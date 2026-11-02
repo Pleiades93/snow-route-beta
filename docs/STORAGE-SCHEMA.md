@@ -18,6 +18,7 @@ sanitizers on 2026-10-29.
 | `snowroute.v4.notes` | Per-street notes and flags | JSON object `{street: [ {k, at, text?}, … ]}`; `k` is `note` or a flag kind (`car`, `hazard`, `missed`, `salt`). |
 | `snowroute.v4.via` | How each street was marked | JSON object `{street: string}`. |
 | `snowroute.v4.trail` | GPS trail, all sessions (recorded only during a run) | JSON array of `[lat, lng, epochSeconds]` triples; sanitizer enforces finite, in-range values. |
+| `snowroute.v5.sess` | GPS session markers (Beta 1.71) | JSON array of epoch-second clean-start times, sorted and de-duplicated; written when a clean starts, cleared with the trail; in BACKUP_KEYS since 1.71 (older backups lack it — restore leaves current markers untouched). |
 | `snowroute.v4.cov` | Coverage sample indexes per street | JSON object `{street: [integers]}`; each index must be an integer in `[0, samples)` — enforced at load (audit F-2). |
 | `snowroute.v5.start` | Run start | Raw epoch-milliseconds digit string (not JSON). |
 | `snowroute.v5.flip` | Legacy flip flag | Retained for format compatibility; unused by the beta (flip was removed in Beta 1.14). Still backed up. |
@@ -36,7 +37,7 @@ non-full runs first (full = all 34 streets).
 
 ## Backup envelope
 
-`{app: 'snowroute-backup', v: 1, at, data}` where `data` maps each of the 11
+`{app: 'snowroute-backup', v: 1, at, data}` where `data` maps each of the 12
 backup keys (all rows above except the three local-only keys) to its raw
 stored string. **Missing-key policy:** a key absent from `data` leaves the
 current value untouched on restore. A legacy backup whose done value is a

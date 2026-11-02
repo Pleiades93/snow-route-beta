@@ -148,6 +148,34 @@ ok('D1 oversized sparse indexes cannot inflate piece-times | ' + JSON.stringify(
 // G4: GPX splits two sessions into two segments.
 const g4 = JSON.parse(await ev(`(() => { const t0 = 1700000000; trail = [[43.82, -79.560, t0], [43.82, -79.559, t0 + 10], [43.82, -79.558, t0 + 20], [43.83, -79.550, t0 + 3600], [43.83, -79.549, t0 + 3610]]; const g = buildGpx(); trail = []; return JSON.stringify({ segs: g.split('<trkseg>').length - 1, pts: g.split('<trkpt').length - 1 }); })()`));
 ok('G4 GPX exports separate sessions as separate segments | ' + JSON.stringify(g4), g4.segs === 2 && g4.pts === 5);
+// ---- Beta 1.71 (audit of 1.70): B01, B02, B03, B04, B05 + independent distance ----
+// X1 (B01): Clear dismisses the live suggestion panel and its street reference.
+await ev(`(() => { coveredIdx = { Velmar: [0, 1] }; suggested = new Set(['Velmar']); showSuggest('Velmar'); return true; })()`);
+const x1 = JSON.parse(await ev(`(() => { const visBefore = !$('suggest').classList.contains('hidden'); clearAllMarks(); return JSON.stringify({ visBefore, visAfter: !$('suggest').classList.contains('hidden'), n: $('suggest').dataset.n || null, cov: Object.keys(coveredIdx).length }); })()`));
+ok('X1 (B01) clear dismisses the suggestion panel and clears its street | ' + JSON.stringify(x1), x1.visBefore === true && x1.visAfter === false && x1.n === null && x1.cov === 0);
+// X2 (audit section 9 + B03): distance checked against GEODESY, not the app -
+// ten 0.001-degree steps due north along a meridian. Earth's meridian arc at
+// this latitude is ~111.11 m per step (the app's equirectangular constant says
+// 111.32 m); either way the total must land in [1.10, 1.12] km.
+const x2 = JSON.parse(await ev(`(() => { const t0 = 1700001000; trail = []; for (let i = 0; i <= 10; i++) trail.push([43.82 + i * 0.001, -79.56, t0 + i * 60]); const km = trailKm(t0 * 1000); trail = []; return JSON.stringify({ km }); })()`));
+ok('X2 distance matches an independent meridian-arc expectation | km ' + x2.km.toFixed(3) + ' expected ~1.111', x2.km >= 1.10 && x2.km <= 1.12);
+// X2b (B03): a >1000 m jump is a break, not distance - two honest steps, one
+// teleport, one honest step must total the honest steps only (~0.222 km).
+const x2b = JSON.parse(await ev(`(() => { const t0 = 1700001000; trail = [[43.82, -79.56, t0], [43.821, -79.56, t0 + 60], [43.832, -79.56, t0 + 70], [43.833, -79.56, t0 + 130]]; const km = trailKm(t0 * 1000); trail = []; return JSON.stringify({ km }); })()`));
+ok('X2b (B03) a >1000 m jump segment is excluded from distance | km ' + x2b.km.toFixed(3) + ' expected ~0.222', x2b.km >= 0.21 && x2b.km <= 0.235);
+// X3 (B04): the run starts 500 ms into a second - the first segment still counts.
+const x3 = JSON.parse(await ev(`(() => { const t0 = 1700001000; trail = [[43.82, -79.56, t0], [43.821, -79.56, t0 + 60], [43.822, -79.56, t0 + 120]]; const km = trailKm(t0 * 1000 + 500); trail = []; return JSON.stringify({ km }); })()`));
+ok('X3 (B04) a mid-second run start keeps the first segment | km ' + x3.km.toFixed(3) + ' expected ~0.222', x3.km >= 0.21 && x3.km <= 0.235);
+// X4 (B05): the snow log's Started/Duration come from the real run start.
+const x4 = JSON.parse(await ev(`(() => { const T = 1700001000000; runStart = T; doneSet = new Set(['Velmar', 'Astona']); doneTimes = { Velmar: new Date(T + 20 * 60000).toISOString(), Astona: new Date(T + 100 * 60000).toISOString() }; const rep = buildReport(); const line = rep.split(String.fromCharCode(10)).find(l => l.indexOf('Started:') >= 0) || ''; const out = { line, wantStart: fmtStamp(new Date(T).toISOString()), wantDur: fmtDur(100 * 60000), badStart: fmtStamp(new Date(T + 20 * 60000).toISOString()) }; doneSet = new Set(); doneTimes = {}; runStart = 0; return JSON.stringify(out); })()`));
+ok('X4 (B05) snow log starts at the clean start, duration spans the whole clean | ' + x4.line, x4.line.indexOf('Started: ' + x4.wantStart) === 0 && x4.line.indexOf('Duration: ' + x4.wantDur) >= 0 && x4.line.indexOf(x4.badStart) < 0);
+// X5 (B02): recorded session markers split adjacent cleans in the GPX export;
+// without markers the same points stay one segment (legacy heuristic kept).
+const x5 = JSON.parse(await ev(`(() => { const t0 = 1700001000; trail = [[43.82, -79.56, t0], [43.8201, -79.56, t0 + 10], [43.8202, -79.56, t0 + 20], [43.8203, -79.56, t0 + 50], [43.8204, -79.56, t0 + 60]]; trailSessions = [t0, t0 + 50]; const withM = buildGpx().split('<trkseg>').length - 1; trailSessions = []; const withoutM = buildGpx().split('<trkseg>').length - 1; trail = []; return JSON.stringify({ withM, withoutM }); })()`));
+ok('X5 (B02) session markers split cleans 30 s apart; the gap heuristic alone does not | ' + JSON.stringify(x5), x5.withM === 2 && x5.withoutM === 1);
+// X5b (B02): starting a clean records and persists its marker.
+const x5b = JSON.parse(await ev(`(() => { trailSessions = []; runStart = 1700001000123; noteSessionStart(); const stored = JSON.parse(lsGet(LS.sess) || '[]'); const out = { mem: trailSessions.slice(), stored }; trailSessions = []; saveSess(); runStart = 0; return JSON.stringify(out); })()`));
+ok('X5b (B02) a clean start appends its marker and saves it | ' + JSON.stringify(x5b), x5b.mem.length === 1 && x5b.mem[0] === 1700001000 && x5b.stored[0] === 1700001000);
 R.exceptions = consoleLog.filter(c => c.type === 'EXCEPTION');
 console.log(JSON.stringify(R, null, 1));
 proc.kill('SIGKILL'); process.exit(0);

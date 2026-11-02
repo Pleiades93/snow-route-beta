@@ -1,5 +1,14 @@
 # Changelog
 
+## Beta 1.71
+The Beta 1.70 deep-audit round (adjudicated 2026-11-02). Small corrective patches plus one approved format addition; no Kalman parameters, geometry, paint or fullscreen changes.
+1. **Clear dismisses the suggestion panel (B01).** Clear wiped the coverage behind the GPS suggestion panel but left the panel itself visible, its Yes still able to select the street. It now hides the panel and clears its street reference, like Cancel/Finish/Undo already did.
+2. **One segment rule for distance (B03).** trailKm now treats a jump over 1000 m as a break, matching the trail display and the GPX export — the archived distance can no longer count GPS teleports the map refuses to draw.
+3. **Second-precision boundaries (B04).** Trail timestamps are whole seconds; run-start boundaries are now compared at that precision (trailKm and the archive path filter; the display already did), so a start mid-second no longer discards the clean's first segment.
+4. **GPS session markers (B02 — format addition, approved).** A new storage key (snowroute.v5.sess) records each clean's start in epoch seconds; GPX segmentation splits at recorded session starts exactly — a cancelled-and-restarted clean now exports as two tracks — while pre-1.71 trail keeps the gap heuristic. The key joins BACKUP_KEYS (12): new backups carry it, older backups restore exactly as before (the missing key leaves current markers untouched), and clearing the trail clears the markers.
+5. **Snow Log start consistency (B05).** Started and Duration use the clean's actual start when recorded (the first-completion fallback is kept for states without one), matching the distance window.
+Tests: drive143 gains B01/B02/B03/B04/B05 cases, and its archive-distance check now verifies against an independently computed meridian-arc expectation instead of the app's own distance function.
+
 ## Beta 1.70
 The Beta 1.69 audit round (two external audits, adjudicated 2026-11-02). The deep audit verified 1.69 clean; the full audit's nine findings are fixed here, in its phase order. No Kalman parameters, thresholds, geometry, paint, storage keys or backup shapes changed.
 1. **Undo reports its metadata save (A01).** Undo's gated writes (history, sides) were already transactional, but the follow-up save of notes/times/start was ignored behind an unconditional 'run restored' toast. It now branches on the result like Finish does and names the failed key.
