@@ -2,7 +2,7 @@
 <html lang="en">
 <head>
 <meta charset="UTF-8">
-<meta http-equiv="Content-Security-Policy" content="default-src 'none'; script-src 'sha384-bB8FchQ3cJ4DULcOptfugN3tt6fw2L//t+C98iHH8J/RB2ahr6vMQYXZ5uaPkBEg' https://cdn.jsdelivr.net; style-src-elem 'sha384-rX2R/tsSSEJcJr/owBJ3iue2FzR4atzp7Ge7sombVmaT45whVNISwQ9vgpUCDFUb' https://cdn.jsdelivr.net; style-src-attr 'unsafe-inline'; img-src 'self' data: blob: https://tiles.basemaps.cartocdn.com https://protomaps.github.io https://cdn.jsdelivr.net; connect-src 'self' https://tiles.basemaps.cartocdn.com https://protomaps.github.io https://cdn.jsdelivr.net; worker-src blob: 'self'; child-src blob: 'self'; font-src 'none'; manifest-src 'self'; base-uri 'none'; form-action 'none'; object-src 'none'">
+<meta http-equiv="Content-Security-Policy" content="default-src 'none'; script-src 'sha384-riV/EiAy9Hh77bUOVcegDcu4ZPrunfXPVaGHegdlbx4G+Aei8jXERGNsMOOJqM+g' https://cdn.jsdelivr.net; style-src-elem 'sha384-rX2R/tsSSEJcJr/owBJ3iue2FzR4atzp7Ge7sombVmaT45whVNISwQ9vgpUCDFUb' https://cdn.jsdelivr.net; style-src-attr 'unsafe-inline'; img-src 'self' data: blob: https://tiles.basemaps.cartocdn.com https://protomaps.github.io https://cdn.jsdelivr.net; connect-src 'self' https://tiles.basemaps.cartocdn.com https://protomaps.github.io https://cdn.jsdelivr.net; worker-src blob: 'self'; child-src blob: 'self'; font-src 'none'; manifest-src 'self'; base-uri 'none'; form-action 'none'; object-src 'none'">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="mobile-web-app-capable" content="yes">
@@ -232,7 +232,7 @@
 <div id="hud">
   <div id="warn">Not saving — storage is full or blocked</div>
   <div class="row">
-    <div class="titleStack"><div class="title">Snow Route Beta</div><div class="ver" id="ver">Beta 1.72</div></div>
+    <div class="titleStack"><div class="title">Snow Route Beta</div><div class="ver" id="ver">Beta 1.73</div></div>
   </div>
   <div id="stats"></div>
 </div>
@@ -297,7 +297,7 @@ const MAIN = new Set(['Velmar', 'Mellings', 'Astona', 'Santa Barbara', 'Valeria'
 const SPOT = { 'Columbus': [1, 0.47], 'Mellings': [1, 0.55], 'Valeria': [1, 0.45], 'Santa Barbara': [3, 0.40], 'Kingsnorth': [0, 0.57], 'Bell Harbour': [0, 0.45], 'Romeo': [-1, 0.40], 'Astona': [-1, 0.60], 'Bourbon': [-1, 0.55], 'Fifth': [-1, 0.55] };
 const TRAIL_MAX = 8000;
 const LS = { done: 'snowroute.v2', times: 'snowroute.v2.times', hist: 'snowroute.v2.history', night: 'snowroute.v2.night', notes: 'snowroute.v4.notes', via: 'snowroute.v4.via', trail: 'snowroute.v4.trail', cov: 'snowroute.v4.cov', start: 'snowroute.v5.start', flip: 'snowroute.v5.flip', sides: 'snowroute.v5.sides', sess: 'snowroute.v5.sess', exp: 'snowroute.v5.export', pre: 'snowroute.v5.preload', prep: 'snowroute.prep.v1' };
-const BACKUP_KEYS = [LS.done, LS.times, LS.hist, LS.night, LS.notes, LS.via, LS.trail, LS.cov, LS.start, LS.flip, LS.sides, LS.sess]; // Beta 1.71 (audit B02): session markers ride in backups from now on; an older backup simply lacks the key and restore leaves the current markers untouched, per the standing missing-key rule
+const BACKUP_KEYS = [LS.done, LS.times, LS.hist, LS.night, LS.notes, LS.via, LS.trail, LS.cov, LS.start, LS.flip, LS.sides, LS.sess]; // Beta 1.71 (audit B02): session markers ride in backups from now on; an older backup simply lacks the key; restore follows the missing-key rule EXCEPT that a legacy backup replacing the trail clears the current markers (Beta 1.73, audit C06 - they describe the trail being replaced)
 
 function distM(a, b) { const dx = (a[1] - b[1]) * MLNG, dy = (a[0] - b[0]) * MLAT; return Math.hypot(dx, dy); }
 const jDistM = distM; // the paint engine's name for the same two-point distance
@@ -488,13 +488,14 @@ function saveAll() {
 // recording, always when forced (page hide/close). Dirty flags clear ONLY when the write actually lands, so a
 // failed write is retried by the next flush instead of silently dropping GPS points. While `restoring` is set
 // (a restore is mid-flight), flushes are refused so the restore's reload cannot clobber the restored data.
-let trailDirty = false, auxDirty = false, lastTrailSave = 0, restoring = false;
+let trailDirty = false, auxDirty = false, sessDirty = false, lastTrailSave = 0, restoring = false; // Beta 1.73 (audit C04/C05): sessDirty is the session markers' retry flag, same discipline as trailDirty - a failed marker write is retried by flushAux instead of being silently dropped
 function saveTrail() { return lsSet(LS.trail, JSON.stringify(trail)); }
 function saveSess() { return lsSet(LS.sess, JSON.stringify(trailSessions)); }
 function flushAux(force) {
   if (restoring) return;
   if (auxDirty && lsSet(LS.cov, JSON.stringify(coveredIdx))) auxDirty = false;
   if (trailDirty && (force || Date.now() - lastTrailSave > 45000) && saveTrail()) { trailDirty = false; lastTrailSave = Date.now(); }
+  if (sessDirty && saveSess()) sessDirty = false;
 }
 setInterval(() => flushAux(false), 15000);
 document.addEventListener('visibilitychange', () => { if (document.visibilityState === 'hidden') flushAux(true); });
@@ -2944,8 +2945,8 @@ async function syncWake() {
   } catch (e) { /* wake lock is best-effort */ }
 }
 document.addEventListener('visibilitychange', syncWake);
-function noteSessionStart() { const s = Math.floor(runStart / 1000); if (trailSessions[trailSessions.length - 1] !== s) { trailSessions.push(s); saveSess(); } } // Beta 1.71 (audit B02): record the session boundary the moment the clean starts - undo restores the original runStart, so a resumed run correctly adds no new marker
-function startClean() { runStart = Date.now(); noteSessionStart(); const okStart = saveAll(); startGps(true); updateCount(); syncWake(); if (okStart) toast('Clean started · ' + fmtClock(new Date())); else toast('Clean started — warning: the run state could not be saved (storage problem)', 4200); drawTrail(true); checkStale(); } // Beta 1.63 (audit F04): the clean still starts - he is standing in the snow - but the message stops claiming a saved state that does not exist
+function noteSessionStart() { const s = Math.floor(runStart / 1000); if (trailSessions[trailSessions.length - 1] !== s) { trailSessions.push(s); if (saveSess()) return true; sessDirty = true; return false; } return true; } // Beta 1.71 (audit B02): record the session boundary the moment the clean starts - undo restores the original runStart, so a resumed run correctly adds no new marker. Beta 1.73 (audit C04): the save result is RETURNED and a failure arms the flushAux retry - 1.71 dropped it, so a failed marker write was silent and a reload could join two cleans in the GPX export
+function startClean() { runStart = Date.now(); const okSess = noteSessionStart(); const okStart = saveAll(); startGps(true); updateCount(); syncWake(); if (okStart && okSess) toast('Clean started · ' + fmtClock(new Date())); else if (!okStart) toast('Clean started — warning: the run state could not be saved (storage problem)', 4200); else toast('Clean started — warning: the session marker could not be saved; it will keep retrying', 4200); drawTrail(true); checkStale(); } // Beta 1.73 (audit C04): the marker save is part of the start's honesty check, not a silent side write // Beta 1.63 (audit F04): the clean still starts - he is standing in the snow - but the message stops claiming a saved state that does not exist
 // Beta 1.70 (audit A04): coverage and suggestions are run-scoped - a cancelled clean never happened, so its coverage dies with it instead of leaking into the next clean (the trail is history and stays).
 function cancelStart() { const wasRunGps = gpsFromRun; runStart = 0; coveredIdx = {}; suggested = new Set(); $('suggest').classList.add('hidden'); const okCancel = saveAll(); if (wasRunGps) stopGps(); drawTrail(true); updateCount(); syncWake(); if (okCancel) toast('Start cancelled'); else toast('Start cancelled - warning: the cancellation could not be saved; the run may return on reload', 4200); } // Beta 1.69 (audits N03 + trail): cancelStart ignored saveAll's result and claimed success unconditionally; it also never refreshed the trail, so a cancelled run's line lingered
 $('startBtn').addEventListener('click', () => { if (!tapGuard('startBtn')) return; startClean(); });
@@ -3360,7 +3361,8 @@ function buildReport() {
 }
 function buildGpx() {
   let g = '<?xml version="1.0" encoding="UTF-8"?>\n<gpx version="1.1" creator="Snow Route Beta"><trk><name>Snow Route trail</name><trkseg>\n';
-  for (let i = 0; i < trail.length; i++) { const p = trail[i]; if (i > 0 && (p[2] - trail[i - 1][2] > 300 || distM(trail[i - 1], p) > 1000 || trailSessions.some(m => trail[i - 1][2] < m && m <= p[2]))) g += '</trkseg><trkseg>\n'; g += '<trkpt lat="' + p[0] + '" lon="' + p[1] + '"><time>' + new Date(p[2] * 1000).toISOString() + '</time></trkpt>\n'; } // Beta 1.70 (audit A07): separate sessions get separate segments (same gap rule as the map's trail display) instead of one line stitched across days. Beta 1.71 (audit B02): a recorded session start between two points also splits - exact for cleans recorded since 1.71, heuristic for older trail
+  let sessAt = 0; // Beta 1.73 (audit C07): walk the sorted markers with a pointer instead of re-scanning the whole list per point (was O(points x markers)); sessAt only advances, and the split test below is the same predicate - output is unchanged (drive143 parity check)
+  for (let i = 0; i < trail.length; i++) { const p = trail[i]; if (i > 0) { while (sessAt < trailSessions.length && trailSessions[sessAt] <= trail[i - 1][2]) sessAt++; } if (i > 0 && (p[2] - trail[i - 1][2] > 300 || distM(trail[i - 1], p) > 1000 || (sessAt < trailSessions.length && trailSessions[sessAt] <= p[2]))) g += '</trkseg><trkseg>\n'; g += '<trkpt lat="' + p[0] + '" lon="' + p[1] + '"><time>' + new Date(p[2] * 1000).toISOString() + '</time></trkpt>\n'; } // Beta 1.70 (audit A07): separate sessions get separate segments (same gap rule as the map's trail display) instead of one line stitched across days. Beta 1.71 (audit B02): a recorded session start between two points also splits - exact for cleans recorded since 1.71, heuristic for older trail
   g += '</trkseg></trk></gpx>';
   return g;
 }
@@ -3397,10 +3399,12 @@ let clrArmed = false, clrTimer = 0;
 $('xClr').addEventListener('click', () => {
   if (!clrArmed) { clrArmed = true; $('xClr').textContent = 'Sure?'; clrTimer = setTimeout(() => { clrArmed = false; $('xClr').textContent = 'Clear trail'; }, 5000); return; }
   clearTimeout(clrTimer); clrArmed = false; $('xClr').textContent = 'Clear trail';
-  trail = []; trailSessions = []; saveSess(); drawTrail(true); // Beta 1.71 (audit B02): the markers describe this trail - clearing the trail clears them
+  trail = []; trailSessions = []; const okSessClr = saveSess(); if (!okSessClr) sessDirty = true; drawTrail(true); // Beta 1.71 (audit B02): the markers describe this trail - clearing the trail clears them. Beta 1.73 (audit C05): the marker write is CHECKED like the trail write - 1.71 dropped its result, so 'Trail cleared' could be claimed while the markers stayed stored
   // The clear is a storage write like any other: if it fails, the stored trail still holds every point and
   // would resurrect on the next load - say so honestly and keep the clear pending (trailDirty) so the flush retries it.
-  if (saveTrail()) { trailDirty = false; lastTrailSave = Date.now(); toast('Trail cleared'); }
+  const okTrailClr = saveTrail();
+  if (okTrailClr && okSessClr) { trailDirty = false; lastTrailSave = Date.now(); toast('Trail cleared'); }
+  else if (okTrailClr) { toast('Trail cleared, but the session markers could not be saved — will keep retrying', 3200); }
   else { trailDirty = true; toast('Trail cleared on screen, but saving failed — will keep retrying', 3200); }
   if (xMode === 'gpx') showX('gpx');
 });
@@ -3422,6 +3426,13 @@ function restoreBackup(parsed) { // production doRestore semantics: validate EVE
     }
     entries.push([k, v]);
   }
+  // Beta 1.73 (audit C06, Andrew's call): a legacy backup that replaces the TRAIL but carries no
+  // session markers of its own must not inherit the CURRENT trail's markers - they describe the
+  // trail being replaced and would split the restored trail at wrong places. Clear them as part
+  // of this restore: the entry is written and verified like every other, and the snapshot +
+  // rollback below already cover LS.sess, so a failed restore puts the markers back too. A
+  // legacy backup WITHOUT a trail leaves the markers untouched (missing-key rule, unchanged).
+  if (entries.some(p => p[0] === LS.trail) && !entries.some(p => p[0] === LS.sess)) entries.push([LS.sess, '[]']);
   if (!entries.length) { toast('Nothing in that backup to restore', 3000); return; }
   const snap = {}; let snapOk = true;
   for (const k of BACKUP_KEYS) { try { snap[k] = localStorage.getItem(k); } catch (e) { snapOk = false; } }
@@ -3444,7 +3455,7 @@ function restoreBackup(parsed) { // production doRestore semantics: validate EVE
       return;
     }
   }
-  restoring = true; trailDirty = false; auxDirty = false; // the reload's pagehide flush must not write the old in-memory trail/coverage over the restored data
+  restoring = true; trailDirty = false; auxDirty = false; sessDirty = false; // the reload's pagehide flush must not write the old in-memory trail/coverage over the restored data
   toast('Backup restored — reloading');
   setTimeout(() => location.reload(), 600);
 }

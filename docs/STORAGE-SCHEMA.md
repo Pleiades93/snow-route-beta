@@ -18,7 +18,7 @@ sanitizers on 2026-10-29.
 | `snowroute.v4.notes` | Per-street notes and flags | JSON object `{street: [ {k, at, text?}, … ]}`; `k` is `note` or a flag kind (`car`, `hazard`, `missed`, `salt`). |
 | `snowroute.v4.via` | How each street was marked | JSON object `{street: string}`. |
 | `snowroute.v4.trail` | GPS trail, all sessions (recorded only during a run) | JSON array of `[lat, lng, epochSeconds]` triples; sanitizer enforces finite, in-range values. |
-| `snowroute.v5.sess` | GPS session markers (Beta 1.71) | JSON array of epoch-second clean-start times, sorted and de-duplicated; written when a clean starts, cleared with the trail; in BACKUP_KEYS since 1.71 (older backups lack it — restore leaves current markers untouched). |
+| `snowroute.v5.sess` | GPS session markers (Beta 1.71) | JSON array of epoch-second clean-start times, sorted and de-duplicated; written when a clean starts, cleared with the trail; in BACKUP_KEYS since 1.71 (older backups lack it). Restore rule (Beta 1.73, audit C06): a legacy backup that replaces the trail but has no markers of its own clears the current markers as part of the restore (they describe the replaced trail); a legacy backup without a trail leaves the markers untouched. The clear is written, verified and rolled back like every other restore entry. |
 | `snowroute.v4.cov` | Coverage sample indexes per street | JSON object `{street: [integers]}`; each index must be an integer in `[0, samples)` — enforced at load (audit F-2). |
 | `snowroute.v5.start` | Run start | Raw epoch-milliseconds digit string (not JSON). |
 | `snowroute.v5.flip` | Legacy flip flag | Retained for format compatibility; unused by the beta (flip was removed in Beta 1.14). Still backed up. |
