@@ -82,8 +82,9 @@ themselves are embedded in the page (generated Protomaps styles), so no
 style document is ever fetched.
 Activate deletes only `snowroute-` caches (plus the two pre-rename beta cache names, once) — disjoint from production's
 `snow5w-` prefix, so the two apps can share an origin safely. An in-app
-preload ("Download route maps") warms tiles (zoom 14 over the area, plus a
-zoom-15 route core), sprites and glyphs — 894 files in all. The first-ever
+preload ("Download route maps") warms tiles (zooms 8-14 over the area - the
+wide zooms added in Beta 1.72 so the map's own minimum zoom works offline -
+plus a zoom-15 route core), sprites and glyphs — 897 files in all. The first-ever
 boot also self-warms once the worker controls the page, so the map works
 offline from the first install — drive119's first session proves it
 without any manual reload.

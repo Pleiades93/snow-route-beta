@@ -18,8 +18,10 @@ const ws = new WebSocket(wsUrl);
 await new Promise(r => ws.addEventListener('open', r, { once: true }));
 let nextId = 1; const pending = new Map(); const consoleLog = []; const sessions = new Set();
 function send(method, params = {}, sessionId) { const id = nextId++; return new Promise(res => { pending.set(id, res); ws.send(JSON.stringify({ id, method, params, ...(sessionId ? { sessionId } : {}) })); }); }
+let netOff = false; // Phase 3 (Beta 1.72): when true, every intercepted request fails - a true dead-zone simulation for the page AND the worker's own fetches
 async function fulfil(sessionId, p) {
   const url = p.request.url;
+  if (netOff) { await send('Fetch.failRequest', { requestId: p.requestId, errorReason: 'InternetDisconnected' }, sessionId); return; }
   try {
     const r = await fetch(url, { headers: { 'user-agent': 'Mozilla/5.0 (iPhone; CPU iPhone OS 17_0 like Mac OS X)' } });
     const buf = Buffer.from(await r.arrayBuffer());
@@ -75,10 +77,54 @@ await ev2(`document.getElementById('xPre').click()`);
 ok('E4 preload completes with a saved count', await poll(`document.getElementById('xPreStat').textContent.includes('Offline maps: saved')`, 420000));
 const stat = await ev2(`document.getElementById('xPreStat').textContent`);
 const m = /saved (\d+) of (\d+)/.exec(stat || '');
-ok('E5 saved >= 880 of 894 (the 2026-11-01 regression saved 0) | ' + stat, !!m && +m[1] >= 880 && +m[2] === 894);
+ok('E5 saved >= 883 of 897 (the 2026-11-01 regression saved 0) | ' + stat, !!m && +m[1] >= 883 && +m[2] === 897);
 const counts = await ev2(`(async () => { const out = {}; for (const k of await caches.keys()) { const c = await caches.open(k); out[k] = (await c.keys()).length; } return JSON.stringify(out); })()`);
-ok('E6 the tiles cache really holds the files | ' + counts, (() => { try { return JSON.parse(counts)['snowroute-tiles-v1'] >= 880; } catch (e) { return false; } })());
-ok('E7 no page exceptions', consoleLog.filter(c => String(c).startsWith('EXCEPTION')).length === 0);
+ok('E6 the tiles cache really holds the files | ' + counts, (() => { try { return JSON.parse(counts)['snowroute-tiles-v1'] >= 883; } catch (e) { return false; } })());
+// ---- Phase 3 (Beta 1.72): E1-E6 prove the files land in the cache. These
+// prove the app actually LIVES on them: renders with the network dead, at
+// every zoom it allows, across a worker upgrade and a mid-download death.
+// E8: cold boot offline - shell, scripts, styles and tiles all from cache.
+netOff = true;
+await send('Page.reload', { ignoreCache: false }, PAGE_S);
+ok('E8 offline cold boot renders the map from cache alone', (await poll(`typeof glOk !== 'undefined' && glOk === true`, 90000)) && (await poll(`typeof tilesOk !== 'undefined' && tilesOk > 0`, 30000)));
+// E9/E10: the wide zooms offline (the R04 gap: minZoom is 8, the preload
+// stopped at z10 until 1.72). New tile data must still arrive - from cache.
+const zoomProbe = async (z) => { const before = await ev2(`typeof tilesOk !== 'undefined' ? tilesOk : -1`); await ev2(`(() => { GLM.jumpTo({ zoom: ${z} }); return true; })()`); await sleep(5000); const after = await ev2(`typeof tilesOk !== 'undefined' ? tilesOk : -1`); return [before, after]; };
+const zp9 = await zoomProbe(8.4);
+ok('E9 offline at zoom 8.4, basemap tiles still arrive (from cache) | tilesOk ' + zp9[0] + ' -> ' + zp9[1], zp9[1] > zp9[0]);
+// (E10 reload-isolates like E9's fresh boot did: chained off E9 instead, the
+// z9 tiles E9 loaded would still cover the view and no new arrival could ever
+// be observed - the first local run failed exactly that way, 4 -> 4, with the
+// map rendering fine throughout.)
+await send('Page.reload', { ignoreCache: false }, PAGE_S);
+await poll(`typeof glOk !== 'undefined' && glOk === true`, 90000);
+const zp10 = await zoomProbe(9.4);
+ok('E10 offline at zoom 9.4, basemap tiles still arrive (from cache) | tilesOk ' + zp10[0] + ' -> ' + zp10[1], zp10[1] > zp10[0]);
+// E11: a worker upgrade takes over without taking the saved maps with it.
+netOff = false;
+const swFile = new URL('../../sw.js', import.meta.url);
+const swOrig = fs.readFileSync(swFile, 'utf8');
+let upgraded = false;
+try {
+  fs.writeFileSync(swFile, swOrig + '\n// e2e phase-3 upgrade probe (byte change only)\n');
+  await ev2(`(() => { window.__ctl = false; navigator.serviceWorker.addEventListener('controllerchange', () => { window.__ctl = true; }); return true; })()`);
+  await ev2(`(async () => { const r = await navigator.serviceWorker.getRegistration(); if (r) await r.update(); return true; })()`);
+  upgraded = await poll(`window.__ctl === true`, 45000);
+} finally { fs.writeFileSync(swFile, swOrig); }
+const counts2 = await ev2(`(async () => { const out = {}; for (const k of await caches.keys()) { const c = await caches.open(k); out[k] = (await c.keys()).length; } return JSON.stringify(out); })()`);
+ok('E11 worker upgrade takes over and the tile cache survives | upgraded ' + upgraded + ' ' + counts2, upgraded && (() => { try { return JSON.parse(counts2)['snowroute-tiles-v1'] >= 883; } catch (e) { return false; } })());
+// E12: the page dies mid-download; the next run still lands the full count.
+await ev2(`document.getElementById('xPre').click()`);
+await sleep(2000);
+await send('Page.reload', { ignoreCache: false }, PAGE_S);
+await poll(`typeof glOk !== 'undefined' && glOk === true`, 90000);
+await ev2(`document.getElementById('xPre').click()`);
+ok('E12 preload interrupted by a page death still completes afterwards', await poll(`document.getElementById('xPreStat').textContent.includes('Offline maps: saved')`, 420000));
+const stat2 = await ev2(`document.getElementById('xPreStat').textContent`);
+const m2 = /saved (\d+) of (\d+)/.exec(stat2 || '');
+const diag12 = await ev2(`(async () => { const out = { caches: {}, pre: null, sampleMatch: null, sampleKey: null }; for (const k of await caches.keys()) { const c = await caches.open(k); out.caches[k] = (await c.keys()).length; } try { out.pre = localStorage.getItem('snowroute.prep.v1'); } catch (e) {} const tc = await caches.open('snowroute-tiles-v1'); const keys = await tc.keys(); out.sampleKey = keys.length ? keys[0].url : null; if (keys.length) out.sampleMatch = !!(await caches.match(keys[0].url)); return JSON.stringify(out); })()`);
+ok('E12b the final count is the full set | ' + stat2 + ' | diag ' + diag12, !!m2 && +m2[1] >= 883 && +m2[2] === 897);
+ok('E13 no page exceptions across the whole run', consoleLog.filter(c => String(c).startsWith('EXCEPTION')).length === 0);
 const fails = R.checks.filter(c => !c[1]);
 for (const c of R.checks) console.log((c[1] ? 'PASS ' : 'FAIL ') + c[0]);
 console.log('e2e-offline:', R.checks.length - fails.length + '/' + R.checks.length);
