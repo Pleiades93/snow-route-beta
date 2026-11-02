@@ -1,5 +1,10 @@
 # Changelog
 
+## Beta 1.72
+Offline Phase 3 (the parked remainder of the reliability audits, built 2026-11-02): one app fix plus the end-to-end proofs that were missing.
+1. **Offline maps cover the wide zooms (R04).** The map lets you zoom out to zoom 8, but the offline download only fetched zoom 10 and closer - so with no signal, zooming out past 10 showed a blank basemap. The download now includes zooms 8 and 9 over the same Vaughan area (3 extra tiles): 633 tiles, 897 files in all. Your next download picks them up; the count on the button is the honest new total.
+Tests: the offline end-to-end gains Phase 3 cases - a cold boot with the network dead must render the map from the saved files alone (E8), the basemap must still arrive at zooms 8.4 and 9.4 offline (E9/E10), a behind-the-scenes app update must take over without losing the saved maps (E11), and killing the app mid-download must still end at the full count on the next run (E12). drive123's download count updated to 633 tiles / 897 files.
+
 ## Beta 1.71
 The Beta 1.70 deep-audit round (adjudicated 2026-11-02). Small corrective patches plus one approved format addition; no Kalman parameters, geometry, paint or fullscreen changes.
 1. **Clear dismisses the suggestion panel (B01).** Clear wiped the coverage behind the GPS suggestion panel but left the panel itself visible, its Yes still able to select the street. It now hides the panel and clears its street reference, like Cancel/Finish/Undo already did.
