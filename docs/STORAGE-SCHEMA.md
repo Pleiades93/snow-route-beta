@@ -17,7 +17,7 @@ sanitizers on 2026-10-29.
 | `snowroute.v2.night` | Night-mode flag | String flag. |
 | `snowroute.v4.notes` | Per-street notes and flags | JSON object `{street: [ {k, at, text?}, … ]}`; `k` is `note` or a flag kind (`car`, `hazard`, `missed`, `salt`). |
 | `snowroute.v4.via` | How each street was marked | JSON object `{street: string}`. |
-| `snowroute.v4.trail` | GPS trail of the current run | JSON array of `[lat, lng, epochSeconds]` triples; sanitizer enforces finite, in-range values. |
+| `snowroute.v4.trail` | GPS trail, all sessions (recorded only during a run) | JSON array of `[lat, lng, epochSeconds]` triples; sanitizer enforces finite, in-range values. |
 | `snowroute.v4.cov` | Coverage sample indexes per street | JSON object `{street: [integers]}`; each index must be an integer in `[0, samples)` — enforced at load (audit F-2). |
 | `snowroute.v5.start` | Run start | Raw epoch-milliseconds digit string (not JSON). |
 | `snowroute.v5.flip` | Legacy flip flag | Retained for format compatibility; unused by the beta (flip was removed in Beta 1.14). Still backed up. |

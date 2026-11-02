@@ -193,7 +193,29 @@ await send('Emulation.setDeviceMetricsOverride', { width: 420, height: 560, devi
 let efvLate = [];
 for (let i = 0; i < 12 && !efvLate.length; i++) { await sleep(200); efvLate = JSON.parse(await ev(`JSON.stringify(window.__efv)`)); }
 ok('K2 when the keyboard finally arrives, the visibility check runs against the TRUE keyboard height (560) | calls ' + JSON.stringify(efvLate), efvLate.length >= 1 && Math.abs(efvLate[0].h - 560) <= 2);
-await ev(`document.querySelector('.noteEd textarea').blur()`); await sleep(400);
+// Beta 1.70 (audit A03): a DELAYED dismissal - after blur the height sits at the
+// short value for a while before the keyboard starts retracting. The closing
+// sampler must not release the freeze inside that window (its opening twin, N02,
+// got the same discipline in 1.69).
+await ev(`document.querySelector('.noteEd textarea').blur()`);
+await sleep(350);
+ok('K02 delayed dismissal: the freeze HOLDS while the height has not begun to rise', await ev(`document.body.classList.contains('kb')`));
+await send('Emulation.setDeviceMetricsOverride', { width: 420, height: 900, deviceScaleFactor: 2, mobile: true }, S);
+ok('K02b once the height is home the freeze releases', await poll120(`!document.body.classList.contains('kb')`, 4000));
+// Beta 1.70 (audit A02): a modal card, two-stage keyboard growth. The card is
+// shifted up at the first height; when the keyboard grows further, the second
+// correction must be computed from the UNSHIFTED card - the old math measured
+// the shifted card and under-shifted, dropping the field back under the keyboard.
+await ev(`(() => { const d = document.createElement('div'); d.className = 'modal'; d.id = 'kModal'; d.innerHTML = '<div class="card" style="margin-top:560px"><div>Note</div><textarea id="kTa" rows="3"></textarea></div>'; document.body.appendChild(d); return true; })()`);
+await ev(`document.getElementById('kTa').focus()`); await sleep(300);
+await send('Emulation.setDeviceMetricsOverride', { width: 420, height: 580, deviceScaleFactor: 2, mobile: true }, S); await sleep(800);
+const kA = JSON.parse(await ev(`(() => { const r = document.getElementById('kTa').getBoundingClientRect(); return JSON.stringify({ b: r.bottom, floor: window.visualViewport.height - 8 }); })()`));
+ok('K01a first keyboard height: the modal field is lifted above the keyboard | bottom ' + Math.round(kA.b) + ' floor ' + kA.floor, kA.b <= kA.floor + 2);
+await send('Emulation.setDeviceMetricsOverride', { width: 420, height: 480, deviceScaleFactor: 2, mobile: true }, S); await sleep(900);
+const kB = JSON.parse(await ev(`(() => { const r = document.getElementById('kTa').getBoundingClientRect(); return JSON.stringify({ b: r.bottom, floor: window.visualViewport.height - 8 }); })()`));
+ok('K01b the keyboard GROWS: the field stays above it (no under-shift from measuring the shifted card) | bottom ' + Math.round(kB.b) + ' floor ' + kB.floor, kB.b <= kB.floor + 2);
+await ev(`(() => { const m = document.getElementById('kModal'); if (m) m.remove(); return true; })()`);
+await sleep(400);
 await send('Emulation.setDeviceMetricsOverride', { width: 420, height: 900, deviceScaleFactor: 2, mobile: true }, S); await sleep(300);
 R.exceptions = consoleLog.filter(c => c.type === 'EXCEPTION');
 console.log(JSON.stringify(R, null, 1));

@@ -2,7 +2,7 @@
 <html lang="en">
 <head>
 <meta charset="UTF-8">
-<meta http-equiv="Content-Security-Policy" content="default-src 'none'; script-src 'sha384-il29F7mw+ns3AlDYk2mSB3+nzDezMJDKF2iVZBggNJouEZdneSR0StWJg81Cc9L8' https://cdn.jsdelivr.net; style-src-elem 'sha384-SpJcC1pd6bJBUuT/mTX0CQqb/yDmjJnSP5uWGzxm6DeJs//ETS8IpJAVzgtVsZ7L' https://cdn.jsdelivr.net; style-src-attr 'unsafe-inline'; img-src 'self' data: blob: https://tiles.basemaps.cartocdn.com https://protomaps.github.io https://cdn.jsdelivr.net; connect-src 'self' https://tiles.basemaps.cartocdn.com https://protomaps.github.io https://cdn.jsdelivr.net; worker-src blob: 'self'; child-src blob: 'self'; font-src 'none'; manifest-src 'self'; base-uri 'none'; form-action 'none'; object-src 'none'">
+<meta http-equiv="Content-Security-Policy" content="default-src 'none'; script-src 'sha384-NpJ4WAPgNdcE51+XqqsWdqN8e4Cmd1ByL00WIM+sSdb2AWuKG1m9cULemzH1oASn' https://cdn.jsdelivr.net; style-src-elem 'sha384-rX2R/tsSSEJcJr/owBJ3iue2FzR4atzp7Ge7sombVmaT45whVNISwQ9vgpUCDFUb' https://cdn.jsdelivr.net; style-src-attr 'unsafe-inline'; img-src 'self' data: blob: https://tiles.basemaps.cartocdn.com https://protomaps.github.io https://cdn.jsdelivr.net; connect-src 'self' https://tiles.basemaps.cartocdn.com https://protomaps.github.io https://cdn.jsdelivr.net; worker-src blob: 'self'; child-src blob: 'self'; font-src 'none'; manifest-src 'self'; base-uri 'none'; form-action 'none'; object-src 'none'">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="mobile-web-app-capable" content="yes">
@@ -118,7 +118,7 @@
   #selClearBtn { background: transparent; color: inherit; }
   #cancelStartBtn { position: absolute; bottom: calc(100% + 10px); left: 50%; transform: translateX(-50%); border: none; border-radius: 999px; padding: 8px 14px; font-size: 12.5px; font-weight: 700; color: #fff; white-space: nowrap; cursor: pointer; box-shadow: var(--shadow-float); } /* Beta 1.24 (Andrew): above the Start circle - below it, the tab bar swallowed it */
   .sheet { position: fixed; left: 0; right: 0; bottom: var(--vvb, 0px); z-index: 1100; background: var(--card); -webkit-backdrop-filter: var(--blur); backdrop-filter: var(--blur); color: var(--ink); border-radius: 18px 18px 0 0; box-shadow: var(--shadow-card); max-height: calc(var(--vvh, 100dvh) * .74); display: flex; flex-direction: column; transform: translateY(105%); visibility: hidden; transition: transform var(--anim-dur) var(--ease-close), height var(--anim-dur) var(--ease-close), max-height var(--anim-dur) var(--ease-close), visibility 0s linear var(--anim-dur); padding-bottom: var(--sab); }
-  .grab, #sheetHead { touch-action: none; }
+  .grab, .sheetHead { touch-action: none; }
   #sheetBody, #pacePad { touch-action: pan-y; }
   .sheet.open { transform: translateY(0); visibility: visible; transition: transform var(--anim-dur) var(--ease-open), height var(--anim-dur) var(--ease-open), max-height var(--anim-dur) var(--ease-open), visibility 0s; }
   .grab { padding: 12px 0 7px; cursor: grab; touch-action: none; flex: none; }
@@ -126,8 +126,8 @@
   .sheet.dragging { transition: none; }
   .sheet.snapping { transition: transform var(--anim-dur) var(--ease-open), height var(--anim-dur) var(--ease-open), max-height var(--anim-dur) var(--ease-open), visibility 0s; }
   #sheetBody { flex: 1 1 auto; min-height: 0; }
-  #sheetHead { display: flex; align-items: center; gap: 8px; padding: 8px 48px 6px 14px; }
-  #sheetTitle { font-size: 16px; font-weight: 700; flex: 1; }
+  .sheetHead { display: flex; align-items: center; gap: 8px; padding: 8px 48px 6px 14px; }
+  .sheetTitle { font-size: 16px; font-weight: 700; flex: 1; }
   #sheetClose, #paceClose, #finNo, #noteNo, #xClose { position: absolute; top: 2px; right: 4px; z-index: 3; border: none; background: transparent; width: 38px; height: 38px; padding: 0; color: #e63a2e; font-size: 21px; font-weight: 800; cursor: pointer; } /* THE corner X (Beta 1.30/1.31, completed 1.34, Andrew): ONE plain red X, no box, pinned to the top-right corner of EVERY menu - sheets and dialogs alike. This single rule is the only place a close may be styled; the 1.34 bug was three dialogs carrying their own overrides (coloured-button rules and the Backup button grid) that silently repainted their X as a red box */
   body.kb .sheet { transition: none; } /* Beta 1.61 (was 1.31's near-full-visible-height rule): while the keyboard is up the sheet keeps its pre-keyboard size and place - the layout variables are frozen in syncViewport and the keyboard overlays the sheet; the field is surfaced by the sheet's own scroll (ensureFieldVisible). The 1.31/1.55 sizing chase after the shrinking visible height is what made note menus flicker and jump. */
   .modal .card { max-height: calc(var(--vvh, 100dvh) - 44px); overflow-y: auto; } /* a modal card can never outgrow the visible area, keyboard or not */
@@ -232,7 +232,7 @@
 <div id="hud">
   <div id="warn">Not saving — storage is full or blocked</div>
   <div class="row">
-    <div class="titleStack"><div class="title">Snow Route Beta</div><div class="ver" id="ver">Beta 1.69</div></div>
+    <div class="titleStack"><div class="title">Snow Route Beta</div><div class="ver" id="ver">Beta 1.70</div></div>
   </div>
   <div id="stats"></div>
 </div>
@@ -263,13 +263,13 @@
 </div>
 <div id="sheet" class="sheet">
   <div class="grab"><div class="grabBar"></div></div>
-  <div id="sheetHead"><div id="sheetTitle">Streets</div><button id="sheetClose">✕</button></div>
+  <div class="sheetHead"><div class="sheetTitle">Streets</div><button id="sheetClose">✕</button></div>
   <div id="filters"><button data-f="all" class="on">All</button><button data-f="todo">To do</button><button data-f="done">Done</button></div>
   <div id="sheetBody"><div id="streetList"></div><div id="cleanView"></div></div>
 </div>
 <div id="pacePanel" class="sheet">
   <div class="grab"><div class="grabBar"></div></div>
-  <div id="sheetHead"><div id="sheetTitle">Pace</div><button id="paceClose">✕</button></div>
+  <div class="sheetHead"><div class="sheetTitle">Pace</div><button id="paceClose">✕</button></div>
   <div id="pacePad"></div>
 </div>
 <div id="finModal" class="modal hidden"><div class="card"><h3>Finish this clean?</h3><p id="finMsg"></p><div class="row"><button id="finNo">✕</button><button id="finYes">Finish clean</button></div></div></div>
@@ -426,11 +426,12 @@ let coveredIdx = parseJ(lsGet(LS.cov), {});
 if (!coveredIdx || typeof coveredIdx !== 'object' || Array.isArray(coveredIdx)) coveredIdx = {};
 let pieces = {}, pieceTimes = {};
 function streetComplete(n) { const p = pieces[n]; if (!Array.isArray(p)) return doneSet.has(n); return p.every(v => v === 3); }
-function sanitizePieceTimes(raw) { // Beta 1.64 (audit F07): only [stringOrNull, stringOrNull] pairs survive - a nested string used to reach applyPiece and throw under strict mode. Accepts the array shape the app writes and the numeric-keyed object a JSON round-trip of a sparse structure can produce.
+function sanitizePieceTimes(raw, count) { // Beta 1.64 (audit F07): only [stringOrNull, stringOrNull] pairs survive - a nested string used to reach applyPiece and throw under strict mode. Accepts the array shape the app writes and the numeric-keyed object a JSON round-trip of a sparse structure can produce. Beta 1.70 (audit A06): indexes are bounded by the street's real stretch count - a corrupt key like 10000 used to inflate a sparse array to that length (~50 KB of nulls per street, worse for larger keys).
   const pair = pr => Array.isArray(pr) ? [typeof pr[0] === 'string' ? pr[0] : null, typeof pr[1] === 'string' ? pr[1] : null] : [null, null];
+  const lim = Number.isInteger(count) && count > 0 ? count : 0;
   const out = [];
-  if (Array.isArray(raw)) { for (let i = 0; i < raw.length; i++) out[i] = pair(raw[i]); return out; }
-  if (raw && typeof raw === 'object') { for (const k of Object.keys(raw)) { const i = Number(k); if (Number.isInteger(i) && i >= 0) out[i] = pair(raw[k]); } return out; }
+  if (Array.isArray(raw)) { const n = Math.min(raw.length, lim); for (let i = 0; i < n; i++) out[i] = pair(raw[i]); return out; }
+  if (raw && typeof raw === 'object') { for (const k of Object.keys(raw)) { const i = Number(k); if (Number.isInteger(i) && i >= 0 && i < lim) out[i] = pair(raw[k]); } return out; }
   return out;
 }
 (function loadSides() {
@@ -442,7 +443,7 @@ function sanitizePieceTimes(raw) { // Beta 1.64 (audit F07): only [stringOrNull,
     let arr = (P && Array.isArray(P[n]) && P[n].length === count) ? P[n].map(v => (v === 1 || v === 2 || v === 3) ? v : 0) : null; // audit G3: normalize side values to the 0..3 the app writes - a crafted 99 otherwise counted sides via bitwise reads while streetComplete (===3) disagreed
     if (!arr) arr = new Array(count).fill(doneSet.has(n) ? 3 : 0);
     pieces[n] = arr;
-    pieceTimes[n] = sanitizePieceTimes(T && T[n]);
+    pieceTimes[n] = sanitizePieceTimes(T && T[n], STRETCH[n].parts.length);
   }
   // complete streets inherit their done-time on every side; doneSet is derived from pieces
   doneSet = new Set(STREETNAMES.filter(streetComplete));
@@ -2698,7 +2699,7 @@ function makeSheetDraggable(sheet) {
   sheet.addEventListener('pointerdown', e => {
     if (dragging) return;
     if (e.target.closest('button')) return; // buttons keep their taps
-    if (!e.target.closest('.grab, #sheetHead')) return; // drags start only in the empty top strip
+    if (!e.target.closest('.grab, .sheetHead')) return; // drags start only in the empty top strip
     dragging = true; moved = false; panelMoved = false; pid = e.pointerId;
     startY = lastY = e.clientY; startH = sheet.offsetHeight;
     samples = [{ t: performance.now(), y: e.clientY }];
@@ -2941,13 +2942,14 @@ async function syncWake() {
 }
 document.addEventListener('visibilitychange', syncWake);
 function startClean() { runStart = Date.now(); const okStart = saveAll(); startGps(true); updateCount(); syncWake(); if (okStart) toast('Clean started · ' + fmtClock(new Date())); else toast('Clean started — warning: the run state could not be saved (storage problem)', 4200); drawTrail(true); checkStale(); } // Beta 1.63 (audit F04): the clean still starts - he is standing in the snow - but the message stops claiming a saved state that does not exist
-function cancelStart() { const wasRunGps = gpsFromRun; runStart = 0; const okCancel = saveAll(); if (wasRunGps) stopGps(); drawTrail(true); updateCount(); syncWake(); if (okCancel) toast('Start cancelled'); else toast('Start cancelled - warning: the cancellation could not be saved; the run may return on reload', 4200); } // Beta 1.69 (audits N03 + trail): the last F04 holdout - cancelStart ignored saveAll's result and claimed success unconditionally; it also never refreshed the trail, so a cancelled run's line lingered
+// Beta 1.70 (audit A04): coverage and suggestions are run-scoped - a cancelled clean never happened, so its coverage dies with it instead of leaking into the next clean (the trail is history and stays).
+function cancelStart() { const wasRunGps = gpsFromRun; runStart = 0; coveredIdx = {}; suggested = new Set(); $('suggest').classList.add('hidden'); const okCancel = saveAll(); if (wasRunGps) stopGps(); drawTrail(true); updateCount(); syncWake(); if (okCancel) toast('Start cancelled'); else toast('Start cancelled - warning: the cancellation could not be saved; the run may return on reload', 4200); } // Beta 1.69 (audits N03 + trail): cancelStart ignored saveAll's result and claimed success unconditionally; it also never refreshed the trail, so a cancelled run's line lingered
 $('startBtn').addEventListener('click', () => { if (!tapGuard('startBtn')) return; startClean(); });
 // CLEAR (Andrew, Beta 1.7): header button beside Pace - one tap wipes EVERY mark on the board (all streets,
 // both sides), plus the completion times/vias and the GPS coverage that would instantly re-suggest them.
 // The run itself (start time, trail, notes, history) is untouched - this is the mistake eraser, not a finish.
 function clearAllMarks() {
-  const any = doneSet.size > 0 || STREETNAMES.some(n => pieces[n].some(v => v !== 0));
+  const any = doneSet.size > 0 || STREETNAMES.some(n => pieces[n].some(v => v !== 0)) || Object.keys(coveredIdx).length > 0 || suggested.size > 0; // Beta 1.70 (audit A04): coverage-only state is something to clear too - the old guard claimed 'nothing to clear' while coverage and suggestions sat untouched
   if (!any) { toast('Nothing marked to clear'); return; }
   for (const n of STREETNAMES) { pieces[n] = STRETCH[n].parts.map(() => 0); pieceTimes[n] = {}; }
   doneSet = new Set(); doneTimes = {}; doneVia = {}; coveredIdx = {}; suggested = new Set();
@@ -2987,7 +2989,7 @@ function thinPath(pts) {
 function trailKm(sinceMs) {
   let d = 0;
   for (let i = 1; i < trail.length; i++) {
-    if (trail[i][2] * 1000 < sinceMs || trail[i][2] - trail[i - 1][2] > 300) continue; // ignore gaps where tracking was off
+    if (trail[i][2] * 1000 < sinceMs || trail[i - 1][2] * 1000 < sinceMs || trail[i][2] - trail[i - 1][2] > 300) continue; // Beta 1.70 (audit A05): a segment counts only when BOTH endpoints belong to the run - the old test counted a segment straddling the start boundary whole, importing the previous session's driving
     d += distM(trail[i - 1], trail[i]);
   }
   return d / 1000;
@@ -2995,10 +2997,11 @@ function trailKm(sinceMs) {
 function buildSnap() { // production archive shape: items is a street->time map; km is trail distance; the GPS path is thinned FROM the trail
   if (!doneSet.size && !Object.keys(notes).length) return null;
   const ts = [...doneSet].map(n => Date.parse(doneTimes[n])).filter(t => !isNaN(t)).sort((a, b) => a - b);
-  const snap = { at: new Date().toISOString(), items: {}, via: { ...doneVia }, notes: JSON.parse(JSON.stringify(notes)), sides: JSON.parse(JSON.stringify({ p: pieces, t: pieceTimes })), km: ts.length ? +trailKm(ts[0]).toFixed(1) : 0, startedAt: (runStart && ts.length && runStart <= ts[0]) ? new Date(runStart).toISOString() : (ts.length ? new Date(ts[0]).toISOString() : null) };
+  const startMs = (runStart && ts.length && runStart <= ts[0]) ? runStart : (ts.length ? ts[0] : null); // Beta 1.70 (audit A05): distance and path are measured from the clean's actual start, not its first completed street - driving before the first street was silently dropped
+  const snap = { at: new Date().toISOString(), items: {}, via: { ...doneVia }, notes: JSON.parse(JSON.stringify(notes)), sides: JSON.parse(JSON.stringify({ p: pieces, t: pieceTimes })), km: startMs ? +trailKm(startMs).toFixed(1) : 0, startedAt: startMs ? new Date(startMs).toISOString() : null };
   doneSet.forEach(n => { snap.items[n] = doneTimes[n] || null; });
   const sMs = Date.parse(snap.startedAt);
-  if (!isNaN(sMs)) { const pp = thinPath(trail.filter(p => p[2] * 1000 >= sMs - 60000)); if (pp.length > 1) snap.path = pp; }
+  if (!isNaN(sMs)) { const pp = thinPath(trail.filter(p => p[2] * 1000 >= sMs)); if (pp.length > 1) snap.path = pp; } // Beta 1.70 (audit A05): the old 60 s look-back admitted points from the previous session
   return snap;
 }
 function finishRun() {
@@ -3030,7 +3033,7 @@ function finishRun() {
   }
   if (archiving) history = newHist;
   undoSnap = { done: [...doneSet], times: { ...doneTimes }, via: { ...doneVia }, notes: JSON.parse(JSON.stringify(notes)), pieces: JSON.parse(JSON.stringify(pieces)), pieceTimes: JSON.parse(JSON.stringify(pieceTimes)), runStart, cov: JSON.parse(JSON.stringify(coveredIdx)), hist: prevHist.slice(), gpsWas: gpsFromRun };
-  doneSet = new Set(); doneTimes = {}; doneVia = {}; notes = {}; runStart = 0; coveredIdx = {};
+  doneSet = new Set(); doneTimes = {}; doneVia = {}; notes = {}; runStart = 0; coveredIdx = {}; suggested = new Set(); $('suggest').classList.add('hidden'); // Beta 1.70 (audit A04): the suggestion set is run-scoped too - finishRun used to clear the coverage but keep the set, so suggested streets never suggested again
   for (const n of STREETNAMES) { pieces[n] = STRETCH[n].parts.map(() => 0); pieceTimes[n] = {}; }
   stopGps(); deselect(); drawTrail(true); // Beta 1.69 (audit visual check): the run is over and runStart is 0, so this clears the finished line now instead of leaving it until the next throttled refresh
   saveQuiet = true; const restOk = saveAll(); saveQuiet = false; // the gated sides write already landed; this pass carries the metadata - a failure here warns but cannot resurrect anything (authority + archive agree)
@@ -3054,11 +3057,12 @@ function doUndo() {
   const undoSnapGpsWas = !!undoSnap.gpsWas; // undo restores the pre-finish state: GPS restarts only if it was actually running for the run (a fresh watch's first error toast would otherwise overwrite the 'Finish undone' toast)
   doneSet = new Set(undoSnap.done); doneTimes = undoSnap.times; doneVia = undoSnap.via; notes = undoSnap.notes || {}; pieces = undoSnap.pieces; pieceTimes = undoSnap.pieceTimes; runStart = undoSnap.runStart; coveredIdx = undoSnap.cov;
   history = undoSnap.hist;
+  suggested = new Set(); $('suggest').classList.add('hidden'); // Beta 1.70 (audit A04): the restored coverage starts with a clean suggestion set
   undoSnap = null;
   const rb = $('resetBtn'); rb.textContent = 'Finish'; rb.classList.remove('undoing');
-  saveQuiet = true; saveAll(); saveQuiet = false; finishChange(); if (runStart && undoSnapGpsWas) startGps(true);
+  saveQuiet = true; const metaOk = saveAll(); saveQuiet = false; const fcOk = finishChange(); if (runStart && undoSnapGpsWas) startGps(true);
   drawTrail(true); // Beta 1.69: the restored run's trail redraws at once
-  toast('Finish undone — run restored');
+  if (metaOk && fcOk) toast('Finish undone — run restored'); else toast('Finish undone — run restored, but some details could not be saved (' + (saveFailKey || 'storage') + '); they retry on the next save', 4200); // Beta 1.70 (audit A01): the gated writes (history, sides) already landed - it is the metadata pass that can fail, and the old unconditional toast claimed a durability it did not have
 }
 function checkStale() {
   const stale = runStart && (Date.now() - runStart > 12 * 3600000);
@@ -3332,7 +3336,7 @@ function buildReport() {
   const L = ['Snow Route — snow log', 'Exported: ' + fmtStamp(new Date().toISOString()), 'Completed: ' + doneSet.size + ' of 34'];
   if (ts.length) {
     L.push('Started: ' + fmtStamp(new Date(ts[0]).toISOString()) + '   Last: ' + fmtStamp(new Date(ts[ts.length - 1]).toISOString()) + '   Duration: ' + fmtDur(ts[ts.length - 1] - ts[0]));
-    if (trail.length > 1) L.push('GPS distance since start: ' + trailKm(ts[0]).toFixed(1) + ' km');
+    if (trail.length > 1) L.push('GPS distance since start: ' + trailKm(runStart && runStart < ts[0] ? runStart : ts[0]).toFixed(1) + ' km'); // Beta 1.70 (audit A05): from the clean's start when one is recorded, not the first completion
   }
   L.push('', 'Street, Completed');
   [...doneSet].sort(byTime(doneTimes)).forEach(n => L.push(n + ', ' + (doneTimes[n] ? fmtStamp(doneTimes[n]) : '(no time)') + (doneVia[n] === 'gps' ? ' (GPS-verified)' : '')));
@@ -3349,7 +3353,7 @@ function buildReport() {
 }
 function buildGpx() {
   let g = '<?xml version="1.0" encoding="UTF-8"?>\n<gpx version="1.1" creator="Snow Route Beta"><trk><name>Snow Route trail</name><trkseg>\n';
-  for (const p of trail) g += '<trkpt lat="' + p[0] + '" lon="' + p[1] + '"><time>' + new Date(p[2] * 1000).toISOString() + '</time></trkpt>\n';
+  for (let i = 0; i < trail.length; i++) { const p = trail[i]; if (i > 0 && (p[2] - trail[i - 1][2] > 300 || distM(trail[i - 1], p) > 1000)) g += '</trkseg><trkseg>\n'; g += '<trkpt lat="' + p[0] + '" lon="' + p[1] + '"><time>' + new Date(p[2] * 1000).toISOString() + '</time></trkpt>\n'; } // Beta 1.70 (audit A07): separate sessions get separate segments (same gap rule as the map's trail display) instead of one line stitched across days
   g += '</trkseg></trk></gpx>';
   return g;
 }
@@ -3633,11 +3637,11 @@ window.addEventListener('resize', syncViewport);
 // SETTLES (back at the settled size, or unchanged across samples, capped ~1.5s), then
 // release in one clean state change and re-measure. Every wait terminates.
 let kbSettle = null;
-let kbInSettle = null, kbShiftHost = null, kbVisH = -1;
+let kbInSettle = null, kbShiftHost = null, kbVisH = -1, kbShiftPx = 0;
 document.addEventListener('focusin', e => {
   if (!e.target.matches('textarea, input')) return;
   if (kbSettle) { clearInterval(kbSettle); kbSettle = null; }
-  if (kbShiftHost) { kbShiftHost.style.transform = ''; kbShiftHost = null; }
+  if (kbShiftHost) { kbShiftHost.style.transform = ''; kbShiftHost = null; kbShiftPx = 0; }
   document.body.classList.add('kb');
   // Beta 1.61: once the keyboard's rise settles, make sure the field is
   // actually visible above it - by scrolling the menu's own list or
@@ -3660,7 +3664,7 @@ function ensureFieldVisible() { // Beta 1.61: the keyboard overlays the frozen l
     kbVisH = vv.height;
     const floor = vv.height - 8; // the visible bottom edge while the keyboard is up
     const r = ae.getBoundingClientRect();
-    if (r.bottom <= floor && r.top >= 0) return;
+    if (r.bottom <= floor && r.top >= 0 && !kbShiftHost) return; // Beta 1.70 (audit A02): with a card shift already applied, fall through - the host branch below may need to grow, shrink or clear it
     const sb = $('sheetBody');
     if (sb && sb.contains(ae)) {
       if (r.bottom > floor) sb.scrollTop += (r.bottom - floor) + 12;
@@ -3668,7 +3672,7 @@ function ensureFieldVisible() { // Beta 1.61: the keyboard overlays the frozen l
       return;
     }
     const host = ae.closest('#selPop, .modal .card');
-    if (host && r.bottom > floor) { const over = Math.ceil(r.bottom - floor) + 12; host.style.transform = 'translateY(' + (-over) + 'px)'; kbShiftHost = host; }
+    if (host) { const rawBottom = r.bottom + (host === kbShiftHost ? kbShiftPx : 0); if (rawBottom > floor) { const over = Math.ceil(rawBottom - floor) + 12; host.style.transform = 'translateY(' + (-over) + 'px)'; kbShiftHost = host; kbShiftPx = over; } else if (host === kbShiftHost) { host.style.transform = ''; kbShiftHost = null; kbShiftPx = 0; } } // Beta 1.70 (audit A02): measure from the UNSHIFTED rect (the tracked shift added back) - the old code measured the already-shifted card and replaced its shift with a smaller one, dropping the field back under a grown keyboard
   } catch (e) { /* visibility is best-effort; the layout never depends on it */ }
 }
 // Beta 1.69 (audit N02, second half): while the keyboard is open, a viewport
@@ -3684,15 +3688,17 @@ if (window.visualViewport) window.visualViewport.addEventListener('resize', () =
 function startKbSettle() { // Beta 1.56: the settle sampler has ONE home - focusout and kbSync both start it here
   if (!document.body.classList.contains('kb')) return;
   if (kbSettle) clearInterval(kbSettle);
-  let lastH = -1, stable = 0; const t0 = Date.now();
+  // Beta 1.70 (audit A03): the mirror of the N02 opening fix - two unchanged samples at the still-short height no longer prove the keyboard has retracted (iOS can sit at the short height for a few hundred ms after blur before it starts growing). An early release now requires an observed RISE from the blur-time height (or the confirmed full height); the 1.5 s cap still bounds every dismissal.
+  let lastH = -1, stable = 0, sawRise = false; const t0 = Date.now(); const hB = window.visualViewport ? window.visualViewport.height : 0;
   const step = () => {
     const ae2 = document.activeElement;
     if (ae2 && (ae2.tagName === 'TEXTAREA' || ae2.tagName === 'INPUT')) { clearInterval(kbSettle); kbSettle = null; return; }
     const vv = window.visualViewport; const h = vv ? vv.height : 0;
+    if (hB && h > hB + 20) sawRise = true;
     if (h === lastH) stable++; else { stable = 0; lastH = h; }
-    if (stable >= 2 || (fullH && h >= fullH - 2) || Date.now() - t0 > 1500) {
+    if ((sawRise && stable >= 2) || (fullH && h >= fullH - 2) || Date.now() - t0 > 1500) {
       clearInterval(kbSettle); kbSettle = null;
-      if (kbShiftHost) { kbShiftHost.style.transform = ''; kbShiftHost = null; } // Beta 1.61: undo the field-visibility shift with the keyboard gone
+      if (kbShiftHost) { kbShiftHost.style.transform = ''; kbShiftHost = null; kbShiftPx = 0; } // Beta 1.61: undo the field-visibility shift with the keyboard gone
       document.body.classList.remove('kb'); syncViewport(); setTimeout(syncViewport, 350);
     }
   };
