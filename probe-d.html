@@ -1,0 +1,29 @@
+<!DOCTYPE html>
+<html lang="en"><head><meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="Probe D">
+<title>Probe D</title>
+<link rel="apple-touch-icon" href="apple-touch-icon.png">
+<style>
+html, body { margin: 0; padding: 0; height: 100%; height: 100dvh; overflow: hidden; background: #14171d; }
+html { min-height: min(100lvh, calc(100% + env(safe-area-inset-top))); }
+body { font-family: -apple-system, system-ui, sans-serif; }
+#main { position: fixed; inset: 0; background: #14171d; color: #e8ecf1; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 14px; text-align: center; padding: 24px; }
+#main h1 { font-size: 26px; margin: 0; }
+#main p { font-size: 16px; color: #9fb0c3; margin: 0; line-height: 1.45; }
+#cover { position: fixed; inset: 0; background: #ff00ff; z-index: 2147483647; display: none; }
+</style></head>
+<body>
+<div id="main"><h1>Probe D</h1><p>Snapshot-cover test. Press Home or swipe up to background this page, then open the App Switcher: if the preview card is bright MAGENTA, the cover was painted in time for the phone's stored snapshot. If it shows this dark screen instead, it was not.</p><p>Clock: <span id="t"></span></p></div>
+<div id="cover"></div>
+<script>
+const cov = document.getElementById('cover');
+const tick = () => document.getElementById('t').textContent = new Date().toLocaleTimeString();
+tick(); setInterval(tick, 1000);
+document.addEventListener('visibilitychange', () => { cov.style.display = (document.visibilityState === 'hidden') ? 'block' : 'none'; });
+window.addEventListener('pagehide', () => { cov.style.display = 'block'; });
+window.addEventListener('pageshow', () => { cov.style.display = 'none'; });
+</script>
+</body></html>
