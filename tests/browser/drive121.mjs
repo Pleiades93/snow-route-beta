@@ -194,6 +194,51 @@ ok('S3 interrupted restore still landed state B (Woolacott complete) | state ' +
 ok('S3 restored state is stable across the relaunch boot', await b.ev(`[...doneSet].includes('Woolacott')`));
 await closeBrowser(b);
 
+// ---- session 4: C06 legacy-restore marker rule (Beta 1.73) ------------------
+// A legacy backup (this fixture era: trail present, NO sess key) that replaces
+// the trail must clear the current markers; one WITHOUT a trail must not; a
+// current-format backup restores its own markers; and a restore that fails on
+// the marker write rolls BOTH the trail and the markers back.
+b = await launch(false);
+ok('S4 legacy-era page boots', await waitBoot(b.ev));
+await b.ev(`(() => { const F = ${FIXJ}; for (const k of Object.keys(F)) localStorage.setItem(k, F[k]); localStorage.setItem('snowroute.v5.sess', '[1767650000]'); return true; })()`);
+await b.ev('location.reload()');
+await waitBoot(b.ev);
+await sleep(1200);
+const waitReload = async () => { await b.ev(`(() => { window.__preRestore = 1; return true; })()`); };
+const waitApp = async () => !!(await until(async () => await b.ev(`typeof restoreBackup === 'function' && typeof buildBackup === 'function'`), 30000));
+await waitApp();
+const pollReload = async () => { const t0 = Date.now(); while (Date.now() - t0 < 25000) { const gone = await b.ev(`typeof window.__preRestore === 'undefined' && !!document.getElementById('ver')`); if (gone === true) return true; await sleep(400); } return false; };
+await waitReload();
+await b.ev(`(() => { restoreBackup(JSON.parse(${JSON.stringify(backupB)})); return true; })()`);
+ok('S4a restore of the legacy backup completed (page reloaded)', await pollReload());
+await waitApp();
+const s4a = JSON.parse(await b.ev(`JSON.stringify({ sess: localStorage.getItem('snowroute.v5.sess'), trail: localStorage.getItem('snowroute.v4.trail') })`));
+ok('S4a legacy restore (trail, no markers) clears the current markers, trail restored | ' + JSON.stringify(s4a), s4a.sess === '[]' && s4a.trail === JSON.parse(backupB).data['snowroute.v4.trail']);
+await b.ev(`(() => { localStorage.setItem('snowroute.v5.sess', '[1767650000]'); return true; })()`);
+await waitReload();
+await b.ev(`(() => { const nb = JSON.parse(${JSON.stringify(backupB)}); delete nb.data['snowroute.v4.trail']; restoreBackup(nb); return true; })()`);
+ok('S4b restore of the no-trail legacy backup completed', await pollReload());
+await waitApp();
+const s4b = await b.ev(`localStorage.getItem('snowroute.v5.sess')`);
+ok('S4b legacy restore without a trail leaves the markers untouched | sess ' + s4b, s4b === '[1767650000]');
+await b.ev(`(() => { localStorage.setItem('snowroute.v5.sess', '[1767650000,1767740000]'); return true; })()`);
+const backupC = await b.ev(`buildBackup()`);
+await b.ev(`(() => { localStorage.setItem('snowroute.v5.sess', '[1]'); return true; })()`);
+await waitReload();
+await b.ev(`(() => { restoreBackup(JSON.parse(${JSON.stringify(backupC)})); return true; })()`);
+ok('S4c restore of the current-format backup completed', await pollReload());
+await waitApp();
+const s4c = await b.ev(`localStorage.getItem('snowroute.v5.sess')`);
+ok('S4c current-format backup restores its own markers | sess ' + s4c, s4c === '[1767650000,1767740000]');
+await b.ev(`(() => { localStorage.setItem('snowroute.v4.trail', '[[43.9,-79.6,1767600000]]'); localStorage.setItem('snowroute.v5.sess', '[1767650000]'); window.__realLsSet = lsSet; lsSet = (k, v) => k === 'snowroute.v5.sess' ? false : window.__realLsSet(k, v); return true; })()`);
+await b.ev(`(() => { restoreBackup(JSON.parse(${JSON.stringify(backupB)})); return true; })()`);
+await sleep(400);
+const s4d = JSON.parse(await b.ev(`(() => JSON.stringify({ toast: $('toast').textContent, trail: localStorage.getItem('snowroute.v4.trail'), sess: localStorage.getItem('snowroute.v5.sess') }))()`));
+await b.ev(`(() => { lsSet = window.__realLsSet; return true; })()`);
+ok('S4d a restore failing on the marker write rolls the trail AND the markers back | ' + JSON.stringify(s4d), s4d.trail === '[[43.9,-79.6,1767600000]]' && s4d.sess === '[1767650000]' && s4d.toast.indexOf('put back') >= 0);
+await closeBrowser(b);
+
 R.exceptions = allExceptions;
 console.log(JSON.stringify(R, null, 1));
 process.exit(0);
