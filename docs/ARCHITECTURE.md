@@ -60,10 +60,14 @@ write + verify → verified rollback).
 
 ## GPS and coverage
 
-Fixes pass a validity gate (finite, on-Earth), exponential smoothing with
-jump/stationary rejection, and a follow camera that rotates heading-up
-(course over ground) while a run is active. The trail records only during
-a run. Coverage samples each street's centreline every 15m; a fix covers
+Fixes pass a validity gate (finite, on-Earth), an out-of-order timestamp
+guard, and a constant-velocity Kalman filter (one per axis, measurement
+noise scaled by the fix's accuracy); the displayed position glides toward
+the filter's lookahead aim through a single frame-synced render loop. A
+follow camera rotates heading-up (course over ground) while a run is
+active. The trail records only during a run, but the stored trail retains
+every session (snow log, GPX, backups); only the on-map display is scoped
+to the current run. Coverage samples each street's centreline every 15m; a fix covers
 samples within 22m; at 85% of a street's samples the app SUGGESTS the
 street — it never marks it. Confirmation flies to and selects the street;
 marking is always manual.
@@ -72,15 +76,17 @@ marking is always manual.
 
 `src/sw.js` (deployed as `sw.js`): integrity-checked core (the two MapLibre
 files) in the shell cache `snowroute-shell-v1`; navigations network-first
-with cache fallback; map styles network-first into the tiles cache
-`snowroute-tiles-v1` (cap 3,000); other map resources cache-first.
+with cache fallback; map tiles, sprites and glyphs are cached in the
+tiles cache `snowroute-tiles-v1` (cap 3,000). The day/night map styles
+themselves are embedded in the page (generated Protomaps styles), so no
+style document is ever fetched.
 Activate deletes only `snowroute-` caches (plus the two pre-rename beta cache names, once) — disjoint from production's
 `snow5w-` prefix, so the two apps can share an origin safely. An in-app
-preload ("Download route maps") warms styles, sprites, glyphs and tiles to
-zoom 14 over the route box. Since Beta 1.17 (Stage 2), the first-ever boot
-also self-warms: once the worker controls the page, the app fetches both map
-styles through it, so the map works offline from the first install —
-drive119's first session proves it without any manual reload.
+preload ("Download route maps") warms tiles (zoom 14 over the area, plus a
+zoom-15 route core), sprites and glyphs — 894 files in all. The first-ever
+boot also self-warms once the worker controls the page, so the map works
+offline from the first install — drive119's first session proves it
+without any manual reload.
 
 ## Testing
 
