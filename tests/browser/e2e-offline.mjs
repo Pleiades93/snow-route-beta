@@ -208,6 +208,27 @@ const rerunOk = await poll(`document.getElementById('xPreStat').textContent.incl
 const keysFinal = await keysOf();
 const noLoss = keysMid.every(u => keysFinal.includes(u));
 ok('E15b the re-run restores the full preload set and loses nothing | rerun ' + rerunOk + ' keys ' + keysFinal.length + ' burst survivors ' + keysMid.length, rerunOk && noLoss && keysFinal.length >= 897); // the keys above 897 in baseKeys are boot-time extras the map fetched for its first view; the preload's own contract is the 897 files, and this section's page never reloads, so the sound claims are: full 897 restored, nothing the burst left behind lost
+// E16 (Beta 1.74, audit D02): PROCESS death mid-download. E12 kills the page
+// (a navigation); this kills the whole browser while the download is
+// genuinely incomplete, relaunches on the SAME persisted profile, and the
+// resumed download must restore the full set - the saved maps and the app's
+// state have to survive a process kill, not just a reload.
+await ev2(`(async () => { await caches.delete('snowroute-tiles-v1'); try { localStorage.removeItem('snowroute.prep.v1'); } catch (e) {} return true; })()`);
+tileDelayMs = 150;
+await ev2(`document.getElementById('xPre').click()`);
+const partial16 = await waitPartial();
+ok('E16a the download was verifiably partial when the process died | cached ' + partial16 + ' of ' + baseKeys.length, partial16 >= 300 && partial16 <= baseKeys.length - 150);
+tileDelayMs = 0;
+proc.kill('SIGKILL');
+await sleep(1500);
+for (const f of ['SingletonLock', 'SingletonCookie', 'SingletonSocket']) { try { fs.rmSync(PROFILE + '/' + f, { force: true }); } catch (e) {} }
+await launchBrowser();
+const backOk = (await poll(`typeof glOk !== 'undefined' && glOk === true`, 90000)) && (await poll(`!!navigator.serviceWorker.controller`, 30000));
+await ev2(`document.getElementById('xPre').click()`);
+const stat16 = await poll(`document.getElementById('xPreStat').textContent.includes('saved 897 of 897')`, 420000);
+const keysAfter16 = await keysOf();
+const superset16 = baseKeys.every(u => keysAfter16.includes(u));
+ok('E16 process killed mid-download: relaunch on the same profile and the resumed download restores the full set | back ' + backOk + ' keys ' + keysAfter16.length + '/' + baseKeys.length, backOk && stat16 && superset16 && keysAfter16.length >= baseKeys.length);
 ok('E13 no page exceptions across the whole run', consoleLog.filter(c => String(c).startsWith('EXCEPTION')).length === 0);
 const fails = R.checks.filter(c => !c[1]);
 for (const c of R.checks) console.log((c[1] ? 'PASS ' : 'FAIL ') + c[0]);
