@@ -1,5 +1,9 @@
 # Changelog
 
+## Beta 1.67
+Launch-ghosting investigation, Experiment 1 (external audit of the splash handover, adopted 2026-11-01). Two live-layer isolations, nothing else changed: while the splash element exists, the bottom tab bar is hidden outright (if the tab bar still flashes in a slow-motion launch recording, it is not coming from this page's live tab bar layer); and the splash container itself carries the opaque splash blue during the intro, scoped to before the exit starts so the icon rush still reveals the app as designed. Splash timing, geometry and the exit animation are untouched. Device protocol (Andrew): repeated cold launches recorded in slow motion, each classified doubled-icon / tab-bar flash / both / clean.
+Tests: drive132 gains S6 (tab bar hidden and container opaque during the splash, tab bar restored after).
+
 ## Beta 1.66
 Render-loop refinement (drive127 arbitration): a running glide is settled to the current instant at each new fix before it re-anchors on the new aim, so the dot never chases leftover distance from a stale position in a browser that paints slowly; the frame-starvation pump checks every 100 ms instead of 250 ms. No threshold, estimator, or glide parameter changed - Beta 1.65's merge-commit battery caught drive127's stationary-wander and backtrack measures over their lines twice while the identical branch battery passed; the stale re-anchor is the mechanism, and this is its fix.
 
