@@ -231,7 +231,7 @@
 <div id="hud">
   <div id="warn">Not saving — storage is full or blocked</div>
   <div class="row">
-    <div class="titleStack"><div class="title">Snow Route Beta</div><div class="ver" id="ver">Beta 1.68</div></div>
+    <div class="titleStack"><div class="title">Snow Route Beta</div><div class="ver" id="ver">Beta 1.69</div></div>
   </div>
   <div id="stats"></div>
 </div>
@@ -2940,7 +2940,7 @@ async function syncWake() {
 }
 document.addEventListener('visibilitychange', syncWake);
 function startClean() { runStart = Date.now(); const okStart = saveAll(); startGps(true); updateCount(); syncWake(); if (okStart) toast('Clean started · ' + fmtClock(new Date())); else toast('Clean started — warning: the run state could not be saved (storage problem)', 4200); drawTrail(true); checkStale(); } // Beta 1.63 (audit F04): the clean still starts - he is standing in the snow - but the message stops claiming a saved state that does not exist
-function cancelStart() { const wasRunGps = gpsFromRun; runStart = 0; saveAll(); if (wasRunGps) stopGps(); updateCount(); syncWake(); toast('Start cancelled'); }
+function cancelStart() { const wasRunGps = gpsFromRun; runStart = 0; const okCancel = saveAll(); if (wasRunGps) stopGps(); drawTrail(true); updateCount(); syncWake(); if (okCancel) toast('Start cancelled'); else toast('Start cancelled - warning: the cancellation could not be saved; the run may return on reload', 4200); } // Beta 1.69 (audits N03 + trail): the last F04 holdout - cancelStart ignored saveAll's result and claimed success unconditionally; it also never refreshed the trail, so a cancelled run's line lingered
 $('startBtn').addEventListener('click', () => { if (!tapGuard('startBtn')) return; startClean(); });
 // CLEAR (Andrew, Beta 1.7): header button beside Pace - one tap wipes EVERY mark on the board (all streets,
 // both sides), plus the completion times/vias and the GPS coverage that would instantly re-suggest them.
@@ -3031,7 +3031,7 @@ function finishRun() {
   undoSnap = { done: [...doneSet], times: { ...doneTimes }, via: { ...doneVia }, notes: JSON.parse(JSON.stringify(notes)), pieces: JSON.parse(JSON.stringify(pieces)), pieceTimes: JSON.parse(JSON.stringify(pieceTimes)), runStart, cov: JSON.parse(JSON.stringify(coveredIdx)), hist: prevHist.slice(), gpsWas: gpsFromRun };
   doneSet = new Set(); doneTimes = {}; doneVia = {}; notes = {}; runStart = 0; coveredIdx = {};
   for (const n of STREETNAMES) { pieces[n] = STRETCH[n].parts.map(() => 0); pieceTimes[n] = {}; }
-  stopGps(); deselect();
+  stopGps(); deselect(); drawTrail(true); // Beta 1.69 (audit visual check): the run is over and runStart is 0, so this clears the finished line now instead of leaving it until the next throttled refresh
   saveQuiet = true; const restOk = saveAll(); saveQuiet = false; // the gated sides write already landed; this pass carries the metadata - a failure here warns but cannot resurrect anything (authority + archive agree)
   finishChange();
   const rb = $('resetBtn'); rb.textContent = 'Undo'; rb.classList.add('undoing'); rb.style.display = '';
@@ -3056,6 +3056,7 @@ function doUndo() {
   undoSnap = null;
   const rb = $('resetBtn'); rb.textContent = 'Finish'; rb.classList.remove('undoing');
   saveQuiet = true; saveAll(); saveQuiet = false; finishChange(); if (runStart && undoSnapGpsWas) startGps(true);
+  drawTrail(true); // Beta 1.69: the restored run's trail redraws at once
   toast('Finish undone — run restored');
 }
 function checkStale() {
@@ -3101,7 +3102,7 @@ $('noteYes').addEventListener('click', () => {
 
 // ===== GPS (checklist SS7) =====
 // Beta 1.64 (audit R01): lastFixTs is the last accepted fix's OWN timestamp - a callback carrying an older one is stale
-let watchId = null, gpsFromRun = false, gpsPos = null, dispPos = null, lastFixAt = 0, lastFixTs = 0, lastGood = null, spdTimer = 0, offRouteArmed = true, followPaused = false, staleWatchTimer = 0;
+let watchId = null, watchGen = 0, gpsFromRun = false, gpsPos = null, dispPos = null, lastFixAt = 0, lastFixTs = 0, lastGood = null, spdTimer = 0, offRouteArmed = true, followPaused = false, staleWatchTimer = 0;
 const SAMPLES = {};
 (function buildSamples() { for (const n of STREETNAMES) { const L = STRETCH[n].line, cum = STRETCH[n].cum, pts = []; for (let d = 0; d <= STRETCH[n].total; d += 15) { let i = 1; while (i < cum.length - 1 && cum[i] < d) i++; const span = cum[i] - cum[i - 1] || 1, t = (d - cum[i - 1]) / span; pts.push([L[i - 1][0] + (L[i][0] - L[i - 1][0]) * t, L[i - 1][1] + (L[i][1] - L[i - 1][1]) * t]); } SAMPLES[n] = pts; } })();
 for (const n of Object.keys(coveredIdx)) { if (!SAMPLES[n] || !Array.isArray(coveredIdx[n])) { delete coveredIdx[n]; continue; } coveredIdx[n] = coveredIdx[n].filter(i => Number.isInteger(i) && i >= 0 && i < SAMPLES[n].length); } // audit D1: was upper-bound only - negatives, fractions and text values survived and each inflated the coverage count
@@ -3161,7 +3162,6 @@ function renderLoop(now) {
   renderRaf = requestAnimationFrame(renderLoop);
 }
 function startRenderLoop() { if (!renderRaf) { lastCamAt = lastFrameAt = performance.now(); renderRaf = requestAnimationFrame(renderLoop); } if (!renderPump) renderPump = setInterval(() => { if ((watchId != null || glideActive) && performance.now() - lastFrameAt > 100) renderTick(performance.now()); if (watchId == null && !glideActive && !renderRaf) { clearInterval(renderPump); renderPump = 0; } }, 100); } // the pump is a starvation fallback only: a browser that is not painting (headless, occluded) delivers no animation frames, and the GPS state must still advance - on a painting phone it never fires; it parks itself when nothing is left to render
-function startRenderLoop() { if (!renderRaf) { lastCamAt = performance.now(); renderRaf = requestAnimationFrame(renderLoop); } }
 function followCam(now) {
   if (!dispPos || followPaused || watchId == null) { lastCamAt = now; return; } // follow whenever location is ON (Beta 1.27, Andrew) - it used to engage only during a run, so the dot wandered off-screen on a plain drive. Trail recording and heading-up stay run-only.
   const c = map.getCanvas(); const p = projLL(dispPos);
@@ -3307,7 +3307,7 @@ function startGps(fromRun) {
   if (watchId != null) { if (fromRun) { gpsFromRun = true; $('gpsBtn').classList.add('on'); $('gpsBtn').classList.toggle('rec', true); } return; } // Beta 1.64 (audit F06): reusing a view-only watcher for a clean must still flip the Locate tab to its recording face - the class sync sits below this early return, so the tab used to stay blue while recording
   if (!navigator.geolocation) { toast('This device has no GPS access here', 3000); return; }
   gpsFromRun = !!fromRun; followPaused = false; lastPushKey = ''; startCompass();
-  watchId = navigator.geolocation.watchPosition(acceptFix, gpsError, { enableHighAccuracy: true, maximumAge: 2000, timeout: 20000 });
+  const wg = ++watchGen; watchId = navigator.geolocation.watchPosition(p => { if (wg === watchGen) acceptFix(p); }, e => { if (wg === watchGen) gpsError(e); }, { enableHighAccuracy: true, maximumAge: 2000, timeout: 20000 }); // Beta 1.69 (audit N04): callbacks carry their watcher's generation - a queued callback from a stopped or replaced watcher is dropped even when its timestamp is fresh (R01's guard cannot tell watchers apart)
   startRenderLoop(); // Beta 1.65: the frame-synced loop keeps centring after a glide ends (the Beta 1.28 camTimer's job, drive126 F2) - on the display's own clock now, not a second timer
   clearInterval(staleWatchTimer);
   staleWatchTimer = setInterval(() => { if (watchId != null && Date.now() - lastFixAt > 45000 && lastFixAt) { const wasRunGps = gpsFromRun; stopGps(true); startGps(wasRunGps); } }, 15000); // Beta 1.48 (audit B02): capture run ownership BEFORE stopGps clears it - the restart used to always come back as non-run GPS, so a mid-run watcher lost its run
@@ -3315,6 +3315,7 @@ function startGps(fromRun) {
   $('gpsBtn').classList.toggle('rec', gpsFromRun); // Beta 1.49: recording wears red on the Locate tab; view-only wears blue
 }
 function stopGps(silent) {
+  watchGen++; // Beta 1.69: invalidate any callback still queued from this watcher
   if (watchId != null) navigator.geolocation.clearWatch(watchId);
   watchId = null; gpsFromRun = false; clearInterval(staleWatchTimer); glideActive = false; if (renderRaf) { cancelAnimationFrame(renderRaf); renderRaf = 0; } clearInterval(renderPump); renderPump = 0; stopCompass(); // Beta 1.64 (audit F08); Beta 1.65: the render loop stops with the watch
   if (map) pushGps(); // Beta 1.48 (audit B05): the facing beam is only built while watchId lives - without a fresh push the last beam stayed drawn after stop
@@ -3631,7 +3632,7 @@ window.addEventListener('resize', syncViewport);
 // SETTLES (back at the settled size, or unchanged across samples, capped ~1.5s), then
 // release in one clean state change and re-measure. Every wait terminates.
 let kbSettle = null;
-let kbInSettle = null, kbShiftHost = null;
+let kbInSettle = null, kbShiftHost = null, kbVisH = -1;
 document.addEventListener('focusin', e => {
   if (!e.target.matches('textarea, input')) return;
   if (kbSettle) { clearInterval(kbSettle); kbSettle = null; }
@@ -3641,11 +3642,13 @@ document.addEventListener('focusin', e => {
   // actually visible above it - by scrolling the menu's own list or
   // shifting its card, never by resizing the layout (see syncViewport).
   if (kbInSettle) clearInterval(kbInSettle);
-  let lastH = -1, stable = 0; const t0 = Date.now();
+  // Beta 1.69 (audit N02): unchanged samples alone no longer prove the keyboard has settled - iOS can report the full height for the first few hundred ms BEFORE the keyboard starts moving the viewport, and the old sampler concluded 'settled' inside that window and lined the field up against the wrong geometry, never to recheck. Early conclusion now requires a real observed drop from the focus-time height; the 700 ms cap still bounds the wait, and a viewport resize while the keyboard is open re-runs the visibility check (below).
+  let lastH = -1, stable = 0, sawDrop = false; const t0 = Date.now(); const h0 = window.visualViewport ? window.visualViewport.height : 0;
   const step = () => {
     const vv = window.visualViewport; const h = vv ? vv.height : 0;
+    if (h0 && h < h0 - 20) sawDrop = true;
     if (h === lastH) stable++; else { stable = 0; lastH = h; }
-    if (stable >= 2 || Date.now() - t0 > 700) { clearInterval(kbInSettle); kbInSettle = null; ensureFieldVisible(); }
+    if ((sawDrop && stable >= 2) || Date.now() - t0 > 700) { clearInterval(kbInSettle); kbInSettle = null; ensureFieldVisible(); }
   };
   kbInSettle = setInterval(step, 80); step();
 });
@@ -3653,6 +3656,7 @@ function ensureFieldVisible() { // Beta 1.61: the keyboard overlays the frozen l
   try {
     const ae = document.activeElement; if (!ae || (ae.tagName !== 'TEXTAREA' && ae.tagName !== 'INPUT')) return;
     const vv = window.visualViewport; if (!vv) return;
+    kbVisH = vv.height;
     const floor = vv.height - 8; // the visible bottom edge while the keyboard is up
     const r = ae.getBoundingClientRect();
     if (r.bottom <= floor && r.top >= 0) return;
@@ -3666,6 +3670,16 @@ function ensureFieldVisible() { // Beta 1.61: the keyboard overlays the frozen l
     if (host && r.bottom > floor) { const over = Math.ceil(r.bottom - floor) + 12; host.style.transform = 'translateY(' + (-over) + 'px)'; kbShiftHost = host; }
   } catch (e) { /* visibility is best-effort; the layout never depends on it */ }
 }
+// Beta 1.69 (audit N02, second half): while the keyboard is open, a viewport
+// resize that materially changes the height re-runs the field-visibility check -
+// the layout variables stay frozen (syncViewport still returns early); only the
+// local scroll/shift that surfaces the field is re-evaluated, so a late-arriving
+// keyboard can no longer leave the field covered after an early conclusion.
+if (window.visualViewport) window.visualViewport.addEventListener('resize', () => {
+  if (!document.body.classList.contains('kb') || kbInSettle) return;
+  const h = window.visualViewport.height;
+  if (kbVisH >= 0 && Math.abs(h - kbVisH) > 4) ensureFieldVisible();
+});
 function startKbSettle() { // Beta 1.56: the settle sampler has ONE home - focusout and kbSync both start it here
   if (!document.body.classList.contains('kb')) return;
   if (kbSettle) clearInterval(kbSettle);
