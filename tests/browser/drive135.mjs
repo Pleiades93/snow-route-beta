@@ -172,6 +172,29 @@ const stuck = JSON.parse(await ev(`JSON.stringify({ vvh: document.documentElemen
 ok('V4 stuck-short report (820, no keyboard): the live report rules as-is (820px) - the 1.54 trust override is RETIRED (Beta 1.62); the full-stage guarantee is the document-height floor (1.60), which this rig cannot emulate and drive139 pins | ' + JSON.stringify(stuck), stuck.vvh === '820px' && stuck.vvb === '0px');
 await send('Emulation.setDeviceMetricsOverride', { width: 420, height: 900, deviceScaleFactor: 2, mobile: true }, S);
 await sleep(300);
+// Beta 1.69 (audit N02): a DELAYED keyboard - the viewport does not move for the
+// first ~350 ms after focus (iOS can report the full height before the keyboard
+// starts rising). The 1.61 sampler read two unchanged heights inside that window,
+// declared the keyboard settled and ran its one visibility check against the
+// no-keyboard geometry. Now the first check must wait for a real height drop.
+await ev(`(() => { if (!$('sheet').classList.contains('open')) $('streetsBtn').click(); return true; })()`); await sleep(500);
+await ev(`(() => { const r = [...document.querySelectorAll('.srow')][names.indexOf('Velmar')]; r.querySelector('.nwrap').click(); return true; })()`); await sleep(400);
+const hasEd = await ev(`!!document.querySelector('.noteEd textarea')`);
+await ev(`(() => { const ta = document.querySelector('.noteEd textarea'); if (ta) ta.blur(); return true; })()`); await sleep(700);
+await send('Emulation.setDeviceMetricsOverride', { width: 420, height: 900, deviceScaleFactor: 2, mobile: true }, S); await sleep(400);
+await ev(`(() => { window.__efv = []; const orig = ensureFieldVisible; ensureFieldVisible = () => { window.__efv.push({ t: Date.now(), h: window.visualViewport.height }); orig(); }; return true; })()`);
+await ev(`document.querySelector('.noteEd textarea').focus()`);
+const kFocused = await ev(`document.activeElement && document.activeElement.tagName`);
+const kT0 = Date.now();
+await sleep(350);
+const efvEarly = JSON.parse(await ev(`JSON.stringify(window.__efv)`));
+ok('K1 delayed keyboard: NO visibility conclusion inside the pre-keyboard window (350 ms, height unmoved) | editor staged ' + hasEd + ' focused ' + kFocused + ' calls ' + JSON.stringify(efvEarly), hasEd === true && kFocused === 'TEXTAREA' && efvEarly.length === 0);
+await send('Emulation.setDeviceMetricsOverride', { width: 420, height: 560, deviceScaleFactor: 2, mobile: true }, S);
+let efvLate = [];
+for (let i = 0; i < 12 && !efvLate.length; i++) { await sleep(200); efvLate = JSON.parse(await ev(`JSON.stringify(window.__efv)`)); }
+ok('K2 when the keyboard finally arrives, the visibility check runs against the TRUE keyboard height (560) | calls ' + JSON.stringify(efvLate), efvLate.length >= 1 && Math.abs(efvLate[0].h - 560) <= 2);
+await ev(`document.querySelector('.noteEd textarea').blur()`); await sleep(400);
+await send('Emulation.setDeviceMetricsOverride', { width: 420, height: 900, deviceScaleFactor: 2, mobile: true }, S); await sleep(300);
 R.exceptions = consoleLog.filter(c => c.type === 'EXCEPTION');
 console.log(JSON.stringify(R, null, 1));
 proc.kill('SIGKILL'); process.exit(0);

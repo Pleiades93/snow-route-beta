@@ -145,6 +145,8 @@ const feed = async (lat, lng) => ev('window.__wpOk({ coords: { latitude: ' + lat
 await ev(`(() => { window.__wpOk = null; navigator.geolocation.watchPosition = (ok) => { window.__wpOk = ok; return 4242; }; navigator.geolocation.clearWatch = () => {}; startGps(false); return true; })()`);
 const LC = JSON.parse(await ev(`(() => JSON.stringify({ wid: watchId, cam: renderRaf !== 0, run: gpsFromRun, cb: typeof window.__wpOk === 'function' }))()`));
 ok('F2b GPS runs through the real startGps lifecycle (watch + render loop live) | ' + JSON.stringify(LC), LC.wid === 4242 && LC.cam === true && LC.run === false && LC.cb === true);
+const PMP = JSON.parse(await ev(`(() => JSON.stringify({ raf: renderRaf !== 0, pump: renderPump !== 0 }))()`));
+ok('F2f the starvation pump is armed while GPS runs (Beta 1.69, audit N01: the duplicate startRenderLoop had silently disabled it since 1.65) | ' + JSON.stringify(PMP), PMP.raf === true && PMP.pump === true);
 await feed(base.lat, base.lng); await sleep(600);                    // first fix (centres once, by design)
 await feed(base.lat, base.lng + 0.004); await sleep(500);
 await feed(base.lat, base.lng + 0.008); await sleep(500);
@@ -186,6 +188,8 @@ ok('F2e a run-owned start marks the live watch as run GPS', LC3.run === true);
 await ev(`(() => { stopGps(); return true; })()`);
 const LC2 = JSON.parse(await ev(`(() => JSON.stringify({ wid: watchId, run: gpsFromRun }))()`));
 ok('F2d stopGps through the real handler clears the watch and run ownership', LC2.wid === null && LC2.run === false);
+const PMP2 = JSON.parse(await ev(`(() => JSON.stringify({ raf: renderRaf, pump: renderPump }))()`));
+ok('F2g stopGps clears BOTH the frame loop and the pump | ' + JSON.stringify(PMP2), PMP2.raf === 0 && PMP2.pump === 0);
 
 // Night labels: reload into night mode and read the basemap text paint back.
 await ev(`(() => { localStorage.setItem('snowroute.v2.night', '1'); location.reload(); return true; })()`);

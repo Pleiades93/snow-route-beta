@@ -1,5 +1,14 @@
 # Changelog
 
+## Beta 1.69
+The two-audit fix round (external audits of Beta 1.66, adjudicated 2026-11-02). Five fixes, no estimator, threshold, geometry, styling or storage-format changes:
+1. **The starvation pump lives again (N01, both audits).** Two declarations of startRenderLoop stood back to back since the 1.65 lifecycle repair: the full version (frame loop + 100 ms starvation pump) and a stripped leftover (frame loop only) that JavaScript silently preferred - the pump described in the 1.65/1.66 entries never ran. The duplicate is deleted; a test now counts declarations and proves the pump advances GPS state with animation frames blocked.
+2. **Keyboard settle hardened (N02).** The focus sampler could declare the keyboard settled after two unchanged height readings before the keyboard had even begun moving the viewport, lining the field up against the wrong geometry with no recheck. Early conclusion now requires a real observed drop in height (the time cap remains), and a viewport resize while the keyboard is open re-runs the field-visibility check.
+3. **Cancel Start tells the truth (N03).** It was the last save path still claiming success unconditionally; it now branches on the save result like every other path.
+4. **GPS watcher generations (N04).** Watcher callbacks carry a generation tag; a queued callback from a stopped or replaced watcher is dropped even when its timestamp is fresh.
+5. **Trail refreshes on run end.** Finish, undo and cancel-start now force a trail redraw, so a finished or cancelled run's line no longer lingers until the next throttled refresh.
+Tests: new drive142 (declaration count, pump-under-starvation, watcher generation, cancel honesty, trail-refresh calls); drive126 asserts the pump installs and clears with GPS start/stop; the keyboard drive gains a delayed-keyboard scenario.
+
 ## Beta 1.68
 Experiment 1 REVERTED (Andrew's device verdict, 2026-11-02): on Beta 1.67 the launch glitch persisted unchanged - which answers the experiment's question: the flashing tab bar does NOT come from this page's live tab-bar layer. The hiding rule also made the tab bar pop in a beat after the app revealed, which reads worse than the original reveal, so both Experiment 1 rules are removed in full and the launch is back to the Beta 1.66 design. The investigation's remaining results (Probes C/D/E) are recorded with the audit; the tab-bar image is now attributed to a previously captured app image on the evidence of elimination.
 
