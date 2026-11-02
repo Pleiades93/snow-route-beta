@@ -116,8 +116,21 @@ ok('F0 app boots with the map active', await poll120(`typeof glOk !== 'undefined
 const NOISE = [[0,0],[5,-3],[-6,2],[3,6],[-2,-6],[7,1],[-5,-4],[1,7],[-7,-1],[4,-5],[-3,3],[6,5],[-1,-7],[2,2],[-4,6],[5,-2]];
 const base = JSON.parse(await ev(`(() => { const part = STRETCH.Velmar.parts[0]; const mid = part[Math.floor(part.length / 2)]; return JSON.stringify({ lat: mid[0], lng: mid[1] }); })()`));
 const M = (e, n) => [base.lat + n / 111320, base.lng + e / 80386];
-await ev(`(() => { watchId = 4242; followPaused = false; window.__rec = []; window.__recT = setInterval(() => { if (dispPos) window.__rec.push([dispPos[0], dispPos[1]]); }, 100); return true; })()`);
-const feedAll = async (fixes, gapMs) => ev(`new Promise(res => { const F = ${JSON.stringify(fixes)}; let i = 0; const h = setInterval(() => { const f = F[i]; acceptFix({ coords: { latitude: f[0], longitude: f[1], accuracy: f[2], speed: f[3], heading: 90 }, timestamp: Date.now() }); i++; if (i >= F.length) { clearInterval(h); res(true); } }, ${gapMs}); })`);
+// Flake hardening (2026-11-02, v2): the S-metrics integrate the displayed path
+// over time, and both clocks that path runs on - Date.now inside the estimator
+// and the render loop's frame clock - were the test machine's real wall clock,
+// so the integrals straddled their lines under load (S2 backtrack printed
+// 1.49-1.55 m across runs of IDENTICAL code; it failed the 1.71 branch run at
+// 1.52). The page's clocks are now stepped exactly, 50 ms at a time, with a
+// render tick and a position sample at every step: Date.now advances exactly
+// gapMs between fixes, and the glide/camera machinery experiences the same
+// flow of time it would on a real phone, just quantized. (v1 of this fix froze
+// the frame clock between fixes, so glides never completed and S3 read a
+// permanently mid-glide dot - err 8.51 m. The stepping is the fix.) Same
+// fixes, same noise table, same thresholds - the only thing removed is the
+// machine's mood.
+await ev(`(() => { watchId = 4242; followPaused = false; window.__fakeT0 = Date.now(); window.__fakeNow = window.__fakeT0; const rp = performance.now(); Date.now = () => window.__fakeNow; performance.now = () => rp - 3600000 + (window.__fakeNow - window.__fakeT0); window.__rec = []; window.__recT = 0; return true; })()`);
+const feedAll = async (fixes, gapMs) => { for (const f of fixes) { await ev(`(() => { const f = ${JSON.stringify(f)}; const end = window.__fakeNow + ${gapMs}; while (window.__fakeNow < end) { window.__fakeNow = Math.min(end, window.__fakeNow + 50); renderTick(performance.now()); if (dispPos) window.__rec.push([dispPos[0], dispPos[1]]); } acceptFix({ coords: { latitude: f[0], longitude: f[1], accuracy: f[2], speed: f[3], heading: 90 }, timestamp: Date.now() }); return true; })()`); await sleep(20); } await ev(`(() => { const end = window.__fakeNow + 2000; while (window.__fakeNow < end) { window.__fakeNow = Math.min(end, window.__fakeNow + 50); renderTick(performance.now()); if (dispPos) window.__rec.push([dispPos[0], dispPos[1]]); } return true; })()`); };
 const recLen = async () => ev(`window.__rec.length`);
 const hav = (a, b) => Math.hypot((b[0]-a[0]) * 111320, (b[1]-a[1]) * 80386); // flat-earth at route latitude (MLNG is already the local value)
 
