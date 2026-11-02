@@ -219,9 +219,6 @@
 @keyframes splashBgOut { 0%, 82% { opacity: 1; } 100% { opacity: 0; } }
 @keyframes splashTitleOut { to { opacity: 0; } }
 @media (prefers-reduced-motion: reduce) { #splash { display: none; } }
-/* Launch-ghosting investigation, Experiment 1 (external audit, 2026-11-01): isolate the live layer during the launch transition. While the splash exists, the tab bar layer is hidden outright - if the tab bar still flashes in a launch recording, it is not coming from this page's live tab bar. And the splash container itself carries the opaque blue during the intro (not only its #splashBg child); the :not(.go) scope drops it the moment the exit starts, so the rush still reveals the app as designed. */
-body:has(#splash) #tabBar { visibility: hidden !important; }
-#splash:not(.go) { background: #2b4bf2; }
 </style>
 </head>
 <body>
@@ -234,7 +231,7 @@ body:has(#splash) #tabBar { visibility: hidden !important; }
 <div id="hud">
   <div id="warn">Not saving — storage is full or blocked</div>
   <div class="row">
-    <div class="titleStack"><div class="title">Snow Route Beta</div><div class="ver" id="ver">Beta 1.67</div></div>
+    <div class="titleStack"><div class="title">Snow Route Beta</div><div class="ver" id="ver">Beta 1.68</div></div>
   </div>
   <div id="stats"></div>
 </div>

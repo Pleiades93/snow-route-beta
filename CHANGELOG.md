@@ -1,5 +1,8 @@
 # Changelog
 
+## Beta 1.68
+Experiment 1 REVERTED (Andrew's device verdict, 2026-11-02): on Beta 1.67 the launch glitch persisted unchanged - which answers the experiment's question: the flashing tab bar does NOT come from this page's live tab-bar layer. The hiding rule also made the tab bar pop in a beat after the app revealed, which reads worse than the original reveal, so both Experiment 1 rules are removed in full and the launch is back to the Beta 1.66 design. The investigation's remaining results (Probes C/D/E) are recorded with the audit; the tab-bar image is now attributed to a previously captured app image on the evidence of elimination.
+
 ## Beta 1.67
 Launch-ghosting investigation, Experiment 1 (external audit of the splash handover, adopted 2026-11-01). Two live-layer isolations, nothing else changed: while the splash element exists, the bottom tab bar is hidden outright (if the tab bar still flashes in a slow-motion launch recording, it is not coming from this page's live tab bar layer); and the splash container itself carries the opaque splash blue during the intro, scoped to before the exit starts so the icon rush still reveals the app as designed. Splash timing, geometry and the exit animation are untouched. Device protocol (Andrew): repeated cold launches recorded in slow motion, each classified doubled-icon / tab-bar flash / both / clean.
 Tests: drive132 gains S6 (tab bar hidden and container opaque during the splash, tab bar restored after).
