@@ -231,7 +231,7 @@
 <div id="hud">
   <div id="warn">Not saving — storage is full or blocked</div>
   <div class="row">
-    <div class="titleStack"><div class="title">Snow Route Beta</div><div class="ver" id="ver">Beta 1.70</div></div>
+    <div class="titleStack"><div class="title">Snow Route Beta</div><div class="ver" id="ver">Beta 1.71</div></div>
   </div>
   <div id="stats"></div>
 </div>
@@ -295,8 +295,8 @@ const YELLOW = '#ffc233', RED = '#ef476f', GREEN = '#06d6a0';
 const MAIN = new Set(['Velmar', 'Mellings', 'Astona', 'Santa Barbara', 'Valeria', 'Greenpark']);
 const SPOT = { 'Columbus': [1, 0.47], 'Mellings': [1, 0.55], 'Valeria': [1, 0.45], 'Santa Barbara': [3, 0.40], 'Kingsnorth': [0, 0.57], 'Bell Harbour': [0, 0.45], 'Romeo': [-1, 0.40], 'Astona': [-1, 0.60], 'Bourbon': [-1, 0.55], 'Fifth': [-1, 0.55] };
 const TRAIL_MAX = 8000;
-const LS = { done: 'snowroute.v2', times: 'snowroute.v2.times', hist: 'snowroute.v2.history', night: 'snowroute.v2.night', notes: 'snowroute.v4.notes', via: 'snowroute.v4.via', trail: 'snowroute.v4.trail', cov: 'snowroute.v4.cov', start: 'snowroute.v5.start', flip: 'snowroute.v5.flip', sides: 'snowroute.v5.sides', exp: 'snowroute.v5.export', pre: 'snowroute.v5.preload', prep: 'snowroute.prep.v1' };
-const BACKUP_KEYS = [LS.done, LS.times, LS.hist, LS.night, LS.notes, LS.via, LS.trail, LS.cov, LS.start, LS.flip, LS.sides];
+const LS = { done: 'snowroute.v2', times: 'snowroute.v2.times', hist: 'snowroute.v2.history', night: 'snowroute.v2.night', notes: 'snowroute.v4.notes', via: 'snowroute.v4.via', trail: 'snowroute.v4.trail', cov: 'snowroute.v4.cov', start: 'snowroute.v5.start', flip: 'snowroute.v5.flip', sides: 'snowroute.v5.sides', sess: 'snowroute.v5.sess', exp: 'snowroute.v5.export', pre: 'snowroute.v5.preload', prep: 'snowroute.prep.v1' };
+const BACKUP_KEYS = [LS.done, LS.times, LS.hist, LS.night, LS.notes, LS.via, LS.trail, LS.cov, LS.start, LS.flip, LS.sides, LS.sess]; // Beta 1.71 (audit B02): session markers ride in backups from now on; an older backup simply lacks the key and restore leaves the current markers untouched, per the standing missing-key rule
 
 function distM(a, b) { const dx = (a[1] - b[1]) * MLNG, dy = (a[0] - b[0]) * MLAT; return Math.hypot(dx, dy); }
 const jDistM = distM; // the paint engine's name for the same two-point distance
@@ -419,6 +419,8 @@ let runStart = 0;
 try { runStart = +lsGet(LS.start) || 0; } catch (e) { runStart = 0; }
 function saveStart() { if (runStart) return lsSet(LS.start, String(runStart)); return lsDel(LS.start); } // Beta 1.57: reports its result like every other write, for the saveAll contract
 let trail = parseJ(lsGet(LS.trail), []);
+let trailSessions = parseJ(lsGet(LS.sess), []); // Beta 1.71 (audit B02): the epoch-second start of each clean that recorded trail points - the session identity the flat trail never carried, so exports can split cleans exactly instead of guessing from gaps. Pre-1.71 trails simply have no markers and keep the gap heuristic.
+trailSessions = Array.isArray(trailSessions) ? [...new Set(trailSessions.filter(t => Number.isFinite(t) && t >= 946684800 && t <= 4102444800))].sort((a, b) => a - b) : [];
 // Trail (production): [lat, lng, epochSeconds] triples; out-of-range or impossible points are dropped at load (SEC-9a bounds).
 trail = Array.isArray(trail) ? trail.filter(p => Array.isArray(p) && p.length === 3 && Number.isFinite(p[0]) && Number.isFinite(p[1]) && Number.isFinite(p[2]) && p[2] >= 946684800 && p[2] <= 4102444800 && Math.abs(p[0]) <= 90 && Math.abs(p[1]) <= 180) : [];
 let coveredIdx = parseJ(lsGet(LS.cov), {});
@@ -487,6 +489,7 @@ function saveAll() {
 // (a restore is mid-flight), flushes are refused so the restore's reload cannot clobber the restored data.
 let trailDirty = false, auxDirty = false, lastTrailSave = 0, restoring = false;
 function saveTrail() { return lsSet(LS.trail, JSON.stringify(trail)); }
+function saveSess() { return lsSet(LS.sess, JSON.stringify(trailSessions)); }
 function flushAux(force) {
   if (restoring) return;
   if (auxDirty && lsSet(LS.cov, JSON.stringify(coveredIdx))) auxDirty = false;
@@ -2940,7 +2943,8 @@ async function syncWake() {
   } catch (e) { /* wake lock is best-effort */ }
 }
 document.addEventListener('visibilitychange', syncWake);
-function startClean() { runStart = Date.now(); const okStart = saveAll(); startGps(true); updateCount(); syncWake(); if (okStart) toast('Clean started · ' + fmtClock(new Date())); else toast('Clean started — warning: the run state could not be saved (storage problem)', 4200); drawTrail(true); checkStale(); } // Beta 1.63 (audit F04): the clean still starts - he is standing in the snow - but the message stops claiming a saved state that does not exist
+function noteSessionStart() { const s = Math.floor(runStart / 1000); if (trailSessions[trailSessions.length - 1] !== s) { trailSessions.push(s); saveSess(); } } // Beta 1.71 (audit B02): record the session boundary the moment the clean starts - undo restores the original runStart, so a resumed run correctly adds no new marker
+function startClean() { runStart = Date.now(); noteSessionStart(); const okStart = saveAll(); startGps(true); updateCount(); syncWake(); if (okStart) toast('Clean started · ' + fmtClock(new Date())); else toast('Clean started — warning: the run state could not be saved (storage problem)', 4200); drawTrail(true); checkStale(); } // Beta 1.63 (audit F04): the clean still starts - he is standing in the snow - but the message stops claiming a saved state that does not exist
 // Beta 1.70 (audit A04): coverage and suggestions are run-scoped - a cancelled clean never happened, so its coverage dies with it instead of leaking into the next clean (the trail is history and stays).
 function cancelStart() { const wasRunGps = gpsFromRun; runStart = 0; coveredIdx = {}; suggested = new Set(); $('suggest').classList.add('hidden'); const okCancel = saveAll(); if (wasRunGps) stopGps(); drawTrail(true); updateCount(); syncWake(); if (okCancel) toast('Start cancelled'); else toast('Start cancelled - warning: the cancellation could not be saved; the run may return on reload', 4200); } // Beta 1.69 (audits N03 + trail): cancelStart ignored saveAll's result and claimed success unconditionally; it also never refreshed the trail, so a cancelled run's line lingered
 $('startBtn').addEventListener('click', () => { if (!tapGuard('startBtn')) return; startClean(); });
@@ -2952,6 +2956,7 @@ function clearAllMarks() {
   if (!any) { toast('Nothing marked to clear'); return; }
   for (const n of STREETNAMES) { pieces[n] = STRETCH[n].parts.map(() => 0); pieceTimes[n] = {}; }
   doneSet = new Set(); doneTimes = {}; doneVia = {}; coveredIdx = {}; suggested = new Set();
+  $('suggest').classList.add('hidden'); delete $('suggest').dataset.n; // Beta 1.71 (audit B01): the one path the 1.70 dismissal sweep missed - Clear wiped the coverage behind the panel but left the panel itself up, its Yes still able to select the street
   deselect(); const okClear = finishChange();
   if (okClear) toast('All marks cleared'); else toast('Storage problem — the clear could not be saved; marks may return on reload', 4200); // Beta 1.63 (audit F04)
 }
@@ -2986,9 +2991,10 @@ function thinPath(pts) {
   return out;
 }
 function trailKm(sinceMs) {
+  const sinceSec = Math.floor(sinceMs / 1000); // Beta 1.71 (audit B04): trail timestamps are whole seconds - the boundary is compared at the same precision, or a start mid-second discards the run's first legitimate segment (the map's trail filter has floored its boundary since 1.64)
   let d = 0;
   for (let i = 1; i < trail.length; i++) {
-    if (trail[i][2] * 1000 < sinceMs || trail[i - 1][2] * 1000 < sinceMs || trail[i][2] - trail[i - 1][2] > 300) continue; // Beta 1.70 (audit A05): a segment counts only when BOTH endpoints belong to the run - the old test counted a segment straddling the start boundary whole, importing the previous session's driving
+    if (trail[i][2] < sinceSec || trail[i - 1][2] < sinceSec || trail[i][2] - trail[i - 1][2] > 300 || distM(trail[i - 1], trail[i]) > 1000) continue; // Beta 1.70 (audit A05): a segment counts only when BOTH endpoints belong to the run. Beta 1.71 (audit B03): a jump over 1000 m is a break, not distance - the same acceptance rule the trail display and the GPX export already apply, so the number and the drawn line can no longer disagree
     d += distM(trail[i - 1], trail[i]);
   }
   return d / 1000;
@@ -3000,7 +3006,7 @@ function buildSnap() { // production archive shape: items is a street->time map;
   const snap = { at: new Date().toISOString(), items: {}, via: { ...doneVia }, notes: JSON.parse(JSON.stringify(notes)), sides: JSON.parse(JSON.stringify({ p: pieces, t: pieceTimes })), km: startMs ? +trailKm(startMs).toFixed(1) : 0, startedAt: startMs ? new Date(startMs).toISOString() : null };
   doneSet.forEach(n => { snap.items[n] = doneTimes[n] || null; });
   const sMs = Date.parse(snap.startedAt);
-  if (!isNaN(sMs)) { const pp = thinPath(trail.filter(p => p[2] * 1000 >= sMs)); if (pp.length > 1) snap.path = pp; } // Beta 1.70 (audit A05): the old 60 s look-back admitted points from the previous session
+  if (!isNaN(sMs)) { const pp = thinPath(trail.filter(p => p[2] >= Math.floor(sMs / 1000))); if (pp.length > 1) snap.path = pp; } // Beta 1.70 (audit A05): the old 60 s look-back admitted points from the previous session. Beta 1.71 (audit B04): second-precision comparison, matching the stored timestamps
   return snap;
 }
 function finishRun() {
@@ -3334,8 +3340,9 @@ function buildReport() {
   const ts = [...doneSet].map(n => Date.parse(doneTimes[n])).filter(t => !isNaN(t)).sort((a, b) => a - b);
   const L = ['Snow Route — snow log', 'Exported: ' + fmtStamp(new Date().toISOString()), 'Completed: ' + doneSet.size + ' of 34'];
   if (ts.length) {
-    L.push('Started: ' + fmtStamp(new Date(ts[0]).toISOString()) + '   Last: ' + fmtStamp(new Date(ts[ts.length - 1]).toISOString()) + '   Duration: ' + fmtDur(ts[ts.length - 1] - ts[0]));
-    if (trail.length > 1) L.push('GPS distance since start: ' + trailKm(runStart && runStart < ts[0] ? runStart : ts[0]).toFixed(1) + ' km'); // Beta 1.70 (audit A05): from the clean's start when one is recorded, not the first completion
+    const startMs = (runStart && runStart <= ts[0]) ? runStart : ts[0]; // Beta 1.71 (audit B05): one start for the whole log - the real clean start when it is recorded, the first completion only as the fallback for states that never recorded one. The 1.70 round had aligned the distance to the real start but left Started/Duration on the first completion, so the log disagreed with itself
+    L.push('Started: ' + fmtStamp(new Date(startMs).toISOString()) + '   Last: ' + fmtStamp(new Date(ts[ts.length - 1]).toISOString()) + '   Duration: ' + fmtDur(ts[ts.length - 1] - startMs));
+    if (trail.length > 1) L.push('GPS distance since start: ' + trailKm(startMs).toFixed(1) + ' km');
   }
   L.push('', 'Street, Completed');
   [...doneSet].sort(byTime(doneTimes)).forEach(n => L.push(n + ', ' + (doneTimes[n] ? fmtStamp(doneTimes[n]) : '(no time)') + (doneVia[n] === 'gps' ? ' (GPS-verified)' : '')));
@@ -3352,7 +3359,7 @@ function buildReport() {
 }
 function buildGpx() {
   let g = '<?xml version="1.0" encoding="UTF-8"?>\n<gpx version="1.1" creator="Snow Route Beta"><trk><name>Snow Route trail</name><trkseg>\n';
-  for (let i = 0; i < trail.length; i++) { const p = trail[i]; if (i > 0 && (p[2] - trail[i - 1][2] > 300 || distM(trail[i - 1], p) > 1000)) g += '</trkseg><trkseg>\n'; g += '<trkpt lat="' + p[0] + '" lon="' + p[1] + '"><time>' + new Date(p[2] * 1000).toISOString() + '</time></trkpt>\n'; } // Beta 1.70 (audit A07): separate sessions get separate segments (same gap rule as the map's trail display) instead of one line stitched across days
+  for (let i = 0; i < trail.length; i++) { const p = trail[i]; if (i > 0 && (p[2] - trail[i - 1][2] > 300 || distM(trail[i - 1], p) > 1000 || trailSessions.some(m => trail[i - 1][2] < m && m <= p[2]))) g += '</trkseg><trkseg>\n'; g += '<trkpt lat="' + p[0] + '" lon="' + p[1] + '"><time>' + new Date(p[2] * 1000).toISOString() + '</time></trkpt>\n'; } // Beta 1.70 (audit A07): separate sessions get separate segments (same gap rule as the map's trail display) instead of one line stitched across days. Beta 1.71 (audit B02): a recorded session start between two points also splits - exact for cleans recorded since 1.71, heuristic for older trail
   g += '</trkseg></trk></gpx>';
   return g;
 }
@@ -3389,7 +3396,7 @@ let clrArmed = false, clrTimer = 0;
 $('xClr').addEventListener('click', () => {
   if (!clrArmed) { clrArmed = true; $('xClr').textContent = 'Sure?'; clrTimer = setTimeout(() => { clrArmed = false; $('xClr').textContent = 'Clear trail'; }, 5000); return; }
   clearTimeout(clrTimer); clrArmed = false; $('xClr').textContent = 'Clear trail';
-  trail = []; drawTrail(true);
+  trail = []; trailSessions = []; saveSess(); drawTrail(true); // Beta 1.71 (audit B02): the markers describe this trail - clearing the trail clears them
   // The clear is a storage write like any other: if it fails, the stored trail still holds every point and
   // would resurrect on the next load - say so honestly and keep the clear pending (trailDirty) so the flush retries it.
   if (saveTrail()) { trailDirty = false; lastTrailSave = Date.now(); toast('Trail cleared'); }
@@ -3399,7 +3406,7 @@ $('xClr').addEventListener('click', () => {
 function restoreBackup(parsed) { // production doRestore semantics: validate EVERYTHING before writing; snapshot; write + verify each; verified rollback on any failure
   if (!parsed || parsed.app !== 'snowroute-backup' || !parsed.data || typeof parsed.data !== 'object' || Array.isArray(parsed.data)) { toast('That is not a Snow Route backup', 3200); return; }
   if (parsed.v !== 1) { toast('Unsupported backup version (' + String(parsed.v) + ') — nothing was changed', 3200); return; }
-  const JSON_SHAPE = { [LS.done]: 'arr', [LS.times]: 'obj', [LS.hist]: 'arr', [LS.notes]: 'obj', [LS.via]: 'obj', [LS.trail]: 'arr', [LS.cov]: 'obj', [LS.sides]: 'obj' };
+  const JSON_SHAPE = { [LS.done]: 'arr', [LS.times]: 'obj', [LS.hist]: 'arr', [LS.notes]: 'obj', [LS.via]: 'obj', [LS.trail]: 'arr', [LS.cov]: 'obj', [LS.sides]: 'obj', [LS.sess]: 'arr' };
   const entries = [];
   for (const k of BACKUP_KEYS) {
     let v = parsed.data[k];
