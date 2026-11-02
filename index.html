@@ -2,7 +2,7 @@
 <html lang="en">
 <head>
 <meta charset="UTF-8">
-<meta http-equiv="Content-Security-Policy" content="default-src 'none'; script-src 'sha384-riV/EiAy9Hh77bUOVcegDcu4ZPrunfXPVaGHegdlbx4G+Aei8jXERGNsMOOJqM+g' https://cdn.jsdelivr.net; style-src-elem 'sha384-rX2R/tsSSEJcJr/owBJ3iue2FzR4atzp7Ge7sombVmaT45whVNISwQ9vgpUCDFUb' https://cdn.jsdelivr.net; style-src-attr 'unsafe-inline'; img-src 'self' data: blob: https://tiles.basemaps.cartocdn.com https://protomaps.github.io https://cdn.jsdelivr.net; connect-src 'self' https://tiles.basemaps.cartocdn.com https://protomaps.github.io https://cdn.jsdelivr.net; worker-src blob: 'self'; child-src blob: 'self'; font-src 'none'; manifest-src 'self'; base-uri 'none'; form-action 'none'; object-src 'none'">
+<meta http-equiv="Content-Security-Policy" content="default-src 'none'; script-src 'sha384-BU/PIXXeQe8/TZjrcELn0gbiBclaRcN00s63YVewrtAvnRNp2s5EgkBOWlYYbOK1' https://cdn.jsdelivr.net; style-src-elem 'sha384-rX2R/tsSSEJcJr/owBJ3iue2FzR4atzp7Ge7sombVmaT45whVNISwQ9vgpUCDFUb' https://cdn.jsdelivr.net; style-src-attr 'unsafe-inline'; img-src 'self' data: blob: https://tiles.basemaps.cartocdn.com https://protomaps.github.io https://cdn.jsdelivr.net; connect-src 'self' https://tiles.basemaps.cartocdn.com https://protomaps.github.io https://cdn.jsdelivr.net; worker-src blob: 'self'; child-src blob: 'self'; font-src 'none'; manifest-src 'self'; base-uri 'none'; form-action 'none'; object-src 'none'">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="mobile-web-app-capable" content="yes">
@@ -232,7 +232,7 @@
 <div id="hud">
   <div id="warn">Not saving — storage is full or blocked</div>
   <div class="row">
-    <div class="titleStack"><div class="title">Snow Route Beta</div><div class="ver" id="ver">Beta 1.73</div></div>
+    <div class="titleStack"><div class="title">Snow Route Beta</div><div class="ver" id="ver">Beta 1.74</div></div>
   </div>
   <div id="stats"></div>
 </div>
@@ -3361,8 +3361,8 @@ function buildReport() {
 }
 function buildGpx() {
   let g = '<?xml version="1.0" encoding="UTF-8"?>\n<gpx version="1.1" creator="Snow Route Beta"><trk><name>Snow Route trail</name><trkseg>\n';
-  let sessAt = 0; // Beta 1.73 (audit C07): walk the sorted markers with a pointer instead of re-scanning the whole list per point (was O(points x markers)); sessAt only advances, and the split test below is the same predicate - output is unchanged (drive143 parity check)
-  for (let i = 0; i < trail.length; i++) { const p = trail[i]; if (i > 0) { while (sessAt < trailSessions.length && trailSessions[sessAt] <= trail[i - 1][2]) sessAt++; } if (i > 0 && (p[2] - trail[i - 1][2] > 300 || distM(trail[i - 1], p) > 1000 || (sessAt < trailSessions.length && trailSessions[sessAt] <= p[2]))) g += '</trkseg><trkseg>\n'; g += '<trkpt lat="' + p[0] + '" lon="' + p[1] + '"><time>' + new Date(p[2] * 1000).toISOString() + '</time></trkpt>\n'; } // Beta 1.70 (audit A07): separate sessions get separate segments (same gap rule as the map's trail display) instead of one line stitched across days. Beta 1.71 (audit B02): a recorded session start between two points also splits - exact for cleans recorded since 1.71, heuristic for older trail
+  let sessAt = 0; // Beta 1.73 (audit C07): walk the sorted markers with a pointer instead of re-scanning the whole list per point (was O(points x markers)); the split test below is the same predicate. Beta 1.74 (audit D01): a stored trail is not guaranteed ordered (legacy trails, restored backups - the loader sorts the markers, never the points), so when the previous point steps BACKWARD below markers already passed, sessAt re-seeks to the first marker after it before testing; chronological trails never re-seek, so the walk stays linear (drive143 X6/X7 parity checks)
+  for (let i = 0; i < trail.length; i++) { const p = trail[i]; if (i > 0) { if (sessAt > 0 && trailSessions[sessAt - 1] > trail[i - 1][2]) { let lo = 0, hi = sessAt; while (lo < hi) { const mid = (lo + hi) >> 1; if (trailSessions[mid] <= trail[i - 1][2]) lo = mid + 1; else hi = mid; } sessAt = lo; } while (sessAt < trailSessions.length && trailSessions[sessAt] <= trail[i - 1][2]) sessAt++; } if (i > 0 && (p[2] - trail[i - 1][2] > 300 || distM(trail[i - 1], p) > 1000 || (sessAt < trailSessions.length && trailSessions[sessAt] <= p[2]))) g += '</trkseg><trkseg>\n'; g += '<trkpt lat="' + p[0] + '" lon="' + p[1] + '"><time>' + new Date(p[2] * 1000).toISOString() + '</time></trkpt>\n'; } // Beta 1.70 (audit A07): separate sessions get separate segments (same gap rule as the map's trail display) instead of one line stitched across days. Beta 1.71 (audit B02): a recorded session start between two points also splits - exact for cleans recorded since 1.71, heuristic for older trail
   g += '</trkseg></trk></gpx>';
   return g;
 }

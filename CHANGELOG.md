@@ -1,5 +1,10 @@
 # Changelog
 
+## Beta 1.74
+The Beta 1.73 follow-up audit round (adjudicated 2026-11-02). One export correctness fix with its regression test, one harder offline test, and a phone checklist.
+1. **GPX export splits correctly on out-of-order trails (D01).** The 1.73 export walked the session markers with a pointer that only moved forward - exact for trails in time order (and proven so), but a stored trail is not guaranteed ordered (older trails, restored backups), and a trail that crossed a session start, stepped back below it, and crossed again lost the second split, merging two cleans into one exported segment. The walk now re-seeks when a point steps backward; in-order trails are unaffected and still export in one pass, and no saved data changes shape or order. A regression test with exactly that out-of-order shape failed before this fix (2 segments instead of 3) and passes after.
+Tests: drive143 gains X7 (the out-of-order parity case). The offline end-to-end gains E16: the browser process itself is killed mid-download (the 1.73 test killed only the page), relaunched on the same saved profile, and the resumed download must restore the full set. Also delivered with this round: a short manual iOS regression checklist (in the tracker's documents) covering airplane-mode launch, offline zooms, day/night switching, relaunch, interrupted download, storage persistence and GPS background/resume - the automated suite runs in Chromium, and the checklist is the iOS-side evidence.
+
 ## Beta 1.73
 The Beta 1.72 deep-audit round (adjudicated 2026-11-02; the audit's findings C01-C08 verified against the source first). Two small data-integrity fixes, one approved restore rule, one export tidy-up, and a test suite that now proves what it claims.
 1. **Session-marker saves tell the truth (C04 + C05).** The marker write when a clean starts, and the marker clear when the trail is cleared, were the last two storage writes whose results were dropped - a failure was silent. Both are now checked like every other write: the start and the clear warn accurately, the clean still starts, and a failed marker write is retried by the background flush until it lands.
