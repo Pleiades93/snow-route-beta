@@ -286,7 +286,7 @@
 </nav>
 <div id="setMenu">
   <div class="rmPane on" id="setMainPane">
-    <button class="rmBtn" id="exportBtn">Backup</button>
+    <button class="rmBtn" id="exportBtn">Backup (JSON)</button>
     <button class="rmBtn" id="updBtn">Update</button>
   </div>
   <div class="rmPane" id="setBackupPane">
@@ -3818,7 +3818,15 @@ $('setBtn').addEventListener('click', () => { if (!tapGuard('setBtn')) return; s
 function showSetPane(id) { for (const p of ['setMainPane', 'setBackupPane']) $(p).classList.toggle('on', p === id); }
 $('setClose').addEventListener('click', () => $('setMenu').classList.remove('open'));
 $('setBack').addEventListener('click', () => showSetPane('setMainPane'));
-$('exportBtn').addEventListener('click', () => { if (!tapGuard('exportBtn')) return; openExport(); });
+$('exportBtn').addEventListener('click', () => { if (!tapGuard('exportBtn')) return; openExport(); shareBackup(); });
+async function shareBackup() { // Beta 1.88 (Andrew): the Backup (JSON) press both backs up AND asks where to save it - one tap. A real FILE share where the platform offers it (Save to Files keeps the .json name), the text share next, and the plain download where no share exists at all (desktops, the test rig). Cancelling the prompt is a shrug, not an error - the pane is open behind it with Copy for the manual way
+  const b = buildBackup();
+  if (!b) { toast('Backup failed — your saved data could not be read', 3600); return; }
+  let f = null; try { f = new File([b], 'snowroute-backup.json', { type: 'application/json' }); } catch (e) { /* older engine: the text share below still works */ }
+  if (f && navigator.canShare && navigator.canShare({ files: [f] })) { try { await navigator.share({ files: [f] }); return; } catch (e) { if (e && e.name === 'AbortError') return; } }
+  if (navigator.share) { try { await navigator.share({ text: b }); return; } catch (e) { if (e && e.name === 'AbortError') return; } }
+  dl(new Blob([b], { type: 'application/json' }), 'snowroute-backup.json'); toast('Backup downloaded');
+}
 $('updBtn').addEventListener('click', () => $('setMenu').classList.remove('open')); // the update check reports by toast over the map - the menu steps aside for it (the old pop-up's pick-and-close)
 // Click-away (Andrew, Beta 1.14): tapping anywhere outside an open menu closes it - no hunting for a
 // Close button. Header buttons keep their own toggle behaviour; a tap on a dialog's dimmed backdrop
