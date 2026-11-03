@@ -1,5 +1,10 @@
 # Changelog
 
+## Beta 1.87 — 2026-11-03
+
+- Settings menu reordered at Andrew's request: Night/Day on top, Backup second, Update last.
+- The offline-maps download gets a progress bar (Andrew's request): a slim green bar, full width of the Snow log panel under the buttons, shown while a download runs — plus the counter now sweeps smoothly up to the real number through every value in between. The jumps he saw (0 → 200 → 400) were the display, not the download: five files fetch in parallel and finish in clusters, and the old status text only repainted every 200 files. The sweep is display-only — downloads stay five-wide, and the final line still reports the confirmed-in-cache count exactly as before; the bar settles on that confirmed fraction.
+
 ## Beta 1.86 — 2026-11-03
 
 - Splash, fourth pass — Andrew's design: the splash is no longer a lid over a finished app. His frame-checked 1.85 recording showed the real remaining artifact at the still-to-live takeover (~3 frames): the icon ghost-doubling and the app's own tab bar bleeding in at the bottom — the app underneath the lid, showing through while the lid's first frames settle. Now boot is a state of the app itself: while booting, the app's chrome (tab bar, top HUD, dock, sheets, pop-ups) is not painted at all — absent, not covered — and the map's frame wears splash blue, so the live page during boot contains only the blue screen and there is no second surface to clash with the launch still. When a route is picked, the boot state flips while both blue layers are still fully opaque: the finished app paints beneath them, complete and in place, and the blue fade then reveals it whole — the chrome never pops or "loads in" afterwards (the failure of the old hide-everything attempt). The splash icon also returns to the exact original PNG artwork, embedded in the page: the launch still on Andrew's phone was captured from that artwork, and the compressed JPEG copy used in 1.85 renders its edges slightly differently — a plausible source of the ghost outline. Page grows by the difference (~280KB). Device cold opens are the verdict, as always.

@@ -2,7 +2,7 @@
 <html lang="en" class="boot">
 <head>
 <meta charset="UTF-8">
-<meta http-equiv="Content-Security-Policy" content="default-src 'none'; script-src 'sha384-BYgnxxT9pSpnGSk4XcvUjCYU9gqbXABrRZjh/kcJDZnsmquSK6xP3YekMsPyC0kI' https://cdn.jsdelivr.net; style-src-elem 'sha384-sjvmDptUZgXuZ22q58dOCzY1a41ZAu2HYJMVQdk+UWA6xEC1mRXlxpQYf/bRJy+C' https://cdn.jsdelivr.net; style-src-attr 'unsafe-inline'; img-src 'self' data: blob: https://tiles.basemaps.cartocdn.com https://protomaps.github.io https://cdn.jsdelivr.net; connect-src 'self' https://tiles.basemaps.cartocdn.com https://protomaps.github.io https://cdn.jsdelivr.net; worker-src blob: 'self'; child-src blob: 'self'; font-src 'none'; manifest-src 'self'; base-uri 'none'; form-action 'none'; object-src 'none'">
+<meta http-equiv="Content-Security-Policy" content="default-src 'none'; script-src 'sha384-0WDONzZIiqUjdSzgo8dYQWSAo1o0FxEk1tiJOMEzYibx/yXX8Z85NL6xevOERyeS' https://cdn.jsdelivr.net; style-src-elem 'sha384-5GNnmE/5C1D/JKBk1l/xDoRjRnMbj409yUcOEz2wZV+kwMlJ7Ruv/WC+mTJCKmSj' https://cdn.jsdelivr.net; style-src-attr 'unsafe-inline'; img-src 'self' data: blob: https://tiles.basemaps.cartocdn.com https://protomaps.github.io https://cdn.jsdelivr.net; connect-src 'self' https://tiles.basemaps.cartocdn.com https://protomaps.github.io https://cdn.jsdelivr.net; worker-src blob: 'self'; child-src blob: 'self'; font-src 'none'; manifest-src 'self'; base-uri 'none'; form-action 'none'; object-src 'none'">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="mobile-web-app-capable" content="yes">
@@ -197,6 +197,9 @@
   #xport .grid button { border: none; border-radius: var(--rad-btn); padding: 10px 6px; font-size: 13px; font-weight: 700; min-height: 42px; background: var(--chip); color: var(--ink); }
   #xport .grid button.red { background: #e63a2e; color: #fff; }
   #xPreStat, #xSum { font-size: 12px; color: var(--ink-dim); margin-top: 9px; line-height: 1.5; }
+  #xPreBar { display: none; height: 6px; border-radius: 3px; background: var(--hair); margin-top: 10px; overflow: hidden; } /* Beta 1.87: the offline-download progress bar - slim, full width of the panel, shown only while a download runs (the .on class) */
+  #xPreBar.on { display: block; }
+  #xPreFill { height: 100%; width: 0%; background: #2ecc71; border-radius: 3px; }
   #setMenu { position: fixed; right: calc(8px + var(--sar)); bottom: calc(var(--vvb, 0px) + 84px + var(--sab)); z-index: 1150; background: var(--card); -webkit-backdrop-filter: var(--blur); backdrop-filter: var(--blur); color: var(--ink); border: 1px solid var(--hair); border-radius: 16px; box-shadow: var(--shadow-card); padding: 6px; display: flex; flex-direction: column; gap: 2px; min-width: 184px; opacity: 0; visibility: hidden; transform: translateY(10px); transform-origin: bottom right; transition: opacity var(--anim-dur) var(--ease-close), transform var(--anim-dur) var(--ease-close), visibility 0s linear var(--anim-dur); }
   #setMenu.open { opacity: 1; visibility: visible; transform: translateY(0); transition: opacity var(--anim-dur) var(--ease-open), transform var(--anim-dur) var(--ease-open), visibility 0s; }
   .setRow { display: flex; align-items: center; gap: 11px; border: none; background: transparent; color: var(--ink); font: inherit; font-size: 14.5px; font-weight: 700; padding: 10px 12px; border-radius: 11px; min-height: 46px; text-align: left; cursor: pointer; }
@@ -258,7 +261,7 @@
 <div id="hud">
   <div id="warn">Not saving — storage is full or blocked</div>
   <div class="row">
-    <div class="titleStack"><div class="title">Snow Route Beta</div><div class="ver" id="ver">Beta 1.86</div></div>
+    <div class="titleStack"><div class="title">Snow Route Beta</div><div class="ver" id="ver">Beta 1.87</div></div>
   </div>
   <div id="stats"></div>
 </div>
@@ -285,8 +288,8 @@
 </nav>
 <div id="setMenu">
   <button class="setRow" id="nightBtn"><span class="tabIco"></span><span class="tabLbl">Night</span></button>
-  <button class="setRow" id="updBtn"><span class="tabIco"></span><span class="tabLbl">Update</span></button>
   <button class="setRow" id="exportBtn"><span class="tabIco"></span><span class="tabLbl">Backup</span></button>
+  <button class="setRow" id="updBtn"><span class="tabIco"></span><span class="tabLbl">Update</span></button>
 </div>
 <div id="sheet" class="sheet">
   <div class="grab"><div class="grabBar"></div></div>
@@ -307,7 +310,7 @@
   <button id="xBak">Backup (JSON)</button><button id="xRes">Restore</button>
   <button id="xImp" style="display:none">Import backup</button><button id="xClr" class="red">Clear trail</button>
   <button id="xPre">Download offline maps</button>
-</div><div id="xPreStat"></div></div></div>
+</div><div id="xPreBar"><div id="xPreFill"></div></div><div id="xPreStat"></div></div></div>
 <div id="toast"></div>
 <script src="https://cdn.jsdelivr.net/npm/maplibre-gl@4.7.1/dist/maplibre-gl.js" integrity="sha384-SYKAG6cglRMN0RVvhNeBY0r3FYKNOJtznwA0v7B5Vp9tr31xAHsZC0DqkQ/pZDmj" crossorigin="anonymous"></script>
 <script>
@@ -3594,6 +3597,7 @@ function showX(mode) {
   $('xShare').style.display = navigator.share ? '' : 'none';
   const rec = parseJ(lsGet(LS.pre), null);
   $('xPreStat').textContent = rec ? 'Offline maps downloaded ' + new Date(rec.at).toLocaleDateString() + ' (' + rec.saved + ' files)' : 'Offline maps not downloaded yet — preload for offline use.';
+  $('xPreBar').classList.remove('on'); $('xPreFill').style.width = '0%'; // Beta 1.87: the progress bar belongs to a live download - a reopened panel starts clean
   $('xport').classList.remove('hidden');
   ta.scrollTop = 0;
 }
@@ -3749,10 +3753,24 @@ $('xPre').addEventListener('click', async () => {
     }
     const list = [...urls];
     let done = 0, nextU = 0;
-    const preWorker = async () => { while (nextU < list.length) { const u = list[nextU++]; try { await fetch(u, { mode: 'cors' }); } catch (e) { /* failures simply never confirm below */ } done++; if (done % 200 === 0) st.textContent = 'Downloading… ' + done + '/' + list.length; } }; // Beta 1.50 (audit P07): 894 files strictly one at a time was the slowest single wait in the app - five at a time (bounded, never unlimited); same list, same honest confirmed count below
+    // Beta 1.87 (Andrew's request): a slim green progress bar under the buttons, and the
+    // count SWEEPS up to the real number instead of jumping - the five workers finish
+    // files in clusters and the pre-1.87 text only repainted every 200 files, so the
+    // display leapt 0 -> 200 -> 400. The sweep is display-only (a 30ms interval eases
+    // the shown count toward the true one, through every number in between); the
+    // downloads stay five-wide and the final line below still reports the CONFIRMED
+    // cache count, exactly as before.
+    const bar = $('xPreBar'), fill = $('xPreFill');
+    let shown = 0;
+    const paint = () => { fill.style.width = (list.length ? shown / list.length * 100 : 0) + '%'; st.textContent = 'Downloading… ' + shown + '/' + list.length; };
+    bar.classList.add('on'); paint();
+    const sweep = setInterval(() => { if (shown < done) { shown = Math.min(done, shown + Math.max(1, Math.ceil((done - shown) / 5))); paint(); } }, 30);
+    const preWorker = async () => { while (nextU < list.length) { const u = list[nextU++]; try { await fetch(u, { mode: 'cors' }); } catch (e) { /* failures simply never confirm below */ } done++; } }; // Beta 1.50 (audit P07): 894 files strictly one at a time was the slowest single wait in the app - five at a time (bounded, never unlimited); same list, same honest confirmed count below
     await Promise.all([preWorker(), preWorker(), preWorker(), preWorker(), preWorker()]);
+    clearInterval(sweep); shown = done; paint();
     let saved = 0;
     for (const u of list) { try { if (await caches.match(u)) saved++; } catch (e) {} } // Stage 2 (audit G-5): report only resources CONFIRMED in the offline cache
+    fill.style.width = (list.length ? saved / list.length * 100 : 0) + '%'; // the bar settles on the CONFIRMED fraction, matching the line below
     lsSet(LS.pre, JSON.stringify({ at: Date.now(), saved, total: list.length }));
     st.textContent = 'Offline maps: saved ' + saved + ' of ' + list.length + ' files (tiles are kept by the offline cache)';
     toast('Offline maps: ' + saved + '/' + list.length);

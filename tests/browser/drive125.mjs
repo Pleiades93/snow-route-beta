@@ -61,8 +61,8 @@ ok('T3 the meter starts empty | fillW ' + T1.fillW, T1.fillW === 0);
 await ev(`(() => { $('setBtn').click(); return true; })()`); await sleep(600);
 const T3b = JSON.parse(await ev(`(() => JSON.stringify({ open: $('setMenu').classList.contains('open'),
   rows: [...document.querySelectorAll('#setMenu .setRow')].map(b => ({ id: b.id, lbl: b.querySelector('.tabLbl').textContent, svg: !!b.querySelector('svg') })) }))()`));
-ok('T3 Settings rises with Night, Update and Backup inside, in that order (Beta 1.76) | ' + JSON.stringify(T3b),
-  T3b.open === true && T3b.rows.length === 3 && T3b.rows[0].id === 'nightBtn' && T3b.rows[1].id === 'updBtn' && T3b.rows[2].id === 'exportBtn' && T3b.rows.every(r => r.svg && r.lbl.length > 0));
+ok('T3 Settings rises with Night, Backup and Update inside, in that order (Beta 1.87: Andrew reordered - Night/Day on top, Backup second, Update last) | ' + JSON.stringify(T3b),
+  T3b.open === true && T3b.rows.length === 3 && T3b.rows[0].id === 'nightBtn' && T3b.rows[1].id === 'exportBtn' && T3b.rows[2].id === 'updBtn' && T3b.rows.every(r => r.svg && r.lbl.length > 0));
 await ev(`(() => { $('setBtn').click(); return true; })()`); await sleep(600);
 ok('T3 Settings closes on a second tap', await ev(`$('setMenu').classList.contains('open')`) === false);
 

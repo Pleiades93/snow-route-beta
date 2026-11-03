@@ -42,7 +42,7 @@ ok('N6c after the boot pick the route menu is parked, not gone (the Routes tab c
 
 // --- Settings order + theme from its new home -----------------------------
 await ev(`$('setBtn').click(); true`); await sleep(500);
-ok('N7 Settings order is Night/Day, Update, Backup', await ev(`(function(){ var ids = [...document.querySelectorAll('#setMenu .setRow')].map(b => b.id); return JSON.stringify(ids) === JSON.stringify(['nightBtn', 'updBtn', 'exportBtn']); })()`));
+ok('N7 Settings order is Night/Day, Backup, Update (Beta 1.87: Andrew reordered)', await ev(`(function(){ var ids = [...document.querySelectorAll('#setMenu .setRow')].map(b => b.id); return JSON.stringify(ids) === JSON.stringify(['nightBtn', 'exportBtn', 'updBtn']); })()`));
 const nightBefore = await ev(`isNight()`);
 await ev(`$('nightBtn').click(); true`); await sleep(400);
 ok('N8 the theme row in Settings actually flips the theme', (await ev(`isNight()`)) !== nightBefore);
