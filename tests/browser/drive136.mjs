@@ -1,5 +1,6 @@
-import { launchDrive, finish, PATTERNS_GITHUB_IO } from './harness.mjs';
-const { proc, send, S, ev, consoleLog, sleep, poll: poll120, url } = await launchDrive({ patterns: PATTERNS_GITHUB_IO });
+import { launchDrive, finish, PATTERNS_GITHUB_IO, bootThrough } from './harness.mjs';
+const { proc, send, S, ev, consoleLog, sleep, poll: poll120, url, poll } = await launchDrive({ patterns: PATTERNS_GITHUB_IO });
+await bootThrough(ev, poll); // Beta 1.76: boots end at the route menu now - click through to a loaded route
 
 
 
@@ -19,28 +20,28 @@ ok('S0 app boots for the storage transaction tests', await poll120(`!!window.map
 const INSTALL_STUB = `(() => { window.__stubKey = null; const orig = Storage.prototype.setItem; Storage.prototype.setItem = function (k, v) { if (window.__stubKey && k === window.__stubKey) throw new Error('injected quota failure'); return orig.call(this, k, v); }; window.__stub = k => { window.__stubKey = k; }; window.__unstub = () => { window.__stubKey = null; }; return typeof window.__stub === 'function'; })()`;
 ok('S0b fault-injection stub installed', await ev(INSTALL_STUB) === true);
 const seed = async () => { await ev(`(() => { markDone('Velmar', 'test'); markDone('Mellings', 'test'); markDone('Astona', 'test'); return doneSet.size; })()`); await sleep(250); };
-const state = async () => JSON.parse(await ev(`JSON.stringify({ done: doneSet.size, label: $('resetBtn').textContent, toast: $('toast').textContent, hist: history.length, lsHist: JSON.parse(localStorage.getItem('snowroute.v2.history') || '[]').length, fk: saveFailKey, snap: !!undoSnap })`));
+const state = async () => JSON.parse(await ev(`JSON.stringify({ done: doneSet.size, label: $('resetBtn').textContent, toast: $('toast').textContent, hist: history.length, lsHist: JSON.parse(localStorage.getItem('snowroute.5w.v2.history') || '[]').length, fk: saveFailKey, snap: !!undoSnap })`));
 await seed();
 let st = await state();
 ok('S1 seeded clean: 3 streets done, nothing archived yet | ' + JSON.stringify(st), st.done === 3 && st.hist === 0 && st.lsHist === 0);
 // F3: the ARCHIVE write fails during Finish - the pre-1.57 gate already
 // stopped this; regression-pin it inside the transaction suite.
-await ev(`__stub('snowroute.v2.history')`);
+await ev(`__stub('snowroute.5w.v2.history')`);
 await ev(`(() => { performReset(); return true; })()`); await sleep(300);
 st = await state();
 ok('F3 archive write fails: finish stops, run intact, nothing archived | ' + JSON.stringify(st), st.done === 3 && st.lsHist === 0 && st.label === 'Finish' && /finish stopped/.test(st.toast));
 await ev(`__unstub()`);
 // F2: the cleared AUTHORITY write fails during Finish - the archive write
 // lands first and must be ROLLED BACK; the clean survives whole.
-await ev(`__stub('snowroute.v5.sides')`);
+await ev(`__stub('snowroute.5w.v5.sides')`);
 await ev(`(() => { performReset(); return true; })()`); await sleep(300);
 st = await state();
-const sidesKept = JSON.parse(await ev(`(() => { const s = JSON.parse(localStorage.getItem('snowroute.v5.sides') || '{}'); return JSON.stringify({ velmar: (s.p && s.p.Velmar) ? s.p.Velmar.some(v => v > 0) : false }); })()`));
+const sidesKept = JSON.parse(await ev(`(() => { const s = JSON.parse(localStorage.getItem('snowroute.5w.v5.sides') || '{}'); return JSON.stringify({ velmar: (s.p && s.p.Velmar) ? s.p.Velmar.some(v => v > 0) : false }); })()`));
 ok('F2 authority write fails: finish stops, archive rolled back, run intact, stored sides untouched | ' + JSON.stringify(st) + ' ' + JSON.stringify(sidesKept), st.done === 3 && st.lsHist === 0 && st.label === 'Finish' && /clean is intact/.test(st.toast) && sidesKept.velmar === true);
 await ev(`__unstub()`);
 // F1: a MARK whose authority write fails reports the failure (contract +
 // episode warning) and does not persist on reload.
-await ev(`__stub('snowroute.v5.sides')`);
+await ev(`__stub('snowroute.5w.v5.sides')`);
 await ev(`(() => { togglePiece('Boddy', 0, 0); return true; })()`); await sleep(300);
 st = await state();
 ok('F1 mark with failing authority write: failure named (sides) + storage warning shown | ' + JSON.stringify(st), st.fk === 'sides' && /not saving/.test(st.toast));
@@ -48,17 +49,18 @@ await ev(`__unstub()`);
 await send('Page.navigate', { url: url }, S);
 await sleep(3000);
 await ev(INSTALL_STUB); // the reload wiped the page-side injection - reinstall it for F4/F5 (the F4/F5 failures in the first local run traced to exactly this, not to the app)
+await ev(`loadRoute('5w'); true`); await sleep(600); // Beta 1.76: the navigate landed on the route menu
 ok('F1b after reload the failed mark is absent and the seeded clean survives whole', await poll120(`doneSet.size === 3 && !streetComplete('Boddy')`, 30000));
 // F4: a METADATA write (notes) fails during Finish - the finish completes
 // (authority + archive agree) and says so honestly.
-await ev(`__stub('snowroute.v4.notes')`);
+await ev(`__stub('snowroute.5w.v4.notes')`);
 await ev(`(() => { performReset(); return true; })()`); await sleep(300);
 st = await state();
 ok('F4 notes write fails: finish completes, archive landed, warning names the gap | ' + JSON.stringify(st), st.done === 0 && st.lsHist === 1 && st.label === 'Undo' && st.fk === 'notes' && /could not be written/.test(st.toast));
 await ev(`__unstub()`);
 // F5: the AUTHORITY write fails during Undo - the undo stays on offer
 // (snapshot retained), then succeeds once storage recovers.
-await ev(`__stub('snowroute.v5.sides')`);
+await ev(`__stub('snowroute.5w.v5.sides')`);
 await ev(`(() => { doUndo(); return true; })()`); await sleep(300);
 st = await state();
 ok('F5 authority write fails during undo: undo stopped and STILL on offer, board untouched | ' + JSON.stringify(st), st.done === 0 && st.snap === true && st.label === 'Undo' && /undo stopped/.test(st.toast) && st.lsHist === 1);
@@ -72,12 +74,13 @@ ok('F5b undo succeeds after storage recovers: run restored, archive un-happened 
 // the app must SAY so (never 'your clean is intact'). Needs a sequenced
 // stub: the first history write passes, every later one throws, and the
 // sides write always throws.
-await ev(`(() => { const orig = Storage.prototype.setItem; let histWrites = 0; Storage.prototype.setItem = function (k, v) { if (k === 'snowroute.v5.sides') throw new Error('injected quota failure'); if (k === 'snowroute.v2.history') { histWrites++; if (histWrites > 1) throw new Error('injected quota failure'); } return orig.call(this, k, v); }; window.__seqOrig = orig; return true; })()`);
+await ev(`(() => { const orig = Storage.prototype.setItem; let histWrites = 0; Storage.prototype.setItem = function (k, v) { if (k === 'snowroute.5w.v5.sides') throw new Error('injected quota failure'); if (k === 'snowroute.5w.v2.history') { histWrites++; if (histWrites > 1) throw new Error('injected quota failure'); } return orig.call(this, k, v); }; window.__seqOrig = orig; return true; })()`);
 await ev(`(() => { performReset(); return true; })()`); await sleep(300);
 st = await state();
 ok('F6 rollback write fails: finish stops, run intact in memory, the divergence is REPORTED (archive persisted, no intact claim) | ' + JSON.stringify(st), st.done === 3 && st.lsHist === 1 && /could not be undone/.test(st.toast) && !/clean is intact/.test(st.toast));
 await ev(`(() => { Storage.prototype.setItem = window.__seqOrig; return true; })()`);
 await send('Page.navigate', { url: url }, S);
+await sleep(3000); await ev(`loadRoute('5w'); true`); await sleep(600); // Beta 1.76
 ok('F6b after reload the app boots on the diverged store without crashing (the archive is simply there)', await poll120(`typeof doneSet !== 'undefined'`, 30000));
 // F7 (Beta 1.63, audit F03): a failing removeItem must surface through
 // saveStart() - the delete path reports like every other write.

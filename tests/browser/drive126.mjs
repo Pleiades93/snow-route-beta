@@ -1,5 +1,6 @@
-import { launchDrive, finish } from './harness.mjs';
-const { proc, ev, consoleLog, sleep, poll: poll120 } = await launchDrive();
+import { launchDrive, finish, bootThrough } from './harness.mjs';
+const { proc, ev, consoleLog, sleep, poll: poll120, poll } = await launchDrive();
+await bootThrough(ev, poll); // Beta 1.76: boots end at the route menu now - click through to a loaded route
 
 
 
@@ -96,6 +97,7 @@ ok('F2g stopGps clears BOTH the frame loop and the pump | ' + JSON.stringify(PMP
 // Night labels: reload into night mode and read the basemap text paint back.
 await ev(`(() => { localStorage.setItem('snowroute.v2.night', '1'); location.reload(); return true; })()`);
 await sleep(3000);
+await bootThrough(ev, poll); // Beta 1.76: the reload returns to the route menu - pick 5W so the engine init applies the night name treatment
 ok('F3 night boot with the map active', await poll120(`typeof glOk !== 'undefined' && glOk === true && document.body.classList.contains('night')`, 30000));
 const NL = JSON.parse(await ev(`(() => { const out = []; for (const L of map.getStyle().layers) { if (L.type === 'symbol' && L['source-layer'] && L.layout && L.layout['text-field']) out.push({ id: L.id, col: map.getPaintProperty(L.id, 'text-color'), hw: map.getPaintProperty(L.id, 'text-halo-width') }); } return JSON.stringify(out); })()`));
 ok('F3 every basemap name layer wears the readable night treatment | layers ' + NL.length + ' ' + JSON.stringify(NL.slice(0, 3)),

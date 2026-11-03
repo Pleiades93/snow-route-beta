@@ -1,6 +1,7 @@
 import { readFileSync } from 'node:fs';
-import { launchDrive, finish } from './harness.mjs';
-const { proc, ev, consoleLog, sleep, poll: poll120 } = await launchDrive();
+import { launchDrive, finish, bootThrough } from './harness.mjs';
+const { proc, ev, consoleLog, sleep, poll: poll120, poll } = await launchDrive();
+await bootThrough(ev, poll); // Beta 1.76: boots end at the route menu now - click through to a loaded route
 
 
 
@@ -18,7 +19,7 @@ const { proc, ev, consoleLog, sleep, poll: poll120 } = await launchDrive();
 const R = { checks: [] };
 const ok = (name, cond) => R.checks.push([name, !!cond]);
 const src = readFileSync(new URL('../../src/tracker-source.html', import.meta.url), 'utf8');
-ok('H1 sheet panels use shared classes, no duplicate IDs | sheetHead ids ' + (src.split('id="sheetHead"').length - 1) + ' classes ' + (src.split('class="sheetHead"').length - 1), (src.split('id="sheetHead"').length - 1) === 0 && (src.split('id="sheetTitle"').length - 1) === 0 && (src.split('class="sheetHead"').length - 1) === 2 && (src.split('class="sheetTitle"').length - 1) === 2);
+ok('H1 sheet panels use shared classes, no duplicate IDs | sheetHead ids ' + (src.split('id="sheetHead"').length - 1) + ' classes ' + (src.split('class="sheetHead"').length - 1), (src.split('id="sheetHead"').length - 1) === 0 && (src.split('id="sheetTitle"').length - 1) === 0 && (src.split('class="sheetHead"').length - 1) === 3 && (src.split('class="sheetTitle"').length - 1) === 3);
 ok('T0 app script and map object are live', await poll120(`typeof map !== 'undefined' && !!map && typeof finishRun === 'function' && typeof buildSnap === 'function'`, 90000));
 // U1: finish a 3-street clean, then undo with the notes/times saves broken.
 await ev(`(() => { runStart = Date.now() - 3600000; markDone('Velmar', 'tap'); markDone('Mellings', 'tap'); markDone('Astona', 'tap'); suggested = new Set(['Boddy']); finishRun(); return true; })()`);

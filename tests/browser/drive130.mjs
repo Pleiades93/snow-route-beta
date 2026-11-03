@@ -1,5 +1,6 @@
-import { launchDrive, finish } from './harness.mjs';
-const { proc, ev, consoleLog, sleep, poll: poll120 } = await launchDrive();
+import { launchDrive, finish, bootThrough } from './harness.mjs';
+const { proc, ev, consoleLog, sleep, poll: poll120, poll } = await launchDrive();
+await bootThrough(ev, poll); // Beta 1.76: boots end at the route menu now - click through to a loaded route
 
 
 
@@ -54,6 +55,7 @@ ok('L7 at close zoom the basemap names print on the clones only | clone ' + JSON
 // Night: the clones are rebuilt per restack and wear the night lift.
 await ev(`(() => { localStorage.setItem('snowroute.v2.night', '1'); location.reload(); return true; })()`);
 await sleep(3000);
+await bootThrough(ev, poll); // Beta 1.76: the reload returns to the route menu - pick 5W so the engine rebuilds the clones under the night style
 ok('L8 night boot with the map active', await poll120(`typeof glOk !== 'undefined' && glOk === true && document.body.classList.contains('night')`, 30000));
 const S3 = JSON.parse(await ev(`(() => JSON.stringify({
   clone: !!map.getLayer('roads_labels_major-route'),

@@ -247,7 +247,9 @@ ok('E16 process killed mid-download: relaunch on the same profile and the resume
 // it does not hide an app defect (verified by probe: with the settle, every
 // key survives byte-for-byte; without it, the browser had not yet stored
 // them at all).
+const loadRouteE2E = async () => { await poll(`(function(){ if (typeof routeLoaded !== 'undefined' && !routeLoaded && typeof loadRoute === 'function') { try { loadRoute('5w'); } catch (e) {} } return typeof routeLoaded !== 'undefined' && routeLoaded === true; })()`, 60000); }; // Beta 1.76: app state loads when a route is picked - E17's entry points (startClean, markDone) and state reads need the route loaded, including after each process-kill relaunch
 const snapState = async () => JSON.parse(await ev2(`(() => { const out = {}; for (const k of ['start', 'sess', 'sides', 'done', 'times', 'via', 'trail']) out[k] = lsGet(LS[k]); out.app = JSON.stringify({ run: runStart, sess: trailSessions.slice(), velmar: pieces.Velmar[0], astona: pieces.Astona[0], done: Array.from(doneSet).sort(), trailN: trail.length }); return JSON.stringify(out); })()`));
+await loadRouteE2E();
 await ev2(`(() => { startClean(); markDone('Velmar', 'tap'); togglePiece('Astona', 0, 0); const t0 = Math.floor(Date.now() / 1000); trail = [[43.82, -79.56, t0], [43.8201, -79.56, t0 + 30], [43.8202, -79.56, t0 + 60]]; saveTrail(); return true; })()`);
 await sleep(500);
 const snapBefore = await snapState();
@@ -258,6 +260,7 @@ await sleep(1500);
 for (const f of ['SingletonLock', 'SingletonCookie', 'SingletonSocket']) { try { fs.rmSync(PROFILE + '/' + f, { force: true }); } catch (e) {} }
 await launchBrowser();
 const backOk17 = (await poll(`typeof glOk !== 'undefined' && glOk === true`, 90000)) && (await poll(`!!navigator.serviceWorker.controller`, 30000));
+await loadRouteE2E();
 const snapAfter = await snapState();
 const stateKeys = ['start', 'sess', 'sides', 'done', 'times', 'via', 'trail'];
 ok('E17 persisted app state survives process death byte-for-byte and reloads identically | back ' + backOk17, backOk17 && stateKeys.every(k => snapBefore[k] === snapAfter[k]) && snapBefore.app === snapAfter.app);
@@ -269,6 +272,7 @@ await sleep(1500);
 for (const f of ['SingletonLock', 'SingletonCookie', 'SingletonSocket']) { try { fs.rmSync(PROFILE + '/' + f, { force: true }); } catch (e) {} }
 await launchBrowser();
 const backOk17b = (await poll(`typeof glOk !== 'undefined' && glOk === true`, 90000)) && (await poll(`!!navigator.serviceWorker.controller`, 30000));
+await loadRouteE2E();
 const e17bAfter = JSON.parse(await ev2(`(() => { const before = { run: runStart, sess: JSON.parse(lsGet(LS.sess) || '[]') }; startClean(); const after = { sess: JSON.parse(lsGet(LS.sess) || '[]'), marker: Math.floor(runStart / 1000), dirty: sessDirty }; return JSON.stringify({ before, after }); })()`));
 ok('E17b after the kill: persisted run state intact, the never-persisted marker absent (expected loss), and a fresh start saves cleanly | ' + JSON.stringify(e17bAfter), backOk17b && e17bAfter.before.run === e17b.run && !e17bAfter.before.sess.includes(e17b.marker) && e17bAfter.after.sess.includes(e17bAfter.after.marker) && e17bAfter.after.dirty === false);
 ok('E13 no page exceptions across the whole run', consoleLog.filter(c => String(c).startsWith('EXCEPTION')).length === 0);

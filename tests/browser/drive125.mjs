@@ -1,5 +1,6 @@
-import { launchDrive, finish } from './harness.mjs';
-const { proc, ev, consoleLog, sleep, poll: poll120 } = await launchDrive();
+import { launchDrive, finish, bootThrough } from './harness.mjs';
+const { proc, ev, consoleLog, sleep, poll: poll120, poll } = await launchDrive();
+await bootThrough(ev, poll); // Beta 1.76: boots end at the route menu now - click through to a loaded route
 
 
 
@@ -54,14 +55,14 @@ const T1 = JSON.parse(await ev(`(() => { const surf = el => getComputedStyle(el)
   order: [...document.querySelectorAll('#tabBar .tabItem')].map(b => b.id) }); })()`));
 ok('T1 day menus share one light surface with dark text (bar = sheets = settings pop-up) | ' + JSON.stringify(T1),
   T1.sheetBg === 'rgba(255, 255, 255, 0.92)' && T1.sheetCol === 'rgb(28, 37, 52)' && T1.paceBg === T1.sheetBg && T1.barBg === T1.sheetBg && T1.menuBg === T1.sheetBg);
-ok('T2 tab order: Locate, Night, Home dead centre, Clear, Settings | ' + JSON.stringify(T1.order),
-  JSON.stringify(T1.order) === JSON.stringify(['gpsBtn', 'nightBtn', 'homeBtn', 'clearBtn', 'setBtn']));
+ok('T2 tab order: Locate, Routes, Home dead centre, Clear, Settings (Beta 1.76: Night/Day moved into Settings) | ' + JSON.stringify(T1.order),
+  JSON.stringify(T1.order) === JSON.stringify(['gpsBtn', 'routesBtn', 'homeBtn', 'clearBtn', 'setBtn']));
 ok('T3 the meter starts empty | fillW ' + T1.fillW, T1.fillW === 0);
 await ev(`(() => { $('setBtn').click(); return true; })()`); await sleep(600);
 const T3b = JSON.parse(await ev(`(() => JSON.stringify({ open: $('setMenu').classList.contains('open'),
   rows: [...document.querySelectorAll('#setMenu .setRow')].map(b => ({ id: b.id, lbl: b.querySelector('.tabLbl').textContent, svg: !!b.querySelector('svg') })) }))()`));
-ok('T3 Settings rises with Update and Backup inside (Pack D icons + labels) | ' + JSON.stringify(T3b),
-  T3b.open === true && T3b.rows.length === 2 && T3b.rows[0].id === 'updBtn' && T3b.rows[1].id === 'exportBtn' && T3b.rows.every(r => r.svg && r.lbl.length > 0));
+ok('T3 Settings rises with Night, Update and Backup inside, in that order (Beta 1.76) | ' + JSON.stringify(T3b),
+  T3b.open === true && T3b.rows.length === 3 && T3b.rows[0].id === 'nightBtn' && T3b.rows[1].id === 'updBtn' && T3b.rows[2].id === 'exportBtn' && T3b.rows.every(r => r.svg && r.lbl.length > 0));
 await ev(`(() => { $('setBtn').click(); return true; })()`); await sleep(600);
 ok('T3 Settings closes on a second tap', await ev(`$('setMenu').classList.contains('open')`) === false);
 
@@ -100,13 +101,13 @@ ok('S7 day mode: chrome is light glass with dark icons (GPS-app behaviour) | ' +
   S6.listCol === 'rgb(34, 38, 46)' && S6.paceCol === 'rgb(34, 38, 46)' && S6.tabCol === 'rgb(43, 48, 56)');
 await ev(`(() => { $('nightBtn').click(); return true; })()`);
 await sleep(600);
-ok('S7 day mode: the theme tab offers Night - it names where it takes you, not where you are (Beta 1.28) | label ' + S6.nightLbl, S6.nightLbl === 'Night');
+ok('S7 day mode: the Settings theme row offers Night - it names where it takes you, not where you are (Beta 1.28) | label ' + S6.nightLbl, S6.nightLbl === 'Night');
 const S7 = JSON.parse(await ev(`(() => JSON.stringify({ night: document.body.classList.contains('night'), nightLbl: $('nightBtn').querySelector('.tabLbl').textContent,
   listCol: getComputedStyle($('streetsBtn')).color, tabCol: getComputedStyle($('homeBtn')).color,
   barBg: getComputedStyle($('tabBar')).backgroundColor, countCol: getComputedStyle($('count')).color }))()`));
 ok('S7 night mode: chrome flips to dark glass with bright icons | ' + JSON.stringify(S7),
   S7.night === true && S7.listCol === 'rgb(242, 244, 248)' && S7.tabCol === 'rgb(221, 229, 236)' && S7.barBg === 'rgba(32, 33, 37, 0.94)' && S7.countCol === 'rgb(238, 244, 238)');
-ok('S7 night mode: the theme tab now offers Day, label and state in agreement | label ' + S7.nightLbl, S7.nightLbl === 'Day');
+ok('S7 night mode: the Settings theme row now offers Day, label and state in agreement | label ' + S7.nightLbl, S7.nightLbl === 'Day');
 const T4 = JSON.parse(await ev(`(() => { const surf = el => getComputedStyle(el).backgroundColor; return JSON.stringify({
   sheetBg: surf($('sheet')), sheetCol: getComputedStyle($('sheet')).color, barBg: surf($('tabBar')), menuBg: surf($('setMenu')) }); })()`));
 ok('T4 night menus share the neutral charcoal (bar = sheets = pop-up), text bright (Beta 1.75) | ' + JSON.stringify(T4),

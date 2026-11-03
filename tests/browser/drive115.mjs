@@ -1,6 +1,7 @@
-import { launchDrive, PATTERNS_PROTOMAPS } from './harness.mjs';
+import { launchDrive, PATTERNS_PROTOMAPS, bootThrough } from './harness.mjs';
 let failTiles = false;   // when true, GL map-host requests are failed on purpose (total-basemap-outage simulation) - the harness consults it via failWhen
-const { proc, ev, consoleLog, sleep } = await launchDrive({ patterns: PATTERNS_PROTOMAPS, failWhen: u => failTiles && (u.includes('tiles.basemaps.cartocdn.com') || u.includes('protomaps.github.io')) });
+const { proc, ev, consoleLog, sleep, poll } = await launchDrive({ patterns: PATTERNS_PROTOMAPS, failWhen: u => failTiles && (u.includes('tiles.basemaps.cartocdn.com') || u.includes('protomaps.github.io')) });
+await bootThrough(ev, poll); // Beta 1.76: boots end at the route menu now - click through to a loaded route
 
 
 const R = { checks: [] };
@@ -15,7 +16,7 @@ const exc = () => consoleLog.filter(c => c.type === 'EXCEPTION').length;
 // fallback, by design), that recovery auto-hides it, that dismissal sticks for the
 // session, and the Design QA layout measurements in both themes.
 const waitBoot = async () => { for (let i = 0; i < 25; i++) { try { if (await ev(`!!document.getElementById('ver')`)) return true; } catch (e) {} await sleep(400); } return false; };
-const reload = async (ms) => { await ev(`location.reload(); true`); await sleep(500); await waitBoot(); await sleep(ms || 4000); };
+const reload = async (ms) => { await ev(`location.reload(); true`); await sleep(500); await waitBoot(); await sleep(ms || 4000); await ev(`loadRoute('5w'); true`); await sleep(600); }; // Beta 1.76: a reload lands on the route menu - load 5W (works with the map dead; GLP catches up via onStyleReady)
 const noteVisible = async () => ev(`!document.getElementById('mapNote').classList.contains('hidden')`);
 const until = async (fn, ms) => { const t0 = Date.now(); while (Date.now() - t0 < (ms || 12000)) { if (await fn()) return true; await sleep(300); } return false; };
 const rects = async () => ev(`(function(){ const r = (id) => { const e = document.getElementById(id); if (!e) return null; const b = e.getBoundingClientRect(); return { x: b.x, y: b.y, w: b.width, h: b.height, r: b.right, btm: b.bottom }; }; return { note: r('mapNote'), gear: r('tabBar'), info: r('info'), vw: window.innerWidth, vh: window.innerHeight }; })()`);

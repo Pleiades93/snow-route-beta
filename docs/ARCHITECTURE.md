@@ -18,6 +18,16 @@ inline `<style>` — then `scripts/build-pages.py` produces the deployed
 source, SRI integrity of the two MapLibre CDN files, and the stamped policy
 naming all three map hosts). Generated files are never hand-edited.
 
+Boot flow (Beta 1.76): the splash brand animates in, and at the readiness
+gate (map engine up and a first tile landed, with a time failsafe) it
+slides away to reveal a route menu on the same blue screen — Choose a
+route, or Create new route (a placeholder). The map boots to a plain
+area view with no route painted; picking a route runs `loadRoute(id)`,
+which loads that route's stored state (migrating pre-1.76 data into its
+slot on first load), paints it, frames it, and resumes an in-progress
+clean. Route packs are data (`ROUTE_PACKS` in `app1.js`); Route 5W is
+the only pack today.
+
 ## Part files (assembly order)
 
 | Part | Responsibility |
@@ -52,11 +62,12 @@ naming all three map hosts). Generated files are never hand-edited.
 
 ## Data and persistence
 
-All data is `localStorage` under the serving origin. The key set and the
-backup envelope are a contract with production v5.81 — see
-`docs/STORAGE-SCHEMA.md` for the full schema, the per-key formats, and the
-versioning/migration rules. Restore is transactional (validate → snapshot →
-write + verify → verified rollback).
+All data is `localStorage` under the serving origin, laid out since
+Beta 1.76 as one storage slot per route (`snowroute.<routeId>.`) plus a
+few global keys — see `docs/STORAGE-SCHEMA.md` for the full schema, the
+per-key formats, the legacy migration, and the versioning rules. Restore
+is transactional (validate → snapshot → write + verify → verified
+rollback).
 
 ## GPS and coverage
 

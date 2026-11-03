@@ -1,5 +1,6 @@
-import { launchDrive } from './harness.mjs';
-const { proc, ev, consoleLog, sleep } = await launchDrive();
+import { launchDrive, bootThrough } from './harness.mjs';
+const { proc, ev, consoleLog, sleep, poll } = await launchDrive();
+await bootThrough(ev, poll); // Beta 1.76: boots end at the route menu now - click through to a loaded route
 
 
 // drive89: v5.54 Finish pop-up + delete/back navigation
@@ -20,7 +21,7 @@ const exc = () => consoleLog.filter(c => c.type === 'EXCEPTION').length;
 // round-trip reproduces the migrated state exactly.
 const VTIME = '2026-10-20T11:00:00.000Z';
 const waitBoot = async () => { for (let i = 0; i < 25; i++) { try { if (await ev(`!!document.getElementById('ver')`)) return true; } catch (e) {} await sleep(400); } return false; };
-const reload = async () => { await ev(`location.reload(); true`); await sleep(500); await waitBoot(); await sleep(3200); };
+const reload = async () => { await ev(`location.reload(); true`); await sleep(500); await waitBoot(); await sleep(3200); await ev(`loadRoute('5w'); true`); await sleep(600); }; // Beta 1.76: a reload lands on the route menu - load 5W before reading state (also exercises the legacy->slot migration)
 const setLS = async (k, v) => ev(`localStorage.setItem(${JSON.stringify(k)}, ${JSON.stringify(v)}); true`);
 const noValidTimes = async (n) => ev(`(function(){ const T = pieceTimes[${JSON.stringify(n)}]; if (!T) return true; const flat = []; T.forEach(pr => { if (Array.isArray(pr)) pr.forEach(x => flat.push(x)); }); return flat.every(x => typeof x !== 'string' || isNaN(Date.parse(x))); })()`);
 
@@ -57,7 +58,7 @@ try {
   const bak = await ev(`buildBackup()`);
   await ev(`localStorage.clear(); true`); await reload();
   await ev(`(function(){ document.getElementById('xText').value = ${JSON.stringify(bak)}; doRestore(); return true; })()`);
-  await sleep(600); await waitBoot(); await sleep(3200);
+  await sleep(600); await waitBoot(); await sleep(3200); await ev(`loadRoute('5w'); true`); await sleep(600);
   ok('M10 round-trip: pieces identical', await ev(`JSON.stringify(pieces.Woolacott) === '[3,1,1]' && pieces.Velmar.every(v => v === 3)`));
   ok('M10b round-trip: completion + times intact', await ev(`doneSet.has('Velmar') && !doneSet.has('Woolacott') && doneTimes.Velmar === '${VTIME}' && pieceTimes.Woolacott[2][0] === ${JSON.stringify(stamp)}`));
   ok('M10c round-trip: still no fabricated times for old sides', await ev(`(function(){ const T = pieceTimes.Woolacott; const flat = [...T[0], ...T[1]]; return flat.every(x => typeof x !== 'string' || isNaN(Date.parse(x))); })()`));

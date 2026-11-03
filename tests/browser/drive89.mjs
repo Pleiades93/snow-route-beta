@@ -1,5 +1,6 @@
-import { launchDrive, finish } from './harness.mjs';
-const { proc, ev, consoleLog, sleep } = await launchDrive();
+import { launchDrive, finish, bootThrough } from './harness.mjs';
+const { proc, ev, consoleLog, sleep, poll } = await launchDrive();
+await bootThrough(ev, poll); // Beta 1.76: boots end at the route menu now - click through to a loaded route
 
 
 // drive89: v5.54 Finish pop-up + delete/back navigation
