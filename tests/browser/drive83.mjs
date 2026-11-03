@@ -52,7 +52,7 @@ ok('SEC-4 flush after restore does NOT clobber restored trail', A.ls === '[[43.8
 await sleep(1500);   // the restore's reload lands
 // Beta 1.76 hardening: poll-with-load - a single loadRoute after a fixed sleep can land in the
 // pre-reload page (its routeLoaded guard then leaves the fresh page unloaded and the read races).
-for (let i = 0; i < 40; i++) { await ev(`(function(){ if (typeof routeLoaded !== 'undefined' && !routeLoaded && typeof loadRoute === 'function') { try { loadRoute('5w'); } catch (e) {} } return true; })()`); A = JSON.parse(await ev(`(() => JSON.stringify({ tl: trail.length, lat: trail.length ? trail[0][0] : null }))()`)); if (A.tl === 1 && A.lat === 43.8) break; await sleep(300); }
+for (let i = 0; i < 40; i++) { await ev(`(function(){ if (typeof routeLoaded !== 'undefined' && !routeLoaded && typeof loadRoute === 'function') { try { loadRoute('5w'); } catch (e) {} } return true; })()`); try { A = JSON.parse(await ev(`(() => JSON.stringify({ tl: trail.length, lat: trail.length ? trail[0][0] : null }))()`)); } catch (e) { A = { tl: 0, lat: null }; } if (A.tl === 1 && A.lat === 43.8) break; await sleep(300); } // Beta 1.88 hardening: an ev landing mid-navigation can return a non-string and the bare parse killed the drive (seen twice locally in the 1.88 round) - a bad read is just a poll that missed, the loop's own deadline still bounds it
 ok('SEC-4 after reload, trail is the restored one', A.tl === 1 && A.lat === 43.8);
 // P6 SEC-6a (rewritten Beta 1.48, audit B06): the old check called
 // prepOfflineMaps() - a function that no longer exists - so it passed while
