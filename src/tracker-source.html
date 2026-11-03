@@ -2337,6 +2337,7 @@ const PM_NIGHT = {"version":8,"name":"protomaps-dark","glyphs":"https://protomap
 
 // ===== MAP BOOT + LAYERS (fresh, MapLibre-native) =====
 const GL_STYLES = { day: PM_DAY, night: PM_NIGHT }; // Beta 1.33 (Andrew's pick): BOTH basemaps are Protomaps - one map in light + dark flavours - embedded by pmstyles.js, so a day/night switch is a local setStyle: nothing to fetch, nothing to break mid-switch
+const glStyleFor = night => JSON.parse(JSON.stringify(GL_STYLES[night ? 'night' : 'day'])); // Beta 1.77: MapLibre rewrites fields of a style object it is handed - a night boot followed by a day flip rewrote PM_NIGHT's own sprite to the LIGHT sheet, and the offline preload (which enumerates these objects) then never fetched the dark sprites (drive123 A8: 893 files, not 897). The embedded styles are the single source of truth and are never handed over directly; every map gets a copy.
 let glOk = false, mapNoteArmed = false, mapNoteOff = false, basemapDead = false, tilesOk = 0;
 // Beta 1.44 (Andrew: the splash stuttered): the map is created by bootMap(), which
 // app4 calls only AFTER the splash intro has played (~1.1s). Map creation, style
@@ -2350,7 +2351,7 @@ function onMapReady(fn) { if (map) fn(); else __onMap.push(fn); }
 function bootMap() {
   if (map) return;
   window.__bootAt = Date.now();
-  map = new maplibregl.Map({ container: 'map', style: GL_STYLES[isNight() ? 'night' : 'day'], attributionControl: false, fadeDuration: 200, pixelRatio: 2, maxTileCacheSize: 200, maxTileCacheZoomLevels: 6, minZoom: 8, maxZoom: 19, maxPitch: 60 });
+  map = new maplibregl.Map({ container: 'map', style: glStyleFor(isNight()), attributionControl: false, fadeDuration: 200, pixelRatio: 2, maxTileCacheSize: 200, maxTileCacheZoomLevels: 6, minZoom: 8, maxZoom: 19, maxPitch: 60 });
   map.setCenter([(routeBox.w + routeBox.e) / 2, (routeBox.s + routeBox.n) / 2]); map.setZoom(12); // Beta 1.76: a plain area view - the camera frames the ROUTE only when one is chosen (loadRoute does the fitBounds)
   setTimeout(() => { if (!tilesOk) { basemapDead = true; noteMapState(); } }, 9000);
   for (const fn of __onMap) fn();
@@ -2520,7 +2521,7 @@ function onStyleReady() {
 onMapReady(() => map.on('load', onStyleReady));
 let restackArmed = false;
 function setBasemap() {
-  map.setStyle(GL_STYLES[isNight() ? 'night' : 'day']);
+  map.setStyle(glStyleFor(isNight()));
   if (restackArmed) return;
   restackArmed = true;
   const go = () => { if (!restackArmed) return; restackArmed = false; map.off('styledata', waiter); onStyleReady(); };

@@ -2,7 +2,7 @@
 <html lang="en">
 <head>
 <meta charset="UTF-8">
-<meta http-equiv="Content-Security-Policy" content="default-src 'none'; script-src 'sha384-qtPM2qkr8SnTzI5psaHwS7j60ybYeJ1TAlFK26hZs+rVw3vt7Ypgix6W349kRM9/' https://cdn.jsdelivr.net; style-src-elem 'sha384-WJ/Rt/EpVdRJ6m24HbIIyPjL/r87ylZNefdccpqFxHZ2MdW6WEA1AcMBTUaBbbwd' https://cdn.jsdelivr.net; style-src-attr 'unsafe-inline'; img-src 'self' data: blob: https://tiles.basemaps.cartocdn.com https://protomaps.github.io https://cdn.jsdelivr.net; connect-src 'self' https://tiles.basemaps.cartocdn.com https://protomaps.github.io https://cdn.jsdelivr.net; worker-src blob: 'self'; child-src blob: 'self'; font-src 'none'; manifest-src 'self'; base-uri 'none'; form-action 'none'; object-src 'none'">
+<meta http-equiv="Content-Security-Policy" content="default-src 'none'; script-src 'sha384-m05qbprJDu0AO0eF3ACIzi/o6VWrfTDfXb7FvuSquMmj8HExiIARkiu6sdWlolo6' https://cdn.jsdelivr.net; style-src-elem 'sha384-WJ/Rt/EpVdRJ6m24HbIIyPjL/r87ylZNefdccpqFxHZ2MdW6WEA1AcMBTUaBbbwd' https://cdn.jsdelivr.net; style-src-attr 'unsafe-inline'; img-src 'self' data: blob: https://tiles.basemaps.cartocdn.com https://protomaps.github.io https://cdn.jsdelivr.net; connect-src 'self' https://tiles.basemaps.cartocdn.com https://protomaps.github.io https://cdn.jsdelivr.net; worker-src blob: 'self'; child-src blob: 'self'; font-src 'none'; manifest-src 'self'; base-uri 'none'; form-action 'none'; object-src 'none'">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="mobile-web-app-capable" content="yes">
@@ -2338,6 +2338,7 @@ const PM_NIGHT = {"version":8,"name":"protomaps-dark","glyphs":"https://protomap
 
 // ===== MAP BOOT + LAYERS (fresh, MapLibre-native) =====
 const GL_STYLES = { day: PM_DAY, night: PM_NIGHT }; // Beta 1.33 (Andrew's pick): BOTH basemaps are Protomaps - one map in light + dark flavours - embedded by pmstyles.js, so a day/night switch is a local setStyle: nothing to fetch, nothing to break mid-switch
+const glStyleFor = night => JSON.parse(JSON.stringify(GL_STYLES[night ? 'night' : 'day'])); // Beta 1.77: MapLibre rewrites fields of a style object it is handed - a night boot followed by a day flip rewrote PM_NIGHT's own sprite to the LIGHT sheet, and the offline preload (which enumerates these objects) then never fetched the dark sprites (drive123 A8: 893 files, not 897). The embedded styles are the single source of truth and are never handed over directly; every map gets a copy.
 let glOk = false, mapNoteArmed = false, mapNoteOff = false, basemapDead = false, tilesOk = 0;
 // Beta 1.44 (Andrew: the splash stuttered): the map is created by bootMap(), which
 // app4 calls only AFTER the splash intro has played (~1.1s). Map creation, style
@@ -2351,7 +2352,7 @@ function onMapReady(fn) { if (map) fn(); else __onMap.push(fn); }
 function bootMap() {
   if (map) return;
   window.__bootAt = Date.now();
-  map = new maplibregl.Map({ container: 'map', style: GL_STYLES[isNight() ? 'night' : 'day'], attributionControl: false, fadeDuration: 200, pixelRatio: 2, maxTileCacheSize: 200, maxTileCacheZoomLevels: 6, minZoom: 8, maxZoom: 19, maxPitch: 60 });
+  map = new maplibregl.Map({ container: 'map', style: glStyleFor(isNight()), attributionControl: false, fadeDuration: 200, pixelRatio: 2, maxTileCacheSize: 200, maxTileCacheZoomLevels: 6, minZoom: 8, maxZoom: 19, maxPitch: 60 });
   map.setCenter([(routeBox.w + routeBox.e) / 2, (routeBox.s + routeBox.n) / 2]); map.setZoom(12); // Beta 1.76: a plain area view - the camera frames the ROUTE only when one is chosen (loadRoute does the fitBounds)
   setTimeout(() => { if (!tilesOk) { basemapDead = true; noteMapState(); } }, 9000);
   for (const fn of __onMap) fn();
@@ -2521,7 +2522,7 @@ function onStyleReady() {
 onMapReady(() => map.on('load', onStyleReady));
 let restackArmed = false;
 function setBasemap() {
-  map.setStyle(GL_STYLES[isNight() ? 'night' : 'day']);
+  map.setStyle(glStyleFor(isNight()));
   if (restackArmed) return;
   restackArmed = true;
   const go = () => { if (!restackArmed) return; restackArmed = false; map.off('styledata', waiter); onStyleReady(); };
