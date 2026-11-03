@@ -1,5 +1,5 @@
 import { launchDrive, finish } from './harness.mjs';
-const { proc, ev, consoleLog, sleep, poll } = await launchDrive();
+const { proc, send, S, ev, consoleLog, sleep, poll } = await launchDrive();
 
 // drive145: Beta 1.76 route menu + multi-route storage.
 // Boot flow: the splash brand hands over to a route menu on the same blue
@@ -58,10 +58,15 @@ await ev(`$('rmClose').click(); true`); await sleep(600);
 ok('N9c the menu X closes the full-screen menu', await ev(`!$('routeMenu').classList.contains('open') && !$('routeMenu').classList.contains('tab')`));
 
 // --- menu consistency (Beta 1.77, Andrew's standing rule: a new menu carries
-// everything the others have - same X; sheets keep tap-away, the full-screen
-// route menu is a takeover by design (1.78) - checked by enumeration
+// everything the others have - sheets share the corner X and tap-away; the
+// full-screen route menu is a takeover by design (1.78) whose close is
+// Andrew's own translucent bottom-centre circle (1.79, N15b) - all checked
+// by enumeration
 // so a future menu is covered the day it exists) ------------------------------
-ok('N15 every menu close X wears the one shared corner-X style (sheets enumerated, plus the route menu X)', await ev(`(function(){ var props = ['color', 'backgroundColor', 'width', 'height', 'fontSize', 'fontWeight', 'position', 'paddingTop']; var btns = [...document.querySelectorAll('.sheet .sheetHead button'), document.getElementById('rmClose')]; if (btns.length < 3) return false; var ref = getComputedStyle(btns[0]); return btns.every(b => { var cs = getComputedStyle(b); return props.every(p => cs[p] === ref[p]); }) && ref.color === 'rgb(230, 58, 46)' && ref.width === '38px' && ref.backgroundColor === 'rgba(0, 0, 0, 0)'; })()`));
+ok('N15 every sheet close X wears the one shared corner-X style', await ev(`(function(){ var props = ['color', 'backgroundColor', 'width', 'height', 'fontSize', 'fontWeight', 'position', 'paddingTop']; var btns = [...document.querySelectorAll('.sheet .sheetHead button')]; if (btns.length < 2) return false; var ref = getComputedStyle(btns[0]); return btns.every(b => { var cs = getComputedStyle(b); return props.every(p => cs[p] === ref[p]); }) && ref.color === 'rgb(230, 58, 46)' && ref.width === '38px' && ref.backgroundColor === 'rgba(0, 0, 0, 0)'; })()`));
+await ev(`$('routesBtn').click(); true`); await poll(`$('routeMenu').classList.contains('open')`, 5000);
+ok('N15b the route menu close is the translucent bottom-centre circle (Beta 1.79, Andrew)', await ev(`(function(){ var b = document.getElementById('rmClose'); var cs = getComputedStyle(b); var r = b.getBoundingClientRect(); return cs.display !== 'none' && r.width === 44 && r.height === 44 && cs.borderRadius === '50%' && cs.backgroundColor === 'rgba(255, 255, 255, 0.28)' && cs.color === 'rgb(43, 75, 242)' && Math.abs((r.left + r.width / 2) - innerWidth / 2) <= 2 && (innerHeight - r.bottom) <= 90; })()`));
+await ev(`$('rmClose').click(); true`); await sleep(600);
 await ev(`selectStretch('Velmar', 0, [43.8207, -79.5670]); true`); await sleep(300);
 await ev(`$('routesBtn').click(); true`); await poll(`$('routeMenu').classList.contains('open')`, 5000);
 const swBefore = await ev(`swallowClickUntil`);
@@ -135,6 +140,39 @@ ok('N22 a route pick starts the camera wide of the fitted view', await ev(`(func
 await sleep(1200); // the flight starts at +800ms by design (as the splash finishes leaving) - wait until it is actually under way before polling for the settle, or the poll reads the pre-flight stillness and N23 measures the wide start
 await poll(`!map.isMoving()`, 25000);
 ok('N23 the intro flight lands exactly on the fitted route view', await ev(`(function(){ var fit = map.cameraForBounds([[routeBox.w, routeBox.s], [routeBox.e, routeBox.n]], { padding: 28 }); return Math.abs(map.getZoom() - fit.zoom) < 0.05 && Math.abs(map.getCenter().lng - fit.center.lng) < 0.001 && Math.abs(map.getCenter().lat - fit.center.lat) < 0.001; })()`));
+
+// ---- sheet stops + seamless drag (Beta 1.79, Andrew): both bottom sheets
+// open at HALF height; three stops - closed / half / full (drag or flick up
+// to fill, down to half, down again to close). A drag follows the finger
+// from the first pixels (the 9px dead zone through 1.78 is gone) with the
+// frosted blur dropped mid-drag - the per-frame blur repaint that made
+// drags stutter behind the finger. Real CDP mouse drags on the head strip;
+// a 200ms pause before each release keeps the snap position-based (no
+// flick) so the stops are what is measured. --------------------------------
+await ev(`$('streetsBtn').click(); true`); await sleep(700);
+const hOpen = await ev(`$('sheet').offsetHeight`);
+ok('N24 the Streets sheet opens at HALF height (Beta 1.79 three stops: closed / half / full) | h ' + hOpen, Math.abs(hOpen - 450) <= 8);
+const headPt = async () => JSON.parse(await ev(`(() => { const r = $('sheet').querySelector('.sheetHead').getBoundingClientRect(); return JSON.stringify({ x: Math.round(r.left + r.width / 2), y: Math.round(r.top + 12) }); })()`));
+const mDown = async (x, y) => { await send('Input.dispatchMouseEvent', { type: 'mousePressed', x, y, button: 'left', clickCount: 1 }, S); };
+const mMove = async (x, y) => { await send('Input.dispatchMouseEvent', { type: 'mouseMoved', x, y, button: 'left' }, S); };
+const mUp = async (x, y) => { await send('Input.dispatchMouseEvent', { type: 'mouseReleased', x, y, button: 'left', clickCount: 1 }, S); };
+let hp = await headPt();
+await mDown(hp.x, hp.y); await mMove(hp.x, hp.y - 5); await sleep(80);
+const drag5 = JSON.parse(await ev(`(() => JSON.stringify({ h: $('sheet').offsetHeight, bf: getComputedStyle($('sheet')).backdropFilter }))()`));
+ok('N25 the drag follows from the first pixels and the blur is dropped mid-drag | ' + JSON.stringify(drag5), drag5.h >= 453 && drag5.bf === 'none');
+await mMove(hp.x, hp.y - 60); await sleep(60); await mMove(hp.x, hp.y - 150); await sleep(80);
+const drag150 = await ev(`$('sheet').offsetHeight`);
+ok('N26 the drag follows the finger 1:1 | h ' + drag150 + ' at +150px of travel', Math.abs(drag150 - 600) <= 4);
+await mMove(hp.x, hp.y - 300); await sleep(200); await mUp(hp.x, hp.y - 300); await sleep(650);
+const full = JSON.parse(await ev(`(() => JSON.stringify({ h: $('sheet').offsetHeight, full: $('sheet').classList.contains('full') }))()`));
+ok('N27 release past the midpoint snaps to FULL | ' + JSON.stringify(full), Math.abs(full.h - 846) <= 8 && full.full === true);
+hp = await headPt();
+await mDown(hp.x, hp.y); await mMove(hp.x, hp.y + 130); await sleep(60); await mMove(hp.x, hp.y + 250); await sleep(200); await mUp(hp.x, hp.y + 250); await sleep(650);
+const half = JSON.parse(await ev(`(() => JSON.stringify({ h: $('sheet').offsetHeight, full: $('sheet').classList.contains('full'), open: $('sheet').classList.contains('open') }))()`));
+ok('N28 drag down from full settles back at HALF | ' + JSON.stringify(half), Math.abs(half.h - 450) <= 8 && half.full === false && half.open === true);
+hp = await headPt();
+await mDown(hp.x, hp.y); await mMove(hp.x, hp.y + 140); await sleep(60); await mMove(hp.x, hp.y + 260); await sleep(200); await mUp(hp.x, hp.y + 260); await sleep(650);
+ok('N29 drag down from half CLOSES the sheet', await ev(`!$('sheet').classList.contains('open')`));
 
 R.exceptions = consoleLog.filter(c => c.type === 'EXCEPTION').map(c => String(c.text || '').slice(0, 200));
 finish(R, proc);

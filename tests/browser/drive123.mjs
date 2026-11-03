@@ -60,7 +60,7 @@ ok('A3 tab bar is static chrome: five actions, fully visible, no stagger | ' + J
 
 // A5 (Beta 1.30): a close must ANIMATE - the sheet's current height is frozen for the
 // slide-down and cleared only after the motion ends; clearing it instantly was the snap.
-await ev(`(() => { const sh = $('sheet'); sh.style.height = '500px'; sh.classList.add('open'); return true; })()`);
+await ev(`(() => { const sh = $('sheet'); sh.style.height = '500px'; sh.style.maxHeight = 'none'; sh.classList.add('open'); return true; })()`); // Beta 1.79: the default cap is half height now - a 500px sheet exists only with the cap lifted, as during a drag or at the full stop, so the setup lifts it the same way
 await sleep(100);
 await ev(`closeSheets()`);
 const frozenH = await ev(`$('sheet').style.height`);

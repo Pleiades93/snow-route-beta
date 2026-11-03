@@ -1,5 +1,11 @@
 # Changelog
 
+## Beta 1.79 — 2026-11-03
+The route menu's close is now Andrew's own design: a translucent circular ✕ floating at the bottom centre of the blue screen, Apple-style, replacing the red corner ✕ the menu briefly shared with the sheets in 1.78. It appears only when the menu is opened from the Routes tab — at boot there is still no close, because there is nowhere to go back to. The sheets and dialogs keep the shared red corner ✕.
+The map's point of interest — the dot at the route's centre, shown when zoomed out — is now labelled with the route's name (Route 5W) instead of the app name (Andrew).
+The two bottom sheets (Streets and Pace) now open at HALF height, with three stops — closed, half, full: drag or flick up to fill the screen, down to settle back at half, down again to close (Andrew). Dragging is seamless now: the panel follows the finger from the first pixels (a 9-pixel dead zone before it started moving is gone) and the frosted-glass blur is dropped while dragging, since repainting a full-screen blur every frame was making drags stutter behind the finger.
+Also fixed in this round: if the street list rebuilt itself while a street note was mid-save (the map finishing loading, a day/night flip), the note's pending save could be stranded — the rebuild now finalizes the save on the spot and the reopened editor shows the truthful “Saved” state.
+
 ## Beta 1.78 — 2026-11-03
 The Routes tab now opens the full-screen blue route menu (Andrew): the same menu the splash shows at boot — Choose a route / Create new route — sliding up from the bottom to take the whole screen, and the small Routes sheet is retired. The menu carries its own close X in this mode (at boot there is nowhere to go back to, so the X stays hidden there), styled by the same shared corner-X rule as every other menu. The loaded route's "Currently loaded" badge belongs to this menu.
 No badge at boot (Andrew, caught live on 1.77): picking a route on a cold open briefly flashed "Currently loaded" as the menu left, because loading the route re-rendered the list mid-exit with the badge on it. The badge is now rendered only when the menu is opened from the Routes tab — boot-mode renders never carry it, so nothing can flash it during the pick.
