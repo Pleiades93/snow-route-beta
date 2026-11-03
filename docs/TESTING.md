@@ -65,7 +65,7 @@ tail), so `bootThrough` first waits for the boot to run — drives that
 reload mid-test re-load the route after the reload (drive114's reload
 helper; drive121's seeded sessions). drive145 is the menu's own drive:
 the handover, both panes, the placeholder, the pick, the Settings order,
-the Routes sheet badge, the per-route slot shape, the legacy→slot
+the Routes tab's full-screen menu and its badge, the per-route slot shape, the legacy→slot
 migration and its abort fallback, and a v1 backup restoring into the
 slot. drive132's splash checks now assert the menu handover and that
 picking a route is what removes the splash; drive125 asserts the new
@@ -79,7 +79,13 @@ against the real Vaughan sun as absolute instants, automatic mode
 across the year, the override's boundary hand-back and cold-open
 reset, the override pair's backup carriage) and the route intro
 flight (N22–N23: a pick starts wide of the fitted view and lands
-exactly on it; the shared boot waits for the flight to settle).
+exactly on it; the shared boot waits for the flight to settle). Beta 1.78 extends the same drive to the Routes
+tab's full-screen route menu (N9–N9c: the takeover opens on the main
+pane, the badge shows only in that mode, the menu's own X closes it;
+N6b–N6c: a boot-mode render never badges, and after a pick the menu is
+parked below the screen, not removed; N15 also compares the route
+menu's X against the shared style; N16 asserts the takeover has no
+tap-away; N17's tap-away enumeration covers the remaining sheets).
 
 Coverage:
 

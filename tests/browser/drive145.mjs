@@ -5,8 +5,10 @@ const { proc, ev, consoleLog, sleep, poll } = await launchDrive();
 // Boot flow: the splash brand hands over to a route menu on the same blue
 // screen (Choose a route / Create new route placeholder); the map behind
 // carries NO route until one is picked. Picking Route 5W loads it, removes
-// the splash, and the Routes tab then opens a sheet with the loaded route
-// marked Currently loaded. Storage: every route owns a slot under
+// the splash. Beta 1.78 (Andrew): the Routes tab reopens that same
+// full-screen blue menu (slide-up takeover; badge and its own X exist only
+// in that mode) - the small Routes sheet is retired, and boot-mode renders
+// never carry the badge (the 1.77 pick flicker). Storage: every route owns a slot under
 // snowroute.<routeId>.; pre-1.76 data moves into the 5W slot copy-and-
 // verified on first load (legacy keys kept as fallback; a failed copy
 // aborts the move, wipes the partial slot, and the legacy keys stay
@@ -21,7 +23,7 @@ const DONE_5W = JSON.stringify(['Velmar']);
 await ev(`localStorage.clear(); true`);
 await ev(`location.reload(); true`);
 await poll(`!!window.__bootAt`, 30000);
-ok('N1 the splash hands over to the route menu (main pane up, Choose + Create offered)', await poll(`(function(){ var sp = document.getElementById('splash'); return !!sp && sp.classList.contains('menu') && document.getElementById('rmMain').classList.contains('on') && !!document.getElementById('rmChoose') && !!document.getElementById('rmCreate'); })()`, 20000));
+ok('N1 the splash hands over to the route menu (menu shown, main pane up, Choose + Create offered)', await poll(`(function(){ var sp = document.getElementById('splash'); return !!sp && sp.classList.contains('menu') && document.getElementById('routeMenu').classList.contains('show') && document.getElementById('rmMain').classList.contains('on') && !!document.getElementById('rmChoose') && !!document.getElementById('rmCreate'); })()`, 20000));
 ok('N2 no route is loaded behind the menu (no state, no route source)', await ev(`routeLoaded === false && activeRoute === null && !(typeof map !== 'undefined' && map && map.getSource('centres'))`));
 await ev(`document.getElementById('rmChoose').click(); true`); await sleep(500);
 ok('N3 Choose lists Route 5W, unbadged while nothing is loaded', await ev(`(function(){ var rows = document.querySelectorAll('#rmRoutes .routeRow'); return document.getElementById('rmListPane').classList.contains('on') && rows.length === 1 && rows[0].textContent.indexOf('Route 5W') >= 0 && !rows[0].querySelector('.routeBadge'); })()`));
@@ -35,6 +37,8 @@ await ev(`document.getElementById('rmBack2').click(); true`); await sleep(400);
 await ev(`document.getElementById('rmChoose').click(); true`); await sleep(400);
 await ev(`document.querySelector('#rmRoutes .routeRow').click(); true`);
 ok('N6 picking Route 5W loads it and removes the splash for good', (await poll(`typeof routeLoaded !== 'undefined' && routeLoaded === true && !!activeRoute && activeRoute.id === '5w'`, 15000)) && (await poll(`!document.getElementById('splash')`, 15000)));
+ok('N6b a boot-mode render never badges the loaded route (the 1.77 pick flicker, killed at the source)', await ev(`(function(){ renderRouteLists(); var r = document.querySelector('#rmRoutes .routeRow'); return !!r && !r.querySelector('.routeBadge'); })()`));
+ok('N6c after the boot pick the route menu is parked, not gone (the Routes tab can bring it back)', await ev(`(function(){ var rm = document.getElementById('routeMenu'); return !!rm && !rm.classList.contains('open') && !rm.classList.contains('boot') && getComputedStyle(rm).visibility === 'hidden'; })()`));
 
 // --- Settings order + theme from its new home -----------------------------
 await ev(`$('setBtn').click(); true`); await sleep(500);
@@ -44,21 +48,27 @@ await ev(`$('nightBtn').click(); true`); await sleep(400);
 ok('N8 the theme row in Settings actually flips the theme', (await ev(`isNight()`)) !== nightBefore);
 await ev(`(function(){ if (isNight() !== ${nightBefore}) $('nightBtn').click(); return true; })()`); await sleep(300);
 
-// --- the Routes sheet ------------------------------------------------------
+// --- the Routes tab's full-screen menu (Beta 1.78) ---------------------------
 await ev(`$('routesBtn').click(); true`);
-ok('N9 Routes opens its sheet with the loaded route marked Currently loaded', (await poll(`$('routeSheet').classList.contains('open')`, 5000)) && await ev(`(function(){ var rows = document.querySelectorAll('#routeList .routeRow'); var b = rows.length === 1 && rows[0].querySelector('.routeBadge'); return rows.length === 1 && !!b && b.textContent === 'Currently loaded'; })()`));
-await ev(`$('routeClose').click(); true`); await sleep(300);
+ok('N9 the Routes tab opens the full-screen blue route menu, main pane up', await poll(`$('routeMenu').classList.contains('open') && $('routeMenu').classList.contains('tab') && $('rmMain').classList.contains('on')`, 5000));
+await ev(`$('rmChoose').click(); true`); await sleep(400);
+ok('N9b the loaded route wears Currently loaded in the tab-opened menu', await ev(`(function(){ var rows = document.querySelectorAll('#rmRoutes .routeRow'); var b = rows.length === 1 && rows[0].querySelector('.routeBadge'); return rows.length === 1 && !!b && b.textContent === 'Currently loaded'; })()`));
+await ev(`$('rmBack').click(); true`); await sleep(400);
+await ev(`$('rmClose').click(); true`); await sleep(600);
+ok('N9c the menu X closes the full-screen menu', await ev(`!$('routeMenu').classList.contains('open') && !$('routeMenu').classList.contains('tab')`));
 
 // --- menu consistency (Beta 1.77, Andrew's standing rule: a new menu carries
-// everything the others have - same X, same tap-away - checked by enumeration
+// everything the others have - same X; sheets keep tap-away, the full-screen
+// route menu is a takeover by design (1.78) - checked by enumeration
 // so a future menu is covered the day it exists) ------------------------------
-ok('N15 every sheet close X wears the one shared corner-X style', await ev(`(function(){ var props = ['color', 'backgroundColor', 'width', 'height', 'fontSize', 'fontWeight', 'position', 'paddingTop']; var btns = [...document.querySelectorAll('.sheet .sheetHead button')]; if (btns.length < 3) return false; var ref = getComputedStyle(btns[0]); return btns.every(b => { var cs = getComputedStyle(b); return props.every(p => cs[p] === ref[p]); }) && ref.color === 'rgb(230, 58, 46)' && ref.width === '38px' && ref.backgroundColor === 'rgba(0, 0, 0, 0)'; })()`));
+ok('N15 every menu close X wears the one shared corner-X style (sheets enumerated, plus the route menu X)', await ev(`(function(){ var props = ['color', 'backgroundColor', 'width', 'height', 'fontSize', 'fontWeight', 'position', 'paddingTop']; var btns = [...document.querySelectorAll('.sheet .sheetHead button'), document.getElementById('rmClose')]; if (btns.length < 3) return false; var ref = getComputedStyle(btns[0]); return btns.every(b => { var cs = getComputedStyle(b); return props.every(p => cs[p] === ref[p]); }) && ref.color === 'rgb(230, 58, 46)' && ref.width === '38px' && ref.backgroundColor === 'rgba(0, 0, 0, 0)'; })()`));
 await ev(`selectStretch('Velmar', 0, [43.8207, -79.5670]); true`); await sleep(300);
-await ev(`$('routesBtn').click(); true`); await poll(`$('routeSheet').classList.contains('open')`, 5000);
+await ev(`$('routesBtn').click(); true`); await poll(`$('routeMenu').classList.contains('open')`, 5000);
 const swBefore = await ev(`swallowClickUntil`);
 await ev(`document.getElementById('map').dispatchEvent(new PointerEvent('pointerdown', { bubbles: true })); true`); await sleep(400);
-ok('N16 tapping away closes the Routes sheet, the tap is spent, and the selection survives', await ev(`!$('routeSheet').classList.contains('open') && !!selStretch`) && (await ev(`swallowClickUntil`)) > swBefore);
-ok('N17 tap-away closes EVERY sheet (enumerated by class, present and future)', await ev(`(function(){ var sheets = [...document.querySelectorAll('.sheet')]; if (sheets.length < 3) return false; for (const s of sheets) { closeSheets(); s.classList.add('open'); document.getElementById('map').dispatchEvent(new PointerEvent('pointerdown', { bubbles: true })); if (s.classList.contains('open')) return false; } closeSheets(); return true; })()`));
+ok('N16 the full-screen route menu is a takeover: no tap-away dismisses it, no tap is spent, the selection survives', await ev(`$('routeMenu').classList.contains('open') && !!selStretch`) && (await ev(`swallowClickUntil`)) === swBefore);
+await ev(`$('rmClose').click(); true`); await sleep(600);
+ok('N17 tap-away closes EVERY sheet (enumerated by class, present and future)', await ev(`(function(){ var sheets = [...document.querySelectorAll('.sheet')]; if (sheets.length < 2) return false; for (const s of sheets) { closeSheets(); s.classList.add('open'); document.getElementById('map').dispatchEvent(new PointerEvent('pointerdown', { bubbles: true })); if (s.classList.contains('open')) return false; } closeSheets(); return true; })()`));
 await ev(`deselect(); true`); await sleep(200);
 
 // --- automatic day/night (Beta 1.77): the sun math is asserted in UTC so the
