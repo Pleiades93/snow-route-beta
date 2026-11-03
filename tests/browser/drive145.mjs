@@ -58,10 +58,15 @@ await ev(`$('rmClose').click(); true`); await sleep(600);
 ok('N9c the menu X closes the full-screen menu', await ev(`!$('routeMenu').classList.contains('open') && !$('routeMenu').classList.contains('tab')`));
 
 // --- menu consistency (Beta 1.77, Andrew's standing rule: a new menu carries
-// everything the others have - same X; sheets keep tap-away, the full-screen
-// route menu is a takeover by design (1.78) - checked by enumeration
+// everything the others have - sheets share the corner X and tap-away; the
+// full-screen route menu is a takeover by design (1.78) whose close is
+// Andrew's own translucent bottom-centre circle (1.79, N15b) - all checked
+// by enumeration
 // so a future menu is covered the day it exists) ------------------------------
-ok('N15 every menu close X wears the one shared corner-X style (sheets enumerated, plus the route menu X)', await ev(`(function(){ var props = ['color', 'backgroundColor', 'width', 'height', 'fontSize', 'fontWeight', 'position', 'paddingTop']; var btns = [...document.querySelectorAll('.sheet .sheetHead button'), document.getElementById('rmClose')]; if (btns.length < 3) return false; var ref = getComputedStyle(btns[0]); return btns.every(b => { var cs = getComputedStyle(b); return props.every(p => cs[p] === ref[p]); }) && ref.color === 'rgb(230, 58, 46)' && ref.width === '38px' && ref.backgroundColor === 'rgba(0, 0, 0, 0)'; })()`));
+ok('N15 every sheet close X wears the one shared corner-X style', await ev(`(function(){ var props = ['color', 'backgroundColor', 'width', 'height', 'fontSize', 'fontWeight', 'position', 'paddingTop']; var btns = [...document.querySelectorAll('.sheet .sheetHead button')]; if (btns.length < 2) return false; var ref = getComputedStyle(btns[0]); return btns.every(b => { var cs = getComputedStyle(b); return props.every(p => cs[p] === ref[p]); }) && ref.color === 'rgb(230, 58, 46)' && ref.width === '38px' && ref.backgroundColor === 'rgba(0, 0, 0, 0)'; })()`));
+await ev(`$('routesBtn').click(); true`); await poll(`$('routeMenu').classList.contains('open')`, 5000);
+ok('N15b the route menu close is the translucent bottom-centre circle (Beta 1.79, Andrew)', await ev(`(function(){ var b = document.getElementById('rmClose'); var cs = getComputedStyle(b); var r = b.getBoundingClientRect(); return cs.display !== 'none' && r.width === 44 && r.height === 44 && cs.borderRadius === '50%' && cs.backgroundColor === 'rgba(255, 255, 255, 0.28)' && cs.color === 'rgb(43, 75, 242)' && Math.abs((r.left + r.width / 2) - innerWidth / 2) <= 2 && (innerHeight - r.bottom) <= 90; })()`));
+await ev(`$('rmClose').click(); true`); await sleep(600);
 await ev(`selectStretch('Velmar', 0, [43.8207, -79.5670]); true`); await sleep(300);
 await ev(`$('routesBtn').click(); true`); await poll(`$('routeMenu').classList.contains('open')`, 5000);
 const swBefore = await ev(`swallowClickUntil`);
