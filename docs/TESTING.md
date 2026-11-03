@@ -48,8 +48,12 @@ extraction: drive115 passes `failWhen` (its basemap-outage simulation
 fails map-host requests on purpose) and drive116 passes `logDomain`
 (its CSP checks read CDP Log entries). Drives 114/115/116 keep their
 own tails (their exit paths differ from the standard finish). The
-http-origin drives (117/119/121) use a different preamble family and
-are not on this harness.
+http-origin drives (119/121) boot through the sibling preamble in
+`tests/browser/harness-http.mjs` (local-origin fixture servers plus the
+same launch/until helpers), extracted the same way. drive117 is the
+documented exception: its server switches content roots mid-drive
+(the service-worker upgrade test), a genuinely different shape, so it
+keeps its own preamble.
 
 Coverage:
 
