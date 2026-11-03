@@ -39,7 +39,7 @@ const S22 = JSON.parse(await ev(`(() => { const sb = $('startBtn'); const cs = g
     hudBg: getComputedStyle($('hud')).backgroundColor,
     strip: { x: sr.x, w: sr.width, top: sr.top, bottom: sr.bottom }, startB: br.bottom,
     atBottom: atBottom && (atBottom.id || (atBottom.closest('#tabBar') ? 'tabBar' : '')), atStart: atStart && atStart.id, color: cs.color, vw: window.innerWidth, vh: window.innerHeight }); })()`));
-ok('S1 Start button: black circle, volt-yellow word (per the reference) | ' + JSON.stringify(S22), S22.label === 'Start' && S22.bg === 'rgb(10, 10, 11)' && S22.color === 'rgb(216, 255, 61)');
+ok('S1 Start button: splash-blue circle, white START word (Beta 1.75) | ' + JSON.stringify(S22), S22.label === 'START' && S22.bg === 'rgb(43, 75, 242)' && S22.color === 'rgb(255, 255, 255)');
 ok('S2 count reads "0 of 34 · 0%" (no "completed") | ' + S22.count, S22.count === '0 of 34 · 0%');
 ok('S3 header slab is transparent (map full-screen at the top)', S22.hudBg === 'rgba(0, 0, 0, 0)');
 ok('S4 tab bar spans the bottom edge and takes the touch there (the old dead-strip job), dock clear above it | ' + JSON.stringify(S22),
@@ -105,12 +105,12 @@ const S7 = JSON.parse(await ev(`(() => JSON.stringify({ night: document.body.cla
   listCol: getComputedStyle($('streetsBtn')).color, tabCol: getComputedStyle($('homeBtn')).color,
   barBg: getComputedStyle($('tabBar')).backgroundColor, countCol: getComputedStyle($('count')).color }))()`));
 ok('S7 night mode: chrome flips to dark glass with bright icons | ' + JSON.stringify(S7),
-  S7.night === true && S7.listCol === 'rgb(242, 244, 248)' && S7.tabCol === 'rgb(221, 229, 236)' && S7.barBg === 'rgba(7, 10, 17, 0.94)' && S7.countCol === 'rgb(238, 244, 238)');
+  S7.night === true && S7.listCol === 'rgb(242, 244, 248)' && S7.tabCol === 'rgb(221, 229, 236)' && S7.barBg === 'rgba(32, 33, 37, 0.94)' && S7.countCol === 'rgb(238, 244, 238)');
 ok('S7 night mode: the theme tab now offers Day, label and state in agreement | label ' + S7.nightLbl, S7.nightLbl === 'Day');
 const T4 = JSON.parse(await ev(`(() => { const surf = el => getComputedStyle(el).backgroundColor; return JSON.stringify({
   sheetBg: surf($('sheet')), sheetCol: getComputedStyle($('sheet')).color, barBg: surf($('tabBar')), menuBg: surf($('setMenu')) }); })()`));
-ok('T4 night menus share the deep blue-black (bar = sheets = pop-up), text bright | ' + JSON.stringify(T4),
-  T4.sheetBg === 'rgba(7, 10, 17, 0.94)' && T4.sheetCol === 'rgb(237, 242, 249)' && T4.barBg === T4.sheetBg && T4.menuBg === T4.sheetBg);
+ok('T4 night menus share the neutral charcoal (bar = sheets = pop-up), text bright (Beta 1.75) | ' + JSON.stringify(T4),
+  T4.sheetBg === 'rgba(32, 33, 37, 0.94)' && T4.sheetCol === 'rgb(237, 242, 249)' && T4.barBg === T4.sheetBg && T4.menuBg === T4.sheetBg);
 const PL2 = JSON.parse(await ev(`(() => { const byId = {}; for (const L of map.getStyle().layers) byId[L.id] = { mn: L.minzoom, mx: L.maxzoom }; return JSON.stringify({ sub: byId['places_subplace'], loc: byId['places_locality'] }); })()`));
 ok('P2 night map too: same Protomaps ladder (subplace 9, locality capped 15.5) | ' + JSON.stringify(PL2),
   !!PL2.sub && PL2.sub.mn === 9 && !!PL2.loc && PL2.loc.mx === 15.5);
