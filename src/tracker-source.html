@@ -190,20 +190,18 @@
   #finYes { background: #c22f24; color: #fff; }
   #noteYes { background: #2b4bf2; color: #fff; }
   #noteText { width: 100%; min-height: 74px; border-radius: var(--rad-btn); border: 1px solid var(--hair); background: var(--field); color: var(--ink); font-size: 16px; /* 16px: no iOS focus auto-zoom (Beta 1.18) */ padding: 9px; margin-bottom: 12px; font-family: inherit; }
-  #xport .card { max-width: 380px; }
-  #xText { width: 100%; min-height: 110px; border-radius: var(--rad-btn); border: 1px solid var(--hair); background: var(--field); color: var(--ink); font-size: 12px; padding: 9px; margin-bottom: 10px; font-family: ui-monospace, monospace; }
-  #xport .grid { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; }
-  #xport .grid button { border: none; border-radius: var(--rad-btn); padding: 10px 6px; font-size: 13px; font-weight: 700; min-height: 42px; background: var(--chip); color: var(--ink); }
-  #xport .grid button.red { background: #e63a2e; color: #fff; }
-  #xPreStat, #xSum { font-size: 12px; color: var(--ink-dim); margin-top: 9px; line-height: 1.5; }
-  #xPreBar { display: none; height: 6px; border-radius: 3px; background: var(--hair); margin-top: 10px; overflow: hidden; } /* Beta 1.87: the offline-download progress bar - slim, full width of the panel, shown only while a download runs (the .on class) */
+  #xText { width: 100%; min-height: 150px; border-radius: 14px; border: 1px solid rgba(255,255,255,.45); background: #fff; color: #14161c; font-size: 11.5px; padding: 10px; font-family: ui-monospace, monospace; resize: vertical; } /* Beta 1.88: the backup box, restyled for the blue pane (white box, dark text - the mock Andrew approved) */
+  .bkBtn { font-size: 16px; padding: 13px 16px; text-align: center; width: 100%; }
+  .bkRow { display: flex; gap: 10px; width: 100%; }
+  .bkRow > * { flex: 1; }
+  #xPreStat { font-size: 12.5px; color: rgba(255,255,255,.9); line-height: 1.5; text-align: center; }
+  #xPreBar { display: none; height: 6px; border-radius: 3px; background: rgba(255,255,255,.25); width: 100%; overflow: hidden; } /* Beta 1.87: the offline-download progress bar - shown only while a download runs (the .on class); Beta 1.88: the track went translucent white for the blue pane */
   #xPreBar.on { display: block; }
   #xPreFill { height: 100%; width: 0%; background: #2ecc71; border-radius: 3px; }
-  #setMenu { position: fixed; right: calc(8px + var(--sar)); bottom: calc(var(--vvb, 0px) + 84px + var(--sab)); z-index: 1150; background: var(--card); -webkit-backdrop-filter: var(--blur); backdrop-filter: var(--blur); color: var(--ink); border: 1px solid var(--hair); border-radius: 16px; box-shadow: var(--shadow-card); padding: 6px; display: flex; flex-direction: column; gap: 2px; min-width: 184px; opacity: 0; visibility: hidden; transform: translateY(10px); transform-origin: bottom right; transition: opacity var(--anim-dur) var(--ease-close), transform var(--anim-dur) var(--ease-close), visibility 0s linear var(--anim-dur); }
-  #setMenu.open { opacity: 1; visibility: visible; transform: translateY(0); transition: opacity var(--anim-dur) var(--ease-open), transform var(--anim-dur) var(--ease-open), visibility 0s; }
-  .setRow { display: flex; align-items: center; gap: 11px; border: none; background: transparent; color: var(--ink); font: inherit; font-size: 14.5px; font-weight: 700; padding: 10px 12px; border-radius: 11px; min-height: 46px; text-align: left; cursor: pointer; }
-  .setRow:active { background: var(--chip); }
-  .setRow .tabIco svg { width: 21px; height: 21px; display: block; }
+  #setMenu { position: fixed; inset: 0; z-index: 10000; background: #2b4bf2; display: flex; flex-direction: column; align-items: center; justify-content: center; padding: 24px; opacity: 0; visibility: hidden; transform: translateY(103%); transition: transform var(--anim-dur) var(--ease-close), opacity .3s ease, visibility 0s linear var(--anim-dur); pointer-events: none; } /* Beta 1.88 (Andrew): Settings is a blue full-screen takeover like the Routes menu - same slide-up, same panes, same bare X; the Day/Night row left for its own button, Summary/GPX/Clear trail left with the old Snow log */
+  #setMenu.open { opacity: 1; visibility: visible; transform: none; pointer-events: auto; transition: transform var(--anim-dur) var(--ease-open), opacity .3s ease, visibility 0s; }
+  #setVer { position: absolute; right: 24px; bottom: calc(30px + env(safe-area-inset-bottom, 0px)); color: rgba(255,255,255,.75); font-size: 12px; font-weight: 600; letter-spacing: .04em; } /* Beta 1.88 (Andrew's pick): the version rides the settings menu family at bottom-right, in both panes, synced from the main title's version - never a second copy to go stale */
+  #nightBtn { position: fixed; top: calc(var(--vvt, 0px) + 78px); right: calc(12px + var(--sar)); z-index: 1000; margin: 0; } /* Beta 1.88 (Andrew): Day/Night is its own round button at top-right - the dockBtn class itself, so it IS the Pace/Streets button (56px, same glass, same 27px icon), only placed */
   #toast { position: absolute; left: 50%; bottom: calc(120px + var(--sab)); transform: translateX(-50%) translateY(16px); z-index: 1300; background: rgba(20,22,28,.95); color: #fff; font-size: 13px; font-weight: 600; padding: 9px 14px; border-radius: 10px; box-shadow: var(--shadow-float); opacity: 0; pointer-events: none; transition: opacity var(--anim-dur) var(--ease-open), transform var(--anim-dur) var(--ease-open); max-width: 86vw; text-align: center; }
   #toast.show { opacity: 1; transform: translateX(-50%) translateY(0); }
   #map { transition: transform .45s ease-in-out; }
@@ -230,7 +228,7 @@
 #routeMenu.boot.show, #routeMenu.open { opacity: 1; visibility: visible; transform: none; pointer-events: auto; }
 #routeMenu.open { transition: transform var(--anim-dur) var(--ease-open), opacity .3s ease, visibility 0s; }
 #routeMenu.notrans { transition: none !important; } /* the boot-to-parked swap in finish() must not animate */
-#rmClose { position: absolute; left: 50%; bottom: calc(26px + env(safe-area-inset-bottom, 0px)); transform: translateX(-50%); z-index: 2; width: 44px; height: 44px; border: none; background: none; color: #fff; font-size: 30px; font-weight: 800; text-shadow: 0 1px 8px rgba(8,12,40,.45); line-height: 1; padding: 0; display: flex; align-items: center; justify-content: center; cursor: pointer; } /* Beta 1.80 (Andrew, picked from six rendered options A-F): a BARE white X at bottom centre - no circle, no frosting (the translucent circle was 1.79's). The 44px box stays as the invisible touch target; the soft shadow keeps the glyph readable on the blue */
+#rmClose, #setClose { position: absolute; left: 50%; bottom: calc(26px + env(safe-area-inset-bottom, 0px)); transform: translateX(-50%); z-index: 2; width: 44px; height: 44px; border: none; background: none; color: #fff; font-size: 30px; font-weight: 800; text-shadow: 0 1px 8px rgba(8,12,40,.45); line-height: 1; padding: 0; display: flex; align-items: center; justify-content: center; cursor: pointer; } /* Beta 1.80 (Andrew, picked from six rendered options A-F): a BARE white X at bottom centre - no circle, no frosting (the translucent circle was 1.79's). The 44px box stays as the invisible touch target; the soft shadow keeps the glyph readable on the blue */
 #routeMenu:not(.tab) #rmClose { display: none; } /* the X exists only in tab mode - at boot there is nowhere to go back to */
 .rmPane { width: min(342px, 92vw); display: none; flex-direction: column; gap: 12px; }
 .rmPane.on { display: flex; }
@@ -260,7 +258,7 @@
 <div id="hud">
   <div id="warn">Not saving — storage is full or blocked</div>
   <div class="row">
-    <div class="titleStack"><div class="title">Snow Route Beta</div><div class="ver" id="ver">Beta 1.87</div></div>
+    <div class="titleStack"><div class="title">Snow Route Beta</div><div class="ver" id="ver">Beta 1.88</div></div>
   </div>
   <div id="stats"></div>
 </div>
@@ -268,6 +266,7 @@
 <div id="stale" class="banner hidden"><span id="staleText"></span><button id="staleYes">Finish it</button><button id="staleNo" class="red">Keep going</button></div>
 <div id="bakNudge" class="banner hidden"><span id="bakText"></span><button id="bakSave">Save backup</button><button id="bakLater" class="red">Later</button></div>
 <div id="mapNote" class="hidden"><span>Maps can't load — streets, GPS and marking still work. Check your connection.</span><button id="mapNoteNo">✕</button></div>
+<button id="nightBtn" class="dockBtn"></button>
 <div id="dock">
   <button id="streetsBtn" class="dockBtn" title="Streets"></button>
   <div id="runSlot">
@@ -286,9 +285,24 @@
   <button class="tabItem" id="setBtn"><span class="tabIco"></span><span class="tabLbl">Settings</span></button>
 </nav>
 <div id="setMenu">
-  <button class="setRow" id="nightBtn"><span class="tabIco"></span><span class="tabLbl">Night</span></button>
-  <button class="setRow" id="exportBtn"><span class="tabIco"></span><span class="tabLbl">Backup</span></button>
-  <button class="setRow" id="updBtn"><span class="tabIco"></span><span class="tabLbl">Update</span></button>
+  <div class="rmPane on" id="setMainPane">
+    <button class="rmBtn" id="exportBtn">Backup</button>
+    <button class="rmBtn" id="updBtn">Update</button>
+  </div>
+  <div class="rmPane" id="setBackupPane">
+    <div class="rmTitle" id="xTitle">Backup</div>
+    <textarea id="xText" readonly></textarea>
+    <div class="bkRow"><button class="rmBtn bkBtn" id="xShare">Share</button><button class="rmBtn bkBtn" id="xCopy">Copy</button></div>
+    <button class="rmBtn bkBtn" id="xRes">Restore a backup</button>
+    <button class="rmBtn bkBtn" id="xBak" style="display:none">Back to backup</button>
+    <button class="rmBtn bkBtn" id="xImp" style="display:none">Import backup</button>
+    <button class="rmBtn bkBtn" id="xPre">Download offline maps</button>
+    <div id="xPreBar"><div id="xPreFill"></div></div>
+    <div id="xPreStat"></div>
+    <button class="rmBack" id="setBack">&#8592; Back</button>
+  </div>
+  <button id="setClose">&#10005;</button>
+  <div id="setVer"></div>
 </div>
 <div id="sheet" class="sheet">
   <div class="grab"><div class="grabBar"></div></div>
@@ -303,13 +317,6 @@
 </div>
 <div id="finModal" class="modal hidden"><div class="card"><h3>Finish this clean?</h3><p id="finMsg"></p><div class="row"><button id="finNo">✕</button><button id="finYes">Finish clean</button></div></div></div>
 <div id="noteModal" class="modal hidden"><div class="card"><h3 id="noteTitle">Note</h3><textarea id="noteText"></textarea><div class="row"><button id="noteNo">✕</button><button id="noteYes">Save note</button></div></div></div>
-<div id="xport" class="modal hidden"><div class="card"><h3 id="xTitle">Snow log</h3><button id="xClose">✕</button><textarea id="xText" readonly></textarea><div class="grid">
-  <button id="xShare">Share</button><button id="xCopy">Copy</button>
-  <button id="xSum">Summary</button><button id="xGpx">GPX trail</button>
-  <button id="xBak">Backup (JSON)</button><button id="xRes">Restore</button>
-  <button id="xImp" style="display:none">Import backup</button><button id="xClr" class="red">Clear trail</button>
-  <button id="xPre">Download offline maps</button>
-</div><div id="xPreBar"><div id="xPreFill"></div></div><div id="xPreStat"></div></div></div>
 <div id="toast"></div>
 <script src="https://cdn.jsdelivr.net/npm/maplibre-gl@4.7.1/dist/maplibre-gl.js" integrity="sha384-SYKAG6cglRMN0RVvhNeBY0r3FYKNOJtznwA0v7B5Vp9tr31xAHsZC0DqkQ/pZDmj" crossorigin="anonymous"></script>
 <script>
@@ -3583,28 +3590,23 @@ function buildGpx() {
   g += '</trkseg></trk></gpx>';
   return g;
 }
-let xMode = 'summary';
-function showX(mode) {
+let xMode = 'backup';
+function showX(mode) { // Beta 1.88: two modes survive - backup and restore. Summary and GPX left with the old Snow log at Andrew's word; buildGpx itself stays (the architecture program still counts it a consumer), it just has no button here anymore
   xMode = mode;
   const ta = $('xText');
   ta.readOnly = mode !== 'restore';
   $('xImp').style.display = mode === 'restore' ? '' : 'none';
-  if (mode === 'gpx') { ta.value = buildGpx(); $('xTitle').textContent = 'GPS trail (GPX)'; }
-  else if (mode === 'backup') { const bb = buildBackup(); ta.value = bb || 'Backup failed — your saved data could not be read. Nothing was exported.'; $('xTitle').textContent = 'Backup — share or copy this and keep it safe'; }
-  else if (mode === 'restore') { ta.value = ''; $('xTitle').textContent = 'Restore — paste a backup here, then tap Import backup'; }
-  else { ta.value = buildReport(); $('xTitle').textContent = 'Snow log'; }
+  $('xBak').style.display = mode === 'restore' ? '' : 'none';
+  $('xRes').style.display = mode === 'restore' ? 'none' : '';
+  if (mode === 'restore') { ta.value = ''; ta.placeholder = 'Paste a backup here, then tap Import backup'; $('xTitle').textContent = 'Restore'; }
+  else { const bb = buildBackup(); ta.value = bb || 'Backup failed — your saved data could not be read. Nothing was exported.'; ta.placeholder = ''; $('xTitle').textContent = 'Backup'; }
   $('xShare').style.display = navigator.share ? '' : 'none';
   const rec = parseJ(lsGet(LS.pre), null);
   $('xPreStat').textContent = rec ? 'Offline maps downloaded ' + new Date(rec.at).toLocaleDateString() + ' (' + rec.saved + ' files)' : 'Offline maps not downloaded yet — preload for offline use.';
-  $('xPreBar').classList.remove('on'); $('xPreFill').style.width = '0%'; // Beta 1.87: the progress bar belongs to a live download - a reopened panel starts clean
-  $('xport').classList.remove('hidden');
+  $('xPreBar').classList.remove('on'); $('xPreFill').style.width = '0%'; // Beta 1.87: the progress bar belongs to a live download - a reopened pane starts clean
   ta.scrollTop = 0;
 }
-function openExport() { showX('summary'); }
-$('exportBtn').addEventListener('click', () => { if (!tapGuard('exportBtn')) return; openExport(); });
-$('xClose').addEventListener('click', () => $('xport').classList.add('hidden'));
-$('xSum').addEventListener('click', () => showX('summary'));
-$('xGpx').addEventListener('click', () => showX('gpx'));
+function openExport() { showX('backup'); showSetPane('setBackupPane'); $('setVer').textContent = $('ver').textContent; $('setMenu').classList.add('open'); } // Beta 1.88: Backup lives on the settings takeover's backup pane - opening it (the row, or a direct call) lands there with the takeover open
 $('xBak').addEventListener('click', () => showX('backup'));
 $('xRes').addEventListener('click', () => showX('restore'));
 $('xCopy').addEventListener('click', async () => { try { await navigator.clipboard.writeText($('xText').value); toast('Copied'); } catch (e) { $('xText').select(); toast('Select and copy manually'); } });
@@ -3622,10 +3624,7 @@ function backupObj() { // Beta 1.76: format v2 - routes carry their own slots ({
 }
 function buildBackup() { const o = backupObj(); return o ? JSON.stringify(o, null, 1) : null; }
 function downloadBackup() { const b = buildBackup(); if (!b) { toast('Backup failed — your saved data could not be read', 3600); return; } dl(new Blob([b], { type: 'application/json' }), 'snowroute-backup.json'); toast('Backup downloaded'); } // Beta 1.48 (audit B09): the filename still carried the retired 5W name; the backup format and its internal marker are unchanged
-let clrArmed = false, clrTimer = 0;
-$('xClr').addEventListener('click', () => {
-  if (!clrArmed) { clrArmed = true; $('xClr').textContent = 'Sure?'; clrTimer = setTimeout(() => { clrArmed = false; $('xClr').textContent = 'Clear trail'; }, 5000); return; }
-  clearTimeout(clrTimer); clrArmed = false; $('xClr').textContent = 'Clear trail';
+function clearTrailAll() { // Beta 1.88: the Clear trail BUTTON left with the old Snow log (Andrew: the clearing gets re-homed in a later round) - the clearing itself stays as one callable piece, two-tap guard and all its storage honesty intact, so the re-home is a button wired to this, not a rebuild
   trail = []; trailSessions = []; const okSessClr = saveSess(); if (!okSessClr) sessDirty = true; drawTrail(true); // Beta 1.71 (audit B02): the markers describe this trail - clearing the trail clears them. Beta 1.73 (audit C05): the marker write is CHECKED like the trail write - 1.71 dropped its result, so 'Trail cleared' could be claimed while the markers stayed stored
   // The clear is a storage write like any other: if it fails, the stored trail still holds every point and
   // would resurrect on the next load - say so honestly and keep the clear pending (trailDirty) so the flush retries it.
@@ -3633,8 +3632,7 @@ $('xClr').addEventListener('click', () => {
   if (okTrailClr && okSessClr) { trailDirty = false; lastTrailSave = Date.now(); toast('Trail cleared'); }
   else if (okTrailClr) { toast('Trail cleared, but the session markers could not be saved — will keep retrying', 3200); }
   else { trailDirty = true; toast('Trail cleared on screen, but saving failed — will keep retrying', 3200); }
-  if (xMode === 'gpx') showX('gpx');
-});
+}
 function restoreBackup(parsed) { // production doRestore semantics: validate EVERYTHING before writing; snapshot; write + verify each; verified rollback on any failure
   if (!parsed || parsed.app !== 'snowroute-backup') { toast('That is not a Snow Route backup', 3200); return; }
   const FIELD_SHAPES = { done: 'arr', times: 'obj', hist: 'arr', notes: 'obj', via: 'obj', trail: 'arr', cov: 'obj', sides: 'obj', sess: 'arr' };
@@ -3813,11 +3811,15 @@ const ICONS = { // Pack D "iOS Filled" (Andrew's pick, Beta 1.28): solid silhoue
   exp: '<svg viewBox="0 0 24 24" fill="currentColor" stroke="none"><path fill="currentColor" stroke="none" d="M11 3h2v9.2l2.4-2.4 1.5 1.5L12 16.2l-4.9-4.9 1.5-1.5L11 12.2z"/><path fill="currentColor" stroke="none" d="M4.4 15.6h3.4v2.6h8.4v-2.6h3.4V21H4.4z"/></svg>'
 };
 $('streetsBtn').innerHTML = ICONS.streets; $('paceBtn').innerHTML = ICONS.pace;
-['updBtn', 'homeBtn', 'gpsBtn', 'exportBtn', 'clearBtn', 'routesBtn'].forEach(id => { $(id).querySelector('.tabIco').innerHTML = ICONS[{ updBtn: 'upd', homeBtn: 'home', gpsBtn: 'gps', exportBtn: 'exp', clearBtn: 'clear', routesBtn: 'routes' }[id]]; });
+['homeBtn', 'gpsBtn', 'clearBtn', 'routesBtn'].forEach(id => { $(id).querySelector('.tabIco').innerHTML = ICONS[{ homeBtn: 'home', gpsBtn: 'gps', clearBtn: 'clear', routesBtn: 'routes' }[id]]; }); // Beta 1.88: Backup and Update carry no tab icons anymore - they are text rows on the blue settings panes
 $('setBtn').querySelector('.tabIco').innerHTML = ICONS.gear;
 $('selNote').innerHTML = ICONS.note;
-$('setBtn').addEventListener('click', () => { if (!tapGuard('setBtn')) return; $('setMenu').classList.toggle('open'); }); // the Settings pop-up (Beta 1.29): rises from the bar on the shared menu motion; picking a row closes it
-['updBtn', 'exportBtn', 'nightBtn'].forEach(id => $(id).addEventListener('click', () => $('setMenu').classList.remove('open'))); // Beta 1.76: Night/Day lives in this menu now (Andrew) - same pick-and-close behaviour
+$('setBtn').addEventListener('click', () => { if (!tapGuard('setBtn')) return; showSetPane('setMainPane'); $('setVer').textContent = $('ver').textContent; $('setMenu').classList.add('open'); }); // the Settings menu (Beta 1.88, Andrew): a blue full-screen takeover like Routes - it always lands on the main pane, and the version re-syncs from the title's on every open
+function showSetPane(id) { for (const p of ['setMainPane', 'setBackupPane']) $(p).classList.toggle('on', p === id); }
+$('setClose').addEventListener('click', () => $('setMenu').classList.remove('open'));
+$('setBack').addEventListener('click', () => showSetPane('setMainPane'));
+$('exportBtn').addEventListener('click', () => { if (!tapGuard('exportBtn')) return; openExport(); });
+$('updBtn').addEventListener('click', () => $('setMenu').classList.remove('open')); // the update check reports by toast over the map - the menu steps aside for it (the old pop-up's pick-and-close)
 // Click-away (Andrew, Beta 1.14): tapping anywhere outside an open menu closes it - no hunting for a
 // Close button. Header buttons keep their own toggle behaviour; a tap on a dialog's dimmed backdrop
 // acts as that dialog's Cancel / Not yet / Close (each is a plain hide - nothing gets committed).
@@ -3827,11 +3829,10 @@ document.addEventListener('pointerdown', e => {
   // The two banners count as menus too (Andrew: ANY menu): a tap outside one is its Dismiss / Keep going.
   if (!$('suggest').classList.contains('hidden') && !e.target.closest('#suggest')) { $('suggest').classList.add('hidden'); swallowClickUntil = Date.now() + 400; }
   if (!$('stale').classList.contains('hidden') && !e.target.closest('#stale')) { $('stale').classList.add('hidden'); swallowClickUntil = Date.now() + 400; }
-  if ($('setMenu').classList.contains('open') && !e.target.closest('#setMenu') && !e.target.closest('#setBtn')) { $('setMenu').classList.remove('open'); swallowClickUntil = Date.now() + 400; } // the Settings pop-up is a menu too: a tap anywhere else puts it away - and that tap is spent, not passed to the map
 });
-['finModal', 'noteModal', 'xport'].forEach(id => { const mEl = $(id); mEl.addEventListener('pointerdown', e => { if (e.target === mEl) mEl.classList.add('hidden'); }); });
-function applyNight() { document.body.classList.toggle('night', isNight()); const tc = document.querySelector('meta[name="theme-color"]'); if (tc) tc.setAttribute('content', isNight() ? '#14171d' : '#eceff2'); $('nightBtn').querySelector('.tabIco').innerHTML = isNight() ? ICONS.sun : ICONS.moon; $('nightBtn').querySelector('.tabLbl').textContent = isNight() ? 'Day' : 'Night'; } // the tab names where it TAKES you (Beta 1.28, Andrew): in day it offers Night (moon), in night it offers Day (sun) - icon and label flip together
-$('nightBtn').addEventListener('click', () => { if (!tapGuard('nightBtn')) return; setThemeOverride(!isNight()); applyNight(); setBasemap(); }); // Beta 1.77: the row sets a session override - the sun takes over again at the next sunrise/sunset or the next full app open (theme block, app1)
+['finModal', 'noteModal'].forEach(id => { const mEl = $(id); mEl.addEventListener('pointerdown', e => { if (e.target === mEl) mEl.classList.add('hidden'); }); });
+function applyNight() { document.body.classList.toggle('night', isNight()); const tc = document.querySelector('meta[name="theme-color"]'); if (tc) tc.setAttribute('content', isNight() ? '#14171d' : '#eceff2'); $('nightBtn').innerHTML = isNight() ? ICONS.sun : ICONS.moon; } // the button shows where it TAKES you (Beta 1.28, Andrew): in day it offers Night (moon), in night it offers Day (sun). Beta 1.88: the button is the round chip at top-right - the icon alone flips, there is no label
+$('nightBtn').addEventListener('click', () => { if (!tapGuard('nightBtn')) return; setThemeOverride(!isNight()); applyNight(); setBasemap(); }); // Beta 1.77: the button sets a session override - the sun takes over again at the next sunrise/sunset or the next full app open (theme block, app1)
 $('homeBtn').addEventListener('click', () => { if (!tapGuard('homeBtn')) return; map.fitBounds([[routeBox.w, routeBox.s], [routeBox.e, routeBox.n]], { padding: 28 }); });
 // ===== SERVICE WORKER + BOOT =====
 if ('serviceWorker' in navigator) {
