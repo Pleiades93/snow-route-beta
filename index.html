@@ -2,7 +2,7 @@
 <html lang="en">
 <head>
 <meta charset="UTF-8">
-<meta http-equiv="Content-Security-Policy" content="default-src 'none'; script-src 'sha384-YrdL9LmfyEjc7sioU8OozNFqv6ERXb7X3Ebk+ptzSP0BpKuapUlD1fl4d9tDuH+o' https://cdn.jsdelivr.net; style-src-elem 'sha384-V7ZX3DFDJgfhaP7ap/hhTh2inhRB0EteQcIqXI3uJq9TqOT+uX1hI0QpIzGstLgO' https://cdn.jsdelivr.net; style-src-attr 'unsafe-inline'; img-src 'self' data: blob: https://tiles.basemaps.cartocdn.com https://protomaps.github.io https://cdn.jsdelivr.net; connect-src 'self' https://tiles.basemaps.cartocdn.com https://protomaps.github.io https://cdn.jsdelivr.net; worker-src blob: 'self'; child-src blob: 'self'; font-src 'none'; manifest-src 'self'; base-uri 'none'; form-action 'none'; object-src 'none'">
+<meta http-equiv="Content-Security-Policy" content="default-src 'none'; script-src 'sha384-tJ8BQu6eGTqltdxhWmUeqPkwvXl2BIr6gDR1amFEi5vphEs0z1i8hNrGkKeXN2PS' https://cdn.jsdelivr.net; style-src-elem 'sha384-V7ZX3DFDJgfhaP7ap/hhTh2inhRB0EteQcIqXI3uJq9TqOT+uX1hI0QpIzGstLgO' https://cdn.jsdelivr.net; style-src-attr 'unsafe-inline'; img-src 'self' data: blob: https://tiles.basemaps.cartocdn.com https://protomaps.github.io https://cdn.jsdelivr.net; connect-src 'self' https://tiles.basemaps.cartocdn.com https://protomaps.github.io https://cdn.jsdelivr.net; worker-src blob: 'self'; child-src blob: 'self'; font-src 'none'; manifest-src 'self'; base-uri 'none'; form-action 'none'; object-src 'none'">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="mobile-web-app-capable" content="yes">
@@ -253,7 +253,7 @@
 <div id="hud">
   <div id="warn">Not saving — storage is full or blocked</div>
   <div class="row">
-    <div class="titleStack"><div class="title">Snow Route Beta</div><div class="ver" id="ver">Beta 1.81</div></div>
+    <div class="titleStack"><div class="title">Snow Route Beta</div><div class="ver" id="ver">Beta 1.82</div></div>
   </div>
   <div id="stats"></div>
 </div>
@@ -2888,6 +2888,14 @@ function makeSheetDraggable(sheet) {
     document.addEventListener('click', swallow, true);
     setTimeout(() => document.removeEventListener('click', swallow, true), 350);
     const vh = vvHeight(), h = sheet.offsetHeight, defH = vh * SHEET_DEF_VH;
+    // Beta 1.82: the DEFAULT stop's target is the sheet's own natural open height, not
+    // defH. Streets' content overflows the half cap so its natural height IS defH - but
+    // Pace's content is short (its natural height is ~a quarter of the screen), and the
+    // 1.81 spring aimed it at defH: it sprang to half, then snapped to its quarter the
+    // moment the finish cleared the inline height (Andrew's live catch - "goes halfway,
+    // stutters, goes back to its original quarter"). Measure the natural height by
+    // clearing the inline geometry for one read, then spring to exactly that.
+    const naturalH = (() => { const ph = sheet.style.height, pm = sheet.style.maxHeight; sheet.style.height = ''; sheet.style.maxHeight = ''; const nh = sheet.offsetHeight; sheet.style.height = ph; sheet.style.maxHeight = pm; return nh; })();
     // Release velocity from the last ~130ms of movement, px/ms, positive = upward.
     // The settle spring starts AT this velocity (Beta 1.81) - the old CSS snap restarted
     // from rest, which is what made swipe closes read as "just disappears" on Pace.
@@ -2921,10 +2929,10 @@ function makeSheetDraggable(sheet) {
       });
     };
     if (flick > 0) { settleStop(vh * SHEET_FULL_VH); return; }
-    if (flick < 0) { if (sheet.classList.contains('full')) settleStop(defH); else settleClose(); return; }
+    if (flick < 0) { if (sheet.classList.contains('full')) settleStop(naturalH); else settleClose(); return; }
     if (h < defH * 0.55) { settleClose(); return; }
     if (h > (defH + vh * SHEET_FULL_VH) / 2) { settleStop(vh * SHEET_FULL_VH); return; }
-    settleStop(defH);
+    settleStop(naturalH);
   };
   sheet.addEventListener('pointerup', end);
   sheet.addEventListener('pointercancel', end);

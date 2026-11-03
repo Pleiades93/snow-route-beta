@@ -191,6 +191,32 @@ ok('N30 a flick-down close keeps the finger speed (no restart from rest) | top '
 await sleep(900);
 const closedState = JSON.parse(await ev(`(() => JSON.stringify({ open: $('sheet').classList.contains('open'), vis: getComputedStyle($('sheet')).visibility, tf: $('sheet').style.transform, h: $('sheet').style.height }))()`));
 ok('N31 the spring close lands fully closed with inline geometry cleared | ' + JSON.stringify(closedState), closedState.open === false && closedState.vis === 'hidden' && closedState.tf === '' && closedState.h === '');
+// N32/N33 (Beta 1.82): the DEFAULT stop is the sheet's OWN natural open height.
+// Pace's content is short - its natural height is ~204px (a quarter screen), not the
+// 450px half. The 1.81 spring aimed Pace at 450 and snapped it to 204 when the
+// finish cleared the inline height (Andrew, live: "goes halfway, stutters, goes
+// back to its quarter"). Slow drags with pauses keep these on the position path
+// (the rig's CDP dispatch is too slow for true flicks); the flick path shares
+// the same settle target. Mid-settle samples discriminate: the buggy spring
+// heads UP toward 450, the fixed one heads DOWN toward the natural height.
+await ev(`openPace()`); await sleep(700);
+const paceNat = await ev(`$('pacePanel').offsetHeight`);
+ok('N32 setup: the Pace sheet natural open height is its short content height | ' + paceNat, paceNat > 150 && paceNat < 300);
+const paceHead = async () => JSON.parse(await ev(`(() => { const r = $('pacePanel').querySelector('.sheetHead').getBoundingClientRect(); return JSON.stringify({ x: Math.round(r.left + r.width / 2), y: Math.round(r.top + 12) }); })()`));
+let pp = await paceHead();
+await mDown(pp.x, pp.y); await mMove(pp.x, pp.y - 40); await sleep(200); await mMove(pp.x, pp.y - 80); await sleep(200); await mUp(pp.x, pp.y - 80);
+await sleep(150); const paceMid = await ev(`$('pacePanel').offsetHeight`);
+await sleep(600);
+const paceEnd = JSON.parse(await ev(`(() => JSON.stringify({ h: $('pacePanel').offsetHeight, inl: $('pacePanel').style.height, open: $('pacePanel').classList.contains('open') }))()`));
+ok('N32 a Pace release settles to its OWN natural height, never up toward the half | mid ' + paceMid + ' end ' + JSON.stringify(paceEnd), paceMid < paceNat + 120 && Math.abs(paceEnd.h - paceNat) <= 6 && paceEnd.inl === '' && paceEnd.open === true);
+await ev(`(function(){ const s = $('pacePanel'); s.style.maxHeight = 'none'; s.style.height = (vvHeight() * 0.94) + 'px'; s.classList.add('full'); })()`); await sleep(100);
+pp = await paceHead();
+await mDown(pp.x, pp.y); await mMove(pp.x, pp.y + 115); await sleep(200); await mMove(pp.x, pp.y + 230); await sleep(200); await mUp(pp.x, pp.y + 230);
+await sleep(150); const paceMid2 = await ev(`$('pacePanel').offsetHeight`);
+await sleep(600);
+const paceEnd2 = JSON.parse(await ev(`(() => JSON.stringify({ h: $('pacePanel').offsetHeight, full: $('pacePanel').classList.contains('full'), open: $('pacePanel').classList.contains('open') }))()`));
+ok('N33 drag down from full settles Pace at its natural height (no halfway stutter) | mid ' + paceMid2 + ' end ' + JSON.stringify(paceEnd2), paceMid2 < 350 && Math.abs(paceEnd2.h - paceNat) <= 6 && paceEnd2.full === false && paceEnd2.open === true);
+await ev(`closeSheets()`); await sleep(600);
 
 R.exceptions = consoleLog.filter(c => c.type === 'EXCEPTION').map(c => String(c.text || '').slice(0, 200));
 finish(R, proc);

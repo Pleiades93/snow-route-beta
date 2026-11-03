@@ -1,5 +1,8 @@
 # Changelog
 
+## Beta 1.82 — 2026-11-03
+Fix for a glitch Andrew caught live in 1.81: flicking the Pace sheet down from full, it sprang to halfway, stuttered, and snapped back to its own quarter-height rest. The 1.81 spring aimed every sheet's default stop at the half-height number, but Pace's content is short — its natural open height is about a quarter of the screen — so the spring landed on empty height and the finish step snapped it home. The default stop now targets the sheet's own natural open height (Streets is unchanged: its natural height is the half). Everything else from 1.81 is untouched.
+
 ## Beta 1.81 — 2026-11-03
 Sheet swipe animations rebuilt from a measurement of Andrew's Waze screen recording. A drag release used to hand the sheet to a fixed 420ms CSS transition that restarted from rest: rig-measured, a flick thrown at ~1600px/s crawled in its first 120ms, then accelerated away — on Pace's short sheet that slow start was most of the trip, which is why a swipe down sometimes read as "just disappears." Releases now run a critically-damped spring (omega 30/s) whose starting velocity is the finger's own release velocity, matching the recording's settles (start at flick speed, geometric decay, ~500px trips landing in ~230-300ms, no overshoot past a stop). The sheet keeps its blur off until the motion lands, so the phone never repaints the frosted background mid-settle. Stop positions, end states, and the tap / X / tap-away animations Andrew approved are unchanged.
 The route intro flight is slower and gentler (Andrew): the wide view now sits on the Route 5W point of interest for about 1.5 seconds (was 0.8), then flies in over 3 seconds on a flatter curve (was 2.1 seconds).
