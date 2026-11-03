@@ -37,6 +37,15 @@ prints a passing block and then exits non-zero, and one that hangs — and
 asserts each verdict, so the runner cannot silently go back to trusting
 the printed block alone.
 
+Drives boot through the shared preamble in `tests/browser/harness.mjs`
+(`launchDrive` — browser spawn, CDP plumbing, request interception,
+evaluate/poll helpers, and the `finish` tail), extracted verbatim from
+the drives' former per-file copies. Migrated so far: drive65, drive122,
+drive127, drive143, drive144 (Phase 1 pilot, 2026-11-02 — local A/B and
+CI counts identical to the pre-migration baseline). The remaining
+file:// drives still embed their own copies; the http-origin drives
+(117/119/121) use a different preamble family and are not on the harness.
+
 Coverage:
 
 - `drive65` — stored-data validators: corrupt completion times and history
