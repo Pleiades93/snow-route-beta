@@ -24,7 +24,9 @@ turn every discovered bug into a permanent regression test.
    accidental edits, stale text, and claims the code does not enforce.
 8. **Document** — update the docs the change makes stale, in the same change.
 9. **Merge only when safe** — the branch's full CI battery must be green
-   (`github.py ref merge <branch>`). Then confirm `main`'s battery is green too.
+   (`github.py ref merge <branch>`). Then run the merge gate of §3: prove the
+   merged tree is identical to the tested branch tree, confirm `main`'s smoke
+   run and build checks are green, and read the live page back.
 
 ## 2. Per-change report (required with every merge)
 
@@ -37,8 +39,14 @@ turn every discovered bug into a permanent regression test.
 ## 3. The regression gate
 
 CI (`.github/workflows/checks.yml`) runs on every push to any branch:
-`build-pages.py --check` (parity + integrity + CSP), the service-worker unit suite,
-and the deterministic browser drives (`tests/browser/run.mjs`).
+`build-pages.py --check` (parity + integrity + CSP), the shard-coverage guard,
+the service-worker unit suite, and the deterministic browser drives
+(`tests/browser/run.mjs`). Since Beta 1.83 the drives run in four parallel
+shards balanced by measured duration (~155 s each; the coverage guard fails
+the build if the shard lists ever stop covering every drive exactly once).
+A push to `main` runs the build checks plus a critical-path smoke subset
+instead of the full suite, and a nightly scheduled run repeats the full
+sharded suite on `main` as the environment-drift audit.
 
 - A change merges only with a green battery.
 - **Test tiers (set 2026-10-30, Andrew).** Iteration and the merge gate are
@@ -50,9 +58,20 @@ and the deterministic browser drives (`tests/browser/run.mjs`).
   - *Data-critical changes* — storage keys or formats, backup/restore,
     GPS/coverage logic, finish/history, the service worker: the full battery
     runs on the branch before merge, every time, no exceptions.
-  - *The merge gate never moves:* the branch's final commit must have a green
-    full battery, and the exact merge commit is verified on `main` afterwards
-    (the commit-bound evidence rule, §6).
+  - *The merge gate (revised 2026-11-03, Andrew — CI-speed round):* the
+    branch's final commit must have a green full battery. After merging, the
+    gate is a proof, not a second sampling: the merged tree must be shown
+    identical to the tested branch tree (file hashes at both commits — the
+    same "same code" definition GitHub's own CI uses), `main`'s build checks
+    and smoke subset must be green, and the live page is read back against
+    the build. If the trees differ by even one byte, the full sharded suite
+    is re-run on `main` (workflow_dispatch) before the round is called
+    shipped — fail closed, no exceptions. The nightly full run on `main`
+    covers what a tree hash cannot see (runner and browser drift). Test
+    evidence is still recorded against exact commits (§6); a re-run that
+    turns a failure green counts as green for that commit and is logged as a
+    flake in the goal's flake log — a check that flakes three times is
+    hardened or quarantined out of the gate, never just re-run forever.
 - **Never weaken or delete a test assertion to obtain a pass.** When a test fails,
   establish whether the defect is in the app or in the test (state dumps, step
   traces, reproduction), fix the defective side, and say which it was. The
