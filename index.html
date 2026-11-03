@@ -2,7 +2,7 @@
 <html lang="en">
 <head>
 <meta charset="UTF-8">
-<meta http-equiv="Content-Security-Policy" content="default-src 'none'; script-src 'sha384-m05qbprJDu0AO0eF3ACIzi/o6VWrfTDfXb7FvuSquMmj8HExiIARkiu6sdWlolo6' https://cdn.jsdelivr.net; style-src-elem 'sha384-WJ/Rt/EpVdRJ6m24HbIIyPjL/r87ylZNefdccpqFxHZ2MdW6WEA1AcMBTUaBbbwd' https://cdn.jsdelivr.net; style-src-attr 'unsafe-inline'; img-src 'self' data: blob: https://tiles.basemaps.cartocdn.com https://protomaps.github.io https://cdn.jsdelivr.net; connect-src 'self' https://tiles.basemaps.cartocdn.com https://protomaps.github.io https://cdn.jsdelivr.net; worker-src blob: 'self'; child-src blob: 'self'; font-src 'none'; manifest-src 'self'; base-uri 'none'; form-action 'none'; object-src 'none'">
+<meta http-equiv="Content-Security-Policy" content="default-src 'none'; script-src 'sha384-biRdGRzZMpaVt/No517K8hmXpIMHqilMntwUsZS+l8niM2MCkkaqsY3g+DxM68c+' https://cdn.jsdelivr.net; style-src-elem 'sha384-WJ/Rt/EpVdRJ6m24HbIIyPjL/r87ylZNefdccpqFxHZ2MdW6WEA1AcMBTUaBbbwd' https://cdn.jsdelivr.net; style-src-attr 'unsafe-inline'; img-src 'self' data: blob: https://tiles.basemaps.cartocdn.com https://protomaps.github.io https://cdn.jsdelivr.net; connect-src 'self' https://tiles.basemaps.cartocdn.com https://protomaps.github.io https://cdn.jsdelivr.net; worker-src blob: 'self'; child-src blob: 'self'; font-src 'none'; manifest-src 'self'; base-uri 'none'; form-action 'none'; object-src 'none'">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="mobile-web-app-capable" content="yes">
@@ -2522,7 +2522,7 @@ function onStyleReady() {
 onMapReady(() => map.on('load', onStyleReady));
 let restackArmed = false;
 function setBasemap() {
-  map.setStyle(glStyleFor(isNight()));
+  map.setStyle(glStyleFor(isNight()), { diff: false }); // Beta 1.77: never a diff - a diff keeps the existing tile source (and its errored tiles from an outage) when the style is unchanged, so a recovered connection never re-requested the basemap and the failure notice never cleared (drive115 C1, caught by the intro flight's wider errored-tile sweep). A basemap switch always rebuilds fully; the tiles themselves come back from cache.
   if (restackArmed) return;
   restackArmed = true;
   const go = () => { if (!restackArmed) return; restackArmed = false; map.off('styledata', waiter); onStyleReady(); };

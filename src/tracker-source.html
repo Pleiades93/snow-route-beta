@@ -2521,7 +2521,7 @@ function onStyleReady() {
 onMapReady(() => map.on('load', onStyleReady));
 let restackArmed = false;
 function setBasemap() {
-  map.setStyle(glStyleFor(isNight()));
+  map.setStyle(glStyleFor(isNight()), { diff: false }); // Beta 1.77: never a diff - a diff keeps the existing tile source (and its errored tiles from an outage) when the style is unchanged, so a recovered connection never re-requested the basemap and the failure notice never cleared (drive115 C1, caught by the intro flight's wider errored-tile sweep). A basemap switch always rebuilds fully; the tiles themselves come back from cache.
   if (restackArmed) return;
   restackArmed = true;
   const go = () => { if (!restackArmed) return; restackArmed = false; map.off('styledata', waiter); onStyleReady(); };
