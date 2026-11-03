@@ -35,7 +35,15 @@ for Route 5W (see Migration).
 | `v5.sides` | **Source of truth for progress** | JSON `{p: {street: [0..3 per stretch]}, t: {street: {stretchIdx: [timeA, timeB]}}}`. Values are bit flags: 1 = side A, 2 = side B, 3 = both. Load normalizes values to 0..3 (audit G-3). |
 | `v5.preload` | Preload record `{at, saved, total}` (local only) | Per-route; not backed up. |
 
-Global keys: `snowroute.v2.night` (night-mode flag, string; backed up),
+Global keys: `snowroute.v2.night` + `snowroute.v2.nightExp` (the theme
+override pair, Beta 1.77: since 1.77 the day/night theme is automatic by
+sunrise/sunset, computed on-device; `night` holds a manual override
+('1'/'0') and `nightExp` the epoch-ms of the next sun boundary, at which
+the override hands back to automatic. Both are cleared on a fresh app
+session — a sessionStorage marker (`snowroute.session`) is what tells a
+reload inside the session from a cold open — and both are backed up,
+travelling together; an override restored without its expiry is read as
+expiring at the next boundary),
 `snowroute.v5.export` (last export summary; local only, not backed up),
 `snowroute.prep.v1` (offline-prep flag; local only, not backed up).
 

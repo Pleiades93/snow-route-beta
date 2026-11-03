@@ -69,7 +69,17 @@ the Routes sheet badge, the per-route slot shape, the legacy→slot
 migration and its abort fallback, and a v1 backup restoring into the
 slot. drive132's splash checks now assert the menu handover and that
 picking a route is what removes the splash; drive125 asserts the new
-tab order and the three-row Settings menu.
+tab order and the three-row Settings menu. Beta 1.77 added the menu-
+consistency checks to drive145 (N15–N17): every sheet's close X must
+compute to the one shared corner-X style, and tap-away must close
+every sheet — both enumerated from the DOM by class, so a future menu
+is covered by the same checks the day it is built. The same drive
+carries the automatic day/night checks (N18–N21: the computed sun
+against the real Vaughan sun as absolute instants, automatic mode
+across the year, the override's boundary hand-back and cold-open
+reset, the override pair's backup carriage) and the route intro
+flight (N22–N23: a pick starts wide of the fitted view and lands
+exactly on it; the shared boot waits for the flight to settle).
 
 Coverage:
 

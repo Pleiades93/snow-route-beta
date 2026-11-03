@@ -58,7 +58,7 @@ try {
   failTiles = false;
   await reload(2500);
   ok('D1 healthy boot: no notice', await until(async () => await ev(`glOk === true`), 20000) && !(await noteVisible()));
-  await ev(`document.getElementById('nightBtn').click(); true`);
+  await ev(`setThemeOverride(true); applyNight(); setBasemap(); true`); // Beta 1.77: the theme is sun-automatic now, so a toggle click lands on whatever the sun is NOT doing (a pre-sunrise boot is already night and the click would flip to day) - set the night override explicitly; it is stored, so D3's reload still boots night
   ok('D2 night basemap loads, still no notice', await until(async () => await ev(`isNight() === true && glOk === true && !!map.getSource('centres')`), 20000) && !(await noteVisible()));
   failTiles = true;
   await reload(4000);   // night persists across reload (stored), so this boots night-themed on a dead map

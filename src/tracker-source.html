@@ -127,7 +127,7 @@
   #sheetBody { flex: 1 1 auto; min-height: 0; }
   .sheetHead { display: flex; align-items: center; gap: 8px; padding: 8px 48px 6px 14px; }
   .sheetTitle { font-size: 16px; font-weight: 700; flex: 1; }
-  #sheetClose, #paceClose, #finNo, #noteNo, #xClose { position: absolute; top: 2px; right: 4px; z-index: 3; border: none; background: transparent; width: 38px; height: 38px; padding: 0; color: #e63a2e; font-size: 21px; font-weight: 800; cursor: pointer; } /* THE corner X (Beta 1.30/1.31, completed 1.34, Andrew): ONE plain red X, no box, pinned to the top-right corner of EVERY menu - sheets and dialogs alike. This single rule is the only place a close may be styled; the 1.34 bug was three dialogs carrying their own overrides (coloured-button rules and the Backup button grid) that silently repainted their X as a red box */
+  #sheetClose, #paceClose, #routeClose, #finNo, #noteNo, #xClose { position: absolute; top: 2px; right: 4px; z-index: 3; border: none; background: transparent; width: 38px; height: 38px; padding: 0; color: #e63a2e; font-size: 21px; font-weight: 800; cursor: pointer; } /* THE corner X (Beta 1.30/1.31, completed 1.34, Andrew): ONE plain red X, no box, pinned to the top-right corner of EVERY menu - sheets and dialogs alike. This single rule is the only place a close may be styled; the 1.34 bug was three dialogs carrying their own overrides (coloured-button rules and the Backup button grid) that silently repainted their X as a red box. Beta 1.77 (Andrew, live catch): routeClose shipped missing from this list in 1.76 and rendered as a boxed default button - a NEW menu's X joins this selector the day the menu is built, and drive145 N15 compares every sheet's X computed style so an omission fails the battery */
   body.kb .sheet { transition: none; } /* Beta 1.61 (was 1.31's near-full-visible-height rule): while the keyboard is up the sheet keeps its pre-keyboard size and place - the layout variables are frozen in syncViewport and the keyboard overlays the sheet; the field is surfaced by the sheet's own scroll (ensureFieldVisible). The 1.31/1.55 sizing chase after the shrinking visible height is what made note menus flicker and jump. */
   .modal .card { max-height: calc(var(--vvh, 100dvh) - 44px); overflow-y: auto; } /* a modal card can never outgrow the visible area, keyboard or not */
   #filters { display: flex; gap: 6px; padding: 2px 14px 8px; }
@@ -249,7 +249,7 @@
 <div id="hud">
   <div id="warn">Not saving — storage is full or blocked</div>
   <div class="row">
-    <div class="titleStack"><div class="title">Snow Route Beta</div><div class="ver" id="ver">Beta 1.76</div></div>
+    <div class="titleStack"><div class="title">Snow Route Beta</div><div class="ver" id="ver">Beta 1.77</div></div>
   </div>
   <div id="stats"></div>
 </div>
@@ -331,7 +331,7 @@ const TRAIL_MAX = 8000;
 // backup replacing the trail clears the current markers (Beta 1.73, C06).
 const ROUTE_PACKS = [{ id: '5w', name: 'Route 5W', area: 'Vaughan', roads: ROADS, reference: REFERENCE }];
 function routeKeys(id) { const p = 'snowroute.' + id + '.'; return { done: p + 'v2', times: p + 'v2.times', hist: p + 'v2.history', notes: p + 'v4.notes', via: p + 'v4.via', trail: p + 'v4.trail', cov: p + 'v4.cov', start: p + 'v5.start', flip: p + 'v5.flip', sides: p + 'v5.sides', sess: p + 'v5.sess', pre: p + 'v5.preload' }; }
-const LS_GLOBAL = { night: 'snowroute.v2.night', exp: 'snowroute.v5.export', prep: 'snowroute.prep.v1' };
+const LS_GLOBAL = { night: 'snowroute.v2.night', nightExp: 'snowroute.v2.nightExp', exp: 'snowroute.v5.export', prep: 'snowroute.prep.v1' };
 const LEGACY_KEYS = { done: 'snowroute.v2', times: 'snowroute.v2.times', hist: 'snowroute.v2.history', notes: 'snowroute.v4.notes', via: 'snowroute.v4.via', trail: 'snowroute.v4.trail', cov: 'snowroute.v4.cov', start: 'snowroute.v5.start', flip: 'snowroute.v5.flip', sides: 'snowroute.v5.sides', sess: 'snowroute.v5.sess' };
 const ROUTE_FIELDS = ['done', 'times', 'hist', 'notes', 'via', 'trail', 'cov', 'start', 'flip', 'sides', 'sess'];
 let LS = { ...routeKeys('5w'), ...LS_GLOBAL };
@@ -511,7 +511,64 @@ pieces = {}; pieceTimes = {};
   for (const k of Object.keys(doneVia)) if (!streetComplete(k)) delete doneVia[k];
 })();
 }
-function isNight() { return lsGet(LS.night) === '1'; }
+// ===== DAY/NIGHT (Beta 1.77, Andrew): the theme follows the sun by default.
+// Sunrise and sunset are computed on the device (the standard NOAA
+// approximation - good to a few minutes, no network, works offline) for the
+// best position known: the last GPS fix, else the route's own centre. The
+// Settings row is a session OVERRIDE: it holds until the next sunrise or
+// sunset after it was set (a timer and every return to the front re-check),
+// or until the app is fully closed - a fresh app open always starts
+// automatic. A reload inside the session (the Update flow, a crash) keeps
+// the override: sessionStorage carries the session marker, and the stored
+// override carries its own expiry, so nothing stale outlives its boundary.
+let themeOverride = null, themeOverrideUntil = 0; // null = automatic
+function sunTimes(ms, lat, lng) { // the sun events of the position-local day containing ms, as epoch ms
+  // The date is taken in the position's own solar frame (from its longitude),
+  // never the device's timezone - the answer is a physical instant and must
+  // not move with the clock's zone. The raw UTC hour the formula gives is
+  // normalized into the position-local day's span: at far longitudes the
+  // event's UTC clock reading can sit on the neighbouring date (a June
+  // sunset in Ontario reads 01:03 UTC the NEXT day), and clamping it into
+  // the same date lands it a day early - drive145 N18/N19 are the guards.
+  const shifted = new Date(ms + lng * 240000), y = shifted.getUTCFullYear(), mo = shifted.getUTCMonth(), da = shifted.getUTCDate();
+  const rad = Math.PI / 180, N = Math.floor((Date.UTC(y, mo, da) - Date.UTC(y, 0, 0)) / 86400000), lngHour = lng / 15;
+  const dayStart = Date.UTC(y, mo, da) - lng * 240000;
+  const one = isRise => {
+    const t = N + ((isRise ? 6 : 18) - lngHour) / 24, M = 0.9856 * t - 3.289;
+    let L = M + 1.916 * Math.sin(M * rad) + 0.020 * Math.sin(2 * M * rad) + 282.634; L = ((L % 360) + 360) % 360;
+    let RA = Math.atan(0.91764 * Math.tan(L * rad)) / rad; RA = ((RA % 360) + 360) % 360; RA += Math.floor(L / 90) * 90 - Math.floor(RA / 90) * 90; RA /= 15;
+    const sinDec = 0.39782 * Math.sin(L * rad), cosDec = Math.cos(Math.asin(sinDec));
+    const cosH = (Math.cos(90.833 * rad) - sinDec * Math.sin(lat * rad)) / (cosDec * Math.cos(lat * rad));
+    if (cosH > 1 || cosH < -1) return null; // the sun never rises (or never sets) that day - no boundary to give
+    const H = (isRise ? 360 - Math.acos(cosH) / rad : Math.acos(cosH) / rad) / 15;
+    const UT = ((H + RA - 0.06571 * t - 6.622 - lngHour) % 24 + 24) % 24;
+    let cand = Date.UTC(y, mo, da) + UT * 3600000;
+    while (cand < dayStart) cand += 86400000;
+    while (cand >= dayStart + 86400000) cand -= 86400000;
+    return cand;
+  };
+  return { rise: one(true), set: one(false) };
+}
+function themePos() { if (typeof lastGood !== 'undefined' && lastGood && lastGood.ll) return lastGood.ll; if (typeof routeBox !== 'undefined' && routeBox) return [(routeBox.s + routeBox.n) / 2, (routeBox.w + routeBox.e) / 2]; return [43.82, -79.57]; }
+function autoNightAt(ms) { const p = themePos(), st = sunTimes(ms, p[0], p[1]); if (!st || st.rise == null || st.set == null) return false; return ms >= st.set || ms < st.rise; }
+function nextSunBoundary(ms) { const p = themePos(), out = []; for (let d = 0; d <= 1; d++) { const st = sunTimes(ms + d * 86400000, p[0], p[1]); if (st) { if (st.rise != null) out.push(st.rise); if (st.set != null) out.push(st.set); } } const nx = out.filter(t => t > ms).sort((a, b) => a - b)[0]; return nx || ms + 12 * 3600000; }
+function isNight() { return themeOverride !== null ? themeOverride : autoNightAt(Date.now()); }
+function clearThemeOverride() { themeOverride = null; themeOverrideUntil = 0; lsDel(LS.night); lsDel(LS.nightExp); }
+function setThemeOverride(night) { themeOverride = night; themeOverrideUntil = nextSunBoundary(Date.now()); lsSet(LS.night, night ? '1' : '0'); lsSet(LS.nightExp, String(themeOverrideUntil)); }
+function themeTick() { // the boundary hand-back, and the automatic cycle itself: if the effective theme no longer matches the screen, repaint
+  if (themeOverride !== null && Date.now() >= themeOverrideUntil) clearThemeOverride();
+  if (typeof document !== 'undefined' && document.body && typeof applyNight === 'function' && isNight() !== document.body.classList.contains('night')) { applyNight(); if (typeof map !== 'undefined' && map && typeof setBasemap === 'function') setBasemap(); }
+}
+(function initTheme() { // boot resolution (script eval; the boot tail's applyNight makes it visible)
+  let continuing = false; try { continuing = !!sessionStorage.getItem('snowroute.session'); sessionStorage.setItem('snowroute.session', '1'); } catch (e) {}
+  const stored = lsGet(LS.night), exp = +(lsGet(LS.nightExp) || 0);
+  if (!continuing) { if (stored != null) { lsDel(LS.night); lsDel(LS.nightExp); } return; } // the app was fully closed since: automatic
+  if (stored === '1' || stored === '0') {
+    if (exp && Date.now() >= exp) { lsDel(LS.night); lsDel(LS.nightExp); return; } // its boundary passed while the app was away
+    themeOverride = stored === '1'; themeOverrideUntil = exp || nextSunBoundary(Date.now());
+  }
+})();
+document.addEventListener('visibilitychange', () => { if (document.visibilityState === 'visible') themeTick(); });
 function workDoneM() { let s = 0; for (const n of STREETNAMES) { const p = pieces[n]; STRETCH[n].parts.forEach((part, i) => { const L = segLenM(part); if (p[i] & 1) s += L; if (p[i] & 2) s += L; }); } return s; }
 function totalWorkM() { let s = 0; for (const n of STREETNAMES) s += STRETCH[n].total * 2; return s; }
 // Beta 1.57 (Phase 2 storage integrity, external audit Section 7): saveAll has a
@@ -553,7 +610,7 @@ function flushAux(force) {
   if (trailDirty && (force || Date.now() - lastTrailSave > 45000) && saveTrail()) { trailDirty = false; lastTrailSave = Date.now(); }
   if (sessDirty && saveSess()) sessDirty = false;
 }
-setInterval(() => flushAux(false), 15000);
+setInterval(() => { flushAux(false); themeTick(); }, 15000); // Beta 1.77: the same 15 s heartbeat also walks the day/night cycle across its boundaries
 document.addEventListener('visibilitychange', () => { if (document.visibilityState === 'hidden') flushAux(true); });
 window.addEventListener('pagehide', () => flushAux(true));
 const GLP = (() => {
@@ -2280,6 +2337,7 @@ const PM_NIGHT = {"version":8,"name":"protomaps-dark","glyphs":"https://protomap
 
 // ===== MAP BOOT + LAYERS (fresh, MapLibre-native) =====
 const GL_STYLES = { day: PM_DAY, night: PM_NIGHT }; // Beta 1.33 (Andrew's pick): BOTH basemaps are Protomaps - one map in light + dark flavours - embedded by pmstyles.js, so a day/night switch is a local setStyle: nothing to fetch, nothing to break mid-switch
+const glStyleFor = night => JSON.parse(JSON.stringify(GL_STYLES[night ? 'night' : 'day'])); // Beta 1.77: MapLibre rewrites fields of a style object it is handed - a night boot followed by a day flip rewrote PM_NIGHT's own sprite to the LIGHT sheet, and the offline preload (which enumerates these objects) then never fetched the dark sprites (drive123 A8: 893 files, not 897). The embedded styles are the single source of truth and are never handed over directly; every map gets a copy.
 let glOk = false, mapNoteArmed = false, mapNoteOff = false, basemapDead = false, tilesOk = 0;
 // Beta 1.44 (Andrew: the splash stuttered): the map is created by bootMap(), which
 // app4 calls only AFTER the splash intro has played (~1.1s). Map creation, style
@@ -2293,7 +2351,7 @@ function onMapReady(fn) { if (map) fn(); else __onMap.push(fn); }
 function bootMap() {
   if (map) return;
   window.__bootAt = Date.now();
-  map = new maplibregl.Map({ container: 'map', style: GL_STYLES[isNight() ? 'night' : 'day'], attributionControl: false, fadeDuration: 200, pixelRatio: 2, maxTileCacheSize: 200, maxTileCacheZoomLevels: 6, minZoom: 8, maxZoom: 19, maxPitch: 60 });
+  map = new maplibregl.Map({ container: 'map', style: glStyleFor(isNight()), attributionControl: false, fadeDuration: 200, pixelRatio: 2, maxTileCacheSize: 200, maxTileCacheZoomLevels: 6, minZoom: 8, maxZoom: 19, maxPitch: 60 });
   map.setCenter([(routeBox.w + routeBox.e) / 2, (routeBox.s + routeBox.n) / 2]); map.setZoom(12); // Beta 1.76: a plain area view - the camera frames the ROUTE only when one is chosen (loadRoute does the fitBounds)
   setTimeout(() => { if (!tilesOk) { basemapDead = true; noteMapState(); } }, 9000);
   for (const fn of __onMap) fn();
@@ -2463,7 +2521,7 @@ function onStyleReady() {
 onMapReady(() => map.on('load', onStyleReady));
 let restackArmed = false;
 function setBasemap() {
-  map.setStyle(GL_STYLES[isNight() ? 'night' : 'day']);
+  map.setStyle(glStyleFor(isNight()), { diff: false }); // Beta 1.77: never a diff - a diff keeps the existing tile source (and its errored tiles from an outage) when the style is unchanged, so a recovered connection never re-requested the basemap and the failure notice never cleared (drive115 C1, caught by the intro flight's wider errored-tile sweep). A basemap switch always rebuilds fully; the tiles themselves come back from cache.
   if (restackArmed) return;
   restackArmed = true;
   const go = () => { if (!restackArmed) return; restackArmed = false; map.off('styledata', waiter); onStyleReady(); };
@@ -2746,7 +2804,7 @@ function closeSheetEl(s) { // Beta 1.30: the close now ANIMATES - freeze the hei
   s.classList.remove('open'); s.classList.remove('full'); s.classList.remove('snapping'); // the base (closing) transition and curve own the motion from here
   setTimeout(() => { if (!s.classList.contains('open')) { s.style.height = ''; s.style.maxHeight = ''; } }, 480);
 }
-function closeSheets() { [$('sheet'), $('pacePanel'), $('routeSheet')].forEach(closeSheetEl); }
+function closeSheets() { document.querySelectorAll('.sheet').forEach(closeSheetEl); } // Beta 1.77: every sheet by class, present and future - no hand-kept list to fall behind a new menu
 // Draggable sheets (Andrew, Beta 1.9 spec; refined 1.10 flick; refined 1.13 touch zone): the drag/flick touch
 // zone is the panel's EMPTY TOP STRIP - the grab handle plus the title row - a comfortable area with no
 // controls except Close (a flick starting on a button never starts a drag). The content area below is pure
@@ -3462,8 +3520,10 @@ function backupObj() { // Beta 1.76: format v2 - routes carry their own slots ({
   const routes = {};
   for (const p of ROUTE_PACKS) { const rk = routeKeys(p.id); const data = {}; for (const f of ROUTE_FIELDS) { let v = null; try { v = localStorage.getItem(rk[f]); } catch (e) { return null; } if (v != null) data[f] = v; } if (Object.keys(data).length) routes[p.id] = data; }
   let night = null; try { night = localStorage.getItem(LS_GLOBAL.night); } catch (e) { return null; }
+  let nightExp = null; try { nightExp = localStorage.getItem(LS_GLOBAL.nightExp); } catch (e) { return null; }
   const o = { app: 'snowroute-backup', v: 2, at: new Date().toISOString(), routes };
   if (night != null) o.night = night;
+  if (nightExp != null) o.nightExp = nightExp; // Beta 1.77: the theme override and its expiry travel together (an override without its expiry is read as expiring at the next boundary)
   return o;
 }
 function buildBackup() { const o = backupObj(); return o ? JSON.stringify(o, null, 1) : null; }
@@ -3505,6 +3565,7 @@ function restoreBackup(parsed) { // production doRestore semantics: validate EVE
       for (const f of ROUTE_FIELDS) { if (data[f] === undefined) continue; if (!pushField(rk[f], f, data[f], pack.name + ' ' + f)) return; }
     }
     if (parsed.night !== undefined && !pushField(LS_GLOBAL.night, 'night', parsed.night, 'night')) return;
+    if (parsed.nightExp !== undefined && !pushField(LS_GLOBAL.nightExp, 'nightExp', parsed.nightExp, 'night override expiry')) return;
   } else if (parsed.v === 1) { // Beta 1.76: a v1 backup is the pre-routes format - its data map (keyed by the legacy storage names) belongs to Route 5W and lands in the 5W slot
     if (!parsed.data || typeof parsed.data !== 'object' || Array.isArray(parsed.data)) { toast('That is not a Snow Route backup', 3200); return; }
     const rk5 = routeKeys('5w');
@@ -3518,7 +3579,7 @@ function restoreBackup(parsed) { // production doRestore semantics: validate EVE
   // rollback below cover the markers too. Applies per route (today: the 5W slot in both formats).
   for (const p of ROUTE_PACKS) { const rk = routeKeys(p.id); if (entries.some(e => e[0] === rk.trail) && !entries.some(e => e[0] === rk.sess)) entries.push([rk.sess, '[]']); }
   if (!entries.length) { toast('Nothing in that backup to restore', 3000); return; }
-  const SCOPE = []; for (const p of ROUTE_PACKS) { const rk = routeKeys(p.id); for (const f of ROUTE_FIELDS) SCOPE.push(rk[f]); } SCOPE.push(LS_GLOBAL.night);
+  const SCOPE = []; for (const p of ROUTE_PACKS) { const rk = routeKeys(p.id); for (const f of ROUTE_FIELDS) SCOPE.push(rk[f]); } SCOPE.push(LS_GLOBAL.night, LS_GLOBAL.nightExp);
   const snap = {}; let snapOk = true;
   for (const k of SCOPE) { try { snap[k] = localStorage.getItem(k); } catch (e) { snapOk = false; } }
   if (!snapOk) { toast('Restore stopped — your current data could not be read for safekeeping, so nothing was changed', 3600); return; }
@@ -3653,7 +3714,7 @@ $('setBtn').addEventListener('click', () => { if (!tapGuard('setBtn')) return; $
 // Close button. Header buttons keep their own toggle behaviour; a tap on a dialog's dimmed backdrop
 // acts as that dialog's Cancel / Not yet / Close (each is a plain hide - nothing gets committed).
 document.addEventListener('pointerdown', e => {
-  const anySheet = $('sheet').classList.contains('open') || $('pacePanel').classList.contains('open');
+  const anySheet = !!document.querySelector('.sheet.open'); // Beta 1.77 (Andrew, live catch): ANY open sheet, read from the DOM - the hand-listed pair missed the Routes sheet in 1.76, so tapping away from it did nothing (and the tap fell through to the map)
   if (anySheet && !e.target.closest('.sheet') && !e.target.closest('#hud') && !e.target.closest('.modal')) { closeSheets(); swallowClickUntil = Date.now() + 400; } // Beta 1.30 (Andrew): the closing tap is spent here - the map never sees it
   // The two banners count as menus too (Andrew: ANY menu): a tap outside one is its Dismiss / Keep going.
   if (!$('suggest').classList.contains('hidden') && !e.target.closest('#suggest')) { $('suggest').classList.add('hidden'); swallowClickUntil = Date.now() + 400; }
@@ -3662,7 +3723,7 @@ document.addEventListener('pointerdown', e => {
 });
 ['finModal', 'noteModal', 'xport'].forEach(id => { const mEl = $(id); mEl.addEventListener('pointerdown', e => { if (e.target === mEl) mEl.classList.add('hidden'); }); });
 function applyNight() { document.body.classList.toggle('night', isNight()); const tc = document.querySelector('meta[name="theme-color"]'); if (tc) tc.setAttribute('content', isNight() ? '#14171d' : '#eceff2'); $('nightBtn').querySelector('.tabIco').innerHTML = isNight() ? ICONS.sun : ICONS.moon; $('nightBtn').querySelector('.tabLbl').textContent = isNight() ? 'Day' : 'Night'; } // the tab names where it TAKES you (Beta 1.28, Andrew): in day it offers Night (moon), in night it offers Day (sun) - icon and label flip together
-$('nightBtn').addEventListener('click', () => { if (!tapGuard('nightBtn')) return; lsSet(LS.night, isNight() ? '0' : '1'); applyNight(); setBasemap(); });
+$('nightBtn').addEventListener('click', () => { if (!tapGuard('nightBtn')) return; setThemeOverride(!isNight()); applyNight(); setBasemap(); }); // Beta 1.77: the row sets a session override - the sun takes over again at the next sunrise/sunset or the next full app open (theme block, app1)
 $('homeBtn').addEventListener('click', () => { if (!tapGuard('homeBtn')) return; map.fitBounds([[routeBox.w, routeBox.s], [routeBox.e, routeBox.n]], { padding: 28 }); });
 // ===== SERVICE WORKER + BOOT =====
 if ('serviceWorker' in navigator) {
@@ -3864,6 +3925,15 @@ if (__splashEl && !window.matchMedia('(prefers-reduced-motion: reduce)').matches
 // behind carries NO route until one is chosen. Picking a route loads it
 // (state, paint, camera, run resume), fades the blue, and REMOVES the splash:
 // it plays once per cold load and can never replay.
+function introToRoute() { // Beta 1.77 (Andrew): a pick opens WIDE on the route's area and flies in to the fitted view as the splash leaves, instead of the map simply appearing already zoomed in
+  const b = [[routeBox.w, routeBox.s], [routeBox.e, routeBox.n]];
+  const fit0 = () => { try { map.fitBounds(b, { padding: 28, animate: false }); } catch (e) {} };
+  if (!map.cameraForBounds || (window.matchMedia && matchMedia('(prefers-reduced-motion: reduce)').matches)) { fit0(); return; }
+  let fit = null; try { fit = map.cameraForBounds(b, { padding: 28 }); } catch (e) {}
+  if (!fit || !fit.center || typeof fit.zoom !== 'number') { fit0(); return; }
+  try { map.jumpTo({ center: fit.center, zoom: Math.max(8, fit.zoom - 3) }); } catch (e) { fit0(); return; }
+  setTimeout(() => { if (!map) return; try { map.flyTo({ center: fit.center, zoom: fit.zoom, duration: 2100, curve: 1.35, essential: false }); } catch (e) {} }, 800); // 800ms: the splash's own exit (780ms) has just finished, so the whole flight is on screen
+}
 function loadRoute(id) {
   if (routeLoaded) return;
   const pack = ROUTE_PACKS.find(p => p.id === id); if (!pack) return;
@@ -3872,7 +3942,7 @@ function loadRoute(id) {
   renderRouteLists();
   if (map) {
     if (typeof glOk !== 'undefined' && glOk && window.GLP) { if (!map.getSource('centres')) window.GLP.init(map); else window.GLP.sync(); }
-    map.fitBounds([[routeBox.w, routeBox.s], [routeBox.e, routeBox.n]], { padding: 28, animate: false });
+    introToRoute();
   }
   refreshAll(); drawTrail(true); checkStale(); syncWake();
   if (runStart) startGps(true);

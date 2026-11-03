@@ -49,6 +49,27 @@ await ev(`$('routesBtn').click(); true`);
 ok('N9 Routes opens its sheet with the loaded route marked Currently loaded', (await poll(`$('routeSheet').classList.contains('open')`, 5000)) && await ev(`(function(){ var rows = document.querySelectorAll('#routeList .routeRow'); var b = rows.length === 1 && rows[0].querySelector('.routeBadge'); return rows.length === 1 && !!b && b.textContent === 'Currently loaded'; })()`));
 await ev(`$('routeClose').click(); true`); await sleep(300);
 
+// --- menu consistency (Beta 1.77, Andrew's standing rule: a new menu carries
+// everything the others have - same X, same tap-away - checked by enumeration
+// so a future menu is covered the day it exists) ------------------------------
+ok('N15 every sheet close X wears the one shared corner-X style', await ev(`(function(){ var props = ['color', 'backgroundColor', 'width', 'height', 'fontSize', 'fontWeight', 'position', 'paddingTop']; var btns = [...document.querySelectorAll('.sheet .sheetHead button')]; if (btns.length < 3) return false; var ref = getComputedStyle(btns[0]); return btns.every(b => { var cs = getComputedStyle(b); return props.every(p => cs[p] === ref[p]); }) && ref.color === 'rgb(230, 58, 46)' && ref.width === '38px' && ref.backgroundColor === 'rgba(0, 0, 0, 0)'; })()`));
+await ev(`selectStretch('Velmar', 0, [43.8207, -79.5670]); true`); await sleep(300);
+await ev(`$('routesBtn').click(); true`); await poll(`$('routeSheet').classList.contains('open')`, 5000);
+const swBefore = await ev(`swallowClickUntil`);
+await ev(`document.getElementById('map').dispatchEvent(new PointerEvent('pointerdown', { bubbles: true })); true`); await sleep(400);
+ok('N16 tapping away closes the Routes sheet, the tap is spent, and the selection survives', await ev(`!$('routeSheet').classList.contains('open') && !!selStretch`) && (await ev(`swallowClickUntil`)) > swBefore);
+ok('N17 tap-away closes EVERY sheet (enumerated by class, present and future)', await ev(`(function(){ var sheets = [...document.querySelectorAll('.sheet')]; if (sheets.length < 3) return false; for (const s of sheets) { closeSheets(); s.classList.add('open'); document.getElementById('map').dispatchEvent(new PointerEvent('pointerdown', { bubbles: true })); if (s.classList.contains('open')) return false; } closeSheets(); return true; })()`));
+await ev(`deselect(); true`); await sleep(200);
+
+// --- automatic day/night (Beta 1.77): the sun math is asserted in UTC so the
+// checks hold in any timezone the battery runs in; Vaughan reference values
+// verified against the real sun (Jan 5 2026: 12:52 / 21:55 UTC; Jun 21 2026:
+// 09:36 UTC / 01:03 UTC next day) ---------------------------------------------
+ok('N18 the computed sunrise/sunset land on the real Vaughan sun', await ev(`(function(){ var w = sunTimes(Date.UTC(2026, 0, 5, 12, 0), 43.82, -79.57), s = sunTimes(Date.UTC(2026, 5, 21, 12, 0), 43.82, -79.57); return Math.abs(w.rise - Date.UTC(2026, 0, 5, 12, 52)) <= 360000 && Math.abs(w.set - Date.UTC(2026, 0, 5, 21, 55)) <= 360000 && Math.abs(s.rise - Date.UTC(2026, 5, 21, 9, 36)) <= 360000 && Math.abs(s.set - Date.UTC(2026, 5, 22, 1, 3)) <= 360000; })()`)); // instants, not clock readings: the June sunset is 01:03 UTC on the 22nd - asserting the date is the point (a same-date clamp lands it a day early)
+ok('N19 automatic mode reads the sun correctly across the year', await ev(`(function(){ return autoNightAt(Date.UTC(2026, 0, 5, 17, 0)) === false && autoNightAt(Date.UTC(2026, 0, 6, 1, 0)) === true && autoNightAt(Date.UTC(2026, 0, 5, 8, 0)) === true && autoNightAt(Date.UTC(2026, 5, 21, 16, 0)) === false && autoNightAt(Date.UTC(2026, 5, 22, 3, 0)) === true; })()`));
+ok('N20 a manual override flips the theme at once and hands back at its boundary', await ev(`(function(){ clearThemeOverride(); var auto = autoNightAt(Date.now()); setThemeOverride(!auto); var flipped = isNight() === !auto && !!localStorage.getItem(LS.nightExp) && themeOverrideUntil > Date.now(); themeOverrideUntil = Date.now() - 1; themeTick(); return flipped && themeOverride === null && isNight() === autoNightAt(Date.now()); })()`));
+ok('N20b a backup written under an override carries the override pair', await ev(`(function(){ setThemeOverride(true); var b = JSON.parse(buildBackup()); var carried = typeof b.night === 'string' && typeof b.nightExp === 'string'; clearThemeOverride(); return carried; })()`));
+
 // --- storage slot shape -----------------------------------------------------
 ok('N10 route slots are per-route and disjoint; night stays a global key', await ev(`(function(){ var a = routeKeys('5w'), b = routeKeys('zz9'); var av = Object.values(a), bv = Object.values(b); return a.sides === 'snowroute.5w.v5.sides' && b.sides === 'snowroute.zz9.v5.sides' && av.every(v => v.indexOf('snowroute.5w.') === 0) && bv.every(v => v.indexOf('snowroute.zz9.') === 0) && !av.some(v => bv.indexOf(v) >= 0) && LS.night === 'snowroute.v2.night'; })()`));
 
@@ -77,14 +98,33 @@ await ev(`localStorage.clear(); true`);
 await ev(`location.reload(); true`);
 await poll(`!!window.__bootAt`, 30000);
 await ev(`loadRoute('5w'); true`); await sleep(500);
+const bootMark13 = await ev(`window.__bootAt`);
 await ev(`(function(){ document.getElementById('xText').value = ${JSON.stringify(v1)}; doRestore(); return true; })()`);
 await sleep(900);
-await poll(`!!window.__bootAt`, 30000);
+await poll(`!!window.__bootAt && window.__bootAt !== ${JSON.stringify(bootMark13)}`, 30000); // the restore's reload is app-triggered and async - a bare __bootAt poll can return on the OLD page (its marker is still set), and the loadRoute below would then no-op on already-loaded state
 await ev(`loadRoute('5w'); true`); await sleep(600);
 ok('N13 a v1 backup restores into the 5W slot, markers cleared by the C06 rule (trail without its sessions)', await ev(`(function(){ return doneSet.has('Velmar') && localStorage.getItem('snowroute.5w.v5.sess') === '[]' && JSON.parse(localStorage.getItem('snowroute.5w.v4.trail') || '[]').length === 2; })()`));
 
 // --- backups are v2 now ------------------------------------------------------
 ok('N14 buildBackup emits the v2 per-route shape', await ev(`(function(){ var b = JSON.parse(buildBackup()); return b.app === 'snowroute-backup' && b.v === 2 && !!b.routes && typeof b.routes['5w'].sides === 'string' && typeof b.routes['5w'].trail === 'string'; })()`));
+
+// --- a full close forgets the override (Beta 1.77): the session marker is
+// what separates "opened again" from "cold open" ------------------------------
+await ev(`setThemeOverride(true); true`); await sleep(200);
+await ev(`sessionStorage.removeItem('snowroute.session'); location.reload(); true`);
+await poll(`!!window.__bootAt`, 30000);
+ok('N21 after a cold open the override is gone and the sun is in charge again', await ev(`themeOverride === null && localStorage.getItem(LS.night) === null && isNight() === autoNightAt(Date.now())`));
+
+// --- the route intro flight (Beta 1.77, Andrew): a pick opens wide on the
+// area and flies in to the fitted view instead of appearing already zoomed --
+await ev(`document.getElementById('rmChoose').click(); true`);
+await poll(`document.querySelectorAll('#rmRoutes .routeRow').length > 0`, 15000);
+await ev(`document.querySelector('#rmRoutes .routeRow').click(); true`);
+await poll(`typeof routeLoaded !== 'undefined' && routeLoaded === true`, 20000);
+ok('N22 a route pick starts the camera wide of the fitted view', await ev(`(function(){ var fit = map.cameraForBounds([[routeBox.w, routeBox.s], [routeBox.e, routeBox.n]], { padding: 28 }); return map.getZoom() < fit.zoom - 1.5; })()`));
+await sleep(1200); // the flight starts at +800ms by design (as the splash finishes leaving) - wait until it is actually under way before polling for the settle, or the poll reads the pre-flight stillness and N23 measures the wide start
+await poll(`!map.isMoving()`, 25000);
+ok('N23 the intro flight lands exactly on the fitted route view', await ev(`(function(){ var fit = map.cameraForBounds([[routeBox.w, routeBox.s], [routeBox.e, routeBox.n]], { padding: 28 }); return Math.abs(map.getZoom() - fit.zoom) < 0.05 && Math.abs(map.getCenter().lng - fit.center.lng) < 0.001 && Math.abs(map.getCenter().lat - fit.center.lat) < 0.001; })()`));
 
 R.exceptions = consoleLog.filter(c => c.type === 'EXCEPTION').map(c => String(c.text || '').slice(0, 200));
 finish(R, proc);

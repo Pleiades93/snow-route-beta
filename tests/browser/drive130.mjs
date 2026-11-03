@@ -53,9 +53,9 @@ ok('L7 at close zoom the basemap names print on the clones only | clone ' + JSON
   settled === true && S2.clone.includes('Malden Street') && S2.clone.includes('Cartwright Boulevard') && !S2.orig.includes('Malden Street') && !S2.orig.includes('Cartwright Boulevard'));
 
 // Night: the clones are rebuilt per restack and wear the night lift.
-await ev(`(() => { localStorage.setItem('snowroute.v2.night', '1'); location.reload(); return true; })()`);
+await ev(`(() => { localStorage.setItem('snowroute.v2.night', '1'); localStorage.setItem('snowroute.v2.nightExp', '4102444800000'); location.reload(); return true; })()`); // Beta 1.77: a stored override carries its sun-boundary expiry with it
 await sleep(3000);
-await bootThrough(ev, poll); // Beta 1.76: the reload returns to the route menu - pick 5W so the engine rebuilds the clones under the night style
+await bootThrough(ev, poll, { pinTheme: false }); // Beta 1.76: the reload returns to the route menu - pick 5W so the engine rebuilds the clones under the night style; Beta 1.77: keep the seeded night override (no day pin)
 ok('L8 night boot with the map active', await poll120(`typeof glOk !== 'undefined' && glOk === true && document.body.classList.contains('night')`, 30000));
 const S3 = JSON.parse(await ev(`(() => JSON.stringify({
   clone: !!map.getLayer('roads_labels_major-route'),
