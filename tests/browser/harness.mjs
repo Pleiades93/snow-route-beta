@@ -7,6 +7,11 @@
 // migrated drive behaves identically to its copied-preamble original.
 // Contract with run.mjs is unchanged: the drive prints one JSON block
 // { checks, exceptions } last and exits 0; finish() performs that tail.
+// Options: failWhen(url) fails matching requests instead of fulfilling
+// them (drive115's basemap-outage simulation); logDomain enables the CDP
+// Log domain into consoleLog as { type: 'LOG' } entries (drive116's CSP
+// violation capture). Both are opt-in; defaults reproduce the plain
+// preamble exactly.
 // The http-origin drives (117/119/121) run a different preamble family
 // (local origin + SRI mirror) and are NOT on this harness yet.
 import { spawn } from 'node:child_process';
@@ -41,7 +46,7 @@ export const PATTERNS_PROTOMAPS = [
   { urlPattern: '*sw.js', requestStage: 'Request' }
 ];
 
-export async function launchDrive({ patterns = PATTERNS_DEFAULT, page = process.argv[2] || 'tracker-source.html' } = {}) {
+export async function launchDrive({ patterns = PATTERNS_DEFAULT, page = process.argv[2] || 'tracker-source.html', failWhen = null, logDomain = false } = {}) {
   //  remote map requests are still fulfilled through Node fetch below.)
   const proc = spawn(CHROME, [
     '--headless=new', '--no-sandbox', '--disable-gpu', '--hide-scrollbars', '--no-proxy-server',
@@ -67,6 +72,8 @@ export async function launchDrive({ patterns = PATTERNS_DEFAULT, page = process.
     } else if (msg.method === 'Runtime.exceptionThrown') {
       const d = msg.params.exceptionDetails;
       consoleLog.push({ type: 'EXCEPTION', text: (d.exception && d.exception.description) || d.text });
+    } else if (msg.method === 'Log.entryAdded') {
+      consoleLog.push({ type: 'LOG', text: (msg.params.entry && msg.params.entry.text) || '' });
     } else if (msg.method === 'Fetch.requestPaused') {
       handlePaused(msg.params);
     }
@@ -82,6 +89,7 @@ export async function launchDrive({ patterns = PATTERNS_DEFAULT, page = process.
   async function handlePaused(p) {
     const url = p.request.url;
     try {
+      if (failWhen && failWhen(url)) { await send('Fetch.failRequest', { requestId: p.requestId, errorReason: 'Failed' }, S); return; }
       if (url.endsWith('/sw.js')) {
         await send('Fetch.fulfillRequest', { requestId: p.requestId, responseCode: 404, body: '' }, S);
         return;
@@ -101,6 +109,7 @@ export async function launchDrive({ patterns = PATTERNS_DEFAULT, page = process.
   await send('Fetch.enable', { patterns }, S);
   await send('Page.enable', {}, S);
   await send('Runtime.enable', {}, S);
+  if (logDomain) await send('Log.enable', {}, S);
   await send('Emulation.setDeviceMetricsOverride', { width: 420, height: 900, deviceScaleFactor: 2, mobile: true }, S);
   await send('Page.navigate', { url: 'file://' + DIR + '/' + page }, S);
 
@@ -116,6 +125,6 @@ export async function launchDrive({ patterns = PATTERNS_DEFAULT, page = process.
   }
   const ev = async (code) => evaluate(code);
   const poll = async (expr, ms) => { const t0 = Date.now(); while (Date.now() - t0 < (ms || 30000)) { const v = await ev(expr); if (v === true) return true; await sleep(300); } return false; };
-  return { proc, send, S, evaluate, ev, shot, poll, consoleLog, sleep };
+  return { proc, send, S, evaluate, ev, shot, poll, consoleLog, sleep, url: 'file://' + DIR + '/' + page };
 }
 export function finish(R, proc) { console.log(JSON.stringify(R, null, 1)); proc.kill('SIGKILL'); process.exit(0); }
