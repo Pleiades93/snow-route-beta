@@ -222,7 +222,7 @@
 #routeMenu.boot.show, #routeMenu.open { opacity: 1; visibility: visible; transform: none; pointer-events: auto; }
 #routeMenu.open { transition: transform var(--anim-dur) var(--ease-open), opacity .3s ease, visibility 0s; }
 #routeMenu.notrans { transition: none !important; } /* the boot-to-parked swap in finish() must not animate */
-#rmClose { position: absolute; left: 50%; bottom: calc(26px + env(safe-area-inset-bottom, 0px)); transform: translateX(-50%); z-index: 2; width: 44px; height: 44px; border-radius: 50%; border: none; background: rgba(255,255,255,.28); -webkit-backdrop-filter: blur(6px); backdrop-filter: blur(6px); color: #2b4bf2; font-size: 19px; font-weight: 700; line-height: 1; padding: 0; display: flex; align-items: center; justify-content: center; cursor: pointer; } /* Beta 1.79 (Andrew): the route menu's close is his own pick - a translucent circular X, Apple-style, floating at bottom centre of the blue - not the sheets' red corner X */
+#rmClose { position: absolute; left: 50%; bottom: calc(26px + env(safe-area-inset-bottom, 0px)); transform: translateX(-50%); z-index: 2; width: 44px; height: 44px; border: none; background: none; color: #fff; font-size: 30px; font-weight: 800; text-shadow: 0 1px 8px rgba(8,12,40,.45); line-height: 1; padding: 0; display: flex; align-items: center; justify-content: center; cursor: pointer; } /* Beta 1.80 (Andrew, picked from six rendered options A-F): a BARE white X at bottom centre - no circle, no frosting (the translucent circle was 1.79's). The 44px box stays as the invisible touch target; the soft shadow keeps the glyph readable on the blue */
 #routeMenu:not(.tab) #rmClose { display: none; } /* the X exists only in tab mode - at boot there is nowhere to go back to */
 .rmPane { width: min(342px, 92vw); display: none; flex-direction: column; gap: 12px; }
 .rmPane.on { display: flex; }
@@ -252,7 +252,7 @@
 <div id="hud">
   <div id="warn">Not saving — storage is full or blocked</div>
   <div class="row">
-    <div class="titleStack"><div class="title">Snow Route Beta</div><div class="ver" id="ver">Beta 1.79</div></div>
+    <div class="titleStack"><div class="title">Snow Route Beta</div><div class="ver" id="ver">Beta 1.80</div></div>
   </div>
   <div id="stats"></div>
 </div>

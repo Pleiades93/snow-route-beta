@@ -1,5 +1,8 @@
 # Changelog
 
+## Beta 1.80 — 2026-11-03
+The route menu's close is now a bare white ✕ — no circle, no frosting — still floating at the bottom centre of the blue screen, still tab mode only. Andrew picked it from six rendered options (frosted light, Apple-Maps grey, dark frosted, solid white, bare white, bare black). The invisible 44-pixel touch target stays, and a soft shadow keeps the glyph readable on the blue. The translucent circle from 1.79 is retired.
+
 ## Beta 1.79 — 2026-11-03
 The route menu's close is now Andrew's own design: a translucent circular ✕ floating at the bottom centre of the blue screen, Apple-style, replacing the red corner ✕ the menu briefly shared with the sheets in 1.78. It appears only when the menu is opened from the Routes tab — at boot there is still no close, because there is nowhere to go back to. The sheets and dialogs keep the shared red corner ✕.
 The map's point of interest — the dot at the route's centre, shown when zoomed out — is now labelled with the route's name (Route 5W) instead of the app name (Andrew).
