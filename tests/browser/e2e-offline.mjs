@@ -94,7 +94,7 @@ const stat = await ev2(`document.getElementById('xPreStat').textContent`);
 const m = /saved (\d+) of (\d+)/.exec(stat || '');
 ok('E5 saved >= 883 of 897 (the 2026-11-01 regression saved 0) | ' + stat, !!m && +m[1] >= 883 && +m[2] === 897);
 const counts = await ev2(`(async () => { const out = {}; for (const k of await caches.keys()) { const c = await caches.open(k); out[k] = (await c.keys()).length; } return JSON.stringify(out); })()`);
-const baseKeys = JSON.parse(await ev2(`(async () => { const c = await caches.open('snowroute-tiles-v1'); const ks = await c.keys(); return JSON.stringify(ks.map(r => r.url).sort()); })()`)); // the pristine post-preload key set (897 preload files + the boot view's own extras), captured before any zooming adds opportunistic keys (keysOf is defined further down, so this capture is inlined)
+const baseKeys = JSON.parse(await ev2(`(async () => { const c = await caches.open('snowroute-tiles-v1'); const ks = await c.keys(); return JSON.stringify(ks.map(r => r.url).sort()); })()`)); // the pristine post-preload key set (897 preload files + the boot view's own extras), captured before any zooming adds opportunistic keys (keysOf is defined further down, so this capture is inlined). PROVEN 2026-11-03 (instrumented run, work/e12b-probe): the extras are exactly 2 - the Noto Sans Italic and Noto Sans Medium 0-255 glyph files, fetched by the live map for boot-view labels; the preload manifest itself is 633 tiles + 256 Noto Sans Regular glyph ranges + 8 sprites = 897
 ok('E6 the tiles cache really holds the files | ' + counts, (() => { try { return JSON.parse(counts)['snowroute-tiles-v1'] >= 883; } catch (e) { return false; } })());
 // ---- Phase 3 (Beta 1.72): E1-E6 prove the files land in the cache. These
 // prove the app actually LIVES on them: renders with the network dead, at
@@ -170,12 +170,13 @@ netOff = false;
 // the cache E4 had ALREADY filled, so its "interruption" proved nothing about
 // a partial cache. Now the download starts from an EMPTY tile cache with tile
 // responses throttled, a PARTIAL count is verified on disk, the page dies, and
-// the resume must restore the EXACT key set the verified full download had.
+// the resume must restore the full PRELOAD MANIFEST (897 files) and lose nothing the interrupted download had already stored. (It is NOT held to baseKeys: 2 of those 899 are opportunistic glyph fetches - see the baseKeys comment - whose return depends on the resumed page's label rendering, not on the download. E15b already asserts this same contract shape.)
 const waitPartial = async () => { let n = 0; const t0 = Date.now(); while (Date.now() - t0 < 300000) { n = (await keysOf()).length; if (n >= 600) break; await sleep(700); } return n; };
 await ev2(`(async () => { await caches.delete('snowroute-tiles-v1'); try { localStorage.removeItem('snowroute.prep.v1'); } catch (e) {} return true; })()`);
 tileDelayMs = 150;
 await ev2(`document.getElementById('xPre').click()`);
 const partial = await waitPartial();
+const partialKeys = await keysOf();
 ok('E12a the download was verifiably partial when the page died | cached ' + partial + ' of ' + baseKeys.length, partial >= 300 && partial <= baseKeys.length - 150);
 await send('Page.reload', { ignoreCache: false }, PAGE_S);
 await poll(`typeof glOk !== 'undefined' && glOk === true`, 90000);
@@ -185,8 +186,8 @@ ok('E12 preload interrupted by a page death still completes afterwards', await p
 const stat2 = await ev2(`document.getElementById('xPreStat').textContent`);
 const m2 = /saved (\d+) of (\d+)/.exec(stat2 || '');
 const keysAfter = await keysOf();
-const superset = baseKeys.every(u => keysAfter.includes(u));
-ok('E12b the resumed download restores the full post-preload key set | ' + stat2 + ' | keys ' + keysAfter.length + '/' + baseKeys.length, !!m2 && +m2[1] === 897 && +m2[2] === 897 && superset && keysAfter.length >= baseKeys.length);
+const noLoss12 = partialKeys.every(u => keysAfter.includes(u));
+ok('E12b the resumed download restores the full preload set (897) and loses nothing the interruption stored | ' + stat2 + ' | keys ' + keysAfter.length + ' (base ' + baseKeys.length + ' incl. 2 opportunistic glyphs)', !!m2 && +m2[1] === 897 && +m2[2] === 897 && noLoss12 && keysAfter.length >= 897);
 // E15 (audit C01-T4): a dead-network BURST mid-download. The app's per-file
 // failure handling skips what it cannot fetch and reports the short count
 // honestly; a clean re-run must then restore the exact full set.
@@ -217,6 +218,7 @@ await ev2(`(async () => { await caches.delete('snowroute-tiles-v1'); try { local
 tileDelayMs = 150;
 await ev2(`document.getElementById('xPre').click()`);
 const partial16 = await waitPartial();
+const partialKeys16 = await keysOf();
 ok('E16a the download was verifiably partial when the process died | cached ' + partial16 + ' of ' + baseKeys.length, partial16 >= 300 && partial16 <= baseKeys.length - 150);
 tileDelayMs = 0;
 proc.kill('SIGKILL');
@@ -227,8 +229,8 @@ const backOk = (await poll(`typeof glOk !== 'undefined' && glOk === true`, 90000
 await ev2(`document.getElementById('xPre').click()`);
 const stat16 = await poll(`document.getElementById('xPreStat').textContent.includes('saved 897 of 897')`, 420000);
 const keysAfter16 = await keysOf();
-const superset16 = baseKeys.every(u => keysAfter16.includes(u));
-ok('E16 process killed mid-download: relaunch on the same profile and the resumed download restores the full set | back ' + backOk + ' keys ' + keysAfter16.length + '/' + baseKeys.length, backOk && stat16 && superset16 && keysAfter16.length >= baseKeys.length);
+const noLoss16 = partialKeys16.every(u => keysAfter16.includes(u));
+ok('E16 process killed mid-download: relaunch on the same profile and the resumed download restores the full preload set (897) and loses nothing the kill left stored | back ' + backOk + ' keys ' + keysAfter16.length + ' (base ' + baseKeys.length + ' incl. 2 opportunistic glyphs)', backOk && stat16 && noLoss16 && keysAfter16.length >= 897);
 // E17 (Beta 1.74 audit E02): process death vs APP STATE. E14/E16 prove the
 // map cache survives a kill; this proves the WORK does: an open clean, its
 // session marker, marked streets and the GPS trail, all written through the
