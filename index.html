@@ -2,7 +2,7 @@
 <html lang="en" class="boot">
 <head>
 <meta charset="UTF-8">
-<meta http-equiv="Content-Security-Policy" content="default-src 'none'; script-src 'sha384-mCLeeFABnOrhea7fNeGHTJPT9/Aj/cw3yLbq6FbqmivOZWbL2kZAyEieMPOCBxU4' https://cdn.jsdelivr.net; style-src-elem 'sha384-sjvmDptUZgXuZ22q58dOCzY1a41ZAu2HYJMVQdk+UWA6xEC1mRXlxpQYf/bRJy+C' https://cdn.jsdelivr.net; style-src-attr 'unsafe-inline'; img-src 'self' data: blob: https://tiles.basemaps.cartocdn.com https://protomaps.github.io https://cdn.jsdelivr.net; connect-src 'self' https://tiles.basemaps.cartocdn.com https://protomaps.github.io https://cdn.jsdelivr.net; worker-src blob: 'self'; child-src blob: 'self'; font-src 'none'; manifest-src 'self'; base-uri 'none'; form-action 'none'; object-src 'none'">
+<meta http-equiv="Content-Security-Policy" content="default-src 'none'; script-src 'sha384-BYgnxxT9pSpnGSk4XcvUjCYU9gqbXABrRZjh/kcJDZnsmquSK6xP3YekMsPyC0kI' https://cdn.jsdelivr.net; style-src-elem 'sha384-sjvmDptUZgXuZ22q58dOCzY1a41ZAu2HYJMVQdk+UWA6xEC1mRXlxpQYf/bRJy+C' https://cdn.jsdelivr.net; style-src-attr 'unsafe-inline'; img-src 'self' data: blob: https://tiles.basemaps.cartocdn.com https://protomaps.github.io https://cdn.jsdelivr.net; connect-src 'self' https://tiles.basemaps.cartocdn.com https://protomaps.github.io https://cdn.jsdelivr.net; worker-src blob: 'self'; child-src blob: 'self'; font-src 'none'; manifest-src 'self'; base-uri 'none'; form-action 'none'; object-src 'none'">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="mobile-web-app-capable" content="yes">
@@ -4030,6 +4030,7 @@ function introToRoute() { // Beta 1.77 (Andrew): a pick opens WIDE on the route'
 function loadRoute(id) {
   if (routeLoaded) return;
   const pack = ROUTE_PACKS.find(p => p.id === id); if (!pack) return;
+  document.documentElement.classList.remove('boot'); /* Beta 1.86: a loaded route IS the end of the boot state, whichever path loaded it - the boot pick, a relaunch, a test harness. The chrome returns as the state flips (in the pick flow that is still before the blue fade, so the reveal choreography is unchanged) */
   loadRouteState(id);
   activeRoute = pack; routeLoaded = true;
   renderRouteLists();
@@ -4044,7 +4045,7 @@ function loadRoute(id) {
   const sp = $('splash'); if (!sp) return;
   const t0 = Date.now(); let gone = false;
   const finish = () => { if (gone) return; gone = true; clearInterval(iv); sp.remove(); document.documentElement.classList.remove('boot'); /* Beta 1.85: the splash is gone - the root frame returns to the app's own colour (the html.boot rule) */ const rm = $('routeMenu'); if (rm) { rm.classList.add('notrans'); rm.classList.remove('boot', 'show', 'bye'); void rm.offsetWidth; rm.classList.remove('notrans'); } }; // Beta 1.78: park the menu below the screen without animating the swap
-  const arm = () => { const wait = Math.max(0, 1900 - (Date.now() - t0)); setTimeout(() => { if (!gone) { sp.classList.add('menu'); $('routeMenu').classList.add('show'); } }, wait); };
+  const arm = () => { const wait = Math.max(0, 1900 - (Date.now() - t0)); setTimeout(() => { if (!gone) { sp.classList.add('menu'); $('routeMenu').classList.add('show'); document.documentElement.classList.remove('boot'); /* Beta 1.86: the boot state also ends HERE, when the menu arms - the still-to-live handover window (the unsettled first frames the chrome-absence protects) is long past by the gate's 1900ms minimum, and the opaque menu covers the chrome while it paints beneath. Every later state (a post-reload session at the menu, the pick, a direct load) must find a functional shell; the pick/loadRoute/finish removals stay as backstops */ } }, wait); };
   const iv = setInterval(() => {
     if (!map && Date.now() - t0 > 4000) __bootTail();
     if ((typeof glOk !== 'undefined' && glOk && typeof tilesOk !== 'undefined' && tilesOk > 0) || Date.now() - t0 > 6000) { clearInterval(iv); arm(); }
