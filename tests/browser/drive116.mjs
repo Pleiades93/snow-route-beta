@@ -1,6 +1,7 @@
 import fs from 'node:fs';
-import { launchDrive } from './harness.mjs';
-const { proc, send, S, ev, consoleLog, sleep } = await launchDrive({ logDomain: true });
+import { launchDrive, bootThrough } from './harness.mjs';
+const { proc, send, S, ev, consoleLog, sleep, poll } = await launchDrive({ logDomain: true });
+await bootThrough(ev, poll); // Beta 1.76: boots end at the route menu now - click through to a loaded route
 
 
 const R = { checks: [] };

@@ -1,5 +1,6 @@
-import { launchDrive, finish, PATTERNS_GITHUB_IO } from './harness.mjs';
-const { proc, send, S, ev, consoleLog, sleep, poll: poll120 } = await launchDrive({ patterns: PATTERNS_GITHUB_IO });
+import { launchDrive, finish, PATTERNS_GITHUB_IO, bootThrough } from './harness.mjs';
+const { proc, send, S, ev, consoleLog, sleep, poll: poll120, poll } = await launchDrive({ patterns: PATTERNS_GITHUB_IO });
+await bootThrough(ev, poll); // Beta 1.76: boots end at the route menu now - click through to a loaded route
 
 
 

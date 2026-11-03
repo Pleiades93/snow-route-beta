@@ -1,5 +1,6 @@
-import { launchDrive, finish } from './harness.mjs';
-const { proc, ev, consoleLog, sleep } = await launchDrive();
+import { launchDrive, finish, bootThrough } from './harness.mjs';
+const { proc, ev, consoleLog, sleep, poll } = await launchDrive();
+await bootThrough(ev, poll); // Beta 1.76: boots end at the route menu now - click through to a loaded route
 
 
 // drive65 tail: v5.39 audit-fix tests - load validators (BUG-04) + restore suite (BUG-01)
@@ -9,9 +10,9 @@ await sleep(3200);
 
 // ---- Phase A: corrupt stored data is sanitized on load ----
 await ev(`(() => {
-  localStorage.setItem('snowroute.v2', JSON.stringify(['Columbus']));
-  localStorage.setItem('snowroute.v2.times', JSON.stringify({ Columbus: '2026-10-26T12:00:00.000Z', Galloway: 'not-a-date', Narnia: '2026-10-26T12:00:00.000Z' }));
-  localStorage.setItem('snowroute.v2.history', JSON.stringify([
+  localStorage.setItem('snowroute.5w.v2', JSON.stringify(['Columbus']));
+  localStorage.setItem('snowroute.5w.v2.times', JSON.stringify({ Columbus: '2026-10-26T12:00:00.000Z', Galloway: 'not-a-date', Narnia: '2026-10-26T12:00:00.000Z' }));
+  localStorage.setItem('snowroute.5w.v2.history', JSON.stringify([
     { at: '2026-10-20T12:00:00.000Z', items: { Velmar: '2026-10-20T12:30:00.000Z' } },
     { at: 'junk', items: {} },
     { at: '2026-10-21T12:00:00.000Z', items: { Columbus: '2026-10-21T12:30:00.000Z', Bad: '2026-10-21T12:30:00.000Z', Velmar: 'junk-time' } },
@@ -19,6 +20,7 @@ await ev(`(() => {
   ]));
   location.reload(); return true; })()`);
 await sleep(3800);
+await ev(`loadRoute('5w'); true`); await sleep(600); // Beta 1.76: a reload lands on the route menu
 const A = JSON.parse(await ev(`(() => JSON.stringify({ times: Object.keys(doneTimes), hist: history.map(h => Object.keys(h.items)), done: [...doneSet] }))()`));
 ok('A1 bad/foreign times dropped, good kept', JSON.stringify(A.times) === '["Columbus"]');
 ok('A2 history keeps 2 valid runs', A.hist.length === 2);

@@ -128,3 +128,15 @@ export async function launchDrive({ patterns = PATTERNS_DEFAULT, page = process.
   return { proc, send, S, evaluate, ev, shot, poll, consoleLog, sleep, url: 'file://' + DIR + '/' + page };
 }
 export function finish(R, proc) { console.log(JSON.stringify(R, null, 1)); proc.kill('SIGKILL'); process.exit(0); }
+
+// Beta 1.76: every cold boot now ends at the route menu - drives that need a
+// loaded route click through it (Choose -> first route row) and wait for the
+// splash to be removed, exactly the state pre-1.76 boots ended in.
+export async function bootThrough(ev, poll) {
+  await poll(`typeof loadRoute === 'function'`, 20000);
+  await poll(`!!window.__bootAt`, 30000); // Beta 1.76: wait until bootMap has actually run - a route pick before the map exists is unreachable for a real user (the menu only appears at the readiness gate, after the boot tail) and loadRoute's paint calls need the map
+  await ev(`document.getElementById('rmChoose') && document.getElementById('rmChoose').click()`);
+  await ev(`document.querySelector('#rmRoutes .routeRow') && document.querySelector('#rmRoutes .routeRow').click()`);
+  await poll(`typeof routeLoaded !== 'undefined' && routeLoaded === true`, 20000);
+  await poll(`!document.getElementById('splash')`, 20000);
+}

@@ -1,5 +1,6 @@
-import { launchDrive, finish } from './harness.mjs';
-const { proc, ev, consoleLog, sleep, poll: poll120 } = await launchDrive();
+import { launchDrive, finish, bootThrough } from './harness.mjs';
+const { proc, ev, consoleLog, sleep, poll: poll120, poll } = await launchDrive();
+await bootThrough(ev, poll); // Beta 1.76: boots end at the route menu now - click through to a loaded route
 
 
 
@@ -19,9 +20,13 @@ await ev(`location.reload(); true`);
 let seen = null;
 for (let i = 0; i < 40 && !seen; i++) { const v = await ev(`(() => { const sp = document.getElementById('splash'); const bg = document.getElementById('splashBg'); const ti = document.getElementById('splashTitle'); const ic = document.getElementById('splashIcon'); return sp ? JSON.stringify({ bg: bg ? getComputedStyle(bg).backgroundColor : '', title: ti ? ti.textContent : '', iconOp: ic ? getComputedStyle(ic).opacity : '', sb: (document.querySelector('meta[name="apple-mobile-web-app-status-bar-style"]') || {}).content || '', tc: (document.querySelector('meta[name="theme-color"]') || {}).content || '' }) : ''; })()`); if (v) seen = JSON.parse(v); else await sleep(100); }
 ok('S1 splash is the first thing on screen (icon blue, its own name, icon AT REST from the first frame - no rise replay) | ' + JSON.stringify(seen), !!seen && seen.bg === 'rgb(43, 75, 242)' && seen.title === 'Snow Route' && seen.iconOp === '1' && seen.sb === 'black-translucent' && seen.tc === '#eceff2');
-ok('S2 splash removes itself once the app is ready (never traps the user)', await poll120(`!document.getElementById('splash')`, 15000));
+ok('S2 splash hands over to the route menu once the app is ready (never traps the user in the brand animation)', await poll120(`(function(){ var sp = document.getElementById('splash'); return !!sp && sp.classList.contains('menu'); })()`, 15000));
+await ev(`document.getElementById('rmChoose').click(); true`);
+await sleep(450);
+await ev(`(function(){ var r = document.querySelector('#rmRoutes .routeRow'); if (r) r.click(); return true; })()`);
+const gone132 = await poll120(`!document.getElementById('splash')`, 15000);
 await sleep(1600);
-ok('S3 splash never comes back (it is removed, not hidden)', await ev(`!document.getElementById('splash')`));
+ok('S3 picking a route removes the splash and it never comes back (removed, not hidden)', gone132 && (await ev(`!document.getElementById('splash')`)));
 const before = await ev(`isNight()`);
 await ev(`$('nightBtn').click(); true`);
 await sleep(400);

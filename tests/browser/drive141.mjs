@@ -1,5 +1,6 @@
-import { launchDrive, finish, PATTERNS_GITHUB_IO } from './harness.mjs';
-const { proc, send, S, ev, consoleLog, sleep, poll: poll120, url } = await launchDrive({ patterns: PATTERNS_GITHUB_IO });
+import { launchDrive, finish, PATTERNS_GITHUB_IO, bootThrough } from './harness.mjs';
+const { proc, send, S, ev, consoleLog, sleep, poll: poll120, url, poll } = await launchDrive({ patterns: PATTERNS_GITHUB_IO });
+await bootThrough(ev, poll); // Beta 1.76: boots end at the route menu now - click through to a loaded route
 
 
 
@@ -38,14 +39,14 @@ const cOff = await ev(`compassOn`);
 ok('F08 compass lifecycle: on after start, off after stop | on ' + cOn + ' off ' + cOff, cOn === true && cOff === false);
 // F07a: the completion-times record is a bare string - the boot used to
 // die in the cleanup loop (strict-mode delete on a string).
-await ev(`(() => { localStorage.setItem('snowroute.v2.times', JSON.stringify('just-a-string')); return true; })()`);
+await ev(`(() => { localStorage.setItem('snowroute.5w.v2.times', JSON.stringify('just-a-string')); return true; })()`);
 await send('Page.navigate', { url: url }, S);
-ok('F07a boot survives a string completion-times record', await poll120(`typeof doneSet !== 'undefined' && typeof doneTimes === 'object' && !Array.isArray(doneTimes)`, 30000));
+ok('F07a boot survives a string completion-times record', await poll120(`(function(){ if (typeof routeLoaded !== 'undefined' && !routeLoaded && typeof loadRoute === 'function') { try { loadRoute('5w'); } catch (e) {} } return typeof doneSet !== 'undefined' && typeof doneTimes === 'object' && !Array.isArray(doneTimes) && routeLoaded === true; })()`, 30000));
 // F07b: a nested string inside the side timestamps - marking the street
 // used to throw in applyPiece under strict mode.
-const street = await ev(`(() => { const rec = { p: {}, t: {} }; rec.p.Boddy = pieces.Boddy.slice(); rec.t.Boddy = 'o'; localStorage.setItem('snowroute.v5.sides', JSON.stringify(rec)); return 'Boddy'; })()`);
+const street = await ev(`(() => { const rec = { p: {}, t: {} }; rec.p.Boddy = pieces.Boddy.slice(); rec.t.Boddy = 'o'; localStorage.setItem('snowroute.5w.v5.sides', JSON.stringify(rec)); return 'Boddy'; })()`);
 await send('Page.navigate', { url: url }, S);
-await poll120(`typeof togglePiece === 'function'`, 30000);
+await poll120(`(function(){ if (typeof routeLoaded !== 'undefined' && !routeLoaded && typeof loadRoute === 'function') { try { loadRoute('5w'); } catch (e) {} } return typeof togglePiece === 'function' && typeof routeLoaded !== 'undefined' && routeLoaded === true; })()`, 30000); // Beta 1.76: the sanitizer runs when the route loads
 const markRes = await ev(`(() => { try { togglePiece(${JSON.stringify(street)}, 0, 0); return 'ok'; } catch (e) { return 'threw: ' + e.message; } })()`);
 ok('F07b boot survives nested-string side timestamps and marking works | street ' + street + ' result ' + markRes, !!street && markRes === 'ok');
 R.exceptions = consoleLog.filter(c => c.type === 'EXCEPTION');

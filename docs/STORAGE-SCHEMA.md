@@ -1,31 +1,53 @@
 # Storage Schema — the data contract
 
-Status: **contract**. This schema is shared with production v5.81 and with every
-installed beta. Changing any key name, value shape, or the missing-key policy
-requires a documented migration, migration tests, and Andrew's approval
-(DEVELOPMENT_RULES.md §4). All values live in `localStorage` under the serving
-origin. Formats below were verified against the app source and the loaders'
-sanitizers on 2026-10-29.
+Status: **contract**. Changing any key name, value shape, or the missing-key
+policy requires a documented migration, migration tests, and Andrew's
+approval (DEVELOPMENT_RULES.md §4). All values live in `localStorage` under
+the serving origin. Formats below were verified against the app source and
+the loaders' sanitizers; the slot layout and backup v2 landed in Beta 1.76
+(2026-11-02).
 
-## Keys
+## Layout: per-route slots + globals (Beta 1.76)
 
-| Key | Content | Shape |
-|-----|---------|-------|
-| `snowroute.v2` | Completed streets (derived cache) | JSON array of street names. Re-derived from `snowroute.v5.sides` at every load; a non-array value is ignored, never fatal (audit F-3). |
-| `snowroute.v2.times` | Completion time per street | JSON object `{street: ISO time}`. |
-| `snowroute.v2.history` | Archived cleans, oldest first, max 10 | JSON array of history entries (below). Load sanitizer drops malformed entries. |
-| `snowroute.v2.night` | Night-mode flag | String flag. |
-| `snowroute.v4.notes` | Per-street notes and flags | JSON object `{street: [ {k, at, text?}, … ]}`; `k` is `note` or a flag kind (`car`, `hazard`, `missed`, `salt`). |
-| `snowroute.v4.via` | How each street was marked | JSON object `{street: string}`. |
-| `snowroute.v4.trail` | GPS trail, all sessions (recorded only during a run) | JSON array of `[lat, lng, epochSeconds]` triples; sanitizer enforces finite, in-range values. |
-| `snowroute.v5.sess` | GPS session markers (Beta 1.71) | JSON array of epoch-second clean-start times, sorted and de-duplicated; written when a clean starts, cleared with the trail; in BACKUP_KEYS since 1.71 (older backups lack it). Restore rule (Beta 1.73, audit C06): a legacy backup that replaces the trail but has no markers of its own clears the current markers as part of the restore (they describe the replaced trail); a legacy backup without a trail leaves the markers untouched. The clear is written, verified and rolled back like every other restore entry. |
-| `snowroute.v4.cov` | Coverage sample indexes per street | JSON object `{street: [integers]}`; each index must be an integer in `[0, samples)` — enforced at load (audit F-2). |
-| `snowroute.v5.start` | Run start | Raw epoch-milliseconds digit string (not JSON). |
-| `snowroute.v5.flip` | Legacy flip flag | Retained for format compatibility; unused by the beta (flip was removed in Beta 1.14). Still backed up. |
-| `snowroute.v5.sides` | **Source of truth for progress** | JSON `{p: {street: [0..3 per stretch]}, t: {street: {stretchIdx: [timeA, timeB]}}}`. Values are bit flags: 1 = side A, 2 = side B, 3 = both. Load normalizes values to 0..3 (audit G-3). |
-| `snowroute.v5.export` | Last export summary (local only) | Not backed up. |
-| `snowroute.v5.preload` | Preload record `{at, saved, total}` (local only) | Not backed up. |
-| `snowroute.prep.v1` | Offline-prep flag (local only) | Not backed up. |
+Every route owns a storage slot: `snowroute.<routeId>.` followed by a field
+tail. Route 5W (id `5w`) is the first tenant. Three keys are **global** —
+they describe the app, not a route — and keep their historical names:
+`snowroute.v2.night`, `snowroute.v5.export`, `snowroute.prep.v1`.
+
+The pre-1.76 layout is the same tails under a bare `snowroute.` prefix
+(e.g. `snowroute.v5.sides`). Those keys are now the **legacy fallback copy**
+for Route 5W (see Migration).
+
+## Keys (tails; read `snowroute.5w.<tail>` for Route 5W)
+
+| Tail | Content | Shape |
+|------|---------|-------|
+| `v2` | Completed streets (derived cache) | JSON array of street names. Re-derived from `v5.sides` at every load; a non-array value is ignored, never fatal (audit F-3). |
+| `v2.times` | Completion time per street | JSON object `{street: ISO time}`. |
+| `v2.history` | Archived cleans, oldest first, max 10 | JSON array of history entries (below). Load sanitizer drops malformed entries. |
+| `v4.notes` | Per-street notes and flags | JSON object `{street: [ {k, at, text?}, … ]}`; `k` is `note` or a flag kind (`car`, `hazard`, `missed`, `salt`). |
+| `v4.via` | How each street was marked | JSON object `{street: string}`. |
+| `v4.trail` | GPS trail, all sessions (recorded only during a run) | JSON array of `[lat, lng, epochSeconds]` triples; sanitizer enforces finite, in-range values. |
+| `v5.sess` | GPS session markers (Beta 1.71) | JSON array of epoch-second clean-start times, sorted and de-duplicated; written when a clean starts, cleared with the trail. Restore rule (Beta 1.73, audit C06 — applied per route since 1.76): a restore that replaces a route's trail but carries no markers for it clears that route's markers as part of the restore (they describe the replaced trail); a restore without that route's trail leaves its markers untouched. The clear is written, verified and rolled back like every other restore entry. |
+| `v4.cov` | Coverage sample indexes per street | JSON object `{street: [integers]}`; each index must be an integer in `[0, samples)` — enforced at load (audit F-2). |
+| `v5.start` | Run start | Raw epoch-milliseconds digit string (not JSON). |
+| `v5.flip` | Legacy flip flag | Retained for format compatibility; unused by the beta (flip was removed in Beta 1.14). Still backed up. |
+| `v5.sides` | **Source of truth for progress** | JSON `{p: {street: [0..3 per stretch]}, t: {street: {stretchIdx: [timeA, timeB]}}}`. Values are bit flags: 1 = side A, 2 = side B, 3 = both. Load normalizes values to 0..3 (audit G-3). |
+| `v5.preload` | Preload record `{at, saved, total}` (local only) | Per-route; not backed up. |
+
+Global keys: `snowroute.v2.night` (night-mode flag, string; backed up),
+`snowroute.v5.export` (last export summary; local only, not backed up),
+`snowroute.prep.v1` (offline-prep flag; local only, not backed up).
+
+## Migration: legacy → 5W slot (Beta 1.76, one-time)
+
+On the first `loadRoute('5w')` where the slot's `v5.sides` is absent and the
+legacy `snowroute.v5.sides` exists, the app copies each present legacy field
+raw into the slot, verifying every key by read-back. Any failure deletes the
+partial slot copies and the boot reads the **legacy keys** instead; the move
+retries on the next load. Legacy keys are never deleted — they remain the
+fallback copy. The migration is 5W-only by construction (only 5W has a
+legacy layout). Regression coverage: drive145 N11/N12.
 
 ## History entry
 
@@ -37,20 +59,32 @@ non-full runs first (full = all 34 streets).
 
 ## Backup envelope
 
-`{app: 'snowroute-backup', v: 1, at, data}` where `data` maps each of the 12
-backup keys (all rows above except the three local-only keys) to its raw
-stored string. **Missing-key policy:** a key absent from `data` leaves the
-current value untouched on restore. A legacy backup whose done value is a
-bare object migrates to the sides-derived set (street-name filtered).
+**v2 (current):** `{app: 'snowroute-backup', v: 2, at, routes, night?}` where
+`routes` maps each route id to an object of field name → raw stored string,
+the field names being `done, times, hist, notes, via, trail, cov, start,
+flip, sides, sess` (the 11 stored fields; the per-route preload record is
+not backed up), and `night` is the raw global night value when present. Export reads every field raw; **any failed read fails
+the whole export** (audit 1.48 B04) rather than emitting a partial backup.
+
+**v1 (restore-only):** `{app: 'snowroute-backup', v: 1, at, data}` where
+`data` maps the 12 legacy key names to raw strings. Restoring a v1 backup
+writes into the **5W slot** (legacy name → slot field), with `night` taken
+from `data['snowroute.v2.night']`. **Missing-key policy (both versions):** a
+field absent from the backup leaves the current value untouched on restore.
+A legacy done value that is a bare object migrates to the sides-derived set
+(street-name filtered). A v2 backup naming an unknown route id is rejected
+whole.
 
 ## Restore transaction (invariant)
 
-1. Validate envelope identity, version (must be 1), and per-key string/shape
+1. Validate envelope identity, version (1 or 2), and per-field string/shape
    BEFORE writing anything; reject malformed backups whole.
-2. Snapshot every backup key; abort honestly if the snapshot cannot be read.
+2. Snapshot every key in scope — every known route's slot keys plus the
+   global night key; abort honestly if the snapshot cannot be read.
 3. Write each key and re-read to verify.
-4. On any failure, roll back from the snapshot and verify the rollback; if the
-   rollback itself cannot be verified, say so ("could NOT be fully put back").
+4. On any failure, roll back from the snapshot and verify the rollback; if
+   the rollback itself cannot be verified, say so ("could NOT be fully put
+   back").
 5. Reload with the `restoring` flag set, so the unload flush cannot clobber
    the restored data. Nested content is sanitized by the loaders on that
    reload (documented design, audit G-2).

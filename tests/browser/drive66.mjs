@@ -1,5 +1,6 @@
-import { launchDrive, finish } from './harness.mjs';
-const { proc, ev, consoleLog, sleep } = await launchDrive();
+import { launchDrive, finish, bootThrough } from './harness.mjs';
+const { proc, ev, consoleLog, sleep, poll } = await launchDrive();
+await bootThrough(ev, poll); // Beta 1.76: boots end at the route menu now - click through to a loaded route
 
 
 // drive66 tail: v5.39 restore suite only (drive65 Phase B fix: recapture backup after reload)
@@ -14,6 +15,7 @@ await ev(`(() => { markDone('Galloway', 'tap'); return true; })()`);
 await sleep(300);
 await ev(`(() => { $('xText').value = window.__good; doRestore(); return true; })()`);
 await sleep(2200);
+await ev(`loadRoute('5w'); true`); await sleep(600); // Beta 1.76: the restore reload lands on the route menu
 const B1 = JSON.parse(await ev(`(() => JSON.stringify([...doneSet]))()`));
 ok('B1 valid backup restores exactly', JSON.stringify(B1) === '["Columbus"]');
 
@@ -27,13 +29,13 @@ ok('B2 unsupported version rejected', (await toast()).includes('Unsupported back
 const B2s = JSON.parse(await ev(`(() => JSON.stringify([...doneSet].sort()))()`));
 ok('B2 state untouched', JSON.stringify(B2s) === '["Columbus","Galloway"]');
 
-await ev(`(() => { const p = JSON.parse(window.__good); p.data['snowroute.v2.times'] = 'not json'; $('xText').value = JSON.stringify(p); doRestore(); return true; })()`);
+await ev(`(() => { const p = JSON.parse(window.__good); p.routes['5w'].times = 'not json'; $('xText').value = JSON.stringify(p); doRestore(); return true; })()`);
 await sleep(400);
 ok('B3 corrupt value rejected', (await toast()).includes('not valid JSON'));
 const B3s = JSON.parse(await ev(`(() => JSON.stringify([...doneSet].sort()))()`));
 ok('B3 state untouched', JSON.stringify(B3s) === '["Columbus","Galloway"]');
 
-await ev(`(() => { window.__origSet = Storage.prototype.setItem; Storage.prototype.setItem = function(k, v) { if (k === 'snowroute.v2.history') throw new Error('quota'); return window.__origSet.call(this, k, v); }; $('xText').value = window.__good; doRestore(); return true; })()`);
+await ev(`(() => { window.__origSet = Storage.prototype.setItem; Storage.prototype.setItem = function(k, v) { if (k === 'snowroute.5w.v2.history') throw new Error('quota'); return window.__origSet.call(this, k, v); }; $('xText').value = window.__good; doRestore(); return true; })()`);
 await sleep(400);
 ok('B5 mid-write failure reported', (await toast()).includes('Restore failed'));
 const B5s = JSON.parse(await ev(`(() => JSON.stringify([...doneSet].sort()))()`));

@@ -1,5 +1,6 @@
-import { launchDrive, finish } from './harness.mjs';
-const { proc, ev, consoleLog, sleep, poll: poll120 } = await launchDrive();
+import { launchDrive, finish, bootThrough } from './harness.mjs';
+const { proc, ev, consoleLog, sleep, poll: poll120, poll } = await launchDrive();
+await bootThrough(ev, poll); // Beta 1.76: boots end at the route menu now - click through to a loaded route
 
 
 
@@ -78,7 +79,7 @@ A = await J(`(() => { const e = $('sheet'); const r = e.getBoundingClientRect();
 ok('V5 closed sheet is invisible (hidden or fully below the viewport)', A.vis === 'hidden' || A.top >= 899);
 
 // V6: night theme - header measurements hold there too
-await ev(`(() => { $('nightBtn').click(); return true; })()`); // the Night tab is directly tappable now
+await ev(`(() => { $('nightBtn').click(); return true; })()`); // Night/Day lives in Settings now (Beta 1.76); a programmatic click still fires it
 await sleep(900);
 A = await J(`({ night: document.body.classList.contains('night') })`);
 D = await dockGeom();

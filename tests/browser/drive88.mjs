@@ -1,5 +1,6 @@
-import { launchDrive, finish } from './harness.mjs';
-const { proc, ev, consoleLog, sleep } = await launchDrive();
+import { launchDrive, finish, bootThrough } from './harness.mjs';
+const { proc, ev, consoleLog, sleep, poll } = await launchDrive();
+await bootThrough(ev, poll); // Beta 1.76: boots end at the route menu now - click through to a loaded route
 
 
 // drive88: v5.53 notes + clean detail battery
@@ -9,6 +10,7 @@ const exc = () => consoleLog.filter(c => c.type === 'EXCEPTION').length;
 const rowOf = (n) => `(() => { const rows = [...document.querySelectorAll('.srow')]; const i = names.indexOf('${n}'); return rows[i]; })()`;
 await sleep(3000);
 await ev(`(() => { localStorage.clear(); location.reload(); return true; })()`); await sleep(3000);
+await ev(`loadRoute('5w'); true`); await sleep(600); // Beta 1.76: a reload lands on the route menu
 // Phase 1: list buttons + auto-saving notes
 await ev(`(() => { $('streetsBtn').click(); return true; })()`); await sleep(400);
 let A = JSON.parse(await ev(`(() => JSON.stringify({ rows: document.querySelectorAll('.srow').length, smap: !!document.querySelector('.srow .smap'), snote: !!document.querySelector('.srow .snote') }))()`));
@@ -25,7 +27,7 @@ await ev(`(() => { document.querySelector('.noteEd textarea').blur(); return tru
 ok('K2 keyboard down: the sheet returns to normal motion', await ev(`document.body.classList.contains('kb')`) === false);
 await ev(`(() => { const ta = document.querySelector('.noteEd textarea'); ta.value = 'Driveway at #12 blocked by car'; ta.dispatchEvent(new Event('input', { bubbles: true })); return true; })()`);
 await sleep(800);
-A = JSON.parse(await ev(`(() => JSON.stringify({ ls: localStorage.getItem('snowroute.v4.notes') || '', hint: document.querySelector('.noteEd .nhint').textContent, nt: noteTextOf('Velmar') }))()`));
+A = JSON.parse(await ev(`(() => JSON.stringify({ ls: localStorage.getItem('snowroute.5w.v4.notes') || '', hint: document.querySelector('.noteEd .nhint').textContent, nt: noteTextOf('Velmar') }))()`));
 ok('P1 note auto-saves to storage (no Save button)', A.ls.includes('blocked by car') && A.nt.includes('blocked by car'));
 ok('P1 editor confirms the save', /Saved/.test(A.hint));
 await ev(`(() => { const r = [...document.querySelectorAll('.srow')][names.indexOf('Angie')]; r.querySelector('.nwrap').click(); return true; })()`); await sleep(400);
@@ -34,6 +36,7 @@ await sleep(800);
 A = JSON.parse(await ev(`(() => JSON.stringify({ nt: noteTextOf('Angie') }))()`));
 ok('P1 note works on a street that is not cleaned', A.nt.includes('gate locked'));
 await ev(`(() => { location.reload(); return true; })()`); await sleep(3000);
+await ev(`loadRoute('5w'); true`); await sleep(600);
 await ev(`(() => { $('streetsBtn').click(); return true; })()`); await sleep(400);
 A = JSON.parse(await ev(`(() => { const r = [...document.querySelectorAll('.srow')][names.indexOf('Velmar')]; return JSON.stringify({ preview: r.querySelector('.nt').textContent }); })()`));
 ok('P1 note survives reload and previews in the row', A.preview.includes('blocked by car'));
@@ -59,7 +62,7 @@ await ev(`(() => { $('cleanView').querySelector('.cvDel').click(); return true; 
 A = JSON.parse(await ev(`(() => JSON.stringify({ armed: $('cleanView').querySelector('.cvDel').textContent, h: history.length }))()`));
 ok('P4 first tap arms the delete', /confirm/.test(A.armed) && A.h === 1);
 await ev(`(() => { $('cleanView').querySelector('.cvDel').click(); return true; })()`); await sleep(300);
-A = JSON.parse(await ev(`(() => JSON.stringify({ h: history.length, ls: localStorage.getItem('snowroute.v2.history'), cvHidden: $('cleanView').classList.contains('hidden') }))()`));
+A = JSON.parse(await ev(`(() => JSON.stringify({ h: history.length, ls: localStorage.getItem('snowroute.5w.v2.history'), cvHidden: $('cleanView').classList.contains('hidden') }))()`));
 ok('P4 second tap deletes the clean and persists', A.h === 0 && A.ls === '[]' && A.cvHidden);
 R.exceptions = consoleLog.filter(c => c.type === 'EXCEPTION').map(c => String((c.args && c.args[0]) || c.text || '').slice(0, 220));
 finish(R, proc);

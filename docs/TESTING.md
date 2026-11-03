@@ -55,6 +55,22 @@ documented exception: its server switches content roots mid-drive
 (the service-worker upgrade test), a genuinely different shape, so it
 keeps its own preamble.
 
+Since Beta 1.76 every boot ends at the route menu (no route is loaded
+until one is picked), so file:// drives call `bootThrough(ev, poll)`
+from the harness right after launch: it waits for the boot tail, clicks
+Choose a route → Route 5W, and waits until the route is loaded and the
+splash is gone. A route pick before the map exists is unreachable for a
+real user (the menu only appears at the readiness gate, after the boot
+tail), so `bootThrough` first waits for the boot to run — drives that
+reload mid-test re-load the route after the reload (drive114's reload
+helper; drive121's seeded sessions). drive145 is the menu's own drive:
+the handover, both panes, the placeholder, the pick, the Settings order,
+the Routes sheet badge, the per-route slot shape, the legacy→slot
+migration and its abort fallback, and a v1 backup restoring into the
+slot. drive132's splash checks now assert the menu handover and that
+picking a route is what removes the splash; drive125 asserts the new
+tab order and the three-row Settings menu.
+
 Coverage:
 
 - `drive65` — stored-data validators: corrupt completion times and history
