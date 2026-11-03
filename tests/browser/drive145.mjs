@@ -191,6 +191,27 @@ ok('N30 a flick-down close keeps the finger speed (no restart from rest) | top '
 await sleep(900);
 const closedState = JSON.parse(await ev(`(() => JSON.stringify({ open: $('sheet').classList.contains('open'), vis: getComputedStyle($('sheet')).visibility, tf: $('sheet').style.transform, h: $('sheet').style.height }))()`));
 ok('N31 the spring close lands fully closed with inline geometry cleared | ' + JSON.stringify(closedState), closedState.open === false && closedState.vis === 'hidden' && closedState.tf === '' && closedState.h === '');
+// N34 (Beta 1.83): the close landing must be CLEAN - Andrew on 1.82: a flick close
+// landed, then the sheet popped back up and down a split second later (Streets and
+// Pace). The stop landings never did it: they finish with computed values unchanged.
+// The close finish was the one landing that removed .dragging (transitions back on)
+// in the same breath as flipping .open and clearing the inline geometry. The fix
+// lands the close entirely under .dragging and removes it two frames later, when it
+// changes nothing. Pinned two ways: (a) in the landing frame itself (spring done,
+// .open off) .dragging is STILL on, and it is off shortly after; (b) once the sheet's
+// top edge first passes the bottom of the screen it never re-enters (no pop).
+await ev(`(function(){ renderStreets(); $('sheet').classList.add('open'); })()`); await sleep(650);
+await ev(`(function(){ const s = $('sheet'); window.__popTrace = []; const t0 = performance.now(); const tick = () => { const r = s.getBoundingClientRect(); window.__popTrace.push({ top: Math.round(r.top), drag: s.classList.contains('dragging'), spr: !!s._spring, open: s.classList.contains('open') }); if (performance.now() - t0 < 1500) requestAnimationFrame(tick); }; requestAnimationFrame(tick); })()`);
+hp = await headPt();
+fy = hp.y; await mDown(hp.x, hp.y); for (let i = 0; i < 5; i++) { fy += 26; await mMove(hp.x, fy); await sleep(16); } await mUp(hp.x, fy);
+await sleep(1700);
+const popTrace = JSON.parse(await ev(`(() => JSON.stringify(window.__popTrace || []))()`));
+const crossIdx = popTrace.findIndex(p => p.top >= 898);
+const reentry = crossIdx >= 0 ? popTrace.slice(crossIdx).some(p => p.top < 890) : true;
+const landIdx = popTrace.findIndex(p => !p.spr && !p.open);
+const dragAtLand = landIdx >= 0 ? popTrace[landIdx].drag : false;
+const dragLater = landIdx >= 0 ? popTrace.slice(landIdx + 6).some(p => !p.drag) : false;
+ok('N34 the flick close lands clean - no pop back up, transitions stay off through the landing | n ' + popTrace.length + ' cross ' + crossIdx + ' reentry ' + reentry + ' dragAtLand ' + dragAtLand + ' dragLater ' + dragLater, crossIdx >= 0 && !reentry && dragAtLand === true && dragLater === true);
 // N32/N33 (Beta 1.82): the DEFAULT stop is the sheet's OWN natural open height.
 // Pace's content is short - its natural height is ~204px (a quarter screen), not the
 // 450px half. The 1.81 spring aimed Pace at 450 and snapped it to 204 when the

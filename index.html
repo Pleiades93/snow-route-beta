@@ -2,7 +2,7 @@
 <html lang="en">
 <head>
 <meta charset="UTF-8">
-<meta http-equiv="Content-Security-Policy" content="default-src 'none'; script-src 'sha384-tJ8BQu6eGTqltdxhWmUeqPkwvXl2BIr6gDR1amFEi5vphEs0z1i8hNrGkKeXN2PS' https://cdn.jsdelivr.net; style-src-elem 'sha384-V7ZX3DFDJgfhaP7ap/hhTh2inhRB0EteQcIqXI3uJq9TqOT+uX1hI0QpIzGstLgO' https://cdn.jsdelivr.net; style-src-attr 'unsafe-inline'; img-src 'self' data: blob: https://tiles.basemaps.cartocdn.com https://protomaps.github.io https://cdn.jsdelivr.net; connect-src 'self' https://tiles.basemaps.cartocdn.com https://protomaps.github.io https://cdn.jsdelivr.net; worker-src blob: 'self'; child-src blob: 'self'; font-src 'none'; manifest-src 'self'; base-uri 'none'; form-action 'none'; object-src 'none'">
+<meta http-equiv="Content-Security-Policy" content="default-src 'none'; script-src 'sha384-yEn1dWhPH8Tmd6s/dV+TiSkpAAdbqhmJmkPnoRyxoUOVm/BJAdl6PYZboVkN9M6o' https://cdn.jsdelivr.net; style-src-elem 'sha384-lnBRvYg7ic2bbpk6O36o0QajoTy2fkrXHMW8VnEAgTANV+4k3cbT+KzCfJasOim2' https://cdn.jsdelivr.net; style-src-attr 'unsafe-inline'; img-src 'self' data: blob: https://tiles.basemaps.cartocdn.com https://protomaps.github.io https://cdn.jsdelivr.net; connect-src 'self' https://tiles.basemaps.cartocdn.com https://protomaps.github.io https://cdn.jsdelivr.net; worker-src blob: 'self'; child-src blob: 'self'; font-src 'none'; manifest-src 'self'; base-uri 'none'; form-action 'none'; object-src 'none'">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="mobile-web-app-capable" content="yes">
@@ -210,8 +210,9 @@
    same blue + centred icon, so the two read as one continuous moment. */
 #splash { position: fixed; inset: 0; z-index: 9999; display: flex; flex-direction: column; align-items: center; justify-content: center; }
 #splashBg { position: absolute; inset: -70px 0; background: #2b4bf2; } /* Beta 1.65: the cover overshoots the screen top and bottom by 70px, so while the screen size is still settling in the first frames no sliver of the app beneath (the tab bar) can show under the splash */
-#splashIcon { position: relative; width: 168px; height: 168px; border-radius: 38px; box-shadow: 0 18px 50px rgba(0,0,0,.35); will-change: transform; }
-#splashTitle { position: relative; margin-top: 26px; color: #fff; font-size: 37px; font-weight: 700; letter-spacing: .2px; opacity: 0; animation: splashSlide .65s cubic-bezier(.16,.84,.3,1) .1s forwards; }
+/* Beta 1.83 (Andrew, test build for the launch-glitch code audit): two tweaks, tested together on his cold opens. (1) #splashIcon no longer carries the will-change layer hint - a leftover from the retired pre-1.76 icon-rush exit; nothing has transformed the icon since, so the hint only told the compositor to keep it on a dedicated layer for no reason. (2) The title's slide-in now starts at 1s instead of .1s, so it no longer crosses the screen during the still-to-live handover (the launch still has no title); the slide itself is unchanged. Identical glitch on 1.83 clears both permanently. */
+#splashIcon { position: relative; width: 168px; height: 168px; border-radius: 38px; box-shadow: 0 18px 50px rgba(0,0,0,.35); }
+#splashTitle { position: relative; margin-top: 26px; color: #fff; font-size: 37px; font-weight: 700; letter-spacing: .2px; opacity: 0; animation: splashSlide .65s cubic-bezier(.16,.84,.3,1) 1s forwards; }
 @keyframes splashSlide { 0% { opacity: 0; transform: translateX(360px); } 55% { opacity: 1; } 82% { transform: translateX(-9px); } 100% { opacity: 1; transform: translateX(0); } }
 #splashBrand { position: relative; display: flex; flex-direction: column; align-items: center; transition: transform .5s var(--ease-close), opacity .45s ease; }
 #splash.menu #splashBrand { transform: translateX(70vw); opacity: 0; pointer-events: none; } /* Beta 1.76 (Andrew): the brand leaves to the RIGHT and the route menu takes the same blue screen - the old icon-rush exit is retired */
@@ -253,7 +254,7 @@
 <div id="hud">
   <div id="warn">Not saving — storage is full or blocked</div>
   <div class="row">
-    <div class="titleStack"><div class="title">Snow Route Beta</div><div class="ver" id="ver">Beta 1.82</div></div>
+    <div class="titleStack"><div class="title">Snow Route Beta</div><div class="ver" id="ver">Beta 1.83</div></div>
   </div>
   <div id="stats"></div>
 </div>
@@ -2924,8 +2925,22 @@ function makeSheetDraggable(sheet) {
       sheet.classList.remove('full');
       sheet.style.height = h + 'px'; sheet.style.maxHeight = 'none';
       springSheet(sheet, 0, h * 1.05 + 8, -v * 1000, q => { sheet.style.transform = 'translateY(' + q + 'px)'; }, () => {
-        sheet.classList.remove('open'); sheet.classList.remove('dragging');
+        sheet.classList.remove('open');
         sheet.style.height = ''; sheet.style.maxHeight = ''; sheet.style.transform = '';
+        // Beta 1.83 (Andrew, live catch on 1.82): a flick close landed, then the sheet
+        // popped back up and down again a split second later - on Streets and Pace both.
+        // The stop landings never did it (flick up to full, flick down to the natural
+        // stop): those finish with the sheet's computed values unchanged, so nothing
+        // re-animates. The close landing was the one finish that ALSO removed .dragging
+        // (transitions back on) in the same breath as flipping .open and clearing the
+        // inline geometry - handing the landing to the browser's compositor with a
+        // state change left to animate or commit in pieces (an intermediate
+        // open-with-no-transform frame reads as exactly that pop). So the close now
+        // lands entirely under .dragging (transition: none): classes and inline
+        // geometry settle to the closed state first, and .dragging comes off two
+        // frames later, when removing it changes no computed value and nothing can
+        // animate. Guarded on still-closed so a reopen in between keeps its drag.
+        requestAnimationFrame(() => requestAnimationFrame(() => { if (!sheet.classList.contains('open')) sheet.classList.remove('dragging'); }));
       });
     };
     if (flick > 0) { settleStop(vh * SHEET_FULL_VH); return; }

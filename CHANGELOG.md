@@ -1,5 +1,9 @@
 # Changelog
 
+## Beta 1.83 — 2026-11-03
+- Sheet flick-close pop FIXED (Andrew, live catch on 1.82): a flick down to fully close landed, then the sheet popped back up and down a split second later — Streets and Pace both; flick up to full and flick down to the natural stop were clean. The close was the one landing that removed .dragging (transitions back on) in the same breath as flipping .open and clearing the inline geometry, leaving the browser's compositor a state change to animate/commit in pieces; the rig reproduces it (the closed sheet's top edge re-enters after first crossing). The close now lands entirely under .dragging and removes it two frames later, when it changes no computed value and nothing can animate (drive145 N34 pins the landing frame + no-re-entry; red on the old code, green on the fix).
+- Splash glitch TEST tweaks (Andrew approved testing both in this beta): #splashIcon's dead `will-change: transform` removed (a leftover from the retired pre-1.76 icon-rush exit — nothing has transformed the icon since), and the splash title's slide-in delayed from 0.1s to 1s so it no longer crosses the screen during the still-to-live handover (the launch still carries no title); the slide itself is unchanged. Andrew's cold opens are the verdict: an identical glitch clears both items permanently and exhausts the code side.
+
 ## Beta 1.82 — 2026-11-03
 Fix for a glitch Andrew caught live in 1.81: flicking the Pace sheet down from full, it sprang to halfway, stuttered, and snapped back to its own quarter-height rest. The 1.81 spring aimed every sheet's default stop at the half-height number, but Pace's content is short — its natural open height is about a quarter of the screen — so the spring landed on empty height and the finish step snapped it home. The default stop now targets the sheet's own natural open height (Streets is unchanged: its natural height is the half). Everything else from 1.81 is untouched.
 
