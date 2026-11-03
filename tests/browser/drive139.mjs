@@ -27,6 +27,7 @@ await send('Emulation.setDeviceMetricsOverride', { width: 420, height: 820, devi
 await ev(`location.reload()`);
 await sleep(2500);
 ok('P5 app reboots coherently in a short stage', await poll120(`!!window.maplibregl && window.innerHeight === 820`, 30000));
+ok('P5b the boot state has ended before layout is measured (Beta 1.86: chrome is absent BY DESIGN while booting, so a bar rect read mid-boot is the boot state, not the app layout)', await poll120(`!document.documentElement.classList.contains('boot')`, 20000));
 const lay2 = await ev(`(() => { const tb = document.getElementById('tabBar').getBoundingClientRect(); return { ih: window.innerHeight, tabB: Math.round(tb.bottom), sh: document.documentElement.scrollHeight }; })()`);
 ok('P6 short stage: bar still at the stage bottom and the floor precondition holds | ' + JSON.stringify(lay2), !!lay2 && lay2.tabB === lay2.ih && lay2.sh >= lay2.ih);
 R.exceptions = consoleLog.filter(c => c.type === 'EXCEPTION');
