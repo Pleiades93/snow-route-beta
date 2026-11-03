@@ -195,7 +195,8 @@ try {
     return core.every(u => urls.includes(u)) && urls.some(u => u === 'http://127.0.0.1:8931/');
   })()`));
   await ev(`(async () => { const c = await caches.open('${TILECACHE}'); await c.put('https://server.arcgisonline.com/ArcGIS/rest/services/Canvas/World_Light_Gray_Base/MapServer/tile/15/100/200', new Response('TILEBYTES', { status: 200, headers: { 'Content-Type': 'image/png' } })); return true; })()`);
-  await ev(`togglePiece('Velmar', 0, 0); true`); await sleep(500);
+  await until(async () => await ev(`(function(){ if (typeof routeLoaded !== 'undefined' && !routeLoaded && typeof loadRoute === 'function' && window.__bootAt) { try { loadRoute('5w'); } catch (e) {} } return typeof routeLoaded !== 'undefined' && routeLoaded === true; })()`), 30000); // Beta 1.76: the page boots to the route menu - load 5W before marking/reading route state
+await ev(`togglePiece('Velmar', 0, 0); true`); await sleep(500);
   okS('W4 seeded: a tile in the tiles cache + a marked side under v1', await ev(`pieces.Velmar[0] === 1`));
 
   current = 'v2';   // the server now serves the next release (Node-side flag from the preamble)
@@ -215,7 +216,7 @@ try {
   okS('W5 the app update path lands on the new version (first reload, or the app-designed retry)', w5);
   okS('W6 handoff: new shell cache in, old shell cache deleted', await until(async () => await ev(`(async () => { const ks = await caches.keys(); return ks.includes('${V2CACHE}') && !ks.includes('${V1CACHE}'); })()`), 25000));
   okS('W7 tiles cache survives the handoff, seeded tile intact', await ev(`(async () => { const c = await caches.open('${TILECACHE}'); const r = await c.match('https://server.arcgisonline.com/ArcGIS/rest/services/Canvas/World_Light_Gray_Base/MapServer/tile/15/100/200'); return !!r && (await r.text()) === 'TILEBYTES'; })()`));
-  okS('W8 route progress survives the handoff', await until(async () => await ev(`pieces.Velmar[0] === 1`), 15000));
+  okS('W8 route progress survives the handoff', await until(async () => await ev(`(function(){ if (typeof routeLoaded !== 'undefined' && !routeLoaded && typeof loadRoute === 'function' && window.__bootAt) { try { loadRoute('5w'); } catch (e) {} } return typeof pieces !== 'undefined' && !!pieces.Velmar && pieces.Velmar[0] === 1; })()`), 25000));
   okS('W9 post-update confirmation was consumed (no stale update flag)', await until(async () => await ev(`sessionStorage.getItem('snowroute.updatedTo') === null`), 15000));
   okS('W10 the new shell serves the new page from cache storage', await ev(`(async () => { const c = await caches.open('${V2CACHE}'); const r = await c.match('http://127.0.0.1:8931/'); return !!r && (await r.text()).includes('${V2LABEL}'); })()`));
 } catch (e) {

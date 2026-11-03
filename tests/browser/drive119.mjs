@@ -2,7 +2,7 @@ import { sleep, launch, closeBrowser, until, waitBoot, allExceptions, FIX } from
 const R = { checks: [] };
 const ok = (name, cond) => R.checks.push([name, !!cond]);
 const okS = (n, v) => ok(n, v === true);
-const loadRouteWait = async (ev) => { await until(async () => { const r = await ev(`(function(){ if (typeof routeLoaded === 'undefined') return false; if (!routeLoaded && typeof loadRoute === 'function') { try { loadRoute('5w'); } catch (e) {} } return routeLoaded === true; })()`); return r === true; }, 30000); }; // Beta 1.76: boots end at the route menu - load 5W, retrying across the boot
+const loadRouteWait = async (ev) => { await until(async () => { const r = await ev(`(function(){ if (typeof routeLoaded === 'undefined') return false; if (!routeLoaded && typeof loadRoute === 'function') { try { loadRoute('5w'); } catch (e) {} } return routeLoaded === true && !!window.__bootAt; })()`); return r === true; }, 30000); }; // Beta 1.76: boots end at the route menu - load 5W, retrying across the boot
 
 // ---- Session 1: online boot, worker control, style cached, seed one marked side ----
 let b = await launch(false);

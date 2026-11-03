@@ -28,7 +28,7 @@ const FIXTURE = {
   'snowroute.5w.v5.sides': JSON.stringify({ p: { Astona: [3], Velmar: Array(14).fill(3), Woolacott: [3, 1, 0] }, t: { Velmar: { 0: [T1, '2026-01-05T12:01:00.000Z'] }, Woolacott: { 0: [T1, '2026-01-05T12:02:00.000Z'], 1: [T1, null] } } })
 };
 const FIXJ = JSON.stringify(FIXTURE);
-const loadRouteWait = async () => { await until(async () => { const r = await b.ev(`(function(){ if (typeof routeLoaded === 'undefined') return false; if (!routeLoaded && typeof loadRoute === 'function') { try { loadRoute('5w'); } catch (e) {} } return routeLoaded === true; })()`); return r === true; }, 30000); }; // Beta 1.76: retry across the reload race
+const loadRouteWait = async () => { await until(async () => { const r = await b.ev(`(function(){ if (typeof routeLoaded === 'undefined') return false; if (!routeLoaded && typeof loadRoute === 'function') { try { loadRoute('5w'); } catch (e) {} } return routeLoaded === true && !!window.__bootAt; })()`); return r === true; }, 30000); }; // Beta 1.76: retry across the reload race
 
 // ---- session 1: the fixture loads losslessly, and a backup round-trips it ----
 let b = await launch(false);

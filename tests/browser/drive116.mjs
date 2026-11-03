@@ -1,9 +1,7 @@
 import fs from 'node:fs';
 import { launchDrive, bootThrough } from './harness.mjs';
 const { proc, send, S, ev, consoleLog, sleep, poll } = await launchDrive({ logDomain: true });
-await bootThrough(ev, poll); // Beta 1.76: boots end at the route menu now - click through to a loaded route
-
-
+// (the Beta 1.76 route pick happens after the stamped-page reload below - this drive navigates away from the harness page first)
 const R = { checks: [] };
 const ok = (name, cond) => R.checks.push([name, !!cond]);
 const exc = () => consoleLog.filter(c => c.type === 'EXCEPTION').length;
@@ -36,6 +34,7 @@ await sleep(800);
 try {
   await ev(`localStorage.clear(); location.reload(); true`);
   await sleep(500); await waitBoot(); await sleep(2500);
+  await bootThrough(ev, poll); // Beta 1.76: the stamped page also boots to the route menu - pick 5W before the GL checks
   ok('P1 app boots under its own CSP (version label live)', await ev(`/^Beta \\d+\\.\\d+$/.test(document.getElementById('ver').textContent)`));
   ok('P2 MapLibre GL loaded from the allowlisted CDN', await ev(`typeof window.maplibregl === 'object'`));
   const pol = await ev(`(function(){ const m = document.querySelector('meta[http-equiv="Content-Security-Policy"]'); return m ? m.getAttribute('content') : ''; })()`);
