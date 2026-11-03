@@ -31,6 +31,7 @@ await send('Page.addScriptToEvaluateOnNewDocument', { source: `(() => { const mm
 await ev(`location.reload()`);
 await sleep(2500);
 ok('V0b app reboots under the home-screen shim', await poll120(`typeof glOk !== 'undefined' && glOk === true`));
+ok('V0c the boot state has ended before the editor interactions (Beta 1.86: chrome is absent BY DESIGN while booting - a focus() landing mid-boot would no-op against the hidden editor)', await poll120(`!document.documentElement.classList.contains('boot')`, 20000));
 await ev(`syncViewport()`);
 ok('V1 settled size learned at boot (900) | ' + await ev(`fullH`), await ev(`fullH`) === 900);
 await ev(`$('streetsBtn').click()`); await sleep(500);
