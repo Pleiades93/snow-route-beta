@@ -1,5 +1,9 @@
 # Changelog
 
+## Beta 1.81 — 2026-11-03
+Sheet swipe animations rebuilt from a measurement of Andrew's Waze screen recording. A drag release used to hand the sheet to a fixed 420ms CSS transition that restarted from rest: rig-measured, a flick thrown at ~1600px/s crawled in its first 120ms, then accelerated away — on Pace's short sheet that slow start was most of the trip, which is why a swipe down sometimes read as "just disappears." Releases now run a critically-damped spring (omega 30/s) whose starting velocity is the finger's own release velocity, matching the recording's settles (start at flick speed, geometric decay, ~500px trips landing in ~230-300ms, no overshoot past a stop). The sheet keeps its blur off until the motion lands, so the phone never repaints the frosted background mid-settle. Stop positions, end states, and the tap / X / tap-away animations Andrew approved are unchanged.
+The route intro flight is slower and gentler (Andrew): the wide view now sits on the Route 5W point of interest for about 1.5 seconds (was 0.8), then flies in over 3 seconds on a flatter curve (was 2.1 seconds).
+
 ## Beta 1.80 — 2026-11-03
 The route menu's close is now a bare white ✕ — no circle, no frosting — still floating at the bottom centre of the blue screen, still tab mode only. Andrew picked it from six rendered options (frosted light, Apple-Maps grey, dark frosted, solid white, bare white, bare black). The invisible 44-pixel touch target stays, and a soft shadow keeps the glyph readable on the blue. The translucent circle from 1.79 is retired.
 

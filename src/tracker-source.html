@@ -252,7 +252,7 @@
 <div id="hud">
   <div id="warn">Not saving — storage is full or blocked</div>
   <div class="row">
-    <div class="titleStack"><div class="title">Snow Route Beta</div><div class="ver" id="ver">Beta 1.80</div></div>
+    <div class="titleStack"><div class="title">Snow Route Beta</div><div class="ver" id="ver">Beta 1.81</div></div>
   </div>
   <div id="stats"></div>
 </div>
@@ -2798,11 +2798,12 @@ function renderStreets() { // production row design: tap a street's name area to
   if (!el.querySelector('.noteEd')) { noteEdFor = null; kbSync(); } // Beta 1.56: an editor removed by a rebuild must not leave the keyboard state stuck on - reported to the owner (app4 kbSync), which releases it through the settle path
 }
 document.querySelectorAll('#filters button').forEach(b => b.addEventListener('click', () => { listFilter = b.dataset.f; document.querySelectorAll('#filters button').forEach(x => x.classList.toggle('on', x === b)); renderStreets(); }));
-function closeSheetEl(s) { // Beta 1.30: the close now ANIMATES - freeze the height the sheet has at this moment for the whole slide-down, and clear it only after the motion ends. Clearing it instantly (the old way) snapped the sheet to its default height mid-close, which is why closing felt broken while opening felt fine.
-  if (!s.classList.contains('open')) { s.classList.remove('full'); return; }
+function closeSheetEl(s) { // Beta 1.30: the close now ANIMATES - freeze the height the sheet has at this moment for the whole slide-down, and clear it only after the motion ends. Clearing it instantly (the old way) snapped the sheet to its default height mid-close, which is why closing felt broken while opening felt fine. Beta 1.81: a running release spring is cancelled first (its finish never runs, so the takeover also drops .dragging); a leftover inline transform from an interrupted spring-close is cleared so the class transition owns the slide.
+  cancelSheetSpring(s);
+  if (!s.classList.contains('open')) { s.classList.remove('full'); s.classList.remove('dragging'); return; }
   const h = s.offsetHeight;
-  s.style.height = h + 'px'; s.style.maxHeight = 'none';
-  s.classList.remove('open'); s.classList.remove('full'); s.classList.remove('snapping'); // the base (closing) transition and curve own the motion from here
+  s.style.height = h + 'px'; s.style.maxHeight = 'none'; s.style.transform = '';
+  s.classList.remove('open'); s.classList.remove('full'); s.classList.remove('snapping'); s.classList.remove('dragging'); // the base (closing) transition and curve own the motion from here
   setTimeout(() => { if (!s.classList.contains('open')) { s.style.height = ''; s.style.maxHeight = ''; } }, 480);
 }
 function closeSheets() { document.querySelectorAll('.sheet').forEach(closeSheetEl); } // Beta 1.77: every sheet by class, present and future - no hand-kept list to fall behind a new menu
@@ -2813,6 +2814,32 @@ function closeSheets() { document.querySelectorAll('.sheet').forEach(closeSheetE
 // (FULL), down = back to the standard open height (DEFAULT), down again = closed. Slow drags follow the
 // finger; quick flicks throw the panel to the next stop on release. Taps pass through untouched.
 const SHEET_DEF_VH = 0.50, SHEET_FULL_VH = 0.94, SHEET_MIN_PX = 150; // Beta 1.79 (Andrew): the three stops - closed / half (SHEET_DEF_VH, where a sheet opens) / full (SHEET_FULL_VH)
+// Beta 1.81 (Andrew, reverse-engineered from his Waze screen recording): a drag release used to
+// hand the sheet to a fixed 420ms CSS transition that restarted from rest - measured on the rig,
+// a flick thrown at ~1600px/s crawled +3/+12/+21px in its first 120ms and only then accelerated
+// away (on Pace's short sheet that slow start IS most of the trip, which is why it read as
+// "just disappears"). The recording's settles instead start at the finger's speed and decay
+// geometrically (tails halving each ~33ms frame, ~500px trips landing in ~230-300ms, no overshoot
+// past a stop). So releases now run a critically-damped spring (omega 30/s) whose initial velocity
+// IS the release velocity, and the sheet keeps .dragging (no CSS transition, blur off) until the
+// motion lands - the phone never repaints the frosted blur mid-settle either. End states match
+// the old snap exactly: full = inline full height + .full; half = cleared inline height, no .full;
+// closed = .open off with inline geometry cleared.
+const SHEET_OMEGA = 30;
+function cancelSheetSpring(sheet) { if (sheet._spring) { cancelAnimationFrame(sheet._spring); sheet._spring = null; } }
+function springSheet(sheet, q0, qT, v0, apply, finish) {
+  cancelSheetSpring(sheet);
+  let q = q0, vel = Math.max(-4000, Math.min(4000, v0)), last = performance.now(), t0 = last;
+  if (window.matchMedia && matchMedia('(prefers-reduced-motion: reduce)').matches) { apply(qT); finish(); return; }
+  const step = now => {
+    const dt = Math.min(0.05, (now - last) / 1000); last = now;
+    const acc = -SHEET_OMEGA * SHEET_OMEGA * (q - qT) - 2 * SHEET_OMEGA * vel;
+    vel += acc * dt; q += vel * dt;
+    if ((Math.abs(q - qT) < 0.7 && Math.abs(vel) < 15) || now - t0 > 1000) { apply(qT); sheet._spring = null; finish(); return; }
+    apply(q); sheet._spring = requestAnimationFrame(step);
+  };
+  sheet._spring = requestAnimationFrame(step);
+}
 function makeSheetDraggable(sheet) {
   let startY = 0, lastY = 0, startH = 0, dragging = false, moved = false, pid = null, panelMoved = false, samples = [];
   sheet.addEventListener('pointerdown', e => {
@@ -2830,6 +2857,7 @@ function makeSheetDraggable(sheet) {
     if (!moved && Math.abs(total) < 3) return; // Beta 1.79: near-zero dead zone - the old 9px threshold was the first hitch of the drag hesitation Andrew felt; the panel follows from the first pixels
     if (!moved) {
       moved = true;
+      if (sheet._spring) { cancelSheetSpring(sheet); sheet.style.transform = ''; startY = e.clientY; lastY = e.clientY; startH = sheet.offsetHeight; samples = [{ t: performance.now(), y: e.clientY }]; } // a catch mid-settle restarts the drag from the sheet's live height
       sheet.classList.add('dragging'); sheet.classList.remove('snapping');
       try { sheet.setPointerCapture(pid); } catch (err) {}
     }
@@ -2847,34 +2875,48 @@ function makeSheetDraggable(sheet) {
     if (!dragging || (e && e.pointerId !== pid)) return;
     dragging = false;
     if (!moved) return;
-    sheet.classList.remove('dragging'); sheet.classList.add('snapping');
     // swallow the click this drag would otherwise deliver to a row/button
     const swallow = ev => { ev.stopPropagation(); ev.preventDefault(); document.removeEventListener('click', swallow, true); };
     document.addEventListener('click', swallow, true);
     setTimeout(() => document.removeEventListener('click', swallow, true), 350);
     const vh = vvHeight(), h = sheet.offsetHeight, defH = vh * SHEET_DEF_VH;
-    // FLICK (Andrew, Beta 1.11 - the Waze gesture): a fast short swipe throws the panel to its next stop
-    // instead of following the finger the whole way. Velocity from the last ~120ms of movement, px/ms,
-    // positive = upward. Only when the panel itself moved (a flick that scrolled the list stays a scroll).
-    let flick = 0;
+    // Release velocity from the last ~130ms of movement, px/ms, positive = upward.
+    // The settle spring starts AT this velocity (Beta 1.81) - the old CSS snap restarted
+    // from rest, which is what made swipe closes read as "just disappears" on Pace.
+    let v = 0;
     if (panelMoved && samples.length > 1) {
       const now = performance.now();
       const s0 = samples.find(s => now - s.t <= 130) || samples[0];
       const dt = now - s0.t;
-      if (dt >= 30) { const v = (s0.y - lastY) / dt; if (Math.abs(v) > 0.30) flick = v > 0 ? 1 : -1; }
+      if (dt >= 30) v = (s0.y - lastY) / dt;
     }
-    if (flick) {
-      const isFull = sheet.classList.contains('full');
-      if (flick > 0) { sheet.style.height = (vh * SHEET_FULL_VH) + 'px'; sheet.classList.add('full'); } // up: fill (already full = stay)
-      else if (isFull) { sheet.style.height = ''; sheet.style.maxHeight = ''; sheet.classList.remove('full'); } // down from full: back to default
-      else { closeSheets(); return; } // down from default: close
-      setTimeout(() => sheet.classList.remove('snapping'), 470);
-      return;
-    }
-    if (h < defH * 0.55) { closeSheets(); return; }
-    if (h > (defH + vh * SHEET_FULL_VH) / 2) { sheet.style.height = (vh * SHEET_FULL_VH) + 'px'; sheet.classList.add('full'); }
-    else { sheet.style.height = ''; sheet.style.maxHeight = ''; sheet.classList.remove('full'); }
-    setTimeout(() => sheet.classList.remove('snapping'), 470);
+    // FLICK (Andrew, Beta 1.11 - the Waze gesture): a fast short swipe throws the panel
+    // to its next stop on release instead of following the finger the whole way. Only when
+    // the panel itself moved (a flick that scrolled the list stays a scroll).
+    const flick = panelMoved && Math.abs(v) > 0.30 ? (v > 0 ? 1 : -1) : 0;
+    const settleStop = targetH => { // spring the height to a stop; end state = the old snap's end state
+      const isFull = targetH >= vh * SHEET_FULL_VH - 1;
+      if (isFull) sheet.classList.add('full'); else sheet.classList.remove('full');
+      sheet.style.maxHeight = 'none';
+      springSheet(sheet, h, targetH, v * 1000, q => { sheet.style.height = q + 'px'; }, () => {
+        sheet.classList.remove('dragging');
+        if (isFull) sheet.style.height = (vh * SHEET_FULL_VH) + 'px';
+        else { sheet.style.height = ''; sheet.style.maxHeight = ''; }
+      });
+    };
+    const settleClose = () => { // spring the sheet off the bottom edge at the finger's speed, then land closed
+      sheet.classList.remove('full');
+      sheet.style.height = h + 'px'; sheet.style.maxHeight = 'none';
+      springSheet(sheet, 0, h * 1.05 + 8, -v * 1000, q => { sheet.style.transform = 'translateY(' + q + 'px)'; }, () => {
+        sheet.classList.remove('open'); sheet.classList.remove('dragging');
+        sheet.style.height = ''; sheet.style.maxHeight = ''; sheet.style.transform = '';
+      });
+    };
+    if (flick > 0) { settleStop(vh * SHEET_FULL_VH); return; }
+    if (flick < 0) { if (sheet.classList.contains('full')) settleStop(defH); else settleClose(); return; }
+    if (h < defH * 0.55) { settleClose(); return; }
+    if (h > (defH + vh * SHEET_FULL_VH) / 2) { settleStop(vh * SHEET_FULL_VH); return; }
+    settleStop(defH);
   };
   sheet.addEventListener('pointerup', end);
   sheet.addEventListener('pointercancel', end);
@@ -3941,14 +3983,14 @@ if (__splashEl && !window.matchMedia('(prefers-reduced-motion: reduce)').matches
 // Beta 1.78: the splash plays once per cold load and can never replay - but
 // the route menu is NOT removed with it: finish() parks it below the screen
 // and the Routes tab slides it back up (app2's openRouteMenu).
-function introToRoute() { // Beta 1.77 (Andrew): a pick opens WIDE on the route's area and flies in to the fitted view as the splash leaves, instead of the map simply appearing already zoomed in
+function introToRoute() { // Beta 1.77 (Andrew): a pick opens WIDE on the route's area and flies in to the fitted view as the splash leaves, instead of the map simply appearing already zoomed in. Beta 1.81 (Andrew): the wide view dwells longer on the Route 5W point of interest and the flight in is slower and gentler - the old one was over before he could take the map in
   const b = [[routeBox.w, routeBox.s], [routeBox.e, routeBox.n]];
   const fit0 = () => { try { map.fitBounds(b, { padding: 28, animate: false }); } catch (e) {} };
   if (!map.cameraForBounds || (window.matchMedia && matchMedia('(prefers-reduced-motion: reduce)').matches)) { fit0(); return; }
   let fit = null; try { fit = map.cameraForBounds(b, { padding: 28 }); } catch (e) {}
   if (!fit || !fit.center || typeof fit.zoom !== 'number') { fit0(); return; }
   try { map.jumpTo({ center: fit.center, zoom: Math.max(8, fit.zoom - 3) }); } catch (e) { fit0(); return; }
-  setTimeout(() => { if (!map) return; try { map.flyTo({ center: fit.center, zoom: fit.zoom, duration: 2100, curve: 1.35, essential: false }); } catch (e) {} }, 800); // 800ms: the splash's own exit (780ms) has just finished, so the whole flight is on screen
+  setTimeout(() => { if (!map) return; try { map.flyTo({ center: fit.center, zoom: fit.zoom, duration: 3000, curve: 1.2, essential: false }); } catch (e) {} }, 1500); // 1500ms: the splash's exit (780ms) has finished and the wide view - the Route 5W point of interest - has had a moment to sit, before the slow flight in
 }
 function loadRoute(id) {
   if (routeLoaded) return;
