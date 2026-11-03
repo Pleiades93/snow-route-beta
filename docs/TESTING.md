@@ -40,11 +40,16 @@ the printed block alone.
 Drives boot through the shared preamble in `tests/browser/harness.mjs`
 (`launchDrive` — browser spawn, CDP plumbing, request interception,
 evaluate/poll helpers, and the `finish` tail), extracted verbatim from
-the drives' former per-file copies. Migrated so far: drive65, drive122,
-drive127, drive143, drive144 (Phase 1 pilot, 2026-11-02 — local A/B and
-CI counts identical to the pre-migration baseline). The remaining
-file:// drives still embed their own copies; the http-origin drives
-(117/119/121) use a different preamble family and are not on the harness.
+the drives' former per-file copies. All 32 file:// drives are migrated
+(Phase 1 pilot of five on 2026-11-02, the remaining 27 the same day —
+local A/B and CI counts identical to the pre-migration baseline at
+every step). Two drives needed harness options rather than plain
+extraction: drive115 passes `failWhen` (its basemap-outage simulation
+fails map-host requests on purpose) and drive116 passes `logDomain`
+(its CSP checks read CDP Log entries). Drives 114/115/116 keep their
+own tails (their exit paths differ from the standard finish). The
+http-origin drives (117/119/121) use a different preamble family and
+are not on this harness.
 
 Coverage:
 
