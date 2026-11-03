@@ -52,7 +52,7 @@ ok('K2 note editors use >=16px text (no iOS focus auto-zoom) and the editor take
 // keyboard overlays it). The rig cannot split layout height from visible
 // height the way the phone does (layout 932 vs visible 740), so the sheet's
 // top is asserted through its unchanged height rather than the stage top:
-// on the phone the frozen size is .74 of the FULL height, so its top sits
+// on the phone the frozen size is .50 of the FULL height (Beta 1.79 half-open sheets; .74 through 1.78), so its top sits
 // on-screen by construction. ----------------------------------------------
 await send('Emulation.setDeviceMetricsOverride', { width: 420, height: 520, deviceScaleFactor: 2, mobile: true }, S);
 await sleep(900);
@@ -62,7 +62,7 @@ const shrunk = JSON.parse(await ev(`(() => { const vv = window.visualViewport; c
     vvh: cs.getPropertyValue('--vvh'), vvb: cs.getPropertyValue('--vvb'), ih: window.innerHeight }); })()`));
 ok('K3 keyboard-state: header unmoved at the top, sheet frozen at its pre-keyboard size and flush with the layout bottom, published height frozen at full | ' + JSON.stringify(shrunk),
   shrunk.hudTop >= shrunk.vvT - 1 && shrunk.hudBottom <= shrunk.vvT + shrunk.vvH + 1 &&
-  Math.abs(shrunk.sheetBottom - shrunk.ih) <= 1 && shrunk.sheetH > 600 && shrunk.sheetH <= 668 &&
+  Math.abs(shrunk.sheetBottom - shrunk.ih) <= 1 && shrunk.sheetH > 430 && shrunk.sheetH <= 470 &&
   shrunk.vvh === '900px' && shrunk.vvb === '0px');
 
 // ---- K4: keyboard closed again - everything settles back (Andrew: "it never

@@ -116,13 +116,13 @@
   #selAllBtn { background: #2ecc71; color: #fff; }
   #selClearBtn { background: transparent; color: inherit; }
   #cancelStartBtn { position: absolute; bottom: calc(100% + 10px); left: 50%; transform: translateX(-50%); border: none; border-radius: 999px; padding: 8px 14px; font-size: 12.5px; font-weight: 700; color: #fff; white-space: nowrap; cursor: pointer; box-shadow: var(--shadow-float); } /* Beta 1.24 (Andrew): above the Start circle - below it, the tab bar swallowed it */
-  .sheet { position: fixed; left: 0; right: 0; bottom: var(--vvb, 0px); z-index: 1100; background: var(--card); -webkit-backdrop-filter: var(--blur); backdrop-filter: var(--blur); color: var(--ink); border-radius: 18px 18px 0 0; box-shadow: var(--shadow-card); max-height: calc(var(--vvh, 100dvh) * .74); display: flex; flex-direction: column; transform: translateY(105%); visibility: hidden; transition: transform var(--anim-dur) var(--ease-close), height var(--anim-dur) var(--ease-close), max-height var(--anim-dur) var(--ease-close), visibility 0s linear var(--anim-dur); padding-bottom: var(--sab); }
+  .sheet { position: fixed; left: 0; right: 0; bottom: var(--vvb, 0px); z-index: 1100; background: var(--card); -webkit-backdrop-filter: var(--blur); backdrop-filter: var(--blur); color: var(--ink); border-radius: 18px 18px 0 0; box-shadow: var(--shadow-card); max-height: calc(var(--vvh, 100dvh) * .5); /* Beta 1.79 (Andrew): sheets open at HALF height - the three stops are closed / half / full (drag or flick up to fill, down to half, down again to close) */ display: flex; flex-direction: column; transform: translateY(105%); visibility: hidden; transition: transform var(--anim-dur) var(--ease-close), height var(--anim-dur) var(--ease-close), max-height var(--anim-dur) var(--ease-close), visibility 0s linear var(--anim-dur); padding-bottom: var(--sab); }
   .grab, .sheetHead { touch-action: none; }
   #sheetBody, #pacePad { touch-action: pan-y; }
   .sheet.open { transform: translateY(0); visibility: visible; transition: transform var(--anim-dur) var(--ease-open), height var(--anim-dur) var(--ease-open), max-height var(--anim-dur) var(--ease-open), visibility 0s; }
   .grab { padding: 12px 0 7px; cursor: grab; touch-action: none; flex: none; }
   .grabBar { width: 44px; height: 5px; border-radius: 3px; background: var(--ink-faint); margin: 0 auto; }
-  .sheet.dragging { transition: none; }
+  .sheet.dragging { transition: none; backdrop-filter: none; -webkit-backdrop-filter: none; } /* Beta 1.79: while dragging, the frosted blur drops - repainting a full-screen blur every frame is what made drags stutter behind the finger; the near-opaque card colour carries the look, and the panel follows 1:1 with no transition */
   .sheet.snapping { transition: transform var(--anim-dur) var(--ease-open), height var(--anim-dur) var(--ease-open), max-height var(--anim-dur) var(--ease-open), visibility 0s; }
   #sheetBody { flex: 1 1 auto; min-height: 0; }
   .sheetHead { display: flex; align-items: center; gap: 8px; padding: 8px 48px 6px 14px; }
@@ -2221,9 +2221,10 @@ function addStack() {
   // (his r37 correction: staggered switches looked broken). Hard
   // floors sit just outside the band (paint 12.5, names 12.6, POI
   // capped 13.3) so fully-faded layers stop drawing / colliding.
+  // Beta 1.79 (Andrew): the point of interest wears the ROUTE's name (Route 5W), not the app's name.
   add({ id: 'routepoi-ring', type: 'circle', source: 'routepoi', maxzoom: 13.3, paint: { 'circle-radius': ['interpolate', ['linear'], ['zoom'], 10, 7, 13.5, 9], 'circle-color': '#ffffff', 'circle-opacity': ['step', ['zoom'], 1, 12.6, 0], 'circle-opacity-transition': { duration: 0, delay: 0 } } });
   add({ id: 'routepoi-dot', type: 'circle', source: 'routepoi', maxzoom: 13.3, paint: { 'circle-radius': ['interpolate', ['linear'], ['zoom'], 10, 4.5, 13.5, 6.5], 'circle-color': '#ef476f', 'circle-opacity': ['step', ['zoom'], 1, 12.6, 0], 'circle-opacity-transition': { duration: 0, delay: 0 } } });
-  add({ id: 'routepoi-txt', type: 'symbol', source: 'routepoi', maxzoom: 13.3, layout: { 'text-field': 'Snow Route', 'text-font': fontStack, 'text-size': 11, 'text-anchor': 'left', 'text-offset': [1.1, 0], 'text-allow-overlap': false }, paint: { 'text-color': isNight() ? '#e8e8e8' : '#333333', 'text-halo-color': isNight() ? 'rgba(0,0,0,.8)' : 'rgba(255,255,255,.9)', 'text-opacity': ['step', ['zoom'], 1, 12.6, 0], 'text-opacity-transition': { duration: 0, delay: 0 }, 'text-halo-width': 1.6 } });
+  add({ id: 'routepoi-txt', type: 'symbol', source: 'routepoi', maxzoom: 13.3, layout: { 'text-field': (activeRoute && activeRoute.name) || 'Snow Route', 'text-font': fontStack, 'text-size': 11, 'text-anchor': 'left', 'text-offset': [1.1, 0], 'text-allow-overlap': false }, paint: { 'text-color': isNight() ? '#e8e8e8' : '#333333', 'text-halo-color': isNight() ? 'rgba(0,0,0,.8)' : 'rgba(255,255,255,.9)', 'text-opacity': ['step', ['zoom'], 1, 12.6, 0], 'text-opacity-transition': { duration: 0, delay: 0 }, 'text-halo-width': 1.6 } });
   ['t1-casing', 't1-casingb', 't1-surface', 't1-band', 't1-edge', 't1-sel', 't1-selband', 't1-sele', 'sel-core-s', 'sel-core-b', 'hit'].concat([1, 2, 3, 4, 5].flatMap(i => ['sel-glow' + i + '-s', 'sel-glow' + i + '-b'])).forEach(id => { if (GLM.getLayer(id)) GLM.setLayerZoomRange(id, 12.5, 24); });
   glHideLabels(GLM);
   pushSources();
@@ -2722,6 +2723,8 @@ function renderStreets() { // production row design: tap a street's name area to
   const draft = openEd ? openEd.value : null; // an in-progress note survives re-renders
   const draftFor = openEd ? noteEdFor : null; // Beta 1.63 (audit F01): the draft belongs to draftFor's street only - never poured into another street's editor
   if (draft !== null && draftFor && draftFor !== noteOpenFor) { clearTimeout(noteSaveTimer); setNoteText(draftFor, draft); } // switching streets finalizes the old editor against ITS street first (a destroyed editor's blur is not guaranteed to fire)
+  let noteFlushed = false; // Beta 1.79: a rebuild for the SAME street (the map style finishing its load, a theme flip - both end in refreshAll) replaces the open editor too. Finalize its pending save HERE, synchronously, instead of leaving the debounced timer pointing at a discarded textarea - that race is what stranded drive88's note checks when the style-ready refresh landed mid-edit
+  if (draft !== null && draftFor && draftFor === noteOpenFor && noteSaveTimer) { clearTimeout(noteSaveTimer); noteSaveTimer = 0; if (setNoteText(draftFor, draft)) noteFlushed = true; }
   const arr = STREETNAMES.filter(n => listFilter === 'all' || (listFilter === 'done') === streetComplete(n));
   if (listFilter === 'done') arr.sort((a, b) => String(doneTimes[b] || '').localeCompare(String(doneTimes[a] || '')));
   if (!arr.length) { el.innerHTML = '<div style="padding:14px 4px;color:#8fa0b3">' + (listFilter === 'done' ? 'Nothing completed yet' : 'All streets done ✓') + '</div>'; srowCache = { sig: '', rows: new Map() }; return; }
@@ -2781,7 +2784,7 @@ function renderStreets() { // production row design: tap a street's name area to
       ed.innerHTML = '<textarea placeholder="Note for this street — e.g. driveway at #12 could not be cleaned, car blocking"></textarea><div class="nhint">Saves automatically</div>';
       const ta = ed.querySelector('textarea');
       ta.value = (draft !== null && draftFor === n) ? draft : noteTextOf(n); noteEdFor = n;
-      const hint = ed.querySelector('.nhint');
+      const hint = ed.querySelector('.nhint'); if (noteFlushed && n === draftFor) hint.textContent = 'Saved \u2713'; // Beta 1.79: the rebuilt editor tells the truth about the save the rebuild just finalized
       ta.addEventListener('input', () => {
         hint.textContent = 'Saving…';
         clearTimeout(noteSaveTimer);
@@ -2809,7 +2812,7 @@ function closeSheets() { document.querySelectorAll('.sheet').forEach(closeSheetE
 // scrolling again, so flicks never fight the streets list. Three stops: flick/drag up = fill the screen
 // (FULL), down = back to the standard open height (DEFAULT), down again = closed. Slow drags follow the
 // finger; quick flicks throw the panel to the next stop on release. Taps pass through untouched.
-const SHEET_FULL_VH = 0.94, SHEET_MIN_PX = 150;
+const SHEET_DEF_VH = 0.50, SHEET_FULL_VH = 0.94, SHEET_MIN_PX = 150; // Beta 1.79 (Andrew): the three stops - closed / half (SHEET_DEF_VH, where a sheet opens) / full (SHEET_FULL_VH)
 function makeSheetDraggable(sheet) {
   let startY = 0, lastY = 0, startH = 0, dragging = false, moved = false, pid = null, panelMoved = false, samples = [];
   sheet.addEventListener('pointerdown', e => {
@@ -2824,7 +2827,7 @@ function makeSheetDraggable(sheet) {
     if (!dragging || e.pointerId !== pid) return;
     const dy = e.clientY - lastY; lastY = e.clientY;
     const total = startY - e.clientY; // +ve = finger travelled up
-    if (!moved && Math.abs(total) < 9) return;
+    if (!moved && Math.abs(total) < 3) return; // Beta 1.79: near-zero dead zone - the old 9px threshold was the first hitch of the drag hesitation Andrew felt; the panel follows from the first pixels
     if (!moved) {
       moved = true;
       sheet.classList.add('dragging'); sheet.classList.remove('snapping');
@@ -2849,7 +2852,7 @@ function makeSheetDraggable(sheet) {
     const swallow = ev => { ev.stopPropagation(); ev.preventDefault(); document.removeEventListener('click', swallow, true); };
     document.addEventListener('click', swallow, true);
     setTimeout(() => document.removeEventListener('click', swallow, true), 350);
-    const vh = vvHeight(), h = sheet.offsetHeight, defH = vh * 0.74;
+    const vh = vvHeight(), h = sheet.offsetHeight, defH = vh * SHEET_DEF_VH;
     // FLICK (Andrew, Beta 1.11 - the Waze gesture): a fast short swipe throws the panel to its next stop
     // instead of following the finger the whole way. Velocity from the last ~120ms of movement, px/ms,
     // positive = upward. Only when the panel itself moved (a flick that scrolled the list stays a scroll).

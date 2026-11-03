@@ -40,6 +40,8 @@ ok('L4 originals exclude route names by a valid combined filter | orig ' + S1.or
   S1.origFilter.startsWith('["all"') && S1.origFilter.includes('Velmar Drive') && S1.cloneFilter.includes('Velmar Drive'));
 ok('L5 day road names wear the readable restyle | color ' + S1.dayColor + ' halo ' + S1.dayHalo, S1.dayColor === '#333333' && S1.dayHalo === '1.5');
 ok('L6 the reference source draws nothing (West link off the map) | ref features ' + S1.refFeatures, S1.refFeatures === 0);
+const poiTxt = await ev(`map.getLayer('routepoi-txt') ? JSON.stringify(map.getLayoutProperty('routepoi-txt', 'text-field')) : 'missing'`);
+ok('L6b the point of interest wears the route name, not the app name (Beta 1.79, Andrew) | poi ' + poiTxt, poiTxt === '"Route 5W"');
 
 // The rendered proof at close zoom: on Malden/Cartwright the basemap names arrive on the
 // CLONE layers only - the originals must return none of them (no doubling, ever).
