@@ -98,9 +98,10 @@ await ev(`localStorage.clear(); true`);
 await ev(`location.reload(); true`);
 await poll(`!!window.__bootAt`, 30000);
 await ev(`loadRoute('5w'); true`); await sleep(500);
+const bootMark13 = await ev(`window.__bootAt`);
 await ev(`(function(){ document.getElementById('xText').value = ${JSON.stringify(v1)}; doRestore(); return true; })()`);
 await sleep(900);
-await poll(`!!window.__bootAt`, 30000);
+await poll(`!!window.__bootAt && window.__bootAt !== ${JSON.stringify(bootMark13)}`, 30000); // the restore's reload is app-triggered and async - a bare __bootAt poll can return on the OLD page (its marker is still set), and the loadRoute below would then no-op on already-loaded state
 await ev(`loadRoute('5w'); true`); await sleep(600);
 ok('N13 a v1 backup restores into the 5W slot, markers cleared by the C06 rule (trail without its sessions)', await ev(`(function(){ return doneSet.has('Velmar') && localStorage.getItem('snowroute.5w.v5.sess') === '[]' && JSON.parse(localStorage.getItem('snowroute.5w.v4.trail') || '[]').length === 2; })()`));
 
@@ -113,6 +114,17 @@ await ev(`setThemeOverride(true); true`); await sleep(200);
 await ev(`sessionStorage.removeItem('snowroute.session'); location.reload(); true`);
 await poll(`!!window.__bootAt`, 30000);
 ok('N21 after a cold open the override is gone and the sun is in charge again', await ev(`themeOverride === null && localStorage.getItem(LS.night) === null && isNight() === autoNightAt(Date.now())`));
+
+// --- the route intro flight (Beta 1.77, Andrew): a pick opens wide on the
+// area and flies in to the fitted view instead of appearing already zoomed --
+await ev(`document.getElementById('rmChoose').click(); true`);
+await poll(`document.querySelectorAll('#rmRoutes .routeRow').length > 0`, 15000);
+await ev(`document.querySelector('#rmRoutes .routeRow').click(); true`);
+await poll(`typeof routeLoaded !== 'undefined' && routeLoaded === true`, 20000);
+ok('N22 a route pick starts the camera wide of the fitted view', await ev(`(function(){ var fit = map.cameraForBounds([[routeBox.w, routeBox.s], [routeBox.e, routeBox.n]], { padding: 28 }); return map.getZoom() < fit.zoom - 1.5; })()`));
+await sleep(1200); // the flight starts at +800ms by design (as the splash finishes leaving) - wait until it is actually under way before polling for the settle, or the poll reads the pre-flight stillness and N23 measures the wide start
+await poll(`!map.isMoving()`, 25000);
+ok('N23 the intro flight lands exactly on the fitted route view', await ev(`(function(){ var fit = map.cameraForBounds([[routeBox.w, routeBox.s], [routeBox.e, routeBox.n]], { padding: 28 }); return Math.abs(map.getZoom() - fit.zoom) < 0.05 && Math.abs(map.getCenter().lng - fit.center.lng) < 0.001 && Math.abs(map.getCenter().lat - fit.center.lat) < 0.001; })()`));
 
 R.exceptions = consoleLog.filter(c => c.type === 'EXCEPTION').map(c => String(c.text || '').slice(0, 200));
 finish(R, proc);

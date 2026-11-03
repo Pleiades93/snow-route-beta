@@ -139,6 +139,7 @@ export async function bootThrough(ev, poll, opts = {}) {
   await ev(`document.querySelector('#rmRoutes .routeRow') && document.querySelector('#rmRoutes .routeRow').click()`);
   await poll(`typeof routeLoaded !== 'undefined' && routeLoaded === true`, 20000);
   await poll(`!document.getElementById('splash')`, 20000);
+  await poll(`typeof map === 'undefined' || !map || !map.isMoving()`, 25000); // Beta 1.77: the pick's intro flight settles on the fitted view - geometry checks must wait for the landing
   // Beta 1.77: the theme is automatic by the sun now, so an unpinned boot is
   // day or night depending on the hour the battery happens to run. Pin a day
   // override so theme-blind checks are deterministic; drives that test the

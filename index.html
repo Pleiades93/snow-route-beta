@@ -2,7 +2,7 @@
 <html lang="en">
 <head>
 <meta charset="UTF-8">
-<meta http-equiv="Content-Security-Policy" content="default-src 'none'; script-src 'sha384-8EMS4Qgnlh7IV65ql6mUdAfaiyPEO3rXHLNZ49PVAxEny/Q8yd9aNFBHPPhcyuxO' https://cdn.jsdelivr.net; style-src-elem 'sha384-WJ/Rt/EpVdRJ6m24HbIIyPjL/r87ylZNefdccpqFxHZ2MdW6WEA1AcMBTUaBbbwd' https://cdn.jsdelivr.net; style-src-attr 'unsafe-inline'; img-src 'self' data: blob: https://tiles.basemaps.cartocdn.com https://protomaps.github.io https://cdn.jsdelivr.net; connect-src 'self' https://tiles.basemaps.cartocdn.com https://protomaps.github.io https://cdn.jsdelivr.net; worker-src blob: 'self'; child-src blob: 'self'; font-src 'none'; manifest-src 'self'; base-uri 'none'; form-action 'none'; object-src 'none'">
+<meta http-equiv="Content-Security-Policy" content="default-src 'none'; script-src 'sha384-qtPM2qkr8SnTzI5psaHwS7j60ybYeJ1TAlFK26hZs+rVw3vt7Ypgix6W349kRM9/' https://cdn.jsdelivr.net; style-src-elem 'sha384-WJ/Rt/EpVdRJ6m24HbIIyPjL/r87ylZNefdccpqFxHZ2MdW6WEA1AcMBTUaBbbwd' https://cdn.jsdelivr.net; style-src-attr 'unsafe-inline'; img-src 'self' data: blob: https://tiles.basemaps.cartocdn.com https://protomaps.github.io https://cdn.jsdelivr.net; connect-src 'self' https://tiles.basemaps.cartocdn.com https://protomaps.github.io https://cdn.jsdelivr.net; worker-src blob: 'self'; child-src blob: 'self'; font-src 'none'; manifest-src 'self'; base-uri 'none'; form-action 'none'; object-src 'none'">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="mobile-web-app-capable" content="yes">
@@ -3925,6 +3925,15 @@ if (__splashEl && !window.matchMedia('(prefers-reduced-motion: reduce)').matches
 // behind carries NO route until one is chosen. Picking a route loads it
 // (state, paint, camera, run resume), fades the blue, and REMOVES the splash:
 // it plays once per cold load and can never replay.
+function introToRoute() { // Beta 1.77 (Andrew): a pick opens WIDE on the route's area and flies in to the fitted view as the splash leaves, instead of the map simply appearing already zoomed in
+  const b = [[routeBox.w, routeBox.s], [routeBox.e, routeBox.n]];
+  const fit0 = () => { try { map.fitBounds(b, { padding: 28, animate: false }); } catch (e) {} };
+  if (!map.cameraForBounds || (window.matchMedia && matchMedia('(prefers-reduced-motion: reduce)').matches)) { fit0(); return; }
+  let fit = null; try { fit = map.cameraForBounds(b, { padding: 28 }); } catch (e) {}
+  if (!fit || !fit.center || typeof fit.zoom !== 'number') { fit0(); return; }
+  try { map.jumpTo({ center: fit.center, zoom: Math.max(8, fit.zoom - 3) }); } catch (e) { fit0(); return; }
+  setTimeout(() => { if (!map) return; try { map.flyTo({ center: fit.center, zoom: fit.zoom, duration: 2100, curve: 1.35, essential: false }); } catch (e) {} }, 800); // 800ms: the splash's own exit (780ms) has just finished, so the whole flight is on screen
+}
 function loadRoute(id) {
   if (routeLoaded) return;
   const pack = ROUTE_PACKS.find(p => p.id === id); if (!pack) return;
@@ -3933,7 +3942,7 @@ function loadRoute(id) {
   renderRouteLists();
   if (map) {
     if (typeof glOk !== 'undefined' && glOk && window.GLP) { if (!map.getSource('centres')) window.GLP.init(map); else window.GLP.sync(); }
-    map.fitBounds([[routeBox.w, routeBox.s], [routeBox.e, routeBox.n]], { padding: 28, animate: false });
+    introToRoute();
   }
   refreshAll(); drawTrail(true); checkStale(); syncWake();
   if (runStart) startGps(true);

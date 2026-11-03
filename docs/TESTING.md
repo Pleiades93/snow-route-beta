@@ -73,7 +73,13 @@ tab order and the three-row Settings menu. Beta 1.77 added the menu-
 consistency checks to drive145 (N15–N17): every sheet's close X must
 compute to the one shared corner-X style, and tap-away must close
 every sheet — both enumerated from the DOM by class, so a future menu
-is covered by the same checks the day it is built.
+is covered by the same checks the day it is built. The same drive
+carries the automatic day/night checks (N18–N21: the computed sun
+against the real Vaughan sun as absolute instants, automatic mode
+across the year, the override's boundary hand-back and cold-open
+reset, the override pair's backup carriage) and the route intro
+flight (N22–N23: a pick starts wide of the fitted view and lands
+exactly on it; the shared boot waits for the flight to settle).
 
 Coverage:
 
