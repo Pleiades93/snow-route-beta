@@ -213,7 +213,9 @@
 #splashIcon { position: relative; width: 168px; height: 168px; border-radius: 38px; box-shadow: 0 18px 50px rgba(0,0,0,.35); }
 #splashTitle { position: relative; margin-top: 26px; color: #fff; font-size: 37px; font-weight: 700; letter-spacing: .2px; opacity: 0; animation: splashSlide .65s cubic-bezier(.16,.84,.3,1) 1s forwards; }
 @keyframes splashSlide { 0% { opacity: 0; transform: translateX(360px); } 55% { opacity: 1; } 82% { transform: translateX(-9px); } 100% { opacity: 1; transform: translateX(0); } }
-#splashBrand { position: relative; display: flex; flex-direction: column; align-items: center; transition: transform .5s var(--ease-close), opacity .45s ease; }
+/* Beta 1.84 (Andrew's workaround, after 1.83 cleared the last code suspects): stop trying to fix the still-to-live handover - hide it. The brand starts invisible and fades in at 1s, so during the handover window (~0.6s) the live side of iOS's blend is plain splash blue with no icon, title or tab bar to double or leak. Opacity only (no transform), backwards fill so the delay period holds opacity 0 and nothing lingers to fight the .menu exit; the title's own slide is unchanged. Andrew's cold opens are the verdict, as with 1.83. */
+#splashBrand { position: relative; display: flex; flex-direction: column; align-items: center; transition: transform .5s var(--ease-close), opacity .45s ease; animation: brandIn .5s ease 1s backwards; }
+@keyframes brandIn { from { opacity: 0; } to { opacity: 1; } }
 #splash.menu #splashBrand { transform: translateX(70vw); opacity: 0; pointer-events: none; } /* Beta 1.76 (Andrew): the brand leaves to the RIGHT and the route menu takes the same blue screen - the old icon-rush exit is retired */
 #splash.go #splashBg { animation: splashBgOut .7s linear forwards; }
 #routeMenu.bye { opacity: 0 !important; transition: opacity .3s ease; } /* Beta 1.78: on a boot pick the menu fades while the splash blue dissolves - the menu itself stays in the page, parked below the screen for the Routes tab */
@@ -239,7 +241,7 @@
 .routeBadge { font-size: 12px; font-weight: 700; letter-spacing: .2px; padding: 4px 8px; border-radius: 999px; white-space: nowrap; }
 #routeMenu .routeRow { background: rgba(255,255,255,.14); border: 1px solid rgba(255,255,255,.45); color: #fff; margin-bottom: 10px; }
 #routeMenu .routeBadge { background: #fff; color: #2b4bf2; }
-@media (prefers-reduced-motion: reduce) { #splashTitle { animation: none; opacity: 1; } #splashBrand, #routeMenu { transition: none; } #splash.menu #splashBrand { display: none; } }
+@media (prefers-reduced-motion: reduce) { #splashTitle { animation: none; opacity: 1; } #splashBrand { animation: none; transition: none; } #routeMenu { transition: none; } #splash.menu #splashBrand { display: none; } }
 </style>
 </head>
 <body>
@@ -253,7 +255,7 @@
 <div id="hud">
   <div id="warn">Not saving — storage is full or blocked</div>
   <div class="row">
-    <div class="titleStack"><div class="title">Snow Route Beta</div><div class="ver" id="ver">Beta 1.83</div></div>
+    <div class="titleStack"><div class="title">Snow Route Beta</div><div class="ver" id="ver">Beta 1.84</div></div>
   </div>
   <div id="stats"></div>
 </div>
