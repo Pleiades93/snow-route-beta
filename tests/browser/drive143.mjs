@@ -19,7 +19,8 @@ await bootThrough(ev, poll); // Beta 1.76: boots end at the route menu now - cli
 const R = { checks: [] };
 const ok = (name, cond) => R.checks.push([name, !!cond]);
 const src = readFileSync(new URL('../../src/tracker-source.html', import.meta.url), 'utf8');
-ok('H1 sheet panels use shared classes, no duplicate IDs | sheetHead ids ' + (src.split('id="sheetHead"').length - 1) + ' classes ' + (src.split('class="sheetHead"').length - 1), (src.split('id="sheetHead"').length - 1) === 0 && (src.split('id="sheetTitle"').length - 1) === 0 && (src.split('class="sheetHead"').length - 1) === 3 && (src.split('class="sheetTitle"').length - 1) === 3);
+const sheetPanels = src.split('class="sheet"').length - 1; // Beta 1.78: the census follows the panels that exist (the Routes sheet retired - 3 panels became 2); the invariant is one shared head/title class pair per panel and never an id
+ok('H1 sheet panels use shared classes, no duplicate IDs | sheetHead ids ' + (src.split('id="sheetHead"').length - 1) + ' classes ' + (src.split('class="sheetHead"').length - 1) + ' sheets ' + sheetPanels, (src.split('id="sheetHead"').length - 1) === 0 && (src.split('id="sheetTitle"').length - 1) === 0 && sheetPanels >= 2 && (src.split('class="sheetHead"').length - 1) === sheetPanels && (src.split('class="sheetTitle"').length - 1) === sheetPanels);
 ok('T0 app script and map object are live', await poll120(`typeof map !== 'undefined' && !!map && typeof finishRun === 'function' && typeof buildSnap === 'function'`, 90000));
 // U1: finish a 3-street clean, then undo with the notes/times saves broken.
 await ev(`(() => { runStart = Date.now() - 3600000; markDone('Velmar', 'tap'); markDone('Mellings', 'tap'); markDone('Astona', 'tap'); suggested = new Set(['Boddy']); finishRun(); return true; })()`);
