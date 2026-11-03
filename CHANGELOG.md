@@ -1,5 +1,9 @@
 # Changelog
 
+## Beta 1.85 — 2026-11-03
+
+- Splash, third pass — matching the still instead of hiding from it. Beta 1.84's blank-blue workaround is reverted: Andrew's recording of a 1.84 cold open shows the handover is a clean cut, not a blend — the still's icon vanished for ~0.9s (the blank live page) and then faded back in, an artifact the workaround itself created. The same recording is the good news: with a trivially simple live page, the seam frames were otherwise clean (no strip bleed, no doubled icon in any frame). So the live first frame now matches the launch still exactly: (1) the brand is visible from the first frame again (no fade delay); (2) the splash icon is embedded directly in the page (a data-URI copy of the same icon art, visually verified against the original) so no separate image fetch or decode can delay or drop it from the first paint; (3) while the splash is up, the page's root frame colour and theme colour are splash blue — the app's light day-frame colour (#eceff2) can no longer flash at any edge or first frame the splash hasn't covered yet; the boot class comes off at the same moment the splash is removed. The 1.83 tweaks (icon layer hint removed, title slide delayed to 1s) stay. Device cold opens are the verdict, as before.
+
 ## Beta 1.84 — 2026-11-03
 
 - Splash workaround (Andrew's call after Beta 1.83's cold opens cleared the last two code suspects — the icon's leftover layer hint and the title's slide timing — with the glitch identical): stop trying to fix the still-to-live handover and hide it instead. The brand (icon + title) now starts invisible and fades in at 1s, so during the handover window the live page is plain splash blue with nothing on it for iOS's blend to double or leak. The title's slide, the splash timing, and the route-menu flow are unchanged; reduced-motion devices show the brand immediately as before. Device cold opens are the verdict.
