@@ -18,7 +18,10 @@ const FIXTURE = {
   'snowroute.5w.v2.history': JSON.stringify([
     { at: '2026-01-05T12:30:00.000Z', via: 'manual', items: fullItems, notes: {}, sides: { p: { Velmar: Array(14).fill(3) }, t: {} }, km: 17.67, startedAt: 1767650100000 },
     { at: '2026-01-04T11:00:00.000Z', via: 'gps', items: { Velmar: T2 }, notes: { Velmar: [{ k: 'note', at: T1, text: 'Earlier partial' }] }, sides: { p: { Velmar: [3, 3, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0] }, t: {} }, km: 3.1, startedAt: 1767560100000 }]),
-  'snowroute.v2.night': '1', // the app's own writer stores '1'/'0' (the night toggle) - the fixture must match the writers, which is its whole purpose
+  // No night key in the fixture: since Beta 1.77 the theme is sun-automatic and
+  // a cold open forgets any stored override, so a seeded one cannot survive
+  // this drive's first boot by design. The override pair's backup carriage is
+  // asserted in drive145 (N20b); the S1 probe below reads the pinned day.
   'snowroute.5w.v4.notes': JSON.stringify({ Woolacott: [{ k: 'car', at: '2026-01-05T12:10:00.000Z' }, { k: 'note', at: '2026-01-05T12:11:00.000Z', text: 'Bin at the curb' }] }),
   'snowroute.5w.v4.via': JSON.stringify({ Astona: 'manual', Velmar: 'gps' }),
   'snowroute.5w.v4.trail': JSON.stringify([[43.8207, -79.567, 1767650400], [43.821, -79.5675, 1767650460], [43.8213, -79.568, 1767650520]]),
@@ -37,6 +40,7 @@ await b.ev(`(() => { const F = ${FIXJ}; for (const k of Object.keys(F)) localSto
 await b.ev('location.reload()');
 await waitBoot(b.ev);
 await loadRouteWait(); await sleep(400);
+await b.ev(`setThemeOverride(true); applyNight(); true`); // Beta 1.77: the fixture no longer seeds a night flag - a cold open starts automatic by design, so the probe's night reading is set the way a user sets it, through the override
 const probe = JSON.parse(await b.ev(`JSON.stringify({
   velmarAll3: pieces.Velmar.length === 14 && pieces.Velmar.every(v => v === 3),
   wool: pieces.Woolacott, done: [...doneSet].sort(),
@@ -48,7 +52,7 @@ ok('S1 fixture done set + piece times survive', JSON.stringify(probe.done) === '
 ok('S1 fixture history survives (2 entries, full run intact)', probe.hist === 2 && probe.histFull === 34);
 ok('S1 fixture notes/trail/coverage/run/night survive | probe ' + JSON.stringify(probe), probe.notes === 2 && probe.trail === 3 && probe.covV === 4 && probe.runStart === 1767650300000 && probe.night === true);
 const rt = JSON.parse(await b.ev(`(() => { const o = JSON.parse(buildBackup()); const F = ${FIXJ}; const k2f = {}; for (const f of ROUTE_FIELDS) k2f[routeKeys('5w')[f]] = f; k2f[LS_GLOBAL.night] = 'night'; const out = {}; for (const k of Object.keys(F)) { const f = k2f[k]; const v = f === 'night' ? o.night : (o.routes['5w'] || {})[f]; try { out[k] = JSON.stringify(JSON.parse(v)) === JSON.stringify(JSON.parse(F[k])); } catch (e) { out[k] = v === F[k]; } } return JSON.stringify(out); })()`));
-ok('S1 backup of the fixture state is meaning-identical on all 11 keys', Object.keys(rt).length === 11 && Object.values(rt).every(Boolean));
+ok('S1 backup of the fixture state is meaning-identical on all 10 keys', Object.keys(rt).length === 10 && Object.values(rt).every(Boolean));
 
 // ---- session 2: state B backup taken, state A restored, restore interrupted --
 await b.ev(`(() => { pieces.Woolacott = [3, 3, 3]; saveAll(); return true; })()`);

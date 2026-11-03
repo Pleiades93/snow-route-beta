@@ -132,11 +132,17 @@ export function finish(R, proc) { console.log(JSON.stringify(R, null, 1)); proc.
 // Beta 1.76: every cold boot now ends at the route menu - drives that need a
 // loaded route click through it (Choose -> first route row) and wait for the
 // splash to be removed, exactly the state pre-1.76 boots ended in.
-export async function bootThrough(ev, poll) {
+export async function bootThrough(ev, poll, opts = {}) {
   await poll(`typeof loadRoute === 'function'`, 20000);
   await poll(`!!window.__bootAt`, 30000); // Beta 1.76: wait until bootMap has actually run - a route pick before the map exists is unreachable for a real user (the menu only appears at the readiness gate, after the boot tail) and loadRoute's paint calls need the map
   await ev(`document.getElementById('rmChoose') && document.getElementById('rmChoose').click()`);
   await ev(`document.querySelector('#rmRoutes .routeRow') && document.querySelector('#rmRoutes .routeRow').click()`);
   await poll(`typeof routeLoaded !== 'undefined' && routeLoaded === true`, 20000);
   await poll(`!document.getElementById('splash')`, 20000);
+  // Beta 1.77: the theme is automatic by the sun now, so an unpinned boot is
+  // day or night depending on the hour the battery happens to run. Pin a day
+  // override so theme-blind checks are deterministic; drives that test the
+  // theme itself set their own state after this. A drive whose fixture seeds
+  // its own theme state passes { pinTheme: false } and keeps it.
+  if (opts.pinTheme !== false) await ev(`(function(){ if (typeof setThemeOverride === 'function') { setThemeOverride(false); if (typeof applyNight === 'function') applyNight(); if (typeof map !== 'undefined' && map && typeof setBasemap === 'function') setBasemap(); } return true; })()`);
 }

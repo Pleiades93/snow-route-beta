@@ -69,7 +69,11 @@ the Routes sheet badge, the per-route slot shape, the legacy→slot
 migration and its abort fallback, and a v1 backup restoring into the
 slot. drive132's splash checks now assert the menu handover and that
 picking a route is what removes the splash; drive125 asserts the new
-tab order and the three-row Settings menu.
+tab order and the three-row Settings menu. Beta 1.77 added the menu-
+consistency checks to drive145 (N15–N17): every sheet's close X must
+compute to the one shared corner-X style, and tap-away must close
+every sheet — both enumerated from the DOM by class, so a future menu
+is covered by the same checks the day it is built.
 
 Coverage:
 
