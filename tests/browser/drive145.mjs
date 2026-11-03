@@ -137,7 +137,7 @@ await poll(`document.querySelectorAll('#rmRoutes .routeRow').length > 0`, 15000)
 await ev(`document.querySelector('#rmRoutes .routeRow').click(); true`);
 await poll(`typeof routeLoaded !== 'undefined' && routeLoaded === true`, 20000);
 ok('N22 a route pick starts the camera wide of the fitted view', await ev(`(function(){ var fit = map.cameraForBounds([[routeBox.w, routeBox.s], [routeBox.e, routeBox.n]], { padding: 28 }); return map.getZoom() < fit.zoom - 1.5; })()`));
-await sleep(1200); // the flight starts at +800ms by design (as the splash finishes leaving) - wait until it is actually under way before polling for the settle, or the poll reads the pre-flight stillness and N23 measures the wide start
+await sleep(2200); // Beta 1.81: the flight starts at +1500ms by design (the wide view dwells on the Route 5W point of interest first) - wait until it is actually under way before polling for the settle, or the poll reads the pre-flight stillness and N23 measures the wide start
 await poll(`!map.isMoving()`, 25000);
 ok('N23 the intro flight lands exactly on the fitted route view', await ev(`(function(){ var fit = map.cameraForBounds([[routeBox.w, routeBox.s], [routeBox.e, routeBox.n]], { padding: 28 }); return Math.abs(map.getZoom() - fit.zoom) < 0.05 && Math.abs(map.getCenter().lng - fit.center.lng) < 0.001 && Math.abs(map.getCenter().lat - fit.center.lat) < 0.001; })()`));
 
@@ -173,6 +173,24 @@ ok('N28 drag down from full settles back at HALF | ' + JSON.stringify(half), Mat
 hp = await headPt();
 await mDown(hp.x, hp.y); await mMove(hp.x, hp.y + 140); await sleep(60); await mMove(hp.x, hp.y + 260); await sleep(200); await mUp(hp.x, hp.y + 260); await sleep(650);
 ok('N29 drag down from half CLOSES the sheet', await ev(`!$('sheet').classList.contains('open')`));
+// N30/N31 (Beta 1.81): a flick-down close must CONTINUE at the finger's speed - the old
+// CSS ease-close restarted from rest (rig-measured: +3/+12/+21px in the first 120ms),
+// which read as "just disappears" on Pace's short sheet. The spring settle keeps the
+// release velocity: sample the top edge right after release - it must already be well
+// on its way - and the sheet must land fully closed.
+await ev(`(function(){ renderStreets(); $('sheet').classList.add('open'); })()`); await sleep(650);
+hp = await headPt();
+const topNow = async () => Math.round(await ev(`$('sheet').getBoundingClientRect().top`));
+await mDown(hp.x, hp.y);
+let fy = hp.y; for (let i = 0; i < 5; i++) { fy += 26; await mMove(hp.x, fy); await sleep(16); }
+await mUp(hp.x, fy);
+const topR = await topNow();
+await sleep(45); const top1 = await topNow();
+await sleep(45); const top2 = await topNow();
+ok('N30 a flick-down close keeps the finger speed (no restart from rest) | top ' + topR + ' -> ' + top1 + ' -> ' + top2, top1 >= topR && (top2 - topR) >= 45);
+await sleep(900);
+const closedState = JSON.parse(await ev(`(() => JSON.stringify({ open: $('sheet').classList.contains('open'), vis: getComputedStyle($('sheet')).visibility, tf: $('sheet').style.transform, h: $('sheet').style.height }))()`));
+ok('N31 the spring close lands fully closed with inline geometry cleared | ' + JSON.stringify(closedState), closedState.open === false && closedState.vis === 'hidden' && closedState.tf === '' && closedState.h === '');
 
 R.exceptions = consoleLog.filter(c => c.type === 'EXCEPTION').map(c => String(c.text || '').slice(0, 200));
 finish(R, proc);
