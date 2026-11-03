@@ -31,7 +31,7 @@ await ev(`(() => { cancelStart(); return true; })()`);
 // ---- C05: break ONLY the marker key, then clear a trail that has markers ----
 await ev(`(() => { trail = [[43.82, -79.56, 1767650000], [43.821, -79.559, 1767650060]]; trailSessions = [1767650000]; saveTrail(); saveSess(); return true; })()`);
 await ev(`(() => { if (!map) map = { getSource: () => null }; lsSet = (k, v) => k === 'snowroute.5w.v5.sess' ? false : window.__realLsSet(k, v); return true; })()`);
-await ev(`(() => { const b = document.getElementById('xClr'); b.click(); b.click(); return true; })()`);
+await ev(`(() => { clearTrailAll(); return true; })()`); // Beta 1.88: was the Clear trail button's double-tap; the clearing lives on as clearTrailAll
 await sleep(300);
 const c05 = JSON.parse(await ev(`(() => JSON.stringify({ toast: $('toast').textContent, dirty: sessDirty, storedTrail: localStorage.getItem('snowroute.5w.v4.trail'), storedSess: localStorage.getItem('snowroute.5w.v5.sess') }))()`));
 ok('C05a Clear Trail with the marker write broken does NOT claim a plain success | ' + JSON.stringify(c05), c05.toast.indexOf('session markers could not be saved') >= 0 && c05.storedTrail === '[]' && c05.storedSess === '[1767650000]' && c05.dirty === true);

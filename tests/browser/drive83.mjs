@@ -26,22 +26,22 @@ ok('SEC-9b numeric doneTimes dropped', A.tc === 0);
 // P3 SEC-2: malformed notes cannot kill the export panel
 await seedReload({ 'snowroute.5w.v2': '["Angie","Velmar"]', 'snowroute.5w.v4.notes': '{"Velmar":"x","Angie":[{"k":"deep","at":"2026-01-05T12:00:00.000Z"}]}' });
 const e0 = exc();
-await ev(`(() => { showX('summary'); return true; })()`);
+await ev(`(() => { openExport(); return true; })()`); // Beta 1.88: the export surface is the settings takeover's backup pane now (Summary mode is gone with the old Snow log)
 await sleep(500);
-A = JSON.parse(await ev(`(() => JSON.stringify({ open: !$('xport').classList.contains('hidden'), hasFlag: $('xText').value.includes('deep'), velmarNotes: notes.Velmar }))()`));
+A = JSON.parse(await ev(`(() => JSON.stringify({ open: $('setMenu').classList.contains('open') && $('setBackupPane').classList.contains('on'), hasFlag: $('xText').value.includes('deep'), velmarNotes: notes.Velmar }))()`));
 ok('SEC-2 export panel opens despite poisoned notes', A.open);
 ok('SEC-2 valid flag still renders', A.hasFlag);
 ok('SEC-2 string notes entry deleted at load', A.velmarNotes === undefined);
-ok('SEC-2 no exception from showX', exc() === e0);
+ok('SEC-2 no exception from the backup open', exc() === e0);
 // P4 SEC-9a: absurd trail timestamp dropped, GPX export survives
 await seedReload({ 'snowroute.5w.v4.trail': '[[43.81,-79.56,1767225600],[43.82,-79.57,1e300]]' });
 A = JSON.parse(await ev(`(() => JSON.stringify({ tl: trail.length }))()`));
 ok('SEC-9a out-of-range trail point dropped', A.tl === 1);
 const e1 = exc();
-await ev(`(() => { showX('gpx'); return true; })()`);
+await ev(`(() => { document.__gpx188 = buildGpx(); return true; })()`); // Beta 1.88: no GPX button anymore - the export builder itself is what SEC-9a protects, so it is exercised directly
 await sleep(400);
-A = JSON.parse(await ev(`(() => JSON.stringify({ open: !$('xport').classList.contains('hidden'), gpx: $('xText').value.includes('<trkpt') }))()`));
-ok('SEC-9a GPX panel opens with trkpt', A.open && A.gpx);
+A = JSON.parse(await ev(`(() => JSON.stringify({ gpx: (document.__gpx188 || '').includes('<trkpt') }))()`));
+ok('SEC-9a GPX export still builds with trkpt', A.gpx);
 ok('SEC-9a no exception from GPX export', exc() === e1);
 // P5 SEC-4: restore survives its own pagehide flush
 await ev(`(() => { localStorage.clear(); location.reload(); return true; })()`); await sleep(3000);
@@ -52,7 +52,7 @@ ok('SEC-4 flush after restore does NOT clobber restored trail', A.ls === '[[43.8
 await sleep(1500);   // the restore's reload lands
 // Beta 1.76 hardening: poll-with-load - a single loadRoute after a fixed sleep can land in the
 // pre-reload page (its routeLoaded guard then leaves the fresh page unloaded and the read races).
-for (let i = 0; i < 40; i++) { await ev(`(function(){ if (typeof routeLoaded !== 'undefined' && !routeLoaded && typeof loadRoute === 'function') { try { loadRoute('5w'); } catch (e) {} } return true; })()`); A = JSON.parse(await ev(`(() => JSON.stringify({ tl: trail.length, lat: trail.length ? trail[0][0] : null }))()`)); if (A.tl === 1 && A.lat === 43.8) break; await sleep(300); }
+for (let i = 0; i < 40; i++) { await ev(`(function(){ if (typeof routeLoaded !== 'undefined' && !routeLoaded && typeof loadRoute === 'function') { try { loadRoute('5w'); } catch (e) {} } return true; })()`); try { A = JSON.parse(await ev(`(() => JSON.stringify({ tl: trail.length, lat: trail.length ? trail[0][0] : null }))()`)); } catch (e) { A = { tl: 0, lat: null }; } if (A.tl === 1 && A.lat === 43.8) break; await sleep(300); } // Beta 1.88 hardening: an ev landing mid-navigation can return a non-string and the bare parse killed the drive (seen twice locally in the 1.88 round) - a bad read is just a poll that missed, the loop's own deadline still bounds it
 ok('SEC-4 after reload, trail is the restored one', A.tl === 1 && A.lat === 43.8);
 // P6 SEC-6a (rewritten Beta 1.48, audit B06): the old check called
 // prepOfflineMaps() - a function that no longer exists - so it passed while

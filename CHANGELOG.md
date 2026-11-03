@@ -1,5 +1,14 @@
 # Changelog
 
+## Beta 1.88 — 2026-11-03
+
+- Settings is a blue full-screen takeover like the Routes menu (Andrew: the menus are cohesive on the blue): the Settings tab slides it up on the shared menu motion, the main pane holds Backup and Update, a bare white X at bottom centre closes it, and Andrew's picked version text rides at bottom-right in BOTH panes, re-synced from the main title's version on every open so it can never go stale.
+- The Snow log pop-up is retired into the takeover's Backup pane: the backup box, Share and Copy, Restore with its paste-and-Import flow, and Download offline maps with the 1.87 progress bar (restyled on the blue) all live there now. Summary, GPX trail and Clear trail are REMOVED from the menu at Andrew's word; the trail clearing itself stays in the code as one callable piece (clearTrailAll) for its later re-home, and buildGpx stays for the architecture program.
+- The Backup row is Backup (JSON) and earns the name (Andrew, same day): one press builds the backup AND opens the save/share prompt - a real .json file share where the platform offers it (Save to Files), the text share next, a plain download where no share exists. The backup pane opens behind the prompt, so cancelling still lands where Copy, Restore and the offline download live.
+- Day/Night leaves the settings menu: it is now a round button at top-right of the map, built from the dock buttons' own class - measured identical to Pace and Streets (56px, same glass, same 27px icon) - showing the moon in day and the sun in night, with the same sun-auto and session-override behaviour.
+- Tests: drive83's export checks ride the new pane (SEC-2 opens the backup pane; SEC-9a exercises buildGpx directly), drive86/drive144 clear the trail through clearTrailAll, drive125/drive145 assert the takeover's structure instead of the pop-up's rows.
+
+
 ## Beta 1.87 — 2026-11-03
 
 - Settings menu reordered at Andrew's request: Night/Day on top, Backup second, Update last.

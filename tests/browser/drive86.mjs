@@ -17,8 +17,7 @@ await sleep(3000);
 await seedReload({ 'snowroute.5w.v4.trail': '[[43.81,-79.56,1767225600],[43.82,-79.57,1767225700]]' });
 let A = JSON.parse(await ev(`(() => JSON.stringify({ tl: trail.length }))()`));
 ok('T1 trail seeded (2 pts)', A.tl === 2);
-await ev(`(() => { $('xClr').click(); return true; })()`); await sleep(700);
-await ev(`(() => { $('xClr').click(); return true; })()`); await sleep(400);
+await ev(`(() => { clearTrailAll(); return true; })()`); await sleep(700); // Beta 1.88: the Clear trail button is gone (re-home comes later) - the drives call the clearing itself, which is what the button's second tap did
 A = JSON.parse(await ev(`(() => JSON.stringify({ ls: localStorage.getItem('snowroute.5w.v4.trail'), toast: $('toast').textContent }))()`));
 ok('T1 clear writes [] to storage', A.ls === '[]');
 ok('T1 toast says Trail cleared', A.toast === 'Trail cleared');
@@ -31,8 +30,7 @@ await ev(`(() => { trail.push([43.81,-79.56,1767225600],[43.82,-79.57,1767225700
   window.__origSI = Storage.prototype.setItem;
   Storage.prototype.setItem = function(k, v) { if (k === 'snowroute.5w.v4.trail') throw new Error('quota'); return window.__origSI.call(this, k, v); };
   return true; })()`);
-await ev(`(() => { $('xClr').click(); return true; })()`); await sleep(700);
-await ev(`(() => { $('xClr').click(); return true; })()`); await sleep(400);
+await ev(`(() => { clearTrailAll(); return true; })()`); await sleep(700); // Beta 1.88: the Clear trail button is gone (re-home comes later) - the drives call the clearing itself, which is what the button's second tap did
 A = JSON.parse(await ev(`(() => JSON.stringify({ toast: $('toast').textContent, dirty: trailDirty, ls: localStorage.getItem('snowroute.5w.v4.trail') }))()`));
 ok('T2 toast reports the save failure honestly', /saving failed/.test(A.toast));
 ok('T2 clear stays pending (trailDirty)', A.dirty === true);
