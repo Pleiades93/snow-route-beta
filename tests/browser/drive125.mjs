@@ -105,12 +105,12 @@ const S7 = JSON.parse(await ev(`(() => JSON.stringify({ night: document.body.cla
   listCol: getComputedStyle($('streetsBtn')).color, tabCol: getComputedStyle($('homeBtn')).color,
   barBg: getComputedStyle($('tabBar')).backgroundColor, countCol: getComputedStyle($('count')).color }))()`));
 ok('S7 night mode: chrome flips to dark glass with bright icons | ' + JSON.stringify(S7),
-  S7.night === true && S7.listCol === 'rgb(242, 244, 248)' && S7.tabCol === 'rgb(221, 229, 236)' && S7.barBg === 'rgba(7, 10, 17, 0.94)' && S7.countCol === 'rgb(238, 244, 238)');
+  S7.night === true && S7.listCol === 'rgb(242, 244, 248)' && S7.tabCol === 'rgb(221, 229, 236)' && S7.barBg === 'rgba(32, 33, 37, 0.94)' && S7.countCol === 'rgb(238, 244, 238)');
 ok('S7 night mode: the theme tab now offers Day, label and state in agreement | label ' + S7.nightLbl, S7.nightLbl === 'Day');
 const T4 = JSON.parse(await ev(`(() => { const surf = el => getComputedStyle(el).backgroundColor; return JSON.stringify({
   sheetBg: surf($('sheet')), sheetCol: getComputedStyle($('sheet')).color, barBg: surf($('tabBar')), menuBg: surf($('setMenu')) }); })()`));
-ok('T4 night menus share the deep blue-black (bar = sheets = pop-up), text bright | ' + JSON.stringify(T4),
-  T4.sheetBg === 'rgba(7, 10, 17, 0.94)' && T4.sheetCol === 'rgb(237, 242, 249)' && T4.barBg === T4.sheetBg && T4.menuBg === T4.sheetBg);
+ok('T4 night menus share the neutral charcoal (bar = sheets = pop-up), text bright (Beta 1.75) | ' + JSON.stringify(T4),
+  T4.sheetBg === 'rgba(32, 33, 37, 0.94)' && T4.sheetCol === 'rgb(237, 242, 249)' && T4.barBg === T4.sheetBg && T4.menuBg === T4.sheetBg);
 const PL2 = JSON.parse(await ev(`(() => { const byId = {}; for (const L of map.getStyle().layers) byId[L.id] = { mn: L.minzoom, mx: L.maxzoom }; return JSON.stringify({ sub: byId['places_subplace'], loc: byId['places_locality'] }); })()`));
 ok('P2 night map too: same Protomaps ladder (subplace 9, locality capped 15.5) | ' + JSON.stringify(PL2),
   !!PL2.sub && PL2.sub.mn === 9 && !!PL2.loc && PL2.loc.mx === 15.5);
