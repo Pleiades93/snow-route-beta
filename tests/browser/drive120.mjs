@@ -1,101 +1,5 @@
-// Ported from the maintainer's local drive battery (same filename); the
-// test body is unchanged - only harness plumbing differs: CHROME_BIN env
-// override for the browser path, repo-relative source path, default page.
-// Runner: tests/browser/run.mjs. See docs/TESTING.md.
-// v6 driver: serve the v6 folder locally, load in headless Chromium, and fulfill all
-// remote map requests (jsDelivr / OpenFreeMap / Esri) through Node fetch (env proxy),
-// so the page runs its REAL production pipeline. sw.js is 404'd to keep the run hermetic.
-import { spawn } from 'node:child_process';
-import fs from 'node:fs';
-
-const CHROME = process.env.CHROME_BIN || (fs.existsSync('/opt/meta-chromium/chrome') ? '/opt/meta-chromium/chrome' : 'google-chrome');
-const DIR = new URL('../../src/', import.meta.url).pathname;
-const PAGE = process.argv[2] || 'tracker-source.html';
-const PORT = 8931;
-const outPrefix = process.argv[2] || '/tmp/v6';
-const sleep = ms => new Promise(r => setTimeout(r, ms));
-
-// (no local HTTP server: Chromium's Local Network Access checks block 127.0.0.1 navigations
-//  from a fresh target, so the page is loaded via file:// like the earlier harnesses;
-//  remote map requests are still fulfilled through Node fetch below.)
-const proc = spawn(CHROME, [
-  '--headless=new', '--no-sandbox', '--disable-gpu', '--hide-scrollbars', '--no-proxy-server',
-  '--remote-debugging-port=0', '--disable-features=LocalNetworkAccessChecks', '--user-data-dir=/tmp/v6profile-' + Date.now(),
-  '--window-size=420,900', 'about:blank'
-], { stdio: ['ignore', 'pipe', 'pipe'] });
-
-const wsUrl = await new Promise((res, rej) => {
-  let buf = '';
-  proc.stderr.on('data', d => { buf += d; const m = buf.match(/DevTools listening on (ws:\/\/\S+)/); if (m) res(m[1]); });
-  setTimeout(() => rej(new Error('no devtools url: ' + buf.slice(0, 500))), 25000);
-});
-const ws = new WebSocket(wsUrl);
-await new Promise(r => ws.addEventListener('open', r, { once: true }));
-let nextId = 1;
-const pending = new Map();
-const consoleLog = [];
-ws.addEventListener('message', ev => {
-  const msg = JSON.parse(ev.data);
-  if (msg.id && pending.has(msg.id)) { pending.get(msg.id)(msg); pending.delete(msg.id); }
-  else if (msg.method === 'Runtime.consoleAPICalled') {
-    consoleLog.push({ type: msg.params.type, text: (msg.params.args || []).map(a => a.value !== undefined ? String(a.value) : (a.description || a.type)).join(' ') });
-  } else if (msg.method === 'Runtime.exceptionThrown') {
-    const d = msg.params.exceptionDetails;
-    consoleLog.push({ type: 'EXCEPTION', text: (d.exception && d.exception.description) || d.text });
-  } else if (msg.method === 'Fetch.requestPaused') {
-    handlePaused(msg.params);
-  }
-});
-function send(method, params = {}, sessionId) {
-  const id = nextId++;
-  return new Promise(res => { pending.set(id, res); ws.send(JSON.stringify({ id, method, params, ...(sessionId ? { sessionId } : {}) })); });
-}
-const { result: { targetId } } = await send('Target.createTarget', { url: 'about:blank' });
-const { result: { sessionId } } = await send('Target.attachToTarget', { targetId, flatten: true });
-const S = sessionId;
-
-async function handlePaused(p) {
-  const url = p.request.url;
-  try {
-    if (url.endsWith('/sw.js')) {
-      await send('Fetch.fulfillRequest', { requestId: p.requestId, responseCode: 404, body: '' }, S);
-      return;
-    }
-    const r = await fetch(url, { headers: { 'user-agent': 'Mozilla/5.0 (iPhone; CPU iPhone OS 17_0 like Mac OS X)' } });
-    const buf = Buffer.from(await r.arrayBuffer());
-    const ct = r.headers.get('content-type') || 'application/octet-stream';
-    await send('Fetch.fulfillRequest', {
-      requestId: p.requestId, responseCode: r.status,
-      responseHeaders: [{ name: 'Content-Type', value: ct }, { name: 'Access-Control-Allow-Origin', value: '*' }],
-      body: buf.toString('base64')
-    }, S);
-  } catch (e) {
-    await send('Fetch.failRequest', { requestId: p.requestId, errorReason: 'Failed' }, S);
-  }
-}
-await send('Fetch.enable', { patterns: [
-  { urlPattern: '*jsdelivr*', requestStage: 'Request' },
-  { urlPattern: '*openfreemap*', requestStage: 'Request' },
-  { urlPattern: '*arcgisonline*', requestStage: 'Request' },
-  { urlPattern: '*unpkg*', requestStage: 'Request' },
-  { urlPattern: '*cartocdn*', requestStage: 'Request' },
-  { urlPattern: '*sw.js', requestStage: 'Request' }
-] }, S);
-await send('Page.enable', {}, S);
-await send('Runtime.enable', {}, S);
-await send('Emulation.setDeviceMetricsOverride', { width: 420, height: 900, deviceScaleFactor: 2, mobile: true }, S);
-await send('Page.navigate', { url: 'file://' + DIR + '/' + PAGE }, S);
-
-async function evaluate(expr) {
-  const r = await send('Runtime.evaluate', { expression: expr, returnByValue: true, awaitPromise: true }, S);
-  if (r.result && r.result.exceptionDetails) return { error: JSON.stringify(r.result.exceptionDetails).slice(0, 400) };
-  return r.result && r.result.result ? r.result.result.value : undefined;
-}
-async function shot(name) {
-  const r = await send('Page.captureScreenshot', { format: 'png' }, S);
-  fs.writeFileSync(name, Buffer.from(r.result.data, 'base64'));
-  console.log('saved', name);
-}
+import { launchDrive, finish } from './harness.mjs';
+const { proc, ev, consoleLog, sleep, poll: poll120 } = await launchDrive();
 
 
 
@@ -106,7 +10,6 @@ async function shot(name) {
 // finish (suite 11), partial multi-key save consistency (suite 12).
 const R = { checks: [] };
 const ok = (name, cond) => R.checks.push([name, !!cond]);
-const ev = async (code) => evaluate(code);
 const J = async (expr) => { const raw = await ev(`(() => { try { return JSON.stringify((${expr})); } catch (e) { return JSON.stringify({ __err: String(e && e.message || e) }); } })()`); return typeof raw === 'string' ? JSON.parse(raw) : {}; };
 await sleep(3000);
 
@@ -118,9 +21,8 @@ const overlaps = (a, b) => a.x < b.r - 1 && b.x < a.r - 1 && a.y < b.b - 1 && b.
 const inView = (r) => r.x >= -1 && r.y >= -1 && r.r <= 421 && r.b <= 901;
 const noOverlap = (rs) => rs.every((a, i) => rs.every((b, j) => i === j || !overlaps(a, b)));
 let A;
-const poll120 = async (expr, pred, ms) => { const t0 = Date.now(); while (Date.now() - t0 < (ms || 20000)) { const v = await ev(expr); if (v === true) return true; await sleep(300); } return false; };
 
-ok('V0 app boots with the map active', await poll120(`typeof glOk !== 'undefined' && glOk === true`, v => v, 30000));
+ok('V0 app boots with the map active', await poll120(`typeof glOk !== 'undefined' && glOk === true`, 30000));
 
 // V1 (Beta 1.21 layout): the dock - List | round run button | Pace on one level,
 // centred and symmetrical; the gear alone at the top left; the header is title-only.
@@ -166,12 +68,12 @@ ok('V4 tab items are equal width, inside the viewport, no overlaps | tabs ' + JS
 
 // V5: sheets - open sheet fits the viewport; closed sheet is truly invisible
 await ev(`(() => { $('streetsBtn').click(); return true; })()`); // the List button toggles the sheet itself; there is no openList() function
-await poll120(`$('sheet').classList.contains('open')`, v => v, 5000);
+await poll120(`$('sheet').classList.contains('open')`, 5000);
 await sleep(600);
 A = await J(`(() => { const r = $('sheet').getBoundingClientRect(); return { x: r.x, y: r.y, w: r.width, h: r.height, r: r.right, b: r.bottom }; })()`);
 ok('V5 open list sheet fits the viewport | sheet ' + JSON.stringify(A), inView(A) && A.y >= 0);
 await ev(`(() => { closeSheets(); return true; })()`);
-await poll120(`(() => { const e = $('sheet'); return getComputedStyle(e).visibility === 'hidden' || e.getBoundingClientRect().top >= 899; })()`, v => v, 10000);
+await poll120(`(() => { const e = $('sheet'); return getComputedStyle(e).visibility === 'hidden' || e.getBoundingClientRect().top >= 899; })()`, 10000);
 A = await J(`(() => { const e = $('sheet'); const r = e.getBoundingClientRect(); return { vis: getComputedStyle(e).visibility, top: r.top }; })()`);
 ok('V5 closed sheet is invisible (hidden or fully below the viewport)', A.vis === 'hidden' || A.top >= 899);
 
@@ -183,5 +85,5 @@ D = await dockGeom();
 ok('V6 night: dock centred, inside the viewport, no overlaps | dock ' + JSON.stringify(D), A.night === true && [D.list, D.pace, D.start].every(inView) && noOverlap([D.list, D.pace, D.start]) && Math.abs(D.start.cx - D.vw / 2) <= 2);
 
 R.exceptions = consoleLog.filter(c => c.type === 'EXCEPTION').map(c => String(c.text || '').slice(0, 200));
-console.log(JSON.stringify(R, null, 1));
-proc.kill('SIGKILL'); process.exit(0);
+finish(R, proc);
+
