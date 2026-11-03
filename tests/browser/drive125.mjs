@@ -39,7 +39,7 @@ const S22 = JSON.parse(await ev(`(() => { const sb = $('startBtn'); const cs = g
     hudBg: getComputedStyle($('hud')).backgroundColor,
     strip: { x: sr.x, w: sr.width, top: sr.top, bottom: sr.bottom }, startB: br.bottom,
     atBottom: atBottom && (atBottom.id || (atBottom.closest('#tabBar') ? 'tabBar' : '')), atStart: atStart && atStart.id, color: cs.color, vw: window.innerWidth, vh: window.innerHeight }); })()`));
-ok('S1 Start button: black circle, volt-yellow word (per the reference) | ' + JSON.stringify(S22), S22.label === 'Start' && S22.bg === 'rgb(10, 10, 11)' && S22.color === 'rgb(216, 255, 61)');
+ok('S1 Start button: splash-blue circle, white START word (Beta 1.75) | ' + JSON.stringify(S22), S22.label === 'START' && S22.bg === 'rgb(43, 75, 242)' && S22.color === 'rgb(255, 255, 255)');
 ok('S2 count reads "0 of 34 · 0%" (no "completed") | ' + S22.count, S22.count === '0 of 34 · 0%');
 ok('S3 header slab is transparent (map full-screen at the top)', S22.hudBg === 'rgba(0, 0, 0, 0)');
 ok('S4 tab bar spans the bottom edge and takes the touch there (the old dead-strip job), dock clear above it | ' + JSON.stringify(S22),

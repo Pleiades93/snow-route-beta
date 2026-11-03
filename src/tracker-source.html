@@ -32,7 +32,7 @@
   /* MENU ANIMATION BASELINE (Andrew, 2026-10-30; pace set by Andrew in Beta 1.29): every menu uses --anim-dur; opening plays --ease-open, closing plays its exact time-flip --ease-close, staggers mirror. This survives any redesign of the menus themselves. The pace is deliberately a touch slow - smooth and fluid beats snappy. */
   :root { --anim-dur: 420ms; --ease-open: cubic-bezier(.22,.9,.28,1); --ease-close: cubic-bezier(.72,0,.1,.78); }
   :root { --sat: env(safe-area-inset-top, 0px); --sab: env(safe-area-inset-bottom, 0px); --sal: env(safe-area-inset-left, 0px); --sar: env(safe-area-inset-right, 0px);
-    --card: rgba(255,255,255,.92); --ink: #1c2534; --ink-dim: rgba(28,37,52,.64); --ink-faint: rgba(28,37,52,.32); --hair: rgba(20,28,44,.13); --chip: rgba(20,30,50,.06); --field: #ffffff; --sec: #47617f; --link: #1f6fd6; --done-nm: #177245; --tm-c: #4d7a5e; --nt-c: #96690f; /* Beta 1.29: menus follow the map - light glass by day (opaque enough that text never washes out on the bright map), a deep blue-black by night */ --rad-card: 14px; --rad-btn: 11px; --shadow-card: 0 10px 34px rgba(10,14,20,.28); --shadow-float: 0 8px 24px rgba(10,14,20,.22); --glass-day: rgba(255,255,255,.78); --glass-night: rgba(10,14,22,.78); /* Beta 1.29: retuned into the same deep blue-black family as --card night (the old slate grey is gone everywhere) */ --blur: blur(18px) saturate(1.6); } /* Beta 1.22 modern chrome: frosted glass surfaces, soft deep shadows */
+    --card: rgba(255,255,255,.92); --ink: #1c2534; --ink-dim: rgba(28,37,52,.64); --ink-faint: rgba(28,37,52,.32); --hair: rgba(20,28,44,.13); --chip: rgba(43,75,242,.06); --field: #ffffff; --sec: #47617f; --link: #2b4bf2; --done-nm: #177245; --tm-c: #4d7a5e; --nt-c: #96690f; /* Beta 1.29: menus follow the map - light glass by day (opaque enough that text never washes out on the bright map), a neutral charcoal by night */ --rad-card: 14px; --rad-btn: 11px; --shadow-card: 0 10px 34px rgba(10,14,20,.28); --shadow-float: 0 8px 24px rgba(10,14,20,.22); --glass-day: rgba(255,255,255,.78); --glass-night: rgba(32,33,37,.78); /* Beta 1.75: same neutral charcoal family as --card night */ --blur: blur(18px) saturate(1.6); } /* Beta 1.22 modern chrome: frosted glass surfaces, soft deep shadows */
   #map { position: fixed; top: 0; left: 0; right: 0; bottom: 0; z-index: 1; background: #eceff2; }
   body.night #map { background: #14171d; }
   #hud { position: fixed; top: var(--vvt, 0px); left: 0; right: 0; z-index: 1000; background: transparent; box-shadow: none; color: #fff; padding: calc(25px + var(--sat)) calc(12px + var(--sar)) 8px calc(12px + var(--sal)); } /* Beta 1.22/1.23: no top banner - the map runs full-screen under the floating title */ /* Beta 1.21: slim title-only header; the 70px left inset clears the top-left hamburger */
@@ -44,7 +44,7 @@
   body.night #hud .ver { color: #8fa0b3; text-shadow: 0 0 6px rgba(0,0,0,.85); }
   #count { position: relative; overflow: hidden; margin-top: 9px; background: var(--glass-day); -webkit-backdrop-filter: var(--blur); backdrop-filter: var(--blur); color: #1d2530; border: 1px solid rgba(20,22,28,.09); padding: 6px 14px; border-radius: 999px; font-size: 12.5px; font-weight: 700; white-space: nowrap; box-shadow: var(--shadow-float); } /* Beta 1.23: the progress lives in its own pill under the circle, like the goal pill in Andrew's reference */
   #hud .spacer { margin-left: auto; }
-  #hud button { background: #2c7be5; color: #fff; border: none; border-radius: var(--rad-btn); padding: 9px 8px; font-size: 13.5px; font-weight: 600; min-height: 40px; white-space: nowrap; }
+  #hud button { background: #2b4bf2; color: #fff; border: none; border-radius: var(--rad-btn); padding: 9px 8px; font-size: 13.5px; font-weight: 600; min-height: 40px; white-space: nowrap; }
   #hud button.ghost { background: #444; }
   #resetBtn { background: #0a0a0b; color: #d8ff3d; font-size: 19px; } /* same black/volt treatment as Start while it holds the slot */
   #resetBtn.armed { background: #8c1f16; color: #fff; font-style: normal; }
@@ -70,7 +70,7 @@
   .banner { position: fixed; left: calc(10px + var(--sal)); right: calc(10px + var(--sar)); bottom: calc(var(--vvb, 0px) + 236px + var(--sab)); z-index: 1000; background: var(--card); -webkit-backdrop-filter: var(--blur); backdrop-filter: var(--blur); color: var(--ink); border-radius: 16px; box-shadow: var(--shadow-card); padding: 10px 12px; display: flex; align-items: center; gap: 10px; font-size: 13px; }
   .banner.hidden { display: none; }
   .banner span { flex: 1; line-height: 1.4; }
-  .banner button { border: none; border-radius: var(--rad-btn); padding: 8px 10px; font-size: 13px; font-weight: 700; min-height: 38px; background: #2c7be5; color: #fff; white-space: nowrap; }
+  .banner button { border: none; border-radius: var(--rad-btn); padding: 8px 10px; font-size: 13px; font-weight: 700; min-height: 38px; background: #2b4bf2; color: #fff; white-space: nowrap; }
   .banner button.red { background: #e63a2e; }
   #stale { z-index: 1001; } #bakNudge { z-index: 1002; }
   #mapNote { position: fixed; left: calc(10px + var(--sal)); right: calc(10px + var(--sar)); bottom: calc(var(--vvb, 0px) + 240px + var(--sab)); z-index: 1003; background: var(--card); -webkit-backdrop-filter: var(--blur); backdrop-filter: var(--blur); color: var(--ink); border-radius: 16px; box-shadow: var(--shadow-card); padding: 10px 12px; display: flex; align-items: center; gap: 10px; font-size: 13px; }
@@ -91,10 +91,10 @@
   .tabItem { flex: 1; background: none; border: none; color: #2b3038; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 2px; padding: 4px 0 2px; cursor: pointer; font-family: inherit; }
   .tabItem svg { width: 24px; height: 24px; }
   .tabLbl { font-size: 10px; font-weight: 600; letter-spacing: .02em; }
-  .tabItem.on { color: #1f6fd0; }
+  .tabItem.on { color: #2b4bf2; }
   /* (the tab bar's night surface comes from --card via body.night - no separate override) */
   body.night .tabItem { color: #dde5ec; }
-  body.night .tabItem.on { color: #4da3ff; }
+  body.night .tabItem.on { color: #2b4bf2; }
   .tabItem.rec { color: #d92c1e; } /* Beta 1.49: the Locate tab wears red while a clean's GPS is recording (blue = view only) */
   body.night .tabItem.rec { color: #ff6b5e; }
   .tabItem.red { color: #ff6b5e; }
@@ -104,11 +104,11 @@
   body.night .dockBtn { background: var(--glass-night); color: #f2f4f8; border-color: rgba(255,255,255,.16); }
   #runSlot { position: relative; width: 104px; flex: none; display: flex; flex-direction: column; align-items: center; }
   .runBtn { position: relative; width: 104px; height: 104px; flex: none; border-radius: 50%; border: none; box-shadow: var(--shadow-float); line-height: 1.1; cursor: pointer; padding: 0 8px; font-style: italic; font-weight: 900; letter-spacing: .01em; }
-  #startBtn { background: #0a0a0b; color: #d8ff3d; font-size: 21px; } /* Beta 1.23 (Andrew's reference): black circle, volt-yellow word */
+  #startBtn { background: #2b4bf2; color: #fff; font-size: 21px; } /* Beta 1.75 (Andrew): splash-blue circle, white START - supersedes the 1.23 black/volt treatment; font unchanged */
   body.night #count { background: var(--glass-night); color: #eef4ee; border-color: rgba(255,255,255,.16); }
   #countFill { position: absolute; left: 0; top: 0; bottom: 0; width: 0%; background: rgba(52,199,89,.42); box-shadow: inset -2px 0 0 #34c759; transition: width .7s var(--ease-open); } /* Beta 1.29: the pill is a meter - a translucent green wash fills it as the route gets cleaned, with a bright leading edge; translucent on purpose, so the themed text (dark by day, bright by night) stays readable over filled and unfilled parts alike */
   #countTxt { position: relative; z-index: 1; }
-  body.night { --card: rgba(7,10,17,.94); --ink: #edf2f9; --ink-dim: rgba(214,226,242,.62); --ink-faint: rgba(214,226,242,.32); --hair: rgba(160,190,235,.14); --chip: rgba(140,170,230,.10); --field: #101623; --sec: #9fb4c8; --link: #7db4e8; --done-nm: #9fd3ae; --tm-c: #8fae99; --nt-c: #c9a86a; } /* Beta 1.29 night card: near-black with a blue soul, replacing the slate grey Andrew disliked */
+  body.night { --card: rgba(32,33,37,.94); --ink: #edf2f9; --ink-dim: rgba(214,226,242,.62); --ink-faint: rgba(214,226,242,.32); --hair: rgba(160,190,235,.14); --chip: rgba(43,75,242,.10); --field: #3c4043; --sec: #9fb4c8; --link: #2b4bf2; --done-nm: #9fd3ae; --tm-c: #8fae99; --nt-c: #c9a86a; } /* Beta 1.75 night card: neutral charcoal (32,33,37) at 94% - Andrew's pick, sampled from a Google Maps dark reference (#202125) - replacing the 1.29 blue-black; fields take the reference's raised tone #3c4043 */
   #selPop { position: fixed; top: calc(var(--vvt, 0px) + 54px + var(--sat)); left: 50%; transform: translateX(-50%); z-index: 1001; display: flex; align-items: center; gap: 8px; background: var(--glass-day); -webkit-backdrop-filter: var(--blur); backdrop-filter: var(--blur); color: #1d2530; border: 1px solid rgba(20,22,28,.09); padding: 9px 12px 9px 15px; border-radius: 20px; box-shadow: inset 4px 0 0 var(--accent, transparent), var(--shadow-float); flex-direction: column; align-items: stretch; gap: 7px; width: min(342px, 92vw); --accent: transparent; } /* Beta 1.34 (Andrew): ONE fixed width, so the pop-up is the same size for one section or many - no growing/shrinking as the selection changes */ /* Beta 1.30: ONE selection pop-up (Andrew) - the multi-select pill he liked, widened into a card that also carries the old header strip's name/status/notes/mark actions; the street colour rides the left edge */
   body.night #selPop { background: var(--glass-night); color: #eef4ee; border-color: rgba(255,255,255,.16); }
   #selPop.hidden { display: none; }
@@ -132,7 +132,7 @@
   .modal .card { max-height: calc(var(--vvh, 100dvh) - 44px); overflow-y: auto; } /* a modal card can never outgrow the visible area, keyboard or not */
   #filters { display: flex; gap: 6px; padding: 2px 14px 8px; }
   #filters button { flex: 1; border: none; border-radius: var(--rad-btn); padding: 8px; font-size: 13px; font-weight: 700; background: var(--chip); color: var(--ink-dim); min-height: 38px; }
-  #filters button.on { background: #2c7be5; color: #fff; }
+  #filters button.on { background: #2b4bf2; color: #fff; }
   #sheetBody { overflow-y: auto; padding: 0 14px 14px; -webkit-overflow-scrolling: touch; }
   .srow { display: flex; align-items: center; gap: 11px; padding: 12px 4px; border-bottom: 1px solid var(--hair); font-size: 16px; cursor: pointer; min-height: 48px; }
   .srow .dot { width: 15px; height: 15px; border-radius: 50%; background: #ef476f; flex-shrink: 0; }
@@ -185,7 +185,7 @@
   .modal .row { display: flex; gap: 8px; }
   .modal .row button { flex: 1; border: none; border-radius: var(--rad-btn); padding: 11px; font-size: 14px; font-weight: 700; min-height: 44px; }
   #finYes { background: #c22f24; color: #fff; }
-  #noteYes { background: #2c7be5; color: #fff; }
+  #noteYes { background: #2b4bf2; color: #fff; }
   #noteText { width: 100%; min-height: 74px; border-radius: var(--rad-btn); border: 1px solid var(--hair); background: var(--field); color: var(--ink); font-size: 16px; /* 16px: no iOS focus auto-zoom (Beta 1.18) */ padding: 9px; margin-bottom: 12px; font-family: inherit; }
   #xport .card { max-width: 380px; }
   #xText { width: 100%; min-height: 110px; border-radius: var(--rad-btn); border: 1px solid var(--hair); background: var(--field); color: var(--ink); font-size: 12px; padding: 9px; margin-bottom: 10px; font-family: ui-monospace, monospace; }
@@ -231,7 +231,7 @@
 <div id="hud">
   <div id="warn">Not saving — storage is full or blocked</div>
   <div class="row">
-    <div class="titleStack"><div class="title">Snow Route Beta</div><div class="ver" id="ver">Beta 1.74</div></div>
+    <div class="titleStack"><div class="title">Snow Route Beta</div><div class="ver" id="ver">Beta 1.75</div></div>
   </div>
   <div id="stats"></div>
 </div>
@@ -242,7 +242,7 @@
 <div id="dock">
   <button id="streetsBtn" class="dockBtn" title="Streets"></button>
   <div id="runSlot">
-    <button id="startBtn" class="runBtn">Start</button>
+    <button id="startBtn" class="runBtn">START</button>
     <button id="resetBtn" class="runBtn" style="display:none">Finish</button>
     <div id="count"><span id="countFill"></span><span id="countTxt">0 of 34 · 0%</span></div>
     <button id="cancelStartBtn" style="display:none;background:#e63a2e">Cancel start</button>
@@ -2358,9 +2358,9 @@ function makeBeamImage() { // Beta 1.49: the facing beam as a painted fan (Andre
   const x = cv.getContext('2d'), c = S / 2;
   const pass = (halfDeg, len, a0) => {
     const g = x.createRadialGradient(c, c, 0, c, c, len);
-    g.addColorStop(0, 'rgba(26,140,255,' + a0 + ')');
-    g.addColorStop(0.55, 'rgba(26,140,255,' + (a0 * 0.55).toFixed(3) + ')');
-    g.addColorStop(1, 'rgba(26,140,255,0)');
+    g.addColorStop(0, 'rgba(43,75,242,' + a0 + ')');
+    g.addColorStop(0.55, 'rgba(43,75,242,' + (a0 * 0.55).toFixed(3) + ')');
+    g.addColorStop(1, 'rgba(43,75,242,0)');
     x.fillStyle = g; x.beginPath(); x.moveTo(c, c);
     const h = -Math.PI / 2, hd = halfDeg * Math.PI / 180;
     x.arc(c, c, len, h - hd, h + hd); x.closePath(); x.fill();
@@ -2374,14 +2374,14 @@ function addGpsLayers() {
   if (!map.hasImage('beam-img')) { const bcv = makeBeamImage(); map.addImage('beam-img', bcv.getContext('2d').getImageData(0, 0, bcv.width, bcv.height), { pixelRatio: 2 }); } // raw ImageData form: handing MapLibre the canvas element itself throws 'mismatched image size' (its size reads come back 0) and the throw silently killed this whole layer batch in the boot queue - found by drive129's layer checks before 1.49 ever shipped
   map.addLayer({ id: 'gps-shadow', type: 'circle', source: 'gps', filter: ['==', ['get', 'k'], 'dot'], paint: { 'circle-radius': 13, 'circle-color': '#000000', 'circle-opacity': 0.16, 'circle-blur': 1 } }); // Beta 1.49: the soft shadow under the dot (Andrew's reference image)
   map.addLayer({ id: 'gps-beam', type: 'symbol', source: 'gps', filter: ['==', ['get', 'k'], 'beam'], layout: { 'icon-image': 'beam-img', 'icon-size': 0.62, 'icon-rotate': ['get', 'rot'], 'icon-rotation-alignment': 'map', 'icon-pitch-alignment': 'map', 'icon-anchor': 'center', 'icon-allow-overlap': true, 'icon-ignore-placement': true } }); // Beta 1.49: gradient fan symbol, painted under the accuracy ring and the dot - replaces the flat cone polygon (Beta 1.28), which read as cheap
-  map.addLayer({ id: 'gps-ring', type: 'fill', source: 'gps', filter: ['==', ['get', 'k'], 'ring'], paint: { 'fill-color': '#1a8cff', 'fill-opacity': 0.12 } });
-  map.addLayer({ id: 'gps-ring-line', type: 'line', source: 'gps', filter: ['==', ['get', 'k'], 'ring'], paint: { 'line-color': '#1a8cff', 'line-width': 1.5, 'line-opacity': 0.5 } });
-  map.addLayer({ id: 'gps-dot', type: 'circle', source: 'gps', filter: ['==', ['get', 'k'], 'dot'], paint: { 'circle-radius': 9.5, 'circle-color': '#1a8cff', 'circle-stroke-width': 4, 'circle-stroke-color': '#ffffff' } });
+  map.addLayer({ id: 'gps-ring', type: 'fill', source: 'gps', filter: ['==', ['get', 'k'], 'ring'], paint: { 'fill-color': '#2b4bf2', 'fill-opacity': 0.12 } });
+  map.addLayer({ id: 'gps-ring-line', type: 'line', source: 'gps', filter: ['==', ['get', 'k'], 'ring'], paint: { 'line-color': '#2b4bf2', 'line-width': 1.5, 'line-opacity': 0.5 } });
+  map.addLayer({ id: 'gps-dot', type: 'circle', source: 'gps', filter: ['==', ['get', 'k'], 'dot'], paint: { 'circle-radius': 9.5, 'circle-color': '#2b4bf2', 'circle-stroke-width': 4, 'circle-stroke-color': '#ffffff' } });
 }
 function addTrailLayers() {
   if (map.getSource('trail')) return;
   map.addSource('trail', { type: 'geojson', data: { type: 'FeatureCollection', features: [] } });
-  map.addLayer({ id: 'trail-line', type: 'line', source: 'trail', layout: { 'line-cap': 'round', 'line-join': 'round' }, paint: { 'line-color': '#38bdf8', 'line-width': 3, 'line-opacity': 0.7 } }, 'gps-shadow'); // Beta 1.65 (Andrew's road report): anchored UNDER the GPS stack - unanchored, the line could paint across the dot's face
+  map.addLayer({ id: 'trail-line', type: 'line', source: 'trail', layout: { 'line-cap': 'round', 'line-join': 'round' }, paint: { 'line-color': '#2b4bf2', 'line-width': 3, 'line-opacity': 0.7 } }, 'gps-shadow'); // Beta 1.65 (Andrew's road report): anchored UNDER the GPS stack - unanchored, the line could paint across the dot's face
 }
 function pickFontFromStyle() { // adopt a NOTO stack from the CURRENT basemap for OUR route labels (Beta 1.6: same
   // typeface day and night - Versatiles names it noto_sans_regular, CARTO lists Noto Sans Regular inside its
@@ -3542,8 +3542,8 @@ $('updBtn').addEventListener('click', async () => {
 // ===== FAN / NIGHT / FLIP / HOME =====
 const ICONS = { // Pack D "iOS Filled" (Andrew's pick, Beta 1.28): solid silhouettes throughout - no line-work, so every glyph stays crisp at tab size; the sun is drawn fresh in the same language
   streets: '<svg viewBox="0 0 24 24" fill="currentColor" stroke="none"><path fill="currentColor" stroke="none" fill-rule="evenodd" d="M9.6 3.4h4.8L19.6 20.6H4.4zM11.1 16.9h1.8l.5 2.6h-2.8zM11.4 12.4h1.2l.4 2h-2zM11.7 8.6h.6l.3 1.6h-1.2z"/></svg>',
-  pace: '<svg viewBox="0 0 24 24" fill="currentColor" stroke="none"><path fill="currentColor" stroke="none" fill-rule="evenodd" d="M10.4 2.4h3.2v2.2h-3.2zM12 6a7.6 7.6 0 1 1 0 15.2A7.6 7.6 0 0 1 12 6zm-.9 3.4v5l1 .8 3-3.4-1.2-1-2 2.2z"/></svg>',
-  clear: '<svg viewBox="0 0 24 24" fill="currentColor" stroke="none"><path fill="currentColor" stroke="none" d="M13.9 4.3a2.3 2.3 0 0 1 3.2 0l2.6 2.6a2.3 2.3 0 0 1 0 3.2l-5.6 5.6H8.6L4.3 12.6a2.3 2.3 0 0 1 0-3.2z"/><path fill="currentColor" stroke="none" d="M4.5 18.6h15v2.1h-15z"/></svg>',
+  pace: '<svg viewBox="0 0 24 24" fill="currentColor" stroke="none"><path fill="currentColor" stroke="none" d="M5.8 2.8h2.1V21H5.8zM9.2 3.8h9.3l-2.6 3.6 2.6 3.6H9.2z"/></svg>',
+  clear: '<svg viewBox="0 0 24 24" fill="currentColor" stroke="none"><path fill="currentColor" stroke="none" d="M9.2 5.3L4.6 9.9l4.6 4.6v-3.3h5.1a3.6 3.6 0 0 1 0 7.2H11v2h3.3a5.6 5.6 0 0 0 0-11.2H9.2V5.3z"/></svg>',
   menu: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round"><path d="M4 7h16M4 12h16M4 17h16"/></svg>',
   upd: '<svg viewBox="0 0 24 24" fill="currentColor" stroke="none"><path fill="currentColor" stroke="none" d="M19.9 12a7.9 7.9 0 1 1-2.3-5.7l-1.7 1.8A5.7 5.7 0 1 0 17.7 12z"/><path fill="currentColor" stroke="none" d="M21.4 2.8v5.6h-5.6z"/></svg>',
   flip: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M7 4v13M7 4L4 7M7 4l3 3M17 20V7M17 20l3-3M17 20l-3-3"/></svg>',
