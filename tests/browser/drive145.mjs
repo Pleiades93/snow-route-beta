@@ -137,7 +137,7 @@ await poll(`document.querySelectorAll('#rmRoutes .routeRow').length > 0`, 15000)
 await ev(`document.querySelector('#rmRoutes .routeRow').click(); true`);
 await poll(`typeof routeLoaded !== 'undefined' && routeLoaded === true`, 20000);
 ok('N22 a route pick starts the camera wide of the fitted view', await ev(`(function(){ var fit = map.cameraForBounds([[routeBox.w, routeBox.s], [routeBox.e, routeBox.n]], { padding: 28 }); return map.getZoom() < fit.zoom - 1.5; })()`));
-await sleep(1200); // the flight starts at +800ms by design (as the splash finishes leaving) - wait until it is actually under way before polling for the settle, or the poll reads the pre-flight stillness and N23 measures the wide start
+await sleep(2200); // Beta 1.81: the flight starts at +1500ms by design (the wide view dwells on the Route 5W point of interest first) - wait until it is actually under way before polling for the settle, or the poll reads the pre-flight stillness and N23 measures the wide start
 await poll(`!map.isMoving()`, 25000);
 ok('N23 the intro flight lands exactly on the fitted route view', await ev(`(function(){ var fit = map.cameraForBounds([[routeBox.w, routeBox.s], [routeBox.e, routeBox.n]], { padding: 28 }); return Math.abs(map.getZoom() - fit.zoom) < 0.05 && Math.abs(map.getCenter().lng - fit.center.lng) < 0.001 && Math.abs(map.getCenter().lat - fit.center.lat) < 0.001; })()`));
 

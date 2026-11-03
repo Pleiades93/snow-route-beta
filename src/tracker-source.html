@@ -2829,13 +2829,20 @@ const SHEET_OMEGA = 30;
 function cancelSheetSpring(sheet) { if (sheet._spring) { cancelAnimationFrame(sheet._spring); sheet._spring = null; } }
 function springSheet(sheet, q0, qT, v0, apply, finish) {
   cancelSheetSpring(sheet);
-  let q = q0, vel = Math.max(-4000, Math.min(4000, v0)), last = performance.now(), t0 = last;
+  // Closed form of the critically-damped spring, evaluated at the frame's timestamp -
+  // NOT a per-frame Euler integration: the integrated form diverged at the slower frame
+  // rate of the CI browser (drive145 N27 measured a sheet height of 582,683px on run
+  // 41686175718) while passing at the local rig's 60fps. The closed form is exact at any
+  // frame rate. With v0 clamped to 4000px/s it cannot overshoot a stop: crossing needs
+  // v0 > omega * distance, and 30 * distance exceeds the clamp beyond ~134px of travel.
+  const A = q0 - qT, B = Math.max(-4000, Math.min(4000, v0)) + SHEET_OMEGA * A, t0 = performance.now();
   if (window.matchMedia && matchMedia('(prefers-reduced-motion: reduce)').matches) { apply(qT); finish(); return; }
   const step = now => {
-    const dt = Math.min(0.05, (now - last) / 1000); last = now;
-    const acc = -SHEET_OMEGA * SHEET_OMEGA * (q - qT) - 2 * SHEET_OMEGA * vel;
-    vel += acc * dt; q += vel * dt;
-    if ((Math.abs(q - qT) < 0.7 && Math.abs(vel) < 15) || now - t0 > 1000) { apply(qT); sheet._spring = null; finish(); return; }
+    const t = (now - t0) / 1000;
+    const e = Math.exp(-SHEET_OMEGA * t);
+    const q = qT + (A + B * t) * e;
+    const vel = (B - SHEET_OMEGA * (A + B * t)) * e;
+    if ((Math.abs(q - qT) < 0.7 && Math.abs(vel) < 15) || t > 1) { apply(qT); sheet._spring = null; finish(); return; }
     apply(q); sheet._spring = requestAnimationFrame(step);
   };
   sheet._spring = requestAnimationFrame(step);
