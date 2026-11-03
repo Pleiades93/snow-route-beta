@@ -51,20 +51,21 @@ ok('S4 tab bar spans the bottom edge and takes the touch there (the old dead-str
 // dark text (never white-on-white over the bright map), night is a deep blue-black.
 const T1 = JSON.parse(await ev(`(() => { const surf = el => getComputedStyle(el).backgroundColor; return JSON.stringify({
   sheetBg: surf($('sheet')), sheetCol: getComputedStyle($('sheet')).color, paceBg: surf($('pacePanel')),
-  barBg: surf($('tabBar')), menuBg: surf($('setMenu')), fillW: $('countFill').offsetWidth,
+  barBg: surf($('tabBar')), fillW: $('countFill').offsetWidth,
   order: [...document.querySelectorAll('#tabBar .tabItem')].map(b => b.id) }); })()`));
-ok('T1 day menus share one light surface with dark text (bar = sheets = settings pop-up) | ' + JSON.stringify(T1),
-  T1.sheetBg === 'rgba(255, 255, 255, 0.92)' && T1.sheetCol === 'rgb(28, 37, 52)' && T1.paceBg === T1.sheetBg && T1.barBg === T1.sheetBg && T1.menuBg === T1.sheetBg);
-ok('T2 tab order: Locate, Routes, Home dead centre, Clear, Settings (Beta 1.76: Night/Day moved into Settings) | ' + JSON.stringify(T1.order),
+ok('T1 day menus share one light surface with dark text (bar = sheets; the Settings takeover is blue in both themes since 1.88, asserted at T3) | ' + JSON.stringify(T1),
+  T1.sheetBg === 'rgba(255, 255, 255, 0.92)' && T1.sheetCol === 'rgb(28, 37, 52)' && T1.paceBg === T1.sheetBg && T1.barBg === T1.sheetBg);
+ok('T2 tab order: Locate, Routes, Home dead centre, Clear, Settings (Beta 1.88: Day/Night is a floating button, not a tab) | ' + JSON.stringify(T1.order),
   JSON.stringify(T1.order) === JSON.stringify(['gpsBtn', 'routesBtn', 'homeBtn', 'clearBtn', 'setBtn']));
 ok('T3 the meter starts empty | fillW ' + T1.fillW, T1.fillW === 0);
 await ev(`(() => { $('setBtn').click(); return true; })()`); await sleep(600);
-const T3b = JSON.parse(await ev(`(() => JSON.stringify({ open: $('setMenu').classList.contains('open'),
-  rows: [...document.querySelectorAll('#setMenu .setRow')].map(b => ({ id: b.id, lbl: b.querySelector('.tabLbl').textContent, svg: !!b.querySelector('svg') })) }))()`));
-ok('T3 Settings rises with Night, Backup and Update inside, in that order (Beta 1.87: Andrew reordered - Night/Day on top, Backup second, Update last) | ' + JSON.stringify(T3b),
-  T3b.open === true && T3b.rows.length === 3 && T3b.rows[0].id === 'nightBtn' && T3b.rows[1].id === 'exportBtn' && T3b.rows[2].id === 'updBtn' && T3b.rows.every(r => r.svg && r.lbl.length > 0));
-await ev(`(() => { $('setBtn').click(); return true; })()`); await sleep(600);
-ok('T3 Settings closes on a second tap', await ev(`$('setMenu').classList.contains('open')`) === false);
+const T3b = JSON.parse(await ev(`(() => JSON.stringify({ open: $('setMenu').classList.contains('open'), bg: getComputedStyle($('setMenu')).backgroundColor,
+  rows: [...document.querySelectorAll('#setMainPane .rmBtn')].map(b => b.id), ver: $('setVer').textContent, titleVer: $('ver').textContent,
+  chipOut: !$('setMenu').contains($('nightBtn')), chipW: $('nightBtn').offsetWidth, paceW: $('paceBtn').offsetWidth }))()`));
+ok('T3 Settings rises as the blue takeover: Backup then Update on the main pane, the version riding bottom-right synced from the title, Day/Night out of the menu - its own button now, exactly Pace-sized (Beta 1.88) | ' + JSON.stringify(T3b),
+  T3b.open === true && T3b.bg === 'rgb(43, 75, 242)' && JSON.stringify(T3b.rows) === JSON.stringify(['exportBtn', 'updBtn']) && T3b.ver === T3b.titleVer && T3b.ver.length > 0 && T3b.chipOut && T3b.chipW === 56 && T3b.chipW === T3b.paceW);
+await ev(`(() => { $('setClose').click(); return true; })()`); await sleep(600);
+ok('T3 the bare X closes the Settings takeover', await ev(`$('setMenu').classList.contains('open')`) === false);
 
 // P1 (Beta 1.33, Protomaps): ONE places system - localities (cities/towns/villages) are
 // gated by the tile data itself, size by size (the Apple/Google ladder); the app's tuning
@@ -93,7 +94,7 @@ await ev(`(() => { $('startBtn').click(); return true; })()`);
 await sleep(700);
 const S6 = JSON.parse(await ev(`(() => { const c = $('cancelStartBtn'); const cr = c.getBoundingClientRect(); const tr = $('tabBar').getBoundingClientRect();
   const hit = document.elementFromPoint(cr.x + cr.width / 2, cr.y + cr.height / 2);
-  return JSON.stringify({ disp: c.style.display, cancel: { y: cr.y, b: cr.bottom }, tabTop: tr.top, hit: hit && hit.id, nightLbl: $('nightBtn').querySelector('.tabLbl').textContent,
+  return JSON.stringify({ disp: c.style.display, cancel: { y: cr.y, b: cr.bottom }, tabTop: tr.top, hit: hit && hit.id, moonIcon: (() => { const t = document.createElement('span'); t.innerHTML = ICONS.moon; return $('nightBtn').innerHTML === t.innerHTML; })(), // serialized-vs-serialized: a raw string compare against the ICONS source never matches (the HTML serializer normalizes the SVG)
     listCol: getComputedStyle($('streetsBtn')).color, paceCol: getComputedStyle($('paceBtn')).color, tabCol: getComputedStyle($('homeBtn')).color }); })()`));
 ok('S6 Cancel start floats above the circle, clear of the tab bar, and takes the tap | ' + JSON.stringify(S6),
   S6.disp !== 'none' && S6.cancel.b <= S6.tabTop - 40 && S6.hit === 'cancelStartBtn');
@@ -101,17 +102,17 @@ ok('S7 day mode: chrome is light glass with dark icons (GPS-app behaviour) | ' +
   S6.listCol === 'rgb(34, 38, 46)' && S6.paceCol === 'rgb(34, 38, 46)' && S6.tabCol === 'rgb(43, 48, 56)');
 await ev(`(() => { $('nightBtn').click(); return true; })()`);
 await sleep(600);
-ok('S7 day mode: the Settings theme row offers Night - it names where it takes you, not where you are (Beta 1.28) | label ' + S6.nightLbl, S6.nightLbl === 'Night');
-const S7 = JSON.parse(await ev(`(() => JSON.stringify({ night: document.body.classList.contains('night'), nightLbl: $('nightBtn').querySelector('.tabLbl').textContent,
+ok('S7 day mode: the day/night button offers Night - the moon shows where it takes you, not where you are (Beta 1.28)', S6.moonIcon === true);
+const S7 = JSON.parse(await ev(`(() => JSON.stringify({ night: document.body.classList.contains('night'), sunIcon: (() => { const t = document.createElement('span'); t.innerHTML = ICONS.sun; return $('nightBtn').innerHTML === t.innerHTML; })(),
   listCol: getComputedStyle($('streetsBtn')).color, tabCol: getComputedStyle($('homeBtn')).color,
   barBg: getComputedStyle($('tabBar')).backgroundColor, countCol: getComputedStyle($('count')).color }))()`));
 ok('S7 night mode: chrome flips to dark glass with bright icons | ' + JSON.stringify(S7),
   S7.night === true && S7.listCol === 'rgb(242, 244, 248)' && S7.tabCol === 'rgb(221, 229, 236)' && S7.barBg === 'rgba(32, 33, 37, 0.94)' && S7.countCol === 'rgb(238, 244, 238)');
-ok('S7 night mode: the Settings theme row now offers Day, label and state in agreement | label ' + S7.nightLbl, S7.nightLbl === 'Day');
+ok('S7 night mode: the day/night button now offers Day - sun icon, state in agreement', S7.sunIcon === true);
 const T4 = JSON.parse(await ev(`(() => { const surf = el => getComputedStyle(el).backgroundColor; return JSON.stringify({
-  sheetBg: surf($('sheet')), sheetCol: getComputedStyle($('sheet')).color, barBg: surf($('tabBar')), menuBg: surf($('setMenu')) }); })()`));
-ok('T4 night menus share the neutral charcoal (bar = sheets = pop-up), text bright (Beta 1.75) | ' + JSON.stringify(T4),
-  T4.sheetBg === 'rgba(32, 33, 37, 0.94)' && T4.sheetCol === 'rgb(237, 242, 249)' && T4.barBg === T4.sheetBg && T4.menuBg === T4.sheetBg);
+  sheetBg: surf($('sheet')), sheetCol: getComputedStyle($('sheet')).color, barBg: surf($('tabBar')) }); })()`));
+ok('T4 night menus share the neutral charcoal (bar = sheets), text bright (Beta 1.75) | ' + JSON.stringify(T4),
+  T4.sheetBg === 'rgba(32, 33, 37, 0.94)' && T4.sheetCol === 'rgb(237, 242, 249)' && T4.barBg === T4.sheetBg);
 const PL2 = JSON.parse(await ev(`(() => { const byId = {}; for (const L of map.getStyle().layers) byId[L.id] = { mn: L.minzoom, mx: L.maxzoom }; return JSON.stringify({ sub: byId['places_subplace'], loc: byId['places_locality'] }); })()`));
 ok('P2 night map too: same Protomaps ladder (subplace 9, locality capped 15.5) | ' + JSON.stringify(PL2),
   !!PL2.sub && PL2.sub.mn === 9 && !!PL2.loc && PL2.loc.mx === 15.5);

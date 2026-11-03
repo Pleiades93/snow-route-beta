@@ -78,14 +78,16 @@ await ev(`closeSheets()`); await sleep(300);
 
 // A7 (Beta 1.34, Andrew): EVERY menu's close is the same plain red corner X. The Backup
 // menu's X used to render as a red BOX - the button-grid styles overrode the plain-X rule -
-// and the same collision hit Finish and Note. Assert the COMPUTED look of all three dialog
-// closes (Backup via its real opener, the two dialogs unhidden for the style read).
+// and the same collision hit Finish and Note. Beta 1.88: the Backup surface moved into the
+// blue settings takeover, whose close is the blue menus' bare white X (one shared rule with
+// the Routes menu) - so this now asserts BOTH families: the red corner X computed on the
+// Finish and Note dialogs, and the IDENTICAL bare white X computed on Settings and Routes.
 await ev(`(() => { $('exportBtn').click(); return true; })()`); await sleep(400);
 await ev(`(() => { $('finModal').classList.remove('hidden'); $('noteModal').classList.remove('hidden'); return true; })()`); await sleep(200);
-const A7 = JSON.parse(await ev(`(() => { const one = id => { const e = $(id), cs = getComputedStyle(e), card = e.closest('.card').getBoundingClientRect(), r = e.getBoundingClientRect(); return { bg: cs.backgroundColor, col: cs.color, fs: cs.fontSize, pos: cs.position, topGap: Math.round(r.top - card.top), rightGap: Math.round(card.right - r.right), inGrid: !!e.closest('.grid') }; }; return JSON.stringify({ x: one('xClose'), fin: one('finNo'), note: one('noteNo') }); })()`));
+const A7 = JSON.parse(await ev(`(() => { const one = id => { const e = $(id), cs = getComputedStyle(e), card = e.closest('.card').getBoundingClientRect(), r = e.getBoundingClientRect(); return { bg: cs.backgroundColor, col: cs.color, fs: cs.fontSize, pos: cs.position, topGap: Math.round(r.top - card.top), rightGap: Math.round(card.right - r.right), inGrid: !!e.closest('.grid') }; }; const bx = id => { const cs = getComputedStyle($(id)); return { bg: cs.backgroundColor, col: cs.color, fs: cs.fontSize, fw: cs.fontWeight }; }; return JSON.stringify({ fin: one('finNo'), note: one('noteNo'), set: bx('setClose'), rm: bx('rmClose') }); })()`));
 const xOk = o => o.bg === 'rgba(0, 0, 0, 0)' && o.col === 'rgb(230, 58, 46)' && o.fs === '21px' && o.pos === 'absolute' && o.topGap >= 0 && o.topGap <= 8 && o.rightGap >= 0 && o.rightGap <= 10 && o.inGrid === false;
-ok('A7 every dialog close is the same plain red corner X as the sheets (Backup, Finish, Note) | ' + JSON.stringify(A7), xOk(A7.x) && xOk(A7.fin) && xOk(A7.note));
-await ev(`(() => { $('xClose').click(); $('finModal').classList.add('hidden'); $('noteModal').classList.add('hidden'); return true; })()`); await sleep(200);
+ok('A7 dialog closes keep the plain red corner X (Finish, Note) and the settings X computes IDENTICAL to the routes X - one bare-white-X rule for the blue menus (Beta 1.88) | ' + JSON.stringify(A7), xOk(A7.fin) && xOk(A7.note) && JSON.stringify(A7.set) === JSON.stringify(A7.rm) && A7.set.col === 'rgb(255, 255, 255)' && A7.set.fs === '30px');
+await ev(`(() => { $('setClose').click(); $('finModal').classList.add('hidden'); $('noteModal').classList.add('hidden'); return true; })()`); await sleep(200);
 
 // A8 (Beta 1.34, z15 core added Beta 1.41): Download offline maps must actually fetch the VAUGHAN + NEARBY tile set
 // for both modes. The pre-1.34 loop ran the tile y-range backwards (north y is smaller),

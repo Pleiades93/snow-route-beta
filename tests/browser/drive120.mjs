@@ -79,7 +79,7 @@ A = await J(`(() => { const e = $('sheet'); const r = e.getBoundingClientRect();
 ok('V5 closed sheet is invisible (hidden or fully below the viewport)', A.vis === 'hidden' || A.top >= 899);
 
 // V6: night theme - header measurements hold there too
-await ev(`(() => { $('nightBtn').click(); return true; })()`); // Night/Day lives in Settings now (Beta 1.76); a programmatic click still fires it
+await ev(`(() => { $('nightBtn').click(); return true; })()`); // Beta 1.88: Day/Night is its own button at top-right; a programmatic click still fires it
 await sleep(900);
 A = await J(`({ night: document.body.classList.contains('night') })`);
 D = await dockGeom();
