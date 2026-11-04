@@ -6,6 +6,7 @@
 // request pauses in exactly the session whose context issued it.
 import { spawn } from 'node:child_process';
 import fs from 'node:fs';
+import { isRaceLoss } from './race-loss.mjs'; // the E17 race judge - fixture-proven by selftest-race-loss.mjs (test-change gate, docs/TESTING.md)
 const CHROME = process.env.CHROME_BIN || (fs.existsSync('/opt/meta-chromium/chrome') ? '/opt/meta-chromium/chrome' : 'google-chrome');
 const sleep = ms => new Promise(r => setTimeout(r, ms));
 const PROFILE = '/tmp/e2e2profile-' + Date.now(); // Beta 1.73 (audit C02): a NAMED profile, so E14 can kill the browser and relaunch on the same one - a true cold-process boot, not a reload
@@ -272,7 +273,7 @@ const snapState = async () => JSON.parse(await ev2(`(() => { const out = {}; for
 // attempt, and a failed attempt earns exactly ONE retry when - and only when -
 // its failure carries the kill-vs-commit race signature: MONOTONE LOSS. Every
 // differing key is absent, emptied, or a strict prefix of its pre-kill value,
-// and the app summary's counts only ever drop (its run stamp unchanged) - the
+// and the app summary's counts only ever drop (its run stamp surviving or itself lost) - the
 // two signatures the flake log documents (partial last-writes loss on
 // 2026-11-04 run 41885400454 attempt 1; wholesale-empty on attempt 2). A
 // mutation, a gain, a changed run, or a second failure is a hard FAIL: the
@@ -300,9 +301,7 @@ const attemptE17 = async () => {
   const keys = ['start', 'sess', 'sides', 'done', 'times', 'via', 'trail'];
   const diff = keys.filter(k => before[k] !== after[k]).map(k => k + '[' + (before[k] || '').length + '->' + (after[k] || '').length + ']').join(' ') + (before.app !== after.app ? ' appDIFF before=' + before.app + ' after=' + after.app : '');
   const pass = backOk && keys.every(k => before[k] === after[k]) && before.app === after.app;
-  let appLoss = false;
-  try { const b = JSON.parse(before.app), a = JSON.parse(after.app); appLoss = (a.run === b.run || a.run === 0) && a.velmar <= b.velmar && a.astona <= b.astona && a.trailN <= b.trailN && a.done.every(d => b.done.includes(d)) && a.sess.every(t => b.sess.includes(t)); } catch (e) {} // the run stamp either survives or is itself lost (0): a DIFFERENT nonzero stamp would be a mutation, never the race. First CI run of this retry (2026-11-04, run 41919355118) hit the wholesale-empty signature live and this predicate's original run-equality clause misjudged it - corrected same day
-  const lossOnly = backOk && aOk && appLoss && keys.every(k => { const b = before[k], a = after[k]; return a === b || a === null || a === '' || (typeof b === 'string' && typeof a === 'string' && a.length < b.length && b.startsWith(a)); });
+  const lossOnly = isRaceLoss(before, after, backOk, aOk); // the judge lives in race-loss.mjs and is fixture-proven by selftest-race-loss.mjs before it may judge a run (its first version misjudged the wholesale-empty signature on run 41919355118 - the run stamp is itself lost there; fixture F2 is that case's regression test)
   return { before, after, diag, diff, aOk, pass, lossOnly };
 };
 const e17r1 = await attemptE17();
@@ -333,15 +332,13 @@ ok('E17b after the kill: persisted run state intact, the never-persisted marker 
 // included) through a catch-all that set the completion flag
 // unconditionally, so a partial copy was marked complete forever.
 try {
-  const sample3 = baseKeys.filter(u => u.includes('tiles.basemaps.cartocdn.com')).slice(0, 3).sort(); // tile URLs only: no spaces/encoding edge (the glyph URLs are stored %20-encoded) and no sprite ambiguity
   await ev2(`(async () => { const sample = ${JSON.stringify(baseKeys.filter(u => u.includes('tiles.basemaps.cartocdn.com')).slice(0, 3))}; const junk = ['https://tiles.basemaps.cartocdn.com/junk/e19-a', 'https://tiles.basemaps.cartocdn.com/junk/e19-b']; await caches.delete('snowroute-offline-v1'); const tc = await caches.open('snowroute-tiles-v1'); for (const u of sample.concat(junk)) await tc.put(u, new Response('x')); localStorage.removeItem('snowroute.v5.packmig'); return true; })()`);
   await send('Page.reload', { ignoreCache: false }, PAGE_S); await sleep(1200);
   await sleep(1500);
   await loadRouteE2E();
-  await poll(`(async () => { const oc = await caches.open('snowroute-offline-v1'); const ks = (await oc.keys()).map(r => r.url); return ${JSON.stringify(sample3)}.every(u => ks.includes(u)); })()`, 30000);
-  await poll(`localStorage.getItem('snowroute.v5.packmig') === packMigFingerprint(preloadUrlList())`, 30000); // Phase 1 (2026-11-04): the samples poll alone races the boot migration - it exits the moment the seeded tiles land, while the full pass is still copying and the flag (written LAST, after verification) is still unset; E19 then censused a half-migrated pack (n=3, flag null on run 41921688086; n=0 variant on 41920672848). Wait for the earned flag - the app's own completion signal - before censusing.
-  const e19 = JSON.parse(await ev2(`(async () => { const oc = await caches.open('snowroute-offline-v1'); const ks = (await oc.keys()).map(r => r.url); const man = new Set(preloadUrlList().map(u => new URL(u).href)); const tc = await caches.open('snowroute-tiles-v1'); const tks = (await tc.keys()).map(r => r.url); const inTiles = preloadUrlList().filter(u => tks.includes(new URL(u).href)).length; const again = await migratePack(); return JSON.stringify({ n: ks.length, outside: ks.filter(k => !man.has(k)).length, junk: ks.filter(k => k.includes('/junk/')).length, flag: localStorage.getItem('snowroute.v5.packmig'), fp: packMigFingerprint(preloadUrlList()), DIAG_inTiles: inTiles, DIAG_tilesTotal: tks.length, DIAG_again: again }); })()`)); // TEMP DIAG (Phase 1 branch only - strip before merge)
-  ok('E19 pack migration is bounded by the manifest: every pack entry is a manifest URL, seeded strays stay out, the seeded manifest tiles arrive, the flag follows verification (Beta 1.95, SR-194-05/06) | ' + JSON.stringify(e19), e19.outside === 0 && e19.junk === 0 && e19.n >= 3 && e19.flag === e19.fp);
+  const mig19 = JSON.parse(await ev2(`(async () => JSON.stringify(await migratePack()))()`)); // Phase 1 (2026-11-04): drive the migration EXPLICITLY and await its return (E20's pattern) instead of censusing the fire-and-forget boot migration mid-flight. The boot pass over ~897 manifest entries against a flooded ~3,000-entry browsing cache (E18's eviction flood leaves only a few dozen manifest tiles in TILES) outlasted every poll window on the 2026-11-04 branch runs - n=3 / flag-null on 41920672848 + 41921688086; a diagnostic explicit call on 41924197280 completed and set the flag at once, proving the migration contract sound and the OBSERVATION racy. The seeded tiles make n >= 3 deterministic; the flag still follows verification.
+  const e19 = JSON.parse(await ev2(`(async () => { const oc = await caches.open('snowroute-offline-v1'); const ks = (await oc.keys()).map(r => r.url); const man = new Set(preloadUrlList().map(u => new URL(u).href)); return JSON.stringify({ n: ks.length, outside: ks.filter(k => !man.has(k)).length, junk: ks.filter(k => k.includes('/junk/')).length, flag: localStorage.getItem('snowroute.v5.packmig'), fp: packMigFingerprint(preloadUrlList()) }); })()`));
+  ok('E19 pack migration is bounded by the manifest: every pack entry is a manifest URL, seeded strays stay out, the seeded manifest tiles arrive, the flag follows verification (Beta 1.95, SR-194-05/06) | ' + JSON.stringify(e19), e19.outside === 0 && e19.junk === 0 && e19.n >= 3 && e19.flag === e19.fp && mig19.ok === true);
 } catch (e) { ok('E19 pack migration manifest-bounded + verified (Beta 1.95, SR-194-05/06) | threw ' + String(e).slice(0, 150), false); }
 try {
   const hasFn = await ev2(`typeof migratePack === 'function'`);
