@@ -156,6 +156,39 @@ const f10c = await (async () => {
 })();
 ok('F10c a recovery backup restores through the normal restore path - marks and notes recovered | ' + JSON.stringify(f10c), f10c.val === f10mem && f10c.note === true);
 
+// --- F11 (Beta 1.96, deep audit SR-195-02): the recovery backup CARRIES the
+// run's cancel snapshot (Andrew's pick: carry it, do not just warn). 1.95's
+// recovery file held every route field EXCEPT the snapshot, so a restored
+// run's Cancel fell back to the stamp journal and a pre-Start side unmarked
+// during the run stayed unmarked - the exact loss SR-194-01 fixed in-app,
+// reopened by the recovery path.
+await ev(`markDone('Astona', 'tap')`); await sleep(200);
+await ev(`startClean()`); await sleep(200);
+await ev(`togglePiece('Astona', 0, 0)`); // unmark one side of the pre-Start-completed street during the run
+const f11a = JSON.parse(await ev(`(function(){ const o = JSON.parse(buildRecovery()); let snap = null; try { snap = JSON.parse(o.routes['5w'].snap); } catch (e) {} return JSON.stringify({ hasSnap: !!snap, atOk: !!snap && snap.at === runStart, astonaInSnap: !!snap && snap.pieces.Astona && snap.pieces.Astona[0] === 3 }); })()`));
+ok('F11a a recovery backup carries the cancel snapshot of the active run, stamped with the run start (Beta 1.96, SR-195-02) | ' + JSON.stringify(f11a), f11a.hasSnap && f11a.atOk && f11a.astonaInSnap);
+await ev(`(function(){ sessionStorage.setItem('f11rec', buildRecovery()); return true; })()`);
+await ev(`(function(){ localStorage.clear(); location.reload(); return true; })()`); await sleep(1200);
+await bootThrough(ev, poll);
+await ev(`(function(){ document.getElementById('xText').value = sessionStorage.getItem('f11rec'); doRestore(); return true; })()`); await sleep(1500);
+await bootThrough(ev, poll);
+const f11b = JSON.parse(await ev(`(function(){ let okSnap = false; try { okSnap = !!validateSnap(JSON.parse(localStorage.getItem(LS.snap)), runStart); } catch (e) {} return JSON.stringify({ run: runStart > 0, snapOk: okSnap }); })()`));
+ok('F11b the restored recovery run has its snapshot back on disk, validated against the restored start (Beta 1.96, SR-195-02) | ' + JSON.stringify(f11b), f11b.run && f11b.snapOk);
+await ev(`cancelStart()`); await sleep(300);
+ok('F11c cancel after a recovery restore restores the pre-Start board exactly - the side unmarked during the run returns (Beta 1.96, SR-195-02)', (await ev(`doneSet.has('Astona') && pieces.Astona.every(v => v === 3)`)) === true);
+// F11d: a recovery file whose snapshot field is corrupt - the restore must
+// land the run, drop the snapshot WITH a warning, and store no garbage.
+await ev(`markDone('Velmar', 'tap')`); await sleep(200);
+await ev(`startClean()`); await sleep(200);
+await ev(`(function(){ const o = JSON.parse(buildRecovery()); o.routes['5w'].snap = JSON.stringify({ at: 1, pieces: { Velmar: [99] }, pieceTimes: {}, done: [], times: {}, via: {}, cov: {} }); sessionStorage.setItem('f11bad', JSON.stringify(o)); return true; })()`);
+await ev(`(function(){ localStorage.clear(); location.reload(); return true; })()`); await sleep(1200);
+await bootThrough(ev, poll);
+const toast11d = await ev(`(function(){ document.getElementById('xText').value = sessionStorage.getItem('f11bad'); doRestore(); return document.getElementById('toast').textContent; })()`); await sleep(1500);
+await bootThrough(ev, poll);
+const f11d = JSON.parse(await ev(`(function(){ return JSON.stringify({ run: runStart > 0, velmar: doneSet.has('Velmar'), snapStored: localStorage.getItem(LS.snap) }); })()`));
+ok('F11d a corrupt snapshot inside a recovery file is dropped with a warning; the restore itself is unharmed (Beta 1.96, SR-195-02) | ' + toast11d + ' ' + JSON.stringify(f11d), /start snapshot was not usable/.test(toast11d) && f11d.run && f11d.velmar && f11d.snapStored === null);
+await ev(`cancelStart()`); await sleep(200);
+
 
 R.exceptions = consoleLog.filter(c => c.type === 'EXCEPTION');
 finish(R, proc);

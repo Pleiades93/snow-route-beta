@@ -202,6 +202,15 @@ fetchImpl = async () => { throw new Error('offline'); };
 r = await mapFetch(packTile, null);
 check('F-03 pack hit still served after the eviction ran', (await r.text()) === 'PACK-TILE');
 
+// 15. Beta 1.96 (audit-2, N-2): a request in reload mode (the Download button's
+// deliberate re-download, which fetches with cache:'reload') must BYPASS the
+// pack and reach the network - before 1.96 mapFetch answered from the pack
+// first, so re-downloading re-stored the pack's own responses and the pack
+// could never refresh.
+fetchImpl = async () => new Response('NETWORK-TILE', { status: 200 });
+r = await mapFetch(new Request(packTile.url, { cache: 'reload' }), null);
+check('N-2 a reload-mode request bypasses the pack and returns the network response', (await r.text()) === 'NETWORK-TILE');
+
 let fail = 0;
 for (const [n, ok] of results) { console.log((ok ? 'PASS' : 'FAIL') + '  ' + n); if (!ok) fail++; }
 process.exit(fail ? 1 : 0);
