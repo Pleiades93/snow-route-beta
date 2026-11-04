@@ -11,6 +11,16 @@
 //                    used to pass - a drive that ran nothing proved nothing)
 //   fixture-hang     never prints, never exits             -> runner FAIL
 //                    (killed via RUNNER_TIMEOUT_MS, set short for this test)
+//   fixture-truthy   a check recorded as 1 (truthy, not    -> runner FAIL
+//                    true) in the block, exit 0               (Beta 1.95,
+//                    SR-194-07: only literal true passes)
+//   fixture-throw    a REAL drive whose page evaluation    -> runner FAIL
+//                    throws - with the strict harness the     (Beta 1.95,
+//                    drive crashes and prints no block;       SR-194-07)
+//                    with the old {error} return it printed
+//                    a passing block. Needs a browser
+//                    (CHROME_BIN), unlike the print-only
+//                    fixtures above.
 // Fixtures are deleted afterwards, pass or fail. No browser is needed:
 // the fixtures only print the JSON block the runner parses.
 import { spawnSync } from 'node:child_process';
@@ -28,6 +38,15 @@ const FIXTURES = {
   'fixture-noblock': `console.log('just noise, no result block');`,
   'fixture-empty': BLOCK([], 0),
   'fixture-hang': `setInterval(() => {}, 1000);`,
+  'fixture-truthy': BLOCK([['a', 1], ['b', true]], 0),
+  'fixture-throw': [
+    "import { launchDrive, finish, PATTERNS_GITHUB_IO } from './harness.mjs';",
+    'const { proc, ev } = await launchDrive({ patterns: PATTERNS_GITHUB_IO });',
+    'const R = { checks: [], exceptions: [] };',
+    'const ok = (name, cond) => R.checks.push([name, cond === true]);',
+    "ok('a throwing page evaluation must fail the drive, not pass it', await ev(`(() => { throw new Error('fixture boom') })()`));",
+    'finish(R, proc);',
+  ].join('\n'),
 };
 const EXPECT_PASS = { 'fixture-ok': true };
 

@@ -5,7 +5,7 @@ await bootThrough(ev, poll); // Beta 1.76: boots end at the route menu now - cli
 
 // drive89: v5.54 Finish pop-up + delete/back navigation
 const R = { checks: [] };
-const ok = (name, cond) => R.checks.push([name, !!cond]);
+const ok = (name, cond) => R.checks.push([name, cond === true]);
 const exc = () => consoleLog.filter(c => c.type === 'EXCEPTION').length;
 
 // drive114: D-01 migration regression (2026-10-28 audit) - partially completed

@@ -14,7 +14,7 @@ await bootThrough(ev, poll); // Beta 1.76: boots end at the route menu now - cli
 // real quota error produces. Each case asserts the user-visible outcome:
 // honest toast, run intact, storage coherent.
 const R = { checks: [] };
-const ok = (name, cond) => R.checks.push([name, !!cond]);
+const ok = (name, cond) => R.checks.push([name, cond === true]);
 await sleep(3000);
 ok('S0 app boots for the storage transaction tests', await poll120(`!!window.maplibregl && !!document.querySelector('#map canvas')`, 45000));
 const INSTALL_STUB = `(() => { window.__stubKey = null; const orig = Storage.prototype.setItem; Storage.prototype.setItem = function (k, v) { if (window.__stubKey && k === window.__stubKey) throw new Error('injected quota failure'); return orig.call(this, k, v); }; window.__stub = k => { window.__stubKey = k; }; window.__unstub = () => { window.__stubKey = null; }; return typeof window.__stub === 'function'; })()`;
@@ -122,6 +122,41 @@ ok('F9a a failed primary save arms the retry flag and names the failed record | 
 await ev(`__unstub()`);
 const f9b = JSON.parse(await ev(`(() => { flushAux(true); return JSON.stringify({ dirty: primaryDirty, stored: localStorage.getItem('snowroute.5w.v4.notes') === JSON.stringify(notes) }); })()`));
 ok('F9b the flush retry lands the failed save once storage recovers | ' + JSON.stringify(f9b), f9b.dirty === false && f9b.stored === true);
+
+// F10 (Beta 1.95, deep audit SR-194-02): when storage is failing, the
+// normal Backup REFUSES by design (it would ship the stale stored board) -
+// and in 1.94 the failure warnings' "export a backup now" was therefore
+// unactionable: the very marks at risk had no exit. The RECOVERY backup
+// serializes the live in-memory state instead and is labelled as such.
+const f10v0 = await ev(`pieces.Velmar[0]`);
+await ev(`__stub('snowroute.5w.v5.sides')`);
+await ev(`togglePiece('Velmar', 0, 0); true`); await sleep(200);
+const f10a = JSON.parse(await ev(`(() => { try { const rec = buildRecovery(); const o = rec ? JSON.parse(rec) : null; const stored = JSON.parse(localStorage.getItem('snowroute.5w.v5.sides') || '{"p":{}}'); return JSON.stringify({ refused: buildBackup() === null, dirty: primaryDirty, hasRec: !!o, flagged: !!o && o.recovery === true, recVal: o ? JSON.parse(o.routes['5w'].sides).p.Velmar[0] : null, memVal: pieces.Velmar[0], storedVal: stored.p.Velmar ? stored.p.Velmar[0] : null }); } catch (e) { return JSON.stringify({ err: String(e) }); } })()`));
+ok('F10a under a sides-write failure: Backup refuses, the labelled RECOVERY backup carries the live in-memory board (Beta 1.95, SR-194-02) | ' + JSON.stringify(f10a), f10a.refused === true && f10a.dirty === true && f10a.hasRec === true && f10a.flagged === true && f10a.recVal === f10a.memVal && f10a.recVal !== f10a.storedVal && f10a.memVal !== f10v0);
+await ev(`__unstub()`);
+await ev(`(function(){ notes.Velmar = [{ k: 'f10probe', at: '2026-11-04T00:00:00.000Z', text: 'recovery keeps me' }]; return true; })()`);
+await ev(`__stub('snowroute.5w.v4.notes')`);
+const f10save = await ev(`saveAll()`);
+const f10b = JSON.parse(await ev(`(() => { try { const o = JSON.parse(buildRecovery()); return JSON.stringify({ notes: JSON.parse(o.routes['5w'].notes) }); } catch (e) { return JSON.stringify({ err: String(e) }); } })()`));
+await ev(`__unstub()`);
+await ev(`flushAux(true); true`); await sleep(200);
+ok('F10b under a notes-write failure the recovery backup carries the in-memory notes too | save ' + f10save + ' ' + JSON.stringify(f10b), f10save === false && !!f10b.notes && JSON.stringify(f10b.notes).includes('recovery keeps me'));
+const f10mem = await ev(`pieces.Velmar[0]`);
+const f10c = await (async () => {
+  await ev(`(function(){ sessionStorage.setItem('__rec136', buildRecovery()); return true; })()`);
+  await ev(`(function(){ localStorage.clear(); return true; })()`);
+  await ev(`location.reload(); true`);
+  await bootThrough(ev, poll);
+  const bm = await ev(`window.__bootAt`);
+  await ev(`(function(){ document.getElementById('xText').value = sessionStorage.getItem('__rec136'); doRestore(); return true; })()`);
+  await sleep(900);
+  await poll(`!!window.__bootAt && window.__bootAt !== ${JSON.stringify(bm)}`, 30000);
+  await ev(`loadRoute('5w'); true`); await sleep(600);
+  return JSON.parse(await ev(`(() => { try { return JSON.stringify({ val: pieces.Velmar[0], note: JSON.stringify(notes.Velmar || []).includes('recovery keeps me') }); } catch (e) { return JSON.stringify({ err: String(e) }); } })()`));
+})();
+ok('F10c a recovery backup restores through the normal restore path - marks and notes recovered | ' + JSON.stringify(f10c), f10c.val === f10mem && f10c.note === true);
+
+
 R.exceptions = consoleLog.filter(c => c.type === 'EXCEPTION');
 finish(R, proc);
 

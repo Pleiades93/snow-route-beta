@@ -5,7 +5,7 @@ await bootThrough(ev, poll); // Beta 1.76: boots end at the route menu now - cli
 
 // drive89: v5.54 Finish pop-up + delete/back navigation
 const R = { checks: [] };
-const ok = (name, cond) => R.checks.push([name, !!cond]);
+const ok = (name, cond) => R.checks.push([name, cond === true]);
 const exc = () => consoleLog.filter(c => c.type === 'EXCEPTION').length;
 const pollRead = async (expr, pred, ms = 9000) => {   // state-polling wait: fixed sleeps made T4 fail on a slow CI runner (the 8s undo window could lapse mid-jam); assertions unchanged, only the waiting is state-based. Hardened per audit T-02 (2026-10-28): the sampled value resets every iteration; a read that errors (page mid-reload) or returns a non-string counts as not-ready instead of reusing the previous read; a timeout returns {} (explicit not-ready), never the last sampled state.
   const t0 = Date.now();
@@ -25,6 +25,7 @@ const mark3 = () => ev(`(() => { const base = Date.now() - 3600000; runStart = b
   refreshAll(); return true; })()`);
 await sleep(3000);
 await ev(`(() => { localStorage.clear(); location.reload(); return true; })()`); await sleep(1200);   // floor wait: let the reload actually begin before polling, so the poll cannot be answered by the pre-reload page
+await bootThrough(ev, poll); // Beta 1.95 (SR-194-07 re-baseline): the strict harness exposed that this drive ran its whole flow after this reload with NO route loaded (pieces empty) - mark3's refreshAll threw on the empty board and the old {error} return swallowed it, the mutations before the throw carrying the checks. The flow now runs against a loaded route, as it reads.
 // T1: the button is Finish, and red
 let A = await pollRead(`(() => { const b = $('resetBtn'); const cs = getComputedStyle(b); return JSON.stringify({ label: b.textContent, bg: cs.backgroundColor }); })()`, v => v.label === 'Finish');
 ok('T1 button says Finish', A.label === 'Finish');

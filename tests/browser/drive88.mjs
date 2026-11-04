@@ -5,7 +5,7 @@ await bootThrough(ev, poll); // Beta 1.76: boots end at the route menu now - cli
 
 // drive88: v5.53 notes + clean detail battery
 const R = { checks: [] };
-const ok = (name, cond) => R.checks.push([name, !!cond]);
+const ok = (name, cond) => R.checks.push([name, cond === true]);
 const exc = () => consoleLog.filter(c => c.type === 'EXCEPTION').length;
 const rowOf = (n) => `(() => { return [...document.querySelectorAll('.srow')].find(r => r.querySelector('.nm').textContent === '${n}'); })()`; // Beta 1.91: rows are picked BY NAME - the list is colour-sorted now, so a route-order index picks the wrong street
 await sleep(3000);

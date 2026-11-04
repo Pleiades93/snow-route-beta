@@ -12,7 +12,7 @@ await bootThrough(ev, poll); // Beta 1.76: boots end at the route menu now - cli
 // that would have caught the Beta 1.33-era clash, where the exclusion filter was
 // silently rejected and basemap names printed on route streets at every zoom.
 const R = { checks: [] };
-const ok = (name, cond) => R.checks.push([name, !!cond]);
+const ok = (name, cond) => R.checks.push([name, cond === true]);
 ok('W0 app boots with the map active', await poll120(`typeof glOk !== 'undefined' && glOk === true`, 30000));
 
 // W1-W3: the Beta 1.41 constructor values are actually in force (read from the live

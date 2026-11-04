@@ -9,7 +9,7 @@ await bootThrough(ev, poll); // Beta 1.76: boots end at the route menu now - cli
 // slow drift inside a tight corridor with no teleports or reversals, and still track
 // real driving speed without lag. Every check measures the displayed path itself.
 const R = { checks: [] };
-const ok = (name, cond) => R.checks.push([name, !!cond]);
+const ok = (name, cond) => R.checks.push([name, cond === true]);
 const J = async (expr) => { const raw = await ev(`(() => { try { return JSON.stringify((${expr})); } catch (e) { return JSON.stringify({ __err: String(e && e.message || e) }); } })()`); return typeof raw === 'string' ? JSON.parse(raw) : {}; };
 await sleep(3000);
 ok('F0 app boots with the map active', await poll120(`typeof glOk !== 'undefined' && glOk === true`, 30000));

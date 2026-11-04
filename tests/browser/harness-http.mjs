@@ -114,7 +114,7 @@ async function launch(offline) {
   }
   const ev = async (expr) => {
     const r = await send('Runtime.evaluate', { expression: expr, returnByValue: true, awaitPromise: true }, S);
-    if (r.result && r.result.exceptionDetails) return { error: JSON.stringify(r.result.exceptionDetails).slice(0, 400) };
+    if (r.result && r.result.exceptionDetails) { const d = r.result.exceptionDetails; const what = (d.exception && (d.exception.description || d.exception.value)) || d.text || 'unknown page error'; throw new Error('page evaluation threw: ' + String(what).slice(0, 300)); } // Beta 1.95 (deep audit SR-194-07): an evaluation error FAILS the drive - 1.94 returned a truthy {error} object that a bare ok(name, await ev(expr)) read as a PASS when the expression threw
     return r.result && r.result.result ? r.result.result.value : undefined;
   };
   await send('Page.navigate', { url: 'file://' + path.join(FIX, 'bootstrap.html') }, S);

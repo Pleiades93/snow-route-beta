@@ -5,7 +5,7 @@ await bootThrough(ev, poll); // Beta 1.76: boots end at the route menu now - cli
 
 // drive66 tail: v5.39 restore suite only (drive65 Phase B fix: recapture backup after reload)
 const R = { checks: [] };
-const ok = (name, cond) => R.checks.push([name, !!cond]);
+const ok = (name, cond) => R.checks.push([name, cond === true]);
 const toast = async () => await ev(`(() => $('toast').textContent)()`);
 await sleep(3200);
 

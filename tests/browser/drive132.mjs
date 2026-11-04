@@ -12,7 +12,7 @@ await bootThrough(ev, poll); // Beta 1.76: boots end at the route menu now - cli
 // that would have caught the Beta 1.33-era clash, where the exclusion filter was
 // silently rejected and basemap names printed on route streets at every zoom.
 const R = { checks: [] };
-const ok = (name, cond) => R.checks.push([name, !!cond]);
+const ok = (name, cond) => R.checks.push([name, cond === true]);
 
 // SPLASH (Beta 1.42): the cold-start overlay. Reload so the checks catch it from
 // the first frame instead of whenever the boot section happens to finish.

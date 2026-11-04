@@ -1,5 +1,18 @@
 # Changelog
 
+## Beta 1.95 — 2026-11-04
+
+The Beta 1.94 deep-audit round (SR-194 series), full scope as approved: every confirmed defect plus the recovery export. Findings 09 (release engineering) and 10 (route switching) stay separate decisions, untouched here.
+
+- **SR-194-01 — Finish → Undo → Cancel restores exactly again.** The finish captures the run's cancel snapshot into the undo (from memory, or from its persisted copy validated as below); the undo re-persists it as a verified gate before the run resumes — a failed snapshot write stops the undo with all gated writes rolled back and the undo still on offer.
+- **SR-194-03 — Persisted snapshots are validated, never applied raw.** A strict validator (the loader's own structural rules) must pass the whole snapshot before a single field is applied; a damaged snapshot falls back to the mark-stamp journal and the cancel message says the board was rebuilt, not restored.
+- **SR-194-02 — Recovery backup.** A second, clearly labelled export in Settings → Backup serializes the live in-memory state (marked as a recovery file, restorable through the normal path) for exactly the moments the normal Backup refuses by design — storage failure. The failure warnings now point at it.
+- **SR-194-04 — Resume honesty.** Start still never blocks; a run resumed without a usable cancel snapshot now says so at load.
+- **SR-194-05/06 — Pack migration, verified and manifest-bounded.** The one-time offline-pack migration is a named function: it copies only the deterministic preload manifest (now a single shared list builder), prunes the pack to exactly that manifest, and sets its completion flag only after verifying the destination — a failed copy retries next boot instead of being marked done.
+- **SR-194-07 — Test harness strictness.** A page-side evaluation error now fails the drive instead of returning a truthy object that `!!cond` read as a pass; checks record literal `true` only; runner selftests pin both.
+- **SR-194-08 — Unknown-name counting reads the raw backup.** Restore reports unique unknown street names counted before normalization — object-form done maps and array-form history items included.
+- **SR-194-11 — Basemap generation pinned.** The style generator's dependency is pinned with a lockfile, and the generated banner records the toolchain and upstream style version.
+
 ## Beta 1.94 — 2026-11-04
 
 The double deep-audit round: two independent audits of Beta 1.93, every

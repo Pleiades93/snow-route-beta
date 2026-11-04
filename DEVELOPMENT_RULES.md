@@ -34,7 +34,23 @@ only. After editing a part, run `python3 scripts/assemble.py`, then
 `src/tracker-source.html` is not exactly what the parts assemble to, so a
 hand-edit of the generated file (or a forgotten assembly) cannot ship.
 `parts/pmstyles.js` is itself generated — regenerate it with
-`scripts/genstyles.mjs`, never hand-edit it.
+`scripts/genstyles.mjs`, never hand-edit it. The generator's
+`@protomaps/basemaps` dependency is PINNED exactly
+(`scripts/package.json` + `scripts/package-lock.json`; install with
+`npm ci` inside `scripts/`) — never regenerate from an unpinned install
+(Beta 1.95, audit SR-194-11; the pinned 5.7.2 reproduces the shipped
+styles byte-for-byte).
+
+**Test harness contract (Beta 1.95, audit SR-194-07).** A page-side
+evaluation error THROWS in the harness (`harness.mjs` /
+`harness-http.mjs`) and fails the drive — it never returns a truthy
+object a check could read as a pass. Checks record a pass only on
+literal `true` (`cond === true` in every drive's `ok()`), and the runner
+counts anything else as a failure. `tests/browser/selftest-runner.mjs`
+pins all three behaviours (fixture-throw, fixture-truthy); run it after
+any harness change. A check whose expression can throw transiently
+(mid-reload reads) wraps itself in try/catch and returns an explicit
+boolean — that is the drive's job, not the harness's.
 
 **Tooling fallback (audit F-09).** The `github.py` helper is the normal
 route for branch/push/merge/runs, but it is not the only one: if a

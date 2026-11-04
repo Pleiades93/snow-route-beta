@@ -5,7 +5,7 @@ await bootThrough(ev, poll); // Beta 1.76: boots end at the route menu now - cli
 
 // drive86: v5.51 audit-5 battery (NEW-01, ISSUE-02 snapshot, NEW-03 legacy)
 const R = { checks: [] };
-const ok = (name, cond) => R.checks.push([name, !!cond]);
+const ok = (name, cond) => R.checks.push([name, cond === true]);
 const exc = () => consoleLog.filter(c => c.type === 'EXCEPTION').length;
 const seedReload = async (obj) => {
   await ev(`(() => { for (const k in ${JSON.stringify(obj)}) localStorage.setItem(k, ${JSON.stringify(obj)}[k]); location.reload(); return true; })()`);

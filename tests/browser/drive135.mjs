@@ -16,7 +16,7 @@ await bootThrough(ev, poll); // Beta 1.76: boots end at the route menu now - cli
 // metrics move screen and viewport together; the phone is its judge. What is
 // asserted here is the user-visible machinery: pin, settle-hold, trust, release.)
 const R = { checks: [] };
-const ok = (name, cond) => R.checks.push([name, !!cond]);
+const ok = (name, cond) => R.checks.push([name, cond === true]);
 await sleep(3000);
 ok('V0 app boots with the map active', await poll120(`typeof glOk !== 'undefined' && glOk === true`));
 await send('Emulation.setDeviceMetricsOverride', { width: 420, height: 820, deviceScaleFactor: 2, mobile: true }, S);

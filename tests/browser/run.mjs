@@ -56,7 +56,7 @@ for (const name of names) {
     allPass = false;
     continue;
   }
-  const failed = R.checks.filter(c => !c[1]);
+  const failed = R.checks.filter(c => c[1] !== true); // Beta 1.95 (deep audit SR-194-07): a check passes only on literal true - a truthy non-boolean (1, a string, an object) is a FAIL, so a drive cannot pass on a value it never actually verified
   const exc = Array.isArray(R.exceptions) ? R.exceptions.length : (R.exceptions ?? 0);
   const empty = R.checks.length === 0; // Beta 1.94 (deep audit SR-193-06): an empty checks array used to PASS - a drive that ran nothing proved nothing, and a harness break that swallowed a drive's checks would have shipped as green. Zero checks is a failure, named as such.
   const pass = r.code === 0 && !empty && failed.length === 0 && exc === 0;

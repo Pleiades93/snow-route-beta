@@ -116,8 +116,13 @@ preload ("Download offline maps") warms tiles (zooms 8-14 over the area - the
 wide zooms added in Beta 1.72 so the map's own minimum zoom works offline -
 plus a zoom-15 route core), sprites and glyphs — 897 files in all, written
 into the pack cache. A phone upgrading from a pre-1.94 build has its
-existing download copied into the pack cache automatically on first boot
-(one-time, flagged by `snowroute.v5.packmig`). The first-ever
+existing download migrated into the pack cache automatically on boot
+(`migratePack`, Beta 1.95, SR-194-05/06): only the deterministic preload
+manifest (the shared `preloadUrlList` the download itself uses) is
+copied, the pack is pruned to exactly that manifest, and the completion
+flag (`snowroute.v5.packmig`) is set only after the destination is
+verified — a failed copy retries on the next boot instead of being
+marked done. The first-ever
 boot also self-warms once the worker controls the page, so the map works
 offline from the first install — drive119's first session proves it
 without any manual reload.

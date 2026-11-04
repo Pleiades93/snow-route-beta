@@ -12,7 +12,7 @@ await bootThrough(ev, poll); // Beta 1.76: boots end at the route menu now - cli
 // restores them. It also pins the title block's lowered position (Andrew:
 // title + version down slightly - 8px more top padding on the header).
 const R = { checks: [] };
-const ok = (name, cond) => R.checks.push([name, !!cond]);
+const ok = (name, cond) => R.checks.push([name, cond === true]);
 await sleep(3000);
 ok('W0 app boots with the map active', await poll120(`typeof glOk !== 'undefined' && glOk === true`));
 const expect = `(() => { const vv = window.visualViewport; const vvb = Math.max(0, window.innerHeight - vv.offsetTop - vv.height) + 'px'; const vvh = vv.height + 'px'; const de = document.documentElement.style; return de.getPropertyValue('--vvb') === vvb && de.getPropertyValue('--vvh') === vvh; })()`;
