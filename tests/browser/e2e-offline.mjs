@@ -280,7 +280,7 @@ const snapState = async () => JSON.parse(await ev2(`(() => { const out = {}; for
 // release gates, never to forgive an app defect. Each attempt starts from a
 // wiped localStorage so attempts are independent and self-relative.
 const attemptE17 = async () => {
-  await ev2(`(() => { try { localStorage.clear(); } catch (e) {} return true; })()`);
+  await ev2(`(() => { try { const ks = []; for (let i = 0; i < localStorage.length; i++) ks.push(localStorage.key(i)); for (const k of ks) if (k && k.startsWith('snowroute.5w.') && k !== LS.pre) localStorage.removeItem(k); } catch (e) {} return true; })()`); // wipe ONLY this route's state keys: a blanket localStorage.clear() also killed the preload record (LS.pre), which silently disabled migratePack for the rest of the run and failed E19/E20/E21 on run 41920672848 - the migration is gated on that record (app4 migratePack: no record = skip)
   await send('Page.reload', { ignoreCache: false }, PAGE_S);
   await sleep(1200);
   await loadRouteE2E();
