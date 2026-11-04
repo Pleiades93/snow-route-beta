@@ -83,6 +83,15 @@ ok('T3c the backup pane is a menu tree exactly as Andrew specced (Beta 1.89): th
   T3c3.title === 'Import Text' && T3c3.box && T3c3.imp && T3c4.title === 'Restore' && T3c5.title === 'Backup');
 await ev(`(() => { $('setClose').click(); return true; })()`); await sleep(400);
 
+// F03 (Beta 1.92, deep audit): restore feedback must be VISIBLE from inside
+// the Settings takeover it was launched from.
+await ev(`(() => { $('setBtn').click(); return true; })()`); await sleep(500);
+await ev(`(() => { $('exportBtn').click(); return true; })()`); await sleep(400);
+await ev(`(() => { document.getElementById('xText').value = 'not json'; doRestore(); return true; })()`); await sleep(300);
+const F03 = JSON.parse(await ev(`(() => { const t = $('toast'); return JSON.stringify({ show: t.classList.contains('show'), z: +getComputedStyle(t).zIndex, menuZ: +getComputedStyle($('setMenu')).zIndex, txt: t.textContent }); })()`));
+ok('F03 a restore rejection is visible from inside Settings (the toast rides above the takeover) | ' + JSON.stringify(F03), F03.show === true && F03.z > F03.menuZ && F03.txt.length > 0);
+await ev(`(() => { $('setClose').click(); return true; })()`); await sleep(400);
+
 // P1 (Beta 1.33, Protomaps): ONE places system - localities (cities/towns/villages) are
 // gated by the tile data itself, size by size (the Apple/Google ladder); the app's tuning
 // owns the neighbourhood layer's arrival (9) and the 15.5 cap where route labels take over.

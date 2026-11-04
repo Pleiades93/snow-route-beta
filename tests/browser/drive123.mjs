@@ -93,13 +93,22 @@ await ev(`(() => { $('setClose').click(); $('finModal').classList.add('hidden');
 // for both modes. The pre-1.34 loop ran the tile y-range backwards (north y is smaller),
 // so it silently fetched ZERO tiles and reported only glyphs+sprites - this check stubs
 // fetch, records every URL the handler asks for, and counts them exactly.
-await ev(`(() => { window.__preSeen = []; window.__realFetch = window.fetch; window.fetch = (u) => { window.__preSeen.push(String(u)); return Promise.resolve(new Response('{}', { status: 200 })); }; $('exportBtn').click(); return true; })()`); await sleep(300);
+// Beta 1.92: the stub answers after 5 ms, not instantly - the small delay keeps the job in
+// flight long enough for A8b's second tap below to land mid-download. (The note lives HERE,
+// in the source: a // comment inside the ev() string once commented out the IIFE's own
+// closing and silently uninstalled the stub - A8 read an empty recording and failed.)
+await ev(`(() => { window.__preSeen = []; window.__realFetch = window.fetch; window.fetch = (u) => { window.__preSeen.push(String(u)); return new Promise(res => setTimeout(() => res(new Response('{}', { status: 200 })), 5)); }; $('exportBtn').click(); return true; })()`); await sleep(300);
 await ev(`(() => { $('xPre').click(); return true; })()`);
+await sleep(600);
+await ev(`(() => { $('xPre').click(); return true; })()`); // Beta 1.92 (audit F07): a second tap mid-download must start NO second job
+await sleep(250);
+const A8toast = await ev(`$('toast').textContent`);
 let preStat = '';
-for (let i = 0; i < 60; i++) { preStat = await ev(`$('xPreStat').textContent`); if (/Offline maps: saved/.test(preStat)) break; await sleep(250); }
+for (let i = 0; i < 90; i++) { preStat = await ev(`$('xPreStat').textContent`); if (/Offline maps: saved/.test(preStat)) break; await sleep(250); }
 const A8 = JSON.parse(await ev(`(() => { const seen = window.__preSeen || []; window.fetch = window.__realFetch; const tiles = seen.filter(u => u.endsWith('.mvt')); const inBox = tiles.every(u => { const m = u.match(/\\/(\\d+)\\/(\\d+)\\/(\\d+)\\.mvt$/); if (!m) return false; const z = +m[1], x = +m[2], y = +m[3], n = 2 ** z; const xw = Math.floor((-79.75 + 180) / 360 * n), xe = Math.floor((-79.35 + 180) / 360 * n); const yOf = lat => Math.floor((1 - Math.log(Math.tan(lat * Math.PI / 180) + 1 / Math.cos(lat * Math.PI / 180)) / Math.PI) / 2 * n); return x >= xw && x <= xe && y >= yOf(44.05) && y <= yOf(43.70); }); return JSON.stringify({ total: seen.length, tiles: tiles.length, inBox, glyphs: seen.filter(u => u.endsWith('.pbf')).length, sprites: seen.filter(u => u.includes('/sprites/')).length, stat: $('xPreStat').textContent }); })()`));
 ok('A8 offline download fetches the full Vaughan tile set + the z15 route core (633 tiles incl. the z8/9 wide zooms since 1.72, every one inside the area) + glyphs + both sprite flavours | ' + JSON.stringify(A8),
   A8.tiles === 633 && A8.inBox === true && A8.glyphs === 256 && A8.sprites === 8 && A8.total === 897);
+ok('A8b the second tap was refused while the download ran (single-flight, Beta 1.92) | toast: ' + A8toast, A8toast === 'Offline download already running');
 
 R.exceptions = consoleLog.filter(c => c.type === 'EXCEPTION').map(c => String(c.text || '').slice(0, 200));
 finish(R, proc);

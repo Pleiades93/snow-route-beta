@@ -1,5 +1,50 @@
 # Changelog
 
+## Beta 1.92 — 2026-11-03
+
+The deep-audit fix round: all seven code findings of the external Beta 1.90
+deep audit, each fixed at its source and covered by a fault-injection check.
+
+- **Boot crash on a damaged theme override (F01).** A stored day/night
+  override whose expiry value was missing, corrupt, or infinite could abort
+  the whole startup: the sunrise fallback probed two values that do not exist
+  yet at that point in the boot, and JavaScript throws on the probe itself.
+  The probes are now guarded so the fallback is reachable, a non-finite
+  expiry recomputes the next sun boundary instead of sticking or crashing,
+  and Backup/Restore now rejects a non-numeric expiry instead of accepting
+  any text.
+- **Backups taken on the storage fallback were silently empty (F02).** When
+  the one-time storage migration fails, the app runs on the legacy keys —
+  but the backup read the fresh (just-wiped) slot and emitted a valid-looking
+  backup with nothing in it. A backup now exports from the key mapping the
+  app is actually running on.
+- **Migration cleanup verified (F08).** The failed-copy cleanup wipes the
+  side-marks record first and re-checks it, so a partial slot can never be
+  mistaken for a completed migration on the next boot.
+- **Backup/restore messages visible again (F03).** Feedback messages now
+  stack above the full-screen Settings screen; errors raised from inside
+  Backup/Restore were previously hidden behind its opaque blue.
+- **Backups no longer lag the GPS trail (F04).** Exporting flushes the
+  buffered trail and coverage first — a backup taken mid-clean previously
+  could miss the last stretch of trail.
+- **A finished run can no longer resurrect (F05).** If the delete that
+  clears the run's start time fails during Finish, the failure is retried
+  by the app's 15-second heartbeat until it lands, instead of the next
+  launch mistaking the stale start time for a live run.
+- **One offline download at a time (F07).** The Download offline maps
+  button is single-flight (a second tap is refused with a message), and
+  every file gives up after 30 seconds instead of one stalled file holding
+  the whole download open.
+- **Old backups restore for real (F06, Andrew's pick).** A backup carrying
+  a street completion list but no side-marks record (the old format) used to
+  report success and change nothing — the app trusts the side-marks and
+  rebuilt the list from the phone's existing ones. Such a restore now
+  derives the side-marks from the list, by the same rule the loader uses
+  for streets with no side-marks record. Backups that carry side-marks
+  restore exactly as written, as before.
+- Docs: the storage schema's backup envelope now lists the override expiry
+  field it always carried (F12).
+
 ## Beta 1.91 — 2026-11-03
 
 - Pace rebuilt on metres (Andrew): pace is now a work rate — side-metres completed per hour, cumulative from the per-side mark stamps — instead of completed streets per hour. His real pattern (one side of a long street, both sides of a short one, back to the first) cannot distort a cumulative rate: every marked side adds its real metres the moment it lands, the ETA divides the side-metres remaining by that rate, and saved cleans compare in km of sides/hr with a projected full-clean time. Batched marks on one street cost only a few minutes of lag in the live reading; the totals never move. Per-street times in a saved clean are now the street's span — first side marked to last side marked — labelled as including any work in between (the old 'from the previous street' gap stays as the fallback for cleans recorded before side stamps existed).

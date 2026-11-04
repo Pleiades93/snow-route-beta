@@ -103,6 +103,18 @@ const NL = JSON.parse(await ev(`(() => { const out = []; for (const L of map.get
 ok('F3 every basemap name layer wears the readable night treatment | layers ' + NL.length + ' ' + JSON.stringify(NL.slice(0, 3)),
   NL.length >= 4 && NL.every(l => l.col === '#ccd6df' && l.hw === 1.3));
 
+// F4 (Beta 1.92, deep audit F01): a stored override whose expiry is missing
+// or corrupt must still BOOT - the boundary is recomputed, the override kept.
+await ev(`(() => { localStorage.setItem('snowroute.v2.night', '1'); localStorage.removeItem('snowroute.v2.nightExp'); location.reload(); return true; })()`);
+await sleep(2500);
+await bootThrough(ev, poll, { pinTheme: false });
+ok('F4a boot survives an override with NO expiry stored', await ev(`(function(){ try { return typeof paceInfo === 'function' && themeOverride === true && isFinite(themeOverrideUntil) && themeOverrideUntil > Date.now(); } catch (e) { return false; } })()`));
+await ev(`(() => { localStorage.setItem('snowroute.v2.night', '1'); localStorage.setItem('snowroute.v2.nightExp', 'abc'); location.reload(); return true; })()`);
+await sleep(2500);
+await bootThrough(ev, poll, { pinTheme: false });
+ok('F4b boot survives a CORRUPT expiry the same way', await ev(`(function(){ try { return themeOverride === true && isFinite(themeOverrideUntil) && themeOverrideUntil > Date.now(); } catch (e) { return false; } })()`));
+await ev(`(() => { clearThemeOverride(); return true; })()`);
+
 R.exceptions = consoleLog.filter(c => c.type === 'EXCEPTION').map(c => String(c.text || '').slice(0, 200));
 finish(R, proc);
 
