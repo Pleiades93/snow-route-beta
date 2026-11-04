@@ -1,0 +1,9 @@
+{
+  "name": "snow-route-genstyles",
+  "private": true,
+  "version": "1.0.0",
+  "description": "Toolchain for genstyles.mjs - the @protomaps/basemaps version is PINNED exactly (Beta 1.95, deep audit SR-194-11): install with `npm ci` so the lockfile, never a range, decides what generates the basemaps.",
+  "dependencies": {
+    "@protomaps/basemaps": "5.7.2"
+  }
+}

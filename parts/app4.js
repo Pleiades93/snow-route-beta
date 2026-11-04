@@ -46,6 +46,7 @@ function showX(mode) { // Beta 1.89 (Andrew): the backup pane is a small menu tr
 }
 function openExport() { showX('menu'); showSetPane('setBackupPane'); $('setVer').textContent = $('ver').textContent; $('setMenu').classList.add('open'); } // Beta 1.89: opening Backup lands on the backup menu (the three options)
 $('xBak').addEventListener('click', () => shareBackup());
+$('xRec').addEventListener('click', () => { if (!tapGuard('xRec')) return; shareRecovery(); });
 $('xRes').addEventListener('click', () => showX('restore'));
 $('xImpText').addEventListener('click', () => showX('text'));
 $('xImpFile').addEventListener('click', () => $('xFile').click());
@@ -74,6 +75,27 @@ function backupObj() { // Beta 1.76: format v2 - routes carry their own slots ({
   return o;
 }
 function buildBackup() { const o = backupObj(); return o ? JSON.stringify(o, null, 1) : null; }
+function recoveryObj() { // Beta 1.95 (deep audit SR-194-02): the RECOVERY backup - the live IN-MEMORY state of the active route, serialized directly. The normal Backup reads storage and REFUSES when storage is behind memory (it would ship a stale board as current); that refusal left the storage-failure warnings' "export a backup now" unactionable in exactly the state they fire in - the marks at risk had no exit before a reload. This export is that exit: same envelope (it restores through the normal path), plus the recovery marker, and the file/labels say plainly that it holds unsaved live data. It never reads the board from storage and never writes anything.
+  if (!routeLoaded || !activeRoute) return null;
+  const data = {};
+  data.sides = JSON.stringify({ p: pieces, t: pieceTimes });
+  data.done = JSON.stringify([...doneSet]);
+  data.times = JSON.stringify(doneTimes);
+  data.via = JSON.stringify(doneVia);
+  data.notes = JSON.stringify(notes);
+  data.hist = JSON.stringify(history);
+  data.trail = JSON.stringify(trail);
+  data.cov = JSON.stringify(coveredIdx);
+  data.sess = JSON.stringify(trailSessions);
+  if (runStart) data.start = String(runStart);
+  try { const fl = localStorage.getItem(routeKeys(activeRoute.id).flip); if (fl != null) data.flip = fl; } catch (e) { /* a read that fails simply leaves the field out */ }
+  const routes = {}; routes[activeRoute.id] = data;
+  for (const pk of ROUTE_PACKS) { if (pk.id === activeRoute.id) continue; const rk = routeKeys(pk.id); const d = {}; for (const f of ROUTE_FIELDS) { try { const v = localStorage.getItem(rk[f]); if (v != null) d[f] = v; } catch (e) {} } if (Object.keys(d).length) routes[pk.id] = d; }
+  const o = { app: 'snowroute-backup', v: 2, recovery: true, at: new Date().toISOString(), routes };
+  try { const nt = localStorage.getItem(LS_GLOBAL.night); if (nt != null) o.night = nt; const ne = localStorage.getItem(LS_GLOBAL.nightExp); if (ne != null) o.nightExp = ne; } catch (e) {}
+  return o;
+}
+function buildRecovery() { const o = recoveryObj(); return o ? JSON.stringify(o, null, 1) : null; }
 function downloadBackup() { const b = buildBackup(); if (!b) { toast('Backup failed — your saved data could not be read', 3600); return; } dl(new Blob([b], { type: 'application/json' }), 'snowroute-backup.json'); toast('Backup downloaded'); } // Beta 1.48 (audit B09): the filename still carried the retired 5W name; the backup format and its internal marker are unchanged
 function clearTrailAll() { // Beta 1.88: the Clear trail BUTTON left with the old Snow log (Andrew: the clearing gets re-homed in a later round) - the clearing itself stays as one callable piece, two-tap guard and all its storage honesty intact, so the re-home is a button wired to this, not a rebuild
   trail = []; trailSessions = []; const okSessClr = saveSess(); if (!okSessClr) sessDirty = true; drawTrail(true); // Beta 1.71 (audit B02): the markers describe this trail - clearing the trail clears them. Beta 1.73 (audit C05): the marker write is CHECKED like the trail write - 1.71 dropped its result, so 'Trail cleared' could be claimed while the markers stayed stored
@@ -83,6 +105,22 @@ function clearTrailAll() { // Beta 1.88: the Clear trail BUTTON left with the ol
   if (okTrailClr && okSessClr) { trailDirty = false; lastTrailSave = Date.now(); toast('Trail cleared'); }
   else if (okTrailClr) { toast('Trail cleared, but the session markers could not be saved — will keep retrying', 3200); }
   else { trailDirty = true; toast('Trail cleared on screen, but saving failed — will keep retrying', 3200); }
+}
+function countUnknownNames(parsed) { // Beta 1.95 (deep audit SR-194-08): how many street names in a backup this route does not know - counted from the RAW parsed backup, BEFORE any normalization, each name ONCE. 1.94 counted what survived pushField into the write list: an object-form done map was filtered to known streets before it was pushed (its unknowns invisible), history entries in the legacy array form were skipped entirely, and a name repeated across fields counted per occurrence. The restore itself is unchanged; only the report is honest now.
+  const bad = new Set();
+  const noteName = n => { if (typeof n === 'string' && !STREETSET.has(n)) bad.add(n); };
+  const fromObj = o => { if (o && typeof o === 'object' && !Array.isArray(o)) for (const k of Object.keys(o)) noteName(k); };
+  const scanData = (data) => {
+    if (!data || typeof data !== 'object') return;
+    const done = parseJ(data.done, null); if (Array.isArray(done)) { for (const n of done) noteName(n); } else fromObj(done);
+    fromObj(parseJ(data.times, null)); fromObj(parseJ(data.via, null)); fromObj(parseJ(data.cov, null));
+    const notesRaw = parseJ(data.notes, null); if (Array.isArray(notesRaw)) for (const e of notesRaw) { if (e && typeof e === 'object') noteName(e.k); }
+    const sides = parseJ(data.sides, null); if (sides && typeof sides === 'object') { fromObj(sides.p); fromObj(sides.t); }
+    const hist = parseJ(data.hist, null); if (Array.isArray(hist)) for (const h of hist) { if (h && typeof h === 'object') { if (Array.isArray(h.items)) { for (const n of h.items) noteName(n); } else fromObj(h.items); } }
+  };
+  if (parsed.v === 2 && parsed.routes && typeof parsed.routes === 'object') { for (const id of Object.keys(parsed.routes)) scanData(parsed.routes[id]); }
+  else if (parsed.v === 1 && parsed.data && typeof parsed.data === 'object') { const lf = {}; for (const f of Object.keys(LEGACY_KEYS)) { if (parsed.data[LEGACY_KEYS[f]] != null) lf[f] = parsed.data[LEGACY_KEYS[f]]; } scanData(lf); }
+  return bad.size;
 }
 function restoreBackup(parsed) { // production doRestore semantics: validate EVERYTHING before writing; snapshot; write + verify each; verified rollback on any failure
   if (!parsed || parsed.app !== 'snowroute-backup') { toast('That is not a Snow Route backup', 3200); return; }
@@ -142,13 +180,7 @@ function restoreBackup(parsed) { // production doRestore semantics: validate EVE
       entries.push([rk.sides, JSON.stringify({ p: P, t: T })]); // Beta 1.93 (follow-up audit R03): ALWAYS write the derived authority when the backup carries done-but-no-sides - an explicitly EMPTY list ('[]') is an intentional empty state, and {} reads back as nothing done; skipping the write used to leave the phone's old sides in charge
     } catch (e) { /* a list that cannot be parsed was already rejected during validation - never invent sides from rubble */ }
   }
-  // Beta 1.94 (audit F-05): count the street names the backup carries that this route does
-  // not know. FIELD_SHAPES validates shapes only, and the loaders drop unknown names
-  // silently on the reload - so a 'successful' restore used to hide the loss. The count
-  // rides the result message below; the restore itself is unchanged.
-  let droppedNames = 0;
-  { const kindByKey = {}; for (const p of ROUTE_PACKS) { const rk = routeKeys(p.id); kindByKey[rk.done] = 'names'; kindByKey[rk.sides] = 'sides'; kindByKey[rk.times] = 'names'; kindByKey[rk.via] = 'names'; kindByKey[rk.notes] = 'names'; kindByKey[rk.cov] = 'names'; kindByKey[rk.hist] = 'hist'; }
-    for (const pair of entries) { const kind = kindByKey[pair[0]]; if (!kind) continue; try { const pv = JSON.parse(pair[1]); if (kind === 'names') { const ns = Array.isArray(pv) ? pv : (pv && typeof pv === 'object' ? Object.keys(pv) : []); for (const n of ns) if (typeof n === 'string' && !STREETSET.has(n)) droppedNames++; } else if (kind === 'sides' && pv && typeof pv === 'object') { for (const src of [pv.p, pv.t]) if (src && typeof src === 'object') for (const n of Object.keys(src)) if (!STREETSET.has(n)) droppedNames++; } else if (kind === 'hist' && Array.isArray(pv)) { for (const h of pv) if (h && h.items && typeof h.items === 'object' && !Array.isArray(h.items)) for (const n of Object.keys(h.items)) if (!STREETSET.has(n)) droppedNames++; } } catch (e) { /* shapes were validated during pushField - an unparseable value was already rejected above */ } } }
+  const droppedNames = countUnknownNames(parsed); // Beta 1.95 (SR-194-08): counted from the RAW backup before any normalization - see countUnknownNames
   if (!entries.length) { toast('Nothing in that backup to restore', 3000); return; }
   const SCOPE = []; for (const p of ROUTE_PACKS) { const rk = routeKeys(p.id); for (const f of ROUTE_FIELDS) SCOPE.push(rk[f]); } SCOPE.push(LS_GLOBAL.night, LS_GLOBAL.nightExp);
   const snap = {}; let snapOk = true;
@@ -186,6 +218,27 @@ $('xImp').addEventListener('click', () => doRestore());
 // ===== PRELOAD (offline route maps) =====
 function tileNums(lng, lat, z) { const n = 2 ** z; const x = Math.floor((lng + 180) / 360 * n); const la = lat * Math.PI / 180; const y = Math.floor((1 - Math.log(Math.tan(la) + 1 / Math.cos(la)) / Math.PI) / 2 * n); return [x, y]; }
 let preloadRunning = false; // Beta 1.92 (deep audit F07): single-flight - a second tap while a download runs starts no competing job
+function preloadUrlList() { // Beta 1.95 (deep audit SR-194-06): the deterministic preload set, extracted from the download handler so the offline-pack migration below derives its manifest from the SAME list - one source of truth, the two can never drift apart
+  const urls = new Set();
+  for (const key of ['day', 'night']) {
+    const stj = GL_STYLES[key]; // Beta 1.33: the styles are embedded objects (pmstyles.js) - already in the shell, nothing to fetch
+    const spr = Array.isArray(stj.sprite) ? stj.sprite[0].url : stj.sprite;
+    if (spr) { urls.add(spr + '.json'); urls.add(spr + '.png'); urls.add(spr + '@2x.json'); urls.add(spr + '@2x.png'); }
+    if (stj.glyphs) { const stack = 'Noto Sans Regular'; for (let a = 0; a <= 255; a++) urls.add(stj.glyphs.replace('{fontstack}', stack).replace('{range}', a * 256 + '-' + (a * 256 + 255))); } // the stack GL actually requests per style (Stage 2, audit G-5)
+    const ex = { w: -79.75, s: 43.70, e: -79.35, n: 44.05 }; // Beta 1.34 (Andrew's pick): the offline area is Vaughan + nearby at full street detail (z10-14), not just the route. Day and night are two skins over these SAME tiles, so this one set covers both modes
+    for (const srcName of Object.keys(stj.sources || {})) {
+      const src = stj.sources[srcName];
+      if (src.type !== 'vector' || !src.tiles) continue;
+      const maxz = Math.min(14, src.maxzoom || 14);
+      // tile y grows SOUTHWARD: the north edge (y1) is the smaller number - looping y0..y1 (the pre-1.34 code) silently downloaded ZERO tiles; drive123 A8 counts the fetched tile URLs so this can never pass unnoticed again
+      // Beta 1.72 (Phase 3, item R04): the wide zooms join the set - the map itself allows zoom 8 (minZoom), but the preload stopped at z10, so offline at z8-9 the basemap had nothing to draw. Over this box those zooms are 3 tiles (1 + 2).
+      for (let z = 8; z <= maxz; z++) { const [x0, y1] = tileNums(ex.w, ex.n, z); const [x1, y0] = tileNums(ex.e, ex.s, z); for (let x = x0; x <= x1; x++) for (let y = y1; y <= y0; y++) for (const t of src.tiles) urls.add(t.replace('{z}', z).replace('{x}', x).replace('{y}', y)); }
+      // Beta 1.41: display zooms 15-19 all render from z15 tiles (the source's maxzoom) - yet the set above stops at 14, so the working zoom band was the LEAST cached. Add z15 over the route core only (routeBox + margin, derived from the app's own route bounds so it cannot drift): 15 tiles. z15 over the whole Vaughan box would be ~1,400 files for streets he never opens.
+      if ((src.maxzoom || 14) >= 15) { const cb = { w: routeBox.w - 0.005, s: routeBox.s - 0.004, e: routeBox.e + 0.005, n: routeBox.n + 0.004 }; const [cx0, cy1] = tileNums(cb.w, cb.n, 15); const [cx1, cy0] = tileNums(cb.e, cb.s, 15); for (let x = cx0; x <= cx1; x++) for (let y = cy1; y <= cy0; y++) for (const t of src.tiles) urls.add(t.replace('{z}', 15).replace('{x}', x).replace('{y}', y)); }
+    }
+  }
+  return [...urls];
+}
 $('xPre').addEventListener('click', async () => {
   if (!tapGuard('xPre')) return;
   if (preloadRunning) { toast('Offline download already running'); return; }
@@ -212,25 +265,7 @@ $('xPre').addEventListener('click', async () => {
     if (!swOk) { st.textContent = 'Offline maps NOT saved: the part of the app that saves them is not running' + (window.__swErr ? ' (' + window.__swErr + ')' : '') + '. The live map is unaffected.'; preloadRunning = false; return; } // Beta 1.57: wording stands on its own (second audit, item 5)
   }
   try {
-    const urls = new Set();
-    for (const key of ['day', 'night']) {
-      const stj = GL_STYLES[key]; // Beta 1.33: the styles are embedded objects (pmstyles.js) - already in the shell, nothing to fetch
-      const spr = Array.isArray(stj.sprite) ? stj.sprite[0].url : stj.sprite;
-      if (spr) { urls.add(spr + '.json'); urls.add(spr + '.png'); urls.add(spr + '@2x.json'); urls.add(spr + '@2x.png'); }
-      if (stj.glyphs) { const stack = 'Noto Sans Regular'; for (let a = 0; a <= 255; a++) urls.add(stj.glyphs.replace('{fontstack}', stack).replace('{range}', a * 256 + '-' + (a * 256 + 255))); } // the stack GL actually requests per style (Stage 2, audit G-5)
-      const ex = { w: -79.75, s: 43.70, e: -79.35, n: 44.05 }; // Beta 1.34 (Andrew's pick): the offline area is Vaughan + nearby at full street detail (z10-14), not just the route. Day and night are two skins over these SAME tiles, so this one set covers both modes
-      for (const srcName of Object.keys(stj.sources || {})) {
-        const src = stj.sources[srcName];
-        if (src.type !== 'vector' || !src.tiles) continue;
-        const maxz = Math.min(14, src.maxzoom || 14);
-        // tile y grows SOUTHWARD: the north edge (y1) is the smaller number - looping y0..y1 (the pre-1.34 code) silently downloaded ZERO tiles; drive123 A8 counts the fetched tile URLs so this can never pass unnoticed again
-        // Beta 1.72 (Phase 3, item R04): the wide zooms join the set - the map itself allows zoom 8 (minZoom), but the preload stopped at z10, so offline at z8-9 the basemap had nothing to draw. Over this box those zooms are 3 tiles (1 + 2).
-        for (let z = 8; z <= maxz; z++) { const [x0, y1] = tileNums(ex.w, ex.n, z); const [x1, y0] = tileNums(ex.e, ex.s, z); for (let x = x0; x <= x1; x++) for (let y = y1; y <= y0; y++) for (const t of src.tiles) urls.add(t.replace('{z}', z).replace('{x}', x).replace('{y}', y)); }
-        // Beta 1.41: display zooms 15-19 all render from z15 tiles (the source's maxzoom) - yet the set above stops at 14, so the working zoom band was the LEAST cached. Add z15 over the route core only (routeBox + margin, derived from the app's own route bounds so it cannot drift): 15 tiles. z15 over the whole Vaughan box would be ~1,400 files for streets he never opens.
-        if ((src.maxzoom || 14) >= 15) { const cb = { w: routeBox.w - 0.005, s: routeBox.s - 0.004, e: routeBox.e + 0.005, n: routeBox.n + 0.004 }; const [cx0, cy1] = tileNums(cb.w, cb.n, 15); const [cx1, cy0] = tileNums(cb.e, cb.s, 15); for (let x = cx0; x <= cx1; x++) for (let y = cy1; y <= cy0; y++) for (const t of src.tiles) urls.add(t.replace('{z}', 15).replace('{x}', x).replace('{y}', y)); }
-      }
-    }
-    const list = [...urls];
+const list = preloadUrlList();
     // Beta 1.94 (audit F-03): the downloaded pack is written into its OWN cache
     // ('snowroute-offline-v1'), which the service worker serves FIRST for map data and
     // whose contents the browsing cache's eviction can never touch. Before 1.94 the pack
@@ -321,6 +356,14 @@ async function shareBackup() { // Beta 1.88 (Andrew), moved into the backup menu
   if (navigator.share) { try { await navigator.share({ text: b }); return; } catch (e) { if (e && e.name === 'AbortError') return; } }
   dl(new Blob([b], { type: 'application/json' }), 'snowroute-backup.json'); toast('Backup downloaded');
 }
+async function shareRecovery() { // Beta 1.95 (SR-194-02): the Backup press's recovery twin - same share sheet, but the file is NAMED recovery and the result message repeats what it is: the live on-screen state, not fully saved on this device
+  const b = buildRecovery();
+  if (!b) { toast('Recovery backup unavailable — open the route first', 3600); return; }
+  let f = null; try { f = new File([b], 'snowroute-recovery.json', { type: 'application/json' }); } catch (e) { /* older engine: the text share below still works */ }
+  if (f && navigator.canShare && navigator.canShare({ files: [f] })) { try { await navigator.share({ files: [f] }); toast('Recovery backup shared — it holds the live on-screen state, which is not fully saved on this device', 4200); return; } catch (e) { if (e && e.name === 'AbortError') return; } }
+  if (navigator.share) { try { await navigator.share({ text: b }); toast('Recovery backup shared — it holds the live on-screen state, which is not fully saved on this device', 4200); return; } catch (e) { if (e && e.name === 'AbortError') return; } }
+  dl(new Blob([b], { type: 'application/json' }), 'snowroute-recovery.json'); toast('Recovery backup downloaded — it holds the live on-screen state, which is not fully saved on this device', 4200);
+}
 $('updBtn').addEventListener('click', () => $('setMenu').classList.remove('open')); // the update check reports by toast over the map - the menu steps aside for it (the old pop-up's pick-and-close)
 // Click-away (Andrew, Beta 1.14): tapping anywhere outside an open menu closes it - no hunting for a
 // Close button. Header buttons keep their own toggle behaviour; a tap on a dialog's dimmed backdrop
@@ -372,16 +415,30 @@ if ('serviceWorker' in navigator) {
 // it, the pack cache is the pack's only home (new downloads write there directly and
 // clean their browsing duplicates up). Best-effort: a failed copy retries on the next
 // boot, and a fresh Download offline maps always rebuilds the pack cache directly.
-(async () => {
+const PACKMIG_KEY = 'snowroute.v5.packmig';
+async function migratePack() { // Beta 1.95 (deep audit SR-194-05/06): the one-time move of a pre-1.94 pack from the browsing cache into the protected pack cache, under an honest contract. 1.94 copied EVERY browsing-cache key (any stray the map had ever fetched came along) through per-file catch-alls, then set the completion flag unconditionally - a partial copy was marked complete and never retried. Now: only the deterministic preload manifest (preloadUrlList) is migrated; non-manifest entries already in the pack cache are pruned, so the pack is exactly the manifest; the completion flag is set only after VERIFYING that everything that exists in either cache is present in the pack cache; any failed copy leaves the flag unset and the next boot retries (the function is idempotent). Returns a status object so the test battery can drive it directly.
   try {
-    if (!('caches' in window)) return;
-    if (lsGet('snowroute.v5.packmig')) return;
-    if (!parseJ(lsGet(LS.pre), null)) return; // no pack was ever downloaded on this install
+    if (!('caches' in window)) return { ok: false, why: 'nocache' };
+    if (!parseJ(lsGet(LS.pre), null)) return { ok: true, skipped: true }; // no pack was ever downloaded on this install
+    const list = preloadUrlList();
+    const want = new Set(list);
     const oc = await caches.open('snowroute-offline-v1');
-    if ((await oc.keys()).length === 0) { const tc = await caches.open('snowroute-tiles-v1'); for (const rq of await tc.keys()) { const res = await tc.match(rq); if (res) { try { await oc.put(rq.url, res); } catch (e) {} } } }
-    lsSet('snowroute.v5.packmig', '1');
-  } catch (e) { /* the migration never blocks the boot */ }
-})();
+    const tc = await caches.open('snowroute-tiles-v1');
+    let failed = 0;
+    for (const u of list) {
+      if (await oc.match(u)) continue;
+      const hit = await tc.match(u);
+      if (!hit) continue; // exists in neither cache - nothing to migrate (a re-download rebuilds the pack directly)
+      try { await oc.put(u, hit); } catch (e) { failed++; }
+    }
+    if (failed > 0) return { ok: false, failed };
+    for (const rq of await oc.keys()) { if (!want.has(rq.url)) { try { await oc.delete(rq.url); } catch (e) { /* a stray that will not delete is inert - the pack still serves the manifest */ } } }
+    for (const u of list) { if (!(await oc.match(u)) && (await tc.match(u))) return { ok: false, why: 'verify' }; } // verify BEFORE the flag: everything recoverable must be in the pack cache
+    lsSet(PACKMIG_KEY, '1');
+    return { ok: true };
+  } catch (e) { return { ok: false, why: String((e && e.message) || e) }; }
+}
+if (parseJ(lsGet(LS.pre), null)) migratePack(); // boot: fire-and-forget - it never blocks the boot, and because the flag is earned, an incomplete migration simply runs again next boot
 // Beta 1.18 (Andrew's phone report): the on-screen keyboard shrinks the VISIBLE screen
 // (visualViewport) and iOS pans the page to the focused note box, stranding the header
 // and menus off-screen - and it does not pan back. Track the visible screen in CSS vars
@@ -577,6 +634,7 @@ function loadRoute(id) {
     introToRoute();
   }
   refreshAll(); drawTrail(true); checkStale(); syncWake();
+  if (runStart && !validateSnap(parseJ(lsGet(LS.snap), null), runStart)) toast('Resumed run — no usable cancel snapshot, so Cancel will rebuild from the marks made during the run', 4600); // Beta 1.95 (deep audit SR-194-04): the honesty lives at RESUME - Start still never blocks (the settled 1.63 stance: he is standing in the snow), but a run whose cancel snapshot is missing or damaged is resumed with its reduced Cancel guarantee stated, not silent
   if (runStart) startGps(true);
 }
 (() => {

@@ -184,6 +184,44 @@ function saveSnap() { // Beta 1.94 (deep audit SR-193-02): the pre-Start board i
   const ok = lsSet(LS.snap, JSON.stringify({ at: runStart, pieces: runSnap.pieces, pieceTimes: runSnap.pieceTimes, done: runSnap.done, times: runSnap.times, via: runSnap.via, cov: runSnap.cov }));
   snapDirty = !ok; return ok;
 }
+function validateSnap(raw, expectAt) { // Beta 1.95 (deep audit SR-194-03): a persisted cancel snapshot is DATA FROM STORAGE, not trusted state - it earns application only by passing the same structural rules the loader enforces (every street present at its true stretch count, side values 0..3 only, stamp pairs of null-or-parseable strings, known street names everywhere, coverage indexes inside the street's samples). 1.94 checked only the stamp and the object-ness of two fields, then assigned the stored structures raw: an injected {Velmar:[99]} became the live board and was saved onward, destroying a valid mark. Any violation rejects the WHOLE snapshot (never a partial application); the caller falls back to the stamp journal. Returns a normalized deep copy, or null.
+  try {
+    if (!raw || typeof raw !== 'object' || Array.isArray(raw)) return null;
+    if (raw.at !== expectAt) return null;
+    const P = raw.pieces, T = raw.pieceTimes, D = raw.done, TM = raw.times, V = raw.via, C = raw.cov;
+    if (!P || typeof P !== 'object' || Array.isArray(P)) return null;
+    if (!T || typeof T !== 'object' || Array.isArray(T)) return null;
+    if (!Array.isArray(D)) return null;
+    if (!TM || typeof TM !== 'object' || Array.isArray(TM)) return null;
+    if (!V || typeof V !== 'object' || Array.isArray(V)) return null;
+    if (!C || typeof C !== 'object' || Array.isArray(C)) return null;
+    for (const k of Object.keys(P)) if (!STREETSET.has(k)) return null;
+    for (const k of Object.keys(T)) if (!STREETSET.has(k)) return null;
+    const pieces = {}, pieceTimes = {};
+    for (const n of STREETNAMES) {
+      const arr = P[n];
+      if (!Array.isArray(arr) || arr.length !== STRETCH[n].parts.length) return null;
+      for (const v of arr) if (v !== 0 && v !== 1 && v !== 2 && v !== 3) return null;
+      pieces[n] = arr.slice();
+      const tn = T[n];
+      if (tn !== undefined && (!tn || typeof tn !== 'object')) return null; // a stamp record that is not a structure at all rejects the snapshot
+      pieceTimes[n] = sanitizePieceTimes(tn, STRETCH[n].parts.length); // the LOADER'S OWN sanitizer is the shape authority (it produces the array form the live state carries, accepting the numeric-keyed object form too) - the first 1.95 draft hand-rolled an object-only assumption and rejected every genuine snapshot; strictness lives in the structural checks around this call, not in a parallel shape
+    }
+    const done = [];
+    for (const d of D) { if (typeof d !== 'string' || !STREETSET.has(d)) return null; if (!done.includes(d)) done.push(d); }
+    const times = {}, via = {};
+    for (const k of Object.keys(TM)) { if (!STREETSET.has(k) || typeof TM[k] !== 'string') return null; times[k] = TM[k]; }
+    for (const k of Object.keys(V)) { if (!STREETSET.has(k) || typeof V[k] !== 'string') return null; via[k] = V[k]; }
+    const cov = {};
+    for (const k of Object.keys(C)) {
+      if (!STREETSET.has(k) || !SAMPLES[k] || !Array.isArray(C[k])) return null;
+      const arr = [];
+      for (const i of C[k]) { if (!Number.isInteger(i) || i < 0 || i >= SAMPLES[k].length) return null; arr.push(i); }
+      cov[k] = arr;
+    }
+    return { pieces, pieceTimes, done, times, via, cov };
+  } catch (e) { return null; }
+}
 function startClean() { runSnap = { pieces: JSON.parse(JSON.stringify(pieces)), pieceTimes: JSON.parse(JSON.stringify(pieceTimes)), done: [...doneSet], times: { ...doneTimes }, via: { ...doneVia }, cov: JSON.parse(JSON.stringify(coveredIdx)) }; runStart = Date.now(); const okSnap = saveSnap(); const okSess = noteSessionStart(); const okStart = saveAll(); startGps(true); updateCount(); syncWake(); if (okStart && okSess && okSnap) toast('Clean started · ' + fmtClock(new Date())); else if (!okStart) toast('Clean started — warning: the run state could not be saved (storage problem)', 4200); else if (!okSess) toast('Clean started — warning: the session marker could not be saved; it will keep retrying', 4200); else toast('Clean started — warning: the cancel safety snapshot could not be saved; it will keep retrying', 4200); drawTrail(true); checkStale(); } // Beta 1.73 (audit C04): the marker save is part of the start's honesty check, not a silent side write // Beta 1.63 (audit F04): the clean still starts - he is standing in the snow - but the message stops claiming a saved state that does not exist
 // Beta 1.91 (Andrew): Cancel start erases everything the run recorded - its trail points, its session
 // marker, any sides marked during it, its coverage and suggestions - and stores nothing. Only Finish
@@ -191,14 +229,17 @@ function startClean() { runSnap = { pieces: JSON.parse(JSON.stringify(pieces)), 
 function cancelStart() {
   const wasRunGps = gpsFromRun;
   const startSec = runStart ? Math.floor(runStart / 1000) : 0;
+  let snapDamaged = false; // Beta 1.95 (SR-194-03): a persisted snapshot that exists but fails validation - the closing message must not claim an exact restore
   if (runStart) {
     trail = trail.filter(p => (p[2] || 0) < startSec);
     trailSessions = trailSessions.filter(s => s !== startSec);
     if (runSnap) { pieces = runSnap.pieces; pieceTimes = runSnap.pieceTimes; doneSet = new Set(runSnap.done); doneTimes = runSnap.times; doneVia = runSnap.via; coveredIdx = runSnap.cov; }
     else { // No in-memory snapshot (the app reloaded mid-run). Beta 1.94 (deep audit SR-193-02): the PERSISTED snapshot Start wrote (LS.snap, stamped with this run's start) restores the pre-Start board exactly - including a pre-Start side that was UNMARKED during the run, which the 1.93 stamp journal could not see (unmarking erases the stamp). Only when no usable persisted snapshot exists (written before 1.94, or its write never landed) does the 1.93 journal fallback below run: revert ONLY sides stamped at or after Start - anything older is pre-Start progress and is not this run's to erase; the 1.91 full-board wipe could destroy it.
       const persisted = parseJ(lsGet(LS.snap), null);
-      if (persisted && persisted.at === runStart && persisted.pieces && typeof persisted.pieces === 'object' && persisted.pieceTimes && typeof persisted.pieceTimes === 'object') { pieces = persisted.pieces; pieceTimes = persisted.pieceTimes; doneSet = new Set(Array.isArray(persisted.done) ? persisted.done : []); doneTimes = (persisted.times && typeof persisted.times === 'object') ? persisted.times : {}; doneVia = (persisted.via && typeof persisted.via === 'object') ? persisted.via : {}; coveredIdx = (persisted.cov && typeof persisted.cov === 'object') ? persisted.cov : {}; }
+      const validSnap = persisted ? validateSnap(persisted, runStart) : null; // Beta 1.95 (SR-194-03): validated + normalized before a single field is applied - never the raw stored structures
+      if (validSnap) { pieces = validSnap.pieces; pieceTimes = validSnap.pieceTimes; doneSet = new Set(validSnap.done); doneTimes = validSnap.times; doneVia = validSnap.via; coveredIdx = validSnap.cov; }
       else {
+        if (persisted) snapDamaged = true;
         for (const n of STREETNAMES) { const P = pieces[n], T = pieceTimes[n] || {}; for (let i = 0; i < P.length; i++) { const st = T[i] || [null, null]; if ((P[i] & 1) && st[0] && Date.parse(st[0]) >= runStart) { P[i] &= ~1; st[0] = null; } if ((P[i] & 2) && st[1] && Date.parse(st[1]) >= runStart) { P[i] &= ~2; st[1] = null; } } }
         doneSet = new Set(STREETNAMES.filter(streetComplete));
         for (const k of Object.keys(doneTimes)) if (!doneSet.has(k)) delete doneTimes[k];
@@ -216,7 +257,7 @@ function cancelStart() {
   if (wasRunGps) stopGps();
   if (window.GLP) window.GLP.sync(); renderPanel(); renderStreets();
   drawTrail(true); updateCount(); syncWake();
-  if (okCancel && !trailPending) toast('Start cancelled — run erased'); else if (okCancel) toast('Start cancelled — erased here, but the trail cleanup could not be saved yet; it will keep retrying', 4200); else toast('Start cancelled - warning: the cancellation could not be saved; the run may return on reload', 4200);
+  if (okCancel && snapDamaged) toast('Start cancelled — run erased (the saved snapshot was damaged, so the board was rebuilt from the marks made during the run)', 4600); else if (okCancel && !trailPending) toast('Start cancelled — run erased'); else if (okCancel) toast('Start cancelled — erased here, but the trail cleanup could not be saved yet; it will keep retrying', 4200); else toast('Start cancelled - warning: the cancellation could not be saved; the run may return on reload', 4200);
 } // Beta 1.69 (audits N03 + trail): cancelStart ignored saveAll's result and claimed success unconditionally; it also never refreshed the trail, so a cancelled run's line lingered
 $('startBtn').addEventListener('click', () => { if (!tapGuard('startBtn')) return; startClean(); });
 // CLEAR (Andrew, Beta 1.7): header button beside Pace - one tap wipes EVERY mark on the board (all streets,
@@ -303,7 +344,7 @@ function finishRun() {
   if (!lsSet(LS.sides, JSON.stringify({ p: clearedPieces, t: clearedTimes }))) {
     if (archiving) { // roll the archive back - the finish did not happen. Beta 1.63 (audit F02): the rollback is CHECKED and READ BACK - if it fails, the stored history and the stored board disagree, and the message must say so instead of claiming the clean is intact.
       const rbOk = lsSet(LS.hist, JSON.stringify(prevHist)) && lsGet(LS.hist) === JSON.stringify(prevHist);
-      if (!rbOk) { toast('Storage failure — finish stopped, but the archive could not be undone. Export a backup now', 6000); return; }
+      if (!rbOk) { toast('Storage failure — finish stopped, but the archive could not be undone. Export a recovery backup now', 6000); return; }
     }
     toast('Storage problem — finish stopped, your clean is intact', 4200);
     return;
@@ -318,12 +359,13 @@ function finishRun() {
     let rbHist = true;
     if (archiving) rbHist = lsSet(LS.hist, JSON.stringify(prevHist)) && lsGet(LS.hist) === JSON.stringify(prevHist);
     if (rbSides && rbHist) toast('Storage problem — finish stopped, your clean is intact', 4200);
-    else toast('Storage failure — finish stopped, but the rollback could not be verified. Export a backup now', 6000);
+    else toast('Storage failure — finish stopped, but the rollback could not be verified. Export a recovery backup now', 6000);
     return;
   }
+  const undoSnapData = runSnap ? JSON.parse(JSON.stringify(runSnap)) : validateSnap(parseJ(lsGet(LS.snap), null), runStart); // Beta 1.95 (deep audit SR-194-01): the cancel snapshot travels INTO the undo before it is deleted here - from memory when the run never reloaded, from its persisted copy (validated, SR-194-03) when it did. 1.94 deleted the snapshot and never carried it, so Finish -> Undo -> Cancel fell back to the stamp journal, blind to a pre-Start side unmarked mid-run.
   lsDel(LS.snap); snapDirty = false; // Beta 1.94 (SR-193-02): the run is finished - its cancel snapshot goes with it. Ungated on purpose: a leftover snapshot is stamped with THIS run's start, so it can never match a future run, and the next Start overwrites it anyway
   if (archiving) history = newHist;
-  undoSnap = { done: [...doneSet], times: { ...doneTimes }, via: { ...doneVia }, notes: JSON.parse(JSON.stringify(notes)), pieces: JSON.parse(JSON.stringify(pieces)), pieceTimes: JSON.parse(JSON.stringify(pieceTimes)), runStart, cov: JSON.parse(JSON.stringify(coveredIdx)), hist: prevHist.slice(), gpsWas: gpsFromRun };
+  undoSnap = { done: [...doneSet], times: { ...doneTimes }, via: { ...doneVia }, notes: JSON.parse(JSON.stringify(notes)), pieces: JSON.parse(JSON.stringify(pieces)), pieceTimes: JSON.parse(JSON.stringify(pieceTimes)), runStart, cov: JSON.parse(JSON.stringify(coveredIdx)), hist: prevHist.slice(), gpsWas: gpsFromRun, snap: undoSnapData };
   doneSet = new Set(); doneTimes = {}; doneVia = {}; notes = {}; runStart = 0; runSnap = null; coveredIdx = {}; suggested = new Set(); $('suggest').classList.add('hidden'); // Beta 1.70 (audit A04): the suggestion set is run-scoped too - finishRun used to clear the coverage but keep the set, so suggested streets never suggested again
   for (const n of STREETNAMES) { pieces[n] = STRETCH[n].parts.map(() => 0); pieceTimes[n] = {}; }
   stopGps(); deselect(); drawTrail(true); // Beta 1.69 (audit visual check): the run is over and runStart is 0, so this clears the finished line now instead of leaving it until the next throttled refresh
@@ -343,7 +385,7 @@ function doUndo() {
   // failure keeps the undo on offer (snapshot retained, button unchanged)
   // instead of half-undoing.
   if (!lsSet(LS.hist, JSON.stringify(undoSnap.hist))) { toast('Storage problem — undo stopped, nothing changed', 3600); return; }
-  if (!lsSet(LS.sides, JSON.stringify({ p: undoSnap.pieces, t: undoSnap.pieceTimes }))) { const rbOk = lsSet(LS.hist, JSON.stringify(history)) && lsGet(LS.hist) === JSON.stringify(history); toast(rbOk ? 'Storage problem — undo stopped, nothing changed' : 'Storage failure — undo stopped, but the history restore could not be undone. Export a backup now', rbOk ? 3600 : 6000); return; } // Beta 1.63 (audit F02): the mirror rollback is verified too
+  if (!lsSet(LS.sides, JSON.stringify({ p: undoSnap.pieces, t: undoSnap.pieceTimes }))) { const rbOk = lsSet(LS.hist, JSON.stringify(history)) && lsGet(LS.hist) === JSON.stringify(history); toast(rbOk ? 'Storage problem — undo stopped, nothing changed' : 'Storage failure — undo stopped, but the history restore could not be undone. Export a recovery backup now', rbOk ? 3600 : 6000); return; } // Beta 1.63 (audit F02): the mirror rollback is verified too
   // Beta 1.94 (deep audit SR-193-04): the restored run's START is a gate too, taken BEFORE the
   // snapshot below is consumed. It used to ride the saveAll after the state swap (with
   // undoSnap already nulled), so a failed start write plus a reload restored the board but
@@ -354,12 +396,27 @@ function doUndo() {
   if (!startOk) {
     const rbHist = lsSet(LS.hist, JSON.stringify(history)) && lsGet(LS.hist) === JSON.stringify(history);
     const rbSides = lsSet(LS.sides, JSON.stringify({ p: pieces, t: pieceTimes })) && lsGet(LS.sides) === JSON.stringify({ p: pieces, t: pieceTimes });
-    toast((rbHist && rbSides) ? 'Storage problem — undo stopped, nothing changed' : 'Storage failure — undo stopped, but the rollback could not be verified. Export a backup now', (rbHist && rbSides) ? 3600 : 6000);
+    toast((rbHist && rbSides) ? 'Storage problem — undo stopped, nothing changed' : 'Storage failure — undo stopped, but the rollback could not be verified. Export a recovery backup now', (rbHist && rbSides) ? 3600 : 6000);
     return;
+  }
+  // Beta 1.95 (deep audit SR-194-01): the restored run's cancel SNAPSHOT is a gate too,
+  // on the same discipline as the start gate above: the undo is complete only when the
+  // snapshot is persisted again (read back) for the restored run, because a later reload
+  // leaves Cancel nothing else exact to restore from. A failure rolls all three gated
+  // writes back (each checked) and returns with the undo still on offer.
+  if (undoSnap.snap) {
+    const snapRaw = JSON.stringify({ at: undoSnap.runStart, pieces: undoSnap.snap.pieces, pieceTimes: undoSnap.snap.pieceTimes, done: undoSnap.snap.done, times: undoSnap.snap.times, via: undoSnap.snap.via, cov: undoSnap.snap.cov });
+    if (!(lsSet(LS.snap, snapRaw) && lsGet(LS.snap) === snapRaw)) {
+      const rbHist = lsSet(LS.hist, JSON.stringify(history)) && lsGet(LS.hist) === JSON.stringify(history);
+      const rbSides = lsSet(LS.sides, JSON.stringify({ p: pieces, t: pieceTimes })) && lsGet(LS.sides) === JSON.stringify({ p: pieces, t: pieceTimes });
+      const rbStart = lsDel(LS.start);
+      toast((rbHist && rbSides && rbStart) ? 'Storage problem — undo stopped, nothing changed' : 'Storage failure — undo stopped, but the rollback could not be verified. Export a recovery backup now', (rbHist && rbSides && rbStart) ? 3600 : 6000);
+      return;
+    }
   }
   clearTimeout(undoTimer);
   const undoSnapGpsWas = !!undoSnap.gpsWas; // undo restores the pre-finish state: GPS restarts only if it was actually running for the run (a fresh watch's first error toast would otherwise overwrite the 'Finish undone' toast)
-  doneSet = new Set(undoSnap.done); doneTimes = undoSnap.times; doneVia = undoSnap.via; notes = undoSnap.notes || {}; pieces = undoSnap.pieces; pieceTimes = undoSnap.pieceTimes; runStart = undoSnap.runStart; coveredIdx = undoSnap.cov;
+  doneSet = new Set(undoSnap.done); doneTimes = undoSnap.times; doneVia = undoSnap.via; notes = undoSnap.notes || {}; pieces = undoSnap.pieces; pieceTimes = undoSnap.pieceTimes; runStart = undoSnap.runStart; coveredIdx = undoSnap.cov; runSnap = undoSnap.snap ? JSON.parse(JSON.stringify(undoSnap.snap)) : null; if (undoSnap.snap) snapDirty = false; // Beta 1.95 (SR-194-01): the restored run carries its cancel snapshot again - in memory and (gate above) on disk
   history = undoSnap.hist;
   suggested = new Set(); $('suggest').classList.add('hidden'); // Beta 1.70 (audit A04): the restored coverage starts with a clean suggestion set
   undoSnap = null;

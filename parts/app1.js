@@ -290,7 +290,7 @@ function saveAll() {
     if (!saveStart() && !saveFailKey) saveFailKey = 'start';
     if (!lsSet(LS.cov, JSON.stringify(coveredIdx)) && !saveFailKey) saveFailKey = 'coverage';
   }
-  if (saveFailKey) { primaryDirty = true; if (!saveQuiet && !saveWarned) { saveWarned = true; toast('Storage is not saving (' + saveFailKey + ') - export a backup now', 4200); } return false; }
+  if (saveFailKey) { primaryDirty = true; if (!saveQuiet && !saveWarned) { saveWarned = true; toast('Storage is not saving (' + saveFailKey + ') - export a recovery backup now', 4200); } return false; }
   saveWarned = false; primaryDirty = false;
   return true;
 }

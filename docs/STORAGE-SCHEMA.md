@@ -34,7 +34,7 @@ for Route 5W (see Migration).
 | `v5.start` | Run start | Raw epoch-milliseconds digit string (not JSON). |
 | `v5.flip` | Legacy flip flag | Retained for format compatibility; unused by the beta (flip was removed in Beta 1.14). Still backed up. |
 | `v5.sides` | **Source of truth for progress** | JSON `{p: {street: [0..3 per stretch]}, t: {street: {stretchIdx: [timeA, timeB]}}}`. Values are bit flags: 1 = side A, 2 = side B, 3 = both. Load normalizes values to 0..3 (audit G-3). |
-| `v5.snap` | Pre-Start snapshot for Cancel (Beta 1.94, audit SR-193-02) | JSON `{at, pieces, pieceTimes, done, times, via, cov}` — the board as Start found it, stamped with the run's start time (`at` === `v5.start`). Written at Start, deleted by Finish and by Cancel. A resumed run's Cancel restores from it when `at` matches the live run; it is transient working state — not backed up, not migration-copied. |
+| `v5.snap` | Pre-Start snapshot for Cancel (Beta 1.94, audit SR-193-02) | JSON `{at, pieces, pieceTimes, done, times, via, cov}` — the board as Start found it, stamped with the run's start time (`at` === `v5.start`). Written at Start, deleted by Finish and by Cancel. A resumed run's Cancel restores from it when `at` matches the live run; it is transient working state — not backed up, not migration-copied. Beta 1.95 (SR-194-03): the restore validates the snapshot strictly against the loader's structural rules first — a damaged snapshot is never applied raw; the mark-stamp journal is the fallback and the cancel message says the board was rebuilt. Beta 1.95 (SR-194-01): Finish carries the snapshot into its undo record, and Undo re-persists it as a verified gate, so Finish → Undo → Cancel restores exactly. |
 | `v2.migrated` | Migration completion marker (Beta 1.94, audit SR-193-03) | The string `'1'`, written only after every legacy field the slot should hold is verified present in it (see Migration). Its presence is the ONLY thing that makes the slot authoritative; without it the legacy keys stay authoritative and the move retries. Not backed up. |
 | `v5.preload` | Preload record `{at, saved, total}` (local only) | Per-route; not backed up. |
 
@@ -49,9 +49,11 @@ travelling together; an override restored without its expiry is read as
 expiring at the next boundary),
 `snowroute.v5.export` (last export summary; local only, not backed up),
 `snowroute.prep.v1` (offline-prep flag; local only, not backed up),
-`snowroute.v5.packmig` (Beta 1.94: set once the pre-1.94 downloaded map
-pack has been copied into its own cache — see ARCHITECTURE.md, Offline;
-local only, not backed up).
+`snowroute.v5.packmig` (Beta 1.94; semantics hardened Beta 1.95,
+SR-194-05/06: set only after the manifest-bounded pack migration has
+VERIFIED the pack cache holds everything recoverable from the browsing
+cache — a failed copy leaves it unset and the migration retries on the
+next boot; see ARCHITECTURE.md, Offline; local only, not backed up).
 
 ## Migration: legacy → 5W slot (Beta 1.76; commit rule revised Beta 1.94)
 
@@ -103,7 +105,14 @@ backup can never carry a staler board than the one on screen (audit
 SR-193-01, extending 1.93's R02); and a **restore** counts street names
 in the backup that the route does not know and reports the count in its
 result message, instead of the loaders dropping them silently (audit
-F-05). The transient fields (`v5.snap`, `v2.migrated`) are never part of
+F-05). Beta 1.95 (SR-194-08): the count is taken from the RAW backup
+before any normalization, each unknown name once — object-form done maps
+and array-form history items included. Beta 1.95 (SR-194-02): a second
+export, the **recovery backup**, shares this envelope with one added
+marker (`"recovery": true`): it serializes the live in-memory state of
+the active route directly, for the storage-failure moments when the
+normal backup refuses by design; it restores through this same path.
+The transient fields (`v5.snap`, `v2.migrated`) are never part of
 a backup.
 
 ## Restore transaction (invariant)

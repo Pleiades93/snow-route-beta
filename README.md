@@ -87,7 +87,7 @@ Settings → **Backup** is a small menu of three options: **Backup (JSON)**,
 | `scripts/assemble.py` | Concatenates `parts/` into `src/tracker-source.html` (byte-exact recipe; `--check` verifies without writing). |
 | `scripts/build-pages.py` | The repository-owned build: generates `index.html` + `sw.js` from `src/` and runs the assembly, parity, CSP, integrity and version gates. Standard library only. |
 | `scripts/csp_stamp.py` | Computes the Content-Security-Policy the build stamps into the page. |
-| `scripts/genstyles.mjs` | Regenerates `parts/pmstyles.js` (the two embedded Protomaps basemap styles) from the `@protomaps/basemaps` package; run from `scripts/`. Never hand-edit its output. |
+| `scripts/genstyles.mjs` | Regenerates `parts/pmstyles.js` (the two embedded Protomaps basemap styles) from the `@protomaps/basemaps` package (pinned exactly by `scripts/package.json` + `package-lock.json` — `npm ci` in `scripts/` first); run from `scripts/`. Never hand-edit its output. |
 | `tests/sw.test.mjs` | Service worker fetch-strategy tests (Node, mocked caches/fetch) — 26 checks. |
 | `tests/browser/` | The deterministic browser drive battery (36 drives, 487 checks) plus the offline end-to-end suite (27 checks) — see `docs/TESTING.md`. |
 | `docs/` | `ARCHITECTURE.md`, `STORAGE-SCHEMA.md`, `TESTING.md`, `DEPLOYMENT.md` — the detailed references. |
