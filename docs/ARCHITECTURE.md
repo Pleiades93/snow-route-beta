@@ -3,7 +3,10 @@
 ## Overview
 
 Snow Route Beta is a single-page app for one operator clearing driveway
-windrows on both sides of a 34-street route in Vaughan, Ontario. It is a
+windrows on both sides of a route's streets. It is built as a multi-route
+system: routes are data packs with per-route storage, and Route 5W in
+Vaughan, Ontario (34 streets) is the pack that ships today — the app
+itself is not tied to any one area. It is a
 from-scratch MapLibre GL application (no Leaflet): the vector basemap IS the
 map, and the tracker's own roads are painted as GeoJSON layers inserted into
 the basemap's road stack. There is no server and no account; all state lives
@@ -32,13 +35,13 @@ the only pack today.
 
 | Part | Responsibility |
 |------|----------------|
-| `head.html` | Markup and CSS: header bar, sheets, panels, modals, fan, chips, toasts. Design tokens as CSS variables; day/night via `body.night`. |
+| `head.html` | Markup and CSS: tab bar, dock, sheets, the route and settings full-screen menus, chips, toasts, splash. Design tokens as CSS variables; day/night via `body.night`. |
 | `data.js` | Route data only: `ROADS` (OSM-derived centrelines, 34 streets) and the 3 reference features. Verbatim production data. |
 | `app1.js` | Core: constants (Metro palette), storage keys and guarded storage, stitch/cut geometry (87 stretches, 174 sides), state, the double-tap guard. |
 | `engine.js` | The paint engine (namespace `GLP`): builds GeoJSON families (centres, side bands/edges, selection, labels, route POI) from app state and syncs them to GL sources. Full rebuild + signature cache on state change. |
 | `app2.js` | Map boot and interaction: GL map creation, basemap swap + restack, selection, side chips, street panel, list sheet, draggable/flickable sheets, map-failure notice. |
 | `app3.js` | Work lifecycle: pace, Start/Finish/Undo, history and Previous cleans, notes, Clear, GPS (smoothing, trail, heading-up camera), coverage suggestions. |
-| `app4.js` | System: export/import (report, GPX, backup/restore), preload, update check, fan/night, service-worker registration, boot wiring. |
+| `app4.js` | System: the backup menu tree (Backup (JSON); Restore via Import JSON / Import Text; offline preload), update check, the day/night chip, service-worker registration, boot wiring. |
 
 ## The map
 
@@ -56,6 +59,13 @@ the only pack today.
   other roads raspberry `#ef476f`, finished mint `#06d6a0`. A marked side is
   a green edge hugging that physical side of the centreline; both sides
   done greens the stretch.
+- 3D buildings (Beta 1.90): both styles carry a `buildings-3d`
+  fill-extrusion layer just below the labels, generated into the styles by
+  `work/genstyles/gen.mjs`. The tiles carry footprints but no heights for
+  residential streets, so the height is an estimate (7 m, or a recorded
+  `height` where the tile has one), rising from zero between zooms 15 and
+  15.3; the flat footprint fill hands over to the extrusion's top face, so
+  the top-down map is unchanged.
 - Failure model: GL `error` events are not fatal. Fatal = `load` not fired
   within 15s, or the style fetch itself failing before first load → the
   map-failure notice shows; marking and all data features keep working.
@@ -77,7 +87,7 @@ noise scaled by the fix's accuracy); the displayed position glides toward
 the filter's lookahead aim through a single frame-synced render loop. A
 follow camera rotates heading-up (course over ground) while a run is
 active. The trail records only during a run, but the stored trail retains
-every session (snow log, GPX, backups); only the on-map display is scoped
+every session and rides in backups; only the on-map display is scoped
 to the current run. Coverage samples each street's centreline every 15m; a fix covers
 samples within 22m; at 85% of a street's samples the app SUGGESTS the
 street — it never marks it. Confirmation flies to and selects the street;
@@ -93,7 +103,7 @@ themselves are embedded in the page (generated Protomaps styles), so no
 style document is ever fetched.
 Activate deletes only `snowroute-` caches (plus the two pre-rename beta cache names, once) — disjoint from production's
 `snow5w-` prefix, so the two apps can share an origin safely. An in-app
-preload ("Download route maps") warms tiles (zooms 8-14 over the area - the
+preload ("Download offline maps") warms tiles (zooms 8-14 over the area - the
 wide zooms added in Beta 1.72 so the map's own minimum zoom works offline -
 plus a zoom-15 route core), sprites and glyphs — 897 files in all. The first-ever
 boot also self-warms once the worker controls the page, so the map works

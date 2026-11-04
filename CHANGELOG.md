@@ -1,5 +1,12 @@
 # Changelog
 
+## Beta 1.90 — 2026-11-03
+
+- 3D buildings (Andrew's pick, option 1): both basemaps gain a fill-extrusion layer ('buildings-3d', just below the labels) built from the footprints already in the map tiles. The tiles record no heights for his streets (checked directly: 492 buildings in the route tile, none with a height), so the height is an estimate — a standard two-storey 7 m, using a real recorded height on the rare building that carries one. Blocks rise between zoom 15 and 15.3, so they appear as you zoom in and tilt; from directly above, the extrusion's top face is the old footprint fill (same colour, same blend) and the flat fill underneath is retired, so the top-down map is unchanged. Same tiles as before — the offline download is untouched (897 files), and the layer is inside the embedded styles, so it survives day/night swaps by construction.
+- The generator (work/genstyles/gen.mjs) carries the same transform, so a future style regeneration keeps the layer.
+- Tests: drive125 gains S7b — after a theme flip rebuilds the style, the extrusion layer is still there with its height ramp.
+
+
 ## Beta 1.89 — 2026-11-03
 
 - A correction round, Andrew's exact structure (1.88 put the one-tap share on the settings row and left the backup pane a form): the settings main pane is Backup and Update, and the Backup row only OPENS the backup menu. The backup menu holds exactly three options - Backup (JSON) (the one-tap build + save prompt, moved here), Restore backup, and Download offline maps (the progress bar and status line are that option's feedback) - and the always-on text box and the Share/Copy buttons are gone.
