@@ -1,0 +1,50 @@
+{
+ "g1_continuous": {
+  "gpx": "<?xml version=\"1.0\" encoding=\"UTF-8\"?>\n<gpx version=\"1.1\" creator=\"Snow Route Beta\"><trk><name>Snow Route trail</name><trkseg>\n<trkpt lat=\"43.82\" lon=\"-79.57\"><time>1970-01-01T00:16:40.000Z</time></trkpt>\n<trkpt lat=\"43.82045\" lon=\"-79.57\"><time>1970-01-01T00:16:50.000Z</time></trkpt>\n<trkpt lat=\"43.8209\" lon=\"-79.57\"><time>1970-01-01T00:17:00.000Z</time></trkpt>\n<trkpt lat=\"43.82135\" lon=\"-79.57\"><time>1970-01-01T00:17:10.000Z</time></trkpt>\n<trkpt lat=\"43.8218\" lon=\"-79.57\"><time>1970-01-01T00:17:20.000Z</time></trkpt>\n<trkpt lat=\"43.82225\" lon=\"-79.57\"><time>1970-01-01T00:17:30.000Z</time></trkpt>\n</trkseg></trk></gpx>",
+  "km0": 0.250469999999614,
+  "kmMid": 0.15028199999945202,
+  "kmFloor": 0.15028199999945202
+ },
+ "g2_timegaps": {
+  "gpx": "<?xml version=\"1.0\" encoding=\"UTF-8\"?>\n<gpx version=\"1.1\" creator=\"Snow Route Beta\"><trk><name>Snow Route trail</name><trkseg>\n<trkpt lat=\"43.82\" lon=\"-79.57\"><time>1970-01-01T00:16:40.000Z</time></trkpt>\n<trkpt lat=\"43.8201\" lon=\"-79.57\"><time>1970-01-01T00:21:40.000Z</time></trkpt>\n</trkseg><trkseg>\n<trkpt lat=\"43.8202\" lon=\"-79.57\"><time>1970-01-01T00:26:41.000Z</time></trkpt>\n<trkpt lat=\"43.8203\" lon=\"-79.57\"><time>1970-01-01T00:26:50.000Z</time></trkpt>\n</trkseg></trk></gpx>",
+  "km0": 0.022263999999948113,
+  "kmMid": 0.011132000000369544,
+  "kmFloor": 0.011132000000369544
+ },
+ "g3_jumps": {
+  "gpx": "<?xml version=\"1.0\" encoding=\"UTF-8\"?>\n<gpx version=\"1.1\" creator=\"Snow Route Beta\"><trk><name>Snow Route trail</name><trkseg>\n<trkpt lat=\"43.82\" lon=\"-79.57\"><time>1970-01-01T00:16:40.000Z</time></trkpt>\n<trkpt lat=\"43.82897412863816\" lon=\"-79.57\"><time>1970-01-01T00:16:50.000Z</time></trkpt>\n</trkseg><trkseg>\n<trkpt lat=\"43.83796622349982\" lon=\"-79.57\"><time>1970-01-01T00:17:00.000Z</time></trkpt>\n</trkseg><trkseg>\n<trkpt lat=\"43.84796622349982\" lon=\"-79.57\"><time>1970-01-01T00:17:10.000Z</time></trkpt>\n</trkseg></trk></gpx>",
+  "km0": 0.9989999999997667,
+  "kmMid": 0,
+  "kmFloor": 0
+ },
+ "g4_markers": {
+  "gpx": "<?xml version=\"1.0\" encoding=\"UTF-8\"?>\n<gpx version=\"1.1\" creator=\"Snow Route Beta\"><trk><name>Snow Route trail</name><trkseg>\n<trkpt lat=\"43.82\" lon=\"-79.57\"><time>1970-01-01T00:16:40.000Z</time></trkpt>\n</trkseg><trkseg>\n<trkpt lat=\"43.8201\" lon=\"-79.57\"><time>1970-01-01T00:16:50.000Z</time></trkpt>\n</trkseg><trkseg>\n<trkpt lat=\"43.8202\" lon=\"-79.57\"><time>1970-01-01T00:17:00.000Z</time></trkpt>\n</trkseg><trkseg>\n<trkpt lat=\"43.8203\" lon=\"-79.57\"><time>1970-01-01T00:17:10.000Z</time></trkpt>\n</trkseg><trkseg>\n<trkpt lat=\"43.8204\" lon=\"-79.57\"><time>1970-01-01T00:17:20.000Z</time></trkpt>\n</trkseg></trk></gpx>",
+  "km0": 0.04452799999989623,
+  "kmMid": 0.022263999999948113,
+  "kmFloor": 0.022263999999948113
+ },
+ "g5_backward": {
+  "gpx": "<?xml version=\"1.0\" encoding=\"UTF-8\"?>\n<gpx version=\"1.1\" creator=\"Snow Route Beta\"><trk><name>Snow Route trail</name><trkseg>\n<trkpt lat=\"43.82\" lon=\"-79.57\"><time>1970-01-01T00:16:40.000Z</time></trkpt>\n</trkseg><trkseg>\n<trkpt lat=\"43.8201\" lon=\"-79.57\"><time>1970-01-01T00:17:30.000Z</time></trkpt>\n<trkpt lat=\"43.8202\" lon=\"-79.57\"><time>1970-01-01T00:17:00.000Z</time></trkpt>\n</trkseg><trkseg>\n<trkpt lat=\"43.8203\" lon=\"-79.57\"><time>1970-01-01T00:18:00.000Z</time></trkpt>\n<trkpt lat=\"43.8204\" lon=\"-79.57\"><time>1970-01-01T00:18:10.000Z</time></trkpt>\n</trkseg></trk></gpx>",
+  "km0": 0.04452799999989623,
+  "kmMid": 0.03339600000031766,
+  "kmFloor": 0.03339600000031766
+ },
+ "g6_empty": {
+  "gpx": "<?xml version=\"1.0\" encoding=\"UTF-8\"?>\n<gpx version=\"1.1\" creator=\"Snow Route Beta\"><trk><name>Snow Route trail</name><trkseg>\n</trkseg></trk></gpx>",
+  "km0": 0,
+  "kmMid": 0,
+  "kmFloor": 0
+ },
+ "g7_single": {
+  "gpx": "<?xml version=\"1.0\" encoding=\"UTF-8\"?>\n<gpx version=\"1.1\" creator=\"Snow Route Beta\"><trk><name>Snow Route trail</name><trkseg>\n<trkpt lat=\"43.82\" lon=\"-79.57\"><time>1970-01-01T00:16:40.000Z</time></trkpt>\n</trkseg></trk></gpx>",
+  "km0": 0,
+  "kmMid": 0,
+  "kmFloor": 0
+ },
+ "g8_marker_and_gap": {
+  "gpx": "<?xml version=\"1.0\" encoding=\"UTF-8\"?>\n<gpx version=\"1.1\" creator=\"Snow Route Beta\"><trk><name>Snow Route trail</name><trkseg>\n<trkpt lat=\"43.82\" lon=\"-79.57\"><time>1970-01-01T00:16:40.000Z</time></trkpt>\n<trkpt lat=\"43.8201\" lon=\"-79.57\"><time>1970-01-01T00:16:50.000Z</time></trkpt>\n</trkseg><trkseg>\n<trkpt lat=\"43.8202\" lon=\"-79.57\"><time>1970-01-01T00:33:20.000Z</time></trkpt>\n</trkseg></trk></gpx>",
+  "km0": 0.011131999999578568,
+  "kmMid": 0,
+  "kmFloor": 0
+ }
+}
