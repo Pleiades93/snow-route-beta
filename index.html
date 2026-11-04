@@ -2,7 +2,7 @@
 <html lang="en" class="boot">
 <head>
 <meta charset="UTF-8">
-<meta http-equiv="Content-Security-Policy" content="default-src 'none'; script-src 'sha384-DxtoniztRgaVX0wVPu0FCsUmQ8KssagfTaR2IaL5xjkK9iorn8lGhxjrgzO/ed1S' https://cdn.jsdelivr.net; style-src-elem 'sha384-accjBcHCGovhsx/8hEwhl62sWw1r4BRwhy781bcgEb1dRvI+X0Bv2gzw95YiaWW/' https://cdn.jsdelivr.net; style-src-attr 'unsafe-inline'; img-src 'self' data: blob: https://tiles.basemaps.cartocdn.com https://protomaps.github.io https://cdn.jsdelivr.net; connect-src 'self' https://tiles.basemaps.cartocdn.com https://protomaps.github.io https://cdn.jsdelivr.net; worker-src blob: 'self'; child-src blob: 'self'; font-src 'none'; manifest-src 'self'; base-uri 'none'; form-action 'none'; object-src 'none'">
+<meta http-equiv="Content-Security-Policy" content="default-src 'none'; script-src 'sha384-DxtoniztRgaVX0wVPu0FCsUmQ8KssagfTaR2IaL5xjkK9iorn8lGhxjrgzO/ed1S' https://cdn.jsdelivr.net; style-src-elem 'sha384-+nJWpuSMiOj7B/nILMcUsCamZUvKkzi0lhzfAlDo6lzQuPhhLrJPCAEL6iGk0jtV' https://cdn.jsdelivr.net; style-src-attr 'unsafe-inline'; img-src 'self' data: blob: https://tiles.basemaps.cartocdn.com https://protomaps.github.io https://cdn.jsdelivr.net; connect-src 'self' https://tiles.basemaps.cartocdn.com https://protomaps.github.io https://cdn.jsdelivr.net; worker-src blob: 'self'; child-src blob: 'self'; font-src 'none'; manifest-src 'self'; base-uri 'none'; form-action 'none'; object-src 'none'">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="mobile-web-app-capable" content="yes">
@@ -50,7 +50,6 @@
   #hud .spacer { margin-left: auto; }
   #hud button { background: #2b4bf2; color: #fff; border: none; border-radius: var(--rad-btn); padding: 9px 8px; font-size: 13.5px; font-weight: 600; min-height: 40px; white-space: nowrap; }
   #hud button.ghost { background: #444; }
-  #resetBtn { background: #0a0a0b; color: #d8ff3d; font-size: 19px; } /* same black/volt treatment as Start while it holds the slot */
   #resetBtn.armed { background: #8c1f16; color: #fff; font-style: normal; }
   #resetBtn.undoing { background: #1e7a46; color: #fff; font-style: normal; }
   #stats { font-size: 12px; font-weight: 600; color: #33404e; margin-top: 6px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; text-shadow: 0 0 6px rgba(255,255,255,.95), 0 0 3px rgba(255,255,255,.9); }
@@ -108,7 +107,7 @@
   body.night .dockBtn { background: var(--glass-night); color: #f2f4f8; border-color: rgba(255,255,255,.16); }
   #runSlot { position: relative; width: 104px; flex: none; display: flex; flex-direction: column; align-items: center; }
   .runBtn { position: relative; width: 104px; height: 104px; flex: none; border-radius: 50%; border: none; box-shadow: var(--shadow-float); line-height: 1.1; cursor: pointer; padding: 0 8px; font-style: italic; font-weight: 900; letter-spacing: .01em; }
-  #startBtn { background: #2b4bf2; color: #fff; font-size: 21px; } /* Beta 1.75 (Andrew): splash-blue circle, white START - supersedes the 1.23 black/volt treatment; font unchanged */
+  #startBtn, #resetBtn { background: #2b4bf2; color: #fff; font-size: 21px; } /* Beta 1.75 (Andrew): splash-blue circle, white text - supersedes the 1.23 black/volt treatment. Beta 1.100 (Andrew): Start and Finish share ONE rule - the swap changes only the word, so the two can never drift apart again (Finish kept the stale 1.23 black/volt + 19px until now) */
   body.night #count { background: var(--glass-night); color: #eef4ee; border-color: rgba(255,255,255,.16); }
   #countFill { position: absolute; left: 0; top: 0; bottom: 0; width: 0%; background: rgba(52,199,89,.42); box-shadow: inset -2px 0 0 #34c759; transition: width .7s var(--ease-open); } /* Beta 1.29: the pill is a meter - a translucent green wash fills it as the route gets cleaned, with a bright leading edge; translucent on purpose, so the themed text (dark by day, bright by night) stays readable over filled and unfilled parts alike */
   #countTxt { position: relative; z-index: 1; }
@@ -258,7 +257,7 @@
 <div id="hud">
   <div id="warn">Not saving — storage is full or blocked</div>
   <div class="row">
-    <div class="titleStack"><div class="title">Snow Route Beta</div><div class="ver" id="ver">Beta 1.99</div></div>
+    <div class="titleStack"><div class="title">Snow Route Beta</div><div class="ver" id="ver">Beta 1.100</div></div>
   </div>
   <div id="stats"></div>
 </div>
