@@ -257,7 +257,7 @@
 <div id="hud">
   <div id="warn">Not saving — storage is full or blocked</div>
   <div class="row">
-    <div class="titleStack"><div class="title">Snow Route Beta</div><div class="ver" id="ver">Beta 1.93</div></div>
+    <div class="titleStack"><div class="title">Snow Route Beta</div><div class="ver" id="ver">Beta 1.94</div></div>
   </div>
   <div id="stats"></div>
 </div>
@@ -271,7 +271,7 @@
   <div id="runSlot">
     <button id="startBtn" class="runBtn">START</button>
     <button id="resetBtn" class="runBtn" style="display:none">Finish</button>
-    <div id="count"><span id="countFill"></span><span id="countTxt">0 of 34 · 0%</span></div>
+    <div id="count"><span id="countFill"></span><span id="countTxt"></span></div> <!-- Beta 1.94 (audit F-01): no hard-coded street total in the static markup - updateCount fills this from the route's own street list the moment a route loads (the pill is chrome, hidden until then) -->
     <button id="cancelStartBtn" style="display:none;background:#e63a2e">Cancel start</button>
   </div>
   <button id="paceBtn" class="dockBtn" title="Pace"></button>
@@ -348,20 +348,19 @@ const TRAIL_MAX = 8000;
 // simply lacks a field; restore follows the missing-key rule EXCEPT that a
 // backup replacing the trail clears the current markers (Beta 1.73, C06).
 const ROUTE_PACKS = [{ id: '5w', name: 'Route 5W', area: 'Vaughan', roads: ROADS, reference: REFERENCE }];
-function routeKeys(id) { const p = 'snowroute.' + id + '.'; return { done: p + 'v2', times: p + 'v2.times', hist: p + 'v2.history', notes: p + 'v4.notes', via: p + 'v4.via', trail: p + 'v4.trail', cov: p + 'v4.cov', start: p + 'v5.start', flip: p + 'v5.flip', sides: p + 'v5.sides', sess: p + 'v5.sess', pre: p + 'v5.preload' }; }
+function routeKeys(id) { const p = 'snowroute.' + id + '.'; return { done: p + 'v2', times: p + 'v2.times', hist: p + 'v2.history', notes: p + 'v4.notes', via: p + 'v4.via', trail: p + 'v4.trail', cov: p + 'v4.cov', start: p + 'v5.start', flip: p + 'v5.flip', sides: p + 'v5.sides', sess: p + 'v5.sess', pre: p + 'v5.preload', snap: p + 'v5.snap', mig: p + 'v2.migrated' }; } // Beta 1.94 (deep audit SR-193-02/03): two slot-local records join the layout - 'snap' is the running clean's persisted pre-Start board (Start writes it, Finish/Cancel delete it; transient, never backed up, not in ROUTE_FIELDS) and 'mig' is the legacy migration's explicit completion marker (see migrateLegacyRoute). Neither is a backup field.
 const LS_GLOBAL = { night: 'snowroute.v2.night', nightExp: 'snowroute.v2.nightExp', exp: 'snowroute.v5.export', prep: 'snowroute.prep.v1' };
-const LEGACY_KEYS = { done: 'snowroute.v2', times: 'snowroute.v2.times', hist: 'snowroute.v2.history', notes: 'snowroute.v4.notes', via: 'snowroute.v4.via', trail: 'snowroute.v4.trail', cov: 'snowroute.v4.cov', start: 'snowroute.v5.start', flip: 'snowroute.v5.flip', sides: 'snowroute.v5.sides', sess: 'snowroute.v5.sess' };
+const LEGACY_KEYS = { done: 'snowroute.v2', times: 'snowroute.v2.times', hist: 'snowroute.v2.history', notes: 'snowroute.v4.notes', via: 'snowroute.v4.via', trail: 'snowroute.v4.trail', cov: 'snowroute.v4.cov', start: 'snowroute.v5.start', flip: 'snowroute.v5.flip', sides: 'snowroute.v5.sides', sess: 'snowroute.v5.sess', snap: 'snowroute.v5.snap' }; // snap rides here too so LS.snap is defined on a legacy-fallback boot (the pre-1.76 app never wrote one - the key is simply absent there, which the cancel path already treats as 'no snapshot')
 const ROUTE_FIELDS = ['done', 'times', 'hist', 'notes', 'via', 'trail', 'cov', 'start', 'flip', 'sides', 'sess'];
 let LS = { ...routeKeys('5w'), ...LS_GLOBAL };
-function migrateLegacyRoute(id) { // one-time, 5W only: copy -> verify per key; any failure wipes the partial copy and reports false (caller reads the legacy keys for this boot and the move retries next boot). The legacy keys themselves are never deleted - they stay as the fallback copy.
+function migrateLegacyRoute(id) { // one-time, 5W only. Beta 1.94 (deep audit SR-193-03): the COMMIT RECORD is the explicit marker key (rk.mig), never field presence. The 1.93 parity gate (R04) could not tell an interrupted copy from a legitimately partial slot - sides restored from a backup, no history yet - and its retry recopied legacy sides OVER the newer restored ones. Now: with the marker absent, the copy fills ONLY fields the slot lacks (a present slot field is never overwritten), each fill verified by read-back; any failure reports false and the caller reads the legacy keys for this boot - verified fills already landed may stay, since without the marker they are never mistaken for a completed move, and each is an exact copy of the legacy value. Parity is re-checked before the marker is written. The legacy keys themselves are never deleted - they stay as the fallback copy.
   if (id !== '5w') return true;
   const rk = routeKeys(id);
+  if (lsGet(rk.mig) !== null) return true; // the move committed on an earlier boot - the slot is never re-examined against legacy again
   if (lsGet(LEGACY_KEYS.sides) === null) return true; // nothing legacy to move
-  let slotComplete = lsGet(rk.sides) !== null;
-  if (slotComplete) { for (const f of ROUTE_FIELDS) { if (lsGet(LEGACY_KEYS[f]) !== null && lsGet(rk[f]) === null) { slotComplete = false; break; } } } // Beta 1.93 (follow-up audit R04): sides' mere presence is not a commit - a slot missing ANY field legacy holds is a partial copy (e.g. a failed cleanup left it behind), so the verified copy below runs again instead of adopting it
-  if (slotComplete) return true;
-  const copied = [];
-  for (const f of ROUTE_FIELDS) { const raw = lsGet(LEGACY_KEYS[f]); if (raw === null) continue; if (!lsSet(rk[f], raw) || lsGet(rk[f]) !== raw) { const wipe = ['sides', f, ...copied]; for (const c of wipe) lsDel(rk[c]); if (lsGet(rk.sides) !== null) lsDel(rk.sides); return false; } copied.push(f); } // Beta 1.92 (audit F08): the cleanup wipes sides FIRST and re-checks it - a surviving rk.sides would make the next boot mistake this partial slot for a completed migration
+  for (const f of ROUTE_FIELDS) { const raw = lsGet(LEGACY_KEYS[f]); if (raw === null) continue; if (lsGet(rk[f]) !== null) continue; if (!lsSet(rk[f], raw) || lsGet(rk[f]) !== raw) return false; } // fill the gaps only, verified per key
+  for (const f of ROUTE_FIELDS) { if (lsGet(LEGACY_KEYS[f]) !== null && lsGet(rk[f]) === null) return false; } // parity before committing: every field legacy holds must now be present in the slot
+  lsSet(rk.mig, '1'); // commit. If THIS write fails the next boot re-runs the fill (by then a no-op) and retries the marker - safe either way
   return true;
 }
 
@@ -460,10 +459,11 @@ const STREETSET = new Set(STREETNAMES);
 // its slot. The load body is the pre-1.76 eval-time block VERBATIM (same
 // sanitizers, same order), wrapped.
 let doneSet = new Set(), doneTimes = {}, doneVia = {}, notes = {}, history = [], runStart = 0, trail = [], trailSessions = [], coveredIdx = {}, pieces = {}, pieceTimes = {};
-function isFullRun(h) { return !!(h && h.items && Object.keys(h.items).length >= 34); }
+function isFullRun(h) { return !!(h && h.items && Object.keys(h.items).length >= STREETNAMES.length); } // Beta 1.94 (audit F-01): the street count derives from the route's own street list, never a hard-coded 34 - the same derivation replaces every hard-coded count in the app this round
 function trimHistory(list) { const out = list.slice(); while (out.length > 10) { const i = out.findIndex(h => !isFullRun(h)); out.splice(i >= 0 ? i : 0, 1); } return out; }
 function saveHistory() { history = trimHistory(history); return lsSet(LS.hist, JSON.stringify(history)); } // Beta 1.63 (audit F04): the delete-clean handler branches on this
 let startDirty = false; // Beta 1.92 (deep audit F05): a failed start write/delete arms this retry, walked by the flushAux heartbeat until it lands - a stale start key must never resurrect a finished run on the next boot
+let snapDirty = false; // Beta 1.94 (deep audit SR-193-02): the same retry discipline for the persisted pre-Start snapshot (saveSnap, app3) - a failed snapshot write is retried by flushAux until it lands
 function saveStart() { const ok = runStart ? lsSet(LS.start, String(runStart)) : lsDel(LS.start); startDirty = !ok; return ok; } // Beta 1.57: reports its result like every other write, for the saveAll contract
 function streetComplete(n) { const p = pieces[n]; if (!Array.isArray(p)) return doneSet.has(n); return p.every(v => v === 3); }
 function sanitizePieceTimes(raw, count) { // Beta 1.64 (audit F07): only [stringOrNull, stringOrNull] pairs survive - a nested string used to reach applyPiece and throw under strict mode. Accepts the array shape the app writes and the numeric-keyed object a JSON round-trip of a sparse structure can produce. Beta 1.70 (audit A06): indexes are bounded by the street's real stretch count - a corrupt key like 10000 used to inflate a sparse array to that length (~50 KB of nulls per street, worse for larger keys).
@@ -607,6 +607,7 @@ function totalWorkM() { let s = 0; for (const n of STREETNAMES) s += STRETCH[n].
 // suppress the episode warning; everyone else gets one warning per failure
 // episode (saveWarned resets on the next fully successful save).
 let saveFailKey = null, saveWarned = false, saveQuiet = false;
+let primaryDirty = false; // Beta 1.94 (deep audit SR-193-05): a failed saveAll arms this flag and flushAux's heartbeat retries the primary save until it lands. Before 1.94 the heartbeat retried only the auxiliary records and the start key, so a failed metadata write (notes/times/via/done/history) waited for the next incidental save - while Finish's own message promised a retry nothing performed.
 function saveAll() {
   saveFailKey = null;
   if (!lsSet(LS.sides, JSON.stringify({ p: pieces, t: pieceTimes }))) saveFailKey = 'sides';
@@ -619,8 +620,8 @@ function saveAll() {
     if (!saveStart() && !saveFailKey) saveFailKey = 'start';
     if (!lsSet(LS.cov, JSON.stringify(coveredIdx)) && !saveFailKey) saveFailKey = 'coverage';
   }
-  if (saveFailKey) { if (!saveQuiet && !saveWarned) { saveWarned = true; toast('Storage is not saving (' + saveFailKey + ') - export a backup now', 4200); } return false; }
-  saveWarned = false;
+  if (saveFailKey) { primaryDirty = true; if (!saveQuiet && !saveWarned) { saveWarned = true; toast('Storage is not saving (' + saveFailKey + ') - export a backup now', 4200); } return false; }
+  saveWarned = false; primaryDirty = false;
   return true;
 }
 // Aux flush (production model): the trail JSON is the big write (~250 KB at cap) - at most every 45 s while
@@ -636,6 +637,8 @@ function flushAux(force) {
   if (trailDirty && (force || Date.now() - lastTrailSave > 45000) && saveTrail()) { trailDirty = false; lastTrailSave = Date.now(); }
   if (sessDirty && saveSess()) sessDirty = false;
   if (startDirty) saveStart(); // Beta 1.92 (audit F05): saveStart re-arms the flag itself on failure
+  if (snapDirty && typeof saveSnap === 'function') saveSnap(); // Beta 1.94 (SR-193-02): the cancel snapshot retries on the same heartbeat (saveSnap lives in app3 beside runSnap; the typeof probe keeps this safe in any partial-load state)
+  if (primaryDirty) saveAll(); // Beta 1.94 (SR-193-05): a failed primary save retries here - saveAll clears the flag itself when a save lands whole
 }
 setInterval(() => { flushAux(false); themeTick(); }, 15000); // Beta 1.77: the same 15 s heartbeat also walks the day/night cycle across its boundaries
 document.addEventListener('visibilitychange', () => { if (document.visibilityState === 'hidden') flushAux(true); });
@@ -2689,7 +2692,7 @@ function markDone(name, via, at) { // production contract: whole street done; si
   pieceTimes[name] = STRETCH[name].parts.map((_, i) => { const pr = Array.isArray(cur[i]) ? cur[i] : [null, null]; return [pr[0] || mts, pr[1] || mts]; });
   doneSet.add(name); doneTimes[name] = mts; doneVia[name] = via || 'tap';
   finishChange();
-  toast('✓ ' + name + ' · ' + fmtClock(new Date(mts)) + (doneSet.size === 34 ? ' — ALL 34 DONE' : ''));
+  toast('✓ ' + name + ' · ' + fmtClock(new Date(mts)) + (doneSet.size === STREETNAMES.length ? ' — ALL ' + STREETNAMES.length + ' DONE' : '')); // Beta 1.94 (audit F-01): the total derives from the route's street list
 }
 function markUndone(name) {
   pieces[name] = STRETCH[name].parts.map(() => 0);
@@ -2734,7 +2737,7 @@ $('selNote').addEventListener('click', () => { if (!sel || !tapGuard('selNote'))
 function updateCount() {
   const n = STREETNAMES.filter(streetComplete).length;
   const pct = Math.round(workDoneM() / totalWorkM() * 100);
-  $('countTxt').textContent = n + ' of 34 · ' + pct + '%'; $('countFill').style.width = (workDoneM() / totalWorkM() * 100) + '%'; // the meter fills with the same work fraction the % is computed from
+  $('countTxt').textContent = n + ' of ' + STREETNAMES.length + ' · ' + pct + '%'; $('countFill').style.width = (workDoneM() / totalWorkM() * 100) + '%'; // the meter fills with the same work fraction the % is computed from. Beta 1.94 (audit F-01): the total derives from the route's street list
   $('stats').textContent = statsLine();
   $('startBtn').style.display = runStart ? 'none' : '';
   $('cancelStartBtn').style.display = runStart ? '' : 'none'; // Beta 1.91: Cancel start is offered for the whole run - it erases the run's records, marks included
@@ -2988,8 +2991,17 @@ makeSheetDraggable($('pacePanel'));
 // badge is a TAB-mode-only signal: at boot nothing is loaded yet, and in
 // 1.76/1.77 the badge render landing mid-exit read as a flicker on the pick
 // (Andrew, live catch). wireRouteRows binds the rows to the mode's chooser.
-function routeRowsHTML() { const tab = $('routeMenu').classList.contains('tab'); return ROUTE_PACKS.map(p => '<button class="routeRow" data-route="' + p.id + '"><span class="routeMeta"><span class="routeName">' + p.name + '</span><span class="routeArea">' + p.area + ' \u00b7 ' + Object.keys(p.roads).length + ' streets</span></span>' + (tab && activeRoute && activeRoute.id === p.id ? '<span class="routeBadge">Currently loaded</span>' : '') + '</button>').join(''); }
-function renderRouteLists() { document.querySelectorAll('.routeList').forEach(el => { el.innerHTML = routeRowsHTML(); }); }
+function routeRowEl(p) { // Beta 1.94 (audit F-04): rows are built as DOM nodes with textContent, never by interpolating pack data into innerHTML - a pack's name/area are data, and the day route creation lands, a typed name must not be able to become markup. The row shape (classes, badge rule) is unchanged; wireRouteRows' container delegation reads data-route as before.
+  const tab = $('routeMenu').classList.contains('tab');
+  const b = document.createElement('button'); b.className = 'routeRow'; b.dataset.route = p.id;
+  const meta = document.createElement('span'); meta.className = 'routeMeta';
+  const nm = document.createElement('span'); nm.className = 'routeName'; nm.textContent = p.name;
+  const ar = document.createElement('span'); ar.className = 'routeArea'; ar.textContent = p.area + ' · ' + Object.keys(p.roads).length + ' streets';
+  meta.append(nm, ar); b.appendChild(meta);
+  if (tab && activeRoute && activeRoute.id === p.id) { const bd = document.createElement('span'); bd.className = 'routeBadge'; bd.textContent = 'Currently loaded'; b.appendChild(bd); }
+  return b;
+}
+function renderRouteLists() { document.querySelectorAll('.routeList').forEach(el => { el.replaceChildren(...ROUTE_PACKS.map(routeRowEl)); }); }
 function wireRouteRows(container, choose) { container.addEventListener('click', e => { const row = e.target.closest('.routeRow'); if (row) choose(row.dataset.route); }); }
 function showRmPane(id) { ['rmMain', 'rmListPane', 'rmCreatePane'].forEach(p => $(p).classList.toggle('on', p === id)); }
 function openRouteMenu() { const rm = $('routeMenu'); closeSheets(); showRmPane('rmMain'); rm.classList.add('tab'); renderRouteLists(); rm.classList.add('open'); }
@@ -3012,7 +3024,7 @@ function refreshAll() { updateCount(); renderPanel(); renderStreets(); }
 
 // ===== PACE (one source) =====
 function refRun() { // newest qualifying clean wins (history is chronological, so search from the end)
-  for (let i = history.length - 1; i >= 0; i--) { const h = history[i]; if (h.items && Object.keys(h.items).length === 34) return h; }
+  for (let i = history.length - 1; i >= 0; i--) { const h = history[i]; if (h.items && Object.keys(h.items).length === STREETNAMES.length) return h; } // Beta 1.94 (audit F-01): full = every street in the route's own list, not a hard-coded 34
   for (let i = history.length - 1; i >= 0; i--) { const h = history[i]; if (h.items && Object.keys(h.items).length >= 5) return h; }
   return null;
 }
@@ -3067,7 +3079,7 @@ function renderPace() {
     let any = 0;
     for (let i = history.length - 1; i >= 0; i--) {
       const d = histDur(history[i]); if (!d) continue;
-      html += '<div class="prow histRow" data-i="' + i + '"><span>' + fmtWhen(history[i].at) + '</span><span>' + fmtDur(d.durMs) + ' · ' + d.count + ' of 34 streets ›</span></div>';
+      html += '<div class="prow histRow" data-i="' + i + '"><span>' + fmtWhen(history[i].at) + '</span><span>' + fmtDur(d.durMs) + ' · ' + d.count + ' of ' + STREETNAMES.length + ' streets ›</span></div>';
       any++;
     }
     if (!any) html += '<div style="font-size:13px;color:var(--ink-dim);padding:4px 2px">No cleans saved yet — when you finish a run and tap Finish, it lands here with its total time.</div>';
@@ -3189,8 +3201,13 @@ async function syncWake() {
 }
 document.addEventListener('visibilitychange', syncWake);
 function noteSessionStart() { const s = Math.floor(runStart / 1000); if (trailSessions[trailSessions.length - 1] !== s) { trailSessions.push(s); if (saveSess()) return true; sessDirty = true; return false; } return true; } // Beta 1.71 (audit B02): record the session boundary the moment the clean starts - undo restores the original runStart, so a resumed run correctly adds no new marker. Beta 1.73 (audit C04): the save result is RETURNED and a failure arms the flushAux retry - 1.71 dropped it, so a failed marker write was silent and a reload could join two cleans in the GPX export
-let runSnap = null; // Beta 1.91: the board exactly as it was when Start was pressed - Cancel restores it, so a cancelled run erases ONLY what the run itself recorded (marks made before Start are not the run's to erase). In-memory: after a reload mid-run there is no snapshot and Cancel falls back to wiping the board.
-function startClean() { runSnap = { pieces: JSON.parse(JSON.stringify(pieces)), pieceTimes: JSON.parse(JSON.stringify(pieceTimes)), done: [...doneSet], times: { ...doneTimes }, via: { ...doneVia }, cov: JSON.parse(JSON.stringify(coveredIdx)) }; runStart = Date.now(); const okSess = noteSessionStart(); const okStart = saveAll(); startGps(true); updateCount(); syncWake(); if (okStart && okSess) toast('Clean started · ' + fmtClock(new Date())); else if (!okStart) toast('Clean started — warning: the run state could not be saved (storage problem)', 4200); else toast('Clean started — warning: the session marker could not be saved; it will keep retrying', 4200); drawTrail(true); checkStale(); } // Beta 1.73 (audit C04): the marker save is part of the start's honesty check, not a silent side write // Beta 1.63 (audit F04): the clean still starts - he is standing in the snow - but the message stops claiming a saved state that does not exist
+let runSnap = null; // Beta 1.91: the board exactly as it was when Start was pressed - Cancel restores it, so a cancelled run erases ONLY what the run itself recorded (marks made before Start are not the run's to erase).
+function saveSnap() { // Beta 1.94 (deep audit SR-193-02): the pre-Start board is ALSO persisted (LS.snap, stamped with the run's start time) the moment a clean starts. The in-memory runSnap dies with the page; after a reload mid-run, Cancel used to fall back to the mark-stamp journal (1.93 R01) - which cannot see an UNMARK, because unmarking erases the stamp, so a pre-Start side removed during the run stayed removed. The persisted snapshot is the board itself: a resumed Cancel restores it exactly, like a live one. A failed write arms snapDirty and the flushAux heartbeat retries (app1), on the same discipline as the start key and the session markers.
+  if (!runSnap || !runStart) { snapDirty = false; return true; }
+  const ok = lsSet(LS.snap, JSON.stringify({ at: runStart, pieces: runSnap.pieces, pieceTimes: runSnap.pieceTimes, done: runSnap.done, times: runSnap.times, via: runSnap.via, cov: runSnap.cov }));
+  snapDirty = !ok; return ok;
+}
+function startClean() { runSnap = { pieces: JSON.parse(JSON.stringify(pieces)), pieceTimes: JSON.parse(JSON.stringify(pieceTimes)), done: [...doneSet], times: { ...doneTimes }, via: { ...doneVia }, cov: JSON.parse(JSON.stringify(coveredIdx)) }; runStart = Date.now(); const okSnap = saveSnap(); const okSess = noteSessionStart(); const okStart = saveAll(); startGps(true); updateCount(); syncWake(); if (okStart && okSess && okSnap) toast('Clean started · ' + fmtClock(new Date())); else if (!okStart) toast('Clean started — warning: the run state could not be saved (storage problem)', 4200); else if (!okSess) toast('Clean started — warning: the session marker could not be saved; it will keep retrying', 4200); else toast('Clean started — warning: the cancel safety snapshot could not be saved; it will keep retrying', 4200); drawTrail(true); checkStale(); } // Beta 1.73 (audit C04): the marker save is part of the start's honesty check, not a silent side write // Beta 1.63 (audit F04): the clean still starts - he is standing in the snow - but the message stops claiming a saved state that does not exist
 // Beta 1.91 (Andrew): Cancel start erases everything the run recorded - its trail points, its session
 // marker, any sides marked during it, its coverage and suggestions - and stores nothing. Only Finish
 // stores a run. (Supersedes the Beta 1.70 A04 call that kept the trail as history - Andrew's word.)
@@ -3201,13 +3218,18 @@ function cancelStart() {
     trail = trail.filter(p => (p[2] || 0) < startSec);
     trailSessions = trailSessions.filter(s => s !== startSec);
     if (runSnap) { pieces = runSnap.pieces; pieceTimes = runSnap.pieceTimes; doneSet = new Set(runSnap.done); doneTimes = runSnap.times; doneVia = runSnap.via; coveredIdx = runSnap.cov; }
-    else { // Beta 1.93 (follow-up audit R01): no snapshot (the app reloaded mid-run) - the mark stamps are the run's journal: revert ONLY sides stamped at or after Start. Anything older is pre-Start progress and is not this run's to erase; the 1.91 full-board wipe could destroy it. Coverage is left as-is here (GPS-derived, auxiliary; the trail wipe above is the run's record).
-      for (const n of STREETNAMES) { const P = pieces[n], T = pieceTimes[n] || {}; for (let i = 0; i < P.length; i++) { const st = T[i] || [null, null]; if ((P[i] & 1) && st[0] && Date.parse(st[0]) >= runStart) { P[i] &= ~1; st[0] = null; } if ((P[i] & 2) && st[1] && Date.parse(st[1]) >= runStart) { P[i] &= ~2; st[1] = null; } } }
-      doneSet = new Set(STREETNAMES.filter(streetComplete));
-      for (const k of Object.keys(doneTimes)) if (!doneSet.has(k)) delete doneTimes[k];
-      for (const k of Object.keys(doneVia)) if (!doneSet.has(k)) delete doneVia[k];
-      coveredIdx = {}; // coverage cannot be attributed without the snapshot - and unlike hand marks it is GPS-derived and re-earns itself as he drives; drive143 C1 holds this line
+    else { // No in-memory snapshot (the app reloaded mid-run). Beta 1.94 (deep audit SR-193-02): the PERSISTED snapshot Start wrote (LS.snap, stamped with this run's start) restores the pre-Start board exactly - including a pre-Start side that was UNMARKED during the run, which the 1.93 stamp journal could not see (unmarking erases the stamp). Only when no usable persisted snapshot exists (written before 1.94, or its write never landed) does the 1.93 journal fallback below run: revert ONLY sides stamped at or after Start - anything older is pre-Start progress and is not this run's to erase; the 1.91 full-board wipe could destroy it.
+      const persisted = parseJ(lsGet(LS.snap), null);
+      if (persisted && persisted.at === runStart && persisted.pieces && typeof persisted.pieces === 'object' && persisted.pieceTimes && typeof persisted.pieceTimes === 'object') { pieces = persisted.pieces; pieceTimes = persisted.pieceTimes; doneSet = new Set(Array.isArray(persisted.done) ? persisted.done : []); doneTimes = (persisted.times && typeof persisted.times === 'object') ? persisted.times : {}; doneVia = (persisted.via && typeof persisted.via === 'object') ? persisted.via : {}; coveredIdx = (persisted.cov && typeof persisted.cov === 'object') ? persisted.cov : {}; }
+      else {
+        for (const n of STREETNAMES) { const P = pieces[n], T = pieceTimes[n] || {}; for (let i = 0; i < P.length; i++) { const st = T[i] || [null, null]; if ((P[i] & 1) && st[0] && Date.parse(st[0]) >= runStart) { P[i] &= ~1; st[0] = null; } if ((P[i] & 2) && st[1] && Date.parse(st[1]) >= runStart) { P[i] &= ~2; st[1] = null; } } }
+        doneSet = new Set(STREETNAMES.filter(streetComplete));
+        for (const k of Object.keys(doneTimes)) if (!doneSet.has(k)) delete doneTimes[k];
+        for (const k of Object.keys(doneVia)) if (!doneSet.has(k)) delete doneVia[k];
+        coveredIdx = {}; // coverage cannot be attributed without a snapshot - and unlike hand marks it is GPS-derived and re-earns itself as he drives; drive143 C1 holds this line
+      }
     }
+    lsDel(LS.snap); snapDirty = false; // the run is cancelled - its snapshot goes with it (a stale one could never match a future run's start stamp, but there is no reason to keep it)
     trailDirty = true; sessDirty = true;
   }
   runSnap = null;
@@ -3245,7 +3267,7 @@ $('resetBtn').addEventListener('click', () => {
   if (!tapGuard('resetBtn')) return;
   const nDone = doneSet.size, nNotes = Object.keys(notes).length;
   $('finMsg').textContent = (nDone || nNotes)
-    ? (nDone + ' of 34 streets cleaned' + (nNotes ? ', notes on ' + nNotes + ' street' + (nNotes === 1 ? '' : 's') : '') + '. The clean is saved to Previous cleans with its notes, and the board clears for the next clean.' + (nDone < 3 ? ' Careful: under 3 streets, so this will clear WITHOUT being saved.' : ''))
+    ? (nDone + ' of ' + STREETNAMES.length + ' streets cleaned' + (nNotes ? ', notes on ' + nNotes + ' street' + (nNotes === 1 ? '' : 's') : '') + '. The clean is saved to Previous cleans with its notes, and the board clears for the next clean.' + (nDone < 3 ? ' Careful: under 3 streets, so this will clear WITHOUT being saved.' : ''))
     : 'Nothing is marked yet. Finishing just clears the board - nothing will be saved.';
   $('finModal').classList.remove('hidden');
 });
@@ -3322,6 +3344,7 @@ function finishRun() {
     else toast('Storage failure — finish stopped, but the rollback could not be verified. Export a backup now', 6000);
     return;
   }
+  lsDel(LS.snap); snapDirty = false; // Beta 1.94 (SR-193-02): the run is finished - its cancel snapshot goes with it. Ungated on purpose: a leftover snapshot is stamped with THIS run's start, so it can never match a future run, and the next Start overwrites it anyway
   if (archiving) history = newHist;
   undoSnap = { done: [...doneSet], times: { ...doneTimes }, via: { ...doneVia }, notes: JSON.parse(JSON.stringify(notes)), pieces: JSON.parse(JSON.stringify(pieces)), pieceTimes: JSON.parse(JSON.stringify(pieceTimes)), runStart, cov: JSON.parse(JSON.stringify(coveredIdx)), hist: prevHist.slice(), gpsWas: gpsFromRun };
   doneSet = new Set(); doneTimes = {}; doneVia = {}; notes = {}; runStart = 0; runSnap = null; coveredIdx = {}; suggested = new Set(); $('suggest').classList.add('hidden'); // Beta 1.70 (audit A04): the suggestion set is run-scoped too - finishRun used to clear the coverage but keep the set, so suggested streets never suggested again
@@ -3344,6 +3367,19 @@ function doUndo() {
   // instead of half-undoing.
   if (!lsSet(LS.hist, JSON.stringify(undoSnap.hist))) { toast('Storage problem — undo stopped, nothing changed', 3600); return; }
   if (!lsSet(LS.sides, JSON.stringify({ p: undoSnap.pieces, t: undoSnap.pieceTimes }))) { const rbOk = lsSet(LS.hist, JSON.stringify(history)) && lsGet(LS.hist) === JSON.stringify(history); toast(rbOk ? 'Storage problem — undo stopped, nothing changed' : 'Storage failure — undo stopped, but the history restore could not be undone. Export a backup now', rbOk ? 3600 : 6000); return; } // Beta 1.63 (audit F02): the mirror rollback is verified too
+  // Beta 1.94 (deep audit SR-193-04): the restored run's START is a gate too, taken BEFORE the
+  // snapshot below is consumed. It used to ride the saveAll after the state swap (with
+  // undoSnap already nulled), so a failed start write plus a reload restored the board but
+  // lost the run itself - marks with no run to finish or cancel. A failure here rolls BOTH
+  // gated writes back (each checked by read-back, as elsewhere) and returns with the undo
+  // still on offer: nothing half-committed.
+  const startOk = undoSnap.runStart ? (lsSet(LS.start, String(undoSnap.runStart)) && lsGet(LS.start) === String(undoSnap.runStart)) : lsDel(LS.start);
+  if (!startOk) {
+    const rbHist = lsSet(LS.hist, JSON.stringify(history)) && lsGet(LS.hist) === JSON.stringify(history);
+    const rbSides = lsSet(LS.sides, JSON.stringify({ p: pieces, t: pieceTimes })) && lsGet(LS.sides) === JSON.stringify({ p: pieces, t: pieceTimes });
+    toast((rbHist && rbSides) ? 'Storage problem — undo stopped, nothing changed' : 'Storage failure — undo stopped, but the rollback could not be verified. Export a backup now', (rbHist && rbSides) ? 3600 : 6000);
+    return;
+  }
   clearTimeout(undoTimer);
   const undoSnapGpsWas = !!undoSnap.gpsWas; // undo restores the pre-finish state: GPS restarts only if it was actually running for the run (a fresh watch's first error toast would otherwise overwrite the 'Finish undone' toast)
   doneSet = new Set(undoSnap.done); doneTimes = undoSnap.times; doneVia = undoSnap.via; notes = undoSnap.notes || {}; pieces = undoSnap.pieces; pieceTimes = undoSnap.pieceTimes; runStart = undoSnap.runStart; coveredIdx = undoSnap.cov;
@@ -3624,7 +3660,7 @@ function fmtStamp(iso) { const d = new Date(iso); return isNaN(d) ? '' : d.toLoc
 function buildReport() {
   const byTime = m => (a, b) => String(m[a] || '').localeCompare(String(m[b] || ''));
   const ts = [...doneSet].map(n => Date.parse(doneTimes[n])).filter(t => !isNaN(t)).sort((a, b) => a - b);
-  const L = ['Snow Route — snow log', 'Exported: ' + fmtStamp(new Date().toISOString()), 'Completed: ' + doneSet.size + ' of 34'];
+  const L = ['Snow Route — snow log', 'Exported: ' + fmtStamp(new Date().toISOString()), 'Completed: ' + doneSet.size + ' of ' + STREETNAMES.length]; // Beta 1.94 (audit F-01): the total derives from the route's street list
   if (ts.length) {
     const startMs = (runStart && runStart <= ts[0]) ? runStart : ts[0]; // Beta 1.71 (audit B05): one start for the whole log - the real clean start when it is recorded, the first completion only as the fallback for states that never recorded one. The 1.70 round had aligned the distance to the real start but left Started/Duration on the first completion, so the log disagreed with itself
     L.push('Started: ' + fmtStamp(new Date(startMs).toISOString()) + '   Last: ' + fmtStamp(new Date(ts[ts.length - 1]).toISOString()) + '   Duration: ' + fmtDur(ts[ts.length - 1] - startMs));
@@ -3673,6 +3709,13 @@ $('xFile').addEventListener('change', async () => { const f = $('xFile').files &
 function dl(blob, name) { const a = document.createElement('a'); a.href = URL.createObjectURL(blob); a.download = name; document.body.appendChild(a); a.click(); setTimeout(() => { URL.revokeObjectURL(a.href); a.remove(); }, 400); }
 function backupObj() { // Beta 1.76: format v2 - routes carry their own slots ({routes: {id: {field: raw}}}) and the night preference rides at top level. Reads stay RAW (Beta 1.48, audit B04): a failed read fails the whole export (null) instead of producing a valid-looking backup with a piece silently missing.
   flushAux(true); // Beta 1.92 (deep audit F04): flush the buffered trail/coverage first - a backup must not lag the work it claims to hold
+  // Beta 1.94 (deep audit SR-193-01): the PRIMARY records get the same reconciliation the aux
+  // records got in 1.93 (R02). The export reads the persisted records raw, so when the last
+  // saveAll had failed, a backup used to ship the OLD board as current - silently, in a
+  // valid-looking file. Attempt the verified save of the in-memory board first; if the
+  // primary records still cannot be persisted, refuse the export (null), exactly like R02.
+  // Quiet on purpose: the caller's 'could not be read' message is the honest report here.
+  if (routeLoaded) { saveQuiet = true; const okPrim = saveAll(); saveQuiet = false; if (!okPrim) return null; }
   if (trailDirty || auxDirty || sessDirty) return null; // Beta 1.93 (follow-up audit R02): the flush did not land - refuse the export (the caller's 'could not be read' message) rather than ship a valid-looking backup with stale trail/coverage inside
   const routes = {};
   for (const p of ROUTE_PACKS) { const rk = routeKeys(p.id); const data = {}; for (const f of ROUTE_FIELDS) { const key = (activeRoute && p.id === activeRoute.id && LS[f] !== rk[f]) ? LS[f] : rk[f]; let v = null; try { v = localStorage.getItem(key); } catch (e) { return null; } if (v != null) data[f] = v; } if (Object.keys(data).length) routes[p.id] = data; } // Beta 1.92 (deep audit F02): the ACTIVE route exports from the key mapping it is actually running on - on a legacy-fallback boot (migration failed) LS points at the legacy keys, and reading the fresh slot would emit a valid-looking EMPTY backup
@@ -3752,6 +3795,13 @@ function restoreBackup(parsed) { // production doRestore semantics: validate EVE
       entries.push([rk.sides, JSON.stringify({ p: P, t: T })]); // Beta 1.93 (follow-up audit R03): ALWAYS write the derived authority when the backup carries done-but-no-sides - an explicitly EMPTY list ('[]') is an intentional empty state, and {} reads back as nothing done; skipping the write used to leave the phone's old sides in charge
     } catch (e) { /* a list that cannot be parsed was already rejected during validation - never invent sides from rubble */ }
   }
+  // Beta 1.94 (audit F-05): count the street names the backup carries that this route does
+  // not know. FIELD_SHAPES validates shapes only, and the loaders drop unknown names
+  // silently on the reload - so a 'successful' restore used to hide the loss. The count
+  // rides the result message below; the restore itself is unchanged.
+  let droppedNames = 0;
+  { const kindByKey = {}; for (const p of ROUTE_PACKS) { const rk = routeKeys(p.id); kindByKey[rk.done] = 'names'; kindByKey[rk.sides] = 'sides'; kindByKey[rk.times] = 'names'; kindByKey[rk.via] = 'names'; kindByKey[rk.notes] = 'names'; kindByKey[rk.cov] = 'names'; kindByKey[rk.hist] = 'hist'; }
+    for (const pair of entries) { const kind = kindByKey[pair[0]]; if (!kind) continue; try { const pv = JSON.parse(pair[1]); if (kind === 'names') { const ns = Array.isArray(pv) ? pv : (pv && typeof pv === 'object' ? Object.keys(pv) : []); for (const n of ns) if (typeof n === 'string' && !STREETSET.has(n)) droppedNames++; } else if (kind === 'sides' && pv && typeof pv === 'object') { for (const src of [pv.p, pv.t]) if (src && typeof src === 'object') for (const n of Object.keys(src)) if (!STREETSET.has(n)) droppedNames++; } else if (kind === 'hist' && Array.isArray(pv)) { for (const h of pv) if (h && h.items && typeof h.items === 'object' && !Array.isArray(h.items)) for (const n of Object.keys(h.items)) if (!STREETSET.has(n)) droppedNames++; } } catch (e) { /* shapes were validated during pushField - an unparseable value was already rejected above */ } } }
   if (!entries.length) { toast('Nothing in that backup to restore', 3000); return; }
   const SCOPE = []; for (const p of ROUTE_PACKS) { const rk = routeKeys(p.id); for (const f of ROUTE_FIELDS) SCOPE.push(rk[f]); } SCOPE.push(LS_GLOBAL.night, LS_GLOBAL.nightExp);
   const snap = {}; let snapOk = true;
@@ -3776,7 +3826,7 @@ function restoreBackup(parsed) { // production doRestore semantics: validate EVE
     }
   }
   restoring = true; trailDirty = false; auxDirty = false; sessDirty = false; // the reload's pagehide flush must not write the old in-memory trail/coverage over the restored data
-  toast('Backup restored — reloading');
+  toast('Backup restored — reloading' + (droppedNames ? ' · ' + droppedNames + ' unknown street name' + (droppedNames === 1 ? '' : 's') + ' in the backup were ignored' : '')); // Beta 1.94 (audit F-05): the drop count is part of the result, not a silent loader detail
   setTimeout(() => location.reload(), 600);
 }
 function doRestore() {
@@ -3834,6 +3884,16 @@ $('xPre').addEventListener('click', async () => {
       }
     }
     const list = [...urls];
+    // Beta 1.94 (audit F-03): the downloaded pack is written into its OWN cache
+    // ('snowroute-offline-v1'), which the service worker serves FIRST for map data and
+    // whose contents the browsing cache's eviction can never touch. Before 1.94 the pack
+    // lived only in 'snowroute-tiles-v1' - the same cache ordinary browsing fills, whose
+    // FIFO eviction (cap 3,000) starts deleting the OLDEST entries once ~2,100 net-new
+    // tiles have been browsed: the pack, silently, oldest first. The worker still
+    // pass-through-caches these fetches into the browsing cache as it always has; once
+    // the pack copy is confirmed below, the duplicate browsing copies are deleted again,
+    // so the pack lives in exactly one place.
+    let packCache = null; try { packCache = await caches.open('snowroute-offline-v1'); } catch (e) { packCache = null; }
     let done = 0, nextU = 0;
     // Beta 1.87 (Andrew's request): a slim green progress bar under the buttons, and the
     // count SWEEPS up to the real number instead of jumping - the five workers finish
@@ -3847,12 +3907,13 @@ $('xPre').addEventListener('click', async () => {
     const paint = () => { fill.style.width = (list.length ? shown / list.length * 100 : 0) + '%'; st.textContent = 'Downloading… ' + shown + '/' + list.length; };
     bar.classList.add('on'); paint();
     const sweep = setInterval(() => { if (shown < done) { shown = Math.min(done, shown + Math.max(1, Math.ceil((done - shown) / 5))); paint(); } }, 30);
-    const preFetch = async (u) => { const ctl = new AbortController(); const to = setTimeout(() => ctl.abort(), 30000); try { await fetch(u, { mode: 'cors', signal: ctl.signal }); } catch (e) { /* failures and timeouts simply never confirm below */ } clearTimeout(to); }; // Beta 1.92 (audit F07): one stalled file gives up at 30 s instead of holding the whole job open forever
+    const preFetch = async (u) => { const ctl = new AbortController(); const to = setTimeout(() => ctl.abort(), 30000); try { const res = await fetch(u, { mode: 'cors', signal: ctl.signal }); if (res && res.ok && packCache) { try { await packCache.put(u, res.clone()); } catch (e) { /* a failed pack write simply never confirms in the count below */ } } } catch (e) { /* failures and timeouts simply never confirm below */ } clearTimeout(to); }; // Beta 1.92 (audit F07): one stalled file gives up at 30 s instead of holding the whole job open forever. Beta 1.94 (F-03): a good response is ALSO stored into the pack cache by the page itself - the worker's pass-through copy in the browsing cache is the duplicate that gets cleaned up below, never the guarantee
     const preWorker = async () => { while (nextU < list.length) { const u = list[nextU++]; await preFetch(u); done++; } }; // Beta 1.50 (audit P07): 894 files strictly one at a time was the slowest single wait in the app - five at a time (bounded, never unlimited); same list, same honest confirmed count below
     await Promise.all([preWorker(), preWorker(), preWorker(), preWorker(), preWorker()]);
     clearInterval(sweep); shown = done; paint();
     let saved = 0;
-    for (const u of list) { try { if (await caches.match(u)) saved++; } catch (e) {} } // Stage 2 (audit G-5): report only resources CONFIRMED in the offline cache
+    for (const u of list) { try { if (packCache ? await packCache.match(u) : await caches.match(u)) saved++; } catch (e) {} } // Stage 2 (audit G-5): report only resources CONFIRMED in the offline cache. Beta 1.94 (F-03): the confirmation reads the PACK cache - a file that only reached the browsing cache does not count as saved, because the eviction could still take it
+    if (packCache) { try { const tc = await caches.open('snowroute-tiles-v1'); for (const u of list) await tc.delete(u); } catch (e) {} } // Beta 1.94 (F-03): the worker's pass-through copies of the pack leave the browsing cache - the pack lives in exactly one place, and the browsing cache goes back to holding only what was actually browsed
     fill.style.width = (list.length ? saved / list.length * 100 : 0) + '%'; // the bar settles on the CONFIRMED fraction, matching the line below
     lsSet(LS.pre, JSON.stringify({ at: Date.now(), saved, total: list.length }));
     st.textContent = 'Offline maps: saved ' + saved + ' of ' + list.length + ' files (tiles are kept by the offline cache)';
@@ -3956,6 +4017,24 @@ if ('serviceWorker' in navigator) {
     } catch (e) { window.__warm = 'error:' + (e && e.message || e); }
   }).catch(() => { window.__warm = 'no-worker'; });
 }
+// Beta 1.94 (audit F-03, one-time migration): installs that downloaded the offline pack
+// before 1.94 hold it in the browsing cache ('snowroute-tiles-v1'), where the tile
+// eviction can still eat it. While a preload record exists and the pack cache is still
+// empty, copy the browsing cache's contents into the pack cache ('snowroute-offline-v1')
+// so the protection applies without a re-download; a flag key ends the migration. After
+// it, the pack cache is the pack's only home (new downloads write there directly and
+// clean their browsing duplicates up). Best-effort: a failed copy retries on the next
+// boot, and a fresh Download offline maps always rebuilds the pack cache directly.
+(async () => {
+  try {
+    if (!('caches' in window)) return;
+    if (lsGet('snowroute.v5.packmig')) return;
+    if (!parseJ(lsGet(LS.pre), null)) return; // no pack was ever downloaded on this install
+    const oc = await caches.open('snowroute-offline-v1');
+    if ((await oc.keys()).length === 0) { const tc = await caches.open('snowroute-tiles-v1'); for (const rq of await tc.keys()) { const res = await tc.match(rq); if (res) { try { await oc.put(rq.url, res); } catch (e) {} } } }
+    lsSet('snowroute.v5.packmig', '1');
+  } catch (e) { /* the migration never blocks the boot */ }
+})();
 // Beta 1.18 (Andrew's phone report): the on-screen keyboard shrinks the VISIBLE screen
 // (visualViewport) and iOS pans the page to the focused note box, stranding the header
 // and menus off-screen - and it does not pan back. Track the visible screen in CSS vars

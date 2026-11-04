@@ -18,6 +18,8 @@ on:
   schedule:
     - cron: '23 7 * * *'
   workflow_dispatch:
+permissions:
+  contents: read # Beta 1.94 (audit F-08): the workflow only checks out and tests - it never needs write access to the repository
 concurrency:
   # Branch/PR runs cancel superseded runs on the same ref; main runs never
   # cancel each other (unique group per run).
