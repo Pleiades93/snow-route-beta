@@ -67,7 +67,7 @@ non-full runs first (full = all 34 streets).
 
 ## Backup envelope
 
-**v2 (current):** `{app: 'snowroute-backup', v: 2, at, routes, night?}` where
+**v2 (current):** `{app: 'snowroute-backup', v: 2, at, routes, night?, nightExp?}` where
 `routes` maps each route id to an object of field name → raw stored string,
 the field names being `done, times, hist, notes, via, trail, cov, start,
 flip, sides, sess` (the 11 stored fields; the per-route preload record is
