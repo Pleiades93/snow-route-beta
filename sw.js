@@ -4,7 +4,7 @@
 // the SAME folder as index.html, over https. Without it the page still works
 // online. The activate step deletes this app's older caches (and, once, the
 // pre-rename beta caches) so no stale page survives an update.
-const CACHE = 'snowroute-shell-v1', TILES = 'snowroute-tiles-v1', MAX_TILES = 3000;   // App identity: own cache names - production and this app share an origin (same Pages domain), and 'snowroute-' does not match production's 'snow5w-' cleanup prefix, so neither app's worker can delete the other's caches
+const CACHE = 'snowroute-shell-v1', TILES = 'snowroute-tiles-v1', OFFLINE = 'snowroute-offline-v1', MAX_TILES = 3000;   // App identity: own cache names - production and this app share an origin (same Pages domain), and 'snowroute-' does not match production's 'snow5w-' cleanup prefix, so neither app's worker can delete the other's caches. Beta 1.94 (audit F-03): OFFLINE is the downloaded map pack's own cache - mapFetch checks it FIRST for map data, and the browsing cache's FIFO eviction (MAX_TILES, in bumpTileCount) only ever receives the TILES cache, so the pack the operator downloaded can no longer be silently evicted by ordinary browsing
 // SEC-1 (external audit, 2026-10-27): the library files are cached ONLY
 // through integrity-checked fetches. The old c.add(url) stored ANY ok
 // response - a captive-portal page cached as maplibre-gl.js would then be
@@ -28,7 +28,7 @@ self.addEventListener('install', e => {
 });
 self.addEventListener('activate', e => {
   // one-time cleanup: the two exact legacy names below are the pre-rename beta caches
-  e.waitUntil(caches.keys().then(ks => Promise.all(ks.filter(k => (k.startsWith('snowroute-') || k === 'snow5wbeta1-shell-v1' || k === 'snow5wbeta1-tiles-v1') && k !== CACHE && k !== TILES).map(k => caches.delete(k))))
+  e.waitUntil(caches.keys().then(ks => Promise.all(ks.filter(k => (k.startsWith('snowroute-') || k === 'snow5wbeta1-shell-v1' || k === 'snow5wbeta1-tiles-v1') && k !== CACHE && k !== TILES && k !== OFFLINE).map(k => caches.delete(k))))
     .then(() => self.clients.claim()));
 });
 async function netFirst(r, cacheName) {   // fresh when the network answers fast, cached otherwise
@@ -100,14 +100,21 @@ async function staleWhileRevalidate(r, cacheName, e) {   // Beta 1.41: answer fr
   const res = await np;
   return res || Response.error();
 }
+async function mapFetch(r, e) { // Beta 1.94 (audit F-03): map data is served from the offline pack cache FIRST - a pack hit needs no network and no strategy race. Only a pack miss falls through to the per-kind strategies in the browsing cache, exactly as before 1.94.
+  const oc = await caches.open(OFFLINE);
+  const pack = await oc.match(r.url || r);
+  if (pack) return pack;
+  const u = new URL(r.url);
+  if (u.pathname.includes('/sprites/') && u.pathname.endsWith('.json')) return staleWhileRevalidate(r, TILES, e);
+  if (u.pathname.endsWith('.json') || u.pathname.includes('/styles/')) return netFirst(r, TILES);
+  return cacheFirst(r, TILES);
+}
 self.addEventListener('fetch', e => {
   const r = e.request;
   if (r.method !== 'GET') return;
   const u = new URL(r.url);
   const mapHost = u.hostname === 'tiles.basemaps.cartocdn.com' || u.hostname === 'protomaps.github.io'; // Beta 1.33: Protomaps tiles (CARTO-hosted) + glyphs/sprites; the styles themselves are embedded in the page
-  if (mapHost && u.pathname.includes('/sprites/') && u.pathname.endsWith('.json')) e.respondWith(staleWhileRevalidate(r, TILES, e));
-  else if (mapHost && (u.pathname.endsWith('.json') || u.pathname.includes('/styles/'))) e.respondWith(netFirst(r, TILES));
-  else if (mapHost) e.respondWith(cacheFirst(r, TILES));
+  if (mapHost) e.respondWith(mapFetch(r, e));
   else if (u.hostname === 'unpkg.com' || u.hostname === 'cdn.jsdelivr.net') e.respondWith(cacheFirst(r, CACHE));
   else if (r.mode === 'navigate' || u.origin === self.location.origin) e.respondWith(netFirst(r, CACHE));
 });

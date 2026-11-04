@@ -10,9 +10,10 @@ the loaders' sanitizers; the slot layout and backup v2 landed in Beta 1.76
 ## Layout: per-route slots + globals (Beta 1.76)
 
 Every route owns a storage slot: `snowroute.<routeId>.` followed by a field
-tail. Route 5W (id `5w`) is the first tenant. Three keys are **global** —
+tail. Route 5W (id `5w`) is the first tenant. A few keys are **global** —
 they describe the app, not a route — and keep their historical names:
-`snowroute.v2.night`, `snowroute.v5.export`, `snowroute.prep.v1`.
+`snowroute.v2.night` (+ its `nightExp` pair), `snowroute.v5.export`,
+`snowroute.prep.v1`, `snowroute.v5.packmig`.
 
 The pre-1.76 layout is the same tails under a bare `snowroute.` prefix
 (e.g. `snowroute.v5.sides`). Those keys are now the **legacy fallback copy**
@@ -33,6 +34,8 @@ for Route 5W (see Migration).
 | `v5.start` | Run start | Raw epoch-milliseconds digit string (not JSON). |
 | `v5.flip` | Legacy flip flag | Retained for format compatibility; unused by the beta (flip was removed in Beta 1.14). Still backed up. |
 | `v5.sides` | **Source of truth for progress** | JSON `{p: {street: [0..3 per stretch]}, t: {street: {stretchIdx: [timeA, timeB]}}}`. Values are bit flags: 1 = side A, 2 = side B, 3 = both. Load normalizes values to 0..3 (audit G-3). |
+| `v5.snap` | Pre-Start snapshot for Cancel (Beta 1.94, audit SR-193-02) | JSON `{at, pieces, pieceTimes, done, times, via, cov}` — the board as Start found it, stamped with the run's start time (`at` === `v5.start`). Written at Start, deleted by Finish and by Cancel. A resumed run's Cancel restores from it when `at` matches the live run; it is transient working state — not backed up, not migration-copied. |
+| `v2.migrated` | Migration completion marker (Beta 1.94, audit SR-193-03) | The string `'1'`, written only after every legacy field the slot should hold is verified present in it (see Migration). Its presence is the ONLY thing that makes the slot authoritative; without it the legacy keys stay authoritative and the move retries. Not backed up. |
 | `v5.preload` | Preload record `{at, saved, total}` (local only) | Per-route; not backed up. |
 
 Global keys: `snowroute.v2.night` + `snowroute.v2.nightExp` (the theme
@@ -45,17 +48,28 @@ reload inside the session from a cold open — and both are backed up,
 travelling together; an override restored without its expiry is read as
 expiring at the next boundary),
 `snowroute.v5.export` (last export summary; local only, not backed up),
-`snowroute.prep.v1` (offline-prep flag; local only, not backed up).
+`snowroute.prep.v1` (offline-prep flag; local only, not backed up),
+`snowroute.v5.packmig` (Beta 1.94: set once the pre-1.94 downloaded map
+pack has been copied into its own cache — see ARCHITECTURE.md, Offline;
+local only, not backed up).
 
-## Migration: legacy → 5W slot (Beta 1.76, one-time)
+## Migration: legacy → 5W slot (Beta 1.76; commit rule revised Beta 1.94)
 
-On the first `loadRoute('5w')` where the slot's `v5.sides` is absent and the
-legacy `snowroute.v5.sides` exists, the app copies each present legacy field
-raw into the slot, verifying every key by read-back. Any failure deletes the
-partial slot copies and the boot reads the **legacy keys** instead; the move
-retries on the next load. Legacy keys are never deleted — they remain the
-fallback copy. The migration is 5W-only by construction (only 5W has a
-legacy layout). Regression coverage: drive145 N11/N12.
+On `loadRoute('5w')`, the `v2.migrated` marker is the commit record
+(Beta 1.94, audit SR-193-03). Marker present → the slot is authoritative,
+full stop. Marker absent and the legacy `snowroute.v5.sides` exists →
+the app fills ONLY the fields the slot lacks (a field already in the slot
+is never overwritten — a partially-restored slot can hold NEWER data than
+the legacy copy), verifying every fill by read-back; any failed fill
+aborts the move (no marker) and the boot reads the **legacy keys**
+instead. When every legacy field is verified present in the slot, the
+marker is written. Legacy keys are never deleted — they remain the
+fallback copy until the marker exists. Earlier designs wiped partial
+slot copies on failure (1.76) and treated field parity as the commit
+record (1.93, audit R04); both could destroy a newer restored record,
+which is what the marker + fill-only rule exists to prevent. The
+migration is 5W-only by construction (only 5W has a legacy layout).
+Regression coverage: drive145 N11/N12/N12c/N12d/N12e.
 
 ## History entry
 
@@ -63,7 +77,9 @@ legacy layout). Regression coverage: drive145 N11/N12.
 completion ISO time or null; `notes` and `sides` are deep snapshots taken at
 Finish; `path` is the thinned GPS path (optional). An entry archives ONLY when
 a run finishes with ≥ 3 streets; the store caps at 10 entries, evicting
-non-full runs first (full = all 34 streets).
+non-full runs first (full = every street in the route pack — 34 for
+Route 5W; the count is derived from the pack, never restated — Beta 1.94,
+audit F-01).
 
 ## Backup envelope
 
@@ -81,7 +97,14 @@ from `data['snowroute.v2.night']`. **Missing-key policy (both versions):** a
 field absent from the backup leaves the current value untouched on restore.
 A legacy done value that is a bare object migrates to the sides-derived set
 (street-name filtered). A v2 backup naming an unknown route id is rejected
-whole.
+whole. Two Beta 1.94 hardenings: **export** first reconciles the primary
+save (and the auxiliary flush) and fails whole if either cannot land, so a
+backup can never carry a staler board than the one on screen (audit
+SR-193-01, extending 1.93's R02); and a **restore** counts street names
+in the backup that the route does not know and reports the count in its
+result message, instead of the loaders dropping them silently (audit
+F-05). The transient fields (`v5.snap`, `v2.migrated`) are never part of
+a backup.
 
 ## Restore transaction (invariant)
 

@@ -1,5 +1,56 @@
 # Changelog
 
+## Beta 1.94 — 2026-11-04
+
+The double deep-audit round: two independent audits of Beta 1.93, every
+finding adjudicated against the live code, each real one fixed at its
+source. No new features — the recovery cases come first.
+
+- **A backup can no longer ship a stale board (SR-193-01).** If the
+  primary save had failed, the export read the older stored board and
+  handed over a valid-looking backup missing the newest marks. When a
+  save has failed, the export now attempts that save again first and
+  is refused outright if it still cannot land; when no save has
+  failed, the export reads storage as before and writes nothing.
+- **Cancel after a reload restores the exact pre-Start board
+  (SR-193-02).** Start now persists its snapshot. A resumed run's cancel
+  restores from it — including a pre-Start side that was unmarked mid-run,
+  which the 1.93 timestamp journal could not see (unmarking erases the
+  stamp). The journal remains as the fallback when no snapshot exists.
+- **The storage migration can never overwrite newer data (SR-193-03).**
+  Completion is now an explicit marker key, written only after every
+  legacy field is verified present in the slot. A retry fills only the
+  fields the slot lacks — the old parity gate could recopy legacy data
+  over a newer restored record.
+- **Undo gates the run's start time (SR-193-04).** Undoing a finish now
+  writes the restored start time as a gated step before the undo snapshot
+  is consumed; a failed write stops the undo with everything rolled back
+  and the undo still on offer.
+- **Failed saves retry on their own (SR-193-05).** Any failed primary
+  save arms a retry flag that the periodic flush acts on, instead of
+  waiting for the next incidental save.
+- **An empty test run now fails (SR-193-06).** The browser test runner
+  treated a drive that collected zero checks as a pass; it now fails the
+  run and names the empty drive.
+- **The street count is derived, never restated (F-01).** Every place
+  that named the route's street total now reads it from the route pack
+  itself, so a future pack cannot inherit a stale number.
+- **Downloaded offline maps get their own cache (F-03).** The preload
+  pack now lives in a dedicated cache the map's rolling tile cache can
+  never evict; an existing download is carried over automatically on
+  first boot after the update.
+- **Route names are rendered as text, never markup (F-04).** The route
+  menu rows are built as DOM nodes with text content, closing an
+  injection path for a future route pack with markup in its name.
+- **Unknown streets in a backup are counted and reported (F-05).** A
+  restore now tells you how many street names in the backup matched
+  nothing in the route, instead of dropping them silently.
+- **The app source lives in the repo (F-02).** The page is assembled
+  from `parts/` by `scripts/assemble.py`; the assembled file is
+  generated, never hand-edited, and the build proves the two agree.
+- Housekeeping (F-08): the CI workflow now declares read-only
+  permissions.
+
 ## Beta 1.93 — 2026-11-03
 
 The follow-up audit round: seven residual findings from the independent

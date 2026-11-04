@@ -68,6 +68,26 @@ await ev(`__unstub()`);
 await ev(`(() => { doUndo(); return true; })()`); await sleep(300);
 st = await state();
 ok('F5b undo succeeds after storage recovers: run restored, archive un-happened | ' + JSON.stringify(st), st.done === 3 && st.lsHist === 0 && st.label === 'Finish' && /Finish undone/.test(st.toast));
+// F8 (Beta 1.94, deep audit SR-193-04): the restored run's START write is a
+// gate in doUndo, taken BEFORE the snapshot is consumed. It used to ride
+// the post-swap saveAll (snapshot already nulled), so a failed start write
+// plus a reload restored the board but lost the run itself. The run is
+// opened by hand here (runStart + saveAll) rather than via Start, to keep
+// this drive's GPS untouched - Finish and Undo only read the value.
+const f8start = await ev(`(() => { runStart = Date.now(); saveAll(); return runStart; })()`);
+await ev(`(() => { performReset(); return true; })()`); await sleep(300);
+let st8 = await state();
+ok('F8 setup: finish landed with a live run waiting to be restored | ' + JSON.stringify(st8), st8.done === 0 && st8.snap === true && st8.label === 'Undo' && st8.lsHist === 1);
+await ev(`__stub('snowroute.5w.v5.start')`);
+await ev(`(() => { doUndo(); return true; })()`); await sleep(300);
+st8 = await state();
+const f8ls = JSON.parse(await ev(`JSON.stringify({ hist: JSON.parse(localStorage.getItem('snowroute.5w.v2.history') || '[]').length, start: localStorage.getItem('snowroute.5w.v5.start') })`));
+ok('F8 start write fails during undo: undo stopped, STILL on offer, both gated writes rolled back | ' + JSON.stringify(st8) + ' ' + JSON.stringify(f8ls), st8.done === 0 && st8.snap === true && st8.label === 'Undo' && /undo stopped/.test(st8.toast) && f8ls.hist === 1 && f8ls.start === null);
+await ev(`__unstub()`);
+await ev(`(() => { doUndo(); return true; })()`); await sleep(300);
+st8 = await state();
+const f8run = await ev(`runStart`);
+ok('F8b undo succeeds after storage recovers: the run is restored WITH its start time | ' + JSON.stringify(st8), st8.done === 3 && st8.label === 'Finish' && f8run === f8start);
 // F6 (Beta 1.63, audit F02): the ROLLBACK write itself fails - the archive
 // write lands, the authority write fails, and rolling the archive back
 // fails too. The stored history and the stored board now disagree, and
@@ -89,6 +109,19 @@ const delFail = await ev(`(() => { runStart = 0; return saveStart(); })()`);
 await ev(`(() => { Storage.prototype.removeItem = window.__delOrig; return true; })()`);
 const delOk = await ev(`(() => { runStart = 0; return saveStart(); })()`);
 ok('F7 removeItem failure: saveStart reports false; healthy storage reports true | fail ' + delFail + ' ok ' + delOk, delFail === false && delOk === true);
+// F9 (Beta 1.94, deep audit SR-193-05): a failed saveAll arms the primary
+// retry flag; the flushAux heartbeat then lands the save on its own once
+// storage recovers. Before 1.94 a failed metadata write (notes/times/via)
+// waited for the next incidental save - possibly forever under quota.
+// The stub is reinstalled first: F6b's reload wiped the page-side injection
+// (the same trap F1b's comment records).
+await ev(INSTALL_STUB);
+await ev(`__stub('snowroute.5w.v4.notes')`);
+const f9a = JSON.parse(await ev(`JSON.stringify({ ok: saveAll(), dirty: primaryDirty, fk: saveFailKey })`));
+ok('F9a a failed primary save arms the retry flag and names the failed record | ' + JSON.stringify(f9a), f9a.ok === false && f9a.dirty === true && f9a.fk === 'notes');
+await ev(`__unstub()`);
+const f9b = JSON.parse(await ev(`(() => { flushAux(true); return JSON.stringify({ dirty: primaryDirty, stored: localStorage.getItem('snowroute.5w.v4.notes') === JSON.stringify(notes) }); })()`));
+ok('F9b the flush retry lands the failed save once storage recovers | ' + JSON.stringify(f9b), f9b.dirty === false && f9b.stored === true);
 R.exceptions = consoleLog.filter(c => c.type === 'EXCEPTION');
 finish(R, proc);
 

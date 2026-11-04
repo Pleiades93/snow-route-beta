@@ -26,10 +26,11 @@ const origPut = cacheMock.put.bind(cacheMock);
 cacheMock.put = async (r, res) => { if (putThrows) throw new Error('quota'); return origPut(r, res); };
 
 const constLine = sw.split('\n').find(l => l.startsWith('const CACHE'));
-eval(constLine + '\n' + fnSrc + '\nglobalThis.netFirst = netFirst; globalThis.cacheFirst = cacheFirst; globalThis.staleWhileRevalidate = staleWhileRevalidate;');
+eval(constLine + '\n' + fnSrc + '\nglobalThis.netFirst = netFirst; globalThis.cacheFirst = cacheFirst; globalThis.staleWhileRevalidate = staleWhileRevalidate; globalThis.mapFetch = mapFetch;');
 const netFirst = globalThis.netFirst;
 const cacheFirst = globalThis.cacheFirst;
 const staleWhileRevalidate = globalThis.staleWhileRevalidate;
+const mapFetch = globalThis.mapFetch;
 
 const req = new Request('https://example.test/app/');
 const cachedResp = new Response('CACHED-SHELL', { status: 200 });
@@ -168,6 +169,38 @@ check('1.57 seed: counter starts from the real cache size (seed reads the post-p
 delete cacheFirst._n; // worker stopped and restarted by the platform
 await cacheFirst(new Request('https://tiles.basemaps.cartocdn.com/t/new2'), 'snowroute-tiles-v1');
 check('1.57 seed: after a restart the counter re-seeds from the real size (26 stored, +1 = 27)', cacheFirst._n === 27);
+
+// 14. Beta 1.94 (audit F-03): the downloaded offline pack lives in its OWN
+// cache (snowroute-offline-v1). mapFetch serves a pack hit with the network
+// DOWN, and the browsing cache's FIFO eviction (which trims
+// snowroute-tiles-v1 to MAX_TILES) can never reach into the pack cache -
+// before 1.94 the pack shared the browsing cache and ordinary browsing
+// could silently evict the download the operator was relying on. This case
+// needs NAME-AWARE cache mocks; the earlier cases shared one store.
+const namedStores = new Map();
+const namedCache = name => ({
+  async match(r) { const s = namedStores.get(name); const u = typeof r === 'string' ? r : r.url; const hit = s ? s.get(u) : undefined; return hit ? hit.clone() : undefined; }, // real Cache Storage hands back a fresh body per match - clone, or the second read of a stored Response throws
+  async put(r, res) { if (!namedStores.has(name)) namedStores.set(name, new Map()); const u = typeof r === 'string' ? r : r.url; namedStores.get(name).set(u, res); },
+  async keys() { const s = namedStores.get(name); return s ? [...s.keys()].map(u => ({ url: u })) : []; },
+  async delete(r) { const s = namedStores.get(name); const u = typeof r === 'string' ? r : r.url; return s ? s.delete(u) : false; }
+});
+globalThis.caches = { async open(name) { return namedCache(name); } };
+const packTile = new Request('https://tiles.basemaps.cartocdn.com/v/t/15/1/2.mvt');
+namedStores.set('snowroute-offline-v1', new Map([[packTile.url, new Response('PACK-TILE', { status: 200 })]]));
+fetchImpl = async () => { throw new Error('offline'); };
+r = await mapFetch(packTile, null);
+check('F-03 pack hit is served with the network down', (await r.text()) === 'PACK-TILE');
+const floodStore = new Map();
+for (let i = 0; i < 3010; i++) floodStore.set('https://tiles.basemaps.cartocdn.com/flood/' + i, new Response('F'));
+namedStores.set('snowroute-tiles-v1', floodStore);
+fetchImpl = async () => new Response('FRESH-TILE', { status: 200 });
+delete cacheFirst._n; // fresh worker: the eviction counter re-seeds from the flooded cache
+for (let i = 0; i < 14; i++) await cacheFirst(new Request('https://tiles.basemaps.cartocdn.com/fresh/' + i), 'snowroute-tiles-v1'); // 14 puts cross the seeded counter's first batch boundary (3025): the trim fires exactly there - between boundaries the cache may sit up to 24 over the cap by design (Beta 1.50 batching)
+check('F-03 eviction trims the browsing cache back to its cap at the batch boundary', floodStore.size === 3000);
+check('F-03 the pack entry survives browsing-cache eviction', namedStores.get('snowroute-offline-v1').has(packTile.url));
+fetchImpl = async () => { throw new Error('offline'); };
+r = await mapFetch(packTile, null);
+check('F-03 pack hit still served after the eviction ran', (await r.text()) === 'PACK-TILE');
 
 let fail = 0;
 for (const [n, ok] of results) { console.log((ok ? 'PASS' : 'FAIL') + '  ' + n); if (!ok) fail++; }
