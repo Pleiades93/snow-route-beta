@@ -302,9 +302,9 @@ ok('E17b after the kill: persisted run state intact, the never-persisted marker 
 // included) through a catch-all that set the completion flag
 // unconditionally, so a partial copy was marked complete forever.
 try {
-  const sample3 = baseKeys.slice(0, 3).sort();
-  await ev2(`(async () => { const sample = ${JSON.stringify(baseKeys.slice(0, 3))}; const junk = ['https://tiles.basemaps.cartocdn.com/junk/e19-a', 'https://tiles.basemaps.cartocdn.com/junk/e19-b']; await caches.delete('snowroute-offline-v1'); const tc = await caches.open('snowroute-tiles-v1'); for (const u of sample.concat(junk)) await tc.put(u, new Response('x')); localStorage.removeItem('snowroute.v5.packmig'); return true; })()`);
-  await page2.reload({ waitUntil: 'load', timeout: 45000 }).catch(() => {});
+  const sample3 = baseKeys.filter(u => u.includes('tiles.basemaps.cartocdn.com')).slice(0, 3).sort(); // tile URLs only: no spaces/encoding edge (the glyph URLs are stored %20-encoded) and no sprite ambiguity
+  await ev2(`(async () => { const sample = ${JSON.stringify(baseKeys.filter(u => u.includes('tiles.basemaps.cartocdn.com')).slice(0, 3))}; const junk = ['https://tiles.basemaps.cartocdn.com/junk/e19-a', 'https://tiles.basemaps.cartocdn.com/junk/e19-b']; await caches.delete('snowroute-offline-v1'); const tc = await caches.open('snowroute-tiles-v1'); for (const u of sample.concat(junk)) await tc.put(u, new Response('x')); localStorage.removeItem('snowroute.v5.packmig'); return true; })()`);
+  await send('Page.reload', { ignoreCache: false }, PAGE_S); await sleep(1200);
   await sleep(1500);
   await loadRouteE2E();
   await poll2(`(async () => { const oc = await caches.open('snowroute-offline-v1'); return (await oc.keys()).length === 3; })()`, 30000);
@@ -313,7 +313,7 @@ try {
 } catch (e) { ok('E19 pack migration manifest-bounded + verified (Beta 1.95, SR-194-05/06) | threw ' + String(e).slice(0, 150), false); }
 try {
   const hasFn = await ev2(`typeof migratePack === 'function'`);
-  await ev2(`(async () => { const sample = ${JSON.stringify(baseKeys.slice(0, 3))}; await caches.delete('snowroute-offline-v1'); const tc = await caches.open('snowroute-tiles-v1'); for (const u of sample) { if (!(await tc.match(u))) await tc.put(u, new Response('x')); } localStorage.removeItem('snowroute.v5.packmig'); return true; })()`);
+  await ev2(`(async () => { const sample = ${JSON.stringify(baseKeys.filter(u => u.includes('tiles.basemaps.cartocdn.com')).slice(0, 3))}; await caches.delete('snowroute-offline-v1'); const tc = await caches.open('snowroute-tiles-v1'); for (const u of sample) { if (!(await tc.match(u))) await tc.put(u, new Response('x')); } localStorage.removeItem('snowroute.v5.packmig'); return true; })()`);
   await ev2(`(() => { const realOpen = CacheStorage.prototype.open.bind(caches); let n = 0; caches.open = async (name) => { const c = await realOpen(name); if (name !== 'snowroute-offline-v1') return c; return new Proxy(c, { get(t, p) { if (p === 'put') return async (rq, rs) => { n++; if (n === 2) throw new Error('injected pack write failure'); return t.put(rq, rs); }; const v = t[p]; return typeof v === 'function' ? v.bind(t) : v; } }); }; window.__restoreOpen = () => { caches.open = realOpen; }; return true; })()`);
   const r1 = JSON.parse(await ev2(`(async () => { const r = await migratePack(); const oc = await caches.open('snowroute-offline-v1'); return JSON.stringify({ ok: !!(r && r.ok), n: (await oc.keys()).length, flag: localStorage.getItem('snowroute.v5.packmig') }); })()`));
   await ev2(`(() => { window.__restoreOpen(); return true; })()`);

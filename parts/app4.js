@@ -421,7 +421,7 @@ async function migratePack() { // Beta 1.95 (deep audit SR-194-05/06): the one-t
     if (!('caches' in window)) return { ok: false, why: 'nocache' };
     if (!parseJ(lsGet(LS.pre), null)) return { ok: true, skipped: true }; // no pack was ever downloaded on this install
     const list = preloadUrlList();
-    const want = new Set(list);
+    const want = new Set(list.map(u => { try { return new URL(u).href; } catch (e) { return u; } })); // stored cache keys are URL-normalized (the glyph ranges' 'Noto Sans Regular' is stored %20-encoded) - the prune below must compare like with like, or it deletes the pack's own glyphs (the first CI run of 1.95 did exactly that: pack 897 -> 641)
     const oc = await caches.open('snowroute-offline-v1');
     const tc = await caches.open('snowroute-tiles-v1');
     let failed = 0;

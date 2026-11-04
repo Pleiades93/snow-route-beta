@@ -77,8 +77,8 @@ await ev(`(() => { $('setBack').click(); return true; })()`); await sleep(300);
 const T3c4 = JSON.parse(await ev(`(() => JSON.stringify({ title: $('xTitle').textContent }))()`));
 await ev(`(() => { $('setBack').click(); return true; })()`); await sleep(300);
 const T3c5 = JSON.parse(await ev(`(() => JSON.stringify({ title: $('xTitle').textContent }))()`));
-ok('T3c the backup pane is a menu tree exactly as Andrew specced (Beta 1.89): three options, Restore opens Import JSON / Import Text, Import Text opens the box with Import backup under it, Back walks up one level at a time | ' + JSON.stringify({ T3c1, T3c2, T3c3, T3c4, T3c5 }),
-  JSON.stringify(T3c1.opts) === JSON.stringify(['Backup (JSON)', 'Restore backup', 'Download offline maps']) && T3c1.groupShown && T3c1.title === 'Backup' &&
+ok('T3c the backup pane is a menu tree exactly as specced (Beta 1.89; the recovery option added Beta 1.95, SR-194-02): Restore opens Import JSON / Import Text, Import Text opens the box with Import backup under it, Back walks up one level at a time | ' + JSON.stringify({ T3c1, T3c2, T3c3, T3c4, T3c5 }),
+  JSON.stringify(T3c1.opts) === JSON.stringify(['Backup (JSON)', 'Recovery backup (unsaved live data)', 'Restore backup', 'Download offline maps']) && T3c1.groupShown && T3c1.title === 'Backup' &&
   JSON.stringify(T3c2.opts) === JSON.stringify(['Import JSON', 'Import Text']) && T3c2.title === 'Restore' &&
   T3c3.title === 'Import Text' && T3c3.box && T3c3.imp && T3c4.title === 'Restore' && T3c5.title === 'Backup');
 await ev(`(() => { $('setClose').click(); return true; })()`); await sleep(400);
