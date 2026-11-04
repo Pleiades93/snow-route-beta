@@ -218,6 +218,13 @@ locally, first:
    bug's permanent regression test. Current instance:
    `tests/browser/race-loss.mjs` + `selftest-race-loss.mjs` (runs in the
    offline-e2e CI job before the suite; also a snow fix-checks probe).
+   Second instance (Phase 2, 2026-11-04): the app's own judging logic —
+   the trail segment-acceptance rule in `trailSegments` — is proven by
+   `tests/browser/selftest-trail-segments.mjs`, which extracts the shipped
+   functions from the parts and checks them against golden outputs
+   captured from the pre-refactor implementations
+   (`tests/browser/fixtures/trail-golden.json`); runs in the build-and-test
+   CI job, and also a snow fix-checks probe.
 2. **A setup or reset enumerates its blast radius.** Before pushing, list
    the storage keys / caches / state the setup writes or deletes, and the
    keys every later check in the file reads. Overlap outside the check's

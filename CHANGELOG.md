@@ -1,5 +1,8 @@
 # Changelog
 
+## Beta 1.99 — 2026-11-04
+Internal refactor only — no behaviour change (architecture scan Phase 2, candidate C1). The trail segment-acceptance rule (break on a gap over 300 s, a jump over 1000 m, or a recorded session start between two points) existed as three hand-kept copies in trailKm, drawTrail and buildGpx; it now lives in one shared pure function, trailSegments (app1), and all three call it — buildGpx's session-marker pointer walk moved verbatim. Parity is fixture-proven, not asserted: tests/browser/selftest-trail-segments.mjs extracts the shipped functions and checks them against golden outputs captured from the 1.98 implementations (GPX strings byte-equal, distances exactly equal), runs in CI before the browser battery, and fails on a one-second change to the gap constant. drive143's X8 measuring oracle stays independent, as designed.
+
 ## Beta 1.98 — 2026-11-04
 - Dragging the Streets or Pace sheet no longer turns it see-through: while a drag drops the frosted blur (the 1.79 anti-stutter measure), the sheet now wears the solid card colour (new --card-solid, both themes) instead of the near-opaque glass colour.
 

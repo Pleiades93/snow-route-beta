@@ -45,6 +45,8 @@ jobs:
           node-version: '22'
       - name: Service worker tests
         run: node tests/sw.test.mjs
+      - name: Trail segmentation fixtures (test-change gate)
+        run: node tests/browser/selftest-trail-segments.mjs
   browser-tests:
     # Full suite everywhere EXCEPT a push to main (the smoke job takes that).
     if: github.event_name != 'push' || github.ref != 'refs/heads/main'
