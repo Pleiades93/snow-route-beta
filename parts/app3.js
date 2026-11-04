@@ -318,9 +318,9 @@ function thinPath(pts) {
 function trailKm(sinceMs) {
   const sinceSec = Math.floor(sinceMs / 1000); // Beta 1.71 (audit B04): trail timestamps are whole seconds - the boundary is compared at the same precision, or a start mid-second discards the run's first legitimate segment (the map's trail filter has floored its boundary since 1.64)
   let d = 0;
-  for (let i = 1; i < trail.length; i++) {
-    if (trail[i][2] < sinceSec || trail[i - 1][2] < sinceSec || trail[i][2] - trail[i - 1][2] > 300 || distM(trail[i - 1], trail[i]) > 1000) continue; // Beta 1.70 (audit A05): a segment counts only when BOTH endpoints belong to the run. Beta 1.71 (audit B03): a jump over 1000 m is a break, not distance - the same acceptance rule the trail display and the GPX export already apply, so the number and the drawn line can no longer disagree
-    d += distM(trail[i - 1], trail[i]);
+  for (const seg of trailSegments(trail)) for (let i = 1; i < seg.length; i++) { // Beta 1.99 (Phase 2, C1): the break rule (gap > 300 s, jump > 1000 m - audit B03: a break is not distance) lives in trailSegments now; the pairs inside a segment are exactly the pairs the old loop accepted, in the same order
+    if (seg[i][2] < sinceSec || seg[i - 1][2] < sinceSec) continue; // Beta 1.70 (audit A05): a segment counts only when BOTH endpoints belong to the run
+    d += distM(seg[i - 1], seg[i]);
   }
   return d / 1000;
 }
@@ -509,11 +509,7 @@ function drawTrail(force) {
   if (!force && performance.now() - lastTrailDraw < 3000 && pts.length - lastTrailPts < 5) return; // Beta 1.64 (audit 3): the rebuild is O(trail) up to 8000 points - redraw at most every 3 s, or once 5 undrawn points have accumulated, whichever comes first; forced draws (run start, trail clear) ignore the throttle
   lastTrailDraw = performance.now(); lastTrailPts = pts.length;
   const feats = [];
-  if (pts.length > 1) {
-    let seg = pts.length ? [pts[0]] : [];
-    for (let i = 1; i < pts.length; i++) { const gap = pts[i][2] - pts[i - 1][2] > 300 || distM(pts[i - 1], pts[i]) > 1000; if (gap) { if (seg.length > 1) feats.push({ type: 'Feature', properties: {}, geometry: { type: 'LineString', coordinates: seg.map(p => [p[1], p[0]]) } }); seg = [pts[i]]; } else seg.push(pts[i]); }
-    if (seg.length > 1) feats.push({ type: 'Feature', properties: {}, geometry: { type: 'LineString', coordinates: seg.map(p => [p[1], p[0]]) } });
-  }
+  for (const seg of trailSegments(pts)) { if (seg.length > 1) feats.push({ type: 'Feature', properties: {}, geometry: { type: 'LineString', coordinates: seg.map(p => [p[1], p[0]]) } }); } // Beta 1.99 (Phase 2, C1): segmentation by the shared rule in trailSegments (was a private copy of the gap/jump test)
   src.setData({ type: 'FeatureCollection', features: feats });
 }
 function havM(a, b) { const R = 6371000, dLa = (b[0] - a[0]) * Math.PI / 180, dLo = (b[1] - a[1]) * Math.PI / 180; const s = Math.sin(dLa / 2) ** 2 + Math.cos(a[0] * Math.PI / 180) * Math.cos(b[0] * Math.PI / 180) * Math.sin(dLo / 2) ** 2; return 2 * R * Math.asin(Math.sqrt(s)); }

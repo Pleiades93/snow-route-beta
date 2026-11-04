@@ -23,12 +23,9 @@ function buildReport() {
   });
   return L.join('\n');
 }
-function buildGpx() {
-  let g = '<?xml version="1.0" encoding="UTF-8"?>\n<gpx version="1.1" creator="Snow Route Beta"><trk><name>Snow Route trail</name><trkseg>\n';
-  let sessAt = 0; // Beta 1.73 (audit C07): walk the sorted markers with a pointer instead of re-scanning the whole list per point (was O(points x markers)); the split test below is the same predicate. Beta 1.74 (audit D01): a stored trail is not guaranteed ordered (legacy trails, restored backups - the loader sorts the markers, never the points), so when the previous point steps BACKWARD below markers already passed, sessAt re-seeks to the first marker after it before testing; chronological trails never re-seek, so the walk stays linear (drive143 X6/X7 parity checks)
-  for (let i = 0; i < trail.length; i++) { const p = trail[i]; if (i > 0) { if (sessAt > 0 && trailSessions[sessAt - 1] > trail[i - 1][2]) { let lo = 0, hi = sessAt; while (lo < hi) { const mid = (lo + hi) >> 1; if (trailSessions[mid] <= trail[i - 1][2]) lo = mid + 1; else hi = mid; } sessAt = lo; } while (sessAt < trailSessions.length && trailSessions[sessAt] <= trail[i - 1][2]) sessAt++; } if (i > 0 && (p[2] - trail[i - 1][2] > 300 || distM(trail[i - 1], p) > 1000 || (sessAt < trailSessions.length && trailSessions[sessAt] <= p[2]))) g += '</trkseg><trkseg>\n'; g += '<trkpt lat="' + p[0] + '" lon="' + p[1] + '"><time>' + new Date(p[2] * 1000).toISOString() + '</time></trkpt>\n'; } // Beta 1.70 (audit A07): separate sessions get separate segments (same gap rule as the map's trail display) instead of one line stitched across days. Beta 1.71 (audit B02): a recorded session start between two points also splits - exact for cleans recorded since 1.71, heuristic for older trail
-  g += '</trkseg></trk></gpx>';
-  return g;
+function buildGpx() { // Beta 1.99 (Phase 2, C1): segmentation - gap rule (1.70, audit A07: separate sessions get separate segments instead of one line stitched across days), session-start splits (1.71, B02) and the marker pointer walk with its backward re-seek (1.73 C07 / 1.74 D01) - lives in trailSegments (app1) now; this consumer only renders the segments as GPX tracks
+  const pt = p => '<trkpt lat="' + p[0] + '" lon="' + p[1] + '"><time>' + new Date(p[2] * 1000).toISOString() + '</time></trkpt>\n';
+  return '<?xml version="1.0" encoding="UTF-8"?>\n<gpx version="1.1" creator="Snow Route Beta"><trk><name>Snow Route trail</name><trkseg>\n' + trailSegments(trail, trailSessions).map(seg => seg.map(pt).join('')).join('</trkseg><trkseg>\n') + '</trkseg></trk></gpx>';
 }
 let xMode = 'menu';
 function showX(mode) { // Beta 1.89 (Andrew): the backup pane is a small menu tree, not a form - the menu holds exactly Backup (JSON) / Restore backup / Download offline maps; Restore backup opens the restore menu (Import JSON / Import Text); Import Text opens the paste box with Import backup under it. The always-on text box and the Share/Copy buttons are gone: Backup (JSON)'s save prompt IS the share now

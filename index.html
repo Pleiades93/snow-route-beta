@@ -2,7 +2,7 @@
 <html lang="en" class="boot">
 <head>
 <meta charset="UTF-8">
-<meta http-equiv="Content-Security-Policy" content="default-src 'none'; script-src 'sha384-7gezDzln4c6e5WlGkzLqCo87pMbYVnhHdSZlZ8czLCAgtESCSiASilWyoUMSt9qe' https://cdn.jsdelivr.net; style-src-elem 'sha384-accjBcHCGovhsx/8hEwhl62sWw1r4BRwhy781bcgEb1dRvI+X0Bv2gzw95YiaWW/' https://cdn.jsdelivr.net; style-src-attr 'unsafe-inline'; img-src 'self' data: blob: https://tiles.basemaps.cartocdn.com https://protomaps.github.io https://cdn.jsdelivr.net; connect-src 'self' https://tiles.basemaps.cartocdn.com https://protomaps.github.io https://cdn.jsdelivr.net; worker-src blob: 'self'; child-src blob: 'self'; font-src 'none'; manifest-src 'self'; base-uri 'none'; form-action 'none'; object-src 'none'">
+<meta http-equiv="Content-Security-Policy" content="default-src 'none'; script-src 'sha384-DxtoniztRgaVX0wVPu0FCsUmQ8KssagfTaR2IaL5xjkK9iorn8lGhxjrgzO/ed1S' https://cdn.jsdelivr.net; style-src-elem 'sha384-accjBcHCGovhsx/8hEwhl62sWw1r4BRwhy781bcgEb1dRvI+X0Bv2gzw95YiaWW/' https://cdn.jsdelivr.net; style-src-attr 'unsafe-inline'; img-src 'self' data: blob: https://tiles.basemaps.cartocdn.com https://protomaps.github.io https://cdn.jsdelivr.net; connect-src 'self' https://tiles.basemaps.cartocdn.com https://protomaps.github.io https://cdn.jsdelivr.net; worker-src blob: 'self'; child-src blob: 'self'; font-src 'none'; manifest-src 'self'; base-uri 'none'; form-action 'none'; object-src 'none'">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="mobile-web-app-capable" content="yes">
@@ -258,7 +258,7 @@
 <div id="hud">
   <div id="warn">Not saving — storage is full or blocked</div>
   <div class="row">
-    <div class="titleStack"><div class="title">Snow Route Beta</div><div class="ver" id="ver">Beta 1.98</div></div>
+    <div class="titleStack"><div class="title">Snow Route Beta</div><div class="ver" id="ver">Beta 1.99</div></div>
   </div>
   <div id="stats"></div>
 </div>
@@ -367,6 +367,13 @@ function migrateLegacyRoute(id) { // one-time, 5W only. Beta 1.94 (deep audit SR
 
 function distM(a, b) { const dx = (a[1] - b[1]) * MLNG, dy = (a[0] - b[0]) * MLAT; return Math.hypot(dx, dy); }
 const jDistM = distM; // the paint engine's name for the same two-point distance
+function trailSegments(trail, trailSessions) { // Beta 1.99 (architecture Phase 2, C1): THE trail segment-acceptance rule, in exactly one place - a segment breaks when the gap exceeds 300 s, the jump exceeds 1000 m, or (when session markers are supplied) a recorded session start falls between the two points. trailKm, drawTrail and buildGpx all consume this; before 1.99 each carried its own copy and three audit rounds (1.70/1.71) had to force them back into agreement by hand. Pure: points in, segments (arrays of the same point references) out. The parameters deliberately keep buildGpx's names so its 1.73/1.74 pointer walk (C07/D01) moves VERBATIM: markers are walked with a pointer, and when a point steps BACKWARD below markers already passed, the pointer re-seeks before testing - chronological trails never re-seek, so the walk stays linear (drive143 X6/X7 parity, fixtures in tests/browser/selftest-trail-segments.mjs).
+  trailSessions = trailSessions || [];
+  const segs = []; let seg = []; let sessAt = 0;
+  for (let i = 0; i < trail.length; i++) { const p = trail[i]; if (i > 0) { if (sessAt > 0 && trailSessions[sessAt - 1] > trail[i - 1][2]) { let lo = 0, hi = sessAt; while (lo < hi) { const mid = (lo + hi) >> 1; if (trailSessions[mid] <= trail[i - 1][2]) lo = mid + 1; else hi = mid; } sessAt = lo; } while (sessAt < trailSessions.length && trailSessions[sessAt] <= trail[i - 1][2]) sessAt++; } if (i > 0 && (p[2] - trail[i - 1][2] > 300 || distM(trail[i - 1], p) > 1000 || (sessAt < trailSessions.length && trailSessions[sessAt] <= p[2]))) { segs.push(seg); seg = []; } seg.push(p); }
+  if (seg.length) segs.push(seg);
+  return segs;
+}
 function ptSegM(p, a, b) { // metres from point p to segment a-b (the engine's helper)
   const ax = a[1] * MLNG, ay = a[0] * MLAT, bx = b[1] * MLNG, by = b[0] * MLAT, px = p[1] * MLNG, py = p[0] * MLAT;
   const vx = bx - ax, vy = by - ay, L2 = vx * vx + vy * vy;
@@ -3345,9 +3352,9 @@ function thinPath(pts) {
 function trailKm(sinceMs) {
   const sinceSec = Math.floor(sinceMs / 1000); // Beta 1.71 (audit B04): trail timestamps are whole seconds - the boundary is compared at the same precision, or a start mid-second discards the run's first legitimate segment (the map's trail filter has floored its boundary since 1.64)
   let d = 0;
-  for (let i = 1; i < trail.length; i++) {
-    if (trail[i][2] < sinceSec || trail[i - 1][2] < sinceSec || trail[i][2] - trail[i - 1][2] > 300 || distM(trail[i - 1], trail[i]) > 1000) continue; // Beta 1.70 (audit A05): a segment counts only when BOTH endpoints belong to the run. Beta 1.71 (audit B03): a jump over 1000 m is a break, not distance - the same acceptance rule the trail display and the GPX export already apply, so the number and the drawn line can no longer disagree
-    d += distM(trail[i - 1], trail[i]);
+  for (const seg of trailSegments(trail)) for (let i = 1; i < seg.length; i++) { // Beta 1.99 (Phase 2, C1): the break rule (gap > 300 s, jump > 1000 m - audit B03: a break is not distance) lives in trailSegments now; the pairs inside a segment are exactly the pairs the old loop accepted, in the same order
+    if (seg[i][2] < sinceSec || seg[i - 1][2] < sinceSec) continue; // Beta 1.70 (audit A05): a segment counts only when BOTH endpoints belong to the run
+    d += distM(seg[i - 1], seg[i]);
   }
   return d / 1000;
 }
@@ -3536,11 +3543,7 @@ function drawTrail(force) {
   if (!force && performance.now() - lastTrailDraw < 3000 && pts.length - lastTrailPts < 5) return; // Beta 1.64 (audit 3): the rebuild is O(trail) up to 8000 points - redraw at most every 3 s, or once 5 undrawn points have accumulated, whichever comes first; forced draws (run start, trail clear) ignore the throttle
   lastTrailDraw = performance.now(); lastTrailPts = pts.length;
   const feats = [];
-  if (pts.length > 1) {
-    let seg = pts.length ? [pts[0]] : [];
-    for (let i = 1; i < pts.length; i++) { const gap = pts[i][2] - pts[i - 1][2] > 300 || distM(pts[i - 1], pts[i]) > 1000; if (gap) { if (seg.length > 1) feats.push({ type: 'Feature', properties: {}, geometry: { type: 'LineString', coordinates: seg.map(p => [p[1], p[0]]) } }); seg = [pts[i]]; } else seg.push(pts[i]); }
-    if (seg.length > 1) feats.push({ type: 'Feature', properties: {}, geometry: { type: 'LineString', coordinates: seg.map(p => [p[1], p[0]]) } });
-  }
+  for (const seg of trailSegments(pts)) { if (seg.length > 1) feats.push({ type: 'Feature', properties: {}, geometry: { type: 'LineString', coordinates: seg.map(p => [p[1], p[0]]) } }); } // Beta 1.99 (Phase 2, C1): segmentation by the shared rule in trailSegments (was a private copy of the gap/jump test)
   src.setData({ type: 'FeatureCollection', features: feats });
 }
 function havM(a, b) { const R = 6371000, dLa = (b[0] - a[0]) * Math.PI / 180, dLo = (b[1] - a[1]) * Math.PI / 180; const s = Math.sin(dLa / 2) ** 2 + Math.cos(a[0] * Math.PI / 180) * Math.cos(b[0] * Math.PI / 180) * Math.sin(dLo / 2) ** 2; return 2 * R * Math.asin(Math.sqrt(s)); }
@@ -3755,12 +3758,9 @@ function buildReport() {
   });
   return L.join('\n');
 }
-function buildGpx() {
-  let g = '<?xml version="1.0" encoding="UTF-8"?>\n<gpx version="1.1" creator="Snow Route Beta"><trk><name>Snow Route trail</name><trkseg>\n';
-  let sessAt = 0; // Beta 1.73 (audit C07): walk the sorted markers with a pointer instead of re-scanning the whole list per point (was O(points x markers)); the split test below is the same predicate. Beta 1.74 (audit D01): a stored trail is not guaranteed ordered (legacy trails, restored backups - the loader sorts the markers, never the points), so when the previous point steps BACKWARD below markers already passed, sessAt re-seeks to the first marker after it before testing; chronological trails never re-seek, so the walk stays linear (drive143 X6/X7 parity checks)
-  for (let i = 0; i < trail.length; i++) { const p = trail[i]; if (i > 0) { if (sessAt > 0 && trailSessions[sessAt - 1] > trail[i - 1][2]) { let lo = 0, hi = sessAt; while (lo < hi) { const mid = (lo + hi) >> 1; if (trailSessions[mid] <= trail[i - 1][2]) lo = mid + 1; else hi = mid; } sessAt = lo; } while (sessAt < trailSessions.length && trailSessions[sessAt] <= trail[i - 1][2]) sessAt++; } if (i > 0 && (p[2] - trail[i - 1][2] > 300 || distM(trail[i - 1], p) > 1000 || (sessAt < trailSessions.length && trailSessions[sessAt] <= p[2]))) g += '</trkseg><trkseg>\n'; g += '<trkpt lat="' + p[0] + '" lon="' + p[1] + '"><time>' + new Date(p[2] * 1000).toISOString() + '</time></trkpt>\n'; } // Beta 1.70 (audit A07): separate sessions get separate segments (same gap rule as the map's trail display) instead of one line stitched across days. Beta 1.71 (audit B02): a recorded session start between two points also splits - exact for cleans recorded since 1.71, heuristic for older trail
-  g += '</trkseg></trk></gpx>';
-  return g;
+function buildGpx() { // Beta 1.99 (Phase 2, C1): segmentation - gap rule (1.70, audit A07: separate sessions get separate segments instead of one line stitched across days), session-start splits (1.71, B02) and the marker pointer walk with its backward re-seek (1.73 C07 / 1.74 D01) - lives in trailSegments (app1) now; this consumer only renders the segments as GPX tracks
+  const pt = p => '<trkpt lat="' + p[0] + '" lon="' + p[1] + '"><time>' + new Date(p[2] * 1000).toISOString() + '</time></trkpt>\n';
+  return '<?xml version="1.0" encoding="UTF-8"?>\n<gpx version="1.1" creator="Snow Route Beta"><trk><name>Snow Route trail</name><trkseg>\n' + trailSegments(trail, trailSessions).map(seg => seg.map(pt).join('')).join('</trkseg><trkseg>\n') + '</trkseg></trk></gpx>';
 }
 let xMode = 'menu';
 function showX(mode) { // Beta 1.89 (Andrew): the backup pane is a small menu tree, not a form - the menu holds exactly Backup (JSON) / Restore backup / Download offline maps; Restore backup opens the restore menu (Import JSON / Import Text); Import Text opens the paste box with Import backup under it. The always-on text box and the Share/Copy buttons are gone: Backup (JSON)'s save prompt IS the share now

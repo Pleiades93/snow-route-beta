@@ -36,6 +36,13 @@ function migrateLegacyRoute(id) { // one-time, 5W only. Beta 1.94 (deep audit SR
 
 function distM(a, b) { const dx = (a[1] - b[1]) * MLNG, dy = (a[0] - b[0]) * MLAT; return Math.hypot(dx, dy); }
 const jDistM = distM; // the paint engine's name for the same two-point distance
+function trailSegments(trail, trailSessions) { // Beta 1.99 (architecture Phase 2, C1): THE trail segment-acceptance rule, in exactly one place - a segment breaks when the gap exceeds 300 s, the jump exceeds 1000 m, or (when session markers are supplied) a recorded session start falls between the two points. trailKm, drawTrail and buildGpx all consume this; before 1.99 each carried its own copy and three audit rounds (1.70/1.71) had to force them back into agreement by hand. Pure: points in, segments (arrays of the same point references) out. The parameters deliberately keep buildGpx's names so its 1.73/1.74 pointer walk (C07/D01) moves VERBATIM: markers are walked with a pointer, and when a point steps BACKWARD below markers already passed, the pointer re-seeks before testing - chronological trails never re-seek, so the walk stays linear (drive143 X6/X7 parity, fixtures in tests/browser/selftest-trail-segments.mjs).
+  trailSessions = trailSessions || [];
+  const segs = []; let seg = []; let sessAt = 0;
+  for (let i = 0; i < trail.length; i++) { const p = trail[i]; if (i > 0) { if (sessAt > 0 && trailSessions[sessAt - 1] > trail[i - 1][2]) { let lo = 0, hi = sessAt; while (lo < hi) { const mid = (lo + hi) >> 1; if (trailSessions[mid] <= trail[i - 1][2]) lo = mid + 1; else hi = mid; } sessAt = lo; } while (sessAt < trailSessions.length && trailSessions[sessAt] <= trail[i - 1][2]) sessAt++; } if (i > 0 && (p[2] - trail[i - 1][2] > 300 || distM(trail[i - 1], p) > 1000 || (sessAt < trailSessions.length && trailSessions[sessAt] <= p[2]))) { segs.push(seg); seg = []; } seg.push(p); }
+  if (seg.length) segs.push(seg);
+  return segs;
+}
 function ptSegM(p, a, b) { // metres from point p to segment a-b (the engine's helper)
   const ax = a[1] * MLNG, ay = a[0] * MLAT, bx = b[1] * MLNG, by = b[0] * MLAT, px = p[1] * MLNG, py = p[0] * MLAT;
   const vx = bx - ax, vy = by - ay, L2 = vx * vx + vy * vy;
