@@ -79,14 +79,17 @@ Settings → **Backup** is a small menu of three options: **Backup (JSON)**,
 
 | File | What it is |
 |---|---|
-| `src/tracker-source.html` | **The canonical application source — the only file where the app itself is edited.** A single-file MapLibre GL app, assembled from part files kept in the maintainer's tree (see `docs/ARCHITECTURE.md`). |
+| `parts/` | **The canonical application source — the only place the app itself is edited** (since Beta 1.94). Eight part files (markup/CSS, route data, the app in four parts, the paint engine, the generated basemap styles) that `scripts/assemble.py` concatenates into the single-file page, in the order listed in `docs/ARCHITECTURE.md`. |
+| `src/tracker-source.html` | **Generated** by `scripts/assemble.py` from `parts/`. Never hand-edit — the build fails if it differs from what the parts assemble to. |
 | `src/sw.js` | The authored service worker source (offline open + tile caching). Edited here; copied to the root by the build. |
 | `index.html` | **Generated** deployable build: the source plus its stamped Content-Security-Policy. This is what GitHub Pages serves. Never hand-edit. |
 | `sw.js` | **Generated** copy of `src/sw.js`. Must sit beside `index.html` on an https host. Never hand-edit. |
-| `scripts/build-pages.py` | The repository-owned build: generates `index.html` + `sw.js` from `src/` and runs the parity, CSP, integrity and version gates. Standard library only. |
+| `scripts/assemble.py` | Concatenates `parts/` into `src/tracker-source.html` (byte-exact recipe; `--check` verifies without writing). |
+| `scripts/build-pages.py` | The repository-owned build: generates `index.html` + `sw.js` from `src/` and runs the assembly, parity, CSP, integrity and version gates. Standard library only. |
 | `scripts/csp_stamp.py` | Computes the Content-Security-Policy the build stamps into the page. |
-| `tests/sw.test.mjs` | Service worker fetch-strategy tests (Node, mocked caches/fetch) — 22 checks. |
-| `tests/browser/` | The deterministic browser drive battery (36 drives, 476 checks) plus the offline end-to-end suite (26 checks) — see `docs/TESTING.md`. |
+| `scripts/genstyles.mjs` | Regenerates `parts/pmstyles.js` (the two embedded Protomaps basemap styles) from the `@protomaps/basemaps` package; run from `scripts/`. Never hand-edit its output. |
+| `tests/sw.test.mjs` | Service worker fetch-strategy tests (Node, mocked caches/fetch) — 26 checks. |
+| `tests/browser/` | The deterministic browser drive battery (36 drives, 487 checks) plus the offline end-to-end suite (27 checks) — see `docs/TESTING.md`. |
 | `docs/` | `ARCHITECTURE.md`, `STORAGE-SCHEMA.md`, `TESTING.md`, `DEPLOYMENT.md` — the detailed references. |
 | `DEVELOPMENT_RULES.md` | How changes are built, tested and merged in this repo. |
 | `CHANGELOG.md` | What changed in each Beta version. |
@@ -99,6 +102,7 @@ Settings → **Backup** is a small menu of three options: **Backup (JSON)**,
 script in this repository — it is never hand-edited:
 
 ```
+python3 scripts/assemble.py              # parts/ -> src/tracker-source.html
 python3 scripts/build-pages.py           # build + verify (writes index.html, sw.js)
 python3 scripts/build-pages.py --check   # verify only: committed files match a fresh build
 node tests/sw.test.mjs                   # service worker tests

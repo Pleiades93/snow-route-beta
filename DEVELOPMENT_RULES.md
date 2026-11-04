@@ -28,6 +28,23 @@ turn every discovered bug into a permanent regression test.
    merged tree is identical to the tested branch tree, confirm `main`'s smoke
    run and build checks are green, and read the live page back.
 
+**Source layout (Beta 1.94, audit F-02).** The app is edited in `parts/`
+only. After editing a part, run `python3 scripts/assemble.py`, then
+`python3 scripts/build-pages.py`; the build FAILS if
+`src/tracker-source.html` is not exactly what the parts assemble to, so a
+hand-edit of the generated file (or a forgotten assembly) cannot ship.
+`parts/pmstyles.js` is itself generated — regenerate it with
+`scripts/genstyles.mjs`, never hand-edit it.
+
+**Tooling fallback (audit F-09).** The `github.py` helper is the normal
+route for branch/push/merge/runs, but it is not the only one: if a
+subcommand fails transiently (a branch creation did, 2026-11-04), drive
+the same GitHub API through the helper module's `api()` function, plain
+HTTPS git, or the web UI. The discipline above (branch → battery → merge
+gate) is identical whichever route carries it — a tooling hiccup is
+never a reason to skip a step, and never a blocker to report before the
+fallbacks have been tried.
+
 ## 2. Per-change report (required with every merge)
 
 - What changed and why.
