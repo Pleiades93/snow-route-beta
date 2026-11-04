@@ -101,6 +101,7 @@ async function staleWhileRevalidate(r, cacheName, e) {   // Beta 1.41: answer fr
   return res || Response.error();
 }
 async function mapFetch(r, e) { // Beta 1.94 (audit F-03): map data is served from the offline pack cache FIRST - a pack hit needs no network and no strategy race. Only a pack miss falls through to the per-kind strategies in the browsing cache, exactly as before 1.94.
+  if (r.cache === 'reload') { try { return await fetch(r); } catch (err) { return Response.error(); } } // Beta 1.96 (audit-2, N-2): a reload-mode request (the Download button's deliberate re-download fetches with cache:'reload') bypasses the pack AND the browsing strategies and goes straight to the network - otherwise a re-download re-stores the pack's own responses and the pack can never refresh. No cache write here: the downloading page stores the fresh response into the pack itself
   const oc = await caches.open(OFFLINE);
   const pack = await oc.match(r.url || r);
   if (pack) return pack;
