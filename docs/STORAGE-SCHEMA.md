@@ -34,7 +34,7 @@ for Route 5W (see Migration).
 | `v5.start` | Run start | Raw epoch-milliseconds digit string (not JSON). |
 | `v5.flip` | Legacy flip flag | Retained for format compatibility; unused by the beta (flip was removed in Beta 1.14). Still backed up. |
 | `v5.sides` | **Source of truth for progress** | JSON `{p: {street: [0..3 per stretch]}, t: {street: {stretchIdx: [timeA, timeB]}}}`. Values are bit flags: 1 = side A, 2 = side B, 3 = both. Load normalizes values to 0..3 (audit G-3). |
-| `v5.snap` | Pre-Start snapshot for Cancel (Beta 1.94, audit SR-193-02) | JSON `{at, pieces, pieceTimes, done, times, via, cov}` — the board as Start found it, stamped with the run's start time (`at` === `v5.start`). Written at Start, deleted by Finish and by Cancel. A resumed run's Cancel restores from it when `at` matches the live run; it is transient working state — not a backup field, not migration-copied. Beta 1.96 (SR-195-04): validation also applies the loader's own rule to time VALUES — a completion time or piece stamp that fails `Date.parse` rejects the snapshot, exactly as the loader deletes such times. Beta 1.96 (SR-195-02): a RECOVERY backup may carry a copy of the snapshot as an optional per-route `snap` field (see the backup section) — the key itself is still never a backup field. Beta 1.95 (SR-194-03): the restore validates the snapshot strictly against the loader's structural rules first — a damaged snapshot is never applied raw; the mark-stamp journal is the fallback and the cancel message says the board was rebuilt. Beta 1.95 (SR-194-01): Finish carries the snapshot into its undo record, and Undo re-persists it as a verified gate, so Finish → Undo → Cancel restores exactly. |
+| `v5.snap` | Pre-Start snapshot for Cancel (Beta 1.94, audit SR-193-02) | JSON `{at, pieces, pieceTimes, done, times, via, cov}` — the board as Start found it, stamped with the run's start time (`at` === `v5.start`). Written at Start, deleted by Finish and by Cancel. A resumed run's Cancel restores from it when `at` matches the live run; it is transient working state — not a backup field, not migration-copied. Beta 1.96 (SR-195-04): validation also applies the loader's own rule to time VALUES — a completion time or piece stamp that fails `Date.parse` rejects the snapshot, exactly as the loader deletes such times. Beta 1.96 (SR-195-02): a RECOVERY backup may carry a copy of the snapshot as an optional per-route `snap` field (see the backup section) — the key itself is still never a backup field. Beta 1.97 (audit loop CG-196-02): NORMAL backups carry the snapshot the same way, through the same construction. Beta 1.95 (SR-194-03): the restore validates the snapshot strictly against the loader's structural rules first — a damaged snapshot is never applied raw; the mark-stamp journal is the fallback and the cancel message says the board was rebuilt. Beta 1.95 (SR-194-01): Finish carries the snapshot into its undo record, and Undo re-persists it as a verified gate, so Finish → Undo → Cancel restores exactly. |
 | `v2.migrated` | Migration completion marker (Beta 1.94, audit SR-193-03) | The string `'1'`, written only after every legacy field the slot should hold is verified present in it (see Migration). Its presence is the ONLY thing that makes the slot authoritative; without it the legacy keys stay authoritative and the move retries. Not backed up. |
 | `v5.preload` | Preload record `{at, saved, total}` (local only) | Per-route; not backed up. |
 
@@ -104,7 +104,8 @@ the whole export** (audit 1.48 B04) rather than emitting a partial backup.
 `data` maps the 12 legacy key names to raw strings. Restoring a v1 backup
 writes into the **5W slot** (legacy name → slot field), with `night` taken
 from `data['snowroute.v2.night']`. **Missing-key policy (both versions):** a
-field absent from the backup leaves the current value untouched on restore.
+field absent from the backup leaves the current value untouched on restore
+(the one exception is the explicit `start: null` idle assertion above).
 A legacy done value that is a bare object migrates to the sides-derived set
 (street-name filtered). A v2 backup naming an unknown route id is rejected
 whole. Two Beta 1.94 hardenings: **export** first reconciles the primary
@@ -134,8 +135,17 @@ separate Recovery menu option anymore.
 key — inside the restore transaction and its rollback scope — only if
 it passes `validateSnap` against the start the same backup carries for
 that route. A carried snapshot that fails validation (or whose run's
-start is absent) is dropped and the result message says so; ordinary
-backups never carry the field.
+start is absent) is dropped and the result message says so. Beta 1.97
+(audit loop CG-196-01/-02): ordinary backups carry the field too, and
+every route entry in a current-format backup asserts its lifecycle
+state explicitly — `start` is always present, as the run's timestamp
+string or as `null` for no run. On restore, `start: null` is an idle
+ASSERTION, not an omission: the destination's `v5.start` and `v5.snap`
+are deleted inside the restore transaction (verified, rolled back on
+failure like every entry), so an idle backup restored over an active
+run leaves no inherited run behind. A backup that OMITS `start`
+entirely (anything written before 1.97) keeps the missing-key rule
+below: the destination's run state is left untouched.
 
 ## Restore transaction (invariant)
 

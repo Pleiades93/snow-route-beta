@@ -1,5 +1,15 @@
 # Changelog
 
+## Beta 1.97 — 2026-11-04
+
+The audit-loop round-196 fixes (Codex audit of Beta 1.96, adjudicated and debated to convergence, gate approved by Andrew):
+
+- **Backups assert idle explicitly (CG-196-01).** Every route entry in a backup now carries its start state: a run's timestamp, or `start: null` for no run. Restoring an idle backup onto a device with an active run clears that run's start and cancel snapshot inside the verified write set (rolled back like any other field if the restore fails) — an idle backup can no longer inherit another run's Start, whose snapshot would later erase restored marks. Older backups, which omit the field, keep the missing-key rule.
+- **Normal backups carry the cancel snapshot (CG-196-02).** A backup made mid-run now includes the run's validated start snapshot (the construction 1.96's recovery backup introduced, now shared), so a restored run's Cancel restores the Start-moment board exactly instead of falling back to the mark-stamp journal, which cannot see a side unmarked during the run.
+- **Every board mutation kills a pending Finish Undo (CG-196-03).** One `invalidateFinishUndo()` helper now serves all mutation paths — side chips and group chips (via `applyPiece`), mark-all, whole-street mark/unmark, an effective Clear, and starting a new run. Before, only whole-street marking invalidated, so a mark made in the 8-second Undo window was silently discarded by an Undo tap.
+- **Marking toasts are gated on the save (CG-196-05).** The completion/unmark toasts on all marking paths now show only when the save landed. On failure the storage warning stands, and a later failure in the same warning episode still says "Not saved — storage problem" instead of going silent.
+- Finding CG-196-04 (Finish's gated writes vs process death between them) is recorded as a design input to the architecture program's Phase 4 transaction coordinator; no patch, by adjudication.
+
 ## Beta 1.96 — 2026-11-04
 
 The Beta 1.95 audit round — BOTH deep audits (the SR-195 series and the independent F-status/N-findings review), consolidated scope as approved. Finding SR-195-10 (per-route street registries) stays with the future multi-route project, untouched here.
