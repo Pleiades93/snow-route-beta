@@ -3206,6 +3206,7 @@ function cancelStart() {
       doneSet = new Set(STREETNAMES.filter(streetComplete));
       for (const k of Object.keys(doneTimes)) if (!doneSet.has(k)) delete doneTimes[k];
       for (const k of Object.keys(doneVia)) if (!doneSet.has(k)) delete doneVia[k];
+      coveredIdx = {}; // coverage cannot be attributed without the snapshot - and unlike hand marks it is GPS-derived and re-earns itself as he drives; drive143 C1 holds this line
     }
     trailDirty = true; sessDirty = true;
   }

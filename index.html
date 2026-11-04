@@ -2,7 +2,7 @@
 <html lang="en" class="boot">
 <head>
 <meta charset="UTF-8">
-<meta http-equiv="Content-Security-Policy" content="default-src 'none'; script-src 'sha384-0YT0iIlNMaK2s16N16DdWPCH/AitF7f+CH6aFLoAazayg2Cn/zEZtTyv5MdcMYBc' https://cdn.jsdelivr.net; style-src-elem 'sha384-Qjh2L6DVSRi6o2Njzap7vfVNupLBwp3RriR5hnlMwHJ9i0TZ9hCNxVcwQUeBzZA7' https://cdn.jsdelivr.net; style-src-attr 'unsafe-inline'; img-src 'self' data: blob: https://tiles.basemaps.cartocdn.com https://protomaps.github.io https://cdn.jsdelivr.net; connect-src 'self' https://tiles.basemaps.cartocdn.com https://protomaps.github.io https://cdn.jsdelivr.net; worker-src blob: 'self'; child-src blob: 'self'; font-src 'none'; manifest-src 'self'; base-uri 'none'; form-action 'none'; object-src 'none'">
+<meta http-equiv="Content-Security-Policy" content="default-src 'none'; script-src 'sha384-AM+imHLnfYY2yKofF44GC1edwlmW3TN0yIFQuhRxihSbomffFnosYv5ecdj9/gxg' https://cdn.jsdelivr.net; style-src-elem 'sha384-Qjh2L6DVSRi6o2Njzap7vfVNupLBwp3RriR5hnlMwHJ9i0TZ9hCNxVcwQUeBzZA7' https://cdn.jsdelivr.net; style-src-attr 'unsafe-inline'; img-src 'self' data: blob: https://tiles.basemaps.cartocdn.com https://protomaps.github.io https://cdn.jsdelivr.net; connect-src 'self' https://tiles.basemaps.cartocdn.com https://protomaps.github.io https://cdn.jsdelivr.net; worker-src blob: 'self'; child-src blob: 'self'; font-src 'none'; manifest-src 'self'; base-uri 'none'; form-action 'none'; object-src 'none'">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="mobile-web-app-capable" content="yes">
@@ -3207,6 +3207,7 @@ function cancelStart() {
       doneSet = new Set(STREETNAMES.filter(streetComplete));
       for (const k of Object.keys(doneTimes)) if (!doneSet.has(k)) delete doneTimes[k];
       for (const k of Object.keys(doneVia)) if (!doneSet.has(k)) delete doneVia[k];
+      coveredIdx = {}; // coverage cannot be attributed without the snapshot - and unlike hand marks it is GPS-derived and re-earns itself as he drives; drive143 C1 holds this line
     }
     trailDirty = true; sessDirty = true;
   }
