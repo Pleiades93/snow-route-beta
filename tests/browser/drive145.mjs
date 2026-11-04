@@ -11,13 +11,16 @@ const { proc, send, S, ev, consoleLog, sleep, poll } = await launchDrive();
 // never carry the badge (the 1.77 pick flicker). Storage: every route owns a slot under
 // snowroute.<routeId>.; pre-1.76 data moves into the 5W slot copy-and-
 // verified on first load (legacy keys kept as fallback; a failed copy
-// aborts the move, wipes the partial slot, and the legacy keys stay
-// authoritative for that boot). Backups are v2; a v1 backup restores into
+// aborts the move and the legacy keys stay authoritative for that boot).
+// Beta 1.94 (SR-193-03): the move's commit record is an explicit marker
+// key - a retry fills only the fields the slot lacks and never overwrites
+// a present one. Backups are v2; a v1 backup restores into
 // the 5W slot (and the C06 rule clears its session markers).
 const R = { checks: [] };
 const ok = (name, cond) => R.checks.push([name, !!cond]);
 const SIDES_5W = JSON.stringify({ Velmar: Array(14).fill(3) });
 const DONE_5W = JSON.stringify(['Velmar']);
+const RESTORED_5W = JSON.stringify({ p: { Velmar: [0] }, t: {} }); // a NEWER slot record, as a backup restore would leave it - the SR-193-03 migration must never overwrite it with the legacy copy
 
 // --- the menu phase: nothing is loaded yet -------------------------------
 await ev(`localStorage.clear(); true`);
@@ -89,6 +92,9 @@ ok('N20c a backup taken mid-recording contains the buffered trail + coverage - f
 await ev(`(function(){ var orig = lsSet; window.__lsOrig145 = orig; lsSet = function(k, v){ if (k === LS.trail) return false; return orig(k, v); }; return true; })()`);
 ok('N20d a backup whose trail flush FAILS is refused outright, never shipped stale (Beta 1.93, audit R02)', await ev(`(function(){ try { trail.push([43.9998, -79.9998, 1999999998]); trailDirty = true; var b = buildBackup(); trail.pop(); return b === null; } catch (e) { return false; } })()`));
 await ev(`(function(){ if (window.__lsOrig145) lsSet = window.__lsOrig145; return true; })()`);
+await ev(`(function(){ var orig = lsSet; window.__lsOrig145b = orig; lsSet = function(k, v){ if (k === LS.sides) return false; return orig(k, v); }; return true; })()`);
+ok('N20e a backup whose PRIMARY save fails is refused outright, never shipped with the old board inside (Beta 1.94, deep audit SR-193-01)', await ev(`(function(){ try { return buildBackup() === null; } catch (e) { return false; } })()`));
+await ev(`(function(){ if (window.__lsOrig145b) lsSet = window.__lsOrig145b; flushAux(true); return true; })()`);
 
 // --- storage slot shape -----------------------------------------------------
 ok('N10 route slots are per-route and disjoint; night stays a global key', await ev(`(function(){ var a = routeKeys('5w'), b = routeKeys('zz9'); var av = Object.values(a), bv = Object.values(b); return a.sides === 'snowroute.5w.v5.sides' && b.sides === 'snowroute.zz9.v5.sides' && av.every(v => v.indexOf('snowroute.5w.') === 0) && bv.every(v => v.indexOf('snowroute.zz9.') === 0) && !av.some(v => bv.indexOf(v) >= 0) && LS.night === 'snowroute.v2.night'; })()`));
@@ -108,9 +114,9 @@ await ev(`location.reload(); true`);
 await poll(`!!window.__bootAt`, 30000);
 await ev(`(function(){ var orig = lsSet; window.__origLsSet = orig; lsSet = function(k, v){ if (k === 'snowroute.5w.v5.sides') return false; return orig(k, v); }; return true; })()`);
 await ev(`loadRoute('5w'); true`); await sleep(600);
-ok('N12 a failed copy aborts the move: partial slot wiped, legacy state loads instead', await ev(`(function(){ return localStorage.getItem('snowroute.5w.v5.sides') === null && localStorage.getItem('snowroute.5w.v2') === null && doneSet.has('Velmar'); })()`));
+ok('N12 a failed copy aborts the move: no marker written, legacy state loads instead (Beta 1.94, SR-193-03: a verified fill may stay - done landed - but without the marker it is never treated as a completed move)', await ev(`(function(){ return localStorage.getItem('snowroute.5w.v5.sides') === null && localStorage.getItem('snowroute.5w.v2') === ${JSON.stringify(DONE_5W)} && localStorage.getItem('snowroute.5w.v2.migrated') === null && doneSet.has('Velmar'); })()`));
 await ev(`(function(){ if (window.__origLsSet) lsSet = window.__origLsSet; return true; })()`);
-ok('N12b a backup taken on the legacy fallback exports the LEGACY data, not the wiped slot (Beta 1.92, deep audit F02)', await ev(`(function(){ try { var b = JSON.parse(buildBackup()); return !!b.routes && !!b.routes['5w'] && b.routes['5w'].done === ${JSON.stringify(DONE_5W)} && b.routes['5w'].sides === ${JSON.stringify(SIDES_5W)}; } catch (e) { return false; } })()`));
+ok('N12b a backup taken on the legacy fallback exports the LEGACY data, not the wiped slot (Beta 1.92, deep audit F02; compared semantically since 1.94 - SR-193-01 reconciles the save first, which stores the same marks in the current sides format)', await ev(`(function(){ try { var b = JSON.parse(buildBackup()); if (!b.routes || !b.routes['5w'] || b.routes['5w'].done !== ${JSON.stringify(DONE_5W)}) return false; var sd = JSON.parse(b.routes['5w'].sides); var arr = sd && sd.p ? sd.p.Velmar : sd && sd.Velmar; return Array.isArray(arr) && arr.length === 14 && arr.every(v => v === 3); } catch (e) { return false; } })()`));
 
 // --- R04 (Beta 1.93): a partial slot (sides only) is not a completed migration
 await ev(`localStorage.clear(); true`);
@@ -119,6 +125,23 @@ await poll(`!!window.__bootAt`, 30000);
 await ev(`localStorage.setItem('snowroute.v5.sides', ${JSON.stringify(SIDES_5W)}); localStorage.setItem('snowroute.v2', ${JSON.stringify(DONE_5W)}); localStorage.setItem('snowroute.v5.sess', '[1762000000]'); localStorage.setItem('snowroute.5w.v5.sides', ${JSON.stringify(SIDES_5W)}); true`); // seeded AFTER the reload, on the fresh unloaded page: seeding before it raced the old page's pagehide flush, which could write its own session record back over the seeded one (CI caught this; the app was never wrong)
 await ev(`loadRoute('5w'); true`); await sleep(600);
 ok('N12c a partial slot is NOT adopted as migrated - the missing fields are copied (Beta 1.93, audit R04)', await ev(`localStorage.getItem('snowroute.5w.v5.sess') === '[1762000000]' && doneSet.has('Velmar')`));
+
+// --- SR-193-03 (Beta 1.94): the marker is the commit record - a partial
+// slot's present fields are NEVER overwritten by the legacy copy, and once
+// the marker exists the slot is never re-examined against legacy again.
+// (The auditor's repro: legacy sides OLD + slot sides RESTORED + no slot
+// history - the 1.93 parity gate recopied OLD over RESTORED.)
+await ev(`localStorage.clear(); true`);
+await ev(`location.reload(); true`);
+await poll(`!!window.__bootAt`, 30000);
+await ev(`localStorage.setItem('snowroute.v5.sides', ${JSON.stringify(SIDES_5W)}); localStorage.setItem('snowroute.v2', ${JSON.stringify(DONE_5W)}); localStorage.setItem('snowroute.v5.sess', '[1762000000]'); localStorage.setItem('snowroute.5w.v5.sides', ${JSON.stringify(RESTORED_5W)}); true`); // seeded AFTER the reload, on the fresh unloaded page (the N12c lesson)
+await ev(`loadRoute('5w'); true`); await sleep(600);
+ok('N12d a partial slot keeps its NEWER sides: the migration fills only the gaps and writes the marker (Beta 1.94, deep audit SR-193-03)', await ev(`(function(){ return localStorage.getItem('snowroute.5w.v5.sides') === ${JSON.stringify(RESTORED_5W)} && localStorage.getItem('snowroute.5w.v5.sess') === '[1762000000]' && localStorage.getItem('snowroute.5w.v2.migrated') === '1'; })()`));
+await ev(`localStorage.setItem('snowroute.v5.sides', ${JSON.stringify(SIDES_5W)}); true`); // legacy changes its mind afterwards - with the marker written, it no longer matters
+await ev(`location.reload(); true`);
+await poll(`!!window.__bootAt`, 30000);
+await ev(`loadRoute('5w'); true`); await sleep(600);
+ok('N12e with the marker written, later legacy changes never re-enter the slot', await ev(`localStorage.getItem('snowroute.5w.v5.sides') === ${JSON.stringify(RESTORED_5W)}`));
 
 // --- v1 backup restores into the slot; C06 clears its markers ---------------
 const TRAIL_5W = JSON.stringify([[43.8, -79.5, 1762000000], [43.8005, -79.5005, 1762000060]]);
@@ -163,6 +186,16 @@ await sleep(900);
 await poll(`!!window.__bootAt && window.__bootAt !== ${JSON.stringify(bootMark13c)}`, 30000);
 await ev(`loadRoute('5w'); true`); await sleep(600);
 ok('N13c-b restoring an EMPTY completion list clears the board (Beta 1.93, audit R03)', await ev(`(function(){ try { return !doneSet.has('Velmar') && pieces.Velmar.every(v => v === 0); } catch (e) { return false; } })()`));
+
+// --- F-05 (Beta 1.94): street names the route does not know are counted and
+// reported in the restore result, not silently dropped by the loaders ------
+const v2badNames = JSON.stringify({ app: 'snowroute-backup', v: 2, at: '2026-11-04T00:00:00.000Z', routes: { '5w': { done: JSON.stringify(['Velmar', 'Nosuch Avenue']), sides: JSON.stringify({ p: { Velmar: Array(14).fill(3), 'Nosuch Avenue': [3] }, t: {} }) } } });
+const bootMark13d = await ev(`window.__bootAt`);
+const toast13d = await ev(`(function(){ document.getElementById('xText').value = ${JSON.stringify(v2badNames)}; doRestore(); return document.getElementById('toast').textContent; })()`);
+await sleep(900);
+await poll(`!!window.__bootAt && window.__bootAt !== ${JSON.stringify(bootMark13d)}`, 30000);
+await ev(`loadRoute('5w'); true`); await sleep(600);
+ok('N13d a restore carrying unknown street names reports how many were ignored (Beta 1.94, audit F-05) | ' + toast13d, /2 unknown street names/.test(toast13d) && (await ev(`doneSet.has('Velmar')`)) === true);
 
 // --- backups are v2 now ------------------------------------------------------
 ok('N14 buildBackup emits the v2 per-route shape', await ev(`(function(){ var b = JSON.parse(buildBackup()); return b.app === 'snowroute-backup' && b.v === 2 && !!b.routes && typeof b.routes['5w'].sides === 'string' && typeof b.routes['5w'].trail === 'string'; })()`));

@@ -83,6 +83,22 @@ const S10 = JSON.parse(await ev(`(() => JSON.stringify({ toast: $('toast').textC
 ok('S10 a failed trail save qualifies the cancel message (no false erasure claim) | ' + JSON.stringify(S10), /could not be saved yet/.test(S10.toast) && S10.dirty === true);
 await ev(`(function(){ if (window.__lsOrig133) lsSet = window.__lsOrig133; flushAux(true); return true; })()`);
 
+// S11 (Beta 1.94, deep audit SR-193-02): Start PERSISTS its pre-Start
+// snapshot (LS.snap, stamped with the run). A resumed run's cancel restores
+// from it - including a pre-Start side that was UNMARKED mid-run, the case
+// the 1.93 stamp journal cannot see (unmarking erases the stamp).
+await ev(`markDone('Velmar', 'test')`);
+await ev(`(function(){ pieceTimes.Velmar = { 0: ['2020-01-01T00:00:00.000Z', '2020-01-01T00:00:00.000Z'] }; saveAll(); return true; })()`); // Velmar's completion predates the run
+await ev(`startClean()`);
+const S11a = JSON.parse(await ev(`(() => { const s = JSON.parse(localStorage.getItem(LS.snap) || 'null'); return JSON.stringify({ at: s && s.at, run: runStart, velmar: !!(s && s.pieces && s.pieces.Velmar && s.pieces.Velmar.every(v => v === 3)) }); })()`));
+ok('S11a Start persists the pre-Start snapshot, stamped with the run (Beta 1.94, SR-193-02) | ' + JSON.stringify(S11a), S11a.at === S11a.run && S11a.run > 0 && S11a.velmar === true);
+await ev(`(function(){ runSnap = null; return true; })()`); // exactly the post-reload state: in-memory snapshot gone, the persisted one remains
+await ev(`markUndone('Velmar')`); // the journal-blind act: a pre-Start completion removed mid-run
+await ev(`markDone('Astona', 'test')`);
+await ev(`cancelStart()`);
+await sleep(300);
+ok('S11b resumed cancel restores the pre-Start board from the persisted snapshot - the unmarked Velmar returns, the run mark (Astona) goes, the snapshot is consumed', await ev(`(function(){ try { return doneSet.has('Velmar') && pieces.Astona.every(v => v === 0) && runStart === 0 && localStorage.getItem(LS.snap) === null; } catch (e) { return false; } })()`));
+
 R.exceptions = consoleLog.filter(c => c.type === 'EXCEPTION').map(c => String(c.text || '').slice(0, 200));
 finish(R, proc);
 

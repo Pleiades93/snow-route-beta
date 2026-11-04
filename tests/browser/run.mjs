@@ -58,9 +58,10 @@ for (const name of names) {
   }
   const failed = R.checks.filter(c => !c[1]);
   const exc = Array.isArray(R.exceptions) ? R.exceptions.length : (R.exceptions ?? 0);
-  const pass = r.code === 0 && failed.length === 0 && exc === 0;
+  const empty = R.checks.length === 0; // Beta 1.94 (deep audit SR-193-06): an empty checks array used to PASS - a drive that ran nothing proved nothing, and a harness break that swallowed a drive's checks would have shipped as green. Zero checks is a failure, named as such.
+  const pass = r.code === 0 && !empty && failed.length === 0 && exc === 0;
   if (!pass) allPass = false;
-  console.log(`${name}: ${R.checks.length - failed.length}/${R.checks.length} checks, ${exc} exceptions - ${pass ? 'PASS' : 'FAIL'}` + (r.code !== 0 ? ` (child exit ${r.code})` : ''));
+  console.log(`${name}: ${R.checks.length - failed.length}/${R.checks.length} checks, ${exc} exceptions - ${pass ? 'PASS' : 'FAIL'}` + (r.code !== 0 ? ` (child exit ${r.code})` : '') + (empty ? ' (no checks ran)' : ''));
   for (const [n] of failed) console.log(`  FAILED: ${n}`);
   if (Array.isArray(R.exceptions)) for (const x of R.exceptions) console.log(`  EXC: ${x}`);
 }

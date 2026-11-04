@@ -94,8 +94,8 @@ const stat = await ev2(`document.getElementById('xPreStat').textContent`);
 const m = /saved (\d+) of (\d+)/.exec(stat || '');
 ok('E5 saved >= 883 of 897 (the 2026-11-01 regression saved 0) | ' + stat, !!m && +m[1] >= 883 && +m[2] === 897);
 const counts = await ev2(`(async () => { const out = {}; for (const k of await caches.keys()) { const c = await caches.open(k); out[k] = (await c.keys()).length; } return JSON.stringify(out); })()`);
-const baseKeys = JSON.parse(await ev2(`(async () => { const c = await caches.open('snowroute-tiles-v1'); const ks = await c.keys(); return JSON.stringify(ks.map(r => r.url).sort()); })()`)); // the pristine post-preload key set (897 preload files + the boot view's own extras), captured before any zooming adds opportunistic keys (keysOf is defined further down, so this capture is inlined). PROVEN 2026-11-03 (instrumented run, work/e12b-probe): the extras are exactly 2 - the Noto Sans Italic and Noto Sans Medium 0-255 glyph files, fetched by the live map for boot-view labels; the preload manifest itself is 633 tiles + 256 Noto Sans Regular glyph ranges + 8 sprites = 897
-ok('E6 the tiles cache really holds the files | ' + counts, (() => { try { return JSON.parse(counts)['snowroute-tiles-v1'] >= 883; } catch (e) { return false; } })());
+const baseKeys = JSON.parse(await ev2(`(async () => { const c = await caches.open('snowroute-offline-v1'); const ks = await c.keys(); return JSON.stringify(ks.map(r => r.url).sort()); })()`)); // the pristine post-preload PACK key set, captured before any zooming (keysOf is defined further down, so this capture is inlined). Beta 1.94 (audit F-03): the preload writes into its own cache (snowroute-offline-v1), so this set is exactly the 897-file manifest - 633 tiles + 256 Noto Sans Regular glyph ranges + 8 sprites. (Through 1.93 the pack shared snowroute-tiles-v1 and this census read 899: the manifest plus 2 opportunistic glyph files the live map fetched for boot-view labels - PROVEN 2026-11-03, work/e12b-probe. Those fetches now fall through to the browsing cache, so the pack census is exact.)
+ok('E6 the offline pack cache really holds the files | ' + counts, (() => { try { return JSON.parse(counts)['snowroute-offline-v1'] >= 883; } catch (e) { return false; } })());
 // ---- Phase 3 (Beta 1.72): E1-E6 prove the files land in the cache. These
 // prove the app actually LIVES on them: renders with the network dead, at
 // every zoom it allows, across a worker upgrade and a mid-download death.
@@ -110,10 +110,10 @@ const zoomProbe = async (z) => { const before = await ev2(`typeof tilesOk !== 'u
 // tiles are cached. coverCheck computes the exact tiles covering the current
 // view at the zoom band on screen and requires every one to be in the cache.
 const coverCheck = async (z) => {
-  const expr = '(async () => { const zz = [' + Math.floor(z) + ', ' + Math.ceil(z) + ']; const b = map.getBounds(); const tc = await caches.open(\'snowroute-tiles-v1\'); const tpl = \'https://tiles.basemaps.cartocdn.com/v/20261026-01/vectortiles/carto.streets/v2/{z}/{x}/{y}.mvt\'; const xOf = (lng, k) => Math.floor((lng + 180) / 360 * Math.pow(2, k)); const yOf = (lat, k) => { const r = lat * Math.PI / 180; return Math.floor((1 - Math.log(Math.tan(r) + 1 / Math.cos(r)) / Math.PI) / 2 * Math.pow(2, k)); }; let need = 0, have = 0; for (const k of zz) { const xa = Math.max(xOf(b.getWest(), k), xOf(-79.75, k)), xb = Math.min(xOf(b.getEast(), k), xOf(-79.35, k)), ya = Math.max(yOf(b.getNorth(), k), yOf(44.05, k)), yb = Math.min(yOf(b.getSouth(), k), yOf(43.70, k)); for (let x = xa; x <= xb; x++) for (let y = ya; y <= yb; y++) { need++; if (await tc.match(tpl.replace(\'{z}\', k).replace(\'{x}\', x).replace(\'{y}\', y))) have++; } } return JSON.stringify({ need, have }); })()';
+  const expr = '(async () => { const zz = [' + Math.floor(z) + ', ' + Math.ceil(z) + ']; const b = map.getBounds(); const tc = await caches.open(\'snowroute-offline-v1\'); const bc = await caches.open(\'snowroute-tiles-v1\'); const tpl = \'https://tiles.basemaps.cartocdn.com/v/20261026-01/vectortiles/carto.streets/v2/{z}/{x}/{y}.mvt\'; const xOf = (lng, k) => Math.floor((lng + 180) / 360 * Math.pow(2, k)); const yOf = (lat, k) => { const r = lat * Math.PI / 180; return Math.floor((1 - Math.log(Math.tan(r) + 1 / Math.cos(r)) / Math.PI) / 2 * Math.pow(2, k)); }; let need = 0, have = 0; for (const k of zz) { const xa = Math.max(xOf(b.getWest(), k), xOf(-79.75, k)), xb = Math.min(xOf(b.getEast(), k), xOf(-79.35, k)), ya = Math.max(yOf(b.getNorth(), k), yOf(44.05, k)), yb = Math.min(yOf(b.getSouth(), k), yOf(43.70, k)); for (let x = xa; x <= xb; x++) for (let y = ya; y <= yb; y++) { need++; const U = tpl.replace(\'{z}\', k).replace(\'{x}\', x).replace(\'{y}\', y); if (await tc.match(U) || await bc.match(U)) have++; } } return JSON.stringify({ need, have }); })()'; // Beta 1.94: a covering tile counts when it is in EITHER cache - the worker serves the pack first and the browsing cache second, so coverage is the union
   try { return JSON.parse(await ev2(expr)); } catch (e) { return { need: -1, have: -1 }; }
 };
-const keysOf = async () => { const s = await ev2(`(async () => { const tc = await caches.open('snowroute-tiles-v1'); const ks = await tc.keys(); return JSON.stringify(ks.map(k => k.url).sort()); })()`); try { return JSON.parse(s); } catch (e) { return []; } };
+const keysOf = async () => { const s = await ev2(`(async () => { const tc = await caches.open('snowroute-offline-v1'); const ks = await tc.keys(); return JSON.stringify(ks.map(k => k.url).sort()); })()`); try { return JSON.parse(s); } catch (e) { return []; } }; // Beta 1.94: the pack census - the preload's own cache (E12/E15/E16 partial-and-resume arithmetic is about the pack)
 tileReqs.length = 0;
 const zp9 = await zoomProbe(8.4);
 ok('E9 offline at zoom 8.4, basemap tiles still arrive (from cache) | tilesOk ' + zp9[0] + ' -> ' + zp9[1] + ' zoomNow ' + zp9[2], zp9[1] > zp9[0] && Math.abs(zp9[2] - 8.4) < 0.3);
@@ -153,7 +153,7 @@ try {
   upgraded = await poll(`window.__ctl === true`, 45000);
 } finally { fs.writeFileSync(swFile, swOrig); }
 const counts2 = await ev2(`(async () => { const out = {}; for (const k of await caches.keys()) { const c = await caches.open(k); out[k] = (await c.keys()).length; } return JSON.stringify(out); })()`);
-ok('E11 worker upgrade takes over and the tile cache survives | upgraded ' + upgraded + ' ' + counts2, upgraded && (() => { try { return JSON.parse(counts2)['snowroute-tiles-v1'] >= 883; } catch (e) { return false; } })());
+ok('E11 worker upgrade takes over and the offline pack cache survives (the 1.94 keep-list) | upgraded ' + upgraded + ' ' + counts2, upgraded && (() => { try { return JSON.parse(counts2)['snowroute-offline-v1'] >= 883; } catch (e) { return false; } })());
 // E14 (Beta 1.73, audit C02): a TRUE cold boot offline. E8 reloads inside a
 // live browser; this kills the process entirely and relaunches on the SAME
 // persisted profile with the network dead from the first instant - the
@@ -170,9 +170,9 @@ netOff = false;
 // the cache E4 had ALREADY filled, so its "interruption" proved nothing about
 // a partial cache. Now the download starts from an EMPTY tile cache with tile
 // responses throttled, a PARTIAL count is verified on disk, the page dies, and
-// the resume must restore the full PRELOAD MANIFEST (897 files) and lose nothing the interrupted download had already stored. (It is NOT held to baseKeys: 2 of those 899 are opportunistic glyph fetches - see the baseKeys comment - whose return depends on the resumed page's label rendering, not on the download. E15b already asserts this same contract shape.)
+// the resume must restore the full PRELOAD MANIFEST (897 files) and lose nothing the interrupted download had already stored. (Since Beta 1.94 baseKeys IS the manifest exactly - the pack has its own cache; through 1.93 the census ran 899 with 2 opportunistic glyph fetches mixed in. E15b asserts this same contract shape.)
 const waitPartial = async () => { let n = 0; const t0 = Date.now(); while (Date.now() - t0 < 300000) { n = (await keysOf()).length; if (n >= 600) break; await sleep(700); } return n; };
-await ev2(`(async () => { await caches.delete('snowroute-tiles-v1'); try { localStorage.removeItem('snowroute.prep.v1'); } catch (e) {} return true; })()`);
+await ev2(`(async () => { await caches.delete('snowroute-tiles-v1'); await caches.delete('snowroute-offline-v1'); try { localStorage.removeItem('snowroute.prep.v1'); } catch (e) {} return true; })()`);
 tileDelayMs = 150;
 await ev2(`document.getElementById('xPre').click()`);
 const partial = await waitPartial();
@@ -187,11 +187,11 @@ const stat2 = await ev2(`document.getElementById('xPreStat').textContent`);
 const m2 = /saved (\d+) of (\d+)/.exec(stat2 || '');
 const keysAfter = await keysOf();
 const noLoss12 = partialKeys.every(u => keysAfter.includes(u));
-ok('E12b the resumed download restores the full preload set (897) and loses nothing the interruption stored | ' + stat2 + ' | keys ' + keysAfter.length + ' (base ' + baseKeys.length + ' incl. 2 opportunistic glyphs)', !!m2 && +m2[1] === 897 && +m2[2] === 897 && noLoss12 && keysAfter.length >= 897);
+ok('E12b the resumed download restores the full preload set (897) and loses nothing the interruption stored | ' + stat2 + ' | keys ' + keysAfter.length + ' (base ' + baseKeys.length + ' = the pack exactly)', !!m2 && +m2[1] === 897 && +m2[2] === 897 && noLoss12 && keysAfter.length >= 897);
 // E15 (audit C01-T4): a dead-network BURST mid-download. The app's per-file
 // failure handling skips what it cannot fetch and reports the short count
 // honestly; a clean re-run must then restore the exact full set.
-await ev2(`(async () => { await caches.delete('snowroute-tiles-v1'); try { localStorage.removeItem('snowroute.prep.v1'); } catch (e) {} return true; })()`);
+await ev2(`(async () => { await caches.delete('snowroute-tiles-v1'); await caches.delete('snowroute-offline-v1'); try { localStorage.removeItem('snowroute.prep.v1'); } catch (e) {} return true; })()`);
 tileDelayMs = 150;
 await ev2(`document.getElementById('xPre').click()`);
 const partial15 = await waitPartial();
@@ -208,13 +208,13 @@ await ev2(`document.getElementById('xPre').click()`);
 const rerunOk = await poll(`document.getElementById('xPreStat').textContent.includes('saved 897 of 897')`, 420000);
 const keysFinal = await keysOf();
 const noLoss = keysMid.every(u => keysFinal.includes(u));
-ok('E15b the re-run restores the full preload set and loses nothing | rerun ' + rerunOk + ' keys ' + keysFinal.length + ' burst survivors ' + keysMid.length, rerunOk && noLoss && keysFinal.length >= 897); // the keys above 897 in baseKeys are boot-time extras the map fetched for its first view; the preload's own contract is the 897 files, and this section's page never reloads, so the sound claims are: full 897 restored, nothing the burst left behind lost
+ok('E15b the re-run restores the full preload set and loses nothing | rerun ' + rerunOk + ' keys ' + keysFinal.length + ' burst survivors ' + keysMid.length, rerunOk && noLoss && keysFinal.length >= 897); // the preload's contract is the 897 files (baseKeys, exactly, since the 1.94 pack cache), and this section's page never reloads, so the sound claims are: full 897 restored, nothing the burst left behind lost
 // E16 (Beta 1.74, audit D02): PROCESS death mid-download. E12 kills the page
 // (a navigation); this kills the whole browser while the download is
 // genuinely incomplete, relaunches on the SAME persisted profile, and the
 // resumed download must restore the full set - the saved maps and the app's
 // state have to survive a process kill, not just a reload.
-await ev2(`(async () => { await caches.delete('snowroute-tiles-v1'); try { localStorage.removeItem('snowroute.prep.v1'); } catch (e) {} return true; })()`);
+await ev2(`(async () => { await caches.delete('snowroute-tiles-v1'); await caches.delete('snowroute-offline-v1'); try { localStorage.removeItem('snowroute.prep.v1'); } catch (e) {} return true; })()`);
 tileDelayMs = 150;
 await ev2(`document.getElementById('xPre').click()`);
 const partial16 = await waitPartial();
@@ -230,7 +230,16 @@ await ev2(`document.getElementById('xPre').click()`);
 const stat16 = await poll(`document.getElementById('xPreStat').textContent.includes('saved 897 of 897')`, 420000);
 const keysAfter16 = await keysOf();
 const noLoss16 = partialKeys16.every(u => keysAfter16.includes(u));
-ok('E16 process killed mid-download: relaunch on the same profile and the resumed download restores the full preload set (897) and loses nothing the kill left stored | back ' + backOk + ' keys ' + keysAfter16.length + ' (base ' + baseKeys.length + ' incl. 2 opportunistic glyphs)', backOk && stat16 && noLoss16 && keysAfter16.length >= 897);
+ok('E16 process killed mid-download: relaunch on the same profile and the resumed download restores the full preload set (897) and loses nothing the kill left stored | back ' + backOk + ' keys ' + keysAfter16.length + ' (base ' + baseKeys.length + ' = the pack exactly)', backOk && stat16 && noLoss16 && keysAfter16.length >= 897);
+// E18 (Beta 1.94, audit F-03): the browsing cache's FIFO eviction can never
+// evict the downloaded pack. Flood snowroute-tiles-v1 past its 3000 cap from
+// the page, then fetch fresh tiles THROUGH the worker so its batched trim
+// actually runs; every pack file must still sit in snowroute-offline-v1, and
+// the browsing cache must show the trim happened (below the flood level).
+await ev2(`(async () => { const tc = await caches.open('snowroute-tiles-v1'); const res = new Response('x'); for (let i = 0; i < 3100; i++) await tc.put('https://tiles.basemaps.cartocdn.com/flood/' + i, res.clone()); return true; })()`);
+await ev2(`(async () => { const tpl = 'https://tiles.basemaps.cartocdn.com/v/20261026-01/vectortiles/carto.streets/v2/12/{x}/1490.mvt'; for (let i = 0; i < 30; i++) { try { await fetch(tpl.replace('{x}', 1140 + i)); } catch (e) {} } return true; })()`);
+const e18 = JSON.parse(await ev2(`(async () => { const oc = await caches.open('snowroute-offline-v1'); const base = ${JSON.stringify(baseKeys)}; let have = 0; for (const u of base) { if (await oc.match(u)) have++; } const tc = await caches.open('snowroute-tiles-v1'); return JSON.stringify({ have, tiles: (await tc.keys()).length }); })()`));
+ok('E18 browsing-cache eviction (flooded past its cap, trim ran) leaves the downloaded pack untouched | pack ' + e18.have + ' of ' + baseKeys.length + ', browsing cache ' + e18.tiles, e18.have === baseKeys.length && e18.tiles <= 3024 && e18.tiles < 3100);
 // E17 (Beta 1.74 audit E02): process death vs APP STATE. E14/E16 prove the
 // map cache survives a kill; this proves the WORK does: an open clean, its
 // session marker, marked streets and the GPS trail, all written through the

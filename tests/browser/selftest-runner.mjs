@@ -6,6 +6,9 @@
 //   fixture-fail     one failed check in the block, exit 0 -> runner FAIL
 //   fixture-exc      exceptions in the block, exit 0       -> runner FAIL
 //   fixture-noblock  no result block at all, exit 0        -> runner FAIL
+//   fixture-empty    result block with ZERO checks, exit 0 -> runner FAIL
+//                    (Beta 1.94, deep audit SR-193-06: an empty checks array
+//                    used to pass - a drive that ran nothing proved nothing)
 //   fixture-hang     never prints, never exits             -> runner FAIL
 //                    (killed via RUNNER_TIMEOUT_MS, set short for this test)
 // Fixtures are deleted afterwards, pass or fail. No browser is needed:
@@ -23,6 +26,7 @@ const FIXTURES = {
   'fixture-fail': BLOCK([['a', true], ['b', false]], 0),
   'fixture-exc': BLOCK([['a', true]], 2),
   'fixture-noblock': `console.log('just noise, no result block');`,
+  'fixture-empty': BLOCK([], 0),
   'fixture-hang': `setInterval(() => {}, 1000);`,
 };
 const EXPECT_PASS = { 'fixture-ok': true };
