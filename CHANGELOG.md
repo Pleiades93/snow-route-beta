@@ -1,5 +1,39 @@
 # Changelog
 
+## Beta 1.93 — 2026-11-03
+
+The follow-up audit round: seven residual findings from the independent
+Beta 1.92 audit, each reproduced first, then fixed at its source.
+
+- **Cancel after a reload no longer erases pre-Start progress (R01).** The
+  pre-Start snapshot lives only in memory, so a cancelled resumed run fell
+  back to wiping the whole board. It now reverts only the sides marked at
+  or after Start — the mark timestamps are the run's journal — and keeps
+  everything older.
+- **Live pace counts only this run's work (R06).** The rate's numerator was
+  the whole board over the run's clock, so streets marked before Start
+  inflated it. It now counts sides stamped during the run; the remaining-
+  work side of the ETA is unchanged.
+- **A backup is refused when its data cannot be flushed (R02).** If the
+  pre-export flush of trail/coverage fails, the export now fails openly
+  instead of shipping a valid-looking backup with stale data inside.
+- **Cancel's message matches what was saved (R07).** If the trail cleanup
+  could not be written, the message says exactly that (and the retry stays
+  armed) instead of claiming the run was fully erased.
+- **Finish cannot leave a stale start behind (R05).** Clearing the run's
+  start time is now a gated step inside Finish itself: if the delete
+  cannot land, the finish stops with the run intact, replacing the retry
+  window where an app death could resurrect a finished run.
+- **An empty completion list restores as empty (R03).** A backup whose
+  completion list is explicitly empty now derives an empty side record
+  too, instead of leaving the phone's old marks in charge.
+- **Migration completeness is verified, not assumed (R04).** A route slot
+  counts as migrated only when every field the legacy data holds is
+  present in it; a partial copy is re-copied, never adopted.
+- Test gap closed (V02): the offline download now has a stalled-file
+  check — one file that never answers is abandoned by the 30-second
+  timeout and the download still completes honestly.
+
 ## Beta 1.92 — 2026-11-03
 
 The deep-audit fix round: all seven code findings of the external Beta 1.90

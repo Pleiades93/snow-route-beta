@@ -86,7 +86,7 @@ Settings → **Backup** is a small menu of three options: **Backup (JSON)**,
 | `scripts/build-pages.py` | The repository-owned build: generates `index.html` + `sw.js` from `src/` and runs the parity, CSP, integrity and version gates. Standard library only. |
 | `scripts/csp_stamp.py` | Computes the Content-Security-Policy the build stamps into the page. |
 | `tests/sw.test.mjs` | Service worker fetch-strategy tests (Node, mocked caches/fetch) — 22 checks. |
-| `tests/browser/` | The deterministic browser drive battery (36 drives, 467 checks) plus the offline end-to-end suite (26 checks) — see `docs/TESTING.md`. |
+| `tests/browser/` | The deterministic browser drive battery (36 drives, 476 checks) plus the offline end-to-end suite (26 checks) — see `docs/TESTING.md`. |
 | `docs/` | `ARCHITECTURE.md`, `STORAGE-SCHEMA.md`, `TESTING.md`, `DEPLOYMENT.md` — the detailed references. |
 | `DEVELOPMENT_RULES.md` | How changes are built, tested and merged in this repo. |
 | `CHANGELOG.md` | What changed in each Beta version. |

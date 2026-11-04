@@ -201,7 +201,7 @@
   #setMenu.open { opacity: 1; visibility: visible; transform: none; pointer-events: auto; transition: transform var(--anim-dur) var(--ease-open), opacity .3s ease, visibility 0s; }
   #setVer { position: absolute; right: 24px; bottom: calc(30px + env(safe-area-inset-bottom, 0px)); color: rgba(255,255,255,.75); font-size: 12px; font-weight: 600; letter-spacing: .04em; } /* Beta 1.88 (Andrew's pick): the version rides the settings menu family at bottom-right, in both panes, synced from the main title's version - never a second copy to go stale */
   #nightBtn { position: fixed; top: calc(var(--vvt, 0px) + 78px); right: calc(12px + var(--sar)); z-index: 1000; margin: 0; } /* Beta 1.88 (Andrew): Day/Night is its own round button at top-right - the dockBtn class itself, so it IS the Pace/Streets button (56px, same glass, same 27px icon), only placed */
-  #toast { position: absolute; left: 50%; bottom: calc(120px + var(--sab)); transform: translateX(-50%) translateY(16px); z-index: 10001; /* Beta 1.92 (deep audit F03): above the full-screen takeovers (10000) - backup/restore errors toasted from inside Settings were hidden behind its opaque blue */ background: rgba(20,22,28,.95); color: #fff; font-size: 13px; font-weight: 600; padding: 9px 14px; border-radius: 10px; box-shadow: var(--shadow-float); opacity: 0; pointer-events: none; transition: opacity var(--anim-dur) var(--ease-open), transform var(--anim-dur) var(--ease-open); max-width: 86vw; text-align: center; }
+  #toast { position: absolute; left: 50%; bottom: calc(120px + var(--sab)); transform: translateX(-50%) translateY(16px); z-index: 10001; /* Beta 1.93 (deep audit F03): above the full-screen takeovers (10000) - backup/restore errors toasted from inside Settings were hidden behind its opaque blue */ background: rgba(20,22,28,.95); color: #fff; font-size: 13px; font-weight: 600; padding: 9px 14px; border-radius: 10px; box-shadow: var(--shadow-float); opacity: 0; pointer-events: none; transition: opacity var(--anim-dur) var(--ease-open), transform var(--anim-dur) var(--ease-open); max-width: 86vw; text-align: center; }
   #toast.show { opacity: 1; transform: translateX(-50%) translateY(0); }
   #map { transition: transform .45s ease-in-out; }
 /* ===== SPLASH (Beta 1.42, Andrew approved the mock 2026-10-31) =====
@@ -257,7 +257,7 @@
 <div id="hud">
   <div id="warn">Not saving — storage is full or blocked</div>
   <div class="row">
-    <div class="titleStack"><div class="title">Snow Route Beta</div><div class="ver" id="ver">Beta 1.92</div></div>
+    <div class="titleStack"><div class="title">Snow Route Beta</div><div class="ver" id="ver">Beta 1.93</div></div>
   </div>
   <div id="stats"></div>
 </div>
@@ -356,7 +356,10 @@ let LS = { ...routeKeys('5w'), ...LS_GLOBAL };
 function migrateLegacyRoute(id) { // one-time, 5W only: copy -> verify per key; any failure wipes the partial copy and reports false (caller reads the legacy keys for this boot and the move retries next boot). The legacy keys themselves are never deleted - they stay as the fallback copy.
   if (id !== '5w') return true;
   const rk = routeKeys(id);
-  if (lsGet(rk.sides) !== null || lsGet(LEGACY_KEYS.sides) === null) return true;
+  if (lsGet(LEGACY_KEYS.sides) === null) return true; // nothing legacy to move
+  let slotComplete = lsGet(rk.sides) !== null;
+  if (slotComplete) { for (const f of ROUTE_FIELDS) { if (lsGet(LEGACY_KEYS[f]) !== null && lsGet(rk[f]) === null) { slotComplete = false; break; } } } // Beta 1.93 (follow-up audit R04): sides' mere presence is not a commit - a slot missing ANY field legacy holds is a partial copy (e.g. a failed cleanup left it behind), so the verified copy below runs again instead of adopting it
+  if (slotComplete) return true;
   const copied = [];
   for (const f of ROUTE_FIELDS) { const raw = lsGet(LEGACY_KEYS[f]); if (raw === null) continue; if (!lsSet(rk[f], raw) || lsGet(rk[f]) !== raw) { const wipe = ['sides', f, ...copied]; for (const c of wipe) lsDel(rk[c]); if (lsGet(rk.sides) !== null) lsDel(rk.sides); return false; } copied.push(f); } // Beta 1.92 (audit F08): the cleanup wipes sides FIRST and re-checks it - a surviving rk.sides would make the next boot mistake this partial slot for a completed migration
   return true;
@@ -589,6 +592,10 @@ function themeTick() { // the boundary hand-back, and the automatic cycle itself
 })();
 document.addEventListener('visibilitychange', () => { if (document.visibilityState === 'visible') themeTick(); });
 function workDoneM() { let s = 0; for (const n of STREETNAMES) { const p = pieces[n]; STRETCH[n].parts.forEach((part, i) => { const L = segLenM(part); if (p[i] & 1) s += L; if (p[i] & 2) s += L; }); } return s; }
+function liveWorkM() { // Beta 1.93 (follow-up audit R06): the RUN's work only - sides stamped at or after Start. workDoneM counts the whole board, so marks made before Start used to inflate the live rate (real progress, wrong clock).
+  if (!runStart) return 0; let s = 0;
+  for (const n of STREETNAMES) { const p = pieces[n], T = pieceTimes[n] || {}; STRETCH[n].parts.forEach((part, i) => { const L = segLenM(part); const st = T[i] || [null, null]; if ((p[i] & 1) && st[0] && Date.parse(st[0]) >= runStart) s += L; if ((p[i] & 2) && st[1] && Date.parse(st[1]) >= runStart) s += L; }); }
+  return s; }
 function totalWorkM() { let s = 0; for (const n of STREETNAMES) s += STRETCH[n].total * 2; return s; }
 // Beta 1.57 (Phase 2 storage integrity, external audit Section 7): saveAll has a
 // failure CONTRACT now. The sides record is the AUTHORITY for completion - the
@@ -3019,7 +3026,7 @@ function paceInfo() { // Beta 1.91 (Andrew): pace is a WORK RATE - side-metres p
   const ref = refRun();
   const refRateMh = ref ? workRateMh(cleanWorkM(ref), Date.parse(ref.startedAt || ''), Date.parse(ref.at || ''), 0.05) : null;
   let rateMh = null, live = false;
-  if (runStart) { const r = workRateMh(workDoneM(), runStart, Date.now(), 0.02); if (r) { rateMh = r; live = true; } }
+  if (runStart) { const r = workRateMh(liveWorkM(), runStart, Date.now(), 0.02); if (r) { rateMh = r; live = true; } } // Beta 1.93 (audit R06): the numerator is the RUN's work (liveWorkM), not the whole board's
   if (!rateMh) rateMh = refRateMh;
   let etaTxt = '';
   if (runStart && rateMh) { const leftM = totalWorkM() - workDoneM(); if (leftM > 0) { const leftH = leftM / rateMh; etaTxt = 'ETA ' + fmtDur(leftH * 3600000) + ' · done ~' + fmtClock(new Date(Date.now() + leftH * 3600000)); } }
@@ -3194,16 +3201,22 @@ function cancelStart() {
     trail = trail.filter(p => (p[2] || 0) < startSec);
     trailSessions = trailSessions.filter(s => s !== startSec);
     if (runSnap) { pieces = runSnap.pieces; pieceTimes = runSnap.pieceTimes; doneSet = new Set(runSnap.done); doneTimes = runSnap.times; doneVia = runSnap.via; coveredIdx = runSnap.cov; }
-    else { for (const n of STREETNAMES) { pieces[n] = STRETCH[n].parts.map(() => 0); pieceTimes[n] = {}; } doneSet = new Set(); doneTimes = {}; doneVia = {}; coveredIdx = {}; }
+    else { // Beta 1.93 (follow-up audit R01): no snapshot (the app reloaded mid-run) - the mark stamps are the run's journal: revert ONLY sides stamped at or after Start. Anything older is pre-Start progress and is not this run's to erase; the 1.91 full-board wipe could destroy it. Coverage is left as-is here (GPS-derived, auxiliary; the trail wipe above is the run's record).
+      for (const n of STREETNAMES) { const P = pieces[n], T = pieceTimes[n] || {}; for (let i = 0; i < P.length; i++) { const st = T[i] || [null, null]; if ((P[i] & 1) && st[0] && Date.parse(st[0]) >= runStart) { P[i] &= ~1; st[0] = null; } if ((P[i] & 2) && st[1] && Date.parse(st[1]) >= runStart) { P[i] &= ~2; st[1] = null; } } }
+      doneSet = new Set(STREETNAMES.filter(streetComplete));
+      for (const k of Object.keys(doneTimes)) if (!doneSet.has(k)) delete doneTimes[k];
+      for (const k of Object.keys(doneVia)) if (!doneSet.has(k)) delete doneVia[k];
+    }
     trailDirty = true; sessDirty = true;
   }
   runSnap = null;
   runStart = 0; suggested = new Set(); $('suggest').classList.add('hidden');
   const okCancel = saveAll(); flushAux(true);
+  const trailPending = trailDirty || sessDirty; // Beta 1.93 (follow-up audit R07): the erasure claim below is gated on the trail/session writes having actually landed
   if (wasRunGps) stopGps();
   if (window.GLP) window.GLP.sync(); renderPanel(); renderStreets();
   drawTrail(true); updateCount(); syncWake();
-  if (okCancel) toast('Start cancelled — run erased'); else toast('Start cancelled - warning: the cancellation could not be saved; the run may return on reload', 4200);
+  if (okCancel && !trailPending) toast('Start cancelled — run erased'); else if (okCancel) toast('Start cancelled — erased here, but the trail cleanup could not be saved yet; it will keep retrying', 4200); else toast('Start cancelled - warning: the cancellation could not be saved; the run may return on reload', 4200);
 } // Beta 1.69 (audits N03 + trail): cancelStart ignored saveAll's result and claimed success unconditionally; it also never refreshed the trail, so a cancelled run's line lingered
 $('startBtn').addEventListener('click', () => { if (!tapGuard('startBtn')) return; startClean(); });
 // CLEAR (Andrew, Beta 1.7): header button beside Pace - one tap wipes EVERY mark on the board (all streets,
@@ -3286,12 +3299,26 @@ function finishRun() {
   }
   const clearedPieces = {}, clearedTimes = {};
   for (const n of STREETNAMES) { clearedPieces[n] = STRETCH[n].parts.map(() => 0); clearedTimes[n] = {}; }
+  const prevSidesRaw = lsGet(LS.sides); // Beta 1.93 (audit R05): kept so the start-key gate below can roll this write back
   if (!lsSet(LS.sides, JSON.stringify({ p: clearedPieces, t: clearedTimes }))) {
     if (archiving) { // roll the archive back - the finish did not happen. Beta 1.63 (audit F02): the rollback is CHECKED and READ BACK - if it fails, the stored history and the stored board disagree, and the message must say so instead of claiming the clean is intact.
       const rbOk = lsSet(LS.hist, JSON.stringify(prevHist)) && lsGet(LS.hist) === JSON.stringify(prevHist);
       if (!rbOk) { toast('Storage failure — finish stopped, but the archive could not be undone. Export a backup now', 6000); return; }
     }
     toast('Storage problem — finish stopped, your clean is intact', 4200);
+    return;
+  }
+  // Beta 1.93 (follow-up audit R05): the start-key delete is a GATE, taken before anything
+  // mutates. 1.92's retry (startDirty) still left a window: die before the retry lands and
+  // the stale start key resurrects this finished run on the next boot. If the delete cannot
+  // land, both gated writes roll back (checked, as at gate 2) and the finish stops with the
+  // run intact - a committed finish never carries a stale start key.
+  if (runStart && !lsDel(LS.start)) {
+    const rbSides = prevSidesRaw === null ? lsDel(LS.sides) : (lsSet(LS.sides, prevSidesRaw) && lsGet(LS.sides) === prevSidesRaw);
+    let rbHist = true;
+    if (archiving) rbHist = lsSet(LS.hist, JSON.stringify(prevHist)) && lsGet(LS.hist) === JSON.stringify(prevHist);
+    if (rbSides && rbHist) toast('Storage problem — finish stopped, your clean is intact', 4200);
+    else toast('Storage failure — finish stopped, but the rollback could not be verified. Export a backup now', 6000);
     return;
   }
   if (archiving) history = newHist;
@@ -3645,6 +3672,7 @@ $('xFile').addEventListener('change', async () => { const f = $('xFile').files &
 function dl(blob, name) { const a = document.createElement('a'); a.href = URL.createObjectURL(blob); a.download = name; document.body.appendChild(a); a.click(); setTimeout(() => { URL.revokeObjectURL(a.href); a.remove(); }, 400); }
 function backupObj() { // Beta 1.76: format v2 - routes carry their own slots ({routes: {id: {field: raw}}}) and the night preference rides at top level. Reads stay RAW (Beta 1.48, audit B04): a failed read fails the whole export (null) instead of producing a valid-looking backup with a piece silently missing.
   flushAux(true); // Beta 1.92 (deep audit F04): flush the buffered trail/coverage first - a backup must not lag the work it claims to hold
+  if (trailDirty || auxDirty || sessDirty) return null; // Beta 1.93 (follow-up audit R02): the flush did not land - refuse the export (the caller's 'could not be read' message) rather than ship a valid-looking backup with stale trail/coverage inside
   const routes = {};
   for (const p of ROUTE_PACKS) { const rk = routeKeys(p.id); const data = {}; for (const f of ROUTE_FIELDS) { const key = (activeRoute && p.id === activeRoute.id && LS[f] !== rk[f]) ? LS[f] : rk[f]; let v = null; try { v = localStorage.getItem(key); } catch (e) { return null; } if (v != null) data[f] = v; } if (Object.keys(data).length) routes[p.id] = data; } // Beta 1.92 (deep audit F02): the ACTIVE route exports from the key mapping it is actually running on - on a legacy-fallback boot (migration failed) LS points at the legacy keys, and reading the fresh slot would emit a valid-looking EMPTY backup
   let night = null; try { night = localStorage.getItem(LS_GLOBAL.night); } catch (e) { return null; }
@@ -3720,7 +3748,7 @@ function restoreBackup(parsed) { // production doRestore semantics: validate EVE
       const times = timesEnt ? (JSON.parse(timesEnt[1]) || {}) : {};
       const P = {}, T = {};
       for (const n of names) { if (typeof n !== 'string' || !STREETSET.has(n) || !STRETCH[n]) continue; P[n] = STRETCH[n].parts.map(() => 3); T[n] = STRETCH[n].parts.map(() => [times[n] || null, times[n] || null]); }
-      if (Object.keys(P).length) entries.push([rk.sides, JSON.stringify({ p: P, t: T })]);
+      entries.push([rk.sides, JSON.stringify({ p: P, t: T })]); // Beta 1.93 (follow-up audit R03): ALWAYS write the derived authority when the backup carries done-but-no-sides - an explicitly EMPTY list ('[]') is an intentional empty state, and {} reads back as nothing done; skipping the write used to leave the phone's old sides in charge
     } catch (e) { /* a list that cannot be parsed was already rejected during validation - never invent sides from rubble */ }
   }
   if (!entries.length) { toast('Nothing in that backup to restore', 3000); return; }
