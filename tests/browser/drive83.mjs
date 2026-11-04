@@ -28,9 +28,9 @@ await seedReload({ 'snowroute.5w.v2': '["Angie","Velmar"]', 'snowroute.5w.v4.not
 const e0 = exc();
 await ev(`(() => { openExport(); return true; })()`); // Beta 1.88: the export surface is the settings takeover's backup pane now (Summary mode is gone with the old Snow log)
 await sleep(500);
-A = JSON.parse(await ev(`(() => JSON.stringify({ open: $('setMenu').classList.contains('open') && $('setBackupPane').classList.contains('on'), hasFlag: $('xText').value.includes('deep'), velmarNotes: notes.Velmar }))()`));
+A = JSON.parse(await ev(`(() => { const bb = buildBackup(); return JSON.stringify({ open: $('setMenu').classList.contains('open') && $('setBackupPane').classList.contains('on'), hasFlag: !!bb && bb.includes('deep'), velmarNotes: notes.Velmar }); })()`)); // Beta 1.89: the backup is no longer rendered into a box - the builder itself is the read
 ok('SEC-2 export panel opens despite poisoned notes', A.open);
-ok('SEC-2 valid flag still renders', A.hasFlag);
+ok('SEC-2 valid flag still in the backup', A.hasFlag);
 ok('SEC-2 string notes entry deleted at load', A.velmarNotes === undefined);
 ok('SEC-2 no exception from the backup open', exc() === e0);
 // P4 SEC-9a: absurd trail timestamp dropped, GPX export survives
