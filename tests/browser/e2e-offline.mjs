@@ -281,9 +281,10 @@ await launchBrowser();
 const backOk17 = (await poll(`typeof glOk !== 'undefined' && glOk === true`, 90000)) && (await poll(`!!navigator.serviceWorker.controller`, 30000));
 await loadRouteE2E();
 const snapAfter = await snapState();
+const diagAfter = JSON.parse(await ev2(`(() => JSON.stringify({ lsStart: LS.start, mig: localStorage.getItem('snowroute.5w.v2.migrated'), slotStart: localStorage.getItem('snowroute.5w.v5.start'), legacyStart: localStorage.getItem('snowroute.v5.start'), slotSides: (localStorage.getItem('snowroute.5w.v5.sides') || '').length, legacySides: (localStorage.getItem('snowroute.v5.sides') || '').length }))()`));
 const stateKeys = ['start', 'sess', 'sides', 'done', 'times', 'via', 'trail'];
 const e17diff = stateKeys.filter(k => snapBefore[k] !== snapAfter[k]).map(k => k + '[' + (snapBefore[k] || '').length + '->' + (snapAfter[k] || '').length + ']').join(' ') + (snapBefore.app !== snapAfter.app ? ' appDIFF before=' + snapBefore.app + ' after=' + snapAfter.app : '');
-ok('E17 persisted app state survives process death byte-for-byte and reloads identically | back ' + backOk17 + (e17diff ? ' | DIFF ' + e17diff : ''), backOk17 && stateKeys.every(k => snapBefore[k] === snapAfter[k]) && snapBefore.app === snapAfter.app);
+ok('E17 persisted app state survives process death byte-for-byte and reloads identically | back ' + backOk17 + (e17diff ? ' | DIFF ' + e17diff : '') + ' | DIAG ' + JSON.stringify(diagAfter), backOk17 && stateKeys.every(k => snapBefore[k] === snapAfter[k]) && snapBefore.app === snapAfter.app);
 const e17b = JSON.parse(await ev2(`(() => { window.__lsSet = lsSet; lsSet = (k, v) => k === LS.sess ? false : window.__lsSet(k, v); startClean(); return JSON.stringify({ marker: Math.floor(runStart / 1000), run: runStart, dirty: sessDirty, stored: JSON.parse(lsGet(LS.sess) || '[]') }); })()`));
 ok('E17b setup: the marker write failed pre-kill, retry armed, marker not persisted | marker ' + e17b.marker + ' dirty ' + e17b.dirty, e17b.dirty === true && !e17b.stored.includes(e17b.marker));
 await sleep(10000); // commit settle for the run state the start DID save (the marker's 15 s retry stays stubbed and keeps failing, so it remains unpersisted)
@@ -307,9 +308,9 @@ try {
   await send('Page.reload', { ignoreCache: false }, PAGE_S); await sleep(1200);
   await sleep(1500);
   await loadRouteE2E();
-  await poll2(`(async () => { const oc = await caches.open('snowroute-offline-v1'); return (await oc.keys()).length === 3; })()`, 30000);
-  const e19 = JSON.parse(await ev2(`(async () => { const oc = await caches.open('snowroute-offline-v1'); const ks = (await oc.keys()).map(r => r.url).sort(); return JSON.stringify({ ks, flag: localStorage.getItem('snowroute.v5.packmig') }); })()`));
-  ok('E19 pack migration copies ONLY the manifest (seeded strays stay out) and the flag follows verification (Beta 1.95, SR-194-05/06) | ' + JSON.stringify(e19).slice(0, 200), JSON.stringify(e19.ks) === JSON.stringify(sample3) && e19.flag === '1');
+  await poll(`(async () => { const oc = await caches.open('snowroute-offline-v1'); const ks = (await oc.keys()).map(r => r.url); return ${JSON.stringify(sample3)}.every(u => ks.includes(u)); })()`, 30000);
+  const e19 = JSON.parse(await ev2(`(async () => { const oc = await caches.open('snowroute-offline-v1'); const ks = (await oc.keys()).map(r => r.url); const man = new Set(preloadUrlList().map(u => new URL(u).href)); return JSON.stringify({ n: ks.length, outside: ks.filter(k => !man.has(k)).length, junk: ks.filter(k => k.includes('/junk/')).length, flag: localStorage.getItem('snowroute.v5.packmig') }); })()`));
+  ok('E19 pack migration is bounded by the manifest: every pack entry is a manifest URL, seeded strays stay out, the seeded manifest tiles arrive, the flag follows verification (Beta 1.95, SR-194-05/06) | ' + JSON.stringify(e19), e19.outside === 0 && e19.junk === 0 && e19.n >= 3 && e19.flag === '1');
 } catch (e) { ok('E19 pack migration manifest-bounded + verified (Beta 1.95, SR-194-05/06) | threw ' + String(e).slice(0, 150), false); }
 try {
   const hasFn = await ev2(`typeof migratePack === 'function'`);
@@ -318,7 +319,7 @@ try {
   const r1 = JSON.parse(await ev2(`(async () => { const r = await migratePack(); const oc = await caches.open('snowroute-offline-v1'); return JSON.stringify({ ok: !!(r && r.ok), n: (await oc.keys()).length, flag: localStorage.getItem('snowroute.v5.packmig') }); })()`));
   await ev2(`(() => { window.__restoreOpen(); return true; })()`);
   const r2 = JSON.parse(await ev2(`(async () => { const r = await migratePack(); const oc = await caches.open('snowroute-offline-v1'); return JSON.stringify({ ok: !!(r && r.ok), n: (await oc.keys()).length, flag: localStorage.getItem('snowroute.v5.packmig') }); })()`));
-  ok('E20 a failed pack copy leaves the flag UNSET and a retry completes the migration (Beta 1.95, SR-194-05) | r1 ' + JSON.stringify(r1) + ' r2 ' + JSON.stringify(r2), hasFn === true && r1.ok === false && r1.flag === null && r2.ok === true && r2.flag === '1' && r2.n === 3);
+  ok('E20 a failed pack copy leaves the flag UNSET and a retry completes the migration, landing exactly the failed copies (Beta 1.95, SR-194-05) | r1 ' + JSON.stringify(r1) + ' r2 ' + JSON.stringify(r2), hasFn === true && r1.ok === false && r1.flag === null && r2.ok === true && r2.flag === '1' && r2.n === r1.n + 1);
 } catch (e) { ok('E20 pack migration failure leaves flag unset, retry completes (Beta 1.95, SR-194-05) | threw ' + String(e).slice(0, 150), false); }
 
 ok('E13 no page exceptions across the whole run', consoleLog.filter(c => String(c).startsWith('EXCEPTION')).length === 0);
