@@ -19,23 +19,28 @@ hand-edit `index.html` or the root `sw.js`.
 
 ## Release flow
 
-1. Edit `src/tracker-source.html` (and `src/sw.js` when the worker
-   changes). Bump the version label (`#ver`, under the title) — and, if the
-   worker changed, its cache name (`snowroute-shell-vN`).
-2. Run the build and the tests (`docs/TESTING.md`), plus the release
-   regression drives.
-3. Test the source build where it will be used; confirm it is good.
-4. Commit source, worker and generated files together in one commit and
-   push. CI re-runs the build check and the service worker tests.
+1. Work on a branch — never commit a release straight to `main`. Edit the
+   app (assembled into `src/tracker-source.html`; `src/sw.js` when the
+   worker changes). Bump the version in both places that carry it: the
+   `#ver` label in the page and the top `CHANGELOG.md` entry — the build
+   gate fails the build if they disagree. If the worker changed, bump its
+   cache name (`snowroute-shell-vN`) too.
+2. Run the build and the full battery (`docs/TESTING.md`) locally.
+3. Push the branch. CI runs the build gate, the service-worker suite, the
+   full sharded browser battery and the offline end-to-end suite.
+4. Merge to `main` only under the merge gate in `DEVELOPMENT_RULES.md`:
+   the merged tree is proven identical to the tested branch tree, and
+   `main` then runs the build gate, a smoke subset and the offline suite.
+   Pages serves `main`, so the merge is the release.
 5. Pages picks the files up within a few minutes; GitHub's edge cache can
    lag ~10 minutes behind the push.
 
 ## Updating the installed app
 
-Open the app → ⚙ fan → **Update app** (the ⟳ icon). It fetches the served
+Open the app → Settings (the gear tab) → **Update**. It fetches the served
 page without cache, compares its version label with the running one, and
 reloads into the new build, confirming "Updated to vX.Y ✓". If it reports
-you are up to date but the label under "Snow Route" shows an older version,
+you are up to date but the version at the bottom right of Settings shows an older one,
 the edge cache has not caught up yet — wait a few minutes and retry.
 
 ## Rollback
@@ -46,5 +51,5 @@ build script, and the previous release is always reachable in history.
 
 ## Verifying a deployment
 
-The label under "Snow Route" shows the running build's version — compare it
+Settings shows the running build's version at the bottom right — compare it
 with the release you intended to ship.

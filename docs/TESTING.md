@@ -5,7 +5,7 @@
 ```
 python3 scripts/build-pages.py --check   # generated files match source; parity + SRI integrity + CSP stamp
 node tests/sw.test.mjs                   # service worker fetch-strategy tests
-node tests/browser/run.mjs               # deterministic browser drives (second CI job)
+node tests/browser/run.mjs               # deterministic browser drives (the browser battery; in CI it runs sharded — see the CI shape note below)
 node tests/browser/selftest-runner.mjs   # proves the runner's own verdicts (exit code, timeout)
 ```
 
@@ -17,10 +17,18 @@ not match a fresh hash computation over the built page's own inline
 script and style — a code change can never ship under a stale policy.
 
 The service worker suite runs the worker's `cacheFirst` / `netFirst`
-functions in Node with mocked caches and fetch — 14 cases: cache hits,
+functions in Node with mocked caches and fetch — 22 cases: cache hits,
 HTTP 503 with and without a cached copy, network failure, cache-write
 failure, shell-vs-style confusion, slow-network responses (awaited, then
 cached), tile error handling, and cache-write failures in `netFirst`.
+
+CI shape (`checks.yml`): a build-and-test job (the build gate, a
+shard-coverage guard that fails if the shard lists drift from the drive
+list, and the service-worker suite); the browser battery split across
+four shard jobs on branch pushes; a smoke subset (drives 89, 123, 132,
+145) on pushes to `main`; the offline end-to-end job; and a nightly full
+run on `main`. Merging follows the tree-identity gate in
+`DEVELOPMENT_RULES.md`.
 
 ## Browser tests (in this repository, run in CI)
 
@@ -176,8 +184,8 @@ origin, by `drive117` and `drive119`.
 The rest of the maintainer's drive battery runs locally on every release
 but is intentionally not in CI:
 
-- Animation and geometry drives — settings-fan geometry and measured icon
-  spacing, fan open/close animation profiles, the Pace/List motion
+- Animation and geometry drives — settings/menu geometry and measured icon
+  spacing, menu and sheet animation profiles, the Pace/List motion
   comparison, header layout in every state. These assert pixel positions
   and mid-animation states; they are timing-sensitive and would be flaky
   in CI, so they stay local until a deterministic CI strategy exists.
