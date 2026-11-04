@@ -35,7 +35,7 @@ ok('V0c the boot state has ended before the editor interactions (Beta 1.86: chro
 await ev(`syncViewport()`);
 ok('V1 settled size learned at boot (900) | ' + await ev(`fullH`), await ev(`fullH`) === 900);
 await ev(`$('streetsBtn').click()`); await sleep(500);
-await ev(`(() => { const r = [...document.querySelectorAll('.srow')][names.indexOf('Velmar')]; r.querySelector('.nwrap').click(); return true; })()`); await sleep(400);
+await ev(`(() => { const r = [...document.querySelectorAll('.srow')].find(x => x.querySelector('.nm').textContent === 'Velmar'); r.querySelector('.nwrap').click(); // Beta 1.91: pick by name, not route-order index (list is colour-sorted) return true; })()`); await sleep(400);
 await ev(`document.querySelector('.noteEd textarea').focus()`);
 await sleep(200);
 ok('V2a typing state on (kb class)', await ev(`document.body.classList.contains('kb')`));
@@ -81,7 +81,7 @@ await sleep(300);
 // declared the keyboard settled and ran its one visibility check against the
 // no-keyboard geometry. Now the first check must wait for a real height drop.
 await ev(`(() => { if (!$('sheet').classList.contains('open')) $('streetsBtn').click(); return true; })()`); await sleep(500);
-await ev(`(() => { const r = [...document.querySelectorAll('.srow')][names.indexOf('Velmar')]; r.querySelector('.nwrap').click(); return true; })()`); await sleep(400);
+await ev(`(() => { const r = [...document.querySelectorAll('.srow')].find(x => x.querySelector('.nm').textContent === 'Velmar'); r.querySelector('.nwrap').click(); // Beta 1.91: pick by name, not route-order index (list is colour-sorted) return true; })()`); await sleep(400);
 const hasEd = await ev(`!!document.querySelector('.noteEd textarea')`);
 await ev(`(() => { const ta = document.querySelector('.noteEd textarea'); if (ta) ta.blur(); return true; })()`); await sleep(700);
 await send('Emulation.setDeviceMetricsOverride', { width: 420, height: 900, deviceScaleFactor: 2, mobile: true }, S); await sleep(400);

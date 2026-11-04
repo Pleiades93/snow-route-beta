@@ -7,7 +7,7 @@ await bootThrough(ev, poll); // Beta 1.76: boots end at the route menu now - cli
 const R = { checks: [] };
 const ok = (name, cond) => R.checks.push([name, !!cond]);
 const exc = () => consoleLog.filter(c => c.type === 'EXCEPTION').length;
-const rowOf = (n) => `(() => { const rows = [...document.querySelectorAll('.srow')]; const i = names.indexOf('${n}'); return rows[i]; })()`;
+const rowOf = (n) => `(() => { return [...document.querySelectorAll('.srow')].find(r => r.querySelector('.nm').textContent === '${n}'); })()`; // Beta 1.91: rows are picked BY NAME - the list is colour-sorted now, so a route-order index picks the wrong street
 await sleep(3000);
 await ev(`(() => { localStorage.clear(); location.reload(); return true; })()`); await sleep(3000);
 await ev(`loadRoute('5w'); true`); await sleep(600); // Beta 1.76: a reload lands on the route menu
@@ -16,7 +16,7 @@ await ev(`(() => { $('streetsBtn').click(); return true; })()`); await sleep(400
 let A = JSON.parse(await ev(`(() => JSON.stringify({ rows: document.querySelectorAll('.srow').length, smap: !!document.querySelector('.srow .smap'), snote: !!document.querySelector('.srow .snote') }))()`));
 ok('P1 rows carry the pin button and NO note button (v5.55)', A.rows === 34 && A.smap && !A.snote);
 await ev(`(() => { ${'PLACEHOLDER'} return true; })()`.replace('PLACEHOLDER', ''));
-await ev(`(() => { const r = [...document.querySelectorAll('.srow')][names.indexOf('Velmar')]; r.querySelector('.nwrap').click(); return true; })()`); await sleep(400);
+await ev(`(() => { const r = [...document.querySelectorAll('.srow')].find(x => x.querySelector('.nm').textContent === 'Velmar'); r.querySelector('.nwrap').click(); return true; })()`); await sleep(400);
 A = JSON.parse(await ev(`(() => JSON.stringify({ ed: !!document.querySelector('.noteEd textarea') }))()`));
 ok('P1 name tap opens the note editor', A.ed);
 // Beta 1.31: while the editor has focus (the phone keyboard is up) the sheet must hold still.
@@ -30,7 +30,7 @@ await sleep(800);
 A = JSON.parse(await ev(`(() => JSON.stringify({ ls: localStorage.getItem('snowroute.5w.v4.notes') || '', hint: document.querySelector('.noteEd .nhint').textContent, nt: noteTextOf('Velmar') }))()`));
 ok('P1 note auto-saves to storage (no Save button)', A.ls.includes('blocked by car') && A.nt.includes('blocked by car'));
 ok('P1 editor confirms the save', /Saved/.test(A.hint));
-await ev(`(() => { const r = [...document.querySelectorAll('.srow')][names.indexOf('Angie')]; r.querySelector('.nwrap').click(); return true; })()`); await sleep(400);
+await ev(`(() => { const r = [...document.querySelectorAll('.srow')].find(x => x.querySelector('.nm').textContent === 'Angie'); r.querySelector('.nwrap').click(); return true; })()`); await sleep(400);
 await ev(`(() => { const ta = document.querySelector('.noteEd textarea'); ta.value = 'Could not clean - gate locked'; ta.dispatchEvent(new Event('input', { bubbles: true })); return true; })()`);
 await sleep(800);
 A = JSON.parse(await ev(`(() => JSON.stringify({ nt: noteTextOf('Angie') }))()`));
@@ -38,7 +38,7 @@ ok('P1 note works on a street that is not cleaned', A.nt.includes('gate locked')
 await ev(`(() => { location.reload(); return true; })()`); await sleep(3000);
 await ev(`loadRoute('5w'); true`); await sleep(600);
 await ev(`(() => { $('streetsBtn').click(); return true; })()`); await sleep(400);
-A = JSON.parse(await ev(`(() => { const r = [...document.querySelectorAll('.srow')][names.indexOf('Velmar')]; return JSON.stringify({ preview: r.querySelector('.nt').textContent }); })()`));
+A = JSON.parse(await ev(`(() => { const r = [...document.querySelectorAll('.srow')].find(x => x.querySelector('.nm').textContent === 'Velmar'); return JSON.stringify({ preview: r.querySelector('.nt').textContent }); })()`));
 ok('P1 note survives reload and previews in the row', A.preview.includes('blocked by car'));
 // Phase 2: Reset (finish & save) files the notes with the clean
 await ev(`(() => { const base = Date.now() - 3600000;
