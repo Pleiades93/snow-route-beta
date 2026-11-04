@@ -123,6 +123,21 @@ await poll(`!!window.__bootAt && window.__bootAt !== ${JSON.stringify(bootMark13
 await ev(`loadRoute('5w'); true`); await sleep(600);
 ok('N13 a v1 backup restores into the 5W slot, markers cleared by the C06 rule (trail without its sessions)', await ev(`(function(){ return doneSet.has('Velmar') && localStorage.getItem('snowroute.5w.v5.sess') === '[]' && JSON.parse(localStorage.getItem('snowroute.5w.v4.trail') || '[]').length === 2; })()`));
 
+// --- F06 (Beta 1.92, Andrew's pick (a)): a done-only backup derives its sides
+const v1doneOnly = JSON.stringify({ app: 'snowroute-backup', v: 1, at: '2026-11-02T00:00:00.000Z', data: { 'snowroute.v2': DONE_5W } });
+await ev(`localStorage.clear(); true`);
+await ev(`localStorage.setItem('snowroute.5w.v5.sides', JSON.stringify({ p: { Velmar: [0] }, t: {} })); localStorage.setItem('snowroute.5w.v4.trail', JSON.stringify([[43.8, -79.5, 1762000000]])); true`); // the trail seed keeps N14's v2-shape precondition (a stored trail) true after this section's clear
+await ev(`location.reload(); true`);
+await poll(`!!window.__bootAt`, 30000);
+await ev(`loadRoute('5w'); true`); await sleep(500);
+ok('N13a baseline: the seeded side-marks say Velmar is NOT done', await ev(`!doneSet.has('Velmar')`));
+const bootMark13b = await ev(`window.__bootAt`);
+await ev(`(function(){ document.getElementById('xText').value = ${JSON.stringify(v1doneOnly)}; doRestore(); return true; })()`);
+await sleep(900);
+await poll(`!!window.__bootAt && window.__bootAt !== ${JSON.stringify(bootMark13b)}`, 30000);
+await ev(`loadRoute('5w'); true`); await sleep(600);
+ok('N13b a done-only backup restores for real: the side-marks are derived from the list', await ev(`(function(){ try { return doneSet.has('Velmar') && pieces.Velmar.every(v => v === 3); } catch (e) { return false; } })()`));
+
 // --- backups are v2 now ------------------------------------------------------
 ok('N14 buildBackup emits the v2 per-route shape', await ev(`(function(){ var b = JSON.parse(buildBackup()); return b.app === 'snowroute-backup' && b.v === 2 && !!b.routes && typeof b.routes['5w'].sides === 'string' && typeof b.routes['5w'].trail === 'string'; })()`));
 

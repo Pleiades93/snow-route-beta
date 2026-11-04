@@ -35,6 +35,13 @@ deep audit, each fixed at its source and covered by a fault-injection check.
   button is single-flight (a second tap is refused with a message), and
   every file gives up after 30 seconds instead of one stalled file holding
   the whole download open.
+- **Old backups restore for real (F06, Andrew's pick).** A backup carrying
+  a street completion list but no side-marks record (the old format) used to
+  report success and change nothing — the app trusts the side-marks and
+  rebuilt the list from the phone's existing ones. Such a restore now
+  derives the side-marks from the list, by the same rule the loader uses
+  for streets with no side-marks record. Backups that carry side-marks
+  restore exactly as written, as before.
 - Docs: the storage schema's backup envelope now lists the override expiry
   field it always carried (F12).
 

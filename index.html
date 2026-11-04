@@ -2,7 +2,7 @@
 <html lang="en" class="boot">
 <head>
 <meta charset="UTF-8">
-<meta http-equiv="Content-Security-Policy" content="default-src 'none'; script-src 'sha384-lnRKCeCEaM1ghPtRcy5fmQ1BEVgbZNh8mnapNe5NebfwLSOnpjd2yzWrQ41wr+ob' https://cdn.jsdelivr.net; style-src-elem 'sha384-HyHf4w7/z0NMEOxOrBQEeo080wyG5VEG8D2wm3y/mhbaLtU7OKlwQEB3vBH6KTXo' https://cdn.jsdelivr.net; style-src-attr 'unsafe-inline'; img-src 'self' data: blob: https://tiles.basemaps.cartocdn.com https://protomaps.github.io https://cdn.jsdelivr.net; connect-src 'self' https://tiles.basemaps.cartocdn.com https://protomaps.github.io https://cdn.jsdelivr.net; worker-src blob: 'self'; child-src blob: 'self'; font-src 'none'; manifest-src 'self'; base-uri 'none'; form-action 'none'; object-src 'none'">
+<meta http-equiv="Content-Security-Policy" content="default-src 'none'; script-src 'sha384-SlhKbH+OTxOpnwwAUhtV9QcTyHnQuVTzEBh393t8TWcKhmSAI0+On+5gT9UfkuvN' https://cdn.jsdelivr.net; style-src-elem 'sha384-HyHf4w7/z0NMEOxOrBQEeo080wyG5VEG8D2wm3y/mhbaLtU7OKlwQEB3vBH6KTXo' https://cdn.jsdelivr.net; style-src-attr 'unsafe-inline'; img-src 'self' data: blob: https://tiles.basemaps.cartocdn.com https://protomaps.github.io https://cdn.jsdelivr.net; connect-src 'self' https://tiles.basemaps.cartocdn.com https://protomaps.github.io https://cdn.jsdelivr.net; worker-src blob: 'self'; child-src blob: 'self'; font-src 'none'; manifest-src 'self'; base-uri 'none'; form-action 'none'; object-src 'none'">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="mobile-web-app-capable" content="yes">
@@ -3703,6 +3703,27 @@ function restoreBackup(parsed) { // production doRestore semantics: validate EVE
   // of this restore: the entry is written and verified like every other, and the snapshot +
   // rollback below cover the markers too. Applies per route (today: the 5W slot in both formats).
   for (const p of ROUTE_PACKS) { const rk = routeKeys(p.id); if (entries.some(e => e[0] === rk.trail) && !entries.some(e => e[0] === rk.sess)) entries.push([rk.sess, '[]']); }
+  // Beta 1.92 (deep audit F06, Andrew's pick (a)): a backup carrying a route's completion
+  // list but NO side-marks record (the old v1 shape) used to restore into silence - the
+  // loader trusts the side-marks and rebuilt the list from the phone's existing ones,
+  // erasing the restore while reporting success. Derive the side-marks from the list
+  // instead, by the loader's own rule for streets with no sides record: a completed
+  // street is all-sides-done, stamped with its completion time. Scoped to backups that
+  // lack sides entirely; a backup WITH sides restores exactly as written.
+  for (const p of ROUTE_PACKS) {
+    const rk = routeKeys(p.id);
+    const doneEnt = entries.find(e => e[0] === rk.done);
+    if (!doneEnt || entries.some(e => e[0] === rk.sides)) continue;
+    try {
+      const names = JSON.parse(doneEnt[1]);
+      if (!Array.isArray(names)) continue;
+      const timesEnt = entries.find(e => e[0] === rk.times);
+      const times = timesEnt ? (JSON.parse(timesEnt[1]) || {}) : {};
+      const P = {}, T = {};
+      for (const n of names) { if (typeof n !== 'string' || !STREETSET.has(n) || !STRETCH[n]) continue; P[n] = STRETCH[n].parts.map(() => 3); T[n] = STRETCH[n].parts.map(() => [times[n] || null, times[n] || null]); }
+      if (Object.keys(P).length) entries.push([rk.sides, JSON.stringify({ p: P, t: T })]);
+    } catch (e) { /* a list that cannot be parsed was already rejected during validation - never invent sides from rubble */ }
+  }
   if (!entries.length) { toast('Nothing in that backup to restore', 3000); return; }
   const SCOPE = []; for (const p of ROUTE_PACKS) { const rk = routeKeys(p.id); for (const f of ROUTE_FIELDS) SCOPE.push(rk[f]); } SCOPE.push(LS_GLOBAL.night, LS_GLOBAL.nightExp);
   const snap = {}; let snapOk = true;
