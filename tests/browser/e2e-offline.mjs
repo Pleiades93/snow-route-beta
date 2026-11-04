@@ -268,23 +268,53 @@ ok('E18 browsing-cache eviction (flooded past its cap, trim observed at ' + trim
 // them at all).
 const loadRouteE2E = async () => { await poll(`(function(){ if (typeof routeLoaded !== 'undefined' && !routeLoaded && typeof loadRoute === 'function') { try { loadRoute('5w'); } catch (e) {} } return typeof routeLoaded !== 'undefined' && routeLoaded === true; })()`, 60000); await poll(`typeof map === 'undefined' || !map || !map.isMoving()`, 25000); }; // Beta 1.76: app state loads when a route is picked - E17's entry points (startClean, markDone) and state reads need the route loaded, including after each process-kill relaunch. Beta 1.77: also wait out the pick's intro flight.
 const snapState = async () => JSON.parse(await ev2(`(() => { const out = {}; for (const k of ['start', 'sess', 'sides', 'done', 'times', 'via', 'trail']) out[k] = lsGet(LS[k]); out.app = JSON.stringify({ run: runStart, sess: trailSessions.slice(), velmar: pieces.Velmar[0], astona: pieces.Astona[0], done: Array.from(doneSet).sort(), trailN: trail.length }); return JSON.stringify(out); })()`));
-await loadRouteE2E();
-await ev2(`(() => { startClean(); markDone('Velmar', 'tap'); togglePiece('Astona', 0, 0); const t0 = Math.floor(Date.now() / 1000); trail = [[43.82, -79.56, t0], [43.8201, -79.56, t0 + 30], [43.8202, -79.56, t0 + 60]]; saveTrail(); return true; })()`);
-await ev2(`(() => { try { flushAux(true); } catch (e) {} return true; })()`); // quiesce the app's writers first (the flake-log prescription after E17's repeated kill-vs-commit races: settle BEFORE the snapshot, not after)
-await sleep(10000); // storage-commit settle BEFORE snapBefore (Beta 1.95 hardening; the snapshot is then read from committed storage and the kill follows immediately - snapshotting first and settling after left the kill racing the commit, and E17 failed intermittently in both the 1.94 and 1.95 rounds with a wholesale-empty after-state)
-const snapBefore = await snapState();
-ok('E17a the clean state was persisted through the app save paths before the kill | sess ' + snapBefore.sess + ' app ' + snapBefore.app, !!snapBefore.start && JSON.parse(snapBefore.sess).length >= 1 && JSON.parse(snapBefore.app).velmar === 3 && JSON.parse(snapBefore.app).astona === 1 && JSON.parse(snapBefore.app).done.includes('Velmar') && JSON.parse(snapBefore.app).trailN === 3);
-proc.kill('SIGKILL');
-await sleep(1500);
-for (const f of ['SingletonLock', 'SingletonCookie', 'SingletonSocket']) { try { fs.rmSync(PROFILE + '/' + f, { force: true }); } catch (e) {} }
-await launchBrowser();
-const backOk17 = (await poll(`typeof glOk !== 'undefined' && glOk === true`, 90000)) && (await poll(`!!navigator.serviceWorker.controller`, 30000));
-await loadRouteE2E();
-const snapAfter = await snapState();
-const diagAfter = JSON.parse(await ev2(`(() => JSON.stringify({ lsStart: LS.start, mig: localStorage.getItem('snowroute.5w.v2.migrated'), slotStart: localStorage.getItem('snowroute.5w.v5.start'), legacyStart: localStorage.getItem('snowroute.v5.start'), slotSides: (localStorage.getItem('snowroute.5w.v5.sides') || '').length, legacySides: (localStorage.getItem('snowroute.v5.sides') || '').length }))()`));
-const stateKeys = ['start', 'sess', 'sides', 'done', 'times', 'via', 'trail'];
-const e17diff = stateKeys.filter(k => snapBefore[k] !== snapAfter[k]).map(k => k + '[' + (snapBefore[k] || '').length + '->' + (snapAfter[k] || '').length + ']').join(' ') + (snapBefore.app !== snapAfter.app ? ' appDIFF before=' + snapBefore.app + ' after=' + snapAfter.app : '');
-ok('E17 persisted app state survives process death byte-for-byte and reloads identically | back ' + backOk17 + (e17diff ? ' | DIFF ' + e17diff : '') + ' | DIAG ' + JSON.stringify(diagAfter), backOk17 && stateKeys.every(k => snapBefore[k] === snapAfter[k]) && snapBefore.app === snapAfter.app);
+// Phase 1 hygiene (architecture scan 2026-11-04, N4): the scenario runs as an
+// attempt, and a failed attempt earns exactly ONE retry when - and only when -
+// its failure carries the kill-vs-commit race signature: MONOTONE LOSS. Every
+// differing key is absent, emptied, or a strict prefix of its pre-kill value,
+// and the app summary's counts only ever drop (its run stamp unchanged) - the
+// two signatures the flake log documents (partial last-writes loss on
+// 2026-11-04 run 41885400454 attempt 1; wholesale-empty on attempt 2). A
+// mutation, a gain, a changed run, or a second failure is a hard FAIL: the
+// retry exists so the platform's asynchronous storage commit stops blocking
+// release gates, never to forgive an app defect. Each attempt starts from a
+// wiped localStorage so attempts are independent and self-relative.
+const attemptE17 = async () => {
+  await ev2(`(() => { try { localStorage.clear(); } catch (e) {} return true; })()`);
+  await send('Page.reload', { ignoreCache: false }, PAGE_S);
+  await sleep(1200);
+  await loadRouteE2E();
+  await ev2(`(() => { startClean(); markDone('Velmar', 'tap'); togglePiece('Astona', 0, 0); const t0 = Math.floor(Date.now() / 1000); trail = [[43.82, -79.56, t0], [43.8201, -79.56, t0 + 30], [43.8202, -79.56, t0 + 60]]; saveTrail(); return true; })()`);
+  await ev2(`(() => { try { flushAux(true); } catch (e) {} return true; })()`); // quiesce the app's writers first (the flake-log prescription after E17's repeated kill-vs-commit races: settle BEFORE the snapshot, not after)
+  await sleep(10000); // storage-commit settle BEFORE snapBefore (Beta 1.95 hardening; the snapshot is then read from committed storage and the kill follows immediately)
+  const before = await snapState();
+  const aOk = !!before.start && JSON.parse(before.sess).length >= 1 && JSON.parse(before.app).velmar === 3 && JSON.parse(before.app).astona === 1 && JSON.parse(before.app).done.includes('Velmar') && JSON.parse(before.app).trailN === 3;
+  proc.kill('SIGKILL');
+  await sleep(1500);
+  for (const f of ['SingletonLock', 'SingletonCookie', 'SingletonSocket']) { try { fs.rmSync(PROFILE + '/' + f, { force: true }); } catch (e) {} }
+  await launchBrowser();
+  const backOk = (await poll(`typeof glOk !== 'undefined' && glOk === true`, 90000)) && (await poll(`!!navigator.serviceWorker.controller`, 30000));
+  await loadRouteE2E();
+  const after = await snapState();
+  const diag = JSON.parse(await ev2(`(() => JSON.stringify({ lsStart: LS.start, mig: localStorage.getItem('snowroute.5w.v2.migrated'), slotStart: localStorage.getItem('snowroute.5w.v5.start'), legacyStart: localStorage.getItem('snowroute.v5.start'), slotSides: (localStorage.getItem('snowroute.5w.v5.sides') || '').length, legacySides: (localStorage.getItem('snowroute.v5.sides') || '').length }))()`));
+  const keys = ['start', 'sess', 'sides', 'done', 'times', 'via', 'trail'];
+  const diff = keys.filter(k => before[k] !== after[k]).map(k => k + '[' + (before[k] || '').length + '->' + (after[k] || '').length + ']').join(' ') + (before.app !== after.app ? ' appDIFF before=' + before.app + ' after=' + after.app : '');
+  const pass = backOk && keys.every(k => before[k] === after[k]) && before.app === after.app;
+  let appLoss = false;
+  try { const b = JSON.parse(before.app), a = JSON.parse(after.app); appLoss = a.run === b.run && a.velmar <= b.velmar && a.astona <= b.astona && a.trailN <= b.trailN && a.done.every(d => b.done.includes(d)); } catch (e) {}
+  const lossOnly = backOk && aOk && appLoss && keys.every(k => { const b = before[k], a = after[k]; return a === b || a === null || a === '' || (typeof b === 'string' && typeof a === 'string' && a.length < b.length && b.startsWith(a)); });
+  return { before, after, diag, diff, aOk, pass, lossOnly };
+};
+const e17r1 = await attemptE17();
+ok('E17a the clean state was persisted through the app save paths before the kill | sess ' + e17r1.before.sess + ' app ' + e17r1.before.app, e17r1.aOk);
+if (e17r1.pass) {
+  ok('E17 persisted app state survives process death byte-for-byte and reloads identically | back true', true);
+} else if (e17r1.lossOnly) {
+  const e17r2 = await attemptE17();
+  ok('E17 persisted app state survives process death byte-for-byte and reloads identically | attempt 1 carried the kill-vs-commit race signature (monotone loss: ' + e17r1.diff + '), retried once per the Phase 1 N4 rule | attempt 2 ' + (e17r2.pass ? 'clean' : 'FAILED | DIFF ' + e17r2.diff + ' | DIAG ' + JSON.stringify(e17r2.diag)), e17r2.pass);
+} else {
+  ok('E17 persisted app state survives process death byte-for-byte and reloads identically | back ' + e17r1.pass + (e17r1.diff ? ' | DIFF ' + e17r1.diff : '') + ' | DIAG ' + JSON.stringify(e17r1.diag), false);
+}
 const e17b = JSON.parse(await ev2(`(() => { window.__lsSet = lsSet; lsSet = (k, v) => k === LS.sess ? false : window.__lsSet(k, v); startClean(); return JSON.stringify({ marker: Math.floor(runStart / 1000), run: runStart, dirty: sessDirty, stored: JSON.parse(lsGet(LS.sess) || '[]') }); })()`));
 ok('E17b setup: the marker write failed pre-kill, retry armed, marker not persisted | marker ' + e17b.marker + ' dirty ' + e17b.dirty, e17b.dirty === true && !e17b.stored.includes(e17b.marker));
 await sleep(10000); // commit settle for the run state the start DID save (the marker's 15 s retry stays stubbed and keeps failing, so it remains unpersisted)
