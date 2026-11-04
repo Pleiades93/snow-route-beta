@@ -137,6 +137,8 @@ without any manual reload.
 
 ## Backups: one button, automatic recovery fallback (Beta 1.96, Andrew)
 
+Beta 1.97 (audit-loop round 196) hardened what a backup ASSERTS: every route entry carries its start state explicitly (a run's timestamp, or `start: null` for idle), a restore honours the idle assertion by clearing the destination's start + cancel snapshot inside the verified transaction, and normal backups carry the run's validated cancel snapshot — the construction the recovery backup introduced in 1.96, now shared (`snapForExport`). The same round funnelled every board mutation through one Finish-Undo invalidation helper and gated the marking outcome toasts on the save result.
+
 Settings → Backup has ONE backup action. The normal backup is built
 from saved storage and still refuses to be built when the state cannot
 be saved first (it would ship stale data) — but the refusal is no

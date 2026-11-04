@@ -290,10 +290,12 @@ onMapReady(() => map.on('click', e => {
 
 // ===== MARKING (one finish path) =====
 function finishChange() { if (window.GLP) window.GLP.sync(); renderPanel(); updateCount(); renderStreets(); const ok = saveAll(); syncWake(); return ok; } // Beta 1.63 (audit F04): callers that announce an outcome branch on the save result
+function finishChangeMarked() { const wb = saveWarned; const ok = finishChange(); if (!ok && wb) toast('Not saved \u2014 storage problem', 3200); return ok; } // Beta 1.97 (audit loop CG-196-05): the marking callers' half of the save-honesty contract - when the save fails, NO outcome toast may replace the storage warning; saveAll raises that warning once per episode (saveWarned), so when it was already raised before this call, the caller still owes a plain 'not saved' rather than silence
 function applyPiece(name, idx, side, on) { // the piece mutation with NO rendering - returns the street name if this change completed it
   const bit = side ? 2 : 1; const was = pieces[name][idx];
   const now = on ? (was | bit) : (was & ~bit);
   if (now === was) return null;
+  invalidateFinishUndo(); // Beta 1.97 (audit loop CG-196-03): an actual piece change kills a pending Finish Undo - here, the shared choke point, so no marking path can forget
   pieces[name][idx] = now;
   if (!pieceTimes[name][idx]) pieceTimes[name][idx] = [null, null];
   pieceTimes[name][idx][side] = on ? new Date().toISOString() : null;
@@ -304,35 +306,36 @@ function applyPiece(name, idx, side, on) { // the piece mutation with NO renderi
 function togglePiece(name, idx, side) {
   const bit = side ? 2 : 1;
   const doneName = applyPiece(name, idx, side, !(pieces[name][idx] & bit));
-  showChips(); finishChange();
-  if (doneName) toast('✓ ' + doneName + ' · ' + fmtClock(new Date()));
+  showChips(); const okTp = finishChangeMarked();
+  if (doneName && okTp) toast('✓ ' + doneName + ' · ' + fmtClock(new Date()));
 }
 function togglePieceGroup(side) { // one chip, whole selection: a side not done everywhere gets completed everywhere; a side done everywhere gets cleared everywhere
   if (!selSet.length) return;
   const on = !groupSideDone(side);
   const completed = [];
   for (const en of selSet) { const c = applyPiece(en.name, en.idx, side, on); if (c && !completed.includes(c)) completed.push(c); }
-  showChips(); finishChange();
-  completed.forEach(n => toast('✓ ' + n + ' · ' + fmtClock(new Date())));
+  showChips(); const okTg = finishChangeMarked();
+  if (okTg) completed.forEach(n => toast('✓ ' + n + ' · ' + fmtClock(new Date())));
 }
-$('selAllBtn').addEventListener('click', () => { if (!tapGuard('selAll')) return; const completed = []; for (const en of selSet) for (const side of [0, 1]) { const c = applyPiece(en.name, en.idx, side, true); if (c && !completed.includes(c)) completed.push(c); } showChips(); finishChange(); completed.forEach(n => toast('✓ ' + n + ' · ' + fmtClock(new Date()))); });
+$('selAllBtn').addEventListener('click', () => { if (!tapGuard('selAll')) return; const completed = []; for (const en of selSet) for (const side of [0, 1]) { const c = applyPiece(en.name, en.idx, side, true); if (c && !completed.includes(c)) completed.push(c); } showChips(); const okSa = finishChangeMarked(); if (okSa) completed.forEach(n => toast('✓ ' + n + ' · ' + fmtClock(new Date()))); });
 $('selClearBtn').addEventListener('click', () => { if (!tapGuard('selClear')) return; deselect(); });
 function markDone(name, via, at) { // production contract: whole street done; sides already marked keep their real times, the rest inherit the completion moment
-  if (typeof undoSnap !== 'undefined' && undoSnap) { undoSnap = null; clearTimeout(undoTimer); const rb = $('resetBtn'); rb.textContent = 'Finish'; rb.classList.remove('undoing'); }
+  invalidateFinishUndo();
   pieces[name] = STRETCH[name].parts.map(() => 3);
   const mts = at || new Date().toISOString();
   const cur = (pieceTimes[name] && typeof pieceTimes[name] === 'object') ? pieceTimes[name] : {};
   pieceTimes[name] = STRETCH[name].parts.map((_, i) => { const pr = Array.isArray(cur[i]) ? cur[i] : [null, null]; return [pr[0] || mts, pr[1] || mts]; });
   doneSet.add(name); doneTimes[name] = mts; doneVia[name] = via || 'tap';
-  finishChange();
-  toast('✓ ' + name + ' · ' + fmtClock(new Date(mts)) + (doneSet.size === STREETNAMES.length ? ' — ALL ' + STREETNAMES.length + ' DONE' : '')); // Beta 1.94 (audit F-01): the total derives from the route's street list
+  const okMd = finishChangeMarked();
+  if (okMd) toast('✓ ' + name + ' · ' + fmtClock(new Date(mts)) + (doneSet.size === STREETNAMES.length ? ' — ALL ' + STREETNAMES.length + ' DONE' : '')); // Beta 1.94 (audit F-01): the total derives from the route's street list
 }
 function markUndone(name) {
   pieces[name] = STRETCH[name].parts.map(() => 0);
   pieceTimes[name] = STRETCH[name].parts.map(() => [null, null]);
+  invalidateFinishUndo();
   doneSet.delete(name); delete doneTimes[name]; delete doneVia[name];
-  finishChange();
-  toast('Unmarked ' + name);
+  const okMu = finishChangeMarked();
+  if (okMu) toast('Unmarked ' + name);
 }
 function markStreet(name, done) { if (done) markDone(name, 'tap'); else markUndone(name); showChips(); }
 function renderPanel() { // ONE selection pop-up (Beta 1.30, Andrew): the header strip and the multi-select pill are the same pop-up now - pill glass, every action inside, content follows the selection

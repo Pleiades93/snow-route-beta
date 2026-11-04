@@ -51,6 +51,15 @@ $('xImpText').addEventListener('click', () => showX('text'));
 $('xImpFile').addEventListener('click', () => $('xFile').click());
 $('xFile').addEventListener('change', async () => { const f = $('xFile').files && $('xFile').files[0]; $('xFile').value = ''; if (!f) return; let t = ''; try { t = await f.text(); } catch (e) { toast('That file could not be read', 3200); return; } $('xText').value = t; doRestore(); }); // Import JSON: the picked file feeds the SAME restore path as pasted text - one validator, one verdict, no second door to keep honest
 function dl(blob, name) { const a = document.createElement('a'); a.href = URL.createObjectURL(blob); a.download = name; document.body.appendChild(a); a.click(); setTimeout(() => { URL.revokeObjectURL(a.href); a.remove(); }, 400); }
+function snapForExport(strict) { // Beta 1.97 (audit loop CG-196-02): the ACTIVE route's cancel snapshot in normalized object form - from the in-memory snapshot when there is one, else from the persisted copy after validation; null when the run has neither. Extracted from 1.96's recoveryObj so the normal backup carries the identical object through the identical construction. Verify cycle 1 (CG-196-02): in STRICT mode (the normal backup) a snapshot READ failure returns undefined instead of null - lsGet swallows read errors, which would silently ship a snapshot-less backup that looks complete; the strict caller fails the whole export, the recovery caller stays best-effort.
+  if (!runStart) return null;
+  if (runSnap) return { at: runStart, pieces: runSnap.pieces, pieceTimes: runSnap.pieceTimes, done: runSnap.done, times: runSnap.times, via: runSnap.via, cov: runSnap.cov };
+  let rawSnap = null;
+  if (strict) { try { rawSnap = localStorage.getItem(LS.snap); } catch (e) { return undefined; } }
+  else rawSnap = lsGet(LS.snap);
+  const pv = validateSnap(parseJ(rawSnap, null), runStart);
+  return pv ? { at: runStart, pieces: pv.pieces, pieceTimes: pv.pieceTimes, done: pv.done, times: pv.times, via: pv.via, cov: pv.cov } : null;
+}
 function backupObj() { // Beta 1.76: format v2 - routes carry their own slots ({routes: {id: {field: raw}}}) and the night preference rides at top level. Reads stay RAW (Beta 1.48, audit B04): a failed read fails the whole export (null) instead of producing a valid-looking backup with a piece silently missing.
   flushAux(true); // Beta 1.92 (deep audit F04): flush the buffered trail/coverage first - a backup must not lag the work it claims to hold
   // Beta 1.94 (deep audit SR-193-01): the PRIMARY records get the same reconciliation the aux
@@ -65,7 +74,26 @@ function backupObj() { // Beta 1.76: format v2 - routes carry their own slots ({
   if (routeLoaded && primaryDirty) { saveQuiet = true; const okPrim = saveAll(); saveQuiet = false; if (!okPrim) return null; }
   if (trailDirty || auxDirty || sessDirty) return null; // Beta 1.93 (follow-up audit R02): the flush did not land - refuse the export (the caller's 'could not be read' message) rather than ship a valid-looking backup with stale trail/coverage inside
   const routes = {};
-  for (const p of ROUTE_PACKS) { const rk = routeKeys(p.id); const data = {}; for (const f of ROUTE_FIELDS) { const key = (activeRoute && p.id === activeRoute.id && LS[f] !== rk[f]) ? LS[f] : rk[f]; let v = null; try { v = localStorage.getItem(key); } catch (e) { return null; } if (v != null) data[f] = v; } if (Object.keys(data).length) routes[p.id] = data; } // Beta 1.92 (deep audit F02): the ACTIVE route exports from the key mapping it is actually running on - on a legacy-fallback boot (migration failed) LS points at the legacy keys, and reading the fresh slot would emit a valid-looking EMPTY backup
+  for (const p of ROUTE_PACKS) {
+    const rk = routeKeys(p.id); const data = {};
+    for (const f of ROUTE_FIELDS) { const key = (activeRoute && p.id === activeRoute.id && LS[f] !== rk[f]) ? LS[f] : rk[f]; let v = null; try { v = localStorage.getItem(key); } catch (e) { return null; } if (v != null) data[f] = v; }
+    // Beta 1.97 (audit loop CG-196-01/-02): the route's lifecycle state rides EXPLICITLY, never by
+    // omission. A run's start is asserted as its timestamp string; NO run is asserted as start: null -
+    // so a restore can tell "this backup says idle" from an older backup that simply omits the field
+    // (the missing-key rule, which leaves the destination's state alone). A run's validated cancel
+    // snapshot rides along (CG-196-02 - 1.96 carried it in recovery backups only): the active route's
+    // from the shared exporter, any other pack's from its stored copy after validation.
+    const isActive = !!(activeRoute && p.id === activeRoute.id && routeLoaded);
+    const startStr = isActive ? (runStart ? String(runStart) : null) : (data.start !== undefined ? data.start : null);
+    data.start = startStr;
+    if (startStr) {
+      let snapObj = null;
+      if (isActive) { snapObj = snapForExport(true); if (snapObj === undefined) return null; } // a snapshot read failure fails the whole export (B04 discipline) - never a valid-looking backup missing the snapshot
+      else { let rawSnap = null; try { rawSnap = localStorage.getItem(rk.snap); } catch (e) { return null; } const pv = validateSnap(parseJ(rawSnap, null), +startStr); if (pv) snapObj = { at: +startStr, pieces: pv.pieces, pieceTimes: pv.pieceTimes, done: pv.done, times: pv.times, via: pv.via, cov: pv.cov }; }
+      if (snapObj) data.snap = JSON.stringify(snapObj);
+    }
+    routes[p.id] = data;
+  } // Beta 1.92 (deep audit F02): the ACTIVE route exports from the key mapping it is actually running on - on a legacy-fallback boot (migration failed) LS points at the legacy keys, and reading the fresh slot would emit a valid-looking EMPTY backup
   let night = null; try { night = localStorage.getItem(LS_GLOBAL.night); } catch (e) { return null; }
   let nightExp = null; try { nightExp = localStorage.getItem(LS_GLOBAL.nightExp); } catch (e) { return null; }
   const o = { app: 'snowroute-backup', v: 2, at: new Date().toISOString(), routes };
@@ -86,16 +114,14 @@ function recoveryObj() { // Beta 1.95 (deep audit SR-194-02): the RECOVERY backu
   data.trail = JSON.stringify(trail);
   data.cov = JSON.stringify(coveredIdx);
   data.sess = JSON.stringify(trailSessions);
-  if (runStart) data.start = String(runStart);
+  data.start = runStart ? String(runStart) : null; // Beta 1.97 (audit loop CG-196-01): the recovery backup asserts idle explicitly too - it is a complete backup by construction
   if (runStart) { // Beta 1.96 (deep audit SR-195-02, Andrew's pick: carry it, do not just warn): the run's cancel snapshot rides INSIDE the recovery file, so a run restored from it - on this phone or another - keeps the exact-restore Cancel it had. 1.95's recovery carried every field except the snapshot, quietly demoting a restored run's Cancel to the stamp journal (which cannot see an unmark). Taken from the in-memory snapshot when there is one, else from the persisted copy after validation; a run with neither simply carries none, and the restore side says so.
-    let snapObj = null;
-    if (runSnap) snapObj = { at: runStart, pieces: runSnap.pieces, pieceTimes: runSnap.pieceTimes, done: runSnap.done, times: runSnap.times, via: runSnap.via, cov: runSnap.cov };
-    else { const pv = validateSnap(parseJ(lsGet(LS.snap), null), runStart); if (pv) snapObj = { at: runStart, pieces: pv.pieces, pieceTimes: pv.pieceTimes, done: pv.done, times: pv.times, via: pv.via, cov: pv.cov }; }
+    const snapObj = snapForExport(); // Beta 1.97 (audit loop CG-196-02): the shared construction - the recovery and normal backups carry the identical object
     if (snapObj) data.snap = JSON.stringify(snapObj);
   }
   try { const fl = localStorage.getItem(routeKeys(activeRoute.id).flip); if (fl != null) data.flip = fl; } catch (e) { /* a read that fails simply leaves the field out */ }
   const routes = {}; routes[activeRoute.id] = data;
-  for (const pk of ROUTE_PACKS) { if (pk.id === activeRoute.id) continue; const rk = routeKeys(pk.id); const d = {}; for (const f of ROUTE_FIELDS) { try { const v = localStorage.getItem(rk[f]); if (v != null) d[f] = v; } catch (e) {} } if (Object.keys(d).length) routes[pk.id] = d; }
+  for (const pk of ROUTE_PACKS) { if (pk.id === activeRoute.id) continue; const rk = routeKeys(pk.id); const d = {}; for (const f of ROUTE_FIELDS) { try { const v = localStorage.getItem(rk[f]); if (v != null) d[f] = v; } catch (e) {} } if (d.start === undefined) d.start = null; if (Object.keys(d).length) routes[pk.id] = d; } // Beta 1.97 (audit loop CG-196-01): an untouched pack in a recovery file asserts idle like any complete backup
   const o = { app: 'snowroute-backup', v: 2, recovery: true, at: new Date().toISOString(), routes };
   try { const nt = localStorage.getItem(LS_GLOBAL.night); if (nt != null) o.night = nt; const ne = localStorage.getItem(LS_GLOBAL.nightExp); if (ne != null) o.nightExp = ne; } catch (e) {}
   return o;
@@ -150,8 +176,9 @@ function restoreBackup(parsed) { // production doRestore semantics: validate EVE
       const pack = ROUTE_PACKS.find(p => p.id === id); if (!pack) { toast('Backup mentions an unknown route (' + id + ') — nothing was changed', 3200); return; }
       const data = parsed.routes[id]; if (!data || typeof data !== 'object' || Array.isArray(data)) { toast('That is not a Snow Route backup', 3200); return; }
       const rk = routeKeys(id);
-      for (const f of ROUTE_FIELDS) { if (data[f] === undefined) continue; if (!pushField(rk[f], f, data[f], pack.name + ' ' + f)) return; }
-      if (data.snap !== undefined) { // Beta 1.96 (SR-195-02): a carried start snapshot (recovery backups) is restored WITH its run - it earns a write only by passing validateSnap against the start this same backup carries for the route, and it is written in its normalized form through the same verified entries as every other field, so a failed restore rolls it back too. A snapshot that fails validation, or one whose run's start is not in the backup, is dropped and reported in the result message - never applied, never silently kept.
+      for (const f of ROUTE_FIELDS) { if (data[f] === undefined) continue; if (f === 'start' && data[f] === null) continue; if (!pushField(rk[f], f, data[f], pack.name + ' ' + f)) return; }
+      if (data.start === null) { entries.push([rk.start, null]); entries.push([rk.snap, null]); if (data.snap !== undefined && data.snap !== null) snapDropped = true; } // Beta 1.97 (audit loop CG-196-01): an explicit idle assertion (start: null, a current-format complete backup) clears the destination's run state INSIDE the verified write set, so a failed restore rolls the clearing back too. An OMITTED start (older backups) keeps the missing-key rule: the destination's run is left alone.
+      else if (data.snap !== undefined) { // Beta 1.96 (SR-195-02): a carried start snapshot (recovery backups) is restored WITH its run. Beta 1.97 verify cycle 1 (CG-196-01): ELSE - an explicit idle assertion already consumed this route's lifecycle state above; a snap string riding an idle assertion is dropped (and reported), never validated against the deleted start and written back - it earns a write only by passing validateSnap against the start this same backup carries for the route, and it is written in its normalized form through the same verified entries as every other field, so a failed restore rolls it back too. A snapshot that fails validation, or one whose run's start is not in the backup, is dropped and reported in the result message - never applied, never silently kept.
         const startEnt = entries.find(e => e[0] === rk.start);
         let restoredSnap = null;
         if (startEnt && typeof data.snap === 'string') { try { const valid = validateSnap(JSON.parse(data.snap), +startEnt[1]); if (valid) restoredSnap = JSON.stringify({ at: +startEnt[1], pieces: valid.pieces, pieceTimes: valid.pieceTimes, done: valid.done, times: valid.times, via: valid.via, cov: valid.cov }); } catch (e) { /* an unparseable snapshot is a dropped snapshot */ } }
@@ -210,7 +237,7 @@ function restoreBackup(parsed) { // production doRestore semantics: validate EVE
   for (const pair of entries) {
     const k = pair[0], v = pair[1];
     let wrote = false;
-    try { wrote = lsSet(k, v) && localStorage.getItem(k) === v; } catch (e) { wrote = false; }
+    try { wrote = v === null ? (localStorage.removeItem(k), localStorage.getItem(k) === null) : (lsSet(k, v) && localStorage.getItem(k) === v); } catch (e) { wrote = false; } // Beta 1.97 (audit loop CG-196-01): a null entry value is a DELETE (the idle assertion clearing start/snapshot) - removed and verified like every write
     if (!wrote) {
       if (rollback()) toast('Restore failed while writing ' + k + ' — your current data was put back, nothing was changed', 3800);
       else toast('Restore failed while writing ' + k + ' — and your previous data could NOT be fully put back. Restore from a known-good backup', 4200);
