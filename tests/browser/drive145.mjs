@@ -17,7 +17,7 @@ const { proc, send, S, ev, consoleLog, sleep, poll } = await launchDrive();
 // a present one. Backups are v2; a v1 backup restores into
 // the 5W slot (and the C06 rule clears its session markers).
 const R = { checks: [] };
-const ok = (name, cond) => R.checks.push([name, !!cond]);
+const ok = (name, cond) => R.checks.push([name, cond === true]);
 const SIDES_5W = JSON.stringify({ Velmar: Array(14).fill(3) });
 const DONE_5W = JSON.stringify(['Velmar']);
 const RESTORED_5W = JSON.stringify({ p: { Velmar: [0] }, t: {} }); // a NEWER slot record, as a backup restore would leave it - the SR-193-03 migration must never overwrite it with the legacy copy
@@ -190,13 +190,33 @@ ok('N13c-b restoring an EMPTY completion list clears the board (Beta 1.93, audit
 
 // --- F-05 (Beta 1.94): street names the route does not know are counted and
 // reported in the restore result, not silently dropped by the loaders ------
-const v2badNames = JSON.stringify({ app: 'snowroute-backup', v: 2, at: '2026-11-04T00:00:00.000Z', routes: { '5w': { done: JSON.stringify(['Velmar', 'Nosuch Avenue']), sides: JSON.stringify({ p: { Velmar: Array(14).fill(3), 'Nosuch Avenue': [3] }, t: {} }) } } });
+const v2badNames = JSON.stringify({ app: 'snowroute-backup', v: 2, at: '2026-11-04T00:00:00.000Z', routes: { '5w': { done: JSON.stringify(['Velmar', 'Nosuch Avenue']), sides: JSON.stringify({ p: { Velmar: Array(14).fill(3), 'Nosuch Avenue': [3], 'Different Nowhere': [3] }, t: {} }) } } });
 const bootMark13d = await ev(`window.__bootAt`);
 const toast13d = await ev(`(function(){ document.getElementById('xText').value = ${JSON.stringify(v2badNames)}; doRestore(); return document.getElementById('toast').textContent; })()`);
 await sleep(900);
 await poll(`!!window.__bootAt && window.__bootAt !== ${JSON.stringify(bootMark13d)}`, 30000);
 await ev(`loadRoute('5w'); true`); await sleep(600);
-ok('N13d a restore carrying unknown street names reports how many were ignored (Beta 1.94, audit F-05) | ' + toast13d, /2 unknown street names/.test(toast13d) && (await ev(`doneSet.has('Velmar')`)) === true);
+ok('N13d a restore carrying unknown street names reports how many UNIQUE names were ignored - Nosuch Avenue appears twice, counts once (Beta 1.94 F-05; unique counting Beta 1.95, SR-194-08) | ' + toast13d, /2 unknown street names/.test(toast13d) && (await ev(`doneSet.has('Velmar')`)) === true);
+
+// --- SR-194-08 (Beta 1.95): the unknown-name count reads the RAW backup,
+// before any normalization filters names away, and counts each name once.
+// 1.94 counted only what survived pushField: an object-form done map was
+// filtered before counting (its unknowns invisible) and array-form history
+// items were skipped entirely; repeats counted per occurrence.
+const v1badNames = JSON.stringify({ app: 'snowroute-backup', v: 1, at: '2026-11-04T00:00:00.000Z', data: { 'snowroute.v2': JSON.stringify({ Velmar: '2026-11-01T00:00:00.000Z', 'Nosuch Avenue': '2026-11-01T00:00:00.000Z', 'Ghost Road': '2026-11-01T00:00:00.000Z' }), 'snowroute.v2.times': JSON.stringify({ Velmar: '2026-11-01T00:00:00.000Z', 'Nosuch Avenue': '2026-11-01T00:00:00.000Z' }) } });
+const bootMark13e = await ev(`window.__bootAt`);
+const toast13e = await ev(`(function(){ document.getElementById('xText').value = ${JSON.stringify(v1badNames)}; doRestore(); return document.getElementById('toast').textContent; })()`);
+await sleep(900);
+await poll(`!!window.__bootAt && window.__bootAt !== ${JSON.stringify(bootMark13e)}`, 30000);
+await ev(`loadRoute('5w'); true`); await sleep(600);
+ok('N13e a v1 restore counts unknown names from the raw backup, each name once - object-form done included (Beta 1.95, SR-194-08) | ' + toast13e, /2 unknown street names/.test(toast13e) && (await ev(`doneSet.has('Velmar')`)) === true);
+const v2arrHist = JSON.stringify({ app: 'snowroute-backup', v: 2, at: '2026-11-04T00:00:00.000Z', routes: { '5w': { done: JSON.stringify(['Velmar']), sides: JSON.stringify({ p: { Velmar: Array(14).fill(3) }, t: {} }), hist: JSON.stringify([{ at: '2026-11-02T00:00:00.000Z', startedAt: '2026-11-02T00:00:00.000Z', items: ['Velmar', 'Phantom Crescent'] }]) } } });
+const bootMark13f = await ev(`window.__bootAt`);
+const toast13f = await ev(`(function(){ document.getElementById('xText').value = ${JSON.stringify(v2arrHist)}; doRestore(); return document.getElementById('toast').textContent; })()`);
+await sleep(900);
+await poll(`!!window.__bootAt && window.__bootAt !== ${JSON.stringify(bootMark13f)}`, 30000);
+await ev(`loadRoute('5w'); true`); await sleep(600);
+ok('N13f unknown names inside ARRAY-form history items are counted too (Beta 1.95, SR-194-08) | ' + toast13f, /1 unknown street name/.test(toast13f));
 
 // --- backups are v2 now ------------------------------------------------------
 ok('N14 buildBackup emits the v2 per-route shape', await ev(`(function(){ var b = JSON.parse(buildBackup()); return b.app === 'snowroute-backup' && b.v === 2 && !!b.routes && typeof b.routes['5w'].sides === 'string' && typeof b.routes['5w'].trail === 'string'; })()`));
@@ -216,6 +236,57 @@ await ev(`location.reload(); true`);
 await poll(`!!window.__bootAt`, 30000);
 await ev(`loadRoute('5w'); true`); await sleep(500);
 ok('N25c no phantom run after the reload', await ev(`runStart === 0`));
+
+// --- SR-194-01 (Beta 1.95): Finish -> Undo -> Cancel must restore the
+// pre-Start board EXACTLY. 1.94's finish deleted the cancel snapshot and
+// its undo never restored it, so the sequence fell back to the stamp
+// journal - blind to a pre-Start side unmarked mid-run (unmarking erases
+// its stamp). The undo now carries the snapshot and re-persists it as a
+// verified gate before the run resumes.
+await ev(`clearAllMarks(); true`); await sleep(200);
+await ev(`markDone('Velmar', 'tap'); true`);
+await ev(`startClean(); true`); await sleep(200);
+await ev(`togglePiece('Velmar', 0, 0); true`); // the journal-blind act: a pre-Start side unmarked mid-run
+await ev(`markDone('Astona', 'tap'); true`); await sleep(200);
+await ev(`finishRun(); true`); await sleep(300);
+await ev(`doUndo(); true`); await sleep(300);
+await ev(`cancelStart(); true`); await sleep(300);
+ok('N35a finish -> undo -> cancel restores the pre-Start board exactly - the unmarked Velmar side returns, the run mark (Astona) goes (Beta 1.95, SR-194-01)', await ev(`(function(){ try { return doneSet.has('Velmar') && pieces.Velmar.every(v => v === 3) && pieces.Astona.every(v => v === 0) && runStart === 0 && localStorage.getItem(LS.snap) === null; } catch (e) { return false; } })()`));
+await ev(`clearAllMarks(); true`); await sleep(200);
+await ev(`markDone('Velmar', 'tap'); markDone('Boddy', 'tap'); true`);
+await ev(`startClean(); true`); await sleep(200);
+await ev(`togglePiece('Boddy', 0, 1); true`);
+await ev(`markDone('Tina', 'tap'); true`); await sleep(200);
+await ev(`finishRun(); true`); await sleep(300);
+await ev(`doUndo(); true`); await sleep(300);
+const n35snap = await ev(`(function(){ const s = JSON.parse(localStorage.getItem(LS.snap) || 'null'); return !!s && s.at === runStart && runStart > 0; })()`);
+await ev(`cancelStart(); true`); await sleep(300);
+ok('N35b the same sequence across several streets - and Undo re-persisted the snapshot for the restored run | snapLive ' + n35snap, await ev(`(function(){ try { return doneSet.has('Velmar') && doneSet.has('Boddy') && pieces.Tina.every(v => v === 0) && runStart === 0; } catch (e) { return false; } })()`) && n35snap === true);
+await ev(`clearAllMarks(); true`); await sleep(200);
+await ev(`markDone('Velmar', 'tap'); true`);
+await ev(`startClean(); true`); await sleep(200);
+await ev(`togglePiece('Velmar', 0, 0); true`);
+await ev(`markDone('Astona', 'tap'); true`); await sleep(200);
+await ev(`finishRun(); true`); await sleep(300);
+await ev(`doUndo(); true`); await sleep(300);
+await ev(`location.reload(); true`);
+await poll(`!!window.__bootAt`, 30000);
+await ev(`loadRoute('5w'); true`); await sleep(600);
+await ev(`cancelStart(); true`); await sleep(300);
+ok('N35c finish -> undo -> RELOAD -> cancel still restores exactly (the re-persisted snapshot survives the reload)', await ev(`(function(){ try { return doneSet.has('Velmar') && pieces.Velmar.every(v => v === 3) && pieces.Astona.every(v => v === 0) && runStart === 0; } catch (e) { return false; } })()`));
+await ev(`clearAllMarks(); true`); await sleep(200);
+await ev(`markDone('Velmar', 'tap'); true`);
+await ev(`startClean(); true`); await sleep(200);
+await ev(`togglePiece('Velmar', 0, 0); true`);
+await ev(`finishRun(); true`); await sleep(300);
+await ev(`(function(){ window.__lsOrig145 = lsSet; lsSet = function(k, v){ if (k === LS.snap) return false; return window.__lsOrig145(k, v); }; return true; })()`);
+await ev(`doUndo(); true`); await sleep(300);
+const n35d = JSON.parse(await ev(`(() => JSON.stringify({ toast: $('toast').textContent, label: $('resetBtn').textContent, run: runStart, done: doneSet.size, snapKept: !!undoSnap }))()`));
+ok('N35d if the snapshot cannot be re-persisted, the Undo STOPS - run still finished, undo still on offer | ' + JSON.stringify(n35d), /undo stopped/.test(n35d.toast) && n35d.label === 'Undo' && n35d.run === 0 && n35d.done === 0 && n35d.snapKept === true);
+await ev(`(function(){ lsSet = window.__lsOrig145; return true; })()`);
+await ev(`doUndo(); true`); await sleep(300);
+await ev(`cancelStart(); true`); await sleep(300);
+ok('N35e with storage healthy again the undo + cancel chain completes exactly', await ev(`(function(){ try { return doneSet.has('Velmar') && pieces.Velmar.every(v => v === 3) && runStart === 0; } catch (e) { return false; } })()`));
 
 // --- a full close forgets the override (Beta 1.77): the session marker is
 // what separates "opened again" from "cold open" ------------------------------

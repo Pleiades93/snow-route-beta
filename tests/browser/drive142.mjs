@@ -18,7 +18,7 @@ await bootThrough(ev, poll); // Beta 1.76: boots end at the route menu now - cli
 // T3: a queued callback from a stopped watcher is ignored (generation tag, N04).
 // T4: Cancel Start reports a storage failure honestly instead of claiming success (N03).
 const R = { checks: [] };
-const ok = (name, cond) => R.checks.push([name, !!cond]);
+const ok = (name, cond) => R.checks.push([name, cond === true]);
 const src = readFileSync(new URL('../../src/tracker-source.html', import.meta.url), 'utf8');
 const bodyOf = (name, next) => { const i = src.indexOf('function ' + name); const j = src.indexOf('function ' + next, i + 10); return i >= 0 && j > i ? src.slice(i, j) : ''; };
 ok('T1a exactly one startRenderLoop declaration in the shipped source | count ' + (src.split('function startRenderLoop').length - 1), (src.split('function startRenderLoop').length - 1) === 1);

@@ -17,7 +17,7 @@ await bootThrough(ev, poll); // Beta 1.76: boots end at the route menu now - cli
 // D1: the piece-time sanitizer is bounded by the street's stretch count (A06).
 // G4: GPX splits sessions into separate track segments (A07). H1: no duplicate sheet IDs (A08).
 const R = { checks: [] };
-const ok = (name, cond) => R.checks.push([name, !!cond]);
+const ok = (name, cond) => R.checks.push([name, cond === true]);
 const src = readFileSync(new URL('../../src/tracker-source.html', import.meta.url), 'utf8');
 const sheetPanels = src.split('class="sheet"').length - 1; // Beta 1.78: the census follows the panels that exist (the Routes sheet retired - 3 panels became 2); the invariant is one shared head/title class pair per panel and never an id
 ok('H1 sheet panels use shared classes, no duplicate IDs | sheetHead ids ' + (src.split('id="sheetHead"').length - 1) + ' classes ' + (src.split('class="sheetHead"').length - 1) + ' sheets ' + sheetPanels, (src.split('id="sheetHead"').length - 1) === 0 && (src.split('id="sheetTitle"').length - 1) === 0 && sheetPanels >= 2 && (src.split('class="sheetHead"').length - 1) === sheetPanels && (src.split('class="sheetTitle"').length - 1) === sheetPanels);

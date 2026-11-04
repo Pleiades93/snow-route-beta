@@ -13,7 +13,7 @@ await bootThrough(ev, poll); // Beta 1.76: boots end at the route menu now - cli
 // short stage. The cure itself is judged on Andrew's iPhone, like every
 // WebKit sizing claim in this project.
 const R = { checks: [] };
-const ok = (name, cond) => R.checks.push([name, !!cond]);
+const ok = (name, cond) => R.checks.push([name, cond === true]);
 await sleep(2500);
 ok('P0 app boots for the floor tests', await poll120(`!!window.maplibregl && typeof glOk !== 'undefined'`, 45000));
 ok('P1 the document-height floor rule ships in the page CSS', await ev(`(() => { for (const sh of document.styleSheets) { try { for (const r of sh.cssRules) { if (r.cssText && r.cssText.indexOf('min(100lvh') >= 0) return true; } } catch (e) {} } return false; })()`));

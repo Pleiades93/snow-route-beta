@@ -82,7 +82,7 @@ await sleep(2000);
 // lets the REAL worker run, and proves the download actually stores files.
 // Requires a server on 127.0.0.1:8077 serving the repo root (CI starts one).
 const R = { checks: [] };
-const ok = (name, cond) => R.checks.push([name, !!cond]);
+const ok = (name, cond) => R.checks.push([name, cond === true]);
 console.log('boot glOk:', await poll(`typeof glOk !== 'undefined' && glOk === true`, 90000));
 ok('E1 app boots with the map active (http, real worker present)', await poll(`typeof glOk !== 'undefined' && glOk === true`, 5000));
 ok('E2 service worker controls the page', await poll(`!!navigator.serviceWorker.controller`, 30000));
@@ -295,6 +295,32 @@ const backOk17b = (await poll(`typeof glOk !== 'undefined' && glOk === true`, 90
 await loadRouteE2E();
 const e17bAfter = JSON.parse(await ev2(`(() => { const before = { run: runStart, sess: JSON.parse(lsGet(LS.sess) || '[]') }; startClean(); const after = { sess: JSON.parse(lsGet(LS.sess) || '[]'), marker: Math.floor(runStart / 1000), dirty: sessDirty }; return JSON.stringify({ before, after }); })()`));
 ok('E17b after the kill: persisted run state intact, the never-persisted marker absent (expected loss), and a fresh start saves cleanly | ' + JSON.stringify(e17bAfter), backOk17b && e17bAfter.before.run === e17b.run && !e17bAfter.before.sess.includes(e17b.marker) && e17bAfter.after.sess.includes(e17bAfter.after.marker) && e17bAfter.after.dirty === false);
+// ---- E19/E20 (Beta 1.95, deep audit SR-194-05/06): the one-time pack
+// migration copies ONLY the deterministic preload manifest, verifies the
+// destination before it may call itself done, and retries on a later
+// attempt when a copy fails. 1.94 copied EVERY browsing-cache key (strays
+// included) through a catch-all that set the completion flag
+// unconditionally, so a partial copy was marked complete forever.
+try {
+  const sample3 = baseKeys.slice(0, 3).sort();
+  await ev2(`(async () => { const sample = ${JSON.stringify(baseKeys.slice(0, 3))}; const junk = ['https://tiles.basemaps.cartocdn.com/junk/e19-a', 'https://tiles.basemaps.cartocdn.com/junk/e19-b']; await caches.delete('snowroute-offline-v1'); const tc = await caches.open('snowroute-tiles-v1'); for (const u of sample.concat(junk)) await tc.put(u, new Response('x')); localStorage.removeItem('snowroute.v5.packmig'); return true; })()`);
+  await page2.reload({ waitUntil: 'load', timeout: 45000 }).catch(() => {});
+  await sleep(1500);
+  await loadRouteE2E();
+  await poll2(`(async () => { const oc = await caches.open('snowroute-offline-v1'); return (await oc.keys()).length === 3; })()`, 30000);
+  const e19 = JSON.parse(await ev2(`(async () => { const oc = await caches.open('snowroute-offline-v1'); const ks = (await oc.keys()).map(r => r.url).sort(); return JSON.stringify({ ks, flag: localStorage.getItem('snowroute.v5.packmig') }); })()`));
+  ok('E19 pack migration copies ONLY the manifest (seeded strays stay out) and the flag follows verification (Beta 1.95, SR-194-05/06) | ' + JSON.stringify(e19).slice(0, 200), JSON.stringify(e19.ks) === JSON.stringify(sample3) && e19.flag === '1');
+} catch (e) { ok('E19 pack migration manifest-bounded + verified (Beta 1.95, SR-194-05/06) | threw ' + String(e).slice(0, 150), false); }
+try {
+  const hasFn = await ev2(`typeof migratePack === 'function'`);
+  await ev2(`(async () => { const sample = ${JSON.stringify(baseKeys.slice(0, 3))}; await caches.delete('snowroute-offline-v1'); const tc = await caches.open('snowroute-tiles-v1'); for (const u of sample) { if (!(await tc.match(u))) await tc.put(u, new Response('x')); } localStorage.removeItem('snowroute.v5.packmig'); return true; })()`);
+  await ev2(`(() => { const realOpen = CacheStorage.prototype.open.bind(caches); let n = 0; caches.open = async (name) => { const c = await realOpen(name); if (name !== 'snowroute-offline-v1') return c; return new Proxy(c, { get(t, p) { if (p === 'put') return async (rq, rs) => { n++; if (n === 2) throw new Error('injected pack write failure'); return t.put(rq, rs); }; const v = t[p]; return typeof v === 'function' ? v.bind(t) : v; } }); }; window.__restoreOpen = () => { caches.open = realOpen; }; return true; })()`);
+  const r1 = JSON.parse(await ev2(`(async () => { const r = await migratePack(); const oc = await caches.open('snowroute-offline-v1'); return JSON.stringify({ ok: !!(r && r.ok), n: (await oc.keys()).length, flag: localStorage.getItem('snowroute.v5.packmig') }); })()`));
+  await ev2(`(() => { window.__restoreOpen(); return true; })()`);
+  const r2 = JSON.parse(await ev2(`(async () => { const r = await migratePack(); const oc = await caches.open('snowroute-offline-v1'); return JSON.stringify({ ok: !!(r && r.ok), n: (await oc.keys()).length, flag: localStorage.getItem('snowroute.v5.packmig') }); })()`));
+  ok('E20 a failed pack copy leaves the flag UNSET and a retry completes the migration (Beta 1.95, SR-194-05) | r1 ' + JSON.stringify(r1) + ' r2 ' + JSON.stringify(r2), hasFn === true && r1.ok === false && r1.flag === null && r2.ok === true && r2.flag === '1' && r2.n === 3);
+} catch (e) { ok('E20 pack migration failure leaves flag unset, retry completes (Beta 1.95, SR-194-05) | threw ' + String(e).slice(0, 150), false); }
+
 ok('E13 no page exceptions across the whole run', consoleLog.filter(c => String(c).startsWith('EXCEPTION')).length === 0);
 const fails = R.checks.filter(c => !c[1]);
 for (const c of R.checks) console.log((c[1] ? 'PASS ' : 'FAIL ') + c[0]);

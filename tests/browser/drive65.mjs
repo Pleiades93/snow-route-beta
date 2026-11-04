@@ -5,7 +5,7 @@ await bootThrough(ev, poll); // Beta 1.76: boots end at the route menu now - cli
 
 // drive65 tail: v5.39 audit-fix tests - load validators (BUG-04) + restore suite (BUG-01)
 const R = { checks: [] };
-const ok = (name, cond) => R.checks.push([name, !!cond]);
+const ok = (name, cond) => R.checks.push([name, cond === true]);
 await sleep(3200);
 
 // ---- Phase A: corrupt stored data is sanitized on load ----

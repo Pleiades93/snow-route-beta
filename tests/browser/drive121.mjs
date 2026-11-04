@@ -1,6 +1,6 @@
 import { sleep, launch, closeBrowser, until, waitBoot, allExceptions, FIX } from './harness-http.mjs';
 const R = { checks: [] };
-const ok = (name, cond) => R.checks.push([name, !!cond]);
+const ok = (name, cond) => R.checks.push([name, cond === true]);
 const okS = (n, v) => ok(n, v === true);
 
 // ---- Session 1: online boot, worker control, style cached, seed one marked side ----

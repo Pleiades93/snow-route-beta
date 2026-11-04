@@ -12,7 +12,7 @@ await bootThrough(ev, poll); // Beta 1.76: boots end at the route menu now - cli
 // that would have caught the Beta 1.33-era clash, where the exclusion filter was
 // silently rejected and basemap names printed on route streets at every zoom.
 const R = { checks: [] };
-const ok = (name, cond) => R.checks.push([name, !!cond]);
+const ok = (name, cond) => R.checks.push([name, cond === true]);
 // Beta 1.83 (flake hardening): this drive's first-read crash has tripped four
 // merge-commit runs (1.77, 1.78, 1.81, 1.82) - always the first read after
 // bootThrough dying with '"[object Object]" is not valid JSON' before any check

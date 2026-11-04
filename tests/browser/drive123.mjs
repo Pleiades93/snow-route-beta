@@ -10,7 +10,7 @@ await bootThrough(ev, poll); // Beta 1.76: boots end at the route menu now - cli
 // invalid nested history (suite 3), current-format backup round-trip (suite 1), failed history write at
 // finish (suite 11), partial multi-key save consistency (suite 12).
 const R = { checks: [] };
-const ok = (name, cond) => R.checks.push([name, !!cond]);
+const ok = (name, cond) => R.checks.push([name, cond === true]);
 const J = async (expr) => { const raw = await ev(`(() => { try { return JSON.stringify((${expr})); } catch (e) { return JSON.stringify({ __err: String(e && e.message || e) }); } })()`); return typeof raw === 'string' ? JSON.parse(raw) : {}; };
 await sleep(3000);
 

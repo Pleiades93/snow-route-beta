@@ -10,7 +10,7 @@ await bootThrough(ev, poll); // Beta 1.76: boots end at the route menu now - cli
 // complete-the-set semantics, and the selBar pill marks both sides of the set.
 // Single-select behaviour must stay exactly as before.
 const R = { checks: [] };
-const ok = (name, cond) => R.checks.push([name, !!cond]);
+const ok = (name, cond) => R.checks.push([name, cond === true]);
 const J = async (expr) => { const raw = await ev(`(() => { try { return JSON.stringify((${expr})); } catch (e) { return JSON.stringify({ __err: String(e && e.message || e) }); } })()`); return typeof raw === 'string' ? JSON.parse(raw) : {}; };
 await sleep(3000);
 ok('F0 app boots with the map active', await poll120(`typeof glOk !== 'undefined' && glOk === true`, 30000));

@@ -11,7 +11,7 @@ await bootThrough(ev, poll); // Beta 1.76: boots end at the route menu now - cli
 // open clean resumes that clean's recording; after the clean ends, Locate
 // is view-only again.
 const R = { checks: [] };
-const ok = (name, cond) => R.checks.push([name, !!cond]);
+const ok = (name, cond) => R.checks.push([name, cond === true]);
 await sleep(3000);
 ok('G0 app boots with the map active', await poll120(`typeof glOk !== 'undefined' && glOk === true`));
 // (No clear+reload slate-wipe: the harness gives every drive a fresh browser
@@ -98,6 +98,54 @@ await ev(`markDone('Astona', 'test')`);
 await ev(`cancelStart()`);
 await sleep(300);
 ok('S11b resumed cancel restores the pre-Start board from the persisted snapshot - the unmarked Velmar returns, the run mark (Astona) goes, the snapshot is consumed', await ev(`(function(){ try { return doneSet.has('Velmar') && pieces.Astona.every(v => v === 0) && runStart === 0 && localStorage.getItem(LS.snap) === null; } catch (e) { return false; } })()`));
+
+
+// S12 (Beta 1.95, deep audit SR-194-03): a DAMAGED persisted snapshot must
+// never be applied raw. The 1.94 branch checked only the stamp and the
+// object-ness of two fields, then assigned the stored structures straight
+// into live state - the audit's injected {Velmar:[99]} became the board
+// AND was saved onward, destroying a valid mark. Each variant below must
+// fall back to the stamp journal (which protects the pre-Start marks here)
+// with the board and the stored record left sane.
+const corruptCycle = async (mutate) => {
+  await ev(`markDone('Velmar', 'test')`);
+  await ev(`(function(){ pieceTimes.Velmar = { 0: ['2020-01-01T00:00:00.000Z', '2020-01-01T00:00:00.000Z'] }; saveAll(); return true; })()`);
+  await ev(`startClean()`);
+  await ev(`(function(){ const s = JSON.parse(localStorage.getItem(LS.snap)); (${mutate})(s); localStorage.setItem(LS.snap, JSON.stringify(s)); runSnap = null; return true; })()`);
+  await ev(`markDone('Astona', 'test')`);
+  await ev(`cancelStart()`);
+  await sleep(300);
+  return JSON.parse(await ev(`(() => { const stored = JSON.parse(localStorage.getItem(LS.sides) || '{"p":{}}'); return JSON.stringify({ velmarDone: doneSet.has('Velmar'), astona: pieces.Astona ? pieces.Astona.every(v => v === 0) : 'missing', velmarVal: pieces.Velmar ? pieces.Velmar[0] : 'missing', stored99: JSON.stringify(stored).includes('99'), covBad: (coveredIdx.Velmar || []).some(i => typeof i !== 'number' || i < 0 || i > 5000), stray: doneSet.has('Nowhere Road'), toast: $('toast').textContent }); })()`));
+};
+const S12a = await corruptCycle(`s => { s.pieces = { Velmar: [99] }; }`);
+ok('S12a a snapshot with an out-of-range value and missing streets is rejected whole - journal fallback, no corruption saved (Beta 1.95, SR-194-03) | ' + JSON.stringify(S12a), S12a.velmarDone === true && S12a.astona === true && S12a.velmarVal === 3 && S12a.stored99 === false && /damaged/.test(S12a.toast));
+const S12b = await corruptCycle(`s => { s.pieces.Velmar = [3]; s.pieceTimes.Velmar = { 0: 'garbage' }; }`);
+ok('S12b a snapshot with a wrong-length street and garbage times is rejected whole | ' + JSON.stringify(S12b), S12b.velmarDone === true && S12b.astona === true && S12b.velmarVal === 3 && S12b.stored99 === false);
+const S12c = await corruptCycle(`s => { s.cov = { Velmar: [99999] }; s.done = ['Velmar', 'Nowhere Road']; }`);
+ok('S12c a snapshot with out-of-range coverage and an unknown street is rejected whole | ' + JSON.stringify(S12c), S12c.velmarDone === true && S12c.astona === true && S12c.covBad === false && S12c.stray === false);
+
+// S13 (Beta 1.95, deep audit SR-194-04): a run resumed WITHOUT a usable
+// cancel snapshot must say so at load - its Cancel guarantee is reduced to
+// the stamp journal, and 1.94 resumed it in silence. Start itself still
+// never blocks (the settled 1.63 stance); the honesty moves to resume.
+await ev(`markDone('Velmar', 'test')`);
+await ev(`startClean()`);
+await ev(`(function(){ localStorage.removeItem(LS.snap); return true; })()`); // the snapshot never landed / was lost - the run itself is legitimately open
+await ev(`location.reload(); true`);
+await poll(`!!window.__bootAt`, 30000);
+await ev(`(function(){ window.__toasts133 = []; const t = $('toast'); new MutationObserver(() => { const x = t.textContent; if (x && window.__toasts133[window.__toasts133.length - 1] !== x) window.__toasts133.push(x); }).observe(t, { childList: true, characterData: true, subtree: true }); return true; })()`);
+await ev(`loadRoute('5w'); true`); await sleep(700);
+const S13a = JSON.parse(await ev(`JSON.stringify(window.__toasts133 || [])`));
+ok('S13a a resumed run with no snapshot warns that Cancel is reduced (Beta 1.95, SR-194-04) | ' + JSON.stringify(S13a), S13a.some(t => /no usable cancel snapshot/.test(t)));
+await ev(`cancelStart()`); await sleep(300);
+await ev(`startClean()`); await sleep(300); // a fresh Start writes a fresh, valid snapshot
+await ev(`location.reload(); true`);
+await poll(`!!window.__bootAt`, 30000);
+await ev(`(function(){ window.__toasts133 = []; const t = $('toast'); new MutationObserver(() => { const x = t.textContent; if (x && window.__toasts133[window.__toasts133.length - 1] !== x) window.__toasts133.push(x); }).observe(t, { childList: true, characterData: true, subtree: true }); return true; })()`);
+await ev(`loadRoute('5w'); true`); await sleep(700);
+const S13b = JSON.parse(await ev(`JSON.stringify(window.__toasts133 || [])`));
+ok('S13b a resumed run WITH its snapshot stays silent | ' + JSON.stringify(S13b), !S13b.some(t => /no usable cancel snapshot/.test(t)));
+await ev(`cancelStart()`); await sleep(300);
 
 R.exceptions = consoleLog.filter(c => c.type === 'EXCEPTION').map(c => String(c.text || '').slice(0, 200));
 finish(R, proc);

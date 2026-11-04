@@ -13,7 +13,7 @@ await bootThrough(ev, poll); // Beta 1.76: boots end at the route menu now - cli
 // finalizes the old editor against ITS street and shows the new street
 // its OWN note; an unsaved draft never crosses.
 const R = { checks: [] };
-const ok = (name, cond) => R.checks.push([name, !!cond]);
+const ok = (name, cond) => R.checks.push([name, cond === true]);
 await sleep(3000);
 ok('N0 app boots for the note-draft tests', await poll120(`typeof renderStreets === 'function' && typeof setNoteText === 'function'`, 30000));
 await ev(`(() => { setNoteText('Velmar', 'velmar own note'); setNoteText('Mellings', 'mellings own note'); $('streetsBtn').click(); return true; })()`); await sleep(600);

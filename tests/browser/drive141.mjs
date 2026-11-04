@@ -12,7 +12,7 @@ await bootThrough(ev, poll); // Beta 1.76: boots end at the route menu now - cli
 // timestamps) load without crashing and marking still works. F08: the
 // compass lifecycle actually stops.
 const R = { checks: [] };
-const ok = (name, cond) => R.checks.push([name, !!cond]);
+const ok = (name, cond) => R.checks.push([name, cond === true]);
 await sleep(3000);
 ok('G0 app boots for the GPS/defensive tests', await poll120(`typeof acceptFix === 'function' && !!map`, 30000));
 // R01: fresh fix accepted, then a STALE-timestamp fix must be ignored.

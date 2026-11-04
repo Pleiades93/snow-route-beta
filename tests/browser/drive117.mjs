@@ -177,7 +177,7 @@ async function shot(name) {
 
 // drive89: v5.54 Finish pop-up + delete/back navigation
 const R = { checks: [] };
-const ok = (name, cond) => R.checks.push([name, !!cond]);
+const ok = (name, cond) => R.checks.push([name, cond === true]);
 const ev = async (code) => evaluate(code);
 const exc = () => consoleLog.filter(c => c.type === 'EXCEPTION').length;
 const okS = (n, v) => ok(n, v === true);   // strict: an evaluate {error} object must never read as a pass

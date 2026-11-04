@@ -3,7 +3,7 @@ import { launchDrive, bootThrough } from './harness.mjs';
 const { proc, send, S, ev, consoleLog, sleep, poll } = await launchDrive({ logDomain: true });
 // (the Beta 1.76 route pick happens after the stamped-page reload below - this drive navigates away from the harness page first)
 const R = { checks: [] };
-const ok = (name, cond) => R.checks.push([name, !!cond]);
+const ok = (name, cond) => R.checks.push([name, cond === true]);
 const exc = () => consoleLog.filter(c => c.type === 'EXCEPTION').length;
 
 // drive116: CSP proof for the stamped build (src/csp-test.html). Asserts the
