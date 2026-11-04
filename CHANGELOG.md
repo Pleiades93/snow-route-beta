@@ -1,5 +1,8 @@
 # Changelog
 
+## Beta 1.98 — 2026-11-04
+- Dragging the Streets or Pace sheet no longer turns it see-through: while a drag drops the frosted blur (the 1.79 anti-stutter measure), the sheet now wears the solid card colour (new --card-solid, both themes) instead of the near-opaque glass colour.
+
 ## Beta 1.97 — 2026-11-04
 
 The audit-loop round-196 fixes (Codex audit of Beta 1.96, adjudicated and debated to convergence, gate approved by Andrew):
