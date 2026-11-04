@@ -61,6 +61,28 @@ ST = await state();
 ok('M1 Locate during an open clean resumes run GPS | ' + JSON.stringify(ST), ST.clean === true && ST.wid === 4242 && ST.clean === true);
 await ev(`stopGps()`);
 
+// S9 (Beta 1.93, follow-up audit R01): cancel on a RESUMED run (no snapshot -
+// the app reloaded mid-run) reverts only the run's own marks; pre-Start
+// progress survives.
+await ev(`markDone('Velmar', 'test')`);
+await ev(`(function(){ pieceTimes.Velmar = { 0: ['2020-01-01T00:00:00.000Z', '2020-01-01T00:00:00.000Z'] }; saveAll(); return true; })()`); // Velmar's marks are stamped long before any run
+await ev(`startClean()`);
+await ev(`(function(){ runSnap = null; return true; })()`); // exactly the post-reload state: runStart persisted, snapshot gone
+await ev(`markDone('Astona', 'test')`);
+await ev(`cancelStart()`);
+await sleep(300);
+ok('S9 resumed-run cancel reverts the run marks (Astona) and KEEPS pre-Start progress (Velmar)', await ev(`(function(){ try { return doneSet.has('Velmar') && pieces.Astona.every(v => v === 0) && runStart === 0; } catch (e) { return false; } })()`));
+
+// S10 (Beta 1.93, follow-up audit R07): if the trail cleanup cannot be saved,
+// the cancel message must say so instead of claiming full erasure.
+await ev(`startClean()`); await sleep(200);
+await ev(`(function(){ var orig = lsSet; window.__lsOrig133 = orig; lsSet = function(k, v){ if (k === LS.trail) return false; return orig(k, v); }; return true; })()`);
+await ev(`cancelStart()`);
+await sleep(200);
+const S10 = JSON.parse(await ev(`(() => JSON.stringify({ toast: $('toast').textContent, dirty: trailDirty }))()`));
+ok('S10 a failed trail save qualifies the cancel message (no false erasure claim) | ' + JSON.stringify(S10), /could not be saved yet/.test(S10.toast) && S10.dirty === true);
+await ev(`(function(){ if (window.__lsOrig133) lsSet = window.__lsOrig133; flushAux(true); return true; })()`);
+
 R.exceptions = consoleLog.filter(c => c.type === 'EXCEPTION').map(c => String(c.text || '').slice(0, 200));
 finish(R, proc);
 

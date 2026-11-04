@@ -110,6 +110,18 @@ ok('A8 offline download fetches the full Vaughan tile set + the z15 route core (
   A8.tiles === 633 && A8.inBox === true && A8.glyphs === 256 && A8.sprites === 8 && A8.total === 897);
 ok('A8b the second tap was refused while the download ran (single-flight, Beta 1.92) | toast: ' + A8toast, A8toast === 'Offline download already running');
 
+// A8c (Beta 1.93, follow-up audit V02): a genuinely STALLED file (a fetch that
+// never answers but honours the abort signal, as a real fetch does) is
+// abandoned by the 30 s timeout and the job still completes honestly.
+await ev(`(() => { window.__preSeen = []; window.__hangCalls = 0; window.fetch = (u, opts) => { window.__preSeen.push(String(u)); window.__hangCalls++; if (window.__hangCalls === 1) return new Promise((_, rej) => { if (opts && opts.signal) opts.signal.addEventListener('abort', () => rej(new Error('aborted'))); }); return Promise.resolve(new Response('{}', { status: 200 })); }; $('xPre').click(); return true; })()`);
+const t8c = Date.now();
+let stat8c = '';
+for (let i = 0; i < 100; i++) { stat8c = await ev(`$('xPreStat').textContent`); if (/Offline maps: saved/.test(stat8c)) break; await sleep(500); }
+const el8c = Date.now() - t8c;
+const seen8c = await ev(`(window.__preSeen || []).length`);
+await ev(`(() => { window.fetch = window.__realFetch; return true; })()`);
+ok('A8c one stalled file is aborted (~30 s) and the download still completes | ' + stat8c + ' | seen ' + seen8c + ' | elapsed ' + Math.round(el8c / 1000) + 's', /Offline maps: saved/.test(stat8c) && seen8c === 897 && el8c >= 20000 && el8c < 90000);
+
 R.exceptions = consoleLog.filter(c => c.type === 'EXCEPTION').map(c => String(c.text || '').slice(0, 200));
 finish(R, proc);
 

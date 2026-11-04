@@ -86,6 +86,9 @@ ok('N20 a manual override flips the theme at once and hands back at its boundary
 ok('N20b a backup written under an override carries the override pair', await ev(`(function(){ setThemeOverride(true); var b = JSON.parse(buildBackup()); var carried = typeof b.night === 'string' && typeof b.nightExp === 'string'; clearThemeOverride(); return carried; })()`));
 await ev(`markDone('Velmar', 'tap'); true`); await sleep(200);
 ok('N20c a backup taken mid-recording contains the buffered trail + coverage - flushed first (Beta 1.92, deep audit F04)', await ev(`(function(){ try { trail.push([43.9999, -79.9999, 1999999999]); trailDirty = true; coveredIdx.__f04 = [0]; auxDirty = true; var b = JSON.parse(buildBackup()); var tr = JSON.parse(b.routes['5w'].trail || '[]'); var cv = JSON.parse(b.routes['5w'].cov || '{}'); var good = tr.some(p => p[0] === 43.9999) && !!cv.__f04; trail.pop(); delete coveredIdx.__f04; return good; } catch (e) { return false; } })()`));
+await ev(`(function(){ var orig = lsSet; window.__lsOrig145 = orig; lsSet = function(k, v){ if (k === LS.trail) return false; return orig(k, v); }; return true; })()`);
+ok('N20d a backup whose trail flush FAILS is refused outright, never shipped stale (Beta 1.93, audit R02)', await ev(`(function(){ try { trail.push([43.9998, -79.9998, 1999999998]); trailDirty = true; var b = buildBackup(); trail.pop(); return b === null; } catch (e) { return false; } })()`));
+await ev(`(function(){ if (window.__lsOrig145) lsSet = window.__lsOrig145; return true; })()`);
 
 // --- storage slot shape -----------------------------------------------------
 ok('N10 route slots are per-route and disjoint; night stays a global key', await ev(`(function(){ var a = routeKeys('5w'), b = routeKeys('zz9'); var av = Object.values(a), bv = Object.values(b); return a.sides === 'snowroute.5w.v5.sides' && b.sides === 'snowroute.zz9.v5.sides' && av.every(v => v.indexOf('snowroute.5w.') === 0) && bv.every(v => v.indexOf('snowroute.zz9.') === 0) && !av.some(v => bv.indexOf(v) >= 0) && LS.night === 'snowroute.v2.night'; })()`));
@@ -108,6 +111,14 @@ await ev(`loadRoute('5w'); true`); await sleep(600);
 ok('N12 a failed copy aborts the move: partial slot wiped, legacy state loads instead', await ev(`(function(){ return localStorage.getItem('snowroute.5w.v5.sides') === null && localStorage.getItem('snowroute.5w.v2') === null && doneSet.has('Velmar'); })()`));
 await ev(`(function(){ if (window.__origLsSet) lsSet = window.__origLsSet; return true; })()`);
 ok('N12b a backup taken on the legacy fallback exports the LEGACY data, not the wiped slot (Beta 1.92, deep audit F02)', await ev(`(function(){ try { var b = JSON.parse(buildBackup()); return !!b.routes && !!b.routes['5w'] && b.routes['5w'].done === ${JSON.stringify(DONE_5W)} && b.routes['5w'].sides === ${JSON.stringify(SIDES_5W)}; } catch (e) { return false; } })()`));
+
+// --- R04 (Beta 1.93): a partial slot (sides only) is not a completed migration
+await ev(`localStorage.clear(); true`);
+await ev(`location.reload(); true`);
+await poll(`!!window.__bootAt`, 30000);
+await ev(`localStorage.setItem('snowroute.v5.sides', ${JSON.stringify(SIDES_5W)}); localStorage.setItem('snowroute.v2', ${JSON.stringify(DONE_5W)}); localStorage.setItem('snowroute.v5.sess', '[1762000000]'); localStorage.setItem('snowroute.5w.v5.sides', ${JSON.stringify(SIDES_5W)}); true`); // seeded AFTER the reload, on the fresh unloaded page: seeding before it raced the old page's pagehide flush, which could write its own session record back over the seeded one (CI caught this; the app was never wrong)
+await ev(`loadRoute('5w'); true`); await sleep(600);
+ok('N12c a partial slot is NOT adopted as migrated - the missing fields are copied (Beta 1.93, audit R04)', await ev(`localStorage.getItem('snowroute.5w.v5.sess') === '[1762000000]' && doneSet.has('Velmar')`));
 
 // --- v1 backup restores into the slot; C06 clears its markers ---------------
 const TRAIL_5W = JSON.stringify([[43.8, -79.5, 1762000000], [43.8005, -79.5005, 1762000060]]);
@@ -138,17 +149,35 @@ await poll(`!!window.__bootAt && window.__bootAt !== ${JSON.stringify(bootMark13
 await ev(`loadRoute('5w'); true`); await sleep(600);
 ok('N13b a done-only backup restores for real: the side-marks are derived from the list', await ev(`(function(){ try { return doneSet.has('Velmar') && pieces.Velmar.every(v => v === 3); } catch (e) { return false; } })()`));
 
+// --- R03 (Beta 1.93): an explicitly EMPTY done list is applied, not skipped --
+const v1doneEmpty = JSON.stringify({ app: 'snowroute-backup', v: 1, at: '2026-11-02T00:00:00.000Z', data: { 'snowroute.v2': '[]' } });
+await ev(`localStorage.clear(); true`);
+await ev(`localStorage.setItem('snowroute.5w.v5.sides', ${JSON.stringify(SIDES_5W)}); localStorage.setItem('snowroute.5w.v4.trail', JSON.stringify([[43.8, -79.5, 1762000000]])); true`);
+await ev(`location.reload(); true`);
+await poll(`!!window.__bootAt`, 30000);
+await ev(`loadRoute('5w'); true`); await sleep(500);
+ok('N13c-a baseline: Velmar starts out done', await ev(`doneSet.has('Velmar')`));
+const bootMark13c = await ev(`window.__bootAt`);
+await ev(`(function(){ document.getElementById('xText').value = ${JSON.stringify(v1doneEmpty)}; doRestore(); return true; })()`);
+await sleep(900);
+await poll(`!!window.__bootAt && window.__bootAt !== ${JSON.stringify(bootMark13c)}`, 30000);
+await ev(`loadRoute('5w'); true`); await sleep(600);
+ok('N13c-b restoring an EMPTY completion list clears the board (Beta 1.93, audit R03)', await ev(`(function(){ try { return !doneSet.has('Velmar') && pieces.Velmar.every(v => v === 0); } catch (e) { return false; } })()`));
+
 // --- backups are v2 now ------------------------------------------------------
 ok('N14 buildBackup emits the v2 per-route shape', await ev(`(function(){ var b = JSON.parse(buildBackup()); return b.app === 'snowroute-backup' && b.v === 2 && !!b.routes && typeof b.routes['5w'].sides === 'string' && typeof b.routes['5w'].trail === 'string'; })()`));
 
-// --- F05 (Beta 1.92, deep audit): a blocked start delete at Finish arms a
-// retry; the stale key must never resurrect the run on the next boot --------
+// --- R05 (Beta 1.93, follow-up audit): the start delete is a finish GATE ----
+// A blocked delete stops the finish with the run intact; it no longer relies
+// on a retry surviving long enough to land.
+await ev(`markDone('Velmar', 'tap'); true`); await sleep(200);
 await ev(`(function(){ window.__rmOrig = Storage.prototype.removeItem; Storage.prototype.removeItem = function(k){ if (k === 'snowroute.5w.v5.start') throw new Error('injected delete failure'); return window.__rmOrig.call(this, k); }; return true; })()`);
 await ev(`startClean(); true`); await sleep(300);
 await ev(`finishRun(); true`); await sleep(400);
-ok('N25a (fault live) the blocked start delete leaves the stale key and arms the retry', await ev(`(function(){ try { return localStorage.getItem('snowroute.5w.v5.start') !== null && startDirty === true; } catch (e) { return false; } })()`));
-await ev(`(function(){ Storage.prototype.removeItem = window.__rmOrig; flushAux(false); return true; })()`); await sleep(300);
-ok('N25b the flush heartbeat retries the delete until it lands', await ev(`localStorage.getItem('snowroute.5w.v5.start') === null && startDirty === false`));
+ok('N25a (fault live) a blocked start delete STOPS the finish - run intact, board untouched', await ev(`(function(){ try { return runStart > 0 && doneSet.has('Velmar'); } catch (e) { return false; } })()`));
+await ev(`(function(){ Storage.prototype.removeItem = window.__rmOrig; return true; })()`);
+await ev(`finishRun(); true`); await sleep(400);
+ok('N25b with the delete working again the finish completes and the start key is gone', await ev(`runStart === 0 && localStorage.getItem('snowroute.5w.v5.start') === null`));
 await ev(`location.reload(); true`);
 await poll(`!!window.__bootAt`, 30000);
 await ev(`loadRoute('5w'); true`); await sleep(500);
