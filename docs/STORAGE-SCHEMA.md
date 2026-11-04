@@ -124,7 +124,13 @@ The transient fields (`v5.snap`, `v2.migrated`) are never part of
 a backup as fields of their own. Beta 1.96 (SR-195-02): a recovery
 backup additionally carries the active run's cancel snapshot as an
 optional per-route `snap` string (the snapshot object, serialized) when
-a run is open; on restore it is written back to the route's `v5.snap`
+a run is open; on restore it is written back to the route's `v5.snap`.
+Since later in Beta 1.96 (Andrew's one-button design) the recovery
+export is also the Backup button's AUTOMATIC fallback: when the normal
+backup cannot be built because saving failed, the press produces this
+recovery file instead — recovery-marked and recovery-named, with a
+result message that says the save could not be done first. There is no
+separate Recovery menu option anymore.
 key — inside the restore transaction and its rollback scope — only if
 it passes `validateSnap` against the start the same backup carries for
 that route. A carried snapshot that fails validation (or whose run's

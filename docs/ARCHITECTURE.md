@@ -135,6 +135,19 @@ boot also self-warms once the worker controls the page, so the map works
 offline from the first install — drive119's first session proves it
 without any manual reload.
 
+## Backups: one button, automatic recovery fallback (Beta 1.96, Andrew)
+
+Settings → Backup has ONE backup action. The normal backup is built
+from saved storage and still refuses to be built when the state cannot
+be saved first (it would ship stale data) — but the refusal is no
+longer a dead end: the press falls back automatically to the recovery
+export (live in-memory state, marked `"recovery": true`, shared as
+`snowroute-recovery.json`) and the result message says the save could
+not be done. The fallback triggers on the BUILD failure only; a
+cancelled share sheet is a shrug, never a fallback. drive136 F12 pins
+both directions (broken save → recovery file + loud toast; healthy
+save → normal file, no marker).
+
 ## Service worker updates (deliberate, audit F-11)
 
 The worker calls `skipWaiting()` on install and `clients.claim()` on

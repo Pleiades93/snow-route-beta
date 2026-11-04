@@ -190,6 +190,28 @@ ok('F11d a corrupt snapshot inside a recovery file is dropped with a warning; th
 await ev(`cancelStart()`); await sleep(200);
 
 
+// --- F12 (Beta 1.96, Andrew's design): ONE Backup button. When the normal
+// backup cannot be built because saving failed, the Backup press falls back
+// AUTOMATICALLY to the recovery export and says so loudly - no second
+// button to hunt for mid-clean. A healthy save still produces a normal
+// backup with no recovery marker. The share is captured by stubbing
+// navigator.share into the text branch.
+await ev(`(function(){ window.__shared136 = null; try { Object.defineProperty(navigator, 'canShare', { value: () => false, configurable: true }); } catch (e) {} navigator.share = (arg) => { window.__shared136 = arg && arg.text ? arg.text : 'NO-TEXT'; return Promise.resolve(); }; return true; })()`);
+await ev(INSTALL_STUB); // F11's reloads wiped the fault-injection stub - reinstall before stubbing
+await ev(`__stub('snowroute.5w.v5.sides')`);
+await ev(`togglePiece('Velmar', 1, 0); true`); await sleep(200);
+await ev(`shareBackup(); true`);
+await poll(`!!window.__shared136`, 15000); await sleep(200);
+const f12a = JSON.parse(await ev(`(() => { try { const o = JSON.parse(window.__shared136); return JSON.stringify({ isRec: o.recovery === true, toast: $('toast').textContent }); } catch (e) { return JSON.stringify({ err: String(e) }); } })()`));
+ok('F12a with saving broken, the Backup press shares a RECOVERY file and the toast says so | ' + JSON.stringify(f12a), f12a.isRec === true && f12a.toast.indexOf('recovery backup') >= 0 && f12a.toast.indexOf('could not be saved') >= 0);
+await ev(`__unstub()`);
+await ev(`flushAux(true); window.__shared136 = null; true`); await sleep(200);
+await ev(`shareBackup(); true`);
+await poll(`!!window.__shared136`, 15000); await sleep(200);
+const f12b = JSON.parse(await ev(`(() => { try { const o = JSON.parse(window.__shared136); return JSON.stringify({ isRec: o.recovery === true, app: o.app }); } catch (e) { return JSON.stringify({ err: String(e) }); } })()`));
+ok('F12b with saving healthy, the Backup press shares a NORMAL backup (no recovery marker) | ' + JSON.stringify(f12b), f12b.isRec === false && f12b.app === 'snowroute-backup');
+
 R.exceptions = consoleLog.filter(c => c.type === 'EXCEPTION');
 finish(R, proc);
+
 

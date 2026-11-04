@@ -351,7 +351,7 @@ function finishRun() {
   if (!lsSet(LS.sides, JSON.stringify({ p: clearedPieces, t: clearedTimes }))) {
     if (archiving) { // roll the archive back - the finish did not happen. Beta 1.63 (audit F02): the rollback is CHECKED and READ BACK - if it fails, the stored history and the stored board disagree, and the message must say so instead of claiming the clean is intact.
       const rbOk = lsSet(LS.hist, JSON.stringify(prevHist)) && lsGet(LS.hist) === JSON.stringify(prevHist);
-      if (!rbOk) { toast('Storage failure — finish stopped, but the archive could not be undone. Export a recovery backup now', 6000); return; }
+      if (!rbOk) { toast('Storage failure — finish stopped, but the archive could not be undone. Export a backup now', 6000); return; }
     }
     toast('Storage problem — finish stopped, your clean is intact', 4200);
     return;
@@ -366,7 +366,7 @@ function finishRun() {
     let rbHist = true;
     if (archiving) rbHist = lsSet(LS.hist, JSON.stringify(prevHist)) && lsGet(LS.hist) === JSON.stringify(prevHist);
     if (rbSides && rbHist) toast('Storage problem — finish stopped, your clean is intact', 4200);
-    else toast('Storage failure — finish stopped, but the rollback could not be verified. Export a recovery backup now', 6000);
+    else toast('Storage failure — finish stopped, but the rollback could not be verified. Export a backup now', 6000);
     return;
   }
   const undoSnapData = runSnap ? JSON.parse(JSON.stringify(runSnap)) : validateSnap(parseJ(lsGet(LS.snap), null), runStart); // Beta 1.95 (deep audit SR-194-01): the cancel snapshot travels INTO the undo before it is deleted here - from memory when the run never reloaded, from its persisted copy (validated, SR-194-03) when it did. 1.94 deleted the snapshot and never carried it, so Finish -> Undo -> Cancel fell back to the stamp journal, blind to a pre-Start side unmarked mid-run.
@@ -392,7 +392,7 @@ function doUndo() {
   // failure keeps the undo on offer (snapshot retained, button unchanged)
   // instead of half-undoing.
   if (!lsSet(LS.hist, JSON.stringify(undoSnap.hist))) { toast('Storage problem — undo stopped, nothing changed', 3600); return; }
-  if (!lsSet(LS.sides, JSON.stringify({ p: undoSnap.pieces, t: undoSnap.pieceTimes }))) { const rbOk = lsSet(LS.hist, JSON.stringify(history)) && lsGet(LS.hist) === JSON.stringify(history); toast(rbOk ? 'Storage problem — undo stopped, nothing changed' : 'Storage failure — undo stopped, but the history restore could not be undone. Export a recovery backup now', rbOk ? 3600 : 6000); return; } // Beta 1.63 (audit F02): the mirror rollback is verified too
+  if (!lsSet(LS.sides, JSON.stringify({ p: undoSnap.pieces, t: undoSnap.pieceTimes }))) { const rbOk = lsSet(LS.hist, JSON.stringify(history)) && lsGet(LS.hist) === JSON.stringify(history); toast(rbOk ? 'Storage problem — undo stopped, nothing changed' : 'Storage failure — undo stopped, but the history restore could not be undone. Export a backup now', rbOk ? 3600 : 6000); return; } // Beta 1.63 (audit F02): the mirror rollback is verified too
   // Beta 1.94 (deep audit SR-193-04): the restored run's START is a gate too, taken BEFORE the
   // snapshot below is consumed. It used to ride the saveAll after the state swap (with
   // undoSnap already nulled), so a failed start write plus a reload restored the board but
@@ -403,7 +403,7 @@ function doUndo() {
   if (!startOk) {
     const rbHist = lsSet(LS.hist, JSON.stringify(history)) && lsGet(LS.hist) === JSON.stringify(history);
     const rbSides = lsSet(LS.sides, JSON.stringify({ p: pieces, t: pieceTimes })) && lsGet(LS.sides) === JSON.stringify({ p: pieces, t: pieceTimes });
-    toast((rbHist && rbSides) ? 'Storage problem — undo stopped, nothing changed' : 'Storage failure — undo stopped, but the rollback could not be verified. Export a recovery backup now', (rbHist && rbSides) ? 3600 : 6000);
+    toast((rbHist && rbSides) ? 'Storage problem — undo stopped, nothing changed' : 'Storage failure — undo stopped, but the rollback could not be verified. Export a backup now', (rbHist && rbSides) ? 3600 : 6000);
     return;
   }
   // Beta 1.95 (deep audit SR-194-01): the restored run's cancel SNAPSHOT is a gate too,
@@ -417,7 +417,7 @@ function doUndo() {
       const rbHist = lsSet(LS.hist, JSON.stringify(history)) && lsGet(LS.hist) === JSON.stringify(history);
       const rbSides = lsSet(LS.sides, JSON.stringify({ p: pieces, t: pieceTimes })) && lsGet(LS.sides) === JSON.stringify({ p: pieces, t: pieceTimes });
       const rbStart = lsDel(LS.start);
-      toast((rbHist && rbSides && rbStart) ? 'Storage problem — undo stopped, nothing changed' : 'Storage failure — undo stopped, but the rollback could not be verified. Export a recovery backup now', (rbHist && rbSides && rbStart) ? 3600 : 6000);
+      toast((rbHist && rbSides && rbStart) ? 'Storage problem — undo stopped, nothing changed' : 'Storage failure — undo stopped, but the rollback could not be verified. Export a backup now', (rbHist && rbSides && rbStart) ? 3600 : 6000);
       return;
     }
   }

@@ -46,7 +46,6 @@ function showX(mode) { // Beta 1.89 (Andrew): the backup pane is a small menu tr
 }
 function openExport() { showX('menu'); showSetPane('setBackupPane'); $('setVer').textContent = $('ver').textContent; $('setMenu').classList.add('open'); } // Beta 1.89: opening Backup lands on the backup menu (the three options)
 $('xBak').addEventListener('click', () => shareBackup());
-$('xRec').addEventListener('click', () => { if (!tapGuard('xRec')) return; shareRecovery(); });
 $('xRes').addEventListener('click', () => showX('restore'));
 $('xImpText').addEventListener('click', () => showX('text'));
 $('xImpFile').addEventListener('click', () => $('xFile').click());
@@ -102,7 +101,8 @@ function recoveryObj() { // Beta 1.95 (deep audit SR-194-02): the RECOVERY backu
   return o;
 }
 function buildRecovery() { const o = recoveryObj(); return o ? JSON.stringify(o, null, 1) : null; }
-function downloadBackup() { const b = buildBackup(); if (!b) { toast('Backup failed — your saved data could not be read', 3600); return; } dl(new Blob([b], { type: 'application/json' }), 'snowroute-backup.json'); toast('Backup downloaded'); } // Beta 1.48 (audit B09): the filename still carried the retired 5W name; the backup format and its internal marker are unchanged
+// Beta 1.96: downloadBackup follows the same one-button rule as shareBackup - a build failure is the recovery fallback, never a dead-end refusal.
+function downloadBackup() { const b = buildBackup(); if (!b) { shareRecovery(true); return; } dl(new Blob([b], { type: 'application/json' }), 'snowroute-backup.json'); toast('Backup downloaded'); } // Beta 1.48 (audit B09): the filename still carried the retired 5W name; the backup format and its internal marker are unchanged
 function clearTrailAll() { // Beta 1.88: the Clear trail BUTTON left with the old Snow log (Andrew: the clearing gets re-homed in a later round) - the clearing itself stays as one callable piece, two-tap guard and all its storage honesty intact, so the re-home is a button wired to this, not a rebuild
   trail = []; trailSessions = []; const okSessClr = saveSess(); if (!okSessClr) sessDirty = true; drawTrail(true); // Beta 1.71 (audit B02): the markers describe this trail - clearing the trail clears them. Beta 1.73 (audit C05): the marker write is CHECKED like the trail write - 1.71 dropped its result, so 'Trail cleared' could be claimed while the markers stayed stored
   // The clear is a storage write like any other: if it fails, the stored trail still holds every point and
@@ -365,19 +365,19 @@ $('setBack').addEventListener('click', () => { if (xMode === 'text') showX('rest
 $('exportBtn').addEventListener('click', () => { if (!tapGuard('exportBtn')) return; openExport(); });
 async function shareBackup() { // Beta 1.88 (Andrew), moved into the backup menu in 1.89 (his correction): the Backup (JSON) press both backs up AND asks where to save it - one tap. A real FILE share where the platform offers it (Save to Files keeps the .json name), the text share next, and the plain download where no share exists at all (desktops, the test rig). Cancelling the prompt is a shrug, not an error - the backup menu stays open behind it
   const b = buildBackup();
-  if (!b) { toast('Backup failed — your saved data could not be read', 3600); return; }
+  if (!b) { shareRecovery(true); return; } // Beta 1.96 (Andrew's design): ONE Backup button - a backup that cannot be built because saving failed falls back AUTOMATICALLY to the recovery export (live state, snapshot carried) instead of refusing and sending him to a second button mid-clean. shareRecovery(true) labels the result loudly: the file is recovery-marked, recovery-named, and its message says the save could not be done first. A cancelled SHARE never reaches here - the fallback triggers on the build failure only
   let f = null; try { f = new File([b], 'snowroute-backup.json', { type: 'application/json' }); } catch (e) { /* older engine: the text share below still works */ }
   if (f && navigator.canShare && navigator.canShare({ files: [f] })) { try { await navigator.share({ files: [f] }); return; } catch (e) { if (e && e.name === 'AbortError') return; } }
   if (navigator.share) { try { await navigator.share({ text: b }); return; } catch (e) { if (e && e.name === 'AbortError') return; } }
   dl(new Blob([b], { type: 'application/json' }), 'snowroute-backup.json'); toast('Backup downloaded');
 }
-async function shareRecovery() { // Beta 1.95 (SR-194-02): the Backup press's recovery twin - same share sheet, but the file is NAMED recovery and the result message repeats what it is: the live on-screen state, not fully saved on this device
+async function shareRecovery(viaFallback) { // Beta 1.95 (SR-194-02): the recovery export - same share sheet, but the file is NAMED recovery and the result message repeats what it is: the live on-screen state, not fully saved on this device. Beta 1.96: since Andrew's one-button change this runs as Backup's AUTOMATIC fallback (viaFallback) - the standalone Recovery menu option is gone
   const b = buildRecovery();
   if (!b) { toast('Recovery backup unavailable — open the route first', 3600); return; }
   let f = null; try { f = new File([b], 'snowroute-recovery.json', { type: 'application/json' }); } catch (e) { /* older engine: the text share below still works */ }
-  if (f && navigator.canShare && navigator.canShare({ files: [f] })) { try { await navigator.share({ files: [f] }); toast('Recovery backup shared — the open route is the live on-screen state, not fully saved on this device; other routes are included as last saved', 4200); return; } catch (e) { if (e && e.name === 'AbortError') return; } }
-  if (navigator.share) { try { await navigator.share({ text: b }); toast('Recovery backup shared — the open route is the live on-screen state, not fully saved on this device; other routes are included as last saved', 4200); return; } catch (e) { if (e && e.name === 'AbortError') return; } }
-  dl(new Blob([b], { type: 'application/json' }), 'snowroute-recovery.json'); toast('Recovery backup downloaded — the open route is the live on-screen state, not fully saved on this device; other routes are included as last saved', 4200); // Beta 1.96 (audit-2, N-5b): the wording distinguishes what the file actually holds - the ACTIVE route is serialized from live memory; any other route pack in the same file is read from storage, as last saved
+  if (f && navigator.canShare && navigator.canShare({ files: [f] })) { try { await navigator.share({ files: [f] }); toast((viaFallback ? 'Backup could not be saved — recovery backup shared instead: ' : 'Recovery backup shared — ') + 'the open route is the live on-screen state, not fully saved on this device; other routes are included as last saved', 4200); return; } catch (e) { if (e && e.name === 'AbortError') return; } }
+  if (navigator.share) { try { await navigator.share({ text: b }); toast((viaFallback ? 'Backup could not be saved — recovery backup shared instead: ' : 'Recovery backup shared — ') + 'the open route is the live on-screen state, not fully saved on this device; other routes are included as last saved', 4200); return; } catch (e) { if (e && e.name === 'AbortError') return; } }
+  dl(new Blob([b], { type: 'application/json' }), 'snowroute-recovery.json'); toast((viaFallback ? 'Backup could not be saved — recovery backup downloaded instead: ' : 'Recovery backup downloaded — ') + 'the open route is the live on-screen state, not fully saved on this device; other routes are included as last saved', 4200); // Beta 1.96 (audit-2, N-5b): the wording distinguishes what the file actually holds - the ACTIVE route is serialized from live memory; any other route pack in the same file is read from storage, as last saved
 }
 $('updBtn').addEventListener('click', () => $('setMenu').classList.remove('open')); // the update check reports by toast over the map - the menu steps aside for it (the old pop-up's pick-and-close)
 // Click-away (Andrew, Beta 1.14): tapping anywhere outside an open menu closes it - no hunting for a

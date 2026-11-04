@@ -17,6 +17,7 @@ The Beta 1.95 audit round — BOTH deep audits (the SR-195 series and the indepe
 - **Audit-2 N-3 — README route wording corrected.** It described per-route packs as a present capability; it now separates the design from what ships (one pack, no in-app switching yet).
 - **Audit-2 N-5b — Recovery wording is precise.** The share text now says the open route is the live state while any other route in the file is included as last saved.
 - **Audit F-08 — CI actions pinned by commit SHA** (tags kept as comments), and **F-11 recorded as a decision**: the worker's prompt takeover (`skipWaiting` + `clients.claim`) is deliberate — it never reloads a page, and state is version-tolerant; see ARCHITECTURE.md.
+- **One Backup button (Andrew's design, added to this round at his direction).** The separate "Recovery backup" menu option is gone. When the normal backup cannot be built because saving failed, the Backup press falls back AUTOMATICALLY to the recovery export — and says so loudly: the file is recovery-marked, recovery-named, and its message opens "Backup could not be saved — recovery backup shared/downloaded instead". A cancelled share sheet never triggers the fallback (it fires on the build failure only). The storage-failure warnings now point at "a backup" — the one button covers both.
 
 ## Beta 1.95 — 2026-11-04
 
