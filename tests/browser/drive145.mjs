@@ -114,9 +114,9 @@ ok('N12b a backup taken on the legacy fallback exports the LEGACY data, not the 
 
 // --- R04 (Beta 1.93): a partial slot (sides only) is not a completed migration
 await ev(`localStorage.clear(); true`);
-await ev(`localStorage.setItem('snowroute.v5.sides', ${JSON.stringify(SIDES_5W)}); localStorage.setItem('snowroute.v2', ${JSON.stringify(DONE_5W)}); localStorage.setItem('snowroute.v5.sess', '[1762000000]'); localStorage.setItem('snowroute.5w.v5.sides', ${JSON.stringify(SIDES_5W)}); true`);
 await ev(`location.reload(); true`);
 await poll(`!!window.__bootAt`, 30000);
+await ev(`localStorage.setItem('snowroute.v5.sides', ${JSON.stringify(SIDES_5W)}); localStorage.setItem('snowroute.v2', ${JSON.stringify(DONE_5W)}); localStorage.setItem('snowroute.v5.sess', '[1762000000]'); localStorage.setItem('snowroute.5w.v5.sides', ${JSON.stringify(SIDES_5W)}); true`); // seeded AFTER the reload, on the fresh unloaded page: seeding before it raced the old page's pagehide flush, which could write its own session record back over the seeded one (CI caught this; the app was never wrong)
 await ev(`loadRoute('5w'); true`); await sleep(600);
 ok('N12c a partial slot is NOT adopted as migrated - the missing fields are copied (Beta 1.93, audit R04)', await ev(`localStorage.getItem('snowroute.5w.v5.sess') === '[1762000000]' && doneSet.has('Velmar')`));
 
