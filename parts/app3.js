@@ -286,7 +286,7 @@ let undoSnap = null, undoTimer = 0;
 function invalidateFinishUndo() { // Beta 1.97 (audit loop CG-196-03): the ONE place a pending Finish Undo dies. Before 1.97 only markDone cleared it inline; side chips, group chips, mark-all, unmarks, Clear and a new Start all mutated the board underneath a live Undo, whose restore then silently discarded the newer work. Every mutation path now funnels here (applyPiece is the piece-level choke point; the lifecycle paths call it themselves).
   if (!undoSnap) return;
   undoSnap = null; clearTimeout(undoTimer);
-  const rb = $('resetBtn'); rb.textContent = 'Finish'; rb.classList.remove('undoing');
+  const rb = $('resetBtn'); rb.textContent = 'FINISH'; rb.classList.remove('undoing');
 }
 $('resetBtn').addEventListener('click', () => {
   // Undo is checked BEFORE the double-tap guard (audit finding, drive89 T4): the guard exists to stop a
@@ -386,7 +386,7 @@ function finishRun() {
   finishChange();
   const rb = $('resetBtn'); rb.textContent = 'Undo'; rb.classList.add('undoing'); rb.style.display = '';
   clearTimeout(undoTimer);
-  undoTimer = setTimeout(() => { undoSnap = null; rb.textContent = 'Finish'; rb.classList.remove('undoing'); updateCount(); }, 8000);
+  undoTimer = setTimeout(() => { undoSnap = null; rb.textContent = 'FINISH'; rb.classList.remove('undoing'); updateCount(); }, 8000);
   toast((archiving ? 'Clean archived · ' + Object.keys(snap.items).length + ' streets' : 'Board cleared — under 3 streets, nothing saved') + (restOk ? '' : ' — some details could not be written (' + saveFailKey + '); they retry on the next save'), 3400);
   if (archiving) maybeBackupNudge();
 }
@@ -434,7 +434,7 @@ function doUndo() {
   history = undoSnap.hist;
   suggested = new Set(); $('suggest').classList.add('hidden'); // Beta 1.70 (audit A04): the restored coverage starts with a clean suggestion set
   undoSnap = null;
-  const rb = $('resetBtn'); rb.textContent = 'Finish'; rb.classList.remove('undoing');
+  const rb = $('resetBtn'); rb.textContent = 'FINISH'; rb.classList.remove('undoing');
   saveQuiet = true; const metaOk = saveAll(); saveQuiet = false; const fcOk = finishChange(); if (runStart && undoSnapGpsWas) startGps(true);
   drawTrail(true); // Beta 1.69: the restored run's trail redraws at once
   if (metaOk && fcOk && runStart && !undoHadSnap) toast('Finish undone — run restored, but no start snapshot is saved for it, so its Cancel will rebuild from the marks made during the run', 4600); // Beta 1.96 (SR-195-06)

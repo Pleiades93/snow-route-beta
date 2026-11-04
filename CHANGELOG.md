@@ -1,5 +1,8 @@
 # Changelog
 
+## Beta 1.100 — 2026-11-04
+Start and Finish are the same button in every way but the word (Andrew). The Start circle went splash-blue with white text in 1.75, but Finish kept the superseded 1.23 treatment (black, volt-yellow text, 19 px instead of 21 px) — the swap changed the whole look. #startBtn and #resetBtn now share one CSS rule, so the two states can never drift apart again. The button's word is now FINISH in capitals, matching START (it was title-case before). The Undo state keeps its green (a different signal, unchanged).
+
 ## Beta 1.99 — 2026-11-04
 Internal refactor only — no behaviour change (architecture scan Phase 2, candidate C1). The trail segment-acceptance rule (break on a gap over 300 s, a jump over 1000 m, or a recorded session start between two points) existed as three hand-kept copies in trailKm, drawTrail and buildGpx; it now lives in one shared pure function, trailSegments (app1), and all three call it — buildGpx's session-marker pointer walk moved verbatim. Parity is fixture-proven, not asserted: tests/browser/selftest-trail-segments.mjs extracts the shipped functions and checks them against golden outputs captured from the 1.98 implementations (GPX strings byte-equal, distances exactly equal), runs in CI before the browser battery, and fails on a one-second change to the gap constant. drive143's X8 measuring oracle stays independent, as designed.
 

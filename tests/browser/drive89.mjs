@@ -28,7 +28,7 @@ await ev(`(() => { localStorage.clear(); location.reload(); return true; })()`);
 await bootThrough(ev, poll); // Beta 1.95 (SR-194-07 re-baseline): the strict harness exposed that this drive ran its whole flow after this reload with NO route loaded (pieces empty) - mark3's refreshAll threw on the empty board and the old {error} return swallowed it, the mutations before the throw carrying the checks. The flow now runs against a loaded route, as it reads.
 // T1: the button is Finish, and red
 let A = await pollRead(`(() => { const b = $('resetBtn'); const cs = getComputedStyle(b); return JSON.stringify({ label: b.textContent, bg: cs.backgroundColor }); })()`, v => v.label === 'Finish');
-ok('T1 button says Finish', A.label === 'Finish');
+ok('T1 button says FINISH', A.label === 'FINISH');
 ok('T1 button wears the black redesign (Beta 1.23)', A.bg === 'rgb(10, 10, 11)');
 // T2: pop-up flow - No changes nothing
 await ev(`(() => { $('resetBtn').click(); return true; })()`); await sleep(300);
