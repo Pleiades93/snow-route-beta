@@ -122,10 +122,31 @@ manifest (the shared `preloadUrlList` the download itself uses) is
 copied, the pack is pruned to exactly that manifest, and the completion
 flag (`snowroute.v5.packmig`) is set only after the destination is
 verified — a failed copy retries on the next boot instead of being
-marked done. The first-ever
+marked done. Beta 1.96 (SR-195-03): the completion flag is a
+fingerprint of the manifest, and it is READ on boot — a matching
+fingerprint with a pack census of exactly the manifest count skips the
+verification sweep entirely; anything else runs the full pass, which
+also heals a shrunken pack from the browsing cache. A re-download is a
+true refresh (Beta 1.96, audit-2 N-2): the download fetches in `reload`
+mode and the worker bypasses both caches for it, and the browsing-cache
+cleanup afterwards deletes only copies the pack confirmed it holds
+(N-1). The first-ever
 boot also self-warms once the worker controls the page, so the map works
 offline from the first install — drive119's first session proves it
 without any manual reload.
+
+## Service worker updates (deliberate, audit F-11)
+
+The worker calls `skipWaiting()` on install and `clients.claim()` on
+activate, so an update takes control promptly instead of waiting for
+every tab of the old version to close. This is deliberate for a field
+tool: the operator's one update path should not strand him on a stale
+build mid-season. The takeover is bounded — claim changes which worker
+controls an open page; it never reloads the page. The running page
+keeps its loaded code and its on-device state, and the new version
+applies on the next load or via Settings → Update. All state is
+localStorage in version-tolerant shapes (the loaders sanitize what
+they read), so a controller change mid-clean cannot strand a run.
 
 ## Viewport (deliberate, audit F-06)
 

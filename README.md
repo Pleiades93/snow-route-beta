@@ -6,9 +6,11 @@ truck — in the dark, with gloves-adjacent tapping and spotty signal.
 It started as a tracker for one 34-street route in Vaughan, Ontario, and has
 grown into a small route system: routes are **data packs**, and storage,
 backups and the route menu are all per-route. **Route 5W (Vaughan)** is the
-pack that ships today; nothing in the app is tied to Vaughan — a new area is
-a new pack, not a new app. There is no server and no account; all progress
-lives on the device.
+pack that ships today. The system is *designed* so a new area is a new pack
+rather than a new app — storage, backups and the menu are already per-route —
+but only Route 5W ships today, in-app route switching is not built yet, and
+the offline map set is drawn around Vaughan. There is no server and no
+account; all progress lives on the device.
 
 ## Live
 
