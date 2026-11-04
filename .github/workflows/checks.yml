@@ -101,6 +101,8 @@ jobs:
           node-version: '22'
       - name: Locate Chrome
         run: echo "CHROME_BIN=$(command -v google-chrome || command -v chromium || command -v chromium-browser)" >> "$GITHUB_ENV"
+      - name: Race-judge self-test (E17 retry predicate, fixture-proven before it judges)
+        run: node tests/browser/selftest-race-loss.mjs
       - name: Offline end-to-end (real service worker, real caches; Beta 1.53 / audit B08)
         run: |
           python3 -m http.server 8077 --directory . >/dev/null 2>&1 &

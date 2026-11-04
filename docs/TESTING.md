@@ -200,6 +200,41 @@ LOGIC (fix validation, suggestion thresholds, parallel-street isolation)
 is covered in CI by `drive118`; real-world GPS reception on the route
 remains a device-only verification.
 
+## The test-change gate (standing rule, Andrew, 2026-11-04)
+
+A test that fails because of an error in the test itself burns the same CI
+hour as a real defect and teaches nothing. Three e2e failures in one
+afternoon (Phase 1, 2026-11-04) were all test bugs — a judging rule written
+from an incomplete signature list, a setup wipe that deleted state later
+checks depend on, a census taken while the work it measured was still
+running. So a test change is not ready for CI until it passes this gate,
+locally, first:
+
+1. **Judging logic ships with fixtures.** Any predicate or comparison that
+   decides pass/fail (retry rules, signature matchers, verdict math) is
+   extracted into a shared module and proven in plain Node against written
+   fixtures: every documented positive case AND the mutations/gains that
+   must still fail. The fixture that covers a past misjudgment is that
+   bug's permanent regression test. Current instance:
+   `tests/browser/race-loss.mjs` + `selftest-race-loss.mjs` (runs in the
+   offline-e2e CI job before the suite; also a snow fix-checks probe).
+2. **A setup or reset enumerates its blast radius.** Before pushing, list
+   the storage keys / caches / state the setup writes or deletes, and the
+   keys every later check in the file reads. Overlap outside the check's
+   own scope must be deliberate and commented, or the push stops. (The
+   E17 attempt wipe once deleted the preload record, silently disabling
+   the pack migration E19–E21 measure.)
+3. **Waits poll the terminal signal, never a proxy.** A check waits for
+   the system's own completion signal — an earned flag, a returned status
+   object — not for an intermediate observable (entries appearing, counts
+   moving). Where no signal exists, drive the function directly and await
+   its return (E20's pattern) instead of observing side effects (E19's
+   original pattern).
+4. **Failures are classified before anything re-runs.** Every CI failure
+   is entered in the snow goal's flake log as APP, TEST, or FLAKE with the
+   evidence first. A failure that reproduces is not a flake; a TEST
+   classification means the fix lands in the test and re-enters at step 1.
+
 ## Honest limitations
 
 - The service-worker upgrade lifecycle is covered by `drive117` on a

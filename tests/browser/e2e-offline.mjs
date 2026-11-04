@@ -6,6 +6,7 @@
 // request pauses in exactly the session whose context issued it.
 import { spawn } from 'node:child_process';
 import fs from 'node:fs';
+import { isRaceLoss } from './race-loss.mjs'; // the E17 race judge - fixture-proven by selftest-race-loss.mjs (test-change gate, docs/TESTING.md)
 const CHROME = process.env.CHROME_BIN || (fs.existsSync('/opt/meta-chromium/chrome') ? '/opt/meta-chromium/chrome' : 'google-chrome');
 const sleep = ms => new Promise(r => setTimeout(r, ms));
 const PROFILE = '/tmp/e2e2profile-' + Date.now(); // Beta 1.73 (audit C02): a NAMED profile, so E14 can kill the browser and relaunch on the same one - a true cold-process boot, not a reload
@@ -268,23 +269,51 @@ ok('E18 browsing-cache eviction (flooded past its cap, trim observed at ' + trim
 // them at all).
 const loadRouteE2E = async () => { await poll(`(function(){ if (typeof routeLoaded !== 'undefined' && !routeLoaded && typeof loadRoute === 'function') { try { loadRoute('5w'); } catch (e) {} } return typeof routeLoaded !== 'undefined' && routeLoaded === true; })()`, 60000); await poll(`typeof map === 'undefined' || !map || !map.isMoving()`, 25000); }; // Beta 1.76: app state loads when a route is picked - E17's entry points (startClean, markDone) and state reads need the route loaded, including after each process-kill relaunch. Beta 1.77: also wait out the pick's intro flight.
 const snapState = async () => JSON.parse(await ev2(`(() => { const out = {}; for (const k of ['start', 'sess', 'sides', 'done', 'times', 'via', 'trail']) out[k] = lsGet(LS[k]); out.app = JSON.stringify({ run: runStart, sess: trailSessions.slice(), velmar: pieces.Velmar[0], astona: pieces.Astona[0], done: Array.from(doneSet).sort(), trailN: trail.length }); return JSON.stringify(out); })()`));
-await loadRouteE2E();
-await ev2(`(() => { startClean(); markDone('Velmar', 'tap'); togglePiece('Astona', 0, 0); const t0 = Math.floor(Date.now() / 1000); trail = [[43.82, -79.56, t0], [43.8201, -79.56, t0 + 30], [43.8202, -79.56, t0 + 60]]; saveTrail(); return true; })()`);
-await ev2(`(() => { try { flushAux(true); } catch (e) {} return true; })()`); // quiesce the app's writers first (the flake-log prescription after E17's repeated kill-vs-commit races: settle BEFORE the snapshot, not after)
-await sleep(10000); // storage-commit settle BEFORE snapBefore (Beta 1.95 hardening; the snapshot is then read from committed storage and the kill follows immediately - snapshotting first and settling after left the kill racing the commit, and E17 failed intermittently in both the 1.94 and 1.95 rounds with a wholesale-empty after-state)
-const snapBefore = await snapState();
-ok('E17a the clean state was persisted through the app save paths before the kill | sess ' + snapBefore.sess + ' app ' + snapBefore.app, !!snapBefore.start && JSON.parse(snapBefore.sess).length >= 1 && JSON.parse(snapBefore.app).velmar === 3 && JSON.parse(snapBefore.app).astona === 1 && JSON.parse(snapBefore.app).done.includes('Velmar') && JSON.parse(snapBefore.app).trailN === 3);
-proc.kill('SIGKILL');
-await sleep(1500);
-for (const f of ['SingletonLock', 'SingletonCookie', 'SingletonSocket']) { try { fs.rmSync(PROFILE + '/' + f, { force: true }); } catch (e) {} }
-await launchBrowser();
-const backOk17 = (await poll(`typeof glOk !== 'undefined' && glOk === true`, 90000)) && (await poll(`!!navigator.serviceWorker.controller`, 30000));
-await loadRouteE2E();
-const snapAfter = await snapState();
-const diagAfter = JSON.parse(await ev2(`(() => JSON.stringify({ lsStart: LS.start, mig: localStorage.getItem('snowroute.5w.v2.migrated'), slotStart: localStorage.getItem('snowroute.5w.v5.start'), legacyStart: localStorage.getItem('snowroute.v5.start'), slotSides: (localStorage.getItem('snowroute.5w.v5.sides') || '').length, legacySides: (localStorage.getItem('snowroute.v5.sides') || '').length }))()`));
-const stateKeys = ['start', 'sess', 'sides', 'done', 'times', 'via', 'trail'];
-const e17diff = stateKeys.filter(k => snapBefore[k] !== snapAfter[k]).map(k => k + '[' + (snapBefore[k] || '').length + '->' + (snapAfter[k] || '').length + ']').join(' ') + (snapBefore.app !== snapAfter.app ? ' appDIFF before=' + snapBefore.app + ' after=' + snapAfter.app : '');
-ok('E17 persisted app state survives process death byte-for-byte and reloads identically | back ' + backOk17 + (e17diff ? ' | DIFF ' + e17diff : '') + ' | DIAG ' + JSON.stringify(diagAfter), backOk17 && stateKeys.every(k => snapBefore[k] === snapAfter[k]) && snapBefore.app === snapAfter.app);
+// Phase 1 hygiene (architecture scan 2026-11-04, N4): the scenario runs as an
+// attempt, and a failed attempt earns exactly ONE retry when - and only when -
+// its failure carries the kill-vs-commit race signature: MONOTONE LOSS. Every
+// differing key is absent, emptied, or a strict prefix of its pre-kill value,
+// and the app summary's counts only ever drop (its run stamp surviving or itself lost) - the
+// two signatures the flake log documents (partial last-writes loss on
+// 2026-11-04 run 41885400454 attempt 1; wholesale-empty on attempt 2). A
+// mutation, a gain, a changed run, or a second failure is a hard FAIL: the
+// retry exists so the platform's asynchronous storage commit stops blocking
+// release gates, never to forgive an app defect. Each attempt starts from a
+// wiped localStorage so attempts are independent and self-relative.
+const attemptE17 = async () => {
+  await ev2(`(() => { try { const ks = []; for (let i = 0; i < localStorage.length; i++) ks.push(localStorage.key(i)); for (const k of ks) if (k && k.startsWith('snowroute.5w.') && k !== LS.pre) localStorage.removeItem(k); } catch (e) {} return true; })()`); // wipe ONLY this route's state keys: a blanket localStorage.clear() also killed the preload record (LS.pre), which silently disabled migratePack for the rest of the run and failed E19/E20/E21 on run 41920672848 - the migration is gated on that record (app4 migratePack: no record = skip)
+  await send('Page.reload', { ignoreCache: false }, PAGE_S);
+  await sleep(1200);
+  await loadRouteE2E();
+  await ev2(`(() => { startClean(); markDone('Velmar', 'tap'); togglePiece('Astona', 0, 0); const t0 = Math.floor(Date.now() / 1000); trail = [[43.82, -79.56, t0], [43.8201, -79.56, t0 + 30], [43.8202, -79.56, t0 + 60]]; saveTrail(); return true; })()`);
+  await ev2(`(() => { try { flushAux(true); } catch (e) {} return true; })()`); // quiesce the app's writers first (the flake-log prescription after E17's repeated kill-vs-commit races: settle BEFORE the snapshot, not after)
+  await sleep(10000); // storage-commit settle BEFORE snapBefore (Beta 1.95 hardening; the snapshot is then read from committed storage and the kill follows immediately)
+  const before = await snapState();
+  const aOk = !!before.start && JSON.parse(before.sess).length >= 1 && JSON.parse(before.app).velmar === 3 && JSON.parse(before.app).astona === 1 && JSON.parse(before.app).done.includes('Velmar') && JSON.parse(before.app).trailN === 3;
+  proc.kill('SIGKILL');
+  await sleep(1500);
+  for (const f of ['SingletonLock', 'SingletonCookie', 'SingletonSocket']) { try { fs.rmSync(PROFILE + '/' + f, { force: true }); } catch (e) {} }
+  await launchBrowser();
+  const backOk = (await poll(`typeof glOk !== 'undefined' && glOk === true`, 90000)) && (await poll(`!!navigator.serviceWorker.controller`, 30000));
+  await loadRouteE2E();
+  const after = await snapState();
+  const diag = JSON.parse(await ev2(`(() => JSON.stringify({ lsStart: LS.start, mig: localStorage.getItem('snowroute.5w.v2.migrated'), slotStart: localStorage.getItem('snowroute.5w.v5.start'), legacyStart: localStorage.getItem('snowroute.v5.start'), slotSides: (localStorage.getItem('snowroute.5w.v5.sides') || '').length, legacySides: (localStorage.getItem('snowroute.v5.sides') || '').length }))()`));
+  const keys = ['start', 'sess', 'sides', 'done', 'times', 'via', 'trail'];
+  const diff = keys.filter(k => before[k] !== after[k]).map(k => k + '[' + (before[k] || '').length + '->' + (after[k] || '').length + ']').join(' ') + (before.app !== after.app ? ' appDIFF before=' + before.app + ' after=' + after.app : '');
+  const pass = backOk && keys.every(k => before[k] === after[k]) && before.app === after.app;
+  const lossOnly = isRaceLoss(before, after, backOk, aOk); // the judge lives in race-loss.mjs and is fixture-proven by selftest-race-loss.mjs before it may judge a run (its first version misjudged the wholesale-empty signature on run 41919355118 - the run stamp is itself lost there; fixture F2 is that case's regression test)
+  return { before, after, diag, diff, aOk, pass, lossOnly };
+};
+const e17r1 = await attemptE17();
+ok('E17a the clean state was persisted through the app save paths before the kill | sess ' + e17r1.before.sess + ' app ' + e17r1.before.app, e17r1.aOk);
+if (e17r1.pass) {
+  ok('E17 persisted app state survives process death byte-for-byte and reloads identically | back true', true);
+} else if (e17r1.lossOnly) {
+  const e17r2 = await attemptE17();
+  ok('E17 persisted app state survives process death byte-for-byte and reloads identically | attempt 1 carried the kill-vs-commit race signature (monotone loss: ' + e17r1.diff + '), retried once per the Phase 1 N4 rule | attempt 2 ' + (e17r2.pass ? 'clean' : 'FAILED | DIFF ' + e17r2.diff + ' | DIAG ' + JSON.stringify(e17r2.diag)), e17r2.pass);
+} else {
+  ok('E17 persisted app state survives process death byte-for-byte and reloads identically | back ' + e17r1.pass + (e17r1.diff ? ' | DIFF ' + e17r1.diff : '') + ' | DIAG ' + JSON.stringify(e17r1.diag), false);
+}
 const e17b = JSON.parse(await ev2(`(() => { window.__lsSet = lsSet; lsSet = (k, v) => k === LS.sess ? false : window.__lsSet(k, v); startClean(); return JSON.stringify({ marker: Math.floor(runStart / 1000), run: runStart, dirty: sessDirty, stored: JSON.parse(lsGet(LS.sess) || '[]') }); })()`));
 ok('E17b setup: the marker write failed pre-kill, retry armed, marker not persisted | marker ' + e17b.marker + ' dirty ' + e17b.dirty, e17b.dirty === true && !e17b.stored.includes(e17b.marker));
 await sleep(10000); // commit settle for the run state the start DID save (the marker's 15 s retry stays stubbed and keeps failing, so it remains unpersisted)
@@ -303,14 +332,13 @@ ok('E17b after the kill: persisted run state intact, the never-persisted marker 
 // included) through a catch-all that set the completion flag
 // unconditionally, so a partial copy was marked complete forever.
 try {
-  const sample3 = baseKeys.filter(u => u.includes('tiles.basemaps.cartocdn.com')).slice(0, 3).sort(); // tile URLs only: no spaces/encoding edge (the glyph URLs are stored %20-encoded) and no sprite ambiguity
   await ev2(`(async () => { const sample = ${JSON.stringify(baseKeys.filter(u => u.includes('tiles.basemaps.cartocdn.com')).slice(0, 3))}; const junk = ['https://tiles.basemaps.cartocdn.com/junk/e19-a', 'https://tiles.basemaps.cartocdn.com/junk/e19-b']; await caches.delete('snowroute-offline-v1'); const tc = await caches.open('snowroute-tiles-v1'); for (const u of sample.concat(junk)) await tc.put(u, new Response('x')); localStorage.removeItem('snowroute.v5.packmig'); return true; })()`);
   await send('Page.reload', { ignoreCache: false }, PAGE_S); await sleep(1200);
   await sleep(1500);
   await loadRouteE2E();
-  await poll(`(async () => { const oc = await caches.open('snowroute-offline-v1'); const ks = (await oc.keys()).map(r => r.url); return ${JSON.stringify(sample3)}.every(u => ks.includes(u)); })()`, 30000);
+  const mig19 = JSON.parse(await ev2(`(async () => JSON.stringify(await migratePack()))()`)); // Phase 1 (2026-11-04): drive the migration EXPLICITLY and await its return (E20's pattern) instead of censusing the fire-and-forget boot migration mid-flight. The boot pass over ~897 manifest entries against a flooded ~3,000-entry browsing cache (E18's eviction flood leaves only a few dozen manifest tiles in TILES) outlasted every poll window on the 2026-11-04 branch runs - n=3 / flag-null on 41920672848 + 41921688086; a diagnostic explicit call on 41924197280 completed and set the flag at once, proving the migration contract sound and the OBSERVATION racy. The seeded tiles make n >= 3 deterministic; the flag still follows verification.
   const e19 = JSON.parse(await ev2(`(async () => { const oc = await caches.open('snowroute-offline-v1'); const ks = (await oc.keys()).map(r => r.url); const man = new Set(preloadUrlList().map(u => new URL(u).href)); return JSON.stringify({ n: ks.length, outside: ks.filter(k => !man.has(k)).length, junk: ks.filter(k => k.includes('/junk/')).length, flag: localStorage.getItem('snowroute.v5.packmig'), fp: packMigFingerprint(preloadUrlList()) }); })()`));
-  ok('E19 pack migration is bounded by the manifest: every pack entry is a manifest URL, seeded strays stay out, the seeded manifest tiles arrive, the flag follows verification (Beta 1.95, SR-194-05/06) | ' + JSON.stringify(e19), e19.outside === 0 && e19.junk === 0 && e19.n >= 3 && e19.flag === e19.fp);
+  ok('E19 pack migration is bounded by the manifest: every pack entry is a manifest URL, seeded strays stay out, the seeded manifest tiles arrive, the flag follows verification (Beta 1.95, SR-194-05/06) | ' + JSON.stringify(e19), e19.outside === 0 && e19.junk === 0 && e19.n >= 3 && e19.flag === e19.fp && mig19.ok === true);
 } catch (e) { ok('E19 pack migration manifest-bounded + verified (Beta 1.95, SR-194-05/06) | threw ' + String(e).slice(0, 150), false); }
 try {
   const hasFn = await ev2(`typeof migratePack === 'function'`);
