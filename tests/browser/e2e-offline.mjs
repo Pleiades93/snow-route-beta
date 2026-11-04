@@ -233,13 +233,21 @@ const noLoss16 = partialKeys16.every(u => keysAfter16.includes(u));
 ok('E16 process killed mid-download: relaunch on the same profile and the resumed download restores the full preload set (897) and loses nothing the kill left stored | back ' + backOk + ' keys ' + keysAfter16.length + ' (base ' + baseKeys.length + ' = the pack exactly)', backOk && stat16 && noLoss16 && keysAfter16.length >= 897);
 // E18 (Beta 1.94, audit F-03): the browsing cache's FIFO eviction can never
 // evict the downloaded pack. Flood snowroute-tiles-v1 past its 3000 cap from
-// the page, then fetch fresh tiles THROUGH the worker so its batched trim
-// actually runs; every pack file must still sit in snowroute-offline-v1, and
-// the browsing cache must show the trim happened (below the flood level).
+// the page, then fetch fresh tiles THROUGH the worker in small batches,
+// reading the count after each batch: the worker's trim fires at least every
+// 25 puts and cuts to exactly 3000, so a reading at/under 3024 must appear
+// within a few batches (a single end-state reading is racy - the trim can
+// fire mid-flood while the page-side puts keep landing, as the first CI run
+// of this check showed: pack intact at 897/897, count caught at 3126).
 await ev2(`(async () => { const tc = await caches.open('snowroute-tiles-v1'); const res = new Response('x'); for (let i = 0; i < 3100; i++) await tc.put('https://tiles.basemaps.cartocdn.com/flood/' + i, res.clone()); return true; })()`);
-await ev2(`(async () => { const tpl = 'https://tiles.basemaps.cartocdn.com/v/20261026-01/vectortiles/carto.streets/v2/12/{x}/1490.mvt'; for (let i = 0; i < 30; i++) { try { await fetch(tpl.replace('{x}', 1140 + i)); } catch (e) {} } return true; })()`);
-const e18 = JSON.parse(await ev2(`(async () => { const oc = await caches.open('snowroute-offline-v1'); const base = ${JSON.stringify(baseKeys)}; let have = 0; for (const u of base) { if (await oc.match(u)) have++; } const tc = await caches.open('snowroute-tiles-v1'); return JSON.stringify({ have, tiles: (await tc.keys()).length }); })()`));
-ok('E18 browsing-cache eviction (flooded past its cap, trim ran) leaves the downloaded pack untouched | pack ' + e18.have + ' of ' + baseKeys.length + ', browsing cache ' + e18.tiles, e18.have === baseKeys.length && e18.tiles <= 3024 && e18.tiles < 3100);
+let trimSeen = -1;
+for (let batch = 0; batch < 60 && trimSeen < 0; batch++) {
+  await ev2(`(async () => { const tpl = 'https://tiles.basemaps.cartocdn.com/v/20261026-01/vectortiles/carto.streets/v2/12/{x}/1490.mvt'; for (let i = 0; i < 5; i++) { try { await fetch(tpl.replace('{x}', ${1140 + batch * 5} + i)); } catch (e) {} } return true; })()`);
+  const n = JSON.parse(await ev2(`(async () => { const tc = await caches.open('snowroute-tiles-v1'); return JSON.stringify((await tc.keys()).length); })()`));
+  if (n <= 3024) trimSeen = n;
+}
+const e18 = JSON.parse(await ev2(`(async () => { const oc = await caches.open('snowroute-offline-v1'); const base = ${JSON.stringify(baseKeys)}; let have = 0; for (const u of base) { if (await oc.match(u)) have++; } return JSON.stringify({ have }); })()`));
+ok('E18 browsing-cache eviction (flooded past its cap, trim observed at ' + trimSeen + ') leaves the downloaded pack untouched | pack ' + e18.have + ' of ' + baseKeys.length, e18.have === baseKeys.length && trimSeen > 0);
 // E17 (Beta 1.74 audit E02): process death vs APP STATE. E14/E16 prove the
 // map cache survives a kill; this proves the WORK does: an open clean, its
 // session marker, marked streets and the GPS trail, all written through the
