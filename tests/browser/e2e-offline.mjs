@@ -282,7 +282,8 @@ const backOk17 = (await poll(`typeof glOk !== 'undefined' && glOk === true`, 900
 await loadRouteE2E();
 const snapAfter = await snapState();
 const stateKeys = ['start', 'sess', 'sides', 'done', 'times', 'via', 'trail'];
-ok('E17 persisted app state survives process death byte-for-byte and reloads identically | back ' + backOk17, backOk17 && stateKeys.every(k => snapBefore[k] === snapAfter[k]) && snapBefore.app === snapAfter.app);
+const e17diff = stateKeys.filter(k => snapBefore[k] !== snapAfter[k]).map(k => k + '[' + (snapBefore[k] || '').length + '->' + (snapAfter[k] || '').length + ']').join(' ') + (snapBefore.app !== snapAfter.app ? ' appDIFF before=' + snapBefore.app + ' after=' + snapAfter.app : '');
+ok('E17 persisted app state survives process death byte-for-byte and reloads identically | back ' + backOk17 + (e17diff ? ' | DIFF ' + e17diff : ''), backOk17 && stateKeys.every(k => snapBefore[k] === snapAfter[k]) && snapBefore.app === snapAfter.app);
 const e17b = JSON.parse(await ev2(`(() => { window.__lsSet = lsSet; lsSet = (k, v) => k === LS.sess ? false : window.__lsSet(k, v); startClean(); return JSON.stringify({ marker: Math.floor(runStart / 1000), run: runStart, dirty: sessDirty, stored: JSON.parse(lsGet(LS.sess) || '[]') }); })()`));
 ok('E17b setup: the marker write failed pre-kill, retry armed, marker not persisted | marker ' + e17b.marker + ' dirty ' + e17b.dirty, e17b.dirty === true && !e17b.stored.includes(e17b.marker));
 await sleep(10000); // commit settle for the run state the start DID save (the marker's 15 s retry stays stubbed and keeps failing, so it remains unpersisted)
