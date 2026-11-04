@@ -1,5 +1,12 @@
 # Changelog
 
+## Beta 1.89 — 2026-11-03
+
+- A correction round, Andrew's exact structure (1.88 put the one-tap share on the settings row and left the backup pane a form): the settings main pane is Backup and Update, and the Backup row only OPENS the backup menu. The backup menu holds exactly three options - Backup (JSON) (the one-tap build + save prompt, moved here), Restore backup, and Download offline maps (the progress bar and status line are that option's feedback) - and the always-on text box and the Share/Copy buttons are gone.
+- Restore backup opens its own menu with two options: Import JSON (new - the system file picker; the picked file feeds the SAME restore path as pasted text, one validator and one verdict) and Import Text (the paste box with Import backup under it). One Back button walks the tree up a level at a time; the version still rides bottom-right in every state.
+- Tests: drive83's SEC-2 reads buildBackup() directly (the backup is no longer rendered into a box to read); drive125 gains T3c, a walk of the whole menu tree asserting Andrew's exact options and titles at every level.
+
+
 ## Beta 1.88 — 2026-11-03
 
 - Settings is a blue full-screen takeover like the Routes menu (Andrew: the menus are cohesive on the blue): the Settings tab slides it up on the shared menu motion, the main pane holds Backup and Update, a bare white X at bottom centre closes it, and Andrew's picked version text rides at bottom-right in BOTH panes, re-synced from the main title's version on every open so it can never go stale.

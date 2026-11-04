@@ -66,6 +66,22 @@ ok('T3 Settings rises as the blue takeover: Backup then Update on the main pane,
   T3b.open === true && T3b.bg === 'rgb(43, 75, 242)' && JSON.stringify(T3b.rows) === JSON.stringify(['exportBtn', 'updBtn']) && T3b.ver === T3b.titleVer && T3b.ver.length > 0 && T3b.chipOut && T3b.chipW === 56 && T3b.chipW === T3b.paceW);
 await ev(`(() => { $('setClose').click(); return true; })()`); await sleep(600);
 ok('T3 the bare X closes the Settings takeover', await ev(`$('setMenu').classList.contains('open')`) === false);
+await ev(`(() => { $('setBtn').click(); return true; })()`); await sleep(500);
+await ev(`(() => { $('exportBtn').click(); return true; })()`); await sleep(500);
+const T3c1 = JSON.parse(await ev(`(() => JSON.stringify({ opts: [...document.querySelectorAll('#xOpts .bkBtn')].map(b => b.textContent), groupShown: $('xOpts').style.display !== 'none', title: $('xTitle').textContent }))()`));
+await ev(`(() => { $('xRes').click(); return true; })()`); await sleep(300);
+const T3c2 = JSON.parse(await ev(`(() => JSON.stringify({ opts: [...document.querySelectorAll('#xRestoreOpts .bkBtn')].map(b => b.textContent), title: $('xTitle').textContent }))()`));
+await ev(`(() => { $('xImpText').click(); return true; })()`); await sleep(300);
+const T3c3 = JSON.parse(await ev(`(() => JSON.stringify({ title: $('xTitle').textContent, box: $('xText').style.display !== 'none', imp: $('xImp').style.display !== 'none' }))()`));
+await ev(`(() => { $('setBack').click(); return true; })()`); await sleep(300);
+const T3c4 = JSON.parse(await ev(`(() => JSON.stringify({ title: $('xTitle').textContent }))()`));
+await ev(`(() => { $('setBack').click(); return true; })()`); await sleep(300);
+const T3c5 = JSON.parse(await ev(`(() => JSON.stringify({ title: $('xTitle').textContent }))()`));
+ok('T3c the backup pane is a menu tree exactly as Andrew specced (Beta 1.89): three options, Restore opens Import JSON / Import Text, Import Text opens the box with Import backup under it, Back walks up one level at a time | ' + JSON.stringify({ T3c1, T3c2, T3c3, T3c4, T3c5 }),
+  JSON.stringify(T3c1.opts) === JSON.stringify(['Backup (JSON)', 'Restore backup', 'Download offline maps']) && T3c1.groupShown && T3c1.title === 'Backup' &&
+  JSON.stringify(T3c2.opts) === JSON.stringify(['Import JSON', 'Import Text']) && T3c2.title === 'Restore' &&
+  T3c3.title === 'Import Text' && T3c3.box && T3c3.imp && T3c4.title === 'Restore' && T3c5.title === 'Backup');
+await ev(`(() => { $('setClose').click(); return true; })()`); await sleep(400);
 
 // P1 (Beta 1.33, Protomaps): ONE places system - localities (cities/towns/villages) are
 // gated by the tile data itself, size by size (the Apple/Google ladder); the app's tuning
