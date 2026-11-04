@@ -192,8 +192,7 @@
   #noteText { width: 100%; min-height: 74px; border-radius: var(--rad-btn); border: 1px solid var(--hair); background: var(--field); color: var(--ink); font-size: 16px; /* 16px: no iOS focus auto-zoom (Beta 1.18) */ padding: 9px; margin-bottom: 12px; font-family: inherit; }
   #xText { width: 100%; min-height: 150px; border-radius: 14px; border: 1px solid rgba(255,255,255,.45); background: #fff; color: #14161c; font-size: 11.5px; padding: 10px; font-family: ui-monospace, monospace; resize: vertical; } /* Beta 1.88: the backup box, restyled for the blue pane (white box, dark text - the mock Andrew approved) */
   .bkBtn { font-size: 16px; padding: 13px 16px; text-align: center; width: 100%; }
-  .bkRow { display: flex; gap: 10px; width: 100%; }
-  .bkRow > * { flex: 1; }
+  #xOpts, #xRestoreOpts { display: flex; flex-direction: column; gap: 12px; width: 100%; } /* Beta 1.89: the backup pane's option groups stack at the pane's own rhythm */
   #xPreStat { font-size: 12.5px; color: rgba(255,255,255,.9); line-height: 1.5; text-align: center; }
   #xPreBar { display: none; height: 6px; border-radius: 3px; background: rgba(255,255,255,.25); width: 100%; overflow: hidden; } /* Beta 1.87: the offline-download progress bar - shown only while a download runs (the .on class); Beta 1.88: the track went translucent white for the blue pane */
   #xPreBar.on { display: block; }
@@ -258,7 +257,7 @@
 <div id="hud">
   <div id="warn">Not saving — storage is full or blocked</div>
   <div class="row">
-    <div class="titleStack"><div class="title">Snow Route Beta</div><div class="ver" id="ver">Beta 1.88</div></div>
+    <div class="titleStack"><div class="title">Snow Route Beta</div><div class="ver" id="ver">Beta 1.89</div></div>
   </div>
   <div id="stats"></div>
 </div>
@@ -286,20 +285,26 @@
 </nav>
 <div id="setMenu">
   <div class="rmPane on" id="setMainPane">
-    <button class="rmBtn" id="exportBtn">Backup (JSON)</button>
+    <button class="rmBtn" id="exportBtn">Backup</button>
     <button class="rmBtn" id="updBtn">Update</button>
   </div>
   <div class="rmPane" id="setBackupPane">
     <div class="rmTitle" id="xTitle">Backup</div>
-    <textarea id="xText" readonly></textarea>
-    <div class="bkRow"><button class="rmBtn bkBtn" id="xShare">Share</button><button class="rmBtn bkBtn" id="xCopy">Copy</button></div>
-    <button class="rmBtn bkBtn" id="xRes">Restore a backup</button>
-    <button class="rmBtn bkBtn" id="xBak" style="display:none">Back to backup</button>
+    <div id="xOpts">
+      <button class="rmBtn bkBtn" id="xBak">Backup (JSON)</button>
+      <button class="rmBtn bkBtn" id="xRes">Restore backup</button>
+      <button class="rmBtn bkBtn" id="xPre">Download offline maps</button>
+      <div id="xPreBar"><div id="xPreFill"></div></div>
+      <div id="xPreStat"></div>
+    </div>
+    <div id="xRestoreOpts" style="display:none">
+      <button class="rmBtn bkBtn" id="xImpFile">Import JSON</button>
+      <button class="rmBtn bkBtn" id="xImpText">Import Text</button>
+    </div>
+    <textarea id="xText" style="display:none" readonly></textarea>
     <button class="rmBtn bkBtn" id="xImp" style="display:none">Import backup</button>
-    <button class="rmBtn bkBtn" id="xPre">Download offline maps</button>
-    <div id="xPreBar"><div id="xPreFill"></div></div>
-    <div id="xPreStat"></div>
     <button class="rmBack" id="setBack">&#8592; Back</button>
+    <input type="file" id="xFile" accept=".json,application/json" style="display:none">
   </div>
   <button id="setClose">&#10005;</button>
   <div id="setVer"></div>
@@ -3590,27 +3595,26 @@ function buildGpx() {
   g += '</trkseg></trk></gpx>';
   return g;
 }
-let xMode = 'backup';
-function showX(mode) { // Beta 1.88: two modes survive - backup and restore. Summary and GPX left with the old Snow log at Andrew's word; buildGpx itself stays (the architecture program still counts it a consumer), it just has no button here anymore
+let xMode = 'menu';
+function showX(mode) { // Beta 1.89 (Andrew): the backup pane is a small menu tree, not a form - the menu holds exactly Backup (JSON) / Restore backup / Download offline maps; Restore backup opens the restore menu (Import JSON / Import Text); Import Text opens the paste box with Import backup under it. The always-on text box and the Share/Copy buttons are gone: Backup (JSON)'s save prompt IS the share now
   xMode = mode;
+  const menu = mode === 'menu', restore = mode === 'restore', text = mode === 'text';
+  $('xOpts').style.display = menu ? '' : 'none';
+  $('xRestoreOpts').style.display = restore ? '' : 'none';
   const ta = $('xText');
-  ta.readOnly = mode !== 'restore';
-  $('xImp').style.display = mode === 'restore' ? '' : 'none';
-  $('xBak').style.display = mode === 'restore' ? '' : 'none';
-  $('xRes').style.display = mode === 'restore' ? 'none' : '';
-  if (mode === 'restore') { ta.value = ''; ta.placeholder = 'Paste a backup here, then tap Import backup'; $('xTitle').textContent = 'Restore'; }
-  else { const bb = buildBackup(); ta.value = bb || 'Backup failed — your saved data could not be read. Nothing was exported.'; ta.placeholder = ''; $('xTitle').textContent = 'Backup'; }
-  $('xShare').style.display = navigator.share ? '' : 'none';
-  const rec = parseJ(lsGet(LS.pre), null);
-  $('xPreStat').textContent = rec ? 'Offline maps downloaded ' + new Date(rec.at).toLocaleDateString() + ' (' + rec.saved + ' files)' : 'Offline maps not downloaded yet — preload for offline use.';
-  $('xPreBar').classList.remove('on'); $('xPreFill').style.width = '0%'; // Beta 1.87: the progress bar belongs to a live download - a reopened pane starts clean
-  ta.scrollTop = 0;
+  ta.style.display = text ? '' : 'none';
+  ta.readOnly = !text;
+  $('xImp').style.display = text ? '' : 'none';
+  $('xTitle').textContent = menu ? 'Backup' : restore ? 'Restore' : 'Import Text';
+  if (text) { ta.value = ''; ta.placeholder = 'Paste a backup here, then tap Import backup'; }
+  if (menu) { const rec = parseJ(lsGet(LS.pre), null); $('xPreStat').textContent = rec ? 'Offline maps downloaded ' + new Date(rec.at).toLocaleDateString() + ' (' + rec.saved + ' files)' : 'Offline maps not downloaded yet — preload for offline use.'; $('xPreBar').classList.remove('on'); $('xPreFill').style.width = '0%'; } // the bar belongs to a live download - landing on the menu starts it clean (Beta 1.87)
 }
-function openExport() { showX('backup'); showSetPane('setBackupPane'); $('setVer').textContent = $('ver').textContent; $('setMenu').classList.add('open'); } // Beta 1.88: Backup lives on the settings takeover's backup pane - opening it (the row, or a direct call) lands there with the takeover open
-$('xBak').addEventListener('click', () => showX('backup'));
+function openExport() { showX('menu'); showSetPane('setBackupPane'); $('setVer').textContent = $('ver').textContent; $('setMenu').classList.add('open'); } // Beta 1.89: opening Backup lands on the backup menu (the three options)
+$('xBak').addEventListener('click', () => shareBackup());
 $('xRes').addEventListener('click', () => showX('restore'));
-$('xCopy').addEventListener('click', async () => { try { await navigator.clipboard.writeText($('xText').value); toast('Copied'); } catch (e) { $('xText').select(); toast('Select and copy manually'); } });
-$('xShare').addEventListener('click', async () => { if (navigator.share) { try { await navigator.share({ text: $('xText').value }); } catch (e) { /* dismissed */ } } else toast('Share is not offered here — use Copy'); });
+$('xImpText').addEventListener('click', () => showX('text'));
+$('xImpFile').addEventListener('click', () => $('xFile').click());
+$('xFile').addEventListener('change', async () => { const f = $('xFile').files && $('xFile').files[0]; $('xFile').value = ''; if (!f) return; let t = ''; try { t = await f.text(); } catch (e) { toast('That file could not be read', 3200); return; } $('xText').value = t; doRestore(); }); // Import JSON: the picked file feeds the SAME restore path as pasted text - one validator, one verdict, no second door to keep honest
 function dl(blob, name) { const a = document.createElement('a'); a.href = URL.createObjectURL(blob); a.download = name; document.body.appendChild(a); a.click(); setTimeout(() => { URL.revokeObjectURL(a.href); a.remove(); }, 400); }
 function backupObj() { // Beta 1.76: format v2 - routes carry their own slots ({routes: {id: {field: raw}}}) and the night preference rides at top level. Reads stay RAW (Beta 1.48, audit B04): a failed read fails the whole export (null) instead of producing a valid-looking backup with a piece silently missing.
   const routes = {};
@@ -3817,9 +3821,9 @@ $('selNote').innerHTML = ICONS.note;
 $('setBtn').addEventListener('click', () => { if (!tapGuard('setBtn')) return; showSetPane('setMainPane'); $('setVer').textContent = $('ver').textContent; $('setMenu').classList.add('open'); }); // the Settings menu (Beta 1.88, Andrew): a blue full-screen takeover like Routes - it always lands on the main pane, and the version re-syncs from the title's on every open
 function showSetPane(id) { for (const p of ['setMainPane', 'setBackupPane']) $(p).classList.toggle('on', p === id); }
 $('setClose').addEventListener('click', () => $('setMenu').classList.remove('open'));
-$('setBack').addEventListener('click', () => showSetPane('setMainPane'));
-$('exportBtn').addEventListener('click', () => { if (!tapGuard('exportBtn')) return; openExport(); shareBackup(); });
-async function shareBackup() { // Beta 1.88 (Andrew): the Backup (JSON) press both backs up AND asks where to save it - one tap. A real FILE share where the platform offers it (Save to Files keeps the .json name), the text share next, and the plain download where no share exists at all (desktops, the test rig). Cancelling the prompt is a shrug, not an error - the pane is open behind it with Copy for the manual way
+$('setBack').addEventListener('click', () => { if (xMode === 'text') showX('restore'); else if (xMode === 'restore') showX('menu'); else showSetPane('setMainPane'); }); // Beta 1.89: one Back walks the backup tree up a level at a time; from the backup menu it lands on the settings main pane
+$('exportBtn').addEventListener('click', () => { if (!tapGuard('exportBtn')) return; openExport(); });
+async function shareBackup() { // Beta 1.88 (Andrew), moved into the backup menu in 1.89 (his correction): the Backup (JSON) press both backs up AND asks where to save it - one tap. A real FILE share where the platform offers it (Save to Files keeps the .json name), the text share next, and the plain download where no share exists at all (desktops, the test rig). Cancelling the prompt is a shrug, not an error - the backup menu stays open behind it
   const b = buildBackup();
   if (!b) { toast('Backup failed — your saved data could not be read', 3600); return; }
   let f = null; try { f = new File([b], 'snowroute-backup.json', { type: 'application/json' }); } catch (e) { /* older engine: the text share below still works */ }
