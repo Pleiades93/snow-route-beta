@@ -49,7 +49,7 @@ await ev(`$('gpsBtn').click()`);
 await sleep(300);
 await march();
 ST = await state();
-ok('S1 after the clean, Locate is view-only and the trail does not grow | ' + JSON.stringify(ST) + ' was ' + trailAfterClean, ST.run === false && ST.clean === false && ST.trail === trailAfterClean);
+ok('S1 after cancel, Locate is view-only, the cancelled run trail is erased (Beta 1.91, Andrew) and does not grow | ' + JSON.stringify(ST) + ' was ' + trailAfterClean, ST.run === false && ST.clean === false && ST.trail === 0);
 
 // Phase M: Locate pressed during an open clean resumes that clean's GPS.
 await ev(`startClean()`);

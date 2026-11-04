@@ -257,7 +257,7 @@
 <div id="hud">
   <div id="warn">Not saving — storage is full or blocked</div>
   <div class="row">
-    <div class="titleStack"><div class="title">Snow Route Beta</div><div class="ver" id="ver">Beta 1.90</div></div>
+    <div class="titleStack"><div class="title">Snow Route Beta</div><div class="ver" id="ver">Beta 1.91</div></div>
   </div>
   <div id="stats"></div>
 </div>
@@ -2728,7 +2728,7 @@ function updateCount() {
   $('countTxt').textContent = n + ' of 34 · ' + pct + '%'; $('countFill').style.width = (workDoneM() / totalWorkM() * 100) + '%'; // the meter fills with the same work fraction the % is computed from
   $('stats').textContent = statsLine();
   $('startBtn').style.display = runStart ? 'none' : '';
-  $('cancelStartBtn').style.display = (runStart && doneSet.size === 0) ? '' : 'none';
+  $('cancelStartBtn').style.display = runStart ? '' : 'none'; // Beta 1.91: Cancel start is offered for the whole run - it erases the run's records, marks included
   $('resetBtn').style.display = runStart ? '' : 'none';
 }
 
@@ -2746,7 +2746,7 @@ function renderStreets() { // production row design: tap a street's name area to
   let noteFlushed = false; // Beta 1.79: a rebuild for the SAME street (the map style finishing its load, a theme flip - both end in refreshAll) replaces the open editor too. Finalize its pending save HERE, synchronously, instead of leaving the debounced timer pointing at a discarded textarea - that race is what stranded drive88's note checks when the style-ready refresh landed mid-edit
   if (draft !== null && draftFor && draftFor === noteOpenFor && noteSaveTimer) { clearTimeout(noteSaveTimer); noteSaveTimer = 0; if (setNoteText(draftFor, draft)) noteFlushed = true; }
   const arr = STREETNAMES.filter(n => listFilter === 'all' || (listFilter === 'done') === streetComplete(n));
-  if (listFilter === 'done') arr.sort((a, b) => String(doneTimes[b] || '').localeCompare(String(doneTimes[a] || '')));
+  arr.sort((a, b) => ((MAIN.has(a) ? 0 : 1) - (MAIN.has(b) ? 0 : 1)) || a.localeCompare(b)); // Beta 1.91 (Andrew): the Streets list leads with the mains (gold - cleaned first), then the secondary streets (raspberry), alphabetical inside each colour, in every filter view
   if (!arr.length) { el.innerHTML = '<div style="padding:14px 4px;color:#8fa0b3">' + (listFilter === 'done' ? 'Nothing completed yet' : 'All streets done ✓') + '</div>'; srowCache = { sig: '', rows: new Map() }; return; }
   // Beta 1.50 (audit P06): a routine mark used to rebuild all 34 rows from
   // scratch. When the visible set and order are unchanged and no note editor
@@ -3007,23 +3007,26 @@ function refRun() { // newest qualifying clean wins (history is chronological, s
   for (let i = history.length - 1; i >= 0; i--) { const h = history[i]; if (h.items && Object.keys(h.items).length >= 5) return h; }
   return null;
 }
-function paceInfo() {
+function cleanWorkM(h) { // side-metres a saved clean actually covered: its recorded sides when present, else its completed streets at full length
+  if (h && h.sides && h.sides.p && typeof h.sides.p === 'object') { let s = 0; for (const n of STREETNAMES) { const p = h.sides.p[n]; if (!Array.isArray(p)) continue; STRETCH[n].parts.forEach((part, i) => { const v = p[i] | 0; const L = segLenM(part); if (v & 1) s += L; if (v & 2) s += L; }); } if (s > 0) return s; }
+  const items = (h && h.items) || {}; let s = 0; for (const n of Object.keys(items)) if (STRETCH[n]) s += STRETCH[n].total * 2; return s;
+}
+function workRateMh(workM, startMs, endMs, minH) { const h = (endMs - startMs) / 3600000; return (workM > 0 && h > minH) ? workM / h : null; } // NaN inputs fail the comparisons and yield null
+function fmtRate(r) { return (r / 1000).toFixed(1) + ' km of sides/hr'; }
+function paceInfo() { // Beta 1.91 (Andrew): pace is a WORK RATE - side-metres per hour, cumulative (work done so far / time so far) off the per-side mark stamps. Interleaved streets and same-street batched marks cannot distort a cumulative rate; a mark left late only makes the live reading lag until it lands, and the totals are never touched by stamp timing.
   const ref = refRun();
-  let perHour = null, perStreetMin = null;
-  if (ref && ref.startedAt) { const hrs = (Date.parse(ref.at) - Date.parse(ref.startedAt)) / 3600000; if (hrs > 0.05) { perHour = Object.keys(ref.items).length / hrs; perStreetMin = 60 / perHour; } }
+  const refRateMh = ref ? workRateMh(cleanWorkM(ref), Date.parse(ref.startedAt || ''), Date.parse(ref.at || ''), 0.05) : null;
+  let rateMh = null, live = false;
+  if (runStart) { const r = workRateMh(workDoneM(), runStart, Date.now(), 0.02); if (r) { rateMh = r; live = true; } }
+  if (!rateMh) rateMh = refRateMh;
   let etaTxt = '';
-  if (runStart) {
-    const doneN = STREETNAMES.filter(streetComplete).length;
-    const elapsedH = (Date.now() - runStart) / 3600000;
-    const rate = (doneN >= 1 && elapsedH > 0.02) ? doneN / elapsedH : perHour;
-    if (rate) { const leftH = (34 - doneN) / rate; if (doneN < 34) etaTxt = 'ETA ' + fmtDur(leftH * 3600000) + ' · done ~' + fmtClock(new Date(Date.now() + leftH * 3600000)); }
-  }
-  return { perHour, perStreetMin, etaTxt, ref };
+  if (runStart && rateMh) { const leftM = totalWorkM() - workDoneM(); if (leftM > 0) { const leftH = leftM / rateMh; etaTxt = 'ETA ' + fmtDur(leftH * 3600000) + ' · done ~' + fmtClock(new Date(Date.now() + leftH * 3600000)); } }
+  return { rateMh, refRateMh, live, etaTxt, ref };
 }
 function statsLine() {
   const p = paceInfo();
   const bits = [];
-  if (p.perHour) bits.push(p.perHour.toFixed(1) + ' streets/hr');
+  if (p.rateMh) bits.push(fmtRate(p.rateMh));
   if (p.etaTxt) bits.push(p.etaTxt);
   if (runStart) bits.push('started ' + fmtClock(new Date(runStart)));
   return bits.join(' · ');
@@ -3046,10 +3049,10 @@ function renderPace() {
   const ref = p.ref;
   let html =
     '<div>Reference clean: <b>' + (ref ? new Date(ref.at).toLocaleDateString() + ' (' + Object.keys(ref.items).length + ' streets)' : 'none yet — finish a clean to set your pace') + '</b></div>' +
-    '<div>Pace: <b>' + (p.perHour ? p.perHour.toFixed(1) + ' streets/hr · ' + p.perStreetMin.toFixed(0) + ' min/street' : '—') + '</b></div>' +
+    '<div>Pace: <b>' + (p.rateMh ? fmtRate(p.rateMh) + ' · full clean ≈ ' + fmtDur(totalWorkM() / p.rateMh * 3600000) + (p.live ? ' (this run so far)' : ' (reference clean)') : '—') + '</b></div>' +
     '<div>This run: <b>' + (runStart ? 'started ' + fmtClock(new Date(runStart)) + (p.etaTxt ? ' · ' + p.etaTxt : '') : 'not started') + '</b></div>' +
     '<div>Work done: <b>' + Math.round(workDoneM()) + ' m of ' + Math.round(totalWorkM()) + ' m of street sides</b></div>' +
-    (runStart && doneSet.size === 0 ? '<button class="red" id="paceCancel">Cancel start</button>' : '');
+    (runStart ? '<button class="red" id="paceCancel">Cancel start</button>' : '');
   html += '<div class="psec" id="histHead">Previous cleans ' + (histOpen ? '▲' : '▼') + '</div>';
   if (histOpen) {
     let any = 0;
@@ -3090,7 +3093,7 @@ function openClean(i) {
   cv.appendChild(head);
   const d = histDur(h);
   const meta = document.createElement('div'); meta.className = 'cvMeta';
-  meta.textContent = (d ? ('Total time ' + fmtDur(d.durMs) + ' · ') : '') + (h.items ? Object.keys(h.items).length : 0) + ' streets' + (h.km ? (' · ' + h.km + ' km of GPS trail') : '') + (h.startedAt ? (' · started ' + fmtClock(new Date(h.startedAt))) : '') + '\nTime taken per street = from the previous street (or the start). Tap a street for its details.';
+  meta.textContent = (d ? ('Total time ' + fmtDur(d.durMs) + ' · ') : '') + (h.items ? Object.keys(h.items).length : 0) + ' streets' + (h.km ? (' · ' + h.km + ' km of GPS trail') : '') + (h.startedAt ? (' · started ' + fmtClock(new Date(h.startedAt))) : '') + '\nPer-street span = first side marked to last side marked (includes any work in between). Tap a street for its details.';
   cv.appendChild(meta);
   const items = h.items || {};
   const order = Object.keys(items).filter(n => STREETSET.has(n)).sort((x, y) => String(items[x] || '9999').localeCompare(String(items[y] || '9999')));
@@ -3098,19 +3101,21 @@ function openClean(i) {
   order.forEach(n => {
     const t = items[n] ? Date.parse(items[n]) : NaN;
     const dur = (!isNaN(t) && !isNaN(prev)) ? t - prev : NaN;
+    const stArr = (h.sides && h.sides.t && Array.isArray(h.sides.t[n])) ? h.sides.t[n].flat().map(x => Date.parse(x)).filter(x => !isNaN(x)) : []; // Beta 1.91: the street's own side stamps - span = first side marked to last side marked
+    const span = stArr.length ? Math.max.apply(null, stArr) - Math.min.apply(null, stArr) : NaN;
     if (!isNaN(t)) prev = t;
     const rowEl = document.createElement('div'); rowEl.className = 'cvRow';
     const top = document.createElement('div'); top.className = 'cvTop';
     top.innerHTML = '<div class="cvNm"></div><div class="cvTm"></div>';
     top.querySelector('.cvNm').textContent = n;
-    top.querySelector('.cvTm').textContent = (!isNaN(t) ? fmtClock(new Date(t)) : '—') + (!isNaN(dur) ? (' · took ' + fmtDur(dur)) : '');
+    top.querySelector('.cvTm').textContent = (!isNaN(t) ? fmtClock(new Date(t)) : '—') + ((span > 0) ? (' · span ' + fmtDur(span)) : (!isNaN(dur) ? (' · took ' + fmtDur(dur)) : ''));
     rowEl.appendChild(top);
     const lines = cleanNoteLines((h.notes || {})[n]);
     if (lines.length) { const p = document.createElement('div'); p.className = 'cvNt'; p.textContent = lines[0] + (lines.length > 1 ? ' (+' + (lines.length - 1) + ' more)' : ''); rowEl.appendChild(p); }
     const det = document.createElement('div'); det.className = 'cvDet'; det.style.display = 'none';
     const parts = [];
     parts.push('Marked: ' + (items[n] ? fmtWhen(items[n]) : 'no time recorded'));
-    if (!isNaN(dur)) parts.push('Time taken: ' + fmtDur(dur) + ' (from the previous street or the start)');
+    if (span > 0) parts.push('Span: ' + fmtDur(span) + ' - first side marked ' + fmtClock(new Date(Math.min.apply(null, stArr))) + ', last side ' + fmtClock(new Date(Math.max.apply(null, stArr))) + ' (includes any other work in between)'); else if (!isNaN(dur)) parts.push('Time taken: ' + fmtDur(dur) + ' (from the previous street or the start)');
     if ((h.via || {})[n]) parts.push('How: ' + ((h.via || {})[n] === 'gps' ? 'GPS suggestion' : 'marked by tap'));
     lines.forEach(L => parts.push(L));
     det.textContent = parts.join('\n');
@@ -3175,9 +3180,29 @@ async function syncWake() {
 }
 document.addEventListener('visibilitychange', syncWake);
 function noteSessionStart() { const s = Math.floor(runStart / 1000); if (trailSessions[trailSessions.length - 1] !== s) { trailSessions.push(s); if (saveSess()) return true; sessDirty = true; return false; } return true; } // Beta 1.71 (audit B02): record the session boundary the moment the clean starts - undo restores the original runStart, so a resumed run correctly adds no new marker. Beta 1.73 (audit C04): the save result is RETURNED and a failure arms the flushAux retry - 1.71 dropped it, so a failed marker write was silent and a reload could join two cleans in the GPX export
-function startClean() { runStart = Date.now(); const okSess = noteSessionStart(); const okStart = saveAll(); startGps(true); updateCount(); syncWake(); if (okStart && okSess) toast('Clean started · ' + fmtClock(new Date())); else if (!okStart) toast('Clean started — warning: the run state could not be saved (storage problem)', 4200); else toast('Clean started — warning: the session marker could not be saved; it will keep retrying', 4200); drawTrail(true); checkStale(); } // Beta 1.73 (audit C04): the marker save is part of the start's honesty check, not a silent side write // Beta 1.63 (audit F04): the clean still starts - he is standing in the snow - but the message stops claiming a saved state that does not exist
-// Beta 1.70 (audit A04): coverage and suggestions are run-scoped - a cancelled clean never happened, so its coverage dies with it instead of leaking into the next clean (the trail is history and stays).
-function cancelStart() { const wasRunGps = gpsFromRun; runStart = 0; coveredIdx = {}; suggested = new Set(); $('suggest').classList.add('hidden'); const okCancel = saveAll(); if (wasRunGps) stopGps(); drawTrail(true); updateCount(); syncWake(); if (okCancel) toast('Start cancelled'); else toast('Start cancelled - warning: the cancellation could not be saved; the run may return on reload', 4200); } // Beta 1.69 (audits N03 + trail): cancelStart ignored saveAll's result and claimed success unconditionally; it also never refreshed the trail, so a cancelled run's line lingered
+let runSnap = null; // Beta 1.91: the board exactly as it was when Start was pressed - Cancel restores it, so a cancelled run erases ONLY what the run itself recorded (marks made before Start are not the run's to erase). In-memory: after a reload mid-run there is no snapshot and Cancel falls back to wiping the board.
+function startClean() { runSnap = { pieces: JSON.parse(JSON.stringify(pieces)), pieceTimes: JSON.parse(JSON.stringify(pieceTimes)), done: [...doneSet], times: { ...doneTimes }, via: { ...doneVia }, cov: JSON.parse(JSON.stringify(coveredIdx)) }; runStart = Date.now(); const okSess = noteSessionStart(); const okStart = saveAll(); startGps(true); updateCount(); syncWake(); if (okStart && okSess) toast('Clean started · ' + fmtClock(new Date())); else if (!okStart) toast('Clean started — warning: the run state could not be saved (storage problem)', 4200); else toast('Clean started — warning: the session marker could not be saved; it will keep retrying', 4200); drawTrail(true); checkStale(); } // Beta 1.73 (audit C04): the marker save is part of the start's honesty check, not a silent side write // Beta 1.63 (audit F04): the clean still starts - he is standing in the snow - but the message stops claiming a saved state that does not exist
+// Beta 1.91 (Andrew): Cancel start erases everything the run recorded - its trail points, its session
+// marker, any sides marked during it, its coverage and suggestions - and stores nothing. Only Finish
+// stores a run. (Supersedes the Beta 1.70 A04 call that kept the trail as history - Andrew's word.)
+function cancelStart() {
+  const wasRunGps = gpsFromRun;
+  const startSec = runStart ? Math.floor(runStart / 1000) : 0;
+  if (runStart) {
+    trail = trail.filter(p => (p[2] || 0) < startSec);
+    trailSessions = trailSessions.filter(s => s !== startSec);
+    if (runSnap) { pieces = runSnap.pieces; pieceTimes = runSnap.pieceTimes; doneSet = new Set(runSnap.done); doneTimes = runSnap.times; doneVia = runSnap.via; coveredIdx = runSnap.cov; }
+    else { for (const n of STREETNAMES) { pieces[n] = STRETCH[n].parts.map(() => 0); pieceTimes[n] = {}; } doneSet = new Set(); doneTimes = {}; doneVia = {}; coveredIdx = {}; }
+    trailDirty = true; sessDirty = true;
+  }
+  runSnap = null;
+  runStart = 0; suggested = new Set(); $('suggest').classList.add('hidden');
+  const okCancel = saveAll(); flushAux(true);
+  if (wasRunGps) stopGps();
+  if (window.GLP) window.GLP.sync(); renderPanel(); renderStreets();
+  drawTrail(true); updateCount(); syncWake();
+  if (okCancel) toast('Start cancelled — run erased'); else toast('Start cancelled - warning: the cancellation could not be saved; the run may return on reload', 4200);
+} // Beta 1.69 (audits N03 + trail): cancelStart ignored saveAll's result and claimed success unconditionally; it also never refreshed the trail, so a cancelled run's line lingered
 $('startBtn').addEventListener('click', () => { if (!tapGuard('startBtn')) return; startClean(); });
 // CLEAR (Andrew, Beta 1.7): header button beside Pace - one tap wipes EVERY mark on the board (all streets,
 // both sides), plus the completion times/vias and the GPS coverage that would instantly re-suggest them.
@@ -3269,7 +3294,7 @@ function finishRun() {
   }
   if (archiving) history = newHist;
   undoSnap = { done: [...doneSet], times: { ...doneTimes }, via: { ...doneVia }, notes: JSON.parse(JSON.stringify(notes)), pieces: JSON.parse(JSON.stringify(pieces)), pieceTimes: JSON.parse(JSON.stringify(pieceTimes)), runStart, cov: JSON.parse(JSON.stringify(coveredIdx)), hist: prevHist.slice(), gpsWas: gpsFromRun };
-  doneSet = new Set(); doneTimes = {}; doneVia = {}; notes = {}; runStart = 0; coveredIdx = {}; suggested = new Set(); $('suggest').classList.add('hidden'); // Beta 1.70 (audit A04): the suggestion set is run-scoped too - finishRun used to clear the coverage but keep the set, so suggested streets never suggested again
+  doneSet = new Set(); doneTimes = {}; doneVia = {}; notes = {}; runStart = 0; runSnap = null; coveredIdx = {}; suggested = new Set(); $('suggest').classList.add('hidden'); // Beta 1.70 (audit A04): the suggestion set is run-scoped too - finishRun used to clear the coverage but keep the set, so suggested streets never suggested again
   for (const n of STREETNAMES) { pieces[n] = STRETCH[n].parts.map(() => 0); pieceTimes[n] = {}; }
   stopGps(); deselect(); drawTrail(true); // Beta 1.69 (audit visual check): the run is over and runStart is 0, so this clears the finished line now instead of leaving it until the next throttled refresh
   saveQuiet = true; const restOk = saveAll(); saveQuiet = false; // the gated sides write already landed; this pass carries the metadata - a failure here warns but cannot resurrect anything (authority + archive agree)
