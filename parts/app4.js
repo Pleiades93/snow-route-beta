@@ -88,6 +88,12 @@ function recoveryObj() { // Beta 1.95 (deep audit SR-194-02): the RECOVERY backu
   data.cov = JSON.stringify(coveredIdx);
   data.sess = JSON.stringify(trailSessions);
   if (runStart) data.start = String(runStart);
+  if (runStart) { // Beta 1.96 (deep audit SR-195-02, Andrew's pick: carry it, do not just warn): the run's cancel snapshot rides INSIDE the recovery file, so a run restored from it - on this phone or another - keeps the exact-restore Cancel it had. 1.95's recovery carried every field except the snapshot, quietly demoting a restored run's Cancel to the stamp journal (which cannot see an unmark). Taken from the in-memory snapshot when there is one, else from the persisted copy after validation; a run with neither simply carries none, and the restore side says so.
+    let snapObj = null;
+    if (runSnap) snapObj = { at: runStart, pieces: runSnap.pieces, pieceTimes: runSnap.pieceTimes, done: runSnap.done, times: runSnap.times, via: runSnap.via, cov: runSnap.cov };
+    else { const pv = validateSnap(parseJ(lsGet(LS.snap), null), runStart); if (pv) snapObj = { at: runStart, pieces: pv.pieces, pieceTimes: pv.pieceTimes, done: pv.done, times: pv.times, via: pv.via, cov: pv.cov }; }
+    if (snapObj) data.snap = JSON.stringify(snapObj);
+  }
   try { const fl = localStorage.getItem(routeKeys(activeRoute.id).flip); if (fl != null) data.flip = fl; } catch (e) { /* a read that fails simply leaves the field out */ }
   const routes = {}; routes[activeRoute.id] = data;
   for (const pk of ROUTE_PACKS) { if (pk.id === activeRoute.id) continue; const rk = routeKeys(pk.id); const d = {}; for (const f of ROUTE_FIELDS) { try { const v = localStorage.getItem(rk[f]); if (v != null) d[f] = v; } catch (e) {} } if (Object.keys(d).length) routes[pk.id] = d; }
@@ -114,7 +120,7 @@ function countUnknownNames(parsed) { // Beta 1.95 (deep audit SR-194-08): how ma
     if (!data || typeof data !== 'object') return;
     const done = parseJ(data.done, null); if (Array.isArray(done)) { for (const n of done) noteName(n); } else fromObj(done);
     fromObj(parseJ(data.times, null)); fromObj(parseJ(data.via, null)); fromObj(parseJ(data.cov, null));
-    const notesRaw = parseJ(data.notes, null); if (Array.isArray(notesRaw)) for (const e of notesRaw) { if (e && typeof e === 'object') noteName(e.k); }
+    const notesRaw = parseJ(data.notes, null); if (Array.isArray(notesRaw)) { for (const e of notesRaw) { if (e && typeof e === 'object') noteName(e.k); } } else fromObj(notesRaw); // Beta 1.96 (deep audit SR-195-05): notes in the OBJECT form ({street: [entries]}) - a shape the app itself never writes, but the restore's shape check accepts it and the loader then drops its names; 1.95's counter scanned only the array form, so those names vanished uncounted
     const sides = parseJ(data.sides, null); if (sides && typeof sides === 'object') { fromObj(sides.p); fromObj(sides.t); }
     const hist = parseJ(data.hist, null); if (Array.isArray(hist)) for (const h of hist) { if (h && typeof h === 'object') { if (Array.isArray(h.items)) { for (const n of h.items) noteName(n); } else fromObj(h.items); } }
   };
@@ -137,6 +143,7 @@ function restoreBackup(parsed) { // production doRestore semantics: validate EVE
     }
     entries.push([targetKey, v]); return true;
   };
+  let snapDropped = false; // Beta 1.96 (SR-195-02): set when a backup CARRIES a start snapshot that cannot be restored with its run - the result message must say so
   if (parsed.v === 2) {
     if (!parsed.routes || typeof parsed.routes !== 'object' || Array.isArray(parsed.routes)) { toast('That is not a Snow Route backup', 3200); return; }
     for (const id of Object.keys(parsed.routes)) {
@@ -144,6 +151,12 @@ function restoreBackup(parsed) { // production doRestore semantics: validate EVE
       const data = parsed.routes[id]; if (!data || typeof data !== 'object' || Array.isArray(data)) { toast('That is not a Snow Route backup', 3200); return; }
       const rk = routeKeys(id);
       for (const f of ROUTE_FIELDS) { if (data[f] === undefined) continue; if (!pushField(rk[f], f, data[f], pack.name + ' ' + f)) return; }
+      if (data.snap !== undefined) { // Beta 1.96 (SR-195-02): a carried start snapshot (recovery backups) is restored WITH its run - it earns a write only by passing validateSnap against the start this same backup carries for the route, and it is written in its normalized form through the same verified entries as every other field, so a failed restore rolls it back too. A snapshot that fails validation, or one whose run's start is not in the backup, is dropped and reported in the result message - never applied, never silently kept.
+        const startEnt = entries.find(e => e[0] === rk.start);
+        let restoredSnap = null;
+        if (startEnt && typeof data.snap === 'string') { try { const valid = validateSnap(JSON.parse(data.snap), +startEnt[1]); if (valid) restoredSnap = JSON.stringify({ at: +startEnt[1], pieces: valid.pieces, pieceTimes: valid.pieceTimes, done: valid.done, times: valid.times, via: valid.via, cov: valid.cov }); } catch (e) { /* an unparseable snapshot is a dropped snapshot */ } }
+        if (restoredSnap) entries.push([rk.snap, restoredSnap]); else snapDropped = true;
+      }
     }
     if (parsed.night !== undefined && !pushField(LS_GLOBAL.night, 'night', parsed.night, 'night')) return;
     if (parsed.nightExp !== undefined) { const ne = parsed.nightExp; if (typeof ne !== 'string' || !isFinite(+ne) || +ne <= 0) { toast('Backup has a bad value for night override expiry — nothing was changed', 3200); return; } if (!pushField(LS_GLOBAL.nightExp, 'nightExp', ne, 'night override expiry')) return; } // Beta 1.92 (audit F01): the expiry must be a finite positive epoch string - any other text used to sail through and poison the next boot
@@ -182,7 +195,7 @@ function restoreBackup(parsed) { // production doRestore semantics: validate EVE
   }
   const droppedNames = countUnknownNames(parsed); // Beta 1.95 (SR-194-08): counted from the RAW backup before any normalization - see countUnknownNames
   if (!entries.length) { toast('Nothing in that backup to restore', 3000); return; }
-  const SCOPE = []; for (const p of ROUTE_PACKS) { const rk = routeKeys(p.id); for (const f of ROUTE_FIELDS) SCOPE.push(rk[f]); } SCOPE.push(LS_GLOBAL.night, LS_GLOBAL.nightExp);
+  const SCOPE = []; for (const p of ROUTE_PACKS) { const rk = routeKeys(p.id); for (const f of ROUTE_FIELDS) SCOPE.push(rk[f]); SCOPE.push(rk.snap); } SCOPE.push(LS_GLOBAL.night, LS_GLOBAL.nightExp); // Beta 1.96 (SR-195-02): the snapshot key joins the rollback scope - a restore that writes a carried snapshot must be able to put the previous one back
   const snap = {}; let snapOk = true;
   for (const k of SCOPE) { try { snap[k] = localStorage.getItem(k); } catch (e) { snapOk = false; } }
   if (!snapOk) { toast('Restore stopped — your current data could not be read for safekeeping, so nothing was changed', 3600); return; }
@@ -205,7 +218,7 @@ function restoreBackup(parsed) { // production doRestore semantics: validate EVE
     }
   }
   restoring = true; trailDirty = false; auxDirty = false; sessDirty = false; // the reload's pagehide flush must not write the old in-memory trail/coverage over the restored data
-  toast('Backup restored — reloading' + (droppedNames ? ' · ' + droppedNames + ' unknown street name' + (droppedNames === 1 ? '' : 's') + ' in the backup were ignored' : '')); // Beta 1.94 (audit F-05): the drop count is part of the result, not a silent loader detail
+  toast('Backup restored — reloading' + (droppedNames ? ' · ' + droppedNames + ' unknown street name' + (droppedNames === 1 ? '' : 's') + ' in the backup were ignored' : '') + (snapDropped ? ' · the saved start snapshot was not usable, so Cancel will rebuild from the marks made during the run' : ''), snapDropped ? 4600 : undefined); // Beta 1.94 (audit F-05): the drop count is part of the result, not a silent loader detail. Beta 1.96 (SR-195-02): a dropped start snapshot is reported the same way
   setTimeout(() => location.reload(), 600);
 }
 function doRestore() {
@@ -289,13 +302,15 @@ const list = preloadUrlList();
     const paint = () => { fill.style.width = (list.length ? shown / list.length * 100 : 0) + '%'; st.textContent = 'Downloading… ' + shown + '/' + list.length; };
     bar.classList.add('on'); paint();
     const sweep = setInterval(() => { if (shown < done) { shown = Math.min(done, shown + Math.max(1, Math.ceil((done - shown) / 5))); paint(); } }, 30);
-    const preFetch = async (u) => { const ctl = new AbortController(); const to = setTimeout(() => ctl.abort(), 30000); try { const res = await fetch(u, { mode: 'cors', signal: ctl.signal }); if (res && res.ok && packCache) { try { await packCache.put(u, res.clone()); } catch (e) { /* a failed pack write simply never confirms in the count below */ } } } catch (e) { /* failures and timeouts simply never confirm below */ } clearTimeout(to); }; // Beta 1.92 (audit F07): one stalled file gives up at 30 s instead of holding the whole job open forever. Beta 1.94 (F-03): a good response is ALSO stored into the pack cache by the page itself - the worker's pass-through copy in the browsing cache is the duplicate that gets cleaned up below, never the guarantee
+    // Beta 1.96 (audit-2, N-2): the fetch above uses cache 'reload' - a deliberate Download is a reload, not an ordinary request. Before 1.96 the request went through the service worker like any other, mapFetch answered from the very pack being refreshed, and the rebuilt pack stored the pack's own responses back: re-downloading could never refresh anything. The worker honours the mode (mapFetch's reload bypass, src/sw.js).
+    const preFetch = async (u) => { const ctl = new AbortController(); const to = setTimeout(() => ctl.abort(), 30000); try { const res = await fetch(u, { mode: 'cors', signal: ctl.signal, cache: 'reload' }); if (res && res.ok && packCache) { try { await packCache.put(u, res.clone()); } catch (e) { /* a failed pack write simply never confirms in the count below */ } } } catch (e) { /* failures and timeouts simply never confirm below */ } clearTimeout(to); }; // Beta 1.92 (audit F07): one stalled file gives up at 30 s instead of holding the whole job open forever. Beta 1.94 (F-03): a good response is ALSO stored into the pack cache by the page itself - the worker's pass-through copy in the browsing cache is the duplicate that gets cleaned up below, never the guarantee
     const preWorker = async () => { while (nextU < list.length) { const u = list[nextU++]; await preFetch(u); done++; } }; // Beta 1.50 (audit P07): 894 files strictly one at a time was the slowest single wait in the app - five at a time (bounded, never unlimited); same list, same honest confirmed count below
     await Promise.all([preWorker(), preWorker(), preWorker(), preWorker(), preWorker()]);
     clearInterval(sweep); shown = done; paint();
-    let saved = 0;
-    for (const u of list) { try { if (packCache ? await packCache.match(u) : await caches.match(u)) saved++; } catch (e) {} } // Stage 2 (audit G-5): report only resources CONFIRMED in the offline cache. Beta 1.94 (F-03): the confirmation reads the PACK cache - a file that only reached the browsing cache does not count as saved, because the eviction could still take it
-    if (packCache) { try { const tc = await caches.open('snowroute-tiles-v1'); for (const u of list) await tc.delete(u); } catch (e) {} } // Beta 1.94 (F-03): the worker's pass-through copies of the pack leave the browsing cache - the pack lives in exactly one place, and the browsing cache goes back to holding only what was actually browsed
+    let saved = 0; const confirmed = [];
+    for (const u of list) { try { if (packCache ? await packCache.match(u) : await caches.match(u)) { saved++; confirmed.push(u); } } catch (e) {} } // Stage 2 (audit G-5): report only resources CONFIRMED in the offline cache. Beta 1.94 (F-03): the confirmation reads the PACK cache - a file that only reached the browsing cache does not count as saved, because the eviction could still take it. Beta 1.96 (audit-2, N-1): the confirmation set is kept - the cleanup below may only delete what this loop confirmed
+    if (packCache) { try { const tc = await caches.open('snowroute-tiles-v1'); for (const u of confirmed) await tc.delete(u); } catch (e) {} } // Beta 1.94 (F-03): the worker's pass-through copies of the pack leave the browsing cache - the pack lives in exactly one place. Beta 1.96 (N-1): ONLY the confirmed URLs are deleted - 1.95 deleted every manifest URL unconditionally, so a file whose pack write had failed (storage quota) lost BOTH copies: fetched, honestly counted as unsaved, and actually gone
+    if (packCache && saved === list.length) lsSet(PACKMIG_KEY, packMigFingerprint(list)); // Beta 1.96 (SR-195-03): a complete download leaves the pack exactly at the manifest - it earns the same completion fingerprint the migration writes, so the next boot takes the fast path
     fill.style.width = (list.length ? saved / list.length * 100 : 0) + '%'; // the bar settles on the CONFIRMED fraction, matching the line below
     lsSet(LS.pre, JSON.stringify({ at: Date.now(), saved, total: list.length }));
     st.textContent = 'Offline maps: saved ' + saved + ' of ' + list.length + ' files (tiles are kept by the offline cache)';
@@ -360,9 +375,9 @@ async function shareRecovery() { // Beta 1.95 (SR-194-02): the Backup press's re
   const b = buildRecovery();
   if (!b) { toast('Recovery backup unavailable — open the route first', 3600); return; }
   let f = null; try { f = new File([b], 'snowroute-recovery.json', { type: 'application/json' }); } catch (e) { /* older engine: the text share below still works */ }
-  if (f && navigator.canShare && navigator.canShare({ files: [f] })) { try { await navigator.share({ files: [f] }); toast('Recovery backup shared — it holds the live on-screen state, which is not fully saved on this device', 4200); return; } catch (e) { if (e && e.name === 'AbortError') return; } }
-  if (navigator.share) { try { await navigator.share({ text: b }); toast('Recovery backup shared — it holds the live on-screen state, which is not fully saved on this device', 4200); return; } catch (e) { if (e && e.name === 'AbortError') return; } }
-  dl(new Blob([b], { type: 'application/json' }), 'snowroute-recovery.json'); toast('Recovery backup downloaded — it holds the live on-screen state, which is not fully saved on this device', 4200);
+  if (f && navigator.canShare && navigator.canShare({ files: [f] })) { try { await navigator.share({ files: [f] }); toast('Recovery backup shared — the open route is the live on-screen state, not fully saved on this device; other routes are included as last saved', 4200); return; } catch (e) { if (e && e.name === 'AbortError') return; } }
+  if (navigator.share) { try { await navigator.share({ text: b }); toast('Recovery backup shared — the open route is the live on-screen state, not fully saved on this device; other routes are included as last saved', 4200); return; } catch (e) { if (e && e.name === 'AbortError') return; } }
+  dl(new Blob([b], { type: 'application/json' }), 'snowroute-recovery.json'); toast('Recovery backup downloaded — the open route is the live on-screen state, not fully saved on this device; other routes are included as last saved', 4200); // Beta 1.96 (audit-2, N-5b): the wording distinguishes what the file actually holds - the ACTIVE route is serialized from live memory; any other route pack in the same file is read from storage, as last saved
 }
 $('updBtn').addEventListener('click', () => $('setMenu').classList.remove('open')); // the update check reports by toast over the map - the menu steps aside for it (the old pop-up's pick-and-close)
 // Click-away (Andrew, Beta 1.14): tapping anywhere outside an open menu closes it - no hunting for a
@@ -416,11 +431,18 @@ if ('serviceWorker' in navigator) {
 // clean their browsing duplicates up). Best-effort: a failed copy retries on the next
 // boot, and a fresh Download offline maps always rebuilds the pack cache directly.
 const PACKMIG_KEY = 'snowroute.v5.packmig';
+function packMigFingerprint(list) { // Beta 1.96 (deep audit SR-195-03): the pack-migration completion flag stops being the constant '1' and becomes a fingerprint of the manifest it certifies - a stored flag is believable only for the exact manifest it was earned on (a styles update changes tile/glyph URLs, hence the list, hence the fingerprint, and the full pass runs again). djb2 over the joined list: deterministic, dependency-free, cheap at 897 entries.
+  let h = 0; const s = list.join('\n');
+  for (let i = 0; i < s.length; i++) { h = ((h << 5) - h + s.charCodeAt(i)) | 0; }
+  return 'v1:' + list.length + ':' + (h >>> 0).toString(36);
+}
 async function migratePack() { // Beta 1.95 (deep audit SR-194-05/06): the one-time move of a pre-1.94 pack from the browsing cache into the protected pack cache, under an honest contract. 1.94 copied EVERY browsing-cache key (any stray the map had ever fetched came along) through per-file catch-alls, then set the completion flag unconditionally - a partial copy was marked complete and never retried. Now: only the deterministic preload manifest (preloadUrlList) is migrated; non-manifest entries already in the pack cache are pruned, so the pack is exactly the manifest; the completion flag is set only after VERIFYING that everything that exists in either cache is present in the pack cache; any failed copy leaves the flag unset and the next boot retries (the function is idempotent). Returns a status object so the test battery can drive it directly.
   try {
     if (!('caches' in window)) return { ok: false, why: 'nocache' };
     if (!parseJ(lsGet(LS.pre), null)) return { ok: true, skipped: true }; // no pack was ever downloaded on this install
     const list = preloadUrlList();
+    const fp = packMigFingerprint(list);
+    if (lsGet(PACKMIG_KEY) === fp) { try { const ocF = await caches.open('snowroute-offline-v1'); if ((await ocF.keys()).length === list.length) return { ok: true, skipped: true, fast: true }; } catch (e) { /* a census that cannot run proves nothing - fall through to the full pass */ } } // Beta 1.96 (SR-195-03): the FAST PATH - 1.95 wrote the completion flag and never read it, so every boot with a preload record re-ran the full ~1,800-match verification sweep. The flag is now read, and believed only with a cheap census agreeing (exactly the manifest's count in the pack); any doubt - flag absent or stale, count off - runs the full pass below, which also HEALS a shrunken pack from the browsing cache
     const want = new Set(list.map(u => { try { return new URL(u).href; } catch (e) { return u; } })); // stored cache keys are URL-normalized (the glyph ranges' 'Noto Sans Regular' is stored %20-encoded) - the prune below must compare like with like, or it deletes the pack's own glyphs (the first CI run of 1.95 did exactly that: pack 897 -> 641)
     const oc = await caches.open('snowroute-offline-v1');
     const tc = await caches.open('snowroute-tiles-v1');
@@ -432,10 +454,11 @@ async function migratePack() { // Beta 1.95 (deep audit SR-194-05/06): the one-t
       try { await oc.put(u, hit); } catch (e) { failed++; }
     }
     if (failed > 0) return { ok: false, failed };
-    for (const rq of await oc.keys()) { if (!want.has(rq.url)) { try { await oc.delete(rq.url); } catch (e) { /* a stray that will not delete is inert - the pack still serves the manifest */ } } }
+    let pruneOk = true;
+    for (const rq of await oc.keys()) { if (!want.has(rq.url)) { try { await oc.delete(rq.url); } catch (e) { pruneOk = false; /* a stray that will not delete is inert - the pack still serves the manifest; Beta 1.96 (SR-195-07): the failure is REPORTED in the status now, not swallowed - copies are the readiness question, the prune is maintenance */ } } }
     for (const u of list) { if (!(await oc.match(u)) && (await tc.match(u))) return { ok: false, why: 'verify' }; } // verify BEFORE the flag: everything recoverable must be in the pack cache
-    lsSet(PACKMIG_KEY, '1');
-    return { ok: true };
+    const flagOk = lsSet(PACKMIG_KEY, fp); // Beta 1.96 (SR-195-07): the flag write is CHECKED - the fast path believes this flag, so a migration whose flag could not be persisted is not complete and must not report ok
+    return { ok: flagOk, flag: flagOk ? fp : null, pruneOk };
   } catch (e) { return { ok: false, why: String((e && e.message) || e) }; }
 }
 if (parseJ(lsGet(LS.pre), null)) migratePack(); // boot: fire-and-forget - it never blocks the boot, and because the flag is earned, an incomplete migration simply runs again next boot
