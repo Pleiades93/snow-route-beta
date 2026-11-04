@@ -301,7 +301,7 @@ const attemptE17 = async () => {
   const diff = keys.filter(k => before[k] !== after[k]).map(k => k + '[' + (before[k] || '').length + '->' + (after[k] || '').length + ']').join(' ') + (before.app !== after.app ? ' appDIFF before=' + before.app + ' after=' + after.app : '');
   const pass = backOk && keys.every(k => before[k] === after[k]) && before.app === after.app;
   let appLoss = false;
-  try { const b = JSON.parse(before.app), a = JSON.parse(after.app); appLoss = a.run === b.run && a.velmar <= b.velmar && a.astona <= b.astona && a.trailN <= b.trailN && a.done.every(d => b.done.includes(d)); } catch (e) {}
+  try { const b = JSON.parse(before.app), a = JSON.parse(after.app); appLoss = (a.run === b.run || a.run === 0) && a.velmar <= b.velmar && a.astona <= b.astona && a.trailN <= b.trailN && a.done.every(d => b.done.includes(d)) && a.sess.every(t => b.sess.includes(t)); } catch (e) {} // the run stamp either survives or is itself lost (0): a DIFFERENT nonzero stamp would be a mutation, never the race. First CI run of this retry (2026-11-04, run 41919355118) hit the wholesale-empty signature live and this predicate's original run-equality clause misjudged it - corrected same day
   const lossOnly = backOk && aOk && appLoss && keys.every(k => { const b = before[k], a = after[k]; return a === b || a === null || a === '' || (typeof b === 'string' && typeof a === 'string' && a.length < b.length && b.startsWith(a)); });
   return { before, after, diag, diff, aOk, pass, lossOnly };
 };
