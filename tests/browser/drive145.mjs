@@ -218,6 +218,17 @@ await poll(`!!window.__bootAt && window.__bootAt !== ${JSON.stringify(bootMark13
 await ev(`loadRoute('5w'); true`); await sleep(600);
 ok('N13f unknown names inside ARRAY-form history items are counted too (Beta 1.95, SR-194-08) | ' + toast13f, /1 unknown street name/.test(toast13f));
 
+// N13g (Beta 1.96, deep audit SR-195-05): OBJECT-form notes ({street: [entries]})
+// pass the restore's shape check and their names are dropped by the loader -
+// 1.95's counter scanned only the array form, so they vanished uncounted.
+const v2objNotes = JSON.stringify({ app: 'snowroute-backup', v: 2, at: '2026-11-04T00:00:00.000Z', routes: { '5w': { done: JSON.stringify(['Velmar']), times: JSON.stringify({ Velmar: '2026-11-01T00:00:00.000Z' }), notes: JSON.stringify({ 'Phantom Lane': [{ at: '2026-11-01T00:00:00.000Z', text: 'gate code 4' }] }) } } });
+const bootMark13g = await ev(`window.__bootAt`);
+const toast13g = await ev(`(function(){ document.getElementById('xText').value = ${JSON.stringify(v2objNotes)}; doRestore(); return document.getElementById('toast').textContent; })()`);
+await sleep(900);
+await poll(`!!window.__bootAt && window.__bootAt !== ${JSON.stringify(bootMark13g)}`, 30000);
+await ev(`loadRoute('5w'); true`); await sleep(600);
+ok('N13g unknown names inside OBJECT-form notes are counted too (Beta 1.96, SR-195-05) | ' + toast13g, /1 unknown street name/.test(toast13g) && (await ev(`doneSet.has('Velmar')`)) === true);
+
 // --- backups are v2 now ------------------------------------------------------
 ok('N14 buildBackup emits the v2 per-route shape', await ev(`(function(){ var b = JSON.parse(buildBackup()); return b.app === 'snowroute-backup' && b.v === 2 && !!b.routes && typeof b.routes['5w'].sides === 'string' && typeof b.routes['5w'].trail === 'string'; })()`));
 
@@ -287,6 +298,18 @@ await ev(`(function(){ lsSet = window.__lsOrig145; return true; })()`);
 await ev(`doUndo(); true`); await sleep(300);
 await ev(`cancelStart(); true`); await sleep(300);
 ok('N35e with storage healthy again the undo + cancel chain completes exactly', await ev(`(function(){ try { return doneSet.has('Velmar') && pieces.Velmar.every(v => v === 3) && runStart === 0; } catch (e) { return false; } })()`));
+
+// N35f (Beta 1.96, deep audit SR-195-06): Finish + Undo with NO snapshot
+// available (its save never landed, or a reload lost it). The run restores,
+// but its Cancel is journal-grade - 1.95's Undo said plain 'run restored'.
+await ev(`markDone('Astona', 'tap'); true`); await sleep(200);
+await ev(`startClean(); true`); await sleep(200);
+await ev(`(function(){ runSnap = null; localStorage.removeItem(LS.snap); return true; })()`);
+await ev(`finishRun(); true`); await sleep(300);
+await ev(`doUndo(); true`); await sleep(300);
+const toast35f = await ev(`document.getElementById('toast').textContent`);
+ok('N35f undo without an available snapshot says the restored run has no saved start snapshot (Beta 1.96, SR-195-06) | ' + toast35f, /Finish undone/.test(toast35f) && /no start snapshot is saved/.test(toast35f));
+await ev(`cancelStart(); true`); await sleep(200); // leave no run open behind this check
 
 // --- a full close forgets the override (Beta 1.77): the session marker is
 // what separates "opened again" from "cold open" ------------------------------

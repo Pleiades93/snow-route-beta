@@ -75,18 +75,39 @@ await new Promise(r => mirrorServer.listen(8443, '127.0.0.1', r));
 
 const allExceptions = [];
 async function launch(offline) {
-  const proc = spawn(CHROME, [
+    // Beta 1.96 (deep audit SR-195-09): browser STARTUP gets a bounded retry - nothing else does.
+  // The scheduled run 41859112876 lost shard 1 twice to a cold runner whose FIRST Chrome launch
+  // never printed its DevTools line ('no devtools url'), while every later launch on the same
+  // runner worked. A launch failure happens before any page exists, so retrying it can never
+  // mask a test result: after 3 failed attempts the drive still crashes and FAILs (never a
+  // pass), each attempt's stderr is logged to the drive's stderr for diagnosis, a browser that
+  // EXITS is rejected at once instead of burning the 25 s timeout, and every attempt gets a
+  // fresh profile dir where the harness uses one per launch.
+  let proc = null, wsUrl = null, lastLaunchErr = null;
+  for (let attempt = 1; attempt <= 3 && !wsUrl; attempt++) {
+    proc = spawn(CHROME, [
     '--headless=new', '--no-sandbox', '--disable-gpu', '--hide-scrollbars', '--no-proxy-server',
     '--remote-debugging-port=0', '--disable-features=LocalNetworkAccessChecks,LocalNetworkAccessMainFrameNavigations,BlockInsecurePrivateNetworkRequests,PrivateNetworkAccessSendPreflights,PrivateNetworkAccessRespectPreflightResults', '--user-data-dir=' + PROFILE,
     '--ignore-certificate-errors', '--host-resolver-rules=MAP unpkg.com 127.0.0.1:8443, MAP cdn.jsdelivr.net 127.0.0.1:8443',
     '--window-size=420,900', 'about:blank'
   ], { stdio: ['ignore', 'pipe', 'pipe'] });
-  const wsUrl = await new Promise((res, rej) => {
-    let buf = '';
-    proc.stderr.on('data', d => { buf += d; const m = buf.match(/DevTools listening on (ws:\/\/\S+)/); if (m) res(m[1]); });
-    setTimeout(() => rej(new Error('no devtools url: ' + buf.slice(0, 500))), 25000);
-  });
-  const ws = new WebSocket(wsUrl);
+    try {
+      wsUrl = await new Promise((res, rej) => {
+        let buf = ''; let settled = false;
+        const to = setTimeout(() => { if (!settled) { settled = true; rej(new Error('no devtools url: ' + buf.slice(0, 500))); } }, 25000);
+        proc.stderr.on('data', d => { buf += d; const m = buf.match(/DevTools listening on (ws:\S+)/); if (m && !settled) { settled = true; clearTimeout(to); res(m[1]); } });
+        proc.on('exit', (code, sig) => { if (!settled) { settled = true; clearTimeout(to); rej(new Error('chrome exited before devtools (code ' + code + ', signal ' + sig + '): ' + buf.slice(0, 500))); } });
+      });
+    } catch (e) {
+      lastLaunchErr = e;
+      console.error('CHROME LAUNCH attempt ' + attempt + ' of 3 failed: ' + String((e && e.message) || e).slice(0, 220));
+      try { proc.kill('SIGKILL'); } catch (e2) {}
+      proc = null;
+      if (attempt < 3) await new Promise(r => setTimeout(r, 300));
+    }
+  }
+  if (!wsUrl) throw lastLaunchErr || new Error('chrome launch failed after 3 attempts');
+const ws = new WebSocket(wsUrl);
   await new Promise(r => ws.addEventListener('open', r, { once: true }));
   let nextId = 1;
   const pending = new Map();

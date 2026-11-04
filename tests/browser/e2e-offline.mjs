@@ -309,8 +309,8 @@ try {
   await sleep(1500);
   await loadRouteE2E();
   await poll(`(async () => { const oc = await caches.open('snowroute-offline-v1'); const ks = (await oc.keys()).map(r => r.url); return ${JSON.stringify(sample3)}.every(u => ks.includes(u)); })()`, 30000);
-  const e19 = JSON.parse(await ev2(`(async () => { const oc = await caches.open('snowroute-offline-v1'); const ks = (await oc.keys()).map(r => r.url); const man = new Set(preloadUrlList().map(u => new URL(u).href)); return JSON.stringify({ n: ks.length, outside: ks.filter(k => !man.has(k)).length, junk: ks.filter(k => k.includes('/junk/')).length, flag: localStorage.getItem('snowroute.v5.packmig') }); })()`));
-  ok('E19 pack migration is bounded by the manifest: every pack entry is a manifest URL, seeded strays stay out, the seeded manifest tiles arrive, the flag follows verification (Beta 1.95, SR-194-05/06) | ' + JSON.stringify(e19), e19.outside === 0 && e19.junk === 0 && e19.n >= 3 && e19.flag === '1');
+  const e19 = JSON.parse(await ev2(`(async () => { const oc = await caches.open('snowroute-offline-v1'); const ks = (await oc.keys()).map(r => r.url); const man = new Set(preloadUrlList().map(u => new URL(u).href)); return JSON.stringify({ n: ks.length, outside: ks.filter(k => !man.has(k)).length, junk: ks.filter(k => k.includes('/junk/')).length, flag: localStorage.getItem('snowroute.v5.packmig'), fp: packMigFingerprint(preloadUrlList()) }); })()`));
+  ok('E19 pack migration is bounded by the manifest: every pack entry is a manifest URL, seeded strays stay out, the seeded manifest tiles arrive, the flag follows verification (Beta 1.95, SR-194-05/06) | ' + JSON.stringify(e19), e19.outside === 0 && e19.junk === 0 && e19.n >= 3 && e19.flag === e19.fp);
 } catch (e) { ok('E19 pack migration manifest-bounded + verified (Beta 1.95, SR-194-05/06) | threw ' + String(e).slice(0, 150), false); }
 try {
   const hasFn = await ev2(`typeof migratePack === 'function'`);
@@ -318,9 +318,40 @@ try {
   await ev2(`(() => { const realOpen = CacheStorage.prototype.open.bind(caches); let n = 0; caches.open = async (name) => { const c = await realOpen(name); if (name !== 'snowroute-offline-v1') return c; return new Proxy(c, { get(t, p) { if (p === 'put') return async (rq, rs) => { n++; if (n === 2) throw new Error('injected pack write failure'); return t.put(rq, rs); }; const v = t[p]; return typeof v === 'function' ? v.bind(t) : v; } }); }; window.__restoreOpen = () => { caches.open = realOpen; }; return true; })()`);
   const r1 = JSON.parse(await ev2(`(async () => { const r = await migratePack(); const oc = await caches.open('snowroute-offline-v1'); return JSON.stringify({ ok: !!(r && r.ok), n: (await oc.keys()).length, flag: localStorage.getItem('snowroute.v5.packmig') }); })()`));
   await ev2(`(() => { window.__restoreOpen(); return true; })()`);
-  const r2 = JSON.parse(await ev2(`(async () => { const r = await migratePack(); const oc = await caches.open('snowroute-offline-v1'); return JSON.stringify({ ok: !!(r && r.ok), n: (await oc.keys()).length, flag: localStorage.getItem('snowroute.v5.packmig') }); })()`));
-  ok('E20 a failed pack copy leaves the flag UNSET and a retry completes the migration, landing exactly the failed copies (Beta 1.95, SR-194-05) | r1 ' + JSON.stringify(r1) + ' r2 ' + JSON.stringify(r2), hasFn === true && r1.ok === false && r1.flag === null && r2.ok === true && r2.flag === '1' && r2.n === r1.n + 1);
+  const r2 = JSON.parse(await ev2(`(async () => { const r = await migratePack(); const oc = await caches.open('snowroute-offline-v1'); return JSON.stringify({ ok: !!(r && r.ok), n: (await oc.keys()).length, flag: localStorage.getItem('snowroute.v5.packmig'), fp: packMigFingerprint(preloadUrlList()) }); })()`));
+  ok('E20 a failed pack copy leaves the flag UNSET and a retry completes the migration, landing exactly the failed copies (Beta 1.95, SR-194-05) | r1 ' + JSON.stringify(r1) + ' r2 ' + JSON.stringify(r2), hasFn === true && r1.ok === false && r1.flag === null && r2.ok === true && r2.flag === r2.fp && r2.n === r1.n + 1);
 } catch (e) { ok('E20 pack migration failure leaves flag unset, retry completes (Beta 1.95, SR-194-05) | threw ' + String(e).slice(0, 150), false); }
+
+// E21 (Beta 1.96, audit-2 N-1): the download cleanup must delete a browsing
+// copy ONLY when the pack copy is confirmed. 1.95 deleted every manifest URL
+// from the browsing cache unconditionally - a failed pack write (quota) lost
+// BOTH copies of a fetched file. Force one pack put to fail during a real
+// re-download: the file must stay out of the pack, the count must say so,
+// and its browsing copy must SURVIVE.
+try {
+  await loadRouteE2E();
+  const target = JSON.parse(await ev2(`(async () => { const oc = await caches.open('snowroute-offline-v1'); const ks = (await oc.keys()).map(r => r.url); return JSON.stringify(ks.find(u => u.includes('tiles.basemaps.cartocdn.com')) || null); })()`));
+  if (!target) throw new Error('no pack tile available to target');
+  await ev2(`(async () => { const oc = await caches.open('snowroute-offline-v1'); const tc = await caches.open('snowroute-tiles-v1'); const hit = await oc.match(${JSON.stringify(target)}); if (hit) await tc.put(${JSON.stringify(target)}, hit); await oc.delete(${JSON.stringify(target)}); return true; })()`);
+  await ev2(`(() => { window.__realOpen = caches.open.bind(caches); caches.open = async (name) => { const c = await window.__realOpen(name); if (name !== 'snowroute-offline-v1') return c; return new Proxy(c, { get(t, p) { if (p === 'put') return async (u, res) => { const url = typeof u === 'string' ? u : u.url; if (url === ${JSON.stringify(target)}) throw new Error('injected pack put failure'); return t.put(u, res); }; const v = t[p]; return typeof v === 'function' ? v.bind(t) : v; } }); }; return true; })()`);
+  await ev2(`(() => { document.getElementById('xPre').click(); return true; })()`);
+  const statOk = await poll(`document.getElementById('xPreStat').textContent.includes('saved 896 of 897')`, 300000);
+  const e21 = JSON.parse(await ev2(`(async () => { const oc = await caches.open('snowroute-offline-v1'); const tc = await caches.open('snowroute-tiles-v1'); return JSON.stringify({ inPack: !!(await oc.match(${JSON.stringify(target)})), inTiles: !!(await tc.match(${JSON.stringify(target)})), stat: document.getElementById('xPreStat').textContent }); })()`));
+  await ev2(`(() => { caches.open = window.__realOpen; return true; })()`);
+  ok('E21 a failed pack write keeps the browsing copy: cleanup deletes only confirmed pack entries (Beta 1.96, audit-2 N-1) | statOk ' + statOk + ' ' + JSON.stringify(e21), statOk === true && e21.inPack === false && e21.inTiles === true);
+} catch (e) { ok('E21 download cleanup deletes only confirmed entries (Beta 1.96, N-1) | threw ' + String(e).slice(0, 150), false); }
+
+// E22 (Beta 1.96, deep audit SR-195-03/07): with a healthy pack and the
+// completion fingerprint stored, migratePack must take the fast path - a
+// census, not another ~1,800-match sweep on every cold start. 1.95 never
+// read its own flag and re-verified the whole pack at every boot.
+try {
+  const heal = JSON.parse(await ev2(`(async () => { const r = await migratePack(); return JSON.stringify({ ok: !!(r && r.ok) }); })()`)); // heal E21's missing file from its surviving browsing copy and re-earn the fingerprint
+  await ev2(`(() => { window.__realOpen2 = caches.open.bind(caches); window.__matchN = 0; caches.open = async (name) => { const c = await window.__realOpen2(name); if (name !== 'snowroute-offline-v1') return c; return new Proxy(c, { get(t, p) { if (p === 'match') return async (...a) => { window.__matchN++; return t.match(...a); }; const v = t[p]; return typeof v === 'function' ? v.bind(t) : v; } }); }; return true; })()`);
+  const e22 = JSON.parse(await ev2(`(async () => { const r = await migratePack(); return JSON.stringify({ ok: !!(r && r.ok), skipped: !!(r && r.skipped), matches: window.__matchN }); })()`));
+  await ev2(`(() => { caches.open = window.__realOpen2; return true; })()`);
+  ok('E22 a healthy migrated pack takes the fast path on the next migration call: skipped, zero cache matches (Beta 1.96, SR-195-03) | heal ' + JSON.stringify(heal) + ' ' + JSON.stringify(e22), heal.ok === true && e22.ok === true && e22.skipped === true && e22.matches === 0);
+} catch (e) { ok('E22 pack migration fast path (Beta 1.96, SR-195-03) | threw ' + String(e).slice(0, 150), false); }
 
 ok('E13 no page exceptions across the whole run', consoleLog.filter(c => String(c).startsWith('EXCEPTION')).length === 0);
 const fails = R.checks.filter(c => !c[1]);

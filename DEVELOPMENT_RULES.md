@@ -39,7 +39,14 @@ hand-edit of the generated file (or a forgotten assembly) cannot ship.
 (`scripts/package.json` + `scripts/package-lock.json`; install with
 `npm ci` inside `scripts/`) — never regenerate from an unpinned install
 (Beta 1.95, audit SR-194-11; the pinned 5.7.2 reproduces the shipped
-styles byte-for-byte).
+styles byte-for-byte). The generator's OTHER input, CARTO's dark-matter
+style, is VENDORED at `scripts/carto-dark-matter-style.json` (Beta
+1.96, audit SR-195-08): the generator reads the vendored copy and
+stamps its sha256 into the banner — no live fetch, no generation date,
+so a regeneration from the same repo state is byte-identical.
+Refreshing the vendored copy is deliberate: `node genstyles.mjs
+--refresh-carto`, and the banner-hash change in the diff is the review
+signal.
 
 **Test harness contract (Beta 1.95, audit SR-194-07).** A page-side
 evaluation error THROWS in the harness (`harness.mjs` /
@@ -48,7 +55,14 @@ object a check could read as a pass. Checks record a pass only on
 literal `true` (`cond === true` in every drive's `ok()`), and the runner
 counts anything else as a failure. `tests/browser/selftest-runner.mjs`
 pins all three behaviours (fixture-throw, fixture-truthy); run it after
-any harness change. A check whose expression can throw transiently
+any harness change. Browser STARTUP is the one retried step (Beta 1.96,
+audit SR-195-09): a launch that never prints its DevTools line, or a
+browser that exits first, is retried up to 3 attempts with the failed
+attempt's stderr logged — the cold-runner first-launch failure that
+killed a shard of scheduled run 41859112876 twice. The retry wraps only
+the launch, before any page exists; three failures still crash the
+drive and FAIL it. `fixture-startup` in the selftest pins both sides
+(a fail-once browser passes via the retry; a dead browser fails). A check whose expression can throw transiently
 (mid-reload reads) wraps itself in try/catch and returns an explicit
 boolean — that is the drive's job, not the harness's.
 

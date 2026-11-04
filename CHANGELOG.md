@@ -1,5 +1,24 @@
 # Changelog
 
+## Beta 1.96 — 2026-11-04
+
+The Beta 1.95 audit round — BOTH deep audits (the SR-195 series and the independent F-status/N-findings review), consolidated scope as approved. Finding SR-195-10 (per-route street registries) stays with the future multi-route project, untouched here.
+
+- **SR-195-01 — Cancel's closing message is composed, not chained.** With a damaged snapshot AND a trail cleanup that could not be saved, 1.95 showed the damage message and masked the storage warning. The warning now leads whenever it applies, with the rebuild explanation attached; each single-failure message keeps its exact wording.
+- **SR-195-02 — The recovery backup carries the run's cancel snapshot** (the include remedy). Restoring a recovery file restores the snapshot with its run — validated against the backup's own start stamp, written in normalized form inside the restore transaction (rollback covers it) — so Cancel after a restore is exact again. A carried snapshot that fails validation is dropped and the result message says so.
+- **SR-195-03/07 — Pack migration has a fast path and an honest status.** The completion flag is now a fingerprint of the manifest and is read on boot: fingerprint + exact pack census skips the ~1,800-match verification sweep; any doubt runs the full pass, which also heals a shrunken pack. A complete download earns the same fingerprint. Prune and flag-write failures are reported in the migration status instead of swallowed.
+- **SR-195-04 — Snapshot validation checks time VALUES.** A completion time or piece stamp that is not a parseable date rejects the snapshot — the loader's own rule, now applied by the validator too.
+- **SR-195-05 — Unknown-name counting covers object-form notes** (the one notes shape the counter missed).
+- **SR-195-06 — Undo and Cancel say when a run has no snapshot.** An undo that restores a run without one, and a journal-fallback cancel with none saved, both name the reduced guarantee instead of restoring in silence.
+- **SR-195-08 — Style generation is reproducible from the repo.** CARTO's dark-matter style is vendored (`scripts/carto-dark-matter-style.json`, hash stamped into the banner); the banner carries no date. Regeneration from the vendored inputs reproduces the shipped styles byte-for-byte; `--refresh-carto` is the deliberate refresh.
+- **SR-195-09 — Browser startup is retried in the test harnesses.** A launch that never prints its DevTools line (or a browser that exits first) retries up to 3 attempts with diagnostics; three failures still fail the drive. The cold-runner first-launch failure that killed a shard of the first scheduled run, twice, is the target.
+- **Audit-2 N-1 — Download cleanup deletes only confirmed copies.** A file whose pack write failed keeps its browsing copy; 1.95 deleted it anyway and lost both.
+- **Audit-2 N-2 — Re-download actually refreshes.** Downloads fetch in `reload` mode and the worker bypasses both caches for them; before, a re-download re-stored the pack's own responses.
+- **Audit-2 N-3 — README route wording corrected.** It described per-route packs as a present capability; it now separates the design from what ships (one pack, no in-app switching yet).
+- **Audit-2 N-5b — Recovery wording is precise.** The share text now says the open route is the live state while any other route in the file is included as last saved.
+- **Audit F-08 — CI actions pinned by commit SHA** (tags kept as comments), and **F-11 recorded as a decision**: the worker's prompt takeover (`skipWaiting` + `clients.claim`) is deliberate — it never reloads a page, and state is version-tolerant; see ARCHITECTURE.md.
+- **One Backup button (Andrew's design, added to this round at his direction).** The separate "Recovery backup" menu option is gone. When the normal backup cannot be built because saving failed, the Backup press falls back AUTOMATICALLY to the recovery export — and says so loudly: the file is recovery-marked, recovery-named, and its message opens "Backup could not be saved — recovery backup shared/downloaded instead". A cancelled share sheet never triggers the fallback (it fires on the build failure only). The storage-failure warnings now point at "a backup" — the one button covers both.
+
 ## Beta 1.95 — 2026-11-04
 
 The Beta 1.94 deep-audit round (SR-194 series), full scope as approved: every confirmed defect plus the recovery export. Findings 09 (release engineering) and 10 (route switching) stay separate decisions, untouched here.

@@ -124,6 +124,38 @@ ok('S12b a snapshot with a wrong-length street and garbage times is rejected who
 const S12c = await corruptCycle(`s => { s.cov = { Velmar: [99999] }; s.done = ['Velmar', 'Nowhere Road']; }`);
 ok('S12c a snapshot with out-of-range coverage and an unknown street is rejected whole | ' + JSON.stringify(S12c), S12c.velmarDone === true && S12c.astona === true && S12c.covBad === false && S12c.stray === false);
 
+// S12d (Beta 1.96, deep audit SR-195-04): snapshot validation applies the
+// LOADER'S OWN rule to timestamp VALUES - app1's loader deletes a completion
+// time that does not Date.parse, so a snapshot carrying one is not a snapshot
+// the loader would honour. 1.95 checked only that the values were strings,
+// so 'not-a-date' sailed through both the times map and a piece stamp.
+await ev(`markDone('Velmar', 'test')`);
+await ev(`startClean()`);
+const S12d = JSON.parse(await ev(`(() => { const base = JSON.parse(localStorage.getItem(LS.snap)); const good = JSON.parse(JSON.stringify(base)); const badT = JSON.parse(JSON.stringify(base)); badT.times = { Velmar: 'not-a-date' }; const badS = JSON.parse(JSON.stringify(base)); badS.pieceTimes.Velmar = [['not-a-date', null]]; return JSON.stringify({ good: !!validateSnap(good, good.at), badTimes: validateSnap(badT, badT.at) === null, badStamp: validateSnap(badS, badS.at) === null }); })()`));
+await ev(`cancelStart()`); await sleep(300); // leave no run open behind this check
+ok('S12d a snapshot whose completion time or piece stamp is not a real date is rejected whole (Beta 1.96, SR-195-04) | ' + JSON.stringify(S12d), S12d.good === true && S12d.badTimes === true && S12d.badStamp === true);
+
+// S14 (Beta 1.96, deep audit SR-195-01): the combined failure - the saved
+// snapshot is DAMAGED and the trail cleanup cannot be saved. 1.95's message
+// chain evaluated the damage branch first, so the erasure message masked the
+// unsaved-cleanup warning entirely. The storage warning must survive, with
+// the rebuild explanation attached - and once storage recovers, the pending
+// cleanup must land on retry.
+await ev(`markDone('Astona', 'test')`);
+await ev(`startClean()`);
+await ev(`togglePiece('Velmar', 0, 0)`);
+await ev(`(function(){ const s2 = JSON.parse(localStorage.getItem(LS.snap)); s2.pieces = { Velmar: [99] }; localStorage.setItem(LS.snap, JSON.stringify(s2)); return true; })()`);
+await ev(`location.reload(); true`);
+await poll(`!!window.__bootAt`, 30000);
+await ev(`(function(){ window.__toasts133 = []; const t = $('toast'); new MutationObserver(() => { const x = t.textContent; if (x && window.__toasts133[window.__toasts133.length - 1] !== x) window.__toasts133.push(x); }).observe(t, { childList: true, characterData: true, subtree: true }); return true; })()`);
+await ev(`loadRoute('5w'); true`); await sleep(700);
+await ev(`(function(){ window.__lsSetOrig = lsSet; lsSet = (k, v) => (k === LS.trail || k === LS.sess) ? false : window.__lsSetOrig(k, v); return true; })()`);
+await ev(`cancelStart()`); await sleep(300);
+const S14a = JSON.parse(await ev(`JSON.stringify(window.__toasts133 || [])`));
+ok('S14a damaged snapshot + unsaved trail cleanup: the message carries the cleanup warning AND the rebuild explanation - the erasure claim never stands alone (Beta 1.96, SR-195-01) | ' + JSON.stringify(S14a), S14a.some(t => /trail cleanup could not be saved/.test(t) && /rebuilt from the marks/.test(t)));
+await ev(`(function(){ lsSet = window.__lsSetOrig; flushAux(true); return true; })()`); await sleep(200);
+ok('S14b when storage recovers the pending trail cleanup lands on retry (Beta 1.96, SR-195-01)', (await ev(`trailDirty === false && sessDirty === false`)) === true);
+
 // S13 (Beta 1.95, deep audit SR-194-04): a run resumed WITHOUT a usable
 // cancel snapshot must say so at load - its Cancel guarantee is reduced to
 // the stamp journal, and 1.94 resumed it in silence. Start itself still

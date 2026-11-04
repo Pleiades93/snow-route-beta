@@ -34,7 +34,7 @@ for Route 5W (see Migration).
 | `v5.start` | Run start | Raw epoch-milliseconds digit string (not JSON). |
 | `v5.flip` | Legacy flip flag | Retained for format compatibility; unused by the beta (flip was removed in Beta 1.14). Still backed up. |
 | `v5.sides` | **Source of truth for progress** | JSON `{p: {street: [0..3 per stretch]}, t: {street: {stretchIdx: [timeA, timeB]}}}`. Values are bit flags: 1 = side A, 2 = side B, 3 = both. Load normalizes values to 0..3 (audit G-3). |
-| `v5.snap` | Pre-Start snapshot for Cancel (Beta 1.94, audit SR-193-02) | JSON `{at, pieces, pieceTimes, done, times, via, cov}` — the board as Start found it, stamped with the run's start time (`at` === `v5.start`). Written at Start, deleted by Finish and by Cancel. A resumed run's Cancel restores from it when `at` matches the live run; it is transient working state — not backed up, not migration-copied. Beta 1.95 (SR-194-03): the restore validates the snapshot strictly against the loader's structural rules first — a damaged snapshot is never applied raw; the mark-stamp journal is the fallback and the cancel message says the board was rebuilt. Beta 1.95 (SR-194-01): Finish carries the snapshot into its undo record, and Undo re-persists it as a verified gate, so Finish → Undo → Cancel restores exactly. |
+| `v5.snap` | Pre-Start snapshot for Cancel (Beta 1.94, audit SR-193-02) | JSON `{at, pieces, pieceTimes, done, times, via, cov}` — the board as Start found it, stamped with the run's start time (`at` === `v5.start`). Written at Start, deleted by Finish and by Cancel. A resumed run's Cancel restores from it when `at` matches the live run; it is transient working state — not a backup field, not migration-copied. Beta 1.96 (SR-195-04): validation also applies the loader's own rule to time VALUES — a completion time or piece stamp that fails `Date.parse` rejects the snapshot, exactly as the loader deletes such times. Beta 1.96 (SR-195-02): a RECOVERY backup may carry a copy of the snapshot as an optional per-route `snap` field (see the backup section) — the key itself is still never a backup field. Beta 1.95 (SR-194-03): the restore validates the snapshot strictly against the loader's structural rules first — a damaged snapshot is never applied raw; the mark-stamp journal is the fallback and the cancel message says the board was rebuilt. Beta 1.95 (SR-194-01): Finish carries the snapshot into its undo record, and Undo re-persists it as a verified gate, so Finish → Undo → Cancel restores exactly. |
 | `v2.migrated` | Migration completion marker (Beta 1.94, audit SR-193-03) | The string `'1'`, written only after every legacy field the slot should hold is verified present in it (see Migration). Its presence is the ONLY thing that makes the slot authoritative; without it the legacy keys stay authoritative and the move retries. Not backed up. |
 | `v5.preload` | Preload record `{at, saved, total}` (local only) | Per-route; not backed up. |
 
@@ -54,6 +54,14 @@ SR-194-05/06: set only after the manifest-bounded pack migration has
 VERIFIED the pack cache holds everything recoverable from the browsing
 cache — a failed copy leaves it unset and the migration retries on the
 next boot; see ARCHITECTURE.md, Offline; local only, not backed up).
+Beta 1.96 (SR-195-03/07): the stored value is no longer the constant `1`
+but a FINGERPRINT of the manifest it certifies (`v1:<count>:<hash>`,
+`packMigFingerprint` in app4) — a complete download earns the same
+fingerprint. On boot the flag is finally READ: a matching fingerprint
+plus a pack census of exactly the manifest count takes a fast path and
+skips the verification sweep; any doubt runs (and heals via) the full
+pass. The migration's status now also reports prune and flag-write
+failures instead of swallowing them.
 
 ## Migration: legacy → 5W slot (Beta 1.76; commit rule revised Beta 1.94)
 
@@ -113,7 +121,21 @@ marker (`"recovery": true`): it serializes the live in-memory state of
 the active route directly, for the storage-failure moments when the
 normal backup refuses by design; it restores through this same path.
 The transient fields (`v5.snap`, `v2.migrated`) are never part of
-a backup.
+a backup as fields of their own. Beta 1.96 (SR-195-02): a recovery
+backup additionally carries the active run's cancel snapshot as an
+optional per-route `snap` string (the snapshot object, serialized) when
+a run is open; on restore it is written back to the route's `v5.snap`.
+Since later in Beta 1.96 (Andrew's one-button design) the recovery
+export is also the Backup button's AUTOMATIC fallback: when the normal
+backup cannot be built because saving failed, the press produces this
+recovery file instead — recovery-marked and recovery-named, with a
+result message that says the save could not be done first. There is no
+separate Recovery menu option anymore.
+key — inside the restore transaction and its rollback scope — only if
+it passes `validateSnap` against the start the same backup carries for
+that route. A carried snapshot that fails validation (or whose run's
+start is absent) is dropped and the result message says so; ordinary
+backups never carry the field.
 
 ## Restore transaction (invariant)
 

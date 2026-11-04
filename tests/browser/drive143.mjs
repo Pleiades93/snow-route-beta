@@ -35,7 +35,7 @@ ok('U1 undo with metadata saves broken warns instead of claiming a clean restore
 // C1: cancel a clean that has coverage but no marks - coverage and suggestions die with it.
 await ev(`(() => { runStart = Date.now(); coveredIdx = { Velmar: [0, 1, 2] }; suggested = new Set(['Velmar']); cancelStart(); return true; })()`);
 const c1 = JSON.parse(await ev(`(() => JSON.stringify({ cov: Object.keys(coveredIdx).length, sug: suggested.size, toast: $('toast').textContent }))()`));
-ok('C1 cancel clears the cancelled run coverage and suggestions | ' + JSON.stringify(c1), c1.cov === 0 && c1.sug === 0 && c1.toast === 'Start cancelled — run erased'); // Beta 1.91: the toast names the new contract - cancel erases the run
+ok('C1 cancel clears the cancelled run coverage and suggestions | ' + JSON.stringify(c1), c1.cov === 0 && c1.sug === 0 && c1.toast === 'Start cancelled — run erased (no start snapshot was saved, so the board was rebuilt from the marks made during the run)'); // Beta 1.91: the toast names the contract - cancel erases the run. Beta 1.96 (SR-195-06): this scenario sets runStart directly, so no snapshot exists by construction and the message now QUALIFIES the rebuild instead of claiming the plain restore
 // C2: Clear with coverage-only state clears it instead of claiming nothing to do.
 await ev(`(() => { coveredIdx = { Velmar: [0] }; suggested = new Set(['Velmar']); clearAllMarks(); return true; })()`);
 const c2 = JSON.parse(await ev(`(() => JSON.stringify({ cov: Object.keys(coveredIdx).length, sug: suggested.size, toast: $('toast').textContent }))()`));
