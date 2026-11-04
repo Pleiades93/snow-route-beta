@@ -8,9 +8,10 @@ source. No new features — the recovery cases come first.
 
 - **A backup can no longer ship a stale board (SR-193-01).** If the
   primary save had failed, the export read the older stored board and
-  handed over a valid-looking backup missing the newest marks. The
-  export now reconciles the primary save first and is refused outright
-  if that save cannot land.
+  handed over a valid-looking backup missing the newest marks. When a
+  save has failed, the export now attempts that save again first and
+  is refused outright if it still cannot land; when no save has
+  failed, the export reads storage as before and writes nothing.
 - **Cancel after a reload restores the exact pre-Start board
   (SR-193-02).** Start now persists its snapshot. A resumed run's cancel
   restores from it — including a pre-Start side that was unmarked mid-run,

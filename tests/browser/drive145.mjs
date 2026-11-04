@@ -93,8 +93,9 @@ await ev(`(function(){ var orig = lsSet; window.__lsOrig145 = orig; lsSet = func
 ok('N20d a backup whose trail flush FAILS is refused outright, never shipped stale (Beta 1.93, audit R02)', await ev(`(function(){ try { trail.push([43.9998, -79.9998, 1999999998]); trailDirty = true; var b = buildBackup(); trail.pop(); return b === null; } catch (e) { return false; } })()`));
 await ev(`(function(){ if (window.__lsOrig145) lsSet = window.__lsOrig145; return true; })()`);
 await ev(`(function(){ var orig = lsSet; window.__lsOrig145b = orig; lsSet = function(k, v){ if (k === LS.sides) return false; return orig(k, v); }; return true; })()`);
-ok('N20e a backup whose PRIMARY save fails is refused outright, never shipped with the old board inside (Beta 1.94, deep audit SR-193-01)', await ev(`(function(){ try { return buildBackup() === null; } catch (e) { return false; } })()`));
-await ev(`(function(){ if (window.__lsOrig145b) lsSet = window.__lsOrig145b; flushAux(true); return true; })()`);
+await ev(`(function(){ try { togglePiece('Velmar', 0, 0); } catch (e) {} return true; })()`); // the auditor's repro sequence: a mutation whose save FAILS - memory is now ahead of storage
+ok('N20e a backup is refused when a failed save leaves memory ahead of storage - never shipped with the old board inside (Beta 1.94, deep audit SR-193-01)', await ev(`(function(){ try { return primaryDirty === true && buildBackup() === null; } catch (e) { return false; } })()`));
+await ev(`(function(){ if (window.__lsOrig145b) lsSet = window.__lsOrig145b; try { togglePiece('Velmar', 0, 0); } catch (e) {} flushAux(true); return true; })()`); // storage healthy again: undo the probe mutation and let the retry land, leaving the board as the section found it
 
 // --- storage slot shape -----------------------------------------------------
 ok('N10 route slots are per-route and disjoint; night stays a global key', await ev(`(function(){ var a = routeKeys('5w'), b = routeKeys('zz9'); var av = Object.values(a), bv = Object.values(b); return a.sides === 'snowroute.5w.v5.sides' && b.sides === 'snowroute.zz9.v5.sides' && av.every(v => v.indexOf('snowroute.5w.') === 0) && bv.every(v => v.indexOf('snowroute.zz9.') === 0) && !av.some(v => bv.indexOf(v) >= 0) && LS.night === 'snowroute.v2.night'; })()`));

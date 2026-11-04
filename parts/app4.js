@@ -54,12 +54,15 @@ function dl(blob, name) { const a = document.createElement('a'); a.href = URL.cr
 function backupObj() { // Beta 1.76: format v2 - routes carry their own slots ({routes: {id: {field: raw}}}) and the night preference rides at top level. Reads stay RAW (Beta 1.48, audit B04): a failed read fails the whole export (null) instead of producing a valid-looking backup with a piece silently missing.
   flushAux(true); // Beta 1.92 (deep audit F04): flush the buffered trail/coverage first - a backup must not lag the work it claims to hold
   // Beta 1.94 (deep audit SR-193-01): the PRIMARY records get the same reconciliation the aux
-  // records got in 1.93 (R02). The export reads the persisted records raw, so when the last
-  // saveAll had failed, a backup used to ship the OLD board as current - silently, in a
-  // valid-looking file. Attempt the verified save of the in-memory board first; if the
-  // primary records still cannot be persisted, refuse the export (null), exactly like R02.
-  // Quiet on purpose: the caller's 'could not be read' message is the honest report here.
-  if (routeLoaded) { saveQuiet = true; const okPrim = saveAll(); saveQuiet = false; if (!okPrim) return null; }
+  // records got in 1.93 (R02) - but only when a reconciliation is OWED, which is exactly when
+  // a primary save has failed (primaryDirty, SR-193-05): memory is then ahead of storage, and
+  // the raw export below would ship the OLD board as current, silently, in a valid-looking
+  // file. Attempt the verified save first; if it still cannot land, refuse the export (null),
+  // exactly like R02. When no save has failed, storage already holds the last verified save,
+  // so the export reads it raw and writes nothing - an export of never-resaved loaded state
+  // (drive121's frozen fixture) stays byte-true to what is stored, loader derivations and
+  // all. Quiet on purpose: the caller's 'could not be read' message is the honest report.
+  if (routeLoaded && primaryDirty) { saveQuiet = true; const okPrim = saveAll(); saveQuiet = false; if (!okPrim) return null; }
   if (trailDirty || auxDirty || sessDirty) return null; // Beta 1.93 (follow-up audit R02): the flush did not land - refuse the export (the caller's 'could not be read' message) rather than ship a valid-looking backup with stale trail/coverage inside
   const routes = {};
   for (const p of ROUTE_PACKS) { const rk = routeKeys(p.id); const data = {}; for (const f of ROUTE_FIELDS) { const key = (activeRoute && p.id === activeRoute.id && LS[f] !== rk[f]) ? LS[f] : rk[f]; let v = null; try { v = localStorage.getItem(key); } catch (e) { return null; } if (v != null) data[f] = v; } if (Object.keys(data).length) routes[p.id] = data; } // Beta 1.92 (deep audit F02): the ACTIVE route exports from the key mapping it is actually running on - on a legacy-fallback boot (migration failed) LS points at the legacy keys, and reading the fresh slot would emit a valid-looking EMPTY backup
