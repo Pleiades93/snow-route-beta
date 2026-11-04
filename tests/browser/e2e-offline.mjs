@@ -270,10 +270,10 @@ const loadRouteE2E = async () => { await poll(`(function(){ if (typeof routeLoad
 const snapState = async () => JSON.parse(await ev2(`(() => { const out = {}; for (const k of ['start', 'sess', 'sides', 'done', 'times', 'via', 'trail']) out[k] = lsGet(LS[k]); out.app = JSON.stringify({ run: runStart, sess: trailSessions.slice(), velmar: pieces.Velmar[0], astona: pieces.Astona[0], done: Array.from(doneSet).sort(), trailN: trail.length }); return JSON.stringify(out); })()`));
 await loadRouteE2E();
 await ev2(`(() => { startClean(); markDone('Velmar', 'tap'); togglePiece('Astona', 0, 0); const t0 = Math.floor(Date.now() / 1000); trail = [[43.82, -79.56, t0], [43.8201, -79.56, t0 + 30], [43.8202, -79.56, t0 + 60]]; saveTrail(); return true; })()`);
-await sleep(500);
+await ev2(`(() => { try { flushAux(true); } catch (e) {} return true; })()`); // quiesce the app's writers first (the flake-log prescription after E17's repeated kill-vs-commit races: settle BEFORE the snapshot, not after)
+await sleep(10000); // storage-commit settle BEFORE snapBefore (Beta 1.95 hardening; the snapshot is then read from committed storage and the kill follows immediately - snapshotting first and settling after left the kill racing the commit, and E17 failed intermittently in both the 1.94 and 1.95 rounds with a wholesale-empty after-state)
 const snapBefore = await snapState();
 ok('E17a the clean state was persisted through the app save paths before the kill | sess ' + snapBefore.sess + ' app ' + snapBefore.app, !!snapBefore.start && JSON.parse(snapBefore.sess).length >= 1 && JSON.parse(snapBefore.app).velmar === 3 && JSON.parse(snapBefore.app).astona === 1 && JSON.parse(snapBefore.app).done.includes('Velmar') && JSON.parse(snapBefore.app).trailN === 3);
-await sleep(10000); // storage-commit settle (see the note above)
 proc.kill('SIGKILL');
 await sleep(1500);
 for (const f of ['SingletonLock', 'SingletonCookie', 'SingletonSocket']) { try { fs.rmSync(PROFILE + '/' + f, { force: true }); } catch (e) {} }
