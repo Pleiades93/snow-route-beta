@@ -84,6 +84,8 @@ ok('N18 the computed sunrise/sunset land on the real Vaughan sun', await ev(`(fu
 ok('N19 automatic mode reads the sun correctly across the year', await ev(`(function(){ return autoNightAt(Date.UTC(2026, 0, 5, 17, 0)) === false && autoNightAt(Date.UTC(2026, 0, 6, 1, 0)) === true && autoNightAt(Date.UTC(2026, 0, 5, 8, 0)) === true && autoNightAt(Date.UTC(2026, 5, 21, 16, 0)) === false && autoNightAt(Date.UTC(2026, 5, 22, 3, 0)) === true; })()`));
 ok('N20 a manual override flips the theme at once and hands back at its boundary', await ev(`(function(){ clearThemeOverride(); var auto = autoNightAt(Date.now()); setThemeOverride(!auto); var flipped = isNight() === !auto && !!localStorage.getItem(LS.nightExp) && themeOverrideUntil > Date.now(); themeOverrideUntil = Date.now() - 1; themeTick(); return flipped && themeOverride === null && isNight() === autoNightAt(Date.now()); })()`));
 ok('N20b a backup written under an override carries the override pair', await ev(`(function(){ setThemeOverride(true); var b = JSON.parse(buildBackup()); var carried = typeof b.night === 'string' && typeof b.nightExp === 'string'; clearThemeOverride(); return carried; })()`));
+await ev(`markDone('Velmar', 'tap'); true`); await sleep(200);
+ok('N20c a backup taken mid-recording contains the buffered trail + coverage - flushed first (Beta 1.92, deep audit F04)', await ev(`(function(){ try { trail.push([43.9999, -79.9999, 1999999999]); trailDirty = true; coveredIdx.__f04 = [0]; auxDirty = true; var b = JSON.parse(buildBackup()); var tr = JSON.parse(b.routes['5w'].trail || '[]'); var cv = JSON.parse(b.routes['5w'].cov || '{}'); var good = tr.some(p => p[0] === 43.9999) && !!cv.__f04; trail.pop(); delete coveredIdx.__f04; return good; } catch (e) { return false; } })()`));
 
 // --- storage slot shape -----------------------------------------------------
 ok('N10 route slots are per-route and disjoint; night stays a global key', await ev(`(function(){ var a = routeKeys('5w'), b = routeKeys('zz9'); var av = Object.values(a), bv = Object.values(b); return a.sides === 'snowroute.5w.v5.sides' && b.sides === 'snowroute.zz9.v5.sides' && av.every(v => v.indexOf('snowroute.5w.') === 0) && bv.every(v => v.indexOf('snowroute.zz9.') === 0) && !av.some(v => bv.indexOf(v) >= 0) && LS.night === 'snowroute.v2.night'; })()`));
@@ -105,6 +107,7 @@ await ev(`(function(){ var orig = lsSet; window.__origLsSet = orig; lsSet = func
 await ev(`loadRoute('5w'); true`); await sleep(600);
 ok('N12 a failed copy aborts the move: partial slot wiped, legacy state loads instead', await ev(`(function(){ return localStorage.getItem('snowroute.5w.v5.sides') === null && localStorage.getItem('snowroute.5w.v2') === null && doneSet.has('Velmar'); })()`));
 await ev(`(function(){ if (window.__origLsSet) lsSet = window.__origLsSet; return true; })()`);
+ok('N12b a backup taken on the legacy fallback exports the LEGACY data, not the wiped slot (Beta 1.92, deep audit F02)', await ev(`(function(){ try { var b = JSON.parse(buildBackup()); return !!b.routes && !!b.routes['5w'] && b.routes['5w'].done === ${JSON.stringify(DONE_5W)} && b.routes['5w'].sides === ${JSON.stringify(SIDES_5W)}; } catch (e) { return false; } })()`));
 
 // --- v1 backup restores into the slot; C06 clears its markers ---------------
 const TRAIL_5W = JSON.stringify([[43.8, -79.5, 1762000000], [43.8005, -79.5005, 1762000060]]);
@@ -122,6 +125,19 @@ ok('N13 a v1 backup restores into the 5W slot, markers cleared by the C06 rule (
 
 // --- backups are v2 now ------------------------------------------------------
 ok('N14 buildBackup emits the v2 per-route shape', await ev(`(function(){ var b = JSON.parse(buildBackup()); return b.app === 'snowroute-backup' && b.v === 2 && !!b.routes && typeof b.routes['5w'].sides === 'string' && typeof b.routes['5w'].trail === 'string'; })()`));
+
+// --- F05 (Beta 1.92, deep audit): a blocked start delete at Finish arms a
+// retry; the stale key must never resurrect the run on the next boot --------
+await ev(`(function(){ window.__rmOrig = Storage.prototype.removeItem; Storage.prototype.removeItem = function(k){ if (k === 'snowroute.5w.v5.start') throw new Error('injected delete failure'); return window.__rmOrig.call(this, k); }; return true; })()`);
+await ev(`startClean(); true`); await sleep(300);
+await ev(`finishRun(); true`); await sleep(400);
+ok('N25a (fault live) the blocked start delete leaves the stale key and arms the retry', await ev(`(function(){ try { return localStorage.getItem('snowroute.5w.v5.start') !== null && startDirty === true; } catch (e) { return false; } })()`));
+await ev(`(function(){ Storage.prototype.removeItem = window.__rmOrig; flushAux(false); return true; })()`); await sleep(300);
+ok('N25b the flush heartbeat retries the delete until it lands', await ev(`localStorage.getItem('snowroute.5w.v5.start') === null && startDirty === false`));
+await ev(`location.reload(); true`);
+await poll(`!!window.__bootAt`, 30000);
+await ev(`loadRoute('5w'); true`); await sleep(500);
+ok('N25c no phantom run after the reload', await ev(`runStart === 0`));
 
 // --- a full close forgets the override (Beta 1.77): the session marker is
 // what separates "opened again" from "cold open" ------------------------------
