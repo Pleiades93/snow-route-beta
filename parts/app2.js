@@ -383,7 +383,7 @@ function updateCount() {
 }
 
 // ===== LIST SHEET =====
-let listFilter = 'all';
+let listFilter = 'mains'; // Beta 1.109 (Andrew): the Streets filter is the route's two groups - Mains (the gold roads) or Secondaries (the raspberry ones) - replacing All / To do / Done; Mains is the opening view
 let noteOpenFor = null, noteSaveTimer = 0, noteEdFor = null; // Beta 1.63 (audit F01): noteEdFor names the street whose editor is actually in the DOM - the draft's owner
 let srowCache = { sig: '', rows: new Map() }; // Beta 1.50 (audit P06): rows kept between renders when the visible set is unchanged
 function fmtLenM(v) { return String(Math.round(v)).replace(/\B(?=(\d{3})+(?!\d))/g, ',') + ' m'; } // Beta 1.107: street-length display for the Streets list's quiet line - whole metres, thousands separator, never kilometres
@@ -396,9 +396,9 @@ function renderStreets() { // production row design: tap a street's name area to
   if (draft !== null && draftFor && draftFor !== noteOpenFor) { clearTimeout(noteSaveTimer); setNoteText(draftFor, draft); } // switching streets finalizes the old editor against ITS street first (a destroyed editor's blur is not guaranteed to fire)
   let noteFlushed = false; // Beta 1.79: a rebuild for the SAME street (the map style finishing its load, a theme flip - both end in refreshAll) replaces the open editor too. Finalize its pending save HERE, synchronously, instead of leaving the debounced timer pointing at a discarded textarea - that race is what stranded drive88's note checks when the style-ready refresh landed mid-edit
   if (draft !== null && draftFor && draftFor === noteOpenFor && noteSaveTimer) { clearTimeout(noteSaveTimer); noteSaveTimer = 0; if (setNoteText(draftFor, draft)) noteFlushed = true; }
-  const arr = STREETNAMES.filter(n => listFilter === 'all' || (listFilter === 'done') === streetComplete(n));
+  const arr = STREETNAMES.filter(n => (listFilter === 'mains') === MAIN.has(n)); // Beta 1.109: the visible set is exactly the selected group - 6 mains or 28 secondaries on Route 5W
   arr.sort((a, b) => ((MAIN.has(a) ? 0 : 1) - (MAIN.has(b) ? 0 : 1)) || a.localeCompare(b)); // Beta 1.91 (Andrew): the Streets list leads with the mains (gold - cleaned first), then the secondary streets (raspberry), alphabetical inside each colour, in every filter view
-  if (!arr.length) { el.innerHTML = '<div style="padding:14px 4px;color:#8fa0b3">' + (listFilter === 'done' ? 'Nothing completed yet' : 'All streets done ✓') + '</div>'; srowCache = { sig: '', rows: new Map() }; return; }
+  if (!arr.length) { el.innerHTML = '<div style="padding:14px 4px;color:#8fa0b3">No streets in this group</div>'; srowCache = { sig: '', rows: new Map() }; return; } // Beta 1.109: unreachable with shipped route data (both groups are non-empty by construction) - kept as the safety net it was
   // Beta 1.50 (audit P06): a routine mark used to rebuild all 34 rows from
   // scratch. When the visible set and order are unchanged and no note editor
   // is open, update the kept rows in place instead; anything structural
@@ -411,6 +411,7 @@ function renderStreets() { // production row design: tap a street's name area to
       for (const n of arr) {
         const c = srowCache.rows.get(n);
         c.row.className = 'srow' + (streetComplete(n) ? ' done' : '') + (MAIN.has(n) ? ' main' : '');
+        c.row.querySelector('.pill').style.display = streetComplete(n) ? '' : 'none'; // Beta 1.109: the COMPLETED pill rides the same done predicate as the row class (the mint dot comes from the .done rule)
         const doneAt = streetComplete(n) && doneTimes[n] ? fmtWhen(doneTimes[n]) : '';
         c.row.querySelector('.tm').textContent = (notes[n] && notes[n].some(f => f.k !== 'note') ? '⚑ ' : '') + (doneAt ? 'done ' + doneAt + ' (' + fmtAgo(doneTimes[n]) + ')' : '');
         c.paintNt();
@@ -425,8 +426,9 @@ function renderStreets() { // production row design: tap a street's name area to
   arr.forEach(n => {
     const d = document.createElement('div');
     d.className = 'srow' + (streetComplete(n) ? ' done' : '') + (MAIN.has(n) ? ' main' : '');
-    d.innerHTML = '<div class="dot"></div><div class="nwrap"><div class="nm"></div><div class="nt"><span class="ntIco"></span><span class="ntTxt"></span></div></div><div class="tm"></div><button class="sbtn smap" title="Show on map"></button>';
+    d.innerHTML = '<div class="dot"></div><div class="nwrap"><div class="nmrow"><div class="nm"></div><span class="pill" style="display:none">COMPLETED</span></div><div class="nt"><span class="ntIco"></span><span class="ntTxt"></span></div></div><div class="tm"></div><button class="sbtn smap" title="Show on map"></button>';
     d.querySelector('.nm').textContent = n;
+    if (streetComplete(n)) d.querySelector('.pill').style.display = ''; // Beta 1.109: a fully completed street (streetComplete - both sides done) wears the pill; a one-side partial never reaches this line's condition
     const ntEl = d.querySelector('.nt');
     d.querySelector('.smap').innerHTML = ICONS.pin; d.querySelector('.ntIco').innerHTML = ICONS.note; // Pack D glyphs (Beta 1.30) in place of the emoji
     const paintNt = () => { const t = noteTextOf(n); if (t) { d.querySelector('.ntTxt').textContent = t; d.querySelector('.ntIco').style.display = ''; ntEl.style.display = ''; } else { d.querySelector('.ntTxt').textContent = fmtLenM(STRETCH[n].total); d.querySelector('.ntIco').style.display = 'none'; ntEl.style.display = ''; } }; // Beta 1.107 (Andrew): the quiet line shows the street's length by default (live STRETCH total, exact); a note wins the slot while one exists

@@ -13,7 +13,7 @@ await ev(`(() => { localStorage.clear(); location.reload(); return true; })()`);
 await ev(`loadRoute('5w'); true`); await sleep(600); // Beta 1.76: a reload lands on the route menu
 // Phase 1: list buttons + auto-saving notes
 await ev(`(() => { $('streetsBtn').click(); return true; })()`); await sleep(400);
-let A = JSON.parse(await ev(`(() => JSON.stringify({ rows: document.querySelectorAll('.srow').length, smap: !!document.querySelector('.srow .smap'), snote: !!document.querySelector('.srow .snote') }))()`));
+let A = JSON.parse(await ev(`(() => { listFilter = 'mains'; renderStreets(); const m = document.querySelectorAll('.srow').length; listFilter = 'secondaries'; renderStreets(); const s = document.querySelectorAll('.srow').length; listFilter = 'mains'; renderStreets(); return JSON.stringify({ rows: m + s, smap: !!document.querySelector('.srow .smap'), snote: !!document.querySelector('.srow .snote') }); })()`)); // Beta 1.109: the list shows one group at a time (6 mains / 28 secondaries) - the row census spans both views
 ok('P1 rows carry the pin button and NO note button (v5.55)', A.rows === 34 && A.smap && !A.snote);
 await ev(`(() => { ${'PLACEHOLDER'} return true; })()`.replace('PLACEHOLDER', ''));
 await ev(`(() => { const r = [...document.querySelectorAll('.srow')].find(x => x.querySelector('.nm').textContent === 'Velmar'); r.querySelector('.nwrap').click(); return true; })()`); await sleep(400);
@@ -30,6 +30,7 @@ await sleep(800);
 A = JSON.parse(await ev(`(() => JSON.stringify({ ls: localStorage.getItem('snowroute.5w.v4.notes') || '', hint: document.querySelector('.noteEd .nhint').textContent, nt: noteTextOf('Velmar') }))()`));
 ok('P1 note auto-saves to storage (no Save button)', A.ls.includes('blocked by car') && A.nt.includes('blocked by car'));
 ok('P1 editor confirms the save', /Saved/.test(A.hint));
+await ev(`(() => { document.querySelector('#filters button[data-f="secondaries"]').click(); return true; })()`); await sleep(400); // Beta 1.109: Angie lives in the Secondaries group now - select it through the real chip before picking her row
 await ev(`(() => { const r = [...document.querySelectorAll('.srow')].find(x => x.querySelector('.nm').textContent === 'Angie'); r.querySelector('.nwrap').click(); return true; })()`); await sleep(400);
 await ev(`(() => { const ta = document.querySelector('.noteEd textarea'); ta.value = 'Could not clean - gate locked'; ta.dispatchEvent(new Event('input', { bubbles: true })); return true; })()`);
 await sleep(800);

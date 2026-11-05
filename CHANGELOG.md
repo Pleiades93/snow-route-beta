@@ -1,5 +1,18 @@
 # Changelog
 
+## Beta 1.109 — 2026-11-05
+The Streets sheet filter changes from All / To do / Done to the route's two
+groups (Andrew's mockup pick, 2026-11-05: the V2 two-chip layout with V1's
+completed pill): exactly two chips, Mains and Secondaries, and the list
+shows only the selected group - the 6 gold main roads or the 28 raspberry
+secondary streets. Mains is the opening view. A fully completed street's
+row now also wears a small COMPLETED pill after its name (soft mint pill,
+from the V1 mockup), on top of the existing mint dot and green name tint;
+a street with only one side done is not completed and gets no pill.
+Everything else about the rows is unchanged: the pin button, the quiet
+line (length, or the note preview while a note exists) and the done-time
+stamp.
+
 ## Beta 1.108 — 2026-11-05
 Repo hygiene release (Andrew approved the full cleanup plan, 2026-11-05):
 the 12 iOS launch stills move from the repo root into assets/launch/ (the

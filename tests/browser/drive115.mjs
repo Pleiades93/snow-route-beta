@@ -30,7 +30,7 @@ try {
   ok('A1 notice shows when the basemap can never draw (tile hosts dead)', await until(noteVisible, 18000));
   ok('A2 notice text explains streets still work', await ev(`/still work/.test(document.querySelector('#mapNote span').textContent)`));
   ok('A3 basemap death recorded (the embedded style loads, but no tile ever arrives)', await until(async () => await ev(`typeof basemapDead !== 'undefined' && basemapDead === true`), 15000));
-  ok('A4 streets list still renders with no map (34 rows)', await ev(`document.querySelectorAll('#streetList .srow').length === 34`));
+  ok('A4 streets list still renders with no map (6 mains + 28 secondaries across the two Beta 1.109 groups)', await ev(`(function(){ listFilter = 'mains'; renderStreets(); const a = document.querySelectorAll('#streetList .srow').length; listFilter = 'secondaries'; renderStreets(); const b = document.querySelectorAll('#streetList .srow').length; listFilter = 'mains'; renderStreets(); return a === 6 && b === 28; })()`));
   await ev(`togglePiece('Velmar', 0, 0); true`); await sleep(600);
   ok('A5 marking still works on the dead map', await ev(`pieces.Velmar[0] === 1`));
   let R1 = await rects();

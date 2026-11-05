@@ -143,6 +143,9 @@
   .srow.done .nm { color: var(--done-nm); }
   .srow .tm { margin-left: auto; font-size: 12px; color: var(--tm-c); white-space: nowrap; }
   .srow .nwrap { display: flex; flex-direction: column; min-width: 0; }
+  .srow .nmrow { display: flex; align-items: center; gap: 6px; min-width: 0; }
+  .srow .pill { font-size: 10px; font-weight: 700; letter-spacing: .05em; background: rgba(6,214,160,.18); color: #0b6e4f; border-radius: 999px; padding: 2px 7px; white-space: nowrap; } /* Beta 1.109 (Andrew): the COMPLETED pill from his V1 mockup, carried into the V2 two-chip layout he picked - values are the mockup's own */
+  body.night .srow .pill { color: #9fd3ae; } /* Beta 1.109: at night the pill text takes the app's own night done-name green (--done-nm) so it stays readable on the dark card; the mint tint is unchanged */
   .srow .nt { font-size: 12px; color: var(--nt-c); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; max-width: 36vw; }
   .srow .sbtn svg { width: 20px; height: 20px; display: block; margin: auto; }
   .srow .nt .ntIco svg { width: 11px; height: 11px; vertical-align: -1px; margin-right: 4px; }
@@ -257,7 +260,7 @@
 <div id="hud">
   <div id="warn">Not saving — storage is full or blocked</div>
   <div class="row">
-    <div class="titleStack"><div class="title">Snow Route Beta</div><div class="ver" id="ver">Beta 1.108</div></div>
+    <div class="titleStack"><div class="title">Snow Route Beta</div><div class="ver" id="ver">Beta 1.109</div></div>
   </div>
   <div id="stats"></div>
 </div>
@@ -312,7 +315,7 @@
 <div id="sheet" class="sheet">
   <div class="grab"><div class="grabBar"></div></div>
   <div class="sheetHead"><div class="sheetTitle">Streets</div><button id="sheetClose">✕</button></div>
-  <div id="filters"><button data-f="all" class="on">All</button><button data-f="todo">To do</button><button data-f="done">Done</button></div>
+  <div id="filters"><button data-f="mains" class="on">Mains</button><button data-f="secondaries">Secondaries</button></div>
   <div id="sheetBody"><div id="streetList"></div><div id="cleanView"></div></div>
 </div>
 <div id="pacePanel" class="sheet">
