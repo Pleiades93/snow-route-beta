@@ -1,5 +1,23 @@
 # Changelog
 
+## Beta 1.104 — 2026-11-04
+Codex audit round 103 fixes (both P1, both in the finish/archive path).
+(1) CG-103-02: the interrupted-Finish recovery added in 1.102 matched an
+archive to its run by startedAt, but startedAt is the real work start - a
+street marked before Start was pressed made it earlier than the stored
+start, so the recovery missed the run entirely and a second Finish
+archived a duplicate. Archive entries written by Finish now carry a
+dedicated run identity (runId, the active run's start) and the recovery
+matches on that, strictly; startedAt itself is unchanged (distances and
+the saved path still measure from the real work start). Entries written
+before this build carry no identity and are never reconciled.
+(2) CG-103-01: with ten full cleans in history, finishing a new partial
+clean evicted the archive it had just written - it was the only non-full
+entry the trim could find - while announcing "Clean archived." The
+finish trim now chooses evictions only among the pre-existing entries;
+the incoming archive is always kept. No storage keys or formats changed;
+the history loader already preserved the extra entry field.
+
 ## Beta 1.103 — 2026-11-04
 Architecture Phase 6 (candidate C5, the engine adapter): the paint engine
 (parts/engine.js) no longer reads app globals freely. Every app value,
