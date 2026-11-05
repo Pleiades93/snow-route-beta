@@ -17,7 +17,11 @@ on:
   push:
   pull_request:
   schedule:
-    - cron: '23 7 * * *'
+    # Nightly full battery at 06:00 UTC = 1:00 AM EST / 2:00 AM EDT (GitHub
+    # cron is UTC-only, no daylight saving). Set 2026-11-05 (Andrew): the
+    # pipeline is schedule 1 AM -> Muse catch-up check 4 AM (dispatches
+    # this workflow if the slot was skipped) -> summary 6 AM.
+    - cron: '0 6 * * *'
   workflow_dispatch:
 permissions:
   contents: read # Beta 1.94 (audit F-08): the workflow only checks out and tests - it never needs write access to the repository

@@ -13,7 +13,8 @@ turn every discovered bug into a permanent regression test.
    could be affected, and what the rollback is.
 4. **Branch** — work happens on a feature branch created from `main`
    (`github.py ref create-branch <name>`). Never commit feature work directly to
-   `main`. `main` is the known-good line.
+   `main`. `main` is the known-good line. **Exception (2026-11-05, Andrew —
+   the shipping standard in §3): the visual tier ships directly to `main`.**
 5. **Implement the smallest appropriate change** — no unrelated refactoring in the
    same change. Visual changes must not alter backend behaviour; backend changes
    must not unexpectedly alter the interface.
@@ -23,10 +24,11 @@ turn every discovered bug into a permanent regression test.
 7. **Review the diff** — re-read the complete diff before merging; check for
    accidental edits, stale text, and claims the code does not enforce.
 8. **Document** — update the docs the change makes stale, in the same change.
-9. **Merge only when safe** — the branch's full CI battery must be green
-   (`github.py ref merge <branch>`). Then run the merge gate of §3: prove the
-   merged tree is identical to the tested branch tree, confirm `main`'s smoke
-   run and build checks are green, and read the live page back.
+9. **Merge only when safe** — per the tier rules of §3 (2026-11-05
+   standard): the visual tier has no branch and no battery; the feature tier
+   merges with its build checks and touched-surface drives green; the merge
+   gate of §3 (tree identity, `main` smoke + build green, live read-back)
+   applies to branch merges.
 
 **Source layout (Beta 1.94, audit F-02).** The app is edited in `parts/`
 only. After editing a part, run `python3 scripts/assemble.py`, then
@@ -95,8 +97,23 @@ A push to `main` runs the build checks plus a critical-path smoke subset
 instead of the full suite, and a nightly scheduled run repeats the full
 sharded suite on `main` as the environment-drift audit.
 
-- A change merges only with a green battery.
-- **Test tiers (set 2026-10-30, Andrew).** Iteration and the merge gate are
+- **Shipping standard (set 2026-11-05, Andrew — supersedes the 2026-10-30
+  tiers below wherever they conflict).** Three tiers:
+  - *Visual tier* — small visual changes (CSS, images, icons, moving a menu
+    or button, adding a button, small menu changes): ship DIRECTLY to `main`
+    with NO test battery. Kept steps are mechanical integrity only: the build
+    check (`assemble.py` + `build-pages.py --check`), a hash-verified push
+    (remote blobs compared to local files), and the live read-back.
+  - *Feature tier* — new features and deep mechanics (GPS, storage handling,
+    route handling, anything that could really break): branch + build checks
+    + the drives covering the touched surface — enough to show the change
+    does not break the app. The full battery is NOT required before merge.
+  - *Full battery* — the complete suite runs ONLY on the nightly schedule
+    (06:00 UTC on `main`, with the 4 AM catch-up dispatch and 6 AM summary),
+    as the once-a-day net over everything that landed.
+- **Test tiers (set 2026-10-30, Andrew; the pre-merge full-battery
+  requirement for data-critical changes was retired by the 2026-11-05
+  standard above — the nightly run is now that net).** Iteration and the merge gate are
   priced differently, so tinkering stays fast without weakening the gate:
   - *Tinkering iterations on a branch:* quick checks only — the build check,
     syntax checks, and the drives that cover the surface the change touches.
