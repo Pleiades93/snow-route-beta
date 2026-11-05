@@ -2,7 +2,7 @@
 <html lang="en" class="boot">
 <head>
 <meta charset="UTF-8">
-<meta http-equiv="Content-Security-Policy" content="default-src 'none'; script-src 'sha384-BsTXsoZqYOjUcJYhXxVraaAttxzXcQamZzHYqSAu9p4ooL1NnQSZZgjRJh8OlK9a' https://cdn.jsdelivr.net; style-src-elem 'sha384-Xl3xxdA/bWPfzmICH0cYSqF4VTU64ZCQzJIzvFL3aJMkffB+AMAK9nYcMlrrE3E5' https://cdn.jsdelivr.net; style-src-attr 'unsafe-inline'; img-src 'self' data: blob: https://tiles.basemaps.cartocdn.com https://protomaps.github.io https://cdn.jsdelivr.net; connect-src 'self' https://tiles.basemaps.cartocdn.com https://protomaps.github.io https://cdn.jsdelivr.net; worker-src blob: 'self'; child-src blob: 'self'; font-src 'none'; manifest-src 'self'; base-uri 'none'; form-action 'none'; object-src 'none'">
+<meta http-equiv="Content-Security-Policy" content="default-src 'none'; script-src 'sha384-gRObyYWNfICBz+BlgPYtlfOj8U9SduRt3fi0EKduzHJv/r7G3D/zTeLv8Sz922PW' https://cdn.jsdelivr.net; style-src-elem 'sha384-Xl3xxdA/bWPfzmICH0cYSqF4VTU64ZCQzJIzvFL3aJMkffB+AMAK9nYcMlrrE3E5' https://cdn.jsdelivr.net; style-src-attr 'unsafe-inline'; img-src 'self' data: blob: https://tiles.basemaps.cartocdn.com https://protomaps.github.io https://cdn.jsdelivr.net; connect-src 'self' https://tiles.basemaps.cartocdn.com https://protomaps.github.io https://cdn.jsdelivr.net; worker-src blob: 'self'; child-src blob: 'self'; font-src 'none'; manifest-src 'self'; base-uri 'none'; form-action 'none'; object-src 'none'">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="mobile-web-app-capable" content="yes">
@@ -302,7 +302,7 @@
 <div id="hud">
   <div id="warn">Not saving — storage is full or blocked</div>
   <div class="row">
-    <div class="titleStack"><div class="title">Snow Route Beta</div><div class="ver" id="ver">Beta 1.111</div></div>
+    <div class="titleStack"><div class="title">Snow Route Beta</div><div class="ver" id="ver">Beta 1.112</div></div>
   </div>
   <div id="stats"></div>
 </div>
@@ -533,29 +533,34 @@ function finishReconcileAction(startMs, lastStartedMs, boardEmpty) { if (!startM
 function parseJ(raw, fb) { if (raw == null) return fb; try { const v = JSON.parse(raw); return v == null ? fb : v; } catch (e) { return fb; } }
 // ===== SETTINGS (Beta 1.111, settings redesign) =====
 // One GLOBAL key, additive - no existing data migrates and nothing else reads
-// it. It holds the Settings redesign's device-behaviour toggles. Defaults: ALL
-// toggles OFF (features that change device behaviour - wake lock, vibration,
-// sound - start off until Andrew flips them; the approved mockups showed
-// switches ON as state examples, not default decisions); only the chime's
-// sound pick defaults, to Two-Tone. A corrupt or partial stored value falls
-// back per-field to the defaults. Documented in docs/STORAGE-SCHEMA.md
+// it. It holds the Settings redesign's PERSISTENT device-behaviour toggles
+// (vibration, chime on/off, chime sound). Defaults: ALL toggles OFF (features
+// that change device behaviour - vibration, sound - start off until Andrew
+// flips them; the approved mockups showed switches ON as state examples,
+// not default decisions); only the chime's sound pick defaults, to Two-Tone.
+// A corrupt or partial stored value falls back per-field to the defaults.
+// Beta 1.112 (Andrew): 'awake' (Keep screen awake) is NOT persistent - it is
+// session-only in-memory state, always OFF at a cold open, and it is
+// deliberately absent from the stored record and from SETTINGS_DEF; a 1.111
+// record that still carries an awake field is simply never read for it, and
+// saveSettings never writes it. Documented in docs/STORAGE-SCHEMA.md
 // (DEVELOPMENT_RULES section 4).
 const SETTINGS_KEY = 'snowroute.v2.settings';
 const CHIME_KEYS = ['bell', 'two', 'rising', 'pop', 'melody'];
-const SETTINGS_DEF = { awake: false, vib: false, chime: false, chimeSound: 'two' };
+const SETTINGS_DEF = { vib: false, chime: false, chimeSound: 'two' };
 function loadSettings() {
   const raw = parseJ(lsGet(SETTINGS_KEY), null);
-  const s = { awake: SETTINGS_DEF.awake, vib: SETTINGS_DEF.vib, chime: SETTINGS_DEF.chime, chimeSound: SETTINGS_DEF.chimeSound };
+  const s = { vib: SETTINGS_DEF.vib, chime: SETTINGS_DEF.chime, chimeSound: SETTINGS_DEF.chimeSound };
   if (raw && typeof raw === 'object') {
-    if (typeof raw.awake === 'boolean') s.awake = raw.awake;
     if (typeof raw.vib === 'boolean') s.vib = raw.vib;
     if (typeof raw.chime === 'boolean') s.chime = raw.chime;
     if (CHIME_KEYS.indexOf(raw.chimeSound) >= 0) s.chimeSound = raw.chimeSound;
   }
+  s.awake = false; // Beta 1.112 (Andrew): screen-awake is SESSION-ONLY - forced OFF at every load, whatever any stored record says; the On-the-job toggle flips this in-memory field for the session only
   return s;
 }
 let settings = loadSettings();
-function saveSettings() { return lsSet(SETTINGS_KEY, JSON.stringify(settings)); }
+function saveSettings() { return lsSet(SETTINGS_KEY, JSON.stringify({ vib: settings.vib, chime: settings.chime, chimeSound: settings.chimeSound })); } // only the persistent three - settings.awake is never written (Beta 1.112)
 // Tap guard — 400 ms per control
 const tapLast = {};
 function tapGuard(key) { const now = Date.now(); if (tapLast[key] && now - tapLast[key] < 400) return false; tapLast[key] = now; return true; }
@@ -3424,7 +3429,7 @@ function closeClean() {
 // ===== RUN LIFECYCLE =====
 let wakeLock = null;
 async function syncWake() {
-  const want = !!runStart && document.visibilityState === 'visible' && settings.awake; // Beta 1.111: the wake lock is gated on the On-the-job toggle (default OFF) - the request/release machinery below is unchanged; where the API is absent the toggle still saves and nothing here throws
+  const want = !!runStart && document.visibilityState === 'visible' && settings.awake; // Beta 1.111: the wake lock is gated on the On-the-job toggle - the request/release machinery below is unchanged; where the API is absent the request is a silent no-op and nothing here throws. Beta 1.112 (Andrew): settings.awake is session-only state - always OFF at a cold open, never stored
   try {
     if (want && !wakeLock && navigator.wakeLock) { wakeLock = await navigator.wakeLock.request('screen'); wakeLock.addEventListener('release', () => { wakeLock = null; }); }
     if (!want && wakeLock) { const w = wakeLock; wakeLock = null; w.release(); }
@@ -4434,6 +4439,7 @@ $('stDel').addEventListener('click', async () => {
 });
 // ---- About / What's new ----
 const WHATSNEW = [ // the curated in-app list: plain words, newest first. Ships WITH each version like the CHANGELOG - a release that changes what Andrew sees adds its entry here in the same change
+  { v: 'Beta 1.112', items: ['Keep screen awake now resets when the app closes — turn it on per session when you want it'] },
   { v: 'Beta 1.111', items: ['Settings rebuilt: Status, On the job, Backup, About', 'Keep the screen awake during a clean', 'Done chime — five sounds to choose from', 'Offline maps now live in Status'] },
   { v: 'Beta 1.110', items: ['Finish is final: no more Undo after you confirm'] },
   { v: 'Beta 1.109', items: ['Streets list: Mains / Secondaries, with a Completed pill'] }
