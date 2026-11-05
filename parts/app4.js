@@ -557,21 +557,14 @@ $('stDel').addEventListener('click', async () => {
   renderStatus(true);
 });
 // ---- About / What's new ----
-const WHATSNEW = [ // the curated in-app list: plain words, newest first. Ships WITH each version like the CHANGELOG - a release that changes what Andrew sees adds its entry here in the same change
-  { v: 'Beta 1.113', items: ['Fixed: a note could say "Saved" when it had not saved', 'Delete maps now only says deleted when the maps really are gone', 'The Last backup line no longer resets when you dismiss the backup reminder', 'Settings switches now tell you if a change could not be saved', 'Turning screen-awake off now always lets the screen sleep again'] },
-  { v: 'Beta 1.112', items: ['Keep screen awake now resets when the app closes — turn it on per session when you want it'] },
-  { v: 'Beta 1.111', items: ['Settings rebuilt: Status, On the job, Backup, About', 'Keep the screen awake during a clean', 'Done chime — five sounds to choose from', 'Offline maps now live in Status'] },
-  { v: 'Beta 1.110', items: ['Finish is final: no more Undo after you confirm'] },
-  { v: 'Beta 1.109', items: ['Streets list: Mains / Secondaries, with a Completed pill'] }
-];
+const WHATSNEW = { // the curated in-app notes: plain words, LATEST RELEASE ONLY (Beta 1.114, Andrew: the accumulated list cluttered the About pane). A release REPLACES this entry with its own in the same change - it never accumulates; the full history lives in CHANGELOG.md, not the app
+  v: 'Beta 1.114', items: ["What's New now shows only the latest update — no long list"]
+};
 function renderAbout() {
   const cur = $('ver').textContent.trim();
   $('wnHead').textContent = "WHAT'S NEW · " + cur; // the header names the LIVE version, read from the title's version element - never a second hard-coded copy that can go stale
   const list = $('wnList'); list.innerHTML = '';
-  WHATSNEW.forEach((entry, i) => {
-    if (i > 0 || entry.v !== cur) { const h = document.createElement('div'); h.className = 'm-secLbl'; h.textContent = entry.v; list.appendChild(h); } // the current version's items sit directly under the header; older versions get their own numbered subhead
-    for (const item of entry.items) { const d = document.createElement('div'); d.className = 'm-wnItem'; const dot = document.createElement('span'); dot.className = 'm-wnDot'; dot.innerHTML = '&middot;'; const tx = document.createElement('span'); tx.textContent = item; d.appendChild(dot); d.appendChild(tx); list.appendChild(d); }
-  });
+  for (const item of WHATSNEW.items) { const d = document.createElement('div'); d.className = 'm-wnItem'; const dot = document.createElement('span'); dot.className = 'm-wnDot'; dot.innerHTML = '&middot;'; const tx = document.createElement('span'); tx.textContent = item; d.appendChild(dot); d.appendChild(tx); list.appendChild(d); } // exactly one version block: the current release's items directly under the header, no older-version subheads (1.114)
 }
 $('aboutBtn').addEventListener('click', () => { renderAbout(); showSetPane('setAboutPane'); });
 $('aboutBack').addEventListener('click', () => showSetPane('setMainPane'));

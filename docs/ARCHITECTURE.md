@@ -161,7 +161,9 @@ The Settings takeover has six panes (`showSetPane` over `SET_PANES`):
 into the existing export record at every successful backup hand-off),
 **Status**, **On the job**, **Done chime**, **Backup** (slimmed to
 Backup (JSON) / Restore backup; its internal Back walk is unchanged),
-and **About** (app line, map credits, the curated `WHATSNEW` list —
+and **About** (app line, map credits, the curated `WHATSNEW` entry —
+latest release only since 1.114 (Andrew): each release replaces it
+rather than accumulating, and the CHANGELOG is the full history;
 header version read from the live `#ver` — and the Update button,
 moved from the main pane with both handlers).
 

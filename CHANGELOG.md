@@ -1,5 +1,12 @@
 # Changelog
 
+## Beta 1.114 — 2026-11-05
+What's New in Settings → About now shows ONLY the latest release's
+notes (Andrew's call — the accumulated per-version list cluttered the
+pane). The in-app WHATSNEW entry is REPLACED by each release rather
+than accumulated from here on; older releases' notes live here in the
+changelog, not in the app. No behaviour change beyond the About pane.
+
 ## Beta 1.113 — 2026-11-05
 Audit round 112 (Codex audit, all five findings approved by Andrew):
 the honesty fixes. (1) A street note whose save failed during a
