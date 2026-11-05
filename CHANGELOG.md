@@ -1,5 +1,14 @@
 # Changelog
 
+## Beta 1.108 — 2026-11-05
+Repo hygiene release (Andrew approved the full cleanup plan, 2026-11-05):
+the 12 iOS launch stills move from the repo root into assets/launch/ (the
+startup-image references in the page head point at the new folder; the
+images themselves are byte-identical), docs/AUDIT-REMEDIATION-REPORT.md
+moves into docs/archive/ beside the v5-era archive, and .gitignore now
+covers the local service-worker test fixture directory. No behaviour
+change: same splash images, same app, new shelf locations.
+
 ## Beta 1.107 — 2026-11-05
 Each Streets-list row now shows the street's length on the quiet second line
 under its name (Andrew's pick of the investigated options, 2026-11-05). The

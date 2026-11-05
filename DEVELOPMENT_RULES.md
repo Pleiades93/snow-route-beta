@@ -139,7 +139,7 @@ sharded suite on `main` as the environment-drift audit.
 - **Never weaken or delete a test assertion to obtain a pass.** When a test fails,
   establish whether the defect is in the app or in the test (state dumps, step
   traces, reproduction), fix the defective side, and say which it was. The
-  drive89 history (docs/AUDIT-REMEDIATION-REPORT.md §8) is the worked example:
+  drive89 history (docs/archive/AUDIT-REMEDIATION-REPORT.md §8) is the worked example:
   one genuine app defect (F-1) and several test-sequencing artifacts, each proven
   before being fixed.
 - Every bug fixed gets a regression test that fails without the fix, added in the
