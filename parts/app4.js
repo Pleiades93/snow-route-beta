@@ -68,8 +68,8 @@ function backupObj() { // Beta 1.76: format v2 - routes carry their own slots ({
   // so the export reads it raw and writes nothing - an export of never-resaved loaded state
   // (drive121's frozen fixture) stays byte-true to what is stored, loader derivations and
   // all. Quiet on purpose: the caller's 'could not be read' message is the honest report.
-  if (routeLoaded && primaryDirty) { saveQuiet = true; const okPrim = saveAll(); saveQuiet = false; if (!okPrim) return null; }
-  if (trailDirty || auxDirty || sessDirty) return null; // Beta 1.93 (follow-up audit R02): the flush did not land - refuse the export (the caller's 'could not be read' message) rather than ship a valid-looking backup with stale trail/coverage inside
+  if (routeLoaded && writePending('primary')) { const okPrim = saveAll().ok; if (!okPrim) return null; }
+  if (writePending('trail') || writePending('aux') || writePending('sess')) return null; // Beta 1.93 (follow-up audit R02): the flush did not land - refuse the export (the caller's 'could not be read' message) rather than ship a valid-looking backup with stale trail/coverage inside
   const routes = {};
   for (const p of ROUTE_PACKS) {
     const rk = routeKeys(p.id); const data = {};
@@ -127,13 +127,13 @@ function buildRecovery() { const o = recoveryObj(); return o ? JSON.stringify(o,
 // Beta 1.96: downloadBackup follows the same one-button rule as shareBackup - a build failure is the recovery fallback, never a dead-end refusal.
 function downloadBackup() { const b = buildBackup(); if (!b) { shareRecovery(true); return; } dl(new Blob([b], { type: 'application/json' }), 'snowroute-backup.json'); toast('Backup downloaded'); } // Beta 1.48 (audit B09): the filename still carried the retired 5W name; the backup format and its internal marker are unchanged
 function clearTrailAll() { // Beta 1.88: the Clear trail BUTTON left with the old Snow log (Andrew: the clearing gets re-homed in a later round) - the clearing itself stays as one callable piece, two-tap guard and all its storage honesty intact, so the re-home is a button wired to this, not a rebuild
-  trail = []; trailSessions = []; const okSessClr = saveSess(); if (!okSessClr) sessDirty = true; drawTrail(true); // Beta 1.71 (audit B02): the markers describe this trail - clearing the trail clears them. Beta 1.73 (audit C05): the marker write is CHECKED like the trail write - 1.71 dropped its result, so 'Trail cleared' could be claimed while the markers stayed stored
+  trail = []; trailSessions = []; const okSessClr = saveSess().ok; if (!okSessClr) markDirty('sess'); drawTrail(true); // Beta 1.71 (audit B02): the markers describe this trail - clearing the trail clears them. Beta 1.73 (audit C05): the marker write is CHECKED like the trail write - 1.71 dropped its result, so 'Trail cleared' could be claimed while the markers stayed stored
   // The clear is a storage write like any other: if it fails, the stored trail still holds every point and
   // would resurrect on the next load - say so honestly and keep the clear pending (trailDirty) so the flush retries it.
-  const okTrailClr = saveTrail();
-  if (okTrailClr && okSessClr) { trailDirty = false; lastTrailSave = Date.now(); toast('Trail cleared'); }
+  const okTrailClr = saveTrail().ok;
+  if (okTrailClr && okSessClr) { markClean('trail'); lastTrailSave = Date.now(); toast('Trail cleared'); }
   else if (okTrailClr) { toast('Trail cleared, but the session markers could not be saved — will keep retrying', 3200); }
-  else { trailDirty = true; toast('Trail cleared on screen, but saving failed — will keep retrying', 3200); }
+  else { markDirty('trail'); toast('Trail cleared on screen, but saving failed — will keep retrying', 3200); }
 }
 function countUnknownNames(parsed) { // Beta 1.95 (deep audit SR-194-08): how many street names in a backup this route does not know - counted from the RAW parsed backup, BEFORE any normalization, each name ONCE. 1.94 counted what survived pushField into the write list: an object-form done map was filtered to known streets before it was pushed (its unknowns invisible), history entries in the legacy array form were skipped entirely, and a name repeated across fields counted per occurrence. The restore itself is unchanged; only the report is honest now.
   const bad = new Set();
@@ -241,7 +241,7 @@ function restoreBackup(parsed) { // production doRestore semantics: validate EVE
       return;
     }
   }
-  restoring = true; trailDirty = false; auxDirty = false; sessDirty = false; // the reload's pagehide flush must not write the old in-memory trail/coverage over the restored data
+  restoring = true; markClean('trail'); markClean('aux'); markClean('sess'); // the reload's pagehide flush must not write the old in-memory trail/coverage over the restored data
   toast('Backup restored — reloading' + (droppedNames ? ' · ' + droppedNames + ' unknown street name' + (droppedNames === 1 ? '' : 's') + ' in the backup were ignored' : '') + (snapDropped ? ' · the saved start snapshot was not usable, so Cancel will rebuild from the marks made during the run' : ''), snapDropped ? 4600 : undefined); // Beta 1.94 (audit F-05): the drop count is part of the result, not a silent loader detail. Beta 1.96 (SR-195-02): a dropped start snapshot is reported the same way
   setTimeout(() => location.reload(), 600);
 }

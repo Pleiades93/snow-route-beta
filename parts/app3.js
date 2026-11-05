@@ -177,12 +177,12 @@ async function syncWake() {
   } catch (e) { /* wake lock is best-effort */ }
 }
 document.addEventListener('visibilitychange', syncWake);
-function noteSessionStart() { const s = Math.floor(runStart / 1000); if (trailSessions[trailSessions.length - 1] !== s) { trailSessions.push(s); if (saveSess()) return true; sessDirty = true; return false; } return true; } // Beta 1.71 (audit B02): record the session boundary the moment the clean starts - undo restores the original runStart, so a resumed run correctly adds no new marker. Beta 1.73 (audit C04): the save result is RETURNED and a failure arms the flushAux retry - 1.71 dropped it, so a failed marker write was silent and a reload could join two cleans in the GPX export
+function noteSessionStart() { const s = Math.floor(runStart / 1000); if (trailSessions[trailSessions.length - 1] !== s) { trailSessions.push(s); if (saveSess().ok) return storeOk(); markDirty('sess'); return storeFail('sess', true); } return storeOk(); } // Beta 1.71 (audit B02): record the session boundary the moment the clean starts - undo restores the original runStart, so a resumed run correctly adds no new marker. Beta 1.73 (audit C04): the save result is RETURNED and a failure arms the flushAux retry - 1.71 dropped it, so a failed marker write was silent and a reload could join two cleans in the GPX export
 let runSnap = null; // Beta 1.91: the board exactly as it was when Start was pressed - Cancel restores it, so a cancelled run erases ONLY what the run itself recorded (marks made before Start are not the run's to erase).
 function saveSnap() { // Beta 1.94 (deep audit SR-193-02): the pre-Start board is ALSO persisted (LS.snap, stamped with the run's start time) the moment a clean starts. The in-memory runSnap dies with the page; after a reload mid-run, Cancel used to fall back to the mark-stamp journal (1.93 R01) - which cannot see an UNMARK, because unmarking erases the stamp, so a pre-Start side removed during the run stayed removed. The persisted snapshot is the board itself: a resumed Cancel restores it exactly, like a live one. A failed write arms snapDirty and the flushAux heartbeat retries (app1), on the same discipline as the start key and the session markers.
-  if (!runSnap || !runStart) { snapDirty = false; return true; }
+  if (!runSnap || !runStart) { markClean('snap'); return storeOk(); }
   const ok = lsSet(LS.snap, JSON.stringify({ at: runStart, pieces: runSnap.pieces, pieceTimes: runSnap.pieceTimes, done: runSnap.done, times: runSnap.times, via: runSnap.via, cov: runSnap.cov }));
-  snapDirty = !ok; return ok;
+  if (ok) markClean('snap'); else markDirty('snap'); return ok ? storeOk() : storeFail('snap', true);
 }
 function validateSnap(raw, expectAt) { // Beta 1.95 (deep audit SR-194-03): a persisted cancel snapshot is DATA FROM STORAGE, not trusted state - it earns application only by passing the same structural rules the loader enforces (every street present at its true stretch count, side values 0..3 only, stamp pairs of null-or-parseable strings, known street names everywhere, coverage indexes inside the street's samples). 1.94 checked only the stamp and the object-ness of two fields, then assigned the stored structures raw: an injected {Velmar:[99]} became the live board and was saved onward, destroying a valid mark. Any violation rejects the WHOLE snapshot (never a partial application); the caller falls back to the stamp journal. Returns a normalized deep copy, or null.
   try {
@@ -223,7 +223,7 @@ function validateSnap(raw, expectAt) { // Beta 1.95 (deep audit SR-194-03): a pe
     return { pieces, pieceTimes, done, times, via, cov };
   } catch (e) { return null; }
 }
-function startClean() { invalidateFinishUndo(); runSnap = { pieces: JSON.parse(JSON.stringify(pieces)), pieceTimes: JSON.parse(JSON.stringify(pieceTimes)), done: [...doneSet], times: { ...doneTimes }, via: { ...doneVia }, cov: JSON.parse(JSON.stringify(coveredIdx)) }; runStart = Date.now(); const okSnap = saveSnap(); const okSess = noteSessionStart(); const okStart = saveAll(); startGps(true); updateCount(); syncWake(); if (okStart && okSess && okSnap) toast('Clean started · ' + fmtClock(new Date())); else if (!okStart) toast('Clean started — warning: the run state could not be saved (storage problem)', 4200); else if (!okSess) toast('Clean started — warning: the session marker could not be saved; it will keep retrying', 4200); else toast('Clean started — warning: the cancel safety snapshot could not be saved; it will keep retrying', 4200); drawTrail(true); checkStale(); } // Beta 1.73 (audit C04): the marker save is part of the start's honesty check, not a silent side write // Beta 1.63 (audit F04): the clean still starts - he is standing in the snow - but the message stops claiming a saved state that does not exist
+function startClean() { invalidateFinishUndo(); runSnap = { pieces: JSON.parse(JSON.stringify(pieces)), pieceTimes: JSON.parse(JSON.stringify(pieceTimes)), done: [...doneSet], times: { ...doneTimes }, via: { ...doneVia }, cov: JSON.parse(JSON.stringify(coveredIdx)) }; runStart = Date.now(); const okSnap = saveSnap(); const okSess = noteSessionStart(); const okStart = saveAllWarned(); startGps(true); updateCount(); syncWake(); if (okStart.ok && okSess.ok && okSnap.ok) toast('Clean started · ' + fmtClock(new Date())); else if (!okStart.ok) toast('Clean started — warning: the run state could not be saved (storage problem)', 4200); else if (!okSess.ok) toast('Clean started — warning: the session marker could not be saved; it will keep retrying', 4200); else toast('Clean started — warning: the cancel safety snapshot could not be saved; it will keep retrying', 4200); drawTrail(true); checkStale(); } // Beta 1.73 (audit C04): the marker save is part of the start's honesty check, not a silent side write // Beta 1.63 (audit F04): the clean still starts - he is standing in the snow - but the message stops claiming a saved state that does not exist
 // Beta 1.91 (Andrew): Cancel start erases everything the run recorded - its trail points, its session
 // marker, any sides marked during it, its coverage and suggestions - and stores nothing. Only Finish
 // stores a run. (Supersedes the Beta 1.70 A04 call that kept the trail as history - Andrew's word.)
@@ -249,13 +249,13 @@ function cancelStart() {
         coveredIdx = {}; // coverage cannot be attributed without a snapshot - and unlike hand marks it is GPS-derived and re-earns itself as he drives; drive143 C1 holds this line
       }
     }
-    lsDel(LS.snap); snapDirty = false; // the run is cancelled - its snapshot goes with it (a stale one could never match a future run's start stamp, but there is no reason to keep it)
-    trailDirty = true; sessDirty = true;
+    lsDel(LS.snap); markClean('snap'); // the run is cancelled - its snapshot goes with it (a stale one could never match a future run's start stamp, but there is no reason to keep it)
+    markDirty('trail'); markDirty('sess');
   }
   runSnap = null;
   runStart = 0; suggested = new Set(); $('suggest').classList.add('hidden');
-  const okCancel = saveAll(); flushAux(true);
-  const trailPending = trailDirty || sessDirty; // Beta 1.93 (follow-up audit R07): the erasure claim below is gated on the trail/session writes having actually landed
+  const okCancel = saveAllWarned().ok; flushAux(true);
+  const trailPending = writePending('trail') || writePending('sess'); // Beta 1.93 (follow-up audit R07): the erasure claim below is gated on the trail/session writes having actually landed
   if (wasRunGps) stopGps();
   if (window.GLP) window.GLP.sync(); renderPanel(); renderStreets();
   drawTrail(true); updateCount(); syncWake();
@@ -278,7 +278,7 @@ function clearAllMarks() {
   doneSet = new Set(); doneTimes = {}; doneVia = {}; coveredIdx = {}; suggested = new Set();
   $('suggest').classList.add('hidden'); delete $('suggest').dataset.n; // Beta 1.71 (audit B01): the one path the 1.70 dismissal sweep missed - Clear wiped the coverage behind the panel but left the panel itself up, its Yes still able to select the street
   deselect(); const okClear = finishChange();
-  if (okClear) toast('All marks cleared'); else toast('Storage problem — the clear could not be saved; marks may return on reload', 4200); // Beta 1.63 (audit F04)
+  if (okClear.ok) toast('All marks cleared'); else toast('Storage problem — the clear could not be saved; marks may return on reload', 4200); // Beta 1.63 (audit F04)
 }
 $('clearBtn').addEventListener('click', () => { if (!tapGuard('clearBtn')) return; clearAllMarks(); });
 $('cancelStartBtn').addEventListener('click', () => { if (!tapGuard('cancelStartBtn')) return; cancelStart(); });
@@ -376,18 +376,18 @@ function finishRun() {
     return;
   }
   const undoSnapData = runSnap ? JSON.parse(JSON.stringify(runSnap)) : validateSnap(parseJ(lsGet(LS.snap), null), runStart); // Beta 1.95 (deep audit SR-194-01): the cancel snapshot travels INTO the undo before it is deleted here - from memory when the run never reloaded, from its persisted copy (validated, SR-194-03) when it did. 1.94 deleted the snapshot and never carried it, so Finish -> Undo -> Cancel fell back to the stamp journal, blind to a pre-Start side unmarked mid-run.
-  lsDel(LS.snap); snapDirty = false; // Beta 1.94 (SR-193-02): the run is finished - its cancel snapshot goes with it. Ungated on purpose: a leftover snapshot is stamped with THIS run's start, so it can never match a future run, and the next Start overwrites it anyway
+  lsDel(LS.snap); markClean('snap'); // Beta 1.94 (SR-193-02): the run is finished - its cancel snapshot goes with it. Ungated on purpose: a leftover snapshot is stamped with THIS run's start, so it can never match a future run, and the next Start overwrites it anyway
   if (archiving) history = newHist;
   undoSnap = { done: [...doneSet], times: { ...doneTimes }, via: { ...doneVia }, notes: JSON.parse(JSON.stringify(notes)), pieces: JSON.parse(JSON.stringify(pieces)), pieceTimes: JSON.parse(JSON.stringify(pieceTimes)), runStart, cov: JSON.parse(JSON.stringify(coveredIdx)), hist: prevHist.slice(), gpsWas: gpsFromRun, snap: undoSnapData };
   doneSet = new Set(); doneTimes = {}; doneVia = {}; notes = {}; runStart = 0; runSnap = null; coveredIdx = {}; suggested = new Set(); $('suggest').classList.add('hidden'); // Beta 1.70 (audit A04): the suggestion set is run-scoped too - finishRun used to clear the coverage but keep the set, so suggested streets never suggested again
   for (const n of STREETNAMES) { pieces[n] = STRETCH[n].parts.map(() => 0); pieceTimes[n] = {}; }
   stopGps(); deselect(); drawTrail(true); // Beta 1.69 (audit visual check): the run is over and runStart is 0, so this clears the finished line now instead of leaving it until the next throttled refresh
-  saveQuiet = true; const restOk = saveAll(); saveQuiet = false; // the gated sides write already landed; this pass carries the metadata - a failure here warns but cannot resurrect anything (authority + archive agree)
+  const restRes = saveAll(); const restOk = restRes.ok; // the gated sides write already landed; this pass carries the metadata - a failure here warns but cannot resurrect anything (authority + archive agree)
   finishChange();
   const rb = $('resetBtn'); rb.textContent = 'Undo'; rb.classList.add('undoing'); rb.style.display = '';
   clearTimeout(undoTimer);
   undoTimer = setTimeout(() => { undoSnap = null; rb.textContent = 'FINISH'; rb.classList.remove('undoing'); updateCount(); }, 8000);
-  toast((archiving ? 'Clean archived · ' + Object.keys(snap.items).length + ' streets' : 'Board cleared — under 3 streets, nothing saved') + (restOk ? '' : ' — some details could not be written (' + saveFailKey + '); they retry on the next save'), 3400);
+  toast((archiving ? 'Clean archived · ' + Object.keys(snap.items).length + ' streets' : 'Board cleared — under 3 streets, nothing saved') + (restOk ? '' : ' — some details could not be written (' + restRes.failedKey + '); they retry on the next save'), 3400);
   if (archiving) maybeBackupNudge();
 }
 function performReset() { finishRun(); } // production's name for the finish action (the test battery calls it directly)
@@ -435,10 +435,10 @@ function doUndo() {
   suggested = new Set(); $('suggest').classList.add('hidden'); // Beta 1.70 (audit A04): the restored coverage starts with a clean suggestion set
   undoSnap = null;
   const rb = $('resetBtn'); rb.textContent = 'FINISH'; rb.classList.remove('undoing');
-  saveQuiet = true; const metaOk = saveAll(); saveQuiet = false; const fcOk = finishChange(); if (runStart && undoSnapGpsWas) startGps(true);
+  const metaOk = saveAll().ok; const fcOk = finishChange(); if (runStart && undoSnapGpsWas) startGps(true);
   drawTrail(true); // Beta 1.69: the restored run's trail redraws at once
-  if (metaOk && fcOk && runStart && !undoHadSnap) toast('Finish undone — run restored, but no start snapshot is saved for it, so its Cancel will rebuild from the marks made during the run', 4600); // Beta 1.96 (SR-195-06)
-  else if (metaOk && fcOk) toast('Finish undone — run restored'); else toast('Finish undone — run restored, but some details could not be saved (' + (saveFailKey || 'storage') + '); they retry on the next save', 4200); // Beta 1.70 (audit A01): the gated writes (history, sides) already landed - it is the metadata pass that can fail, and the old unconditional toast claimed a durability it did not have
+  if (metaOk && fcOk.ok && runStart && !undoHadSnap) toast('Finish undone — run restored, but no start snapshot is saved for it, so its Cancel will rebuild from the marks made during the run', 4600); // Beta 1.96 (SR-195-06)
+  else if (metaOk && fcOk.ok) toast('Finish undone — run restored'); else toast('Finish undone — run restored, but some details could not be saved (' + (fcOk.failedKey || 'storage') + '); they retry on the next save', 4200); // Beta 1.70 (audit A01): the gated writes (history, sides) already landed - it is the metadata pass that can fail, and the old unconditional toast claimed a durability it did not have
 }
 function checkStale() {
   const stale = runStart && (Date.now() - runStart > 12 * 3600000);
@@ -469,7 +469,7 @@ function setNoteText(n, txt) {
   else if (i >= 0) { arr[i] = Object.assign({}, arr[i], { text: t, at: new Date().toISOString() }); }
   else arr.push({ k: 'note', at: new Date().toISOString(), text: t });
   if (arr.length) notes[n] = arr; else delete notes[n];
-  return saveAll(); // Beta 1.63 (audit F04): callers announce from the result
+  return saveAllWarned(); // Beta 1.63 (audit F04): callers announce from the result - since Beta 1.101 (Phase 3) the storage-outcome object
 }
 function flagText(n) { return (Array.isArray(notes[n]) ? notes[n] : []).map(f => f.k === 'note' ? ('📝 ' + (f.text || '')) : (FLAGS[f.k] || f.k) + (f.at ? ' ' + fmtClock(new Date(f.at)) : '')).join('; '); }
 let noteFor = null;
@@ -478,7 +478,7 @@ $('noteNo').addEventListener('click', () => $('noteModal').classList.add('hidden
 $('noteYes').addEventListener('click', () => {
   if (!noteFor) return;
   const okNote = setNoteText(noteFor, $('noteText').value);
-  $('noteModal').classList.add('hidden'); renderStreets(); if (okNote) toast('Note saved'); else toast('Storage problem — the note could not be saved', 4200); // Beta 1.63 (audit F04)
+  $('noteModal').classList.add('hidden'); renderStreets(); if (okNote.ok) toast('Note saved'); else toast('Storage problem — the note could not be saved', 4200); // Beta 1.63 (audit F04)
 });
 
 // ===== GPS (checklist SS7) =====
@@ -653,7 +653,7 @@ function acceptFix(pos) {
   if (runStart && gpsFromRun) { // Beta 1.49 (Andrew's rule): route data is recorded ONLY by a clean's own GPS - the Locate tab's view-only watch never writes trail or coverage, even if a stale flag disagrees
     trail.push([+sm[0].toFixed(6), +sm[1].toFixed(6), Math.floor(now / 1000)]);
     if (trail.length > TRAIL_MAX) trail.splice(0, trail.length - TRAIL_MAX);
-    trailDirty = true; flushAux(false); drawTrail();
+    markDirty('trail'); flushAux(false); drawTrail();
     coverFix(sm);
   }
 }
@@ -666,7 +666,7 @@ function coverFix(ll) {
     if (set.size) coveredIdx[n] = [...set];
     if (set.size >= Math.ceil(pts.length * 0.85) && !streetComplete(n)) { suggested.add(n); showSuggest(n); }
   }
-  if (changed) auxDirty = true;
+  if (changed) markDirty('aux');
 }
 function showSuggest(n) {
   $('sugText').textContent = n + ' looks fully covered by GPS but is not marked done.';
