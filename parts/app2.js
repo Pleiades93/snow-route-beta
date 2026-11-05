@@ -177,7 +177,7 @@ function pickFontFromStyle() { // adopt a NOTO stack from the CURRENT basemap fo
 function onStyleReady() {
   glOk = true; noteMapState();
   pickFontFromStyle();
-  if (routeLoaded && window.GLP && !map.getSource('centres')) window.GLP.init(map);
+  if (routeLoaded && window.GLP && !map.getSource('centres')) window.GLP.init(map, GL_HOST);
   else if (routeLoaded && window.GLP) window.GLP.sync();
   for (const fn of [addReferenceLayers, addGpsLayers, addTrailLayers]) { try { fn(); } catch (e) { /* one bad layer must never kill the rest of the stack (the REFERENCE throw hid the GPS dot until 2026-10-30) */ } }
   pushGps(); drawTrail(); if (routeLoaded) refreshAll(); // Beta 1.76: before a route is chosen the map is basemap-only - no route paint, no streets list, no count

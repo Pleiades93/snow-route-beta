@@ -673,7 +673,7 @@ function loadRoute(id) {
   activeRoute = pack; routeLoaded = true;
   renderRouteLists();
   if (map) {
-    if (typeof glOk !== 'undefined' && glOk && window.GLP) { if (!map.getSource('centres')) window.GLP.init(map); else window.GLP.sync(); }
+    if (typeof glOk !== 'undefined' && glOk && window.GLP) { if (!map.getSource('centres')) window.GLP.init(map, GL_HOST); else window.GLP.sync(); }
     introToRoute();
   }
   refreshAll(); drawTrail(true); checkStale(); syncWake();
