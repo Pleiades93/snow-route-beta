@@ -95,7 +95,7 @@ function runTx(steps) {
   }
   return { outcome: 'committed', failedStep: null };
 }
-function finishReconcileAction(startMs, lastStartedMs, boardEmpty) { if (!startMs || !lastStartedMs || startMs !== lastStartedMs) return 'none'; return boardEmpty ? 'complete' : 'rollback'; } // pure - fixture-proven in tests/browser/selftest-tx.mjs
+function finishReconcileAction(startMs, lastStartedMs, boardEmpty) { if (!startMs || !lastStartedMs || startMs !== lastStartedMs) return 'none'; return boardEmpty ? 'complete' : 'rollback'; } // pure - fixture-proven in tests/browser/selftest-tx.mjs. Beta 1.104 (round 103, CG-103-02): the second argument is the newest archive entry's run identity (its runId), NOT its startedAt - strict equality on the identity is the whole contract
 function parseJ(raw, fb) { if (raw == null) return fb; try { const v = JSON.parse(raw); return v == null ? fb : v; } catch (e) { return fb; } }
 // Tap guard — 400 ms per control
 const tapLast = {};
@@ -174,6 +174,7 @@ const STREETSET = new Set(STREETNAMES);
 let doneSet = new Set(), doneTimes = {}, doneVia = {}, notes = {}, history = [], runStart = 0, trail = [], trailSessions = [], coveredIdx = {}, pieces = {}, pieceTimes = {};
 function isFullRun(h) { return !!(h && h.items && Object.keys(h.items).length >= STREETNAMES.length); } // Beta 1.94 (audit F-01): the street count derives from the route's own street list, never a hard-coded 34 - the same derivation replaces every hard-coded count in the app this round
 function trimHistory(list) { const out = list.slice(); while (out.length > 10) { const i = out.findIndex(h => !isFullRun(h)); out.splice(i >= 0 ? i : 0, 1); } return out; }
+function trimHistoryForFinish(list, entry) { const old = list.slice(); while (old.length > 9) { const i = old.findIndex(h => !isFullRun(h)); old.splice(i >= 0 ? i : 0, 1); } return [...old, entry]; } // Beta 1.104 (round 103, CG-103-01): the finish path's append - eviction is chosen ONLY among the pre-existing entries (oldest non-full first, else oldest overall - the trimHistory rule, capped at 9 kept) so the incoming archive can never evict itself; trimHistory itself is unchanged for saveHistory. Fixture-proven in tests/browser/selftest-history.mjs
 function saveHistory() { history = trimHistory(history); return lsSet(LS.hist, JSON.stringify(history)); } // Beta 1.63 (audit F04): the delete-clean handler branches on this
 let startDirty = false; // Beta 1.92 (deep audit F05): a failed start write/delete arms this retry, walked by the flushAux heartbeat until it lands - a stale start key must never resurrect a finished run on the next boot
 let snapDirty = false; // Beta 1.94 (deep audit SR-193-02): the same retry discipline for the persisted pre-Start snapshot (saveSnap, app3) - a failed snapshot write is retried by flushAux until it lands
@@ -247,10 +248,10 @@ pieces = {}; pieceTimes = {};
   })();
   reconcileInterruptedFinish(); // Beta 1.102 (Phase 4, CG-196-04): resolve a finish that died between its gates before anything renders this state
 }
-function reconcileInterruptedFinish() { // a finish killed mid-transaction runs no rollback; its two harmful prefixes share one signature in EXISTING records - the newest archive entry belongs to the run still marked active (startedAt === the stored start; a later run's start is a later millisecond, so no live state collides). Board still marked: the archive write was the only gate that landed - remove that entry (verified) and the run resumes intact. Board already cleared: the finish effectively happened - delete the start key (verified) and it stands committed. No signature: nothing to do. An under-3 finish writes no archive, so its prefixes look exactly like a fresh empty run - coherent as one, left alone.
+function reconcileInterruptedFinish() { // a finish killed mid-transaction runs no rollback; its two harmful prefixes share one signature in EXISTING records - the newest archive entry belongs to the run still marked active (its runId === the stored start; a later run's start is a later millisecond, so no live state collides). Board still marked: the archive write was the only gate that landed - remove that entry (verified) and the run resumes intact. Board already cleared: the finish effectively happened - delete the start key (verified) and it stands committed. No signature: nothing to do. An under-3 finish writes no archive, so its prefixes look exactly like a fresh empty run - coherent as one, left alone. Beta 1.104 (round 103, CG-103-02): the signature key is the entry's runId, never startedAt - startedAt is the real work start and predates the stored start whenever a street was marked before Start was pressed, which used to defeat both branches; entries written before 1.104 carry no runId and are never reconciled (missing identity = no signature).
   if (!runStart || !history.length) return;
   const last = history[history.length - 1];
-  const lastMs = last && last.startedAt ? Date.parse(last.startedAt) : 0;
+  const lastMs = last && last.runId ? (+last.runId || 0) : 0; // Beta 1.104 (CG-103-02): the entry's run identity; an entry without one yields 0 and can never match
   const boardEmpty = STREETNAMES.every(n => pieces[n].every(v => v === 0));
   const act = finishReconcileAction(runStart, lastMs, boardEmpty);
   if (act === 'rollback') { const trimmed = history.slice(0, -1); if (txSet(LS.hist, JSON.stringify(trimmed)).ok) history = trimmed; }

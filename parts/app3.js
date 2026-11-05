@@ -337,6 +337,7 @@ function buildSnap() { // production archive shape: items is a street->time map;
 function finishRun() {
   northUp();
   const snap = buildSnap();
+  if (snap && runStart) snap.runId = runStart; // Beta 1.104 (round 103, CG-103-02): the archive carries the active run's identity, so an interrupted finish can be reconciled at boot even when startedAt predates Start; startedAt itself is NOT touched (km/path measure from the real work start, audit A05)
   const archiving = !!(snap && doneSet.size >= 3); // production rule: under 3 streets clears WITHOUT being saved
   const prevHist = history;
   // Beta 1.57: the finish is a small TRANSACTION (Phase 2 storage integrity) -
@@ -347,7 +348,7 @@ function finishRun() {
   // written afterwards was not, so a failed sides write resurrected the
   // finished clean beside its own archive entry on the next launch.
   let newHist = null;
-  if (archiving) newHist = trimHistory([...history, snap]);
+  if (archiving) newHist = trimHistoryForFinish(history, snap); // Beta 1.104 (round 103, CG-103-01): the incoming archive is never an eviction candidate
   const clearedPieces = {}, clearedTimes = {};
   for (const n of STREETNAMES) { clearedPieces[n] = STRETCH[n].parts.map(() => 0); clearedTimes[n] = {}; }
   const prevSidesRaw = lsGet(LS.sides); // kept so the start step's rollback can restore this write exactly (including its absence)

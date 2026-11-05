@@ -51,6 +51,8 @@ jobs:
         run: node tests/browser/selftest-store-result.mjs
       - name: Transaction coordinator fixtures (Phase 4 gate)
         run: node tests/browser/selftest-tx.mjs
+      - name: History trim fixtures (round 103 gate)
+        run: node tests/browser/selftest-history.mjs
       - name: Offline contract fixture (Phase 5 gate)
         run: node tests/browser/selftest-offline-fixture.mjs
       - name: Service-worker contract literals (Phase 5 gate)
