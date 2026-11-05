@@ -375,3 +375,26 @@ function flushAux(force) {
 setInterval(() => { flushAux(false); themeTick(); }, 15000); // Beta 1.77: the same 15 s heartbeat also walks the day/night cycle across its boundaries
 document.addEventListener('visibilitychange', () => { if (document.visibilityState === 'hidden') flushAux(true); });
 window.addEventListener('pagehide', () => flushAux(true));
+
+// Beta 1.103 (architecture Phase 6, C5): the paint engine's host. The engine
+// (parts/engine.js) reads NOTHING from the app directly any more - every app
+// value, helper, callback and piece of live state it consumes arrives
+// through this one object (the engine aliases it as H; GLP.init(map, host)
+// adopts the same object). Plain entries are the values themselves;
+// group (c) - state the app REBINDS (pieces on load/restore/undo, the
+// selection on every tap, the active route on load) - is exposed through
+// getters so the engine always reads the CURRENT binding, exactly as its
+// old free-global reads behaved. glHideLabels is also behind a getter: it
+// is declared in app2.js, after this part, and the getter resolves it at
+// call time. Built here, at the end of app1.js, because the engine
+// evaluates immediately after this part in the assembled page and its
+// eval-time geometry builders read the constants and jDistM at once.
+// Guarded by tests/browser/selftest-engine-surface.mjs (the frozen list).
+const GL_HOST = {
+  MLAT, MLNG, MAIN, SPOT, STRETCH, ROADS, names, jDistM, ptSegM, isNight,
+  get pieces() { return pieces; },
+  get selSet() { return selSet; },
+  get selStretch() { return selStretch; },
+  get activeRoute() { return activeRoute; },
+  get glHideLabels() { return glHideLabels; },
+};
