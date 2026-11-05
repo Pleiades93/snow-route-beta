@@ -1,5 +1,8 @@
 # Changelog
 
+## Beta 1.101 — 2026-11-04
+Architecture Phase 3 (storage outcomes contract, from the 2026-11-04 architecture scan): every save now reports back in one standard shape — did it land, which record failed first, and whether a retry is armed — instead of each save inventing its own answer. The storage layer owns saving, checking and retrying, and no longer talks to the user directly: the warning message moved to the app side, word-for-word unchanged. The retry flags (trail, session markers, snapshot, start, coverage, main records) are now reached through one doorway in the storage code. No data, keys, formats, save order or messages changed. This build also syncs the test battery to the FINISH capitals from 1.100 (several checks still compared the old title-case word).
+
 ## Beta 1.100 — 2026-11-04
 Start and Finish are the same button in every way but the word (Andrew). The Start circle went splash-blue with white text in 1.75, but Finish kept the superseded 1.23 treatment (black, volt-yellow text, 19 px instead of 21 px) — the swap changed the whole look. #startBtn and #resetBtn now share one CSS rule, so the two states can never drift apart again. The button's word is now FINISH in capitals, matching START (it was title-case before). The Undo state keeps its green (a different signal, unchanged).
 
