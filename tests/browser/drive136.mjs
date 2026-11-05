@@ -7,7 +7,7 @@ await bootThrough(ev, poll); // Beta 1.76: boots end at the route menu now - cli
 // drive136: Beta 1.57 Phase 2 storage integrity (external audit Section 7).
 // saveAll() has a failure CONTRACT (the authority sides record is written
 // first, every write is checked, the first failure is named in the save result's failedKey);
-// Finish and Undo are verified transactions whose gated writes land before
+// Finish is a verified transaction whose gated writes land before
 // any state changes. Failures are INJECTED by stubbing
 // Storage.prototype.setItem for one key at a time - lsSet converts the throw
 // into the false return the contract consumes, which is the failure signal a
@@ -20,7 +20,7 @@ ok('S0 app boots for the storage transaction tests', await poll120(`!!window.map
 const INSTALL_STUB = `(() => { window.__stubKey = null; const orig = Storage.prototype.setItem; Storage.prototype.setItem = function (k, v) { if (window.__stubKey && k === window.__stubKey) throw new Error('injected quota failure'); return orig.call(this, k, v); }; window.__stub = k => { window.__stubKey = k; }; window.__unstub = () => { window.__stubKey = null; }; return typeof window.__stub === 'function'; })()`;
 ok('S0b fault-injection stub installed', await ev(INSTALL_STUB) === true);
 const seed = async () => { await ev(`(() => { markDone('Velmar', 'test'); markDone('Mellings', 'test'); markDone('Astona', 'test'); return doneSet.size; })()`); await sleep(250); };
-const state = async () => JSON.parse(await ev(`JSON.stringify({ done: doneSet.size, label: $('resetBtn').textContent, toast: $('toast').textContent, hist: history.length, lsHist: JSON.parse(localStorage.getItem('snowroute.5w.v2.history') || '[]').length, snap: !!undoSnap })`));
+const state = async () => JSON.parse(await ev(`JSON.stringify({ done: doneSet.size, label: $('resetBtn').textContent, toast: $('toast').textContent, hist: history.length, lsHist: JSON.parse(localStorage.getItem('snowroute.5w.v2.history') || '[]').length })`));
 await seed();
 let st = await state();
 ok('S1 seeded clean: 3 streets done, nothing archived yet | ' + JSON.stringify(st), st.done === 3 && st.hist === 0 && st.lsHist === 0);
@@ -56,38 +56,26 @@ ok('F1b after reload the failed mark is absent and the seeded clean survives who
 await ev(`__stub('snowroute.5w.v4.notes')`);
 await ev(`(() => { performReset(); return true; })()`); await sleep(300);
 st = await state();
-ok('F4 notes write fails: finish completes, archive landed, warning names the gap | ' + JSON.stringify(st), st.done === 0 && st.lsHist === 1 && st.label === 'Undo' && /could not be written \(notes\)/.test(st.toast));
+ok('F4 notes write fails: finish completes, archive landed, warning names the gap | ' + JSON.stringify(st), st.done === 0 && st.lsHist === 1 && st.label === 'FINISH' && /could not be written \(notes\)/.test(st.toast));
 await ev(`__unstub()`);
-// F5: the AUTHORITY write fails during Undo - the undo stays on offer
-// (snapshot retained), then succeeds once storage recovers.
-await ev(`__stub('snowroute.5w.v5.sides')`);
-await ev(`(() => { doUndo(); return true; })()`); await sleep(300);
-st = await state();
-ok('F5 authority write fails during undo: undo stopped and STILL on offer, board untouched | ' + JSON.stringify(st), st.done === 0 && st.snap === true && st.label === 'Undo' && /undo stopped/.test(st.toast) && st.lsHist === 1);
-await ev(`__unstub()`);
-await ev(`(() => { doUndo(); return true; })()`); await sleep(300);
-st = await state();
-ok('F5b undo succeeds after storage recovers: run restored, archive un-happened | ' + JSON.stringify(st), st.done === 3 && st.lsHist === 0 && st.label === 'FINISH' && /Finish undone/.test(st.toast));
-// F8 (Beta 1.94, deep audit SR-193-04): the restored run's START write is a
-// gate in doUndo, taken BEFORE the snapshot is consumed. It used to ride
-// the post-swap saveAll (snapshot already nulled), so a failed start write
-// plus a reload restored the board but lost the run itself. The run is
-// opened by hand here (runStart + saveAll) rather than via Start, to keep
-// this drive's GPS untouched - Finish and Undo only read the value.
+// F8 (Beta 1.110): a finish with a LIVE run - the stored start is deleted as
+// a gate, the run's cancel snapshot goes with it, and NOTHING brings the run
+// back (the pre-1.110 F8 pinned doUndo's start gate; the Undo is removed -
+// Andrew: the Yes confirmation is the whole gate). The run is opened by hand
+// (runStart + saveAll) rather than via Start, to keep this drive's GPS
+// untouched - Finish only reads the value.
 const f8start = await ev(`(() => { runStart = Date.now(); saveAll(); return runStart; })()`);
 await ev(`(() => { performReset(); return true; })()`); await sleep(300);
 let st8 = await state();
-ok('F8 setup: finish landed with a live run waiting to be restored | ' + JSON.stringify(st8), st8.done === 0 && st8.snap === true && st8.label === 'Undo' && st8.lsHist === 1);
-await ev(`__stub('snowroute.5w.v5.start')`);
-await ev(`(() => { doUndo(); return true; })()`); await sleep(300);
+const f8ls = JSON.parse(await ev(`JSON.stringify({ start: localStorage.getItem('snowroute.5w.v5.start'), snap: localStorage.getItem('snowroute.5w.v5.snap') })`));
+ok('F8 finish with a live run: board cleared, start key deleted, no cancel snapshot lingers, button normal | ' + JSON.stringify(st8) + ' ' + JSON.stringify(f8ls), st8.done === 0 && st8.label === 'FINISH' && f8ls.start === null && f8ls.snap === null);
+await send('Page.navigate', { url: url }, S);
+await sleep(3000);
+await ev(`loadRoute('5w'); true`); await sleep(600); // Beta 1.76
 st8 = await state();
-const f8ls = JSON.parse(await ev(`JSON.stringify({ hist: JSON.parse(localStorage.getItem('snowroute.5w.v2.history') || '[]').length, start: localStorage.getItem('snowroute.5w.v5.start') })`));
-ok('F8 start write fails during undo: undo stopped, STILL on offer, both gated writes rolled back | ' + JSON.stringify(st8) + ' ' + JSON.stringify(f8ls), st8.done === 0 && st8.snap === true && st8.label === 'Undo' && /undo stopped/.test(st8.toast) && f8ls.hist === 1 && f8ls.start === null);
-await ev(`__unstub()`);
-await ev(`(() => { doUndo(); return true; })()`); await sleep(300);
-st8 = await state();
-const f8run = await ev(`runStart`);
-ok('F8b undo succeeds after storage recovers: the run is restored WITH its start time | ' + JSON.stringify(st8), st8.done === 3 && st8.label === 'FINISH' && f8run === f8start);
+ok('F8b after reload the finished state persists - no run resurrects | ' + JSON.stringify(st8), st8.done === 0 && st8.lsHist === 1 && (await ev(`runStart`)) === 0);
+await ev(`(() => { history = []; saveHistory(); return true; })()`); // F6 below counts history writes from a clean slate, exactly as the pre-1.110 flow left it
+await seed();
 // F6 (Beta 1.63, audit F02): the ROLLBACK write itself fails - the archive
 // write lands, the authority write fails, and rolling the archive back
 // fails too. The stored history and the stored board now disagree, and

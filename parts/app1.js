@@ -77,7 +77,7 @@ function storeFail(failedKey, retryPending) { return { ok: false, failedKey: fai
 // transaction and every completed step is undone in REVERSE order, each undo attempted
 // even if an earlier undo fails. Outcome: 'committed', 'rolled-back', or 'degraded'
 // (a rollback step itself failed - the stored records may disagree, which is the one
-// outcome that changes what the user must be told). The flows (finishRun, doUndo,
+// outcome that changes what the user must be told). The flows (finishRun,
 // restoreBackup) keep their own message texts and select them from (outcome,
 // failedStep) exactly as they selected them from their hand-built gates before.
 function txSet(key, value) { return (lsSet(key, value) && lsGet(key) === value) ? storeOk() : storeFail(key, true); }
@@ -328,7 +328,7 @@ function totalWorkM() { let s = 0; for (const n of STREETNAMES) s += STRETCH[n].
 // state survives whole. Every other write is checked too; the first failing
 // record is named in the returned result's failedKey. Callers that warn go
 // through saveAllWarned (app2), which raises one warning per failure episode;
-// the finish/undo transactions call saveAll directly and do their own gated
+// the finish transaction calls saveAll directly and does its own gated
 // writes and messaging. (Beta 1.101, Phase 3: the old global failure key, the
 // quiet toggle and the warned flag are retired - outcomes travel in the
 // returned result, and messaging lives in the app layer.)
@@ -382,7 +382,7 @@ window.addEventListener('pagehide', () => flushAux(true));
 // value, helper, callback and piece of live state it consumes arrives
 // through this one object (the engine aliases it as H; GLP.init(map, host)
 // adopts the same object). Plain entries are the values themselves;
-// group (c) - state the app REBINDS (pieces on load/restore/undo, the
+// group (c) - state the app REBINDS (pieces on load/restore, the
 // selection on every tap, the active route on load) - is exposed through
 // getters so the engine always reads the CURRENT binding, exactly as its
 // old free-global reads behaved. glHideLabels is also behind a getter: it

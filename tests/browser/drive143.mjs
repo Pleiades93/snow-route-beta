@@ -11,7 +11,7 @@ await bootThrough(ev, poll); // Beta 1.76: boots end at the route menu now - cli
 // invalid nested history (suite 3), current-format backup round-trip (suite 1), failed history write at
 // finish (suite 11), partial multi-key save consistency (suite 12).
 // drive143: Beta 1.70 audit fixes (full audit of 1.69, adjudicated 2026-11-02).
-// U1: Undo reports a failed metadata save instead of claiming full restoration (A01).
+// U1: the finish is final - no Undo follows it (Beta 1.110; replaces A01's undo-honesty check).
 // C1/C2: coverage + suggestions are run-scoped - Cancel clears them, Clear counts them (A04).
 // G1-G3: archived distance/path are measured from the run's true start (A05).
 // D1: the piece-time sanitizer is bounded by the street's stretch count (A06).
@@ -22,16 +22,17 @@ const src = readFileSync(new URL('../../src/tracker-source.html', import.meta.ur
 const sheetPanels = src.split('class="sheet"').length - 1; // Beta 1.78: the census follows the panels that exist (the Routes sheet retired - 3 panels became 2); the invariant is one shared head/title class pair per panel and never an id
 ok('H1 sheet panels use shared classes, no duplicate IDs | sheetHead ids ' + (src.split('id="sheetHead"').length - 1) + ' classes ' + (src.split('class="sheetHead"').length - 1) + ' sheets ' + sheetPanels, (src.split('id="sheetHead"').length - 1) === 0 && (src.split('id="sheetTitle"').length - 1) === 0 && sheetPanels >= 2 && (src.split('class="sheetHead"').length - 1) === sheetPanels && (src.split('class="sheetTitle"').length - 1) === sheetPanels);
 ok('T0 app script and map object are live', await poll120(`typeof map !== 'undefined' && !!map && typeof finishRun === 'function' && typeof buildSnap === 'function'`, 90000));
-// U1: finish a 3-street clean, then undo with the notes/times saves broken.
+// U1 (Beta 1.110): finish a 3-street clean - the finish is FINAL. No Undo is
+// offered afterwards, and the button's next tap opens the finish pop-up for
+// the current (empty) board instead of restoring anything.
 await ev(`(() => { runStart = Date.now() - 3600000; markDone('Velmar', 'tap'); markDone('Mellings', 'tap'); markDone('Astona', 'tap'); suggested = new Set(['Boddy']); finishRun(); return true; })()`);
 await sleep(300);
-const u0 = JSON.parse(await ev(`(() => JSON.stringify({ undo: !!undoSnap, btn: $('resetBtn').textContent, sug: suggested.size }))()`));
-ok('U0 setup: finish archived and undo is on offer; the finish cleared the suggestion set (A04) | ' + JSON.stringify(u0), u0.undo === true && u0.btn === 'Undo' && u0.sug === 0);
-await ev(`(() => { window.__lsSet = lsSet; lsSet = (k, v) => (k === LS.notes || k === LS.times) ? false : window.__lsSet(k, v); doUndo(); return true; })()`);
-await sleep(200);
-const u1 = JSON.parse(await ev(`(() => JSON.stringify({ toast: $('toast').textContent, done: doneSet.size, run: !!runStart }))()`));
-await ev(`(() => { lsSet = window.__lsSet; return true; })()`);
-ok('U1 undo with metadata saves broken warns instead of claiming a clean restore | ' + JSON.stringify(u1), u1.done === 3 && u1.run === true && u1.toast.indexOf('could not be saved') >= 0);
+const u0 = JSON.parse(await ev(`(() => JSON.stringify({ btn: $('resetBtn').textContent, undoing: $('resetBtn').classList.contains('undoing'), sug: suggested.size, h: history.length }))()`));
+ok('U0 setup: finish archived, the finish cleared the suggestion set (A04), and NO Undo state follows (Beta 1.110) | ' + JSON.stringify(u0), u0.btn === 'FINISH' && u0.undoing === false && u0.sug === 0 && u0.h === 1);
+await ev(`(() => { $('resetBtn').click(); return true; })()`); await sleep(300);
+const u1 = JSON.parse(await ev(`(() => JSON.stringify({ open: !$('finModal').classList.contains('hidden'), msg: $('finMsg').textContent, h: history.length, done: doneSet.size }))()`));
+await ev(`(() => { $('finNo').click(); return true; })()`);
+ok('U1 the finished clean stays finished - the button opens the pop-up for the empty board, nothing is restored | ' + JSON.stringify(u1), u1.open === true && /Nothing is marked yet/.test(u1.msg) && u1.h === 1 && u1.done === 0);
 // C1: cancel a clean that has coverage but no marks - coverage and suggestions die with it.
 await ev(`(() => { runStart = Date.now(); coveredIdx = { Velmar: [0, 1, 2] }; suggested = new Set(['Velmar']); cancelStart(); return true; })()`);
 const c1 = JSON.parse(await ev(`(() => JSON.stringify({ cov: Object.keys(coveredIdx).length, sug: suggested.size, toast: $('toast').textContent }))()`));

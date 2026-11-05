@@ -2,7 +2,7 @@
 <html lang="en" class="boot">
 <head>
 <meta charset="UTF-8">
-<meta http-equiv="Content-Security-Policy" content="default-src 'none'; script-src 'sha384-AbpqZ0J68E+Nm6iACyB3f3A9A4o9uLLT4HuNi0A6vbxJzsvxlQnLuBOQq7GYNJtX' https://cdn.jsdelivr.net; style-src-elem 'sha384-JkfgNPEaUC0qblYEm898y/t8WalXPax9p1P/AeyvR1uAGsm8nhKYhQa33b9LoOVh' https://cdn.jsdelivr.net; style-src-attr 'unsafe-inline'; img-src 'self' data: blob: https://tiles.basemaps.cartocdn.com https://protomaps.github.io https://cdn.jsdelivr.net; connect-src 'self' https://tiles.basemaps.cartocdn.com https://protomaps.github.io https://cdn.jsdelivr.net; worker-src blob: 'self'; child-src blob: 'self'; font-src 'none'; manifest-src 'self'; base-uri 'none'; form-action 'none'; object-src 'none'">
+<meta http-equiv="Content-Security-Policy" content="default-src 'none'; script-src 'sha384-mqILP2UVntbv83UgQsIiJza3Ozb7ixHt2nqeNkkPZeHPDkSj770E2V8TR5XAD6jw' https://cdn.jsdelivr.net; style-src-elem 'sha384-WxJXkfY6r0/vGLrC0wd+7QOiKH5i4Joe2+lqo/xSXDWSDTD1CBx1rfxIZvwRtySU' https://cdn.jsdelivr.net; style-src-attr 'unsafe-inline'; img-src 'self' data: blob: https://tiles.basemaps.cartocdn.com https://protomaps.github.io https://cdn.jsdelivr.net; connect-src 'self' https://tiles.basemaps.cartocdn.com https://protomaps.github.io https://cdn.jsdelivr.net; worker-src blob: 'self'; child-src blob: 'self'; font-src 'none'; manifest-src 'self'; base-uri 'none'; form-action 'none'; object-src 'none'">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="mobile-web-app-capable" content="yes">
@@ -51,7 +51,6 @@
   #hud button { background: #2b4bf2; color: #fff; border: none; border-radius: var(--rad-btn); padding: 9px 8px; font-size: 13.5px; font-weight: 600; min-height: 40px; white-space: nowrap; }
   #hud button.ghost { background: #444; }
   #resetBtn.armed { background: #8c1f16; color: #fff; font-style: normal; }
-  #resetBtn.undoing { background: #1e7a46; color: #fff; font-style: normal; }
   #stats { font-size: 12px; font-weight: 600; color: #33404e; margin-top: 6px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; text-shadow: 0 0 6px rgba(255,255,255,.95), 0 0 3px rgba(255,255,255,.9); }
   body.night #stats { color: #9fb4c8; text-shadow: 0 0 6px rgba(0,0,0,.85), 0 0 3px rgba(0,0,0,.85); }
   #warn { display: none; background: #c22f24; color: #fff; font-size: 12px; font-weight: 700; text-align: center; padding: 5px 4px; border-radius: 9px; margin-bottom: 6px; }
@@ -261,7 +260,7 @@
 <div id="hud">
   <div id="warn">Not saving — storage is full or blocked</div>
   <div class="row">
-    <div class="titleStack"><div class="title">Snow Route Beta</div><div class="ver" id="ver">Beta 1.109</div></div>
+    <div class="titleStack"><div class="title">Snow Route Beta</div><div class="ver" id="ver">Beta 1.110</div></div>
   </div>
   <div id="stats"></div>
 </div>
@@ -411,7 +410,7 @@ function storeFail(failedKey, retryPending) { return { ok: false, failedKey: fai
 // transaction and every completed step is undone in REVERSE order, each undo attempted
 // even if an earlier undo fails. Outcome: 'committed', 'rolled-back', or 'degraded'
 // (a rollback step itself failed - the stored records may disagree, which is the one
-// outcome that changes what the user must be told). The flows (finishRun, doUndo,
+// outcome that changes what the user must be told). The flows (finishRun,
 // restoreBackup) keep their own message texts and select them from (outcome,
 // failedStep) exactly as they selected them from their hand-built gates before.
 function txSet(key, value) { return (lsSet(key, value) && lsGet(key) === value) ? storeOk() : storeFail(key, true); }
@@ -662,7 +661,7 @@ function totalWorkM() { let s = 0; for (const n of STREETNAMES) s += STRETCH[n].
 // state survives whole. Every other write is checked too; the first failing
 // record is named in the returned result's failedKey. Callers that warn go
 // through saveAllWarned (app2), which raises one warning per failure episode;
-// the finish/undo transactions call saveAll directly and do their own gated
+// the finish transaction calls saveAll directly and does its own gated
 // writes and messaging. (Beta 1.101, Phase 3: the old global failure key, the
 // quiet toggle and the warned flag are retired - outcomes travel in the
 // returned result, and messaging lives in the app layer.)
@@ -716,7 +715,7 @@ window.addEventListener('pagehide', () => flushAux(true));
 // value, helper, callback and piece of live state it consumes arrives
 // through this one object (the engine aliases it as H; GLP.init(map, host)
 // adopts the same object). Plain entries are the values themselves;
-// group (c) - state the app REBINDS (pieces on load/restore/undo, the
+// group (c) - state the app REBINDS (pieces on load/restore, the
 // selection on every tap, the active route on load) - is exposed through
 // getters so the engine always reads the CURRENT binding, exactly as its
 // old free-global reads behaved. glHideLabels is also behind a getter: it
@@ -2749,14 +2748,13 @@ onMapReady(() => map.on('click', e => {
 
 // ===== MARKING (one finish path) =====
 let saveWarned = false; // Beta 1.101 (Phase 3 / C2): the storage-warning episode state - app-layer messaging state, moved out of the storage layer with the warning itself. One warning per failure episode; resets on the next fully successful save (the 1.63 discipline, unchanged).
-function saveAllWarned() { const r = saveAll(); if (!r.ok) { if (!saveWarned) { saveWarned = true; toast('Storage is not saving (' + r.failedKey + ') - export a recovery backup now', 4200); } } else saveWarned = false; return r; } // the non-transactional save path: saveAll plus the episode warning. The finish/undo transactions call saveAll directly and do their own gated messaging.
+function saveAllWarned() { const r = saveAll(); if (!r.ok) { if (!saveWarned) { saveWarned = true; toast('Storage is not saving (' + r.failedKey + ') - export a recovery backup now', 4200); } } else saveWarned = false; return r; } // the non-transactional save path: saveAll plus the episode warning. The finish transaction calls saveAll directly and does its own gated messaging.
 function finishChange() { if (window.GLP) window.GLP.sync(); renderPanel(); updateCount(); renderStreets(); const r = saveAllWarned(); syncWake(); return r; } // Beta 1.63 (audit F04): callers that announce an outcome branch on the save result - since Beta 1.101 (Phase 3) that result is the storage-outcome object
 function finishChangeMarked() { const wb = saveWarned; const r = finishChange(); if (!r.ok && wb) toast('Not saved \u2014 storage problem', 3200); return r; } // Beta 1.97 (audit loop CG-196-05): the marking callers' half of the save-honesty contract - when the save fails, NO outcome toast may replace the storage warning; saveAll raises that warning once per episode (saveWarned), so when it was already raised before this call, the caller still owes a plain 'not saved' rather than silence
 function applyPiece(name, idx, side, on) { // the piece mutation with NO rendering - returns the street name if this change completed it
   const bit = side ? 2 : 1; const was = pieces[name][idx];
   const now = on ? (was | bit) : (was & ~bit);
   if (now === was) return null;
-  invalidateFinishUndo(); // Beta 1.97 (audit loop CG-196-03): an actual piece change kills a pending Finish Undo - here, the shared choke point, so no marking path can forget
   pieces[name][idx] = now;
   if (!pieceTimes[name][idx]) pieceTimes[name][idx] = [null, null];
   pieceTimes[name][idx][side] = on ? new Date().toISOString() : null;
@@ -2781,7 +2779,6 @@ function togglePieceGroup(side) { // one chip, whole selection: a side not done 
 $('selAllBtn').addEventListener('click', () => { if (!tapGuard('selAll')) return; const completed = []; for (const en of selSet) for (const side of [0, 1]) { const c = applyPiece(en.name, en.idx, side, true); if (c && !completed.includes(c)) completed.push(c); } showChips(); const okSa = finishChangeMarked(); if (okSa) completed.forEach(n => toast('✓ ' + n + ' · ' + fmtClock(new Date()))); });
 $('selClearBtn').addEventListener('click', () => { if (!tapGuard('selClear')) return; deselect(); });
 function markDone(name, via, at) { // production contract: whole street done; sides already marked keep their real times, the rest inherit the completion moment
-  invalidateFinishUndo();
   pieces[name] = STRETCH[name].parts.map(() => 3);
   const mts = at || new Date().toISOString();
   const cur = (pieceTimes[name] && typeof pieceTimes[name] === 'object') ? pieceTimes[name] : {};
@@ -2793,7 +2790,6 @@ function markDone(name, via, at) { // production contract: whole street done; si
 function markUndone(name) {
   pieces[name] = STRETCH[name].parts.map(() => 0);
   pieceTimes[name] = STRETCH[name].parts.map(() => [null, null]);
-  invalidateFinishUndo();
   doneSet.delete(name); delete doneTimes[name]; delete doneVia[name];
   const okMu = finishChangeMarked();
   if (okMu.ok) toast('Unmarked ' + name);
@@ -3307,7 +3303,7 @@ async function syncWake() {
   } catch (e) { /* wake lock is best-effort */ }
 }
 document.addEventListener('visibilitychange', syncWake);
-function noteSessionStart() { const s = Math.floor(runStart / 1000); if (trailSessions[trailSessions.length - 1] !== s) { trailSessions.push(s); if (saveSess().ok) return storeOk(); markDirty('sess'); return storeFail('sess', true); } return storeOk(); } // Beta 1.71 (audit B02): record the session boundary the moment the clean starts - undo restores the original runStart, so a resumed run correctly adds no new marker. Beta 1.73 (audit C04): the save result is RETURNED and a failure arms the flushAux retry - 1.71 dropped it, so a failed marker write was silent and a reload could join two cleans in the GPX export
+function noteSessionStart() { const s = Math.floor(runStart / 1000); if (trailSessions[trailSessions.length - 1] !== s) { trailSessions.push(s); if (saveSess().ok) return storeOk(); markDirty('sess'); return storeFail('sess', true); } return storeOk(); } // Beta 1.71 (audit B02): record the session boundary the moment the clean starts - a resumed run adds no new marker, because its Start already recorded one. Beta 1.73 (audit C04): the save result is RETURNED and a failure arms the flushAux retry - 1.71 dropped it, so a failed marker write was silent and a reload could join two cleans in the GPX export
 let runSnap = null; // Beta 1.91: the board exactly as it was when Start was pressed - Cancel restores it, so a cancelled run erases ONLY what the run itself recorded (marks made before Start are not the run's to erase).
 function saveSnap() { // Beta 1.94 (deep audit SR-193-02): the pre-Start board is ALSO persisted (LS.snap, stamped with the run's start time) the moment a clean starts. The in-memory runSnap dies with the page; after a reload mid-run, Cancel used to fall back to the mark-stamp journal (1.93 R01) - which cannot see an UNMARK, because unmarking erases the stamp, so a pre-Start side removed during the run stayed removed. The persisted snapshot is the board itself: a resumed Cancel restores it exactly, like a live one. A failed write arms snapDirty and the flushAux heartbeat retries (app1), on the same discipline as the start key and the session markers.
   if (!runSnap || !runStart) { markClean('snap'); return storeOk(); }
@@ -3353,7 +3349,7 @@ function validateSnap(raw, expectAt) { // Beta 1.95 (deep audit SR-194-03): a pe
     return { pieces, pieceTimes, done, times, via, cov };
   } catch (e) { return null; }
 }
-function startClean() { invalidateFinishUndo(); runSnap = { pieces: JSON.parse(JSON.stringify(pieces)), pieceTimes: JSON.parse(JSON.stringify(pieceTimes)), done: [...doneSet], times: { ...doneTimes }, via: { ...doneVia }, cov: JSON.parse(JSON.stringify(coveredIdx)) }; runStart = Date.now(); const okSnap = saveSnap(); const okSess = noteSessionStart(); const okStart = saveAllWarned(); startGps(true); updateCount(); syncWake(); if (okStart.ok && okSess.ok && okSnap.ok) toast('Clean started · ' + fmtClock(new Date())); else if (!okStart.ok) toast('Clean started — warning: the run state could not be saved (storage problem)', 4200); else if (!okSess.ok) toast('Clean started — warning: the session marker could not be saved; it will keep retrying', 4200); else toast('Clean started — warning: the cancel safety snapshot could not be saved; it will keep retrying', 4200); drawTrail(true); checkStale(); } // Beta 1.73 (audit C04): the marker save is part of the start's honesty check, not a silent side write // Beta 1.63 (audit F04): the clean still starts - he is standing in the snow - but the message stops claiming a saved state that does not exist
+function startClean() { runSnap = { pieces: JSON.parse(JSON.stringify(pieces)), pieceTimes: JSON.parse(JSON.stringify(pieceTimes)), done: [...doneSet], times: { ...doneTimes }, via: { ...doneVia }, cov: JSON.parse(JSON.stringify(coveredIdx)) }; runStart = Date.now(); const okSnap = saveSnap(); const okSess = noteSessionStart(); const okStart = saveAllWarned(); startGps(true); updateCount(); syncWake(); if (okStart.ok && okSess.ok && okSnap.ok) toast('Clean started · ' + fmtClock(new Date())); else if (!okStart.ok) toast('Clean started — warning: the run state could not be saved (storage problem)', 4200); else if (!okSess.ok) toast('Clean started — warning: the session marker could not be saved; it will keep retrying', 4200); else toast('Clean started — warning: the cancel safety snapshot could not be saved; it will keep retrying', 4200); drawTrail(true); checkStale(); } // Beta 1.73 (audit C04): the marker save is part of the start's honesty check, not a silent side write // Beta 1.63 (audit F04): the clean still starts - he is standing in the snow - but the message stops claiming a saved state that does not exist
 // Beta 1.91 (Andrew): Cancel start erases everything the run recorded - its trail points, its session
 // marker, any sides marked during it, its coverage and suggestions - and stores nothing. Only Finish
 // stores a run. (Supersedes the Beta 1.70 A04 call that kept the trail as history - Andrew's word.)
@@ -3403,7 +3399,6 @@ $('startBtn').addEventListener('click', () => { if (!tapGuard('startBtn')) retur
 function clearAllMarks() {
   const any = doneSet.size > 0 || STREETNAMES.some(n => pieces[n].some(v => v !== 0)) || Object.keys(coveredIdx).length > 0 || suggested.size > 0; // Beta 1.70 (audit A04): coverage-only state is something to clear too - the old guard claimed 'nothing to clear' while coverage and suggestions sat untouched
   if (!any) { toast('Nothing marked to clear'); return; }
-  invalidateFinishUndo(); // Beta 1.97 (audit loop CG-196-03): an EFFECTIVE clear kills a pending Undo - the nothing-to-clear return above deliberately does not
   for (const n of STREETNAMES) { pieces[n] = STRETCH[n].parts.map(() => 0); pieceTimes[n] = {}; }
   doneSet = new Set(); doneTimes = {}; doneVia = {}; coveredIdx = {}; suggested = new Set();
   $('suggest').classList.add('hidden'); delete $('suggest').dataset.n; // Beta 1.71 (audit B01): the one path the 1.70 dismissal sweep missed - Clear wiped the coverage behind the panel but left the panel itself up, its Yes still able to select the street
@@ -3412,19 +3407,8 @@ function clearAllMarks() {
 }
 $('clearBtn').addEventListener('click', () => { if (!tapGuard('clearBtn')) return; clearAllMarks(); });
 $('cancelStartBtn').addEventListener('click', () => { if (!tapGuard('cancelStartBtn')) return; cancelStart(); });
-let undoSnap = null, undoTimer = 0;
-function invalidateFinishUndo() { // Beta 1.97 (audit loop CG-196-03): the ONE place a pending Finish Undo dies. Before 1.97 only markDone cleared it inline; side chips, group chips, mark-all, unmarks, Clear and a new Start all mutated the board underneath a live Undo, whose restore then silently discarded the newer work. Every mutation path now funnels here (applyPiece is the piece-level choke point; the lifecycle paths call it themselves).
-  if (!undoSnap) return;
-  undoSnap = null; clearTimeout(undoTimer);
-  const rb = $('resetBtn'); rb.textContent = 'FINISH'; rb.classList.remove('undoing');
-}
 $('resetBtn').addEventListener('click', () => {
-  // Undo is checked BEFORE the double-tap guard (audit finding, drive89 T4): the guard exists to stop a
-  // repeated OPEN of the finish pop-up, but the same button means Undo once a finish lands - a fast
-  // Finish > Yes > Undo sequence lands inside the 400ms guard window and the Undo tap was silently
-  // swallowed (proven by drive89's state dump: label Undo, snapshot present, tap never acted). doUndo
-  // nulls the snapshot, so it cannot double-fire; the pop-up branch keeps its guard.
-  if (undoSnap) { doUndo(); return; }
+  // Beta 1.110 (Andrew): the Yes/No pop-up below is the ONLY finish gate - the post-Finish Undo is removed, so this button never means anything but Finish.
   if (!tapGuard('resetBtn')) return;
   const nDone = doneSet.size, nNotes = Object.keys(notes).length;
   $('finMsg').textContent = (nDone || nNotes)
@@ -3496,58 +3480,17 @@ function finishRun() {
     if (fTx.outcome === 'degraded') { toast(fTx.failedStep === 'sides' && archiving ? 'Storage failure \u2014 finish stopped, but the archive could not be undone. Export a backup now' : 'Storage failure \u2014 finish stopped, but the rollback could not be verified. Export a backup now', 6000); return; }
     toast('Storage problem \u2014 finish stopped, your clean is intact', 4200); return;
   }
-  const undoSnapData = runSnap ? JSON.parse(JSON.stringify(runSnap)) : validateSnap(parseJ(lsGet(LS.snap), null), runStart); // Beta 1.95 (deep audit SR-194-01): the cancel snapshot travels INTO the undo before it is deleted here - from memory when the run never reloaded, from its persisted copy (validated, SR-194-03) when it did. 1.94 deleted the snapshot and never carried it, so Finish -> Undo -> Cancel fell back to the stamp journal, blind to a pre-Start side unmarked mid-run.
   lsDel(LS.snap); markClean('snap'); // Beta 1.94 (SR-193-02): the run is finished - its cancel snapshot goes with it. Ungated on purpose: a leftover snapshot is stamped with THIS run's start, so it can never match a future run, and the next Start overwrites it anyway
   if (archiving) history = newHist;
-  undoSnap = { done: [...doneSet], times: { ...doneTimes }, via: { ...doneVia }, notes: JSON.parse(JSON.stringify(notes)), pieces: JSON.parse(JSON.stringify(pieces)), pieceTimes: JSON.parse(JSON.stringify(pieceTimes)), runStart, cov: JSON.parse(JSON.stringify(coveredIdx)), hist: prevHist.slice(), gpsWas: gpsFromRun, snap: undoSnapData };
   doneSet = new Set(); doneTimes = {}; doneVia = {}; notes = {}; runStart = 0; runSnap = null; coveredIdx = {}; suggested = new Set(); $('suggest').classList.add('hidden'); // Beta 1.70 (audit A04): the suggestion set is run-scoped too - finishRun used to clear the coverage but keep the set, so suggested streets never suggested again
   for (const n of STREETNAMES) { pieces[n] = STRETCH[n].parts.map(() => 0); pieceTimes[n] = {}; }
   stopGps(); deselect(); drawTrail(true); // Beta 1.69 (audit visual check): the run is over and runStart is 0, so this clears the finished line now instead of leaving it until the next throttled refresh
   const restRes = saveAll(); const restOk = restRes.ok; // the gated sides write already landed; this pass carries the metadata - a failure here warns but cannot resurrect anything (authority + archive agree)
   finishChange();
-  const rb = $('resetBtn'); rb.textContent = 'Undo'; rb.classList.add('undoing'); rb.style.display = '';
-  clearTimeout(undoTimer);
-  undoTimer = setTimeout(() => { undoSnap = null; rb.textContent = 'FINISH'; rb.classList.remove('undoing'); updateCount(); }, 8000);
   toast((archiving ? 'Clean archived · ' + Object.keys(snap.items).length + ' streets' : 'Board cleared — under 3 streets, nothing saved') + (restOk ? '' : ' — some details could not be written (' + restRes.failedKey + '); they retry on the next save'), 3400);
   if (archiving) maybeBackupNudge();
 }
 function performReset() { finishRun(); } // production's name for the finish action (the test battery calls it directly)
-function doUndo() {
-  if (!undoSnap) return;
-  // Beta 1.57: the undo follows the same transaction discipline - the restored
-  // history and authority records are written from the snapshot FIRST; a
-  // failure keeps the undo on offer (snapshot retained, button unchanged)
-  // instead of half-undoing.
-  // Beta 1.102 (Phase 4, C3): the undo transaction on the one coordinator - the
-  // 1.57-1.95 gates mechanized: history, authority, the restored run's start, its
-  // cancel snapshot; verified writes, verified rollback in reverse; a failure
-  // keeps the undo on offer (snapshot retained, button unchanged).
-  const curHistRaw = JSON.stringify(history), curSidesRaw = JSON.stringify({ p: pieces, t: pieceTimes });
-  const uSteps = [
-    { name: 'history', write: () => txSet(LS.hist, JSON.stringify(undoSnap.hist)), undo: () => txSet(LS.hist, curHistRaw) },
-    { name: 'sides', write: () => txSet(LS.sides, JSON.stringify({ p: undoSnap.pieces, t: undoSnap.pieceTimes })), undo: () => txSet(LS.sides, curSidesRaw) },
-    { name: 'start', write: () => undoSnap.runStart ? txSet(LS.start, String(undoSnap.runStart)) : txDel(LS.start), undo: () => txDel(LS.start) }
-  ];
-  if (undoSnap.snap) { const snapRaw = JSON.stringify({ at: undoSnap.runStart, pieces: undoSnap.snap.pieces, pieceTimes: undoSnap.snap.pieceTimes, done: undoSnap.snap.done, times: undoSnap.snap.times, via: undoSnap.snap.via, cov: undoSnap.snap.cov }); uSteps.push({ name: 'snap', write: () => txSet(LS.snap, snapRaw), undo: () => txDel(LS.snap) }); }
-  const uTx = runTx(uSteps);
-  if (uTx.outcome !== 'committed') {
-    if (uTx.outcome === 'degraded') toast(uTx.failedStep === 'sides' ? 'Storage failure \u2014 undo stopped, but the history restore could not be undone. Export a backup now' : 'Storage failure \u2014 undo stopped, but the rollback could not be verified. Export a backup now', 6000);
-    else toast('Storage problem \u2014 undo stopped, nothing changed', 3600);
-    return;
-  }
-  clearTimeout(undoTimer);
-  const undoHadSnap = !!undoSnap.snap; // Beta 1.96 (SR-195-06): captured before undoSnap is consumed - the success message below must say when the restored run carries NO snapshot (its Cancel is journal-grade), which 1.95 restored in silence
-  const undoSnapGpsWas = !!undoSnap.gpsWas; // undo restores the pre-finish state: GPS restarts only if it was actually running for the run (a fresh watch's first error toast would otherwise overwrite the 'Finish undone' toast)
-  doneSet = new Set(undoSnap.done); doneTimes = undoSnap.times; doneVia = undoSnap.via; notes = undoSnap.notes || {}; pieces = undoSnap.pieces; pieceTimes = undoSnap.pieceTimes; runStart = undoSnap.runStart; coveredIdx = undoSnap.cov; runSnap = undoSnap.snap ? JSON.parse(JSON.stringify(undoSnap.snap)) : null; if (undoSnap.snap) markClean('snap'); // Beta 1.95 (SR-194-01): the restored run carries its cancel snapshot again - in memory and (gate above) on disk
-  history = undoSnap.hist;
-  suggested = new Set(); $('suggest').classList.add('hidden'); // Beta 1.70 (audit A04): the restored coverage starts with a clean suggestion set
-  undoSnap = null;
-  const rb = $('resetBtn'); rb.textContent = 'FINISH'; rb.classList.remove('undoing');
-  const metaOk = saveAll().ok; const fcOk = finishChange(); if (runStart && undoSnapGpsWas) startGps(true);
-  drawTrail(true); // Beta 1.69: the restored run's trail redraws at once
-  if (metaOk && fcOk.ok && runStart && !undoHadSnap) toast('Finish undone — run restored, but no start snapshot is saved for it, so its Cancel will rebuild from the marks made during the run', 4600); // Beta 1.96 (SR-195-06)
-  else if (metaOk && fcOk.ok) toast('Finish undone — run restored'); else toast('Finish undone — run restored, but some details could not be saved (' + (fcOk.failedKey || 'storage') + '); they retry on the next save', 4200); // Beta 1.70 (audit A01): the gated writes (history, sides) already landed - it is the metadata pass that can fail, and the old unconditional toast claimed a durability it did not have
-}
 function checkStale() {
   const stale = runStart && (Date.now() - runStart > 12 * 3600000);
   $('stale').classList.toggle('hidden', !stale);
