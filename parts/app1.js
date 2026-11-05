@@ -99,29 +99,34 @@ function finishReconcileAction(startMs, lastStartedMs, boardEmpty) { if (!startM
 function parseJ(raw, fb) { if (raw == null) return fb; try { const v = JSON.parse(raw); return v == null ? fb : v; } catch (e) { return fb; } }
 // ===== SETTINGS (Beta 1.111, settings redesign) =====
 // One GLOBAL key, additive - no existing data migrates and nothing else reads
-// it. It holds the Settings redesign's device-behaviour toggles. Defaults: ALL
-// toggles OFF (features that change device behaviour - wake lock, vibration,
-// sound - start off until Andrew flips them; the approved mockups showed
-// switches ON as state examples, not default decisions); only the chime's
-// sound pick defaults, to Two-Tone. A corrupt or partial stored value falls
-// back per-field to the defaults. Documented in docs/STORAGE-SCHEMA.md
+// it. It holds the Settings redesign's PERSISTENT device-behaviour toggles
+// (vibration, chime on/off, chime sound). Defaults: ALL toggles OFF (features
+// that change device behaviour - vibration, sound - start off until Andrew
+// flips them; the approved mockups showed switches ON as state examples,
+// not default decisions); only the chime's sound pick defaults, to Two-Tone.
+// A corrupt or partial stored value falls back per-field to the defaults.
+// Beta 1.112 (Andrew): 'awake' (Keep screen awake) is NOT persistent - it is
+// session-only in-memory state, always OFF at a cold open, and it is
+// deliberately absent from the stored record and from SETTINGS_DEF; a 1.111
+// record that still carries an awake field is simply never read for it, and
+// saveSettings never writes it. Documented in docs/STORAGE-SCHEMA.md
 // (DEVELOPMENT_RULES section 4).
 const SETTINGS_KEY = 'snowroute.v2.settings';
 const CHIME_KEYS = ['bell', 'two', 'rising', 'pop', 'melody'];
-const SETTINGS_DEF = { awake: false, vib: false, chime: false, chimeSound: 'two' };
+const SETTINGS_DEF = { vib: false, chime: false, chimeSound: 'two' };
 function loadSettings() {
   const raw = parseJ(lsGet(SETTINGS_KEY), null);
-  const s = { awake: SETTINGS_DEF.awake, vib: SETTINGS_DEF.vib, chime: SETTINGS_DEF.chime, chimeSound: SETTINGS_DEF.chimeSound };
+  const s = { vib: SETTINGS_DEF.vib, chime: SETTINGS_DEF.chime, chimeSound: SETTINGS_DEF.chimeSound };
   if (raw && typeof raw === 'object') {
-    if (typeof raw.awake === 'boolean') s.awake = raw.awake;
     if (typeof raw.vib === 'boolean') s.vib = raw.vib;
     if (typeof raw.chime === 'boolean') s.chime = raw.chime;
     if (CHIME_KEYS.indexOf(raw.chimeSound) >= 0) s.chimeSound = raw.chimeSound;
   }
+  s.awake = false; // Beta 1.112 (Andrew): screen-awake is SESSION-ONLY - forced OFF at every load, whatever any stored record says; the On-the-job toggle flips this in-memory field for the session only
   return s;
 }
 let settings = loadSettings();
-function saveSettings() { return lsSet(SETTINGS_KEY, JSON.stringify(settings)); }
+function saveSettings() { return lsSet(SETTINGS_KEY, JSON.stringify({ vib: settings.vib, chime: settings.chime, chimeSound: settings.chimeSound })); } // only the persistent three - settings.awake is never written (Beta 1.112)
 // Tap guard — 400 ms per control
 const tapLast = {};
 function tapGuard(key) { const now = Date.now(); if (tapLast[key] && now - tapLast[key] < 400) return false; tapLast[key] = now; return true; }
