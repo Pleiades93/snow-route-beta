@@ -89,10 +89,17 @@ run intact.
 
 Fixes pass a validity gate (finite, on-Earth), an out-of-order timestamp
 guard, and a constant-velocity Kalman filter (one per axis, measurement
-noise scaled by the fix's accuracy); the displayed position glides toward
-the filter's lookahead aim through a single frame-synced render loop. A
-follow camera rotates heading-up (course over ground) while a run is
-active. The trail records only during a run, but the stored trail retains
+noise scaled by the fix's accuracy). Through a single frame-synced render
+loop, the displayed position coasts on the filter's predicted track —
+the estimate extrapolated along its own velocity (horizon capped at
+2.5 s) — with each fix's correction absorbed into an offset that decays
+over ~0.3 s, so the dot flows between fixes instead of stepping at fix
+cadence (Beta 1.115); the smoothing is display-only, and trail, coverage
+and pace consume the raw accepted estimate. A follow camera keeps the
+dot centred whenever location is on and rotates heading-up (course over
+ground) while a run is active; a user drag suspends the follow (the
+camera, pan and bearing, stays where it was put) until the re-centre
+button below the day/night button — or the Locate tab — resumes it. The trail records only during a run, but the stored trail retains
 every session and rides in backups; only the on-map display is scoped
 to the current run. Coverage samples each street's centreline every 15m; a fix covers
 samples within 22m; at 85% of a street's samples the app SUGGESTS the

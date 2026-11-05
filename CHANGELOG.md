@@ -1,5 +1,27 @@
 # Changelog
 
+## Beta 1.115 — 2026-11-05
+Two GPS fixes from Andrew's drive test. (1) The follow camera no longer
+locks the map: while location is on and following, dragging the map now
+suspends the follow — the dot keeps updating, the camera (pan and bearing)
+stays where he put it — and a re-centre button appears at top-right,
+directly below the day/night button (same 56 px dock button); tapping it,
+or tapping the Locate tab while suspended, eases the camera back to the
+dot and resumes the follow. Root cause: followCam's per-frame panBy kept
+resetting MapLibre's drag-pan handler mid-gesture, so dragstart almost
+never fired and the drag-pause never engaged; suspension now also listens
+to the raw pointer stream (>10 px of movement), and the mid-run dragend
+no longer hauls the bearing back to north. Heading-up during a run yields
+while suspended and re-engages on re-centre. (2) GPS motion is smooth:
+the displayed position (dot, accuracy ring, facing beam origin, follow
+camera target) now coasts on the Kalman estimator's predicted track every
+frame, with each fix's correction absorbed into a decaying offset — no
+more move-stop-move at the 1 Hz fix cadence (measured before: the dot sat
+still up to 950 ms of every second). Smoothing is display-only: trail
+recording, coverage and pace keep consuming the raw accepted fixes, and a
+reacquisition (>75 m jump or >10 s silence) still snaps. Regression:
+drive148 (new), drives 126/127/129 unchanged and green.
+
 ## Beta 1.114 — 2026-11-05
 What's New in Settings → About now shows ONLY the latest release's
 notes (Andrew's call — the accumulated per-version list cluttered the

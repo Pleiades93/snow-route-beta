@@ -244,6 +244,8 @@
   #chimeList { display: flex; flex-direction: column; gap: 12px; }
   #wnList { display: flex; flex-direction: column; } /* Beta 1.88 (Andrew's pick): the version rides the settings menu family at bottom-right, in both panes, synced from the main title's version - never a second copy to go stale */
   #nightBtn { position: fixed; top: calc(var(--vvt, 0px) + 78px); right: calc(12px + var(--sar)); z-index: 1000; margin: 0; } /* Beta 1.88 (Andrew): Day/Night is its own round button at top-right - the dockBtn class itself, so it IS the Pace/Streets button (56px, same glass, same 27px icon), only placed */
+  #centreBtn { position: fixed; top: calc(var(--vvt, 0px) + 144px); right: calc(12px + var(--sar)); z-index: 1000; margin: 0; } /* Beta 1.115 (Andrew): the re-centre button - same dockBtn, same right edge, directly below Day/Night (78 + 56 + 10 gap). Shown only while the follow is suspended (syncCentreBtn, app3) */
+  #centreBtn.hidden { display: none; }
   #toast { position: absolute; left: 50%; bottom: calc(120px + var(--sab)); transform: translateX(-50%) translateY(16px); z-index: 10001; /* Beta 1.93 (deep audit F03): above the full-screen takeovers (10000) - backup/restore errors toasted from inside Settings were hidden behind its opaque blue */ background: rgba(20,22,28,.95); color: #fff; font-size: 13px; font-weight: 600; padding: 9px 14px; border-radius: 10px; box-shadow: var(--shadow-float); opacity: 0; pointer-events: none; transition: opacity var(--anim-dur) var(--ease-open), transform var(--anim-dur) var(--ease-open); max-width: 86vw; text-align: center; }
   #toast.show { opacity: 1; transform: translateX(-50%) translateY(0); }
   #map { transition: transform .45s ease-in-out; }
@@ -301,7 +303,7 @@
 <div id="hud">
   <div id="warn">Not saving — storage is full or blocked</div>
   <div class="row">
-    <div class="titleStack"><div class="title">Snow Route Beta</div><div class="ver" id="ver">Beta 1.114</div></div>
+    <div class="titleStack"><div class="title">Snow Route Beta</div><div class="ver" id="ver">Beta 1.115</div></div>
   </div>
   <div id="stats"></div>
 </div>
@@ -310,6 +312,7 @@
 <div id="bakNudge" class="banner hidden"><span id="bakText"></span><button id="bakSave">Save backup</button><button id="bakLater" class="red">Later</button></div>
 <div id="mapNote" class="hidden"><span>Maps can't load — streets, GPS and marking still work. Check your connection.</span><button id="mapNoteNo">✕</button></div>
 <button id="nightBtn" class="dockBtn"></button>
+<button id="centreBtn" class="dockBtn hidden" title="Centre on me"></button>
 <div id="dock">
   <button id="streetsBtn" class="dockBtn" title="Streets"></button>
   <div id="runSlot">

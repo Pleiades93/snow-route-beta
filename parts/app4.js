@@ -375,7 +375,7 @@ const ICONS = { // Pack D "iOS Filled" (Andrew's pick, Beta 1.28): solid silhoue
   note: '<svg viewBox="0 0 24 24" fill="currentColor" stroke="none"><path fill="currentColor" stroke="none" fill-rule="evenodd" d="M6.5 2.8h7.2l4.8 4.8v13.6H6.5zM9.3 12.2h5.9v2H9.3zM9.3 16h5.9v2H9.3z"/></svg>', /* Pack D language (Beta 1.30): the note glyph for rows and the selection pop-up */
   exp: '<svg viewBox="0 0 24 24" fill="currentColor" stroke="none"><path fill="currentColor" stroke="none" d="M11 3h2v9.2l2.4-2.4 1.5 1.5L12 16.2l-4.9-4.9 1.5-1.5L11 12.2z"/><path fill="currentColor" stroke="none" d="M4.4 15.6h3.4v2.6h8.4v-2.6h3.4V21H4.4z"/></svg>'
 };
-$('streetsBtn').innerHTML = ICONS.streets; $('paceBtn').innerHTML = ICONS.pace;
+$('streetsBtn').innerHTML = ICONS.streets; $('paceBtn').innerHTML = ICONS.pace; $('centreBtn').innerHTML = ICONS.gps; // Beta 1.115: the re-centre button wears the pack's navigation arrow - "centre on me" in the same glyph language
 ['homeBtn', 'gpsBtn', 'clearBtn', 'routesBtn'].forEach(id => { $(id).querySelector('.tabIco').innerHTML = ICONS[{ homeBtn: 'home', gpsBtn: 'gps', clearBtn: 'clear', routesBtn: 'routes' }[id]]; }); // Beta 1.88: Backup and Update carry no tab icons anymore - they are text rows on the blue settings panes
 $('setBtn').querySelector('.tabIco').innerHTML = ICONS.gear;
 $('selNote').innerHTML = ICONS.note;
@@ -558,7 +558,7 @@ $('stDel').addEventListener('click', async () => {
 });
 // ---- About / What's new ----
 const WHATSNEW = { // the curated in-app notes: plain words, LATEST RELEASE ONLY (Beta 1.114, Andrew: the accumulated list cluttered the About pane). A release REPLACES this entry with its own in the same change - it never accumulates; the full history lives in CHANGELOG.md, not the app
-  v: 'Beta 1.114', items: ["What's New now shows only the latest update — no long list"]
+  v: 'Beta 1.115', items: ["You can now drag the map while it's following you — tap the centre button (top right) to snap back to your dot", "GPS movement is smooth now — the dot glides between updates instead of jumping every second"]
 };
 function renderAbout() {
   const cur = $('ver').textContent.trim();
