@@ -445,42 +445,48 @@ function drawTrail(force) {
 }
 function havM(a, b) { const R = 6371000, dLa = (b[0] - a[0]) * Math.PI / 180, dLo = (b[1] - a[1]) * Math.PI / 180; const s = Math.sin(dLa / 2) ** 2 + Math.cos(a[0] * Math.PI / 180) * Math.cos(b[0] * Math.PI / 180) * Math.sin(dLo / 2) ** 2; return 2 * R * Math.asin(Math.sqrt(s)); }
 let renderRaf = 0, renderPump = 0, lastFrameAt = 0, lastCamAt = 0, lastPushKey = ''; // Beta 1.65 (Andrew's road report: the GPS motion stuttered; third audit item 1): ONE frame-synced render loop drives the dot and the camera - the 40 ms glide timer and the 50 ms camera timer used to overlap at ~45 unsynced updates a second, and the camera's per-tick easing sped up whenever they overlapped
-let glideFrom = null, glideTarget = null, glideT0 = 0, glideDur = 0, glideActive = false;
-function glideTo(target) {
-  glideFrom = dispPos ? dispPos.slice() : target.slice();
-  glideTarget = target.slice();
-  const d = havM(glideFrom, glideTarget); glideDur = Math.max(200, Math.min(1500, d * 30));
-  glideT0 = performance.now(); glideActive = true; startRenderLoop(); // the glide is STATE now, not a timer - the render loop advances it from the clock; the smoothstep easing itself is unchanged (Beta 1.28). The loop starts here, not only in startGps: a fix can arrive on an existing watch (or be fed directly) and must still render
-}
+let dispOff = [0, 0], lastDispAt = 0; // Beta 1.115 (Andrew's drive report: the dot stepped once a second): the display no longer glides toward a fixed aim and stops - it COASTS on the estimator's predicted track (kfPredict, by the filter below) every frame, and a fix's correction is absorbed into dispOff (metres, [lat, lng]) and decayed away over ~0.3 s, so a fix never teleports the dot either. Smoothing is DISPLAY-ONLY: trail, coverage and pace keep consuming the raw accepted estimate (gpsPos) exactly as before.
+function dispSettled() { return Math.abs(dispOff[0]) < 0.05 && Math.abs(dispOff[1]) < 0.05; }
 function renderTick(now) {
-  if (glideActive && glideTarget) {
-    const t = Math.min(1, (now - glideT0) / glideDur);
-    const e = t * t * (3 - 2 * t); // smoothstep: the glide eases in and out instead of starting/stopping dead (Beta 1.28) - linear segments meeting at each fix were half the visible jaggedness
-    dispPos = [glideFrom[0] + (glideTarget[0] - glideFrom[0]) * e, glideFrom[1] + (glideTarget[1] - glideFrom[1]) * e];
-    if (t >= 1) glideActive = false;
+  const pred = kfPredict(); // Beta 1.115: the predicted track at THIS frame - between fixes it advances on the estimated velocity, so the dot flows instead of bursting once a second
+  if (pred) {
+    const pNow = performance.now();
+    const dtF = lastDispAt ? Math.min(0.25, Math.max(0, (pNow - lastDispAt) / 1000)) : 0; lastDispAt = pNow;
+    if (dtF > 0 && !dispSettled()) { const k = Math.pow(0.2, dtF / 0.3); dispOff = [dispOff[0] * k, dispOff[1] * k]; if (dispSettled()) dispOff = [0, 0]; } // the correction offset decays with a ~0.3 s time constant, on the same performance clock the prediction reads
+    dispPos = [pred[0] + dispOff[0] / MLAT, pred[1] + dispOff[1] / MLNG];
   }
   const key = dispPos ? dispPos[0] + ',' + dispPos[1] + ',' + facingDeg + ',' + gpsAccM : '';
   if (key !== lastPushKey) { lastPushKey = key; pushGps(); } // redraw the dot/ring/beam only when something actually moved - the old timers rebuilt it on every tick regardless
-  followCam(now);
+  followCam(now); headCam(now); syncCentreBtn();
 }
 function renderLoop(now) {
   lastFrameAt = now;
   renderTick(now);
-  if (watchId == null && !glideActive) { renderRaf = 0; return; } // nothing left to animate: the loop parks itself until the next glide or GPS start
+  if (watchId == null && dispSettled()) { renderRaf = 0; return; } // nothing left to animate: the loop parks itself until the next fix or GPS start
   renderRaf = requestAnimationFrame(renderLoop);
 }
-function startRenderLoop() { if (!renderRaf) { lastCamAt = lastFrameAt = performance.now(); renderRaf = requestAnimationFrame(renderLoop); } if (!renderPump) renderPump = setInterval(() => { if ((watchId != null || glideActive) && performance.now() - lastFrameAt > 100) renderTick(performance.now()); if (watchId == null && !glideActive && !renderRaf) { clearInterval(renderPump); renderPump = 0; } }, 100); } // the pump is a starvation fallback only: a browser that is not painting (headless, occluded) delivers no animation frames, and the GPS state must still advance - on a painting phone it never fires; it parks itself when nothing is left to render
+function startRenderLoop() { if (!renderRaf) { lastCamAt = lastFrameAt = performance.now(); renderRaf = requestAnimationFrame(renderLoop); } if (!renderPump) renderPump = setInterval(() => { if ((watchId != null || !dispSettled()) && performance.now() - lastFrameAt > 100) renderTick(performance.now()); if (watchId == null && dispSettled() && !renderRaf) { clearInterval(renderPump); renderPump = 0; } }, 100); } // the pump is a starvation fallback only: a browser that is not painting (headless, occluded) delivers no animation frames, and the GPS state must still advance - on a painting phone it never fires; it parks itself when nothing is left to render
 function followCam(now) {
   if (!dispPos || followPaused || watchId == null) { lastCamAt = now; return; } // follow whenever location is ON (Beta 1.27, Andrew) - it used to engage only during a run, so the dot wandered off-screen on a plain drive. Trail recording and heading-up stay run-only.
   const c = map.getCanvas(); const p = projLL(dispPos);
   const dx = p.x - c.clientWidth / 2, dy = p.y - c.clientHeight / 2;
-  if (Math.abs(dx) < 2 && Math.abs(dy) < 2) { lastCamAt = now; return; }
+  if (Math.abs(dx) < 0.5 && Math.abs(dy) < 0.5) { lastCamAt = now; return; } // Beta 1.115: the deadband was 2 px - at driving zoom the dot had to drift ~7 m off-centre before the camera moved at all, so the camera lurched in pulses behind a smoothly coasting dot; half a pixel keeps it glued without jitter (the settle band drive126 judges is 12% of the screen, two orders wider)
   const dt = Math.min(100, Math.max(1, now - lastCamAt)); lastCamAt = now;
   const f = 1 - Math.pow(0.65, dt / 50); // Beta 1.65: the 1.28 ease (close 35% of the remaining offset per 50 ms) made time-based, so the convergence is identical at any frame rate - a gradual lock that keeps the dot kind of in the centre, never a snap and never a chase view
   map.panBy([dx * f, dy * f], { animate: false });
 }
-onMapReady(() => map.on('dragstart', () => { followPaused = true; }));
-onMapReady(() => map.on('dragend', () => { if (runStart) northUp(); })); // during a run: ease back to north-up like a nav app. Outside a run (Beta 1.27): a rotation/tilt he deliberately set stays put.
+function syncCentreBtn() { const b = $('centreBtn'); if (b) b.classList.toggle('hidden', !(watchId != null && followPaused && !!dispPos)); } // Beta 1.115 (Andrew): the re-centre button exists ONLY in the suspended state - location on, a position known, and the follow yielded to the user. Called on every render tick so the button's state can never drift from the follow's.
+function resumeFollow() { if (watchId == null || !followPaused) return; followPaused = false; syncCentreBtn(); startRenderLoop(); } // followCam's own ease carries the camera back to the dot - no snap, no jump
+onMapReady(() => map.on('dragstart', () => { followPaused = true; syncCentreBtn(); }));
+// Beta 1.115 (Andrew's drive report: "it locks and I'm not able to move around while I'm moving"):
+// the dragstart above almost never fires while following - followCam's panBy on every frame keeps
+// resetting MapLibre's drag-pan handler mid-gesture, so the drag never registers (measured in the
+// rig: GPS on + following = dragstart x0 across a full drag; GPS off = it fires at once). Suspension
+// therefore ALSO listens to the raw pointer stream, which no camera move can eat: a press on the
+// canvas that moves >10 px yields the camera to the user, pan AND bearing both (the old dragend
+// northUp haul is gone - while suspended the map stays exactly where he put it), until he re-centres.
+// A plain tap (< 10 px of movement) does NOT suspend: tapping a street to select it changes nothing.
+onMapReady(() => { const c = map.getCanvas(); let press = null; c.addEventListener('pointerdown', e => { press = { x: e.clientX, y: e.clientY }; }); window.addEventListener('pointermove', e => { if (press && !followPaused && (Math.abs(e.clientX - press.x) > 10 || Math.abs(e.clientY - press.y) > 10)) { followPaused = true; syncCentreBtn(); } }); window.addEventListener('pointerup', () => { press = null; }); window.addEventListener('pointercancel', () => { press = null; }); c.addEventListener('wheel', () => { if (!followPaused) { followPaused = true; syncCentreBtn(); } }, { passive: true }); });
 // HEADING-UP (Andrew, Beta 1.14 - replaces Flip): while the camera follows during a run, the map rotates
 // so his direction of travel points up - course-up from the GPS course, not the compass and not true
 // north: 'my north' is wherever he is heading. Smoothed around the circle so low-speed wobble can't spin
@@ -490,10 +496,23 @@ function headDelta(a, b) { return ((b - a + 540) % 360) - 180; }
 function updateHeading(hdg, speed) {
   if (typeof hdg !== 'number' || isNaN(hdg) || !speed || speed < 1) return;
   if (!runStart || followPaused) return;
-  smHeading = smHeading === null ? hdg : smHeading + headDelta(smHeading, hdg) * 0.35;
+  smHeading = smHeading === null ? hdg : smHeading + headDelta(smHeading, hdg) * 0.35; // Beta 1.115: this only maintains the smoothed course now - headCam, in the render loop, applies it to the map
+}
+// Beta 1.115: heading-up is applied per render tick, fractionally, in the same pipeline
+// as followCam's pan. It used to be a map.easeTo fired from updateHeading - but a camera
+// ease is cancelled by the next panBy, and while following, followCam pans on nearly every
+// frame, so the rotation starved whenever the dot was off-centre (measured in the rig:
+// smHeading chased 90 -> 170 while the bearing sat at 90). Tick application rides with the
+// pan instead of fighting it, and is frame-smooth like the rest of the follow.
+let lastHeadAt = 0;
+function headCam(now) {
+  if (!runStart || followPaused || smHeading === null) { lastHeadAt = now; return; }
   const cur = map.getBearing();
   const d = headDelta(cur, smHeading);
-  if (Math.abs(d) > 3) map.easeTo({ bearing: cur + d, duration: 350 });
+  if (Math.abs(d) < 0.3) { lastHeadAt = now; return; }
+  const dt = Math.min(100, Math.max(1, now - (lastHeadAt || now))); lastHeadAt = now;
+  const f = 1 - Math.pow(0.65, dt / 50); // followCam's ease, time-based: identical convergence at any frame rate
+  map.jumpTo({ bearing: cur + d * f });
 }
 function northUp() { smHeading = null; if (!map) return; if (Math.abs(map.getBearing()) > 0.5) map.easeTo({ bearing: 0, duration: 400 }); } // Beta 1.76: same no-map tolerance as drawTrail/pushGps - a finish on a map-less page must reach its transaction, not throw here
 // ===== POSITION FILTER (Beta 1.28, Andrew: the dot jitters at slow speed) =====
@@ -522,15 +541,21 @@ function kfUpdate(ll, acc, now) {
     const dt0 = (now - kf.at) / 1000;
     if (dt0 > 10 || Math.hypot(zx - kf.ox - kf.x.p, zy - kf.oy - kf.y.p) > 75) kf = null; // reacquisition: a long silence or a far jump voids the motion model
   }
-  if (!kf) { kf = { ox: zx, oy: zy, at: now, x: { p: 0, v: 0, a: R, b: 0, c: 4 }, y: { p: 0, v: 0, a: R, b: 0, c: 4 } }; return { est: ll.slice(), aim: ll.slice() }; }
+  if (!kf) { kf = { ox: zx, oy: zy, at: now, atF: performance.now(), x: { p: 0, v: 0, a: R, b: 0, c: 4 }, y: { p: 0, v: 0, a: R, b: 0, c: 4 } }; return { est: ll.slice(), snap: true }; }
   const dt = Math.min(Math.max((now - kf.at) / 1000, 0.05), 5); kf.at = now;
   kfAxis(zx - kf.ox, kf.x, dt, R); kfAxis(zy - kf.oy, kf.y, dt, R);
+  kf.atF = performance.now();
   const est = [(kf.oy + kf.y.p) / MLAT, (kf.ox + kf.x.p) / MLNG];
-  // gentle lookahead: the glide aims a fraction of a second along the estimated velocity
-  // (capped at 3 m), so the dot keeps flowing between fixes instead of bursting once a second
-  const lx = Math.max(-3, Math.min(3, kf.x.v * 0.45)), ly = Math.max(-3, Math.min(3, kf.y.v * 0.45));
-  return { est, aim: [(kf.oy + kf.y.p + ly) / MLAT, (kf.ox + kf.x.p + lx) / MLNG] };
+  return { est, snap: false };
 }
+// Beta 1.115: where the estimator's motion model says we are at THIS instant - the estimate
+// extrapolated along its own velocity from the last fix. This (not the raw estimate) is what
+// the display draws, so between fixes the dot coasts instead of freezing at the last one.
+// The horizon is capped at 2.5 s: if fixes stop arriving the dot stops too, a little past
+// the last one, instead of sailing away on a stale velocity. A reacquisition (the filter
+// voiding itself above: >10 s silence or a >75 m jump) reports snap instead, and the
+// display takes the new position immediately.
+function kfPredict() { if (!kf) return null; const h = Math.min(Math.max((performance.now() - kf.atF) / 1000, 0), 2.5); return [(kf.oy + kf.y.p + kf.y.v * h) / MLAT, (kf.ox + kf.x.p + kf.x.v * h) / MLNG]; }
 // ===== FACING (Beta 1.28, Andrew: the Apple Maps light beam on the dot) =====
 // One funnel for every facing source, smoothed around the circle so the beam never
 // snaps. Sources: the GPS course while moving (truest inside a steel vehicle), the
@@ -567,11 +592,14 @@ function acceptFix(pos) {
   if (acc <= 65) lastGood = { ll, at: now };
   const speed = pos.coords.speed;
   lastFixAt = now; if (typeof pos.timestamp === 'number') lastFixTs = pos.timestamp; gpsAccM = acc; gpsDenied = false; // Beta 1.111: a live fix clears any earlier denial for the Status row
-  const { est: sm, aim } = kfUpdate(ll, acc, now); // the filter subsumes the old deadband: sub-noise moves barely shift the estimate, so no fix needs swallowing
-  renderTick(performance.now()); // Beta 1.66: settle the running glide to NOW before re-anchoring on the new aim - a glide that is re-aimed from a stale position (few ticks in a non-painting browser) makes the dot chase leftover distance, which is exactly the wander drive127 S1/S2 measure
+  renderTick(performance.now()); // Beta 1.66's settle, kept: advance the display to NOW on the OLD track before re-anchoring - a display re-anchored from a stale position makes the dot chase leftover distance, which is exactly the wander drive127 S1/S2 measure
+  const { est: sm, snap } = kfUpdate(ll, acc, now); // the filter subsumes the old deadband: sub-noise moves barely shift the estimate, so no fix needs swallowing
   const firstFix = !gpsPos;
   gpsPos = sm;
-  glideTo(aim);
+  const pred = kfPredict(); // Beta 1.115: re-anchor the display on the NEW track without a jump - the gap between where the dot is drawn and where the new track puts it becomes the decaying offset; a reacquisition (snap) takes the new position outright
+  if (snap || !dispPos || !pred) { dispOff = [0, 0]; if (pred) dispPos = pred; }
+  else dispOff = [(dispPos[0] - pred[0]) * MLAT, (dispPos[1] - pred[1]) * MLNG];
+  startRenderLoop(); // the old glide started the loop here; the coasting display needs it just as much (a fix can arrive on an existing watch and must still render)
   updateHeading(pos.coords.heading, speed);
   if (typeof pos.coords.heading === 'number' && speed && speed >= 1) { lastCourseAt = now; setFacing(pos.coords.heading, 0.5); } // moving: face along the course
   const spd = $('spd');
@@ -617,7 +645,7 @@ function startGps(fromRun) {
   if (!navigator.geolocation) { toast('This device has no GPS access here', 3000); return; }
   gpsFromRun = !!fromRun; followPaused = false; lastPushKey = ''; startCompass();
   const wg = ++watchGen; watchId = navigator.geolocation.watchPosition(p => { if (wg === watchGen) acceptFix(p); }, e => { if (wg === watchGen) gpsError(e); }, { enableHighAccuracy: true, maximumAge: 2000, timeout: 20000 }); // Beta 1.69 (audit N04): callbacks carry their watcher's generation - a queued callback from a stopped or replaced watcher is dropped even when its timestamp is fresh (R01's guard cannot tell watchers apart)
-  startRenderLoop(); // Beta 1.65: the frame-synced loop keeps centring after a glide ends (the Beta 1.28 camTimer's job, drive126 F2) - on the display's own clock now, not a second timer
+  startRenderLoop(); // Beta 1.65: the frame-synced loop keeps centring between fixes (the Beta 1.28 camTimer's job, drive126 F2) - on the display's own clock now, not a second timer
   clearInterval(staleWatchTimer);
   staleWatchTimer = setInterval(() => { if (watchId != null && Date.now() - lastFixAt > 45000 && lastFixAt) { const wasRunGps = gpsFromRun; stopGps(true); startGps(wasRunGps); } }, 15000); // Beta 1.48 (audit B02): capture run ownership BEFORE stopGps clears it - the restart used to always come back as non-run GPS, so a mid-run watcher lost its run
   $('gpsBtn').classList.add('on');
@@ -626,8 +654,9 @@ function startGps(fromRun) {
 function stopGps(silent) {
   watchGen++; // Beta 1.69: invalidate any callback still queued from this watcher
   if (watchId != null) navigator.geolocation.clearWatch(watchId);
-  watchId = null; gpsFromRun = false; clearInterval(staleWatchTimer); glideActive = false; if (renderRaf) { cancelAnimationFrame(renderRaf); renderRaf = 0; } clearInterval(renderPump); renderPump = 0; stopCompass(); // Beta 1.64 (audit F08); Beta 1.65: the render loop stops with the watch
+  watchId = null; gpsFromRun = false; clearInterval(staleWatchTimer); dispOff = [0, 0]; if (renderRaf) { cancelAnimationFrame(renderRaf); renderRaf = 0; } clearInterval(renderPump); renderPump = 0; stopCompass(); // Beta 1.64 (audit F08); Beta 1.65: the render loop stops with the watch
   if (map) pushGps(); // Beta 1.48 (audit B05): the facing beam is only built while watchId lives - without a fresh push the last beam stayed drawn after stop
-  $('gpsBtn').classList.remove('on'); $('gpsBtn').classList.remove('rec'); $('spd').classList.add('hidden');
+  $('gpsBtn').classList.remove('on'); $('gpsBtn').classList.remove('rec'); $('spd').classList.add('hidden'); syncCentreBtn(); // Beta 1.115: location off - the re-centre button goes with it
 }
-$('gpsBtn').addEventListener('click', () => { if (!tapGuard('gpsBtn')) return; if (watchId != null) stopGps(); else if (runStart) { startGps(true); toast('Clean in progress — recording your route', 2600); } else { startGps(false); toast('Location on — view only, not recording', 2400); } }); // Beta 1.49 (Andrew's rule): the Locate tab alone never records - with no clean open it is view-only; pressed during an open clean it resumes that clean's recording and says so
+$('gpsBtn').addEventListener('click', () => { if (!tapGuard('gpsBtn')) return; if (watchId != null) { if (followPaused) { resumeFollow(); toast('Centred on you — following again', 1800); } else stopGps(); } else if (runStart) { startGps(true); toast('Clean in progress — recording your route', 2600); } else { startGps(false); toast('Location on — view only, not recording', 2400); } }); // Beta 1.49 (Andrew's rule): the Locate tab alone never records - with no clean open it is view-only; pressed during an open clean it resumes that clean's recording and says so. Beta 1.115 (Andrew): with the follow suspended, Locate means "take me back to my dot" and resumes it - off is the tap while following.
+$('centreBtn').addEventListener('click', () => { if (!tapGuard('centreBtn')) return; resumeFollow(); }); // Beta 1.115: the top-right re-centre button (below day/night) - visible only while suspended (syncCentreBtn)
