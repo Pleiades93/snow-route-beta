@@ -1,5 +1,13 @@
 # Changelog
 
+## Beta 1.105 — 2026-11-05
+Pressed feedback for route rows in the blue route menu: tapping a route in
+the Choose-a-route list now lights up exactly like the menu's own buttons
+(.rmBtn). One CSS rule added (#routeMenu .routeRow:active, same .28 white
+wash); no behaviour, layout or JS changes. Reported by Andrew 2026-11-05:
+the Choose / Create buttons lit up when pressed but a route row did not,
+because .routeRow never had an :active rule.
+
 ## Beta 1.104 — 2026-11-04
 Codex audit round 103 fixes (both P1, both in the finish/archive path).
 (1) CG-103-02: the interrupted-Finish recovery added in 1.102 matched an
