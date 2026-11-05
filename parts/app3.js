@@ -170,7 +170,7 @@ function closeClean() {
 // ===== RUN LIFECYCLE =====
 let wakeLock = null;
 async function syncWake() {
-  const want = !!runStart && document.visibilityState === 'visible' && settings.awake; // Beta 1.111: the wake lock is gated on the On-the-job toggle (default OFF) - the request/release machinery below is unchanged; where the API is absent the toggle still saves and nothing here throws
+  const want = !!runStart && document.visibilityState === 'visible' && settings.awake; // Beta 1.111: the wake lock is gated on the On-the-job toggle - the request/release machinery below is unchanged; where the API is absent the request is a silent no-op and nothing here throws. Beta 1.112 (Andrew): settings.awake is session-only state - always OFF at a cold open, never stored
   try {
     if (want && !wakeLock && navigator.wakeLock) { wakeLock = await navigator.wakeLock.request('screen'); wakeLock.addEventListener('release', () => { wakeLock = null; }); }
     if (!want && wakeLock) { const w = wakeLock; wakeLock = null; w.release(); }
