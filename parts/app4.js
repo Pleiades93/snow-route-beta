@@ -552,6 +552,7 @@ $('stDel').addEventListener('click', async () => {
 });
 // ---- About / What's new ----
 const WHATSNEW = [ // the curated in-app list: plain words, newest first. Ships WITH each version like the CHANGELOG - a release that changes what Andrew sees adds its entry here in the same change
+  { v: 'Beta 1.112', items: ['Keep screen awake now resets when the app closes — turn it on per session when you want it'] },
   { v: 'Beta 1.111', items: ['Settings rebuilt: Status, On the job, Backup, About', 'Keep the screen awake during a clean', 'Done chime — five sounds to choose from', 'Offline maps now live in Status'] },
   { v: 'Beta 1.110', items: ['Finish is final: no more Undo after you confirm'] },
   { v: 'Beta 1.109', items: ['Streets list: Mains / Secondaries, with a Completed pill'] }
