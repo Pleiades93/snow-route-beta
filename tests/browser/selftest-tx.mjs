@@ -51,6 +51,14 @@ function steps(spec, log) { return spec.map(s => ({ name: s[0], write: () => { l
   t('reconcile: no archive -> none', A(111, 0, false) === 'none');
   t('reconcile: different run -> none', A(222, 111, false) === 'none' && A(222, 111, true) === 'none');
   t('reconcile: match + live board -> rollback', A(111, 111, false) === 'rollback');
-  t('reconcile: match + empty board -> complete', A(111, 111, true) === 'complete'); }
+  t('reconcile: match + empty board -> complete', A(111, 111, true) === 'complete');
+  // Round 103 (CG-103-02): the second argument is now the archive entry's
+  // dedicated run identity (runId), no longer its startedAt - strictness is
+  // the whole fix: a near-miss or a previous run's identity must NEVER match
+  // (the <= alternative was rejected in debate - it could delete a legitimate
+  // archive mid-run), and an entry carrying no identity matches nothing.
+  t('reconcile: near-miss identity -> none (no tolerance)', A(111, 112, false) === 'none' && A(112, 111, true) === 'none');
+  t('reconcile: previous run identity vs new start -> none', A(999999, 111, false) === 'none' && A(999999, 111, true) === 'none');
+  t('reconcile: entry without identity -> none', A(111, 0, false) === 'none' && A(111, 0, true) === 'none'); }
 console.log(`tx selftest: ${pass} pass, ${fail} fail`);
 process.exit(fail ? 1 : 0);
