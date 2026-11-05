@@ -347,33 +347,23 @@ function finishRun() {
   // written afterwards was not, so a failed sides write resurrected the
   // finished clean beside its own archive entry on the next launch.
   let newHist = null;
-  if (archiving) {
-    newHist = trimHistory([...history, snap]);
-    if (!lsSet(LS.hist, JSON.stringify(newHist))) { toast('Storage full — finish stopped, run intact', 3600); return; } // verified write BEFORE anything clears
-  }
+  if (archiving) newHist = trimHistory([...history, snap]);
   const clearedPieces = {}, clearedTimes = {};
   for (const n of STREETNAMES) { clearedPieces[n] = STRETCH[n].parts.map(() => 0); clearedTimes[n] = {}; }
-  const prevSidesRaw = lsGet(LS.sides); // Beta 1.93 (audit R05): kept so the start-key gate below can roll this write back
-  if (!lsSet(LS.sides, JSON.stringify({ p: clearedPieces, t: clearedTimes }))) {
-    if (archiving) { // roll the archive back - the finish did not happen. Beta 1.63 (audit F02): the rollback is CHECKED and READ BACK - if it fails, the stored history and the stored board disagree, and the message must say so instead of claiming the clean is intact.
-      const rbOk = lsSet(LS.hist, JSON.stringify(prevHist)) && lsGet(LS.hist) === JSON.stringify(prevHist);
-      if (!rbOk) { toast('Storage failure — finish stopped, but the archive could not be undone. Export a backup now', 6000); return; }
-    }
-    toast('Storage problem — finish stopped, your clean is intact', 4200);
-    return;
-  }
-  // Beta 1.93 (follow-up audit R05): the start-key delete is a GATE, taken before anything
-  // mutates. 1.92's retry (startDirty) still left a window: die before the retry lands and
-  // the stale start key resurrects this finished run on the next boot. If the delete cannot
-  // land, both gated writes roll back (checked, as at gate 2) and the finish stops with the
-  // run intact - a committed finish never carries a stale start key.
-  if (runStart && !lsDel(LS.start)) {
-    const rbSides = prevSidesRaw === null ? lsDel(LS.sides) : (lsSet(LS.sides, prevSidesRaw) && lsGet(LS.sides) === prevSidesRaw);
-    let rbHist = true;
-    if (archiving) rbHist = lsSet(LS.hist, JSON.stringify(prevHist)) && lsGet(LS.hist) === JSON.stringify(prevHist);
-    if (rbSides && rbHist) toast('Storage problem — finish stopped, your clean is intact', 4200);
-    else toast('Storage failure — finish stopped, but the rollback could not be verified. Export a backup now', 6000);
-    return;
+  const prevSidesRaw = lsGet(LS.sides); // kept so the start step's rollback can restore this write exactly (including its absence)
+  // Beta 1.102 (Phase 4, C3): the finish transaction on the ONE coordinator - the
+  // 1.57-1.93 gate discipline mechanized: archive, cleared authority, start-key
+  // delete; verified writes; verified rollback in reverse. A kill between gates
+  // leaves a signature reconcileInterruptedFinish resolves at boot (CG-196-04).
+  const fSteps = [];
+  if (archiving) fSteps.push({ name: 'archive', write: () => txSet(LS.hist, JSON.stringify(newHist)), undo: () => txSet(LS.hist, JSON.stringify(prevHist)) });
+  fSteps.push({ name: 'sides', write: () => txSet(LS.sides, JSON.stringify({ p: clearedPieces, t: clearedTimes })), undo: () => prevSidesRaw === null ? txDel(LS.sides) : txSet(LS.sides, prevSidesRaw) });
+  if (runStart) fSteps.push({ name: 'start', write: () => txDel(LS.start), undo: () => txSet(LS.start, String(runStart)) });
+  const fTx = runTx(fSteps);
+  if (fTx.outcome !== 'committed') {
+    if (fTx.failedStep === 'archive') { toast('Storage full \u2014 finish stopped, run intact', 3600); return; }
+    if (fTx.outcome === 'degraded') { toast(fTx.failedStep === 'sides' && archiving ? 'Storage failure \u2014 finish stopped, but the archive could not be undone. Export a backup now' : 'Storage failure \u2014 finish stopped, but the rollback could not be verified. Export a backup now', 6000); return; }
+    toast('Storage problem \u2014 finish stopped, your clean is intact', 4200); return;
   }
   const undoSnapData = runSnap ? JSON.parse(JSON.stringify(runSnap)) : validateSnap(parseJ(lsGet(LS.snap), null), runStart); // Beta 1.95 (deep audit SR-194-01): the cancel snapshot travels INTO the undo before it is deleted here - from memory when the run never reloaded, from its persisted copy (validated, SR-194-03) when it did. 1.94 deleted the snapshot and never carried it, so Finish -> Undo -> Cancel fell back to the stamp journal, blind to a pre-Start side unmarked mid-run.
   lsDel(LS.snap); markClean('snap'); // Beta 1.94 (SR-193-02): the run is finished - its cancel snapshot goes with it. Ungated on purpose: a leftover snapshot is stamped with THIS run's start, so it can never match a future run, and the next Start overwrites it anyway
@@ -397,40 +387,27 @@ function doUndo() {
   // history and authority records are written from the snapshot FIRST; a
   // failure keeps the undo on offer (snapshot retained, button unchanged)
   // instead of half-undoing.
-  if (!lsSet(LS.hist, JSON.stringify(undoSnap.hist))) { toast('Storage problem — undo stopped, nothing changed', 3600); return; }
-  if (!lsSet(LS.sides, JSON.stringify({ p: undoSnap.pieces, t: undoSnap.pieceTimes }))) { const rbOk = lsSet(LS.hist, JSON.stringify(history)) && lsGet(LS.hist) === JSON.stringify(history); toast(rbOk ? 'Storage problem — undo stopped, nothing changed' : 'Storage failure — undo stopped, but the history restore could not be undone. Export a backup now', rbOk ? 3600 : 6000); return; } // Beta 1.63 (audit F02): the mirror rollback is verified too
-  // Beta 1.94 (deep audit SR-193-04): the restored run's START is a gate too, taken BEFORE the
-  // snapshot below is consumed. It used to ride the saveAll after the state swap (with
-  // undoSnap already nulled), so a failed start write plus a reload restored the board but
-  // lost the run itself - marks with no run to finish or cancel. A failure here rolls BOTH
-  // gated writes back (each checked by read-back, as elsewhere) and returns with the undo
-  // still on offer: nothing half-committed.
-  const startOk = undoSnap.runStart ? (lsSet(LS.start, String(undoSnap.runStart)) && lsGet(LS.start) === String(undoSnap.runStart)) : lsDel(LS.start);
-  if (!startOk) {
-    const rbHist = lsSet(LS.hist, JSON.stringify(history)) && lsGet(LS.hist) === JSON.stringify(history);
-    const rbSides = lsSet(LS.sides, JSON.stringify({ p: pieces, t: pieceTimes })) && lsGet(LS.sides) === JSON.stringify({ p: pieces, t: pieceTimes });
-    toast((rbHist && rbSides) ? 'Storage problem — undo stopped, nothing changed' : 'Storage failure — undo stopped, but the rollback could not be verified. Export a backup now', (rbHist && rbSides) ? 3600 : 6000);
+  // Beta 1.102 (Phase 4, C3): the undo transaction on the one coordinator - the
+  // 1.57-1.95 gates mechanized: history, authority, the restored run's start, its
+  // cancel snapshot; verified writes, verified rollback in reverse; a failure
+  // keeps the undo on offer (snapshot retained, button unchanged).
+  const curHistRaw = JSON.stringify(history), curSidesRaw = JSON.stringify({ p: pieces, t: pieceTimes });
+  const uSteps = [
+    { name: 'history', write: () => txSet(LS.hist, JSON.stringify(undoSnap.hist)), undo: () => txSet(LS.hist, curHistRaw) },
+    { name: 'sides', write: () => txSet(LS.sides, JSON.stringify({ p: undoSnap.pieces, t: undoSnap.pieceTimes })), undo: () => txSet(LS.sides, curSidesRaw) },
+    { name: 'start', write: () => undoSnap.runStart ? txSet(LS.start, String(undoSnap.runStart)) : txDel(LS.start), undo: () => txDel(LS.start) }
+  ];
+  if (undoSnap.snap) { const snapRaw = JSON.stringify({ at: undoSnap.runStart, pieces: undoSnap.snap.pieces, pieceTimes: undoSnap.snap.pieceTimes, done: undoSnap.snap.done, times: undoSnap.snap.times, via: undoSnap.snap.via, cov: undoSnap.snap.cov }); uSteps.push({ name: 'snap', write: () => txSet(LS.snap, snapRaw), undo: () => txDel(LS.snap) }); }
+  const uTx = runTx(uSteps);
+  if (uTx.outcome !== 'committed') {
+    if (uTx.outcome === 'degraded') toast(uTx.failedStep === 'sides' ? 'Storage failure \u2014 undo stopped, but the history restore could not be undone. Export a backup now' : 'Storage failure \u2014 undo stopped, but the rollback could not be verified. Export a backup now', 6000);
+    else toast('Storage problem \u2014 undo stopped, nothing changed', 3600);
     return;
-  }
-  // Beta 1.95 (deep audit SR-194-01): the restored run's cancel SNAPSHOT is a gate too,
-  // on the same discipline as the start gate above: the undo is complete only when the
-  // snapshot is persisted again (read back) for the restored run, because a later reload
-  // leaves Cancel nothing else exact to restore from. A failure rolls all three gated
-  // writes back (each checked) and returns with the undo still on offer.
-  if (undoSnap.snap) {
-    const snapRaw = JSON.stringify({ at: undoSnap.runStart, pieces: undoSnap.snap.pieces, pieceTimes: undoSnap.snap.pieceTimes, done: undoSnap.snap.done, times: undoSnap.snap.times, via: undoSnap.snap.via, cov: undoSnap.snap.cov });
-    if (!(lsSet(LS.snap, snapRaw) && lsGet(LS.snap) === snapRaw)) {
-      const rbHist = lsSet(LS.hist, JSON.stringify(history)) && lsGet(LS.hist) === JSON.stringify(history);
-      const rbSides = lsSet(LS.sides, JSON.stringify({ p: pieces, t: pieceTimes })) && lsGet(LS.sides) === JSON.stringify({ p: pieces, t: pieceTimes });
-      const rbStart = lsDel(LS.start);
-      toast((rbHist && rbSides && rbStart) ? 'Storage problem — undo stopped, nothing changed' : 'Storage failure — undo stopped, but the rollback could not be verified. Export a backup now', (rbHist && rbSides && rbStart) ? 3600 : 6000);
-      return;
-    }
   }
   clearTimeout(undoTimer);
   const undoHadSnap = !!undoSnap.snap; // Beta 1.96 (SR-195-06): captured before undoSnap is consumed - the success message below must say when the restored run carries NO snapshot (its Cancel is journal-grade), which 1.95 restored in silence
   const undoSnapGpsWas = !!undoSnap.gpsWas; // undo restores the pre-finish state: GPS restarts only if it was actually running for the run (a fresh watch's first error toast would otherwise overwrite the 'Finish undone' toast)
-  doneSet = new Set(undoSnap.done); doneTimes = undoSnap.times; doneVia = undoSnap.via; notes = undoSnap.notes || {}; pieces = undoSnap.pieces; pieceTimes = undoSnap.pieceTimes; runStart = undoSnap.runStart; coveredIdx = undoSnap.cov; runSnap = undoSnap.snap ? JSON.parse(JSON.stringify(undoSnap.snap)) : null; if (undoSnap.snap) snapDirty = false; // Beta 1.95 (SR-194-01): the restored run carries its cancel snapshot again - in memory and (gate above) on disk
+  doneSet = new Set(undoSnap.done); doneTimes = undoSnap.times; doneVia = undoSnap.via; notes = undoSnap.notes || {}; pieces = undoSnap.pieces; pieceTimes = undoSnap.pieceTimes; runStart = undoSnap.runStart; coveredIdx = undoSnap.cov; runSnap = undoSnap.snap ? JSON.parse(JSON.stringify(undoSnap.snap)) : null; if (undoSnap.snap) markClean('snap'); // Beta 1.95 (SR-194-01): the restored run carries its cancel snapshot again - in memory and (gate above) on disk
   history = undoSnap.hist;
   suggested = new Set(); $('suggest').classList.add('hidden'); // Beta 1.70 (audit A04): the restored coverage starts with a clean suggestion set
   undoSnap = null;

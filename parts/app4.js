@@ -223,21 +223,17 @@ function restoreBackup(parsed) { // production doRestore semantics: validate EVE
   const snap = {}; let snapOk = true;
   for (const k of SCOPE) { try { snap[k] = localStorage.getItem(k); } catch (e) { snapOk = false; } }
   if (!snapOk) { toast('Restore stopped — your current data could not be read for safekeeping, so nothing was changed', 3600); return; }
-  const rollback = () => {
+  const rollback = () => { // Beta 1.102 (Phase 4, C3): the restore-all rollback on the verified primitives - every scoped key put back (or removed) and read back
     let okBack = true;
-    for (const k of SCOPE) {
-      try { if (snap[k] === null) localStorage.removeItem(k); else localStorage.setItem(k, snap[k]); } catch (e) { /* verified below */ }
-      try { if (localStorage.getItem(k) !== snap[k]) okBack = false; } catch (e) { okBack = false; }
-    }
+    for (const k of SCOPE) { const r = snap[k] === null ? txDel(k) : txSet(k, snap[k]); if (!r.ok) okBack = false; }
     return okBack;
   };
   for (const pair of entries) {
     const k = pair[0], v = pair[1];
-    let wrote = false;
-    try { wrote = v === null ? (localStorage.removeItem(k), localStorage.getItem(k) === null) : (lsSet(k, v) && localStorage.getItem(k) === v); } catch (e) { wrote = false; } // Beta 1.97 (audit loop CG-196-01): a null entry value is a DELETE (the idle assertion clearing start/snapshot) - removed and verified like every write
-    if (!wrote) {
-      if (rollback()) toast('Restore failed while writing ' + k + ' — your current data was put back, nothing was changed', 3800);
-      else toast('Restore failed while writing ' + k + ' — and your previous data could NOT be fully put back. Restore from a known-good backup', 4200);
+    const wr = v === null ? txDel(k) : txSet(k, v); // Beta 1.97 (CG-196-01) + 1.102 (Phase 4): a null entry is a DELETE (the idle assertion) - every entry written and verified by the same primitives
+    if (!wr.ok) {
+      if (rollback()) toast('Restore failed while writing ' + k + ' \u2014 your current data was put back, nothing was changed', 3800);
+      else toast('Restore failed while writing ' + k + ' \u2014 and your previous data could NOT be fully put back. Restore from a known-good backup', 4200);
       return;
     }
   }
