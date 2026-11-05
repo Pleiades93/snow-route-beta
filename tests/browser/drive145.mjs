@@ -248,68 +248,24 @@ await poll(`!!window.__bootAt`, 30000);
 await ev(`loadRoute('5w'); true`); await sleep(500);
 ok('N25c no phantom run after the reload', await ev(`runStart === 0`));
 
-// --- SR-194-01 (Beta 1.95): Finish -> Undo -> Cancel must restore the
-// pre-Start board EXACTLY. 1.94's finish deleted the cancel snapshot and
-// its undo never restored it, so the sequence fell back to the stamp
-// journal - blind to a pre-Start side unmarked mid-run (unmarking erases
-// its stamp). The undo now carries the snapshot and re-persists it as a
-// verified gate before the run resumes.
+// --- Beta 1.110: Finish is FINAL (the Finish -> Undo -> Cancel chain went
+// with the Undo itself - Andrew: the Yes confirmation is the whole gate).
+// What survives of the SR-194-01 concern: a finish takes the run's cancel
+// snapshot with it (no stale LS.snap may linger pretending a live run
+// exists), and the finished state persists across a reload.
 await ev(`clearAllMarks(); true`); await sleep(200);
 await ev(`markDone('Velmar', 'tap'); true`);
 await ev(`startClean(); true`); await sleep(200);
-await ev(`togglePiece('Velmar', 0, 0); true`); // the journal-blind act: a pre-Start side unmarked mid-run
-await ev(`markDone('Astona', 'tap'); true`); await sleep(200);
+await ev(`togglePiece('Velmar', 0, 0); true`); // a pre-Start side unmarked mid-run - the snapshot exists for Cancel, and Finish must retire it
+await ev(`markDone('Astona', 'tap'); markDone('Mellings', 'tap'); markDone('Boddy', 'tap'); true`); await sleep(200); // 3 complete streets at the finish, so the clean ARCHIVES (Velmar's unmark dropped it out of the done set)
+const h145before = await ev(`history.length`);
 await ev(`finishRun(); true`); await sleep(300);
-await ev(`doUndo(); true`); await sleep(300);
-await ev(`cancelStart(); true`); await sleep(300);
-ok('N35a finish -> undo -> cancel restores the pre-Start board exactly - the unmarked Velmar side returns, the run mark (Astona) goes (Beta 1.95, SR-194-01)', await ev(`(function(){ try { return doneSet.has('Velmar') && pieces.Velmar.every(v => v === 3) && pieces.Astona.every(v => v === 0) && runStart === 0 && localStorage.getItem(LS.snap) === null; } catch (e) { return false; } })()`));
-await ev(`clearAllMarks(); true`); await sleep(200);
-await ev(`markDone('Velmar', 'tap'); markDone('Boddy', 'tap'); true`);
-await ev(`startClean(); true`); await sleep(200);
-await ev(`togglePiece('Boddy', 0, 1); true`);
-await ev(`markDone('Tina', 'tap'); true`); await sleep(200);
-await ev(`finishRun(); true`); await sleep(300);
-await ev(`doUndo(); true`); await sleep(300);
-const n35snap = await ev(`(function(){ const s = JSON.parse(localStorage.getItem(LS.snap) || 'null'); return !!s && s.at === runStart && runStart > 0; })()`);
-await ev(`cancelStart(); true`); await sleep(300);
-ok('N35b the same sequence across several streets - and Undo re-persisted the snapshot for the restored run | snapLive ' + n35snap, await ev(`(function(){ try { return doneSet.has('Velmar') && doneSet.has('Boddy') && pieces.Tina.every(v => v === 0) && runStart === 0; } catch (e) { return false; } })()`) && n35snap === true);
-await ev(`clearAllMarks(); true`); await sleep(200);
-await ev(`markDone('Velmar', 'tap'); true`);
-await ev(`startClean(); true`); await sleep(200);
-await ev(`togglePiece('Velmar', 0, 0); true`);
-await ev(`markDone('Astona', 'tap'); true`); await sleep(200);
-await ev(`finishRun(); true`); await sleep(300);
-await ev(`doUndo(); true`); await sleep(300);
+ok('N35a finish retires the cancel snapshot - board cleared, run over, no LS.snap lingers (Beta 1.110)', await ev(`(function(){ try { return runStart === 0 && doneSet.size === 0 && localStorage.getItem(LS.snap) === null && localStorage.getItem(LS.start) === null; } catch (e) { return false; } })()`));
 await ev(`location.reload(); true`);
 await poll(`!!window.__bootAt`, 30000);
 await ev(`loadRoute('5w'); true`); await sleep(600);
-await ev(`cancelStart(); true`); await sleep(300);
-ok('N35c finish -> undo -> RELOAD -> cancel still restores exactly (the re-persisted snapshot survives the reload)', await ev(`(function(){ try { return doneSet.has('Velmar') && pieces.Velmar.every(v => v === 3) && pieces.Astona.every(v => v === 0) && runStart === 0; } catch (e) { return false; } })()`));
-await ev(`clearAllMarks(); true`); await sleep(200);
-await ev(`markDone('Velmar', 'tap'); true`);
-await ev(`startClean(); true`); await sleep(200);
-await ev(`togglePiece('Velmar', 0, 0); true`);
-await ev(`finishRun(); true`); await sleep(300);
-await ev(`(function(){ window.__lsOrig145 = lsSet; lsSet = function(k, v){ if (k === LS.snap) return false; return window.__lsOrig145(k, v); }; return true; })()`);
-await ev(`doUndo(); true`); await sleep(300);
-const n35d = JSON.parse(await ev(`(() => JSON.stringify({ toast: $('toast').textContent, label: $('resetBtn').textContent, run: runStart, done: doneSet.size, snapKept: !!undoSnap }))()`));
-ok('N35d if the snapshot cannot be re-persisted, the Undo STOPS - run still finished, undo still on offer | ' + JSON.stringify(n35d), /undo stopped/.test(n35d.toast) && n35d.label === 'Undo' && n35d.run === 0 && n35d.done === 0 && n35d.snapKept === true);
-await ev(`(function(){ lsSet = window.__lsOrig145; return true; })()`);
-await ev(`doUndo(); true`); await sleep(300);
-await ev(`cancelStart(); true`); await sleep(300);
-ok('N35e with storage healthy again the undo + cancel chain completes exactly', await ev(`(function(){ try { return doneSet.has('Velmar') && pieces.Velmar.every(v => v === 3) && runStart === 0; } catch (e) { return false; } })()`));
-
-// N35f (Beta 1.96, deep audit SR-195-06): Finish + Undo with NO snapshot
-// available (its save never landed, or a reload lost it). The run restores,
-// but its Cancel is journal-grade - 1.95's Undo said plain 'run restored'.
-await ev(`markDone('Astona', 'tap'); true`); await sleep(200);
-await ev(`startClean(); true`); await sleep(200);
-await ev(`(function(){ runSnap = null; localStorage.removeItem(LS.snap); return true; })()`);
-await ev(`finishRun(); true`); await sleep(300);
-await ev(`doUndo(); true`); await sleep(300);
-const toast35f = await ev(`document.getElementById('toast').textContent`);
-ok('N35f undo without an available snapshot says the restored run has no saved start snapshot (Beta 1.96, SR-195-06) | ' + toast35f, /Finish undone/.test(toast35f) && /no start snapshot is saved/.test(toast35f));
-await ev(`cancelStart(); true`); await sleep(200); // leave no run open behind this check
+const n35b = JSON.parse(await ev(`(() => JSON.stringify({ run: runStart, done: doneSet.size, h: history.length }))()`));
+ok('N35b after a reload the finish stands - board still clear, no run, the archive kept (Beta 1.110) | ' + JSON.stringify(n35b), n35b.run === 0 && n35b.done === 0 && n35b.h === h145before + 1);
 
 // --- a full close forgets the override (Beta 1.77): the session marker is
 // what separates "opened again" from "cold open" ------------------------------

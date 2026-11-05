@@ -7,7 +7,7 @@ await bootThrough(ev, poll); // Beta 1.76: boots end at the route menu now - cli
 const R = { checks: [] };
 const ok = (name, cond) => R.checks.push([name, cond === true]);
 const exc = () => consoleLog.filter(c => c.type === 'EXCEPTION').length;
-const pollRead = async (expr, pred, ms = 9000) => {   // state-polling wait: fixed sleeps made T4 fail on a slow CI runner (the 8s undo window could lapse mid-jam); assertions unchanged, only the waiting is state-based. Hardened per audit T-02 (2026-10-28): the sampled value resets every iteration; a read that errors (page mid-reload) or returns a non-string counts as not-ready instead of reusing the previous read; a timeout returns {} (explicit not-ready), never the last sampled state.
+const pollRead = async (expr, pred, ms = 9000) => {   // state-polling wait: fixed sleeps raced the pop-up's own timing on a slow CI runner; assertions unchanged, only the waiting is state-based. Hardened per audit T-02 (2026-10-28): the sampled value resets every iteration; a read that errors (page mid-reload) or returns a non-string counts as not-ready instead of reusing the previous read; a timeout returns {} (explicit not-ready), never the last sampled state.
   const t0 = Date.now();
   do {
     let v;
@@ -37,7 +37,7 @@ ok('T2 Finish opens the Yes/No pop-up', A.vis && /Nothing is marked/.test(A.msg)
 await ev(`(() => { $('finNo').click(); return true; })()`); await sleep(300);
 A = JSON.parse(await ev(`(() => JSON.stringify({ vis: !$('finModal').classList.contains('hidden'), h: history.length }))()`));
 ok('T2 No closes the pop-up, nothing saved', !A.vis && A.h === 0);
-// T3: Yes saves the clean (with its note), button becomes Undo finish
+// T3: Yes saves the clean (with its note); the button stays FINISH - no Undo follows (Beta 1.110)
 await mark3();
 await ev(`(() => { setNoteText('Velmar', 'Blocked driveway at #12'); return true; })()`);
 await ev(`(() => { $('resetBtn').click(); return true; })()`); await sleep(300);
@@ -46,41 +46,35 @@ ok('T3 pop-up summarises streets + notes', /3 of 34 streets/.test(A.msg) && /not
 await ev(`(() => { $('finYes').click(); return true; })()`);
 A = await pollRead(`(() => JSON.stringify({ h: history.length, done: doneSet.size, label: $('resetBtn').textContent, hn: history[0] && history[0].notes && history[0].notes.Velmar ? history[0].notes.Velmar[0].text : '' }))()`, v => v.h === 1 && v.done === 0);
 ok('T3 Yes archives the clean with its notes', A.h === 1 && A.done === 0 && /Blocked driveway/.test(A.hn));
-ok('T3 button offers Undo', A.label === 'Undo');
-// T4: Undo restores the run — SELF-CONTAINED (Beta 1.12). Diagnosis trail: the check used to undo T3's
-// finish, which only works inside the app's real 8-second Undo window; the T3-to-T4 gap on this rig can
-// exceed 8s, and once the window lapses no recovery can recreate T3's snapshot (re-finishing the by-then
-// empty board snapshots the empty board). So T4 now builds its own finish and undoes it immediately -
-// what it verifies (history cleared of the finish, run restored, toast) is unchanged.
-await ev(`(() => { history = []; saveHistory(); undoSnap = null; const rb = $('resetBtn'); rb.textContent = 'FINISH'; rb.classList.remove('undoing'); return true; })()`);
+ok('T3 after Yes the button shows NO Undo - label stays FINISH (Beta 1.110)', A.label === 'FINISH');
+// T4: NO Undo exists any more (Beta 1.110, Andrew): the Yes tap is the whole gate. T4 builds its
+// own finish, then watches the button for a full 9 seconds (past the old 8s window): the label must
+// never read Undo, the finished run must never come back, and tapping the button again must open
+// the finish pop-up for the CURRENT board - not resurrect anything.
+await ev(`(() => { history = []; saveHistory(); return true; })()`);
 await mark3();
-// Page-side step trace (audit round 3): record every finishRun/doUndo invocation and every tapGuard
-// verdict from here on, so a T4 failure prints WHICH step never fired instead of a state snapshot.
-await ev(`(() => { window.__t4log = []; for (const k of ['finishRun', 'doUndo']) { const o = window[k]; if (typeof o === 'function') window[k] = function () { window.__t4log.push(k); return o.apply(this, arguments); }; } const tg = window.tapGuard; if (typeof tg === 'function') window.tapGuard = function (k) { const r = tg(k); window.__t4log.push('guard:' + k + '=' + r); return r; }; return true; })()`);
 await ev(`(() => { $('resetBtn').click(); return true; })()`);
 await pollRead(`(() => JSON.stringify({ open: !$('finModal').classList.contains('hidden') }))()`, v => v.open === true, 4000); // the pop-up must actually be open before Yes is tapped
-await sleep(600); // outlast the app's 400ms double-tap guard: T3's Yes tap can be <400ms old on a fast runner (proven by the step trace in run #25: guard:finYes=false) - a human cannot re-tap that fast, a test can
+await sleep(600); // outlast the app's 400ms double-tap guard: a prior Yes tap can be <400ms old on a fast runner - a human cannot re-tap that fast, a test can
 await ev(`(() => { $('finYes').click(); return true; })()`);
-// Hardened (Beta 1.15): T4 flaked once on a slow runner (1.14 attempt 2) even self-contained - the fixed
-// sleep(300) before the Undo tap is replaced by a state wait for the button to actually BE Undo, and the
-// final poll requires the toast in the SAME sample as the restored state, so no sample can pass state
-// while reading a stale toast.
-const diagUndo = await pollRead(`(() => JSON.stringify({ label: $('resetBtn').textContent }))()`, v => v.label === 'Undo', 6000);
-const diagPre = JSON.parse(await ev(`(() => JSON.stringify({ label: $('resetBtn').textContent, snap: !!undoSnap, h: history.length, done: doneSet.size, modal: $('finModal').classList.contains('hidden'), log: (window.__t4log || []).join(',') }))()`));
+A = await pollRead(`(() => JSON.stringify({ h: history.length, done: doneSet.size }))()`, v => v.h === 1 && v.done === 0);
+ok('T4 setup: the second clean archived', A.h === 1 && A.done === 0);
+const labels = [];
+const t4end = Date.now() + 9000;
+while (Date.now() < t4end) { labels.push(await ev(`(() => $('resetBtn').textContent + '|' + $('resetBtn').classList.contains('undoing'))()`)); await sleep(400); }
+ok('T4 no Undo is offered at any moment in the 9s after Yes | samples ' + labels.length + ' saw ' + JSON.stringify([...new Set(labels)]), labels.length >= 10 && labels.every(l => l === 'FINISH|false'));
 await ev(`(() => { $('resetBtn').click(); return true; })()`);
-A = await pollRead(`(() => JSON.stringify({ h: history.length, done: doneSet.size, toast: $('toast').textContent }))()`, v => v.h === 0 && v.done === 3 && /Finish undone/.test(v.toast));
-R.diagT4 = { labelWait: diagUndo, pre: diagPre, post: A };
-// The runner prints only check NAMES for failures - so the state dump rides in the name itself.
-// (The first diagnostic round put it in the result block, which the runner parses but never echoes.)
-ok('T4 Undo finish restores the run | diag ' + JSON.stringify(R.diagT4), A.h === 0 && A.done === 3 && /Finish undone/.test(A.toast));
+A = await pollRead(`(() => JSON.stringify({ open: !$('finModal').classList.contains('hidden'), h: history.length, done: doneSet.size }))()`, v => v.open === true, 4000);
+ok('T4 tapping the button after a finish opens the pop-up - the run does NOT come back', A.open === true && A.h === 1 && A.done === 0);
+await ev(`(() => { $('finNo').click(); return true; })()`); await sleep(200);
 // T5: finish again, then delete returns to Previous cleans (the bug fix)
 // Hardened (audit round 3): every tap waits for its observable EFFECT before the next tap - the fixed
 // sleeps raced the app's real double-tap guards (T5's resetBtn tap can land inside the 400ms guard
 // window of T4's Undo tap on the same button and be silently eaten, stranding the whole chain).
 const step = async (tapExpr, effectExpr, pred) => { await ev(tapExpr); return await pollRead(effectExpr, pred, 6000); };
-await sleep(600); // same guard window: T4's Undo tap on this very button can be <400ms old here
+await sleep(600); // same guard window: T4's last tap on this very button can be <400ms old here
 await step(`(() => { $('resetBtn').click(); return true; })()`, `(() => JSON.stringify({ open: !$('finModal').classList.contains('hidden') }))()`, v => v.open === true);
-await step(`(() => { $('finYes').click(); return true; })()`, `(() => JSON.stringify({ label: $('resetBtn').textContent, h: history.length }))()`, v => v.label === 'Undo' && v.h === 1);
+await step(`(() => { $('finYes').click(); return true; })()`, `(() => JSON.stringify({ label: $('resetBtn').textContent, h: history.length }))()`, v => v.label === 'FINISH' && v.h === 1);
 await step(`(() => { openPace(); return true; })()`, `(() => JSON.stringify({ vis: !$('pacePanel').classList.contains('hidden') }))()`, v => v.vis === true);
 await step(`(() => { $('histHead').click(); return true; })()`, `(() => JSON.stringify({ rows: document.querySelectorAll('.histRow').length }))()`, v => v.rows >= 1);
 await step(`(() => { document.querySelector('.histRow').click(); return true; })()`, `(() => JSON.stringify({ cvOpen: !$('cleanView').classList.contains('hidden') }))()`, v => v.cvOpen === true);

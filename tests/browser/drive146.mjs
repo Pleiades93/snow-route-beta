@@ -8,8 +8,9 @@ await bootThrough(ev, poll); // boots end at the route menu - click through to a
 //    from it keeps the exact-restore Cancel (a pre-Start side unmarked mid-run comes back).
 // B: CG-196-01 - an idle backup asserts idle explicitly (start: null); restoring it onto a
 //    device with an active run clears that run's start + snapshot transactionally.
-// C: CG-196-03 - every board mutation kills a pending Finish Undo (side chip, group chip,
-//    whole-street unmark, effective Clear, new Start); markDone already did (guard).
+// C: Beta 1.110 - post-finish board work: the Undo is removed, so mutations after a
+//    confirmed finish are simply new work and the archived clean never comes back
+//    (this section was CG-196-03's undo-invalidation suite).
 // D: CG-196-05 - marking outcome toasts are gated on the save result; a failed save never
 //    gets a success toast, and a later failure in the same episode still says "not saved".
 const R = { checks: [] };
@@ -57,36 +58,33 @@ const postB = JSON.parse(await ev(`(() => JSON.stringify({ start: localStorage.g
 ok('B2 restoring an idle backup clears the destination run start + snapshot - no inherited run (CG-196-01) | ' + JSON.stringify(postB), postB.start === null && postB.snap === null && postB.run === 0);
 ok('B3 the restored board is the idle backup board (fixture mark present, the run mark gone) | ' + JSON.stringify(postB), postB.done === 0 && postB.astona === 0 && (postB.velmar & 1) === 1);
 
-// ---- C: undo invalidation ---- //
+// ---- C: post-finish board work (Beta 1.110) ---- //
 const setupFinish = async () => { await ev(`(() => { runStart = Date.now() - 3600000; markDone('Velmar', 'tap'); markDone('Mellings', 'tap'); markDone('Astona', 'tap'); finishRun(); return true; })()`); await sleep(300); };
 await setupFinish();
-const c0 = JSON.parse(await ev(`(() => JSON.stringify({ undo: !!undoSnap, btn: $('resetBtn').textContent }))()`));
-ok('C0 setup: finish offers Undo | ' + JSON.stringify(c0), c0.undo === true && c0.btn === 'Undo');
+const c0 = JSON.parse(await ev(`(() => JSON.stringify({ btn: $('resetBtn').textContent, undoing: $('resetBtn').classList.contains('undoing'), h: history.length }))()`));
+ok('C0 setup: finish archived and offers NO Undo - the button is back to FINISH (Beta 1.110) | ' + JSON.stringify(c0), c0.btn === 'FINISH' && c0.undoing === false && c0.h >= 1);
+const hC = c0.h;
 await ev(`togglePiece('Boddy', 0, 0); true`); await sleep(200);
-const c1 = JSON.parse(await ev(`(() => JSON.stringify({ undo: !!undoSnap, btn: $('resetBtn').textContent }))()`));
-ok('C1 a side-chip mark kills the pending Undo and restores the Finish label (CG-196-03) | ' + JSON.stringify(c1), c1.undo === false && c1.btn === 'FINISH');
-await ev(`doUndo(); true`); await sleep(200);
-ok('C1b the dead Undo cannot fire - the new mark survives | Boddy ' + await ev(`pieces.Boddy[0]`), (await ev(`pieces.Boddy[0] & 1`)) === 1);
+ok('C1 a side-chip mark after the finish lands as new work; the archive is untouched | Boddy ' + await ev(`pieces.Boddy[0]`) + ' h ' + await ev(`history.length`), (await ev(`pieces.Boddy[0] & 1`)) === 1 && (await ev(`history.length`)) === hC);
+await ev(`(() => { $('resetBtn').click(); return true; })()`); await sleep(300);
+const c1b = JSON.parse(await ev(`(() => JSON.stringify({ open: !$('finModal').classList.contains('hidden'), h: history.length, done: doneSet.size }))()`));
+await ev(`(() => { $('finNo').click(); return true; })()`);
+ok('C1b the button after a finish opens the pop-up - the archived clean does NOT come back | ' + JSON.stringify(c1b), c1b.open === true && c1b.h === hC && c1b.done === 0);
 await setupFinish();
 await ev(`(() => { selSet = [{ name: 'Boddy', idx: 0 }]; togglePieceGroup(1); return true; })()`); await sleep(200);
-ok('C2 a group-chip mark kills the pending Undo (CG-196-03) | undo ' + await ev(`!!undoSnap`), (await ev(`!!undoSnap`)) === false);
+ok('C2 a group-chip mark after the finish lands as new work | Boddy ' + await ev(`pieces.Boddy[0]`), (await ev(`pieces.Boddy[0] & 2`)) === 2);
 await setupFinish();
+await ev(`markDone('Velmar', 'tap'); true`); await sleep(200);
 await ev(`markUndone('Velmar'); true`); await sleep(200);
-const c3 = JSON.parse(await ev(`(() => JSON.stringify({ undo: !!undoSnap, velmar: pieces.Velmar.every(v => v === 0) }))()`));
-ok('C3 a whole-street unmark kills the pending Undo (CG-196-03) | ' + JSON.stringify(c3), c3.undo === false && c3.velmar === true);
-await ev(`doUndo(); true`); await sleep(200);
-ok('C3b the dead Undo cannot resurrect the unmarked street | Velmar done ' + await ev(`doneSet.has('Velmar')`), (await ev(`doneSet.has('Velmar')`)) === false);
-await setupFinish();
-await ev(`markDone('Boddy', 'tap'); true`); await sleep(200);
-ok('C4 whole-street mark still kills the pending Undo (pre-existing behaviour, guard) | undo ' + await ev(`!!undoSnap`), (await ev(`!!undoSnap`)) === false);
+ok('C3 a whole-street mark + unmark after the finish behaves as fresh work | Velmar done ' + await ev(`doneSet.has('Velmar')`), (await ev(`doneSet.has('Velmar')`)) === false);
 await setupFinish();
 await ev(`(() => { pieces.Boddy[0] = 1; clearAllMarks(); return true; })()`); await sleep(200);
-const c5 = JSON.parse(await ev(`(() => JSON.stringify({ undo: !!undoSnap, boddy: pieces.Boddy[0] }))()`));
-ok('C5 an effective Clear kills the pending Undo (CG-196-03) | ' + JSON.stringify(c5), c5.undo === false && c5.boddy === 0);
+const c5 = JSON.parse(await ev(`(() => JSON.stringify({ boddy: pieces.Boddy[0], h: history.length }))()`));
+ok('C5 an effective Clear after the finish clears the fresh board; the archive is untouched | ' + JSON.stringify(c5), c5.boddy === 0 && c5.h === hC + 3);
 await setupFinish();
 await ev(`startClean(); true`); await sleep(250);
-const c6 = JSON.parse(await ev(`(() => JSON.stringify({ undo: !!undoSnap, run: runStart > 0 }))()`));
-ok('C6 starting a new run kills the pending Undo (CG-196-03) | ' + JSON.stringify(c6), c6.undo === false && c6.run === true);
+const c6 = JSON.parse(await ev(`(() => JSON.stringify({ run: runStart > 0, h: history.length }))()`));
+ok('C6 starting a new run after the finish begins cleanly; the archived cleans stay archived | ' + JSON.stringify(c6), c6.run === true && c6.h === hC + 4);
 await ev(`cancelStart(); true`); await sleep(250);
 
 // ---- D: toast gating on save failure ---- //
