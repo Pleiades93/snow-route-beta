@@ -1,5 +1,16 @@
 # Changelog
 
+## Beta 1.112 — 2026-11-05
+Keep screen awake (the On the job toggle) is now session-only
+(Andrew's call): every cold open starts with it OFF, however it was
+left, so it can never quietly stay armed between app sessions. The
+toggle works within a session exactly as before. It is no longer
+written into the stored settings record at all — the record now
+holds only the persistent three {vib, chime, chimeSound} — and a
+Beta 1.111 record still carrying an awake field is simply never read
+for it. Vibration, the chime on/off and the chime sound pick are
+unchanged and stay persistent.
+
 ## Beta 1.111 — 2026-11-05
 Settings is rebuilt (Andrew's mockup-approved design): the main pane is
 four rows - Status, On the job, Backup, About / What's new - and the
