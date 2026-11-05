@@ -342,12 +342,26 @@ try {
 } catch (e) { ok('E19 pack migration manifest-bounded + verified (Beta 1.95, SR-194-05/06) | threw ' + String(e).slice(0, 150), false); }
 try {
   const hasFn = await ev2(`typeof migratePack === 'function'`);
+  // E20 hardening (2026-11-04, flake-log root cause): QUIESCE the pack migration
+  // before this scenario touches anything. The boot pass fired by E19's reload
+  // is a slow full sweep (~897 manifest URLs against the flooded browsing cache)
+  // and was still in its copy phase during r1/r2 in the three recorded flakes:
+  // a URL mid-put reads as TILES-present / OFFLINE-absent to r2's verify sweep,
+  // which honestly returns not-ok (everything landed, flag null). Clear the
+  // flag, reload so exactly one boot pass runs, and wait for ITS completion
+  // signal - the flag is written only at the very end of a verified pass, so
+  // flag === fingerprint here proves no pass is in flight and r1/r2 run
+  // deterministically. A timeout fails E20 naming the quiesce, not a phantom r2.
+  await ev2(`(() => { localStorage.removeItem('snowroute.v5.packmig'); return true; })()`);
+  await send('Page.reload', { ignoreCache: false }, PAGE_S); await sleep(1200);
+  await loadRouteE2E();
+  const q20 = await poll(`localStorage.getItem('snowroute.v5.packmig') === packMigFingerprint(preloadUrlList())`, 300000);
   await ev2(`(async () => { const sample = ${JSON.stringify(baseKeys.filter(u => u.includes('tiles.basemaps.cartocdn.com')).slice(0, 3))}; await caches.delete('snowroute-offline-v1'); const tc = await caches.open('snowroute-tiles-v1'); for (const u of sample) { if (!(await tc.match(u))) await tc.put(u, new Response('x')); } localStorage.removeItem('snowroute.v5.packmig'); return true; })()`);
   await ev2(`(() => { const realOpen = CacheStorage.prototype.open.bind(caches); let n = 0; caches.open = async (name) => { const c = await realOpen(name); if (name !== 'snowroute-offline-v1') return c; return new Proxy(c, { get(t, p) { if (p === 'put') return async (rq, rs) => { n++; if (n === 2) throw new Error('injected pack write failure'); return t.put(rq, rs); }; const v = t[p]; return typeof v === 'function' ? v.bind(t) : v; } }); }; window.__restoreOpen = () => { caches.open = realOpen; }; return true; })()`);
-  const r1 = JSON.parse(await ev2(`(async () => { const r = await migratePack(); const oc = await caches.open('snowroute-offline-v1'); return JSON.stringify({ ok: !!(r && r.ok), n: (await oc.keys()).length, flag: localStorage.getItem('snowroute.v5.packmig') }); })()`));
+  const r1 = JSON.parse(await ev2(`(async () => { const r = await migratePack(); const oc = await caches.open('snowroute-offline-v1'); return JSON.stringify({ ok: !!(r && r.ok), why: (r && r.why) || null, failed: (r && r.failed) || 0, n: (await oc.keys()).length, flag: localStorage.getItem('snowroute.v5.packmig') }); })()`));
   await ev2(`(() => { window.__restoreOpen(); return true; })()`);
-  const r2 = JSON.parse(await ev2(`(async () => { const r = await migratePack(); const oc = await caches.open('snowroute-offline-v1'); return JSON.stringify({ ok: !!(r && r.ok), n: (await oc.keys()).length, flag: localStorage.getItem('snowroute.v5.packmig'), fp: packMigFingerprint(preloadUrlList()) }); })()`));
-  ok('E20 a failed pack copy leaves the flag UNSET and a retry completes the migration, landing exactly the failed copies (Beta 1.95, SR-194-05) | r1 ' + JSON.stringify(r1) + ' r2 ' + JSON.stringify(r2), hasFn === true && r1.ok === false && r1.flag === null && r2.ok === true && r2.flag === r2.fp && r2.n === r1.n + 1);
+  const r2 = JSON.parse(await ev2(`(async () => { const r = await migratePack(); const oc = await caches.open('snowroute-offline-v1'); return JSON.stringify({ ok: !!(r && r.ok), why: (r && r.why) || null, failed: (r && r.failed) || 0, n: (await oc.keys()).length, flag: localStorage.getItem('snowroute.v5.packmig'), fp: packMigFingerprint(preloadUrlList()) }); })()`));
+  ok('E20 a failed pack copy leaves the flag UNSET and a retry completes the migration, landing exactly the failed copies (Beta 1.95, SR-194-05) | q20 ' + q20 + ' r1 ' + JSON.stringify(r1) + ' r2 ' + JSON.stringify(r2), q20 === true && hasFn === true && r1.ok === false && r1.flag === null && r2.ok === true && r2.flag === r2.fp && r2.n === r1.n + 1);
 } catch (e) { ok('E20 pack migration failure leaves flag unset, retry completes (Beta 1.95, SR-194-05) | threw ' + String(e).slice(0, 150), false); }
 
 // E21 (Beta 1.96, audit-2 N-1): the download cleanup must delete a browsing
