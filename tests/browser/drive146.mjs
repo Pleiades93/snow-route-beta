@@ -64,7 +64,7 @@ const c0 = JSON.parse(await ev(`(() => JSON.stringify({ undo: !!undoSnap, btn: $
 ok('C0 setup: finish offers Undo | ' + JSON.stringify(c0), c0.undo === true && c0.btn === 'Undo');
 await ev(`togglePiece('Boddy', 0, 0); true`); await sleep(200);
 const c1 = JSON.parse(await ev(`(() => JSON.stringify({ undo: !!undoSnap, btn: $('resetBtn').textContent }))()`));
-ok('C1 a side-chip mark kills the pending Undo and restores the Finish label (CG-196-03) | ' + JSON.stringify(c1), c1.undo === false && c1.btn === 'Finish');
+ok('C1 a side-chip mark kills the pending Undo and restores the Finish label (CG-196-03) | ' + JSON.stringify(c1), c1.undo === false && c1.btn === 'FINISH');
 await ev(`doUndo(); true`); await sleep(200);
 ok('C1b the dead Undo cannot fire - the new mark survives | Boddy ' + await ev(`pieces.Boddy[0]`), (await ev(`pieces.Boddy[0] & 1`)) === 1);
 await setupFinish();
