@@ -49,6 +49,8 @@ jobs:
         run: node tests/browser/selftest-trail-segments.mjs
       - name: Storage-outcome contract fixtures (Phase 3 gate)
         run: node tests/browser/selftest-store-result.mjs
+      - name: Transaction coordinator fixtures (Phase 4 gate)
+        run: node tests/browser/selftest-tx.mjs
   browser-tests:
     # Full suite everywhere EXCEPT a push to main (the smoke job takes that).
     if: github.event_name != 'push' || github.ref != 'refs/heads/main'
@@ -63,7 +65,7 @@ jobs:
           - shard: 2
             drives: "drive117 drive83 drive86 drive134 drive123 drive122 drive132 drive131 drive144 drive146"
           - shard: 3
-            drives: "drive145 drive126 drive135 drive120 drive65 drive119 drive139 drive140 drive129"
+            drives: "drive145 drive126 drive135 drive120 drive65 drive119 drive139 drive140 drive129 drive147"
           - shard: 4
             drives: "drive66 drive130 drive125 drive127 drive121 drive88 drive115 drive116 drive142"
     steps:

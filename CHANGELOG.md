@@ -1,5 +1,8 @@
 # Changelog
 
+## Beta 1.102 — 2026-11-04
+Architecture Phase 4 (transaction coordinator, from the 2026-11-04 architecture scan): Finish, Undo and Restore now run their multi-step saves through ONE standard routine — each step is written and read back to prove it landed, and a failure undoes the earlier steps in reverse order. Before, that careful dance was hand-built separately in each place, slightly differently each time. Also new: if the app is killed in the middle of a Finish (phone dies, app swiped away), the next launch now recognises the half-finished state and quietly puts it right — either removing the duplicate archive entry so the run resumes, or completing the finish — using only what is already stored. No data formats, messages or behaviour otherwise changed.
+
 ## Beta 1.101 — 2026-11-04
 Architecture Phase 3 (storage outcomes contract, from the 2026-11-04 architecture scan): every save now reports back in one standard shape — did it land, which record failed first, and whether a retry is armed — instead of each save inventing its own answer. The storage layer owns saving, checking and retrying, and no longer talks to the user directly: the warning message moved to the app side, word-for-word unchanged. The retry flags (trail, session markers, snapshot, start, coverage, main records) are now reached through one doorway in the storage code. No data, keys, formats, save order or messages changed. This build also syncs the test battery to the FINISH capitals from 1.100 (several checks still compared the old title-case word).
 

@@ -70,6 +70,32 @@ function lsDel(k) { try { localStorage.removeItem(k); return true; } catch (e) {
 // to the app layer (saveAllWarned in app2).
 function storeOk() { return { ok: true, failedKey: null, retryPending: false }; }
 function storeFail(failedKey, retryPending) { return { ok: false, failedKey: failedKey || null, retryPending: !!retryPending }; }
+// Verified writes + the transaction coordinator (Beta 1.102, architecture Phase 4 / C3).
+// txSet/txDel are the ONLY verified-write shapes: a write earns trust by reading back
+// (a delete by reading back absent). runTx runs a step list - { name, write, undo },
+// each returning a Phase 3 result - in order; the first failing write stops the
+// transaction and every completed step is undone in REVERSE order, each undo attempted
+// even if an earlier undo fails. Outcome: 'committed', 'rolled-back', or 'degraded'
+// (a rollback step itself failed - the stored records may disagree, which is the one
+// outcome that changes what the user must be told). The flows (finishRun, doUndo,
+// restoreBackup) keep their own message texts and select them from (outcome,
+// failedStep) exactly as they selected them from their hand-built gates before.
+function txSet(key, value) { return (lsSet(key, value) && lsGet(key) === value) ? storeOk() : storeFail(key, true); }
+function txDel(key) { return (lsDel(key) && lsGet(key) === null) ? storeOk() : storeFail(key, true); }
+function runTx(steps) {
+  const done = [];
+  for (const st of steps) {
+    const r = st.write();
+    if (!r.ok) {
+      let degraded = false;
+      for (let i = done.length - 1; i >= 0; i--) { if (!done[i].undo().ok) degraded = true; }
+      return { outcome: degraded ? 'degraded' : 'rolled-back', failedStep: st.name };
+    }
+    done.push(st);
+  }
+  return { outcome: 'committed', failedStep: null };
+}
+function finishReconcileAction(startMs, lastStartedMs, boardEmpty) { if (!startMs || !lastStartedMs || startMs !== lastStartedMs) return 'none'; return boardEmpty ? 'complete' : 'rollback'; } // pure - fixture-proven in tests/browser/selftest-tx.mjs
 function parseJ(raw, fb) { if (raw == null) return fb; try { const v = JSON.parse(raw); return v == null ? fb : v; } catch (e) { return fb; } }
 // Tap guard — 400 ms per control
 const tapLast = {};
@@ -218,7 +244,17 @@ pieces = {}; pieceTimes = {};
   }
   for (const k of Object.keys(doneTimes)) if (!streetComplete(k)) delete doneTimes[k];
   for (const k of Object.keys(doneVia)) if (!streetComplete(k)) delete doneVia[k];
-})();
+  })();
+  reconcileInterruptedFinish(); // Beta 1.102 (Phase 4, CG-196-04): resolve a finish that died between its gates before anything renders this state
+}
+function reconcileInterruptedFinish() { // a finish killed mid-transaction runs no rollback; its two harmful prefixes share one signature in EXISTING records - the newest archive entry belongs to the run still marked active (startedAt === the stored start; a later run's start is a later millisecond, so no live state collides). Board still marked: the archive write was the only gate that landed - remove that entry (verified) and the run resumes intact. Board already cleared: the finish effectively happened - delete the start key (verified) and it stands committed. No signature: nothing to do. An under-3 finish writes no archive, so its prefixes look exactly like a fresh empty run - coherent as one, left alone.
+  if (!runStart || !history.length) return;
+  const last = history[history.length - 1];
+  const lastMs = last && last.startedAt ? Date.parse(last.startedAt) : 0;
+  const boardEmpty = STREETNAMES.every(n => pieces[n].every(v => v === 0));
+  const act = finishReconcileAction(runStart, lastMs, boardEmpty);
+  if (act === 'rollback') { const trimmed = history.slice(0, -1); if (txSet(LS.hist, JSON.stringify(trimmed)).ok) history = trimmed; }
+  else if (act === 'complete') { if (txDel(LS.start).ok) runStart = 0; }
 }
 // ===== DAY/NIGHT (Beta 1.77, Andrew): the theme follows the sun by default.
 // Sunrise and sunset are computed on the device (the standard NOAA
