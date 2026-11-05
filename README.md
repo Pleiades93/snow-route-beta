@@ -31,7 +31,7 @@ account; all progress lives on the device.
   gold, the rest raspberry, finished mint; a street counts done when every
   stretch is done on both sides, and the info panel can still complete a
   whole street in one tap.
-- **Runs:** Start / Finish with an 8-second Undo, a pace readout against
+- **Runs:** Start / Finish (one Yes/No confirmation — no undo after it), a pace readout against
   your last full clean, a per-street progress count, and a history of
   previous cleans. Per-street notes ride along.
 - **GPS:** follow mode with a heading-up camera during a run, a recorded

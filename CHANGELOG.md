@@ -1,5 +1,15 @@
 # Changelog
 
+## Beta 1.110 — 2026-11-05
+The post-Finish Undo is removed (Andrew's call): Finish already asks for
+confirmation in the Yes/No pop-up, and that confirmation is now the whole
+gate - pressing Yes archives the clean and clears the board, and the button
+returns to its normal state with no 8-second Undo window after it. doUndo,
+the undo snapshot, the undo-invalidation helper and the .undoing button
+state are gone. The finish transaction and its rollback messages, Cancel
+Start and its snapshots, and the interrupted-finish reconciliation are
+unchanged.
+
 ## Beta 1.109 — 2026-11-05
 The Streets sheet filter changes from All / To do / Done to the route's two
 groups (Andrew's mockup pick, 2026-11-05: the V2 two-chip layout with V1's

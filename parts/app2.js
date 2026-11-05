@@ -290,14 +290,13 @@ onMapReady(() => map.on('click', e => {
 
 // ===== MARKING (one finish path) =====
 let saveWarned = false; // Beta 1.101 (Phase 3 / C2): the storage-warning episode state - app-layer messaging state, moved out of the storage layer with the warning itself. One warning per failure episode; resets on the next fully successful save (the 1.63 discipline, unchanged).
-function saveAllWarned() { const r = saveAll(); if (!r.ok) { if (!saveWarned) { saveWarned = true; toast('Storage is not saving (' + r.failedKey + ') - export a recovery backup now', 4200); } } else saveWarned = false; return r; } // the non-transactional save path: saveAll plus the episode warning. The finish/undo transactions call saveAll directly and do their own gated messaging.
+function saveAllWarned() { const r = saveAll(); if (!r.ok) { if (!saveWarned) { saveWarned = true; toast('Storage is not saving (' + r.failedKey + ') - export a recovery backup now', 4200); } } else saveWarned = false; return r; } // the non-transactional save path: saveAll plus the episode warning. The finish transaction calls saveAll directly and does its own gated messaging.
 function finishChange() { if (window.GLP) window.GLP.sync(); renderPanel(); updateCount(); renderStreets(); const r = saveAllWarned(); syncWake(); return r; } // Beta 1.63 (audit F04): callers that announce an outcome branch on the save result - since Beta 1.101 (Phase 3) that result is the storage-outcome object
 function finishChangeMarked() { const wb = saveWarned; const r = finishChange(); if (!r.ok && wb) toast('Not saved \u2014 storage problem', 3200); return r; } // Beta 1.97 (audit loop CG-196-05): the marking callers' half of the save-honesty contract - when the save fails, NO outcome toast may replace the storage warning; saveAll raises that warning once per episode (saveWarned), so when it was already raised before this call, the caller still owes a plain 'not saved' rather than silence
 function applyPiece(name, idx, side, on) { // the piece mutation with NO rendering - returns the street name if this change completed it
   const bit = side ? 2 : 1; const was = pieces[name][idx];
   const now = on ? (was | bit) : (was & ~bit);
   if (now === was) return null;
-  invalidateFinishUndo(); // Beta 1.97 (audit loop CG-196-03): an actual piece change kills a pending Finish Undo - here, the shared choke point, so no marking path can forget
   pieces[name][idx] = now;
   if (!pieceTimes[name][idx]) pieceTimes[name][idx] = [null, null];
   pieceTimes[name][idx][side] = on ? new Date().toISOString() : null;
@@ -322,7 +321,6 @@ function togglePieceGroup(side) { // one chip, whole selection: a side not done 
 $('selAllBtn').addEventListener('click', () => { if (!tapGuard('selAll')) return; const completed = []; for (const en of selSet) for (const side of [0, 1]) { const c = applyPiece(en.name, en.idx, side, true); if (c && !completed.includes(c)) completed.push(c); } showChips(); const okSa = finishChangeMarked(); if (okSa) completed.forEach(n => toast('✓ ' + n + ' · ' + fmtClock(new Date()))); });
 $('selClearBtn').addEventListener('click', () => { if (!tapGuard('selClear')) return; deselect(); });
 function markDone(name, via, at) { // production contract: whole street done; sides already marked keep their real times, the rest inherit the completion moment
-  invalidateFinishUndo();
   pieces[name] = STRETCH[name].parts.map(() => 3);
   const mts = at || new Date().toISOString();
   const cur = (pieceTimes[name] && typeof pieceTimes[name] === 'object') ? pieceTimes[name] : {};
@@ -334,7 +332,6 @@ function markDone(name, via, at) { // production contract: whole street done; si
 function markUndone(name) {
   pieces[name] = STRETCH[name].parts.map(() => 0);
   pieceTimes[name] = STRETCH[name].parts.map(() => [null, null]);
-  invalidateFinishUndo();
   doneSet.delete(name); delete doneTimes[name]; delete doneVia[name];
   const okMu = finishChangeMarked();
   if (okMu.ok) toast('Unmarked ' + name);
