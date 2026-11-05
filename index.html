@@ -2,7 +2,7 @@
 <html lang="en" class="boot">
 <head>
 <meta charset="UTF-8">
-<meta http-equiv="Content-Security-Policy" content="default-src 'none'; script-src 'sha384-yq+CY3CYA8dTkqpUJNoRIp1CPOAChRqSiTkUR7/RrtrBuP5dyZgrU5C0hjo1hwQm' https://cdn.jsdelivr.net; style-src-elem 'sha384-+nJWpuSMiOj7B/nILMcUsCamZUvKkzi0lhzfAlDo6lzQuPhhLrJPCAEL6iGk0jtV' https://cdn.jsdelivr.net; style-src-attr 'unsafe-inline'; img-src 'self' data: blob: https://tiles.basemaps.cartocdn.com https://protomaps.github.io https://cdn.jsdelivr.net; connect-src 'self' https://tiles.basemaps.cartocdn.com https://protomaps.github.io https://cdn.jsdelivr.net; worker-src blob: 'self'; child-src blob: 'self'; font-src 'none'; manifest-src 'self'; base-uri 'none'; form-action 'none'; object-src 'none'">
+<meta http-equiv="Content-Security-Policy" content="default-src 'none'; script-src 'sha384-yq+CY3CYA8dTkqpUJNoRIp1CPOAChRqSiTkUR7/RrtrBuP5dyZgrU5C0hjo1hwQm' https://cdn.jsdelivr.net; style-src-elem 'sha384-5a/W4BtdMYdH3woWm2yCEVACHgbYnrFlwFARf29WFPkNtck4Ego6tJ/03nt7mtNz' https://cdn.jsdelivr.net; style-src-attr 'unsafe-inline'; img-src 'self' data: blob: https://tiles.basemaps.cartocdn.com https://protomaps.github.io https://cdn.jsdelivr.net; connect-src 'self' https://tiles.basemaps.cartocdn.com https://protomaps.github.io https://cdn.jsdelivr.net; worker-src blob: 'self'; child-src blob: 'self'; font-src 'none'; manifest-src 'self'; base-uri 'none'; form-action 'none'; object-src 'none'">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="mobile-web-app-capable" content="yes">
@@ -242,6 +242,7 @@
 .routeArea { font-size: 13px; opacity: .75; }
 .routeBadge { font-size: 12px; font-weight: 700; letter-spacing: .2px; padding: 4px 8px; border-radius: 999px; white-space: nowrap; }
 #routeMenu .routeRow { background: rgba(255,255,255,.14); border: 1px solid rgba(255,255,255,.45); color: #fff; margin-bottom: 10px; }
+#routeMenu .routeRow:active { background: rgba(255,255,255,.28); }
 #routeMenu .routeBadge { background: #fff; color: #2b4bf2; }
 @media (prefers-reduced-motion: reduce) { #splashTitle { animation: none; opacity: 1; } #splashBrand, #routeMenu { transition: none; } #splash.menu #splashBrand { display: none; } }
 </style>
@@ -257,7 +258,7 @@
 <div id="hud">
   <div id="warn">Not saving — storage is full or blocked</div>
   <div class="row">
-    <div class="titleStack"><div class="title">Snow Route Beta</div><div class="ver" id="ver">Beta 1.104</div></div>
+    <div class="titleStack"><div class="title">Snow Route Beta</div><div class="ver" id="ver">Beta 1.105</div></div>
   </div>
   <div id="stats"></div>
 </div>
