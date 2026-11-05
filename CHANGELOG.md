@@ -1,5 +1,16 @@
 # Changelog
 
+## Beta 1.107 — 2026-11-05
+Each Streets-list row now shows the street's length on the quiet second line
+under its name (Andrew's pick of the investigated options, 2026-11-05). The
+value is the app's own live per-street centreline length (STRETCH total),
+formatted as whole metres with a thousands separator ("48 m", "1,686 m"),
+read at render time - nothing hardcoded. Precedence: a street note preview
+wins the slot while a note exists (notes are working information, the length
+is reference); clearing the note brings the length back. Row structure, the
+done stamp and the pin button are unchanged, and the note editor's open/
+close behaviour (build 106) is untouched.
+
 ## Beta 1.106 — 2026-11-05
 Closing the Streets sheet now resets an open inline note editor: reopening
 the sheet shows plain street rows instead of the editor still open on the
