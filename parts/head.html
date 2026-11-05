@@ -200,7 +200,49 @@
   #xPreFill { height: 100%; width: 0%; background: #2ecc71; border-radius: 3px; }
   #setMenu { position: fixed; inset: 0; z-index: 10000; background: #2b4bf2; display: flex; flex-direction: column; align-items: center; justify-content: center; padding: 24px; opacity: 0; visibility: hidden; transform: translateY(103%); transition: transform var(--anim-dur) var(--ease-close), opacity .3s ease, visibility 0s linear var(--anim-dur); pointer-events: none; } /* Beta 1.88 (Andrew): Settings is a blue full-screen takeover like the Routes menu - same slide-up, same panes, same bare X; the Day/Night row left for its own button, Summary/GPX/Clear trail left with the old Snow log */
   #setMenu.open { opacity: 1; visibility: visible; transform: none; pointer-events: auto; transition: transform var(--anim-dur) var(--ease-open), opacity .3s ease, visibility 0s; }
-  #setVer { position: absolute; right: 24px; bottom: calc(30px + env(safe-area-inset-bottom, 0px)); color: rgba(255,255,255,.75); font-size: 12px; font-weight: 600; letter-spacing: .04em; } /* Beta 1.88 (Andrew's pick): the version rides the settings menu family at bottom-right, in both panes, synced from the main title's version - never a second copy to go stale */
+  #setVer { position: absolute; right: 24px; bottom: calc(30px + env(safe-area-inset-bottom, 0px)); color: rgba(255,255,255,.75); font-size: 12px; font-weight: 600; letter-spacing: .04em; }
+  /* Beta 1.111 (Andrew, settings redesign approved from mockups 2026-11-05): the settings card / switch / check language - values verbatim from the approved mockups (beta1/work/settings-mockups/), class names kept from them */
+  #setMenu { overflow-y: auto; }
+  #setMenu .rmPane { flex-shrink: 0; margin-top: auto; margin-bottom: auto; } /* tall panes (Status, Chime) scroll instead of clipping on short screens */
+  .rmBtn .m-sub { display: block; font-size: 13px; font-weight: 500; color: rgba(255,255,255,.75); margin-top: 3px; line-height: 1.35; }
+  .m-card { border: 1px solid rgba(255,255,255,.45); background: rgba(255,255,255,.14); border-radius: 16px; padding: 16px 20px; }
+  button.m-card { appearance: none; -webkit-appearance: none; font: inherit; color: #fff; text-align: left; width: 100%; cursor: pointer; }
+  button.m-card:active { background: rgba(255,255,255,.28); }
+  .m-togRow { display: flex; align-items: center; gap: 14px; }
+  .m-togTxt { flex: 1; min-width: 0; }
+  .m-togLbl { color: #fff; font-size: 17px; font-weight: 650; line-height: 1.25; }
+  .m-togDesc { color: rgba(255,255,255,.78); font-size: 13px; line-height: 1.4; margin-top: 3px; }
+  .m-switch { appearance: none; -webkit-appearance: none; border: none; padding: 0; flex-shrink: 0; width: 51px; height: 31px; border-radius: 999px; background: rgba(255,255,255,.35); position: relative; cursor: pointer; transition: background .18s ease; }
+  .m-switch::after { content: ""; position: absolute; top: 2px; left: 2px; width: 27px; height: 27px; border-radius: 50%; background: #fff; box-shadow: 0 2px 6px rgba(8,12,40,.35); transition: left .18s ease; }
+  .m-switch.on { background: #06d6a0; }
+  .m-switch.on::after { left: 22px; }
+  .m-secLbl { font-size: 13px; font-weight: 700; letter-spacing: .09em; color: rgba(255,255,255,.75); margin-top: 6px; }
+  .m-statusLine { color: #fff; font-size: 16.5px; font-weight: 650; }
+  .m-statusLine .m-tick { color: #06d6a0; font-weight: 800; }
+  .m-quiet { color: rgba(255,255,255,.8); font-size: 13.5px; line-height: 1.45; margin-top: 4px; }
+  .m-btnRow { display: flex; gap: 12px; }
+  .m-btnRow .rmBtn { flex: 1; }
+  .m-chkRow { display: flex; align-items: baseline; gap: 10px; padding: 9px 0; border-bottom: 1px solid rgba(255,255,255,.18); }
+  .m-chkRow:last-child { border-bottom: none; padding-bottom: 2px; }
+  .m-chkRow:first-child { padding-top: 2px; }
+  .m-chk { color: #06d6a0; font-weight: 800; font-size: 15px; }
+  .m-chk.warn { color: #ffb735; }
+  .m-chk.idle { color: rgba(255,255,255,.5); }
+  .m-chkTxt { color: #fff; font-size: 15.5px; font-weight: 600; }
+  .m-chkTxt .m-val { color: rgba(255,255,255,.82); font-weight: 500; }
+  .m-appName { color: #fff; font-size: 19px; font-weight: 700; }
+  .m-credits { color: rgba(255,255,255,.8); font-size: 13px; line-height: 1.5; }
+  .m-wnItem { display: flex; gap: 10px; color: rgba(255,255,255,.96); font-size: 15px; line-height: 1.45; padding: 5px 0; }
+  .m-wnDot { color: #06d6a0; font-weight: 800; }
+  .m-navRow { display: flex; align-items: center; gap: 14px; }
+  .m-navVal { flex-shrink: 0; display: flex; align-items: center; gap: 7px; color: rgba(255,255,255,.8); font-size: 15.5px; font-weight: 550; }
+  .m-navChev { font-size: 21px; font-weight: 600; line-height: 1; color: rgba(255,255,255,.55); }
+  .m-sndRow { display: flex; align-items: center; gap: 14px; padding: 13px 20px; }
+  .m-sndRow.sel { background: rgba(6,214,160,.13); border-color: rgba(6,214,160,.6); }
+  .m-play { flex-shrink: 0; width: 30px; height: 30px; border-radius: 50%; border: 1.5px solid rgba(255,255,255,.5); color: #fff; font-size: 10px; display: flex; align-items: center; justify-content: center; padding-left: 2px; }
+  .m-selTick { flex-shrink: 0; width: 30px; text-align: center; color: #06d6a0; font-weight: 800; font-size: 19px; }
+  #chimeList { display: flex; flex-direction: column; gap: 12px; }
+  #wnList { display: flex; flex-direction: column; } /* Beta 1.88 (Andrew's pick): the version rides the settings menu family at bottom-right, in both panes, synced from the main title's version - never a second copy to go stale */
   #nightBtn { position: fixed; top: calc(var(--vvt, 0px) + 78px); right: calc(12px + var(--sar)); z-index: 1000; margin: 0; } /* Beta 1.88 (Andrew): Day/Night is its own round button at top-right - the dockBtn class itself, so it IS the Pace/Streets button (56px, same glass, same 27px icon), only placed */
   #toast { position: absolute; left: 50%; bottom: calc(120px + var(--sab)); transform: translateX(-50%) translateY(16px); z-index: 10001; /* Beta 1.93 (deep audit F03): above the full-screen takeovers (10000) - backup/restore errors toasted from inside Settings were hidden behind its opaque blue */ background: rgba(20,22,28,.95); color: #fff; font-size: 13px; font-weight: 600; padding: 9px 14px; border-radius: 10px; box-shadow: var(--shadow-float); opacity: 0; pointer-events: none; transition: opacity var(--anim-dur) var(--ease-open), transform var(--anim-dur) var(--ease-open); max-width: 86vw; text-align: center; }
   #toast.show { opacity: 1; transform: translateX(-50%) translateY(0); }
@@ -259,7 +301,7 @@
 <div id="hud">
   <div id="warn">Not saving — storage is full or blocked</div>
   <div class="row">
-    <div class="titleStack"><div class="title">Snow Route Beta</div><div class="ver" id="ver">Beta 1.110</div></div>
+    <div class="titleStack"><div class="title">Snow Route Beta</div><div class="ver" id="ver">Beta 1.111</div></div>
   </div>
   <div id="stats"></div>
 </div>
@@ -287,17 +329,76 @@
 </nav>
 <div id="setMenu">
   <div class="rmPane on" id="setMainPane">
-    <button class="rmBtn" id="exportBtn">Backup</button>
+    <button class="rmBtn" id="stBtn">Status</button>
+    <button class="rmBtn" id="jobBtn">On the job</button>
+    <button class="rmBtn" id="exportBtn">Backup<span class="m-sub" id="bakAge">Last backup: never</span></button>
+    <button class="rmBtn" id="aboutBtn">About / What's new</button>
+  </div>
+  <div class="rmPane" id="setStatusPane">
+    <div class="rmTitle">Status</div>
+    <div class="m-secLbl">MAPS</div>
+    <div class="m-card">
+      <div class="m-statusLine" id="stMapsLine">Offline maps</div>
+      <div class="m-quiet" id="stMapsSub"></div>
+    </div>
+    <div class="m-btnRow">
+      <button class="rmBtn bkBtn" id="xPre">Download</button>
+      <button class="rmBtn bkBtn" id="stDel" style="display:none">Delete maps</button>
+    </div>
+    <div id="xPreBar"><div id="xPreFill"></div></div>
+    <div id="xPreStat"></div>
+    <div class="m-secLbl">HEALTH</div>
+    <div class="m-card">
+      <div class="m-chkRow"><span class="m-chk" id="stIcoStorage">&#10003;</span><span class="m-chkTxt">Storage <span class="m-val" id="stValStorage"></span></span></div>
+      <div class="m-chkRow"><span class="m-chk" id="stIcoMaps">&#10003;</span><span class="m-chkTxt">Offline maps <span class="m-val" id="stValMaps"></span></span></div>
+      <div class="m-chkRow"><span class="m-chk" id="stIcoVer">&#10003;</span><span class="m-chkTxt">App version <span class="m-val" id="stValVer"></span></span></div>
+      <div class="m-chkRow"><span class="m-chk" id="stIcoGps">&#10003;</span><span class="m-chkTxt">GPS <span class="m-val" id="stValGps"></span></span></div>
+    </div>
+    <button class="rmBack" id="statusBack">&#8592; Back</button>
+  </div>
+  <div class="rmPane" id="setJobPane">
+    <div class="rmTitle">On the job</div>
+    <div class="m-card m-togRow">
+      <div class="m-togTxt"><div class="m-togLbl">Keep screen awake during a clean</div><div class="m-togDesc">Screen won't dim while a clean is running</div></div>
+      <button class="m-switch" id="swAwake" role="switch" aria-checked="false" aria-label="Keep screen awake during a clean"></button>
+    </div>
+    <div class="m-card m-togRow">
+      <div class="m-togTxt"><div class="m-togLbl">Vibration when marking</div><div class="m-togDesc">A buzz when a street is finished</div></div>
+      <button class="m-switch" id="swVib" role="switch" aria-checked="false" aria-label="Vibration when marking"></button>
+    </div>
+    <button class="m-card m-navRow" id="chimeRow">
+      <div class="m-togTxt"><div class="m-togLbl">Done chime</div></div>
+      <div class="m-navVal"><span id="chimeVal">Two-Tone</span> <span class="m-navChev">&#8250;</span></div>
+    </button>
+    <button class="rmBack" id="jobBack">&#8592; Back</button>
+  </div>
+  <div class="rmPane" id="setChimePane">
+    <div class="rmTitle">Done chime</div>
+    <div class="m-card m-togRow">
+      <div class="m-togTxt"><div class="m-togLbl">Chime</div><div class="m-togDesc">Play a sound when a street is finished</div></div>
+      <button class="m-switch" id="swChime" role="switch" aria-checked="false" aria-label="Done chime"></button>
+    </div>
+    <div class="m-secLbl">SOUND</div>
+    <div id="chimeList"></div>
+    <button class="rmBack" id="chimeBack">&#8592; Back</button>
+  </div>
+  <div class="rmPane" id="setAboutPane">
+    <div class="rmTitle">About / What's new</div>
+    <div>
+      <div class="m-appName">Snow Route</div>
+      <div class="m-quiet">Route tracker for driveway snow clearing &middot; Vaughan</div>
+    </div>
+    <div class="m-credits">Map data: &copy; OpenStreetMap contributors &middot; Protomaps &middot; CARTO</div>
+    <div class="m-secLbl" id="wnHead">WHAT'S NEW</div>
+    <div id="wnList"></div>
     <button class="rmBtn" id="updBtn">Update</button>
+    <button class="rmBack" id="aboutBack">&#8592; Back</button>
   </div>
   <div class="rmPane" id="setBackupPane">
     <div class="rmTitle" id="xTitle">Backup</div>
     <div id="xOpts">
       <button class="rmBtn bkBtn" id="xBak">Backup (JSON)</button>
       <button class="rmBtn bkBtn" id="xRes">Restore backup</button>
-      <button class="rmBtn bkBtn" id="xPre">Download offline maps</button>
-      <div id="xPreBar"><div id="xPreFill"></div></div>
-      <div id="xPreStat"></div>
     </div>
     <div id="xRestoreOpts" style="display:none">
       <button class="rmBtn bkBtn" id="xImpFile">Import JSON</button>

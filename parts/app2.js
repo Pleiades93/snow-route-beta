@@ -300,7 +300,7 @@ function applyPiece(name, idx, side, on) { // the piece mutation with NO renderi
   pieces[name][idx] = now;
   if (!pieceTimes[name][idx]) pieceTimes[name][idx] = [null, null];
   pieceTimes[name][idx][side] = on ? new Date().toISOString() : null;
-  if (streetComplete(name) && !doneSet.has(name)) { doneSet.add(name); doneTimes[name] = new Date().toISOString(); doneVia[name] = 'sides'; return name; }
+  if (streetComplete(name) && !doneSet.has(name)) { doneSet.add(name); doneTimes[name] = new Date().toISOString(); doneVia[name] = 'sides'; onStreetComplete(name); return name; } // Beta 1.111: applyPiece is the piece-marking funnel - this branch is the exact false-to-true completion flip, so the Done-chime / vibration feedback (app4, fully guarded, can never throw into marking) fires here and in markDone, the only two places a street becomes complete
   if (!streetComplete(name) && doneSet.has(name)) { doneSet.delete(name); delete doneTimes[name]; delete doneVia[name]; }
   return null;
 }
@@ -321,11 +321,13 @@ function togglePieceGroup(side) { // one chip, whole selection: a side not done 
 $('selAllBtn').addEventListener('click', () => { if (!tapGuard('selAll')) return; const completed = []; for (const en of selSet) for (const side of [0, 1]) { const c = applyPiece(en.name, en.idx, side, true); if (c && !completed.includes(c)) completed.push(c); } showChips(); const okSa = finishChangeMarked(); if (okSa) completed.forEach(n => toast('✓ ' + n + ' · ' + fmtClock(new Date()))); });
 $('selClearBtn').addEventListener('click', () => { if (!tapGuard('selClear')) return; deselect(); });
 function markDone(name, via, at) { // production contract: whole street done; sides already marked keep their real times, the rest inherit the completion moment
+  const wasComplete111 = streetComplete(name); // Beta 1.111: whole-street marking bypasses applyPiece - the completion feedback fires only on a real false-to-true flip here too
   pieces[name] = STRETCH[name].parts.map(() => 3);
   const mts = at || new Date().toISOString();
   const cur = (pieceTimes[name] && typeof pieceTimes[name] === 'object') ? pieceTimes[name] : {};
   pieceTimes[name] = STRETCH[name].parts.map((_, i) => { const pr = Array.isArray(cur[i]) ? cur[i] : [null, null]; return [pr[0] || mts, pr[1] || mts]; });
   doneSet.add(name); doneTimes[name] = mts; doneVia[name] = via || 'tap';
+  if (!wasComplete111) onStreetComplete(name); // Beta 1.111: see applyPiece
   const okMd = finishChangeMarked();
   if (okMd.ok) toast('✓ ' + name + ' · ' + fmtClock(new Date(mts)) + (doneSet.size === STREETNAMES.length ? ' — ALL ' + STREETNAMES.length + ' DONE' : '')); // Beta 1.94 (audit F-01): the total derives from the route's street list
 }

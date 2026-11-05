@@ -97,6 +97,31 @@ function runTx(steps) {
 }
 function finishReconcileAction(startMs, lastStartedMs, boardEmpty) { if (!startMs || !lastStartedMs || startMs !== lastStartedMs) return 'none'; return boardEmpty ? 'complete' : 'rollback'; } // pure - fixture-proven in tests/browser/selftest-tx.mjs. Beta 1.104 (round 103, CG-103-02): the second argument is the newest archive entry's run identity (its runId), NOT its startedAt - strict equality on the identity is the whole contract
 function parseJ(raw, fb) { if (raw == null) return fb; try { const v = JSON.parse(raw); return v == null ? fb : v; } catch (e) { return fb; } }
+// ===== SETTINGS (Beta 1.111, settings redesign) =====
+// One GLOBAL key, additive - no existing data migrates and nothing else reads
+// it. It holds the Settings redesign's device-behaviour toggles. Defaults: ALL
+// toggles OFF (features that change device behaviour - wake lock, vibration,
+// sound - start off until Andrew flips them; the approved mockups showed
+// switches ON as state examples, not default decisions); only the chime's
+// sound pick defaults, to Two-Tone. A corrupt or partial stored value falls
+// back per-field to the defaults. Documented in docs/STORAGE-SCHEMA.md
+// (DEVELOPMENT_RULES section 4).
+const SETTINGS_KEY = 'snowroute.v2.settings';
+const CHIME_KEYS = ['bell', 'two', 'rising', 'pop', 'melody'];
+const SETTINGS_DEF = { awake: false, vib: false, chime: false, chimeSound: 'two' };
+function loadSettings() {
+  const raw = parseJ(lsGet(SETTINGS_KEY), null);
+  const s = { awake: SETTINGS_DEF.awake, vib: SETTINGS_DEF.vib, chime: SETTINGS_DEF.chime, chimeSound: SETTINGS_DEF.chimeSound };
+  if (raw && typeof raw === 'object') {
+    if (typeof raw.awake === 'boolean') s.awake = raw.awake;
+    if (typeof raw.vib === 'boolean') s.vib = raw.vib;
+    if (typeof raw.chime === 'boolean') s.chime = raw.chime;
+    if (CHIME_KEYS.indexOf(raw.chimeSound) >= 0) s.chimeSound = raw.chimeSound;
+  }
+  return s;
+}
+let settings = loadSettings();
+function saveSettings() { return lsSet(SETTINGS_KEY, JSON.stringify(settings)); }
 // Tap guard — 400 ms per control
 const tapLast = {};
 function tapGuard(key) { const now = Date.now(); if (tapLast[key] && now - tapLast[key] < 400) return false; tapLast[key] = now; return true; }
