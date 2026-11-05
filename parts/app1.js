@@ -60,6 +60,16 @@ function flagStorage() { document.body.classList.add('storage-bad'); }
 function lsGet(k) { try { return localStorage.getItem(k); } catch (e) { flagStorage(); return null; } }
 function lsSet(k, v) { try { localStorage.setItem(k, v); return true; } catch (e) { flagStorage(); return false; } }
 function lsDel(k) { try { localStorage.removeItem(k); return true; } catch (e) { flagStorage(); return false; } } // Beta 1.63 (audit F03): deletions report like writes - a failed removeItem used to be invisible while saveStart claimed success
+// Storage outcomes (Beta 1.101, architecture Phase 3 / C2): every save-family function
+// returns ONE shape - { ok, failedKey, retryPending } - so no caller ever has to guess
+// what a save did. failedKey names the first record that failed (null on success);
+// retryPending says a retry is armed in the dirty machinery. The raw layer below this
+// contract stays primitive (lsSet/lsDel report a boolean, lsGet returns null); the
+// contract lives in the save family (saveAll, saveStart, saveSnap, saveTrail, saveSess)
+// and everything above it. Storage code never speaks to the user - messaging belongs
+// to the app layer (saveAllWarned in app2).
+function storeOk() { return { ok: true, failedKey: null, retryPending: false }; }
+function storeFail(failedKey, retryPending) { return { ok: false, failedKey: failedKey || null, retryPending: !!retryPending }; }
 function parseJ(raw, fb) { if (raw == null) return fb; try { const v = JSON.parse(raw); return v == null ? fb : v; } catch (e) { return fb; } }
 // Tap guard — 400 ms per control
 const tapLast = {};
@@ -141,7 +151,7 @@ function trimHistory(list) { const out = list.slice(); while (out.length > 10) {
 function saveHistory() { history = trimHistory(history); return lsSet(LS.hist, JSON.stringify(history)); } // Beta 1.63 (audit F04): the delete-clean handler branches on this
 let startDirty = false; // Beta 1.92 (deep audit F05): a failed start write/delete arms this retry, walked by the flushAux heartbeat until it lands - a stale start key must never resurrect a finished run on the next boot
 let snapDirty = false; // Beta 1.94 (deep audit SR-193-02): the same retry discipline for the persisted pre-Start snapshot (saveSnap, app3) - a failed snapshot write is retried by flushAux until it lands
-function saveStart() { const ok = runStart ? lsSet(LS.start, String(runStart)) : lsDel(LS.start); startDirty = !ok; return ok; } // Beta 1.57: reports its result like every other write, for the saveAll contract
+function saveStart() { const ok = runStart ? lsSet(LS.start, String(runStart)) : lsDel(LS.start); startDirty = !ok; return ok ? storeOk() : storeFail('start', true); } // Beta 1.57: reports its result like every other write, for the saveAll contract
 function streetComplete(n) { const p = pieces[n]; if (!Array.isArray(p)) return doneSet.has(n); return p.every(v => v === 3); }
 function sanitizePieceTimes(raw, count) { // Beta 1.64 (audit F07): only [stringOrNull, stringOrNull] pairs survive - a nested string used to reach applyPiece and throw under strict mode. Accepts the array shape the app writes and the numeric-keyed object a JSON round-trip of a sparse structure can produce. Beta 1.70 (audit A06): indexes are bounded by the street's real stretch count - a corrupt key like 10000 used to inflate a sparse array to that length (~50 KB of nulls per street, worse for larger keys).
   const pair = pr => Array.isArray(pr) ? [typeof pr[0] === 'string' ? pr[0] : null, typeof pr[1] === 'string' ? pr[1] : null] : [null, null];
@@ -279,40 +289,49 @@ function totalWorkM() { let s = 0; for (const n of STREETNAMES) s += STRETCH[n].
 // boot block re-derives the done set from it and prunes times/via against it -
 // so it is written FIRST: if it fails, the save stops and the previous coherent
 // state survives whole. Every other write is checked too; the first failing
-// record is named in saveFailKey. Callers that stay silent (saveQuiet, used by
-// the finish/undo transactions, which do their own gated writes and messaging)
-// suppress the episode warning; everyone else gets one warning per failure
-// episode (saveWarned resets on the next fully successful save).
-let saveFailKey = null, saveWarned = false, saveQuiet = false;
+// record is named in the returned result's failedKey. Callers that warn go
+// through saveAllWarned (app2), which raises one warning per failure episode;
+// the finish/undo transactions call saveAll directly and do their own gated
+// writes and messaging. (Beta 1.101, Phase 3: the old global failure key, the
+// quiet toggle and the warned flag are retired - outcomes travel in the
+// returned result, and messaging lives in the app layer.)
 let primaryDirty = false; // Beta 1.94 (deep audit SR-193-05): a failed saveAll arms this flag and flushAux's heartbeat retries the primary save until it lands. Before 1.94 the heartbeat retried only the auxiliary records and the start key, so a failed metadata write (notes/times/via/done/history) waited for the next incidental save - while Finish's own message promised a retry nothing performed.
-function saveAll() {
-  saveFailKey = null;
-  if (!lsSet(LS.sides, JSON.stringify({ p: pieces, t: pieceTimes }))) saveFailKey = 'sides';
+function saveAll() { // Beta 1.101 (Phase 3 / C2): returns the storage-outcome result - the first failing record is named in failedKey and a retry is armed via primaryDirty. No toast here: storage never speaks to the user (saveAllWarned in app2 owns the warning).
+  let failedKey = null;
+  if (!lsSet(LS.sides, JSON.stringify({ p: pieces, t: pieceTimes }))) failedKey = 'sides';
   else {
-    if (!lsSet(LS.done, JSON.stringify([...doneSet]))) saveFailKey = 'done';
-    if (!lsSet(LS.times, JSON.stringify(doneTimes)) && !saveFailKey) saveFailKey = 'times';
-    if (!lsSet(LS.via, JSON.stringify(doneVia)) && !saveFailKey) saveFailKey = 'via';
-    if (!lsSet(LS.notes, JSON.stringify(notes)) && !saveFailKey) saveFailKey = 'notes';
-    if (!lsSet(LS.hist, JSON.stringify(history)) && !saveFailKey) saveFailKey = 'history';
-    if (!saveStart() && !saveFailKey) saveFailKey = 'start';
-    if (!lsSet(LS.cov, JSON.stringify(coveredIdx)) && !saveFailKey) saveFailKey = 'coverage';
+    if (!lsSet(LS.done, JSON.stringify([...doneSet]))) failedKey = 'done';
+    if (!lsSet(LS.times, JSON.stringify(doneTimes)) && !failedKey) failedKey = 'times';
+    if (!lsSet(LS.via, JSON.stringify(doneVia)) && !failedKey) failedKey = 'via';
+    if (!lsSet(LS.notes, JSON.stringify(notes)) && !failedKey) failedKey = 'notes';
+    if (!lsSet(LS.hist, JSON.stringify(history)) && !failedKey) failedKey = 'history';
+    if (!saveStart().ok && !failedKey) failedKey = 'start';
+    if (!lsSet(LS.cov, JSON.stringify(coveredIdx)) && !failedKey) failedKey = 'coverage';
   }
-  if (saveFailKey) { primaryDirty = true; if (!saveQuiet && !saveWarned) { saveWarned = true; toast('Storage is not saving (' + saveFailKey + ') - export a recovery backup now', 4200); } return false; }
-  saveWarned = false; primaryDirty = false;
-  return true;
+  if (failedKey) { primaryDirty = true; return storeFail(failedKey, true); }
+  primaryDirty = false;
+  return storeOk();
 }
+// Dirty-flag access (Beta 1.101, Phase 3 / C2): the flags themselves stay storage-owned
+// state in this file; code in app3/app4 arms, clears and reads them ONLY through these
+// three functions, so the retry machinery has one doorway. Kinds: trail, sess, snap,
+// start, aux, primary. (The episode-warning state is NOT one of these - it is app-layer
+// messaging state and lives in app2 with saveAllWarned.)
+function markDirty(kind) { if (kind === 'trail') trailDirty = true; else if (kind === 'sess') sessDirty = true; else if (kind === 'snap') snapDirty = true; else if (kind === 'start') startDirty = true; else if (kind === 'aux') auxDirty = true; else if (kind === 'primary') primaryDirty = true; }
+function markClean(kind) { if (kind === 'trail') trailDirty = false; else if (kind === 'sess') sessDirty = false; else if (kind === 'snap') snapDirty = false; else if (kind === 'start') startDirty = false; else if (kind === 'aux') auxDirty = false; else if (kind === 'primary') primaryDirty = false; }
+function writePending(kind) { return kind === 'trail' ? trailDirty : kind === 'sess' ? sessDirty : kind === 'snap' ? snapDirty : kind === 'start' ? startDirty : kind === 'aux' ? auxDirty : kind === 'primary' ? primaryDirty : false; }
 // Aux flush (production model): the trail JSON is the big write (~250 KB at cap) - at most every 45 s while
 // recording, always when forced (page hide/close). Dirty flags clear ONLY when the write actually lands, so a
 // failed write is retried by the next flush instead of silently dropping GPS points. While `restoring` is set
 // (a restore is mid-flight), flushes are refused so the restore's reload cannot clobber the restored data.
 let trailDirty = false, auxDirty = false, sessDirty = false, lastTrailSave = 0, restoring = false; // Beta 1.73 (audit C04/C05): sessDirty is the session markers' retry flag, same discipline as trailDirty - a failed marker write is retried by flushAux instead of being silently dropped
-function saveTrail() { return lsSet(LS.trail, JSON.stringify(trail)); }
-function saveSess() { return lsSet(LS.sess, JSON.stringify(trailSessions)); }
+function saveTrail() { const ok = lsSet(LS.trail, JSON.stringify(trail)); return ok ? storeOk() : storeFail('trail', true); }
+function saveSess() { const ok = lsSet(LS.sess, JSON.stringify(trailSessions)); return ok ? storeOk() : storeFail('sess', true); }
 function flushAux(force) {
   if (restoring) return;
   if (auxDirty && lsSet(LS.cov, JSON.stringify(coveredIdx))) auxDirty = false;
-  if (trailDirty && (force || Date.now() - lastTrailSave > 45000) && saveTrail()) { trailDirty = false; lastTrailSave = Date.now(); }
-  if (sessDirty && saveSess()) sessDirty = false;
+  if (trailDirty && (force || Date.now() - lastTrailSave > 45000) && saveTrail().ok) { trailDirty = false; lastTrailSave = Date.now(); }
+  if (sessDirty && saveSess().ok) sessDirty = false;
   if (startDirty) saveStart(); // Beta 1.92 (audit F05): saveStart re-arms the flag itself on failure
   if (snapDirty && typeof saveSnap === 'function') saveSnap(); // Beta 1.94 (SR-193-02): the cancel snapshot retries on the same heartbeat (saveSnap lives in app3 beside runSnap; the typeof probe keeps this safe in any partial-load state)
   if (primaryDirty) saveAll(); // Beta 1.94 (SR-193-05): a failed primary save retries here - saveAll clears the flag itself when a save lands whole

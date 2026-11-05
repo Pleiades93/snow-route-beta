@@ -129,7 +129,7 @@ await ev(`(() => { $('finYes').click(); return true; })()`); await sleep(400);
 A = await J(`({ toast: $('toast').textContent, done: doneSet.size, run: !!runStart, label: $('resetBtn').textContent })`);
 await ev(`(() => { Storage.prototype.setItem = window.__origSI2; return true; })()`);
 ok('T9 finish stopped honestly on history write failure', /finish stopped/.test(A.toast || ''));
-ok('T9 run intact after stopped finish', A.done === 3 && A.run === true && A.label === 'Finish');
+ok('T9 run intact after stopped finish', A.done === 3 && A.run === true && A.label === 'FINISH');
 
 // T10 (suite 12): a partial multi-key save cannot leave phantom state after reload
 await ev(`(() => { localStorage.clear(); location.reload(); return true; })()`); await sleep(3000);

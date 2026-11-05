@@ -15,7 +15,7 @@ await bootThrough(ev, poll); // Beta 1.76: boots end at the route menu now - cli
 const R = { checks: [] };
 const ok = (name, cond) => R.checks.push([name, cond === true]);
 const src = readFileSync(new URL('../../src/tracker-source.html', import.meta.url), 'utf8');
-ok('S1 shipped source wires the marker-save results into both callers + the flush retry', src.includes('const okSess = noteSessionStart()') && src.includes('const okSessClr = saveSess()') && src.includes('if (sessDirty && saveSess()) sessDirty = false;'));
+ok('S1 shipped source wires the marker-save results into both callers + the flush retry', src.includes('const okSess = noteSessionStart()') && src.includes('const okSessClr = saveSess()') && src.includes('if (sessDirty && saveSess().ok) sessDirty = false;'));
 const poll144 = async (expr, ms) => { const t0 = Date.now(); while (Date.now() - t0 < (ms || 30000)) { const v = await ev(expr); if (v === true) return true; await sleep(300); } return false; };
 ok('T0 app script is live', await poll144(`typeof startClean === 'function' && typeof noteSessionStart === 'function' && typeof flushAux === 'function'`, 90000));
 await ev(`(() => { navigator.geolocation.watchPosition = () => 777; navigator.geolocation.clearWatch = () => {}; return true; })()`);

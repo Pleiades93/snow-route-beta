@@ -289,8 +289,10 @@ onMapReady(() => map.on('click', e => {
 }));
 
 // ===== MARKING (one finish path) =====
-function finishChange() { if (window.GLP) window.GLP.sync(); renderPanel(); updateCount(); renderStreets(); const ok = saveAll(); syncWake(); return ok; } // Beta 1.63 (audit F04): callers that announce an outcome branch on the save result
-function finishChangeMarked() { const wb = saveWarned; const ok = finishChange(); if (!ok && wb) toast('Not saved \u2014 storage problem', 3200); return ok; } // Beta 1.97 (audit loop CG-196-05): the marking callers' half of the save-honesty contract - when the save fails, NO outcome toast may replace the storage warning; saveAll raises that warning once per episode (saveWarned), so when it was already raised before this call, the caller still owes a plain 'not saved' rather than silence
+let saveWarned = false; // Beta 1.101 (Phase 3 / C2): the storage-warning episode state - app-layer messaging state, moved out of the storage layer with the warning itself. One warning per failure episode; resets on the next fully successful save (the 1.63 discipline, unchanged).
+function saveAllWarned() { const r = saveAll(); if (!r.ok) { if (!saveWarned) { saveWarned = true; toast('Storage is not saving (' + r.failedKey + ') - export a recovery backup now', 4200); } } else saveWarned = false; return r; } // the non-transactional save path: saveAll plus the episode warning. The finish/undo transactions call saveAll directly and do their own gated messaging.
+function finishChange() { if (window.GLP) window.GLP.sync(); renderPanel(); updateCount(); renderStreets(); const r = saveAllWarned(); syncWake(); return r; } // Beta 1.63 (audit F04): callers that announce an outcome branch on the save result - since Beta 1.101 (Phase 3) that result is the storage-outcome object
+function finishChangeMarked() { const wb = saveWarned; const r = finishChange(); if (!r.ok && wb) toast('Not saved \u2014 storage problem', 3200); return r; } // Beta 1.97 (audit loop CG-196-05): the marking callers' half of the save-honesty contract - when the save fails, NO outcome toast may replace the storage warning; saveAll raises that warning once per episode (saveWarned), so when it was already raised before this call, the caller still owes a plain 'not saved' rather than silence
 function applyPiece(name, idx, side, on) { // the piece mutation with NO rendering - returns the street name if this change completed it
   const bit = side ? 2 : 1; const was = pieces[name][idx];
   const now = on ? (was | bit) : (was & ~bit);
@@ -307,7 +309,7 @@ function togglePiece(name, idx, side) {
   const bit = side ? 2 : 1;
   const doneName = applyPiece(name, idx, side, !(pieces[name][idx] & bit));
   showChips(); const okTp = finishChangeMarked();
-  if (doneName && okTp) toast('✓ ' + doneName + ' · ' + fmtClock(new Date()));
+  if (doneName && okTp.ok) toast('✓ ' + doneName + ' · ' + fmtClock(new Date()));
 }
 function togglePieceGroup(side) { // one chip, whole selection: a side not done everywhere gets completed everywhere; a side done everywhere gets cleared everywhere
   if (!selSet.length) return;
@@ -315,7 +317,7 @@ function togglePieceGroup(side) { // one chip, whole selection: a side not done 
   const completed = [];
   for (const en of selSet) { const c = applyPiece(en.name, en.idx, side, on); if (c && !completed.includes(c)) completed.push(c); }
   showChips(); const okTg = finishChangeMarked();
-  if (okTg) completed.forEach(n => toast('✓ ' + n + ' · ' + fmtClock(new Date())));
+  if (okTg.ok) completed.forEach(n => toast('✓ ' + n + ' · ' + fmtClock(new Date())));
 }
 $('selAllBtn').addEventListener('click', () => { if (!tapGuard('selAll')) return; const completed = []; for (const en of selSet) for (const side of [0, 1]) { const c = applyPiece(en.name, en.idx, side, true); if (c && !completed.includes(c)) completed.push(c); } showChips(); const okSa = finishChangeMarked(); if (okSa) completed.forEach(n => toast('✓ ' + n + ' · ' + fmtClock(new Date()))); });
 $('selClearBtn').addEventListener('click', () => { if (!tapGuard('selClear')) return; deselect(); });
@@ -327,7 +329,7 @@ function markDone(name, via, at) { // production contract: whole street done; si
   pieceTimes[name] = STRETCH[name].parts.map((_, i) => { const pr = Array.isArray(cur[i]) ? cur[i] : [null, null]; return [pr[0] || mts, pr[1] || mts]; });
   doneSet.add(name); doneTimes[name] = mts; doneVia[name] = via || 'tap';
   const okMd = finishChangeMarked();
-  if (okMd) toast('✓ ' + name + ' · ' + fmtClock(new Date(mts)) + (doneSet.size === STREETNAMES.length ? ' — ALL ' + STREETNAMES.length + ' DONE' : '')); // Beta 1.94 (audit F-01): the total derives from the route's street list
+  if (okMd.ok) toast('✓ ' + name + ' · ' + fmtClock(new Date(mts)) + (doneSet.size === STREETNAMES.length ? ' — ALL ' + STREETNAMES.length + ' DONE' : '')); // Beta 1.94 (audit F-01): the total derives from the route's street list
 }
 function markUndone(name) {
   pieces[name] = STRETCH[name].parts.map(() => 0);
@@ -335,7 +337,7 @@ function markUndone(name) {
   invalidateFinishUndo();
   doneSet.delete(name); delete doneTimes[name]; delete doneVia[name];
   const okMu = finishChangeMarked();
-  if (okMu) toast('Unmarked ' + name);
+  if (okMu.ok) toast('Unmarked ' + name);
 }
 function markStreet(name, done) { if (done) markDone(name, 'tap'); else markUndone(name); showChips(); }
 function renderPanel() { // ONE selection pop-up (Beta 1.30, Andrew): the header strip and the multi-select pill are the same pop-up now - pill glass, every action inside, content follows the selection
@@ -456,7 +458,7 @@ function renderStreets() { // production row design: tap a street's name area to
       ta.addEventListener('input', () => {
         hint.textContent = 'Saving…';
         clearTimeout(noteSaveTimer);
-        noteSaveTimer = setTimeout(() => { const ok = setNoteText(n, ta.value); paintNt(); hint.textContent = ok ? 'Saved ✓' : 'Not saved — storage problem'; }, 400); // Beta 1.63 (audit F04): the hint tells the truth about the write
+        noteSaveTimer = setTimeout(() => { const ok = setNoteText(n, ta.value); paintNt(); hint.textContent = ok.ok ? 'Saved ✓' : 'Not saved — storage problem'; }, 400); // Beta 1.63 (audit F04): the hint tells the truth about the write
       });
       ta.addEventListener('blur', () => { clearTimeout(noteSaveTimer); setNoteText(n, ta.value); paintNt(); });
       el.appendChild(ed);

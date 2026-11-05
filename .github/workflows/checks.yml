@@ -47,6 +47,8 @@ jobs:
         run: node tests/sw.test.mjs
       - name: Trail segmentation fixtures (test-change gate)
         run: node tests/browser/selftest-trail-segments.mjs
+      - name: Storage-outcome contract fixtures (Phase 3 gate)
+        run: node tests/browser/selftest-store-result.mjs
   browser-tests:
     # Full suite everywhere EXCEPT a push to main (the smoke job takes that).
     if: github.event_name != 'push' || github.ref != 'refs/heads/main'

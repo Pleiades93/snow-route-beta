@@ -1,0 +1,11 @@
+{ "about": "Fixtures for the Phase 3 storage-outcome constructors. storeOk is the success result; storeFail names the first failing record (null/undefined keys normalize to null) and whether a retry is armed (coerced to a strict boolean). Every save-family function returns exactly this shape: { ok, failedKey, retryPending }.",
+  "cases": [
+    { "name": "ok shape", "call": "ok", "expect": { "ok": true, "failedKey": null, "retryPending": false } },
+    { "name": "fail with retry armed", "call": "fail", "args": ["sides", true], "expect": { "ok": false, "failedKey": "sides", "retryPending": true } },
+    { "name": "fail without retry", "call": "fail", "args": ["history", false], "expect": { "ok": false, "failedKey": "history", "retryPending": false } },
+    { "name": "fail with null key", "call": "fail", "args": [null, true], "expect": { "ok": false, "failedKey": null, "retryPending": true } },
+    { "name": "fail with undefined key normalizes to null", "call": "fail", "args": ["UNDEF", true], "expect": { "ok": false, "failedKey": null, "retryPending": true } },
+    { "name": "retry coerced from truthy", "call": "fail", "args": ["start", 1], "expect": { "ok": false, "failedKey": "start", "retryPending": true } },
+    { "name": "retry coerced from falsy", "call": "fail", "args": ["start", 0], "expect": { "ok": false, "failedKey": "start", "retryPending": false } },
+    { "name": "retry coerced from undefined", "call": "fail", "args": ["snap", "UNDEF"], "expect": { "ok": false, "failedKey": "snap", "retryPending": false } }
+  ] }

@@ -26,10 +26,10 @@ const mark3 = () => ev(`(() => { const base = Date.now() - 3600000; runStart = b
 await sleep(3000);
 await ev(`(() => { localStorage.clear(); location.reload(); return true; })()`); await sleep(1200);   // floor wait: let the reload actually begin before polling, so the poll cannot be answered by the pre-reload page
 await bootThrough(ev, poll); // Beta 1.95 (SR-194-07 re-baseline): the strict harness exposed that this drive ran its whole flow after this reload with NO route loaded (pieces empty) - mark3's refreshAll threw on the empty board and the old {error} return swallowed it, the mutations before the throw carrying the checks. The flow now runs against a loaded route, as it reads.
-// T1: the button is Finish, and red
-let A = await pollRead(`(() => { const b = $('resetBtn'); const cs = getComputedStyle(b); return JSON.stringify({ label: b.textContent, bg: cs.backgroundColor }); })()`, v => v.label === 'Finish');
+// T1: the button is FINISH, wearing Start's splash blue (Beta 1.100: Start and Finish share one style rule)
+let A = await pollRead(`(() => { const b = $('resetBtn'); const cs = getComputedStyle(b); return JSON.stringify({ label: b.textContent, bg: cs.backgroundColor }); })()`, v => v.label === 'FINISH');
 ok('T1 button says FINISH', A.label === 'FINISH');
-ok('T1 button wears the black redesign (Beta 1.23)', A.bg === 'rgb(10, 10, 11)');
+ok('T1 button wears the shared splash-blue of Start (Beta 1.100)', A.bg === 'rgb(43, 75, 242)');
 // T2: pop-up flow - No changes nothing
 await ev(`(() => { $('resetBtn').click(); return true; })()`); await sleep(300);
 A = JSON.parse(await ev(`(() => JSON.stringify({ vis: !$('finModal').classList.contains('hidden'), msg: $('finMsg').textContent }))()`));
@@ -52,7 +52,7 @@ ok('T3 button offers Undo', A.label === 'Undo');
 // exceed 8s, and once the window lapses no recovery can recreate T3's snapshot (re-finishing the by-then
 // empty board snapshots the empty board). So T4 now builds its own finish and undoes it immediately -
 // what it verifies (history cleared of the finish, run restored, toast) is unchanged.
-await ev(`(() => { history = []; saveHistory(); undoSnap = null; const rb = $('resetBtn'); rb.textContent = 'Finish'; rb.classList.remove('undoing'); return true; })()`);
+await ev(`(() => { history = []; saveHistory(); undoSnap = null; const rb = $('resetBtn'); rb.textContent = 'FINISH'; rb.classList.remove('undoing'); return true; })()`);
 await mark3();
 // Page-side step trace (audit round 3): record every finishRun/doUndo invocation and every tapGuard
 // verdict from here on, so a T4 failure prints WHICH step never fired instead of a state snapshot.
