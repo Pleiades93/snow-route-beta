@@ -45,7 +45,7 @@ ok('N6c after the boot pick the route menu is parked, not gone (the Routes tab c
 
 // --- Settings order + theme from its new home -----------------------------
 await ev(`$('setBtn').click(); true`); await sleep(500);
-ok('N7 Settings main pane is Backup then Update, and Day/Night is not in the menu anymore (Beta 1.88: the blue takeover; the theme got its own button)', await ev(`(function(){ var ids = [...document.querySelectorAll('#setMainPane .rmBtn')].map(b => b.id); return JSON.stringify(ids) === JSON.stringify(['exportBtn', 'updBtn']) && !$('setMenu').contains($('nightBtn')); })()`));
+ok('N7 Settings main pane is Status / On the job / Backup / About-What\'s new (Beta 1.111 redesign; Beta 1.88: the blue takeover; the theme got its own button, still out of the menu)', await ev(`(function(){ var ids = [...document.querySelectorAll('#setMainPane .rmBtn')].map(b => b.id); return JSON.stringify(ids) === JSON.stringify(['stBtn', 'jobBtn', 'exportBtn', 'aboutBtn']) && !$('setMenu').contains($('nightBtn')); })()`));
 const nightBefore = await ev(`isNight()`);
 await ev(`$('nightBtn').click(); true`); await sleep(400);
 ok('N8 the day/night button actually flips the theme', (await ev(`isNight()`)) !== nightBefore);

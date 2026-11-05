@@ -1,5 +1,29 @@
 # Changelog
 
+## Beta 1.111 — 2026-11-05
+Settings is rebuilt (Andrew's mockup-approved design): the main pane is
+four rows - Status, On the job, Backup, About / What's new - and the
+Backup row carries a small second line ("Last backup: ...") read from a
+stamp now written into the existing export record at every successful
+backup hand-off (a cancelled share stamps nothing). New panes: Status
+(the offline-maps download MOVED here from the Backup pane - same
+machinery, progress bar and stat line - plus a Delete maps action and a
+health block whose four rows are computed live at pane open: a storage
+write/read-back probe, the maps state, the update-check state, the GPS
+state), On the job (Keep screen awake - the existing wake lock, now
+gated on the toggle; Vibration when marking; the Done chime nav row),
+Done chime (five WebAudio-synthesized sounds - no files; tap a row to
+preview and select; the sound fires when a street becomes complete and
+twice at a confirmed Finish, Chime Melody once), and About (the app
+line, map credits, a curated What's new list whose header reads the
+live version, and the Update button, MOVED here from the main pane with
+both of its handlers). The Backup pane keeps only Backup (JSON) /
+Restore backup. One new global key, snowroute.v2.settings, holds the
+toggles ({awake, vib, chime, chimeSound}); every toggle defaults OFF
+and the chime sound defaults to Two-Tone. The completion feedback hook
+is the marking funnel itself: applyPiece's completion branch and
+markDone, the only two places a street flips to complete.
+
 ## Beta 1.110 — 2026-11-05
 The post-Finish Undo is removed (Andrew's call): Finish already asks for
 confirmation in the Yes/No pop-up, and that confirmation is now the whole

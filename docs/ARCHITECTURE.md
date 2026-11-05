@@ -153,6 +153,38 @@ cancelled share sheet is a shrug, never a fallback. drive136 F12 pins
 both directions (broken save → recovery file + loud toast; healthy
 save → normal file, no marker).
 
+## Settings (Beta 1.111, Andrew's approved redesign)
+
+The Settings takeover has six panes (`showSetPane` over `SET_PANES`):
+**main** (Status / On the job / Backup / About — the Backup row shows a
+"Last backup" age from the `exportedAt` stamp `noteExported` writes
+into the existing export record at every successful backup hand-off),
+**Status**, **On the job**, **Done chime**, **Backup** (slimmed to
+Backup (JSON) / Restore backup; its internal Back walk is unchanged),
+and **About** (app line, map credits, the curated `WHATSNEW` list —
+header version read from the live `#ver` — and the Update button,
+moved from the main pane with both handlers).
+
+Status owns the offline-maps download (moved from Backup, machinery
+unchanged: `preloadUrlList`, the pack cache, the progress bar/stat) and
+a Delete maps action (pack cache + PACKMIG flag + the active route's
+preload record; the browsing tile cache stays). Its maps line and the
+health block are computed live at pane open (`renderStatus` /
+`packState`): storage by a scratch-key write/read-back probe, maps from
+a pack-cache census against the deterministic manifest, app version
+from the update check's session state (`updState`), GPS from the watch
+state / last fix / the `gpsDenied` flag.
+
+Device-behaviour toggles live in ONE new global key,
+`snowroute.v2.settings` (`{awake, vib, chime, chimeSound}`; all
+toggles default OFF, sound defaults to Two-Tone — see
+docs/STORAGE-SCHEMA.md). The wake lock (`syncWake`, app3) is gated on
+`awake`. Completion feedback (chime + vibration) fires from the
+marking funnel — `applyPiece`'s completion branch and `markDone`
+(app2) call `onStreetComplete`; `finishRun` calls `onFinishFeedback`
+on its committed path only. Sounds are WebAudio-synthesized in app4
+(`playChime`), fully guarded so audio can never break marking.
+
 ## Service worker updates (deliberate, audit F-11)
 
 The worker calls `skipWaiting()` on install and `clients.claim()` on
@@ -162,7 +194,7 @@ tool: the operator's one update path should not strand him on a stale
 build mid-season. The takeover is bounded — claim changes which worker
 controls an open page; it never reloads the page. The running page
 keeps its loaded code and its on-device state, and the new version
-applies on the next load or via Settings → Update. All state is
+applies on the next load or via Settings → About → Update. All state is
 localStorage in version-tolerant shapes (the loaders sanitize what
 they read), so a controller change mid-clean cannot strand a run.
 

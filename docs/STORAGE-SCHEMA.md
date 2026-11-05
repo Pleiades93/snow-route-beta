@@ -47,7 +47,17 @@ session — a sessionStorage marker (`snowroute.session`) is what tells a
 reload inside the session from a cold open — and both are backed up,
 travelling together; an override restored without its expiry is read as
 expiring at the next boundary),
-`snowroute.v5.export` (last export summary; local only, not backed up),
+`snowroute.v5.export` (last export summary; local only, not backed up;
+Beta 1.111: `noteExported` also stamps an `exportedAt` epoch-ms into the
+same record at every successful backup hand-off — the Settings main
+pane's "Last backup" line reads it; a cancelled share stamps nothing),
+`snowroute.v2.settings` (Beta 1.111, additive — no migration: the
+Settings redesign's device-behaviour toggles as one JSON object
+`{awake, vib, chime, chimeSound}`, `chimeSound` one of
+`bell|two|rising|pop|melody`; defaults all toggles OFF and `chimeSound`
+`'two'`; a corrupt or partial value falls back per-field to the
+defaults; read/written only through `loadSettings`/`saveSettings` in
+app1; local only, not backed up),
 `snowroute.prep.v1` (offline-prep flag; local only, not backed up),
 `snowroute.v5.packmig` (Beta 1.94; semantics hardened Beta 1.95,
 SR-194-05/06: set only after the manifest-bounded pack migration has
