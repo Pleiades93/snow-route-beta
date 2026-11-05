@@ -467,9 +467,15 @@ function renderStreets() { // production row design: tap a street's name area to
   if (scroller) scroller.scrollTop = keepScroll;
   if (!el.querySelector('.noteEd')) { noteEdFor = null; kbSync(); } // Beta 1.56: an editor removed by a rebuild must not leave the keyboard state stuck on - reported to the owner (app4 kbSync), which releases it through the settle path
 }
+function collapseNoteEditor() { // Beta 1.106 (Andrew): closing the Streets sheet resets the list - an editor left open must not still be open on the next open. Clearing noteOpenFor and re-rendering finalizes any pending debounced save first (renderStreets' draft flush runs against the editor's own street), so typed text is never lost; only the open-editor state resets. Called from BOTH close funnels of the Streets sheet: closeSheetEl (X, tab toggle, pin, opening another sheet, outside tap) and the drag settleClose landing in makeSheetDraggable.
+  if (!noteOpenFor) return;
+  noteOpenFor = null;
+  renderStreets();
+}
 document.querySelectorAll('#filters button').forEach(b => b.addEventListener('click', () => { listFilter = b.dataset.f; document.querySelectorAll('#filters button').forEach(x => x.classList.toggle('on', x === b)); renderStreets(); }));
 function closeSheetEl(s) { // Beta 1.30: the close now ANIMATES - freeze the height the sheet has at this moment for the whole slide-down, and clear it only after the motion ends. Clearing it instantly (the old way) snapped the sheet to its default height mid-close, which is why closing felt broken while opening felt fine. Beta 1.81: a running release spring is cancelled first (its finish never runs, so the takeover also drops .dragging); a leftover inline transform from an interrupted spring-close is cleared so the class transition owns the slide.
   cancelSheetSpring(s);
+  if (s.id === 'sheet') collapseNoteEditor(); // Beta 1.106: any animated close of the Streets sheet resets an open note editor first
   if (!s.classList.contains('open')) { s.classList.remove('full'); s.classList.remove('dragging'); return; }
   const h = s.offsetHeight;
   s.style.height = h + 'px'; s.style.maxHeight = 'none'; s.style.transform = '';
@@ -595,6 +601,7 @@ function makeSheetDraggable(sheet) {
       springSheet(sheet, 0, h * 1.05 + 8, -v * 1000, q => { sheet.style.transform = 'translateY(' + q + 'px)'; }, () => {
         sheet.classList.remove('open');
         sheet.style.height = ''; sheet.style.maxHeight = ''; sheet.style.transform = '';
+        if (sheet.id === 'sheet') collapseNoteEditor(); // Beta 1.106: a drag/flick close lands here, not in closeSheetEl - the note-editor reset rides both close funnels
         // Beta 1.83 (Andrew, live catch on 1.82): a flick close landed, then the sheet
         // popped back up and down again a split second later - on Streets and Pace both.
         // The stop landings never did it (flick up to full, flick down to the natural

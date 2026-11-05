@@ -1,5 +1,15 @@
 # Changelog
 
+## Beta 1.106 — 2026-11-05
+Closing the Streets sheet now resets an open inline note editor: reopening
+the sheet shows plain street rows instead of the editor still open on the
+street last edited (Andrew, 2026-11-05). The reset rides both close funnels
+(closeSheetEl and the drag/flick settleClose landing) via a new
+collapseNoteEditor() in app2.js; a still-pending debounced note save is
+finalized by renderStreets' existing draft flush before the editor is torn
+down, so no typed text is lost. Note storage, the 400 ms auto-save and the
+editor's appearance while open are unchanged.
+
 ## Beta 1.105 — 2026-11-05
 Pressed feedback for route rows in the blue route menu: tapping a route in
 the Choose-a-route list now lights up exactly like the menu's own buttons
