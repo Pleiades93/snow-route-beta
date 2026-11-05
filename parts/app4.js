@@ -432,7 +432,7 @@ function renderJob() {
   $('chimeVal').textContent = settings.chime ? CHIME_SOUNDS[settings.chimeSound].name : 'Off';
 }
 $('swAwake').addEventListener('click', () => { settings.awake = !settings.awake; saveSettings(); renderSwitch($('swAwake'), settings.awake); syncWake(); }); // syncWake applies the new gate at once: ON mid-run requests the lock, OFF (or a run ending) releases it; an absent WakeLock API makes the request a silent no-op while the toggle still saves (app3)
-$('swVib').addEventListener('click', () => { settings.vib = !settings.vib; saveSettings(); renderSwitch($('swVib'), settings.vib); if (settings.vib && navigator.vibrate) { try { navigator.vibrate(60); } catch (e) {} } }); // a confirming buzz on the flip itself, where the platform supports vibration at all
+$('swVib').addEventListener('click', () => { const prevVib = settings.vib; settings.vib = !settings.vib; if (!saveSettings()) { settings.vib = prevVib; renderSwitch($('swVib'), settings.vib); toast('Not saved — storage problem'); return; } renderSwitch($('swVib'), settings.vib); if (settings.vib && navigator.vibrate) { try { navigator.vibrate(60); } catch (e) {} } }); // Beta 1.113 (round 112, CG-112-03): a failed save reverts the value AND the switch and warns - the 1.101 save-honesty contract every other save path honours; on a saved flip, a confirming buzz where the platform supports vibration at all
 $('chimeRow').addEventListener('click', () => { renderChime(); showSetPane('setChimePane'); });
 $('jobBtn').addEventListener('click', () => { renderJob(); showSetPane('setJobPane'); });
 $('jobBack').addEventListener('click', () => showSetPane('setMainPane'));
@@ -492,11 +492,11 @@ function renderChime() {
     const row = document.createElement('button');
     row.className = 'm-card m-sndRow' + (sel ? ' sel' : ''); row.dataset.snd = key;
     row.innerHTML = '<div class="m-togTxt"><div class="m-togLbl">' + snd.name + '</div><div class="m-togDesc">' + snd.desc + '</div></div>' + (sel ? '<div class="m-selTick">&#10003;</div>' : '<div class="m-play">&#9654;</div>'); // one fixed 30px right slot per row, per the mockup: the tick on the selected row, the play affordance on the rest
-    row.addEventListener('click', () => { settings.chimeSound = key; saveSettings(); renderChime(); renderJob(); playChime(key, 1); }); // a tap PREVIEWs and selects (the mockup's contract). The preview is a deliberate tap, so it sounds even while the chime toggle is off - the toggle gates only the in-clean playback
+    row.addEventListener('click', () => { const prevSnd = settings.chimeSound; settings.chimeSound = key; if (!saveSettings()) { settings.chimeSound = prevSnd; renderChime(); renderJob(); toast('Not saved — storage problem'); return; } renderChime(); renderJob(); playChime(key, 1); }); // a tap PREVIEWs and selects (the mockup's contract). The preview is a deliberate tap, so it sounds even while the chime toggle is off - the toggle gates only the in-clean playback. Beta 1.113 (round 112, CG-112-03): an unsaved pick reverts and warns instead of previewing a selection storage never took
     list.appendChild(row);
   }
 }
-$('swChime').addEventListener('click', () => { settings.chime = !settings.chime; saveSettings(); renderSwitch($('swChime'), settings.chime); renderJob(); });
+$('swChime').addEventListener('click', () => { const prevChime = settings.chime; settings.chime = !settings.chime; if (!saveSettings()) { settings.chime = prevChime; renderSwitch($('swChime'), settings.chime); renderJob(); toast('Not saved — storage problem'); return; } renderSwitch($('swChime'), settings.chime); renderJob(); }); // Beta 1.113 (round 112, CG-112-03): same save-honesty as the vibration switch - a failed save reverts and warns
 $('chimeBack').addEventListener('click', () => { renderJob(); showSetPane('setJobPane'); });
 // ---- Status: maps + health, every value read live at pane open ----
 async function packState() { // how much of the deterministic manifest (preloadUrlList - the same list the download writes and the pack migration certifies) is actually in the pack cache right now; falls back to the preload record when the cache census cannot run
@@ -545,13 +545,20 @@ $('statusBack').addEventListener('click', () => showSetPane('setMainPane'));
 $('stDel').addEventListener('click', async () => {
   if (!tapGuard('stDel')) return;
   if (preloadRunning) { toast('Wait for the download to finish first'); return; }
-  try { if ('caches' in window) await caches.delete('snowroute-offline-v1'); } catch (e) { /* a cache that will not delete simply re-counts honestly on the next census - the flag and record clears below still land */ }
+  // Beta 1.113 (round 112, CG-112-02): verify the pack is actually GONE before clearing anything or announcing success - the old handler swallowed a failed delete and still toasted 'Offline maps deleted' over a pack that was still there. caches.delete resolving false means the name was not deleted; the pack counts as gone only when it is also verifiably absent (caches.has). On failure the metadata stays and the failure is reported
+  let gone = false;
+  try {
+    if ('caches' in window) gone = (await caches.delete('snowroute-offline-v1')) || !(await caches.has('snowroute-offline-v1'));
+    else gone = true; // no Cache Storage in this browser: no pack exists to delete
+  } catch (e) { gone = false; }
+  if (!gone) { toast('Offline maps could not be deleted — they are still on this device'); renderStatus(true); return; }
   lsDel(PACKMIG_KEY); lsDel(LS.pre); // the completion flag and the ACTIVE route's preload record go with the pack; the browsing tile cache ('snowroute-tiles-v1') is a cache, not the pack - it stays
   toast('Offline maps deleted');
   renderStatus(true);
 });
 // ---- About / What's new ----
 const WHATSNEW = [ // the curated in-app list: plain words, newest first. Ships WITH each version like the CHANGELOG - a release that changes what Andrew sees adds its entry here in the same change
+  { v: 'Beta 1.113', items: ['Fixed: a note could say "Saved" when it had not saved', 'Delete maps now only says deleted when the maps really are gone', 'The Last backup line no longer resets when you dismiss the backup reminder', 'Settings switches now tell you if a change could not be saved', 'Turning screen-awake off now always lets the screen sleep again'] },
   { v: 'Beta 1.112', items: ['Keep screen awake now resets when the app closes — turn it on per session when you want it'] },
   { v: 'Beta 1.111', items: ['Settings rebuilt: Status, On the job, Backup, About', 'Keep the screen awake during a clean', 'Done chime — five sounds to choose from', 'Offline maps now live in Status'] },
   { v: 'Beta 1.110', items: ['Finish is final: no more Undo after you confirm'] },

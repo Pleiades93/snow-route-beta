@@ -1,5 +1,28 @@
 # Changelog
 
+## Beta 1.113 — 2026-11-05
+Audit round 112 (Codex audit, all five findings approved by Andrew):
+the honesty fixes. (1) A street note whose save failed during a
+same-street list rebuild could announce "Saved ✓" — the rebuild's
+flush tested the truthiness of the 1.101 storage-outcome object
+({ok:false} is truthy); it now reads .ok, and a failed flush shows
+"Not saved — storage problem". (2) Delete maps announced success
+even when the cache delete failed; it now verifies the pack is gone
+(delete resolved true, or verifiably absent) before clearing the
+completion flag and preload record or toasting success, and reports
+the failure honestly otherwise. (3) Dismissing the backup nudge
+replaced the whole export record and erased the 1.111 last-backup
+stamp; both nudge handlers now merge nudgedAt into the record.
+(4) The vibration / chime / chime-sound handlers ignored a failed
+settings write — the switch rendered ON and silently reverted on
+reload; a failed save now restores the previous value and switch
+and warns. (5) Turning screen-awake off (or finishing a run) while
+a wake-lock request was still in flight left the late-arriving lock
+held with the switch OFF; syncWake now recomputes eligibility after
+the request resolves and releases an unwanted lock on arrival.
+Regression gate: tests/browser/selftest-round112.mjs (verbatim
+extractions, red on 1.112 / green here) wired into CI.
+
 ## Beta 1.112 — 2026-11-05
 Keep screen awake (the On the job toggle) is now session-only
 (Andrew's call): every cold open starts with it OFF, however it was

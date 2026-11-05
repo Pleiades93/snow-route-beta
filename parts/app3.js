@@ -170,10 +170,15 @@ function closeClean() {
 // ===== RUN LIFECYCLE =====
 let wakeLock = null;
 async function syncWake() {
-  const want = !!runStart && document.visibilityState === 'visible' && settings.awake; // Beta 1.111: the wake lock is gated on the On-the-job toggle - the request/release machinery below is unchanged; where the API is absent the request is a silent no-op and nothing here throws. Beta 1.112 (Andrew): settings.awake is session-only state - always OFF at a cold open, never stored
+  const wantNow = () => !!runStart && document.visibilityState === 'visible' && settings.awake; // Beta 1.111: the wake lock is gated on the On-the-job toggle - the request/release machinery below is unchanged; where the API is absent the request is a silent no-op and nothing here throws. Beta 1.112 (Andrew): settings.awake is session-only state - always OFF at a cold open, never stored. Beta 1.113 (round 112, CG-112-04): eligibility is a FUNCTION, recomputed after the request await - capturing it once let a toggle-off (or a finish) landing mid-request leave the late-arriving lock held with the switch OFF
   try {
-    if (want && !wakeLock && navigator.wakeLock) { wakeLock = await navigator.wakeLock.request('screen'); wakeLock.addEventListener('release', () => { wakeLock = null; }); }
-    if (!want && wakeLock) { const w = wakeLock; wakeLock = null; w.release(); }
+    if (wantNow() && !wakeLock && navigator.wakeLock) {
+      const lock = await navigator.wakeLock.request('screen');
+      lock.addEventListener('release', () => { if (wakeLock === lock) wakeLock = null; });
+      if (wantNow()) wakeLock = lock; // still wanted: hold it
+      else { try { lock.release(); } catch (e) {} } // no longer wanted (toggle off / run finished / tab hidden during the request): release on arrival, wakeLock stays null
+    }
+    if (!wantNow() && wakeLock) { const w = wakeLock; wakeLock = null; w.release(); }
   } catch (e) { /* wake lock is best-effort */ }
 }
 document.addEventListener('visibilitychange', syncWake);
@@ -380,8 +385,8 @@ function maybeBackupNudge() {
   $('bakText').textContent = 'Clean saved. Export a backup so your history survives a lost phone.';
   $('bakNudge').classList.remove('hidden');
 }
-$('bakLater').addEventListener('click', () => { lsSet(LS.exp, JSON.stringify({ nudgedAt: Date.now() })); $('bakNudge').classList.add('hidden'); });
-$('bakSave').addEventListener('click', () => { lsSet(LS.exp, JSON.stringify({ nudgedAt: Date.now() })); $('bakNudge').classList.add('hidden'); openExport(); downloadBackup(); });
+$('bakLater').addEventListener('click', () => { const st = parseJ(lsGet(LS.exp), {}); st.nudgedAt = Date.now(); lsSet(LS.exp, JSON.stringify(st)); $('bakNudge').classList.add('hidden'); }); // Beta 1.113 (round 112, CG-112-05): MERGE nudgedAt into the export record (the noteExported pattern) - the record also carries 1.111's exportedAt, and replacing it here erased the Settings 'Last backup' stamp on every dismissal
+$('bakSave').addEventListener('click', () => { const st = parseJ(lsGet(LS.exp), {}); st.nudgedAt = Date.now(); lsSet(LS.exp, JSON.stringify(st)); $('bakNudge').classList.add('hidden'); openExport(); downloadBackup(); }); // Beta 1.113 (round 112, CG-112-05): same merge as bakLater
 
 // ===== NOTES (production model: notes[street] = [{k:'note', at, text} | {k: flag kind, at}]) =====
 const FLAGS = { car: 'Car blocking', hazard: 'Hazard', missed: 'Missed spot', salt: 'Needs salt' };
