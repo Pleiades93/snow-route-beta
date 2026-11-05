@@ -256,7 +256,7 @@
 <div id="hud">
   <div id="warn">Not saving — storage is full or blocked</div>
   <div class="row">
-    <div class="titleStack"><div class="title">Snow Route Beta</div><div class="ver" id="ver">Beta 1.102</div></div>
+    <div class="titleStack"><div class="title">Snow Route Beta</div><div class="ver" id="ver">Beta 1.103</div></div>
   </div>
   <div id="stats"></div>
 </div>
@@ -704,11 +704,35 @@ function flushAux(force) {
 setInterval(() => { flushAux(false); themeTick(); }, 15000); // Beta 1.77: the same 15 s heartbeat also walks the day/night cycle across its boundaries
 document.addEventListener('visibilitychange', () => { if (document.visibilityState === 'hidden') flushAux(true); });
 window.addEventListener('pagehide', () => flushAux(true));
+
+// Beta 1.103 (architecture Phase 6, C5): the paint engine's host. The engine
+// (parts/engine.js) reads NOTHING from the app directly any more - every app
+// value, helper, callback and piece of live state it consumes arrives
+// through this one object (the engine aliases it as H; GLP.init(map, host)
+// adopts the same object). Plain entries are the values themselves;
+// group (c) - state the app REBINDS (pieces on load/restore/undo, the
+// selection on every tap, the active route on load) - is exposed through
+// getters so the engine always reads the CURRENT binding, exactly as its
+// old free-global reads behaved. glHideLabels is also behind a getter: it
+// is declared in app2.js, after this part, and the getter resolves it at
+// call time. Built here, at the end of app1.js, because the engine
+// evaluates immediately after this part in the assembled page and its
+// eval-time geometry builders read the constants and jDistM at once.
+// Guarded by tests/browser/selftest-engine-surface.mjs (the frozen list).
+const GL_HOST = {
+  MLAT, MLNG, MAIN, SPOT, STRETCH, ROADS, names, jDistM, ptSegM, isNight,
+  get pieces() { return pieces; },
+  get selSet() { return selSet; },
+  get selStretch() { return selStretch; },
+  get activeRoute() { return activeRoute; },
+  get glHideLabels() { return glHideLabels; },
+};
 const GLP = (() => {
+  let H = GL_HOST; // Beta 1.103 (architecture Phase 6, C5): the engine's ONLY doorway to the app - every app value, helper, callback and live state read goes through this host object (built in app1.js; also passed to GLP.init). Live state arrives via getters, so an app rebind is seen on the next read, exactly as a free-global read behaved before.
   let GLM = null;                 // the MapLibre map instance (recreated per setBasemap)
   let sel = null;                 // {name, idx} - fed from the app's selStretch
   let YELLOW = '#ffc233', RED = '#ef476f', GREEN = '#06d6a0';   // METRO, locked in the prototype (r26)
-  const pendingColor = n => MAIN.has(n) ? YELLOW : RED;
+  const pendingColor = n => H.MAIN.has(n) ? YELLOW : RED;
   let fontStack = ['Noto Sans Regular']; // replaced per-style by GLP.setFont (the app adopts the basemap's own stack, prototype pickFont rule)
   const glowPreset = 1;   // SOFT - the locked selection preset (prototype r24)
   let lastSig = null;
@@ -731,13 +755,13 @@ const GLP = (() => {
     if (GLM.getSource('selGlow')) GLM.getSource('selGlow').setData(buildSelGlow());
     managePulse();
   }
-const XYOf = p => [p[1] * MLNG, p[0] * MLAT];
-function segLenM(pts) { let L = 0; for (let i = 1; i < pts.length; i++) L += jDistM(pts[i - 1], pts[i]); return L; }
+const XYOf = p => [p[1] * H.MLNG, p[0] * H.MLAT];
+function segLenM(pts) { let L = 0; for (let i = 1; i < pts.length; i++) L += H.jDistM(pts[i - 1], pts[i]); return L; }
 const GJ = pts => pts.map(p => [p[1], p[0]]);   // [lat,lng] -> [lng,lat]
 // Geographic offset of a [lat,lng] polyline by `m` metres (positive = left
 // of the direction of travel), in the same flat-metre space the app uses.
 function offsetLine(pts, m) {
-  const P = pts.map(p => [p[1] * MLNG, p[0] * MLAT]);
+  const P = pts.map(p => [p[1] * H.MLNG, p[0] * H.MLAT]);
   const out = [];
   for (let i = 0; i < P.length; i++) {
     // Direction from a WINDOW of at least ~2 m each way, not the immediate
@@ -749,7 +773,7 @@ function offsetLine(pts, m) {
     while (b < P.length - 1 && Math.hypot(P[b][0] - P[i][0], P[b][1] - P[i][1]) < 2) b++;
     let dx = P[b][0] - P[a][0], dy = P[b][1] - P[a][1];
     const L = Math.hypot(dx, dy) || 1; dx /= L; dy /= L;
-    out.push([(P[i][1] + dx * m) / MLAT, (P[i][0] + (-dy) * m) / MLNG]);   // offset vector = m * (-dy, dx): x takes -dy, y takes dx. A transposed pair here shifted the line ALONG the street instead of beside it (Andrew's 'overshoot', 2026-10-28)
+    out.push([(P[i][1] + dx * m) / H.MLAT, (P[i][0] + (-dy) * m) / H.MLNG]);   // offset vector = m * (-dy, dx): x takes -dy, y takes dx. A transposed pair here shifted the line ALONG the street instead of beside it (Andrew's 'overshoot', 2026-10-28)
   }
   return out;
 }
@@ -764,8 +788,8 @@ const GEO = {};
 // with the direction of travel. LEFTBIT[name] = which state bit is Left;
 // LEFTSIDE[name] = the compass side that is, for the status line.
 const LEFTBIT = {}, LEFTSIDE = {};
-names.forEach(n => {
-  const parts = STRETCH[n].parts;
+H.names.forEach(n => {
+  const parts = H.STRETCH[n].parts;
   // The street's whole stitched line; sectors are exact slices of it
   // (sector k+1 starts at the very point sector k ends).
   const stitched = [], cuts = [];
@@ -786,20 +810,20 @@ names.forEach(n => {
   const canonicalForward = Math.abs(dLat) >= Math.abs(dLng) ? dLat >= 0 : dLng >= 0;
   LEFTBIT[n] = canonicalForward ? 0 : 1;   // bit 0 is the left of the stitched direction
   const leftOff = LEFTBIT[n] === 0 ? off0 : off1, mid = Math.floor(stitched.length / 2);
-  const dx = (leftOff[mid][1] - stitched[mid][1]) * MLNG, dy = (leftOff[mid][0] - stitched[mid][0]) * MLAT;
+  const dx = (leftOff[mid][1] - stitched[mid][1]) * H.MLNG, dy = (leftOff[mid][0] - stitched[mid][0]) * H.MLAT;
   LEFTSIDE[n] = Math.abs(dx) >= Math.abs(dy) ? (dx < 0 ? 'west side' : 'east side') : (dy > 0 ? 'north side' : 'south side');
   // label line: the SPOT segment (or the longest), like the app's labels
-  const segs = ROADS[n];
-  let li = (SPOT[n] ? SPOT[n][0] : -1);
+  const segs = H.ROADS[n];
+  let li = (H.SPOT[n] ? H.SPOT[n][0] : -1);
   if (li < 0 || li >= segs.length) { li = 0; let bl = -1; segs.forEach((sg, j) => { const L = segLenM(sg); if (L > bl) { bl = L; li = j; } }); }
   labelFeatures.push({ type: 'Feature', properties: { name: n }, geometry: { type: 'LineString', coordinates: GJ(segs[li]) } });
   // Round 34: a POINT anchor on the same segment at the SPOT fraction.
   // Line-placed labels need the segment to fit the name on screen, so
   // at Overview most short streets lost their labels entirely; point
   // labels render regardless of segment length.
-  const seg = segs[li], fr = SPOT[n] ? SPOT[n][1] : 0.5;
+  const seg = segs[li], fr = H.SPOT[n] ? H.SPOT[n][1] : 0.5;
   let target = segLenM(seg) * fr, acc = 0, anchor = seg[seg.length - 1];
-  for (let k = 1; k < seg.length; k++) { const d = jDistM(seg[k - 1], seg[k]); if (acc + d >= target) { const t = d ? (target - acc) / d : 0; anchor = [seg[k - 1][0] + (seg[k][0] - seg[k - 1][0]) * t, seg[k - 1][1] + (seg[k][1] - seg[k - 1][1]) * t]; break; } acc += d; }
+  for (let k = 1; k < seg.length; k++) { const d = H.jDistM(seg[k - 1], seg[k]); if (acc + d >= target) { const t = d ? (target - acc) / d : 0; anchor = [seg[k - 1][0] + (seg[k][0] - seg[k - 1][0]) * t, seg[k - 1][1] + (seg[k][1] - seg[k - 1][1]) * t]; break; } acc += d; }
   labelPointFeatures.push({ type: 'Feature', properties: { name: n, len: Math.round(segLenM(stitched)) }, geometry: { type: 'Point', coordinates: GJ([anchor])[0] } });
 });
 // Round 35 (Andrew): Fifth's label anchor sits at its Greenpark
@@ -813,14 +837,14 @@ names.forEach(n => {
   const gp = GEO['Greenpark'].stitched;
   let bd = 1e9, bq = A0;
   for (let k = 1; k < gp.length; k++) {
-    const a = gp[k - 1], b = gp[k], vx = (b[1] - a[1]) * MLNG, vy = (b[0] - a[0]) * MLAT;
-    const wx = (A0[1] - a[1]) * MLNG, wy = (A0[0] - a[0]) * MLAT, L2 = vx * vx + vy * vy;
+    const a = gp[k - 1], b = gp[k], vx = (b[1] - a[1]) * H.MLNG, vy = (b[0] - a[0]) * H.MLAT;
+    const wx = (A0[1] - a[1]) * H.MLNG, wy = (A0[0] - a[0]) * H.MLAT, L2 = vx * vx + vy * vy;
     let t = L2 ? (wx * vx + wy * vy) / L2 : 0; t = Math.max(0, Math.min(1, t));
-    const q = [a[0] + (b[0] - a[0]) * t, a[1] + (b[1] - a[1]) * t], d = jDistM(A0, q);
+    const q = [a[0] + (b[0] - a[0]) * t, a[1] + (b[1] - a[1]) * t], d = H.jDistM(A0, q);
     if (d < bd) { bd = d; bq = q; }
   }
-  const dx = (A0[1] - bq[1]) * MLNG, dy = (A0[0] - bq[0]) * MLAT, dl = Math.hypot(dx, dy) || 1;
-  f.geometry.coordinates = [A0[1] + (dx / dl) * 45 / MLNG, A0[0] + (dy / dl) * 45 / MLAT];
+  const dx = (A0[1] - bq[1]) * H.MLNG, dy = (A0[0] - bq[0]) * H.MLAT, dl = Math.hypot(dx, dy) || 1;
+  f.geometry.coordinates = [A0[1] + (dx / dl) * 45 / H.MLNG, A0[0] + (dy / dl) * 45 / H.MLAT];
 })();
 const LABELS = { type: 'FeatureCollection', features: labelFeatures };
 // Round 39 (Andrew): street names DEPUPULATE as he zooms out - from
@@ -834,11 +858,11 @@ const LABELS = { type: 'FeatureCollection', features: labelFeatures };
   const q = p => lens[Math.min(lens.length - 1, Math.floor(p * lens.length))];
   const q1 = q(0.25), q2 = q(0.5), q3 = q(0.75);
   labelPointFeatures.forEach(f => {
-    f.properties.tier = MAIN.has(f.properties.name) ? 4 : (f.properties.len < q1 ? 1 : f.properties.len < q2 ? 2 : f.properties.len < q3 ? 3 : 4);
+    f.properties.tier = H.MAIN.has(f.properties.name) ? 4 : (f.properties.len < q1 ? 1 : f.properties.len < q2 ? 2 : f.properties.len < q3 ? 3 : 4);
   });
 })();
 const LABELPTS = { type: 'FeatureCollection', features: labelPointFeatures };
-const ROUTEPOI = (() => { let a = 90, b = -90, c = 180, d = -180; names.forEach(n => GEO[n].stitched.forEach(p => { a = Math.min(a, p[0]); b = Math.max(b, p[0]); c = Math.min(c, p[1]); d = Math.max(d, p[1]); })); return { type: 'Feature', properties: {}, geometry: { type: 'Point', coordinates: [(c + d) / 2, (a + b) / 2] } }; })();
+const ROUTEPOI = (() => { let a = 90, b = -90, c = 180, d = -180; H.names.forEach(n => GEO[n].stitched.forEach(p => { a = Math.min(a, p[0]); b = Math.max(b, p[0]); c = Math.min(c, p[1]); d = Math.max(d, p[1]); })); return { type: 'Feature', properties: {}, geometry: { type: 'Point', coordinates: [(c + d) / 2, (a + b) / 2] } }; })();
 
 // ---- unified strands (Andrew, 2026-10-28): the route is painted as
 // STRANDS, not per-street pieces. Slices of the same colour that touch -
@@ -847,7 +871,7 @@ const ROUTEPOI = (() => { let a = 90, b = -90, c = 180, d = -180; names.forEach(
 // one painted shape, the engine drawing every joint. A completed stretch
 // is not a core flanked by two side lines: completed stretches form the
 // BAND family - one solid ribbon at road width.
-function colOf(n, bits) { return bits === 3 ? GREEN : (MAIN.has(n) ? YELLOW : RED); }
+function colOf(n, bits) { return bits === 3 ? GREEN : (H.MAIN.has(n) ? YELLOW : RED); }
 // Selection by vibrancy (Andrew, 2026-10-28 - the model he designed on
 // 2026-10-26): everything rests MUTED (same colour, saturation cut), the
 // selected sector renders the full vibrant colour at the same glow spec.
@@ -874,7 +898,7 @@ function lineHit(p1, p2, p3, p4) {
   const den = (b[0] - a[0]) * (d[1] - c[1]) - (b[1] - a[1]) * (d[0] - c[0]);
   if (Math.abs(den) < 1e-9) return null;
   const t = ((c[0] - a[0]) * (d[1] - c[1]) - (c[1] - a[1]) * (d[0] - c[0])) / den;
-  return [(a[1] + t * (b[1] - a[1])) / MLAT, (a[0] + t * (b[0] - a[0])) / MLNG];
+  return [(a[1] + t * (b[1] - a[1])) / H.MLAT, (a[0] + t * (b[0] - a[0])) / H.MLNG];
 }
 const coordKey = p => p[0].toFixed(7) + ',' + p[1].toFixed(7);
 // ---- kerb model (Andrew, 2026-10-28, round 7): a side line behaves like
@@ -887,9 +911,9 @@ const coordKey = p => p[0].toFixed(7) + ',' + p[1].toFixed(7);
 const CORRIDOR = 5.2;   // metres: half the drawn road width
 let JUNC = null;
 function buildJunctions() {
-  JUNC = {}; names.forEach(n => { JUNC[n] = []; });
+  JUNC = {}; H.names.forEach(n => { JUNC[n] = []; });
   const at = {};
-  names.forEach(n => GEO[n].stitched.forEach((pt, vi) => { const k = coordKey(pt); (at[k] = at[k] || []).push({ n, vi }); }));
+  H.names.forEach(n => GEO[n].stitched.forEach((pt, vi) => { const k = coordKey(pt); (at[k] = at[k] || []).push({ n, vi }); }));
   const dirAt = (n, vi) => {
     const st = GEO[n].stitched, a = XYOf(st[Math.max(0, vi - 1)]), b = XYOf(st[Math.min(st.length - 1, vi + 1)]);
     const dx = b[0] - a[0], dy = b[1] - a[1], m = Math.hypot(dx, dy) || 1;
@@ -908,7 +932,7 @@ let SVMAP = null;
 function sharedVertexMap() {
   if (SVMAP) return SVMAP;
   SVMAP = {};
-  names.forEach(n => GEO[n].stitched.forEach((pt, vi) => { const k = coordKey(pt); (SVMAP[k] = SVMAP[k] || []).push({ n, vi }); }));
+  H.names.forEach(n => GEO[n].stitched.forEach((pt, vi) => { const k = coordKey(pt); (SVMAP[k] = SVMAP[k] || []).push({ n, vi }); }));
   return SVMAP;
 }
 // ---- through-connection (Andrew, 2026-10-28, round 9): "they all have
@@ -946,19 +970,19 @@ function throughOK(A, side, J, runPts) {
     const gD = GEO[E.n];
     [0, 1].forEach(tt => {
       if (crossed) return;
-      const marked = gD.cuts.some((ab, ci) => (E.vi >= ab[0] && E.vi <= ab[1]) && pieces[E.n][ci] !== 3 && (pieces[E.n][ci] & (1 << tt)));
+      const marked = gD.cuts.some((ab, ci) => (E.vi >= ab[0] && E.vi <= ab[1]) && H.pieces[E.n][ci] !== 3 && (H.pieces[E.n][ci] & (1 << tt)));
       if (!marked) return;
       const offD = tt === 0 ? gD.off0 : gD.off1;
       const corners = (pairsNow[A + '|' + J.viA + '|' + side] || []).filter(pr => pr.n2 === E.n && pr.side2 === tt && pr.corner).map(pr => pr.corner);
       for (let s1 = 0; s1 + 1 < offA.length && !crossed; s1++) {
-        if (ptSegM(V, offA[s1], offA[s1 + 1]) > 13) continue;
+        if (H.ptSegM(V, offA[s1], offA[s1 + 1]) > 13) continue;
         for (let s2 = 0; s2 + 1 < offD.length; s2++) {
-          if (ptSegM(V, offD[s2], offD[s2 + 1]) > 13) continue;
+          if (H.ptSegM(V, offD[s2], offD[s2 + 1]) > 13) continue;
           if (!segCross(offA[s1], offA[s1 + 1], offD[s2], offD[s2 + 1])) continue;
           const X = lineHit(offA[s1], offA[s1 + 1], offD[s2], offD[s2 + 1]);
           if (!X) continue;
-          if ([offA[s1], offA[s1 + 1], offD[s2], offD[s2 + 1]].some(pt => jDistM(X, pt) < 0.35)) continue;
-          if (corners.some(c => jDistM(X, c) < 0.5)) continue;
+          if ([offA[s1], offA[s1 + 1], offD[s2], offD[s2 + 1]].some(pt => H.jDistM(X, pt) < 0.35)) continue;
+          if (corners.some(c => H.jDistM(X, c) < 0.5)) continue;
           crossed = true;
         }
       }
@@ -976,7 +1000,7 @@ function throughOK(A, side, J, runPts) {
     if (seg.A === A && seg.side === side) continue;
     if (seg.pts.some(pt => signsOf(pt)[0] === sideSign)) return false;
   }
-  THROUGH_SEGS.push({ V, A, side, pts: runPts.filter(pt => jDistM(pt, V) < CORRIDOR + 5) });
+  THROUGH_SEGS.push({ V, A, side, pts: runPts.filter(pt => H.jDistM(pt, V) < CORRIDOR + 5) });
   return true;
 }
 // Cut one piece at one junction: the part inside the crossing street's
@@ -992,7 +1016,7 @@ function throughOK(A, side, J, runPts) {
 // kerbed - the segment's exit crossing landed within centimetres of
 // its start and was deduped away). Cluster twins and act ONCE.
 function sameRoad(J1, J2) {
-  if (jDistM(J1.V, J2.V) >= 2) return false;
+  if (H.jDistM(J1.V, J2.V) >= 2) return false;
   return Math.abs(J1.dB[0] * J2.dB[0] + J1.dB[1] * J2.dB[1]) > 0.95;
 }
 function clipOne(pc, J, R) {
@@ -1031,7 +1055,7 @@ function clipOne(pc, J, R) {
     cr.sort((x, y) => x.t - y.t).forEach(({ c }) => {
       const last = aug[aug.length - 1];
       if (coordKey(c) === coordKey(last)) return;
-      if (jDistM(c, last) < 0.05) {
+      if (H.jDistM(c, last) < 0.05) {
         // An exit within centimetres of an INSIDE start point: the wall
         // point must REPLACE the start, never be deduped away - dropping
         // it starts the surviving piece at the next trace point, however
@@ -1062,7 +1086,7 @@ function clipPieces(piecesIn, A, R = CORRIDOR, skip = null) {
   for (const J of JUNC[A]) {
     if (seenCluster.some(u => sameRoad(u, J))) continue;   // one clip per physical road at a point: double vertices AND name-change twins (round 9/10)
     seenCluster.push(J);
-    if (skip && [...skip].some(u => (u.B === J.B && jDistM(u.V, J.V) < 2) || sameRoad(u, J))) continue;
+    if (skip && [...skip].some(u => (u.B === J.B && H.jDistM(u.V, J.V) < 2) || sameRoad(u, J))) continue;
     if (J.sin <= 0.42) continue;   // near-parallel traces run together (overlaps) - not crossings
     const out = [];
     for (const pc of pieces) out.push(...clipOne(pc, J, R));
@@ -1089,7 +1113,7 @@ function edgeRunSlices(n, side, marked) {
       if (J.sin <= 0.42) continue;
       if (seenJ.some(u => sameRoad(u, J))) continue;   // name-change twins share one verdict (frame + through + skip)
       seenJ.push(J);
-      if (!run.pts.some(pt => jDistM(pt, J.V) < CORRIDOR + 5)) continue;   // the run does not reach this junction
+      if (!run.pts.some(pt => H.jDistM(pt, J.V) < CORRIDOR + 5)) continue;   // the run does not reach this junction
       // A through is only for a line marked on BOTH arms of the junction.
       // A run that ENDS at the junction (a terminating street, or the last
       // marked stretch) gets the kerb clip + corner bridge instead -
@@ -1103,7 +1127,7 @@ function edgeRunSlices(n, side, marked) {
       // the junction, so this side line runs unclipped to the vertex and
       // lands inside the band - provided no other street has a marked
       // side line here it could poke across.
-      const otherArmBand = GEO[n].cuts.some((ab, ci) => (ab[0] === J.viA || ab[1] === J.viA) && (ci < run.firstIdx || ci > run.lastIdx) && pieces[n][ci] === 3);
+      const otherArmBand = GEO[n].cuts.some((ab, ci) => (ab[0] === J.viA || ab[1] === J.viA) && (ci < run.firstIdx || ci > run.lastIdx) && H.pieces[n][ci] === 3);
       if (otherArmBand) {
         // Skip the clip only if following this line unclipped to the
         // vertex properly crosses NO other street's marked side line.
@@ -1112,18 +1136,18 @@ function edgeRunSlices(n, side, marked) {
         // Velmar x Flushing the line reaches the band without crossing
         // Flushing's line at all, and the refusal left it shy.)
         let crosses = false;
-        const properX = (a, b, c, d) => { if (!segCross(a, b, c, d)) return false; const X = lineHit(a, b, c, d); return !!X && [a, b, c, d].every(pt => jDistM(X, pt) >= 0.35); };
+        const properX = (a, b, c, d) => { if (!segCross(a, b, c, d)) return false; const X = lineHit(a, b, c, d); return !!X && [a, b, c, d].every(pt => H.jDistM(X, pt) >= 0.35); };
         for (let si = 0; si + 1 < run.pts.length && !crosses; si++) {
-          if (ptSegM(J.V, run.pts[si], run.pts[si + 1]) > CORRIDOR + 6) continue;
-          for (const dn of names) {
+          if (H.ptSegM(J.V, run.pts[si], run.pts[si + 1]) > CORRIDOR + 6) continue;
+          for (const dn of H.names) {
             if (dn === n || crosses) break;
             const gd = GEO[dn];
             for (const t of [0, 1]) {
-              const marked = gd.cuts.some((ab, ci) => pieces[dn][ci] !== 3 && (pieces[dn][ci] & (1 << t)) && ab.some(v => jDistM(gd.stitched[v], J.V) < 16));
+              const marked = gd.cuts.some((ab, ci) => H.pieces[dn][ci] !== 3 && (H.pieces[dn][ci] & (1 << t)) && ab.some(v => H.jDistM(gd.stitched[v], J.V) < 16));
               if (!marked) continue;
               const off = t === 0 ? gd.off0 : gd.off1;
               for (let oi = 0; oi + 1 < off.length; oi++) {
-                if (ptSegM(J.V, off[oi], off[oi + 1]) > 14) continue;
+                if (H.ptSegM(J.V, off[oi], off[oi + 1]) > 14) continue;
                 if (properX(run.pts[si], run.pts[si + 1], off[oi], off[oi + 1])) { crosses = true; break; }
               }
               if (crosses) break;
@@ -1164,8 +1188,8 @@ function polyCorner(n1, side1, n2, side2, V, vi1, vi2) {
   const segsOf = (off, vi) => {
     const segs = [];
     for (let i = 0; i + 1 < off.length; i++) segs.push({ seg: [off[i], off[i + 1]], ext: false });
-    if (vi === 0 && off.length > 1) { const d = [off[0][0] - off[1][0], off[0][1] - off[1][1]], L = jDistM(off[0], off[1]) || 1; segs.push({ seg: [[off[0][0] + d[0] * 8 / L, off[0][1] + d[1] * 8 / L], off[0]], ext: true }); }
-    if (vi === off.length - 1 && off.length > 1) { const e = off[off.length - 1], q = off[off.length - 2], d = [e[0] - q[0], e[1] - q[1]], L = jDistM(q, e) || 1; segs.push({ seg: [e, [e[0] + d[0] * 8 / L, e[1] + d[1] * 8 / L]], ext: true }); }
+    if (vi === 0 && off.length > 1) { const d = [off[0][0] - off[1][0], off[0][1] - off[1][1]], L = H.jDistM(off[0], off[1]) || 1; segs.push({ seg: [[off[0][0] + d[0] * 8 / L, off[0][1] + d[1] * 8 / L], off[0]], ext: true }); }
+    if (vi === off.length - 1 && off.length > 1) { const e = off[off.length - 1], q = off[off.length - 2], d = [e[0] - q[0], e[1] - q[1]], L = H.jDistM(q, e) || 1; segs.push({ seg: [e, [e[0] + d[0] * 8 / L, e[1] + d[1] * 8 / L]], ext: true }); }
     return segs;
   };
   // an extension-derived corner is valid only if the leg from the
@@ -1175,20 +1199,20 @@ function polyCorner(n1, side1, n2, side2, V, vi1, vi2) {
   // Valeria's east arm with Angie across the junction)
   const legCrosses = (endPt, X, otherN) => {
     const st = GEO[otherN].stitched;
-    for (let si = 0; si + 1 < st.length; si++) if (ptSegM(V, st[si], st[si + 1]) < 13 && segCross(endPt, X, st[si], st[si + 1])) return true;
+    for (let si = 0; si + 1 < st.length; si++) if (H.ptSegM(V, st[si], st[si + 1]) < 13 && segCross(endPt, X, st[si], st[si + 1])) return true;
     return false;
   };
   let best = null, bd = 1e9;
   for (const s1 of segsOf(o1, vi1)) {
-    if (ptSegM(V, s1.seg[0], s1.seg[1]) > 12) continue;
+    if (H.ptSegM(V, s1.seg[0], s1.seg[1]) > 12) continue;
     for (const s2 of segsOf(o2, vi2)) {
-      if (ptSegM(V, s2.seg[0], s2.seg[1]) > 12) continue;
+      if (H.ptSegM(V, s2.seg[0], s2.seg[1]) > 12) continue;
       const X = lineHit(s1.seg[0], s1.seg[1], s2.seg[0], s2.seg[1]);
       if (!X) continue;
-      if (ptSegM(X, s1.seg[0], s1.seg[1]) > 0.35 || ptSegM(X, s2.seg[0], s2.seg[1]) > 0.35) continue;
+      if (H.ptSegM(X, s1.seg[0], s1.seg[1]) > 0.35 || H.ptSegM(X, s2.seg[0], s2.seg[1]) > 0.35) continue;
       if (s1.ext && legCrosses(o1[vi1], X, n2)) continue;
       if (s2.ext && legCrosses(o2[vi2], X, n1)) continue;
-      const d = jDistM(X, V); if (d < bd) { bd = d; best = X; }
+      const d = H.jDistM(X, V); if (d < bd) { bd = d; best = X; }
     }
   }
   return best;
@@ -1198,20 +1222,20 @@ function polyCorner(n1, side1, n2, side2, V, vi1, vi2) {
 // two lines being joined are excluded (the legs run along them), and a
 // touch AT the bridge's own corner point is the join itself, not a cross.
 function pathBadGreen(pts, J, excl, cornerPt) {
-  for (const n2 of names) {
+  for (const n2 of H.names) {
     const g2 = GEO[n2];
     for (const t of [0, 1]) {
       if (excl.has(n2 + '|' + t)) continue;
-      const marked = g2.cuts.some((ab, ci) => pieces[n2][ci] !== 3 && (pieces[n2][ci] & (1 << t)) && ab.some(v => jDistM(g2.stitched[v], J) < 16));
+      const marked = g2.cuts.some((ab, ci) => H.pieces[n2][ci] !== 3 && (H.pieces[n2][ci] & (1 << t)) && ab.some(v => H.jDistM(g2.stitched[v], J) < 16));
       if (!marked) continue;
       const off = t === 0 ? g2.off0 : g2.off1;
       for (let si = 0; si + 1 < off.length; si++) {
-        if (ptSegM(J, off[si], off[si + 1]) > 14) continue;
+        if (H.ptSegM(J, off[si], off[si + 1]) > 14) continue;
         for (let s2 = 0; s2 + 1 < pts.length; s2++) {
           if (!segCross(pts[s2], pts[s2 + 1], off[si], off[si + 1])) continue;
           const X = lineHit(pts[s2], pts[s2 + 1], off[si], off[si + 1]);
           if (!X) return true;
-          if (cornerPt && jDistM(X, cornerPt) < 1.2) continue;
+          if (cornerPt && H.jDistM(X, cornerPt) < 1.2) continue;
           return true;
         }
       }
@@ -1221,7 +1245,7 @@ function pathBadGreen(pts, J, excl, cornerPt) {
 }
 function junctionPairs() {
   const at = {};
-  names.forEach(n => GEO[n].stitched.forEach((pt, vi) => { const k = coordKey(pt); (at[k] = at[k] || []).push({ n, vi }); }));
+  H.names.forEach(n => GEO[n].stitched.forEach((pt, vi) => { const k = coordKey(pt); (at[k] = at[k] || []).push({ n, vi }); }));
   const pairs = {};
   const link = (A, B, corner) => {
     const ka = A.n + '|' + A.vi + '|' + A.side, kb = B.n + '|' + B.vi + '|' + B.side;
@@ -1234,31 +1258,31 @@ function junctionPairs() {
     list.forEach(({ n, vi }) => {
       const g = GEO[n];
       [0, 1].forEach(side => {
-        const present = g.cuts.some((ab, ci) => vi >= ab[0] && vi <= ab[1] && (pieces[n][ci] & (1 << side)));
+        const present = g.cuts.some((ab, ci) => vi >= ab[0] && vi <= ab[1] && (H.pieces[n][ci] & (1 << side)));
         if (present) cand.push({ n, vi, side, pt: (side === 0 ? g.off0 : g.off1)[vi] });
       });
     });
     for (let i = 0; i < cand.length; i++) for (let j = i + 1; j < cand.length; j++) {
       const A = cand[i], B = cand[j];
       if (A.n === B.n) continue;
-      if (jDistM(A.pt, B.pt) > 9.5) continue;
+      if (H.jDistM(A.pt, B.pt) > 9.5) continue;
       const J = GEO[A.n].stitched[A.vi];
       const hitP = polyCorner(A.n, A.side, B.n, B.side, J, A.vi, B.vi);
       const pathBad = pts => {
         for (let s2 = 0; s2 + 1 < pts.length; s2++) {
-          if (ptSegM(J, pts[s2], pts[s2 + 1]) < 1.5) return true;   // through the junction's middle = a mouth cut
-          for (const n2 of names) {
+          if (H.ptSegM(J, pts[s2], pts[s2 + 1]) < 1.5) return true;   // through the junction's middle = a mouth cut
+          for (const n2 of H.names) {
             const st = GEO[n2].stitched;
             for (let si = 0; si + 1 < st.length; si++) {
-              if (ptSegM(J, st[si], st[si + 1]) >= 13 || !segCross(pts[s2], pts[s2 + 1], st[si], st[si + 1])) continue;
+              if (H.ptSegM(J, st[si], st[si + 1]) >= 13 || !segCross(pts[s2], pts[s2 + 1], st[si], st[si + 1])) continue;
               const X = lineHit(pts[s2], pts[s2 + 1], st[si], st[si + 1]);
-              if (!X || jDistM(X, J) > 6) return true;   // corner-blob crossings sit at the offset distance (~3.3 m); far crossings are excursions
+              if (!X || H.jDistM(X, J) > 6) return true;   // corner-blob crossings sit at the offset distance (~3.3 m); far crossings are excursions
             }
           }
         }
         return false;
       };
-      let pts = hitP && jDistM(hitP, J) < 10 ? [A.pt, hitP, B.pt] : [A.pt, B.pt];
+      let pts = hitP && H.jDistM(hitP, J) < 10 ? [A.pt, hitP, B.pt] : [A.pt, B.pt];
       if (pathBad(pts)) pts = [A.pt, B.pt];
       if (pathBad(pts)) continue;
       link(A, B, pts.length === 3 ? pts[1] : null);
@@ -1275,7 +1299,7 @@ function junctionPairs() {
       const key = coordKey(J);
       if (!reps.has(key)) reps.set(key, []);
       const list = reps.get(key);
-      for (const r of list) if (jDistM(r, pt) < 0.5) return r;
+      for (const r of list) if (H.jDistM(r, pt) < 0.5) return r;
       list.push(pt);
       return pt;
     };
@@ -1295,13 +1319,13 @@ function mergeStrands(slices, pairs) {
   const rev = sl => ({ pts: [...sl.pts].reverse(), key: sl.key, mem: sl.mem, e0: sl.e1, e1: sl.e0 });
   const pathBadNear = (pts, J) => {
     for (let s2 = 0; s2 + 1 < pts.length; s2++) {
-      if (ptSegM(J, pts[s2], pts[s2 + 1]) < 1.5) return true;
-      for (const n2 of names) {
+      if (H.ptSegM(J, pts[s2], pts[s2 + 1]) < 1.5) return true;
+      for (const n2 of H.names) {
         const st = GEO[n2].stitched;
         for (let si = 0; si + 1 < st.length; si++) {
-          if (ptSegM(J, st[si], st[si + 1]) >= 13 || !segCross(pts[s2], pts[s2 + 1], st[si], st[si + 1])) continue;
+          if (H.ptSegM(J, st[si], st[si + 1]) >= 13 || !segCross(pts[s2], pts[s2 + 1], st[si], st[si + 1])) continue;
           const X = lineHit(pts[s2], pts[s2 + 1], st[si], st[si + 1]);
-          if (!X || jDistM(X, J) > 6) return true;
+          if (!X || H.jDistM(X, J) > 6) return true;
         }
       }
     }
@@ -1380,13 +1404,13 @@ function bridgeStragglers(chains, pairs) {
   const revC = c => ({ pts: [...c.pts].reverse(), key: c.key, mem: c.mem, e0: c.e1, e1: c.e0 });
   const pathBadNear = (pts, J) => {
     for (let s2 = 0; s2 + 1 < pts.length; s2++) {
-      if (ptSegM(J, pts[s2], pts[s2 + 1]) < 1.5) return true;
-      for (const n2 of names) {
+      if (H.ptSegM(J, pts[s2], pts[s2 + 1]) < 1.5) return true;
+      for (const n2 of H.names) {
         const st = GEO[n2].stitched;
         for (let si = 0; si + 1 < st.length; si++) {
-          if (ptSegM(J, st[si], st[si + 1]) >= 13 || !segCross(pts[s2], pts[s2 + 1], st[si], st[si + 1])) continue;
+          if (H.ptSegM(J, st[si], st[si + 1]) >= 13 || !segCross(pts[s2], pts[s2 + 1], st[si], st[si + 1])) continue;
           const X = lineHit(pts[s2], pts[s2 + 1], st[si], st[si + 1]);
-          if (!X || jDistM(X, J) > 6) return true;
+          if (!X || H.jDistM(X, J) > 6) return true;
         }
       }
     }
@@ -1395,9 +1419,9 @@ function bridgeStragglers(chains, pairs) {
   const dirLL = (n, vi) => {
     const st = GEO[n].stitched, a = XYOf(st[Math.max(0, vi - 1)]), b = XYOf(st[Math.min(st.length - 1, vi + 1)]);
     const dx = b[0] - a[0], dy = b[1] - a[1], m = Math.hypot(dx, dy) || 1;
-    return [dy / m / MLAT, dx / m / MLNG];
+    return [dy / m / H.MLAT, dx / m / H.MLNG];
   };
-  const pathLen = pts => { let L = 0; for (let i = 0; i + 1 < pts.length; i++) L += jDistM(pts[i], pts[i + 1]); return L; };
+  const pathLen = pts => { let L = 0; for (let i = 0; i + 1 < pts.length; i++) L += H.jDistM(pts[i], pts[i + 1]); return L; };
   const verts = Object.values(sharedVertexMap())
     .filter(list => new Set(list.map(e => e.n)).size >= 2)
     .map(list => GEO[list[0].n].stitched[list[0].vi]);
@@ -1408,14 +1432,14 @@ function bridgeStragglers(chains, pairs) {
       const near = [];
       chains.forEach((c, ci) => {
         [{ at: 'e0', pt: c.pts[0], meta: c.e0 }, { at: 'e1', pt: c.pts[c.pts.length - 1], meta: c.e1 }].forEach(E => {
-          if (E.meta && jDistM(E.pt, V) <= 10) near.push({ ci, ...E });
+          if (E.meta && H.jDistM(E.pt, V) <= 10) near.push({ ci, ...E });
         });
       });
       for (const E1 of near) for (const E2 of near) {
         if (E1.ci === E2.ci || E1.meta.n === E2.meta.n) continue;
-        if (jDistM(E1.pt, E2.pt) > 13) continue;
-        const J1 = (JUNC[E1.meta.n] || []).find(x => x.B === E2.meta.n && jDistM(x.V, V) < 2);
-        const J2 = (JUNC[E2.meta.n] || []).find(x => x.B === E1.meta.n && jDistM(x.V, V) < 2);
+        if (H.jDistM(E1.pt, E2.pt) > 13) continue;
+        const J1 = (JUNC[E1.meta.n] || []).find(x => x.B === E2.meta.n && H.jDistM(x.V, V) < 2);
+        const J2 = (JUNC[E2.meta.n] || []).find(x => x.B === E1.meta.n && H.jDistM(x.V, V) < 2);
         if (!J1 || !J2) continue;
         const nA = J2.nB, nB = J1.nB, Vx = XYOf(V);
         const signs = pt => { const w = XYOf(pt); return [Math.sign((w[0] - Vx[0]) * nA[0] + (w[1] - Vx[1]) * nA[1]), Math.sign((w[0] - Vx[0]) * nB[0] + (w[1] - Vx[1]) * nB[1])]; };
@@ -1432,7 +1456,7 @@ function bridgeStragglers(chains, pairs) {
         if (pairs) (pairs[E1.meta.n + '|' + E1.meta.vi + '|' + E1.meta.side] || []).forEach(pr => { if (pr.n2 === E2.meta.n && pr.vi2 === E2.meta.vi && pr.side2 === E2.meta.side && pr.corner) pairCorner = pr.corner; });
         const polyC = polyCorner(E1.meta.n, E1.meta.side, E2.meta.n, E2.meta.side, V, E1.meta.vi, E2.meta.vi);
         let bridge = null;
-        if (jDistM(E1.pt, E2.pt) < 1.2) bridge = [];
+        if (H.jDistM(E1.pt, E2.pt) < 1.2) bridge = [];
         else for (const cand of [pairCorner ? [pairCorner] : null, polyC ? [polyC] : null, corner ? [corner] : null, box ? [box] : null, []]) {
           if (!cand) continue;
           const path = [E1.pt, ...cand, E2.pt];
@@ -1464,12 +1488,12 @@ function throughTouch(chains, pairs) {
       (pairs[meta.n + '|' + meta.vi + '|' + meta.side] || []).forEach(pr => {
         if (!pr.corner) return;
         const endPt = atEnd ? c.pts[c.pts.length - 1] : c.pts[0];
-        if (jDistM(endPt, pr.corner) > 12 || coordKey(endPt) === coordKey(pr.corner)) return;
+        if (H.jDistM(endPt, pr.corner) > 12 || coordKey(endPt) === coordKey(pr.corner)) return;
         const onOther = chains.some(o => {
           if (o === c) return false;
           // the partner's OWN line must carry the corner (not just any chain)
           if (!o.mem.some(m => m.n === pr.n2 && m.side === pr.side2)) return false;
-          for (let s2 = 0; s2 + 1 < o.pts.length; s2++) if (ptSegM(pr.corner, o.pts[s2], o.pts[s2 + 1]) < 1.0) return true;
+          for (let s2 = 0; s2 + 1 < o.pts.length; s2++) if (H.ptSegM(pr.corner, o.pts[s2], o.pts[s2 + 1]) < 1.0) return true;
           return false;
         });
         if (onOther) { if (atEnd) c.pts.push(pr.corner); else c.pts.unshift(pr.corner); }
@@ -1488,7 +1512,7 @@ function extendIntoBands(edgeChains, pairs) {
         if (!pr.corner) return;
         const g2 = GEO[pr.n2];
         const ci = g2.cuts.findIndex(ab => pr.vi2 >= ab[0] && pr.vi2 <= ab[1]);
-        if (ci >= 0 && pieces[pr.n2][ci] === 3) s.pts = atEnd ? s.pts.concat([pr.corner]) : [pr.corner].concat(s.pts);
+        if (ci >= 0 && H.pieces[pr.n2][ci] === 3) s.pts = atEnd ? s.pts.concat([pr.corner]) : [pr.corner].concat(s.pts);
       });
     });
   });
@@ -1509,14 +1533,14 @@ function lastResortConnect(edges, bands) {
   const jList = Object.values(sharedVertexMap()).filter(l => new Set(l.map(e => e.n)).size >= 2)
     .map(l => ({ V: GEO[l[0].n].stitched[l[0].vi], streets: [...new Set(l.map(e => e.n))] }));
   const frameFor = (V, A, B) => {
-    const J1 = (JUNC[A] || []).find(x => x.B === B && jDistM(x.V, V) < 2);
-    const J2 = (JUNC[B] || []).find(x => x.B === A && jDistM(x.V, V) < 2);
+    const J1 = (JUNC[A] || []).find(x => x.B === B && H.jDistM(x.V, V) < 2);
+    const J2 = (JUNC[B] || []).find(x => x.B === A && H.jDistM(x.V, V) < 2);
     return (J1 && J2) ? { nA: J2.nB, nB: J1.nB } : null;
   };
   const properCross = (a, b, c, d) => {
     if (!segCross(a, b, c, d)) return false;
     const X = lineHit(a, b, c, d);
-    return !!X && [a, b, c, d].every(pt => jDistM(X, pt) >= 0.35);
+    return !!X && [a, b, c, d].every(pt => H.jDistM(X, pt) >= 0.35);
   };
   // LOCAL connectivity at a junction - the same fragment rules gate12
   // audits with, mirrored here so the mop-up and the audit agree. The
@@ -1537,13 +1561,13 @@ function lastResortConnect(edges, bands) {
       let cur = null;
       const close = () => { if (cur && cur.pts.length >= 1) frags.push(cur); cur = null; };
       c.pts.forEach((p, pi) => {
-        if (jDistM(p, V) < 15) {
+        if (H.jDistM(p, V) < 15) {
           if (!cur) {
             cur = { ci, band, pts: [] };
-            if (pi > 0 && ptSegM(V, c.pts[pi - 1], p) < 15) cur.pts.push(c.pts[pi - 1]);
+            if (pi > 0 && H.ptSegM(V, c.pts[pi - 1], p) < 15) cur.pts.push(c.pts[pi - 1]);
           }
           cur.pts.push(p);
-        } else if (pi > 0 && ptSegM(V, c.pts[pi - 1], p) < 15) {
+        } else if (pi > 0 && H.ptSegM(V, c.pts[pi - 1], p) < 15) {
           if (cur) { cur.pts.push(p); close(); }
           else frags.push({ ci, band, pts: [c.pts[pi - 1], p] });
         } else close();
@@ -1552,7 +1576,7 @@ function lastResortConnect(edges, bands) {
     });
     const parent = frags.map((_, i) => i);
     const find = x => parent[x] === x ? x : (parent[x] = find(parent[x]));
-    const onLine = (p, f, thr) => { for (let s2 = 0; s2 + 1 < f.pts.length; s2++) if (ptSegM(p, f.pts[s2], f.pts[s2 + 1]) < thr) return true; return false; };
+    const onLine = (p, f, thr) => { for (let s2 = 0; s2 + 1 < f.pts.length; s2++) if (H.ptSegM(p, f.pts[s2], f.pts[s2 + 1]) < thr) return true; return false; };
     const touch = (A2, B2) => {
       const eA = [A2.pts[0], A2.pts[A2.pts.length - 1]], eB = [B2.pts[0], B2.pts[B2.pts.length - 1]];
       if (eA.some(p => eB.some(q => coordKey(p) === coordKey(q)))) return true;
@@ -1570,7 +1594,7 @@ function lastResortConnect(edges, bands) {
         const ib = chain.pts.findIndex(p => coordKey(p) === coordKey(B2.pts[0]));
         if (ia < 0 || ib < 0 || ib <= ia) continue;
         const mid = chain.pts.slice(ia + 1, ib);
-        if (mid.length <= 3 && mid.every(p => jDistM(p, V) <= 30) && ptSegM(V, A2.pts[A2.pts.length - 1], B2.pts[0]) <= 15) parent[find(idxs[k])] = find(idxs[k + 1]);
+        if (mid.length <= 3 && mid.every(p => H.jDistM(p, V) <= 30) && H.ptSegM(V, A2.pts[A2.pts.length - 1], B2.pts[0]) <= 15) parent[find(idxs[k])] = find(idxs[k + 1]);
       }
     });
     const out = { frags, comp: frags.map((_, i) => find(i)) };
@@ -1591,13 +1615,13 @@ function lastResortConnect(edges, bands) {
       const nearChains = [];
       list.forEach((c, ci) => {
         if (!c.mem.some(m => m.n === A || m.n === B)) return;
-        const pn = c.pts.filter(pt => jDistM(pt, V) < 11);
+        const pn = c.pts.filter(pt => H.jDistM(pt, V) < 11);
         if (pn.length) nearChains.push({ ci, pn });
       });
       const ends = [];
       edges.forEach((c, ci) => {
         [{ pt: c.pts[0], meta: c.e0, atEnd: false }, { pt: c.pts[c.pts.length - 1], meta: c.e1, atEnd: true }].forEach(E => {
-          if (E.meta && (E.meta.n === A || E.meta.n === B) && jDistM(E.pt, V) < 11) ends.push({ ci, ...E });
+          if (E.meta && (E.meta.n === A || E.meta.n === B) && H.jDistM(E.pt, V) < 11) ends.push({ ci, ...E });
         });
       });
       for (const E of ends) {
@@ -1624,7 +1648,7 @@ function lastResortConnect(edges, bands) {
             let t = ((ex[0] - ax[0]) * dx + (ex[1] - ax[1]) * dy) / L2;
             t = Math.max(0, Math.min(1, t));
             const np = [a[0] + (b[0] - a[0]) * t, a[1] + (b[1] - a[1]) * t];
-            cands.push({ d: jDistM(E.pt, np), np, ci: nc.ci, si });
+            cands.push({ d: H.jDistM(E.pt, np), np, ci: nc.ci, si });
           }
         });
         cands.sort((x, y) => x.d - y.d);
@@ -1638,19 +1662,19 @@ function lastResortConnect(edges, bands) {
           // Conti, Fifth x Marconi, Dianawood x Wilshire, Valeria x
           // Bell Harbour - all ends sat 6-7 m out, vetoed by their own
           // landings).
-          let badPath = ptSegM(V, seg[0], seg[1]) < 1.5 && jDistM(cand.np, V) > 0.5;
-          if (!badPath) for (const n2 of names) {
+          let badPath = H.ptSegM(V, seg[0], seg[1]) < 1.5 && H.jDistM(cand.np, V) > 0.5;
+          if (!badPath) for (const n2 of H.names) {
             const st = GEO[n2].stitched;
             for (let si = 0; si + 1 < st.length && !badPath; si++) {
-              if (ptSegM(V, st[si], st[si + 1]) >= 13 || !segCross(seg[0], seg[1], st[si], st[si + 1])) continue;
+              if (H.ptSegM(V, st[si], st[si + 1]) >= 13 || !segCross(seg[0], seg[1], st[si], st[si + 1])) continue;
               const X = lineHit(seg[0], seg[1], st[si], st[si + 1]);
               if (!X) continue;
               // Landing ON the target's centreline is the join itself,
               // not a crossing of the road (round 10: ends at band
               // junctions - Angie x Conti, Fifth x Marconi - were vetoed
               // by their own landing points, 6-7 m from V)
-              if (jDistM(X, cand.np) < 1.5) continue;
-              if (jDistM(X, V) > 6) badPath = true;
+              if (H.jDistM(X, cand.np) < 1.5) continue;
+              if (H.jDistM(X, V) > 6) badPath = true;
             }
           }
           if (badPath) continue;
@@ -1691,7 +1715,7 @@ function lastResortConnect(edges, bands) {
 function rawPath(n, side, fromPt, toPt, V) {
   const off = side === 0 ? GEO[n].off0 : GEO[n].off1;
   let fi = -1;
-  for (let s2 = 0; s2 + 1 < off.length; s2++) if (ptSegM(fromPt, off[s2], off[s2 + 1]) < 0.05) { fi = s2; break; }
+  for (let s2 = 0; s2 + 1 < off.length; s2++) if (H.ptSegM(fromPt, off[s2], off[s2 + 1]) < 0.05) { fi = s2; break; }
   if (fi < 0) return null;
   for (const dir of [1, -1]) {
     const pts = [];
@@ -1700,8 +1724,8 @@ function rawPath(n, side, fromPt, toPt, V) {
       const p = off[k];
       if (!p) break;
       const segA = off[k - dir];
-      if (segA && ptSegM(toPt, segA, p) < 0.05) return pts;
-      if (jDistM(p, V) > 17) break;
+      if (segA && H.ptSegM(toPt, segA, p) < 0.05) return pts;
+      if (H.jDistM(p, V) > 17) break;
       pts.push(p);
       k += dir;
       if (k < 0 || k >= off.length) break;
@@ -1712,7 +1736,7 @@ function rawPath(n, side, fromPt, toPt, V) {
 function cornerTouchSlices(slices, pairs) {
   const endKeys = new Set();
   slices.forEach(sl => { [sl.e0, sl.e1].forEach(m => { if (m) endKeys.add(m.n + '|' + m.vi + '|' + m.side); }); });
-  const properX = (a, b, c, d) => { if (!segCross(a, b, c, d)) return false; const X = lineHit(a, b, c, d); return !!X && [a, b, c, d].every(pt => jDistM(X, pt) >= 0.35); };
+  const properX = (a, b, c, d) => { if (!segCross(a, b, c, d)) return false; const X = lineHit(a, b, c, d); return !!X && [a, b, c, d].every(pt => H.jDistM(X, pt) >= 0.35); };
   slices.forEach(sl => {
     [['e1', true], ['e0', false]].forEach(([key, atEnd]) => {
       const meta = sl[key];
@@ -1726,24 +1750,24 @@ function cornerTouchSlices(slices, pairs) {
         // lies on the slice (a through line has no end at the junction:
         // Bloomingdale x Valeria, round 10 - the first version required
         // an end and skipped every terminating street at a through road).
-        const partnerShown = endKeys.has(pr.n2 + '|' + pr.vi2 + '|' + pr.side2) || slices.some(o => o !== sl && o.mem.some(m => m.n === pr.n2 && m.side === pr.side2) && o.pts.some((p, pi) => pi + 1 < o.pts.length && ptSegM(pr.corner, p, o.pts[pi + 1]) < 1.0));
+        const partnerShown = endKeys.has(pr.n2 + '|' + pr.vi2 + '|' + pr.side2) || slices.some(o => o !== sl && o.mem.some(m => m.n === pr.n2 && m.side === pr.side2) && o.pts.some((p, pi) => pi + 1 < o.pts.length && H.ptSegM(pr.corner, p, o.pts[pi + 1]) < 1.0));
         if (!partnerShown) return;
         const endPt = atEnd ? sl.pts[sl.pts.length - 1] : sl.pts[0];
-        const d = jDistM(endPt, pr.corner);
+        const d = H.jDistM(endPt, pr.corner);
         if (d < 0.05 || d > 12) return;
         // vet: the short hop along this line to the corner must not
         // properly cross another street's marked side line
         const V = GEO[meta.n].stitched[meta.vi];
         let bad = false;
-        for (const dn of names) {
+        for (const dn of H.names) {
           if (dn === meta.n || dn === pr.n2) continue;
           const gd = GEO[dn];
           for (const t2 of [0, 1]) {
-            const marked = gd.cuts.some((ab, ci) => pieces[dn][ci] !== 3 && (pieces[dn][ci] & (1 << t2)) && ab.some(v => jDistM(gd.stitched[v], V) < 16));
+            const marked = gd.cuts.some((ab, ci) => H.pieces[dn][ci] !== 3 && (H.pieces[dn][ci] & (1 << t2)) && ab.some(v => H.jDistM(gd.stitched[v], V) < 16));
             if (!marked) continue;
             const off = t2 === 0 ? gd.off0 : gd.off1;
             for (let s2 = 0; s2 + 1 < off.length && !bad; s2++) {
-              if (ptSegM(V, off[s2], off[s2 + 1]) > 16) continue;
+              if (H.ptSegM(V, off[s2], off[s2 + 1]) > 16) continue;
               if (properX(endPt, pr.corner, off[s2], off[s2 + 1])) bad = true;
             }
           }
@@ -1784,7 +1808,7 @@ function endCorners(pts, atStart, half) {
   // Mellings 4/5) until a point at least 1 m away gives a true heading
   let I = null;
   const order = pts.map((_, i) => atStart ? i : pts.length - 1 - i);
-  for (const i of order.slice(1)) { if (jDistM(pts[i], E) >= 1) { I = pts[i]; break; } }
+  for (const i of order.slice(1)) { if (H.jDistM(pts[i], E) >= 1) { I = pts[i]; break; } }
   if (!I) I = atStart ? pts[pts.length - 1] : pts[0];
   if (!I || I === E) return [];
   const P = XYOf(E), Q = XYOf(I);
@@ -1795,7 +1819,7 @@ function endCorners(pts, atStart, half) {
   // components swapped - a reflection, not a rotation: the 'corners'
   // lay ALONG the street, and builder + audit shared the wrong test
   // consistently. Found by diag66 on synthetic axis-aligned cases.)
-  return [[E[0] + (dx * half) / MLAT, E[1] + (-dy * half) / MLNG], [E[0] + (-dx * half) / MLAT, E[1] + (dy * half) / MLNG]];
+  return [[E[0] + (dx * half) / H.MLAT, E[1] + (-dy * half) / H.MLNG], [E[0] + (-dx * half) / H.MLAT, E[1] + (dy * half) / H.MLNG]];
 }
 function nearestPaintM(cp, B) {
   // distance from a point to street B's centreline AND the paint
@@ -1809,7 +1833,7 @@ function nearestPaintM(cp, B) {
   let bd = 1e9, half = SURF_HALF, pt = null;
   for (let k = 0; k < st.length - 1; k++) {
     const d = ptSegDistM(cp, st[k], st[k + 1]);
-    if (d < bd) { bd = d; half = SURF_HALF; GEO[B].cuts.forEach((ab, i) => { if (ab[0] <= k && k + 1 <= ab[1] && pieces[B][i] === 3) half = BAND_HALF; }); pt = nearestPtOnSeg(cp, st[k], st[k + 1]); }
+    if (d < bd) { bd = d; half = SURF_HALF; GEO[B].cuts.forEach((ab, i) => { if (ab[0] <= k && k + 1 <= ab[1] && H.pieces[B][i] === 3) half = BAND_HALF; }); pt = nearestPtOnSeg(cp, st[k], st[k + 1]); }
   }
   return { d: bd, half, pt };
 }
@@ -1817,7 +1841,7 @@ function nearestPtOnSeg(p, a, b) {
   const P = XYOf(p), A = XYOf(a), B = XYOf(b);
   const vx = B[0] - A[0], vy = B[1] - A[1], L2 = vx * vx + vy * vy || 1;
   let t = ((P[0] - A[0]) * vx + (P[1] - A[1]) * vy) / L2; t = Math.max(0, Math.min(1, t));
-  return [(A[1] + t * vy) / MLAT, (A[0] + t * vx) / MLNG];
+  return [(A[1] + t * vy) / H.MLAT, (A[0] + t * vx) / H.MLNG];
 }
 function pokeExcess(cp, B, V) {
   // how far a paint corner pokes past street B's paint, or -1 when
@@ -1828,7 +1852,7 @@ function pokeExcess(cp, B, V) {
   // Bayside x Malden, Fifth x Bloomingdale, where pulling back only
   // ever moved the corner further from the vertex).
   const np = nearestPaintM(cp, B);
-  if (np.pt && jDistM(np.pt, V) < 0.05) return -1;
+  if (np.pt && H.jDistM(np.pt, V) < 0.05) return -1;
   return np.d - np.half;
 }
 function pullbackEnd(pts, atStart, d) {
@@ -1837,7 +1861,7 @@ function pullbackEnd(pts, atStart, d) {
   const work = atStart ? pts.slice() : pts.slice().reverse();   // end-first
   let acc = 0;
   for (let k = 1; k < work.length; k++) {
-    const seg = jDistM(work[k], work[k - 1]);
+    const seg = H.jDistM(work[k], work[k - 1]);
     if (acc + seg >= d) { const f = seg ? (d - acc) / seg : 0; const cut = [work[k - 1][0] + (work[k][0] - work[k - 1][0]) * f, work[k - 1][1] + (work[k][1] - work[k - 1][1]) * f]; const out = [cut].concat(work.slice(k)); return atStart ? out : out.reverse(); }
     acc += seg;
   }
@@ -1854,8 +1878,8 @@ function capLineFor(B, viB, Ix, Vx) {
   // arm that bends away.
   const st = GEO[B].stitched, Vp = st[viB];
   let pPrev = null, pNext = null;
-  for (let k = viB - 1; k >= 0; k--) { if (jDistM(st[k], Vp) >= 1) { pPrev = st[k]; break; } }
-  for (let k = viB + 1; k < st.length; k++) { if (jDistM(st[k], Vp) >= 1) { pNext = st[k]; break; } }
+  for (let k = viB - 1; k >= 0; k--) { if (H.jDistM(st[k], Vp) >= 1) { pPrev = st[k]; break; } }
+  for (let k = viB + 1; k < st.length; k++) { if (H.jDistM(st[k], Vp) >= 1) { pNext = st[k]; break; } }
   const arms = [];
   if (pPrev) arms.push(pPrev);
   if (pNext) arms.push(pNext);
@@ -1870,7 +1894,7 @@ function capLineFor(B, viB, Ix, Vx) {
     // near edge is the kinked line through both arms' own edges.
     const segK = p === pPrev ? viB - 1 : viB;
     let half = SURF_HALF;
-    GEO[B].cuts.forEach((ab, i) => { if (ab[0] <= segK && segK + 1 <= ab[1] && pieces[B][i] === 3) half = BAND_HALF; });
+    GEO[B].cuts.forEach((ab, i) => { if (ab[0] <= segK && segK + 1 <= ab[1] && H.pieces[B][i] === 3) half = BAND_HALF; });
     return [Vx[0] + nx * half, Vx[1] + ny * half, nx, ny];
   });
   if (W.length === 2) {
@@ -1921,7 +1945,7 @@ function clipEndAtJunction(n, vi, pts, atStart, ownHalf) {
   // nearest anchor cannot form the cap - a deeper one can.
   const inners = [];
   { let cum = 0; const marks = [1, 4.5, 9, 14]; let mi = 0;
-    for (let k = 1; k < pts.length && mi < marks.length; k++) { const p = atStart ? pts[k] : pts[pts.length - 1 - k]; cum += jDistM(p, atStart ? pts[k - 1] : pts[pts.length - k]); if (cum >= marks[mi]) { inners.push(p); mi++; } } }
+    for (let k = 1; k < pts.length && mi < marks.length; k++) { const p = atStart ? pts[k] : pts[pts.length - 1 - k]; cum += H.jDistM(p, atStart ? pts[k - 1] : pts[pts.length - k]); if (cum >= marks[mi]) { inners.push(p); mi++; } } }
   if (!inners.length) return pts;
   const Vx = XYOf(V);
   const tried = new Set();
@@ -1981,7 +2005,7 @@ function clipEndAtJunction(n, vi, pts, atStart, ownHalf) {
       const t = ((cap.px - Ix[0]) * cap.nx + (cap.py - Ix[1]) * cap.ny) / denom;
       if (t <= 0.05 || t > 1.6) continue;
       const Ex = [Ix[0] + t * dv[0], Ix[1] + t * dv[1]];
-      const E = [Ex[1] / MLAT, Ex[0] / MLNG];   // new end point: ON the crossing street's near paint edge
+      const E = [Ex[1] / H.MLAT, Ex[0] / H.MLNG];   // new end point: ON the crossing street's near paint edge
       const L = 4;   // the final approach runs L metres along the edge's normal
       // ROUND 41 HYBRID (Andrew-approved trial): the corrected approach
       // (PLUS - approach point on this street's own side) applies ONLY
@@ -1994,8 +2018,8 @@ function clipEndAtJunction(n, vi, pts, atStart, ownHalf) {
       // (Fifth x Greenpark 104 m2, Columbus x Santa Barbara 90 m2).
       const bSt = GEO[worst.J.B].stitched;
       const bSpans = grp.filter(e => e.n === worst.J.B).some(e => e.vi > 0 && e.vi < bSt.length - 1);
-      const P = bSpans ? [(Ex[1] + cap.ny * L) / MLAT, (Ex[0] + cap.nx * L) / MLNG]
-                       : [(Ex[1] - cap.ny * L) / MLAT, (Ex[0] - cap.nx * L) / MLNG];
+      const P = bSpans ? [(Ex[1] + cap.ny * L) / H.MLAT, (Ex[0] + cap.nx * L) / H.MLNG]
+                       : [(Ex[1] - cap.ny * L) / H.MLAT, (Ex[0] - cap.nx * L) / H.MLNG];
       const cumE = (1 - t) * Math.hypot(dv[0], dv[1]);
       // work in END-FIRST order (work[0] = the end being cut)
       // whichever end it is, build the new end-first array, then
@@ -2005,7 +2029,7 @@ function clipEndAtJunction(n, vi, pts, atStart, ownHalf) {
       // missed the scramble.)
       const work = atStart ? pts.slice() : pts.slice().reverse();
       let cum = 0, ki = work.length - 1;
-      for (let k = 1; k < work.length; k++) { cum += jDistM(work[k], work[k - 1]); if (cum > cumE + L * 1.05) { ki = k; break; } }
+      for (let k = 1; k < work.length; k++) { cum += H.jDistM(work[k], work[k - 1]); if (cum > cumE + L * 1.05) { ki = k; break; } }
       const nw = [E, P].concat(work.slice(ki));
       pts = atStart ? nw : nw.reverse();
       applied = true;
@@ -2060,14 +2084,14 @@ function buildFamilies() {
   const pairs = junctionPairs();
   PAIRS_CUR = pairs;
   const centreSlices = [], bandSlices = [], edgeSlices = [];
-  names.forEach(n => {
+  H.names.forEach(n => {
     const g = GEO[n];
     g.cuts.forEach((ab, idx) => {
-      const bits = pieces[n][idx];
+      const bits = H.pieces[n][idx];
       let cPts = g.stitched.slice(ab[0], ab[1] + 1);
       const isBand = bits === 3;
       const key = isBand ? 'band' : mute(colOf(n, bits));
-      const famKey = i => pieces[n][i] === 3 ? 'band' : mute(colOf(n, pieces[n][i]));
+      const famKey = i => H.pieces[n][i] === 3 ? 'band' : mute(colOf(n, H.pieces[n][i]));
       const ownHalf = isBand ? BAND_HALF : SURF_HALF;
       // clip an end only where the paint actually ends there: the
       // neighbouring cut is a different family/colour, or the street
@@ -2079,7 +2103,7 @@ function buildFamilies() {
       else centreSlices.push({ pts: cPts, key, mem: [{ n, idx }], e0: null, e1: null });
     });
     [0, 1].forEach(side => {
-      edgeRunSlices(n, side, idx => pieces[n][idx] !== 3 && (pieces[n][idx] & (1 << side))).forEach(sl => edgeSlices.push(sl));
+      edgeRunSlices(n, side, idx => H.pieces[n][idx] !== 3 && (H.pieces[n][idx] & (1 << side))).forEach(sl => edgeSlices.push(sl));
     });
   });
   const centres = mergeStrands(centreSlices, null);
@@ -2097,12 +2121,12 @@ function buildFamilies() {
   return { centres: fc(centres, sl => sl.key), bands: fc(bands, () => MUGREEN), edges: fc(edges, () => MUGREEN) };
 }
 function currentSelList() { // every selected stretch (Beta 1.28): the app's selSet when multi-selecting, else the single anchor - read live at build time, like the original builders read the app global sel
-  return (typeof selSet !== 'undefined' && Array.isArray(selSet) && selSet.length) ? selSet : (sel ? [sel] : []);
+  return (typeof H.selSet !== 'undefined' && Array.isArray(H.selSet) && H.selSet.length) ? H.selSet : (sel ? [sel] : []);
 }
 function buildSel(which) {   // the selected sectors' side lines (vibrant)
   const feats = [];
   if (which === 'e') for (const it of currentSelList()) {
-    const bits = pieces[it.name][it.idx];
+    const bits = H.pieces[it.name][it.idx];
     if (bits !== 3) [0, 1].forEach(side => { if (bits & (1 << side)) edgeRunSlices(it.name, side, idx => idx === it.idx).forEach(sl => feats.push({ type: 'Feature', properties: { col: GREEN, colG: mute(GREEN) }, geometry: { type: 'LineString', coordinates: GJ(sl.pts) } })); });
   }
   return { type: 'FeatureCollection', features: feats };
@@ -2111,7 +2135,7 @@ const EMPTYFC = { type: 'FeatureCollection', features: [] };
 function selectedGeom(it) {   // a selected stretch's painted slice: stitched points, edge-clipped at its junctions
   const s0 = it || sel;
   if (!s0) return null;
-  const g = GEO[s0.name], ab = g.cuts[s0.idx], bits = pieces[s0.name][s0.idx];
+  const g = GEO[s0.name], ab = g.cuts[s0.idx], bits = H.pieces[s0.name][s0.idx];
   const half = bits === 3 ? BAND_HALF : SURF_HALF;
   let pts = g.stitched.slice(ab[0], ab[1] + 1);
   pts = clipEndAtJunction(s0.name, ab[0], pts, true, half);
@@ -2132,7 +2156,7 @@ function buildSelC() {   // the selected sector's core: a vibrant BAND when comp
   }
   return { sel: selFeats.length ? { type: 'FeatureCollection', features: selFeats } : EMPTYFC, selBand: bandFeats.length ? { type: 'FeatureCollection', features: bandFeats } : EMPTYFC };
 }
-const HIT = { type: 'FeatureCollection', features: names.flatMap(n => GEO[n].cuts.map((ab, i) => ({ type: 'Feature', properties: { name: n, idx: i }, geometry: { type: 'LineString', coordinates: GJ(GEO[n].stitched.slice(ab[0], ab[1] + 1)) } }))) };
+const HIT = { type: 'FeatureCollection', features: H.names.flatMap(n => GEO[n].cuts.map((ab, i) => ({ type: 'Feature', properties: { name: n, idx: i }, geometry: { type: 'LineString', coordinates: GJ(GEO[n].stitched.slice(ab[0], ab[1] + 1)) } }))) };
 let CUR = null;
 function rebuildData() { const F = buildFamilies(); const SC = buildSelC();
   // Paint order (round 21, Andrew's rule): within the centres source,
@@ -2241,8 +2265,8 @@ function addStack() {
   // under yellow at junctions. The green (completed) family is back
   // where it was before round 21 (Andrew: revert the green part) -
   // band casing and band render above the unfinished centre paint.
-  add(line('t1-casing', 'centres', { 'line-color': isNight() ? '#000000' : '#5a5f6a', 'line-width': ['interpolate', ['linear'], ['zoom'], 14, 4.5, 16, 9, 17, 12.5, 18, 18.5, 19, 28], 'line-opacity': ['step', ['zoom'], 0, 12.6, 1], 'line-opacity-transition': { duration: 0, delay: 0 } }, { 'line-cap': 'butt' }));
-  add(line('t1-casingb', 'bands', { 'line-color': isNight() ? '#000000' : '#5a5f6a', 'line-width': BANDCASE, 'line-opacity': ['step', ['zoom'], 0, 12.6, 1], 'line-opacity-transition': { duration: 0, delay: 0 } }, { 'line-cap': 'butt' }));
+  add(line('t1-casing', 'centres', { 'line-color': H.isNight() ? '#000000' : '#5a5f6a', 'line-width': ['interpolate', ['linear'], ['zoom'], 14, 4.5, 16, 9, 17, 12.5, 18, 18.5, 19, 28], 'line-opacity': ['step', ['zoom'], 0, 12.6, 1], 'line-opacity-transition': { duration: 0, delay: 0 } }, { 'line-cap': 'butt' }));
+  add(line('t1-casingb', 'bands', { 'line-color': H.isNight() ? '#000000' : '#5a5f6a', 'line-width': BANDCASE, 'line-opacity': ['step', ['zoom'], 0, 12.6, 1], 'line-opacity-transition': { duration: 0, delay: 0 } }, { 'line-cap': 'butt' }));
   add(line('t1-surface', 'centres', { 'line-color': ['get', 'col'], 'line-width': surfW, 'line-opacity': ['step', ['zoom'], 0, 12.6, 1], 'line-opacity-transition': { duration: 0, delay: 0 } }, { 'line-cap': 'butt' }));
   add(line('t1-band', 'bands', { 'line-color': ['get', 'col'], 'line-width': BANDW, 'line-opacity': ['step', ['zoom'], 0, 12.6, 1], 'line-opacity-transition': { duration: 0, delay: 0 } }, { 'line-cap': 'butt' }));
   add(line('t1-edge', 'edges', { 'line-color': ['get', 'col'], 'line-width': 3, 'line-opacity': ['step', ['zoom'], 0, 12.6, 1], 'line-opacity-transition': { duration: 0, delay: 0 } }, { 'line-cap': 'butt' }));
@@ -2302,7 +2326,7 @@ function addStack() {
   for (let t = 1; t <= 4; t++) {
     const id = 'streetnamespt' + t;
     if (!GLM.getLayer(id)) {
-      GLM.addLayer({ id, type: 'symbol', source: 'labelpts', minzoom: PT_MIN[t - 1], maxzoom: 16.4, filter: ['==', ['get', 'tier'], t], layout: { 'text-field': ['get', 'name'], 'text-font': fontStack, 'text-size': ['interpolate', ['linear'], ['zoom'], 14, 10, 14.6, 10.5, 16.2, 12], 'text-padding': 1, 'text-variable-anchor': ['center', 'top', 'bottom', 'left', 'right'], 'text-radial-offset': 0.8, 'symbol-sort-key': ['-', ['get', 'len']], 'text-allow-overlap': false }, paint: { 'text-color': isNight() ? '#e8e8e8' : '#333333', 'text-halo-color': isNight() ? 'rgba(0,0,0,.8)' : 'rgba(255,255,255,.9)', 'text-opacity': ['interpolate', ['linear'], ['zoom'], 12.59, 0, 12.62, 1, 15.4, 1, 16.4, 0], 'text-opacity-transition': { duration: 0, delay: 0 }, 'text-halo-width': 1.4 } });
+      GLM.addLayer({ id, type: 'symbol', source: 'labelpts', minzoom: PT_MIN[t - 1], maxzoom: 16.4, filter: ['==', ['get', 'tier'], t], layout: { 'text-field': ['get', 'name'], 'text-font': fontStack, 'text-size': ['interpolate', ['linear'], ['zoom'], 14, 10, 14.6, 10.5, 16.2, 12], 'text-padding': 1, 'text-variable-anchor': ['center', 'top', 'bottom', 'left', 'right'], 'text-radial-offset': 0.8, 'symbol-sort-key': ['-', ['get', 'len']], 'text-allow-overlap': false }, paint: { 'text-color': H.isNight() ? '#e8e8e8' : '#333333', 'text-halo-color': H.isNight() ? 'rgba(0,0,0,.8)' : 'rgba(255,255,255,.9)', 'text-opacity': ['interpolate', ['linear'], ['zoom'], 12.59, 0, 12.62, 1, 15.4, 1, 16.4, 0], 'text-opacity-transition': { duration: 0, delay: 0 }, 'text-halo-width': 1.4 } });
     }
   }
   // Round 35/37 (Andrew): zoomed far out, the route cluster blurs
@@ -2317,9 +2341,9 @@ function addStack() {
   // Beta 1.79 (Andrew): the point of interest wears the ROUTE's name (Route 5W), not the app's name.
   add({ id: 'routepoi-ring', type: 'circle', source: 'routepoi', maxzoom: 13.3, paint: { 'circle-radius': ['interpolate', ['linear'], ['zoom'], 10, 7, 13.5, 9], 'circle-color': '#ffffff', 'circle-opacity': ['step', ['zoom'], 1, 12.6, 0], 'circle-opacity-transition': { duration: 0, delay: 0 } } });
   add({ id: 'routepoi-dot', type: 'circle', source: 'routepoi', maxzoom: 13.3, paint: { 'circle-radius': ['interpolate', ['linear'], ['zoom'], 10, 4.5, 13.5, 6.5], 'circle-color': '#ef476f', 'circle-opacity': ['step', ['zoom'], 1, 12.6, 0], 'circle-opacity-transition': { duration: 0, delay: 0 } } });
-  add({ id: 'routepoi-txt', type: 'symbol', source: 'routepoi', maxzoom: 13.3, layout: { 'text-field': (activeRoute && activeRoute.name) || 'Snow Route', 'text-font': fontStack, 'text-size': 11, 'text-anchor': 'left', 'text-offset': [1.1, 0], 'text-allow-overlap': false }, paint: { 'text-color': isNight() ? '#e8e8e8' : '#333333', 'text-halo-color': isNight() ? 'rgba(0,0,0,.8)' : 'rgba(255,255,255,.9)', 'text-opacity': ['step', ['zoom'], 1, 12.6, 0], 'text-opacity-transition': { duration: 0, delay: 0 }, 'text-halo-width': 1.6 } });
+  add({ id: 'routepoi-txt', type: 'symbol', source: 'routepoi', maxzoom: 13.3, layout: { 'text-field': (H.activeRoute && H.activeRoute.name) || 'Snow Route', 'text-font': fontStack, 'text-size': 11, 'text-anchor': 'left', 'text-offset': [1.1, 0], 'text-allow-overlap': false }, paint: { 'text-color': H.isNight() ? '#e8e8e8' : '#333333', 'text-halo-color': H.isNight() ? 'rgba(0,0,0,.8)' : 'rgba(255,255,255,.9)', 'text-opacity': ['step', ['zoom'], 1, 12.6, 0], 'text-opacity-transition': { duration: 0, delay: 0 }, 'text-halo-width': 1.6 } });
   ['t1-casing', 't1-casingb', 't1-surface', 't1-band', 't1-edge', 't1-sel', 't1-selband', 't1-sele', 'sel-core-s', 'sel-core-b', 'hit'].concat([1, 2, 3, 4, 5].flatMap(i => ['sel-glow' + i + '-s', 'sel-glow' + i + '-b'])).forEach(id => { if (GLM.getLayer(id)) GLM.setLayerZoomRange(id, 12.5, 24); });
-  glHideLabels(GLM);
+  H.glHideLabels(GLM);
   pushSources();
   applyGlow();
 }
@@ -2393,9 +2417,10 @@ function managePulse() {
   } else if (!want && pulseTimer) { clearInterval(pulseTimer); pulseTimer = null; }
 }
   // ---- public API (the app's only handles on the engine) ----
-  function stateSig() { return JSON.stringify(pieces); }
-  function init(gl) {
+  function stateSig() { return JSON.stringify(H.pieces); }
+  function init(gl, host) {
     GLM = gl;
+    if (host) H = host; // adopt the passed host (the app passes the same GL_HOST it registered before this script evaluated; a one-argument init keeps the registered host)
     if (!CUR) { rebuildData(); lastSig = stateSig(); }
     addStack();           // re-adds sources+layers on the fresh GL map and pushes CUR
   }
@@ -2412,7 +2437,7 @@ function managePulse() {
     pushSources();
   }
   function syncSel() {    // selection-only refresh: families are untouched (cheap)
-    sel = selStretch ? { name: selStretch.name, idx: selStretch.idx } : null;
+    sel = H.selStretch ? { name: H.selStretch.name, idx: H.selStretch.idx } : null;
     if (!GLM || !CUR) return;
     const SC = buildSelC();
     CUR.sel = SC.sel; CUR.selBand = SC.selBand; CUR.selEdges = buildSel('e');
@@ -2605,7 +2630,7 @@ function pickFontFromStyle() { // adopt a NOTO stack from the CURRENT basemap fo
 function onStyleReady() {
   glOk = true; noteMapState();
   pickFontFromStyle();
-  if (routeLoaded && window.GLP && !map.getSource('centres')) window.GLP.init(map);
+  if (routeLoaded && window.GLP && !map.getSource('centres')) window.GLP.init(map, GL_HOST);
   else if (routeLoaded && window.GLP) window.GLP.sync();
   for (const fn of [addReferenceLayers, addGpsLayers, addTrailLayers]) { try { fn(); } catch (e) { /* one bad layer must never kill the rest of the stack (the REFERENCE throw hid the GPS dot until 2026-10-30) */ } }
   pushGps(); drawTrail(); if (routeLoaded) refreshAll(); // Beta 1.76: before a route is chosen the map is basemap-only - no route paint, no streets list, no count
@@ -4440,7 +4465,7 @@ function loadRoute(id) {
   activeRoute = pack; routeLoaded = true;
   renderRouteLists();
   if (map) {
-    if (typeof glOk !== 'undefined' && glOk && window.GLP) { if (!map.getSource('centres')) window.GLP.init(map); else window.GLP.sync(); }
+    if (typeof glOk !== 'undefined' && glOk && window.GLP) { if (!map.getSource('centres')) window.GLP.init(map, GL_HOST); else window.GLP.sync(); }
     introToRoute();
   }
   refreshAll(); drawTrail(true); checkStale(); syncWake();

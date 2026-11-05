@@ -55,6 +55,8 @@ jobs:
         run: node tests/browser/selftest-offline-fixture.mjs
       - name: Service-worker contract literals (Phase 5 gate)
         run: node tests/browser/selftest-sw-contract.mjs
+      - name: Engine host surface (Phase 6 gate)
+        run: node tests/browser/selftest-engine-surface.mjs
   browser-tests:
     # Full suite everywhere EXCEPT a push to main (the smoke job takes that).
     if: github.event_name != 'push' || github.ref != 'refs/heads/main'

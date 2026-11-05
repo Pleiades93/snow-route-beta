@@ -1,5 +1,18 @@
 # Changelog
 
+## Beta 1.103 — 2026-11-04
+Architecture Phase 6 (candidate C5, the engine adapter): the paint engine
+(parts/engine.js) no longer reads app globals freely. Every app value,
+helper, callback and piece of live state it consumes - the frozen census
+list of 15 names (172 reads, zero writes) - arrives through one host
+object (GL_HOST, built in app1.js, aliased as H inside the engine and
+passed to GLP.init(map, host)); live state (pieces, selSet, selStretch,
+activeRoute) is exposed through getters so an app rebind is seen on the
+next read, exactly as a free-global read behaved. No paint behaviour
+changes: same layers, label math, colours and sync semantics; storage,
+formats and messages untouched. Guarded by
+tests/browser/selftest-engine-surface.mjs in CI.
+
 ## Beta 1.102 — 2026-11-04
 Architecture Phase 4 (transaction coordinator, from the 2026-11-04 architecture scan): Finish, Undo and Restore now run their multi-step saves through ONE standard routine — each step is written and read back to prove it landed, and a failure undoes the earlier steps in reverse order. Before, that careful dance was hand-built separately in each place, slightly differently each time. Also new: if the app is killed in the middle of a Finish (phone dies, app swiped away), the next launch now recognises the half-finished state and quietly puts it right — either removing the duplicate archive entry so the run resumes, or completing the finish — using only what is already stored. No data formats, messages or behaviour otherwise changed.
 
