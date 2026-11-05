@@ -55,7 +55,8 @@ await sleep(300);
 // ---- D: a real drag suspends the follow (real clocks, real startGps path) ----
 await ev(`(() => { window.__wpOk = null; navigator.geolocation.watchPosition = (ok2) => { window.__wpOk = ok2; return 4242; }; navigator.geolocation.clearWatch = () => {}; window.__feed = { on: false, n: 0, lat: ${base.lat}, lng: ${base.lng}, speed: 8, heading: 90, acc: 8 }; window.__feedTimer = setInterval(() => { const f = window.__feed; if (!f.on || !window.__wpOk) return; f.n++; const e = f.speed * f.n; const rad = (90 - f.heading) * Math.PI / 180; const de = Math.cos(rad) * e, dn = Math.sin(rad) * e; window.__lastFix = [f.lat + dn / ${MLAT}, f.lng + de / ${MLNG}]; window.__wpOk({ coords: { latitude: window.__lastFix[0], longitude: window.__lastFix[1], accuracy: f.acc, speed: f.speed, heading: f.heading }, timestamp: Date.now() }); }, 1000); window.__dragEv = { start: 0, end: 0 }; map.on('dragstart', () => window.__dragEv.start++); map.on('dragend', () => window.__dragEv.end++); return true; })()`);
 await ev(`(() => { startGps(false); window.__feed.on = true; return true; })()`);
-await sleep(3200);
+const followReady = await poll120(`(() => { if (!gpsPos || !dispPos || followPaused) return false; const c = map.getCenter(); return Math.abs((c.lng - dispPos[1]) * ${MLNG}) < 25 && Math.abs((c.lat - dispPos[0]) * ${MLAT}) < 25; })()`, 25000); // CI runners deliver the first fixes late under load - never drag against a follow that has not engaged (the 2026-11-05 branch run's V2/D3/D4/D5 cascade was exactly that race)
+ok('D0 the follow is engaged (dot live, camera centred) before the drag | ready ' + followReady, followReady === true);
 CB = await centreBtnState();
 ok('V1 no re-centre button while following normally | ' + JSON.stringify(CB), CB.hidden === true);
 const preDrag = await J(`(() => { const c = map.getCenter(); return { lng: c.lng, lat: c.lat, paused: followPaused, dev: window.__dragEv }; })()`);
@@ -89,7 +90,7 @@ await ev(`(() => { const f = window.__feed; f.lat = ${base.lat}; f.lng = ${base.
 await ev(`$('startBtn').click()`);
 await sleep(600);
 await ev(`(() => { window.__feed.on = true; return true; })()`);
-await sleep(4200);
+await poll120(`(() => Math.abs(((map.getBearing() - 90 + 540) % 360) - 180) < 30)()`, 20000); // wait for heading-up to actually engage, however loaded the runner is
 const B1 = await J(`(() => ({ b: map.getBearing(), run: !!runStart, paused: followPaused, smH: smHeading, fromRun: gpsFromRun }))()`);
 ok('R1 heading-up engages during a run (bearing chases the 90 deg course) | ' + JSON.stringify(B1), B1.run === true && bDiff(B1.b, 90) < 30);
 await dragMouse(cv.x, cv.y, -132);

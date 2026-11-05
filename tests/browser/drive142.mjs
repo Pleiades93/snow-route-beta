@@ -14,7 +14,13 @@ await bootThrough(ev, poll); // Beta 1.76: boots end at the route menu now - cli
 // T1: exactly ONE startRenderLoop declaration exists in the shipped source (the
 // duplicate silently disabled the starvation pump in 1.65-1.68), and the trail /
 // honesty call sites the audits required are present in their function bodies.
-// T2: with animation frames BLOCKED, the 100 ms pump alone advances the glide.
+// T2: with animation frames BLOCKED, the 100 ms pump alone advances the display.
+// (Beta 1.115 remap: the fixed-aim glide is gone - the display coasts on the
+// estimator's prediction and absorbs each fix's correction into a decaying
+// offset. The 1.69 starvation purpose is unchanged: no frames, no movement
+// unless the pump ticks. The second fix steps only ~40 m so it lands as a
+// correction, not a >75 m reacquisition snap - a snap takes the new position
+// immediately by design and would leave the pump nothing to advance.)
 // T3: a queued callback from a stopped watcher is ignored (generation tag, N04).
 // T4: Cancel Start reports a storage failure honestly instead of claiming success (N03).
 const R = { checks: [] };
@@ -35,16 +41,16 @@ await sleep(120);
 await feed142(base[0], base[1] + 0.002); await sleep(300);
 const afterTs = await ev(`lastFixTs`);
 ok('T3 a queued callback from the stopped watcher is ignored even with a fresh timestamp | live ' + liveTs + ' after-stop ' + afterTs, liveTs > 0 && afterTs === liveTs);
-// T2: starvation - block animation frames entirely; the pump must advance the glide alone.
+// T2: starvation - block animation frames entirely; the pump must advance the display alone.
 await ev(`(() => { startGps(false); return true; })()`);
 await feed142(base[0], base[1]); await sleep(800);
 await ev(`(() => { window.__realRaf = window.requestAnimationFrame; window.requestAnimationFrame = () => 990001; return true; })()`);
 await sleep(250);
-await feed142(base[0], base[1] + 0.0037);
-const d0 = await ev(`distM(dispPos, [` + base[0] + `, ` + (base[1] + 0.0037) + `])`);
+await feed142(base[0], base[1] + 0.0005);
+const d0 = await ev(`distM(dispPos, [` + base[0] + `, ` + (base[1] + 0.0005) + `])`);
 await sleep(1100);
-const st = JSON.parse(await ev(`(() => JSON.stringify({ d: distM(dispPos, [` + base[0] + `, ` + (base[1] + 0.0037) + `]), pump: renderPump !== 0 }))()`));
-ok('T2 with animation frames blocked, the starvation pump advances the glide on its own | from ' + Math.round(d0) + 'm to ' + Math.round(st.d) + 'm, pump armed ' + st.pump, st.pump === true && d0 > 150 && st.d < d0 * 0.45);
+const st = JSON.parse(await ev(`(() => JSON.stringify({ d: distM(dispPos, [` + base[0] + `, ` + (base[1] + 0.0005) + `]), dp: distM(dispPos, kfPredict()), pump: renderPump !== 0 }))()`));
+ok('T2 with animation frames blocked, the starvation pump advances the display on its own | from ' + Math.round(d0) + 'm out to on-track (display vs predicted track ' + st.dp.toFixed(2) + 'm; vs the raw fix ' + Math.round(st.d) + 'm - the estimator itself only steps partway per fix), pump armed ' + st.pump, st.pump === true && d0 > 15 && st.dp < 2);
 await ev(`(() => { window.requestAnimationFrame = window.__realRaf; stopGps(); return true; })()`);
 await sleep(200);
 // T4: Cancel Start honesty - break storage, cancel, read the message.

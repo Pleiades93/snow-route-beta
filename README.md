@@ -92,7 +92,7 @@ the app update check under Settings → **About**.)
 | `scripts/csp_stamp.py` | Computes the Content-Security-Policy the build stamps into the page. |
 | `scripts/genstyles.mjs` | Regenerates `parts/pmstyles.js` (the two embedded Protomaps basemap styles) from the `@protomaps/basemaps` package (pinned exactly by `scripts/package.json` + `package-lock.json` — `npm ci` in `scripts/` first); run from `scripts/`. Never hand-edit its output. |
 | `tests/sw.test.mjs` | Service worker fetch-strategy tests (Node, mocked caches/fetch) — 27 checks. |
-| `tests/browser/` | The deterministic browser drive battery (39 drives, 556 checks) plus the offline end-to-end suite (31 checks) — see `docs/TESTING.md`. |
+| `tests/browser/` | The deterministic browser drive battery (39 drives, 557 checks) plus the offline end-to-end suite (31 checks) — see `docs/TESTING.md`. |
 | `docs/` | `ARCHITECTURE.md`, `STORAGE-SCHEMA.md`, `TESTING.md`, `DEPLOYMENT.md` — the detailed references. |
 | `DEVELOPMENT_RULES.md` | How changes are built, tested and merged in this repo. |
 | `CHANGELOG.md` | What changed in each Beta version. |
