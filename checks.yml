@@ -1,0 +1,124 @@
+# Beta 1.96 (audit F-08): every action is pinned to the exact commit SHA of its release tag (the tag is kept as a trailing comment). A tag can be re-pointed by its owner; a SHA cannot - the workflow runs exactly the code reviewed when the pin was set. Bump deliberately: resolve the new tag to its commit via the GitHub API and update SHA + comment together.
+name: checks
+# Beta 1.83 (CI-speed round, Andrew approved after the professional-practice
+# research): the browser drives run in FOUR parallel shards, balanced by
+# measured duration (~155s each), instead of one serial ~11-minute job.
+# Branch pushes and PRs run the full sharded suite. A push to main runs only
+# the smoke set: the merge gate is the tree-identity proof (the merged tree
+# must equal the tested branch tree - verified at merge time, see
+# docs/DEVELOPMENT_RULES.md), the build checks below, and the live read-back;
+# if the trees ever differ, the full suite is re-run via workflow_dispatch
+# before the round is called shipped. The nightly schedule runs the full
+# sharded suite on main regardless - the environment-drift audit a tree hash
+# cannot see (runner/browser changes). scripts/check-shard-coverage.py runs
+# in build-and-test and fails the build if the shard lists ever stop covering
+# every drive in run.mjs exactly once.
+on:
+  push:
+  pull_request:
+  schedule:
+    - cron: '23 7 * * *'
+  workflow_dispatch:
+permissions:
+  contents: read # Beta 1.94 (audit F-08): the workflow only checks out and tests - it never needs write access to the repository
+concurrency:
+  # Branch/PR runs cancel superseded runs on the same ref; main runs never
+  # cancel each other (unique group per run).
+  group: ${{ github.ref == 'refs/heads/main' && format('checks-main-{0}', github.run_id) || format('checks-{0}', github.ref) }}
+  cancel-in-progress: true
+jobs:
+  build-and-test:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4
+      - name: Set up Python
+        uses: actions/setup-python@a26af69be951a213d495a4c3e4e4022e16d87065 # v5
+        with:
+          python-version: '3.12'
+      - name: Build check (generated files match source; parity + integrity)
+        run: python3 scripts/build-pages.py --check
+      - name: Shard coverage (every drive in exactly one shard)
+        run: python3 scripts/check-shard-coverage.py
+      - name: Set up Node
+        uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020 # v4
+        with:
+          node-version: '22'
+      - name: Service worker tests
+        run: node tests/sw.test.mjs
+      - name: Trail segmentation fixtures (test-change gate)
+        run: node tests/browser/selftest-trail-segments.mjs
+      - name: Storage-outcome contract fixtures (Phase 3 gate)
+        run: node tests/browser/selftest-store-result.mjs
+      - name: Transaction coordinator fixtures (Phase 4 gate)
+        run: node tests/browser/selftest-tx.mjs
+      - name: History trim fixtures (round 103 gate)
+        run: node tests/browser/selftest-history.mjs
+      - name: Offline contract fixture (Phase 5 gate)
+        run: node tests/browser/selftest-offline-fixture.mjs
+      - name: Service-worker contract literals (Phase 5 gate)
+        run: node tests/browser/selftest-sw-contract.mjs
+      - name: Engine host surface (Phase 6 gate)
+        run: node tests/browser/selftest-engine-surface.mjs
+  browser-tests:
+    # Full suite everywhere EXCEPT a push to main (the smoke job takes that).
+    if: github.event_name != 'push' || github.ref != 'refs/heads/main'
+    name: browser-tests shard ${{ matrix.shard }}
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - shard: 1
+            drives: "drive114 drive89 drive124 drive118 drive136 drive128 drive141 drive133 drive143"
+          - shard: 2
+            drives: "drive117 drive83 drive86 drive134 drive123 drive122 drive132 drive131 drive144 drive146"
+          - shard: 3
+            drives: "drive145 drive126 drive135 drive120 drive65 drive119 drive139 drive140 drive129 drive147"
+          - shard: 4
+            drives: "drive66 drive130 drive125 drive127 drive121 drive88 drive115 drive116 drive142"
+    steps:
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4
+      - name: Set up Node
+        uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020 # v4
+        with:
+          node-version: '22'
+      - name: Locate Chrome
+        run: echo "CHROME_BIN=$(command -v google-chrome || command -v chromium || command -v chromium-browser)" >> "$GITHUB_ENV"
+      - name: "Runner self-test (verdicts: exit code, timeout, result block)"
+        run: node tests/browser/selftest-runner.mjs
+      - name: Browser tests (deterministic drives, shard ${{ matrix.shard }})
+        run: node tests/browser/run.mjs ${{ matrix.drives }}
+  browser-smoke:
+    # Push to main (i.e. a merge landing): the critical-path subset only. The
+    # full battery already passed on the branch's identical tree.
+    if: github.event_name == 'push' && github.ref == 'refs/heads/main'
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4
+      - name: Set up Node
+        uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020 # v4
+        with:
+          node-version: '22'
+      - name: Locate Chrome
+        run: echo "CHROME_BIN=$(command -v google-chrome || command -v chromium || command -v chromium-browser)" >> "$GITHUB_ENV"
+      - name: "Runner self-test (verdicts: exit code, timeout, result block)"
+        run: node tests/browser/selftest-runner.mjs
+      - name: Browser smoke (critical-path drives)
+        run: node tests/browser/run.mjs drive89 drive123 drive132 drive145
+  offline-e2e:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4
+      - name: Set up Node
+        uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020 # v4
+        with:
+          node-version: '22'
+      - name: Locate Chrome
+        run: echo "CHROME_BIN=$(command -v google-chrome || command -v chromium || command -v chromium-browser)" >> "$GITHUB_ENV"
+      - name: Race-judge self-test (E17 retry predicate, fixture-proven before it judges)
+        run: node tests/browser/selftest-race-loss.mjs
+      - name: Offline end-to-end (real service worker, real caches; Beta 1.53 / audit B08)
+        run: |
+          python3 -m http.server 8077 --directory . >/dev/null 2>&1 &
+          sleep 1
+          node tests/browser/e2e-offline.mjs
