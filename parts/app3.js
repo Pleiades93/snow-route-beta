@@ -170,7 +170,7 @@ function closeClean() {
 // ===== RUN LIFECYCLE =====
 let wakeLock = null;
 async function syncWake() {
-  const want = !!runStart && document.visibilityState === 'visible';
+  const want = !!runStart && document.visibilityState === 'visible' && settings.awake; // Beta 1.111: the wake lock is gated on the On-the-job toggle (default OFF) - the request/release machinery below is unchanged; where the API is absent the toggle still saves and nothing here throws
   try {
     if (want && !wakeLock && navigator.wakeLock) { wakeLock = await navigator.wakeLock.request('screen'); wakeLock.addEventListener('release', () => { wakeLock = null; }); }
     if (!want && wakeLock) { const w = wakeLock; wakeLock = null; w.release(); }
@@ -363,6 +363,7 @@ function finishRun() {
   finishChange();
   toast((archiving ? 'Clean archived · ' + Object.keys(snap.items).length + ' streets' : 'Board cleared — under 3 streets, nothing saved') + (restOk ? '' : ' — some details could not be written (' + restRes.failedKey + '); they retry on the next save'), 3400);
   if (archiving) maybeBackupNudge();
+  onFinishFeedback(); // Beta 1.111: only on the COMMITTED path (every failure return above leaves the run intact and silent) - the Done chime plays twice here (once for Chime Melody) plus the finish vibration pattern, per the On-the-job settings; fully guarded in app4
 }
 function performReset() { finishRun(); } // production's name for the finish action (the test battery calls it directly)
 function checkStale() {
@@ -560,7 +561,7 @@ function acceptFix(pos) {
   if (acc > 65 && lastGood && now - lastGood.at < 10000) return;
   if (acc <= 65) lastGood = { ll, at: now };
   const speed = pos.coords.speed;
-  lastFixAt = now; if (typeof pos.timestamp === 'number') lastFixTs = pos.timestamp; gpsAccM = acc;
+  lastFixAt = now; if (typeof pos.timestamp === 'number') lastFixTs = pos.timestamp; gpsAccM = acc; gpsDenied = false; // Beta 1.111: a live fix clears any earlier denial for the Status row
   const { est: sm, aim } = kfUpdate(ll, acc, now); // the filter subsumes the old deadband: sub-noise moves barely shift the estimate, so no fix needs swallowing
   renderTick(performance.now()); // Beta 1.66: settle the running glide to NOW before re-anchoring on the new aim - a glide that is re-aimed from a stale position (few ticks in a non-painting browser) makes the dot chase leftover distance, which is exactly the wander drive127 S1/S2 measure
   const firstFix = !gpsPos;
@@ -601,8 +602,9 @@ function showSuggest(n) {
 $('sugYes').addEventListener('click', () => { const n = $('suggest').dataset.n; $('suggest').classList.add('hidden'); if (n) { const c = STRETCH[n].line[Math.floor(STRETCH[n].line.length / 2)]; map.flyTo({ center: [c[1], c[0]], zoom: Math.max(map.getZoom(), 15.5) }); selectStretch(n, 0, c); } });
 $('sugNo').addEventListener('click', () => $('suggest').classList.add('hidden'));
 let weakToastAt = 0;
+let gpsDenied = false; // Beta 1.111: the Status health GPS row's amber state - set by a permission denial (gpsError code 1), cleared by any accepted fix
 function gpsError(e) {
-  if (e && e.code === 1) { toast('Location is off — allow location for this site in your browser settings', 4200); stopGps(); return; }
+  if (e && e.code === 1) { gpsDenied = true; toast('Location is off — allow location for this site in your browser settings', 4200); stopGps(); return; }
   if (Date.now() - weakToastAt > 60000) { weakToastAt = Date.now(); toast('GPS signal weak — still trying', 2600); }
 }
 function startGps(fromRun) {

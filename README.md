@@ -47,7 +47,7 @@ account; all progress lives on the device.
   record no heights for residential streets, so heights are a standard
   two-storey estimate (a real recorded height is used where one exists).
   From directly above, the map looks exactly as it did before.
-- **Offline:** Settings → Backup → **Download offline maps** saves the
+- **Offline:** Settings → Status → **Download** (offline maps) saves the
   area's vector tiles (zooms 8–14, plus the route core at zoom 15), styles,
   glyphs and sprites — 897 files — and reports the count it actually saved.
   Tiles are also cached as you view them, so a later cold start with no
@@ -55,8 +55,9 @@ account; all progress lives on the device.
 
 ## Backup & restore
 
-Settings → **Backup** is a small menu of three options: **Backup (JSON)**,
-**Restore backup**, and **Download offline maps**.
+Settings → **Backup** is a small menu of two options: **Backup (JSON)**
+and **Restore backup**. (Offline maps live under Settings → **Status**;
+the app update check under Settings → **About**.)
 
 - **Backup (JSON)** builds the backup and immediately offers to save or
   share it — one tap. The format is one JSON file, versioned (v2): every
@@ -131,7 +132,7 @@ GitHub Pages serves `index.html` straight from the `main` branch — merging
 to `main` is the whole deploy. Without `sw.js` beside it, everything works
 except the offline open; without `manifest.json` and the icons, the
 home-screen install just loses its name and icon. Update an installed copy
-from inside the app: Settings → **Update**.
+from inside the app: Settings → About → **Update**.
 
 Map data © OpenStreetMap contributors; vector styles: Protomaps; basemap
 tiles: © CARTO.

@@ -62,8 +62,8 @@ await ev(`(() => { $('setBtn').click(); return true; })()`); await sleep(600);
 const T3b = JSON.parse(await ev(`(() => JSON.stringify({ open: $('setMenu').classList.contains('open'), bg: getComputedStyle($('setMenu')).backgroundColor,
   rows: [...document.querySelectorAll('#setMainPane .rmBtn')].map(b => b.id), ver: $('setVer').textContent, titleVer: $('ver').textContent,
   chipOut: !$('setMenu').contains($('nightBtn')), chipW: $('nightBtn').offsetWidth, paceW: $('paceBtn').offsetWidth }))()`));
-ok('T3 Settings rises as the blue takeover: Backup then Update on the main pane, the version riding bottom-right synced from the title, Day/Night out of the menu - its own button now, exactly Pace-sized (Beta 1.88) | ' + JSON.stringify(T3b),
-  T3b.open === true && T3b.bg === 'rgb(43, 75, 242)' && JSON.stringify(T3b.rows) === JSON.stringify(['exportBtn', 'updBtn']) && T3b.ver === T3b.titleVer && T3b.ver.length > 0 && T3b.chipOut && T3b.chipW === 56 && T3b.chipW === T3b.paceW);
+ok('T3 Settings rises as the blue takeover: Status / On the job / Backup / About-What\'s new on the main pane (Beta 1.111 redesign - Update moved into About, offline maps into Status), the version riding bottom-right synced from the title, Day/Night out of the menu - its own button now, exactly Pace-sized (Beta 1.88) | ' + JSON.stringify(T3b),
+  T3b.open === true && T3b.bg === 'rgb(43, 75, 242)' && JSON.stringify(T3b.rows) === JSON.stringify(['stBtn', 'jobBtn', 'exportBtn', 'aboutBtn']) && T3b.ver === T3b.titleVer && T3b.ver.length > 0 && T3b.chipOut && T3b.chipW === 56 && T3b.chipW === T3b.paceW);
 await ev(`(() => { $('setClose').click(); return true; })()`); await sleep(600);
 ok('T3 the bare X closes the Settings takeover', await ev(`$('setMenu').classList.contains('open')`) === false);
 await ev(`(() => { $('setBtn').click(); return true; })()`); await sleep(500);
@@ -80,8 +80,8 @@ const T3c5 = JSON.parse(await ev(`(() => JSON.stringify({ title: $('xTitle').tex
 // Beta 1.96 (Andrew): the Recovery option LEFT this menu in this round - ONE Backup button
 // remains, and the recovery export is its automatic fallback when saving fails (drive136 F12
 // pins the fallback).
-ok('T3c the backup pane is a menu tree exactly as specced (Beta 1.89; the recovery option added Beta 1.95, SR-194-02): Restore opens Import JSON / Import Text, Import Text opens the box with Import backup under it, Back walks up one level at a time | ' + JSON.stringify({ T3c1, T3c2, T3c3, T3c4, T3c5 }),
-  JSON.stringify(T3c1.opts) === JSON.stringify(['Backup (JSON)', 'Restore backup', 'Download offline maps'])&& T3c1.groupShown && T3c1.title === 'Backup' &&
+ok('T3c the backup pane is a menu tree exactly as specced (Beta 1.89; the recovery option added Beta 1.95, SR-194-02; Beta 1.111 slimmed the menu to its two export options - Download offline maps moved to Status): Restore opens Import JSON / Import Text, Import Text opens the box with Import backup under it, Back walks up one level at a time | ' + JSON.stringify({ T3c1, T3c2, T3c3, T3c4, T3c5 }),
+  JSON.stringify(T3c1.opts) === JSON.stringify(['Backup (JSON)', 'Restore backup'])&& T3c1.groupShown && T3c1.title === 'Backup' &&
   JSON.stringify(T3c2.opts) === JSON.stringify(['Import JSON', 'Import Text']) && T3c2.title === 'Restore' &&
   T3c3.title === 'Import Text' && T3c3.box && T3c3.imp && T3c4.title === 'Restore' && T3c5.title === 'Backup');
 await ev(`(() => { $('setClose').click(); return true; })()`); await sleep(400);

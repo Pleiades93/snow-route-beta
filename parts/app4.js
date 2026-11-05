@@ -28,7 +28,7 @@ function buildGpx() { // Beta 1.99 (Phase 2, C1): segmentation - gap rule (1.70,
   return '<?xml version="1.0" encoding="UTF-8"?>\n<gpx version="1.1" creator="Snow Route Beta"><trk><name>Snow Route trail</name><trkseg>\n' + trailSegments(trail, trailSessions).map(seg => seg.map(pt).join('')).join('</trkseg><trkseg>\n') + '</trkseg></trk></gpx>';
 }
 let xMode = 'menu';
-function showX(mode) { // Beta 1.89 (Andrew): the backup pane is a small menu tree, not a form - the menu holds exactly Backup (JSON) / Restore backup / Download offline maps; Restore backup opens the restore menu (Import JSON / Import Text); Import Text opens the paste box with Import backup under it. The always-on text box and the Share/Copy buttons are gone: Backup (JSON)'s save prompt IS the share now
+function showX(mode) { // Beta 1.89 (Andrew): the backup pane is a small menu tree, not a form - the menu holds exactly Backup (JSON) / Restore backup (Beta 1.111: Download offline maps moved to the Status pane, machinery and all); Restore backup opens the restore menu (Import JSON / Import Text); Import Text opens the paste box with Import backup under it. The always-on text box and the Share/Copy buttons are gone: Backup (JSON)'s save prompt IS the share now
   xMode = mode;
   const menu = mode === 'menu', restore = mode === 'restore', text = mode === 'text';
   $('xOpts').style.display = menu ? '' : 'none';
@@ -39,9 +39,8 @@ function showX(mode) { // Beta 1.89 (Andrew): the backup pane is a small menu tr
   $('xImp').style.display = text ? '' : 'none';
   $('xTitle').textContent = menu ? 'Backup' : restore ? 'Restore' : 'Import Text';
   if (text) { ta.value = ''; ta.placeholder = 'Paste a backup here, then tap Import backup'; }
-  if (menu) { const rec = parseJ(lsGet(LS.pre), null); $('xPreStat').textContent = rec ? 'Offline maps downloaded ' + new Date(rec.at).toLocaleDateString() + ' (' + rec.saved + ' files)' : 'Offline maps not downloaded yet — preload for offline use.'; $('xPreBar').classList.remove('on'); $('xPreFill').style.width = '0%'; } // the bar belongs to a live download - landing on the menu starts it clean (Beta 1.87)
 }
-function openExport() { showX('menu'); showSetPane('setBackupPane'); $('setVer').textContent = $('ver').textContent; $('setMenu').classList.add('open'); } // Beta 1.89: opening Backup lands on the backup menu (the three options)
+function openExport() { showX('menu'); showSetPane('setBackupPane'); $('setVer').textContent = $('ver').textContent; $('setMenu').classList.add('open'); } // Beta 1.89: opening Backup lands on the backup menu (Beta 1.111: two options - the maps download lives in Status now)
 $('xBak').addEventListener('click', () => shareBackup());
 $('xRes').addEventListener('click', () => showX('restore'));
 $('xImpText').addEventListener('click', () => showX('text'));
@@ -125,7 +124,7 @@ function recoveryObj() { // Beta 1.95 (deep audit SR-194-02): the RECOVERY backu
 }
 function buildRecovery() { const o = recoveryObj(); return o ? JSON.stringify(o, null, 1) : null; }
 // Beta 1.96: downloadBackup follows the same one-button rule as shareBackup - a build failure is the recovery fallback, never a dead-end refusal.
-function downloadBackup() { const b = buildBackup(); if (!b) { shareRecovery(true); return; } dl(new Blob([b], { type: 'application/json' }), 'snowroute-backup.json'); toast('Backup downloaded'); } // Beta 1.48 (audit B09): the filename still carried the retired 5W name; the backup format and its internal marker are unchanged
+function downloadBackup() { const b = buildBackup(); if (!b) { shareRecovery(true); return; } dl(new Blob([b], { type: 'application/json' }), 'snowroute-backup.json'); noteExported(); toast('Backup downloaded'); } // Beta 1.48 (audit B09): the filename still carried the retired 5W name; the backup format and its internal marker are unchanged
 function clearTrailAll() { // Beta 1.88: the Clear trail BUTTON left with the old Snow log (Andrew: the clearing gets re-homed in a later round) - the clearing itself stays as one callable piece, two-tap guard and all its storage honesty intact, so the re-home is a button wired to this, not a rebuild
   trail = []; trailSessions = []; const okSessClr = saveSess().ok; if (!okSessClr) markDirty('sess'); drawTrail(true); // Beta 1.71 (audit B02): the markers describe this trail - clearing the trail clears them. Beta 1.73 (audit C05): the marker write is CHECKED like the trail write - 1.71 dropped its result, so 'Trail cleared' could be claimed while the markers stayed stored
   // The clear is a storage write like any other: if it fails, the stored trail still holds every point and
@@ -335,10 +334,11 @@ const list = preloadUrlList();
     lsSet(LS.pre, JSON.stringify({ at: Date.now(), saved, total: list.length }));
     st.textContent = 'Offline maps: saved ' + saved + ' of ' + list.length + ' files (tiles are kept by the offline cache)';
     toast('Offline maps: ' + saved + '/' + list.length);
-  } catch (e) { st.textContent = 'Preload failed — check connection and retry.'; } finally { preloadRunning = false; }
+  } catch (e) { st.textContent = 'Preload failed — check connection and retry.'; } finally { preloadRunning = false; if ($('setStatusPane').classList.contains('on')) renderStatus(false); } // Beta 1.111: the download lives in Status now - when it ends with Status on screen, the maps line, buttons and health row re-read the pack state it just wrote (the stat line itself is the download's own report and is left alone)
 });
 
 // ===== UPDATE CHECK =====
+let updState = ''; // Beta 1.111: the Status health row's App-version state - '' = not checked yet this session, 'ok' = up to date, 'avail' = a newer version was served. In-memory on purpose: a fresh boot honestly reports "not checked yet" again instead of trusting a stale stamp.
 $('updBtn').addEventListener('click', async () => {
   if (!tapGuard('updBtn')) return;
   toast('Checking for a newer version…');
@@ -350,7 +350,8 @@ $('updBtn').addEventListener('click', async () => {
     const served = m && m[1].trim();
     const mine = $('ver').textContent.trim();
     if (!served) { toast('Could not read the server copy', 3000); return; }
-    if (served === mine) { toast('✓ Up to date (' + mine + ')', 2800); return; }
+    if (served === mine) { updState = 'ok'; toast('✓ Up to date (' + mine + ')', 2800); return; }
+    updState = 'avail';
     toast('New version found — reloading…', 2600);
     setTimeout(() => location.replace(location.pathname + '?v=' + Date.now()), 900);
   } catch (e) { toast('Update check failed — reloading to be safe', 2800); setTimeout(() => location.reload(), 900); }
@@ -379,27 +380,194 @@ $('streetsBtn').innerHTML = ICONS.streets; $('paceBtn').innerHTML = ICONS.pace;
 $('setBtn').querySelector('.tabIco').innerHTML = ICONS.gear;
 $('selNote').innerHTML = ICONS.note;
 $('setBtn').addEventListener('click', () => { if (!tapGuard('setBtn')) return; showSetPane('setMainPane'); $('setVer').textContent = $('ver').textContent; $('setMenu').classList.add('open'); }); // the Settings menu (Beta 1.88, Andrew): a blue full-screen takeover like Routes - it always lands on the main pane, and the version re-syncs from the title's on every open
-function showSetPane(id) { for (const p of ['setMainPane', 'setBackupPane']) $(p).classList.toggle('on', p === id); }
+const SET_PANES = ['setMainPane', 'setStatusPane', 'setJobPane', 'setChimePane', 'setBackupPane', 'setAboutPane'];
+function showSetPane(id) { for (const p of SET_PANES) $(p).classList.toggle('on', p === id); if (id === 'setMainPane') renderBakAge(); } // Beta 1.111: the pane set grew from two to six; landing on main refreshes the Backup button's last-backup line from the export stamp
 $('setClose').addEventListener('click', () => $('setMenu').classList.remove('open'));
 $('setBack').addEventListener('click', () => { if (xMode === 'text') showX('restore'); else if (xMode === 'restore') showX('menu'); else showSetPane('setMainPane'); }); // Beta 1.89: one Back walks the backup tree up a level at a time; from the backup menu it lands on the settings main pane
 $('exportBtn').addEventListener('click', () => { if (!tapGuard('exportBtn')) return; openExport(); });
+function noteExported() { // Beta 1.111: the Settings main pane's "Last backup" line reads this stamp. It rides the EXISTING export record (LS.exp - the backup-nudge record) as one added field, so no new key exists and the nudge's own field (nudgedAt) is untouched. Stamped only at a successful hand-off (share accepted / download dispatched) - a cancelled share sheet stamps nothing, so the line never claims a backup that never left the phone.
+  try { const st = parseJ(lsGet(LS.exp), {}); st.exportedAt = Date.now(); lsSet(LS.exp, JSON.stringify(st)); } catch (e) { /* the line is a courtesy - a failed stamp never breaks an export */ }
+}
 async function shareBackup() { // Beta 1.88 (Andrew), moved into the backup menu in 1.89 (his correction): the Backup (JSON) press both backs up AND asks where to save it - one tap. A real FILE share where the platform offers it (Save to Files keeps the .json name), the text share next, and the plain download where no share exists at all (desktops, the test rig). Cancelling the prompt is a shrug, not an error - the backup menu stays open behind it
   const b = buildBackup();
   if (!b) { shareRecovery(true); return; } // Beta 1.96 (Andrew's design): ONE Backup button - a backup that cannot be built because saving failed falls back AUTOMATICALLY to the recovery export (live state, snapshot carried) instead of refusing and sending him to a second button mid-clean. shareRecovery(true) labels the result loudly: the file is recovery-marked, recovery-named, and its message says the save could not be done first. A cancelled SHARE never reaches here - the fallback triggers on the build failure only
   let f = null; try { f = new File([b], 'snowroute-backup.json', { type: 'application/json' }); } catch (e) { /* older engine: the text share below still works */ }
-  if (f && navigator.canShare && navigator.canShare({ files: [f] })) { try { await navigator.share({ files: [f] }); return; } catch (e) { if (e && e.name === 'AbortError') return; } }
-  if (navigator.share) { try { await navigator.share({ text: b }); return; } catch (e) { if (e && e.name === 'AbortError') return; } }
-  dl(new Blob([b], { type: 'application/json' }), 'snowroute-backup.json'); toast('Backup downloaded');
+  if (f && navigator.canShare && navigator.canShare({ files: [f] })) { try { await navigator.share({ files: [f] }); noteExported(); return; } catch (e) { if (e && e.name === 'AbortError') return; } }
+  if (navigator.share) { try { await navigator.share({ text: b }); noteExported(); return; } catch (e) { if (e && e.name === 'AbortError') return; } }
+  dl(new Blob([b], { type: 'application/json' }), 'snowroute-backup.json'); noteExported(); toast('Backup downloaded');
 }
 async function shareRecovery(viaFallback) { // Beta 1.95 (SR-194-02): the recovery export - same share sheet, but the file is NAMED recovery and the result message repeats what it is: the live on-screen state, not fully saved on this device. Beta 1.96: since Andrew's one-button change this runs as Backup's AUTOMATIC fallback (viaFallback) - the standalone Recovery menu option is gone
   const b = buildRecovery();
   if (!b) { toast('Recovery backup unavailable — open the route first', 3600); return; }
   let f = null; try { f = new File([b], 'snowroute-recovery.json', { type: 'application/json' }); } catch (e) { /* older engine: the text share below still works */ }
-  if (f && navigator.canShare && navigator.canShare({ files: [f] })) { try { await navigator.share({ files: [f] }); toast((viaFallback ? 'Backup could not be saved — recovery backup shared instead: ' : 'Recovery backup shared — ') + 'the open route is the live on-screen state, not fully saved on this device; other routes are included as last saved', 4200); return; } catch (e) { if (e && e.name === 'AbortError') return; } }
-  if (navigator.share) { try { await navigator.share({ text: b }); toast((viaFallback ? 'Backup could not be saved — recovery backup shared instead: ' : 'Recovery backup shared — ') + 'the open route is the live on-screen state, not fully saved on this device; other routes are included as last saved', 4200); return; } catch (e) { if (e && e.name === 'AbortError') return; } }
-  dl(new Blob([b], { type: 'application/json' }), 'snowroute-recovery.json'); toast((viaFallback ? 'Backup could not be saved — recovery backup downloaded instead: ' : 'Recovery backup downloaded — ') + 'the open route is the live on-screen state, not fully saved on this device; other routes are included as last saved', 4200); // Beta 1.96 (audit-2, N-5b): the wording distinguishes what the file actually holds - the ACTIVE route is serialized from live memory; any other route pack in the same file is read from storage, as last saved
+  if (f && navigator.canShare && navigator.canShare({ files: [f] })) { try { await navigator.share({ files: [f] }); noteExported(); toast((viaFallback ? 'Backup could not be saved — recovery backup shared instead: ' : 'Recovery backup shared — ') + 'the open route is the live on-screen state, not fully saved on this device; other routes are included as last saved', 4200); return; } catch (e) { if (e && e.name === 'AbortError') return; } }
+  if (navigator.share) { try { await navigator.share({ text: b }); noteExported(); toast((viaFallback ? 'Backup could not be saved — recovery backup shared instead: ' : 'Recovery backup shared — ') + 'the open route is the live on-screen state, not fully saved on this device; other routes are included as last saved', 4200); return; } catch (e) { if (e && e.name === 'AbortError') return; } }
+  dl(new Blob([b], { type: 'application/json' }), 'snowroute-recovery.json'); noteExported(); toast((viaFallback ? 'Backup could not be saved — recovery backup downloaded instead: ' : 'Recovery backup downloaded — ') + 'the open route is the live on-screen state, not fully saved on this device; other routes are included as last saved', 4200); // Beta 1.96 (audit-2, N-5b): the wording distinguishes what the file actually holds - the ACTIVE route is serialized from live memory; any other route pack in the same file is read from storage, as last saved
 }
 $('updBtn').addEventListener('click', () => $('setMenu').classList.remove('open')); // the update check reports by toast over the map - the menu steps aside for it (the old pop-up's pick-and-close)
+
+// ===== SETTINGS PANES (Beta 1.111, Andrew's approved redesign) =====
+// Six panes on the blue takeover: main (Status / On the job / Backup / About),
+// Status (maps + health), On the job (toggles + chime nav), Done chime,
+// Backup (slimmed to its two export options), About (info + What's new +
+// Update). The design is the approved mockups' (beta1/work/settings-mockups/);
+// the behaviour settings themselves live in app1 (SETTINGS_KEY).
+function bakAgeText() { // the Backup button's second line, from the export stamp (LS.exp's exportedAt, written by noteExported at every successful hand-off)
+  const st = parseJ(lsGet(LS.exp), null);
+  const at = st && +st.exportedAt;
+  if (!at || !isFinite(at)) return 'never';
+  const d0 = new Date(); d0.setHours(0, 0, 0, 0);
+  const d1 = new Date(at); d1.setHours(0, 0, 0, 0);
+  const days = Math.round((d0 - d1) / 86400000);
+  if (days <= 0) return 'today';
+  if (days === 1) return 'yesterday';
+  return days + ' days ago';
+}
+function renderBakAge() { const el = $('bakAge'); if (el) el.textContent = 'Last backup: ' + bakAgeText(); }
+function renderSwitch(el, on) { el.classList.toggle('on', !!on); el.setAttribute('aria-checked', on ? 'true' : 'false'); }
+// ---- On the job ----
+function renderJob() {
+  renderSwitch($('swAwake'), settings.awake);
+  renderSwitch($('swVib'), settings.vib);
+  $('chimeVal').textContent = settings.chime ? CHIME_SOUNDS[settings.chimeSound].name : 'Off';
+}
+$('swAwake').addEventListener('click', () => { settings.awake = !settings.awake; saveSettings(); renderSwitch($('swAwake'), settings.awake); syncWake(); }); // syncWake applies the new gate at once: ON mid-run requests the lock, OFF (or a run ending) releases it; an absent WakeLock API makes the request a silent no-op while the toggle still saves (app3)
+$('swVib').addEventListener('click', () => { settings.vib = !settings.vib; saveSettings(); renderSwitch($('swVib'), settings.vib); if (settings.vib && navigator.vibrate) { try { navigator.vibrate(60); } catch (e) {} } }); // a confirming buzz on the flip itself, where the platform supports vibration at all
+$('chimeRow').addEventListener('click', () => { renderChime(); showSetPane('setChimePane'); });
+$('jobBtn').addEventListener('click', () => { renderJob(); showSetPane('setJobPane'); });
+$('jobBack').addEventListener('click', () => showSetPane('setMainPane'));
+// ---- Done chime: WebAudio-synthesized sounds (no files) ----
+const CHIME_SOUNDS = {
+  bell: { name: 'Classic Bell', desc: 'Single soft bell tone' },
+  two: { name: 'Two-Tone', desc: 'Two notes, up' },
+  rising: { name: 'Rising Notes', desc: 'Three notes climbing' },
+  pop: { name: 'Soft Pop', desc: 'Short, quiet blip' },
+  melody: { name: 'Chime Melody', desc: 'Four-note finish melody' }
+};
+let AC = null; // one shared AudioContext, created/resumed only inside user-gesture handlers (a preview tap, a marking tap)
+function acNow() { try { const ACtor = window.AudioContext || window.webkitAudioContext; if (!ACtor) return null; if (!AC) AC = new ACtor(); if (AC.state === 'suspended') AC.resume(); return AC; } catch (e) { return null; } }
+function toneAt(ac, freq, t0, dur, type, vol, slideTo) {
+  const o = ac.createOscillator(), g = ac.createGain();
+  o.type = type; o.frequency.setValueAtTime(freq, t0);
+  if (slideTo) o.frequency.exponentialRampToValueAtTime(slideTo, t0 + dur);
+  g.gain.setValueAtTime(0.0001, t0);
+  g.gain.exponentialRampToValueAtTime(vol, t0 + 0.012);
+  g.gain.exponentialRampToValueAtTime(0.0001, t0 + dur);
+  o.connect(g); g.connect(ac.destination);
+  o.start(t0); o.stop(t0 + dur + 0.05);
+}
+function playChime(key, times) { // FULLY guarded: an audio failure can never break marking - sound is decoration
+  try {
+    const ac = acNow(); if (!ac) return;
+    const seqs = {
+      bell: (a, t) => { toneAt(a, 1568, t, 0.9, 'sine', 0.22); toneAt(a, 3136, t, 0.45, 'sine', 0.06); return 0.95; }, // a single soft bell: fundamental + a quiet harmonic, ~0.9 s decay
+      two: (a, t) => { toneAt(a, 1319, t, 0.11, 'sine', 0.2); toneAt(a, 1760, t + 0.12, 0.16, 'sine', 0.2); return 0.32; },
+      rising: (a, t) => { [1047, 1319, 1569].forEach((f, i) => toneAt(a, f, t + i * 0.11, 0.14, 'sine', 0.2)); return 0.4; },
+      pop: (a, t) => { toneAt(a, 330, t, 0.07, 'triangle', 0.25, 170); return 0.1; }, // one short low blip with a quick pitch fall
+      melody: (a, t) => { [1047, 1319, 1569, 2093].forEach((f, i) => toneAt(a, f, t + i * 0.12, 0.18, 'sine', 0.2)); return 0.6; }
+    };
+    const fn = seqs[key] || seqs.two;
+    let t = ac.currentTime + 0.01;
+    const n = Math.max(1, times || 1);
+    for (let i = 0; i < n; i++) { const len = fn(ac, t); t += len + 0.18; }
+  } catch (e) { /* silent by design */ }
+}
+function onStreetComplete() { // Beta 1.111: called by the marking funnel (applyPiece's completion branch and markDone in app2) the moment a street flips false-to-true complete. Feedback only, guarded end to end - it can never throw into marking.
+  try {
+    if (settings.chime) playChime(settings.chimeSound, 1);
+    if (settings.vib && navigator.vibrate) { try { navigator.vibrate(60); } catch (e) {} } // iOS web apps cannot vibrate: a designed no-op there (Andrew knows - the toggle is a persisted placeholder for a possible native app)
+  } catch (e) {}
+}
+function onFinishFeedback() { // Beta 1.111: the confirmed-Finish fanfare, called by finishRun only on its committed path: the selected sound twice around - except Chime Melody once, it is already a four-note finish - plus the longer vibration pattern when vibration is on
+  try {
+    if (settings.chime) playChime(settings.chimeSound, settings.chimeSound === 'melody' ? 1 : 2);
+    if (settings.vib && navigator.vibrate) { try { navigator.vibrate([90, 70, 90]); } catch (e) {} }
+  } catch (e) {}
+}
+function renderChime() {
+  renderSwitch($('swChime'), settings.chime);
+  const list = $('chimeList'); list.innerHTML = '';
+  for (const key of CHIME_KEYS) {
+    const snd = CHIME_SOUNDS[key]; const sel = settings.chimeSound === key;
+    const row = document.createElement('button');
+    row.className = 'm-card m-sndRow' + (sel ? ' sel' : ''); row.dataset.snd = key;
+    row.innerHTML = '<div class="m-togTxt"><div class="m-togLbl">' + snd.name + '</div><div class="m-togDesc">' + snd.desc + '</div></div>' + (sel ? '<div class="m-selTick">&#10003;</div>' : '<div class="m-play">&#9654;</div>'); // one fixed 30px right slot per row, per the mockup: the tick on the selected row, the play affordance on the rest
+    row.addEventListener('click', () => { settings.chimeSound = key; saveSettings(); renderChime(); renderJob(); playChime(key, 1); }); // a tap PREVIEWs and selects (the mockup's contract). The preview is a deliberate tap, so it sounds even while the chime toggle is off - the toggle gates only the in-clean playback
+    list.appendChild(row);
+  }
+}
+$('swChime').addEventListener('click', () => { settings.chime = !settings.chime; saveSettings(); renderSwitch($('swChime'), settings.chime); renderJob(); });
+$('chimeBack').addEventListener('click', () => { renderJob(); showSetPane('setJobPane'); });
+// ---- Status: maps + health, every value read live at pane open ----
+async function packState() { // how much of the deterministic manifest (preloadUrlList - the same list the download writes and the pack migration certifies) is actually in the pack cache right now; falls back to the preload record when the cache census cannot run
+  const list = preloadUrlList(); const total = list.length;
+  let cached = -1;
+  try {
+    if ('caches' in window) {
+      const oc = await caches.open('snowroute-offline-v1');
+      const have = new Set((await oc.keys()).map(r => r.url));
+      cached = 0;
+      for (const u of list) { let href = u; try { href = new URL(u).href; } catch (e) {} if (have.has(href)) cached++; }
+    }
+  } catch (e) { cached = -1; }
+  if (cached < 0) { const rec = parseJ(lsGet(LS.pre), null); cached = rec ? Math.min(total, rec.saved || 0) : 0; }
+  return { total, cached, complete: total > 0 && cached >= total };
+}
+function setHealth(icoId, valId, state, text) { // state: 'ok' green tick / 'warn' amber warning / 'idle' neutral dash - honesty over decoration: a state that is merely unknown is never painted green
+  const ico = $(icoId);
+  ico.textContent = state === 'ok' ? '✓' : state === 'warn' ? '⚠' : '–';
+  ico.className = 'm-chk' + (state === 'warn' ? ' warn' : state === 'idle' ? ' idle' : '');
+  $(valId).textContent = '— ' + text;
+}
+async function renderStatus(resetStat) {
+  const ps = await packState();
+  const area = (activeRoute ? activeRoute.name : 'Route') + ' area';
+  if (ps.complete) { $('stMapsLine').innerHTML = 'Offline maps: Downloaded <span class="m-tick">&#10003;</span>'; $('stMapsSub').textContent = ps.total + ' files · ' + area; }
+  else if (ps.cached > 0) { $('stMapsLine').textContent = 'Offline maps: Partial'; $('stMapsSub').textContent = ps.cached + ' of ' + ps.total + ' files · ' + area; }
+  else { $('stMapsLine').textContent = 'Offline maps: Not downloaded'; $('stMapsSub').textContent = ps.total + ' files · ' + area; }
+  $('xPre').textContent = ps.complete ? 'Re-download' : 'Download';
+  $('stDel').style.display = ps.cached > 0 ? '' : 'none';
+  if (resetStat && !preloadRunning) { const rec = parseJ(lsGet(LS.pre), null); $('xPreStat').textContent = rec ? 'Offline maps downloaded ' + new Date(rec.at).toLocaleDateString() + ' (' + rec.saved + ' files)' : 'Offline maps not downloaded yet — download for offline use.'; $('xPreBar').classList.remove('on'); $('xPreFill').style.width = '0%'; } // the bar/stat belong to a live download - landing on Status with none running starts them clean (the 1.87 reset, re-homed with the elements)
+  // HEALTH - each row from a real signal at this moment:
+  let storageOk = false;
+  try { storageOk = lsSet('snowroute.v2.healthprobe', '1') && lsGet('snowroute.v2.healthprobe') === '1'; lsDel('snowroute.v2.healthprobe'); } catch (e) { storageOk = false; } // a scratch-key write + read-back + delete - the same guarded helpers every save uses
+  setHealth('stIcoStorage', 'stValStorage', storageOk ? 'ok' : 'warn', storageOk ? 'saving normally' : 'storage problem — export a backup');
+  setHealth('stIcoMaps', 'stValMaps', ps.complete ? 'ok' : 'warn', ps.complete ? 'complete' : ps.cached > 0 ? 'partial — ' + ps.cached + ' of ' + ps.total : 'not downloaded');
+  if (updState === 'ok') setHealth('stIcoVer', 'stValVer', 'ok', 'up to date (' + $('ver').textContent.trim() + ')');
+  else if (updState === 'avail') setHealth('stIcoVer', 'stValVer', 'warn', 'update available');
+  else setHealth('stIcoVer', 'stValVer', 'idle', 'not checked yet');
+  if (gpsDenied) setHealth('stIcoGps', 'stValGps', 'warn', 'location permission is off');
+  else if (watchId != null || (lastGood && Date.now() - lastGood.at < 120000)) setHealth('stIcoGps', 'stValGps', 'ok', 'ready');
+  else setHealth('stIcoGps', 'stValGps', 'idle', 'not started yet');
+}
+$('stBtn').addEventListener('click', () => { showSetPane('setStatusPane'); renderStatus(true); });
+$('statusBack').addEventListener('click', () => showSetPane('setMainPane'));
+$('stDel').addEventListener('click', async () => {
+  if (!tapGuard('stDel')) return;
+  if (preloadRunning) { toast('Wait for the download to finish first'); return; }
+  try { if ('caches' in window) await caches.delete('snowroute-offline-v1'); } catch (e) { /* a cache that will not delete simply re-counts honestly on the next census - the flag and record clears below still land */ }
+  lsDel(PACKMIG_KEY); lsDel(LS.pre); // the completion flag and the ACTIVE route's preload record go with the pack; the browsing tile cache ('snowroute-tiles-v1') is a cache, not the pack - it stays
+  toast('Offline maps deleted');
+  renderStatus(true);
+});
+// ---- About / What's new ----
+const WHATSNEW = [ // the curated in-app list: plain words, newest first. Ships WITH each version like the CHANGELOG - a release that changes what Andrew sees adds its entry here in the same change
+  { v: 'Beta 1.111', items: ['Settings rebuilt: Status, On the job, Backup, About', 'Keep the screen awake during a clean', 'Done chime — five sounds to choose from', 'Offline maps now live in Status'] },
+  { v: 'Beta 1.110', items: ['Finish is final: no more Undo after you confirm'] },
+  { v: 'Beta 1.109', items: ['Streets list: Mains / Secondaries, with a Completed pill'] }
+];
+function renderAbout() {
+  const cur = $('ver').textContent.trim();
+  $('wnHead').textContent = "WHAT'S NEW · " + cur; // the header names the LIVE version, read from the title's version element - never a second hard-coded copy that can go stale
+  const list = $('wnList'); list.innerHTML = '';
+  WHATSNEW.forEach((entry, i) => {
+    if (i > 0 || entry.v !== cur) { const h = document.createElement('div'); h.className = 'm-secLbl'; h.textContent = entry.v; list.appendChild(h); } // the current version's items sit directly under the header; older versions get their own numbered subhead
+    for (const item of entry.items) { const d = document.createElement('div'); d.className = 'm-wnItem'; const dot = document.createElement('span'); dot.className = 'm-wnDot'; dot.innerHTML = '&middot;'; const tx = document.createElement('span'); tx.textContent = item; d.appendChild(dot); d.appendChild(tx); list.appendChild(d); }
+  });
+}
+$('aboutBtn').addEventListener('click', () => { renderAbout(); showSetPane('setAboutPane'); });
+$('aboutBack').addEventListener('click', () => showSetPane('setMainPane'));
+
 // Click-away (Andrew, Beta 1.14): tapping anywhere outside an open menu closes it - no hunting for a
 // Close button. Header buttons keep their own toggle behaviour; a tap on a dialog's dimmed backdrop
 // acts as that dialog's Cancel / Not yet / Close (each is a plain hide - nothing gets committed).
