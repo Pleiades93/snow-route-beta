@@ -28,6 +28,20 @@ in-memory copy of the snapshot is dropped, so a Cancel performed after
 switching back validates the persisted snapshot, precisely the
 post-reload path.
 
+Beta 1.118 (created routes): one more global record,
+`snowroute.v2.userpacks` = `{<routeId>: <pack>}` — the definitions of
+routes Andrew created in the app (shipped packs live in `parts/data.js`,
+never in storage). At boot the record's packs are validated
+(`normalizePack`) and merged into the runtime pack list — a created pack
+wins an id collision; created ids are slugs generated from the route
+name, uniqueness-checked against shipped + created ids, so collisions
+do not arise from the app itself. A created route's own data lives in
+its ordinary per-route slot (`snowroute.<id>.` + tails), exactly like a
+shipped route's. A pack in the record that fails validation is skipped
+at boot, never half-loaded; its record entry and slot stay untouched.
+One more global rides along: `snowroute.v2.lastarea`, the create flow's
+last-used area (a name-it pre-fill memory, nothing more).
+
 ## Keys (tails; read `snowroute.5w.<tail>` for Route 5W)
 
 | Tail | Content | Shape |
@@ -120,7 +134,7 @@ audit F-01).
 
 ## Backup envelope
 
-**v2 (current):** `{app: 'snowroute-backup', v: 2, at, routes, night?, nightExp?}` where
+**v2 (current):** `{app: 'snowroute-backup', v: 2, at, routes, night?, nightExp?, userpacks?}` where
 `routes` maps each route id to an object of field name → raw stored string,
 the field names being `done, times, hist, notes, via, trail, cov, start,
 flip, sides, sess` (the 11 stored fields; the per-route preload record is
@@ -161,7 +175,21 @@ result message that says the save could not be done first. There is no
 separate Recovery menu option anymore.
 key — inside the restore transaction and its rollback scope — only if
 it passes `validateSnap` against the start the same backup carries for
-that route. A carried snapshot that fails validation (or whose run's
+that route. Beta 1.118: `userpacks` (when present and non-empty) carries
+the created-route definitions — `{<routeId>: <pack>}`, the same objects
+as the on-device record. Both exporters (normal and recovery) include
+it under strict-read discipline. On restore the definitions are
+validated FIRST (shape via `normalizePack`; ids must be slug-shaped and
+must NOT collide with a shipped pack — a collision fails the whole
+restore closed, since app-generated ids never collide), then written as
+ONE entry in the same verified write set — merged over the device's
+current record (a restore adds/updates created routes; it does not
+delete ones the backup predates) — inside the rollback scope, BEFORE
+any route state is applied; the reload that ends every restore
+re-registers them at boot before their state is read, and route ids
+known only through this field are accepted by the routes loop and the
+unknown-name count. Backups without the field (anything written before
+1.118) restore exactly as before. A carried snapshot that fails validation (or whose run's
 start is absent) is dropped and the result message says so. Beta 1.97
 (audit loop CG-196-01/-02): ordinary backups carry the field too, and
 every route entry in a current-format backup asserts its lifecycle

@@ -75,7 +75,7 @@ jobs:
       matrix:
         include:
           - shard: 1
-            drives: "drive114 drive89 drive124 drive118 drive136 drive128 drive141 drive133 drive143 drive149"
+            drives: "drive114 drive89 drive124 drive118 drive136 drive128 drive141 drive133 drive143 drive149 drive150"
           - shard: 2
             drives: "drive117 drive83 drive86 drive134 drive123 drive122 drive132 drive131 drive144 drive146"
           - shard: 3
