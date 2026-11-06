@@ -44,6 +44,25 @@ at boot, never half-loaded; its record entry and slot stay untouched.
 One more global rides along: `snowroute.v2.lastarea`, the create flow's
 last-used area (a name-it pre-fill memory, nothing more).
 
+Beta 1.124 (route deletion): deleting a created route removes its
+entry from `snowroute.v2.userpacks` and deletes EVERY key of its
+per-route slot — the full `routeKeys(id)` family (all `ROUTE_FIELDS`
+tails plus `v5.snap`, `v2.migrated` and `v5.preload`), enumerated
+from `routeKeys` at deletion time rather than hand-listed, so a
+field added later joins the sweep automatically. The userpacks
+removal is the gated step: it goes through a strict read and a
+verified write, and on any failure nothing else is touched — the
+route stays listed with its slot intact. Shipped packs cannot be
+deleted (no entry exists in the record, and the deletion path
+refuses shipped ids). If the deleted route was the active one, the
+app returns to the boot-picker state; its slot keys are gone either
+way. Two neighbours deliberately survive a deletion: the IndexedDB
+city cache (keyed by CITY, not route — the next route in that city
+reuses it) and `snowroute.v2.lastarea` (a city name, not a route
+reference). The offline pack-migration fingerprint is computed
+from the live pack list, so a deletion un-certifies the previous
+union download; the cached tiles themselves are not removed.
+
 ## Keys (tails; read `snowroute.5w.<tail>` for Route 5W)
 
 | Tail | Content | Shape |

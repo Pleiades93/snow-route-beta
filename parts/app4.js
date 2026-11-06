@@ -609,7 +609,7 @@ $('stDel').addEventListener('click', async () => {
 });
 // ---- About / What's new ----
 const WHATSNEW = { // the curated in-app notes: plain words, LATEST RELEASE ONLY (Beta 1.114, Andrew: the accumulated list cluttered the About pane). A release REPLACES this entry with its own in the same change - it never accumulates; the full history lives in CHANGELOG.md, not the app
-  v: 'Beta 1.123', items: ["Creating a route now starts by tapping your city from a list — Vaughan, Toronto, Markham, Richmond Hill and Brampton are ready in seconds, because the app now carries its own street library for them instead of asking a faraway service", "Cleaning somewhere else? Tap Search manually and search as before — other cities still load the original way, and the city search there actually answers now (before, it silently found nothing)"]
+  v: 'Beta 1.124', items: ["You can now delete a route you created: open Choose a route and tap Delete on it (the built-in route can't be deleted). It asks first, and deleting removes the route and everything saved for it on this phone", "Creating a route now starts with two clear doors — Select from list, for a ready city you just tap, or Search manually, for anywhere else — and after picking a city you can still search for a street by name, the same as before"]
 };
 function renderAbout() {
   const cur = $('ver').textContent.trim();
@@ -933,6 +933,37 @@ function loadRoute(id) {
   refreshAll(); drawTrail(true); checkStale(); syncWake();
   if (runStart && !validateSnap(parseJ(lsGet(LS.snap), null), runStart)) toast('Resumed run — no usable cancel snapshot, so Cancel will rebuild from the marks made during the run', 4600); // Beta 1.95 (deep audit SR-194-04): the honesty lives at RESUME - Start still never blocks (the settled 1.63 stance: he is standing in the snow), but a run whose cancel snapshot is missing or damaged is resumed with its reduced Cancel guarantee stated, not silent
   if (runStart) startGps(true);
+}
+function unloadRouteToBoot() { // Beta 1.124: the ACTIVE route was deleted - return the app to the boot-picker state, mirroring a cold boot before any pick (no geometry at eval, no state loaded, LS at its eval default, the menu in boot mode over rmMain). Unlike a route SWITCH there is no flush: the outgoing slot's keys are wiped by deleteRoute right after, so nothing may write into them here - resetSwitchSession's clearing (note timer, dirty flags) is exactly the teardown needed, and its flush steps are deliberately NOT run.
+  const hadRun = !!runStart;
+  resetSwitchSession();
+  if (hadRun) stopGps(true); // a clean on a deleted route cannot keep recording - its trail's slot no longer exists
+  buildGeometry({ roads: {}, reference: {}, mains: [] }); // the eval-time emptiness a cold boot shows before any pick (drive149's zero-geometry state)
+  if (map && window.GLP) window.GLP.rebuildRoute();
+  doneSet = new Set(); doneTimes = {}; doneVia = {}; notes = {}; history = []; runStart = 0; trail = []; trailSessions = []; coveredIdx = {}; pieces = {}; pieceTimes = {}; // the eval empties (app1's declarations)
+  LS = { ...routeKeys('5w'), ...LS_GLOBAL }; // the eval default - the next pick repoints it via loadRoute
+  activeRoute = null; routeLoaded = false;
+  document.documentElement.classList.add('boot');
+  const rm = $('routeMenu'); rm.classList.remove('tab', 'open'); rm.classList.add('boot', 'show'); showRmPane('rmMain'); renderRouteLists();
+  syncWake();
+}
+function deleteRoute(id) { // Beta 1.124 (Andrew): delete a route HE created - the shipped packs are refused (SHIPPED_PACK_IDS), so the built-in 5W can never be deleted. Order is the safety: (1) the userpacks definition goes first, through a strict read and a VERIFIED write - on any failure nothing else is touched, the route stays listed and fully intact, and a toast names the storage problem; (2) only then is the pack unregistered and every key of its slot wiped - enumerated from routeKeys (ROUTE_FIELDS + snap + mig + its preload record), never hand-listed, so a future field joins the sweep by construction; (3) if it was the active route, the app returns to the boot picker; (4) the list re-renders without it.
+  const ix = ROUTE_PACKS.findIndex(p => p.id === id); if (ix < 0 || SHIPPED_PACK_IDS.has(id)) return;
+  const rec = readUserPacks(); // strict: a record that cannot be read is never rewritten blind - rescuing one deletion must never cost every created route
+  if (!rec || !rec[id]) { toast('Storage problem — the route could not be deleted', 4000); return; }
+  delete rec[id];
+  if (!lsSet(USERPACKS_KEY, JSON.stringify(rec))) { toast('Storage problem — the route could not be deleted', 4000); return; }
+  const back = readUserPacks(); if (!back || back[id]) { toast('Storage problem — the route could not be deleted', 4000); return; } // the storage-outcome contract: the write is verified before any data is wiped - a route whose definition survived keeps its data and its row
+  const wasActive = !!(activeRoute && activeRoute.id === id && routeLoaded);
+  ROUTE_PACKS.splice(ix, 1);
+  const rk = routeKeys(id); for (const k of Object.values(rk)) lsDel(k);
+  // Reference sweep (1.124): nothing else keys on a route id - the IndexedDB city cache is keyed by CITY (a deleted route's city stays cached for the next route there), LS_GLOBAL.lastArea is a city name, and PACKMIG's fingerprint derives from preloadUrlList() over ROUTE_PACKS, so removing the pack honestly un-certifies the old union download (the tiles themselves stay cached; the Settings line simply offers the current set's download again).
+  if (wasActive) unloadRouteToBoot(); else renderRouteLists();
+  toast('Route deleted', 2600);
+}
+function askDeleteRoute(id) { // Beta 1.124: the Delete button on a created route's row (app2's routeRowEl) - the shared create confirm asks, with the deletion labels; the confirm's card is the theme-token surface in both day and night.
+  const pack = ROUTE_PACKS.find(p => p.id === id); if (!pack || SHIPPED_PACK_IDS.has(id)) return;
+  crConfirm('Delete ' + pack.name + '?', 'The route and everything saved for it on this phone — progress, notes, history — will be removed. This can’t be undone.', () => deleteRoute(id), { yes: 'Delete', no: 'Cancel', danger: true });
 }
 // ===== Beta 1.118: CREATE A ROUTE (Step 2 of the route programme; Andrew's approved mockups) =====
 // The HYBRID flow: Door 1 turns a photo of a route map into a draft (the
@@ -1618,29 +1649,37 @@ function crEnterPickFromCity() { // the city is chosen: land in the pick stage, 
   crCityPrepare();
   crRenderHint();
 }
-// ---- the create gate is a CHOOSER (Beta 1.123, Andrew's redesign) ----
-// The first screen of Create lists the library's cities as tappable
-// options - no typing required to proceed. The list IS packs/index.json
-// (the same catalogue the seam reads): a city appears the day its pack
-// is published, and the app carries no hardcoded city names. Below the
-// list sit the two doors: Search manually (the typed place search, for
-// anywhere without a pack) and From a photo. Both entries into Create -
-// the cold-start picker and the Routes menu - show the SAME routeMenu
-// and the SAME rmCreatePane, so this one surface is the gate for both.
+// ---- the create gate: TWO DOORS, then the list (Beta 1.124, Andrew's
+// redesign, approved from the rendered mockup 2026-11-06) ----
+// The first screen of Create is "Create new route" with two primary
+// doors: Select from list and Search manually (the photo door sits
+// quieter below a divider). Select from list opens its own pane listing
+// the library's cities as clean rows - no typing required to proceed.
+// The list IS packs/index.json (the same catalogue the seam reads): a
+// city appears the day its pack is published, and the app carries no
+// hardcoded city names. Both entries into Create - the cold-start
+// picker and the Routes menu - show the SAME routeMenu and the SAME
+// panes, so this one surface is the gate for both.
 function crRenderCityChoices() {
-  const boxEl = $('crCityChoices'); if (!boxEl) return;
+  const boxEl = $('crCityList'); if (!boxEl) return;
   boxEl.innerHTML = '';
   const loading = document.createElement('div'); loading.className = 'rmNote'; loading.textContent = 'Loading the city library…'; boxEl.appendChild(loading);
   crPackIndexLoad().then(entries => {
     if (!boxEl.isConnected) return;
     boxEl.innerHTML = '';
-    if (!entries || !entries.length) { const d = document.createElement('div'); d.className = 'rmNote'; d.textContent = 'The city library isn’t available right now — use Search manually below.'; boxEl.appendChild(d); return; } // honest unavailability, and the manual door below still works - the gate never dead-ends
+    if (!entries || !entries.length) { const d = document.createElement('div'); d.className = 'rmNote'; d.textContent = 'The city library isn’t available right now — go back and use Search manually.'; boxEl.appendChild(d); return; } // honest unavailability, and the manual door behind Back still works - the gate never dead-ends
     const last = (lsGet(LS_GLOBAL.lastArea) || '').toLowerCase();
     const sorted = entries.slice().sort((a, b) => (((b.name || '').toLowerCase() === last) ? 1 : 0) - (((a.name || '').toLowerCase() === last) ? 1 : 0)); // the last-used city rides first when the library holds it (a convenience, never a requirement - the full list is always there)
     for (const e of sorted) {
       if (!e || !e.name || !e.slug || !Array.isArray(e.bbox) || e.bbox.length !== 4) continue;
-      const b = document.createElement('button'); b.className = 'rmBtn';
-      b.textContent = e.name + (String(e.name).toLowerCase() === last ? ' · last used' : '');
+      const b = document.createElement('button'); b.className = 'routeRow';
+      const meta = document.createElement('span'); meta.className = 'routeMeta';
+      const nm = document.createElement('span'); nm.className = 'routeName'; nm.textContent = e.name;
+      const sub = document.createElement('span'); sub.className = 'routeArea';
+      sub.textContent = (typeof e.streets === 'number' && isFinite(e.streets) ? e.streets.toLocaleString('en-US') + ' streets · ' : '') + 'ready to load' + (String(e.name).toLowerCase() === last ? ' · last used' : '');
+      meta.append(nm, sub);
+      const chev = document.createElement('span'); chev.className = 'routeChev'; chev.textContent = '›';
+      b.append(meta, chev);
       b.addEventListener('click', () => crPackPickCity(e));
       boxEl.appendChild(b);
     }
@@ -1794,7 +1833,7 @@ function renderCrLists() {
   $('pvSaveBtn').disabled = !names.length;
 }
 let crConfirmCb = null;
-function crConfirm(title, msg, cb) { $('crModalTitle').textContent = title; $('crModalMsg').textContent = msg; crConfirmCb = cb; $('crModal').classList.remove('hidden'); }
+function crConfirm(title, msg, cb, labels) { $('crModalTitle').textContent = title; $('crModalMsg').textContent = msg; crConfirmCb = cb; $('crModalYes').textContent = (labels && labels.yes) || 'Discard'; $('crModalYes').classList.toggle('danger', !!(labels && labels.danger)); $('crModalNo').textContent = (labels && labels.no) || '✕'; $('crModal').classList.remove('hidden'); } // Beta 1.124: labels are optional - the create flow's discard keeps its exact defaults (Yes "Discard", No the bare ✕); route deletion passes {yes:'Delete', no:'Cancel', danger:true}. The card itself is the --card token surface in BOTH themes (the head.html rule) - the confirm never hardcodes a light background.
 $('crModalYes').addEventListener('click', () => { $('crModal').classList.add('hidden'); const cb = crConfirmCb; crConfirmCb = null; if (cb) cb(); });
 $('crModalNo').addEventListener('click', () => { $('crModal').classList.add('hidden'); crConfirmCb = null; });
 function parkBootChrome() { const sp = $('splash'); if (sp) sp.style.visibility = 'hidden'; $('routeMenu').classList.remove('show'); crBootParked = true; }
@@ -1839,7 +1878,7 @@ function exitCreate() {
   crSetBackdrop(false); // Beta 1.120: the loaded route's paint returns exactly as it was
   renderDraft(); // draft is null: the overlay clears, the active route was never touched
 }
-function openDoors() { if (!routeLoaded) { restoreBootChrome(); } else openRouteMenu(); showRmPane('rmCreatePane'); crRenderCityChoices(); }
+function openDoors() { if (!routeLoaded) { restoreBootChrome(); } else openRouteMenu(); showRmPane('rmCreatePane'); } // Beta 1.124: the doors pane needs no render on entry - the city list renders when ITS door is tapped
 function askDiscard(then) { if (draft && draftStreets().length) crConfirm('Throw away this draft?', 'The ' + draftStreets().length + ' streets you picked will be lost.', then); else then(); }
 function fitDraft() {
   if (!draft || !map) return;
@@ -1860,7 +1899,7 @@ $('pvStartOverBtn').addEventListener('click', () => askDiscard(() => { exitCreat
 
 // ---- Door 1: photo -> waiting state -> draft import ----
 $('crDoorPhoto').addEventListener('click', () => showRmPane('rmPhotoPane'));
-$('crPhotoBack').addEventListener('click', () => { showRmPane('rmCreatePane'); crRenderCityChoices(); });
+$('crPhotoBack').addEventListener('click', () => showRmPane('rmCreatePane')); // Beta 1.124: the photo pane backs to the doors pane it came from (1.123's chooser pane was that pane's old shape)
 $('crPhotoBtn').addEventListener('click', () => $('crPhotoFile').click());
 $('crPhotoFile').addEventListener('change', () => {
   const f = $('crPhotoFile').files && $('crPhotoFile').files[0]; $('crPhotoFile').value = '';
@@ -1898,6 +1937,8 @@ function importDraft(text) { // fail closed, named errors, nothing half-applied 
 }
 
 // ---- Door 2: city first (Andrew's amendment) -> prepare the area's street shapes once -> tap roads, resolved locally ----
+$('crDoorList').addEventListener('click', () => { showRmPane('rmCityListPane'); crRenderCityChoices(); }); // Beta 1.124: Select from list - the city rows render fresh on every entry to the list pane
+$('rmCityListBack').addEventListener('click', () => showRmPane('rmCreatePane')); // the list pane backs to the doors pane (the mockup's pane-to-pane Back chain)
 $('crDoorManual').addEventListener('click', () => { draft = newDraft(); crReturnToPreview = false; crOpenCityPane('doors'); });
 $('crCityInput').addEventListener('input', () => { if (crCityTimer) clearTimeout(crCityTimer); crCityTimer = setTimeout(() => { crCityTimer = null; crRunCitySearch(); }, 500); });
 $('crCityLast').addEventListener('click', async () => {
@@ -1920,7 +1961,7 @@ $('crCityLast').addEventListener('click', async () => {
 $('crCityBack').addEventListener('click', () => {
   crCityLookupSeq++; if (crCityLastCtl) { try { crCityLastCtl.abort(); } catch (e) {} crCityLastCtl = null; } // leaving the pane kills a held lookup (CG-PF-11)
   if (crCityReturn === 'preview' || crCityReturn === 'pick') { if (!routeLoaded) parkBootChrome(); else closeRouteMenu(); setCreateStage(crCityReturn); }
-  else { showRmPane('rmCreatePane'); crRenderCityChoices(); }
+  else { showRmPane('rmCreatePane'); }
 });
 $('crCityChange').addEventListener('click', () => crOpenCityPane('pick'));
 $('crHintBtn').addEventListener('click', () => {

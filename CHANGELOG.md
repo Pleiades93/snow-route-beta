@@ -1,5 +1,45 @@
 # Changelog
 
+## Beta 1.124 — 2026-11-06
+Two changes from Andrew's same-day calls, both approved from a
+rendered mockup before build. ROUTES HE CREATED CAN NOW BE DELETED:
+each created route's row in Choose a route carries a red-tinted
+Delete button (the shipped Route 5W gets none and is refused in
+code); the shared confirm pop-up asks with Cancel / Delete, and on
+confirm the route's definition is removed from the userpacks record
+through a strict read + verified write (a storage failure leaves
+the route listed and intact, with a toast naming the problem), then
+every key of the route's storage slot is wiped — enumerated from
+routeKeys, never hand-listed — and if the deleted route was the one
+loaded, the app returns to the boot picker exactly as a cold boot
+looks before any pick. THE CREATE GATE OPENS ON TWO DOORS: Create's
+first screen is now "Create new route" — Select from list (sub:
+"Choose a city that's ready to load instantly") opens its own pane
+listing the library cities as rows with their street counts
+("4,477 streets · ready to load"), Search manually (sub: "Any other
+city or address — loaded from the map service") opens the typed
+search as before, and From a photo sits quieter below a divider.
+Back links walk pane to pane; both entries (cold start, Routes
+menu) share the one surface. After picking a city from the list,
+the creation screen still shows the street search bar with its
+autocomplete — the pick stage is the same funnel for both paths,
+and drive154 proves the search end to end on the list path.
+NIGHT TOKENS (Andrew's added requirement): the delete confirm is
+the app's existing modal, whose card is the --card token surface —
+light in day, dark (#202125 family via body.night) at night — and a
+drive assertion pins the confirm's computed background and text
+colour to the tokens in BOTH modes. The one modal change is
+z-index: it rises above the full-screen menus (10000) so the
+confirm can be asked from inside the route list (the toast is the
+precedent). Tests: drive153's gate navigation rewired to the new
+panes (premise change from Andrew's approved redesign; all pack /
+cache / fallback / manual-search assertions kept); new drive154
+(doors + subs + quiet photo row, list rows with street counts,
+street search after a list pick, both-entries cohesion, delete
+Cancel / Delete / active-route / storage-failure, confirm tokens
+in both themes). Battery: 45 drives / 736 checks + e2e-offline 31
++ sw.test 27 + Node selftests; registry 383 → 395 probes.
+
 ## Beta 1.123 — 2026-11-06
 Creating a route is rebuilt around two of Andrew's calls from the road.
 THE GATE IS A CHOOSER NOW: 1.121's first create screen asked him to
