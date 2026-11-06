@@ -655,7 +655,7 @@ function routeRowEl(p) { // Beta 1.94 (audit F-04): rows are built as DOM nodes 
 }
 function renderRouteLists() { document.querySelectorAll('.routeList').forEach(el => { el.replaceChildren(...ROUTE_PACKS.map(routeRowEl)); }); }
 function wireRouteRows(container, choose) { container.addEventListener('click', e => { const row = e.target.closest('.routeRow'); if (row) choose(row.dataset.route); }); }
-function showRmPane(id) { ['rmMain', 'rmListPane', 'rmCreatePane', 'rmPhotoPane', 'rmNamePane'].forEach(p => $(p).classList.toggle('on', p === id)); }
+function showRmPane(id) { ['rmMain', 'rmListPane', 'rmCreatePane', 'rmPhotoPane', 'rmNamePane', 'rmCityPane'].forEach(p => $(p).classList.toggle('on', p === id)); }
 function openRouteMenu() { const rm = $('routeMenu'); closeSheets(); showRmPane('rmMain'); rm.classList.add('tab'); renderRouteLists(); rm.classList.add('open'); }
 function closeRouteMenu() { const rm = $('routeMenu'); rm.classList.remove('open'); rm.classList.remove('tab'); }
 $('routesBtn').addEventListener('click', () => { if (!tapGuard('routesBtn')) return; if ($('routeMenu').classList.contains('open')) closeRouteMenu(); else openRouteMenu(); });

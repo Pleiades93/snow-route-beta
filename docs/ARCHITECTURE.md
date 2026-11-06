@@ -134,29 +134,113 @@ returns as a pack-format JSON file that "Import my draft" validates and
 loads into the preview. A bare roads object (the route-creation
 sandbox's candidate shape) is accepted as a roads-only draft.
 
-**Door 2 — select streets myself.** A search bar queries Nominatim
-(street/address search only — intersections are known not to resolve).
-Beta 1.120: the search suggests as he types (Andrew's on-device ask,
-superseding the 1.118 button-only design) — a 500 ms debounce makes a
-keystroke burst one query (3+ characters), a sequence token plus an
-AbortController keep a slow earlier answer from overwriting newer
-results, results are biased to the visible map (viewbox, bounded=0),
-and the Search button / Enter still run the typed query at once.
-Tapping anywhere outside the results dropdown dismisses it, and the ✕
-beside the search clears the text and results before it exits. A
-result flies the map there. Tapping a road identifies the street from
-the basemap's roads layer — the tile feature's NAME is the identity,
-never its geometry (display tiles re-segment streets and misplace
-joins, proven in the sandbox). The street's true shape is then fetched
-from the Overpass API (every way carrying the name near the tap) and
-stitched by `chainWays` — the sandbox's greedy endpoint chaining at
-1.5 m tolerance; a run whose joins were all exact keeps its ways as
-segments (the app's own stitcher re-chains them identically), a run with
-a bridged join is stored as its single stitched line, a divided road
-chains into its hairpin, and the run nearest the tap is the street
-tapped. Names are shortened by the app convention (suffix strip;
-ordinal avenues spell out — 5th Avenue is Fifth). Picked streets join
-as SECONDARIES by default, light up on the map in route colours, and
+**Door 2 — select streets myself (Beta 1.121: city first, then the
+whole city prepared).** Manual creation STARTS with a city step —
+"What city will you be cleaning in?" (Andrew's amendment at the
+round-pickfetch gate). A debounced Nominatim query
+(`featuretype=city`) offers populated places only (a place of type
+city/town/village/hamlet/suburb, or an administrative boundary); the
+last-used city is remembered (`snowroute.v2.lastArea`) and offered
+as a one-tap choice. Picking a city scopes the creation (name +
+centre + the result's bounding box), flies the map to it, biases
+the street search to the city's box (viewbox, bounded=0 — a bias,
+never a restriction), and STARTS the city's preparation (below). A
+draft that already names its city (the photo door) pre-answers the
+step; the city stays changeable from the pick sheet without losing
+the draft. The street search is otherwise the 1.120 form: Nominatim
+(street/address search only — intersections are known not to
+resolve), suggestions as he types (500 ms debounce, 3+ characters,
+sequence token + AbortController against stale answers), Search /
+Enter run the typed query at once, tapping away dismisses the
+dropdown, and the ✕ clears text and results before it exits.
+
+Street shapes are NOT fetched per tap. A picked city's shapes are
+prepared as a **whole-city grid extract** (Andrew's second gate
+amendment, at the verify gate: he rejected the working-box-only
+preparation — picking a city loads the WHOLE city): the city's
+bounding box (a ~16 × 16 km box on the centre when the lookup gave
+none) is divided into ~4 × 4 km cells — Vaughan is roughly two
+dozen — and each cell is one batch request (`way["name"]["highway"]`
+over the cell) through the extract source seam (below), at most 3
+in flight. Each cell's answer commits to the merged extract the
+moment it lands (progress is real: the hint reads "Loading
+<City> — part N of M · T s"); a failed cell retries once inside the
+run, then is marked failed while the rest continue — the state
+settles as ready, degraded ("loaded except K parts", with a
+Retry-missing-parts action that fetches ONLY the missing cells),
+or failed. Cancel stops scheduling and aborts the downloads in
+flight but KEEPS every committed cell, and re-entering the city
+resumes only the missing cells. Committed cells are also written
+through to the **on-device city cache** (IndexedDB — see
+STORAGE-SCHEMA.md), so picking a city with a saved extract is
+instant and download-free, the hint says when it was loaded, and a
+Refresh affordance re-fetches the whole city. A first load is
+honest about its cost ("can take a few minutes — after that it's
+instant"); the constraint was never download size (~14 MB a city)
+but the service's compute time per query, which the grid bounds.
+
+Every extract — a grid cell, the fallback box, a street top-up —
+comes through ONE source seam, **`crSourceExtract(box, name, …)`**:
+given a coverage box (and optionally one street name) it returns
+the extract for that box. Today the source behind the seam is the
+live Overpass service: the query is built by the single builder
+`crQL` and fetched by `crOverpassFetch` under ONE deadline per
+request spanning connect + body + parse, with per-attempt budgets
+inside it (the primary instance gets the larger share; the
+fallback keeps the reserve), the body consumed as a stream with a
+2 MB cap enforced while streaming, an HTTP-200 Overpass `remark`
+treated as a failed extract, and the clock re-checked after the
+synchronous parse before anything commits. Beta 1.122's
+pre-generated city packs are designed to plug in BEHIND this seam —
+a static source answering the same call shape — without touching
+the grid, the fallback, the top-up, or anything downstream.
+
+Outside a picked/saved city — an anchor beyond the city's coverage,
+or a name-only city whose lookup failed — the **fallback
+preparation** still exists: one bounded box (~4 × 4 km picking box
+plus a 1 km buffer ring) around an anchor — (a) a picked
+street-search result outside the city, or (b) the map centre via a
+one-tap "Prepare this area" at zoom ≥ 14 — never a silent download
+while panning, session-only (never cached). Either way, the ways
+land in the SAME merged extract: indexed by name, deduped by way
+id (a way returned by two cells is stored once, so a street
+crossing a cell border stitches whole), with the SET of verified
+boxes (landed cells + fallback boxes) as the coverage record.
+
+Tapping a road identifies the street from the basemap's roads layer
+— the tile feature's NAME is the identity, never its geometry
+(display tiles re-segment streets and misplace joins, proven in the
+sandbox) — and the tap then resolves LOCALLY from the extract:
+`chainWays` stitches the name's ways (the sandbox's greedy endpoint
+chaining at 1.5 m tolerance; a run whose joins were all exact keeps
+its ways as segments, a bridged join is stored as its single
+stitched line, a divided road chains into its hairpin) and the run
+nearest the tap is the street tapped — subject to a fail-closed
+completeness check: a run end is CLOSED only when it lies inside
+verified coverage — the extract's box SET (any continuation starts
+there, inside a query that was actually answered, and would have
+been returned). An end outside verified coverage is unproven —
+however many other streets touch it (the verify round's
+adversarial case: a cross street touching the endpoint says
+nothing about a same-name continuation running wholly outside the
+box; an earlier "junction proof" form was removed as unsound,
+CG-PF-08) — so the street gets ONE targeted top-up (through the
+same source seam, its own budgets on the same measured profile —
+60 s primary of 90 s, CG-PF-07 — the name over a bounded box
+centred on the run's open end, merged by way id, resolved again
+against that box); still beyond coverage, it stays PENDING —
+listed as pending in the pick sheet, never added, never counted —
+with a wider-preparation offer that prepares around the street's
+own open end (a fresh preparation also sweeps pending streets —
+a pending street completes when the union of verified boxes
+closes its run). Before the extract is ready a tap still
+identifies the street and says preparation is pending (a tap in a
+part of the city that has already landed resolves even while the
+rest still loads); a name absent from the extract gets an honest
+"no shape found" (or, outside coverage, a re-prepare offer). Names are
+shortened by the app convention (suffix strip; ordinal avenues
+spell out — 5th Avenue is Fifth). Picked streets join as
+SECONDARIES by default, light up on the map in route colours, and
 are listed with MAIN/2ND flip chips and per-street remove.
 
 **Shared preview + name-it.** "Is this correct?" draws the draft on the
@@ -174,21 +258,48 @@ discards behind a confirm. drive150 proves the active route's slot
 byte-identical across create-save-switch-mark and create-discard
 cycles.
 
-**Pick resilience (Beta 1.120).** The public Overpass instance at
-overpass-api.de commonly answers slowly or 429/504; a shape fetch now
-tries it, pauses, tries again, then asks the fallback instance
-(overpass.kumi.systems — both hosts are named in the stamped CSP's
-connect-src). The pick's busy flag resets on EVERY exit path (a
-`finally`): 1.119's early return on a failed fetch latched the picker
-shut for the whole session. The hint line carries "Loading <street>…"
-for the whole wait, and the failure word is honest — the service not
-answering and the service holding no line for the name are different
-messages. While creating, the create surfaces wear the app's theme
-tokens (they stayed hardcoded-white at night in 1.118/1.119), and the
-loaded route's engine paint hides behind a per-pack point-of-interest
-backdrop (`crSetBackdrop`: every pack's centre + name, the zoomed-out
-POI treatment) so the map he picks from is uncluttered; exiting
-restores the recorded layer visibilities exactly.
+**Pick resilience (Beta 1.121; supersedes the 1.120 per-tap form).**
+Why the rewrite: on Andrew's phone, tapping a street in 1.118–1.120
+said "Loading…" for over a minute and then failed — every street,
+every time. Audit round pickfetch found the root cause in the app's
+own bytes: the shape query was malformed (`way["name="X"]` — the
+equals sign inside the quoted key), so Overpass rejected every tap
+from the day the flow shipped; the 1.120 patience work treated a
+symptom, and 1.120's drive passed its network sections with zero
+geometry ever received. Around it: 40 s per-attempt timeouts
+excluded the measured 40.6/52.7 s successes (~123 s total burn), and
+the attempt timer was cleared at headers, before the body was read.
+The 1.121 shape (above) removes the per-tap fetch entirely. What
+carries over from 1.120: both Overpass hosts stay named in the
+stamped CSP's connect-src (overpass-api.de + overpass.kumi.systems,
+now the two attempts inside the one deadline); the pick's busy flag
+still resets on EVERY exit path (a `finally`) for the one async pick
+path that remains (the top-up); and every async completion —
+preparation, top-up, searches, the remembered-city lookup — binds
+to (creation session, coverage generation), so a completion that
+lands after an exit or a newer preparation mutates nothing.
+Cancellation is real, not just discarding: Cancel, exit and
+supersede abort the in-flight fetch itself (CG-PF-10), and a
+competing city pick aborts a held remembered-city lookup
+(CG-PF-11). Preparation remedies are working actions, not wording
+(CG-PF-09): a tap outside ready coverage, a pending street and a
+too-dense failure each leave a hint button that prepares exactly
+where it points (the tap point, the street's open end, the map's
+current centre). The failure taxonomy is explicit
+in code and UI: unreachable / answered-with-error (HTTP status or
+remark) / ready-but-no-shape / too-dense are distinct states with
+distinct messages; toasts are for brief acknowledgments, persistent
+states live in the hint. While creating, the create surfaces wear
+the app's theme tokens (they stayed hardcoded-white at night in
+1.118/1.119), and the loaded route's engine paint hides behind a
+per-pack point-of-interest backdrop (`crSetBackdrop`: every pack's
+centre + name, the zoomed-out POI treatment) so the map he picks
+from is uncluttered; exiting restores the recorded layer
+visibilities exactly. drive150's network sections were rebuilt with
+the fix (section (j) grades the real POST bodies, replays the
+measured latency, splits headers/body, runs the failure matrix,
+proves offline-after-extract adds, and races the generations) after
+being demonstrated red on the 1.120 tree.
 
 **Persistence.** Created packs persist on-device in the global
 `snowroute.v2.userpacks` record (see STORAGE-SCHEMA) and merge into the

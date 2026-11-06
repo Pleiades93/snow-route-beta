@@ -609,7 +609,7 @@ $('stDel').addEventListener('click', async () => {
 });
 // ---- About / What's new ----
 const WHATSNEW = { // the curated in-app notes: plain words, LATEST RELEASE ONLY (Beta 1.114, Andrew: the accumulated list cluttered the About pane). A release REPLACES this entry with its own in the same change - it never accumulates; the full history lives in CHANGELOG.md, not the app
-  v: 'Beta 1.120', items: ["Creating a route: tapping a street now loads more patiently — if the street-shape service is slow, the app keeps showing \"Loading\", retries, tries a second service, and tells you honestly if it can't answer, instead of getting stuck", "Search now suggests streets as you type", "The create screens follow day and night, the search bar sits a little lower, tapping away closes the search results, and while you create, the map shows just a place marker for each route instead of the loaded route's streets"]
+  v: 'Beta 1.121', items: ["Creating a route now starts by asking what city you'll be cleaning in — the app loads the whole city's street shapes once and saves them on your phone, so after that first load, tapping streets adds them right away, every time", "Fixed street picking for good: the app's street-shape request was itself written wrong, so tapping a street could never load its shape — that is fixed, and the wait now shows real progress, with a Cancel"]
 };
 function renderAbout() {
   const cur = $('ver').textContent.trim();
@@ -1034,6 +1034,523 @@ let creating = false, crStage = 'pick', crReturnToPreview = false, crBootParked 
 let draft = null; // { roads, mains: Set, osmNames: {short: full}, tileNames: [..], name, area }
 function newDraft() { return { roads: {}, mains: new Set(), osmNames: {}, tileNames: [], name: '', area: '' }; }
 function draftStreets() { return draft ? Object.keys(draft.roads) : []; }
+
+// ---- city-first preparation (Beta 1.121, audit round pickfetch) ----
+// Andrew's amendment at the gate: manual creation STARTS by asking what
+// city he will be cleaning in. He picks the city FIRST, and every tap
+// then resolves LOCALLY from a prepared extract - no per-tap network
+// (CG-PF-04). 1.118-1.120 fetched each street live at tap time, and the
+// fetch itself was broken three ways: the query was malformed (CG-PF-01:
+// the name filter carried its equals sign INSIDE the quoted key and lost
+// the value's opening quote - so NO tap could ever succeed), the 40 s
+// per-attempt timeouts excluded the measured 40.6/52.7 s successes and
+// burned ~123 s across retries (CG-PF-02), and the attempt timer was
+// cleared when the headers landed, before the body was read (CG-PF-03).
+// SECOND AMENDMENT (Andrew, at the verify gate): he rejected the
+// working-box-only preparation - picking a city loads the WHOLE CITY.
+// The extract for a picked city is therefore a GRID of ~4 x 4 km cells
+// over the city's bounding box, fetched with bounded parallelism,
+// committed cell by cell, and PERSISTED on-device (IndexedDB, see the
+// city cache below + docs/STORAGE-SCHEMA.md), so a city loads once and
+// is instant forever after. The original bounded box survives as the
+// FALLBACK preparation for places with no picked/saved city (an anchor
+// outside the city, a name-only city), session-only. Download size was
+// never the constraint (a whole city is ~14 MB); the service's compute
+// time per query is - which is exactly what the grid bounds.
+// Every async completion below binds to (creation session, coverage
+// generation): exitCreate and every new preparation invalidate older
+// generations, and an obsolete completion mutates nothing (CG-PF-05).
+const CR_TIMING = { budgetMs: 120000, attempt1Ms: 70000, topupBudgetMs: 90000, topupAttempt1Ms: 60000, capBytes: 2 * 1024 * 1024, cityCapBytes: 60 * 1024 * 1024 }; // ONE overall deadline per fetch with the attempt budgets defined INSIDE it - the primary may take at most attempt1Ms, so the fallback always keeps a meaningful reserve. Verify round (CG-PF-07): the TOP-UP budgets obey the same measured profile as the batch - the primary's measured successes were 40.6/52.7 s, so a 40 s top-up cap reproduced the PF-02 failure on the exception path; the top-up primary now gets 60 s of its 90 s. An object (not bare consts) as the honest test seam: the battery shrinks budgets and caps instead of waiting out real minutes.
+const CR_INNER_KM = 2, CR_BUFFER_KM = 1, CR_TOPUP_RING_KM = 2; // the FALLBACK preparation footprint: a fixed ~4 x 4 km picking box plus a 1 km buffer ring (Codex, debate 1: a fixed geographic footprint, never viewport-derived - the map can be panned anywhere)
+const CR_CELL_KM = 4, CR_GRID_PARALLEL = 3, CR_CELL_TRIES = 2; // the city grid: ~4 x 4 km cells, at most 3 fetches in flight, each cell retried once inside a preparation before it is marked failed
+let crSession = 0; // bumped on every enterCreate and exitCreate
+let crCity = null; // { name, lat, lon, bbox } - the city this creation is scoped to (lat/lon/bbox null when only the name is known)
+let crCov = null; // { gen, byName, byId, boxes: [verified boxes], fetchedAt } - the merged extract taps resolve from: city cells + fallback boxes, one index (ids dedupe across cells - a way returned by two cells is stored once)
+let crWanted = null; // { anchor, label } - an explicit preparation offer the hint's button currently acts on (set when a tap lands outside coverage or a street pends; cleared when a preparation starts)
+let crTopOp = null; // the in-flight top-up's cancellation handle (crOverpassFetch's op), so exitCreate can stop its download too
+let crCovGen = 0; // the coverage generation
+let crPrep = null; // { gen, session, anchor, startedAt, ticker, op } while a FALLBACK box preparation is in flight
+let crGrid = null; // { name, bbox, cells: [{ key, box, state, tries }], gen, session, startedAt, ticker, ops: Set, active, fromCache, savedAt, stopped, lastFail } while a CITY grid preparation exists (kept after it settles, for progress/resume/refresh state)
+let crPrepState = 'none'; // 'none' | 'preparing' | 'ready' | 'degraded' | 'failed'  ('degraded': a city grid settled with parts missing - what loaded is usable, the rest is resumable)
+let crPrepFail = null; // { kind: 'unreachable' | 'error' | 'dense' | 'badjson', status?, remark? }
+let crFailFromGrid = false; // which preparation produced crPrepFail - the Retry button resumes a failed GRID's missing cells but re-runs a failed fallback BOX at its anchor; the two must never be confused when both exist
+let crPrepAnchor = null; // where Retry / a not-ready tap re-prepares
+let crPending = {}; // short name -> { osmName, lngLat }: streets whose full shape reaches beyond verified coverage (fail-closed) - listed as pending, NEVER added half-known
+let crToppedUp = {}; // '<short>@<gen>' -> true: a street's ONE top-up per coverage generation is spent
+let crCityReturn = 'doors'; // where the city pane's Back lands
+function crBoxAround(lat, lng, halfKm) { const dLat = halfKm * 1000 / MLAT, dLng = halfKm * 1000 / MLNG; return { s: +(lat - dLat).toFixed(6), n: +(lat + dLat).toFixed(6), w: +(lng - dLng).toFixed(6), e: +(lng + dLng).toFixed(6) }; }
+function crInBox(box, lat, lng) { return !!box && lat >= box.s && lat <= box.n && lng >= box.w && lng <= box.e; }
+function crInAnyBox(boxes, lat, lng) { for (const b of boxes || []) { if (crInBox(b, lat, lng)) return true; } return false; } // verified coverage is a SET of boxes (city cells + fallback boxes) - an endpoint is verified when it lies inside ANY of them
+function crExpandBox(box, km) { const dLat = km * 1000 / MLAT, dLng = km * 1000 / MLNG; return { s: +(box.s - dLat).toFixed(6), n: +(box.n + dLat).toFixed(6), w: +(box.w - dLng).toFixed(6), e: +(box.e + dLng).toFixed(6) }; }
+function crQL(filter, box, timeoutS) { return '[out:json][timeout:' + timeoutS + '];way[' + filter + '](' + box.s + ',' + box.w + ',' + box.n + ',' + box.e + ');out geom;'; } // THE one query builder - batch and top-up share its grammar (single source; the battery decodes the real POST bodies and grades THIS output). The name filter is "name"="..." - quote, name, quote, equals, quote. 1.118-1.120 hand-built the malformed form (equals inside the key quotes) inside fetchStreetGeometry and every tap failed on it (CG-PF-01).
+function crAreaQL(box, timeoutS) { return crQL('"name"]["highway"', box, timeoutS); }
+function crNameQL(osmName, box, timeoutS) { return crQL('"name"="' + osmName.replace(/(["\\])/g, '\\$1') + '"', box, timeoutS); }
+function crAbortOp(op) { try { if (op && op.ctl) op.ctl.abort(); } catch (e) {} } // stop an in-flight fetch's download, not just its right to land (CG-PF-10: Cancel/exit/supersede abort the request itself)
+async function crOverpassFetch(ql, budgetMs, attempt1Ms, sessionOk, op) {
+  // One query against the public Overpass instances (OVERPASS_URLS) under
+  // ONE overall deadline spanning connect + body + parse (CG-PF-02/03):
+  // attempt 1 gets at most attempt1Ms of the budget, the fallback keeps
+  // the rest; the body is consumed as a stream with the size cap enforced
+  // WHILE it arrives (a post-parse length check bounds nothing); the
+  // clock is re-checked after the synchronous parse - which no abort can
+  // interrupt - before the answer is allowed to commit. Honest outcomes:
+  // { ok: true, json, ms } or { ok: false, kind } with kind 'unreachable'
+  // (no instance answered in budget - a throw, or our own deadline
+  // abort), 'error' (HTTP status, or an Overpass remark riding an
+  // HTTP 200), 'dense' (over the byte cap), 'badjson' (unreadable
+  // answer), 'stale' (the caller's session/generation moved on).
+  const t0 = Date.now(), deadline = t0 + budgetMs;
+  let lastFail = { ok: false, kind: 'unreachable' };
+  for (let i = 0; i < OVERPASS_URLS.length; i++) {
+    if (sessionOk && !sessionOk()) return { ok: false, kind: 'stale' };
+    const remain = deadline - Date.now(); if (remain <= 0) break;
+    const cap = i === 0 ? Math.min(attempt1Ms, remain) : remain;
+    const ctl = (typeof AbortController !== 'undefined') ? new AbortController() : null;
+    if (op) op.ctl = ctl; // the caller can stop THIS download (Cancel / exit / supersede - CG-PF-10)
+    const to = ctl ? setTimeout(() => { try { ctl.abort(); } catch (e) {} }, cap) : null;
+    try {
+      const r = await fetch(OVERPASS_URLS[i], { method: 'POST', headers: { 'Content-Type': 'application/x-www-form-urlencoded' }, body: 'data=' + encodeURIComponent(ql), signal: ctl ? ctl.signal : undefined });
+      if (!r.ok) { lastFail = { ok: false, kind: 'error', status: r.status }; if (to) clearTimeout(to); continue; }
+      let text;
+      if (r.body && typeof r.body.getReader === 'function') {
+        const reader = r.body.getReader(), chunks = []; let total = 0;
+        for (;;) {
+          const part = await reader.read();
+          if (part.done) break;
+          total += part.value.byteLength;
+          if (total > CR_TIMING.capBytes) { try { if (ctl) ctl.abort(); } catch (e) {} if (to) clearTimeout(to); return { ok: false, kind: 'dense' }; }
+          chunks.push(part.value);
+          if (sessionOk && !sessionOk()) { if (to) clearTimeout(to); try { await reader.cancel(); } catch (e) {} crAbortOp(op); return { ok: false, kind: 'stale' }; } // superseded mid-stream: stop the download, don't just discard its result (CG-PF-10)
+        }
+        const buf = new Uint8Array(total); let off = 0; for (const c of chunks) { buf.set(c, off); off += c.byteLength; }
+        text = new TextDecoder().decode(buf);
+      } else { text = await r.text(); if (text.length > CR_TIMING.capBytes) { if (to) clearTimeout(to); return { ok: false, kind: 'dense' }; } }
+      if (to) clearTimeout(to);
+      let json = null;
+      try { json = JSON.parse(text); } catch (e) { lastFail = { ok: false, kind: 'badjson' }; continue; }
+      if (Date.now() > deadline) { lastFail = { ok: false, kind: 'unreachable' }; continue; } // the parse itself ate the deadline (CG-PF-03): a late success is not committed
+      if (json && json.remark) return { ok: false, kind: 'error', remark: String(json.remark).slice(0, 120) }; // an Overpass error remark fails the extract even on HTTP 200 with elements attached (Codex) - partial output is never promoted to ready
+      if (!json || !Array.isArray(json.elements)) { lastFail = { ok: false, kind: 'badjson' }; continue; }
+      return { ok: true, json, ms: Date.now() - t0 };
+    } catch (e) {
+      if (to) clearTimeout(to);
+      if (sessionOk && !sessionOk()) return { ok: false, kind: 'stale' };
+      lastFail = { ok: false, kind: 'unreachable' };
+    }
+  }
+  return lastFail;
+}
+async function crSourceExtract(box, name, budgetMs, attempt1Ms, sessionOk, op) {
+  // THE EXTRACT SOURCE SEAM (parent architecture note, 2026-11-06): every
+  // street-shape extract this app obtains - a city grid cell, the fallback
+  // box, a street top-up - comes through this ONE function: given a
+  // coverage box (and optionally one street name), it returns the extract
+  // for that box. Today the source behind the seam is the live Overpass
+  // service (the query built by the single builder crQL, fetched by
+  // crOverpassFetch under its honesty rules). Beta 1.122's pre-generated
+  // city packs plug in BEHIND this seam - a static source answers the
+  // same call shape - without touching the grid, the fallback, the
+  // top-up, or anything downstream of them.
+  const ql = name ? crNameQL(name, box, Math.ceil(budgetMs / 1000)) : crAreaQL(box, Math.ceil(budgetMs / 1000));
+  return crOverpassFetch(ql, budgetMs, attempt1Ms, sessionOk, op);
+}
+function crIndexWays(elements, byId) { // Overpass elements -> byId { id: { name, pts } }, with the point cleaning the per-tap fetch used (1e7 rounding, sub-0.1 m duplicates dropped)
+  for (const el of elements || []) {
+    if (!el || el.type !== 'way' || el.id == null || !el.tags || typeof el.tags.name !== 'string' || !el.tags.name) continue;
+    if (!Array.isArray(el.geometry) || el.geometry.length < 2) continue;
+    const pts = [];
+    for (const g of el.geometry) { const p = [Math.round(g.lat * 1e7) / 1e7, Math.round(g.lon * 1e7) / 1e7]; if (!pts.length || distM(pts[pts.length - 1], p) > 0.1) pts.push(p); }
+    if (pts.length > 1) byId[el.id] = { name: el.tags.name, pts };
+  }
+  return byId;
+}
+function crCovFromWays(byId, boxes) { // the coverage record: the extract's ways indexed by street name (ids kept in byId - grid cells and top-ups merge into the SAME index, deduped by way id), plus the SET of verified boxes completeness is judged against
+  const byName = {};
+  for (const id of Object.keys(byId)) {
+    const w = byId[id];
+    (byName[w.name] = byName[w.name] || []).push(w);
+  }
+  return { gen: crCovGen, byName, byId, boxes: (boxes || []).slice(), fetchedAt: Date.now() };
+}
+function crCovEnsure() { if (!crCov) crCov = crCovFromWays({}, []); return crCov; }
+function crCovMerge(elements, box) { // fold one answered extract (a grid cell, the fallback box, a top-up) into the merged coverage: ways dedupe by id, the answered box joins the verified set
+  const cov = crCovEnsure();
+  crIndexWays(elements, cov.byId);
+  const fresh = crCovFromWays(cov.byId, cov.boxes);
+  cov.byName = fresh.byName;
+  if (box && !cov.boxes.some(b => b.s === box.s && b.w === box.w && b.n === box.n && b.e === box.e)) cov.boxes.push(box);
+  cov.fetchedAt = Date.now();
+  return cov;
+}
+function crResolve(osmName, lngLat, boundary) { // resolve a tapped street from the extract: the sandbox stitch + the run nearest the tap (the 1.118 rule), plus the fail-closed completeness check (Codex (c)): a run end is CLOSED only when it lies INSIDE verified coverage - any same-name continuation starts at that end, inside a query that was actually answered, and the source returns every way touching that box, so it would have been returned. Verified coverage is the extract's box SET (city cells + fallback boxes); an explicit boundary (a top-up's own box) replaces the set for that one resolution. Verify round (CG-PF-08): an earlier form also accepted an end touched by ANY other returned way ('junction proof') - unsound, and removed: a cross street touching the endpoint says nothing about a same-name continuation that starts there and runs wholly outside the box, which the extract never saw (Codex's adversarial fixture: Main Road certified complete by an unrelated Cross Road). Outside verified coverage the run is unproven, however many other streets touch it.
+  const cov = crCov; if (!cov) return { status: 'nocov' };
+  const ways = cov.byName[osmName];
+  if (!ways || !ways.length) return { status: 'absent' };
+  const runs = chainWays(ways.map(w => w.pts));
+  let best = null, bestD = Infinity;
+  for (const run of runs) for (const p of run.line) { const d = distM(p, [lngLat.lat, lngLat.lng]); if (d < bestD) { bestD = d; best = run; } }
+  if (!best) return { status: 'absent' };
+  for (const end of [best.line[0], best.line[best.line.length - 1]]) {
+    const closed = boundary ? crInBox(boundary, end[0], end[1]) : crInAnyBox(cov.boxes, end[0], end[1]);
+    if (!closed) return { status: 'edge', run: best };
+  }
+  return { status: 'ok', segs: best.exact ? best.segments.slice().sort((a, b) => crLineLen(b) - crLineLen(a)) : [best.line] };
+}
+function crPrepCurrent(gen, session) { return creating && crSession === session && crCovGen === gen && crPrepState === 'preparing'; }
+function crStartPrep(anchor) { // the FALLBACK preparation (second amendment, item D): one bounded box around an anchor, session-only - for places with no picked/saved city, and for anchors outside the city's coverage. The whole-city path is crCityPrepare below.
+  if (!creating || !anchor || !isFinite(anchor.lat) || !isFinite(anchor.lng)) return;
+  if (crCov && crInAnyBox(crCov.boxes, anchor.lat, anchor.lng) && crPrepState !== 'preparing') { crRenderHint(); return; } // verified coverage already includes this anchor - reuse it, no second download (CG-PF-04)
+  if (crPrep && crPrepState === 'preparing' && crInBox(crBoxAround(crPrep.anchor.lat, crPrep.anchor.lng, CR_INNER_KM), anchor.lat, anchor.lng)) return; // the same preparation is already in flight - dedupe
+  if (crPrep) crAbortOp(crPrep.op); // a superseding preparation stops the old download outright (CG-PF-10)
+  if (crGrid) crGridStop('superseded'); // CG-PF-13: a fallback starting over a live grid must STOP the grid first - the generation bump below would otherwise orphan its in-flight cells in 'fetching' (their answers settle into the dead generation, their handlers discard them, and Resume - which only resets 'failed' cells - could never reschedule them, wedging the city mid-load forever). crGridStop aborts the grid's downloads and returns those cells to 'pending', so the city stays resumable; on a settled grid it changes nothing but the stopped marker, which crGridSettledState already reads correctly
+  const session = crSession, gen = ++crCovGen;
+  const outer = crBoxAround(anchor.lat, anchor.lng, CR_INNER_KM + CR_BUFFER_KM);
+  crPrepState = 'preparing'; crPrepFail = null; crFailFromGrid = false; crPrepAnchor = anchor; crWanted = null; // starting a preparation IS the answer to any outstanding offer
+  const prep = crPrep = { gen, session, anchor, startedAt: Date.now(), ticker: null, op: {} };
+  crRenderHint();
+  prep.ticker = setInterval(() => { if (crPrepCurrent(gen, session)) crRenderHint(); else clearInterval(prep.ticker); }, 1000);
+  crSourceExtract(outer, null, CR_TIMING.budgetMs, CR_TIMING.attempt1Ms, () => crPrepCurrent(gen, session), prep.op).then(res => {
+    clearInterval(prep.ticker);
+    if (!creating || crSession !== session || crCovGen !== gen) return; // obsolete: land NOWHERE - not the draft, not the hint, not a newer operation's state (CG-PF-05)
+    if (crPrep === prep) crPrep = null;
+    if (res.kind === 'stale') return; // superseded mid-flight; the newer operation owns the state
+    if (res.ok) {
+      crCovMerge(res.json.elements, outer);
+      crPrepState = crGrid ? crGridSettledState() : 'ready'; // a fallback box landing does not pretend a part-missing city is whole: the settled state comes from the grid's own judge - CG-PF-14: the pending count alone promoted a city with a FAILED cell (nothing pending, one part refused) to plain 'ready', dropping the missing-parts disclosure and its Retry
+      if (crPrepState === 'failed' && crGrid && crGrid.lastFail) { crPrepFail = crGrid.lastFail; crFailFromGrid = true; } // the box landed but the city had wholly failed: keep the grid's honest failure and its Retry (mirrors crGridFinish)
+      crSweepPending();
+    } else { crPrepState = 'failed'; crPrepFail = res; }
+    crRenderHint();
+  });
+}
+function crCancelPrep() { // stops the wait AND the downloads (CG-PF-10), keeps the draft, the city and every cell already loaded; the generation bump makes any late answer land nowhere
+  if (crPrep) { clearInterval(crPrep.ticker); crAbortOp(crPrep.op); crPrep = null; }
+  if (crGrid) crGridStop('cancelled');
+  crCovGen++;
+  crPrepFail = null;
+  crPrepState = crGrid ? crGridSettledState() : (crCov && crCov.boxes.length ? 'ready' : 'none');
+  crRenderHint();
+}
+function crSweepPending() { // a fresh extract may complete streets that were pending on a narrower one
+  if (!crCov || (crPrepState !== 'ready' && crPrepState !== 'degraded')) return;
+  for (const pk of Object.keys(crPending)) {
+    const p = crPending[pk]; if (!p) continue;
+    const res = crResolve(p.osmName, p.lngLat);
+    if (res.status === 'ok') crAddStreet(pk, p.osmName, res.segs);
+  }
+}
+// ---- the city grid + the persistent city cache (second amendment) ----
+// A picked city is covered by a grid of ~4 x 4 km cells over its bounding
+// box. Cells fetch through the source seam with at most CR_GRID_PARALLEL
+// in flight; each answer commits to the merged extract (and to the
+// on-device cache) the moment it lands, so progress is real and a stopped
+// preparation resumes by fetching only the missing cells. The cache is
+// IndexedDB (docs/STORAGE-SCHEMA.md): one record per city holding its
+// cells' ways in compact parsed form. It is a CACHE, never user data - it
+// is not part of any backup, and losing it costs a re-download, nothing
+// else. A city whose stored form would exceed the cap is refused with
+// the refusal DISCLOSED; a write failure degrades to session-only with
+// the same disclosure - never a silent un-save.
+const CR_IDB_NAME = 'snowroute-citycache', CR_IDB_STORE = 'cities';
+let crCacheNote = ''; // the disclosed cache state for the current city ('' = saving fine)
+let crCacheQueue = Promise.resolve(); // serializes cache read-modify-writes (parallel cell commits must not clobber each other)
+function crIdbOpen() {
+  return new Promise(res => {
+    try {
+      if (typeof indexedDB === 'undefined') { res(null); return; }
+      const rq = indexedDB.open(CR_IDB_NAME, 1);
+      rq.onupgradeneeded = () => { try { rq.result.createObjectStore(CR_IDB_STORE, { keyPath: 'cityName' }); } catch (e) {} };
+      rq.onsuccess = () => res(rq.result);
+      rq.onerror = () => res(null);
+      rq.onblocked = () => res(null);
+    } catch (e) { res(null); }
+  });
+}
+async function crIdbGet(name) {
+  const db = await crIdbOpen(); if (!db) return null;
+  return new Promise(res => {
+    try {
+      const rq = db.transaction(CR_IDB_STORE, 'readonly').objectStore(CR_IDB_STORE).get(name);
+      rq.onsuccess = () => { const v = rq.result || null; try { db.close(); } catch (e) {} res(v); };
+      rq.onerror = () => { try { db.close(); } catch (e) {} res(null); };
+    } catch (e) { try { db.close(); } catch (e2) {} res(null); }
+  });
+}
+async function crIdbPut(rec) {
+  const db = await crIdbOpen(); if (!db) return false;
+  return new Promise(res => {
+    try {
+      const tx = db.transaction(CR_IDB_STORE, 'readwrite');
+      tx.objectStore(CR_IDB_STORE).put(rec);
+      tx.oncomplete = () => { try { db.close(); } catch (e) {} res(true); };
+      tx.onerror = () => { try { db.close(); } catch (e) {} res(false); };
+      tx.onabort = () => { try { db.close(); } catch (e) {} res(false); };
+    } catch (e) { try { db.close(); } catch (e2) {} res(false); }
+  });
+}
+async function crIdbDelete(name) {
+  const db = await crIdbOpen(); if (!db) return;
+  return new Promise(res => {
+    try {
+      const tx = db.transaction(CR_IDB_STORE, 'readwrite');
+      tx.objectStore(CR_IDB_STORE).delete(name);
+      tx.oncomplete = () => { try { db.close(); } catch (e) {} res(); };
+      tx.onerror = () => { try { db.close(); } catch (e) {} res(); };
+    } catch (e) { try { db.close(); } catch (e2) {} res(); }
+  });
+}
+function crCacheDisclose() { // the one wording for every cache failure (cap, quota, private mode): the session keeps working, the state is SAID
+  if (crCity && !crCacheNote) { crCacheNote = 'Couldn’t save ' + crCity.name + ' on this phone — it will reload next time'; crRenderHint(); }
+}
+function crCacheSaveCell(cityName, bbox, totalCells, key, ways) { // write-through, one cell at a time, serialized; ways in the compact stored form [[id, name, pts], ...]
+  crCacheQueue = crCacheQueue.then(async () => {
+    if (crCacheNote) return; // already refused/failed for this city: stop writing, the disclosure stands
+    let rec = await crIdbGet(cityName);
+    if (rec && rec.bbox && (rec.bbox.s !== bbox.s || rec.bbox.n !== bbox.n || rec.bbox.w !== bbox.w || rec.bbox.e !== bbox.e)) rec = null; // CG-PF-15: a record saved under a DIFFERENT bounding box is not this grid's cache - its cells were downloaded for another grid. Merging a fresh cell into it while overwriting its bbox would defeat the restore-time bbox guard in crCityPrepare and certify coverage that was never downloaded for this grid; a changed box starts the record over
+    if (!rec) rec = { cityName, bbox, cells: {}, savedAt: Date.now(), totalCells };
+    rec.bbox = bbox; rec.totalCells = totalCells;
+    rec.cells[key] = { at: Date.now(), ways };
+    rec.savedAt = Date.now();
+    let size = 0;
+    try { size = JSON.stringify(rec).length; } catch (e) {}
+    if (size > CR_TIMING.cityCapBytes) { crCacheDisclose(); return; } // refuse BEFORE the write rather than dying mid-write (amendment C)
+    if (!(await crIdbPut(rec))) crCacheDisclose();
+  }).catch(() => crCacheDisclose());
+  return crCacheQueue;
+}
+function crGridCellsFor(bbox) { // the ~4 x 4 km grid over a city bounding box (row-major, south-west first); the last row/column clamps to the box edge
+  const dLat = CR_CELL_KM * 1000 / MLAT, dLng = CR_CELL_KM * 1000 / MLNG;
+  const rows = Math.max(1, Math.ceil((bbox.n - bbox.s) / dLat - 1e-9)), cols = Math.max(1, Math.ceil((bbox.e - bbox.w) / dLng - 1e-9));
+  const cells = [];
+  for (let r = 0; r < rows; r++) for (let c = 0; c < cols; c++) {
+    cells.push({ key: 'r' + r + 'c' + c, box: { s: +(bbox.s + r * dLat).toFixed(6), n: +Math.min(bbox.n, bbox.s + (r + 1) * dLat).toFixed(6), w: +(bbox.w + c * dLng).toFixed(6), e: +Math.min(bbox.e, bbox.w + (c + 1) * dLng).toFixed(6) }, state: 'pending', tries: 0 });
+  }
+  return cells;
+}
+function crGridCurrent(g) { return !!g && crGrid === g && creating && crSession === g.session && crCovGen === g.gen; }
+function crGridDoneCount() { return crGrid ? crGrid.cells.filter(c => c.state === 'done').length : 0; }
+function crGridFailedCount() { return crGrid ? crGrid.cells.filter(c => c.state === 'failed').length : 0; }
+function crGridPendingCount() { return crGrid ? crGrid.cells.filter(c => c.state === 'pending' || c.state === 'fetching').length : 0; }
+function crGridSettledState() { // the honest state of a settled grid: all in = ready; some in = degraded (usable + resumable); none in = failed - or 'none' when Andrew stopped it before anything landed
+  if (!crGrid) return crCov && crCov.boxes.length ? 'ready' : 'none';
+  if (crGridPendingCount() > 0 && !crGrid.stopped) return 'preparing';
+  if (crGridFailedCount() === 0 && crGridPendingCount() === 0) return 'ready';
+  if (crGrid.stopped) return 'degraded'; // stopped with parts missing - even zero landed - is resumable, not 'none': the Resume offer must exist (the city is part-known, its grid state is the point)
+  return crGridDoneCount() > 0 ? 'degraded' : 'failed';
+}
+function crGridStop(why) { // stop scheduling, abort the downloads in flight, KEEP every committed cell (amendment B)
+  const g = crGrid; if (!g) return;
+  g.stopped = why;
+  if (g.ticker) { clearInterval(g.ticker); g.ticker = null; }
+  for (const op of Array.from(g.ops)) crAbortOp(op);
+  g.ops.clear(); g.active = 0;
+  for (const c of g.cells) if (c.state === 'fetching') c.state = 'pending';
+}
+function crGridFinish(g) {
+  if (g.ticker) { clearInterval(g.ticker); g.ticker = null; }
+  crPrepState = crGridSettledState();
+  if (crPrepState === 'failed' && g.lastFail) { crPrepFail = g.lastFail; crFailFromGrid = true; }
+  if (crPrepState === 'ready' || crPrepState === 'degraded') crSweepPending();
+  crRenderHint();
+}
+function crGridPump(g) { // keep at most CR_GRID_PARALLEL cell fetches in flight; a cell that fails is retried once inside the run, then marked failed while the rest continue (amendment A)
+  if (!crGridCurrent(g) || g.stopped) return;
+  while (g.active < CR_GRID_PARALLEL) {
+    const cell = g.cells.find(c => c.state === 'pending');
+    if (!cell) break;
+    cell.state = 'fetching'; cell.tries++;
+    g.active++;
+    const op = {}; g.ops.add(op);
+    crSourceExtract(cell.box, null, CR_TIMING.budgetMs, CR_TIMING.attempt1Ms, () => crGridCurrent(g) && !g.stopped, op).then(res => {
+      if (!g.ops.has(op)) return; // stopped/superseded since launch: crGridStop already zeroed the accounting - a late answer lands NOWHERE, even if this grid is later resumed under a new generation
+      g.ops.delete(op); g.active--;
+      if (!crGridCurrent(g)) return; // the session moved on: land nowhere (CG-PF-05)
+      if (res.ok) {
+        cell.state = 'done';
+        crCovMerge(res.json.elements, cell.box);
+        const ways = [];
+        for (const el of res.json.elements || []) { const w = crCov.byId[el && el.id]; if (w) ways.push([el.id, w.name, w.pts]); }
+        crCacheSaveCell(g.name, g.bbox, g.cells.length, cell.key, ways);
+      } else if (res.kind === 'stale' || g.stopped) { cell.state = 'pending'; }
+      else if (cell.tries < CR_CELL_TRIES) { cell.state = 'pending'; g.lastFail = res; }
+      else { cell.state = 'failed'; g.lastFail = res; }
+      crRenderHint();
+      crGridPump(g);
+      if (g.active === 0 && crGridPendingCount() === 0) crGridFinish(g);
+    });
+  }
+  if (g.active === 0 && crGridPendingCount() === 0) crGridFinish(g);
+}
+function crCityPrepare() { // a city is picked: load its whole extract - from the on-device cache when saved (instant, zero downloads), else the grid, resuming whatever a saved partial already holds (amendments A-C)
+  if (!crCity || crCity.lat == null || !creating) return;
+  const name = crCity.name;
+  const bbox = crCity.bbox || crBoxAround(crCity.lat, crCity.lon, 8); // no bounding box from the lookup: a ~16 x 16 km box on the centre (amendment A fallback)
+  const session = crSession, gen = ++crCovGen;
+  if (crPrep) { clearInterval(crPrep.ticker); crAbortOp(crPrep.op); crPrep = null; }
+  if (crGrid) crGridStop('superseded');
+  crCov = crCovFromWays({}, []);
+  crCacheNote = '';
+  const cells = crGridCellsFor(bbox);
+  const g = crGrid = { name, bbox, cells, gen, session, startedAt: Date.now(), ticker: null, ops: new Set(), active: 0, fromCache: false, savedAt: null, stopped: null, lastFail: null };
+  crPrepState = 'preparing'; crPrepFail = null; crWanted = null;
+  crRenderHint();
+  crIdbGet(name).then(rec => {
+    if (!crGridCurrent(g)) return;
+    let restored = 0;
+    if (rec && rec.bbox && (rec.bbox.s !== bbox.s || rec.bbox.n !== bbox.n || rec.bbox.w !== bbox.w || rec.bbox.e !== bbox.e)) rec = null; // a record saved under a DIFFERENT bounding box (the lookup's answer changed) is not this grid's cache - its cell keys would restore the wrong streets
+    if (rec && rec.cells) {
+      for (const cell of g.cells) {
+        const saved = rec.cells[cell.key];
+        if (saved && Array.isArray(saved.ways)) {
+          const byId = {};
+          for (const sw of saved.ways) { if (Array.isArray(sw) && sw[2] && sw[2].length > 1) byId[sw[0]] = { name: sw[1], pts: sw[2] }; }
+          crCovMerge([], null); // ensure the cov exists before the direct fold below
+          for (const id of Object.keys(byId)) crCov.byId[id] = byId[id];
+          const fresh = crCovFromWays(crCov.byId, crCov.boxes);
+          crCov.byName = fresh.byName;
+          if (!crCov.boxes.some(b => b.s === cell.box.s && b.w === cell.box.w && b.n === cell.box.n && b.e === cell.box.e)) crCov.boxes.push(cell.box);
+          cell.state = 'done'; restored++;
+        }
+      }
+      if (restored) { g.fromCache = true; g.savedAt = rec.savedAt || null; }
+    }
+    if (restored === g.cells.length) { crPrepState = 'ready'; crSweepPending(); crRenderHint(); return; } // fully saved: instant ready, ZERO downloads (amendment C)
+    if (restored === 0) toast('First load of ' + name + ' can take a few minutes — after that it’s instant', 5000); // timing honesty (amendment E): said once, when a real first download starts
+    g.ticker = setInterval(() => { if (crGridCurrent(g) && crPrepState === 'preparing') crRenderHint(); else if (g.ticker) clearInterval(g.ticker); }, 1000);
+    crGridPump(g);
+    crRenderHint();
+  });
+}
+function crGridResume() { // the degraded/stopped remedy: fetch ONLY the missing cells (amendments A+B)
+  const g = crGrid; if (!g || !creating) return;
+  g.gen = ++crCovGen; // Cancel bumped the coverage generation to orphan late answers (CG-PF-05); resuming ADOPTS the grid into the live generation, or the pump would refuse it as obsolete and fetch nothing
+  g.stopped = null; g.startedAt = Date.now();
+  for (const c of g.cells) if (c.state === 'failed') { c.state = 'pending'; c.tries = 0; }
+  crPrepState = 'preparing'; crPrepFail = null; crFailFromGrid = false; crWanted = null;
+  if (g.ticker) clearInterval(g.ticker);
+  g.ticker = setInterval(() => { if (crGridCurrent(g) && crPrepState === 'preparing') crRenderHint(); else if (g.ticker) clearInterval(g.ticker); }, 1000);
+  crRenderHint();
+  crGridPump(g);
+}
+function crGridRefresh() { // the saved city's Refresh affordance: drop the saved record and load the whole city again
+  const g = crGrid; if (!g || !creating) return;
+  const name = g.name, bbox = g.bbox;
+  crIdbDelete(name);
+  crCacheNote = '';
+  const session = crSession, gen = ++crCovGen;
+  crCov = crCovFromWays({}, []);
+  const g2 = crGrid = { name, bbox, cells: crGridCellsFor(bbox), gen, session, startedAt: Date.now(), ticker: null, ops: new Set(), active: 0, fromCache: false, savedAt: null, stopped: null, lastFail: null };
+  crPrepState = 'preparing'; crPrepFail = null;
+  g2.ticker = setInterval(() => { if (crGridCurrent(g2) && crPrepState === 'preparing') crRenderHint(); else if (g2.ticker) clearInterval(g2.ticker); }, 1000);
+  crRenderHint();
+  crGridPump(g2);
+}
+function crFailText(f) { // the honest taxonomy (scope item 5): unreachable / answered-with-error / too-dense read differently because they ARE different
+  if (!f) return '';
+  if (f.kind === 'dense') return crGrid ? 'Parts of ' + (crCity ? crCity.name : 'the city') + ' were too dense to load — tap Retry to try those parts again' : 'That area is too dense to load at once — move the map to a less busy part of ' + (crCity ? crCity.name : 'the city') + ', then tap Prepare this area'; // box form per CG-PF-09: the footprint is FIXED, so zooming changes nothing - the working remedy is preparing a less dense area, and the button in this state does exactly that (map centre). Grid form: the dense cells are the failed parts, and Retry resumes exactly them
+  if (f.kind === 'error') return 'The street-shape service answered with an error' + (f.status ? ' (' + f.status + ')' : '') + ' — tap Retry';
+  if (f.kind === 'badjson') return 'The street-shape service sent back something unreadable — tap Retry';
+  return 'The street-shape service didn’t answer — tap Retry';
+}
+function crRenderHint() { // the ONE writer of the pick-stage hint + its action button + the sheet's city chip: state-driven, so no stale text survives a state change
+  if (!creating || crStage !== 'pick') return;
+  const hint = $('createHint'), btn = $('crHintBtn');
+  let text = '', btnLabel = '';
+  const secs = t0 => Math.max(0, Math.round((Date.now() - t0) / 1000));
+  if (crPrepState === 'preparing' && crPrep) { text = 'Preparing street shapes for ' + (crCity ? crCity.name : 'this area') + '… ' + secs(crPrep.startedAt) + ' s'; btnLabel = 'Cancel'; } // the fallback box, when IT is the in-flight operation: it outranks the grid text - a settled (or still-loading) city grid must not label a box wait with stale part counts
+  else if (crPrepState === 'preparing' && crGrid) { // the city grid: REAL progress - parts landed of parts total, and elapsed (amendment B: no fake percentages, the count is the count)
+    const done = crGridDoneCount(), total = crGrid.cells.length, failed = crGridFailedCount();
+    text = 'Loading ' + crGrid.name + ' — part ' + done + ' of ' + total + ' · ' + secs(crGrid.startedAt) + ' s' + (failed ? ' · ' + failed + ' failed so far' : '');
+    btnLabel = 'Cancel';
+  }
+  else if (crPrepState === 'degraded' && crGrid) {
+    if (crGrid.stopped === 'cancelled') { text = 'Loading stopped — ' + crGridDoneCount() + ' of ' + crGrid.cells.length + ' parts of ' + crGrid.name + ' loaded'; btnLabel = 'Resume'; }
+    else { text = crGrid.name + ' loaded except ' + (crGridFailedCount() + crGridPendingCount()) + ' part' + ((crGridFailedCount() + crGridPendingCount()) === 1 ? '' : 's') + ' — streets there may be missing'; btnLabel = 'Retry missing parts'; }
+    if (crWanted) btnLabel = crWanted.label;
+  }
+  else if (crPrepState === 'failed') { text = crFailText(crPrepFail); btnLabel = crGrid ? 'Retry' : ((crPrepFail && crPrepFail.kind === 'dense') ? 'Prepare this area' : 'Retry'); } // grid failure: Retry resumes the missing cells. Box dense: Retry at the same anchor cannot help (fixed footprint) - the button prepares wherever the map now sits (CG-PF-09)
+  else if (crPrepState === 'ready') {
+    if (crGrid && crGrid.fromCache && crGrid.savedAt) { const d = new Date(crGrid.savedAt); text = crGrid.name + ' — loaded ' + d.toLocaleDateString('en-CA', { month: 'short', day: 'numeric' }) + ' · tap a road'; btnLabel = 'Refresh'; }
+    else text = draftStreets().length ? 'Tap a road on the map to add it' : 'Street shapes ready — tap a road';
+    if (crWanted) btnLabel = crWanted.label; // an outstanding offer (a tap outside coverage, a pending street) keeps its working button in the ready state too (CG-PF-09: the first build's ready state hid it) - it outranks Refresh
+  }
+  else { text = crCity ? 'Search for a street in ' + crCity.name + ', or zoom in and prepare this area' : 'Search, fly to a street, then tap it on the map'; if (crWanted) btnLabel = crWanted.label; else if (map && map.getZoom() >= 14) btnLabel = 'Prepare this area'; }
+  if (crCacheNote && crCity) text += ' · ' + crCacheNote; // the disclosed cache state rides the hint (amendment C: degradation is said, never silent)
+  hint.textContent = text; hint.classList.add('on');
+  if (btnLabel) { btn.textContent = btnLabel; btn.style.display = ''; } else btn.style.display = 'none';
+  const cc = $('crCityChange'); if (cc) { if (crCity) { cc.textContent = 'City: ' + crCity.name + ' — change'; cc.style.display = ''; } else cc.style.display = 'none'; }
+}
+function crAddStreet(short, osmName, segs) {
+  draft.roads[short] = segs; draft.osmNames[short] = osmName; // a tapped street joins as a SECONDARY (fork 3) - flip it to MAIN in the list if it is one
+  delete crPending[short];
+  renderDraft(); renderCrLists(); crRenderHint();
+  toast('Added ' + short, 1800);
+}
+function crPendStreet(short, osmName, lngLat, run, boundary) { // fail-closed (Codex (c)): the shape reaches past verified coverage even after its one top-up - listed as PENDING, never added half-known; a wider preparation can still complete it (crSweepPending)
+  let openEnd = null;
+  if (run && run.line) { for (const end of [run.line[0], run.line[run.line.length - 1]]) { const inside = crCov && crInAnyBox(crCov.boxes, end[0], end[1]); if (!inside) { openEnd = { lat: end[0], lng: end[1] }; break; } } } // an end is OPEN only when no COMMITTED coverage holds it (the sweep's union rule): the top-up's box (the boundary argument) was fetched for this name only and never becomes coverage, so an end inside it but outside every committed box is still open; an end inside a loaded city cell needs no preparation - anchoring the wider preparation on either wrong end could never complete the street
+  crPending[short] = { osmName, lngLat, openEnd };
+  if (openEnd) crWanted = { anchor: openEnd, label: 'Prepare wider area' }; // verify round (CG-PF-09): the promised wider preparation is a REAL button - it prepares around the street's own open end, the point coverage must grow from
+  renderCrLists(); crRenderHint();
+  toast(short + ' runs past the prepared area — it is pending, not added. Prepare a wider area to complete it', 4200);
+}
+// ---- the city step (Andrew's amendment): Door 2 STARTS here ----
+function crCityNameOf(it) { const a = (it && it.address) || {}; return a.city || a.town || a.village || a.municipality || a.county || String((it && it.display_name) || '').split(',')[0].trim(); }
+function crIsPlace(it) { // populated places only: a city/town/village place, or an administrative boundary (a city's own boundary relation) - never a street, a POI or a postcode area
+  if (!it) return false;
+  if (it.class === 'place') return ['city', 'town', 'village', 'hamlet', 'suburb'].includes(it.type);
+  if (it.class === 'boundary') return it.type === 'administrative';
+  return false;
+}
+function crPickCity(it) {
+  crCityLookupSeq++; if (crCityLastCtl) { try { crCityLastCtl.abort(); } catch (e) {} crCityLastCtl = null; } // a real pick supersedes any held last-city lookup (CG-PF-11)
+  const lat = parseFloat(it.lat), lon = parseFloat(it.lon); if (!isFinite(lat) || !isFinite(lon)) return;
+  const name = crCityNameOf(it); if (!name) return;
+  let bbox = null;
+  if (Array.isArray(it.boundingbox) && it.boundingbox.length === 4) { const bb = it.boundingbox.map(Number); if (bb.every(isFinite)) bbox = { s: bb[0], n: bb[1], w: bb[2], e: bb[3] }; }
+  crCity = { name, lat, lon, bbox };
+  crAreaGuess = name;
+  if (draft && !draft.area) draft.area = name;
+  try { lsSet(LS_GLOBAL.lastArea, name); } catch (e) {}
+  crEnterPickFromCity();
+}
+function crEnterPickFromCity() { // the city is chosen: land in the pick stage, the map flown to the city, and its whole-city preparation started (from the on-device cache when saved - crCityPrepare)
+  if (!creating) enterCreate('pick'); else { if (!routeLoaded) parkBootChrome(); else closeRouteMenu(); setCreateStage('pick'); }
+  if (map && crCity && crCity.lat != null) { try { map.flyTo({ center: [crCity.lon, crCity.lat], zoom: 12, duration: 900 }); } catch (e) {} }
+  crCityPrepare();
+  crRenderHint();
+}
+function crOpenCityPane(ret) {
+  crCityLookupSeq++; if (crCityLastCtl) { try { crCityLastCtl.abort(); } catch (e) {} crCityLastCtl = null; } // reopening the pane supersedes any held lookup (CG-PF-11)
+  crCityReturn = ret;
+  const last = lsGet(LS_GLOBAL.lastArea), lb = $('crCityLast');
+  if (last) { lb.textContent = 'Use ' + last; lb.style.display = ''; } else lb.style.display = 'none';
+  $('crCityInput').value = ''; $('crCityResults').innerHTML = '';
+  if (creating) { if (!routeLoaded) restoreBootChrome(); else openRouteMenu(); }
+  showRmPane('rmCityPane');
+}
+let crCityTimer = null, crCitySeq = 0, crCityCtl = null;
+let crCityLookupSeq = 0, crCityLastCtl = null; // the one-tap last-city lookup's generation + abort handle (CG-PF-11: it is an async completion like any other - it binds to its generation, and any competing pick, Back, pane reopen or exit kills it)
+async function crRunCitySearch() {
+  const q = $('crCityInput').value.trim(), box = $('crCityResults');
+  if (q.length < 3) { box.innerHTML = ''; return; }
+  const seq = ++crCitySeq, session = crSession;
+  if (crCityCtl) { try { crCityCtl.abort(); } catch (e) {} }
+  const ctl = (typeof AbortController !== 'undefined') ? new AbortController() : null; crCityCtl = ctl;
+  try {
+    const r = await fetch('https://nominatim.openstreetmap.org/search?format=jsonv2&addressdetails=1&featuretype=city&limit=6&q=' + encodeURIComponent(q), { headers: { 'Accept': 'application/json' }, signal: ctl ? ctl.signal : undefined });
+    if (!r.ok) throw new Error('city search HTTP ' + r.status);
+    const list = await r.json();
+    if (seq !== crCitySeq || session !== crSession) return; // superseded, or the creation it belonged to has closed (CG-PF-05)
+    box.innerHTML = '';
+    for (const it of (Array.isArray(list) ? list : []).filter(crIsPlace)) {
+      const b = document.createElement('button'); b.className = 'rmBtn'; b.textContent = it.display_name || '';
+      b.addEventListener('click', () => crPickCity(it));
+      box.appendChild(b);
+    }
+  } catch (e) { if (seq === crCitySeq && !(e && e.name === 'AbortError')) { box.innerHTML = ''; toast('City search needs an internet connection — try again', 3000); } }
+}
+
 const DRAFT_SRC = 'crDraft';
 function ensureDraftLayers() {
   if (!map || typeof map.addSource !== 'function') return;
@@ -1128,6 +1645,17 @@ function renderCrLists() {
   const count = names.length + ' streets · ' + draft.mains.size + ' mains · ' + fmtLenM(tot);
   $('crCount').textContent = count; $('pvCount').textContent = count;
   for (const listId of ['crPickList', 'pvList']) { const el = $(listId); el.innerHTML = ''; for (const n of names) el.appendChild(crRowEl(n, g)); }
+  for (const pk of Object.keys(crPending).sort()) { // Beta 1.121: pending streets (shape reaches past verified coverage) list in the PICK sheet only - never in the preview, never in the count, never saved
+    if (draft.roads[pk]) continue;
+    const row = document.createElement('div'); row.className = 'crRow pending';
+    const dot = document.createElement('span'); dot.className = 'crDot sec'; row.appendChild(dot);
+    const nm = document.createElement('span'); nm.className = 'crName'; nm.textContent = pk; row.appendChild(nm);
+    const chip = document.createElement('span'); chip.className = 'crChip pend'; chip.textContent = 'PENDING'; row.appendChild(chip);
+    const del = document.createElement('button'); del.className = 'crDel'; del.textContent = '✕'; del.title = 'Drop ' + pk;
+    del.addEventListener('click', () => { delete crPending[pk]; renderCrLists(); });
+    row.appendChild(del);
+    $('crPickList').appendChild(row);
+  }
   $('crDoneBtn').disabled = !names.length;
   $('crDoneBtn').textContent = crReturnToPreview ? 'Done — back to check' : 'Done — check route';
   $('pvSaveBtn').disabled = !names.length;
@@ -1145,13 +1673,14 @@ function setCreateStage(stage) {
   $('previewSheet').classList.toggle('on', stage === 'preview');
   $('createResults').classList.remove('on');
   $('createHint').classList.toggle('on', stage === 'pick');
-  if (stage === 'pick') $('createHint').textContent = draftStreets().length ? 'Tap a road on the map to add it' : 'Search, fly to a street, then tap it on the map';
+  if (stage === 'pick') crRenderHint(); else $('crHintBtn').style.display = 'none'; // Beta 1.121: the hint is state-driven now (crRenderHint owns it) - the preparation state must survive stage changes, not be overwritten by a static line
   renderCrLists(); renderDraft();
   if (stage === 'preview') fitDraft();
 }
 function enterCreate(stage) {
   if (!draft) draft = newDraft();
   creating = true;
+  crSession++; // a fresh creation session: async completions born in any earlier session are obsolete from here (CG-PF-05)
   document.body.classList.add('creating');
   followPaused = true; // the camera belongs to the picking now; GPS is device state and is not stopped - follow resumes from the Locate tab afterwards
   try { deselect(); } catch (e) {} closeSheets();
@@ -1161,6 +1690,14 @@ function enterCreate(stage) {
 }
 function exitCreate() {
   creating = false; draft = null; crStage = 'pick'; crReturnToPreview = false; crAreaGuess = '';
+  crSession++; crCovGen++; // every async completion born in this session is obsolete the moment the flow closes - it must not land in a later draft, hint or busy state (CG-PF-05)
+  if (crPrep) { clearInterval(crPrep.ticker); crAbortOp(crPrep.op); crPrep = null; } // and the downloads themselves stop (CG-PF-10)
+  if (crGrid) { crGridStop('exit'); crGrid = null; } // the grid's downloads stop too; its committed cells live on in the on-device city cache, by design
+  crCacheNote = '';
+  crAbortOp(crTopOp); crTopOp = null;
+  crCityLookupSeq++; if (crCityLastCtl) { try { crCityLastCtl.abort(); } catch (e) {} crCityLastCtl = null; } // a held last-city lookup dies with the session (CG-PF-11)
+  crCov = null; crCity = null; crPrepState = 'none'; crPrepFail = null; crPrepAnchor = null; crPending = {}; crToppedUp = {}; crWanted = null;
+  $('crHintBtn').style.display = 'none';
   if (crSearchTimer) { clearTimeout(crSearchTimer); crSearchTimer = null; }
   crSearchSeq++; if (crSearchCtl) { try { crSearchCtl.abort(); } catch (e) {} crSearchCtl = null; } // no in-flight suggestion may land after the flow has closed
   document.body.classList.remove('creating');
@@ -1226,8 +1763,46 @@ function importDraft(text) { // fail closed, named errors, nothing half-applied 
   toast('Draft loaded — check it over', 2600);
 }
 
-// ---- Door 2: search (Nominatim) -> fly -> tap a road (identity) -> fetch its true shape (Overpass) ----
-$('crDoorManual').addEventListener('click', () => { draft = newDraft(); crReturnToPreview = false; enterCreate('pick'); });
+// ---- Door 2: city first (Andrew's amendment) -> prepare the area's street shapes once -> tap roads, resolved locally ----
+$('crDoorManual').addEventListener('click', () => { draft = newDraft(); crReturnToPreview = false; crOpenCityPane('doors'); });
+$('crCityInput').addEventListener('input', () => { if (crCityTimer) clearTimeout(crCityTimer); crCityTimer = setTimeout(() => { crCityTimer = null; crRunCitySearch(); }, 500); });
+$('crCityLast').addEventListener('click', async () => {
+  const last = lsGet(LS_GLOBAL.lastArea); if (!last) return;
+  // resolve the remembered NAME back to a place (centre + bounds) through the same city search; if the lookup fails, the name alone still scopes the creation - anchors then come from street-search picks and Prepare this area.
+  // CG-PF-11 (verify round): this completion binds to (lookup generation, creation session, the pane still being open) - a slow lookup must never overwrite a city picked in the meantime, and Back / exit / a competing pick abort it outright.
+  const seq = ++crCityLookupSeq, session = crSession;
+  if (crCityLastCtl) { try { crCityLastCtl.abort(); } catch (e) {} }
+  const ctl = (typeof AbortController !== 'undefined') ? new AbortController() : null; crCityLastCtl = ctl;
+  const stillMine = () => seq === crCityLookupSeq && session === crSession && $('rmCityPane').classList.contains('on');
+  try {
+    const r = await fetch('https://nominatim.openstreetmap.org/search?format=jsonv2&addressdetails=1&featuretype=city&limit=6&q=' + encodeURIComponent(last), { headers: { 'Accept': 'application/json' }, signal: ctl ? ctl.signal : undefined });
+    if (r.ok) { const list = await r.json(); if (!stillMine()) return; const hit = (Array.isArray(list) ? list : []).find(crIsPlace); if (hit) { crPickCity(hit); return; } }
+  } catch (e) { if (e && e.name === 'AbortError') return; }
+  if (!stillMine()) return;
+  crCity = { name: last, lat: null, lon: null, bbox: null };
+  crAreaGuess = last; if (draft && !draft.area) draft.area = last;
+  crEnterPickFromCity();
+});
+$('crCityBack').addEventListener('click', () => {
+  crCityLookupSeq++; if (crCityLastCtl) { try { crCityLastCtl.abort(); } catch (e) {} crCityLastCtl = null; } // leaving the pane kills a held lookup (CG-PF-11)
+  if (crCityReturn === 'preview' || crCityReturn === 'pick') { if (!routeLoaded) parkBootChrome(); else closeRouteMenu(); setCreateStage(crCityReturn); }
+  else showRmPane('rmCreatePane');
+});
+$('crCityChange').addEventListener('click', () => crOpenCityPane('pick'));
+$('crHintBtn').addEventListener('click', () => {
+  if (crPrepState === 'preparing') { crCancelPrep(); return; }
+  if (crWanted) { crStartPrep(crWanted.anchor); return; } // an outstanding offer (outside-coverage tap / pending street) prepares exactly where it points - it outranks the state remedies below
+  if (crPrepState === 'degraded') { crGridResume(); return; } // Resume / Retry missing parts: only the missing cells fetch (amendments A+B)
+  if (crPrepState === 'failed') {
+    if (crFailFromGrid) { crGridResume(); return; } // a failed GRID retries its missing cells
+    if (crPrepFail && crPrepFail.kind === 'dense') { if (map) { const c = map.getCenter(); crStartPrep({ lat: c.lat, lng: c.lng }); } } // the dense remedy: prepare wherever the map now sits (CG-PF-09)
+    else if (crPrepAnchor) crStartPrep(crPrepAnchor); // Retry: the same anchor again
+    return;
+  }
+  if (crPrepState === 'ready' && crGrid && crGrid.fromCache) { crGridRefresh(); return; } // the saved city's Refresh: load the whole city again
+  if (map) { const c = map.getCenter(); crStartPrep({ lat: c.lat, lng: c.lng }); } // Prepare this area: the anchor is the map centre he is looking at
+});
+onMapReady(() => map.on('moveend', () => { if (creating && crStage === 'pick' && crPrepState === 'none') crRenderHint(); })); // the Prepare-this-area offer follows the zoom (it appears only at picking zoom) - never a silent download while merely panning
 $('crSearchBtn').addEventListener('click', crSearch);
 $('crSearchInput').addEventListener('keydown', e => { if (e.key === 'Enter') crSearch(); });
 // Beta 1.120 (Andrew): search AS YOU TYPE. 1.118/1.119 searched only on
@@ -1259,7 +1834,10 @@ async function crRunSearch(fromTyping) {
   if (!fromTyping) $('crSearchBtn').disabled = true;
   try {
     let url = 'https://nominatim.openstreetmap.org/search?format=jsonv2&addressdetails=1&limit=5&q=' + encodeURIComponent(q);
-    try { if (map) { const b = map.getBounds(); url += '&viewbox=' + [b.getWest(), b.getNorth(), b.getEast(), b.getSouth()].map(v => +v.toFixed(5)).join(',') + '&bounded=0'; } } catch (e) {}
+    try { // Beta 1.121: with a city chosen, the street search is biased to the CITY (its Nominatim bounding box) - preparation and search live inside the city he picked; without one, the visible map biases as before. bounded=0 either way: a bias, never a restriction.
+      if (crCity && crCity.bbox) url += '&viewbox=' + [crCity.bbox.w, crCity.bbox.n, crCity.bbox.e, crCity.bbox.s].map(v => +v.toFixed(5)).join(',') + '&bounded=0';
+      else if (map) { const b = map.getBounds(); url += '&viewbox=' + [b.getWest(), b.getNorth(), b.getEast(), b.getSouth()].map(v => +v.toFixed(5)).join(',') + '&bounded=0'; }
+    } catch (e) {}
     const r = await fetch(url, { headers: { 'Accept': 'application/json' }, signal: ctl ? ctl.signal : undefined });
     if (!r.ok) throw new Error('search HTTP ' + r.status);
     const list = await r.json();
@@ -1287,7 +1865,8 @@ function renderCrResults(list) {
       const lat = parseFloat(it.lat), lon = parseFloat(it.lon); if (!isFinite(lat) || !isFinite(lon)) return;
       const a = it.address || {}; crAreaGuess = a.city || a.town || a.village || a.municipality || a.county || '';
       if (map) map.flyTo({ center: [lon, lat], zoom: Math.max(map.getZoom(), 15), duration: 900 });
-      $('createHint').textContent = 'Tap a road on the map to add it to your route'; $('createHint').classList.add('on');
+      if (crGrid && crCity && crInBox(crGrid.bbox, lat, lon)) { /* inside the picked city: its grid is the preparation (already running or saved) - no second download for a search pick */ }
+      else crStartPrep({ lat, lng: lon }); // Beta 1.121: outside any city coverage, the search pick ANCHORS the fallback box preparation (anchor rule (a)) - taps then resolve locally from the extract
     });
     box.appendChild(b);
   }
@@ -1330,66 +1909,71 @@ function chainWays(ways) { // the sandbox's stitch: greedy endpoint chaining at 
   return runs;
 }
 const OVERPASS_URLS = ['https://overpass-api.de/api/interpreter', 'https://overpass.kumi.systems/api/interpreter']; // primary + fallback (both named in the stamped CSP's connect-src)
-async function overpassQuery(ql) { // one query, up to three chances: the primary public Overpass instance commonly answers slowly or 429/504 under load (Beta 1.120 - Andrew's tap sat on "Loading" and then nothing) - try it, pause, try it again, then ask the fallback instance before admitting failure
-  const body = 'data=' + encodeURIComponent(ql);
-  const order = [OVERPASS_URLS[0], OVERPASS_URLS[0], OVERPASS_URLS[1]];
-  for (let i = 0; i < order.length; i++) {
-    if (i) await new Promise(r => setTimeout(r, 1500));
-    let ctl = null, to = null;
-    try {
-      if (typeof AbortController !== 'undefined') { ctl = new AbortController(); to = setTimeout(() => { try { ctl.abort(); } catch (e) {} }, 40000); }
-      const r = await fetch(order[i], { method: 'POST', headers: { 'Content-Type': 'application/x-www-form-urlencoded' }, body, signal: ctl ? ctl.signal : undefined });
-      if (to) clearTimeout(to);
-      if (r.ok) return r;
-    } catch (e) { if (to) clearTimeout(to); }
-  }
-  return null;
-}
-async function fetchStreetGeometry(osmName, lngLat) { // the street's TRUE shape from OpenStreetMap (Overpass): every way carrying the name near the tap, stitched; the run nearest the tap is the street he tapped. Beta 1.120: the answer is HONEST about failure - { segs } on success, { error: 'unreachable' } when no instance answered, { error: 'noshape' } when the service answered but holds no line for the name here (1.118/1.119 returned null for both, and pickStreet's early return on null latched the picker shut - see pickStreet)
-  const s = (lngLat.lat - 0.05).toFixed(6), n = (lngLat.lat + 0.05).toFixed(6), w = (lngLat.lng - 0.065).toFixed(6), e = (lngLat.lng + 0.065).toFixed(6);
-  const ql = '[out:json][timeout:30];way["name="' + osmName.replace(/(["\\])/g, '\\$1') + '"](' + s + ',' + w + ',' + n + ',' + e + ');out geom;';
-  const r = await overpassQuery(ql);
-  if (!r) return { error: 'unreachable' };
-  let j = null;
-  try { j = await r.json(); } catch (e) { return { error: 'unreachable' }; }
-  const ways = [];
-  for (const el of (j && j.elements) || []) {
-    if (el.type !== 'way' || !Array.isArray(el.geometry) || el.geometry.length < 2) continue;
-    const pts = [];
-    for (const g of el.geometry) { const p = [Math.round(g.lat * 1e7) / 1e7, Math.round(g.lon * 1e7) / 1e7]; if (!pts.length || distM(pts[pts.length - 1], p) > 0.1) pts.push(p); }
-    if (pts.length > 1) ways.push(pts);
-  }
-  if (!ways.length) return { error: 'noshape' };
-  const runs = chainWays(ways);
-  let best = null, bestD = Infinity;
-  for (const run of runs) for (const p of run.line) { const d = distM(p, [lngLat.lat, lngLat.lng]); if (d < bestD) { bestD = d; best = run; } }
-  if (!best) return { error: 'noshape' };
-  return { segs: best.exact ? best.segments.slice().sort((a, b) => crLineLen(b) - crLineLen(a)) : [best.line] };
-}
+// Beta 1.121: overpassQuery + fetchStreetGeometry are GONE - they were the
+// per-tap fetch (and the malformed query's home). All Overpass traffic now
+// goes through crOverpassFetch with queries built by crQL/crAreaQL/
+// crNameQL (see the preparation block above); taps resolve locally.
 async function pickStreet(osmName, lngLat) {
   const short = shortStreetName(osmName);
+  if (!draft) return;
   if (draft.roads[short] || Object.values(draft.osmNames).includes(osmName)) { toast(short + ' is already in your route', 2400); return; }
-  if (crPickBusy) return; crPickBusy = true;
-  const hint = $('createHint');
-  hint.textContent = 'Loading ' + short + '…'; hint.classList.add('on'); // Beta 1.120: the hint carries the wait for as long as it lasts (the 1.6s toast expired while a slow service was still thinking, so the tap looked dead)
-  try {
-    const got = await fetchStreetGeometry(osmName, lngLat);
-    if (got && got.segs) {
-      draft.roads[short] = got.segs; draft.osmNames[short] = osmName; // a tapped street joins as a SECONDARY (fork 3) - flip it to MAIN in the list if it is one
-      renderDraft(); renderCrLists();
-      hint.textContent = 'Added ' + short + ' — tap another road, or Done';
-      toast('Added ' + short, 1800);
-    } else if (got && got.error === 'noshape') {
-      hint.textContent = 'Tap a road on the map to add it';
-      toast('No shape found for ' + short + ' here — the map data holds no line for it', 3600);
-    } else {
-      hint.textContent = 'Tap a road on the map to add it';
-      toast('The street-shape service didn’t answer — give it a moment and tap ' + short + ' again', 3800);
+  if (crPending[short]) { toast(short + ' is pending — it runs past the prepared area and is not in your route yet', 3400); return; }
+  if (crPickBusy) return;
+  // Beta 1.121: the tap resolves LOCALLY from the prepared extract - no
+  // network on the ordinary path (CG-PF-04). Before the extract is ready
+  // the tap still IDENTIFIES the street and says so honestly; it never
+  // pretends to add it - nothing appears added until accurate geometry
+  // is in hand and validated (the line the whole create flow holds).
+  // A tap inside a part of the city that has ALREADY landed resolves
+  // even while the rest still loads - progress is real (amendment B).
+  if (crCov && crCov.boxes.length) {
+    const res0 = crResolve(osmName, lngLat);
+    if (res0.status === 'ok') { crAddStreet(short, osmName, res0.segs); return; }
+    if (res0.status === 'absent') {
+      if (crInAnyBox(crCov.boxes, lngLat.lat, lngLat.lng)) { toast('No shape found for ' + short + ' here — the map data holds no line for it', 3600); return; }
+      if (crGrid && crInBox(crGrid.bbox, lngLat.lat, lngLat.lng)) {
+        const cell = crGrid.cells.find(c => crInBox(c.box, lngLat.lat, lngLat.lng));
+        if (cell && cell.state === 'failed') toast('That part of ' + crGrid.name + ' didn’t load — ' + short + ' can be added after Retry missing parts', 3800);
+        else toast('That part of ' + (crCity ? crCity.name : 'the city') + ' is still loading — ' + short + ' can be added as soon as it lands', 3400);
+        return;
+      }
+      crPrepAnchor = { lat: lngLat.lat, lng: lngLat.lng }; crWanted = { anchor: { lat: lngLat.lat, lng: lngLat.lng }, label: 'Prepare this area' }; crRenderHint(); toast(short + ' is outside the prepared area — prepare this area, then tap it again', 3800);
+      return;
     }
-  } catch (e) {
-    hint.textContent = 'Tap a road on the map to add it';
-    toast('The street-shape service didn’t answer — give it a moment and tap ' + short + ' again', 3800);
-  } finally { crPickBusy = false; } // Beta 1.120: EVERY exit path releases the picker - 1.119's early return on a null shape skipped this line and one refused fetch wedged tapping for the whole session (Andrew, on device)
+    // edge (Codex (c)): the run reaches beyond verified coverage - ONE
+    // targeted fetch for this name over an expanded bounded area (centred
+    // on the run's open end), merged by way id, then resolved again
+    // against that wider boundary. Still beyond afterwards: PENDING.
+    const session = crSession, gen = crCovGen, topKey = short + '@' + gen;
+    if (crToppedUp[topKey]) { crPendStreet(short, osmName, lngLat, res0.run, null); return; }
+    crToppedUp[topKey] = true;
+    crPickBusy = true;
+    const hint = $('createHint'); hint.textContent = 'Checking the whole of ' + short + '…'; hint.classList.add('on');
+    const op = {}; crTopOp = op; // exitCreate can stop this download too (CG-PF-10)
+    try {
+      let openEnd = { lat: lngLat.lat, lng: lngLat.lng };
+      if (res0.run && res0.run.line) { for (const end of [res0.run.line[0], res0.run.line[res0.run.line.length - 1]]) { if (!crInAnyBox(crCov.boxes, end[0], end[1])) { openEnd = { lat: end[0], lng: end[1] }; break; } } }
+      const box = crBoxAround(openEnd.lat, openEnd.lng, CR_INNER_KM + CR_BUFFER_KM + CR_TOPUP_RING_KM);
+      const got = await crSourceExtract(box, osmName, CR_TIMING.topupBudgetMs, CR_TIMING.topupAttempt1Ms, () => creating && crSession === session && crCovGen === gen, op);
+      if (!creating || crSession !== session || crCovGen !== gen || !draft) return; // obsolete: land nowhere (CG-PF-05)
+      if (!got.ok) {
+        if (got.kind === 'dense') toast('That area is too dense to check ' + short + ' against — it stays out of your route for now', 4000);
+        else if (got.kind === 'error' || got.kind === 'badjson') toast('The street-shape service answered with an error — ' + short + ' was not added', 3800);
+        else if (got.kind !== 'stale') toast('The street-shape service didn’t answer — ' + short + ' was not added', 3800);
+        crRenderHint();
+        return;
+      }
+      crCovMerge(got.json.elements, null); // merged by way id; the top-up's box verifies THIS resolution (below) but does not join the coverage set - a later street must earn its own proof
+      const res = crResolve(osmName, lngLat, box);
+      if (res.status === 'ok') crAddStreet(short, osmName, res.segs); else crPendStreet(short, osmName, lngLat, res.run, box);
+    } finally { if (crTopOp === op) crTopOp = null; crPickBusy = false; } // Beta 1.120: EVERY exit path releases the picker - 1.119's early return on a null shape skipped this line and one refused fetch wedged tapping for the whole session (Andrew, on device). The session/generation guards above are what bind the COMPLETION (CG-PF-05); the busy flag can only be held by the one pick in flight, so releasing it here can never clear a newer operation's state.
+    return;
+  }
+  if (crPrepState === 'preparing') { toast('Still preparing street shapes — ' + short + ' can be added as soon as they are ready', 3200); return; }
+  crPrepAnchor = { lat: lngLat.lat, lng: lngLat.lng };
+  crWanted = { anchor: { lat: lngLat.lat, lng: lngLat.lng }, label: 'Prepare this area' }; // the offer names THIS tap's area, and the hint button prepares exactly there (CG-PF-09)
+  toast('Street shapes aren’t ready for this area yet — tap Prepare this area, then tap ' + short + ' again', 3800);
+  crRenderHint();
 }
 function crFeatDistM(lngLat, geom) { // metres from the tap to the nearest point of a tile feature's line(s), in distM's flat-earth metres. CHOICE ONLY (see crMapTap): the number judges which named street a tap meant - it is never stored and never shapes the route
   if (!geom) return Infinity;
@@ -1419,9 +2003,10 @@ function crMapTap(e) {
   // real tap toasted "No road there" (Andrew, on device). The tile
   // geometry's ONLY job here is to choose WHICH named street the tap meant
   // (the line passing closest to the tap wins); it is never stored - the
-  // street's stored shape still comes from Overpass at pick time (identity
-  // from the tile name, shape from the accurate source - the approved
-  // reconciliation; display tiles re-segment streets and misplace joins).
+  // street's stored shape still comes from the accurate source - the
+  // prepared Overpass extract (identity from the tile name, shape from
+  // the extract - the approved reconciliation; display tiles re-segment
+  // streets and misplace joins).
   const roadFeats = (half) => {
     let feats = [];
     try { feats = map.queryRenderedFeatures([[e.point.x - half, e.point.y - half], [e.point.x + half, e.point.y + half]]) || []; } catch (err) {}
@@ -1441,7 +2026,12 @@ function crMapTap(e) {
 }
 onMapReady(() => map.on('click', crMapTap));
 $('crDoneBtn').addEventListener('click', () => { if (draftStreets().length) setCreateStage('preview'); });
-$('pvAddBtn').addEventListener('click', () => { crReturnToPreview = true; setCreateStage('pick'); });
+$('pvAddBtn').addEventListener('click', () => {
+  crReturnToPreview = true;
+  if (crCity) { setCreateStage('pick'); return; }
+  if (draft && draft.area) { crCity = { name: draft.area, lat: null, lon: null, bbox: null }; setCreateStage('pick'); return; } // Beta 1.121: a draft that already names its city (the photo door) pre-answers the city step - still changeable from the pick sheet's city chip
+  crOpenCityPane('preview');
+});
 
 // ---- name it + save ----
 $('pvSaveBtn').addEventListener('click', openNameIt);
