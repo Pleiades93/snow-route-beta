@@ -473,7 +473,7 @@ function renderLoop(now) {
 }
 function startRenderLoop() { if (!renderRaf) { lastCamAt = lastFrameAt = performance.now(); renderRaf = requestAnimationFrame(renderLoop); } if (!renderPump) renderPump = setInterval(() => { if ((watchId != null || !dispSettled()) && performance.now() - lastFrameAt > 100) renderTick(performance.now()); if (watchId == null && dispSettled() && !renderRaf) { clearInterval(renderPump); renderPump = 0; } }, 100); } // the pump is a starvation fallback only: a browser that is not painting (headless, occluded) delivers no animation frames, and the GPS state must still advance - on a painting phone it never fires; it parks itself when nothing is left to render
 function followCam(now) {
-  if (!dispPos || followPaused || watchId == null) { lastCamAt = now; return; } // follow whenever location is ON (Beta 1.27, Andrew) - it used to engage only during a run, so the dot wandered off-screen on a plain drive. Trail recording and heading-up stay run-only.
+  if (!dispPos || followPaused || watchId == null) { lastCamAt = now; return; } // follow whenever location is ON (Beta 1.27, Andrew) - it used to engage only during a run, so the dot wandered off-screen on a plain drive. Trail recording stays run-only; heading-up applies whenever location is on and the camera follows (Beta 1.122, Andrew).
   const c = map.getCanvas(); const p = projLL(dispPos);
   const dx = p.x - c.clientWidth / 2, dy = p.y - c.clientHeight / 2;
   if (Math.abs(dx) < 0.5 && Math.abs(dy) < 0.5) { lastCamAt = now; return; } // Beta 1.115: the deadband was 2 px - at driving zoom the dot had to drift ~7 m off-centre before the camera moved at all, so the camera lurched in pulses behind a smoothly coasting dot; half a pixel keeps it glued without jitter (the settle band drive126 judges is 12% of the screen, two orders wider)
@@ -491,7 +491,7 @@ onMapReady(() => map.on('dragstart', () => { followPaused = true; syncCentreBtn(
 // therefore ALSO listens to the raw pointer stream, which no camera move can eat: a press on the
 // canvas that moves >10 px yields the camera to the user, pan AND bearing both (the old dragend
 // northUp haul is gone - while suspended the map stays exactly where he put it), until he re-centres.
-// A plain tap (< 10 px of movement) does NOT suspend: tapping a street to select it changes nothing.
+// Beta 1.122 (Andrew, from the road): the PRESS itself suspends now - see the pointerdown below - so the map is movable from the first pixel and a plain tap takes the camera too; the >10 px move rule remains as a backstop for a press that began before the follow did (e.g. GPS started mid-press).
 onMapReady(() => { const c = map.getCanvas(); let press = null; // {x, y, id} - the ONE pointer that pressed the canvas
   // Beta 1.116 (audit CG-115-03) - multi-touch policy, stated explicitly: only the pointer
   // that pressed the canvas can suspend the follow, and only ITS moves count. A second
@@ -501,12 +501,12 @@ onMapReady(() => { const c = map.getCanvas(); let press = null; // {x, y, id} - 
   // including as one half of a pinch - the follow suspends: that finger is on the map and
   // moving it, which is exactly the claim this seam exists for. Only the arming pointer's
   // own up/cancel releases the press.
-  c.addEventListener('pointerdown', e => { if (!press) press = { x: e.clientX, y: e.clientY, id: e.pointerId }; });
+  c.addEventListener('pointerdown', e => { if (!press) { press = { x: e.clientX, y: e.clientY, id: e.pointerId }; if (watchId != null && !followPaused) { followPaused = true; syncCentreBtn(); } } }); // Beta 1.122 (Andrew): the press ITSELF takes the camera - no 10 px toll before the map answers his finger; the re-centre button lights in the same instant as the way back
   window.addEventListener('pointermove', e => { if (press && e.pointerId === press.id && !followPaused && (Math.abs(e.clientX - press.x) > 10 || Math.abs(e.clientY - press.y) > 10)) { followPaused = true; syncCentreBtn(); } });
   window.addEventListener('pointerup', e => { if (press && e.pointerId === press.id) press = null; });
   window.addEventListener('pointercancel', e => { if (press && e.pointerId === press.id) press = null; });
   c.addEventListener('wheel', () => { if (!followPaused) { followPaused = true; syncCentreBtn(); } }, { passive: true }); });
-// HEADING-UP (Andrew, Beta 1.14 - replaces Flip): while the camera follows during a run, the map rotates
+// HEADING-UP (Andrew, Beta 1.14 - replaces Flip; Beta 1.122, Andrew: whenever location is on and the camera follows, run or not): the map rotates
 // so his direction of travel points up - course-up from the GPS course, not the compass and not true
 // north: 'my north' is wherever he is heading. Smoothed around the circle so low-speed wobble can't spin
 // the map; under ~1 m/s the course is unreliable, so the map just holds its last bearing.
@@ -514,7 +514,7 @@ let smHeading = null;
 function headDelta(a, b) { return ((b - a + 540) % 360) - 180; }
 function updateHeading(hdg, speed) {
   if (typeof hdg !== 'number' || isNaN(hdg) || !speed || speed < 1) return;
-  if (!runStart || followPaused) return;
+  if (followPaused) return; // Beta 1.122 (Andrew): the smoothed course is maintained whenever location is on, not only during a run - headCam applies it whenever the camera follows
   smHeading = smHeading === null ? hdg : smHeading + headDelta(smHeading, hdg) * 0.35; // Beta 1.115: this only maintains the smoothed course now - headCam, in the render loop, applies it to the map
 }
 // Beta 1.115: heading-up is applied per render tick, fractionally, in the same pipeline
@@ -525,7 +525,7 @@ function updateHeading(hdg, speed) {
 // pan instead of fighting it, and is frame-smooth like the rest of the follow.
 let lastHeadAt = 0;
 function headCam(now) {
-  if (!runStart || followPaused || smHeading === null) { lastHeadAt = now; return; }
+  if (watchId == null || followPaused || smHeading === null) { lastHeadAt = now; return; }
   const cur = map.getBearing();
   const d = headDelta(cur, smHeading);
   if (Math.abs(d) < 0.3) { lastHeadAt = now; return; }

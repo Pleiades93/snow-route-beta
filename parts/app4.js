@@ -609,7 +609,7 @@ $('stDel').addEventListener('click', async () => {
 });
 // ---- About / What's new ----
 const WHATSNEW = { // the curated in-app notes: plain words, LATEST RELEASE ONLY (Beta 1.114, Andrew: the accumulated list cluttered the About pane). A release REPLACES this entry with its own in the same change - it never accumulates; the full history lives in CHANGELOG.md, not the app
-  v: 'Beta 1.121', items: ["Creating a route now starts by asking what city you'll be cleaning in — the app loads the whole city's street shapes once and saves them on your phone, so after that first load, tapping streets adds them right away, every time", "Fixed street picking for good: the app's street-shape request was itself written wrong, so tapping a street could never load its shape — that is fixed, and the wait now shows real progress, with a Cancel"]
+  v: 'Beta 1.122', items: ["When location is on and the map is following you, it now turns so your direction of travel always points up — like a car GPS — not just during a clean", "Touching the map while it is following you hands it over instantly: no more first-touch delay before you can drag it. The centre button at the top right brings the follow back"]
 };
 function renderAbout() {
   const cur = $('ver').textContent.trim();

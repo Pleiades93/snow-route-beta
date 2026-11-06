@@ -1,5 +1,9 @@
 # Changelog
 
+## Beta 1.122 — 2026-11-06
+- Heading-up whenever location is on and the camera follows (Beta 1.14 made it run-only) — Andrew, from the road: travel direction always points up, like a car GPS.
+- The follow yields on the press itself (canvas pointerdown), not after 10 px of movement — the map is draggable from the first pixel and the re-centre button lights in the same instant. Shipped direct to main at Andrew's explicit order for immediate phone testing; the full battery judges it on the nightly run.
+
 ## Beta 1.121 — 2026-11-06
 The converged fix from audit round "round-pickfetch" (Codex audit +
 debate, Andrew's gate amendment), after 1.120 failed on Andrew's phone
