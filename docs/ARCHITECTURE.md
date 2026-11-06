@@ -392,7 +392,14 @@ fingerprint derives from the pack list, so removal honestly
 un-certifies the old union download (the tiles stay cached).
 drive154 proves the affordance split, the ask, both themes, Cancel,
 the full wipe, the active-route boot return and the
-storage-failure path.
+storage-failure path. The boot-picker state the return mirrors is
+the RESTING picker: its <html> carries no `boot` class (the boot
+tail's arm() removes it when the menu arms, because the 1.86
+chrome-absence rule force-hides every non-menu body child while it
+stands). Beta 1.126: unloadRouteToBoot originally re-added that
+class, which left the whole create stage display:none after an
+active-route delete — drive155 pins the resting state and the
+create stage's computed visibility after both delete paths.
 
 ## GPS and coverage
 

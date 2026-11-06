@@ -1,5 +1,12 @@
 # Changelog
 
+## Beta 1.126 — 2026-11-06
+Creating a route after deleting one was broken (Andrew's device report on 1.124/1.125): he deleted his created route — it was the active one — then Create new route showed no street search bar, and the bottom panel listing the selected roads never appeared, though taps on the map still quietly added streets.
+Root cause: 1.124's unloadRouteToBoot re-added the `boot` class to <html>, intending to mirror a cold boot. But a cold boot's RESTING picker has no html.boot: the boot tail's arm() removes it when the route menu arms (~1900 ms), precisely because the 1.86 chrome-absence rule — `html.boot body > *:not(#splash):not(#routeMenu):not(#map) { display: none !important }` — force-hides every other body child while it stands. After an active-route delete, nothing removed the class again until a route was picked, so #createBar, #createSheet, #createResults and #createHint (and the 'Route deleted' toast) stayed display:none for the whole session while the excepted map still took taps — the exact reported symptoms. drive154's boot-return check read the menu's own classes and could not see it.
+Fix: unloadRouteToBoot now REMOVES html.boot, holding it to its own claim — the state it mirrors is the resting picker, where the class is absent. The route menu keeps its own boot class (its slide-in choreography), which never governed chrome visibility.
+Proof: new drive155 (6 checks) — red on 1.125 with the computed evidence (picker reached, prep ready, streets added, yet bar/sheet/results all computed display:none), green here; its phase B pins the sibling path (deleting a NON-active route never broke creation) as a control. Registry: the no-html-boot invariant is probe-pinned (grep_absent) alongside the drive.
+Also in this build (test premises, no app change): 1.125's restyle of the manual-search results (.rmBtn boxes → .routeRow rows) had silently expired the city-result selectors in drives 150/151/152/153/154 — 1.125 shipped without a battery at Andrew's order, so nothing caught it; the selectors and text reads now follow the shipped shape, assertions unchanged in meaning.
+
 ## Beta 1.125 — 2026-11-06
 - Manual city-search results render as the same neat rows as the Select-from-list cities (name line + small dim remainder) — Andrew: the full-address .rmBtn boxes stacked with no gap were bunched and ugly.
 - Typing caret pinned visible app-wide (`caret-color: currentColor` on inputs/textareas) — Andrew: every search bar and field must show the flashing line beside the last letter as he types.

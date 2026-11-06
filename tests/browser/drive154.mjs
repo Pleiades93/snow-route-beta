@@ -212,12 +212,14 @@ ok('B3 STREET SEARCH AFTER A LIST PICK (Andrew\'s requirement): typing "Bordeaux
 await ev2(`exitCreate()`);
 
 // ---- phase C: the manual path's street search (parity) ----
+// Beta 1.126 TEST-PREMISE UPDATE: 1.125 restyled the manual-search city
+// results from .rmBtn to .routeRow; the selectors below follow.
 await openDoorsTab();
 await ev2(`document.getElementById('crDoorManual').click()`);
 await poll(`document.getElementById('rmCityPane').classList.contains('on')`, 10000);
 await typeCity('King City');
-await poll(`document.querySelectorAll('#crCityResults .rmBtn').length >= 1`, 15000);
-await ev2(`(() => { const b = document.querySelector('#crCityResults .rmBtn'); if (b) b.click(); return true; })()`);
+await poll(`document.querySelectorAll('#crCityResults .routeRow').length >= 1`, 15000);
+await ev2(`(() => { const b = document.querySelector('#crCityResults .routeRow'); if (b) b.click(); return true; })()`);
 const readyC = await poll(`crPrepState === 'ready'`, 30000);
 await typeStreet('Bordeaux');
 const resC = await poll(`document.querySelectorAll('#createResults .crResult').length >= 1`, 15000);

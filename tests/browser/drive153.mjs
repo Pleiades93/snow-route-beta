@@ -245,16 +245,20 @@ ok('C1 PACK FAILURE FALLBACK: with the pack file 404ing, preparation falls back 
 packMode = 'ok';
 
 // ---- phase D: the manual door - typed search fixed + honest states ----
+// Beta 1.126 TEST-PREMISE UPDATE: Beta 1.125 (Andrew's direct ship) restyled the
+// manual-search results from .rmBtn boxes to .routeRow rows (name in
+// .routeName, the dim remainder in .routeArea); this phase's selectors and
+// text reads follow the shipped shape. The assertions' meanings are unchanged.
 await ev2(`exitCreate()`);
 await openChooserTab();
 await ev2(`document.getElementById('crDoorManual').click()`);
 const paneD = await poll(`document.getElementById('rmCityPane').classList.contains('on')`, 10000);
 await typeCity('Vaughan');
-const resultsD = await poll(`document.querySelectorAll('#crCityResults .rmBtn').length >= 1`, 15000);
-const btnD = await J(`({ texts: [...document.querySelectorAll('#crCityResults .rmBtn')].map(b => b.textContent) })`);
+const resultsD = await poll(`document.querySelectorAll('#crCityResults .routeRow').length >= 1`, 15000);
+const btnD = await J(`({ texts: [...document.querySelectorAll('#crCityResults .routeRow')].map(b => { const n = b.querySelector('.routeName'); const a = b.querySelector('.routeArea'); return (n ? n.textContent : '') + ', ' + (a ? a.textContent : ''); }) })`);
 ok('D1 MANUAL DOOR SEARCH (the 1.121 defect): typing "Vaughan" against REAL jsonv2-shaped answers (category, not class) renders SELECTABLE results - the place filter accepts the payload the service actually sends | ' + JSON.stringify(btnD.texts),
   paneD === true && resultsD === true && (btnD.texts || []).some(t => t.indexOf('Vaughan, York Region') === 0));
-await ev2(`(() => { const b = [...document.querySelectorAll('#crCityResults .rmBtn')].find(x => x.textContent.indexOf('Vaughan, York Region') === 0); if (b) b.click(); return true; })()`);
+await ev2(`(() => { const b = [...document.querySelectorAll('#crCityResults .routeRow')].find(x => { const n = x.querySelector('.routeName'); const a = x.querySelector('.routeArea'); return n && n.textContent === 'Vaughan' && a && a.textContent.indexOf('York Region') === 0; }); if (b) b.click(); return true; })()`);
 const inPickD = await poll(`typeof creating !== 'undefined' && creating === true && crStage === 'pick' && crCity && crCity.name === 'Vaughan'`, 15000);
 ok('D2 tapping the typed-search result picks the city and enters the pick stage (the door Andrew hit is walkable end to end)', inPickD === true);
 await ev2(`exitCreate()`);
@@ -263,8 +267,8 @@ await ev2(`document.getElementById('crDoorManual').click()`);
 await poll(`document.getElementById('rmCityPane').classList.contains('on')`, 10000);
 const wireD0 = wire.length;
 await typeCity('King City');
-const resultsK = await poll(`document.querySelectorAll('#crCityResults .rmBtn').length >= 1`, 15000);
-await ev2(`(() => { const b = document.querySelector('#crCityResults .rmBtn'); if (b) b.click(); return true; })()`);
+const resultsK = await poll(`document.querySelectorAll('#crCityResults .routeRow').length >= 1`, 15000);
+await ev2(`(() => { const b = document.querySelector('#crCityResults .routeRow'); if (b) b.click(); return true; })()`);
 const readyK = await poll(`crPrepState === 'ready'`, 30000);
 const wD = wire.slice(wireD0);
 const gridK = await J(`({ fromPack: crGrid && crGrid.fromPack, name: crGrid && crGrid.name })`);
@@ -275,7 +279,7 @@ await openChooserTab();
 await ev2(`document.getElementById('crDoorManual').click()`);
 await poll(`document.getElementById('rmCityPane').classList.contains('on')`, 10000);
 await typeCity('Zzzzz');
-const emptyD = await poll(`document.querySelectorAll('#crCityResults .rmBtn').length === 0 && /No city matched/.test(document.getElementById('crCityResults').textContent)`, 15000);
+const emptyD = await poll(`document.querySelectorAll('#crCityResults .routeRow').length === 0 && /No city matched/.test(document.getElementById('crCityResults').textContent)`, 15000);
 ok('D4 HONEST EMPTY: a search with no matches shows a "No city matched" line in the results - not the 1.121 silence', emptyD === true);
 await typeCity('Failtown');
 const failD = await poll(`/internet connection/.test((document.getElementById('toast') || {}).textContent || '')`, 15000);
