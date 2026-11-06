@@ -260,11 +260,18 @@ const modalE = await poll(`!document.getElementById('crModal').classList.contain
 const askE = await J(`({ title: document.getElementById('crModalTitle').textContent, msg: document.getElementById('crModalMsg').textContent, yes: document.getElementById('crModalYes').textContent, no: document.getElementById('crModalNo').textContent, danger: document.getElementById('crModalYes').classList.contains('danger'), active: activeRoute && activeRoute.id, loaded: routeLoaded, menuOpen: document.getElementById('routeMenu').classList.contains('open') })`);
 ok('E2 THE ASK: the Delete tap does NOT load the route (5W stays active, the menu stays open) and the shared confirm asks "Delete Route 2?" with the exact body, Cancel / Delete labels and the danger-styled Yes | ' + JSON.stringify(askE),
   modalE === true && askE.title === 'Delete Route 2?' && askE.msg === 'The route and everything saved for it on this phone — progress, notes, history — will be removed. This can’t be undone.' && askE.yes === 'Delete' && askE.no === 'Cancel' && askE.danger === true && askE.active === '5w' && askE.loaded === true && askE.menuOpen === true);
+// Beta 1.126 TEST-PREMISE REPAIR: both samples are PINNED through the app's own
+// theme-override seam. The original code sampled "day" from the ambient theme -
+// but the app's automatic theme is sunset-driven (autoNightAt), so any run after
+// local sunset booted into night and the day sample read the night values
+// (deterministic evening failure: local + branch CI 42302781608 shard 3).
+await ev2(`(() => { setThemeOverride(false); applyNight(); setBasemap(); return true; })()`);
+await sleep(300);
 const dayE = await J(`(() => { const c = document.querySelector('#crModal .card'); const s = getComputedStyle(c); return { bg: s.backgroundColor, col: s.color }; })()`);
-await ev2(`(() => { document.body.classList.add('night'); setBasemap(); return true; })()`);
+await ev2(`(() => { setThemeOverride(true); applyNight(); setBasemap(); return true; })()`);
 await sleep(300);
 const nightE = await J(`(() => { const c = document.querySelector('#crModal .card'); const s = getComputedStyle(c); return { bg: s.backgroundColor, col: s.color }; })()`);
-await ev2(`(() => { document.body.classList.remove('night'); setBasemap(); return true; })()`);
+await ev2(`(() => { clearThemeOverride(); applyNight(); setBasemap(); return true; })()`);
 ok('E3 NIGHT TOKENS (Andrew\'s requirement): the confirm card\'s computed background + text colour EQUAL the theme tokens in BOTH modes - day rgba(255, 255, 255, 0.92) / rgb(28, 37, 52), night rgba(32, 33, 37, 0.94) / rgb(237, 242, 249) - a hardcoded-white card fails the night half | day: ' + JSON.stringify(dayE) + ' night: ' + JSON.stringify(nightE),
   dayE.bg === 'rgba(255, 255, 255, 0.92)' && dayE.col === 'rgb(28, 37, 52)' && nightE.bg === 'rgba(32, 33, 37, 0.94)' && nightE.col === 'rgb(237, 242, 249)');
 await ev2(`document.getElementById('crModalNo').click()`);
