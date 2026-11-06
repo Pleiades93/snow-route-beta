@@ -1,5 +1,8 @@
-import { launchDrive, finish } from './harness.mjs';
+import { launchDrive, bootThrough, finish } from './harness.mjs';
 import fs from 'node:fs';
+import path from 'node:path';
+import { execFileSync } from 'node:child_process';
+import { fileURLToPath } from 'node:url';
 const { proc, send, S, ev, consoleLog, sleep, poll } = await launchDrive();
 
 // drive150: Beta 1.118 create-a-route (Step 2, hybrid flow). NETWORK
@@ -20,14 +23,29 @@ const { proc, send, S, ev, consoleLog, sleep, poll } = await launchDrive();
 // basemap -> defaults secondary -> flip Bordeaux to main -> preview
 // lengths match the fixture geometry -> name it -> save -> listed ->
 // switch to it -> mark a street -> switch back: 5W slot BYTE-IDENTICAL,
-// the created route's mark in ITS slot); (b) preview corrections (add via
+// the created route's mark in ITS slot); (a2) the tap pick seam (Beta
+// 1.119): a point query at the tap returns NO road (a fingertip never
+// lands on the line's exact pixels) but a box query returns two named
+// roads - the nearer line must be picked, the farther must not (1.118's
+// point-only crMapTap fails this: "No road there" on every real tap);
+// (b) preview corrections (add via
 // the picker from preview, remove in preview, start-over confirm
 // discards - 5W slot still byte-identical); (c) the photo door (photo
 // pick -> waiting state -> a MALFORMED draft fails closed with a named
 // error and no state change -> the sandbox candidate draft imports into
 // the preview with its 34 streets; a pack-envelope draft carries its name
 // into name-it); (d) persistence (reload keeps the route; backup carries
-// userpacks; wipe + restore brings the route AND its mark back).
+// userpacks; wipe + restore brings the route AND its mark back);
+// (e) the CSP seam (Beta 1.119): a copy of the page stamped with the
+// REAL policy (scripts/csp_stamp.py, as drive116 stamps) is booted with
+// window.fetch NOT stubbed, and the app's actual crSearch /
+// fetchStreetGeometry calls are fired at their real URLs - on the 1.118
+// policy the app's own connect-src refuses both (securitypolicyviolation
+// events + console refusals naming the hosts); on 1.119 the calls leave
+// the page (whatever the rig's network then does with them) and no
+// refusal is recorded. drive150's sections (a)-(d) stub fetch in-page,
+// which is exactly why the 1.118 defect shipped unseen - this section
+// never stubs.
 const R = { checks: [] };
 const ok = (name, cond) => R.checks.push([name, cond === true]);
 const J = async (expr) => { const raw = await ev(`(() => { try { return JSON.stringify((${expr})); } catch (e) { return JSON.stringify({ __err: String(e && e.message || e) }); } })()`); return typeof raw === 'string' ? JSON.parse(raw) : {}; };
@@ -168,6 +186,47 @@ const D1 = await ev(dump5wSrc);
 const G1 = await J(`({ names: STREETNAMES.slice(), totals: Object.fromEntries(Object.entries(STRETCH).map(([n, s]) => [n, Math.round(s.total)])) })`);
 ok('A13 after the full create -> save -> switch -> mark -> switch-back cycle, the 5W slot is BYTE-IDENTICAL and its geometry is unchanged', D1 === D0 && JSON.stringify(G1) === JSON.stringify(G0));
 
+// ---------- (a2) the tap pick seam: box query + nearest line wins (Beta 1.119) ----------
+// 1.118's crMapTap asked queryRenderedFeatures for the tap's single PIXEL:
+// rendered road lines are a few px wide, so a real fingertip (landing
+// +/-10-20 px off the line) almost never returned a road and every tap
+// toasted "No road there". This stub reproduces the fingertip exactly: a
+// POINT query returns no road at all, while a BOX query returns two named
+// roads - Alderson's line 15 px off the tap, Bordeaux's 12 px - with the
+// FARTHER street first in the array, so only a nearest-line choice (never
+// array order, never the bare name list) can pick Bordeaux.
+const installPickStub = `(() => {
+  if (!map.__qrfOrig) map.__qrfOrig = map.queryRenderedFeatures.bind(map);
+  map.queryRenderedFeatures = (arg) => {
+    if (!Array.isArray(arg)) return []; // the single-pixel point query: NO road under the exact pixel
+    const cx = (arg[0][0] + arg[1][0]) / 2, cy = (arg[0][1] + arg[1][1]) / 2;
+    const mk = (name, dy) => { const a = map.unproject([cx - 40, cy + dy]); const b = map.unproject([cx + 40, cy + dy]); return { type: 'Feature', sourceLayer: 'roads', properties: { name }, geometry: { type: 'LineString', coordinates: [[a.lng, a.lat], [b.lng, b.lat]] } }; };
+    return [mk('Alderson Avenue', 15), mk('Bordeaux Drive', -12)];
+  };
+  return true;
+})()`;
+await ev(`openRouteMenu()`);
+await ev(`document.getElementById('rmCreate').click()`);
+await ev(`document.getElementById('crDoorManual').click()`);
+await ev(installPickStub);
+// a REAL MapLibre click's lngLat is by construction the unprojection of its
+// point - fire the tap that way, so the nearest-line judge is measured
+// against the same geometry the stub draws (section (a)'s canned lngLat
+// belongs to a view the map is no longer showing here)
+await ev(`(() => { const pt = { x: 210, y: 320 }; const ll = map.unproject([pt.x, pt.y]); map.fire('click', { lngLat: { lat: ll.lat, lng: ll.lng }, point: pt, originalEvent: {} }); return true; })()`);
+const gotPick = await poll(`typeof draft !== 'undefined' && draft && !!draft.roads['Bordeaux']`, 20000);
+const PK = await J(`({ streets: draft ? Object.keys(draft.roads) : [], total: draft && draft.roads['Bordeaux'] ? Math.round(computeStretches(draft.roads)['Bordeaux'].total) : -1, toast: document.getElementById('toast').textContent })`);
+ok('P1 (pick seam) a tap whose exact pixel holds NO road still picks the street whose tile line passes nearest the tap (Bordeaux, 12 px) and the pick reaches pickStreet -> the Overpass fixture (length ' + Math.round(fixtureLen('Bordeaux Drive')) + ' m) | ' + JSON.stringify(PK),
+  gotPick === true && PK.streets.join() === 'Bordeaux' && Math.abs(PK.total - fixtureLen('Bordeaux Drive')) <= fixtureLen('Bordeaux Drive') * 0.02);
+ok('P2 (pick seam) the farther street inside the same box (Alderson, 15 px, listed first) is NOT picked', !PK.streets.includes('Alderson'));
+await ev(`document.getElementById('crExit').click()`);
+await sleep(500);
+await ev(`(() => { const y = document.getElementById('crModalYes'); if (y && !document.getElementById('crModal').classList.contains('hidden')) y.click(); return true; })()`);
+await sleep(400);
+await ev(installFeatureStub); // restore section (a)'s stub for the sections that follow
+const PK3 = await J(`({ creating })`);
+ok('P3 (pick seam) the probe draft is discarded and create mode exits cleanly', PK3.creating === false);
+
 // ---------- (b) preview corrections + start-over discard ----------
 await ev(`openRouteMenu()`);
 await ev(`document.getElementById('rmCreate').click()`);
@@ -284,6 +343,50 @@ await ev(`document.querySelector('#rmRoutes .routeRow[data-route="5w"]').click()
 await poll(`typeof activeRoute !== 'undefined' && activeRoute && activeRoute.id === '5w'`, 20000);
 const P5 = await J(`({ velmar: streetComplete('Velmar'), note: noteTextOf('Velmar') })`);
 ok('D6 5W\'s own state rode the same round trip (Velmar complete, note intact)', P5.velmar === true && P5.note === 'drive150 baseline');
+
+// ---------- (e) the CSP seam: the app's real calls under the real stamped policy (Beta 1.119) ----------
+// A throwaway copy of the current source, stamped by the repo's own tool
+// (the single source of the policy, exactly as drive116 stamps), is booted
+// fresh: window.fetch is NEVER stubbed on this page. The app's actual
+// crSearch and fetchStreetGeometry are fired at their real URLs while the
+// page's securitypolicyviolation events and the CDP log are watched for a
+// refusal naming either host. (The CDP Fetch-interception form - pause the
+// request, fulfil it with the fixture payloads, watch the street land in
+// the draft - cannot run inside this drive: the shared harness owns
+// paused-request fulfilment and answers every paused request with a
+// body-less Node fetch of its URL, which cannot return Overpass data for
+// the app's POST. That form was exercised in a standalone rig instead -
+// see beta1/work/csp-fix-1119/. What ships here is the deterministic half
+// of the seam: a policy-blocked call announces itself by name, instantly.)
+const REPO_ROOT_E = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..', '..');
+const TMP_PAGE_E = path.join(REPO_ROOT_E, 'src', '.csp-drive150.html');
+fs.copyFileSync(path.join(REPO_ROOT_E, 'src', 'tracker-source.html'), TMP_PAGE_E);
+execFileSync('python3', [path.join(REPO_ROOT_E, 'scripts', 'csp_stamp.py'), 'apply', TMP_PAGE_E], { stdio: 'pipe' });
+await send('Log.enable', {}, S);
+await send('Page.navigate', { url: 'file://' + TMP_PAGE_E }, S);
+await sleep(800);
+await ev(`localStorage.clear(); location.reload(); true`);
+await sleep(500);
+await poll(`!!document.getElementById('ver')`, 20000);
+await bootThrough(ev, poll);
+const polE = await ev(`(function(){ const m = document.querySelector('meta[http-equiv="Content-Security-Policy"]'); return m ? m.getAttribute('content') : ''; })()`);
+const csTokens = (() => { const d = (polE || '').split(';').map(s => s.trim()).find(s => s === 'connect-src' || s.indexOf('connect-src ') === 0); return d ? d.split(/\s+/) : []; })();
+ok('E1 (CSP seam) the stamped page\'s connect-src names https://nominatim.openstreetmap.org (the create-flow search origin)', csTokens.includes('https://nominatim.openstreetmap.org'));
+ok('E2 (CSP seam) the stamped page\'s connect-src names https://overpass-api.de (the create-flow geometry origin)', csTokens.includes('https://overpass-api.de'));
+await ev(`window.__cspEv = []; document.addEventListener('securitypolicyviolation', e => { window.__cspEv.push(String(e.blockedURI || '') + ' | ' + String(e.violatedDirective || '')); }); true`);
+await ev(`document.getElementById('crSearchInput').value = 'Bordeaux Drive'; crSearch(); true`);
+await sleep(5000);
+const evAfterSearch = await ev(`window.__cspEv.slice()`);
+const logAfterSearch = consoleLog.filter(c => /Refused to|Content Security Policy/i.test(c.text || '') && (c.text || '').includes('nominatim.openstreetmap.org')).length;
+const evHitsSearch = (Array.isArray(evAfterSearch) ? evAfterSearch : []).filter(u => u.includes('nominatim.openstreetmap.org')).length;
+ok('E3 (CSP seam) the app\'s real search call (crSearch -> nominatim) is NOT refused by the page\'s own policy (violation events ' + evHitsSearch + ', console refusals ' + logAfterSearch + ')', evHitsSearch === 0 && logAfterSearch === 0);
+await ev(`fetchStreetGeometry('Bordeaux Drive', { lat: 43.798972, lng: -79.574666 }).then(() => {}, () => {}); true`);
+await sleep(5000);
+const evAfterGeo = await ev(`window.__cspEv.slice()`);
+const logAfterGeo = consoleLog.filter(c => /Refused to|Content Security Policy/i.test(c.text || '') && (c.text || '').includes('overpass-api.de')).length;
+const evHitsGeo = (Array.isArray(evAfterGeo) ? evAfterGeo : []).filter(u => u.includes('overpass-api.de')).length;
+ok('E4 (CSP seam) the app\'s real geometry call (fetchStreetGeometry -> overpass) is NOT refused by the page\'s own policy (violation events ' + evHitsGeo + ', console refusals ' + logAfterGeo + ')', evHitsGeo === 0 && logAfterGeo === 0);
+try { fs.rmSync(TMP_PAGE_E, { force: true }); } catch (e) {}
 
 R.exceptions = consoleLog.filter(l => l.type === 'EXCEPTION').map(l => l.text.slice(0, 200));
 finish(R, proc);
