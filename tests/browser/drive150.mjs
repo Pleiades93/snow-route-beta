@@ -215,9 +215,9 @@ ok('A2b a tap with no road feature under it says so and adds nothing | toast: ' 
 await ev(tapStreet('Bordeaux Drive'));
 const gotB = await poll(`typeof draft !== 'undefined' && draft && !!draft.roads['Bordeaux']`, 20000);
 ok('A3 tapping Bordeaux Drive (fixture roads feature through the real click handler) adds it from the prepared extract', gotB === true);
-const A4 = await J(`({ streets: Object.keys(draft.roads), mains: draft.mains.size, count: document.getElementById('crCount').textContent, chip: (document.querySelector('#crPickList .crChip') || {}).textContent || '', total: Math.round(computeStretches(draft.roads)['Bordeaux'].total), src: (map.getSource('crDraft').serialize().data.features || []).length })`);
+const A4 = await J(`({ streets: Object.keys(draft.roads), mains: draft.mains.size, count: document.getElementById('crCount').textContent, chip: (document.querySelector('#crPickList .crPChip') || {}).textContent || '', total: Math.round(computeStretches(draft.roads)['Bordeaux'].total), src: (map.getSource('crDraft').serialize().data.features || []).length })`); // Beta 1.127 premise updates in this drive: the pick rows are the picked-roads panel's rows - chip is .crPChip (A4), the panel header counts 'N roads' (A4/A6), the chip flip's proof is its own MAIN text (A7), and the theme probe reads the panel face #crPanel (I2)
 ok('A4 Bordeaux joined the draft as a SECONDARY (2ND chip, 0 mains) with its shape drawn on the draft overlay | ' + JSON.stringify(A4),
-  A4.streets.length === 1 && A4.mains === 0 && A4.count.indexOf('1 streets') === 0 && A4.chip === '2ND' && A4.src === 1);
+  A4.streets.length === 1 && A4.mains === 0 && A4.count.indexOf('1 roads') === 0 && A4.chip === '2ND' && A4.src === 1);
 ok('A5 the fetched Bordeaux length matches the fixture geometry (' + Math.round(fixtureLen('Bordeaux Drive')) + ' m) within 2% | got ' + A4.total,
   Math.abs(A4.total - fixtureLen('Bordeaux Drive')) <= fixtureLen('Bordeaux Drive') * 0.02);
 await ev(tapStreet('Alderson Avenue'));
@@ -225,10 +225,10 @@ const gotA = await poll(`typeof draft !== 'undefined' && draft && !!draft.roads[
 ok('A5b tapping Alderson Avenue adds it too', gotA === true);
 const A6 = await J(`({ streets: Object.keys(draft.roads).sort(), count: document.getElementById('crCount').textContent, ald: Math.round(computeStretches(draft.roads)['Alderson'].total) })`);
 ok('A6 Alderson Avenue tapped and added (2 streets); its stitched length matches the 5-way fixture (' + Math.round(fixtureLen('Alderson Avenue')) + ' m) within 3% | ' + JSON.stringify(A6),
-  A6.streets.length === 2 && A6.count.indexOf('2 streets') === 0 && Math.abs(A6.ald - fixtureLen('Alderson Avenue')) <= fixtureLen('Alderson Avenue') * 0.03);
-await ev(`(() => { const rows = [...document.querySelectorAll('#crPickList .crRow')]; const row = rows.find(r => r.querySelector('.crName').textContent === 'Bordeaux'); row.querySelector('.crChip').click(); return true; })()`);
-const A7 = await J(`({ mains: [...draft.mains], count: document.getElementById('crCount').textContent })`);
-ok('A7 flipping Bordeaux to MAIN updates the count line (2 streets · 1 mains)', A7.mains.length === 1 && A7.mains[0] === 'Bordeaux' && A7.count.indexOf('1 mains') > 0);
+  A6.streets.length === 2 && A6.count.indexOf('2 roads') === 0 && Math.abs(A6.ald - fixtureLen('Alderson Avenue')) <= fixtureLen('Alderson Avenue') * 0.03);
+await ev(`(() => { const rows = [...document.querySelectorAll('#crPickList .crPRow')]; const row = rows.find(r => r.querySelector('.crPName').textContent === 'Bordeaux'); row.querySelector('.crPChip').click(); return true; })()`); // Beta 1.127 premise update: the chip lives in the panel row (.crPRow/.crPName/.crPChip)
+const A7 = await J(`({ mains: [...draft.mains], chip: (() => { const rows = [...document.querySelectorAll('#crPickList .crPRow')]; const row = rows.find(r => (r.querySelector('.crPName') || {}).textContent === 'Bordeaux'); return row ? (row.querySelector('.crPChip') || {}).textContent || '' : ''; })() })`); // Beta 1.127 premise update: the panel header has no mains count - the flipped chip's MAIN text is the visible proof
+ok('A7 flipping Bordeaux to MAIN updates its panel chip (2ND -> MAIN)', A7.mains.length === 1 && A7.mains[0] === 'Bordeaux' && A7.chip === 'MAIN'); // Beta 1.127 premise update: chip text replaces the old header mains count
 await ev(`document.getElementById('crDoneBtn').click()`);
 const A8 = await J(`({ stage: crStage, pv: document.getElementById('previewSheet').classList.contains('on'), bar: document.getElementById('createBar').classList.contains('on'), rows: document.querySelectorAll('#pvList .crRow').length, pvCount: document.getElementById('pvCount').textContent })`);
 ok('A8 Done lands in the shared preview ("Is this correct?") with both streets and the count', A8.stage === 'preview' && A8.pv && !A8.bar && A8.rows === 2 && A8.pvCount.indexOf('2 streets') === 0);
@@ -575,7 +575,7 @@ const barRect = `(() => { const r = document.getElementById('createBar').getBoun
 const IBday = await J(barRect);
 await ev(`document.body.classList.add('night')`);
 const IBnight = await J(barRect);
-const themeProbe = `(() => { const cs = (sel) => { const el = document.querySelector(sel); return el ? getComputedStyle(el).backgroundColor : ''; }; const probe = document.createElement('div'); probe.style.background = 'var(--card-solid)'; document.body.appendChild(probe); const token = getComputedStyle(probe).backgroundColor; probe.remove(); return { wrap: cs('#crSearchWrap'), sheet: cs('#createSheet'), res: cs('#createResults'), row: cs('.crResult'), token }; })()`;
+const themeProbe = `(() => { const cs = (sel) => { const el = document.querySelector(sel); return el ? getComputedStyle(el).backgroundColor : ''; }; const probe = document.createElement('div'); probe.style.background = 'var(--card-solid)'; document.body.appendChild(probe); const token = getComputedStyle(probe).backgroundColor; probe.remove(); return { wrap: cs('#crSearchWrap'), sheet: cs('#crPanel'), res: cs('#createResults'), row: cs('.crResult'), token }; })()`;
 const ITnight = await J(themeProbe);
 await ev(`document.body.classList.remove('night')`);
 const ITday = await J(themeProbe);

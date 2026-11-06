@@ -186,7 +186,7 @@ await tapStreet('Bordeaux Drive');
 const addedA = await poll(`typeof draft !== 'undefined' && draft && !!draft.roads['Bordeaux']`, 15000);
 const sheetA = await sheetState();
 ok('A4 THE BOTTOM PANEL APPEARS AND NAMES THE SELECTED ROAD: tapping Bordeaux adds it to the draft and the count sheet is displayed, reads "1 streets" and lists Bordeaux - the exact panel Andrew reported missing | added: ' + addedA + ' | ' + JSON.stringify(sheetA),
-  addedA === true && sheetA.sheet === 'flex' && sheetA.count.indexOf('1 streets') === 0 && sheetA.list.indexOf('Bordeaux') >= 0);
+  addedA === true && sheetA.sheet === 'flex' && sheetA.count.indexOf('1 roads') === 0 && sheetA.list.indexOf('Bordeaux') >= 0); // Beta 1.127 premise update: the picked-roads panel header counts 'N roads' (the old count sheet said 'N streets'); the list still names Bordeaux
 await ev2(`exitCreate()`);
 
 // ---- phase B: delete a NON-active created route, then create (control) ----
@@ -206,7 +206,7 @@ await tapStreet('Bordeaux Drive');
 const addedB = await poll(`typeof draft !== 'undefined' && draft && !!draft.roads['Bordeaux']`, 15000);
 const sheetB = await sheetState();
 ok('B2 CONTROL - THE SHEET NAMES THE ROAD THERE TOO: the tapped street lands in the draft and the visible count sheet lists it | added: ' + addedB + ' | ' + JSON.stringify(sheetB),
-  addedB === true && sheetB.sheet === 'flex' && sheetB.count.indexOf('1 streets') === 0 && sheetB.list.indexOf('Bordeaux') >= 0);
+  addedB === true && sheetB.sheet === 'flex' && sheetB.count.indexOf('1 roads') === 0 && sheetB.list.indexOf('Bordeaux') >= 0); // Beta 1.127 premise update: the panel header counts 'N roads'
 await ev2(`exitCreate()`);
 
 R.exceptions = consoleLog.filter(l => l.indexOf('EXCEPTION') === 0);

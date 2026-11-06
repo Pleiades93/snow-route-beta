@@ -302,18 +302,68 @@ rest still loads); a name absent from the extract gets an honest
 "no shape found" (or, outside coverage, a re-prepare offer). Names are
 shortened by the app convention (suffix strip; ordinal avenues
 spell out — 5th Avenue is Fifth). Picked streets join as
-SECONDARIES by default, light up on the map in route colours, and
-are listed with MAIN/2ND flip chips and per-street remove.
+SECONDARIES by default and light up on the map in route colours.
+A second map tap on an already-picked street REMOVES it (Beta
+1.127, Andrew: tap again to deselect) — instantly, through the one
+removal path (`crRemoveStreet`) the panel's and preview's ✕ also
+use, with a toast naming the removal; streets still enter only
+once their geometry has resolved, so the honesty line stands.
+
+**The picked-roads panel (Beta 1.127; Andrew's approved mockups,
+beta1/work/create-sectors-mockups/).** The pick stage's bottom
+sheet is a panel with three faces of which exactly one shows
+(`syncCrPanel` is the one switch): the PANEL ("Your route so far",
+a live "N roads · X m", one compact row per street — category dot,
+name, a sub-line, the MAIN/2ND chip in the row, ✕ — plus a Clear
+all that empties the draft's streets behind the shared confirm,
+the city/session staying, and a footer of "+ Add a street" /
+"Looks right →"), the STRIP it tucks into, and the SECTOR BAR
+(below). The panel never exceeds the sheet cap (~half the visible
+viewport); its rows scroll inside it with header and footer
+fixed. TUCK-AWAY: dragging or flicking the grab handle / header
+downward — or tapping it — collapses the panel to the slim strip
+("N roads picked · X m" + Review ▴); Review or a flick up
+restores it. Collapse and restore run on the sheets' own
+closed-form spring (`springSheet`); while collapsed, a new pick
+does not force the panel back — the strip's counts update live.
+An empty draft shows no face at all, as before. All three faces
+wear the theme tokens in day and night.
+
+**Sectors (Beta 1.127).** A street in the draft can be trimmed to
+the junction-to-junction pieces actually cleaned. Tapping its
+panel row opens sector mode: the panel area shows the sector bar
+(street name, "N of M sectors picked · X m", Whole road, Done with
+this road) and the draft renders the street as one feature per
+sector — chosen in its category colour, unchosen thin grey, with
+a wide invisible hit layer picked with the same ±16/±28 px
+discipline as street taps. The sector boundaries are
+`computeStretches`' own cut rule (4 m join tolerance, cuts merged
+under 15 m, none within 12 m of an end) applied to the street's
+stitched line, but the junction set is the prepared EXTRACT (every
+other street's vertices within 12 m of the line) — never the
+draft's current contents — so a street's sectors are its real
+cross-street pieces and do not shift as other streets join or
+leave the draft (`crStreetParts`, cached per draft). Sector state
+lives ONLY in the draft (`draft.sectors[short]` = the chosen part
+indexes; an absent entry means the whole road, which is also the
+first-pick state). Un-picking every sector removes the street.
+At Save, `crFilteredRoads` stores ONLY the chosen sectors'
+polylines — the pack format is unchanged (roads = segment lists)
+and everything downstream derives from the stored geometry as
+always. Every length the flow states — panel header and rows,
+preview count, name-it summary, the preview's map framing — bills
+chosen geometry only.
 
 **Shared preview + name-it.** "Is this correct?" draws the draft on the
-map and lists every street with its length; corrections (flip, remove,
-"+ Add a street" through the same picker) happen here. "Looks right"
-goes to name-it, its own step (name + area with pre-fills, a read-only
-summary), and Save persists the pack.
+map (framed on the geometry that will save — chosen sectors, not whole
+streets) and lists every street with its length; corrections (flip,
+remove, "+ Add a street" through the same picker) happen here. "Looks
+right" goes to name-it, its own step (name + area with pre-fills, a
+read-only summary billing chosen geometry), and Save persists the pack.
 
 **Draft isolation.** A draft is session state only. It renders through
 its own GeoJSON source (`crDraft`) computed from the draft's own roads
-via `computeStretches` — the active route's geometry, engine sources
+(per-sector features while creating, Beta 1.127) — the active route's geometry, engine sources
 and storage are never touched, and the marking tap handler stands down
 while `creating` (app2). Leaving mid-draft asks first; "Start over"
 discards behind a confirm. drive150 proves the active route's slot
@@ -400,6 +450,16 @@ stands). Beta 1.126: unloadRouteToBoot originally re-added that
 class, which left the whole create stage display:none after an
 active-route delete — drive155 pins the resting state and the
 create stage's computed visibility after both delete paths.
+
+**Back hit area (Beta 1.127).** The blue menus' panes are flex
+columns, which stretched every `.rmBack` button to full pane
+width — a tap anywhere along its row navigated back, far right of
+the visible words (Andrew, on device, in both the route menus and
+Settings, which share the class). `align-self: flex-start` on the
+one shared rule shrinks every Back in both menus to its words
+(padding kept); drive156 presses 60 px right of the button's edge
+in a route pane AND a Settings pane and proves nothing happens,
+then proves the words themselves still go back.
 
 ## GPS and coverage
 
