@@ -19,6 +19,15 @@ The pre-1.76 layout is the same tails under a bare `snowroute.` prefix
 (e.g. `snowroute.v5.sides`). Those keys are now the **legacy fallback copy**
 for Route 5W (see Migration).
 
+Beta 1.117 (route separation): switching routes never moves or rewrites
+another route's slot. A switch first flushes the outgoing route's pending
+writes into its own slot, then loads the target slot read-only. A run in
+progress survives a switch exactly as it survives a reload: its records
+(including the persisted `v5.snap`) stay in its slot untouched — only the
+in-memory copy of the snapshot is dropped, so a Cancel performed after
+switching back validates the persisted snapshot, precisely the
+post-reload path.
+
 ## Keys (tails; read `snowroute.5w.<tail>` for Route 5W)
 
 | Tail | Content | Shape |
@@ -36,7 +45,7 @@ for Route 5W (see Migration).
 | `v5.sides` | **Source of truth for progress** | JSON `{p: {street: [0..3 per stretch]}, t: {street: {stretchIdx: [timeA, timeB]}}}`. Values are bit flags: 1 = side A, 2 = side B, 3 = both. Load normalizes values to 0..3 (audit G-3). |
 | `v5.snap` | Pre-Start snapshot for Cancel (Beta 1.94, audit SR-193-02) | JSON `{at, pieces, pieceTimes, done, times, via, cov}` — the board as Start found it, stamped with the run's start time (`at` === `v5.start`). Written at Start, deleted by Finish and by Cancel. A resumed run's Cancel restores from it when `at` matches the live run; it is transient working state — not a backup field, not migration-copied. Beta 1.96 (SR-195-04): validation also applies the loader's own rule to time VALUES — a completion time or piece stamp that fails `Date.parse` rejects the snapshot, exactly as the loader deletes such times. Beta 1.96 (SR-195-02): a RECOVERY backup may carry a copy of the snapshot as an optional per-route `snap` field (see the backup section) — the key itself is still never a backup field. Beta 1.97 (audit loop CG-196-02): NORMAL backups carry the snapshot the same way, through the same construction. Beta 1.95 (SR-194-03): the restore validates the snapshot strictly against the loader's structural rules first — a damaged snapshot is never applied raw; the mark-stamp journal is the fallback and the cancel message says the board was rebuilt. Beta 1.95 (SR-194-01): Finish carries the snapshot into its undo record, and Undo re-persists it as a verified gate, so Finish → Undo → Cancel restores exactly. Beta 1.110: the Undo is removed (Andrew's call) — that carry is gone with it; Finish simply deletes the key, exactly as the first sentences of this cell describe. |
 | `v2.migrated` | Migration completion marker (Beta 1.94, audit SR-193-03) | The string `'1'`, written only after every legacy field the slot should hold is verified present in it (see Migration). Its presence is the ONLY thing that makes the slot authoritative; without it the legacy keys stay authoritative and the move retries. Not backed up. |
-| `v5.preload` | Preload record `{at, saved, total}` (local only) | Per-route; not backed up. |
+| `v5.preload` | Preload record `{at, saved, total, routeSaved, routeTotal}` (local only) | Per-route; not backed up. `saved`/`total` count the whole offline pack (the union manifest — the pack is ONE shared cache). Beta 1.117: `routeSaved`/`routeTotal` count THIS route's own tile subset (its area + route core), so completion is accounted per route; records written before 1.117 lack the pair and read as pack-level only. Delete maps clears EVERY route's record along with the pack. |
 
 Global keys: `snowroute.v2.night` + `snowroute.v2.nightExp` (the theme
 override pair, Beta 1.77: since 1.77 the day/night theme is automatic by
@@ -75,7 +84,11 @@ fingerprint. On boot the flag is finally READ: a matching fingerprint
 plus a pack census of exactly the manifest count takes a fast path and
 skips the verification sweep; any doubt runs (and heals via) the full
 pass. The migration's status now also reports prune and flag-write
-failures instead of swallowing them.
+failures instead of swallowing them. Beta 1.117: the flag certifies the
+ONE shared pack cache against the UNION manifest over all known packs —
+it is deliberately a global cache certificate, NOT a per-route
+completion flag; per-route completion lives in each route's own
+`v5.preload` record (above).
 
 ## Migration: legacy → 5W slot (Beta 1.76; commit rule revised Beta 1.94)
 

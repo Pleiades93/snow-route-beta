@@ -55,9 +55,9 @@ const t = (name, cond) => { if (cond) pass++; else { fail++; console.log('FAIL',
     let handler = null;
     const $ = () => ({ addEventListener: (ev, fn) => { handler = fn; } });
     const cachesStub = { delete: del, has: async () => has };
-    new Function('$', 'caches', 'window', 'lsDel', 'toast', 'renderStatus', 'tapGuard', 'preloadRunning', 'PACKMIG_KEY', 'LS',
+    new Function('$', 'caches', 'window', 'lsDel', 'toast', 'renderStatus', 'tapGuard', 'preloadRunning', 'PACKMIG_KEY', 'LS', 'ROUTE_PACKS', 'routeKeys',
       body)($, cachesStub, { caches: cachesStub }, k => { dels.push(k); return true; }, m => toasts.push(m), () => {}, () => true, false,
-      'snowroute.v5.packmig', { pre: 'snowroute.5w.v5.preload' });
+      'snowroute.v5.packmig', { pre: 'snowroute.5w.v5.preload' }, [{ id: '5w' }], id => ({ pre: 'snowroute.' + id + '.v5.preload' })); // Beta 1.117: the handler now clears EVERY pack's preload record (one shipped pack -> the same 2 deletes: the flag + the 5W record)
     await handler();
     return { toasts, dels };
   };

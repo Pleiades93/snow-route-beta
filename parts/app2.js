@@ -16,18 +16,18 @@ function bootMap() {
   if (map) return;
   window.__bootAt = Date.now();
   map = new maplibregl.Map({ container: 'map', style: glStyleFor(isNight()), attributionControl: false, fadeDuration: 200, pixelRatio: 2, maxTileCacheSize: 200, maxTileCacheZoomLevels: 6, minZoom: 8, maxZoom: 19, maxPitch: 60 });
-  map.setCenter([(routeBox.w + routeBox.e) / 2, (routeBox.s + routeBox.n) / 2]); map.setZoom(12); // Beta 1.76: a plain area view - the camera frames the ROUTE only when one is chosen (loadRoute does the fitBounds)
+  map.setCenter(routeBox ? [(routeBox.w + routeBox.e) / 2, (routeBox.s + routeBox.n) / 2] : [-79.57, 43.82]); map.setZoom(12); // Beta 1.76: a plain area view - the camera frames the ROUTE only when one is chosen (loadRoute does the fitBounds). Beta 1.117: no route is baked in, so before any pick there is no routeBox - the map opens on the plain fallback view (themePos's constants) behind the picker
   setTimeout(() => { if (!tilesOk) { basemapDead = true; noteMapState(); } }, 9000);
   for (const fn of __onMap) fn();
   __onMap.length = 0;
 } // Beta 1.41 (performance round, Andrew approved): tiles MELT in over 200ms instead of snapping (fadeDuration was 0); the canvas renders at pixel ratio 2 instead of the phone's 3 - 4/9 the pixels per frame across all 106 layers, the biggest single fluidity win (labels are SDF and stay crisp); the tile cache is sized so a 13->17 sweep AND the trip back stay parsed. // full gestures (Beta 1.27, Andrew): drag/two-finger rotate and two-finger pitch stay ON, as in the prototype - the fresh build had them switched off
-const routeBox = (() => { let w = 1e9, s = 1e9, e = -1e9, n = -1e9; for (const nm of STREETNAMES) for (const seg of ROADS[nm]) for (const p of seg) { w = Math.min(w, p[1]); e = Math.max(e, p[1]); s = Math.min(s, p[0]); n = Math.max(n, p[0]); } return { w, s, e, n }; })();
+let routeBox = null; // Beta 1.117: the ACTIVE pack's bounding box - set by buildGeometry (app1) on every load via computeRouteBox; null before any route is chosen and for an empty pack. (Pre-1.117 this was an eval-time IIFE over the baked-in 5W ROADS.)
 function noteMapState() { const dead = !mapNoteOff && ((mapNoteArmed && !glOk) || basemapDead); $('mapNote').classList.toggle('hidden', !dead); }
 $('mapNoteNo').addEventListener('click', () => { if (!tapGuard('mapNoteNo')) return; mapNoteOff = true; noteMapState(); });
 setTimeout(() => { if (!glOk) { mapNoteArmed = true; noteMapState(); } }, 15000);
 onMapReady(() => map.on('error', e => { if (!glOk && e && e.error && /fetch|Failed/i.test(e.error.message || '') && !mapNoteArmed) { mapNoteArmed = true; noteMapState(); } }));
 onMapReady(() => map.on('sourcedata', e => { if (e.dataType === 'source' && e.sourceId === 'protomaps' && e.tile) { tilesOk++; if (basemapDead) { basemapDead = false; noteMapState(); } } })); // Beta 1.33: proof the basemap is really drawing - and the moment a tile lands after an outage, the death notice clears itself
-const ROUTE_TILE_NAMES = [...STREETNAMES, '5th Avenue', 'Angie Place', 'Astona Boulevard', 'Bayside Court', 'Bell Harbour Place', 'Blackburn Boulevard', 'Bloomingdale Lane', 'Boddy Court', 'Bourbon Street', 'Brownlee Avenue', 'Cartwright Boulevard', 'Columbus Avenue', 'Conti Crescent', 'Dianawood Ridge', 'Ferrari Court', 'Flatbush Avenue', 'Flushing Avenue', 'Frankie Lane', 'Galloway Drive', 'Greenpark Boulevard', 'Julian Court', 'Kingsnorth Boulevard', 'Malden Street', 'Marconi Avenue', 'Mellings Drive', 'Radley Street', 'Romeo Crescent', 'Santa Barbara Place', 'Tina Place', 'Topper Court', 'Valeria Boulevard', 'Velmar Drive', 'Wilshire Boulevard', 'Woolacott Road']; // Beta 1.40: every route street's name AS THE TILES SPELL IT (census of the protomaps 'roads' source layer, 2026-10-31: 34/34 matched exactly once; Fifth = '5th Avenue'). Drives the label handover in glHideLabels.
+const ROUTE_TILE_NAMES = []; // Beta 1.40: every route street's name AS THE TILES SPELL IT (census of the protomaps 'roads' source layer, 2026-10-31: 34/34 matched exactly once; Fifth = '5th Avenue'). Drives the label handover in glHideLabels. Beta 1.117: the list itself is pack data (pack.tileNames in data.js) - this live array starts empty and buildGeometry refills it in place on every load.
 function glHideLabels(m) { // BASEMAP LABEL UNIFICATION (Andrew, Beta 1.6): the day and night styles are two
   // different ready-made maps, each printing its own names in its own lettering and size. On every (re)stack,
   // normalize every basemap text layer: same typeface (each glyph service's own Noto Sans - the same face under
@@ -56,8 +56,12 @@ function glHideLabels(m) { // BASEMAP LABEL UNIFICATION (Andrew, Beta 1.6): the 
     const convF = f => (Array.isArray(f) && f[0] === 'in' && typeof f[1] === 'string') ? ['in', ['get', f[1]], ['literal', f.slice(2)]] : f; // the generated styles author kind filters in legacy form; as expressions they must be rebuilt or any combined filter is rejected whole
     for (const baseId of ['roads_labels_major', 'roads_labels_minor']) {
       const cloneId = baseId + '-route';
-      if (m.getLayer(cloneId) || !m.getLayer(baseId)) continue;
       const specL = (spec.layers || []).find(x => x.id === baseId);
+      if (m.getLayer(cloneId)) { // Beta 1.117: the clone already exists (built for a previous route) - refresh its name filter to the ACTIVE pack's tile names, or a switched route keeps the old route's label handover
+        if (specL) { const cf = specL.filter ? ['all', convF(specL.filter), ['in', ['get', 'name'], ['literal', ROUTE_TILE_NAMES]]] : ['in', ['get', 'name'], ['literal', ROUTE_TILE_NAMES]]; if (!eq(m.getFilter(cloneId), cf)) { try { m.setFilter(cloneId, cf); } catch (e2) {} } }
+        continue;
+      }
+      if (!m.getLayer(baseId)) continue;
       if (!specL) continue;
       const clone = JSON.parse(JSON.stringify(specL));
       clone.id = cloneId;
@@ -125,10 +129,10 @@ function glHideLabels(m) { // BASEMAP LABEL UNIFICATION (Andrew, Beta 1.6): the 
   } catch (e) { /* a style without label layers has nothing to normalize */ }
 }
 function addReferenceLayers() {
-  if (map.getSource('ref')) return;
   const feats = [];
   for (const name of Object.keys(REFERENCE)) { if (name === 'Village Green' || name === 'Ott' || name === 'West link') continue; // Beta 1.32/1.40 (Andrew): ALL reference lines are OFF the map - Village Green and Ott duplicate roads the basemap already names, and West link traced a dashed line over Velmar's west leg toward Rutherford (his report, 2026-10-31). The data stays (production parity); nothing draws.
     const segs = REFERENCE[name]; for (const seg of segs) feats.push({ type: 'Feature', properties: { refName: name }, geometry: { type: 'LineString', coordinates: seg.map(p => [p[1], p[0]]) } }); } // production REFERENCE shape: { name: [segment, ...] } - the first cut wrongly iterated it as an array of {name, pts}, threw on every style-ready, and silently killed the GPS + trail layers queued after it (Andrew's missing GPS dot, 2026-10-30)
+  if (map.getSource('ref')) { map.getSource('ref').setData({ type: 'FeatureCollection', features: feats }); return; } // Beta 1.117: a route switch re-points the existing source at the new pack's reference features instead of leaving the old route's drawn
   map.addSource('ref', { type: 'geojson', data: { type: 'FeatureCollection', features: feats } });
   map.addLayer({ id: 'ref-line', type: 'line', source: 'ref', filter: ['has', 'refName'], layout: { 'line-cap': 'round' }, paint: { 'line-color': isNight() ? '#aab4c0' : '#8a929c', 'line-width': 3, 'line-opacity': 0.55, 'line-dasharray': [2, 1.6] } }, map.getLayer('t1-casing') ? 't1-casing' : undefined);
 }

@@ -1,5 +1,43 @@
 # Changelog
 
+## Beta 1.117 — 2026-11-05
+Step 1 of the route programme (Andrew's direction): COMPLETE APP/ROUTE
+SEPARATION. The app is now route-agnostic and Route 5W is one pack among
+any — the segregation audit's fix list F1–F8, implemented:
+(1) F1: no route is baked in. All geometry that was computed at script
+eval from 5W (STRETCH/STREETNAMES/STREETSET, MAIN/SPOT, SAMPLES,
+routeBox/ROUTE_TILE_NAMES, the paint engine's GEO/labels/POI/hit) is now
+rebuilt per load from the active pack via buildGeometry(pack); the
+engine rebuilds through GLP.rebuildRoute. At boot, before a pick, no
+street geometry exists. data.js holds packs only (metadata + geometry);
+5W's coordinates are byte-for-byte unchanged — only the wrapper moved.
+(2) Switching works: Routes tab → pick another route and the app loads
+it live. Switch semantics = a cold boot on the target route, plus a
+pre-flush a reboot only gets via pagehide: the outgoing route's pending
+writes are flushed to its own slot first (F2), session state is reset in
+one block (F3: the in-memory cancel snapshot is cleared — the persisted
+one survives, so Cancel after switching back works exactly as after a
+reload; F4: selection, note editor, history panel, modal note,
+suggested set, dirty flags), and a run in progress on the route you
+leave is NOT ended — it persists in its slot and resumes when you pick
+that route again. GPS is device state (F8), untouched by a switch.
+(3) F5 (minimal honest form): the offline preload manifest is the union
+over every known pack (per-pack area + z15 core); with only 5W shipped
+it is byte-identical to the frozen 897-file contract (fingerprint
+unchanged). Preload records are per-route and now carry the route's own
+tile-subset counts alongside the pack totals; Delete maps clears every
+route's record. PACKMIG stays a global certificate of the one shared
+pack cache — documented as such, not a per-route flag.
+(4) F6: backup/restore judge every route by its OWN geometry —
+snapshot validation, the unknown-name count, the legacy done-map
+filter and the derived-sides path all go through packGeometry(pack);
+a done-only entry for route B restored while route A is open now
+derives B's sides from B's streets. F7: unknown-route backups still
+fail closed; the vestigial flip/prep keys are documented, unchanged.
+Proof: drive149 (boot with no geometry; 5W work → switch → fixture
+work → switch back with the 5W storage slot byte-identical; empty-pack
+load; restore-under-B derivation; preload union growth).
+
 ## Beta 1.116 — 2026-11-05
 Audit round 115 fixes: the Beta 1.115 GPS follow, hardened at its edges
 (Codex audit → adjudication → Andrew's scope gate; all five findings were
