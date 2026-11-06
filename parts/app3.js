@@ -486,7 +486,20 @@ onMapReady(() => map.on('dragstart', () => { followPaused = true; syncCentreBtn(
 // canvas that moves >10 px yields the camera to the user, pan AND bearing both (the old dragend
 // northUp haul is gone - while suspended the map stays exactly where he put it), until he re-centres.
 // A plain tap (< 10 px of movement) does NOT suspend: tapping a street to select it changes nothing.
-onMapReady(() => { const c = map.getCanvas(); let press = null; c.addEventListener('pointerdown', e => { press = { x: e.clientX, y: e.clientY }; }); window.addEventListener('pointermove', e => { if (press && !followPaused && (Math.abs(e.clientX - press.x) > 10 || Math.abs(e.clientY - press.y) > 10)) { followPaused = true; syncCentreBtn(); } }); window.addEventListener('pointerup', () => { press = null; }); window.addEventListener('pointercancel', () => { press = null; }); c.addEventListener('wheel', () => { if (!followPaused) { followPaused = true; syncCentreBtn(); } }, { passive: true }); });
+onMapReady(() => { const c = map.getCanvas(); let press = null; // {x, y, id} - the ONE pointer that pressed the canvas
+  // Beta 1.116 (audit CG-115-03) - multi-touch policy, stated explicitly: only the pointer
+  // that pressed the canvas can suspend the follow, and only ITS moves count. A second
+  // pointerdown while a press is armed is IGNORED - it never re-arms the press, and its
+  // moves never suspend (a finger resting or moving on an overlaid panel, or the second
+  // half of a pinch, cannot take the camera). If the ARMING finger itself travels >10 px -
+  // including as one half of a pinch - the follow suspends: that finger is on the map and
+  // moving it, which is exactly the claim this seam exists for. Only the arming pointer's
+  // own up/cancel releases the press.
+  c.addEventListener('pointerdown', e => { if (!press) press = { x: e.clientX, y: e.clientY, id: e.pointerId }; });
+  window.addEventListener('pointermove', e => { if (press && e.pointerId === press.id && !followPaused && (Math.abs(e.clientX - press.x) > 10 || Math.abs(e.clientY - press.y) > 10)) { followPaused = true; syncCentreBtn(); } });
+  window.addEventListener('pointerup', e => { if (press && e.pointerId === press.id) press = null; });
+  window.addEventListener('pointercancel', e => { if (press && e.pointerId === press.id) press = null; });
+  c.addEventListener('wheel', () => { if (!followPaused) { followPaused = true; syncCentreBtn(); } }, { passive: true }); });
 // HEADING-UP (Andrew, Beta 1.14 - replaces Flip): while the camera follows during a run, the map rotates
 // so his direction of travel points up - course-up from the GPS course, not the compass and not true
 // north: 'my north' is wherever he is heading. Smoothed around the circle so low-speed wobble can't spin
@@ -604,7 +617,7 @@ function acceptFix(pos) {
   if (typeof pos.coords.heading === 'number' && speed && speed >= 1) { lastCourseAt = now; setFacing(pos.coords.heading, 0.5); } // moving: face along the course
   const spd = $('spd');
   if (speed && speed > 0.5) { spd.textContent = Math.round(speed * 3.6) + ' km/h'; spd.classList.remove('hidden'); } else spd.classList.add('hidden');
-  if (firstFix && (gpsFromRun || watchId != null)) { map.jumpTo({ center: [sm[1], sm[0]], zoom: Math.max(map.getZoom(), 15) }); followPaused = false; }
+  if (firstFix && (gpsFromRun || watchId != null) && !followPaused) { map.jumpTo({ center: [sm[1], sm[0]], zoom: Math.max(map.getZoom(), 15) }); } // Beta 1.116 (audit CG-115-02): a drag made while waiting for this fix already claimed the camera - the fix still records the position (gpsPos/dispPos above), and with dispPos set the syncCentreBtn rule lights the re-centre button as the way back; no jump, no clear
   // outside-route note (route box + 400 m)
   const inB = sm[0] > routeBox.s - 0.0036 && sm[0] < routeBox.n + 0.0036 && sm[1] > routeBox.w - 0.005 && sm[1] < routeBox.e + 0.005;
   if (!inB && offRouteArmed) { offRouteArmed = false; toast("You are outside the route area — GPS won't mark streets here", 3600); }
@@ -640,14 +653,14 @@ function gpsError(e) {
   if (e && e.code === 1) { gpsDenied = true; toast('Location is off — allow location for this site in your browser settings', 4200); stopGps(); return; }
   if (Date.now() - weakToastAt > 60000) { weakToastAt = Date.now(); toast('GPS signal weak — still trying', 2600); }
 }
-function startGps(fromRun) {
+function startGps(fromRun, restart) {
   if (watchId != null) { if (fromRun) { gpsFromRun = true; $('gpsBtn').classList.add('on'); $('gpsBtn').classList.toggle('rec', true); } return; } // Beta 1.64 (audit F06): reusing a view-only watcher for a clean must still flip the Locate tab to its recording face - the class sync sits below this early return, so the tab used to stay blue while recording
   if (!navigator.geolocation) { toast('This device has no GPS access here', 3000); return; }
-  gpsFromRun = !!fromRun; followPaused = false; lastPushKey = ''; startCompass();
+  gpsFromRun = !!fromRun; if (!restart) followPaused = false; lastPushKey = ''; startCompass(); // Beta 1.116 (audit CG-115-01): the stale-watch restart passes restart=true - it is the app's own housekeeping, not a user action, so it must not clear a suspension the user deliberately made; only an explicit start begins un-suspended
   const wg = ++watchGen; watchId = navigator.geolocation.watchPosition(p => { if (wg === watchGen) acceptFix(p); }, e => { if (wg === watchGen) gpsError(e); }, { enableHighAccuracy: true, maximumAge: 2000, timeout: 20000 }); // Beta 1.69 (audit N04): callbacks carry their watcher's generation - a queued callback from a stopped or replaced watcher is dropped even when its timestamp is fresh (R01's guard cannot tell watchers apart)
   startRenderLoop(); // Beta 1.65: the frame-synced loop keeps centring between fixes (the Beta 1.28 camTimer's job, drive126 F2) - on the display's own clock now, not a second timer
   clearInterval(staleWatchTimer);
-  staleWatchTimer = setInterval(() => { if (watchId != null && Date.now() - lastFixAt > 45000 && lastFixAt) { const wasRunGps = gpsFromRun; stopGps(true); startGps(wasRunGps); } }, 15000); // Beta 1.48 (audit B02): capture run ownership BEFORE stopGps clears it - the restart used to always come back as non-run GPS, so a mid-run watcher lost its run
+  staleWatchTimer = setInterval(() => { if (watchId != null && Date.now() - lastFixAt > 45000 && lastFixAt) { const wasRunGps = gpsFromRun; stopGps(true); startGps(wasRunGps, true); } }, 15000); // Beta 1.48 (audit B02): capture run ownership BEFORE stopGps clears it - the restart used to always come back as non-run GPS, so a mid-run watcher lost its run. Beta 1.116 (CG-115-01): the restart also preserves followPaused (startGps's restart flag) - a dead zone must not hand the camera back
   $('gpsBtn').classList.add('on');
   $('gpsBtn').classList.toggle('rec', gpsFromRun); // Beta 1.49: recording wears red on the Locate tab; view-only wears blue
 }
