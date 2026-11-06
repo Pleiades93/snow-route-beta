@@ -219,7 +219,11 @@ cells: { <cellKey>: { at, ways } } }`. `ways` is the cell's streets in
 compact parsed form — `[[wayId, streetName, [[lat, lng], ...]], ...]` —
 never raw service JSON. A record is valid only for the exact `bbox` it
 was saved under; a lookup whose bounding box differs ignores the record
-whole. A record whose serialized size would exceed 60 MB is refused
+whole. The write side honours the same rule (VERIFY-3, CG-PF-15): a cell
+save arriving under a different `bbox` starts the record over instead of
+merging into it — the old box's cells are never carried under a new
+`bbox`, so the restore-time comparison can never be defeated by the
+record's own writes. A record whose serialized size would exceed 60 MB is refused
 BEFORE writing (the refusal is disclosed in the create UI); a failed
 write (quota, private mode) degrades the cache to session-only with the
 same disclosure — the cache never fails silently and never blocks

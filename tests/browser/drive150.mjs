@@ -79,7 +79,14 @@ const { proc, send, S, ev, consoleLog, sleep, poll } = await launchDrive();
 // progress, cross-cell merge/dedupe by way id, cancel-keeps-parts +
 // resume-fetches-only-missing, the saved city loading with ZERO
 // requests, and the disclosed storage-cap refusal - every scenario
-// starting from a wiped cache.
+// starting from a wiped cache. VERIFY-2 (CG-PF-13/14/15) then found the
+// grid x fallback x cache coherence family, graded by section (k): a
+// fallback started MID-GRID-LOAD must stop the grid (downloads aborted,
+// no cell orphaned in 'fetching') and Resume must still be able to
+// finish the city; a fallback landing over a grid that settled with a
+// FAILED cell must not promote the city to READY; and a cache record
+// whose city bounding box changed between writes must not carry its old
+// cells into the new grid (neither in the record nor at restore).
 const R = { checks: [] };
 const ok = (name, cond) => R.checks.push([name, cond === true]);
 const J = async (expr) => { const raw = await ev(`(() => { try { return JSON.stringify((${expr})); } catch (e) { return JSON.stringify({ __err: String(e && e.message || e) }); } })()`); return typeof raw === 'string' ? JSON.parse(raw) : {}; };
@@ -999,6 +1006,100 @@ await ev(`window.__jCityHold = false`);
 const J10 = await J(`({ city: crCity && crCity.name, area: draft && draft.area, stage: crStage })`);
 ok('J10 (last-city race, CG-PF-11) the remembered-city button is offered (' + hasLastJ + '); its lookup held 4 s while Toronto is searched and picked - the late Vaughan answer CANNOT overwrite the session: city and draft area stay Toronto | ' + JSON.stringify(J10),
   hasLastJ === true && J10.city === 'Toronto' && J10.area === 'Toronto' && J10.stage === 'pick');
+await jExitDiscard();
+
+// ---------- (k) grid x fallback x cache coherence (VERIFY-2: CG-PF-13/14/15) ----------
+// The three sequences VERIFY-2 reproduced against the 1.121 branch and
+// the first battery never combined: a fallback started DURING a grid
+// load, a fallback landing AFTER a grid settled with a failed cell, and
+// a cache record written under two different bounding boxes.
+// K1 (CG-PF-13): the fallback's start must STOP the grid - its live
+// downloads aborted, its in-flight cells returned to 'pending' - so a
+// later Resume can still finish the city. On the defective tree the
+// fallback's generation bump orphans the in-flight cells: their answers
+// settle while the grid is orphaned, their handlers discard them, and
+// the cells sit in 'fetching' with no live request behind them -
+// Resume only resets 'failed' cells, so the city can never finish.
+await jWipe();
+await ev(`window.__jDelayMs = 6000`);
+await ev(`openRouteMenu()`);
+await ev(`document.getElementById('rmCreate').click()`);
+await ev(`document.getElementById('crDoorManual').click()`);
+await pickCityVaughan();
+const k1Flying = await poll(`!!(typeof crGrid !== 'undefined' && crGrid && crGrid.cells.some(c => c.state === 'fetching'))`, 15000).catch(() => false);
+const abK1a = await ev(`window.__jAborted`);
+await ev(`window.__jDelayMs = 0`); // the fallback answers at once; the grid's in-flight requests keep their 6 s
+await ev(`crStartPrep({ lat: 43.9, lng: -79.56 })`); // an anchor outside the city: the fallback box, started MID-GRID-LOAD
+await sleep(600);
+const K1mid = await J(`({ aborted: window.__jAborted, fetching: crGrid ? crGrid.cells.filter(c => c.state === 'fetching').length : -1, stopped: crGrid && crGrid.stopped })`);
+ok('K1a (fallback mid-grid, CG-PF-13) starting the fallback STOPS the grid: its downloads are aborted (aborts ' + abK1a + ' -> ' + K1mid.aborted + ') and NO cell is left in the fetching state (orphaned cells: ' + K1mid.fetching + ', grid stop: ' + K1mid.stopped + ') | grid was flying: ' + k1Flying,
+  k1Flying === true && K1mid.aborted > abK1a && K1mid.fetching === 0);
+await sleep(6500); // on the defective tree the orphaned answers settle inside this window and are discarded; on the fixed tree the grid is already stopped and nothing moves
+const k1Deg = await poll(`crPrepState === 'degraded'`, 15000).catch(() => false);
+await ev(`document.getElementById('crHintBtn').click()`); // Retry missing parts -> crGridResume
+const k1Ready = await poll(`crPrepState === 'ready'`, 25000).catch(() => false);
+const K1b = await J(`({ state: crPrepState, done: crGrid ? crGrid.cells.filter(c => c.state === 'done').length : -1, total: crGrid ? crGrid.cells.length : -1, fetching: crGrid ? crGrid.cells.filter(c => c.state === 'fetching').length : -1 })`);
+ok('K1b (fallback mid-grid, CG-PF-13) after the interruption the city still RESUMES to fully ready - every cell fetched, none wedged (degraded first: ' + k1Deg + ') | ' + JSON.stringify(K1b),
+  k1Deg === true && k1Ready === true && K1b.done === K1b.total && K1b.fetching === 0);
+await jExitDiscard();
+// K2 (CG-PF-14): one cell of the city refuses (503) on every attempt, so
+// the grid settles DEGRADED with the missing part disclosed; a fallback
+// box landing afterwards must NOT promote the city to plain READY - the
+// failed cell still counts.
+const installStubK = `(() => {
+  const prev = window.fetch.bind(window);
+  window.__kFailCell = null; // { s, w } of the ONE grid cell the service refuses, or null
+  const boxOf = raw => { const m = /\\(([-\\d.]+),([-\\d.]+),([-\\d.]+),([-\\d.]+)\\)/.exec(raw); return m ? { s: +m[1], w: +m[2] } : null; };
+  window.fetch = (url, opts) => {
+    const u = String(url);
+    if ((u.indexOf('overpass-api.de') >= 0 || u.indexOf('overpass.kumi.systems') >= 0) && window.__kFailCell) {
+      const b = boxOf(decodeURIComponent((opts && opts.body) || ''));
+      if (b && Math.abs(b.s - window.__kFailCell.s) < 0.0005 && Math.abs(b.w - window.__kFailCell.w) < 0.0005) return new Promise(res => setTimeout(() => res(new Response('refused by fixture (one cell)', { status: 503 })), 300));
+    }
+    return prev(url, opts);
+  };
+  return true;
+})()`;
+await ev(installStubK);
+await ev(`window.__kFailCell = { s: 43.820932, w: -79.56024 }`); // cell r1c1 of the fixture city
+await jEnter();
+const k2Deg = await poll(`crPrepState === 'degraded'`, 30000).catch(() => false);
+const K2a = await J(`({ failed: crGrid ? crGrid.cells.filter(c => c.state === 'failed').length : -1, done: crGrid ? crGrid.cells.filter(c => c.state === 'done').length : -1, hint: document.getElementById('createHint').textContent, btn: document.getElementById('crHintBtn').textContent })`);
+ok('K2a (one failed cell) the grid settles DEGRADED with the missing part disclosed ("loaded except 1 part", Retry missing parts offered) | ' + JSON.stringify(K2a),
+  k2Deg === true && K2a.failed === 1 && K2a.done === 3 && K2a.hint.indexOf('loaded except 1 part') >= 0 && K2a.btn === 'Retry missing parts');
+await ev(`crStartPrep({ lat: 43.9, lng: -79.56 })`); // the fallback box, outside the city - it lands successfully
+const k2Box = await poll(`!!(crCov && crCov.boxes.some(b => 43.9 >= b.s && 43.9 <= b.n && -79.56 >= b.w && -79.56 <= b.e))`, 20000).catch(() => false);
+await sleep(300);
+const K2b = await J(`({ state: crPrepState, failed: crGrid ? crGrid.cells.filter(c => c.state === 'failed').length : -1, hint: document.getElementById('createHint').textContent, btn: document.getElementById('crHintBtn').textContent })`);
+ok('K2b (fallback over a failed cell, CG-PF-14) the fallback box landed (' + k2Box + ') but the city is NOT promoted to ready: the settled state still counts the failed cell - DEGRADED, the missing part still disclosed, Retry missing parts still offered | ' + JSON.stringify(K2b),
+  k2Box === true && K2b.state === 'degraded' && K2b.failed === 1 && K2b.hint.indexOf('loaded except 1 part') >= 0 && K2b.btn === 'Retry missing parts');
+await ev(`window.__kFailCell = null`);
+await jExitDiscard();
+// K3 (CG-PF-15): the same city NAME saved under two different bounding
+// boxes (the lookup's answer changed between visits). A save under the
+// new box must start the record over - the old box's cells must neither
+// survive in the record nor be restored as coverage for the new grid
+// (the restore-time guard compares the record's bbox, so overwriting
+// the bbox while keeping the cells defeats it).
+await jWipe();
+await ev(`crCacheNote = ''`); // an earlier scenario's disclosed refusal must not mute these saves - the app's own write path is graded directly here
+const KBOX_A = { s: 43.785, n: 43.845, w: -79.61, e: -79.5105 }; // the fixture city's box, as first saved
+const KBOX_B = { s: 43.7, n: 43.76, w: -79.61, e: -79.5105 }; // the same city's name under a DIFFERENT box
+await ev(`(async () => { const A = ${JSON.stringify(KBOX_A)}; await crCacheSaveCell('Vaughan', A, 4, 'r0c0', [[101, 'Alpha Street', [[43.79, -79.6], [43.8, -79.6]]]]); await crCacheSaveCell('Vaughan', A, 4, 'r0c1', [[102, 'Beta Street', [[43.79, -79.55], [43.8, -79.55]]]]); return true; })()`);
+await ev(`(async () => { const B = ${JSON.stringify(KBOX_B)}; await crCacheSaveCell('Vaughan', B, 4, 'r1c0', [[103, 'Gamma Street', [[43.71, -79.6], [43.72, -79.6]]]]); return true; })()`);
+const K3rec = JSON.parse(await ev(`(async () => { const r = await crIdbGet('Vaughan'); return JSON.stringify(r ? { bbox: r.bbox, keys: Object.keys(r.cells || {}).sort() } : null); })()`));
+ok('K3a (cache bbox change, CG-PF-15) after a save under a DIFFERENT bounding box, the stored record carries the new box and ONLY the new box\'s cell - the old box\'s cells are discarded, not merged under the new bbox | ' + JSON.stringify(K3rec),
+  !!K3rec && JSON.stringify(K3rec.bbox) === JSON.stringify(KBOX_B) && K3rec.keys.join() === 'r1c0');
+await ev(`window.__jDelayMs = 4000`); // the new grid's own fetches stay in flight while the restore is graded
+await ev(`openRouteMenu()`);
+await ev(`document.getElementById('rmCreate').click()`);
+await ev(`document.getElementById('crDoorManual').click()`);
+await ev(`crPickCity({ display_name: 'Vaughan, Ontario, Canada', lat: '43.73', lon: '-79.56', boundingbox: ['43.700', '43.760', '-79.610', '-79.5105'], class: 'place', type: 'city', address: { city: 'Vaughan', state: 'Ontario', country: 'Canada' } })`);
+await sleep(1200); // the cache read + restore land well inside this window
+const K3b = await J(`({ names: crCov ? Object.keys(crCov.byName) : [], doneCells: crGrid ? crGrid.cells.filter(c => c.state === 'done').map(c => c.key) : [] })`);
+ok('K3b (cache bbox change, CG-PF-15) restoring the city under its NEW box never certifies the old box\'s streets: neither Alpha nor Beta is in the extract, and neither old cell is marked done from cache | ' + JSON.stringify(K3b),
+  !K3b.names.includes('Alpha Street') && !K3b.names.includes('Beta Street') && !K3b.doneCells.includes('r0c0') && !K3b.doneCells.includes('r0c1'));
+await ev(`window.__jDelayMs = 0`);
 await jExitDiscard();
 
 // ---------- (e) the CSP seam: the app's real calls under the real stamped policy (Beta 1.119) ----------
