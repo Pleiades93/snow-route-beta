@@ -285,6 +285,7 @@ function tapStretch(name, idx, anchor) { // map taps ACCUMULATE (Beta 1.28): tap
 }
 function deselect() { sel = null; selStretch = null; selSet = []; clearChips(); if (window.GLP) window.GLP.syncSel(); renderPanel(); }
 onMapReady(() => map.on('click', e => {
+  if (creating) return; // Beta 1.118: in the create flow, map taps pick streets for the DRAFT - they never mark the active route
   if (Date.now() < swallowClickUntil) return;
   const pt = map.project([e.lngLat.lng, e.lngLat.lat]);
   const near = nearestStreet(pt);
@@ -654,7 +655,7 @@ function routeRowEl(p) { // Beta 1.94 (audit F-04): rows are built as DOM nodes 
 }
 function renderRouteLists() { document.querySelectorAll('.routeList').forEach(el => { el.replaceChildren(...ROUTE_PACKS.map(routeRowEl)); }); }
 function wireRouteRows(container, choose) { container.addEventListener('click', e => { const row = e.target.closest('.routeRow'); if (row) choose(row.dataset.route); }); }
-function showRmPane(id) { ['rmMain', 'rmListPane', 'rmCreatePane'].forEach(p => $(p).classList.toggle('on', p === id)); }
+function showRmPane(id) { ['rmMain', 'rmListPane', 'rmCreatePane', 'rmPhotoPane', 'rmNamePane'].forEach(p => $(p).classList.toggle('on', p === id)); }
 function openRouteMenu() { const rm = $('routeMenu'); closeSheets(); showRmPane('rmMain'); rm.classList.add('tab'); renderRouteLists(); rm.classList.add('open'); }
 function closeRouteMenu() { const rm = $('routeMenu'); rm.classList.remove('open'); rm.classList.remove('tab'); }
 $('routesBtn').addEventListener('click', () => { if (!tapGuard('routesBtn')) return; if ($('routeMenu').classList.contains('open')) closeRouteMenu(); else openRouteMenu(); });
