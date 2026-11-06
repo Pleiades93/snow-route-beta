@@ -1202,6 +1202,7 @@ function crStartPrep(anchor) { // the FALLBACK preparation (second amendment, it
   if (crCov && crInAnyBox(crCov.boxes, anchor.lat, anchor.lng) && crPrepState !== 'preparing') { crRenderHint(); return; } // verified coverage already includes this anchor - reuse it, no second download (CG-PF-04)
   if (crPrep && crPrepState === 'preparing' && crInBox(crBoxAround(crPrep.anchor.lat, crPrep.anchor.lng, CR_INNER_KM), anchor.lat, anchor.lng)) return; // the same preparation is already in flight - dedupe
   if (crPrep) crAbortOp(crPrep.op); // a superseding preparation stops the old download outright (CG-PF-10)
+  if (crGrid) crGridStop('superseded'); // CG-PF-13: a fallback starting over a live grid must STOP the grid first - the generation bump below would otherwise orphan its in-flight cells in 'fetching' (their answers settle into the dead generation, their handlers discard them, and Resume - which only resets 'failed' cells - could never reschedule them, wedging the city mid-load forever). crGridStop aborts the grid's downloads and returns those cells to 'pending', so the city stays resumable; on a settled grid it changes nothing but the stopped marker, which crGridSettledState already reads correctly
   const session = crSession, gen = ++crCovGen;
   const outer = crBoxAround(anchor.lat, anchor.lng, CR_INNER_KM + CR_BUFFER_KM);
   crPrepState = 'preparing'; crPrepFail = null; crFailFromGrid = false; crPrepAnchor = anchor; crWanted = null; // starting a preparation IS the answer to any outstanding offer
@@ -1215,7 +1216,8 @@ function crStartPrep(anchor) { // the FALLBACK preparation (second amendment, it
     if (res.kind === 'stale') return; // superseded mid-flight; the newer operation owns the state
     if (res.ok) {
       crCovMerge(res.json.elements, outer);
-      crPrepState = (crGrid && crGridPendingCount() > 0) ? 'degraded' : 'ready'; // a fallback box landing does not pretend a part-missing city is whole
+      crPrepState = crGrid ? crGridSettledState() : 'ready'; // a fallback box landing does not pretend a part-missing city is whole: the settled state comes from the grid's own judge - CG-PF-14: the pending count alone promoted a city with a FAILED cell (nothing pending, one part refused) to plain 'ready', dropping the missing-parts disclosure and its Retry
+      if (crPrepState === 'failed' && crGrid && crGrid.lastFail) { crPrepFail = crGrid.lastFail; crFailFromGrid = true; } // the box landed but the city had wholly failed: keep the grid's honest failure and its Retry (mirrors crGridFinish)
       crSweepPending();
     } else { crPrepState = 'failed'; crPrepFail = res; }
     crRenderHint();
@@ -1303,7 +1305,9 @@ function crCacheDisclose() { // the one wording for every cache failure (cap, qu
 function crCacheSaveCell(cityName, bbox, totalCells, key, ways) { // write-through, one cell at a time, serialized; ways in the compact stored form [[id, name, pts], ...]
   crCacheQueue = crCacheQueue.then(async () => {
     if (crCacheNote) return; // already refused/failed for this city: stop writing, the disclosure stands
-    const rec = (await crIdbGet(cityName)) || { cityName, bbox, cells: {}, savedAt: Date.now(), totalCells };
+    let rec = await crIdbGet(cityName);
+    if (rec && rec.bbox && (rec.bbox.s !== bbox.s || rec.bbox.n !== bbox.n || rec.bbox.w !== bbox.w || rec.bbox.e !== bbox.e)) rec = null; // CG-PF-15: a record saved under a DIFFERENT bounding box is not this grid's cache - its cells were downloaded for another grid. Merging a fresh cell into it while overwriting its bbox would defeat the restore-time bbox guard in crCityPrepare and certify coverage that was never downloaded for this grid; a changed box starts the record over
+    if (!rec) rec = { cityName, bbox, cells: {}, savedAt: Date.now(), totalCells };
     rec.bbox = bbox; rec.totalCells = totalCells;
     rec.cells[key] = { at: Date.now(), ways };
     rec.savedAt = Date.now();
