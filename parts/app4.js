@@ -609,7 +609,7 @@ $('stDel').addEventListener('click', async () => {
 });
 // ---- About / What's new ----
 const WHATSNEW = { // the curated in-app notes: plain words, LATEST RELEASE ONLY (Beta 1.114, Andrew: the accumulated list cluttered the About pane). A release REPLACES this entry with its own in the same change - it never accumulates; the full history lives in CHANGELOG.md, not the app
-  v: 'Beta 1.118', items: ["You can now create your own routes — from a photo of the route map, or by searching and tapping streets yourself — check the preview, fix anything, name it, save"]
+  v: 'Beta 1.119', items: ["Fixed: creating a route by searching and tapping streets works again — the app's security settings were blocking its own search, and taps now find the road under your finger"]
 };
 function renderAbout() {
   const cur = $('ver').textContent.trim();
@@ -1261,13 +1261,53 @@ async function pickStreet(osmName, lngLat) {
   } catch (e) { toast('Could not load the shape of ' + short + ' — check your connection and tap it again', 3600); }
   crPickBusy = false;
 }
+function crFeatDistM(lngLat, geom) { // metres from the tap to the nearest point of a tile feature's line(s), in distM's flat-earth metres. CHOICE ONLY (see crMapTap): the number judges which named street a tap meant - it is never stored and never shapes the route
+  if (!geom) return Infinity;
+  const lines = geom.type === 'LineString' ? [geom.coordinates] : (geom.type === 'MultiLineString' ? geom.coordinates : []);
+  const px = lngLat.lng * MLNG, py = lngLat.lat * MLAT;
+  let best = Infinity;
+  for (const line of lines) {
+    if (!Array.isArray(line)) continue;
+    for (let i = 0; i < line.length; i++) {
+      const ax = line[i][0] * MLNG, ay = line[i][1] * MLAT;
+      const d0 = Math.hypot(px - ax, py - ay); if (d0 < best) best = d0;
+      if (i > 0) {
+        const bx = line[i - 1][0] * MLNG, by = line[i - 1][1] * MLAT;
+        const dx = ax - bx, dy = ay - by, L2 = dx * dx + dy * dy;
+        let t = L2 ? ((px - bx) * dx + (py - by) * dy) / L2 : 0; t = Math.max(0, Math.min(1, t));
+        const d = Math.hypot(px - (bx + t * dx), py - (by + t * dy)); if (d < best) best = d;
+      }
+    }
+  }
+  return best;
+}
 function crMapTap(e) {
   if (!creating || crStage !== 'pick' || !map) return;
-  let feats = [];
-  try { feats = map.queryRenderedFeatures(e.point) || []; } catch (err) {}
-  const f = feats.find(x => x && x.sourceLayer === 'roads' && x.properties && typeof x.properties.name === 'string' && !!x.properties.name);
-  if (!f) { toast('No road there — tap right on a road line', 2400); return; }
-  pickStreet(f.properties.name, e.lngLat); // the tile feature's NAME is the identity; its geometry is never used (the approved reconciliation - display tiles re-segment streets and misplace joins)
+  // Beta 1.119: query a small BOX around the tap, not the tap's single pixel.
+  // Rendered road lines are a few px wide and a fingertip lands +/-10-20 px
+  // off them, so the 1.118 point query almost never held a road and every
+  // real tap toasted "No road there" (Andrew, on device). The tile
+  // geometry's ONLY job here is to choose WHICH named street the tap meant
+  // (the line passing closest to the tap wins); it is never stored - the
+  // street's stored shape still comes from Overpass at pick time (identity
+  // from the tile name, shape from the accurate source - the approved
+  // reconciliation; display tiles re-segment streets and misplace joins).
+  const roadFeats = (half) => {
+    let feats = [];
+    try { feats = map.queryRenderedFeatures([[e.point.x - half, e.point.y - half], [e.point.x + half, e.point.y + half]]) || []; } catch (err) {}
+    return feats.filter(x => x && x.sourceLayer === 'roads' && x.properties && typeof x.properties.name === 'string' && !!x.properties.name);
+  };
+  let pick = null;
+  for (const half of [16, 28]) { // a finger's real tolerance first; one wider retry before giving up
+    const named = roadFeats(half);
+    if (!named.length) continue;
+    let pickD = Infinity;
+    for (const f of named) { const d = crFeatDistM(e.lngLat, f.geometry); if (d < pickD) { pickD = d; pick = f.properties.name; } }
+    if (!pick) pick = named[0].properties.name; // a named road whose tile line is unusable still names the street - the name is the identity
+    break; // the first box that names any road decides
+  }
+  if (!pick) { toast('No road there — tap right on a road line', 2400); return; }
+  pickStreet(pick, e.lngLat);
 }
 onMapReady(() => map.on('click', crMapTap));
 $('crDoneBtn').addEventListener('click', () => { if (draftStreets().length) setCreateStage('preview'); });

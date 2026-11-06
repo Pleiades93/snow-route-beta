@@ -28,6 +28,15 @@ Design notes (adjudicated 2026-10-28):
   jsdelivr for the MapLibre tags the Pages build injects), the three map
   hosts (Esri tiles, OpenFreeMap, CARTO), same-origin for the update
   check's self-fetch and the manifest, blob: workers for MapLibre GL.
+  Beta 1.119: connect-src ALSO names the create-a-route flow's two
+  service origins (Nominatim street search, the Overpass API for street
+  geometry) - the only third-party calls the app itself makes. Beta
+  1.118 shipped the create flow without them, so the policy refused the
+  app's own search and geometry fetches and route creation died behind
+  a "needs internet" toast on an online phone; the build gate in
+  build-pages.py now asserts both hosts inside connect-src, and
+  tests/browser/selftest-csp-connect-src.mjs re-proves it against the
+  built page.
   style-src-attr 'unsafe-inline' is required: the app carries a few
   static style="" attributes (element styles set from JS are not
   CSP-governed); the <style> BLOCK stays hash-locked via style-src-elem.
@@ -51,7 +60,8 @@ POLICY_TEMPLATE = (
     "https://cdn.jsdelivr.net; "
     "connect-src 'self' "
     "https://tiles.basemaps.cartocdn.com https://protomaps.github.io "
-    "https://cdn.jsdelivr.net; "
+    "https://cdn.jsdelivr.net https://nominatim.openstreetmap.org "
+    "https://overpass-api.de; "
     "worker-src blob: 'self'; child-src blob: 'self'; "   # 'self' is load-bearing: the service worker is a same-origin file, and blob:-only here silently blocked its registration - killing ALL offline capability while the app looked fine online (2026-11-01, Andrew's 'saved 0 of 894'). blob: stays for the map library's internal workers. The build gate asserts 'self' is present.
     "font-src 'none'; manifest-src 'self'; "
     "base-uri 'none'; form-action 'none'; object-src 'none'"
