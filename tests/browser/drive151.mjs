@@ -124,14 +124,16 @@ const bootRoute = async () => {
   await poll(`typeof routeLoaded !== 'undefined' && routeLoaded === true`, 30000);
   await poll(`!document.getElementById('splash')`, 10000);
 };
+// Beta 1.126 TEST-PREMISE UPDATE: 1.125 restyled the manual-search city results
+// from .rmBtn boxes to .routeRow rows; the selectors in this helper follow.
 const pickVaughan = async () => {
   await ev2(`openRouteMenu()`);
   await ev2(`document.getElementById('rmCreate').click()`);
   await ev2(`document.getElementById('crDoorManual').click()`);
   await poll(`document.getElementById('rmCityPane').classList.contains('on')`, 10000);
   await ev2(`(() => { const i = document.getElementById('crCityInput'); i.value = 'Vaughan'; i.dispatchEvent(new Event('input', { bubbles: true })); return true; })()`);
-  await poll(`document.querySelectorAll('#crCityResults .rmBtn').length === 1`, 15000);
-  await ev2(`document.querySelector('#crCityResults .rmBtn').click()`);
+  await poll(`document.querySelectorAll('#crCityResults .routeRow').length === 1`, 15000);
+  await ev2(`document.querySelector('#crCityResults .routeRow').click()`);
   return await poll(`typeof creating !== 'undefined' && creating === true && crStage === 'pick'`, 15000);
 };
 const TAP_POINTS = { 'Bordeaux Drive': { lat: 43.798972, lng: -79.574666 }, 'Alderson Avenue': { lat: 43.8000667, lng: -79.573051 } };

@@ -77,15 +77,19 @@ const setFile = async (selector, path) => {
   return vis;
 };
 const TAP_POINTS = { 'Bordeaux Drive': { lat: 43.798972, lng: -79.574666 }, 'Alderson Avenue': { lat: 43.8000667, lng: -79.573051 }, 'Edgewater Avenue': { lat: 43.8100, lng: -79.5750 }, 'Faraway Avenue': { lat: 43.8150, lng: -79.5600 }, 'Farfaraway Avenue': { lat: 43.8200, lng: -79.5600 } };
+// Beta 1.126 TEST-PREMISE UPDATE: 1.125 restyled the manual-search city
+// results from .rmBtn boxes to .routeRow rows (.routeName + .routeArea);
+// this helper's selectors and its first-row text read follow the shipped
+// shape. The assertions' meanings are unchanged.
 // Beta 1.121: Door 2 now opens the CITY pane - this helper walks it
 // (type the city, wait for the populated-place results, pick Vaughan,
 // land in the pick stage) and reports what it saw for the checks.
 const pickCityVaughan = async () => {
   const pane = await poll(`document.getElementById('rmCityPane').classList.contains('on')`, 10000).catch(() => false);
   await ev(`(() => { const i = document.getElementById('crCityInput'); i.value = 'Vaughan'; i.dispatchEvent(new Event('input', { bubbles: true })); return true; })()`);
-  const rows = await poll(`document.querySelectorAll('#crCityResults .rmBtn').length === 1`, 10000).catch(() => false);
-  const first = rows === true ? await ev(`(document.querySelector('#crCityResults .rmBtn') || {}).textContent || ''`) : '';
-  if (rows === true) await ev(`document.querySelector('#crCityResults .rmBtn').click()`);
+  const rows = await poll(`document.querySelectorAll('#crCityResults .routeRow').length === 1`, 10000).catch(() => false);
+  const first = rows === true ? await ev(`(() => { const b = document.querySelector('#crCityResults .routeRow'); if (!b) return ''; const n = b.querySelector('.routeName'); const a = b.querySelector('.routeArea'); return (n ? n.textContent : '') + ', ' + (a ? a.textContent : ''); })()`) : '';
+  if (rows === true) await ev(`document.querySelector('#crCityResults .routeRow').click()`);
   const inPick = rows === true ? await poll(`typeof creating !== 'undefined' && creating === true && crStage === 'pick'`, 10000).catch(() => false) : false;
   return { pane: pane === true, rows: rows === true, first, inPick: inPick === true };
 };

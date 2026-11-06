@@ -2,7 +2,7 @@
 <html lang="en" class="boot">
 <head>
 <meta charset="UTF-8">
-<meta http-equiv="Content-Security-Policy" content="default-src 'none'; script-src 'sha384-+wMz02KfxYv2NnJfmXjVXZeDtUm6Nkei8EiW+MJ5JIRWPQcxc8y4HYG6nG2RS7lW' https://cdn.jsdelivr.net; style-src-elem 'sha384-zO1L9V7QbdDQrLIa+rqJzlvg5SWycRZ8Qg6u2B3KUsdv1ompvROO3enW6i+JTMS8' https://cdn.jsdelivr.net; style-src-attr 'unsafe-inline'; img-src 'self' data: blob: https://tiles.basemaps.cartocdn.com https://protomaps.github.io https://cdn.jsdelivr.net; connect-src 'self' https://tiles.basemaps.cartocdn.com https://protomaps.github.io https://cdn.jsdelivr.net https://nominatim.openstreetmap.org https://overpass-api.de https://overpass.kumi.systems; worker-src blob: 'self'; child-src blob: 'self'; font-src 'none'; manifest-src 'self'; base-uri 'none'; form-action 'none'; object-src 'none'">
+<meta http-equiv="Content-Security-Policy" content="default-src 'none'; script-src 'sha384-53pjhlD/BRmum83+U4U02ShTOTS1bmnbtve4aB4rh8xS8/e/f57cBdTtCkOTk3T4' https://cdn.jsdelivr.net; style-src-elem 'sha384-zO1L9V7QbdDQrLIa+rqJzlvg5SWycRZ8Qg6u2B3KUsdv1ompvROO3enW6i+JTMS8' https://cdn.jsdelivr.net; style-src-attr 'unsafe-inline'; img-src 'self' data: blob: https://tiles.basemaps.cartocdn.com https://protomaps.github.io https://cdn.jsdelivr.net; connect-src 'self' https://tiles.basemaps.cartocdn.com https://protomaps.github.io https://cdn.jsdelivr.net https://nominatim.openstreetmap.org https://overpass-api.de https://overpass.kumi.systems; worker-src blob: 'self'; child-src blob: 'self'; font-src 'none'; manifest-src 'self'; base-uri 'none'; form-action 'none'; object-src 'none'">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="mobile-web-app-capable" content="yes">
@@ -378,7 +378,7 @@ input, textarea { caret-color: currentColor; } /* Beta 1.125 (Andrew): the typin
 <div id="hud">
   <div id="warn">Not saving — storage is full or blocked</div>
   <div class="row">
-    <div class="titleStack"><div class="title">Snow Route Beta</div><div class="ver" id="ver">Beta 1.125</div></div>
+    <div class="titleStack"><div class="title">Snow Route Beta</div><div class="ver" id="ver">Beta 1.126</div></div>
   </div>
   <div id="stats"></div>
 </div>
@@ -4699,7 +4699,7 @@ $('stDel').addEventListener('click', async () => {
 });
 // ---- About / What's new ----
 const WHATSNEW = { // the curated in-app notes: plain words, LATEST RELEASE ONLY (Beta 1.114, Andrew: the accumulated list cluttered the About pane). A release REPLACES this entry with its own in the same change - it never accumulates; the full history lives in CHANGELOG.md, not the app
-  v: 'Beta 1.125', items: ["Tidier searching: when you search for a city manually, the matches now arrive as a neat list — the city name on its own line, the province and country small underneath — instead of one bunched-up block", "The blinking typing line now shows in every search bar and text field as you type, like in other apps"]
+  v: 'Beta 1.126', items: ["Fixed: creating a new route after deleting a route works again — the street search bar and the panel listing your selected roads show up like they should"]
 };
 function renderAbout() {
   const cur = $('ver').textContent.trim();
@@ -5024,7 +5024,7 @@ function loadRoute(id) {
   if (runStart && !validateSnap(parseJ(lsGet(LS.snap), null), runStart)) toast('Resumed run — no usable cancel snapshot, so Cancel will rebuild from the marks made during the run', 4600); // Beta 1.95 (deep audit SR-194-04): the honesty lives at RESUME - Start still never blocks (the settled 1.63 stance: he is standing in the snow), but a run whose cancel snapshot is missing or damaged is resumed with its reduced Cancel guarantee stated, not silent
   if (runStart) startGps(true);
 }
-function unloadRouteToBoot() { // Beta 1.124: the ACTIVE route was deleted - return the app to the boot-picker state, mirroring a cold boot before any pick (no geometry at eval, no state loaded, LS at its eval default, the menu in boot mode over rmMain). Unlike a route SWITCH there is no flush: the outgoing slot's keys are wiped by deleteRoute right after, so nothing may write into them here - resetSwitchSession's clearing (note timer, dirty flags) is exactly the teardown needed, and its flush steps are deliberately NOT run.
+function unloadRouteToBoot() { // Beta 1.124: the ACTIVE route was deleted - return the app to the boot-picker state, mirroring a cold boot before any pick (no geometry at eval, no state loaded, LS at its eval default, the menu in boot mode over rmMain). The mirror is of the RESTING picker, whose html carries NO boot class (Beta 1.126 - see the remove() below). Unlike a route SWITCH there is no flush: the outgoing slot's keys are wiped by deleteRoute right after, so nothing may write into them here - resetSwitchSession's clearing (note timer, dirty flags) is exactly the teardown needed, and its flush steps are deliberately NOT run.
   const hadRun = !!runStart;
   resetSwitchSession();
   if (hadRun) stopGps(true); // a clean on a deleted route cannot keep recording - its trail's slot no longer exists
@@ -5033,7 +5033,7 @@ function unloadRouteToBoot() { // Beta 1.124: the ACTIVE route was deleted - ret
   doneSet = new Set(); doneTimes = {}; doneVia = {}; notes = {}; history = []; runStart = 0; trail = []; trailSessions = []; coveredIdx = {}; pieces = {}; pieceTimes = {}; // the eval empties (app1's declarations)
   LS = { ...routeKeys('5w'), ...LS_GLOBAL }; // the eval default - the next pick repoints it via loadRoute
   activeRoute = null; routeLoaded = false;
-  document.documentElement.classList.add('boot');
+  document.documentElement.classList.remove('boot'); // Beta 1.126: NOT add. A cold boot's RESTING picker carries no html.boot - the boot tail's arm() removes it when the menu arms (finish()/loadRoute are backstops), because while it stands the 1.86 chrome-absence rule (html.boot body > *:not(#splash):not(#routeMenu):not(#map) { display: none !important }) force-hides every other body child. 1.124 re-added it here and nothing on the create path removed it again, so after deleting the active route the whole create stage (#createBar, #createSheet, #createResults, #createHint - and the 'Route deleted' toast) was display:none for the rest of the session: Andrew's search bar and selected-roads panel never painted, though the map (excepted from the rule) still took taps and the draft filled invisibly. drive155 A1-A4 pin the resting state + computed visibility.
   const rm = $('routeMenu'); rm.classList.remove('tab', 'open'); rm.classList.add('boot', 'show'); showRmPane('rmMain'); renderRouteLists();
   syncWake();
 }
