@@ -3,8 +3,10 @@ import fs from 'node:fs';
 const { proc, send, S, ev, consoleLog, sleep, poll } = await launchDrive();
 
 // drive150: Beta 1.118 create-a-route (Step 2, hybrid flow). NETWORK
-// FIXTURES: Nominatim + Overpass are stubbed IN-PAGE from the route-creation
-// sandbox's real Vaughan OSM extract (osm-raw.json) - deterministic, no
+// FIXTURES: Nominatim + Overpass are stubbed IN-PAGE from fixtures frozen
+// out of the route-creation sandbox's real Vaughan OSM extract
+// (tests/browser/fixtures/create-osm.json, vendored so CI runs the same
+// data) - deterministic, no
 // live network for the create flow (basemap tiles still flow through the
 // harness as usual). The tap's feature pick is fixtured at the map seam:
 // in this headless rig the basemap style never readies (the known limit
@@ -31,9 +33,8 @@ const ok = (name, cond) => R.checks.push([name, cond === true]);
 const J = async (expr) => { const raw = await ev(`(() => { try { return JSON.stringify((${expr})); } catch (e) { return JSON.stringify({ __err: String(e && e.message || e) }); } })()`); return typeof raw === 'string' ? JSON.parse(raw) : {}; };
 
 // ---------- fixtures ----------
-const osm = JSON.parse(fs.readFileSync(new URL('../../..', import.meta.url).pathname + 'work/route-creation-sandbox/osm-raw.json', 'utf8'));
-const elsByName = {};
-for (const e of osm.elements) { if (e.type === 'way' && e.geometry && e.tags && e.tags.name) (elsByName[e.tags.name] = elsByName[e.tags.name] || []).push(e); }
+const FIXDATA = JSON.parse(fs.readFileSync(new URL('./fixtures/create-osm.json', import.meta.url), 'utf8'));
+const elsByName = FIXDATA.overpass;
 const MLAT = 111320, MLNG = 80386;
 const dM = (a, b) => Math.hypot((a[1] - b[1]) * MLNG, (a[0] - b[0]) * MLAT);
 const wayLen = g => { let s = 0; for (let i = 1; i < g.length; i++) s += dM([g[i - 1].lat, g[i - 1].lon], [g[i].lat, g[i].lon]); return s; };
@@ -44,7 +45,8 @@ const FIXTURE = {
 };
 fs.writeFileSync('/tmp/d150-photo.png', Buffer.from('iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mNk+M9QDwADhgGAWjR9awAAAABJRU5ErkJggg==', 'base64'));
 fs.writeFileSync('/tmp/d150-bad.json', '{this is not a draft');
-const candidate = JSON.parse(fs.readFileSync(new URL('../../..', import.meta.url).pathname + 'work/route-creation-sandbox/candidate-route-roads.json', 'utf8'));
+const candidate = FIXDATA.candidate;
+fs.writeFileSync('/tmp/d150-candidate.json', JSON.stringify(candidate));
 const envelope = { name: 'Envelope Route', area: 'Vaughan', mains: ['Bordeaux'], roads: { Bordeaux: [elsByName['Bordeaux Drive'][0].geometry.map(g => [g.lat, g.lon])], Alderson: [elsByName['Alderson Avenue'][0].geometry.map(g => [g.lat, g.lon])] } };
 fs.writeFileSync('/tmp/d150-envelope.json', JSON.stringify(envelope));
 const candLen = Object.values(candidate).reduce((a, segs) => a + segs.reduce((b, s) => b + wayLen(s.map(p => ({ lat: p[0], lon: p[1] }))), 0), 0);
@@ -211,8 +213,7 @@ let C2 = await J(`({ creating, draft: draft === null, toast: document.getElement
 if (!C2.toast) { await ev(`document.getElementById('crDraftFile').dispatchEvent(new Event('change'))`); await sleep(600); C2 = await J(`({ creating, draft: draft === null, toast: document.getElementById('toast').textContent })`); }
 ok('C2 a MALFORMED draft file fails closed: named error toast, no create mode, no draft | toast: ' + C2.toast,
   C2.creating === false && C2.draft && C2.toast.indexOf('could not be read') >= 0);
-const candPath = new URL('../../..', import.meta.url).pathname + 'work/route-creation-sandbox/candidate-route-roads.json';
-await setFile('#crDraftFile', candPath);
+await setFile('#crDraftFile', '/tmp/d150-candidate.json');
 await poll(`typeof creating !== 'undefined' && creating === true && crStage === 'preview'`, 10000).catch(() => false);
 let C3 = await J(`({ creating, stage: crStage, streets: draft ? Object.keys(draft.roads).length : -1, rows: document.querySelectorAll('#pvList .crRow').length, total: draft ? Math.round(Object.values(computeStretches(draft.roads)).reduce((a, s) => a + s.total, 0)) : -1 })`);
 if (!C3.creating) { await ev(`document.getElementById('crDraftFile').dispatchEvent(new Event('change'))`); await poll(`typeof creating !== 'undefined' && creating === true`, 10000); C3 = await J(`({ creating, stage: crStage, streets: draft ? Object.keys(draft.roads).length : -1, rows: document.querySelectorAll('#pvList .crRow').length, total: draft ? Math.round(Object.values(computeStretches(draft.roads)).reduce((a, s) => a + s.total, 0)) : -1 })`); }

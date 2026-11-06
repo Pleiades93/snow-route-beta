@@ -3,7 +3,7 @@ const { proc, send, S, ev, consoleLog, sleep, poll } = await launchDrive();
 
 // drive145: Beta 1.76 route menu + multi-route storage.
 // Boot flow: the splash brand hands over to a route menu on the same blue
-// screen (Choose a route / Create new route placeholder); the map behind
+// screen (Choose a route / Create new route); the map behind
 // carries NO route until one is picked. Picking Route 5W loads it, removes
 // the splash. Beta 1.78 (Andrew): the Routes tab reopens that same
 // full-screen blue menu (slide-up takeover; badge and its own X exist only
@@ -33,7 +33,7 @@ ok('N3 Choose lists Route 5W, unbadged while nothing is loaded', await ev(`(func
 await ev(`document.getElementById('rmBack').click(); true`); await sleep(400);
 ok('N4 Back returns to the main pane', await ev(`document.getElementById('rmMain').classList.contains('on') && !document.getElementById('rmListPane').classList.contains('on')`));
 await ev(`document.getElementById('rmCreate').click(); true`); await sleep(400);
-ok('N5 Create is an honest placeholder', await ev(`document.getElementById('rmCreatePane').classList.contains('on') && document.getElementById('rmCreatePane').textContent.indexOf('Coming soon') >= 0`));
+ok('N5 Create opens the two doors (Beta 1.118 remap: the 1.117 "Coming soon" placeholder is replaced by the real flow - From a photo / Select streets myself, and the placeholder text is gone)', await ev(`document.getElementById('rmCreatePane').classList.contains('on') && !!document.getElementById('crDoorPhoto') && !!document.getElementById('crDoorManual') && document.getElementById('rmCreatePane').textContent.indexOf('Coming soon') < 0`));
 await ev(`document.getElementById('rmBack2').click(); true`); await sleep(400);
 
 // --- the pick -------------------------------------------------------------
