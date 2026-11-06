@@ -14,6 +14,17 @@ await bootThrough(ev, poll); // boots end at the route menu - click through to a
 // dot sat still up to 784 ms of every 1 s between fixes on real clocks (stepped
 // run: see work/gps-follow-smooth/), there was no re-centre button, and a mid-run
 // dragend hauled the bearing back to north.
+// Beta 1.116 extension (audit round 115): (W) the two branch checks CG-115-05
+// named - a wheel gesture suspends, and Locate tapped while FOLLOWING stops GPS;
+// D3's drift tolerance tightened 25 m -> <2 m with a mid-window sample (the
+// shipped behaviour measured 0.0 m - the guard was looser than the claim);
+// (N) CG-115-02: a drag made while waiting for the first fix must survive that
+// fix (no jumpTo, no clear - the centre button is the way back); (A) CG-115-01:
+// the >45 s stale-watch restart must preserve a suspension (only an explicit
+// user start clears one); (P) CG-115-03: a second pointer's move must never
+// suspend - only the pointer that pressed the canvas counts; (I) CG-115-04 as
+// amended by Andrew at the gate: the centre button wears the standard GPS
+// crosshair icon and the Locate tab's face is byte-identical to 1.115.
 const R = { checks: [] };
 const ok = (name, cond) => R.checks.push([name, cond === true]);
 const J = async (expr) => { const raw = await ev(`(() => { try { return JSON.stringify((${expr})); } catch (e) { return JSON.stringify({ __err: String(e && e.message || e) }); } })()`); return typeof raw === 'string' ? JSON.parse(raw) : {}; };
@@ -71,10 +82,13 @@ ok('D2 the drag suspends the follow | followPaused ' + postDrag.paused, postDrag
 CB = await centreBtnState();
 ok('V2 the re-centre button appears while suspended: 56 px, right-aligned with day/night, directly below it | ' + JSON.stringify(CB), CB.exists === true && CB.hidden === false && Math.abs(CB.w - 56) <= 1.5 && Math.abs(CB.right - CB.nRight) <= 2 && CB.top >= CB.nBottom + 3 && CB.top <= CB.nBottom + 22);
 const dotBefore = await J(`dispPos`);
-await sleep(3500); // 3+ more fixes land while suspended
+await sleep(1750); // fixes keep landing while suspended - sample the hold mid-window too (Beta 1.116, CG-115-05: the <25 m tolerance could pass a 20 m drift; the shipped behaviour measured 0.0 m, so the guard is tightened to the claim)
+const midCam = await J(`(() => { const c = map.getCenter(); return { lng: c.lng, lat: c.lat }; })()`);
+ok('D3a mid-window, the suspended camera has not drifted (< 2 m) | drift ' + hav([postDrag.lat, postDrag.lng], [midCam.lat, midCam.lng]).toFixed(2) + ' m', hav([postDrag.lat, postDrag.lng], [midCam.lat, midCam.lng]) < 2);
+await sleep(1750); // 3+ more fixes land while suspended in total
 const heldCam = await J(`(() => { const c = map.getCenter(); return { lng: c.lng, lat: c.lat, paused: followPaused }; })()`);
 const dotAfter = await J(`dispPos`);
-ok('D3 the camera stays where the user put it across 3 s of fixes | drift ' + hav([postDrag.lat, postDrag.lng], [heldCam.lat, heldCam.lng]).toFixed(1) + ' m', hav([postDrag.lat, postDrag.lng], [heldCam.lat, heldCam.lng]) < 25 && heldCam.paused === true);
+ok('D3 the camera stays where the user put it across 3 s of fixes | drift ' + hav([postDrag.lat, postDrag.lng], [heldCam.lat, heldCam.lng]).toFixed(2) + ' m', hav([postDrag.lat, postDrag.lng], [heldCam.lat, heldCam.lng]) < 2 && heldCam.paused === true);
 ok('D4 the dot keeps moving while the camera is suspended | advanced ' + (dotBefore && dotAfter ? hav(dotBefore, dotAfter).toFixed(1) : 'n/a') + ' m', dotBefore && dotAfter && hav(dotBefore, dotAfter) > 15);
 // resume via the Locate tab this time (spec: it also re-centres from suspension)
 await ev(`$('gpsBtn').click()`);
@@ -112,6 +126,101 @@ ok('R4 after re-centre, heading-up re-engages toward the new course | bearing ' 
 await ev(`(() => { window.__feed.on = false; stopGps(); return true; })()`);
 CB = await centreBtnState();
 ok('V4 the re-centre button is gone once location is off | ' + JSON.stringify(CB), CB.hidden === true);
+
+// ---- W (Beta 1.116, CG-115-05's added branch checks): wheel suspends; Locate while FOLLOWING stops ----
+await ev(`(() => { const f = window.__feed; f.lat = ${base.lat}; f.lng = ${base.lng}; f.n = 0; f.heading = 90; startGps(false); f.on = true; return true; })()`);
+const wReady = await poll120(`(() => { if (!gpsPos || !dispPos || followPaused) return false; const c = map.getCenter(); return Math.abs((c.lng - dispPos[1]) * ${MLNG}) < 25 && Math.abs((c.lat - dispPos[0]) * ${MLAT}) < 25; })()`, 25000);
+await send('Input.dispatchMouseEvent', { type: 'mouseWheel', x: cv.x, y: cv.y, deltaX: 0, deltaY: -240 }, S);
+await sleep(400);
+const wState = await J(`(() => ({ paused: followPaused }))()`);
+ok('W0 setup: follow engaged before the wheel gesture | ready ' + wReady, wReady === true);
+ok('W1 a wheel gesture over the map suspends the follow | followPaused ' + wState.paused, wReady === true && wState.paused === true);
+await ev(`$('centreBtn').click()`);
+await sleep(300);
+const wResumed = await J(`(() => ({ paused: followPaused, wid: watchId }))()`);
+ok('W2 the centre button resumes from a wheel suspension (GPS stays on) | ' + JSON.stringify(wResumed), wResumed.paused === false && wResumed.wid !== null);
+await ev(`$('gpsBtn').click()`);
+await sleep(300);
+const wStopped = await J(`(() => ({ wid: watchId, on: $('gpsBtn').classList.contains('on') }))()`);
+ok('W3 Locate tapped while FOLLOWING stops GPS outright (the branch D5 never covered) | ' + JSON.stringify(wStopped), wStopped.wid === null && wStopped.on === false);
+await ev(`(() => { window.__feed.on = false; return true; })()`);
+
+// ---- N (Beta 1.116, CG-115-02): a drag made while waiting for the first fix survives that fix ----
+// The first fix lands 300 m NORTH of the camera: on 1.115 the firstFix jumpTo drags the
+// camera ~300 m to it (and clears the suspension); fixed, the camera must not move at all.
+// The discrimination deliberately does NOT ride on the drag panning the map: in this rig's
+// full-run context a pre-fix drag's MapLibre pan may not register (the instrumented run in
+// round-115/build/probe-n-full.json: canvas is the event target, the pointer seam arms the
+// suspension, dragstart never fires, centre unmoved - D1 remains the pan proof, on the
+// session's first drag). What this section judges is the app's firstFix behaviour given an
+// armed suspension, which is the finding's exact claim.
+await ev(`(() => { stopGps(); gpsPos = null; dispPos = null; kf = null; followPaused = false; map.jumpTo({ center: [${base.lng}, ${base.lat}], zoom: 16 }); startGps(false); return true; })()`);
+await sleep(300);
+await dragMouse(cv.x, cv.y, -168);
+await sleep(350);
+const nDrag = await J(`(() => { const c = map.getCenter(); return { lng: c.lng, lat: c.lat, paused: followPaused, hasPos: !!gpsPos }; })()`);
+await ev(`(() => { window.__wpOk({ coords: { latitude: ${base.lat} + 300 / ${MLAT}, longitude: ${base.lng}, accuracy: 8, speed: 0, heading: null }, timestamp: Date.now() }); return true; })()`);
+await sleep(500);
+const nFix = await J(`(() => { const c = map.getCenter(); return { lng: c.lng, lat: c.lat, paused: followPaused, hasPos: !!gpsPos }; })()`);
+CB = await centreBtnState();
+ok('N1 the pre-fix drag armed the suspension before any position existed | paused ' + nDrag.paused, nDrag.paused === true && nDrag.hasPos === false);
+ok('N2 the first fix does NOT clear a suspension made during acquisition | paused ' + nFix.paused + ', position recorded ' + nFix.hasPos, nFix.paused === true && nFix.hasPos === true);
+ok('N3 the first fix does NOT jump the camera to itself - and the re-centre button lights as the way back | camera drift from the pre-fix centre ' + hav([nDrag.lat, nDrag.lng], [nFix.lat, nFix.lng]).toFixed(2) + ' m (the fix sits 300 m north), button hidden ' + CB.hidden, hav([nDrag.lat, nDrag.lng], [nFix.lat, nFix.lng]) < 2 && CB.exists === true && CB.hidden === false);
+await ev(`(() => { stopGps(); return true; })()`);
+
+// ---- A (Beta 1.116, CG-115-01): the stale-watch restart preserves a suspension ----
+await ev(`(() => { window.__wpCalls = 0; const cur = navigator.geolocation.watchPosition; navigator.geolocation.watchPosition = (ok2, err) => { window.__wpCalls++; window.__wpOk = ok2; return cur(ok2, err); }; const f = window.__feed; f.lat = ${base.lat}; f.lng = ${base.lng}; f.n = 0; f.heading = 90; startGps(false); f.on = true; return true; })()`);
+const aReady = await poll120(`(() => { if (!gpsPos || !dispPos || followPaused) return false; const c = map.getCenter(); return Math.abs((c.lng - dispPos[1]) * ${MLNG}) < 25 && Math.abs((c.lat - dispPos[0]) * ${MLAT}) < 25; })()`, 25000);
+await dragMouse(cv.x, cv.y, -168);
+await sleep(350);
+const aDrag = await J(`(() => { const c = map.getCenter(); return { lng: c.lng, lat: c.lat, paused: followPaused }; })()`);
+const aCalls0 = await J(`window.__wpCalls`);
+await ev(`(() => { window.__feed.on = false; lastFixAt = Date.now() - 60000; return true; })()`);
+const aRestarted = await poll120(`window.__wpCalls > ${aCalls0}`, 30000);
+await sleep(400);
+const aState = await J(`(() => { const c = map.getCenter(); return { lng: c.lng, lat: c.lat, paused: followPaused, wid: watchId }; })()`);
+ok('A0 setup: follow engaged, then suspended by a drag | ready ' + aReady + ', paused ' + aDrag.paused, aReady === true && aDrag.paused === true);
+ok('A1 the stale-watch restart fires - and the suspension SURVIVES it | restarted ' + aRestarted + ', paused after ' + aState.paused, aRestarted === true && aState.paused === true);
+ok('A2 the camera did not move across the restart | drift ' + hav([aDrag.lat, aDrag.lng], [aState.lat, aState.lng]).toFixed(2) + ' m', hav([aDrag.lat, aDrag.lng], [aState.lat, aState.lng]) < 2);
+await ev(`(() => { window.__feed.on = true; return true; })()`);
+await sleep(2600);
+const aState2 = await J(`(() => { const c = map.getCenter(); return { lng: c.lng, lat: c.lat, paused: followPaused }; })()`);
+ok('A3 fixes on the restarted watch still do not reclaim the camera | paused ' + aState2.paused + ', drift ' + hav([aDrag.lat, aDrag.lng], [aState2.lat, aState2.lng]).toFixed(2) + ' m', aState2.paused === true && hav([aDrag.lat, aDrag.lng], [aState2.lat, aState2.lng]) < 2);
+await ev(`(() => { window.__feed.on = false; stopGps(); startGps(false); return true; })()`);
+const aFresh = await J(`(() => ({ paused: followPaused, wid: watchId }))()`);
+ok('A4 control: an explicit user start DOES clear the suspension (a fresh start follows) | ' + JSON.stringify(aFresh), aFresh.paused === false && aFresh.wid !== null);
+await ev(`(() => { stopGps(); return true; })()`);
+
+// ---- P (Beta 1.116, CG-115-03): only the pointer that pressed the canvas can suspend ----
+await ev(`(() => { const f = window.__feed; f.lat = ${base.lat}; f.lng = ${base.lng}; f.n = 0; f.heading = 90; startGps(false); f.on = true; return true; })()`);
+const pReady = await poll120(`(() => { if (!gpsPos || !dispPos || followPaused) return false; const c = map.getCenter(); return Math.abs((c.lng - dispPos[1]) * ${MLNG}) < 25 && Math.abs((c.lat - dispPos[0]) * ${MLAT}) < 25; })()`, 25000);
+const touchEv = async (type, pts) => send('Input.dispatchTouchEvent', { type, touchPoints: pts }, S);
+await touchEv('touchStart', [{ id: 1, x: cv.x, y: cv.y }]);
+await touchEv('touchMove', [{ id: 1, x: cv.x - 60, y: cv.y }]);
+await sleep(300);
+const p0 = await J(`(() => ({ paused: followPaused }))()`);
+await touchEv('touchEnd', [{ id: 1, x: cv.x - 60, y: cv.y }]);
+ok('P0 control: a one-finger TOUCH drag suspends through the same pointer seam (proves the synthetic-touch seam is alive in this rig) | paused ' + p0.paused + ', follow ready ' + pReady, pReady === true && p0.paused === true);
+await ev(`$('gpsBtn').click()`);
+await sleep(300);
+const pResumed = await J(`(() => ({ paused: followPaused }))()`);
+await touchEv('touchStart', [{ id: 1, x: cv.x, y: cv.y }]);
+await touchEv('touchStart', [{ id: 1, x: cv.x, y: cv.y }, { id: 2, x: cv.x + 6, y: cv.y }]);
+await touchEv('touchMove', [{ id: 1, x: cv.x, y: cv.y }, { id: 2, x: cv.x + 70, y: cv.y }]);
+await sleep(300);
+const p1 = await J(`(() => ({ paused: followPaused, dev: window.__dragEv }))()`);
+ok('P1 a second pointer moving >10 px does NOT suspend the follow | followPaused ' + p1.paused + ' (resumed first: ' + pResumed.paused + ', dragstart x' + (p1.dev ? p1.dev.start : '?') + ')', pResumed.paused === false && p1.paused === false);
+await touchEv('touchMove', [{ id: 1, x: cv.x - 70, y: cv.y }, { id: 2, x: cv.x + 70, y: cv.y }]);
+await sleep(300);
+const p2 = await J(`(() => ({ paused: followPaused }))()`);
+ok('P2 the arming pointer own drag still suspends | followPaused ' + p2.paused, p2.paused === true);
+await touchEv('touchEnd', [{ id: 1, x: cv.x - 70, y: cv.y }, { id: 2, x: cv.x + 70, y: cv.y }]);
+
+// ---- I (Beta 1.116, CG-115-04 as amended by Andrew at the gate): centre button = standard GPS crosshair; the Locate face is untouched ----
+const iFace = await J(`(() => { const cb = $('centreBtn'); const gb = $('gpsBtn'); return { cbHtml: cb.innerHTML, lbl: gb.querySelector('.tabLbl').textContent, ico: gb.querySelector('.tabIco').innerHTML, paused: followPaused }; })()`);
+ok('I1 the re-centre button wears the GPS crosshair/target artwork (ring + centre dot + ticks), not the navigation arrow | ' + String(iFace.cbHtml).slice(0, 110), iFace.paused === true && String(iFace.cbHtml).includes('<circle') && String(iFace.cbHtml).includes('fill-rule="evenodd"'));
+ok('I2 while suspended, the Locate tab face is still the 1.115 face (Locate label + the pack navigation-arrow icon; the file-level diff proves byte-identity) | label ' + JSON.stringify(iFace.lbl), iFace.lbl === 'Locate' && String(iFace.ico).includes('M12 2.6 19.6 20.6') && !String(iFace.ico).includes('<circle'));
+await ev(`(() => { window.__feed.on = false; stopGps(); return true; })()`);
 
 R.exceptions = consoleLog.filter(c => c.type === 'EXCEPTION').map(c => String(c.text || '').slice(0, 200));
 finish(R, proc);

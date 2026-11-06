@@ -303,7 +303,7 @@
 <div id="hud">
   <div id="warn">Not saving — storage is full or blocked</div>
   <div class="row">
-    <div class="titleStack"><div class="title">Snow Route Beta</div><div class="ver" id="ver">Beta 1.115</div></div>
+    <div class="titleStack"><div class="title">Snow Route Beta</div><div class="ver" id="ver">Beta 1.116</div></div>
   </div>
   <div id="stats"></div>
 </div>
@@ -3747,7 +3747,20 @@ onMapReady(() => map.on('dragstart', () => { followPaused = true; syncCentreBtn(
 // canvas that moves >10 px yields the camera to the user, pan AND bearing both (the old dragend
 // northUp haul is gone - while suspended the map stays exactly where he put it), until he re-centres.
 // A plain tap (< 10 px of movement) does NOT suspend: tapping a street to select it changes nothing.
-onMapReady(() => { const c = map.getCanvas(); let press = null; c.addEventListener('pointerdown', e => { press = { x: e.clientX, y: e.clientY }; }); window.addEventListener('pointermove', e => { if (press && !followPaused && (Math.abs(e.clientX - press.x) > 10 || Math.abs(e.clientY - press.y) > 10)) { followPaused = true; syncCentreBtn(); } }); window.addEventListener('pointerup', () => { press = null; }); window.addEventListener('pointercancel', () => { press = null; }); c.addEventListener('wheel', () => { if (!followPaused) { followPaused = true; syncCentreBtn(); } }, { passive: true }); });
+onMapReady(() => { const c = map.getCanvas(); let press = null; // {x, y, id} - the ONE pointer that pressed the canvas
+  // Beta 1.116 (audit CG-115-03) - multi-touch policy, stated explicitly: only the pointer
+  // that pressed the canvas can suspend the follow, and only ITS moves count. A second
+  // pointerdown while a press is armed is IGNORED - it never re-arms the press, and its
+  // moves never suspend (a finger resting or moving on an overlaid panel, or the second
+  // half of a pinch, cannot take the camera). If the ARMING finger itself travels >10 px -
+  // including as one half of a pinch - the follow suspends: that finger is on the map and
+  // moving it, which is exactly the claim this seam exists for. Only the arming pointer's
+  // own up/cancel releases the press.
+  c.addEventListener('pointerdown', e => { if (!press) press = { x: e.clientX, y: e.clientY, id: e.pointerId }; });
+  window.addEventListener('pointermove', e => { if (press && e.pointerId === press.id && !followPaused && (Math.abs(e.clientX - press.x) > 10 || Math.abs(e.clientY - press.y) > 10)) { followPaused = true; syncCentreBtn(); } });
+  window.addEventListener('pointerup', e => { if (press && e.pointerId === press.id) press = null; });
+  window.addEventListener('pointercancel', e => { if (press && e.pointerId === press.id) press = null; });
+  c.addEventListener('wheel', () => { if (!followPaused) { followPaused = true; syncCentreBtn(); } }, { passive: true }); });
 // HEADING-UP (Andrew, Beta 1.14 - replaces Flip): while the camera follows during a run, the map rotates
 // so his direction of travel points up - course-up from the GPS course, not the compass and not true
 // north: 'my north' is wherever he is heading. Smoothed around the circle so low-speed wobble can't spin
@@ -3865,7 +3878,7 @@ function acceptFix(pos) {
   if (typeof pos.coords.heading === 'number' && speed && speed >= 1) { lastCourseAt = now; setFacing(pos.coords.heading, 0.5); } // moving: face along the course
   const spd = $('spd');
   if (speed && speed > 0.5) { spd.textContent = Math.round(speed * 3.6) + ' km/h'; spd.classList.remove('hidden'); } else spd.classList.add('hidden');
-  if (firstFix && (gpsFromRun || watchId != null)) { map.jumpTo({ center: [sm[1], sm[0]], zoom: Math.max(map.getZoom(), 15) }); followPaused = false; }
+  if (firstFix && (gpsFromRun || watchId != null) && !followPaused) { map.jumpTo({ center: [sm[1], sm[0]], zoom: Math.max(map.getZoom(), 15) }); } // Beta 1.116 (audit CG-115-02): a drag made while waiting for this fix already claimed the camera - the fix still records the position (gpsPos/dispPos above), and with dispPos set the syncCentreBtn rule lights the re-centre button as the way back; no jump, no clear
   // outside-route note (route box + 400 m)
   const inB = sm[0] > routeBox.s - 0.0036 && sm[0] < routeBox.n + 0.0036 && sm[1] > routeBox.w - 0.005 && sm[1] < routeBox.e + 0.005;
   if (!inB && offRouteArmed) { offRouteArmed = false; toast("You are outside the route area — GPS won't mark streets here", 3600); }
@@ -3901,14 +3914,14 @@ function gpsError(e) {
   if (e && e.code === 1) { gpsDenied = true; toast('Location is off — allow location for this site in your browser settings', 4200); stopGps(); return; }
   if (Date.now() - weakToastAt > 60000) { weakToastAt = Date.now(); toast('GPS signal weak — still trying', 2600); }
 }
-function startGps(fromRun) {
+function startGps(fromRun, restart) {
   if (watchId != null) { if (fromRun) { gpsFromRun = true; $('gpsBtn').classList.add('on'); $('gpsBtn').classList.toggle('rec', true); } return; } // Beta 1.64 (audit F06): reusing a view-only watcher for a clean must still flip the Locate tab to its recording face - the class sync sits below this early return, so the tab used to stay blue while recording
   if (!navigator.geolocation) { toast('This device has no GPS access here', 3000); return; }
-  gpsFromRun = !!fromRun; followPaused = false; lastPushKey = ''; startCompass();
+  gpsFromRun = !!fromRun; if (!restart) followPaused = false; lastPushKey = ''; startCompass(); // Beta 1.116 (audit CG-115-01): the stale-watch restart passes restart=true - it is the app's own housekeeping, not a user action, so it must not clear a suspension the user deliberately made; only an explicit start begins un-suspended
   const wg = ++watchGen; watchId = navigator.geolocation.watchPosition(p => { if (wg === watchGen) acceptFix(p); }, e => { if (wg === watchGen) gpsError(e); }, { enableHighAccuracy: true, maximumAge: 2000, timeout: 20000 }); // Beta 1.69 (audit N04): callbacks carry their watcher's generation - a queued callback from a stopped or replaced watcher is dropped even when its timestamp is fresh (R01's guard cannot tell watchers apart)
   startRenderLoop(); // Beta 1.65: the frame-synced loop keeps centring between fixes (the Beta 1.28 camTimer's job, drive126 F2) - on the display's own clock now, not a second timer
   clearInterval(staleWatchTimer);
-  staleWatchTimer = setInterval(() => { if (watchId != null && Date.now() - lastFixAt > 45000 && lastFixAt) { const wasRunGps = gpsFromRun; stopGps(true); startGps(wasRunGps); } }, 15000); // Beta 1.48 (audit B02): capture run ownership BEFORE stopGps clears it - the restart used to always come back as non-run GPS, so a mid-run watcher lost its run
+  staleWatchTimer = setInterval(() => { if (watchId != null && Date.now() - lastFixAt > 45000 && lastFixAt) { const wasRunGps = gpsFromRun; stopGps(true); startGps(wasRunGps, true); } }, 15000); // Beta 1.48 (audit B02): capture run ownership BEFORE stopGps clears it - the restart used to always come back as non-run GPS, so a mid-run watcher lost its run. Beta 1.116 (CG-115-01): the restart also preserves followPaused (startGps's restart flag) - a dead zone must not hand the camera back
   $('gpsBtn').classList.add('on');
   $('gpsBtn').classList.toggle('rec', gpsFromRun); // Beta 1.49: recording wears red on the Locate tab; view-only wears blue
 }
@@ -4293,12 +4306,13 @@ const ICONS = { // Pack D "iOS Filled" (Andrew's pick, Beta 1.28): solid silhoue
   sun: '<svg viewBox="0 0 24 24" fill="currentColor" stroke="none"><circle cx="12" cy="12" r="4.4" fill="currentColor" stroke="none"/><path fill="currentColor" stroke="none" d="M10.75 6.20 L11.22 2.60 L12.78 2.60 L13.25 6.20 ZM15.22 7.01 L18.10 4.80 L19.20 5.90 L16.99 8.78 ZM17.80 10.75 L21.40 11.22 L21.40 12.78 L17.80 13.25 ZM16.99 15.22 L19.20 18.10 L18.10 19.20 L15.22 16.99 ZM13.25 17.80 L12.78 21.40 L11.22 21.40 L10.75 17.80 ZM8.78 16.99 L5.90 19.20 L4.80 18.10 L7.01 15.22 ZM6.20 13.25 L2.60 12.78 L2.60 11.22 L6.20 10.75 ZM7.01 8.78 L4.80 5.90 L5.90 4.80 L8.78 7.01 Z"/></svg>',
   home: '<svg viewBox="0 0 24 24" fill="currentColor" stroke="none"><path fill="currentColor" stroke="none" fill-rule="evenodd" d="M12 3.4 2.6 11.8h2.8V21h13.2v-9.2h2.8zM10.2 21v-6h3.6v6z"/></svg>',
   gps: '<svg viewBox="0 0 24 24" fill="currentColor" stroke="none"><path fill="currentColor" stroke="none" d="M12 2.6 19.6 20.6 12 17l-7.6 3.6z"/></svg>',
+  centre: '<svg viewBox="0 0 24 24" fill="currentColor" stroke="none"><path fill="currentColor" stroke="none" fill-rule="evenodd" d="M12 5.1a6.9 6.9 0 1 0 0 13.8 6.9 6.9 0 1 0 0-13.8ZM12 7.2a4.8 4.8 0 1 1 0 9.6 4.8 4.8 0 1 1 0-9.6Z"/><circle cx="12" cy="12" r="2" fill="currentColor" stroke="none"/><path fill="currentColor" stroke="none" d="M11.15 1h1.7v3.6h-1.7zM11.15 19.4h1.7V23h-1.7zM1 11.15h3.6v1.7H1zM19.4 11.15H23v1.7h-3.6z"/></svg>', /* Beta 1.116 (Andrew's gate call on CG-115-04): the standard GPS re-centre target - ring, centre dot, four ticks - drawn in the pack's filled language */
   gear: '<svg viewBox="0 0 24 24" fill="currentColor" stroke="none"><path fill="currentColor" stroke="none" fill-rule="evenodd" d="M8.98 4.70 L9.66 1.87 L14.34 1.87 L15.02 4.70 L15.02 4.70 L17.51 3.18 L20.82 6.49 L19.30 8.98 L19.30 8.98 L22.13 9.66 L22.13 14.34 L19.30 15.02 L19.30 15.02 L20.82 17.51 L17.51 20.82 L15.02 19.30 L15.02 19.30 L14.34 22.13 L9.66 22.13 L8.98 19.30 L8.98 19.30 L6.49 20.82 L3.18 17.51 L4.70 15.02 L4.70 15.02 L1.87 14.34 L1.87 9.66 L4.70 8.98 L4.70 8.98 L3.18 6.49 L6.49 3.18 L8.98 4.70 ZM12 8.70 a3.30 3.30 0 1 0 0.001 0 Z"/></svg>', /* Pack D language, drawn for the Settings tab (Beta 1.29) */
   pin: '<svg viewBox="0 0 24 24" fill="currentColor" stroke="none"><path fill="currentColor" stroke="none" fill-rule="evenodd" d="M12 2.8c-3.86 0-7 3.13-7 7 0 5.25 7 11.2 7 11.2s7-5.95 7-11.2c0-3.87-3.14-7-7-7zM12 7a2.8 2.8 0 1 0 .001 0z"/></svg>', /* Pack D language (Beta 1.30): the Streets row jump-to pin */
   note: '<svg viewBox="0 0 24 24" fill="currentColor" stroke="none"><path fill="currentColor" stroke="none" fill-rule="evenodd" d="M6.5 2.8h7.2l4.8 4.8v13.6H6.5zM9.3 12.2h5.9v2H9.3zM9.3 16h5.9v2H9.3z"/></svg>', /* Pack D language (Beta 1.30): the note glyph for rows and the selection pop-up */
   exp: '<svg viewBox="0 0 24 24" fill="currentColor" stroke="none"><path fill="currentColor" stroke="none" d="M11 3h2v9.2l2.4-2.4 1.5 1.5L12 16.2l-4.9-4.9 1.5-1.5L11 12.2z"/><path fill="currentColor" stroke="none" d="M4.4 15.6h3.4v2.6h8.4v-2.6h3.4V21H4.4z"/></svg>'
 };
-$('streetsBtn').innerHTML = ICONS.streets; $('paceBtn').innerHTML = ICONS.pace; $('centreBtn').innerHTML = ICONS.gps; // Beta 1.115: the re-centre button wears the pack's navigation arrow - "centre on me" in the same glyph language
+$('streetsBtn').innerHTML = ICONS.streets; $('paceBtn').innerHTML = ICONS.pace; $('centreBtn').innerHTML = ICONS.centre; // Beta 1.116 (Andrew): the re-centre button wears the standard GPS crosshair/target glyph other map apps use - the Locate tab keeps the navigation arrow and is otherwise untouched
 ['homeBtn', 'gpsBtn', 'clearBtn', 'routesBtn'].forEach(id => { $(id).querySelector('.tabIco').innerHTML = ICONS[{ homeBtn: 'home', gpsBtn: 'gps', clearBtn: 'clear', routesBtn: 'routes' }[id]]; }); // Beta 1.88: Backup and Update carry no tab icons anymore - they are text rows on the blue settings panes
 $('setBtn').querySelector('.tabIco').innerHTML = ICONS.gear;
 $('selNote').innerHTML = ICONS.note;
@@ -4481,7 +4495,7 @@ $('stDel').addEventListener('click', async () => {
 });
 // ---- About / What's new ----
 const WHATSNEW = { // the curated in-app notes: plain words, LATEST RELEASE ONLY (Beta 1.114, Andrew: the accumulated list cluttered the About pane). A release REPLACES this entry with its own in the same change - it never accumulates; the full history lives in CHANGELOG.md, not the app
-  v: 'Beta 1.115', items: ["You can now drag the map while it's following you — tap the centre button (top right) to snap back to your dot", "GPS movement is smooth now — the dot glides between updates instead of jumping every second"]
+  v: 'Beta 1.116', items: ["If you drag the map to look around, it now stays yours — a GPS signal dropout and the first reading after you start location no longer snap the camera back to following on their own", "The centre button (top right) now uses the standard GPS crosshair icon"]
 };
 function renderAbout() {
   const cur = $('ver').textContent.trim();

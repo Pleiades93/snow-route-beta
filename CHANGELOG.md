@@ -1,5 +1,31 @@
 # Changelog
 
+## Beta 1.116 — 2026-11-05
+Audit round 115 fixes: the Beta 1.115 GPS follow, hardened at its edges
+(Codex audit → adjudication → Andrew's scope gate; all five findings were
+reproduced before they counted).
+(1) CG-115-01: the >45 s stale-watch restart no longer clears a follow
+suspension — startGps gained a restart flag the automatic restart passes,
+so a signal dead zone cannot silently hand the camera back; an explicit
+user start still begins un-suspended. (2) CG-115-02: the first fix no
+longer overrides a drag made while waiting for it — when a suspension is
+already armed, the firstFix branch records the position and lights the
+re-centre button instead of jumpTo-ing and clearing. (3) CG-115-04, as
+amended by Andrew at the gate (his design call, replacing the auditors'
+tab-face proposal): the Locate tab is completely untouched; the top-right
+centre button's icon becomes the standard GPS re-centre glyph — the
+target/crosshair (ring, centre dot, four ticks) other map apps use —
+drawn in the pack's filled icon language. Its show/hide rule, placement,
+size and tap behaviour are unchanged. (4) CG-115-05 (tests): drive148's
+suspended-camera drift tolerance tightened 25 m → <2 m with a mid-window
+sample (the shipped behaviour measured 0.0 m — the guard was looser than
+its own claim), plus the two branch checks the audit found missing: a
+wheel gesture suspends the follow, and Locate tapped while FOLLOWING
+stops GPS. (5) CG-115-03: the suspension pointer seam tracks the
+initiating pointerId — only the pointer that pressed the canvas can
+suspend, and only its own moves count; a second pointerdown while a
+press is armed is ignored (the multi-touch policy is stated in the code).
+
 ## Beta 1.115 — 2026-11-05
 Two GPS fixes from Andrew's drive test. (1) The follow camera no longer
 locks the map: while location is on and following, dragging the map now
