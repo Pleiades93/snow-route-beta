@@ -609,7 +609,7 @@ $('stDel').addEventListener('click', async () => {
 });
 // ---- About / What's new ----
 const WHATSNEW = { // the curated in-app notes: plain words, LATEST RELEASE ONLY (Beta 1.114, Andrew: the accumulated list cluttered the About pane). A release REPLACES this entry with its own in the same change - it never accumulates; the full history lives in CHANGELOG.md, not the app
-  v: 'Beta 1.126', items: ["Fixed: creating a new route after deleting a route works again — the street search bar and the panel listing your selected roads show up like they should"]
+  v: 'Beta 1.127', items: ["Creating a route is easier: tap a picked road's row to trim it to just the sectors you clean, tap a road on the map again to take it off, flip MAIN/2ND right in its row, and clear all picks at once. The roads panel tucks away to a slim strip when you need the map, and Back buttons now only respond on the words themselves"]
 };
 function renderAbout() {
   const cur = $('ver').textContent.trim();
@@ -1062,8 +1062,10 @@ function nextRouteNameGuess() { let mx = 1; for (const p of ROUTE_PACKS) { const
 
 // ---- draft state: session only (not a route, not in any slot) ----
 let creating = false, crStage = 'pick', crReturnToPreview = false, crBootParked = false, crAreaGuess = '', crPhoto = null, crPickBusy = false;
-let draft = null; // { roads, mains: Set, osmNames: {short: full}, tileNames: [..], name, area }
-function newDraft() { return { roads: {}, mains: new Set(), osmNames: {}, tileNames: [], name: '', area: '' }; }
+let draft = null; // { roads, mains: Set, osmNames: {short: full}, tileNames: [..], name, area, sectors: {short: [chosen part indexes]} (Beta 1.127 - an ABSENT entry means the whole road), parts: {short: crStreetParts record} (session cache) }
+function newDraft() { return { roads: {}, mains: new Set(), osmNames: {}, tileNames: [], name: '', area: '', sectors: {}, parts: {} }; }
+let crSectorStreet = null; // Beta 1.127: the street whose sectors are being trimmed (sector mode), or null
+let crPanelCollapsed = false; // Beta 1.127: the picked-roads panel's tucked-away state (the slim strip shows instead)
 function draftStreets() { return draft ? Object.keys(draft.roads) : []; }
 
 // ---- city-first preparation (Beta 1.121, audit round pickfetch) ----
@@ -1581,6 +1583,7 @@ function crFailText(f) { // the honest taxonomy (scope item 5): unreachable / an
 function crRenderHint() { // the ONE writer of the pick-stage hint + its action button + the sheet's city chip: state-driven, so no stale text survives a state change
   if (!creating || crStage !== 'pick') return;
   const hint = $('createHint'), btn = $('crHintBtn');
+  if (crSectorStreet) { hint.textContent = 'Tap sectors to add or remove them'; hint.classList.add('on'); btn.style.display = 'none'; return; } // Beta 1.127 (mockup screen 1): while trimming, the pill says the one thing there is to do
   let text = '', btnLabel = '';
   const secs = t0 => Math.max(0, Math.round((Date.now() - t0) / 1000));
   if (crPrepState === 'preparing' && crPrep) { text = 'Preparing street shapes for ' + (crCity ? crCity.name : 'this area') + '… ' + secs(crPrep.startedAt) + ' s'; btnLabel = 'Cancel'; } // the fallback box, when IT is the in-flight operation: it outranks the grid text - a settled (or still-loading) city grid must not label a box wait with stale part counts
@@ -1613,6 +1616,146 @@ function crAddStreet(short, osmName, segs) {
   delete crPending[short];
   renderDraft(); renderCrLists(); crRenderHint();
   toast('Added ' + short, 1800);
+}
+function crRemoveStreet(short) { // Beta 1.127: the ONE removal path - the panel's x, the preview's x and tap-again-to-deselect on the map all land here, so a street leaves with ALL of its draft state (geometry, main flag, names, sector pick, cached parts) and every face re-renders from the same state
+  if (!draft || !draft.roads[short]) return;
+  delete draft.roads[short]; draft.mains.delete(short); delete draft.osmNames[short];
+  if (draft.sectors) delete draft.sectors[short];
+  if (draft.parts) delete draft.parts[short];
+  delete crPending[short];
+  if (crSectorStreet === short) crSectorStreet = null;
+  renderDraft(); renderCrLists(); crRenderHint();
+}
+// ---- sectors (Beta 1.127, Andrew's approved mockups in beta1/work/create-sectors-mockups/):
+// a picked street can be trimmed to the junction-to-junction pieces he
+// actually cleans - a long road that runs past his subdivision enters
+// the route only as far as he cleans it. Sector state lives ONLY in
+// the draft (draft.sectors[short] = chosen part indexes; absent = the
+// whole road); at Save the stored pack's roads[name] holds only the
+// chosen sectors' polylines, so the pack format is unchanged and
+// everything downstream derives from the stored geometry as always.
+function crStreetParts(short) { // the street's sectors: its stitched line cut where OTHER streets of the prepared extract meet it - computeStretches' own cut rule (4 m join tolerance, cuts merged under 15 m, no cut within 12 m of an end) with the EXTRACT as the junction set. The extract, not the draft, is the context on purpose: the pieces are the real junction-to-junction pieces, and a street's sector boundaries never move as other streets join or leave the draft. Computed once per street per draft (cached on draft.parts); vertices are bbox-prefiltered to the line's neighbourhood, so a whole city's extract costs one bounded pass per street, paid only when sector mode first opens for it.
+  if (!draft || !draft.roads[short]) return null;
+  draft.parts = draft.parts || {};
+  if (draft.parts[short]) return draft.parts[short];
+  const one = {}; one[short] = draft.roads[short];
+  const line = stitchLine(short, one);
+  if (!line || line.length < 2) return null;
+  const cum = [0]; for (let i = 1; i < line.length; i++) cum.push(cum[i - 1] + distM(line[i - 1], line[i]));
+  const total = cum[cum.length - 1];
+  let w = 1e9, s = 1e9, e = -1e9, n = -1e9; for (const p of line) { s = Math.min(s, p[0]); n = Math.max(n, p[0]); w = Math.min(w, p[1]); e = Math.max(e, p[1]); }
+  const mLat = 12 / MLAT, mLng = 12 / MLNG;
+  const cuts = [];
+  if (crCov && crCov.byName) {
+    const own = draft.osmNames ? draft.osmNames[short] : null;
+    for (const nm of Object.keys(crCov.byName)) {
+      if (nm === own) continue; // the street's own ways never cut it
+      for (const wy of crCov.byName[nm]) for (const v of wy.pts) {
+        if (v[0] < s - mLat || v[0] > n + mLat || v[1] < w - mLng || v[1] > e + mLng) continue;
+        const pr = projOnLine(line, cum, v); if (pr.off <= 4) cuts.push(pr.d);
+      }
+    }
+  }
+  cuts.sort((a, b) => a - b);
+  const merged = []; for (const c of cuts) { if (merged.length && c - merged[merged.length - 1] < 15) continue; merged.push(c); }
+  const inner = merged.filter(c => c >= 12 && c <= total - 12);
+  const bounds = [0, ...inner, total];
+  const parts = []; for (let i = 1; i < bounds.length; i++) parts.push(sliceLine(line, cum, bounds[i - 1], bounds[i]));
+  const rec = { line, cum, total, parts };
+  draft.parts[short] = rec;
+  return rec;
+}
+function crChosenSet(short, rec) { const sel = draft && draft.sectors ? draft.sectors[short] : null; return new Set(sel || rec.parts.map((_, i) => i)); } // no entry = every sector chosen (the whole road)
+function crSetChosen(short, rec, set) { // a FULL set stores as NO entry - "whole road" stays the draft's default state, so an untrimmed street carries no sector baggage into counts or the save
+  draft.sectors = draft.sectors || {};
+  if (set.size >= rec.parts.length) delete draft.sectors[short];
+  else draft.sectors[short] = [...set].sort((a, b) => a - b);
+}
+function crChosenLenM(short, rec) { const set = crChosenSet(short, rec); let s = 0; for (const i of set) if (rec.parts[i]) s += crLineLen(rec.parts[i]); return s; }
+function crStreetChosenM(short, g) { // a street's length AS PICKED - the whole street, or only its chosen sectors when trimmed. Every length the create flow states (panel header + rows, preview count, name-it summary) reads through here, so a trimmed street never bills its unchosen ends
+  const sel = draft && draft.sectors ? draft.sectors[short] : null;
+  if (!sel) return g && g[short] ? g[short].total : 0;
+  const rec = crStreetParts(short); if (!rec) return 0;
+  let s = 0; for (const i of sel) if (rec.parts[i]) s += crLineLen(rec.parts[i]);
+  return s;
+}
+function crFilteredRoads() { // the roads object the SAVE stores: a trimmed street contributes ONLY its chosen sectors' polylines (each sector as one segment). The pack format is untouched (roads = segment lists); the unchosen ends simply never enter the pack
+  const out = {};
+  for (const n of draftStreets()) {
+    const sel = draft.sectors ? draft.sectors[n] : null;
+    if (sel && sel.length) { const rec = crStreetParts(n); out[n] = rec ? sel.map(i => rec.parts[i]).filter(p => p && p.length > 1) : draft.roads[n]; }
+    else out[n] = draft.roads[n];
+  }
+  return out;
+}
+function crToggleSector(short, idx) {
+  const rec = crStreetParts(short); if (!rec || idx < 0 || idx >= rec.parts.length) return;
+  const set = crChosenSet(short, rec);
+  if (set.has(idx)) set.delete(idx); else set.add(idx);
+  if (!set.size) { crRemoveStreet(short); toast(short + ' removed - no sectors left picked', 2400); return; } // un-picking every sector removes the street (crRemoveStreet also closes its sector mode)
+  crSetChosen(short, rec, set);
+  renderDraft(); renderCrLists(); renderSectorBar();
+}
+function crSectorTap(lngLat) { // a map tap while trimming: the sector under the tap toggles. The rendered draft features answer first (the wide invisible crDraftHit layer, the street pick's own +/-16/28 px box discipline); the geometry fallback - the nearest part of THIS street - covers what the renderer cannot answer, and never reaches for another street
+  const short = crSectorStreet; if (!short || !draft || !draft.roads[short]) return;
+  const rec = crStreetParts(short); if (!rec) return;
+  let idx = -1;
+  if (map && typeof map.queryRenderedFeatures === 'function' && typeof map.project === 'function') {
+    try {
+      const pt = map.project([lngLat.lng, lngLat.lat]);
+      for (const half of [16, 28]) {
+        const feats = (map.queryRenderedFeatures([[pt.x - half, pt.y - half], [pt.x + half, pt.y + half]], { layers: ['crDraftHit'] }) || []).filter(f => f && f.properties && f.properties.name === short && typeof f.properties.sector === 'number' && f.properties.sector >= 0);
+        if (!feats.length) continue;
+        let bd = Infinity;
+        for (const f of feats) { const d = crFeatDistM(lngLat, f.geometry); if (d < bd) { bd = d; idx = f.properties.sector; } }
+        break;
+      }
+    } catch (e) {}
+  }
+  if (idx < 0) {
+    let bd = Infinity;
+    for (let i = 0; i < rec.parts.length; i++) { const d = crFeatDistM(lngLat, { type: 'LineString', coordinates: rec.parts[i].map(p => [p[1], p[0]]) }); if (d < bd) { bd = d; idx = i; } }
+    if (bd > 75) idx = -1; // nowhere near the street being trimmed - not a sector tap
+  }
+  if (idx >= 0) crToggleSector(short, idx);
+}
+function crOpenSectors(short) { // tapping a picked road's panel row opens its trimming (mockup screen 1)
+  if (!draft || !draft.roads[short]) return;
+  if (!crStreetParts(short)) return;
+  crSectorStreet = short;
+  syncCrPanel(); renderDraft(); crRenderHint();
+}
+function crCloseSectors() { if (!crSectorStreet) return; crSectorStreet = null; syncCrPanel(); crRenderHint(); }
+function renderSectorBar() {
+  const s = crSectorStreet; if (!s || !draft || !draft.roads[s]) return;
+  const rec = crStreetParts(s); if (!rec) return;
+  const chosen = crChosenSet(s, rec);
+  $('crSbName').textContent = s;
+  $('crSbSub').textContent = chosen.size >= rec.parts.length
+    ? 'Whole road picked · ' + fmtLenM(rec.total) + ' — tap sectors to trim it'
+    : chosen.size + ' of ' + rec.parts.length + ' sectors picked · ' + fmtLenM(crChosenLenM(s, rec)) + ' — the grey ends stay out of your route';
+}
+function syncCrPanel() { // the ONE face switch for the pick sheet (Beta 1.127): the sector bar while trimming, the slim strip while the panel is tucked away, else the panel itself. An empty draft never shows the strip (there is nothing to review)
+  const panel = $('crPanel'), strip = $('crStrip'), bar = $('crSectorBar'); if (!panel || !strip || !bar) return;
+  if (crSectorStreet && draft && draft.roads[crSectorStreet]) { panel.style.display = 'none'; strip.style.display = 'none'; bar.style.display = ''; renderSectorBar(); return; }
+  bar.style.display = 'none';
+  if (crPanelCollapsed && draft && draftStreets().length) { panel.style.display = 'none'; strip.style.display = ''; }
+  else { strip.style.display = 'none'; panel.style.display = ''; }
+}
+function crCollapsePanel(fromY, v0) { // tuck the panel away: it springs down its own height (the sheets' closed-form spring, SHEET_OMEGA family - no per-frame integration), then the strip takes its place
+  const panel = $('crPanel'); if (!panel) return;
+  if (crPanelCollapsed) { panel.style.transform = ''; syncCrPanel(); return; }
+  const H = panel.offsetHeight;
+  if (!H) { crPanelCollapsed = true; syncCrPanel(); return; }
+  crPanelCollapsed = true;
+  springSheet(panel, fromY || 0, H, v0 || 0, q => { panel.style.transform = 'translateY(' + q + 'px)'; }, () => { panel.style.transform = ''; syncCrPanel(); });
+}
+function crExpandPanel() { // Review: the strip hands back to the panel, springing up from below the fold
+  const panel = $('crPanel'); if (!panel || !crPanelCollapsed) return;
+  crPanelCollapsed = false; syncCrPanel();
+  const H = panel.offsetHeight; if (!H) return;
+  panel.style.transform = 'translateY(' + H + 'px)'; void panel.offsetWidth;
+  springSheet(panel, H, 0, 0, q => { panel.style.transform = 'translateY(' + q + 'px)'; }, () => { panel.style.transform = ''; });
 }
 function crPendStreet(short, osmName, lngLat, run, boundary) { // fail-closed (Codex (c)): the shape reaches past verified coverage even after its one top-up - listed as PENDING, never added half-known; a wider preparation can still complete it (crSweepPending)
   let openEnd = null;
@@ -1734,16 +1877,30 @@ function ensureDraftLayers() {
   if (!map || typeof map.addSource !== 'function') return;
   try {
     if (!map.getSource(DRAFT_SRC)) map.addSource(DRAFT_SRC, { type: 'geojson', data: { type: 'FeatureCollection', features: [] } });
-    if (!map.getLayer('crDraftCase')) map.addLayer({ id: 'crDraftCase', type: 'line', source: DRAFT_SRC, layout: { 'line-cap': 'round', 'line-join': 'round' }, paint: { 'line-color': 'rgba(10,14,34,.55)', 'line-width': 8.5 } });
-    if (!map.getLayer('crDraftLine')) map.addLayer({ id: 'crDraftLine', type: 'line', source: DRAFT_SRC, layout: { 'line-cap': 'round', 'line-join': 'round' }, paint: { 'line-color': ['case', ['==', ['get', 'main'], 1], '#ffc233', '#ef476f'], 'line-width': 4.5 } });
+    if (!map.getLayer('crDraftCase')) map.addLayer({ id: 'crDraftCase', type: 'line', source: DRAFT_SRC, filter: ['==', ['get', 'chosen'], 1], layout: { 'line-cap': 'round', 'line-join': 'round' }, paint: { 'line-color': 'rgba(10,14,34,.55)', 'line-width': 8.5 } }); // Beta 1.127: the casing underlines CHOSEN geometry only - an unchosen sector wears no casing, like the mockup's plain grey ends
+    if (!map.getLayer('crDraftLine')) map.addLayer({ id: 'crDraftLine', type: 'line', source: DRAFT_SRC, layout: { 'line-cap': 'round', 'line-join': 'round' }, paint: { 'line-color': ['case', ['==', ['get', 'chosen'], 1], ['case', ['==', ['get', 'main'], 1], '#ffc233', '#ef476f'], '#b9c1cb'], 'line-width': ['case', ['==', ['get', 'chosen'], 1], 4.5, 3] } }); // Beta 1.127: chosen = category colour at full width; unchosen = thin grey
+    if (!map.getLayer('crDraftHit')) map.addLayer({ id: 'crDraftHit', type: 'line', source: DRAFT_SRC, layout: { 'line-cap': 'round', 'line-join': 'round' }, paint: { 'line-color': '#000000', 'line-opacity': 0, 'line-width': 24 } }); // Beta 1.127: the sector pick's fat-finger target - invisible, queryable (crSectorTap)
   } catch (e) { /* the style may still be loading - renderDraft retries on every change */ }
 }
-function renderDraft() { // the DRAFT renders through its own GeoJSON source, computed from the draft's own roads - the active route's geometry, engine sources and storage are never touched by the create flow
+function renderDraft() { // the DRAFT renders through its own GeoJSON source, computed from the draft's own roads - the active route's geometry, engine sources and storage are never touched by the create flow. Beta 1.127: a street carrying a sector pick (or open in sector mode) renders PER SECTOR - chosen sectors in its category colour, unchosen thin grey (the approved mockup's language); every other street renders as its whole line, exactly as before.
   ensureDraftLayers();
   if (!map || typeof map.getSource !== 'function') return;
   const src = map.getSource(DRAFT_SRC); if (!src) return;
   const feats = [];
-  if (draft) { const g = computeStretches(draft.roads); for (const n of draftStreets()) { const L = g[n] && g[n].line; if (L && L.length > 1) feats.push({ type: 'Feature', properties: { name: n, main: draft.mains.has(n) ? 1 : 0 }, geometry: { type: 'LineString', coordinates: L.map(p => [p[1], p[0]]) } }); } }
+  if (draft) {
+    const g = computeStretches(draft.roads);
+    for (const n of draftStreets()) {
+      const main = draft.mains.has(n) ? 1 : 0;
+      const sel = draft.sectors ? draft.sectors[n] : null;
+      if (sel || crSectorStreet === n) {
+        const rec = crStreetParts(n); if (!rec) continue;
+        const set = crChosenSet(n, rec);
+        for (let i = 0; i < rec.parts.length; i++) { const L = rec.parts[i]; if (L && L.length > 1) feats.push({ type: 'Feature', properties: { name: n, main, chosen: set.has(i) ? 1 : 0, sector: i }, geometry: { type: 'LineString', coordinates: L.map(p => [p[1], p[0]]) } }); }
+      } else {
+        const L = g[n] && g[n].line; if (L && L.length > 1) feats.push({ type: 'Feature', properties: { name: n, main, chosen: 1, sector: -1 }, geometry: { type: 'LineString', coordinates: L.map(p => [p[1], p[0]]) } });
+      }
+    }
+  }
   src.setData({ type: 'FeatureCollection', features: feats });
 }
 onMapReady(() => map.on('styledata', () => { if (creating) { renderDraft(); crSetBackdrop(true); } })); // a basemap swap mid-create wipes custom layers - redraw the draft and re-hide the backdrop
@@ -1811,18 +1968,39 @@ function crRowEl(n, g) {
   chip.addEventListener('click', () => { if (draft.mains.has(n)) draft.mains.delete(n); else draft.mains.add(n); renderDraft(); renderCrLists(); });
   row.appendChild(chip);
   const del = document.createElement('button'); del.className = 'crDel'; del.textContent = '✕'; del.title = 'Remove ' + n;
-  del.addEventListener('click', () => { delete draft.roads[n]; draft.mains.delete(n); delete draft.osmNames[n]; renderDraft(); renderCrLists(); });
+  del.addEventListener('click', () => crRemoveStreet(n)); // Beta 1.127: the shared removal path (sector state leaves with the street)
   row.appendChild(del);
+  return row;
+}
+function crPanelRowEl(n, g) { // Beta 1.127 (Andrew's approved mockup, screen 2): one short row per picked road - category dot, name, "Whole road · X m" or "N of M sectors · X m", the MAIN/2ND chip IN the row (one tap flips the road's type), x to remove; tapping the row itself opens the street's sector trimming
+  const main = draft.mains.has(n);
+  const row = document.createElement('div'); row.className = 'crPRow';
+  const dot = document.createElement('span'); dot.className = 'crDot ' + (main ? 'main' : 'sec'); row.appendChild(dot);
+  const meta = document.createElement('span'); meta.className = 'crPMeta';
+  const nm = document.createElement('span'); nm.className = 'crPName'; nm.textContent = n; meta.appendChild(nm);
+  const sub = document.createElement('span'); sub.className = 'crPSub';
+  const sel = draft.sectors ? draft.sectors[n] : null;
+  if (sel) { const rec = crStreetParts(n); sub.textContent = sel.length + ' of ' + (rec ? rec.parts.length : sel.length) + ' sectors · ' + fmtLenM(crStreetChosenM(n, g)) + ' — tap row to adjust'; }
+  else sub.textContent = 'Whole road · ' + fmtLenM(g[n] ? g[n].total : 0);
+  meta.appendChild(sub); row.appendChild(meta);
+  const chip = document.createElement('button'); chip.className = 'crPChip ' + (main ? 'main' : 'sec'); chip.textContent = main ? 'MAIN' : '2ND';
+  chip.addEventListener('click', e => { e.stopPropagation(); if (draft.mains.has(n)) draft.mains.delete(n); else draft.mains.add(n); renderDraft(); renderCrLists(); });
+  row.appendChild(chip);
+  const del = document.createElement('button'); del.className = 'crPDel'; del.textContent = '✕'; del.title = 'Remove ' + n;
+  del.addEventListener('click', e => { e.stopPropagation(); crRemoveStreet(n); });
+  row.appendChild(del);
+  row.addEventListener('click', () => crOpenSectors(n));
   return row;
 }
 function renderCrLists() {
   if (!draft) return;
   const g = computeStretches(draft.roads);
   const names = draftStreets().sort((a, b) => a.localeCompare(b));
-  let tot = 0; for (const n of names) tot += g[n] ? g[n].total : 0;
-  const count = names.length + ' streets · ' + draft.mains.size + ' mains · ' + fmtLenM(tot);
-  $('crCount').textContent = count; $('pvCount').textContent = count;
-  for (const listId of ['crPickList', 'pvList']) { const el = $(listId); el.innerHTML = ''; for (const n of names) el.appendChild(crRowEl(n, g)); }
+  let tot = 0; for (const n of names) tot += crStreetChosenM(n, g); // Beta 1.127: totals bill CHOSEN lengths - a trimmed street's unchosen ends never count
+  $('crCount').textContent = names.length + ' roads · ' + fmtLenM(tot); // Beta 1.127: the panel header's count in the mockup's shape ("3 roads · 2,410 m")
+  $('pvCount').textContent = names.length + ' streets · ' + draft.mains.size + ' mains · ' + fmtLenM(tot); // the preview keeps its fuller count line
+  { const el = $('crPickList'); el.innerHTML = ''; for (const n of names) el.appendChild(crPanelRowEl(n, g)); }
+  { const el = $('pvList'); el.innerHTML = ''; for (const n of names) el.appendChild(crRowEl(n, g)); }
   for (const pk of Object.keys(crPending).sort()) { // Beta 1.121: pending streets (shape reaches past verified coverage) list in the PICK sheet only - never in the preview, never in the count, never saved
     if (draft.roads[pk]) continue;
     const row = document.createElement('div'); row.className = 'crRow pending';
@@ -1834,9 +2012,12 @@ function renderCrLists() {
     row.appendChild(del);
     $('crPickList').appendChild(row);
   }
+  $('crStripTitle').textContent = names.length + (names.length === 1 ? ' road' : ' roads') + ' picked'; // the tucked-away strip always carries the live count (mockup screen 4)
+  $('crStripSub').textContent = fmtLenM(tot) + ' · tap Review to see them';
   $('crDoneBtn').disabled = !names.length;
-  $('crDoneBtn').textContent = crReturnToPreview ? 'Done — back to check' : 'Done — check route';
+  $('crDoneBtn').textContent = crReturnToPreview ? 'Done — back to check' : 'Looks right →'; // Beta 1.127: the panel footer's words (mockup screen 2); the return-to-preview errand keeps its plainer label
   $('pvSaveBtn').disabled = !names.length;
+  syncCrPanel();
 }
 let crConfirmCb = null;
 function crConfirm(title, msg, cb, labels) { $('crModalTitle').textContent = title; $('crModalMsg').textContent = msg; crConfirmCb = cb; $('crModalYes').textContent = (labels && labels.yes) || 'Discard'; $('crModalYes').classList.toggle('danger', !!(labels && labels.danger)); $('crModalNo').textContent = (labels && labels.no) || '✕'; $('crModal').classList.remove('hidden'); } // Beta 1.124: labels are optional - the create flow's discard keeps its exact defaults (Yes "Discard", No the bare ✕); route deletion passes {yes:'Delete', no:'Cancel', danger:true}. The card itself is the --card token surface in BOTH themes (the head.html rule) - the confirm never hardcodes a light background.
@@ -1845,6 +2026,7 @@ $('crModalNo').addEventListener('click', () => { $('crModal').classList.add('hid
 function parkBootChrome() { const sp = $('splash'); if (sp) sp.style.visibility = 'hidden'; $('routeMenu').classList.remove('show'); crBootParked = true; }
 function restoreBootChrome() { if (!crBootParked) return; crBootParked = false; const sp = $('splash'); if (sp) sp.style.visibility = ''; $('routeMenu').classList.add('show'); }
 function setCreateStage(stage) {
+  if (stage !== 'pick') crSectorStreet = null; // Beta 1.127: sector mode belongs to the pick stage - the preview and name-it never inherit a half-trimmed street's bar
   crStage = stage;
   $('createBar').classList.toggle('on', stage === 'pick');
   $('createSheet').classList.toggle('on', stage === 'pick');
@@ -1858,6 +2040,7 @@ function setCreateStage(stage) {
 function enterCreate(stage) {
   if (!draft) draft = newDraft();
   creating = true;
+  crSectorStreet = null; crPanelCollapsed = false; // Beta 1.127: every creation starts un-trimmed with the panel up
   crSession++; // a fresh creation session: async completions born in any earlier session are obsolete from here (CG-PF-05)
   document.body.classList.add('creating');
   followPaused = true; // the camera belongs to the picking now; GPS is device state and is not stopped - follow resumes from the Locate tab afterwards
@@ -1867,7 +2050,7 @@ function enterCreate(stage) {
   setCreateStage(stage);
 }
 function exitCreate() {
-  creating = false; draft = null; crStage = 'pick'; crReturnToPreview = false; crAreaGuess = '';
+  creating = false; draft = null; crStage = 'pick'; crReturnToPreview = false; crAreaGuess = ''; crSectorStreet = null; crPanelCollapsed = false; // Beta 1.127: the panel + sector session state dies with the creation
   crSession++; crCovGen++; // every async completion born in this session is obsolete the moment the flow closes - it must not land in a later draft, hint or busy state (CG-PF-05)
   if (crPrep) { clearInterval(crPrep.ticker); crAbortOp(crPrep.op); crPrep = null; } // and the downloads themselves stop (CG-PF-10)
   if (crGrid) { crGridStop('exit'); crGrid = null; } // the grid's downloads stop too; its committed cells live on in the on-device city cache, by design
@@ -1888,7 +2071,7 @@ function openDoors() { if (!routeLoaded) { restoreBootChrome(); } else openRoute
 function askDiscard(then) { if (draft && draftStreets().length) crConfirm('Throw away this draft?', 'The ' + draftStreets().length + ' streets you picked will be lost.', then); else then(); }
 function fitDraft() {
   if (!draft || !map) return;
-  const bb = computeRouteBox(draft.roads); if (!bb) return;
+  const bb = computeRouteBox(crFilteredRoads()); if (!bb) return; // Beta 1.127: the preview frames what will save (chosen sectors), not the whole streets
   try { map.fitBounds([[bb.w, bb.s], [bb.e, bb.n]], { padding: 56, duration: 800 }); } catch (e) {}
 }
 $('crExit').addEventListener('click', () => { // Beta 1.120: the ✕ beside the search first CLEARS the search (text + open results) when there is anything to clear - that is what a ✕ beside a search bar means; pressed with an empty search it exits creating, as before
@@ -2097,7 +2280,7 @@ const OVERPASS_URLS = ['https://overpass-api.de/api/interpreter', 'https://overp
 async function pickStreet(osmName, lngLat) {
   const short = shortStreetName(osmName);
   if (!draft) return;
-  if (draft.roads[short] || Object.values(draft.osmNames).includes(osmName)) { toast(short + ' is already in your route', 2400); return; }
+  if (draft.roads[short]) { crRemoveStreet(short); toast('Removed ' + short + ' — tap it again to add it back', 2200); return; } // Beta 1.127 (Andrew): tap again to DESELECT - a second tap on a picked street takes it back off (it never enters twice, and it never re-resolves: removal is instant and named, like the add)
   if (crPending[short]) { toast(short + ' is pending — it runs past the prepared area and is not in your route yet', 3400); return; }
   if (crPickBusy) return;
   // Beta 1.121: the tap resolves LOCALLY from the prepared extract - no
@@ -2178,6 +2361,7 @@ function crFeatDistM(lngLat, geom) { // metres from the tap to the nearest point
 }
 function crMapTap(e) {
   if (!creating || crStage !== 'pick' || !map) return;
+  if (crSectorStreet) { crSectorTap(e.lngLat); return; } // Beta 1.127: while trimming, a map tap speaks only to the street being trimmed - it can neither add nor remove another street
   // Beta 1.119: query a small BOX around the tap, not the tap's single pixel.
   // Rendered road lines are a few px wide and a fingertip lands +/-10-20 px
   // off them, so the 1.118 point query almost never held a road and every
@@ -2207,6 +2391,47 @@ function crMapTap(e) {
 }
 onMapReady(() => map.on('click', crMapTap));
 $('crDoneBtn').addEventListener('click', () => { if (draftStreets().length) setCreateStage('preview'); });
+$('crAddBtn').addEventListener('click', () => crCollapsePanel(0, 0)); // Beta 1.127: "+ Add a street" (mockup screen 2) - the panel tucks to its strip and the map is his again
+$('crReviewBtn').addEventListener('click', () => crExpandPanel()); // the strip's way back (mockup screen 4)
+$('crClearAll').addEventListener('click', () => { // Andrew's addition (2026-11-06): empty the picks at once - behind the shared confirm, the same discipline as Start over and route deletion; the city and the session stay
+  const n = draft ? draftStreets().length : 0; if (!n) return;
+  crConfirm('Clear all ' + n + (n === 1 ? ' road?' : ' roads?'), 'Every road you picked will be taken off this route. The city stays loaded.', () => {
+    draft.roads = {}; draft.mains.clear(); draft.osmNames = {}; draft.sectors = {}; draft.parts = {};
+    crSectorStreet = null;
+    renderDraft(); renderCrLists(); crRenderHint();
+  }, { yes: 'Clear all', no: 'Cancel', danger: true });
+});
+$('crSbWhole').addEventListener('click', () => { const s = crSectorStreet; if (!s) return; const rec = crStreetParts(s); if (rec) crSetChosen(s, rec, new Set(rec.parts.map((_, i) => i))); renderDraft(); renderCrLists(); renderSectorBar(); }); // Whole road: every sector back on (the pick is stored as no entry again)
+$('crSbDone').addEventListener('click', () => crCloseSectors()); // Done with this road: back to the panel
+(() => { // the panel's tuck-away gesture (mockup screens 3-4): drag or flick the grab handle / header downward to collapse; a plain tap there collapses too. Buttons inside the header keep their own taps (the check below), and the rows below scroll natively - drags never start there
+  const panel = $('crPanel'), head = $('crPanelHead'); if (!panel || !head) return;
+  let pid = null, startY = 0, lastY = 0, samples = [], moved = false;
+  head.addEventListener('pointerdown', e => {
+    if (pid !== null || e.target.closest('button')) return;
+    pid = e.pointerId; startY = lastY = e.clientY; samples = [{ t: performance.now(), y: e.clientY }]; moved = false;
+    cancelSheetSpring(panel); // a grab mid-settle takes the panel over from its live position
+  });
+  head.addEventListener('pointermove', e => {
+    if (pid === null || e.pointerId !== pid) return;
+    lastY = e.clientY;
+    samples.push({ t: performance.now(), y: e.clientY }); if (samples.length > 8) samples.shift();
+    const dy = lastY - startY;
+    if (Math.abs(dy) > 4) { if (!moved) { moved = true; try { head.setPointerCapture(pid); } catch (err) {} } }
+    if (moved && dy > 0) { panel.style.transform = 'translateY(' + dy + 'px)'; e.preventDefault(); }
+  });
+  const up = e => {
+    if (pid === null || (e && e.pointerId !== pid)) return;
+    pid = null;
+    if (!moved) { crCollapsePanel(0, 0); return; } // a tap on the handle/header tucks the panel away
+    const dy = Math.max(0, lastY - startY);
+    const now = performance.now(); const s0 = samples.find(s => now - s.t <= 130) || samples[0];
+    const dt = now - s0.t; const vy = dt >= 30 ? (lastY - s0.y) / dt : 0; // px/ms, positive = downward (the sheets' release-velocity rule)
+    if (dy > 70 || vy > 0.45) crCollapsePanel(dy, vy * 1000);
+    else springSheet(panel, dy, 0, vy * 1000, q => { panel.style.transform = 'translateY(' + q + 'px)'; }, () => { panel.style.transform = ''; });
+  };
+  head.addEventListener('pointerup', up);
+  head.addEventListener('pointercancel', up);
+})();
 $('pvAddBtn').addEventListener('click', () => {
   crReturnToPreview = true;
   if (crCity) { setCreateStage('pick'); return; }
@@ -2220,7 +2445,7 @@ function openNameIt() {
   if (!draft || !draftStreets().length) return;
   $('crNameInput').value = draft.name || nextRouteNameGuess();
   $('crAreaInput').value = draft.area || crAreaGuess || lsGet(LS_GLOBAL.lastArea) || '';
-  const g = computeStretches(draft.roads); let tot = 0; for (const n of draftStreets()) tot += g[n] ? g[n].total : 0;
+  const g = computeStretches(draft.roads); let tot = 0; for (const n of draftStreets()) tot += crStreetChosenM(n, g); // Beta 1.127: the summary bills what will actually save
   $('crNameSummary').textContent = draftStreets().length + ' streets · ' + draft.mains.size + ' mains · ' + fmtLenM(tot) + ' of road';
   if (!routeLoaded) restoreBootChrome(); else openRouteMenu();
   showRmPane('rmNamePane');
@@ -2231,7 +2456,7 @@ function saveDraftRoute() {
   const name = $('crNameInput').value.trim();
   if (!name) { toast('Give the route a name first', 2600); return; }
   const area = $('crAreaInput').value.trim();
-  const v = normalizePack({ name, area, mains: [...draft.mains], roads: draft.roads, reference: {} }, { tileNames: [...Object.values(draft.osmNames), ...(draft.tileNames || [])] });
+  const v = normalizePack({ name, area, mains: [...draft.mains], roads: crFilteredRoads(), reference: {} }, { tileNames: [...Object.values(draft.osmNames), ...(draft.tileNames || [])] }); // Beta 1.127: the SAVE stores chosen sectors only - the draft keeps the whole streets, the pack never sees the unchosen ends
   if (!v.ok) { toast('Could not save — ' + v.error, 4000); return; }
   const pack = v.pack; pack.id = uniqueRouteId(name);
   const rec = loadUserPacks(); rec[pack.id] = pack;
