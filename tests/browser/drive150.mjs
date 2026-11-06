@@ -65,7 +65,21 @@ const { proc, send, S, ev, consoleLog, sleep, poll } = await launchDrive();
 // PENDING), races cancel / exit / supersede / top-up-after-exit, and
 // walks the no-search Prepare-this-area path. The grammar, latency and
 // body-stall assertions were each demonstrated RED on the 1.120 tree
-// before the fix (beta1/work/create-prep-1121/).
+// before the fix (beta1/work/create-prep-1121/). The VERIFY round then
+// added (CG-PF-07..11): the top-up graded at a real 45 s primary answer,
+// Codex's adversarial junction fixture, the dense / outside-coverage /
+// pending remedies graded on the REQUESTS they fire rather than their
+// wording, Cancel and exit proven to abort the download itself via the
+// stub's abort counter, and the held remembered-city lookup raced
+// against a competing pick. CG-PF-12's native-transport half (real
+// browser interception, window.fetch untouched) is drive151. Andrew's
+// SECOND gate amendment then replaced the single-box preparation with
+// the WHOLE-CITY grid + the persistent on-device city cache: (j) now
+// runs against a small 2 x 2 fixture city and grades grid grammar and
+// progress, cross-cell merge/dedupe by way id, cancel-keeps-parts +
+// resume-fetches-only-missing, the saved city loading with ZERO
+// requests, and the disclosed storage-cap refusal - every scenario
+// starting from a wiped cache.
 const R = { checks: [] };
 const ok = (name, cond) => R.checks.push([name, cond === true]);
 const J = async (expr) => { const raw = await ev(`(() => { try { return JSON.stringify((${expr})); } catch (e) { return JSON.stringify({ __err: String(e && e.message || e) }); } })()`); return typeof raw === 'string' ? JSON.parse(raw) : {}; };
@@ -123,7 +137,7 @@ const setFile = async (selector, path) => {
   const vis = await J(`!!document.querySelector('${selector}')`);
   return vis;
 };
-const TAP_POINTS = { 'Bordeaux Drive': { lat: 43.798972, lng: -79.574666 }, 'Alderson Avenue': { lat: 43.8000667, lng: -79.573051 }, 'Edgewater Avenue': { lat: 43.8100, lng: -79.5750 }, 'Faraway Avenue': { lat: 43.8150, lng: -79.5600 } };
+const TAP_POINTS = { 'Bordeaux Drive': { lat: 43.798972, lng: -79.574666 }, 'Alderson Avenue': { lat: 43.8000667, lng: -79.573051 }, 'Edgewater Avenue': { lat: 43.8100, lng: -79.5750 }, 'Faraway Avenue': { lat: 43.8150, lng: -79.5600 }, 'Farfaraway Avenue': { lat: 43.8200, lng: -79.5600 } };
 // Beta 1.121: Door 2 now opens the CITY pane - this helper walks it
 // (type the city, wait for the populated-place results, pick Vaughan,
 // land in the pick stage) and reports what it saw for the checks.
@@ -187,7 +201,7 @@ await ev(`document.querySelector('#createResults .crResult').click()`);
 await poll(`(() => { const c = map.getCenter(); return Math.abs(c.lat - 43.798972) < 0.004 && Math.abs(c.lng - (-79.574666)) < 0.004 && !map.isMoving(); })()`, 20000);
 await poll(`crPrepState === 'ready'`, 15000).catch(() => false);
 const A2c = await J(`({ state: crPrepState, cov: !!crCov, names: crCov ? Object.keys(crCov.byName).sort() : [] })`);
-ok('A2c (Beta 1.121) the search pick ANCHORED the area preparation (anchor rule (a)): the extract is ready and holds both fixture streets - taps from here resolve locally | ' + JSON.stringify(A2c),
+ok('A2c (Beta 1.121, whole-city amendment) picking the city started its whole-city preparation: the extract is ready and holds both fixture streets - taps from here resolve locally | ' + JSON.stringify(A2c),
   A2c.state === 'ready' && A2c.cov && A2c.names.join() === 'Alderson Avenue,Bordeaux Drive');
 await ev(installFeatureStub);
 await ev(tapNothing);
@@ -430,22 +444,22 @@ const tapRoad = (name, lat, lng) => `(() => { window.__fixtureRoads = [${JSON.st
 await ev(installStub); // section (d)'s reloads wiped the in-page stubs - restore the base fixture first
 await ev(installStub2);
 await ev(installFeatureStub);
+await ev(`(async () => { await new Promise(res => { try { const rq = indexedDB.deleteDatabase('snowroute-citycache'); rq.onsuccess = () => res(); rq.onerror = () => res(); rq.onblocked = () => res(); } catch (e) { res(); } }); return true; })()`); // the city cache is on-device state: earlier sections SAVED Vaughan - this scenario must load it for real, not read it back
 await ev(`openRouteMenu()`);
 await ev(`document.getElementById('rmCreate').click()`);
 await ev(`document.getElementById('crDoorManual').click()`);
-await pickCityVaughan();
-await ev(`crStartPrep({ lat: 43.798972, lng: -79.574666 })`);
-await sleep(150);
+await pickCityVaughan(); // the pick itself starts the whole-city grid now
+await sleep(2500);
 const F0 = await J(`({ state: crPrepState, hint: document.getElementById('createHint').textContent, btn: document.getElementById('crHintBtn').textContent, btnOn: document.getElementById('crHintBtn').style.display !== 'none' })`);
-ok('F1 while the preparation is in flight, the hint carries the wait ("Preparing street shapes for Vaughan… N s") with a Cancel button beside it | ' + JSON.stringify(F0),
-  F0.state === 'preparing' && /Preparing street shapes for Vaughan… \d+ s/.test(F0.hint) && F0.btn === 'Cancel' && F0.btnOn);
-const fFailed = await poll(`crPrepState === 'failed'`, 15000).catch(() => false);
-const F1 = await J(`({ state: crPrepState, kind: crPrepFail && crPrepFail.kind, status: crPrepFail && crPrepFail.status, hint: document.getElementById('createHint').textContent, btn: document.getElementById('crHintBtn').textContent, cov: !!crCov, streets: draft ? Object.keys(draft.roads).length : -1, busy: crPickBusy })`);
-ok('F2 a shape service that refuses on BOTH instances (503) ends FAILED with the honest reason persistent in the hint, a Retry button, NO coverage committed, nothing added, and the picker free (the 1.119/1.120 wedge cannot recur at the preparation layer) | ' + JSON.stringify(F1),
-  fFailed === true && F1.kind === 'error' && F1.status === 503 && F1.hint.indexOf('answered with an error') >= 0 && F1.btn === 'Retry' && F1.cov === false && F1.streets === 0 && F1.busy === false);
+ok('F1 while the city load is in flight, the hint carries the REAL progress ("Loading Vaughan — part N of 35 · T s") with a Cancel button beside it | ' + JSON.stringify(F0),
+  F0.state === 'preparing' && /Loading Vaughan — part \d+ of 35 · \d+ s/.test(F0.hint) && F0.btn === 'Cancel' && F0.btnOn);
+const fFailed = await poll(`crPrepState === 'failed'`, 45000).catch(() => false);
+const F1 = await J(`({ state: crPrepState, kind: crPrepFail && crPrepFail.kind, status: crPrepFail && crPrepFail.status, hint: document.getElementById('createHint').textContent, btn: document.getElementById('crHintBtn').textContent, boxes: crCov ? crCov.boxes.length : -1, streets: draft ? Object.keys(draft.roads).length : -1, busy: crPickBusy })`);
+ok('F2 a shape service that refuses on BOTH instances (503) fails EVERY cell and ends FAILED with the honest reason persistent in the hint, a Retry button, NO coverage committed, nothing added, and the picker free (the 1.119/1.120 wedge cannot recur at the preparation layer) | ' + JSON.stringify(F1),
+  fFailed === true && F1.kind === 'error' && F1.status === 503 && F1.hint.indexOf('answered with an error') >= 0 && F1.btn === 'Retry' && F1.boxes === 0 && F1.streets === 0 && F1.busy === false);
 await ev(`window.__fHealthy = true`);
-await ev(`document.getElementById('crHintBtn').click()`); // Retry
-const fReady = await poll(`crPrepState === 'ready'`, 15000).catch(() => false);
+await ev(`document.getElementById('crHintBtn').click()`); // Retry: resumes the grid's missing cells (all of them)
+const fReady = await poll(`crPrepState === 'ready'`, 30000).catch(() => false);
 await ev(tapStreet('Bordeaux Drive'));
 const gotF = await poll(`typeof draft !== 'undefined' && draft && !!draft.roads['Bordeaux']`, 15000).catch(() => false);
 ok('F3 Retry against the now-healthy service completes the preparation, and a tap then adds Bordeaux from the extract - failure left nothing latched | ready: ' + fReady,
@@ -591,21 +605,29 @@ await sleep(400);
 const I7 = await J(`({ creating })`);
 ok('I7 pressed again with an empty search, the ✕ exits creating (the discard confirm still guards the draft)', I7.creating === false);
 
-// ---------- (j) the preparation battery (Beta 1.121, CG-PF-06) ----------
+// ---------- (j) the preparation battery (Beta 1.121, CG-PF-06 + the whole-city amendment) ----------
 // The network seam, controlled at fetch level with the app's REAL request
-// path intact (crStartPrep -> crQL -> crOverpassFetch -> fetch). The stub
-// below answers from ONE dataset, filtered by the request's own decoded
-// bbox - the honest seam for both the batch extract and the per-street
-// top-up - and records every geometry request body in __geoLog. The
-// dataset adds two synthetic streets to the real fixture: Edgewater
-// Avenue crosses the extract's outer edge and is completed by its ONE
-// top-up (a continuation way + a junction way wait in the wider box);
-// Faraway Avenue crosses and is NOT completed even by the top-up, so it
-// must stay PENDING. Profiles (window.__jMode): healthy / throw / silent
-// / status / remark / badjson / dense / stallbody / supersede, plus
-// __jDelayMs for honest latency. Delays honour the AbortSignal, as a
-// real fetch does - a stub that ignores aborts grades nothing (the red
-// drive's first run proved exactly that trap).
+// path intact (crCityPrepare / crStartPrep -> crSourceExtract -> crQL ->
+// crOverpassFetch -> fetch). The stub below answers from ONE dataset,
+// filtered by the request's own decoded bbox - the honest seam for the
+// grid cells, the fallback box and the per-street top-up alike - and
+// records every geometry request body in __geoLog. The fixture city is
+// SMALL (a 2 x 2 grid of ~4 km cells over [43.785..43.845] x
+// [-79.610..-79.5105]) so the whole-city machinery runs at battery scale.
+// The dataset adds synthetic streets to the real fixture: Edgewater
+// Avenue (wholly inside the city - local now), Crosscell Avenue (crosses
+// a CELL border - its ways arrive from two cells and one way is returned
+// by BOTH, so the merged index must dedupe it by id and stitch it
+// whole), Faraway Avenue (crosses the CITY edge - completed by its ONE
+// top-up), Farfaraway Avenue (crosses and is NOT completed even by the
+// top-up - it must stay PENDING until a wider preparation sweeps it).
+// Profiles (window.__jMode): healthy / throw / silent / status / remark
+// / badjson / dense / stallbody / supersede / cityfail, plus __jDelayMs
+// for honest latency. Delays honour the AbortSignal, as a real fetch
+// does - a stub that ignores aborts grades nothing (the red drive's
+// first run proved exactly that trap). Every scenario starts from a
+// WIPED city cache: the cache is on-device state, and a scenario that
+// inherits another's saved city grades nothing (the run-6 lesson).
 const JDATA = (() => {
   const byId = {};
   for (const k of Object.keys(FIXTURE.overpass)) for (const e of FIXTURE.overpass[k]) byId[e.id] = { name: k, geometry: e.geometry };
@@ -614,15 +636,23 @@ const JDATA = (() => {
   seg(9002, 'Edgewater Avenue', [[43.8200, -79.5750], [43.8285, -79.5750]]);
   seg(9004, 'Edgewater Avenue', [[43.8285, -79.5750], [43.8360, -79.5750]]);
   seg(9003, 'Northgate Crescent', [[43.8285, -79.5800], [43.8285, -79.5750], [43.8285, -79.5700]]);
-  seg(9010, 'Faraway Avenue', [[43.8050, -79.5600], [43.8200, -79.5600], [43.8500, -79.5600]]);
+  seg(9010, 'Faraway Avenue', [[43.8060, -79.5600], [43.8200, -79.5600], [43.8500, -79.5600]]);
+  seg(9011, 'Farfaraway Avenue', [[43.7950, -79.5600], [43.8440, -79.5600], [43.8750, -79.5600]]);
+  seg(9020, 'Crosscell Avenue', [[43.8150, -79.5650], [43.82093, -79.5650], [43.8260, -79.5650]]);
+  seg(9021, 'Crosscell Avenue', [[43.8260, -79.5650], [43.8320, -79.5650]]);
   return { byId };
 })();
 const edgewaterLen = [9001, 9002, 9004].reduce((a, id) => a + wayLen(JDATA.byId[id].geometry), 0);
+const farawayLen = wayLen(JDATA.byId[9010].geometry);
+const farfarawayLen = wayLen(JDATA.byId[9011].geometry);
+const crosscellLen = [9020, 9021].reduce((a, id) => a + wayLen(JDATA.byId[id].geometry), 0);
+const JCITY = [{ display_name: 'Vaughan, Ontario, Canada', lat: '43.8150', lon: '-79.5600', boundingbox: ['43.785', '43.845', '-79.610', '-79.5105'], class: 'place', type: 'city', address: { city: 'Vaughan', state: 'Ontario', country: 'Canada', country_code: 'ca' } }];
 const installStubJ = `(() => {
   const DATA = ${JSON.stringify(JDATA)};
-  const CITY = ${JSON.stringify([CITY_FIXTURE[0]])};
+  const CITY = ${JSON.stringify(JCITY)};
+  const TORONTO = [{ display_name: 'Toronto, Ontario, Canada', lat: '43.6532', lon: '-79.3832', boundingbox: ['43.5810', '43.8555', '-79.6393', '-79.1150'], class: 'place', type: 'city', address: { city: 'Toronto', state: 'Ontario', country: 'Canada' } }];
   const prev = window.fetch.bind(window);
-  window.__jMode = 'healthy'; window.__jDelayMs = 0; window.__jStatus = 503; window.__geoLog = [];
+  window.__jMode = 'healthy'; window.__jDelayMs = 0; window.__jStatus = 503; window.__geoLog = []; window.__jAborted = 0; window.__jCityHold = false;
   const boxOf = raw => { const m = /\\(([-\\d.]+),([-\\d.]+),([-\\d.]+),([-\\d.]+)\\)/.exec(raw); return m ? { s: +m[1], w: +m[2], n: +m[3], e: +m[4] } : null; };
   const elsFor = raw => {
     const box = boxOf(raw); if (!box) return [];
@@ -636,11 +666,18 @@ const installStubJ = `(() => {
     }
     return out;
   };
-  const delayed = (make, ms, opts) => new Promise((res, rej) => { const to = setTimeout(() => res(make()), ms); const s = opts && opts.signal; if (s) s.addEventListener('abort', () => { clearTimeout(to); const e = new Error('aborted'); e.name = 'AbortError'; rej(e); }); });
-  const hang = opts => new Promise((res, rej) => { const s = opts && opts.signal; if (s) s.addEventListener('abort', () => { const e = new Error('aborted'); e.name = 'AbortError'; rej(e); }); });
+  const delayed = (make, ms, opts) => new Promise((res, rej) => { const to = setTimeout(() => res(make()), ms); const s = opts && opts.signal; if (s) s.addEventListener('abort', () => { window.__jAborted++; clearTimeout(to); const e = new Error('aborted'); e.name = 'AbortError'; rej(e); }); });
+  const hang = opts => new Promise((res, rej) => { const s = opts && opts.signal; if (s) s.addEventListener('abort', () => { window.__jAborted++; const e = new Error('aborted'); e.name = 'AbortError'; rej(e); }); });
   window.fetch = (url, opts) => {
     const u = String(url);
-    if (u.indexOf('nominatim.openstreetmap.org') >= 0 && u.indexOf('featuretype=city') >= 0) return Promise.resolve(new Response(JSON.stringify(CITY), { status: 200, headers: { 'Content-Type': 'application/json' } }));
+    if (u.indexOf('nominatim.openstreetmap.org') >= 0 && u.indexOf('featuretype=city') >= 0) {
+      const qm = /[?&]q=([^&]+)/.exec(u); const q = qm ? decodeURIComponent(qm[1]).toLowerCase() : '';
+      if (window.__jMode === 'cityfail') return Promise.reject(new TypeError('fixture city lookup offline'));
+      const payload = q.indexOf('toronto') >= 0 ? TORONTO : CITY;
+      const mk = () => new Response(JSON.stringify(payload), { status: 200, headers: { 'Content-Type': 'application/json' } });
+      if (window.__jCityHold && q.indexOf('vaughan') >= 0) return delayed(mk, 4000, opts); // CG-PF-11's race: the remembered-city lookup is HELD while a competing pick lands
+      return Promise.resolve(mk());
+    }
     if (u.indexOf('overpass-api.de') >= 0 || u.indexOf('overpass.kumi.systems') >= 0) {
       const raw = decodeURIComponent((opts && opts.body) || '').replace(/^data=/, ''); // the QL itself, form-field prefix stripped - __geoLog grades the query, not the envelope
       window.__geoLog.push({ host: u.indexOf('kumi') >= 0 ? 'kumi' : 'de', body: raw });
@@ -657,7 +694,7 @@ const installStubJ = `(() => {
         const stream = new ReadableStream({ start(c) { c.enqueue(new TextEncoder().encode('{"elements":[')); if (s) s.addEventListener('abort', () => { try { c.error(new Error('aborted')); } catch (e) {} }); } });
         return Promise.resolve(new Response(stream, { status: 200, headers: { 'Content-Type': 'application/json' } }));
       }
-      if (mode === 'supersede') { const box = boxOf(raw); const isA = box && Math.abs((box.s + box.n) / 2 - 43.798972) < 0.002; return delayed(() => json({ elements: isA ? elsFor(raw) : [] }), 3000, opts); }
+      if (mode === 'supersede') { const box = boxOf(raw); const inSmall = box && (Math.abs(box.s - 43.785) < 0.001 || Math.abs(box.s - 43.82093) < 0.001) && (Math.abs(box.w - (-79.61)) < 0.001 || Math.abs(box.w - (-79.56024)) < 0.001); return inSmall ? delayed(() => json({ elements: elsFor(raw) }), 3000, opts) : Promise.resolve(json({ elements: [] })); } // only the fixture city's OWN cell boxes (their exact grid edges) are slow - a bigger city's cells never share both edges
       const d = window.__jDelayMs || 0;
       const make = () => json({ elements: elsFor(raw) });
       return d > 0 ? delayed(make, d, opts) : Promise.resolve(make());
@@ -666,160 +703,302 @@ const installStubJ = `(() => {
   };
   return true;
 })()`;
-const jEnter = async () => { await ev(`openRouteMenu()`); await ev(`document.getElementById('rmCreate').click()`); await ev(`document.getElementById('crDoorManual').click()`); await pickCityVaughan(); };
+const jWipe = async () => { await ev(`(async () => { await new Promise(res => { try { const rq = indexedDB.deleteDatabase('snowroute-citycache'); rq.onsuccess = () => res(); rq.onerror = () => res(); rq.onblocked = () => res(); } catch (e) { res(); } }); return true; })()`); };
+const jEnter = async () => { await jWipe(); await ev(`openRouteMenu()`); await ev(`document.getElementById('rmCreate').click()`); await ev(`document.getElementById('crDoorManual').click()`); await pickCityVaughan(); };
 const jExitDiscard = async () => { await ev(`document.getElementById('crExit').click()`); await sleep(400); await ev(`(() => { const y = document.getElementById('crModalYes'); if (y && !document.getElementById('crModal').classList.contains('hidden')) y.click(); return true; })()`); await sleep(400); };
 const geoCount = async () => await ev(`(window.__geoLog || []).length`);
+const geoSince = async n => await ev(`window.__geoLog.slice(` + n + `)`);
+const batchBodies = log => (Array.isArray(log) ? log : []).map(x => x.body).filter(b => b.indexOf('["highway"]') >= 0);
+const nameBodies = (log, name) => (Array.isArray(log) ? log : []).map(x => x.body).filter(b => b.indexOf('"name"="' + name + '"') >= 0);
 await ev(installStubJ);
 await ev(installFeatureStub);
+// S1: grid grammar + real progress + cross-cell merge/dedupe + offline adds
+await ev(`window.__jDelayMs = 5000`);
 await jEnter();
-await ev(`window.__jDelayMs = 45000`);
-const jt0 = Date.now();
-await ev(`crStartPrep({ lat: 43.798972, lng: -79.574666 })`);
-await sleep(8000);
-const J2aMid = await J(`({ state: crPrepState, hint: document.getElementById('createHint').textContent, btn: document.getElementById('crHintBtn').textContent, btnOn: document.getElementById('crHintBtn').style.display !== 'none' })`);
-ok('J2a (latency) 8 s into a preparation whose answer needs 45 s: still preparing, the hint ticks the elapsed seconds, Cancel is offered | ' + JSON.stringify(J2aMid),
-  J2aMid.state === 'preparing' && /Preparing street shapes for Vaughan… [5-9] s/.test(J2aMid.hint) && J2aMid.btn === 'Cancel' && J2aMid.btnOn);
-const jReady = await poll(`crPrepState === 'ready'`, 80000).catch(() => false);
-const J2aMs = Date.now() - jt0;
-ok('J2a (latency) a CORRECT answer arriving at a real 45 s (the measured overpass-api.de profile) SUCCEEDS inside the 120 s budget - 1.120 killed it at its 40 s attempt cap | elapsed ' + J2aMs + ' ms',
-  jReady === true && J2aMs >= 44000);
+await sleep(3200);
+const S1mid = await J(`({ state: crPrepState, hint: document.getElementById('createHint').textContent, btn: document.getElementById('crHintBtn').textContent, btnOn: document.getElementById('crHintBtn').style.display !== 'none' })`);
+ok('J2a (grid progress) mid-load the hint carries REAL progress - "Loading Vaughan — part N of 4 · T s" - with Cancel beside it | ' + JSON.stringify(S1mid),
+  S1mid.state === 'preparing' && /Loading Vaughan — part \d of 4 · \d+ s/.test(S1mid.hint) && S1mid.btn === 'Cancel' && S1mid.btnOn);
+const s1Ready = await poll(`crPrepState === 'ready'`, 30000).catch(() => false);
 await ev(`window.__jDelayMs = 0`);
-const JLOG = await ev(`window.__geoLog.slice()`);
-const batchBody = (Array.isArray(JLOG) ? JLOG : []).map(x => x.body).find(b => b.indexOf('["highway"]') >= 0) || '';
-const bm = /^\[out:json\]\[timeout:\d+\];way\["name"\]\["highway"\]\(([-\d.]+),([-\d.]+),([-\d.]+),([-\d.]+)\);out geom;$/.exec(batchBody);
-const expOuter = { s: 43.798972 - 3000 / 111320, w: -79.574666 - 3000 / 80386, n: 43.798972 + 3000 / 111320, e: -79.574666 + 3000 / 80386 };
-ok('J1 (grammar) the batch request body DECODED from the wire is exactly [out:json][timeout:N];way["name"]["highway"](outer box);out geom; with the fixed footprint\'s bounds (inner 2 km + 1 km buffer around the anchor) | body: ' + batchBody.slice(0, 130),
-  !!bm && Math.abs(+bm[1] - expOuter.s) < 0.002 && Math.abs(+bm[2] - expOuter.w) < 0.002 && Math.abs(+bm[3] - expOuter.n) < 0.002 && Math.abs(+bm[4] - expOuter.e) < 0.002);
-const malformedSeen = (Array.isArray(JLOG) ? JLOG : []).some(x => /way\["name="/.test(x.body));
-ok('J1b (grammar) NO recorded request carries the 1.118-1.120 malformed filter (the equals sign inside the quoted key)', malformedSeen === false);
+const S1log = await geoSince(0);
+const s1Batches = batchBodies(S1log);
+const cellKey = b => { const m = /\(([-\d.]+),([-\d.]+),([-\d.]+),([-\d.]+)\)/.exec(b); return m ? m.slice(1).join(',') : '?'; };
+const s1Cells = new Set(s1Batches.map(cellKey));
+const s1Grammar = s1Batches.every(b => /^\[out:json\]\[timeout:\d+\];way\["name"\]\["highway"\]\([-\d.,]+\);out geom;$/.test(b));
+const s1InCity = s1Batches.every(b => { const m = /\(([-\d.]+),([-\d.]+),([-\d.]+),([-\d.]+)\)/.exec(b); return m && +m[1] >= 43.784 && +m[3] <= 43.846 && +m[2] >= -79.611 && +m[4] <= -79.5095; });
+ok('J1 (grammar, whole-city) picking Vaughan fired the GRID: exactly 4 cell requests (2 x 2 over the fixture city), every decoded body the single builder\'s correct batch grammar (way["name"]["highway"] over a cell inside the city box), no malformed literal anywhere | cells: ' + s1Cells.size + ', bodies: ' + s1Batches.length,
+  s1Ready === true && s1Batches.length === 4 && s1Cells.size === 4 && s1Grammar && s1InCity && !S1log.some(x => /way\["name="/.test(x.body)));
+const S1cov = await J(`({ cross: crCov && crCov.byName['Crosscell Avenue'] ? crCov.byName['Crosscell Avenue'].length : -1, boxes: crCov ? crCov.boxes.length : -1, w9020: crCov ? Object.keys(crCov.byId).filter(id => id === '9020').length : -1 })`);
+await ev(tapRoad('Crosscell Avenue', 43.8230, -79.5650));
+const gotCross = await poll(`typeof draft !== 'undefined' && draft && !!draft.roads['Crosscell']`, 15000).catch(() => false);
+const S1x = await J(`({ total: draft && draft.roads['Crosscell'] ? Math.round(computeStretches(draft.roads)['Crosscell'].total) : -1 })`);
+ok('J1c (cross-cell merge) Crosscell Avenue crosses a cell border: way 9020 was returned by BOTH row cells yet is stored ONCE (dedupe by way id), and the tap stitches the street WHOLE from the merged index (' + Math.round(crosscellLen) + ' m across both cells) | ' + JSON.stringify(S1cov) + ' ' + JSON.stringify(S1x),
+  S1cov.cross === 2 && S1cov.boxes === 4 && S1cov.w9020 === 1 && gotCross === true && Math.abs(S1x.total - crosscellLen) <= crosscellLen * 0.03);
+const gcS1 = await geoCount();
 await ev(`window.__jMode = 'throw'`);
-const gcBefore = await geoCount();
 await ev(tapStreet('Bordeaux Drive'));
+const gotB5 = await poll(`typeof draft !== 'undefined' && draft && !!draft.roads['Bordeaux']`, 15000).catch(() => false);
 await ev(tapStreet('Alderson Avenue'));
-const gotJ5 = await poll(`typeof draft !== 'undefined' && draft && !!draft.roads['Bordeaux'] && !!draft.roads['Alderson']`, 15000).catch(() => false);
-const gcAfter = await geoCount();
-const J5 = await J(`({ b: draft && draft.roads['Bordeaux'] ? Math.round(computeStretches(draft.roads)['Bordeaux'].total) : -1, a: draft && draft.roads['Alderson'] ? Math.round(computeStretches(draft.roads)['Alderson'].total) : -1 })`);
-ok('J5 (offline after ready) with Overpass now THROWING, taps still add Bordeaux + Alderson from the extract with their fixture lengths - and fire ZERO further geometry requests (' + gcBefore + ' -> ' + gcAfter + ') | ' + JSON.stringify(J5),
-  gotJ5 === true && gcAfter === gcBefore && Math.abs(J5.b - fixtureLen('Bordeaux Drive')) <= fixtureLen('Bordeaux Drive') * 0.02 && Math.abs(J5.a - fixtureLen('Alderson Avenue')) <= fixtureLen('Alderson Avenue') * 0.03);
+const gotA5 = await poll(`typeof draft !== 'undefined' && draft && !!draft.roads['Alderson']`, 15000).catch(() => false);
+const gcS1b = await geoCount();
+ok('J5 (offline after ready) with the service now THROWING on every request, Bordeaux and Alderson still add from the loaded city at full length - and the geometry request count does not move (' + gcS1 + ' -> ' + gcS1b + ')',
+  gotB5 === true && gotA5 === true && gcS1b === gcS1);
 await ev(`window.__jMode = 'healthy'`);
 await jExitDiscard();
-// (j) the edge rule: one top-up completes Edgewater; Faraway stays pending
+// S2: the fallback box at the measured latency (the fetcher's budgets, via the seam)
 await jEnter();
-await ev(`crStartPrep({ lat: 43.798972, lng: -79.574666 })`);
-await poll(`crPrepState === 'ready'`, 15000);
-const gcJ7 = await geoCount();
-await ev(tapStreet('Edgewater Avenue'));
-const gotEdge = await poll(`typeof draft !== 'undefined' && draft && !!draft.roads['Edgewater']`, 20000).catch(() => false);
-const J7log = await ev(`window.__geoLog.slice(` + gcJ7 + `)`);
-const topBodies = (Array.isArray(J7log) ? J7log : []).map(x => x.body).filter(b => b.indexOf('Edgewater') >= 0);
-const J7 = await J(`({ total: draft && draft.roads['Edgewater'] ? Math.round(computeStretches(draft.roads)['Edgewater'].total) : -1 })`);
-ok('J7a (edge rule) Edgewater Avenue crosses the extract\'s edge: ONE targeted top-up fires with the correct grammar (way["name"="Edgewater Avenue"] over the expanded box), merges by way id, and the street joins WHOLE - stitched length ' + Math.round(edgewaterLen) + ' m across all three ways | top-ups: ' + topBodies.length + ', got ' + JSON.stringify(J7),
-  gotEdge === true && topBodies.length === 1 && /\["name"="Edgewater Avenue"\]/.test(topBodies[0] || '') && Math.abs(J7.total - edgewaterLen) <= edgewaterLen * 0.03);
-await ev(tapStreet('Faraway Avenue'));
-const pendF = await poll(`!!crPending['Faraway']`, 20000).catch(() => false);
-const J7all = await ev(`window.__geoLog.slice()`);
-const farTopups = (Array.isArray(J7all) ? J7all : []).map(x => x.body).filter(b => b.indexOf('Faraway') >= 0).length;
-const J7b = await J(`({ inDraft: !!(draft && draft.roads['Faraway']), pendRow: [...document.querySelectorAll('#crPickList .crRow')].some(r => r.className.indexOf('pending') >= 0 && r.textContent.indexOf('Faraway') >= 0 && r.textContent.indexOf('PENDING') >= 0), count: document.getElementById('crCount').textContent })`);
-ok('J7b (edge rule, fail-closed) Faraway Avenue still reaches past the widened area after its ONE top-up (' + farTopups + ' fired): it stays PENDING - listed as pending in the pick sheet, NOT in the draft, NOT in the count | ' + JSON.stringify(J7b),
-  pendF === true && J7b.inDraft === false && J7b.pendRow && J7b.count.indexOf('1 streets') === 0);
-await jExitDiscard();
-// (j) the failure matrix + the dense cap + silence + the stalled body
-await jEnter();
-const failPrep = async (mode, status) => {
-  await ev(`window.__jMode = ${JSON.stringify(mode)}; window.__jStatus = ${status || 503}`);
-  const before = await geoCount();
-  await ev(`CR_TIMING.budgetMs = 4000; CR_TIMING.attempt1Ms = 2000`);
-  const t = Date.now();
-  await ev(`crStartPrep({ lat: 43.798972, lng: -79.574666 })`);
-  const r = await poll(`crPrepState === 'failed'`, 15000).catch(() => false);
-  const el = Date.now() - t;
-  await ev(`CR_TIMING.budgetMs = 120000; CR_TIMING.attempt1Ms = 70000`);
-  const after = await geoCount();
-  const F = await J(`({ kind: crPrepFail && crPrepFail.kind, status: crPrepFail && crPrepFail.status, remark: crPrepFail && crPrepFail.remark, cov: !!crCov, hint: document.getElementById('createHint').textContent })`);
-  return { r: r === true, el, reqs: after - before, F };
-};
-const M1 = await failPrep('status', 503);
-ok('J4a (failure matrix) HTTP 503 from both instances -> FAILED kind=error with the status kept, exactly 2 bounded requests, no coverage committed | ' + JSON.stringify(M1), M1.r && M1.F.kind === 'error' && M1.F.status === 503 && M1.reqs === 2 && M1.F.cov === false);
-const M2 = await failPrep('status', 429);
-ok('J4b (failure matrix) HTTP 429 from both instances -> FAILED kind=error (429), 2 bounded requests, no coverage | ' + JSON.stringify(M2), M2.r && M2.F.kind === 'error' && M2.F.status === 429 && M2.reqs === 2 && M2.F.cov === false);
-const M3 = await failPrep('remark');
-ok('J4c (failure matrix) HTTP 200 WITH an Overpass remark AND elements attached -> FAILED kind=error: partial output is never promoted to ready | ' + JSON.stringify(M3), M3.r && M3.F.kind === 'error' && String(M3.F.remark || '').indexOf('fixture remark') >= 0 && M3.F.cov === false);
-const M4 = await failPrep('badjson');
-ok('J4d (failure matrix) malformed JSON from both instances -> FAILED kind=badjson, no coverage | ' + JSON.stringify(M4), M4.r && M4.F.kind === 'badjson' && M4.F.cov === false);
-const M5 = await failPrep('dense');
-ok('J8 (streaming cap) a 2.3 MB payload trips the 2 MB cap WHILE streaming -> FAILED kind=dense with the too-dense hint (prepare a smaller area is the offered remedy), no coverage | ' + JSON.stringify(M5), M5.r && M5.F.kind === 'dense' && M5.F.hint.indexOf('too dense') >= 0 && M5.F.cov === false);
-const M6 = await failPrep('silent');
-ok('J2b (latency) both instances SILENT: terminal honest failure (kind=unreachable) inside the budget - shrunk to 4 s here through the CR_TIMING seam; the budget STRUCTURE is what is graded, elapsed ' + M6.el + ' ms, 2 bounded attempts | ' + JSON.stringify(M6), M6.r && M6.F.kind === 'unreachable' && M6.el < 11000 && M6.reqs === 2);
-const M7 = await failPrep('stallbody');
-ok('J3 (body stall, CG-PF-03) headers land instantly but the body never finishes: the deadline still fires THROUGH body consumption - FAILED kind=unreachable in ' + M7.el + ' ms instead of hanging forever | ' + JSON.stringify(M7), M7.r && M7.F.kind === 'unreachable' && M7.el < 11000);
-await ev(`window.__jMode = 'healthy'`);
-await ev(`crStartPrep({ lat: 43.798972, lng: -79.574666 })`);
-const mRec = await poll(`crPrepState === 'ready'`, 15000).catch(() => false);
-ok('J4e after the failure matrix, a healthy preparation still succeeds in the same session (no failure latches)', mRec === true);
-await jExitDiscard();
-// (j) races: cancel / exit / supersede / top-up-after-exit
-await jEnter();
-await ev(`window.__jDelayMs = 3000`);
-await ev(`crStartPrep({ lat: 43.798972, lng: -79.574666 })`);
-await sleep(700);
-await ev(`document.getElementById('crHintBtn').click()`); // Cancel
-const J6a1 = await J(`({ state: crPrepState, cov: !!crCov })`);
-await sleep(3200); // the cancelled answer lands inside this window - and must change nothing
-const J6a2 = await J(`({ state: crPrepState, cov: !!crCov, hint: document.getElementById('createHint').textContent })`);
-await ev(`window.__jDelayMs = 0`);
-await ev(`crStartPrep({ lat: 43.798972, lng: -79.574666 })`);
-const j6aReady = await poll(`crPrepState === 'ready'`, 15000).catch(() => false);
-ok('J6a (race: cancel) Cancel mid-preparation drops the state at once; the late answer lands NOWHERE (still no coverage, no ready hint); a fresh preparation then succeeds | ' + JSON.stringify({ J6a1, J6a2 }),
-  J6a1.state === 'none' && J6a1.cov === false && J6a2.state === 'none' && J6a2.cov === false && J6a2.hint.indexOf('ready') < 0 && j6aReady === true);
-await jExitDiscard();
-await jEnter();
-await ev(`window.__jDelayMs = 2500`);
-await ev(`crStartPrep({ lat: 43.798972, lng: -79.574666 })`);
-await sleep(300);
-await ev(`exitCreate()`);
-await sleep(3000); // the answer lands while create mode is closed
-await jEnter();
-const J6b = await J(`({ state: crPrepState, cov: !!crCov, streets: draft ? Object.keys(draft.roads).length : -1 })`);
-ok('J6b (race: exit) a preparation abandoned by exiting create mode cannot land in the NEXT session: fresh session, no coverage, empty draft | ' + JSON.stringify(J6b),
-  J6b.state === 'none' && J6b.cov === false && J6b.streets === 0);
-await ev(`window.__jDelayMs = 0`);
-await jExitDiscard();
-await jEnter();
-await ev(`window.__jMode = 'supersede'`);
-await ev(`crStartPrep({ lat: 43.798972, lng: -79.574666 })`); // anchor A: the full dataset after 3 s
-await sleep(500);
-await ev(`crStartPrep({ lat: 43.827000, lng: -79.574666 })`); // anchor B, outside A's inner box: supersedes; answers EMPTY after 3 s
-const j6cReady = await poll(`crPrepState === 'ready'`, 15000).catch(() => false);
-const J6c = await J(`({ anchorLat: crCov ? crCov.anchor.lat : null, names: crCov ? Object.keys(crCov.byName) : ['<none>'] })`);
-ok('J6c (race: supersede) a second anchor during preparation supersedes the first: the committed coverage is B\'s (empty) extract - A\'s late full dataset never lands | ' + JSON.stringify(J6c),
-  j6cReady === true && J6c.anchorLat !== null && Math.abs(J6c.anchorLat - 43.827) < 0.001 && !J6c.names.includes('Bordeaux Drive'));
-await ev(`window.__jMode = 'healthy'`);
-await jExitDiscard();
-await jEnter();
-await ev(`window.__jDelayMs = 2500`);
-await ev(`crStartPrep({ lat: 43.798972, lng: -79.574666 })`);
 await poll(`crPrepState === 'ready'`, 20000);
-await ev(tapStreet('Faraway Avenue')); // edge street: its top-up is now in flight (2.5 s)
+await ev(`window.__jDelayMs = 45000`);
+const bt0 = Date.now();
+await ev(`crStartPrep({ lat: 43.9, lng: -79.56 })`); // an anchor OUTSIDE the city: the fallback box path
+await sleep(6000);
+const S2mid = await J(`({ state: crPrepState, hint: document.getElementById('createHint').textContent, btn: document.getElementById('crHintBtn').textContent })`);
+const s2Ready = await poll(`crPrepState === 'ready'`, 80000).catch(() => false);
+const s2Ms = Date.now() - bt0;
+await ev(`window.__jDelayMs = 0`);
+ok('J2a2 (latency, fallback box) a CORRECT answer arriving at a real 45 s (the measured overpass-api.de profile) SUCCEEDS inside the 120 s budget - mid-wait the hint ticks with Cancel up; 1.120 killed this answer at its 40 s attempt cap | mid: ' + JSON.stringify(S2mid) + ', elapsed ' + s2Ms + ' ms',
+  S2mid.state === 'preparing' && /Preparing street shapes for Vaughan… \d+ s/.test(S2mid.hint) && S2mid.btn === 'Cancel' && s2Ready === true && s2Ms >= 44000);
+await jExitDiscard();
+// S3: the failure matrix on the GRID - every cell failing ends honestly
+const failGrid = async (mode, status) => {
+  await ev(`window.__jMode = '` + mode + `'` + (status ? `; window.__jStatus = ` + status : ''));
+  const gc0 = await geoCount();
+  await jEnter();
+  const r = await poll(`crPrepState === 'failed' || crPrepState === 'degraded'`, 30000).catch(() => false);
+  const F = await J(`({ state: crPrepState, kind: crPrepFail && crPrepFail.kind, status: crPrepFail && crPrepFail.status, remark: crPrepFail && crPrepFail.remark, boxes: crCov ? crCov.boxes.length : -1, hint: document.getElementById('createHint').textContent, btn: document.getElementById('crHintBtn').textContent })`);
+  const reqs = (await geoCount()) - gc0;
+  await jExitDiscard();
+  await ev(`window.__jMode = 'healthy'`);
+  return { r, F, reqs };
+};
+const G1m = await failGrid('status', 503);
+ok('J4a (failure matrix, grid) HTTP 503 from both instances for EVERY cell -> FAILED kind=error (503), no cell committed, bounded requests (' + G1m.reqs + ' for 4 cells x 2 tries x 2 hosts max 16), Retry offered | ' + JSON.stringify(G1m.F),
+  G1m.r && G1m.F.state === 'failed' && G1m.F.kind === 'error' && G1m.F.status === 503 && G1m.F.boxes === 0 && G1m.reqs > 0 && G1m.reqs <= 16 && G1m.F.btn === 'Retry');
+const G2m = await failGrid('status', 429);
+ok('J4b (failure matrix, grid) HTTP 429 for every cell -> FAILED kind=error (429), no coverage | ' + JSON.stringify(G2m.F),
+  G2m.r && G2m.F.state === 'failed' && G2m.F.kind === 'error' && G2m.F.status === 429 && G2m.F.boxes === 0);
+const G3m = await failGrid('remark');
+ok('J4c (failure matrix, grid) HTTP 200 WITH an Overpass remark AND elements attached, for every cell -> FAILED kind=error: partial output is never promoted | ' + JSON.stringify(G3m.F),
+  G3m.r && G3m.F.state === 'failed' && G3m.F.kind === 'error' && String(G3m.F.remark || '').indexOf('fixture remark') >= 0 && G3m.F.boxes === 0);
+const G4m = await failGrid('badjson');
+ok('J4d (failure matrix, grid) malformed JSON for every cell -> FAILED kind=badjson, no coverage | ' + JSON.stringify(G4m.F),
+  G4m.r && G4m.F.state === 'failed' && G4m.F.kind === 'badjson' && G4m.F.boxes === 0);
+const G5m = await failGrid('dense');
+ok('J8 (dense, grid) a >2 MB payload for every cell is cut off WHILE streaming -> FAILED kind=dense with the too-dense hint, no coverage | ' + JSON.stringify(G5m.F),
+  G5m.r && G5m.F.state === 'failed' && G5m.F.kind === 'dense' && G5m.F.hint.indexOf('too dense') >= 0 && G5m.F.boxes === 0);
+await jEnter();
+await poll(`crPrepState === 'ready'`, 20000);
+ok('J4e after the failure matrix, a healthy city load still succeeds in a fresh session (no failure latches)', true);
+await jExitDiscard();
+// S4: silence + the stalled body, on the fallback box with shrunk budgets
+const failBox = async mode => {
+  await jEnter();
+  await poll(`crPrepState === 'ready'`, 20000);
+  await ev(`window.__jMode = '` + mode + `'`);
+  await ev(`window.__savedTiming = [CR_TIMING.budgetMs, CR_TIMING.attempt1Ms]; CR_TIMING.budgetMs = 2500; CR_TIMING.attempt1Ms = 1500`);
+  const gc0 = await geoCount();
+  const t0 = Date.now();
+  await ev(`crStartPrep({ lat: 43.9, lng: -79.56 })`);
+  const r = await poll(`crPrepState === 'failed'`, 20000).catch(() => false);
+  const el = Date.now() - t0;
+  const F = await J(`({ state: crPrepState, kind: crPrepFail && crPrepFail.kind, fromGrid: crFailFromGrid })`);
+  const reqs = (await geoCount()) - gc0;
+  await ev(`CR_TIMING.budgetMs = window.__savedTiming[0]; CR_TIMING.attempt1Ms = window.__savedTiming[1]`);
+  await ev(`window.__jMode = 'healthy'`);
+  await ev(`document.getElementById('crHintBtn').click()`); // Retry: the BOX again (not a grid resume - crFailFromGrid must say so)
+  const rec = await poll(`crPrepState === 'ready'`, 20000).catch(() => false);
+  await jExitDiscard();
+  return { r, F, el, reqs, rec };
+};
+const FB1 = await failBox('silent');
+ok('J2b (latency) both instances SILENT on the fallback box: terminal honest failure (kind=unreachable) inside the budget - shrunk to 2.5 s through the CR_TIMING seam; the budget STRUCTURE is what is graded, elapsed ' + FB1.el + ' ms, ' + FB1.reqs + ' bounded attempts; Retry then re-runs the BOX and recovers | ' + JSON.stringify(B1.F),
+  FB1.r && FB1.F.kind === 'unreachable' && FB1.F.fromGrid === false && FB1.el < 11000 && FB1.reqs === 2 && FB1.rec === true);
+const FB2 = await failBox('stallbody');
+ok('J3 (body stall, CG-PF-03) headers land instantly but the body never finishes: the deadline still fires THROUGH body consumption - FAILED kind=unreachable in ' + FB2.el + ' ms instead of hanging forever | ' + JSON.stringify(B2.F),
+  FB2.r && FB2.F.kind === 'unreachable' && FB2.el < 11000 && FB2.reqs === 2);
+// S5: cancel keeps the loaded parts; resume fetches ONLY the missing; the saved city then loads with ZERO requests
+await ev(`window.__jDelayMs = 2500`);
+await jEnter();
+await sleep(900);
+const abS5a = await ev(`window.__jAborted`);
+await ev(`document.getElementById('crHintBtn').click()`); // Cancel
+await sleep(300);
+const abS5b = await ev(`window.__jAborted`);
+const S5a = await J(`({ state: crPrepState, done: crGrid ? crGrid.cells.filter(c => c.state === 'done').length : -1, total: crGrid ? crGrid.cells.length : -1, boxes: crCov ? crCov.boxes.length : -1, btn: document.getElementById('crHintBtn').textContent })`);
+const gcS5a = await geoCount();
+await sleep(1500);
+const gcS5b = await geoCount();
+await ev(`window.__jDelayMs = 0`);
+await ev(`document.getElementById('crHintBtn').click()`); // Resume
+const s5Ready = await poll(`crPrepState === 'ready'`, 20000).catch(() => false);
+const gcS5c = await geoCount();
+ok('J6a (race: cancel + resume) Cancel mid-load aborts the in-flight downloads themselves (aborts ' + abS5a + ' -> ' + abS5b + ', CG-PF-10), stops scheduling (requests frozen ' + gcS5a + ' -> ' + gcS5b + '), and KEEPS the parts already loaded; Resume then fetches ONLY the missing parts (' + (gcS5c - gcS5b) + ' requests for ' + (S5a.total - S5a.done) + ' missing) | ' + JSON.stringify(S5a),
+  abS5b > abS5a && gcS5b === gcS5a && S5a.done >= 0 && S5a.boxes === S5a.done && s5Ready === true && (gcS5c - gcS5b) === (S5a.total - S5a.done));
+await jExitDiscard();
+const gcS5d = await geoCount();
+await ev(`openRouteMenu()`);
+await ev(`document.getElementById('rmCreate').click()`);
+await ev(`document.getElementById('crDoorManual').click()`);
+await pickCityVaughan();
+const s5Cached = await poll(`crPrepState === 'ready'`, 15000).catch(() => false);
+const gcS5e = await geoCount();
+const S5b = await J(`({ fromCache: crGrid && crGrid.fromCache, hint: document.getElementById('createHint').textContent, btn: document.getElementById('crHintBtn').textContent })`);
+ok('J11a (persistence) re-picking the completed city loads it from the ON-DEVICE CACHE: ready with ZERO new geometry requests (' + gcS5d + ' -> ' + gcS5e + '), the hint says when it was loaded, Refresh is offered | ' + JSON.stringify(S5b),
+  s5Cached === true && gcS5e === gcS5d && S5b.fromCache === true && S5b.hint.indexOf('loaded') >= 0 && S5b.btn === 'Refresh');
+await jExitDiscard();
+// S6: exit mid-load - the downloads stop; nothing lands in the next session
+await jWipe();
+await ev(`window.__jDelayMs = 2500`);
+await ev(`openRouteMenu()`);
+await ev(`document.getElementById('rmCreate').click()`);
+await ev(`document.getElementById('crDoorManual').click()`);
+await pickCityVaughan();
+await poll(`!!(typeof crGrid !== 'undefined' && crGrid && crGrid.ops && crGrid.ops.size >= 1)`, 10000).catch(() => false); // the downloads must actually be IN FLIGHT before the exit - the grid's first fetch waits on the cache read, and an exit that lands before it has nothing to abort (the invariant is that exit stops live downloads, graded on live downloads)
+await sleep(300);
+const abS6a = await ev(`window.__jAborted`);
+await jExitDiscard();
+await sleep(300);
+const abS6b = await ev(`window.__jAborted`);
+await ev(`window.__jDelayMs = 0`);
+await jEnter();
+const S6 = await J(`({ streets: draft ? Object.keys(draft.roads).length : -1, pend: Object.keys(crPending).length, busy: crPickBusy })`);
+const s6Ready = await poll(`crPrepState === 'ready' || crPrepState === 'degraded'`, 20000).catch(() => false);
+ok('J6b (race: exit) leaving mid-load aborts the downloads themselves (aborts ' + abS6a + ' -> ' + abS6b + ', CG-PF-10); the next session opens clean (no draft streets, no pending, picker free) and its own load proceeds | ' + JSON.stringify(S6),
+  abS6b > abS6a && S6.streets === 0 && S6.pend === 0 && S6.busy === false && s6Ready === true);
+await jExitDiscard();
+// S7: a city switch supersedes the old grid - its late cells land nowhere
+await jWipe();
+await ev(`window.__jMode = 'supersede'`);
+await ev(`openRouteMenu()`);
+await ev(`document.getElementById('rmCreate').click()`);
+await ev(`document.getElementById('crDoorManual').click()`);
+await pickCityVaughan(); // Vaughan's cells: delayed 3 s by the supersede profile
+await sleep(500);
+await ev(`crPickCity({ display_name: 'Toronto, Ontario, Canada', lat: '43.6532', lon: '-79.3832', boundingbox: ['43.5810', '43.8555', '-79.6393', '-79.1150'], class: 'place', type: 'city', address: { city: 'Toronto', state: 'Ontario', country: 'Canada' } })`);
+const s7Ready = await poll(`crPrepState === 'ready'`, 25000).catch(() => false);
+await sleep(3500); // Vaughan's delayed cells land inside this window - in the OLD grid's name only
+const S7 = await J(`({ city: crCity && crCity.name, gridName: crGrid && crGrid.name, names: crCov ? Object.keys(crCov.byName) : ['<none>'], boxes: crCov ? crCov.boxes.length : -1, cells: crGrid ? crGrid.cells.length : -1 })`);
+await ev(`window.__jMode = 'healthy'`);
+ok('J6c (race: supersede) switching city mid-load supersedes the old grid: Toronto\'s own (empty) extract commits, and Vaughan\'s late full dataset NEVER lands in it | ' + JSON.stringify(S7),
+  s7Ready === true && S7.city === 'Toronto' && S7.gridName === 'Toronto' && S7.names.length === 0 && S7.boxes === S7.cells);
+await jExitDiscard();
+// S8: the edge chain - top-up completes Faraway; Farfaraway pends; the wider preparation sweeps it; an outside tap leaves a working remedy
+await jEnter();
+await poll(`crPrepState === 'ready'`, 20000);
+await ev(tapRoad('Ghost Avenue', 43.91, -79.5)); // absent AND outside the city (east of it - a box there touches no fixture street)
+const S8g = await J(`({ btn: document.getElementById('crHintBtn').textContent, btnOn: document.getElementById('crHintBtn').style.display !== 'none', state: crPrepState })`);
+await ev(`document.getElementById('crHintBtn').click()`); // Prepare this area - at the TAP point
+const s8gPrep = await poll(`crCov && crCov.boxes.some(b => 43.91 >= b.s && 43.91 <= b.n && -79.5 >= b.w && -79.5 <= b.e)`, 20000).catch(() => false);
+ok('J9b (remedy works, CG-PF-09) with the city READY, a tap outside it still leaves a visible "Prepare this area" button (' + JSON.stringify(S8g) + '); tapping it prepares around the TAPPED point and the new coverage contains it | covered: ' + s8gPrep,
+  S8g.btn === 'Prepare this area' && S8g.btnOn && S8g.state === 'ready' && s8gPrep === true);
+const gcS8 = await geoCount();
+await ev(`window.__jDelayMs = 45000`);
+const ft0 = Date.now();
+await ev(tapStreet('Faraway Avenue'));
+const gotFar = await poll(`typeof draft !== 'undefined' && draft && !!draft.roads['Faraway']`, 90000).catch(() => false);
+const fMs = Date.now() - ft0;
+await ev(`window.__jDelayMs = 0`);
+const S8log = await geoSince(gcS8);
+const farTopups = nameBodies(S8log, 'Faraway Avenue');
+const S8a = await J(`({ total: draft && draft.roads['Faraway'] ? Math.round(computeStretches(draft.roads)['Faraway'].total) : -1 })`);
+ok('J7a (edge rule + CG-PF-07) Faraway Avenue crosses the CITY edge: ONE targeted top-up fires with the correct grammar (way["name"="Faraway Avenue"]), its primary answer landing at a real 45 s is ACCEPTED (elapsed ' + fMs + ' ms - the verified build\'s 40 s top-up cap killed exactly this), and the street joins WHOLE (' + Math.round(farawayLen) + ' m) | top-ups: ' + farTopups.length + ', got ' + JSON.stringify(S8a),
+  gotFar === true && fMs >= 44000 && farTopups.length === 1 && Math.abs(S8a.total - farawayLen) <= farawayLen * 0.03);
+await ev(tapStreet('Farfaraway Avenue'));
+const pendFF = await poll(`crPending['Farfaraway'] !== undefined`, 20000).catch(() => false);
+const S8b = await J(`({ inDraft: !!(draft && draft.roads['Farfaraway']), pendRow: (document.getElementById('crPickList').textContent || '').indexOf('PENDING') >= 0, count: document.getElementById('crCount').textContent })`);
+ok('J7b (edge rule, fail-closed) Farfaraway Avenue still reaches past the widened area after its ONE top-up: it stays PENDING - listed as pending, NOT in the draft, NOT in the count | ' + JSON.stringify(S8b),
+  pendFF === true && S8b.inDraft === false && S8b.pendRow && S8b.count.indexOf('Faraway') < 0);
+const S8c0 = await J(`({ btn: document.getElementById('crHintBtn').textContent, btnOn: document.getElementById('crHintBtn').style.display !== 'none' })`);
+await ev(`document.getElementById('crHintBtn').click()`); // Prepare wider area - around the street's open end; the landing box SWEEPS the pending street complete (its other end is verified by a city cell)
+const sweptFF = await poll(`typeof draft !== 'undefined' && draft && !!draft.roads['Farfaraway']`, 25000).catch(() => false);
+const S8c = await J(`({ total: draft && draft.roads['Farfaraway'] ? Math.round(computeStretches(draft.roads)['Farfaraway'].total) : -1, pend: Object.keys(crPending).length })`);
+ok('J9c (remedy works, CG-PF-09) the pending street offers a working "Prepare wider area" button (' + JSON.stringify(S8c0) + '): the wider preparation lands and the street completes WHOLE (' + Math.round(farfarawayLen) + ' m) by the sweep - pending cleared, no re-tap needed | ' + JSON.stringify(S8c),
+  S8c0.btn === 'Prepare wider area' && S8c0.btnOn && sweptFF === true && Math.abs(S8c.total - farfarawayLen) <= farfarawayLen * 0.03 && S8c.pend === 0);
+await ev(tapStreet('Edgewater Avenue'));
+const gotEdge2 = await poll(`typeof draft !== 'undefined' && draft && !!draft.roads['Edgewater']`, 15000).catch(() => false);
+const S8d = await J(`({ total: draft && draft.roads['Edgewater'] ? Math.round(computeStretches(draft.roads)['Edgewater'].total) : -1 })`);
+ok('J7c (whole-city contrast) Edgewater Avenue - the OLD box design\'s edge case, completed only by a top-up - now resolves LOCALLY from the city extract (' + Math.round(edgewaterLen) + ' m), no top-up at all | ' + JSON.stringify(S8d),
+  gotEdge2 === true && Math.abs(S8d.total - edgewaterLen) <= edgewaterLen * 0.03);
+await jExitDiscard();
+// S9: the top-up-after-exit race
+await jEnter();
+await poll(`crPrepState === 'ready'`, 20000);
+await ev(`window.__jDelayMs = 2500`);
+await ev(tapStreet('Faraway Avenue')); // edge street: its top-up is now in flight
 await sleep(300);
 await ev(`exitCreate()`);
 await sleep(3200); // the top-up completes into a closed session
-await jEnter();
-const J6d = await J(`({ pend: Object.keys(crPending).length, streets: draft ? Object.keys(draft.roads).length : -1, busy: crPickBusy })`);
-ok('J6d (race: late top-up) a top-up completing after exit changes nothing: the next session opens clean (no pending, no draft streets, picker free) | ' + JSON.stringify(J6d),
-  J6d.pend === 0 && J6d.streets === 0 && J6d.busy === false);
 await ev(`window.__jDelayMs = 0`);
+await ev(`openRouteMenu()`);
+await ev(`document.getElementById('rmCreate').click()`);
+await ev(`document.getElementById('crDoorManual').click()`);
+await pickCityVaughan();
+const S9 = await J(`({ pend: Object.keys(crPending).length, streets: draft ? Object.keys(draft.roads).length : -1, busy: crPickBusy })`);
+ok('J6d (race: late top-up) a top-up completing after exit changes nothing: the next session opens clean (no pending, no draft streets, picker free) | ' + JSON.stringify(S9),
+  S9.pend === 0 && S9.streets === 0 && S9.busy === false);
 await jExitDiscard();
-// (j) the no-search path: Prepare this area (anchor rule (b))
-await jEnter();
+// S10: the adversarial junction, against the shipped resolver (CG-PF-08)
+const ADV = await ev(`(() => { const els = [
+  { type: 'way', id: 1, tags: { name: 'Main Road' }, geometry: [{ lat: 0.5, lon: 0.5 }, { lat: 0.5, lon: 2 }] },
+  { type: 'way', id: 2, tags: { name: 'Cross Road' }, geometry: [{ lat: 0.6, lon: 0.6 }, { lat: 0.5, lon: 2 }] }
+]; const keep = crCov; crCov = crCovFromWays(crIndexWays(els, {}), [{ s: 0, w: 0, n: 1, e: 1 }]); const r = crResolve('Main Road', { lat: 0.5, lng: 0.75 }); crCov = keep; return r.status; })()`);
+ok('J8b (adversarial junction, CG-PF-08) a cross street touching an out-of-coverage endpoint does NOT certify the street complete: resolve returns edge, not ok | got ' + ADV, ADV === 'edge');
+// S11: a name-only city (the lookup failed) still gets the fallback box - and its dense remedy
+await ev(`window.__jMode = 'cityfail'`);
+await ev(`openRouteMenu()`);
+await ev(`document.getElementById('rmCreate').click()`);
+await ev(`document.getElementById('crDoorManual').click()`);
+await poll(`document.getElementById('rmCityPane').classList.contains('on')`, 10000);
+await ev(`document.getElementById('crCityLast').click()`); // the lookup fails in this profile: the remembered NAME alone scopes the creation
+const s11Pick = await poll(`typeof creating !== 'undefined' && creating === true && crStage === 'pick' && crGrid === null`, 10000).catch(() => false);
+await ev(`window.__jMode = 'dense'`);
 await ev(`map.jumpTo({ center: [-79.574666, 43.798972], zoom: 15 })`);
-await sleep(600); // the moveend hook refreshes the hint: the Prepare offer appears at picking zoom
-const J9a = await J(`({ btn: document.getElementById('crHintBtn').textContent, btnOn: document.getElementById('crHintBtn').style.display !== 'none', state: crPrepState })`);
-await ev(`document.getElementById('crHintBtn').click()`); // Prepare this area (anchor = map centre)
-const j9Ready = await poll(`crPrepState === 'ready'`, 15000).catch(() => false);
-await ev(tapStreet('Bordeaux Drive'));
-const gotJ9 = await poll(`typeof draft !== 'undefined' && draft && !!draft.roads['Bordeaux']`, 15000).catch(() => false);
-ok('J9 (no-search path) with NO street search at all: zoomed into a neighbourhood, the hint offers "Prepare this area"; one tap prepares around the map centre and street taps then resolve locally | ' + JSON.stringify(J9a),
-  J9a.btn === 'Prepare this area' && J9a.btnOn && J9a.state === 'none' && j9Ready === true && gotJ9 === true);
+await sleep(600);
+await ev(`document.getElementById('crHintBtn').click()`); // Prepare this area - the box, which the dense profile refuses
+const s11Dense = await poll(`crPrepState === 'failed' && crPrepFail && crPrepFail.kind === 'dense'`, 20000).catch(() => false);
+const S11a = await J(`({ btn: document.getElementById('crHintBtn').textContent, grid: !!crGrid })`);
+await ev(`map.jumpTo({ center: [-79.56, 43.815], zoom: 13 })`);
+const gcS11 = await geoCount();
+await ev(`window.__jMode = 'healthy'`);
+await ev(`document.getElementById('crHintBtn').click()`);
+const s11Ready = await poll(`crPrepState === 'ready'`, 20000).catch(() => false);
+const S11log = await geoSince(gcS11);
+const s11Body = batchBodies(S11log)[0] || '';
+const s11M = /\(([-\d.]+),([-\d.]+),([-\d.]+),([-\d.]+)\)/.exec(s11Body);
+ok('J9/J8c (no-city fallback + dense remedy) with the city lookup DOWN, the remembered name alone still reaches the pick stage with NO grid (' + s11Pick + '); Prepare-this-area runs the fallback box; a dense refusal leaves a working "Prepare this area" button (' + JSON.stringify(S11a) + ') - moving the map and tapping it prepares the NEW centre\'s box (bounds ' + (s11M ? s11M.slice(1).join(',') : '?') + ') | dense failed: ' + s11Dense + ', ready after remedy: ' + s11Ready,
+  s11Pick === true && s11Dense === true && S11a.btn === 'Prepare this area' && S11a.grid === false && s11Ready === true && !!s11M && Math.abs(+s11M[1] - 43.788054) < 0.002 && Math.abs(+s11M[3] - 43.841946) < 0.002);
+await jExitDiscard();
+// S12: the quota/cap degradation is DISCLOSED, and the session still works
+await jWipe();
+await ev(`CR_TIMING.cityCapBytes = 10`); // a cap no real city fits: the save must be refused, out loud
+await jEnter();
+const s12Ready = await poll(`crPrepState === 'ready'`, 20000).catch(() => false);
+await sleep(600); // the serialized cache writes settle
+const S12 = await J(`({ note: crCacheNote, hint: document.getElementById('createHint').textContent })`);
+const s12Rec = await ev(`crIdbGet('Vaughan').then(r => r ? Object.keys(r.cells || {}).length : -1)`);
+await ev(`CR_TIMING.cityCapBytes = 60 * 1024 * 1024`);
+ok('J11b (cache cap, amendment C) with the storage cap shrunk below any city, the load still completes - and the refusal is DISCLOSED in the hint ("Couldn\'t save Vaughan on this phone"), with nothing silently half-saved (record cells: ' + s12Rec + ') | ' + JSON.stringify(S12),
+  s12Ready === true && S12.note.indexOf('Couldn’t save') === 0 && S12.hint.indexOf('Couldn’t save Vaughan') >= 0 && s12Rec <= 0);
+await jExitDiscard();
+// S13: the last-city lookup race (CG-PF-11), end to end through the real UI
+await ev(`openRouteMenu()`);
+await ev(`document.getElementById('rmCreate').click()`);
+await ev(`document.getElementById('crDoorManual').click()`);
+await poll(`document.getElementById('rmCityPane').classList.contains('on')`, 10000);
+const hasLastJ = await poll(`document.getElementById('crCityLast').style.display !== 'none'`, 5000).catch(() => false);
+await ev(`window.__jCityHold = true`);
+await ev(`document.getElementById('crCityLast').click()`); // the held lookup starts
+await sleep(300);
+await ev(`(() => { const i = document.getElementById('crCityInput'); i.value = 'toronto'; i.dispatchEvent(new Event('input', { bubbles: true })); return true; })()`);
+await poll(`document.querySelectorAll('#crCityResults .rmBtn').length === 1`, 10000);
+await ev(`document.querySelector('#crCityResults .rmBtn').click()`);
+await poll(`typeof creating !== 'undefined' && creating === true && crStage === 'pick'`, 10000);
+await sleep(4500); // the held Vaughan lookup lands inside this window
+await ev(`window.__jCityHold = false`);
+const J10 = await J(`({ city: crCity && crCity.name, area: draft && draft.area, stage: crStage })`);
+ok('J10 (last-city race, CG-PF-11) the remembered-city button is offered (' + hasLastJ + '); its lookup held 4 s while Toronto is searched and picked - the late Vaughan answer CANNOT overwrite the session: city and draft area stay Toronto | ' + JSON.stringify(J10),
+  hasLastJ === true && J10.city === 'Toronto' && J10.area === 'Toronto' && J10.stage === 'pick');
 await jExitDiscard();
 
 // ---------- (e) the CSP seam: the app's real calls under the real stamped policy (Beta 1.119) ----------
