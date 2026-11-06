@@ -1,5 +1,49 @@
 # Changelog
 
+## Beta 1.121 — 2026-11-06
+The converged fix from audit round "round-pickfetch" (Codex audit +
+debate, Andrew's gate amendment), after 1.120 failed on Andrew's phone
+exactly like 1.118/1.119: tap a street, long "Loading…", then "the shape
+service didn't answer" — every street, every time.
+THE ROOT CAUSE (CG-PF-01): the app's own shape request was malformed.
+fetchStreetGeometry built `way["name="Bordeaux Drive"]` — the equals
+sign inside the quoted key, the value's opening quote missing — instead
+of `way["name"="Bordeaux Drive"]`. Overpass rejected it on every tap
+since 1.118. 1.120's patience work treated a symptom; its exhibits used
+a hand-written correct query, so they never tested the app's bytes.
+Around it: 40 s per-attempt timeouts excluded the measured 40.6/52.7 s
+successes and burned ~123 s across retries (CG-PF-02); the attempt
+timer was cleared when headers landed, before the body was read, so a
+stalled body hung forever (CG-PF-03); async pick completions could
+write into a replacement draft (CG-PF-05); and drive150's network
+sections passed with zero geometry ever received (CG-PF-06).
+THE FIX (Andrew's amendment: city first): manual creation now STARTS
+with "What city will you be cleaning in?" — he picks the city, then ONE
+bounded area extract (~4 × 4 km picking box + 1 km buffer) is prepared
+for the neighbourhood (anchor: a street-search pick, or a one-tap
+"Prepare this area" at picking zoom — never a silent download while
+panning). Taps then resolve LOCALLY from the extract via the existing
+chainWays stitch + nearest-run rule. One query builder serves batch and
+top-up alike. The fetcher runs under a single 120 s deadline spanning
+connect+body+parse with per-attempt budgets inside it, consumes the
+body as a stream with the 2 MB cap enforced while streaming, treats an
+HTTP-200 Overpass `remark` as a failed extract, and re-checks the clock
+after the parse before committing. A street whose run reaches beyond
+verified coverage gets ONE targeted top-up over an expanded bounded
+area; still beyond coverage it stays PENDING (listed, never added).
+Every async completion binds to (creation session, coverage
+generation); exit and new preparations invalidate older generations.
+Honest taxonomy throughout: unreachable / answered-with-error /
+ready-but-no-shape / too-dense. The hint carries the preparation state
+("Preparing street shapes for <City>… N s") with Cancel / Retry /
+Prepare-this-area as a real button. drive150 rebuilt at the fetch seam:
+it decodes the app's real POST bodies and grades the query grammar,
+replays the measured latency profile, splits headers/body, runs the
+failure matrix, proves offline-after-extract adds with zero further
+requests, and races cancel/exit/supersede/late-top-up — demonstrated
+RED on the 1.120 tree first (grammar, latency and body-stall each
+reproduced independently).
+
 ## Beta 1.120 — 2026-11-06
 Round 2 of create-a-route fixes, all from Andrew's real phone use of
 1.119.
