@@ -218,7 +218,7 @@ await touchEv('touchEnd', [{ id: 1, x: cv.x - 70, y: cv.y }, { id: 2, x: cv.x + 
 
 // ---- I (Beta 1.116, CG-115-04 as amended by Andrew at the gate): centre button = standard GPS crosshair; the Locate face is untouched ----
 const iFace = await J(`(() => { const cb = $('centreBtn'); const gb = $('gpsBtn'); return { cbHtml: cb.innerHTML, lbl: gb.querySelector('.tabLbl').textContent, ico: gb.querySelector('.tabIco').innerHTML, paused: followPaused }; })()`);
-ok('I1 the re-centre button wears the GPS crosshair/target artwork (ring + centre dot + ticks), not the navigation arrow | ' + String(iFace.cbHtml).slice(0, 110), iFace.paused === true && String(iFace.cbHtml).includes('<circle') && String(iFace.cbHtml).includes('fill-rule="evenodd"'));
+ok('I1 the re-centre button wears Andrew\'s picked crosshair artwork (mockup sheet candidate #2: stroked ring r6 + four ticks + filled dot r2.2), not the navigation arrow | ' + String(iFace.cbHtml).slice(0, 110), iFace.paused === true && String(iFace.cbHtml).includes('r="2.2"') && String(iFace.cbHtml).includes('M12 1.5v4') && !String(iFace.cbHtml).includes('M12 2.6 19.6 20.6'));
 ok('I2 while suspended, the Locate tab face is still the 1.115 face (Locate label + the pack navigation-arrow icon; the file-level diff proves byte-identity) | label ' + JSON.stringify(iFace.lbl), iFace.lbl === 'Locate' && String(iFace.ico).includes('M12 2.6 19.6 20.6') && !String(iFace.ico).includes('<circle'));
 await ev(`(() => { window.__feed.on = false; stopGps(); return true; })()`);
 
