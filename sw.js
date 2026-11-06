@@ -114,6 +114,7 @@ self.addEventListener('fetch', e => {
   const r = e.request;
   if (r.method !== 'GET') return;
   const u = new URL(r.url);
+  if (u.origin === self.location.origin && u.pathname.includes('/packs/')) return; // Beta 1.123: the city street packs (packs/*.json) are NETWORK-ONLY - the worker does not intercept them at all. The generic same-origin branch below (netFirst into the shell cache) would otherwise store multi-megabyte JSON beside the app page AND serve a stale cached copy whenever the server answers an error status - a removed or broken pack must read as a failure, because that failure is exactly the signal the create flow's grid fallback keys on. Not the tile cache, not the offline pack: straight to the network, and offline it simply fails.
   const mapHost = u.hostname === 'tiles.basemaps.cartocdn.com' || u.hostname === 'protomaps.github.io'; // Beta 1.33: Protomaps tiles (CARTO-hosted) + glyphs/sprites; the styles themselves are embedded in the page
   if (mapHost) e.respondWith(mapFetch(r, e));
   else if (u.hostname === 'unpkg.com' || u.hostname === 'cdn.jsdelivr.net') e.respondWith(cacheFirst(r, CACHE));
