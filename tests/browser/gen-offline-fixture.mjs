@@ -36,7 +36,12 @@ export const CONTRACT = {
 
 function loadData() {
   const dataSrc = readFileSync(new URL('../../parts/data.js', import.meta.url), 'utf8');
-  const { ROADS, REFERENCE } = vm.runInNewContext(dataSrc + '\n;({ ROADS, REFERENCE })');
+  // Beta 1.117: data.js holds PACKS - the 5W pack's roads are the route data
+  // this contract covers (the pack's own box field equals CONTRACT.vaughanBox;
+  // the generator deliberately keeps using its own constant, so a pack edit
+  // that moved the area would move the app's list but not this fixture).
+  const { ROUTE_PACKS } = vm.runInNewContext(dataSrc + '\n;({ ROUTE_PACKS })');
+  const ROADS = ROUTE_PACKS[0].roads, REFERENCE = ROUTE_PACKS[0].reference;
   const pmSrc = readFileSync(new URL('../../parts/pmstyles.js', import.meta.url), 'utf8');
   const { PM_DAY, PM_NIGHT } = vm.runInNewContext(pmSrc + '\n;({ PM_DAY, PM_NIGHT })');
   return { ROADS, REFERENCE, GL_STYLES: { day: PM_DAY, night: PM_NIGHT } };
