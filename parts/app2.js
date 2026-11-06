@@ -645,23 +645,25 @@ makeSheetDraggable($('pacePanel'));
 // (Andrew, live catch). wireRouteRows binds the rows to the mode's chooser.
 function routeRowEl(p) { // Beta 1.94 (audit F-04): rows are built as DOM nodes with textContent, never by interpolating pack data into innerHTML - a pack's name/area are data, and the day route creation lands, a typed name must not be able to become markup. The row shape (classes, badge rule) is unchanged; wireRouteRows' container delegation reads data-route as before.
   const tab = $('routeMenu').classList.contains('tab');
-  const b = document.createElement('button'); b.className = 'routeRow'; b.dataset.route = p.id;
+  const user = !SHIPPED_PACK_IDS.has(p.id); // Beta 1.124: a route Andrew created (not a shipped pack) can be deleted - its row is a DIV, not a <button>, because the Delete control is a real button and buttons cannot nest; the row's choose behaviour is unchanged (the container delegation reads data-route on any .routeRow)
+  const b = document.createElement(user ? 'div' : 'button'); b.className = 'routeRow'; b.dataset.route = p.id;
   const meta = document.createElement('span'); meta.className = 'routeMeta';
   const nm = document.createElement('span'); nm.className = 'routeName'; nm.textContent = p.name;
   const ar = document.createElement('span'); ar.className = 'routeArea'; ar.textContent = p.area + ' · ' + Object.keys(p.roads).length + ' streets';
   meta.append(nm, ar); b.appendChild(meta);
   if (tab && activeRoute && activeRoute.id === p.id) { const bd = document.createElement('span'); bd.className = 'routeBadge'; bd.textContent = 'Currently loaded'; b.appendChild(bd); }
+  if (user) { const del = document.createElement('button'); del.className = 'routeDel'; del.type = 'button'; del.textContent = 'Delete'; del.addEventListener('click', e => { e.stopPropagation(); askDeleteRoute(p.id); }); b.appendChild(del); } // the Delete tap stops here - it must never read as a tap on the row itself (which would load the route it is about to delete)
   return b;
 }
 function renderRouteLists() { document.querySelectorAll('.routeList').forEach(el => { el.replaceChildren(...ROUTE_PACKS.map(routeRowEl)); }); }
 function wireRouteRows(container, choose) { container.addEventListener('click', e => { const row = e.target.closest('.routeRow'); if (row) choose(row.dataset.route); }); }
-function showRmPane(id) { ['rmMain', 'rmListPane', 'rmCreatePane', 'rmPhotoPane', 'rmNamePane', 'rmCityPane'].forEach(p => $(p).classList.toggle('on', p === id)); }
+function showRmPane(id) { ['rmMain', 'rmListPane', 'rmCreatePane', 'rmCityListPane', 'rmPhotoPane', 'rmNamePane', 'rmCityPane'].forEach(p => $(p).classList.toggle('on', p === id)); }
 function openRouteMenu() { const rm = $('routeMenu'); closeSheets(); showRmPane('rmMain'); rm.classList.add('tab'); renderRouteLists(); rm.classList.add('open'); }
 function closeRouteMenu() { const rm = $('routeMenu'); rm.classList.remove('open'); rm.classList.remove('tab'); }
 $('routesBtn').addEventListener('click', () => { if (!tapGuard('routesBtn')) return; if ($('routeMenu').classList.contains('open')) closeRouteMenu(); else openRouteMenu(); });
 $('rmClose').addEventListener('click', closeRouteMenu);
 $('rmChoose').addEventListener('click', () => { renderRouteLists(); showRmPane('rmListPane'); });
-$('rmCreate').addEventListener('click', () => { showRmPane('rmCreatePane'); crRenderCityChoices(); }); // Beta 1.123: the Create pane is the city chooser - its list renders fresh on every entry (both the cold-start picker and this Routes menu show this same pane)
+$('rmCreate').addEventListener('click', () => { showRmPane('rmCreatePane'); }); // Beta 1.124 (Andrew, approved mockup): the Create pane opens on the two doors - Select from list renders the city list fresh on ITS entry (crDoorList), not here
 $('rmBack').addEventListener('click', () => showRmPane('rmMain'));
 $('rmBack2').addEventListener('click', () => showRmPane('rmMain'));
 wireRouteRows($('rmRoutes'), id => {

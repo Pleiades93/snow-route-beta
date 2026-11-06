@@ -135,26 +135,38 @@ loads into the preview. A bare roads object (the route-creation
 sandbox's candidate shape) is accepted as a roads-only draft.
 
 **Door 2 — select streets myself (Beta 1.121: city first, then the
-whole city prepared; Beta 1.123: the gate is a chooser).** Manual
+whole city prepared; Beta 1.123: the gate is a chooser; Beta 1.124:
+the gate opens on two doors).** Manual
 creation STARTS by choosing a city. 1.121's gate was a typed city
 search; on Andrew's phone it dead-ended (the defect below), so
-1.123 makes the Create pane itself the gate — "Select the city
-you'll be cleaning in", with the pack library's cities as tappable
-buttons rendered from `packs/index.json` (the last-used city,
-`snowroute.v2.lastArea`, rides first when the library holds it).
-The cold-start picker and the Routes menu show the SAME routeMenu
-and the SAME pane, so the chooser exists once and both entries
-reach it (drive153 proves both). A chooser tap is a city pick
+1.123 made the Create pane itself the gate. 1.124 restructures it
+again (Andrew's approved mockup): the Create pane is titled
+"Create new route" and opens on TWO primary doors — **Select from
+list** (sub: "Choose a city that's ready to load instantly"), which
+opens its own pane titled "Select the city you'll be cleaning in"
+listing the pack library's cities as rows with their street counts
+("4,477 streets · ready to load") rendered from `packs/index.json`
+(the last-used city, `snowroute.v2.lastArea`, rides first when the
+library holds it), and **Search manually** (sub: "Any other city
+or address — loaded from the map service"), which opens the typed
+search. The photo door sits quieter below a divider. Back links
+walk pane to pane (list/manual/photo → doors → main). The
+cold-start picker and the Routes menu show the SAME routeMenu
+and the SAME panes, so the gate exists once and both entries
+reach it (drive153 + drive154 prove both). A list-row tap is a city pick
 through the same `crPickCity` the typed search uses, carrying the
-catalogue's own bounds. A separate **"Search manually"** door on
-the same pane keeps the typed search for anywhere without a pack:
+catalogue's own bounds. The typed search keeps its form:
 a debounced Nominatim query (`featuretype=city`) offers populated
 places only (a place of type city/town/village/hamlet/suburb, or
 an administrative boundary), with the last-used city as a one-tap
 choice. Picking a city — either door — scopes the creation (name
 + centre + bounding box), flies the map to it, biases the street
 search to the city's box (viewbox, bounded=0 — a bias, never a
-restriction), and STARTS the city's preparation (below). A draft
+restriction), and STARTS the city's preparation (below). Both
+doors land on the SAME pick stage, so the street search bar with
+its autocomplete is present and behaves identically after a list
+pick (drive154 proves it end to end on both paths).
+A draft
 that already names its city (the photo door) pre-answers the step;
 the city stays changeable from the pick sheet without losing the
 draft. **The 1.121 dead end, for the record:** the app requests
@@ -359,6 +371,28 @@ any pack. A freshly saved route gets an honest preload record (none of
 its area downloaded yet) and the save toast points at Settings →
 Status → Download. Backups carry the definitions (see the backup
 envelope in STORAGE-SCHEMA).
+
+**Deletion (Beta 1.124).** A created route's row in Choose a route
+carries a Delete button (shipped packs never do, and `deleteRoute`
+refuses shipped ids in code). The shared create confirm asks first
+(Cancel / Delete, the Yes in the destructive red; the confirm card
+is the `--card` theme-token surface in both day and night, and the
+modal's z-index rises above the full-screen menus so it can be
+asked from inside the route list). On confirm, in order: the
+definition is removed from the userpacks record through a strict
+read + verified write (a storage failure leaves the route listed
+and intact, with a toast naming the problem); every key of the
+route's slot is wiped, enumerated from `routeKeys` — never
+hand-listed, so a future field joins the sweep by construction;
+if the deleted route was the active one, the app returns to the
+boot-picker state (no geometry, no state loaded, LS at its eval
+default, menu in boot mode). Nothing else keys on a route id: the
+IndexedDB city cache is keyed by city and survives; the offline
+fingerprint derives from the pack list, so removal honestly
+un-certifies the old union download (the tiles stay cached).
+drive154 proves the affordance split, the ask, both themes, Cancel,
+the full wipe, the active-route boot return and the
+storage-failure path.
 
 ## GPS and coverage
 
