@@ -37,6 +37,13 @@ Design notes (adjudicated 2026-10-28):
   build-pages.py now asserts both hosts inside connect-src, and
   tests/browser/selftest-csp-connect-src.mjs re-proves it against the
   built page.
+  Beta 1.120: connect-src also names the FALLBACK street-shape host,
+  https://overpass.kumi.systems - the public Overpass instance at
+  overpass-api.de commonly answers slowly or 429/504 under load, so the
+  create flow retries it once and then asks the fallback before it may
+  report failure (Andrew's on-device wedge: a refused shape fetch
+  latched the picker shut for the whole session). The build gate and
+  the selftest now assert all three creation hosts.
   style-src-attr 'unsafe-inline' is required: the app carries a few
   static style="" attributes (element styles set from JS are not
   CSP-governed); the <style> BLOCK stays hash-locked via style-src-elem.
@@ -61,7 +68,7 @@ POLICY_TEMPLATE = (
     "connect-src 'self' "
     "https://tiles.basemaps.cartocdn.com https://protomaps.github.io "
     "https://cdn.jsdelivr.net https://nominatim.openstreetmap.org "
-    "https://overpass-api.de; "
+    "https://overpass-api.de https://overpass.kumi.systems; "
     "worker-src blob: 'self'; child-src blob: 'self'; "   # 'self' is load-bearing: the service worker is a same-origin file, and blob:-only here silently blocked its registration - killing ALL offline capability while the app looked fine online (2026-11-01, Andrew's 'saved 0 of 894'). blob: stays for the map library's internal workers. The build gate asserts 'self' is present.
     "font-src 'none'; manifest-src 'self'; "
     "base-uri 'none'; form-action 'none'; object-src 'none'"

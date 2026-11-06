@@ -58,7 +58,7 @@ def verify(bundle: str, src_text: str, sw_text: str) -> None:
         assert f'https://{host}' in stamped, f'CSP FAIL: policy omits map host {host} - the styles fetch tiles/glyphs/sprites from it (2026-10-29 dark-mode incident: tiles.basemaps.cartocdn.com was missing and the whole dark basemap was policy-blocked)'
     assert "worker-src blob: 'self'" in stamped, 'CSP FAIL: worker-src does not allow the same-origin service worker - registration would be policy-blocked and ALL offline capability silently dies (2026-11-01 incident: preload reported saved 0 of 894 on a working connection)'
     cs = next((d.strip() for d in stamped.split(';') if d.strip().startswith('connect-src')), '')
-    for host in ('nominatim.openstreetmap.org', 'overpass-api.de'):
+    for host in ('nominatim.openstreetmap.org', 'overpass-api.de', 'overpass.kumi.systems'):
         assert f'https://{host}' in cs.split(), f'CSP FAIL: connect-src omits create-flow service host {host} - the create-a-route street search (Nominatim) and street geometry (Overpass) fetches are refused by the app\'s own policy before they leave the phone (2026-11-06 Beta 1.118 incident: both hosts missing, route creation died behind a "needs internet" toast on an online phone, and drive150\'s in-page fetch stub meant no test ever met the policy)'
     import pathlib
     chg = pathlib.Path(__file__).resolve().parent.parent.joinpath('CHANGELOG.md').read_text()
