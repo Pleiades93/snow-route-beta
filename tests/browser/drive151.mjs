@@ -162,6 +162,16 @@ ok('N5 both streets ADD from the wire-delivered geometry at their fixture length
 ok('N6 after the extract, the adds made ZERO further Overpass requests (the wire count is still the 4 cells) | total overpass requests: ' + wire.filter(w => w.kind === 'overpass').length,
   wire.filter(w => w.kind === 'overpass').length === 4);
 // ---- phase 2: reload - the saved city must load with ZERO Overpass requests ----
+// The cell saves are a fire-and-forget write-through queue (by design -
+// the cache is best-effort, never user data, and a partial record simply
+// resumes). Reloading the moment the streets land would grade the
+// queue's drain timing, not the persistence - on a loaded CI runner the
+// reload landed mid-queue twice (phase-2 counts 2, then 3: the cells
+// whose saves had not committed yet, fetched exactly as designed). Wait
+// for the TERMINAL signal first: the stored record itself holding every
+// cell (the harness rule - poll the terminal signal, never a proxy). If
+// the record never completes, N7 fails honestly below.
+const savedAll = await poll(`crIdbGet('Vaughan').then(r => !!r && !!r.cells && Object.keys(r.cells).length === 4)`, 30000);
 const wireMark = wire.length;
 await send('Page.reload', { ignoreCache: false }, PAGE_S);
 await bootRoute();
@@ -169,8 +179,8 @@ const inPick2 = await pickVaughan();
 const ready2 = await poll(`crPrepState === 'ready'`, 20000);
 const phase2Overpass = wire.slice(wireMark).filter(w => w.kind === 'overpass').length;
 const NH = await J(`({ fromCache: crGrid && crGrid.fromCache, hint: document.getElementById('createHint').textContent })`);
-ok('N7 PERSISTENCE ROUND-TRIP: after a full page reload, re-picking Vaughan is ready from the ON-DEVICE CACHE with ZERO Overpass requests on the wire (phase 2 count: ' + phase2Overpass + ') and the hint says when the city was loaded | ' + JSON.stringify(NH),
-  inPick2 === true && ready2 === true && phase2Overpass === 0 && NH.fromCache === true && NH.hint.indexOf('loaded') >= 0);
+ok('N7 PERSISTENCE ROUND-TRIP: after a full page reload, re-picking Vaughan is ready from the ON-DEVICE CACHE with ZERO Overpass requests on the wire (phase 2 count: ' + phase2Overpass + ') and the hint says when the city was loaded | ' + JSON.stringify(NH) + ' | record complete before reload: ' + savedAll,
+  inPick2 === true && ready2 === true && phase2Overpass === 0 && NH.fromCache === true && NH.hint.indexOf('loaded') >= 0 && savedAll === true);
 await installFeatureSeam();
 await tapStreet('Bordeaux Drive');
 const gotB2 = await poll(`typeof draft !== 'undefined' && draft && !!draft.roads['Bordeaux']`, 15000).catch(() => false);
