@@ -16,7 +16,9 @@ import { fileURLToPath } from 'node:url';
 // (the QL body is decoded; the payload is the fixture extract filtered
 // by the body's own bounds / name filter). Everything else passes
 // through to the real network via Node fetch, exactly as e2e-offline
-// fulfils. What it proves: the app's native fetch, under the shipped
+// fulfils. One fixture boundary (Beta 1.123): /packs/* requests are
+// answered 404 - this drive's world predates the pack library, and its
+// subject is the service path; drive153 grades the pack path. What it proves: the app's native fetch, under the shipped
 // CSP, on a real http origin, gets its city, fires the whole-city GRID
 // (one grammatically correct request per cell), receives real geometry
 // over the wire, adds streets from it - and after a full page RELOAD,
@@ -73,6 +75,7 @@ async function fulfil(sessionId, p) {
   const url = p.request.url;
   const json = (obj) => send('Fetch.fulfillRequest', { requestId: p.requestId, responseCode: 200, responseHeaders: [{ name: 'Content-Type', value: 'application/json' }, { name: 'Access-Control-Allow-Origin', value: '*' }], body: Buffer.from(JSON.stringify(obj)).toString('base64') }, sessionId);
   try {
+    if (new URL(url).pathname.indexOf('/packs/') >= 0) { wire.push({ kind: 'packs404', url }); return await json('nf', 404); } // Beta 1.123 fixture boundary: this drive grades the SERVICE path (grid + on-device cache) in a world where the pack library does not exist - the shipped packs/ tree would otherwise (correctly!) answer its fixture Vaughan from the real pack and there would be no grid left to grade. The pack path has its own drive (drive153); here every pack request 404s, the app finds no library, and preparation is the pure 1.121 service flow this drive was written for.
     if (url.indexOf('nominatim.openstreetmap.org') >= 0) {
       wire.push({ kind: 'nominatim', url });
       if (url.indexOf('featuretype=city') >= 0) return await json(CITY);

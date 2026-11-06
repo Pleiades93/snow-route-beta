@@ -609,7 +609,7 @@ $('stDel').addEventListener('click', async () => {
 });
 // ---- About / What's new ----
 const WHATSNEW = { // the curated in-app notes: plain words, LATEST RELEASE ONLY (Beta 1.114, Andrew: the accumulated list cluttered the About pane). A release REPLACES this entry with its own in the same change - it never accumulates; the full history lives in CHANGELOG.md, not the app
-  v: 'Beta 1.122', items: ["When location is on and the map is following you, it now turns so your direction of travel always points up — like a car GPS — not just during a clean", "Touching the map while it is following you hands it over instantly: no more first-touch delay before you can drag it. The centre button at the top right brings the follow back"]
+  v: 'Beta 1.123', items: ["Creating a route now starts by tapping your city from a list — Vaughan, Toronto, Markham, Richmond Hill and Brampton are ready in seconds, because the app now carries its own street library for them instead of asking a faraway service", "Cleaning somewhere else? Tap Search manually and search as before — other cities still load the original way, and the city search there actually answers now (before, it silently found nothing)"]
 };
 function renderAbout() {
   const cur = $('ver').textContent.trim();
@@ -1145,14 +1145,97 @@ async function crSourceExtract(box, name, budgetMs, attempt1Ms, sessionOk, op) {
   // street-shape extract this app obtains - a city grid cell, the fallback
   // box, a street top-up - comes through this ONE function: given a
   // coverage box (and optionally one street name), it returns the extract
-  // for that box. Today the source behind the seam is the live Overpass
-  // service (the query built by the single builder crQL, fetched by
-  // crOverpassFetch under its honesty rules). Beta 1.122's pre-generated
-  // city packs plug in BEHIND this seam - a static source answers the
-  // same call shape - without touching the grid, the fallback, the
-  // top-up, or anything downstream of them.
+  // for that box. Beta 1.123: the pre-generated city packs plug in BEHIND
+  // this seam - when a pack context is active (crPackCtx, set by
+  // crCityPrepare / crGridRefresh when the picked city matches the pack
+  // library), the pack answers the same call shape and the live Overpass
+  // service becomes the fallback. The grid, the fallback box prep, the
+  // top-up and everything downstream consume the identical result shape
+  // either way.
+  const pk = await crPackServe(box, name, sessionOk);
+  if (pk) return pk;
   const ql = name ? crNameQL(name, box, Math.ceil(budgetMs / 1000)) : crAreaQL(box, Math.ceil(budgetMs / 1000));
   return crOverpassFetch(ql, budgetMs, attempt1Ms, sessionOk, op);
+}
+// ---- the city packs (Beta 1.123): the app's own street library ----
+// Pre-generated whole-city street-shape files, hosted beside the app on
+// its own origin under packs/ (one <slug>.json per city + index.json,
+// the library's catalogue). This is the app's offline philosophy applied
+// to street shapes: a prepared city downloads ONCE from a static file
+// (seconds, same origin - no third-party service in the path), commits
+// through the same grid/cache machinery as a service load, and is then
+// the phone's own copy. The catalogue is data, not code: publishing a
+// new city's pack + index entry lights it up in the chooser and at this
+// seam with NO app change. A city with no pack - or a pack that fails
+// to load - uses the live Overpass grid exactly as 1.121 did, and the
+// fallback is SAID in the hint (crPackNote), never silent.
+let crPackCtx = null; // { slug, bbox, failed } while the active city's preparation is pack-backed; null = the service is the source
+let crPackNote = ''; // the disclosed pack state ('' = nothing to say); rides the hint like crCacheNote
+let crPackIndexP = null; // the session's catalogue promise (null result cached too: no library this session)
+let crPackLoads = {}; // slug -> Promise<elements>: the session's downloaded packs, adapted once
+function crPackIndexLoad() {
+  if (!crPackIndexP) {
+    crPackIndexP = (async () => {
+      try {
+        const r = await fetch('packs/index.json', { cache: 'no-cache' });
+        if (!r.ok) return null;
+        const ix = await r.json();
+        return (ix && Array.isArray(ix.cities) && ix.cities.length) ? ix.cities : null;
+      } catch (e) { return null; }
+    })();
+  }
+  return crPackIndexP;
+}
+async function crPackResolveCity(name, bbox) { // does the library hold THIS city? The match is by city name against the catalogue; the pack's own bounding box must CONTAIN the grid's box (a pack that covers less than the grid would certify coverage it never downloaded - the CG-PF-15 lesson, applied at the source). A slow catalogue never wedges preparation: past the race, the service path proceeds as if there were no pack.
+  if (!name || !bbox) return null;
+  const entries = await Promise.race([crPackIndexLoad(), new Promise(res => setTimeout(() => res(null), 8000))]);
+  if (!entries) return null;
+  const e = entries.find(x => x && typeof x.name === 'string' && typeof x.slug === 'string' && x.name.toLowerCase() === String(name).toLowerCase() && Array.isArray(x.bbox) && x.bbox.length === 4);
+  if (!e) return null;
+  const pb = { s: +e.bbox[0], w: +e.bbox[1], n: +e.bbox[2], e: +e.bbox[3] };
+  if (![pb.s, pb.w, pb.n, pb.e].every(isFinite)) return null;
+  const EPS = 1e-6;
+  if (!(pb.s <= bbox.s + EPS && pb.n >= bbox.n - EPS && pb.w <= bbox.w + EPS && pb.e >= bbox.e - EPS)) return null;
+  return { slug: e.slug, bbox: pb };
+}
+function crPackLoad(slug, force) { // one same-origin download per session per city, adapted ONCE into the Overpass element shape the extract machinery consumes ({ id, tags: { name }, geometry: [{ lat, lon }] }). The pack holds raw segments per street ([[lat, lng], ...] runs, unchained - the app chains at resolve time, as it does for service extracts). Synthetic ids are NEGATIVE and sequential: OSM way ids are positive, so a pack way can never collide with a service way in the merged by-id index. A failed load is NOT cached - a later preparation may retry it.
+  if (!force && crPackLoads[slug]) return crPackLoads[slug];
+  const p = (async () => {
+    const r = await fetch('packs/' + slug + '.json', { cache: 'no-cache' });
+    if (!r.ok) throw new Error('pack HTTP ' + r.status);
+    const pack = await r.json();
+    if (!pack || !pack.streets || typeof pack.streets !== 'object') throw new Error('pack shape');
+    const els = [];
+    let idc = 0;
+    for (const nm of Object.keys(pack.streets)) {
+      const segs = pack.streets[nm];
+      if (!Array.isArray(segs)) continue;
+      for (const seg of segs) { if (Array.isArray(seg) && seg.length > 1) els.push({ type: 'way', id: -(++idc), tags: { name: nm }, geometry: seg.map(pt => ({ lat: pt[0], lon: pt[1] })) }); }
+    }
+    if (!els.length) throw new Error('pack empty');
+    return els;
+  })();
+  crPackLoads[slug] = p;
+  p.catch(() => { if (crPackLoads[slug] === p) delete crPackLoads[slug]; });
+  return p;
+}
+async function crPackServe(box, name, sessionOk) { // the seam's pack answer: the extract for `box` (optionally one street) filtered out of the active city's pack, in the seam's result shape. A way belongs to a box when any of its points lies in it - the same membership the service's bounding-box query applies - and its FULL geometry is returned, exactly as `out geom` returns it. Returns null when no pack applies (the caller then takes the service path): no context, a box reaching past the pack's bounds, or a pack that failed to load - and that failure flips the context to the service for the rest of the preparation and says so in the hint.
+  const ctx = crPackCtx;
+  if (!ctx || ctx.failed) return null;
+  const EPS = 2e-6; // the grid rounds its cell edges to 6 decimals (crGridCellsFor), which can set an edge cell's side up to 5e-7 of a degree (~5 cm) outside the city's exact box - that is the grid's own rounding, not a coverage gap; anything beyond it is real and the service answers
+  if (!(box.s >= ctx.bbox.s - EPS && box.n <= ctx.bbox.n + EPS && box.w >= ctx.bbox.w - EPS && box.e <= ctx.bbox.e + EPS)) return null; // outside the pack's coverage the service answers (its extract is the honest one there)
+  let els = null;
+  try { els = await crPackLoad(ctx.slug); } catch (e) { els = null; }
+  if (sessionOk && !sessionOk()) return { ok: false, kind: 'stale' }; // superseded while the pack downloaded: land nowhere (CG-PF-05)
+  if (!els) {
+    ctx.failed = true;
+    if (!crPackNote) { crPackNote = 'The app’s street library didn’t load — loading from the street service instead'; crRenderHint(); }
+    return null;
+  }
+  const t0 = Date.now();
+  const out = [];
+  for (const el of els) { if (name && el.tags.name !== name) continue; if (el.geometry.some(g => g.lat >= box.s && g.lat <= box.n && g.lon >= box.w && g.lon <= box.e)) out.push(el); }
+  return { ok: true, json: { elements: out }, ms: Date.now() - t0 };
 }
 function crIndexWays(elements, byId) { // Overpass elements -> byId { id: { name, pts } }, with the point cleaning the per-tap fetch used (1e7 rounding, sub-0.1 m duplicates dropped)
   for (const el of elements || []) {
@@ -1390,6 +1473,7 @@ function crCityPrepare() { // a city is picked: load its whole extract - from th
   if (crGrid) crGridStop('superseded');
   crCov = crCovFromWays({}, []);
   crCacheNote = '';
+  crPackCtx = null; crPackNote = ''; // Beta 1.123: a new city's preparation re-decides its source (pack vs service) below
   const cells = crGridCellsFor(bbox);
   const g = crGrid = { name, bbox, cells, gen, session, startedAt: Date.now(), ticker: null, ops: new Set(), active: 0, fromCache: false, savedAt: null, stopped: null, lastFail: null };
   crPrepState = 'preparing'; crPrepFail = null; crWanted = null;
@@ -1415,10 +1499,18 @@ function crCityPrepare() { // a city is picked: load its whole extract - from th
       if (restored) { g.fromCache = true; g.savedAt = rec.savedAt || null; }
     }
     if (restored === g.cells.length) { crPrepState = 'ready'; crSweepPending(); crRenderHint(); return; } // fully saved: instant ready, ZERO downloads (amendment C)
-    if (restored === 0) toast('First load of ' + name + ' can take a few minutes — after that it’s instant', 5000); // timing honesty (amendment E): said once, when a real first download starts
-    g.ticker = setInterval(() => { if (crGridCurrent(g) && crPrepState === 'preparing') crRenderHint(); else if (g.ticker) clearInterval(g.ticker); }, 1000);
-    crGridPump(g);
-    crRenderHint();
+    // Beta 1.123: resolve the pack BEFORE the pump starts, so the source
+    // decision is the grid's from its first cell (and the hint can name
+    // it). A pack city skips the minutes warning - its first load is one
+    // static download, seconds not minutes.
+    crPackResolveCity(name, bbox).then(pk => {
+      if (!crGridCurrent(g)) return; // the session moved on while the catalogue answered: land nowhere (CG-PF-05)
+      if (pk) { g.fromPack = pk.slug; crPackCtx = { slug: pk.slug, bbox: pk.bbox, failed: false }; }
+      if (restored === 0 && !pk) toast('First load of ' + name + ' can take a few minutes — after that it’s instant', 5000); // timing honesty (amendment E): said once, when a real first download starts
+      g.ticker = setInterval(() => { if (crGridCurrent(g) && crPrepState === 'preparing') crRenderHint(); else if (g.ticker) clearInterval(g.ticker); }, 1000);
+      crRenderHint();
+      crGridPump(g);
+    });
   });
 }
 function crGridResume() { // the degraded/stopped remedy: fetch ONLY the missing cells (amendments A+B)
@@ -1437,9 +1529,12 @@ function crGridRefresh() { // the saved city's Refresh affordance: drop the save
   const name = g.name, bbox = g.bbox;
   crIdbDelete(name);
   crCacheNote = '';
+  crPackNote = '';
+  if (g.fromPack) crPackLoad(g.fromPack, true).catch(() => {}); // Beta 1.123: Refresh on a pack city re-downloads the PACK itself (forced past the session copy) - the fresh grid below then commits from it
   const session = crSession, gen = ++crCovGen;
   crCov = crCovFromWays({}, []);
   const g2 = crGrid = { name, bbox, cells: crGridCellsFor(bbox), gen, session, startedAt: Date.now(), ticker: null, ops: new Set(), active: 0, fromCache: false, savedAt: null, stopped: null, lastFail: null };
+  if (g.fromPack) { g2.fromPack = g.fromPack; crPackCtx = { slug: g.fromPack, bbox: g.bbox, failed: false }; } // the refreshed preparation stays pack-backed, against the same bounds
   crPrepState = 'preparing'; crPrepFail = null;
   g2.ticker = setInterval(() => { if (crGridCurrent(g2) && crPrepState === 'preparing') crRenderHint(); else if (g2.ticker) clearInterval(g2.ticker); }, 1000);
   crRenderHint();
@@ -1460,7 +1555,8 @@ function crRenderHint() { // the ONE writer of the pick-stage hint + its action 
   if (crPrepState === 'preparing' && crPrep) { text = 'Preparing street shapes for ' + (crCity ? crCity.name : 'this area') + '… ' + secs(crPrep.startedAt) + ' s'; btnLabel = 'Cancel'; } // the fallback box, when IT is the in-flight operation: it outranks the grid text - a settled (or still-loading) city grid must not label a box wait with stale part counts
   else if (crPrepState === 'preparing' && crGrid) { // the city grid: REAL progress - parts landed of parts total, and elapsed (amendment B: no fake percentages, the count is the count)
     const done = crGridDoneCount(), total = crGrid.cells.length, failed = crGridFailedCount();
-    text = 'Loading ' + crGrid.name + ' — part ' + done + ' of ' + total + ' · ' + secs(crGrid.startedAt) + ' s' + (failed ? ' · ' + failed + ' failed so far' : '');
+    if (crGrid.fromPack && !crPackNote) text = 'Loading ' + crGrid.name + ' from the app’s own library… ' + secs(crGrid.startedAt) + ' s'; // Beta 1.123: a pack load is ONE download, not parts - the wording names the fast path and keeps only the honest elapsed clock (no part counts, no percentages, and never the service's name for the library's work)
+    else text = 'Loading ' + crGrid.name + ' — part ' + done + ' of ' + total + ' · ' + secs(crGrid.startedAt) + ' s' + (failed ? ' · ' + failed + ' failed so far' : '');
     btnLabel = 'Cancel';
   }
   else if (crPrepState === 'degraded' && crGrid) {
@@ -1476,6 +1572,7 @@ function crRenderHint() { // the ONE writer of the pick-stage hint + its action 
   }
   else { text = crCity ? 'Search for a street in ' + crCity.name + ', or zoom in and prepare this area' : 'Search, fly to a street, then tap it on the map'; if (crWanted) btnLabel = crWanted.label; else if (map && map.getZoom() >= 14) btnLabel = 'Prepare this area'; }
   if (crCacheNote && crCity) text += ' · ' + crCacheNote; // the disclosed cache state rides the hint (amendment C: degradation is said, never silent)
+  if (crPackNote && crCity) text += ' · ' + crPackNote; // Beta 1.123: the disclosed pack state rides the hint the same way - a fallen-back load says the library didn't load, in every state the hint shows
   hint.textContent = text; hint.classList.add('on');
   if (btnLabel) { btn.textContent = btnLabel; btn.style.display = ''; } else btn.style.display = 'none';
   const cc = $('crCityChange'); if (cc) { if (crCity) { cc.textContent = 'City: ' + crCity.name + ' — change'; cc.style.display = ''; } else cc.style.display = 'none'; }
@@ -1498,8 +1595,9 @@ function crPendStreet(short, osmName, lngLat, run, boundary) { // fail-closed (C
 function crCityNameOf(it) { const a = (it && it.address) || {}; return a.city || a.town || a.village || a.municipality || a.county || String((it && it.display_name) || '').split(',')[0].trim(); }
 function crIsPlace(it) { // populated places only: a city/town/village place, or an administrative boundary (a city's own boundary relation) - never a street, a POI or a postcode area
   if (!it) return false;
-  if (it.class === 'place') return ['city', 'town', 'village', 'hamlet', 'suburb'].includes(it.type);
-  if (it.class === 'boundary') return it.type === 'administrative';
+  const cls = it.category || it.class; // the app requests format=jsonv2, and jsonv2 names this field `category` - `class` was the older format's name and does not exist in a jsonv2 payload. 1.121 read only `class`, so EVERY real result was rejected here and the suggestion list silently emptied on Andrew's phone (the typed city search dead end, 2026-11-06). The battery's fixture cities carried the old field name, which is why the rig never saw it; drive153 stubs the real jsonv2 shape.
+  if (cls === 'place') return ['city', 'town', 'village', 'hamlet', 'suburb'].includes(it.type);
+  if (cls === 'boundary') return it.type === 'administrative';
   return false;
 }
 function crPickCity(it) {
@@ -1519,6 +1617,39 @@ function crEnterPickFromCity() { // the city is chosen: land in the pick stage, 
   if (map && crCity && crCity.lat != null) { try { map.flyTo({ center: [crCity.lon, crCity.lat], zoom: 12, duration: 900 }); } catch (e) {} }
   crCityPrepare();
   crRenderHint();
+}
+// ---- the create gate is a CHOOSER (Beta 1.123, Andrew's redesign) ----
+// The first screen of Create lists the library's cities as tappable
+// options - no typing required to proceed. The list IS packs/index.json
+// (the same catalogue the seam reads): a city appears the day its pack
+// is published, and the app carries no hardcoded city names. Below the
+// list sit the two doors: Search manually (the typed place search, for
+// anywhere without a pack) and From a photo. Both entries into Create -
+// the cold-start picker and the Routes menu - show the SAME routeMenu
+// and the SAME rmCreatePane, so this one surface is the gate for both.
+function crRenderCityChoices() {
+  const boxEl = $('crCityChoices'); if (!boxEl) return;
+  boxEl.innerHTML = '';
+  const loading = document.createElement('div'); loading.className = 'rmNote'; loading.textContent = 'Loading the city library…'; boxEl.appendChild(loading);
+  crPackIndexLoad().then(entries => {
+    if (!boxEl.isConnected) return;
+    boxEl.innerHTML = '';
+    if (!entries || !entries.length) { const d = document.createElement('div'); d.className = 'rmNote'; d.textContent = 'The city library isn’t available right now — use Search manually below.'; boxEl.appendChild(d); return; } // honest unavailability, and the manual door below still works - the gate never dead-ends
+    const last = (lsGet(LS_GLOBAL.lastArea) || '').toLowerCase();
+    const sorted = entries.slice().sort((a, b) => (((b.name || '').toLowerCase() === last) ? 1 : 0) - (((a.name || '').toLowerCase() === last) ? 1 : 0)); // the last-used city rides first when the library holds it (a convenience, never a requirement - the full list is always there)
+    for (const e of sorted) {
+      if (!e || !e.name || !e.slug || !Array.isArray(e.bbox) || e.bbox.length !== 4) continue;
+      const b = document.createElement('button'); b.className = 'rmBtn';
+      b.textContent = e.name + (String(e.name).toLowerCase() === last ? ' · last used' : '');
+      b.addEventListener('click', () => crPackPickCity(e));
+      boxEl.appendChild(b);
+    }
+  });
+}
+function crPackPickCity(e) { // a chooser tap IS a city pick: it lands in the same crPickCity the typed search uses, with the catalogue's own bounds - so preparation, caching and the pick stage behave identically whichever door named the city
+  draft = newDraft(); crReturnToPreview = false;
+  const s = +e.bbox[0], w = +e.bbox[1], n = +e.bbox[2], ee = +e.bbox[3];
+  crPickCity({ lat: String((s + n) / 2), lon: String((w + ee) / 2), boundingbox: [String(s), String(n), String(w), String(ee)], display_name: e.name + ', Ontario, Canada', address: { city: e.name, state: 'Ontario', country: 'Canada', country_code: 'ca' } });
 }
 function crOpenCityPane(ret) {
   crCityLookupSeq++; if (crCityLastCtl) { try { crCityLastCtl.abort(); } catch (e) {} crCityLastCtl = null; } // reopening the pane supersedes any held lookup (CG-PF-11)
@@ -1543,11 +1674,13 @@ async function crRunCitySearch() {
     const list = await r.json();
     if (seq !== crCitySeq || session !== crSession) return; // superseded, or the creation it belonged to has closed (CG-PF-05)
     box.innerHTML = '';
-    for (const it of (Array.isArray(list) ? list : []).filter(crIsPlace)) {
+    const places = (Array.isArray(list) ? list : []).filter(crIsPlace);
+    for (const it of places) {
       const b = document.createElement('button'); b.className = 'rmBtn'; b.textContent = it.display_name || '';
       b.addEventListener('click', () => crPickCity(it));
       box.appendChild(b);
     }
+    if (!places.length) { const d = document.createElement('div'); d.className = 'rmNote'; d.textContent = 'No city matched that search — check the spelling, or go Back and pick from the list.'; box.appendChild(d); } // Beta 1.123: an empty answer SAYS so in the pane - 1.121 rendered nothing at all, which reads as a dead app (the same silence as the class/category defect, and just as unhelpful)
   } catch (e) { if (seq === crCitySeq && !(e && e.name === 'AbortError')) { box.innerHTML = ''; toast('City search needs an internet connection — try again', 3000); } }
 }
 
@@ -1694,6 +1827,7 @@ function exitCreate() {
   if (crPrep) { clearInterval(crPrep.ticker); crAbortOp(crPrep.op); crPrep = null; } // and the downloads themselves stop (CG-PF-10)
   if (crGrid) { crGridStop('exit'); crGrid = null; } // the grid's downloads stop too; its committed cells live on in the on-device city cache, by design
   crCacheNote = '';
+  crPackCtx = null; crPackNote = ''; // Beta 1.123: the pack context belongs to the closed session's city - the next creation re-decides its source
   crAbortOp(crTopOp); crTopOp = null;
   crCityLookupSeq++; if (crCityLastCtl) { try { crCityLastCtl.abort(); } catch (e) {} crCityLastCtl = null; } // a held last-city lookup dies with the session (CG-PF-11)
   crCov = null; crCity = null; crPrepState = 'none'; crPrepFail = null; crPrepAnchor = null; crPending = {}; crToppedUp = {}; crWanted = null;
@@ -1705,7 +1839,7 @@ function exitCreate() {
   crSetBackdrop(false); // Beta 1.120: the loaded route's paint returns exactly as it was
   renderDraft(); // draft is null: the overlay clears, the active route was never touched
 }
-function openDoors() { if (!routeLoaded) { restoreBootChrome(); } else openRouteMenu(); showRmPane('rmCreatePane'); }
+function openDoors() { if (!routeLoaded) { restoreBootChrome(); } else openRouteMenu(); showRmPane('rmCreatePane'); crRenderCityChoices(); }
 function askDiscard(then) { if (draft && draftStreets().length) crConfirm('Throw away this draft?', 'The ' + draftStreets().length + ' streets you picked will be lost.', then); else then(); }
 function fitDraft() {
   if (!draft || !map) return;
@@ -1726,7 +1860,7 @@ $('pvStartOverBtn').addEventListener('click', () => askDiscard(() => { exitCreat
 
 // ---- Door 1: photo -> waiting state -> draft import ----
 $('crDoorPhoto').addEventListener('click', () => showRmPane('rmPhotoPane'));
-$('crPhotoBack').addEventListener('click', () => showRmPane('rmCreatePane'));
+$('crPhotoBack').addEventListener('click', () => { showRmPane('rmCreatePane'); crRenderCityChoices(); });
 $('crPhotoBtn').addEventListener('click', () => $('crPhotoFile').click());
 $('crPhotoFile').addEventListener('change', () => {
   const f = $('crPhotoFile').files && $('crPhotoFile').files[0]; $('crPhotoFile').value = '';
@@ -1786,7 +1920,7 @@ $('crCityLast').addEventListener('click', async () => {
 $('crCityBack').addEventListener('click', () => {
   crCityLookupSeq++; if (crCityLastCtl) { try { crCityLastCtl.abort(); } catch (e) {} crCityLastCtl = null; } // leaving the pane kills a held lookup (CG-PF-11)
   if (crCityReturn === 'preview' || crCityReturn === 'pick') { if (!routeLoaded) parkBootChrome(); else closeRouteMenu(); setCreateStage(crCityReturn); }
-  else showRmPane('rmCreatePane');
+  else { showRmPane('rmCreatePane'); crRenderCityChoices(); }
 });
 $('crCityChange').addEventListener('click', () => crOpenCityPane('pick'));
 $('crHintBtn').addEventListener('click', () => {

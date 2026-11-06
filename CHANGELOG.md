@@ -1,5 +1,45 @@
 # Changelog
 
+## Beta 1.123 — 2026-11-06
+Creating a route is rebuilt around two of Andrew's calls from the road.
+THE GATE IS A CHOOSER NOW: 1.121's first create screen asked him to
+TYPE a city and pick from suggestions — on his phone the suggestions
+never came (below), so Create was a dead end from both entries. The
+first screen of Create now reads "Select the city you'll be cleaning
+in" and lists the library cities as tappable buttons; a separate
+"Search manually" door keeps the typed search for anywhere else. Both
+entries (the cold-start picker and the Routes menu) show the same
+menu and the same chooser surface — it is implemented once.
+THE CITY PACKS ARE THE PRIMARY SOURCE: pre-generated whole-city
+street-shape files (Vaughan, Toronto, Markham, Richmond Hill,
+Brampton — generated once from OpenStreetMap, validated, incl. an
+independent Vaughan name cross-check) are published beside the app
+under packs/, catalogued by packs/index.json. Picking one of those
+cities downloads its pack from the app's own origin (Vaughan: 878 KB
+on the wire) behind the existing preparation seam (crSourceExtract):
+the pack answers every grid cell locally, commits through the same
+IndexedDB city cache, and settles ready in seconds. Cities without a
+pack — and any pack that fails to load — fall back to the 1.121
+Overpass grid, with the hint saying so when the library didn't load.
+The catalogue is data: publishing a new pack + index entry lights the
+city up in the chooser and at the seam with no app change. The
+service worker does not intercept packs/*.json at all (network-only);
+before this, the generic same-origin netFirst branch would have
+shell-cached multi-megabyte JSON and served a stale copy on an error
+status, hiding exactly the failure the fallback keys on.
+THE TYPED SEARCH DEFECT (why 1.121 dead-ended): the app requests
+Nominatim format=jsonv2, whose results carry the place kind in a
+field named `category`; crIsPlace read the older format's `class`,
+which jsonv2 does not send — so every real result was filtered out
+and the list silently emptied. The battery's fixture cities carried
+the old field name, so the rig never saw it. Fixed (category, with
+class as a fallback), an empty answer now renders a "No city matched"
+line instead of nothing, and drive153 stubs the real jsonv2 shape.
+Proof: drive153 (new) — chooser from both entries, pack ready with
+zero Overpass requests, reload ready from cache with zero downloads,
+pack-404 grid fallback with the disclosure in the hint, manual-door
+search selectable + honest empty/failure, no-pack city on the grid.
+
 ## Beta 1.122 — 2026-11-06
 - Heading-up whenever location is on and the camera follows (Beta 1.14 made it run-only) — Andrew, from the road: travel direction always points up, like a car GPS.
 - The follow yields on the press itself (canvas pointerdown), not after 10 px of movement — the map is draggable from the first pixel and the re-centre button lights in the same instant. Shipped direct to main at Andrew's explicit order for immediate phone testing; the full battery judges it on the nightly run.

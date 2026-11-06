@@ -661,7 +661,7 @@ function closeRouteMenu() { const rm = $('routeMenu'); rm.classList.remove('open
 $('routesBtn').addEventListener('click', () => { if (!tapGuard('routesBtn')) return; if ($('routeMenu').classList.contains('open')) closeRouteMenu(); else openRouteMenu(); });
 $('rmClose').addEventListener('click', closeRouteMenu);
 $('rmChoose').addEventListener('click', () => { renderRouteLists(); showRmPane('rmListPane'); });
-$('rmCreate').addEventListener('click', () => showRmPane('rmCreatePane'));
+$('rmCreate').addEventListener('click', () => { showRmPane('rmCreatePane'); crRenderCityChoices(); }); // Beta 1.123: the Create pane is the city chooser - its list renders fresh on every entry (both the cold-start picker and this Routes menu show this same pane)
 $('rmBack').addEventListener('click', () => showRmPane('rmMain'));
 $('rmBack2').addEventListener('click', () => showRmPane('rmMain'));
 wireRouteRows($('rmRoutes'), id => {

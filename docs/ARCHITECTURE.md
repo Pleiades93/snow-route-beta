@@ -135,19 +135,38 @@ loads into the preview. A bare roads object (the route-creation
 sandbox's candidate shape) is accepted as a roads-only draft.
 
 **Door 2 — select streets myself (Beta 1.121: city first, then the
-whole city prepared).** Manual creation STARTS with a city step —
-"What city will you be cleaning in?" (Andrew's amendment at the
-round-pickfetch gate). A debounced Nominatim query
-(`featuretype=city`) offers populated places only (a place of type
-city/town/village/hamlet/suburb, or an administrative boundary); the
-last-used city is remembered (`snowroute.v2.lastArea`) and offered
-as a one-tap choice. Picking a city scopes the creation (name +
-centre + the result's bounding box), flies the map to it, biases
-the street search to the city's box (viewbox, bounded=0 — a bias,
-never a restriction), and STARTS the city's preparation (below). A
-draft that already names its city (the photo door) pre-answers the
-step; the city stays changeable from the pick sheet without losing
-the draft. The street search is otherwise the 1.120 form: Nominatim
+whole city prepared; Beta 1.123: the gate is a chooser).** Manual
+creation STARTS by choosing a city. 1.121's gate was a typed city
+search; on Andrew's phone it dead-ended (the defect below), so
+1.123 makes the Create pane itself the gate — "Select the city
+you'll be cleaning in", with the pack library's cities as tappable
+buttons rendered from `packs/index.json` (the last-used city,
+`snowroute.v2.lastArea`, rides first when the library holds it).
+The cold-start picker and the Routes menu show the SAME routeMenu
+and the SAME pane, so the chooser exists once and both entries
+reach it (drive153 proves both). A chooser tap is a city pick
+through the same `crPickCity` the typed search uses, carrying the
+catalogue's own bounds. A separate **"Search manually"** door on
+the same pane keeps the typed search for anywhere without a pack:
+a debounced Nominatim query (`featuretype=city`) offers populated
+places only (a place of type city/town/village/hamlet/suburb, or
+an administrative boundary), with the last-used city as a one-tap
+choice. Picking a city — either door — scopes the creation (name
++ centre + bounding box), flies the map to it, biases the street
+search to the city's box (viewbox, bounded=0 — a bias, never a
+restriction), and STARTS the city's preparation (below). A draft
+that already names its city (the photo door) pre-answers the step;
+the city stays changeable from the pick sheet without losing the
+draft. **The 1.121 dead end, for the record:** the app requests
+Nominatim `format=jsonv2`, whose results carry the place kind in a
+field named `category`; the place filter read the older format's
+`class`, which jsonv2 does not send — every real result was
+rejected and the suggestion list silently emptied (the battery's
+fixture cities carried the old field, so the rig never saw it).
+The filter now reads `category` (with `class` as fallback), an
+empty answer renders a "No city matched" line instead of nothing,
+a failed request toasts as before, and drive153 stubs the real
+jsonv2 payload shape. The street search is otherwise the 1.120 form: Nominatim
 (street/address search only — intersections are known not to
 resolve), suggestions as he types (500 ms debounce, 3+ characters,
 sequence token + AbortController against stale answers), Search /
@@ -164,7 +183,10 @@ dozen — and each cell is one batch request (`way["name"]["highway"]`
 over the cell) through the extract source seam (below), at most 3
 in flight. Each cell's answer commits to the merged extract the
 moment it lands (progress is real: the hint reads "Loading
-<City> — part N of M · T s"); a failed cell retries once inside the
+<City> — part N of M · T s" on the service path; a pack-backed
+load is one download, so its hint instead reads "Loading <City>
+from the app's own library… T s" — elapsed only, no part counts
+for a single file); a failed cell retries once inside the
 run, then is marked failed while the rest continue — the state
 settles as ready, degraded ("loaded except K parts", with a
 Retry-missing-parts action that fetches ONLY the missing cells),
@@ -182,18 +204,46 @@ but the service's compute time per query, which the grid bounds.
 Every extract — a grid cell, the fallback box, a street top-up —
 comes through ONE source seam, **`crSourceExtract(box, name, …)`**:
 given a coverage box (and optionally one street name) it returns
-the extract for that box. Today the source behind the seam is the
-live Overpass service: the query is built by the single builder
+the extract for that box. Two sources answer behind the seam. The
+**city packs** (Beta 1.123) are primary when the picked city has
+one: pre-generated whole-city street files, generated once from
+OpenStreetMap and published beside the app under `packs/` — one
+`<slug>.json` per city (raw street segments per name, unchained;
+the app chains at resolve time) plus `packs/index.json`, the
+library's catalogue (slug, name, bbox, sizes, street count,
+generation date). `crCityPrepare` resolves the picked city against
+the catalogue (by name; the pack's own bounding box must contain
+the grid's box) and sets a pack context; the seam then answers
+each call from the ONE downloaded pack (adapted once into the
+Overpass element shape, with negative synthetic way ids so a pack
+way can never collide with a service way in the merged index),
+filtered by the same point-in-box membership the service's
+bounding-box query applies. The grid, the cache write-through, the
+settled-state judge and everything downstream consume the identical
+result shape — a pack city commits, caches, resumes and refreshes
+exactly as a service-loaded city does (Refresh re-downloads the
+pack). If the pack fails to load, the context flips to the service
+for the rest of that preparation and the hint says the library
+didn't load. The **live Overpass service** is the other source —
+for cities with no pack, for boxes reaching past a pack's bounds,
+and as that fallback: the query is built by the single builder
 `crQL` and fetched by `crOverpassFetch` under ONE deadline per
 request spanning connect + body + parse, with per-attempt budgets
 inside it (the primary instance gets the larger share; the
 fallback keeps the reserve), the body consumed as a stream with a
 2 MB cap enforced while streaming, an HTTP-200 Overpass `remark`
 treated as a failed extract, and the clock re-checked after the
-synchronous parse before anything commits. Beta 1.122's
-pre-generated city packs are designed to plug in BEHIND this seam —
-a static source answering the same call shape — without touching
-the grid, the fallback, the top-up, or anything downstream.
+synchronous parse before anything commits. **The catalogue is
+data, not code: publishing a new city's pack file plus its index
+entry lights that city up in the chooser and at this seam with NO
+app change.** The service worker does not intercept `packs/*.json`
+at all (an explicit pass-through in `src/sw.js`): before it, the
+generic same-origin netFirst branch would have stored
+multi-megabyte pack JSON in the shell cache and served a stale
+copy on an error status — hiding exactly the failure the seam's
+fallback keys on. Packs are network-only; offline, the fetch fails
+and the grid fallback applies only if the service is reachable,
+else the existing honest failure stands.
 
 Outside a picked/saved city — an anchor beyond the city's coverage,
 or a name-only city whose lookup failed — the **fallback

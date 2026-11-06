@@ -1,0 +1,81 @@
+{
+ "v": 1,
+ "generatedAt": "2026-11-06T17:33:57Z",
+ "cities": [
+  {
+   "slug": "brampton",
+   "name": "Brampton",
+   "province": "Ontario",
+   "bbox": [
+    43.6018018,
+    -79.8888473,
+    43.8480959,
+    -79.6302939
+   ],
+   "rawBytes": 3467400,
+   "gzipBytes": 1034711,
+   "streets": 5401,
+   "generatedAt": "2026-11-06T17:33:57Z"
+  },
+  {
+   "slug": "markham",
+   "name": "Markham",
+   "province": "Ontario",
+   "bbox": [
+    43.7980391,
+    -79.428729,
+    43.9625146,
+    -79.1702147
+   ],
+   "rawBytes": 2909312,
+   "gzipBytes": 852665,
+   "streets": 4102,
+   "generatedAt": "2026-11-06T17:25:06Z"
+  },
+  {
+   "slug": "richmond-hill",
+   "name": "Richmond Hill",
+   "province": "Ontario",
+   "bbox": [
+    43.8275458,
+    -79.4855416,
+    43.9776956,
+    -79.3708618
+   ],
+   "rawBytes": 1384550,
+   "gzipBytes": 402440,
+   "streets": 2181,
+   "generatedAt": "2026-11-06T17:25:07Z"
+  },
+  {
+   "slug": "toronto",
+   "name": "Toronto",
+   "province": "Ontario",
+   "bbox": [
+    43.5796082,
+    -79.6392832,
+    43.8554425,
+    -79.1132193
+   ],
+   "rawBytes": 11210963,
+   "gzipBytes": 3327448,
+   "streets": 15152,
+   "generatedAt": "2026-11-06T17:25:00Z"
+  },
+  {
+   "slug": "vaughan",
+   "name": "Vaughan",
+   "province": "Ontario",
+   "bbox": [
+    43.7498436,
+    -79.7106948,
+    43.9243511,
+    -79.4200471
+   ],
+   "rawBytes": 2965675,
+   "gzipBytes": 877725,
+   "streets": 4477,
+   "generatedAt": "2026-11-06T17:24:53Z"
+  }
+ ]
+}
