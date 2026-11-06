@@ -1,5 +1,50 @@
 # Changelog
 
+## Beta 1.120 — 2026-11-06
+Round 2 of create-a-route fixes, all from Andrew's real phone use of
+1.119.
+(1) THE TAP WEDGE. Tapping a street said "Loading", then nothing, and
+the picker never accepted another tap. Two layers: pickStreet's early
+return on a failed shape fetch skipped the line that released its busy
+flag, so ONE refused fetch latched the picker shut for the whole
+session; and the fetch itself had no patience — the public Overpass
+instance (overpass-api.de) commonly answers slowly or 429/504, and any
+non-OK answer was an instant silent null. Now the busy flag resets in
+a `finally` (every exit path), the hint line carries "Loading
+<street>…" for the whole wait, the query tries the primary instance,
+pauses, tries again, then asks the fallback instance
+(overpass.kumi.systems — added to the stamped CSP's connect-src, with
+the build gate and the CSP selftest rolled forward to all three
+creation hosts), and the failure word is honest: the service not
+answering and the service holding no line for the name say different
+things.
+(2) SEARCH AS YOU TYPE (Andrew's ask, superseding the 1.118
+button-only design): suggestions while typing — a 500 ms debounce
+makes a keystroke burst one query (3+ characters), a sequence token
+plus AbortController keeps a slow earlier answer from overwriting
+newer results, results are biased toward the visible map (viewbox,
+bounded=0), and Search / Enter still run the typed query immediately.
+(3) DAY/NIGHT: the create surfaces (search bar, results dropdown, the
+"Your route" sheet and its rows/chips) wear the app's own theme tokens
+(--card-solid / --ink / --ink-dim / --hair / --chip) — in 1.118/1.119
+they were hardcoded white and stayed bright at night.
+(4) DROPDOWN + BAR POSITION: tapping anywhere outside the results
+dropdown dismisses it (map taps included; the pick still runs), the ✕
+beside the search clears the text and results before it exits, and
+the whole search row sits lower by half its own height — the row's
+height is fixed at 50px and the 25px shift (--cr-shift) is added to
+the resting tops of the bar, the dropdown and the hint.
+(5) CREATION BACKDROP: entering create mode with a route loaded no
+longer leaves that route's painted streets and selection covering the
+map he picks from. While `creating`, the engine's route paint and
+street-name layers hide, and a point of interest for EVERY pack in the
+database (white ring, raspberry dot, the route's name — the map's own
+zoomed-out treatment, at each pack's centre) gives orientation with
+zero clutter; exiting restores the recorded layer visibilities
+exactly. drive150 gains sections for the wedge + fallback, the
+as-you-type search (debounce count, stale-answer guard), the backdrop,
+the theming, the bar position and the dropdown dismissal.
+
 ## Beta 1.119 — 2026-11-06
 Two defects in the 1.118 create-a-route flow, both caught by Andrew on
 his phone within minutes of trying it, both fixed here.

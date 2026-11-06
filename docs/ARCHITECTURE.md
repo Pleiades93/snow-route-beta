@@ -135,8 +135,15 @@ loads into the preview. A bare roads object (the route-creation
 sandbox's candidate shape) is accepted as a roads-only draft.
 
 **Door 2 — select streets myself.** A search bar queries Nominatim
-(street/address search only — intersections are known not to resolve;
-queries are user-initiated, one per Search tap, no autocomplete). A
+(street/address search only — intersections are known not to resolve).
+Beta 1.120: the search suggests as he types (Andrew's on-device ask,
+superseding the 1.118 button-only design) — a 500 ms debounce makes a
+keystroke burst one query (3+ characters), a sequence token plus an
+AbortController keep a slow earlier answer from overwriting newer
+results, results are biased to the visible map (viewbox, bounded=0),
+and the Search button / Enter still run the typed query at once.
+Tapping anywhere outside the results dropdown dismisses it, and the ✕
+beside the search clears the text and results before it exits. A
 result flies the map there. Tapping a road identifies the street from
 the basemap's roads layer — the tile feature's NAME is the identity,
 never its geometry (display tiles re-segment streets and misplace
@@ -166,6 +173,22 @@ while `creating` (app2). Leaving mid-draft asks first; "Start over"
 discards behind a confirm. drive150 proves the active route's slot
 byte-identical across create-save-switch-mark and create-discard
 cycles.
+
+**Pick resilience (Beta 1.120).** The public Overpass instance at
+overpass-api.de commonly answers slowly or 429/504; a shape fetch now
+tries it, pauses, tries again, then asks the fallback instance
+(overpass.kumi.systems — both hosts are named in the stamped CSP's
+connect-src). The pick's busy flag resets on EVERY exit path (a
+`finally`): 1.119's early return on a failed fetch latched the picker
+shut for the whole session. The hint line carries "Loading <street>…"
+for the whole wait, and the failure word is honest — the service not
+answering and the service holding no line for the name are different
+messages. While creating, the create surfaces wear the app's theme
+tokens (they stayed hardcoded-white at night in 1.118/1.119), and the
+loaded route's engine paint hides behind a per-pack point-of-interest
+backdrop (`crSetBackdrop`: every pack's centre + name, the zoomed-out
+POI treatment) so the map he picks from is uncluttered; exiting
+restores the recorded layer visibilities exactly.
 
 **Persistence.** Created packs persist on-device in the global
 `snowroute.v2.userpacks` record (see STORAGE-SCHEMA) and merge into the
