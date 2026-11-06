@@ -17,20 +17,31 @@ timer was cleared when headers landed, before the body was read, so a
 stalled body hung forever (CG-PF-03); async pick completions could
 write into a replacement draft (CG-PF-05); and drive150's network
 sections passed with zero geometry ever received (CG-PF-06).
-THE FIX (Andrew's amendment: city first): manual creation now STARTS
-with "What city will you be cleaning in?" — he picks the city, then ONE
-bounded area extract (~4 × 4 km picking box + 1 km buffer) is prepared
-for the neighbourhood (anchor: a street-search pick, or a one-tap
-"Prepare this area" at picking zoom — never a silent download while
-panning). Taps then resolve LOCALLY from the extract via the existing
-chainWays stitch + nearest-run rule. One query builder serves batch and
-top-up alike. The fetcher runs under a single 120 s deadline spanning
-connect+body+parse with per-attempt budgets inside it, consumes the
-body as a stream with the 2 MB cap enforced while streaming, treats an
-HTTP-200 Overpass `remark` as a failed extract, and re-checks the clock
-after the parse before committing. A street whose run reaches beyond
-verified coverage gets ONE targeted top-up over an expanded bounded
-area; still beyond coverage it stays PENDING (listed, never added).
+THE FIX (Andrew's amendments: city first, then the WHOLE city):
+manual creation now STARTS with "What city will you be cleaning in?" —
+he picks the city, and its street shapes are prepared as a GRID of
+~4 × 4 km cells over the whole city bounding box (bounded parallelism,
+each cell committed as it lands, real progress in the hint, a failed
+cell retried once then marked — the load settles ready, degraded with
+a Retry-missing-parts action, or failed). Committed cells persist
+on-device (IndexedDB city cache), so a city loads once and is instant
+forever after, with the loaded date shown and a Refresh affordance;
+a first load says plainly it can take a few minutes. The original
+bounded box (~4 × 4 km + 1 km buffer, anchor: a street-search pick
+outside the city, or a one-tap "Prepare this area" — never a silent
+download while panning) survives as the session-only FALLBACK for
+places with no picked/saved city. Taps resolve LOCALLY from the
+merged extract via the existing chainWays stitch + nearest-run rule.
+One query builder serves cells, box and top-up alike, behind ONE
+source seam (crSourceExtract) that 1.122's pre-generated city packs
+can plug into. The fetcher runs under a single deadline per request
+spanning connect+body+parse with per-attempt budgets inside it,
+consumes the body as a stream with the 2 MB cap enforced while
+streaming, treats an HTTP-200 Overpass `remark` as a failed extract,
+and re-checks the clock after the parse before committing. A street
+whose run reaches beyond verified coverage gets ONE targeted top-up
+over a bounded box centred on its open end; still beyond coverage it
+stays PENDING (listed, never added).
 Every async completion binds to (creation session, coverage
 generation); exit and new preparations invalidate older generations.
 Honest taxonomy throughout: unreachable / answered-with-error /
@@ -43,6 +54,38 @@ failure matrix, proves offline-after-extract adds with zero further
 requests, and races cancel/exit/supersede/late-top-up — demonstrated
 RED on the 1.120 tree first (grammar, latency and body-stall each
 reproduced independently).
+THE VERIFY ROUND (Codex, on the branch before merge — six further
+findings, all confirmed first-hand and fixed in the same cycle):
+the top-up kept a 40 s primary cap that reproduced the latency failure
+on the exception path — its budgets now follow the same measured
+profile (60 s of 90 s) (CG-PF-07); the completeness check's
+"junction proof" was unsound — a cross street touching a run's
+out-of-area endpoint certified nothing about a same-name continuation
+— and is removed: an endpoint is closed only inside the fetched
+boundary (CG-PF-08); three preparation remedies were wording without
+working actions (a tap outside ready coverage, a pending street's
+wider preparation, the too-dense retry) — each is now a real button
+that prepares exactly where it points (CG-PF-09); Cancel and exit
+discarded results but never stopped the download — they now abort
+the fetch itself (CG-PF-10); the remembered-city one-tap lookup raced
+competing picks unguarded — it now binds to its generation and is
+aborted by any competing pick, Back or exit (CG-PF-11); and drive151
+joins the battery for the native-transport half (real browser network
+interception, the page's fetch untouched) (CG-PF-12).
+THE BATTERY THEN FOUND FOUR MORE in the new machinery, each fixed
+before this build shipped: the city cache opened a fresh IndexedDB
+connection per call and never closed it — leaked connections block a
+cache wipe forever and queue later reads behind it (every operation
+now closes its connection); Cancel's generation bump orphaned the
+city grid itself, so Resume fetched nothing (resuming now adopts the
+grid into the live generation, and a stopped cell's late answer lands
+nowhere even after a resume); a pending street's "prepare wider area"
+anchor was computed against the wrong coverage — first an end the
+city already covered (nothing new to fetch, the street pended
+forever), then an end inside the top-up's name-only box (no anchor at
+all) — it now names the first end no committed coverage holds; and
+the hint labelled a fallback-box wait with the city grid's stale part
+counts — the in-flight operation now owns the hint text.
 
 ## Beta 1.120 — 2026-11-06
 Round 2 of create-a-route fixes, all from Andrew's real phone use of

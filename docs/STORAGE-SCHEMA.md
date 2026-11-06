@@ -3,7 +3,9 @@
 Status: **contract**. Changing any key name, value shape, or the missing-key
 policy requires a documented migration, migration tests, and Andrew's
 approval (DEVELOPMENT_RULES.md §4). All values live in `localStorage` under
-the serving origin. Formats below were verified against the app source and
+the serving origin, with ONE exception: the IndexedDB city shape cache
+(Beta 1.121, documented in its own section below — a re-downloadable
+cache, not user data). Formats below were verified against the app source and
 the loaders' sanitizers; the slot layout and backup v2 landed in Beta 1.76
 (2026-11-02).
 
@@ -201,6 +203,36 @@ failure like every entry), so an idle backup restored over an active
 run leaves no inherited run behind. A backup that OMITS `start`
 entirely (anything written before 1.97) keeps the missing-key rule
 below: the destination's run state is left untouched.
+
+## IndexedDB: the city shape cache (Beta 1.121 — a cache, NOT user data)
+
+One IndexedDB database lives beside the localStorage contract above:
+`snowroute-citycache` (version 1), object store `cities` (keyPath
+`cityName`). It holds the create flow's whole-city street-shape extracts
+(Andrew's second gate amendment, audit round pickfetch): when a city is
+picked for route creation, its street shapes are downloaded once as a
+grid of ~4 × 4 km cells and saved here, so every later creation in that
+city is instant.
+
+Record shape: `{ cityName, bbox: {s, n, w, e}, totalCells, savedAt,
+cells: { <cellKey>: { at, ways } } }`. `ways` is the cell's streets in
+compact parsed form — `[[wayId, streetName, [[lat, lng], ...]], ...]` —
+never raw service JSON. A record is valid only for the exact `bbox` it
+was saved under; a lookup whose bounding box differs ignores the record
+whole. A record whose serialized size would exceed 60 MB is refused
+BEFORE writing (the refusal is disclosed in the create UI); a failed
+write (quota, private mode) degrades the cache to session-only with the
+same disclosure — the cache never fails silently and never blocks
+creation.
+
+Contract status: this store is a **re-downloadable cache**, deliberately
+outside the backup envelope and outside the restore transaction —
+backups neither carry it nor restore it, and losing it (browser data
+clear, eviction) costs a re-download of the city's shapes, nothing
+else. It holds no route data, no progress, no user content. Adding it
+was approved by Andrew as part of the 1.121 gate amendment
+(DEVELOPMENT_RULES.md §4 note: a new storage surface with a documented
+schema — this section — and the owner's request as the approval).
 
 ## Restore transaction (invariant)
 

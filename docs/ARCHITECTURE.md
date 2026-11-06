@@ -134,16 +134,17 @@ returns as a pack-format JSON file that "Import my draft" validates and
 loads into the preview. A bare roads object (the route-creation
 sandbox's candidate shape) is accepted as a roads-only draft.
 
-**Door 2 — select streets myself (Beta 1.121: city first, then one
-prepared extract).** Manual creation STARTS with a city step — "What
-city will you be cleaning in?" (Andrew's amendment at the round-
-pickfetch gate). A debounced Nominatim query (`featuretype=city`)
-offers populated places only (a place of type city/town/village/
-hamlet/suburb, or an administrative boundary); the last-used city is
-remembered (`snowroute.v2.lastArea`) and offered as a one-tap choice.
-Picking a city scopes the creation (name + centre + the result's
-bounding box), flies the map to it, and biases the street search to
-the city's box (viewbox, bounded=0 — a bias, never a restriction). A
+**Door 2 — select streets myself (Beta 1.121: city first, then the
+whole city prepared).** Manual creation STARTS with a city step —
+"What city will you be cleaning in?" (Andrew's amendment at the
+round-pickfetch gate). A debounced Nominatim query
+(`featuretype=city`) offers populated places only (a place of type
+city/town/village/hamlet/suburb, or an administrative boundary); the
+last-used city is remembered (`snowroute.v2.lastArea`) and offered
+as a one-tap choice. Picking a city scopes the creation (name +
+centre + the result's bounding box), flies the map to it, biases
+the street search to the city's box (viewbox, bounded=0 — a bias,
+never a restriction), and STARTS the city's preparation (below). A
 draft that already names its city (the photo door) pre-answers the
 step; the city stays changeable from the pick sheet without losing
 the draft. The street search is otherwise the 1.120 form: Nominatim
@@ -153,26 +154,58 @@ sequence token + AbortController against stale answers), Search /
 Enter run the typed query at once, tapping away dismisses the
 dropdown, and the ✕ clears text and results before it exits.
 
-Street shapes are NOT fetched per tap. One bounded area extract —
-the **preparation** — is fetched for the neighbourhood: a fixed
-~4 × 4 km picking box (inner) plus a 1 km buffer ring, centred on an
-anchor. The anchor is (a) a picked street-search result's location,
-or (b) the map centre, via a one-tap "Prepare this area" the hint
-offers at zoom ≥ 14 — never a silent download while panning. The
-extract query (`way["name"]["highway"]` over the outer box) is built
-by the single query builder `crQL` (shared with the top-up below),
-and `crOverpassFetch` runs it under ONE 120 s deadline spanning
-connect + body + parse, with per-attempt budgets inside it (the
-primary instance gets at most 70 s; the fallback keeps the reserve),
-the body consumed as a stream with a 2 MB cap enforced while
-streaming, an HTTP-200 Overpass `remark` treated as a failed
-extract, and the clock re-checked after the synchronous parse before
-anything commits. On success the ways are indexed by name (way ids
-kept) and recorded as coverage {anchor, inner, outer, generation};
-the hint shows the ticking wait ("Preparing street shapes for
-<City>… N s") with a Cancel, and a failure leaves a persistent Retry
-with the honest reason. Requests deduplicate, and a valid extract is
-reused when a new anchor falls inside its coverage.
+Street shapes are NOT fetched per tap. A picked city's shapes are
+prepared as a **whole-city grid extract** (Andrew's second gate
+amendment, at the verify gate: he rejected the working-box-only
+preparation — picking a city loads the WHOLE city): the city's
+bounding box (a ~16 × 16 km box on the centre when the lookup gave
+none) is divided into ~4 × 4 km cells — Vaughan is roughly two
+dozen — and each cell is one batch request (`way["name"]["highway"]`
+over the cell) through the extract source seam (below), at most 3
+in flight. Each cell's answer commits to the merged extract the
+moment it lands (progress is real: the hint reads "Loading
+<City> — part N of M · T s"); a failed cell retries once inside the
+run, then is marked failed while the rest continue — the state
+settles as ready, degraded ("loaded except K parts", with a
+Retry-missing-parts action that fetches ONLY the missing cells),
+or failed. Cancel stops scheduling and aborts the downloads in
+flight but KEEPS every committed cell, and re-entering the city
+resumes only the missing cells. Committed cells are also written
+through to the **on-device city cache** (IndexedDB — see
+STORAGE-SCHEMA.md), so picking a city with a saved extract is
+instant and download-free, the hint says when it was loaded, and a
+Refresh affordance re-fetches the whole city. A first load is
+honest about its cost ("can take a few minutes — after that it's
+instant"); the constraint was never download size (~14 MB a city)
+but the service's compute time per query, which the grid bounds.
+
+Every extract — a grid cell, the fallback box, a street top-up —
+comes through ONE source seam, **`crSourceExtract(box, name, …)`**:
+given a coverage box (and optionally one street name) it returns
+the extract for that box. Today the source behind the seam is the
+live Overpass service: the query is built by the single builder
+`crQL` and fetched by `crOverpassFetch` under ONE deadline per
+request spanning connect + body + parse, with per-attempt budgets
+inside it (the primary instance gets the larger share; the
+fallback keeps the reserve), the body consumed as a stream with a
+2 MB cap enforced while streaming, an HTTP-200 Overpass `remark`
+treated as a failed extract, and the clock re-checked after the
+synchronous parse before anything commits. Beta 1.122's
+pre-generated city packs are designed to plug in BEHIND this seam —
+a static source answering the same call shape — without touching
+the grid, the fallback, the top-up, or anything downstream.
+
+Outside a picked/saved city — an anchor beyond the city's coverage,
+or a name-only city whose lookup failed — the **fallback
+preparation** still exists: one bounded box (~4 × 4 km picking box
+plus a 1 km buffer ring) around an anchor — (a) a picked
+street-search result outside the city, or (b) the map centre via a
+one-tap "Prepare this area" at zoom ≥ 14 — never a silent download
+while panning, session-only (never cached). Either way, the ways
+land in the SAME merged extract: indexed by name, deduped by way
+id (a way returned by two cells is stored once, so a street
+crossing a cell border stitches whole), with the SET of verified
+boxes (landed cells + fallback boxes) as the coverage record.
 
 Tapping a road identifies the street from the basemap's roads layer
 — the tile feature's NAME is the identity, never its geometry
@@ -183,17 +216,28 @@ chaining at 1.5 m tolerance; a run whose joins were all exact keeps
 its ways as segments, a bridged join is stored as its single
 stitched line, a divided road chains into its hairpin) and the run
 nearest the tap is the street tapped — subject to a fail-closed
-completeness check: a run end that leaves the verified boundary
-with no other returned way touching it may continue with ways the
-extract never saw, so the street gets ONE targeted top-up (the same
-builder + fetcher, the name over an expanded bounded area, merged
-by way id, resolved again against the wider boundary); still beyond
-coverage, it stays PENDING — listed as pending in the pick sheet,
-never added, never counted — with a wider-preparation offer (a fresh
-preparation also sweeps pending streets). Before the extract is
-ready a tap still identifies the street and says preparation is
-pending; a name absent from the extract gets an honest "no shape
-found" (or, outside coverage, a re-prepare offer). Names are
+completeness check: a run end is CLOSED only when it lies inside
+verified coverage — the extract's box SET (any continuation starts
+there, inside a query that was actually answered, and would have
+been returned). An end outside verified coverage is unproven —
+however many other streets touch it (the verify round's
+adversarial case: a cross street touching the endpoint says
+nothing about a same-name continuation running wholly outside the
+box; an earlier "junction proof" form was removed as unsound,
+CG-PF-08) — so the street gets ONE targeted top-up (through the
+same source seam, its own budgets on the same measured profile —
+60 s primary of 90 s, CG-PF-07 — the name over a bounded box
+centred on the run's open end, merged by way id, resolved again
+against that box); still beyond coverage, it stays PENDING —
+listed as pending in the pick sheet, never added, never counted —
+with a wider-preparation offer that prepares around the street's
+own open end (a fresh preparation also sweeps pending streets —
+a pending street completes when the union of verified boxes
+closes its run). Before the extract is ready a tap still
+identifies the street and says preparation is pending (a tap in a
+part of the city that has already landed resolves even while the
+rest still loads); a name absent from the extract gets an honest
+"no shape found" (or, outside coverage, a re-prepare offer). Names are
 shortened by the app convention (suffix strip; ordinal avenues
 spell out — 5th Avenue is Fifth). Picked streets join as
 SECONDARIES by default, light up on the map in route colours, and
@@ -231,9 +275,17 @@ stamped CSP's connect-src (overpass-api.de + overpass.kumi.systems,
 now the two attempts inside the one deadline); the pick's busy flag
 still resets on EVERY exit path (a `finally`) for the one async pick
 path that remains (the top-up); and every async completion —
-preparation, top-up, searches — binds to (creation session,
-coverage generation), so a completion that lands after an exit or a
-newer preparation mutates nothing. The failure taxonomy is explicit
+preparation, top-up, searches, the remembered-city lookup — binds
+to (creation session, coverage generation), so a completion that
+lands after an exit or a newer preparation mutates nothing.
+Cancellation is real, not just discarding: Cancel, exit and
+supersede abort the in-flight fetch itself (CG-PF-10), and a
+competing city pick aborts a held remembered-city lookup
+(CG-PF-11). Preparation remedies are working actions, not wording
+(CG-PF-09): a tap outside ready coverage, a pending street and a
+too-dense failure each leave a hint button that prepares exactly
+where it points (the tap point, the street's open end, the map's
+current centre). The failure taxonomy is explicit
 in code and UI: unreachable / answered-with-error (HTTP status or
 remark) / ready-but-no-shape / too-dense are distinct states with
 distinct messages; toasts are for brief acknowledgments, persistent
