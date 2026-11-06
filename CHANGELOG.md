@@ -1,5 +1,41 @@
 # Changelog
 
+## Beta 1.119 — 2026-11-06
+Two defects in the 1.118 create-a-route flow, both caught by Andrew on
+his phone within minutes of trying it, both fixed here.
+(1) THE APP'S OWN CSP BLOCKED THE CREATE FLOW'S NETWORK CALLS. The
+stamped Content-Security-Policy's connect-src named only 'self' and the
+map/style hosts; the create flow's two service calls — Nominatim street
+search and the Overpass API street geometry — were refused by the policy
+before they left the phone, and the flow's catch reported "needs an
+internet connection" on an online phone. connect-src now also names
+https://nominatim.openstreetmap.org and https://overpass-api.de (the
+only third-party calls the app itself makes — a fetch census of every
+call site in the app confirms no other origin is needed). The seam that
+let this ship is closed three ways: build-pages.py --check asserts both
+hosts inside connect-src (a policy edit that drops them fails the
+build); tests/browser/selftest-csp-connect-src.mjs re-proves it against
+the built page in CI; drive150's new section (e) boots the page under
+its REAL stamped policy with fetch unstubbed and fires the app's actual
+search and geometry calls, asserting no policy refusal names either
+host (1.118's drive150 stubbed fetch in-page, so no real request ever
+met the policy — the interception form of the same proof was exercised
+in a standalone CDP rig: on the 1.118 policy neither request ever
+reached interception and both violation events fired; on 1.119 both
+pause, are fulfilled with the fixture payloads, and complete).
+(2) TAPPING A ROAD NEVER IDENTIFIED IT. crMapTap asked
+queryRenderedFeatures for the tap's single pixel; rendered road lines
+are a few pixels wide, so a fingertip tap almost never landed on the
+line's pixels and every tap toasted "No road there". The tap now
+queries a small box around the point (±16 px — a finger's real
+tolerance — retrying once at ±28 px), and when the box names several
+streets the one whose tile line passes closest to the tap wins. Tile
+geometry is used ONLY to choose among candidates — never stored; the
+stored shape still comes from Overpass (the approved reconciliation).
+drive150's new section (a2) proves it: a point query returns no road, a
+box query returns two named roads (the farther listed first), and the
+nearer street is the one picked.
+
 ## Beta 1.118 — 2026-11-05
 Step 2 of the route programme (Andrew's direction, mockups approved
 2026-11-05): THE HYBRID CREATE-A-ROUTE FLOW. The Routes menu's "Create new
