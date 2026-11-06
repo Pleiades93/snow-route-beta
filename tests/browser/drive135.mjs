@@ -32,6 +32,13 @@ await ev(`location.reload()`);
 await sleep(2500);
 ok('V0b app reboots under the home-screen shim', await poll120(`typeof glOk !== 'undefined' && glOk === true`));
 ok('V0c the boot state has ended before the editor interactions (Beta 1.86: chrome is absent BY DESIGN while booting - a focus() landing mid-boot would no-op against the hidden editor)', await poll120(`!document.documentElement.classList.contains('boot')`, 20000));
+// Beta 1.117: a reload lands on the route menu with NO route loaded - and since the separation build
+// the app holds no geometry at all until a pack loads, so the streets list is empty pre-pick. (Before
+// 1.117 the eval-time baked 5W geometry let this drive's editor steps run on an unpicked route without
+// ever noticing.) Re-pick Route 5W through the picker, exactly as bootThrough did. Assertions unchanged.
+await ev(`document.getElementById('rmChoose') && document.getElementById('rmChoose').click()`);
+await ev(`document.querySelector('#rmRoutes .routeRow') && document.querySelector('#rmRoutes .routeRow').click()`);
+await poll(`typeof routeLoaded !== 'undefined' && routeLoaded === true`, 20000);
 await ev(`syncViewport()`);
 ok('V1 settled size learned at boot (900) | ' + await ev(`fullH`), await ev(`fullH`) === 900);
 await ev(`$('streetsBtn').click()`); await sleep(500);

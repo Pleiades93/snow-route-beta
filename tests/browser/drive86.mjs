@@ -40,7 +40,7 @@ A = JSON.parse(await ev(`(() => JSON.stringify({ ls: localStorage.getItem('snowr
 ok('T2 after recovery the pending clear persists', A.ls === '[]' && A.dirty === false);
 // T3 NEW-03: legacy import drops inherited names
 await ev(`(() => { localStorage.clear(); location.reload(); return true; })()`); await sleep(3000);
-await ev(`(() => { $('xText').value = JSON.stringify({ app: 'snowroute-backup', v: 1, data: { 'snowroute.v2': JSON.stringify({ constructor: true, Velmar: true, __proto__: true }) } }); doRestore(); return true; })()`);
+const t3org = await ev(`(() => { const o = performance.timeOrigin; $('xText').value = JSON.stringify({ app: 'snowroute-backup', v: 1, data: { 'snowroute.v2': JSON.stringify({ constructor: true, Velmar: true, __proto__: true }) } }); doRestore(); return o; })()`);
 await sleep(300);
 A = JSON.parse(await ev(`(() => JSON.stringify({ ls: localStorage.getItem('snowroute.5w.v2') }))()`));
 ok('T3 legacy migration keeps only real streets', A.ls === '["Velmar"]');
@@ -50,13 +50,21 @@ ok('T3 legacy migration keeps only real streets', A.ls === '["Velmar"]');
 // Diagnostic round (Beta 1.16): the 1.15 wait took the FIRST readable sample, which can be the post-clear
 // page (doneSet empty) before doRestore's reload lands - poll until the condition itself holds, and dump
 // what was actually seen (stored value + last sample + sample count) into the result either way.
+// Reload-wait (Beta 1.117): the poll below can now satisfy its condition on the PRE-reload page - the
+// restore has already written storage and loadRoute reads it back at once, so the drive reached T4 while
+// doRestore's scheduled reload (600 ms) was still in flight, and T4's evaluate died in the navigating
+// page (CI branch attempts 1+2 and a pristine-1.116 local run all crashed at T4's JSON.parse; the app
+// behaviour is correct - this is the drive's own race, third hardening of this read). Wait for the
+// reload to LAND (timeOrigin changes) before polling state. Assertions unchanged.
+let reloadLanded = false;
+for (let i = 0; i < 40 && !reloadLanded; i++) { const o = await ev(`(() => performance.timeOrigin)()`).catch(() => null); if (typeof o === 'number' && o !== t3org) reloadLanded = true; else await sleep(200); }
 A = {}; let samples = 0;
 for (let i = 0; i < 48 && !(A.n === 1 && A.has); i++) {
   const raw = await ev(`(() => { try { if (typeof routeLoaded !== 'undefined' && !routeLoaded && typeof loadRoute === 'function') loadRoute('5w'); return JSON.stringify({ n: doneSet.size, has: doneSet.has('Velmar'), ls: localStorage.getItem('snowroute.5w.v2') }); } catch (e) { return ''; } })()`);
   if (typeof raw === 'string' && raw) { try { A = JSON.parse(raw); samples++; } catch { /* keep waiting */ } }
   if (!(A.n === 1 && A.has)) await sleep(250);
 }
-R.diagT3 = { samples, last: A };
+R.diagT3 = { samples, last: A, reloadLanded };
 ok('T3 after reload doneSet is exactly {Velmar}', A.n === 1 && A.has);
 // T4 ISSUE-02: snapshot read failure aborts honestly, nothing written, no throw
 A = JSON.parse(await ev(`(() => { window.__origGI = Storage.prototype.getItem;
