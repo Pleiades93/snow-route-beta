@@ -59,7 +59,13 @@ const GEO = {};
 // with the direction of travel. LEFTBIT[name] = which state bit is Left;
 // LEFTSIDE[name] = the compass side that is, for the status line.
 const LEFTBIT = {}, LEFTSIDE = {};
-H.names.forEach(n => {
+function buildEngineGeometry() { // Beta 1.117: the engine's route geometry (GEO offsets, LEFTBIT/LEFTSIDE, label features + tiers, the route POI, the hit features) is built HERE from the host's CURRENT data - once at eval (no route loaded yet: empty) and again on every route switch via GLP.rebuildRoute. The containers are refilled in place, never rebound, so every module-level reader (buildFamilies, selectedGeom, addStack) keeps working unchanged.
+  for (const k of Object.keys(GEO)) delete GEO[k];
+  for (const k of Object.keys(LEFTBIT)) delete LEFTBIT[k];
+  for (const k of Object.keys(LEFTSIDE)) delete LEFTSIDE[k];
+  labelFeatures.length = 0; labelPointFeatures.length = 0;
+  SVMAP = null; // the shared-vertex map is a memoized derivative of GEO (sharedVertexMap) - it must die with the geometry it was built from, or the strand builders read the previous route's streets (the first switch build threw exactly there)
+  H.names.forEach(n => {
   const parts = H.STRETCH[n].parts;
   // The street's whole stitched line; sectors are exact slices of it
   // (sector k+1 starts at the very point sector k ends).
@@ -97,15 +103,22 @@ H.names.forEach(n => {
   for (let k = 1; k < seg.length; k++) { const d = H.jDistM(seg[k - 1], seg[k]); if (acc + d >= target) { const t = d ? (target - acc) / d : 0; anchor = [seg[k - 1][0] + (seg[k][0] - seg[k - 1][0]) * t, seg[k - 1][1] + (seg[k][1] - seg[k - 1][1]) * t]; break; } acc += d; }
   labelPointFeatures.push({ type: 'Feature', properties: { name: n, len: Math.round(segLenM(stitched)) }, geometry: { type: 'Point', coordinates: GJ([anchor])[0] } });
 });
+  nudgeFifth();
+  assignTiers();
+  let a = 90, b = -90, c = 180, d = -180; H.names.forEach(n => GEO[n].stitched.forEach(p => { a = Math.min(a, p[0]); b = Math.max(b, p[0]); c = Math.min(c, p[1]); d = Math.max(d, p[1]); }));
+  ROUTEPOI.geometry.coordinates = [(c + d) / 2, (a + b) / 2];
+  HIT.features = H.names.flatMap(n => GEO[n].cuts.map((ab, i) => ({ type: 'Feature', properties: { name: n, idx: i }, geometry: { type: 'LineString', coordinates: GJ(GEO[n].stitched.slice(ab[0], ab[1] + 1)) } })));
+}
 // Round 35 (Andrew): Fifth's label anchor sits at its Greenpark
 // junction, so the name reads as if it belongs to the yellow street.
 // Push it 45 m away from Greenpark's line - the text sits just off
 // Fifth's own corner instead of on the junction paint.
-(function nudgeFifth() {
+function nudgeFifth() {
   const f = labelPointFeatures.find(x => x.properties.name === 'Fifth');
   if (!f) return;
   const A0 = [f.geometry.coordinates[1], f.geometry.coordinates[0]];
-  const gp = GEO['Greenpark'].stitched;
+  const gp = GEO['Greenpark'] && GEO['Greenpark'].stitched;
+  if (!gp) return; // Beta 1.117: the nudge is a Route 5W refinement - a pack with a Fifth but no Greenpark simply skips it
   let bd = 1e9, bq = A0;
   for (let k = 1; k < gp.length; k++) {
     const a = gp[k - 1], b = gp[k], vx = (b[1] - a[1]) * H.MLNG, vy = (b[0] - a[0]) * H.MLAT;
@@ -116,7 +129,7 @@ H.names.forEach(n => {
   }
   const dx = (A0[1] - bq[1]) * H.MLNG, dy = (A0[0] - bq[0]) * H.MLAT, dl = Math.hypot(dx, dy) || 1;
   f.geometry.coordinates = [A0[1] + (dx / dl) * 45 / H.MLNG, A0[0] + (dy / dl) * 45 / H.MLAT];
-})();
+}
 const LABELS = { type: 'FeatureCollection', features: labelFeatures };
 // Round 39 (Andrew): street names DEPUPULATE as he zooms out - from
 // 13.7 the shortest streets' names drop away in tiers, longest last,
@@ -124,16 +137,16 @@ const LABELS = { type: 'FeatureCollection', features: labelFeatures };
 // length quartile (computed from the data, no hand-set lengths); the
 // six MAIN streets are forced into the final tier regardless of
 // length (Astona is a main but only 187 m long).
-(function assignTiers() {
+function assignTiers() {
   const lens = labelPointFeatures.map(f => f.properties.len).sort((a, b) => a - b);
   const q = p => lens[Math.min(lens.length - 1, Math.floor(p * lens.length))];
   const q1 = q(0.25), q2 = q(0.5), q3 = q(0.75);
   labelPointFeatures.forEach(f => {
     f.properties.tier = H.MAIN.has(f.properties.name) ? 4 : (f.properties.len < q1 ? 1 : f.properties.len < q2 ? 2 : f.properties.len < q3 ? 3 : 4);
   });
-})();
+}
 const LABELPTS = { type: 'FeatureCollection', features: labelPointFeatures };
-const ROUTEPOI = (() => { let a = 90, b = -90, c = 180, d = -180; H.names.forEach(n => GEO[n].stitched.forEach(p => { a = Math.min(a, p[0]); b = Math.max(b, p[0]); c = Math.min(c, p[1]); d = Math.max(d, p[1]); })); return { type: 'Feature', properties: {}, geometry: { type: 'Point', coordinates: [(c + d) / 2, (a + b) / 2] } }; })();
+const ROUTEPOI = { type: 'Feature', properties: {}, geometry: { type: 'Point', coordinates: [0, 0] } }; // Beta 1.117: the centre is filled per load by buildEngineGeometry (was an eval-time IIFE over the baked route)
 
 // ---- unified strands (Andrew, 2026-10-28): the route is painted as
 // STRANDS, not per-street pieces. Slices of the same colour that touch -
@@ -1427,7 +1440,8 @@ function buildSelC() {   // the selected sector's core: a vibrant BAND when comp
   }
   return { sel: selFeats.length ? { type: 'FeatureCollection', features: selFeats } : EMPTYFC, selBand: bandFeats.length ? { type: 'FeatureCollection', features: bandFeats } : EMPTYFC };
 }
-const HIT = { type: 'FeatureCollection', features: H.names.flatMap(n => GEO[n].cuts.map((ab, i) => ({ type: 'Feature', properties: { name: n, idx: i }, geometry: { type: 'LineString', coordinates: GJ(GEO[n].stitched.slice(ab[0], ab[1] + 1)) } }))) };
+const HIT = { type: 'FeatureCollection', features: [] }; // Beta 1.117: filled per load by buildEngineGeometry
+buildEngineGeometry(); // the eval pass: no route is loaded yet, so this builds the empty geometry - the structures exist and every reader is safe; GLP.rebuildRoute rebuilds for real on each load
 let CUR = null;
 function rebuildData() { const F = buildFamilies(); const SC = buildSelC();
   // Paint order (round 21, Andrew's rule): within the centres source,
@@ -1695,6 +1709,18 @@ function managePulse() {
     if (!CUR) { rebuildData(); lastSig = stateSig(); }
     addStack();           // re-adds sources+layers on the fresh GL map and pushes CUR
   }
+  function rebuildRoute() { // Beta 1.117: the app switched routes and rebuilt its own geometry (buildGeometry, app1) - rebuild the engine's from the host's current data and re-point every route-shaped source at it. The basemap and layers are untouched; only data moves.
+    buildEngineGeometry();
+    sel = null;
+    CUR = null; rebuildData(); lastSig = stateSig();
+    if (!GLM) return;
+    if (GLM.getSource('hit')) GLM.getSource('hit').setData(HIT);
+    if (GLM.getSource('labelpts')) GLM.getSource('labelpts').setData(LABELPTS);
+    if (GLM.getSource('routepoi')) GLM.getSource('routepoi').setData(ROUTEPOI);
+    if (GLM.getLayer('routepoi-txt')) { try { GLM.setLayoutProperty('routepoi-txt', 'text-field', (H.activeRoute && H.activeRoute.name) || 'Snow Route'); } catch (e) {} } // the POI wears the route's name (Beta 1.79) - a switch renames it
+    H.glHideLabels(GLM); // the tile-label handover follows the new route's street names
+    pushSources();
+  }
   function drop() {       // GL failed / fell back to raster: stop touching GL entirely
     GLM = null;
     if (pulseTimer) { clearInterval(pulseTimer); pulseTimer = null; }
@@ -1716,6 +1742,6 @@ function managePulse() {
   }
   function active() { return !!GLM; }
   function setFont(stack) { if (Array.isArray(stack) && stack.length) fontStack = stack.slice(); }
-  return { init, drop, sync, syncSel, active, setFont };
+  return { init, drop, sync, syncSel, active, setFont, rebuildRoute };
 })();
 window.GLP = GLP;

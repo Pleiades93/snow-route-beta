@@ -4,8 +4,8 @@ const $ = id => document.getElementById(id);
 const MLAT = 111320, MLNG = 80386;
 const vvHeight = () => (window.visualViewport ? window.visualViewport.height : window.innerHeight); // visible-screen height (shrinks when the phone keyboard opens)
 const YELLOW = '#ffc233', RED = '#ef476f', GREEN = '#06d6a0';
-const MAIN = new Set(['Velmar', 'Mellings', 'Astona', 'Santa Barbara', 'Valeria', 'Greenpark']);
-const SPOT = { 'Columbus': [1, 0.47], 'Mellings': [1, 0.55], 'Valeria': [1, 0.45], 'Santa Barbara': [3, 0.40], 'Kingsnorth': [0, 0.57], 'Bell Harbour': [0, 0.45], 'Romeo': [-1, 0.40], 'Astona': [-1, 0.60], 'Bourbon': [-1, 0.55], 'Fifth': [-1, 0.55] };
+const MAIN = new Set(); // Beta 1.117: the active pack's main streets - filled per load by buildGeometry from pack.main (the values live in the pack, data.js)
+const SPOT = {}; // Beta 1.117: the active pack's label-anchor hints - filled per load by buildGeometry from pack.spot
 const TRAIL_MAX = 8000;
 // Beta 1.76 (Andrew): ROUTES. A route is a pack (geometry in data.js) plus its own
 // storage slot: every route-scoped record lives under 'snowroute.<routeId>.',
@@ -17,7 +17,14 @@ const TRAIL_MAX = 8000;
 // session markers ride in backups (Beta 1.71, audit B02); an older backup
 // simply lacks a field; restore follows the missing-key rule EXCEPT that a
 // backup replacing the trail clears the current markers (Beta 1.73, C06).
-const ROUTE_PACKS = [{ id: '5w', name: 'Route 5W', area: 'Vaughan', roads: ROADS, reference: REFERENCE }];
+// Beta 1.117 (route separation, Andrew): ROUTE_PACKS itself is declared in
+// data.js - packs are DATA (metadata + roads + reference), and the app holds
+// no route of its own. ROADS/REFERENCE below are the LIVE working copies of
+// the ACTIVE pack's geometry: empty until a pack loads, refilled in place by
+// buildGeometry on every load/switch (never rebound, so every captured
+// reference - GL_HOST's included - stays valid across a switch).
+const ROADS = {};
+const REFERENCE = {};
 function routeKeys(id) { const p = 'snowroute.' + id + '.'; return { done: p + 'v2', times: p + 'v2.times', hist: p + 'v2.history', notes: p + 'v4.notes', via: p + 'v4.via', trail: p + 'v4.trail', cov: p + 'v4.cov', start: p + 'v5.start', flip: p + 'v5.flip', sides: p + 'v5.sides', sess: p + 'v5.sess', pre: p + 'v5.preload', snap: p + 'v5.snap', mig: p + 'v2.migrated' }; } // Beta 1.94 (deep audit SR-193-02/03): two slot-local records join the layout - 'snap' is the running clean's persisted pre-Start board (Start writes it, Finish/Cancel delete it; transient, never backed up, not in ROUTE_FIELDS) and 'mig' is the legacy migration's explicit completion marker (see migrateLegacyRoute). Neither is a backup field.
 const LS_GLOBAL = { night: 'snowroute.v2.night', nightExp: 'snowroute.v2.nightExp', exp: 'snowroute.v5.export', prep: 'snowroute.prep.v1' };
 const LEGACY_KEYS = { done: 'snowroute.v2', times: 'snowroute.v2.times', hist: 'snowroute.v2.history', notes: 'snowroute.v4.notes', via: 'snowroute.v4.via', trail: 'snowroute.v4.trail', cov: 'snowroute.v4.cov', start: 'snowroute.v5.start', flip: 'snowroute.v5.flip', sides: 'snowroute.v5.sides', sess: 'snowroute.v5.sess', snap: 'snowroute.v5.snap' }; // snap rides here too so LS.snap is defined on a legacy-fallback boot (the pre-1.76 app never wrote one - the key is simply absent there, which the cancel path already treats as 'no snapshot')
@@ -132,8 +139,8 @@ const tapLast = {};
 function tapGuard(key) { const now = Date.now(); if (tapLast[key] && now - tapLast[key] < 400) return false; tapLast[key] = now; return true; }
 
 // ===== STRETCHES — stitch each street, cut at junctions (checklist SS1) =====
-function stitchLine(name) {
-  const segs = ROADS[name].map(s => s.slice());
+function stitchLine(name, roads) {
+  const segs = (roads || ROADS)[name].map(s => s.slice());
   const used = new Array(segs.length).fill(false);
   let line = segs[0].slice(); used[0] = true;
   for (let guard = 0; guard < segs.length + 2; guard++) {
@@ -172,12 +179,13 @@ function sliceLine(pts, cum, d0, d1) {
   return out;
 }
 const STRETCH = {};
-(function buildStretches() {
+function computeStretches(roads) { // Beta 1.117: the stretch builder as a PURE function of a roads object - the pre-1.117 eval-time IIFE, parameterized. buildGeometry fills the live STRETCH from it on every load; backup/restore (app4's packGeometry) builds a non-active pack's geometry from it without touching the live one (F6).
+  const out = {};
   const lines = {}, cums = {}, totals = {};
-  for (const n of Object.keys(ROADS)) { const L = stitchLine(n); lines[n] = L; const cum = [0]; for (let i = 1; i < L.length; i++) cum.push(cum[i - 1] + distM(L[i - 1], L[i])); cums[n] = cum; totals[n] = cum[cum.length - 1]; }
-  for (const n of Object.keys(ROADS)) {
+  for (const n of Object.keys(roads)) { const L = stitchLine(n, roads); lines[n] = L; const cum = [0]; for (let i = 1; i < L.length; i++) cum.push(cum[i - 1] + distM(L[i - 1], L[i])); cums[n] = cum; totals[n] = cum[cum.length - 1]; }
+  for (const n of Object.keys(roads)) {
     const cuts = [];
-    for (const m of Object.keys(ROADS)) {
+    for (const m of Object.keys(roads)) {
       if (m === n) continue;
       for (const v of lines[m]) { const pr = projOnLine(lines[n], cums[n], v); if (pr.off <= 4) cuts.push(pr.d); }
     }
@@ -188,14 +196,34 @@ const STRETCH = {};
     const bounds = [0, ...inner, totals[n]];
     const parts = [];
     for (let i = 1; i < bounds.length; i++) parts.push(sliceLine(lines[n], cums[n], bounds[i - 1], bounds[i]));
-    STRETCH[n] = { line: lines[n], cum: cums[n], total: totals[n], parts };
+    out[n] = { line: lines[n], cum: cums[n], total: totals[n], parts };
   }
-})();
-const STREETNAMES = Object.keys(ROADS);
+  return out;
+}
+function computeRouteBox(roads) { // the roads' bounding box, or null for an empty pack (no route baked in: pre-load there is no box at all)
+  let w = 1e9, s = 1e9, e = -1e9, n = -1e9, any = false;
+  for (const nm of Object.keys(roads)) for (const seg of roads[nm]) for (const p of seg) { any = true; w = Math.min(w, p[1]); e = Math.max(e, p[1]); s = Math.min(s, p[0]); n = Math.max(n, p[0]); }
+  return any ? { w, s, e, n } : null;
+}
+const STREETNAMES = [];
 const names = STREETNAMES; // the paint engine's name for the street list
 
 // ===== STATE =====
-const STREETSET = new Set(STREETNAMES);
+const STREETSET = new Set();
+function buildGeometry(pack) { // Beta 1.117 (F1): ALL route geometry is (re)built HERE, per load, from the pack - nothing route-shaped is computed at script eval any more. The live containers (ROADS/REFERENCE/STRETCH/STREETNAMES/STREETSET/MAIN/SPOT, app2's routeBox and ROUTE_TILE_NAMES, app3's SAMPLES) are refilled IN PLACE, never rebound, so references captured earlier (GL_HOST's plain entries above all) stay valid. Runs BEFORE loadRouteState: the state sanitizers filter against this geometry. buildSamples (app3) and the paint engine's rebuild (GLP.rebuildRoute, called by loadRoute) complete the per-load rebuild.
+  const roads = (pack && pack.roads) || {}, reference = (pack && pack.reference) || {};
+  for (const k of Object.keys(ROADS)) delete ROADS[k]; Object.assign(ROADS, roads);
+  for (const k of Object.keys(REFERENCE)) delete REFERENCE[k]; Object.assign(REFERENCE, reference);
+  const built = computeStretches(ROADS);
+  for (const k of Object.keys(STRETCH)) delete STRETCH[k]; Object.assign(STRETCH, built);
+  STREETNAMES.length = 0; for (const n of Object.keys(ROADS)) STREETNAMES.push(n);
+  STREETSET.clear(); for (const n of STREETNAMES) STREETSET.add(n);
+  MAIN.clear(); for (const n of ((pack && pack.main) || [])) if (STREETSET.has(n)) MAIN.add(n);
+  for (const k of Object.keys(SPOT)) delete SPOT[k]; Object.assign(SPOT, (pack && pack.spot) || {});
+  routeBox = computeRouteBox(ROADS);
+  ROUTE_TILE_NAMES.length = 0; ROUTE_TILE_NAMES.push(...((pack && pack.tileNames && pack.tileNames.length) ? pack.tileNames : STREETNAMES));
+  buildSamples();
+}
 // Beta 1.76: state loads when a route is CHOSEN, not at script eval - before
 // that, the globals below sit at their empty defaults and nothing route-shaped
 // is read, drawn, or offered. loadRoute (app4) resolves the pack, this loads
@@ -418,8 +446,10 @@ window.addEventListener('pagehide', () => flushAux(true));
 // old free-global reads behaved. glHideLabels is also behind a getter: it
 // is declared in app2.js, after this part, and the getter resolves it at
 // call time. Built here, at the end of app1.js, because the engine
-// evaluates immediately after this part in the assembled page and its
-// eval-time geometry builders read the constants and jDistM at once.
+// evaluates immediately after this part in the assembled page. Beta 1.117:
+// the plain entries are the LIVE containers (MAIN/SPOT/STRETCH/ROADS/names)
+// - buildGeometry refills them in place per load, so the engine's captured
+// references stay valid across a switch and GLP.rebuildRoute re-reads them.
 // Guarded by tests/browser/selftest-engine-surface.mjs (the frozen list).
 const GL_HOST = {
   MLAT, MLNG, MAIN, SPOT, STRETCH, ROADS, names, jDistM, ptSegM, isNight,
