@@ -1,5 +1,60 @@
 # Changelog
 
+## Beta 1.118 — 2026-11-05
+Step 2 of the route programme (Andrew's direction, mockups approved
+2026-11-05): THE HYBRID CREATE-A-ROUTE FLOW. The Routes menu's "Create new
+route" now opens two doors, and both land in one shared checking screen.
+(1) FROM A PHOTO: pick a photo of the route map and the app holds it in an
+honest waiting state ("Photo received — your draft is being built…") with
+a Share button where the platform offers one. Reading the photo is
+Muse's job, OUTSIDE the app by design (a web app cannot read street names
+off a photo): the draft comes back as a pack-format JSON file and "Import
+my draft" loads it into the preview after full validation — fail closed,
+named errors, nothing half-applied, the same discipline as a backup
+restore. A bare roads object (the route-creation sandbox's candidate
+shape) is accepted as a roads-only draft.
+(2) SELECT STREETS MYSELF: a search bar queries Nominatim (street/address
+search only — intersections are known not to resolve; one user-initiated
+query per tap, no autocomplete), a result flies the map there, and tapping
+a road on the map picks the street's IDENTITY from the basemap's roads
+layer — never its geometry (display tiles re-segment streets and misplace
+joins, proven in the sandbox). The street's true shape is fetched at tap
+time from the Overpass API and stitched with the sandbox's rules (greedy
+endpoint chaining at 1.5 m; a divided road chains into its hairpin; the
+run nearest the tap is the street tapped). Streets join as SECONDARIES by
+default and light up on the map in route colours (gold main / raspberry
+secondary); the bottom sheet keeps the running count and the picked list
+with MAIN/2ND flip chips and per-street remove.
+(3) SHARED PREVIEW — "Is this correct?": the draft drawn on the map in
+route colours with every street's length; flip main/secondary, remove a
+street, or "+ Add a street" (the same picker, returning to the preview).
+"Start over" discards behind a confirm; leaving mid-draft asks first.
+(4) NAME IT (its own step): name + area (pre-filled with the next
+"Route N" guess / the searched area / the last-used area), a read-only
+summary, Save.
+PERSISTENCE: created packs live on-device in a new global record
+(snowroute.v2.userpacks = {id: pack}); at boot the runtime pack list is
+shipped packs + created packs (a created pack wins an id collision;
+created ids are slugs generated from the name, uniqueness-checked against
+both lists). Backups (normal AND recovery) now carry the definitions:
+restore validates them like everything else, registers them in the same
+verified write set (rollback scope included) BEFORE any route state is
+applied, and rejects an id that collides with a shipped pack; older
+backups without the field restore exactly as before. The offline manifest
+(F5 union) includes created packs once known; a freshly saved route gets
+an honest preload record (none of its area downloaded yet) and the save
+toast points at Settings → Status → Download.
+DRAFT SAFETY: a draft is session state only — it renders through its own
+GeoJSON overlay computed from the draft's own roads and NEVER touches the
+active route's geometry, engine sources or storage (drive150 proves the
+5W slot byte-identical across a full create-mark-discard cycle, and the
+marking tap is disabled while creating).
+Proof: new drive150 (deterministic network fixtures from the sandbox's
+real Vaughan OSM extract — Nominatim and Overpass stubbed in-page, no
+live network) covers the manual door end-to-end, preview corrections,
+the photo door + fail-closed malformed import, and persistence across
+reload and backup-wipe-restore.
+
 ## Beta 1.117 — 2026-11-05
 Step 1 of the route programme (Andrew's direction): COMPLETE APP/ROUTE
 SEPARATION. The app is now route-agnostic and Route 5W is one pack among

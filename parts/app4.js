@@ -99,6 +99,7 @@ function backupObj() { // Beta 1.76: format v2 - routes carry their own slots ({
   let night = null; try { night = localStorage.getItem(LS_GLOBAL.night); } catch (e) { return null; }
   let nightExp = null; try { nightExp = localStorage.getItem(LS_GLOBAL.nightExp); } catch (e) { return null; }
   const o = { app: 'snowroute-backup', v: 2, at: new Date().toISOString(), routes };
+  const ups = readUserPacks(); if (ups === null) return null; if (Object.keys(ups).length) o.userpacks = ups; // Beta 1.118: created routes are Andrew's data - their definitions ride every backup, read with the same B04 strictness as everything else here: an unreadable created-routes record fails the export rather than shipping a valid-looking backup that silently loses his routes
   if (night != null) o.night = night;
   if (nightExp != null) o.nightExp = nightExp; // Beta 1.77: the theme override and its expiry travel together (an override without its expiry is read as expiring at the next boundary)
   return o;
@@ -125,6 +126,7 @@ function recoveryObj() { // Beta 1.95 (deep audit SR-194-02): the RECOVERY backu
   const routes = {}; routes[activeRoute.id] = data;
   for (const pk of ROUTE_PACKS) { if (pk.id === activeRoute.id) continue; const rk = routeKeys(pk.id); const d = {}; for (const f of ROUTE_FIELDS) { try { const v = localStorage.getItem(rk[f]); if (v != null) d[f] = v; } catch (e) {} } if (d.start === undefined) d.start = null; if (Object.keys(d).length) routes[pk.id] = d; } // Beta 1.97 (audit loop CG-196-01): an untouched pack in a recovery file asserts idle like any complete backup
   const o = { app: 'snowroute-backup', v: 2, recovery: true, at: new Date().toISOString(), routes };
+  try { const upsR = readUserPacks(); if (upsR && Object.keys(upsR).length) o.userpacks = upsR; } catch (e) {} // Beta 1.118: created-route definitions ride the recovery backup too
   try { const nt = localStorage.getItem(LS_GLOBAL.night); if (nt != null) o.night = nt; const ne = localStorage.getItem(LS_GLOBAL.nightExp); if (ne != null) o.nightExp = ne; } catch (e) {}
   return o;
 }
@@ -142,7 +144,7 @@ function clearTrailAll() { // Beta 1.88: the Clear trail BUTTON left with the ol
 }
 function countUnknownNames(parsed) { // Beta 1.95 (deep audit SR-194-08): how many street names in a backup this route does not know - counted from the RAW parsed backup, BEFORE any normalization, each name ONCE. 1.94 counted what survived pushField into the write list: an object-form done map was filtered to known streets before it was pushed (its unknowns invisible), history entries in the legacy array form were skipped entirely, and a name repeated across fields counted per occurrence. The restore itself is unchanged; only the report is honest now. Beta 1.117 (F6): "known" is judged PER ROUTE - each entry against its own pack's street set, not the open route's.
   const bad = new Set();
-  const setFor = id => { const p = ROUTE_PACKS.find(x => x.id === id); return p ? new Set(Object.keys(p.roads || {})) : new Set(); };
+  const setFor = id => { const p = ROUTE_PACKS.find(x => x.id === id) || (restoreOverlayPacks ? restoreOverlayPacks[id] : null); return p ? new Set(Object.keys(p.roads || {})) : new Set(); }; // Beta 1.118: a route whose definition rides THIS backup (restoreOverlayPacks) is known too
   const scanData = (data, set) => {
     const noteName = n => { if (typeof n === 'string' && !set.has(n)) bad.add(n); };
     const fromObj = o => { if (o && typeof o === 'object' && !Array.isArray(o)) for (const k of Object.keys(o)) noteName(k); };
@@ -157,6 +159,7 @@ function countUnknownNames(parsed) { // Beta 1.95 (deep audit SR-194-08): how ma
   else if (parsed.v === 1 && parsed.data && typeof parsed.data === 'object') { const lf = {}; for (const f of Object.keys(LEGACY_KEYS)) { if (parsed.data[LEGACY_KEYS[f]] != null) lf[f] = parsed.data[LEGACY_KEYS[f]]; } scanData(lf, setFor('5w')); }
   return bad.size;
 }
+let restoreOverlayPacks = null; // Beta 1.118: during restoreBackup, the validated created-route definitions carried by the backup itself - visible to countUnknownNames and the route lookups so a route restored WITH its definition is never reported (or rejected) as unknown
 function restoreBackup(parsed) { // production doRestore semantics: validate EVERYTHING before writing; snapshot; write + verify each; verified rollback on any failure
   if (!parsed || parsed.app !== 'snowroute-backup') { toast('That is not a Snow Route backup', 3200); return; }
   const FIELD_SHAPES = { done: 'arr', times: 'obj', hist: 'arr', notes: 'obj', via: 'obj', trail: 'arr', cov: 'obj', sides: 'obj', sess: 'arr' };
@@ -173,10 +176,23 @@ function restoreBackup(parsed) { // production doRestore semantics: validate EVE
     entries.push([targetKey, v]); return true;
   };
   let snapDropped = false; // Beta 1.96 (SR-195-02): set when a backup CARRIES a start snapshot that cannot be restored with its run - the result message must say so
+  let restoredPacks = null; // Beta 1.118: the created-route definitions this backup carries, validated before anything is written
+  let allPacks = ROUTE_PACKS; // the routes this restore knows about: the runtime list, plus restoredPacks once validated
   if (parsed.v === 2) {
     if (!parsed.routes || typeof parsed.routes !== 'object' || Array.isArray(parsed.routes)) { toast('That is not a Snow Route backup', 3200); return; }
+    if (parsed.userpacks !== undefined) { // Beta 1.118: validate the created-route definitions FIRST - they register before any route state is applied, fail-closed like everything else in this function. An id that collides with a SHIPPED pack is rejected outright: created ids are generated slugs that never collide, so a collision means the file is corrupt or tampered with.
+      if (!parsed.userpacks || typeof parsed.userpacks !== 'object' || Array.isArray(parsed.userpacks)) { toast('Backup has a bad created-routes record — nothing was changed', 3200); return; }
+      restoredPacks = {};
+      for (const rid of Object.keys(parsed.userpacks)) {
+        if (!/^[a-z0-9][a-z0-9-]{0,40}$/.test(rid) || SHIPPED_PACK_IDS.has(rid)) { toast('Backup has a bad created route id (' + rid + ') — nothing was changed', 3200); return; }
+        const v = normalizePack(parsed.userpacks[rid], {});
+        if (!v.ok) { toast('Backup has a bad created route (' + rid + ': ' + v.error + ') — nothing was changed', 3200); return; }
+        v.pack.id = rid; restoredPacks[rid] = v.pack;
+      }
+      allPacks = ROUTE_PACKS.concat(Object.values(restoredPacks));
+    }
     for (const id of Object.keys(parsed.routes)) {
-      const pack = ROUTE_PACKS.find(p => p.id === id); if (!pack) { toast('Backup mentions an unknown route (' + id + ') — nothing was changed', 3200); return; }
+      const pack = ROUTE_PACKS.find(p => p.id === id) || (restoredPacks ? restoredPacks[id] : null); if (!pack) { toast('Backup mentions an unknown route (' + id + ') — nothing was changed', 3200); return; } // Beta 1.118: a route whose definition rides this same backup is known
       const data = parsed.routes[id]; if (!data || typeof data !== 'object' || Array.isArray(data)) { toast('That is not a Snow Route backup', 3200); return; }
       const rk = routeKeys(id);
       const pg = packGeometry(pack); // Beta 1.117 (F6): this route's own geometry, for its name filter and snapshot validation below
@@ -198,12 +214,13 @@ function restoreBackup(parsed) { // production doRestore semantics: validate EVE
     for (const f of ROUTE_FIELDS) { const lv = parsed.data[LEGACY_KEYS[f]]; if (lv === undefined) continue; if (!pushField(rk5[f], f, lv, 'Route 5W ' + f, pg5 ? pg5.set : null)) return; }
     if (parsed.data['snowroute.v2.night'] !== undefined && !pushField(LS_GLOBAL.night, 'night', parsed.data['snowroute.v2.night'], 'night')) return;
   } else { toast('Unsupported backup version (' + String(parsed.v) + ') — nothing was changed', 3200); return; }
+  if (restoredPacks) { const merged = { ...loadUserPacks(), ...restoredPacks }; entries.push([USERPACKS_KEY, JSON.stringify(merged)]); } // Beta 1.118: the definitions land as ONE verified entry in the same write set (merged over the device's current record - a restore adds/updates routes, it does not delete ones the backup predates), inside the rollback scope below, and the reload that ends every restore re-registers them at boot before their state is read
   // Beta 1.73 (audit C06, Andrew's call): a backup that replaces a route's TRAIL but carries no
   // session markers of its own must not inherit the CURRENT trail's markers - they describe the
   // trail being replaced and would split the restored trail at wrong places. Clear them as part
   // of this restore: the entry is written and verified like every other, and the snapshot +
   // rollback below cover the markers too. Applies per route (today: the 5W slot in both formats).
-  for (const p of ROUTE_PACKS) { const rk = routeKeys(p.id); if (entries.some(e => e[0] === rk.trail) && !entries.some(e => e[0] === rk.sess)) entries.push([rk.sess, '[]']); }
+  for (const p of allPacks) { const rk = routeKeys(p.id); if (entries.some(e => e[0] === rk.trail) && !entries.some(e => e[0] === rk.sess)) entries.push([rk.sess, '[]']); }
   // Beta 1.92 (deep audit F06, Andrew's pick (a)): a backup carrying a route's completion
   // list but NO side-marks record (the old v1 shape) used to restore into silence - the
   // loader trusts the side-marks and rebuilt the list from the phone's existing ones,
@@ -211,7 +228,7 @@ function restoreBackup(parsed) { // production doRestore semantics: validate EVE
   // instead, by the loader's own rule for streets with no sides record: a completed
   // street is all-sides-done, stamped with its completion time. Scoped to backups that
   // lack sides entirely; a backup WITH sides restores exactly as written.
-  for (const p of ROUTE_PACKS) {
+  for (const p of allPacks) {
     const rk = routeKeys(p.id);
     const doneEnt = entries.find(e => e[0] === rk.done);
     if (!doneEnt || entries.some(e => e[0] === rk.sides)) continue;
@@ -226,9 +243,9 @@ function restoreBackup(parsed) { // production doRestore semantics: validate EVE
       entries.push([rk.sides, JSON.stringify({ p: P, t: T })]); // Beta 1.93 (follow-up audit R03): ALWAYS write the derived authority when the backup carries done-but-no-sides - an explicitly EMPTY list ('[]') is an intentional empty state, and {} reads back as nothing done; skipping the write used to leave the phone's old sides in charge
     } catch (e) { /* a list that cannot be parsed was already rejected during validation - never invent sides from rubble */ }
   }
-  const droppedNames = countUnknownNames(parsed); // Beta 1.95 (SR-194-08): counted from the RAW backup before any normalization - see countUnknownNames
+  restoreOverlayPacks = restoredPacks; const droppedNames = countUnknownNames(parsed); restoreOverlayPacks = null; // Beta 1.95 (SR-194-08): counted from the RAW backup before any normalization - see countUnknownNames. Beta 1.118: judged with this backup's own created-route definitions overlaid
   if (!entries.length) { toast('Nothing in that backup to restore', 3000); return; }
-  const SCOPE = []; for (const p of ROUTE_PACKS) { const rk = routeKeys(p.id); for (const f of ROUTE_FIELDS) SCOPE.push(rk[f]); SCOPE.push(rk.snap); } SCOPE.push(LS_GLOBAL.night, LS_GLOBAL.nightExp); // Beta 1.96 (SR-195-02): the snapshot key joins the rollback scope - a restore that writes a carried snapshot must be able to put the previous one back
+  const SCOPE = []; for (const p of allPacks) { const rk = routeKeys(p.id); for (const f of ROUTE_FIELDS) SCOPE.push(rk[f]); SCOPE.push(rk.snap); } if (restoredPacks) SCOPE.push(USERPACKS_KEY); SCOPE.push(LS_GLOBAL.night, LS_GLOBAL.nightExp); // Beta 1.118: the created-routes record and restored routes' slots join the rollback scope // Beta 1.96 (SR-195-02): the snapshot key joins the rollback scope - a restore that writes a carried snapshot must be able to put the previous one back
   const snap = {}; let snapOk = true;
   for (const k of SCOPE) { try { snap[k] = localStorage.getItem(k); } catch (e) { snapOk = false; } }
   if (!snapOk) { toast('Restore stopped — your current data could not be read for safekeeping, so nothing was changed', 3600); return; }
@@ -592,7 +609,7 @@ $('stDel').addEventListener('click', async () => {
 });
 // ---- About / What's new ----
 const WHATSNEW = { // the curated in-app notes: plain words, LATEST RELEASE ONLY (Beta 1.114, Andrew: the accumulated list cluttered the About pane). A release REPLACES this entry with its own in the same change - it never accumulates; the full history lives in CHANGELOG.md, not the app
-  v: 'Beta 1.117', items: ["The app and Route 5W are now fully separate — routes load as packs and you can switch between them in the Routes tab"]
+  v: 'Beta 1.118', items: ["You can now create your own routes — from a photo of the route map, or by searching and tapping streets yourself — check the preview, fix anything, name it, save"]
 };
 function renderAbout() {
   const cur = $('ver').textContent.trim();
@@ -917,6 +934,377 @@ function loadRoute(id) {
   if (runStart && !validateSnap(parseJ(lsGet(LS.snap), null), runStart)) toast('Resumed run — no usable cancel snapshot, so Cancel will rebuild from the marks made during the run', 4600); // Beta 1.95 (deep audit SR-194-04): the honesty lives at RESUME - Start still never blocks (the settled 1.63 stance: he is standing in the snow), but a run whose cancel snapshot is missing or damaged is resumed with its reduced Cancel guarantee stated, not silent
   if (runStart) startGps(true);
 }
+// ===== Beta 1.118: CREATE A ROUTE (Step 2 of the route programme; Andrew's approved mockups) =====
+// The HYBRID flow: Door 1 turns a photo of a route map into a draft (the
+// photo is read by Muse OUTSIDE the app - the app has no photo reader by
+// design; see docs/ARCHITECTURE.md) and imports the returned draft file;
+// Door 2 searches a street (Nominatim), flies there, and lets Andrew TAP
+// roads on the map - a tap chooses a street's IDENTITY from the basemap's
+// roads layer, never its geometry: the street's true shape is fetched from
+// the Overpass API at tap time and stitched with the sandbox's rules
+// (endpoint chaining, divided roads chain into their hairpin). Both doors
+// land in one shared preview ("Is this correct?") with corrections, then a
+// name-it step, then the pack is saved on-device (below).
+// PACK FORMAT (defined once, here and in docs/ARCHITECTURE.md): the same
+// shape as a ROUTE_PACKS entry - { name, area, mains: [names], roads:
+// { street: [segment, ...] }, reference: {...}, tileNames?: [...] }, each
+// segment an array of [lat, lng] points. normalizePack is the one validator
+// every entry path (draft import, save, backup restore, boot merge) uses.
+const USERPACKS_KEY = 'snowroute.v2.userpacks'; // the on-device record of created routes: { <id>: <pack> }. Shipped packs live in data.js; created packs live here.
+const SHIPPED_PACK_IDS = new Set(ROUTE_PACKS.map(p => p.id)); // captured at eval, BEFORE any user pack merges - data.js holds shipped packs only
+function readUserPacks() { // the stored record, or null when it cannot be read/parsed at all (callers that must not lose data treat null as a failure; lenient callers use loadUserPacks)
+  try { const raw = localStorage.getItem(USERPACKS_KEY); if (raw == null) return {}; const o = JSON.parse(raw); return (o && typeof o === 'object' && !Array.isArray(o)) ? o : null; } catch (e) { return null; }
+}
+function loadUserPacks() { const r = readUserPacks(); return r || {}; }
+function normalizePack(raw, opts) { // -> { ok: true, pack } | { ok: false, error } - fail-closed with a named error, nothing half-built
+  opts = opts || {};
+  const bad = m => ({ ok: false, error: m });
+  if (!raw || typeof raw !== 'object' || Array.isArray(raw)) return bad('it is not a route pack');
+  const name = typeof raw.name === 'string' ? raw.name.trim() : '';
+  if (name.length > 60) return bad('the route name is too long');
+  if (!opts.draft && !name) return bad('the route has no name');
+  const area = typeof raw.area === 'string' ? raw.area.trim().slice(0, 60) : '';
+  let totalPts = 0;
+  const cleanRoads = (obj, label) => {
+    if (!obj || typeof obj !== 'object' || Array.isArray(obj)) return { error: 'the ' + label + ' are missing or the wrong shape' };
+    const out = {}; const names = Object.keys(obj);
+    if (names.length > 300) return { error: 'too many streets in the ' + label };
+    for (const nm0 of names) {
+      const nm = nm0.trim();
+      if (!nm || nm.length > 60) return { error: 'a street name in the ' + label + ' is missing or too long' };
+      if (out[nm]) return { error: 'the street "' + nm + '" appears twice' };
+      const segsIn = obj[nm0];
+      if (!Array.isArray(segsIn) || !segsIn.length || segsIn.length > 80) return { error: 'the street "' + nm + '" has no usable shape' };
+      const segs = [];
+      for (const segIn of segsIn) {
+        if (!Array.isArray(segIn) || segIn.length < 2 || segIn.length > 4000) return { error: 'the street "' + nm + '" has a bad segment' };
+        const seg = [];
+        for (const pt of segIn) {
+          if (!Array.isArray(pt) || pt.length < 2 || !isFinite(pt[0]) || !isFinite(pt[1]) || Math.abs(pt[0]) > 90 || Math.abs(pt[1]) > 180) return { error: 'the street "' + nm + '" has a bad map point' };
+          const p = [Math.round(pt[0] * 1e7) / 1e7, Math.round(pt[1] * 1e7) / 1e7];
+          if (!seg.length || seg[seg.length - 1][0] !== p[0] || seg[seg.length - 1][1] !== p[1]) seg.push(p);
+          if (++totalPts > 150000) return { error: 'the route is too big' };
+        }
+        if (seg.length > 1) segs.push(seg);
+      }
+      if (!segs.length) return { error: 'the street "' + nm + '" has no usable shape' };
+      out[nm] = segs;
+    }
+    return { roads: out };
+  };
+  const rc = cleanRoads(raw.roads, 'roads'); if (rc.error) return bad(rc.error);
+  if (!Object.keys(rc.roads).length) return bad(opts.draft ? 'the draft has no streets' : 'the route has no streets');
+  let reference = {};
+  if (raw.reference !== undefined) { const fc = cleanRoads(raw.reference, 'reference features'); if (fc.error) return bad(fc.error); reference = fc.roads; for (const nm of Object.keys(reference)) if (rc.roads[nm]) delete reference[nm]; }
+  const mainsIn = raw.mains !== undefined ? raw.mains : raw.main;
+  const mains = [];
+  if (mainsIn !== undefined) {
+    if (!Array.isArray(mainsIn)) return bad('the mains list is the wrong shape');
+    for (const m of mainsIn) if (typeof m === 'string' && rc.roads[m] && !mains.includes(m)) mains.push(m);
+  }
+  const tileSet = new Set(Object.keys(rc.roads));
+  if (Array.isArray(raw.tileNames)) for (const t of raw.tileNames) if (typeof t === 'string' && t && t.length <= 80 && tileSet.size < 400) tileSet.add(t);
+  if (opts.tileNames) for (const t of opts.tileNames) if (typeof t === 'string' && t && t.length <= 80 && tileSet.size < 400) tileSet.add(t);
+  let box = null;
+  if (raw.box && isFinite(raw.box.w) && isFinite(raw.box.s) && isFinite(raw.box.e) && isFinite(raw.box.n) && raw.box.w < raw.box.e && raw.box.s < raw.box.n) box = { w: raw.box.w, s: raw.box.s, e: raw.box.e, n: raw.box.n };
+  else { const cb = computeRouteBox({ ...rc.roads, ...reference }); if (cb) box = { w: Math.max(-180, cb.w - 0.03), s: Math.max(-90, cb.s - 0.025), e: Math.min(180, cb.e + 0.03), n: Math.min(90, cb.n + 0.025) }; }
+  return { ok: true, pack: { name, area, main: mains, spot: {}, tileNames: [...tileSet], box, roads: rc.roads, reference } };
+}
+function mergeUserPacks() { // boot: the runtime pack list = shipped packs + created packs (a created pack wins an id collision - created ids are generated slugs that never collide with a shipped id, so a collision means the record was hand-edited; the created route is Andrew's data and wins)
+  const rec = loadUserPacks();
+  for (const id of Object.keys(rec)) {
+    const v = normalizePack(rec[id], {});
+    if (!v.ok) continue; // a created pack that no longer validates is skipped, never half-loaded; its record and slot stay on the device untouched
+    v.pack.id = id;
+    const ix = ROUTE_PACKS.findIndex(p => p.id === id);
+    if (ix >= 0) ROUTE_PACKS[ix] = v.pack; else ROUTE_PACKS.push(v.pack);
+  }
+}
+mergeUserPacks();
+function uniqueRouteId(name) { // a slug from the name, uniqueness-checked against shipped + created ids
+  let base = name.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-+|-+$/g, '').slice(0, 32) || 'route';
+  let id = base, i = 2;
+  while (ROUTE_PACKS.some(p => p.id === id)) { id = base + '-' + i; i++; }
+  return id;
+}
+function nextRouteNameGuess() { let mx = 1; for (const p of ROUTE_PACKS) { const m = /^Route (\d+)$/.exec(p.name || ''); if (m) mx = Math.max(mx, +m[1] + 1); } return 'Route ' + Math.max(mx, ROUTE_PACKS.length + 1); }
+
+// ---- draft state: session only (not a route, not in any slot) ----
+let creating = false, crStage = 'pick', crReturnToPreview = false, crBootParked = false, crAreaGuess = '', crPhoto = null, crPickBusy = false;
+let draft = null; // { roads, mains: Set, osmNames: {short: full}, tileNames: [..], name, area }
+function newDraft() { return { roads: {}, mains: new Set(), osmNames: {}, tileNames: [], name: '', area: '' }; }
+function draftStreets() { return draft ? Object.keys(draft.roads) : []; }
+const DRAFT_SRC = 'crDraft';
+function ensureDraftLayers() {
+  if (!map || typeof map.addSource !== 'function') return;
+  try {
+    if (!map.getSource(DRAFT_SRC)) map.addSource(DRAFT_SRC, { type: 'geojson', data: { type: 'FeatureCollection', features: [] } });
+    if (!map.getLayer('crDraftCase')) map.addLayer({ id: 'crDraftCase', type: 'line', source: DRAFT_SRC, layout: { 'line-cap': 'round', 'line-join': 'round' }, paint: { 'line-color': 'rgba(10,14,34,.55)', 'line-width': 8.5 } });
+    if (!map.getLayer('crDraftLine')) map.addLayer({ id: 'crDraftLine', type: 'line', source: DRAFT_SRC, layout: { 'line-cap': 'round', 'line-join': 'round' }, paint: { 'line-color': ['case', ['==', ['get', 'main'], 1], '#ffc233', '#ef476f'], 'line-width': 4.5 } });
+  } catch (e) { /* the style may still be loading - renderDraft retries on every change */ }
+}
+function renderDraft() { // the DRAFT renders through its own GeoJSON source, computed from the draft's own roads - the active route's geometry, engine sources and storage are never touched by the create flow
+  ensureDraftLayers();
+  if (!map || typeof map.getSource !== 'function') return;
+  const src = map.getSource(DRAFT_SRC); if (!src) return;
+  const feats = [];
+  if (draft) { const g = computeStretches(draft.roads); for (const n of draftStreets()) { const L = g[n] && g[n].line; if (L && L.length > 1) feats.push({ type: 'Feature', properties: { name: n, main: draft.mains.has(n) ? 1 : 0 }, geometry: { type: 'LineString', coordinates: L.map(p => [p[1], p[0]]) } }); } }
+  src.setData({ type: 'FeatureCollection', features: feats });
+}
+onMapReady(() => map.on('styledata', () => { if (creating) renderDraft(); })); // a basemap swap mid-create wipes custom layers - redraw the draft
+function crRowEl(n, g) {
+  const row = document.createElement('div'); row.className = 'crRow';
+  const main = draft.mains.has(n);
+  const dot = document.createElement('span'); dot.className = 'crDot ' + (main ? 'main' : 'sec'); row.appendChild(dot);
+  const nm = document.createElement('span'); nm.className = 'crName'; nm.textContent = n; row.appendChild(nm);
+  const ln = document.createElement('span'); ln.className = 'crLen'; ln.textContent = fmtLenM(g[n] ? g[n].total : 0); row.appendChild(ln);
+  const chip = document.createElement('button'); chip.className = 'crChip ' + (main ? 'main' : 'sec'); chip.textContent = main ? 'MAIN' : '2ND';
+  chip.addEventListener('click', () => { if (draft.mains.has(n)) draft.mains.delete(n); else draft.mains.add(n); renderDraft(); renderCrLists(); });
+  row.appendChild(chip);
+  const del = document.createElement('button'); del.className = 'crDel'; del.textContent = '✕'; del.title = 'Remove ' + n;
+  del.addEventListener('click', () => { delete draft.roads[n]; draft.mains.delete(n); delete draft.osmNames[n]; renderDraft(); renderCrLists(); });
+  row.appendChild(del);
+  return row;
+}
+function renderCrLists() {
+  if (!draft) return;
+  const g = computeStretches(draft.roads);
+  const names = draftStreets().sort((a, b) => a.localeCompare(b));
+  let tot = 0; for (const n of names) tot += g[n] ? g[n].total : 0;
+  const count = names.length + ' streets · ' + draft.mains.size + ' mains · ' + fmtLenM(tot);
+  $('crCount').textContent = count; $('pvCount').textContent = count;
+  for (const listId of ['crPickList', 'pvList']) { const el = $(listId); el.innerHTML = ''; for (const n of names) el.appendChild(crRowEl(n, g)); }
+  $('crDoneBtn').disabled = !names.length;
+  $('crDoneBtn').textContent = crReturnToPreview ? 'Done — back to check' : 'Done — check route';
+  $('pvSaveBtn').disabled = !names.length;
+}
+let crConfirmCb = null;
+function crConfirm(title, msg, cb) { $('crModalTitle').textContent = title; $('crModalMsg').textContent = msg; crConfirmCb = cb; $('crModal').classList.remove('hidden'); }
+$('crModalYes').addEventListener('click', () => { $('crModal').classList.add('hidden'); const cb = crConfirmCb; crConfirmCb = null; if (cb) cb(); });
+$('crModalNo').addEventListener('click', () => { $('crModal').classList.add('hidden'); crConfirmCb = null; });
+function parkBootChrome() { const sp = $('splash'); if (sp) sp.style.visibility = 'hidden'; $('routeMenu').classList.remove('show'); crBootParked = true; }
+function restoreBootChrome() { if (!crBootParked) return; crBootParked = false; const sp = $('splash'); if (sp) sp.style.visibility = ''; $('routeMenu').classList.add('show'); }
+function setCreateStage(stage) {
+  crStage = stage;
+  $('createBar').classList.toggle('on', stage === 'pick');
+  $('createSheet').classList.toggle('on', stage === 'pick');
+  $('previewSheet').classList.toggle('on', stage === 'preview');
+  $('createResults').classList.remove('on');
+  $('createHint').classList.toggle('on', stage === 'pick');
+  if (stage === 'pick') $('createHint').textContent = draftStreets().length ? 'Tap a road on the map to add it' : 'Search, fly to a street, then tap it on the map';
+  renderCrLists(); renderDraft();
+  if (stage === 'preview') fitDraft();
+}
+function enterCreate(stage) {
+  if (!draft) draft = newDraft();
+  creating = true;
+  document.body.classList.add('creating');
+  followPaused = true; // the camera belongs to the picking now; GPS is device state and is not stopped - follow resumes from the Locate tab afterwards
+  try { deselect(); } catch (e) {} closeSheets();
+  if (routeLoaded) closeRouteMenu(); else parkBootChrome();
+  setCreateStage(stage);
+}
+function exitCreate() {
+  creating = false; draft = null; crStage = 'pick'; crReturnToPreview = false; crAreaGuess = '';
+  document.body.classList.remove('creating');
+  for (const id of ['createBar', 'createSheet', 'previewSheet', 'createResults', 'createHint']) $(id).classList.remove('on');
+  renderDraft(); // draft is null: the overlay clears, the active route was never touched
+}
+function openDoors() { if (!routeLoaded) { restoreBootChrome(); } else openRouteMenu(); showRmPane('rmCreatePane'); }
+function askDiscard(then) { if (draft && draftStreets().length) crConfirm('Throw away this draft?', 'The ' + draftStreets().length + ' streets you picked will be lost.', then); else then(); }
+function fitDraft() {
+  if (!draft || !map) return;
+  const bb = computeRouteBox(draft.roads); if (!bb) return;
+  try { map.fitBounds([[bb.w, bb.s], [bb.e, bb.n]], { padding: 56, duration: 800 }); } catch (e) {}
+}
+$('crExit').addEventListener('click', () => askDiscard(() => { const wasBoot = !routeLoaded; exitCreate(); if (wasBoot) openDoors(); }));
+$('pvStartOverBtn').addEventListener('click', () => askDiscard(() => { exitCreate(); openDoors(); }));
+
+// ---- Door 1: photo -> waiting state -> draft import ----
+$('crDoorPhoto').addEventListener('click', () => showRmPane('rmPhotoPane'));
+$('crPhotoBack').addEventListener('click', () => showRmPane('rmCreatePane'));
+$('crPhotoBtn').addEventListener('click', () => $('crPhotoFile').click());
+$('crPhotoFile').addEventListener('change', () => {
+  const f = $('crPhotoFile').files && $('crPhotoFile').files[0]; $('crPhotoFile').value = '';
+  if (!f) return;
+  crPhoto = f;
+  $('crPhotoName').textContent = f.name || 'photo';
+  $('crPhotoPick').style.display = 'none'; $('crPhotoWait').style.display = '';
+  const sh = $('crShareBtn');
+  let can = false; try { can = !!(navigator.canShare && navigator.canShare({ files: [f] })); } catch (e) {}
+  sh.style.display = can ? '' : 'none'; // the share affordance exists only where the platform offers it - silent absence otherwise
+});
+$('crShareBtn').addEventListener('click', () => { if (crPhoto && navigator.share) navigator.share({ files: [crPhoto] }).catch(() => {}); });
+$('crImportBtn').addEventListener('click', () => $('crDraftFile').click());
+$('crDraftFile').addEventListener('change', async () => {
+  const f = $('crDraftFile').files && $('crDraftFile').files[0]; $('crDraftFile').value = '';
+  if (!f) return;
+  let text = ''; try { text = await f.text(); } catch (e) { toast('That draft file could not be read', 3200); return; }
+  importDraft(text);
+});
+function importDraft(text) { // fail closed, named errors, nothing half-applied - the same discipline as a backup restore
+  let obj; try { obj = JSON.parse(text); } catch (e) { toast('That draft file could not be read — it is not valid JSON', 3600); return; }
+  let raw = obj;
+  if (obj && typeof obj === 'object' && !Array.isArray(obj) && obj.roads === undefined) { // the sandbox pipeline's candidate shape: a bare roads object
+    const vals = Object.values(obj);
+    if (vals.length && vals.every(v => Array.isArray(v))) raw = { roads: obj };
+    else { toast('That draft file has no roads in it — nothing was imported', 3600); return; }
+  }
+  const v = normalizePack(raw, { draft: true });
+  if (!v.ok) { toast('Draft not imported — ' + v.error, 4000); return; }
+  draft = newDraft();
+  draft.roads = v.pack.roads; draft.mains = new Set(v.pack.main); draft.name = v.pack.name || ''; draft.area = v.pack.area || ''; draft.tileNames = v.pack.tileNames.slice();
+  crReturnToPreview = false;
+  enterCreate('preview');
+  toast('Draft loaded — check it over', 2600);
+}
+
+// ---- Door 2: search (Nominatim) -> fly -> tap a road (identity) -> fetch its true shape (Overpass) ----
+$('crDoorManual').addEventListener('click', () => { draft = newDraft(); crReturnToPreview = false; enterCreate('pick'); });
+$('crSearchBtn').addEventListener('click', crSearch);
+$('crSearchInput').addEventListener('keydown', e => { if (e.key === 'Enter') crSearch(); });
+async function crSearch() { // user-initiated, one query per tap - no autocomplete (Nominatim's usage policy: modest volume; creation happens at home)
+  const q = $('crSearchInput').value.trim(); if (!q) return;
+  $('crSearchBtn').disabled = true;
+  try {
+    const r = await fetch('https://nominatim.openstreetmap.org/search?format=jsonv2&addressdetails=1&limit=5&q=' + encodeURIComponent(q), { headers: { 'Accept': 'application/json' } });
+    if (!r.ok) throw new Error('search HTTP ' + r.status);
+    const list = await r.json();
+    renderCrResults(Array.isArray(list) ? list : []);
+    if (!Array.isArray(list) || !list.length) toast('No places matched that search', 3000);
+  } catch (e) { toast('Search needs an internet connection — try again', 3200); }
+  $('crSearchBtn').disabled = false;
+}
+function renderCrResults(list) {
+  const box = $('createResults'); box.innerHTML = '';
+  for (const it of list) {
+    const b = document.createElement('button'); b.className = 'crResult'; b.textContent = it.display_name || '';
+    b.addEventListener('click', () => {
+      box.classList.remove('on');
+      const lat = parseFloat(it.lat), lon = parseFloat(it.lon); if (!isFinite(lat) || !isFinite(lon)) return;
+      const a = it.address || {}; crAreaGuess = a.city || a.town || a.village || a.municipality || a.county || '';
+      if (map) map.flyTo({ center: [lon, lat], zoom: Math.max(map.getZoom(), 15), duration: 900 });
+      $('createHint').textContent = 'Tap a road on the map to add it to your route'; $('createHint').classList.add('on');
+    });
+    box.appendChild(b);
+  }
+  box.classList.toggle('on', list.length > 0);
+}
+const CR_SUFFIX = /\s+(Drive|Court|Boulevard|Lane|Street|Avenue|Crescent|Road|Place|Ridge|Way|Terrace|Circle|Gate|Heights|Trail|Parkway)$/;
+const CR_ORDINALS = { '1st': 'First', '2nd': 'Second', '3rd': 'Third', '4th': 'Fourth', '5th': 'Fifth', '6th': 'Sixth', '7th': 'Seventh', '8th': 'Eighth', '9th': 'Ninth', '10th': 'Tenth', '11th': 'Eleventh', '12th': 'Twelfth' };
+function shortStreetName(osm) { // the app's short-name convention (the sandbox's suffix rule; ordinal avenues spell out - 5th Avenue is Fifth)
+  const m = /^(\d+(?:st|nd|rd|th))\s+Avenue$/i.exec(osm);
+  if (m && CR_ORDINALS[m[1].toLowerCase()]) return CR_ORDINALS[m[1].toLowerCase()];
+  const s = osm.replace(CR_SUFFIX, '');
+  return s && s !== osm ? s : osm;
+}
+function crLineLen(pts) { let s = 0; for (let i = 1; i < pts.length; i++) s += distM(pts[i - 1], pts[i]); return s; }
+function chainWays(ways) { // the sandbox's stitch: greedy endpoint chaining at 1.5 m tolerance into runs. A run whose joins were all exact keeps its ways as segments (the app's own stitcher re-chains them identically); a run with a bridged join is stored as its single stitched line.
+  const pool = ways.map(w => w.slice());
+  const runs = [];
+  while (pool.length) {
+    let bi = 0; for (let i = 1; i < pool.length; i++) if (crLineLen(pool[i]) > crLineLen(pool[bi])) bi = i;
+    const first = pool.splice(bi, 1)[0];
+    let line = first.slice(); const segs = [first]; let exact = true;
+    let grew = true;
+    while (grew) {
+      grew = false;
+      for (let i = 0; i < pool.length; i++) {
+        const s = pool[i], a = s[0], b = s[s.length - 1], L0 = line[0], L1 = line[line.length - 1];
+        const dAL1 = distM(a, L1), dBL1 = distM(b, L1), dBL0 = distM(b, L0), dAL0 = distM(a, L0);
+        let addLine = null, addSeg = null, dJoin = 0;
+        if (dAL1 <= 1.5) { addLine = s.slice(1); addSeg = s; dJoin = dAL1; line = line.concat(addLine); }
+        else if (dBL1 <= 1.5) { addLine = s.slice(0, -1).reverse(); addSeg = s.slice().reverse(); dJoin = dBL1; line = line.concat(addLine); }
+        else if (dBL0 <= 1.5) { addLine = s.slice(0, -1); addSeg = s; dJoin = dBL0; line = addLine.concat(line); }
+        else if (dAL0 <= 1.5) { addLine = s.slice(1).reverse(); addSeg = s.slice().reverse(); dJoin = dAL0; line = addLine.concat(line); }
+        else continue;
+        if (dJoin > 0.01) exact = false;
+        segs.push(addSeg); pool.splice(i, 1); grew = true; break;
+      }
+    }
+    runs.push({ segments: segs, line, exact });
+  }
+  return runs;
+}
+async function fetchStreetGeometry(osmName, lngLat) { // the street's TRUE shape from OpenStreetMap (Overpass): every way carrying the name near the tap, stitched; the run nearest the tap is the street he tapped
+  const s = (lngLat.lat - 0.05).toFixed(6), n = (lngLat.lat + 0.05).toFixed(6), w = (lngLat.lng - 0.065).toFixed(6), e = (lngLat.lng + 0.065).toFixed(6);
+  const ql = '[out:json][timeout:30];way["name="' + osmName.replace(/(["\\])/g, '\\$1') + '"](' + s + ',' + w + ',' + n + ',' + e + ');out geom;';
+  const r = await fetch('https://overpass-api.de/api/interpreter', { method: 'POST', headers: { 'Content-Type': 'application/x-www-form-urlencoded' }, body: 'data=' + encodeURIComponent(ql) });
+  if (!r.ok) return null;
+  const j = await r.json();
+  const ways = [];
+  for (const el of (j && j.elements) || []) {
+    if (el.type !== 'way' || !Array.isArray(el.geometry) || el.geometry.length < 2) continue;
+    const pts = [];
+    for (const g of el.geometry) { const p = [Math.round(g.lat * 1e7) / 1e7, Math.round(g.lon * 1e7) / 1e7]; if (!pts.length || distM(pts[pts.length - 1], p) > 0.1) pts.push(p); }
+    if (pts.length > 1) ways.push(pts);
+  }
+  if (!ways.length) return null;
+  const runs = chainWays(ways);
+  let best = null, bestD = Infinity;
+  for (const run of runs) for (const p of run.line) { const d = distM(p, [lngLat.lat, lngLat.lng]); if (d < bestD) { bestD = d; best = run; } }
+  if (!best) return null;
+  return best.exact ? best.segments.slice().sort((a, b) => crLineLen(b) - crLineLen(a)) : [best.line];
+}
+async function pickStreet(osmName, lngLat) {
+  const short = shortStreetName(osmName);
+  if (draft.roads[short] || Object.values(draft.osmNames).includes(osmName)) { toast(short + ' is already in your route', 2400); return; }
+  if (crPickBusy) return; crPickBusy = true;
+  toast('Loading ' + short + '…', 1600);
+  try {
+    const segs = await fetchStreetGeometry(osmName, lngLat);
+    if (!segs) { toast('Could not load the shape of ' + short + ' — check your connection and tap it again', 3600); return; }
+    draft.roads[short] = segs; draft.osmNames[short] = osmName; // a tapped street joins as a SECONDARY (fork 3) - flip it to MAIN in the list if it is one
+    renderDraft(); renderCrLists();
+    $('createHint').textContent = 'Added ' + short + ' — tap another road, or Done';
+    toast('Added ' + short, 1800);
+  } catch (e) { toast('Could not load the shape of ' + short + ' — check your connection and tap it again', 3600); }
+  crPickBusy = false;
+}
+function crMapTap(e) {
+  if (!creating || crStage !== 'pick' || !map) return;
+  let feats = [];
+  try { feats = map.queryRenderedFeatures(e.point) || []; } catch (err) {}
+  const f = feats.find(x => x && x.sourceLayer === 'roads' && x.properties && typeof x.properties.name === 'string' && !!x.properties.name);
+  if (!f) { toast('No road there — tap right on a road line', 2400); return; }
+  pickStreet(f.properties.name, e.lngLat); // the tile feature's NAME is the identity; its geometry is never used (the approved reconciliation - display tiles re-segment streets and misplace joins)
+}
+onMapReady(() => map.on('click', crMapTap));
+$('crDoneBtn').addEventListener('click', () => { if (draftStreets().length) setCreateStage('preview'); });
+$('pvAddBtn').addEventListener('click', () => { crReturnToPreview = true; setCreateStage('pick'); });
+
+// ---- name it + save ----
+$('pvSaveBtn').addEventListener('click', openNameIt);
+function openNameIt() {
+  if (!draft || !draftStreets().length) return;
+  $('crNameInput').value = draft.name || nextRouteNameGuess();
+  $('crAreaInput').value = draft.area || crAreaGuess || lsGet(LS_GLOBAL.lastArea) || '';
+  const g = computeStretches(draft.roads); let tot = 0; for (const n of draftStreets()) tot += g[n] ? g[n].total : 0;
+  $('crNameSummary').textContent = draftStreets().length + ' streets · ' + draft.mains.size + ' mains · ' + fmtLenM(tot) + ' of road';
+  if (!routeLoaded) restoreBootChrome(); else openRouteMenu();
+  showRmPane('rmNamePane');
+}
+$('crNameBack').addEventListener('click', () => { if (!routeLoaded) parkBootChrome(); else closeRouteMenu(); setCreateStage('preview'); });
+$('crSaveBtn').addEventListener('click', saveDraftRoute);
+function saveDraftRoute() {
+  const name = $('crNameInput').value.trim();
+  if (!name) { toast('Give the route a name first', 2600); return; }
+  const area = $('crAreaInput').value.trim();
+  const v = normalizePack({ name, area, mains: [...draft.mains], roads: draft.roads, reference: {} }, { tileNames: [...Object.values(draft.osmNames), ...(draft.tileNames || [])] });
+  if (!v.ok) { toast('Could not save — ' + v.error, 4000); return; }
+  const pack = v.pack; pack.id = uniqueRouteId(name);
+  const rec = loadUserPacks(); rec[pack.id] = pack;
+  if (!lsSet(USERPACKS_KEY, JSON.stringify(rec))) { toast('Storage problem — the route could not be saved', 4000); return; }
+  ROUTE_PACKS.push(pack); // live in the runtime list at once - listed and switchable without a reload
+  try { lsSet(routeKeys(pack.id).pre, JSON.stringify({ at: 0, saved: 0, total: preloadUrlList().length, routeSaved: 0, routeTotal: packTileUrls(pack).size })); } catch (e) {} // F5: the new route starts with an honest preload record - none of its area is downloaded yet; Status offers the (grown) union download
+  if (area) lsSet(LS_GLOBAL.lastArea, area);
+  const wasBoot = !routeLoaded, newId = pack.id;
+  exitCreate();
+  toast('Route saved — its maps are not downloaded yet; get them in Settings → Status → Download', 4600);
+  if (wasBoot) { restoreBootChrome(); if (window.__bootPickRoute) window.__bootPickRoute(newId); }
+  else { openRouteMenu(); showRmPane('rmListPane'); }
+}
+
 (() => {
   const sp = $('splash'); if (!sp) return;
   const t0 = Date.now(); let gone = false;

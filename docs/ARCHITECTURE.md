@@ -111,6 +111,71 @@ read the open route's geometry, so a record belonging to route B is
 never silently dropped for not matching route A's streets. Unknown-route
 backups still fail closed, wholesale.
 
+## Creating routes (Beta 1.118, Step 2 of the route programme)
+
+The Routes menu's "Create new route" opens a hybrid flow (Andrew's
+approved mockups) with two doors landing in one shared preview.
+
+**Pack format (defined once).** A route pack is
+`{name, area, mains: [street names], roads: {street: [segment, ...]},
+reference: {street: [segment, ...]}, tileNames?: [...]}` — the shape of
+a `ROUTE_PACKS` entry in `parts/data.js`; each segment is an array of
+`[lat, lng]` points. `normalizePack` (app4) is the single validator and
+normalizer for every pack that enters the app — draft import, save,
+backup restore, boot merge — fail-closed with named errors, nothing
+half-applied.
+
+**Door 1 — from a photo.** The app takes the photo and holds it in an
+honest waiting state ("Photo received — your draft is being built…",
+with a Web Share affordance where the platform offers one). Reading
+street names off a photo is deliberately NOT an app function: the photo
+is read and the draft built by Muse outside the app, and the draft
+returns as a pack-format JSON file that "Import my draft" validates and
+loads into the preview. A bare roads object (the route-creation
+sandbox's candidate shape) is accepted as a roads-only draft.
+
+**Door 2 — select streets myself.** A search bar queries Nominatim
+(street/address search only — intersections are known not to resolve;
+queries are user-initiated, one per Search tap, no autocomplete). A
+result flies the map there. Tapping a road identifies the street from
+the basemap's roads layer — the tile feature's NAME is the identity,
+never its geometry (display tiles re-segment streets and misplace
+joins, proven in the sandbox). The street's true shape is then fetched
+from the Overpass API (every way carrying the name near the tap) and
+stitched by `chainWays` — the sandbox's greedy endpoint chaining at
+1.5 m tolerance; a run whose joins were all exact keeps its ways as
+segments (the app's own stitcher re-chains them identically), a run with
+a bridged join is stored as its single stitched line, a divided road
+chains into its hairpin, and the run nearest the tap is the street
+tapped. Names are shortened by the app convention (suffix strip;
+ordinal avenues spell out — 5th Avenue is Fifth). Picked streets join
+as SECONDARIES by default, light up on the map in route colours, and
+are listed with MAIN/2ND flip chips and per-street remove.
+
+**Shared preview + name-it.** "Is this correct?" draws the draft on the
+map and lists every street with its length; corrections (flip, remove,
+"+ Add a street" through the same picker) happen here. "Looks right"
+goes to name-it, its own step (name + area with pre-fills, a read-only
+summary), and Save persists the pack.
+
+**Draft isolation.** A draft is session state only. It renders through
+its own GeoJSON source (`crDraft`) computed from the draft's own roads
+via `computeStretches` — the active route's geometry, engine sources
+and storage are never touched, and the marking tap handler stands down
+while `creating` (app2). Leaving mid-draft asks first; "Start over"
+discards behind a confirm. drive150 proves the active route's slot
+byte-identical across create-save-switch-mark and create-discard
+cycles.
+
+**Persistence.** Created packs persist on-device in the global
+`snowroute.v2.userpacks` record (see STORAGE-SCHEMA) and merge into the
+runtime pack list at boot, so they are listed, switchable through the
+1.117 machinery, and covered by the offline manifest union (F5) like
+any pack. A freshly saved route gets an honest preload record (none of
+its area downloaded yet) and the save toast points at Settings →
+Status → Download. Backups carry the definitions (see the backup
+envelope in STORAGE-SCHEMA).
+
 ## GPS and coverage
 
 Fixes pass a validity gate (finite, on-Earth), an out-of-order timestamp
