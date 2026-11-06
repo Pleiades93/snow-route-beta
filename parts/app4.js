@@ -609,7 +609,7 @@ $('stDel').addEventListener('click', async () => {
 });
 // ---- About / What's new ----
 const WHATSNEW = { // the curated in-app notes: plain words, LATEST RELEASE ONLY (Beta 1.114, Andrew: the accumulated list cluttered the About pane). A release REPLACES this entry with its own in the same change - it never accumulates; the full history lives in CHANGELOG.md, not the app
-  v: 'Beta 1.124', items: ["You can now delete a route you created: open Choose a route and tap Delete on it (the built-in route can't be deleted). It asks first, and deleting removes the route and everything saved for it on this phone", "Creating a route now starts with two clear doors — Select from list, for a ready city you just tap, or Search manually, for anywhere else — and after picking a city you can still search for a street by name, the same as before"]
+  v: 'Beta 1.125', items: ["Tidier searching: when you search for a city manually, the matches now arrive as a neat list — the city name on its own line, the province and country small underneath — instead of one bunched-up block", "The blinking typing line now shows in every search bar and text field as you type, like in other apps"]
 };
 function renderAbout() {
   const cur = $('ver').textContent.trim();
@@ -1715,7 +1715,13 @@ async function crRunCitySearch() {
     box.innerHTML = '';
     const places = (Array.isArray(list) ? list : []).filter(crIsPlace);
     for (const it of places) {
-      const b = document.createElement('button'); b.className = 'rmBtn'; b.textContent = it.display_name || '';
+      const b = document.createElement('button'); b.className = 'routeRow'; // Beta 1.125 (Andrew): manual-search results wear the SAME neat row as the city list - name on its own line, the rest of the address small and dim under it; full .rmBtn boxes stacked with no gap read as one bunched wall
+      const dn = it.display_name || '', cut = dn.indexOf(',');
+      const meta = document.createElement('span'); meta.className = 'routeMeta';
+      const nm = document.createElement('span'); nm.className = 'routeName'; nm.textContent = cut > 0 ? dn.slice(0, cut).trim() : dn;
+      meta.appendChild(nm);
+      if (cut > 0 && dn.slice(cut + 1).trim()) { const sub = document.createElement('span'); sub.className = 'routeArea'; sub.textContent = dn.slice(cut + 1).trim(); meta.appendChild(sub); }
+      b.appendChild(meta);
       b.addEventListener('click', () => crPickCity(it));
       box.appendChild(b);
     }

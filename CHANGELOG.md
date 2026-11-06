@@ -1,5 +1,10 @@
 # Changelog
 
+## Beta 1.125 — 2026-11-06
+- Manual city-search results render as the same neat rows as the Select-from-list cities (name line + small dim remainder) — Andrew: the full-address .rmBtn boxes stacked with no gap were bunched and ugly.
+- Typing caret pinned visible app-wide (`caret-color: currentColor` on inputs/textareas) — Andrew: every search bar and field must show the flashing line beside the last letter as he types.
+- Shipped direct to main at Andrew's explicit order ("push without testing") — visual tier; the nightly battery judges it.
+
 ## Beta 1.124 — 2026-11-06
 Two changes from Andrew's same-day calls, both approved from a
 rendered mockup before build. ROUTES HE CREATED CAN NOW BE DELETED:
