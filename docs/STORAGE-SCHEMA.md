@@ -44,6 +44,14 @@ at boot, never half-loaded; its record entry and slot stay untouched.
 One more global rides along: `snowroute.v2.lastarea`, the create flow's
 last-used area (a name-it pre-fill memory, nothing more).
 
+Beta 1.127 (sectors): NO storage change. Sector selections made
+while creating live only in the creation draft (in-memory); the
+saved pack's `roads[name]` simply contains the chosen sectors'
+segment lists — the pack format itself is unchanged (roads =
+segment lists, as since 1.117), so a trimmed route is stored,
+backed up, restored and switched exactly like any other, and no
+migration exists or is needed.
+
 Beta 1.124 (route deletion): deleting a created route removes its
 entry from `snowroute.v2.userpacks` and deletes EVERY key of its
 per-route slot — the full `routeKeys(id)` family (all `ROUTE_FIELDS`
