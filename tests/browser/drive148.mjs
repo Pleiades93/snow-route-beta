@@ -21,8 +21,10 @@ await bootThrough(ev, poll); // boots end at the route menu - click through to a
 // (N) CG-115-02: a drag made while waiting for the first fix must survive that
 // fix (no jumpTo, no clear - the centre button is the way back); (A) CG-115-01:
 // the >45 s stale-watch restart must preserve a suspension (only an explicit
-// user start clears one); (P) CG-115-03: a second pointer's move must never
-// suspend - only the pointer that pressed the canvas counts; (I) CG-115-04 as
+// user start clears one); (P) CG-115-03, revised to the Beta 1.122 contract
+// (Andrew: the press itself suspends): a bare press suspends at once, and a
+// second pointer pressing/moving while the first press is armed changes
+// nothing - no re-arm, no resume, no steal; (I) CG-115-04 as
 // amended by Andrew at the gate: the centre button wears the standard GPS
 // crosshair icon and the Locate tab's face is byte-identical to 1.115.
 const R = { checks: [] };
@@ -191,7 +193,18 @@ const aFresh = await J(`(() => ({ paused: followPaused, wid: watchId }))()`);
 ok('A4 control: an explicit user start DOES clear the suspension (a fresh start follows) | ' + JSON.stringify(aFresh), aFresh.paused === false && aFresh.wid !== null);
 await ev(`(() => { stopGps(); return true; })()`);
 
-// ---- P (Beta 1.116, CG-115-03): only the pointer that pressed the canvas can suspend ----
+// ---- P (Beta 1.116, CG-115-03; contract revised Beta 1.122): the PRESS suspends; a second pointer is inert while a press is armed ----
+// Revision note (1.123 ship): this section originally asserted "a second
+// pointer moving >10 px does NOT suspend", written when suspension needed a
+// >10 px move by the arming pointer. Beta 1.122 (Andrew, from the road)
+// moved suspension onto the press itself, so the section's own first
+// touchStart now suspends before the second pointer exists - the old
+// assertion's premise expired with the contract it graded (it failed
+// deterministically on every 1.122+ tree; 1.122 shipped direct without the
+// battery, so the staleness surfaced at this build's branch CI). The app
+// side never regressed: Andrew's directive IS the press behaviour, and
+// CG-115-03's protection survives as the app-side if(!press) no-re-arm
+// guard, graded below as P1b.
 await ev(`(() => { const f = window.__feed; f.lat = ${base.lat}; f.lng = ${base.lng}; f.n = 0; f.heading = 90; startGps(false); f.on = true; return true; })()`);
 const pReady = await poll120(`(() => { if (!gpsPos || !dispPos || followPaused) return false; const c = map.getCenter(); return Math.abs((c.lng - dispPos[1]) * ${MLNG}) < 25 && Math.abs((c.lat - dispPos[0]) * ${MLAT}) < 25; })()`, 25000);
 const touchEv = async (type, pts) => send('Input.dispatchTouchEvent', { type, touchPoints: pts }, S);
@@ -205,15 +218,18 @@ await ev(`$('gpsBtn').click()`);
 await sleep(300);
 const pResumed = await J(`(() => ({ paused: followPaused }))()`);
 await touchEv('touchStart', [{ id: 1, x: cv.x, y: cv.y }]);
+await sleep(300);
+const p1 = await J(`(() => ({ paused: followPaused, dev: window.__dragEv }))()`);
+ok('P1 a bare PRESS suspends at once, no move needed (the Beta 1.122 contract: the press itself takes the camera) | followPaused ' + p1.paused + ' (resumed first: ' + pResumed.paused + ', dragstart x' + (p1.dev ? p1.dev.start : '?') + ')', pResumed.paused === false && p1.paused === true);
 await touchEv('touchStart', [{ id: 1, x: cv.x, y: cv.y }, { id: 2, x: cv.x + 6, y: cv.y }]);
 await touchEv('touchMove', [{ id: 1, x: cv.x, y: cv.y }, { id: 2, x: cv.x + 70, y: cv.y }]);
 await sleep(300);
-const p1 = await J(`(() => ({ paused: followPaused, dev: window.__dragEv }))()`);
-ok('P1 a second pointer moving >10 px does NOT suspend the follow | followPaused ' + p1.paused + ' (resumed first: ' + pResumed.paused + ', dragstart x' + (p1.dev ? p1.dev.start : '?') + ')', pResumed.paused === false && p1.paused === false);
+const p1b = await J(`(() => ({ paused: followPaused }))()`);
+ok('P1b a second pointer pressing + moving >10 px while the first press is armed changes nothing (CG-115-03: no re-arm, no resume, no steal) | followPaused ' + p1b.paused, p1b.paused === true);
 await touchEv('touchMove', [{ id: 1, x: cv.x - 70, y: cv.y }, { id: 2, x: cv.x + 70, y: cv.y }]);
 await sleep(300);
 const p2 = await J(`(() => ({ paused: followPaused }))()`);
-ok('P2 the arming pointer own drag still suspends | followPaused ' + p2.paused, p2.paused === true);
+ok('P2 the arming pointer own drag holds the suspension its press took | followPaused ' + p2.paused, p2.paused === true);
 await touchEv('touchEnd', [{ id: 1, x: cv.x - 70, y: cv.y }, { id: 2, x: cv.x + 70, y: cv.y }]);
 
 // ---- I (Beta 1.116, CG-115-04 as amended by Andrew at the gate): centre button = standard GPS crosshair; the Locate face is untouched ----
