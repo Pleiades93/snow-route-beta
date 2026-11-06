@@ -295,39 +295,49 @@
    body.creating hides the working chrome. Route colours carry the meaning:
    gold = main, raspberry = secondary. */
 body.creating #dock, body.creating #tabBar, body.creating #hud, body.creating #nightBtn, body.creating #centreBtn, body.creating #selPop, body.creating #chips, body.creating #suggest, body.creating #stale, body.creating #bakNudge, body.creating #mapNote { display: none !important; }
-#createBar { position: fixed; top: calc(10px + env(safe-area-inset-top, 0px)); left: 10px; right: 10px; z-index: 5000; display: none; gap: 8px; align-items: stretch; }
+/* Beta 1.120 (Andrew): the whole create row sits lower by HALF ITS OWN
+   HEIGHT - the row's height is fixed at 50px (the search wrap and the
+   exit button both wear it), so the shift is a fixed 25px, named once
+   here and added to the resting tops of the bar, the results dropdown
+   and the hint alike. */
+:root { --cr-shift: 25px; }
+#createBar { position: fixed; top: calc(10px + var(--cr-shift) + env(safe-area-inset-top, 0px)); left: 10px; right: 10px; z-index: 5000; display: none; gap: 8px; align-items: stretch; }
 #createBar.on { display: flex; }
-#crSearchWrap { flex: 1; display: flex; background: #fff; border-radius: 14px; box-shadow: 0 4px 18px rgba(8,12,40,.28); overflow: hidden; }
-#crSearchInput { flex: 1; min-width: 0; border: none; outline: none; font-size: 17px; padding: 13px 14px; color: #14213d; background: #fff; }
+/* Beta 1.120 (Andrew): the create surfaces wear the app's own theme
+   tokens (--card-solid / --ink / --ink-dim / --hair / --chip - charcoal
+   by night, white by day) instead of the 1.118 hardcoded whites, which
+   stayed bright at night while the rest of the app went dark. */
+#crSearchWrap { flex: 1; display: flex; height: 50px; background: var(--card-solid); border-radius: 14px; box-shadow: 0 4px 18px rgba(8,12,40,.28); overflow: hidden; }
+#crSearchInput { flex: 1; min-width: 0; border: none; outline: none; font-size: 17px; padding: 13px 14px; color: var(--ink); background: transparent; }
 #crSearchBtn { border: none; background: #2b4bf2; color: #fff; font-size: 16px; font-weight: 700; padding: 0 18px; cursor: pointer; }
-#crExit { width: 48px; border: none; border-radius: 14px; background: #fff; box-shadow: 0 4px 18px rgba(8,12,40,.28); font-size: 19px; font-weight: 800; color: #14213d; cursor: pointer; }
-#createResults { position: fixed; top: calc(66px + env(safe-area-inset-top, 0px)); left: 10px; right: 10px; z-index: 5000; background: #fff; border-radius: 14px; box-shadow: 0 8px 26px rgba(8,12,40,.30); overflow: hidden; display: none; }
+#crExit { width: 48px; height: 50px; border: none; border-radius: 14px; background: var(--card-solid); box-shadow: 0 4px 18px rgba(8,12,40,.28); font-size: 19px; font-weight: 800; color: var(--ink); cursor: pointer; }
+#createResults { position: fixed; top: calc(66px + var(--cr-shift) + env(safe-area-inset-top, 0px)); left: 10px; right: 10px; z-index: 5000; background: var(--card-solid); border-radius: 14px; box-shadow: 0 8px 26px rgba(8,12,40,.30); overflow: hidden; display: none; }
 #createResults.on { display: block; }
-.crResult { display: block; width: 100%; text-align: left; border: none; border-bottom: 1px solid #eef0f4; background: #fff; padding: 13px 16px; font-size: 16px; color: #14213d; cursor: pointer; }
+.crResult { display: block; width: 100%; text-align: left; border: none; border-bottom: 1px solid var(--hair); background: transparent; padding: 13px 16px; font-size: 16px; color: var(--ink); cursor: pointer; }
 .crResult:last-child { border-bottom: none; }
-.crResult:active { background: #eef2ff; }
-#createHint { position: fixed; top: calc(66px + env(safe-area-inset-top, 0px)); left: 50%; transform: translateX(-50%); z-index: 4900; background: rgba(20,33,61,.92); color: #fff; font-size: 15px; font-weight: 600; padding: 9px 16px; border-radius: 999px; display: none; white-space: nowrap; }
+.crResult:active { background: var(--chip); }
+#createHint { position: fixed; top: calc(66px + var(--cr-shift) + env(safe-area-inset-top, 0px)); left: 50%; transform: translateX(-50%); z-index: 4900; background: rgba(20,33,61,.92); color: #fff; font-size: 15px; font-weight: 600; padding: 9px 16px; border-radius: 999px; display: none; white-space: nowrap; }
 #createHint.on { display: block; }
-.csheet { position: fixed; left: 0; right: 0; bottom: 0; z-index: 5000; background: #fff; border-radius: 20px 20px 0 0; box-shadow: 0 -6px 30px rgba(8,12,40,.30); padding: 14px 16px calc(14px + env(safe-area-inset-bottom, 0px)); display: none; max-height: 54vh; flex-direction: column; }
+.csheet { position: fixed; left: 0; right: 0; bottom: 0; z-index: 5000; background: var(--card-solid); color: var(--ink); border-radius: 20px 20px 0 0; box-shadow: 0 -6px 30px rgba(8,12,40,.30); padding: 14px 16px calc(14px + env(safe-area-inset-bottom, 0px)); display: none; max-height: 54vh; flex-direction: column; }
 .csheet.on { display: flex; }
-.csheetTitle { font-size: 20px; font-weight: 750; color: #14213d; }
-.csheetSub { font-size: 14px; color: #5a6580; margin-top: 2px; }
-.crCount { font-size: 15px; font-weight: 700; color: #14213d; margin: 8px 0 4px; }
+.csheetTitle { font-size: 20px; font-weight: 750; color: var(--ink); }
+.csheetSub { font-size: 14px; color: var(--ink-dim); margin-top: 2px; }
+.crCount { font-size: 15px; font-weight: 700; color: var(--ink); margin: 8px 0 4px; }
 .crList { overflow-y: auto; -webkit-overflow-scrolling: touch; margin: 4px -4px 8px; padding: 0 4px; }
-.crRow { display: flex; align-items: center; gap: 9px; padding: 9px 2px; border-bottom: 1px solid #eef0f4; }
+.crRow { display: flex; align-items: center; gap: 9px; padding: 9px 2px; border-bottom: 1px solid var(--hair); }
 .crRow:last-child { border-bottom: none; }
 .crDot { width: 11px; height: 11px; border-radius: 50%; flex: none; }
 .crDot.main { background: #ffc233; }
 .crDot.sec { background: #ef476f; }
-.crName { flex: 1; min-width: 0; font-size: 16px; font-weight: 600; color: #14213d; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
-.crLen { font-size: 13px; color: #5a6580; font-weight: 600; }
+.crName { flex: 1; min-width: 0; font-size: 16px; font-weight: 600; color: var(--ink); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.crLen { font-size: 13px; color: var(--ink-dim); font-weight: 600; }
 .crChip { border: none; border-radius: 999px; font-size: 12px; font-weight: 800; letter-spacing: .3px; padding: 6px 10px; cursor: pointer; flex: none; }
 .crChip.main { background: #ffc233; color: #4a3200; }
-.crChip.sec { background: #e8ebf2; color: #5a6580; }
+.crChip.sec { background: var(--chip); color: var(--ink-dim); }
 .crDel { border: none; background: none; color: #e63a2e; font-size: 18px; font-weight: 800; width: 34px; height: 34px; cursor: pointer; flex: none; }
 .crPrimary { appearance: none; -webkit-appearance: none; border: none; background: #2b4bf2; color: #fff; font-size: 17px; font-weight: 700; padding: 15px 18px; border-radius: 14px; width: 100%; cursor: pointer; }
 .crPrimary:disabled { opacity: .45; }
-.crGhost { appearance: none; -webkit-appearance: none; border: 1px solid #d4d9e4; background: #fff; color: #14213d; font-size: 16px; font-weight: 650; padding: 13px 18px; border-radius: 14px; width: 100%; cursor: pointer; }
+.crGhost { appearance: none; -webkit-appearance: none; border: 1px solid var(--hair); background: transparent; color: var(--ink); font-size: 16px; font-weight: 650; padding: 13px 18px; border-radius: 14px; width: 100%; cursor: pointer; }
 .crDanger { appearance: none; -webkit-appearance: none; border: none; background: none; color: #e63a2e; font-size: 15px; font-weight: 650; padding: 8px; cursor: pointer; width: 100%; }
 .crBtns { display: flex; flex-direction: column; gap: 9px; }
 .rmInput { appearance: none; -webkit-appearance: none; width: 100%; box-sizing: border-box; border: 1px solid rgba(255,255,255,.45); background: rgba(255,255,255,.14); color: #fff; font-size: 18px; padding: 14px 16px; border-radius: 14px; outline: none; }
@@ -348,7 +358,7 @@ body.creating #dock, body.creating #tabBar, body.creating #hud, body.creating #n
 <div id="hud">
   <div id="warn">Not saving — storage is full or blocked</div>
   <div class="row">
-    <div class="titleStack"><div class="title">Snow Route Beta</div><div class="ver" id="ver">Beta 1.119</div></div>
+    <div class="titleStack"><div class="title">Snow Route Beta</div><div class="ver" id="ver">Beta 1.120</div></div>
   </div>
   <div id="stats"></div>
 </div>

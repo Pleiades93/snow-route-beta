@@ -45,7 +45,9 @@ const { proc, send, S, ev, consoleLog, sleep, poll } = await launchDrive();
 // the page (whatever the rig's network then does with them) and no
 // refusal is recorded. drive150's sections (a)-(d) stub fetch in-page,
 // which is exactly why the 1.118 defect shipped unseen - this section
-// never stubs.
+// never stubs. Beta 1.120 adds sections (f) the tap wedge + Overpass
+// fallback, (g) search as you type, (h) the POI creation backdrop, and
+// (i) theming / bar position / dropdown dismissal / the ✕.
 const R = { checks: [] };
 const ok = (name, cond) => R.checks.push([name, cond === true]);
 const J = async (expr) => { const raw = await ev(`(() => { try { return JSON.stringify((${expr})); } catch (e) { return JSON.stringify({ __err: String(e && e.message || e) }); } })()`); return typeof raw === 'string' ? JSON.parse(raw) : {}; };
@@ -220,6 +222,8 @@ ok('P1 (pick seam) a tap whose exact pixel holds NO road still picks the street 
   gotPick === true && PK.streets.join() === 'Bordeaux' && Math.abs(PK.total - fixtureLen('Bordeaux Drive')) <= fixtureLen('Bordeaux Drive') * 0.02);
 ok('P2 (pick seam) the farther street inside the same box (Alderson, 15 px, listed first) is NOT picked', !PK.streets.includes('Alderson'));
 await ev(`document.getElementById('crExit').click()`);
+await sleep(300);
+await ev(`document.getElementById('crExit').click()`); // Beta 1.120: the ✕ clears a leftover search text FIRST (section (a) left "borde" in the box) - the second press is the exit this section means
 await sleep(500);
 await ev(`(() => { const y = document.getElementById('crModalYes'); if (y && !document.getElementById('crModal').classList.contains('hidden')) y.click(); return true; })()`);
 await sleep(400);
@@ -344,6 +348,198 @@ await poll(`typeof activeRoute !== 'undefined' && activeRoute && activeRoute.id 
 const P5 = await J(`({ velmar: streetComplete('Velmar'), note: noteTextOf('Velmar') })`);
 ok('D6 5W\'s own state rode the same round trip (Velmar complete, note intact)', P5.velmar === true && P5.note === 'drive150 baseline');
 
+// ---------- (f) the tap wedge + the Overpass fallback (Beta 1.120) ----------
+// Andrew on device (1.119): a tap said "Loading", then nothing, and the
+// picker never accepted another tap. Two layers, both reproduced here:
+// pickStreet's early return on a failed shape fetch skipped the busy-flag
+// release (one refused fetch latched the picker for the session), and the
+// fetch had no patience (the public Overpass instance commonly answers
+// slowly or 429/504; any non-OK was an instant silent null). The stub
+// below makes 'Refused Road' fail on EVERY instance and 'Flaky Road' fail
+// on the primary twice before the fallback answers with Bordeaux's ways.
+// On the 1.119 code the first tap's failure leaves crPickBusy true
+// forever, so F2's release assertion and F3's second-tap completion both
+// fail there by construction (red-verified against the 1.119 page in the
+// build's scratch drive - see beta1/work/create-round2-1120/).
+const installStub2 = `(() => {
+  const FIX = ${JSON.stringify(FIXTURE)};
+  const prev = window.fetch.bind(window);
+  window.__ovpLog = [];
+  window.fetch = (url, opts) => {
+    const u = String(url);
+    if (u.indexOf('overpass-api.de') >= 0 || u.indexOf('overpass.kumi.systems') >= 0) {
+      const body = (opts && opts.body) || '';
+      const m = /name=\\"([^\\"]+)\\"/.exec(decodeURIComponent(body)) || /name="([^"]+)"/.exec(decodeURIComponent(body));
+      const nm = m ? m[1] : '';
+      window.__ovpLog.push((u.indexOf('kumi') >= 0 ? 'kumi' : 'de') + ':' + nm);
+      if (nm === 'Refused Road') return Promise.resolve(new Response('refused by fixture', { status: 503 }));
+      if (nm === 'Flaky Road') {
+        if (u.indexOf('kumi') >= 0) return Promise.resolve(new Response(JSON.stringify({ elements: FIX.overpass['Bordeaux Drive'] }), { status: 200, headers: { 'Content-Type': 'application/json' } }));
+        return Promise.resolve(new Response('busy by fixture', { status: 503 }));
+      }
+      if (u.indexOf('kumi') >= 0) return Promise.resolve(new Response(JSON.stringify({ elements: [] }), { status: 200, headers: { 'Content-Type': 'application/json' } }));
+    }
+    return prev(url, opts);
+  };
+  return true;
+})()`;
+const tapRoad = (name, lat, lng) => `(() => { window.__fixtureRoads = [${JSON.stringify(name)}]; map.fire('click', { lngLat: { lat: ${lat}, lng: ${lng} }, point: { x: 210, y: 320 }, originalEvent: {} }); return true; })()`;
+await ev(installStub); // section (d)'s reloads wiped the in-page stubs - restore the base fixture first
+await ev(installStub2);
+await ev(installFeatureStub);
+await ev(`openRouteMenu()`);
+await ev(`document.getElementById('rmCreate').click()`);
+await ev(`document.getElementById('crDoorManual').click()`);
+await ev(tapRoad('Refused Road', 43.798972, -79.574666));
+await sleep(600);
+const F0 = await J(`({ hint: document.getElementById('createHint').textContent, busy: crPickBusy })`);
+ok('F1 while the shape service is being retried, the hint carries the wait ("Loading Refused…") and the pick is in flight | ' + JSON.stringify(F0),
+  F0.hint.indexOf('Loading Refused') >= 0 && F0.busy === true);
+const fToast = await poll(`document.getElementById('toast').textContent.indexOf('street-shape service') >= 0`, 40000).catch(() => false);
+const F1 = await J(`({ busy: crPickBusy, streets: draft ? Object.keys(draft.roads) : ['<no draft>'], log: (window.__ovpLog || []).filter(x => x.indexOf('Refused Road') >= 0) })`);
+ok('F2 a shape service that never answers (503 on primary, retry and fallback) ends with the honest service message, adds nothing, and RELEASES the picker (crPickBusy false) | ' + JSON.stringify(F1),
+  fToast === true && F1.busy === false && F1.streets.length === 0 && F1.log.length === 3 && F1.log[0].indexOf('de:') === 0 && F1.log[2].indexOf('kumi') === 0);
+await ev(tapRoad('Flaky Road', 43.798972, -79.574666));
+const gotFlaky = await poll(`typeof draft !== 'undefined' && draft && !!draft.roads['Flaky']`, 40000).catch(() => false);
+const F2 = await J(`({ busy: crPickBusy, log: (window.__ovpLog || []).filter(x => x.indexOf('Flaky Road') >= 0) })`);
+ok('F3 after the refused tap, a SECOND tap still completes: Flaky Road is answered by the FALLBACK instance (de, de, kumi) and joins the draft - the picker is not wedged | ' + JSON.stringify(F2),
+  gotFlaky === true && F2.busy === false && F2.log.length === 3 && F2.log[0].indexOf('de:') === 0 && F2.log[1].indexOf('de:') === 0 && F2.log[2].indexOf('kumi') === 0);
+await ev(`document.getElementById('crExit').click()`);
+await sleep(400);
+await ev(`(() => { const y = document.getElementById('crModalYes'); if (y && !document.getElementById('crModal').classList.contains('hidden')) y.click(); return true; })()`);
+await sleep(400);
+const F3 = await J(`({ creating })`);
+ok('F4 the wedge-probe draft discards cleanly and create mode exits', F3.creating === false);
+
+// ---------- (g) search as you type (Beta 1.120) ----------
+// Andrew's ask, superseding the 1.118 button-only design: suggestions
+// while typing. The stub records every Nominatim query and answers
+// 'slowville' after 1500 ms - long after a newer 'borde' search has
+// rendered - so the stale-answer guard (sequence token + abort) is what
+// keeps the slow answer out of the dropdown.
+const installStub3 = `(() => {
+  const prev = window.fetch.bind(window);
+  window.__nomCalls = [];
+  window.fetch = (url, opts) => {
+    const u = String(url);
+    if (u.indexOf('nominatim.openstreetmap.org') >= 0) {
+      const qm = /[?&]q=([^&]+)/.exec(u); const q = qm ? decodeURIComponent(qm[1]) : '';
+      window.__nomCalls.push(q);
+      const slow = q.indexOf('slowville') >= 0;
+      const payload = slow ? [{ display_name: 'Slowville, Far Away', lat: '43.900000', lon: '-79.400000', address: { city: 'Slowville' } }] : ${JSON.stringify(FIXTURE.nominatim)};
+      const body = JSON.stringify(payload);
+      if (slow) return new Promise(res => setTimeout(() => res(new Response(body, { status: 200, headers: { 'Content-Type': 'application/json' } })), 1500));
+      return Promise.resolve(new Response(body, { status: 200, headers: { 'Content-Type': 'application/json' } }));
+    }
+    return prev(url, opts);
+  };
+  return true;
+})()`;
+const typeText = v => `(() => { const i = document.getElementById('crSearchInput'); i.value = ${JSON.stringify(v)}; i.dispatchEvent(new Event('input', { bubbles: true })); return true; })()`;
+await ev(installStub3);
+await ev(`openRouteMenu()`);
+await ev(`document.getElementById('rmCreate').click()`);
+await ev(`document.getElementById('crDoorManual').click()`);
+for (const p of ['b', 'bo', 'bor', 'bord']) { await ev(typeText(p)); await sleep(120); }
+await ev(typeText('borde'));
+const sgRows = await poll(`document.querySelectorAll('#createResults .crResult').length === 1`, 8000).catch(() => false);
+await sleep(700); // any second debounced query would have fired by now
+const SG1 = await J(`({ calls: window.__nomCalls.slice(), rows: document.querySelectorAll('#createResults .crResult').length, txt: (document.querySelector('#createResults .crResult') || {}).textContent || '' })`);
+ok('G1 typing "borde" keystroke by keystroke fires exactly ONE debounced query (for the full text) and renders its row | ' + JSON.stringify(SG1),
+  sgRows === true && SG1.calls.length === 1 && SG1.calls[0] === 'borde' && SG1.rows === 1 && SG1.txt.indexOf('Bordeaux Drive') >= 0);
+await ev(typeText('slowville'));
+await poll(`window.__nomCalls.indexOf('slowville') >= 0`, 8000);
+await ev(typeText('borde'));
+await poll(`document.querySelectorAll('#createResults .crResult').length === 1 && document.querySelector('#createResults .crResult').textContent.indexOf('Bordeaux') >= 0`, 8000);
+await sleep(1800); // the slow 'slowville' answer lands inside this window - and must be dropped
+const SG2 = await J(`({ txt: (document.querySelector('#createResults .crResult') || {}).textContent || '', calls: window.__nomCalls.slice() })`);
+ok('G2 a slow earlier answer arriving after a newer search does NOT overwrite the newer results (stale guard) | ' + JSON.stringify(SG2),
+  SG2.txt.indexOf('Bordeaux') >= 0 && SG2.txt.indexOf('Slowville') < 0 && SG2.calls.join() === 'borde,slowville,borde');
+await ev(typeText('bor'));
+await sleep(120);
+await ev(`document.getElementById('crSearchInput').dispatchEvent(new KeyboardEvent('keydown', { key: 'Enter', bubbles: true }))`);
+await sleep(250); // well inside the 500 ms debounce: only Enter can have queried
+const SG3a = await J(`({ calls: window.__nomCalls.slice() })`);
+await sleep(700); // the cancelled debounce must NOT fire a duplicate
+const SG3 = await J(`({ calls: window.__nomCalls.slice() })`);
+ok('G3 Enter runs the typed query immediately and cancels the pending debounce (no duplicate "bor" query) | ' + JSON.stringify(SG3),
+  SG3a.calls.filter(c => c === 'bor').length === 1 && SG3.calls.filter(c => c === 'bor').length === 1);
+await ev(`document.getElementById('crExit').click()`); // input holds text: this click CLEARS (Beta 1.120) - covered in full in section (i)
+await sleep(200);
+await ev(`document.getElementById('crExit').click()`); // now empty: exits (the draft is empty, so no confirm)
+await sleep(400);
+const SG4 = await J(`({ creating })`);
+ok('G4 the search-probe session exits create mode cleanly', SG4.creating === false);
+
+// ---------- (h) the creation backdrop: POIs only (Beta 1.120) ----------
+// With 5W loaded, entering create used to leave its painted streets and
+// selection covering the picking map. Now the engine's route paint and
+// street-name layers hide, and a POI for EVERY pack in the database
+// (the map's own zoomed-out treatment) gives orientation instead.
+const FX150 = { id: 'fx150', name: 'Fixture Route', area: 'Nowhere', main: [], roads: { 'Fixture Alpha': [[[43.845, -79.575], [43.845, -79.565]]], 'Fixture Beta': [[[43.855, -79.575], [43.855, -79.565]]] }, reference: {} };
+await ev(`(() => { ROUTE_PACKS.push(${JSON.stringify(FX150)}); return true; })()`);
+const engReady = await poll(`!!(window.map && map.getLayer && map.getLayer('t1-surface'))`, 30000).catch(() => false);
+const H0 = await J(`({ surf: map.getLayoutProperty('t1-surface', 'visibility') || 'visible', names: map.getLayoutProperty('streetnamespt1', 'visibility') || 'visible', sel: map.getLayoutProperty('t1-sel', 'visibility') || 'visible', packs: ROUTE_PACKS.map(p => p.name) })`);
+const Dpre = await ev(dump5wSrc);
+await ev(`openRouteMenu()`);
+await ev(`document.getElementById('rmCreate').click()`);
+await ev(`document.getElementById('crDoorManual').click()`);
+await sleep(600);
+const H1 = await J(`({ surf: map.getLayoutProperty('t1-surface', 'visibility') || 'visible', names: map.getLayoutProperty('streetnamespt1', 'visibility') || 'visible', sel: map.getLayoutProperty('t1-sel', 'visibility') || 'visible', rec: (typeof crHiddenLayers !== 'undefined' && crHiddenLayers) ? crHiddenLayers.length : -1, poi: map.getSource('crPoi') ? map.getSource('crPoi').serialize().data.features.map(f => f.properties.name) : null, poiLayers: ['crPoiRing', 'crPoiDot', 'crPoiTxt'].map(id => !!map.getLayer(id)), draftSrc: !!map.getSource('crDraft') })`);
+ok('H1 entering create hides the loaded route\'s paint, selection and street names (engine layers visibility none) - engine stack ready in this session: ' + engReady + ' (in the local rig the basemap style never readies, the documented drive149 limit, so no engine layers exist to hide and the recorded set is empty; CI readies the stack and exercises the hide for real; the hide/restore logic itself is proven against a faithful fake layer registry in the build evidence) | ' + JSON.stringify(H1),
+  (engReady === true && H1.surf === 'none' && H1.names === 'none' && H1.sel === 'none' && H1.rec === 28) || (engReady !== true && H1.rec === 0));
+ok('H2 while creating, the backdrop shows a POI for EVERY pack in the database (5W, the created route, the fixture) and the draft overlay still exists | ' + JSON.stringify(H1.poi),
+  !!H1.poi && H1.poi.length === H0.packs.length && H1.poi.indexOf('Route 5W') >= 0 && H1.poi.indexOf('Fixture Route') >= 0 && H1.poiLayers.every(Boolean) && H1.draftSrc === true);
+await ev(`document.getElementById('crExit').click()`);
+await sleep(500);
+const H2 = await J(`({ surf: map.getLayoutProperty('t1-surface', 'visibility') || 'visible', names: map.getLayoutProperty('streetnamespt1', 'visibility') || 'visible', sel: map.getLayoutProperty('t1-sel', 'visibility') || 'visible', poi: !!map.getSource('crPoi'), creating })`);
+ok('H3 exiting create restores the route paint exactly as it was and removes the POI backdrop (engine stack ready in this session: ' + engReady + ') | ' + JSON.stringify(H2),
+  H2.creating === false && H2.poi === false && (engReady !== true || (H2.surf === H0.surf && H2.names === H0.names && H2.sel === H0.sel)));
+const Dpost = await ev(dump5wSrc);
+ok('H4 the backdrop cycle never touched the 5W slot (byte-identical)', Dpost === Dpre);
+
+// ---------- (i) theming, bar position, dropdown dismissal, the ✕ (Beta 1.120) ----------
+await ev(`openRouteMenu()`);
+await ev(`document.getElementById('rmCreate').click()`);
+await ev(`document.getElementById('crDoorManual').click()`);
+await sleep(300);
+const barRect = `(() => { const r = document.getElementById('createBar').getBoundingClientRect(); return { top: r.top, height: r.height }; })()`;
+const IBday = await J(barRect);
+await ev(`document.body.classList.add('night')`);
+const IBnight = await J(barRect);
+const themeProbe = `(() => { const cs = (sel) => { const el = document.querySelector(sel); return el ? getComputedStyle(el).backgroundColor : ''; }; const probe = document.createElement('div'); probe.style.background = 'var(--card-solid)'; document.body.appendChild(probe); const token = getComputedStyle(probe).backgroundColor; probe.remove(); return { wrap: cs('#crSearchWrap'), sheet: cs('#createSheet'), res: cs('#createResults'), row: cs('.crResult'), token }; })()`;
+const ITnight = await J(themeProbe);
+await ev(`document.body.classList.remove('night')`);
+const ITday = await J(themeProbe);
+ok('I1 the search row sits lower by half its own height (fixed 50px row; top = 10 + 25 in the rig, no safe-area inset) in BOTH themes, nothing clipped | day ' + JSON.stringify(IBday) + ' night ' + JSON.stringify(IBnight),
+  Math.abs(IBday.height - 50) <= 2 && Math.abs((IBday.top - 10) - IBday.height / 2) <= 3 && Math.abs(IBnight.height - 50) <= 2 && Math.abs((IBnight.top - 10) - IBnight.height / 2) <= 3);
+ok('I2 the create surfaces wear the app\'s theme token: search bar + "Your route" sheet backgrounds EQUAL --card-solid by day and by night, and the two modes differ | day ' + JSON.stringify(ITday) + ' night ' + JSON.stringify(ITnight),
+  ITday.wrap === ITday.token && ITday.sheet === ITday.token && ITnight.wrap === ITnight.token && ITnight.sheet === ITnight.token && ITday.wrap !== ITnight.wrap);
+ok('I3 the results dropdown is themed too (background equals --card-solid in both modes - never the 1.119 hardcoded white at night) and its rows sit transparent over it | night res ' + ITnight.res,
+  ITday.res === ITday.token && ITnight.res === ITnight.token && ITnight.res !== 'rgb(255, 255, 255)' && ITnight.row === 'rgba(0, 0, 0, 0)');
+await ev(typeText('borde'));
+await poll(`document.getElementById('createResults').classList.contains('on') && document.querySelectorAll('#createResults .crResult').length === 1`, 8000);
+const I4a = await J(`({ on: document.getElementById('createResults').classList.contains('on') })`);
+await ev(`(() => { const c = document.querySelector('#map canvas') || document.getElementById('map'); c.dispatchEvent(new PointerEvent('pointerdown', { bubbles: true })); return true; })()`);
+await sleep(250);
+const I4 = await J(`({ on: document.getElementById('createResults').classList.contains('on'), creating })`);
+ok('I4 tapping away (a pointerdown on the map) dismisses the results dropdown; create mode is untouched', I4a.on === true && I4.on === false && I4.creating === true);
+await ev(tapStreet('Bordeaux Drive'));
+const gotI = await poll(`typeof draft !== 'undefined' && draft && !!draft.roads['Bordeaux']`, 20000).catch(() => false);
+ok('I5 after dismissing the dropdown, tapping a road still picks it (the dismissal never eats the pick)', gotI === true);
+await ev(typeText('borde'));
+await poll(`document.getElementById('createResults').classList.contains('on') && document.querySelectorAll('#createResults .crResult').length === 1`, 8000);
+await ev(`document.getElementById('crExit').click()`);
+const I6 = await J(`({ val: document.getElementById('crSearchInput').value, on: document.getElementById('createResults').classList.contains('on'), creating })`);
+ok('I6 the ✕ beside the search first CLEARS the text and closes the results - it does not exit creating | ' + JSON.stringify(I6),
+  I6.val === '' && I6.on === false && I6.creating === true);
+await ev(`document.getElementById('crExit').click()`);
+await sleep(400);
+await ev(`(() => { const y = document.getElementById('crModalYes'); if (y && !document.getElementById('crModal').classList.contains('hidden')) y.click(); return true; })()`);
+await sleep(400);
+const I7 = await J(`({ creating })`);
+ok('I7 pressed again with an empty search, the ✕ exits creating (the discard confirm still guards the draft)', I7.creating === false);
+
 // ---------- (e) the CSP seam: the app's real calls under the real stamped policy (Beta 1.119) ----------
 // A throwaway copy of the current source, stamped by the repo's own tool
 // (the single source of the policy, exactly as drive116 stamps), is booted
@@ -373,6 +569,7 @@ const polE = await ev(`(function(){ const m = document.querySelector('meta[http-
 const csTokens = (() => { const d = (polE || '').split(';').map(s => s.trim()).find(s => s === 'connect-src' || s.indexOf('connect-src ') === 0); return d ? d.split(/\s+/) : []; })();
 ok('E1 (CSP seam) the stamped page\'s connect-src names https://nominatim.openstreetmap.org (the create-flow search origin)', csTokens.includes('https://nominatim.openstreetmap.org'));
 ok('E2 (CSP seam) the stamped page\'s connect-src names https://overpass-api.de (the create-flow geometry origin)', csTokens.includes('https://overpass-api.de'));
+ok('E2b (CSP seam) the stamped page\'s connect-src names https://overpass.kumi.systems (the create-flow geometry FALLBACK, Beta 1.120)', csTokens.includes('https://overpass.kumi.systems'));
 await ev(`window.__cspEv = []; document.addEventListener('securitypolicyviolation', e => { window.__cspEv.push(String(e.blockedURI || '') + ' | ' + String(e.violatedDirective || '')); }); true`);
 await ev(`document.getElementById('crSearchInput').value = 'Bordeaux Drive'; crSearch(); true`);
 await sleep(5000);

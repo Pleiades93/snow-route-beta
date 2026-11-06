@@ -609,7 +609,7 @@ $('stDel').addEventListener('click', async () => {
 });
 // ---- About / What's new ----
 const WHATSNEW = { // the curated in-app notes: plain words, LATEST RELEASE ONLY (Beta 1.114, Andrew: the accumulated list cluttered the About pane). A release REPLACES this entry with its own in the same change - it never accumulates; the full history lives in CHANGELOG.md, not the app
-  v: 'Beta 1.119', items: ["Fixed: creating a route by searching and tapping streets works again — the app's security settings were blocking its own search, and taps now find the road under your finger"]
+  v: 'Beta 1.120', items: ["Creating a route: tapping a street now loads more patiently — if the street-shape service is slow, the app keeps showing \"Loading\", retries, tries a second service, and tells you honestly if it can't answer, instead of getting stuck", "Search now suggests streets as you type", "The create screens follow day and night, the search bar sits a little lower, tapping away closes the search results, and while you create, the map shows just a place marker for each route instead of the loaded route's streets"]
 };
 function renderAbout() {
   const cur = $('ver').textContent.trim();
@@ -1051,7 +1051,61 @@ function renderDraft() { // the DRAFT renders through its own GeoJSON source, co
   if (draft) { const g = computeStretches(draft.roads); for (const n of draftStreets()) { const L = g[n] && g[n].line; if (L && L.length > 1) feats.push({ type: 'Feature', properties: { name: n, main: draft.mains.has(n) ? 1 : 0 }, geometry: { type: 'LineString', coordinates: L.map(p => [p[1], p[0]]) } }); } }
   src.setData({ type: 'FeatureCollection', features: feats });
 }
-onMapReady(() => map.on('styledata', () => { if (creating) renderDraft(); })); // a basemap swap mid-create wipes custom layers - redraw the draft
+onMapReady(() => map.on('styledata', () => { if (creating) { renderDraft(); crSetBackdrop(true); } })); // a basemap swap mid-create wipes custom layers - redraw the draft and re-hide the backdrop
+onMapReady(() => { if (creating) crSetBackdrop(true); }); // creation entered before the map existed (boot mode): the backdrop lands when the map does
+
+// ---- creation backdrop (Beta 1.120, Andrew's design): while creating, the
+// loaded route's painted streets and selection would cover the very map he
+// is picking from. They hide entirely, and in their place the map shows a
+// POINT OF INTEREST for every route in the database - the same marker the
+// map itself shows when zoomed out (white ring, raspberry dot, the route's
+// name) at each pack's centre (the engine's ROUTEPOI is exactly that
+// centre for the active pack; a pack's `spot` is its per-STREET label
+// anchors, not the route POI). Orientation with zero clutter. The draft's
+// own overlay (crDraft) is untouched, and exitCreate restores the exact
+// visibility every hidden layer had before. ----
+const CR_ROUTE_LAYERS = ['t1-casing', 't1-casingb', 't1-surface', 't1-band', 't1-edge', 't1-sel', 't1-selband', 't1-sele', 'sel-core-s', 'sel-core-b', 'hit', 'routepoi-ring', 'routepoi-dot', 'routepoi-txt']
+  .concat([1, 2, 3, 4].map(t => 'streetnamespt' + t), [1, 2, 3, 4, 5].flatMap(i => ['sel-glow' + i + '-s', 'sel-glow' + i + '-b']));
+let crHiddenLayers = null; // [[id, visibilityBefore], ...] recorded on the first hide; null = backdrop off
+const CR_POI_SRC = 'crPoi';
+function crPoiFeatures() {
+  return ROUTE_PACKS.map(p => { const bb = computeRouteBox(p.roads); if (!bb) return null; return { type: 'Feature', properties: { name: p.name || '' }, geometry: { type: 'Point', coordinates: [(bb.w + bb.e) / 2, (bb.s + bb.n) / 2] } }; }).filter(Boolean);
+}
+function crPoiFont() { // the basemap's own Noto stack, read the way pickFontFromStyle reads it - a guessed stack renders no text
+  try {
+    const syms = (map.getStyle().layers || []).filter(l => l.type === 'symbol' && l.layout && l.layout['text-font']);
+    const pick = syms.find(l => /noto/i.test(l.layout['text-font'].join(' '))) || syms[0];
+    if (pick) return pick.layout['text-font'];
+  } catch (e) {}
+  return ['Noto Sans Regular'];
+}
+function ensureCrPoiLayers() {
+  if (!map || typeof map.addSource !== 'function') return;
+  try {
+    const data = { type: 'FeatureCollection', features: crPoiFeatures() };
+    if (!map.getSource(CR_POI_SRC)) map.addSource(CR_POI_SRC, { type: 'geojson', data });
+    else map.getSource(CR_POI_SRC).setData(data);
+    const night = isNight();
+    if (!map.getLayer('crPoiRing')) map.addLayer({ id: 'crPoiRing', type: 'circle', source: CR_POI_SRC, paint: { 'circle-radius': 9, 'circle-color': '#ffffff', 'circle-stroke-color': 'rgba(10,14,34,.25)', 'circle-stroke-width': 1 } });
+    if (!map.getLayer('crPoiDot')) map.addLayer({ id: 'crPoiDot', type: 'circle', source: CR_POI_SRC, paint: { 'circle-radius': 6, 'circle-color': '#ef476f' } });
+    if (!map.getLayer('crPoiTxt')) map.addLayer({ id: 'crPoiTxt', type: 'symbol', source: CR_POI_SRC, layout: { 'text-field': ['get', 'name'], 'text-font': crPoiFont(), 'text-size': 11, 'text-anchor': 'left', 'text-offset': [1.1, 0], 'text-allow-overlap': true }, paint: { 'text-color': night ? '#e8e8e8' : '#333333', 'text-halo-color': night ? 'rgba(0,0,0,.8)' : 'rgba(255,255,255,.9)', 'text-halo-width': 1.6 } });
+  } catch (e) { /* the style may still be loading - the styledata hook re-runs this while creating */ }
+}
+function crSetBackdrop(on) {
+  if (!map || typeof map.setLayoutProperty !== 'function') return;
+  if (on) {
+    if (!crHiddenLayers) {
+      crHiddenLayers = [];
+      for (const id of CR_ROUTE_LAYERS) { try { if (map.getLayer(id)) crHiddenLayers.push([id, map.getLayoutProperty(id, 'visibility') || 'visible']); } catch (e) {} }
+    }
+    for (const pair of crHiddenLayers) { try { map.setLayoutProperty(pair[0], 'visibility', 'none'); } catch (e) {} }
+    ensureCrPoiLayers();
+  } else {
+    if (crHiddenLayers) { for (const pair of crHiddenLayers) { try { if (map.getLayer(pair[0])) map.setLayoutProperty(pair[0], 'visibility', pair[1]); } catch (e) {} } crHiddenLayers = null; }
+    for (const id of ['crPoiRing', 'crPoiDot', 'crPoiTxt']) { try { if (map.getLayer(id)) map.removeLayer(id); } catch (e) {} }
+    try { if (map.getSource(CR_POI_SRC)) map.removeSource(CR_POI_SRC); } catch (e) {}
+  }
+}
 function crRowEl(n, g) {
   const row = document.createElement('div'); row.className = 'crRow';
   const main = draft.mains.has(n);
@@ -1102,12 +1156,16 @@ function enterCreate(stage) {
   followPaused = true; // the camera belongs to the picking now; GPS is device state and is not stopped - follow resumes from the Locate tab afterwards
   try { deselect(); } catch (e) {} closeSheets();
   if (routeLoaded) closeRouteMenu(); else parkBootChrome();
+  crSetBackdrop(true); // Beta 1.120: the loaded route's paint steps aside for the picking (POIs only) - see crSetBackdrop
   setCreateStage(stage);
 }
 function exitCreate() {
   creating = false; draft = null; crStage = 'pick'; crReturnToPreview = false; crAreaGuess = '';
+  if (crSearchTimer) { clearTimeout(crSearchTimer); crSearchTimer = null; }
+  crSearchSeq++; if (crSearchCtl) { try { crSearchCtl.abort(); } catch (e) {} crSearchCtl = null; } // no in-flight suggestion may land after the flow has closed
   document.body.classList.remove('creating');
   for (const id of ['createBar', 'createSheet', 'previewSheet', 'createResults', 'createHint']) $(id).classList.remove('on');
+  crSetBackdrop(false); // Beta 1.120: the loaded route's paint returns exactly as it was
   renderDraft(); // draft is null: the overlay clears, the active route was never touched
 }
 function openDoors() { if (!routeLoaded) { restoreBootChrome(); } else openRouteMenu(); showRmPane('rmCreatePane'); }
@@ -1117,7 +1175,16 @@ function fitDraft() {
   const bb = computeRouteBox(draft.roads); if (!bb) return;
   try { map.fitBounds([[bb.w, bb.s], [bb.e, bb.n]], { padding: 56, duration: 800 }); } catch (e) {}
 }
-$('crExit').addEventListener('click', () => askDiscard(() => { const wasBoot = !routeLoaded; exitCreate(); if (wasBoot) openDoors(); }));
+$('crExit').addEventListener('click', () => { // Beta 1.120: the ✕ beside the search first CLEARS the search (text + open results) when there is anything to clear - that is what a ✕ beside a search bar means; pressed with an empty search it exits creating, as before
+  const box = $('createResults');
+  if (box.classList.contains('on') || $('crSearchInput').value) {
+    box.classList.remove('on'); $('crSearchInput').value = '';
+    if (crSearchTimer) { clearTimeout(crSearchTimer); crSearchTimer = null; }
+    crSearchSeq++; if (crSearchCtl) { try { crSearchCtl.abort(); } catch (e) {} }
+    return;
+  }
+  askDiscard(() => { const wasBoot = !routeLoaded; exitCreate(); if (wasBoot) openDoors(); });
+});
 $('pvStartOverBtn').addEventListener('click', () => askDiscard(() => { exitCreate(); openDoors(); }));
 
 // ---- Door 1: photo -> waiting state -> draft import ----
@@ -1163,18 +1230,54 @@ function importDraft(text) { // fail closed, named errors, nothing half-applied 
 $('crDoorManual').addEventListener('click', () => { draft = newDraft(); crReturnToPreview = false; enterCreate('pick'); });
 $('crSearchBtn').addEventListener('click', crSearch);
 $('crSearchInput').addEventListener('keydown', e => { if (e.key === 'Enter') crSearch(); });
-async function crSearch() { // user-initiated, one query per tap - no autocomplete (Nominatim's usage policy: modest volume; creation happens at home)
+// Beta 1.120 (Andrew): search AS YOU TYPE. 1.118/1.119 searched only on
+// the Search button - his call then; on the phone he asked for
+// suggestions while typing, and this supersedes it. The volume stays
+// honest: a keystroke burst becomes ONE query (500 ms debounce, 3+
+// characters), a newer query aborts and supersedes the one in flight
+// (sequence token + AbortController, so a slow earlier answer can never
+// overwrite newer results), and the Search button / Enter still run the
+// typed query immediately. Results are biased toward the visible map
+// (viewbox, bounded=0 - a bias, never a restriction).
+let crSearchTimer = null, crSearchSeq = 0, crSearchCtl = null;
+$('crSearchInput').addEventListener('input', () => {
+  if (crSearchTimer) { clearTimeout(crSearchTimer); crSearchTimer = null; }
+  $('crSearchBtn').disabled = false;
+  const q = $('crSearchInput').value.trim();
+  if (q.length < 3) { crSearchSeq++; if (crSearchCtl) { try { crSearchCtl.abort(); } catch (e) {} } $('createResults').classList.remove('on'); return; }
+  crSearchTimer = setTimeout(() => { crSearchTimer = null; crRunSearch(true); }, 500);
+});
+function crSearch() { // the button / Enter: cancel any pending debounce and run the typed query NOW
+  if (crSearchTimer) { clearTimeout(crSearchTimer); crSearchTimer = null; }
+  crRunSearch(false);
+}
+async function crRunSearch(fromTyping) {
   const q = $('crSearchInput').value.trim(); if (!q) return;
-  $('crSearchBtn').disabled = true;
+  const seq = ++crSearchSeq;
+  if (crSearchCtl) { try { crSearchCtl.abort(); } catch (e) {} }
+  const ctl = (typeof AbortController !== 'undefined') ? new AbortController() : null; crSearchCtl = ctl;
+  if (!fromTyping) $('crSearchBtn').disabled = true;
   try {
-    const r = await fetch('https://nominatim.openstreetmap.org/search?format=jsonv2&addressdetails=1&limit=5&q=' + encodeURIComponent(q), { headers: { 'Accept': 'application/json' } });
+    let url = 'https://nominatim.openstreetmap.org/search?format=jsonv2&addressdetails=1&limit=5&q=' + encodeURIComponent(q);
+    try { if (map) { const b = map.getBounds(); url += '&viewbox=' + [b.getWest(), b.getNorth(), b.getEast(), b.getSouth()].map(v => +v.toFixed(5)).join(',') + '&bounded=0'; } } catch (e) {}
+    const r = await fetch(url, { headers: { 'Accept': 'application/json' }, signal: ctl ? ctl.signal : undefined });
     if (!r.ok) throw new Error('search HTTP ' + r.status);
     const list = await r.json();
+    if (seq !== crSearchSeq) return; // superseded while in flight - a newer query owns the dropdown
     renderCrResults(Array.isArray(list) ? list : []);
-    if (!Array.isArray(list) || !list.length) toast('No places matched that search', 3000);
-  } catch (e) { toast('Search needs an internet connection — try again', 3200); }
-  $('crSearchBtn').disabled = false;
+    if (!fromTyping && (!Array.isArray(list) || !list.length)) toast('No places matched that search', 3000);
+  } catch (e) {
+    if (seq === crSearchSeq && !(e && e.name === 'AbortError') && !fromTyping) toast('Search needs an internet connection — try again', 3200);
+  }
+  if (!fromTyping && seq === crSearchSeq) $('crSearchBtn').disabled = false;
 }
+document.addEventListener('pointerdown', (e) => { // Beta 1.120 (Andrew): tapping anywhere outside the results dropdown dismisses it - map taps included (the pick still runs: this only closes the list, in the capture phase, before the map's own click)
+  if (!creating) return;
+  const box = $('createResults');
+  if (!box.classList.contains('on')) return;
+  if (e.target && (box.contains(e.target) || $('createBar').contains(e.target))) return;
+  box.classList.remove('on');
+}, true);
 function renderCrResults(list) {
   const box = $('createResults'); box.innerHTML = '';
   for (const it of list) {
@@ -1226,12 +1329,29 @@ function chainWays(ways) { // the sandbox's stitch: greedy endpoint chaining at 
   }
   return runs;
 }
-async function fetchStreetGeometry(osmName, lngLat) { // the street's TRUE shape from OpenStreetMap (Overpass): every way carrying the name near the tap, stitched; the run nearest the tap is the street he tapped
+const OVERPASS_URLS = ['https://overpass-api.de/api/interpreter', 'https://overpass.kumi.systems/api/interpreter']; // primary + fallback (both named in the stamped CSP's connect-src)
+async function overpassQuery(ql) { // one query, up to three chances: the primary public Overpass instance commonly answers slowly or 429/504 under load (Beta 1.120 - Andrew's tap sat on "Loading" and then nothing) - try it, pause, try it again, then ask the fallback instance before admitting failure
+  const body = 'data=' + encodeURIComponent(ql);
+  const order = [OVERPASS_URLS[0], OVERPASS_URLS[0], OVERPASS_URLS[1]];
+  for (let i = 0; i < order.length; i++) {
+    if (i) await new Promise(r => setTimeout(r, 1500));
+    let ctl = null, to = null;
+    try {
+      if (typeof AbortController !== 'undefined') { ctl = new AbortController(); to = setTimeout(() => { try { ctl.abort(); } catch (e) {} }, 40000); }
+      const r = await fetch(order[i], { method: 'POST', headers: { 'Content-Type': 'application/x-www-form-urlencoded' }, body, signal: ctl ? ctl.signal : undefined });
+      if (to) clearTimeout(to);
+      if (r.ok) return r;
+    } catch (e) { if (to) clearTimeout(to); }
+  }
+  return null;
+}
+async function fetchStreetGeometry(osmName, lngLat) { // the street's TRUE shape from OpenStreetMap (Overpass): every way carrying the name near the tap, stitched; the run nearest the tap is the street he tapped. Beta 1.120: the answer is HONEST about failure - { segs } on success, { error: 'unreachable' } when no instance answered, { error: 'noshape' } when the service answered but holds no line for the name here (1.118/1.119 returned null for both, and pickStreet's early return on null latched the picker shut - see pickStreet)
   const s = (lngLat.lat - 0.05).toFixed(6), n = (lngLat.lat + 0.05).toFixed(6), w = (lngLat.lng - 0.065).toFixed(6), e = (lngLat.lng + 0.065).toFixed(6);
   const ql = '[out:json][timeout:30];way["name="' + osmName.replace(/(["\\])/g, '\\$1') + '"](' + s + ',' + w + ',' + n + ',' + e + ');out geom;';
-  const r = await fetch('https://overpass-api.de/api/interpreter', { method: 'POST', headers: { 'Content-Type': 'application/x-www-form-urlencoded' }, body: 'data=' + encodeURIComponent(ql) });
-  if (!r.ok) return null;
-  const j = await r.json();
+  const r = await overpassQuery(ql);
+  if (!r) return { error: 'unreachable' };
+  let j = null;
+  try { j = await r.json(); } catch (e) { return { error: 'unreachable' }; }
   const ways = [];
   for (const el of (j && j.elements) || []) {
     if (el.type !== 'way' || !Array.isArray(el.geometry) || el.geometry.length < 2) continue;
@@ -1239,27 +1359,37 @@ async function fetchStreetGeometry(osmName, lngLat) { // the street's TRUE shape
     for (const g of el.geometry) { const p = [Math.round(g.lat * 1e7) / 1e7, Math.round(g.lon * 1e7) / 1e7]; if (!pts.length || distM(pts[pts.length - 1], p) > 0.1) pts.push(p); }
     if (pts.length > 1) ways.push(pts);
   }
-  if (!ways.length) return null;
+  if (!ways.length) return { error: 'noshape' };
   const runs = chainWays(ways);
   let best = null, bestD = Infinity;
   for (const run of runs) for (const p of run.line) { const d = distM(p, [lngLat.lat, lngLat.lng]); if (d < bestD) { bestD = d; best = run; } }
-  if (!best) return null;
-  return best.exact ? best.segments.slice().sort((a, b) => crLineLen(b) - crLineLen(a)) : [best.line];
+  if (!best) return { error: 'noshape' };
+  return { segs: best.exact ? best.segments.slice().sort((a, b) => crLineLen(b) - crLineLen(a)) : [best.line] };
 }
 async function pickStreet(osmName, lngLat) {
   const short = shortStreetName(osmName);
   if (draft.roads[short] || Object.values(draft.osmNames).includes(osmName)) { toast(short + ' is already in your route', 2400); return; }
   if (crPickBusy) return; crPickBusy = true;
-  toast('Loading ' + short + '…', 1600);
+  const hint = $('createHint');
+  hint.textContent = 'Loading ' + short + '…'; hint.classList.add('on'); // Beta 1.120: the hint carries the wait for as long as it lasts (the 1.6s toast expired while a slow service was still thinking, so the tap looked dead)
   try {
-    const segs = await fetchStreetGeometry(osmName, lngLat);
-    if (!segs) { toast('Could not load the shape of ' + short + ' — check your connection and tap it again', 3600); return; }
-    draft.roads[short] = segs; draft.osmNames[short] = osmName; // a tapped street joins as a SECONDARY (fork 3) - flip it to MAIN in the list if it is one
-    renderDraft(); renderCrLists();
-    $('createHint').textContent = 'Added ' + short + ' — tap another road, or Done';
-    toast('Added ' + short, 1800);
-  } catch (e) { toast('Could not load the shape of ' + short + ' — check your connection and tap it again', 3600); }
-  crPickBusy = false;
+    const got = await fetchStreetGeometry(osmName, lngLat);
+    if (got && got.segs) {
+      draft.roads[short] = got.segs; draft.osmNames[short] = osmName; // a tapped street joins as a SECONDARY (fork 3) - flip it to MAIN in the list if it is one
+      renderDraft(); renderCrLists();
+      hint.textContent = 'Added ' + short + ' — tap another road, or Done';
+      toast('Added ' + short, 1800);
+    } else if (got && got.error === 'noshape') {
+      hint.textContent = 'Tap a road on the map to add it';
+      toast('No shape found for ' + short + ' here — the map data holds no line for it', 3600);
+    } else {
+      hint.textContent = 'Tap a road on the map to add it';
+      toast('The street-shape service didn’t answer — give it a moment and tap ' + short + ' again', 3800);
+    }
+  } catch (e) {
+    hint.textContent = 'Tap a road on the map to add it';
+    toast('The street-shape service didn’t answer — give it a moment and tap ' + short + ' again', 3800);
+  } finally { crPickBusy = false; } // Beta 1.120: EVERY exit path releases the picker - 1.119's early return on a null shape skipped this line and one refused fetch wedged tapping for the whole session (Andrew, on device)
 }
 function crFeatDistM(lngLat, geom) { // metres from the tap to the nearest point of a tile feature's line(s), in distM's flat-earth metres. CHOICE ONLY (see crMapTap): the number judges which named street a tap meant - it is never stored and never shapes the route
   if (!geom) return Infinity;
