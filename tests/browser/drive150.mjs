@@ -235,7 +235,7 @@ ok('A8 Done lands in the shared preview ("Is this correct?") with both streets a
 await ev(`document.getElementById('pvSaveBtn').click()`);
 await poll(`document.getElementById('rmNamePane').classList.contains('on')`, 10000);
 const A9 = await J(`({ name: document.getElementById('crNameInput').value, area: document.getElementById('crAreaInput').value, summary: document.getElementById('crNameSummary').textContent })`);
-ok('A9 name-it is its own step: area pre-filled from the search (Vaughan), summary reads 2 streets · 1 mains | ' + JSON.stringify(A9),
+ok('A9 name-it is its own step (kept, Andrew - the preview\'s "Save route" advances here): area pre-filled from the search (Vaughan), summary reads 2 streets · 1 mains | ' + JSON.stringify(A9),
   A9.area === 'Vaughan' && A9.summary.indexOf('2 streets') >= 0 && A9.summary.indexOf('1 mains') >= 0);
 await ev(`document.getElementById('crNameInput').value = 'Route 6W'`);
 await ev(`document.getElementById('crSaveBtn').click()`);
@@ -317,7 +317,7 @@ const B1 = await J(`({ rows: document.querySelectorAll('#pvList .crRow').length 
 ok('B1 a one-street draft reaches the preview', B1.rows === 1);
 await ev(`document.getElementById('pvAddBtn').click()`);
 const B2 = await J(`({ stage: crStage, bar: document.getElementById('createBar').classList.contains('on'), doneLbl: document.getElementById('crDoneBtn').textContent })`);
-ok('B2 "+ Add a street" reopens the picker in add mode (Done reads "back to check")', B2.stage === 'pick' && B2.bar && B2.doneLbl.indexOf('back to check') >= 0);
+ok('B2 "+ Add a street" reopens the picker (Beta 1.128: the panel button reads "Done" in every state - the "back to check" rewrite is gone)', B2.stage === 'pick' && B2.bar && B2.doneLbl === 'Done');
 await ev(tapStreet('Alderson Avenue'));
 await poll(`typeof draft !== 'undefined' && draft && !!draft.roads['Alderson']`, 20000);
 await ev(`document.getElementById('crDoneBtn').click()`);
