@@ -406,6 +406,35 @@ try {
   ok('E22 a healthy migrated pack takes the fast path on the next migration call: skipped, zero cache matches (Beta 1.96, SR-195-03) | heal ' + JSON.stringify(heal) + ' ' + JSON.stringify(e22), heal.ok === true && e22.ok === true && e22.skipped === true && e22.matches === 0);
 } catch (e) { ok('E22 pack migration fast path (Beta 1.96, SR-195-03) | threw ' + String(e).slice(0, 150), false); }
 
+// E23 (Beta 1.143, DA-07): the boot pack migration must capture its manifest
+// AFTER created packs register. Through 1.142 the migration fired during
+// app4's evaluation - before create.js ran mergeUserPacks - so its manifest
+// was the shipped packs only (the 897 fixture set): a created route's
+// downloaded tiles were pruned at the next cold boot and the flag certified
+// the smaller set. Here a created pack is seeded into the userpacks record,
+// its union-only tiles are placed in the pack cache (as its own download
+// left them), the flag is removed (the stale/absent state), and the page
+// cold-boots: the created tiles must survive and the flag must certify the
+// UNION. The wait polls the flag's terminal value - the migration sets it
+// only at the end of its pass (E20's terminal-signal rule).
+try {
+  const SEED23 = { name: 'E23 Test Route', area: 'E23', roads: { 'E23 Test Street': [[[43.83, -79.44], [43.831, -79.439]]] }, main: [], tileNames: [], box: { w: -79.47, s: 43.815, e: -79.41, n: 43.845 } };
+  await ev2(`(() => { localStorage.setItem('snowroute.v2.userpacks', ${JSON.stringify(JSON.stringify({ 'e23-test': SEED23 }))}); return true; })()`);
+  await send('Page.reload', { ignoreCache: false }, PAGE_S); // the registration boot: both trees register the seeded pack here
+  await poll(`typeof migratePack === 'function' && typeof preloadUrlList === 'function'`, 90000);
+  await sleep(1500);
+  const info23 = JSON.parse(await ev2(`(async () => { const list = preloadUrlList(); const hrefs = list.map(u => { try { return new URL(u).href; } catch (e) { return u; } }); const fix = new Set(${JSON.stringify([...FIX_SET])}); const extras = hrefs.filter(h => !fix.has(h)); return JSON.stringify({ total: list.length, extras, fp: packMigFingerprint(list), registered: ROUTE_PACKS.some(p => p.id === 'e23-test') }); })()`));
+  if (!info23.registered || !(info23.extras.length >= 1)) throw new Error('seeded pack did not register a union: ' + JSON.stringify(info23));
+  await ev2(`(async () => { const oc = await caches.open('snowroute-offline-v1'); for (const u of ${JSON.stringify(info23.extras)}) { if (!(await oc.match(u))) await oc.put(u, new Response('x')); } localStorage.removeItem('snowroute.v5.packmig'); return true; })()`);
+  await send('Page.reload', { ignoreCache: false }, PAGE_S); // THE measured cold boot
+  const settled23 = await poll(`localStorage.getItem('snowroute.v5.packmig') === ${JSON.stringify(info23.fp)} || localStorage.getItem('snowroute.v5.packmig') === ${JSON.stringify(FIX_FP)}`, 300000);
+  await sleep(1000);
+  const e23 = JSON.parse(await ev2(`(async () => { const oc = await caches.open('snowroute-offline-v1'); const ks = new Set((await oc.keys()).map(r => r.url)); const extras = ${JSON.stringify(info23.extras)}; return JSON.stringify({ flag: localStorage.getItem('snowroute.v5.packmig'), extrasSurviving: extras.filter(u => ks.has(u)).length }); })()`));
+  ok('E23 boot migration certifies the UNION with created packs registered: created tiles survive, flag = union fingerprint (Beta 1.143, DA-07) | settled ' + settled23 + ' union ' + JSON.stringify(info23) + ' after ' + JSON.stringify(e23),
+    settled23 === true && e23.flag === info23.fp && e23.extrasSurviving === info23.extras.length);
+  await ev2(`(async () => { localStorage.removeItem('snowroute.v2.userpacks'); const r = await migratePack(); return JSON.stringify({ ok: !!(r && r.ok) }); })()`); // cleanup: with the record gone the explicit pass re-certifies the 897 state E22 left
+} catch (e) { ok('E23 boot migration union certification (Beta 1.143, DA-07) | threw ' + String(e).slice(0, 150), false); }
+
 ok('E13 no page exceptions across the whole run', consoleLog.filter(c => String(c).startsWith('EXCEPTION')).length === 0);
 const fails = R.checks.filter(c => !c[1]);
 for (const c of R.checks) console.log((c[1] ? 'PASS ' : 'FAIL ') + c[0]);
