@@ -1,5 +1,12 @@
 # Changelog
 
+## Beta 1.134 — 2026-11-07
+Programme build 3 — candidate B from the 2026-11-06 maintainability scan (adjudicated; re-scan confirmed on 1.129): `parts/app4.js` split at the create banner. Feature tier: branch + battery on touched surfaces + the standing Codex verify gate before merge.
+
+- `parts/app4.js` (2,581 lines) split at the Beta 1.118 create banner (its line 968). Everything before the banner — backup/restore, preload, update check, Settings, service worker + boot, route loading — stays in `app4.js`; everything from the banner to the end of the old file (created-route packs + the one validator, city preparation, picking, sectors, the panel, the shared confirm — and the boot-tail IIFE that physically follows the create section) is the new `parts/create.js`. `scripts/assemble.py`'s PARTS list is the single place the new part joins the assembly, immediately after app4.js.
+- No behaviour change, proven by bytes: with only this release's version strings and What's New entry reverted, the assembled page hashes identically to Beta 1.133's (sha256 9444456b0810…), and the shipped index.html matches under the same normalization (the CSP script hash is a function of those same strings). The split changes which FILE a line lives in, never the shipped script's bytes or order.
+- Costs paid deliberately (the scan named them up front): 62 fix-checks registry probes re-pointed to the file their subject code now lives in — 61 by measured content location, and the Phase-3 `saveQuiet` absence probe retargeted at the assembled source, the one target that still covers both halves; `tests/browser/selftest-packfields.mjs` extracts `normalizePack` from create.js now (the only selftest whose subject moved — the round-112, SW-contract and trail-segments extractions all read platform code that stayed). docs/ARCHITECTURE.md's part table gains the create.js row; the `normalizePack` pointer moves with it.
+
 ## Beta 1.133 — 2026-11-07
 Programme build 2 — candidate C from the 2026-11-06 maintainability scan (adjudicated; re-scan confirmed on 1.129): the release bookkeeping is generated, not hand-kept — plus, as this build's first job, the repair of the drive premises Beta 1.132's renames expired. Feature tier: branch + battery on touched surfaces + the standing Codex verify gate before merge.
 
