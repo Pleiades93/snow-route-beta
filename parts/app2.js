@@ -643,14 +643,21 @@ makeSheetDraggable($('pacePanel'));
 // badge is a TAB-mode-only signal: at boot nothing is loaded yet, and in
 // 1.76/1.77 the badge render landing mid-exit read as a flicker on the pick
 // (Andrew, live catch). wireRouteRows binds the rows to the mode's chooser.
-function routeRowEl(p) { // Beta 1.94 (audit F-04): rows are built as DOM nodes with textContent, never by interpolating pack data into innerHTML - a pack's name/area are data, and the day route creation lands, a typed name must not be able to become markup. The row shape (classes, badge rule) is unchanged; wireRouteRows' container delegation reads data-route as before.
+function routeRowShell(tag, name, sub, opts) { // Beta 1.136 (programme F): the ONE route-row builder - a .routeRow element carrying the .routeMeta column (a .routeName line, plus a .routeArea line unless sub is null) and, when opts.chevron, the .routeChev. Through 1.135 the row shape was hand-built at three sites (route rows below, the create flow's city rows and its manual-search rows); they all build through this now, so the shape can only drift in one place. Text is assigned via textContent throughout (the Beta 1.94 F-04 rule: pack/city names are data, never markup). opts.cls adds a class (the city list's loading row); callers hang their own extras (dataset, badge, Delete, listeners) on the returned row.
+  opts = opts || {};
+  const b = document.createElement(tag || 'button'); b.className = 'routeRow' + (opts.cls ? ' ' + opts.cls : '');
+  const meta = document.createElement('span'); meta.className = 'routeMeta';
+  const nm = document.createElement('span'); nm.className = 'routeName'; nm.textContent = name;
+  meta.appendChild(nm);
+  if (sub != null) { const ar = document.createElement('span'); ar.className = 'routeArea'; ar.textContent = sub; meta.appendChild(ar); }
+  b.appendChild(meta);
+  if (opts.chevron) { const chev = document.createElement('span'); chev.className = 'routeChev'; chev.textContent = '›'; b.appendChild(chev); }
+  return b;
+}
+function routeRowEl(p) { // Beta 1.94 (audit F-04): rows are built as DOM nodes with textContent, never by interpolating pack data into innerHTML - a pack's name/area are data, and the day route creation lands, a typed name must not be able to become markup. The row shape (classes, badge rule) is unchanged; wireRouteRows' container delegation reads data-route as before. Beta 1.136: the row itself comes from routeRowShell above; this function adds the route-specific extras (the tab badge, a created route's Delete).
   const tab = $('routeMenu').classList.contains('tab');
   const user = !SHIPPED_PACK_IDS.has(p.id); // Beta 1.124: a route Andrew created (not a shipped pack) can be deleted - its row is a DIV, not a <button>, because the Delete control is a real button and buttons cannot nest; the row's choose behaviour is unchanged (the container delegation reads data-route on any .routeRow)
-  const b = document.createElement(user ? 'div' : 'button'); b.className = 'routeRow'; b.dataset.route = p.id;
-  const meta = document.createElement('span'); meta.className = 'routeMeta';
-  const nm = document.createElement('span'); nm.className = 'routeName'; nm.textContent = p.name;
-  const ar = document.createElement('span'); ar.className = 'routeArea'; ar.textContent = p.area + ' · ' + Object.keys(p.roads).length + ' streets';
-  meta.append(nm, ar); b.appendChild(meta);
+  const b = routeRowShell(user ? 'div' : 'button', p.name, p.area + ' · ' + Object.keys(p.roads).length + ' streets'); b.dataset.route = p.id;
   if (tab && activeRoute && activeRoute.id === p.id) { const bd = document.createElement('span'); bd.className = 'routeBadge'; bd.textContent = 'Currently loaded'; b.appendChild(bd); }
   if (user) { const del = document.createElement('button'); del.className = 'routeDel'; del.type = 'button'; del.textContent = 'Delete'; del.addEventListener('click', e => { e.stopPropagation(); askDeleteRoute(p.id); }); b.appendChild(del); } // the Delete tap stops here - it must never read as a tap on the row itself (which would load the route it is about to delete)
   return b;

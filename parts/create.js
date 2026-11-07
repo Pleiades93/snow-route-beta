@@ -25,29 +25,29 @@ function normalizePack(raw, opts) { // -> { ok: true, pack } | { ok: false, erro
   const bad = m => ({ ok: false, error: m });
   if (!raw || typeof raw !== 'object' || Array.isArray(raw)) return bad('it is not a route pack');
   const name = typeof raw.name === 'string' ? raw.name.trim() : '';
-  if (name.length > 60) return bad('the route name is too long');
+  if (name.length > PACK_NAME_MAX) return bad('the route name is too long');
   if (!opts.draft && !name) return bad('the route has no name');
-  const area = typeof raw.area === 'string' ? raw.area.trim().slice(0, 60) : '';
+  const area = typeof raw.area === 'string' ? raw.area.trim().slice(0, PACK_AREA_MAX) : '';
   let totalPts = 0;
   const cleanRoads = (obj, label) => {
     if (!obj || typeof obj !== 'object' || Array.isArray(obj)) return { error: 'the ' + label + ' are missing or the wrong shape' };
     const out = {}; const names = Object.keys(obj);
-    if (names.length > 300) return { error: 'too many streets in the ' + label };
+    if (names.length > PACK_STREETS_MAX) return { error: 'too many streets in the ' + label };
     for (const nm0 of names) {
       const nm = nm0.trim();
-      if (!nm || nm.length > 60) return { error: 'a street name in the ' + label + ' is missing or too long' };
+      if (!nm || nm.length > PACK_STREET_NAME_MAX) return { error: 'a street name in the ' + label + ' is missing or too long' };
       if (out[nm]) return { error: 'the street "' + nm + '" appears twice' };
       const segsIn = obj[nm0];
-      if (!Array.isArray(segsIn) || !segsIn.length || segsIn.length > 80) return { error: 'the street "' + nm + '" has no usable shape' };
+      if (!Array.isArray(segsIn) || !segsIn.length || segsIn.length > PACK_SEGS_MAX) return { error: 'the street "' + nm + '" has no usable shape' };
       const segs = [];
       for (const segIn of segsIn) {
-        if (!Array.isArray(segIn) || segIn.length < 2 || segIn.length > 4000) return { error: 'the street "' + nm + '" has a bad segment' };
+        if (!Array.isArray(segIn) || segIn.length < 2 || segIn.length > PACK_SEG_PTS_MAX) return { error: 'the street "' + nm + '" has a bad segment' };
         const seg = [];
         for (const pt of segIn) {
           if (!Array.isArray(pt) || pt.length < 2 || !isFinite(pt[0]) || !isFinite(pt[1]) || Math.abs(pt[0]) > 90 || Math.abs(pt[1]) > 180) return { error: 'the street "' + nm + '" has a bad map point' };
           const p = [Math.round(pt[0] * 1e7) / 1e7, Math.round(pt[1] * 1e7) / 1e7];
           if (!seg.length || seg[seg.length - 1][0] !== p[0] || seg[seg.length - 1][1] !== p[1]) seg.push(p);
-          if (++totalPts > 150000) return { error: 'the route is too big' };
+          if (++totalPts > PACK_POINTS_MAX) return { error: 'the route is too big' };
         }
         if (seg.length > 1) segs.push(seg);
       }
@@ -67,8 +67,8 @@ function normalizePack(raw, opts) { // -> { ok: true, pack } | { ok: false, erro
     for (const m of mainsIn) if (typeof m === 'string' && rc.roads[m] && !mains.includes(m)) mains.push(m);
   }
   const tileSet = new Set(Object.keys(rc.roads));
-  if (Array.isArray(raw.tileNames)) for (const t of raw.tileNames) if (typeof t === 'string' && t && t.length <= 80 && tileSet.size < 400) tileSet.add(t);
-  if (opts.tileNames) for (const t of opts.tileNames) if (typeof t === 'string' && t && t.length <= 80 && tileSet.size < 400) tileSet.add(t);
+  if (Array.isArray(raw.tileNames)) for (const t of raw.tileNames) if (typeof t === 'string' && t && t.length <= PACK_TILENAME_MAX && tileSet.size < PACK_TILENAMES_MAX) tileSet.add(t);
+  if (opts.tileNames) for (const t of opts.tileNames) if (typeof t === 'string' && t && t.length <= PACK_TILENAME_MAX && tileSet.size < PACK_TILENAMES_MAX) tileSet.add(t);
   let box = null;
   if (raw.box && isFinite(raw.box.w) && isFinite(raw.box.s) && isFinite(raw.box.e) && isFinite(raw.box.n) && raw.box.w < raw.box.e && raw.box.s < raw.box.n) box = { w: raw.box.w, s: raw.box.s, e: raw.box.e, n: raw.box.n };
   else { const cb = computeRouteBox({ ...rc.roads, ...reference }); if (cb) box = { w: Math.max(-180, cb.w - 0.03), s: Math.max(-90, cb.s - 0.025), e: Math.min(180, cb.e + 0.03), n: Math.min(90, cb.n + 0.025) }; }
@@ -102,6 +102,7 @@ let draft = null; // { roads, mains: Set, osmNames: {short: full}, tileNames: [.
 function newDraft() { return { roads: {}, mains: new Set(), osmNames: {}, tileNames: [], name: '', area: '', sectors: {}, parts: {} }; }
 let crSectorStreet = null; // Beta 1.127: the street whose sectors are being trimmed (sector mode), or null
 let crSectorSnapshot = undefined; // Beta 1.129: the street's sector pick as it stood when sector mode was ENTERED (null = the whole road; an array = the trim then in force) - the sector bar's Cancel restores exactly this. undefined = no sector session in flight
+function crSectorReset() { crSectorStreet = null; crSectorSnapshot = undefined; } // Beta 1.136 (programme F): a sector session's teardown in ONE place - through 1.135 the pair (street cleared, Cancel snapshot dropped) was written out at six sites (street removal, sector close, stage change, creation start, creation exit, draft start-over); every one of them now calls this, so a seventh field in the session state would have exactly one home to join
 let crPanelCollapsed = false; // Beta 1.127: the picked-roads panel's tucked-away state (the slim strip shows instead)
 function draftStreets() { return draft ? Object.keys(draft.roads) : []; }
 
@@ -661,7 +662,7 @@ function crRemoveStreet(short) { // Beta 1.127: the ONE removal path - the panel
   if (draft.sectors) delete draft.sectors[short];
   if (draft.parts) delete draft.parts[short];
   delete crPending[short];
-  if (crSectorStreet === short) { crSectorStreet = null; crSectorSnapshot = undefined; }
+  if (crSectorStreet === short) crSectorReset();
   renderDraft(); renderCrLists(); crRenderHint();
 }
 // ---- sectors (Beta 1.127, Andrew's approved mockups in beta1/work/create-sectors-mockups/):
@@ -765,7 +766,7 @@ function crOpenSectors(short) { // opens a picked street's trimming - TWO doors 
   else syncCrPanel();
   renderDraft(); crRenderHint();
 }
-function crCloseSectors() { if (!crSectorStreet) return; crSectorStreet = null; crSectorSnapshot = undefined; const sheet = $('createSheet'); if (sheet && sheet.classList.contains('on')) crMorphTo(crWantedFace()); else syncCrPanel(); crRenderHint(); }
+function crCloseSectors() { if (!crSectorStreet) return; crSectorReset(); const sheet = $('createSheet'); if (sheet && sheet.classList.contains('on')) crMorphTo(crWantedFace()); else syncCrPanel(); crRenderHint(); }
 function crCancelSectors() { // Beta 1.129 (Andrew: "I still need a way to cancel selections while I'm selecting something"): the deliberate back-out of a sector session - the street's pick returns EXACTLY as it was when sector mode was entered (the whole road, or the trim then in force), every face repaints from the restored state, and sector mode closes back to the panel. Distinct from un-picking every sector by toggles, which still removes the street - that is a selection, this is an abandonment of the session's edits
   const s = crSectorStreet; if (!s || !draft) return;
   if (crSectorSnapshot) { draft.sectors = draft.sectors || {}; draft.sectors[s] = crSectorSnapshot.slice(); }
@@ -803,22 +804,22 @@ function renderSectorBar() {
 // never display:none, never teleported.
 let crMorph = null; // { from, to } while the surface morphs between faces, else null
 let crFaceNow = 'panel'; // the face the surface currently rests as (a morph's origin; crMorph.to is its destination)
-function crFaceEl(face) { return face === 'panel' ? $('crPanel') : face === 'strip' ? $('crStrip') : $('crSectorBar'); }
+const CR_FACES = { panel: { el: 'crPanel', cls: null }, strip: { el: 'crStrip', cls: 'crG-strip' }, bar: { el: 'crSectorBar', cls: 'crG-bar' } }; // Beta 1.136 (programme F): the sheet's faces in ONE table - element id + geometry class per face. Through 1.135 the face list was written out at five sites (the element lookup, the rest-state toggles + display lines, the morph cleanup loop, the morph's two class flips); every one reads this table now, so a fourth face joins in exactly one place
+function crFaceEl(face) { return $(CR_FACES[face].el); }
+function crFaceClasses(sheet, face) { for (const f of Object.keys(CR_FACES)) { const cls = CR_FACES[f].cls; if (cls) sheet.classList.toggle(cls, f === face); } } // the sheet wears the named face's geometry: its class on, every other face's class off (the panel's geometry is the absence of both classes)
 function crWantedFace() { // the face the current state asks for: the sector bar while trimming; the strip whenever the panel is tucked away (Beta 1.128: at ANY pick count, zero included - an empty draft retracts too, where 1.127's strip demanded a non-empty draft and collapse at zero sprang down and bounced back); else the panel
   if (crSectorStreet && draft && draft.roads[crSectorStreet]) return 'bar';
   if (crPanelCollapsed) return 'strip';
   return 'panel';
 }
 function syncCrPanel() { // the REST state: the surface wears the wanted face's geometry class and exactly that face's content shows. Animated switches run through crMorphTo and land here; renders and stage changes call this directly. While a morph is in flight this no-ops - the morph's finish lands the rest state, so a mid-flight re-render can never tear the surface
-  const sheet = $('createSheet'), panel = $('crPanel'), strip = $('crStrip'), bar = $('crSectorBar'); if (!sheet || !panel || !strip || !bar) return;
+  const sheet = $('createSheet'); if (!sheet) return;
+  const els = {}; for (const f of Object.keys(CR_FACES)) { els[f] = crFaceEl(f); if (!els[f]) return; }
   if (crMorph) return;
   const want = crWantedFace();
   crFaceNow = want;
-  sheet.classList.toggle('crG-strip', want === 'strip');
-  sheet.classList.toggle('crG-bar', want === 'bar');
-  panel.style.display = want === 'panel' ? '' : 'none';
-  strip.style.display = want === 'strip' ? '' : 'none';
-  bar.style.display = want === 'bar' ? '' : 'none';
+  crFaceClasses(sheet, want);
+  for (const f of Object.keys(CR_FACES)) els[f].style.display = f === want ? '' : 'none';
   if (want === 'bar') renderSectorBar();
 }
 function crGeoOf(sheet) { // the surface's border-box geometry as plain numbers - content height, the three insets, the four corner radii - read from computed style, so calc()/env() are already resolved to px by the engine
@@ -829,7 +830,7 @@ function crGeoOf(sheet) { // the surface's border-box geometry as plain numbers 
 }
 function crMorphCleanup() { // the surface returns to class-driven rest: every inline geometry/position the morph set is cleared, so the rest state the eye lands on is exactly the CSS geometry of the destination face
   const sheet = $('createSheet'); if (sheet) { sheet.style.height = ''; sheet.style.overflow = ''; sheet.style.marginLeft = ''; sheet.style.marginRight = ''; sheet.style.marginBottom = ''; sheet.style.borderRadius = ''; sheet.style.transform = ''; }
-  for (const f of ['panel', 'strip', 'bar']) { const el = crFaceEl(f); if (!el) continue; el.style.position = ''; el.style.top = ''; el.style.left = ''; el.style.right = ''; el.style.bottom = ''; el.style.opacity = ''; }
+  for (const f of Object.keys(CR_FACES)) { const el = crFaceEl(f); if (!el) continue; el.style.position = ''; el.style.top = ''; el.style.left = ''; el.style.right = ''; el.style.bottom = ''; el.style.opacity = ''; }
   crMorph = null;
 }
 function crSettleMorph() { if (!crMorph) return; cancelSheetSpring($('createSheet')); crMorphCleanup(); syncCrPanel(); } // land an in-flight morph NOW (a grab on the panel head, or a new face decision superseding it)
@@ -843,9 +844,9 @@ function crMorphTo(to, opts) { // THE face change: one surface, its geometry spr
   if (!fromEl || !toEl || fromEl.style.display === 'none') { syncCrPanel(); return; }
   const G0 = crGeoOf(sheet); // where the surface rests now
   fromEl.style.display = 'none'; toEl.style.display = ''; // measure the destination: its content in flow, its geometry class on
-  sheet.classList.toggle('crG-strip', to === 'strip'); sheet.classList.toggle('crG-bar', to === 'bar');
+  crFaceClasses(sheet, to);
   const G1 = crGeoOf(sheet);
-  sheet.classList.toggle('crG-strip', from === 'strip'); sheet.classList.toggle('crG-bar', from === 'bar');
+  crFaceClasses(sheet, from);
   const mb0 = opts.dy ? -opts.dy : G0.mb; // the finger left the surface dy px below its rest - the morph's bottom edge starts there, not at the rest position
   if (!G0.h || !G1.h || (Math.abs(G1.h - G0.h) < 2 && Math.abs(G1.ml - G0.ml) < 1 && Math.abs(G1.mb - mb0) < 1)) { syncCrPanel(); return; } // nothing to travel (or nothing measurable): land the rest state directly
   for (const el of [fromEl, toEl]) { el.style.display = ''; el.style.position = 'absolute'; el.style.top = '0px'; el.style.left = '0px'; el.style.right = '0px'; el.style.bottom = '0px'; } // both contents live inside the one surface for the motion
@@ -927,11 +928,7 @@ function crEnterPickFromCity() { // the city is chosen: land in the pick stage, 
 function crRenderCityChoices() {
   const boxEl = $('crCityList'); if (!boxEl) return;
   boxEl.innerHTML = '';
-  const loading = document.createElement('div'); loading.className = 'routeRow crLoadingRow'; // Beta 1.130: while the catalogue is genuinely in flight, the pane shows a ROW in the city rows' own styling (the shape the list itself takes) - the wait reads as the list arriving, not a bare note floating on an empty pane (the second, cosmetic half of Andrew's "loading screen" stutter; the wait itself is attacked by crWarmCityLibrary)
-  const lmeta = document.createElement('span'); lmeta.className = 'routeMeta';
-  const lnm = document.createElement('span'); lnm.className = 'routeName'; lnm.textContent = 'Loading cities…';
-  const lsub = document.createElement('span'); lsub.className = 'routeArea'; lsub.textContent = 'Getting the city library';
-  lmeta.append(lnm, lsub); loading.appendChild(lmeta); boxEl.appendChild(loading);
+  boxEl.appendChild(routeRowShell('div', 'Loading cities…', 'Getting the city library', { cls: 'crLoadingRow' })); // Beta 1.130: while the catalogue is genuinely in flight, the pane shows a ROW in the city rows' own styling (the shape the list itself takes) - the wait reads as the list arriving, not a bare note floating on an empty pane (the second, cosmetic half of Andrew's "loading screen" stutter; the wait itself is attacked by crWarmCityLibrary)
   crPackIndexLoad().then(entries => {
     if (!boxEl.isConnected) return;
     boxEl.innerHTML = '';
@@ -940,14 +937,7 @@ function crRenderCityChoices() {
     const sorted = entries.slice().sort((a, b) => (((b.name || '').toLowerCase() === last) ? 1 : 0) - (((a.name || '').toLowerCase() === last) ? 1 : 0)); // the last-used city rides first when the library holds it (a convenience, never a requirement - the full list is always there)
     for (const e of sorted) {
       if (!e || !e.name || !e.slug || !Array.isArray(e.bbox) || e.bbox.length !== 4) continue;
-      const b = document.createElement('button'); b.className = 'routeRow';
-      const meta = document.createElement('span'); meta.className = 'routeMeta';
-      const nm = document.createElement('span'); nm.className = 'routeName'; nm.textContent = e.name;
-      const sub = document.createElement('span'); sub.className = 'routeArea';
-      sub.textContent = (typeof e.streets === 'number' && isFinite(e.streets) ? e.streets.toLocaleString('en-US') + ' streets · ' : '') + 'ready to load' + (String(e.name).toLowerCase() === last ? ' · last used' : '');
-      meta.append(nm, sub);
-      const chev = document.createElement('span'); chev.className = 'routeChev'; chev.textContent = '›';
-      b.append(meta, chev);
+      const b = routeRowShell('button', e.name, (typeof e.streets === 'number' && isFinite(e.streets) ? e.streets.toLocaleString('en-US') + ' streets · ' : '') + 'ready to load' + (String(e.name).toLowerCase() === last ? ' · last used' : ''), { chevron: true });
       b.addEventListener('click', () => crPackPickCity(e));
       boxEl.appendChild(b);
     }
@@ -983,13 +973,8 @@ async function crRunCitySearch() {
     box.innerHTML = '';
     const places = (Array.isArray(list) ? list : []).filter(crIsPlace);
     for (const it of places) {
-      const b = document.createElement('button'); b.className = 'routeRow'; // Beta 1.125 (Andrew): manual-search results wear the SAME neat row as the city list - name on its own line, the rest of the address small and dim under it; full .rmBtn boxes stacked with no gap read as one bunched wall
       const dn = it.display_name || '', cut = dn.indexOf(',');
-      const meta = document.createElement('span'); meta.className = 'routeMeta';
-      const nm = document.createElement('span'); nm.className = 'routeName'; nm.textContent = cut > 0 ? dn.slice(0, cut).trim() : dn;
-      meta.appendChild(nm);
-      if (cut > 0 && dn.slice(cut + 1).trim()) { const sub = document.createElement('span'); sub.className = 'routeArea'; sub.textContent = dn.slice(cut + 1).trim(); meta.appendChild(sub); }
-      b.appendChild(meta);
+      const b = routeRowShell('button', cut > 0 ? dn.slice(0, cut).trim() : dn, (cut > 0 && dn.slice(cut + 1).trim()) ? dn.slice(cut + 1).trim() : null); // Beta 1.125 (Andrew): manual-search results wear the SAME neat row as the city list - name on its own line, the rest of the address small and dim under it; full .rmBtn boxes stacked with no gap read as one bunched wall
       b.addEventListener('click', () => crPickCity(it));
       box.appendChild(b);
     }
@@ -1175,7 +1160,7 @@ $('crModal').addEventListener('click', (e) => { if (crConfirmOneBtn && e.target 
 function parkBootChrome() { const sp = $('splash'); if (sp) sp.style.visibility = 'hidden'; $('routeMenu').classList.remove('show'); crBootParked = true; }
 function restoreBootChrome() { if (!crBootParked) return; crBootParked = false; const sp = $('splash'); if (sp) sp.style.visibility = ''; $('routeMenu').classList.add('show'); }
 function setCreateStage(stage) {
-  if (stage !== 'pick') { crSectorStreet = null; crSectorSnapshot = undefined; } // Beta 1.127: sector mode belongs to the pick stage - the preview never inherits a half-trimmed street's bar (Beta 1.129: its Cancel snapshot dies with it)
+  if (stage !== 'pick') crSectorReset(); // Beta 1.127: sector mode belongs to the pick stage - the preview never inherits a half-trimmed street's bar (Beta 1.129: its Cancel snapshot dies with it)
   crStage = stage;
   $('createBar').classList.toggle('on', stage === 'pick');
   $('createSheet').classList.toggle('on', stage === 'pick');
@@ -1189,7 +1174,7 @@ function setCreateStage(stage) {
 function enterCreate(stage) {
   if (!draft) draft = newDraft();
   creating = true;
-  crSectorStreet = null; crSectorSnapshot = undefined; crPanelCollapsed = false; crSettleMorph(); // Beta 1.127: every creation starts un-trimmed with the panel up (Beta 1.129: any surface morph a previous creation left in flight lands first)
+  crSectorReset(); crPanelCollapsed = false; crSettleMorph(); // Beta 1.127: every creation starts un-trimmed with the panel up (Beta 1.129: any surface morph a previous creation left in flight lands first)
   crSession++; // a fresh creation session: async completions born in any earlier session are obsolete from here (CG-PF-05)
   document.body.classList.add('creating');
   followPaused = true; // the camera belongs to the picking now; GPS is device state and is not stopped - follow resumes from the Locate tab afterwards
@@ -1199,7 +1184,7 @@ function enterCreate(stage) {
   setCreateStage(stage);
 }
 function exitCreate() {
-  creating = false; draft = null; crStage = 'pick'; crAreaGuess = ''; crSectorStreet = null; crSectorSnapshot = undefined; crPanelCollapsed = false; // Beta 1.127: the panel + sector session state dies with the creation
+  creating = false; draft = null; crStage = 'pick'; crAreaGuess = ''; crSectorReset(); crPanelCollapsed = false; // Beta 1.127: the panel + sector session state dies with the creation
   crSession++; crCovGen++; // every async completion born in this session is obsolete the moment the flow closes - it must not land in a later draft, hint or busy state (CG-PF-05)
   if (crPrep) { clearInterval(crPrep.ticker); crAbortOp(crPrep.op); crPrep = null; } // and the downloads themselves stop (CG-PF-10)
   if (crGrid) { crGridStop('exit'); crGrid = null; } // the grid's downloads stop too; its committed cells live on in the on-device city cache, by design
@@ -1544,7 +1529,7 @@ $('crClearAll').addEventListener('click', () => { // Andrew's addition (2026-11-
   const n = draft ? draftStreets().length : 0; if (!n) return;
   crConfirm('Clear all ' + n + (n === 1 ? ' road?' : ' roads?'), 'Every road you picked will be taken off this route. The city stays loaded.', () => {
     draft.roads = {}; draft.mains.clear(); draft.osmNames = {}; draft.sectors = {}; draft.parts = {};
-    crSectorStreet = null; crSectorSnapshot = undefined;
+    crSectorReset();
     renderDraft(); renderCrLists(); crRenderHint();
   }, { yes: 'Clear all', no: 'Cancel', danger: true });
 });

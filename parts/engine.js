@@ -599,22 +599,27 @@ function junctionPairs() {
 // point) or, for edges, whose ends pair at a junction (bridge = the corner
 // point). Any same-colour pairing at a junction renders as one shape, so
 // merges simply run to a fixpoint, exact joins preferred over hops.
-function mergeStrands(slices, pairs) {
-  const rev = sl => ({ pts: [...sl.pts].reverse(), key: sl.key, mem: sl.mem, e0: sl.e1, e1: sl.e0 });
-  const pathBadNear = (pts, J) => {
-    for (let s2 = 0; s2 + 1 < pts.length; s2++) {
-      if (H.ptSegM(J, pts[s2], pts[s2 + 1]) < 1.5) return true;
-      for (const n2 of H.names) {
-        const st = GEO[n2].stitched;
-        for (let si = 0; si + 1 < st.length; si++) {
-          if (H.ptSegM(J, st[si], st[si + 1]) >= 13 || !segCross(pts[s2], pts[s2 + 1], st[si], st[si + 1])) continue;
-          const X = lineHit(pts[s2], pts[s2 + 1], st[si], st[si + 1]);
-          if (!X || H.jDistM(X, J) > 6) return true;
-        }
+// Beta 1.136 (programme F): the bridge veto in ONE copy. Through 1.135 the identical
+// function was defined privately inside both mergeStrands and bridgeStragglers;
+// it lives at this level now and both passes call the same one, so the veto rule
+// (a candidate path is bad when it passes within 1.5 m of the junction point, or
+// crosses any street's line away from that junction) can never drift between them.
+const pathBadNear = (pts, J) => {
+  for (let s2 = 0; s2 + 1 < pts.length; s2++) {
+    if (H.ptSegM(J, pts[s2], pts[s2 + 1]) < 1.5) return true;
+    for (const n2 of H.names) {
+      const st = GEO[n2].stitched;
+      for (let si = 0; si + 1 < st.length; si++) {
+        if (H.ptSegM(J, st[si], st[si + 1]) >= 13 || !segCross(pts[s2], pts[s2 + 1], st[si], st[si + 1])) continue;
+        const X = lineHit(pts[s2], pts[s2 + 1], st[si], st[si + 1]);
+        if (!X || H.jDistM(X, J) > 6) return true;
       }
     }
-    return false;
-  };
+  }
+  return false;
+};
+function mergeStrands(slices, pairs) {
+  const rev = sl => ({ pts: [...sl.pts].reverse(), key: sl.key, mem: sl.mem, e0: sl.e1, e1: sl.e0 });
   const joinInfo = (a, b) => {
     const out = [];
     const aS = coordKey(a.pts[0]), aE = coordKey(a.pts[a.pts.length - 1]);
@@ -686,20 +691,6 @@ function bridgeStragglers(chains, pairs) {
   // the junction point.
   if (!JUNC) buildJunctions();
   const revC = c => ({ pts: [...c.pts].reverse(), key: c.key, mem: c.mem, e0: c.e1, e1: c.e0 });
-  const pathBadNear = (pts, J) => {
-    for (let s2 = 0; s2 + 1 < pts.length; s2++) {
-      if (H.ptSegM(J, pts[s2], pts[s2 + 1]) < 1.5) return true;
-      for (const n2 of H.names) {
-        const st = GEO[n2].stitched;
-        for (let si = 0; si + 1 < st.length; si++) {
-          if (H.ptSegM(J, st[si], st[si + 1]) >= 13 || !segCross(pts[s2], pts[s2 + 1], st[si], st[si + 1])) continue;
-          const X = lineHit(pts[s2], pts[s2 + 1], st[si], st[si + 1]);
-          if (!X || H.jDistM(X, J) > 6) return true;
-        }
-      }
-    }
-    return false;
-  };
   const dirLL = (n, vi) => {
     const st = GEO[n].stitched, a = XYOf(st[Math.max(0, vi - 1)]), b = XYOf(st[Math.min(st.length - 1, vi + 1)]);
     const dx = b[0] - a[0], dy = b[1] - a[1], m = Math.hypot(dx, dy) || 1;

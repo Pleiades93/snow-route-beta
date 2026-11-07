@@ -30,6 +30,24 @@ const LS_GLOBAL = { night: 'snowroute.v2.night', nightExp: 'snowroute.v2.nightEx
 const LEGACY_KEYS = { done: 'snowroute.v2', times: 'snowroute.v2.times', hist: 'snowroute.v2.history', notes: 'snowroute.v4.notes', via: 'snowroute.v4.via', trail: 'snowroute.v4.trail', cov: 'snowroute.v4.cov', start: 'snowroute.v5.start', flip: 'snowroute.v5.flip', sides: 'snowroute.v5.sides', sess: 'snowroute.v5.sess', snap: 'snowroute.v5.snap' }; // snap rides here too so LS.snap is defined on a legacy-fallback boot (the pre-1.76 app never wrote one - the key is simply absent there, which the cancel path already treats as 'no snapshot')
 const ROUTE_FIELDS = ['done', 'times', 'hist', 'notes', 'via', 'trail', 'cov', 'start', 'flip', 'sides', 'sess'];
 const PACK_FIELDS = ['name', 'area', 'main', 'spot', 'tileNames', 'box', 'roads', 'reference']; // Beta 1.131 (maintainability programme A): the ONE list of fields a route pack carries - normalizePack (app4) builds every validated pack by walking THIS list, so a field joins the pack format by joining this list (with its cleaner there); a field absent from the list does not survive validation, by construction. Deliberately distinct from ROUTE_FIELDS above: those are storage-slot fields, and 'snap' in particular is a slot field that is NOT a pack field (hand-carried at restore scope by design) - it must never be added here.
+// ===== RULE CONSTANTS (Beta 1.136, maintainability programme F): every number that IS a
+// product rule lives HERE, named once - coverage, GPS acceptance and the pack validator's
+// caps. A rule changes by changing its constant (with the evidence DEVELOPMENT_RULES asks
+// for), never by hunting literals. The fence, stated once and binding: equal numbers that
+// serve DIFFERENT policies stay SEPARATE constants - GPS_STALE_MS and TRAIL_FLUSH_MS are
+// both 45 s today by coincidence, not by reference, and must be free to drift apart; the
+// validator's three 60-character caps and two 80 caps are likewise separate per field.
+const COV_SAMPLE_M = 15; // coverage samples are laid along a street every this many metres (samplesFor, app3)
+const COV_RADIUS_M = 22; // a GPS fix covers the samples within this radius of it (coverFix, app3)
+const COV_FRAC = 0.85; // the covered fraction at which an unmarked street is SUGGESTED (never auto-marked - coverFix, app3)
+const GPS_ACCURACY_M = 65; // fixes reported worse than this are rejected while a fresh good fix exists; the accept comparison (<=) and the reject comparison (>) are ONE rule - this constant (acceptFix, app3)
+const GPS_STALE_MS = 45000; // a watch silent this long is restarted (app3) - a GPS policy
+const TRAIL_FLUSH_MS = 45000; // the buffered trail write's flush interval (flushAux, below) - a STORAGE policy; see the fence above
+const COV_SAVE_MS = 15000; // the coverage write's throttle window (flushAux, below; declared here with the rule constants since Beta 1.136 - its 1.135 flush discipline is unchanged)
+const PACK_NAME_MAX = 60, PACK_AREA_MAX = 60, PACK_STREET_NAME_MAX = 60; // the pack validator's per-field character caps (normalizePack, create.js) - separate constants per field, per the fence above
+const PACK_STREETS_MAX = 300, PACK_SEGS_MAX = 80, PACK_SEG_PTS_MAX = 4000, PACK_POINTS_MAX = 150000; // the pack validator's shape caps (normalizePack, create.js); PACK_SEGS_MAX (segments per street) and PACK_TILENAME_MAX (characters per tile name) both happen to be 80 - different policies, separate constants
+const PACK_TILENAME_MAX = 80, PACK_TILENAMES_MAX = 400;
+function slotKeys(id) { const rk = routeKeys(id); return ROUTE_FIELDS.map(f => rk[f]).concat(rk.snap); } // Beta 1.136 (programme F): a route slot's BACKUP keys as one list - the ROUTE_FIELDS keys plus the cancel snapshot - for the callers that enumerate keys without needing field names (the restore's rollback scope). Backup field loops keep walking ROUTE_FIELDS itself (they need the names), and route deletion keeps enumerating routeKeys' values (it wipes slots the backup never carries, pre/mig included).
 let LS = { ...routeKeys('5w'), ...LS_GLOBAL };
 function migrateLegacyRoute(id) { // one-time, 5W only. Beta 1.94 (deep audit SR-193-03): the COMMIT RECORD is the explicit marker key (rk.mig), never field presence. The 1.93 parity gate (R04) could not tell an interrupted copy from a legitimately partial slot - sides restored from a backup, no history yet - and its retry recopied legacy sides OVER the newer restored ones. Now: with the marker absent, the copy fills ONLY fields the slot lacks (a present slot field is never overwritten), each fill verified by read-back; any failure reports false and the caller reads the legacy keys for this boot - verified fills already landed may stay, since without the marker they are never mistaken for a completed move, and each is an exact copy of the legacy value. Parity is re-checked before the marker is written. The legacy keys themselves are never deleted - they stay as the fallback copy.
   if (id !== '5w') return true;
@@ -67,7 +85,9 @@ function toast(msg, ms) { const t = $('toast'); t.textContent = msg; t.classList
 function flagStorage() { document.body.classList.add('storage-bad'); }
 function lsGet(k) { try { return localStorage.getItem(k); } catch (e) { flagStorage(); return null; } }
 function lsSet(k, v) { try { localStorage.setItem(k, v); return true; } catch (e) { flagStorage(); return false; } }
-function lsDel(k) { try { localStorage.removeItem(k); return true; } catch (e) { flagStorage(); return false; } } // Beta 1.63 (audit F03): deletions report like writes - a failed removeItem used to be invisible while saveStart claimed success
+function lsDel(k) { try { localStorage.removeItem(k); return true; } catch (e) { flagStorage(); return false; } }
+const RAW_READ_FAILED = {}; // Beta 1.136 (programme F): rawRead's failure sentinel - a unique object no stored value can equal, so a THROWN read is distinguishable from an absent key (getItem's null), which lsGet deliberately cannot tell apart
+function rawRead(k) { try { return localStorage.getItem(k); } catch (e) { return RAW_READ_FAILED; } } // Beta 1.136 (programme F): the ONE raw storage read for the backup paths - they read RAW by design (Beta 1.48, audit B04) and each caller keeps its own failure mode against the sentinel: the strict export aborts (null/undefined), the recovery export skips the field, the restore stops before writing // Beta 1.63 (audit F03): deletions report like writes - a failed removeItem used to be invisible while saveStart claimed success
 // Storage outcomes (Beta 1.101, architecture Phase 3 / C2): every save-family function
 // returns ONE shape - { ok, failedKey, retryPending } - so no caller ever has to guess
 // what a save did. failedKey names the first record that failed (null on success);
@@ -434,12 +454,12 @@ function saveSess() { const ok = lsSet(LS.sess, JSON.stringify(trailSessions)); 
 // starts only on a SUCCESSFUL write - a failed write leaves auxDirty set and the very next
 // flush retries, exactly the flag discipline above. Between windows the 15 s heartbeat is
 // the backstop, and saveAll still writes coverage unconditionally on every primary save.
-const COV_SAVE_MS = 15000;
+// (COV_SAVE_MS itself is declared with the rule constants at the top of this file, Beta 1.136.)
 let lastCovSave = 0; // the last successful coverage write (0 = never: the first flush writes at once)
 function flushAux(force) {
   if (restoring) return;
   if (auxDirty && (force || Date.now() - lastCovSave >= COV_SAVE_MS) && lsSet(LS.cov, JSON.stringify(coveredIdx))) { auxDirty = false; lastCovSave = Date.now(); }
-  if (trailDirty && (force || Date.now() - lastTrailSave > 45000) && saveTrail().ok) { trailDirty = false; lastTrailSave = Date.now(); }
+  if (trailDirty && (force || Date.now() - lastTrailSave > TRAIL_FLUSH_MS) && saveTrail().ok) { trailDirty = false; lastTrailSave = Date.now(); }
   if (sessDirty && saveSess().ok) sessDirty = false;
   if (startDirty) saveStart(); // Beta 1.92 (audit F05): saveStart re-arms the flag itself on failure
   if (snapDirty && typeof saveSnap === 'function') saveSnap(); // Beta 1.94 (SR-193-02): the cancel snapshot retries on the same heartbeat (saveSnap lives in app3 beside runSnap; the typeof probe keeps this safe in any partial-load state)
