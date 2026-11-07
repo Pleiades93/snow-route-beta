@@ -2,7 +2,7 @@
 <html lang="en" class="boot">
 <head>
 <meta charset="UTF-8">
-<meta http-equiv="Content-Security-Policy" content="default-src 'none'; script-src 'sha384-Qmee5F7ecU3NYOhzl3kRjXrUJ5fplvyZfrnizSbJXlOChdEDTcgEwc7lYPR4XDOB' https://cdn.jsdelivr.net; style-src-elem 'sha384-Z5nYeLguGIPmbuBxkZFDoxv56KPqmnkDUJCg43k9PQSKgiAdchTPgf7sGHbomVRH' https://cdn.jsdelivr.net; style-src-attr 'unsafe-inline'; img-src 'self' data: blob: https://tiles.basemaps.cartocdn.com https://protomaps.github.io https://cdn.jsdelivr.net; connect-src 'self' https://tiles.basemaps.cartocdn.com https://protomaps.github.io https://cdn.jsdelivr.net https://nominatim.openstreetmap.org https://overpass-api.de https://overpass.kumi.systems; worker-src blob: 'self'; child-src blob: 'self'; font-src 'none'; manifest-src 'self'; base-uri 'none'; form-action 'none'; object-src 'none'">
+<meta http-equiv="Content-Security-Policy" content="default-src 'none'; script-src 'sha384-w+NelvQHMnvn67gkvFgO4ARVTV2IPKjR7q/ABCEV5aaxJK6GFfbIbiReUDik/ums' https://cdn.jsdelivr.net; style-src-elem 'sha384-Z5nYeLguGIPmbuBxkZFDoxv56KPqmnkDUJCg43k9PQSKgiAdchTPgf7sGHbomVRH' https://cdn.jsdelivr.net; style-src-attr 'unsafe-inline'; img-src 'self' data: blob: https://tiles.basemaps.cartocdn.com https://protomaps.github.io https://cdn.jsdelivr.net; connect-src 'self' https://tiles.basemaps.cartocdn.com https://protomaps.github.io https://cdn.jsdelivr.net https://nominatim.openstreetmap.org https://overpass-api.de https://overpass.kumi.systems; worker-src blob: 'self'; child-src blob: 'self'; font-src 'none'; manifest-src 'self'; base-uri 'none'; form-action 'none'; object-src 'none'">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="mobile-web-app-capable" content="yes">
@@ -420,7 +420,7 @@ input, textarea { caret-color: currentColor; } /* Beta 1.125 (Andrew): the typin
 <div id="hud">
   <div id="warn">Not saving — storage is full or blocked</div>
   <div class="row">
-    <div class="titleStack"><div class="title">Snow Route Beta</div><div class="ver" id="ver">Beta 1.135</div></div>
+    <div class="titleStack"><div class="title">Snow Route Beta</div><div class="ver" id="ver">Beta 1.136</div></div>
   </div>
   <div id="stats"></div>
 </div>
@@ -593,6 +593,24 @@ const LS_GLOBAL = { night: 'snowroute.v2.night', nightExp: 'snowroute.v2.nightEx
 const LEGACY_KEYS = { done: 'snowroute.v2', times: 'snowroute.v2.times', hist: 'snowroute.v2.history', notes: 'snowroute.v4.notes', via: 'snowroute.v4.via', trail: 'snowroute.v4.trail', cov: 'snowroute.v4.cov', start: 'snowroute.v5.start', flip: 'snowroute.v5.flip', sides: 'snowroute.v5.sides', sess: 'snowroute.v5.sess', snap: 'snowroute.v5.snap' }; // snap rides here too so LS.snap is defined on a legacy-fallback boot (the pre-1.76 app never wrote one - the key is simply absent there, which the cancel path already treats as 'no snapshot')
 const ROUTE_FIELDS = ['done', 'times', 'hist', 'notes', 'via', 'trail', 'cov', 'start', 'flip', 'sides', 'sess'];
 const PACK_FIELDS = ['name', 'area', 'main', 'spot', 'tileNames', 'box', 'roads', 'reference']; // Beta 1.131 (maintainability programme A): the ONE list of fields a route pack carries - normalizePack (app4) builds every validated pack by walking THIS list, so a field joins the pack format by joining this list (with its cleaner there); a field absent from the list does not survive validation, by construction. Deliberately distinct from ROUTE_FIELDS above: those are storage-slot fields, and 'snap' in particular is a slot field that is NOT a pack field (hand-carried at restore scope by design) - it must never be added here.
+// ===== RULE CONSTANTS (Beta 1.136, maintainability programme F): every number that IS a
+// product rule lives HERE, named once - coverage, GPS acceptance and the pack validator's
+// caps. A rule changes by changing its constant (with the evidence DEVELOPMENT_RULES asks
+// for), never by hunting literals. The fence, stated once and binding: equal numbers that
+// serve DIFFERENT policies stay SEPARATE constants - GPS_STALE_MS and TRAIL_FLUSH_MS are
+// both 45 s today by coincidence, not by reference, and must be free to drift apart; the
+// validator's three 60-character caps and two 80 caps are likewise separate per field.
+const COV_SAMPLE_M = 15; // coverage samples are laid along a street every this many metres (samplesFor, app3)
+const COV_RADIUS_M = 22; // a GPS fix covers the samples within this radius of it (coverFix, app3)
+const COV_FRAC = 0.85; // the covered fraction at which an unmarked street is SUGGESTED (never auto-marked - coverFix, app3)
+const GPS_ACCURACY_M = 65; // fixes reported worse than this are rejected while a fresh good fix exists; the accept comparison (<=) and the reject comparison (>) are ONE rule - this constant (acceptFix, app3)
+const GPS_STALE_MS = 45000; // a watch silent this long is restarted (app3) - a GPS policy
+const TRAIL_FLUSH_MS = 45000; // the buffered trail write's flush interval (flushAux, below) - a STORAGE policy; see the fence above
+const COV_SAVE_MS = 15000; // the coverage write's throttle window (flushAux, below; declared here with the rule constants since Beta 1.136 - its 1.135 flush discipline is unchanged)
+const PACK_NAME_MAX = 60, PACK_AREA_MAX = 60, PACK_STREET_NAME_MAX = 60; // the pack validator's per-field character caps (normalizePack, create.js) - separate constants per field, per the fence above
+const PACK_STREETS_MAX = 300, PACK_SEGS_MAX = 80, PACK_SEG_PTS_MAX = 4000, PACK_POINTS_MAX = 150000; // the pack validator's shape caps (normalizePack, create.js); PACK_SEGS_MAX (segments per street) and PACK_TILENAME_MAX (characters per tile name) both happen to be 80 - different policies, separate constants
+const PACK_TILENAME_MAX = 80, PACK_TILENAMES_MAX = 400;
+function slotKeys(id) { const rk = routeKeys(id); return ROUTE_FIELDS.map(f => rk[f]).concat(rk.snap); } // Beta 1.136 (programme F): a route slot's BACKUP keys as one list - the ROUTE_FIELDS keys plus the cancel snapshot - for the callers that enumerate keys without needing field names (the restore's rollback scope). Backup field loops keep walking ROUTE_FIELDS itself (they need the names), and route deletion keeps enumerating routeKeys' values (it wipes slots the backup never carries, pre/mig included).
 let LS = { ...routeKeys('5w'), ...LS_GLOBAL };
 function migrateLegacyRoute(id) { // one-time, 5W only. Beta 1.94 (deep audit SR-193-03): the COMMIT RECORD is the explicit marker key (rk.mig), never field presence. The 1.93 parity gate (R04) could not tell an interrupted copy from a legitimately partial slot - sides restored from a backup, no history yet - and its retry recopied legacy sides OVER the newer restored ones. Now: with the marker absent, the copy fills ONLY fields the slot lacks (a present slot field is never overwritten), each fill verified by read-back; any failure reports false and the caller reads the legacy keys for this boot - verified fills already landed may stay, since without the marker they are never mistaken for a completed move, and each is an exact copy of the legacy value. Parity is re-checked before the marker is written. The legacy keys themselves are never deleted - they stay as the fallback copy.
   if (id !== '5w') return true;
@@ -630,7 +648,9 @@ function toast(msg, ms) { const t = $('toast'); t.textContent = msg; t.classList
 function flagStorage() { document.body.classList.add('storage-bad'); }
 function lsGet(k) { try { return localStorage.getItem(k); } catch (e) { flagStorage(); return null; } }
 function lsSet(k, v) { try { localStorage.setItem(k, v); return true; } catch (e) { flagStorage(); return false; } }
-function lsDel(k) { try { localStorage.removeItem(k); return true; } catch (e) { flagStorage(); return false; } } // Beta 1.63 (audit F03): deletions report like writes - a failed removeItem used to be invisible while saveStart claimed success
+function lsDel(k) { try { localStorage.removeItem(k); return true; } catch (e) { flagStorage(); return false; } }
+const RAW_READ_FAILED = {}; // Beta 1.136 (programme F): rawRead's failure sentinel - a unique object no stored value can equal, so a THROWN read is distinguishable from an absent key (getItem's null), which lsGet deliberately cannot tell apart
+function rawRead(k) { try { return localStorage.getItem(k); } catch (e) { return RAW_READ_FAILED; } } // Beta 1.136 (programme F): the ONE raw storage read for the backup paths - they read RAW by design (Beta 1.48, audit B04) and each caller keeps its own failure mode against the sentinel: the strict export aborts (null/undefined), the recovery export skips the field, the restore stops before writing // Beta 1.63 (audit F03): deletions report like writes - a failed removeItem used to be invisible while saveStart claimed success
 // Storage outcomes (Beta 1.101, architecture Phase 3 / C2): every save-family function
 // returns ONE shape - { ok, failedKey, retryPending } - so no caller ever has to guess
 // what a save did. failedKey names the first record that failed (null on success);
@@ -997,12 +1017,12 @@ function saveSess() { const ok = lsSet(LS.sess, JSON.stringify(trailSessions)); 
 // starts only on a SUCCESSFUL write - a failed write leaves auxDirty set and the very next
 // flush retries, exactly the flag discipline above. Between windows the 15 s heartbeat is
 // the backstop, and saveAll still writes coverage unconditionally on every primary save.
-const COV_SAVE_MS = 15000;
+// (COV_SAVE_MS itself is declared with the rule constants at the top of this file, Beta 1.136.)
 let lastCovSave = 0; // the last successful coverage write (0 = never: the first flush writes at once)
 function flushAux(force) {
   if (restoring) return;
   if (auxDirty && (force || Date.now() - lastCovSave >= COV_SAVE_MS) && lsSet(LS.cov, JSON.stringify(coveredIdx))) { auxDirty = false; lastCovSave = Date.now(); }
-  if (trailDirty && (force || Date.now() - lastTrailSave > 45000) && saveTrail().ok) { trailDirty = false; lastTrailSave = Date.now(); }
+  if (trailDirty && (force || Date.now() - lastTrailSave > TRAIL_FLUSH_MS) && saveTrail().ok) { trailDirty = false; lastTrailSave = Date.now(); }
   if (sessDirty && saveSess().ok) sessDirty = false;
   if (startDirty) saveStart(); // Beta 1.92 (audit F05): saveStart re-arms the flag itself on failure
   if (snapDirty && typeof saveSnap === 'function') saveSnap(); // Beta 1.94 (SR-193-02): the cancel snapshot retries on the same heartbeat (saveSnap lives in app3 beside runSnap; the typeof probe keeps this safe in any partial-load state)
@@ -1637,22 +1657,27 @@ function junctionPairs() {
 // point) or, for edges, whose ends pair at a junction (bridge = the corner
 // point). Any same-colour pairing at a junction renders as one shape, so
 // merges simply run to a fixpoint, exact joins preferred over hops.
-function mergeStrands(slices, pairs) {
-  const rev = sl => ({ pts: [...sl.pts].reverse(), key: sl.key, mem: sl.mem, e0: sl.e1, e1: sl.e0 });
-  const pathBadNear = (pts, J) => {
-    for (let s2 = 0; s2 + 1 < pts.length; s2++) {
-      if (H.ptSegM(J, pts[s2], pts[s2 + 1]) < 1.5) return true;
-      for (const n2 of H.names) {
-        const st = GEO[n2].stitched;
-        for (let si = 0; si + 1 < st.length; si++) {
-          if (H.ptSegM(J, st[si], st[si + 1]) >= 13 || !segCross(pts[s2], pts[s2 + 1], st[si], st[si + 1])) continue;
-          const X = lineHit(pts[s2], pts[s2 + 1], st[si], st[si + 1]);
-          if (!X || H.jDistM(X, J) > 6) return true;
-        }
+// Beta 1.136 (programme F): the bridge veto in ONE copy. Through 1.135 the identical
+// function was defined privately inside both mergeStrands and bridgeStragglers;
+// it lives at this level now and both passes call the same one, so the veto rule
+// (a candidate path is bad when it passes within 1.5 m of the junction point, or
+// crosses any street's line away from that junction) can never drift between them.
+const pathBadNear = (pts, J) => {
+  for (let s2 = 0; s2 + 1 < pts.length; s2++) {
+    if (H.ptSegM(J, pts[s2], pts[s2 + 1]) < 1.5) return true;
+    for (const n2 of H.names) {
+      const st = GEO[n2].stitched;
+      for (let si = 0; si + 1 < st.length; si++) {
+        if (H.ptSegM(J, st[si], st[si + 1]) >= 13 || !segCross(pts[s2], pts[s2 + 1], st[si], st[si + 1])) continue;
+        const X = lineHit(pts[s2], pts[s2 + 1], st[si], st[si + 1]);
+        if (!X || H.jDistM(X, J) > 6) return true;
       }
     }
-    return false;
-  };
+  }
+  return false;
+};
+function mergeStrands(slices, pairs) {
+  const rev = sl => ({ pts: [...sl.pts].reverse(), key: sl.key, mem: sl.mem, e0: sl.e1, e1: sl.e0 });
   const joinInfo = (a, b) => {
     const out = [];
     const aS = coordKey(a.pts[0]), aE = coordKey(a.pts[a.pts.length - 1]);
@@ -1724,20 +1749,6 @@ function bridgeStragglers(chains, pairs) {
   // the junction point.
   if (!JUNC) buildJunctions();
   const revC = c => ({ pts: [...c.pts].reverse(), key: c.key, mem: c.mem, e0: c.e1, e1: c.e0 });
-  const pathBadNear = (pts, J) => {
-    for (let s2 = 0; s2 + 1 < pts.length; s2++) {
-      if (H.ptSegM(J, pts[s2], pts[s2 + 1]) < 1.5) return true;
-      for (const n2 of H.names) {
-        const st = GEO[n2].stitched;
-        for (let si = 0; si + 1 < st.length; si++) {
-          if (H.ptSegM(J, st[si], st[si + 1]) >= 13 || !segCross(pts[s2], pts[s2 + 1], st[si], st[si + 1])) continue;
-          const X = lineHit(pts[s2], pts[s2 + 1], st[si], st[si + 1]);
-          if (!X || H.jDistM(X, J) > 6) return true;
-        }
-      }
-    }
-    return false;
-  };
   const dirLL = (n, vi) => {
     const st = GEO[n].stitched, a = XYOf(st[Math.max(0, vi - 1)]), b = XYOf(st[Math.min(st.length - 1, vi + 1)]);
     const dx = b[0] - a[0], dy = b[1] - a[1], m = Math.hypot(dx, dy) || 1;
@@ -3431,14 +3442,21 @@ makeSheetDraggable($('pacePanel'));
 // badge is a TAB-mode-only signal: at boot nothing is loaded yet, and in
 // 1.76/1.77 the badge render landing mid-exit read as a flicker on the pick
 // (Andrew, live catch). wireRouteRows binds the rows to the mode's chooser.
-function routeRowEl(p) { // Beta 1.94 (audit F-04): rows are built as DOM nodes with textContent, never by interpolating pack data into innerHTML - a pack's name/area are data, and the day route creation lands, a typed name must not be able to become markup. The row shape (classes, badge rule) is unchanged; wireRouteRows' container delegation reads data-route as before.
+function routeRowShell(tag, name, sub, opts) { // Beta 1.136 (programme F): the ONE route-row builder - a .routeRow element carrying the .routeMeta column (a .routeName line, plus a .routeArea line unless sub is null) and, when opts.chevron, the .routeChev. Through 1.135 the row shape was hand-built at three sites (route rows below, the create flow's city rows and its manual-search rows); they all build through this now, so the shape can only drift in one place. Text is assigned via textContent throughout (the Beta 1.94 F-04 rule: pack/city names are data, never markup). opts.cls adds a class (the city list's loading row); callers hang their own extras (dataset, badge, Delete, listeners) on the returned row.
+  opts = opts || {};
+  const b = document.createElement(tag || 'button'); b.className = 'routeRow' + (opts.cls ? ' ' + opts.cls : '');
+  const meta = document.createElement('span'); meta.className = 'routeMeta';
+  const nm = document.createElement('span'); nm.className = 'routeName'; nm.textContent = name;
+  meta.appendChild(nm);
+  if (sub != null) { const ar = document.createElement('span'); ar.className = 'routeArea'; ar.textContent = sub; meta.appendChild(ar); }
+  b.appendChild(meta);
+  if (opts.chevron) { const chev = document.createElement('span'); chev.className = 'routeChev'; chev.textContent = '›'; b.appendChild(chev); }
+  return b;
+}
+function routeRowEl(p) { // Beta 1.94 (audit F-04): rows are built as DOM nodes with textContent, never by interpolating pack data into innerHTML - a pack's name/area are data, and the day route creation lands, a typed name must not be able to become markup. The row shape (classes, badge rule) is unchanged; wireRouteRows' container delegation reads data-route as before. Beta 1.136: the row itself comes from routeRowShell above; this function adds the route-specific extras (the tab badge, a created route's Delete).
   const tab = $('routeMenu').classList.contains('tab');
   const user = !SHIPPED_PACK_IDS.has(p.id); // Beta 1.124: a route Andrew created (not a shipped pack) can be deleted - its row is a DIV, not a <button>, because the Delete control is a real button and buttons cannot nest; the row's choose behaviour is unchanged (the container delegation reads data-route on any .routeRow)
-  const b = document.createElement(user ? 'div' : 'button'); b.className = 'routeRow'; b.dataset.route = p.id;
-  const meta = document.createElement('span'); meta.className = 'routeMeta';
-  const nm = document.createElement('span'); nm.className = 'routeName'; nm.textContent = p.name;
-  const ar = document.createElement('span'); ar.className = 'routeArea'; ar.textContent = p.area + ' · ' + Object.keys(p.roads).length + ' streets';
-  meta.append(nm, ar); b.appendChild(meta);
+  const b = routeRowShell(user ? 'div' : 'button', p.name, p.area + ' · ' + Object.keys(p.roads).length + ' streets'); b.dataset.route = p.id;
   if (tab && activeRoute && activeRoute.id === p.id) { const bd = document.createElement('span'); bd.className = 'routeBadge'; bd.textContent = 'Currently loaded'; b.appendChild(bd); }
   if (user) { const del = document.createElement('button'); del.className = 'routeDel'; del.type = 'button'; del.textContent = 'Delete'; del.addEventListener('click', e => { e.stopPropagation(); askDeleteRoute(p.id); }); b.appendChild(del); } // the Delete tap stops here - it must never read as a tap on the row itself (which would load the route it is about to delete)
   return b;
@@ -3884,7 +3902,7 @@ let watchId = null, watchGen = 0, gpsFromRun = false, gpsPos = null, dispPos = n
 const SAMPLES = {};
 function samplesFor(stretch, names) { // Beta 1.117: the coverage samples as a PURE function of a stretch set - the pre-1.117 eval-time IIFE, parameterized. buildSamples refills the live SAMPLES from it on every load (via buildGeometry); app4's packGeometry builds a non-active pack's samples from it for snapshot validation (F6).
   const out = {};
-  for (const n of names) { const L = stretch[n].line, cum = stretch[n].cum, pts = []; let i = 1; for (let d = 0; d <= stretch[n].total; d += 15) { while (i < cum.length - 1 && cum[i] < d) i++; const span = cum[i] - cum[i - 1] || 1, t = (d - cum[i - 1]) / span; pts.push([L[i - 1][0] + (L[i][0] - L[i - 1][0]) * t, L[i - 1][1] + (L[i][1] - L[i - 1][1]) * t]); } out[n] = pts; } // Beta 1.135 (programme D): the segment cursor i is hoisted out of the sample loop - sample distances rise monotonically, so a sample's segment never lies before the previous sample's, and the pre-1.135 per-sample restart re-walked the line from its start every 15 m (18,449 cursor-condition checks on Route 5W; the hoisted cursor advances at most once per segment). The samples produced are identical (the 1.135 fixture harness compares them byte-for-byte).
+  for (const n of names) { const L = stretch[n].line, cum = stretch[n].cum, pts = []; let i = 1; for (let d = 0; d <= stretch[n].total; d += COV_SAMPLE_M) { while (i < cum.length - 1 && cum[i] < d) i++; const span = cum[i] - cum[i - 1] || 1, t = (d - cum[i - 1]) / span; pts.push([L[i - 1][0] + (L[i][0] - L[i - 1][0]) * t, L[i - 1][1] + (L[i][1] - L[i - 1][1]) * t]); } out[n] = pts; } // Beta 1.135 (programme D): the segment cursor i is hoisted out of the sample loop - sample distances rise monotonically, so a sample's segment never lies before the previous sample's, and the pre-1.135 per-sample restart re-walked the line from its start every 15 m (18,449 cursor-condition checks on Route 5W; the hoisted cursor advances at most once per segment). The samples produced are identical (the 1.135 fixture harness compares them byte-for-byte).
   return out;
 }
 function buildSamples() { const built = samplesFor(STRETCH, STREETNAMES); for (const k of Object.keys(SAMPLES)) delete SAMPLES[k]; Object.assign(SAMPLES, built); covSamplesGen++; } // Beta 1.135 (programme D): the generation bump invalidates coverFix's per-street sample boxes (below) - the samples they were measured from just changed
@@ -4075,8 +4093,8 @@ function acceptFix(pos) {
   const now = Date.now(); const ll = [pos.coords.latitude, pos.coords.longitude]; const acc = pos.coords.accuracy || 999;
   if (!Number.isFinite(ll[0]) || !Number.isFinite(ll[1]) || Math.abs(ll[0]) > 90 || Math.abs(ll[1]) > 180) return; // audit G1: never let a non-finite or off-Earth fix reach the smoothing, trail or coverage math
   if (typeof pos.timestamp === 'number' && lastFixTs && pos.timestamp < lastFixTs) return; // Beta 1.64 (audit R01): a delayed or out-of-order callback must not move the dot, trail or coverage backwards
-  if (acc > 65 && lastGood && now - lastGood.at < 10000) return;
-  if (acc <= 65) lastGood = { ll, at: now };
+  if (acc > GPS_ACCURACY_M && lastGood && now - lastGood.at < 10000) return;
+  if (acc <= GPS_ACCURACY_M) lastGood = { ll, at: now };
   const speed = pos.coords.speed;
   lastFixAt = now; if (typeof pos.timestamp === 'number') lastFixTs = pos.timestamp; gpsAccM = acc; gpsDenied = false; // Beta 1.111: a live fix clears any earlier denial for the Status row
   renderTick(performance.now()); // Beta 1.66's settle, kept: advance the display to NOW on the OLD track before re-anchoring - a display re-anchored from a stale position makes the dot chase leftover distance, which is exactly the wander drive127 S1/S2 measure
@@ -4123,15 +4141,15 @@ function acceptFix(pos) {
 let covSetsFor = null, covSets = {}, covBoxesFor = -1, covBoxes = {}, covSamplesGen = 0;
 function coverFix(ll) {
   if (covSetsFor !== coveredIdx) { covSets = {}; for (const n of Object.keys(coveredIdx)) covSets[n] = new Set(coveredIdx[n]); covSetsFor = coveredIdx; }
-  if (covBoxesFor !== covSamplesGen) { covBoxes = {}; const pLat = 22 / MLAT, pLng = 22 / MLNG; for (const n of STREETNAMES) { const pts = SAMPLES[n]; if (!pts || !pts.length) continue; let a = 1e9, b = -1e9, c = 1e9, e = -1e9; for (const p of pts) { if (p[0] < a) a = p[0]; if (p[0] > b) b = p[0]; if (p[1] < c) c = p[1]; if (p[1] > e) e = p[1]; } covBoxes[n] = [a - pLat, b + pLat, c - pLng, e + pLng]; } covBoxesFor = covSamplesGen; }
+  if (covBoxesFor !== covSamplesGen) { covBoxes = {}; const pLat = COV_RADIUS_M / MLAT, pLng = COV_RADIUS_M / MLNG; for (const n of STREETNAMES) { const pts = SAMPLES[n]; if (!pts || !pts.length) continue; let a = 1e9, b = -1e9, c = 1e9, e = -1e9; for (const p of pts) { if (p[0] < a) a = p[0]; if (p[0] > b) b = p[0]; if (p[1] < c) c = p[1]; if (p[1] > e) e = p[1]; } covBoxes[n] = [a - pLat, b + pLat, c - pLng, e + pLng]; } covBoxesFor = covSamplesGen; }
   let changed = false;
   for (const n of STREETNAMES) {
     if (streetComplete(n) || suggested.has(n)) continue;
     const pts = SAMPLES[n]; const set = covSets[n] || (covSets[n] = new Set(coveredIdx[n] || []));
     const box = covBoxes[n]; const outOfBox = box && (ll[0] < box[0] || ll[0] > box[1] || ll[1] < box[2] || ll[1] > box[3]);
-    if (!outOfBox) for (let i = 0; i < pts.length; i++) { if (!set.has(i) && distM(ll, pts[i]) <= 22) { set.add(i); changed = true; } }
+    if (!outOfBox) for (let i = 0; i < pts.length; i++) { if (!set.has(i) && distM(ll, pts[i]) <= COV_RADIUS_M) { set.add(i); changed = true; } }
     if (set.size) coveredIdx[n] = [...set];
-    if (set.size >= Math.ceil(pts.length * 0.85) && !streetComplete(n)) { suggested.add(n); showSuggest(n); }
+    if (set.size >= Math.ceil(pts.length * COV_FRAC) && !streetComplete(n)) { suggested.add(n); showSuggest(n); }
   }
   if (changed) markDirty('aux');
 }
@@ -4155,7 +4173,7 @@ function startGps(fromRun, restart) {
   const wg = ++watchGen; watchId = navigator.geolocation.watchPosition(p => { if (wg === watchGen) acceptFix(p); }, e => { if (wg === watchGen) gpsError(e); }, { enableHighAccuracy: true, maximumAge: 2000, timeout: 20000 }); // Beta 1.69 (audit N04): callbacks carry their watcher's generation - a queued callback from a stopped or replaced watcher is dropped even when its timestamp is fresh (R01's guard cannot tell watchers apart)
   startRenderLoop(); // Beta 1.65: the frame-synced loop keeps centring between fixes (the Beta 1.28 camTimer's job, drive126 F2) - on the display's own clock now, not a second timer
   clearInterval(staleWatchTimer);
-  staleWatchTimer = setInterval(() => { if (watchId != null && Date.now() - lastFixAt > 45000 && lastFixAt) { const wasRunGps = gpsFromRun; stopGps(true); startGps(wasRunGps, true); } }, 15000); // Beta 1.48 (audit B02): capture run ownership BEFORE stopGps clears it - the restart used to always come back as non-run GPS, so a mid-run watcher lost its run. Beta 1.116 (CG-115-01): the restart also preserves followPaused (startGps's restart flag) - a dead zone must not hand the camera back
+  staleWatchTimer = setInterval(() => { if (watchId != null && Date.now() - lastFixAt > GPS_STALE_MS && lastFixAt) { const wasRunGps = gpsFromRun; stopGps(true); startGps(wasRunGps, true); } }, 15000); // Beta 1.48 (audit B02): capture run ownership BEFORE stopGps clears it - the restart used to always come back as non-run GPS, so a mid-run watcher lost its run. Beta 1.116 (CG-115-01): the restart also preserves followPaused (startGps's restart flag) - a dead zone must not hand the camera back
   $('gpsBtn').classList.add('on');
   $('gpsBtn').classList.toggle('rec', gpsFromRun); // Beta 1.49: recording wears red on the Locate tab; view-only wears blue
 }
@@ -4227,7 +4245,7 @@ function snapForExport(strict) { // Beta 1.97 (audit loop CG-196-02): the ACTIVE
   if (!runStart) return null;
   if (runSnap) return { at: runStart, pieces: runSnap.pieces, pieceTimes: runSnap.pieceTimes, done: runSnap.done, times: runSnap.times, via: runSnap.via, cov: runSnap.cov };
   let rawSnap = null;
-  if (strict) { try { rawSnap = localStorage.getItem(LS.snap); } catch (e) { return undefined; } }
+  if (strict) { const rs = rawRead(LS.snap); if (rs === RAW_READ_FAILED) return undefined; rawSnap = rs; } // Beta 1.136: through the shared rawRead - the strict failure mode (undefined) is unchanged
   else rawSnap = lsGet(LS.snap);
   const pv = validateSnap(parseJ(rawSnap, null), runStart);
   return pv ? { at: runStart, pieces: pv.pieces, pieceTimes: pv.pieceTimes, done: pv.done, times: pv.times, via: pv.via, cov: pv.cov } : null;
@@ -4248,7 +4266,7 @@ function backupObj() { // Beta 1.76: format v2 - routes carry their own slots ({
   const routes = {};
   for (const p of ROUTE_PACKS) {
     const rk = routeKeys(p.id); const data = {};
-    for (const f of ROUTE_FIELDS) { const key = (activeRoute && p.id === activeRoute.id && LS[f] !== rk[f]) ? LS[f] : rk[f]; let v = null; try { v = localStorage.getItem(key); } catch (e) { return null; } if (v != null) data[f] = v; }
+    for (const f of ROUTE_FIELDS) { const key = (activeRoute && p.id === activeRoute.id && LS[f] !== rk[f]) ? LS[f] : rk[f]; const v = rawRead(key); if (v === RAW_READ_FAILED) return null; if (v != null) data[f] = v; }
     // Beta 1.97 (audit loop CG-196-01/-02): the route's lifecycle state rides EXPLICITLY, never by
     // omission. A run's start is asserted as its timestamp string; NO run is asserted as start: null -
     // so a restore can tell "this backup says idle" from an older backup that simply omits the field
@@ -4261,13 +4279,13 @@ function backupObj() { // Beta 1.76: format v2 - routes carry their own slots ({
     if (startStr) {
       let snapObj = null;
       if (isActive) { snapObj = snapForExport(true); if (snapObj === undefined) return null; } // a snapshot read failure fails the whole export (B04 discipline) - never a valid-looking backup missing the snapshot
-      else { let rawSnap = null; try { rawSnap = localStorage.getItem(rk.snap); } catch (e) { return null; } const pv = validateSnap(parseJ(rawSnap, null), +startStr, packGeometry(p)); if (pv) snapObj = { at: +startStr, pieces: pv.pieces, pieceTimes: pv.pieceTimes, done: pv.done, times: pv.times, via: pv.via, cov: pv.cov }; } // Beta 1.117 (F6): a non-active pack's snapshot validates against ITS OWN geometry
+      else { const rawSnap = rawRead(rk.snap); if (rawSnap === RAW_READ_FAILED) return null; const pv = validateSnap(parseJ(rawSnap, null), +startStr, packGeometry(p)); if (pv) snapObj = { at: +startStr, pieces: pv.pieces, pieceTimes: pv.pieceTimes, done: pv.done, times: pv.times, via: pv.via, cov: pv.cov }; } // Beta 1.117 (F6): a non-active pack's snapshot validates against ITS OWN geometry
       if (snapObj) data.snap = JSON.stringify(snapObj);
     }
     routes[p.id] = data;
   } // Beta 1.92 (deep audit F02): the ACTIVE route exports from the key mapping it is actually running on - on a legacy-fallback boot (migration failed) LS points at the legacy keys, and reading the fresh slot would emit a valid-looking EMPTY backup
-  let night = null; try { night = localStorage.getItem(LS_GLOBAL.night); } catch (e) { return null; }
-  let nightExp = null; try { nightExp = localStorage.getItem(LS_GLOBAL.nightExp); } catch (e) { return null; }
+  const night = rawRead(LS_GLOBAL.night); if (night === RAW_READ_FAILED) return null;
+  const nightExp = rawRead(LS_GLOBAL.nightExp); if (nightExp === RAW_READ_FAILED) return null;
   const o = { app: 'snowroute-backup', v: 2, at: new Date().toISOString(), routes };
   const ups = readUserPacks(); if (ups === null) return null; if (Object.keys(ups).length) o.userpacks = ups; // Beta 1.118: created routes are Andrew's data - their definitions ride every backup, read with the same B04 strictness as everything else here: an unreadable created-routes record fails the export rather than shipping a valid-looking backup that silently loses his routes
   if (night != null) o.night = night;
@@ -4292,12 +4310,12 @@ function recoveryObj() { // Beta 1.95 (deep audit SR-194-02): the RECOVERY backu
     const snapObj = snapForExport(); // Beta 1.97 (audit loop CG-196-02): the shared construction - the recovery and normal backups carry the identical object
     if (snapObj) data.snap = JSON.stringify(snapObj);
   }
-  try { const fl = localStorage.getItem(routeKeys(activeRoute.id).flip); if (fl != null) data.flip = fl; } catch (e) { /* a read that fails simply leaves the field out */ }
+  { const fl = rawRead(routeKeys(activeRoute.id).flip); if (fl !== RAW_READ_FAILED && fl != null) data.flip = fl; } // a read that fails simply leaves the field out (the recovery export's best-effort mode)
   const routes = {}; routes[activeRoute.id] = data;
-  for (const pk of ROUTE_PACKS) { if (pk.id === activeRoute.id) continue; const rk = routeKeys(pk.id); const d = {}; for (const f of ROUTE_FIELDS) { try { const v = localStorage.getItem(rk[f]); if (v != null) d[f] = v; } catch (e) {} } if (d.start === undefined) d.start = null; if (Object.keys(d).length) routes[pk.id] = d; } // Beta 1.97 (audit loop CG-196-01): an untouched pack in a recovery file asserts idle like any complete backup
+  for (const pk of ROUTE_PACKS) { if (pk.id === activeRoute.id) continue; const rk = routeKeys(pk.id); const d = {}; for (const f of ROUTE_FIELDS) { const v = rawRead(rk[f]); if (v !== RAW_READ_FAILED && v != null) d[f] = v; } if (d.start === undefined) d.start = null; if (Object.keys(d).length) routes[pk.id] = d; } // Beta 1.97 (audit loop CG-196-01): an untouched pack in a recovery file asserts idle like any complete backup
   const o = { app: 'snowroute-backup', v: 2, recovery: true, at: new Date().toISOString(), routes };
   try { const upsR = readUserPacks(); if (upsR && Object.keys(upsR).length) o.userpacks = upsR; } catch (e) {} // Beta 1.118: created-route definitions ride the recovery backup too
-  try { const nt = localStorage.getItem(LS_GLOBAL.night); if (nt != null) o.night = nt; const ne = localStorage.getItem(LS_GLOBAL.nightExp); if (ne != null) o.nightExp = ne; } catch (e) {}
+  { const nt = rawRead(LS_GLOBAL.night); if (nt !== RAW_READ_FAILED && nt != null) o.night = nt; const ne = rawRead(LS_GLOBAL.nightExp); if (ne !== RAW_READ_FAILED && ne != null) o.nightExp = ne; }
   return o;
 }
 function buildRecovery() { const o = recoveryObj(); return o ? JSON.stringify(o, null, 1) : null; }
@@ -4415,9 +4433,9 @@ function restoreBackup(parsed) { // production doRestore semantics: validate EVE
   }
   restoreOverlayPacks = restoredPacks; const droppedNames = countUnknownNames(parsed); restoreOverlayPacks = null; // Beta 1.95 (SR-194-08): counted from the RAW backup before any normalization - see countUnknownNames. Beta 1.118: judged with this backup's own created-route definitions overlaid
   if (!entries.length) { toast('Nothing in that backup to restore', 3000); return; }
-  const SCOPE = []; for (const p of allPacks) { const rk = routeKeys(p.id); for (const f of ROUTE_FIELDS) SCOPE.push(rk[f]); SCOPE.push(rk.snap); } if (restoredPacks) SCOPE.push(USERPACKS_KEY); SCOPE.push(LS_GLOBAL.night, LS_GLOBAL.nightExp); // Beta 1.118: the created-routes record and restored routes' slots join the rollback scope // Beta 1.96 (SR-195-02): the snapshot key joins the rollback scope - a restore that writes a carried snapshot must be able to put the previous one back
+  const SCOPE = []; for (const p of allPacks) SCOPE.push(...slotKeys(p.id)); if (restoredPacks) SCOPE.push(USERPACKS_KEY); SCOPE.push(LS_GLOBAL.night, LS_GLOBAL.nightExp); // Beta 1.136: the per-route keys come from slotKeys (app1) - the same ROUTE_FIELDS + snap list, enumerated in one place // Beta 1.118: the created-routes record and restored routes' slots join the rollback scope // Beta 1.96 (SR-195-02): the snapshot key joins the rollback scope - a restore that writes a carried snapshot must be able to put the previous one back
   const snap = {}; let snapOk = true;
-  for (const k of SCOPE) { try { snap[k] = localStorage.getItem(k); } catch (e) { snapOk = false; } }
+  for (const k of SCOPE) { const v = rawRead(k); if (v === RAW_READ_FAILED) snapOk = false; else snap[k] = v; }
   if (!snapOk) { toast('Restore stopped — your current data could not be read for safekeeping, so nothing was changed', 3600); return; }
   const rollback = () => { // Beta 1.102 (Phase 4, C3): the restore-all rollback on the verified primitives - every scoped key put back (or removed) and read back
     let okBack = true;
@@ -4779,7 +4797,7 @@ $('stDel').addEventListener('click', async () => {
 });
 // ---- About / What's new ----
 const WHATSNEW = { // the curated in-app notes: plain words, LATEST RELEASE ONLY (Beta 1.114, Andrew: the accumulated list cluttered the About pane). A release REPLACES this entry with its own in the same change - it never accumulates; the full history lives in CHANGELOG.md, not the app
-  v: 'Beta 1.135', items: ["Speed work under the hood: while a clean is recording, the app now does far less repeat maths in the background — it checks only the streets near you and saves its coverage notes in batches instead of after every GPS point", "Creating a route is snappier too: tapping sectors and flipping roads between main and secondary no longer rebuilds the whole draft every time", "Nothing about how the app looks or works has changed — same screens, same buttons, same routes, same saved data"]
+  v: 'Beta 1.136', items: ["Under-the-hood tidy-up: the app's rule numbers (how close a GPS point must be to count a street as covered, how big a created route may be, and the rest) now each live in one named place instead of being repeated through the code", "The automatic test battery that checks the app every night is faster and better balanced, and a new guard flags test wording the moment an app label changes — so a rename can never quietly outdate the tests again", "Nothing about how the app looks or works has changed — same screens, same buttons, same routes, same saved data"]
 };
 function renderAbout() {
   const cur = $('ver').textContent.trim();
@@ -5162,29 +5180,29 @@ function normalizePack(raw, opts) { // -> { ok: true, pack } | { ok: false, erro
   const bad = m => ({ ok: false, error: m });
   if (!raw || typeof raw !== 'object' || Array.isArray(raw)) return bad('it is not a route pack');
   const name = typeof raw.name === 'string' ? raw.name.trim() : '';
-  if (name.length > 60) return bad('the route name is too long');
+  if (name.length > PACK_NAME_MAX) return bad('the route name is too long');
   if (!opts.draft && !name) return bad('the route has no name');
-  const area = typeof raw.area === 'string' ? raw.area.trim().slice(0, 60) : '';
+  const area = typeof raw.area === 'string' ? raw.area.trim().slice(0, PACK_AREA_MAX) : '';
   let totalPts = 0;
   const cleanRoads = (obj, label) => {
     if (!obj || typeof obj !== 'object' || Array.isArray(obj)) return { error: 'the ' + label + ' are missing or the wrong shape' };
     const out = {}; const names = Object.keys(obj);
-    if (names.length > 300) return { error: 'too many streets in the ' + label };
+    if (names.length > PACK_STREETS_MAX) return { error: 'too many streets in the ' + label };
     for (const nm0 of names) {
       const nm = nm0.trim();
-      if (!nm || nm.length > 60) return { error: 'a street name in the ' + label + ' is missing or too long' };
+      if (!nm || nm.length > PACK_STREET_NAME_MAX) return { error: 'a street name in the ' + label + ' is missing or too long' };
       if (out[nm]) return { error: 'the street "' + nm + '" appears twice' };
       const segsIn = obj[nm0];
-      if (!Array.isArray(segsIn) || !segsIn.length || segsIn.length > 80) return { error: 'the street "' + nm + '" has no usable shape' };
+      if (!Array.isArray(segsIn) || !segsIn.length || segsIn.length > PACK_SEGS_MAX) return { error: 'the street "' + nm + '" has no usable shape' };
       const segs = [];
       for (const segIn of segsIn) {
-        if (!Array.isArray(segIn) || segIn.length < 2 || segIn.length > 4000) return { error: 'the street "' + nm + '" has a bad segment' };
+        if (!Array.isArray(segIn) || segIn.length < 2 || segIn.length > PACK_SEG_PTS_MAX) return { error: 'the street "' + nm + '" has a bad segment' };
         const seg = [];
         for (const pt of segIn) {
           if (!Array.isArray(pt) || pt.length < 2 || !isFinite(pt[0]) || !isFinite(pt[1]) || Math.abs(pt[0]) > 90 || Math.abs(pt[1]) > 180) return { error: 'the street "' + nm + '" has a bad map point' };
           const p = [Math.round(pt[0] * 1e7) / 1e7, Math.round(pt[1] * 1e7) / 1e7];
           if (!seg.length || seg[seg.length - 1][0] !== p[0] || seg[seg.length - 1][1] !== p[1]) seg.push(p);
-          if (++totalPts > 150000) return { error: 'the route is too big' };
+          if (++totalPts > PACK_POINTS_MAX) return { error: 'the route is too big' };
         }
         if (seg.length > 1) segs.push(seg);
       }
@@ -5204,8 +5222,8 @@ function normalizePack(raw, opts) { // -> { ok: true, pack } | { ok: false, erro
     for (const m of mainsIn) if (typeof m === 'string' && rc.roads[m] && !mains.includes(m)) mains.push(m);
   }
   const tileSet = new Set(Object.keys(rc.roads));
-  if (Array.isArray(raw.tileNames)) for (const t of raw.tileNames) if (typeof t === 'string' && t && t.length <= 80 && tileSet.size < 400) tileSet.add(t);
-  if (opts.tileNames) for (const t of opts.tileNames) if (typeof t === 'string' && t && t.length <= 80 && tileSet.size < 400) tileSet.add(t);
+  if (Array.isArray(raw.tileNames)) for (const t of raw.tileNames) if (typeof t === 'string' && t && t.length <= PACK_TILENAME_MAX && tileSet.size < PACK_TILENAMES_MAX) tileSet.add(t);
+  if (opts.tileNames) for (const t of opts.tileNames) if (typeof t === 'string' && t && t.length <= PACK_TILENAME_MAX && tileSet.size < PACK_TILENAMES_MAX) tileSet.add(t);
   let box = null;
   if (raw.box && isFinite(raw.box.w) && isFinite(raw.box.s) && isFinite(raw.box.e) && isFinite(raw.box.n) && raw.box.w < raw.box.e && raw.box.s < raw.box.n) box = { w: raw.box.w, s: raw.box.s, e: raw.box.e, n: raw.box.n };
   else { const cb = computeRouteBox({ ...rc.roads, ...reference }); if (cb) box = { w: Math.max(-180, cb.w - 0.03), s: Math.max(-90, cb.s - 0.025), e: Math.min(180, cb.e + 0.03), n: Math.min(90, cb.n + 0.025) }; }
@@ -5239,6 +5257,7 @@ let draft = null; // { roads, mains: Set, osmNames: {short: full}, tileNames: [.
 function newDraft() { return { roads: {}, mains: new Set(), osmNames: {}, tileNames: [], name: '', area: '', sectors: {}, parts: {} }; }
 let crSectorStreet = null; // Beta 1.127: the street whose sectors are being trimmed (sector mode), or null
 let crSectorSnapshot = undefined; // Beta 1.129: the street's sector pick as it stood when sector mode was ENTERED (null = the whole road; an array = the trim then in force) - the sector bar's Cancel restores exactly this. undefined = no sector session in flight
+function crSectorReset() { crSectorStreet = null; crSectorSnapshot = undefined; } // Beta 1.136 (programme F): a sector session's teardown in ONE place - through 1.135 the pair (street cleared, Cancel snapshot dropped) was written out at six sites (street removal, sector close, stage change, creation start, creation exit, draft start-over); every one of them now calls this, so a seventh field in the session state would have exactly one home to join
 let crPanelCollapsed = false; // Beta 1.127: the picked-roads panel's tucked-away state (the slim strip shows instead)
 function draftStreets() { return draft ? Object.keys(draft.roads) : []; }
 
@@ -5798,7 +5817,7 @@ function crRemoveStreet(short) { // Beta 1.127: the ONE removal path - the panel
   if (draft.sectors) delete draft.sectors[short];
   if (draft.parts) delete draft.parts[short];
   delete crPending[short];
-  if (crSectorStreet === short) { crSectorStreet = null; crSectorSnapshot = undefined; }
+  if (crSectorStreet === short) crSectorReset();
   renderDraft(); renderCrLists(); crRenderHint();
 }
 // ---- sectors (Beta 1.127, Andrew's approved mockups in beta1/work/create-sectors-mockups/):
@@ -5902,7 +5921,7 @@ function crOpenSectors(short) { // opens a picked street's trimming - TWO doors 
   else syncCrPanel();
   renderDraft(); crRenderHint();
 }
-function crCloseSectors() { if (!crSectorStreet) return; crSectorStreet = null; crSectorSnapshot = undefined; const sheet = $('createSheet'); if (sheet && sheet.classList.contains('on')) crMorphTo(crWantedFace()); else syncCrPanel(); crRenderHint(); }
+function crCloseSectors() { if (!crSectorStreet) return; crSectorReset(); const sheet = $('createSheet'); if (sheet && sheet.classList.contains('on')) crMorphTo(crWantedFace()); else syncCrPanel(); crRenderHint(); }
 function crCancelSectors() { // Beta 1.129 (Andrew: "I still need a way to cancel selections while I'm selecting something"): the deliberate back-out of a sector session - the street's pick returns EXACTLY as it was when sector mode was entered (the whole road, or the trim then in force), every face repaints from the restored state, and sector mode closes back to the panel. Distinct from un-picking every sector by toggles, which still removes the street - that is a selection, this is an abandonment of the session's edits
   const s = crSectorStreet; if (!s || !draft) return;
   if (crSectorSnapshot) { draft.sectors = draft.sectors || {}; draft.sectors[s] = crSectorSnapshot.slice(); }
@@ -5940,22 +5959,22 @@ function renderSectorBar() {
 // never display:none, never teleported.
 let crMorph = null; // { from, to } while the surface morphs between faces, else null
 let crFaceNow = 'panel'; // the face the surface currently rests as (a morph's origin; crMorph.to is its destination)
-function crFaceEl(face) { return face === 'panel' ? $('crPanel') : face === 'strip' ? $('crStrip') : $('crSectorBar'); }
+const CR_FACES = { panel: { el: 'crPanel', cls: null }, strip: { el: 'crStrip', cls: 'crG-strip' }, bar: { el: 'crSectorBar', cls: 'crG-bar' } }; // Beta 1.136 (programme F): the sheet's faces in ONE table - element id + geometry class per face. Through 1.135 the face list was written out at five sites (the element lookup, the rest-state toggles + display lines, the morph cleanup loop, the morph's two class flips); every one reads this table now, so a fourth face joins in exactly one place
+function crFaceEl(face) { return $(CR_FACES[face].el); }
+function crFaceClasses(sheet, face) { for (const f of Object.keys(CR_FACES)) { const cls = CR_FACES[f].cls; if (cls) sheet.classList.toggle(cls, f === face); } } // the sheet wears the named face's geometry: its class on, every other face's class off (the panel's geometry is the absence of both classes)
 function crWantedFace() { // the face the current state asks for: the sector bar while trimming; the strip whenever the panel is tucked away (Beta 1.128: at ANY pick count, zero included - an empty draft retracts too, where 1.127's strip demanded a non-empty draft and collapse at zero sprang down and bounced back); else the panel
   if (crSectorStreet && draft && draft.roads[crSectorStreet]) return 'bar';
   if (crPanelCollapsed) return 'strip';
   return 'panel';
 }
 function syncCrPanel() { // the REST state: the surface wears the wanted face's geometry class and exactly that face's content shows. Animated switches run through crMorphTo and land here; renders and stage changes call this directly. While a morph is in flight this no-ops - the morph's finish lands the rest state, so a mid-flight re-render can never tear the surface
-  const sheet = $('createSheet'), panel = $('crPanel'), strip = $('crStrip'), bar = $('crSectorBar'); if (!sheet || !panel || !strip || !bar) return;
+  const sheet = $('createSheet'); if (!sheet) return;
+  const els = {}; for (const f of Object.keys(CR_FACES)) { els[f] = crFaceEl(f); if (!els[f]) return; }
   if (crMorph) return;
   const want = crWantedFace();
   crFaceNow = want;
-  sheet.classList.toggle('crG-strip', want === 'strip');
-  sheet.classList.toggle('crG-bar', want === 'bar');
-  panel.style.display = want === 'panel' ? '' : 'none';
-  strip.style.display = want === 'strip' ? '' : 'none';
-  bar.style.display = want === 'bar' ? '' : 'none';
+  crFaceClasses(sheet, want);
+  for (const f of Object.keys(CR_FACES)) els[f].style.display = f === want ? '' : 'none';
   if (want === 'bar') renderSectorBar();
 }
 function crGeoOf(sheet) { // the surface's border-box geometry as plain numbers - content height, the three insets, the four corner radii - read from computed style, so calc()/env() are already resolved to px by the engine
@@ -5966,7 +5985,7 @@ function crGeoOf(sheet) { // the surface's border-box geometry as plain numbers 
 }
 function crMorphCleanup() { // the surface returns to class-driven rest: every inline geometry/position the morph set is cleared, so the rest state the eye lands on is exactly the CSS geometry of the destination face
   const sheet = $('createSheet'); if (sheet) { sheet.style.height = ''; sheet.style.overflow = ''; sheet.style.marginLeft = ''; sheet.style.marginRight = ''; sheet.style.marginBottom = ''; sheet.style.borderRadius = ''; sheet.style.transform = ''; }
-  for (const f of ['panel', 'strip', 'bar']) { const el = crFaceEl(f); if (!el) continue; el.style.position = ''; el.style.top = ''; el.style.left = ''; el.style.right = ''; el.style.bottom = ''; el.style.opacity = ''; }
+  for (const f of Object.keys(CR_FACES)) { const el = crFaceEl(f); if (!el) continue; el.style.position = ''; el.style.top = ''; el.style.left = ''; el.style.right = ''; el.style.bottom = ''; el.style.opacity = ''; }
   crMorph = null;
 }
 function crSettleMorph() { if (!crMorph) return; cancelSheetSpring($('createSheet')); crMorphCleanup(); syncCrPanel(); } // land an in-flight morph NOW (a grab on the panel head, or a new face decision superseding it)
@@ -5980,9 +5999,9 @@ function crMorphTo(to, opts) { // THE face change: one surface, its geometry spr
   if (!fromEl || !toEl || fromEl.style.display === 'none') { syncCrPanel(); return; }
   const G0 = crGeoOf(sheet); // where the surface rests now
   fromEl.style.display = 'none'; toEl.style.display = ''; // measure the destination: its content in flow, its geometry class on
-  sheet.classList.toggle('crG-strip', to === 'strip'); sheet.classList.toggle('crG-bar', to === 'bar');
+  crFaceClasses(sheet, to);
   const G1 = crGeoOf(sheet);
-  sheet.classList.toggle('crG-strip', from === 'strip'); sheet.classList.toggle('crG-bar', from === 'bar');
+  crFaceClasses(sheet, from);
   const mb0 = opts.dy ? -opts.dy : G0.mb; // the finger left the surface dy px below its rest - the morph's bottom edge starts there, not at the rest position
   if (!G0.h || !G1.h || (Math.abs(G1.h - G0.h) < 2 && Math.abs(G1.ml - G0.ml) < 1 && Math.abs(G1.mb - mb0) < 1)) { syncCrPanel(); return; } // nothing to travel (or nothing measurable): land the rest state directly
   for (const el of [fromEl, toEl]) { el.style.display = ''; el.style.position = 'absolute'; el.style.top = '0px'; el.style.left = '0px'; el.style.right = '0px'; el.style.bottom = '0px'; } // both contents live inside the one surface for the motion
@@ -6064,11 +6083,7 @@ function crEnterPickFromCity() { // the city is chosen: land in the pick stage, 
 function crRenderCityChoices() {
   const boxEl = $('crCityList'); if (!boxEl) return;
   boxEl.innerHTML = '';
-  const loading = document.createElement('div'); loading.className = 'routeRow crLoadingRow'; // Beta 1.130: while the catalogue is genuinely in flight, the pane shows a ROW in the city rows' own styling (the shape the list itself takes) - the wait reads as the list arriving, not a bare note floating on an empty pane (the second, cosmetic half of Andrew's "loading screen" stutter; the wait itself is attacked by crWarmCityLibrary)
-  const lmeta = document.createElement('span'); lmeta.className = 'routeMeta';
-  const lnm = document.createElement('span'); lnm.className = 'routeName'; lnm.textContent = 'Loading cities…';
-  const lsub = document.createElement('span'); lsub.className = 'routeArea'; lsub.textContent = 'Getting the city library';
-  lmeta.append(lnm, lsub); loading.appendChild(lmeta); boxEl.appendChild(loading);
+  boxEl.appendChild(routeRowShell('div', 'Loading cities…', 'Getting the city library', { cls: 'crLoadingRow' })); // Beta 1.130: while the catalogue is genuinely in flight, the pane shows a ROW in the city rows' own styling (the shape the list itself takes) - the wait reads as the list arriving, not a bare note floating on an empty pane (the second, cosmetic half of Andrew's "loading screen" stutter; the wait itself is attacked by crWarmCityLibrary)
   crPackIndexLoad().then(entries => {
     if (!boxEl.isConnected) return;
     boxEl.innerHTML = '';
@@ -6077,14 +6092,7 @@ function crRenderCityChoices() {
     const sorted = entries.slice().sort((a, b) => (((b.name || '').toLowerCase() === last) ? 1 : 0) - (((a.name || '').toLowerCase() === last) ? 1 : 0)); // the last-used city rides first when the library holds it (a convenience, never a requirement - the full list is always there)
     for (const e of sorted) {
       if (!e || !e.name || !e.slug || !Array.isArray(e.bbox) || e.bbox.length !== 4) continue;
-      const b = document.createElement('button'); b.className = 'routeRow';
-      const meta = document.createElement('span'); meta.className = 'routeMeta';
-      const nm = document.createElement('span'); nm.className = 'routeName'; nm.textContent = e.name;
-      const sub = document.createElement('span'); sub.className = 'routeArea';
-      sub.textContent = (typeof e.streets === 'number' && isFinite(e.streets) ? e.streets.toLocaleString('en-US') + ' streets · ' : '') + 'ready to load' + (String(e.name).toLowerCase() === last ? ' · last used' : '');
-      meta.append(nm, sub);
-      const chev = document.createElement('span'); chev.className = 'routeChev'; chev.textContent = '›';
-      b.append(meta, chev);
+      const b = routeRowShell('button', e.name, (typeof e.streets === 'number' && isFinite(e.streets) ? e.streets.toLocaleString('en-US') + ' streets · ' : '') + 'ready to load' + (String(e.name).toLowerCase() === last ? ' · last used' : ''), { chevron: true });
       b.addEventListener('click', () => crPackPickCity(e));
       boxEl.appendChild(b);
     }
@@ -6120,13 +6128,8 @@ async function crRunCitySearch() {
     box.innerHTML = '';
     const places = (Array.isArray(list) ? list : []).filter(crIsPlace);
     for (const it of places) {
-      const b = document.createElement('button'); b.className = 'routeRow'; // Beta 1.125 (Andrew): manual-search results wear the SAME neat row as the city list - name on its own line, the rest of the address small and dim under it; full .rmBtn boxes stacked with no gap read as one bunched wall
       const dn = it.display_name || '', cut = dn.indexOf(',');
-      const meta = document.createElement('span'); meta.className = 'routeMeta';
-      const nm = document.createElement('span'); nm.className = 'routeName'; nm.textContent = cut > 0 ? dn.slice(0, cut).trim() : dn;
-      meta.appendChild(nm);
-      if (cut > 0 && dn.slice(cut + 1).trim()) { const sub = document.createElement('span'); sub.className = 'routeArea'; sub.textContent = dn.slice(cut + 1).trim(); meta.appendChild(sub); }
-      b.appendChild(meta);
+      const b = routeRowShell('button', cut > 0 ? dn.slice(0, cut).trim() : dn, (cut > 0 && dn.slice(cut + 1).trim()) ? dn.slice(cut + 1).trim() : null); // Beta 1.125 (Andrew): manual-search results wear the SAME neat row as the city list - name on its own line, the rest of the address small and dim under it; full .rmBtn boxes stacked with no gap read as one bunched wall
       b.addEventListener('click', () => crPickCity(it));
       box.appendChild(b);
     }
@@ -6312,7 +6315,7 @@ $('crModal').addEventListener('click', (e) => { if (crConfirmOneBtn && e.target 
 function parkBootChrome() { const sp = $('splash'); if (sp) sp.style.visibility = 'hidden'; $('routeMenu').classList.remove('show'); crBootParked = true; }
 function restoreBootChrome() { if (!crBootParked) return; crBootParked = false; const sp = $('splash'); if (sp) sp.style.visibility = ''; $('routeMenu').classList.add('show'); }
 function setCreateStage(stage) {
-  if (stage !== 'pick') { crSectorStreet = null; crSectorSnapshot = undefined; } // Beta 1.127: sector mode belongs to the pick stage - the preview never inherits a half-trimmed street's bar (Beta 1.129: its Cancel snapshot dies with it)
+  if (stage !== 'pick') crSectorReset(); // Beta 1.127: sector mode belongs to the pick stage - the preview never inherits a half-trimmed street's bar (Beta 1.129: its Cancel snapshot dies with it)
   crStage = stage;
   $('createBar').classList.toggle('on', stage === 'pick');
   $('createSheet').classList.toggle('on', stage === 'pick');
@@ -6326,7 +6329,7 @@ function setCreateStage(stage) {
 function enterCreate(stage) {
   if (!draft) draft = newDraft();
   creating = true;
-  crSectorStreet = null; crSectorSnapshot = undefined; crPanelCollapsed = false; crSettleMorph(); // Beta 1.127: every creation starts un-trimmed with the panel up (Beta 1.129: any surface morph a previous creation left in flight lands first)
+  crSectorReset(); crPanelCollapsed = false; crSettleMorph(); // Beta 1.127: every creation starts un-trimmed with the panel up (Beta 1.129: any surface morph a previous creation left in flight lands first)
   crSession++; // a fresh creation session: async completions born in any earlier session are obsolete from here (CG-PF-05)
   document.body.classList.add('creating');
   followPaused = true; // the camera belongs to the picking now; GPS is device state and is not stopped - follow resumes from the Locate tab afterwards
@@ -6336,7 +6339,7 @@ function enterCreate(stage) {
   setCreateStage(stage);
 }
 function exitCreate() {
-  creating = false; draft = null; crStage = 'pick'; crAreaGuess = ''; crSectorStreet = null; crSectorSnapshot = undefined; crPanelCollapsed = false; // Beta 1.127: the panel + sector session state dies with the creation
+  creating = false; draft = null; crStage = 'pick'; crAreaGuess = ''; crSectorReset(); crPanelCollapsed = false; // Beta 1.127: the panel + sector session state dies with the creation
   crSession++; crCovGen++; // every async completion born in this session is obsolete the moment the flow closes - it must not land in a later draft, hint or busy state (CG-PF-05)
   if (crPrep) { clearInterval(crPrep.ticker); crAbortOp(crPrep.op); crPrep = null; } // and the downloads themselves stop (CG-PF-10)
   if (crGrid) { crGridStop('exit'); crGrid = null; } // the grid's downloads stop too; its committed cells live on in the on-device city cache, by design
@@ -6681,7 +6684,7 @@ $('crClearAll').addEventListener('click', () => { // Andrew's addition (2026-11-
   const n = draft ? draftStreets().length : 0; if (!n) return;
   crConfirm('Clear all ' + n + (n === 1 ? ' road?' : ' roads?'), 'Every road you picked will be taken off this route. The city stays loaded.', () => {
     draft.roads = {}; draft.mains.clear(); draft.osmNames = {}; draft.sectors = {}; draft.parts = {};
-    crSectorStreet = null; crSectorSnapshot = undefined;
+    crSectorReset();
     renderDraft(); renderCrLists(); crRenderHint();
   }, { yes: 'Clear all', no: 'Cancel', danger: true });
 });
