@@ -32,8 +32,8 @@ function constArray(src, name) { // the literal of `const NAME = [ ... ];`
 }
 const PACK_FIELDS = constArray(app1src, 'PACK_FIELDS');
 const ROUTE_FIELDS = constArray(app1src, 'ROUTE_FIELDS');
-function constNum(src, name) { // the value of `const NAME = <number>` (Beta 1.136: the validator's caps live in app1's rule-constants block, so the sandbox receives them like PACK_FIELDS)
-  const m = src.match(new RegExp('const ' + name + ' = (\\d+)'));
+function constNum(src, name) { // the value of a numeric const (Beta 1.136: the validator's caps live in app1's rule-constants block, so the sandbox receives them like PACK_FIELDS). The block declares several caps per line (`const A = 60, B = 60`), so a name may be introduced by `const` OR by the chain's comma - matching only `const NAME` silently misses every chained name after the first (fix cycle 2: CI caught PACK_AREA_MAX not found).
+  const m = src.match(new RegExp('(?:const |, )' + name + ' = (\\d+)'));
   if (!m) throw new Error(name + ' not found');
   return Number(m[1]);
 }
