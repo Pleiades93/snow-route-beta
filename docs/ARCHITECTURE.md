@@ -71,6 +71,7 @@ Cancel after a reload). GPS is device state and is not switched.
 | `app2.js` | Map boot and interaction: GL map creation, basemap swap + restack, selection, side chips, street panel, list sheet, draggable/flickable sheets, map-failure notice. |
 | `app3.js` | Work lifecycle: pace, Start/Finish, history and Previous cleans, notes, Clear, GPS (smoothing, trail, heading-up camera), coverage suggestions. |
 | `app4.js` | System: the backup menu tree (Backup (JSON); Restore via Import JSON / Import Text; offline preload), update check, the day/night chip, service-worker registration, boot wiring. |
+| `create.js` | Route creation (Beta 1.118+): created-route packs (`USERPACKS_KEY`, `normalizePack`), city preparation (Nominatim search, the whole-city grid, the IndexedDB city cache, the city-pack seam), street picking, sectors, the picked-roads panel, the shared create confirm, save — plus the boot-tail IIFE that physically follows the create section. Split from `app4.js` at the create banner in Beta 1.134; assembly order and shipped bytes unchanged. |
 
 ## The map
 
@@ -127,7 +128,7 @@ approved mockups) with two doors landing in one shared preview.
 `{name, area, mains: [street names], roads: {street: [segment, ...]},
 reference: {street: [segment, ...]}, tileNames?: [...]}` — the shape of
 a `ROUTE_PACKS` entry in `parts/data.js`; each segment is an array of
-`[lat, lng]` points. `normalizePack` (app4) is the single validator and
+`[lat, lng]` points. `normalizePack` (create.js) is the single validator and
 normalizer for every pack that enters the app — draft import, save,
 backup restore, boot merge — fail-closed with named errors, nothing
 half-applied. The set of fields a pack carries is defined ONCE in

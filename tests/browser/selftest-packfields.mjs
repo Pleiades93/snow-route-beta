@@ -14,7 +14,7 @@
 // field, never a pack field, before and after.
 import { readFileSync } from 'node:fs';
 const app1src = readFileSync(new URL('../../parts/app1.js', import.meta.url), 'utf8');
-const app4src = readFileSync(new URL('../../parts/app4.js', import.meta.url), 'utf8');
+const createSrc = readFileSync(new URL('../../parts/create.js', import.meta.url), 'utf8'); // Beta 1.134: normalizePack lives in create.js since the app4 split
 const cases = JSON.parse(readFileSync(new URL('./fixtures/packfields-cases.json', import.meta.url), 'utf8'));
 function extract(src, name) {
   const i = src.indexOf('function ' + name + '(');
@@ -33,7 +33,7 @@ function constArray(src, name) { // the literal of `const NAME = [ ... ];`
 const PACK_FIELDS = constArray(app1src, 'PACK_FIELDS');
 const ROUTE_FIELDS = constArray(app1src, 'ROUTE_FIELDS');
 const api = new Function('MLAT', 'MLNG', 'ROADS', 'PACK_FIELDS',
-  extract(app1src, 'distM') + '\n' + extract(app1src, 'computeRouteBox') + '\n' + extract(app4src, 'normalizePack') + '\nreturn { normalizePack };')(111320, 80386, {}, PACK_FIELDS);
+  extract(app1src, 'distM') + '\n' + extract(app1src, 'computeRouteBox') + '\n' + extract(createSrc, 'normalizePack') + '\nreturn { normalizePack };')(111320, 80386, {}, PACK_FIELDS);
 let pass = 0, fail = 0;
 const t = (name, cond) => { if (cond) pass++; else { fail++; console.log('FAIL', name); } };
 const clone = o => JSON.parse(JSON.stringify(o));
