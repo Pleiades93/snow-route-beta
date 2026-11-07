@@ -105,6 +105,7 @@ function backupObj() { // Beta 1.76: format v2 - routes carry their own slots ({
   return o;
 }
 function buildBackup() { const o = backupObj(); return o ? JSON.stringify(o, null, 1) : null; }
+let recoveryDisclosure = null; // Beta 1.142 (Package B, DA-09): the names of created routes the LAST recovery build could not carry a definition for (their entries were excluded - see recoveryObj); shareRecovery names them in its result message, so an incomplete recovery file is never silent about what it lacks
 function recoveryObj() { // Beta 1.95 (deep audit SR-194-02): the RECOVERY backup - the live IN-MEMORY state of the active route, serialized directly. The normal Backup reads storage and REFUSES when storage is behind memory (it would ship a stale board as current); that refusal left the storage-failure warnings' "export a backup now" unactionable in exactly the state they fire in - the marks at risk had no exit before a reload. This export is that exit: same envelope (it restores through the normal path), plus the recovery marker, and the file/labels say plainly that it holds unsaved live data. It never reads the board from storage and never writes anything.
   if (!routeLoaded || !activeRoute) return null;
   const data = {};
@@ -123,10 +124,29 @@ function recoveryObj() { // Beta 1.95 (deep audit SR-194-02): the RECOVERY backu
     if (snapObj) data.snap = JSON.stringify(snapObj);
   }
   { const fl = rawRead(routeKeys(activeRoute.id).flip); if (fl !== RAW_READ_FAILED && fl != null) data.flip = fl; } // a read that fails simply leaves the field out (the recovery export's best-effort mode)
+  // Beta 1.142 (Package B, DA-09): the created-route definitions this file must carry are settled
+  // FIRST, before any route entry is built. When the stored record reads cleanly it is carried as
+  // before (1.118); when it cannot be read at all, the definitions come from the in-memory packs -
+  // each re-validated through normalizePack, the one validator - because a recovery file whose
+  // created route has progress but no definition is rejected WHOLESALE by a fresh device
+  // ("unknown route"), in exactly the storage-failure states this export exists for. A route whose
+  // definition cannot be carried even from memory is excluded from the file entirely (its progress
+  // would make the file unrestorable) and named in recoveryDisclosure for shareRecovery's message.
+  recoveryDisclosure = null;
+  let upsCarry = null; const excluded = new Set();
+  { const upsR = readUserPacks();
+    if (upsR !== null) upsCarry = upsR;
+    else { upsCarry = {}; const badNames = [];
+      for (const pk of ROUTE_PACKS) { if (SHIPPED_PACK_IDS.has(pk.id)) continue; const v = normalizePack(pk, {}); if (v.ok) { v.pack.id = pk.id; upsCarry[pk.id] = v.pack; } else { excluded.add(pk.id); badNames.push(pk.name || pk.id); } }
+      if (badNames.length) recoveryDisclosure = badNames;
+    } }
+  if (excluded.has(activeRoute.id)) return null; // the open route's own definition cannot be carried - no honest recovery file exists, and shareRecovery's unavailable message is the truthful result
   const routes = {}; routes[activeRoute.id] = data;
-  for (const pk of ROUTE_PACKS) { if (pk.id === activeRoute.id) continue; const rk = routeKeys(pk.id); const d = {}; for (const f of ROUTE_FIELDS) { const v = rawRead(rk[f]); if (v !== RAW_READ_FAILED && v != null) d[f] = v; } if (d.start === undefined) d.start = null; if (Object.keys(d).length) routes[pk.id] = d; } // Beta 1.97 (audit loop CG-196-01): an untouched pack in a recovery file asserts idle like any complete backup
+  for (const pk of ROUTE_PACKS) { if (pk.id === activeRoute.id || excluded.has(pk.id)) continue; const rk = routeKeys(pk.id); const d = {}; for (const f of ROUTE_FIELDS) { const v = rawRead(rk[f]); if (v !== RAW_READ_FAILED && v != null) d[f] = v; } if (d.start === undefined) d.start = null;
+    if (d.start) { const rawSnap = rawRead(rk.snap); if (rawSnap !== RAW_READ_FAILED && rawSnap != null) { const pv = validateSnap(parseJ(rawSnap, null), +d.start, packGeometry(pk)); if (pv) d.snap = JSON.stringify({ at: +d.start, pieces: pv.pieces, pieceTimes: pv.pieceTimes, done: pv.done, times: pv.times, via: pv.via, cov: pv.cov }); } } // Beta 1.142 (Package B, DA-08): a non-active RUNNING route's cancel snapshot rides the recovery file too, validated against its own geometry and normalized exactly as the normal backup carries it (1.97) - pre-1.142 recovery copied ROUTE_FIELDS only, so a run restored from a recovery file lost its exact Cancel. Recovery stays best-effort: a snapshot read that fails simply leaves it out.
+    if (Object.keys(d).length) routes[pk.id] = d; } // Beta 1.97 (audit loop CG-196-01): an untouched pack in a recovery file asserts idle like any complete backup
   const o = { app: 'snowroute-backup', v: 2, recovery: true, at: new Date().toISOString(), routes };
-  try { const upsR = readUserPacks(); if (upsR && Object.keys(upsR).length) o.userpacks = upsR; } catch (e) {} // Beta 1.118: created-route definitions ride the recovery backup too
+  if (upsCarry && Object.keys(upsCarry).length) o.userpacks = upsCarry; // Beta 1.118: created-route definitions ride the recovery backup too. Beta 1.142: from the strict record read, or from validated memory when the record cannot be read (DA-09)
   { const nt = rawRead(LS_GLOBAL.night); if (nt !== RAW_READ_FAILED) { if (nt != null) o.night = nt; const ne = rawRead(LS_GLOBAL.nightExp); if (ne !== RAW_READ_FAILED && ne != null) o.nightExp = ne; } } // the pair keeps its pre-1.136 one-try shape (Codex verify, 1.136 fix cycle): a FAILED night read skips the nightExp read entirely - the two values travel together, so a recovery file never carries an expiry whose override failed to read
   return o;
 }
@@ -144,7 +164,7 @@ function clearTrailAll() { // Beta 1.88: the Clear trail BUTTON left with the ol
 }
 function countUnknownNames(parsed) { // Beta 1.95 (deep audit SR-194-08): how many street names in a backup this route does not know - counted from the RAW parsed backup, BEFORE any normalization, each name ONCE. 1.94 counted what survived pushField into the write list: an object-form done map was filtered to known streets before it was pushed (its unknowns invisible), history entries in the legacy array form were skipped entirely, and a name repeated across fields counted per occurrence. The restore itself is unchanged; only the report is honest now. Beta 1.117 (F6): "known" is judged PER ROUTE - each entry against its own pack's street set, not the open route's.
   const bad = new Set();
-  const setFor = id => { const p = ROUTE_PACKS.find(x => x.id === id) || (restoreOverlayPacks ? restoreOverlayPacks[id] : null); return p ? new Set(Object.keys(p.roads || {})) : new Set(); }; // Beta 1.118: a route whose definition rides THIS backup (restoreOverlayPacks) is known too
+  const setFor = id => { const p = (restoreOverlayPacks ? restoreOverlayPacks[id] : null) || ROUTE_PACKS.find(x => x.id === id); return p ? new Set(Object.keys(p.roads || {})) : new Set(); }; // Beta 1.118: a route whose definition rides THIS backup (restoreOverlayPacks) is known too. Beta 1.142 (Package B, DA-01): the backup's own definition wins the lookup - a replaced route's names are judged against the streets it is about to have, not the ones it had
   const scanData = (data, set) => {
     const noteName = n => { if (typeof n === 'string' && !set.has(n)) bad.add(n); };
     const fromObj = o => { if (o && typeof o === 'object' && !Array.isArray(o)) for (const k of Object.keys(o)) noteName(k); };
@@ -189,10 +209,10 @@ function restoreBackup(parsed) { // production doRestore semantics: validate EVE
         if (!v.ok) { toast('Backup has a bad created route (' + rid + ': ' + v.error + ') — nothing was changed', 3200); return; }
         v.pack.id = rid; restoredPacks[rid] = v.pack;
       }
-      allPacks = ROUTE_PACKS.concat(Object.values(restoredPacks));
+      allPacks = ROUTE_PACKS.filter(p => !restoredPacks[p.id]).concat(Object.values(restoredPacks)); // Beta 1.142 (Package B, DA-01): ONE entry per route id, the INCOMING definition in it - everything below that iterates allPacks (session clearing, derived sides, the rollback scope) must see the definition this backup installs, never a duplicate of the one it replaces
     }
     for (const id of Object.keys(parsed.routes)) {
-      const pack = ROUTE_PACKS.find(p => p.id === id) || (restoredPacks ? restoredPacks[id] : null); if (!pack) { toast('Backup mentions an unknown route (' + id + ') — nothing was changed', 3200); return; } // Beta 1.118: a route whose definition rides this same backup is known
+      const pack = (restoredPacks ? restoredPacks[id] : null) || ROUTE_PACKS.find(p => p.id === id); if (!pack) { toast('Backup mentions an unknown route (' + id + ') — nothing was changed', 3200); return; } // Beta 1.118: a route whose definition rides this same backup is known. Beta 1.142 (Package B, DA-01): the incoming definition is judged FIRST - pre-1.142 the existing pack won this lookup, so a replaced route's name filter and snapshot validation ran against its OLD geometry while the new definition was installed underneath them
       const data = parsed.routes[id]; if (!data || typeof data !== 'object' || Array.isArray(data)) { toast('That is not a Snow Route backup', 3200); return; }
       const rk = routeKeys(id);
       const pg = packGeometry(pack); // Beta 1.117 (F6): this route's own geometry, for its name filter and snapshot validation below
@@ -214,7 +234,11 @@ function restoreBackup(parsed) { // production doRestore semantics: validate EVE
     for (const f of ROUTE_FIELDS) { const lv = parsed.data[LEGACY_KEYS[f]]; if (lv === undefined) continue; if (!pushField(rk5[f], f, lv, 'Route 5W ' + f, pg5 ? pg5.set : null)) return; }
     if (parsed.data['snowroute.v2.night'] !== undefined && !pushField(LS_GLOBAL.night, 'night', parsed.data['snowroute.v2.night'], 'night')) return;
   } else { toast('Unsupported backup version (' + String(parsed.v) + ') — nothing was changed', 3200); return; }
-  if (restoredPacks) { const merged = { ...loadUserPacks(), ...restoredPacks }; entries.push([USERPACKS_KEY, JSON.stringify(merged)]); } // Beta 1.118: the definitions land as ONE verified entry in the same write set (merged over the device's current record - a restore adds/updates routes, it does not delete ones the backup predates), inside the rollback scope below, and the reload that ends every restore re-registers them at boot before their state is read
+  if (restoredPacks) { // Beta 1.142 (Package B, DA-05): the merge base is read STRICTLY - a transient read failure or a corrupt record at this line must refuse the restore here, before anything is written. The rollback snapshot below re-reads the record, so it cannot catch a merge-time failure that has healed by snapshot time; merging over the lenient loader's guessed-empty {} committed a record holding only the restored routes and deleted every other definition.
+    const curRec = readUserPacks();
+    if (curRec === null) { toast('Restore stopped — your created-routes record could not be read, so nothing was changed', 3600); return; }
+    entries.push([USERPACKS_KEY, JSON.stringify({ ...curRec, ...restoredPacks })]);
+  } // Beta 1.118: the definitions land as ONE verified entry in the same write set (merged over the device's current record - a restore adds/updates routes, it does not delete ones the backup predates), inside the rollback scope below, and the reload that ends every restore re-registers them at boot before their state is read
   // Beta 1.73 (audit C06, Andrew's call): a backup that replaces a route's TRAIL but carries no
   // session markers of its own must not inherit the CURRENT trail's markers - they describe the
   // trail being replaced and would split the restored trail at wrong places. Clear them as part
@@ -451,10 +475,11 @@ async function shareBackup() { // Beta 1.88 (Andrew), moved into the backup menu
 async function shareRecovery(viaFallback) { // Beta 1.95 (SR-194-02): the recovery export - same share sheet, but the file is NAMED recovery and the result message repeats what it is: the live on-screen state, not fully saved on this device. Beta 1.96: since Andrew's one-button change this runs as Backup's AUTOMATIC fallback (viaFallback) - the standalone Recovery menu option is gone
   const b = buildRecovery();
   if (!b) { toast('Recovery backup unavailable — open the route first', 3600); return; }
+  const disc = (recoveryDisclosure && recoveryDisclosure.length) ? ' · WARNING: the definition for ' + recoveryDisclosure.join(', ') + ' could not be carried, so that route is NOT in this file' : ''; // Beta 1.142 (Package B, DA-09): an excluded route is named in the result - the file is honest about what it lacks
   let f = null; try { f = new File([b], 'snowroute-recovery.json', { type: 'application/json' }); } catch (e) { /* older engine: the text share below still works */ }
-  if (f && navigator.canShare && navigator.canShare({ files: [f] })) { try { await navigator.share({ files: [f] }); noteExported(); toast((viaFallback ? 'Backup could not be saved — recovery backup shared instead: ' : 'Recovery backup shared — ') + 'the open route is the live on-screen state, not fully saved on this device; other routes are included as last saved', 4200); return; } catch (e) { if (e && e.name === 'AbortError') return; } }
-  if (navigator.share) { try { await navigator.share({ text: b }); noteExported(); toast((viaFallback ? 'Backup could not be saved — recovery backup shared instead: ' : 'Recovery backup shared — ') + 'the open route is the live on-screen state, not fully saved on this device; other routes are included as last saved', 4200); return; } catch (e) { if (e && e.name === 'AbortError') return; } }
-  dl(new Blob([b], { type: 'application/json' }), 'snowroute-recovery.json'); noteExported(); toast((viaFallback ? 'Backup could not be saved — recovery backup downloaded instead: ' : 'Recovery backup downloaded — ') + 'the open route is the live on-screen state, not fully saved on this device; other routes are included as last saved', 4200); // Beta 1.96 (audit-2, N-5b): the wording distinguishes what the file actually holds - the ACTIVE route is serialized from live memory; any other route pack in the same file is read from storage, as last saved
+  if (f && navigator.canShare && navigator.canShare({ files: [f] })) { try { await navigator.share({ files: [f] }); noteExported(); toast((viaFallback ? 'Backup could not be saved — recovery backup shared instead: ' : 'Recovery backup shared — ') + 'the open route is the live on-screen state, not fully saved on this device; other routes are included as last saved' + disc, 4200); return; } catch (e) { if (e && e.name === 'AbortError') return; } }
+  if (navigator.share) { try { await navigator.share({ text: b }); noteExported(); toast((viaFallback ? 'Backup could not be saved — recovery backup shared instead: ' : 'Recovery backup shared — ') + 'the open route is the live on-screen state, not fully saved on this device; other routes are included as last saved' + disc, 4200); return; } catch (e) { if (e && e.name === 'AbortError') return; } }
+  dl(new Blob([b], { type: 'application/json' }), 'snowroute-recovery.json'); noteExported(); toast((viaFallback ? 'Backup could not be saved — recovery backup downloaded instead: ' : 'Recovery backup downloaded — ') + 'the open route is the live on-screen state, not fully saved on this device; other routes are included as last saved' + disc, 4200); // Beta 1.96 (audit-2, N-5b): the wording distinguishes what the file actually holds - the ACTIVE route is serialized from live memory; any other route pack in the same file is read from storage, as last saved
 }
 $('updBtn').addEventListener('click', () => $('setMenu').classList.remove('open')); // the update check reports by toast over the map - the menu steps aside for it (the old pop-up's pick-and-close)
 
@@ -610,7 +635,7 @@ $('stDel').addEventListener('click', async () => {
 });
 // ---- About / What's new ----
 const WHATSNEW = { // the curated in-app notes: plain words, LATEST RELEASE ONLY (Beta 1.114, Andrew: the accumulated list cluttered the About pane). A release REPLACES this entry with its own in the same change - it never accumulates; the full history lives in CHANGELOG.md, not the app
-  v: 'Beta 1.141', items: ["Finish is harder to fool: if a storage write fails halfway through finishing a clean, the app now restores even the step that failed \u2014 when it says your clean is intact, it has checked that it is true", "If a finish's final tidy-up (clearing the old clean's notes and coverage) cannot be written, the app now remembers the obligation and completes it the next time it opens \u2014 an old hazard note can no longer linger into the next clean"]};
+  v: 'Beta 1.142', items: ["Created routes are harder to lose: if your phone's storage hiccups at the exact moment a new route is saved or a backup is restored, the app now refuses the operation instead of guessing — a guess could silently erase your other routes", "Recovery backups now carry everything a normal backup does for your other routes — including the exact Cancel snapshot for a clean in progress — and if a route's details can't be read from storage, the recovery file carries them from the app's memory instead of leaving them out"]};
 function renderAbout() {
   const cur = $('ver').textContent.trim();
   $('wnHead').textContent = "WHAT'S NEW · " + cur; // the header names the LIVE version, read from the title's version element - never a second hard-coded copy that can go stale

@@ -175,6 +175,16 @@ Coverage:
   level: an archive write whose read-back lies, with the rollback's
   verification read throwing, warns the rollback could not be verified —
   never "run intact".
+- `drive163` — created-route data safety (Beta 1.142, Package B /
+  DA-05 + DA-01 + DA-09 + DA-08): a route save whose created-routes read
+  throws or parses corrupt refuses and leaves the record and registry
+  untouched; a restore replacing a created route judges its snapshot and
+  street names against the incoming definition; a restore whose merge-base
+  read fails transiently refuses before writing anything; a recovery
+  export under a dead record read carries the created route's definition
+  from validated memory plus its running snapshot, restores cleanly with
+  the record gone, and excludes + discloses a definition that cannot be
+  validated.
 
 ## The drive compatibility surface (frozen, Beta 1.136, programme E)
 
