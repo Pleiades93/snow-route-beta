@@ -21,10 +21,10 @@ import { fileURLToPath } from 'node:url';
 // so the whole draft -> panel -> save path under test is production
 // code; only the map's tile layer (which no drive can ready in this
 // rig) is bypassed, exactly as in drives 150/155.
-//   A sectors: whole-road pick -> row reads "Whole road"; the row
+//   A sectors: entire-road pick -> row reads "Entire road"; the row
 //     opens sector mode (bar replaces panel, draft renders 5 sector
 //     features, all chosen); two sector taps trim the street to its
-//     middle 3 parts; Whole road restores; trimming again and saving
+//     middle 3 parts; Entire road restores; trimming again and saving
 //     stores ONLY the chosen sectors in the saved pack (its Long
 //     measures ~964 m against the draft's 1,608 m whole).
 //   B panel: 8 streets -> the sheet stays under ~55% of the viewport
@@ -134,14 +134,14 @@ const inA = await enterPickWithExtract();
 await ev2(`pickStreet('Long Road', { lat: 43.8, lng: -79.574 })`);
 const addedA = await poll(`typeof draft !== 'undefined' && draft && !!draft.roads['Long']`, 15000);
 const rowA = await J(`(() => { const r = document.querySelector('#crPickList .crPRow'); return { panel: !!document.getElementById('crPanel'), sub: r ? (r.querySelector('.crPSub') || {}).textContent || '' : '', count: document.getElementById('crCount').textContent, whole: draft && draft.roads['Long'] ? Math.round(computeStretches(draft.roads)['Long'].total) : -1 }; })()`);
-ok('A1 WHOLE-ROAD PICK, PANEL SHAPE: picking Long Road adds it whole (its stitched length is ~1,608 m) and the new panel lists it with a "Whole road" sub-line under a "1 roads" header count | entered: ' + inA + ', added: ' + addedA + ' | ' + JSON.stringify(rowA),
-  inA === true && addedA === true && rowA.panel === true && rowA.sub.indexOf('Whole road') === 0 && Math.abs(rowA.whole - 1608) <= 4 && rowA.count.indexOf('1 roads') === 0);
+ok('A1 WHOLE-ROAD PICK, PANEL SHAPE: picking Long Road adds it whole (its stitched length is ~1,608 m) and the new panel lists it with a "Entire road" sub-line under a "1 roads" header count | entered: ' + inA + ', added: ' + addedA + ' | ' + JSON.stringify(rowA),
+  inA === true && addedA === true && rowA.panel === true && rowA.sub.indexOf('Entire road') === 0 && Math.abs(rowA.whole - 1608) <= 4 && rowA.count.indexOf('1 roads') === 0);
 await ev2(`(() => { const r = document.querySelector('#crPickList .crPRow'); if (r) r.click(); return true; })()`);
 const secA = await poll(`typeof crSectorStreet !== 'undefined' && crSectorStreet === 'Long'`, 10000);
 await poll(`getComputedStyle(document.getElementById('crPanel')).display === 'none'`, 12000); // Beta 1.128: face changes are a continuous morph now - wait for the panel to fully hand over before reading the bar's face state
 const barA = await J(`({ bar: getComputedStyle(document.getElementById('crSectorBar')).display, panel: getComputedStyle(document.getElementById('crPanel')).display, sub: document.getElementById('crSbSub').textContent, feats: (map.getSource('crDraft').serialize().data.features || []).filter(f => f.properties.name === 'Long').map(f => f.properties.chosen) })`);
-ok('A2 SECTOR MODE OPENS FROM THE ROW: the sector bar replaces the panel, reads "Whole road picked", and the draft renders Long Road as FIVE sector features, all chosen - the four cross streets cut it into five junction-to-junction parts | sector mode: ' + secA + ' | ' + JSON.stringify(barA),
-  secA === true && barA.bar !== 'none' && barA.panel === 'none' && barA.sub.indexOf('Whole road picked') === 0 && barA.feats.length === 5 && barA.feats.every(c => c === 1));
+ok('A2 SECTOR MODE OPENS FROM THE ROW: the sector bar replaces the panel, reads "Entire road picked", and the draft renders Long Road as FIVE sector features, all chosen - the four cross streets cut it into five junction-to-junction parts | sector mode: ' + secA + ' | ' + JSON.stringify(barA),
+  secA === true && barA.bar !== 'none' && barA.panel === 'none' && barA.sub.indexOf('Entire road picked') === 0 && barA.feats.length === 5 && barA.feats.every(c => c === 1));
 await ev2(`crSectorTap({ lat: 43.8, lng: -79.578 })`); // the middle of part 0
 const trim1 = await poll(`!!draft.sectors['Long'] && draft.sectors['Long'].length === 4`, 10000);
 await ev2(`crSectorTap({ lat: 43.8, lng: -79.562 })`); // the middle of part 4
@@ -152,8 +152,8 @@ ok('A3 SECTOR TAPS TRIM: tapping the end sectors un-picks exactly them - the sel
 await ev2(`document.getElementById('crSbWhole').click()`);
 const wholeA = await poll(`!draft.sectors['Long']`, 10000);
 const wholeSub = await J(`document.getElementById('crSbSub').textContent`);
-ok('A4 WHOLE ROAD RESTORES: the bar\'s Whole road button clears the trim (no sector entry - the draft\'s default state) and the bar reads "Whole road picked" again | restored: ' + wholeA + ' | ' + wholeSub,
-  wholeA === true && wholeSub.indexOf('Whole road picked') === 0);
+ok('A4 ENTIRE ROAD RESTORES: the bar\'s Entire road button clears the trim (no sector entry - the draft\'s default state) and the bar reads "Entire road picked" again | restored: ' + wholeA + ' | ' + wholeSub,
+  wholeA === true && wholeSub.indexOf('Entire road picked') === 0);
 await ev2(`crSectorTap({ lat: 43.8, lng: -79.578 })`);
 await poll(`!!draft.sectors['Long'] && draft.sectors['Long'].length === 4`, 10000);
 await ev2(`crSectorTap({ lat: 43.8, lng: -79.562 })`);
@@ -162,12 +162,12 @@ await ev2(`document.getElementById('crSbDone').click()`);
 const doneA = await poll(`crSectorStreet === null`, 10000);
 await poll(`getComputedStyle(document.getElementById('crSectorBar')).display === 'none'`, 12000); // Beta 1.128: same morph settle wait on the way back
 const rowA2 = await J(`(() => { const r = document.querySelector('#crPickList .crPRow'); return { bar: getComputedStyle(document.getElementById('crSectorBar')).display, panel: getComputedStyle(document.getElementById('crPanel')).display, sub: r ? (r.querySelector('.crPSub') || {}).textContent || '' : '', count: document.getElementById('crCount').textContent }; })()`);
-ok('A5 DONE RETURNS TO THE PANEL, AND THE ROW TELLS THE TRIM: "Done with this road" closes sector mode, the panel is back, its row reads "3 of 5 sectors · ~964 m - tap row to adjust" and the header total bills the chosen length only | done: ' + doneA + ' | ' + JSON.stringify(rowA2),
+ok('A5 DONE RETURNS TO THE PANEL, AND THE ROW TELLS THE TRIM: "Done" closes sector mode, the panel is back, its row reads "3 of 5 sectors · ~964 m - tap row to adjust" and the header total bills the chosen length only | done: ' + doneA + ' | ' + JSON.stringify(rowA2),
   doneA === true && rowA2.bar === 'none' && rowA2.panel !== 'none' && rowA2.sub.indexOf('3 of 5 sectors') === 0 && /9[0-9]{2} m/.test(rowA2.sub) && /roads · 9[0-9]{2} m/.test(rowA2.count));
 await ev2(`document.getElementById('crDoneBtn').click()`);
 await poll(`crStage === 'preview'`, 10000);
 const pvA = await J(`(() => { const num = s => Number(String(s).replace(/[^0-9]/g, '')) || 0; const rows = [...document.querySelectorAll('#pvList .crRow')].map(r => ({ n: (r.querySelector('.crName') || {}).textContent || '', m: num((r.querySelector('.crLen') || {}).textContent || '') })); const psub = (document.querySelector('#crPickList .crPRow .crPSub') || {}).textContent || ''; return { rows, rowSum: rows.reduce((a, r) => a + r.m, 0), countM: num(document.getElementById('pvCount').textContent.split('·').pop()), panelM: num(psub.split('·')[1] || '') }; })()`);
-ok('A6 PREVIEW BILLS THE TRIM (Beta 1.130, re-scan N1): on the check screen the trimmed street\'s row bills the CHOSEN ~964 m - the same figure the picking panel billed - NOT the whole 1,608 m, and the preview\'s own total equals the sum of its rows (through 1.129 crRowEl read the whole-road total, so the check screen\'s rows and total disagreed with each other and with the panel) | ' + JSON.stringify(pvA),
+ok('A6 PREVIEW BILLS THE TRIM (Beta 1.130, re-scan N1): on the check screen the trimmed street\'s row bills the CHOSEN ~964 m - the same figure the picking panel billed - NOT the whole 1,608 m, and the preview\'s own total equals the sum of its rows (through 1.129 crRowEl read the entire-road total, so the check screen\'s rows and total disagreed with each other and with the panel) | ' + JSON.stringify(pvA),
   pvA.rows.length === 1 && Math.abs(pvA.rows[0].m - 964) <= 8 && pvA.rows[0].m === pvA.panelM && pvA.countM === pvA.rowSum);
 await ev2(`document.getElementById('pvSaveBtn').click()`);
 await poll(`document.getElementById('rmNamePane').classList.contains('on')`, 10000);

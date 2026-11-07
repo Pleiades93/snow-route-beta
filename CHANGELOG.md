@@ -1,5 +1,12 @@
 # Changelog
 
+## Beta 1.133 — 2026-11-07
+Programme build 2 — candidate C from the 2026-11-06 maintainability scan (adjudicated; re-scan confirmed on 1.129): the release bookkeeping is generated, not hand-kept — plus, as this build's first job, the repair of the drive premises Beta 1.132's renames expired. Feature tier: branch + battery on touched surfaces + the standing Codex verify gate before merge.
+
+- NEW `scripts/release.py` — the single source for the README battery counts. It derives them from the suite itself (the drive count from `tests/browser/run.mjs`'s ALL list; the check counts from the suites' own assertion call sites, by the counting rule stated in the script) and rewrites the README lines; `--check` fails when the README disagrees. `build-pages.py` asserts the same derivation on every build, so a stale count now fails the build instead of drifting silently. `release.py` also prints the release checklist, separating the generated steps from the editorial ones (the CHANGELOG entry and the What's New prose stay editorial).
+- The build now gates What's New alignment: `build-pages.py` asserts `WHATSNEW.v` equals the displayed version (before this build the gate compared only #ver against the CHANGELOG — the 1.125 direct ship left WHATSNEW stale and only a registry probe noticed). A stale `WHATSNEW.v` fails the build; demonstrated on a deliberately staled copy during this build.
+- Splash injection: `parts/head.html` no longer carries the splash icon as a 281 KB base64 line — it carries a placeholder token, and `scripts/assemble.py` inlines the exact bytes of `icon-512.png` at assembly time. The artwork is untouched (this is NOT the declined re-encode) and the shipped page is unchanged: the new tree with only this release's version strings reverted builds to the exact Beta 1.132 page hash. head.html itself drops from ~348 KB to ~67 KB of reviewable source.
+- Drive premises repaired (the KNOWN-EXPIRED-BY-1132 note): drives 156/157/158 assertions now use the 1.132 labels ("Entire road", "Done", "Entire road picked · ", "Entire road · ") — labels only, every assertion's meaning unchanged.
 ## Beta 1.132 — 2026-11-06
 Cosmetics, shipped DIRECT to main at Andrew's explicit order (2026-11-06, "push without testing"; visual tier): mechanical integrity only — assemble + build check + hash-verified push + live read-back. No test battery, no Codex gate.
 

@@ -21,7 +21,14 @@ produces the deployed `index.html` by stamping a Content-Security-Policy
 (see `scripts/csp_stamp.py`) and runs `--check` gates (the source being
 exactly what the parts assemble to, byte parity with the source, SRI
 integrity of the two MapLibre CDN files, and the stamped policy
-naming all three map hosts). Generated files are never hand-edited.
+naming all three map hosts). Since Beta 1.133 the same gates also pin
+the release bookkeeping: the What's New entry's version must equal the
+displayed version, and the battery counts quoted in README.md must equal
+the derivation of `scripts/release.py` — that script is the single
+source for the counts, deriving them from the test suite itself
+(`tests/browser/run.mjs`'s ALL list and the suites' assertion call
+sites); the counts are generated, never hand-kept. Generated files are
+never hand-edited.
 
 Boot flow (Beta 1.76): the splash brand animates in, and at the readiness
 gate (map engine up and a first tile landed, with a time failsafe) it
@@ -56,7 +63,7 @@ Cancel after a reload). GPS is device state and is not switched.
 
 | Part | Responsibility |
 |------|----------------|
-| `head.html` | Markup and CSS: tab bar, dock, sheets, the route and settings full-screen menus, chips, toasts, splash. Design tokens as CSS variables; day/night via `body.night`. |
+| `head.html` | Markup and CSS: tab bar, dock, sheets, the route and settings full-screen menus, chips, toasts, splash. Design tokens as CSS variables; day/night via `body.night`. The splash icon is a placeholder token in this part — `scripts/assemble.py` inlines the exact bytes of `icon-512.png` at assembly time (Beta 1.133), so the part carries no 281 KB base64 line. |
 | `data.js` | Route packs only: `ROUTE_PACKS` — per pack, metadata (name, area, mains, label anchors, tile spellings, offline area) + street geometry + reference features. Route 5W's coordinates are verbatim production data. |
 | `app1.js` | Core: constants (Metro palette), storage keys and guarded storage, stitch/cut geometry (87 stretches, 174 sides on 5W), state, the double-tap guard. Beta 1.117: the geometry builders are pure functions of a pack (`computeStretches`, `computeRouteBox`); `buildGeometry(pack)` refills the live geometry containers per load. |
 | `engine.js` | The paint engine (namespace `GLP`): builds GeoJSON families (centres, side bands/edges, selection, labels, route POI) from app state and syncs them to GL sources. Full rebuild + signature cache on state change. Beta 1.117: its geometry is built by `buildEngineGeometry()` from the host's current data — empty at eval, rebuilt per load via `GLP.rebuildRoute()`. |

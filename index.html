@@ -2,7 +2,7 @@
 <html lang="en" class="boot">
 <head>
 <meta charset="UTF-8">
-<meta http-equiv="Content-Security-Policy" content="default-src 'none'; script-src 'sha384-15Grk4nqGRMPU3Xw5Fq5iE5+ATKI8+Os8xexYPRyd2JE43NKzDJaxjnUNZu3r+qL' https://cdn.jsdelivr.net; style-src-elem 'sha384-Z5nYeLguGIPmbuBxkZFDoxv56KPqmnkDUJCg43k9PQSKgiAdchTPgf7sGHbomVRH' https://cdn.jsdelivr.net; style-src-attr 'unsafe-inline'; img-src 'self' data: blob: https://tiles.basemaps.cartocdn.com https://protomaps.github.io https://cdn.jsdelivr.net; connect-src 'self' https://tiles.basemaps.cartocdn.com https://protomaps.github.io https://cdn.jsdelivr.net https://nominatim.openstreetmap.org https://overpass-api.de https://overpass.kumi.systems; worker-src blob: 'self'; child-src blob: 'self'; font-src 'none'; manifest-src 'self'; base-uri 'none'; form-action 'none'; object-src 'none'">
+<meta http-equiv="Content-Security-Policy" content="default-src 'none'; script-src 'sha384-6sxNIkKaWSJzA510jjozzs8SbGgfuy/WrsC1ZCxhPUrs0zdurhm0qNaYE42o+kYH' https://cdn.jsdelivr.net; style-src-elem 'sha384-Z5nYeLguGIPmbuBxkZFDoxv56KPqmnkDUJCg43k9PQSKgiAdchTPgf7sGHbomVRH' https://cdn.jsdelivr.net; style-src-attr 'unsafe-inline'; img-src 'self' data: blob: https://tiles.basemaps.cartocdn.com https://protomaps.github.io https://cdn.jsdelivr.net; connect-src 'self' https://tiles.basemaps.cartocdn.com https://protomaps.github.io https://cdn.jsdelivr.net https://nominatim.openstreetmap.org https://overpass-api.de https://overpass.kumi.systems; worker-src blob: 'self'; child-src blob: 'self'; font-src 'none'; manifest-src 'self'; base-uri 'none'; form-action 'none'; object-src 'none'">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="mobile-web-app-capable" content="yes">
@@ -420,7 +420,7 @@ input, textarea { caret-color: currentColor; } /* Beta 1.125 (Andrew): the typin
 <div id="hud">
   <div id="warn">Not saving — storage is full or blocked</div>
   <div class="row">
-    <div class="titleStack"><div class="title">Snow Route Beta</div><div class="ver" id="ver">Beta 1.132</div></div>
+    <div class="titleStack"><div class="title">Snow Route Beta</div><div class="ver" id="ver">Beta 1.133</div></div>
   </div>
   <div id="stats"></div>
 </div>
@@ -4745,7 +4745,7 @@ $('stDel').addEventListener('click', async () => {
 });
 // ---- About / What's new ----
 const WHATSNEW = { // the curated in-app notes: plain words, LATEST RELEASE ONLY (Beta 1.114, Andrew: the accumulated list cluttered the About pane). A release REPLACES this entry with its own in the same change - it never accumulates; the full history lives in CHANGELOG.md, not the app
-  v: 'Beta 1.132', items: ["Sector buttons are renamed: Entire road and Done — and Entire road is easy to read on the night map now", "Throwing away a draft asks with one red Discard button — the red X in the corner, or a tap anywhere outside, keeps you editing instead", "Swipes in the gap under the tucked-away route pill no longer move the map"]
+  v: 'Beta 1.133', items: ["Under-the-hood release tidy-up: the version notes, test counts and splash picture are now produced by a release script instead of being typed by hand, so they can't quietly go stale", "Nothing about how the app works has changed — same screens, same buttons, same routes"]
 };
 function renderAbout() {
   const cur = $('ver').textContent.trim();

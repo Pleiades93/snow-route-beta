@@ -89,10 +89,11 @@ the app update check under Settings → **About**.)
 | `sw.js` | **Generated** copy of `src/sw.js`. Must sit beside `index.html` on an https host. Never hand-edit. |
 | `scripts/assemble.py` | Concatenates `parts/` into `src/tracker-source.html` (byte-exact recipe; `--check` verifies without writing). |
 | `scripts/build-pages.py` | The repository-owned build: generates `index.html` + `sw.js` from `src/` and runs the assembly, parity, CSP, integrity and version gates. Standard library only. |
+| `scripts/release.py` | The release bookkeeping generator (Beta 1.133): derives the battery counts quoted in this README from the suite itself and rewrites them — the counts are generated, never hand-kept — and prints the release checklist (generated steps vs editorial ones). The build fails if the README disagrees with its derivation. |
 | `scripts/csp_stamp.py` | Computes the Content-Security-Policy the build stamps into the page. |
 | `scripts/genstyles.mjs` | Regenerates `parts/pmstyles.js` (the two embedded Protomaps basemap styles) from the `@protomaps/basemaps` package (pinned exactly by `scripts/package.json` + `package-lock.json` — `npm ci` in `scripts/` first); run from `scripts/`. Never hand-edit its output. |
 | `tests/sw.test.mjs` | Service worker fetch-strategy tests (Node, mocked caches/fetch) — 27 checks. |
-| `tests/browser/` | The deterministic browser drive battery (50 drives, 783 checks) plus the offline end-to-end suite (31 checks) — see `docs/TESTING.md`. |
+| `tests/browser/` | The deterministic browser drive battery (50 drives, 794 checks) plus the offline end-to-end suite (38 checks) — see `docs/TESTING.md`. |
 | `docs/` | `ARCHITECTURE.md`, `STORAGE-SCHEMA.md`, `TESTING.md`, `DEPLOYMENT.md` — the detailed references. |
 | `DEVELOPMENT_RULES.md` | How changes are built, tested and merged in this repo. |
 | `CHANGELOG.md` | What changed in each Beta version. |
@@ -116,8 +117,14 @@ stamped Content-Security-Policy: the build reverses it and asserts the
 result is byte-identical to the source, so any other difference fails the
 build. The build also asserts that the service worker's library integrity
 hashes match the page tags exactly, that the policy names every host the
-styles use, and that the version the app displays equals the top
-`CHANGELOG.md` entry — a stale version label cannot ship.
+styles use, that the version the app displays equals the top
+`CHANGELOG.md` entry — a stale version label cannot ship — that the
+What's New entry carries the same version, and that the battery counts
+quoted in this README equal `scripts/release.py`'s derivation from the
+suite. One more assembly-time step (Beta 1.133): `parts/head.html` holds
+a placeholder where the splash icon belongs, and `scripts/assemble.py`
+inlines the exact bytes of `icon-512.png` there — the shipped page is
+unchanged, the source part is ~281 KB smaller and reviewable.
 
 CI (GitHub Actions) runs the build gate and the service-worker suite on
 every push; the browser battery runs sharded across four jobs on branches,

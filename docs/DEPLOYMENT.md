@@ -21,18 +21,26 @@ hand-edit `index.html` or the root `sw.js`.
 
 1. Work on a branch — never commit a release straight to `main`. Edit the
    app (assembled into `src/tracker-source.html`; `src/sw.js` when the
-   worker changes). Bump the version in both places that carry it: the
-   `#ver` label in the page and the top `CHANGELOG.md` entry — the build
-   gate fails the build if they disagree. If the worker changed, bump its
-   cache name (`snowroute-shell-vN`) too.
-2. Run the build and the full battery (`docs/TESTING.md`) locally.
-3. Push the branch. CI runs the build gate, the service-worker suite, the
+   worker changes). Bump the version in the three places that carry it:
+   the `#ver` label in the page, the top `CHANGELOG.md` entry and the
+   `WHATSNEW` entry in `parts/app4.js` — the build gate fails the build
+   if any of them disagrees (the What's New comparison is gated since
+   Beta 1.133; before that a stale entry shipped once and only a registry
+   probe noticed). If the worker changed, bump its cache name
+   (`snowroute-shell-vN`) too.
+2. Run `python3 scripts/release.py` — it derives the README battery
+   counts from the suite and rewrites them (generated bookkeeping is
+   never typed by hand; `build-pages.py` asserts the same derivation, so
+   skipping this step fails the build), and prints the release checklist
+   separating the generated steps from the editorial ones.
+3. Run the build and the full battery (`docs/TESTING.md`) locally.
+4. Push the branch. CI runs the build gate, the service-worker suite, the
    full sharded browser battery and the offline end-to-end suite.
-4. Merge to `main` only under the merge gate in `DEVELOPMENT_RULES.md`:
+5. Merge to `main` only under the merge gate in `DEVELOPMENT_RULES.md`:
    the merged tree is proven identical to the tested branch tree, and
    `main` then runs the build gate, a smoke subset and the offline suite.
    Pages serves `main`, so the merge is the release.
-5. Pages picks the files up within a few minutes; GitHub's edge cache can
+6. Pages picks the files up within a few minutes; GitHub's edge cache can
    lag ~10 minutes behind the push.
 
 ## Updating the installed app

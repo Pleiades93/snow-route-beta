@@ -156,8 +156,8 @@ const outA1 = await poll(`crSectorStreet === null`, 10000);
 await settled();
 const stA1 = await J(`({ sec: draft.sectors['Long'], mode: crSectorStreet, panel: getComputedStyle(document.getElementById('crPanel')).display, chosen: Math.round(crStreetChosenM('Long', computeStretches(draft.roads))) })`);
 const subA1 = await rowSub();
-ok('A1 CANCEL RESTORES THE WHOLE ROAD: entered via the row, trimmed the two end sectors ([1,2,3]), Cancel restores the entry snapshot - no sector entry, the chosen length is the whole ~1,608 m again, the row reads "Whole road", sector mode closed and the panel is back | opened: ' + openA1 + ', trimmed: ' + trimA1 + ', cancel btn: ' + JSON.stringify(ccA1) + ', out: ' + outA1 + ' | ' + JSON.stringify(stA1) + ' | ' + subA1,
-  inA === true && openA1 === true && trimA1 === true && ccA1.exists === true && ccA1.lbl === 'Cancel' && outA1 === true && stA1.sec === undefined && Math.abs(stA1.chosen - 1608) <= 4 && stA1.panel !== 'none' && subA1.indexOf('Whole road') === 0);
+ok('A1 CANCEL RESTORES THE ENTIRE ROAD: entered via the row, trimmed the two end sectors ([1,2,3]), Cancel restores the entry snapshot - no sector entry, the chosen length is the whole ~1,608 m again, the row reads "Entire road", sector mode closed and the panel is back | opened: ' + openA1 + ', trimmed: ' + trimA1 + ', cancel btn: ' + JSON.stringify(ccA1) + ', out: ' + outA1 + ' | ' + JSON.stringify(stA1) + ' | ' + subA1,
+  inA === true && openA1 === true && trimA1 === true && ccA1.exists === true && ccA1.lbl === 'Cancel' && outA1 === true && stA1.sec === undefined && Math.abs(stA1.chosen - 1608) <= 4 && stA1.panel !== 'none' && subA1.indexOf('Entire road') === 0);
 // A2: enter already trimmed, trim further, Cancel -> the ENTRY trim returns exactly
 await rowClick();
 await ev2(`crSectorTap({ lat: 43.8, lng: -79.578 })`);
@@ -174,7 +174,7 @@ const outA2 = await poll(`crSectorStreet === null`, 10000);
 await settled();
 const stA2 = await J(`({ sel: draft.sectors['Long'], chosen: Math.round(crStreetChosenM('Long', computeStretches(draft.roads))) })`);
 const subA2 = await rowSub();
-ok('A2 CANCEL RESTORES THE ENTRY TRIM, NOT THE WHOLE ROAD: with [1,2,3] already saved by Done, re-entering and un-picking part 1 ([2,3]) then Cancel brings back exactly [1,2,3] - ~964 m, the row again reads "3 of 5 sectors" | opened: ' + openA2 + ', trimmed: ' + trimA2 + ', out: ' + outA2 + ' | ' + JSON.stringify(stA2) + ' | ' + subA2,
+ok('A2 CANCEL RESTORES THE ENTRY TRIM, NOT THE ENTIRE ROAD: with [1,2,3] already saved by Done, re-entering and un-picking part 1 ([2,3]) then Cancel brings back exactly [1,2,3] - ~964 m, the row again reads "3 of 5 sectors" | opened: ' + openA2 + ', trimmed: ' + trimA2 + ', out: ' + outA2 + ' | ' + JSON.stringify(stA2) + ' | ' + subA2,
   openA2 === true && trimA2 === true && outA2 === true && JSON.stringify(stA2.sel) === '[1,2,3]' && Math.abs(stA2.chosen - 964) <= 8 && subA2.indexOf('3 of 5 sectors') === 0);
 // A3: Done keeps the session's trims
 await rowClick();
