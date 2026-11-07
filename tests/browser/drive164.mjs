@@ -50,7 +50,7 @@ await sleep(400); // Alpha's queue step is now parked inside the gated put
 ok('D0b Alpha write is genuinely in flight (one put attempted, gate held)', await ev(`window.__puts.length === 1 && !!window.__gate`) === true);
 // The user switches cities while Alpha's write is in flight - the same
 // reset crCityPrepare performs when the new city's preparation starts.
-await ev(`(() => { crCity = { name: 'Beta City', lat: 43.7, lon: -79.3, bbox: null }; crCacheNote = ''; if (typeof crCacheNoteCity !== 'undefined') crCacheNoteCity = ''; if (typeof crCacheGen !== 'undefined') crCacheGen++; return true; })()`);
+await ev(`(() => { crCity = { name: 'Beta City', lat: 43.7, lon: -79.3, bbox: null }; crCacheNote = ''; if (typeof crCacheNoteCity !== 'undefined') crCacheNoteCity = ''; return true; })()`);
 await ev(`(() => { window.__gate(false); return true; })()`); // Alpha's write now FAILS, after the switch
 await ev(`(async () => { await crCacheSaveCell('Beta City', ${JSON.stringify(BOX_B)}, 4, 'r0c0', ${JSON.stringify(WAYS)}); return true; })()`); // awaiting the returned queue promise settles both steps
 const dState = JSON.parse(await ev(`JSON.stringify({ puts: window.__puts, note: crCacheNote, noteCity: (typeof crCacheNoteCity !== 'undefined' ? crCacheNoteCity : null) })`));
@@ -75,11 +75,26 @@ ok('D3 control: the current city\'s failure still discloses (naming it) and supp
 await ev(`(() => { window.__puts = []; window.__holdCities = new Set(['Delta City']); window.__failCities = new Set(); crCacheNote = ''; if (typeof crCacheNoteCity !== 'undefined') crCacheNoteCity = ''; crCity = { name: 'Delta City', lat: 43.5, lon: -79.1, bbox: null }; return true; })()`);
 await ev(`(() => { crCacheSaveCell('Delta City', ${JSON.stringify(BOX_D)}, 4, 'r0c0', ${JSON.stringify(WAYS)}); return true; })()`); // W1, commissioned by the old preparation
 const d4held = await poll(`window.__puts.length === 1 && !!window.__gate`, 8000);
-await ev(`(() => { crCacheNote = ''; if (typeof crCacheNoteCity !== 'undefined') crCacheNoteCity = ''; if (typeof crCacheGen !== 'undefined') crCacheGen++; crCity = { name: 'Delta City', lat: 43.5, lon: -79.1, bbox: null }; window.__holdCities.clear(); return true; })()`); // the reset + fresh preparation; W2's put will not be held
+await ev(`(() => { crCacheNote = ''; if (typeof crCacheNoteCity !== 'undefined') crCacheNoteCity = ''; crSession++; crCity = { name: 'Delta City', lat: 43.5, lon: -79.1, bbox: null }; window.__holdCities.clear(); return true; })()`); // the reset (crSession++ is what exitCreate does: W1's session is closed) + fresh preparation of the same city; W2's put will not be held
 await ev(`(async () => { const p = crCacheSaveCell('Delta City', ${JSON.stringify(BOX_D)}, 4, 'r0c1', ${JSON.stringify(WAYS)}); window.__gate(false); await p; return true; })()`); // W2 queued behind W1; W1's failure lands; awaiting the queue settles both steps
 const d4 = JSON.parse(await ev(`JSON.stringify({ puts: window.__puts, note: crCacheNote })`));
 ok('D4 DA-06 session binding: a stale write failing after a reset cannot suppress the new preparation\'s writes | ' + JSON.stringify(d4),
   d4held === true && d4.puts.filter(c => c === 'Delta City').length === 2 && d4.note === '');
+
+// Write survival (the drive150 J6a/J11a shape): WITHIN one session, a
+// queued write commissioned before a note reset still LANDS - a
+// preparation's cancel/resume depends on its queued cells reaching the
+// record. (The per-preparation generation binding tried in verify
+// cycle 2 dropped exactly these writes and failed CI on drive150 J11a;
+// the binding is the session, never the write.)
+await ev(`(() => { window.__puts = []; window.__holdCities = new Set(['Echo City']); window.__failCities = new Set(); crCacheNote = ''; if (typeof crCacheNoteCity !== 'undefined') crCacheNoteCity = ''; crCity = { name: 'Echo City', lat: 43.5, lon: -79.0, bbox: null }; return true; })()`);
+await ev(`(() => { crCacheSaveCell('Echo City', ${JSON.stringify(BOX_D)}, 4, 'r0c0', ${JSON.stringify(WAYS)}); return true; })()`); // W1, parked in the gated put
+const d5held = await poll(`window.__puts.length === 1 && !!window.__gate`, 8000);
+await ev(`(() => { crCacheNote = ''; if (typeof crCacheNoteCity !== 'undefined') crCacheNoteCity = ''; window.__holdCities.clear(); return true; })()`); // an in-session reset (cancel/resume territory): NO session bump
+await ev(`(async () => { const p = crCacheSaveCell('Echo City', ${JSON.stringify(BOX_D)}, 4, 'r0c1', ${JSON.stringify(WAYS)}); window.__gate(true); await p; return true; })()`); // W2 queued behind W1; W1 succeeds late; awaiting the queue settles both
+const d5puts = await ev(`window.__puts.filter(c => c === 'Echo City').length`);
+ok('D5 DA-06 write survival: queued writes land across an in-session reset (cancel/resume keeps its cells) | held ' + d5held + ' puts ' + d5puts,
+  d5held === true && d5puts === 2);
 
 // ---------- DA-12: a cleared / reopened city search must stay cleared ----------
 const INSTALL_FETCH = `(() => {

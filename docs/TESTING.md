@@ -189,9 +189,7 @@ Coverage:
 - `drive164` — stale-city cache failure + city search invalidation
   (Beta 1.143, Packages D+E / DA-06 + DA-12): a gated in-flight cache
   write for city A failing after the switch to city B leaves B's writes
-  flowing and B uncharged (the late failure is dropped with its dead
-  preparation, never re-homed onto B); a write commissioned before a
-  reset and failing late cannot suppress a fresh preparation's writes;
+  flowing and B uncharged (the failure is never re-homed onto B); a write commissioned in a closed session and failing late cannot suppress the live session's writes, while queued writes always land — a preparation's cancel/resume keeps its cells;
   the current city's own failure still discloses (naming it) and
   suppresses its own writes. A city search cleared mid-flight renders
   nothing when its late answer lands — cleared through the search
