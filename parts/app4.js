@@ -635,7 +635,7 @@ $('stDel').addEventListener('click', async () => {
 });
 // ---- About / What's new ----
 const WHATSNEW = { // the curated in-app notes: plain words, LATEST RELEASE ONLY (Beta 1.114, Andrew: the accumulated list cluttered the About pane). A release REPLACES this entry with its own in the same change - it never accumulates; the full history lives in CHANGELOG.md, not the app
-  v: 'Beta 1.142', items: ["Created routes are harder to lose: if your phone's storage hiccups at the exact moment a new route is saved or a backup is restored, the app now refuses the operation instead of guessing — a guess could silently erase your other routes", "Recovery backups now carry everything a normal backup does for your other routes — including the exact Cancel snapshot for a clean in progress — and if a route's details can't be read from storage, the recovery file carries them from the app's memory instead of leaving them out"]};
+  v: 'Beta 1.143', items: ["Fix: maps downloaded for a route you created could be dropped by the app's one-time offline cleanup on a later start, while it reported success — created routes now keep their downloaded maps", "Fix: if saving one city's streets failed after you had already moved to another city, the failure was charged to the new city and its saving quietly stopped — a failure now belongs to the city that caused it", "Fix: clearing the city search — or leaving and reopening it — while an answer was still loading could bring the old results back; a cleared search now stays cleared"]};
 function renderAbout() {
   const cur = $('ver').textContent.trim();
   $('wnHead').textContent = "WHAT'S NEW · " + cur; // the header names the LIVE version, read from the title's version element - never a second hard-coded copy that can go stale
@@ -726,7 +726,11 @@ async function migratePack() { // Beta 1.95 (deep audit SR-194-05/06): the one-t
     return { ok: flagOk, flag: flagOk ? fp : null, pruneOk };
   } catch (e) { return { ok: false, why: String((e && e.message) || e) }; }
 }
-if (parseJ(lsGet(LS.pre), null)) migratePack(); // boot: fire-and-forget - it never blocks the boot, and because the flag is earned, an incomplete migration simply runs again next boot
+// Beta 1.143 (DA-07): the boot invocation of migratePack() no longer lives here. It fired during
+// this part's evaluation and captured preloadUrlList() as its manifest BEFORE create.js evaluated
+// and registered the created packs - the captured set was the shipped packs only, so the migration
+// pruned a created route's downloaded tiles and certified the smaller set. The call now sits in
+// create.js immediately after mergeUserPacks(), where the manifest is the true union.
 // Beta 1.18 (Andrew's phone report): the on-screen keyboard shrinks the VISIBLE screen
 // (visualViewport) and iOS pans the page to the focused note box, stranding the header
 // and menus off-screen - and it does not pan back. Track the visible screen in CSS vars

@@ -186,6 +186,19 @@ Coverage:
   the record gone, and excludes + discloses a definition that cannot be
   validated.
 
+- `drive164` — stale-city cache failure + city search invalidation
+  (Beta 1.143, Packages D+E / DA-06 + DA-12): a gated in-flight cache
+  write for city A failing after the switch to city B leaves B's writes
+  flowing and B uncharged (the failure is never re-homed onto B); a write commissioned in a closed session and failing late cannot suppress the live session's writes, while queued writes always land — a preparation's cancel/resume keeps its cells;
+  the current city's own failure still discloses (naming it) and
+  suppresses its own writes. A city search cleared mid-flight renders
+  nothing when its late answer lands — cleared through the search
+  function, through the pane reopening, and through the real input
+  handler (invalidation at the input event, inside the debounce
+  window) — and a normal search still renders. The DA-07 half of the
+  build is covered by e2e-offline E23 (boot migration certifies the
+  union once created packs register).
+
 ## The drive compatibility surface (frozen, Beta 1.136, programme E)
 
 The drives do not test the app only through its UI: most of them call
