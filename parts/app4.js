@@ -609,7 +609,7 @@ $('stDel').addEventListener('click', async () => {
 });
 // ---- About / What's new ----
 const WHATSNEW = { // the curated in-app notes: plain words, LATEST RELEASE ONLY (Beta 1.114, Andrew: the accumulated list cluttered the About pane). A release REPLACES this entry with its own in the same change - it never accumulates; the full history lives in CHANGELOG.md, not the app
-  v: 'Beta 1.132', items: ["Sector buttons are renamed: Entire road and Done — and Entire road is easy to read on the night map now", "Throwing away a draft asks with one red Discard button — the red X in the corner, or a tap anywhere outside, keeps you editing instead", "Swipes in the gap under the tucked-away route pill no longer move the map"]
+  v: 'Beta 1.133', items: ["Under-the-hood release tidy-up: the version notes, test counts and splash picture are now produced by a release script instead of being typed by hand, so they can't quietly go stale", "Nothing about how the app works has changed — same screens, same buttons, same routes"]
 };
 function renderAbout() {
   const cur = $('ver').textContent.trim();
