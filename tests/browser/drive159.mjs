@@ -26,14 +26,14 @@ import { fileURLToPath } from 'node:url';
 //   A (boot pre-warm): from a COLD page, with NO tap at all, the
 //      catalogue request starts during boot (the menu-arming slot);
 //      once it has landed, the Create -> Select-from-list walk renders
-//      the five city rows immediately (< 2.5 s against a 6 s stub
+//      the city rows immediately (< 2.5 s against a 6 s stub
 //      delay - no fetch in flight at tap time) and the session's
 //      catalogue request count stays exactly 1.
 //   B (in-flight honesty): with the fetch still in flight when the
 //      list pane opens, the pane shows the Loading cities row (a
 //      .routeRow, not a bare note on an empty pane) and NO city rows
 //      yet; when the download lands, the loading row is REPLACED by
-//      the five city rows.
+//      the city rows.
 //   C (failure): a 404 catalogue still degrades honestly - the
 //      "isn't available right now - use Search manually" note, no
 //      rows, no dead end (the 1.124 behaviour, preserved).
@@ -116,7 +116,7 @@ const bootPicker = async () => { // the cold-start picker, usable (drive153 phas
   return await poll(`!!document.getElementById('rmCreate')`, 10000);
 };
 const rowsN = () => ev2(`document.querySelectorAll('#crCityList .routeRow:not(.crLoadingRow)').length`);
-const rowsReady = async (ms) => { const t0 = Date.now(); while (Date.now() - t0 < ms) { if ((await rowsN().catch(() => 0)) === 5) return Date.now() - t0; await sleep(100); } return null; };
+const rowsReady = async (ms) => { const t0 = Date.now(); while (Date.now() - t0 < ms) { if ((await rowsN().catch(() => 0)) === INDEXFX.cities.length) return Date.now() - t0; await sleep(100); } return null; }; // premise fix (2026-11-07, Andrew-approved, test-only): the expected row count derives from the shipped packs/index.json - the baked-in 5 expired when the catalogue grew to twelve
 
 // ---- phase A: cold page - BOOT starts the fetch; the warmed walk is instant ----
 indexDelayMs = 6000;
@@ -132,7 +132,7 @@ const doorsA = await poll(`document.getElementById('rmCreatePane').classList.con
 await ev2(`document.getElementById('crDoorList').click()`);
 const rowsMsA = await rowsReady(2500);
 const reqCountA = wire.filter(w => w.kind === 'packindex').length;
-ok('A2 PRE-WARMED WALK: with the catalogue fetched during boot, Create -> Select from list renders the five city rows immediately (' + (rowsMsA === null ? 'not within 2500 ms' : rowsMsA + ' ms') + ' against a 6000 ms stub delay - no fetch in flight at tap time) and the session still holds exactly ONE catalogue request (the gate/menu re-triggers are no-ops) | doors pane: ' + doorsA + ', requests: ' + reqCountA,
+ok('A2 PRE-WARMED WALK: with the catalogue fetched during boot, Create -> Select from list renders the city rows immediately (' + (rowsMsA === null ? 'not within 2500 ms' : rowsMsA + ' ms') + ' against a 6000 ms stub delay - no fetch in flight at tap time) and the session still holds exactly ONE catalogue request (the gate/menu re-triggers are no-ops) | doors pane: ' + doorsA + ', requests: ' + reqCountA,
   doorsA === true && rowsMsA !== null && rowsMsA < 2500 && reqCountA === 1);
 
 // ---- phase B: fresh page session - the pane's in-flight state is a ROW ----
@@ -151,7 +151,7 @@ ok('B1 LOADING ROW: while the catalogue is genuinely in flight, the list pane sh
   loadRowSeen === true && !!loadRowShape && loadRowShape.row === true && loadRowShape.text === 'Loading cities…' && loadRowShape.cityRows === 0);
 const rowsMsB = await rowsReady(12000);
 const loadRowGone = await ev2(`!document.querySelector('#crCityList .crLoadingRow')`).catch(() => false);
-ok('B2 REPLACEMENT: when the download lands, the loading row is replaced by the five city rows (it does not linger above or below them) | rows after ' + (rowsMsB === null ? 'never' : rowsMsB + ' ms'),
+ok('B2 REPLACEMENT: when the download lands, the loading row is replaced by the city rows (it does not linger above or below them) | rows after ' + (rowsMsB === null ? 'never' : rowsMsB + ' ms'),
   loadRowSeen === true && rowsMsB !== null && loadRowGone === true);
 
 // ---- phase C: catalogue failure still degrades honestly (1.124 behaviour) ----

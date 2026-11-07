@@ -35,7 +35,8 @@ import { fileURLToPath } from 'node:url';
 //      against REAL jsonv2-shaped Nominatim answers (the payload
 //      carries `category`, not the `class` field 1.121's filter read -
 //      the defect that silently emptied every real result list) the
-//      results render and are selectable; a city with NO pack (King)
+//      results render and are selectable; a city with NO pack (Caledon -
+//      King held this role until the 12-city publish packed it, 2026-11-07)
 //      prepares through the grid (Overpass POSTs, no pack context);
 //      an empty answer shows an honest "No city matched" line and a
 //      network failure says so (toast) instead of showing nothing.
@@ -77,8 +78,8 @@ const CITY_VAUGHAN = [
   { place_id: 351671075, osm_type: 'relation', osm_id: 324212, lat: '43.7941544', lon: '-79.5268023', category: 'boundary', type: 'administrative', place_rank: 16, importance: 0.489, addresstype: 'city', name: 'Vaughan', display_name: 'Vaughan, York Region, Ontario, Canada', address: { city: 'Vaughan', county: 'York Region', state: 'Ontario', country: 'Canada', country_code: 'ca' }, boundingbox: ['43.7498436', '43.9243511', '-79.7106948', '-79.4200471'] },
   { place_id: 337696909, osm_type: 'node', osm_id: 153709816, lat: '37.9014313', lon: '-87.6302941', category: 'place', type: 'hamlet', place_rank: 20, importance: 0.289, addresstype: 'hamlet', name: 'Vaughan', display_name: 'Vaughan, Vanderburgh County, Indiana, United States', address: { hamlet: 'Vaughan', county: 'Vanderburgh County', state: 'Indiana', country: 'United States', country_code: 'us' }, boundingbox: ['37.8814313', '37.9214313', '-87.6502941', '-87.6102941'] }
 ];
-const CITY_KING = [
-  { place_id: 340000001, osm_type: 'relation', osm_id: 324999, lat: '43.9500000', lon: '-79.6400000', category: 'boundary', type: 'administrative', place_rank: 16, importance: 0.31, addresstype: 'town', name: 'King', display_name: 'King, York Region, Ontario, Canada', address: { town: 'King', county: 'York Region', state: 'Ontario', country: 'Canada', country_code: 'ca' }, boundingbox: ['43.9300000', '43.9700000', '-79.6800000', '-79.6000000'] }
+const CITY_CALEDON = [ // the NO-PACK fixture city: a real Ontario town with no catalogue pack. Same bounding box as the retired King fixture, so the 2 x 2 grid shape is unchanged. Premise fix (2026-11-07, Andrew-approved, test-only): King joined the shipped catalogue in the 12-city publish, which silently flipped D3 to the pack path; D3's condition now also asserts Caledon's absence from the index, so a future Caledon pack fails this drive loudly instead of flipping its meaning again.
+  { place_id: 340000001, osm_type: 'relation', osm_id: 324999, lat: '43.9500000', lon: '-79.6400000', category: 'boundary', type: 'administrative', place_rank: 16, importance: 0.31, addresstype: 'town', name: 'Caledon', display_name: 'Caledon, Peel Region, Ontario, Canada', address: { town: 'Caledon', county: 'Peel Region', state: 'Ontario', country: 'Canada', country_code: 'ca' }, boundingbox: ['43.9300000', '43.9700000', '-79.6800000', '-79.6000000'] }
 ];
 const segLen = pts => { let m = 0; for (let i = 1; i < pts.length; i++) { const dy = (pts[i][0] - pts[i - 1][0]) * 111320, dx = (pts[i][1] - pts[i - 1][1]) * 80386; m += Math.hypot(dx, dy); } return m; };
 const packStreetLen = name => (PACKFX.streets[name] || []).reduce((a, s) => a + segLen(s), 0);
@@ -116,7 +117,7 @@ async function fulfil(sessionId, p) {
       if (url.indexOf('featuretype=city') >= 0) {
         const q = decodeURIComponent((/[?&]q=([^&]+)/.exec(url) || [])[1] || '');
         if (/failtown/i.test(q)) { try { await send('Fetch.failRequest', { requestId: p.requestId, errorReason: 'Failed' }, sessionId); } catch (e) {} return; }
-        if (/king/i.test(q)) return await json(CITY_KING);
+        if (/caledon/i.test(q)) return await json(CITY_CALEDON);
         if (/zzzzz/i.test(q)) return await json([]);
         return await json(CITY_VAUGHAN);
       }
@@ -174,7 +175,8 @@ const openCityList = async () => { // tap Select from list -> the list pane
   await ev2(`document.getElementById('crDoorList').click()`);
   return await poll(`document.getElementById('rmCityListPane').classList.contains('on')`, 10000);
 };
-const choicesReady = () => poll(`document.querySelectorAll('#crCityList .routeRow').length === 5`, 15000);
+const choicesReady = () => poll(`document.querySelectorAll('#crCityList .routeRow').length === ${INDEXFX.cities.length}`, 15000);
+const EXPECTED_CITY_ROWS = INDEXFX.cities.map(c => ({ n: c.name, s: c.streets.toLocaleString('en-US') + ' streets · ready to load' })); // premise fix (2026-11-07, Andrew-approved, test-only): expectations derive from the shipped packs/index.json itself, in served order - a future city self-adjusts instead of expiring this drive (the baked-in five-city list expired when the catalogue grew to twelve)
 const clickChoice = name => ev2(`(() => { const b = [...document.querySelectorAll('#crCityList .routeRow')].find(x => { const n = x.querySelector('.routeName'); return n && n.textContent === ${JSON.stringify(name)}; }); if (b) { b.click(); return true; } return false; })()`);
 const TAP_POINTS = { 'Bordeaux Drive': { lat: 43.798972, lng: -79.574666 } };
 const installFeatureSeam = () => ev2(`(() => { if (!map.__qrfOrig) map.__qrfOrig = map.queryRenderedFeatures.bind(map); window.__fixtureRoads = []; map.queryRenderedFeatures = () => window.__fixtureRoads.map(n => ({ type: 'Feature', sourceLayer: 'roads', properties: { name: n }, geometry: { type: 'LineString', coordinates: [] } })); return true; })()`);
@@ -191,7 +193,7 @@ ok('A1 DOORS (tab entry, Beta 1.124): the Create pane\'s first screen is "Create
 const listA = await openCityList();
 const chA = await choicesReady();
 const namesA = await J(`({ rows: [...document.querySelectorAll('#crCityList .routeRow')].map(r => ({ n: (r.querySelector('.routeName') || {}).textContent || '', s: (r.querySelector('.routeArea') || {}).textContent || '' })), t: (document.querySelector('#rmCityListPane .rmTitle') || {}).textContent || '' })`);
-ok('A2 the list pane ("Select City") renders the FIVE cities from the pack index as rows carrying their street counts + "ready to load" (index-driven, no hardcoded list in the app) | ' + JSON.stringify(namesA), listA === true && chA === true && namesA.t === "Select City" && JSON.stringify((namesA.rows || []).map(r => r.s)) === JSON.stringify(['5,401 streets · ready to load', '4,102 streets · ready to load', '2,181 streets · ready to load', '15,152 streets · ready to load', '4,477 streets · ready to load']) && ['Brampton', 'Markham', 'Richmond Hill', 'Toronto', 'Vaughan'].every(n => (namesA.rows || []).some(r => r.n === n)));
+ok('A2 the list pane ("Select City") renders the pack index cities as rows carrying their street counts + "ready to load" (index-driven, no hardcoded list in the app) | ' + JSON.stringify(namesA), listA === true && chA === true && namesA.t === "Select City" && JSON.stringify(namesA.rows || []) === JSON.stringify(EXPECTED_CITY_ROWS));
 const wireA0 = wire.length;
 packDelayMs = 2500;
 await clickChoice('Vaughan');
@@ -266,14 +268,14 @@ await openChooserTab();
 await ev2(`document.getElementById('crDoorManual').click()`);
 await poll(`document.getElementById('rmCityPane').classList.contains('on')`, 10000);
 const wireD0 = wire.length;
-await typeCity('King City');
+await typeCity('Caledon');
 const resultsK = await poll(`document.querySelectorAll('#crCityResults .routeRow').length >= 1`, 15000);
 await ev2(`(() => { const b = document.querySelector('#crCityResults .routeRow'); if (b) b.click(); return true; })()`);
 const readyK = await poll(`crPrepState === 'ready'`, 30000);
 const wD = wire.slice(wireD0);
 const gridK = await J(`({ fromPack: crGrid && crGrid.fromPack, name: crGrid && crGrid.name })`);
-ok('D3 NO-PACK CITY USES THE GRID: King (no pack in the index) prepares through the Overpass grid - 4 cell POSTs for its 2 x 2 box, no pack context, no pack download | overpass: ' + wD.filter(w => w.kind === 'overpass').length + ' | ' + JSON.stringify(gridK),
-  resultsK === true && readyK === true && wD.filter(w => w.kind === 'overpass').length === 4 && !gridK.fromPack && wD.filter(w => w.kind === 'packfile').length === 0);
+ok('D3 NO-PACK CITY USES THE GRID: Caledon (verified: no pack in the index) prepares through the Overpass grid - 4 cell POSTs for its 2 x 2 box, no pack context, no pack download | overpass: ' + wD.filter(w => w.kind === 'overpass').length + ' | ' + JSON.stringify(gridK),
+  !INDEXFX.cities.some(c => c.slug === 'caledon') && resultsK === true && readyK === true && wD.filter(w => w.kind === 'overpass').length === 4 && !gridK.fromPack && wD.filter(w => w.kind === 'packfile').length === 0);
 await ev2(`exitCreate()`);
 await openChooserTab();
 await ev2(`document.getElementById('crDoorManual').click()`);

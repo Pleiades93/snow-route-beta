@@ -191,9 +191,9 @@ await ev2(`document.getElementById('rmCreate').click()`);
 await poll(`document.getElementById('rmCreatePane').classList.contains('on')`, 10000);
 await ev2(`document.getElementById('crDoorList').click()`);
 await poll(`document.getElementById('rmCityListPane').classList.contains('on')`, 10000);
-const rowsB = await poll(`document.querySelectorAll('#crCityList .routeRow').length === 5`, 15000);
+const rowsB = await poll(`document.querySelectorAll('#crCityList .routeRow').length === ${INDEXFX.cities.length}`, 15000); // premise fix (2026-11-07, Andrew-approved, test-only): the row count derives from the shipped packs/index.json the drive serves - a future city self-adjusts
 const listB = await J(`({ t: (document.querySelector('#rmCityListPane .rmTitle') || {}).textContent || '', subs: [...document.querySelectorAll('#crCityList .routeRow')].map(r => (r.querySelector('.routeArea') || {}).textContent || '') })`);
-ok('B1 LIST ROWS: the list pane is titled "Select City" and renders the five index cities as rows, each with its street count + "ready to load" | ' + JSON.stringify(listB),
+ok('B1 LIST ROWS: the list pane is titled "Select City" and renders the index cities as rows, each with its street count + "ready to load" | ' + JSON.stringify(listB),
   rowsB === true && listB.t === "Select City" && (listB.subs || []).includes('4,477 streets · ready to load') && (listB.subs || []).every(s => /streets · ready to load/.test(s)));
 const wireB0 = wire.length;
 await ev2(`(() => { const r = [...document.querySelectorAll('#crCityList .routeRow')].find(x => { const n = x.querySelector('.routeName'); return n && n.textContent === 'Vaughan'; }); if (r) r.click(); return true; })()`);

@@ -263,6 +263,7 @@ function restoreBackup(parsed) { // production doRestore semantics: validate EVE
       return;
     }
   }
+  for (const rid of (parsed.v === 2 ? Object.keys(parsed.routes) : ['5w'])) lsDel(routeKeys(rid).finclean); // Beta 1.141 (Package A, DA-10): the restore replaces a route's slot truth wholesale, so a finish-cleanup obligation left by the pre-restore state is discharged by the replacement, never completed against restored data. Scoped to the routes this backup actually rewrites (1.141 verify cycle 1): a route the backup OMITS keeps its slot under the missing-key rule, so its obligation stays armed for its next load
   restoring = true; markClean('trail'); markClean('aux'); markClean('sess'); // the reload's pagehide flush must not write the old in-memory trail/coverage over the restored data
   toast('Backup restored — reloading' + (droppedNames ? ' · ' + droppedNames + ' unknown street name' + (droppedNames === 1 ? '' : 's') + ' in the backup were ignored' : '') + (snapDropped ? ' · the saved start snapshot was not usable, so Cancel will rebuild from the marks made during the run' : ''), snapDropped ? 4600 : undefined); // Beta 1.94 (audit F-05): the drop count is part of the result, not a silent loader detail. Beta 1.96 (SR-195-02): a dropped start snapshot is reported the same way
   setTimeout(() => location.reload(), 600);
@@ -609,7 +610,7 @@ $('stDel').addEventListener('click', async () => {
 });
 // ---- About / What's new ----
 const WHATSNEW = { // the curated in-app notes: plain words, LATEST RELEASE ONLY (Beta 1.114, Andrew: the accumulated list cluttered the About pane). A release REPLACES this entry with its own in the same change - it never accumulates; the full history lives in CHANGELOG.md, not the app
-  v: 'Beta 1.140', items: ["The city list now scrolls up and down only \u2014 it no longer slides sideways and cuts off the city names"]};
+  v: 'Beta 1.141', items: ["Finish is harder to fool: if a storage write fails halfway through finishing a clean, the app now restores even the step that failed \u2014 when it says your clean is intact, it has checked that it is true", "If a finish's final tidy-up (clearing the old clean's notes and coverage) cannot be written, the app now remembers the obligation and completes it the next time it opens \u2014 an old hazard note can no longer linger into the next clean"]};
 function renderAbout() {
   const cur = $('ver').textContent.trim();
   $('wnHead').textContent = "WHAT'S NEW · " + cur; // the header names the LIVE version, read from the title's version element - never a second hard-coded copy that can go stale
