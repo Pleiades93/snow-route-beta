@@ -2,7 +2,7 @@
 <html lang="en" class="boot">
 <head>
 <meta charset="UTF-8">
-<meta http-equiv="Content-Security-Policy" content="default-src 'none'; script-src 'sha384-hOugVCB3G2FJOap8Kgb/9LZO2QvmfoRiLQDSMrDdRGCYZCTXBmbV8Fl1/wye/1kI' https://cdn.jsdelivr.net; style-src-elem 'sha384-gANB7r0EP8xDO2FtoibgOX+qcxula8Y/qoSnEkqRqRp+FBh8bzZ1phF00Eqwi+2j' https://cdn.jsdelivr.net; style-src-attr 'unsafe-inline'; img-src 'self' data: blob: https://tiles.basemaps.cartocdn.com https://protomaps.github.io https://cdn.jsdelivr.net; connect-src 'self' https://tiles.basemaps.cartocdn.com https://protomaps.github.io https://cdn.jsdelivr.net https://nominatim.openstreetmap.org https://overpass-api.de https://overpass.kumi.systems; worker-src blob: 'self'; child-src blob: 'self'; font-src 'none'; manifest-src 'self'; base-uri 'none'; form-action 'none'; object-src 'none'">
+<meta http-equiv="Content-Security-Policy" content="default-src 'none'; script-src 'sha384-pcHmARM8vkqdgp7dfxPoSgtULwMs3E6SzQTzJhwRgcs/tmp7MAc5moHWCwx/Si4m' https://cdn.jsdelivr.net; style-src-elem 'sha384-Js463BR/CylyyLg/UqF/9L3uAm2uz7wMqdybuh7vt/VNaKA/L9L/VNFm1MdEPzhd' https://cdn.jsdelivr.net; style-src-attr 'unsafe-inline'; img-src 'self' data: blob: https://tiles.basemaps.cartocdn.com https://protomaps.github.io https://cdn.jsdelivr.net; connect-src 'self' https://tiles.basemaps.cartocdn.com https://protomaps.github.io https://cdn.jsdelivr.net https://nominatim.openstreetmap.org https://overpass-api.de https://overpass.kumi.systems; worker-src blob: 'self'; child-src blob: 'self'; font-src 'none'; manifest-src 'self'; base-uri 'none'; form-action 'none'; object-src 'none'">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="mobile-web-app-capable" content="yes">
@@ -271,6 +271,7 @@
 #routeMenu { position: fixed; inset: 0; z-index: 10000; background: #2b4bf2; display: flex; flex-direction: column; align-items: center; justify-content: center; padding: 24px; opacity: 0; visibility: hidden; transform: translateY(103%); transition: transform var(--anim-dur) var(--ease-close), opacity .3s ease, visibility 0s linear var(--anim-dur); pointer-events: none; } /* Beta 1.78 (Andrew): the route menu is a top-level full-screen menu on the splash blue and OUTLIVES the splash - parked below the screen; the Routes tab slides it up (.open, the shared menu motion, mirrored on close). At boot the splash borrows it in place via .boot (next rule) */
 #routeMenu { overflow-y: auto; } /* Beta 1.137 (Andrew): the Routes menu scrolls like Settings - with 12 cities the Select-from-list pane outgrew the screen and, unlike #setMenu, this menu had no overflow rule, so the list could not be moved at all */
 #routeMenu .rmPane { flex-shrink: 0; margin-top: auto; margin-bottom: auto; } /* panes centre when they fit and scroll from the top when they do not - the same treatment #setMenu got in 1.111 */
+#crCityList, #rmRoutes { max-height: calc(var(--vvh, 100dvh) * .52); overflow-y: auto; overscroll-behavior: contain; -webkit-overflow-scrolling: touch; } /* Beta 1.138 (Andrew): the two long blue-menu lists scroll inside their own box - the pane's title and Back button stay pinned on screen; only the rows move. .52 of the visible height matches the sheets' half-height language */
 #routeMenu.boot { transform: translateX(-26px); transition: opacity .5s var(--ease-open) .15s, transform .5s var(--ease-open) .15s, visibility 0s linear .15s; }
 #routeMenu.boot.show, #routeMenu.open { opacity: 1; visibility: visible; transform: none; pointer-events: auto; }
 #routeMenu.open { transition: transform var(--anim-dur) var(--ease-open), opacity .3s ease, visibility 0s; }
@@ -422,7 +423,7 @@ input, textarea { caret-color: currentColor; } /* Beta 1.125 (Andrew): the typin
 <div id="hud">
   <div id="warn">Not saving — storage is full or blocked</div>
   <div class="row">
-    <div class="titleStack"><div class="title">Snow Route Beta</div><div class="ver" id="ver">Beta 1.137</div></div>
+    <div class="titleStack"><div class="title">Snow Route Beta</div><div class="ver" id="ver">Beta 1.138</div></div>
   </div>
   <div id="stats"></div>
 </div>
@@ -4799,7 +4800,7 @@ $('stDel').addEventListener('click', async () => {
 });
 // ---- About / What's new ----
 const WHATSNEW = { // the curated in-app notes: plain words, LATEST RELEASE ONLY (Beta 1.114, Andrew: the accumulated list cluttered the About pane). A release REPLACES this entry with its own in the same change - it never accumulates; the full history lives in CHANGELOG.md, not the app
-  v: 'Beta 1.137', items: ["The city list in Create new route \u2192 Select from list now scrolls \u2014 with all 12 cities in the library the list outgrew the screen and could not be moved; every city is reachable again", "The Routes menu now scrolls the same way the Settings menu does whenever a list is taller than the screen"]};
+  v: 'Beta 1.138', items: ["The city list in Create new route \u2192 Select from list now scrolls inside its own box \u2014 the title and the Back button stay on screen while you scroll the cities", "The Choose a route list gets the same treatment, so it stays easy to move through as your routes add up"]};
 function renderAbout() {
   const cur = $('ver').textContent.trim();
   $('wnHead').textContent = "WHAT'S NEW · " + cur; // the header names the LIVE version, read from the title's version element - never a second hard-coded copy that can go stale

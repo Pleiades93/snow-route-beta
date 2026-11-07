@@ -1,5 +1,8 @@
 # Changelog
 
+## Beta 1.138 — 2026-11-07
+Capped blue-menu lists (Andrew's pick from three options, direct ship at his order — mechanical integrity only, no test battery): the 1.137 whole-menu scroll left the Select-from-list pane's title riding at the very top of the screen and scrolled the title away with the list. Now #crCityList and #rmRoutes (the Choose-a-route list, same shape) are capped at .52 of the visible height — the sheets' half-height language — and scroll inside their own box with overscroll contained; the pane title and Back button stay pinned. CSS only.
+
 ## Beta 1.137 — 2026-11-07
 Routes-menu scrolling (Andrew's report, direct ship at his order — mechanical integrity only, no test battery): with all 12 city packs published, the Create new route → Select from list pane outgrew the screen, and #routeMenu — unlike #setMenu, which got its overflow rule in 1.111 — had no scrolling at all, so the list could not be moved. #routeMenu now carries the same treatment as Settings: overflow-y auto on the menu plus flex-shrink 0 / auto vertical margins on its panes, so every blue-menu pane centres when it fits and scrolls from the top when it does not. CSS only; no behaviour or data changes.
 
