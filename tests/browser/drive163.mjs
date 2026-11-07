@@ -55,12 +55,13 @@ const saveCase = async (stub, nm, id) => {
   const registered = await ev(`ROUTE_PACKS.some(p => p.id === '${id}')`);
   return { st, keys, registered };
 };
+const SEED_RAW = JSON.stringify({ 'route-a': PACK('Route A', 'Alpha Street'), 'route-b': PACK('Route B', 'Beta Street') });
 const aRes = await saveCase(GET_THROW, 'Route C', 'route-c');
 ok('A1 DA-05 save with a THROWING userpacks read: refusal toast, record keeps route-a + route-b exactly, new pack never registered | ' + JSON.stringify(aRes.keys) + ' ' + aRes.st.toast,
-  JSON.stringify(aRes.keys) === JSON.stringify(['route-a', 'route-b']) && /could not be saved/.test(aRes.st.toast) && aRes.registered === false);
+  JSON.stringify(aRes.keys) === JSON.stringify(['route-a', 'route-b']) && aRes.st.raw === SEED_RAW && /could not be saved/.test(aRes.st.toast) && aRes.registered === false);
 const bRes = await saveCase(GET_CORRUPT, 'Route D', 'route-d');
 ok('B1 DA-05 save with a CORRUPT userpacks record: same refusal - parse failure is a failure, not an empty record | ' + JSON.stringify(bRes.keys) + ' ' + bRes.st.toast,
-  JSON.stringify(bRes.keys) === JSON.stringify(['route-a', 'route-b']) && /could not be saved/.test(bRes.st.toast) && bRes.registered === false);
+  JSON.stringify(bRes.keys) === JSON.stringify(['route-a', 'route-b']) && bRes.st.raw === SEED_RAW && /could not be saved/.test(bRes.st.toast) && bRes.registered === false);
 
 // ---------- C: a replacing restore is judged against the INCOMING definition ----------
 await ev(`(() => { localStorage.setItem('${UPKEY}', JSON.stringify({ 'route-x': ${JSON.stringify(PACK('Route X', 'Old Street'))} })); return true; })()`);
@@ -76,14 +77,14 @@ const cRes = JSON.parse(await ev(`(() => {
   const snap = { at: TS, pieces, pieceTimes, done: [], times: {}, via: {}, cov: {} };
   if (!validateSnap(snap, TS, g)) return JSON.stringify({ setupFail: 'fixture snap invalid against the new geometry' });
   const sides = { p: { 'New Street': g.stretch['New Street'].parts.map(() => 0) }, t: { 'New Street': g.stretch['New Street'].parts.map(() => [null, null]) } };
-  const backup = { app: 'snowroute-backup', v: 2, at: new Date().toISOString(), routes: { 'route-x': { start: String(TS), snap: JSON.stringify(snap), done: '["New Street"]', times: '{}', hist: '[]', notes: '{}', via: '{}', trail: '[]', cov: '{}', sides: JSON.stringify(sides), sess: '[]' } }, userpacks: { 'route-x': NEWRAW } };
+  const backup = { app: 'snowroute-backup', v: 2, at: new Date().toISOString(), routes: { 'route-x': { start: String(TS), snap: JSON.stringify(snap), done: '{"New Street":1700000000000}', times: '{}', hist: '[]', notes: '{}', via: '{}', trail: '[]', cov: '{}', sides: JSON.stringify(sides), sess: '[]' } }, userpacks: { 'route-x': NEWRAW } };
   restoreBackup(backup);
   const rk = routeKeys('route-x');
   return JSON.stringify({ snap: localStorage.getItem(rk.snap), done: localStorage.getItem(rk.done), rec: localStorage.getItem('${UPKEY}'), toast: $('toast').textContent });
 })()`));
 ok('C1 DA-01 the carried snapshot is judged against the INCOMING geometry and lands, naming the new street | ' + JSON.stringify(cRes).slice(0, 300),
   !cRes.setupFail && !!cRes.snap && cRes.snap.includes('New Street'));
-ok('C2 DA-01 the done list is name-filtered against the INCOMING street set - New Street survives | done=' + cRes.done,
+ok('C2 DA-01 the done list is name-filtered against the INCOMING street set - New Street survives (legacy OBJECT form: the only form pushField name-filters; an array would pass unfiltered and prove nothing) | done=' + cRes.done,
   !cRes.setupFail && cRes.done === '["New Street"]');
 ok('C3 DA-01 no unknown-name or dropped-snapshot report, and the incoming definition is installed in the record | ' + cRes.toast,
   !cRes.setupFail && !/unknown street name/.test(cRes.toast) && !/start snapshot was not usable/.test(cRes.toast) && !!cRes.rec && cRes.rec.includes('New Street'));
@@ -91,6 +92,7 @@ await reboot5w(); // absorb the restore's reload
 
 // ---------- D: a transient merge-time read failure refuses the whole restore ----------
 await seedAB();
+const recBefore = await ev(`localStorage.getItem('${UPKEY}')`);
 const doneBefore = await ev(`localStorage.getItem(routeKeys('5w').done)`);
 await ev(GET_THROW_FIRST);
 const dRes = JSON.parse(await ev(`(() => {
@@ -102,8 +104,8 @@ await ev(UNSTUB);
 let dKeys = null; try { dKeys = Object.keys(JSON.parse(dRes.rec)).sort(); } catch (e) {}
 ok('D1 DA-05 restore with a TRANSIENT merge-time read failure: refusal toast naming the unreadable record | ' + dRes.toast,
   /created-routes record could not be read/.test(dRes.toast));
-ok('D2 DA-05 nothing was written - the record keeps route-a + route-b and the 5W board is untouched | ' + JSON.stringify(dKeys),
-  JSON.stringify(dKeys) === JSON.stringify(['route-a', 'route-b']) && dRes.done === doneBefore);
+ok('D2 DA-05 nothing was written - the record keeps route-a + route-b byte-exactly and the 5W board is untouched | ' + JSON.stringify(dKeys),
+  JSON.stringify(dKeys) === JSON.stringify(['route-a', 'route-b']) && dRes.rec === recBefore && dRes.done === doneBefore);
 await reboot5w();
 
 // ---------- E: recovery export under a dead userpacks read ----------
@@ -142,15 +144,20 @@ const recov2 = recov2Raw ? JSON.parse(recov2Raw) : null;
 ok('E4 DA-09 an unvalidatable in-memory definition is EXCLUDED (its progress too) and NAMED in the recovery disclosure | disclosure=' + JSON.stringify(disclosure),
   !!recov2 && !(recov2.routes && recov2.routes['route-r']) && Array.isArray(disclosure) && disclosure.includes('Route R'));
 // E3: the E1/E2 file restores cleanly on a device whose record is gone.
+// route-r's own slots are wiped too and proven absent first - otherwise
+// the snapshot seeded in E0 could fake the landing (Codex cycle-1 catch).
 await ev(`localStorage.removeItem('${UPKEY}'); true`);
 await reboot5w();
 const e3Res = JSON.parse(await ev(`(() => {
+  const rk = routeKeys('route-r');
+  for (const k of Object.values(rk)) localStorage.removeItem(k);
+  const absent = localStorage.getItem(rk.start) === null && localStorage.getItem(rk.snap) === null;
   restoreBackup(JSON.parse(${JSON.stringify(JSON.stringify(recov))}));
-  return JSON.stringify({ rec: localStorage.getItem('${UPKEY}'), snap: localStorage.getItem(routeKeys('route-r').snap), toast: $('toast').textContent });
+  return JSON.stringify({ absent, rec: localStorage.getItem('${UPKEY}'), snap: localStorage.getItem(routeKeys('route-r').snap), toast: $('toast').textContent });
 })()`));
 let e3Keys = null; try { e3Keys = Object.keys(JSON.parse(e3Res.rec)); } catch (e) {}
-ok('E3 DA-09+DA-08 fresh-device restore of the recovery file: definition rebuilt in the record, snapshot lands | ' + e3Res.toast,
-  !!e3Keys && e3Keys.includes('route-r') && !!e3Res.snap && e3Res.snap.includes('Test Street') && /Backup restored/.test(e3Res.toast));
+ok('E3 DA-09+DA-08 fresh-device restore of the recovery file: slots proven absent first, definition rebuilt in the record, snapshot lands | ' + e3Res.toast,
+  e3Res.absent === true && !!e3Keys && e3Keys.includes('route-r') && !!e3Res.snap && e3Res.snap.includes('Test Street') && /Backup restored/.test(e3Res.toast));
 
 R.exceptions = consoleLog.filter(c => c.type === 'EXCEPTION');
 finish(R, proc);
