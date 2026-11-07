@@ -32,8 +32,15 @@ function constArray(src, name) { // the literal of `const NAME = [ ... ];`
 }
 const PACK_FIELDS = constArray(app1src, 'PACK_FIELDS');
 const ROUTE_FIELDS = constArray(app1src, 'ROUTE_FIELDS');
-const api = new Function('MLAT', 'MLNG', 'ROADS', 'PACK_FIELDS',
-  extract(app1src, 'distM') + '\n' + extract(app1src, 'computeRouteBox') + '\n' + extract(createSrc, 'normalizePack') + '\nreturn { normalizePack };')(111320, 80386, {}, PACK_FIELDS);
+function constNum(src, name) { // the value of `const NAME = <number>` (Beta 1.136: the validator's caps live in app1's rule-constants block, so the sandbox receives them like PACK_FIELDS)
+  const m = src.match(new RegExp('const ' + name + ' = (\\d+)'));
+  if (!m) throw new Error(name + ' not found');
+  return Number(m[1]);
+}
+const CAP_NAMES = ['PACK_NAME_MAX', 'PACK_AREA_MAX', 'PACK_STREET_NAME_MAX', 'PACK_STREETS_MAX', 'PACK_SEGS_MAX', 'PACK_SEG_PTS_MAX', 'PACK_POINTS_MAX', 'PACK_TILENAME_MAX', 'PACK_TILENAMES_MAX'];
+const CAPS = {}; for (const n of CAP_NAMES) CAPS[n] = constNum(app1src, n);
+const api = new Function('MLAT', 'MLNG', 'ROADS', 'PACK_FIELDS', ...CAP_NAMES,
+  extract(app1src, 'distM') + '\n' + extract(app1src, 'computeRouteBox') + '\n' + extract(createSrc, 'normalizePack') + '\nreturn { normalizePack };')(111320, 80386, {}, PACK_FIELDS, ...CAP_NAMES.map(n => CAPS[n]));
 let pass = 0, fail = 0;
 const t = (name, cond) => { if (cond) pass++; else { fail++; console.log('FAIL', name); } };
 const clone = o => JSON.parse(JSON.stringify(o));
@@ -43,6 +50,8 @@ t('P1 PACK_FIELDS is exactly the pack format, in construction order',
 t('P2 fence: snap is in neither PACK_FIELDS nor ROUTE_FIELDS (a slot field, hand-carried at restore scope by design)',
   !PACK_FIELDS.includes('snap') && !ROUTE_FIELDS.includes('snap') &&
   JSON.stringify(ROUTE_FIELDS) === JSON.stringify(['done', 'times', 'hist', 'notes', 'via', 'trail', 'cov', 'start', 'flip', 'sides', 'sess']));
+t('P3 the validator caps hold their product values (Beta 1.136: named in app1\'s rule block - a change here is a product decision, never a drift)',
+  CAPS.PACK_NAME_MAX === 60 && CAPS.PACK_AREA_MAX === 60 && CAPS.PACK_STREET_NAME_MAX === 60 && CAPS.PACK_STREETS_MAX === 300 && CAPS.PACK_SEGS_MAX === 80 && CAPS.PACK_SEG_PTS_MAX === 4000 && CAPS.PACK_POINTS_MAX === 150000 && CAPS.PACK_TILENAME_MAX === 80 && CAPS.PACK_TILENAMES_MAX === 400);
 // ---- identity against the pristine 1.130 outputs ----
 for (const c of cases) {
   const got = api.normalizePack(clone(c.raw), clone(c.opts));
