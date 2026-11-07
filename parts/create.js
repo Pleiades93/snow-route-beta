@@ -88,6 +88,7 @@ function mergeUserPacks() { // boot: the runtime pack list = shipped packs + cre
   }
 }
 mergeUserPacks();
+if (parseJ(lsGet(LS.pre), null)) migratePack(); // Beta 1.143 (DA-07): the pack migration starts HERE - after mergeUserPacks has registered the created packs, so the manifest migratePack captures from preloadUrlList() is the union over shipped + created packs (through 1.142 this fired during app4's evaluation, before this part ran; see the note there). Fire-and-forget, exactly as before: it never blocks the boot, and because the flag is earned, an incomplete migration simply runs again next boot
 function uniqueRouteId(name) { // a slug from the name, uniqueness-checked against shipped + created ids
   let base = name.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-+|-+$/g, '').slice(0, 32) || 'route';
   let id = base, i = 2;
@@ -408,6 +409,8 @@ function crSweepPending() { // a fresh extract may complete streets that were pe
 // the same disclosure - never a silent un-save.
 const CR_IDB_NAME = 'snowroute-citycache', CR_IDB_STORE = 'cities';
 let crCacheNote = ''; // the disclosed cache state for the current city ('' = saving fine)
+let crCacheNoteCity = ''; // Beta 1.143 (DA-06): the city the current crCacheNote belongs to - cache failure state binds to the city that EARNED it, never to whichever city happens to be current when a queued write lands
+let crCacheGen = 0; // Beta 1.143 (DA-06, verify cycle 1): the cache preparation generation - bumped wherever the note pair resets (prepare, refresh, exit). A queued write captures it at commissioning; its write, its suppression and its disclosure all bind to it, so a write commissioned by a dead preparation can neither write nor speak into a later one
 let crCacheQueue = Promise.resolve(); // serializes cache read-modify-writes (parallel cell commits must not clobber each other)
 function crIdbOpen() {
   return new Promise(res => {
@@ -454,12 +457,18 @@ async function crIdbDelete(name) {
     } catch (e) { try { db.close(); } catch (e2) {} res(); }
   });
 }
-function crCacheDisclose() { // the one wording for every cache failure (cap, quota, private mode): the session keeps working, the state is SAID
-  if (crCity && !crCacheNote) { crCacheNote = 'Couldn’t save ' + crCity.name + ' on this phone — it will reload next time'; crRenderHint(); }
+function crCacheDisclose(cityName, gen) { // the one wording for every cache failure (cap, quota, private mode): the session keeps working, the state is SAID. Beta 1.143 (DA-06): the failure is recorded against the city whose WRITE failed (the queued step's own city) - through 1.142 this named the global crCity, so a write failing after a city switch charged the failure to the new city
+  if (gen !== crCacheGen) return; // the failure belongs to a dead preparation (verify cycle 1): it is DROPPED - recording it would reinstate stale state over the live preparation and suppress its writes
+  if (crCacheNote && crCacheNoteCity === cityName) return; // already disclosed for this city: the state stands
+  crCacheNoteCity = cityName;
+  crCacheNote = 'Couldn’t save ' + cityName + ' on this phone — it will reload next time';
+  crRenderHint();
 }
 function crCacheSaveCell(cityName, bbox, totalCells, key, ways) { // write-through, one cell at a time, serialized; ways in the compact stored form [[id, name, pts], ...]
+  const gen = crCacheGen; // Beta 1.143 (DA-06, verify cycle 1): the commissioning generation, captured with the call - the step below is judged against it when it runs
   crCacheQueue = crCacheQueue.then(async () => {
-    if (crCacheNote) return; // already refused/failed for this city: stop writing, the disclosure stands
+    if (gen !== crCacheGen) return; // commissioned by a dead preparation: the write itself is dropped - its data snapshot belongs to a superseded extract
+    if (crCacheNote && crCacheNoteCity === cityName) return; // already refused/failed for THIS city: stop writing, the disclosure stands (Beta 1.143, DA-06: another city's failure never mutes this city's writes)
     let rec = await crIdbGet(cityName);
     if (rec && rec.bbox && (rec.bbox.s !== bbox.s || rec.bbox.n !== bbox.n || rec.bbox.w !== bbox.w || rec.bbox.e !== bbox.e)) rec = null; // CG-PF-15: a record saved under a DIFFERENT bounding box is not this grid's cache - its cells were downloaded for another grid. Merging a fresh cell into it while overwriting its bbox would defeat the restore-time bbox guard in crCityPrepare and certify coverage that was never downloaded for this grid; a changed box starts the record over
     if (!rec) rec = { cityName, bbox, cells: {}, savedAt: Date.now(), totalCells };
@@ -468,9 +477,9 @@ function crCacheSaveCell(cityName, bbox, totalCells, key, ways) { // write-throu
     rec.savedAt = Date.now();
     let size = 0;
     try { size = JSON.stringify(rec).length; } catch (e) {}
-    if (size > CR_TIMING.cityCapBytes) { crCacheDisclose(); return; } // refuse BEFORE the write rather than dying mid-write (amendment C)
-    if (!(await crIdbPut(rec))) crCacheDisclose();
-  }).catch(() => crCacheDisclose());
+    if (size > CR_TIMING.cityCapBytes) { crCacheDisclose(cityName, gen); return; } // refuse BEFORE the write rather than dying mid-write (amendment C)
+    if (!(await crIdbPut(rec))) crCacheDisclose(cityName, gen);
+  }).catch(() => crCacheDisclose(cityName, gen));
   return crCacheQueue;
 }
 function crGridCellsFor(bbox) { // the ~4 x 4 km grid over a city bounding box (row-major, south-west first); the last row/column clamps to the box edge
@@ -544,7 +553,7 @@ function crCityPrepare() { // a city is picked: load its whole extract - from th
   if (crPrep) { clearInterval(crPrep.ticker); crAbortOp(crPrep.op); crPrep = null; }
   if (crGrid) crGridStop('superseded');
   crCov = crCovFromWays({}, []);
-  crCacheNote = '';
+  crCacheNote = ''; crCacheNoteCity = ''; crCacheGen++; // a fresh preparation starts with no failure state, and every write the old one commissioned is dead (Beta 1.143, DA-06)
   crPackCtx = null; crPackNote = ''; // Beta 1.123: a new city's preparation re-decides its source (pack vs service) below
   const cells = crGridCellsFor(bbox);
   const g = crGrid = { name, bbox, cells, gen, session, startedAt: Date.now(), ticker: null, ops: new Set(), active: 0, fromCache: false, savedAt: null, stopped: null, lastFail: null };
@@ -600,7 +609,7 @@ function crGridRefresh() { // the saved city's Refresh affordance: drop the save
   const g = crGrid; if (!g || !creating) return;
   const name = g.name, bbox = g.bbox;
   crIdbDelete(name);
-  crCacheNote = '';
+  crCacheNote = ''; crCacheNoteCity = ''; crCacheGen++; // Beta 1.143 (DA-06): the generation bumps with the reset - queued writes from the discarded extract die with it
   crPackNote = '';
   if (g.fromPack) crPackLoad(g.fromPack, true).catch(() => {}); // Beta 1.123: Refresh on a pack city re-downloads the PACK itself (forced past the session copy) - the fresh grid below then commits from it
   const session = crSession, gen = ++crCovGen;
@@ -644,7 +653,7 @@ function crRenderHint() { // the ONE writer of the pick-stage hint + its action 
     if (crWanted) btnLabel = crWanted.label; // an outstanding offer (a tap outside coverage, a pending street) keeps its working button in the ready state too (CG-PF-09: the first build's ready state hid it) - it outranks Refresh
   }
   else { text = crCity ? 'Search for a street in ' + crCity.name + ', or zoom in and prepare this area' : 'Search, fly to a street, then tap it on the map'; if (crWanted) btnLabel = crWanted.label; else if (map && map.getZoom() >= 14) btnLabel = 'Prepare this area'; }
-  if (crCacheNote && crCity) text += ' · ' + crCacheNote; // the disclosed cache state rides the hint (amendment C: degradation is said, never silent)
+  if (crCacheNote && crCity && crCacheNoteCity === crCity.name) text += ' · ' + crCacheNote; // the disclosed cache state rides the hint (amendment C: degradation is said, never silent) - Beta 1.143 (DA-06): only when the note belongs to the city on screen
   if (crPackNote && crCity) text += ' · ' + crPackNote; // Beta 1.123: the disclosed pack state rides the hint the same way - a fallen-back load says the library didn't load, in every state the hint shows
   hint.textContent = text; hint.classList.add('on');
   if (btnLabel) { btn.textContent = btnLabel; btn.style.display = ''; } else btn.style.display = 'none';
@@ -951,6 +960,7 @@ function crPackPickCity(e) { // a chooser tap IS a city pick: it lands in the sa
 }
 function crOpenCityPane(ret) {
   crCityLookupSeq++; if (crCityLastCtl) { try { crCityLastCtl.abort(); } catch (e) {} crCityLastCtl = null; } // reopening the pane supersedes any held lookup (CG-PF-11)
+  crCitySeq++; if (crCityCtl) { try { crCityCtl.abort(); } catch (e) {} crCityCtl = null; } if (crCityTimer) { clearTimeout(crCityTimer); crCityTimer = null; } // Beta 1.143 (DA-12): reopening the pane supersedes a held city SEARCH too - its late answer must not repopulate the pane it was asked from
   crCityReturn = ret;
   const last = lsGet(LS_GLOBAL.lastArea), lb = $('crCityLast');
   if (last) { lb.textContent = 'Use ' + last; lb.style.display = ''; } else lb.style.display = 'none';
@@ -962,7 +972,7 @@ let crCityTimer = null, crCitySeq = 0, crCityCtl = null;
 let crCityLookupSeq = 0, crCityLastCtl = null; // the one-tap last-city lookup's generation + abort handle (CG-PF-11: it is an async completion like any other - it binds to its generation, and any competing pick, Back, pane reopen or exit kills it)
 async function crRunCitySearch() {
   const q = $('crCityInput').value.trim(), box = $('crCityResults');
-  if (q.length < 3) { box.innerHTML = ''; return; }
+  if (q.length < 3) { crCitySeq++; if (crCityCtl) { try { crCityCtl.abort(); } catch (e) {} crCityCtl = null; } box.innerHTML = ''; return; } // Beta 1.143 (DA-12): a short/cleared query invalidates like every other input change - through 1.142 this branch returned before the sequence bump + abort below, so the in-flight answer still held the current sequence when it landed and repopulated the cleared field
   const seq = ++crCitySeq, session = crSession;
   if (crCityCtl) { try { crCityCtl.abort(); } catch (e) {} }
   const ctl = (typeof AbortController !== 'undefined') ? new AbortController() : null; crCityCtl = ctl;
@@ -1189,7 +1199,7 @@ function exitCreate() {
   crSession++; crCovGen++; // every async completion born in this session is obsolete the moment the flow closes - it must not land in a later draft, hint or busy state (CG-PF-05)
   if (crPrep) { clearInterval(crPrep.ticker); crAbortOp(crPrep.op); crPrep = null; } // and the downloads themselves stop (CG-PF-10)
   if (crGrid) { crGridStop('exit'); crGrid = null; } // the grid's downloads stop too; its committed cells live on in the on-device city cache, by design
-  crCacheNote = '';
+  crCacheNote = ''; crCacheNoteCity = ''; crCacheGen++; // Beta 1.143 (DA-06): no failure state - and no commissioned write - outlives the session
   crPackCtx = null; crPackNote = ''; // Beta 1.123: the pack context belongs to the closed session's city - the next creation re-decides its source
   crAbortOp(crTopOp); crTopOp = null;
   crCityLookupSeq++; if (crCityLastCtl) { try { crCityLastCtl.abort(); } catch (e) {} crCityLastCtl = null; } // a held last-city lookup dies with the session (CG-PF-11)
@@ -1263,7 +1273,12 @@ function importDraft(text) { // fail closed, named errors, nothing half-applied 
 $('crDoorList').addEventListener('click', () => { showRmPane('rmCityListPane'); crRenderCityChoices(); }); // Beta 1.124: Select from list - the city rows render fresh on every entry to the list pane
 $('rmCityListBack').addEventListener('click', () => showRmPane('rmCreatePane')); // the list pane backs to the doors pane (the mockup's pane-to-pane Back chain)
 $('crDoorManual').addEventListener('click', () => { draft = newDraft(); crOpenCityPane('doors'); });
-$('crCityInput').addEventListener('input', () => { if (crCityTimer) clearTimeout(crCityTimer); crCityTimer = setTimeout(() => { crCityTimer = null; crRunCitySearch(); }, 500); });
+$('crCityInput').addEventListener('input', () => { // Beta 1.143 (DA-12, verify cycle 1): EVERY input change invalidates the in-flight search AT THE EVENT - bump + abort here, not when the debounce next runs the search (a response landing inside the 500 ms window otherwise renders into a field the user has already moved past). The street search's handler below has always had this shape; crRunCitySearch's own bump remains the backstop for programmatic calls
+  crCitySeq++; if (crCityCtl) { try { crCityCtl.abort(); } catch (e) {} crCityCtl = null; }
+  if (crCityTimer) { clearTimeout(crCityTimer); crCityTimer = null; }
+  if ($('crCityInput').value.trim().length < 3) { $('crCityResults').innerHTML = ''; return; }
+  crCityTimer = setTimeout(() => { crCityTimer = null; crRunCitySearch(); }, 500);
+});
 $('crCityLast').addEventListener('click', async () => {
   const last = lsGet(LS_GLOBAL.lastArea); if (!last) return;
   // resolve the remembered NAME back to a place (centre + bounds) through the same city search; if the lookup fails, the name alone still scopes the creation - anchors then come from street-search picks and Prepare this area.
@@ -1283,6 +1298,7 @@ $('crCityLast').addEventListener('click', async () => {
 });
 $('crCityBack').addEventListener('click', () => {
   crCityLookupSeq++; if (crCityLastCtl) { try { crCityLastCtl.abort(); } catch (e) {} crCityLastCtl = null; } // leaving the pane kills a held lookup (CG-PF-11)
+  crCitySeq++; if (crCityCtl) { try { crCityCtl.abort(); } catch (e) {} crCityCtl = null; } if (crCityTimer) { clearTimeout(crCityTimer); crCityTimer = null; } // Beta 1.143 (DA-12): leaving the pane kills a held city search too - request AND pending debounce, as reopening does
   if (crCityReturn === 'preview' || crCityReturn === 'pick') { if (!routeLoaded) parkBootChrome(); else closeRouteMenu(); setCreateStage(crCityReturn); }
   else { showRmPane('rmCreatePane'); }
 });
