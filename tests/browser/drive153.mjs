@@ -20,7 +20,7 @@ import { fileURLToPath } from 'node:url';
 // slug with a 404. What it proves:
 //   A (tab entry): the Create pane opens on the TWO DOORS (Beta
 //      1.124) - "Create new route"; Select from list opens the list
-//      pane ("Select the city you'll be cleaning in") with the 5 index
+//      pane ("Select City") with the 5 index
 //      cities as rows carrying their street counts; tapping Vaughan
 //      readies the city from the PACK with
 //      ZERO Overpass requests and the hint naming the app's own
@@ -191,7 +191,7 @@ ok('A1 DOORS (tab entry, Beta 1.124): the Create pane\'s first screen is "Create
 const listA = await openCityList();
 const chA = await choicesReady();
 const namesA = await J(`({ rows: [...document.querySelectorAll('#crCityList .routeRow')].map(r => ({ n: (r.querySelector('.routeName') || {}).textContent || '', s: (r.querySelector('.routeArea') || {}).textContent || '' })), t: (document.querySelector('#rmCityListPane .rmTitle') || {}).textContent || '' })`);
-ok('A2 the list pane ("Select the city you\'ll be cleaning in") renders the FIVE cities from the pack index as rows carrying their street counts + "ready to load" (index-driven, no hardcoded list in the app) | ' + JSON.stringify(namesA), listA === true && chA === true && namesA.t === "Select the city you'll be cleaning in" && JSON.stringify((namesA.rows || []).map(r => r.s)) === JSON.stringify(['5,401 streets · ready to load', '4,102 streets · ready to load', '2,181 streets · ready to load', '15,152 streets · ready to load', '4,477 streets · ready to load']) && ['Brampton', 'Markham', 'Richmond Hill', 'Toronto', 'Vaughan'].every(n => (namesA.rows || []).some(r => r.n === n)));
+ok('A2 the list pane ("Select City") renders the FIVE cities from the pack index as rows carrying their street counts + "ready to load" (index-driven, no hardcoded list in the app) | ' + JSON.stringify(namesA), listA === true && chA === true && namesA.t === "Select City" && JSON.stringify((namesA.rows || []).map(r => r.s)) === JSON.stringify(['5,401 streets · ready to load', '4,102 streets · ready to load', '2,181 streets · ready to load', '15,152 streets · ready to load', '4,477 streets · ready to load']) && ['Brampton', 'Markham', 'Richmond Hill', 'Toronto', 'Vaughan'].every(n => (namesA.rows || []).some(r => r.n === n)));
 const wireA0 = wire.length;
 packDelayMs = 2500;
 await clickChoice('Vaughan');

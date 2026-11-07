@@ -609,7 +609,7 @@ $('stDel').addEventListener('click', async () => {
 });
 // ---- About / What's new ----
 const WHATSNEW = { // the curated in-app notes: plain words, LATEST RELEASE ONLY (Beta 1.114, Andrew: the accumulated list cluttered the About pane). A release REPLACES this entry with its own in the same change - it never accumulates; the full history lives in CHANGELOG.md, not the app
-  v: 'Beta 1.138', items: ["The city list in Create new route \u2192 Select from list now scrolls inside its own box \u2014 the title and the Back button stay on screen while you scroll the cities", "The Choose a route list gets the same treatment, so it stays easy to move through as your routes add up"]};
+  v: 'Beta 1.139', items: ["The city list title is now just Select City", "The last used tag on a city now shows in gold so it stands out", "The scroll bar no longer runs over the city bubbles while you scroll the list"]};
 function renderAbout() {
   const cur = $('ver').textContent.trim();
   $('wnHead').textContent = "WHAT'S NEW · " + cur; // the header names the LIVE version, read from the title's version element - never a second hard-coded copy that can go stale

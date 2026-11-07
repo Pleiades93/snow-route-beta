@@ -937,7 +937,8 @@ function crRenderCityChoices() {
     const sorted = entries.slice().sort((a, b) => (((b.name || '').toLowerCase() === last) ? 1 : 0) - (((a.name || '').toLowerCase() === last) ? 1 : 0)); // the last-used city rides first when the library holds it (a convenience, never a requirement - the full list is always there)
     for (const e of sorted) {
       if (!e || !e.name || !e.slug || !Array.isArray(e.bbox) || e.bbox.length !== 4) continue;
-      const b = routeRowShell('button', e.name, (typeof e.streets === 'number' && isFinite(e.streets) ? e.streets.toLocaleString('en-US') + ' streets · ' : '') + 'ready to load' + (String(e.name).toLowerCase() === last ? ' · last used' : ''), { chevron: true });
+      const b = routeRowShell('button', e.name, (typeof e.streets === 'number' && isFinite(e.streets) ? e.streets.toLocaleString('en-US') + ' streets · ' : '') + 'ready to load', { chevron: true });
+      if (String(e.name).toLowerCase() === last) { const lu = document.createElement('span'); lu.className = 'crLastUsed'; lu.textContent = ' · last used'; const area = b.querySelector('.routeArea'); if (area) area.appendChild(lu); } // Beta 1.139 (Andrew): the last-used tag is its own gold span so it stands out - it was plain text trailing the sub-line
       b.addEventListener('click', () => crPackPickCity(e));
       boxEl.appendChild(b);
     }

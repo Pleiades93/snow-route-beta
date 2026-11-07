@@ -1,5 +1,8 @@
 # Changelog
 
+## Beta 1.139 — 2026-11-07
+City-list polish (Andrew, direct ship at his order — mechanical integrity only, no test battery): the Select-from-list pane title is now just "Select City"; city rows (and route rows, same geometry) carry a 12px right gutter so the scroll bar rides beside the bubbles instead of over them; the "last used" tag on a city row is its own span in the app's gold (#ffc233, bold) instead of plain text trailing the sub-line. The two drives that assert the pane title (153/154) had the title literal rolled to match; their other premises are untouched.
+
 ## Beta 1.138 — 2026-11-07
 Capped blue-menu lists (Andrew's pick from three options, direct ship at his order — mechanical integrity only, no test battery): the 1.137 whole-menu scroll left the Select-from-list pane's title riding at the very top of the screen and scrolled the title away with the list. Now #crCityList and #rmRoutes (the Choose-a-route list, same shape) are capped at .52 of the visible height — the sheets' half-height language — and scroll inside their own box with overscroll contained; the pane title and Back button stay pinned. CSS only.
 
