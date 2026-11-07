@@ -16,6 +16,12 @@ and copies src/sw.js to sw.js. It then verifies:
               deployed page tags' (the two copies of the SRI data cannot drift)
   * CSP     - the bundle's stamped policy exactly matches a fresh hash
               computation over the bundle's own inline script/style
+  * WHATSNEW - the in-app What's New entry's version equals the displayed
+              version (Beta 1.133: a stale entry fails the build, not just
+              a registry probe)
+  * README  - the README's battery counts equal scripts/release.py's
+              derivation from the suite (Beta 1.133, programme C: the
+              counts are generated, never hand-kept)
 
 Usage:
   python3 scripts/build-pages.py           build + verify (writes index.html, sw.js)
@@ -66,6 +72,15 @@ def verify(bundle: str, src_text: str, sw_text: str) -> None:
     assert mv, 'VERSION FAIL: CHANGELOG has no Beta entry'
     assert f'id="ver">Beta {mv.group(1)}<' in bundle, f'VERSION FAIL: the displayed version is not the CHANGELOG top entry (Beta {mv.group(1)}) - the in-app update checker compares this text; a stale label disables update detection (2026-11-01: 1.53 shipped still displaying Beta 1.52 because a label edit silently matched nothing)'
     print(f'VERSION check: PASS (displayed version == CHANGELOG top, Beta {mv.group(1)})')
+    wn = re.search(r"const WHATSNEW = \{[^\n]*\n\s*v: 'Beta (\d+\.\d+)'", bundle)
+    assert wn, "WHATSNEW FAIL: no WHATSNEW version found in the bundle - the About pane's notes lost their version stamp"
+    assert wn.group(1) == mv.group(1), f"WHATSNEW FAIL: WHATSNEW.v is Beta {wn.group(1)} but this release is Beta {mv.group(1)} - the What's New entry was not replaced for this release (Beta 1.125 shipped exactly this staleness and only a registry probe noticed; since Beta 1.133 the build itself refuses it)"
+    print(f'WHATSNEW check: PASS (WHATSNEW.v == Beta {mv.group(1)})')
+    import release
+    counts = release.suite_counts(REPO)
+    problems = release.readme_problems((REPO / 'README.md').read_text(encoding='utf-8'), counts)
+    assert not problems, 'README COUNTS FAIL: ' + '; '.join(problems) + ' - the counts are generated, never hand-typed: run python3 scripts/release.py (Beta 1.133, programme C)'
+    print(f"README counts check: PASS (README == scripts/release.py derivation: {counts['drives']} drives, {counts['drive_checks']} drive checks, {counts['e2e_checks']} e2e checks, {counts['sw_checks']} sw checks)")
     print('CSP check: PASS (stamped policy hash matches the bundle\'s own script/style)')
     r = csp_stamp.strip_stamp(bundle)
     assert r == src_text, 'PARITY FAIL: index.html differs from source beyond the CSP stamp'
