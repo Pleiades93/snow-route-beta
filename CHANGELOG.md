@@ -1,5 +1,8 @@
 # Changelog
 
+## Beta 1.140 — 2026-11-07
+No sideways scroll in the menu lists (Andrew, direct ship at his order — mechanical integrity only, no test battery): the 1.138 scroll boxes computed overflow-x to auto alongside overflow-y, and the 1.139 row gutter gave the content a few px of horizontal give — the city list could be dragged left/right and names slid under the edge. Both boxes (#crCityList, #rmRoutes) are now overflow-x: hidden. CSS only.
+
 ## Beta 1.139 — 2026-11-07
 City-list polish (Andrew, direct ship at his order — mechanical integrity only, no test battery): the Select-from-list pane title is now just "Select City"; city rows (and route rows, same geometry) carry a 12px right gutter so the scroll bar rides beside the bubbles instead of over them; the "last used" tag on a city row is its own span in the app's gold (#ffc233, bold) instead of plain text trailing the sub-line. The two drives that assert the pane title (153/154) had the title literal rolled to match; their other premises are untouched.
 

@@ -609,7 +609,7 @@ $('stDel').addEventListener('click', async () => {
 });
 // ---- About / What's new ----
 const WHATSNEW = { // the curated in-app notes: plain words, LATEST RELEASE ONLY (Beta 1.114, Andrew: the accumulated list cluttered the About pane). A release REPLACES this entry with its own in the same change - it never accumulates; the full history lives in CHANGELOG.md, not the app
-  v: 'Beta 1.139', items: ["The city list title is now just Select City", "The last used tag on a city now shows in gold so it stands out", "The scroll bar no longer runs over the city bubbles while you scroll the list"]};
+  v: 'Beta 1.140', items: ["The city list now scrolls up and down only \u2014 it no longer slides sideways and cuts off the city names"]};
 function renderAbout() {
   const cur = $('ver').textContent.trim();
   $('wnHead').textContent = "WHAT'S NEW · " + cur; // the header names the LIVE version, read from the title's version element - never a second hard-coded copy that can go stale
