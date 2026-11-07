@@ -35,7 +35,9 @@ Beta 1.118 (created routes): one more global record,
 routes Andrew created in the app (shipped packs live in `parts/data.js`,
 never in storage). At boot the record's packs are validated
 (`normalizePack`) and merged into the runtime pack list — a created pack
-wins an id collision; created ids are slugs generated from the route
+wins an id collision; the fields a pack may carry are defined once in
+`PACK_FIELDS` (app1), and `normalizePack` builds from that list
+(Beta 1.131); created ids are slugs generated from the route
 name, uniqueness-checked against shipped + created ids, so collisions
 do not arise from the app itself. A created route's own data lives in
 its ordinary per-route slot (`snowroute.<id>.` + tails), exactly like a

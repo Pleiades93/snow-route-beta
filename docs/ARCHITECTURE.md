@@ -123,7 +123,13 @@ a `ROUTE_PACKS` entry in `parts/data.js`; each segment is an array of
 `[lat, lng]` points. `normalizePack` (app4) is the single validator and
 normalizer for every pack that enters the app — draft import, save,
 backup restore, boot merge — fail-closed with named errors, nothing
-half-applied.
+half-applied. The set of fields a pack carries is defined ONCE in
+`PACK_FIELDS` (app1, beside `ROUTE_FIELDS`): `normalizePack` builds the
+validated pack by walking that list (Beta 1.131, maintainability
+programme A — before, the return literal in `normalizePack` was a
+second, hand-kept copy of the format, and a field missing from it
+would have been silently dropped). The storage-slot field `snap` is
+deliberately NOT a pack field and stays out of the list.
 
 **Door 1 — from a photo.** The app takes the photo and holds it in an
 honest waiting state ("Photo received — your draft is being built…",
@@ -383,8 +389,11 @@ Done with this road) and the draft renders the street as one feature per
 sector — chosen in its category colour, unchosen thin grey, with
 a wide invisible hit layer picked with the same ±16/±28 px
 discipline as street taps. The sector boundaries are
-`computeStretches`' own cut rule (4 m join tolerance, cuts merged
-under 15 m, none within 12 m of an end) applied to the street's
+the ONE junction-cut finishing policy — `finishJunctionCuts` (app1):
+4 m join tolerance, cuts merged under 15 m, none within 12 m of an
+end — shared verbatim with `computeStretches` since Beta 1.131
+(maintainability programme N2; the two cutters previously carried
+independent copies of the rule). It is applied to the street's
 stitched line, but the junction set is the prepared EXTRACT (every
 other street's vertices within 12 m of the line) — never the
 draft's current contents — so a street's sectors are its real
