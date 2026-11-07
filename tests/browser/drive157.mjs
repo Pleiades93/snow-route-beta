@@ -33,7 +33,7 @@ import { fileURLToPath } from 'node:url';
 //     to the bottom bar ("No roads picked yet") and Review restores
 //     it; Done is disabled at zero.
 // Red side (pristine 1.127 tree): A fails (the tap removes the
-// street), B fails (bar reads "Whole road picked", the sole-sector
+// street), B fails (bar reads "Entire road picked", the sole-sector
 // tap deletes the street), C fails (the Add button exists and the
 // preview's button reads the compound "Looks right - save route"),
 // D fails (the faces hard-swap - no both-visible sample; expand
@@ -129,8 +129,8 @@ const inA = await enterPickWithExtract();
 await ev2(`pickStreet('Long Road', { lat: 43.8, lng: -79.574 })`);
 const addedA = await poll(`typeof draft !== 'undefined' && draft && !!draft.roads['Long']`, 15000);
 const rowA = await J(`(() => { const r = document.querySelector('#crPickList .crPRow'); return r ? (r.querySelector('.crPSub') || {}).textContent || '' : ''; })()`);
-ok('A1 THE UNTRIMMED ROW STATES THE AFFORDANCE: a freshly picked road\'s row reads "Whole road · X m — tap row to adjust" (the hint exists before any trim, not only after one) | entered: ' + inA + ', added: ' + addedA + ' | ' + rowA,
-  inA === true && addedA === true && rowA.indexOf('Whole road') === 0 && rowA.indexOf('tap row to adjust') > 0);
+ok('A1 THE UNTRIMMED ROW STATES THE AFFORDANCE: a freshly picked road\'s row reads "Entire road · X m — tap row to adjust" (the hint exists before any trim, not only after one) | entered: ' + inA + ', added: ' + addedA + ' | ' + rowA,
+  inA === true && addedA === true && rowA.indexOf('Entire road') === 0 && rowA.indexOf('tap row to adjust') > 0);
 await ev2(`(() => { // the tap seam: a box query names Long Road under the tap (drive150's stub shape); the point query names nothing
   if (!map.__qrfOrig) map.__qrfOrig = map.queryRenderedFeatures.bind(map);
   map.queryRenderedFeatures = (arg) => {
