@@ -2,7 +2,7 @@
 <html lang="en" class="boot">
 <head>
 <meta charset="UTF-8">
-<meta http-equiv="Content-Security-Policy" content="default-src 'none'; script-src 'sha384-wQwV1dFtdgmyxQlvNpAFcDzgLG69f+DUlFS26vOQtq4JhpIpKrO3Q6njf2gNpOrV' https://cdn.jsdelivr.net; style-src-elem 'sha384-CM8XicCxEjRX5pen8Y0s2FFBqB2ItrNqvtjsMIQEs/xMxPMArCAD8JQkn0pS062i' https://cdn.jsdelivr.net; style-src-attr 'unsafe-inline'; img-src 'self' data: blob: https://tiles.basemaps.cartocdn.com https://protomaps.github.io https://cdn.jsdelivr.net; connect-src 'self' https://tiles.basemaps.cartocdn.com https://protomaps.github.io https://cdn.jsdelivr.net https://nominatim.openstreetmap.org https://overpass-api.de https://overpass.kumi.systems; worker-src blob: 'self'; child-src blob: 'self'; font-src 'none'; manifest-src 'self'; base-uri 'none'; form-action 'none'; object-src 'none'">
+<meta http-equiv="Content-Security-Policy" content="default-src 'none'; script-src 'sha384-SxANGdW2/0lAsJXOTyOidLjhIYZmZxSgk6Od/tDJpQLBfLngBpdVpuxBHn+vnBKp' https://cdn.jsdelivr.net; style-src-elem 'sha384-CM8XicCxEjRX5pen8Y0s2FFBqB2ItrNqvtjsMIQEs/xMxPMArCAD8JQkn0pS062i' https://cdn.jsdelivr.net; style-src-attr 'unsafe-inline'; img-src 'self' data: blob: https://tiles.basemaps.cartocdn.com https://protomaps.github.io https://cdn.jsdelivr.net; connect-src 'self' https://tiles.basemaps.cartocdn.com https://protomaps.github.io https://cdn.jsdelivr.net https://nominatim.openstreetmap.org https://overpass-api.de https://overpass.kumi.systems; worker-src blob: 'self'; child-src blob: 'self'; font-src 'none'; manifest-src 'self'; base-uri 'none'; form-action 'none'; object-src 'none'">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="mobile-web-app-capable" content="yes">
@@ -418,7 +418,7 @@ input, textarea { caret-color: currentColor; } /* Beta 1.125 (Andrew): the typin
 <div id="hud">
   <div id="warn">Not saving — storage is full or blocked</div>
   <div class="row">
-    <div class="titleStack"><div class="title">Snow Route Beta</div><div class="ver" id="ver">Beta 1.130</div></div>
+    <div class="titleStack"><div class="title">Snow Route Beta</div><div class="ver" id="ver">Beta 1.131</div></div>
   </div>
   <div id="stats"></div>
 </div>
@@ -590,6 +590,7 @@ function routeKeys(id) { const p = 'snowroute.' + id + '.'; return { done: p + '
 const LS_GLOBAL = { night: 'snowroute.v2.night', nightExp: 'snowroute.v2.nightExp', exp: 'snowroute.v5.export', prep: 'snowroute.prep.v1', lastArea: 'snowroute.v2.lastarea' }; // Beta 1.118: lastArea = the create flow's area pre-fill memory
 const LEGACY_KEYS = { done: 'snowroute.v2', times: 'snowroute.v2.times', hist: 'snowroute.v2.history', notes: 'snowroute.v4.notes', via: 'snowroute.v4.via', trail: 'snowroute.v4.trail', cov: 'snowroute.v4.cov', start: 'snowroute.v5.start', flip: 'snowroute.v5.flip', sides: 'snowroute.v5.sides', sess: 'snowroute.v5.sess', snap: 'snowroute.v5.snap' }; // snap rides here too so LS.snap is defined on a legacy-fallback boot (the pre-1.76 app never wrote one - the key is simply absent there, which the cancel path already treats as 'no snapshot')
 const ROUTE_FIELDS = ['done', 'times', 'hist', 'notes', 'via', 'trail', 'cov', 'start', 'flip', 'sides', 'sess'];
+const PACK_FIELDS = ['name', 'area', 'main', 'spot', 'tileNames', 'box', 'roads', 'reference']; // Beta 1.131 (maintainability programme A): the ONE list of fields a route pack carries - normalizePack (app4) builds every validated pack by walking THIS list, so a field joins the pack format by joining this list (with its cleaner there); a field absent from the list does not survive validation, by construction. Deliberately distinct from ROUTE_FIELDS above: those are storage-slot fields, and 'snap' in particular is a slot field that is NOT a pack field (hand-carried at restore scope by design) - it must never be added here.
 let LS = { ...routeKeys('5w'), ...LS_GLOBAL };
 function migrateLegacyRoute(id) { // one-time, 5W only. Beta 1.94 (deep audit SR-193-03): the COMMIT RECORD is the explicit marker key (rk.mig), never field presence. The 1.93 parity gate (R04) could not tell an interrupted copy from a legitimately partial slot - sides restored from a backup, no history yet - and its retry recopied legacy sides OVER the newer restored ones. Now: with the marker absent, the copy fills ONLY fields the slot lacks (a present slot field is never overwritten), each fill verified by read-back; any failure reports false and the caller reads the legacy keys for this boot - verified fills already landed may stay, since without the marker they are never mistaken for a completed move, and each is an exact copy of the legacy value. Parity is re-checked before the marker is written. The legacy keys themselves are never deleted - they stay as the fallback copy.
   if (id !== '5w') return true;
@@ -739,6 +740,16 @@ function sliceLine(pts, cum, d0, d1) {
   out.push(at(d1));
   return out;
 }
+function finishJunctionCuts(line, cum, total, cuts) { // Beta 1.131 (maintainability programme N2): the ONE junction-cut finishing policy - sort the candidate cuts, merge cuts closer than 15 m into one, drop cuts within 12 m of either end, then slice the line at the surviving bounds. BOTH cutters finish through here: computeStretches (junctions = the route's own streets) and the create flow's sector cutter crStreetParts (junctions = the prepared extract). The junction SOURCES stay distinct by design; only this finishing policy is shared, with its exact inequalities and merge order - the pieces it returns are identical to the pre-1.131 duplicated blocks (identity proven in the 1.131 comparison harnesses).
+  cuts.sort((a, b) => a - b);
+  const merged = [];
+  for (const c of cuts) { if (merged.length && c - merged[merged.length - 1] < 15) continue; merged.push(c); }
+  const inner = merged.filter(c => c >= 12 && c <= total - 12);
+  const bounds = [0, ...inner, total];
+  const parts = [];
+  for (let i = 1; i < bounds.length; i++) parts.push(sliceLine(line, cum, bounds[i - 1], bounds[i]));
+  return parts;
+}
 const STRETCH = {};
 function computeStretches(roads) { // Beta 1.117: the stretch builder as a PURE function of a roads object - the pre-1.117 eval-time IIFE, parameterized. buildGeometry fills the live STRETCH from it on every load; backup/restore (app4's packGeometry) builds a non-active pack's geometry from it without touching the live one (F6).
   const out = {};
@@ -750,14 +761,7 @@ function computeStretches(roads) { // Beta 1.117: the stretch builder as a PURE 
       if (m === n) continue;
       for (const v of lines[m]) { const pr = projOnLine(lines[n], cums[n], v); if (pr.off <= 4) cuts.push(pr.d); }
     }
-    cuts.sort((a, b) => a - b);
-    const merged = [];
-    for (const c of cuts) { if (merged.length && c - merged[merged.length - 1] < 15) continue; merged.push(c); }
-    const inner = merged.filter(c => c >= 12 && c <= totals[n] - 12);
-    const bounds = [0, ...inner, totals[n]];
-    const parts = [];
-    for (let i = 1; i < bounds.length; i++) parts.push(sliceLine(lines[n], cums[n], bounds[i - 1], bounds[i]));
-    out[n] = { line: lines[n], cum: cums[n], total: totals[n], parts };
+    out[n] = { line: lines[n], cum: cums[n], total: totals[n], parts: finishJunctionCuts(lines[n], cums[n], totals[n], cuts) };
   }
   return out;
 }
@@ -4739,7 +4743,7 @@ $('stDel').addEventListener('click', async () => {
 });
 // ---- About / What's new ----
 const WHATSNEW = { // the curated in-app notes: plain words, LATEST RELEASE ONLY (Beta 1.114, Andrew: the accumulated list cluttered the About pane). A release REPLACES this entry with its own in the same change - it never accumulates; the full history lives in CHANGELOG.md, not the app
-  v: 'Beta 1.130', items: ["Creating a route: the city list now starts loading the moment you open Create, so tapping Select from list on a fresh open shows your cities right away - no more loading-screen pause first"]
+  v: 'Beta 1.131', items: ["Under the hood only: the app's inner checklists were tidied into single lists, so a future route feature can't silently lose pieces of a route you created. Nothing about how the app looks or works has changed"]
 };
 function renderAbout() {
   const cur = $('ver').textContent.trim();
@@ -5169,7 +5173,10 @@ function normalizePack(raw, opts) { // -> { ok: true, pack } | { ok: false, erro
   let box = null;
   if (raw.box && isFinite(raw.box.w) && isFinite(raw.box.s) && isFinite(raw.box.e) && isFinite(raw.box.n) && raw.box.w < raw.box.e && raw.box.s < raw.box.n) box = { w: raw.box.w, s: raw.box.s, e: raw.box.e, n: raw.box.n };
   else { const cb = computeRouteBox({ ...rc.roads, ...reference }); if (cb) box = { w: Math.max(-180, cb.w - 0.03), s: Math.max(-90, cb.s - 0.025), e: Math.min(180, cb.e + 0.03), n: Math.min(90, cb.n + 0.025) }; }
-  return { ok: true, pack: { name, area, main: mains, spot: {}, tileNames: [...tileSet], box, roads: rc.roads, reference } };
+  const cleaned = { name, area, main: mains, spot: {}, tileNames: [...tileSet], box, roads: rc.roads, reference };
+  const pack = {};
+  for (const f of PACK_FIELDS) { if (f in cleaned) pack[f] = cleaned[f]; else if (raw[f] !== undefined) pack[f] = raw[f]; } // Beta 1.131 (programme A): the pack is built by walking PACK_FIELDS (app1) - the list is the single source for what a pack carries. Every listed field has a cleaner above today, so the raw fall-through never fires; it exists so a future field added to the list (before its cleaner lands) is carried through rather than silently dropped - the pre-1.131 trap was the hand-written return literal here forgetting a field.
+  return { ok: true, pack };
 }
 function mergeUserPacks() { // boot: the runtime pack list = shipped packs + created packs (a created pack wins an id collision - created ids are generated slugs that never collide with a shipped id, so a collision means the record was hand-edited; the created route is Andrew's data and wins)
   const rec = loadUserPacks();
@@ -5788,11 +5795,7 @@ function crStreetParts(short) { // the street's sectors: its stitched line cut w
       }
     }
   }
-  cuts.sort((a, b) => a - b);
-  const merged = []; for (const c of cuts) { if (merged.length && c - merged[merged.length - 1] < 15) continue; merged.push(c); }
-  const inner = merged.filter(c => c >= 12 && c <= total - 12);
-  const bounds = [0, ...inner, total];
-  const parts = []; for (let i = 1; i < bounds.length; i++) parts.push(sliceLine(line, cum, bounds[i - 1], bounds[i]));
+  const parts = finishJunctionCuts(line, cum, total, cuts); // Beta 1.131 (programme N2): the finishing policy is shared with computeStretches - see finishJunctionCuts (app1). Only the junction SOURCE differs (the prepared extract, collected above); the policy exists exactly once.
   const rec = { line, cum, total, parts };
   draft.parts[short] = rec;
   return rec;
