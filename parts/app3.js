@@ -351,13 +351,14 @@ function finishRun() {
   // delete; verified writes; verified rollback in reverse. A kill between gates
   // leaves a signature reconcileInterruptedFinish resolves at boot (CG-196-04).
   const fSteps = [];
+  fSteps.push({ name: 'finclean', write: () => txSet(LS.finclean, JSON.stringify({ run: runStart || 0, at: Date.now() })), undo: () => txDel(LS.finclean) }); // Beta 1.141 (Package A, DA-10): the metadata-cleanup obligation is the transaction's FIRST step, so every prefix reconciliation can call a committed finish carries it, and a rolled-back finish undoes it with the rest. The post-commit saveAll below normally discharges it at once; if those writes fail and the page dies first, completeFinishCleanup (app1) completes the cleanup at the next load instead of leaving the finished run's notes/coverage live forever.
   if (archiving) fSteps.push({ name: 'archive', write: () => txSet(LS.hist, JSON.stringify(newHist)), undo: () => txSet(LS.hist, JSON.stringify(prevHist)) });
   fSteps.push({ name: 'sides', write: () => txSet(LS.sides, JSON.stringify({ p: clearedPieces, t: clearedTimes })), undo: () => prevSidesRaw === null ? txDel(LS.sides) : txSet(LS.sides, prevSidesRaw) });
   if (runStart) fSteps.push({ name: 'start', write: () => txDel(LS.start), undo: () => txSet(LS.start, String(runStart)) });
   const fTx = runTx(fSteps);
   if (fTx.outcome !== 'committed') {
+    if (fTx.outcome === 'degraded') { toast(fTx.failedStep === 'sides' && archiving ? 'Storage failure \u2014 finish stopped, but the archive could not be undone. Export a backup now' : 'Storage failure \u2014 finish stopped, but the rollback could not be verified. Export a backup now', 6000); return; } // Beta 1.141 verify cycle 1: degraded is judged FIRST - an archive failure whose rollback could not be verified is not "run intact", whatever step failed
     if (fTx.failedStep === 'archive') { toast('Storage full \u2014 finish stopped, run intact', 3600); return; }
-    if (fTx.outcome === 'degraded') { toast(fTx.failedStep === 'sides' && archiving ? 'Storage failure \u2014 finish stopped, but the archive could not be undone. Export a backup now' : 'Storage failure \u2014 finish stopped, but the rollback could not be verified. Export a backup now', 6000); return; }
     toast('Storage problem \u2014 finish stopped, your clean is intact', 4200); return;
   }
   lsDel(LS.snap); markClean('snap'); // Beta 1.94 (SR-193-02): the run is finished - its cancel snapshot goes with it. Ungated on purpose: a leftover snapshot is stamped with THIS run's start, so it can never match a future run, and the next Start overwrites it anyway

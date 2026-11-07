@@ -165,6 +165,16 @@ Coverage:
   the street is completed offline and persisted, and a second offline
   restart keeps the offline-made mark. Same local-origin fixture family
   as `drive117`.
+- `drive162` — finish-cleanup obligation (Beta 1.141, Package A / DA-10):
+  a finish that commits while its notes/coverage writes are refused leaves
+  the durable `v5.finclean` obligation armed; the next load completes the
+  cleanup (the finished run's note and coverage gone, its archive kept,
+  the obligation discharged), while a live run's note across a reload and
+  a non-empty board facing a stray obligation are both left untouched.
+  The G checks pin the same build's verify-cycle findings at the finish
+  level: an archive write whose read-back lies, with the rollback's
+  verification read throwing, warns the rollback could not be verified —
+  never "run intact".
 
 ## The drive compatibility surface (frozen, Beta 1.136, programme E)
 

@@ -424,7 +424,7 @@ input, textarea { caret-color: currentColor; } /* Beta 1.125 (Andrew): the typin
 <div id="hud">
   <div id="warn">Not saving — storage is full or blocked</div>
   <div class="row">
-    <div class="titleStack"><div class="title">Snow Route Beta</div><div class="ver" id="ver">Beta 1.140</div></div>
+    <div class="titleStack"><div class="title">Snow Route Beta</div><div class="ver" id="ver">Beta 1.141</div></div>
   </div>
   <div id="stats"></div>
 </div>
@@ -592,9 +592,9 @@ const TRAIL_MAX = 8000;
 // reference - GL_HOST's included - stays valid across a switch).
 const ROADS = {};
 const REFERENCE = {};
-function routeKeys(id) { const p = 'snowroute.' + id + '.'; return { done: p + 'v2', times: p + 'v2.times', hist: p + 'v2.history', notes: p + 'v4.notes', via: p + 'v4.via', trail: p + 'v4.trail', cov: p + 'v4.cov', start: p + 'v5.start', flip: p + 'v5.flip', sides: p + 'v5.sides', sess: p + 'v5.sess', pre: p + 'v5.preload', snap: p + 'v5.snap', mig: p + 'v2.migrated' }; } // Beta 1.94 (deep audit SR-193-02/03): two slot-local records join the layout - 'snap' is the running clean's persisted pre-Start board (Start writes it, Finish/Cancel delete it; transient, never backed up, not in ROUTE_FIELDS) and 'mig' is the legacy migration's explicit completion marker (see migrateLegacyRoute). Neither is a backup field.
+function routeKeys(id) { const p = 'snowroute.' + id + '.'; return { done: p + 'v2', times: p + 'v2.times', hist: p + 'v2.history', notes: p + 'v4.notes', via: p + 'v4.via', trail: p + 'v4.trail', cov: p + 'v4.cov', start: p + 'v5.start', flip: p + 'v5.flip', sides: p + 'v5.sides', sess: p + 'v5.sess', pre: p + 'v5.preload', snap: p + 'v5.snap', mig: p + 'v2.migrated', finclean: p + 'v5.finclean' }; } // Beta 1.94 (deep audit SR-193-02/03): two slot-local records join the layout - 'snap' is the running clean's persisted pre-Start board (Start writes it, Finish/Cancel delete it; transient, never backed up, not in ROUTE_FIELDS) and 'mig' is the legacy migration's explicit completion marker (see migrateLegacyRoute). Neither is a backup field. Beta 1.141 (Package A, DA-10): 'finclean' joins them on the same terms - the durable finish-cleanup obligation (finishRun's transaction writes it, saveAll's success discharges it, completeFinishCleanup completes it at load); transient, never backed up, not in ROUTE_FIELDS.
 const LS_GLOBAL = { night: 'snowroute.v2.night', nightExp: 'snowroute.v2.nightExp', exp: 'snowroute.v5.export', prep: 'snowroute.prep.v1', lastArea: 'snowroute.v2.lastarea' }; // Beta 1.118: lastArea = the create flow's area pre-fill memory
-const LEGACY_KEYS = { done: 'snowroute.v2', times: 'snowroute.v2.times', hist: 'snowroute.v2.history', notes: 'snowroute.v4.notes', via: 'snowroute.v4.via', trail: 'snowroute.v4.trail', cov: 'snowroute.v4.cov', start: 'snowroute.v5.start', flip: 'snowroute.v5.flip', sides: 'snowroute.v5.sides', sess: 'snowroute.v5.sess', snap: 'snowroute.v5.snap' }; // snap rides here too so LS.snap is defined on a legacy-fallback boot (the pre-1.76 app never wrote one - the key is simply absent there, which the cancel path already treats as 'no snapshot')
+const LEGACY_KEYS = { done: 'snowroute.v2', times: 'snowroute.v2.times', hist: 'snowroute.v2.history', notes: 'snowroute.v4.notes', via: 'snowroute.v4.via', trail: 'snowroute.v4.trail', cov: 'snowroute.v4.cov', start: 'snowroute.v5.start', flip: 'snowroute.v5.flip', sides: 'snowroute.v5.sides', sess: 'snowroute.v5.sess', snap: 'snowroute.v5.snap', finclean: 'snowroute.v5.finclean' }; // snap rides here too so LS.snap is defined on a legacy-fallback boot (the pre-1.76 app never wrote one - the key is simply absent there, which the cancel path already treats as 'no snapshot'); finclean rides for the same reason (Beta 1.141)
 const ROUTE_FIELDS = ['done', 'times', 'hist', 'notes', 'via', 'trail', 'cov', 'start', 'flip', 'sides', 'sess'];
 const PACK_FIELDS = ['name', 'area', 'main', 'spot', 'tileNames', 'box', 'roads', 'reference']; // Beta 1.131 (maintainability programme A): the ONE list of fields a route pack carries - normalizePack (app4) builds every validated pack by walking THIS list, so a field joins the pack format by joining this list (with its cleaner there); a field absent from the list does not survive validation, by construction. Deliberately distinct from ROUTE_FIELDS above: those are storage-slot fields, and 'snap' in particular is a slot field that is NOT a pack field (hand-carried at restore scope by design) - it must never be added here.
 // ===== RULE CONSTANTS (Beta 1.136, maintainability programme F): every number that IS a
@@ -675,16 +675,30 @@ function storeFail(failedKey, retryPending) { return { ok: false, failedKey: fai
 // outcome that changes what the user must be told). The flows (finishRun,
 // restoreBackup) keep their own message texts and select them from (outcome,
 // failedStep) exactly as they selected them from their hand-built gates before.
-function txSet(key, value) { return (lsSet(key, value) && lsGet(key) === value) ? storeOk() : storeFail(key, true); }
-function txDel(key) { return (lsDel(key) && lsGet(key) === null) ? storeOk() : storeFail(key, true); }
+// Beta 1.141 (Package A, DA-03): a failed verification is two different events and
+// the result now says which - failKind 'write' (the lsSet/lsDel call itself failed:
+// the write provably never landed, so the step's prior state stands untouched) vs
+// 'verify' (the write returned success but the read-back disagreed: the write may
+// have landed, so the state is unknown until restored). runTx therefore undoes the
+// FAILING step too - first, as the newest write - and verifies that undo like any
+// other; a failing step whose undo cannot be verified makes the outcome 'degraded',
+// never a clean 'rolled-back'. The one exception is a 'write'-kind failure: nothing
+// landed, there is nothing to undo, and an undo write against the same failing
+// storage would only muddy the verdict. A failure carrying no failKind (a
+// hand-built step) is treated as 'verify' - fail-safe. runTx's result carries the
+// failing write's failKind alongside failedStep. Fixture-proven in
+// tests/browser/selftest-tx.mjs, including the landed-write/lying-read-back shape.
+function txSet(key, value) { if (!lsSet(key, value)) return Object.assign(storeFail(key, true), { failKind: 'write' }); return lsGet(key) === value ? storeOk() : Object.assign(storeFail(key, true), { failKind: 'verify' }); }
+function txDel(key) { if (!lsDel(key)) return Object.assign(storeFail(key, true), { failKind: 'write' }); return rawRead(key) === null ? storeOk() : Object.assign(storeFail(key, true), { failKind: 'verify' }); } // Beta 1.141 verify cycle 1: a delete verifies through rawRead, never lsGet - lsGet reads a THROWN read as absent, so an unverifiable delete could claim success; through rawRead the thrown read is the RAW_READ_FAILED sentinel, a 'verify' failure like any other disagreement
 function runTx(steps) {
   const done = [];
   for (const st of steps) {
     const r = st.write();
     if (!r.ok) {
       let degraded = false;
+      if (r.failKind !== 'write' && !st.undo().ok) degraded = true; // the failing step is undone first - unless its write provably never landed
       for (let i = done.length - 1; i >= 0; i--) { if (!done[i].undo().ok) degraded = true; }
-      return { outcome: degraded ? 'degraded' : 'rolled-back', failedStep: st.name };
+      return { outcome: degraded ? 'degraded' : 'rolled-back', failedStep: st.name, failKind: r.failKind || null };
     }
     done.push(st);
   }
@@ -896,6 +910,7 @@ pieces = {}; pieceTimes = {};
   for (const k of Object.keys(doneVia)) if (!streetComplete(k)) delete doneVia[k];
   })();
   reconcileInterruptedFinish(); // Beta 1.102 (Phase 4, CG-196-04): resolve a finish that died between its gates before anything renders this state
+  completeFinishCleanup(); // Beta 1.141 (Package A, DA-10): complete a committed finish's metadata cleanup if its writes failed and a reload outlived the in-memory retry
 }
 function reconcileInterruptedFinish() { // a finish killed mid-transaction runs no rollback; its two harmful prefixes share one signature in EXISTING records - the newest archive entry belongs to the run still marked active (its runId === the stored start; a later run's start is a later millisecond, so no live state collides). Board still marked: the archive write was the only gate that landed - remove that entry (verified) and the run resumes intact. Board already cleared: the finish effectively happened - delete the start key (verified) and it stands committed. No signature: nothing to do. An under-3 finish writes no archive, so its prefixes look exactly like a fresh empty run - coherent as one, left alone. Beta 1.104 (round 103, CG-103-02): the signature key is the entry's runId, never startedAt - startedAt is the real work start and predates the stored start whenever a street was marked before Start was pressed, which used to defeat both branches; entries written before 1.104 carry no runId and are never reconciled (missing identity = no signature).
   if (!runStart || !history.length) return;
@@ -905,6 +920,15 @@ function reconcileInterruptedFinish() { // a finish killed mid-transaction runs 
   const act = finishReconcileAction(runStart, lastMs, boardEmpty);
   if (act === 'rollback') { const trimmed = history.slice(0, -1); if (txSet(LS.hist, JSON.stringify(trimmed)).ok) history = trimmed; }
   else if (act === 'complete') { if (txDel(LS.start).ok) runStart = 0; }
+}
+function completeFinishCleanup() { // Beta 1.141 (Package A, DA-10): finishRun's transaction writes the slot's finclean record as its first step, so a COMMITTED finish whose post-commit metadata writes then failed (notes/coverage refuse; the primaryDirty retry is in-memory and dies with the page) leaves a DURABLE obligation behind. This completes it at load. Guards, all required: the obligation exists; no run is live (a live run owns notes/coverage - its data is never touched); the loaded board is the cleared board a committed finish leaves (a restored or cancelled live board is non-empty and untouchable). The cleanup is two verified writes of the same '{}' saveAll writes for a finished board; only when BOTH verify do the in-memory copies clear and the obligation delete. Any failure leaves the obligation (and the loaded state, which then matches storage) for the next load - idempotent, safe on every load, a single read on a clean slot.
+  if (runStart) return;
+  if (lsGet(LS.finclean) === null) return;
+  if (!STREETNAMES.every(n => pieces[n].every(v => v === 0))) return;
+  if (!txSet(LS.notes, '{}').ok) return;
+  if (!txSet(LS.cov, '{}').ok) return;
+  notes = {}; coveredIdx = {}; suggested = new Set();
+  txDel(LS.finclean);
 }
 // ===== DAY/NIGHT (Beta 1.77, Andrew): the theme follows the sun by default.
 // Sunrise and sunset are computed on the device (the standard NOAA
@@ -996,6 +1020,7 @@ function saveAll() { // Beta 1.101 (Phase 3 / C2): returns the storage-outcome r
   }
   if (failedKey) { primaryDirty = true; return storeFail(failedKey, true); }
   primaryDirty = false;
+  if (lsGet(LS.finclean) !== null) lsDel(LS.finclean); // Beta 1.141 (Package A, DA-10): a fully landed primary save discharges the finish-cleanup obligation - the stored notes/coverage ARE the in-memory ones now, whoever's they are; the obligation only ever outlives FAILED saves
   return storeOk();
 }
 // Dirty-flag access (Beta 1.101, Phase 3 / C2): the flags themselves stay storage-owned
@@ -3838,13 +3863,14 @@ function finishRun() {
   // delete; verified writes; verified rollback in reverse. A kill between gates
   // leaves a signature reconcileInterruptedFinish resolves at boot (CG-196-04).
   const fSteps = [];
+  fSteps.push({ name: 'finclean', write: () => txSet(LS.finclean, JSON.stringify({ run: runStart || 0, at: Date.now() })), undo: () => txDel(LS.finclean) }); // Beta 1.141 (Package A, DA-10): the metadata-cleanup obligation is the transaction's FIRST step, so every prefix reconciliation can call a committed finish carries it, and a rolled-back finish undoes it with the rest. The post-commit saveAll below normally discharges it at once; if those writes fail and the page dies first, completeFinishCleanup (app1) completes the cleanup at the next load instead of leaving the finished run's notes/coverage live forever.
   if (archiving) fSteps.push({ name: 'archive', write: () => txSet(LS.hist, JSON.stringify(newHist)), undo: () => txSet(LS.hist, JSON.stringify(prevHist)) });
   fSteps.push({ name: 'sides', write: () => txSet(LS.sides, JSON.stringify({ p: clearedPieces, t: clearedTimes })), undo: () => prevSidesRaw === null ? txDel(LS.sides) : txSet(LS.sides, prevSidesRaw) });
   if (runStart) fSteps.push({ name: 'start', write: () => txDel(LS.start), undo: () => txSet(LS.start, String(runStart)) });
   const fTx = runTx(fSteps);
   if (fTx.outcome !== 'committed') {
+    if (fTx.outcome === 'degraded') { toast(fTx.failedStep === 'sides' && archiving ? 'Storage failure \u2014 finish stopped, but the archive could not be undone. Export a backup now' : 'Storage failure \u2014 finish stopped, but the rollback could not be verified. Export a backup now', 6000); return; } // Beta 1.141 verify cycle 1: degraded is judged FIRST - an archive failure whose rollback could not be verified is not "run intact", whatever step failed
     if (fTx.failedStep === 'archive') { toast('Storage full \u2014 finish stopped, run intact', 3600); return; }
-    if (fTx.outcome === 'degraded') { toast(fTx.failedStep === 'sides' && archiving ? 'Storage failure \u2014 finish stopped, but the archive could not be undone. Export a backup now' : 'Storage failure \u2014 finish stopped, but the rollback could not be verified. Export a backup now', 6000); return; }
     toast('Storage problem \u2014 finish stopped, your clean is intact', 4200); return;
   }
   lsDel(LS.snap); markClean('snap'); // Beta 1.94 (SR-193-02): the run is finished - its cancel snapshot goes with it. Ungated on purpose: a leftover snapshot is stamped with THIS run's start, so it can never match a future run, and the next Start overwrites it anyway
@@ -4455,6 +4481,7 @@ function restoreBackup(parsed) { // production doRestore semantics: validate EVE
       return;
     }
   }
+  for (const rid of (parsed.v === 2 ? Object.keys(parsed.routes) : ['5w'])) lsDel(routeKeys(rid).finclean); // Beta 1.141 (Package A, DA-10): the restore replaces a route's slot truth wholesale, so a finish-cleanup obligation left by the pre-restore state is discharged by the replacement, never completed against restored data. Scoped to the routes this backup actually rewrites (1.141 verify cycle 1): a route the backup OMITS keeps its slot under the missing-key rule, so its obligation stays armed for its next load
   restoring = true; markClean('trail'); markClean('aux'); markClean('sess'); // the reload's pagehide flush must not write the old in-memory trail/coverage over the restored data
   toast('Backup restored — reloading' + (droppedNames ? ' · ' + droppedNames + ' unknown street name' + (droppedNames === 1 ? '' : 's') + ' in the backup were ignored' : '') + (snapDropped ? ' · the saved start snapshot was not usable, so Cancel will rebuild from the marks made during the run' : ''), snapDropped ? 4600 : undefined); // Beta 1.94 (audit F-05): the drop count is part of the result, not a silent loader detail. Beta 1.96 (SR-195-02): a dropped start snapshot is reported the same way
   setTimeout(() => location.reload(), 600);
@@ -4801,7 +4828,7 @@ $('stDel').addEventListener('click', async () => {
 });
 // ---- About / What's new ----
 const WHATSNEW = { // the curated in-app notes: plain words, LATEST RELEASE ONLY (Beta 1.114, Andrew: the accumulated list cluttered the About pane). A release REPLACES this entry with its own in the same change - it never accumulates; the full history lives in CHANGELOG.md, not the app
-  v: 'Beta 1.140', items: ["The city list now scrolls up and down only \u2014 it no longer slides sideways and cuts off the city names"]};
+  v: 'Beta 1.141', items: ["Finish is harder to fool: if a storage write fails halfway through finishing a clean, the app now restores even the step that failed \u2014 when it says your clean is intact, it has checked that it is true", "If a finish's final tidy-up (clearing the old clean's notes and coverage) cannot be written, the app now remembers the obligation and completes it the next time it opens \u2014 an old hazard note can no longer linger into the next clean"]};
 function renderAbout() {
   const cur = $('ver').textContent.trim();
   $('wnHead').textContent = "WHAT'S NEW · " + cur; // the header names the LIVE version, read from the title's version element - never a second hard-coded copy that can go stale
