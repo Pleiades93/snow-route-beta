@@ -268,6 +268,8 @@
 #routeMenu.bye { opacity: 0 !important; transition: opacity .3s ease; } /* Beta 1.78: on a boot pick the menu fades while the splash blue dissolves - the menu itself stays in the page, parked below the screen for the Routes tab */
 @keyframes splashBgOut { 0%, 82% { opacity: 1; } 100% { opacity: 0; } }
 #routeMenu { position: fixed; inset: 0; z-index: 10000; background: #2b4bf2; display: flex; flex-direction: column; align-items: center; justify-content: center; padding: 24px; opacity: 0; visibility: hidden; transform: translateY(103%); transition: transform var(--anim-dur) var(--ease-close), opacity .3s ease, visibility 0s linear var(--anim-dur); pointer-events: none; } /* Beta 1.78 (Andrew): the route menu is a top-level full-screen menu on the splash blue and OUTLIVES the splash - parked below the screen; the Routes tab slides it up (.open, the shared menu motion, mirrored on close). At boot the splash borrows it in place via .boot (next rule) */
+#routeMenu { overflow-y: auto; } /* Beta 1.137 (Andrew): the Routes menu scrolls like Settings - with 12 cities the Select-from-list pane outgrew the screen and, unlike #setMenu, this menu had no overflow rule, so the list could not be moved at all */
+#routeMenu .rmPane { flex-shrink: 0; margin-top: auto; margin-bottom: auto; } /* panes centre when they fit and scroll from the top when they do not - the same treatment #setMenu got in 1.111 */
 #routeMenu.boot { transform: translateX(-26px); transition: opacity .5s var(--ease-open) .15s, transform .5s var(--ease-open) .15s, visibility 0s linear .15s; }
 #routeMenu.boot.show, #routeMenu.open { opacity: 1; visibility: visible; transform: none; pointer-events: auto; }
 #routeMenu.open { transition: transform var(--anim-dur) var(--ease-open), opacity .3s ease, visibility 0s; }
@@ -419,7 +421,7 @@ input, textarea { caret-color: currentColor; } /* Beta 1.125 (Andrew): the typin
 <div id="hud">
   <div id="warn">Not saving — storage is full or blocked</div>
   <div class="row">
-    <div class="titleStack"><div class="title">Snow Route Beta</div><div class="ver" id="ver">Beta 1.136</div></div>
+    <div class="titleStack"><div class="title">Snow Route Beta</div><div class="ver" id="ver">Beta 1.137</div></div>
   </div>
   <div id="stats"></div>
 </div>

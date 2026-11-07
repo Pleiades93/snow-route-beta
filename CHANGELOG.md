@@ -1,5 +1,8 @@
 # Changelog
 
+## Beta 1.137 — 2026-11-07
+Routes-menu scrolling (Andrew's report, direct ship at his order — mechanical integrity only, no test battery): with all 12 city packs published, the Create new route → Select from list pane outgrew the screen, and #routeMenu — unlike #setMenu, which got its overflow rule in 1.111 — had no scrolling at all, so the list could not be moved. #routeMenu now carries the same treatment as Settings: overflow-y auto on the menu plus flex-shrink 0 / auto vertical margins on its panes, so every blue-menu pane centres when it fits and scrolls from the top when it does not. CSS only; no behaviour or data changes.
+
 ## Beta 1.136 — 2026-11-07
 Programme build 5 — candidates E (test & CI machinery) + F (small consolidations) from the 2026-11-06 maintainability scan (adjudicated; re-scan confirmed on 1.129). Feature tier: branch + battery on touched surfaces + the standing Codex verify gate before merge. App behaviour does not change: the F consolidations are value- and output-identical by construction (the battery is the judge), and the E items touch tests, CI and docs only.
 

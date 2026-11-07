@@ -609,8 +609,7 @@ $('stDel').addEventListener('click', async () => {
 });
 // ---- About / What's new ----
 const WHATSNEW = { // the curated in-app notes: plain words, LATEST RELEASE ONLY (Beta 1.114, Andrew: the accumulated list cluttered the About pane). A release REPLACES this entry with its own in the same change - it never accumulates; the full history lives in CHANGELOG.md, not the app
-  v: 'Beta 1.136', items: ["Under-the-hood tidy-up: the app's rule numbers (how close a GPS point must be to count a street as covered, how big a created route may be, and the rest) now each live in one named place instead of being repeated through the code", "The automatic test battery that checks the app every night is faster and better balanced, and a new guard flags test wording the moment an app label changes — so a rename can never quietly outdate the tests again", "Nothing about how the app looks or works has changed — same screens, same buttons, same routes, same saved data"]
-};
+  v: 'Beta 1.137', items: ["The city list in Create new route \u2192 Select from list now scrolls \u2014 with all 12 cities in the library the list outgrew the screen and could not be moved; every city is reachable again", "The Routes menu now scrolls the same way the Settings menu does whenever a list is taller than the screen"]};
 function renderAbout() {
   const cur = $('ver').textContent.trim();
   $('wnHead').textContent = "WHAT'S NEW · " + cur; // the header names the LIVE version, read from the title's version element - never a second hard-coded copy that can go stale
