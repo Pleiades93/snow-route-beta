@@ -609,7 +609,7 @@ $('stDel').addEventListener('click', async () => {
 });
 // ---- About / What's new ----
 const WHATSNEW = { // the curated in-app notes: plain words, LATEST RELEASE ONLY (Beta 1.114, Andrew: the accumulated list cluttered the About pane). A release REPLACES this entry with its own in the same change - it never accumulates; the full history lives in CHANGELOG.md, not the app
-  v: 'Beta 1.127', items: ["Creating a route is easier: tap a picked road's row to trim it to just the sectors you clean, tap a road on the map again to take it off, flip MAIN/2ND right in its row, and clear all picks at once. The roads panel tucks away to a slim strip when you need the map, and Back buttons now only respond on the words themselves"]
+  v: 'Beta 1.128', items: ["Creating a route, simpler: tap a road you've already picked to open its sections and trim it right on the map. The finishing words are plainer too - Done in the roads panel, then Save route on the check screen takes you to name your route. And the roads panel slides smoothly down into a bottom bar - it tucks away even before you've picked anything"]
 };
 function renderAbout() {
   const cur = $('ver').textContent.trim();
@@ -1061,7 +1061,7 @@ function uniqueRouteId(name) { // a slug from the name, uniqueness-checked again
 function nextRouteNameGuess() { let mx = 1; for (const p of ROUTE_PACKS) { const m = /^Route (\d+)$/.exec(p.name || ''); if (m) mx = Math.max(mx, +m[1] + 1); } return 'Route ' + Math.max(mx, ROUTE_PACKS.length + 1); }
 
 // ---- draft state: session only (not a route, not in any slot) ----
-let creating = false, crStage = 'pick', crReturnToPreview = false, crBootParked = false, crAreaGuess = '', crPhoto = null, crPickBusy = false;
+let creating = false, crStage = 'pick', crBootParked = false, crAreaGuess = '', crPhoto = null, crPickBusy = false; // Beta 1.128: crReturnToPreview is GONE - it existed only to rewrite the panel's Done label on the return-from-preview errand, and the label no longer rewrites (Andrew: the button reads "Done", always)
 let draft = null; // { roads, mains: Set, osmNames: {short: full}, tileNames: [..], name, area, sectors: {short: [chosen part indexes]} (Beta 1.127 - an ABSENT entry means the whole road), parts: {short: crStreetParts record} (session cache) }
 function newDraft() { return { roads: {}, mains: new Set(), osmNames: {}, tileNames: [], name: '', area: '', sectors: {}, parts: {} }; }
 let crSectorStreet = null; // Beta 1.127: the street whose sectors are being trimmed (sector mode), or null
@@ -1617,7 +1617,7 @@ function crAddStreet(short, osmName, segs) {
   renderDraft(); renderCrLists(); crRenderHint();
   toast('Added ' + short, 1800);
 }
-function crRemoveStreet(short) { // Beta 1.127: the ONE removal path - the panel's x, the preview's x and tap-again-to-deselect on the map all land here, so a street leaves with ALL of its draft state (geometry, main flag, names, sector pick, cached parts) and every face re-renders from the same state
+function crRemoveStreet(short) { // Beta 1.127: the ONE removal path - the panel's x, the preview's x and Clear all land here (Beta 1.128: those are the ONLY doors; a map tap on a picked street opens its sectors instead), so a street leaves with ALL of its draft state (geometry, main flag, names, sector pick, cached parts) and every face re-renders from the same state
   if (!draft || !draft.roads[short]) return;
   delete draft.roads[short]; draft.mains.delete(short); delete draft.osmNames[short];
   if (draft.sectors) delete draft.sectors[short];
@@ -1690,6 +1690,7 @@ function crFilteredRoads() { // the roads object the SAVE stores: a trimmed stre
 }
 function crToggleSector(short, idx) {
   const rec = crStreetParts(short); if (!rec || idx < 0 || idx >= rec.parts.length) return;
+  if (rec.parts.length === 1) { toast(short + ' is one piece — there are no cross-streets to trim it at', 2600); return; } // Beta 1.128: a one-piece street's only sector IS the whole road - tapping it in 1.127 un-picked the street entirely, the exact trap behind Andrew's report; the bar says it plainly and the tap changes nothing
   const set = crChosenSet(short, rec);
   if (set.has(idx)) set.delete(idx); else set.add(idx);
   if (!set.size) { crRemoveStreet(short); toast(short + ' removed - no sectors left picked', 2400); return; } // un-picking every sector removes the street (crRemoveStreet also closes its sector mode)
@@ -1719,43 +1720,99 @@ function crSectorTap(lngLat) { // a map tap while trimming: the sector under the
   }
   if (idx >= 0) crToggleSector(short, idx);
 }
-function crOpenSectors(short) { // tapping a picked road's panel row opens its trimming (mockup screen 1)
+function crOpenSectors(short) { // opens a picked street's trimming - TWO doors since Beta 1.128 (Andrew's fork, decided from his 1.127 device session): the panel row (1.127) AND a map tap on the already-picked street (pickStreet routes here), which is where his finger went on device
   if (!draft || !draft.roads[short]) return;
   if (!crStreetParts(short)) return;
+  const fromEl = crVisibleFaceEl();
   crSectorStreet = short;
-  syncCrPanel(); renderDraft(); crRenderHint();
+  renderSectorBar();
+  const sheet = $('createSheet');
+  if (sheet && sheet.classList.contains('on') && fromEl && fromEl !== $('crSectorBar')) crMorphFaces(fromEl, $('crSectorBar'), 0, 0);
+  else syncCrPanel();
+  renderDraft(); crRenderHint();
 }
-function crCloseSectors() { if (!crSectorStreet) return; crSectorStreet = null; syncCrPanel(); crRenderHint(); }
+function crCloseSectors() { if (!crSectorStreet) return; crSectorStreet = null; const bar = $('crSectorBar'), sheet = $('createSheet'); if (sheet && sheet.classList.contains('on') && bar && bar.style.display !== 'none') crMorphFaces(bar, crFaceEl(crWantedFace()), 0, 0); else syncCrPanel(); crRenderHint(); }
 function renderSectorBar() {
   const s = crSectorStreet; if (!s || !draft || !draft.roads[s]) return;
   const rec = crStreetParts(s); if (!rec) return;
   const chosen = crChosenSet(s, rec);
   $('crSbName').textContent = s;
+  if (rec.parts.length === 1) { $('crSbSub').textContent = 'One piece · ' + fmtLenM(rec.total) + ' — no cross-streets to split it at, so it goes into your route whole'; return; } // Beta 1.128: honest about the streets the cut rules cannot split (measured on the shipped Vaughan pack: 221 of 1,299 streets ≥ 500 m compute to exactly one part) - 1.127's "tap sectors to trim it" promised a trim whose only outcome was deleting the road
   $('crSbSub').textContent = chosen.size >= rec.parts.length
     ? 'Whole road picked · ' + fmtLenM(rec.total) + ' — tap sectors to trim it'
     : chosen.size + ' of ' + rec.parts.length + ' sectors picked · ' + fmtLenM(crChosenLenM(s, rec)) + ' — the grey ends stay out of your route';
 }
-function syncCrPanel() { // the ONE face switch for the pick sheet (Beta 1.127): the sector bar while trimming, the slim strip while the panel is tucked away, else the panel itself. An empty draft never shows the strip (there is nothing to review)
+// ---- the pick sheet's faces (Beta 1.128): panel / strip / sector bar are
+// still three elements, but switching between them is now ONE CONTINUOUS
+// MOTION instead of 1.127's hard display swap. Andrew, on device: the
+// panel "animates but then glitches and turns into a pill" - that was the
+// collapse spring finishing into an instant face swap at a different size
+// and shape. Now the sheet's own height springs from the old face's
+// height to the new one's while the old face slides down out of the
+// (clipped) sheet and the new face rises/fades into the bottom slot it
+// will rest in; when the spring lands, the rest state applies to exactly
+// the geometry the eye already sees, so nothing jumps. The spring is the
+// sheets' own closed-form springSheet - no per-frame integration.
+let crMorph = null; // { from, to } while a face change animates, else null
+function crFaceEl(face) { return face === 'panel' ? $('crPanel') : face === 'strip' ? $('crStrip') : $('crSectorBar'); }
+function crWantedFace() { // the face the current state asks for: the sector bar while trimming; the strip whenever the panel is tucked away (Beta 1.128: at ANY pick count, zero included - an empty draft retracts too, where 1.127's strip demanded a non-empty draft and collapse at zero sprang down and bounced back); else the panel
+  if (crSectorStreet && draft && draft.roads[crSectorStreet]) return 'bar';
+  if (crPanelCollapsed) return 'strip';
+  return 'panel';
+}
+function crVisibleFaceEl() { for (const f of ['bar', 'strip', 'panel']) { const el = crFaceEl(f); if (el && el.style.display !== 'none') return el; } return null; }
+function syncCrPanel() { // the REST state: exactly one face shown. Animated switches run through crMorphFaces and land here; renders and stage changes call this directly. While a morph is in flight this no-ops - the morph's finish lands the rest state, so a mid-flight re-render can never tear the faces apart
   const panel = $('crPanel'), strip = $('crStrip'), bar = $('crSectorBar'); if (!panel || !strip || !bar) return;
-  if (crSectorStreet && draft && draft.roads[crSectorStreet]) { panel.style.display = 'none'; strip.style.display = 'none'; bar.style.display = ''; renderSectorBar(); return; }
-  bar.style.display = 'none';
-  if (crPanelCollapsed && draft && draftStreets().length) { panel.style.display = 'none'; strip.style.display = ''; }
-  else { strip.style.display = 'none'; panel.style.display = ''; }
+  if (crMorph) return;
+  const want = crWantedFace();
+  panel.style.display = want === 'panel' ? '' : 'none';
+  strip.style.display = want === 'strip' ? '' : 'none';
+  bar.style.display = want === 'bar' ? '' : 'none';
+  if (want === 'bar') renderSectorBar();
 }
-function crCollapsePanel(fromY, v0) { // tuck the panel away: it springs down its own height (the sheets' closed-form spring, SHEET_OMEGA family - no per-frame integration), then the strip takes its place
+function crMorphCleanup(fromEl, toEl) {
+  const sheet = $('createSheet'); if (sheet) { sheet.style.height = ''; sheet.style.overflow = ''; }
+  for (const el of [fromEl, toEl]) { if (!el) continue; el.style.position = ''; el.style.top = ''; el.style.left = ''; el.style.right = ''; el.style.bottom = ''; el.style.height = ''; el.style.transform = ''; el.style.opacity = ''; el.style.visibility = ''; }
+  crMorph = null;
+}
+function crSettleMorph() { if (!crMorph) return; const m = crMorph; cancelSheetSpring($('createSheet')); crMorphCleanup(m.from, m.to); syncCrPanel(); } // land an in-flight face change NOW (a grab on the panel head, or a new face decision superseding it)
+function crMorphFaces(fromEl, toEl, fromY, v0) { // the continuous face change: the sheet's height springs old->new, the old face slides down out of the clipped sheet, the new face takes the bottom slot it will rest in
+  const sheet = $('createSheet'); if (!sheet || !fromEl || !toEl || fromEl === toEl) { syncCrPanel(); return; }
+  crSettleMorph();
+  if (fromEl.style.display === 'none') { syncCrPanel(); return; }
+  const H0 = fromEl.offsetHeight;
+  const tcs = getComputedStyle(toEl); // the incoming face rests with its own margins - the morph places it at exactly those offsets, so the animated end state and the rest state are the same geometry
+  toEl.style.display = ''; toEl.style.position = 'absolute'; toEl.style.left = tcs.marginLeft; toEl.style.right = tcs.marginRight; toEl.style.bottom = tcs.marginBottom; toEl.style.visibility = 'hidden';
+  const H1 = toEl.offsetHeight;
+  toEl.style.visibility = '';
+  if (!H0 || !H1 || Math.abs(H1 - H0) < 2) { crMorphCleanup(fromEl, toEl); syncCrPanel(); return; } // nothing to travel (or nothing measurable): swap instantly
+  const fcs = getComputedStyle(fromEl);
+  fromEl.style.position = 'absolute'; fromEl.style.top = '0px'; fromEl.style.left = fcs.marginLeft; fromEl.style.right = fcs.marginRight; fromEl.style.height = H0 + 'px'; // height pinned: the panel's scrolling list must not re-flow taller once it leaves the sheet's flex column
+  toEl.style.height = H1 + 'px';
+  sheet.style.height = H0 + 'px'; sheet.style.overflow = 'hidden';
+  crMorph = { from: fromEl, to: toEl };
+  springSheet(sheet, H0, H1, v0 || 0, h => {
+    sheet.style.height = h + 'px';
+    fromEl.style.transform = 'translateY(' + ((fromY || 0) + (H0 - h)) + 'px)';
+    toEl.style.transform = 'translateY(' + (H1 - h) + 'px)';
+    const p = Math.min(1, Math.abs(h - H0) / Math.abs(H1 - H0));
+    toEl.style.opacity = String(Math.min(1, p * 1.8));
+  }, () => { crMorphCleanup(fromEl, toEl); syncCrPanel(); });
+}
+function crCollapsePanel(fromY, v0) { // tuck the panel away to the bottom bar (Beta 1.128: one continuous slide down into the bar, at any pick count - zero included)
   const panel = $('crPanel'); if (!panel) return;
-  if (crPanelCollapsed) { panel.style.transform = ''; syncCrPanel(); return; }
-  const H = panel.offsetHeight;
-  if (!H) { crPanelCollapsed = true; syncCrPanel(); return; }
+  if (crPanelCollapsed) { syncCrPanel(); return; }
   crPanelCollapsed = true;
-  springSheet(panel, fromY || 0, H, v0 || 0, q => { panel.style.transform = 'translateY(' + q + 'px)'; }, () => { panel.style.transform = ''; syncCrPanel(); });
+  const sheet = $('createSheet');
+  if (!sheet || !sheet.classList.contains('on') || !panel.offsetHeight) { syncCrPanel(); return; }
+  crMorphFaces(panel, $('crStrip'), fromY || 0, -(v0 || 0)); // the sheet's height starts shrinking at the finger's speed: its velocity is the drag velocity negated
 }
-function crExpandPanel() { // Review: the strip hands back to the panel, springing up from below the fold
-  const panel = $('crPanel'); if (!panel || !crPanelCollapsed) return;
-  crPanelCollapsed = false; syncCrPanel();
-  const H = panel.offsetHeight; if (!H) return;
-  panel.style.transform = 'translateY(' + H + 'px)'; void panel.offsetWidth;
-  springSheet(panel, H, 0, 0, q => { panel.style.transform = 'translateY(' + q + 'px)'; }, () => { panel.style.transform = ''; });
+function crExpandPanel() { // Review: the bar hands back to the panel in the same continuous motion, reversed
+  if (!crPanelCollapsed) return;
+  crPanelCollapsed = false;
+  const sheet = $('createSheet'), strip = $('crStrip');
+  if (!sheet || !sheet.classList.contains('on') || !strip || !strip.offsetHeight) { syncCrPanel(); return; }
+  crMorphFaces(strip, $('crPanel'), 0, 0);
 }
 function crPendStreet(short, osmName, lngLat, run, boundary) { // fail-closed (Codex (c)): the shape reaches past verified coverage even after its one top-up - listed as PENDING, never added half-known; a wider preparation can still complete it (crSweepPending)
   let openEnd = null;
@@ -1829,7 +1886,7 @@ function crRenderCityChoices() {
   });
 }
 function crPackPickCity(e) { // a chooser tap IS a city pick: it lands in the same crPickCity the typed search uses, with the catalogue's own bounds - so preparation, caching and the pick stage behave identically whichever door named the city
-  draft = newDraft(); crReturnToPreview = false;
+  draft = newDraft();
   const s = +e.bbox[0], w = +e.bbox[1], n = +e.bbox[2], ee = +e.bbox[3];
   crPickCity({ lat: String((s + n) / 2), lon: String((w + ee) / 2), boundingbox: [String(s), String(n), String(w), String(ee)], display_name: e.name + ', Ontario, Canada', address: { city: e.name, state: 'Ontario', country: 'Canada', country_code: 'ca' } });
 }
@@ -1981,7 +2038,7 @@ function crPanelRowEl(n, g) { // Beta 1.127 (Andrew's approved mockup, screen 2)
   const sub = document.createElement('span'); sub.className = 'crPSub';
   const sel = draft.sectors ? draft.sectors[n] : null;
   if (sel) { const rec = crStreetParts(n); sub.textContent = sel.length + ' of ' + (rec ? rec.parts.length : sel.length) + ' sectors · ' + fmtLenM(crStreetChosenM(n, g)) + ' — tap row to adjust'; }
-  else sub.textContent = 'Whole road · ' + fmtLenM(g[n] ? g[n].total : 0);
+  else sub.textContent = 'Whole road · ' + fmtLenM(g[n] ? g[n].total : 0) + ' — tap row to adjust'; // Beta 1.128: the adjust affordance is stated BEFORE any trim exists - in 1.127 it appeared only after one, so an untrimmed row gave no hint it could be tapped at all
   meta.appendChild(sub); row.appendChild(meta);
   const chip = document.createElement('button'); chip.className = 'crPChip ' + (main ? 'main' : 'sec'); chip.textContent = main ? 'MAIN' : '2ND';
   chip.addEventListener('click', e => { e.stopPropagation(); if (draft.mains.has(n)) draft.mains.delete(n); else draft.mains.add(n); renderDraft(); renderCrLists(); });
@@ -2012,10 +2069,10 @@ function renderCrLists() {
     row.appendChild(del);
     $('crPickList').appendChild(row);
   }
-  $('crStripTitle').textContent = names.length + (names.length === 1 ? ' road' : ' roads') + ' picked'; // the tucked-away strip always carries the live count (mockup screen 4)
-  $('crStripSub').textContent = fmtLenM(tot) + ' · tap Review to see them';
+  $('crStripTitle').textContent = names.length ? names.length + (names.length === 1 ? ' road' : ' roads') + ' picked' : 'No roads picked yet'; // the tucked-away bar always carries the state (mockup screen 4) - Beta 1.128: at zero picks it says so, because the bar now exists at zero too
+  $('crStripSub').textContent = names.length ? fmtLenM(tot) + ' · tap Review to see them' : 'Tap roads on the map to add them';
   $('crDoneBtn').disabled = !names.length;
-  $('crDoneBtn').textContent = crReturnToPreview ? 'Done — back to check' : 'Looks right →'; // Beta 1.127: the panel footer's words (mockup screen 2); the return-to-preview errand keeps its plainer label
+  $('crDoneBtn').textContent = 'Done'; // Beta 1.128 (Andrew): one word, ALWAYS - the 1.127 "Looks right" / "Done - back to check" rewrite is gone with the confusion it caused; Done goes to the check screen from the fresh state and the return-from-preview state alike
   $('pvSaveBtn').disabled = !names.length;
   syncCrPanel();
 }
@@ -2026,7 +2083,7 @@ $('crModalNo').addEventListener('click', () => { $('crModal').classList.add('hid
 function parkBootChrome() { const sp = $('splash'); if (sp) sp.style.visibility = 'hidden'; $('routeMenu').classList.remove('show'); crBootParked = true; }
 function restoreBootChrome() { if (!crBootParked) return; crBootParked = false; const sp = $('splash'); if (sp) sp.style.visibility = ''; $('routeMenu').classList.add('show'); }
 function setCreateStage(stage) {
-  if (stage !== 'pick') crSectorStreet = null; // Beta 1.127: sector mode belongs to the pick stage - the preview and name-it never inherit a half-trimmed street's bar
+  if (stage !== 'pick') crSectorStreet = null; // Beta 1.127: sector mode belongs to the pick stage - the preview never inherits a half-trimmed street's bar
   crStage = stage;
   $('createBar').classList.toggle('on', stage === 'pick');
   $('createSheet').classList.toggle('on', stage === 'pick');
@@ -2050,7 +2107,7 @@ function enterCreate(stage) {
   setCreateStage(stage);
 }
 function exitCreate() {
-  creating = false; draft = null; crStage = 'pick'; crReturnToPreview = false; crAreaGuess = ''; crSectorStreet = null; crPanelCollapsed = false; // Beta 1.127: the panel + sector session state dies with the creation
+  creating = false; draft = null; crStage = 'pick'; crAreaGuess = ''; crSectorStreet = null; crPanelCollapsed = false; // Beta 1.127: the panel + sector session state dies with the creation
   crSession++; crCovGen++; // every async completion born in this session is obsolete the moment the flow closes - it must not land in a later draft, hint or busy state (CG-PF-05)
   if (crPrep) { clearInterval(crPrep.ticker); crAbortOp(crPrep.op); crPrep = null; } // and the downloads themselves stop (CG-PF-10)
   if (crGrid) { crGridStop('exit'); crGrid = null; } // the grid's downloads stop too; its committed cells live on in the on-device city cache, by design
@@ -2120,7 +2177,6 @@ function importDraft(text) { // fail closed, named errors, nothing half-applied 
   if (!v.ok) { toast('Draft not imported — ' + v.error, 4000); return; }
   draft = newDraft();
   draft.roads = v.pack.roads; draft.mains = new Set(v.pack.main); draft.name = v.pack.name || ''; draft.area = v.pack.area || ''; draft.tileNames = v.pack.tileNames.slice();
-  crReturnToPreview = false;
   enterCreate('preview');
   toast('Draft loaded — check it over', 2600);
 }
@@ -2128,7 +2184,7 @@ function importDraft(text) { // fail closed, named errors, nothing half-applied 
 // ---- Door 2: city first (Andrew's amendment) -> prepare the area's street shapes once -> tap roads, resolved locally ----
 $('crDoorList').addEventListener('click', () => { showRmPane('rmCityListPane'); crRenderCityChoices(); }); // Beta 1.124: Select from list - the city rows render fresh on every entry to the list pane
 $('rmCityListBack').addEventListener('click', () => showRmPane('rmCreatePane')); // the list pane backs to the doors pane (the mockup's pane-to-pane Back chain)
-$('crDoorManual').addEventListener('click', () => { draft = newDraft(); crReturnToPreview = false; crOpenCityPane('doors'); });
+$('crDoorManual').addEventListener('click', () => { draft = newDraft(); crOpenCityPane('doors'); });
 $('crCityInput').addEventListener('input', () => { if (crCityTimer) clearTimeout(crCityTimer); crCityTimer = setTimeout(() => { crCityTimer = null; crRunCitySearch(); }, 500); });
 $('crCityLast').addEventListener('click', async () => {
   const last = lsGet(LS_GLOBAL.lastArea); if (!last) return;
@@ -2280,7 +2336,7 @@ const OVERPASS_URLS = ['https://overpass-api.de/api/interpreter', 'https://overp
 async function pickStreet(osmName, lngLat) {
   const short = shortStreetName(osmName);
   if (!draft) return;
-  if (draft.roads[short]) { crRemoveStreet(short); toast('Removed ' + short + ' — tap it again to add it back', 2200); return; } // Beta 1.127 (Andrew): tap again to DESELECT - a second tap on a picked street takes it back off (it never enters twice, and it never re-resolves: removal is instant and named, like the add)
+  if (draft.roads[short]) { crOpenSectors(short); return; } // Beta 1.128 (Andrew's fork, decided from his 1.127 device session): a tap on an ALREADY-PICKED street opens its sectors - the map-level section picking he asked for. 1.127's tap-again-to-deselect is RETIRED: removal lives only on the panel row's ✕ and Clear all. The street is already resolved and validated, so this never re-resolves
   if (crPending[short]) { toast(short + ' is pending — it runs past the prepared area and is not in your route yet', 3400); return; }
   if (crPickBusy) return;
   // Beta 1.121: the tap resolves LOCALLY from the prepared extract - no
@@ -2390,9 +2446,8 @@ function crMapTap(e) {
   pickStreet(pick, e.lngLat);
 }
 onMapReady(() => map.on('click', crMapTap));
-$('crDoneBtn').addEventListener('click', () => { if (draftStreets().length) setCreateStage('preview'); });
-$('crAddBtn').addEventListener('click', () => crCollapsePanel(0, 0)); // Beta 1.127: "+ Add a street" (mockup screen 2) - the panel tucks to its strip and the map is his again
-$('crReviewBtn').addEventListener('click', () => crExpandPanel()); // the strip's way back (mockup screen 4)
+$('crDoneBtn').addEventListener('click', () => { if (draftStreets().length) setCreateStage('preview'); }); // "Done" (Beta 1.128: the panel footer's ONLY button - the 1.127 "+ Add a street" ghost is gone; it never added anything, it only tucked the panel, and tucking belongs to the head's grab/tap gesture)
+$('crReviewBtn').addEventListener('click', () => crExpandPanel()); // the bar's way back (mockup screen 4)
 $('crClearAll').addEventListener('click', () => { // Andrew's addition (2026-11-06): empty the picks at once - behind the shared confirm, the same discipline as Start over and route deletion; the city and the session stay
   const n = draft ? draftStreets().length : 0; if (!n) return;
   crConfirm('Clear all ' + n + (n === 1 ? ' road?' : ' roads?'), 'Every road you picked will be taken off this route. The city stays loaded.', () => {
@@ -2409,7 +2464,7 @@ $('crSbDone').addEventListener('click', () => crCloseSectors()); // Done with th
   head.addEventListener('pointerdown', e => {
     if (pid !== null || e.target.closest('button')) return;
     pid = e.pointerId; startY = lastY = e.clientY; samples = [{ t: performance.now(), y: e.clientY }]; moved = false;
-    cancelSheetSpring(panel); // a grab mid-settle takes the panel over from its live position
+    cancelSheetSpring(panel); crSettleMorph(); // a grab mid-settle takes the panel over from its live position (and lands any face morph in flight)
   });
   head.addEventListener('pointermove', e => {
     if (pid === null || e.pointerId !== pid) return;
@@ -2432,14 +2487,16 @@ $('crSbDone').addEventListener('click', () => crCloseSectors()); // Done with th
   head.addEventListener('pointerup', up);
   head.addEventListener('pointercancel', up);
 })();
-$('pvAddBtn').addEventListener('click', () => {
-  crReturnToPreview = true;
+$('pvAddBtn').addEventListener('click', () => { // back to picking for more streets; Done there returns to this same preview (Beta 1.128: the panel button never changes its label, so no return-mode state is needed)
   if (crCity) { setCreateStage('pick'); return; }
   if (draft && draft.area) { crCity = { name: draft.area, lat: null, lon: null, bbox: null }; setCreateStage('pick'); return; } // Beta 1.121: a draft that already names its city (the photo door) pre-answers the city step - still changeable from the pick sheet's city chip
   crOpenCityPane('preview');
 });
 
-// ---- name it + save ----
+// ---- name it + save (Beta 1.128: the step STAYS its own - a draft of
+// this build folded naming into the preview and Andrew vetoed it the
+// same evening; the preview's button is labelled "Save route" and
+// advances here, and this pane's "Save route" remains the only save) ----
 $('pvSaveBtn').addEventListener('click', openNameIt);
 function openNameIt() {
   if (!draft || !draftStreets().length) return;

@@ -303,35 +303,47 @@ rest still loads); a name absent from the extract gets an honest
 shortened by the app convention (suffix strip; ordinal avenues
 spell out — 5th Avenue is Fifth). Picked streets join as
 SECONDARIES by default and light up on the map in route colours.
-A second map tap on an already-picked street REMOVES it (Beta
-1.127, Andrew: tap again to deselect) — instantly, through the one
-removal path (`crRemoveStreet`) the panel's and preview's ✕ also
-use, with a toast naming the removal; streets still enter only
-once their geometry has resolved, so the honesty line stands.
+A map tap on an ALREADY-PICKED street opens its sectors (Beta
+1.128, Andrew's fork from his 1.127 device session: 1.127's
+tap-again-to-deselect is retired — on device he tapped picked
+roads expecting their sections, and whole-street picking was all
+the map ever offered). Removal lives only on the panel row's ✕,
+the preview's ✕ and Clear all, through the one removal path
+(`crRemoveStreet`); streets still enter only once their geometry
+has resolved, so the honesty line stands.
 
 **The picked-roads panel (Beta 1.127; Andrew's approved mockups,
 beta1/work/create-sectors-mockups/).** The pick stage's bottom
-sheet is a panel with three faces of which exactly one shows
-(`syncCrPanel` is the one switch): the PANEL ("Your route so far",
-a live "N roads · X m", one compact row per street — category dot,
-name, a sub-line, the MAIN/2ND chip in the row, ✕ — plus a Clear
-all that empties the draft's streets behind the shared confirm,
-the city/session staying, and a footer of "+ Add a street" /
-"Looks right →"), the STRIP it tucks into, and the SECTOR BAR
-(below). The panel never exceeds the sheet cap (~half the visible
+sheet is a panel with three faces of which exactly one shows at
+rest (`syncCrPanel` lands the rest state): the PANEL ("Your route
+so far", a live "N roads · X m", one compact row per street —
+category dot, name, a sub-line that always carries the sector
+affordance, the MAIN/2ND chip in the row, ✕ — plus a Clear all
+that empties the draft's streets behind the shared confirm, the
+city/session staying, and a footer whose only button reads
+"Done"), the STRIP it tucks into, and the SECTOR BAR (below).
+The panel never exceeds the sheet cap (~half the visible
 viewport); its rows scroll inside it with header and footer
 fixed. TUCK-AWAY: dragging or flicking the grab handle / header
-downward — or tapping it — collapses the panel to the slim strip
-("N roads picked · X m" + Review ▴); Review or a flick up
-restores it. Collapse and restore run on the sheets' own
-closed-form spring (`springSheet`); while collapsed, a new pick
-does not force the panel back — the strip's counts update live.
-An empty draft shows no face at all, as before. All three faces
-wear the theme tokens in day and night.
+downward — or tapping it — collapses the panel to the slim
+bottom bar ("N roads picked · X m" + Review ▴); Review restores
+it. Face changes are ONE CONTINUOUS MOTION (Beta 1.128,
+`crMorphFaces`): the sheet's height springs between the faces'
+heights on the sheets' own closed-form spring (`springSheet`)
+while the old face slides down out of the clipped sheet and the
+new face rises/fades into the bottom slot it will rest in — no
+hard display swap mid-animation (1.127's swap read on device as
+a glitch into a pill). The bar exists at ZERO picks too ("No
+roads picked yet"), and the panel retracts/restores at any pick
+count; while collapsed, a new pick does not force the panel
+back — the bar's counts update live. All three faces wear the
+theme tokens in day and night.
 
-**Sectors (Beta 1.127).** A street in the draft can be trimmed to
-the junction-to-junction pieces actually cleaned. Tapping its
-panel row opens sector mode: the panel area shows the sector bar
+**Sectors (Beta 1.127; entry + honesty reworked in 1.128).** A street in the draft can be trimmed to
+the junction-to-junction pieces actually cleaned. TWO doors open
+sector mode: tapping its panel row, and tapping the picked
+street itself on the map (Beta 1.128 — the door Andrew's finger
+actually used). Sector mode shows the sector bar
 (street name, "N of M sectors picked · X m", Whole road, Done with
 this road) and the draft renders the street as one feature per
 sector — chosen in its category colour, unchosen thin grey, with
@@ -346,8 +358,15 @@ cross-street pieces and do not shift as other streets join or
 leave the draft (`crStreetParts`, cached per draft). Sector state
 lives ONLY in the draft (`draft.sectors[short]` = the chosen part
 indexes; an absent entry means the whole road, which is also the
-first-pick state). Un-picking every sector removes the street.
-At Save, `crFilteredRoads` stores ONLY the chosen sectors'
+first-pick state). Un-picking every sector of a multi-piece
+street removes the street. A street whose computed parts are
+exactly ONE (measured on the shipped Vaughan pack: 221 of 1,299
+streets ≥ 500 m — their crossings cluster where the 15 m merge
+and 12 m end margins erase them) cannot be trimmed: its bar
+says "One piece · X m — no cross-streets to split it at", and
+tapping its sole sector changes nothing (Beta 1.128; in 1.127
+that tap silently removed the street). At Save,
+`crFilteredRoads` stores ONLY the chosen sectors'
 polylines — the pack format is unchanged (roads = segment lists)
 and everything downstream derives from the stored geometry as
 always. Every length the flow states — panel header and rows,
@@ -357,9 +376,15 @@ chosen geometry only.
 **Shared preview + name-it.** "Is this correct?" draws the draft on the
 map (framed on the geometry that will save — chosen sectors, not whole
 streets) and lists every street with its length; corrections (flip,
-remove, "+ Add a street" through the same picker) happen here. "Looks
-right" goes to name-it, its own step (name + area with pre-fills, a
-read-only summary billing chosen geometry), and Save persists the pack.
+remove, "+ Add a street" through the same picker — the pick panel's
+button there reads "Done" and returns here) happen here. The preview's
+primary button reads "Save route" (Beta 1.128 — the 1.127 compound
+"Looks right - save route" label is gone) and advances to name-it,
+which stays its own final step: name + area with pre-fills, a
+read-only summary billing chosen geometry, and its own "Save route"
+— the only actual save. (Folding the naming into the preview was
+drafted for this build and vetoed by Andrew the same evening; the
+flow is pick → Done → check → name-it → saved.)
 
 **Draft isolation.** A draft is session state only. It renders through
 its own GeoJSON source (`crDraft`) computed from the draft's own roads

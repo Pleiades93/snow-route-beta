@@ -1,5 +1,22 @@
 # Changelog
 
+## Beta 1.128 — 2026-11-06
+Create-flow round 3 — Andrew's device feedback on 1.127, the same evening he approved its mockups: sectors could not be reached the way he actually works, the finish chain confused him, the panel's tuck-away glitched, and an empty panel could not be put away. A read-only diagnosis first (beta1/work/sector-diagnosis-1128/DIAGNOSIS.md) ranked the causes; this build answers all of them.
+
+SECTORS OPEN FROM THE MAP (the headline fix): sector mode's only door in 1.127 was tapping the picked road's ROW in the panel — nothing on the map ever entered it, so every map tap picked the whole street, which is what Andrew reported ("it still selects the entire road"). His fork, decided in chat: tapping an ALREADY-PICKED road on the map now opens ITS sectors (pickStreet routes there; the row door stays). 1.127's tap-again-to-deselect is RETIRED — removal lives only on the panel row's ✕ and Clear all.
+
+ONE-PIECE STREETS ARE HONEST: the diagnosis measured the shipped Vaughan pack with the app's own cut rules — 221 of 1,299 streets ≥ 500 m compute to exactly ONE sector (crossings clustered at the mouth are merged/erased by the 15 m merge and 12 m end margins). In 1.127 such a street's sector bar said "tap sectors to trim it", and tapping its only sector un-picked the street entirely. Now the bar says "One piece · X m — no cross-streets to split it at, so it goes into your route whole", and tapping the sole sector changes nothing (a toast says why). The cut rules themselves are unchanged — they mirror the cleaning stretches by design. Un-picking every sector of a MULTI-piece street still removes it.
+
+WORDING + FLOW (Andrew's words): the picking panel's footer loses "+ Add a street" entirely (it never added anything — it only tucked the panel; tucking belongs to the head's grab/tap) and its primary button reads "Done" — always; the "Done — back to check" rewrite is deleted with the return-mode state (crReturnToPreview) that existed only to drive it. The preview keeps "+ Add a street" (Done there returns to the same preview), and its primary button reads exactly "Save route" — it advances to name-it, as the old button did; the compound "Looks right - save route" is what he objected to. NAMING STAYS ITS OWN STEP (Andrew's veto, same evening): a draft of this build folded the name field into the preview; Andrew vetoed it before ship — name-it remains the separate final step, exactly as it worked, and its "Save route" button remains the only actual save.
+
+THE PANEL SLIDES INTO A BOTTOM BAR: 1.127's syncCrPanel hard-swapped three elements mid-spring (panel slides down → instant cut → a smaller rounded bar at a different size — the "glitch into a pill"). Face changes are now ONE continuous motion (crMorphFaces): the sheet's own height springs between the two faces' heights on the sheets' closed-form spring, the old face slides down out of the clipped sheet, and the new face rises/fades into exactly the bottom slot (its own margins) it rests in — the rest state (syncCrPanel) then applies to the geometry the eye already sees, so nothing jumps. Both directions, and panel↔sector-bar too.
+
+EMPTY STATE: the bottom bar exists at ZERO picks ("No roads picked yet — tap roads on the map to add them") and the panel retracts to it / restores from it at any pick count; 1.127's strip demanded a non-empty draft, so collapse at zero sprang down and bounced back.
+
+DISCOVERABILITY: untrimmed panel rows now carry "— tap row to adjust" from the start (1.127 showed it only after a trim existed).
+
+Proof: new drive157 (map-tap sector entry through the real crMapTap seam, tap-again no longer removing, one-piece honesty, the Done/Save-route wording in both flow states, the kept name-it flow saving end-to-end under a typed name, collapse/expand sampled as a continuous motion with both faces live mid-change, the zero-pick bar) — red on the pristine 1.127 tree. drive156 premises updated where 1.127 behaviours were deliberately replaced (B4 tap-again, B5 the Add-a-street tuck, and the face-swap settle waits); drive150 premises updated for the labels (B2's Done label; A9/C6 keep the name-it flow). Pack format unchanged; storage untouched.
+
 ## Beta 1.127 — 2026-11-06
 Creating a route gets the selection redesign Andrew approved from rendered mockups (beta1/work/create-sectors-mockups/), plus his two additions made while approving (Clear all; the panel must never bury the map) and a defect he reported the same evening (Back buttons firing along their whole row).
 

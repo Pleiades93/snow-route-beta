@@ -81,7 +81,7 @@ jobs:
           - shard: 2
             drives: "drive117 drive83 drive86 drive134 drive123 drive122 drive132 drive131 drive144 drive146 drive151 drive153"
           - shard: 3
-            drives: "drive145 drive126 drive135 drive120 drive65 drive119 drive139 drive140 drive129 drive147 drive154 drive156"
+            drives: "drive145 drive126 drive135 drive120 drive65 drive119 drive139 drive140 drive129 drive147 drive154 drive156 drive157"
           - shard: 4
             drives: "drive66 drive130 drive125 drive127 drive121 drive88 drive115 drive116 drive142 drive148 drive155"
     steps:
