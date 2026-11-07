@@ -138,7 +138,7 @@ const deleteViaUi = async (id) => {
 const pickVaughanFromList = async () => {
   await ev2(`document.getElementById('crDoorList').click()`);
   await poll(`document.getElementById('rmCityListPane').classList.contains('on')`, 10000);
-  await poll(`document.querySelectorAll('#crCityList .routeRow').length === 5`, 15000);
+  await poll(`document.querySelectorAll('#crCityList .routeRow').length === ${INDEXFX.cities.length}`, 15000); // premise fix (2026-11-07, Andrew-approved, test-only): index-derived count - the baked-in 5 expired silently (a 15 s timeout) when the catalogue grew to twelve
   await ev2(`(() => { const r = [...document.querySelectorAll('#crCityList .routeRow')].find(x => { const n = x.querySelector('.routeName'); return n && n.textContent === 'Vaughan'; }); if (r) r.click(); return true; })()`);
   const inPick = await poll(`typeof creating !== 'undefined' && creating === true && crStage === 'pick'`, 15000);
   const ready = await poll(`crPrepState === 'ready'`, 30000);
