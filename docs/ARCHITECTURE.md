@@ -313,39 +313,61 @@ the preview's ✕ and Clear all, through the one removal path
 has resolved, so the honesty line stands.
 
 **The picked-roads panel (Beta 1.127; Andrew's approved mockups,
-beta1/work/create-sectors-mockups/).** The pick stage's bottom
-sheet is a panel with three faces of which exactly one shows at
-rest (`syncCrPanel` lands the rest state): the PANEL ("Your route
-so far", a live "N roads · X m", one compact row per street —
-category dot, name, a sub-line that always carries the sector
-affordance, the MAIN/2ND chip in the row, ✕ — plus a Clear all
-that empties the draft's streets behind the shared confirm, the
-city/session staying, and a footer whose only button reads
-"Done"), the STRIP it tucks into, and the SECTOR BAR (below).
-The panel never exceeds the sheet cap (~half the visible
-viewport); its rows scroll inside it with header and footer
-fixed. TUCK-AWAY: dragging or flicking the grab handle / header
-downward — or tapping it — collapses the panel to the slim
-bottom bar ("N roads picked · X m" + Review ▴); Review restores
-it. Face changes are ONE CONTINUOUS MOTION (Beta 1.128,
-`crMorphFaces`): the sheet's height springs between the faces'
-heights on the sheets' own closed-form spring (`springSheet`)
-while the old face slides down out of the clipped sheet and the
-new face rises/fades into the bottom slot it will rest in — no
-hard display swap mid-animation (1.127's swap read on device as
-a glitch into a pill). The bar exists at ZERO picks too ("No
-roads picked yet"), and the panel retracts/restores at any pick
-count; while collapsed, a new pick does not force the panel
-back — the bar's counts update live. All three faces wear the
-theme tokens in day and night.
+beta1/work/create-sectors-mockups/; the surface itself rebuilt in
+Beta 1.129).** The pick stage's bottom surface is ONE persistent
+object: the sheet element itself (`#createSheet`) is the card —
+it owns the surface tokens (`--card-solid` background, shadow,
+radius) and its GEOMETRY is the state, via the `crG-panel` /
+`crG-strip` / `crG-bar` classes (panel = flush full-width with
+square bottom corners; strip and sector bar = the same box
+contracted to the tucked footprint — 12 px side insets, lifted
+12 px off the bottom, fully rounded: the "absorbed from all
+angles" shape). Inside it sit three CONTENT faces — the PANEL,
+the STRIP it tucks into, and the SECTOR BAR (below) — which
+carry no surface of their own (padding and layout only); exactly
+one shows at rest (`syncCrPanel` lands the rest state). The
+PANEL: "Your route so far", a live "N roads · X m", one compact
+row per street — category dot, name, a sub-line that always
+carries the sector affordance, the MAIN/2ND chip in the row, ✕ —
+plus a Clear all that empties the draft's streets behind the
+shared confirm, the city/session staying, and a footer whose
+only button reads "Done". The panel never exceeds the sheet cap
+(~half the visible viewport); its rows scroll inside it with
+header and footer fixed. TUCK-AWAY: dragging or flicking the
+grab handle / header downward — or tapping it — collapses the
+panel to the slim bottom bar ("N roads picked · X m" + Review
+▴); Review restores it. FACE CHANGES MORPH THE ONE OBJECT (Beta
+1.129, `crMorphTo`): the sheet's height springs between the two
+resting heights on the sheets' own closed-form spring
+(`springSheet`), the same progress drives the margin/radius
+lerp toward the destination shape, and the two faces cross-fade
+pinned inside the moving box — the container is never
+display:none, never empty and never teleports, in both
+directions, for every pair (panel ⇄ strip, panel ⇄ sector bar,
+sector bar → panel); the header-drag gesture transforms the
+sheet itself and hands its release position/velocity to the
+same morph. This is the third attempt at the motion: 1.127
+hard-swapped faces at a spring's end and 1.128's two-card morph
+still read on Andrew's phone as "slides down, disappears, a
+pill appears" — 1.129 removes the second surface entirely
+rather than re-choreographing a swap between two. drive158
+samples the container's bounding box and computed background on
+every animation frame (collapse, expand, panel → sector bar,
+sector bar → panel; day and night) and asserts presence in
+every frame, monotonic edges, distinct intermediate heights
+between the rests, and the resting boxes unchanged. The bar
+exists at ZERO picks too ("No roads picked yet"), and the panel
+retracts/restores at any pick count; while collapsed, a new
+pick does not force the panel back — the bar's counts update
+live. The one surface wears the theme tokens in day and night.
 
 **Sectors (Beta 1.127; entry + honesty reworked in 1.128).** A street in the draft can be trimmed to
 the junction-to-junction pieces actually cleaned. TWO doors open
 sector mode: tapping its panel row, and tapping the picked
 street itself on the map (Beta 1.128 — the door Andrew's finger
 actually used). Sector mode shows the sector bar
-(street name, "N of M sectors picked · X m", Whole road, Done with
-this road) and the draft renders the street as one feature per
+(street name, "N of M sectors picked · X m", Cancel, Whole road,
+Done with this road) and the draft renders the street as one feature per
 sector — chosen in its category colour, unchosen thin grey, with
 a wide invisible hit layer picked with the same ±16/±28 px
 discipline as street taps. The sector boundaries are
@@ -358,7 +380,17 @@ cross-street pieces and do not shift as other streets join or
 leave the draft (`crStreetParts`, cached per draft). Sector state
 lives ONLY in the draft (`draft.sectors[short]` = the chosen part
 indexes; an absent entry means the whole road, which is also the
-first-pick state). Un-picking every sector of a multi-piece
+first-pick state). Entering sector mode — from either door —
+snapshots the street's state as it was (`crSectorSnapshot`:
+undefined = no session open, null = whole road, otherwise the
+selection array in force); the bar's CANCEL restores that
+snapshot exactly (state, panel row sub-line, draft paint, every
+billed length) and returns to the panel, while Done keeps the
+session's trims (Beta 1.129 — Andrew's "I still need a way to
+cancel selections while I'm selecting something"). The snapshot
+is taken only on fresh entry and cleared when the session ends,
+so a Cancel can never reach back past the current session.
+Un-picking every sector of a multi-piece
 street removes the street. A street whose computed parts are
 exactly ONE (measured on the shipped Vaughan pack: 221 of 1,299
 streets ≥ 500 m — their crossings cluster where the 15 m merge
