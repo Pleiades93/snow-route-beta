@@ -67,6 +67,8 @@ jobs:
         run: node tests/browser/selftest-engine-surface.mjs
       - name: CSP connect-src hosts (Beta 1.119 gate)
         run: node tests/browser/selftest-csp-connect-src.mjs
+      - name: Pack-field list fixtures (Beta 1.131 gate)
+        run: node tests/browser/selftest-packfields.mjs
   browser-tests:
     # Full suite everywhere EXCEPT a push to main (the smoke job takes that).
     if: github.event_name != 'push' || github.ref != 'refs/heads/main'

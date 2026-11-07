@@ -228,6 +228,13 @@ locally, first:
    data; `selftest-offline-fixture.mjs` fails the build on any drift, and
    `selftest-sw-contract.mjs` pins the worker's cache names / MAX_TILES to
    the contract. Both run in the build-and-test CI job.
+   Fourth instance (Beta 1.131, 2026-11-06): the pack validator —
+   `tests/browser/selftest-packfields.mjs` checks the shipped
+   `normalizePack` (extracted from the parts) against outputs captured
+   from the pre-change validator (`tests/browser/fixtures/
+   packfields-cases.json`), and proves the PACK_FIELDS list is the
+   construction source (a listed test field is carried through; the
+   same field unlisted is dropped). Runs in the build-and-test CI job.
    Second instance (Phase 2, 2026-11-04): the app's own judging logic —
    the trail segment-acceptance rule in `trailSegments` — is proven by
    `tests/browser/selftest-trail-segments.mjs`, which extracts the shipped
