@@ -1595,7 +1595,9 @@ function saveDraftRoute() {
   const v = normalizePack({ name, area, mains: [...draft.mains], roads: crFilteredRoads(), reference: {} }, { tileNames: [...Object.values(draft.osmNames), ...(draft.tileNames || [])] }); // Beta 1.127: the SAVE stores chosen sectors only - the draft keeps the whole streets, the pack never sees the unchosen ends
   if (!v.ok) { toast('Could not save — ' + v.error, 4000); return; }
   const pack = v.pack; pack.id = uniqueRouteId(name);
-  const rec = loadUserPacks(); rec[pack.id] = pack;
+  const rec = readUserPacks(); // Beta 1.142 (Package B, DA-05): STRICT - saving is a read-modify-write of the WHOLE record, so a read that throws or parses corrupt refuses the save outright. The lenient loader's {} here silently erased every other created route's definition (their progress stayed, unregistered and unreachable); deleteRoute has read strictly since 1.124 for exactly this reason, and the lenient loader remains only for boot/display.
+  if (rec === null) { toast('Storage problem — the route could not be saved', 4000); return; }
+  rec[pack.id] = pack;
   if (!lsSet(USERPACKS_KEY, JSON.stringify(rec))) { toast('Storage problem — the route could not be saved', 4000); return; }
   ROUTE_PACKS.push(pack); // live in the runtime list at once - listed and switchable without a reload
   try { lsSet(routeKeys(pack.id).pre, JSON.stringify({ at: 0, saved: 0, total: preloadUrlList().length, routeSaved: 0, routeTotal: packTileUrls(pack).size })); } catch (e) {} // F5: the new route starts with an honest preload record - none of its area is downloaded yet; Status offers the (grown) union download
