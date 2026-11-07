@@ -153,7 +153,19 @@ search. The photo door sits quieter below a divider. Back links
 walk pane to pane (list/manual/photo → doors → main). The
 cold-start picker and the Routes menu show the SAME routeMenu
 and the SAME panes, so the gate exists once and both entries
-reach it (drive153 + drive154 prove both). A list-row tap is a city pick
+reach it (drive153 + drive154 prove both). Beta 1.130: the
+catalogue itself is prefetched during BOOT — the boot tail's
+menu-arming slot fires `crWarmCityLibrary()` (Andrew's suggestion:
+load it during the splash; adjudicated to the catalogue only —
+the pack files stay on-demand), and the Create button, `openDoors`
+and `openRouteMenu` re-trigger the warm as no-ops on
+`crPackIndexLoad`'s cached promise (at most one catalogue fetch
+per session). 1.129 requested it for the first time at the
+Select-from-list tap, so a cold open's list waited out the whole
+fetch (drive159 proves the boot start, the instant warmed walk,
+and the in-flight state below). While a fetch is genuinely in
+flight, the list pane shows a "Loading cities…" row in the city
+rows' own styling, replaced by the rows when it lands. A list-row tap is a city pick
 through the same `crPickCity` the typed search uses, carrying the
 catalogue's own bounds. The typed search keeps its form:
 a debounced Nominatim query (`featuretype=city`) offers populated

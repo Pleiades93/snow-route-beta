@@ -609,7 +609,7 @@ $('stDel').addEventListener('click', async () => {
 });
 // ---- About / What's new ----
 const WHATSNEW = { // the curated in-app notes: plain words, LATEST RELEASE ONLY (Beta 1.114, Andrew: the accumulated list cluttered the About pane). A release REPLACES this entry with its own in the same change - it never accumulates; the full history lives in CHANGELOG.md, not the app
-  v: 'Beta 1.129', items: ["Creating a route: trimming a road's sections now has a Cancel - it puts the road back exactly as it was when you opened its sections, no harm done. And the roads panel folds itself down into the bottom bar in one smooth motion, absorbed into the bar - the disappearing-and-popping-back act is gone"]
+  v: 'Beta 1.130', items: ["Creating a route: the city list now starts loading the moment you open Create, so tapping Select from list on a fresh open shows your cities right away - no more loading-screen pause first"]
 };
 function renderAbout() {
   const cur = $('ver').textContent.trim();
@@ -1220,6 +1220,7 @@ function crPackIndexLoad() {
   }
   return crPackIndexP;
 }
+function crWarmCityLibrary() { crPackIndexLoad(); } // Beta 1.130 (Andrew's cold-open stutter): the catalogue used to be requested for the FIRST time inside crRenderCityChoices - at the Select-from-list tap itself - so on a cold open the list pane sat on its loading state for the fetch's whole duration (diagnosis beta1/work/cold-stutter-1130/DIAGNOSIS.md: tap->rows painted = the fetch duration to within ~25 ms, while the same tap with the catalogue in hand paints in ~21 ms; even a 1.5 s dwell at the doors bought nothing, because nothing had started the download). The download now starts during BOOT - Andrew's own suggestion, adjudicated to the catalogue only: the boot tail's menu-arming slot fires crWarmCityLibrary (see the boot IIFE) once first paint is safe, and the create gate (Create button / openDoors) plus the route menu (openRouteMenu) re-trigger it as no-ops on the SAME cached promise - still at most one catalogue fetch per session, and a failed one still lands the chooser on its honest Search-manually note.
 async function crPackResolveCity(name, bbox) { // does the library hold THIS city? The match is by city name against the catalogue; the pack's own bounding box must CONTAIN the grid's box (a pack that covers less than the grid would certify coverage it never downloaded - the CG-PF-15 lesson, applied at the source). A slow catalogue never wedges preparation: past the race, the service path proceeds as if there were no pack.
   if (!name || !bbox) return null;
   const entries = await Promise.race([crPackIndexLoad(), new Promise(res => setTimeout(() => res(null), 8000))]);
@@ -1894,7 +1895,11 @@ function crEnterPickFromCity() { // the city is chosen: land in the pick stage, 
 function crRenderCityChoices() {
   const boxEl = $('crCityList'); if (!boxEl) return;
   boxEl.innerHTML = '';
-  const loading = document.createElement('div'); loading.className = 'rmNote'; loading.textContent = 'Loading the city library…'; boxEl.appendChild(loading);
+  const loading = document.createElement('div'); loading.className = 'routeRow crLoadingRow'; // Beta 1.130: while the catalogue is genuinely in flight, the pane shows a ROW in the city rows' own styling (the shape the list itself takes) - the wait reads as the list arriving, not a bare note floating on an empty pane (the second, cosmetic half of Andrew's "loading screen" stutter; the wait itself is attacked by crWarmCityLibrary)
+  const lmeta = document.createElement('span'); lmeta.className = 'routeMeta';
+  const lnm = document.createElement('span'); lnm.className = 'routeName'; lnm.textContent = 'Loading cities…';
+  const lsub = document.createElement('span'); lsub.className = 'routeArea'; lsub.textContent = 'Getting the city library';
+  lmeta.append(lnm, lsub); loading.appendChild(lmeta); boxEl.appendChild(loading);
   crPackIndexLoad().then(entries => {
     if (!boxEl.isConnected) return;
     boxEl.innerHTML = '';
@@ -2051,7 +2056,7 @@ function crRowEl(n, g) {
   const main = draft.mains.has(n);
   const dot = document.createElement('span'); dot.className = 'crDot ' + (main ? 'main' : 'sec'); row.appendChild(dot);
   const nm = document.createElement('span'); nm.className = 'crName'; nm.textContent = n; row.appendChild(nm);
-  const ln = document.createElement('span'); ln.className = 'crLen'; ln.textContent = fmtLenM(g[n] ? g[n].total : 0); row.appendChild(ln);
+  const ln = document.createElement('span'); ln.className = 'crLen'; ln.textContent = fmtLenM(crStreetChosenM(n, g)); row.appendChild(ln); // Beta 1.130 (maintainability re-scan N1): the preview's rows bill the CHOSEN length through the same helper as the panel's rows and every total - through 1.129 this read g[n].total, so a sector-trimmed street showed its WHOLE length on the check screen while the panel billed the trim and the preview's own total (renderCrLists sums crStreetChosenM) disagreed with its rows
   const chip = document.createElement('button'); chip.className = 'crChip ' + (main ? 'main' : 'sec'); chip.textContent = main ? 'MAIN' : '2ND';
   chip.addEventListener('click', () => { if (draft.mains.has(n)) draft.mains.delete(n); else draft.mains.add(n); renderDraft(); renderCrLists(); });
   row.appendChild(chip);
@@ -2155,7 +2160,7 @@ function exitCreate() {
   crSetBackdrop(false); // Beta 1.120: the loaded route's paint returns exactly as it was
   renderDraft(); // draft is null: the overlay clears, the active route was never touched
 }
-function openDoors() { if (!routeLoaded) { restoreBootChrome(); } else openRouteMenu(); showRmPane('rmCreatePane'); } // Beta 1.124: the doors pane needs no render on entry - the city list renders when ITS door is tapped
+function openDoors() { crWarmCityLibrary(); if (!routeLoaded) { restoreBootChrome(); } else openRouteMenu(); showRmPane('rmCreatePane'); } // Beta 1.124: the doors pane needs no render on entry - the city list renders when ITS door is tapped. Beta 1.130: the doors ARE the create gate - opening them starts the catalogue download (crWarmCityLibrary), so it is in hand by the list tap
 function askDiscard(then) { if (draft && draftStreets().length) crConfirm('Throw away this draft?', 'The ' + draftStreets().length + ' streets you picked will be lost.', then); else then(); }
 function fitDraft() {
   if (!draft || !map) return;
@@ -2564,7 +2569,7 @@ function saveDraftRoute() {
   const sp = $('splash'); if (!sp) return;
   const t0 = Date.now(); let gone = false;
   const finish = () => { if (gone) return; gone = true; clearInterval(iv); sp.remove(); document.documentElement.classList.remove('boot'); /* Beta 1.85: the splash is gone - the root frame returns to the app's own colour (the html.boot rule) */ const rm = $('routeMenu'); if (rm) { rm.classList.add('notrans'); rm.classList.remove('boot', 'show', 'bye'); void rm.offsetWidth; rm.classList.remove('notrans'); } }; // Beta 1.78: park the menu below the screen without animating the swap
-  const arm = () => { const wait = Math.max(0, 1900 - (Date.now() - t0)); setTimeout(() => { if (!gone) { sp.classList.add('menu'); $('routeMenu').classList.add('show'); document.documentElement.classList.remove('boot'); /* Beta 1.86: the boot state also ends HERE, when the menu arms - the still-to-live handover window (the unsettled first frames the chrome-absence protects) is long past by the gate's 1900ms minimum, and the opaque menu covers the chrome while it paints beneath. Every later state (a post-reload session at the menu, the pick, a direct load) must find a functional shell; the pick/loadRoute/finish removals stay as backstops */ } }, wait); };
+  const arm = () => { const wait = Math.max(0, 1900 - (Date.now() - t0)); setTimeout(() => { crWarmCityLibrary(); /* Beta 1.130: Andrew's own suggestion, adjudicated to the catalogue ONLY - the packs/index.json download fires in this deferred boot slot (the menu-arming moment: first tiles are in or the 6 s escape has passed, the 1900 ms splash floor has run, so it never competes with first paint), and a cold open has the catalogue in hand before Create is ever opened. The city PACK FILES stay on-demand per city - 6.5 MB of gzip across the library is not boot work. The cached promise keeps it to one fetch per session; the gate/menu warm calls remain as no-op re-triggers */ if (!gone) { sp.classList.add('menu'); $('routeMenu').classList.add('show'); document.documentElement.classList.remove('boot'); /* Beta 1.86: the boot state also ends HERE, when the menu arms - the still-to-live handover window (the unsettled first frames the chrome-absence protects) is long past by the gate's 1900ms minimum, and the opaque menu covers the chrome while it paints beneath. Every later state (a post-reload session at the menu, the pick, a direct load) must find a functional shell; the pick/loadRoute/finish removals stay as backstops */ } }, wait); };
   const iv = setInterval(() => {
     if (!map && Date.now() - t0 > 4000) __bootTail();
     if ((typeof glOk !== 'undefined' && glOk && typeof tilesOk !== 'undefined' && tilesOk > 0) || Date.now() - t0 > 6000) { clearInterval(iv); arm(); }
