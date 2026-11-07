@@ -57,7 +57,7 @@ function snapForExport(strict) { // Beta 1.97 (audit loop CG-196-02): the ACTIVE
   if (!runStart) return null;
   if (runSnap) return { at: runStart, pieces: runSnap.pieces, pieceTimes: runSnap.pieceTimes, done: runSnap.done, times: runSnap.times, via: runSnap.via, cov: runSnap.cov };
   let rawSnap = null;
-  if (strict) { try { rawSnap = localStorage.getItem(LS.snap); } catch (e) { return undefined; } }
+  if (strict) { const rs = rawRead(LS.snap); if (rs === RAW_READ_FAILED) return undefined; rawSnap = rs; } // Beta 1.136: through the shared rawRead - the strict failure mode (undefined) is unchanged
   else rawSnap = lsGet(LS.snap);
   const pv = validateSnap(parseJ(rawSnap, null), runStart);
   return pv ? { at: runStart, pieces: pv.pieces, pieceTimes: pv.pieceTimes, done: pv.done, times: pv.times, via: pv.via, cov: pv.cov } : null;
@@ -78,7 +78,7 @@ function backupObj() { // Beta 1.76: format v2 - routes carry their own slots ({
   const routes = {};
   for (const p of ROUTE_PACKS) {
     const rk = routeKeys(p.id); const data = {};
-    for (const f of ROUTE_FIELDS) { const key = (activeRoute && p.id === activeRoute.id && LS[f] !== rk[f]) ? LS[f] : rk[f]; let v = null; try { v = localStorage.getItem(key); } catch (e) { return null; } if (v != null) data[f] = v; }
+    for (const f of ROUTE_FIELDS) { const key = (activeRoute && p.id === activeRoute.id && LS[f] !== rk[f]) ? LS[f] : rk[f]; const v = rawRead(key); if (v === RAW_READ_FAILED) return null; if (v != null) data[f] = v; }
     // Beta 1.97 (audit loop CG-196-01/-02): the route's lifecycle state rides EXPLICITLY, never by
     // omission. A run's start is asserted as its timestamp string; NO run is asserted as start: null -
     // so a restore can tell "this backup says idle" from an older backup that simply omits the field
@@ -91,13 +91,13 @@ function backupObj() { // Beta 1.76: format v2 - routes carry their own slots ({
     if (startStr) {
       let snapObj = null;
       if (isActive) { snapObj = snapForExport(true); if (snapObj === undefined) return null; } // a snapshot read failure fails the whole export (B04 discipline) - never a valid-looking backup missing the snapshot
-      else { let rawSnap = null; try { rawSnap = localStorage.getItem(rk.snap); } catch (e) { return null; } const pv = validateSnap(parseJ(rawSnap, null), +startStr, packGeometry(p)); if (pv) snapObj = { at: +startStr, pieces: pv.pieces, pieceTimes: pv.pieceTimes, done: pv.done, times: pv.times, via: pv.via, cov: pv.cov }; } // Beta 1.117 (F6): a non-active pack's snapshot validates against ITS OWN geometry
+      else { const rawSnap = rawRead(rk.snap); if (rawSnap === RAW_READ_FAILED) return null; const pv = validateSnap(parseJ(rawSnap, null), +startStr, packGeometry(p)); if (pv) snapObj = { at: +startStr, pieces: pv.pieces, pieceTimes: pv.pieceTimes, done: pv.done, times: pv.times, via: pv.via, cov: pv.cov }; } // Beta 1.117 (F6): a non-active pack's snapshot validates against ITS OWN geometry
       if (snapObj) data.snap = JSON.stringify(snapObj);
     }
     routes[p.id] = data;
   } // Beta 1.92 (deep audit F02): the ACTIVE route exports from the key mapping it is actually running on - on a legacy-fallback boot (migration failed) LS points at the legacy keys, and reading the fresh slot would emit a valid-looking EMPTY backup
-  let night = null; try { night = localStorage.getItem(LS_GLOBAL.night); } catch (e) { return null; }
-  let nightExp = null; try { nightExp = localStorage.getItem(LS_GLOBAL.nightExp); } catch (e) { return null; }
+  const night = rawRead(LS_GLOBAL.night); if (night === RAW_READ_FAILED) return null;
+  const nightExp = rawRead(LS_GLOBAL.nightExp); if (nightExp === RAW_READ_FAILED) return null;
   const o = { app: 'snowroute-backup', v: 2, at: new Date().toISOString(), routes };
   const ups = readUserPacks(); if (ups === null) return null; if (Object.keys(ups).length) o.userpacks = ups; // Beta 1.118: created routes are Andrew's data - their definitions ride every backup, read with the same B04 strictness as everything else here: an unreadable created-routes record fails the export rather than shipping a valid-looking backup that silently loses his routes
   if (night != null) o.night = night;
@@ -122,12 +122,12 @@ function recoveryObj() { // Beta 1.95 (deep audit SR-194-02): the RECOVERY backu
     const snapObj = snapForExport(); // Beta 1.97 (audit loop CG-196-02): the shared construction - the recovery and normal backups carry the identical object
     if (snapObj) data.snap = JSON.stringify(snapObj);
   }
-  try { const fl = localStorage.getItem(routeKeys(activeRoute.id).flip); if (fl != null) data.flip = fl; } catch (e) { /* a read that fails simply leaves the field out */ }
+  { const fl = rawRead(routeKeys(activeRoute.id).flip); if (fl !== RAW_READ_FAILED && fl != null) data.flip = fl; } // a read that fails simply leaves the field out (the recovery export's best-effort mode)
   const routes = {}; routes[activeRoute.id] = data;
-  for (const pk of ROUTE_PACKS) { if (pk.id === activeRoute.id) continue; const rk = routeKeys(pk.id); const d = {}; for (const f of ROUTE_FIELDS) { try { const v = localStorage.getItem(rk[f]); if (v != null) d[f] = v; } catch (e) {} } if (d.start === undefined) d.start = null; if (Object.keys(d).length) routes[pk.id] = d; } // Beta 1.97 (audit loop CG-196-01): an untouched pack in a recovery file asserts idle like any complete backup
+  for (const pk of ROUTE_PACKS) { if (pk.id === activeRoute.id) continue; const rk = routeKeys(pk.id); const d = {}; for (const f of ROUTE_FIELDS) { const v = rawRead(rk[f]); if (v !== RAW_READ_FAILED && v != null) d[f] = v; } if (d.start === undefined) d.start = null; if (Object.keys(d).length) routes[pk.id] = d; } // Beta 1.97 (audit loop CG-196-01): an untouched pack in a recovery file asserts idle like any complete backup
   const o = { app: 'snowroute-backup', v: 2, recovery: true, at: new Date().toISOString(), routes };
   try { const upsR = readUserPacks(); if (upsR && Object.keys(upsR).length) o.userpacks = upsR; } catch (e) {} // Beta 1.118: created-route definitions ride the recovery backup too
-  try { const nt = localStorage.getItem(LS_GLOBAL.night); if (nt != null) o.night = nt; const ne = localStorage.getItem(LS_GLOBAL.nightExp); if (ne != null) o.nightExp = ne; } catch (e) {}
+  { const nt = rawRead(LS_GLOBAL.night); if (nt !== RAW_READ_FAILED) { if (nt != null) o.night = nt; const ne = rawRead(LS_GLOBAL.nightExp); if (ne !== RAW_READ_FAILED && ne != null) o.nightExp = ne; } } // the pair keeps its pre-1.136 one-try shape (Codex verify, 1.136 fix cycle): a FAILED night read skips the nightExp read entirely - the two values travel together, so a recovery file never carries an expiry whose override failed to read
   return o;
 }
 function buildRecovery() { const o = recoveryObj(); return o ? JSON.stringify(o, null, 1) : null; }
@@ -245,9 +245,9 @@ function restoreBackup(parsed) { // production doRestore semantics: validate EVE
   }
   restoreOverlayPacks = restoredPacks; const droppedNames = countUnknownNames(parsed); restoreOverlayPacks = null; // Beta 1.95 (SR-194-08): counted from the RAW backup before any normalization - see countUnknownNames. Beta 1.118: judged with this backup's own created-route definitions overlaid
   if (!entries.length) { toast('Nothing in that backup to restore', 3000); return; }
-  const SCOPE = []; for (const p of allPacks) { const rk = routeKeys(p.id); for (const f of ROUTE_FIELDS) SCOPE.push(rk[f]); SCOPE.push(rk.snap); } if (restoredPacks) SCOPE.push(USERPACKS_KEY); SCOPE.push(LS_GLOBAL.night, LS_GLOBAL.nightExp); // Beta 1.118: the created-routes record and restored routes' slots join the rollback scope // Beta 1.96 (SR-195-02): the snapshot key joins the rollback scope - a restore that writes a carried snapshot must be able to put the previous one back
+  const SCOPE = []; for (const p of allPacks) SCOPE.push(...slotKeys(p.id)); if (restoredPacks) SCOPE.push(USERPACKS_KEY); SCOPE.push(LS_GLOBAL.night, LS_GLOBAL.nightExp); // Beta 1.136: the per-route keys come from slotKeys (app1) - the same ROUTE_FIELDS + snap list, enumerated in one place // Beta 1.118: the created-routes record and restored routes' slots join the rollback scope // Beta 1.96 (SR-195-02): the snapshot key joins the rollback scope - a restore that writes a carried snapshot must be able to put the previous one back
   const snap = {}; let snapOk = true;
-  for (const k of SCOPE) { try { snap[k] = localStorage.getItem(k); } catch (e) { snapOk = false; } }
+  for (const k of SCOPE) { const v = rawRead(k); if (v === RAW_READ_FAILED) snapOk = false; else snap[k] = v; }
   if (!snapOk) { toast('Restore stopped — your current data could not be read for safekeeping, so nothing was changed', 3600); return; }
   const rollback = () => { // Beta 1.102 (Phase 4, C3): the restore-all rollback on the verified primitives - every scoped key put back (or removed) and read back
     let okBack = true;
@@ -609,7 +609,7 @@ $('stDel').addEventListener('click', async () => {
 });
 // ---- About / What's new ----
 const WHATSNEW = { // the curated in-app notes: plain words, LATEST RELEASE ONLY (Beta 1.114, Andrew: the accumulated list cluttered the About pane). A release REPLACES this entry with its own in the same change - it never accumulates; the full history lives in CHANGELOG.md, not the app
-  v: 'Beta 1.135', items: ["Speed work under the hood: while a clean is recording, the app now does far less repeat maths in the background — it checks only the streets near you and saves its coverage notes in batches instead of after every GPS point", "Creating a route is snappier too: tapping sectors and flipping roads between main and secondary no longer rebuilds the whole draft every time", "Nothing about how the app looks or works has changed — same screens, same buttons, same routes, same saved data"]
+  v: 'Beta 1.136', items: ["Under-the-hood tidy-up: the app's rule numbers (how close a GPS point must be to count a street as covered, how big a created route may be, and the rest) now each live in one named place instead of being repeated through the code", "The automatic test battery that checks the app every night is faster and better balanced, and a new guard flags test wording the moment an app label changes — so a rename can never quietly outdate the tests again", "Nothing about how the app looks or works has changed — same screens, same buttons, same routes, same saved data"]
 };
 function renderAbout() {
   const cur = $('ver').textContent.trim();
