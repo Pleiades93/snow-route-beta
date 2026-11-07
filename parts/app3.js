@@ -643,14 +643,18 @@ function acceptFix(pos) {
 // street on EVERY fix and distance-tested every still-uncovered sample of every street,
 // though a fix can only ever cover samples within 22 m of itself. Two caches fix that:
 // the per-street Sets now PERSIST across fixes, mirroring coveredIdx's arrays exactly
-// (same insertion order, written back when they grow, so the stored JSON is
-// byte-identical), and each street's samples are boxed once - bounds padded by the 22 m
-// coverage radius - so a street the fix cannot reach is skipped whole. The caches key on
-// identity, never on content comparison: coveredIdx is only ever rebound wholesale
-// (route load, cancel-restore, finish, clear - it is never edited in place outside this
-// function), so a new object rebuilds the Sets; the boxes key on the buildSamples
-// generation, bumped on every route load. Judged by drives 126/127 and the 1.135 fixture
-// harness (identical coveredIdx JSON + suggestion sequence on a scripted drive).
+// (same insertion order, and written back in 1.134's own per-fix form, so the stored
+// JSON - including its duplicate-index normalization - is byte-identical), and each
+// street's samples are boxed once - bounds padded by the 22 m coverage radius - so a
+// street the fix cannot reach skips its DISTANCE TESTS only, never its suggestion
+// check: a street can sit at 85% from coverage loaded at boot with the suggestion set
+// reset, and 1.134 re-offers it on the first fix wherever that fix lands (the 1.135
+// Codex verify caught a box skip that swallowed this - the harness now covers it).
+// The caches key on identity, never on content comparison: coveredIdx is only ever
+// rebound wholesale (route load, cancel-restore, finish, clear - it is never edited in
+// place outside this function), so a new object rebuilds the Sets; the boxes key on the
+// buildSamples generation, bumped on every route load. Judged by drives 126/127 and the
+// 1.135 fixture harness (identical coveredIdx JSON + suggestion sequence).
 let covSetsFor = null, covSets = {}, covBoxesFor = -1, covBoxes = {}, covSamplesGen = 0;
 function coverFix(ll) {
   if (covSetsFor !== coveredIdx) { covSets = {}; for (const n of Object.keys(coveredIdx)) covSets[n] = new Set(coveredIdx[n]); covSetsFor = coveredIdx; }
@@ -658,11 +662,10 @@ function coverFix(ll) {
   let changed = false;
   for (const n of STREETNAMES) {
     if (streetComplete(n) || suggested.has(n)) continue;
-    const box = covBoxes[n]; if (box && (ll[0] < box[0] || ll[0] > box[1] || ll[1] < box[2] || ll[1] > box[3])) continue;
     const pts = SAMPLES[n]; const set = covSets[n] || (covSets[n] = new Set(coveredIdx[n] || []));
-    let grew = false;
-    for (let i = 0; i < pts.length; i++) { if (!set.has(i) && distM(ll, pts[i]) <= 22) { set.add(i); changed = true; grew = true; } }
-    if (grew) coveredIdx[n] = [...set];
+    const box = covBoxes[n]; const outOfBox = box && (ll[0] < box[0] || ll[0] > box[1] || ll[1] < box[2] || ll[1] > box[3]);
+    if (!outOfBox) for (let i = 0; i < pts.length; i++) { if (!set.has(i) && distM(ll, pts[i]) <= 22) { set.add(i); changed = true; } }
+    if (set.size) coveredIdx[n] = [...set];
     if (set.size >= Math.ceil(pts.length * 0.85) && !streetComplete(n)) { suggested.add(n); showSuggest(n); }
   }
   if (changed) markDirty('aux');
