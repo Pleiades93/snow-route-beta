@@ -426,9 +426,19 @@ function writePending(kind) { return kind === 'trail' ? trailDirty : kind === 's
 let trailDirty = false, auxDirty = false, sessDirty = false, lastTrailSave = 0, restoring = false; // Beta 1.73 (audit C04/C05): sessDirty is the session markers' retry flag, same discipline as trailDirty - a failed marker write is retried by flushAux instead of being silently dropped
 function saveTrail() { const ok = lsSet(LS.trail, JSON.stringify(trail)); return ok ? storeOk() : storeFail('trail', true); }
 function saveSess() { const ok = lsSet(LS.sess, JSON.stringify(trailSessions)); return ok ? storeOk() : storeFail('sess', true); }
+// Beta 1.135 (maintainability programme D): the coverage write is THROTTLED. acceptFix calls
+// flushAux on EVERY fix, and through 1.134 each call re-stringified the whole coverage map
+// (~1 Hz for the length of a clean). Unforced flushes now write coverage at most once per
+// COV_SAVE_MS; FORCED flushes (visibility hidden, pagehide, the route switch's pre-flush)
+// always write, so nothing earned is ever held back at a moment that matters. The window
+// starts only on a SUCCESSFUL write - a failed write leaves auxDirty set and the very next
+// flush retries, exactly the flag discipline above. Between windows the 15 s heartbeat is
+// the backstop, and saveAll still writes coverage unconditionally on every primary save.
+const COV_SAVE_MS = 15000;
+let lastCovSave = 0; // the last successful coverage write (0 = never: the first flush writes at once)
 function flushAux(force) {
   if (restoring) return;
-  if (auxDirty && lsSet(LS.cov, JSON.stringify(coveredIdx))) auxDirty = false;
+  if (auxDirty && (force || Date.now() - lastCovSave >= COV_SAVE_MS) && lsSet(LS.cov, JSON.stringify(coveredIdx))) { auxDirty = false; lastCovSave = Date.now(); }
   if (trailDirty && (force || Date.now() - lastTrailSave > 45000) && saveTrail().ok) { trailDirty = false; lastTrailSave = Date.now(); }
   if (sessDirty && saveSess().ok) sessDirty = false;
   if (startDirty) saveStart(); // Beta 1.92 (audit F05): saveStart re-arms the flag itself on failure

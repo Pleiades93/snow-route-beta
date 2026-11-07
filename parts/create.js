@@ -650,14 +650,14 @@ function crRenderHint() { // the ONE writer of the pick-stage hint + its action 
   const cc = $('crCityChange'); if (cc) { if (crCity) { cc.textContent = 'City: ' + crCity.name + ' — change'; cc.style.display = ''; } else cc.style.display = 'none'; }
 }
 function crAddStreet(short, osmName, segs) {
-  draft.roads[short] = segs; draft.osmNames[short] = osmName; // a tapped street joins as a SECONDARY (fork 3) - flip it to MAIN in the list if it is one
+  draft.roads[short] = segs; draft.osmNames[short] = osmName; crGeomGen++; // a tapped street joins as a SECONDARY (fork 3) - flip it to MAIN in the list if it is one. Beta 1.135 (N3): the generation bump is the draft-geometry cache's invalidation for this in-place join (see crDraftGeom)
   delete crPending[short];
   renderDraft(); renderCrLists(); crRenderHint();
   toast('Added ' + short, 1800);
 }
 function crRemoveStreet(short) { // Beta 1.127: the ONE removal path - the panel's x, the preview's x and Clear all land here (Beta 1.128: those are the ONLY doors; a map tap on a picked street opens its sectors instead), so a street leaves with ALL of its draft state (geometry, main flag, names, sector pick, cached parts) and every face re-renders from the same state
   if (!draft || !draft.roads[short]) return;
-  delete draft.roads[short]; draft.mains.delete(short); delete draft.osmNames[short];
+  delete draft.roads[short]; draft.mains.delete(short); delete draft.osmNames[short]; crGeomGen++; // Beta 1.135 (N3): the removal invalidates the shared draft geometry (see crDraftGeom)
   if (draft.sectors) delete draft.sectors[short];
   if (draft.parts) delete draft.parts[short];
   delete crPending[short];
@@ -997,6 +997,26 @@ async function crRunCitySearch() {
   } catch (e) { if (seq === crCitySeq && !(e && e.name === 'AbortError')) { box.innerHTML = ''; toast('City search needs an internet connection — try again', 3000); } }
 }
 
+// ---- draft geometry cache (Beta 1.135, maintainability programme N3): through 1.134 a
+// single sector toggle recomputed computeStretches(draft.roads) TWICE - once in
+// renderDraft, once in renderCrLists - ~87k segment tests per toggle on a six-street
+// draft and ~1M on a full-size one, for geometry the toggle never touched. crDraftGeom
+// computes it ONCE per draft-geometry change and every consumer shares the result.
+// Invalidation is exact, keyed on identity + generation: the draft object and its roads
+// object are replaced wholesale by every structural change except two (new draft,
+// photo-door import, Clear all, exit), which the identity keys catch; the only in-place
+// geometry mutations are crAddStreet joining a street and crRemoveStreet removing one,
+// and both bump crGeomGen. Selection-only changes - sector picks, MAIN/2ND flips - touch
+// neither key and never recompute. Identity-proven in the 1.135 fixture harness (the
+// cached geometry deep-equals a fresh computeStretches at every step); drives 156-158
+// judge the flows.
+let crGeomCache = null, crGeomGen = 0;
+function crDraftGeom() {
+  if (crGeomCache && crGeomCache.draft === draft && crGeomCache.roads === draft.roads && crGeomCache.gen === crGeomGen) return crGeomCache.g;
+  const g = computeStretches(draft.roads);
+  crGeomCache = { draft, roads: draft.roads, gen: crGeomGen, g };
+  return g;
+}
 const DRAFT_SRC = 'crDraft';
 function ensureDraftLayers() {
   if (!map || typeof map.addSource !== 'function') return;
@@ -1013,7 +1033,7 @@ function renderDraft() { // the DRAFT renders through its own GeoJSON source, co
   const src = map.getSource(DRAFT_SRC); if (!src) return;
   const feats = [];
   if (draft) {
-    const g = computeStretches(draft.roads);
+    const g = crDraftGeom(); // Beta 1.135 (N3): the shared draft geometry - computed once per geometry change, not once per render
     for (const n of draftStreets()) {
       const main = draft.mains.has(n) ? 1 : 0;
       const sel = draft.sectors ? draft.sectors[n] : null;
@@ -1119,7 +1139,7 @@ function crPanelRowEl(n, g) { // Beta 1.127 (Andrew's approved mockup, screen 2)
 }
 function renderCrLists() {
   if (!draft) return;
-  const g = computeStretches(draft.roads);
+  const g = crDraftGeom(); // Beta 1.135 (N3): shares renderDraft's computation through the draft geometry cache
   const names = draftStreets().sort((a, b) => a.localeCompare(b));
   let tot = 0; for (const n of names) tot += crStreetChosenM(n, g); // Beta 1.127: totals bill CHOSEN lengths - a trimmed street's unchosen ends never count
   $('crCount').textContent = names.length + ' roads · ' + fmtLenM(tot); // Beta 1.127: the panel header's count in the mockup's shape ("3 roads · 2,410 m")
@@ -1575,7 +1595,7 @@ function openNameIt() {
   if (!draft || !draftStreets().length) return;
   $('crNameInput').value = draft.name || nextRouteNameGuess();
   $('crAreaInput').value = draft.area || crAreaGuess || lsGet(LS_GLOBAL.lastArea) || '';
-  const g = computeStretches(draft.roads); let tot = 0; for (const n of draftStreets()) tot += crStreetChosenM(n, g); // Beta 1.127: the summary bills what will actually save
+  const g = crDraftGeom(); let tot = 0; for (const n of draftStreets()) tot += crStreetChosenM(n, g); // Beta 1.127: the summary bills what will actually save. Beta 1.135 (N3): the geometry comes through the shared cache like every other consumer
   $('crNameSummary').textContent = draftStreets().length + ' streets · ' + draft.mains.size + ' mains · ' + fmtLenM(tot) + ' of road';
   if (!routeLoaded) restoreBootChrome(); else openRouteMenu();
   showRmPane('rmNamePane');

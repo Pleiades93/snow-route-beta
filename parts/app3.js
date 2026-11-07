@@ -419,10 +419,10 @@ let watchId = null, watchGen = 0, gpsFromRun = false, gpsPos = null, dispPos = n
 const SAMPLES = {};
 function samplesFor(stretch, names) { // Beta 1.117: the coverage samples as a PURE function of a stretch set - the pre-1.117 eval-time IIFE, parameterized. buildSamples refills the live SAMPLES from it on every load (via buildGeometry); app4's packGeometry builds a non-active pack's samples from it for snapshot validation (F6).
   const out = {};
-  for (const n of names) { const L = stretch[n].line, cum = stretch[n].cum, pts = []; for (let d = 0; d <= stretch[n].total; d += 15) { let i = 1; while (i < cum.length - 1 && cum[i] < d) i++; const span = cum[i] - cum[i - 1] || 1, t = (d - cum[i - 1]) / span; pts.push([L[i - 1][0] + (L[i][0] - L[i - 1][0]) * t, L[i - 1][1] + (L[i][1] - L[i - 1][1]) * t]); } out[n] = pts; }
+  for (const n of names) { const L = stretch[n].line, cum = stretch[n].cum, pts = []; let i = 1; for (let d = 0; d <= stretch[n].total; d += 15) { while (i < cum.length - 1 && cum[i] < d) i++; const span = cum[i] - cum[i - 1] || 1, t = (d - cum[i - 1]) / span; pts.push([L[i - 1][0] + (L[i][0] - L[i - 1][0]) * t, L[i - 1][1] + (L[i][1] - L[i - 1][1]) * t]); } out[n] = pts; } // Beta 1.135 (programme D): the segment cursor i is hoisted out of the sample loop - sample distances rise monotonically, so a sample's segment never lies before the previous sample's, and the pre-1.135 per-sample restart re-walked the line from its start every 15 m (18,449 cursor-condition checks on Route 5W; the hoisted cursor advances at most once per segment). The samples produced are identical (the 1.135 fixture harness compares them byte-for-byte).
   return out;
 }
-function buildSamples() { const built = samplesFor(STRETCH, STREETNAMES); for (const k of Object.keys(SAMPLES)) delete SAMPLES[k]; Object.assign(SAMPLES, built); }
+function buildSamples() { const built = samplesFor(STRETCH, STREETNAMES); for (const k of Object.keys(SAMPLES)) delete SAMPLES[k]; Object.assign(SAMPLES, built); covSamplesGen++; } // Beta 1.135 (programme D): the generation bump invalidates coverFix's per-street sample boxes (below) - the samples they were measured from just changed
 // (the coverage-index sanitizer lives in loadRouteState, app1 - Beta 1.76: it must run over the loaded state, and state now loads on route pick, not at eval)
 let suggested = new Set();
 function pushGps() {
@@ -442,8 +442,11 @@ let lastTrailDraw = 0, lastTrailPts = 0; // Beta 1.64: drawTrail throttle state 
 function drawTrail(force) {
   const src = map && map.getSource('trail'); if (!src) return;
   const t0s = runStart ? Math.floor(runStart / 1000) : 0; // Beta 1.64 (audit F05): only THIS clean's points draw as the active trail - the stored trail keeps every clean for the log and GPX; the display is run-scoped
+  if (!force && performance.now() - lastTrailDraw < 3000) { // Beta 1.135 (programme D): the throttle is decided BEFORE the trail filter now. Its count arm needs only the run-scoped COUNT - a bare counting pass, never a filtered copy of up to 8,000 points built on every GPS fix just to be discarded (the pre-1.135 order); the decision itself is unchanged (skip iff under 3 s AND fewer than 5 undrawn points), and forced draws (run start, trail clear) still ignore the throttle whole (Beta 1.64, audit 3)
+    let cnt = 0; if (runStart) for (const p of trail) if (p[2] >= t0s) cnt++;
+    if (cnt - lastTrailPts < 5) return;
+  }
   const pts = runStart ? trail.filter(p => p[2] >= t0s) : [];
-  if (!force && performance.now() - lastTrailDraw < 3000 && pts.length - lastTrailPts < 5) return; // Beta 1.64 (audit 3): the rebuild is O(trail) up to 8000 points - redraw at most every 3 s, or once 5 undrawn points have accumulated, whichever comes first; forced draws (run start, trail clear) ignore the throttle
   lastTrailDraw = performance.now(); lastTrailPts = pts.length;
   const feats = [];
   for (const seg of trailSegments(pts)) { if (seg.length > 1) feats.push({ type: 'Feature', properties: {}, geometry: { type: 'LineString', coordinates: seg.map(p => [p[1], p[0]]) } }); } // Beta 1.99 (Phase 2, C1): segmentation by the shared rule in trailSegments (was a private copy of the gap/jump test)
@@ -635,13 +638,31 @@ function acceptFix(pos) {
     coverFix(sm);
   }
 }
+// ---- coverage caches (Beta 1.135, maintainability programme D): coverFix runs on every
+// accepted fix of a clean. Through 1.134 it rebuilt a Set from coveredIdx[n] for EVERY
+// street on EVERY fix and distance-tested every still-uncovered sample of every street,
+// though a fix can only ever cover samples within 22 m of itself. Two caches fix that:
+// the per-street Sets now PERSIST across fixes, mirroring coveredIdx's arrays exactly
+// (same insertion order, written back when they grow, so the stored JSON is
+// byte-identical), and each street's samples are boxed once - bounds padded by the 22 m
+// coverage radius - so a street the fix cannot reach is skipped whole. The caches key on
+// identity, never on content comparison: coveredIdx is only ever rebound wholesale
+// (route load, cancel-restore, finish, clear - it is never edited in place outside this
+// function), so a new object rebuilds the Sets; the boxes key on the buildSamples
+// generation, bumped on every route load. Judged by drives 126/127 and the 1.135 fixture
+// harness (identical coveredIdx JSON + suggestion sequence on a scripted drive).
+let covSetsFor = null, covSets = {}, covBoxesFor = -1, covBoxes = {}, covSamplesGen = 0;
 function coverFix(ll) {
+  if (covSetsFor !== coveredIdx) { covSets = {}; for (const n of Object.keys(coveredIdx)) covSets[n] = new Set(coveredIdx[n]); covSetsFor = coveredIdx; }
+  if (covBoxesFor !== covSamplesGen) { covBoxes = {}; const pLat = 22 / MLAT, pLng = 22 / MLNG; for (const n of STREETNAMES) { const pts = SAMPLES[n]; if (!pts || !pts.length) continue; let a = 1e9, b = -1e9, c = 1e9, e = -1e9; for (const p of pts) { if (p[0] < a) a = p[0]; if (p[0] > b) b = p[0]; if (p[1] < c) c = p[1]; if (p[1] > e) e = p[1]; } covBoxes[n] = [a - pLat, b + pLat, c - pLng, e + pLng]; } covBoxesFor = covSamplesGen; }
   let changed = false;
   for (const n of STREETNAMES) {
     if (streetComplete(n) || suggested.has(n)) continue;
-    const pts = SAMPLES[n]; const set = new Set(coveredIdx[n] || []);
-    for (let i = 0; i < pts.length; i++) { if (!set.has(i) && distM(ll, pts[i]) <= 22) { set.add(i); changed = true; } }
-    if (set.size) coveredIdx[n] = [...set];
+    const box = covBoxes[n]; if (box && (ll[0] < box[0] || ll[0] > box[1] || ll[1] < box[2] || ll[1] > box[3])) continue;
+    const pts = SAMPLES[n]; const set = covSets[n] || (covSets[n] = new Set(coveredIdx[n] || []));
+    let grew = false;
+    for (let i = 0; i < pts.length; i++) { if (!set.has(i) && distM(ll, pts[i]) <= 22) { set.add(i); changed = true; grew = true; } }
+    if (grew) coveredIdx[n] = [...set];
     if (set.size >= Math.ceil(pts.length * 0.85) && !streetComplete(n)) { suggested.add(n); showSuggest(n); }
   }
   if (changed) markDirty('aux');
