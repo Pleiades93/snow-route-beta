@@ -605,18 +605,18 @@ function junctionPairs() {
 // (a candidate path is bad when it passes within 1.5 m of the junction point, or
 // crosses any street's line away from that junction) can never drift between them.
 const pathBadNear = (pts, J) => {
-  for (let s2 = 0; s2 + 1 < pts.length; s2++) {
-    if (H.ptSegM(J, pts[s2], pts[s2 + 1]) < 1.5) return true;
-    for (const n2 of H.names) {
-      const st = GEO[n2].stitched;
-      for (let si = 0; si + 1 < st.length; si++) {
-        if (H.ptSegM(J, st[si], st[si + 1]) >= 13 || !segCross(pts[s2], pts[s2 + 1], st[si], st[si + 1])) continue;
-        const X = lineHit(pts[s2], pts[s2 + 1], st[si], st[si + 1]);
-        if (!X || H.jDistM(X, J) > 6) return true;
+    for (let s2 = 0; s2 + 1 < pts.length; s2++) {
+      if (H.ptSegM(J, pts[s2], pts[s2 + 1]) < 1.5) return true;
+      for (const n2 of H.names) {
+        const st = GEO[n2].stitched;
+        for (let si = 0; si + 1 < st.length; si++) {
+          if (H.ptSegM(J, st[si], st[si + 1]) >= 13 || !segCross(pts[s2], pts[s2 + 1], st[si], st[si + 1])) continue;
+          const X = lineHit(pts[s2], pts[s2 + 1], st[si], st[si + 1]);
+          if (!X || H.jDistM(X, J) > 6) return true;
+        }
       }
     }
-  }
-  return false;
+    return false;
 };
 function mergeStrands(slices, pairs) {
   const rev = sl => ({ pts: [...sl.pts].reverse(), key: sl.key, mem: sl.mem, e0: sl.e1, e1: sl.e0 });
