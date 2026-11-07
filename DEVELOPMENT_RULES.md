@@ -168,6 +168,12 @@ sharded suite on `main` as the environment-drift audit.
   and re-run the battery.
 - Version identity (cache names, title, `#ver` label) changes only in a release
   change, never inside a feature change.
+- Release bookkeeping is generated, not hand-kept (Beta 1.133, programme C):
+  `scripts/release.py` is the single source for the battery counts quoted in
+  README.md — it derives them from the suite, and `build-pages.py` asserts
+  that derivation (and the What's New version alignment) on every build, so
+  stale bookkeeping fails the build. The CHANGELOG entry and the What's New
+  prose stay editorial; everything derivable is derived.
 - Version 1.0 readiness requires, together: all critical workflows passing, zero
   open high-severity defects, existing beta data compatible, backup/restoration
   verified, offline behaviour verified under real disconnected conditions, the
