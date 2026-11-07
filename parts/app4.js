@@ -609,7 +609,7 @@ $('stDel').addEventListener('click', async () => {
 });
 // ---- About / What's new ----
 const WHATSNEW = { // the curated in-app notes: plain words, LATEST RELEASE ONLY (Beta 1.114, Andrew: the accumulated list cluttered the About pane). A release REPLACES this entry with its own in the same change - it never accumulates; the full history lives in CHANGELOG.md, not the app
-  v: 'Beta 1.130', items: ["Creating a route: the city list now starts loading the moment you open Create, so tapping Select from list on a fresh open shows your cities right away - no more loading-screen pause first"]
+  v: 'Beta 1.131', items: ["Under the hood only: the app's inner checklists were tidied into single lists, so a future route feature can't silently lose pieces of a route you created. Nothing about how the app looks or works has changed"]
 };
 function renderAbout() {
   const cur = $('ver').textContent.trim();
@@ -1039,7 +1039,10 @@ function normalizePack(raw, opts) { // -> { ok: true, pack } | { ok: false, erro
   let box = null;
   if (raw.box && isFinite(raw.box.w) && isFinite(raw.box.s) && isFinite(raw.box.e) && isFinite(raw.box.n) && raw.box.w < raw.box.e && raw.box.s < raw.box.n) box = { w: raw.box.w, s: raw.box.s, e: raw.box.e, n: raw.box.n };
   else { const cb = computeRouteBox({ ...rc.roads, ...reference }); if (cb) box = { w: Math.max(-180, cb.w - 0.03), s: Math.max(-90, cb.s - 0.025), e: Math.min(180, cb.e + 0.03), n: Math.min(90, cb.n + 0.025) }; }
-  return { ok: true, pack: { name, area, main: mains, spot: {}, tileNames: [...tileSet], box, roads: rc.roads, reference } };
+  const cleaned = { name, area, main: mains, spot: {}, tileNames: [...tileSet], box, roads: rc.roads, reference };
+  const pack = {};
+  for (const f of PACK_FIELDS) { if (f in cleaned) pack[f] = cleaned[f]; else if (raw[f] !== undefined) pack[f] = raw[f]; } // Beta 1.131 (programme A): the pack is built by walking PACK_FIELDS (app1) - the list is the single source for what a pack carries. Every listed field has a cleaner above today, so the raw fall-through never fires; it exists so a future field added to the list (before its cleaner lands) is carried through rather than silently dropped - the pre-1.131 trap was the hand-written return literal here forgetting a field.
+  return { ok: true, pack };
 }
 function mergeUserPacks() { // boot: the runtime pack list = shipped packs + created packs (a created pack wins an id collision - created ids are generated slugs that never collide with a shipped id, so a collision means the record was hand-edited; the created route is Andrew's data and wins)
   const rec = loadUserPacks();
@@ -1658,11 +1661,7 @@ function crStreetParts(short) { // the street's sectors: its stitched line cut w
       }
     }
   }
-  cuts.sort((a, b) => a - b);
-  const merged = []; for (const c of cuts) { if (merged.length && c - merged[merged.length - 1] < 15) continue; merged.push(c); }
-  const inner = merged.filter(c => c >= 12 && c <= total - 12);
-  const bounds = [0, ...inner, total];
-  const parts = []; for (let i = 1; i < bounds.length; i++) parts.push(sliceLine(line, cum, bounds[i - 1], bounds[i]));
+  const parts = finishJunctionCuts(line, cum, total, cuts); // Beta 1.131 (programme N2): the finishing policy is shared with computeStretches - see finishJunctionCuts (app1). Only the junction SOURCE differs (the prepared extract, collected above); the policy exists exactly once.
   const rec = { line, cum, total, parts };
   draft.parts[short] = rec;
   return rec;
