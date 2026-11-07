@@ -575,7 +575,8 @@ const barRect = `(() => { const r = document.getElementById('createBar').getBoun
 const IBday = await J(barRect);
 await ev(`document.body.classList.add('night')`);
 const IBnight = await J(barRect);
-const themeProbe = `(() => { const cs = (sel) => { const el = document.querySelector(sel); return el ? getComputedStyle(el).backgroundColor : ''; }; const probe = document.createElement('div'); probe.style.background = 'var(--card-solid)'; document.body.appendChild(probe); const token = getComputedStyle(probe).backgroundColor; probe.remove(); return { wrap: cs('#crSearchWrap'), sheet: cs('#crPanel'), res: cs('#createResults'), row: cs('.crResult'), token }; })()`;
+// Beta 1.129 premise update: the pick sheet's card is #createSheet itself now (one surface) - I2's "sheet" probe reads it instead of the #crPanel content, which is transparent by design. The meaning is unchanged: the create sheet wears --card-solid in both modes.
+const themeProbe = `(() => { const cs = (sel) => { const el = document.querySelector(sel); return el ? getComputedStyle(el).backgroundColor : ''; }; const probe = document.createElement('div'); probe.style.background = 'var(--card-solid)'; document.body.appendChild(probe); const token = getComputedStyle(probe).backgroundColor; probe.remove(); return { wrap: cs('#crSearchWrap'), sheet: cs('#createSheet'), res: cs('#createResults'), row: cs('.crResult'), token }; })()`;
 const ITnight = await J(themeProbe);
 await ev(`document.body.classList.remove('night')`);
 const ITday = await J(themeProbe);
