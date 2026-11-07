@@ -22,8 +22,15 @@ import { fileURLToPath } from 'node:url';
 //     EVERY frame of collapse / expand / panel-to-sector-bar /
 //     sector-bar-to-panel, and asserts: the surface (the one card -
 //     in 1.129 #createSheet itself carries --card-solid) is visibly
-//     present in EVERY frame; no edge teleports (per-frame movement
-//     bounded against that edge's total travel); the motion starts
+//     present in EVERY frame; no edge teleports - stated as the
+//     cadence-independent predicate below (monotonic edges + distinct
+//     intermediate heights; the sampler's worst per-frame steps are
+//     computed and REPORTED in the check names but are NOT part of
+//     the pass predicate - Beta 1.130, re-scan N4: the 1.129
+//     CHANGELOG's "per-frame movement bounded against total travel"
+//     overstated this, and the failure names now also classify the
+//     evidence: OBSERVED DISCONTINUITY vs INSUFFICIENT OBSERVATION);
+//     the motion starts
 //     at the from-rest box and lands on the to-rest box; and the
 //     three resting boxes are the approved geometries (panel flush
 //     full-width at the bottom; bar/sector bar inset 12px on the
@@ -226,7 +233,10 @@ const analyse = (frames, from, to) => {
   const intermediates = new Set(frames.map(f => Math.round(f.h * 20) / 20).filter(v => v > hLo && v < hHi)).size;
   const big = 'h';
   const jumpOk = mono === true && (hTravel < 20 || intermediates >= (hTravel >= 90 ? 2 : 1)); // a swap yields ZERO intermediate heights at any cadence; a spring, however starved, applies at least one genuine mid-trip height on a trip of 20px+
-  return { n: frames.length, worst, travel, jumpOk, present, startOk, endOk, mono, intermediates, big };
+  const needInter = hTravel < 20 ? 0 : (hTravel >= 90 ? 2 : 1);
+  const discontinuity = frames.length > 0 && (mono === false || present === false); // Beta 1.130 (re-scan N4): the failure EVIDENCE is classified, and no assertion changes - an edge reversing or the surface vanishing mid-flight is an OBSERVED DISCONTINUITY; too few frames / intermediate heights to tell a starved spring from a swap is INSUFFICIENT OBSERVATION (the rig's cadence, not the app's motion). `worst` stays a reported number only - it was never part of jumpOk, and the check names now say so
+  const diag = discontinuity ? 'OBSERVED DISCONTINUITY' : ((frames.length < 5 || intermediates < needInter) ? 'INSUFFICIENT OBSERVATION' : 'CONTINUOUS, FULLY OBSERVED');
+  return { n: frames.length, worst, travel, jumpOk, present, startOk, endOk, mono, intermediates, big, diag };
 };
 const runTransition = async (trigger) => { await ev2(`window.__animStart()`); await trigger(); await settled(); await sleep(150); return await J(`window.__animStop()`); };
 
@@ -242,13 +252,13 @@ const restPanel = await restRect();
 const frB1 = await runTransition(async () => { await headTap(); });
 const restStrip = await restRect();
 const anB1 = analyse(frB1, restPanel, restStrip);
-ok('B1 COLLAPSE - ONE OBJECT, EVERY FRAME: ' + anB1.n + ' frames sampled; the surface is visibly present (real size, opacity, the --card-solid background) in EVERY frame, no teleport - monotonic edges with distinct intermediates on the longest edge (worst steps ' + JSON.stringify(anB1.worst) + ' vs travel ' + JSON.stringify(anB1.travel) + '), and the motion runs from the panel\'s rest box to the bar\'s | entered: ' + inB + ' | panel rest ' + JSON.stringify(restPanel) + ' | bar rest ' + JSON.stringify(restStrip),
+ok('B1 COLLAPSE - ONE OBJECT, EVERY FRAME: ' + anB1.n + ' frames sampled; the surface is visibly present (real size, opacity, the --card-solid background) in EVERY frame; continuity = monotonic edges + distinct intermediate heights (per-frame steps REPORTED, not asserted - worst steps ' + JSON.stringify(anB1.worst) + ' vs travel ' + JSON.stringify(anB1.travel) + '), and the motion runs from the panel\'s rest box to the bar\'s | entered: ' + inB + ' | panel rest ' + JSON.stringify(restPanel) + ' | bar rest ' + JSON.stringify(restStrip) + ' | evidence class: ' + anB1.diag,
   inB === true && anB1.n >= 5 && anB1.present === true && anB1.jumpOk === true && anB1.startOk === true && anB1.endOk === true);
 // B2 expand (bar -> panel) via Review
 const frB2 = await runTransition(async () => { await ev2(`document.getElementById('crReviewBtn').click()`); });
 const restPanel2 = await restRect();
 const anB2 = analyse(frB2, restStrip, restPanel2);
-ok('B2 EXPAND - THE SAME OBJECT BACK: ' + anB2.n + ' frames; present in every frame, no teleport - monotonic with intermediates (worst steps ' + JSON.stringify(anB2.worst) + '), lands back on the panel\'s rest box | panel rest ' + JSON.stringify(restPanel2),
+ok('B2 EXPAND - THE SAME OBJECT BACK: ' + anB2.n + ' frames; present in every frame, monotonic with distinct intermediate heights (per-frame steps reported, not asserted: worst steps ' + JSON.stringify(anB2.worst) + '), lands back on the panel\'s rest box | panel rest ' + JSON.stringify(restPanel2) + ' | evidence class: ' + anB2.diag,
   anB2.n >= 5 && anB2.present === true && anB2.jumpOk === true && anB2.startOk === true && anB2.endOk === true);
 // B0 the three resting geometries are the approved ones
 const frB3 = await runTransition(async () => { await rowClick(); });
@@ -261,13 +271,13 @@ ok('B0 THE RESTING BOXES ARE THE APPROVED GEOMETRIES: panel flush (left 0, right
   geoOk === true);
 // B3 panel -> sector bar was the transition sampled above (frB3), analysed against the rests
 const anB3 = analyse(frB3, restPanel2, restBar);
-ok('B3 PANEL TO SECTOR BAR - THE SECOND-TAP ENTRY ANDREW NAMED: ' + anB3.n + ' frames; the surface never leaves the screen, no edge teleports (worst ' + JSON.stringify(anB3.worst) + ' vs travel ' + JSON.stringify(anB3.travel) + '), panel rest to sector-bar rest | legs ' + JSON.stringify({ present: anB3.present, jumpOk: anB3.jumpOk, mono: anB3.mono, inter: anB3.intermediates, big: anB3.big, startOk: anB3.startOk, endOk: anB3.endOk, badBg: frB3.filter(f => f.bg !== f.token).length }) + ' | from ' + JSON.stringify(restPanel2) + ' to ' + JSON.stringify(restBar) + ' f0 ' + JSON.stringify(frB3[0]) + ' fN ' + JSON.stringify(frB3[frB3.length - 1]),
+ok('B3 PANEL TO SECTOR BAR - THE SECOND-TAP ENTRY ANDREW NAMED: ' + anB3.n + ' frames; the surface never leaves the screen, no edge reverses and the height passes through distinct intermediates (per-frame steps reported, not asserted: worst ' + JSON.stringify(anB3.worst) + ' vs travel ' + JSON.stringify(anB3.travel) + '), panel rest to sector-bar rest | legs ' + JSON.stringify({ present: anB3.present, jumpOk: anB3.jumpOk, mono: anB3.mono, inter: anB3.intermediates, big: anB3.big, startOk: anB3.startOk, endOk: anB3.endOk, badBg: frB3.filter(f => f.bg !== f.token).length }) + ' | from ' + JSON.stringify(restPanel2) + ' to ' + JSON.stringify(restBar) + ' f0 ' + JSON.stringify(frB3[0]) + ' fN ' + JSON.stringify(frB3[frB3.length - 1]) + ' | evidence class: ' + anB3.diag,
   anB3.n >= 5 && anB3.present === true && anB3.jumpOk === true && anB3.startOk === true && anB3.endOk === true);
 // B4 sector bar -> panel via Done
 const frB4 = await runTransition(async () => { await ev2(`document.getElementById('crSbDone').click()`); });
 const restPanel3 = await restRect();
 const anB4 = analyse(frB4, restBar, restPanel3);
-ok('B4 SECTOR BAR BACK TO PANEL: ' + anB4.n + ' frames; present in every frame, no teleport - monotonic with intermediates (worst steps ' + JSON.stringify(anB4.worst) + '), lands on the panel rest',
+ok('B4 SECTOR BAR BACK TO PANEL: ' + anB4.n + ' frames; present in every frame, monotonic with distinct intermediate heights (per-frame steps reported, not asserted: worst steps ' + JSON.stringify(anB4.worst) + '), lands on the panel rest' + ' | evidence class: ' + anB4.diag,
   anB4.n >= 5 && anB4.present === true && anB4.jumpOk === true && anB4.startOk === true && anB4.endOk === true);
 
 // ================= C: the same at night =================
@@ -276,11 +286,11 @@ await sleep(150);
 const frC1 = await runTransition(async () => { await headTap(); });
 const restStripN = await restRect();
 const anC1 = analyse(frC1, restPanel3, restStripN);
-ok('C1 COLLAPSE AT NIGHT: ' + anC1.n + ' frames; the surface wears the NIGHT --card-solid (' + (frC1[0] ? frC1[0].token : 'none') + ') in every frame and no teleport (worst steps ' + JSON.stringify(anC1.worst) + ') | legs ' + JSON.stringify({ present: anC1.present, jumpOk: anC1.jumpOk, mono: anC1.mono, inter: anC1.intermediates, endOk: anC1.endOk, badBg: frC1.filter(f => f.bg !== f.token).length, badOp: frC1.filter(f => !(f.op > 0)).length, tokDiff: frC1[0] && frB1[0] ? frC1[0].token !== frB1[0].token : 'na' }) + ' | stripN ' + JSON.stringify(restStripN),
+ok('C1 COLLAPSE AT NIGHT: ' + anC1.n + ' frames; the surface wears the NIGHT --card-solid (' + (frC1[0] ? frC1[0].token : 'none') + ') in every frame and the continuity predicate holds (per-frame steps reported, not asserted: worst steps ' + JSON.stringify(anC1.worst) + ') | legs ' + JSON.stringify({ present: anC1.present, jumpOk: anC1.jumpOk, mono: anC1.mono, inter: anC1.intermediates, endOk: anC1.endOk, badBg: frC1.filter(f => f.bg !== f.token).length, badOp: frC1.filter(f => !(f.op > 0)).length, tokDiff: frC1[0] && frB1[0] ? frC1[0].token !== frB1[0].token : 'na' }) + ' | stripN ' + JSON.stringify(restStripN) + ' | evidence class: ' + anC1.diag,
   anC1.n >= 5 && anC1.present === true && anC1.jumpOk === true && anC1.endOk === true && !!frC1[0] && frC1[0].token !== frB1[0].token);
 const frC2 = await runTransition(async () => { await ev2(`document.getElementById('crReviewBtn').click()`); });
 const anC2 = analyse(frC2, restStripN, await restRect());
-ok('C2 EXPAND AT NIGHT: ' + anC2.n + ' frames; night token in every frame, no teleport - monotonic with intermediates (worst steps ' + JSON.stringify(anC2.worst) + '), lands on the panel rest',
+ok('C2 EXPAND AT NIGHT: ' + anC2.n + ' frames; night token in every frame, monotonic with distinct intermediate heights (per-frame steps reported, not asserted: worst steps ' + JSON.stringify(anC2.worst) + '), lands on the panel rest' + ' | evidence class: ' + anC2.diag,
   anC2.n >= 5 && anC2.present === true && anC2.jumpOk === true && anC2.endOk === true);
 await ev2(`(() => { setThemeOverride(false); applyNight(); return true; })()`);
 await ev2(`exitCreate()`);

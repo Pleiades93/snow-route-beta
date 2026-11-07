@@ -658,12 +658,12 @@ function routeRowEl(p) { // Beta 1.94 (audit F-04): rows are built as DOM nodes 
 function renderRouteLists() { document.querySelectorAll('.routeList').forEach(el => { el.replaceChildren(...ROUTE_PACKS.map(routeRowEl)); }); }
 function wireRouteRows(container, choose) { container.addEventListener('click', e => { const row = e.target.closest('.routeRow'); if (row) choose(row.dataset.route); }); }
 function showRmPane(id) { ['rmMain', 'rmListPane', 'rmCreatePane', 'rmCityListPane', 'rmPhotoPane', 'rmNamePane', 'rmCityPane'].forEach(p => $(p).classList.toggle('on', p === id)); }
-function openRouteMenu() { const rm = $('routeMenu'); closeSheets(); showRmPane('rmMain'); rm.classList.add('tab'); renderRouteLists(); rm.classList.add('open'); }
+function openRouteMenu() { crWarmCityLibrary(); const rm = $('routeMenu'); closeSheets(); showRmPane('rmMain'); rm.classList.add('tab'); renderRouteLists(); rm.classList.add('open'); } // Beta 1.130: showing the route menu warms the city catalogue - Create lives behind this menu, and the download is done or nearly done by the time the city list is tapped (the cold-open stutter fix; crWarmCityLibrary rides the cached promise, so this costs at most one small fetch per session)
 function closeRouteMenu() { const rm = $('routeMenu'); rm.classList.remove('open'); rm.classList.remove('tab'); }
 $('routesBtn').addEventListener('click', () => { if (!tapGuard('routesBtn')) return; if ($('routeMenu').classList.contains('open')) closeRouteMenu(); else openRouteMenu(); });
 $('rmClose').addEventListener('click', closeRouteMenu);
 $('rmChoose').addEventListener('click', () => { renderRouteLists(); showRmPane('rmListPane'); });
-$('rmCreate').addEventListener('click', () => { showRmPane('rmCreatePane'); }); // Beta 1.124 (Andrew, approved mockup): the Create pane opens on the two doors - Select from list renders the city list fresh on ITS entry (crDoorList), not here
+$('rmCreate').addEventListener('click', () => { crWarmCityLibrary(); showRmPane('rmCreatePane'); }); // Beta 1.124 (Andrew, approved mockup): the Create pane opens on the two doors - Select from list renders the city list fresh on ITS entry (crDoorList), not here. Beta 1.130: this tap IS the create gate opening for BOTH entries (the cold-start picker never passes through openRouteMenu, and the Routes menu shares this button), so the catalogue download starts here - by the Select-from-list tap it is in hand
 $('rmBack').addEventListener('click', () => showRmPane('rmMain'));
 $('rmBack2').addEventListener('click', () => showRmPane('rmMain'));
 wireRouteRows($('rmRoutes'), id => {

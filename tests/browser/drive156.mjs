@@ -166,12 +166,15 @@ ok('A5 DONE RETURNS TO THE PANEL, AND THE ROW TELLS THE TRIM: "Done with this ro
   doneA === true && rowA2.bar === 'none' && rowA2.panel !== 'none' && rowA2.sub.indexOf('3 of 5 sectors') === 0 && /9[0-9]{2} m/.test(rowA2.sub) && /roads · 9[0-9]{2} m/.test(rowA2.count));
 await ev2(`document.getElementById('crDoneBtn').click()`);
 await poll(`crStage === 'preview'`, 10000);
+const pvA = await J(`(() => { const num = s => Number(String(s).replace(/[^0-9]/g, '')) || 0; const rows = [...document.querySelectorAll('#pvList .crRow')].map(r => ({ n: (r.querySelector('.crName') || {}).textContent || '', m: num((r.querySelector('.crLen') || {}).textContent || '') })); const psub = (document.querySelector('#crPickList .crPRow .crPSub') || {}).textContent || ''; return { rows, rowSum: rows.reduce((a, r) => a + r.m, 0), countM: num(document.getElementById('pvCount').textContent.split('·').pop()), panelM: num(psub.split('·')[1] || '') }; })()`);
+ok('A6 PREVIEW BILLS THE TRIM (Beta 1.130, re-scan N1): on the check screen the trimmed street\'s row bills the CHOSEN ~964 m - the same figure the picking panel billed - NOT the whole 1,608 m, and the preview\'s own total equals the sum of its rows (through 1.129 crRowEl read the whole-road total, so the check screen\'s rows and total disagreed with each other and with the panel) | ' + JSON.stringify(pvA),
+  pvA.rows.length === 1 && Math.abs(pvA.rows[0].m - 964) <= 8 && pvA.rows[0].m === pvA.panelM && pvA.countM === pvA.rowSum);
 await ev2(`document.getElementById('pvSaveBtn').click()`);
 await poll(`document.getElementById('rmNamePane').classList.contains('on')`, 10000);
 await ev2(`(() => { document.getElementById('crNameInput').value = 'Sector Test Route'; document.getElementById('crSaveBtn').click(); return true; })()`);
 const savedA = await poll(`(() => { try { const rec = JSON.parse(localStorage.getItem('snowroute.v2.userpacks') || '{}'); return Object.values(rec).some(p => p.name === 'Sector Test Route'); } catch (e) { return false; } })()`, 15000);
 const packA = await J(`(() => { const rec = JSON.parse(localStorage.getItem('snowroute.v2.userpacks') || '{}'); const p = Object.values(rec).find(x => x.name === 'Sector Test Route'); if (!p) return { found: false }; const g = computeStretches(p.roads); return { found: true, segs: p.roads['Long'].length, total: Math.round(g['Long'].total), pts: p.roads['Long'].reduce((a, s) => a + s.length, 0) }; })()`);
-ok('A6 THE SAVE STORES CHOSEN SECTORS ONLY: the saved pack\'s Long Road is THREE segments measuring ~964 m (the draft\'s whole street was 1,608 m) - the unchosen ends never entered the pack, and the pack format is the plain segment list it always was | saved: ' + savedA + ' | ' + JSON.stringify(packA),
+ok('A7 THE SAVE STORES CHOSEN SECTORS ONLY: the saved pack\'s Long Road is THREE segments measuring ~964 m (the draft\'s whole street was 1,608 m) - the unchosen ends never entered the pack, and the pack format is the plain segment list it always was | saved: ' + savedA + ' | ' + JSON.stringify(packA),
   savedA === true && packA.found === true && packA.segs === 3 && Math.abs(packA.total - 964) <= 10);
 
 // ================= B: the panel =================
