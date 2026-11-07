@@ -609,7 +609,7 @@ $('stDel').addEventListener('click', async () => {
 });
 // ---- About / What's new ----
 const WHATSNEW = { // the curated in-app notes: plain words, LATEST RELEASE ONLY (Beta 1.114, Andrew: the accumulated list cluttered the About pane). A release REPLACES this entry with its own in the same change - it never accumulates; the full history lives in CHANGELOG.md, not the app
-  v: 'Beta 1.128', items: ["Creating a route, simpler: tap a road you've already picked to open its sections and trim it right on the map. The finishing words are plainer too - Done in the roads panel, then Save route on the check screen takes you to name your route. And the roads panel slides smoothly down into a bottom bar - it tucks away even before you've picked anything"]
+  v: 'Beta 1.129', items: ["Creating a route: trimming a road's sections now has a Cancel - it puts the road back exactly as it was when you opened its sections, no harm done. And the roads panel folds itself down into the bottom bar in one smooth motion, absorbed into the bar - the disappearing-and-popping-back act is gone"]
 };
 function renderAbout() {
   const cur = $('ver').textContent.trim();
@@ -1065,6 +1065,7 @@ let creating = false, crStage = 'pick', crBootParked = false, crAreaGuess = '', 
 let draft = null; // { roads, mains: Set, osmNames: {short: full}, tileNames: [..], name, area, sectors: {short: [chosen part indexes]} (Beta 1.127 - an ABSENT entry means the whole road), parts: {short: crStreetParts record} (session cache) }
 function newDraft() { return { roads: {}, mains: new Set(), osmNames: {}, tileNames: [], name: '', area: '', sectors: {}, parts: {} }; }
 let crSectorStreet = null; // Beta 1.127: the street whose sectors are being trimmed (sector mode), or null
+let crSectorSnapshot = undefined; // Beta 1.129: the street's sector pick as it stood when sector mode was ENTERED (null = the whole road; an array = the trim then in force) - the sector bar's Cancel restores exactly this. undefined = no sector session in flight
 let crPanelCollapsed = false; // Beta 1.127: the picked-roads panel's tucked-away state (the slim strip shows instead)
 function draftStreets() { return draft ? Object.keys(draft.roads) : []; }
 
@@ -1623,7 +1624,7 @@ function crRemoveStreet(short) { // Beta 1.127: the ONE removal path - the panel
   if (draft.sectors) delete draft.sectors[short];
   if (draft.parts) delete draft.parts[short];
   delete crPending[short];
-  if (crSectorStreet === short) crSectorStreet = null;
+  if (crSectorStreet === short) { crSectorStreet = null; crSectorSnapshot = undefined; }
   renderDraft(); renderCrLists(); crRenderHint();
 }
 // ---- sectors (Beta 1.127, Andrew's approved mockups in beta1/work/create-sectors-mockups/):
@@ -1720,18 +1721,25 @@ function crSectorTap(lngLat) { // a map tap while trimming: the sector under the
   }
   if (idx >= 0) crToggleSector(short, idx);
 }
-function crOpenSectors(short) { // opens a picked street's trimming - TWO doors since Beta 1.128 (Andrew's fork, decided from his 1.127 device session): the panel row (1.127) AND a map tap on the already-picked street (pickStreet routes here), which is where his finger went on device
+function crOpenSectors(short) { // opens a picked street's trimming - TWO doors since Beta 1.128 (Andrew's fork, decided from his 1.127 device session): the panel row (1.127) AND a map tap on the already-picked street (pickStreet routes here), which is where his finger went on device. Beta 1.129: entry SNAPSHOTS the street's pick as it stands (whole road, or the trim in force) - the sector bar's Cancel restores that snapshot exactly
   if (!draft || !draft.roads[short]) return;
   if (!crStreetParts(short)) return;
-  const fromEl = crVisibleFaceEl();
+  if (crSectorStreet !== short) crSectorSnapshot = (draft.sectors && draft.sectors[short]) ? draft.sectors[short].slice() : null; // a fresh entry only - re-entering the same street's open session must not move Cancel's restore point
   crSectorStreet = short;
   renderSectorBar();
   const sheet = $('createSheet');
-  if (sheet && sheet.classList.contains('on') && fromEl && fromEl !== $('crSectorBar')) crMorphFaces(fromEl, $('crSectorBar'), 0, 0);
+  if (sheet && sheet.classList.contains('on')) crMorphTo('bar');
   else syncCrPanel();
   renderDraft(); crRenderHint();
 }
-function crCloseSectors() { if (!crSectorStreet) return; crSectorStreet = null; const bar = $('crSectorBar'), sheet = $('createSheet'); if (sheet && sheet.classList.contains('on') && bar && bar.style.display !== 'none') crMorphFaces(bar, crFaceEl(crWantedFace()), 0, 0); else syncCrPanel(); crRenderHint(); }
+function crCloseSectors() { if (!crSectorStreet) return; crSectorStreet = null; crSectorSnapshot = undefined; const sheet = $('createSheet'); if (sheet && sheet.classList.contains('on')) crMorphTo(crWantedFace()); else syncCrPanel(); crRenderHint(); }
+function crCancelSectors() { // Beta 1.129 (Andrew: "I still need a way to cancel selections while I'm selecting something"): the deliberate back-out of a sector session - the street's pick returns EXACTLY as it was when sector mode was entered (the whole road, or the trim then in force), every face repaints from the restored state, and sector mode closes back to the panel. Distinct from un-picking every sector by toggles, which still removes the street - that is a selection, this is an abandonment of the session's edits
+  const s = crSectorStreet; if (!s || !draft) return;
+  if (crSectorSnapshot) { draft.sectors = draft.sectors || {}; draft.sectors[s] = crSectorSnapshot.slice(); }
+  else if (draft.sectors) delete draft.sectors[s];
+  crCloseSectors();
+  renderDraft(); renderCrLists();
+}
 function renderSectorBar() {
   const s = crSectorStreet; if (!s || !draft || !draft.roads[s]) return;
   const rec = crStreetParts(s); if (!rec) return;
@@ -1742,77 +1750,100 @@ function renderSectorBar() {
     ? 'Whole road picked · ' + fmtLenM(rec.total) + ' — tap sectors to trim it'
     : chosen.size + ' of ' + rec.parts.length + ' sectors picked · ' + fmtLenM(crChosenLenM(s, rec)) + ' — the grey ends stay out of your route';
 }
-// ---- the pick sheet's faces (Beta 1.128): panel / strip / sector bar are
-// still three elements, but switching between them is now ONE CONTINUOUS
-// MOTION instead of 1.127's hard display swap. Andrew, on device: the
-// panel "animates but then glitches and turns into a pill" - that was the
-// collapse spring finishing into an instant face swap at a different size
-// and shape. Now the sheet's own height springs from the old face's
-// height to the new one's while the old face slides down out of the
-// (clipped) sheet and the new face rises/fades into the bottom slot it
-// will rest in; when the spring lands, the rest state applies to exactly
-// the geometry the eye already sees, so nothing jumps. The spring is the
-// sheets' own closed-form springSheet - no per-frame integration.
-let crMorph = null; // { from, to } while a face change animates, else null
+// ---- the pick sheet's ONE surface (Beta 1.129): the panel, the
+// tucked-away strip and the sector bar are three CONTENTS of a single
+// card - #createSheet itself, which carries the card's background,
+// radius and shadow in every state (the .crG-* classes in head.html
+// hold the three resting geometries; the contents carry none). A face
+// change morphs the surface's OWN geometry - height, side insets,
+// bottom inset and all four corner radii travel together on the
+// sheets' closed-form spring, so the box contracts toward the bar's
+// footprint on ALL sides at once (Andrew: "retracts into the pill
+// form like it's being absorbed from all angles") while the two
+// contents cross-fade INSIDE it. 1.127 hard-swapped three elements
+// mid-spring; 1.128 sprang the sheet's height and slid the faces but
+// the faces were still three separate boxes with their own margins
+// and radii, landing in a rest state the eye had not been watching -
+// on device it still read as: slides down, disappears, a pill
+// appears. Now the thing on screen at the start of the motion IS the
+// thing on screen at the end of it, at every frame between: one box,
+// never display:none, never teleported.
+let crMorph = null; // { from, to } while the surface morphs between faces, else null
+let crFaceNow = 'panel'; // the face the surface currently rests as (a morph's origin; crMorph.to is its destination)
 function crFaceEl(face) { return face === 'panel' ? $('crPanel') : face === 'strip' ? $('crStrip') : $('crSectorBar'); }
 function crWantedFace() { // the face the current state asks for: the sector bar while trimming; the strip whenever the panel is tucked away (Beta 1.128: at ANY pick count, zero included - an empty draft retracts too, where 1.127's strip demanded a non-empty draft and collapse at zero sprang down and bounced back); else the panel
   if (crSectorStreet && draft && draft.roads[crSectorStreet]) return 'bar';
   if (crPanelCollapsed) return 'strip';
   return 'panel';
 }
-function crVisibleFaceEl() { for (const f of ['bar', 'strip', 'panel']) { const el = crFaceEl(f); if (el && el.style.display !== 'none') return el; } return null; }
-function syncCrPanel() { // the REST state: exactly one face shown. Animated switches run through crMorphFaces and land here; renders and stage changes call this directly. While a morph is in flight this no-ops - the morph's finish lands the rest state, so a mid-flight re-render can never tear the faces apart
-  const panel = $('crPanel'), strip = $('crStrip'), bar = $('crSectorBar'); if (!panel || !strip || !bar) return;
+function syncCrPanel() { // the REST state: the surface wears the wanted face's geometry class and exactly that face's content shows. Animated switches run through crMorphTo and land here; renders and stage changes call this directly. While a morph is in flight this no-ops - the morph's finish lands the rest state, so a mid-flight re-render can never tear the surface
+  const sheet = $('createSheet'), panel = $('crPanel'), strip = $('crStrip'), bar = $('crSectorBar'); if (!sheet || !panel || !strip || !bar) return;
   if (crMorph) return;
   const want = crWantedFace();
+  crFaceNow = want;
+  sheet.classList.toggle('crG-strip', want === 'strip');
+  sheet.classList.toggle('crG-bar', want === 'bar');
   panel.style.display = want === 'panel' ? '' : 'none';
   strip.style.display = want === 'strip' ? '' : 'none';
   bar.style.display = want === 'bar' ? '' : 'none';
   if (want === 'bar') renderSectorBar();
 }
-function crMorphCleanup(fromEl, toEl) {
-  const sheet = $('createSheet'); if (sheet) { sheet.style.height = ''; sheet.style.overflow = ''; }
-  for (const el of [fromEl, toEl]) { if (!el) continue; el.style.position = ''; el.style.top = ''; el.style.left = ''; el.style.right = ''; el.style.bottom = ''; el.style.height = ''; el.style.transform = ''; el.style.opacity = ''; el.style.visibility = ''; }
+function crGeoOf(sheet) { // the surface's border-box geometry as plain numbers - content height, the three insets, the four corner radii - read from computed style, so calc()/env() are already resolved to px by the engine
+  const cs = getComputedStyle(sheet);
+  const rad = (cs.borderRadius || '0px').trim().split(/\s+/).map(v => parseFloat(v) || 0);
+  const R = rad.length === 1 ? [rad[0], rad[0], rad[0], rad[0]] : rad.length === 2 ? [rad[0], rad[1], rad[0], rad[1]] : rad.length === 3 ? [rad[0], rad[1], rad[2], rad[1]] : rad.slice(0, 4);
+  return { h: sheet.offsetHeight, ml: parseFloat(cs.marginLeft) || 0, mr: parseFloat(cs.marginRight) || 0, mb: parseFloat(cs.marginBottom) || 0, r: R };
+}
+function crMorphCleanup() { // the surface returns to class-driven rest: every inline geometry/position the morph set is cleared, so the rest state the eye lands on is exactly the CSS geometry of the destination face
+  const sheet = $('createSheet'); if (sheet) { sheet.style.height = ''; sheet.style.overflow = ''; sheet.style.marginLeft = ''; sheet.style.marginRight = ''; sheet.style.marginBottom = ''; sheet.style.borderRadius = ''; sheet.style.transform = ''; }
+  for (const f of ['panel', 'strip', 'bar']) { const el = crFaceEl(f); if (!el) continue; el.style.position = ''; el.style.top = ''; el.style.left = ''; el.style.right = ''; el.style.bottom = ''; el.style.opacity = ''; }
   crMorph = null;
 }
-function crSettleMorph() { if (!crMorph) return; const m = crMorph; cancelSheetSpring($('createSheet')); crMorphCleanup(m.from, m.to); syncCrPanel(); } // land an in-flight face change NOW (a grab on the panel head, or a new face decision superseding it)
-function crMorphFaces(fromEl, toEl, fromY, v0) { // the continuous face change: the sheet's height springs old->new, the old face slides down out of the clipped sheet, the new face takes the bottom slot it will rest in
-  const sheet = $('createSheet'); if (!sheet || !fromEl || !toEl || fromEl === toEl) { syncCrPanel(); return; }
-  crSettleMorph();
-  if (fromEl.style.display === 'none') { syncCrPanel(); return; }
-  const H0 = fromEl.offsetHeight;
-  const tcs = getComputedStyle(toEl); // the incoming face rests with its own margins - the morph places it at exactly those offsets, so the animated end state and the rest state are the same geometry
-  toEl.style.display = ''; toEl.style.position = 'absolute'; toEl.style.left = tcs.marginLeft; toEl.style.right = tcs.marginRight; toEl.style.bottom = tcs.marginBottom; toEl.style.visibility = 'hidden';
-  const H1 = toEl.offsetHeight;
-  toEl.style.visibility = '';
-  if (!H0 || !H1 || Math.abs(H1 - H0) < 2) { crMorphCleanup(fromEl, toEl); syncCrPanel(); return; } // nothing to travel (or nothing measurable): swap instantly
-  const fcs = getComputedStyle(fromEl);
-  fromEl.style.position = 'absolute'; fromEl.style.top = '0px'; fromEl.style.left = fcs.marginLeft; fromEl.style.right = fcs.marginRight; fromEl.style.height = H0 + 'px'; // height pinned: the panel's scrolling list must not re-flow taller once it leaves the sheet's flex column
-  toEl.style.height = H1 + 'px';
-  sheet.style.height = H0 + 'px'; sheet.style.overflow = 'hidden';
-  crMorph = { from: fromEl, to: toEl };
-  springSheet(sheet, H0, H1, v0 || 0, h => {
+function crSettleMorph() { if (!crMorph) return; cancelSheetSpring($('createSheet')); crMorphCleanup(); syncCrPanel(); } // land an in-flight morph NOW (a grab on the panel head, or a new face decision superseding it)
+function crMorphTo(to, opts) { // THE face change: one surface, its geometry springing between the two faces' resting shapes while the contents cross-fade inside. opts: { dy, v0 } from the head-drag release - the surface is already displaced dy px by the finger's transform, so the morph starts from that displaced bottom edge at the finger's own speed
+  const sheet = $('createSheet'); if (!sheet) { syncCrPanel(); return; }
+  opts = opts || {};
+  crSettleMorph(); // a new decision supersedes an in-flight one - land it first
+  const from = crFaceNow;
+  if (from === to || !sheet.classList.contains('on')) { syncCrPanel(); return; }
+  const fromEl = crFaceEl(from), toEl = crFaceEl(to);
+  if (!fromEl || !toEl || fromEl.style.display === 'none') { syncCrPanel(); return; }
+  const G0 = crGeoOf(sheet); // where the surface rests now
+  fromEl.style.display = 'none'; toEl.style.display = ''; // measure the destination: its content in flow, its geometry class on
+  sheet.classList.toggle('crG-strip', to === 'strip'); sheet.classList.toggle('crG-bar', to === 'bar');
+  const G1 = crGeoOf(sheet);
+  sheet.classList.toggle('crG-strip', from === 'strip'); sheet.classList.toggle('crG-bar', from === 'bar');
+  const mb0 = opts.dy ? -opts.dy : G0.mb; // the finger left the surface dy px below its rest - the morph's bottom edge starts there, not at the rest position
+  if (!G0.h || !G1.h || (Math.abs(G1.h - G0.h) < 2 && Math.abs(G1.ml - G0.ml) < 1 && Math.abs(G1.mb - mb0) < 1)) { syncCrPanel(); return; } // nothing to travel (or nothing measurable): land the rest state directly
+  for (const el of [fromEl, toEl]) { el.style.display = ''; el.style.position = 'absolute'; el.style.top = '0px'; el.style.left = '0px'; el.style.right = '0px'; el.style.bottom = '0px'; } // both contents live inside the one surface for the motion
+  fromEl.style.opacity = '1'; toEl.style.opacity = '0';
+  sheet.style.transform = '';
+  sheet.style.overflow = 'hidden'; sheet.style.height = G0.h + 'px';
+  sheet.style.marginLeft = G0.ml + 'px'; sheet.style.marginRight = G0.mr + 'px'; sheet.style.marginBottom = mb0 + 'px';
+  sheet.style.borderRadius = G0.r[0] + 'px ' + G0.r[1] + 'px ' + G0.r[2] + 'px ' + G0.r[3] + 'px';
+  crMorph = { from, to };
+  const L = (a, b, p) => a + (b - a) * p;
+  springSheet(sheet, G0.h, G1.h, opts.v0 || 0, h => { // the closed-form spring drives the HEIGHT (px, the quantity its settle thresholds are calibrated for); every other property follows the same progress
+    const p = Math.min(1, Math.max(0, (h - G0.h) / (G1.h - G0.h)));
     sheet.style.height = h + 'px';
-    fromEl.style.transform = 'translateY(' + ((fromY || 0) + (H0 - h)) + 'px)';
-    toEl.style.transform = 'translateY(' + (H1 - h) + 'px)';
-    const p = Math.min(1, Math.abs(h - H0) / Math.abs(H1 - H0));
-    toEl.style.opacity = String(Math.min(1, p * 1.8));
-  }, () => { crMorphCleanup(fromEl, toEl); syncCrPanel(); });
+    sheet.style.marginLeft = L(G0.ml, G1.ml, p) + 'px'; sheet.style.marginRight = L(G0.mr, G1.mr, p) + 'px';
+    sheet.style.marginBottom = L(mb0, G1.mb, p) + 'px';
+    sheet.style.borderRadius = L(G0.r[0], G1.r[0], p) + 'px ' + L(G0.r[1], G1.r[1], p) + 'px ' + L(G0.r[2], G1.r[2], p) + 'px ' + L(G0.r[3], G1.r[3], p) + 'px';
+    fromEl.style.opacity = String(1 - Math.min(1, p / 0.45));
+    toEl.style.opacity = String(Math.min(1, Math.max(0, (p - 0.3) / 0.7)));
+  }, () => { crMorphCleanup(); syncCrPanel(); });
 }
-function crCollapsePanel(fromY, v0) { // tuck the panel away to the bottom bar (Beta 1.128: one continuous slide down into the bar, at any pick count - zero included)
-  const panel = $('crPanel'); if (!panel) return;
+function crCollapsePanel(fromY, v0) { // tuck the surface away to the bottom bar: the one box contracts (Beta 1.129) - at any pick count, zero included
   if (crPanelCollapsed) { syncCrPanel(); return; }
   crPanelCollapsed = true;
   const sheet = $('createSheet');
-  if (!sheet || !sheet.classList.contains('on') || !panel.offsetHeight) { syncCrPanel(); return; }
-  crMorphFaces(panel, $('crStrip'), fromY || 0, -(v0 || 0)); // the sheet's height starts shrinking at the finger's speed: its velocity is the drag velocity negated
+  if (!sheet || !sheet.classList.contains('on')) { syncCrPanel(); return; }
+  crMorphTo('strip', { dy: fromY || 0, v0: -(v0 || 0) }); // the height starts shrinking at the finger's speed: its velocity is the drag velocity negated
 }
-function crExpandPanel() { // Review: the bar hands back to the panel in the same continuous motion, reversed
+function crExpandPanel() { // Review: the bar hands back to the panel in the same one-object motion, reversed
   if (!crPanelCollapsed) return;
   crPanelCollapsed = false;
-  const sheet = $('createSheet'), strip = $('crStrip');
-  if (!sheet || !sheet.classList.contains('on') || !strip || !strip.offsetHeight) { syncCrPanel(); return; }
-  crMorphFaces(strip, $('crPanel'), 0, 0);
+  crMorphTo('panel');
 }
 function crPendStreet(short, osmName, lngLat, run, boundary) { // fail-closed (Codex (c)): the shape reaches past verified coverage even after its one top-up - listed as PENDING, never added half-known; a wider preparation can still complete it (crSweepPending)
   let openEnd = null;
@@ -2083,7 +2114,7 @@ $('crModalNo').addEventListener('click', () => { $('crModal').classList.add('hid
 function parkBootChrome() { const sp = $('splash'); if (sp) sp.style.visibility = 'hidden'; $('routeMenu').classList.remove('show'); crBootParked = true; }
 function restoreBootChrome() { if (!crBootParked) return; crBootParked = false; const sp = $('splash'); if (sp) sp.style.visibility = ''; $('routeMenu').classList.add('show'); }
 function setCreateStage(stage) {
-  if (stage !== 'pick') crSectorStreet = null; // Beta 1.127: sector mode belongs to the pick stage - the preview never inherits a half-trimmed street's bar
+  if (stage !== 'pick') { crSectorStreet = null; crSectorSnapshot = undefined; } // Beta 1.127: sector mode belongs to the pick stage - the preview never inherits a half-trimmed street's bar (Beta 1.129: its Cancel snapshot dies with it)
   crStage = stage;
   $('createBar').classList.toggle('on', stage === 'pick');
   $('createSheet').classList.toggle('on', stage === 'pick');
@@ -2097,7 +2128,7 @@ function setCreateStage(stage) {
 function enterCreate(stage) {
   if (!draft) draft = newDraft();
   creating = true;
-  crSectorStreet = null; crPanelCollapsed = false; // Beta 1.127: every creation starts un-trimmed with the panel up
+  crSectorStreet = null; crSectorSnapshot = undefined; crPanelCollapsed = false; crSettleMorph(); // Beta 1.127: every creation starts un-trimmed with the panel up (Beta 1.129: any surface morph a previous creation left in flight lands first)
   crSession++; // a fresh creation session: async completions born in any earlier session are obsolete from here (CG-PF-05)
   document.body.classList.add('creating');
   followPaused = true; // the camera belongs to the picking now; GPS is device state and is not stopped - follow resumes from the Locate tab afterwards
@@ -2107,7 +2138,7 @@ function enterCreate(stage) {
   setCreateStage(stage);
 }
 function exitCreate() {
-  creating = false; draft = null; crStage = 'pick'; crAreaGuess = ''; crSectorStreet = null; crPanelCollapsed = false; // Beta 1.127: the panel + sector session state dies with the creation
+  creating = false; draft = null; crStage = 'pick'; crAreaGuess = ''; crSectorStreet = null; crSectorSnapshot = undefined; crPanelCollapsed = false; // Beta 1.127: the panel + sector session state dies with the creation
   crSession++; crCovGen++; // every async completion born in this session is obsolete the moment the flow closes - it must not land in a later draft, hint or busy state (CG-PF-05)
   if (crPrep) { clearInterval(crPrep.ticker); crAbortOp(crPrep.op); crPrep = null; } // and the downloads themselves stop (CG-PF-10)
   if (crGrid) { crGridStop('exit'); crGrid = null; } // the grid's downloads stop too; its committed cells live on in the on-device city cache, by design
@@ -2452,19 +2483,20 @@ $('crClearAll').addEventListener('click', () => { // Andrew's addition (2026-11-
   const n = draft ? draftStreets().length : 0; if (!n) return;
   crConfirm('Clear all ' + n + (n === 1 ? ' road?' : ' roads?'), 'Every road you picked will be taken off this route. The city stays loaded.', () => {
     draft.roads = {}; draft.mains.clear(); draft.osmNames = {}; draft.sectors = {}; draft.parts = {};
-    crSectorStreet = null;
+    crSectorStreet = null; crSectorSnapshot = undefined;
     renderDraft(); renderCrLists(); crRenderHint();
   }, { yes: 'Clear all', no: 'Cancel', danger: true });
 });
 $('crSbWhole').addEventListener('click', () => { const s = crSectorStreet; if (!s) return; const rec = crStreetParts(s); if (rec) crSetChosen(s, rec, new Set(rec.parts.map((_, i) => i))); renderDraft(); renderCrLists(); renderSectorBar(); }); // Whole road: every sector back on (the pick is stored as no entry again)
 $('crSbDone').addEventListener('click', () => crCloseSectors()); // Done with this road: back to the panel
+$('crSbCancel').addEventListener('click', () => crCancelSectors()); // Cancel (Beta 1.129): restore the pick as it was when sector mode was entered, and leave
 (() => { // the panel's tuck-away gesture (mockup screens 3-4): drag or flick the grab handle / header downward to collapse; a plain tap there collapses too. Buttons inside the header keep their own taps (the check below), and the rows below scroll natively - drags never start there
-  const panel = $('crPanel'), head = $('crPanelHead'); if (!panel || !head) return;
+  const sheet = $('createSheet'), head = $('crPanelHead'); if (!sheet || !head) return; // Beta 1.129: the drag moves the SURFACE (the one card), not a face inside it
   let pid = null, startY = 0, lastY = 0, samples = [], moved = false;
   head.addEventListener('pointerdown', e => {
     if (pid !== null || e.target.closest('button')) return;
     pid = e.pointerId; startY = lastY = e.clientY; samples = [{ t: performance.now(), y: e.clientY }]; moved = false;
-    cancelSheetSpring(panel); crSettleMorph(); // a grab mid-settle takes the panel over from its live position (and lands any face morph in flight)
+    cancelSheetSpring(sheet); crSettleMorph(); // a grab mid-settle takes the surface over from its live position (and lands any face morph in flight)
   });
   head.addEventListener('pointermove', e => {
     if (pid === null || e.pointerId !== pid) return;
@@ -2472,7 +2504,7 @@ $('crSbDone').addEventListener('click', () => crCloseSectors()); // Done with th
     samples.push({ t: performance.now(), y: e.clientY }); if (samples.length > 8) samples.shift();
     const dy = lastY - startY;
     if (Math.abs(dy) > 4) { if (!moved) { moved = true; try { head.setPointerCapture(pid); } catch (err) {} } }
-    if (moved && dy > 0) { panel.style.transform = 'translateY(' + dy + 'px)'; e.preventDefault(); }
+    if (moved && dy > 0) { sheet.style.transform = 'translateY(' + dy + 'px)'; e.preventDefault(); }
   });
   const up = e => {
     if (pid === null || (e && e.pointerId !== pid)) return;
@@ -2482,7 +2514,7 @@ $('crSbDone').addEventListener('click', () => crCloseSectors()); // Done with th
     const now = performance.now(); const s0 = samples.find(s => now - s.t <= 130) || samples[0];
     const dt = now - s0.t; const vy = dt >= 30 ? (lastY - s0.y) / dt : 0; // px/ms, positive = downward (the sheets' release-velocity rule)
     if (dy > 70 || vy > 0.45) crCollapsePanel(dy, vy * 1000);
-    else springSheet(panel, dy, 0, vy * 1000, q => { panel.style.transform = 'translateY(' + q + 'px)'; }, () => { panel.style.transform = ''; });
+    else springSheet(sheet, dy, 0, vy * 1000, q => { sheet.style.transform = 'translateY(' + q + 'px)'; }, () => { sheet.style.transform = ''; });
   };
   head.addEventListener('pointerup', up);
   head.addEventListener('pointercancel', up);
