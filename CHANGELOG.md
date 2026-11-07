@@ -1,5 +1,15 @@
 # Changelog
 
+## Beta 1.132 — 2026-11-06
+Cosmetics, shipped DIRECT to main at Andrew's explicit order (2026-11-06, "push without testing"; visual tier): mechanical integrity only — assemble + build check + hash-verified push + live read-back. No test battery, no Codex gate.
+
+- Sector bar labels: "Whole road" → "Entire road" (the button, the picked-rows' descriptor and the sector bar's own status line renamed together — one concept, one label); "Done with this road" → "Done".
+- Entire road on the night map: the button's text colour comes from --link, which is #2b4bf2 in BOTH themes — measured on the shipped 1.131 build at 5.66:1 against the day card but only 2.44:1 against the night card, which is why it vanished on the dark map. A night-scoped rule now gives it --sec for text and outline, the blue-grey token that does flip at night (#9fb4c8). Day treatment untouched.
+- The discard ask changes shape (Andrew): askDiscard's confirm now passes {oneBtn:true} to crConfirm — ONE red Discard button and nothing else in the row, dismissal on the card's plain red corner ✕ (the new crModalX joins the app's shared corner-X rule) and on a tap of the backdrop; dismissing always means keep editing. Route Delete, Clear all and every other confirm keep their two-button shape.
+- Pill-gap touch guard (Andrew): in the create sheet's two floating geometries (crG-strip / crG-bar) an invisible strip under #createSheet now absorbs touches in the 12px + safe-area gap below the pill, so a swipe starting there no longer pans the map. The flush panel geometry is unchanged, and there is no visual change.
+
+Known-expired by this ship: the label changes expire text assertions in drives 156/157/158; a KNOWN-EXPIRED-BY-1132 note is appended to the snow goal's flake-log for repair at the next gated build (the drives are deliberately NOT edited in a direct ship).
+
 ## Beta 1.131 — 2026-11-06
 Maintainability programme, build 1 of 4 — the programme Andrew approved in full on 2026-11-06 (A–F + N2 + N3, in sequence) after the three-seat maintainability re-scan of Beta 1.129. This build lands A (one pack-field list) + N2 (one junction-cut finishing policy). Internal only: NO behaviour change, and the identity is proven, not asserted (below).
 

@@ -609,7 +609,7 @@ $('stDel').addEventListener('click', async () => {
 });
 // ---- About / What's new ----
 const WHATSNEW = { // the curated in-app notes: plain words, LATEST RELEASE ONLY (Beta 1.114, Andrew: the accumulated list cluttered the About pane). A release REPLACES this entry with its own in the same change - it never accumulates; the full history lives in CHANGELOG.md, not the app
-  v: 'Beta 1.131', items: ["Under the hood only: the app's inner checklists were tidied into single lists, so a future route feature can't silently lose pieces of a route you created. Nothing about how the app looks or works has changed"]
+  v: 'Beta 1.132', items: ["Sector buttons are renamed: Entire road and Done — and Entire road is easy to read on the night map now", "Throwing away a draft asks with one red Discard button — the red X in the corner, or a tap anywhere outside, keeps you editing instead", "Swipes in the gap under the tucked-away route pill no longer move the map"]
 };
 function renderAbout() {
   const cur = $('ver').textContent.trim();
@@ -1747,7 +1747,7 @@ function renderSectorBar() {
   $('crSbName').textContent = s;
   if (rec.parts.length === 1) { $('crSbSub').textContent = 'One piece · ' + fmtLenM(rec.total) + ' — no cross-streets to split it at, so it goes into your route whole'; return; } // Beta 1.128: honest about the streets the cut rules cannot split (measured on the shipped Vaughan pack: 221 of 1,299 streets ≥ 500 m compute to exactly one part) - 1.127's "tap sectors to trim it" promised a trim whose only outcome was deleting the road
   $('crSbSub').textContent = chosen.size >= rec.parts.length
-    ? 'Whole road picked · ' + fmtLenM(rec.total) + ' — tap sectors to trim it'
+    ? 'Entire road picked · ' + fmtLenM(rec.total) + ' — tap sectors to trim it'
     : chosen.size + ' of ' + rec.parts.length + ' sectors picked · ' + fmtLenM(crChosenLenM(s, rec)) + ' — the grey ends stay out of your route';
 }
 // ---- the pick sheet's ONE surface (Beta 1.129): the panel, the
@@ -2064,7 +2064,7 @@ function crRowEl(n, g) {
   row.appendChild(del);
   return row;
 }
-function crPanelRowEl(n, g) { // Beta 1.127 (Andrew's approved mockup, screen 2): one short row per picked road - category dot, name, "Whole road · X m" or "N of M sectors · X m", the MAIN/2ND chip IN the row (one tap flips the road's type), x to remove; tapping the row itself opens the street's sector trimming
+function crPanelRowEl(n, g) { // Beta 1.127 (Andrew's approved mockup, screen 2): one short row per picked road - category dot, name, "Entire road · X m" or "N of M sectors · X m", the MAIN/2ND chip IN the row (one tap flips the road's type), x to remove; tapping the row itself opens the street's sector trimming
   const main = draft.mains.has(n);
   const row = document.createElement('div'); row.className = 'crPRow';
   const dot = document.createElement('span'); dot.className = 'crDot ' + (main ? 'main' : 'sec'); row.appendChild(dot);
@@ -2073,7 +2073,7 @@ function crPanelRowEl(n, g) { // Beta 1.127 (Andrew's approved mockup, screen 2)
   const sub = document.createElement('span'); sub.className = 'crPSub';
   const sel = draft.sectors ? draft.sectors[n] : null;
   if (sel) { const rec = crStreetParts(n); sub.textContent = sel.length + ' of ' + (rec ? rec.parts.length : sel.length) + ' sectors · ' + fmtLenM(crStreetChosenM(n, g)) + ' — tap row to adjust'; }
-  else sub.textContent = 'Whole road · ' + fmtLenM(g[n] ? g[n].total : 0) + ' — tap row to adjust'; // Beta 1.128: the adjust affordance is stated BEFORE any trim exists - in 1.127 it appeared only after one, so an untrimmed row gave no hint it could be tapped at all
+  else sub.textContent = 'Entire road · ' + fmtLenM(g[n] ? g[n].total : 0) + ' — tap row to adjust'; // Beta 1.128: the adjust affordance is stated BEFORE any trim exists - in 1.127 it appeared only after one, so an untrimmed row gave no hint it could be tapped at all
   meta.appendChild(sub); row.appendChild(meta);
   const chip = document.createElement('button'); chip.className = 'crPChip ' + (main ? 'main' : 'sec'); chip.textContent = main ? 'MAIN' : '2ND';
   chip.addEventListener('click', e => { e.stopPropagation(); if (draft.mains.has(n)) draft.mains.delete(n); else draft.mains.add(n); renderDraft(); renderCrLists(); });
@@ -2112,9 +2112,13 @@ function renderCrLists() {
   syncCrPanel();
 }
 let crConfirmCb = null;
-function crConfirm(title, msg, cb, labels) { $('crModalTitle').textContent = title; $('crModalMsg').textContent = msg; crConfirmCb = cb; $('crModalYes').textContent = (labels && labels.yes) || 'Discard'; $('crModalYes').classList.toggle('danger', !!(labels && labels.danger)); $('crModalNo').textContent = (labels && labels.no) || '✕'; $('crModal').classList.remove('hidden'); } // Beta 1.124: labels are optional - the create flow's discard keeps its exact defaults (Yes "Discard", No the bare ✕); route deletion passes {yes:'Delete', no:'Cancel', danger:true}. The card itself is the --card token surface in BOTH themes (the head.html rule) - the confirm never hardcodes a light background.
+let crConfirmOneBtn = false; // Beta 1.132: true while the current confirm wears the one-button shape (the discard ask)
+function crConfirm(title, msg, cb, labels) { $('crModalTitle').textContent = title; $('crModalMsg').textContent = msg; crConfirmCb = cb; crConfirmOneBtn = !!(labels && labels.oneBtn); $('crModalYes').textContent = (labels && labels.yes) || 'Discard'; $('crModalYes').classList.toggle('danger', !!(labels && labels.danger) || crConfirmOneBtn); $('crModalNo').textContent = (labels && labels.no) || '✕'; $('crModalNo').style.display = crConfirmOneBtn ? 'none' : ''; $('crModalX').style.display = crConfirmOneBtn ? '' : 'none'; $('crModal').classList.remove('hidden'); } // Beta 1.124: labels are optional; route deletion passes {yes:'Delete', no:'Cancel', danger:true}. Beta 1.132 (Andrew): the DISCARD ask (askDiscard) passes {oneBtn:true} and changes shape - ONE red Discard button, nothing else in the row; dismissal lives on the card's plain red corner X (crModalX, styled by the shared corner-X rule in head.html) and on a tap of the backdrop, and dismissing always means keep editing. Every other confirm keeps its two-button row exactly as before. The card itself is the --card token surface in BOTH themes - the confirm never hardcodes a light background.
+function crConfirmDismiss() { $('crModal').classList.add('hidden'); crConfirmCb = null; }
 $('crModalYes').addEventListener('click', () => { $('crModal').classList.add('hidden'); const cb = crConfirmCb; crConfirmCb = null; if (cb) cb(); });
-$('crModalNo').addEventListener('click', () => { $('crModal').classList.add('hidden'); crConfirmCb = null; });
+$('crModalNo').addEventListener('click', crConfirmDismiss);
+$('crModalX').addEventListener('click', crConfirmDismiss);
+$('crModal').addEventListener('click', (e) => { if (crConfirmOneBtn && e.target === $('crModal')) crConfirmDismiss(); }); // Beta 1.132: a backdrop tap dismisses ONLY in the one-button shape
 function parkBootChrome() { const sp = $('splash'); if (sp) sp.style.visibility = 'hidden'; $('routeMenu').classList.remove('show'); crBootParked = true; }
 function restoreBootChrome() { if (!crBootParked) return; crBootParked = false; const sp = $('splash'); if (sp) sp.style.visibility = ''; $('routeMenu').classList.add('show'); }
 function setCreateStage(stage) {
@@ -2160,7 +2164,7 @@ function exitCreate() {
   renderDraft(); // draft is null: the overlay clears, the active route was never touched
 }
 function openDoors() { crWarmCityLibrary(); if (!routeLoaded) { restoreBootChrome(); } else openRouteMenu(); showRmPane('rmCreatePane'); } // Beta 1.124: the doors pane needs no render on entry - the city list renders when ITS door is tapped. Beta 1.130: the doors ARE the create gate - opening them starts the catalogue download (crWarmCityLibrary), so it is in hand by the list tap
-function askDiscard(then) { if (draft && draftStreets().length) crConfirm('Throw away this draft?', 'The ' + draftStreets().length + ' streets you picked will be lost.', then); else then(); }
+function askDiscard(then) { if (draft && draftStreets().length) crConfirm('Throw away this draft?', 'The ' + draftStreets().length + ' streets you picked will be lost.', then, { oneBtn: true }); else then(); }
 function fitDraft() {
   if (!draft || !map) return;
   const bb = computeRouteBox(crFilteredRoads()); if (!bb) return; // Beta 1.127: the preview frames what will save (chosen sectors), not the whole streets
@@ -2491,8 +2495,8 @@ $('crClearAll').addEventListener('click', () => { // Andrew's addition (2026-11-
     renderDraft(); renderCrLists(); crRenderHint();
   }, { yes: 'Clear all', no: 'Cancel', danger: true });
 });
-$('crSbWhole').addEventListener('click', () => { const s = crSectorStreet; if (!s) return; const rec = crStreetParts(s); if (rec) crSetChosen(s, rec, new Set(rec.parts.map((_, i) => i))); renderDraft(); renderCrLists(); renderSectorBar(); }); // Whole road: every sector back on (the pick is stored as no entry again)
-$('crSbDone').addEventListener('click', () => crCloseSectors()); // Done with this road: back to the panel
+$('crSbWhole').addEventListener('click', () => { const s = crSectorStreet; if (!s) return; const rec = crStreetParts(s); if (rec) crSetChosen(s, rec, new Set(rec.parts.map((_, i) => i))); renderDraft(); renderCrLists(); renderSectorBar(); }); // Entire road: every sector back on (the pick is stored as no entry again)
+$('crSbDone').addEventListener('click', () => crCloseSectors()); // Done: back to the panel
 $('crSbCancel').addEventListener('click', () => crCancelSectors()); // Cancel (Beta 1.129): restore the pick as it was when sector mode was entered, and leave
 (() => { // the panel's tuck-away gesture (mockup screens 3-4): drag or flick the grab handle / header downward to collapse; a plain tap there collapses too. Buttons inside the header keep their own taps (the check below), and the rows below scroll natively - drags never start there
   const sheet = $('createSheet'), head = $('crPanelHead'); if (!sheet || !head) return; // Beta 1.129: the drag moves the SURFACE (the one card), not a face inside it
