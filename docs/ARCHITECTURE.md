@@ -21,7 +21,14 @@ produces the deployed `index.html` by stamping a Content-Security-Policy
 (see `scripts/csp_stamp.py`) and runs `--check` gates (the source being
 exactly what the parts assemble to, byte parity with the source, SRI
 integrity of the two MapLibre CDN files, and the stamped policy
-naming all three map hosts). Generated files are never hand-edited.
+naming all three map hosts). Since Beta 1.133 the same gates also pin
+the release bookkeeping: the What's New entry's version must equal the
+displayed version, and the battery counts quoted in README.md must equal
+the derivation of `scripts/release.py` — that script is the single
+source for the counts, deriving them from the test suite itself
+(`tests/browser/run.mjs`'s ALL list and the suites' assertion call
+sites); the counts are generated, never hand-kept. Generated files are
+never hand-edited.
 
 Boot flow (Beta 1.76): the splash brand animates in, and at the readiness
 gate (map engine up and a first tile landed, with a time failsafe) it
