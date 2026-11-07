@@ -419,7 +419,7 @@ input, textarea { caret-color: currentColor; } /* Beta 1.125 (Andrew): the typin
 <div id="hud">
   <div id="warn">Not saving — storage is full or blocked</div>
   <div class="row">
-    <div class="titleStack"><div class="title">Snow Route Beta</div><div class="ver" id="ver">Beta 1.134</div></div>
+    <div class="titleStack"><div class="title">Snow Route Beta</div><div class="ver" id="ver">Beta 1.135</div></div>
   </div>
   <div id="stats"></div>
 </div>
@@ -988,9 +988,19 @@ function writePending(kind) { return kind === 'trail' ? trailDirty : kind === 's
 let trailDirty = false, auxDirty = false, sessDirty = false, lastTrailSave = 0, restoring = false; // Beta 1.73 (audit C04/C05): sessDirty is the session markers' retry flag, same discipline as trailDirty - a failed marker write is retried by flushAux instead of being silently dropped
 function saveTrail() { const ok = lsSet(LS.trail, JSON.stringify(trail)); return ok ? storeOk() : storeFail('trail', true); }
 function saveSess() { const ok = lsSet(LS.sess, JSON.stringify(trailSessions)); return ok ? storeOk() : storeFail('sess', true); }
+// Beta 1.135 (maintainability programme D): the coverage write is THROTTLED. acceptFix calls
+// flushAux on EVERY fix, and through 1.134 each call re-stringified the whole coverage map
+// (~1 Hz for the length of a clean). Unforced flushes now write coverage at most once per
+// COV_SAVE_MS; FORCED flushes (visibility hidden, pagehide, the route switch's pre-flush)
+// always write, so nothing earned is ever held back at a moment that matters. The window
+// starts only on a SUCCESSFUL write - a failed write leaves auxDirty set and the very next
+// flush retries, exactly the flag discipline above. Between windows the 15 s heartbeat is
+// the backstop, and saveAll still writes coverage unconditionally on every primary save.
+const COV_SAVE_MS = 15000;
+let lastCovSave = 0; // the last successful coverage write (0 = never: the first flush writes at once)
 function flushAux(force) {
   if (restoring) return;
-  if (auxDirty && lsSet(LS.cov, JSON.stringify(coveredIdx))) auxDirty = false;
+  if (auxDirty && (force || Date.now() - lastCovSave >= COV_SAVE_MS) && lsSet(LS.cov, JSON.stringify(coveredIdx))) { auxDirty = false; lastCovSave = Date.now(); }
   if (trailDirty && (force || Date.now() - lastTrailSave > 45000) && saveTrail().ok) { trailDirty = false; lastTrailSave = Date.now(); }
   if (sessDirty && saveSess().ok) sessDirty = false;
   if (startDirty) saveStart(); // Beta 1.92 (audit F05): saveStart re-arms the flag itself on failure
@@ -3873,10 +3883,10 @@ let watchId = null, watchGen = 0, gpsFromRun = false, gpsPos = null, dispPos = n
 const SAMPLES = {};
 function samplesFor(stretch, names) { // Beta 1.117: the coverage samples as a PURE function of a stretch set - the pre-1.117 eval-time IIFE, parameterized. buildSamples refills the live SAMPLES from it on every load (via buildGeometry); app4's packGeometry builds a non-active pack's samples from it for snapshot validation (F6).
   const out = {};
-  for (const n of names) { const L = stretch[n].line, cum = stretch[n].cum, pts = []; for (let d = 0; d <= stretch[n].total; d += 15) { let i = 1; while (i < cum.length - 1 && cum[i] < d) i++; const span = cum[i] - cum[i - 1] || 1, t = (d - cum[i - 1]) / span; pts.push([L[i - 1][0] + (L[i][0] - L[i - 1][0]) * t, L[i - 1][1] + (L[i][1] - L[i - 1][1]) * t]); } out[n] = pts; }
+  for (const n of names) { const L = stretch[n].line, cum = stretch[n].cum, pts = []; let i = 1; for (let d = 0; d <= stretch[n].total; d += 15) { while (i < cum.length - 1 && cum[i] < d) i++; const span = cum[i] - cum[i - 1] || 1, t = (d - cum[i - 1]) / span; pts.push([L[i - 1][0] + (L[i][0] - L[i - 1][0]) * t, L[i - 1][1] + (L[i][1] - L[i - 1][1]) * t]); } out[n] = pts; } // Beta 1.135 (programme D): the segment cursor i is hoisted out of the sample loop - sample distances rise monotonically, so a sample's segment never lies before the previous sample's, and the pre-1.135 per-sample restart re-walked the line from its start every 15 m (18,449 cursor-condition checks on Route 5W; the hoisted cursor advances at most once per segment). The samples produced are identical (the 1.135 fixture harness compares them byte-for-byte).
   return out;
 }
-function buildSamples() { const built = samplesFor(STRETCH, STREETNAMES); for (const k of Object.keys(SAMPLES)) delete SAMPLES[k]; Object.assign(SAMPLES, built); }
+function buildSamples() { const built = samplesFor(STRETCH, STREETNAMES); for (const k of Object.keys(SAMPLES)) delete SAMPLES[k]; Object.assign(SAMPLES, built); covSamplesGen++; } // Beta 1.135 (programme D): the generation bump invalidates coverFix's per-street sample boxes (below) - the samples they were measured from just changed
 // (the coverage-index sanitizer lives in loadRouteState, app1 - Beta 1.76: it must run over the loaded state, and state now loads on route pick, not at eval)
 let suggested = new Set();
 function pushGps() {
@@ -3896,8 +3906,11 @@ let lastTrailDraw = 0, lastTrailPts = 0; // Beta 1.64: drawTrail throttle state 
 function drawTrail(force) {
   const src = map && map.getSource('trail'); if (!src) return;
   const t0s = runStart ? Math.floor(runStart / 1000) : 0; // Beta 1.64 (audit F05): only THIS clean's points draw as the active trail - the stored trail keeps every clean for the log and GPX; the display is run-scoped
+  if (!force && performance.now() - lastTrailDraw < 3000) { // Beta 1.135 (programme D): the throttle is decided BEFORE the trail filter now. Its count arm needs only the run-scoped COUNT - a bare counting pass, never a filtered copy of up to 8,000 points built on every GPS fix just to be discarded (the pre-1.135 order); the decision itself is unchanged (skip iff under 3 s AND fewer than 5 undrawn points), and forced draws (run start, trail clear) still ignore the throttle whole (Beta 1.64, audit 3)
+    let cnt = 0; if (runStart) for (const p of trail) if (p[2] >= t0s) cnt++;
+    if (cnt - lastTrailPts < 5) return;
+  }
   const pts = runStart ? trail.filter(p => p[2] >= t0s) : [];
-  if (!force && performance.now() - lastTrailDraw < 3000 && pts.length - lastTrailPts < 5) return; // Beta 1.64 (audit 3): the rebuild is O(trail) up to 8000 points - redraw at most every 3 s, or once 5 undrawn points have accumulated, whichever comes first; forced draws (run start, trail clear) ignore the throttle
   lastTrailDraw = performance.now(); lastTrailPts = pts.length;
   const feats = [];
   for (const seg of trailSegments(pts)) { if (seg.length > 1) feats.push({ type: 'Feature', properties: {}, geometry: { type: 'LineString', coordinates: seg.map(p => [p[1], p[0]]) } }); } // Beta 1.99 (Phase 2, C1): segmentation by the shared rule in trailSegments (was a private copy of the gap/jump test)
@@ -4089,12 +4102,33 @@ function acceptFix(pos) {
     coverFix(sm);
   }
 }
+// ---- coverage caches (Beta 1.135, maintainability programme D): coverFix runs on every
+// accepted fix of a clean. Through 1.134 it rebuilt a Set from coveredIdx[n] for EVERY
+// street on EVERY fix and distance-tested every still-uncovered sample of every street,
+// though a fix can only ever cover samples within 22 m of itself. Two caches fix that:
+// the per-street Sets now PERSIST across fixes, mirroring coveredIdx's arrays exactly
+// (same insertion order, and written back in 1.134's own per-fix form, so the stored
+// JSON - including its duplicate-index normalization - is byte-identical), and each
+// street's samples are boxed once - bounds padded by the 22 m coverage radius - so a
+// street the fix cannot reach skips its DISTANCE TESTS only, never its suggestion
+// check: a street can sit at 85% from coverage loaded at boot with the suggestion set
+// reset, and 1.134 re-offers it on the first fix wherever that fix lands (the 1.135
+// Codex verify caught a box skip that swallowed this - the harness now covers it).
+// The caches key on identity, never on content comparison: coveredIdx is only ever
+// rebound wholesale (route load, cancel-restore, finish, clear - it is never edited in
+// place outside this function), so a new object rebuilds the Sets; the boxes key on the
+// buildSamples generation, bumped on every route load. Judged by drives 126/127 and the
+// 1.135 fixture harness (identical coveredIdx JSON + suggestion sequence).
+let covSetsFor = null, covSets = {}, covBoxesFor = -1, covBoxes = {}, covSamplesGen = 0;
 function coverFix(ll) {
+  if (covSetsFor !== coveredIdx) { covSets = {}; for (const n of Object.keys(coveredIdx)) covSets[n] = new Set(coveredIdx[n]); covSetsFor = coveredIdx; }
+  if (covBoxesFor !== covSamplesGen) { covBoxes = {}; const pLat = 22 / MLAT, pLng = 22 / MLNG; for (const n of STREETNAMES) { const pts = SAMPLES[n]; if (!pts || !pts.length) continue; let a = 1e9, b = -1e9, c = 1e9, e = -1e9; for (const p of pts) { if (p[0] < a) a = p[0]; if (p[0] > b) b = p[0]; if (p[1] < c) c = p[1]; if (p[1] > e) e = p[1]; } covBoxes[n] = [a - pLat, b + pLat, c - pLng, e + pLng]; } covBoxesFor = covSamplesGen; }
   let changed = false;
   for (const n of STREETNAMES) {
     if (streetComplete(n) || suggested.has(n)) continue;
-    const pts = SAMPLES[n]; const set = new Set(coveredIdx[n] || []);
-    for (let i = 0; i < pts.length; i++) { if (!set.has(i) && distM(ll, pts[i]) <= 22) { set.add(i); changed = true; } }
+    const pts = SAMPLES[n]; const set = covSets[n] || (covSets[n] = new Set(coveredIdx[n] || []));
+    const box = covBoxes[n]; const outOfBox = box && (ll[0] < box[0] || ll[0] > box[1] || ll[1] < box[2] || ll[1] > box[3]);
+    if (!outOfBox) for (let i = 0; i < pts.length; i++) { if (!set.has(i) && distM(ll, pts[i]) <= 22) { set.add(i); changed = true; } }
     if (set.size) coveredIdx[n] = [...set];
     if (set.size >= Math.ceil(pts.length * 0.85) && !streetComplete(n)) { suggested.add(n); showSuggest(n); }
   }
@@ -4744,7 +4778,7 @@ $('stDel').addEventListener('click', async () => {
 });
 // ---- About / What's new ----
 const WHATSNEW = { // the curated in-app notes: plain words, LATEST RELEASE ONLY (Beta 1.114, Andrew: the accumulated list cluttered the About pane). A release REPLACES this entry with its own in the same change - it never accumulates; the full history lives in CHANGELOG.md, not the app
-  v: 'Beta 1.134', items: ["Under-the-hood tidy-up: the route-creation code now lives in its own file, separate from the rest of the system code, so the app is easier to maintain and fix", "Nothing about how the app works has changed — same screens, same buttons, same routes"]
+  v: 'Beta 1.135', items: ["Speed work under the hood: while a clean is recording, the app now does far less repeat maths in the background — it checks only the streets near you and saves its coverage notes in batches instead of after every GPS point", "Creating a route is snappier too: tapping sectors and flipping roads between main and secondary no longer rebuilds the whole draft every time", "Nothing about how the app looks or works has changed — same screens, same buttons, same routes, same saved data"]
 };
 function renderAbout() {
   const cur = $('ver').textContent.trim();
@@ -5752,14 +5786,14 @@ function crRenderHint() { // the ONE writer of the pick-stage hint + its action 
   const cc = $('crCityChange'); if (cc) { if (crCity) { cc.textContent = 'City: ' + crCity.name + ' — change'; cc.style.display = ''; } else cc.style.display = 'none'; }
 }
 function crAddStreet(short, osmName, segs) {
-  draft.roads[short] = segs; draft.osmNames[short] = osmName; // a tapped street joins as a SECONDARY (fork 3) - flip it to MAIN in the list if it is one
+  draft.roads[short] = segs; draft.osmNames[short] = osmName; crGeomGen++; // a tapped street joins as a SECONDARY (fork 3) - flip it to MAIN in the list if it is one. Beta 1.135 (N3): the generation bump is the draft-geometry cache's invalidation for this in-place join (see crDraftGeom)
   delete crPending[short];
   renderDraft(); renderCrLists(); crRenderHint();
   toast('Added ' + short, 1800);
 }
 function crRemoveStreet(short) { // Beta 1.127: the ONE removal path - the panel's x, the preview's x and Clear all land here (Beta 1.128: those are the ONLY doors; a map tap on a picked street opens its sectors instead), so a street leaves with ALL of its draft state (geometry, main flag, names, sector pick, cached parts) and every face re-renders from the same state
   if (!draft || !draft.roads[short]) return;
-  delete draft.roads[short]; draft.mains.delete(short); delete draft.osmNames[short];
+  delete draft.roads[short]; draft.mains.delete(short); delete draft.osmNames[short]; crGeomGen++; // Beta 1.135 (N3): the removal invalidates the shared draft geometry (see crDraftGeom)
   if (draft.sectors) delete draft.sectors[short];
   if (draft.parts) delete draft.parts[short];
   delete crPending[short];
@@ -6099,6 +6133,26 @@ async function crRunCitySearch() {
   } catch (e) { if (seq === crCitySeq && !(e && e.name === 'AbortError')) { box.innerHTML = ''; toast('City search needs an internet connection — try again', 3000); } }
 }
 
+// ---- draft geometry cache (Beta 1.135, maintainability programme N3): through 1.134 a
+// single sector toggle recomputed computeStretches(draft.roads) TWICE - once in
+// renderDraft, once in renderCrLists - ~87k segment tests per toggle on a six-street
+// draft and ~1M on a full-size one, for geometry the toggle never touched. crDraftGeom
+// computes it ONCE per draft-geometry change and every consumer shares the result.
+// Invalidation is exact, keyed on identity + generation: the draft object and its roads
+// object are replaced wholesale by every structural change except two (new draft,
+// photo-door import, Clear all, exit), which the identity keys catch; the only in-place
+// geometry mutations are crAddStreet joining a street and crRemoveStreet removing one,
+// and both bump crGeomGen. Selection-only changes - sector picks, MAIN/2ND flips - touch
+// neither key and never recompute. Identity-proven in the 1.135 fixture harness (the
+// cached geometry deep-equals a fresh computeStretches at every step); drives 156-158
+// judge the flows.
+let crGeomCache = null, crGeomGen = 0;
+function crDraftGeom() {
+  if (crGeomCache && crGeomCache.draft === draft && crGeomCache.roads === draft.roads && crGeomCache.gen === crGeomGen) return crGeomCache.g;
+  const g = computeStretches(draft.roads);
+  crGeomCache = { draft, roads: draft.roads, gen: crGeomGen, g };
+  return g;
+}
 const DRAFT_SRC = 'crDraft';
 function ensureDraftLayers() {
   if (!map || typeof map.addSource !== 'function') return;
@@ -6115,7 +6169,7 @@ function renderDraft() { // the DRAFT renders through its own GeoJSON source, co
   const src = map.getSource(DRAFT_SRC); if (!src) return;
   const feats = [];
   if (draft) {
-    const g = computeStretches(draft.roads);
+    const g = crDraftGeom(); // Beta 1.135 (N3): the shared draft geometry - computed once per geometry change, not once per render
     for (const n of draftStreets()) {
       const main = draft.mains.has(n) ? 1 : 0;
       const sel = draft.sectors ? draft.sectors[n] : null;
@@ -6221,7 +6275,7 @@ function crPanelRowEl(n, g) { // Beta 1.127 (Andrew's approved mockup, screen 2)
 }
 function renderCrLists() {
   if (!draft) return;
-  const g = computeStretches(draft.roads);
+  const g = crDraftGeom(); // Beta 1.135 (N3): shares renderDraft's computation through the draft geometry cache
   const names = draftStreets().sort((a, b) => a.localeCompare(b));
   let tot = 0; for (const n of names) tot += crStreetChosenM(n, g); // Beta 1.127: totals bill CHOSEN lengths - a trimmed street's unchosen ends never count
   $('crCount').textContent = names.length + ' roads · ' + fmtLenM(tot); // Beta 1.127: the panel header's count in the mockup's shape ("3 roads · 2,410 m")
@@ -6677,7 +6731,7 @@ function openNameIt() {
   if (!draft || !draftStreets().length) return;
   $('crNameInput').value = draft.name || nextRouteNameGuess();
   $('crAreaInput').value = draft.area || crAreaGuess || lsGet(LS_GLOBAL.lastArea) || '';
-  const g = computeStretches(draft.roads); let tot = 0; for (const n of draftStreets()) tot += crStreetChosenM(n, g); // Beta 1.127: the summary bills what will actually save
+  const g = crDraftGeom(); let tot = 0; for (const n of draftStreets()) tot += crStreetChosenM(n, g); // Beta 1.127: the summary bills what will actually save. Beta 1.135 (N3): the geometry comes through the shared cache like every other consumer
   $('crNameSummary').textContent = draftStreets().length + ' streets · ' + draft.mains.size + ' mains · ' + fmtLenM(tot) + ' of road';
   if (!routeLoaded) restoreBootChrome(); else openRouteMenu();
   showRmPane('rmNamePane');

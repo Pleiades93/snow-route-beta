@@ -392,8 +392,8 @@ the junction-to-junction pieces actually cleaned. TWO doors open
 sector mode: tapping its panel row, and tapping the picked
 street itself on the map (Beta 1.128 — the door Andrew's finger
 actually used). Sector mode shows the sector bar
-(street name, "N of M sectors picked · X m", Cancel, Whole road,
-Done with this road) and the draft renders the street as one feature per
+(street name, "N of M sectors picked · X m", Cancel, Entire road,
+Done — labels as renamed in Beta 1.132) and the draft renders the street as one feature per
 sector — chosen in its category colour, unchosen thin grey, with
 a wide invisible hit layer picked with the same ±16/±28 px
 discipline as street taps. The sector boundaries are
@@ -406,7 +406,13 @@ stitched line, but the junction set is the prepared EXTRACT (every
 other street's vertices within 12 m of the line) — never the
 draft's current contents — so a street's sectors are its real
 cross-street pieces and do not shift as other streets join or
-leave the draft (`crStreetParts`, cached per draft). Sector state
+leave the draft (`crStreetParts`, cached per draft). The draft's
+own stretch geometry is likewise shared: `crDraftGeom` (create.js)
+computes `computeStretches(draft.roads)` once per draft-geometry
+change for every consumer (draft render, lists, name-it summary),
+invalidated by street add/remove and by wholesale draft or roads
+replacement — sector picks and category flips never recompute it
+(Beta 1.135, maintainability programme N3). Sector state
 lives ONLY in the draft (`draft.sectors[short]` = the chosen part
 indexes; an absent entry means the whole road, which is also the
 first-pick state). Entering sector mode — from either door —
@@ -566,7 +572,17 @@ every session and rides in backups; only the on-map display is scoped
 to the current run. Coverage samples each street's centreline every 15m; a fix covers
 samples within 22m; at 85% of a street's samples the app SUGGESTS the
 street — it never marks it. Confirmation flies to and selects the street;
-marking is always manual.
+marking is always manual. Per-fix cost is bounded (Beta 1.135,
+maintainability programme D): coverage tests only the streets whose
+sample bounds (padded by the 22 m radius) contain the fix, against
+per-street sample Sets cached across fixes, and the coverage record's
+persistence is throttled — unforced flushes write it at most every
+15 s, while forced flushes (app hidden, page closing, route switch)
+always write; a failed write retries on the next flush as before. The
+trail display's redraw throttle is likewise decided before the trail
+is filtered, and the coverage samples are built with a monotonic
+segment cursor. All outputs — coverage contents, suggestions, the
+drawn trail — are unchanged.
 
 ## Offline
 

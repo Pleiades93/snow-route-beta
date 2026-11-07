@@ -609,7 +609,7 @@ $('stDel').addEventListener('click', async () => {
 });
 // ---- About / What's new ----
 const WHATSNEW = { // the curated in-app notes: plain words, LATEST RELEASE ONLY (Beta 1.114, Andrew: the accumulated list cluttered the About pane). A release REPLACES this entry with its own in the same change - it never accumulates; the full history lives in CHANGELOG.md, not the app
-  v: 'Beta 1.134', items: ["Under-the-hood tidy-up: the route-creation code now lives in its own file, separate from the rest of the system code, so the app is easier to maintain and fix", "Nothing about how the app works has changed — same screens, same buttons, same routes"]
+  v: 'Beta 1.135', items: ["Speed work under the hood: while a clean is recording, the app now does far less repeat maths in the background — it checks only the streets near you and saves its coverage notes in batches instead of after every GPS point", "Creating a route is snappier too: tapping sectors and flipping roads between main and secondary no longer rebuilds the whole draft every time", "Nothing about how the app looks or works has changed — same screens, same buttons, same routes, same saved data"]
 };
 function renderAbout() {
   const cur = $('ver').textContent.trim();
