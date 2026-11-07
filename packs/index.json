@@ -1,7 +1,22 @@
 {
  "v": 1,
- "generatedAt": "2026-11-06T17:33:57Z",
+ "generatedAt": "2026-11-07T04:57:47Z",
  "cities": [
+  {
+   "slug": "aurora",
+   "name": "Aurora",
+   "province": "Ontario",
+   "bbox": [
+    43.9574685,
+    -79.4993582,
+    44.0354744,
+    -79.3928828
+   ],
+   "rawBytes": 518679,
+   "gzipBytes": 149595,
+   "streets": 786,
+   "generatedAt": "2026-11-07T04:41:06Z"
+  },
   {
    "slug": "brampton",
    "name": "Brampton",
@@ -18,6 +33,51 @@
    "generatedAt": "2026-11-06T17:33:57Z"
   },
   {
+   "slug": "east-gwillimbury",
+   "name": "East Gwillimbury",
+   "province": "Ontario",
+   "bbox": [
+    44.0637015,
+    -79.5316668,
+    44.2232998,
+    -79.2761594
+   ],
+   "rawBytes": 589042,
+   "gzipBytes": 175921,
+   "streets": 699,
+   "generatedAt": "2026-11-07T04:47:48Z"
+  },
+  {
+   "slug": "georgina",
+   "name": "Georgina",
+   "province": "Ontario",
+   "bbox": [
+    44.1815706,
+    -79.5196592,
+    44.5048574,
+    -79.1561325
+   ],
+   "rawBytes": 594525,
+   "gzipBytes": 181167,
+   "streets": 942,
+   "generatedAt": "2026-11-07T04:57:47Z"
+  },
+  {
+   "slug": "king",
+   "name": "King",
+   "province": "Ontario",
+   "bbox": [
+    43.8744029,
+    -79.7755033,
+    44.1504955,
+    -79.477773
+   ],
+   "rawBytes": 1121403,
+   "gzipBytes": 338269,
+   "streets": 1595,
+   "generatedAt": "2026-11-07T04:41:06Z"
+  },
+  {
    "slug": "markham",
    "name": "Markham",
    "province": "Ontario",
@@ -31,6 +91,36 @@
    "gzipBytes": 852665,
    "streets": 4102,
    "generatedAt": "2026-11-06T17:25:06Z"
+  },
+  {
+   "slug": "mississauga",
+   "name": "Mississauga",
+   "province": "Ontario",
+   "bbox": [
+    43.4789901,
+    -79.8103184,
+    43.7370604,
+    -79.5385553
+   ],
+   "rawBytes": 5234084,
+   "gzipBytes": 1555099,
+   "streets": 7477,
+   "generatedAt": "2026-11-07T04:41:03Z"
+  },
+  {
+   "slug": "newmarket",
+   "name": "Newmarket",
+   "province": "Ontario",
+   "bbox": [
+    44.0160565,
+    -79.5087852,
+    44.0834542,
+    -79.4117446
+   ],
+   "rawBytes": 509308,
+   "gzipBytes": 145978,
+   "streets": 843,
+   "generatedAt": "2026-11-07T04:41:05Z"
   },
   {
    "slug": "richmond-hill",
@@ -76,6 +166,21 @@
    "gzipBytes": 877725,
    "streets": 4477,
    "generatedAt": "2026-11-06T17:24:53Z"
+  },
+  {
+   "slug": "whitchurch-stouffville",
+   "name": "Whitchurch-Stouffville",
+   "province": "Ontario",
+   "bbox": [
+    43.9231616,
+    -79.4204401,
+    44.101253,
+    -79.2174147
+   ],
+   "rawBytes": 581851,
+   "gzipBytes": 172541,
+   "streets": 750,
+   "generatedAt": "2026-11-07T04:41:33Z"
   }
  ]
 }
