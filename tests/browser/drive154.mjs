@@ -265,5 +265,34 @@ await ev2(`(() => { localStorage.setItem = window.__origSet; return true; })()`)
 ok('G1 STORAGE FAILURE: when the userpacks write throws, deletion toasts the storage problem and NOTHING is removed - the record, the pack, the row and the route\'s keys all stay | ' + JSON.stringify(stateG),
   toastG === true && stateG.rec === true && stateG.pack === true && stateG.row === true && stateG.key === '[]');
 
+// ---- phase H: Beta 1.146 (census C2) - the slot wipe is VERIFIED ----
+// Seed a fifth created route, then fault-inject the delete of ONE slot key
+// (its history key) at the storage seam: deleteRoute must attempt every key
+// through txDel, surface the failure honestly (NO 'Route deleted' success
+// toast), while the verified definition removal stands (record + pack + row
+// gone). The residue key must still be there - that is the failure being
+// reported. Control: with the stub removed, a normal delete of route-4
+// (which survived phase G) is fully verified-green, toast and all.
+await ev2(`(() => { const rec = readUserPacks() || {}; rec['route-5'] = ${JSON.stringify(TEST_PACK('Route 5'))}; localStorage.setItem('snowroute.v2.userpacks', JSON.stringify(rec)); const rk = routeKeys('route-5'); const vals = { done: '[]', times: '{}', hist: '[]', notes: '{}', via: '{}', trail: '[]', cov: '{}', start: '0', flip: '{}', sides: '{"p":{},"t":{}}', sess: '[]', pre: '{"at":0}', snap: '{"x":1}', mig: '1' }; for (const f of Object.keys(rk)) localStorage.setItem(rk[f], vals[f] || 'x'); return true; })()`);
+await send('Page.reload', { ignoreCache: false }, PAGE_S);
+await bootRoute();
+await openListTab();
+await ev2(`(() => { window.__origRm = Storage.prototype.removeItem; Storage.prototype.removeItem = function (k) { if (k === routeKeys('route-5').hist) throw new Error('injected delete failure'); return window.__origRm.call(this, k); }; return true; })()`);
+await ev2(`(() => { const r = document.querySelector('#rmRoutes .routeRow[data-route="route-5"] .routeDel'); if (r) r.click(); return true; })()`);
+await poll(`!document.getElementById('crModal').classList.contains('hidden')`, 10000);
+await ev2(`document.getElementById('crModalYes').click()`);
+const toastH = await poll(`/could not be deleted/.test(document.getElementById('toast').textContent)`, 15000);
+const stateH = await J(`({ toast: document.getElementById('toast').textContent, rec: !!readUserPacks()['route-5'], pack: ROUTE_PACKS.some(p => p.id === 'route-5'), row: !!document.querySelector('#rmRoutes .routeRow[data-route="route-5"]'), histLeft: localStorage.getItem(routeKeys('route-5').hist), doneLeft: localStorage.getItem(routeKeys('route-5').done), notesLeft: localStorage.getItem(routeKeys('route-5').notes) })`);
+await ev2(`(() => { Storage.prototype.removeItem = window.__origRm; return true; })()`);
+ok('H1 VERIFIED WIPE, ONE KEY FAILS: the failure is SURFACED (toast says some saved data could not be deleted, never the plain success toast), the definition removal stands (record, pack and row all gone), every other key was still attempted and deleted, and the one failing key remains as the reported residue | ' + JSON.stringify(stateH),
+  toastH === true && /could not be deleted/.test(stateH.toast || '') && stateH.toast !== 'Route deleted' && stateH.rec === false && stateH.pack === false && stateH.row === false && stateH.histLeft === '[]' && stateH.doneLeft === null && stateH.notesLeft === null);
+await ev2(`(() => { const r = document.querySelector('#rmRoutes .routeRow[data-route="route-4"] .routeDel'); if (r) r.click(); return true; })()`);
+await poll(`!document.getElementById('crModal').classList.contains('hidden')`, 10000);
+await ev2(`document.getElementById('crModalYes').click()`);
+const toastH2 = await poll(`document.getElementById('toast').textContent === 'Route deleted'`, 15000);
+const keysH2 = await J(`({ left: Object.values(routeKeys('route-4')).filter(k => localStorage.getItem(k) !== null) })`);
+ok('H2 NORMAL DELETE STILL FULLY GREEN: with healthy storage the success toast fires and every slot key reads null | surviving keys: ' + JSON.stringify(keysH2.left),
+  toastH2 === true && (keysH2.left || []).length === 0);
+
 R.exceptions = consoleLog.filter(l => l.indexOf('EXCEPTION') === 0);
 finishCreate(R, proc, server);

@@ -136,6 +136,23 @@ AC = await ev(`getComputedStyle($('selPop')).boxShadow`);
 ok('M10 once the street is complete the edge turns mint | ' + AC, AC.includes('6, 214, 160'));
 await ev(`(() => { markUndone('Boddy'); deselect(); return true; })()`);
 
+// ---- M12: Beta 1.146 (census C3) - Mark both sides on a FAILED save ----
+// selAllBtn used to test the storage-outcome OBJECT for truthiness
+// ({ok:false} is truthy), so the '✓ Street · time' success toasts fired
+// beside the storage warning. Fault-inject the sides write (the drive118
+// seam), select EVERY Velmar stretch so Mark both sides completes the
+// street, and click: NO success toast may appear - the toast must be the
+// storage warning (or the plain 'Not saved' of finishChangeMarked).
+await ev(`(() => { deselect(); STRETCH.Velmar.parts.forEach((_, i) => tapStretch('Velmar', i, STRETCH.Velmar.line[0])); return true; })()`); await sleep(300);
+const sel12 = JSON.parse(await ev(`JSON.stringify({ n: selSet.length, total: STRETCH.Velmar.parts.length })`));
+await ev(`(() => { window.__origSI12 = Storage.prototype.setItem; Storage.prototype.setItem = function (k, v) { if (k === LS.sides) throw new Error('injected quota failure'); return window.__origSI12.call(this, k, v); }; return true; })()`);
+await ev(`$('selAllBtn').click()`); await sleep(400);
+const toast12 = await ev(`$('toast').textContent`);
+await ev(`(() => { Storage.prototype.setItem = window.__origSI12; saveAll(); return true; })()`); await sleep(200);
+ok('M12 Mark both sides on a failed save: NO success toast - the storage warning stands alone (selection was all ' + sel12.n + ' of ' + sel12.total + ' Velmar stretches) | toast: ' + JSON.stringify(toast12),
+  sel12.n === sel12.total && sel12.total >= 2 && !/✓/.test(toast12) && /Storage is not saving|Not saved/.test(toast12));
+await ev(`(() => { markUndone('Velmar'); deselect(); return true; })()`);
+
 R.exceptions = consoleLog.filter(c => c.type === 'EXCEPTION').map(c => String(c.text || '').slice(0, 200));
 finish(R, proc);
 
