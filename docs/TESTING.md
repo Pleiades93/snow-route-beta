@@ -65,10 +65,25 @@ fails map-host requests on purpose) and drive116 passes `logDomain`
 own tails (their exit paths differ from the standard finish). The
 http-origin drives (119/121) boot through the sibling preamble in
 `tests/browser/harness-http.mjs` (local-origin fixture servers plus the
-same launch/until helpers), extracted the same way. drive117 is the
-documented exception: its server switches content roots mid-drive
-(the service-worker upgrade test), a genuinely different shape, so it
-keeps its own preamble.
+same launch/until helpers), extracted the same way.
+
+The create-family drives (151, 153–159) boot through
+`tests/browser/harness-create.mjs` — the shared CDP client, auto-attach
+Fetch interception, static repo server, evaluate/poll/J helpers and
+boot sequence extracted from their former per-file copies (Improvement
+Tranche 3 T1, 2026-11-08); each drive keeps its fixtures, its
+request-routing table (which URLs get which fixture, 404 or failure)
+and every check. Behavioural differences between the former copies are
+options on the shared rig, never flattened: drive151's fulfil json
+helper answers always-200 (its historical copy predates the coded
+helper), drive159 passes per-call poll steps, and the result block
+prints pretty in 155–158, compact in the others. drive117 is the
+documented exception to both harnesses: it shares only the CDP
+launch/evaluate layer of `harness-create.mjs`, under its own variant
+options (single session, no Fetch.enable, evaluate returning
+`{ error }`, its cert/host-resolver flags); its fixture servers and
+the mid-drive content-root switch (the service-worker upgrade test)
+stay its own.
 
 Since Beta 1.76 every boot ends at the route menu (no route is loaded
 until one is picked), so file:// drives call `bootThrough(ev, poll)`

@@ -8,19 +8,18 @@
 // v6 driver: serve the v6 folder locally, load in headless Chromium, and fulfill all
 // remote map requests (jsDelivr / OpenFreeMap / Esri) through Node fetch (env proxy),
 // so the page runs its REAL production pipeline. sw.js is 404'd to keep the run hermetic.
-import { spawn, execFileSync } from 'node:child_process';
+import { execFileSync } from 'node:child_process';
 import fs from 'node:fs';
 import http from 'node:http';
 import https from 'node:https';
 import path from 'node:path';
 import { createHash } from 'node:crypto';
+import { startCreateRig, sleep } from './harness-create.mjs';
 
-const CHROME = process.env.CHROME_BIN || (fs.existsSync('/opt/meta-chromium/chrome') ? '/opt/meta-chromium/chrome' : 'google-chrome');
 const DIR = new URL('../../src/', import.meta.url).pathname;
 const PAGE = process.argv[2];
 const PORT = 8931;
 const outPrefix = process.argv[2] || '/tmp/v6';
-const sleep = ms => new Promise(r => setTimeout(r, ms));
 
 // ===== drive117 preamble: local origin + CDN mirror =====
 // The servers start BEFORE the browser. Reaching the app takes a
@@ -101,44 +100,19 @@ await new Promise(r => mirrorServer.listen(8443, '127.0.0.1', r));
 // (no local HTTP server: Chromium's Local Network Access checks block 127.0.0.1 navigations
 //  from a fresh target, so the page is loaded via file:// like the earlier harnesses;
 //  remote map requests are still fulfilled through Node fetch below.)
-const proc = spawn(CHROME, [
-  '--headless=new', '--no-sandbox', '--disable-gpu', '--hide-scrollbars', '--no-proxy-server',
-  '--remote-debugging-port=0', '--disable-features=LocalNetworkAccessChecks,LocalNetworkAccessMainFrameNavigations,BlockInsecurePrivateNetworkRequests,PrivateNetworkAccessSendPreflights,PrivateNetworkAccessRespectPreflightResults', '--user-data-dir=/tmp/v6profile-' + Date.now(),
-  '--ignore-certificate-errors', '--host-resolver-rules=MAP unpkg.com 127.0.0.1:8443, MAP cdn.jsdelivr.net 127.0.0.1:8443',
-  '--window-size=420,900', 'about:blank'
-], { stdio: ['ignore', 'pipe', 'pipe'] });
+// ---- CDP launch/evaluate layer: shared with the create family
+// (harness-create.mjs) under drive117's own variant options - single
+// session with NO Fetch.enable (this preamble never enabled it), the
+// console/exception log as { type, text } objects, evaluate returning
+// { error } (400-char) instead of throwing, its longer
+// --disable-features list and cert/host-resolver flags. The fixture
+// servers above and the root-switching (`current`) stay this drive's.
+const rig = await startCreateRig({ profile: '/tmp/v6profile-' + Date.now(), autoAttach: false, evaluateMode: 'returnError', disableFeatures: 'LocalNetworkAccessChecks,LocalNetworkAccessMainFrameNavigations,BlockInsecurePrivateNetworkRequests,PrivateNetworkAccessSendPreflights,PrivateNetworkAccessRespectPreflightResults', extraFlags: ['--ignore-certificate-errors', '--host-resolver-rules=MAP unpkg.com 127.0.0.1:8443, MAP cdn.jsdelivr.net 127.0.0.1:8443'], devtoolsErrorWithBuf: true, onPaused: (p, H) => handlePaused(p, H) });
+const { proc, send, S, evaluate, shot, consoleLog } = rig;
 
-const wsUrl = await new Promise((res, rej) => {
-  let buf = '';
-  proc.stderr.on('data', d => { buf += d; const m = buf.match(/DevTools listening on (ws:\/\/\S+)/); if (m) res(m[1]); });
-  setTimeout(() => rej(new Error('no devtools url: ' + buf.slice(0, 500))), 25000);
-});
-const ws = new WebSocket(wsUrl);
-await new Promise(r => ws.addEventListener('open', r, { once: true }));
-let nextId = 1;
-const pending = new Map();
-const consoleLog = [];
-ws.addEventListener('message', ev => {
-  const msg = JSON.parse(ev.data);
-  if (msg.id && pending.has(msg.id)) { pending.get(msg.id)(msg); pending.delete(msg.id); }
-  else if (msg.method === 'Runtime.consoleAPICalled') {
-    consoleLog.push({ type: msg.params.type, text: (msg.params.args || []).map(a => a.value !== undefined ? String(a.value) : (a.description || a.type)).join(' ') });
-  } else if (msg.method === 'Runtime.exceptionThrown') {
-    const d = msg.params.exceptionDetails;
-    consoleLog.push({ type: 'EXCEPTION', text: (d.exception && d.exception.description) || d.text });
-  } else if (msg.method === 'Fetch.requestPaused') {
-    handlePaused(msg.params);
-  }
-});
-function send(method, params = {}, sessionId) {
-  const id = nextId++;
-  return new Promise(res => { pending.set(id, res); ws.send(JSON.stringify({ id, method, params, ...(sessionId ? { sessionId } : {}) })); });
-}
-const { result: { targetId } } = await send('Target.createTarget', { url: 'about:blank' });
-const { result: { sessionId } } = await send('Target.attachToTarget', { targetId, flatten: true });
-const S = sessionId;
-
-async function handlePaused(p) {
+async function handlePaused(p, H) {
+  const send = H.send;
+  const S = H.sessionId;
   const url = p.request.url;
   try {
     if (url.endsWith('/sw.js')) {
@@ -158,21 +132,8 @@ async function handlePaused(p) {
   }
 }
 
-await send('Page.enable', {}, S);
-await send('Runtime.enable', {}, S);
-await send('Emulation.setDeviceMetricsOverride', { width: 420, height: 900, deviceScaleFactor: 2, mobile: true }, S);
 await send('Page.navigate', { url: 'file://' + path.join(FIX, 'bootstrap.html') }, S);   // local initiator -> the redirect to 127.0.0.1 is a local-to-local navigation (see the preamble)
 
-async function evaluate(expr) {
-  const r = await send('Runtime.evaluate', { expression: expr, returnByValue: true, awaitPromise: true }, S);
-  if (r.result && r.result.exceptionDetails) return { error: JSON.stringify(r.result.exceptionDetails).slice(0, 400) };
-  return r.result && r.result.result ? r.result.result.value : undefined;
-}
-async function shot(name) {
-  const r = await send('Page.captureScreenshot', { format: 'png' }, S);
-  fs.writeFileSync(name, Buffer.from(r.result.data, 'base64'));
-  console.log('saved', name);
-}
 
 
 // drive89: v5.54 Finish pop-up + delete/back navigation
