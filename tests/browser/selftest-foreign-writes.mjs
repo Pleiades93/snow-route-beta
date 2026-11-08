@@ -8,17 +8,25 @@
 //
 // COUNTING RULE (verbatim, also carried in the census JSON):
 //  - Universe: the app part files parts/app1.js, app2.js, app3.js,
-//    app4.js, create.js, engine.js (data.js and pmstyles.js excluded -
-//    data/generated: data.js is route-pack DATA, pmstyles.js is the
-//    generated basemap styles; neither is app logic). A binding's OWNER
-//    is the part file holding its top-level declaration (let/var/const/
-//    function/async function, incl. multi-declarator statements).
+//    app4.js, create-packs.js, create-fetch.js, create-citydata.js,
+//    create-cache.js, create-pick.js, create-save.js, engine.js
+//    (data.js and pmstyles.js excluded - data/generated: data.js is
+//    route-pack DATA, pmstyles.js is the generated basemap styles;
+//    neither is app logic). A binding's OWNER is the part file holding
+//    its top-level declaration (let/var/const/function/async function,
+//    incl. multi-declarator statements) - EXCEPT the six create-*.js
+//    files, which form ONE owner group labelled 'create.js' (the
+//    historical part name; Tranche 3 sub-ship B1 split create.js six
+//    ways): a binding declared in any create-*.js file is owned by
+//    that group, and a write is foreign only when the target's owner
+//    group differs from the writing file's owner group. Site records
+//    keep the CONCRETE file holding the write.
 //  - A FOREIGN WRITE is an assignment or update expression - operators
 //    =, +=, -=, *=, /=, %=, **=, ++, -- (prefix or postfix) - whose
 //    target is a BARE identifier (not a member expression: `obj.x =`
 //    and `this.x =` never count; a declaration initializer never
 //    counts) that resolves, through lexical scope, to a top-level
-//    binding owned by a DIFFERENT part file.
+//    binding owned by a DIFFERENT part file or owner group.
 //  - Scope resolution: mask comments and string/template literals first
 //    (template ${} interpolations are code); track scopes by braces
 //    with the declarations each scope introduces (function/async-
@@ -113,9 +121,11 @@ import { fileURLToPath } from 'node:url';
 
 const HERE = path.dirname(fileURLToPath(import.meta.url));
 const ROOT = path.join(HERE, '..', '..');
-const UNIVERSE = ['app1.js', 'app2.js', 'app3.js', 'app4.js', 'create.js', 'engine.js'];
+const UNIVERSE = ['app1.js', 'app2.js', 'app3.js', 'app4.js', 'create-packs.js', 'create-fetch.js', 'create-citydata.js', 'create-cache.js', 'create-pick.js', 'create-save.js', 'engine.js'];
+const CREATE_FAMILY = new Set(['create-packs.js', 'create-fetch.js', 'create-citydata.js', 'create-cache.js', 'create-pick.js', 'create-save.js']);
+const ownerGroup = (f) => CREATE_FAMILY.has(f) ? 'create.js' : f; // the six create-*.js files are ONE owner group, labelled by the historical part name
 const CENSUS_PATH = path.join(HERE, 'fixtures', 'foreign-writes-census.json');
-const RULE = 'Universe: parts/app1.js, app2.js, app3.js, app4.js, create.js, engine.js (data.js and pmstyles.js excluded - data/generated). Owner = the part file holding a binding\'s top-level declaration. A FOREIGN WRITE is an assignment/update expression (=, +=, -=, *=, /=, %=, **=, ++, -- prefix or postfix) whose target is a bare identifier (not a member expression; a declaration initializer never counts) resolving through lexical scope to a top-level binding owned by a different part file. Comments/strings/templates masked (interpolations are code); scopes tracked by braces with their declarations (function/arrow/catch params, let/const/var at any depth, function declarations). Destructuring assignment targets count per bound identifier; for (x of ...) with a bare identifier assigns.';
+const RULE = 'Universe: parts/app1.js, app2.js, app3.js, app4.js, create-packs.js, create-fetch.js, create-citydata.js, create-cache.js, create-pick.js, create-save.js, engine.js (data.js and pmstyles.js excluded - data/generated). Owner = the part file holding a binding\'s top-level declaration, except the six create-*.js files form ONE owner group labelled create.js (the historical part name): a binding declared in any create-*.js file is owned by that group, and a write is foreign iff the target\'s owner group differs from the writing file\'s owner group; site records keep the concrete file holding the write. A FOREIGN WRITE is an assignment/update expression (=, +=, -=, *=, /=, %=, **=, ++, -- prefix or postfix) whose target is a bare identifier (not a member expression; a declaration initializer never counts) resolving through lexical scope to a top-level binding owned by a different part file or owner group. Comments/strings/templates masked (interpolations are code); scopes tracked by braces with their declarations (function/arrow/catch params, let/const/var at any depth, function declarations). Destructuring assignment targets count per bound identifier; for (x of ...) with a bare identifier assigns.';
 
 // ---------------- tokenizer (comments/strings masked; templates: interpolations are code) ----------------
 const KEYWORDS = new Set(['if', 'else', 'for', 'while', 'do', 'switch', 'case', 'default', 'break', 'continue', 'return', 'function', 'var', 'let', 'const', 'new', 'delete', 'typeof', 'void', 'in', 'of', 'instanceof', 'try', 'catch', 'finally', 'throw', 'class', 'extends', 'super', 'this', 'null', 'true', 'false', 'undefined', 'yield', 'async', 'await', 'static', 'get', 'set', 'export', 'import', 'from']);
@@ -490,14 +500,14 @@ function patternTargets(toks, a, b, out) {
 
 function analyzeFiles(fileSrcs) {
   const files = Object.keys(fileSrcs);
-  const analyses = {}, ownerMap = new Map(), duplicates = [];
+  const analyses = {}, ownerMap = new Map(), firstFile = new Map(), duplicates = []; // ownerMap: binding name -> OWNER GROUP label (create family collapses to 'create.js'); firstFile: name -> concrete declaring file (duplicate detection stays concrete)
   for (const f of files) {
     const an = analyzeSource(fileSrcs[f]);
     analyses[f] = an;
     for (const e of an.declEvents) {
       if (e.scope !== 0) continue;
-      if (ownerMap.has(e.name) && ownerMap.get(e.name) !== f) duplicates.push(e.name + ' (' + ownerMap.get(e.name) + ' + ' + f + ')');
-      else if (!ownerMap.has(e.name)) ownerMap.set(e.name, f);
+      if (firstFile.has(e.name) && firstFile.get(e.name) !== f) duplicates.push(e.name + ' (' + firstFile.get(e.name) + ' + ' + f + ')');
+      else if (!firstFile.has(e.name)) { firstFile.set(e.name, f); ownerMap.set(e.name, ownerGroup(f)); }
     }
   }
   const sites = [], implicit = new Set();
@@ -513,8 +523,8 @@ function analyzeFiles(fileSrcs) {
       const ordered = [...cand.entries()].sort((x, y) => x[1] - y[1]);
       for (const [scope] of ordered) { const names = an.scopeNames.get(scope); if (names && names.has(name)) return scope === 0 ? 'own' : 'local'; }
       const owner = ownerMap.get(name);
-      if (owner && owner !== f) return owner;
-      if (owner === f) return 'own';
+      if (owner && owner !== ownerGroup(f)) return owner;
+      if (owner === ownerGroup(f)) return 'own';
       implicit.add(name);
       return null;
     };
@@ -663,7 +673,7 @@ if (tree.duplicates.length) console.log('  note: top-level names declared in mor
 const MUST = [
   ['app1.js', 277, 'routeBox'], ['app1.js', 379, 'suggested'],
   ['app4.js', 157, 'trail'], ['app4.js', 157, 'trailSessions'], ['app4.js', 161, 'lastTrailSave'],
-  ['app4.js', 291, 'restoring'], ['create.js', 1216, 'followPaused'],
+  ['app4.js', 291, 'restoring'], ['create-pick.js', 587, 'followPaused'],
 ];
 for (const [f, ln, nm] of MUST) check(`census contains adjudicated site ${f}:${ln} ${nm}`, tree.sites.some(s => s.file === f && s.line === ln && s.name === nm));
 {

@@ -14,7 +14,7 @@
 // field, never a pack field, before and after.
 import { readFileSync } from 'node:fs';
 const app1src = readFileSync(new URL('../../parts/app1.js', import.meta.url), 'utf8');
-const createSrc = readFileSync(new URL('../../parts/create.js', import.meta.url), 'utf8'); // Beta 1.134: normalizePack lives in create.js since the app4 split
+const createSrc = readFileSync(new URL('../../parts/create-packs.js', import.meta.url), 'utf8'); // Beta 1.134: normalizePack lived in create.js since the app4 split; Tranche 3 B1: normalizePack now lives in create-packs.js
 const cases = JSON.parse(readFileSync(new URL('./fixtures/packfields-cases.json', import.meta.url), 'utf8'));
 function extract(src, name) {
   const i = src.indexOf('function ' + name + '(');

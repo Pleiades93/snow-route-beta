@@ -71,7 +71,12 @@ Cancel after a reload). GPS is device state and is not switched.
 | `app2.js` | Map boot and interaction: GL map creation, basemap swap + restack, selection, side chips, street panel, list sheet, draggable/flickable sheets, map-failure notice. |
 | `app3.js` | Work lifecycle: pace, Start/Finish, history and Previous cleans, notes, Clear, GPS (smoothing, trail, heading-up camera), coverage suggestions. |
 | `app4.js` | System: the backup menu tree (Backup (JSON); Restore via Import JSON / Import Text; offline preload), update check, the day/night chip, service-worker registration, boot wiring. |
-| `create.js` | Route creation (Beta 1.118+): created-route packs (`USERPACKS_KEY`, `normalizePack`), city preparation (Nominatim search, the whole-city grid, the IndexedDB city cache, the city-pack seam), street picking, sectors, the picked-roads panel, the shared create confirm, save — plus the boot-tail IIFE that physically follows the create section. Split from `app4.js` at the create banner in Beta 1.134; assembly order and shipped bytes unchanged. |
+| `create-packs.js` | Route creation (Beta 1.118+), part 1 — created-route packs: the `USERPACKS` record (`USERPACKS_KEY`, read/load), `normalizePack` (the single pack validator), `mergeUserPacks` and the boot pack migration, and the route id/name helpers (`uniqueRouteId`, `nextRouteNameGuess`). The create family split from `app4.js` at the create banner in Beta 1.134 and now splits six ways (this row and the next five); assembly order and shipped bytes unchanged. |
+| `create-fetch.js` | Route creation, part 2 — draft and session state (`draft`, `crSession`, coverage and preparation state), the Overpass query builders (`crQL`, `crAreaQL`, `crNameQL`), and the source seam every street shape arrives through (`crOverpassFetch`, `crSourceExtract`). |
+| `create-citydata.js` | Route creation, part 3 — the city-pack seam (Beta 1.123): the packs catalogue and downloads (`crPack*`, `crWarmCityLibrary`), extract indexing and coverage (`crIndexWays`, `crCovFromWays`/`crCovMerge`, `crResolve`), and the fallback preparation lifecycle (`crStartPrep`, `crCancelPrep`, `crSweepPending`). |
+| `create-cache.js` | Route creation, part 4 — the persistent city cache and the whole-city grid: the IndexedDB city cache (`crIdb*`, `crCache*`), the ~4 × 4 km grid cells and pump, `crCityPrepare` (cache-first whole-city preparation, with resume/refresh), and `crFailText`. |
+| `create-pick.js` | Route creation, part 5 — the picking stage: the hint (`crRenderHint`), chosen streets and their sector parts (`crStreetParts`, the chosen sets), the picked-roads panel and its faces/morph, the sector session, the doors and panes (the photo door, the city chooser and Nominatim city/street search), the shared create confirm (`crConfirm`), stage/enter/exit (`setCreateStage`, `enterCreate`, `exitCreate`), and map picking (`crMapTap`, `pickStreet`). |
+| `create-save.js` | Route creation, part 6 — name it + save: the name pane (`openNameIt`) and `saveDraftRoute` — plus the boot-tail IIFE that physically follows the create section, which remains physically last. |
 
 ## The map
 
@@ -91,7 +96,7 @@ Cancel after a reload). GPS is device state and is not switched.
   done greens the stretch.
 - 3D buildings (Beta 1.90): both styles carry a `buildings-3d`
   fill-extrusion layer just below the labels, generated into the styles by
-  `work/genstyles/gen.mjs`. The tiles carry footprints but no heights for
+  `scripts/genstyles.mjs`. The tiles carry footprints but no heights for
   residential streets, so the height is an estimate (7 m, or a recorded
   `height` where the tile has one), rising from zero between zooms 15 and
   15.3; the flat footprint fill hands over to the extrusion's top face, so
@@ -128,7 +133,7 @@ approved mockups) with two doors landing in one shared preview.
 `{name, area, mains: [street names], roads: {street: [segment, ...]},
 reference: {street: [segment, ...]}, tileNames?: [...]}` — the shape of
 a `ROUTE_PACKS` entry in `parts/data.js`; each segment is an array of
-`[lat, lng]` points. `normalizePack` (create.js) is the single validator and
+`[lat, lng]` points. `normalizePack` (create-packs.js) is the single validator and
 normalizer for every pack that enters the app — draft import, save,
 backup restore, boot merge — fail-closed with named errors, nothing
 half-applied. The set of fields a pack carries is defined ONCE in
@@ -424,7 +429,7 @@ other street's vertices within 12 m of the line) — never the
 draft's current contents — so a street's sectors are its real
 cross-street pieces and do not shift as other streets join or
 leave the draft (`crStreetParts`, cached per draft). The draft's
-own stretch geometry is likewise shared: `crDraftGeom` (create.js)
+own stretch geometry is likewise shared: `crDraftGeom` (create-pick.js)
 computes `computeStretches(draft.roads)` once per draft-geometry
 change for every consumer (draft render, lists, name-it summary),
 invalidated by street add/remove and by wholesale draft or roads

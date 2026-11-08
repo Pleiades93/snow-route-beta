@@ -82,7 +82,7 @@ the app update check under Settings → **About**.)
 
 | File | What it is |
 |---|---|
-| `parts/` | **The canonical application source — the only place the app itself is edited** (since Beta 1.94). Eight part files (markup/CSS, route data, the app in four parts, the paint engine, the generated basemap styles) that `scripts/assemble.py` concatenates into the single-file page, in the order listed in `docs/ARCHITECTURE.md`. |
+| `parts/` | **The canonical application source — the only place the app itself is edited** (since Beta 1.94). Fourteen part files (markup/CSS, route data, the app in ten parts — the four core parts plus route creation in six — the paint engine, the generated basemap styles) that `scripts/assemble.py` concatenates into the single-file page, in the order listed in `docs/ARCHITECTURE.md`. |
 | `src/tracker-source.html` | **Generated** by `scripts/assemble.py` from `parts/`. Never hand-edit — the build fails if it differs from what the parts assemble to. |
 | `src/sw.js` | The authored service worker source (offline open + tile caching). Edited here; copied to the root by the build. |
 | `index.html` | **Generated** deployable build: the source plus its stamped Content-Security-Policy. This is what GitHub Pages serves. Never hand-edit. |
@@ -92,9 +92,16 @@ the app update check under Settings → **About**.)
 | `scripts/release.py` | The release bookkeeping generator (Beta 1.133): derives the battery counts quoted in this README from the suite itself and rewrites them — the counts are generated, never hand-kept — and prints the release checklist (generated steps vs editorial ones). The build fails if the README disagrees with its derivation. |
 | `scripts/csp_stamp.py` | Computes the Content-Security-Policy the build stamps into the page. |
 | `scripts/genstyles.mjs` | Regenerates `parts/pmstyles.js` (the two embedded Protomaps basemap styles) from the `@protomaps/basemaps` package (pinned exactly by `scripts/package.json` + `package-lock.json` — `npm ci` in `scripts/` first); run from `scripts/`. Never hand-edit its output. |
+| `packs/` | The app's own street library: `index.json` (the catalogue) + 12 city pack JSONs, downloaded once per city by the create flow's city-pack seam. |
+| `assets/launch/` | The 12 launch stills (one per device size). |
+| `scripts/gen-shards.py` | Generates the CI browser-test shard lists in `.github/workflows/checks.yml` from the drive roster plus the measured durations in `scripts/shard-durations.json` — re-measure and regenerate, never hand-balance. |
+| `scripts/check-shard-coverage.py` | The shard-coverage guard: fails the build if the CI shard lists ever stop covering every drive exactly once. |
+| `scripts/premise-lint.py` | The premise lint (Beta 1.136): flags drive premises (labels, selectors, contract strings) that a `parts/` diff removes, so expired drives are caught in the same change. |
+| `scripts/shard-durations.json` | The measured per-drive durations `scripts/gen-shards.py` balances the CI shards by. |
+| `scripts/carto-dark-matter-style.json` | The vendored CARTO dark-matter basemap style (Beta 1.96): `scripts/genstyles.mjs` reads this copy and stamps its sha256 into the generated banner — no live fetch at generation time. |
 | `tests/sw.test.mjs` | Service worker fetch-strategy tests (Node, mocked caches/fetch) — 27 checks. |
 | `tests/browser/` | The deterministic browser drive battery (57 drives, 865 checks) plus the offline end-to-end suite (40 checks) — see `docs/TESTING.md`. |
-| `docs/` | `ARCHITECTURE.md`, `STORAGE-SCHEMA.md`, `TESTING.md`, `DEPLOYMENT.md` — the detailed references. |
+| `docs/` | `ARCHITECTURE.md`, `STORAGE-SCHEMA.md`, `TESTING.md`, `DEPLOYMENT.md`, `OFFLINE-CONTRACT.md` — the detailed references — plus `docs/archive/` (retired-era documents kept for history). |
 | `DEVELOPMENT_RULES.md` | How changes are built, tested and merged in this repo. |
 | `CHANGELOG.md` | What changed in each Beta version. |
 | `manifest.json` | Home-screen install metadata (name, icons, full-screen launch). |
