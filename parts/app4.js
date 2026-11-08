@@ -635,7 +635,7 @@ $('stDel').addEventListener('click', async () => {
 });
 // ---- About / What's new ----
 const WHATSNEW = { // the curated in-app notes: plain words, LATEST RELEASE ONLY (Beta 1.114, Andrew: the accumulated list cluttered the About pane). A release REPLACES this entry with its own in the same change - it never accumulates; the full history lives in CHANGELOG.md, not the app
-  v: 'Beta 1.144', items: ["Fix: trimming a street to separate pieces (skipping the middle) silently lost the later pieces when the route was saved — the route now keeps every piece you pick, and counts them all", "Fix: two different streets with similar names (like Addington Avenue and Addington Place) blocked each other when creating a route — both can now be added", "New: a street that exists in two separate parts can now be added in full — tap its other part and it joins the same street"]};
+  v: 'Beta 1.145', items: ["Under-the-hood tidy-up: two unused helpers left over from older versions were removed — nothing about how the app works has changed"]};
 function renderAbout() {
   const cur = $('ver').textContent.trim();
   $('wnHead').textContent = "WHAT'S NEW · " + cur; // the header names the LIVE version, read from the title's version element - never a second hard-coded copy that can go stale
