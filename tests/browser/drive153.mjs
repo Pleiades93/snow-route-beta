@@ -54,6 +54,7 @@ const REPO = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..', '.
 const FIX = JSON.parse(fs.readFileSync(path.join(REPO, 'tests', 'browser', 'fixtures', 'create-osm.json'), 'utf8'));
 const PACKFX = JSON.parse(fs.readFileSync(path.join(REPO, 'tests', 'browser', 'fixtures', 'city-pack-vaughan.json'), 'utf8'));
 const INDEXFX = JSON.parse(fs.readFileSync(path.join(REPO, 'packs', 'index.json'), 'utf8'));
+const VAUGHAN_NAME = (INDEXFX.cities.find(c => c.slug === 'vaughan') || {}).name; // premise derivation (Tranche 4 / T2, 2026-11-08): expectations about the shipped world derive from source - see pack-expect.mjs (the list-row / cache-key name for the vaughan pack derives from the shipped index, keyed by its slug)
 const { R, ok } = makeResults();
 
 // ---- fixture worlds ----
@@ -150,7 +151,7 @@ const namesA = await J(`({ rows: [...document.querySelectorAll('#crCityList .rou
 ok('A2 the list pane ("Select City") renders the pack index cities as rows carrying their street counts + "ready to load" (index-driven, no hardcoded list in the app) | ' + JSON.stringify(namesA), listA === true && chA === true && namesA.t === "Select City" && JSON.stringify(namesA.rows || []) === JSON.stringify(EXPECTED_CITY_ROWS));
 const wireA0 = wire.length;
 packDelayMs = 2500;
-await clickChoice('Vaughan');
+await clickChoice(VAUGHAN_NAME);
 const inPickA = await poll(`typeof creating !== 'undefined' && creating === true && crStage === 'pick'`, 15000);
 const libHintA = await poll(`/library/.test(document.getElementById('createHint').textContent) && crPrepState === 'preparing'`, 8000);
 const hintDuringA = await J(`({ hint: document.getElementById('createHint').textContent })`);
@@ -169,14 +170,14 @@ ok('A4 a street FROM THE PACK adds by tap at its pack length (Bordeaux ' + Math.
 
 // ---- phase B: reload - the saved city readies from the on-device cache ----
 const cellsTotal = gridA.cells > 0 ? gridA.cells : 30;
-const savedAll = await poll(`crIdbGet('Vaughan').then(r => !!r && !!r.cells && Object.keys(r.cells).length === ${cellsTotal})`, 30000);
+const savedAll = await poll(`crIdbGet(${JSON.stringify(VAUGHAN_NAME)}).then(r => !!r && !!r.cells && Object.keys(r.cells).length === ${cellsTotal})`, 30000);
 const wireB0 = wire.length;
 await send('Page.reload', { ignoreCache: false }, PAGE_S);
 await bootRoute();
 await openChooserTab();
 await openCityList();
 await choicesReady();
-await clickChoice('Vaughan');
+await clickChoice(VAUGHAN_NAME);
 const readyB = await poll(`crPrepState === 'ready'`, 20000);
 const wB = wire.slice(wireB0);
 const gridB = await J(`({ fromCache: crGrid && crGrid.fromCache })`);
@@ -185,14 +186,14 @@ ok('B1 PERSISTENCE: after a full reload, re-picking Vaughan is ready from the ON
 
 // ---- phase C: pack file fails -> the grid fallback engages, and says so ----
 await ev2(`exitCreate()`);
-await ev2(`crIdbDelete('Vaughan')`);
-await poll(`crIdbGet('Vaughan').then(r => !r)`, 10000);
+await ev2(`crIdbDelete(${JSON.stringify(VAUGHAN_NAME)})`);
+await poll(`crIdbGet(${JSON.stringify(VAUGHAN_NAME)}).then(r => !r)`, 10000);
 packMode = 'fail';
 const wireC0 = wire.length;
 await openChooserTab();
 await openCityList();
 await choicesReady();
-await clickChoice('Vaughan');
+await clickChoice(VAUGHAN_NAME);
 const readyC = await poll(`crPrepState === 'ready'`, 60000);
 const wC = wire.slice(wireC0);
 const hintC = await J(`({ hint: document.getElementById('createHint').textContent })`);
@@ -251,7 +252,7 @@ const paneE = await poll(`document.getElementById('rmCreatePane').classList.cont
 const listE = await openCityList();
 const chE = await choicesReady();
 const doorE = await J(`({ manual: !!document.getElementById('crDoorManual'), manualLabel: (document.getElementById('crDoorManual') || {}).textContent || '', list: !!document.getElementById('crDoorList'), t: (document.querySelector('#rmCreatePane .rmTitle') || {}).textContent || '' })`);
-await clickChoice('Vaughan');
+await clickChoice(VAUGHAN_NAME);
 const inPickE = await poll(`typeof creating !== 'undefined' && creating === true && crStage === 'pick'`, 15000);
 ok('E1 COHESION: the cold-start picker\'s Create reaches the SAME doors surface (same pane, "Create new route", both doors, the 5 index cities behind Select from list) and a city pick enters creation from boot too | ' + JSON.stringify(doorE),
   paneE === true && listE === true && chE === true && doorE.manual === true && doorE.manualLabel.indexOf('Search manually') === 0 && doorE.list === true && doorE.t === 'Create new route' && inPickE === true);

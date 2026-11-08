@@ -1,4 +1,5 @@
 import { launchDrive, finish, bootThrough } from './harness.mjs';
+import { OFFLINE } from './pack-expect.mjs'; // premise derivation (Tranche 4 / T2, 2026-11-08): expectations about the shipped world derive from source - see pack-expect.mjs
 const { proc, ev, consoleLog, sleep, poll: poll120, poll } = await launchDrive();
 await bootThrough(ev, poll); // Beta 1.76: boots end at the route menu now - click through to a loaded route
 
@@ -107,7 +108,7 @@ let preStat = '';
 for (let i = 0; i < 90; i++) { preStat = await ev(`$('xPreStat').textContent`); if (/Offline maps: saved/.test(preStat)) break; await sleep(250); }
 const A8 = JSON.parse(await ev(`(() => { const seen = window.__preSeen || []; window.fetch = window.__realFetch; const tiles = seen.filter(u => u.endsWith('.mvt')); const inBox = tiles.every(u => { const m = u.match(/\\/(\\d+)\\/(\\d+)\\/(\\d+)\\.mvt$/); if (!m) return false; const z = +m[1], x = +m[2], y = +m[3], n = 2 ** z; const xw = Math.floor((-79.75 + 180) / 360 * n), xe = Math.floor((-79.35 + 180) / 360 * n); const yOf = lat => Math.floor((1 - Math.log(Math.tan(lat * Math.PI / 180) + 1 / Math.cos(lat * Math.PI / 180)) / Math.PI) / 2 * n); return x >= xw && x <= xe && y >= yOf(44.05) && y <= yOf(43.70); }); return JSON.stringify({ total: seen.length, tiles: tiles.length, inBox, glyphs: seen.filter(u => u.endsWith('.pbf')).length, sprites: seen.filter(u => u.includes('/sprites/')).length, stat: $('xPreStat').textContent }); })()`));
 ok('A8 offline download fetches the full Vaughan tile set + the z15 route core (633 tiles incl. the z8/9 wide zooms since 1.72, every one inside the area) + glyphs + both sprite flavours | ' + JSON.stringify(A8),
-  A8.tiles === 633 && A8.inBox === true && A8.glyphs === 256 && A8.sprites === 8 && A8.total === 897);
+  A8.tiles === OFFLINE.tiles && A8.inBox === true && A8.glyphs === OFFLINE.glyphs && A8.sprites === OFFLINE.sprites && A8.total === OFFLINE.count);
 ok('A8b the second tap was refused while the download ran (single-flight, Beta 1.92) | toast: ' + A8toast, A8toast === 'Offline download already running');
 
 // A8c (Beta 1.93, follow-up audit V02): a genuinely STALLED file (a fetch that
@@ -120,7 +121,7 @@ for (let i = 0; i < 100; i++) { stat8c = await ev(`$('xPreStat').textContent`); 
 const el8c = Date.now() - t8c;
 const seen8c = await ev(`(window.__preSeen || []).length`);
 await ev(`(() => { window.fetch = window.__realFetch; return true; })()`);
-ok('A8c one stalled file is aborted (~30 s) and the download still completes | ' + stat8c + ' | seen ' + seen8c + ' | elapsed ' + Math.round(el8c / 1000) + 's', /Offline maps: saved/.test(stat8c) && seen8c === 897 && el8c >= 20000 && el8c < 90000);
+ok('A8c one stalled file is aborted (~30 s) and the download still completes | ' + stat8c + ' | seen ' + seen8c + ' | elapsed ' + Math.round(el8c / 1000) + 's', /Offline maps: saved/.test(stat8c) && seen8c === OFFLINE.count && el8c >= 20000 && el8c < 90000);
 
 R.exceptions = consoleLog.filter(c => c.type === 'EXCEPTION').map(c => String(c.text || '').slice(0, 200));
 finish(R, proc);

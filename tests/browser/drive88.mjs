@@ -1,4 +1,5 @@
 import { launchDrive, finish, bootThrough } from './harness.mjs';
+import { PACK5W } from './pack-expect.mjs'; // premise derivation (Tranche 4 / T2, 2026-11-08): expectations about the shipped world derive from source - see pack-expect.mjs
 const { proc, ev, consoleLog, sleep, poll } = await launchDrive();
 await bootThrough(ev, poll); // Beta 1.76: boots end at the route menu now - click through to a loaded route
 
@@ -14,7 +15,7 @@ await ev(`loadRoute('5w'); true`); await sleep(600); // Beta 1.76: a reload land
 // Phase 1: list buttons + auto-saving notes
 await ev(`(() => { $('streetsBtn').click(); return true; })()`); await sleep(400);
 let A = JSON.parse(await ev(`(() => { listFilter = 'mains'; renderStreets(); const m = document.querySelectorAll('.srow').length; listFilter = 'secondaries'; renderStreets(); const s = document.querySelectorAll('.srow').length; listFilter = 'mains'; renderStreets(); return JSON.stringify({ rows: m + s, smap: !!document.querySelector('.srow .smap'), snote: !!document.querySelector('.srow .snote') }); })()`)); // Beta 1.109: the list shows one group at a time (6 mains / 28 secondaries) - the row census spans both views
-ok('P1 rows carry the pin button and NO note button (v5.55)', A.rows === 34 && A.smap && !A.snote);
+ok('P1 rows carry the pin button and NO note button (v5.55)', A.rows === PACK5W.names && A.smap && !A.snote);
 await ev(`(() => { ${'PLACEHOLDER'} return true; })()`.replace('PLACEHOLDER', ''));
 await ev(`(() => { const r = [...document.querySelectorAll('.srow')].find(x => x.querySelector('.nm').textContent === 'Velmar'); r.querySelector('.nwrap').click(); return true; })()`); await sleep(400);
 A = JSON.parse(await ev(`(() => JSON.stringify({ ed: !!document.querySelector('.noteEd textarea') }))()`));

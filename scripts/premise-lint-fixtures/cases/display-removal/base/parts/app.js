@@ -1,0 +1,1 @@
+btn.textContent = 'Finish route';

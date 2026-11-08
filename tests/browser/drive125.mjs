@@ -1,4 +1,5 @@
 import { launchDrive, finish, bootThrough } from './harness.mjs';
+import { PACK5W } from './pack-expect.mjs'; // premise derivation (Tranche 4 / T2, 2026-11-08): expectations about the shipped world derive from source - see pack-expect.mjs
 const { proc, ev, consoleLog, sleep, poll: poll120, poll } = await launchDrive();
 await bootThrough(ev, poll); // Beta 1.76: boots end at the route menu now - click through to a loaded route
 
@@ -41,7 +42,7 @@ const S22 = JSON.parse(await ev(`(() => { const sb = $('startBtn'); const cs = g
     strip: { x: sr.x, w: sr.width, top: sr.top, bottom: sr.bottom }, startB: br.bottom,
     atBottom: atBottom && (atBottom.id || (atBottom.closest('#tabBar') ? 'tabBar' : '')), atStart: atStart && atStart.id, color: cs.color, vw: window.innerWidth, vh: window.innerHeight }); })()`));
 ok('S1 Start button: splash-blue circle, white START word (Beta 1.75) | ' + JSON.stringify(S22), S22.label === 'START' && S22.bg === 'rgb(43, 75, 242)' && S22.color === 'rgb(255, 255, 255)');
-ok('S2 count reads "0 of 34 · 0%" (no "completed") | ' + S22.count, S22.count === '0 of 34 · 0%');
+ok('S2 count reads "0 of 34 · 0%" (no "completed") | ' + S22.count, S22.count === '0 of ' + PACK5W.names + ' · 0%');
 ok('S3 header slab is transparent (map full-screen at the top)', S22.hudBg === 'rgba(0, 0, 0, 0)');
 ok('S4 tab bar spans the bottom edge and takes the touch there (the old dead-strip job), dock clear above it | ' + JSON.stringify(S22),
   S22.strip.x === 0 && S22.strip.w === S22.vw && Math.abs(S22.strip.bottom - S22.vh) <= 1 && S22.startB <= S22.strip.top + 1 && S22.atBottom === 'tabBar' && S22.atStart === 'startBtn');
@@ -176,7 +177,7 @@ await sleep(400);
 await ev(`(() => { markDone('Woolacott', 'tap'); return true; })()`);
 await sleep(400);
 const C2 = await ev(`$('count').textContent`);
-ok('S5 count climbs in the new format after a street is done | ' + C2, /^1 of 34 · \d+%$/.test(C2));
+ok('S5 count climbs in the new format after a street is done | ' + C2, new RegExp('^1 of ' + PACK5W.names + ' · \\d+%$').test(C2));
 await sleep(600);
 const T5 = JSON.parse(await ev(`(() => JSON.stringify({ ratio: $('countFill').offsetWidth / $('count').offsetWidth, want: workDoneM() / totalWorkM(), txt: $('countTxt').textContent, count: $('count').textContent }))()`));
 ok('T5 the pill meter fills with the same work fraction the % reports | ' + JSON.stringify(T5),

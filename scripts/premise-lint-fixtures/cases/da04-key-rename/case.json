@@ -1,0 +1,8 @@
+{
+  "name": "da04-key-rename",
+  "comment": "DA-04 shape: a draft KEY renamed in parts/ whose short literal survives as display text in the same file. Base mode is blind (surviving()); key mode must flag the drive that reads the old key.",
+  "runs": [
+    { "keys": false, "expect_contains": ["premise-lint: no drive premise touched by this diff"], "expect_absent": ["key premise flag"] },
+    { "keys": true, "expect_contains": ["premise-lint --keys: 1 key premise flag(s)", "'Bordeaux'  asserted by: drive999.mjs"], "expect_absent": [] }
+  ]
+}

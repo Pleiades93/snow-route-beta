@@ -1,4 +1,5 @@
 import { launchDrive, bootThrough, finish } from './harness.mjs';
+import { PACK5W } from './pack-expect.mjs'; // premise derivation (Tranche 4 / T2, 2026-11-08): expectations about the shipped world derive from source - see pack-expect.mjs
 // Beta 1.144 TEST-PREMISE UPDATE (Package C, DA-04): the create draft and the packs it saves now key streets by their FULL map name ('Bordeaux Drive', 'Alderson Avenue'); through 1.143 they keyed on the shortened name. Every key read in this drive (draft.roads, computeStretches, mains, markDone/streetComplete on the created route, saved-pack mains) follows the full name; DISPLAY reads (panel/preview row text, search text) still match the short form, and the photo-import fixtures' authored keys (the envelope's 'Bordeaux') are unchanged - the import keeps the file's own keys. Ship-gate completion (2026-11-07 night): the J-section fixture-street reads ('Faraway Avenue', 'Farfaraway Avenue', 'Edgewater Avenue', 'Crosscell Avenue', incl. the crPending key) and P1's saved-key expectation were missed by the first repair pass and are full-name now; the first local run exposed them as 6 failures + ~150 s of dead polls (TEST, flake log).
 import fs from 'node:fs';
 import path from 'node:path';
@@ -111,6 +112,7 @@ const candidate = FIXDATA.candidate;
 fs.writeFileSync('/tmp/d150-candidate.json', JSON.stringify(candidate));
 const envelope = { name: 'Envelope Route', area: 'Vaughan', mains: ['Bordeaux'], roads: { Bordeaux: [elsByName['Bordeaux Drive'][0].geometry.map(g => [g.lat, g.lon])], Alderson: [elsByName['Alderson Avenue'][0].geometry.map(g => [g.lat, g.lon])] } };
 fs.writeFileSync('/tmp/d150-envelope.json', JSON.stringify(envelope));
+const CAND_N = Object.keys(candidate).length; // premise derivation (Tranche 4 / T2, 2026-11-08): expectations about the shipped world derive from source - see pack-expect.mjs (the candidate's street count derives from the candidate fixture itself)
 const candLen = Object.values(candidate).reduce((a, segs) => a + segs.reduce((b, s) => b + wayLen(s.map(p => ({ lat: p[0], lon: p[1] }))), 0), 0);
 
 const installStub = `(() => {
@@ -186,7 +188,7 @@ await ev(`markDone('Velmar', 'drive150')`);
 await ev(`setNoteText('Velmar', 'drive150 baseline')`);
 const D0 = await ev(dump5wSrc);
 const G0 = await J(`({ names: STREETNAMES.slice(), totals: Object.fromEntries(Object.entries(STRETCH).map(([n, s]) => [n, Math.round(s.total)])) })`);
-ok('setup: 5W loaded with baseline work (Velmar done + note) and the fixture stub installed', G0.names.length === 34);
+ok('setup: 5W loaded with baseline work (Velmar done + note) and the fixture stub installed', G0.names.length === PACK5W.names);
 
 // ---------- (a) manual door end-to-end ----------
 await ev(`openRouteMenu()`);
@@ -362,7 +364,7 @@ await poll(`typeof creating !== 'undefined' && creating === true && crStage === 
 let C3 = await J(`({ creating, stage: crStage, streets: draft ? Object.keys(draft.roads).length : -1, rows: document.querySelectorAll('#pvList .crRow').length, total: draft ? Math.round(Object.values(computeStretches(draft.roads)).reduce((a, s) => a + s.total, 0)) : -1 })`);
 if (!C3.creating) { await ev(`document.getElementById('crDraftFile').dispatchEvent(new Event('change'))`); await poll(`typeof creating !== 'undefined' && creating === true`, 10000); C3 = await J(`({ creating, stage: crStage, streets: draft ? Object.keys(draft.roads).length : -1, rows: document.querySelectorAll('#pvList .crRow').length, total: draft ? Math.round(Object.values(computeStretches(draft.roads)).reduce((a, s) => a + s.total, 0)) : -1 })`); }
 ok('C3 the sandbox candidate draft (bare roads shape) imports into the preview with all 34 streets, total length matching the candidate (' + Math.round(candLen) + ' m) within 1% | ' + JSON.stringify(C3),
-  C3.creating && C3.stage === 'preview' && C3.streets === 34 && C3.rows === 34 && Math.abs(C3.total - candLen) <= candLen * 0.01);
+  C3.creating && C3.stage === 'preview' && C3.streets === CAND_N && C3.rows === CAND_N && Math.abs(C3.total - candLen) <= candLen * 0.01);
 await ev(`document.getElementById('pvStartOverBtn').click()`);
 await ev(`document.getElementById('crModalYes').click()`);
 const C4 = await J(`({ creating, doors: document.getElementById('rmCreatePane').classList.contains('on') })`);

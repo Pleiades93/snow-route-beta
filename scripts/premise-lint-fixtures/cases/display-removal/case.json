@@ -1,0 +1,8 @@
+{
+  "name": "display-removal",
+  "comment": "A plain display literal removed: base mode flags it exactly as before the key mode existed.",
+  "runs": [
+    { "keys": false, "expect_contains": ["premise-lint: 1 premise flag(s)", "'Finish route'  asserted by: drive998.mjs"], "expect_absent": [] },
+    { "keys": true, "expect_contains": ["premise-lint: 1 premise flag(s)", "'Finish route'  asserted by: drive998.mjs"], "expect_absent": ["key premise flag(s) -"] }
+  ]
+}

@@ -1,4 +1,5 @@
 import { launchDrive, bootThrough, finish } from './harness.mjs';
+import { PACK5W } from './pack-expect.mjs'; // premise derivation (Tranche 4 / T2, 2026-11-08): expectations about the shipped world derive from source - see pack-expect.mjs
 import fs from 'node:fs';
 const { proc, send, S, ev, consoleLog, sleep, poll } = await launchDrive();
 
@@ -115,7 +116,7 @@ await poll(`!document.getElementById('splash')`, 20000);
 await poll(`typeof map === 'undefined' || !map || !map.isMoving()`, 25000);
 await ev(installStub);
 const SETUP = await J(`({ names: STREETNAMES.slice() })`);
-ok('setup: 5W loaded and the fixture stub installed', SETUP.names.length === 34);
+ok('setup: 5W loaded and the fixture stub installed', SETUP.names.length === PACK5W.names);
 
 const JDATA = (() => {
   const byId = {};

@@ -1,4 +1,5 @@
 import { launchDrive, finish, bootThrough } from './harness.mjs';
+import { PACK5W } from './pack-expect.mjs'; // premise derivation (Tranche 4 / T2, 2026-11-08): expectations about the shipped world derive from source - see pack-expect.mjs
 const { proc, ev, consoleLog, sleep, poll } = await launchDrive();
 await bootThrough(ev, poll); // Beta 1.76: boots end at the route menu now - click through to a loaded route
 
@@ -17,7 +18,7 @@ await sleep(3000);
 await seedReload({ 'snowroute.5w.v2': '["constructor","Velmar"]', 'snowroute.5w.v2.times': '{"Velmar":"2026-01-05T12:00:00.000Z","constructor":"2026-01-05T12:00:00.000Z"}' });
 let A = JSON.parse(await ev(`(() => JSON.stringify({ n: doneSet.size, hdr: $('count').textContent, tc: Object.keys(doneTimes).length }))()`));
 ok('SEC-3 doneSet excludes "constructor" (size 1)', A.n === 1);
-ok('SEC-3 header reads 1 of 34', /1 of 34/.test(A.hdr));
+ok('SEC-3 header reads 1 of 34', A.hdr.includes('1 of ' + PACK5W.names));
 ok('SEC-3 doneTimes excludes "constructor"', A.tc === 1);
 // P2 SEC-9b: numeric time is dropped
 await seedReload({ 'snowroute.5w.v2': '["Velmar"]', 'snowroute.5w.v2.times': '{"Velmar": 12345}' });
