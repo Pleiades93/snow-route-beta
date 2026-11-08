@@ -1,4 +1,4 @@
-import { launchDrive, bootThrough, finish } from './harness.mjs';
+import { launchDrive, bootThrough, finish, resetRoute } from './harness.mjs';
 import { PACK5W } from './pack-expect.mjs'; // premise derivation (Tranche 4 / T2, 2026-11-08): expectations about the shipped world derive from source - see pack-expect.mjs
 // Beta 1.144 TEST-PREMISE UPDATE (Package C, DA-04): the create draft and the packs it saves now key streets by their FULL map name ('Bordeaux Drive', 'Alderson Avenue'); through 1.143 they keyed on the shortened name. Every key read in this drive (draft.roads, computeStretches, mains, markDone/streetComplete on the created route, saved-pack mains) follows the full name; DISPLAY reads (panel/preview row text, search text) still match the short form, and the photo-import fixtures' authored keys (the envelope's 'Bordeaux') are unchanged - the import keeps the file's own keys. Ship-gate completion (2026-11-07 night): the J-section fixture-street reads ('Faraway Avenue', 'Farfaraway Avenue', 'Edgewater Avenue', 'Crosscell Avenue', incl. the crPending key) and P1's saved-key expectation were missed by the first repair pass and are full-name now; the first local run exposed them as 6 failures + ~150 s of dead polls (TEST, flake log).
 import fs from 'node:fs';
@@ -218,7 +218,7 @@ ok('A2c (Beta 1.121, whole-city amendment) picking the city started its whole-ci
   A2c.state === 'ready' && A2c.cov && A2c.names.join() === 'Alderson Avenue,Bordeaux Drive');
 await ev(installFeatureStub);
 await ev(tapNothing);
-await sleep(400);
+await poll(`document.getElementById('toast').textContent.indexOf('No road there') >= 0`, 10000); // T4: poll the terminal state A2b asserts (the no-road toast)
 const A2b = await J(`({ toast: document.getElementById('toast').textContent, streets: draft ? Object.keys(draft.roads).length : -1 })`);
 ok('A2b a tap with no road feature under it says so and adds nothing | toast: ' + A2b.toast, A2b.toast.indexOf('No road there') >= 0 && A2b.streets === 0);
 await ev(tapStreet('Bordeaux Drive'));
@@ -354,7 +354,7 @@ let C1 = await J(`({ wait: document.getElementById('crPhotoWait').style.display 
 if (!C1.wait) { await ev(`document.getElementById('crPhotoFile').dispatchEvent(new Event('change'))`); await sleep(500); C1 = await J(`({ wait: document.getElementById('crPhotoWait').style.display !== 'none', name: document.getElementById('crPhotoName').textContent, copy: document.getElementById('crPhotoWait').textContent.indexOf('your draft is being built') >= 0 })`); }
 ok('C1 picking a photo lands in the honest waiting state (photo named, "your draft is being built")', C1.wait && C1.name === 'd150-photo.png' && C1.copy);
 await setFile('#crDraftFile', '/tmp/d150-bad.json');
-await sleep(600);
+await poll(`document.getElementById('toast').textContent.indexOf('could not be read') >= 0`, 10000); // T4: poll the terminal state C2 asserts (the named error toast)
 let C2 = await J(`({ creating, draft: draft === null, toast: document.getElementById('toast').textContent })`);
 if (!C2.toast) { await ev(`document.getElementById('crDraftFile').dispatchEvent(new Event('change'))`); await sleep(600); C2 = await J(`({ creating, draft: draft === null, toast: document.getElementById('toast').textContent })`); }
 ok('C2 a MALFORMED draft file fails closed: named error toast, no create mode, no draft | toast: ' + C2.toast,
@@ -401,7 +401,7 @@ const bak = await ev(`buildBackup()`);
 const bakObj = JSON.parse(bak);
 ok('D2 the backup carries the created route\'s definition (userpacks) and its route state',
   !!bakObj.userpacks && !!bakObj.userpacks['route-6w'] && Object.keys(bakObj.userpacks['route-6w'].roads).length === 2 && !!bakObj.routes['route-6w']);
-await ev(`localStorage.clear()`);
+await resetRoute(ev, '5w'); await resetRoute(ev, 'route-6w', ['snowroute.v2.userpacks']); // T7: scoped reset - D3 owns both routes' slots + the created-routes record, nothing else (premise statement in INVENTORY-T47.md)
 const origin1 = await ev(`performance.timeOrigin`);
 await ev(`location.reload()`);
 await sleep(1200);

@@ -91,7 +91,7 @@ await tapById(ev, 'setClose'); await sleep(400);
 // the Settings takeover it was launched from.
 await tapById(ev, 'setBtn'); await sleep(500);
 await tapById(ev, 'exportBtn'); await sleep(400);
-await ev(`(() => { document.getElementById('xText').value = 'not json'; doRestore(); return true; })()`); await sleep(300);
+await ev(`(() => { document.getElementById('xText').value = 'not json'; doRestore(); return true; })()`); await waitTrue(poll, `$('toast').classList.contains('show') && $('toast').textContent.length > 0`, 10000); // T4: poll the terminal state F03 asserts (the rejection toast shown with text)
 const F03 = JSON.parse(await ev(`(() => { const t = $('toast'); return JSON.stringify({ show: t.classList.contains('show'), z: +getComputedStyle(t).zIndex, menuZ: +getComputedStyle($('setMenu')).zIndex, txt: t.textContent }); })()`));
 ok('F03 a restore rejection is visible from inside Settings (the toast rides above the takeover) | ' + JSON.stringify(F03), F03.show === true && F03.z > F03.menuZ && F03.txt.length > 0);
 await tapById(ev, 'setClose'); await sleep(400);
@@ -148,7 +148,7 @@ ok('T4 night menus share the neutral charcoal (bar = sheets), text bright (Beta 
 const PL2 = JSON.parse(await ev(`(() => { const byId = {}; for (const L of map.getStyle().layers) byId[L.id] = { mn: L.minzoom, mx: L.maxzoom }; return JSON.stringify({ sub: byId['places_subplace'], loc: byId['places_locality'] }); })()`));
 ok('P2 night map too: same Protomaps ladder (subplace 9, locality capped 15.5) | ' + JSON.stringify(PL2),
   !!PL2.sub && PL2.sub.mn === 9 && !!PL2.loc && PL2.loc.mx === 15.5);
-await ev(`(() => { markDone('Woolacott', 'tap'); selectStretch('Woolacott', 0, STRETCH.Woolacott.line[3]); return true; })()`); await sleep(300);
+await ev(`(() => { markDone('Woolacott', 'tap'); selectStretch('Woolacott', 0, STRETCH.Woolacott.line[3]); return true; })()`); await waitTrue(poll, `getComputedStyle($('selPop')).boxShadow.includes('6, 214, 160')`, 10000); // T4: poll the terminal state P4 asserts (the mint colour edge computed on the popup)
 const NAC = await ev(`getComputedStyle($('selPop')).boxShadow`);
 ok('P4 the colour edge survives the night theme (mint for the completed Woolacott) | ' + NAC, NAC.includes('6, 214, 160'));
 await ev(`(() => { markUndone('Woolacott'); deselect(); return true; })()`);
@@ -175,7 +175,7 @@ await tapById(ev, 'cancelStartBtn');
 await sleep(400);
 
 await markDoneScn(ev, 'Woolacott', 'tap');
-await sleep(400);
+await waitTrue(poll, `$('count').textContent.indexOf('1 of ') === 0`, 10000); // T4: poll the terminal state S5 asserts (the count in the new format)
 const C2 = await ev(`$('count').textContent`);
 ok('S5 count climbs in the new format after a street is done | ' + C2, new RegExp('^1 of ' + PACK5W.names + ' · \\d+%$').test(C2));
 await sleep(600);

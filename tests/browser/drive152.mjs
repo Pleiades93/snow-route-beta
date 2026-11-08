@@ -226,7 +226,7 @@ const k1Flying = await poll(`!!(typeof crGrid !== 'undefined' && crGrid && crGri
 const abK1a = await ev(`window.__jAborted`);
 await ev(`window.__jDelayMs = 0`); // the fallback answers at once; the grid's in-flight requests keep their 6 s
 await ev(`crStartPrep({ lat: 43.9, lng: -79.56 })`); // an anchor outside the city: the fallback box, started MID-GRID-LOAD
-await sleep(600);
+await poll(`!!(typeof crGrid !== 'undefined' && crGrid && crGrid.stopped) && crGrid.cells.filter(c => c.state === 'fetching').length === 0 && window.__jAborted > ${abK1a}`, 10000); // T4: poll the terminal state K1a asserts (grid stopped, no cell fetching, aborts landed)
 const K1mid = await J(`({ aborted: window.__jAborted, fetching: crGrid ? crGrid.cells.filter(c => c.state === 'fetching').length : -1, stopped: crGrid && crGrid.stopped })`);
 ok('K1a (fallback mid-grid, CG-PF-13) starting the fallback STOPS the grid: its downloads are aborted (aborts ' + abK1a + ' -> ' + K1mid.aborted + ') and NO cell is left in the fetching state (orphaned cells: ' + K1mid.fetching + ', grid stop: ' + K1mid.stopped + ') | grid was flying: ' + k1Flying,
   k1Flying === true && K1mid.aborted > abK1a && K1mid.fetching === 0);
@@ -265,7 +265,7 @@ ok('K2a (one failed cell) the grid settles DEGRADED with the missing part disclo
   k2Deg === true && K2a.failed === 1 && K2a.done === 3 && K2a.hint.indexOf('loaded except 1 part') >= 0 && K2a.btn === 'Retry missing parts');
 await ev(`crStartPrep({ lat: 43.9, lng: -79.56 })`); // the fallback box, outside the city - it lands successfully
 const k2Box = await poll(`!!(crCov && crCov.boxes.some(b => 43.9 >= b.s && 43.9 <= b.n && -79.56 >= b.w && -79.56 <= b.e))`, 20000).catch(() => false);
-await sleep(300);
+await poll(`typeof crPrepState !== 'undefined' && crPrepState === 'degraded' && !!crGrid && crGrid.cells.filter(c => c.state === 'failed').length === 1`, 10000); // T4: poll the terminal state K2b asserts (settled DEGRADED with the one failed cell counted)
 const K2b = await J(`({ state: crPrepState, failed: crGrid ? crGrid.cells.filter(c => c.state === 'failed').length : -1, hint: document.getElementById('createHint').textContent, btn: document.getElementById('crHintBtn').textContent })`);
 ok('K2b (fallback over a failed cell, CG-PF-14) the fallback box landed (' + k2Box + ') but the city is NOT promoted to ready: the settled state still counts the failed cell - DEGRADED, the missing part still disclosed, Retry missing parts still offered | ' + JSON.stringify(K2b),
   k2Box === true && K2b.state === 'degraded' && K2b.failed === 1 && K2b.hint.indexOf('loaded except 1 part') >= 0 && K2b.btn === 'Retry missing parts');

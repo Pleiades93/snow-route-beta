@@ -23,14 +23,14 @@ ok('S1 splash is the first thing on screen (icon blue, its own name, icon AT RES
 ok('S1b during boot the app chrome is absent from the paint (Beta 1.86: boot is a state of the app, not a lid over it) | tabBar ' + (await ev(`getComputedStyle(document.getElementById('tabBar')).display`)) + ' hud ' + (await ev(`getComputedStyle(document.getElementById('hud')).display`)), (await ev(`getComputedStyle(document.getElementById('tabBar')).display`)) === 'none' && (await ev(`getComputedStyle(document.getElementById('hud')).display`)) === 'none');
 ok('S2 splash hands over to the route menu once the app is ready (never traps the user in the brand animation)', await waitTrue(poll, `(function(){ var sp = document.getElementById('splash'); return !!sp && sp.classList.contains('menu'); })()`, 15000));
 await tapById(ev, 'rmChoose');
-await sleep(450);
+await waitTrue(poll, `!!document.querySelector('#rmRoutes .routeRow')`, 10000); // T4: poll the terminal state the next step needs (the route row rendered)
 await tapSelector(ev, '#rmRoutes .routeRow');
 const gone132 = await waitAbsent(poll, 'splash', 15000);
 await sleep(1600);
 ok('S3 picking a route removes the splash and it never comes back (removed, not hidden)', gone132 && (await expectStrict(ev, `!document.getElementById('splash')`)));
 const before = await ev(`isNight()`);
 await tapById(ev, 'nightBtn');
-await sleep(400);
+await waitTrue(poll, `isNight() !== ${before}`, 10000); // T4: poll the terminal state S4 asserts (the night state flipped)
 ok('S4 the app answers taps normally after the splash | night ' + before + ' -> ' + (await ev(`isNight()`)), (await ev(`isNight()`)) !== before);
 const gateGap = await ev(`(window.__bootAt || 0) - (window.__tailAt || 0)`);
 ok('S5 the heavy boot waited for the intro (map created ' + gateGap + 'ms after the boot was scheduled, gate is ~900ms+) | gap ' + gateGap, gateGap >= 700);

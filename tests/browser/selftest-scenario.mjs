@@ -24,7 +24,12 @@
 // page. A layer that cannot fail is not a layer (the test-change
 // rule) - if a fixture here cannot pass without weakening the
 // semantics, the layer does not ship.
-import { launchDrive, bootThrough, tapById, tapSelector, expectVisible, expectText, expectStrict, markDone, markUndone, waitTrue, waitAbsent, pinDayTheme } from './harness.mjs';
+// Fixture 6 (T4/T7, Tranche 4) proves the scoped reset helper:
+// resetRoute deletes exactly the keys routeKeys(id) returns for the
+// owned route (the fixture reads routeKeys itself and compares the
+// removed set), leaves a sentinel global key and another route's
+// keys intact, takes named extras, and no-ops on an unseeded route.
+import { launchDrive, bootThrough, tapById, tapSelector, expectVisible, expectText, expectStrict, markDone, markUndone, waitTrue, waitAbsent, pinDayTheme, resetRoute } from './harness.mjs';
 
 let failures = 0;
 const check = (name, cond) => { console.log(`${cond ? 'PASS' : 'FAIL'} ${name}`); if (!cond) failures++; };
@@ -89,6 +94,28 @@ try {
   check("fixture 5 (strict boolean): truthy 'yes' records as FAILURE under drive ok() semantics", R.checks[1][1] === false);
   check('fixture 5 (strict boolean): truthy array records as FAILURE under drive ok() semantics', R.checks[2][1] === false);
   check('fixture 5 (strict boolean): literal true records as a pass', R.checks[3][1] === true);
+
+  // ---- fixture 6: scoped reset (T4/T7, Tranche 4) ----
+  // The reset helper must delete EXACTLY the keys routeKeys(id) names for
+  // the owned route — derived page-side from the app's own scheme, never a
+  // copied list — and nothing else: a sentinel global key and another
+  // route's keys survive. The fixture reads routeKeys itself and compares
+  // the removed set, so a hard-coded list in the helper fails here the day
+  // the app's scheme changes. Runs last: it wipes the 5w slot the earlier
+  // fixtures exercised.
+  await ev(`(() => { for (const k of Object.values(routeKeys('5w'))) localStorage.setItem(k, 't47-seed'); for (const k of Object.values(routeKeys('fxreset'))) localStorage.setItem(k, 't47-other'); localStorage.setItem('t47-sentinel', 'keep'); localStorage.setItem('t47-extra', 'x'); return true; })()`);
+  const expected47 = await ev(`JSON.stringify(Object.values(routeKeys('5w')))`);
+  const removed47 = await resetRoute(ev, '5w');
+  check('fixture 6 (scoped reset): the deletion set is whatever routeKeys(id) returns', JSON.stringify(removed47) === expected47);
+  check('fixture 6 (scoped reset): the owned route keys are gone', (await ev(`Object.values(routeKeys('5w')).every(k => localStorage.getItem(k) === null)`)) === true);
+  check('fixture 6 (scoped reset): the sentinel global key is intact', (await ev(`localStorage.getItem('t47-sentinel')`)) === 'keep');
+  check('fixture 6 (scoped reset): the other route keys are intact', (await ev(`Object.values(routeKeys('fxreset')).every(k => localStorage.getItem(k) === 't47-other')`)) === true);
+  const expected47x = await ev(`JSON.stringify(Object.values(routeKeys('fxreset')).concat(['t47-extra']))`);
+  const removed47x = await resetRoute(ev, 'fxreset', ['t47-extra']);
+  check('fixture 6 (scoped reset): named extras join the deletion set', JSON.stringify(removed47x) === expected47x && (await ev(`localStorage.getItem('t47-extra')`)) === null);
+  const removed47n = await resetRoute(ev, 't47-never-seeded');
+  check('fixture 6 (scoped reset): a route with no keys is a no-op success', Array.isArray(removed47n) && removed47n.length > 0 && (await ev(`localStorage.getItem('t47-sentinel')`)) === 'keep');
+  await ev(`(() => { localStorage.removeItem('t47-sentinel'); return true; })()`);
 } finally {
   try { proc.kill('SIGKILL'); } catch {}
 }
