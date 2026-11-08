@@ -1,4 +1,5 @@
 import { spawn } from 'node:child_process';
+// Beta 1.144 TEST-PREMISE UPDATE (Package C, DA-04): draft keys and sector state use the FULL map name now ('Long Road'); key reads below follow; display text still uses the short form.
 import fs from 'node:fs';
 import http from 'node:http';
 import path from 'node:path';
@@ -132,7 +133,7 @@ const enterPickWithExtract = async () => {
   await ev2(`crCovMerge(${JSON.stringify(ELEMENTS)}, ${JSON.stringify(COV_BOX)}); crPrepState = 'ready'; crRenderHint(); true`);
   return await poll(`typeof creating !== 'undefined' && creating === true && crStage === 'pick' && !!crCov`, 10000);
 };
-const rowClick = async () => { await ev2(`(() => { const r = document.querySelector('#crPickList .crPRow'); if (r) r.click(); return true; })()`); return await poll(`crSectorStreet === 'Long'`, 10000); };
+const rowClick = async () => { await ev2(`(() => { const r = document.querySelector('#crPickList .crPRow'); if (r) r.click(); return true; })()`); return await poll(`crSectorStreet === 'Long Road'`, 10000); };
 const clickCancel = async () => await J(`(() => { const b = document.getElementById('crSbCancel'); if (!b) return { exists: false }; const lbl = b.textContent; b.click(); return { exists: true, lbl }; })()`);
 const rowSub = async () => await J(`(() => { const r = document.querySelector('#crPickList .crPRow'); return r ? (r.querySelector('.crPSub') || {}).textContent || '' : ''; })()`);
 const settled = async () => await poll(`(typeof crMorph === 'undefined' || crMorph === null) && document.getElementById('createSheet').style.height === ''`, 12000);
@@ -145,16 +146,16 @@ await ev2(`(() => { setThemeOverride(false); applyNight(); return true; })()`); 
 // ================= A: sector Cancel =================
 const inA = await enterPickWithExtract();
 await ev2(`pickStreet('Long Road', { lat: 43.8, lng: -79.574 })`);
-await poll(`draft && !!draft.roads['Long']`, 10000);
+await poll(`draft && !!draft.roads['Long Road']`, 10000);
 // A1: trim this session, Cancel -> the whole road returns
 const openA1 = await rowClick();
 await ev2(`crSectorTap({ lat: 43.8, lng: -79.578 })`); // part 0 off
 await ev2(`crSectorTap({ lat: 43.8, lng: -79.562 })`); // part 4 off
-const trimA1 = await poll(`!!draft.sectors['Long'] && draft.sectors['Long'].length === 3`, 10000);
+const trimA1 = await poll(`!!draft.sectors['Long Road'] && draft.sectors['Long Road'].length === 3`, 10000);
 const ccA1 = await clickCancel();
 const outA1 = await poll(`crSectorStreet === null`, 10000);
 await settled();
-const stA1 = await J(`({ sec: draft.sectors['Long'], mode: crSectorStreet, panel: getComputedStyle(document.getElementById('crPanel')).display, chosen: Math.round(crStreetChosenM('Long', computeStretches(draft.roads))) })`);
+const stA1 = await J(`({ sec: draft.sectors['Long Road'], mode: crSectorStreet, panel: getComputedStyle(document.getElementById('crPanel')).display, chosen: Math.round(crStreetChosenM('Long Road', computeStretches(draft.roads))) })`);
 const subA1 = await rowSub();
 ok('A1 CANCEL RESTORES THE ENTIRE ROAD: entered via the row, trimmed the two end sectors ([1,2,3]), Cancel restores the entry snapshot - no sector entry, the chosen length is the whole ~1,608 m again, the row reads "Entire road", sector mode closed and the panel is back | opened: ' + openA1 + ', trimmed: ' + trimA1 + ', cancel btn: ' + JSON.stringify(ccA1) + ', out: ' + outA1 + ' | ' + JSON.stringify(stA1) + ' | ' + subA1,
   inA === true && openA1 === true && trimA1 === true && ccA1.exists === true && ccA1.lbl === 'Cancel' && outA1 === true && stA1.sec === undefined && Math.abs(stA1.chosen - 1608) <= 4 && stA1.panel !== 'none' && subA1.indexOf('Entire road') === 0);
@@ -162,28 +163,28 @@ ok('A1 CANCEL RESTORES THE ENTIRE ROAD: entered via the row, trimmed the two end
 await rowClick();
 await ev2(`crSectorTap({ lat: 43.8, lng: -79.578 })`);
 await ev2(`crSectorTap({ lat: 43.8, lng: -79.562 })`);
-await poll(`!!draft.sectors['Long'] && draft.sectors['Long'].length === 3`, 10000);
+await poll(`!!draft.sectors['Long Road'] && draft.sectors['Long Road'].length === 3`, 10000);
 await ev2(`document.getElementById('crSbDone').click()`);
 await poll(`crSectorStreet === null`, 10000);
 await settled();
 const openA2 = await rowClick(); // snapshot is now [1,2,3]
 await ev2(`crSectorTap({ lat: 43.8, lng: -79.574 })`); // part 1 off -> [2,3]
-const trimA2 = await poll(`!!draft.sectors['Long'] && draft.sectors['Long'].length === 2`, 10000);
+const trimA2 = await poll(`!!draft.sectors['Long Road'] && draft.sectors['Long Road'].length === 2`, 10000);
 await clickCancel();
 const outA2 = await poll(`crSectorStreet === null`, 10000);
 await settled();
-const stA2 = await J(`({ sel: draft.sectors['Long'], chosen: Math.round(crStreetChosenM('Long', computeStretches(draft.roads))) })`);
+const stA2 = await J(`({ sel: draft.sectors['Long Road'], chosen: Math.round(crStreetChosenM('Long Road', computeStretches(draft.roads))) })`);
 const subA2 = await rowSub();
 ok('A2 CANCEL RESTORES THE ENTRY TRIM, NOT THE ENTIRE ROAD: with [1,2,3] already saved by Done, re-entering and un-picking part 1 ([2,3]) then Cancel brings back exactly [1,2,3] - ~964 m, the row again reads "3 of 5 sectors" | opened: ' + openA2 + ', trimmed: ' + trimA2 + ', out: ' + outA2 + ' | ' + JSON.stringify(stA2) + ' | ' + subA2,
   openA2 === true && trimA2 === true && outA2 === true && JSON.stringify(stA2.sel) === '[1,2,3]' && Math.abs(stA2.chosen - 964) <= 8 && subA2.indexOf('3 of 5 sectors') === 0);
 // A3: Done keeps the session's trims
 await rowClick();
 await ev2(`crSectorTap({ lat: 43.8, lng: -79.566 })`); // part 3 off -> [1,2]
-const trimA3 = await poll(`!!draft.sectors['Long'] && draft.sectors['Long'].length === 2`, 10000);
+const trimA3 = await poll(`!!draft.sectors['Long Road'] && draft.sectors['Long Road'].length === 2`, 10000);
 await ev2(`document.getElementById('crSbDone').click()`);
 const outA3 = await poll(`crSectorStreet === null`, 10000);
 await settled();
-const stA3 = await J(`({ sel: draft.sectors['Long'] })`);
+const stA3 = await J(`({ sel: draft.sectors['Long Road'] })`);
 ok('A3 DONE KEEPS THE TRIMS: un-picking part 3 inside the session and pressing Done leaves the selection at [1,2] - Done and Cancel are different doors | trimmed: ' + trimA3 + ', out: ' + outA3 + ' | ' + JSON.stringify(stA3),
   trimA3 === true && outA3 === true && JSON.stringify(stA3.sel) === '[1,2]');
 // A4: the MAP door snapshots too
@@ -198,14 +199,14 @@ await ev2(`(() => { // drive157's tap-seam stub: a box query names Long Road und
   return true;
 })()`);
 await ev2(`crMapTap({ point: { x: 210, y: 450 }, lngLat: { lat: 43.8, lng: -79.574 } })`);
-const openA4 = await poll(`crSectorStreet === 'Long'`, 10000);
+const openA4 = await poll(`crSectorStreet === 'Long Road'`, 10000);
 await ev2(`(() => { if (map.__qrfOrig) { map.queryRenderedFeatures = map.__qrfOrig; delete map.__qrfOrig; } return true; })()`);
 await ev2(`crSectorTap({ lat: 43.8, lng: -79.574 })`); // part 1 off -> [2]
-const trimA4 = await poll(`!!draft.sectors['Long'] && draft.sectors['Long'].length === 1`, 10000);
+const trimA4 = await poll(`!!draft.sectors['Long Road'] && draft.sectors['Long Road'].length === 1`, 10000);
 await clickCancel();
 const outA4 = await poll(`crSectorStreet === null`, 10000);
 await settled();
-const stA4 = await J(`({ sel: draft.sectors['Long'] })`);
+const stA4 = await J(`({ sel: draft.sectors['Long Road'] })`);
 ok('A4 THE MAP DOOR SNAPSHOTS TOO: entering sector mode by re-tapping the picked road on the map, un-picking part 1 ([2]), then Cancel restores the entry state [1,2] - the snapshot discipline is the entry\'s, not the door\'s | opened: ' + openA4 + ', trimmed: ' + trimA4 + ', out: ' + outA4 + ' | ' + JSON.stringify(stA4),
   openA4 === true && trimA4 === true && outA4 === true && JSON.stringify(stA4.sel) === '[1,2]');
 await ev2(`exitCreate()`);
@@ -242,7 +243,7 @@ const runTransition = async (trigger) => { await ev2(`window.__animStart()`); aw
 
 const inB = await enterPickWithExtract();
 await ev2(`pickStreet('Long Road', { lat: 43.8, lng: -79.574 })`);
-await poll(`draft && !!draft.roads['Long']`, 10000);
+await poll(`draft && !!draft.roads['Long Road']`, 10000);
 await settled();
 await headTap(); await settled(); // a warm-up collapse + expand, unsampled: the first transitions after boot ride over a still-rendering map and the rig's starved rAF would grade itself, not the app
 await ev2(`document.getElementById('crReviewBtn').click()`); await settled();

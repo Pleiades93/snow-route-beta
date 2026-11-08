@@ -99,7 +99,7 @@ function nextRouteNameGuess() { let mx = 1; for (const p of ROUTE_PACKS) { const
 
 // ---- draft state: session only (not a route, not in any slot) ----
 let creating = false, crStage = 'pick', crBootParked = false, crAreaGuess = '', crPhoto = null, crPickBusy = false; // Beta 1.128: crReturnToPreview is GONE - it existed only to rewrite the panel's Done label on the return-from-preview errand, and the label no longer rewrites (Andrew: the button reads "Done", always)
-let draft = null; // { roads, mains: Set, osmNames: {short: full}, tileNames: [..], name, area, sectors: {short: [chosen part indexes]} (Beta 1.127 - an ABSENT entry means the whole road), parts: {short: crStreetParts record} (session cache) }
+let draft = null; // { roads, mains: Set, osmNames, tileNames: [..], name, area, sectors, parts } - EVERY street key is the FULL map name (Beta 1.144, DA-04; osmNames maps a key to itself for tapped streets and stays empty for imported ones, whose pack keys are their own); sectors: {name: [chosen part indexes]} (Beta 1.127 - an ABSENT entry means the whole road), parts: {name: crStreetParts record} (session cache)
 function newDraft() { return { roads: {}, mains: new Set(), osmNames: {}, tileNames: [], name: '', area: '', sectors: {}, parts: {} }; }
 let crSectorStreet = null; // Beta 1.127: the street whose sectors are being trimmed (sector mode), or null
 let crSectorSnapshot = undefined; // Beta 1.129: the street's sector pick as it stood when sector mode was ENTERED (null = the whole road; an array = the trim then in force) - the sector bar's Cancel restores exactly this. undefined = no sector session in flight
@@ -147,8 +147,8 @@ let crPrepState = 'none'; // 'none' | 'preparing' | 'ready' | 'degraded' | 'fail
 let crPrepFail = null; // { kind: 'unreachable' | 'error' | 'dense' | 'badjson', status?, remark? }
 let crFailFromGrid = false; // which preparation produced crPrepFail - the Retry button resumes a failed GRID's missing cells but re-runs a failed fallback BOX at its anchor; the two must never be confused when both exist
 let crPrepAnchor = null; // where Retry / a not-ready tap re-prepares
-let crPending = {}; // short name -> { osmName, lngLat }: streets whose full shape reaches beyond verified coverage (fail-closed) - listed as pending, NEVER added half-known
-let crToppedUp = {}; // '<short>@<gen>' -> true: a street's ONE top-up per coverage generation is spent
+let crPending = {}; // full map name -> { osmName, lngLat }: streets whose full shape reaches beyond verified coverage (fail-closed) - listed as pending, NEVER added half-known
+let crToppedUp = {}; // '<full name>@<gen>' -> true: a street's ONE top-up per coverage generation is spent
 let crCityReturn = 'doors'; // where the city pane's Back lands
 function crBoxAround(lat, lng, halfKm) { const dLat = halfKm * 1000 / MLAT, dLng = halfKm * 1000 / MLNG; return { s: +(lat - dLat).toFixed(6), n: +(lat + dLat).toFixed(6), w: +(lng - dLng).toFixed(6), e: +(lng + dLng).toFixed(6) }; }
 function crInBox(box, lat, lng) { return !!box && lat >= box.s && lat <= box.n && lng >= box.w && lng <= box.e; }
@@ -392,7 +392,7 @@ function crSweepPending() { // a fresh extract may complete streets that were pe
   for (const pk of Object.keys(crPending)) {
     const p = crPending[pk]; if (!p) continue;
     const res = crResolve(p.osmName, p.lngLat);
-    if (res.status === 'ok') crAddStreet(pk, p.osmName, res.segs);
+    if (res.status === 'ok') { if (draft && draft.roads[pk]) { delete crPending[pk]; crAddRun(pk, res.segs); } else crAddStreet(pk, res.segs); } // Beta 1.144 (OPT-L1): a swept street that meanwhile entered the draft gains the resolved shape as a further run of the same entry, never an overwrite
   }
 }
 // ---- the city grid + the persistent city cache (second amendment) ----
@@ -658,67 +658,93 @@ function crRenderHint() { // the ONE writer of the pick-stage hint + its action 
   if (btnLabel) { btn.textContent = btnLabel; btn.style.display = ''; } else btn.style.display = 'none';
   const cc = $('crCityChange'); if (cc) { if (crCity) { cc.textContent = 'City: ' + crCity.name + ' — change'; cc.style.display = ''; } else cc.style.display = 'none'; }
 }
-function crAddStreet(short, osmName, segs) {
-  draft.roads[short] = segs; draft.osmNames[short] = osmName; crGeomGen++; // a tapped street joins as a SECONDARY (fork 3) - flip it to MAIN in the list if it is one. Beta 1.135 (N3): the generation bump is the draft-geometry cache's invalidation for this in-place join (see crDraftGeom)
-  delete crPending[short];
+function crAddStreet(name, segs) { // Beta 1.144 (Package C, DA-04): the draft keys on the FULL map name - through 1.143 the key was shortStreetName(osmName), so two distinct streets sharing a shortened name (Addington Avenue / Addington Place) collided: only the first could ever enter a draft, and tapping the second opened the first's sectors. shortStreetName survives ONLY as the display form (toasts, rows, the sector bar's title); every key in the draft - roads, mains, sectors, parts, pending - is the full name, and the saved pack inherits the full names, so both streets can live in one route.
+  draft.roads[name] = segs; draft.osmNames[name] = name; crGeomGen++; // a tapped street joins as a SECONDARY (fork 3) - flip it to MAIN in the list if it is one. Beta 1.135 (N3): the generation bump is the draft-geometry cache's invalidation for this in-place join (see crDraftGeom)
+  delete crPending[name];
   renderDraft(); renderCrLists(); crRenderHint();
-  toast('Added ' + short, 1800);
+  toast('Added ' + shortStreetName(name), 1800);
 }
-function crRemoveStreet(short) { // Beta 1.127: the ONE removal path - the panel's x, the preview's x and Clear all land here (Beta 1.128: those are the ONLY doors; a map tap on a picked street opens its sectors instead), so a street leaves with ALL of its draft state (geometry, main flag, names, sector pick, cached parts) and every face re-renders from the same state
-  if (!draft || !draft.roads[short]) return;
-  delete draft.roads[short]; draft.mains.delete(short); delete draft.osmNames[short]; crGeomGen++; // Beta 1.135 (N3): the removal invalidates the shared draft geometry (see crDraftGeom)
-  if (draft.sectors) delete draft.sectors[short];
-  if (draft.parts) delete draft.parts[short];
-  delete crPending[short];
-  if (crSectorStreet === short) crSectorReset();
+function crRunHeld(name, segs) { // Beta 1.144 (OPT-L1): is this resolved run ALREADY part of the draft street? Segment identity is exact - a run's stored segments are the extract's way point arrays (or its stitched line when the run was bridged), and resolving the same run again reproduces them deterministically, so set membership on the serialized segments is the identity test
+  const held = new Set((draft.roads[name] || []).map(sg => JSON.stringify(sg)));
+  return segs.length > 0 && segs.every(sg => held.has(JSON.stringify(sg)));
+}
+function crAddRun(name, segs) { // Beta 1.144 (OPT-L1): a further DISCONNECTED run of an already-picked street joins the SAME street entry - the segment list grows (the run's parts append after the existing runs' parts: runs form in segment order, so existing sector indexes keep their meaning), the geometry cache invalidates, and the cached sector record dies so boundaries recompute over the fuller street. A trimmed street keeps its trim AND gains the new run's parts as chosen - the tap that added the run was a pick, so its parts join the chosen set explicitly rather than falling out of the save by omission; an untrimmed street simply stays whole.
+  const before = (draft.sectors && draft.sectors[name]) ? crStreetParts(name) : null;
+  draft.roads[name] = draft.roads[name].concat(segs); crGeomGen++;
+  if (draft.parts) delete draft.parts[name];
+  if (before) {
+    const rec = crStreetParts(name);
+    if (rec) { const set = crChosenSet(name, before); for (let i = before.parts.length; i < rec.parts.length; i++) set.add(i); crSetChosen(name, rec, set); }
+  }
+  renderDraft(); renderCrLists(); crRenderHint();
+  toast('Added the other part of ' + shortStreetName(name), 2200);
+}
+function crRemoveStreet(name) { // Beta 1.127: the ONE removal path - the panel's x, the preview's x and Clear all land here (Beta 1.128: those are the ONLY doors; a map tap on a picked street opens its sectors instead), so a street leaves with ALL of its draft state (geometry, main flag, names, sector pick, cached parts) and every face re-renders from the same state
+  if (!draft || !draft.roads[name]) return;
+  delete draft.roads[name]; draft.mains.delete(name); delete draft.osmNames[name]; crGeomGen++; // Beta 1.135 (N3): the removal invalidates the shared draft geometry (see crDraftGeom)
+  if (draft.sectors) delete draft.sectors[name];
+  if (draft.parts) delete draft.parts[name];
+  delete crPending[name];
+  if (crSectorStreet === name) crSectorReset();
   renderDraft(); renderCrLists(); crRenderHint();
 }
 // ---- sectors (Beta 1.127, Andrew's approved mockups in beta1/work/create-sectors-mockups/):
 // a picked street can be trimmed to the junction-to-junction pieces he
 // actually cleans - a long road that runs past his subdivision enters
 // the route only as far as he cleans it. Sector state lives ONLY in
-// the draft (draft.sectors[short] = chosen part indexes; absent = the
+// the draft (draft.sectors[name] = chosen part indexes; absent = the
 // whole road); at Save the stored pack's roads[name] holds only the
 // chosen sectors' polylines, so the pack format is unchanged and
 // everything downstream derives from the stored geometry as always.
-function crStreetParts(short) { // the street's sectors: its stitched line cut where OTHER streets of the prepared extract meet it - computeStretches' own cut rule (4 m join tolerance, cuts merged under 15 m, no cut within 12 m of an end) with the EXTRACT as the junction set. The extract, not the draft, is the context on purpose: the pieces are the real junction-to-junction pieces, and a street's sector boundaries never move as other streets join or leave the draft. Computed once per street per draft (cached on draft.parts); vertices are bbox-prefiltered to the line's neighbourhood, so a whole city's extract costs one bounded pass per street, paid only when sector mode first opens for it.
-  if (!draft || !draft.roads[short]) return null;
+// Beta 1.144 (DA-02/C1): a street's sectors span ALL its disconnected
+// runs - the parts list is the runs' pieces concatenated in run order,
+// so non-adjacent picks (sectors 0 and 2, a middle skipped) save as
+// disconnected segments and the saved route tracks every chosen metre.
+function crStreetParts(name) { // the street's sectors: its stitched runs cut where OTHER streets of the prepared extract meet them - computeStretches' own cut rule (4 m join tolerance, cuts merged under 15 m, no cut within 12 m of an end) with the EXTRACT as the junction set. The extract, not the draft, is the context on purpose: the pieces are the real junction-to-junction pieces, and a street's sector boundaries never move as other streets join or leave the draft. Computed once per street per draft (cached on draft.parts); vertices are bbox-prefiltered to the run's neighbourhood, so a whole city's extract costs one bounded pass per run, paid only when sector mode first opens for the street. Beta 1.144: the cutting runs PER RUN (stitchRuns) and the record carries runs alongside the principal line - a single-run street's record is exactly the pre-1.144 one.
+  if (!draft || !draft.roads[name]) return null;
   draft.parts = draft.parts || {};
-  if (draft.parts[short]) return draft.parts[short];
-  const one = {}; one[short] = draft.roads[short];
-  const line = stitchLine(short, one);
-  if (!line || line.length < 2) return null;
-  const cum = [0]; for (let i = 1; i < line.length; i++) cum.push(cum[i - 1] + distM(line[i - 1], line[i]));
-  const total = cum[cum.length - 1];
-  let w = 1e9, s = 1e9, e = -1e9, n = -1e9; for (const p of line) { s = Math.min(s, p[0]); n = Math.max(n, p[0]); w = Math.min(w, p[1]); e = Math.max(e, p[1]); }
+  if (draft.parts[name]) return draft.parts[name];
+  const one = {}; one[name] = draft.roads[name];
+  const runLines = stitchRuns(name, one).filter(L => L && L.length >= 2);
+  if (!runLines.length) return null;
+  const own = draft.osmNames ? draft.osmNames[name] : null;
   const mLat = 12 / MLAT, mLng = 12 / MLNG;
-  const cuts = [];
-  if (crCov && crCov.byName) {
-    const own = draft.osmNames ? draft.osmNames[short] : null;
-    for (const nm of Object.keys(crCov.byName)) {
-      if (nm === own) continue; // the street's own ways never cut it
-      for (const wy of crCov.byName[nm]) for (const v of wy.pts) {
-        if (v[0] < s - mLat || v[0] > n + mLat || v[1] < w - mLng || v[1] > e + mLng) continue;
-        const pr = projOnLine(line, cum, v); if (pr.off <= 4) cuts.push(pr.d);
+  const parts = [], runs = [];
+  let total = 0;
+  for (const line of runLines) {
+    const cum = [0]; for (let i = 1; i < line.length; i++) cum.push(cum[i - 1] + distM(line[i - 1], line[i]));
+    const rTotal = cum[cum.length - 1];
+    let w = 1e9, s = 1e9, e = -1e9, n = -1e9; for (const p of line) { s = Math.min(s, p[0]); n = Math.max(n, p[0]); w = Math.min(w, p[1]); e = Math.max(e, p[1]); }
+    const cuts = [];
+    if (crCov && crCov.byName) {
+      for (const nm of Object.keys(crCov.byName)) {
+        if (nm === own) continue; // the street's own ways never cut it
+        for (const wy of crCov.byName[nm]) for (const v of wy.pts) {
+          if (v[0] < s - mLat || v[0] > n + mLat || v[1] < w - mLng || v[1] > e + mLng) continue;
+          const pr = projOnLine(line, cum, v); if (pr.off <= 4) cuts.push(pr.d);
+        }
       }
     }
+    const rParts = finishJunctionCuts(line, cum, rTotal, cuts); // Beta 1.131 (programme N2): the finishing policy is shared with computeStretches - see finishJunctionCuts (app1). Only the junction SOURCE differs (the prepared extract, collected above); the policy exists exactly once.
+    runs.push({ line, cum, total: rTotal, parts: rParts });
+    for (const rp of rParts) parts.push(rp);
+    total += rTotal;
   }
-  const parts = finishJunctionCuts(line, cum, total, cuts); // Beta 1.131 (programme N2): the finishing policy is shared with computeStretches - see finishJunctionCuts (app1). Only the junction SOURCE differs (the prepared extract, collected above); the policy exists exactly once.
-  const rec = { line, cum, total, parts };
-  draft.parts[short] = rec;
+  const rec = { line: runs[0].line, cum: runs[0].cum, total, parts, runs };
+  draft.parts[name] = rec;
   return rec;
 }
-function crChosenSet(short, rec) { const sel = draft && draft.sectors ? draft.sectors[short] : null; return new Set(sel || rec.parts.map((_, i) => i)); } // no entry = every sector chosen (the whole road)
-function crSetChosen(short, rec, set) { // a FULL set stores as NO entry - "whole road" stays the draft's default state, so an untrimmed street carries no sector baggage into counts or the save
+function crChosenSet(name, rec) { const sel = draft && draft.sectors ? draft.sectors[name] : null; return new Set(sel || rec.parts.map((_, i) => i)); } // no entry = every sector chosen (the whole road)
+function crSetChosen(name, rec, set) { // a FULL set stores as NO entry - "whole road" stays the draft's default state, so an untrimmed street carries no sector baggage into counts or the save
   draft.sectors = draft.sectors || {};
-  if (set.size >= rec.parts.length) delete draft.sectors[short];
-  else draft.sectors[short] = [...set].sort((a, b) => a - b);
+  if (set.size >= rec.parts.length) delete draft.sectors[name];
+  else draft.sectors[name] = [...set].sort((a, b) => a - b);
 }
-function crChosenLenM(short, rec) { const set = crChosenSet(short, rec); let s = 0; for (const i of set) if (rec.parts[i]) s += crLineLen(rec.parts[i]); return s; }
-function crStreetChosenM(short, g) { // a street's length AS PICKED - the whole street, or only its chosen sectors when trimmed. Every length the create flow states (panel header + rows, preview count, name-it summary) reads through here, so a trimmed street never bills its unchosen ends
-  const sel = draft && draft.sectors ? draft.sectors[short] : null;
-  if (!sel) return g && g[short] ? g[short].total : 0;
-  const rec = crStreetParts(short); if (!rec) return 0;
+function crChosenLenM(name, rec) { const set = crChosenSet(name, rec); let s = 0; for (const i of set) if (rec.parts[i]) s += crLineLen(rec.parts[i]); return s; }
+function crStreetChosenM(name, g) { // a street's length AS PICKED - the whole street, or only its chosen sectors when trimmed. Every length the create flow states (panel header + rows, preview count, name-it summary) reads through here, so a trimmed street never bills its unchosen ends
+  const sel = draft && draft.sectors ? draft.sectors[name] : null;
+  if (!sel) return g && g[name] ? g[name].total : 0;
+  const rec = crStreetParts(name); if (!rec) return 0;
   let s = 0; for (const i of sel) if (rec.parts[i]) s += crLineLen(rec.parts[i]);
   return s;
 }
@@ -731,24 +757,24 @@ function crFilteredRoads() { // the roads object the SAVE stores: a trimmed stre
   }
   return out;
 }
-function crToggleSector(short, idx) {
-  const rec = crStreetParts(short); if (!rec || idx < 0 || idx >= rec.parts.length) return;
-  if (rec.parts.length === 1) { toast(short + ' is one piece — there are no cross-streets to trim it at', 2600); return; } // Beta 1.128: a one-piece street's only sector IS the whole road - tapping it in 1.127 un-picked the street entirely, the exact trap behind Andrew's report; the bar says it plainly and the tap changes nothing
-  const set = crChosenSet(short, rec);
+function crToggleSector(name, idx) {
+  const rec = crStreetParts(name); if (!rec || idx < 0 || idx >= rec.parts.length) return;
+  if (rec.parts.length === 1) { toast(shortStreetName(name) + ' is one piece — there are no cross-streets to trim it at', 2600); return; } // Beta 1.128: a one-piece street's only sector IS the whole road - tapping it in 1.127 un-picked the street entirely, the exact trap behind Andrew's report; the bar says it plainly and the tap changes nothing
+  const set = crChosenSet(name, rec);
   if (set.has(idx)) set.delete(idx); else set.add(idx);
-  if (!set.size) { crRemoveStreet(short); toast(short + ' removed - no sectors left picked', 2400); return; } // un-picking every sector removes the street (crRemoveStreet also closes its sector mode)
-  crSetChosen(short, rec, set);
+  if (!set.size) { crRemoveStreet(name); toast(shortStreetName(name) + ' removed - no sectors left picked', 2400); return; } // un-picking every sector removes the street (crRemoveStreet also closes its sector mode)
+  crSetChosen(name, rec, set);
   renderDraft(); renderCrLists(); renderSectorBar();
 }
 function crSectorTap(lngLat) { // a map tap while trimming: the sector under the tap toggles. The rendered draft features answer first (the wide invisible crDraftHit layer, the street pick's own +/-16/28 px box discipline); the geometry fallback - the nearest part of THIS street - covers what the renderer cannot answer, and never reaches for another street
-  const short = crSectorStreet; if (!short || !draft || !draft.roads[short]) return;
-  const rec = crStreetParts(short); if (!rec) return;
+  const name = crSectorStreet; if (!name || !draft || !draft.roads[name]) return;
+  const rec = crStreetParts(name); if (!rec) return;
   let idx = -1;
   if (map && typeof map.queryRenderedFeatures === 'function' && typeof map.project === 'function') {
     try {
       const pt = map.project([lngLat.lng, lngLat.lat]);
       for (const half of [16, 28]) {
-        const feats = (map.queryRenderedFeatures([[pt.x - half, pt.y - half], [pt.x + half, pt.y + half]], { layers: ['crDraftHit'] }) || []).filter(f => f && f.properties && f.properties.name === short && typeof f.properties.sector === 'number' && f.properties.sector >= 0);
+        const feats = (map.queryRenderedFeatures([[pt.x - half, pt.y - half], [pt.x + half, pt.y + half]], { layers: ['crDraftHit'] }) || []).filter(f => f && f.properties && f.properties.name === name && typeof f.properties.sector === 'number' && f.properties.sector >= 0);
         if (!feats.length) continue;
         let bd = Infinity;
         for (const f of feats) { const d = crFeatDistM(lngLat, f.geometry); if (d < bd) { bd = d; idx = f.properties.sector; } }
@@ -761,13 +787,13 @@ function crSectorTap(lngLat) { // a map tap while trimming: the sector under the
     for (let i = 0; i < rec.parts.length; i++) { const d = crFeatDistM(lngLat, { type: 'LineString', coordinates: rec.parts[i].map(p => [p[1], p[0]]) }); if (d < bd) { bd = d; idx = i; } }
     if (bd > 75) idx = -1; // nowhere near the street being trimmed - not a sector tap
   }
-  if (idx >= 0) crToggleSector(short, idx);
+  if (idx >= 0) crToggleSector(name, idx);
 }
-function crOpenSectors(short) { // opens a picked street's trimming - TWO doors since Beta 1.128 (Andrew's fork, decided from his 1.127 device session): the panel row (1.127) AND a map tap on the already-picked street (pickStreet routes here), which is where his finger went on device. Beta 1.129: entry SNAPSHOTS the street's pick as it stands (whole road, or the trim in force) - the sector bar's Cancel restores that snapshot exactly
-  if (!draft || !draft.roads[short]) return;
-  if (!crStreetParts(short)) return;
-  if (crSectorStreet !== short) crSectorSnapshot = (draft.sectors && draft.sectors[short]) ? draft.sectors[short].slice() : null; // a fresh entry only - re-entering the same street's open session must not move Cancel's restore point
-  crSectorStreet = short;
+function crOpenSectors(name) { // opens a picked street's trimming - TWO doors since Beta 1.128 (Andrew's fork, decided from his 1.127 device session): the panel row (1.127) AND a map tap on the already-picked street (pickStreet routes here), which is where his finger went on device. Beta 1.129: entry SNAPSHOTS the street's pick as it stands (whole road, or the trim in force) - the sector bar's Cancel restores that snapshot exactly
+  if (!draft || !draft.roads[name]) return;
+  if (!crStreetParts(name)) return;
+  if (crSectorStreet !== name) crSectorSnapshot = (draft.sectors && draft.sectors[name]) ? draft.sectors[name].slice() : null; // a fresh entry only - re-entering the same street's open session must not move Cancel's restore point
+  crSectorStreet = name;
   renderSectorBar();
   const sheet = $('createSheet');
   if (sheet && sheet.classList.contains('on')) crMorphTo('bar');
@@ -786,7 +812,7 @@ function renderSectorBar() {
   const s = crSectorStreet; if (!s || !draft || !draft.roads[s]) return;
   const rec = crStreetParts(s); if (!rec) return;
   const chosen = crChosenSet(s, rec);
-  $('crSbName').textContent = s;
+  $('crSbName').textContent = shortStreetName(s); // Beta 1.144 (DA-04): the bar's title is a display surface - the short name, while the draft keys on the full one
   if (rec.parts.length === 1) { $('crSbSub').textContent = 'One piece · ' + fmtLenM(rec.total) + ' — no cross-streets to split it at, so it goes into your route whole'; return; } // Beta 1.128: honest about the streets the cut rules cannot split (measured on the shipped Vaughan pack: 221 of 1,299 streets ≥ 500 m compute to exactly one part) - 1.127's "tap sectors to trim it" promised a trim whose only outcome was deleting the road
   $('crSbSub').textContent = chosen.size >= rec.parts.length
     ? 'Entire road picked · ' + fmtLenM(rec.total) + ' — tap sectors to trim it'
@@ -887,13 +913,13 @@ function crExpandPanel() { // Review: the bar hands back to the panel in the sam
   crPanelCollapsed = false;
   crMorphTo('panel');
 }
-function crPendStreet(short, osmName, lngLat, run, boundary) { // fail-closed (Codex (c)): the shape reaches past verified coverage even after its one top-up - listed as PENDING, never added half-known; a wider preparation can still complete it (crSweepPending)
+function crPendStreet(name, lngLat, run, boundary) { // fail-closed (Codex (c)): the shape reaches past verified coverage even after its one top-up - listed as PENDING, never added half-known; a wider preparation can still complete it (crSweepPending). Beta 1.144 (DA-04): keyed by the full map name, like every other draft structure
   let openEnd = null;
   if (run && run.line) { for (const end of [run.line[0], run.line[run.line.length - 1]]) { const inside = crCov && crInAnyBox(crCov.boxes, end[0], end[1]); if (!inside) { openEnd = { lat: end[0], lng: end[1] }; break; } } } // an end is OPEN only when no COMMITTED coverage holds it (the sweep's union rule): the top-up's box (the boundary argument) was fetched for this name only and never becomes coverage, so an end inside it but outside every committed box is still open; an end inside a loaded city cell needs no preparation - anchoring the wider preparation on either wrong end could never complete the street
-  crPending[short] = { osmName, lngLat, openEnd };
+  crPending[name] = { osmName: name, lngLat, openEnd };
   if (openEnd) crWanted = { anchor: openEnd, label: 'Prepare wider area' }; // verify round (CG-PF-09): the promised wider preparation is a REAL button - it prepares around the street's own open end, the point coverage must grow from
   renderCrLists(); crRenderHint();
-  toast(short + ' runs past the prepared area — it is pending, not added. Prepare a wider area to complete it', 4200);
+  toast(shortStreetName(name) + ' runs past the prepared area — it is pending, not added. Prepare a wider area to complete it', 4200);
 }
 // ---- the city step (Andrew's amendment): Door 2 STARTS here ----
 function crCityNameOf(it) { const a = (it && it.address) || {}; return a.city || a.town || a.village || a.municipality || a.county || String((it && it.display_name) || '').split(',')[0].trim(); }
@@ -1037,7 +1063,7 @@ function renderDraft() { // the DRAFT renders through its own GeoJSON source, co
         const set = crChosenSet(n, rec);
         for (let i = 0; i < rec.parts.length; i++) { const L = rec.parts[i]; if (L && L.length > 1) feats.push({ type: 'Feature', properties: { name: n, main, chosen: set.has(i) ? 1 : 0, sector: i }, geometry: { type: 'LineString', coordinates: L.map(p => [p[1], p[0]]) } }); }
       } else {
-        const L = g[n] && g[n].line; if (L && L.length > 1) feats.push({ type: 'Feature', properties: { name: n, main, chosen: 1, sector: -1 }, geometry: { type: 'LineString', coordinates: L.map(p => [p[1], p[0]]) } });
+        const st = g[n]; if (st) for (const run of st.runs) { const L = run.line; if (L && L.length > 1) feats.push({ type: 'Feature', properties: { name: n, main, chosen: 1, sector: -1 }, geometry: { type: 'LineString', coordinates: L.map(p => [p[1], p[0]]) } }); } // Beta 1.144 (C1): an untrimmed street draws all its runs - one feature per run, never a line bridging them
       }
     }
   }
@@ -1102,12 +1128,12 @@ function crRowEl(n, g) {
   const row = document.createElement('div'); row.className = 'crRow';
   const main = draft.mains.has(n);
   const dot = document.createElement('span'); dot.className = 'crDot ' + (main ? 'main' : 'sec'); row.appendChild(dot);
-  const nm = document.createElement('span'); nm.className = 'crName'; nm.textContent = n; row.appendChild(nm);
+  const nm = document.createElement('span'); nm.className = 'crName'; nm.textContent = shortStreetName(n); row.appendChild(nm); // Beta 1.144 (DA-04): rows display the short name; the draft key behind them is the full map name
   const ln = document.createElement('span'); ln.className = 'crLen'; ln.textContent = fmtLenM(crStreetChosenM(n, g)); row.appendChild(ln); // Beta 1.130 (maintainability re-scan N1): the preview's rows bill the CHOSEN length through the same helper as the panel's rows and every total - through 1.129 this read g[n].total, so a sector-trimmed street showed its WHOLE length on the check screen while the panel billed the trim and the preview's own total (renderCrLists sums crStreetChosenM) disagreed with its rows
   const chip = document.createElement('button'); chip.className = 'crChip ' + (main ? 'main' : 'sec'); chip.textContent = main ? 'MAIN' : '2ND';
   chip.addEventListener('click', () => { if (draft.mains.has(n)) draft.mains.delete(n); else draft.mains.add(n); renderDraft(); renderCrLists(); });
   row.appendChild(chip);
-  const del = document.createElement('button'); del.className = 'crDel'; del.textContent = '✕'; del.title = 'Remove ' + n;
+  const del = document.createElement('button'); del.className = 'crDel'; del.textContent = '✕'; del.title = 'Remove ' + shortStreetName(n);
   del.addEventListener('click', () => crRemoveStreet(n)); // Beta 1.127: the shared removal path (sector state leaves with the street)
   row.appendChild(del);
   return row;
@@ -1117,7 +1143,7 @@ function crPanelRowEl(n, g) { // Beta 1.127 (Andrew's approved mockup, screen 2)
   const row = document.createElement('div'); row.className = 'crPRow';
   const dot = document.createElement('span'); dot.className = 'crDot ' + (main ? 'main' : 'sec'); row.appendChild(dot);
   const meta = document.createElement('span'); meta.className = 'crPMeta';
-  const nm = document.createElement('span'); nm.className = 'crPName'; nm.textContent = n; meta.appendChild(nm);
+  const nm = document.createElement('span'); nm.className = 'crPName'; nm.textContent = shortStreetName(n); meta.appendChild(nm); // Beta 1.144 (DA-04): display form, as in the preview rows
   const sub = document.createElement('span'); sub.className = 'crPSub';
   const sel = draft.sectors ? draft.sectors[n] : null;
   if (sel) { const rec = crStreetParts(n); sub.textContent = sel.length + ' of ' + (rec ? rec.parts.length : sel.length) + ' sectors · ' + fmtLenM(crStreetChosenM(n, g)) + ' — tap row to adjust'; }
@@ -1126,7 +1152,7 @@ function crPanelRowEl(n, g) { // Beta 1.127 (Andrew's approved mockup, screen 2)
   const chip = document.createElement('button'); chip.className = 'crPChip ' + (main ? 'main' : 'sec'); chip.textContent = main ? 'MAIN' : '2ND';
   chip.addEventListener('click', e => { e.stopPropagation(); if (draft.mains.has(n)) draft.mains.delete(n); else draft.mains.add(n); renderDraft(); renderCrLists(); });
   row.appendChild(chip);
-  const del = document.createElement('button'); del.className = 'crPDel'; del.textContent = '✕'; del.title = 'Remove ' + n;
+  const del = document.createElement('button'); del.className = 'crPDel'; del.textContent = '✕'; del.title = 'Remove ' + shortStreetName(n);
   del.addEventListener('click', e => { e.stopPropagation(); crRemoveStreet(n); });
   row.appendChild(del);
   row.addEventListener('click', () => crOpenSectors(n));
@@ -1145,9 +1171,9 @@ function renderCrLists() {
     if (draft.roads[pk]) continue;
     const row = document.createElement('div'); row.className = 'crRow pending';
     const dot = document.createElement('span'); dot.className = 'crDot sec'; row.appendChild(dot);
-    const nm = document.createElement('span'); nm.className = 'crName'; nm.textContent = pk; row.appendChild(nm);
+    const nm = document.createElement('span'); nm.className = 'crName'; nm.textContent = shortStreetName(pk); row.appendChild(nm); // Beta 1.144 (DA-04): display form
     const chip = document.createElement('span'); chip.className = 'crChip pend'; chip.textContent = 'PENDING'; row.appendChild(chip);
-    const del = document.createElement('button'); del.className = 'crDel'; del.textContent = '✕'; del.title = 'Drop ' + pk;
+    const del = document.createElement('button'); del.className = 'crDel'; del.textContent = '✕'; del.title = 'Drop ' + shortStreetName(pk);
     del.addEventListener('click', () => { delete crPending[pk]; renderCrLists(); });
     row.appendChild(del);
     $('crPickList').appendChild(row);
@@ -1427,10 +1453,11 @@ const OVERPASS_URLS = ['https://overpass-api.de/api/interpreter', 'https://overp
 // goes through crOverpassFetch with queries built by crQL/crAreaQL/
 // crNameQL (see the preparation block above); taps resolve locally.
 async function pickStreet(osmName, lngLat) {
-  const short = shortStreetName(osmName);
   if (!draft) return;
-  if (draft.roads[short]) { crOpenSectors(short); return; } // Beta 1.128 (Andrew's fork, decided from his 1.127 device session): a tap on an ALREADY-PICKED street opens its sectors - the map-level section picking he asked for. 1.127's tap-again-to-deselect is RETIRED: removal lives only on the panel row's ✕ and Clear all. The street is already resolved and validated, so this never re-resolves
-  if (crPending[short]) { toast(short + ' is pending — it runs past the prepared area and is not in your route yet', 3400); return; }
+  const name = osmName; // Beta 1.144 (DA-04): the draft key IS the full map name; the short form appears only in display text (shortStreetName at the toast sites below)
+  const exists = !!draft.roads[name];
+  if (exists && (crPickBusy || !(crCov && crCov.boxes.length))) { crOpenSectors(name); return; } // already picked, and either no prepared extract to resolve the tap against or a pick is in flight: the 1.128 sectors door, exactly as before (the pre-1.144 order - the picked check always outranked the busy flag)
+  if (crPending[name]) { toast(shortStreetName(name) + ' is pending — it runs past the prepared area and is not in your route yet', 3400); return; }
   if (crPickBusy) return;
   // Beta 1.121: the tap resolves LOCALLY from the prepared extract - no
   // network on the ordinary path (CG-PF-04). Before the extract is ready
@@ -1441,27 +1468,35 @@ async function pickStreet(osmName, lngLat) {
   // even while the rest still loads - progress is real (amendment B).
   if (crCov && crCov.boxes.length) {
     const res0 = crResolve(osmName, lngLat);
-    if (res0.status === 'ok') { crAddStreet(short, osmName, res0.segs); return; }
+    if (res0.status === 'ok') {
+      if (!exists) { crAddStreet(name, res0.segs); return; }
+      if (crRunHeld(name, res0.segs)) { crOpenSectors(name); return; } // the tap landed on a run the draft already holds: the 1.128 sectors door
+      crAddRun(name, res0.segs); return; // Beta 1.144 (OPT-L1): the tap landed on a DIFFERENT disconnected run of the picked street - it joins the same street entry (docs/ARCHITECTURE.md carries the rule)
+    }
+    if (exists) {
+      if (res0.status === 'edge' && res0.run && !crRunHeld(name, res0.run.exact ? res0.run.segments : [res0.run.line])) { toast('The other part of ' + shortStreetName(name) + ' runs past the prepared area — it was not added. Prepare a wider area, then tap it again', 4200); return; } // an unheld run that reaches past verified coverage is never half-added over an existing pick; the wider preparation + a fresh tap is the honest path
+      crOpenSectors(name); return; // absent/nocov against committed coverage, or an edge tap on the held run itself: the sectors door is the answer the 1.128 fork chose
+    }
     if (res0.status === 'absent') {
-      if (crInAnyBox(crCov.boxes, lngLat.lat, lngLat.lng)) { toast('No shape found for ' + short + ' here — the map data holds no line for it', 3600); return; }
+      if (crInAnyBox(crCov.boxes, lngLat.lat, lngLat.lng)) { toast('No shape found for ' + shortStreetName(name) + ' here — the map data holds no line for it', 3600); return; }
       if (crGrid && crInBox(crGrid.bbox, lngLat.lat, lngLat.lng)) {
         const cell = crGrid.cells.find(c => crInBox(c.box, lngLat.lat, lngLat.lng));
-        if (cell && cell.state === 'failed') toast('That part of ' + crGrid.name + ' didn’t load — ' + short + ' can be added after Retry missing parts', 3800);
-        else toast('That part of ' + (crCity ? crCity.name : 'the city') + ' is still loading — ' + short + ' can be added as soon as it lands', 3400);
+        if (cell && cell.state === 'failed') toast('That part of ' + crGrid.name + ' didn’t load — ' + shortStreetName(name) + ' can be added after Retry missing parts', 3800);
+        else toast('That part of ' + (crCity ? crCity.name : 'the city') + ' is still loading — ' + shortStreetName(name) + ' can be added as soon as it lands', 3400);
         return;
       }
-      crPrepAnchor = { lat: lngLat.lat, lng: lngLat.lng }; crWanted = { anchor: { lat: lngLat.lat, lng: lngLat.lng }, label: 'Prepare this area' }; crRenderHint(); toast(short + ' is outside the prepared area — prepare this area, then tap it again', 3800);
+      crPrepAnchor = { lat: lngLat.lat, lng: lngLat.lng }; crWanted = { anchor: { lat: lngLat.lat, lng: lngLat.lng }, label: 'Prepare this area' }; crRenderHint(); toast(shortStreetName(name) + ' is outside the prepared area — prepare this area, then tap it again', 3800);
       return;
     }
     // edge (Codex (c)): the run reaches beyond verified coverage - ONE
     // targeted fetch for this name over an expanded bounded area (centred
     // on the run's open end), merged by way id, then resolved again
     // against that wider boundary. Still beyond afterwards: PENDING.
-    const session = crSession, gen = crCovGen, topKey = short + '@' + gen;
-    if (crToppedUp[topKey]) { crPendStreet(short, osmName, lngLat, res0.run, null); return; }
+    const session = crSession, gen = crCovGen, topKey = name + '@' + gen;
+    if (crToppedUp[topKey]) { crPendStreet(name, lngLat, res0.run, null); return; }
     crToppedUp[topKey] = true;
     crPickBusy = true;
-    const hint = $('createHint'); hint.textContent = 'Checking the whole of ' + short + '…'; hint.classList.add('on');
+    const hint = $('createHint'); hint.textContent = 'Checking the whole of ' + shortStreetName(name) + '…'; hint.classList.add('on');
     const op = {}; crTopOp = op; // exitCreate can stop this download too (CG-PF-10)
     try {
       let openEnd = { lat: lngLat.lat, lng: lngLat.lng };
@@ -1470,22 +1505,23 @@ async function pickStreet(osmName, lngLat) {
       const got = await crSourceExtract(box, osmName, CR_TIMING.topupBudgetMs, CR_TIMING.topupAttempt1Ms, () => creating && crSession === session && crCovGen === gen, op);
       if (!creating || crSession !== session || crCovGen !== gen || !draft) return; // obsolete: land nowhere (CG-PF-05)
       if (!got.ok) {
-        if (got.kind === 'dense') toast('That area is too dense to check ' + short + ' against — it stays out of your route for now', 4000);
-        else if (got.kind === 'error' || got.kind === 'badjson') toast('The street-shape service answered with an error — ' + short + ' was not added', 3800);
-        else if (got.kind !== 'stale') toast('The street-shape service didn’t answer — ' + short + ' was not added', 3800);
+        if (got.kind === 'dense') toast('That area is too dense to check ' + shortStreetName(name) + ' against — it stays out of your route for now', 4000);
+        else if (got.kind === 'error' || got.kind === 'badjson') toast('The street-shape service answered with an error — ' + shortStreetName(name) + ' was not added', 3800);
+        else if (got.kind !== 'stale') toast('The street-shape service didn’t answer — ' + shortStreetName(name) + ' was not added', 3800);
         crRenderHint();
         return;
       }
       crCovMerge(got.json.elements, null); // merged by way id; the top-up's box verifies THIS resolution (below) but does not join the coverage set - a later street must earn its own proof
       const res = crResolve(osmName, lngLat, box);
-      if (res.status === 'ok') crAddStreet(short, osmName, res.segs); else crPendStreet(short, osmName, lngLat, res.run, box);
+      if (res.status === 'ok') crAddStreet(name, res.segs); else crPendStreet(name, lngLat, res.run, box);
     } finally { if (crTopOp === op) crTopOp = null; crPickBusy = false; } // Beta 1.120: EVERY exit path releases the picker - 1.119's early return on a null shape skipped this line and one refused fetch wedged tapping for the whole session (Andrew, on device). The session/generation guards above are what bind the COMPLETION (CG-PF-05); the busy flag can only be held by the one pick in flight, so releasing it here can never clear a newer operation's state.
     return;
   }
-  if (crPrepState === 'preparing') { toast('Still preparing street shapes — ' + short + ' can be added as soon as they are ready', 3200); return; }
+  if (exists) { crOpenSectors(name); return; } // an extract exists but holds no verified box yet - the picked street's sectors are still the honest door
+  if (crPrepState === 'preparing') { toast('Still preparing street shapes — ' + shortStreetName(name) + ' can be added as soon as they are ready', 3200); return; }
   crPrepAnchor = { lat: lngLat.lat, lng: lngLat.lng };
   crWanted = { anchor: { lat: lngLat.lat, lng: lngLat.lng }, label: 'Prepare this area' }; // the offer names THIS tap's area, and the hint button prepares exactly there (CG-PF-09)
-  toast('Street shapes aren’t ready for this area yet — tap Prepare this area, then tap ' + short + ' again', 3800);
+  toast('Street shapes aren’t ready for this area yet — tap Prepare this area, then tap ' + shortStreetName(name) + ' again', 3800);
   crRenderHint();
 }
 function crFeatDistM(lngLat, geom) { // metres from the tap to the nearest point of a tile feature's line(s), in distM's flat-earth metres. CHOICE ONLY (see crMapTap): the number judges which named street a tap meant - it is never stored and never shapes the route

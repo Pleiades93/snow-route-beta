@@ -303,7 +303,7 @@ sandbox) — and the tap then resolves LOCALLY from the extract:
 chaining at 1.5 m tolerance; a run whose joins were all exact keeps
 its ways as segments, a bridged join is stored as its single
 stitched line, a divided road chains into its hairpin) and the run
-nearest the tap is the street tapped — subject to a fail-closed
+nearest the tap is the run resolved — subject to a fail-closed
 completeness check: a run end is CLOSED only when it lies inside
 verified coverage — the extract's box SET (any continuation starts
 there, inside a query that was actually answered, and would have
@@ -325,18 +325,33 @@ closes its run). Before the extract is ready a tap still
 identifies the street and says preparation is pending (a tap in a
 part of the city that has already landed resolves even while the
 rest still loads); a name absent from the extract gets an honest
-"no shape found" (or, outside coverage, a re-prepare offer). Names are
-shortened by the app convention (suffix strip; ordinal avenues
-spell out — 5th Avenue is Fifth). Picked streets join as
-SECONDARIES by default and light up on the map in route colours.
+"no shape found" (or, outside coverage, a re-prepare offer). Streets are
+keyed everywhere — the draft, the sector state, the saved pack — by
+their FULL map name (Beta 1.144, DA-04: through 1.143 the draft
+keyed on the shortened name, so two distinct streets sharing a
+short form — Addington Avenue and Addington Place — collided and
+only one could ever be picked); names are shortened by the app
+convention (suffix strip; ordinal avenues spell out — 5th Avenue
+is Fifth) for DISPLAY only (rows, toasts, the sector bar's title).
+Picked streets join as SECONDARIES by default and light up on the
+map in route colours.
 A map tap on an ALREADY-PICKED street opens its sectors (Beta
 1.128, Andrew's fork from his 1.127 device session: 1.127's
 tap-again-to-deselect is retired — on device he tapped picked
 roads expecting their sections, and whole-street picking was all
-the map ever offered). Removal lives only on the panel row's ✕,
-the preview's ✕ and Clear all, through the one removal path
-(`crRemoveStreet`); streets still enter only once their geometry
-has resolved, so the honesty line stands.
+the map ever offered) — with one Beta 1.144 refinement (OPT-L1):
+the tap is resolved first, and when it lands on a disconnected run
+of the street that the draft does NOT hold yet, that run joins the
+same street entry (a genuinely split street can contribute all of
+its runs; the new run's sectors start chosen, and it is removable
+through the same sector/panel paths as any other part of the
+street); a tap on a run already held opens the sectors, as before,
+and an unheld run reaching past verified coverage is never
+half-added — it is refused with the wider-preparation advice.
+Removal lives only on the panel row's ✕, the preview's ✕ and
+Clear all, through the one removal path (`crRemoveStreet`);
+streets still enter only once their geometry has resolved, so
+the honesty line stands.
 
 **The picked-roads panel (Beta 1.127; Andrew's approved mockups,
 beta1/work/create-sectors-mockups/; the surface itself rebuilt in
@@ -401,8 +416,10 @@ the ONE junction-cut finishing policy — `finishJunctionCuts` (app1):
 4 m join tolerance, cuts merged under 15 m, none within 12 m of an
 end — shared verbatim with `computeStretches` since Beta 1.131
 (maintainability programme N2; the two cutters previously carried
-independent copies of the rule). It is applied to the street's
-stitched line, but the junction set is the prepared EXTRACT (every
+independent copies of the rule). It is applied per RUN to the
+street's stitched runs (Beta 1.144: a street's sectors span all
+its disconnected runs, concatenated in run order), and the
+junction set is the prepared EXTRACT (every
 other street's vertices within 12 m of the line) — never the
 draft's current contents — so a street's sectors are its real
 cross-street pieces and do not shift as other streets join or
@@ -413,7 +430,7 @@ change for every consumer (draft render, lists, name-it summary),
 invalidated by street add/remove and by wholesale draft or roads
 replacement — sector picks and category flips never recompute it
 (Beta 1.135, maintainability programme N3). Sector state
-lives ONLY in the draft (`draft.sectors[short]` = the chosen part
+lives ONLY in the draft (`draft.sectors[name]` = the chosen part
 indexes; an absent entry means the whole road, which is also the
 first-pick state). Entering sector mode — from either door —
 snapshots the street's state as it was (`crSectorSnapshot`:

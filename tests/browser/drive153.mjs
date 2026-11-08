@@ -1,4 +1,5 @@
 import { spawn } from 'node:child_process';
+// Beta 1.144 TEST-PREMISE UPDATE (Package C, DA-04): draft keys are the FULL map names now ('Bordeaux Drive') - the key reads below follow; display text still uses the short form.
 import fs from 'node:fs';
 import http from 'node:http';
 import path from 'node:path';
@@ -208,8 +209,8 @@ ok('A3 PACK PATH: Vaughan readies with ZERO Overpass requests, exactly ONE pack-
   inPickA === true && libHintA === true && readyA === true && wA.filter(w => w.kind === 'overpass').length === 0 && wA.filter(w => w.kind === 'packfile' && w.slug === 'vaughan.json').length === 1 && gridA.fromPack === 'vaughan');
 await installFeatureSeam();
 await tapStreet('Bordeaux Drive');
-const gotBA = await poll(`typeof draft !== 'undefined' && draft && !!draft.roads['Bordeaux']`, 15000).catch(() => false);
-const lenBA = await J(`({ b: draft && draft.roads['Bordeaux'] ? Math.round(computeStretches(draft.roads)['Bordeaux'].total) : -1 })`);
+const gotBA = await poll(`typeof draft !== 'undefined' && draft && !!draft.roads['Bordeaux Drive']`, 15000).catch(() => false);
+const lenBA = await J(`({ b: draft && draft.roads['Bordeaux Drive'] ? Math.round(computeStretches(draft.roads)['Bordeaux Drive'].total) : -1 })`);
 ok('A4 a street FROM THE PACK adds by tap at its pack length (Bordeaux ' + Math.round(packStreetLen('Bordeaux Drive')) + ' m from the fixture pack) with still zero Overpass requests | ' + JSON.stringify(lenBA) + ', overpass total: ' + count('overpass'),
   gotBA === true && Math.abs(lenBA.b - packStreetLen('Bordeaux Drive')) <= packStreetLen('Bordeaux Drive') * 0.03 + 2 && count('overpass') === 0);
 

@@ -66,22 +66,35 @@ function buildEngineGeometry() { // Beta 1.117: the engine's route geometry (GEO
   labelFeatures.length = 0; labelPointFeatures.length = 0;
   SVMAP = null; // the shared-vertex map is a memoized derivative of GEO (sharedVertexMap) - it must die with the geometry it was built from, or the strand builders read the previous route's streets (the first switch build threw exactly there)
   H.names.forEach(n => {
-  const parts = H.STRETCH[n].parts;
-  // The street's whole stitched line; sectors are exact slices of it
-  // (sector k+1 starts at the very point sector k ends).
-  const stitched = [], cuts = [];
-  parts.forEach((part, i) => {
-    const a = i === 0 ? 0 : stitched.length - 1;
-    if (i === 0) stitched.push(...part); else stitched.push(...part.slice(1));
-    cuts.push([a, stitched.length - 1]);
+  // The street's stitched line, RUN BY RUN (Beta 1.144, Package C DA-02/C1):
+  // within a run, sectors are exact slices of it (sector k+1 starts at the
+  // very point sector k ends) - the pre-1.144 construction verbatim. A
+  // disconnected street (non-adjacent sector picks; a genuinely split
+  // street) has several runs: their points concatenate into the same
+  // stitched array with GLOBAL vertex ranges per part, but the offsets are
+  // computed PER RUN (an offset line must never bridge the omitted ground
+  // between runs), and gaps records the vertex index each later run starts
+  // at, so every segment walk in this engine can refuse to step across a
+  // discontinuity. A single-run street builds byte-identically to before.
+  const stitched = [], cuts = [], gaps = new Set();
+  let off0 = [], off1 = [], stitchedLen = 0;
+  H.STRETCH[n].runs.forEach((run, ri) => {
+    if (ri > 0) gaps.add(stitched.length);
+    const base = stitched.length, rStitched = [];
+    run.parts.forEach((part, i) => {
+      const a = i === 0 ? base : stitched.length - 1;
+      if (i === 0) { stitched.push(...part); rStitched.push(...part); } else { stitched.push(...part.slice(1)); rStitched.push(...part.slice(1)); }
+      cuts.push([a, stitched.length - 1]);
+    });
+    // Offsets computed ONCE over the whole RUN (the tracker's v5.79 method):
+    // a boundary vertex gets ONE shared offset point, so a side marked across
+    // consecutive sectors is one continuous line; both sides sit at the same
+    // 3.3 m; and the lines end exactly at the run's ends - no overshoot
+    // onto the next street, no uneven ends.
+    off0 = off0.concat(offsetLine(rStitched, 3.3)); off1 = off1.concat(offsetLine(rStitched, -3.3));
+    stitchedLen += segLenM(rStitched);
   });
-  // Offsets computed ONCE over the whole line (the tracker's v5.79 method):
-  // a boundary vertex gets ONE shared offset point, so a side marked across
-  // consecutive sectors is one continuous line; both sides sit at the same
-  // 3.3 m; and the lines end exactly at the street's ends - no overshoot
-  // onto the next street, no uneven ends.
-  const off0 = offsetLine(stitched, 3.3), off1 = offsetLine(stitched, -3.3);
-  GEO[n] = { stitched, cuts, off0, off1 };
+  GEO[n] = { stitched, cuts, off0, off1, gaps };
   const p0 = stitched[0], p1 = stitched[stitched.length - 1];
   const dLat = p1[0] - p0[0], dLng = p1[1] - p0[1];
   const canonicalForward = Math.abs(dLat) >= Math.abs(dLng) ? dLat >= 0 : dLng >= 0;
@@ -101,8 +114,9 @@ function buildEngineGeometry() { // Beta 1.117: the engine's route geometry (GEO
   const seg = segs[li], fr = H.SPOT[n] ? H.SPOT[n][1] : 0.5;
   let target = segLenM(seg) * fr, acc = 0, anchor = seg[seg.length - 1];
   for (let k = 1; k < seg.length; k++) { const d = H.jDistM(seg[k - 1], seg[k]); if (acc + d >= target) { const t = d ? (target - acc) / d : 0; anchor = [seg[k - 1][0] + (seg[k][0] - seg[k - 1][0]) * t, seg[k - 1][1] + (seg[k][1] - seg[k - 1][1]) * t]; break; } acc += d; }
-  labelPointFeatures.push({ type: 'Feature', properties: { name: n, len: Math.round(segLenM(stitched)) }, geometry: { type: 'Point', coordinates: GJ([anchor])[0] } });
+  labelPointFeatures.push({ type: 'Feature', properties: { name: n, len: Math.round(stitchedLen) }, geometry: { type: 'Point', coordinates: GJ([anchor])[0] } }); // Beta 1.144: the length is the per-run sum (stitchedLen) - segLenM over the concatenated array would add the jumps between a disconnected street's runs
 });
+  JUNC = null; // Beta 1.144 (found by drive165, proven on the pristine 1.143 tree): the junction table derives from GEO + the current name set but was built once and never invalidated - after a route switch it still named the PREVIOUS route's streets, and the first marked run's paint on the new route threw 'JUNC[n] is not iterable'. The geometry rebuild is the invalidation point: the table rebuilds lazily from the new geometry on next use.
   nudgeFifth();
   assignTiers();
   let a = 90, b = -90, c = 180, d = -180; H.names.forEach(n => GEO[n].stitched.forEach(p => { a = Math.min(a, p[0]); b = Math.max(b, p[0]); c = Math.min(c, p[1]); d = Math.max(d, p[1]); }));
@@ -120,7 +134,9 @@ function nudgeFifth() {
   const gp = GEO['Greenpark'] && GEO['Greenpark'].stitched;
   if (!gp) return; // Beta 1.117: the nudge is a Route 5W refinement - a pack with a Fifth but no Greenpark simply skips it
   let bd = 1e9, bq = A0;
+  const gg = GEO['Greenpark'].gaps;
   for (let k = 1; k < gp.length; k++) {
+    if (gg.has(k)) continue; // Beta 1.144 (verify cycle 2): the segment between two runs is not street - projecting the anchor onto it pushes Fifth's label away from ground that is not Greenpark
     const a = gp[k - 1], b = gp[k], vx = (b[1] - a[1]) * H.MLNG, vy = (b[0] - a[0]) * H.MLAT;
     const wx = (A0[1] - a[1]) * H.MLNG, wy = (A0[0] - a[0]) * H.MLAT, L2 = vx * vx + vy * vy;
     let t = L2 ? (wx * vx + wy * vy) / L2 : 0; t = Math.max(0, Math.min(1, t));
@@ -199,7 +215,9 @@ function buildJunctions() {
   const at = {};
   H.names.forEach(n => GEO[n].stitched.forEach((pt, vi) => { const k = coordKey(pt); (at[k] = at[k] || []).push({ n, vi }); }));
   const dirAt = (n, vi) => {
-    const st = GEO[n].stitched, a = XYOf(st[Math.max(0, vi - 1)]), b = XYOf(st[Math.min(st.length - 1, vi + 1)]);
+    const st = GEO[n].stitched, gaps = GEO[n].gaps; // Beta 1.144: the direction window clamps at the vertex's own RUN ends - a run-boundary vertex's neighbour across the gap belongs to a different piece of the street and would hand the junction a direction the street does not have there
+    const lo = gaps.has(vi) ? vi : Math.max(0, vi - 1), hi = gaps.has(vi + 1) ? vi : Math.min(st.length - 1, vi + 1);
+    const a = XYOf(st[lo]), b = XYOf(st[hi]);
     const dx = b[0] - a[0], dy = b[1] - a[1], m = Math.hypot(dx, dy) || 1;
     return [dx / m, dy / m];
   };
@@ -259,8 +277,10 @@ function throughOK(A, side, J, runPts) {
       const offD = tt === 0 ? gD.off0 : gD.off1;
       const corners = (pairsNow[A + '|' + J.viA + '|' + side] || []).filter(pr => pr.n2 === E.n && pr.side2 === tt && pr.corner).map(pr => pr.corner);
       for (let s1 = 0; s1 + 1 < offA.length && !crossed; s1++) {
+        if (GEO[A].gaps.has(s1 + 1)) continue; // Beta 1.144: the segment between two runs is not street - it can neither cross nor be crossed
         if (H.ptSegM(V, offA[s1], offA[s1 + 1]) > 13) continue;
         for (let s2 = 0; s2 + 1 < offD.length; s2++) {
+          if (gD.gaps.has(s2 + 1)) continue;
           if (H.ptSegM(V, offD[s2], offD[s2 + 1]) > 13) continue;
           if (!segCross(offA[s1], offA[s1 + 1], offD[s2], offD[s2 + 1])) continue;
           const X = lineHit(offA[s1], offA[s1 + 1], offD[s2], offD[s2 + 1]);
@@ -431,6 +451,7 @@ function edgeRunSlices(n, side, marked) {
               if (!marked) continue;
               const off = t === 0 ? gd.off0 : gd.off1;
               for (let oi = 0; oi + 1 < off.length; oi++) {
+                if (gd.gaps.has(oi + 1)) continue; // Beta 1.144: not a real segment (between two runs of dn)
                 if (H.ptSegM(J.V, off[oi], off[oi + 1]) > 14) continue;
                 if (properX(run.pts[si], run.pts[si + 1], off[oi], off[oi + 1])) { crosses = true; break; }
               }
@@ -451,7 +472,7 @@ function edgeRunSlices(n, side, marked) {
   g.cuts.forEach((ab, idx) => {
     if (marked(idx)) {
       const sl = off.slice(ab[0], ab[1] + 1);
-      if (run && run.lastIdx === idx - 1) { run.pts = run.pts.concat(sl.slice(1)); run.lastIdx = idx; }
+      if (run && run.lastIdx === idx - 1 && !g.gaps.has(ab[0])) { run.pts = run.pts.concat(sl.slice(1)); run.lastIdx = idx; } // Beta 1.144: consecutive pieces join into one strand only within a run - a piece that starts a new run (its first vertex is a gap start) always opens a fresh strand, so no painted line ever bridges the ground between a disconnected street's runs
       else { flush(); run = { pts: sl.slice(), firstIdx: idx, lastIdx: idx }; }
     } else flush();
   });
@@ -469,9 +490,9 @@ function edgeRunSlices(n, side, marked) {
 // built on it were then vetoed, leaving shy ends (gate12 evidence).
 function polyCorner(n1, side1, n2, side2, V, vi1, vi2) {
   const o1 = side1 === 0 ? GEO[n1].off0 : GEO[n1].off1, o2 = side2 === 0 ? GEO[n2].off0 : GEO[n2].off1;
-  const segsOf = (off, vi) => {
+  const segsOf = (off, vi, gaps) => {
     const segs = [];
-    for (let i = 0; i + 1 < off.length; i++) segs.push({ seg: [off[i], off[i + 1]], ext: false });
+    for (let i = 0; i + 1 < off.length; i++) { if (gaps.has(i + 1)) continue; segs.push({ seg: [off[i], off[i + 1]], ext: false }); } // Beta 1.144 (verify cycle 2): the segment between two runs is not street - a corner found on it pairs sides at a junction that does not exist
     if (vi === 0 && off.length > 1) { const d = [off[0][0] - off[1][0], off[0][1] - off[1][1]], L = H.jDistM(off[0], off[1]) || 1; segs.push({ seg: [[off[0][0] + d[0] * 8 / L, off[0][1] + d[1] * 8 / L], off[0]], ext: true }); }
     if (vi === off.length - 1 && off.length > 1) { const e = off[off.length - 1], q = off[off.length - 2], d = [e[0] - q[0], e[1] - q[1]], L = H.jDistM(q, e) || 1; segs.push({ seg: [e, [e[0] + d[0] * 8 / L, e[1] + d[1] * 8 / L]], ext: true }); }
     return segs;
@@ -483,13 +504,13 @@ function polyCorner(n1, side1, n2, side2, V, vi1, vi2) {
   // Valeria's east arm with Angie across the junction)
   const legCrosses = (endPt, X, otherN) => {
     const st = GEO[otherN].stitched;
-    for (let si = 0; si + 1 < st.length; si++) if (H.ptSegM(V, st[si], st[si + 1]) < 13 && segCross(endPt, X, st[si], st[si + 1])) return true;
+    for (let si = 0; si + 1 < st.length; si++) { if (GEO[otherN].gaps.has(si + 1)) continue; if (H.ptSegM(V, st[si], st[si + 1]) < 13 && segCross(endPt, X, st[si], st[si + 1])) return true; } // Beta 1.144: gap segments are not centreline
     return false;
   };
   let best = null, bd = 1e9;
-  for (const s1 of segsOf(o1, vi1)) {
+  for (const s1 of segsOf(o1, vi1, GEO[n1].gaps)) {
     if (H.ptSegM(V, s1.seg[0], s1.seg[1]) > 12) continue;
-    for (const s2 of segsOf(o2, vi2)) {
+    for (const s2 of segsOf(o2, vi2, GEO[n2].gaps)) {
       if (H.ptSegM(V, s2.seg[0], s2.seg[1]) > 12) continue;
       const X = lineHit(s1.seg[0], s1.seg[1], s2.seg[0], s2.seg[1]);
       if (!X) continue;
@@ -514,6 +535,7 @@ function pathBadGreen(pts, J, excl, cornerPt) {
       if (!marked) continue;
       const off = t === 0 ? g2.off0 : g2.off1;
       for (let si = 0; si + 1 < off.length; si++) {
+        if (g2.gaps.has(si + 1)) continue; // Beta 1.144: not a real segment
         if (H.ptSegM(J, off[si], off[si + 1]) > 14) continue;
         for (let s2 = 0; s2 + 1 < pts.length; s2++) {
           if (!segCross(pts[s2], pts[s2 + 1], off[si], off[si + 1])) continue;
@@ -558,6 +580,7 @@ function junctionPairs() {
           for (const n2 of H.names) {
             const st = GEO[n2].stitched;
             for (let si = 0; si + 1 < st.length; si++) {
+              if (GEO[n2].gaps.has(si + 1)) continue; // Beta 1.144: not a real segment
               if (H.ptSegM(J, st[si], st[si + 1]) >= 13 || !segCross(pts[s2], pts[s2 + 1], st[si], st[si + 1])) continue;
               const X = lineHit(pts[s2], pts[s2 + 1], st[si], st[si + 1]);
               if (!X || H.jDistM(X, J) > 6) return true;   // corner-blob crossings sit at the offset distance (~3.3 m); far crossings are excursions
@@ -610,6 +633,7 @@ const pathBadNear = (pts, J) => {
       for (const n2 of H.names) {
         const st = GEO[n2].stitched;
         for (let si = 0; si + 1 < st.length; si++) {
+          if (GEO[n2].gaps.has(si + 1)) continue; // Beta 1.144: not a real segment
           if (H.ptSegM(J, st[si], st[si + 1]) >= 13 || !segCross(pts[s2], pts[s2 + 1], st[si], st[si + 1])) continue;
           const X = lineHit(pts[s2], pts[s2 + 1], st[si], st[si + 1]);
           if (!X || H.jDistM(X, J) > 6) return true;
@@ -692,7 +716,9 @@ function bridgeStragglers(chains, pairs) {
   if (!JUNC) buildJunctions();
   const revC = c => ({ pts: [...c.pts].reverse(), key: c.key, mem: c.mem, e0: c.e1, e1: c.e0 });
   const dirLL = (n, vi) => {
-    const st = GEO[n].stitched, a = XYOf(st[Math.max(0, vi - 1)]), b = XYOf(st[Math.min(st.length - 1, vi + 1)]);
+    const st = GEO[n].stitched, gaps = GEO[n].gaps; // Beta 1.144: same run clamp as buildJunctions' dirAt
+    const lo = gaps.has(vi) ? vi : Math.max(0, vi - 1), hi = gaps.has(vi + 1) ? vi : Math.min(st.length - 1, vi + 1);
+    const a = XYOf(st[lo]), b = XYOf(st[hi]);
     const dx = b[0] - a[0], dy = b[1] - a[1], m = Math.hypot(dx, dy) || 1;
     return [dy / m / H.MLAT, dx / m / H.MLNG];
   };
@@ -941,6 +967,7 @@ function lastResortConnect(edges, bands) {
           if (!badPath) for (const n2 of H.names) {
             const st = GEO[n2].stitched;
             for (let si = 0; si + 1 < st.length && !badPath; si++) {
+              if (GEO[n2].gaps.has(si + 1)) continue; // Beta 1.144: not a real segment
               if (H.ptSegM(V, st[si], st[si + 1]) >= 13 || !segCross(seg[0], seg[1], st[si], st[si + 1])) continue;
               const X = lineHit(seg[0], seg[1], st[si], st[si + 1]);
               if (!X) continue;
@@ -988,9 +1015,9 @@ function lastResortConnect(edges, bands) {
 // anywhere the raw lines do not (round 10: straight corner chords cut
 // across bending neighbours - Santa Barbara x Columbus).
 function rawPath(n, side, fromPt, toPt, V) {
-  const off = side === 0 ? GEO[n].off0 : GEO[n].off1;
+  const off = side === 0 ? GEO[n].off0 : GEO[n].off1, gaps = GEO[n].gaps;
   let fi = -1;
-  for (let s2 = 0; s2 + 1 < off.length; s2++) if (H.ptSegM(fromPt, off[s2], off[s2 + 1]) < 0.05) { fi = s2; break; }
+  for (let s2 = 0; s2 + 1 < off.length; s2++) { if (gaps.has(s2 + 1)) continue; if (H.ptSegM(fromPt, off[s2], off[s2 + 1]) < 0.05) { fi = s2; break; } } // Beta 1.144: the segment between two runs is not part of the line - fromPt cannot lie on it, and the walk below never steps across it (a retraced bridge path stays inside the run both its points live in)
   if (fi < 0) return null;
   for (const dir of [1, -1]) {
     const pts = [];
@@ -1002,7 +1029,9 @@ function rawPath(n, side, fromPt, toPt, V) {
       if (segA && H.ptSegM(toPt, segA, p) < 0.05) return pts;
       if (H.jDistM(p, V) > 17) break;
       pts.push(p);
-      k += dir;
+      const nk = k + dir;
+      if (dir === 1 ? gaps.has(nk) : gaps.has(k)) break;
+      k = nk;
       if (k < 0 || k >= off.length) break;
     }
   }
@@ -1042,6 +1071,7 @@ function cornerTouchSlices(slices, pairs) {
             if (!marked) continue;
             const off = t2 === 0 ? gd.off0 : gd.off1;
             for (let s2 = 0; s2 + 1 < off.length && !bad; s2++) {
+              if (gd.gaps.has(s2 + 1)) continue; // Beta 1.144 (verify cycle 2): the segment between two runs is not street - it cannot veto a corner hop
               if (H.ptSegM(V, off[s2], off[s2 + 1]) > 16) continue;
               if (properX(endPt, pr.corner, off[s2], off[s2 + 1])) bad = true;
             }
@@ -1107,6 +1137,7 @@ function nearestPaintM(cp, B) {
   const st = GEO[B].stitched;
   let bd = 1e9, half = SURF_HALF, pt = null;
   for (let k = 0; k < st.length - 1; k++) {
+    if (GEO[B].gaps.has(k + 1)) continue; // Beta 1.144: the between-runs pair is not a segment of B
     const d = ptSegDistM(cp, st[k], st[k + 1]);
     if (d < bd) { bd = d; half = SURF_HALF; GEO[B].cuts.forEach((ab, i) => { if (ab[0] <= k && k + 1 <= ab[1] && H.pieces[B][i] === 3) half = BAND_HALF; }); pt = nearestPtOnSeg(cp, st[k], st[k + 1]); }
   }
@@ -1153,8 +1184,8 @@ function capLineFor(B, viB, Ix, Vx) {
   // arm that bends away.
   const st = GEO[B].stitched, Vp = st[viB];
   let pPrev = null, pNext = null;
-  for (let k = viB - 1; k >= 0; k--) { if (H.jDistM(st[k], Vp) >= 1) { pPrev = st[k]; break; } }
-  for (let k = viB + 1; k < st.length; k++) { if (H.jDistM(st[k], Vp) >= 1) { pNext = st[k]; break; } }
+  for (let k = viB - 1; k >= 0; k--) { if (GEO[B].gaps.has(k + 1)) break; if (H.jDistM(st[k], Vp) >= 1) { pPrev = st[k]; break; } } // Beta 1.144: an arm is a direction within the vertex's own run - the scan never borrows a point from the run on the other side of a gap
+  for (let k = viB + 1; k < st.length; k++) { if (GEO[B].gaps.has(k)) break; if (H.jDistM(st[k], Vp) >= 1) { pNext = st[k]; break; } }
   const arms = [];
   if (pPrev) arms.push(pPrev);
   if (pNext) arms.push(pNext);
@@ -1243,7 +1274,7 @@ function clipEndAtJunction(n, vi, pts, atStart, ownHalf) {
       // cap will lie on)?
       if (ge) {
         const bst = GEO[J.B].stitched;
-        const spans = (grp.filter(e => e.n === J.B)).some(e => e.vi > 0 && e.vi < bst.length - 1);
+        const spans = (grp.filter(e => e.n === J.B)).some(e => e.vi > 0 && e.vi < bst.length - 1 && !GEO[J.B].gaps.has(e.vi) && !GEO[J.B].gaps.has(e.vi + 1)); // Beta 1.144: a vertex at a run end does not span the junction - the street terminates there even when it resumes elsewhere
         if (spans) {
           // capLineFor picks the near edge from the anchor's side,
           // and a trace can overshoot the crossing street before
@@ -1292,7 +1323,7 @@ function clipEndAtJunction(n, vi, pts, atStart, ownHalf) {
       // centre there - stopping short on both sides opens a hole
       // (Fifth x Greenpark 104 m2, Columbus x Santa Barbara 90 m2).
       const bSt = GEO[worst.J.B].stitched;
-      const bSpans = grp.filter(e => e.n === worst.J.B).some(e => e.vi > 0 && e.vi < bSt.length - 1);
+      const bSpans = grp.filter(e => e.n === worst.J.B).some(e => e.vi > 0 && e.vi < bSt.length - 1 && !GEO[worst.J.B].gaps.has(e.vi) && !GEO[worst.J.B].gaps.has(e.vi + 1)); // Beta 1.144 (verify cycle 2): the same run-boundary rule as the spans predicate above - a vertex at a run end does not span the junction
       const P = bSpans ? [(Ex[1] + cap.ny * L) / H.MLAT, (Ex[0] + cap.nx * L) / H.MLNG]
                        : [(Ex[1] - cap.ny * L) / H.MLAT, (Ex[0] - cap.nx * L) / H.MLNG];
       const cumE = (1 - t) * Math.hypot(dv[0], dv[1]);
@@ -1372,8 +1403,8 @@ function buildFamilies() {
       // neighbouring cut is a different family/colour, or the street
       // ends. A continuing family keeps its exact shared vertex, so
       // mergeStrands still joins it seamlessly.
-      if (idx === 0 || famKey(idx - 1) !== key) cPts = clipEndAtJunction(n, ab[0], cPts, true, ownHalf);
-      if (idx === g.cuts.length - 1 || famKey(idx + 1) !== key) cPts = clipEndAtJunction(n, ab[1], cPts, false, ownHalf);
+      if (idx === 0 || g.gaps.has(ab[0]) || famKey(idx - 1) !== key) cPts = clipEndAtJunction(n, ab[0], cPts, true, ownHalf); // Beta 1.144: a run-start piece's leading end is a street end for its run - it earns the junction clip even when the previous piece (another run's end) wears the same family
+      if (idx === g.cuts.length - 1 || g.gaps.has(g.cuts[idx + 1][0]) || famKey(idx + 1) !== key) cPts = clipEndAtJunction(n, ab[1], cPts, false, ownHalf);
       if (isBand) bandSlices.push({ pts: cPts, key: 'band', mem: [{ n, idx }], e0: null, e1: null });
       else centreSlices.push({ pts: cPts, key, mem: [{ n, idx }], e0: null, e1: null });
     });

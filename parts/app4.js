@@ -635,7 +635,7 @@ $('stDel').addEventListener('click', async () => {
 });
 // ---- About / What's new ----
 const WHATSNEW = { // the curated in-app notes: plain words, LATEST RELEASE ONLY (Beta 1.114, Andrew: the accumulated list cluttered the About pane). A release REPLACES this entry with its own in the same change - it never accumulates; the full history lives in CHANGELOG.md, not the app
-  v: 'Beta 1.143', items: ["Fix: maps downloaded for a route you created could be dropped by the app's one-time offline cleanup on a later start, while it reported success — created routes now keep their downloaded maps", "Fix: if saving one city's streets failed after you had already moved to another city, the failure was charged to the new city and its saving quietly stopped — a failure now belongs to the city that caused it", "Fix: clearing the city search — or leaving and reopening it — while an answer was still loading could bring the old results back; a cleared search now stays cleared"]};
+  v: 'Beta 1.144', items: ["Fix: trimming a street to separate pieces (skipping the middle) silently lost the later pieces when the route was saved — the route now keeps every piece you pick, and counts them all", "Fix: two different streets with similar names (like Addington Avenue and Addington Place) blocked each other when creating a route — both can now be added", "New: a street that exists in two separate parts can now be added in full — tap its other part and it joins the same street"]};
 function renderAbout() {
   const cur = $('ver').textContent.trim();
   $('wnHead').textContent = "WHAT'S NEW · " + cur; // the header names the LIVE version, read from the title's version element - never a second hard-coded copy that can go stale
