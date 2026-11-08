@@ -18,6 +18,15 @@ import { spawn } from 'node:child_process';
 import fs from 'node:fs';
 
 export const sleep = ms => new Promise(r => setTimeout(r, ms));
+// Tranche 1 (2026-11-07) cleanup ownership: every browser this harness
+// launches is registered here, and a process-exit hook kills whatever is
+// still registered. Before this, a drive that threw mid-run (or was
+// killed) left its Chrome running - orphan browsers accumulated across
+// a battery and starved later drives (flake log, 2026-11-07 night).
+// finish() and the launch-retry loop still kill their own browsers
+// explicitly; this hook is the net under every other exit path.
+const liveProcs = new Set();
+process.on('exit', () => { for (const p of liveProcs) { try { p.kill('SIGKILL'); } catch (e) {} } });
 const CHROME = process.env.CHROME_BIN || (fs.existsSync('/opt/meta-chromium/chrome') ? '/opt/meta-chromium/chrome' : 'google-chrome');
 const DIR = new URL('../../src/', import.meta.url).pathname;
 export const PATTERNS_DEFAULT = [
@@ -79,6 +88,8 @@ export async function launchDrive({ patterns = PATTERNS_DEFAULT, page = process.
     }
   }
   if (!wsUrl) throw lastLaunchErr || new Error('chrome launch failed after 3 attempts');
+  liveProcs.add(proc);
+  proc.on('exit', () => liveProcs.delete(proc));
 const ws = new WebSocket(wsUrl);
   await new Promise(r => ws.addEventListener('open', r, { once: true }));
   let nextId = 1;
@@ -153,13 +164,20 @@ export function finish(R, proc) { console.log(JSON.stringify(R, null, 1)); proc.
 // loaded route click through it (Choose -> first route row) and wait for the
 // splash to be removed, exactly the state pre-1.76 boots ended in.
 export async function bootThrough(ev, poll, opts = {}) {
-  await poll(`typeof loadRoute === 'function'`, 20000);
-  await poll(`!!window.__bootAt`, 30000); // Beta 1.76: wait until bootMap has actually run - a route pick before the map exists is unreachable for a real user (the menu only appears at the readiness gate, after the boot tail) and loadRoute's paint calls need the map
+  // Tranche 1 (2026-11-07) asserted readiness: these polls ARE the boot
+  // contract, and their booleans used to be ignored - an expired window
+  // let the drive walk into scenario checks that then failed with
+  // misleading names (or, worse, read unsettled state). Now an expired
+  // readiness fails the drive HERE, naming which readiness and how long
+  // it waited. Proven by tests/browser/selftest-readiness.mjs.
+  const ready = async (expr, ms, name) => { if (!await poll(expr, ms)) throw new Error('bootThrough: readiness "' + name + '" not met within ' + ms + 'ms (poll: ' + expr + ')'); };
+  await ready(`typeof loadRoute === 'function'`, 20000, 'loadRoute defined');
+  await ready(`!!window.__bootAt`, 30000, 'app booted (__bootAt)'); // Beta 1.76: wait until bootMap has actually run - a route pick before the map exists is unreachable for a real user (the menu only appears at the readiness gate, after the boot tail) and loadRoute's paint calls need the map
   await ev(`document.getElementById('rmChoose') && document.getElementById('rmChoose').click()`);
   await ev(`document.querySelector('#rmRoutes .routeRow') && document.querySelector('#rmRoutes .routeRow').click()`);
-  await poll(`typeof routeLoaded !== 'undefined' && routeLoaded === true`, 20000);
-  await poll(`!document.getElementById('splash')`, 20000);
-  await poll(`typeof map === 'undefined' || !map || !map.isMoving()`, 25000); // Beta 1.77: the pick's intro flight settles on the fitted view - geometry checks must wait for the landing
+  await ready(`typeof routeLoaded !== 'undefined' && routeLoaded === true`, 20000, 'route loaded (routeLoaded)');
+  await ready(`!document.getElementById('splash')`, 20000, 'splash removed');
+  await ready(`typeof map === 'undefined' || !map || !map.isMoving()`, 25000, 'map settled'); // Beta 1.77: the pick's intro flight settles on the fitted view - geometry checks must wait for the landing
   // Beta 1.77: the theme is automatic by the sun now, so an unpinned boot is
   // day or night depending on the hour the battery happens to run. Pin a day
   // override so theme-blind checks are deterministic; drives that test the
