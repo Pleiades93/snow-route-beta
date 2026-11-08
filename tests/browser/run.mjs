@@ -19,18 +19,37 @@ import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 
 const HERE = path.dirname(fileURLToPath(import.meta.url));
-const ALL = ['drive65', 'drive66', 'drive83', 'drive86', 'drive88', 'drive89', 'drive114', 'drive115', 'drive116', 'drive117', 'drive118', 'drive119', 'drive120', 'drive121', 'drive122', 'drive123', 'drive124', 'drive125', 'drive126', 'drive127', 'drive128', 'drive129', 'drive130', 'drive131', 'drive132', 'drive133', 'drive134', 'drive135', 'drive136', 'drive139', 'drive140', 'drive141', 'drive142', 'drive143', 'drive144', 'drive145', 'drive146', 'drive147', 'drive148', 'drive149', 'drive150', 'drive151', 'drive152', 'drive153', 'drive154', 'drive155', 'drive156', 'drive157', 'drive158', 'drive159', 'drive160', 'drive161', 'drive162', 'drive163', 'drive164', 'drive165'];
+const ALL = ['drive65', 'drive66', 'drive83', 'drive86', 'drive88', 'drive89', 'drive114', 'drive115', 'drive116', 'drive117', 'drive118', 'drive119', 'drive120', 'drive121', 'drive122', 'drive123', 'drive124', 'drive125', 'drive126', 'drive127', 'drive128', 'drive129', 'drive130', 'drive131', 'drive132', 'drive133', 'drive134', 'drive135', 'drive136', 'drive139', 'drive140', 'drive141', 'drive142', 'drive143', 'drive144', 'drive145', 'drive146', 'drive147', 'drive148', 'drive149', 'drive150', 'drive151', 'drive152', 'drive153', 'drive154', 'drive155', 'drive156', 'drive157', 'drive158', 'drive159', 'drive160', 'drive161', 'drive162', 'drive163', 'drive164', 'drive165', 'drive166'];
 const names = process.argv.slice(2).length ? process.argv.slice(2) : ALL;
 const TIMEOUT_MS = Number(process.env.RUNNER_TIMEOUT_MS) || 300000;
 
+// Tranche 1 (2026-11-07) cleanup ownership: each drive spawns DETACHED,
+// so it leads its own process group, and the runner terminates the WHOLE
+// group - drive process plus every browser it launched - on every exit
+// path (pass, fail, exception, timeout). Before this, the timeout path
+// killed only the drive's Node process and an exception exit killed
+// nothing at all: the drive's Chrome survived as an orphan, and orphans
+// compounded the local rig's contention across a battery (flake log,
+// 2026-11-07 night). The harness carries the same ownership inside the
+// drive (an exit hook in harness.mjs); this is the runner-side net that
+// also covers the bespoke rigs, which spawn their browsers directly.
+// Proven by tests/browser/selftest-cleanup.mjs. Verdict logic below is
+// untouched - selftest-runner.mjs still proves every verdict.
+const liveGroups = new Set();
+function killGroup(p) { try { process.kill(-p.pid, 'SIGKILL'); } catch (e) {} try { p.kill('SIGKILL'); } catch (e) {} }
+for (const sig of ['SIGINT', 'SIGTERM']) {
+  process.on(sig, () => { for (const p of liveGroups) killGroup(p); process.exit(sig === 'SIGINT' ? 130 : 143); });
+}
+
 function runOne(name) {
   return new Promise(resolve => {
-    const p = spawn(process.execPath, [path.join(HERE, name + '.mjs')], { cwd: HERE, env: process.env });
+    const p = spawn(process.execPath, [path.join(HERE, name + '.mjs')], { cwd: HERE, env: process.env, detached: true });
+    liveGroups.add(p);
     let out = '', err = '', timedOut = false;
-    const timer = setTimeout(() => { timedOut = true; p.kill('SIGKILL'); }, TIMEOUT_MS);
+    const timer = setTimeout(() => { timedOut = true; killGroup(p); }, TIMEOUT_MS);
     p.stdout.on('data', d => { out += d; });
     p.stderr.on('data', d => { err += d; });
-    p.on('close', code => { clearTimeout(timer); resolve({ name, code, out, err, timedOut }); });
+    p.on('close', code => { clearTimeout(timer); killGroup(p); liveGroups.delete(p); resolve({ name, code, out, err, timedOut }); });
   });
 }
 
