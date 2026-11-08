@@ -124,6 +124,8 @@ jobs:
         run: node tests/browser/selftest-runner.mjs
       - name: "Cleanup self-test (orphan browsers: throw + timeout paths)"
         run: node tests/browser/selftest-cleanup.mjs
+      - name: "Scenario-layer fixtures (Tranche 4 gate)"
+        run: node tests/browser/selftest-scenario.mjs
       - name: Browser tests (deterministic drives, shard ${{ matrix.shard }})
         run: node tests/browser/run.mjs ${{ matrix.drives }}
   browser-smoke:
@@ -144,6 +146,8 @@ jobs:
         run: node tests/browser/selftest-runner.mjs
       - name: "Cleanup self-test (orphan browsers: throw + timeout paths)"
         run: node tests/browser/selftest-cleanup.mjs
+      - name: "Scenario-layer fixtures (Tranche 4 gate)"
+        run: node tests/browser/selftest-scenario.mjs
       - name: Browser smoke (critical-path drives)
         run: node tests/browser/run.mjs drive89 drive123 drive132 drive145 drive160 drive161
   offline-e2e:

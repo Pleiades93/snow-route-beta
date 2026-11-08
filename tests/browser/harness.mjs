@@ -160,6 +160,51 @@ const ws = new WebSocket(wsUrl);
 }
 export function finish(R, proc) { console.log(JSON.stringify(R, null, 1)); proc.kill('SIGKILL'); process.exit(0); }
 
+// Scenario layer (Improvement Tranche 4 / T3, 2026-11-08): named helpers
+// over the five mechanical ev()/poll() patterns - tap by id/selector,
+// expect visible/text, mark calls, load-and-settle, theme pin. Each
+// helper takes the drive's own ev/poll as a parameter (the bootThrough
+// shape - no new global state) and is a THIN wrapper: a page-side throw
+// propagates as the harness's evaluate throw (never caught, never
+// converted to a value), and an expectation result is returned
+// verbatim, so the drive's ok() (pass only on literal true) judges it
+// exactly as it would judge the raw ev() result. Helpers never coerce
+// a truthy value to true. Arguments enter page expressions only via
+// JSON.stringify. Proven - positive AND negative fixtures - by
+// tests/browser/selftest-scenario.mjs (the adjudication's condition:
+// failed-click / absent-element / evaluation-exception / timeout /
+// strict-boolean semantics must survive the layer exactly).
+export async function tapById(ev, id) {
+  return await ev(`(() => { const el = document.getElementById(${JSON.stringify(id)}); if (el && el.disabled) return false; el.click(); return true; })()`);
+}
+export async function tapSelector(ev, selector) {
+  return await ev(`(() => { const el = document.querySelector(${JSON.stringify(selector)}); if (el && el.disabled) return false; el.click(); return true; })()`);
+}
+export async function expectVisible(ev, selector) {
+  return await ev(`(() => { const el = document.querySelector(${JSON.stringify(selector)}); if (!el) return false; const s = getComputedStyle(el); return s.display !== 'none' && s.visibility !== 'hidden' && !!(el.offsetWidth || el.offsetHeight || el.getClientRects().length); })()`);
+}
+export async function expectText(ev, selector, text) {
+  return await ev(`(() => { const el = document.querySelector(${JSON.stringify(selector)}); return !!el && el.textContent.trim() === ${JSON.stringify(text)}; })()`);
+}
+export async function expectStrict(ev, expr) {
+  return await ev(expr);
+}
+export async function markDone(ev, name, via) {
+  return await ev(`(() => { markDone(${JSON.stringify(name)}, ${JSON.stringify(via)}); return true; })()`);
+}
+export async function markUndone(ev, name) {
+  return await ev(`(() => { markUndone(${JSON.stringify(name)}); return true; })()`);
+}
+export async function waitTrue(poll, expr, ms) {
+  return await poll(expr, ms);
+}
+export async function waitAbsent(poll, id, ms) {
+  return await waitTrue(poll, `!document.getElementById(${JSON.stringify(id)})`, ms);
+}
+export async function pinDayTheme(ev) {
+  return await ev(`(function(){ if (typeof setThemeOverride === 'function') { setThemeOverride(false); if (typeof applyNight === 'function') applyNight(); if (typeof map !== 'undefined' && map && typeof setBasemap === 'function') setBasemap(); } return true; })()`);
+}
+
 // Beta 1.76: every cold boot now ends at the route menu - drives that need a
 // loaded route click through it (Choose -> first route row) and wait for the
 // splash to be removed, exactly the state pre-1.76 boots ended in.
@@ -183,5 +228,5 @@ export async function bootThrough(ev, poll, opts = {}) {
   // override so theme-blind checks are deterministic; drives that test the
   // theme itself set their own state after this. A drive whose fixture seeds
   // its own theme state passes { pinTheme: false } and keeps it.
-  if (opts.pinTheme !== false) await ev(`(function(){ if (typeof setThemeOverride === 'function') { setThemeOverride(false); if (typeof applyNight === 'function') applyNight(); if (typeof map !== 'undefined' && map && typeof setBasemap === 'function') setBasemap(); } return true; })()`);
+  if (opts.pinTheme !== false) await pinDayTheme(ev);
 }

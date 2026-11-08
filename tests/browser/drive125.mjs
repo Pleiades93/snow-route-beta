@@ -1,4 +1,4 @@
-import { launchDrive, finish, bootThrough } from './harness.mjs';
+import { launchDrive, finish, bootThrough, tapById, expectStrict, markDone as markDoneScn, waitTrue, waitAbsent } from './harness.mjs';
 import { PACK5W } from './pack-expect.mjs'; // premise derivation (Tranche 4 / T2, 2026-11-08): expectations about the shipped world derive from source - see pack-expect.mjs
 const { proc, ev, consoleLog, sleep, poll: poll120, poll } = await launchDrive();
 await bootThrough(ev, poll); // Beta 1.76: boots end at the route menu now - click through to a loaded route
@@ -24,7 +24,7 @@ const inView = (r) => r.x >= -1 && r.y >= -1 && r.r <= 421 && r.b <= 901;
 const noOverlap = (rs) => rs.every((a, i) => rs.every((b, j) => i === j || !overlaps(a, b)));
 let A;
 
-ok('S0 app boots with the map active', await poll120(`typeof glOk !== 'undefined' && glOk === true`, 30000));
+ok('S0 app boots with the map active', await waitTrue(poll, `typeof glOk !== 'undefined' && glOk === true`, 30000));
 
 // Beta 1.22 (Andrew's phone round): one-word green Start; count as "N of 34 - P%";
 // a dead strip under the dock so the iPhone home swipe cannot drag the map;
@@ -32,7 +32,7 @@ ok('S0 app boots with the map active', await poll120(`typeof glOk !== 'undefined
 // Beta 1.42: the start-up splash overlays the first seconds by design - hit-test
 // probes (elementFromPoint) must wait until it has removed itself, or they measure
 // the splash instead of the app. (drive132 owns the splash's own checks.)
-await poll120(`!document.getElementById('splash')`, 20000);
+await waitAbsent(poll, 'splash', 20000);
 const S22 = JSON.parse(await ev(`(() => { const sb = $('startBtn'); const cs = getComputedStyle(sb);
   const strip = $('tabBar'); const sr = strip.getBoundingClientRect(); const br = sb.getBoundingClientRect();
   const atBottom = document.elementFromPoint(window.innerWidth / 2, window.innerHeight - 3);
@@ -59,24 +59,24 @@ ok('T1 day menus share one light surface with dark text (bar = sheets; the Setti
 ok('T2 tab order: Locate, Routes, Home dead centre, Clear, Settings (Beta 1.88: Day/Night is a floating button, not a tab) | ' + JSON.stringify(T1.order),
   JSON.stringify(T1.order) === JSON.stringify(['gpsBtn', 'routesBtn', 'homeBtn', 'clearBtn', 'setBtn']));
 ok('T3 the meter starts empty | fillW ' + T1.fillW, T1.fillW === 0);
-await ev(`(() => { $('setBtn').click(); return true; })()`); await sleep(600);
+await tapById(ev, 'setBtn'); await sleep(600);
 const T3b = JSON.parse(await ev(`(() => JSON.stringify({ open: $('setMenu').classList.contains('open'), bg: getComputedStyle($('setMenu')).backgroundColor,
   rows: [...document.querySelectorAll('#setMainPane .rmBtn')].map(b => b.id), ver: $('setVer').textContent, titleVer: $('ver').textContent,
   chipOut: !$('setMenu').contains($('nightBtn')), chipW: $('nightBtn').offsetWidth, paceW: $('paceBtn').offsetWidth }))()`));
 ok('T3 Settings rises as the blue takeover: Status / On the job / Backup / About-What\'s new on the main pane (Beta 1.111 redesign - Update moved into About, offline maps into Status), the version riding bottom-right synced from the title, Day/Night out of the menu - its own button now, exactly Pace-sized (Beta 1.88) | ' + JSON.stringify(T3b),
   T3b.open === true && T3b.bg === 'rgb(43, 75, 242)' && JSON.stringify(T3b.rows) === JSON.stringify(['stBtn', 'jobBtn', 'exportBtn', 'aboutBtn']) && T3b.ver === T3b.titleVer && T3b.ver.length > 0 && T3b.chipOut && T3b.chipW === 56 && T3b.chipW === T3b.paceW);
-await ev(`(() => { $('setClose').click(); return true; })()`); await sleep(600);
-ok('T3 the bare X closes the Settings takeover', await ev(`$('setMenu').classList.contains('open')`) === false);
-await ev(`(() => { $('setBtn').click(); return true; })()`); await sleep(500);
-await ev(`(() => { $('exportBtn').click(); return true; })()`); await sleep(500);
+await tapById(ev, 'setClose'); await sleep(600);
+ok('T3 the bare X closes the Settings takeover', await expectStrict(ev, `$('setMenu').classList.contains('open')`) === false);
+await tapById(ev, 'setBtn'); await sleep(500);
+await tapById(ev, 'exportBtn'); await sleep(500);
 const T3c1 = JSON.parse(await ev(`(() => JSON.stringify({ opts: [...document.querySelectorAll('#xOpts .bkBtn')].map(b => b.textContent), groupShown: $('xOpts').style.display !== 'none', title: $('xTitle').textContent }))()`));
-await ev(`(() => { $('xRes').click(); return true; })()`); await sleep(300);
+await tapById(ev, 'xRes'); await sleep(300);
 const T3c2 = JSON.parse(await ev(`(() => JSON.stringify({ opts: [...document.querySelectorAll('#xRestoreOpts .bkBtn')].map(b => b.textContent), title: $('xTitle').textContent }))()`));
-await ev(`(() => { $('xImpText').click(); return true; })()`); await sleep(300);
+await tapById(ev, 'xImpText'); await sleep(300);
 const T3c3 = JSON.parse(await ev(`(() => JSON.stringify({ title: $('xTitle').textContent, box: $('xText').style.display !== 'none', imp: $('xImp').style.display !== 'none' }))()`));
-await ev(`(() => { $('setBack').click(); return true; })()`); await sleep(300);
+await tapById(ev, 'setBack'); await sleep(300);
 const T3c4 = JSON.parse(await ev(`(() => JSON.stringify({ title: $('xTitle').textContent }))()`));
-await ev(`(() => { $('setBack').click(); return true; })()`); await sleep(300);
+await tapById(ev, 'setBack'); await sleep(300);
 const T3c5 = JSON.parse(await ev(`(() => JSON.stringify({ title: $('xTitle').textContent }))()`));
 // Beta 1.96 (Andrew): the Recovery option LEFT this menu in this round - ONE Backup button
 // remains, and the recovery export is its automatic fallback when saving fails (drive136 F12
@@ -85,16 +85,16 @@ ok('T3c the backup pane is a menu tree exactly as specced (Beta 1.89; the recove
   JSON.stringify(T3c1.opts) === JSON.stringify(['Backup (JSON)', 'Restore backup'])&& T3c1.groupShown && T3c1.title === 'Backup' &&
   JSON.stringify(T3c2.opts) === JSON.stringify(['Import JSON', 'Import Text']) && T3c2.title === 'Restore' &&
   T3c3.title === 'Import Text' && T3c3.box && T3c3.imp && T3c4.title === 'Restore' && T3c5.title === 'Backup');
-await ev(`(() => { $('setClose').click(); return true; })()`); await sleep(400);
+await tapById(ev, 'setClose'); await sleep(400);
 
 // F03 (Beta 1.92, deep audit): restore feedback must be VISIBLE from inside
 // the Settings takeover it was launched from.
-await ev(`(() => { $('setBtn').click(); return true; })()`); await sleep(500);
-await ev(`(() => { $('exportBtn').click(); return true; })()`); await sleep(400);
+await tapById(ev, 'setBtn'); await sleep(500);
+await tapById(ev, 'exportBtn'); await sleep(400);
 await ev(`(() => { document.getElementById('xText').value = 'not json'; doRestore(); return true; })()`); await sleep(300);
 const F03 = JSON.parse(await ev(`(() => { const t = $('toast'); return JSON.stringify({ show: t.classList.contains('show'), z: +getComputedStyle(t).zIndex, menuZ: +getComputedStyle($('setMenu')).zIndex, txt: t.textContent }); })()`));
 ok('F03 a restore rejection is visible from inside Settings (the toast rides above the takeover) | ' + JSON.stringify(F03), F03.show === true && F03.z > F03.menuZ && F03.txt.length > 0);
-await ev(`(() => { $('setClose').click(); return true; })()`); await sleep(400);
+await tapById(ev, 'setClose'); await sleep(400);
 
 // P1 (Beta 1.33, Protomaps): ONE places system - localities (cities/towns/villages) are
 // gated by the tile data itself, size by size (the Apple/Google ladder); the app's tuning
@@ -114,12 +114,12 @@ let regionNames = [];
 for (let i = 0; i < 24; i++) { await sleep(500); regionNames = JSON.parse(await ev(`JSON.stringify(map.queryRenderedFeatures({ layers: ['places_locality'] }).map(f => f.properties && f.properties.name).filter(Boolean))`)); if (['Vaughan', 'Richmond Hill', 'Markham', 'Toronto', 'King City', 'Aurora', 'Newmarket'].filter(n => regionNames.includes(n)).length >= 2) break; }
 ok('P3b at dot-zoom (z9.2) the surrounding cities/towns are on the map | ' + JSON.stringify(regionNames.slice(0, 14)),
   ['Vaughan', 'Richmond Hill', 'Markham', 'Toronto', 'King City', 'Aurora', 'Newmarket'].filter(n => regionNames.includes(n)).length >= 2);
-await ev(`(() => { $('homeBtn').click(); return true; })()`); await sleep(600);
+await tapById(ev, 'homeBtn'); await sleep(600);
 
 // S6/S7 (Beta 1.24): after Start, Cancel must float ABOVE the circle - clear of the
 // tab bar and tappable; and the chrome icons must compute to bright colours on the
 // dark glass (a duplicated dark colour value once rendered them invisible).
-await ev(`(() => { $('startBtn').click(); return true; })()`);
+await tapById(ev, 'startBtn');
 await sleep(700);
 const S6 = JSON.parse(await ev(`(() => { const c = $('cancelStartBtn'); const cr = c.getBoundingClientRect(); const tr = $('tabBar').getBoundingClientRect();
   const hit = document.elementFromPoint(cr.x + cr.width / 2, cr.y + cr.height / 2);
@@ -129,7 +129,7 @@ ok('S6 Cancel start floats above the circle, clear of the tab bar, and takes the
   S6.disp !== 'none' && S6.cancel.b <= S6.tabTop - 40 && S6.hit === 'cancelStartBtn');
 ok('S7 day mode: chrome is light glass with dark icons (GPS-app behaviour) | ' + JSON.stringify(S6),
   S6.listCol === 'rgb(34, 38, 46)' && S6.paceCol === 'rgb(34, 38, 46)' && S6.tabCol === 'rgb(43, 48, 56)');
-await ev(`(() => { $('nightBtn').click(); return true; })()`);
+await tapById(ev, 'nightBtn');
 await sleep(600);
 ok('S7 day mode: the day/night button offers Night - the moon shows where it takes you, not where you are (Beta 1.28)', S6.moonIcon === true);
 const S7 = JSON.parse(await ev(`(() => JSON.stringify({ night: document.body.classList.contains('night'), sunIcon: (() => { const t = document.createElement('span'); t.innerHTML = ICONS.sun; return $('nightBtn').innerHTML === t.innerHTML; })(),
@@ -161,20 +161,20 @@ await ev(`(() => { markDone('Woolacott', 'tap'); selectStretch('Woolacott', 0, S
 const swSnap = async () => JSON.parse(await ev(`(() => { const L = {}; for (const l of map.getStyle().layers) L[l.id] = l; return JSON.stringify({ night: document.body.classList.contains('night'), centre: map.getCenter().toArray(), zoom: map.getZoom(), name: $('selName').textContent, count: $('countTxt').textContent, route: !!map.getLayer('t1-surface'), gps: !!map.getLayer('gps-dot'), sub: L['places_subplace'] ? L['places_subplace'].minzoom : null, locMax: L['places_locality'] ? L['places_locality'].maxzoom : null }); })()`));
 const swWait = async () => { for (let i = 0; i < 20; i++) { if (await ev(`!!(window.map && map.getLayer && map.getLayer('t1-surface'))`)) return; await sleep(400); } };
 const SW0 = await swSnap();
-await ev(`(() => { $('nightBtn').click(); return true; })()`); await swWait(); await sleep(300);
+await tapById(ev, 'nightBtn'); await swWait(); await sleep(300);
 const SW1 = await swSnap();
 ok('P5 switching to DAY keeps everything: selection, progress, camera, stack, place tuning | ' + JSON.stringify(SW1),
   SW1.night === false && SW1.name === SW0.name && SW1.count === SW0.count && Math.abs(SW1.centre[0] - SW0.centre[0]) < 0.0001 && Math.abs(SW1.centre[1] - SW0.centre[1]) < 0.0001 && Math.abs(SW1.zoom - SW0.zoom) < 0.01 && SW1.route && SW1.gps && SW1.sub === 9 && SW1.locMax === 15.5);
-await ev(`(() => { $('nightBtn').click(); return true; })()`); await swWait(); await sleep(300);
+await tapById(ev, 'nightBtn'); await swWait(); await sleep(300);
 const SW2 = await swSnap();
 ok('P5 switching back to NIGHT keeps everything too | ' + JSON.stringify(SW2),
   SW2.night === true && SW2.name === SW0.name && SW2.count === SW0.count && Math.abs(SW2.centre[0] - SW0.centre[0]) < 0.0001 && Math.abs(SW2.centre[1] - SW0.centre[1]) < 0.0001 && Math.abs(SW2.zoom - SW0.zoom) < 0.01 && SW2.route && SW2.gps && SW2.sub === 9 && SW2.locMax === 15.5);
 await ev(`(() => { markUndone('Woolacott'); deselect(); return true; })()`);
 
-await ev(`(() => { $('cancelStartBtn').click(); return true; })()`);
+await tapById(ev, 'cancelStartBtn');
 await sleep(400);
 
-await ev(`(() => { markDone('Woolacott', 'tap'); return true; })()`);
+await markDoneScn(ev, 'Woolacott', 'tap');
 await sleep(400);
 const C2 = await ev(`$('count').textContent`);
 ok('S5 count climbs in the new format after a street is done | ' + C2, new RegExp('^1 of ' + PACK5W.names + ' · \\d+%$').test(C2));
