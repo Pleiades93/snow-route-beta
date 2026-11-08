@@ -46,6 +46,7 @@ import { startCreateRig, serveRepo, makeResults, finishCreate, sleep } from './h
 const REPO = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..', '..');
 const PACKFX = JSON.parse(fs.readFileSync(path.join(REPO, 'tests', 'browser', 'fixtures', 'city-pack-vaughan.json'), 'utf8'));
 const INDEXFX = JSON.parse(fs.readFileSync(path.join(REPO, 'packs', 'index.json'), 'utf8'));
+const VAUGHAN_NAME = (INDEXFX.cities.find(c => c.slug === 'vaughan') || {}).name; // premise derivation (Tranche 4 / T2, 2026-11-08): expectations about the shipped world derive from source - see pack-expect.mjs (the list-row name for the vaughan pack derives from the shipped index, keyed by its slug)
 const { R, ok } = makeResults();
 
 const STREET_BORDEAUX = [
@@ -92,7 +93,7 @@ const pickVaughanFromList = async () => {
   await ev2(`document.getElementById('crDoorList').click()`);
   await poll(`document.getElementById('rmCityListPane').classList.contains('on')`, 10000);
   await poll(`document.querySelectorAll('#crCityList .routeRow').length === ${INDEXFX.cities.length}`, 15000); // premise fix (2026-11-07, Andrew-approved, test-only): index-derived count - the baked-in 5 expired silently (a 15 s timeout) when the catalogue grew to twelve
-  await ev2(`(() => { const r = [...document.querySelectorAll('#crCityList .routeRow')].find(x => { const n = x.querySelector('.routeName'); return n && n.textContent === 'Vaughan'; }); if (r) r.click(); return true; })()`);
+  await ev2(`(() => { const r = [...document.querySelectorAll('#crCityList .routeRow')].find(x => { const n = x.querySelector('.routeName'); return n && n.textContent === ${JSON.stringify(VAUGHAN_NAME)}; }); if (r) r.click(); return true; })()`);
   const inPick = await poll(`typeof creating !== 'undefined' && creating === true && crStage === 'pick'`, 15000);
   const ready = await poll(`crPrepState === 'ready'`, 30000);
   return inPick === true && ready === true;

@@ -103,10 +103,10 @@ await ev2(`document.getElementById('xPre').click()`);
 ok('E4 preload completes with a saved count', await poll(`document.getElementById('xPreStat').textContent.includes('Offline maps: saved')`, 420000));
 const stat = await ev2(`document.getElementById('xPreStat').textContent`);
 const m = /saved (\d+) of (\d+)/.exec(stat || '');
-ok('E5 saved >= 883 of 897 (the 2026-11-01 regression saved 0) | ' + stat, !!m && +m[1] >= 883 && +m[2] === 897);
+ok('E5 saved >= 883 of 897 (the 2026-11-01 regression saved 0) | ' + stat, !!m && +m[1] >= OFFLINE_FIXTURE.count - 14 && +m[2] === OFFLINE_FIXTURE.count);
 const counts = await ev2(`(async () => { const out = {}; for (const k of await caches.keys()) { const c = await caches.open(k); out[k] = (await c.keys()).length; } return JSON.stringify(out); })()`);
 const baseKeys = JSON.parse(await ev2(`(async () => { const c = await caches.open('snowroute-offline-v1'); const ks = await c.keys(); return JSON.stringify(ks.map(r => r.url).sort()); })()`)); // the pristine post-preload PACK key set, captured before any zooming (keysOf is defined further down, so this capture is inlined). Beta 1.94 (audit F-03): the preload writes into its own cache (snowroute-offline-v1), so this set is exactly the 897-file manifest - 633 tiles + 256 Noto Sans Regular glyph ranges + 8 sprites. (Through 1.93 the pack shared snowroute-tiles-v1 and this census read 899: the manifest plus 2 opportunistic glyph files the live map fetched for boot-view labels - PROVEN 2026-11-03, work/e12b-probe. Those fetches now fall through to the browsing cache, so the pack census is exact.)
-ok('E6 the offline pack cache really holds the files | ' + counts, (() => { try { return JSON.parse(counts)['snowroute-offline-v1'] >= 883; } catch (e) { return false; } })());
+ok('E6 the offline pack cache really holds the files | ' + counts, (() => { try { return JSON.parse(counts)['snowroute-offline-v1'] >= OFFLINE_FIXTURE.count - 14; } catch (e) { return false; } })());
 ok('E6b the downloaded pack equals the Offline Contract v1 fixture set exactly (Phase 5: the app must match the contract, not itself) | base ' + baseKeys.length + ' fixture ' + OFFLINE_FIXTURE.count, baseKeys.length === FIX_SET.size && baseKeys.every(u => FIX_SET.has(u)));
 // ---- Phase 3 (Beta 1.72): E1-E6 prove the files land in the cache. These
 // prove the app actually LIVES on them: renders with the network dead, at
@@ -199,7 +199,7 @@ const stat2 = await ev2(`document.getElementById('xPreStat').textContent`);
 const m2 = /saved (\d+) of (\d+)/.exec(stat2 || '');
 const keysAfter = await keysOf();
 const noLoss12 = partialKeys.every(u => keysAfter.includes(u));
-ok('E12b the resumed download restores the full preload set (897) and loses nothing the interruption stored | ' + stat2 + ' | keys ' + keysAfter.length + ' (base ' + baseKeys.length + ' = the pack exactly)', !!m2 && +m2[1] === 897 && +m2[2] === 897 && noLoss12 && keysAfter.length >= 897);
+ok('E12b the resumed download restores the full preload set (897) and loses nothing the interruption stored | ' + stat2 + ' | keys ' + keysAfter.length + ' (base ' + baseKeys.length + ' = the pack exactly)', !!m2 && +m2[1] === OFFLINE_FIXTURE.count && +m2[2] === OFFLINE_FIXTURE.count && noLoss12 && keysAfter.length >= OFFLINE_FIXTURE.count);
 // E15 (audit C01-T4): a dead-network BURST mid-download. The app's per-file
 // failure handling skips what it cannot fetch and reports the short count
 // honestly; a clean re-run must then restore the exact full set.
@@ -214,13 +214,13 @@ tileDelayMs = 0;
 await poll(`document.getElementById('xPreStat').textContent.includes('Offline maps: saved')`, 420000);
 const statF = await ev2(`document.getElementById('xPreStat').textContent`);
 const mF = /saved (\d+) of (\d+)/.exec(statF || '');
-ok('E15a a dead-network burst leaves the download short, honestly reported | partial ' + partial15 + ' then ' + statF, !!mF && +mF[1] < 897 && +mF[2] === 897);
+ok('E15a a dead-network burst leaves the download short, honestly reported | partial ' + partial15 + ' then ' + statF, !!mF && +mF[1] < OFFLINE_FIXTURE.count && +mF[2] === OFFLINE_FIXTURE.count);
 const keysMid = await keysOf();
 await ev2(`document.getElementById('xPre').click()`);
-const rerunOk = await poll(`document.getElementById('xPreStat').textContent.includes('saved 897 of 897')`, 420000);
+const rerunOk = await poll(`document.getElementById('xPreStat').textContent.includes('saved ' + ${OFFLINE_FIXTURE.count} + ' of ' + ${OFFLINE_FIXTURE.count})`, 420000);
 const keysFinal = await keysOf();
 const noLoss = keysMid.every(u => keysFinal.includes(u));
-ok('E15b the re-run restores the full preload set and loses nothing | rerun ' + rerunOk + ' keys ' + keysFinal.length + ' burst survivors ' + keysMid.length, rerunOk && noLoss && keysFinal.length >= 897); // the preload's contract is the 897 files (baseKeys, exactly, since the 1.94 pack cache), and this section's page never reloads, so the sound claims are: full 897 restored, nothing the burst left behind lost
+ok('E15b the re-run restores the full preload set and loses nothing | rerun ' + rerunOk + ' keys ' + keysFinal.length + ' burst survivors ' + keysMid.length, rerunOk && noLoss && keysFinal.length >= OFFLINE_FIXTURE.count); // the preload's contract is the 897 files (baseKeys, exactly, since the 1.94 pack cache), and this section's page never reloads, so the sound claims are: full 897 restored, nothing the burst left behind lost
 // E16 (Beta 1.74, audit D02): PROCESS death mid-download. E12 kills the page
 // (a navigation); this kills the whole browser while the download is
 // genuinely incomplete, relaunches on the SAME persisted profile, and the
@@ -239,10 +239,10 @@ for (const f of ['SingletonLock', 'SingletonCookie', 'SingletonSocket']) { try {
 await launchBrowser();
 const backOk = (await poll(`typeof glOk !== 'undefined' && glOk === true`, 90000)) && (await poll(`!!navigator.serviceWorker.controller`, 30000));
 await ev2(`document.getElementById('xPre').click()`);
-const stat16 = await poll(`document.getElementById('xPreStat').textContent.includes('saved 897 of 897')`, 420000);
+const stat16 = await poll(`document.getElementById('xPreStat').textContent.includes('saved ' + ${OFFLINE_FIXTURE.count} + ' of ' + ${OFFLINE_FIXTURE.count})`, 420000);
 const keysAfter16 = await keysOf();
 const noLoss16 = partialKeys16.every(u => keysAfter16.includes(u));
-ok('E16 process killed mid-download: relaunch on the same profile and the resumed download restores the full preload set (897) and loses nothing the kill left stored | back ' + backOk + ' keys ' + keysAfter16.length + ' (base ' + baseKeys.length + ' = the pack exactly)', backOk && stat16 && noLoss16 && keysAfter16.length >= 897);
+ok('E16 process killed mid-download: relaunch on the same profile and the resumed download restores the full preload set (897) and loses nothing the kill left stored | back ' + backOk + ' keys ' + keysAfter16.length + ' (base ' + baseKeys.length + ' = the pack exactly)', backOk && stat16 && noLoss16 && keysAfter16.length >= OFFLINE_FIXTURE.count);
 // E18 (Beta 1.94, audit F-03): the browsing cache's FIFO eviction can never
 // evict the downloaded pack. Flood snowroute-tiles-v1 past its 3000 cap from
 // the page, then fetch fresh tiles THROUGH the worker in small batches,
@@ -388,7 +388,7 @@ try {
   await ev2(`(async () => { const oc = await caches.open('snowroute-offline-v1'); const tc = await caches.open('snowroute-tiles-v1'); const hit = await oc.match(${JSON.stringify(target)}); if (hit) await tc.put(${JSON.stringify(target)}, hit); await oc.delete(${JSON.stringify(target)}); return true; })()`);
   await ev2(`(() => { window.__realOpen = caches.open.bind(caches); caches.open = async (name) => { const c = await window.__realOpen(name); if (name !== 'snowroute-offline-v1') return c; return new Proxy(c, { get(t, p) { if (p === 'put') return async (u, res) => { const url = typeof u === 'string' ? u : u.url; if (url === ${JSON.stringify(target)}) throw new Error('injected pack put failure'); return t.put(u, res); }; const v = t[p]; return typeof v === 'function' ? v.bind(t) : v; } }); }; return true; })()`);
   await ev2(`(() => { document.getElementById('xPre').click(); return true; })()`);
-  const statOk = await poll(`document.getElementById('xPreStat').textContent.includes('saved 896 of 897')`, 300000);
+  const statOk = await poll(`document.getElementById('xPreStat').textContent.includes('saved ' + ${OFFLINE_FIXTURE.count - 1} + ' of ' + ${OFFLINE_FIXTURE.count})`, 300000);
   const e21 = JSON.parse(await ev2(`(async () => { const oc = await caches.open('snowroute-offline-v1'); const tc = await caches.open('snowroute-tiles-v1'); return JSON.stringify({ inPack: !!(await oc.match(${JSON.stringify(target)})), inTiles: !!(await tc.match(${JSON.stringify(target)})), stat: document.getElementById('xPreStat').textContent }); })()`));
   await ev2(`(() => { caches.open = window.__realOpen; return true; })()`);
   ok('E21 a failed pack write keeps the browsing copy: cleanup deletes only confirmed pack entries (Beta 1.96, audit-2 N-1) | statOk ' + statOk + ' ' + JSON.stringify(e21), statOk === true && e21.inPack === false && e21.inTiles === true);

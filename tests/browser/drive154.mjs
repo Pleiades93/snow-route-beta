@@ -48,6 +48,7 @@ const REPO = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..', '.
 const FIX = JSON.parse(fs.readFileSync(path.join(REPO, 'tests', 'browser', 'fixtures', 'create-osm.json'), 'utf8'));
 const PACKFX = JSON.parse(fs.readFileSync(path.join(REPO, 'tests', 'browser', 'fixtures', 'city-pack-vaughan.json'), 'utf8'));
 const INDEXFX = JSON.parse(fs.readFileSync(path.join(REPO, 'packs', 'index.json'), 'utf8'));
+const VAUGHAN_NAME = (INDEXFX.cities.find(c => c.slug === 'vaughan') || {}).name; // premise derivation (Tranche 4 / T2, 2026-11-08): expectations about the shipped world derive from source - see pack-expect.mjs (the list-row name for the vaughan pack derives from the shipped index, keyed by its slug)
 const { R, ok } = makeResults();
 
 // ---- fixture worlds ----
@@ -149,7 +150,7 @@ const listB = await J(`({ t: (document.querySelector('#rmCityListPane .rmTitle')
 ok('B1 LIST ROWS: the list pane is titled "Select City" and renders the index cities as rows, each with its street count + "ready to load" | ' + JSON.stringify(listB),
   rowsB === true && listB.t === "Select City" && (listB.subs || []).includes('4,477 streets · ready to load') && (listB.subs || []).every(s => /streets · ready to load/.test(s)));
 const wireB0 = wire.length;
-await ev2(`(() => { const r = [...document.querySelectorAll('#crCityList .routeRow')].find(x => { const n = x.querySelector('.routeName'); return n && n.textContent === 'Vaughan'; }); if (r) r.click(); return true; })()`);
+await ev2(`(() => { const r = [...document.querySelectorAll('#crCityList .routeRow')].find(x => { const n = x.querySelector('.routeName'); return n && n.textContent === ${JSON.stringify(VAUGHAN_NAME)}; }); if (r) r.click(); return true; })()`);
 const readyB = await poll(`typeof creating !== 'undefined' && creating === true && crStage === 'pick' && crPrepState === 'ready'`, 30000);
 const wB = wire.slice(wireB0);
 const barB = await J(`({ barOn: document.getElementById('createBar').classList.contains('on'), inputThere: !!document.getElementById('crSearchInput') })`);

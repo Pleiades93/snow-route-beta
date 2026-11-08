@@ -1,4 +1,5 @@
 import { launchDrive, finish } from './harness.mjs';
+import { PACK5W, PACK_COUNT, OFFLINE } from './pack-expect.mjs'; // premise derivation (Tranche 4 / T2, 2026-11-08): expectations about the shipped world derive from source - see pack-expect.mjs
 const { proc, send, S, ev, consoleLog, sleep, poll } = await launchDrive();
 
 // drive149: Beta 1.117 route separation (segregation audit F1-F8). The app
@@ -42,9 +43,9 @@ ok('B1 at boot no route is loaded and NO street geometry exists (names/stretch/r
   B.loaded === false && B.names === 0 && B.stretch === 0 && B.box === null && B.mains === 0 && B.spots === 0 && B.roads === 0);
 await ev(`document.getElementById('rmChoose').click()`);
 const rows = await J(`({ n: document.querySelectorAll('#rmRoutes .routeRow').length, first: (document.querySelector('#rmRoutes .routeRow') || {}).textContent || '' })`);
-ok('B2 the boot picker offers exactly the one shipped pack (Route 5W) | ' + JSON.stringify(rows), rows.n === 1 && rows.first.indexOf('Route 5W') >= 0);
+ok('B2 the boot picker offers exactly the one shipped pack (Route 5W) | ' + JSON.stringify(rows), rows.n === PACK_COUNT && rows.first.indexOf(PACK5W.name) >= 0);
 const B3 = await J(`({ n: preloadUrlList().length, fp: packMigFingerprint(preloadUrlList()) })`);
-ok('B3 the offline manifest is the frozen 897 (fingerprint v1:897:mm56ak) BEFORE any route is chosen - it reads pack data, never a live route | ' + JSON.stringify(B3), B3.n === 897 && B3.fp === 'v1:897:mm56ak');
+ok('B3 the offline manifest is the frozen 897 (fingerprint v1:897:mm56ak) BEFORE any route is chosen - it reads pack data, never a live route | ' + JSON.stringify(B3), B3.n === OFFLINE.count && B3.fp === OFFLINE.fingerprint);
 
 // ---------- L: load 5W through the real boot pick ----------
 await ev(`document.querySelector('#rmRoutes .routeRow').click()`);
@@ -53,8 +54,8 @@ await poll(`!document.getElementById('splash')`, 20000);
 await poll(`typeof map === 'undefined' || !map || !map.isMoving()`, 25000);
 const L = await J(`({ names: STREETNAMES.length, mains: MAIN.size, velmar: Math.round(STRETCH.Velmar.total), total: Math.round(totalWorkM()), parts: Object.values(STRETCH).reduce((a, s) => a + s.parts.length, 0), box: !!routeBox, tiles: ROUTE_TILE_NAMES.length })`);
 ok('L1 5W loads as a pack with its exact geometry (34 streets, 6 mains, Velmar ~1686 m, 87 stretches, ~35352 m of sides, 68 tile names) | ' + JSON.stringify(L),
-  L.names === 34 && L.mains === 6 && L.velmar >= 1683 && L.velmar <= 1689 && L.parts === 87 && L.total >= 35340 && L.total <= 35365 && L.box === true && L.tiles === 68);
-const L2 = await J(`document.body.innerText.indexOf('of 34') >= 0`);
+  L.names === PACK5W.names && L.mains === PACK5W.mains && L.velmar >= PACK5W.velmar - 3 && L.velmar <= PACK5W.velmar + 3 && L.parts === PACK5W.parts && L.total >= PACK5W.totalWork - 12 && L.total <= PACK5W.totalWork + 13 && L.box === (PACK5W.box !== null) && L.tiles === PACK5W.tiles);
+const L2 = await J(`document.body.innerText.indexOf('of ${PACK5W.names}') >= 0`);
 ok('L2 the count reads "of 34" for the loaded pack', L2 === true);
 
 // ---------- W: work on 5W - marks, a note, a run, more run work ----------
@@ -82,7 +83,7 @@ ok('S4 F2: the switch itself flushed the outgoing route\'s armed writes (trail p
   S4.trail.some(p => p[0] === 43.820123) + ', note ' + ((S4.notes.Astona || []).some(e => e.text === 'armed at switch')) + ', snap ' + S4.snap,
   S4.trail.some(p => p[0] === 43.820123) && (S4.notes.Astona || []).some(e => e.text === 'armed at switch') && S4.snap === true);
 const S5 = await J(`preloadUrlList().length`);
-ok('S5 F5: with a second pack known, the preload manifest GROWS past 897 (union over packs) | ' + S5, typeof S5 === 'number' && S5 > 897);
+ok('S5 F5: with a second pack known, the preload manifest GROWS past 897 (union over packs) | ' + S5, typeof S5 === 'number' && S5 > OFFLINE.count);
 await ev(`(() => { if (map && window.GLP && !map.getSource('labelpts')) { try { window.GLP.init(map, GL_HOST); } catch (e) {} } return true; })()`); // in the rig the tile CDN may never ready the style (glOk stays false), so onStyleReady's GLP.init never runs - run it exactly as onStyleReady would, so the engine's sources exist to be read back
 const S6 = await J(`({ labelNames: (map.getSource('labelpts') && map.getSource('labelpts').serialize().data) ? map.getSource('labelpts').serialize().data.features.map(f => f.properties.name).sort() : null, hitN: (map.getSource('hit') && map.getSource('hit').serialize().data) ? map.getSource('hit').serialize().data.features.length : -1 })`);
 ok('S6 the paint engine rebuilt for the fixture (its label points are the fixture streets; its hit features are the fixture stretches: 2+2+1+1) | ' + JSON.stringify(S6),
@@ -105,7 +106,7 @@ const D2 = await ev(dump5wSrc);
 ok('R1 the 5W storage slot is BYTE-IDENTICAL after the switch-away-and-back round trip', D2 === D1);
 const R2 = await J(`({ run: runStart, velmar: streetComplete('Velmar'), astona: streetComplete('Astona'), noteV: noteTextOf('Velmar'), noteA: noteTextOf('Astona'), snapMem: !!runSnap, names: STREETNAMES.length })`);
 ok('R2 5W resumes exactly as left: the run is still in progress (same start), both marks and both notes present, 34 streets | ' + JSON.stringify(R2) + ' runStart was ' + RS,
-  R2.run === RS && R2.velmar === true && R2.astona === true && R2.noteV === 'drive149 note' && R2.noteA === 'armed at switch' && R2.names === 34);
+  R2.run === RS && R2.velmar === true && R2.astona === true && R2.noteV === 'drive149 note' && R2.noteA === 'armed at switch' && R2.names === PACK5W.names);
 await ev(`cancelStart()`);
 const R3 = await J(`({ run: runStart, astona: streetComplete('Astona'), velmar: streetComplete('Velmar'), snapStored: !!localStorage.getItem('snowroute.5w.v5.snap'), startStored: !!localStorage.getItem('snowroute.5w.v5.start') })`);
 ok('R3 Cancel after switching back restores through the PERSISTED snapshot (F3 semantics): run work (Astona) erased, the pre-Start mark (Velmar) kept, snap + start keys deleted | ' + JSON.stringify(R3),
@@ -118,7 +119,7 @@ ok('E1 an empty pack (0 streets) loads without exceptions into an empty-but-aliv
   E1.err === null && E1.id === 'mt149' && E1.names === 0 && E1.total === 0 && E1.box === null && E1.loaded === true);
 await ev(`loadRoute('5w')`);
 const E2 = await J(`({ id: activeRoute && activeRoute.id, names: STREETNAMES.length, velmar: streetComplete('Velmar') })`);
-ok('E2 switching back from the empty pack restores 5W whole | ' + JSON.stringify(E2), E2.id === '5w' && E2.names === 34 && E2.velmar === true);
+ok('E2 switching back from the empty pack restores 5W whole | ' + JSON.stringify(E2), E2.id === '5w' && E2.names === PACK5W.names && E2.velmar === true);
 
 // ---------- F6: restore judged by the TARGET route's geometry ----------
 await ev(`loadRoute('fx149')`); // the fixture is the OPEN route; the backup below belongs to 5W

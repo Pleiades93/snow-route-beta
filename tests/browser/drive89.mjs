@@ -1,4 +1,5 @@
 import { launchDrive, finish, bootThrough } from './harness.mjs';
+import { PACK5W } from './pack-expect.mjs'; // premise derivation (Tranche 4 / T2, 2026-11-08): expectations about the shipped world derive from source - see pack-expect.mjs
 const { proc, ev, consoleLog, sleep, poll } = await launchDrive();
 await bootThrough(ev, poll); // Beta 1.76: boots end at the route menu now - click through to a loaded route
 
@@ -42,7 +43,7 @@ await mark3();
 await ev(`(() => { setNoteText('Velmar', 'Blocked driveway at #12'); return true; })()`);
 await ev(`(() => { $('resetBtn').click(); return true; })()`); await sleep(300);
 A = JSON.parse(await ev(`(() => JSON.stringify({ msg: $('finMsg').textContent }))()`));
-ok('T3 pop-up summarises streets + notes', /3 of 34 streets/.test(A.msg) && /notes on 1 street/.test(A.msg));
+ok('T3 pop-up summarises streets + notes', A.msg.includes('3 of ' + PACK5W.names + ' streets') && /notes on 1 street/.test(A.msg));
 await ev(`(() => { $('finYes').click(); return true; })()`);
 A = await pollRead(`(() => JSON.stringify({ h: history.length, done: doneSet.size, label: $('resetBtn').textContent, hn: history[0] && history[0].notes && history[0].notes.Velmar ? history[0].notes.Velmar[0].text : '' }))()`, v => v.h === 1 && v.done === 0);
 ok('T3 Yes archives the clean with its notes', A.h === 1 && A.done === 0 && /Blocked driveway/.test(A.hn));

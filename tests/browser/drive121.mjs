@@ -31,6 +31,7 @@ const FIXTURE = {
   'snowroute.5w.v5.sides': JSON.stringify({ p: { Astona: [3], Velmar: Array(14).fill(3), Woolacott: [3, 1, 0] }, t: { Velmar: { 0: [T1, '2026-01-05T12:01:00.000Z'] }, Woolacott: { 0: [T1, '2026-01-05T12:02:00.000Z'], 1: [T1, null] } } })
 };
 const FIXJ = JSON.stringify(FIXTURE);
+const FIX_VELMAR_PARTS = JSON.parse(FIXTURE['snowroute.5w.v5.sides']).p.Velmar.length; // premise derivation (Tranche 4 / T2, 2026-11-08): expectations about the shipped world derive from source - see pack-expect.mjs (fixture-world: derived from this drive's own frozen fixture, not the catalogue)
 const loadRouteWait = async () => { await until(async () => { const r = await b.ev(`(function(){ if (typeof routeLoaded === 'undefined') return false; if (!routeLoaded && typeof loadRoute === 'function') { try { loadRoute('5w'); } catch (e) {} } return routeLoaded === true && !!window.__bootAt; })()`); return r === true; }, 30000); }; // Beta 1.76: retry across the reload race
 
 // ---- session 1: the fixture loads losslessly, and a backup round-trips it ----
@@ -42,14 +43,14 @@ await waitBoot(b.ev);
 await loadRouteWait(); await sleep(400);
 await b.ev(`setThemeOverride(true); applyNight(); true`); // Beta 1.77: the fixture no longer seeds a night flag - a cold open starts automatic by design, so the probe's night reading is set the way a user sets it, through the override
 const probe = JSON.parse(await b.ev(`JSON.stringify({
-  velmarAll3: pieces.Velmar.length === 14 && pieces.Velmar.every(v => v === 3),
+  velmarAll3: pieces.Velmar.length === ${FIX_VELMAR_PARTS} && pieces.Velmar.every(v => v === 3),
   wool: pieces.Woolacott, done: [...doneSet].sort(),
   pt: pieceTimes.Woolacott[1], hist: history.length, histFull: Object.keys(history[0].items).length,
   notes: (notes.Woolacott || []).length, trail: trail.length, covV: coveredIdx.Velmar ? coveredIdx.Velmar.length : -1,
   runStart, night: document.body.classList.contains('night') })`));
 ok('S1 fixture sides decode exactly (Velmar complete, Woolacott partial)', probe.velmarAll3 && JSON.stringify(probe.wool) === '[3,1,0]');
 ok('S1 fixture done set + piece times survive', JSON.stringify(probe.done) === '["Astona","Velmar"]' && JSON.stringify(probe.pt) === JSON.stringify([T1, null]));
-ok('S1 fixture history survives (2 entries, full run intact)', probe.hist === 2 && probe.histFull === 34);
+ok('S1 fixture history survives (2 entries, full run intact)', probe.hist === 2 && probe.histFull === NAMES34.length);
 ok('S1 fixture notes/trail/coverage/run/night survive | probe ' + JSON.stringify(probe), probe.notes === 2 && probe.trail === 3 && probe.covV === 4 && probe.runStart === 1767650300000 && probe.night === true);
 const rt = JSON.parse(await b.ev(`(() => { const o = JSON.parse(buildBackup()); const F = ${FIXJ}; const k2f = {}; for (const f of ROUTE_FIELDS) k2f[routeKeys('5w')[f]] = f; k2f[LS_GLOBAL.night] = 'night'; const out = {}; for (const k of Object.keys(F)) { const f = k2f[k]; const v = f === 'night' ? o.night : (o.routes['5w'] || {})[f]; try { out[k] = JSON.stringify(JSON.parse(v)) === JSON.stringify(JSON.parse(F[k])); } catch (e) { out[k] = v === F[k]; } } return JSON.stringify(out); })()`));
 ok('S1 backup of the fixture state is meaning-identical on all 10 keys', Object.keys(rt).length === 10 && Object.values(rt).every(Boolean));
