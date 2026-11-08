@@ -1,9 +1,8 @@
-import { spawn } from 'node:child_process';
 // Beta 1.144 TEST-PREMISE UPDATE (Package C, DA-04): draft keys and sector state use the FULL map names now ('Long Road', 'Alpha Street'); key reads below follow; row-text finds and toast text still use the displayed short form.
 import fs from 'node:fs';
-import http from 'node:http';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
+import { startCreateRig, serveRepo, makeResults, finishCreate, sleep } from './harness-create.mjs';
 
 // drive157: Beta 1.128 - CREATE-FLOW ROUND 3 (Andrew's device feedback
 // on 1.127 + the read-only diagnosis in beta1/work/sector-diagnosis-1128/).
@@ -40,10 +39,7 @@ import { fileURLToPath } from 'node:url';
 // D fails (the faces hard-swap - no both-visible sample; expand
 // jumps), E fails (the strip can never show at zero picks).
 const REPO = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..', '..');
-const CHROME = process.env.CHROME_BIN || (fs.existsSync('/opt/meta-chromium/chrome') ? '/opt/meta-chromium/chrome' : 'google-chrome');
-const sleep = ms => new Promise(r => setTimeout(r, ms));
-const R = { checks: [] };
-const ok = (name, cond) => R.checks.push([name, cond === true]);
+const { R, ok } = makeResults();
 
 // ---- the synthetic extract (drive156's geography) ----
 const way = (id, name, pts) => ({ type: 'way', id, tags: { name }, geometry: pts.map(p => ({ lat: p[0], lon: p[1] })) });
@@ -54,66 +50,14 @@ const ELEMENTS = [way(9001, 'Long Road', LONG_PTS)];
 ELEMENTS.push(way(9020, 'Alpha Street', [[43.79, -79.5795], [43.79, -79.578], [43.79, -79.5765]]));
 const COV_BOX = { s: 43.788, w: -79.582, n: 43.806, e: -79.558 };
 
-// ---- static server + CDP rig (drive156's pattern) ----
-const MIME = { '.html': 'text/html', '.js': 'text/javascript', '.json': 'application/json', '.md': 'text/plain', '.py': 'text/plain', '.yml': 'text/plain' };
-const server = http.createServer((req, res) => {
-  const p = path.join(REPO, decodeURIComponent(new URL(req.url, 'http://x').pathname));
-  if (!p.startsWith(REPO) || !fs.existsSync(p) || !fs.statSync(p).isFile()) { res.writeHead(404); res.end('nf'); return; }
-  res.writeHead(200, { 'Content-Type': MIME[path.extname(p)] || 'application/octet-stream' });
-  fs.createReadStream(p).pipe(res);
-});
-await new Promise(r => server.listen(0, '127.0.0.1', r));
-const ORIGIN = 'http://127.0.0.1:' + server.address().port;
-const PROFILE = '/tmp/d157profile-' + Date.now();
-const proc = spawn(CHROME, ['--headless=new', '--no-sandbox', '--disable-gpu', '--hide-scrollbars', '--no-proxy-server', '--remote-debugging-port=0', '--disable-features=LocalNetworkAccessChecks', '--user-data-dir=' + PROFILE, '--window-size=420,900', 'about:blank'], { stdio: ['ignore', 'pipe', 'pipe'] });
-const wsUrl = await new Promise((res, rej) => { let buf = ''; proc.stderr.on('data', d => { buf += d; const m = buf.match(/DevTools listening on (ws:\/\/\S+)/); if (m) res(m[1]); }); setTimeout(() => rej(new Error('no devtools url')), 25000); });
-const ws = new WebSocket(wsUrl);
-await new Promise(r => ws.addEventListener('open', r, { once: true }));
-let nextId = 1; const pending = new Map(); const consoleLog = []; const sessions = new Set();
-let PAGE_S = null;
-function send(method, params = {}, sessionId) { const id = nextId++; return new Promise(res => { pending.set(id, res); ws.send(JSON.stringify({ id, method, params, ...(sessionId ? { sessionId } : {}) })); }); }
-async function fulfil(sessionId, p) {
-  try {
-    const r = await fetch(p.request.url, { headers: { 'user-agent': 'Mozilla/5.0 (iPhone; CPU iPhone OS 17_0 like Mac OS X)' } });
-    const buf = Buffer.from(await r.arrayBuffer());
-    await send('Fetch.fulfillRequest', { requestId: p.requestId, responseCode: r.status, responseHeaders: [{ name: 'Content-Type', value: r.headers.get('content-type') || 'application/octet-stream' }, { name: 'Access-Control-Allow-Origin', value: '*' }], body: buf.toString('base64') }, sessionId);
-  } catch (e) { try { await send('Fetch.failRequest', { requestId: p.requestId, errorReason: 'Failed' }, sessionId); } catch (e2) {} }
-}
-ws.addEventListener('message', async ev => {
-  const msg = JSON.parse(ev.data);
-  if (msg.id && pending.has(msg.id)) { pending.get(msg.id)(msg); pending.delete(msg.id); return; }
-  if (msg.method === 'Target.attachedToTarget') {
-    const sid = msg.params.sessionId;
-    if (!sessions.has(sid)) { sessions.add(sid); await send('Fetch.enable', { patterns: [{ urlPattern: '*', requestStage: 'Request' }] }, sid); }
-    return;
-  }
-  if (msg.method === 'Fetch.requestPaused') { fulfil(msg.sessionId, msg.params); return; }
-  if (msg.method === 'Runtime.exceptionThrown' && msg.sessionId === PAGE_S) { const d = msg.params.exceptionDetails; consoleLog.push('EXCEPTION: ' + ((d.exception && d.exception.description) || d.text)); }
-});
-await send('Target.setAutoAttach', { autoAttach: true, flatten: true, waitForDebuggerOnStart: false });
-const { result: { targetId } } = await send('Target.createTarget', { url: 'about:blank' });
-PAGE_S = (await send('Target.attachToTarget', { targetId, flatten: true })).result.sessionId;
-await send('Page.enable', {}, PAGE_S);
-await send('Runtime.enable', {}, PAGE_S);
-await send('Emulation.setDeviceMetricsOverride', { width: 420, height: 900, deviceScaleFactor: 2, mobile: true }, PAGE_S);
-async function evaluate(expr) { const r = await send('Runtime.evaluate', { expression: expr, returnByValue: true, awaitPromise: true }, PAGE_S); if (r.result && r.result.exceptionDetails) throw new Error(JSON.stringify(r.result.exceptionDetails).slice(0, 300)); return r.result && r.result.result ? r.result.result.value : undefined; }
-const ev2 = async (code) => evaluate(code);
-const poll = async (expr, ms) => { const t0 = Date.now(); while (Date.now() - t0 < (ms || 30000)) { let v; try { v = await ev2(expr); } catch (e) { v = undefined; } if (v === true) return true; await sleep(400); } return false; };
-const J = async (expr) => { const raw = await ev2(`(() => { try { return JSON.stringify((${expr})); } catch (e) { return JSON.stringify({ __err: String(e && e.message || e) }); } })()`); return typeof raw === 'string' ? JSON.parse(raw) : {}; };
+// ---- static server + CDP rig (shared: harness-create.mjs; no routing table - the rig's default passthrough fulfil is this drive's historical fulfil verbatim) ----
+const { server, ORIGIN } = await serveRepo(REPO);
+const rig = await startCreateRig({ profile: '/tmp/d157profile-' + Date.now() });
+const { proc, send, PAGE_S, ev2, poll, consoleLog, J, bootRoute } = rig;
 const mouse = async (type, x, y) => { await send('Input.dispatchMouseEvent', { type, x, y, button: 'left', clickCount: 1 }, PAGE_S); };
 const headTap = async () => { // a quick tap on the panel's grab head (short sleeps - the D-section sampling needs the spring still running)
   const g = await J(`(() => { const r = document.getElementById('crPanelHead').getBoundingClientRect(); return { x: Math.round(r.left + r.width / 2), y: Math.round(r.top + 10) }; })()`);
   await mouse('mousePressed', g.x, g.y); await sleep(50); await mouse('mouseReleased', g.x, g.y);
-};
-const bootRoute = async () => {
-  await poll(`!!document.getElementById('ver')`, 20000);
-  await poll(`!!window.__bootAt`, 30000);
-  await poll(`!!document.getElementById('rmChoose')`, 20000);
-  await ev2(`document.getElementById('rmChoose').click()`);
-  await poll(`!!document.querySelector('#rmRoutes .routeRow')`, 20000);
-  await ev2(`document.querySelector('#rmRoutes .routeRow').click()`);
-  await poll(`typeof routeLoaded !== 'undefined' && routeLoaded === true`, 30000);
-  await poll(`!document.getElementById('splash')`, 10000);
 };
 const enterPickWithExtract = async () => {
   await ev2(`enterCreate('pick')`);
@@ -245,7 +189,4 @@ ok('E1 THE BAR EXISTS AT ZERO PICKS: with nothing picked (Done disabled, panel u
 await ev2(`exitCreate()`);
 
 R.exceptions = consoleLog.filter(l => l.indexOf('EXCEPTION') === 0);
-console.log(JSON.stringify(R, null, 1));
-try { proc.kill('SIGKILL'); } catch (e) {}
-server.close();
-process.exit(0);
+finishCreate(R, proc, server, { pretty: true });

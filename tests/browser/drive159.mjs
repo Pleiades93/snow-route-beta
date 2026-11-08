@@ -1,8 +1,7 @@
-import { spawn } from 'node:child_process';
 import fs from 'node:fs';
-import http from 'node:http';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
+import { startCreateRig, serveRepo, makeResults, finishCreate, sleep } from './harness-create.mjs';
 
 // drive159: Beta 1.130 - the cold-open city-list stutter and its fix.
 // Andrew, on 1.129: cold open -> Create new route -> Select from list ->
@@ -43,36 +42,18 @@ import { fileURLToPath } from 'node:url';
 // be replaced), C passes on both (it guards a preserved behaviour).
 const REPO = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..', '..');
 const INDEXFX = JSON.parse(fs.readFileSync(path.join(REPO, 'packs', 'index.json'), 'utf8'));
-const CHROME = process.env.CHROME_BIN || (fs.existsSync('/opt/meta-chromium/chrome') ? '/opt/meta-chromium/chrome' : 'google-chrome');
-const sleep = ms => new Promise(r => setTimeout(r, ms));
-const R = { checks: [] };
-const ok = (name, cond) => R.checks.push([name, cond === true]);
+const { R, ok } = makeResults();
 
 let indexMode = 'ok'; // 'ok' | 'fail'
 let indexDelayMs = 0;
 const wire = []; // { kind: 'packindex'|'packindexDone', t: epoch ms }
 
-// ---- static server + CDP rig (drive153's pattern) ----
-const MIME = { '.html': 'text/html', '.js': 'text/javascript', '.json': 'application/json', '.md': 'text/plain', '.py': 'text/plain', '.yml': 'text/plain' };
-const server = http.createServer((req, res) => {
-  const p = path.join(REPO, decodeURIComponent(new URL(req.url, 'http://x').pathname));
-  if (!p.startsWith(REPO) || !fs.existsSync(p) || !fs.statSync(p).isFile()) { res.writeHead(404); res.end('nf'); return; }
-  res.writeHead(200, { 'Content-Type': MIME[path.extname(p)] || 'application/octet-stream' });
-  fs.createReadStream(p).pipe(res);
-});
-await new Promise(r => server.listen(0, '127.0.0.1', r));
-const ORIGIN = 'http://127.0.0.1:' + server.address().port;
-const PROFILE = '/tmp/d159profile-' + Date.now();
-const proc = spawn(CHROME, ['--headless=new', '--no-sandbox', '--disable-gpu', '--hide-scrollbars', '--no-proxy-server', '--remote-debugging-port=0', '--disable-features=LocalNetworkAccessChecks', '--user-data-dir=' + PROFILE, '--window-size=420,900', 'about:blank'], { stdio: ['ignore', 'pipe', 'pipe'] });
-const wsUrl = await new Promise((res, rej) => { let buf = ''; proc.stderr.on('data', d => { buf += d; const m = buf.match(/DevTools listening on (ws:\/\/\S+)/); if (m) res(m[1]); }); setTimeout(() => rej(new Error('no devtools url')), 25000); });
-const ws = new WebSocket(wsUrl);
-await new Promise(r => ws.addEventListener('open', r, { once: true }));
-let nextId = 1; const pending = new Map(); const consoleLog = []; const sessions = new Set();
-let PAGE_S = null;
-function send(method, params = {}, sessionId) { const id = nextId++; return new Promise(res => { pending.set(id, res); ws.send(JSON.stringify({ id, method, params, ...(sessionId ? { sessionId } : {}) })); }); }
-async function fulfil(sessionId, p) {
+// ---- static server + CDP rig (shared: harness-create.mjs; this drive's routing table is fulfil, below) ----
+const { server, ORIGIN } = await serveRepo(REPO);
+async function fulfil(sessionId, p, H) {
+  const send = H.send;
   const url = p.request.url;
-  const json = (obj, code) => send('Fetch.fulfillRequest', { requestId: p.requestId, responseCode: code || 200, responseHeaders: [{ name: 'Content-Type', value: 'application/json' }, { name: 'Access-Control-Allow-Origin', value: '*' }], body: Buffer.from(typeof obj === 'string' ? obj : JSON.stringify(obj)).toString('base64') }, sessionId);
+  const json = (obj, code) => H.json(sessionId, p, obj, code);
   try {
     const pn = new URL(url).pathname;
     if (pn.endsWith('/packs/index.json')) {
@@ -89,26 +70,8 @@ async function fulfil(sessionId, p) {
     await send('Fetch.fulfillRequest', { requestId: p.requestId, responseCode: r.status, responseHeaders: [{ name: 'Content-Type', value: r.headers.get('content-type') || 'application/octet-stream' }, { name: 'Access-Control-Allow-Origin', value: '*' }], body: buf.toString('base64') }, sessionId);
   } catch (e) { try { await send('Fetch.failRequest', { requestId: p.requestId, errorReason: 'Failed' }, sessionId); } catch (e2) {} }
 }
-ws.addEventListener('message', async ev => {
-  const msg = JSON.parse(ev.data);
-  if (msg.id && pending.has(msg.id)) { pending.get(msg.id)(msg); pending.delete(msg.id); return; }
-  if (msg.method === 'Target.attachedToTarget') {
-    const sid = msg.params.sessionId;
-    if (!sessions.has(sid)) { sessions.add(sid); await send('Fetch.enable', { patterns: [{ urlPattern: '*', requestStage: 'Request' }] }, sid); }
-    return;
-  }
-  if (msg.method === 'Fetch.requestPaused') { fulfil(msg.sessionId, msg.params); return; }
-  if (msg.method === 'Runtime.exceptionThrown' && msg.sessionId === PAGE_S) { const d = msg.params.exceptionDetails; consoleLog.push('EXCEPTION: ' + ((d.exception && d.exception.description) || d.text)); }
-});
-await send('Target.setAutoAttach', { autoAttach: true, flatten: true, waitForDebuggerOnStart: false });
-const { result: { targetId } } = await send('Target.createTarget', { url: 'about:blank' });
-PAGE_S = (await send('Target.attachToTarget', { targetId, flatten: true })).result.sessionId;
-await send('Page.enable', {}, PAGE_S);
-await send('Runtime.enable', {}, PAGE_S);
-await send('Emulation.setDeviceMetricsOverride', { width: 420, height: 900, deviceScaleFactor: 2, mobile: true }, PAGE_S);
-async function evaluate(expr) { const r = await send('Runtime.evaluate', { expression: expr, returnByValue: true, awaitPromise: true }, PAGE_S); if (r.result && r.result.exceptionDetails) throw new Error(JSON.stringify(r.result.exceptionDetails).slice(0, 300)); return r.result && r.result.result ? r.result.result.value : undefined; }
-const ev2 = async (code) => evaluate(code);
-const poll = async (expr, ms, step) => { const t0 = Date.now(); while (Date.now() - t0 < (ms || 30000)) { let v; try { v = await ev2(expr); } catch (e) { v = undefined; } if (v === true) return true; await sleep(step || 400); } return false; };
+const rig = await startCreateRig({ profile: '/tmp/d159profile-' + Date.now(), fulfil, jsonMode: 'coded' });
+const { proc, send, PAGE_S, ev2, poll, consoleLog } = rig;
 const pollWire = async (kind, ms) => { const t0 = Date.now(); while (Date.now() - t0 < ms) { if (wire.some(w => w.kind === kind)) return true; await sleep(150); } return wire.some(w => w.kind === kind); };
 const bootPicker = async () => { // the cold-start picker, usable (drive153 phase E's entry)
   await poll(`!!window.__bootAt`, 30000);
@@ -165,7 +128,4 @@ const rowsC = await rowsN().catch(() => -1);
 ok('C1 HONEST FAILURE: a catalogue that fails to load still lands on the "isn\'t available right now - go back and use Search manually" note with no rows and no dead end', failNote === true && rowsC === 0);
 
 R.exceptions = consoleLog.filter(l => l.indexOf('EXCEPTION') === 0);
-console.log(JSON.stringify(R));
-try { proc.kill('SIGKILL'); } catch (e) {}
-server.close();
-process.exit(0);
+finishCreate(R, proc, server);

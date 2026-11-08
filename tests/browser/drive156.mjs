@@ -1,9 +1,8 @@
-import { spawn } from 'node:child_process';
 // Beta 1.144 TEST-PREMISE UPDATE (Package C, DA-04): draft keys, sector state, panel feature properties and saved-pack keys are the FULL map names now ('Long Road', 'Alpha Street'); through 1.143 they were the shortened forms. Key reads below follow the full name; row-text finds still match the displayed short form ('Long', 'Alpha').
 import fs from 'node:fs';
-import http from 'node:http';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
+import { startCreateRig, serveRepo, makeResults, finishCreate, sleep } from './harness-create.mjs';
 
 // drive156: Beta 1.127 - SECTORS + THE PICKED-ROADS PANEL + BACK HIT AREA
 // (Andrew's approved mockups, beta1/work/create-sectors-mockups/, plus
@@ -48,10 +47,7 @@ import { fileURLToPath } from 'node:url';
 // "N streets" shape). C is red there too: .rmBack stretches full
 // width, so the +60 px press lands ON the button and navigates.
 const REPO = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..', '..');
-const CHROME = process.env.CHROME_BIN || (fs.existsSync('/opt/meta-chromium/chrome') ? '/opt/meta-chromium/chrome' : 'google-chrome');
-const sleep = ms => new Promise(r => setTimeout(r, ms));
-const R = { checks: [] };
-const ok = (name, cond) => R.checks.push([name, cond === true]);
+const { R, ok } = makeResults();
 
 // ---- the synthetic extract (Overpass element shape) ----
 const way = (id, name, pts) => ({ type: 'way', id, tags: { name }, geometry: pts.map(p => ({ lat: p[0], lon: p[1] })) });
@@ -63,64 +59,12 @@ const FILLERS = ['Alpha', 'Bravo', 'Charlie', 'Delta', 'Echo', 'Foxtrot', 'Golf'
 FILLERS.forEach((nm, i) => { const lat = 43.79 + i * 0.0022; ELEMENTS.push(way(9020 + i, nm + ' Street', [[lat, -79.5795], [lat, -79.578], [lat, -79.5765]])); });
 const COV_BOX = { s: 43.788, w: -79.582, n: 43.806, e: -79.558 };
 
-// ---- static server + CDP rig (drive155's pattern) ----
-const MIME = { '.html': 'text/html', '.js': 'text/javascript', '.json': 'application/json', '.md': 'text/plain', '.py': 'text/plain', '.yml': 'text/plain' };
-const server = http.createServer((req, res) => {
-  const p = path.join(REPO, decodeURIComponent(new URL(req.url, 'http://x').pathname));
-  if (!p.startsWith(REPO) || !fs.existsSync(p) || !fs.statSync(p).isFile()) { res.writeHead(404); res.end('nf'); return; }
-  res.writeHead(200, { 'Content-Type': MIME[path.extname(p)] || 'application/octet-stream' });
-  fs.createReadStream(p).pipe(res);
-});
-await new Promise(r => server.listen(0, '127.0.0.1', r));
-const ORIGIN = 'http://127.0.0.1:' + server.address().port;
-const PROFILE = '/tmp/d156profile-' + Date.now();
-const proc = spawn(CHROME, ['--headless=new', '--no-sandbox', '--disable-gpu', '--hide-scrollbars', '--no-proxy-server', '--remote-debugging-port=0', '--disable-features=LocalNetworkAccessChecks', '--user-data-dir=' + PROFILE, '--window-size=420,900', 'about:blank'], { stdio: ['ignore', 'pipe', 'pipe'] });
-const wsUrl = await new Promise((res, rej) => { let buf = ''; proc.stderr.on('data', d => { buf += d; const m = buf.match(/DevTools listening on (ws:\/\/\S+)/); if (m) res(m[1]); }); setTimeout(() => rej(new Error('no devtools url')), 25000); });
-const ws = new WebSocket(wsUrl);
-await new Promise(r => ws.addEventListener('open', r, { once: true }));
-let nextId = 1; const pending = new Map(); const consoleLog = []; const sessions = new Set();
-let PAGE_S = null;
-function send(method, params = {}, sessionId) { const id = nextId++; return new Promise(res => { pending.set(id, res); ws.send(JSON.stringify({ id, method, params, ...(sessionId ? { sessionId } : {}) })); }); }
-async function fulfil(sessionId, p) {
-  try {
-    const r = await fetch(p.request.url, { headers: { 'user-agent': 'Mozilla/5.0 (iPhone; CPU iPhone OS 17_0 like Mac OS X)' } });
-    const buf = Buffer.from(await r.arrayBuffer());
-    await send('Fetch.fulfillRequest', { requestId: p.requestId, responseCode: r.status, responseHeaders: [{ name: 'Content-Type', value: r.headers.get('content-type') || 'application/octet-stream' }, { name: 'Access-Control-Allow-Origin', value: '*' }], body: buf.toString('base64') }, sessionId);
-  } catch (e) { try { await send('Fetch.failRequest', { requestId: p.requestId, errorReason: 'Failed' }, sessionId); } catch (e2) {} }
-}
-ws.addEventListener('message', async ev => {
-  const msg = JSON.parse(ev.data);
-  if (msg.id && pending.has(msg.id)) { pending.get(msg.id)(msg); pending.delete(msg.id); return; }
-  if (msg.method === 'Target.attachedToTarget') {
-    const sid = msg.params.sessionId;
-    if (!sessions.has(sid)) { sessions.add(sid); await send('Fetch.enable', { patterns: [{ urlPattern: '*', requestStage: 'Request' }] }, sid); }
-    return;
-  }
-  if (msg.method === 'Fetch.requestPaused') { fulfil(msg.sessionId, msg.params); return; }
-  if (msg.method === 'Runtime.exceptionThrown' && msg.sessionId === PAGE_S) { const d = msg.params.exceptionDetails; consoleLog.push('EXCEPTION: ' + ((d.exception && d.exception.description) || d.text)); }
-});
-await send('Target.setAutoAttach', { autoAttach: true, flatten: true, waitForDebuggerOnStart: false });
-const { result: { targetId } } = await send('Target.createTarget', { url: 'about:blank' });
-PAGE_S = (await send('Target.attachToTarget', { targetId, flatten: true })).result.sessionId;
-await send('Page.enable', {}, PAGE_S);
-await send('Runtime.enable', {}, PAGE_S);
-await send('Emulation.setDeviceMetricsOverride', { width: 420, height: 900, deviceScaleFactor: 2, mobile: true }, PAGE_S);
-async function evaluate(expr) { const r = await send('Runtime.evaluate', { expression: expr, returnByValue: true, awaitPromise: true }, PAGE_S); if (r.result && r.result.exceptionDetails) throw new Error(JSON.stringify(r.result.exceptionDetails).slice(0, 300)); return r.result && r.result.result ? r.result.result.value : undefined; }
-const ev2 = async (code) => evaluate(code);
-const poll = async (expr, ms) => { const t0 = Date.now(); while (Date.now() - t0 < (ms || 30000)) { let v; try { v = await ev2(expr); } catch (e) { v = undefined; } if (v === true) return true; await sleep(400); } return false; };
-const J = async (expr) => { const raw = await ev2(`(() => { try { return JSON.stringify((${expr})); } catch (e) { return JSON.stringify({ __err: String(e && e.message || e) }); } })()`); return typeof raw === 'string' ? JSON.parse(raw) : {}; };
+// ---- static server + CDP rig (shared: harness-create.mjs; no routing table - the rig's default passthrough fulfil is this drive's historical fulfil verbatim) ----
+const { server, ORIGIN } = await serveRepo(REPO);
+const rig = await startCreateRig({ profile: '/tmp/d156profile-' + Date.now() });
+const { proc, send, PAGE_S, ev2, poll, consoleLog, J, bootRoute } = rig;
 const mouse = async (type, x, y) => { await send('Input.dispatchMouseEvent', { type, x, y, button: 'left', clickCount: 1 }, PAGE_S); };
 const pressAt = async (x, y) => { await mouse('mousePressed', x, y); await sleep(90); await mouse('mouseReleased', x, y); await sleep(250); };
-const bootRoute = async () => {
-  await poll(`!!document.getElementById('ver')`, 20000);
-  await poll(`!!window.__bootAt`, 30000);
-  await poll(`!!document.getElementById('rmChoose')`, 20000);
-  await ev2(`document.getElementById('rmChoose').click()`);
-  await poll(`!!document.querySelector('#rmRoutes .routeRow')`, 20000);
-  await ev2(`document.querySelector('#rmRoutes .routeRow').click()`);
-  await poll(`typeof routeLoaded !== 'undefined' && routeLoaded === true`, 30000);
-  await poll(`!document.getElementById('splash')`, 10000);
-};
 const enterPickWithExtract = async () => {
   await ev2(`enterCreate('pick')`);
   await ev2(`crCovMerge(${JSON.stringify(ELEMENTS)}, ${JSON.stringify(COV_BOX)}); crPrepState = 'ready'; crRenderHint(); true`);
@@ -262,7 +206,4 @@ ok('C2 SETTINGS BACK: the Status pane\'s Back (the same shared class) is likewis
   geoC2.vis === true && geoC2.w < geoC2.paneW * 0.5 && geoC2.hitIsBtn === false && stillC2 === true && backC2 === true);
 
 R.exceptions = consoleLog.filter(l => l.indexOf('EXCEPTION') === 0);
-console.log(JSON.stringify(R, null, 1));
-try { proc.kill('SIGKILL'); } catch (e) {}
-server.close();
-process.exit(0);
+finishCreate(R, proc, server, { pretty: true });
