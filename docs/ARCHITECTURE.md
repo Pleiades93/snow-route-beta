@@ -694,10 +694,12 @@ from the update check's session state (`updState`), GPS from the watch
 state / last fix / the `gpsDenied` flag.
 
 Device-behaviour toggles live in ONE new global key,
-`snowroute.v2.settings` (`{awake, vib, chime, chimeSound}`; all
+`snowroute.v2.settings` (`{vib, chime, chimeSound}`; all
 toggles default OFF, sound defaults to Two-Tone — see
-docs/STORAGE-SCHEMA.md). The wake lock (`syncWake`, app3) is gated on
-`awake`. Completion feedback (chime + vibration) fires from the
+docs/STORAGE-SCHEMA.md). `awake` (Keep screen awake) is NOT part of
+the stored record: it is session-only in-memory state, forced OFF at
+every load and never written by `saveSettings` (Beta 1.112). The
+wake lock (`syncWake`, app3) is gated on that session-only `awake`. Completion feedback (chime + vibration) fires from the
 marking funnel — `applyPiece`'s completion branch and `markDone`
 (app2) call `onStreetComplete`; `finishRun` calls `onFinishFeedback`
 on its committed path only. Sounds are WebAudio-synthesized in app4
