@@ -174,25 +174,31 @@ const tapLast = {};
 function tapGuard(key) { const now = Date.now(); if (tapLast[key] && now - tapLast[key] < 400) return false; tapLast[key] = now; return true; }
 
 // ===== STRETCHES — stitch each street, cut at junctions (checklist SS1) =====
-function stitchLine(name, roads) {
+function stitchRuns(name, roads) { // Beta 1.144 (Package C, DA-02/C1): a street's segments chained into their CONNECTED RUNS - the pre-1.144 stitchLine growth (exact endpoint equality, same scan order, same concat operations) repeated per component, so a street whose segments form several disconnected runs (non-adjacent sector picks at create; genuinely split streets) keeps EVERY run instead of only the one connected to segment 0. Run 1 is byte-identical to the old stitchLine output for any street; a fully connected street has exactly one run and nothing changes anywhere.
   const segs = (roads || ROADS)[name].map(s => s.slice());
   const used = new Array(segs.length).fill(false);
-  let line = segs[0].slice(); used[0] = true;
-  for (let guard = 0; guard < segs.length + 2; guard++) {
-    let grew = false;
-    for (let i = 0; i < segs.length; i++) {
-      if (used[i]) continue;
-      const s = segs[i], a = s[0], b = s[s.length - 1], L0 = line[0], L1 = line[line.length - 1];
-      const eq = (p, q) => p[0] === q[0] && p[1] === q[1];
-      if (eq(a, L1)) { line = line.concat(s.slice(1)); } else if (eq(b, L1)) { line = line.concat(s.slice(0, -1).reverse()); }
-      else if (eq(b, L0)) { line = s.slice(0, -1).concat(line); } else if (eq(a, L0)) { line = s.slice(1).reverse().concat(line); }
-      else continue;
-      used[i] = true; grew = true;
+  const eq = (p, q) => p[0] === q[0] && p[1] === q[1];
+  const runs = [];
+  for (let s0 = 0; s0 < segs.length; s0++) {
+    if (used[s0]) continue;
+    let line = segs[s0].slice(); used[s0] = true;
+    for (let guard = 0; guard < segs.length + 2; guard++) {
+      let grew = false;
+      for (let i = 0; i < segs.length; i++) {
+        if (used[i]) continue;
+        const s = segs[i], a = s[0], b = s[s.length - 1], L0 = line[0], L1 = line[line.length - 1];
+        if (eq(a, L1)) { line = line.concat(s.slice(1)); } else if (eq(b, L1)) { line = line.concat(s.slice(0, -1).reverse()); }
+        else if (eq(b, L0)) { line = s.slice(0, -1).concat(line); } else if (eq(a, L0)) { line = s.slice(1).reverse().concat(line); }
+        else continue;
+        used[i] = true; grew = true;
+      }
+      if (!grew) break;
     }
-    if (!grew) break;
+    runs.push(line);
   }
-  return line;
+  return runs;
 }
+function stitchLine(name, roads) { return stitchRuns(name, roads)[0]; } // the first run - the pre-1.144 meaning, kept for callers that need a street's principal line
 function projOnLine(pts, cum, p) { // nearest projection: {d: distance along line, off: metres off line}
   let best = { d: 0, off: Infinity };
   for (let i = 1; i < pts.length; i++) {
@@ -224,17 +230,27 @@ function finishJunctionCuts(line, cum, total, cuts) { // Beta 1.131 (maintainabi
   return parts;
 }
 const STRETCH = {};
-function computeStretches(roads) { // Beta 1.117: the stretch builder as a PURE function of a roads object - the pre-1.117 eval-time IIFE, parameterized. buildGeometry fills the live STRETCH from it on every load; backup/restore (app4's packGeometry) builds a non-active pack's geometry from it without touching the live one (F6).
+function computeStretches(roads) { // Beta 1.117: the stretch builder as a PURE function of a roads object - the pre-1.117 eval-time IIFE, parameterized. buildGeometry fills the live STRETCH from it on every load; backup/restore (app4's packGeometry) builds a non-active pack's geometry from it without touching the live one (F6). Beta 1.144 (Package C, DA-02/C1): the builder runs PER RUN (stitchRuns) - each run is cut at the junctions ITS OWN line meets (other streets' vertices from ALL their runs; a street never cuts itself), the street's parts are the runs' parts concatenated in run order, and total is the SUM over runs, so a disconnected street is tracked whole: marking, totals and pace all see every metre that was saved. line/cum keep the first run (the principal line) for the readers that need a single line (fly-to centres); runs carries {line, cum, total, parts} per run for the consumers that must see them all (coverage samples, the paint engine). For a single-run street every field is exactly the pre-1.144 value.
   const out = {};
-  const lines = {}, cums = {}, totals = {};
-  for (const n of Object.keys(roads)) { const L = stitchLine(n, roads); lines[n] = L; const cum = [0]; for (let i = 1; i < L.length; i++) cum.push(cum[i - 1] + distM(L[i - 1], L[i])); cums[n] = cum; totals[n] = cum[cum.length - 1]; }
+  const runsOf = {}, totals = {};
   for (const n of Object.keys(roads)) {
-    const cuts = [];
-    for (const m of Object.keys(roads)) {
-      if (m === n) continue;
-      for (const v of lines[m]) { const pr = projOnLine(lines[n], cums[n], v); if (pr.off <= 4) cuts.push(pr.d); }
+    const runs = stitchRuns(n, roads).map(L => { const cum = [0]; for (let i = 1; i < L.length; i++) cum.push(cum[i - 1] + distM(L[i - 1], L[i])); return { line: L, cum, total: cum[cum.length - 1], parts: null }; });
+    runsOf[n] = runs;
+    totals[n] = runs.reduce((a, r) => a + r.total, 0);
+  }
+  for (const n of Object.keys(roads)) {
+    const parts = [];
+    for (const run of runsOf[n]) {
+      const cuts = [];
+      for (const m of Object.keys(roads)) {
+        if (m === n) continue;
+        for (const mr of runsOf[m]) for (const v of mr.line) { const pr = projOnLine(run.line, run.cum, v); if (pr.off <= 4) cuts.push(pr.d); }
+      }
+      run.parts = finishJunctionCuts(run.line, run.cum, run.total, cuts);
+      for (const p of run.parts) parts.push(p);
     }
-    out[n] = { line: lines[n], cum: cums[n], total: totals[n], parts: finishJunctionCuts(lines[n], cums[n], totals[n], cuts) };
+    const r0 = runsOf[n][0];
+    out[n] = { line: r0.line, cum: r0.cum, total: totals[n], parts, runs: runsOf[n] };
   }
   return out;
 }

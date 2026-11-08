@@ -1,4 +1,5 @@
 import { spawn } from 'node:child_process';
+// Beta 1.144 TEST-PREMISE UPDATE (Package C, DA-04): draft keys are the FULL map names now ('Bordeaux Drive', 'Alderson Avenue') - the key reads below follow; display text still uses the short form.
 import fs from 'node:fs';
 import http from 'node:http';
 import path from 'node:path';
@@ -158,10 +159,10 @@ ok('N4 geometry ARRIVED over the wire and indexed: the extract holds Bordeaux Dr
   NCov.bordeaux === (FIX.overpass['Bordeaux Drive'] || []).length && NCov.alderson === (FIX.overpass['Alderson Avenue'] || []).length && NCov.boxes === 4);
 await installFeatureSeam();
 await tapStreet('Bordeaux Drive');
-const gotB = await poll(`typeof draft !== 'undefined' && draft && !!draft.roads['Bordeaux']`, 15000).catch(() => false);
+const gotB = await poll(`typeof draft !== 'undefined' && draft && !!draft.roads['Bordeaux Drive']`, 15000).catch(() => false);
 await tapStreet('Alderson Avenue');
-const gotA = await poll(`typeof draft !== 'undefined' && draft && !!draft.roads['Alderson']`, 15000).catch(() => false);
-const NT = await J(`({ b: draft && draft.roads['Bordeaux'] ? Math.round(computeStretches(draft.roads)['Bordeaux'].total) : -1, a: draft && draft.roads['Alderson'] ? Math.round(computeStretches(draft.roads)['Alderson'].total) : -1 })`);
+const gotA = await poll(`typeof draft !== 'undefined' && draft && !!draft.roads['Alderson Avenue']`, 15000).catch(() => false);
+const NT = await J(`({ b: draft && draft.roads['Bordeaux Drive'] ? Math.round(computeStretches(draft.roads)['Bordeaux Drive'].total) : -1, a: draft && draft.roads['Alderson Avenue'] ? Math.round(computeStretches(draft.roads)['Alderson Avenue'].total) : -1 })`);
 ok('N5 both streets ADD from the wire-delivered geometry at their fixture lengths (Bordeaux ' + Math.round(streetLen('Bordeaux Drive')) + ' m, Alderson ' + Math.round(streetLen('Alderson Avenue')) + ' m) | ' + JSON.stringify(NT),
   gotB === true && gotA === true && Math.abs(NT.b - streetLen('Bordeaux Drive')) <= streetLen('Bordeaux Drive') * 0.03 && Math.abs(NT.a - streetLen('Alderson Avenue')) <= streetLen('Alderson Avenue') * 0.03);
 ok('N6 after the extract, the adds made ZERO further Overpass requests (the wire count is still the 4 cells) | total overpass requests: ' + wire.filter(w => w.kind === 'overpass').length,
@@ -188,8 +189,8 @@ ok('N7 PERSISTENCE ROUND-TRIP: after a full page reload, re-picking Vaughan is r
   inPick2 === true && ready2 === true && phase2Overpass === 0 && NH.fromCache === true && NH.hint.indexOf('loaded') >= 0 && savedAll === true);
 await installFeatureSeam();
 await tapStreet('Bordeaux Drive');
-const gotB2 = await poll(`typeof draft !== 'undefined' && draft && !!draft.roads['Bordeaux']`, 15000).catch(() => false);
-const NT2 = await J(`({ b: draft && draft.roads['Bordeaux'] ? Math.round(computeStretches(draft.roads)['Bordeaux'].total) : -1 })`);
+const gotB2 = await poll(`typeof draft !== 'undefined' && draft && !!draft.roads['Bordeaux Drive']`, 15000).catch(() => false);
+const NT2 = await J(`({ b: draft && draft.roads['Bordeaux Drive'] ? Math.round(computeStretches(draft.roads)['Bordeaux Drive'].total) : -1 })`);
 ok('N8 the reloaded-from-cache city is fully usable: Bordeaux adds at its fixture length with still zero Overpass requests in phase 2 | ' + JSON.stringify(NT2) + ', phase-2 overpass: ' + wire.slice(wireMark).filter(w => w.kind === 'overpass').length,
   gotB2 === true && Math.abs(NT2.b - streetLen('Bordeaux Drive')) <= streetLen('Bordeaux Drive') * 0.03 && wire.slice(wireMark).filter(w => w.kind === 'overpass').length === 0);
 const noStub = await ev2(`typeof window.__jMode === 'undefined' && typeof window.__geoLog === 'undefined'`);

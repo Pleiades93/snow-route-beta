@@ -183,7 +183,7 @@ ok('A3 THE STREET SEARCH WORKS AND ITS RESULTS PANEL IS VISIBLE: typing "Bordeau
   resA === true && resVisA.results === 'block' && resVisA.first.indexOf('Bordeaux Drive') === 0 && pickedA === true);
 await installFeatureSeam();
 await tapStreet('Bordeaux Drive');
-const addedA = await poll(`typeof draft !== 'undefined' && draft && !!draft.roads['Bordeaux']`, 15000);
+const addedA = await poll(`typeof draft !== 'undefined' && draft && !!draft.roads['Bordeaux Drive']`, 15000);
 const sheetA = await sheetState();
 ok('A4 THE BOTTOM PANEL APPEARS AND NAMES THE SELECTED ROAD: tapping Bordeaux adds it to the draft and the count sheet is displayed, reads "1 streets" and lists Bordeaux - the exact panel Andrew reported missing | added: ' + addedA + ' | ' + JSON.stringify(sheetA),
   addedA === true && sheetA.sheet === 'flex' && sheetA.count.indexOf('1 roads') === 0 && sheetA.list.indexOf('Bordeaux') >= 0); // Beta 1.127 premise update: the picked-roads panel header counts 'N roads' (the old count sheet said 'N streets'); the list still names Bordeaux
@@ -203,7 +203,7 @@ ok('B1 CONTROL - CREATE AFTER A NON-ACTIVE DELETE: 5W stayed loaded through rout
   goneB === true && readyB === true && visB.bar === 'flex' && visB.sheet === 'flex' && visB.htmlBoot === false);
 await installFeatureSeam();
 await tapStreet('Bordeaux Drive');
-const addedB = await poll(`typeof draft !== 'undefined' && draft && !!draft.roads['Bordeaux']`, 15000);
+const addedB = await poll(`typeof draft !== 'undefined' && draft && !!draft.roads['Bordeaux Drive']`, 15000);
 const sheetB = await sheetState();
 ok('B2 CONTROL - THE SHEET NAMES THE ROAD THERE TOO: the tapped street lands in the draft and the visible count sheet lists it | added: ' + addedB + ' | ' + JSON.stringify(sheetB),
   addedB === true && sheetB.sheet === 'flex' && sheetB.count.indexOf('1 roads') === 0 && sheetB.list.indexOf('Bordeaux') >= 0); // Beta 1.127 premise update: the panel header counts 'N roads'

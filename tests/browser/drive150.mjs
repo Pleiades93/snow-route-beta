@@ -1,4 +1,5 @@
 import { launchDrive, bootThrough, finish } from './harness.mjs';
+// Beta 1.144 TEST-PREMISE UPDATE (Package C, DA-04): the create draft and the packs it saves now key streets by their FULL map name ('Bordeaux Drive', 'Alderson Avenue'); through 1.143 they keyed on the shortened name. Every key read in this drive (draft.roads, computeStretches, mains, markDone/streetComplete on the created route, saved-pack mains) follows the full name; DISPLAY reads (panel/preview row text, search text) still match the short form, and the photo-import fixtures' authored keys (the envelope's 'Bordeaux') are unchanged - the import keeps the file's own keys. Ship-gate completion (2026-11-07 night): the J-section fixture-street reads ('Faraway Avenue', 'Farfaraway Avenue', 'Edgewater Avenue', 'Crosscell Avenue', incl. the crPending key) and P1's saved-key expectation were missed by the first repair pass and are full-name now; the first local run exposed them as 6 failures + ~150 s of dead polls (TEST, flake log).
 import fs from 'node:fs';
 import path from 'node:path';
 import { execFileSync } from 'node:child_process';
@@ -213,22 +214,22 @@ await sleep(400);
 const A2b = await J(`({ toast: document.getElementById('toast').textContent, streets: draft ? Object.keys(draft.roads).length : -1 })`);
 ok('A2b a tap with no road feature under it says so and adds nothing | toast: ' + A2b.toast, A2b.toast.indexOf('No road there') >= 0 && A2b.streets === 0);
 await ev(tapStreet('Bordeaux Drive'));
-const gotB = await poll(`typeof draft !== 'undefined' && draft && !!draft.roads['Bordeaux']`, 20000);
+const gotB = await poll(`typeof draft !== 'undefined' && draft && !!draft.roads['Bordeaux Drive']`, 20000);
 ok('A3 tapping Bordeaux Drive (fixture roads feature through the real click handler) adds it from the prepared extract', gotB === true);
-const A4 = await J(`({ streets: Object.keys(draft.roads), mains: draft.mains.size, count: document.getElementById('crCount').textContent, chip: (document.querySelector('#crPickList .crPChip') || {}).textContent || '', total: Math.round(computeStretches(draft.roads)['Bordeaux'].total), src: (map.getSource('crDraft').serialize().data.features || []).length })`); // Beta 1.127 premise updates in this drive: the pick rows are the picked-roads panel's rows - chip is .crPChip (A4), the panel header counts 'N roads' (A4/A6), the chip flip's proof is its own MAIN text (A7), and the theme probe reads the panel face #crPanel (I2)
+const A4 = await J(`({ streets: Object.keys(draft.roads), mains: draft.mains.size, count: document.getElementById('crCount').textContent, chip: (document.querySelector('#crPickList .crPChip') || {}).textContent || '', total: Math.round(computeStretches(draft.roads)['Bordeaux Drive'].total), src: (map.getSource('crDraft').serialize().data.features || []).length })`); // Beta 1.127 premise updates in this drive: the pick rows are the picked-roads panel's rows - chip is .crPChip (A4), the panel header counts 'N roads' (A4/A6), the chip flip's proof is its own MAIN text (A7), and the theme probe reads the panel face #crPanel (I2)
 ok('A4 Bordeaux joined the draft as a SECONDARY (2ND chip, 0 mains) with its shape drawn on the draft overlay | ' + JSON.stringify(A4),
   A4.streets.length === 1 && A4.mains === 0 && A4.count.indexOf('1 roads') === 0 && A4.chip === '2ND' && A4.src === 1);
 ok('A5 the fetched Bordeaux length matches the fixture geometry (' + Math.round(fixtureLen('Bordeaux Drive')) + ' m) within 2% | got ' + A4.total,
   Math.abs(A4.total - fixtureLen('Bordeaux Drive')) <= fixtureLen('Bordeaux Drive') * 0.02);
 await ev(tapStreet('Alderson Avenue'));
-const gotA = await poll(`typeof draft !== 'undefined' && draft && !!draft.roads['Alderson']`, 20000);
+const gotA = await poll(`typeof draft !== 'undefined' && draft && !!draft.roads['Alderson Avenue']`, 20000);
 ok('A5b tapping Alderson Avenue adds it too', gotA === true);
-const A6 = await J(`({ streets: Object.keys(draft.roads).sort(), count: document.getElementById('crCount').textContent, ald: Math.round(computeStretches(draft.roads)['Alderson'].total) })`);
+const A6 = await J(`({ streets: Object.keys(draft.roads).sort(), count: document.getElementById('crCount').textContent, ald: Math.round(computeStretches(draft.roads)['Alderson Avenue'].total) })`);
 ok('A6 Alderson Avenue tapped and added (2 streets); its stitched length matches the 5-way fixture (' + Math.round(fixtureLen('Alderson Avenue')) + ' m) within 3% | ' + JSON.stringify(A6),
   A6.streets.length === 2 && A6.count.indexOf('2 roads') === 0 && Math.abs(A6.ald - fixtureLen('Alderson Avenue')) <= fixtureLen('Alderson Avenue') * 0.03);
 await ev(`(() => { const rows = [...document.querySelectorAll('#crPickList .crPRow')]; const row = rows.find(r => r.querySelector('.crPName').textContent === 'Bordeaux'); row.querySelector('.crPChip').click(); return true; })()`); // Beta 1.127 premise update: the chip lives in the panel row (.crPRow/.crPName/.crPChip)
 const A7 = await J(`({ mains: [...draft.mains], chip: (() => { const rows = [...document.querySelectorAll('#crPickList .crPRow')]; const row = rows.find(r => (r.querySelector('.crPName') || {}).textContent === 'Bordeaux'); return row ? (row.querySelector('.crPChip') || {}).textContent || '' : ''; })() })`); // Beta 1.127 premise update: the panel header has no mains count - the flipped chip's MAIN text is the visible proof
-ok('A7 flipping Bordeaux to MAIN updates its panel chip (2ND -> MAIN)', A7.mains.length === 1 && A7.mains[0] === 'Bordeaux' && A7.chip === 'MAIN'); // Beta 1.127 premise update: chip text replaces the old header mains count
+ok('A7 flipping Bordeaux to MAIN updates its panel chip (2ND -> MAIN)', A7.mains.length === 1 && A7.mains[0] === 'Bordeaux Drive' && A7.chip === 'MAIN'); // Beta 1.127 premise update: chip text replaces the old header mains count
 await ev(`document.getElementById('crDoneBtn').click()`);
 const A8 = await J(`({ stage: crStage, pv: document.getElementById('previewSheet').classList.contains('on'), bar: document.getElementById('createBar').classList.contains('on'), rows: document.querySelectorAll('#pvList .crRow').length, pvCount: document.getElementById('pvCount').textContent })`);
 ok('A8 Done lands in the shared preview ("Is this correct?") with both streets and the count', A8.stage === 'preview' && A8.pv && !A8.bar && A8.rows === 2 && A8.pvCount.indexOf('2 streets') === 0);
@@ -242,14 +243,14 @@ await ev(`document.getElementById('crSaveBtn').click()`);
 await poll(`ROUTE_PACKS.some(p => p.id === 'route-6w') && !creating`, 10000);
 const A10 = await J(`({ rec: JSON.parse(localStorage.getItem('snowroute.v2.userpacks') || '{}'), listed: !!document.querySelector('#rmRoutes .routeRow[data-route="route-6w"]'), pre: JSON.parse(localStorage.getItem('snowroute.route-6w.v5.preload') || 'null') })`);
 ok('A10 save persists the pack in snowroute.v2.userpacks (2 streets, Bordeaux main), lists it in the Routes menu, and gives it an honest preload record (0 of its tiles) | ' + JSON.stringify({ keys: Object.keys(A10.rec), pre: A10.pre }),
-  !!A10.rec['route-6w'] && Object.keys(A10.rec['route-6w'].roads).length === 2 && A10.rec['route-6w'].main.join() === 'Bordeaux' && A10.listed && A10.pre && A10.pre.routeSaved === 0 && A10.pre.routeTotal > 0);
+  !!A10.rec['route-6w'] && Object.keys(A10.rec['route-6w'].roads).length === 2 && A10.rec['route-6w'].main.join() === 'Bordeaux Drive' && A10.listed && A10.pre && A10.pre.routeSaved === 0 && A10.pre.routeTotal > 0);
 await ev(`document.querySelector('#rmRoutes .routeRow[data-route="route-6w"]').click()`);
 await poll(`typeof activeRoute !== 'undefined' && activeRoute && activeRoute.id === 'route-6w'`, 20000);
 await poll(`typeof map === 'undefined' || !map || !map.isMoving()`, 25000);
 const A11 = await J(`({ names: STREETNAMES.slice().sort(), count2: document.body.innerText.indexOf('of 2') >= 0 })`);
-ok('A11 the created route loads through the 1.117 machinery (2 streets, count reads "of 2")', A11.names.join() === 'Alderson,Bordeaux' && A11.count2);
-await ev(`markDone('Bordeaux', 'drive150')`);
-const A12 = await J(`({ done: streetComplete('Bordeaux'), slot: (localStorage.getItem('snowroute.route-6w.v5.sides') || '').indexOf('Bordeaux') >= 0 })`);
+ok('A11 the created route loads through the 1.117 machinery (2 streets, count reads "of 2")', A11.names.join() === 'Alderson Avenue,Bordeaux Drive' && A11.count2);
+await ev(`markDone('Bordeaux Drive', 'drive150')`);
+const A12 = await J(`({ done: streetComplete('Bordeaux Drive'), slot: (localStorage.getItem('snowroute.route-6w.v5.sides') || '').indexOf('Bordeaux') >= 0 })`);
 ok('A12 a street marked on the created route persists in ITS slot', A12.done && A12.slot);
 await ev(`openRouteMenu()`);
 await ev(`document.querySelector('#rmRoutes .routeRow[data-route="5w"]').click()`);
@@ -288,11 +289,11 @@ await ev(installPickStub);
 // against the same geometry the stub draws (section (a)'s canned lngLat
 // belongs to a view the map is no longer showing here)
 await ev(`(() => { const pt = { x: 210, y: 320 }; const ll = map.unproject([pt.x, pt.y]); map.fire('click', { lngLat: { lat: ll.lat, lng: ll.lng }, point: pt, originalEvent: {} }); return true; })()`);
-const gotPick = await poll(`typeof draft !== 'undefined' && draft && !!draft.roads['Bordeaux']`, 20000);
-const PK = await J(`({ streets: draft ? Object.keys(draft.roads) : [], total: draft && draft.roads['Bordeaux'] ? Math.round(computeStretches(draft.roads)['Bordeaux'].total) : -1, toast: document.getElementById('toast').textContent })`);
+const gotPick = await poll(`typeof draft !== 'undefined' && draft && !!draft.roads['Bordeaux Drive']`, 20000);
+const PK = await J(`({ streets: draft ? Object.keys(draft.roads) : [], total: draft && draft.roads['Bordeaux Drive'] ? Math.round(computeStretches(draft.roads)['Bordeaux Drive'].total) : -1, toast: document.getElementById('toast').textContent })`);
 ok('P1 (pick seam) a tap whose exact pixel holds NO road still picks the street whose tile line passes nearest the tap (Bordeaux, 12 px) and the pick reaches pickStreet -> the prepared extract (length ' + Math.round(fixtureLen('Bordeaux Drive')) + ' m) | ' + JSON.stringify(PK),
-  gotPick === true && PK.streets.join() === 'Bordeaux' && Math.abs(PK.total - fixtureLen('Bordeaux Drive')) <= fixtureLen('Bordeaux Drive') * 0.02);
-ok('P2 (pick seam) the farther street inside the same box (Alderson, 15 px, listed first) is NOT picked', !PK.streets.includes('Alderson'));
+  gotPick === true && PK.streets.join() === 'Bordeaux Drive' && Math.abs(PK.total - fixtureLen('Bordeaux Drive')) <= fixtureLen('Bordeaux Drive') * 0.02);
+ok('P2 (pick seam) the farther street inside the same box (Alderson, 15 px, listed first) is NOT picked', !PK.streets.includes('Alderson Avenue'));
 await ev(`document.getElementById('crExit').click()`);
 await sleep(300);
 await ev(`document.getElementById('crExit').click()`); // Beta 1.120: the ✕ clears a leftover search text FIRST (section (a) left "borde" in the box) - the second press is the exit this section means
@@ -310,7 +311,7 @@ await ev(`document.getElementById('crDoorManual').click()`);
 await pickCityVaughan();
 await prepAtBordeaux();
 await ev(tapStreet('Bordeaux Drive'));
-const gotB2 = await poll(`typeof draft !== 'undefined' && draft && !!draft.roads['Bordeaux']`, 20000);
+const gotB2 = await poll(`typeof draft !== 'undefined' && draft && !!draft.roads['Bordeaux Drive']`, 20000);
 ok('B0 the second manual session (city step + preparation again) picks Bordeaux again (feature stub still installed)', gotB2 === true);
 await ev(`document.getElementById('crDoneBtn').click()`);
 const B1 = await J(`({ rows: document.querySelectorAll('#pvList .crRow').length })`);
@@ -319,13 +320,13 @@ await ev(`document.getElementById('pvAddBtn').click()`);
 const B2 = await J(`({ stage: crStage, bar: document.getElementById('createBar').classList.contains('on'), doneLbl: document.getElementById('crDoneBtn').textContent })`);
 ok('B2 "+ Add a street" reopens the picker (Beta 1.128: the panel button reads "Done" in every state - the "back to check" rewrite is gone)', B2.stage === 'pick' && B2.bar && B2.doneLbl === 'Done');
 await ev(tapStreet('Alderson Avenue'));
-await poll(`typeof draft !== 'undefined' && draft && !!draft.roads['Alderson']`, 20000);
+await poll(`typeof draft !== 'undefined' && draft && !!draft.roads['Alderson Avenue']`, 20000);
 await ev(`document.getElementById('crDoneBtn').click()`);
 const B3 = await J(`({ rows: document.querySelectorAll('#pvList .crRow').length, count: document.getElementById('pvCount').textContent })`);
 ok('B3 the added street returns to the same preview (2 streets)', B3.rows === 2 && B3.count.indexOf('2 streets') === 0);
 await ev(`(() => { const rows = [...document.querySelectorAll('#pvList .crRow')]; const row = rows.find(r => r.querySelector('.crName').textContent === 'Bordeaux'); row.querySelector('.crDel').click(); return true; })()`);
 const B4 = await J(`({ streets: Object.keys(draft.roads), count: document.getElementById('pvCount').textContent })`);
-ok('B4 removing Bordeaux in the preview updates the draft and the count (1 street left)', B4.streets.join() === 'Alderson' && B4.count.indexOf('1 streets') === 0);
+ok('B4 removing Bordeaux in the preview updates the draft and the count (1 street left)', B4.streets.join() === 'Alderson Avenue' && B4.count.indexOf('1 streets') === 0);
 await ev(`document.getElementById('pvStartOverBtn').click()`);
 const B5 = await J(`({ modal: !document.getElementById('crModal').classList.contains('hidden'), creating })`);
 ok('B5 Start over on a non-empty draft asks first (confirm modal, still creating)', B5.modal && B5.creating === true);
@@ -414,7 +415,7 @@ const P3 = await J(`({ rows: [...document.querySelectorAll('#rmRoutes .routeRow'
 ok('D4 restore re-registers the created route (record written, route listed after the restore reload)', P3.rows.includes('route-6w') && P3.rec.includes('route-6w'));
 await ev(`document.querySelector('#rmRoutes .routeRow[data-route="route-6w"]').click()`);
 await poll(`typeof activeRoute !== 'undefined' && activeRoute && activeRoute.id === 'route-6w'`, 20000);
-const P4 = await J(`({ names: STREETNAMES.length, bordeaux: streetComplete('Bordeaux') })`);
+const P4 = await J(`({ names: STREETNAMES.length, bordeaux: streetComplete('Bordeaux Drive') })`);
 ok('D5 the restored created route loads with its mark intact (Bordeaux still complete)', P4.names === 2 && P4.bordeaux === true);
 await ev(`openRouteMenu()`);
 await ev(`document.querySelector('#rmRoutes .routeRow[data-route="5w"]').click()`);
@@ -465,7 +466,7 @@ await ev(`window.__fHealthy = true`);
 await ev(`document.getElementById('crHintBtn').click()`); // Retry: resumes the grid's missing cells (all of them)
 const fReady = await poll(`crPrepState === 'ready'`, 30000).catch(() => false);
 await ev(tapStreet('Bordeaux Drive'));
-const gotF = await poll(`typeof draft !== 'undefined' && draft && !!draft.roads['Bordeaux']`, 15000).catch(() => false);
+const gotF = await poll(`typeof draft !== 'undefined' && draft && !!draft.roads['Bordeaux Drive']`, 15000).catch(() => false);
 ok('F3 Retry against the now-healthy service completes the preparation, and a tap then adds Bordeaux from the extract - failure left nothing latched | ready: ' + fReady,
   fReady === true && gotF === true);
 await ev(`document.getElementById('crExit').click()`);
@@ -595,7 +596,7 @@ const I4 = await J(`({ on: document.getElementById('createResults').classList.co
 ok('I4 tapping away (a pointerdown on the map) dismisses the results dropdown; create mode is untouched', I4a.on === true && I4.on === false && I4.creating === true);
 await prepAtBordeaux(); // Beta 1.121: the tap below resolves from the prepared extract
 await ev(tapStreet('Bordeaux Drive'));
-const gotI = await poll(`typeof draft !== 'undefined' && draft && !!draft.roads['Bordeaux']`, 20000).catch(() => false);
+const gotI = await poll(`typeof draft !== 'undefined' && draft && !!draft.roads['Bordeaux Drive']`, 20000).catch(() => false);
 ok('I5 after dismissing the dropdown, tapping a road still picks it (the dismissal never eats the pick)', gotI === true);
 await ev(typeText('borde'));
 await poll(`document.getElementById('createResults').classList.contains('on') && document.querySelectorAll('#createResults .crResult').length === 1`, 8000);
@@ -736,16 +737,16 @@ ok('J1 (grammar, whole-city) picking Vaughan fired the GRID: exactly 4 cell requ
   s1Ready === true && s1Batches.length === 4 && s1Cells.size === 4 && s1Grammar && s1InCity && !S1log.some(x => /way\["name="/.test(x.body)));
 const S1cov = await J(`({ cross: crCov && crCov.byName['Crosscell Avenue'] ? crCov.byName['Crosscell Avenue'].length : -1, boxes: crCov ? crCov.boxes.length : -1, w9020: crCov ? Object.keys(crCov.byId).filter(id => id === '9020').length : -1 })`);
 await ev(tapRoad('Crosscell Avenue', 43.8230, -79.5650));
-const gotCross = await poll(`typeof draft !== 'undefined' && draft && !!draft.roads['Crosscell']`, 15000).catch(() => false);
-const S1x = await J(`({ total: draft && draft.roads['Crosscell'] ? Math.round(computeStretches(draft.roads)['Crosscell'].total) : -1 })`);
+const gotCross = await poll(`typeof draft !== 'undefined' && draft && !!draft.roads['Crosscell Avenue']`, 15000).catch(() => false);
+const S1x = await J(`({ total: draft && draft.roads['Crosscell Avenue'] ? Math.round(computeStretches(draft.roads)['Crosscell Avenue'].total) : -1 })`);
 ok('J1c (cross-cell merge) Crosscell Avenue crosses a cell border: way 9020 was returned by BOTH row cells yet is stored ONCE (dedupe by way id), and the tap stitches the street WHOLE from the merged index (' + Math.round(crosscellLen) + ' m across both cells) | ' + JSON.stringify(S1cov) + ' ' + JSON.stringify(S1x),
   S1cov.cross === 2 && S1cov.boxes === 4 && S1cov.w9020 === 1 && gotCross === true && Math.abs(S1x.total - crosscellLen) <= crosscellLen * 0.03);
 const gcS1 = await geoCount();
 await ev(`window.__jMode = 'throw'`);
 await ev(tapStreet('Bordeaux Drive'));
-const gotB5 = await poll(`typeof draft !== 'undefined' && draft && !!draft.roads['Bordeaux']`, 15000).catch(() => false);
+const gotB5 = await poll(`typeof draft !== 'undefined' && draft && !!draft.roads['Bordeaux Drive']`, 15000).catch(() => false);
 await ev(tapStreet('Alderson Avenue'));
-const gotA5 = await poll(`typeof draft !== 'undefined' && draft && !!draft.roads['Alderson']`, 15000).catch(() => false);
+const gotA5 = await poll(`typeof draft !== 'undefined' && draft && !!draft.roads['Alderson Avenue']`, 15000).catch(() => false);
 const gcS1b = await geoCount();
 ok('J5 (offline after ready) with the service now THROWING on every request, Bordeaux and Alderson still add from the loaded city at full length - and the geometry request count does not move (' + gcS1 + ' -> ' + gcS1b + ')',
   gotB5 === true && gotA5 === true && gcS1b === gcS1);
@@ -901,28 +902,28 @@ const gcS8 = await geoCount();
 await ev(`window.__jDelayMs = 45000`);
 const ft0 = Date.now();
 await ev(tapStreet('Faraway Avenue'));
-const gotFar = await poll(`typeof draft !== 'undefined' && draft && !!draft.roads['Faraway']`, 90000).catch(() => false);
+const gotFar = await poll(`typeof draft !== 'undefined' && draft && !!draft.roads['Faraway Avenue']`, 90000).catch(() => false);
 const fMs = Date.now() - ft0;
 await ev(`window.__jDelayMs = 0`);
 const S8log = await geoSince(gcS8);
 const farTopups = nameBodies(S8log, 'Faraway Avenue');
-const S8a = await J(`({ total: draft && draft.roads['Faraway'] ? Math.round(computeStretches(draft.roads)['Faraway'].total) : -1 })`);
+const S8a = await J(`({ total: draft && draft.roads['Faraway Avenue'] ? Math.round(computeStretches(draft.roads)['Faraway Avenue'].total) : -1 })`);
 ok('J7a (edge rule + CG-PF-07) Faraway Avenue crosses the CITY edge: ONE targeted top-up fires with the correct grammar (way["name"="Faraway Avenue"]), its primary answer landing at a real 45 s is ACCEPTED (elapsed ' + fMs + ' ms - the verified build\'s 40 s top-up cap killed exactly this), and the street joins WHOLE (' + Math.round(farawayLen) + ' m) | top-ups: ' + farTopups.length + ', got ' + JSON.stringify(S8a),
   gotFar === true && fMs >= 44000 && farTopups.length === 1 && Math.abs(S8a.total - farawayLen) <= farawayLen * 0.03);
 await ev(tapStreet('Farfaraway Avenue'));
-const pendFF = await poll(`crPending['Farfaraway'] !== undefined`, 20000).catch(() => false);
-const S8b = await J(`({ inDraft: !!(draft && draft.roads['Farfaraway']), pendRow: (document.getElementById('crPickList').textContent || '').indexOf('PENDING') >= 0, count: document.getElementById('crCount').textContent })`);
+const pendFF = await poll(`crPending['Farfaraway Avenue'] !== undefined`, 20000).catch(() => false);
+const S8b = await J(`({ inDraft: !!(draft && draft.roads['Farfaraway Avenue']), pendRow: (document.getElementById('crPickList').textContent || '').indexOf('PENDING') >= 0, count: document.getElementById('crCount').textContent })`);
 ok('J7b (edge rule, fail-closed) Farfaraway Avenue still reaches past the widened area after its ONE top-up: it stays PENDING - listed as pending, NOT in the draft, NOT in the count | ' + JSON.stringify(S8b),
   pendFF === true && S8b.inDraft === false && S8b.pendRow && S8b.count.indexOf('Faraway') < 0);
 const S8c0 = await J(`({ btn: document.getElementById('crHintBtn').textContent, btnOn: document.getElementById('crHintBtn').style.display !== 'none' })`);
 await ev(`document.getElementById('crHintBtn').click()`); // Prepare wider area - around the street's open end; the landing box SWEEPS the pending street complete (its other end is verified by a city cell)
-const sweptFF = await poll(`typeof draft !== 'undefined' && draft && !!draft.roads['Farfaraway']`, 25000).catch(() => false);
-const S8c = await J(`({ total: draft && draft.roads['Farfaraway'] ? Math.round(computeStretches(draft.roads)['Farfaraway'].total) : -1, pend: Object.keys(crPending).length })`);
+const sweptFF = await poll(`typeof draft !== 'undefined' && draft && !!draft.roads['Farfaraway Avenue']`, 25000).catch(() => false);
+const S8c = await J(`({ total: draft && draft.roads['Farfaraway Avenue'] ? Math.round(computeStretches(draft.roads)['Farfaraway Avenue'].total) : -1, pend: Object.keys(crPending).length })`);
 ok('J9c (remedy works, CG-PF-09) the pending street offers a working "Prepare wider area" button (' + JSON.stringify(S8c0) + '): the wider preparation lands and the street completes WHOLE (' + Math.round(farfarawayLen) + ' m) by the sweep - pending cleared, no re-tap needed | ' + JSON.stringify(S8c),
   S8c0.btn === 'Prepare wider area' && S8c0.btnOn && sweptFF === true && Math.abs(S8c.total - farfarawayLen) <= farfarawayLen * 0.03 && S8c.pend === 0);
 await ev(tapStreet('Edgewater Avenue'));
-const gotEdge2 = await poll(`typeof draft !== 'undefined' && draft && !!draft.roads['Edgewater']`, 15000).catch(() => false);
-const S8d = await J(`({ total: draft && draft.roads['Edgewater'] ? Math.round(computeStretches(draft.roads)['Edgewater'].total) : -1 })`);
+const gotEdge2 = await poll(`typeof draft !== 'undefined' && draft && !!draft.roads['Edgewater Avenue']`, 15000).catch(() => false);
+const S8d = await J(`({ total: draft && draft.roads['Edgewater Avenue'] ? Math.round(computeStretches(draft.roads)['Edgewater Avenue'].total) : -1 })`);
 ok('J7c (whole-city contrast) Edgewater Avenue - the OLD box design\'s edge case, completed only by a top-up - now resolves LOCALLY from the city extract (' + Math.round(edgewaterLen) + ' m), no top-up at all | ' + JSON.stringify(S8d),
   gotEdge2 === true && Math.abs(S8d.total - edgewaterLen) <= edgewaterLen * 0.03);
 await jExitDiscard();

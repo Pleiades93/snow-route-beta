@@ -101,7 +101,7 @@ jobs:
           - shard: 3
             drives: "drive115 drive116 drive117 drive123 drive128 drive131 drive135 drive146 drive149 drive154 drive157 drive162 drive65 drive89"
           - shard: 4
-            drives: "drive119 drive122 drive125 drive127 drive130 drive142 drive144 drive145 drive147 drive148 drive153 drive158 drive160 drive164 drive66"
+            drives: "drive119 drive122 drive125 drive127 drive130 drive142 drive144 drive145 drive147 drive148 drive153 drive158 drive160 drive164 drive165 drive66"
     steps:
       - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4
       - name: Set up Node

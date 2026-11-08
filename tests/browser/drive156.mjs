@@ -1,4 +1,5 @@
 import { spawn } from 'node:child_process';
+// Beta 1.144 TEST-PREMISE UPDATE (Package C, DA-04): draft keys, sector state, panel feature properties and saved-pack keys are the FULL map names now ('Long Road', 'Alpha Street'); through 1.143 they were the shortened forms. Key reads below follow the full name; row-text finds still match the displayed short form ('Long', 'Alpha').
 import fs from 'node:fs';
 import http from 'node:http';
 import path from 'node:path';
@@ -132,32 +133,32 @@ await bootRoute();
 // ================= A: sectors =================
 const inA = await enterPickWithExtract();
 await ev2(`pickStreet('Long Road', { lat: 43.8, lng: -79.574 })`);
-const addedA = await poll(`typeof draft !== 'undefined' && draft && !!draft.roads['Long']`, 15000);
-const rowA = await J(`(() => { const r = document.querySelector('#crPickList .crPRow'); return { panel: !!document.getElementById('crPanel'), sub: r ? (r.querySelector('.crPSub') || {}).textContent || '' : '', count: document.getElementById('crCount').textContent, whole: draft && draft.roads['Long'] ? Math.round(computeStretches(draft.roads)['Long'].total) : -1 }; })()`);
+const addedA = await poll(`typeof draft !== 'undefined' && draft && !!draft.roads['Long Road']`, 15000);
+const rowA = await J(`(() => { const r = document.querySelector('#crPickList .crPRow'); return { panel: !!document.getElementById('crPanel'), sub: r ? (r.querySelector('.crPSub') || {}).textContent || '' : '', count: document.getElementById('crCount').textContent, whole: draft && draft.roads['Long Road'] ? Math.round(computeStretches(draft.roads)['Long Road'].total) : -1 }; })()`);
 ok('A1 WHOLE-ROAD PICK, PANEL SHAPE: picking Long Road adds it whole (its stitched length is ~1,608 m) and the new panel lists it with a "Entire road" sub-line under a "1 roads" header count | entered: ' + inA + ', added: ' + addedA + ' | ' + JSON.stringify(rowA),
   inA === true && addedA === true && rowA.panel === true && rowA.sub.indexOf('Entire road') === 0 && Math.abs(rowA.whole - 1608) <= 4 && rowA.count.indexOf('1 roads') === 0);
 await ev2(`(() => { const r = document.querySelector('#crPickList .crPRow'); if (r) r.click(); return true; })()`);
-const secA = await poll(`typeof crSectorStreet !== 'undefined' && crSectorStreet === 'Long'`, 10000);
+const secA = await poll(`typeof crSectorStreet !== 'undefined' && crSectorStreet === 'Long Road'`, 10000);
 await poll(`getComputedStyle(document.getElementById('crPanel')).display === 'none'`, 12000); // Beta 1.128: face changes are a continuous morph now - wait for the panel to fully hand over before reading the bar's face state
-const barA = await J(`({ bar: getComputedStyle(document.getElementById('crSectorBar')).display, panel: getComputedStyle(document.getElementById('crPanel')).display, sub: document.getElementById('crSbSub').textContent, feats: (map.getSource('crDraft').serialize().data.features || []).filter(f => f.properties.name === 'Long').map(f => f.properties.chosen) })`);
+const barA = await J(`({ bar: getComputedStyle(document.getElementById('crSectorBar')).display, panel: getComputedStyle(document.getElementById('crPanel')).display, sub: document.getElementById('crSbSub').textContent, feats: (map.getSource('crDraft').serialize().data.features || []).filter(f => f.properties.name === 'Long Road').map(f => f.properties.chosen) })`);
 ok('A2 SECTOR MODE OPENS FROM THE ROW: the sector bar replaces the panel, reads "Entire road picked", and the draft renders Long Road as FIVE sector features, all chosen - the four cross streets cut it into five junction-to-junction parts | sector mode: ' + secA + ' | ' + JSON.stringify(barA),
   secA === true && barA.bar !== 'none' && barA.panel === 'none' && barA.sub.indexOf('Entire road picked') === 0 && barA.feats.length === 5 && barA.feats.every(c => c === 1));
 await ev2(`crSectorTap({ lat: 43.8, lng: -79.578 })`); // the middle of part 0
-const trim1 = await poll(`!!draft.sectors['Long'] && draft.sectors['Long'].length === 4`, 10000);
+const trim1 = await poll(`!!draft.sectors['Long Road'] && draft.sectors['Long Road'].length === 4`, 10000);
 await ev2(`crSectorTap({ lat: 43.8, lng: -79.562 })`); // the middle of part 4
-const trim2 = await poll(`!!draft.sectors['Long'] && draft.sectors['Long'].length === 3`, 10000);
-const trimA = await J(`({ sel: draft.sectors['Long'], chosenM: Math.round(crStreetChosenM('Long', computeStretches(draft.roads))), sub: document.getElementById('crSbSub').textContent, feats: (map.getSource('crDraft').serialize().data.features || []).filter(f => f.properties.name === 'Long').map(f => f.properties.chosen) })`);
+const trim2 = await poll(`!!draft.sectors['Long Road'] && draft.sectors['Long Road'].length === 3`, 10000);
+const trimA = await J(`({ sel: draft.sectors['Long Road'], chosenM: Math.round(crStreetChosenM('Long Road', computeStretches(draft.roads))), sub: document.getElementById('crSbSub').textContent, feats: (map.getSource('crDraft').serialize().data.features || []).filter(f => f.properties.name === 'Long Road').map(f => f.properties.chosen) })`);
 ok('A3 SECTOR TAPS TRIM: tapping the end sectors un-picks exactly them - the selection is the middle three parts [1,2,3], the chosen length ~964 m (3 of 5 parts), the bar says so, and the draft features mark the two ends unchosen | ' + JSON.stringify(trimA),
   trim1 === true && trim2 === true && JSON.stringify(trimA.sel) === '[1,2,3]' && Math.abs(trimA.chosenM - 964) <= 8 && trimA.sub.indexOf('3 of 5 sectors picked') === 0 && JSON.stringify(trimA.feats) === '[0,1,1,1,0]');
 await ev2(`document.getElementById('crSbWhole').click()`);
-const wholeA = await poll(`!draft.sectors['Long']`, 10000);
+const wholeA = await poll(`!draft.sectors['Long Road']`, 10000);
 const wholeSub = await J(`document.getElementById('crSbSub').textContent`);
 ok('A4 ENTIRE ROAD RESTORES: the bar\'s Entire road button clears the trim (no sector entry - the draft\'s default state) and the bar reads "Entire road picked" again | restored: ' + wholeA + ' | ' + wholeSub,
   wholeA === true && wholeSub.indexOf('Entire road picked') === 0);
 await ev2(`crSectorTap({ lat: 43.8, lng: -79.578 })`);
-await poll(`!!draft.sectors['Long'] && draft.sectors['Long'].length === 4`, 10000);
+await poll(`!!draft.sectors['Long Road'] && draft.sectors['Long Road'].length === 4`, 10000);
 await ev2(`crSectorTap({ lat: 43.8, lng: -79.562 })`);
-await poll(`!!draft.sectors['Long'] && draft.sectors['Long'].length === 3`, 10000);
+await poll(`!!draft.sectors['Long Road'] && draft.sectors['Long Road'].length === 3`, 10000);
 await ev2(`document.getElementById('crSbDone').click()`);
 const doneA = await poll(`crSectorStreet === null`, 10000);
 await poll(`getComputedStyle(document.getElementById('crSectorBar')).display === 'none'`, 12000); // Beta 1.128: same morph settle wait on the way back
@@ -173,7 +174,7 @@ await ev2(`document.getElementById('pvSaveBtn').click()`);
 await poll(`document.getElementById('rmNamePane').classList.contains('on')`, 10000);
 await ev2(`(() => { document.getElementById('crNameInput').value = 'Sector Test Route'; document.getElementById('crSaveBtn').click(); return true; })()`);
 const savedA = await poll(`(() => { try { const rec = JSON.parse(localStorage.getItem('snowroute.v2.userpacks') || '{}'); return Object.values(rec).some(p => p.name === 'Sector Test Route'); } catch (e) { return false; } })()`, 15000);
-const packA = await J(`(() => { const rec = JSON.parse(localStorage.getItem('snowroute.v2.userpacks') || '{}'); const p = Object.values(rec).find(x => x.name === 'Sector Test Route'); if (!p) return { found: false }; const g = computeStretches(p.roads); return { found: true, segs: p.roads['Long'].length, total: Math.round(g['Long'].total), pts: p.roads['Long'].reduce((a, s) => a + s.length, 0) }; })()`);
+const packA = await J(`(() => { const rec = JSON.parse(localStorage.getItem('snowroute.v2.userpacks') || '{}'); const p = Object.values(rec).find(x => x.name === 'Sector Test Route'); if (!p) return { found: false }; const g = computeStretches(p.roads); return { found: true, segs: p.roads['Long Road'].length, total: Math.round(g['Long Road'].total), pts: p.roads['Long Road'].reduce((a, s) => a + s.length, 0) }; })()`);
 ok('A7 THE SAVE STORES CHOSEN SECTORS ONLY: the saved pack\'s Long Road is THREE segments measuring ~964 m (the draft\'s whole street was 1,608 m) - the unchosen ends never entered the pack, and the pack format is the plain segment list it always was | saved: ' + savedA + ' | ' + JSON.stringify(packA),
   savedA === true && packA.found === true && packA.segs === 3 && Math.abs(packA.total - 964) <= 10);
 
@@ -193,19 +194,19 @@ const nightB = await J(`(() => { document.body.classList.add('night'); const pro
 ok('B2 NIGHT TOKENS: at night the ONE surface wears --card-solid exactly and the three faces inside it are transparent contents (no hardcoded white card) | ' + JSON.stringify(nightB),
   nightB.surface === nightB.token && nightB.panel === 'rgba(0, 0, 0, 0)' && nightB.strip === 'rgba(0, 0, 0, 0)' && nightB.bar === 'rgba(0, 0, 0, 0)');
 await ev2(`(() => { const r = [...document.querySelectorAll('#crPickList .crPRow')].find(x => (x.querySelector('.crPName') || {}).textContent === 'Long'); if (r) r.querySelector('.crPChip').click(); return true; })()`);
-const chipB = await poll(`draft.mains.has('Long')`, 10000);
+const chipB = await poll(`draft.mains.has('Long Road')`, 10000);
 const chipTxt = await J(`(() => { const r = [...document.querySelectorAll('#crPickList .crPRow')].find(x => (x.querySelector('.crPName') || {}).textContent === 'Long'); return r ? (r.querySelector('.crPChip') || {}).textContent || '' : ''; })()`);
 await ev2(`(() => { const r = [...document.querySelectorAll('#crPickList .crPRow')].find(x => (x.querySelector('.crPName') || {}).textContent === 'Long'); if (r) r.querySelector('.crPChip').click(); return true; })()`);
-const chipBack = await poll(`!draft.mains.has('Long') && crSectorStreet === null`, 10000);
+const chipBack = await poll(`!draft.mains.has('Long Road') && crSectorStreet === null`, 10000);
 ok('B3 THE IN-ROW CHIP FLIPS MAIN/2ND: one tap on Long\'s chip puts it in the mains set and the chip reads MAIN; a second tap flips it back - and neither tap opened sector mode (the chip keeps its own tap) | to main: ' + chipB + ' (' + chipTxt + '), back: ' + chipBack,
   chipB === true && chipTxt === 'MAIN' && chipBack === true);
 // Beta 1.128 premise update: tap-again-to-deselect is RETIRED (Andrew's fork) - picking a picked street opens its sectors instead; removal lives on the row's x and Clear all
 await ev2(`pickStreet('Alpha Street', { lat: 43.79, lng: -79.578 })`);
-const secB = await poll(`crSectorStreet === 'Alpha' && draft && !!draft.roads['Alpha'] && Object.keys(draft.roads).length === 8`, 10000);
+const secB = await poll(`crSectorStreet === 'Alpha Street' && draft && !!draft.roads['Alpha Street'] && Object.keys(draft.roads).length === 8`, 10000);
 await ev2(`document.getElementById('crSbDone').click()`);
 await poll(`crSectorStreet === null`, 10000);
 await ev2(`(() => { const r = [...document.querySelectorAll('#crPickList .crPRow')].find(x => (x.querySelector('.crPName') || {}).textContent === 'Alpha'); if (r) r.querySelector('.crPDel').click(); return true; })()`);
-const deselB = await poll(`draft && !draft.roads['Alpha'] && Object.keys(draft.roads).length === 7`, 10000);
+const deselB = await poll(`draft && !draft.roads['Alpha Street'] && Object.keys(draft.roads).length === 7`, 10000);
 ok('B4 TAP A PICKED STREET OPENS ITS SECTORS (Beta 1.128 - it no longer removes); the row x is the removal (7 roads left) | sectors opened: ' + secB + ', removed by x: ' + deselB,
   secB === true && deselB === true);
 // Beta 1.128 premise update: the panel's "+ Add a street" button is gone (it only ever tucked the panel) - a tap on the panel head does the tucking now
