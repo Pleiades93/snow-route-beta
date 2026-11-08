@@ -105,13 +105,13 @@ jobs:
       matrix:
         include:
           - shard: 1
-            drives: "drive116 drive125 drive126 drive130 drive131 drive132 drive142 drive163 drive166 drive65 drive86 drive89"
+            drives: "drive119 drive122 drive125 drive127 drive130 drive132 drive142 drive144 drive147 drive152 drive163 drive166 drive168"
           - shard: 2
-            drives: "drive118 drive121 drive123 drive129 drive133 drive136 drive143 drive144 drive149 drive155 drive156 drive157 drive162 drive83 drive88"
+            drives: "drive118 drive121 drive123 drive124 drive133 drive134 drive136 drive149 drive151 drive156 drive157 drive162 drive167 drive66 drive88"
           - shard: 3
-            drives: "drive115 drive117 drive119 drive122 drive127 drive134 drive135 drive139 drive146 drive147 drive150 drive152 drive154 drive161 drive165"
+            drives: "drive115 drive116 drive117 drive126 drive131 drive135 drive139 drive143 drive146 drive150 drive154 drive161 drive165 drive65 drive86 drive89"
           - shard: 4
-            drives: "drive114 drive120 drive124 drive128 drive140 drive141 drive145 drive148 drive151 drive153 drive158 drive159 drive160 drive164 drive66"
+            drives: "drive114 drive120 drive128 drive129 drive140 drive141 drive145 drive148 drive153 drive155 drive158 drive159 drive160 drive164 drive83"
     steps:
       - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4
       - name: Set up Node

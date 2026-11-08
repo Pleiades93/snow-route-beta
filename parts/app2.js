@@ -323,7 +323,7 @@ function togglePieceGroup(side) { // one chip, whole selection: a side not done 
   showChips(); const okTg = finishChangeMarked();
   if (okTg.ok) completed.forEach(n => toast('✓ ' + n + ' · ' + fmtClock(new Date())));
 }
-$('selAllBtn').addEventListener('click', () => { if (!tapGuard('selAll')) return; const completed = []; for (const en of selSet) for (const side of [0, 1]) { const c = applyPiece(en.name, en.idx, side, true); if (c && !completed.includes(c)) completed.push(c); } showChips(); const okSa = finishChangeMarked(); if (okSa) completed.forEach(n => toast('✓ ' + n + ' · ' + fmtClock(new Date()))); });
+$('selAllBtn').addEventListener('click', () => { if (!tapGuard('selAll')) return; const completed = []; for (const en of selSet) for (const side of [0, 1]) { const c = applyPiece(en.name, en.idx, side, true); if (c && !completed.includes(c)) completed.push(c); } showChips(); const okSa = finishChangeMarked(); if (okSa.ok) completed.forEach(n => toast('✓ ' + n + ' · ' + fmtClock(new Date()))); }); // Beta 1.146 (census C3): the outcome is the 1.101 storage-outcome OBJECT - {ok:false} is truthy, so the old bare test fired the success toasts beside the storage warning; every sibling marking caller (okTp/okTg/okMd/okMu) already branches on .ok
 $('selClearBtn').addEventListener('click', () => { if (!tapGuard('selClear')) return; deselect(); });
 function markDone(name, via, at) { // production contract: whole street done; sides already marked keep their real times, the rest inherit the completion moment
   const wasComplete111 = streetComplete(name); // Beta 1.111: whole-street marking bypasses applyPiece - the completion feedback fires only on a real false-to-true flip here too

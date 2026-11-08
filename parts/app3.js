@@ -331,7 +331,7 @@ function buildSnap() { // production archive shape: items is a street->time map;
 function finishRun() {
   northUp();
   const snap = buildSnap();
-  if (snap && runStart) snap.runId = runStart; // Beta 1.104 (round 103, CG-103-02): the archive carries the active run's identity, so an interrupted finish can be reconciled at boot even when startedAt predates Start; startedAt itself is NOT touched (km/path measure from the real work start, audit A05)
+  const finishAt = Date.now(); if (snap) snap.runId = runStart || finishAt; // Beta 1.104 (round 103, CG-103-02): the archive carries the active run's identity, so an interrupted finish can be reconciled at boot even when startedAt predates Start; startedAt itself is NOT touched (km/path measure from the real work start, audit A05). Beta 1.146 (census C1): a NO-RUN finish (snap exists, no Start was ever pressed) stamps the SAME finishAt the finclean step below writes as its at - the marker's at is this finish's identity, so reconcileInterruptedFinish's no-run branch can match entry to marker exactly; the marker's shape ({run, at}) is unchanged, values only
   const archiving = !!(snap && doneSet.size >= 3); // production rule: under 3 streets clears WITHOUT being saved
   const prevHist = history;
   // Beta 1.57: the finish is a small TRANSACTION (Phase 2 storage integrity) -
@@ -351,7 +351,7 @@ function finishRun() {
   // delete; verified writes; verified rollback in reverse. A kill between gates
   // leaves a signature reconcileInterruptedFinish resolves at boot (CG-196-04).
   const fSteps = [];
-  fSteps.push({ name: 'finclean', write: () => txSet(LS.finclean, JSON.stringify({ run: runStart || 0, at: Date.now() })), undo: () => txDel(LS.finclean) }); // Beta 1.141 (Package A, DA-10): the metadata-cleanup obligation is the transaction's FIRST step, so every prefix reconciliation can call a committed finish carries it, and a rolled-back finish undoes it with the rest. The post-commit saveAll below normally discharges it at once; if those writes fail and the page dies first, completeFinishCleanup (app1) completes the cleanup at the next load instead of leaving the finished run's notes/coverage live forever.
+  fSteps.push({ name: 'finclean', write: () => txSet(LS.finclean, JSON.stringify({ run: runStart || 0, at: finishAt })), undo: () => txDel(LS.finclean) }); // Beta 1.141 (Package A, DA-10): the metadata-cleanup obligation is the transaction's FIRST step, so every prefix reconciliation can call a committed finish carries it, and a rolled-back finish undoes it with the rest. The post-commit saveAll below normally discharges it at once; if those writes fail and the page dies first, completeFinishCleanup (app1) completes the cleanup at the next load instead of leaving the finished run's notes/coverage live forever.
   if (archiving) fSteps.push({ name: 'archive', write: () => txSet(LS.hist, JSON.stringify(newHist)), undo: () => txSet(LS.hist, JSON.stringify(prevHist)) });
   fSteps.push({ name: 'sides', write: () => txSet(LS.sides, JSON.stringify({ p: clearedPieces, t: clearedTimes })), undo: () => prevSidesRaw === null ? txDel(LS.sides) : txSet(LS.sides, prevSidesRaw) });
   if (runStart) fSteps.push({ name: 'start', write: () => txDel(LS.start), undo: () => txSet(LS.start, String(runStart)) });
@@ -476,7 +476,7 @@ function renderLoop(now) {
 }
 function startRenderLoop() { if (!renderRaf) { lastCamAt = lastFrameAt = performance.now(); renderRaf = requestAnimationFrame(renderLoop); } if (!renderPump) renderPump = setInterval(() => { if ((watchId != null || !dispSettled()) && performance.now() - lastFrameAt > 100) renderTick(performance.now()); if (watchId == null && dispSettled() && !renderRaf) { clearInterval(renderPump); renderPump = 0; } }, 100); } // the pump is a starvation fallback only: a browser that is not painting (headless, occluded) delivers no animation frames, and the GPS state must still advance - on a painting phone it never fires; it parks itself when nothing is left to render
 function followCam(now) {
-  if (!dispPos || followPaused || watchId == null) { lastCamAt = now; return; } // follow whenever location is ON (Beta 1.27, Andrew) - it used to engage only during a run, so the dot wandered off-screen on a plain drive. Trail recording stays run-only; heading-up applies whenever location is on and the camera follows (Beta 1.122, Andrew).
+  if (!map || !dispPos || followPaused || watchId == null) { lastCamAt = now; return; } // Beta 1.146 (census C4): the no-map guard in the SAME idiom as northUp/pushGps/drawTrail - in the map-failure world (MapLibre script dead, map === null) renderTick reaches this on every fix and the unguarded map.getCanvas() below threw before the fix could record. follow whenever location is ON (Beta 1.27, Andrew) - it used to engage only during a run, so the dot wandered off-screen on a plain drive. Trail recording stays run-only; heading-up applies whenever location is on and the camera follows (Beta 1.122, Andrew).
   const c = map.getCanvas(); const p = projLL(dispPos);
   const dx = p.x - c.clientWidth / 2, dy = p.y - c.clientHeight / 2;
   if (Math.abs(dx) < 0.5 && Math.abs(dy) < 0.5) { lastCamAt = now; return; } // Beta 1.115: the deadband was 2 px - at driving zoom the dot had to drift ~7 m off-centre before the camera moved at all, so the camera lurched in pulses behind a smoothly coasting dot; half a pixel keeps it glued without jitter (the settle band drive126 judges is 12% of the screen, two orders wider)
@@ -528,7 +528,7 @@ function updateHeading(hdg, speed) {
 // pan instead of fighting it, and is frame-smooth like the rest of the follow.
 let lastHeadAt = 0;
 function headCam(now) {
-  if (watchId == null || followPaused || smHeading === null) { lastHeadAt = now; return; }
+  if (!map || watchId == null || followPaused || smHeading === null) { lastHeadAt = now; return; } // Beta 1.146 (census C4): no-map guard, same idiom as followCam above - headCam is the other renderTick caller that dereferenced the map unguarded
   const cur = map.getBearing();
   const d = headDelta(cur, smHeading);
   if (Math.abs(d) < 0.3) { lastHeadAt = now; return; }
@@ -626,7 +626,7 @@ function acceptFix(pos) {
   if (typeof pos.coords.heading === 'number' && speed && speed >= 1) { lastCourseAt = now; setFacing(pos.coords.heading, 0.5); } // moving: face along the course
   const spd = $('spd');
   if (speed && speed > 0.5) { spd.textContent = Math.round(speed * 3.6) + ' km/h'; spd.classList.remove('hidden'); } else spd.classList.add('hidden');
-  if (firstFix && (gpsFromRun || watchId != null) && !followPaused) { map.jumpTo({ center: [sm[1], sm[0]], zoom: Math.max(map.getZoom(), 15) }); } // Beta 1.116 (audit CG-115-02): a drag made while waiting for this fix already claimed the camera - the fix still records the position (gpsPos/dispPos above), and with dispPos set the syncCentreBtn rule lights the re-centre button as the way back; no jump, no clear
+  if (firstFix && map && (gpsFromRun || watchId != null) && !followPaused) { map.jumpTo({ center: [sm[1], sm[0]], zoom: Math.max(map.getZoom(), 15) }); } // Beta 1.146 (census C4): the map && guard - this first-fix jump sat BEFORE the trail/coverage block below, so in the map-failure world its throw starved recording on fix 1 exactly as followCam's did from fix 2 on // Beta 1.116 (audit CG-115-02): a drag made while waiting for this fix already claimed the camera - the fix still records the position (gpsPos/dispPos above), and with dispPos set the syncCentreBtn rule lights the re-centre button as the way back; no jump, no clear
   // outside-route note (route box + 400 m)
   const inB = routeBox ? (sm[0] > routeBox.s - 0.0036 && sm[0] < routeBox.n + 0.0036 && sm[1] > routeBox.w - 0.005 && sm[1] < routeBox.e + 0.005) : true; // Beta 1.117: no box (no route / empty pack) - no area to be outside of, so no note
   if (!inB && offRouteArmed) { offRouteArmed = false; toast("You are outside the route area — GPS won't mark streets here", 3600); }

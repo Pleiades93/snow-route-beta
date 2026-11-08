@@ -57,7 +57,7 @@ function makeFake(mode) {
 function build(mode) {
   const f = makeFake(mode);
   const api = new Function('lsSet', 'lsDel', 'lsGet', 'rawRead', 'RAW_READ_FAILED',
-    extract('storeOk') + '\n' + extract('storeFail') + '\n' + extract('txSet') + '\n' + extract('txDel') + '\n' + extract('runTx') + '\n' + extract('finishReconcileAction') + '\nreturn { txSet, txDel, runTx, finishReconcileAction };')(f.lsSet, f.lsDel, f.lsGet, f.rawRead, f.RAW_READ_FAILED);
+    extract('storeOk') + '\n' + extract('storeFail') + '\n' + extract('txSet') + '\n' + extract('txDel') + '\n' + extract('runTx') + '\n' + extract('finishReconcileAction') + '\n' + extract('finishBoardMatch') + '\n' + extract('finishReconcileNoRunAction') + '\nreturn { txSet, txDel, runTx, finishReconcileAction, finishBoardMatch, finishReconcileNoRunAction };')(f.lsSet, f.lsDel, f.lsGet, f.rawRead, f.RAW_READ_FAILED);
   return { f, api };
 }
 // ---- txSet / txDel verification semantics ----
@@ -127,5 +127,27 @@ function txSteps(api, spec) { return spec.map(s => ({ name: s[0], write: () => s
   t('reconcile: near-miss identity -> none (no tolerance)', A(111, 112, false) === 'none' && A(112, 111, true) === 'none');
   t('reconcile: previous run identity vs new start -> none', A(999999, 111, false) === 'none' && A(999999, 111, true) === 'none');
   t('reconcile: entry without identity -> none', A(111, 0, false) === 'none' && A(111, 0, true) === 'none'); }
+// ---- Beta 1.146 (census C1): the NO-RUN interrupted finish. finishRun stamps
+// a run-less archive entry's runId with the finclean marker's at (one finish,
+// one identity), and reconcile's no-run branch removes the phantom ONLY on
+// the full signature: marker run 0, entry runId === marker at (truthy), the
+// board non-empty and still equalling the entry's own snapshot exactly. ----
+{ const { api } = build({}); const N = api.finishReconcileNoRunAction, M = api.finishBoardMatch;
+  const NAMES = ['Velmar', 'Astona'];
+  const entry = { runId: 555, sides: { p: { Velmar: [3, 1], Astona: [0, 0] }, t: { Velmar: [['2026-11-08T10:00:00.000Z', null], [null, '2026-11-08T10:05:00.000Z']], Astona: [] } } };
+  const boardP = { Velmar: [3, 1], Astona: [0, 0] };
+  const boardT = { Velmar: [['2026-11-08T10:00:00.000Z', null], [null, '2026-11-08T10:05:00.000Z']], Astona: [] };
+  t('norun board: the loaded board equals the entry snapshot exactly', M(entry, boardP, boardT, NAMES) === true);
+  t('norun board: a sparse in-memory stamp array matches its stored (JSON) twin - holes read as null', M(entry, boardP, { Velmar: [['2026-11-08T10:00:00.000Z', null], [, '2026-11-08T10:05:00.000Z']], Astona: [] }, NAMES) === true);
+  t('norun board: one differing piece value -> no match', M(entry, { Velmar: [3, 0], Astona: [0, 0] }, boardT, NAMES) === false);
+  t('norun board: one differing stamp -> no match', M(entry, boardP, { Velmar: [['2026-11-08T10:00:00.000Z', null], [null, '2026-11-08T10:06:00.000Z']], Astona: [] }, NAMES) === false);
+  t('norun board: an entry without a sides snapshot -> no match (fail-closed)', M({ runId: 555 }, boardP, boardT, NAMES) === false && M(null, boardP, boardT, NAMES) === false);
+  t('norun: interrupted (marker run 0, runId === at, board live + matching) -> rollback (entry removed)', N(0, 555, 555, false, true) === 'rollback');
+  t('norun: completed finish (board empty) -> none (the entry stands)', N(0, 555, 555, true, false) === 'none' && N(0, 555, 555, true, true) === 'none');
+  t('norun: marker absent -> none', N(null, 0, 555, false, true) === 'none' && N(undefined, 0, 555, false, true) === 'none');
+  t('norun: marker of a RUN finish (run !== 0) -> none', N(444, 555, 555, false, true) === 'none');
+  t('norun: entry/board mismatch -> none (nothing removed)', N(0, 555, 555, false, false) === 'none');
+  t('norun: marker/runId mismatch -> none (nothing removed)', N(0, 555, 556, false, true) === 'none' && N(0, 556, 555, false, true) === 'none');
+  t('norun: entry without runId -> none', N(0, 555, 0, false, true) === 'none'); }
 console.log(`tx selftest: ${pass} pass, ${fail} fail`);
 process.exit(fail ? 1 : 0);

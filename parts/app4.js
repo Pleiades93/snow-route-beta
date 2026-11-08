@@ -635,7 +635,7 @@ $('stDel').addEventListener('click', async () => {
 });
 // ---- About / What's new ----
 const WHATSNEW = { // the curated in-app notes: plain words, LATEST RELEASE ONLY (Beta 1.114, Andrew: the accumulated list cluttered the About pane). A release REPLACES this entry with its own in the same change - it never accumulates; the full history lives in CHANGELOG.md, not the app
-  v: 'Beta 1.145', items: ["Under-the-hood tidy-up: two unused helpers left over from older versions were removed — nothing about how the app works has changed"]};
+  v: 'Beta 1.146', items: ["If the app is closed in the middle of finishing a clean that was never started with the Start button, the saved history now sorts itself out properly instead of recording that clean twice", "Deleting a route you created now checks that its saved data is really gone — and tells you if some of it could not be deleted", "Fixed: 'Mark both sides' could show a success message even when saving had failed — success messages now only appear for saves that actually landed", "If the map itself fails to load, your clean's GPS trail and street coverage are still recorded instead of being lost"]};
 function renderAbout() {
   const cur = $('ver').textContent.trim();
   $('wnHead').textContent = "WHAT'S NEW · " + cur; // the header names the LIVE version, read from the title's version element - never a second hard-coded copy that can go stale
@@ -985,10 +985,11 @@ function deleteRoute(id) { // Beta 1.124 (Andrew): delete a route HE created - t
   const back = readUserPacks(); if (!back || back[id]) { toast('Storage problem — the route could not be deleted', 4000); return; } // the storage-outcome contract: the write is verified before any data is wiped - a route whose definition survived keeps its data and its row
   const wasActive = !!(activeRoute && activeRoute.id === id && routeLoaded);
   ROUTE_PACKS.splice(ix, 1);
-  const rk = routeKeys(id); for (const k of Object.values(rk)) lsDel(k);
+  const rk = routeKeys(id); let wipeFailed = false; for (const k of Object.values(rk)) { if (!txDel(k).ok) wipeFailed = true; } // Beta 1.146 (census C2): the slot wipe is VERIFIED like the definition write above it (txDel - the app's own verified delete), every key attempted even after a failure. The old lsDel loop ignored every result: a failed delete left residue in an orphaned slot, and uniqueRouteId checks ROUTE_PACKS only, so a later same-named route regenerated the same slug and loadRouteState loaded the residue as the new route's own progress/history/notes.
   // Reference sweep (1.124): nothing else keys on a route id - the IndexedDB city cache is keyed by CITY (a deleted route's city stays cached for the next route there), LS_GLOBAL.lastArea is a city name, and PACKMIG's fingerprint derives from preloadUrlList() over ROUTE_PACKS, so removing the pack honestly un-certifies the old union download (the tiles themselves stay cached; the Settings line simply offers the current set's download again).
   if (wasActive) unloadRouteToBoot(); else renderRouteLists();
-  toast('Route deleted', 2600);
+  if (wipeFailed) toast('Route deleted — but some of its saved data could not be deleted (storage problem)', 4200); // Beta 1.146 (census C2): the definition IS gone (verified above) and the pack stays unregistered - in-memory tenancy matches storage - but the success toast must NOT fire over a slot that could not be fully wiped; the failure is said out loud, on deleteRoute's own storage-problem surface (the same toast form its definition-write failures use)
+  else toast('Route deleted', 2600);
 }
 function askDeleteRoute(id) { // Beta 1.124: the Delete button on a created route's row (app2's routeRowEl) - the shared create confirm asks, with the deletion labels; the confirm's card is the theme-token surface in both day and night.
   const pack = ROUTE_PACKS.find(p => p.id === id); if (!pack || SHIPPED_PACK_IDS.has(id)) return;
