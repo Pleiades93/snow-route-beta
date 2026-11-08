@@ -35,7 +35,9 @@ import sys
 
 ROOT = pathlib.Path(__file__).resolve().parent.parent
 PARTS = ["head.html", "data.js", "app1.js", "engine.js", "pmstyles.js",
-         "app2.js", "app3.js", "app4.js", "create.js"]
+         "app2.js", "app3.js", "app4.js", "create-packs.js",
+         "create-fetch.js", "create-citydata.js", "create-cache.js",
+         "create-pick.js", "create-save.js"]
 OUT = ROOT / "src" / "tracker-source.html"
 
 

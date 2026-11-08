@@ -280,13 +280,16 @@ but is intentionally not in CI:
   comparison, header layout in every state. These assert pixel positions
   and mid-animation states; they are timing-sensitive and would be flaky
   in CI, so they stay local until a deterministic CI strategy exists.
+  One exception: `drive158` IS in the CI shards — it frame-samples the
+  animated create sheet's bounds, opacity and background on every CI run.
 - The SRI regression drive, which verifies the page refuses tampered
   library copies served from the live CDNs (network-dependent; the static
   hash-parity half of that guarantee is in the build check).
 - GPS/coverage drives and the remaining historical regression drives.
 
-CI therefore does **not** cover animation or fine geometry; those are
-verified locally per release and, for layout, on device. GPS and coverage
+CI therefore does **not** cover animation or fine geometry beyond
+`drive158`'s animated-sheet profile; the rest are verified locally per
+release and, for layout, on device. GPS and coverage
 LOGIC (fix validation, suggestion thresholds, parallel-street isolation)
 is covered in CI by `drive118`; real-world GPS reception on the route
 remains a device-only verification.
