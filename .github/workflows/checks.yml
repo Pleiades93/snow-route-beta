@@ -81,6 +81,10 @@ jobs:
         run: node tests/browser/selftest-ev-syntax.mjs
       - name: Boot-readiness assertion fixtures (Tranche 1 gate)
         run: node tests/browser/selftest-readiness.mjs
+      - name: Judging-logic fixtures (Tranche 2 gate)
+        run: node tests/browser/selftest-judging-fixtures.mjs
+      - name: Foreign-write census (Tranche 2 gate)
+        run: node tests/browser/selftest-foreign-writes.mjs
       - name: Premise lint (advisory - drive premises this PR's app diff touches)
         if: github.event_name == 'pull_request'
         continue-on-error: true
