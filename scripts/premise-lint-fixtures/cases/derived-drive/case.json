@@ -1,0 +1,8 @@
+{
+  "name": "derived-drive",
+  "comment": "A drive that derives its expectation from the source file (the Tranche 4 Part B pattern) contains no literal, so neither mode flags it: reading the source is not asserting the literal.",
+  "runs": [
+    { "keys": false, "expect_contains": ["premise-lint: no drive premise touched by this diff"], "expect_absent": [] },
+    { "keys": true, "expect_contains": ["premise-lint --keys: no key premise touched by this diff"], "expect_absent": ["key premise flag(s) -", "premise flag(s) -"] }
+  ]
+}

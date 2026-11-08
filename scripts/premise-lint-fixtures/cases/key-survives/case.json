@@ -1,0 +1,8 @@
+{
+  "name": "key-survives",
+  "comment": "One usage of the key renamed, but the literal still appears in a key-bearing line in the head version: it genuinely survives in key position, so neither mode flags.",
+  "runs": [
+    { "keys": false, "expect_contains": ["premise-lint: no drive premise touched by this diff"], "expect_absent": [] },
+    { "keys": true, "expect_contains": ["premise-lint --keys: no key premise touched by this diff"], "expect_absent": ["key premise flag(s) -"] }
+  ]
+}

@@ -85,6 +85,8 @@ jobs:
         run: node tests/browser/selftest-judging-fixtures.mjs
       - name: Foreign-write census (Tranche 2 gate)
         run: node tests/browser/selftest-foreign-writes.mjs
+      - name: Premise-lint fixtures (Tranche 4 gate)
+        run: python3 scripts/premise-lint-fixtures/run-fixtures.py
       - name: Premise lint (advisory - drive premises this PR's app diff touches)
         if: github.event_name == 'pull_request'
         continue-on-error: true
