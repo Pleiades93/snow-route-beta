@@ -41,9 +41,10 @@ ok('T2 No closes the pop-up, nothing saved', !A.vis && A.h === 0);
 // T3: Yes saves the clean (with its note); the button stays FINISH - no Undo follows (Beta 1.110)
 await mark3();
 await ev(`(() => { setNoteText('Velmar', 'Blocked driveway at #12'); return true; })()`);
-await ev(`(() => { $('resetBtn').click(); return true; })()`); await poll(`!$('finModal').classList.contains('hidden')`, 10000); // T4: poll the terminal state T3 asserts (the Finish pop-up open)
+await sleep(600); // outlast the app's 400ms double-tap guard: T2's tap on this very button can be <400ms old on a fast runner - a human cannot re-tap that fast, a test can
+await ev(`(() => { $('resetBtn').click(); return true; })()`); const t3open = await poll(`!$('finModal').classList.contains('hidden')`, 10000); // T4: poll the terminal state T3 asserts (the Finish pop-up open). Result CAPTURED and folded into the check (2026-11-08 diagnosis): a pop-up that never opened must fail as itself, not as a content mismatch against T2's stale text
 A = JSON.parse(await ev(`(() => JSON.stringify({ msg: $('finMsg').textContent }))()`));
-ok('T3 pop-up summarises streets + notes', A.msg.includes('3 of ' + PACK5W.names + ' streets') && /notes on 1 street/.test(A.msg));
+ok('T3 pop-up summarises streets + notes', t3open && A.msg.includes('3 of ' + PACK5W.names + ' streets') && /notes on 1 street/.test(A.msg));
 await ev(`(() => { $('finYes').click(); return true; })()`);
 A = await pollRead(`(() => JSON.stringify({ h: history.length, done: doneSet.size, label: $('resetBtn').textContent, hn: history[0] && history[0].notes && history[0].notes.Velmar ? history[0].notes.Velmar[0].text : '' }))()`, v => v.h === 1 && v.done === 0);
 ok('T3 Yes archives the clean with its notes', A.h === 1 && A.done === 0 && /Blocked driveway/.test(A.hn));
