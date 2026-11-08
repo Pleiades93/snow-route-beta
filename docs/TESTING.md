@@ -117,6 +117,42 @@ parked below the screen, not removed; N15 also compares the route
 menu's X against the shared style; N16 asserts the takeover has no
 tap-away; N17's tap-away enumeration covers the remaining sheets).
 
+The scenario layer (Improvement Tranche 4 / T3, 2026-11-08):
+`harness.mjs` exports named helpers over the five mechanical
+ev()/poll() patterns — `tapById`/`tapSelector` (tap),
+`expectVisible`/`expectText`/`expectStrict` (expectation),
+`markDone`/`markUndone` (mark calls), `waitTrue`/`waitAbsent`
+(load-and-settle) and `pinDayTheme` (the theme pin `bootThrough`
+itself now calls). Each helper takes the drive's own ev/poll,
+returns its result verbatim and never catches a page throw.
+Evaluation and strict-verdict handling are preserved exactly:
+a page throw propagates, and only literal `true` passes a
+check. Tap failure behaviour is deliberately strengthened at
+two edges: a tap on an absent element now throws (formerly one
+guarded site returned silent true), and a tap on a disabled
+element returns literal `false` (formerly raw `.click()`
+returned `true`) — fixtures 1a and 1b in
+`tests/browser/selftest-scenario.mjs` are exactly the proof for
+those two strengthened edges. Neither pilot drive taps an
+absent or disabled element, which is why pilot results are
+identical.
+`tests/browser/selftest-scenario.mjs` proves, in a real browser,
+every helper's happy path and the five failure semantics: a tap on
+an absent element throws, and a tap on a disabled element returns
+non-true without dispatching; expectations on an absent element
+return literal false; a throwing page expression surfaces the
+throw through a helper; a never-true wait returns literal false by
+its timeout path in bounded time; and truthy-but-not-true values
+(1, 'yes', an array) fed through `expectStrict` into a drive-shaped
+`ok()` record as failures. Pilot scope: drives 132 and 125 are
+converted, with check names, counts and results identical
+before/after; `expectVisible`/`expectText` are proven by the
+fixtures only — neither pilot drive asserts standalone visibility
+or exact text outside a multi-field snapshot. Migration is
+opportunistic — a drive converts when it is next touched for
+another reason, never in a sweep — and bespoke state surgery
+stays unwrapped.
+
 Coverage:
 
 - `drive65` — stored-data validators: corrupt completion times and history
