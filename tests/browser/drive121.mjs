@@ -117,7 +117,7 @@ const s4c = await b.ev(`localStorage.getItem('snowroute.5w.v5.sess')`);
 ok('S4c current-format backup restores its own markers | sess ' + s4c, s4c === '[1767650000,1767740000]');
 await b.ev(`(() => { localStorage.setItem('snowroute.5w.v4.trail', '[[43.9,-79.6,1767600000]]'); localStorage.setItem('snowroute.5w.v5.sess', '[1767650000]'); window.__realLsSet = lsSet; lsSet = (k, v) => k === 'snowroute.5w.v5.sess' ? false : window.__realLsSet(k, v); return true; })()`);
 await b.ev(`(() => { restoreBackup(JSON.parse(${JSON.stringify(backupB)})); return true; })()`);
-await sleep(400);
+await until(async () => { const t = await b.ev(`$('toast').textContent`); return typeof t === 'string' && t.indexOf('put back') >= 0 ? t : false; }, 9000, 'S4d rollback toast'); // T4: poll the terminal signal S4d asserts (the rollback toast), via this drive's own until idiom
 const s4d = JSON.parse(await b.ev(`(() => JSON.stringify({ toast: $('toast').textContent, trail: localStorage.getItem('snowroute.5w.v4.trail'), sess: localStorage.getItem('snowroute.5w.v5.sess') }))()`));
 await b.ev(`(() => { lsSet = window.__realLsSet; return true; })()`);
 ok('S4d a restore failing on the marker write rolls the trail AND the markers back | ' + JSON.stringify(s4d), s4d.trail === '[[43.9,-79.6,1767600000]]' && s4d.sess === '[1767650000]' && s4d.toast.indexOf('put back') >= 0);

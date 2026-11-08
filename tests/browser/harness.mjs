@@ -205,6 +205,18 @@ export async function pinDayTheme(ev) {
   return await ev(`(function(){ if (typeof setThemeOverride === 'function') { setThemeOverride(false); if (typeof applyNight === 'function') applyNight(); if (typeof map !== 'undefined' && map && typeof setBasemap === 'function') setBasemap(); } return true; })()`);
 }
 
+// T4/T7 (Tranche 4): scoped per-scenario reset. Deletes exactly the keys
+// the named route owns, derived page-side from the app's OWN routeKeys(id)
+// — never a copied key list in the test, so the reset cannot drift from the
+// app's scheme (the slotKeys caution: a hand enumeration is a backup list,
+// not a wipe). extraKeys names documented scenario-owned extras (e.g. a
+// created-routes record key) at the call site. Returns the deletion list so
+// the caller (and the selftest fixture) can see exactly what was removed.
+// A route with no stored keys is a no-op success.
+export async function resetRoute(ev, routeId, extraKeys = []) {
+  return await ev(`(() => { const ks = Object.values(routeKeys(${JSON.stringify(routeId)})).concat(${JSON.stringify(extraKeys)}); for (const k of ks) localStorage.removeItem(k); return ks; })()`);
+}
+
 // Beta 1.76: every cold boot now ends at the route menu - drives that need a
 // loaded route click through it (Choose -> first route row) and wait for the
 // splash to be removed, exactly the state pre-1.76 boots ended in.

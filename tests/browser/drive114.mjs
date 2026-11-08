@@ -51,7 +51,7 @@ try {
   ok('M7 legacy history entry (no sides snap) loads', await ev(`history.length === 1`));
 
   // New work on the migrated record: one more side, marked the app's own way.
-  await ev(`togglePiece('Woolacott', 2, 0); true`); await sleep(700);
+  await ev(`togglePiece('Woolacott', 2, 0); true`); await poll(`JSON.stringify(pieces.Woolacott) === '[3,1,1]'`, 10000); // T4: poll the terminal state M8 asserts
   ok('M8 new side marked on migrated record', await ev(`JSON.stringify(pieces.Woolacott) === '[3,1,1]'`));
   const stamp = await ev(`pieceTimes.Woolacott[2][0]`);
   ok('M8b new side got a real timestamp', typeof stamp === 'string' && !isNaN(Date.parse(stamp)));

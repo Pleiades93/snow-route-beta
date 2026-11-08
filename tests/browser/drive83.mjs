@@ -1,4 +1,4 @@
-import { launchDrive, finish, bootThrough } from './harness.mjs';
+import { launchDrive, finish, bootThrough, resetRoute } from './harness.mjs';
 import { PACK5W } from './pack-expect.mjs'; // premise derivation (Tranche 4 / T2, 2026-11-08): expectations about the shipped world derive from source - see pack-expect.mjs
 const { proc, ev, consoleLog, sleep, poll } = await launchDrive();
 await bootThrough(ev, poll); // Beta 1.76: boots end at the route menu now - click through to a loaded route
@@ -28,7 +28,7 @@ ok('SEC-9b numeric doneTimes dropped', A.tc === 0);
 await seedReload({ 'snowroute.5w.v2': '["Angie","Velmar"]', 'snowroute.5w.v4.notes': '{"Velmar":"x","Angie":[{"k":"deep","at":"2026-01-05T12:00:00.000Z"}]}' });
 const e0 = exc();
 await ev(`(() => { openExport(); return true; })()`); // Beta 1.88: the export surface is the settings takeover's backup pane now (Summary mode is gone with the old Snow log)
-await sleep(500);
+await poll(`$('setMenu').classList.contains('open') && $('setBackupPane').classList.contains('on')`, 10000); // T4: poll the terminal state P1 asserts, not a fixed wait
 A = JSON.parse(await ev(`(() => { const bb = buildBackup(); return JSON.stringify({ open: $('setMenu').classList.contains('open') && $('setBackupPane').classList.contains('on'), hasFlag: !!bb && bb.includes('deep'), velmarNotes: notes.Velmar }); })()`)); // Beta 1.89: the backup is no longer rendered into a box - the builder itself is the read
 ok('SEC-2 export panel opens despite poisoned notes', A.open);
 ok('SEC-2 valid flag still in the backup', A.hasFlag);
@@ -40,14 +40,14 @@ A = JSON.parse(await ev(`(() => JSON.stringify({ tl: trail.length }))()`));
 ok('SEC-9a out-of-range trail point dropped', A.tl === 1);
 const e1 = exc();
 await ev(`(() => { document.__gpx188 = buildGpx(); return true; })()`); // Beta 1.88: no GPX button anymore - the export builder itself is what SEC-9a protects, so it is exercised directly
-await sleep(400);
+await poll(`(document.__gpx188 || '').includes('<trkpt')`, 10000); // T4: poll the terminal state P4 asserts
 A = JSON.parse(await ev(`(() => JSON.stringify({ gpx: (document.__gpx188 || '').includes('<trkpt') }))()`));
 ok('SEC-9a GPX export still builds with trkpt', A.gpx);
 ok('SEC-9a no exception from GPX export', exc() === e1);
 // P5 SEC-4: restore survives its own pagehide flush
-await ev(`(() => { localStorage.clear(); location.reload(); return true; })()`); await sleep(3000);
+await resetRoute(ev, '5w'); await ev(`(() => { location.reload(); return true; })()`); await sleep(3000); // T7: scoped reset - P5 owns only the 5w slot (premise statement in INVENTORY-T47.md); the sleep stays PROCESS-LAUNCH (the reload's fresh page)
 await ev(`(() => { trail.push([43.9, -79.9, 1767225600]); trailDirty = true; $('xText').value = JSON.stringify({ app: 'snowroute-backup', v: 1, data: { 'snowroute.v4.trail': '[[43.8,-79.5,1767225600]]' } }); doRestore(); flushAux(true); return true; })()`);
-await sleep(300);
+await poll(`localStorage.getItem('snowroute.5w.v4.trail') === '[[43.8,-79.5,1767225600]]'`, 10000); // T4: poll the terminal state P5 asserts (the commit landing in storage)
 A = JSON.parse(await ev(`(() => JSON.stringify({ ls: localStorage.getItem('snowroute.5w.v4.trail') }))()`));
 ok('SEC-4 flush after restore does NOT clobber restored trail', A.ls === '[[43.8,-79.5,1767225600]]');
 await sleep(1500);   // the restore's reload lands

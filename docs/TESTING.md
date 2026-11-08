@@ -405,12 +405,44 @@ locally, first:
    own scope must be deliberate and commented, or the push stops. (The
    E17 attempt wipe once deleted the preload record, silently disabling
    the pack migration E19–E21 measure.)
+   Instance (Improvement Tranche 4 / T7, 2026-11-08): a mid-scenario
+   reset uses `resetRoute` (tests/browser/harness.mjs), which derives
+   its deletion set page-side from the app's own `routeKeys(id)` —
+   never a key list copied into the test, which would drift from the
+   app's scheme (the backup enumeration `slotKeys` is not a complete
+   wipe); scenario-owned extras are named at the call site. Proven by
+   fixture 6 in `selftest-scenario.mjs`: the fixture reads `routeKeys`
+   itself and compares the removed set, and a sentinel global key and
+   another route's keys survive. Converted: drive83 (P5) and drive150
+   (D3 — both owned slots plus the created-routes record). Blanket
+   clears whose blank world IS the scenario's premise (drive145's
+   fresh-world resets; the drive88/89/114 setup wipes) stay blanket,
+   deliberately.
 3. **Waits poll the terminal signal, never a proxy.** A check waits for
    the system's own completion signal — an earned flag, a returned status
    object — not for an intermediate observable (entries appearing, counts
    moving). Where no signal exists, drive the function directly and await
    its return (E20's pattern) instead of observing side effects (E19's
    original pattern).
+   Instance (Improvement Tranche 4 / T4, 2026-11-08): the audited
+   working set for that tranche was 15 files — drives 83, 88, 89,
+   114, 121, 123, 125, 132, 149, 150, 152, 153, 154, 155 and
+   e2e-offline — and every fixed wait in those files was classified
+   (the per-site inventory is the tranche workdir's
+   INVENTORY-T47.md). Within that audited set, the converted subset
+   was 11 drives (83, 88, 89, 114, 121, 123, 125, 132, 150, 152,
+   154): in those drives, 32 fixed waits that guarded an observable
+   terminal state now poll that terminal state — the condition the
+   following check asserts, or, where the check measures geometry
+   that a surface animation animates (drive123's A7, whose
+   card-relative gaps the menuRise animation scales), that
+   animation's completion, so the measurement reads settled values.
+   The other audited files (drives 149, 153, 155 and e2e-offline)
+   were classified but not converted. Waits that model a real-world
+   delay, guard an animation or a settle window the check itself
+   measures, pace a poll loop, or cover process launch were
+   classified and kept. No battery-wide claim: files outside the
+   audited working set were not audited for this.
 4. **Failures are classified before anything re-runs.** Every CI failure
    is entered in the snow goal's flake log as APP, TEST, or FLAKE with the
    evidence first. A failure that reproduces is not a flake; a TEST

@@ -32,16 +32,16 @@ let A = await pollRead(`(() => { const b = $('resetBtn'); const cs = getComputed
 ok('T1 button says FINISH', A.label === 'FINISH');
 ok('T1 button wears the shared splash-blue of Start (Beta 1.100)', A.bg === 'rgb(43, 75, 242)');
 // T2: pop-up flow - No changes nothing
-await ev(`(() => { $('resetBtn').click(); return true; })()`); await sleep(300);
+await ev(`(() => { $('resetBtn').click(); return true; })()`); await poll(`!$('finModal').classList.contains('hidden')`, 10000); // T4: poll the terminal state T2 asserts (the Finish pop-up open)
 A = JSON.parse(await ev(`(() => JSON.stringify({ vis: !$('finModal').classList.contains('hidden'), msg: $('finMsg').textContent }))()`));
 ok('T2 Finish opens the Yes/No pop-up', A.vis && /Nothing is marked/.test(A.msg));
-await ev(`(() => { $('finNo').click(); return true; })()`); await sleep(300);
+await ev(`(() => { $('finNo').click(); return true; })()`); await poll(`$('finModal').classList.contains('hidden')`, 10000); // T4: poll the terminal state T2 asserts (the pop-up closed)
 A = JSON.parse(await ev(`(() => JSON.stringify({ vis: !$('finModal').classList.contains('hidden'), h: history.length }))()`));
 ok('T2 No closes the pop-up, nothing saved', !A.vis && A.h === 0);
 // T3: Yes saves the clean (with its note); the button stays FINISH - no Undo follows (Beta 1.110)
 await mark3();
 await ev(`(() => { setNoteText('Velmar', 'Blocked driveway at #12'); return true; })()`);
-await ev(`(() => { $('resetBtn').click(); return true; })()`); await sleep(300);
+await ev(`(() => { $('resetBtn').click(); return true; })()`); await poll(`!$('finModal').classList.contains('hidden')`, 10000); // T4: poll the terminal state T3 asserts (the Finish pop-up open)
 A = JSON.parse(await ev(`(() => JSON.stringify({ msg: $('finMsg').textContent }))()`));
 ok('T3 pop-up summarises streets + notes', A.msg.includes('3 of ' + PACK5W.names + ' streets') && /notes on 1 street/.test(A.msg));
 await ev(`(() => { $('finYes').click(); return true; })()`);
