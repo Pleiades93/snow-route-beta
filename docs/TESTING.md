@@ -429,7 +429,15 @@ openRouteMenu 10 → 12, draftStreets 1 → 2, crSearch 1 → 2; the
 distinct-global count is left at 127 pending a full recount
 (drive177's packTileUrls call was never reconciled against the
 printed list — recorded openly, in the manner of the $ note
-above). **62 of the 71 drives call at least one app global;
+above). drive181 (1.154) joins the battery and calls at least
+one app global — it drives the B3 records by name (crSetPrepState,
+CR_PREP_EDGES, crPrepViolations, the cr<Family>Current predicates,
+crSectorSession) and the sector conversions renamed the legacy
+bindings (crSectorStreet and kin) out of drives 156/157/158/165/
+174 into crSectorSession.street reads; none of drive181's surface
+is reconciled against the printed list yet — recorded openly the
+same way, and the distinct-global count stays at 127 pending the
+same full recount. **63 of the 72 drives call at least one app global;
 127 distinct globals are called.** Renaming, removing or changing the contract of a surfaced
 global breaks the battery exactly as surely as renaming a storage key
 breaks stored data: grep the drives first, and treat a deliberate

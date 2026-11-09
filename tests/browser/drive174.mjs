@@ -57,7 +57,7 @@ try {
     let threw = false, err = '';
     try { crOpenSectors('toString'); } catch (e) { threw = true; err = String(e && e.message || e); }
     crStreetParts = spOrig;
-    return { threw, err, partsCalls: window.__d174parts, sectorStreet: crSectorStreet }; })()`);
+    return { threw, err, partsCalls: window.__d174parts, sectorStreet: crSectorSession.street }; })()`);
   ok('T4 crOpenSectors refuses a prototype-named street at its guard (no parts work, no session) | ' + JSON.stringify(t4),
     t4.threw === false && t4.partsCalls === 0 && (t4.sectorStreet === null || t4.sectorStreet === ''));
 } catch (e) {

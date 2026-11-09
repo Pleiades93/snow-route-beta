@@ -137,7 +137,7 @@ function crResolve(osmName, lngLat, boundary) { // resolve a tapped street from 
   }
   return { status: 'ok', segs: best.exact ? best.segments.slice().sort((a, b) => crLineLen(b) - crLineLen(a)) : [best.line] };
 }
-function crPrepCurrent(gen, session) { return creating && crSession === session && crCovGen === gen && crPrepState === 'preparing'; }
+function crPrepCurrent(gen, session) { return creating && crSession === session && crCovGen === gen && crPrepState === 'preparing'; } // Beta 1.154 (B3 build, G3 option (i)): the prep family's current-check under the one convention - cr<Family>Current(<the family's own invalidation inputs>), answering "may this landing still write?" (the convention is stated at crSearchCurrent in create-pick.js); this family's true inputs are (gen, session)
 function crStartPrep(anchor) { // the FALLBACK preparation (second amendment, item D): one bounded box around an anchor, session-only - for places with no picked/saved city, and for anchors outside the city's coverage. The whole-city path is crCityPrepare below.
   if (!creating || !anchor || !isFinite(anchor.lat) || !isFinite(anchor.lng)) return;
   if (crCov && crInAnyBox(crCov.boxes, anchor.lat, anchor.lng) && crPrepState !== 'preparing') { crRenderHint(); return; } // verified coverage already includes this anchor - reuse it, no second download (CG-PF-04)
@@ -146,7 +146,7 @@ function crStartPrep(anchor) { // the FALLBACK preparation (second amendment, it
   if (crGrid) crGridStop('superseded'); // CG-PF-13: a fallback starting over a live grid must STOP the grid first - the generation bump below would otherwise orphan its in-flight cells in 'fetching' (their answers settle into the dead generation, their handlers discard them, and Resume - which only resets 'failed' cells - could never reschedule them, wedging the city mid-load forever). crGridStop aborts the grid's downloads and returns those cells to 'pending', so the city stays resumable; on a settled grid it changes nothing but the stopped marker, which crGridSettledState already reads correctly
   const session = crSession, gen = ++crCovGen;
   const outer = crBoxAround(anchor.lat, anchor.lng, CR_INNER_KM + CR_BUFFER_KM);
-  crPrepState = 'preparing'; crPrepFail = null; crFailFromGrid = false; crPrepAnchor = anchor; crWanted = null; // starting a preparation IS the answer to any outstanding offer
+  crSetPrepState('preparing'); crPrepFail = null; crFailFromGrid = false; crPrepAnchor = anchor; crWanted = null; // starting a preparation IS the answer to any outstanding offer
   const prep = crPrep = { gen, session, anchor, startedAt: Date.now(), ticker: null, op: {} };
   crRenderHint();
   prep.ticker = setInterval(() => { if (crPrepCurrent(gen, session)) crRenderHint(); else clearInterval(prep.ticker); }, 1000);
@@ -157,10 +157,9 @@ function crStartPrep(anchor) { // the FALLBACK preparation (second amendment, it
     if (res.kind === 'stale') return; // superseded mid-flight; the newer operation owns the state
     if (res.ok) {
       crCovMerge(res.json.elements, outer);
-      crPrepState = crGrid ? crGridSettledState() : 'ready'; // a fallback box landing does not pretend a part-missing city is whole: the settled state comes from the grid's own judge - CG-PF-14: the pending count alone promoted a city with a FAILED cell (nothing pending, one part refused) to plain 'ready', dropping the missing-parts disclosure and its Retry
-      if (crPrepState === 'failed' && crGrid && crGrid.lastFail) { crPrepFail = crGrid.lastFail; crFailFromGrid = true; } // the box landed but the city had wholly failed: keep the grid's honest failure and its Retry (mirrors crGridFinish)
+      crSetPrepState(crGrid ? crGridSettledState() : 'ready'); // a fallback box landing does not pretend a part-missing city is whole: the settled state comes from the grid's own judge - CG-PF-14: the pending count alone promoted a city with a FAILED cell (nothing pending, one part refused) to plain 'ready', dropping the missing-parts disclosure and its Retry. Beta 1.154 (B3 build): the copy of crGridFinish's failed-handling that stood on the next line through 1.153 is DELETED as dead code - crStartPrep stops the grid first (CG-PF-13), so the grid's stopped marker reads 'superseded' at this landing and crGridSettledState's stopped branch answers 'degraded' before its done===0 test can ever say 'failed'; the 2026-11-09 lifecycle trace observed this landing as ready/degraded only, with crPrepFail null throughout (TRACE-RECORD G1). The live copy is crGridFinish's, at the grid's own finish, where stopped is null and 'failed' IS reachable
       crSweepPending();
-    } else { crPrepState = 'failed'; crPrepFail = res; }
+    } else { crSetPrepState('failed'); crPrepFail = res; }
     crRenderHint();
   });
 }
@@ -169,7 +168,7 @@ function crCancelPrep() { // stops the wait AND the downloads (CG-PF-10), keeps 
   if (crGrid) crGridStop('cancelled');
   crCovGen++;
   crPrepFail = null;
-  crPrepState = crGrid ? crGridSettledState() : (crCov && crCov.boxes.length ? 'ready' : 'none');
+  crSetPrepState(crGrid ? crGridSettledState() : (crCov && crCov.boxes.length ? 'ready' : 'none'));
   crRenderHint();
 }
 function crSweepPending() { // a fresh extract may complete streets that were pending on a narrower one
