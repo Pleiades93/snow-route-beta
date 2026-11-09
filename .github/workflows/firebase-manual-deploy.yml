@@ -102,11 +102,20 @@ jobs:
           echo "FIREBASE_STAGE=$stage" >> "$GITHUB_ENV"
 
       - name: Authenticate to Google Cloud (keyless)
+        id: auth
         uses: google-github-actions/auth@7c6bc770dae815cd3e89ee6cdf493a5fab2cc093 # v3
         with:
           project_id: snowroute-tracker
           workload_identity_provider: projects/807502106914/locations/global/workloadIdentityPools/github-actions/providers/snow-route-beta
           service_account: github-firebase-deployer@snowroute-tracker.iam.gserviceaccount.com
+          # The Firebase CLI cannot read the external_account credentials file
+          # this action writes by default - it fails with "Failed to
+          # authenticate, have you run firebase login?" even when this step
+          # succeeded (proven on the first live run, 2026-11-08). What the CLI
+          # does accept is a classic access token, minted fresh for this run
+          # by the federation exchange and gone when the run ends.
+          token_format: access_token
+          create_credentials_file: false
 
       - name: Set up Node
         uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020 # v4
@@ -115,6 +124,8 @@ jobs:
 
       - name: Deploy to Firebase Hosting (live channel)
         working-directory: ${{ env.FIREBASE_STAGE }}
+        env:
+          FIREBASE_TOKEN: ${{ steps.auth.outputs.access_token }}
         run: |
           set -euo pipefail
           npx -y firebase-tools@"$FIREBASE_TOOLS_VERSION" deploy \
