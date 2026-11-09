@@ -55,6 +55,11 @@ jobs:
         uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020 # v4
         with:
           node-version: '22'
+      - name: Type check (A1 pilot - parts/app1.js only, Beta 1.149)
+        working-directory: scripts
+        run: |
+          npm ci
+          ./node_modules/.bin/tsc -p tsconfig.json
       - name: Service worker tests
         run: node tests/sw.test.mjs
       - name: Trail segmentation fixtures (test-change gate)

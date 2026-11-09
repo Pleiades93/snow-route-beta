@@ -1,0 +1,1 @@
+{"compilerOptions":{"allowJs":true,"checkJs":true,"forceConsistentCasingInFileNames":true,"lib":["ES2022"],"module":"none","noEmit":true,"skipLibCheck":false,"strict":false,"target":"ES2022"},"include":["../parts/app1.js","app1-types.d.ts"]}

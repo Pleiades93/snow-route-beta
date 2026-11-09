@@ -635,7 +635,7 @@ $('stDel').addEventListener('click', async () => {
 });
 // ---- About / What's new ----
 const WHATSNEW = { // the curated in-app notes: plain words, LATEST RELEASE ONLY (Beta 1.114, Andrew: the accumulated list cluttered the About pane). A release REPLACES this entry with its own in the same change - it never accumulates; the full history lives in CHANGELOG.md, not the app
-  v: 'Beta 1.148', items: ["Under the hood: switching routes now clears each screen's leftovers through that screen's own reset step — the switch works exactly as before, but a future screen setting can no longer be forgotten when you change routes", "Under the hood: closing a menu or banner now spends the tap that closed it through one shared step, so the map never receives a tap that was meant for the menu"]};
+  v: 'Beta 1.149', items: ["Under the hood: the app's core now carries machine-checked type notes for its saved-data shapes — your cleans, snapshots and route packs — and every future update is verified against them automatically", "Nothing you see or tap has changed: this update is comments and checks only, proven by comparing the built page against the previous one with the comments stripped away"]};
 function renderAbout() {
   const cur = $('ver').textContent.trim();
   $('wnHead').textContent = "WHAT'S NEW · " + cur; // the header names the LIVE version, read from the title's version element - never a second hard-coded copy that can go stale
