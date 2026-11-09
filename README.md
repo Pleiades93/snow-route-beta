@@ -100,7 +100,7 @@ the app update check under Settings → **About**.)
 | `scripts/shard-durations.json` | The measured per-drive durations `scripts/gen-shards.py` balances the CI shards by. |
 | `scripts/carto-dark-matter-style.json` | The vendored CARTO dark-matter basemap style (Beta 1.96): `scripts/genstyles.mjs` reads this copy and stamps its sha256 into the generated banner — no live fetch at generation time. |
 | `tests/sw.test.mjs` | Service worker fetch-strategy tests (Node, mocked caches/fetch) — 27 checks. |
-| `tests/browser/` | The deterministic browser drive battery (72 drives, 1011 checks) plus the offline end-to-end suite (40 checks) — see `docs/TESTING.md`. |
+| `tests/browser/` | The deterministic browser drive battery (73 drives, 1022 checks) plus the offline end-to-end suite (40 checks) — see `docs/TESTING.md`. |
 | `docs/` | `ARCHITECTURE.md`, `STORAGE-SCHEMA.md`, `TESTING.md`, `DEPLOYMENT.md`, `OFFLINE-CONTRACT.md` — the detailed references — plus `docs/archive/` (retired-era documents kept for history). |
 | `DEVELOPMENT_RULES.md` | How changes are built, tested and merged in this repo. |
 | `CHANGELOG.md` | What changed in each Beta version. |
