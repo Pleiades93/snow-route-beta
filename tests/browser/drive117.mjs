@@ -47,7 +47,7 @@ const v1Label = (srcIdx.match(/id="ver">(Beta \d+\.\d+)/) || [])[1];
 const V1CACHE = (srcSw.match(/const CACHE = '([^']+)'/) || [])[1];
 const TILECACHE = (srcSw.match(/TILES = '([^']+)'/) || [])[1];
 if (!v1Label || !V1CACHE || !TILECACHE) throw new Error('drive117 fixture: could not parse version/cache names from src');
-const V2LABEL = v1Label + '-swtest';
+const V2LABEL = 'Beta ' + Number(v1Label.split(' ')[1].split('.')[0]) + '.' + (Number(v1Label.split(' ')[1].split('.')[1]) + 1); // Beta 1.150 (security-audit fix round): the fixture's next release is a genuinely incremented Beta X.Y label - the old 'label + -swtest' form encoded the update check's any-difference-is-newer bug (an unparseable label was installed as an update), which the fix removes; a label the fixed check legitimately orders as newer keeps this drive's claim exactly what it always was: the update path lands on the new version
 const V2CACHE = V1CACHE + 'x';
 fs.writeFileSync(path.join(FIX, 'v1', 'index.html'), srcIdx);
 fs.writeFileSync(path.join(FIX, 'v1', 'sw.js'), srcSw);

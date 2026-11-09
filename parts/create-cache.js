@@ -154,7 +154,7 @@ function crCityPrepare() { // a city is picked: load its whole extract - from th
   const session = crSession, gen = ++crCovGen;
   if (crPrep) { clearInterval(crPrep.ticker); crAbortOp(crPrep.op); crPrep = null; }
   if (crGrid) crGridStop('superseded');
-  crCov = crCovFromWays({}, []);
+  crCov = crCovFromWays(Object.create(null), []);
   crCacheNote = ''; crCacheNoteCity = ''; // a fresh preparation starts with no failure state (Beta 1.143, DA-06: the owner binding resets with the note)
   crPackCtx = null; crPackNote = ''; // Beta 1.123: a new city's preparation re-decides its source (pack vs service) below
   const cells = crGridCellsFor(bbox);
@@ -169,8 +169,9 @@ function crCityPrepare() { // a city is picked: load its whole extract - from th
       for (const cell of g.cells) {
         const saved = rec.cells[cell.key];
         if (saved && Array.isArray(saved.ways)) {
-          const byId = {};
-          for (const sw of saved.ways) { if (Array.isArray(sw) && sw[2] && sw[2].length > 1) byId[sw[0]] = { name: sw[1], pts: sw[2] }; }
+          const byId = Object.create(null); // Beta 1.150: a stored way id of '__proto__' lands as an entry here, not as the map's prototype
+          for (const sw of saved.ways) { const w = crCleanStoredWay(sw); if (w) byId[w.id] = { name: w.name, pts: w.pts }; } // Beta 1.150 (security-audit fix round, finding city-cache-restore-skips-way-validation): every stored triple passes the extract's own cleaning (crCleanStoredWay, create-citydata.js) before it may enter coverage - pre-1.150 this fold installed raw triples on array-shape checks alone, planting out-of-range / NaN / empty-named geometry the extract never held
+          if (!Object.keys(byId).length) continue; // Beta 1.150: the cell is certified (box + done, below) only when at least one VALIDATED way came out of it - a cell whose stored ways are all corrupt stays pending and is fetched fresh, never marked done on the cache's say-so
           crCovMerge([], null); // ensure the cov exists before the direct fold below
           for (const id of Object.keys(byId)) crCov.byId[id] = byId[id];
           const fresh = crCovFromWays(crCov.byId, crCov.boxes);
@@ -215,7 +216,7 @@ function crGridRefresh() { // the saved city's Refresh affordance: drop the save
   crPackNote = '';
   if (g.fromPack) crPackLoad(g.fromPack, true).catch(() => {}); // Beta 1.123: Refresh on a pack city re-downloads the PACK itself (forced past the session copy) - the fresh grid below then commits from it
   const session = crSession, gen = ++crCovGen;
-  crCov = crCovFromWays({}, []);
+  crCov = crCovFromWays(Object.create(null), []);
   const g2 = crGrid = { name, bbox, cells: crGridCellsFor(bbox), gen, session, startedAt: Date.now(), ticker: null, ops: new Set(), active: 0, fromCache: false, savedAt: null, stopped: null, lastFail: null };
   if (g.fromPack) { g2.fromPack = g.fromPack; crPackCtx = { slug: g.fromPack, bbox: g.bbox, failed: false }; } // the refreshed preparation stays pack-backed, against the same bounds
   crPrepState = 'preparing'; crPrepFail = null;

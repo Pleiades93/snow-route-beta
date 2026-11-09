@@ -161,7 +161,7 @@ function crSectorTap(lngLat) { // a map tap while trimming: the sector under the
   if (idx >= 0) crToggleSector(name, idx);
 }
 function crOpenSectors(name) { // opens a picked street's trimming - TWO doors since Beta 1.128 (Andrew's fork, decided from his 1.127 device session): the panel row (1.127) AND a map tap on the already-picked street (pickStreet routes here), which is where his finger went on device. Beta 1.129: entry SNAPSHOTS the street's pick as it stands (whole road, or the trim in force) - the sector bar's Cancel restores that snapshot exactly
-  if (!draft || !draft.roads[name]) return;
+  if (!draft || !draft.roads || !Object.prototype.hasOwnProperty.call(draft.roads, name)) return; // Beta 1.150: own-property at this door too - a prototype member must not read as a held run and carry the call into the parts work below
   if (!crStreetParts(name)) return;
   if (crSectorStreet !== name) crSectorSnapshot = (draft.sectors && draft.sectors[name]) ? draft.sectors[name].slice() : null; // a fresh entry only - re-entering the same street's open session must not move Cancel's restore point
   crSectorStreet = name;
@@ -826,9 +826,9 @@ const OVERPASS_URLS = ['https://overpass-api.de/api/interpreter', 'https://overp
 async function pickStreet(osmName, lngLat) {
   if (!draft) return;
   const name = osmName; // Beta 1.144 (DA-04): the draft key IS the full map name; the short form appears only in display text (shortStreetName at the toast sites below)
-  const exists = !!draft.roads[name];
+  const exists = Object.prototype.hasOwnProperty.call(draft.roads, name); // Beta 1.150 (security-audit fix round, finding covfromways-prototype-name-throw): own-property, not a bare read - on a plain object a street named 'constructor' reads Object.prototype's member as if the street were already picked, and the tap was routed to the sectors door for a street that was never picked
   if (exists && (crPickBusy || !(crCov && crCov.boxes.length))) { crOpenSectors(name); return; } // already picked, and either no prepared extract to resolve the tap against or a pick is in flight: the 1.128 sectors door, exactly as before (the pre-1.144 order - the picked check always outranked the busy flag)
-  if (crPending[name]) { toast(shortStreetName(name) + ' is pending — it runs past the prepared area and is not in your route yet', 3400); return; }
+  if (Object.prototype.hasOwnProperty.call(crPending, name)) { toast(shortStreetName(name) + ' is pending — it runs past the prepared area and is not in your route yet', 3400); return; } // Beta 1.150: the same own-property rule for the pending read
   if (crPickBusy) return;
   // Beta 1.121: the tap resolves LOCALLY from the prepared extract - no
   // network on the ordinary path (CG-PF-04). Before the extract is ready

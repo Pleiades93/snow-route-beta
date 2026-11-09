@@ -89,15 +89,31 @@ function crIndexWays(elements, byId) { // Overpass elements -> byId { id: { name
   }
   return byId;
 }
+function crCleanPts(rawPts) { // Beta 1.150 (security-audit fix round): THE point cleaning for a stored [lat, lon] pair list, mirroring crIndexWays' rules (1e7 rounding, a point is kept only when it sits more than 0.1 m past the last kept one, at least 2 points must survive) plus the finiteness/range condition crResolve demands of every point it reads. A point that is not a finite in-range pair is skipped; the way survives on its remaining points or not at all
+  if (!Array.isArray(rawPts)) return null;
+  const pts = [];
+  for (const gp of rawPts) {
+    if (!Array.isArray(gp) || gp.length < 2 || !isFinite(gp[0]) || !isFinite(gp[1]) || gp[0] < -90 || gp[0] > 90 || gp[1] < -180 || gp[1] > 180) continue;
+    const p = [Math.round(gp[0] * 1e7) / 1e7, Math.round(gp[1] * 1e7) / 1e7];
+    if (!pts.length || distM(pts[pts.length - 1], p) > 0.1) pts.push(p);
+  }
+  return pts.length > 1 ? pts : null;
+}
+function crCleanStoredWay(entry) { // Beta 1.150: a city-cache record's stored triple [id, name, pts] earns installation only by passing the extract's own cleaning - a usable id, a non-empty string name, and geometry that cleans to at least 2 points. Anything else returns null and the way is dropped whole (the cache fold in create-cache.js is the caller)
+  if (!Array.isArray(entry) || entry.length < 3) return null;
+  if (entry[0] == null || typeof entry[1] !== 'string' || !entry[1]) return null;
+  const pts = crCleanPts(entry[2]);
+  return pts ? { id: entry[0], name: entry[1], pts } : null;
+}
 function crCovFromWays(byId, boxes) { // the coverage record: the extract's ways indexed by street name (ids kept in byId - grid cells and top-ups merge into the SAME index, deduped by way id), plus the SET of verified boxes completeness is judged against
-  const byName = {};
+  const byName = Object.create(null); // Beta 1.150 (security-audit fix round, finding covfromways-prototype-name-throw): street names are external data - on a plain object, a street named 'constructor' reads Object.prototype's member as if a run existed and the push below threw, and '__proto__' would write the prototype instead of an entry. A null-prototype index makes every name an own property
   for (const id of Object.keys(byId)) {
     const w = byId[id];
     (byName[w.name] = byName[w.name] || []).push(w);
   }
   return { gen: crCovGen, byName, byId, boxes: (boxes || []).slice(), fetchedAt: Date.now() };
 }
-function crCovEnsure() { if (!crCov) crCov = crCovFromWays({}, []); return crCov; }
+function crCovEnsure() { if (!crCov) crCov = crCovFromWays(Object.create(null), []); return crCov; } // Beta 1.150: the coverage byId starts life null-prototype (as crCovFromWays' byName now does) - the cache fold writes stored way ids into it, and an id of '__proto__' must land as an entry, never as the index's prototype. Every coverage birth site (here, crCityPrepare, the grid refresh) passes Object.create(null) for the same reason
 function crCovMerge(elements, box) { // fold one answered extract (a grid cell, the fallback box, a top-up) into the merged coverage: ways dedupe by id, the answered box joins the verified set
   const cov = crCovEnsure();
   crIndexWays(elements, cov.byId);
