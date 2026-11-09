@@ -31,6 +31,31 @@ const jread = async (expr) => {
   }
   throw lastErr;
 };
+// 2026-11-09 (L7 root hardening, part 1 - the camera thief; tests-only): picking the
+// route started introToRoute's choreography (app4): a jumpTo to the wide view, then -
+// on a 1500 ms timer - a 3000 ms flyTo to the fitted view. bootThrough's readiness
+// poll reads !map.isMoving(), which holds BEFORE the timer fires: the flight is
+// still PENDING and invisible to every readiness signal, so a drive that jumps the
+// camera inside that window has its view stolen back mid-check (diag4 trace, run
+// 42619724117: the Malden pair placed at +1.2 s, then progressively wider label sets
+// as the flight eased out, frozen at the fitted view from +4 s - the classic L7
+// failure read). Whether a session raced depended on whether its pre-L7 work
+// straddled the timer - the family's bimodality across identical code. The gate
+// below waits for the choreography's own terminal state before ANY check reads
+// the map: the flight's moveend, or - when the flight already ended before this
+// listener armed, or never ran - the choreography's own constants (1500 ms timer
+// + 3000 ms flight + margin) elapsed since bootThrough returned (which is after
+// the pick, so the elapsed test can only fire late, never early) with the map at
+// rest. An expired gate fails the drive here, like bootThrough's own readiness.
+await ev(`(() => { window.__introMoved = false; map.once('moveend', () => { window.__introMoved = true; }); return true; })()`);
+const introT0 = Date.now();
+let introDone = false;
+while (Date.now() - introT0 < 30000) {
+  const st = await jread(`(() => JSON.stringify({ moved: window.__introMoved === true, moving: map.isMoving() }))()`).catch(() => null);
+  if (st && !st.moving && (st.moved || Date.now() - introT0 > 6000)) { introDone = true; break; }
+  await sleep(300);
+}
+if (!introDone) throw new Error('drive130: readiness "intro flight finished" not met within 30000ms');
 ok('L0 app boots with the map active', await poll120(`typeof glOk !== 'undefined' && glOk === true`, 30000));
 
 const S1 = await jread(`(() => {
@@ -63,8 +88,9 @@ ok('L6b the point of interest wears the route name, not the app name (Beta 1.79,
 
 // The rendered proof at close zoom: on Malden/Cartwright the basemap names arrive on the
 // CLONE layers only - the originals must return none of them (no doubling, ever).
-// 2026-11-09 (L7 root hardening - Andrew's flake-gate order; tests-only): the read is
-// gated on the render pipeline's TERMINAL state, not on a momentary predicate.
+// 2026-11-09 (L7 root hardening, part 2 - Andrew's flake-gate order; tests-only): with
+// the camera provably at rest (part 1, the intro gate at the top of this drive), the
+// read is gated on the render pipeline's TERMINAL state, not on a momentary predicate.
 // Diagnosis (flake log, L7 family; diag branch drive130-diag, run 42612695745 trace):
 // after the jump the z17.5 tiles stream in and every arrival re-runs symbol placement,
 // so a rendered-feature read is a snapshot of a pipeline still converging - the set
