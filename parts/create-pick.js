@@ -155,14 +155,24 @@ function crToggleSector(name, idx) {
   crSetChosen(name, rec, set);
   renderDraft(); renderCrLists(); renderSectorBar();
 }
-function crSectorTap(lngLat) { // a map tap while trimming: the sector under the tap toggles. The rendered draft features answer first (the wide invisible crDraftHit layer, the street pick's own +/-16/28 px box discipline); the geometry fallback - the nearest part of THIS street - covers what the renderer cannot answer, and never reaches for another street
+// Beta 1.156 (Andrew, device feedback 2026-11-09): the create flow's tap
+// discipline - the two query-box half-widths (px) BOTH tap handlers search
+// around a tap, first reach then one wider retry, and the reach
+// crSectorTap's geometry fallback honours. Through 1.155 the boxes were
+// [16, 28] (Beta 1.119, set after point queries hit nothing); Andrew on
+// device: he could tap pretty far left or right of a road and still select
+// it. Narrowed to [12, 20] - still a fingertip's tolerance plus a retry,
+// but a tap must be honestly near the line. One literal for the whole
+// discipline: both loops and the fallback cap read it here.
+const CR_TAP_BOXES = [12, 20];
+function crSectorTap(lngLat) { // a map tap while trimming: the sector under the tap toggles. The rendered draft features answer first (the wide invisible crDraftHit layer, the street pick's own CR_TAP_BOXES box discipline); the geometry fallback - the nearest part of THIS street - covers what the renderer cannot answer, and never reaches for another street
   const name = crSectorSession.street; if (!name || !draft || !draft.roads[name]) return;
   const rec = crStreetParts(name); if (!rec) return;
   let idx = -1;
   if (map && typeof map.queryRenderedFeatures === 'function' && typeof map.project === 'function') {
     try {
       const pt = map.project([lngLat.lng, lngLat.lat]);
-      for (const half of [16, 28]) {
+      for (const half of CR_TAP_BOXES) {
         const feats = (map.queryRenderedFeatures([[pt.x - half, pt.y - half], [pt.x + half, pt.y + half]], { layers: ['crDraftHit'] }) || []).filter(f => f && f.properties && f.properties.name === name && typeof f.properties.sector === 'number' && f.properties.sector >= 0);
         if (!feats.length) continue;
         let bd = Infinity;
@@ -172,9 +182,20 @@ function crSectorTap(lngLat) { // a map tap while trimming: the sector under the
     } catch (e) {}
   }
   if (idx < 0) {
+    // Beta 1.156: the fallback is judged in the boxes' own unit - projected
+    // pixels - not only in metres. Through 1.155 its only cap was 75 m
+    // (~87 px at zoom 17, ~44 px at zoom 16), far looser than any box, so a
+    // far tap could still toggle a sector whenever the renderer answered
+    // nothing. The nearest part now answers only inside the retry box's
+    // reach (CR_TAP_BOXES[1]); the 75 m rule stays on top as an absolute
+    // guard (it binds first when zoomed far out, where 20 px spans more
+    // than 75 m). Without a projection there are no pixels to judge by and
+    // the metre rule stands alone, exactly as before.
     let bd = Infinity;
-    for (let i = 0; i < rec.parts.length; i++) { const d = crFeatDistM(lngLat, { type: 'LineString', coordinates: rec.parts[i].map(p => [p[1], p[0]]) }); if (d < bd) { bd = d; idx = i; } }
-    if (bd > 75) idx = -1; // nowhere near the street being trimmed - not a sector tap
+    const canPx = !!(map && typeof map.project === 'function');
+    for (let i = 0; i < rec.parts.length; i++) { const d = canPx ? crFeatDistPx(lngLat, rec.parts[i]) : crFeatDistM(lngLat, { type: 'LineString', coordinates: rec.parts[i].map(p => [p[1], p[0]]) }); if (d < bd) { bd = d; idx = i; } }
+    if (idx >= 0 && bd > (canPx ? CR_TAP_BOXES[1] : 75)) idx = -1; // beyond the tap discipline's reach - not a sector tap
+    else if (idx >= 0 && canPx && crFeatDistM(lngLat, { type: 'LineString', coordinates: rec.parts[idx].map(p => [p[1], p[0]]) }) > 75) idx = -1; // the standing 75 m absolute guard
   }
   if (idx >= 0) crToggleSector(name, idx);
 }
@@ -954,6 +975,20 @@ function crFeatDistM(lngLat, geom) { // metres from the tap to the nearest point
   }
   return best;
 }
+function crFeatDistPx(lngLat, part) { // pixels from the tap to the nearest point of a part line ([lat, lng] pairs), in the map's own projection - crSectorTap's geometry fallback is judged in the same pixels its query boxes are measured in (Beta 1.156). The caller guards map.project before calling
+  const pt = map.project([lngLat.lng, lngLat.lat]);
+  let best = Infinity, prev = null;
+  for (const p of part) {
+    const q = map.project([p[1], p[0]]);
+    if (prev) {
+      const dx = q.x - prev.x, dy = q.y - prev.y, L2 = dx * dx + dy * dy;
+      let t = L2 ? ((pt.x - prev.x) * dx + (pt.y - prev.y) * dy) / L2 : 0; t = Math.max(0, Math.min(1, t));
+      const d = Math.hypot(pt.x - (prev.x + t * dx), pt.y - (prev.y + t * dy)); if (d < best) best = d;
+    } else { const d0 = Math.hypot(pt.x - q.x, pt.y - q.y); if (d0 < best) best = d0; }
+    prev = q;
+  }
+  return best;
+}
 function crMapTap(e) {
   if (!creating || crStage !== 'pick' || !map) return;
   if (crSectorSession.street) { crSectorTap(e.lngLat); return; } // Beta 1.127: while trimming, a map tap speaks only to the street being trimmed - it can neither add nor remove another street
@@ -973,7 +1008,7 @@ function crMapTap(e) {
     return feats.filter(x => x && x.sourceLayer === 'roads' && x.properties && typeof x.properties.name === 'string' && !!x.properties.name);
   };
   let pick = null;
-  for (const half of [16, 28]) { // a finger's real tolerance first; one wider retry before giving up
+  for (const half of CR_TAP_BOXES) { // a finger's real tolerance first; one wider retry before giving up (the widths live at CR_TAP_BOXES - Beta 1.156 narrowed them from [16, 28] on Andrew's device report: at 28 a tap far off the line still selected the road)
     const named = roadFeats(half);
     if (!named.length) continue;
     let pickD = Infinity;
