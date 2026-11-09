@@ -63,13 +63,50 @@ ok('L6b the point of interest wears the route name, not the app name (Beta 1.79,
 
 // The rendered proof at close zoom: on Malden/Cartwright the basemap names arrive on the
 // CLONE layers only - the originals must return none of them (no doubling, ever).
-await ev(`(() => { map.jumpTo({ center: [-79.5622, 43.8197], zoom: 17.5 }); return true; })()`);
-const settled = await poll120(`(() => { const c = map.queryRenderedFeatures({ layers: ['roads_labels_major-route', 'roads_labels_minor-route'] }).map(f => f.properties.name); const o = map.queryRenderedFeatures({ layers: ['roads_labels_major', 'roads_labels_minor'] }).map(f => f.properties.name); return c.includes('Malden Street') && c.includes('Cartwright Boulevard') && !o.includes('Malden Street') && !o.includes('Cartwright Boulevard'); })()`, 25000); // Beta 1.136 (programme E, the drive130 L7 hardening prescribed since 2026-11-05): the wait polls the TERMINAL settle signal - the check's own full predicate - not the proxy it used through 1.135 (clone layers holding the names), after which a single sample could still catch the originals mid-settle and read the sets inverted (6 CI sightings of exactly that). The read + assertion below are unchanged; a page that never settles still fails, on the read shown.
-const S2 = await jread(`(() => JSON.stringify({
-  clone: map.queryRenderedFeatures({ layers: ['roads_labels_major-route', 'roads_labels_minor-route'] }).map(f => f.properties.name),
-  orig: map.queryRenderedFeatures({ layers: ['roads_labels_major', 'roads_labels_minor'] }).map(f => f.properties.name)
-}))()`);
-ok('L7 at close zoom the basemap names print on the clones only | clone ' + JSON.stringify(S2.clone) + ' orig ' + JSON.stringify(S2.orig),
+// 2026-11-09 (L7 root hardening - Andrew's flake-gate order; tests-only): the read is
+// gated on the render pipeline's TERMINAL state, not on a momentary predicate.
+// Diagnosis (flake log, L7 family; diag branch drive130-diag, run 42612695745 trace):
+// after the jump the z17.5 tiles stream in and every arrival re-runs symbol placement,
+// so a rendered-feature read is a snapshot of a pipeline still converging - the set
+// pair can be empty, half-arrived or wide-view, and it can CHANGE after the check's
+// predicate first reads true (run 42354426386: the 1.136 predicate poll settled, then
+// the graded sample found the clones missing Malden Street - placement had moved on).
+// The wait below samples the sets themselves and settles only when the map reports
+// loaded, an idle event has fired since the jump, the check's own predicate holds,
+// AND the full clone/orig name sets are identical across 4 consecutive samples
+// (~1.2 s): no tile, placement or fade input then remains that could change the
+// graded sample - and the graded sample IS the last stable sample, not a fresh read
+// taken after the wait. A page that never converges still fails, on its final sample.
+await ev(`(() => { window.__l7idleAt = 0; map.once('idle', () => { window.__l7idleAt = Date.now(); }); map.jumpTo({ center: [-79.5622, 43.8197], zoom: 17.5 }); return true; })()`);
+const agg = { n: 0, loaded: 0, idle: 0, pred: 0, firstCloneAt: 0, lastKey: '', tr: [] }; // DIAG3 (scratch only)
+let S2 = { clone: [], orig: [] };
+let settled = false, l7PrevKey = '', l7Streak = 0, l7Samples = 0;
+const l7T0 = Date.now();
+while (Date.now() - l7T0 < 60000) {
+  l7Samples++;
+  const s = await jread(`(() => JSON.stringify({
+    loaded: map.loaded(),
+    idle: (window.__l7idleAt || 0) > 0,
+    zoom: Math.round(map.getZoom() * 100) / 100,
+    ctr: map.getCenter().toArray().map(v => Math.round(v * 10000) / 10000),
+    rtn: (() => { const f = map.getFilter('roads_labels_major-route'); const lit = f && f[2] && f[2][1]; return Array.isArray(lit) ? lit.length : -1; })(),
+    clone: map.queryRenderedFeatures({ layers: ['roads_labels_major-route', 'roads_labels_minor-route'] }).map(f => f.properties.name),
+    orig: map.queryRenderedFeatures({ layers: ['roads_labels_major', 'roads_labels_minor'] }).map(f => f.properties.name)
+  }))()`).catch(() => null);
+  if (s) {
+    S2 = { clone: s.clone, orig: s.orig };
+    const key = JSON.stringify([[...new Set(s.clone)].sort(), [...new Set(s.orig)].sort()]);
+    const pred = s.clone.includes('Malden Street') && s.clone.includes('Cartwright Boulevard') && !s.orig.includes('Malden Street') && !s.orig.includes('Cartwright Boulevard');
+    if (s.loaded && s.idle && pred && key === l7PrevKey) { l7Streak++; if (l7Streak >= 3) { settled = true; break; } }
+    else { l7Streak = 0; l7PrevKey = key; }
+    // DIAG3 instrumentation (scratch only): aggregates + set transitions
+    agg.n++; if (s.loaded) agg.loaded++; if (s.idle) agg.idle++; if (pred) agg.pred++;
+    if (s.clone.length && !agg.firstCloneAt) agg.firstCloneAt = Date.now() - l7T0;
+    if (key !== agg.lastKey) { agg.lastKey = key; if (agg.tr.length < 40) agg.tr.push({ t: Date.now() - l7T0, loaded: s.loaded, idle: s.idle, zoom: s.zoom, ctr: s.ctr, rtn: s.rtn, clone: [...new Set(s.clone)].sort(), orig: [...new Set(s.orig)].sort() }); }
+  }
+  await sleep(400);
+}
+ok('L7 at close zoom the basemap names print on the clones only | clone ' + JSON.stringify(S2.clone) + ' orig ' + JSON.stringify(S2.orig) + ' | settle ' + (settled ? (Date.now() - l7T0) + 'ms' : 'NEVER') + ' samples ' + l7Samples,
   settled === true && S2.clone.includes('Malden Street') && S2.clone.includes('Cartwright Boulevard') && !S2.orig.includes('Malden Street') && !S2.orig.includes('Cartwright Boulevard'));
 
 // Night: the clones are rebuilt per restack and wear the night lift.
@@ -81,6 +118,9 @@ const S3 = await jread(`(() => JSON.stringify({
   clone: !!map.getLayer('roads_labels_major-route'),
   col: map.getLayer('roads_labels_major-route') ? String(map.getPaintProperty('roads_labels_major-route', 'text-color')) : ''
 }))()`);
+ok('L7DIAG3 agg ' + JSON.stringify({ n: agg.n, loaded: agg.loaded, idle: agg.idle, pred: agg.pred, firstCloneAt: agg.firstCloneAt, transitions: agg.tr.length }), false);
+const aggJson = JSON.stringify(agg.tr);
+for (let c = 0; c * 1500 < aggJson.length && c < 10; c++) ok('L7DIAG3 trace[' + c + '] ' + aggJson.slice(c * 1500, (c + 1) * 1500), false);
 ok('L9 night clones rebuilt with the lifted name colour | clone ' + S3.clone + ' color ' + S3.col, S3.clone === true && S3.col === '#ccd6df');
 
 R.exceptions = consoleLog.filter(c => c.type === 'EXCEPTION').map(c => String(c.text || '').slice(0, 200));
