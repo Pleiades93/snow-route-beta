@@ -651,7 +651,7 @@ $('stDel').addEventListener('click', async () => {
 });
 // ---- About / What's new ----
 const WHATSNEW = { // the curated in-app notes: plain words, LATEST RELEASE ONLY (Beta 1.114, Andrew: the accumulated list cluttered the About pane). A release REPLACES this entry with its own in the same change - it never accumulates; the full history lives in CHANGELOG.md, not the app
-  v: 'Beta 1.150', items: ["Safety fixes from a full security review: restoring a backup now double-checks the run timer and the day/night setting it carries, so a damaged or tampered backup file can't start a phantom run or wipe a route's work", "The update check now tells the truth — if the server doesn't answer it says it couldn't check (it used to say 'up to date' from a saved copy), and it will never install an older version over yours", "Repairs behind the scenes so a half-finished data move, a damaged street cache, or an interrupted restore can never quietly replace good data with stale data"]};
+  v: 'Beta 1.151', items: ["A fix for the fix: the last update's new safety check for saved city street data also rejected areas that legitimately have no named streets (parks, lakes, city edges), so a saved city re-downloaded those areas every time and could finish 'degraded' offline — empty areas are recognised as complete again, while a damaged street cache is still rejected and fetched fresh"]};
 function renderAbout() {
   const cur = $('ver').textContent.trim();
   $('wnHead').textContent = "WHAT'S NEW · " + cur; // the header names the LIVE version, read from the title's version element - never a second hard-coded copy that can go stale

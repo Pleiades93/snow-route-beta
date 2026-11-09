@@ -17,6 +17,13 @@ await bootThrough(ev, poll);
 // single point) plus a junk entry; cell 2 holds only an out-of-range way.
 // Unrestored cells are fetched against a failing street service, so an
 // uncertified cell settles FAILED, never done.
+// Beta 1.151 premise (the 1.150 gate's own regression, caught by drives
+// 151/153): phase 1 legitimately stores EMPTY cells (no named streets -
+// park/lake/city-edge) with ways: []. The 1.150 rule conflated "stored list
+// was empty" (legitimate) with "non-empty list, zero survivors" (the
+// audit's poison case). Cell 3 of the fixture is stored EMPTY: it must
+// certify from cache exactly like a cell with surviving ways, while the
+// all-corrupt cell 2 must still NOT certify.
 const R = { checks: [] };
 const ok = (name, cond) => R.checks.push([name, cond === true]);
 const J = async (expr) => { const raw = await ev(`(() => { try { return JSON.stringify((${expr})); } catch (e) { return JSON.stringify({ __err: String(e && e.message || e) }); } })()`); return typeof raw === 'string' ? JSON.parse(raw) : {}; };
@@ -34,7 +41,7 @@ try {
   await ev(`document.getElementById('crDoorManual').click(); true`); await sleep(300);
   // seed the poisoned cache record for the exact grid the pick will build
   const seeded = await J(`(() => { const bbox = { s: 43.700, n: 43.760, w: -79.610, e: -79.5105 };
-    const cells = crGridCellsFor(bbox); if (cells.length < 2) return { err: 'grid too small: ' + cells.length };
+    const cells = crGridCellsFor(bbox); if (cells.length < 3) return { err: 'grid too small: ' + cells.length };
     const rec = { cityName: 'Vaughan', bbox, savedAt: Date.now(), cells: {} };
     rec.cells[cells[0].key] = { at: Date.now(), ways: [
       [101, 'Good Street', [[43.71, -79.60], [43.711, -79.601]]],
@@ -46,7 +53,7 @@ try {
     rec.cells[cells[1].key] = { at: Date.now(), ways: [ [106, 'Out Street', [[999, 0], [1000, 10]]] ] };
     window.__d173cells = cells.map(c => ({ key: c.key, box: c.box }));
     return { keys: cells.map(c => c.key) }; })()`);
-  ok('setup: grid derived and poisoned record staged (' + JSON.stringify(seeded) + ')', !!seeded.keys && seeded.keys.length >= 2);
+  ok('setup: grid derived and poisoned record staged (' + JSON.stringify(seeded) + ')', !!seeded.keys && seeded.keys.length >= 3);
   await ev(`(async () => { const bbox = { s: 43.700, n: 43.760, w: -79.610, e: -79.5105 }; const cells = crGridCellsFor(bbox);
     const rec = { cityName: 'Vaughan', bbox, savedAt: Date.now(), cells: {} };
     rec.cells[cells[0].key] = { at: Date.now(), ways: [
@@ -57,6 +64,7 @@ try {
       [105, 'Short Street', [[43.71, -79.60]]],
       'junk-entry' ] };
     rec.cells[cells[1].key] = { at: Date.now(), ways: [ [106, 'Out Street', [[999, 0], [1000, 10]]] ] };
+    rec.cells[cells[2].key] = { at: Date.now(), ways: [] };
     await crIdbPut(rec); return true; })()`);
   await ev(`crPickCity({ display_name: 'Vaughan, Ontario, Canada', lat: '43.73', lon: '-79.56', boundingbox: ['43.700', '43.760', '-79.610', '-79.5105'], class: 'place', type: 'city', address: { city: 'Vaughan', state: 'Ontario', country: 'Canada' } }); true`);
   const settled = await poll(`crGrid && crPrepState !== 'preparing' && crGrid.cells.every(c => c.state === 'done' || c.state === 'failed')`, 45000);
@@ -71,6 +79,10 @@ try {
     !!st.boxes && st.boxes.includes(st.cellBoxes[0]) && !st.boxes.includes(st.cellBoxes[1]));
   ok('the all-corrupt cell is left for a fresh fetch (settles failed against the down service), never marked done from cache',
     !!st.cells && st.cells[0].endsWith(':done') && st.cells[1].endsWith(':failed'));
+  ok('the legitimately EMPTY cell certifies from cache - settles done with the service down, so no refetch happened (Beta 1.151) | cells = ' + JSON.stringify(st.cells),
+    !!st.cells && st.cells[2].endsWith(':done'));
+  ok('the empty cell is certified (its box joins coverage) even though it holds no streets (Beta 1.151)',
+    !!st.boxes && st.boxes.includes(st.cellBoxes[2]));
 } catch (e) {
   R.fatal = String(e && e.message || e);
 }

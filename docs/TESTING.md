@@ -313,7 +313,11 @@ Coverage:
   whose only way is out-of-range) restores ONLY the valid way; the
   mixed cell is certified but the all-corrupt cell is not — it stays
   for a fresh fetch and settles failed against a down street service,
-  never done from cache.
+  never done from cache. Beta 1.151 adds the empty-cell premise the
+  1.150 rule got wrong: a third cell stored legitimately EMPTY (ways:
+  [], the park/lake/city-edge case phase 1 saves) certifies from cache
+  — settles done with the service down, its box in coverage — while the
+  all-corrupt cell above still does not certify.
 - `drive174` — prototype-safe street-name index (Beta 1.150,
   security-audit finding covfromways-prototype-name-throw): ways
   named 'constructor', 'toString', '__proto__', 'hasOwnProperty' and
