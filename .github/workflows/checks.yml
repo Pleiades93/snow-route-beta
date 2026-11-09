@@ -15,7 +15,8 @@ name: checks
 # must equal the tested branch tree - verified at merge time, see
 # docs/DEVELOPMENT_RULES.md), the build checks below, and the live read-back;
 # if the trees ever differ, the full suite is re-run via workflow_dispatch
-# before the round is called shipped. The nightly schedule runs the full
+# before the round is called shipped. The nightly battery (dispatched by
+# Muse's own 1 AM job since 2026-11-09 - see the on: block) runs the full
 # sharded suite on main regardless - the environment-drift audit a tree hash
 # cannot see (runner/browser changes). scripts/check-shard-coverage.py runs
 # in build-and-test and fails the build if the shard lists ever stop covering
@@ -23,12 +24,11 @@ name: checks
 on:
   push:
   pull_request:
-  schedule:
-    # Nightly full battery at 06:00 UTC = 1:00 AM EST / 2:00 AM EDT (GitHub
-    # cron is UTC-only, no daylight saving). Set 2026-11-05 (Andrew): the
-    # pipeline is schedule 1 AM -> Muse catch-up check 4 AM (dispatches
-    # this workflow if the slot was skipped) -> summary 6 AM.
-    - cron: '0 6 * * *'
+  # Nightly full battery (reworked 2026-11-09, Andrew): GitHub's schedule
+  # trigger fired 6-9.5 h late every night, so there is NO schedule: trigger
+  # here any more. The pipeline is: Muse's 1 AM job dispatches this
+  # workflow -> Muse's 4 AM catch-up dispatches it only if the 1 AM
+  # dispatch missed -> the 6 AM summary reports which one started the night.
   workflow_dispatch:
 permissions:
   contents: read # Beta 1.94 (audit F-08): the workflow only checks out and tests - it never needs write access to the repository
