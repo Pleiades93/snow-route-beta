@@ -1,3 +1,4 @@
+// (comment-only re-trigger: the preceding workflow edit lands dead via the API token; a drive-only commit runs.)
 import { launchDrive, finish } from './harness.mjs';
 import { PACK5W } from './pack-expect.mjs';
 import fs from 'node:fs';
