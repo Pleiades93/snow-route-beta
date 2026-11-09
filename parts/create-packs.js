@@ -29,6 +29,7 @@ function normalizePack(raw, opts) { // -> { ok: true, pack } | { ok: false, erro
   if (!opts.draft && !name) return bad('the route has no name');
   const area = typeof raw.area === 'string' ? raw.area.trim().slice(0, PACK_AREA_MAX) : '';
   let totalPts = 0;
+  let totalLen = 0;
   const cleanRoads = (obj, label) => {
     if (!obj || typeof obj !== 'object' || Array.isArray(obj)) return { error: 'the ' + label + ' are missing or the wrong shape' };
     const out = {}; const names = Object.keys(obj);
@@ -49,7 +50,7 @@ function normalizePack(raw, opts) { // -> { ok: true, pack } | { ok: false, erro
           if (!seg.length || seg[seg.length - 1][0] !== p[0] || seg[seg.length - 1][1] !== p[1]) seg.push(p);
           if (++totalPts > PACK_POINTS_MAX) return { error: 'the route is too big' };
         }
-        if (seg.length > 1) segs.push(seg);
+        if (seg.length > 1) { segs.push(seg); for (let li = 1; li < seg.length; li++) totalLen += distM(seg[li - 1], seg[li]); if (totalLen > PACK_LENGTH_MAX_M) return { error: 'the route is too long' }; } // Beta 1.152 (NV round, NV1): the total-length ceiling, accumulated over the CLEANED segments (roads and reference alike). Nothing else bounds a pack's length - the point caps alone allow one crafted street of ~246,000 km - and samplesFor (app3) lays one sample per COV_SAMPLE_M over whatever it is given: the audit measured 16.4M samples / ~756 MB from a single crafted street. The ceiling (~4x the worst legitimate pack, the 300 longest Toronto streets at 2,962 km) bounds every validated pack to ~800,000 samples.
       }
       if (!segs.length) return { error: 'the street "' + nm + '" has no usable shape' };
       out[nm] = segs;
@@ -72,6 +73,7 @@ function normalizePack(raw, opts) { // -> { ok: true, pack } | { ok: false, erro
   let box = null;
   if (raw.box && isFinite(raw.box.w) && isFinite(raw.box.s) && isFinite(raw.box.e) && isFinite(raw.box.n) && raw.box.w < raw.box.e && raw.box.s < raw.box.n) box = { w: raw.box.w, s: raw.box.s, e: raw.box.e, n: raw.box.n };
   else { const cb = computeRouteBox({ ...rc.roads, ...reference }); if (cb) box = { w: Math.max(-180, cb.w - 0.03), s: Math.max(-90, cb.s - 0.025), e: Math.min(180, cb.e + 0.03), n: Math.min(90, cb.n + 0.025) }; }
+  if (box && (box.w < -180 || box.e > 180 || box.s < -90 || box.n > 90 || box.e - box.w > PACK_BOX_MAX_DEG || box.n - box.s > PACK_BOX_MAX_DEG)) return bad('the route area is too big'); // Beta 1.152 (NV round, NV3a): extent and world-bounds validation, fail-closed like every other check here, over the declared box and the derived one alike. A box is an offline-download area and the tile enumerators (app4) iterate it zoom by zoom: a worldwide box enumerates ~356.8M tile URLs per source and never returns (measured) - it is a preload wedge, not a route. The ceiling (~7.6x the widest shipped city bbox, 10x the declared 5W box) rejects it at EVERY entry point, this validator being the single gate for draft import, save, backup restore and the boot merge. The enumerators carry their own budget as well (NV3b), for records that never pass through here.
   const cleaned = { name, area, main: mains, spot: {}, tileNames: [...tileSet], box, roads: rc.roads, reference };
   const pack = {};
   for (const f of PACK_FIELDS) { if (f in cleaned) pack[f] = cleaned[f]; else if (raw[f] !== undefined) pack[f] = raw[f]; } // Beta 1.131 (programme A): the pack is built by walking PACK_FIELDS (app1) - the list is the single source for what a pack carries. Every listed field has a cleaner above today, so the raw fall-through never fires; it exists so a future field added to the list (before its cleaner lands) is carried through rather than silently dropped - the pre-1.131 trap was the hand-written return literal here forgetting a field.

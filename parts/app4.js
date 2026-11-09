@@ -196,6 +196,11 @@ function restoreBackup(parsed) { // production doRestore semantics: validate EVE
       if (field === 'done' && pv && typeof pv === 'object' && !Array.isArray(pv)) {
         v = JSON.stringify(Object.keys(pv).filter(nm => pv[nm] && (nameSet || STREETSET).has(nm))); // legacy done-set was a street->time map; migrate like the loader does. Beta 1.117 (F6): filtered against the TARGET route's names (nameSet), not the open route's
       } else if (shape === 'arr' ? !Array.isArray(pv) : !(pv && typeof pv === 'object' && !Array.isArray(pv))) { toast('Backup value for ' + label + ' has the wrong shape — nothing was changed', 3200); return false; }
+      if ((field === 'hist' || field === 'trail' || field === 'sess') && Array.isArray(pv) && pv.length > (field === 'hist' ? 10 : TRAIL_MAX)) { // Beta 1.152 (NV round, NV4): the writers' caps, enforced inside restore validation (validate-then-write: the STORED value is the capped one, so no backup can hand the load an oversized array). Only crafted backups are affected - a genuine backup never exceeds the caps its writers enforce. History caps with trimHistory's own eviction rule via the LINEAR capHistoryList (app1), fullness judged against the TARGET route's street count; the trail and the session markers keep their newest entries, as their writers keep them. Markers are first given the loader's own sanitize (finite, de-duplicated, sorted) so the stored value is exactly what the load would have made of it, capped.
+        if (field === 'hist') v = JSON.stringify(capHistoryList(pv, nameSet ? nameSet.size : STREETNAMES.length));
+        else if (field === 'trail') v = JSON.stringify(pv.slice(pv.length - TRAIL_MAX));
+        else { const cs = [...new Set(pv.map(x => Number(x)).filter(x => Number.isFinite(x)))].sort((a, b) => a - b); v = JSON.stringify(cs.slice(Math.max(0, cs.length - TRAIL_MAX))); }
+      }
     }
     entries.push([targetKey, v]); return true;
   };
@@ -308,7 +313,9 @@ $('xImp').addEventListener('click', () => doRestore());
 function tileNums(lng, lat, z) { const n = 2 ** z; const x = Math.floor((lng + 180) / 360 * n); const la = lat * Math.PI / 180; const y = Math.floor((1 - Math.log(Math.tan(la) + 1 / Math.cos(la)) / Math.PI) / 2 * n); return [x, y]; }
 let preloadRunning = false; // Beta 1.92 (deep audit F07): single-flight - a second tap while a download runs starts no competing job
 function packTileUrls(pk) { // Beta 1.117 (F5): the TILE urls attributable to ONE pack - its offline area (pack.box; a pack without one falls back to its own roads' bounds) at z8-14 plus its z15 route core. Sprites and glyphs are shared chrome, attributable to no route. preloadUrlList unions this over every known pack; the per-route preload record counts against it.
+  // Beta 1.152 (NV round, NV3b): the enumeration itself is budgeted - PACK_TILES_MAX tile iterations for this pack, each zoom's span counted BEFORE its loop runs and the zoom skipped whole when it does not fit. normalizePack's extent ceiling (NV3a) rejects such a pack at every import path, but a pack record planted straight into storage never passes through the validator, and this function runs at every boot that carries a preload record: a worldwide box is ~356.8M iterations per source and never returned (measured). Under the budget the output is identical to the unbudgeted enumeration - proven against the frozen 897-URL fixture by tests/browser/selftest-nv1152.mjs.
   const urls = new Set();
+  let budget = PACK_TILES_MAX;
   for (const key of ['day', 'night']) {
     const stj = GL_STYLES[key];
     for (const srcName of Object.keys(stj.sources || {})) {
@@ -318,15 +325,16 @@ function packTileUrls(pk) { // Beta 1.117 (F5): the TILE urls attributable to ON
       const ex = pk.box || computeRouteBox(pk.roads || {});
       // tile y grows SOUTHWARD: the north edge (y1) is the smaller number - looping y0..y1 (the pre-1.34 code) silently downloaded ZERO tiles; drive123 A8 counts the fetched tile URLs so this can never pass unnoticed again
       // Beta 1.72 (Phase 3, item R04): the wide zooms join the set - the map itself allows zoom 8 (minZoom), but the preload stopped at z10, so offline at z8-9 the basemap had nothing to draw. Over the Vaughan box those zooms are 3 tiles (1 + 2).
-      if (ex) for (let z = 8; z <= maxz; z++) { const [x0, y1] = tileNums(ex.w, ex.n, z); const [x1, y0] = tileNums(ex.e, ex.s, z); for (let x = x0; x <= x1; x++) for (let y = y1; y <= y0; y++) for (const t of src.tiles) urls.add(t.replace('{z}', z).replace('{x}', x).replace('{y}', y)); }
+      if (ex) for (let z = 8; z <= maxz; z++) { const [x0, y1] = tileNums(ex.w, ex.n, z); const [x1, y0] = tileNums(ex.e, ex.s, z); const span = (x1 - x0 + 1) * (y0 - y1 + 1) * src.tiles.length; if (!(span <= budget)) continue; budget -= Math.max(0, span); for (let x = x0; x <= x1; x++) for (let y = y1; y <= y0; y++) for (const t of src.tiles) urls.add(t.replace('{z}', z).replace('{x}', x).replace('{y}', y)); }
       // Beta 1.41: display zooms 15-19 all render from z15 tiles (the source's maxzoom) - yet the set above stops at 14, so the working zoom band was the LEAST cached. Add z15 over the route core only (the pack's own roads bounds + margin, so it cannot drift): 15 tiles for 5W. z15 over the whole Vaughan box would be ~1,400 files for streets he never opens.
-      if ((src.maxzoom || 14) >= 15) { const rb = computeRouteBox(pk.roads || {}); if (rb) { const cb = { w: rb.w - 0.005, s: rb.s - 0.004, e: rb.e + 0.005, n: rb.n + 0.004 }; const [cx0, cy1] = tileNums(cb.w, cb.n, 15); const [cx1, cy0] = tileNums(cb.e, cb.s, 15); for (let x = cx0; x <= cx1; x++) for (let y = cy1; y <= cy0; y++) for (const t of src.tiles) urls.add(t.replace('{z}', 15).replace('{x}', x).replace('{y}', y)); } }
+      if ((src.maxzoom || 14) >= 15) { const rb = computeRouteBox(pk.roads || {}); if (rb) { const cb = { w: rb.w - 0.005, s: rb.s - 0.004, e: rb.e + 0.005, n: rb.n + 0.004 }; const [cx0, cy1] = tileNums(cb.w, cb.n, 15); const [cx1, cy0] = tileNums(cb.e, cb.s, 15); const span15 = (cx1 - cx0 + 1) * (cy0 - cy1 + 1) * src.tiles.length; if (span15 <= budget) { budget -= Math.max(0, span15); for (let x = cx0; x <= cx1; x++) for (let y = cy1; y <= cy0; y++) for (const t of src.tiles) urls.add(t.replace('{z}', 15).replace('{x}', x).replace('{y}', y)); } } }
     }
   }
   return urls;
 }
 function preloadUrlList() { // Beta 1.95 (deep audit SR-194-06): the deterministic preload set, extracted from the download handler so the offline-pack migration below derives its manifest from the SAME list - one source of truth, the two can never drift apart. Beta 1.117 (F5): the tile part is the UNION over every pack the app knows (each pack's area + core, the packTileUrls enumeration inlined per source so the list's ORDER - and therefore the pack fingerprint the offline contract pins - is unchanged from the single-pack era). With only Route 5W shipped the list is exactly the frozen 897: the 5W pack's box IS the Beta 1.34 Vaughan box (Vaughan + nearby at full street detail; day and night are two skins over these SAME tiles, so this one set covers both modes). It reads PACK data only, never the live route, so it is identical before any route is chosen.
   const urls = new Set();
+  const budgets = new Map(); // Beta 1.152 (NV round, NV3b): the per-pack tile budget (see packTileUrls) - this enumeration nests style > source > pack, so each pack's remaining budget travels in a Map keyed by the pack object; the semantics are identical.
   for (const key of ['day', 'night']) {
     const stj = GL_STYLES[key]; // Beta 1.33: the styles are embedded objects (pmstyles.js) - already in the shell, nothing to fetch
     const spr = Array.isArray(stj.sprite) ? stj.sprite[0].url : stj.sprite;
@@ -340,9 +348,11 @@ function preloadUrlList() { // Beta 1.95 (deep audit SR-194-06): the determinist
         const ex = pk.box || computeRouteBox(pk.roads || {});
         // tile y grows SOUTHWARD: the north edge (y1) is the smaller number - looping y0..y1 (the pre-1.34 code) silently downloaded ZERO tiles; drive123 A8 counts the fetched tile URLs so this can never pass unnoticed again
         // Beta 1.72 (Phase 3, item R04): the wide zooms join the set - the map itself allows zoom 8 (minZoom), but the preload stopped at z10, so offline at z8-9 the basemap had nothing to draw. Over the Vaughan box those zooms are 3 tiles (1 + 2).
-        if (ex) for (let z = 8; z <= maxz; z++) { const [x0, y1] = tileNums(ex.w, ex.n, z); const [x1, y0] = tileNums(ex.e, ex.s, z); for (let x = x0; x <= x1; x++) for (let y = y1; y <= y0; y++) for (const t of src.tiles) urls.add(t.replace('{z}', z).replace('{x}', x).replace('{y}', y)); }
+        let budget = budgets.get(pk) ?? PACK_TILES_MAX;
+        if (ex) for (let z = 8; z <= maxz; z++) { const [x0, y1] = tileNums(ex.w, ex.n, z); const [x1, y0] = tileNums(ex.e, ex.s, z); const span = (x1 - x0 + 1) * (y0 - y1 + 1) * src.tiles.length; if (!(span <= budget)) continue; budget -= Math.max(0, span); for (let x = x0; x <= x1; x++) for (let y = y1; y <= y0; y++) for (const t of src.tiles) urls.add(t.replace('{z}', z).replace('{x}', x).replace('{y}', y)); }
         // Beta 1.41: display zooms 15-19 all render from z15 tiles (the source's maxzoom) - yet the set above stops at 14, so the working zoom band was the LEAST cached. Add z15 over the route core only (the pack's own roads bounds + margin, derived from the pack's own data so it cannot drift): 15 tiles for 5W. z15 over the whole Vaughan box would be ~1,400 files for streets he never opens.
-        if ((src.maxzoom || 14) >= 15) { const rb = computeRouteBox(pk.roads || {}); if (rb) { const cb = { w: rb.w - 0.005, s: rb.s - 0.004, e: rb.e + 0.005, n: rb.n + 0.004 }; const [cx0, cy1] = tileNums(cb.w, cb.n, 15); const [cx1, cy0] = tileNums(cb.e, cb.s, 15); for (let x = cx0; x <= cx1; x++) for (let y = cy1; y <= cy0; y++) for (const t of src.tiles) urls.add(t.replace('{z}', 15).replace('{x}', x).replace('{y}', y)); } }
+        if ((src.maxzoom || 14) >= 15) { const rb = computeRouteBox(pk.roads || {}); if (rb) { const cb = { w: rb.w - 0.005, s: rb.s - 0.004, e: rb.e + 0.005, n: rb.n + 0.004 }; const [cx0, cy1] = tileNums(cb.w, cb.n, 15); const [cx1, cy0] = tileNums(cb.e, cb.s, 15); const span15 = (cx1 - cx0 + 1) * (cy0 - cy1 + 1) * src.tiles.length; if (span15 <= budget) { budget -= Math.max(0, span15); for (let x = cx0; x <= cx1; x++) for (let y = cy1; y <= cy0; y++) for (const t of src.tiles) urls.add(t.replace('{z}', 15).replace('{x}', x).replace('{y}', y)); } } }
+        budgets.set(pk, budget);
       }
     }
   }
@@ -651,7 +661,7 @@ $('stDel').addEventListener('click', async () => {
 });
 // ---- About / What's new ----
 const WHATSNEW = { // the curated in-app notes: plain words, LATEST RELEASE ONLY (Beta 1.114, Andrew: the accumulated list cluttered the About pane). A release REPLACES this entry with its own in the same change - it never accumulates; the full history lives in CHANGELOG.md, not the app
-  v: 'Beta 1.151', items: ["A fix for the fix: the last update's new safety check for saved city street data also rejected areas that legitimately have no named streets (parks, lakes, city edges), so a saved city re-downloaded those areas every time and could finish 'degraded' offline — empty areas are recognised as complete again, while a damaged street cache is still rejected and fetched fresh"]};
+  v: 'Beta 1.152', items: ["Safety hardenings from the security review's follow-up list: a route file claiming a worldwide map area is now refused instead of freezing the app while it tries to list map tiles for the whole planet, and the tile lister itself stops at a safe limit even for a tampered saved route; a route's streets are capped at a total length far beyond any real city, so a crafted route can't exhaust the phone's memory; an oversized run history or GPS trail smuggled in through a backup or saved data is trimmed back to the normal limits when it loads, so finishing a run can never stall; and the street-joining maths now skips far-away streets before measuring them, so large routes build much faster with identical results"]};
 function renderAbout() {
   const cur = $('ver').textContent.trim();
   $('wnHead').textContent = "WHAT'S NEW · " + cur; // the header names the LIVE version, read from the title's version element - never a second hard-coded copy that can go stale
