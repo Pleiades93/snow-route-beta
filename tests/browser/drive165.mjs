@@ -119,7 +119,7 @@ ok('D1 the first tap contributes the tapped run only | ' + JSON.stringify(d1), d
 await pick('Splitrun Drive', 43.8040, -79.4945); // run 2 (eastern), ~320 m away, same street name
 const d2 = await J(`({ segs: (draft.roads['Splitrun Drive'] || []).length, toast: document.getElementById('toast').textContent, len: Math.round(crStreetParts('Splitrun Drive') ? crStreetChosenM('Splitrun Drive', crDraftGeom()) : -1), sector: crSectorStreet })`);
 ok('D2 OPT-L1: tapping the OTHER run adds it to the same street entry (both runs held, full length billed, sector mode NOT opened) | ' + JSON.stringify(d2),
-  d2.segs === 2 && d2.len > 150 && d2.toast.indexOf('other part of Splitrun') >= 0 && !d2.sector);
+  d2.segs === 2 && d2.len > 150 && d2.toast.indexOf('Added the other part') < 0 && !d2.sector); // Beta 1.153 (TEST): the toast conjunct asserted the 'Added the other part of Splitrun' confirmation - item 4 of the UX round REMOVED that toast (Andrew: the road's picked state is the feedback), so the conjunct now asserts its ABSENCE; the functional claims (both runs, full length, no sector mode) are unchanged
 await pick('Splitrun Drive', 43.8040, -79.4995); // a run already held
 const d3 = await J(`({ segs: (draft.roads['Splitrun Drive'] || []).length, sector: crSectorStreet })`);
 ok('D3 a tap on a run already held opens the street\'s sectors instead (the 1.128 door is unchanged) | ' + JSON.stringify(d3),

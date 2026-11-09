@@ -43,7 +43,7 @@ let crWanted = null; // { anchor, label } - an explicit preparation offer the hi
 let crTopOp = null; // the in-flight top-up's cancellation handle (crOverpassFetch's op), so exitCreate can stop its download too
 let crCovGen = 0; // the coverage generation
 let crPrep = null; // { gen, session, anchor, startedAt, ticker, op } while a FALLBACK box preparation is in flight
-let crGrid = null; // { name, bbox, cells: [{ key, box, state, tries }], gen, session, startedAt, ticker, ops: Set, active, fromCache, savedAt, stopped, lastFail } while a CITY grid preparation exists (kept after it settles, for progress/resume/refresh state)
+let crGrid = null; // { name, bbox, cells: [{ key, box, state, tries }], gen, session, startedAt, ticker, ops: Set, active, fromCache, savedAt, stopped, lastFail } while a CITY grid preparation exists (kept after it settles, for progress/resume state)
 let crPrepState = 'none'; // 'none' | 'preparing' | 'ready' | 'degraded' | 'failed'  ('degraded': a city grid settled with parts missing - what loaded is usable, the rest is resumable)
 let crPrepFail = null; // { kind: 'unreachable' | 'error' | 'dense' | 'badjson', status?, remark? }
 let crFailFromGrid = false; // which preparation produced crPrepFail - the Retry button resumes a failed GRID's missing cells but re-runs a failed fallback BOX at its anchor; the two must never be confused when both exist
@@ -119,7 +119,7 @@ async function crSourceExtract(box, name, budgetMs, attempt1Ms, sessionOk, op) {
   // coverage box (and optionally one street name), it returns the extract
   // for that box. Beta 1.123: the pre-generated city packs plug in BEHIND
   // this seam - when a pack context is active (crPackCtx, set by
-  // crCityPrepare / crGridRefresh when the picked city matches the pack
+  // crCityPrepare when the picked city matches the pack
   // library), the pack answers the same call shape and the live Overpass
   // service becomes the fallback. The grid, the fallback box prep, the
   // top-up and everything downstream consume the identical result shape

@@ -624,9 +624,9 @@ await ev(`document.getElementById('crDoorManual').click()`);
 await pickCityVaughan();
 const s5Cached = await poll(`crPrepState === 'ready'`, 15000).catch(() => false);
 const gcS5e = await geoCount();
-const S5b = await J(`({ fromCache: crGrid && crGrid.fromCache, hint: document.getElementById('createHint').textContent, btn: document.getElementById('crHintBtn').textContent })`);
-ok('J11a (persistence) re-picking the completed city loads it from the ON-DEVICE CACHE: ready with ZERO new geometry requests (' + gcS5d + ' -> ' + gcS5e + '), the hint says when it was loaded, Refresh is offered | ' + JSON.stringify(S5b),
-  s5Cached === true && gcS5e === gcS5d && S5b.fromCache === true && S5b.hint.indexOf('loaded') >= 0 && S5b.btn === 'Refresh');
+const S5b = await J(`({ fromCache: crGrid && crGrid.fromCache, hint: document.getElementById('createHint').textContent, btnShown: document.getElementById('crHintBtn').style.display !== 'none' })`);
+ok('J11a (persistence) re-picking the completed city loads it from the ON-DEVICE CACHE: ready with ZERO new geometry requests (' + gcS5d + ' -> ' + gcS5e + '), the hint says when it was loaded, and NO Refresh button is offered (Beta 1.153: a healthy cached city offers no reload - the pre-1.153 claim here asserted the Refresh offer this round removed) | ' + JSON.stringify(S5b),
+  s5Cached === true && gcS5e === gcS5d && S5b.fromCache === true && S5b.hint.indexOf('loaded') >= 0 && S5b.btnShown === false);
 await jExitDiscard();
 // S6: exit mid-load - the downloads stop; nothing lands in the next session
 await jWipe();
