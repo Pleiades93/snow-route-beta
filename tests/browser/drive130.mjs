@@ -61,6 +61,40 @@ ok('L6 the reference source draws nothing (West link off the map) | ref features
 const poiTxt = await ev(`map.getLayer('routepoi-txt') ? JSON.stringify(map.getLayoutProperty('routepoi-txt', 'text-field')) : 'missing'`);
 ok('L6b the point of interest wears the route name, not the app name (Beta 1.79, Andrew) | poi ' + poiTxt, poiTxt === '"Route 5W"');
 
+// DIAG VARIANT (scratch branch drive130-diag - NOT for landing): before the stock L7
+// sequence, sample the rendered label sets + the map's own load state every 250 ms after
+// the jump, to establish the flake mechanism with evidence: do the sets keep changing
+// after the predicate first reads true? How long until loaded/idle/stable?
+await ev(`(() => { window.__l7idle = 0; map.once('idle', () => { window.__l7idle = Date.now(); }); map.jumpTo({ center: [-79.5622, 43.8197], zoom: 17.5 }); return true; })()`);
+const diagT0 = Date.now();
+let diagPrevKey = '', diagStreak = 0, diagFirstPredAt = -1, diagChangesAfterPred = 0;
+for (let i = 0; i < 200; i++) {
+  let s = null;
+  try {
+    s = JSON.parse(await ev(`(() => JSON.stringify({
+      loaded: map.loaded(),
+      idle: (window.__l7idle || 0) > 0,
+      moving: map.isMoving(),
+      clone: map.queryRenderedFeatures({ layers: ['roads_labels_major-route', 'roads_labels_minor-route'] }).map(f => f.properties.name),
+      orig: map.queryRenderedFeatures({ layers: ['roads_labels_major', 'roads_labels_minor'] }).map(f => f.properties.name)
+    }))()`));
+  } catch (e) { s = { err: String(e).slice(0, 120) }; }
+  const t = Date.now() - diagT0;
+  if (s && !s.err) {
+    const cs = [...new Set(s.clone)].sort(), os = [...new Set(s.orig)].sort();
+    const pred = cs.includes('Malden Street') && cs.includes('Cartwright Boulevard') && !os.includes('Malden Street') && !os.includes('Cartwright Boulevard');
+    if (pred && diagFirstPredAt < 0) diagFirstPredAt = t;
+    const key = JSON.stringify([cs, os]);
+    if (key === diagPrevKey) diagStreak++; else { diagStreak = 0; if (diagFirstPredAt >= 0) diagChangesAfterPred++; }
+    diagPrevKey = key;
+    console.log('L7DIAG t=' + t + ' loaded=' + s.loaded + ' idle=' + s.idle + ' moving=' + s.moving + ' pred=' + pred + ' streak=' + diagStreak + ' clone=' + JSON.stringify(cs) + ' orig=' + JSON.stringify(os));
+    if (s.loaded && s.idle && pred && diagStreak >= 8) { console.log('L7DIAG CONVERGED t=' + t + ' firstPredAt=' + diagFirstPredAt + ' changesAfterPred=' + diagChangesAfterPred); break; }
+  } else {
+    console.log('L7DIAG t=' + t + ' READ-ERR ' + (s && s.err));
+  }
+  await sleep(250);
+}
+console.log('L7DIAG END firstPredAt=' + diagFirstPredAt + ' changesAfterPred=' + diagChangesAfterPred);
 // The rendered proof at close zoom: on Malden/Cartwright the basemap names arrive on the
 // CLONE layers only - the originals must return none of them (no doubling, ever).
 await ev(`(() => { map.jumpTo({ center: [-79.5622, 43.8197], zoom: 17.5 }); return true; })()`);
