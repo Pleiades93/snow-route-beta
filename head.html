@@ -1,0 +1,553 @@
+<!DOCTYPE html>
+<html lang="en" class="boot">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-title" content="Snow Route Beta">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="theme-color" content="#2b4bf2">
+<link rel="manifest" href="manifest.json">
+<link rel="apple-touch-icon" href="apple-touch-icon.png">
+<link rel="apple-touch-startup-image" href="assets/launch/launch-1290x2796.png" media="(device-width: 430px) and (device-height: 932px) and (-webkit-device-pixel-ratio: 3)">
+<link rel="apple-touch-startup-image" href="assets/launch/launch-1320x2868.png" media="(device-width: 440px) and (device-height: 956px) and (-webkit-device-pixel-ratio: 3)">
+<link rel="apple-touch-startup-image" href="assets/launch/launch-1260x2736.png" media="(device-width: 420px) and (device-height: 912px) and (-webkit-device-pixel-ratio: 3)">
+<link rel="apple-touch-startup-image" href="assets/launch/launch-1206x2622.png" media="(device-width: 402px) and (device-height: 874px) and (-webkit-device-pixel-ratio: 3)">
+<link rel="apple-touch-startup-image" href="assets/launch/launch-1080x2340.png" media="(device-width: 360px) and (device-height: 780px) and (-webkit-device-pixel-ratio: 3)">
+<link rel="apple-touch-startup-image" href="assets/launch/launch-1284x2778.png" media="(device-width: 428px) and (device-height: 926px) and (-webkit-device-pixel-ratio: 3)">
+<link rel="apple-touch-startup-image" href="assets/launch/launch-1179x2556.png" media="(device-width: 393px) and (device-height: 852px) and (-webkit-device-pixel-ratio: 3)">
+<link rel="apple-touch-startup-image" href="assets/launch/launch-1170x2532.png" media="(device-width: 390px) and (device-height: 844px) and (-webkit-device-pixel-ratio: 3)">
+<link rel="apple-touch-startup-image" href="assets/launch/launch-1242x2688.png" media="(device-width: 414px) and (device-height: 896px) and (-webkit-device-pixel-ratio: 3)">
+<link rel="apple-touch-startup-image" href="assets/launch/launch-1125x2436.png" media="(device-width: 375px) and (device-height: 812px) and (-webkit-device-pixel-ratio: 3)">
+<link rel="apple-touch-startup-image" href="assets/launch/launch-1242x2208.png" media="(device-width: 414px) and (device-height: 736px) and (-webkit-device-pixel-ratio: 3)">
+<link rel="apple-touch-startup-image" href="assets/launch/launch-750x1334.png" media="(device-width: 375px) and (device-height: 667px) and (-webkit-device-pixel-ratio: 2)">
+<title>Snow Route Beta</title>
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/maplibre-gl@4.7.1/dist/maplibre-gl.css" integrity="sha384-MinO0mNliZ3vwppuPOUnGa+iq619pfMhLVUXfC4LHwSCvF9H+6P/KO4Q7qBOYV5V" crossorigin="anonymous">
+<style>
+  * { box-sizing: border-box; margin: 0; padding: 0; -webkit-tap-highlight-color: transparent; }
+  html, body { height: 100%; height: 100dvh; overflow: hidden; font-family: -apple-system, sans-serif; background: #eceff2; -webkit-touch-callout: none; user-select: none; -webkit-user-select: none; overscroll-behavior: none; }
+  html { min-height: min(100lvh, calc(100% + env(safe-area-inset-top))); } /* Beta 1.60: document-height floor. On iOS 26/27 a Home Screen app whose document is no taller than the (already short) viewport gets an undersized layout viewport - the 59pt strip (WebKit 313800 family). Forcing the document at least screen-tall makes WebKit grant the full viewport. Proven on Andrew's iPhone 2026-11-01 with bare probe pages (fresh installs: base probe ih 873, this rule ih 932 across launch/resume/keyboard). The app layout is fixed-position and unaffected by the taller document; overflow stays hidden. */
+  body.night { background: #14171d; } /* frame colour follows the mode (Beta 1.48): Safari paints its strips and the area behind its bars with the page frame colour - light by day, dark by night, so the app reads as one full screen */
+  html.boot, html.boot body { background: #2b4bf2; } /* Beta 1.85: while the splash is up (html carries class=boot until finish() removes it), the page's root frame is splash blue - the light #eceff2 frame above is the app's colour, and any first frame iOS paints before the splash covers (or any edge the splash misses) must be blue, never a light flash. The static theme-color meta is splash blue for the same reason; applyNight() retakes it when the boot tail runs. */
+  html.boot #map { background: #2b4bf2; } /* Beta 1.86: even the map's own frame is splash blue while booting - its light day colour can never wash through an unsettled frame */
+  html.boot body > *:not(#splash):not(#routeMenu):not(#map) { display: none !important; } /* Beta 1.86 (Andrew's design): during boot the app chrome does not exist in the paint at all. The splash is not a lid over a finished app - boot is a STATE of the app, and in that state the tab bar, HUD, dock, sheets and pop-ups are absent (not merely covered), so no early or unsettled frame can contain them. The state flips in __bootPickRoute while both blue layers are still opaque: the finished app paints beneath the blue, and the blue's fade reveals it whole - nothing pops or loads in afterwards. */
+  /* MENU ANIMATION BASELINE (Andrew, 2026-10-30; pace set by Andrew in Beta 1.29): every menu uses --anim-dur; opening plays --ease-open, closing plays its exact time-flip --ease-close, staggers mirror. This survives any redesign of the menus themselves. The pace is deliberately a touch slow - smooth and fluid beats snappy. */
+  :root { --anim-dur: 420ms; --ease-open: cubic-bezier(.22,.9,.28,1); --ease-close: cubic-bezier(.72,0,.1,.78); }
+  :root { --sat: env(safe-area-inset-top, 0px); --sab: env(safe-area-inset-bottom, 0px); --sal: env(safe-area-inset-left, 0px); --sar: env(safe-area-inset-right, 0px);
+    --card: rgba(255,255,255,.92); --card-solid: #ffffff; /* Beta 1.98: the card colour at full opacity - worn by a sheet while it is being dragged, when the frosted blur is off (see .sheet.dragging) */ --ink: #1c2534; --ink-dim: rgba(28,37,52,.64); --ink-faint: rgba(28,37,52,.32); --hair: rgba(20,28,44,.13); --chip: rgba(43,75,242,.06); --field: #ffffff; --sec: #47617f; --link: #2b4bf2; --done-nm: #177245; --tm-c: #4d7a5e; --nt-c: #96690f; /* Beta 1.29: menus follow the map - light glass by day (opaque enough that text never washes out on the bright map), a neutral charcoal by night */ --rad-card: 14px; --rad-btn: 11px; --shadow-card: 0 10px 34px rgba(10,14,20,.28); --shadow-float: 0 8px 24px rgba(10,14,20,.22); --glass-day: rgba(255,255,255,.78); --glass-night: rgba(32,33,37,.78); /* Beta 1.75: same neutral charcoal family as --card night */ --blur: blur(18px) saturate(1.6); } /* Beta 1.22 modern chrome: frosted glass surfaces, soft deep shadows */
+  #map { position: fixed; top: 0; left: 0; right: 0; bottom: 0; z-index: 1; background: #eceff2; }
+  body.night #map { background: #14171d; }
+  #hud { position: fixed; top: var(--vvt, 0px); left: 0; right: 0; z-index: 1000; background: transparent; box-shadow: none; color: #fff; padding: calc(25px + var(--sat)) calc(12px + var(--sar)) 8px calc(12px + var(--sal)); } /* Beta 1.22/1.23: no top banner - the map runs full-screen under the floating title */ /* Beta 1.21: slim title-only header; the 70px left inset clears the top-left hamburger */
+  #hud .row { display: flex; align-items: center; gap: 8px; }
+  #hud .title { font-weight: 700; font-size: 15px; white-space: nowrap; color: #14161c; text-shadow: 0 0 7px rgba(255,255,255,.95), 0 0 3px rgba(255,255,255,.95); }
+  body.night #hud .title { color: #f2f4f8; text-shadow: 0 0 7px rgba(0,0,0,.85), 0 0 3px rgba(0,0,0,.85); }
+  #hud .titleStack { display: flex; flex-direction: column; }
+  #hud .ver { font-size: 9px; font-weight: 600; color: #46536a; line-height: 1; margin-top: 2px; letter-spacing: .04em; text-shadow: 0 0 6px rgba(255,255,255,.95); }
+  body.night #hud .ver { color: #8fa0b3; text-shadow: 0 0 6px rgba(0,0,0,.85); }
+  #count { position: relative; overflow: hidden; margin-top: 9px; background: var(--glass-day); -webkit-backdrop-filter: var(--blur); backdrop-filter: var(--blur); color: #1d2530; border: 1px solid rgba(20,22,28,.09); padding: 6px 14px; border-radius: 999px; font-size: 12.5px; font-weight: 700; white-space: nowrap; box-shadow: var(--shadow-float); } /* Beta 1.23: the progress lives in its own pill under the circle, like the goal pill in Andrew's reference */
+  #hud .spacer { margin-left: auto; }
+  #hud button { background: #2b4bf2; color: #fff; border: none; border-radius: var(--rad-btn); padding: 9px 8px; font-size: 13.5px; font-weight: 600; min-height: 40px; white-space: nowrap; }
+  #hud button.ghost { background: #444; }
+  #resetBtn.armed { background: #8c1f16; color: #fff; font-style: normal; }
+  #stats { font-size: 12px; font-weight: 600; color: #33404e; margin-top: 6px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; text-shadow: 0 0 6px rgba(255,255,255,.95), 0 0 3px rgba(255,255,255,.9); }
+  body.night #stats { color: #9fb4c8; text-shadow: 0 0 6px rgba(0,0,0,.85), 0 0 3px rgba(0,0,0,.85); }
+  #warn { display: none; background: #c22f24; color: #fff; font-size: 12px; font-weight: 700; text-align: center; padding: 5px 4px; border-radius: 9px; margin-bottom: 6px; }
+  body.storage-bad #warn { display: block; }
+  /* Selection strip (Beta 1.14, Andrew): part of the header, not a floating card - it grows the top menu
+     only while a street is selected, so Mark completed never floats over the map or fights the buttons. */
+  #selPop .selTxt { min-width: 0; }
+  #selPop .selActs { display: flex; gap: 8px; align-items: center; }
+  #selPop .selActs #selBtn { flex: 1; }
+  #selPop .selActs #selAllBtn { flex: 1; }
+  #selName { white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+  #selName { font-size: 15px; font-weight: 700; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+  #selStatus { font-size: 11.5px; opacity: .65; margin-top: 1px; line-height: 1.35; }
+  #selBtn { flex: none; border: none; border-radius: var(--rad-btn); padding: 9px 12px; font-size: 13.5px; font-weight: 700; min-height: 40px; background: #2ecc71; color: #fff; }
+  #selBtn.notdone { background: #c22f24; }
+  #selBtn:disabled { background: #3a4150; color: #8fa0b3; }
+  #selNote { flex: none; width: 40px; min-height: 40px; border: none; border-radius: 999px; padding: 0; background: var(--chip); color: inherit; }
+  #selNote svg { width: 19px; height: 19px; display: block; margin: auto; }
+  .banner { position: fixed; left: calc(10px + var(--sal)); right: calc(10px + var(--sar)); bottom: calc(var(--vvb, 0px) + 236px + var(--sab)); z-index: 1000; background: var(--card); -webkit-backdrop-filter: var(--blur); backdrop-filter: var(--blur); color: var(--ink); border-radius: 16px; box-shadow: var(--shadow-card); padding: 10px 12px; display: flex; align-items: center; gap: 10px; font-size: 13px; }
+  .banner.hidden { display: none; }
+  .banner span { flex: 1; line-height: 1.4; }
+  .banner button { border: none; border-radius: var(--rad-btn); padding: 8px 10px; font-size: 13px; font-weight: 700; min-height: 38px; background: #2b4bf2; color: #fff; white-space: nowrap; }
+  .banner button.red { background: #e63a2e; }
+  #stale { z-index: 1001; } #bakNudge { z-index: 1002; }
+  #mapNote { position: fixed; left: calc(10px + var(--sal)); right: calc(10px + var(--sar)); bottom: calc(var(--vvb, 0px) + 240px + var(--sab)); z-index: 1003; background: var(--card); -webkit-backdrop-filter: var(--blur); backdrop-filter: var(--blur); color: var(--ink); border-radius: 16px; box-shadow: var(--shadow-card); padding: 10px 12px; display: flex; align-items: center; gap: 10px; font-size: 13px; }
+  #mapNote.hidden { display: none; }
+  #mapNote span { flex: 1; line-height: 1.4; }
+  #mapNoteNo { border: none; background: transparent; width: 44px; min-height: 44px; color: #e63a2e; font-size: 19px; font-weight: 800; cursor: pointer; } /* the plain red X, like every close in the app (Beta 1.31) - still a full 44px tap target */
+  #chips { position: absolute; inset: 0; z-index: 950; pointer-events: none; }
+  .sideChip { position: absolute; width: 40px; height: 40px; pointer-events: auto; }
+  .sideChip .chipBtn { width: 40px; height: 40px; border-radius: 50%; cursor: pointer; background: var(--glass-day); -webkit-backdrop-filter: var(--blur); backdrop-filter: var(--blur); color: #22262e; border: 1px solid rgba(20,22,28,.09); box-shadow: var(--shadow-float); display: flex; align-items: center; justify-content: center; padding: 0; touch-action: manipulation; }
+  body.night .sideChip .chipBtn { background: var(--glass-night); color: #f2f4f8; border-color: rgba(255,255,255,.16); }
+  .sideChip .chipBtn svg { width: 22px; height: 22px; flex: none; }
+  .sideChip.done .chipBtn { background: #2ecc71; color: #fff; }
+  #attrChip { position: fixed; right: calc(8px + var(--sar)); bottom: calc(var(--vvb, 0px) + 68px + var(--sab)); z-index: 900; font-size: 9px; color: #5b6672; background: rgba(255,255,255,.7); padding: 2px 5px; border-radius: 4px; pointer-events: none; }
+  body.night #attrChip { background: rgba(20,23,29,.7); color: #9aa4b2; }
+  #spd { position: fixed; left: calc(10px + var(--sal)); bottom: calc(var(--vvb, 0px) + 76px + var(--sab)); z-index: 900; font-size: 13px; font-weight: 700; color: #fff; background: rgba(26,29,36,.85); padding: 5px 9px; border-radius: 8px; }
+  #spd.hidden { display: none; }
+  #tabBar { position: fixed; left: 0; right: 0; bottom: 0; z-index: 1000; display: flex; background: var(--card); /* Beta 1.29 cohesion (Andrew): the bottom bar wears the SAME surface as the Streets/Pace sheets and the Settings pop-up, day and night - one menu family */ -webkit-backdrop-filter: var(--blur); backdrop-filter: var(--blur); padding: 6px 4px calc(6px + var(--sab)); box-shadow: 0 -8px 28px rgba(10,14,20,.30); } /* Beta 1.23 (Andrew, from his reference screenshot): the menu lives in a bottom tab bar now - dark frosted, icon + label per action */
+  .tabItem { flex: 1; background: none; border: none; color: #2b3038; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 2px; padding: 4px 0 2px; cursor: pointer; font-family: inherit; }
+  .tabItem svg { width: 24px; height: 24px; }
+  .tabLbl { font-size: 10px; font-weight: 600; letter-spacing: .02em; }
+  .tabItem.on { color: #2b4bf2; }
+  /* (the tab bar's night surface comes from --card via body.night - no separate override) */
+  body.night .tabItem { color: #dde5ec; }
+  body.night .tabItem.on { color: #2b4bf2; }
+  .tabItem.rec { color: #d92c1e; } /* Beta 1.49: the Locate tab wears red while a clean's GPS is recording (blue = view only) */
+  body.night .tabItem.rec { color: #ff6b5e; }
+  .tabItem.red { color: #ff6b5e; }
+  #dock { position: fixed; left: 50%; transform: translateX(-50%); bottom: calc(var(--vvb, 0px) + 74px + var(--sab)); z-index: 1000; display: flex; align-items: flex-start; gap: 18px; } /* flex-start + the dock buttons' 24px top margin centres them on the big circle, not on the taller slot (Beta 1.23 fix - drive120 V1 measured a 29px offset) */ /* Beta 1.21 (Andrew): List | round run button | Pace, one level, symmetrical */
+  .dockBtn { width: 56px; height: 56px; margin-top: 24px; border-radius: 50%; background: var(--glass-day); -webkit-backdrop-filter: var(--blur); backdrop-filter: var(--blur); color: #22262e; border: 1px solid rgba(20,22,28,.09); box-shadow: var(--shadow-float); font-size: 13.5px; font-weight: 700; cursor: pointer; display: flex; align-items: center; justify-content: center; }
+  .dockBtn svg { width: 27px; height: 27px; }
+  body.night .dockBtn { background: var(--glass-night); color: #f2f4f8; border-color: rgba(255,255,255,.16); }
+  #runSlot { position: relative; width: 104px; flex: none; display: flex; flex-direction: column; align-items: center; }
+  .runBtn { position: relative; width: 104px; height: 104px; flex: none; border-radius: 50%; border: none; box-shadow: var(--shadow-float); line-height: 1.1; cursor: pointer; padding: 0 8px; font-style: italic; font-weight: 900; letter-spacing: .01em; }
+  #startBtn, #resetBtn { background: #2b4bf2; color: #fff; font-size: 21px; } /* Beta 1.75 (Andrew): splash-blue circle, white text - supersedes the 1.23 black/volt treatment. Beta 1.100 (Andrew): Start and Finish share ONE rule - the swap changes only the word, so the two can never drift apart again (Finish kept the stale 1.23 black/volt + 19px until now) */
+  body.night #count { background: var(--glass-night); color: #eef4ee; border-color: rgba(255,255,255,.16); }
+  #countFill { position: absolute; left: 0; top: 0; bottom: 0; width: 0%; background: rgba(52,199,89,.42); box-shadow: inset -2px 0 0 #34c759; transition: width .7s var(--ease-open); } /* Beta 1.29: the pill is a meter - a translucent green wash fills it as the route gets cleaned, with a bright leading edge; translucent on purpose, so the themed text (dark by day, bright by night) stays readable over filled and unfilled parts alike */
+  #countTxt { position: relative; z-index: 1; }
+  body.night { --card: rgba(32,33,37,.94); --card-solid: #202125; --ink: #edf2f9; --ink-dim: rgba(214,226,242,.62); --ink-faint: rgba(214,226,242,.32); --hair: rgba(160,190,235,.14); --chip: rgba(43,75,242,.10); --field: #3c4043; --sec: #9fb4c8; --link: #2b4bf2; --done-nm: #9fd3ae; --tm-c: #8fae99; --nt-c: #c9a86a; } /* Beta 1.75 night card: neutral charcoal (32,33,37) at 94% - Andrew's pick, sampled from a Google Maps dark reference (#202125) - replacing the 1.29 blue-black; fields take the reference's raised tone #3c4043 */
+  #selPop { position: fixed; top: calc(var(--vvt, 0px) + 54px + var(--sat)); left: 50%; transform: translateX(-50%); z-index: 1001; display: flex; align-items: center; gap: 8px; background: var(--glass-day); -webkit-backdrop-filter: var(--blur); backdrop-filter: var(--blur); color: #1d2530; border: 1px solid rgba(20,22,28,.09); padding: 9px 12px 9px 15px; border-radius: 20px; box-shadow: inset 4px 0 0 var(--accent, transparent), var(--shadow-float); flex-direction: column; align-items: stretch; gap: 7px; width: min(342px, 92vw); --accent: transparent; } /* Beta 1.34 (Andrew): ONE fixed width, so the pop-up is the same size for one section or many - no growing/shrinking as the selection changes */ /* Beta 1.30: ONE selection pop-up (Andrew) - the multi-select pill he liked, widened into a card that also carries the old header strip's name/status/notes/mark actions; the street colour rides the left edge */
+  body.night #selPop { background: var(--glass-night); color: #eef4ee; border-color: rgba(255,255,255,.16); }
+  #selPop.hidden { display: none; }
+  #selPop button { border: 0; border-radius: 999px; padding: 7px 12px; font-size: 12.5px; font-weight: 700; cursor: pointer; touch-action: manipulation; min-height: 36px; white-space: nowrap; }
+  #selAllBtn { background: #2ecc71; color: #fff; }
+  #selClearBtn { background: transparent; color: inherit; }
+  #cancelStartBtn { position: absolute; bottom: calc(100% + 10px); left: 50%; transform: translateX(-50%); border: none; border-radius: 999px; padding: 8px 14px; font-size: 12.5px; font-weight: 700; color: #fff; white-space: nowrap; cursor: pointer; box-shadow: var(--shadow-float); } /* Beta 1.24 (Andrew): above the Start circle - below it, the tab bar swallowed it */
+  .sheet { position: fixed; left: 0; right: 0; bottom: var(--vvb, 0px); z-index: 1100; background: var(--card); -webkit-backdrop-filter: var(--blur); backdrop-filter: var(--blur); color: var(--ink); border-radius: 18px 18px 0 0; box-shadow: var(--shadow-card); max-height: calc(var(--vvh, 100dvh) * .5); /* Beta 1.79 (Andrew): sheets open at HALF height - the three stops are closed / half / full (drag or flick up to fill, down to half, down again to close) */ display: flex; flex-direction: column; transform: translateY(105%); visibility: hidden; transition: transform var(--anim-dur) var(--ease-close), height var(--anim-dur) var(--ease-close), max-height var(--anim-dur) var(--ease-close), visibility 0s linear var(--anim-dur); padding-bottom: var(--sab); }
+  .grab, .sheetHead { touch-action: none; }
+  #sheetBody, #pacePad { touch-action: pan-y; }
+  .sheet.open { transform: translateY(0); visibility: visible; transition: transform var(--anim-dur) var(--ease-open), height var(--anim-dur) var(--ease-open), max-height var(--anim-dur) var(--ease-open), visibility 0s; }
+  .grab { padding: 12px 0 7px; cursor: grab; touch-action: none; flex: none; }
+  .grabBar { width: 44px; height: 5px; border-radius: 3px; background: var(--ink-faint); margin: 0 auto; }
+  .sheet.dragging { transition: none; backdrop-filter: none; -webkit-backdrop-filter: none; background: var(--card-solid); } /* Beta 1.79: while dragging, the frosted blur drops - repainting a full-screen blur every frame is what made drags stutter behind the finger; the panel follows 1:1 with no transition. Beta 1.98 (Andrew): while the blur is off the sheet wears the SOLID card colour - the near-opaque card colour alone let the map show through mid-drag */
+  .sheet.snapping { transition: transform var(--anim-dur) var(--ease-open), height var(--anim-dur) var(--ease-open), max-height var(--anim-dur) var(--ease-open), visibility 0s; }
+  #sheetBody { flex: 1 1 auto; min-height: 0; }
+  .sheetHead { display: flex; align-items: center; gap: 8px; padding: 8px 48px 6px 14px; }
+  .sheetTitle { font-size: 16px; font-weight: 700; flex: 1; }
+  #sheetClose, #paceClose, #finNo, #noteNo, #xClose, #crModalX { position: absolute; top: 2px; right: 4px; z-index: 3; border: none; background: transparent; width: 38px; height: 38px; padding: 0; color: #e63a2e; font-size: 21px; font-weight: 800; cursor: pointer; } /* THE corner X (Beta 1.30/1.31, completed 1.34, Andrew): ONE plain red X, no box, pinned to the top-right corner of EVERY menu - sheets and dialogs alike. This single rule is the only place a close may be styled; the 1.34 bug was three dialogs carrying their own overrides (coloured-button rules and the Backup button grid) that silently repainted their X as a red box. Beta 1.77 (Andrew, live catch): routeClose shipped missing from this list in 1.76 and rendered as a boxed default button - a NEW menu's X joins this selector the day the menu is built, and drive145 N15 compares every sheet's X computed style so an omission fails the battery. Beta 1.78: the Routes sheet retired and the full-screen route menu's X briefly held its seat here; Beta 1.79 (Andrew) moves that menu's close to his own design - a translucent circle at bottom centre (its own rule below) - so this rule again covers sheets and dialogs only */
+  body.kb .sheet { transition: none; } /* Beta 1.61 (was 1.31's near-full-visible-height rule): while the keyboard is up the sheet keeps its pre-keyboard size and place - the layout variables are frozen in syncViewport and the keyboard overlays the sheet; the field is surfaced by the sheet's own scroll (ensureFieldVisible). The 1.31/1.55 sizing chase after the shrinking visible height is what made note menus flicker and jump. */
+  .modal .card { max-height: calc(var(--vvh, 100dvh) - 44px); overflow-y: auto; } /* a modal card can never outgrow the visible area, keyboard or not */
+  #filters { display: flex; gap: 6px; padding: 2px 14px 8px; }
+  #filters button { flex: 1; border: none; border-radius: var(--rad-btn); padding: 8px; font-size: 13px; font-weight: 700; background: var(--chip); color: var(--ink-dim); min-height: 38px; }
+  #filters button.on { background: #2b4bf2; color: #fff; }
+  #sheetBody { overflow-y: auto; padding: 0 14px 14px; -webkit-overflow-scrolling: touch; }
+  .srow { display: flex; align-items: center; gap: 11px; padding: 12px 4px; border-bottom: 1px solid var(--hair); font-size: 16px; cursor: pointer; min-height: 48px; }
+  .srow .dot { width: 15px; height: 15px; border-radius: 50%; background: #ef476f; flex-shrink: 0; }
+  .srow.main .dot { background: #ffc233; }
+  .srow.done .dot { background: #06d6a0; }
+  .srow.done .nm { color: var(--done-nm); }
+  .srow .tm { margin-left: auto; font-size: 12px; color: var(--tm-c); white-space: nowrap; }
+  .srow .nwrap { display: flex; flex-direction: column; min-width: 0; }
+  .srow .nmrow { display: flex; align-items: center; gap: 6px; min-width: 0; }
+  .srow .pill { font-size: 10px; font-weight: 700; letter-spacing: .05em; background: rgba(6,214,160,.18); color: #0b6e4f; border-radius: 999px; padding: 2px 7px; white-space: nowrap; } /* Beta 1.109 (Andrew): the COMPLETED pill from his V1 mockup, carried into the V2 two-chip layout he picked - values are the mockup's own */
+  body.night .srow .pill { color: #9fd3ae; } /* Beta 1.109: at night the pill text takes the app's own night done-name green (--done-nm) so it stays readable on the dark card; the mint tint is unchanged */
+  .srow .nt { font-size: 12px; color: var(--nt-c); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; max-width: 36vw; }
+  .srow .sbtn svg { width: 20px; height: 20px; display: block; margin: auto; }
+  .srow .nt .ntIco svg { width: 11px; height: 11px; vertical-align: -1px; margin-right: 4px; }
+  .srow .sbtn { margin-left: 2px; width: 42px; height: 42px; flex-shrink: 0; border: 1px solid var(--hair); border-radius: var(--rad-btn); background: var(--chip); color: var(--ink); font-size: 17px; padding: 0; }
+  .noteEd { padding: 8px 4px 12px 30px; border-bottom: 1px solid var(--hair); }
+  .noteEd textarea { width: 100%; min-height: 64px; box-sizing: border-box; background: var(--field); color: var(--ink); border: 1px solid var(--hair); border-radius: var(--rad-btn); padding: 9px; font-size: 16px; /* 16px minimum: below it iOS auto-zooms on focus, which shoves the whole layout around (Beta 1.18) */ font-family: inherit; }
+  .noteEd .nhint { font-size: 12px; color: var(--tm-c); margin-top: 5px; }
+  #cleanView { padding: 4px 2px 14px; }
+  .cvHead { display: flex; align-items: center; gap: 8px; padding: 8px 2px; }
+  .cvHead .cvTtl { font-weight: 800; font-size: 16px; flex: 1; }
+  .cvHead button { border: 1px solid var(--hair); background: var(--chip); color: var(--ink); border-radius: var(--rad-btn); min-height: 40px; padding: 0 12px; font-size: 14px; font-weight: 700; }
+  .cvMeta { font-size: 13px; color: var(--ink-dim); padding: 0 2px 8px; line-height: 1.5; white-space: pre-wrap; }
+  .cvRow { padding: 10px 4px; border-bottom: 1px solid var(--hair); cursor: pointer; }
+  .cvRow .cvTop { display: flex; align-items: baseline; gap: 8px; }
+  .cvRow .cvNm { font-size: 15px; font-weight: 700; flex: 1; }
+  .cvRow .cvTm { font-size: 12px; color: var(--tm-c); white-space: nowrap; }
+  .cvRow .cvNt { font-size: 12px; color: var(--nt-c); margin-top: 3px; }
+  .cvDet { font-size: 13px; color: var(--ink); line-height: 1.55; padding: 6px 2px 2px; white-space: pre-wrap; }
+  .cvSec { font-weight: 800; font-size: 13px; color: var(--sec); padding: 12px 2px 4px; }
+  .cvDel { width: 100%; margin-top: 14px; min-height: 44px; border: 1px solid #7a3a3a; background: #4a2323; color: #fff; border-radius: var(--rad-btn); font-size: 14px; font-weight: 700; }
+  .cvDel.armed { background: #8c2f2f; }
+  .psec { font-weight: 800; font-size: 13px; color: var(--sec); padding: 12px 2px 4px; }
+  .prow { display: flex; justify-content: space-between; gap: 8px; padding: 7px 2px; font-size: 13.5px; border-bottom: 1px solid var(--hair); }
+  .prow.histRow { cursor: pointer; }
+  .prow.histRow span:last-child { color: var(--link); }
+  #pacePad { flex: 1 1 auto; min-height: 0; padding: 4px 14px 14px; font-size: 14px; line-height: 1.65; color: var(--ink); overflow-y: auto; -webkit-overflow-scrolling: touch; }
+  #pacePad b { color: var(--ink); }
+  #pacePad button { border: none; border-radius: var(--rad-btn); padding: 10px 14px; font-size: 14px; font-weight: 700; min-height: 42px; background: #1e7a46; color: #fff; margin-top: 10px; }
+  #pacePad button.red { background: #e63a2e; }
+  .modal { position: fixed; top: var(--vvt, 0px); left: 0; right: 0; height: var(--vvh, 100dvh); z-index: 1200; background: rgba(10,12,16,.55); display: flex; align-items: center; justify-content: center; padding: 22px; }
+  .modal.hidden { display: none; }
+  .modal:not(.hidden) { animation: menuFade var(--anim-dur) var(--ease-open); }
+  .modal:not(.hidden) .card { animation: menuRise var(--anim-dur) var(--ease-open); }
+  .banner:not(.hidden), #mapNote:not(.hidden) { animation: menuRise var(--anim-dur) var(--ease-open); }
+  #selPop:not(.hidden) { animation: menuRiseC var(--anim-dur) var(--ease-open); } /* centred: its rise keyframes must carry the -50% X shift or the pop-up jumps sideways mid-animation */
+  @keyframes menuRiseC { from { opacity: 0; transform: translateX(-50%) translateY(10px) scale(.98); } }
+  @keyframes menuFade { from { opacity: 0; } }
+  @keyframes menuRise { from { opacity: 0; transform: translateY(10px) scale(.98); } }
+  .modal .card { position: relative; background: var(--card); -webkit-backdrop-filter: var(--blur); backdrop-filter: var(--blur); color: var(--ink); border-radius: 16px; box-shadow: var(--shadow-card); padding: 18px; width: 100%; max-width: 340px; }
+  .modal .card h3 { font-size: 16px; margin-bottom: 8px; padding-right: 36px; }
+  .modal .card p { font-size: 13px; color: var(--ink-dim); line-height: 1.5; margin-bottom: 14px; white-space: pre-wrap; }
+  .modal .row { display: flex; gap: 8px; }
+  .modal .row button { flex: 1; border: none; border-radius: var(--rad-btn); padding: 11px; font-size: 14px; font-weight: 700; min-height: 44px; }
+  #finYes { background: #c22f24; color: #fff; }
+  #noteYes { background: #2b4bf2; color: #fff; }
+  #noteText { width: 100%; min-height: 74px; border-radius: var(--rad-btn); border: 1px solid var(--hair); background: var(--field); color: var(--ink); font-size: 16px; /* 16px: no iOS focus auto-zoom (Beta 1.18) */ padding: 9px; margin-bottom: 12px; font-family: inherit; }
+  #xText { width: 100%; min-height: 150px; border-radius: 14px; border: 1px solid rgba(255,255,255,.45); background: #fff; color: #14161c; font-size: 11.5px; padding: 10px; font-family: ui-monospace, monospace; resize: vertical; } /* Beta 1.88: the backup box, restyled for the blue pane (white box, dark text - the mock Andrew approved) */
+  .bkBtn { font-size: 16px; padding: 13px 16px; text-align: center; width: 100%; }
+  #xOpts, #xRestoreOpts { display: flex; flex-direction: column; gap: 12px; width: 100%; } /* Beta 1.89: the backup pane's option groups stack at the pane's own rhythm */
+  #xPreStat { font-size: 12.5px; color: rgba(255,255,255,.9); line-height: 1.5; text-align: center; }
+  #xPreBar { display: none; height: 6px; border-radius: 3px; background: rgba(255,255,255,.25); width: 100%; overflow: hidden; } /* Beta 1.87: the offline-download progress bar - shown only while a download runs (the .on class); Beta 1.88: the track went translucent white for the blue pane */
+  #xPreBar.on { display: block; }
+  #xPreFill { height: 100%; width: 0%; background: #2ecc71; border-radius: 3px; }
+  #setMenu { position: fixed; inset: 0; z-index: 10000; background: #2b4bf2; display: flex; flex-direction: column; align-items: center; justify-content: center; padding: 24px; opacity: 0; visibility: hidden; transform: translateY(103%); transition: transform var(--anim-dur) var(--ease-close), opacity .3s ease, visibility 0s linear var(--anim-dur); pointer-events: none; } /* Beta 1.88 (Andrew): Settings is a blue full-screen takeover like the Routes menu - same slide-up, same panes, same bare X; the Day/Night row left for its own button, Summary/GPX/Clear trail left with the old Snow log */
+  #setMenu.open { opacity: 1; visibility: visible; transform: none; pointer-events: auto; transition: transform var(--anim-dur) var(--ease-open), opacity .3s ease, visibility 0s; }
+  #setVer { position: absolute; right: 24px; bottom: calc(30px + env(safe-area-inset-bottom, 0px)); color: rgba(255,255,255,.75); font-size: 12px; font-weight: 600; letter-spacing: .04em; }
+  /* Beta 1.111 (Andrew, settings redesign approved from mockups 2026-11-05): the settings card / switch / check language - values verbatim from the approved mockups (beta1/work/settings-mockups/), class names kept from them */
+  #setMenu { overflow-y: auto; }
+  #setMenu .rmPane { flex-shrink: 0; margin-top: auto; margin-bottom: auto; } /* tall panes (Status, Chime) scroll instead of clipping on short screens */
+  .rmBtn .m-sub { display: block; font-size: 13px; font-weight: 500; color: rgba(255,255,255,.75); margin-top: 3px; line-height: 1.35; }
+  .m-card { border: 1px solid rgba(255,255,255,.45); background: rgba(255,255,255,.14); border-radius: 16px; padding: 16px 20px; }
+  button.m-card { appearance: none; -webkit-appearance: none; font: inherit; color: #fff; text-align: left; width: 100%; cursor: pointer; }
+  button.m-card:active { background: rgba(255,255,255,.28); }
+  .m-togRow { display: flex; align-items: center; gap: 14px; }
+  .m-togTxt { flex: 1; min-width: 0; }
+  .m-togLbl { color: #fff; font-size: 17px; font-weight: 650; line-height: 1.25; }
+  .m-togDesc { color: rgba(255,255,255,.78); font-size: 13px; line-height: 1.4; margin-top: 3px; }
+  .m-switch { appearance: none; -webkit-appearance: none; border: none; padding: 0; flex-shrink: 0; width: 51px; height: 31px; border-radius: 999px; background: rgba(255,255,255,.35); position: relative; cursor: pointer; transition: background .18s ease; }
+  .m-switch::after { content: ""; position: absolute; top: 2px; left: 2px; width: 27px; height: 27px; border-radius: 50%; background: #fff; box-shadow: 0 2px 6px rgba(8,12,40,.35); transition: left .18s ease; }
+  .m-switch.on { background: #06d6a0; }
+  .m-switch.on::after { left: 22px; }
+  .m-secLbl { font-size: 13px; font-weight: 700; letter-spacing: .09em; color: rgba(255,255,255,.75); margin-top: 6px; }
+  .m-statusLine { color: #fff; font-size: 16.5px; font-weight: 650; }
+  .m-statusLine .m-tick { color: #06d6a0; font-weight: 800; }
+  .m-quiet { color: rgba(255,255,255,.8); font-size: 13.5px; line-height: 1.45; margin-top: 4px; }
+  .m-btnRow { display: flex; gap: 12px; }
+  .m-btnRow .rmBtn { flex: 1; }
+  .m-chkRow { display: flex; align-items: baseline; gap: 10px; padding: 9px 0; border-bottom: 1px solid rgba(255,255,255,.18); }
+  .m-chkRow:last-child { border-bottom: none; padding-bottom: 2px; }
+  .m-chkRow:first-child { padding-top: 2px; }
+  .m-chk { color: #06d6a0; font-weight: 800; font-size: 15px; }
+  .m-chk.warn { color: #ffb735; }
+  .m-chk.idle { color: rgba(255,255,255,.5); }
+  .m-chkTxt { color: #fff; font-size: 15.5px; font-weight: 600; }
+  .m-chkTxt .m-val { color: rgba(255,255,255,.82); font-weight: 500; }
+  .m-appName { color: #fff; font-size: 19px; font-weight: 700; }
+  .m-credits { color: rgba(255,255,255,.8); font-size: 13px; line-height: 1.5; }
+  .m-wnItem { display: flex; gap: 10px; color: rgba(255,255,255,.96); font-size: 15px; line-height: 1.45; padding: 5px 0; }
+  .m-wnDot { color: #06d6a0; font-weight: 800; }
+  .m-navRow { display: flex; align-items: center; gap: 14px; }
+  .m-navVal { flex-shrink: 0; display: flex; align-items: center; gap: 7px; color: rgba(255,255,255,.8); font-size: 15.5px; font-weight: 550; }
+  .m-navChev { font-size: 21px; font-weight: 600; line-height: 1; color: rgba(255,255,255,.55); }
+  .m-sndRow { display: flex; align-items: center; gap: 14px; padding: 13px 20px; }
+  .m-sndRow.sel { background: rgba(6,214,160,.13); border-color: rgba(6,214,160,.6); }
+  .m-play { flex-shrink: 0; width: 30px; height: 30px; border-radius: 50%; border: 1.5px solid rgba(255,255,255,.5); color: #fff; font-size: 10px; display: flex; align-items: center; justify-content: center; padding-left: 2px; }
+  .m-selTick { flex-shrink: 0; width: 30px; text-align: center; color: #06d6a0; font-weight: 800; font-size: 19px; }
+  #chimeList { display: flex; flex-direction: column; gap: 12px; }
+  #wnList { display: flex; flex-direction: column; } /* Beta 1.88 (Andrew's pick): the version rides the settings menu family at bottom-right, in both panes, synced from the main title's version - never a second copy to go stale */
+  #nightBtn { position: fixed; top: calc(var(--vvt, 0px) + 78px); right: calc(12px + var(--sar)); z-index: 1000; margin: 0; } /* Beta 1.88 (Andrew): Day/Night is its own round button at top-right - the dockBtn class itself, so it IS the Pace/Streets button (56px, same glass, same 27px icon), only placed */
+  #centreBtn { position: fixed; top: calc(var(--vvt, 0px) + 144px); right: calc(12px + var(--sar)); z-index: 1000; margin: 0; } /* Beta 1.115 (Andrew): the re-centre button - same dockBtn, same right edge, directly below Day/Night (78 + 56 + 10 gap). Shown only while the follow is suspended (syncCentreBtn, app3) */
+  #centreBtn.hidden { display: none; }
+  #toast { position: absolute; left: 50%; bottom: calc(120px + var(--sab)); transform: translateX(-50%) translateY(16px); z-index: 10001; /* Beta 1.93 (deep audit F03): above the full-screen takeovers (10000) - backup/restore errors toasted from inside Settings were hidden behind its opaque blue */ background: rgba(20,22,28,.95); color: #fff; font-size: 13px; font-weight: 600; padding: 9px 14px; border-radius: 10px; box-shadow: var(--shadow-float); opacity: 0; pointer-events: none; transition: opacity var(--anim-dur) var(--ease-open), transform var(--anim-dur) var(--ease-open); max-width: 86vw; text-align: center; }
+  #toast.show { opacity: 1; transform: translateX(-50%) translateY(0); }
+  #map { transition: transform .45s ease-in-out; }
+/* ===== SPLASH (Beta 1.42, Andrew approved the mock 2026-10-31) =====
+   Cold-start overlay: the icon rises in, the name slides in from the right, the
+   pair hold while the map loads behind them, then the flake rushes at the viewer
+   until its white covers the screen and dissolves into the app. The still frame
+   iOS shows before the page loads (apple-touch-startup-image, head links) is the
+   same blue + centred icon, so the two read as one continuous moment. */
+#splash { position: fixed; inset: 0; z-index: 9999; display: flex; flex-direction: column; align-items: center; justify-content: center; }
+#splashBg { position: absolute; inset: -70px 0; background: #2b4bf2; } /* Beta 1.65: the cover overshoots the screen top and bottom by 70px, so while the screen size is still settling in the first frames no sliver of the app beneath (the tab bar) can show under the splash */
+/* Beta 1.83 (Andrew, test build for the launch-glitch code audit): two tweaks, tested together on his cold opens. (1) #splashIcon no longer carries the will-change layer hint - a leftover from the retired pre-1.76 icon-rush exit; nothing has transformed the icon since, so the hint only told the compositor to keep it on a dedicated layer for no reason. (2) The title's slide-in now starts at 1s instead of .1s, so it no longer crosses the screen during the still-to-live handover (the launch still has no title); the slide itself is unchanged. Identical glitch on 1.83 clears both permanently. */
+#splashIcon { position: relative; width: 168px; height: 168px; border-radius: 38px; box-shadow: 0 18px 50px rgba(0,0,0,.35); }
+#splashTitle { position: relative; margin-top: 26px; color: #fff; font-size: 37px; font-weight: 700; letter-spacing: .2px; opacity: 0; animation: splashSlide .65s cubic-bezier(.16,.84,.3,1) 1s forwards; }
+@keyframes splashSlide { 0% { opacity: 0; transform: translateX(360px); } 55% { opacity: 1; } 82% { transform: translateX(-9px); } 100% { opacity: 1; transform: translateX(0); } }
+/* Beta 1.85 (after the 1.84 experiment): the 1.84 blank-blue first second is REVERTED - Andrew's recording of a 1.84 cold open (frames184/ in the splash-debug record) shows the handover as a clean CUT, not a blend: the still's icon vanished for ~0.87s (f80-f106, no icon anywhere) and then the brand faded in - the workaround manufactured the very artifact it hid from. Decisive flip: with a blank live side the seam was otherwise CLEAN (bottom bands blue in every frame, no strip crash, no doubling) - so the live first frame must MATCH the still: brand visible from the first frame at the still's geometry. Supporting changes in this version: the splash icon is inlined as a data URI (no separate fetch/decode race before first paint), and the root frame + theme-color are splash blue while booting (see the html.boot rule). */
+#splashBrand { position: relative; display: flex; flex-direction: column; align-items: center; transition: transform .5s var(--ease-close), opacity .45s ease; }
+#splash.menu #splashBrand { transform: translateX(70vw); opacity: 0; pointer-events: none; } /* Beta 1.76 (Andrew): the brand leaves to the RIGHT and the route menu takes the same blue screen - the old icon-rush exit is retired */
+#splash.go #splashBg { animation: splashBgOut .7s linear forwards; }
+#routeMenu.bye { opacity: 0 !important; transition: opacity .3s ease; } /* Beta 1.78: on a boot pick the menu fades while the splash blue dissolves - the menu itself stays in the page, parked below the screen for the Routes tab */
+@keyframes splashBgOut { 0%, 82% { opacity: 1; } 100% { opacity: 0; } }
+#routeMenu { position: fixed; inset: 0; z-index: 10000; background: #2b4bf2; display: flex; flex-direction: column; align-items: center; justify-content: center; padding: 24px; opacity: 0; visibility: hidden; transform: translateY(103%); transition: transform var(--anim-dur) var(--ease-close), opacity .3s ease, visibility 0s linear var(--anim-dur); pointer-events: none; } /* Beta 1.78 (Andrew): the route menu is a top-level full-screen menu on the splash blue and OUTLIVES the splash - parked below the screen; the Routes tab slides it up (.open, the shared menu motion, mirrored on close). At boot the splash borrows it in place via .boot (next rule) */
+#routeMenu { overflow-y: auto; } /* Beta 1.137 (Andrew): the Routes menu scrolls like Settings - with 12 cities the Select-from-list pane outgrew the screen and, unlike #setMenu, this menu had no overflow rule, so the list could not be moved at all */
+#routeMenu .rmPane { flex-shrink: 0; margin-top: auto; margin-bottom: auto; } /* panes centre when they fit and scroll from the top when they do not - the same treatment #setMenu got in 1.111 */
+#crCityList, #rmRoutes { max-height: calc(var(--vvh, 100dvh) * .52); overflow-y: auto; overflow-x: hidden; overscroll-behavior: contain; -webkit-overflow-scrolling: touch; } /* Beta 1.140 (Andrew): vertical scroll ONLY - the rows' gutter margin gave the box a few px of sideways give, so the list could be dragged left/right and the city names slid under the edge */
+#crCityList .routeRow, #rmRoutes .routeRow { width: calc(100% - 12px); } /* Beta 1.139 (Andrew): rows end 12px short of the box's right edge so the scroll bar rides beside the bubbles, never over them. As a width, not a margin (Beta 1.140 correction): .routeRow is width:100%, so a right margin only pushed the margin box 12px past the edge and gave the list its sideways scroll */
+.crLastUsed { color: #ffc233; font-weight: 700; } /* Beta 1.139 (Andrew): the last-used tag on a city row shows in the app's gold so it stands out from the rest of the line */ /* Beta 1.138 (Andrew): the two long blue-menu lists scroll inside their own box - the pane's title and Back button stay pinned on screen; only the rows move. .52 of the visible height matches the sheets' half-height language */
+#routeMenu.boot { transform: translateX(-26px); transition: opacity .5s var(--ease-open) .15s, transform .5s var(--ease-open) .15s, visibility 0s linear .15s; }
+#routeMenu.boot.show, #routeMenu.open { opacity: 1; visibility: visible; transform: none; pointer-events: auto; }
+#routeMenu.open { transition: transform var(--anim-dur) var(--ease-open), opacity .3s ease, visibility 0s; }
+#routeMenu.notrans { transition: none !important; } /* the boot-to-parked swap in finish() must not animate */
+#rmClose, #setClose { position: absolute; left: 50%; bottom: calc(26px + env(safe-area-inset-bottom, 0px)); transform: translateX(-50%); z-index: 2; width: 44px; height: 44px; border: none; background: none; color: #fff; font-size: 30px; font-weight: 800; text-shadow: 0 1px 8px rgba(8,12,40,.45); line-height: 1; padding: 0; display: flex; align-items: center; justify-content: center; cursor: pointer; } /* Beta 1.80 (Andrew, picked from six rendered options A-F): a BARE white X at bottom centre - no circle, no frosting (the translucent circle was 1.79's). The 44px box stays as the invisible touch target; the soft shadow keeps the glyph readable on the blue */
+#routeMenu:not(.tab) #rmClose { display: none; } /* the X exists only in tab mode - at boot there is nowhere to go back to */
+.rmPane { width: min(342px, 92vw); display: none; flex-direction: column; gap: 12px; }
+.rmPane.on { display: flex; }
+.rmBtn { appearance: none; -webkit-appearance: none; border: 1px solid rgba(255,255,255,.45); background: rgba(255,255,255,.14); color: #fff; font-size: 19px; font-weight: 650; padding: 18px 20px; border-radius: 16px; text-align: left; cursor: pointer; }
+.rmBtn.quiet { font-size: 16px; font-weight: 600; padding: 13px 20px; background: rgba(255,255,255,.07); } /* Beta 1.124 (Andrew, approved mockup): the photo door sits quieter under the two primary create doors */
+.rmBtn.quiet .m-sub { font-size: 12px; }
+.rmBtn:active { background: rgba(255,255,255,.28); }
+.rmDivider { border-top: 1px solid rgba(255,255,255,.25); margin: 6px 0 -2px; } /* Beta 1.124: separates the two primary create doors from the quieter photo door (mockup) */
+.routeChev { font-size: 22px; color: rgba(255,255,255,.7); flex: none; } /* Beta 1.124: the city list rows' chevron (mockup) */
+.routeDel { appearance: none; -webkit-appearance: none; border: 1px solid rgba(255,120,110,.65); background: rgba(230,57,46,.18); color: #ffb3ac; font-size: 14px; font-weight: 650; padding: 8px 14px; border-radius: 10px; cursor: pointer; flex: none; } /* Beta 1.124 (Andrew, approved mockup): Delete on a created route's row */
+.routeDel:active { background: rgba(230,57,46,.34); }
+#crModal { z-index: 10002; } /* Beta 1.124: the create confirm must also serve route deletion, which is asked from INSIDE the route menu (z 10000) - the shared modal rises above the takeovers for that call too (the toast at 10001 is the precedent); during creation the menu is closed and nothing changes */
+#crModalYes.danger { background: #c22f24; color: #fff; } /* Beta 1.124: a destructive confirm's Yes wears the app's destructive red (the finYes red) */
+.rmTitle { color: #fff; font-size: 22px; font-weight: 700; }
+.rmNote { color: rgba(255,255,255,.88); font-size: 16px; line-height: 1.45; }
+.rmBack { appearance: none; -webkit-appearance: none; background: none; border: none; color: rgba(255,255,255,.85); font-size: 16px; text-align: left; padding: 6px 2px; cursor: pointer; align-self: flex-start; } /* Beta 1.127 (Andrew, device report): the panes are flex columns, which STRETCHED every Back button to full pane width - a tap anywhere along the row, far right of the words, went back. align-self:flex-start shrinks the hit area to the visible words (the padding stays as comfortable target room around them). One class serves both blue menus (route panes + Settings panes), so both are fixed by this one rule. */
+.routeRow { display: flex; align-items: center; justify-content: space-between; gap: 10px; width: 100%; text-align: left; padding: 14px 16px; border-radius: 14px; appearance: none; -webkit-appearance: none; cursor: pointer; }
+.routeMeta { display: flex; flex-direction: column; gap: 1px; min-width: 0; }
+.routeName { font-size: 17px; font-weight: 650; }
+.routeArea { font-size: 13px; opacity: .75; }
+.routeBadge { font-size: 12px; font-weight: 700; letter-spacing: .2px; padding: 4px 8px; border-radius: 999px; white-space: nowrap; }
+#routeMenu .routeRow { background: rgba(255,255,255,.14); border: 1px solid rgba(255,255,255,.45); color: #fff; margin-bottom: 10px; }
+#routeMenu .routeRow:active { background: rgba(255,255,255,.28); }
+#routeMenu .routeBadge { background: #fff; color: #2b4bf2; }
+/* Beta 1.118 (Step 2, Andrew's approved mockups): the hybrid create-a-route
+   flow. Panes live in the blue route menu (doors, photo, name-it); the pick
+   and preview stages live on the map (search bar + bottom sheets) while
+   body.creating hides the working chrome. Route colours carry the meaning:
+   gold = main, raspberry = secondary. */
+body.creating #dock, body.creating #tabBar, body.creating #hud, body.creating #nightBtn, body.creating #centreBtn, body.creating #selPop, body.creating #chips, body.creating #suggest, body.creating #stale, body.creating #bakNudge, body.creating #mapNote { display: none !important; }
+/* Beta 1.120 (Andrew): the whole create row sits lower by HALF ITS OWN
+   HEIGHT - the row's height is fixed at 50px (the search wrap and the
+   exit button both wear it), so the shift is a fixed 25px, named once
+   here and added to the resting tops of the bar, the results dropdown
+   and the hint alike. */
+:root { --cr-shift: 25px; }
+#createBar { position: fixed; top: calc(10px + var(--cr-shift) + env(safe-area-inset-top, 0px)); left: 10px; right: 10px; z-index: 5000; display: none; gap: 8px; align-items: stretch; }
+#createBar.on { display: flex; }
+/* Beta 1.120 (Andrew): the create surfaces wear the app's own theme
+   tokens (--card-solid / --ink / --ink-dim / --hair / --chip - charcoal
+   by night, white by day) instead of the 1.118 hardcoded whites, which
+   stayed bright at night while the rest of the app went dark. */
+#crSearchWrap { flex: 1; display: flex; height: 50px; background: var(--card-solid); border-radius: 14px; box-shadow: 0 4px 18px rgba(8,12,40,.28); overflow: hidden; }
+#crSearchInput { flex: 1; min-width: 0; border: none; outline: none; font-size: 17px; padding: 13px 14px; color: var(--ink); background: transparent; }
+#crSearchBtn { border: none; background: #2b4bf2; color: #fff; font-size: 16px; font-weight: 700; padding: 0 18px; cursor: pointer; }
+#crExit { width: 48px; height: 50px; border: none; border-radius: 14px; background: var(--card-solid); box-shadow: 0 4px 18px rgba(8,12,40,.28); font-size: 19px; font-weight: 800; color: var(--ink); cursor: pointer; }
+#createResults { position: fixed; top: calc(66px + var(--cr-shift) + env(safe-area-inset-top, 0px)); left: 10px; right: 10px; z-index: 5000; background: var(--card-solid); border-radius: 14px; box-shadow: 0 8px 26px rgba(8,12,40,.30); overflow: hidden; display: none; }
+#createResults.on { display: block; }
+.crResult { display: block; width: 100%; text-align: left; border: none; border-bottom: 1px solid var(--hair); background: transparent; padding: 13px 16px; font-size: 16px; color: var(--ink); cursor: pointer; }
+.crResult:last-child { border-bottom: none; }
+.crResult:active { background: var(--chip); }
+#createHint { position: fixed; top: calc(66px + var(--cr-shift) + env(safe-area-inset-top, 0px)); left: 50%; transform: translateX(-50%); z-index: 4900; background: rgba(20,33,61,.92); color: #fff; font-size: 15px; font-weight: 600; padding: 9px 16px; border-radius: 999px; display: none; white-space: nowrap; }
+#createHint.on { display: block; }
+/* Beta 1.121: the preparation action button under the hint (Cancel while
+   preparing, Retry after a failure, Prepare this area when zoomed in with
+   no coverage) - a real button, not hint text, because it carries an
+   action Andrew must be able to tap. */
+#crHintBtn { position: fixed; top: calc(114px + var(--cr-shift) + env(safe-area-inset-top, 0px)); left: 50%; transform: translateX(-50%); z-index: 4900; border: none; background: #2b4bf2; color: #fff; font-size: 15px; font-weight: 700; padding: 10px 20px; border-radius: 999px; box-shadow: 0 6px 20px rgba(8,12,40,.35); cursor: pointer; }
+#crCityChange { border: 1px solid var(--hair); background: transparent; color: var(--ink-dim); font-size: 13px; font-weight: 650; padding: 6px 10px; border-radius: 999px; cursor: pointer; vertical-align: middle; }
+.crChip.pend { background: #a35b00; color: #fff; }
+.crRow.pending { opacity: .8; }
+.csheet { position: fixed; left: 0; right: 0; bottom: 0; z-index: 5000; background: var(--card-solid); color: var(--ink); border-radius: 20px 20px 0 0; box-shadow: 0 -6px 30px rgba(8,12,40,.30); padding: 14px 16px calc(14px + env(safe-area-inset-bottom, 0px)); display: none; max-height: 54vh; flex-direction: column; }
+.csheet.on { display: flex; }
+.csheetTitle { font-size: 20px; font-weight: 750; color: var(--ink); }
+.csheetSub { font-size: 14px; color: var(--ink-dim); margin-top: 2px; }
+.crCount { font-size: 15px; font-weight: 700; color: var(--ink); margin: 8px 0 4px; }
+.crList { overflow-y: auto; -webkit-overflow-scrolling: touch; margin: 4px -4px 8px; padding: 0 4px; }
+.crRow { display: flex; align-items: center; gap: 9px; padding: 9px 2px; border-bottom: 1px solid var(--hair); }
+.crRow:last-child { border-bottom: none; }
+.crDot { width: 11px; height: 11px; border-radius: 50%; flex: none; }
+.crDot.main { background: #ffc233; }
+.crDot.sec { background: #ef476f; }
+.crName { flex: 1; min-width: 0; font-size: 16px; font-weight: 600; color: var(--ink); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.crLen { font-size: 13px; color: var(--ink-dim); font-weight: 600; }
+.crChip { border: none; border-radius: 999px; font-size: 12px; font-weight: 800; letter-spacing: .3px; padding: 6px 10px; cursor: pointer; flex: none; }
+.crChip.main { background: #ffc233; color: #4a3200; }
+.crChip.sec { background: var(--chip); color: var(--ink-dim); }
+.crDel { border: none; background: none; color: #e63a2e; font-size: 18px; font-weight: 800; width: 34px; height: 34px; cursor: pointer; flex: none; }
+.crPrimary { appearance: none; -webkit-appearance: none; border: none; background: #2b4bf2; color: #fff; font-size: 17px; font-weight: 700; padding: 15px 18px; border-radius: 14px; width: 100%; cursor: pointer; }
+.crPrimary:disabled { opacity: .45; }
+.crGhost { appearance: none; -webkit-appearance: none; border: 1px solid var(--hair); background: transparent; color: var(--ink); font-size: 16px; font-weight: 650; padding: 13px 18px; border-radius: 14px; width: 100%; cursor: pointer; }
+.crDanger { appearance: none; -webkit-appearance: none; border: none; background: none; color: #e63a2e; font-size: 15px; font-weight: 650; padding: 8px; cursor: pointer; width: 100%; }
+.crBtns { display: flex; flex-direction: column; gap: 9px; }
+/* Beta 1.129 (Andrew, from his 1.128 device session): the pick sheet is ONE SURFACE - #createSheet itself is the card (background, radius, shadow), and the panel / tucked-away strip / sector bar are CONTENTS inside it, never boxes of their own. The .crG-* classes below are the surface's three resting geometries; a face change morphs the surface's own height, side insets, bottom inset and corner radii together (crMorphTo in app4.js) while the contents cross-fade - the box on screen at the start of the motion is the box on screen at the end of it, so it cannot disappear and reappear as a pill the way 1.127's element swap and 1.128's three-box morph both read on his phone. The shell's cap (.csheet max-height) still bounds the whole thing at ~half the screen, and the rows scroll inside the panel. */
+#createSheet { background: var(--card-solid); color: var(--ink); box-shadow: 0 -6px 30px rgba(8,12,40,.30); padding: 0; margin: 0; border-radius: 20px 20px 0 0; }
+#createSheet.crG-strip { margin: 0 12px calc(12px + env(safe-area-inset-bottom, 0px)); border-radius: 16px; box-shadow: 0 6px 24px rgba(10,20,40,.22); }
+#createSheet.crG-bar { margin: 0 12px calc(12px + env(safe-area-inset-bottom, 0px)); border-radius: 18px; box-shadow: 0 6px 24px rgba(10,20,40,.22); }
+#createSheet.crG-strip::after, #createSheet.crG-bar::after { content: ''; position: absolute; left: -12px; right: -12px; top: 100%; height: calc(14px + env(safe-area-inset-bottom, 0px)); } /* Beta 1.132 (Andrew): the two tucked geometries FLOAT the sheet 12px + safe-area above the screen bottom, and that dead strip passed touches through to the map - a swipe starting under the pill panned the map. In those two geometries only, the strip is the sheet's own hit area (invisible; no visual change). The panel geometry sits flush on the bottom edge, has no gap, and gets no guard. */
+#crPanel { padding: 6px 16px calc(14px + env(safe-area-inset-bottom, 0px)); display: flex; flex-direction: column; flex: 1 1 auto; min-height: 0; }
+.crPanelHead { cursor: pointer; touch-action: none; }
+.crGrab { padding: 4px 0 7px; }
+.crGrab span { display: block; width: 44px; height: 5px; border-radius: 3px; background: var(--ink-faint); margin: 0 auto; }
+.crHeadRow { display: flex; justify-content: space-between; align-items: flex-start; gap: 10px; }
+.crPanelTitle { font-size: 18px; font-weight: 750; color: var(--ink); padding-top: 1px; }
+.crPanelMeta { text-align: right; flex: none; }
+#crPanel .crCount { margin: 2px 0 0; font-size: 13.5px; font-weight: 650; color: var(--ink-dim); }
+#crClearAll { appearance: none; -webkit-appearance: none; border: none; background: none; color: #e63a2e; font-size: 13px; font-weight: 700; padding: 3px 0 0; cursor: pointer; }
+#crPanel .crList { flex: 1 1 auto; }
+.crPRow { display: flex; align-items: center; gap: 10px; padding: 10px 2px; border-bottom: 1px solid var(--hair); cursor: pointer; }
+.crPRow:last-child { border-bottom: none; }
+.crPMeta { flex: 1; min-width: 0; display: flex; flex-direction: column; gap: 1px; }
+.crPName { font-size: 16.5px; font-weight: 650; color: var(--ink); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.crPSub { font-size: 13px; color: var(--ink-dim); }
+.crPChip { border-radius: 9px; font-size: 12.5px; font-weight: 800; letter-spacing: .4px; padding: 7px 10px; cursor: pointer; flex: none; appearance: none; -webkit-appearance: none; }
+.crPChip.main { background: rgba(255,194,51,.22); color: #8a6100; border: 1.5px solid #ffc233; }
+.crPChip.sec { background: rgba(239,71,111,.12); color: #b02348; border: 1.5px solid rgba(239,71,111,.55); }
+body.night .crPChip.main { background: rgba(255,194,51,.14); color: #ffc233; }
+body.night .crPChip.sec { background: rgba(239,71,111,.16); color: #ff8fab; }
+.crPDel { border: none; background: rgba(230,58,46,.10); color: #c22f24; font-size: 14px; font-weight: 700; width: 34px; height: 34px; border-radius: 50%; cursor: pointer; flex: none; appearance: none; -webkit-appearance: none; }
+.crPanelBtns { flex-direction: row; }
+.crPanelBtns .crPrimary, .crPanelBtns .crGhost { flex: 1 1 0; width: auto; }
+#crStrip { padding: 13px 16px; display: flex; align-items: center; gap: 10px; }
+.crStripTxt { flex: 1; min-width: 0; }
+.crStripTitle { font-size: 16px; font-weight: 700; color: var(--ink); }
+.crStripSub { font-size: 13px; color: var(--ink-dim); }
+#crReviewBtn { appearance: none; -webkit-appearance: none; border: none; background: #2b4bf2; color: #fff; font-weight: 700; font-size: 14.5px; padding: 9px 14px; border-radius: 10px; cursor: pointer; flex: none; }
+#crSectorBar { padding: 14px 16px; }
+.crSbTitle { font-size: 17px; font-weight: 700; color: var(--ink); }
+.crSbSub { font-size: 13.5px; color: var(--ink-dim); margin-top: 2px; }
+.crSbBtns { display: flex; gap: 9px; margin-top: 11px; }
+.crSbBtns button { flex: 1; text-align: center; padding: 11px 0; border-radius: 11px; font-size: 15px; font-weight: 700; cursor: pointer; appearance: none; -webkit-appearance: none; }
+#crSbWhole { background: var(--chip); color: var(--link); border: 1.5px solid var(--hair); }
+#crSbDone { background: #2ecc71; color: #fff; border: none; }
+#crSbCancel { background: transparent; color: var(--ink); border: 1.5px solid var(--hair); }
+body.night #crSbWhole { color: var(--sec); border-color: var(--sec); } /* Beta 1.132 (Andrew): on the dark map the Entire road button was hard to see - its text colour is --link (#2b4bf2 in BOTH themes; measured 2.44:1 on the night card vs 5.66:1 by day). --sec is the blue-grey token that DOES flip at night (#9fb4c8), so the button keeps its blue identity and reads. Night only; the day treatment is untouched. */
+.rmInput { appearance: none; -webkit-appearance: none; width: 100%; box-sizing: border-box; border: 1px solid rgba(255,255,255,.45); background: rgba(255,255,255,.14); color: #fff; font-size: 18px; padding: 14px 16px; border-radius: 14px; outline: none; }
+.rmInput::placeholder { color: rgba(255,255,255,.55); }
+input, textarea { caret-color: currentColor; } /* Beta 1.125 (Andrew): the typing caret - the flashing vertical line beside the last letter - is always visible in every search bar and field, in the field's own text colour (white on the blue menus, ink on cards) */
+.rmLbl { color: rgba(255,255,255,.85); font-size: 14px; font-weight: 650; margin-bottom: -6px; }
+#crPhotoName { color: #fff; font-weight: 700; }
+@media (prefers-reduced-motion: reduce) { #splashTitle { animation: none; opacity: 1; } #splashBrand, #routeMenu { transition: none; } #splash.menu #splashBrand { display: none; } }
+</style>
+</head>
+<body>
+<div id="splash"><div id="splashBg"></div><div id="splashBrand"><img id="splashIcon" src="data:image/png;base64,@@SPLASH_ICON_512_B64@@" alt=""><div id="splashTitle">Snow Route</div></div></div>
+<div id="routeMenu" class="boot"><button id="rmClose">✕</button><div class="rmPane on" id="rmMain"><button class="rmBtn" id="rmChoose">Choose a route</button><button class="rmBtn" id="rmCreate">Create new route</button></div><div class="rmPane" id="rmListPane"><div class="rmTitle">Choose a route</div><div class="routeList" id="rmRoutes"></div><button class="rmBack" id="rmBack">&#8592; Back</button></div><div class="rmPane" id="rmCreatePane"><div class="rmTitle">Create new route</div><button class="rmBtn" id="crDoorList">Select from list<span class="m-sub">Choose a city that's ready to load instantly</span></button><button class="rmBtn" id="crDoorManual">Search manually<span class="m-sub">Any other city or address — loaded from the map service</span></button><div class="rmDivider"></div><button class="rmBtn quiet" id="crDoorPhoto">From a photo<span class="m-sub">Muse builds the draft from a photo of the route map</span></button><button class="rmBack" id="rmBack2">&#8592; Back</button></div><div class="rmPane" id="rmCityListPane"><div class="rmTitle">Select City</div><div id="crCityList"></div><button class="rmBack" id="rmCityListBack">&#8592; Back</button></div><div class="rmPane" id="rmPhotoPane"><div class="rmTitle">From a photo</div><div id="crPhotoPick"><div class="rmNote">Take or choose a photo of the route map. Muse reads the street names off it and builds your draft - the draft comes back as a file you import here.</div><button class="rmBtn" id="crPhotoBtn">Choose photo</button></div><div id="crPhotoWait" style="display:none"><div class="rmNote">Photo received - your draft is being built. Send the photo to Muse in your Snow Route chat, then import the draft file you get back.</div><div class="rmNote">Photo: <span id="crPhotoName"></span></div><button class="rmBtn" id="crShareBtn" style="display:none">Share photo</button><button class="rmBtn" id="crImportBtn">Import my draft</button></div><button class="rmBack" id="crPhotoBack">&#8592; Back</button><input type="file" id="crPhotoFile" accept="image/*" style="display:none"><input type="file" id="crDraftFile" accept=".json,application/json" style="display:none"></div><div class="rmPane" id="rmCityPane"><div class="rmTitle">What city will you be cleaning in?</div><button class="rmBtn" id="crCityLast" style="display:none"></button><div class="rmLbl">City</div><input class="rmInput" id="crCityInput" type="text" maxlength="60" autocomplete="off" placeholder="Start typing a city"><div id="crCityResults"></div><div class="rmNote">The app loads that area's street shapes once, so tapping streets adds them right away.</div><button class="rmBack" id="crCityBack">&#8592; Back</button></div>
+<div class="rmPane" id="rmNamePane"><div class="rmTitle">Name your route</div><div class="rmLbl">Route name</div><input class="rmInput" id="crNameInput" type="text" maxlength="60" autocomplete="off"><div class="rmLbl">Area</div><input class="rmInput" id="crAreaInput" type="text" maxlength="60" autocomplete="off" placeholder="e.g. Vaughan"><div class="rmNote" id="crNameSummary"></div><button class="rmBtn" id="crSaveBtn">Save route</button><button class="rmBack" id="crNameBack">&#8592; Back</button></div></div><div id="createBar"><div id="crSearchWrap"><input id="crSearchInput" type="search" placeholder="Search a street or address" autocomplete="off"><button id="crSearchBtn">Search</button></div><button id="crExit" title="Exit creating">&#10005;</button></div><div id="createResults"></div><div id="createHint"></div>
+<button id="crHintBtn" style="display:none"></button><div id="createSheet" class="csheet"><div id="crPanel"><div class="crPanelHead" id="crPanelHead"><div class="crGrab"><span></span></div><div class="crHeadRow"><div class="crPanelTitle">Your route so far <button id="crCityChange" style="display:none"></button></div><div class="crPanelMeta"><div class="crCount" id="crCount">0 roads &middot; 0 m</div><button id="crClearAll" type="button">Clear all</button></div></div></div><div class="crList" id="crPickList"></div><div class="crBtns crPanelBtns"><button class="crPrimary" id="crDoneBtn" type="button" disabled>Done</button></div></div><div id="crStrip" style="display:none"><div class="crStripTxt"><div class="crStripTitle" id="crStripTitle">0 roads picked</div><div class="crStripSub" id="crStripSub"></div></div><button id="crReviewBtn" type="button">Review &#9650;</button></div><div id="crSectorBar" style="display:none"><div class="crSbTitle" id="crSbName"></div><div class="crSbSub" id="crSbSub"></div><div class="crSbBtns"><button id="crSbCancel" type="button">Cancel</button><button id="crSbWhole" type="button">Entire road</button><button id="crSbDone" type="button">Done</button></div></div></div><div id="previewSheet" class="csheet"><div class="csheetTitle">Is this correct?</div><div class="csheetSub">Check every street. Fix anything that is wrong.</div><div class="crCount" id="pvCount"></div><div class="crList" id="pvList"></div><div class="crBtns"><button class="crGhost" id="pvAddBtn">+ Add a street</button><button class="crPrimary" id="pvSaveBtn">Save route</button><button class="crDanger" id="pvStartOverBtn">Start over</button></div></div><div id="crModal" class="modal hidden"><div class="card"><button id="crModalX" type="button" style="display:none">&#10005;</button><h3 id="crModalTitle">Throw away this draft?</h3><p id="crModalMsg"></p><div class="row"><button id="crModalNo">&#10005;</button><button id="crModalYes">Discard</button></div></div></div>
+<div id="map"></div>
+<div id="chips"></div>
+<div id="selPop" class="hidden"><div class="selTxt"><div id="selName">No street selected</div><div id="selStatus">Tap a street on the map</div></div><div class="selActs"><button id="selNote" title="Note for this street"></button><button id="selAllBtn">Mark both sides</button><button id="selBtn">Mark completed</button><button id="selClearBtn">Clear</button></div></div>
+<div id="attrChip">© Protomaps © OpenStreetMap contributors © CARTO</div>
+<div id="spd" class="hidden"></div>
+<div id="hud">
+  <div id="warn">Not saving — storage is full or blocked</div>
+  <div class="row">
+    <div class="titleStack"><div class="title">Snow Route Beta</div><div class="ver" id="ver">Beta 1.150</div></div>
+  </div>
+  <div id="stats"></div>
+</div>
+<div id="suggest" class="banner hidden"><span id="sugText"></span><button id="sugYes">Show street</button><button id="sugNo" class="red">Dismiss</button></div>
+<div id="stale" class="banner hidden"><span id="staleText"></span><button id="staleYes">Finish it</button><button id="staleNo" class="red">Keep going</button></div>
+<div id="bakNudge" class="banner hidden"><span id="bakText"></span><button id="bakSave">Save backup</button><button id="bakLater" class="red">Later</button></div>
+<div id="mapNote" class="hidden"><span>Maps can't load — streets, GPS and marking still work. Check your connection.</span><button id="mapNoteNo">✕</button></div>
+<button id="nightBtn" class="dockBtn"></button>
+<button id="centreBtn" class="dockBtn hidden" title="Centre on me"></button>
+<div id="dock">
+  <button id="streetsBtn" class="dockBtn" title="Streets"></button>
+  <div id="runSlot">
+    <button id="startBtn" class="runBtn">START</button>
+    <button id="resetBtn" class="runBtn" style="display:none">FINISH</button>
+    <div id="count"><span id="countFill"></span><span id="countTxt"></span></div> <!-- Beta 1.94 (audit F-01): no hard-coded street total in the static markup - updateCount fills this from the route's own street list the moment a route loads (the pill is chrome, hidden until then) -->
+    <button id="cancelStartBtn" style="display:none;background:#e63a2e">Cancel start</button>
+  </div>
+  <button id="paceBtn" class="dockBtn" title="Pace"></button>
+</div>
+<nav id="tabBar"> <!-- Beta 1.29 layout (Andrew): Locate, Night/Day, Home dead centre, Clear, and a Settings gear at the far right; Update and Backup moved into the Settings pop-up -->
+  <button class="tabItem" id="gpsBtn"><span class="tabIco"></span><span class="tabLbl">Locate</span></button>
+  <button class="tabItem" id="routesBtn"><span class="tabIco"></span><span class="tabLbl">Routes</span></button>
+  <button class="tabItem" id="homeBtn"><span class="tabIco"></span><span class="tabLbl">Home</span></button>
+  <button class="tabItem" id="clearBtn"><span class="tabIco"></span><span class="tabLbl">Clear</span></button>
+  <button class="tabItem" id="setBtn"><span class="tabIco"></span><span class="tabLbl">Settings</span></button>
+</nav>
+<div id="setMenu">
+  <div class="rmPane on" id="setMainPane">
+    <button class="rmBtn" id="stBtn">Status</button>
+    <button class="rmBtn" id="jobBtn">On the job</button>
+    <button class="rmBtn" id="exportBtn">Backup<span class="m-sub" id="bakAge">Last backup: never</span></button>
+    <button class="rmBtn" id="aboutBtn">About / What's new</button>
+  </div>
+  <div class="rmPane" id="setStatusPane">
+    <div class="rmTitle">Status</div>
+    <div class="m-secLbl">MAPS</div>
+    <div class="m-card">
+      <div class="m-statusLine" id="stMapsLine">Offline maps</div>
+      <div class="m-quiet" id="stMapsSub"></div>
+    </div>
+    <div class="m-btnRow">
+      <button class="rmBtn bkBtn" id="xPre">Download</button>
+      <button class="rmBtn bkBtn" id="stDel" style="display:none">Delete maps</button>
+    </div>
+    <div id="xPreBar"><div id="xPreFill"></div></div>
+    <div id="xPreStat"></div>
+    <div class="m-secLbl">HEALTH</div>
+    <div class="m-card">
+      <div class="m-chkRow"><span class="m-chk" id="stIcoStorage">&#10003;</span><span class="m-chkTxt">Storage <span class="m-val" id="stValStorage"></span></span></div>
+      <div class="m-chkRow"><span class="m-chk" id="stIcoMaps">&#10003;</span><span class="m-chkTxt">Offline maps <span class="m-val" id="stValMaps"></span></span></div>
+      <div class="m-chkRow"><span class="m-chk" id="stIcoVer">&#10003;</span><span class="m-chkTxt">App version <span class="m-val" id="stValVer"></span></span></div>
+      <div class="m-chkRow"><span class="m-chk" id="stIcoGps">&#10003;</span><span class="m-chkTxt">GPS <span class="m-val" id="stValGps"></span></span></div>
+    </div>
+    <button class="rmBack" id="statusBack">&#8592; Back</button>
+  </div>
+  <div class="rmPane" id="setJobPane">
+    <div class="rmTitle">On the job</div>
+    <div class="m-card m-togRow">
+      <div class="m-togTxt"><div class="m-togLbl">Keep screen awake during a clean</div><div class="m-togDesc">Screen won't dim while a clean is running</div></div>
+      <button class="m-switch" id="swAwake" role="switch" aria-checked="false" aria-label="Keep screen awake during a clean"></button>
+    </div>
+    <div class="m-card m-togRow">
+      <div class="m-togTxt"><div class="m-togLbl">Vibration when marking</div><div class="m-togDesc">A buzz when a street is finished</div></div>
+      <button class="m-switch" id="swVib" role="switch" aria-checked="false" aria-label="Vibration when marking"></button>
+    </div>
+    <button class="m-card m-navRow" id="chimeRow">
+      <div class="m-togTxt"><div class="m-togLbl">Done chime</div></div>
+      <div class="m-navVal"><span id="chimeVal">Two-Tone</span> <span class="m-navChev">&#8250;</span></div>
+    </button>
+    <button class="rmBack" id="jobBack">&#8592; Back</button>
+  </div>
+  <div class="rmPane" id="setChimePane">
+    <div class="rmTitle">Done chime</div>
+    <div class="m-card m-togRow">
+      <div class="m-togTxt"><div class="m-togLbl">Chime</div><div class="m-togDesc">Play a sound when a street is finished</div></div>
+      <button class="m-switch" id="swChime" role="switch" aria-checked="false" aria-label="Done chime"></button>
+    </div>
+    <div class="m-secLbl">SOUND</div>
+    <div id="chimeList"></div>
+    <button class="rmBack" id="chimeBack">&#8592; Back</button>
+  </div>
+  <div class="rmPane" id="setAboutPane">
+    <div class="rmTitle">About / What's new</div>
+    <div>
+      <div class="m-appName">Snow Route</div>
+      <div class="m-quiet">Route tracker for driveway snow clearing &middot; Vaughan</div>
+    </div>
+    <div class="m-credits">Map data: &copy; OpenStreetMap contributors &middot; Protomaps &middot; CARTO</div>
+    <div class="m-secLbl" id="wnHead">WHAT'S NEW</div>
+    <div id="wnList"></div>
+    <button class="rmBtn" id="updBtn">Update</button>
+    <button class="rmBack" id="aboutBack">&#8592; Back</button>
+  </div>
+  <div class="rmPane" id="setBackupPane">
+    <div class="rmTitle" id="xTitle">Backup</div>
+    <div id="xOpts">
+      <button class="rmBtn bkBtn" id="xBak">Backup (JSON)</button>
+      <button class="rmBtn bkBtn" id="xRes">Restore backup</button>
+    </div>
+    <div id="xRestoreOpts" style="display:none">
+      <button class="rmBtn bkBtn" id="xImpFile">Import JSON</button>
+      <button class="rmBtn bkBtn" id="xImpText">Import Text</button>
+    </div>
+    <textarea id="xText" style="display:none" readonly></textarea>
+    <button class="rmBtn bkBtn" id="xImp" style="display:none">Import backup</button>
+    <button class="rmBack" id="setBack">&#8592; Back</button>
+    <input type="file" id="xFile" accept=".json,application/json" style="display:none">
+  </div>
+  <button id="setClose">&#10005;</button>
+  <div id="setVer"></div>
+</div>
+<div id="sheet" class="sheet">
+  <div class="grab"><div class="grabBar"></div></div>
+  <div class="sheetHead"><div class="sheetTitle">Streets</div><button id="sheetClose">✕</button></div>
+  <div id="filters"><button data-f="mains" class="on">Mains</button><button data-f="secondaries">Secondaries</button></div>
+  <div id="sheetBody"><div id="streetList"></div><div id="cleanView"></div></div>
+</div>
+<div id="pacePanel" class="sheet">
+  <div class="grab"><div class="grabBar"></div></div>
+  <div class="sheetHead"><div class="sheetTitle">Pace</div><button id="paceClose">✕</button></div>
+  <div id="pacePad"></div>
+</div>
+<div id="finModal" class="modal hidden"><div class="card"><h3>Finish this clean?</h3><p id="finMsg"></p><div class="row"><button id="finNo">✕</button><button id="finYes">Finish clean</button></div></div></div>
+<div id="noteModal" class="modal hidden"><div class="card"><h3 id="noteTitle">Note</h3><textarea id="noteText"></textarea><div class="row"><button id="noteNo">✕</button><button id="noteYes">Save note</button></div></div></div>
+<div id="toast"></div>
+<script src="https://cdn.jsdelivr.net/npm/maplibre-gl@4.7.1/dist/maplibre-gl.js" integrity="sha384-SYKAG6cglRMN0RVvhNeBY0r3FYKNOJtznwA0v7B5Vp9tr31xAHsZC0DqkQ/pZDmj" crossorigin="anonymous"></script>
