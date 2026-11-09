@@ -15,8 +15,7 @@ name: checks
 # must equal the tested branch tree - verified at merge time, see
 # docs/DEVELOPMENT_RULES.md), the build checks below, and the live read-back;
 # if the trees ever differ, the full suite is re-run via workflow_dispatch
-# before the round is called shipped. The nightly battery (dispatched by
-# Muse's own 1 AM job since 2026-11-09 - see the on: block) runs the full
+# before the round is called shipped. The nightly schedule runs the full
 # sharded suite on main regardless - the environment-drift audit a tree hash
 # cannot see (runner/browser changes). scripts/check-shard-coverage.py runs
 # in build-and-test and fails the build if the shard lists ever stop covering
@@ -24,11 +23,12 @@ name: checks
 on:
   push:
   pull_request:
-  # Nightly full battery (reworked 2026-11-09, Andrew): GitHub's schedule
-  # trigger fired 6-9.5 h late every night, so there is NO schedule: trigger
-  # here any more. The pipeline is: Muse's 1 AM job dispatches this
-  # workflow -> Muse's 4 AM catch-up dispatches it only if the 1 AM
-  # dispatch missed -> the 6 AM summary reports which one started the night.
+  schedule:
+    # Nightly full battery at 06:00 UTC = 1:00 AM EST / 2:00 AM EDT (GitHub
+    # cron is UTC-only, no daylight saving). Set 2026-11-05 (Andrew): the
+    # pipeline is schedule 1 AM -> Muse catch-up check 4 AM (dispatches
+    # this workflow if the slot was skipped) -> summary 6 AM.
+    - cron: '0 6 * * *'
   workflow_dispatch:
 permissions:
   contents: read # Beta 1.94 (audit F-08): the workflow only checks out and tests - it never needs write access to the repository
@@ -112,13 +112,13 @@ jobs:
       matrix:
         include:
           - shard: 1
-            drives: "drive120 drive121 drive125 drive130 drive132 drive141 drive142 drive151 drive163 drive166 drive168 drive172 drive176 drive66 drive83"
+            drives: "drive119 drive122 drive125 drive127 drive130 drive132 drive142 drive144 drive147 drive152 drive163 drive166 drive168 drive172 drive176 drive180"
           - shard: 2
-            drives: "drive116 drive118 drive122 drive123 drive128 drive133 drive134 drive136 drive156 drive157 drive162 drive167 drive171 drive175 drive65 drive86 drive88 drive89"
+            drives: "drive118 drive121 drive123 drive124 drive133 drive134 drive136 drive149 drive151 drive156 drive157 drive162 drive167 drive171 drive175 drive179 drive66 drive88"
           - shard: 3
-            drives: "drive115 drive117 drive124 drive129 drive131 drive135 drive139 drive146 drive149 drive150 drive152 drive154 drive155 drive161 drive165 drive170 drive174"
+            drives: "drive115 drive116 drive117 drive126 drive131 drive135 drive139 drive143 drive146 drive150 drive154 drive161 drive165 drive170 drive174 drive178 drive65 drive86 drive89"
           - shard: 4
-            drives: "drive114 drive119 drive126 drive127 drive140 drive143 drive144 drive145 drive147 drive148 drive153 drive158 drive159 drive160 drive164 drive169 drive173 drive177"
+            drives: "drive114 drive120 drive128 drive129 drive140 drive141 drive145 drive148 drive153 drive155 drive158 drive159 drive160 drive164 drive169 drive173 drive177 drive83"
     steps:
       - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4
       - name: Set up Node

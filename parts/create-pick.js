@@ -1,5 +1,23 @@
+// Beta 1.153 (Andrew): the loaded-city confirmation pill's self-dismissal clock.
+// crPillKey is the confirmation currently on its 4 s clock; crPillGone is the one
+// already dismissed this create session (road taps re-render the hint - a dismissed
+// confirmation stays dismissed). Failures, progress, offers and disclosures never
+// ride this clock: they are not confirmations.
+let crPillT = 0, crPillKey = '', crPillGone = '';
 function crRenderHint() { // the ONE writer of the pick-stage hint + its action button + the sheet's city chip: state-driven, so no stale text survives a state change
   if (!creating || crStage !== 'pick') return;
+  // The confirmation is exactly ONE render state: ready, restored from the
+  // on-device cache, with nothing outstanding - no wanted offer pending and no
+  // cache/pack note riding the text (a disclosure is not a confirmation).
+  const pillKey = (!crSectorStreet && crPrepState === 'ready' && crGrid && crGrid.fromCache && crGrid.savedAt && !crWanted && !(crCacheNote && crCity && crCacheNoteCity === crCity.name) && !(crPackNote && crCity)) ? crGrid.name + '@' + crGrid.savedAt : '';
+  if (pillKey) {
+    if (crPillKey !== pillKey) { // a NEW confirmation: start its clock (a re-render of the same one leaves the clock running)
+      if (crPillT) clearTimeout(crPillT);
+      crPillKey = pillKey;
+      const key = pillKey;
+      crPillT = setTimeout(() => { crPillT = 0; if (crPillKey !== key) return; crPillKey = ''; crPillGone = key; $('createHint').classList.remove('on'); $('crHintBtn').style.display = 'none'; }, 4000);
+    }
+  } else if (crPillKey) { if (crPillT) clearTimeout(crPillT); crPillT = 0; crPillKey = ''; }
   const hint = $('createHint'), btn = $('crHintBtn');
   if (crSectorStreet) { hint.textContent = 'Tap sectors to add or remove them'; hint.classList.add('on'); btn.style.display = 'none'; return; } // Beta 1.127 (mockup screen 1): while trimming, the pill says the one thing there is to do
   let text = '', btnLabel = '';
@@ -18,14 +36,14 @@ function crRenderHint() { // the ONE writer of the pick-stage hint + its action 
   }
   else if (crPrepState === 'failed') { text = crFailText(crPrepFail); btnLabel = crGrid ? 'Retry' : ((crPrepFail && crPrepFail.kind === 'dense') ? 'Prepare this area' : 'Retry'); } // grid failure: Retry resumes the missing cells. Box dense: Retry at the same anchor cannot help (fixed footprint) - the button prepares wherever the map now sits (CG-PF-09)
   else if (crPrepState === 'ready') {
-    if (crGrid && crGrid.fromCache && crGrid.savedAt) { const d = new Date(crGrid.savedAt); text = crGrid.name + ' — loaded ' + d.toLocaleDateString('en-CA', { month: 'short', day: 'numeric' }) + ' · tap a road'; btnLabel = 'Refresh'; }
+    if (crGrid && crGrid.fromCache && crGrid.savedAt) { const d = new Date(crGrid.savedAt); text = crGrid.name + ' — loaded ' + d.toLocaleDateString('en-CA', { month: 'short', day: 'numeric' }); } // Beta 1.153 (Andrew): the pill is a load confirmation ONLY - city + when it loaded, no 'tap a road', and no Refresh button: a city that loaded fine offers no reload. The failed state's Retry (grid resume / re-prepare) is the one working remedy, and it predates this change.
     else text = draftStreets().length ? 'Tap a road on the map to add it' : 'Street shapes ready — tap a road';
-    if (crWanted) btnLabel = crWanted.label; // an outstanding offer (a tap outside coverage, a pending street) keeps its working button in the ready state too (CG-PF-09: the first build's ready state hid it) - it outranks Refresh
+    if (crWanted) btnLabel = crWanted.label; // an outstanding offer (a tap outside coverage, a pending street) keeps its working button in the ready state too (CG-PF-09: the first build's ready state hid it) - since Beta 1.153 removed the healthy-state Refresh, it is the ready state's only button
   }
   else { text = crCity ? 'Search for a street in ' + crCity.name + ', or zoom in and prepare this area' : 'Search, fly to a street, then tap it on the map'; if (crWanted) btnLabel = crWanted.label; else if (map && map.getZoom() >= 14) btnLabel = 'Prepare this area'; }
   if (crCacheNote && crCity && crCacheNoteCity === crCity.name) text += ' · ' + crCacheNote; // the disclosed cache state rides the hint (amendment C: degradation is said, never silent) - Beta 1.143 (DA-06): only when the note belongs to the city on screen
   if (crPackNote && crCity) text += ' · ' + crPackNote; // Beta 1.123: the disclosed pack state rides the hint the same way - a fallen-back load says the library didn't load, in every state the hint shows
-  hint.textContent = text; hint.classList.add('on');
+  hint.textContent = text; hint.classList.toggle('on', !(pillKey && crPillGone === pillKey)); // Beta 1.153: a confirmation already dismissed this session does not reappear on re-renders
   if (btnLabel) { btn.textContent = btnLabel; btn.style.display = ''; } else btn.style.display = 'none';
   const cc = $('crCityChange'); if (cc) { if (crCity) { cc.textContent = 'City: ' + crCity.name + ' — change'; cc.style.display = ''; } else cc.style.display = 'none'; }
 }
@@ -33,7 +51,7 @@ function crAddStreet(name, segs) { // Beta 1.144 (Package C, DA-04): the draft k
   draft.roads[name] = segs; draft.osmNames[name] = name; crGeomGen++; // a tapped street joins as a SECONDARY (fork 3) - flip it to MAIN in the list if it is one. Beta 1.135 (N3): the generation bump is the draft-geometry cache's invalidation for this in-place join (see crDraftGeom)
   delete crPending[name];
   renderDraft(); renderCrLists(); crRenderHint();
-  toast('Added ' + shortStreetName(name), 1800);
+  // Beta 1.153 (Andrew): no 'Added' popup - the road's own picked state on the map and in the panel is the feedback.
 }
 function crRunHeld(name, segs) { // Beta 1.144 (OPT-L1): is this resolved run ALREADY part of the draft street? Segment identity is exact - a run's stored segments are the extract's way point arrays (or its stitched line when the run was bridged), and resolving the same run again reproduces them deterministically, so set membership on the serialized segments is the identity test
   const held = new Set((draft.roads[name] || []).map(sg => JSON.stringify(sg)));
@@ -48,7 +66,7 @@ function crAddRun(name, segs) { // Beta 1.144 (OPT-L1): a further DISCONNECTED r
     if (rec) { const set = crChosenSet(name, before); for (let i = before.parts.length; i < rec.parts.length; i++) set.add(i); crSetChosen(name, rec, set); }
   }
   renderDraft(); renderCrLists(); crRenderHint();
-  toast('Added the other part of ' + shortStreetName(name), 2200);
+  // Beta 1.153 (Andrew): no 'Added the other part' popup either - same rule as crAddStreet.
 }
 function crRemoveStreet(name) { // Beta 1.127: the ONE removal path - the panel's x, the preview's x and Clear all land here (Beta 1.128: those are the ONLY doors; a map tap on a picked street opens its sectors instead), so a street leaves with ALL of its draft state (geometry, main flag, names, sector pick, cached parts) and every face re-renders from the same state
   if (!draft || !draft.roads[name]) return;
@@ -581,6 +599,7 @@ function setCreateStage(stage) {
 function enterCreate(stage) {
   if (!draft) draft = newDraft();
   creating = true;
+  if (crPillT) clearTimeout(crPillT); crPillT = 0; crPillKey = ''; crPillGone = ''; // Beta 1.153: a new create session re-arms the confirmation pill (a cached city confirms again on entry)
   crSectorReset(); crPanelCollapsed = false; crSettleMorph(); // Beta 1.127: every creation starts un-trimmed with the panel up (Beta 1.129: any surface morph a previous creation left in flight lands first)
   crSession++; // a fresh creation session: async completions born in any earlier session are obsolete from here (CG-PF-05)
   document.body.classList.add('creating');
@@ -591,7 +610,8 @@ function enterCreate(stage) {
   setCreateStage(stage);
 }
 function exitCreate() {
-  creating = false; draft = null; crStage = 'pick'; crAreaGuess = ''; crSectorReset(); crPanelCollapsed = false; // Beta 1.127: the panel + sector session state dies with the creation
+  creating = false; draft = null; crStage = 'pick'; crAreaGuess = '';
+  if (crPillT) clearTimeout(crPillT); crPillT = 0; crPillKey = ''; crPillGone = ''; // Beta 1.153: the pill's clock dies with the session, like every other create timer here crSectorReset(); crPanelCollapsed = false; // Beta 1.127: the panel + sector session state dies with the creation
   crSession++; crCovGen++; // every async completion born in this session is obsolete the moment the flow closes - it must not land in a later draft, hint or busy state (CG-PF-05)
   if (crPrep) { clearInterval(crPrep.ticker); crAbortOp(crPrep.op); crPrep = null; } // and the downloads themselves stop (CG-PF-10)
   if (crGrid) { crGridStop('exit'); crGrid = null; } // the grid's downloads stop too; its committed cells live on in the on-device city cache, by design
@@ -709,8 +729,7 @@ $('crHintBtn').addEventListener('click', () => {
     else if (crPrepAnchor) crStartPrep(crPrepAnchor); // Retry: the same anchor again
     return;
   }
-  if (crPrepState === 'ready' && crGrid && crGrid.fromCache) { crGridRefresh(); return; } // the saved city's Refresh: load the whole city again
-  if (map) { const c = map.getCenter(); crStartPrep({ lat: c.lat, lng: c.lng }); } // Prepare this area: the anchor is the map centre he is looking at
+  if (map) { const c = map.getCenter(); crStartPrep({ lat: c.lat, lng: c.lng }); } // Prepare this area: the anchor is the map centre he is looking at. (Beta 1.153: the ready state's Refresh dispatch is GONE with the button - a healthy cached city offers no reload, so no state routes here to crGridRefresh any more.)
 });
 onMapReady(() => map.on('moveend', () => { if (creating && crStage === 'pick' && crPrepState === 'none') crRenderHint(); })); // the Prepare-this-area offer follows the zoom (it appears only at picking zoom) - never a silent download while merely panning
 $('crSearchBtn').addEventListener('click', crSearch);
@@ -744,16 +763,19 @@ async function crRunSearch(fromTyping) {
   if (!fromTyping) $('crSearchBtn').disabled = true;
   try {
     let url = 'https://nominatim.openstreetmap.org/search?format=jsonv2&addressdetails=1&limit=5&q=' + encodeURIComponent(q);
-    try { // Beta 1.121: with a city chosen, the street search is biased to the CITY (its Nominatim bounding box) - preparation and search live inside the city he picked; without one, the visible map biases as before. bounded=0 either way: a bias, never a restriction.
-      if (crCity && crCity.bbox) url += '&viewbox=' + [crCity.bbox.w, crCity.bbox.n, crCity.bbox.e, crCity.bbox.s].map(v => +v.toFixed(5)).join(',') + '&bounded=0';
+    const scoped = !!(crCity && crCity.bbox); // Beta 1.153 (Andrew): with a city loaded, suggestions come from THAT city only. The 1.121 bias (bounded=0: "a bias, never a restriction") becomes a bound (bounded=1) and the returned list is ALSO filtered to the box below, so a service that ignores the bound cannot leak an out-of-city suggestion. With NO city loaded, the visible-map bias is exactly the old behaviour.
+    try { // Beta 1.121: with a city chosen, the street search centres on the CITY (its Nominatim bounding box) - preparation and search live inside the city he picked; without one, the visible map biases as before.
+      if (scoped) url += '&viewbox=' + [crCity.bbox.w, crCity.bbox.n, crCity.bbox.e, crCity.bbox.s].map(v => +v.toFixed(5)).join(',') + '&bounded=1';
       else if (map) { const b = map.getBounds(); url += '&viewbox=' + [b.getWest(), b.getNorth(), b.getEast(), b.getSouth()].map(v => +v.toFixed(5)).join(',') + '&bounded=0'; }
     } catch (e) {}
     const r = await fetch(url, { headers: { 'Accept': 'application/json' }, signal: ctl ? ctl.signal : undefined });
     if (!r.ok) throw new Error('search HTTP ' + r.status);
     const list = await r.json();
     if (seq !== crSearchSeq) return; // superseded while in flight - a newer query owns the dropdown
-    renderCrResults(Array.isArray(list) ? list : []);
-    if (!fromTyping && (!Array.isArray(list) || !list.length)) toast('No places matched that search', 3000);
+    let results = Array.isArray(list) ? list : [];
+    if (scoped) results = results.filter(it => { const la = parseFloat(it.lat), lo = parseFloat(it.lon); return isFinite(la) && isFinite(lo) && crInBox(crCity.bbox, la, lo); }); // Beta 1.153: the city bound, enforced on the results themselves
+    renderCrResults(results);
+    if (!fromTyping && !results.length) toast('No places matched that search', 3000);
   } catch (e) {
     if (seq === crSearchSeq && !(e && e.name === 'AbortError') && !fromTyping) toast('Search needs an internet connection — try again', 3200);
   }

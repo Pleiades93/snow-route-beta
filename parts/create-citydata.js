@@ -113,7 +113,7 @@ function crCovFromWays(byId, boxes) { // the coverage record: the extract's ways
   }
   return { gen: crCovGen, byName, byId, boxes: (boxes || []).slice(), fetchedAt: Date.now() };
 }
-function crCovEnsure() { if (!crCov) crCov = crCovFromWays(Object.create(null), []); return crCov; } // Beta 1.150: the coverage byId starts life null-prototype (as crCovFromWays' byName now does) - the cache fold writes stored way ids into it, and an id of '__proto__' must land as an entry, never as the index's prototype. Every coverage birth site (here, crCityPrepare, the grid refresh) passes Object.create(null) for the same reason
+function crCovEnsure() { if (!crCov) crCov = crCovFromWays(Object.create(null), []); return crCov; } // Beta 1.150: the coverage byId starts life null-prototype (as crCovFromWays' byName now does) - the cache fold writes stored way ids into it, and an id of '__proto__' must land as an entry, never as the index's prototype. Every coverage birth site (here, crCityPrepare) passes Object.create(null) for the same reason
 function crCovMerge(elements, box) { // fold one answered extract (a grid cell, the fallback box, a top-up) into the merged coverage: ways dedupe by id, the answered box joins the verified set
   const cov = crCovEnsure();
   crIndexWays(elements, cov.byId);

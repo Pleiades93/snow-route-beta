@@ -240,7 +240,7 @@ const A7 = await J(`({ mains: [...draft.mains], chip: (() => { const rows = [...
 ok('A7 flipping Bordeaux to MAIN updates its panel chip (2ND -> MAIN)', A7.mains.length === 1 && A7.mains[0] === 'Bordeaux Drive' && A7.chip === 'MAIN'); // Beta 1.127 premise update: chip text replaces the old header mains count
 await ev(`document.getElementById('crDoneBtn').click()`);
 const A8 = await J(`({ stage: crStage, pv: document.getElementById('previewSheet').classList.contains('on'), bar: document.getElementById('createBar').classList.contains('on'), rows: document.querySelectorAll('#pvList .crRow').length, pvCount: document.getElementById('pvCount').textContent })`);
-ok('A8 Done lands in the shared preview ("Is this correct?") with both streets and the count', A8.stage === 'preview' && A8.pv && !A8.bar && A8.rows === 2 && A8.pvCount.indexOf('2 streets') === 0);
+ok('A8 Done lands in the shared preview ("Review selection") with both streets and the count', A8.stage === 'preview' && A8.pv && !A8.bar && A8.rows === 2 && A8.pvCount.indexOf('2 streets') === 0);
 await ev(`document.getElementById('pvSaveBtn').click()`);
 await poll(`document.getElementById('rmNamePane').classList.contains('on')`, 10000);
 const A9 = await J(`({ name: document.getElementById('crNameInput').value, area: document.getElementById('crAreaInput').value, summary: document.getElementById('crNameSummary').textContent })`);

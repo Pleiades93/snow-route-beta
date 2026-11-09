@@ -208,22 +208,11 @@ function crGridResume() { // the degraded/stopped remedy: fetch ONLY the missing
   crRenderHint();
   crGridPump(g);
 }
-function crGridRefresh() { // the saved city's Refresh affordance: drop the saved record and load the whole city again
-  const g = crGrid; if (!g || !creating) return;
-  const name = g.name, bbox = g.bbox;
-  crIdbDelete(name);
-  crCacheNote = ''; crCacheNoteCity = ''; // Beta 1.143 (DA-06): the owner binding resets with the note
-  crPackNote = '';
-  if (g.fromPack) crPackLoad(g.fromPack, true).catch(() => {}); // Beta 1.123: Refresh on a pack city re-downloads the PACK itself (forced past the session copy) - the fresh grid below then commits from it
-  const session = crSession, gen = ++crCovGen;
-  crCov = crCovFromWays(Object.create(null), []);
-  const g2 = crGrid = { name, bbox, cells: crGridCellsFor(bbox), gen, session, startedAt: Date.now(), ticker: null, ops: new Set(), active: 0, fromCache: false, savedAt: null, stopped: null, lastFail: null };
-  if (g.fromPack) { g2.fromPack = g.fromPack; crPackCtx = { slug: g.fromPack, bbox: g.bbox, failed: false }; } // the refreshed preparation stays pack-backed, against the same bounds
-  crPrepState = 'preparing'; crPrepFail = null;
-  g2.ticker = setInterval(() => { if (crGridCurrent(g2) && crPrepState === 'preparing') crRenderHint(); else if (g2.ticker) clearInterval(g2.ticker); }, 1000);
-  crRenderHint();
-  crGridPump(g2);
-}
+// Beta 1.153 (Andrew): crGridRefresh is REMOVED. It was the saved city's Refresh
+// affordance - drop the saved record and re-download the whole city - and its only
+// door was the hint button in the healthy ready state. Andrew's rule: a city that
+// loaded fine offers no reload; a FAILED load's remedy is Retry (crGridResume /
+// crStartPrep), which was never this function. Nothing calls it any more.
 function crFailText(f) { // the honest taxonomy (scope item 5): unreachable / answered-with-error / too-dense read differently because they ARE different
   if (!f) return '';
   if (f.kind === 'dense') return crGrid ? 'Parts of ' + (crCity ? crCity.name : 'the city') + ' were too dense to load — tap Retry to try those parts again' : 'That area is too dense to load at once — move the map to a less busy part of ' + (crCity ? crCity.name : 'the city') + ', then tap Prepare this area'; // box form per CG-PF-09: the footprint is FIXED, so zooming changes nothing - the working remedy is preparing a less dense area, and the button in this state does exactly that (map centre). Grid form: the dense cells are the failed parts, and Retry resumes exactly them

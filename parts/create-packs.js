@@ -7,7 +7,7 @@
 // roads layer, never its geometry: the street's true shape is fetched from
 // the Overpass API at tap time and stitched with the sandbox's rules
 // (endpoint chaining, divided roads chain into their hairpin). Both doors
-// land in one shared preview ("Is this correct?") with corrections, then a
+// land in one shared preview ("Review selection") with corrections, then a
 // name-it step, then the pack is saved on-device (below).
 // PACK FORMAT (defined once, here and in docs/ARCHITECTURE.md): the same
 // shape as a ROUTE_PACKS entry - { name, area, mains: [names], roads:

@@ -354,6 +354,32 @@ Coverage:
   planted storage record would) returns bounded at the 20,000
   budget — on the unfixed code that call never returns and the
   drive dies on it, which is its RED.
+- `drive178` — the Beta 1.153 UX round's load-state surfaces
+  (items 1+2+3+4+6): with the map service down the preparation
+  settles FAILED, the hint stays up past the confirmation pill's
+  4 s with its Retry offered, and Retry after recovery completes
+  the load; the cached re-pick readies from cache with NO refresh
+  control shown, the pill reading '<City> — loaded <date>' only
+  and dismissing itself within seconds, staying dismissed across
+  a road tap's re-render; the tap adds the street with no 'Added'
+  toast; the panel reads 'Current selection'; the review sheet is
+  'Review selection' with the 'Check every street' line gone and
+  its count/rows standing.
+- `drive179` — city-scoped street search (Beta 1.153, item 5):
+  with no city loaded the search keeps the old visible-map bias
+  (bounded=0, both fixture results render, the Toronto one
+  included); with Vaughan loaded the request carries bounded=1
+  on the city box and — although the stubbed service ignores the
+  bound and returns both results — only the in-city suggestion
+  renders.
+- `drive180` — the splash transition (Beta 1.153, item 8, Variant
+  A "Rise and settle"): geometry samples every ~120 ms from first
+  paint prove the SAME #splashTitle node (marker property) starts
+  in the splash brand and lands in the route menu, its centre
+  rising ≥ 60 px, its height shrinking, mid-rise samples strictly
+  between start and landing, opacity 1 in every post-flip sample,
+  the boot panes fully arrived beneath it, and the gate's arm
+  inside its usual budget.
 
 ## The drive compatibility surface (frozen, Beta 1.136, programme E; census refreshed 2026-11-08, Improvement Tranche 4 / T2)
 
@@ -394,7 +420,16 @@ migrateLegacyRoute, crGridCellsFor and crIdbPut join the surface
 at 1 each; the distinct-global count rises 124 → 127. (This
 recount puts $ at 27 over the 1.147 roster — the printed value;
 the 1.146 note's 26-by-recount discrepancy does not reproduce and
-is closed.) **59 of the 67 drives call at least one app global;
+is closed.) Refreshed 2026-11-09 on the 1.153 tree by the same
+stated rule for the intervening rounds' drive changes only:
+drive177 (1.152) and drive178/drive179 (1.153) join the battery
+(drive180 samples DOM geometry only and calls no app global) —
+the deltas, grep-verified over the drive sources, are
+openRouteMenu 10 → 12, draftStreets 1 → 2, crSearch 1 → 2; the
+distinct-global count is left at 127 pending a full recount
+(drive177's packTileUrls call was never reconciled against the
+printed list — recorded openly, in the manner of the $ note
+above). **62 of the 71 drives call at least one app global;
 127 distinct globals are called.** Renaming, removing or changing the contract of a surfaced
 global breaks the battery exactly as surely as renaming a storage key
 breaks stored data: grep the drives first, and treat a deliberate
@@ -403,7 +438,7 @@ same change). The load-bearing names are also pinned individually in
 the snow fix-checks registry (`togglePiece` and `performReset` above
 all - the battery calls them by name).
 
-The surface, by drive-call count: $ (27) / loadRoute (21) / togglePiece (14) / markDone (13) / buildBackup (11) / doRestore (9) / openRouteMenu (9)
+The surface, by drive-call count: $ (27) / loadRoute (21) / togglePiece (14) / markDone (13) / buildBackup (11) / doRestore (9) / openRouteMenu (12)
 saveAll (11) / cancelStart (8) / exitCreate (9) / startClean (9) / computeStretches (7) / acceptFix (6) / flushAux (6)
 renderStreets (6) / streetComplete (6) / finishRun (5) / markUndone (6) / routeKeys (5)
 saveHistory (5) / saveStart (5) / setThemeOverride (5) / applyNight (4) / crIdbGet (4) / crCovMerge (4) / enterCreate (4)
@@ -416,13 +451,13 @@ noteSessionStart (2) / openClean (2) / openPace (2) / packGeometry (2) / pushGps
 saveDraftRoute (2) / saveSess (2) / saveTrail (2) / segLenM (2) / addGpsLayers (1) / addReferenceLayers (1)
 addTrailLayers (1) / autoNightAt (1) / buildReport (1) / buildSnap (2) / closeRouteMenu (2) / coverFix (1)
 crAreaQL (1) / crCovFromWays (1) / crDraftGeom (1) / crFilteredRoads (1) / crIndexWays (1) / crLineLen (1)
-crOpenCityPane (1) / crOpenSectors (1) / crOverpassFetch (1) / crResolve (1) / crRunCitySearch (1) / crSearch (1)
+crOpenCityPane (1) / crOpenSectors (1) / crOverpassFetch (1) / crResolve (1) / crRunCitySearch (1) / crSearch (2)
 crStreetParts (1) / crToggleSector (1) / fmtDur (1) / fmtStamp (1) / liveWorkM (1) / loadRouteState (1) / lsGet (1)
 markDirty (1) / newDraft (1) / normalizePack (1) / openExport (1) / paceInfo (1) / packMigFingerprint (1)
 pickFontFromStyle (1) / preloadUrlList (1) / projLL (1) / readUserPacks (1) / renderRouteLists (1)
 sanitizePieceTimes (1) / setFacing (1) / shareBackup (1) / showSuggest (1) / startCompass (1) / statsLine (1)
 stopCompass (1) / sunTimes (1) / syncViewport (1) / tapStretch (1) / themeTick (1) / toast (1) / togglePieceGroup (1)
-trailKm (1) / vvHeight (1) / crIdbDelete (1) / writePending (1) / draftStreets (1) / openDoors (1).
+trailKm (1) / vvHeight (1) / crIdbDelete (1) / writePending (1) / draftStreets (2) / openDoors (1).
 
 Running locally:
 
