@@ -42,3 +42,6 @@ jobs:
       - name: "Trace driveT6 (G2 search-tap supersede from preparing, corrected)"
         if: always()
         run: node tests/browser/driveT6.mjs
+      - name: "Trace driveT7 (S10 exit edges into none)"
+        if: always()
+        run: node tests/browser/driveT7.mjs
