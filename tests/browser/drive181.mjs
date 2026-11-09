@@ -10,7 +10,10 @@ const { proc, send, S, ev, consoleLog, sleep, poll } = await launchDrive();
 // crPrepState write through crSetPrepState + the CR_PREP_EDGES table in
 // create-fetch.js - exactly the trace's 13 edges; a transition outside
 // the table is refused (the state does not move) and recorded in
-// crPrepViolations; (b) folded the sector session's four loose bindings
+// crPrepViolations (a write of the state already held is a re-assertion,
+// passed unrecorded - the settle sites are re-entrant, and this drive's
+// first CI run caught exactly those re-assertions in healthy flows);
+// (b) folded the sector session's four loose bindings
 // into crSectorSession { street, snapshot, collapsed, face }, with
 // crSectorReset still closing the (street, snapshot) pair ONLY; (c)
 // named each counter family's current-check under the cr<Family>Current
@@ -280,9 +283,10 @@ ok('S7a (sector record, entry) opening a picked street\'s sectors puts the sessi
   readyG === true && pickedG === true && SG1.sec.street === 'Bordeaux Drive' && SG1.sec.snap === null);
 const faceBar = await poll(`crSectorSession.face === 'bar'`, 10000).catch(() => false);
 await ev(`crCancelSectors()`); // restore the entry pick exactly, close the pair
+const faceBack = await poll(`crSectorSession.face === 'panel'`, 10000).catch(() => false); // the face RESTS at panel when the return morph settles - poll its terminal state, not the click (the morph is the app's own animation; a first cut of this drive read the face mid-flight and failed on its own sampling)
 const SG2 = await snap('S7-sectors-cancelled');
-ok('S7b (sector record, Cancel) Cancel closes the PAIR in the record (street null, snapshot undefined again), the street stays in the draft untouched, and the face rests back at the panel | faceBar=' + faceBar + ' post=' + JSON.stringify(SG2.sec) + ' draft=' + JSON.stringify(await J(`draftStreets()`)),
-  faceBar === true && SG2.sec.street === null && SG2.sec.snap === 'undef' && SG2.sec.face === 'panel');
+ok('S7b (sector record, Cancel) Cancel closes the PAIR in the record (street null, snapshot undefined again), the street stays in the draft untouched, and the face rests back at the panel | faceBar=' + faceBar + ' faceBack=' + faceBack + ' post=' + JSON.stringify(SG2.sec) + ' draft=' + JSON.stringify(await J(`draftStreets()`)),
+  faceBar === true && faceBack === true && SG2.sec.street === null && SG2.sec.snap === 'undef' && SG2.sec.face === 'panel');
 await ev(`crOpenSectors('Bordeaux Drive')`);
 await ev(`crSectorSession.collapsed = true`); // scenario seed: the panel tucked away before the stage change (the gesture path is drives 156-158's claim)
 await ev(`setCreateStage('preview')`);
