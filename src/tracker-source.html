@@ -424,7 +424,7 @@ input, textarea { caret-color: currentColor; } /* Beta 1.125 (Andrew): the typin
 <div id="hud">
   <div id="warn">Not saving — storage is full or blocked</div>
   <div class="row">
-    <div class="titleStack"><div class="title">Snow Route Beta</div><div class="ver" id="ver">Beta 1.150</div></div>
+    <div class="titleStack"><div class="title">Snow Route Beta</div><div class="ver" id="ver">Beta 1.151</div></div>
   </div>
   <div id="stats"></div>
 </div>
@@ -4943,7 +4943,7 @@ $('stDel').addEventListener('click', async () => {
 });
 // ---- About / What's new ----
 const WHATSNEW = { // the curated in-app notes: plain words, LATEST RELEASE ONLY (Beta 1.114, Andrew: the accumulated list cluttered the About pane). A release REPLACES this entry with its own in the same change - it never accumulates; the full history lives in CHANGELOG.md, not the app
-  v: 'Beta 1.150', items: ["Safety fixes from a full security review: restoring a backup now double-checks the run timer and the day/night setting it carries, so a damaged or tampered backup file can't start a phantom run or wipe a route's work", "The update check now tells the truth — if the server doesn't answer it says it couldn't check (it used to say 'up to date' from a saved copy), and it will never install an older version over yours", "Repairs behind the scenes so a half-finished data move, a damaged street cache, or an interrupted restore can never quietly replace good data with stale data"]};
+  v: 'Beta 1.151', items: ["A fix for the fix: the last update's new safety check for saved city street data also rejected areas that legitimately have no named streets (parks, lakes, city edges), so a saved city re-downloaded those areas every time and could finish 'degraded' offline — empty areas are recognised as complete again, while a damaged street cache is still rejected and fetched fresh"]};
 function renderAbout() {
   const cur = $('ver').textContent.trim();
   $('wnHead').textContent = "WHAT'S NEW · " + cur; // the header names the LIVE version, read from the title's version element - never a second hard-coded copy that can go stale
@@ -5888,7 +5888,7 @@ function crCityPrepare() { // a city is picked: load its whole extract - from th
         if (saved && Array.isArray(saved.ways)) {
           const byId = Object.create(null); // Beta 1.150: a stored way id of '__proto__' lands as an entry here, not as the map's prototype
           for (const sw of saved.ways) { const w = crCleanStoredWay(sw); if (w) byId[w.id] = { name: w.name, pts: w.pts }; } // Beta 1.150 (security-audit fix round, finding city-cache-restore-skips-way-validation): every stored triple passes the extract's own cleaning (crCleanStoredWay, create-citydata.js) before it may enter coverage - pre-1.150 this fold installed raw triples on array-shape checks alone, planting out-of-range / NaN / empty-named geometry the extract never held
-          if (!Object.keys(byId).length) continue; // Beta 1.150: the cell is certified (box + done, below) only when at least one VALIDATED way came out of it - a cell whose stored ways are all corrupt stays pending and is fetched fresh, never marked done on the cache's say-so
+          if (!Object.keys(byId).length && saved.ways.length) continue; // Beta 1.151 (hotfix for the 1.150 C2 gate's own regression): a cell is certified (box + done, below) when at least one VALIDATED way came out of it OR its stored list was legitimately EMPTY - phase 1 stores empty cells (no named streets: park/lake/city-edge) with ways: [], and the 1.150 rule conflated them with the audit's poison case, a NON-EMPTY list whose ways are all corrupt, which still stays pending here and is fetched fresh, never marked done on the cache's say-so
           crCovMerge([], null); // ensure the cov exists before the direct fold below
           for (const id of Object.keys(byId)) crCov.byId[id] = byId[id];
           const fresh = crCovFromWays(crCov.byId, crCov.boxes);
