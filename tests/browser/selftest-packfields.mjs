@@ -37,7 +37,7 @@ function constNum(src, name) { // the value of a numeric const (Beta 1.136: the 
   if (!m) throw new Error(name + ' not found');
   return Number(m[1]);
 }
-const CAP_NAMES = ['PACK_NAME_MAX', 'PACK_AREA_MAX', 'PACK_STREET_NAME_MAX', 'PACK_STREETS_MAX', 'PACK_SEGS_MAX', 'PACK_SEG_PTS_MAX', 'PACK_POINTS_MAX', 'PACK_TILENAME_MAX', 'PACK_TILENAMES_MAX'];
+const CAP_NAMES = ['PACK_NAME_MAX', 'PACK_AREA_MAX', 'PACK_STREET_NAME_MAX', 'PACK_STREETS_MAX', 'PACK_SEGS_MAX', 'PACK_SEG_PTS_MAX', 'PACK_POINTS_MAX', 'PACK_TILENAME_MAX', 'PACK_TILENAMES_MAX', 'PACK_BOX_MAX_DEG', 'PACK_LENGTH_MAX_M']; // Beta 1.152 (NV round): the validator gained the extent and total-length ceilings - the sandbox receives them like the other caps
 const CAPS = {}; for (const n of CAP_NAMES) CAPS[n] = constNum(app1src, n);
 const api = new Function('MLAT', 'MLNG', 'ROADS', 'PACK_FIELDS', ...CAP_NAMES,
   extract(app1src, 'distM') + '\n' + extract(app1src, 'computeRouteBox') + '\n' + extract(createSrc, 'normalizePack') + '\nreturn { normalizePack };')(111320, 80386, {}, PACK_FIELDS, ...CAP_NAMES.map(n => CAPS[n]));
