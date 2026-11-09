@@ -31,3 +31,12 @@ jobs:
       - name: "Trace driveT3 (G2 search-tap supersede + G1 no-grid)"
         if: always()
         run: node tests/browser/driveT3.mjs
+      - name: "Trace driveT4 (G1 no-grid control, standalone)"
+        if: always()
+        run: node tests/browser/driveT4.mjs
+      - name: "Trace driveT5 (G1 fallback failure over wholly-failed grid, corrected)"
+        if: always()
+        run: node tests/browser/driveT5.mjs
+      - name: "Trace driveT6 (G2 search-tap supersede from preparing, corrected)"
+        if: always()
+        run: node tests/browser/driveT6.mjs
