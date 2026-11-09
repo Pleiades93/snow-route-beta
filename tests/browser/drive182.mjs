@@ -3,7 +3,8 @@ import { PACK5W } from './pack-expect.mjs';
 import fs from 'node:fs';
 const { proc, send, S, ev, consoleLog, sleep, poll } = await launchDrive();
 
-// drive182: Beta 1.156 (Andrew device feedback, 2026-11-09) - the
+// drive182: Beta 1.156's change, shipped inside Beta 1.157 (the
+// combined round, Andrew's directive 2026-11-09) - the
 // create flow's road-tap width is narrowed: the tap box halves go
 // [16, 28] -> [12, 20] px (CR_TAP_BOXES, one literal for both tap
 // handlers), and crSectorTap's geometry fallback - which through
@@ -28,12 +29,29 @@ const { proc, send, S, ev, consoleLog, sleep, poll } = await launchDrive();
 // width is 24) - and rebuilds the sector features from the app's
 // own crStreetParts, the same lines renderDraft draws. Probe taps
 // are placed ON THE PERPENDICULAR at measured pixel distances
-// (in-page search over the fixture lines at zoom 17; the square's
-// diagonal never comes into it), and the measured distances ride
-// in the check names. RED on 1.155 (CI, this round's record): P3,
-// S2 and S3 fail there - a 24 px tap is inside the old 28 box, a
-// 36 px sector tap is inside the old rendered reach (28 + 12), and
-// the old 75 m fallback cap catches the muted 36 px tap (~31 m).
+// (in-page search over the fixture lines at zoom 17), and the
+// measured distances ride in the check names. RED on 1.155 (CI,
+// this round's record): P3, S2 and S3 fail there - a 24 px tap is
+// inside the old 28 box, a 36 px sector tap is inside the old
+// rendered reach (28 + 12), and the old 75 m fallback cap catches
+// the muted 36 px tap (~31 m).
+// CORNER CORRECTION (combined 1.157 round; the combined round's
+// diagnosis of this drive's 8/11 on the FIXED app, CI run
+// 42715921528): a box query tests SEGMENT against SQUARE - a line
+// whose closest approach to the tap POINT is D px can still clip
+// the square's corner zone whenever D < half*sqrt(2) (28.3 px for
+// the new 20 box; 40.3 on the sector path with its +12 buffer).
+// Far-side probes selected by point distance alone are therefore
+// unsound: on the fixed app P3's street clipped the corner and
+// was picked, S2's part clipped the buffered corner and toggled,
+// and S4 failed as S2's cascade. The far/retry probes (a24, a17,
+// sfar) are now selected by SEGMENT-TO-SQUARE distance - the
+// stub's own segRectDist, exposed as __boxDistTo/__partBoxDist:
+// each must MISS the new square by a margin and HIT the old
+// square (deterministic RED), and the muted-fallback probes keep
+// point distances because the fallback itself is point-judged.
+// drive180's lesson, restated for boxes: grade the quantity the
+// mechanism actually tests.
 // FLOW NOTE (learned on this round's second RED attempt, run
 // 42710835097): the pick probes run P1 -> P3 -> P2, P3 probing the
 // street P2 is about to pick. A tap on an ALREADY-picked street
@@ -125,6 +143,31 @@ const installFeatureStub = `(() => {
   const lineDist = (pt, coords) => { let bd = Infinity; for (let i = 1; i < coords.length; i++) { const d = ptSeg(pt, proj(coords[i - 1]), proj(coords[i])); if (d < bd) bd = d; } return bd; };
   window.__distTo = (pt, name) => { let bd = Infinity; for (const L of LINES) { if (name && L.name !== name) continue; bd = Math.min(bd, lineDist(pt, L.coords)); } return bd; };
   window.__distExcept = (pt, name) => { let bd = Infinity; for (const L of LINES) { if (L.name === name) continue; bd = Math.min(bd, lineDist(pt, L.coords)); } return bd; };
+  const rectOf = (pt, half) => [pt[0] - half, pt[1] - half, pt[0] + half, pt[1] + half];
+  window.__boxDistTo = (pt, name, half) => { const r = rectOf(pt, half); let bd = Infinity; for (const L of LINES) { if (name && L.name !== name) continue; const px = L.coords.map(proj); for (let i = 1; i < px.length; i++) bd = Math.min(bd, segRectDist(px[i - 1], px[i], r)); } return bd; };
+  window.__probeBoxFor = (name, missHalf, hitHalf) => {
+    const cand = (pt) => {
+      const bm = window.__boxDistTo(pt, name, missHalf); if (bm < 3) return null;
+      const bh = window.__boxDistTo(pt, name, hitHalf); if (bh > 0) return null;
+      let bo = Infinity; for (const L of LINES) { if (L.name === name) continue; const px = L.coords.map(proj); const r = rectOf(pt, hitHalf); for (let i = 1; i < px.length; i++) bo = Math.min(bo, segRectDist(px[i - 1], px[i], r)); }
+      if (bo <= 0) return null;
+      const ll = map.unproject(pt);
+      return { x: pt[0], y: pt[1], lng: ll.lng, lat: ll.lat, dMine: window.__distTo(pt, name), dOther: window.__distExcept(pt, name), boxMiss: bm, boxHit: bh };
+    };
+    for (const L of LINES) {
+      if (L.name !== name) continue;
+      const px = L.coords.map(proj);
+      for (let i = 1; i < px.length; i++) {
+        const A = px[i - 1], B = px[i], dx = B[0] - A[0], dy = B[1] - A[1], len = Math.hypot(dx, dy);
+        if (len < 60) continue;
+        for (let d = 20; d <= 42; d += 1) for (const t of [0.5, 0.35, 0.65, 0.25, 0.75]) for (const s of [1, -1]) {
+          const pt = [A[0] + dx * t + (-dy / len) * d * s, A[1] + dy * t + (dx / len) * d * s];
+          const got = cand(pt); if (got) return got;
+        }
+      }
+    }
+    return null;
+  };
   window.__probeFor = (name, target, tol, minOther) => {
     for (const L of LINES) {
       if (L.name !== name) continue;
@@ -138,6 +181,27 @@ const installFeatureStub = `(() => {
           const dOther = window.__distExcept(pt, name); if (dOther < minOther) continue;
           const ll = map.unproject(pt);
           return { x: pt[0], y: pt[1], lng: ll.lng, lat: ll.lat, dMine, dOther };
+        }
+      }
+    }
+    return null;
+  };
+  window.__partFarProbe = (name, missHalf, hitHalf, buf) => {
+    const rec = crStreetParts(name); if (!rec) return null;
+    const partsPx = rec.parts.map(part => part.map(p => { const q = map.project([p[1], p[0]]); return [q.x, q.y]; }));
+    const boxDist = (pt, pi, half) => { const r = rectOf(pt, half); let bd = Infinity; for (let i = 1; i < partsPx[pi].length; i++) bd = Math.min(bd, segRectDist(partsPx[pi][i - 1], partsPx[pi][i], r)); return bd; };
+    const distToPart = (pt, pi) => { let bd = Infinity; for (let i = 1; i < partsPx[pi].length; i++) bd = Math.min(bd, ptSeg(pt, partsPx[pi][i - 1], partsPx[pi][i])); return bd; };
+    for (let pi = 0; pi < rec.parts.length; pi++) {
+      for (let i = 1; i < partsPx[pi].length; i++) {
+        const A = partsPx[pi][i - 1], B = partsPx[pi][i], dx = B[0] - A[0], dy = B[1] - A[1], len = Math.hypot(dx, dy);
+        if (len < 60) continue;
+        for (let d = 28; d <= 48; d += 1) for (const t of [0.5, 0.35, 0.65, 0.25, 0.75]) for (const s of [1, -1]) {
+          const pt = [A[0] + dx * t + (-dy / len) * d * s, A[1] + dy * t + (dx / len) * d * s];
+          let okAll = true, hit = -1;
+          for (let pj = 0; pj < rec.parts.length; pj++) { if (boxDist(pt, pj, missHalf) <= buf + 3) { okAll = false; break; } if (boxDist(pt, pj, hitHalf) <= buf) hit = pj; }
+          if (!okAll || hit < 0) continue;
+          const ll = map.unproject(pt);
+          return { x: pt[0], y: pt[1], lng: ll.lng, lat: ll.lat, part: hit, dMine: distToPart(pt, hit) };
         }
       }
     }
@@ -191,8 +255,8 @@ ok('setup: 5W loaded, Vaughan picked through the manual door and the preparation
 await ev(installFeatureStub);
 await ev(`map.jumpTo({ center: [-79.5745, 43.7993], zoom: 17 })`);
 await poll(`typeof map !== 'undefined' && map && Math.abs(map.getZoom() - 17) < 0.01 && !map.isMoving()`, 15000);
-const PROBES = await J(`({ a24: window.__probeFor('Alderson Avenue', 24, 1, 30), b10: window.__probeFor('Bordeaux Drive', 10, 1, 45), a17: window.__probeFor('Alderson Avenue', 17, 1, 30), zoom: map.getZoom() })`);
-ok('setup: probe taps measured on the perpendicular at zoom 17 (Bordeaux 10 px, Alderson 24 px and 17 px; every cross-street distance clear of even the old box) | ' + JSON.stringify(PROBES),
+const PROBES = await J(`({ a24: window.__probeBoxFor('Alderson Avenue', 20, 28), b10: window.__probeFor('Bordeaux Drive', 10, 1, 45), a17: window.__probeBoxFor('Alderson Avenue', 12, 20), zoom: map.getZoom() })`);
+ok('setup: probe taps measured at zoom 17 (Bordeaux 10 px by point distance; the two Alderson probes by segment-to-square distance: a24 MISSES the new 20 square by >= 3 px and HITS the old 28, a17 MISSES the 12 square and HITS the 20) | ' + JSON.stringify(PROBES),
   !!PROBES.a24 && !!PROBES.b10 && !!PROBES.a17 && Math.abs(PROBES.zoom - 17) < 0.01);
 
 // ---------- P1: 10 px off PICKS (first box) ----------
@@ -200,24 +264,24 @@ await fireTap(PROBES.b10);
 const gotB = await poll(`typeof draft !== 'undefined' && draft && !!draft.roads['Bordeaux Drive']`, 15000).catch(() => false);
 ok('P1 a tap 10 px off the Bordeaux line PICKS Bordeaux - inside the new first box (half 12), the fingertip case of Beta 1.119 still lands', gotB === true);
 
-// ---------- P3: 24 px off the UNPICKED Alderson picks NOTHING ----------
+// ---------- P3: beyond the new retry square, the UNPICKED Alderson picks NOTHING ----------
 await fireTap(PROBES.a24);
 await sleep(600);
 const P3 = await J(`({ streets: draft ? Object.keys(draft.roads) : null, toast: document.getElementById('toast').textContent })`);
-ok('P3 a tap 24 px off the Alderson line picks NOTHING - beyond the new retry box (half 20; the old 28 caught it) | ' + JSON.stringify(P3),
+ok('P3 a tap whose square MISSES Alderson under the new retry box picks NOTHING (segment-to-square miss ' + (PROBES.a24 ? PROBES.a24.boxMiss.toFixed(1) : '?') + ' px vs the 20 square; point distance ' + (PROBES.a24 ? PROBES.a24.dMine.toFixed(1) : '?') + ' px; the old 28 square caught this tap) | ' + JSON.stringify(P3),
   !!P3.streets && !P3.streets.includes('Alderson Avenue') && P3.toast.indexOf('No road there') >= 0);
 
-// ---------- P2: 17 px off PICKS (the retry box) ----------
+// ---------- P2: the retry square PICKS ----------
 await fireTap(PROBES.a17);
 const gotA = await poll(`typeof draft !== 'undefined' && draft && !!draft.roads['Alderson Avenue']`, 15000).catch(() => false);
-ok('P2 a tap 17 px off the Alderson line PICKS Alderson - outside the first box (12), inside the new retry box (20): the two-step forgiveness survives the narrowing', gotA === true);
+ok('P2 a tap that MISSES the first square (12) but HITS the retry square (20) PICKS Alderson - segment-to-square miss ' + (PROBES.a17 ? PROBES.a17.boxMiss.toFixed(1) : '?') + ' px vs the 12 square; the two-step forgiveness survives the narrowing', gotA === true);
 
 // ---------- sector section: Alderson, cut where Bordeaux meets it ----------
 await ev(`crOpenSectors('Alderson Avenue')`);
 const SEC = await J(`({ open: crSectorSession.street, parts: crStreetParts('Alderson Avenue') ? crStreetParts('Alderson Avenue').parts.length : 0 })`);
 ok('S0 Alderson is open for trimming and computes to more than one sector in the fixture extract | ' + JSON.stringify(SEC), SEC.open === 'Alderson Avenue' && SEC.parts >= 2);
-const SPROBES = await J(`({ s10: window.__partProbe('Alderson Avenue', 10, 1, 16), s36: window.__partProbe('Alderson Avenue', 36, 3, 33), s15: window.__partProbe('Alderson Avenue', 15, 1, 16) })`);
-ok('setup: sector probe taps measured (10 px and 15 px off a sector line, 36 px off EVERY sector line) | ' + JSON.stringify(SPROBES), !!SPROBES.s10 && !!SPROBES.s36 && !!SPROBES.s15);
+const SPROBES = await J(`({ s10: window.__partProbe('Alderson Avenue', 10, 1, 16), s36: window.__partFarProbe('Alderson Avenue', 20, 28, 12), s15: window.__partProbe('Alderson Avenue', 15, 1, 16) })`);
+ok('setup: sector probe taps measured (10 px and 15 px off a sector line by point distance; the far probe by segment-to-square distance: it MISSES every part under the new rendered reach - 20 square buffered by the 12 half-width - by > 3 px and HITS a part under the old 28 reach; its point distance keeps the muted-fallback probes meaningful) | ' + JSON.stringify(SPROBES), !!SPROBES.s10 && !!SPROBES.s36 && !!SPROBES.s15 && SPROBES.s36.dMine > 24);
 
 // ---------- S1: 10 px off a sector TOGGLES it (rendered pick) ----------
 await fireTap(SPROBES.s10);
@@ -227,7 +291,7 @@ ok('S1 a tap 10 px off a sector line TOGGLES that sector off - the rendered pick
   !!SPROBES.s10 && !S1.includes(SPROBES.s10.part) && S1.length === SEC.parts - 1);
 await allChosen();
 
-// ---------- S2: 36 px off every sector toggles NOTHING ----------
+// ---------- S2: beyond the new rendered reach, toggles NOTHING ----------
 // The assertion compares the chosen SET before/after, never its
 // length alone: a toggle-off followed by a toggle-on restores the
 // length while changing the set (this round's third RED attempt:
@@ -237,7 +301,7 @@ const S2pre = await chosenOf();
 await fireTap(SPROBES.s36);
 await sleep(600);
 const S2 = await chosenOf();
-ok('S2 a tap 36 px off every sector line toggles NOTHING - beyond the new rendered reach (retry 20 + hit width 12 = 32; the old reach 28 + 12 = 40 caught it) | chosen=' + JSON.stringify(S2) + ' probe=' + JSON.stringify(SPROBES.s36),
+ok('S2 a tap beyond the new rendered reach toggles NOTHING - its square misses every sector line under the new reach (retry 20 + hit width 12; the old reach, 28 + 12, caught this tap; point distance ' + (SPROBES.s36 ? SPROBES.s36.dMine.toFixed(1) : '?') + ' px) | chosen=' + JSON.stringify(S2) + ' probe=' + JSON.stringify(SPROBES.s36),
   S2pre.length === SEC.parts && JSON.stringify(S2) === JSON.stringify(S2pre));
 
 // ---------- S3: renderer muted, 36 px off (~31 m) - the fallback must not catch it ----------
@@ -247,7 +311,7 @@ await fireTap(SPROBES.s36);
 await sleep(600);
 const S3 = await chosenOf();
 await ev(`window.__qrfMute = false`);
-ok('S3 with the renderer answering nothing, a tap 36 px off (~31 m) still toggles NOTHING - the geometry fallback now honours the same 20 px reach (through 1.155 its only cap was 75 m, which caught this tap) | chosen=' + JSON.stringify(S3),
+ok('S3 with the renderer answering nothing, the far tap (' + (SPROBES.s36 ? SPROBES.s36.dMine.toFixed(1) : '?') + ' px off, ~31 m at this zoom) still toggles NOTHING - the geometry fallback now honours the same 20 px reach (through 1.155 its only cap was 75 m, which caught this tap) | chosen=' + JSON.stringify(S3),
   JSON.stringify(S3) === JSON.stringify(S3pre));
 
 // ---------- S4: renderer muted, 15 px off - the fallback lives ----------
