@@ -46,22 +46,25 @@ const { proc, ev, consoleLog, sleep } = await launchDrive();
 //   N3 no teleport: across the seam (last hold sample -> settle)
 //      no consecutive pair travels further than the animation's own
 //      easing can carry it in that pair's window - the bound is the
-//      easing's steepest window (its velocity only decreases, so
-//      the start window bounds every window of that length) over
-//      the pair's dt plus one frame (17 ms) of transition-anchor
-//      offset (the flip task lands between frames, so a pair can
-//      legitimately contain up to a frame more progress than its
-//      stamps suggest), + 3 px. Calibrated against the easing
-//      itself, cubic-bezier(.22,1,.36,1) over this round's 358 px
-//      travel: the steepest true 9 ms window is 15.3 px (1.70
-//      px/ms); the fixed code's first candidate run measured one
-//      18.6 px / 9 ms pair (2.07 px/ms) - inside the anchored
-//      bound (28.1 px), outside any flat rate bound, and on-curve
-//      (N1/N2 in the same run prove the painted path starts at the
-//      hold and never breaks). An absolute per-pair bound would
-//      judge the sampler, not the title (the 1.154 RED run's
-//      128.6 px 'jump' aggregated ~250 ms of starved frames in the
-//      ease-out tail, where the remaining travel was ~8 px);
+//      easing's STEEPEST window of the pair's length, wherever on
+//      the curve it falls, over the pair's dt plus one frame
+//      (17 ms) of transition-anchor offset (the flip task lands
+//      between frames, so a pair can legitimately contain up to a
+//      frame more progress than its stamps suggest), + 3 px. At
+//      Beta 1.155 the easing was ease-out (velocity only decreases,
+//      so the start window WAS the steepest); Beta 1.157's
+//      gentle-start cubic-bezier(.65,0,.35,1) peaks mid-flight
+//      (dy/dx ~2.86 at the centre - ~12.6 px per true 16 ms pair
+//      over this round's 358 px travel), and this drive's first
+//      1.157 candidate kept the start-window construction: 40
+//      on-curve pairs 'violated' a bound derived from the curve's
+//      slowest window (worst 13.1 px vs 3.2 px allowed - the
+//      title moving exactly at its easing's mid-flight rate).
+//      The bound now scans the curve for the steepest window of
+//      each pair's length. An absolute per-pair bound would judge
+//      the sampler, not the title (the 1.154 RED run's 128.6 px
+//      'jump' aggregated ~250 ms of starved frames in the ease-out
+//      tail, where the remaining travel was ~8 px);
 //   S3/S5 the rise (>= 60 px) and mid-rise samples strictly
 //      between (it travels, it does not jump-cut);
 //   N4 at rest the title sits exactly on its menu slot (the rect
@@ -169,17 +172,20 @@ const flight = (hold && settleIdx >= 0) ? [hold, ...post.slice(0, settleIdx + 1)
 // easing Andrew's slower/smoother direction picked; at Beta
 // 1.155 it was .95 s cubic-bezier(.22,1,.36,1). If that easing
 // ever changes, this bound must be re-derived with it). yOfX
-// inverts the bezier.
+// inverts the bezier. steepest(w) is the most progress the easing
+// makes over ANY window of x-length w - the honest per-pair bound
+// for a velocity-peaking easing.
 const DUR = 1300;
 const bezX = t => 3 * (1 - t) * (1 - t) * t * 0.65 + 3 * (1 - t) * t * t * 0.35 + t * t * t;
 const bezY = t => 3 * (1 - t) * t * t + t * t * t;
 const yOfX = x => { if (x <= 0) return 0; if (x >= 1) return 1; let lo = 0, hi = 1; for (let i = 0; i < 40; i++) { const mid = (lo + hi) / 2; if (bezX(mid) < x) lo = mid; else hi = mid; } return bezY((lo + hi) / 2); };
+const steepest = w => { let m = 0; for (let i = 0; i <= 200; i++) { const x = (i / 200) * Math.max(0, 1 - w); const p = yOfX(Math.min(1, x + w)) - yOfX(x); if (p > m) m = p; } return m; };
 let worstRatio = 0, worstDesc = 'none', rateViol = 0;
 const totCy = (hold && lastS) ? Math.abs(hold.cy - lastS.cy) : 0;
 const totCx = (hold && lastS) ? Math.abs(hold.cx - lastS.cx) : 0;
 for (let i = 1; i < flight.length; i++) {
   const dt = Math.max(1, flight[i].t - flight[i - 1].t);
-  const win = yOfX(Math.min(1, (dt + 17) / DUR));
+  const win = steepest(Math.min(1, (dt + 17) / DUR));
   const pairs = [[Math.abs(flight[i].cy - flight[i - 1].cy), totCy], [Math.abs(flight[i].cx - flight[i - 1].cx), totCx]];
   for (const pr of pairs) {
     const allowed = Math.max(pr[1], 10) * win + 3;
