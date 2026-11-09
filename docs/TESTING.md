@@ -343,6 +343,17 @@ Coverage:
   unfaulted, the same restore discharges the record inside its
   verified write set and the restored notes/coverage survive the
   next load.
+- `drive177` — load/restore array caps and the tile-enumeration
+  budget at page level (Beta 1.152, NV round NV4 + NV3b): a slot
+  seeded with 20,000 history entries, 20,000 trail points and
+  20,000 session markers loads capped (10 / 8000 / 8000, history
+  keeping its newest entries); a backup carrying 500 / 9,000 /
+  9,000 is STORED capped by restore validation; `preloadUrlList()`
+  still returns the frozen 897 URLs; and a worldwide-box pack fed
+  straight to `packTileUrls` (bypassing import validation, as a
+  planted storage record would) returns bounded at the 20,000
+  budget — on the unfixed code that call never returns and the
+  drive dies on it, which is its RED.
 
 ## The drive compatibility surface (frozen, Beta 1.136, programme E; census refreshed 2026-11-08, Improvement Tranche 4 / T2)
 
@@ -508,6 +519,22 @@ locally, first:
    the analyzer's current readings (claim narrowed 2026-11-08;
    neither shape occurs in the app parts — see the selftest header).
    Both run in the build-and-test CI job.
+   Sixth instance (Beta 1.152, NV fix round, 2026-11-09): the
+   resource-bound fixes — `tests/browser/selftest-nv1152.mjs`
+   extracts computeStretches, normalizePack, packTileUrls,
+   preloadUrlList, trimHistory and capHistoryList verbatim from
+   the parts and proves in plain Node: stretch-output parity
+   against digests pinned from the pre-fix implementation (the
+   bbox prefilter may not change a single cut), the projOnLine
+   call count on a dense grid (490,000 before, near-linear
+   after), the pack extent and total-length ceilings against a
+   worldwide box, a 10-degree extent, a ~17,900 km length bomb
+   and the worst legitimate pack (the 300 longest Toronto
+   streets as stitched runs, which must still validate), the
+   tile budget against a worldwide box in a timeout-guarded
+   child process plus the frozen 897-URL list in exact order,
+   and capHistoryList's eviction equivalence with trimHistory
+   on 300 randomized lists. Runs in the build-and-test CI job.
    Second instance (Phase 2, 2026-11-04): the app's own judging logic —
    the trail segment-acceptance rule in `trailSegments` — is proven by
    `tests/browser/selftest-trail-segments.mjs`, which extracts the shipped

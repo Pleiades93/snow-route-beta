@@ -2,7 +2,7 @@
 <html lang="en" class="boot">
 <head>
 <meta charset="UTF-8">
-<meta http-equiv="Content-Security-Policy" content="default-src 'none'; script-src 'sha384-4htjmwS6yjfFlZ/XQjqHhpqn+nhl9e9VEy4S2JpQ/aQaSIPX38N/rsAKrPBsGKxO' https://cdn.jsdelivr.net; style-src-elem 'sha384-7Rsl54RVkpDWDLyQ+ECbh5O7S3o2snTdtC2RcSCufb5TS2M0ojiCfRihAuEVQwkU' https://cdn.jsdelivr.net; style-src-attr 'unsafe-inline'; img-src 'self' data: blob: https://tiles.basemaps.cartocdn.com https://protomaps.github.io https://cdn.jsdelivr.net; connect-src 'self' https://tiles.basemaps.cartocdn.com https://protomaps.github.io https://cdn.jsdelivr.net https://nominatim.openstreetmap.org https://overpass-api.de https://overpass.kumi.systems; worker-src blob: 'self'; child-src blob: 'self'; font-src 'none'; manifest-src 'self'; base-uri 'none'; form-action 'none'; object-src 'none'">
+<meta http-equiv="Content-Security-Policy" content="default-src 'none'; script-src 'sha384-Zlxf4H+R8mfgZkDNXLKK6Gn538Ook8jJpzE2kdO33D+dKiENPlqq8ex21kiTZY4o' https://cdn.jsdelivr.net; style-src-elem 'sha384-7Rsl54RVkpDWDLyQ+ECbh5O7S3o2snTdtC2RcSCufb5TS2M0ojiCfRihAuEVQwkU' https://cdn.jsdelivr.net; style-src-attr 'unsafe-inline'; img-src 'self' data: blob: https://tiles.basemaps.cartocdn.com https://protomaps.github.io https://cdn.jsdelivr.net; connect-src 'self' https://tiles.basemaps.cartocdn.com https://protomaps.github.io https://cdn.jsdelivr.net https://nominatim.openstreetmap.org https://overpass-api.de https://overpass.kumi.systems; worker-src blob: 'self'; child-src blob: 'self'; font-src 'none'; manifest-src 'self'; base-uri 'none'; form-action 'none'; object-src 'none'">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="mobile-web-app-capable" content="yes">
@@ -425,7 +425,7 @@ input, textarea { caret-color: currentColor; } /* Beta 1.125 (Andrew): the typin
 <div id="hud">
   <div id="warn">Not saving — storage is full or blocked</div>
   <div class="row">
-    <div class="titleStack"><div class="title">Snow Route Beta</div><div class="ver" id="ver">Beta 1.151</div></div>
+    <div class="titleStack"><div class="title">Snow Route Beta</div><div class="ver" id="ver">Beta 1.152</div></div>
   </div>
   <div id="stats"></div>
 </div>
@@ -615,6 +615,8 @@ const COV_SAVE_MS = 15000; // the coverage write's throttle window (flushAux, be
 const PACK_NAME_MAX = 60, PACK_AREA_MAX = 60, PACK_STREET_NAME_MAX = 60; // the pack validator's per-field character caps (normalizePack, create.js) - separate constants per field, per the fence above
 const PACK_STREETS_MAX = 300, PACK_SEGS_MAX = 80, PACK_SEG_PTS_MAX = 4000, PACK_POINTS_MAX = 150000; // the pack validator's shape caps (normalizePack, create.js); PACK_SEGS_MAX (segments per street) and PACK_TILENAME_MAX (characters per tile name) both happen to be 80 - different policies, separate constants
 const PACK_TILENAME_MAX = 80, PACK_TILENAMES_MAX = 400;
+const PACK_BOX_MAX_DEG = 4, PACK_LENGTH_MAX_M = 12000000; // Beta 1.152 (NV round): the pack validator's extent and total-length ceilings (normalizePack, create-packs.js), beside the shape caps they extend. Sized from the measured real maxima across all 12 shipped city datasets (44,405 streets): the widest city bounding box spans 0.526 degrees (Toronto), the declared Route 5W box 0.40, and the worst legitimate pack - the 300 longest Toronto streets as stitched runs - totals 2,962 km of street; the ceilings sit ~7.6x and ~4x above those. The length ceiling is what bounds samplesFor (app3): at one sample per COV_SAMPLE_M it caps a validated pack at ~800,000 samples.
+const PACK_TILES_MAX = 20000; // Beta 1.152 (NV round): the per-pack tile-URL iteration budget inside the preload enumerators (app4) - ~29x the largest legitimate pack reference (a Toronto-sized box over the 5W core enumerates 689 tile URLs; Route 5W itself 633). A stored pack with a worldwide box is a boot wedge, not a route: its oversized zooms are skipped and enumeration terminates bounded.
 /** @param {string} id @returns {string[]} */ function slotKeys(id) { const rk = routeKeys(id); return ROUTE_FIELDS.map(f => rk[f]).concat(rk.snap); } // Beta 1.136 (programme F): a route slot's BACKUP keys as one list - the ROUTE_FIELDS keys plus the cancel snapshot - for the callers that enumerate keys without needing field names (the restore's rollback scope). Backup field loops keep walking ROUTE_FIELDS itself (they need the names), and route deletion keeps enumerating routeKeys' values (it wipes slots the backup never carries, pre/mig included).
 /** @type {Object.<string, string>} */ let LS = { ...routeKeys('5w'), ...LS_GLOBAL };
 /** @param {string} id @returns {boolean} */ function migrateLegacyRoute(id) { // one-time, 5W only. Beta 1.94 (deep audit SR-193-03): the COMMIT RECORD is the explicit marker key (rk.mig), never field presence. The 1.93 parity gate (R04) could not tell an interrupted copy from a legitimately partial slot - sides restored from a backup, no history yet - and its retry recopied legacy sides OVER the newer restored ones. Now: with the marker absent, the copy fills ONLY fields the slot lacks (a present slot field is never overwritten), each fill verified by read-back; any failure reports false and the caller reads the legacy keys for this boot - verified fills already landed may stay, since without the marker they are never mistaken for a completed move, and each is an exact copy of the legacy value. Parity is re-checked before the marker is written. The legacy keys themselves are never deleted - they stay as the fallback copy. Beta 1.150 (security-audit fix round, finding legacy-migration-fallback-boot-stale-fill): the fill-only rule had one hole - when a fill failed PARTWAY, the fallback boot ran on the legacy keys and its saves wrote NEWER legacy values, and the next boot's retry skipped the fields that had already landed, so the stale partial copy became permanent under the committed marker. The record that tells a migration-owned fill from everyone else's write is rk.migfill: for each field, the exact value a landed fill wrote, persisted (verified) as each fill lands. On a retry, a slot value still EQUAL to its recorded fill is migration's own and is re-copied when the legacy value has moved on; a slot value that DIFFERS from its recorded fill was written by someone else (a restore) - it wins and its record is dropped, which is exactly the 1.94 protection, kept. The record is deleted when the marker commits; from then on the marker alone governs, as before.
@@ -823,9 +825,13 @@ const tapLast = {};
     const parts = [];
     for (const run of runsOf[n]) {
       const cuts = [];
+      // Beta 1.152 (NV round, NV2): bounding-box prefilter, mirroring crStreetParts (create-pick.js). A foreign vertex outside this run's bbox grown by the margin projects more than 4 m from every segment of the run - the bbox uses the same flat-earth axes as projOnLine's metre space, and the margin is the same 12 m crStreetParts uses - so skipping it cannot change the cuts, and finishJunctionCuts sorts the survivors: the output is identical (parity pinned by selftest-nv1152 digests). Without it this loop is the full street-x-vertex cross product (490,000 projections measured on a 50-street x 200-point grid, 5.2 s).
+      let bw = Infinity, bs = Infinity, be = -Infinity, bn = -Infinity;
+      for (const p of run.line) { if (p[0] < bs) bs = p[0]; if (p[0] > bn) bn = p[0]; if (p[1] < bw) bw = p[1]; if (p[1] > be) be = p[1]; }
+      const mLat = 12 / MLAT, mLng = 12 / MLNG;
       for (const m of Object.keys(roads)) {
         if (m === n) continue;
-        for (const mr of runsOf[m]) for (const v of mr.line) { const pr = projOnLine(run.line, run.cum, v); if (pr.off <= 4) cuts.push(pr.d); }
+        for (const mr of runsOf[m]) for (const v of mr.line) { if (v[0] < bs - mLat || v[0] > bn + mLat || v[1] < bw - mLng || v[1] > be + mLng) continue; const pr = projOnLine(run.line, run.cum, v); if (pr.off <= 4) cuts.push(pr.d); }
       }
       run.parts = finishJunctionCuts(run.line, run.cum, run.total, cuts);
       for (const p of run.parts) parts.push(p);
@@ -867,6 +873,14 @@ const STREETSET = new Set();
 let doneSet = new Set(), doneTimes = {}, doneVia = {}, notes = {}, history = [], runStart = 0, trail = [], trailSessions = [], coveredIdx = {}, pieces = {}, pieceTimes = {};
 /** @param {HistoryEntry} h @returns {boolean} */ function isFullRun(h) { return !!(h && h.items && Object.keys(h.items).length >= STREETNAMES.length); } // Beta 1.94 (audit F-01): the street count derives from the route's own street list, never a hard-coded 34 - the same derivation replaces every hard-coded count in the app this round
 /** @param {HistoryEntry[]} list @returns {HistoryEntry[]} */ function trimHistory(list) { const out = list.slice(); while (out.length > 10) { const i = out.findIndex(h => !isFullRun(h)); out.splice(i >= 0 ? i : 0, 1); } return out; }
+/** @param {HistoryEntry[]} list @param {number} streetCount @returns {HistoryEntry[]} */ function capHistoryList(list, streetCount) { // Beta 1.152 (NV round, NV4): trimHistory's eviction rule - drop the oldest NON-FULL entries first, then the oldest overall - in LINEAR time, for inputs trimHistory must never be handed: trimHistory rescans and splices per eviction (quadratic; 2,000 full entries measured at 33 s, 20,000 never returned), and before 1.152 a crafted backup or planted slot could hand it an array of any size at the first Finish. The equivalence with trimHistory is property-proven in tests/browser/selftest-nv1152.mjs (300 randomized lists). streetCount is a parameter because the restore (app4's pushField) judges fullness against the TARGET route's streets, not the loaded route's.
+  if (list.length <= 10) return list;
+  const full = /** @param {HistoryEntry} h @returns {boolean} */ h => !!(h && h.items && Object.keys(h.items).length >= streetCount);
+  let excess = list.length - 10; const drop = new Set();
+  for (let i = 0; i < list.length && excess > 0; i++) if (!full(list[i])) { drop.add(i); excess--; }
+  for (let i = 0; excess > 0; i++) if (!drop.has(i)) { drop.add(i); excess--; }
+  return list.filter((_, i) => !drop.has(i));
+}
 /** @param {HistoryEntry[]} list @param {HistoryEntry} entry @returns {HistoryEntry[]} */ function trimHistoryForFinish(list, entry) { const old = list.slice(); while (old.length > 9) { const i = old.findIndex(h => !isFullRun(h)); old.splice(i >= 0 ? i : 0, 1); } return [...old, entry]; } // Beta 1.104 (round 103, CG-103-01): the finish path's append - eviction is chosen ONLY among the pre-existing entries (oldest non-full first, else oldest overall - the trimHistory rule, capped at 9 kept) so the incoming archive can never evict itself; trimHistory itself is unchanged for saveHistory. Fixture-proven in tests/browser/selftest-history.mjs
 /** @returns {boolean} */ function saveHistory() { history = trimHistory(history); return lsSet(LS.hist, JSON.stringify(history)); } // Beta 1.63 (audit F04): the delete-clean handler branches on this
 let startDirty = false; // Beta 1.92 (deep audit F05): a failed start write/delete arms this retry, walked by the flushAux heartbeat until it lands - a stale start key must never resurrect a finished run on the next boot
@@ -908,14 +922,17 @@ for (const h of history) {
   h.items = m;
 }
 history = history.filter(h => Object.keys(h.items).length > 0);
+if (history.length > 10) history = capHistoryList(history, STREETNAMES.length); // Beta 1.152 (NV round, NV4): the writers cap history at 10 (trimHistory at Finish) - the load enforces the same cap with the LINEAR cap, so a planted slot cannot hand the quadratic trim an oversized array. The app's own writes never exceed the cap, so only crafted input is ever trimmed here.
 // Run start (production): epoch milliseconds, stored as a bare digit string (NOT JSON).
 runStart = 0;
 try { const s = lsGet(LS.start); runStart = (typeof s === 'string' && /^\d+$/.test(s) && isFinite(+s) && +s >= 946684800000 && +s <= 4102444800000) ? +s : 0; } catch (e) { runStart = 0; } // Beta 1.150 (security-audit fix round, finding restore-start-scalar-unvalidated, loader half): the stored start is parsed as strictly as the restore now validates it - a digit string inside the epoch-ms band. The old '+lsGet(...) || 0' coerced a crafted '1' into a live phantom run (and 'Infinity' into an endless one) whose Cancel wiped the route; every other epoch this loader accepts is band-checked the same way (trail sessions and trail points, below)
 trail = parseJ(lsGet(LS.trail), []);
 trailSessions = parseJ(lsGet(LS.sess), []); // Beta 1.71 (audit B02): the epoch-second start of each clean that recorded trail points - the session identity the flat trail never carried, so exports can split cleans exactly instead of guessing from gaps. Pre-1.71 trails simply have no markers and keep the gap heuristic.
 trailSessions = Array.isArray(trailSessions) ? [...new Set(trailSessions.filter(t => Number.isFinite(t) && t >= 946684800 && t <= 4102444800))].sort((a, b) => a - b) : [];
+if (trailSessions.length > TRAIL_MAX) trailSessions = trailSessions.slice(trailSessions.length - TRAIL_MAX); // Beta 1.152 (NV round, NV4): no writer cap exists for session markers (one is appended per clean run start, noteSessionStart in app3) - the load bounds them at the trail's own cap, keeping the newest (the list is sorted ascending here). Every consumer is linear (the day list, the load-notice count), so this is a storage bound, sized to the structure it describes.
 // Trail (production): [lat, lng, epochSeconds] triples; out-of-range or impossible points are dropped at load (SEC-9a bounds).
 trail = Array.isArray(trail) ? trail.filter(p => Array.isArray(p) && p.length === 3 && Number.isFinite(p[0]) && Number.isFinite(p[1]) && Number.isFinite(p[2]) && p[2] >= 946684800 && p[2] <= 4102444800 && Math.abs(p[0]) <= 90 && Math.abs(p[1]) <= 180) : [];
+if (trail.length > TRAIL_MAX) trail = trail.slice(trail.length - TRAIL_MAX); // Beta 1.152 (NV round, NV4): the writer caps the trail at TRAIL_MAX by dropping the OLDEST points (recordFix, app3) - the load keeps the same end of the same cap, so a planted slot cannot resurrect an unbounded trail.
 coveredIdx = parseJ(lsGet(LS.cov), {});
 if (!coveredIdx || typeof coveredIdx !== 'object' || Array.isArray(coveredIdx)) coveredIdx = {};
 for (const n of Object.keys(coveredIdx)) { if (!SAMPLES[n] || !Array.isArray(coveredIdx[n])) { delete coveredIdx[n]; continue; } coveredIdx[n] = coveredIdx[n].filter(i => Number.isInteger(i) && i >= 0 && i < SAMPLES[n].length); } // audit D1: was upper-bound only - negatives, fractions and text values survived and each inflated the coverage count. Beta 1.76: this pass used to sit at script eval in app3, over the state the old eval-time load had just parsed; now that state loads on route pick, the pass lives here, over the data it just loaded (the eval-time copy saw an empty object and sanitized nothing).
@@ -4489,6 +4506,11 @@ function restoreBackup(parsed) { // production doRestore semantics: validate EVE
       if (field === 'done' && pv && typeof pv === 'object' && !Array.isArray(pv)) {
         v = JSON.stringify(Object.keys(pv).filter(nm => pv[nm] && (nameSet || STREETSET).has(nm))); // legacy done-set was a street->time map; migrate like the loader does. Beta 1.117 (F6): filtered against the TARGET route's names (nameSet), not the open route's
       } else if (shape === 'arr' ? !Array.isArray(pv) : !(pv && typeof pv === 'object' && !Array.isArray(pv))) { toast('Backup value for ' + label + ' has the wrong shape — nothing was changed', 3200); return false; }
+      if ((field === 'hist' || field === 'trail' || field === 'sess') && Array.isArray(pv) && pv.length > (field === 'hist' ? 10 : TRAIL_MAX)) { // Beta 1.152 (NV round, NV4): the writers' caps, enforced inside restore validation (validate-then-write: the STORED value is the capped one, so no backup can hand the load an oversized array). Only crafted backups are affected - a genuine backup never exceeds the caps its writers enforce. History caps with trimHistory's own eviction rule via the LINEAR capHistoryList (app1), fullness judged against the TARGET route's street count; the trail and the session markers keep their newest entries, as their writers keep them. Markers are first given the loader's own sanitize (finite, de-duplicated, sorted) so the stored value is exactly what the load would have made of it, capped.
+        if (field === 'hist') v = JSON.stringify(capHistoryList(pv, nameSet ? nameSet.size : STREETNAMES.length));
+        else if (field === 'trail') v = JSON.stringify(pv.slice(pv.length - TRAIL_MAX));
+        else { const cs = [...new Set(pv.map(x => Number(x)).filter(x => Number.isFinite(x)))].sort((a, b) => a - b); v = JSON.stringify(cs.slice(Math.max(0, cs.length - TRAIL_MAX))); }
+      }
     }
     entries.push([targetKey, v]); return true;
   };
@@ -4601,7 +4623,9 @@ $('xImp').addEventListener('click', () => doRestore());
 function tileNums(lng, lat, z) { const n = 2 ** z; const x = Math.floor((lng + 180) / 360 * n); const la = lat * Math.PI / 180; const y = Math.floor((1 - Math.log(Math.tan(la) + 1 / Math.cos(la)) / Math.PI) / 2 * n); return [x, y]; }
 let preloadRunning = false; // Beta 1.92 (deep audit F07): single-flight - a second tap while a download runs starts no competing job
 function packTileUrls(pk) { // Beta 1.117 (F5): the TILE urls attributable to ONE pack - its offline area (pack.box; a pack without one falls back to its own roads' bounds) at z8-14 plus its z15 route core. Sprites and glyphs are shared chrome, attributable to no route. preloadUrlList unions this over every known pack; the per-route preload record counts against it.
+  // Beta 1.152 (NV round, NV3b): the enumeration itself is budgeted - PACK_TILES_MAX tile iterations for this pack, each zoom's span counted BEFORE its loop runs and the zoom skipped whole when it does not fit. normalizePack's extent ceiling (NV3a) rejects such a pack at every import path, but a pack record planted straight into storage never passes through the validator, and this function runs at every boot that carries a preload record: a worldwide box is ~356.8M iterations per source and never returned (measured). Under the budget the output is identical to the unbudgeted enumeration - proven against the frozen 897-URL fixture by tests/browser/selftest-nv1152.mjs.
   const urls = new Set();
+  let budget = PACK_TILES_MAX;
   for (const key of ['day', 'night']) {
     const stj = GL_STYLES[key];
     for (const srcName of Object.keys(stj.sources || {})) {
@@ -4611,15 +4635,16 @@ function packTileUrls(pk) { // Beta 1.117 (F5): the TILE urls attributable to ON
       const ex = pk.box || computeRouteBox(pk.roads || {});
       // tile y grows SOUTHWARD: the north edge (y1) is the smaller number - looping y0..y1 (the pre-1.34 code) silently downloaded ZERO tiles; drive123 A8 counts the fetched tile URLs so this can never pass unnoticed again
       // Beta 1.72 (Phase 3, item R04): the wide zooms join the set - the map itself allows zoom 8 (minZoom), but the preload stopped at z10, so offline at z8-9 the basemap had nothing to draw. Over the Vaughan box those zooms are 3 tiles (1 + 2).
-      if (ex) for (let z = 8; z <= maxz; z++) { const [x0, y1] = tileNums(ex.w, ex.n, z); const [x1, y0] = tileNums(ex.e, ex.s, z); for (let x = x0; x <= x1; x++) for (let y = y1; y <= y0; y++) for (const t of src.tiles) urls.add(t.replace('{z}', z).replace('{x}', x).replace('{y}', y)); }
+      if (ex) for (let z = 8; z <= maxz; z++) { const [x0, y1] = tileNums(ex.w, ex.n, z); const [x1, y0] = tileNums(ex.e, ex.s, z); const span = (x1 - x0 + 1) * (y0 - y1 + 1) * src.tiles.length; if (!(span <= budget)) continue; budget -= Math.max(0, span); for (let x = x0; x <= x1; x++) for (let y = y1; y <= y0; y++) for (const t of src.tiles) urls.add(t.replace('{z}', z).replace('{x}', x).replace('{y}', y)); }
       // Beta 1.41: display zooms 15-19 all render from z15 tiles (the source's maxzoom) - yet the set above stops at 14, so the working zoom band was the LEAST cached. Add z15 over the route core only (the pack's own roads bounds + margin, so it cannot drift): 15 tiles for 5W. z15 over the whole Vaughan box would be ~1,400 files for streets he never opens.
-      if ((src.maxzoom || 14) >= 15) { const rb = computeRouteBox(pk.roads || {}); if (rb) { const cb = { w: rb.w - 0.005, s: rb.s - 0.004, e: rb.e + 0.005, n: rb.n + 0.004 }; const [cx0, cy1] = tileNums(cb.w, cb.n, 15); const [cx1, cy0] = tileNums(cb.e, cb.s, 15); for (let x = cx0; x <= cx1; x++) for (let y = cy1; y <= cy0; y++) for (const t of src.tiles) urls.add(t.replace('{z}', 15).replace('{x}', x).replace('{y}', y)); } }
+      if ((src.maxzoom || 14) >= 15) { const rb = computeRouteBox(pk.roads || {}); if (rb) { const cb = { w: rb.w - 0.005, s: rb.s - 0.004, e: rb.e + 0.005, n: rb.n + 0.004 }; const [cx0, cy1] = tileNums(cb.w, cb.n, 15); const [cx1, cy0] = tileNums(cb.e, cb.s, 15); const span15 = (cx1 - cx0 + 1) * (cy0 - cy1 + 1) * src.tiles.length; if (span15 <= budget) { budget -= Math.max(0, span15); for (let x = cx0; x <= cx1; x++) for (let y = cy1; y <= cy0; y++) for (const t of src.tiles) urls.add(t.replace('{z}', 15).replace('{x}', x).replace('{y}', y)); } } }
     }
   }
   return urls;
 }
 function preloadUrlList() { // Beta 1.95 (deep audit SR-194-06): the deterministic preload set, extracted from the download handler so the offline-pack migration below derives its manifest from the SAME list - one source of truth, the two can never drift apart. Beta 1.117 (F5): the tile part is the UNION over every pack the app knows (each pack's area + core, the packTileUrls enumeration inlined per source so the list's ORDER - and therefore the pack fingerprint the offline contract pins - is unchanged from the single-pack era). With only Route 5W shipped the list is exactly the frozen 897: the 5W pack's box IS the Beta 1.34 Vaughan box (Vaughan + nearby at full street detail; day and night are two skins over these SAME tiles, so this one set covers both modes). It reads PACK data only, never the live route, so it is identical before any route is chosen.
   const urls = new Set();
+  const budgets = new Map(); // Beta 1.152 (NV round, NV3b): the per-pack tile budget (see packTileUrls) - this enumeration nests style > source > pack, so each pack's remaining budget travels in a Map keyed by the pack object; the semantics are identical.
   for (const key of ['day', 'night']) {
     const stj = GL_STYLES[key]; // Beta 1.33: the styles are embedded objects (pmstyles.js) - already in the shell, nothing to fetch
     const spr = Array.isArray(stj.sprite) ? stj.sprite[0].url : stj.sprite;
@@ -4633,9 +4658,11 @@ function preloadUrlList() { // Beta 1.95 (deep audit SR-194-06): the determinist
         const ex = pk.box || computeRouteBox(pk.roads || {});
         // tile y grows SOUTHWARD: the north edge (y1) is the smaller number - looping y0..y1 (the pre-1.34 code) silently downloaded ZERO tiles; drive123 A8 counts the fetched tile URLs so this can never pass unnoticed again
         // Beta 1.72 (Phase 3, item R04): the wide zooms join the set - the map itself allows zoom 8 (minZoom), but the preload stopped at z10, so offline at z8-9 the basemap had nothing to draw. Over the Vaughan box those zooms are 3 tiles (1 + 2).
-        if (ex) for (let z = 8; z <= maxz; z++) { const [x0, y1] = tileNums(ex.w, ex.n, z); const [x1, y0] = tileNums(ex.e, ex.s, z); for (let x = x0; x <= x1; x++) for (let y = y1; y <= y0; y++) for (const t of src.tiles) urls.add(t.replace('{z}', z).replace('{x}', x).replace('{y}', y)); }
+        let budget = budgets.get(pk) ?? PACK_TILES_MAX;
+        if (ex) for (let z = 8; z <= maxz; z++) { const [x0, y1] = tileNums(ex.w, ex.n, z); const [x1, y0] = tileNums(ex.e, ex.s, z); const span = (x1 - x0 + 1) * (y0 - y1 + 1) * src.tiles.length; if (!(span <= budget)) continue; budget -= Math.max(0, span); for (let x = x0; x <= x1; x++) for (let y = y1; y <= y0; y++) for (const t of src.tiles) urls.add(t.replace('{z}', z).replace('{x}', x).replace('{y}', y)); }
         // Beta 1.41: display zooms 15-19 all render from z15 tiles (the source's maxzoom) - yet the set above stops at 14, so the working zoom band was the LEAST cached. Add z15 over the route core only (the pack's own roads bounds + margin, derived from the pack's own data so it cannot drift): 15 tiles for 5W. z15 over the whole Vaughan box would be ~1,400 files for streets he never opens.
-        if ((src.maxzoom || 14) >= 15) { const rb = computeRouteBox(pk.roads || {}); if (rb) { const cb = { w: rb.w - 0.005, s: rb.s - 0.004, e: rb.e + 0.005, n: rb.n + 0.004 }; const [cx0, cy1] = tileNums(cb.w, cb.n, 15); const [cx1, cy0] = tileNums(cb.e, cb.s, 15); for (let x = cx0; x <= cx1; x++) for (let y = cy1; y <= cy0; y++) for (const t of src.tiles) urls.add(t.replace('{z}', 15).replace('{x}', x).replace('{y}', y)); } }
+        if ((src.maxzoom || 14) >= 15) { const rb = computeRouteBox(pk.roads || {}); if (rb) { const cb = { w: rb.w - 0.005, s: rb.s - 0.004, e: rb.e + 0.005, n: rb.n + 0.004 }; const [cx0, cy1] = tileNums(cb.w, cb.n, 15); const [cx1, cy0] = tileNums(cb.e, cb.s, 15); const span15 = (cx1 - cx0 + 1) * (cy0 - cy1 + 1) * src.tiles.length; if (span15 <= budget) { budget -= Math.max(0, span15); for (let x = cx0; x <= cx1; x++) for (let y = cy1; y <= cy0; y++) for (const t of src.tiles) urls.add(t.replace('{z}', 15).replace('{x}', x).replace('{y}', y)); } } }
+        budgets.set(pk, budget);
       }
     }
   }
@@ -4944,7 +4971,7 @@ $('stDel').addEventListener('click', async () => {
 });
 // ---- About / What's new ----
 const WHATSNEW = { // the curated in-app notes: plain words, LATEST RELEASE ONLY (Beta 1.114, Andrew: the accumulated list cluttered the About pane). A release REPLACES this entry with its own in the same change - it never accumulates; the full history lives in CHANGELOG.md, not the app
-  v: 'Beta 1.151', items: ["A fix for the fix: the last update's new safety check for saved city street data also rejected areas that legitimately have no named streets (parks, lakes, city edges), so a saved city re-downloaded those areas every time and could finish 'degraded' offline — empty areas are recognised as complete again, while a damaged street cache is still rejected and fetched fresh"]};
+  v: 'Beta 1.152', items: ["Safety hardenings from the security review's follow-up list: a route file claiming a worldwide map area is now refused instead of freezing the app while it tries to list map tiles for the whole planet, and the tile lister itself stops at a safe limit even for a tampered saved route; a route's streets are capped at a total length far beyond any real city, so a crafted route can't exhaust the phone's memory; an oversized run history or GPS trail smuggled in through a backup or saved data is trimmed back to the normal limits when it loads, so finishing a run can never stall; and the street-joining maths now skips far-away streets before measuring them, so large routes build much faster with identical results"]};
 function renderAbout() {
   const cur = $('ver').textContent.trim();
   $('wnHead').textContent = "WHAT'S NEW · " + cur; // the header names the LIVE version, read from the title's version element - never a second hard-coded copy that can go stale
@@ -5335,6 +5362,7 @@ function normalizePack(raw, opts) { // -> { ok: true, pack } | { ok: false, erro
   if (!opts.draft && !name) return bad('the route has no name');
   const area = typeof raw.area === 'string' ? raw.area.trim().slice(0, PACK_AREA_MAX) : '';
   let totalPts = 0;
+  let totalLen = 0;
   const cleanRoads = (obj, label) => {
     if (!obj || typeof obj !== 'object' || Array.isArray(obj)) return { error: 'the ' + label + ' are missing or the wrong shape' };
     const out = {}; const names = Object.keys(obj);
@@ -5355,7 +5383,7 @@ function normalizePack(raw, opts) { // -> { ok: true, pack } | { ok: false, erro
           if (!seg.length || seg[seg.length - 1][0] !== p[0] || seg[seg.length - 1][1] !== p[1]) seg.push(p);
           if (++totalPts > PACK_POINTS_MAX) return { error: 'the route is too big' };
         }
-        if (seg.length > 1) segs.push(seg);
+        if (seg.length > 1) { segs.push(seg); for (let li = 1; li < seg.length; li++) totalLen += distM(seg[li - 1], seg[li]); if (totalLen > PACK_LENGTH_MAX_M) return { error: 'the route is too long' }; } // Beta 1.152 (NV round, NV1): the total-length ceiling, accumulated over the CLEANED segments (roads and reference alike). Nothing else bounds a pack's length - the point caps alone allow one crafted street of ~246,000 km - and samplesFor (app3) lays one sample per COV_SAMPLE_M over whatever it is given: the audit measured 16.4M samples / ~756 MB from a single crafted street. The ceiling (~4x the worst legitimate pack, the 300 longest Toronto streets at 2,962 km) bounds every validated pack to ~800,000 samples.
       }
       if (!segs.length) return { error: 'the street "' + nm + '" has no usable shape' };
       out[nm] = segs;
@@ -5378,6 +5406,7 @@ function normalizePack(raw, opts) { // -> { ok: true, pack } | { ok: false, erro
   let box = null;
   if (raw.box && isFinite(raw.box.w) && isFinite(raw.box.s) && isFinite(raw.box.e) && isFinite(raw.box.n) && raw.box.w < raw.box.e && raw.box.s < raw.box.n) box = { w: raw.box.w, s: raw.box.s, e: raw.box.e, n: raw.box.n };
   else { const cb = computeRouteBox({ ...rc.roads, ...reference }); if (cb) box = { w: Math.max(-180, cb.w - 0.03), s: Math.max(-90, cb.s - 0.025), e: Math.min(180, cb.e + 0.03), n: Math.min(90, cb.n + 0.025) }; }
+  if (box && (box.w < -180 || box.e > 180 || box.s < -90 || box.n > 90 || box.e - box.w > PACK_BOX_MAX_DEG || box.n - box.s > PACK_BOX_MAX_DEG)) return bad('the route area is too big'); // Beta 1.152 (NV round, NV3a): extent and world-bounds validation, fail-closed like every other check here, over the declared box and the derived one alike. A box is an offline-download area and the tile enumerators (app4) iterate it zoom by zoom: a worldwide box enumerates ~356.8M tile URLs per source and never returns (measured) - it is a preload wedge, not a route. The ceiling (~7.6x the widest shipped city bbox, 10x the declared 5W box) rejects it at EVERY entry point, this validator being the single gate for draft import, save, backup restore and the boot merge. The enumerators carry their own budget as well (NV3b), for records that never pass through here.
   const cleaned = { name, area, main: mains, spot: {}, tileNames: [...tileSet], box, roads: rc.roads, reference };
   const pack = {};
   for (const f of PACK_FIELDS) { if (f in cleaned) pack[f] = cleaned[f]; else if (raw[f] !== undefined) pack[f] = raw[f]; } // Beta 1.131 (programme A): the pack is built by walking PACK_FIELDS (app1) - the list is the single source for what a pack carries. Every listed field has a cleaner above today, so the raw fall-through never fires; it exists so a future field added to the list (before its cleaner lands) is carried through rather than silently dropped - the pre-1.131 trap was the hand-written return literal here forgetting a field.
