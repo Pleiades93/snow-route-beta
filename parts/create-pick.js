@@ -349,10 +349,10 @@ function crRenderCityChoices() {
     }
   });
 }
-function crPackPickCity(e) { // a chooser tap IS a city pick: it lands in the same crPickCity the typed search uses, with the catalogue's own bounds - so preparation, caching and the pick stage behave identically whichever door named the city
-  draft = newDraft();
+function crPackPickCity(e) { // a chooser tap IS a city pick: it lands in the same crPickCity the typed search uses, with the catalogue's own bounds - so preparation, caching and the pick stage behave identically whichever door named the city. Beta 1.147 (hypothesis H2 hardening): the reset + pick run through askDiscard, so the discard guard is local to this handler and not just a property of the pane graph - askDiscard no-ops on an empty draft, so first entry is unchanged
   const s = +e.bbox[0], w = +e.bbox[1], n = +e.bbox[2], ee = +e.bbox[3];
-  crPickCity({ lat: String((s + n) / 2), lon: String((w + ee) / 2), boundingbox: [String(s), String(n), String(w), String(ee)], display_name: e.name + ', Ontario, Canada', address: { city: e.name, state: 'Ontario', country: 'Canada', country_code: 'ca' } });
+  askDiscard(() => { draft = newDraft();
+  crPickCity({ lat: String((s + n) / 2), lon: String((w + ee) / 2), boundingbox: [String(s), String(n), String(w), String(ee)], display_name: e.name + ', Ontario, Canada', address: { city: e.name, state: 'Ontario', country: 'Canada', country_code: 'ca' } }); });
 }
 function crOpenCityPane(ret) {
   crCityLookupSeq++; if (crCityLastCtl) { try { crCityLastCtl.abort(); } catch (e) {} crCityLastCtl = null; } // reopening the pane supersedes any held lookup (CG-PF-11)
@@ -668,7 +668,7 @@ function importDraft(text) { // fail closed, named errors, nothing half-applied 
 // ---- Door 2: city first (Andrew's amendment) -> prepare the area's street shapes once -> tap roads, resolved locally ----
 $('crDoorList').addEventListener('click', () => { showRmPane('rmCityListPane'); crRenderCityChoices(); }); // Beta 1.124: Select from list - the city rows render fresh on every entry to the list pane
 $('rmCityListBack').addEventListener('click', () => showRmPane('rmCreatePane')); // the list pane backs to the doors pane (the mockup's pane-to-pane Back chain)
-$('crDoorManual').addEventListener('click', () => { draft = newDraft(); crOpenCityPane('doors'); });
+$('crDoorManual').addEventListener('click', () => { askDiscard(() => { draft = newDraft(); crOpenCityPane('doors'); }); }); // Beta 1.147 (hypothesis H2 hardening): the same local askDiscard wrap as crPackPickCity - no-op on an empty draft, so first entry is unchanged
 $('crCityInput').addEventListener('input', () => { // Beta 1.143 (DA-12, verify cycle 1): EVERY input change invalidates the in-flight search AT THE EVENT - bump + abort here, not when the debounce next runs the search (a response landing inside the 500 ms window otherwise renders into a field the user has already moved past). The street search's handler below has always had this shape; crRunCitySearch's own bump remains the backstop for programmatic calls
   crCitySeq++; if (crCityCtl) { try { crCityCtl.abort(); } catch (e) {} crCityCtl = null; }
   if (crCityTimer) { clearTimeout(crCityTimer); crCityTimer = null; }
