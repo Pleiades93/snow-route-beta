@@ -93,7 +93,7 @@ function crGridCellsFor(bbox) { // the ~4 x 4 km grid over a city bounding box (
   }
   return cells;
 }
-function crGridCurrent(g) { return !!g && crGrid === g && creating && crSession === g.session && crCovGen === g.gen; }
+function crGridCurrent(g) { return !!g && crGrid === g && creating && crSession === g.session && crCovGen === g.gen; } // Beta 1.154 (B3 build, G3 option (i)): the grid family's current-check under the one convention (stated at crSearchCurrent in create-pick.js); its true input is the grid object itself (identity + its session + its generation)
 function crGridDoneCount() { return crGrid ? crGrid.cells.filter(c => c.state === 'done').length : 0; }
 function crGridFailedCount() { return crGrid ? crGrid.cells.filter(c => c.state === 'failed').length : 0; }
 function crGridPendingCount() { return crGrid ? crGrid.cells.filter(c => c.state === 'pending' || c.state === 'fetching').length : 0; }
@@ -114,7 +114,7 @@ function crGridStop(why) { // stop scheduling, abort the downloads in flight, KE
 }
 function crGridFinish(g) {
   if (g.ticker) { clearInterval(g.ticker); g.ticker = null; }
-  crPrepState = crGridSettledState();
+  crSetPrepState(crGridSettledState());
   if (crPrepState === 'failed' && g.lastFail) { crPrepFail = g.lastFail; crFailFromGrid = true; }
   if (crPrepState === 'ready' || crPrepState === 'degraded') crSweepPending();
   crRenderHint();
@@ -159,7 +159,7 @@ function crCityPrepare() { // a city is picked: load its whole extract - from th
   crPackCtx = null; crPackNote = ''; // Beta 1.123: a new city's preparation re-decides its source (pack vs service) below
   const cells = crGridCellsFor(bbox);
   const g = crGrid = { name, bbox, cells, gen, session, startedAt: Date.now(), ticker: null, ops: new Set(), active: 0, fromCache: false, savedAt: null, stopped: null, lastFail: null };
-  crPrepState = 'preparing'; crPrepFail = null; crWanted = null;
+  crSetPrepState('preparing'); crPrepFail = null; crFailFromGrid = false; crWanted = null; // Beta 1.154 (B3 build): crFailFromGrid clears at THIS entry too - through 1.153 it survived a city change (the 2026-11-09 lifecycle trace's cross-session latch finding); S1/S8 always cleared it at entry, S6 now does the same
   crRenderHint();
   crIdbGet(name).then(rec => {
     if (!crGridCurrent(g)) return;
@@ -182,7 +182,7 @@ function crCityPrepare() { // a city is picked: load its whole extract - from th
       }
       if (restored) { g.fromCache = true; g.savedAt = rec.savedAt || null; }
     }
-    if (restored === g.cells.length) { crPrepState = 'ready'; crSweepPending(); crRenderHint(); return; } // fully saved: instant ready, ZERO downloads (amendment C)
+    if (restored === g.cells.length) { crSetPrepState('ready'); crSweepPending(); crRenderHint(); return; } // fully saved: instant ready, ZERO downloads (amendment C)
     // Beta 1.123: resolve the pack BEFORE the pump starts, so the source
     // decision is the grid's from its first cell (and the hint can name
     // it). A pack city skips the minutes warning - its first load is one
@@ -202,7 +202,7 @@ function crGridResume() { // the degraded/stopped remedy: fetch ONLY the missing
   g.gen = ++crCovGen; // Cancel bumped the coverage generation to orphan late answers (CG-PF-05); resuming ADOPTS the grid into the live generation, or the pump would refuse it as obsolete and fetch nothing
   g.stopped = null; g.startedAt = Date.now();
   for (const c of g.cells) if (c.state === 'failed') { c.state = 'pending'; c.tries = 0; }
-  crPrepState = 'preparing'; crPrepFail = null; crFailFromGrid = false; crWanted = null;
+  crSetPrepState('preparing'); crPrepFail = null; crFailFromGrid = false; crWanted = null;
   if (g.ticker) clearInterval(g.ticker);
   g.ticker = setInterval(() => { if (crGridCurrent(g) && crPrepState === 'preparing') crRenderHint(); else if (g.ticker) clearInterval(g.ticker); }, 1000);
   crRenderHint();

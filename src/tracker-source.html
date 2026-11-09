@@ -430,7 +430,7 @@ input, textarea { caret-color: currentColor; } /* Beta 1.125 (Andrew): the typin
 <div id="hud">
   <div id="warn">Not saving — storage is full or blocked</div>
   <div class="row">
-    <div class="titleStack"><div class="title">Snow Route Beta</div><div class="ver" id="ver">Beta 1.153</div></div>
+    <div class="titleStack"><div class="title">Snow Route Beta</div><div class="ver" id="ver">Beta 1.154</div></div>
   </div>
   <div id="stats"></div>
 </div>
@@ -4976,7 +4976,7 @@ $('stDel').addEventListener('click', async () => {
 });
 // ---- About / What's new ----
 const WHATSNEW = { // the curated in-app notes: plain words, LATEST RELEASE ONLY (Beta 1.114, Andrew: the accumulated list cluttered the About pane). A release REPLACES this entry with its own in the same change - it never accumulates; the full history lives in CHANGELOG.md, not the app
-  v: 'Beta 1.153', items: ["Your fixes from testing: a city that loaded fine no longer offers a Refresh button — tapping it used to throw away the good copy and download the whole city again; if a load ever fails, the Retry that appears does the real repair. The pill under the search bar now just confirms the city and when it loaded, then clears itself after a few seconds. The road-picking panel is headed 'Current selection', tapping a road no longer pops up an 'Added' message, and search suggestions now come only from the city you have loaded — never from all over the world. The confirmation screen is titled 'Review selection', without the extra line under it. And the whole app now uses one font throughout. The opening has changed too: the Snow Route title no longer fades away — it rises up and settles into place above the Choose route / Create new route buttons while they fade in beneath it."]};
+  v: 'Beta 1.154', items: ["Under-the-hood work on the road-loading machinery — nothing about how the app looks or handles changes. The loading state (loading, ready, partly loaded, failed) is now kept in one checked record that only allows the moves the app actually makes, so it can't end up in an impossible state. Three small glitches found while tracing that machinery are fixed: a 'failed' flag from one city can no longer linger into the next city or the next visit; when a load has failed and an area still needs preparing, the button under the search bar now says 'Prepare this area' — what tapping it actually does — instead of 'Retry'; and a dead duplicate of the failure handling was removed. Loading, resuming and retrying all behave exactly as before."]};
 function renderAbout() {
   const cur = $('ver').textContent.trim();
   $('wnHead').textContent = "WHAT'S NEW · " + cur; // the header names the LIVE version, read from the title's version element - never a second hard-coded copy that can go stale
@@ -5441,10 +5441,8 @@ function nextRouteNameGuess() { let mx = 1; for (const p of ROUTE_PACKS) { const
 let creating = false, crStage = 'pick', crBootParked = false, crAreaGuess = '', crPhoto = null, crPickBusy = false; // Beta 1.128: crReturnToPreview is GONE - it existed only to rewrite the panel's Done label on the return-from-preview errand, and the label no longer rewrites (Andrew: the button reads "Done", always)
 let draft = null; // { roads, mains: Set, osmNames, tileNames: [..], name, area, sectors, parts } - EVERY street key is the FULL map name (Beta 1.144, DA-04; osmNames maps a key to itself for tapped streets and stays empty for imported ones, whose pack keys are their own); sectors: {name: [chosen part indexes]} (Beta 1.127 - an ABSENT entry means the whole road), parts: {name: crStreetParts record} (session cache)
 function newDraft() { return { roads: {}, mains: new Set(), osmNames: {}, tileNames: [], name: '', area: '', sectors: {}, parts: {} }; }
-let crSectorStreet = null; // Beta 1.127: the street whose sectors are being trimmed (sector mode), or null
-let crSectorSnapshot = undefined; // Beta 1.129: the street's sector pick as it stood when sector mode was ENTERED (null = the whole road; an array = the trim then in force) - the sector bar's Cancel restores exactly this. undefined = no sector session in flight
-function crSectorReset() { crSectorStreet = null; crSectorSnapshot = undefined; } // Beta 1.136 (programme F): a sector session's teardown in ONE place - through 1.135 the pair (street cleared, Cancel snapshot dropped) was written out at six sites (street removal, sector close, stage change, creation start, creation exit, draft start-over); every one of them now calls this, so a seventh field in the session state would have exactly one home to join
-let crPanelCollapsed = false; // Beta 1.127: the picked-roads panel's tucked-away state (the slim strip shows instead)
+let crSectorSession = { street: null, snapshot: undefined, collapsed: false, face: 'panel' }; // Beta 1.154 (B3 build): the sector/panel session as ONE record - through 1.153 its fields were four loose bindings (crSectorStreet + crSectorSnapshot + crPanelCollapsed here, crFaceNow beside crMorph in create-pick.js). The fields: street (Beta 1.127: the street whose sectors are being trimmed, or null), snapshot (Beta 1.129: the street's sector pick as it stood when sector mode was ENTERED - null = the whole road, an array = the trim then in force; undefined = no sector session in flight), collapsed (Beta 1.127: the picked-roads panel's tucked-away state - the slim strip shows instead), face (the face the pick sheet's surface currently rests as; crMorph in create-pick.js stays a separate binding - it is the morph's in-flight descriptor, not session state). The session is three lifecycles sharing one surface (the blocked record's extraction): the sector pair, the panel's tuck, the sheet's face
+function crSectorReset() { crSectorSession.street = null; crSectorSession.snapshot = undefined; } // Beta 1.136 (programme F): a sector session's teardown in ONE place - through 1.135 the pair (street cleared, Cancel snapshot dropped) was written out at six sites (street removal, sector close, stage change, creation start, creation exit, draft start-over); every one of them now calls this. It closes the PAIR ONLY: a stage change resets the pair and deliberately leaves collapsed/face alone, and creation start/exit clear collapsed separately, exactly as through 1.153
 function draftStreets() { return draft ? Object.keys(draft.roads) : []; }
 
 // ---- city-first preparation (Beta 1.121, audit round pickfetch) ----
@@ -5483,7 +5481,11 @@ let crTopOp = null; // the in-flight top-up's cancellation handle (crOverpassFet
 let crCovGen = 0; // the coverage generation
 let crPrep = null; // { gen, session, anchor, startedAt, ticker, op } while a FALLBACK box preparation is in flight
 let crGrid = null; // { name, bbox, cells: [{ key, box, state, tries }], gen, session, startedAt, ticker, ops: Set, active, fromCache, savedAt, stopped, lastFail } while a CITY grid preparation exists (kept after it settles, for progress/resume state)
-let crPrepState = 'none'; // 'none' | 'preparing' | 'ready' | 'degraded' | 'failed'  ('degraded': a city grid settled with parts missing - what loaded is usable, the rest is resumable)
+let crPrepState = 'none'; // 'none' | 'preparing' | 'ready' | 'degraded' | 'failed'  ('degraded': a city grid settled with parts missing - what loaded is usable, the rest is resumable). Beta 1.154 (B3 build): app writes go through crSetPrepState below - a direct assignment survives only as the battery's scenario seeding, never in app code
+// Beta 1.154 (B3 build, part 1): THE PREP STATE RECORD. The transition table is the OBSERVED lifecycle - all 13 edges driven through the real UI / preparation paths in the 2026-11-09 lifecycle trace (beta1/work/b3-lifecycle-trace/TRACE-RECORD.md), none inferred. A write outside the table is REFUSED (the state does not move) and recorded in crPrepViolations: entry writes (-> 'preparing') and the exit write (-> 'none') are legal from every state, and every settled landing is guard-gated to fire only from 'preparing', from which all four landings are in-table - so a refusal can only fire on a future bug or a foreign write, which is what the record exists to catch. (A write of the state already held is a re-assertion, not a transition - see the setter.) The setter owns validation + assignment ONLY: each write site's side effects (fail set/clear, anchor, wanted, sweeps, renders) stay at the site, because the sites share no common bundle.
+const CR_PREP_EDGES = { none: ['preparing', 'none'], preparing: ['preparing', 'ready', 'degraded', 'failed', 'none'], ready: ['preparing', 'none'], degraded: ['preparing', 'none'], failed: ['preparing', 'none'] };
+const crPrepViolations = []; // 'from->to' of every refused transition - empty in every healthy run; the battery's teeth checks (drive181) read it
+function crSetPrepState(next) { if (next === crPrepState) return true; const row = CR_PREP_EDGES[crPrepState]; if (row && row.indexOf(next) >= 0) { crPrepState = next; return true; } crPrepViolations.push(crPrepState + '->' + next); return false; } // a write of the state the record already holds is a re-assertion, not a transition: the settle sites are re-entrant (two cell completions in one tick can both reach the grid's finish) and re-asserted the same value, unremarked, through 1.153 - the setter passes it, unrecorded (drive181's first CI run proved the re-assertions happen in healthy flows: ready->ready, failed->failed, degraded->degraded). A current state with no row in the table (a value the app itself never holds) refuses every CHANGE the same way - the record never throws
 let crPrepFail = null; // { kind: 'unreachable' | 'error' | 'dense' | 'badjson', status?, remark? }
 let crFailFromGrid = false; // which preparation produced crPrepFail - the Retry button resumes a failed GRID's missing cells but re-runs a failed fallback BOX at its anchor; the two must never be confused when both exist
 let crPrepAnchor = null; // where Retry / a not-ready tap re-prepares
@@ -5707,7 +5709,7 @@ function crResolve(osmName, lngLat, boundary) { // resolve a tapped street from 
   }
   return { status: 'ok', segs: best.exact ? best.segments.slice().sort((a, b) => crLineLen(b) - crLineLen(a)) : [best.line] };
 }
-function crPrepCurrent(gen, session) { return creating && crSession === session && crCovGen === gen && crPrepState === 'preparing'; }
+function crPrepCurrent(gen, session) { return creating && crSession === session && crCovGen === gen && crPrepState === 'preparing'; } // Beta 1.154 (B3 build, G3 option (i)): the prep family's current-check under the one convention - cr<Family>Current(<the family's own invalidation inputs>), answering "may this landing still write?" (the convention is stated at crSearchCurrent in create-pick.js); this family's true inputs are (gen, session)
 function crStartPrep(anchor) { // the FALLBACK preparation (second amendment, item D): one bounded box around an anchor, session-only - for places with no picked/saved city, and for anchors outside the city's coverage. The whole-city path is crCityPrepare below.
   if (!creating || !anchor || !isFinite(anchor.lat) || !isFinite(anchor.lng)) return;
   if (crCov && crInAnyBox(crCov.boxes, anchor.lat, anchor.lng) && crPrepState !== 'preparing') { crRenderHint(); return; } // verified coverage already includes this anchor - reuse it, no second download (CG-PF-04)
@@ -5716,7 +5718,7 @@ function crStartPrep(anchor) { // the FALLBACK preparation (second amendment, it
   if (crGrid) crGridStop('superseded'); // CG-PF-13: a fallback starting over a live grid must STOP the grid first - the generation bump below would otherwise orphan its in-flight cells in 'fetching' (their answers settle into the dead generation, their handlers discard them, and Resume - which only resets 'failed' cells - could never reschedule them, wedging the city mid-load forever). crGridStop aborts the grid's downloads and returns those cells to 'pending', so the city stays resumable; on a settled grid it changes nothing but the stopped marker, which crGridSettledState already reads correctly
   const session = crSession, gen = ++crCovGen;
   const outer = crBoxAround(anchor.lat, anchor.lng, CR_INNER_KM + CR_BUFFER_KM);
-  crPrepState = 'preparing'; crPrepFail = null; crFailFromGrid = false; crPrepAnchor = anchor; crWanted = null; // starting a preparation IS the answer to any outstanding offer
+  crSetPrepState('preparing'); crPrepFail = null; crFailFromGrid = false; crPrepAnchor = anchor; crWanted = null; // starting a preparation IS the answer to any outstanding offer
   const prep = crPrep = { gen, session, anchor, startedAt: Date.now(), ticker: null, op: {} };
   crRenderHint();
   prep.ticker = setInterval(() => { if (crPrepCurrent(gen, session)) crRenderHint(); else clearInterval(prep.ticker); }, 1000);
@@ -5727,10 +5729,9 @@ function crStartPrep(anchor) { // the FALLBACK preparation (second amendment, it
     if (res.kind === 'stale') return; // superseded mid-flight; the newer operation owns the state
     if (res.ok) {
       crCovMerge(res.json.elements, outer);
-      crPrepState = crGrid ? crGridSettledState() : 'ready'; // a fallback box landing does not pretend a part-missing city is whole: the settled state comes from the grid's own judge - CG-PF-14: the pending count alone promoted a city with a FAILED cell (nothing pending, one part refused) to plain 'ready', dropping the missing-parts disclosure and its Retry
-      if (crPrepState === 'failed' && crGrid && crGrid.lastFail) { crPrepFail = crGrid.lastFail; crFailFromGrid = true; } // the box landed but the city had wholly failed: keep the grid's honest failure and its Retry (mirrors crGridFinish)
+      crSetPrepState(crGrid ? crGridSettledState() : 'ready'); // a fallback box landing does not pretend a part-missing city is whole: the settled state comes from the grid's own judge - CG-PF-14: the pending count alone promoted a city with a FAILED cell (nothing pending, one part refused) to plain 'ready', dropping the missing-parts disclosure and its Retry. Beta 1.154 (B3 build): the copy of crGridFinish's failed-handling that stood on the next line through 1.153 is DELETED as dead code - crStartPrep stops the grid first (CG-PF-13), so the grid's stopped marker reads 'superseded' at this landing and crGridSettledState's stopped branch answers 'degraded' before its done===0 test can ever say 'failed'; the 2026-11-09 lifecycle trace observed this landing as ready/degraded only, with crPrepFail null throughout (TRACE-RECORD G1). The live copy is crGridFinish's, at the grid's own finish, where stopped is null and 'failed' IS reachable
       crSweepPending();
-    } else { crPrepState = 'failed'; crPrepFail = res; }
+    } else { crSetPrepState('failed'); crPrepFail = res; }
     crRenderHint();
   });
 }
@@ -5739,7 +5740,7 @@ function crCancelPrep() { // stops the wait AND the downloads (CG-PF-10), keeps 
   if (crGrid) crGridStop('cancelled');
   crCovGen++;
   crPrepFail = null;
-  crPrepState = crGrid ? crGridSettledState() : (crCov && crCov.boxes.length ? 'ready' : 'none');
+  crSetPrepState(crGrid ? crGridSettledState() : (crCov && crCov.boxes.length ? 'ready' : 'none'));
   crRenderHint();
 }
 function crSweepPending() { // a fresh extract may complete streets that were pending on a narrower one
@@ -5845,7 +5846,7 @@ function crGridCellsFor(bbox) { // the ~4 x 4 km grid over a city bounding box (
   }
   return cells;
 }
-function crGridCurrent(g) { return !!g && crGrid === g && creating && crSession === g.session && crCovGen === g.gen; }
+function crGridCurrent(g) { return !!g && crGrid === g && creating && crSession === g.session && crCovGen === g.gen; } // Beta 1.154 (B3 build, G3 option (i)): the grid family's current-check under the one convention (stated at crSearchCurrent in create-pick.js); its true input is the grid object itself (identity + its session + its generation)
 function crGridDoneCount() { return crGrid ? crGrid.cells.filter(c => c.state === 'done').length : 0; }
 function crGridFailedCount() { return crGrid ? crGrid.cells.filter(c => c.state === 'failed').length : 0; }
 function crGridPendingCount() { return crGrid ? crGrid.cells.filter(c => c.state === 'pending' || c.state === 'fetching').length : 0; }
@@ -5866,7 +5867,7 @@ function crGridStop(why) { // stop scheduling, abort the downloads in flight, KE
 }
 function crGridFinish(g) {
   if (g.ticker) { clearInterval(g.ticker); g.ticker = null; }
-  crPrepState = crGridSettledState();
+  crSetPrepState(crGridSettledState());
   if (crPrepState === 'failed' && g.lastFail) { crPrepFail = g.lastFail; crFailFromGrid = true; }
   if (crPrepState === 'ready' || crPrepState === 'degraded') crSweepPending();
   crRenderHint();
@@ -5911,7 +5912,7 @@ function crCityPrepare() { // a city is picked: load its whole extract - from th
   crPackCtx = null; crPackNote = ''; // Beta 1.123: a new city's preparation re-decides its source (pack vs service) below
   const cells = crGridCellsFor(bbox);
   const g = crGrid = { name, bbox, cells, gen, session, startedAt: Date.now(), ticker: null, ops: new Set(), active: 0, fromCache: false, savedAt: null, stopped: null, lastFail: null };
-  crPrepState = 'preparing'; crPrepFail = null; crWanted = null;
+  crSetPrepState('preparing'); crPrepFail = null; crFailFromGrid = false; crWanted = null; // Beta 1.154 (B3 build): crFailFromGrid clears at THIS entry too - through 1.153 it survived a city change (the 2026-11-09 lifecycle trace's cross-session latch finding); S1/S8 always cleared it at entry, S6 now does the same
   crRenderHint();
   crIdbGet(name).then(rec => {
     if (!crGridCurrent(g)) return;
@@ -5934,7 +5935,7 @@ function crCityPrepare() { // a city is picked: load its whole extract - from th
       }
       if (restored) { g.fromCache = true; g.savedAt = rec.savedAt || null; }
     }
-    if (restored === g.cells.length) { crPrepState = 'ready'; crSweepPending(); crRenderHint(); return; } // fully saved: instant ready, ZERO downloads (amendment C)
+    if (restored === g.cells.length) { crSetPrepState('ready'); crSweepPending(); crRenderHint(); return; } // fully saved: instant ready, ZERO downloads (amendment C)
     // Beta 1.123: resolve the pack BEFORE the pump starts, so the source
     // decision is the grid's from its first cell (and the hint can name
     // it). A pack city skips the minutes warning - its first load is one
@@ -5954,7 +5955,7 @@ function crGridResume() { // the degraded/stopped remedy: fetch ONLY the missing
   g.gen = ++crCovGen; // Cancel bumped the coverage generation to orphan late answers (CG-PF-05); resuming ADOPTS the grid into the live generation, or the pump would refuse it as obsolete and fetch nothing
   g.stopped = null; g.startedAt = Date.now();
   for (const c of g.cells) if (c.state === 'failed') { c.state = 'pending'; c.tries = 0; }
-  crPrepState = 'preparing'; crPrepFail = null; crFailFromGrid = false; crWanted = null;
+  crSetPrepState('preparing'); crPrepFail = null; crFailFromGrid = false; crWanted = null;
   if (g.ticker) clearInterval(g.ticker);
   g.ticker = setInterval(() => { if (crGridCurrent(g) && crPrepState === 'preparing') crRenderHint(); else if (g.ticker) clearInterval(g.ticker); }, 1000);
   crRenderHint();
@@ -5983,7 +5984,7 @@ function crRenderHint() { // the ONE writer of the pick-stage hint + its action 
   // The confirmation is exactly ONE render state: ready, restored from the
   // on-device cache, with nothing outstanding - no wanted offer pending and no
   // cache/pack note riding the text (a disclosure is not a confirmation).
-  const pillKey = (!crSectorStreet && crPrepState === 'ready' && crGrid && crGrid.fromCache && crGrid.savedAt && !crWanted && !(crCacheNote && crCity && crCacheNoteCity === crCity.name) && !(crPackNote && crCity)) ? crGrid.name + '@' + crGrid.savedAt : '';
+  const pillKey = (!crSectorSession.street && crPrepState === 'ready' && crGrid && crGrid.fromCache && crGrid.savedAt && !crWanted && !(crCacheNote && crCity && crCacheNoteCity === crCity.name) && !(crPackNote && crCity)) ? crGrid.name + '@' + crGrid.savedAt : '';
   if (pillKey) {
     if (crPillKey !== pillKey) { // a NEW confirmation: start its clock (a re-render of the same one leaves the clock running)
       if (crPillT) clearTimeout(crPillT);
@@ -5993,7 +5994,7 @@ function crRenderHint() { // the ONE writer of the pick-stage hint + its action 
     }
   } else if (crPillKey) { if (crPillT) clearTimeout(crPillT); crPillT = 0; crPillKey = ''; }
   const hint = $('createHint'), btn = $('crHintBtn');
-  if (crSectorStreet) { hint.textContent = 'Tap sectors to add or remove them'; hint.classList.add('on'); btn.style.display = 'none'; return; } // Beta 1.127 (mockup screen 1): while trimming, the pill says the one thing there is to do
+  if (crSectorSession.street) { hint.textContent = 'Tap sectors to add or remove them'; hint.classList.add('on'); btn.style.display = 'none'; return; } // Beta 1.127 (mockup screen 1): while trimming, the pill says the one thing there is to do
   let text = '', btnLabel = '';
   const secs = t0 => Math.max(0, Math.round((Date.now() - t0) / 1000));
   if (crPrepState === 'preparing' && crPrep) { text = 'Preparing street shapes for ' + (crCity ? crCity.name : 'this area') + '… ' + secs(crPrep.startedAt) + ' s'; btnLabel = 'Cancel'; } // the fallback box, when IT is the in-flight operation: it outranks the grid text - a settled (or still-loading) city grid must not label a box wait with stale part counts
@@ -6008,7 +6009,7 @@ function crRenderHint() { // the ONE writer of the pick-stage hint + its action 
     else { text = crGrid.name + ' loaded except ' + (crGridFailedCount() + crGridPendingCount()) + ' part' + ((crGridFailedCount() + crGridPendingCount()) === 1 ? '' : 's') + ' — streets there may be missing'; btnLabel = 'Retry missing parts'; }
     if (crWanted) btnLabel = crWanted.label;
   }
-  else if (crPrepState === 'failed') { text = crFailText(crPrepFail); btnLabel = crGrid ? 'Retry' : ((crPrepFail && crPrepFail.kind === 'dense') ? 'Prepare this area' : 'Retry'); } // grid failure: Retry resumes the missing cells. Box dense: Retry at the same anchor cannot help (fixed footprint) - the button prepares wherever the map now sits (CG-PF-09)
+  else if (crPrepState === 'failed') { text = crFailText(crPrepFail); btnLabel = crGrid ? 'Retry' : ((crPrepFail && crPrepFail.kind === 'dense') ? 'Prepare this area' : 'Retry'); if (crWanted) btnLabel = crWanted.label; } // grid failure: Retry resumes the missing cells. Box dense: Retry at the same anchor cannot help (fixed footprint) - the button prepares wherever the map now sits (CG-PF-09). Beta 1.154 (B3 build): the wanted override applies in this branch too, as it always did in the degraded/ready branches - through 1.153 an outstanding offer's button read 'Retry' here while the click actually started the fallback preparation at the wanted anchor (the 2026-11-09 lifecycle trace's label wart); with no offer outstanding the label stays 'Retry', and the click is then genuinely a retry
   else if (crPrepState === 'ready') {
     if (crGrid && crGrid.fromCache && crGrid.savedAt) { const d = new Date(crGrid.savedAt); text = crGrid.name + ' — loaded ' + d.toLocaleDateString('en-CA', { month: 'short', day: 'numeric' }); } // Beta 1.153 (Andrew): the pill is a load confirmation ONLY - city + when it loaded, no 'tap a road', and no Refresh button: a city that loaded fine offers no reload. The failed state's Retry (grid resume / re-prepare) is the one working remedy, and it predates this change.
     else text = draftStreets().length ? 'Tap a road on the map to add it' : 'Street shapes ready — tap a road';
@@ -6048,7 +6049,7 @@ function crRemoveStreet(name) { // Beta 1.127: the ONE removal path - the panel'
   if (draft.sectors) delete draft.sectors[name];
   if (draft.parts) delete draft.parts[name];
   delete crPending[name];
-  if (crSectorStreet === name) crSectorReset();
+  if (crSectorSession.street === name) crSectorReset();
   renderDraft(); renderCrLists(); crRenderHint();
 }
 // ---- sectors (Beta 1.127, Andrew's approved mockups in beta1/work/create-sectors-mockups/):
@@ -6130,7 +6131,7 @@ function crToggleSector(name, idx) {
   renderDraft(); renderCrLists(); renderSectorBar();
 }
 function crSectorTap(lngLat) { // a map tap while trimming: the sector under the tap toggles. The rendered draft features answer first (the wide invisible crDraftHit layer, the street pick's own +/-16/28 px box discipline); the geometry fallback - the nearest part of THIS street - covers what the renderer cannot answer, and never reaches for another street
-  const name = crSectorStreet; if (!name || !draft || !draft.roads[name]) return;
+  const name = crSectorSession.street; if (!name || !draft || !draft.roads[name]) return;
   const rec = crStreetParts(name); if (!rec) return;
   let idx = -1;
   if (map && typeof map.queryRenderedFeatures === 'function' && typeof map.project === 'function') {
@@ -6155,24 +6156,24 @@ function crSectorTap(lngLat) { // a map tap while trimming: the sector under the
 function crOpenSectors(name) { // opens a picked street's trimming - TWO doors since Beta 1.128 (Andrew's fork, decided from his 1.127 device session): the panel row (1.127) AND a map tap on the already-picked street (pickStreet routes here), which is where his finger went on device. Beta 1.129: entry SNAPSHOTS the street's pick as it stands (whole road, or the trim in force) - the sector bar's Cancel restores that snapshot exactly
   if (!draft || !draft.roads || !Object.prototype.hasOwnProperty.call(draft.roads, name)) return; // Beta 1.150: own-property at this door too - a prototype member must not read as a held run and carry the call into the parts work below
   if (!crStreetParts(name)) return;
-  if (crSectorStreet !== name) crSectorSnapshot = (draft.sectors && draft.sectors[name]) ? draft.sectors[name].slice() : null; // a fresh entry only - re-entering the same street's open session must not move Cancel's restore point
-  crSectorStreet = name;
+  if (crSectorSession.street !== name) crSectorSession.snapshot = (draft.sectors && draft.sectors[name]) ? draft.sectors[name].slice() : null; // a fresh entry only - re-entering the same street's open session must not move Cancel's restore point
+  crSectorSession.street = name;
   renderSectorBar();
   const sheet = $('createSheet');
   if (sheet && sheet.classList.contains('on')) crMorphTo('bar');
   else syncCrPanel();
   renderDraft(); crRenderHint();
 }
-function crCloseSectors() { if (!crSectorStreet) return; crSectorReset(); const sheet = $('createSheet'); if (sheet && sheet.classList.contains('on')) crMorphTo(crWantedFace()); else syncCrPanel(); crRenderHint(); }
+function crCloseSectors() { if (!crSectorSession.street) return; crSectorReset(); const sheet = $('createSheet'); if (sheet && sheet.classList.contains('on')) crMorphTo(crWantedFace()); else syncCrPanel(); crRenderHint(); }
 function crCancelSectors() { // Beta 1.129 (Andrew: "I still need a way to cancel selections while I'm selecting something"): the deliberate back-out of a sector session - the street's pick returns EXACTLY as it was when sector mode was entered (the whole road, or the trim then in force), every face repaints from the restored state, and sector mode closes back to the panel. Distinct from un-picking every sector by toggles, which still removes the street - that is a selection, this is an abandonment of the session's edits
-  const s = crSectorStreet; if (!s || !draft) return;
-  if (crSectorSnapshot) { draft.sectors = draft.sectors || {}; draft.sectors[s] = crSectorSnapshot.slice(); }
+  const s = crSectorSession.street; if (!s || !draft) return;
+  if (crSectorSession.snapshot) { draft.sectors = draft.sectors || {}; draft.sectors[s] = crSectorSession.snapshot.slice(); }
   else if (draft.sectors) delete draft.sectors[s];
   crCloseSectors();
   renderDraft(); renderCrLists();
 }
 function renderSectorBar() {
-  const s = crSectorStreet; if (!s || !draft || !draft.roads[s]) return;
+  const s = crSectorSession.street; if (!s || !draft || !draft.roads[s]) return;
   const rec = crStreetParts(s); if (!rec) return;
   const chosen = crChosenSet(s, rec);
   $('crSbName').textContent = shortStreetName(s); // Beta 1.144 (DA-04): the bar's title is a display surface - the short name, while the draft keys on the full one
@@ -6200,13 +6201,12 @@ function renderSectorBar() {
 // thing on screen at the end of it, at every frame between: one box,
 // never display:none, never teleported.
 let crMorph = null; // { from, to } while the surface morphs between faces, else null
-let crFaceNow = 'panel'; // the face the surface currently rests as (a morph's origin; crMorph.to is its destination)
 const CR_FACES = { panel: { el: 'crPanel', cls: null }, strip: { el: 'crStrip', cls: 'crG-strip' }, bar: { el: 'crSectorBar', cls: 'crG-bar' } }; // Beta 1.136 (programme F): the sheet's faces in ONE table - element id + geometry class per face. Through 1.135 the face list was written out at five sites (the element lookup, the rest-state toggles + display lines, the morph cleanup loop, the morph's two class flips); every one reads this table now, so a fourth face joins in exactly one place
 function crFaceEl(face) { return $(CR_FACES[face].el); }
 function crFaceClasses(sheet, face) { for (const f of Object.keys(CR_FACES)) { const cls = CR_FACES[f].cls; if (cls) sheet.classList.toggle(cls, f === face); } } // the sheet wears the named face's geometry: its class on, every other face's class off (the panel's geometry is the absence of both classes)
 function crWantedFace() { // the face the current state asks for: the sector bar while trimming; the strip whenever the panel is tucked away (Beta 1.128: at ANY pick count, zero included - an empty draft retracts too, where 1.127's strip demanded a non-empty draft and collapse at zero sprang down and bounced back); else the panel
-  if (crSectorStreet && draft && draft.roads[crSectorStreet]) return 'bar';
-  if (crPanelCollapsed) return 'strip';
+  if (crSectorSession.street && draft && draft.roads[crSectorSession.street]) return 'bar';
+  if (crSectorSession.collapsed) return 'strip';
   return 'panel';
 }
 function syncCrPanel() { // the REST state: the surface wears the wanted face's geometry class and exactly that face's content shows. Animated switches run through crMorphTo and land here; renders and stage changes call this directly. While a morph is in flight this no-ops - the morph's finish lands the rest state, so a mid-flight re-render can never tear the surface
@@ -6214,7 +6214,7 @@ function syncCrPanel() { // the REST state: the surface wears the wanted face's 
   const els = {}; for (const f of Object.keys(CR_FACES)) { els[f] = crFaceEl(f); if (!els[f]) return; }
   if (crMorph) return;
   const want = crWantedFace();
-  crFaceNow = want;
+  crSectorSession.face = want;
   crFaceClasses(sheet, want);
   for (const f of Object.keys(CR_FACES)) els[f].style.display = f === want ? '' : 'none';
   if (want === 'bar') renderSectorBar();
@@ -6235,7 +6235,7 @@ function crMorphTo(to, opts) { // THE face change: one surface, its geometry spr
   const sheet = $('createSheet'); if (!sheet) { syncCrPanel(); return; }
   opts = opts || {};
   crSettleMorph(); // a new decision supersedes an in-flight one - land it first
-  const from = crFaceNow;
+  const from = crSectorSession.face;
   if (from === to || !sheet.classList.contains('on')) { syncCrPanel(); return; }
   const fromEl = crFaceEl(from), toEl = crFaceEl(to);
   if (!fromEl || !toEl || fromEl.style.display === 'none') { syncCrPanel(); return; }
@@ -6265,15 +6265,15 @@ function crMorphTo(to, opts) { // THE face change: one surface, its geometry spr
   }, () => { crMorphCleanup(); syncCrPanel(); });
 }
 function crCollapsePanel(fromY, v0) { // tuck the surface away to the bottom bar: the one box contracts (Beta 1.129) - at any pick count, zero included
-  if (crPanelCollapsed) { syncCrPanel(); return; }
-  crPanelCollapsed = true;
+  if (crSectorSession.collapsed) { syncCrPanel(); return; }
+  crSectorSession.collapsed = true;
   const sheet = $('createSheet');
   if (!sheet || !sheet.classList.contains('on')) { syncCrPanel(); return; }
   crMorphTo('strip', { dy: fromY || 0, v0: -(v0 || 0) }); // the height starts shrinking at the finger's speed: its velocity is the drag velocity negated
 }
 function crExpandPanel() { // Review: the bar hands back to the panel in the same one-object motion, reversed
-  if (!crPanelCollapsed) return;
-  crPanelCollapsed = false;
+  if (!crSectorSession.collapsed) return;
+  crSectorSession.collapsed = false;
   crMorphTo('panel');
 }
 function crPendStreet(name, lngLat, run, boundary) { // fail-closed (Codex (c)): the shape reaches past verified coverage even after its one top-up - listed as PENDING, never added half-known; a wider preparation can still complete it (crSweepPending). Beta 1.144 (DA-04): keyed by the full map name, like every other draft structure
@@ -6358,6 +6358,9 @@ function crOpenCityPane(ret) {
 }
 let crCityTimer = null, crCitySeq = 0, crCityCtl = null;
 let crCityLookupSeq = 0, crCityLastCtl = null; // the one-tap last-city lookup's generation + abort handle (CG-PF-11: it is an async completion like any other - it binds to its generation, and any competing pick, Back, pane reopen or exit kills it)
+function crCitySearchCurrent(seq, session) { return seq === crCitySeq && session === crSession; } // Beta 1.154 (B3 build, G3 option (i)): the city-search LANDING's current-check - sequence AND session (the convention is stated at crSearchCurrent above)
+function crCitySearchSeqCurrent(seq) { return seq === crCitySeq; } // Beta 1.154: the city-search CATCH's current-check - sequence ONLY, deliberately weaker than the landing's: exitCreate does not bump crCitySeq (lifecycle trace T7: +0 across four exits), so a late failure from a closed session whose sequence still matches stays silent here exactly as it did inline through 1.153; the name carries the asymmetry so it is never "fixed" by accident
+function crCityLookupCurrent(seq, session) { return seq === crCityLookupSeq && session === crSession && $('rmCityPane').classList.contains('on'); } // Beta 1.154: the last-city lookup's current-check (CG-PF-11) - sequence + session + its pane still open; the handler's stillMine closure delegates here
 async function crRunCitySearch() {
   const q = $('crCityInput').value.trim(), box = $('crCityResults');
   if (q.length < 3) { crCitySeq++; if (crCityCtl) { try { crCityCtl.abort(); } catch (e) {} crCityCtl = null; } box.innerHTML = ''; return; } // Beta 1.143 (DA-12): a short/cleared query invalidates like every other input change - through 1.142 this branch returned before the sequence bump + abort below, so the in-flight answer still held the current sequence when it landed and repopulated the cleared field
@@ -6368,7 +6371,7 @@ async function crRunCitySearch() {
     const r = await fetch('https://nominatim.openstreetmap.org/search?format=jsonv2&addressdetails=1&featuretype=city&limit=6&q=' + encodeURIComponent(q), { headers: { 'Accept': 'application/json' }, signal: ctl ? ctl.signal : undefined });
     if (!r.ok) throw new Error('city search HTTP ' + r.status);
     const list = await r.json();
-    if (seq !== crCitySeq || session !== crSession) return; // superseded, or the creation it belonged to has closed (CG-PF-05)
+    if (!crCitySearchCurrent(seq, session)) return; // superseded, or the creation it belonged to has closed (CG-PF-05)
     box.innerHTML = '';
     const places = (Array.isArray(list) ? list : []).filter(crIsPlace);
     for (const it of places) {
@@ -6378,7 +6381,7 @@ async function crRunCitySearch() {
       box.appendChild(b);
     }
     if (!places.length) { const d = document.createElement('div'); d.className = 'rmNote'; d.textContent = 'No city matched that search — check the spelling, or go Back and pick from the list.'; box.appendChild(d); } // Beta 1.123: an empty answer SAYS so in the pane - 1.121 rendered nothing at all, which reads as a dead app (the same silence as the class/category defect, and just as unhelpful)
-  } catch (e) { if (seq === crCitySeq && !(e && e.name === 'AbortError')) { box.innerHTML = ''; toast('City search needs an internet connection — try again', 3000); } }
+  } catch (e) { if (crCitySearchSeqCurrent(seq) && !(e && e.name === 'AbortError')) { box.innerHTML = ''; toast('City search needs an internet connection — try again', 3000); } }
 }
 
 // ---- draft geometry cache (Beta 1.135, maintainability programme N3): through 1.134 a
@@ -6394,7 +6397,7 @@ async function crRunCitySearch() {
 // neither key and never recompute. Identity-proven in the 1.135 fixture harness (the
 // cached geometry deep-equals a fresh computeStretches at every step); drives 156-158
 // judge the flows.
-let crGeomCache = null, crGeomGen = 0;
+let crGeomCache = null, crGeomGen = 0; // Beta 1.154 (B3 build, G3): crGeomGen is a CACHE KEY, not a currency counter - it is part of this cache's identity, no async landing ever checks it, and the 2026-11-09 lifecycle trace observed it unmoved (+0) across every preparation transition; it deliberately stands outside the cr<Family>Current convention stated at crSearchCurrent
 function crDraftGeom() {
   if (crGeomCache && crGeomCache.draft === draft && crGeomCache.roads === draft.roads && crGeomCache.gen === crGeomGen) return crGeomCache.g;
   const g = computeStretches(draft.roads);
@@ -6421,7 +6424,7 @@ function renderDraft() { // the DRAFT renders through its own GeoJSON source, co
     for (const n of draftStreets()) {
       const main = draft.mains.has(n) ? 1 : 0;
       const sel = draft.sectors ? draft.sectors[n] : null;
-      if (sel || crSectorStreet === n) {
+      if (sel || crSectorSession.street === n) {
         const rec = crStreetParts(n); if (!rec) continue;
         const set = crChosenSet(n, rec);
         for (let i = 0; i < rec.parts.length; i++) { const L = rec.parts[i]; if (L && L.length > 1) feats.push({ type: 'Feature', properties: { name: n, main, chosen: set.has(i) ? 1 : 0, sector: i }, geometry: { type: 'LineString', coordinates: L.map(p => [p[1], p[0]]) } }); }
@@ -6574,7 +6577,7 @@ function enterCreate(stage) {
   if (!draft) draft = newDraft();
   creating = true;
   if (crPillT) clearTimeout(crPillT); crPillT = 0; crPillKey = ''; crPillGone = ''; // Beta 1.153: a new create session re-arms the confirmation pill (a cached city confirms again on entry)
-  crSectorReset(); crPanelCollapsed = false; crSettleMorph(); // Beta 1.127: every creation starts un-trimmed with the panel up (Beta 1.129: any surface morph a previous creation left in flight lands first)
+  crSectorReset(); crSectorSession.collapsed = false; crSettleMorph(); // Beta 1.127: every creation starts un-trimmed with the panel up (Beta 1.129: any surface morph a previous creation left in flight lands first)
   crSession++; // a fresh creation session: async completions born in any earlier session are obsolete from here (CG-PF-05)
   document.body.classList.add('creating');
   followPaused = true; // the camera belongs to the picking now; GPS is device state and is not stopped - follow resumes from the Locate tab afterwards
@@ -6585,7 +6588,7 @@ function enterCreate(stage) {
 }
 function exitCreate() {
   creating = false; draft = null; crStage = 'pick'; crAreaGuess = '';
-  if (crPillT) clearTimeout(crPillT); crPillT = 0; crPillKey = ''; crPillGone = ''; // Beta 1.153: the pill's clock dies with the session, like every other create timer here crSectorReset(); crPanelCollapsed = false; // Beta 1.127: the panel + sector session state dies with the creation
+  if (crPillT) clearTimeout(crPillT); crPillT = 0; crPillKey = ''; crPillGone = ''; // Beta 1.153: the pill's clock dies with the session, like every other create timer here crSectorReset(); crSectorSession.collapsed = false; // Beta 1.127: the panel + sector session state dies with the creation
   crSession++; crCovGen++; // every async completion born in this session is obsolete the moment the flow closes - it must not land in a later draft, hint or busy state (CG-PF-05)
   if (crPrep) { clearInterval(crPrep.ticker); crAbortOp(crPrep.op); crPrep = null; } // and the downloads themselves stop (CG-PF-10)
   if (crGrid) { crGridStop('exit'); crGrid = null; } // the grid's downloads stop too; its committed cells live on in the on-device city cache, by design
@@ -6593,7 +6596,7 @@ function exitCreate() {
   crPackCtx = null; crPackNote = ''; // Beta 1.123: the pack context belongs to the closed session's city - the next creation re-decides its source
   crAbortOp(crTopOp); crTopOp = null;
   crCityLookupSeq++; if (crCityLastCtl) { try { crCityLastCtl.abort(); } catch (e) {} crCityLastCtl = null; } // a held last-city lookup dies with the session (CG-PF-11)
-  crCov = null; crCity = null; crPrepState = 'none'; crPrepFail = null; crPrepAnchor = null; crPending = {}; crToppedUp = {}; crWanted = null;
+  crCov = null; crCity = null; crSetPrepState('none'); crPrepFail = null; crFailFromGrid = false; crPrepAnchor = null; crPending = {}; crToppedUp = {}; crWanted = null; // Beta 1.154 (B3 build): the state write routes through the prep record's setter, and crFailFromGrid clears with the session (the 2026-11-09 lifecycle trace's latch finding) - it must not survive into a new session
   $('crHintBtn').style.display = 'none';
   if (crSearchTimer) { clearTimeout(crSearchTimer); crSearchTimer = null; }
   crSearchSeq++; if (crSearchCtl) { try { crSearchCtl.abort(); } catch (e) {} crSearchCtl = null; } // no in-flight suggestion may land after the flow has closed
@@ -6676,7 +6679,7 @@ $('crCityLast').addEventListener('click', async () => {
   const seq = ++crCityLookupSeq, session = crSession;
   if (crCityLastCtl) { try { crCityLastCtl.abort(); } catch (e) {} }
   const ctl = (typeof AbortController !== 'undefined') ? new AbortController() : null; crCityLastCtl = ctl;
-  const stillMine = () => seq === crCityLookupSeq && session === crSession && $('rmCityPane').classList.contains('on');
+  const stillMine = () => crCityLookupCurrent(seq, session);
   try {
     const r = await fetch('https://nominatim.openstreetmap.org/search?format=jsonv2&addressdetails=1&featuretype=city&limit=6&q=' + encodeURIComponent(last), { headers: { 'Accept': 'application/json' }, signal: ctl ? ctl.signal : undefined });
     if (r.ok) { const list = await r.json(); if (!stillMine()) return; const hit = (Array.isArray(list) ? list : []).find(crIsPlace); if (hit) { crPickCity(hit); return; } }
@@ -6729,6 +6732,21 @@ function crSearch() { // the button / Enter: cancel any pending debounce and run
   if (crSearchTimer) { clearTimeout(crSearchTimer); crSearchTimer = null; }
   crRunSearch(false);
 }
+// Beta 1.154 (B3 build, G3 option (i) - Andrew's decision): THE CURRENT-CHECK
+// CONVENTION. Every counter family's landing guard is a predicate named
+// cr<Family>Current(<that family's own invalidation inputs>), answering one
+// question: "may this landing still write?" The families' shapes DELIBERATELY
+// differ - the 2026-11-09 lifecycle trace proved no unified (gen, session)
+// shape exists: the street-search family below is session-free (its
+// invalidation rides on exitCreate's bump), the city-search family's catch
+// is seq-only while its landing is seq+session (S10 does not bump crCitySeq,
+// so the asymmetry is semantic), the last-city lookup adds a UI conjunct
+// (its pane still open), and crGeomGen is not a currency counter at all (a
+// cache key - see its declaration). The members: crPrepCurrent(gen,
+// session) + crGridCurrent(g) (create-citydata.js / create-cache.js),
+// crSearchCurrent(seq), crCitySearchCurrent(seq, session) +
+// crCitySearchSeqCurrent(seq), crCityLookupCurrent(seq, session).
+function crSearchCurrent(seq) { return seq === crSearchSeq; } // the street-search family's current-check: the sequence ALONE - no session, by design
 async function crRunSearch(fromTyping) {
   const q = $('crSearchInput').value.trim(); if (!q) return;
   const seq = ++crSearchSeq;
@@ -6745,15 +6763,15 @@ async function crRunSearch(fromTyping) {
     const r = await fetch(url, { headers: { 'Accept': 'application/json' }, signal: ctl ? ctl.signal : undefined });
     if (!r.ok) throw new Error('search HTTP ' + r.status);
     const list = await r.json();
-    if (seq !== crSearchSeq) return; // superseded while in flight - a newer query owns the dropdown
+    if (!crSearchCurrent(seq)) return; // superseded while in flight - a newer query owns the dropdown
     let results = Array.isArray(list) ? list : [];
     if (scoped) results = results.filter(it => { const la = parseFloat(it.lat), lo = parseFloat(it.lon); return isFinite(la) && isFinite(lo) && crInBox(crCity.bbox, la, lo); }); // Beta 1.153: the city bound, enforced on the results themselves
     renderCrResults(results);
     if (!fromTyping && !results.length) toast('No places matched that search', 3000);
   } catch (e) {
-    if (seq === crSearchSeq && !(e && e.name === 'AbortError') && !fromTyping) toast('Search needs an internet connection — try again', 3200);
+    if (crSearchCurrent(seq) && !(e && e.name === 'AbortError') && !fromTyping) toast('Search needs an internet connection — try again', 3200);
   }
-  if (!fromTyping && seq === crSearchSeq) $('crSearchBtn').disabled = false;
+  if (!fromTyping && crSearchCurrent(seq)) $('crSearchBtn').disabled = false;
 }
 document.addEventListener('pointerdown', (e) => { // Beta 1.120 (Andrew): tapping anywhere outside the results dropdown dismisses it - map taps included (the pick still runs: this only closes the list, in the capture phase, before the map's own click)
   if (!creating) return;
@@ -6913,7 +6931,7 @@ function crFeatDistM(lngLat, geom) { // metres from the tap to the nearest point
 }
 function crMapTap(e) {
   if (!creating || crStage !== 'pick' || !map) return;
-  if (crSectorStreet) { crSectorTap(e.lngLat); return; } // Beta 1.127: while trimming, a map tap speaks only to the street being trimmed - it can neither add nor remove another street
+  if (crSectorSession.street) { crSectorTap(e.lngLat); return; } // Beta 1.127: while trimming, a map tap speaks only to the street being trimmed - it can neither add nor remove another street
   // Beta 1.119: query a small BOX around the tap, not the tap's single pixel.
   // Rendered road lines are a few px wide and a fingertip lands +/-10-20 px
   // off them, so the 1.118 point query almost never held a road and every
@@ -6952,7 +6970,7 @@ $('crClearAll').addEventListener('click', () => { // Andrew's addition (2026-11-
     renderDraft(); renderCrLists(); crRenderHint();
   }, { yes: 'Clear all', no: 'Cancel', danger: true });
 });
-$('crSbWhole').addEventListener('click', () => { const s = crSectorStreet; if (!s) return; const rec = crStreetParts(s); if (rec) crSetChosen(s, rec, new Set(rec.parts.map((_, i) => i))); renderDraft(); renderCrLists(); renderSectorBar(); }); // Entire road: every sector back on (the pick is stored as no entry again)
+$('crSbWhole').addEventListener('click', () => { const s = crSectorSession.street; if (!s) return; const rec = crStreetParts(s); if (rec) crSetChosen(s, rec, new Set(rec.parts.map((_, i) => i))); renderDraft(); renderCrLists(); renderSectorBar(); }); // Entire road: every sector back on (the pick is stored as no entry again)
 $('crSbDone').addEventListener('click', () => crCloseSectors()); // Done: back to the panel
 $('crSbCancel').addEventListener('click', () => crCancelSectors()); // Cancel (Beta 1.129): restore the pick as it was when sector mode was entered, and leave
 (() => { // the panel's tuck-away gesture (mockup screens 3-4): drag or flick the grab handle / header downward to collapse; a plain tap there collapses too. Buttons inside the header keep their own taps (the check below), and the rows below scroll natively - drags never start there

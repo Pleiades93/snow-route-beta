@@ -87,36 +87,36 @@ await ev2(`(() => { // the tap seam: a box query names Long Road under the tap (
   return true;
 })()`);
 await ev2(`crMapTap({ point: { x: 210, y: 450 }, lngLat: { lat: 43.8, lng: -79.574 } })`);
-const secA = await poll(`typeof crSectorStreet !== 'undefined' && crSectorStreet === 'Long Road'`, 10000);
+const secA = await poll(`typeof crSectorSession.street !== 'undefined' && crSectorSession.street === 'Long Road'`, 10000);
 const keptA = await J(`({ kept: !!(draft && draft.roads['Long Road']), bar: getComputedStyle(document.getElementById('crSectorBar')).display })`);
 await ev2(`(() => { if (map.__qrfOrig) { map.queryRenderedFeatures = map.__qrfOrig; delete map.__qrfOrig; } return true; })()`);
 ok('A2 A MAP TAP ON A PICKED ROAD OPENS ITS SECTORS: the real crMapTap, fed a road feature naming the picked street, enters sector mode for it (the street is NOT removed - 1.127\'s tap-again removal is retired) | sector mode: ' + secA + ' | ' + JSON.stringify(keptA),
   secA === true && keptA.kept === true);
 await ev2(`document.getElementById('crSbDone').click()`);
-await poll(`crSectorStreet === null`, 10000);
+await poll(`crSectorSession.street === null`, 10000);
 await faceSettled('crPanel');
 await ev2(`pickStreet('Long Road', { lat: 43.8, lng: -79.574 })`);
-const secA2 = await poll(`crSectorStreet === 'Long Road' && draft && !!draft.roads['Long Road']`, 10000);
+const secA2 = await poll(`crSectorSession.street === 'Long Road' && draft && !!draft.roads['Long Road']`, 10000);
 const toastA = await J(`document.getElementById('toast').textContent`);
 ok('A3 THE PICK ENTRY AGREES: pickStreet on the picked street opens its sectors again and no removal toast fires | reopened: ' + secA2 + ' | toast: ' + toastA,
   secA2 === true && toastA.indexOf('Removed') !== 0);
 await ev2(`document.getElementById('crSbDone').click()`);
-await poll(`crSectorStreet === null`, 10000);
+await poll(`crSectorSession.street === null`, 10000);
 await faceSettled('crPanel');
 
 // ================= B: one-piece honesty =================
 await ev2(`pickStreet('Alpha Street', { lat: 43.79, lng: -79.578 })`);
 const twoB = await poll(`draft && Object.keys(draft.roads).length === 2`, 10000);
 await ev2(`(() => { const r = [...document.querySelectorAll('#crPickList .crPRow')].find(x => (x.querySelector('.crPName') || {}).textContent === 'Alpha'); if (r) r.click(); return true; })()`);
-const secB = await poll(`crSectorStreet === 'Alpha Street'`, 10000);
+const secB = await poll(`crSectorSession.street === 'Alpha Street'`, 10000);
 const barB = await J(`document.getElementById('crSbSub').textContent`);
 await ev2(`crSectorTap({ lat: 43.79, lng: -79.578 })`); // dead on Alpha's only sector
 await sleep(500);
-const afterB = await J(`({ kept: !!(draft && draft.roads['Alpha Street']), roads: draft ? Object.keys(draft.roads).length : -1, sec: draft && draft.sectors ? draft.sectors['Alpha Street'] : undefined, toast: document.getElementById('toast').textContent, mode: crSectorStreet })`);
+const afterB = await J(`({ kept: !!(draft && draft.roads['Alpha Street']), roads: draft ? Object.keys(draft.roads).length : -1, sec: draft && draft.sectors ? draft.sectors['Alpha Street'] : undefined, toast: document.getElementById('toast').textContent, mode: crSectorSession.street })`);
 ok('B1 ONE-PIECE STREETS ARE HONEST: Alpha (nothing crosses it) computes one sector; its bar says "One piece — no cross-streets to split it at", and tapping that sole sector leaves the street picked, in sector mode, with a toast saying why | 2 picked: ' + twoB + ', mode: ' + secB + ' | bar: ' + barB + ' | ' + JSON.stringify(afterB),
   twoB === true && secB === true && barB.indexOf('One piece') === 0 && barB.indexOf('no cross-streets to split it at') > 0 && afterB.kept === true && afterB.roads === 2 && afterB.mode === 'Alpha Street' && afterB.toast.indexOf('one piece') > 0);
 await ev2(`document.getElementById('crSbDone').click()`);
-await poll(`crSectorStreet === null`, 10000);
+await poll(`crSectorSession.street === null`, 10000);
 await faceSettled('crPanel');
 
 // ================= C: wording + folded naming =================
