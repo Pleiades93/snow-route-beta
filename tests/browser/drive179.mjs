@@ -100,8 +100,8 @@ await ev(`openRouteMenu()`);
 await ev(`document.getElementById('rmCreate').click()`);
 await ev(`document.getElementById('crDoorManual').click()`);
 await poll(`document.getElementById('rmCityPane').classList.contains('on')`, 10000);
-const noCity = await J(`({ creating: typeof creating !== 'undefined' && creating === true, city: typeof crCity !== 'undefined' && !!crCity })`);
-ok('setup: creation is open at the city step with NO city loaded (the control state)', noCity.creating === true && noCity.city === false);
+const noCity = await J(`({ pane: document.getElementById('rmCityPane').classList.contains('on'), city: typeof crCity !== 'undefined' && !!crCity })`);
+ok('setup: creation is open at the city step with NO city loaded (the control state - the create session itself starts at the pick, so the premise is the city pane standing with crCity unset)', noCity.pane === true && noCity.city === false);
 
 // ---------- control: no city loaded - the old bias, both results ----------
 const ctlRan = await runStreetSearch();

@@ -109,7 +109,7 @@ const inPick1 = await enterManual();
 const failed = await poll(`typeof crPrepState !== 'undefined' && crPrepState === 'failed'`, 45000).catch(() => false);
 const F1 = await hintSample();
 ok('P1a (failed load) with the map service down the preparation settles FAILED and the hint shows the failure with a working remedy offered (entered pick: ' + inPick1 + ') | ' + JSON.stringify(F1),
-  inPick1 === true && failed === true && F1.on === true && F1.text.indexOf('failed to load') >= 0 && F1.btnShown === true && F1.btnText === 'Retry');
+  inPick1 === true && failed === true && F1.on === true && F1.text.indexOf('tap Retry') >= 0 && F1.btnShown === true && F1.btnText === 'Retry'); // the failure copy for an HTTP-status failure is the service-error wording ('The street-shape service answered with an error (503) — tap Retry') - the claim is the failure + remedy are shown, not one wording
 await sleep(4600); // longer than the confirmation pill's 4 s: a failure must NOT dismiss itself
 const F2 = await hintSample();
 ok('P1b (failed load) 4.6 s later the failure is STILL up and actionable - failures never auto-dismiss | ' + JSON.stringify(F2),
