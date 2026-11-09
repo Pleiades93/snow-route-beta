@@ -635,7 +635,7 @@ $('stDel').addEventListener('click', async () => {
 });
 // ---- About / What's new ----
 const WHATSNEW = { // the curated in-app notes: plain words, LATEST RELEASE ONLY (Beta 1.114, Andrew: the accumulated list cluttered the About pane). A release REPLACES this entry with its own in the same change - it never accumulates; the full history lives in CHANGELOG.md, not the app
-  v: 'Beta 1.147', items: ["Fixed: restoring a backup could be undone by a tap in the moment right after the restore — your restored streets and coverage now always survive the reload that follows a restore", "The route-creation doors that start over with a fresh route now ask 'Throw away this draft?' first, like every other way out — a half-built route can no longer be replaced without asking"]};
+  v: 'Beta 1.148', items: ["Under the hood: switching routes now clears each screen's leftovers through that screen's own reset step — the switch works exactly as before, but a future screen setting can no longer be forgotten when you change routes", "Under the hood: closing a menu or banner now spends the tap that closed it through one shared step, so the map never receives a tap that was meant for the menu"]};
 function renderAbout() {
   const cur = $('ver').textContent.trim();
   $('wnHead').textContent = "WHAT'S NEW · " + cur; // the header names the LIVE version, read from the title's version element - never a second hard-coded copy that can go stale
@@ -650,10 +650,10 @@ $('aboutBack').addEventListener('click', () => showSetPane('setMainPane'));
 // acts as that dialog's Cancel / Not yet / Close (each is a plain hide - nothing gets committed).
 document.addEventListener('pointerdown', e => {
   const anySheet = !!document.querySelector('.sheet.open'); // Beta 1.77 (Andrew, live catch): ANY open sheet, read from the DOM - the hand-listed pair missed the Routes sheet in 1.76, so tapping away from it did nothing (and the tap fell through to the map)
-  if (anySheet && !e.target.closest('.sheet') && !e.target.closest('#hud') && !e.target.closest('.modal')) { closeSheets(); swallowClickUntil = Date.now() + 400; } // Beta 1.30 (Andrew): the closing tap is spent here - the map never sees it
+  if (anySheet && !e.target.closest('.sheet') && !e.target.closest('#hud') && !e.target.closest('.modal')) { closeSheets(); spendTap(400); } // Beta 1.30 (Andrew): the closing tap is spent here - the map never sees it
   // The two banners count as menus too (Andrew: ANY menu): a tap outside one is its Dismiss / Keep going.
-  if (!$('suggest').classList.contains('hidden') && !e.target.closest('#suggest')) { $('suggest').classList.add('hidden'); swallowClickUntil = Date.now() + 400; }
-  if (!$('stale').classList.contains('hidden') && !e.target.closest('#stale')) { $('stale').classList.add('hidden'); swallowClickUntil = Date.now() + 400; }
+  if (!$('suggest').classList.contains('hidden') && !e.target.closest('#suggest')) { $('suggest').classList.add('hidden'); spendTap(400); }
+  if (!$('stale').classList.contains('hidden') && !e.target.closest('#stale')) { $('stale').classList.add('hidden'); spendTap(400); }
 });
 ['finModal', 'noteModal'].forEach(id => { const mEl = $(id); mEl.addEventListener('pointerdown', e => { if (e.target === mEl) mEl.classList.add('hidden'); }); });
 function applyNight() { document.body.classList.toggle('night', isNight()); const tc = document.querySelector('meta[name="theme-color"]'); if (tc) tc.setAttribute('content', isNight() ? '#14171d' : '#eceff2'); $('nightBtn').innerHTML = isNight() ? ICONS.sun : ICONS.moon; } // the button shows where it TAKES you (Beta 1.28, Andrew): in day it offers Night (moon), in night it offers Day (sun). Beta 1.88: the button is the round chip at top-right - the icon alone flips, there is no label
@@ -916,16 +916,16 @@ function introToRoute() { // Beta 1.77 (Andrew): a pick opens WIDE on the route'
   setTimeout(() => { if (!map) return; try { map.flyTo({ center: fit.center, zoom: fit.zoom, duration: 3000, curve: 1.2, essential: false }); } catch (e) {} }, 1500); // 1500ms: the splash's exit (780ms) has finished and the wide view - the Route 5W point of interest - has had a moment to sit, before the slow flight in
 }
 function resetSwitchSession() { // Beta 1.117 (F3/F4): the ONE reset block a route switch runs - everything that names the OUTGOING route's session dies here, before the new pack's geometry or state exists. Runs after the F2 flush (loadRoute calls collapseNoteEditor first, so an open note draft has already finalized against the outgoing street).
-  runSnap = null; // F3: the in-memory cancel snapshot belongs to the outgoing run. The PERSISTED copy (LS.snap, in the outgoing slot) is deliberately untouched - after switching back, Cancel validates it exactly as it does after a reload
-  deselect(); // selection + chips + the engine's selection, through the one proven path
-  noteOpenFor = null; noteEdFor = null; if (noteSaveTimer) { clearTimeout(noteSaveTimer); noteSaveTimer = 0; } // the note editor's pending debounced save must never fire into the new route (its flush already happened via collapseNoteEditor)
-  listFilter = 'mains'; document.querySelectorAll('#filters button').forEach(x => x.classList.toggle('on', x.dataset.f === 'mains'));
-  srowCache = { sig: '', rows: new Map() };
-  histOpen = false; cleanIdx = null; cleanDelArmed = false; if (cleanDelTimer) { clearTimeout(cleanDelTimer); cleanDelTimer = 0; } // the history panel and its delete-arming
-  noteFor = null; $('noteModal').classList.add('hidden'); // the modal note editor
-  suggested = new Set(); $('suggest').classList.add('hidden'); $('stale').classList.add('hidden'); // run-scoped suggestion set + the two banners (checkStale re-judges the stale banner for the incoming route below)
-  saveWarned = false; // the storage-warning episode belonged to the outgoing route's saves
+  // Beta 1.148 (Tranche 5, A4(ii)): the reset knowledge now lives with the state
+  // owners - this block only CALLS the owners' hooks (each hook preserves the
+  // order its own writes ran in below) and clears app1's dirty flags through
+  // markClean, app1's own accessor. It writes no foreign global itself: a new
+  // session field's reset is added in its owner's hook, not here.
+  resetNotesHistorySession(); // app3: runSnap, history panel + clean-delete arming, modal note, suggestion set + banners
+  resetStreetsSession(); // app2: selection (deselect), note editor + its timer, Streets filter, street-row cache, storage-warning episode
   markClean('trail'); markClean('sess'); markClean('snap'); markClean('start'); markClean('aux'); markClean('primary'); // the dirty flags described the outgoing route's pending writes; the flush above landed what it could, and the incoming route's state (loaded next) starts clean - a stale flag must never re-fire against the new slot
+  // (The two hook calls above replace this block's former inline writes, line
+  // for line in count, so every census-pinned line below this block stands.)
 }
 function loadRoute(id) {
   const pack = ROUTE_PACKS.find(p => p.id === id); if (!pack) return;

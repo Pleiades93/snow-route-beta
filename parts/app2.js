@@ -207,6 +207,7 @@ let sel = null; // {name, idx, anchor:[lat,lng]}
 let selSet = []; // [{name, idx, anchor}] - EVERY stretch currently selected (Beta 1.28 multi-select, Andrew); sel/selStretch stay the ANCHOR entry (last tapped) that positions the chips
 let selStretch = null; // {name, idx} — the paint engine reads this global in syncSel()
 let swallowClickUntil = 0;
+function spendTap(ms) { swallowClickUntil = Date.now() + ms; } // Beta 1.148 (Tranche 5, A4(iii)): app2 is the SOLE writer of its tap-swallow variable - other parts spend a tap through this setter, never by assigning swallowClickUntil themselves
 function projLL(p) { return map.project([p[1], p[0]]); }
 function ptSegDistPx(p, a, b) { const vx = b.x - a.x, vy = b.y - a.y, L2 = vx * vx + vy * vy; let t = L2 ? ((p.x - a.x) * vx + (p.y - a.y) * vy) / L2 : 0; t = Math.max(0, Math.min(1, t)); return Math.hypot(p.x - (a.x + vx * t), p.y - (a.y + vy * t)); }
 function nearestStreet(pt) { let best = null, bd = Infinity; for (const n of STREETNAMES) for (const seg of ROADS[n]) for (let i = 1; i < seg.length; i++) { const d = ptSegDistPx(pt, projLL(seg[i - 1]), projLL(seg[i])); if (d < bd) { bd = d; best = n; } } return { name: best, d: bd }; }
@@ -390,6 +391,13 @@ function updateCount() {
 let listFilter = 'mains'; // Beta 1.109 (Andrew): the Streets filter is the route's two groups - Mains (the gold roads) or Secondaries (the raspberry ones) - replacing All / To do / Done; Mains is the opening view
 let noteOpenFor = null, noteSaveTimer = 0, noteEdFor = null; // Beta 1.63 (audit F01): noteEdFor names the street whose editor is actually in the DOM - the draft's owner
 let srowCache = { sig: '', rows: new Map() }; // Beta 1.50 (audit P06): rows kept between renders when the visible set is unchanged
+function resetStreetsSession() { // Beta 1.148 (Tranche 5, A4(ii)): app2's OWN route-switch reset, called by app4's resetSwitchSession - the Streets session's reset knowledge lives here, with its state, so a new app2 session field's reset is added where its author is looking
+  deselect(); // selection + chips + the engine's selection, through the one proven path
+  noteOpenFor = null; noteEdFor = null; if (noteSaveTimer) { clearTimeout(noteSaveTimer); noteSaveTimer = 0; } // the note editor's pending debounced save must never fire into the new route (its flush already happened via collapseNoteEditor)
+  listFilter = 'mains'; document.querySelectorAll('#filters button').forEach(x => x.classList.toggle('on', x.dataset.f === 'mains'));
+  srowCache = { sig: '', rows: new Map() };
+  saveWarned = false; // the storage-warning episode belonged to the outgoing route's saves
+}
 function fmtLenM(v) { return String(Math.round(v)).replace(/\B(?=(\d{3})+(?!\d))/g, ',') + ' m'; } // Beta 1.107: street-length display for the Streets list's quiet line - whole metres, thousands separator, never kilometres
 function renderStreets() { // production row design: tap a street's name area to open its inline note editor (auto-saves); the pin button flies to the street
   const el = $('streetList'); if (!el) return;

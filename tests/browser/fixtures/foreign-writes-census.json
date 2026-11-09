@@ -14,8 +14,8 @@
     "engine.js"
   ],
   "totals": {
-    "expressions": 68,
-    "lines": 32,
+    "expressions": 52,
+    "lines": 21,
     "byFile": {
       "app1.js": {
         "expressions": 2,
@@ -30,8 +30,8 @@
         "lines": 11
       },
       "app4.js": {
-        "expressions": 36,
-        "lines": 18
+        "expressions": 20,
+        "lines": 7
       },
       "create-packs.js": {
         "expressions": 0,
@@ -273,102 +273,6 @@
       "line": 291,
       "name": "restoring",
       "owner": "app1.js"
-    },
-    {
-      "file": "app4.js",
-      "line": 653,
-      "name": "swallowClickUntil",
-      "owner": "app2.js"
-    },
-    {
-      "file": "app4.js",
-      "line": 655,
-      "name": "swallowClickUntil",
-      "owner": "app2.js"
-    },
-    {
-      "file": "app4.js",
-      "line": 656,
-      "name": "swallowClickUntil",
-      "owner": "app2.js"
-    },
-    {
-      "file": "app4.js",
-      "line": 919,
-      "name": "runSnap",
-      "owner": "app3.js"
-    },
-    {
-      "file": "app4.js",
-      "line": 921,
-      "name": "noteEdFor",
-      "owner": "app2.js"
-    },
-    {
-      "file": "app4.js",
-      "line": 921,
-      "name": "noteOpenFor",
-      "owner": "app2.js"
-    },
-    {
-      "file": "app4.js",
-      "line": 921,
-      "name": "noteSaveTimer",
-      "owner": "app2.js"
-    },
-    {
-      "file": "app4.js",
-      "line": 922,
-      "name": "listFilter",
-      "owner": "app2.js"
-    },
-    {
-      "file": "app4.js",
-      "line": 923,
-      "name": "srowCache",
-      "owner": "app2.js"
-    },
-    {
-      "file": "app4.js",
-      "line": 924,
-      "name": "cleanDelArmed",
-      "owner": "app3.js"
-    },
-    {
-      "file": "app4.js",
-      "line": 924,
-      "name": "cleanDelTimer",
-      "owner": "app3.js"
-    },
-    {
-      "file": "app4.js",
-      "line": 924,
-      "name": "cleanIdx",
-      "owner": "app3.js"
-    },
-    {
-      "file": "app4.js",
-      "line": 924,
-      "name": "histOpen",
-      "owner": "app3.js"
-    },
-    {
-      "file": "app4.js",
-      "line": 925,
-      "name": "noteFor",
-      "owner": "app3.js"
-    },
-    {
-      "file": "app4.js",
-      "line": 926,
-      "name": "suggested",
-      "owner": "app3.js"
-    },
-    {
-      "file": "app4.js",
-      "line": 927,
-      "name": "saveWarned",
-      "owner": "app2.js"
     },
     {
       "file": "app4.js",
