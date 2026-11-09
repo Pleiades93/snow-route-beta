@@ -635,7 +635,7 @@ $('stDel').addEventListener('click', async () => {
 });
 // ---- About / What's new ----
 const WHATSNEW = { // the curated in-app notes: plain words, LATEST RELEASE ONLY (Beta 1.114, Andrew: the accumulated list cluttered the About pane). A release REPLACES this entry with its own in the same change - it never accumulates; the full history lives in CHANGELOG.md, not the app
-  v: 'Beta 1.146', items: ["If the app is closed in the middle of finishing a clean that was never started with the Start button, the saved history now sorts itself out properly instead of recording that clean twice", "Deleting a route you created now checks that its saved data is really gone — and tells you if some of it could not be deleted", "Fixed: 'Mark both sides' could show a success message even when saving had failed — success messages now only appear for saves that actually landed", "If the map itself fails to load, your clean's GPS trail and street coverage are still recorded instead of being lost"]};
+  v: 'Beta 1.147', items: ["Fixed: restoring a backup could be undone by a tap in the moment right after the restore — your restored streets and coverage now always survive the reload that follows a restore", "The route-creation doors that start over with a fresh route now ask 'Throw away this draft?' first, like every other way out — a half-built route can no longer be replaced without asking"]};
 function renderAbout() {
   const cur = $('ver').textContent.trim();
   $('wnHead').textContent = "WHAT'S NEW · " + cur; // the header names the LIVE version, read from the title's version element - never a second hard-coded copy that can go stale

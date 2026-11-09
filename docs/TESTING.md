@@ -268,6 +268,26 @@ Coverage:
   through the watch callback along one street's coverage samples,
   records every trail point and accrues coverage across two bursts,
   with no page exception beyond bootMap's own defining throw.
+- `drive169` — restore-window write fence (Beta 1.147, hypothesis
+  H1): a backup of one board is restored over a different live board,
+  and a mark is forced inside the 600 ms post-restore window three
+  ways (whole-street mark in the restore's own task, one chip tap,
+  and a mark dispatched as a separate task at realistic tap latency);
+  after the real reload the board must be exactly the backup's board
+  every time. A direct in-window `saveAll()` call must return the
+  fenced outcome {ok:false, failedKey:'restoring',
+  retryPending:false}, arm no primary retry and write nothing; a
+  control restore with no in-window mark is exact, and marking works
+  normally again after the reload (the fence is window-scoped).
+- `drive170` — creation-door discard guard (Beta 1.147, hypothesis
+  H2 hardening): with a live two-street draft, the doors are forced
+  open (labelled non-UI pokes — no visible control can do this
+  mid-creation) and a catalogue pick / the manual-door handler must
+  now raise the 'Throw away this draft?' confirm; dismissing it
+  leaves the tagged draft intact, confirming it completes the pick
+  exactly as before. First entry through both doors with an empty
+  draft is prompt-free and unchanged (`askDiscard` no-ops on an
+  empty draft).
 
 ## The drive compatibility surface (frozen, Beta 1.136, programme E; census refreshed 2026-11-08, Improvement Tranche 4 / T2)
 
@@ -287,8 +307,18 @@ same stated rule for this round's drive changes only: drive167 and
 drive168 join the battery, and drive128's M12 extension calls
 `saveAll` — the deltas are loadRoute 19 → 20, markDone 11 → 12,
 saveAll 9 → 10, startClean 8 → 9, performReset 4 → 5, buildSnap
-1 → 2; the distinct-global count is unchanged.). **52 of the
-59 drives call at least one app global; 121 distinct globals are
+1 → 2; the distinct-global count is unchanged. Refreshed again
+2026-11-08 on the 1.147 tree by the same stated rule for this
+round's drive changes only: drive169 and drive170 join the battery
+— the deltas are loadRoute 20 → 21, togglePiece 13 → 14,
+markDone 12 → 13, buildBackup 10 → 11, saveAll 10 → 11,
+exitCreate 8 → 9, markUndone 5 → 6, restoreBackup 4 → 5,
+closeRouteMenu 1 → 2, and writePending, draftStreets and
+openDoors join the surface at 1 each; the distinct-global count
+rises 121 → 124. ($ is called by drive170; its printed count is
+left untouched — the recount discrepancy recorded in the 1.146
+refresh (26 by recount vs 27 printed) is still open.). **54 of the
+61 drives call at least one app global; 124 distinct globals are
 called.** Renaming, removing or changing the contract of a surfaced
 global breaks the battery exactly as surely as renaming a storage key
 breaks stored data: grep the drives first, and treat a deliberate
@@ -297,18 +327,18 @@ same change). The load-bearing names are also pinned individually in
 the snow fix-checks registry (`togglePiece` and `performReset` above
 all - the battery calls them by name).
 
-The surface, by drive-call count: $ (27) / loadRoute (20) / togglePiece (13) / markDone (12) / buildBackup (10) / doRestore (9) / openRouteMenu (9)
-saveAll (10) / cancelStart (8) / exitCreate (8) / startClean (9) / computeStretches (7) / acceptFix (6) / flushAux (6)
-renderStreets (6) / streetComplete (6) / finishRun (5) / markUndone (5) / routeKeys (5)
+The surface, by drive-call count: $ (27) / loadRoute (21) / togglePiece (14) / markDone (13) / buildBackup (11) / doRestore (9) / openRouteMenu (9)
+saveAll (11) / cancelStart (8) / exitCreate (9) / startClean (9) / computeStretches (7) / acceptFix (6) / flushAux (6)
+renderStreets (6) / streetComplete (6) / finishRun (5) / markUndone (6) / routeKeys (5)
 saveHistory (5) / saveStart (5) / setThemeOverride (5) / applyNight (4) / crIdbGet (4) / crCovMerge (4) / enterCreate (4)
-noteTextOf (4) / performReset (5) / pickStreet (4) / restoreBackup (4) / selectStretch (4) / setNoteText (4)
+noteTextOf (4) / performReset (5) / pickStreet (4) / restoreBackup (5) / selectStretch (4) / setNoteText (4)
 startGps (4) / stopGps (4) / clearAllMarks (3) / clearThemeOverride (3) / closeSheets (3) / crRenderHint (3)
 crSectorTap (3) / crStartPrep (3) / crStreetChosenM (3) / deselect (3) / distM (3) / isNight (3) / refreshAll (3)
 setBasemap (3) / totalWorkM (3) / validateSnap (3) / workDoneM (3) / buildGpx (2) / buildRecovery (2)
 clearTrailAll (2) / crCacheSaveCell (2) / crMapTap (2) / crPickCity (2) / drawTrail (2) / kfPredict (2)
 noteSessionStart (2) / openClean (2) / openPace (2) / packGeometry (2) / pushGps (2) / renderTick (2)
 saveDraftRoute (2) / saveSess (2) / saveTrail (2) / segLenM (2) / addGpsLayers (1) / addReferenceLayers (1)
-addTrailLayers (1) / autoNightAt (1) / buildReport (1) / buildSnap (2) / closeRouteMenu (1) / coverFix (1)
+addTrailLayers (1) / autoNightAt (1) / buildReport (1) / buildSnap (2) / closeRouteMenu (2) / coverFix (1)
 crAreaQL (1) / crCovFromWays (1) / crDraftGeom (1) / crFilteredRoads (1) / crIndexWays (1) / crLineLen (1)
 crOpenCityPane (1) / crOpenSectors (1) / crOverpassFetch (1) / crResolve (1) / crRunCitySearch (1) / crSearch (1)
 crStreetParts (1) / crToggleSector (1) / fmtDur (1) / fmtStamp (1) / liveWorkM (1) / loadRouteState (1) / lsGet (1)
@@ -316,7 +346,7 @@ markDirty (1) / newDraft (1) / normalizePack (1) / openExport (1) / paceInfo (1)
 pickFontFromStyle (1) / preloadUrlList (1) / projLL (1) / readUserPacks (1) / renderRouteLists (1)
 sanitizePieceTimes (1) / setFacing (1) / shareBackup (1) / showSuggest (1) / startCompass (1) / statsLine (1)
 stopCompass (1) / sunTimes (1) / syncViewport (1) / tapStretch (1) / themeTick (1) / toast (1) / togglePieceGroup (1)
-trailKm (1) / vvHeight (1) / crIdbDelete (1).
+trailKm (1) / vvHeight (1) / crIdbDelete (1) / writePending (1) / draftStreets (1) / openDoors (1).
 
 Running locally:
 
