@@ -34,6 +34,16 @@ const { proc, send, S, ev, consoleLog, sleep, poll } = await launchDrive();
 // S2 and S3 fail there - a 24 px tap is inside the old 28 box, a
 // 36 px sector tap is inside the old rendered reach (28 + 12), and
 // the old 75 m fallback cap catches the muted 36 px tap (~31 m).
+// FLOW NOTE (learned on this round's second RED attempt, run
+// 42710835097): the pick probes run P1 -> P3 -> P2, P3 probing the
+// street P2 is about to pick. A tap on an ALREADY-picked street
+// opens its sector session (pickStreet routes there, Beta 1.128),
+// and while a session is open every map tap speaks only to
+// trimming (crMapTap's first line) - so a far-tap probe fired at a
+// street an earlier probe already picked would poison every later
+// pick. In this order each probe tap meets a street in the state
+// the check claims: P3's street is unpicked on both colours, and
+// on RED its own pick of that street is the failure recorded.
 const R = { checks: [] };
 const ok = (name, cond) => R.checks.push([name, cond === true]);
 const J = async (expr) => { const raw = await ev(`(() => { try { return JSON.stringify((${expr})); } catch (e) { return JSON.stringify({ __err: String(e && e.message || e) }); } })()`); return typeof raw === 'string' ? JSON.parse(raw) : {}; };
@@ -181,21 +191,21 @@ ok('setup: 5W loaded, Vaughan picked through the manual door and the preparation
 await ev(installFeatureStub);
 await ev(`map.jumpTo({ center: [-79.5745, 43.7993], zoom: 17 })`);
 await poll(`typeof map !== 'undefined' && map && Math.abs(map.getZoom() - 17) < 0.01 && !map.isMoving()`, 15000);
-const PROBES = await J(`({ b24: window.__probeFor('Bordeaux Drive', 24, 1, 45), b10: window.__probeFor('Bordeaux Drive', 10, 1, 45), a17: window.__probeFor('Alderson Avenue', 17, 1, 30), zoom: map.getZoom() })`);
-ok('setup: probe taps measured on the perpendicular at zoom 17 (Bordeaux 24 px and 10 px, Alderson 17 px; every cross-street distance clear of even the old box) | ' + JSON.stringify(PROBES),
-  !!PROBES.b24 && !!PROBES.b10 && !!PROBES.a17 && Math.abs(PROBES.zoom - 17) < 0.01);
-
-// ---------- P3 (first, on an empty draft): 24 px off picks NOTHING ----------
-await fireTap(PROBES.b24);
-await sleep(600);
-const P3 = await J(`({ streets: draft ? Object.keys(draft.roads) : null, toast: document.getElementById('toast').textContent })`);
-ok('P3 a tap 24 px off the Bordeaux line picks NOTHING - beyond the new retry box (half 20; the old 28 caught it) | ' + JSON.stringify(P3),
-  !!P3.streets && P3.streets.length === 0 && P3.toast.indexOf('No road there') >= 0);
+const PROBES = await J(`({ a24: window.__probeFor('Alderson Avenue', 24, 1, 30), b10: window.__probeFor('Bordeaux Drive', 10, 1, 45), a17: window.__probeFor('Alderson Avenue', 17, 1, 30), zoom: map.getZoom() })`);
+ok('setup: probe taps measured on the perpendicular at zoom 17 (Bordeaux 10 px, Alderson 24 px and 17 px; every cross-street distance clear of even the old box) | ' + JSON.stringify(PROBES),
+  !!PROBES.a24 && !!PROBES.b10 && !!PROBES.a17 && Math.abs(PROBES.zoom - 17) < 0.01);
 
 // ---------- P1: 10 px off PICKS (first box) ----------
 await fireTap(PROBES.b10);
 const gotB = await poll(`typeof draft !== 'undefined' && draft && !!draft.roads['Bordeaux Drive']`, 15000).catch(() => false);
 ok('P1 a tap 10 px off the Bordeaux line PICKS Bordeaux - inside the new first box (half 12), the fingertip case of Beta 1.119 still lands', gotB === true);
+
+// ---------- P3: 24 px off the UNPICKED Alderson picks NOTHING ----------
+await fireTap(PROBES.a24);
+await sleep(600);
+const P3 = await J(`({ streets: draft ? Object.keys(draft.roads) : null, toast: document.getElementById('toast').textContent })`);
+ok('P3 a tap 24 px off the Alderson line picks NOTHING - beyond the new retry box (half 20; the old 28 caught it) | ' + JSON.stringify(P3),
+  !!P3.streets && !P3.streets.includes('Alderson Avenue') && P3.toast.indexOf('No road there') >= 0);
 
 // ---------- P2: 17 px off PICKS (the retry box) ----------
 await fireTap(PROBES.a17);
