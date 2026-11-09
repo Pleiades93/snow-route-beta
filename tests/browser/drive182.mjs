@@ -162,7 +162,7 @@ const pickCityVaughan = async () => {
   if (rows === true) await ev(`document.querySelector('#crCityResults .routeRow').click()`);
   return await poll(`typeof creating !== 'undefined' && creating === true && crStage === 'pick'`, 10000).catch(() => false);
 };
-const fireTap = async (p) => { await ev(`(() => { const pt = map.project([${p.lng}, ${p.lat}]); map.fire('click', { lngLat: { lat: ${p.lat}, lng: ${p.lng} }, point: { x: pt.x, y: pt.y }, originalEvent: {} }); return true; })()`); };
+const fireTap = async (p) => { if (!p) return false; await ev(`(() => { const pt = map.project([${p.lng}, ${p.lat}]); map.fire('click', { lngLat: { lat: ${p.lat}, lng: ${p.lng} }, point: { x: pt.x, y: pt.y }, originalEvent: {} }); return true; })()`); return true; };
 const chosenOf = () => J(`(() => { const rec = crStreetParts('Alderson Avenue'); return rec ? [...crChosenSet('Alderson Avenue', rec)].sort((a, b) => a - b) : []; })()`);
 const allChosen = () => J(`(() => { const rec = crStreetParts('Alderson Avenue'); if (rec) crSetChosen('Alderson Avenue', rec, new Set(rec.parts.map((_, i) => i))); return rec ? rec.parts.length : 0; })()`);
 
@@ -206,15 +206,15 @@ ok('P2 a tap 17 px off the Alderson line PICKS Alderson - outside the first box 
 await ev(`crOpenSectors('Alderson Avenue')`);
 const SEC = await J(`({ open: crSectorSession.street, parts: crStreetParts('Alderson Avenue') ? crStreetParts('Alderson Avenue').parts.length : 0 })`);
 ok('S0 Alderson is open for trimming and computes to more than one sector in the fixture extract | ' + JSON.stringify(SEC), SEC.open === 'Alderson Avenue' && SEC.parts >= 2);
-const SPROBES = await J(`({ s10: window.__partProbe('Alderson Avenue', 10, 1, 16), s36: window.__partProbe('Alderson Avenue', 36, 2, 35), s15: window.__partProbe('Alderson Avenue', 15, 1, 16) })`);
+const SPROBES = await J(`({ s10: window.__partProbe('Alderson Avenue', 10, 1, 16), s36: window.__partProbe('Alderson Avenue', 36, 3, 33), s15: window.__partProbe('Alderson Avenue', 15, 1, 16) })`);
 ok('setup: sector probe taps measured (10 px and 15 px off a sector line, 36 px off EVERY sector line) | ' + JSON.stringify(SPROBES), !!SPROBES.s10 && !!SPROBES.s36 && !!SPROBES.s15);
 
 // ---------- S1: 10 px off a sector TOGGLES it (rendered pick) ----------
 await fireTap(SPROBES.s10);
-await poll(`( () => { const rec = crStreetParts('Alderson Avenue'); return rec && !crChosenSet('Alderson Avenue', rec).has(${SPROBES.s10.part}); } )()`, 10000).catch(() => false);
+await poll(`( () => { const rec = crStreetParts('Alderson Avenue'); return rec && !crChosenSet('Alderson Avenue', rec).has(${SPROBES.s10 && SPROBES.s10.part}); } )()`, 10000).catch(() => false);
 const S1 = await chosenOf();
 ok('S1 a tap 10 px off a sector line TOGGLES that sector off - the rendered pick inside the new first box (reach 12 + 12 hit width) | chosen=' + JSON.stringify(S1) + ' probe=' + JSON.stringify(SPROBES.s10),
-  !S1.includes(SPROBES.s10.part) && S1.length === SEC.parts - 1);
+  !!SPROBES.s10 && !S1.includes(SPROBES.s10.part) && S1.length === SEC.parts - 1);
 await allChosen();
 
 // ---------- S2: 36 px off every sector toggles NOTHING ----------
@@ -236,11 +236,11 @@ ok('S3 with the renderer answering nothing, a tap 36 px off (~31 m) still toggle
 // ---------- S4: renderer muted, 15 px off - the fallback lives ----------
 await ev(`window.__qrfMute = true`);
 await fireTap(SPROBES.s15);
-await poll(`( () => { const rec = crStreetParts('Alderson Avenue'); return rec && !crChosenSet('Alderson Avenue', rec).has(${SPROBES.s15.part}); } )()`, 10000).catch(() => false);
+await poll(`( () => { const rec = crStreetParts('Alderson Avenue'); return rec && !crChosenSet('Alderson Avenue', rec).has(${SPROBES.s15 && SPROBES.s15.part}); } )()`, 10000).catch(() => false);
 const S4 = await chosenOf();
 await ev(`window.__qrfMute = false`);
 ok('S4 with the renderer answering nothing, a tap 15 px off a sector line still TOGGLES it - the fallback survives at honest range, inside the 20 px reach | chosen=' + JSON.stringify(S4) + ' probe=' + JSON.stringify(SPROBES.s15),
-  !S4.includes(SPROBES.s15.part));
+  !!SPROBES.s15 && !S4.includes(SPROBES.s15.part));
 
 R.exceptions = consoleLog.filter(l => l.type === 'EXCEPTION').map(l => l.text.slice(0, 200));
 finish(R, proc);
