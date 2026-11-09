@@ -154,7 +154,7 @@ ok('N1 START IDENTITY: the first PAINTED frame after the flip is the splash hold
   nearCtr(firstPainted, hold, 2));
 ok('N2 the title NEVER disappears mid-flight: every sample from the flip to settle is painted (chain visible, effective opacity >= .99) | unpainted samples: ' + unpainted.length + (unpainted.length ? ' (first at flip+' + (unpainted[0].t - trace[flipIdx].t) + 'ms, last at flip+' + (unpainted[unpainted.length - 1].t - trace[flipIdx].t) + 'ms, min effective opacity ' + Math.min(...unpainted.map(s => s.op)) + ')' : ''),
   post.length > 0 && settleIdx >= 0 && unpainted.length === 0);
-ok('N3 CONTINUITY: no teleport across the seam - the centre's travel rate from the last hold sample to settle never exceeds the easing's own (<= 1.6px/ms + 4px per pair) | max rate ' + maxRate.toFixed(2) + 'px/ms over a ' + maxRateDt + 'ms pair at t=' + maxRateT + 'ms, violating pairs: ' + rateViol,
+ok('N3 CONTINUITY: no teleport across the seam - the centre's travel rate from the last hold sample to settle never exceeds the easing\'s own (<= 1.6px/ms + 4px per pair) | max rate ' + maxRate.toFixed(2) + 'px/ms over a ' + maxRateDt + 'ms pair at t=' + maxRateT + 'ms, violating pairs: ' + rateViol,
   flight.length > 2 && rateViol === 0);
 ok('S3 the title RISES into the menu position: centre ' + (hold ? hold.cy : -1) + 'px -> ' + (lastS ? lastS.cy : -1) + 'px (a rise of ' + ((hold && lastS) ? (hold.cy - lastS.cy).toFixed(1) : 'n/a') + 'px)',
   !!hold && !!lastS && (hold.cy - lastS.cy) >= 60);
