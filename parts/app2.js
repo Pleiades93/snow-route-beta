@@ -68,6 +68,8 @@ function glHideLabels(m) { // BASEMAP LABEL UNIFICATION (Andrew, Beta 1.6): the 
       clone.filter = specL.filter ? ['all', convF(specL.filter), ['in', ['get', 'name'], ['literal', ROUTE_TILE_NAMES]]] : ['in', ['get', 'name'], ['literal', ROUTE_TILE_NAMES]];
       clone.paint = clone.paint || {};
       clone.paint['text-opacity'] = ['interpolate', ['linear'], ['zoom'], 15.4, 0, 16.4, 1];
+      clone.layout = clone.layout || {};
+      clone.layout['text-field'] = ''; // TEETH SCRATCH BREAK (branch drive130-teeth, NEVER lands): clone labels suppressed wholesale - the hardened drive130 L7 must FAIL on this tree (negative control for the 2026-11-09 L7 root hardening).
       if (typeof isNight === 'function' && isNight()) { clone.paint['text-color'] = '#ccd6df'; clone.paint['text-halo-color'] = 'rgba(8,10,14,0.9)'; clone.paint['text-halo-width'] = 1.3; }
       else { clone.paint['text-color'] = '#333333'; clone.paint['text-halo-color'] = 'rgba(255,255,255,.92)'; clone.paint['text-halo-width'] = 1.5; }
       const order = m.getStyle().layers.map(x => x.id);
