@@ -67,7 +67,8 @@ ok('L6b the point of interest wears the route name, not the app name (Beta 1.79,
 // after the predicate first reads true? How long until loaded/idle/stable?
 await ev(`(() => { window.__l7idle = 0; map.once('idle', () => { window.__l7idle = Date.now(); }); map.jumpTo({ center: [-79.5622, 43.8197], zoom: 17.5 }); return true; })()`);
 const diagT0 = Date.now();
-let diagPrevKey = '', diagStreak = 0, diagFirstPredAt = -1, diagChangesAfterPred = 0;
+let diagPrevKey = '', diagStreak = 0, diagFirstPredAt = -1, diagChangesAfterPred = 0, diagLastChangeAt = 0;
+const diagTransitions = [];
 for (let i = 0; i < 200; i++) {
   let s = null;
   try {
@@ -85,7 +86,7 @@ for (let i = 0; i < 200; i++) {
     const pred = cs.includes('Malden Street') && cs.includes('Cartwright Boulevard') && !os.includes('Malden Street') && !os.includes('Cartwright Boulevard');
     if (pred && diagFirstPredAt < 0) diagFirstPredAt = t;
     const key = JSON.stringify([cs, os]);
-    if (key === diagPrevKey) diagStreak++; else { diagStreak = 0; if (diagFirstPredAt >= 0) diagChangesAfterPred++; }
+    if (key === diagPrevKey) diagStreak++; else { diagStreak = 0; diagLastChangeAt = t; if (diagFirstPredAt >= 0) diagChangesAfterPred++; if (diagTransitions.length < 48) diagTransitions.push({ t, loaded: s.loaded, idle: s.idle, pred, clone: cs, orig: os }); }
     diagPrevKey = key;
     console.log('L7DIAG t=' + t + ' loaded=' + s.loaded + ' idle=' + s.idle + ' moving=' + s.moving + ' pred=' + pred + ' streak=' + diagStreak + ' clone=' + JSON.stringify(cs) + ' orig=' + JSON.stringify(os));
     if (s.loaded && s.idle && pred && diagStreak >= 8) { console.log('L7DIAG CONVERGED t=' + t + ' firstPredAt=' + diagFirstPredAt + ' changesAfterPred=' + diagChangesAfterPred); break; }
@@ -105,6 +106,11 @@ const S2 = await jread(`(() => JSON.stringify({
 }))()`);
 ok('L7 at close zoom the basemap names print on the clones only | clone ' + JSON.stringify(S2.clone) + ' orig ' + JSON.stringify(S2.orig),
   settled === true && S2.clone.includes('Malden Street') && S2.clone.includes('Cartwright Boulevard') && !S2.orig.includes('Malden Street') && !S2.orig.includes('Cartwright Boulevard'));
+// DIAG digest (scratch branch only - these checks fail BY CONSTRUCTION so run.mjs
+// prints their names, which carry the trace, into the job log):
+ok('L7DIAG summary firstPredAt=' + diagFirstPredAt + ' changesAfterPred=' + diagChangesAfterPred + ' lastChangeAt=' + diagLastChangeAt + ' transitions=' + diagTransitions.length, false);
+const diagJson = JSON.stringify(diagTransitions);
+for (let c = 0; c * 1500 < diagJson.length && c < 10; c++) ok('L7DIAG trace[' + c + '] ' + diagJson.slice(c * 1500, (c + 1) * 1500), false);
 
 // Night: the clones are rebuilt per restack and wear the night lift.
 await ev(`(() => { localStorage.setItem('snowroute.v2.night', '1'); localStorage.setItem('snowroute.v2.nightExp', '4102444800000'); location.reload(); return true; })()`); // Beta 1.77: a stored override carries its sun-boundary expiry with it
