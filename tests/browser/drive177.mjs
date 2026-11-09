@@ -31,6 +31,10 @@ const seedOversized = async (n) => {
 
 try {
   // ---- Phase L: oversized slot arrays are trimmed to the caps at load ----
+  // bootThrough has already PICKED 5W from the empty profile, and loadRoute
+  // no-ops on the already-loaded route - so reload to the menu first (the
+  // drive176 pattern), then seed, then pick.
+  await ev(`localStorage.clear(); location.reload(); true`); await waitBoot(); await sleep(2200);
   await seedOversized(20000);
   await ev(`loadRoute('5w'); true`);
   await sleep(1800);
