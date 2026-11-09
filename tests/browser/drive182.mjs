@@ -228,20 +228,27 @@ ok('S1 a tap 10 px off a sector line TOGGLES that sector off - the rendered pick
 await allChosen();
 
 // ---------- S2: 36 px off every sector toggles NOTHING ----------
+// The assertion compares the chosen SET before/after, never its
+// length alone: a toggle-off followed by a toggle-on restores the
+// length while changing the set (this round's third RED attempt:
+// S3's muted tap toggled S2's victim back on and a length check
+// read it as "nothing happened").
+const S2pre = await chosenOf();
 await fireTap(SPROBES.s36);
 await sleep(600);
 const S2 = await chosenOf();
 ok('S2 a tap 36 px off every sector line toggles NOTHING - beyond the new rendered reach (retry 20 + hit width 12 = 32; the old reach 28 + 12 = 40 caught it) | chosen=' + JSON.stringify(S2) + ' probe=' + JSON.stringify(SPROBES.s36),
-  S2.length === SEC.parts);
+  S2pre.length === SEC.parts && JSON.stringify(S2) === JSON.stringify(S2pre));
 
 // ---------- S3: renderer muted, 36 px off (~31 m) - the fallback must not catch it ----------
 await ev(`window.__qrfMute = true`);
+const S3pre = await chosenOf();
 await fireTap(SPROBES.s36);
 await sleep(600);
 const S3 = await chosenOf();
 await ev(`window.__qrfMute = false`);
 ok('S3 with the renderer answering nothing, a tap 36 px off (~31 m) still toggles NOTHING - the geometry fallback now honours the same 20 px reach (through 1.155 its only cap was 75 m, which caught this tap) | chosen=' + JSON.stringify(S3),
-  S3.length === SEC.parts);
+  JSON.stringify(S3) === JSON.stringify(S3pre));
 
 // ---------- S4: renderer muted, 15 px off - the fallback lives ----------
 await ev(`window.__qrfMute = true`);
