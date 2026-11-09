@@ -288,6 +288,57 @@ Coverage:
   exactly as before. First entry through both doors with an empty
   draft is prompt-free and unchanged (`askDiscard` no-ops on an
   empty draft).
+- `drive171` — restore run-start / night validation (Beta 1.150,
+  security-audit finding restore-start-scalar-unvalidated): a genuine
+  backup is crafted three ways (v2 start='1', v1-loop start='1', and
+  the non-digit / non-finite / below-band forms) and each restore must
+  be refused with the named bad-value message, writing nothing and
+  never reloading; a crafted night='banana' is refused the same way
+  while a genuine night='1' restores; and the loader half — a stored
+  start of '1', 'Infinity' or '123abc' loads as NO run while a genuine
+  epoch-ms digit string still resumes its run.
+- `drive172` — legacy-migration stale-fill interleaving (Beta 1.150,
+  security-audit finding legacy-migration-fallback-boot-stale-fill):
+  one slot key refuses writes mid-migration so the boot falls back to
+  the legacy keys; a newer legacy value saved inside that fallback
+  boot must win on the retry (never the stale partial fill), the
+  marker commits and the fill record retires; a slot value a restore
+  rewrote over a recorded fill still wins (the 1.94 protection); a
+  clean migration copies verbatim and the committed marker makes
+  later legacy edits inert.
+- `drive173` — city-cache restore validation (Beta 1.150,
+  security-audit finding city-cache-restore-skips-way-validation):
+  a poisoned IndexedDB cache record (one good way beside out-of-range,
+  empty-named, NaN-point and single-point ways, plus a second cell
+  whose only way is out-of-range) restores ONLY the valid way; the
+  mixed cell is certified but the all-corrupt cell is not — it stays
+  for a fresh fetch and settles failed against a down street service,
+  never done from cache.
+- `drive174` — prototype-safe street-name index (Beta 1.150,
+  security-audit finding covfromways-prototype-name-throw): ways
+  named 'constructor', 'toString', '__proto__', 'hasOwnProperty' and
+  'valueOf' index as own properties without throwing; resolving and
+  tapping an unpicked prototype-named street takes neither the
+  sectors door nor the pending path, and the sectors guard refuses
+  such a name before any parts work.
+- `drive175` — update-check truthfulness (Beta 1.150, security-audit
+  findings update-check-reports-cached-copy-as-server-copy and
+  update-check-treats-any-difference-as-newer; drive117's local-origin
+  fixture pattern with three roots — the shipped label, one minor
+  older, one minor newer — plus a shell-503 mode): a 503 shell is
+  reported as could-not-check, never up-to-date, with no navigation;
+  an older server build is reported as older and is NOT installed;
+  a newer build still takes the update path and lands.
+- `drive176` — restore finclean discharge, fault-injected (Beta
+  1.150, needs-validation record
+  restore-finclean-discharge-outside-transaction): with an armed
+  finish-cleanup record in the slot and `removeItem` refusing only
+  the finclean key, the restore must FAIL honestly with a rollback
+  (original slot data and the still-armed record intact — the record
+  then completes its own cleanup at the next load once deletes work);
+  unfaulted, the same restore discharges the record inside its
+  verified write set and the restored notes/coverage survive the
+  next load.
 
 ## The drive compatibility surface (frozen, Beta 1.136, programme E; census refreshed 2026-11-08, Improvement Tranche 4 / T2)
 
@@ -317,9 +368,19 @@ closeRouteMenu 1 → 2, and writePending, draftStreets and
 openDoors join the surface at 1 each; the distinct-global count
 rises 121 → 124. ($ is called by drive170; its printed count is
 left untouched — the recount discrepancy recorded in the 1.146
-refresh (26 by recount vs 27 printed) is still open.). **54 of the
-61 drives call at least one app global; 124 distinct globals are
-called.** Renaming, removing or changing the contract of a surfaced
+refresh (26 by recount vs 27 printed) is still open.) Refreshed
+again 2026-11-09 on the 1.150 tree by the same stated rule for
+this round's drive changes only: drive171–drive176 join the
+battery — the deltas are loadRoute 21 → 24, restoreBackup 5 → 7,
+buildBackup 11 → 12, markDone 13 → 14, openRouteMenu 9 → 10,
+pickStreet 4 → 5, crPickCity 2 → 3, crCovFromWays 1 → 2,
+crResolve 1 → 2, crOpenSectors 1 → 2, newDraft 1 → 2, and
+migrateLegacyRoute, crGridCellsFor and crIdbPut join the surface
+at 1 each; the distinct-global count rises 124 → 127. (This
+recount puts $ at 27 over the 1.147 roster — the printed value;
+the 1.146 note's 26-by-recount discrepancy does not reproduce and
+is closed.) **59 of the 67 drives call at least one app global;
+127 distinct globals are called.** Renaming, removing or changing the contract of a surfaced
 global breaks the battery exactly as surely as renaming a storage key
 breaks stored data: grep the drives first, and treat a deliberate
 surface change as a test change under the gate below (fixtures first,

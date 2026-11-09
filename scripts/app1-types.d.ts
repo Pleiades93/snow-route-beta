@@ -103,7 +103,7 @@ type Stretch = { line: LatLng[], cum: number[], total: number, parts: LatLng[][]
 type StretchMap = { [street: string]: Stretch };
 
 /** A route slot's storage keys as routeKeys builds them: every value is a full localStorage key (schema, Layout section). */
-type RouteKeys = { done: string, times: string, hist: string, notes: string, via: string, trail: string, cov: string, start: string, flip: string, sides: string, sess: string, pre: string, snap: string, mig: string, finclean: string };
+type RouteKeys = { done: string, times: string, hist: string, notes: string, via: string, trail: string, cov: string, start: string, flip: string, sides: string, sess: string, pre: string, snap: string, mig: string, migfill: string, finclean: string };
 
 /** sunTimes' return: the day's sunrise/sunset as epoch ms, null when the sun never rises or sets that day (CODE-ONLY, app1). */
 type SunTimes = { rise: number | null, set: number | null };

@@ -424,7 +424,7 @@ input, textarea { caret-color: currentColor; } /* Beta 1.125 (Andrew): the typin
 <div id="hud">
   <div id="warn">Not saving — storage is full or blocked</div>
   <div class="row">
-    <div class="titleStack"><div class="title">Snow Route Beta</div><div class="ver" id="ver">Beta 1.149</div></div>
+    <div class="titleStack"><div class="title">Snow Route Beta</div><div class="ver" id="ver">Beta 1.150</div></div>
   </div>
   <div id="stats"></div>
 </div>
@@ -592,7 +592,7 @@ const TRAIL_MAX = 8000;
 // reference - GL_HOST's included - stays valid across a switch).
 /** @type {RoadsMap} */ const ROADS = {};
 /** @type {RoadsMap} */ const REFERENCE = {};
-/** @param {string} id @returns {RouteKeys} */ function routeKeys(id) { const p = 'snowroute.' + id + '.'; return { done: p + 'v2', times: p + 'v2.times', hist: p + 'v2.history', notes: p + 'v4.notes', via: p + 'v4.via', trail: p + 'v4.trail', cov: p + 'v4.cov', start: p + 'v5.start', flip: p + 'v5.flip', sides: p + 'v5.sides', sess: p + 'v5.sess', pre: p + 'v5.preload', snap: p + 'v5.snap', mig: p + 'v2.migrated', finclean: p + 'v5.finclean' }; } // Beta 1.94 (deep audit SR-193-02/03): two slot-local records join the layout - 'snap' is the running clean's persisted pre-Start board (Start writes it, Finish/Cancel delete it; transient, never backed up, not in ROUTE_FIELDS) and 'mig' is the legacy migration's explicit completion marker (see migrateLegacyRoute). Neither is a backup field. Beta 1.141 (Package A, DA-10): 'finclean' joins them on the same terms - the durable finish-cleanup obligation (finishRun's transaction writes it, saveAll's success discharges it, completeFinishCleanup completes it at load); transient, never backed up, not in ROUTE_FIELDS.
+/** @param {string} id @returns {RouteKeys} */ function routeKeys(id) { const p = 'snowroute.' + id + '.'; return { done: p + 'v2', times: p + 'v2.times', hist: p + 'v2.history', notes: p + 'v4.notes', via: p + 'v4.via', trail: p + 'v4.trail', cov: p + 'v4.cov', start: p + 'v5.start', flip: p + 'v5.flip', sides: p + 'v5.sides', sess: p + 'v5.sess', pre: p + 'v5.preload', snap: p + 'v5.snap', mig: p + 'v2.migrated', migfill: p + 'v2.migfill', finclean: p + 'v5.finclean' }; } // Beta 1.94 (deep audit SR-193-02/03): two slot-local records join the layout - 'snap' is the running clean's persisted pre-Start board (Start writes it, Finish/Cancel delete it; transient, never backed up, not in ROUTE_FIELDS) and 'mig' is the legacy migration's explicit completion marker (see migrateLegacyRoute). Neither is a backup field. Beta 1.141 (Package A, DA-10): 'finclean' joins them on the same terms - the durable finish-cleanup obligation (finishRun's transaction writes it, saveAll's success discharges it, completeFinishCleanup completes it at load); transient, never backed up, not in ROUTE_FIELDS. Beta 1.150 (security-audit fix round): 'migfill' joins them on the same terms - the migration's per-field fill record (see migrateLegacyRoute); written only while a migration is incomplete, deleted when its marker commits.
 const LS_GLOBAL = { night: 'snowroute.v2.night', nightExp: 'snowroute.v2.nightExp', exp: 'snowroute.v5.export', prep: 'snowroute.prep.v1', lastArea: 'snowroute.v2.lastarea' }; // Beta 1.118: lastArea = the create flow's area pre-fill memory
 const LEGACY_KEYS = { done: 'snowroute.v2', times: 'snowroute.v2.times', hist: 'snowroute.v2.history', notes: 'snowroute.v4.notes', via: 'snowroute.v4.via', trail: 'snowroute.v4.trail', cov: 'snowroute.v4.cov', start: 'snowroute.v5.start', flip: 'snowroute.v5.flip', sides: 'snowroute.v5.sides', sess: 'snowroute.v5.sess', snap: 'snowroute.v5.snap', finclean: 'snowroute.v5.finclean' }; // snap rides here too so LS.snap is defined on a legacy-fallback boot (the pre-1.76 app never wrote one - the key is simply absent there, which the cancel path already treats as 'no snapshot'); finclean rides for the same reason (Beta 1.141)
 const ROUTE_FIELDS = ['done', 'times', 'hist', 'notes', 'via', 'trail', 'cov', 'start', 'flip', 'sides', 'sess'];
@@ -616,14 +616,27 @@ const PACK_STREETS_MAX = 300, PACK_SEGS_MAX = 80, PACK_SEG_PTS_MAX = 4000, PACK_
 const PACK_TILENAME_MAX = 80, PACK_TILENAMES_MAX = 400;
 /** @param {string} id @returns {string[]} */ function slotKeys(id) { const rk = routeKeys(id); return ROUTE_FIELDS.map(f => rk[f]).concat(rk.snap); } // Beta 1.136 (programme F): a route slot's BACKUP keys as one list - the ROUTE_FIELDS keys plus the cancel snapshot - for the callers that enumerate keys without needing field names (the restore's rollback scope). Backup field loops keep walking ROUTE_FIELDS itself (they need the names), and route deletion keeps enumerating routeKeys' values (it wipes slots the backup never carries, pre/mig included).
 /** @type {Object.<string, string>} */ let LS = { ...routeKeys('5w'), ...LS_GLOBAL };
-/** @param {string} id @returns {boolean} */ function migrateLegacyRoute(id) { // one-time, 5W only. Beta 1.94 (deep audit SR-193-03): the COMMIT RECORD is the explicit marker key (rk.mig), never field presence. The 1.93 parity gate (R04) could not tell an interrupted copy from a legitimately partial slot - sides restored from a backup, no history yet - and its retry recopied legacy sides OVER the newer restored ones. Now: with the marker absent, the copy fills ONLY fields the slot lacks (a present slot field is never overwritten), each fill verified by read-back; any failure reports false and the caller reads the legacy keys for this boot - verified fills already landed may stay, since without the marker they are never mistaken for a completed move, and each is an exact copy of the legacy value. Parity is re-checked before the marker is written. The legacy keys themselves are never deleted - they stay as the fallback copy.
+/** @param {string} id @returns {boolean} */ function migrateLegacyRoute(id) { // one-time, 5W only. Beta 1.94 (deep audit SR-193-03): the COMMIT RECORD is the explicit marker key (rk.mig), never field presence. The 1.93 parity gate (R04) could not tell an interrupted copy from a legitimately partial slot - sides restored from a backup, no history yet - and its retry recopied legacy sides OVER the newer restored ones. Now: with the marker absent, the copy fills ONLY fields the slot lacks (a present slot field is never overwritten), each fill verified by read-back; any failure reports false and the caller reads the legacy keys for this boot - verified fills already landed may stay, since without the marker they are never mistaken for a completed move, and each is an exact copy of the legacy value. Parity is re-checked before the marker is written. The legacy keys themselves are never deleted - they stay as the fallback copy. Beta 1.150 (security-audit fix round, finding legacy-migration-fallback-boot-stale-fill): the fill-only rule had one hole - when a fill failed PARTWAY, the fallback boot ran on the legacy keys and its saves wrote NEWER legacy values, and the next boot's retry skipped the fields that had already landed, so the stale partial copy became permanent under the committed marker. The record that tells a migration-owned fill from everyone else's write is rk.migfill: for each field, the exact value a landed fill wrote, persisted (verified) as each fill lands. On a retry, a slot value still EQUAL to its recorded fill is migration's own and is re-copied when the legacy value has moved on; a slot value that DIFFERS from its recorded fill was written by someone else (a restore) - it wins and its record is dropped, which is exactly the 1.94 protection, kept. The record is deleted when the marker commits; from then on the marker alone governs, as before.
   if (id !== '5w') return true;
   const rk = routeKeys(id);
   if (lsGet(rk.mig) !== null) return true; // the move committed on an earlier boot - the slot is never re-examined against legacy again
   if (lsGet(LEGACY_KEYS.sides) === null) return true; // nothing legacy to move
-  for (const f of ROUTE_FIELDS) { const raw = lsGet(LEGACY_KEYS[f]); if (raw === null) continue; if (lsGet(rk[f]) !== null) continue; if (!lsSet(rk[f], raw) || lsGet(rk[f]) !== raw) return false; } // fill the gaps only, verified per key
+  let prog = {};
+  try { const rawProg = lsGet(rk.migfill); if (rawProg) { const p = JSON.parse(rawProg); if (p && typeof p === 'object' && !Array.isArray(p)) prog = p; } } catch (e) { prog = {}; }
+  let progDirty = false;
+  const saveProg = () => { if (!progDirty) return true; const s = JSON.stringify(prog); if (!lsSet(rk.migfill, s) || lsGet(rk.migfill) !== s) return false; progDirty = false; return true; };
+  for (const f of ROUTE_FIELDS) {
+    const raw = lsGet(LEGACY_KEYS[f]);
+    if (raw === null) { if (f in prog) { delete prog[f]; progDirty = true; } continue; } // legacy no longer holds the field: its fill record is moot
+    const slot = lsGet(rk[f]);
+    if (slot === null) { if (!lsSet(rk[f], raw) || lsGet(rk[f]) !== raw) return false; prog[f] = raw; progDirty = true; if (!saveProg()) return false; continue; } // fill the gap, verified, and record the fill as migration-owned before moving on
+    if (f in prog && slot === prog[f]) { if (raw !== prog[f]) { if (!lsSet(rk[f], raw) || lsGet(rk[f]) !== raw) return false; prog[f] = raw; progDirty = true; if (!saveProg()) return false; } continue; } // migration's own earlier fill, and the legacy value has moved on (a fallback boot saved over it): re-copy, so the stale fill never becomes permanent
+    if (f in prog) { delete prog[f]; progDirty = true; } // the slot value is NOT what migration wrote - someone else (a restore) owns it now; it wins, untouched
+  }
   for (const f of ROUTE_FIELDS) { if (lsGet(LEGACY_KEYS[f]) !== null && lsGet(rk[f]) === null) return false; } // parity before committing: every field legacy holds must now be present in the slot
-  lsSet(rk.mig, '1'); // commit. If THIS write fails the next boot re-runs the fill (by then a no-op) and retries the marker - safe either way
+  if (!saveProg()) return false;
+  lsSet(rk.mig, '1'); // commit. If THIS write fails the next boot re-runs the pass (by then a no-op) and retries the marker - safe either way
+  lsDel(rk.migfill); // the marker governs from here - the fill record has no further meaning. If this delete fails, the stale record is inert: the marker short-circuits every later call before the record is read
   return true;
 }
 
@@ -896,7 +909,7 @@ for (const h of history) {
 history = history.filter(h => Object.keys(h.items).length > 0);
 // Run start (production): epoch milliseconds, stored as a bare digit string (NOT JSON).
 runStart = 0;
-try { runStart = +lsGet(LS.start) || 0; } catch (e) { runStart = 0; }
+try { const s = lsGet(LS.start); runStart = (typeof s === 'string' && /^\d+$/.test(s) && isFinite(+s) && +s >= 946684800000 && +s <= 4102444800000) ? +s : 0; } catch (e) { runStart = 0; } // Beta 1.150 (security-audit fix round, finding restore-start-scalar-unvalidated, loader half): the stored start is parsed as strictly as the restore now validates it - a digit string inside the epoch-ms band. The old '+lsGet(...) || 0' coerced a crafted '1' into a live phantom run (and 'Infinity' into an endless one) whose Cancel wiped the route; every other epoch this loader accepts is band-checked the same way (trail sessions and trail points, below)
 trail = parseJ(lsGet(LS.trail), []);
 trailSessions = parseJ(lsGet(LS.sess), []); // Beta 1.71 (audit B02): the epoch-second start of each clean that recorded trail points - the session identity the flat trail never carried, so exports can split cleans exactly instead of guessing from gaps. Pre-1.71 trails simply have no markers and keep the gap heuristic.
 trailSessions = Array.isArray(trailSessions) ? [...new Set(trailSessions.filter(t => Number.isFinite(t) && t >= 946684800 && t <= 4102444800))].sort((a, b) => a - b) : [];
@@ -4465,6 +4478,10 @@ function restoreBackup(parsed) { // production doRestore semantics: validate EVE
   const entries = []; // [targetKey, value]
   const pushField = (targetKey, field, v, label, nameSet) => {
     if (typeof v !== 'string') { toast('Backup has a bad value for ' + label + ' — nothing was changed', 3200); return false; }
+    if (field === 'start') { // Beta 1.150 (security-audit fix round, finding restore-start-scalar-unvalidated): the run-start has no FIELD_SHAPES entry, so its check is semantic, not a shape - the storage contract makes it an epoch-ms digit string, and the loader range-bounds every other epoch it accepts (946684800..4102444800 s), so the restore accepts exactly that band in milliseconds. A crafted '1' used to be committed verbatim through this verified write set and coerced by the loader into a phantom run whose Cancel wiped the route
+      if (!/^\d+$/.test(v) || !isFinite(+v) || +v < 946684800000 || +v > 4102444800000) { toast('Backup has a bad value for ' + label + ' — nothing was changed', 3200); return false; }
+    }
+    if (field === 'night' && v !== '0' && v !== '1') { toast('Backup has a bad value for ' + label + ' — nothing was changed', 3200); return false; } // Beta 1.150: night rode the same unchecked path - its writer (setThemeOverride) stores only the enum '0'/'1'. Its pair nightExp was already validated (1.92 F01) and both keys already land in this one verified write set with rollback, so the pair stays atomic; only the enum was missing
     const shape = FIELD_SHAPES[field];
     if (shape) {
       let pv; try { pv = JSON.parse(v); } catch (e) { toast('Backup value for ' + label + ' is not valid JSON — nothing was changed', 3200); return false; }
@@ -4546,9 +4563,10 @@ function restoreBackup(parsed) { // production doRestore semantics: validate EVE
       entries.push([rk.sides, JSON.stringify({ p: P, t: T })]); // Beta 1.93 (follow-up audit R03): ALWAYS write the derived authority when the backup carries done-but-no-sides - an explicitly EMPTY list ('[]') is an intentional empty state, and {} reads back as nothing done; skipping the write used to leave the phone's old sides in charge
     } catch (e) { /* a list that cannot be parsed was already rejected during validation - never invent sides from rubble */ }
   }
+  for (const rid of (parsed.v === 2 ? Object.keys(parsed.routes) : ['5w'])) entries.push([routeKeys(rid).finclean, null]); // Beta 1.150 (security-audit fix round, needs-validation record restore-finclean-discharge-outside-transaction - settled CONFIRMED by fault injection, drive176): the finish-cleanup discharge joins the VERIFIED write set as a null (verified-delete) entry, and the rollback scope below gains the finclean keys. Pre-1.150 a bare lsDel after the commit loop discarded its result: a refused delete left the obligation armed over just-restored data, the restore reported success, and the next load's cleanup wiped the restored notes/coverage. A failed discharge now fails the restore with a rollback, like every other write here
   restoreOverlayPacks = restoredPacks; const droppedNames = countUnknownNames(parsed); restoreOverlayPacks = null; // Beta 1.95 (SR-194-08): counted from the RAW backup before any normalization - see countUnknownNames. Beta 1.118: judged with this backup's own created-route definitions overlaid
   if (!entries.length) { toast('Nothing in that backup to restore', 3000); return; }
-  const SCOPE = []; for (const p of allPacks) SCOPE.push(...slotKeys(p.id)); if (restoredPacks) SCOPE.push(USERPACKS_KEY); SCOPE.push(LS_GLOBAL.night, LS_GLOBAL.nightExp); // Beta 1.136: the per-route keys come from slotKeys (app1) - the same ROUTE_FIELDS + snap list, enumerated in one place // Beta 1.118: the created-routes record and restored routes' slots join the rollback scope // Beta 1.96 (SR-195-02): the snapshot key joins the rollback scope - a restore that writes a carried snapshot must be able to put the previous one back
+  const SCOPE = []; for (const p of allPacks) SCOPE.push(...slotKeys(p.id)); if (restoredPacks) SCOPE.push(USERPACKS_KEY); SCOPE.push(LS_GLOBAL.night, LS_GLOBAL.nightExp); for (const p of allPacks) SCOPE.push(routeKeys(p.id).finclean); // Beta 1.150: the finclean keys join the rollback scope - a restore that discharges an obligation must be able to put the armed record back when a later write fails // Beta 1.136: the per-route keys come from slotKeys (app1) - the same ROUTE_FIELDS + snap list, enumerated in one place // Beta 1.118: the created-routes record and restored routes' slots join the rollback scope // Beta 1.96 (SR-195-02): the snapshot key joins the rollback scope - a restore that writes a carried snapshot must be able to put the previous one back
   const snap = {}; let snapOk = true;
   for (const k of SCOPE) { const v = rawRead(k); if (v === RAW_READ_FAILED) snapOk = false; else snap[k] = v; }
   if (!snapOk) { toast('Restore stopped — your current data could not be read for safekeeping, so nothing was changed', 3600); return; }
@@ -4566,7 +4584,7 @@ function restoreBackup(parsed) { // production doRestore semantics: validate EVE
       return;
     }
   }
-  for (const rid of (parsed.v === 2 ? Object.keys(parsed.routes) : ['5w'])) lsDel(routeKeys(rid).finclean); // Beta 1.141 (Package A, DA-10): the restore replaces a route's slot truth wholesale, so a finish-cleanup obligation left by the pre-restore state is discharged by the replacement, never completed against restored data. Scoped to the routes this backup actually rewrites (1.141 verify cycle 1): a route the backup OMITS keeps its slot under the missing-key rule, so its obligation stays armed for its next load
+  // Beta 1.141 (Package A, DA-10) discharge note: the finish-cleanup discharge itself moved INTO the verified write set above in Beta 1.150 (see the finclean entries) - the 1.141 rule stands unchanged (a restore discharges the obligations of exactly the routes it rewrites; an omitted route's obligation stays armed), only its mechanism is now verified like every other write in this function
   restoring = true; markClean('trail'); markClean('aux'); markClean('sess'); // the reload's pagehide flush must not write the old in-memory trail/coverage over the restored data
   toast('Backup restored — reloading' + (droppedNames ? ' · ' + droppedNames + ' unknown street name' + (droppedNames === 1 ? '' : 's') + ' in the backup were ignored' : '') + (snapDropped ? ' · the saved start snapshot was not usable, so Cancel will rebuild from the marks made during the run' : ''), snapDropped ? 4600 : undefined); // Beta 1.94 (audit F-05): the drop count is part of the result, not a silent loader detail. Beta 1.96 (SR-195-02): a dropped start snapshot is reported the same way
   setTimeout(() => location.reload(), 600);
@@ -4693,22 +4711,30 @@ const list = preloadUrlList();
 
 // ===== UPDATE CHECK =====
 let updState = ''; // Beta 1.111: the Status health row's App-version state - '' = not checked yet this session, 'ok' = up to date, 'avail' = a newer version was served. In-memory on purpose: a fresh boot honestly reports "not checked yet" again instead of trusting a stale stamp.
+function parseVerLabel(s) { const m = typeof s === 'string' ? s.trim().match(/^Beta (\d+)\.(\d+)$/) : null; return m ? [Number(m[1]), Number(m[2])] : null; } // Beta 1.150 (security-audit fix round): the version ordering the update check compares by - two numeric components, nothing else parses
 $('updBtn').addEventListener('click', async () => {
   if (!tapGuard('updBtn')) return;
   toast('Checking for a newer version…');
   try {
     if (navigator.serviceWorker) { const reg = await navigator.serviceWorker.getRegistration(); if (reg) await reg.update(); }
-    const r = await fetch(location.pathname + '?v=' + Date.now(), { cache: 'no-store' });
+    const r = await fetch(location.pathname + '?updprobe=1&v=' + Date.now(), { cache: 'no-store' }); // Beta 1.150 (finding update-check-reports-cached-copy-as-server-copy): the probe carries the updprobe marker and the worker answers it with the network itself or a network error, NEVER its cached shell (src/sw.js) - pre-1.150 this fetch went through netFirst, which substitutes the cached shell on any error status, rejection or stall, so a server answering 503 still produced 'Up to date' from the cache
+    if (!r.ok) { updState = 'fail'; toast('Could not check for updates — the server answered with an error (' + r.status + '). Nothing was changed', 3400); return; }
     const html = await r.text();
     const m = html.match(/id="ver">([^<]+)</);
     const served = m && m[1].trim();
     const mine = $('ver').textContent.trim();
-    if (!served) { toast('Could not read the server copy', 3000); return; }
+    if (!served) { updState = 'fail'; toast('Could not check for updates — the server copy could not be read. Nothing was changed', 3400); return; }
     if (served === mine) { updState = 'ok'; toast('✓ Up to date (' + mine + ')', 2800); return; }
-    updState = 'avail';
-    toast('New version found — reloading…', 2600);
-    setTimeout(() => location.replace(location.pathname + '?v=' + Date.now()), 900);
-  } catch (e) { toast('Update check failed — reloading to be safe', 2800); setTimeout(() => location.reload(), 900); }
+    const sv = parseVerLabel(served), mv = parseVerLabel(mine); // Beta 1.150 (finding update-check-treats-any-difference-as-newer): a difference is an update only when it is strictly NEWER - an older server build is a fact to report, never a version to install, and an unparseable label cannot be ordered so it is never installed on a guess
+    if (sv && mv) {
+      if (sv[0] < mv[0] || (sv[0] === mv[0] && sv[1] < mv[1])) { updState = 'older'; toast('The server is serving an older version (' + served + ') — this copy (' + mine + ') was kept', 3600); return; }
+      updState = 'avail';
+      toast('New version found — reloading…', 2600);
+      setTimeout(() => location.replace(location.pathname + '?v=' + Date.now()), 900);
+      return;
+    }
+    updState = 'diff'; toast('The server is serving a different version (' + served + ') — this copy (' + mine + ') was kept', 3600);
+  } catch (e) { updState = 'fail'; toast('Could not check for updates — the server did not answer. Nothing was changed', 3400); } // Beta 1.150: a failed check is reported as a failed check - the pre-1.150 catch reloaded 'to be safe', which could only land on the same cached shell the probe just failed to get past
 });
 
 // ===== FAN / NIGHT / FLIP / HOME =====
@@ -4891,6 +4917,9 @@ async function renderStatus(resetStat) {
   setHealth('stIcoMaps', 'stValMaps', ps.complete ? 'ok' : 'warn', ps.complete ? 'complete' : ps.cached > 0 ? 'partial — ' + ps.cached + ' of ' + ps.total : 'not downloaded');
   if (updState === 'ok') setHealth('stIcoVer', 'stValVer', 'ok', 'up to date (' + $('ver').textContent.trim() + ')');
   else if (updState === 'avail') setHealth('stIcoVer', 'stValVer', 'warn', 'update available');
+  else if (updState === 'fail') setHealth('stIcoVer', 'stValVer', 'warn', 'could not check — the server did not answer');
+  else if (updState === 'older') setHealth('stIcoVer', 'stValVer', 'warn', 'the server has an older version');
+  else if (updState === 'diff') setHealth('stIcoVer', 'stValVer', 'warn', 'the server has a different version');
   else setHealth('stIcoVer', 'stValVer', 'idle', 'not checked yet');
   if (gpsDenied) setHealth('stIcoGps', 'stValGps', 'warn', 'location permission is off');
   else if (watchId != null || (lastGood && Date.now() - lastGood.at < 120000)) setHealth('stIcoGps', 'stValGps', 'ok', 'ready');
@@ -4914,7 +4943,7 @@ $('stDel').addEventListener('click', async () => {
 });
 // ---- About / What's new ----
 const WHATSNEW = { // the curated in-app notes: plain words, LATEST RELEASE ONLY (Beta 1.114, Andrew: the accumulated list cluttered the About pane). A release REPLACES this entry with its own in the same change - it never accumulates; the full history lives in CHANGELOG.md, not the app
-  v: 'Beta 1.149', items: ["Under the hood: the app's core now carries machine-checked type notes for its saved-data shapes — your cleans, snapshots and route packs — and every future update is verified against them automatically", "Nothing you see or tap has changed: this update is comments and checks only, proven by comparing the built page against the previous one with the comments stripped away"]};
+  v: 'Beta 1.150', items: ["Safety fixes from a full security review: restoring a backup now double-checks the run timer and the day/night setting it carries, so a damaged or tampered backup file can't start a phantom run or wipe a route's work", "The update check now tells the truth — if the server doesn't answer it says it couldn't check (it used to say 'up to date' from a saved copy), and it will never install an older version over yours", "Repairs behind the scenes so a half-finished data move, a damaged street cache, or an interrupted restore can never quietly replace good data with stale data"]};
 function renderAbout() {
   const cur = $('ver').textContent.trim();
   $('wnHead').textContent = "WHAT'S NEW · " + cur; // the header names the LIVE version, read from the title's version element - never a second hard-coded copy that can go stale
@@ -5595,15 +5624,31 @@ function crIndexWays(elements, byId) { // Overpass elements -> byId { id: { name
   }
   return byId;
 }
+function crCleanPts(rawPts) { // Beta 1.150 (security-audit fix round): THE point cleaning for a stored [lat, lon] pair list, mirroring crIndexWays' rules (1e7 rounding, a point is kept only when it sits more than 0.1 m past the last kept one, at least 2 points must survive) plus the finiteness/range condition crResolve demands of every point it reads. A point that is not a finite in-range pair is skipped; the way survives on its remaining points or not at all
+  if (!Array.isArray(rawPts)) return null;
+  const pts = [];
+  for (const gp of rawPts) {
+    if (!Array.isArray(gp) || gp.length < 2 || !isFinite(gp[0]) || !isFinite(gp[1]) || gp[0] < -90 || gp[0] > 90 || gp[1] < -180 || gp[1] > 180) continue;
+    const p = [Math.round(gp[0] * 1e7) / 1e7, Math.round(gp[1] * 1e7) / 1e7];
+    if (!pts.length || distM(pts[pts.length - 1], p) > 0.1) pts.push(p);
+  }
+  return pts.length > 1 ? pts : null;
+}
+function crCleanStoredWay(entry) { // Beta 1.150: a city-cache record's stored triple [id, name, pts] earns installation only by passing the extract's own cleaning - a usable id, a non-empty string name, and geometry that cleans to at least 2 points. Anything else returns null and the way is dropped whole (the cache fold in create-cache.js is the caller)
+  if (!Array.isArray(entry) || entry.length < 3) return null;
+  if (entry[0] == null || typeof entry[1] !== 'string' || !entry[1]) return null;
+  const pts = crCleanPts(entry[2]);
+  return pts ? { id: entry[0], name: entry[1], pts } : null;
+}
 function crCovFromWays(byId, boxes) { // the coverage record: the extract's ways indexed by street name (ids kept in byId - grid cells and top-ups merge into the SAME index, deduped by way id), plus the SET of verified boxes completeness is judged against
-  const byName = {};
+  const byName = Object.create(null); // Beta 1.150 (security-audit fix round, finding covfromways-prototype-name-throw): street names are external data - on a plain object, a street named 'constructor' reads Object.prototype's member as if a run existed and the push below threw, and '__proto__' would write the prototype instead of an entry. A null-prototype index makes every name an own property
   for (const id of Object.keys(byId)) {
     const w = byId[id];
     (byName[w.name] = byName[w.name] || []).push(w);
   }
   return { gen: crCovGen, byName, byId, boxes: (boxes || []).slice(), fetchedAt: Date.now() };
 }
-function crCovEnsure() { if (!crCov) crCov = crCovFromWays({}, []); return crCov; }
+function crCovEnsure() { if (!crCov) crCov = crCovFromWays(Object.create(null), []); return crCov; } // Beta 1.150: the coverage byId starts life null-prototype (as crCovFromWays' byName now does) - the cache fold writes stored way ids into it, and an id of '__proto__' must land as an entry, never as the index's prototype. Every coverage birth site (here, crCityPrepare, the grid refresh) passes Object.create(null) for the same reason
 function crCovMerge(elements, box) { // fold one answered extract (a grid cell, the fallback box, a top-up) into the merged coverage: ways dedupe by id, the answered box joins the verified set
   const cov = crCovEnsure();
   crIndexWays(elements, cov.byId);
@@ -5826,7 +5871,7 @@ function crCityPrepare() { // a city is picked: load its whole extract - from th
   const session = crSession, gen = ++crCovGen;
   if (crPrep) { clearInterval(crPrep.ticker); crAbortOp(crPrep.op); crPrep = null; }
   if (crGrid) crGridStop('superseded');
-  crCov = crCovFromWays({}, []);
+  crCov = crCovFromWays(Object.create(null), []);
   crCacheNote = ''; crCacheNoteCity = ''; // a fresh preparation starts with no failure state (Beta 1.143, DA-06: the owner binding resets with the note)
   crPackCtx = null; crPackNote = ''; // Beta 1.123: a new city's preparation re-decides its source (pack vs service) below
   const cells = crGridCellsFor(bbox);
@@ -5841,8 +5886,9 @@ function crCityPrepare() { // a city is picked: load its whole extract - from th
       for (const cell of g.cells) {
         const saved = rec.cells[cell.key];
         if (saved && Array.isArray(saved.ways)) {
-          const byId = {};
-          for (const sw of saved.ways) { if (Array.isArray(sw) && sw[2] && sw[2].length > 1) byId[sw[0]] = { name: sw[1], pts: sw[2] }; }
+          const byId = Object.create(null); // Beta 1.150: a stored way id of '__proto__' lands as an entry here, not as the map's prototype
+          for (const sw of saved.ways) { const w = crCleanStoredWay(sw); if (w) byId[w.id] = { name: w.name, pts: w.pts }; } // Beta 1.150 (security-audit fix round, finding city-cache-restore-skips-way-validation): every stored triple passes the extract's own cleaning (crCleanStoredWay, create-citydata.js) before it may enter coverage - pre-1.150 this fold installed raw triples on array-shape checks alone, planting out-of-range / NaN / empty-named geometry the extract never held
+          if (!Object.keys(byId).length) continue; // Beta 1.150: the cell is certified (box + done, below) only when at least one VALIDATED way came out of it - a cell whose stored ways are all corrupt stays pending and is fetched fresh, never marked done on the cache's say-so
           crCovMerge([], null); // ensure the cov exists before the direct fold below
           for (const id of Object.keys(byId)) crCov.byId[id] = byId[id];
           const fresh = crCovFromWays(crCov.byId, crCov.boxes);
@@ -5887,7 +5933,7 @@ function crGridRefresh() { // the saved city's Refresh affordance: drop the save
   crPackNote = '';
   if (g.fromPack) crPackLoad(g.fromPack, true).catch(() => {}); // Beta 1.123: Refresh on a pack city re-downloads the PACK itself (forced past the session copy) - the fresh grid below then commits from it
   const session = crSession, gen = ++crCovGen;
-  crCov = crCovFromWays({}, []);
+  crCov = crCovFromWays(Object.create(null), []);
   const g2 = crGrid = { name, bbox, cells: crGridCellsFor(bbox), gen, session, startedAt: Date.now(), ticker: null, ops: new Set(), active: 0, fromCache: false, savedAt: null, stopped: null, lastFail: null };
   if (g.fromPack) { g2.fromPack = g.fromPack; crPackCtx = { slug: g.fromPack, bbox: g.bbox, failed: false }; } // the refreshed preparation stays pack-backed, against the same bounds
   crPrepState = 'preparing'; crPrepFail = null;
@@ -6065,7 +6111,7 @@ function crSectorTap(lngLat) { // a map tap while trimming: the sector under the
   if (idx >= 0) crToggleSector(name, idx);
 }
 function crOpenSectors(name) { // opens a picked street's trimming - TWO doors since Beta 1.128 (Andrew's fork, decided from his 1.127 device session): the panel row (1.127) AND a map tap on the already-picked street (pickStreet routes here), which is where his finger went on device. Beta 1.129: entry SNAPSHOTS the street's pick as it stands (whole road, or the trim in force) - the sector bar's Cancel restores that snapshot exactly
-  if (!draft || !draft.roads[name]) return;
+  if (!draft || !draft.roads || !Object.prototype.hasOwnProperty.call(draft.roads, name)) return; // Beta 1.150: own-property at this door too - a prototype member must not read as a held run and carry the call into the parts work below
   if (!crStreetParts(name)) return;
   if (crSectorStreet !== name) crSectorSnapshot = (draft.sectors && draft.sectors[name]) ? draft.sectors[name].slice() : null; // a fresh entry only - re-entering the same street's open session must not move Cancel's restore point
   crSectorStreet = name;
@@ -6730,9 +6776,9 @@ const OVERPASS_URLS = ['https://overpass-api.de/api/interpreter', 'https://overp
 async function pickStreet(osmName, lngLat) {
   if (!draft) return;
   const name = osmName; // Beta 1.144 (DA-04): the draft key IS the full map name; the short form appears only in display text (shortStreetName at the toast sites below)
-  const exists = !!draft.roads[name];
+  const exists = Object.prototype.hasOwnProperty.call(draft.roads, name); // Beta 1.150 (security-audit fix round, finding covfromways-prototype-name-throw): own-property, not a bare read - on a plain object a street named 'constructor' reads Object.prototype's member as if the street were already picked, and the tap was routed to the sectors door for a street that was never picked
   if (exists && (crPickBusy || !(crCov && crCov.boxes.length))) { crOpenSectors(name); return; } // already picked, and either no prepared extract to resolve the tap against or a pick is in flight: the 1.128 sectors door, exactly as before (the pre-1.144 order - the picked check always outranked the busy flag)
-  if (crPending[name]) { toast(shortStreetName(name) + ' is pending — it runs past the prepared area and is not in your route yet', 3400); return; }
+  if (Object.prototype.hasOwnProperty.call(crPending, name)) { toast(shortStreetName(name) + ' is pending — it runs past the prepared area and is not in your route yet', 3400); return; } // Beta 1.150: the same own-property rule for the pending read
   if (crPickBusy) return;
   // Beta 1.121: the tap resolves LOCALLY from the prepared extract - no
   // network on the ordinary path (CG-PF-04). Before the extract is ready

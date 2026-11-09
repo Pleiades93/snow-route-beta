@@ -186,6 +186,10 @@ function restoreBackup(parsed) { // production doRestore semantics: validate EVE
   const entries = []; // [targetKey, value]
   const pushField = (targetKey, field, v, label, nameSet) => {
     if (typeof v !== 'string') { toast('Backup has a bad value for ' + label + ' — nothing was changed', 3200); return false; }
+    if (field === 'start') { // Beta 1.150 (security-audit fix round, finding restore-start-scalar-unvalidated): the run-start has no FIELD_SHAPES entry, so its check is semantic, not a shape - the storage contract makes it an epoch-ms digit string, and the loader range-bounds every other epoch it accepts (946684800..4102444800 s), so the restore accepts exactly that band in milliseconds. A crafted '1' used to be committed verbatim through this verified write set and coerced by the loader into a phantom run whose Cancel wiped the route
+      if (!/^\d+$/.test(v) || !isFinite(+v) || +v < 946684800000 || +v > 4102444800000) { toast('Backup has a bad value for ' + label + ' — nothing was changed', 3200); return false; }
+    }
+    if (field === 'night' && v !== '0' && v !== '1') { toast('Backup has a bad value for ' + label + ' — nothing was changed', 3200); return false; } // Beta 1.150: night rode the same unchecked path - its writer (setThemeOverride) stores only the enum '0'/'1'. Its pair nightExp was already validated (1.92 F01) and both keys already land in this one verified write set with rollback, so the pair stays atomic; only the enum was missing
     const shape = FIELD_SHAPES[field];
     if (shape) {
       let pv; try { pv = JSON.parse(v); } catch (e) { toast('Backup value for ' + label + ' is not valid JSON — nothing was changed', 3200); return false; }
@@ -267,9 +271,10 @@ function restoreBackup(parsed) { // production doRestore semantics: validate EVE
       entries.push([rk.sides, JSON.stringify({ p: P, t: T })]); // Beta 1.93 (follow-up audit R03): ALWAYS write the derived authority when the backup carries done-but-no-sides - an explicitly EMPTY list ('[]') is an intentional empty state, and {} reads back as nothing done; skipping the write used to leave the phone's old sides in charge
     } catch (e) { /* a list that cannot be parsed was already rejected during validation - never invent sides from rubble */ }
   }
+  for (const rid of (parsed.v === 2 ? Object.keys(parsed.routes) : ['5w'])) entries.push([routeKeys(rid).finclean, null]); // Beta 1.150 (security-audit fix round, needs-validation record restore-finclean-discharge-outside-transaction - settled CONFIRMED by fault injection, drive176): the finish-cleanup discharge joins the VERIFIED write set as a null (verified-delete) entry, and the rollback scope below gains the finclean keys. Pre-1.150 a bare lsDel after the commit loop discarded its result: a refused delete left the obligation armed over just-restored data, the restore reported success, and the next load's cleanup wiped the restored notes/coverage. A failed discharge now fails the restore with a rollback, like every other write here
   restoreOverlayPacks = restoredPacks; const droppedNames = countUnknownNames(parsed); restoreOverlayPacks = null; // Beta 1.95 (SR-194-08): counted from the RAW backup before any normalization - see countUnknownNames. Beta 1.118: judged with this backup's own created-route definitions overlaid
   if (!entries.length) { toast('Nothing in that backup to restore', 3000); return; }
-  const SCOPE = []; for (const p of allPacks) SCOPE.push(...slotKeys(p.id)); if (restoredPacks) SCOPE.push(USERPACKS_KEY); SCOPE.push(LS_GLOBAL.night, LS_GLOBAL.nightExp); // Beta 1.136: the per-route keys come from slotKeys (app1) - the same ROUTE_FIELDS + snap list, enumerated in one place // Beta 1.118: the created-routes record and restored routes' slots join the rollback scope // Beta 1.96 (SR-195-02): the snapshot key joins the rollback scope - a restore that writes a carried snapshot must be able to put the previous one back
+  const SCOPE = []; for (const p of allPacks) SCOPE.push(...slotKeys(p.id)); if (restoredPacks) SCOPE.push(USERPACKS_KEY); SCOPE.push(LS_GLOBAL.night, LS_GLOBAL.nightExp); for (const p of allPacks) SCOPE.push(routeKeys(p.id).finclean); // Beta 1.150: the finclean keys join the rollback scope - a restore that discharges an obligation must be able to put the armed record back when a later write fails // Beta 1.136: the per-route keys come from slotKeys (app1) - the same ROUTE_FIELDS + snap list, enumerated in one place // Beta 1.118: the created-routes record and restored routes' slots join the rollback scope // Beta 1.96 (SR-195-02): the snapshot key joins the rollback scope - a restore that writes a carried snapshot must be able to put the previous one back
   const snap = {}; let snapOk = true;
   for (const k of SCOPE) { const v = rawRead(k); if (v === RAW_READ_FAILED) snapOk = false; else snap[k] = v; }
   if (!snapOk) { toast('Restore stopped — your current data could not be read for safekeeping, so nothing was changed', 3600); return; }
@@ -287,7 +292,7 @@ function restoreBackup(parsed) { // production doRestore semantics: validate EVE
       return;
     }
   }
-  for (const rid of (parsed.v === 2 ? Object.keys(parsed.routes) : ['5w'])) lsDel(routeKeys(rid).finclean); // Beta 1.141 (Package A, DA-10): the restore replaces a route's slot truth wholesale, so a finish-cleanup obligation left by the pre-restore state is discharged by the replacement, never completed against restored data. Scoped to the routes this backup actually rewrites (1.141 verify cycle 1): a route the backup OMITS keeps its slot under the missing-key rule, so its obligation stays armed for its next load
+  // Beta 1.141 (Package A, DA-10) discharge note: the finish-cleanup discharge itself moved INTO the verified write set above in Beta 1.150 (see the finclean entries) - the 1.141 rule stands unchanged (a restore discharges the obligations of exactly the routes it rewrites; an omitted route's obligation stays armed), only its mechanism is now verified like every other write in this function
   restoring = true; markClean('trail'); markClean('aux'); markClean('sess'); // the reload's pagehide flush must not write the old in-memory trail/coverage over the restored data
   toast('Backup restored — reloading' + (droppedNames ? ' · ' + droppedNames + ' unknown street name' + (droppedNames === 1 ? '' : 's') + ' in the backup were ignored' : '') + (snapDropped ? ' · the saved start snapshot was not usable, so Cancel will rebuild from the marks made during the run' : ''), snapDropped ? 4600 : undefined); // Beta 1.94 (audit F-05): the drop count is part of the result, not a silent loader detail. Beta 1.96 (SR-195-02): a dropped start snapshot is reported the same way
   setTimeout(() => location.reload(), 600);
@@ -414,22 +419,30 @@ const list = preloadUrlList();
 
 // ===== UPDATE CHECK =====
 let updState = ''; // Beta 1.111: the Status health row's App-version state - '' = not checked yet this session, 'ok' = up to date, 'avail' = a newer version was served. In-memory on purpose: a fresh boot honestly reports "not checked yet" again instead of trusting a stale stamp.
+function parseVerLabel(s) { const m = typeof s === 'string' ? s.trim().match(/^Beta (\d+)\.(\d+)$/) : null; return m ? [Number(m[1]), Number(m[2])] : null; } // Beta 1.150 (security-audit fix round): the version ordering the update check compares by - two numeric components, nothing else parses
 $('updBtn').addEventListener('click', async () => {
   if (!tapGuard('updBtn')) return;
   toast('Checking for a newer version…');
   try {
     if (navigator.serviceWorker) { const reg = await navigator.serviceWorker.getRegistration(); if (reg) await reg.update(); }
-    const r = await fetch(location.pathname + '?v=' + Date.now(), { cache: 'no-store' });
+    const r = await fetch(location.pathname + '?updprobe=1&v=' + Date.now(), { cache: 'no-store' }); // Beta 1.150 (finding update-check-reports-cached-copy-as-server-copy): the probe carries the updprobe marker and the worker answers it with the network itself or a network error, NEVER its cached shell (src/sw.js) - pre-1.150 this fetch went through netFirst, which substitutes the cached shell on any error status, rejection or stall, so a server answering 503 still produced 'Up to date' from the cache
+    if (!r.ok) { updState = 'fail'; toast('Could not check for updates — the server answered with an error (' + r.status + '). Nothing was changed', 3400); return; }
     const html = await r.text();
     const m = html.match(/id="ver">([^<]+)</);
     const served = m && m[1].trim();
     const mine = $('ver').textContent.trim();
-    if (!served) { toast('Could not read the server copy', 3000); return; }
+    if (!served) { updState = 'fail'; toast('Could not check for updates — the server copy could not be read. Nothing was changed', 3400); return; }
     if (served === mine) { updState = 'ok'; toast('✓ Up to date (' + mine + ')', 2800); return; }
-    updState = 'avail';
-    toast('New version found — reloading…', 2600);
-    setTimeout(() => location.replace(location.pathname + '?v=' + Date.now()), 900);
-  } catch (e) { toast('Update check failed — reloading to be safe', 2800); setTimeout(() => location.reload(), 900); }
+    const sv = parseVerLabel(served), mv = parseVerLabel(mine); // Beta 1.150 (finding update-check-treats-any-difference-as-newer): a difference is an update only when it is strictly NEWER - an older server build is a fact to report, never a version to install, and an unparseable label cannot be ordered so it is never installed on a guess
+    if (sv && mv) {
+      if (sv[0] < mv[0] || (sv[0] === mv[0] && sv[1] < mv[1])) { updState = 'older'; toast('The server is serving an older version (' + served + ') — this copy (' + mine + ') was kept', 3600); return; }
+      updState = 'avail';
+      toast('New version found — reloading…', 2600);
+      setTimeout(() => location.replace(location.pathname + '?v=' + Date.now()), 900);
+      return;
+    }
+    updState = 'diff'; toast('The server is serving a different version (' + served + ') — this copy (' + mine + ') was kept', 3600);
+  } catch (e) { updState = 'fail'; toast('Could not check for updates — the server did not answer. Nothing was changed', 3400); } // Beta 1.150: a failed check is reported as a failed check - the pre-1.150 catch reloaded 'to be safe', which could only land on the same cached shell the probe just failed to get past
 });
 
 // ===== FAN / NIGHT / FLIP / HOME =====
@@ -612,6 +625,9 @@ async function renderStatus(resetStat) {
   setHealth('stIcoMaps', 'stValMaps', ps.complete ? 'ok' : 'warn', ps.complete ? 'complete' : ps.cached > 0 ? 'partial — ' + ps.cached + ' of ' + ps.total : 'not downloaded');
   if (updState === 'ok') setHealth('stIcoVer', 'stValVer', 'ok', 'up to date (' + $('ver').textContent.trim() + ')');
   else if (updState === 'avail') setHealth('stIcoVer', 'stValVer', 'warn', 'update available');
+  else if (updState === 'fail') setHealth('stIcoVer', 'stValVer', 'warn', 'could not check — the server did not answer');
+  else if (updState === 'older') setHealth('stIcoVer', 'stValVer', 'warn', 'the server has an older version');
+  else if (updState === 'diff') setHealth('stIcoVer', 'stValVer', 'warn', 'the server has a different version');
   else setHealth('stIcoVer', 'stValVer', 'idle', 'not checked yet');
   if (gpsDenied) setHealth('stIcoGps', 'stValGps', 'warn', 'location permission is off');
   else if (watchId != null || (lastGood && Date.now() - lastGood.at < 120000)) setHealth('stIcoGps', 'stValGps', 'ok', 'ready');
@@ -635,7 +651,7 @@ $('stDel').addEventListener('click', async () => {
 });
 // ---- About / What's new ----
 const WHATSNEW = { // the curated in-app notes: plain words, LATEST RELEASE ONLY (Beta 1.114, Andrew: the accumulated list cluttered the About pane). A release REPLACES this entry with its own in the same change - it never accumulates; the full history lives in CHANGELOG.md, not the app
-  v: 'Beta 1.149', items: ["Under the hood: the app's core now carries machine-checked type notes for its saved-data shapes — your cleans, snapshots and route packs — and every future update is verified against them automatically", "Nothing you see or tap has changed: this update is comments and checks only, proven by comparing the built page against the previous one with the comments stripped away"]};
+  v: 'Beta 1.150', items: ["Safety fixes from a full security review: restoring a backup now double-checks the run timer and the day/night setting it carries, so a damaged or tampered backup file can't start a phantom run or wipe a route's work", "The update check now tells the truth — if the server doesn't answer it says it couldn't check (it used to say 'up to date' from a saved copy), and it will never install an older version over yours", "Repairs behind the scenes so a half-finished data move, a damaged street cache, or an interrupted restore can never quietly replace good data with stale data"]};
 function renderAbout() {
   const cur = $('ver').textContent.trim();
   $('wnHead').textContent = "WHAT'S NEW · " + cur; // the header names the LIVE version, read from the title's version element - never a second hard-coded copy that can go stale
