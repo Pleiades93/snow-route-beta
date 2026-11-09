@@ -1,4 +1,6 @@
 # B3 lifecycle trace (2026-11-09, Andrew-approved measurement job) -
+# (run 42671195876 failed on GitHub's side with zero jobs created and
+# "cannot be retried"; this comment-only change re-triggers the run.)
 # branch-only workflow: runs the three diagnostic drives directly so
 # their full stdout (TRACE snapshot lines + result blocks) lands in the
 # job logs. These drives are NOT part of the battery: they are absent
@@ -34,3 +36,9 @@ jobs:
       - name: "Trace driveT4 (G1 no-grid control, standalone)"
         if: always()
         run: node tests/browser/driveT4.mjs
+      - name: "Trace driveT5 (G1 fallback failure over wholly-failed grid, corrected)"
+        if: always()
+        run: node tests/browser/driveT5.mjs
+      - name: "Trace driveT6 (G2 search-tap supersede from preparing, corrected)"
+        if: always()
+        run: node tests/browser/driveT6.mjs
