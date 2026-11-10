@@ -12,7 +12,8 @@ pass.
 
 ## Tier A — small visual / constant / copy changes
 
-Paths: `parts/head.html`, `parts/pmstyles.js`, `docs/`, `assets/`,
+Paths: `parts/head.html`, `parts/pmstyles.js`, `parts/brand-snow.js`
+(the boot/menu snow layer — see the amendment below), `docs/`, `assets/`,
 `manifest.json`, any `*.md`.
 Gate: build-and-test + the **core set** (~40 s of drives):
 `drive131 drive160 drive161 drive168 drive174 drive180`.
@@ -41,15 +42,60 @@ visible.
 
 ## Tier C — deep mechanics
 
-Paths: `tests/`, `scripts/`, `.github/`, `src/`, `parts/app1.js` (route
+Paths: `tests/` and `scripts/` and `.github/` and `src/` (for `tests/`,
+read the amendment below first: drive files ride with their feature,
+and only the machinery itself is Tier C on its own — the `tests/`
+prefix remains the backstop for everything else under it, fixtures and
+selftests included), `parts/app1.js` (route
 state, storage slots, history, the finish state machine),
 `parts/create-save.js` (the create→save write path), `parts/data.js`,
-`sw.js`, `index.html`.
+`sw.js`.
 Gate: the FULL battery (all eight shards) + offline-e2e.
 The nightly battery on main is unchanged: full battery + offline-e2e on
 schedule, whatever the day's changes were. A manual `workflow_dispatch`
 can force any tier (`tier` input: auto / A / B / C / full); the default
 is a full (Tier C) run, as before.
+
+## Amendment — 2026-11-09 (Andrew approved)
+
+Two clauses, approved by Andrew on 2026-11-09 after the Beta 1.159 ship:
+that round was a purely visual change (a landing value, pill styling,
+the title's lifetime, the snow layer) whose tests-first drive work and
+snow placement classified it Tier C under the original map, and Andrew
+overrode the gate for the ship ("Just do the small test. The visual
+test. That's all it is."). This amendment fixes the map so the override
+is not needed again.
+
+**Clause 1 — test changes follow their feature.** The drive files
+(`tests/browser/drive*.mjs`) are how a feature's checks ship; they are
+not deep mechanics. A change to drive files therefore never escalates
+a round by itself: when drives accompany an app change, the tier comes
+from the app paths alone and the touched drives join the gate set (so
+the drive carrying the change's own checks always runs). A change to
+drive files only is Tier B and runs the touched drives. What DOES stay
+Tier C on its own is the test *machinery* — the thing that decides and
+runs the verdicts: `tests/browser/harness.mjs`, the runners
+(`tests/**/run*.mjs`), `scripts/select-tier.py`, the checks workflow,
+this map (both files) and `tests/quarantine.json`. Everything else
+under `tests/` (fixtures, selftests, the service-worker test) keeps
+the Tier C backstop it had.
+
+One corollary, without which clause 1 could never fire for a real
+ship: the generated outputs — `index.html` and
+`src/tracker-source.html` — never classify a change. They are rebuilt
+from `parts/` on every ship, and `build-and-test` (which runs at every
+tier) proves them byte-equal to their sources; a hand-edited or stale
+output fails there, not at the tier gate. The sources alone carry the
+tier.
+
+**Clause 2 — the snow stands on its own.** The falling-snow engine
+(the "Falls and settles" layer, Beta 1.158/1.159) used to live at the
+end of `parts/create-save.js`, so a snow-only change inherited the
+save path's Tier C. The engine now lives in its own part,
+`parts/brand-snow.js`, assembled immediately after `create-save.js`
+(the shipped bytes are identical — the split moved text, nothing
+else), and it classifies as what it is: a Tier A visual path.
+`parts/create-save.js` stays Tier C for its save logic.
 
 ## The flake rule (replaces the 2026-11-09 whole-battery rule)
 
