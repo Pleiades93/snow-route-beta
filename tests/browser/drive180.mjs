@@ -118,6 +118,52 @@ const { proc, ev, consoleLog, sleep } = await launchDrive();
 // flake positions change across sampled frames, and the
 // accumulation is present in the layer's state. Every
 // other check is unchanged from 1.157.
+//
+// Beta 1.159 (Andrew, phone test of 1.158 - four items):
+// SLOT re-pins to his tap decision: the landing moves to
+// the examples page's LAST option, +72 (slot top
+// calc(21% + 51px); settled centre = the 21% line + 72).
+// CLEAR keeps its safeguard form - the margin must stay
+// positive at +72 (at the 1.158 slot it passes; if +72
+// ever broke it this drive goes red and the ship stops).
+// The SNOW section is rebuilt for his directed fix of the
+// transition twitch he felt ("like clockwork" at the
+// splash-to-menu handoff): 1.158 drew the scene on TWO
+// canvases - #snowCv in the splash and #snowCvM inside
+// #routeMenu, whose .boot entrance rides a
+// translateX(-26px) slide and an opacity ramp, so the
+// menu-half field slid sideways while fading in over the
+// static splash-half field. 1.159 keeps ONE canvas
+// (#snowCv, in the splash layer, never reparented - the
+// 1.155 brand-layer pattern) and the menu's boot
+// background goes transparent while the scene is live, so
+// the single field paints through under the panes. SNOW1
+// asserts the single canvas + a running engine; SNOW4
+// asserts across EVERY trace sample that exactly one snow
+// canvas exists, its parent never changes, and its rect
+// never translates (on the two-canvas build the count
+// alone fails it, and #snowCvM's rect sweeps 26px besides
+// - the twitch, measured); SNOW5 samples the canvas's own
+// PAINTED field (a downscaled pixel centroid of #snowCv,
+// mapped to screen coordinates through its rect) across
+// the handoff window and bounds consecutive-pair lateral
+// displacement at 10px for pairs up to 120ms apart - the
+// legitimate motions are sway (<= 7.6px/s per flake, and
+// the centroid of 85 flakes moves far less) plus respawn
+// centroid steps (<= ~5px worst case per respawn, ~0.2
+// expected per pair). TITLE1-TITLE5 judge his title
+// lifetime rule (the title lives ONLY on the main pane:
+// gone on the route list, the create doors and the city
+// list; restored on every return to the main pane), and
+// SNOW6 judges the snow hiding in the sub-panes alongside
+// it. ROWC/ROWC2/ROWF judge his city-pill ruling: the
+// blue menus' list rows (the choose list's real rows;
+// a city row built by the app's own routeRowShell factory
+// in the real #crCityList, the catalogue being unreachable
+// from this drive's file:// page) carry CENTRED name and
+// sub lines (Range-measured, <= 2px) and the unified pill
+// font tokens (.routeName at the .rmBtn size/weight, the
+// row wearing the .rmBtn secondary fill/ring/radius).
 const R = { checks: [] };
 const ok = (name, cond) => R.checks.push([name, cond === true]);
 
@@ -144,7 +190,23 @@ await ev(`(() => {
       var pane = document.getElementById('rmMain');
       var btn = document.getElementById('rmChoose');
       var rcs = rm ? getComputedStyle(rm) : null;
-      window.__splashTrace.push({ t: Math.round(performance.now()), x: R2(r.left), y: R2(r.top), w: R2(r.width), h: R2(r.height), cx: R2(r.left + r.width / 2), cy: R2(r.top + r.height / 2), parent: ti.parentElement ? ti.parentElement.id : '', mark: ti.__mark || '', vis: vis, op: R2(op), painted: vis && op >= 0.99, shown: rm ? rm.classList.contains('show') : false, rmOp: rcs ? rcs.opacity : '', rmVis: rcs ? rcs.visibility : '', rmTx: rcs ? rcs.transform : '', paneOp: pane ? getComputedStyle(pane).opacity : '', btnH: btn ? R2(btn.getBoundingClientRect().height) : -1, ix: ir ? R2(ir.left) : -1, iy: ir ? R2(ir.top) : -1, iw: ir ? R2(ir.width) : -1, ih: ir ? R2(ir.height) : -1, iop: R2(iop) });
+      var snArr = [], snCx = -1;
+      try {
+        var scs = document.querySelectorAll('#snowCv, #snowCvM');
+        for (var si = 0; si < scs.length; si++) { var sr = scs[si].getBoundingClientRect(); snArr.push([scs[si].id, scs[si].parentElement ? scs[si].parentElement.id : '', R2(sr.left), R2(sr.top)]); }
+        var scv = document.getElementById('snowCv');
+        if (scv && scv.width > 0) {
+          if (!window.__snOff) { var oc = document.createElement('canvas'); oc.width = 105; oc.height = 225; window.__snOff = oc; }
+          var octx = window.__snOff.getContext('2d');
+          octx.clearRect(0, 0, 105, 225);
+          octx.drawImage(scv, 0, 0, 105, 225);
+          var idata = octx.getImageData(0, 0, 105, 225).data;
+          var swsum = 0, sxsum = 0;
+          for (var pi = 0; pi < idata.length; pi += 4) { var pa = idata[pi + 3]; if (pa > 25 && idata[pi] >= pa * 0.7 && idata[pi + 2] >= pa * 0.7) { var pxx = (pi / 4) % 105; swsum += pa; sxsum += pxx * pa; } }
+          if (swsum > 0) { var srect = scv.getBoundingClientRect(); if (srect.width > 0) snCx = R2(srect.left + (sxsum / swsum) / 105 * srect.width); }
+        }
+      } catch (e) { snArr = []; snCx = -1; }
+      window.__splashTrace.push({ t: Math.round(performance.now()), x: R2(r.left), y: R2(r.top), w: R2(r.width), h: R2(r.height), cx: R2(r.left + r.width / 2), cy: R2(r.top + r.height / 2), parent: ti.parentElement ? ti.parentElement.id : '', mark: ti.__mark || '', vis: vis, op: R2(op), painted: vis && op >= 0.99, shown: rm ? rm.classList.contains('show') : false, rmOp: rcs ? rcs.opacity : '', rmVis: rcs ? rcs.visibility : '', rmTx: rcs ? rcs.transform : '', paneOp: pane ? getComputedStyle(pane).opacity : '', btnH: btn ? R2(btn.getBoundingClientRect().height) : -1, ix: ir ? R2(ir.left) : -1, iy: ir ? R2(ir.top) : -1, iw: ir ? R2(ir.width) : -1, ih: ir ? R2(ir.height) : -1, iop: R2(iop), sn: snArr, snCx: snCx });
     }
     if (performance.now() < 14000 && !window.__splashTraceStop) requestAnimationFrame(step);
     else window.__splashTraceDone = true;
@@ -283,11 +345,11 @@ let slot = null;
 try {
   slot = await ev(`(() => { const ti = document.getElementById('splashTitle'); const btn = document.getElementById('rmChoose'); if (!ti || !btn) return ''; const tr = ti.getBoundingClientRect(); const br = btn.getBoundingClientRect(); return JSON.stringify({ cy: tr.top + tr.height / 2, tBot: tr.bottom, btnTop: br.top, ih: window.innerHeight }); })()`).then(x => typeof x === 'string' && x ? JSON.parse(x) : null);
 } catch (e) { slot = null; }
-const slotExp = slot ? (0.21 * slot.ih + 48) : -1;
-ok('SLOT the landed title sits on the PICKED slot (Beta 1.158: the 21% line + 48px, the examples page\'s +48; the 1.157 slot was the 21% line itself): settled centre-y ' + (slot ? slot.cy.toFixed(1) : 'n/a') + 'px vs expected ' + slotExp.toFixed(1) + 'px (21% of viewport height ' + (slot ? slot.ih : -1) + ' + 48), off by ' + (slot ? Math.abs(slot.cy - slotExp).toFixed(1) : 'n/a') + 'px',
+const slotExp = slot ? (0.21 * slot.ih + 72) : -1;
+ok('SLOT the landed title sits on the PICKED slot (Beta 1.159: the 21% line + 72px - the examples page\'s LAST option, Andrew\'s tap after 1.158\'s +48): settled centre-y ' + (slot ? slot.cy.toFixed(1) : 'n/a') + 'px vs expected ' + slotExp.toFixed(1) + 'px (21% of viewport height ' + (slot ? slot.ih : -1) + ' + 72), off by ' + (slot ? Math.abs(slot.cy - slotExp).toFixed(1) : 'n/a') + 'px',
   !!slot && Math.abs(slot.cy - slotExp) <= 2);
 const clearMargin = slot ? (slot.btnTop - slot.tBot) : -999;
-ok('CLEAR the landed title clears the first menu button (the buttons never moved): title bottom ' + (slot ? slot.tBot.toFixed(1) : 'n/a') + 'px, Choose button top ' + (slot ? slot.btnTop.toFixed(1) : 'n/a') + 'px -> margin ' + clearMargin.toFixed(1) + 'px (must be > 0; the examples page\'s +72 crowded the buttons, +48 was picked to clear)',
+ok('CLEAR the landed title still clears the first menu button at +72 (the buttons never moved): title bottom ' + (slot ? slot.tBot.toFixed(1) : 'n/a') + 'px, Choose button top ' + (slot ? slot.btnTop.toFixed(1) : 'n/a') + 'px -> margin ' + clearMargin.toFixed(1) + 'px (must be > 0 - the safeguard Andrew was told: if +72 broke this, the ship stops rather than forcing it)',
   !!slot && clearMargin > 0);
 
 // PILLS (Beta 1.158): the boot menu's two pills wear the
@@ -306,23 +368,110 @@ ok('PILLC the menu pills\' text is CENTRED, measured on the rendered label (not 
 ok('PILLF the pill hierarchy is the mock\'s: Choose (primary) is SOLID white [' + (pill && pill.a ? pill.a.bg : 'n/a') + ']; Create (secondary) is the TINTED fill [' + (pill && pill.b ? pill.b.bg : 'n/a') + '] wearing the 1.5px inset white ring [' + (pill && pill.b ? pill.b.sh : 'n/a') + ']',
   !!pill && !!pill.a && !!pill.b && pill.a.bg === 'rgb(255, 255, 255)' && pill.b.bg === 'rgba(255, 255, 255, 0.16)' && pill.b.sh.indexOf('inset') >= 0 && pill.b.sh.indexOf('1.5px') >= 0);
 
-// SNOW (Beta 1.158): the "Falls and settles" layer - canvases in both
-// halves of the boot/menu scene, the engine running, flake positions
-// changing across sampled frames, accumulation state present. State is
-// read through the engine's own handle (window.__snow) - no pixel checks.
+// SNOW (Beta 1.159): ONE canvas now - see the header. SNOW1 judges
+// the single-canvas structure + the running engine; SNOW2/SNOW3 keep
+// the 1.158 motion/accumulation judgements (read through the engine's
+// own handle, window.__snow); SNOW4 judges the canvas's singleness,
+// parent and rect stability across EVERY trace sample; SNOW5 judges
+// the painted field's lateral continuity across the handoff window.
 let snowA = null, snowYs2 = null;
 try {
-  snowA = await ev(`(() => { const w = window; return JSON.stringify({ has: !!document.getElementById('snowCv') && !!document.getElementById('snowCvM'), run: !!(w.__snow && w.__snow.running()), amt: w.__snow ? w.__snow.amount() : -1, gnd: w.__snow ? w.__snow.ground() : -1, ys: w.__snow ? w.__snow.flakes().map(f => Math.round(f.y)) : [] }); })()`).then(x => typeof x === 'string' && x ? JSON.parse(x) : null);
+  snowA = await ev(`(() => { const w = window; const all = document.querySelectorAll('#snowCv, #snowCvM'); return JSON.stringify({ n: all.length, one: all.length === 1 && all[0].id === 'snowCv', run: !!(w.__snow && w.__snow.running()), amt: w.__snow ? w.__snow.amount() : -1, gnd: w.__snow ? w.__snow.ground() : -1, ys: w.__snow ? w.__snow.flakes().map(f => Math.round(f.y)) : [] }); })()`).then(x => typeof x === 'string' && x ? JSON.parse(x) : null);
   await new Promise(r => setTimeout(r, 650));
   snowYs2 = await ev(`(() => JSON.stringify(window.__snow ? window.__snow.flakes().map(f => Math.round(f.y)) : []))()`).then(x => typeof x === 'string' && x ? JSON.parse(x) : null);
 } catch (e) { snowA = null; snowYs2 = null; }
 const snowMoved = !!(snowA && snowYs2 && snowA.ys.length > 0 && snowYs2.length === snowA.ys.length && snowYs2.some((y, i) => Math.abs(y - snowA.ys[i]) > 2));
-ok('SNOW1 the snow canvases live in both halves of the boot/menu scene (#snowCv in the splash, #snowCvM in the route menu) and the engine is running',
-  !!snowA && snowA.has && snowA.run);
+ok('SNOW1 ONE snow canvas serves the whole opening scene (Beta 1.159: #snowCv only - the 1.158 pair #snowCv + #snowCvM is retired) and the engine is running | canvases found: ' + (snowA ? snowA.n : 'n/a'),
+  !!snowA && snowA.one && snowA.run);
 ok('SNOW2 the flakes actually fall: flake positions change across frames sampled 650ms apart',
   snowMoved);
 ok('SNOW3 the accumulation is present in the layer state: settle amount ' + (snowA ? snowA.amt.toFixed(2) : 'n/a') + ' and ground height ' + (snowA ? snowA.gnd.toFixed(1) : 'n/a') + 'px, both > 0 in the build phase',
   !!snowA && snowA.amt > 0 && snowA.gnd > 0);
+const snSamples = trace.filter(s => Array.isArray(s.sn));
+const snCounts = [...new Set(snSamples.map(s => s.sn.length))];
+const snIds = [...new Set(snSamples.flatMap(s => s.sn.map(e => e[0])))];
+const snParents = [...new Set(snSamples.flatMap(s => s.sn.map(e => e[0] + '@' + e[1])))];
+let snDrift = 0;
+{
+  const firstById = {};
+  for (const s of snSamples) for (const e of s.sn) { if (!(e[0] in firstById)) firstById[e[0]] = e; else snDrift = Math.max(snDrift, Math.abs(e[2] - firstById[e[0]][2]), Math.abs(e[3] - firstById[e[0]][3])); }
+}
+ok('SNOW4 the snow layer is ONE element that never moves: across all ' + snSamples.length + ' trace samples the snow canvases are ' + JSON.stringify(snIds) + ' (counts per sample ' + JSON.stringify(snCounts) + ', parents ' + JSON.stringify(snParents) + ') and no snow canvas rect drifts more than ' + snDrift.toFixed(1) + 'px (tolerance 1px; the 1.158 build fails this twice over - two canvases, and #snowCvM\'s rect rides the menu\'s 26px entrance slide: the twitch Andrew felt)',
+  snSamples.length > 10 && snCounts.length === 1 && snCounts[0] === 1 && snIds.length === 1 && snIds[0] === 'snowCv' && snParents.length === 1 && snDrift <= 1);
+const snWin = (flipIdx >= 0 && settleIdx >= 0) ? post.slice(0, settleIdx + 1) : [];
+let snPairs = 0, snSkip = 0, snViol = 0, snWorst = 0;
+for (let i = 1; i < snWin.length; i++) {
+  const a = snWin[i - 1], b = snWin[i];
+  if (!(a.snCx >= 0) || !(b.snCx >= 0)) continue;
+  const dt = b.t - a.t;
+  if (dt > 120) { snSkip++; continue; }
+  snPairs++;
+  const d = Math.abs(b.snCx - a.snCx);
+  if (d > snWorst) snWorst = d;
+  if (d > 10) snViol++;
+}
+ok('SNOW5 NO TWITCH: the painted snow field never jumps sideways across the splash-to-menu handoff - the field centroid (pixel centroid of the one canvas, screen coordinates) moves at most ' + snWorst.toFixed(1) + 'px between consecutive trace samples in the flip-to-settle window (bound 10px per pair; ' + snPairs + ' pairs judged, ' + snSkip + ' starved pairs over 120ms excluded, ' + snViol + ' violations; legitimate motion is sway at <= 7.6px/s per flake plus <= ~5px respawn steps)',
+  snPairs >= 12 && snViol === 0);
+
+// TITLE LIFETIME + SUB-PANE SNOW + LIST ROWS (Beta 1.159): navigate
+// the boot menu's panes with real clicks and judge what Andrew's
+// rules demand - the title (and the snow) present ONLY on the main
+// pane; the list rows centred and pill-typed. Effective opacity is
+// the ancestor-multiplied quantity the trace computes.
+const effOp = id => ev(`(() => { const el = document.getElementById('${id}'); if (!el) return -1; let op = 1, n = el; while (n && n.nodeType === 1) { const cs = getComputedStyle(n); if (cs.display === 'none' || cs.visibility === 'hidden') return 0; op *= parseFloat(cs.opacity); if (n === document.documentElement) break; n = n.parentElement; } return Math.round(op * 1000) / 1000; })()`).then(x => (typeof x === 'number' ? x : -1)).catch(() => -1);
+const paneOn = id => ev(`(() => { const p = document.getElementById('${id}'); return !!(p && p.classList.contains('on')); })()`).then(x => x === true).catch(() => false);
+const clickId = id => ev(`(() => { const b = document.getElementById('${id}'); if (!b) return false; b.click(); return true; })()`).then(x => x === true).catch(() => false);
+const waitFor = async (fn, ms) => { const t0 = Date.now(); while (Date.now() - t0 < ms) { if (await fn()) return true; await sleep(120); } return false; };
+let nav = null;
+try {
+  const r = {};
+  r.tMain0 = await effOp('splashTitle');
+  r.cvMain0 = await effOp('snowCv');
+  await clickId('rmChoose');
+  r.toList = await waitFor(async () => (await paneOn('rmListPane')) && (await effOp('splashTitle')) <= 0.05, 3000);
+  r.tList = await effOp('splashTitle');
+  r.cvList = await effOp('snowCv');
+  r.rows = await ev(`(() => { const meas = row => { const rr = row.getBoundingClientRect(); const out = { rcx: rr.left + rr.width / 2 }; const nm = row.querySelector('.routeName'), ar = row.querySelector('.routeArea'); if (nm) { const g = document.createRange(); g.selectNodeContents(nm); const t = g.getBoundingClientRect(); out.nOff = Math.round(Math.abs(t.left + t.width / 2 - out.rcx) * 10) / 10; const cs = getComputedStyle(nm); out.nSize = cs.fontSize; out.nWeight = cs.fontWeight; } if (ar) { const g2 = document.createRange(); g2.selectNodeContents(ar); const t2 = g2.getBoundingClientRect(); out.aOff = Math.round(Math.abs(t2.left + t2.width / 2 - out.rcx) * 10) / 10; } const rcs = getComputedStyle(row); out.bg = rcs.backgroundColor; out.sh = rcs.boxShadow; out.rad = rcs.borderRadius; out.ff = rcs.fontFamily; return out; }; const rows = [...document.querySelectorAll('#rmRoutes .routeRow')]; const btn = document.getElementById('rmCreate'); const bcs = btn ? getComputedStyle(btn) : null; return JSON.stringify({ rows: rows.map(meas), btnFf: bcs ? bcs.fontFamily : '', btnSize: bcs ? bcs.fontSize : '' }); })()`).then(x => typeof x === 'string' && x ? JSON.parse(x) : null);
+  await clickId('rmBack');
+  r.toMain1 = await waitFor(async () => (await paneOn('rmMain')) && (await effOp('splashTitle')) >= 0.99, 3000);
+  r.tMain1 = await effOp('splashTitle');
+  r.cvMain1 = await effOp('snowCv');
+  await clickId('rmCreate');
+  r.toCreate = await waitFor(async () => (await paneOn('rmCreatePane')) && (await effOp('splashTitle')) <= 0.05, 3000);
+  await clickId('crDoorList');
+  r.toCity = await waitFor(() => paneOn('rmCityListPane'), 3000);
+  await waitFor(() => ev(`!!document.querySelector('#crCityList .rmNote') || document.querySelectorAll('#crCityList .routeRow').length > 1`).then(x => x === true).catch(() => false), 6000);
+  r.cityRow = await ev(`(() => { const box = document.getElementById('crCityList'); if (!box || typeof routeRowShell !== 'function') return null; const row = routeRowShell('button', 'Mississauga', '12,345 streets · ready to load', { chevron: true }); box.appendChild(row); const rr = row.getBoundingClientRect(); const rcx = rr.left + rr.width / 2; const nm = row.querySelector('.routeName'), ar = row.querySelector('.routeArea'); const g = document.createRange(); g.selectNodeContents(nm); const t = g.getBoundingClientRect(); const g2 = document.createRange(); g2.selectNodeContents(ar); const t2 = g2.getBoundingClientRect(); const cs = getComputedStyle(nm); return JSON.stringify({ nOff: Math.round(Math.abs(t.left + t.width / 2 - rcx) * 10) / 10, aOff: Math.round(Math.abs(t2.left + t2.width / 2 - rcx) * 10) / 10, nSize: cs.fontSize }); })()`).then(x => typeof x === 'string' && x ? JSON.parse(x) : null);
+  r.tCity = await effOp('splashTitle');
+  r.cvCity = await effOp('snowCv');
+  await clickId('crCityListBack');
+  await waitFor(() => paneOn('rmCreatePane'), 3000);
+  await clickId('rmBack2');
+  r.toMain2 = await waitFor(async () => (await paneOn('rmMain')) && (await effOp('splashTitle')) >= 0.99, 3000);
+  r.tMain2 = await effOp('splashTitle');
+  nav = r;
+} catch (e) { nav = null; }
+ok('TITLE1 the title is PRESENT on the main pane (effective opacity ' + (nav ? nav.tMain0 : 'n/a') + ') and the snow with it (canvas effective opacity ' + (nav ? nav.cvMain0 : 'n/a') + ')',
+  !!nav && nav.tMain0 >= 0.99 && nav.cvMain0 >= 0.99);
+ok('TITLE2 the title is GONE on the route list after tapping Choose (effective opacity ' + (nav ? nav.tList : 'n/a') + ', reached the pane: ' + (nav ? nav.toList : 'n/a') + ') - Andrew\'s rule: it lives only in the main menu',
+  !!nav && nav.toList && nav.tList <= 0.05);
+ok('TITLE3 the title RETURNS on navigating back to the main pane (effective opacity ' + (nav ? nav.tMain1 : 'n/a') + ')',
+  !!nav && nav.toMain1 && nav.tMain1 >= 0.99);
+ok('TITLE4 the title is gone on the create doors AND the city list too (create pane reached: ' + (nav ? nav.toCreate : 'n/a') + '; city list opacity ' + (nav ? nav.tCity : 'n/a') + ')',
+  !!nav && nav.toCreate && nav.toCity && nav.tCity <= 0.05);
+ok('TITLE5 the title returns again at the main pane after the full create-side round trip (effective opacity ' + (nav ? nav.tMain2 : 'n/a') + ')',
+  !!nav && nav.toMain2 && nav.tMain2 >= 0.99);
+ok('SNOW6 the snow hides in the sub-panes alongside the title and returns with it: canvas effective opacity on the route list ' + (nav ? nav.cvList : 'n/a') + ', on the city list ' + (nav ? nav.cvCity : 'n/a') + ', back at the main pane ' + (nav ? nav.cvMain1 : 'n/a'),
+  !!nav && nav.cvList <= 0.05 && nav.cvCity <= 0.05 && nav.cvMain1 >= 0.99);
+const rowList = nav && nav.rows && Array.isArray(nav.rows.rows) ? nav.rows.rows : [];
+const rowNWorst = rowList.length ? Math.max(...rowList.map(x => (typeof x.nOff === 'number' ? x.nOff : 999))) : 999;
+const rowAWorst = rowList.length ? Math.max(...rowList.map(x => (typeof x.aOff === 'number' ? x.aOff : 999))) : 999;
+ok('ROWC the choose list\'s rows carry CENTRED text, Range-measured on the rendered lines: ' + rowList.length + ' rows, worst name-line offset ' + rowNWorst.toFixed(1) + 'px and worst sub-line offset ' + rowAWorst.toFixed(1) + 'px from the row centre (tolerance 2px; through 1.158 the rows were left-aligned)',
+  rowList.length >= 1 && rowNWorst <= 2 && rowAWorst <= 2);
+ok('ROWF the rows wear the unified pill tokens: name at the pill\'s size/weight (' + (rowList.length ? rowList[0].nSize + '/' + rowList[0].nWeight : 'n/a') + ' vs the .rmBtn ' + (nav && nav.rows ? nav.rows.btnSize : 'n/a') + '), the row font stack equals the pill\'s (' + (rowList.length && nav && nav.rows && rowList[0].ff === nav.rows.btnFf ? 'identical' : 'DIFFERENT') + '), fill ' + (rowList.length ? rowList[0].bg : 'n/a') + ', ring ' + (rowList.length ? rowList[0].sh : 'n/a') + ', radius ' + (rowList.length ? rowList[0].rad : 'n/a'),
+  rowList.length >= 1 && !!nav && !!nav.rows && rowList.every(x => x.nSize === nav.rows.btnSize && x.nWeight === '650' && x.ff === nav.rows.btnFf && x.bg === 'rgba(255, 255, 255, 0.16)' && x.sh.indexOf('inset') >= 0 && x.sh.indexOf('1.5px') >= 0 && x.rad === '14px'));
+ok('ROWC2 a city-list row (the app\'s own routeRowShell factory, in the real #crCityList) is centred the same way: name offset ' + (nav && nav.cityRow ? nav.cityRow.nOff : 'n/a') + 'px, sub offset ' + (nav && nav.cityRow ? nav.cityRow.aOff : 'n/a') + 'px, name size ' + (nav && nav.cityRow ? nav.cityRow.nSize : 'n/a'),
+  !!nav && !!nav.cityRow && nav.cityRow.nOff <= 2 && nav.cityRow.aOff <= 2 && !!nav.rows && nav.cityRow.nSize === nav.rows.btnSize);
 
 R.exceptions = consoleLog.filter(l => l.type === 'EXCEPTION').map(l => l.text.slice(0, 200));
 finish(R, proc);
