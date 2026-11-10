@@ -32,6 +32,29 @@ const { proc, send, S, ev, consoleLog, sleep, poll } = await launchDrive();
 // 2 x 2 Vaughan grid over [43.785..43.845] x [-79.610..-79.5105], with
 // per-cell failure rules (window.__tFailCells), an answer delay
 // (window.__jDelayMs) and abort counting at the fetch seam.
+// HARDENING (2026-11-09, drive181-harden round): S2a flaked twice with
+// the same signature (1.159 battery run 42738499028: settled DEGRADED;
+// 1.160 battery run 42746665514: settled READY - a wholly-failed grid
+// must settle FAILED). Classification: TEST, proven from the app code
+// and both failure logs - the app's settles were CORRECT both times:
+// crCityPrepare restores any cells the on-device cache holds before
+// fetching (its documented behaviour), and the record the drive
+// believed it had wiped was in fact present (full record -> ready;
+// partial -> degraded; every transition legal, crPrepViolations
+// unmoved, the failed-poll burning its window because the state never
+// visited 'failed'). The old jWipe resolved on the delete's onblocked
+// AND onerror as if the wipe had succeeded, and nothing verified the
+// record was gone, while the app's cache writes are fire-and-forget
+// BY DESIGN (crCacheQueue: a queued cell write always lands -
+// drive150 J6a/J11a depend on it), so a leftover or re-landed record
+// silently poisoned the wholly-failed sections' premise. jWipe below
+// now (1) drains the cache queue's tail, (2) resolves the delete ONLY
+// on its own onsuccess, and (3) verifies emptiness through the app's
+// own read (crIdbGet) - and the cache-premise sections (S2a, S3, S4a,
+// S5a, S6) carry the verification in their conditions, so the premise
+// is proven per section, never assumed. snap() also records the
+// grid's provenance (fromCache / fromPack) so any future settle
+// anomaly names its source in the log.
 const R = { checks: [] };
 const ok = (name, cond) => R.checks.push([name, cond === true]);
 const J = async (expr) => { const raw = await ev(`(() => { try { return JSON.stringify((${expr})); } catch (e) { return JSON.stringify({ __err: String(e && e.message || e) }); } })()`); return typeof raw === 'string' ? JSON.parse(raw) : {}; };
@@ -148,11 +171,35 @@ const installStubT = `(() => {
   };
   return true;
 })()`;
-const jWipe = async () => { await ev(`(async () => { await new Promise(res => { try { const rq = indexedDB.deleteDatabase('snowroute-citycache'); rq.onsuccess = () => res(); rq.onerror = () => res(); rq.onblocked = () => res(); } catch (e) { res(); } }); return true; })()`); };
-const jEnter = async () => { await jWipe(); await ev(`openRouteMenu()`); await ev(`document.getElementById('rmCreate').click()`); await ev(`document.getElementById('crDoorManual').click()`); return await pickCityVaughan(); };
+let WIPE = null; // the last verified wipe's diagnostics: { drained, deleted, verified } (drive181-harden round)
+const jWipe = async () => {
+  // (1) DRAIN the app's cache-write queue first: its writes are
+  // fire-and-forget by design and always land, so a delete issued
+  // while the previous session's commits are still queued can be
+  // undone behind its back - capture the queue's current tail and
+  // wait for it to settle before touching the database.
+  await ev(`(() => { window.__cqTail = false; try { const t = crCacheQueue; if (t && typeof t.then === 'function') { t.then(() => { window.__cqTail = true; }, () => { window.__cqTail = true; }); } else window.__cqTail = true; } catch (e) { window.__cqTail = true; } return true; })()`);
+  const drained = await poll(`window.__cqTail === true`, 15000);
+  // (2) DELETE, honestly: the wipe counts only when the delete's own
+  // onsuccess fires. onblocked means another connection still holds
+  // the database and the deletion has NOT happened - the pre-hardening
+  // jWipe resolved there (and on onerror) as success, which is how two
+  // battery runs settled wholly-failed sections on a surviving record.
+  await ev(`(() => { window.__wipeState = 'pending'; try { const rq = indexedDB.deleteDatabase('snowroute-citycache'); rq.onsuccess = () => { window.__wipeState = 'done'; }; rq.onerror = () => { window.__wipeState = 'error'; }; rq.onblocked = () => { window.__wipeState = 'blocked'; }; } catch (e) { window.__wipeState = 'error'; } return true; })()`);
+  const delSettled = await poll(`window.__wipeState === 'done' || window.__wipeState === 'error'`, 20000);
+  const deleted = delSettled ? await J(`window.__wipeState`) : 'timeout';
+  // (3) VERIFY through the app's own read path: the exact read
+  // crCityPrepare is about to do must report the Vaughan record gone.
+  await ev(`(() => { window.__cacheProbe = 'pending'; try { crIdbGet('Vaughan').then(r => { window.__cacheProbe = r ? 'record' : 'null'; }, () => { window.__cacheProbe = 'error'; }); } catch (e) { window.__cacheProbe = 'error'; } return true; })()`);
+  const probeSettled = await poll(`window.__cacheProbe === 'null' || window.__cacheProbe === 'record' || window.__cacheProbe === 'error'`, 15000);
+  const verified = probeSettled ? await J(`window.__cacheProbe`) : 'timeout';
+  WIPE = { drained: drained === true, deleted, verified };
+  return WIPE;
+};
+const jEnter = async () => { const w = await jWipe(); await ev(`openRouteMenu()`); await ev(`document.getElementById('rmCreate').click()`); await ev(`document.getElementById('crDoorManual').click()`); const pick = await pickCityVaughan(); return { ...pick, wipeEmpty: !!(w && w.verified === 'null') }; };
 const jExitDiscard = async () => { await ev(`document.getElementById('crExit').click()`); await sleep(400); await ev(`(() => { const y = document.getElementById('crModalYes'); if (y && !document.getElementById('crModal').classList.contains('hidden')) y.click(); return true; })()`); await sleep(400); };
 const snap = async (tag) => {
-  const s = await J(`({ state: crPrepState, fail: crPrepFail ? { kind: crPrepFail.kind, status: crPrepFail.status || null } : null, ffg: crFailFromGrid, wanted: crWanted ? crWanted.label : null, btn: document.getElementById('crHintBtn').textContent, btnShown: document.getElementById('crHintBtn').style.display !== 'none', viol: crPrepViolations.slice(), grid: crGrid ? { done: crGridDoneCount(), failed: crGridFailedCount(), pending: crGridPendingCount(), stopped: crGrid.stopped } : null, sec: { street: crSectorSession.street, snap: crSectorSession.snapshot === undefined ? 'undef' : (crSectorSession.snapshot === null ? null : 'array'), collapsed: crSectorSession.collapsed, face: crSectorSession.face } })`);
+  const s = await J(`({ state: crPrepState, fail: crPrepFail ? { kind: crPrepFail.kind, status: crPrepFail.status || null } : null, ffg: crFailFromGrid, wanted: crWanted ? crWanted.label : null, btn: document.getElementById('crHintBtn').textContent, btnShown: document.getElementById('crHintBtn').style.display !== 'none', viol: crPrepViolations.slice(), grid: crGrid ? { done: crGridDoneCount(), failed: crGridFailedCount(), pending: crGridPendingCount(), stopped: crGrid.stopped, fc: crGrid.fromCache === true, fp: crGrid.fromPack || null } : null, sec: { street: crSectorSession.street, snap: crSectorSession.snapshot === undefined ? 'undef' : (crSectorSession.snapshot === null ? null : 'array'), collapsed: crSectorSession.collapsed, face: crSectorSession.face } })`);
   console.log('SNAP ' + tag + ' ' + JSON.stringify(s));
   return s;
 };
@@ -203,8 +250,8 @@ await ev(`window.__tFailCells = 'ALL'`);
 const E2 = await jEnter();
 const failedB = await poll(`crPrepState === 'failed'`, 40000).catch(() => false);
 const SB1 = await snap('S2-wholly-failed');
-ok('S2a (wholly-failed grid, S5) settles FAILED with the grid failure adopted (crFailFromGrid true - crGridFinish\'s LIVE failed-handling, the dead S2 copy\'s twin) and the no-offer button reading Retry | state=' + SB1.state + ' ffg=' + SB1.ffg + ' btn="' + SB1.btn + '" viol=' + SB1.viol.length,
-  E2.inPick === true && failedB === true && SB1.grid && SB1.grid.failed === 4 && SB1.grid.done === 0 && SB1.ffg === true && !!SB1.fail && SB1.btn === 'Retry' && SB1.viol.length === TEETH_SO_FAR);
+ok('S2a (wholly-failed grid, S5) settles FAILED with the grid failure adopted (crFailFromGrid true - crGridFinish\'s LIVE failed-handling, the dead S2 copy\'s twin) and the no-offer button reading Retry | state=' + SB1.state + ' ffg=' + SB1.ffg + ' btn="' + SB1.btn + '" viol=' + SB1.viol.length + ' wipe=' + JSON.stringify(WIPE),
+  E2.inPick === true && E2.wipeEmpty === true && failedB === true && SB1.grid && SB1.grid.failed === 4 && SB1.grid.done === 0 && SB1.ffg === true && !!SB1.fail && SB1.btn === 'Retry' && SB1.viol.length === TEETH_SO_FAR);
 await ev(`window.__tFailCells = null`);
 await ev(`window.__jDelayMs = 2500`); // hold the re-pick's preparing window open so the latch sample lands mid-flight
 await ev(`document.getElementById('crCityChange').click()`);
@@ -222,23 +269,23 @@ await jExitDiscard();
 
 // ---------- S3: failed again, then EXIT from failed (edge failed->none, S10) ----------
 await ev(`window.__tFailCells = 'ALL'`);
-await jEnter();
+const E3 = await jEnter();
 const failedC = await poll(`crPrepState === 'failed'`, 40000).catch(() => false);
 const SC0 = await snap('S3-failed-before-exit');
 await jExitDiscard();
 const SC1 = await J(`({ state: crPrepState, ffg: crFailFromGrid, creating })`);
 ok('S3 (wart b at S10 + edge failed->none) exiting a FAILED session lands none AND clears crFailFromGrid with the session - the flag is false before any new session starts (through 1.153 it survived the exit) | pre-exit ffg=' + SC0.ffg + ' post=' + JSON.stringify(SC1),
-  failedC === true && SC0.ffg === true && SC1.state === 'none' && SC1.ffg === false && SC1.creating === false);
+  E3.wipeEmpty === true && failedC === true && SC0.ffg === true && SC1.state === 'none' && SC1.ffg === false && SC1.creating === false);
 
 // ---------- S4: failed once more; the out-of-coverage tap - wart (c) label + the S1/S2 fallback landing ----------
-await jEnter(); // __tFailCells still 'ALL': the grid wholly fails again
+const E4 = await jEnter(); // __tFailCells still 'ALL': the grid wholly fails again
 const failedD = await poll(`crPrepState === 'failed'`, 40000).catch(() => false);
 await ev(`window.__tFailCells = null`); // the fallback box itself will answer
 await ev(tapStreet('Faraway Avenue'));
 const wantedSet = await poll(`!!crWanted`, 10000).catch(() => false);
 const SD1 = await snap('S4-failed-with-wanted');
 ok('S4a (wart c) in the FAILED state with an out-of-coverage tap outstanding, the hint button reads the offer\'s own label - "' + SD1.btn + '" - NOT \'Retry\': the click starts the fallback preparation at the wanted anchor, and the label now says so (through 1.153 it read Retry) | wanted=' + SD1.wanted + ' btnShown=' + SD1.btnShown,
-  failedD === true && wantedSet === true && SD1.wanted === 'Prepare this area' && SD1.btn === 'Prepare this area' && SD1.btnShown === true);
+  E4.wipeEmpty === true && failedD === true && wantedSet === true && SD1.wanted === 'Prepare this area' && SD1.btn === 'Prepare this area' && SD1.btnShown === true);
 await ev(`document.getElementById('crHintBtn').click()`); // the handler's wanted branch starts the fallback (edge failed->preparing via S1)
 const landedD = await poll(`crPrep === null && crPrepState === 'degraded'`, 25000).catch(() => false);
 const SD2 = await snap('S4-fallback-landing');
@@ -248,11 +295,11 @@ await jExitDiscard();
 
 // ---------- S5: one failed cell - degraded via S5, resume via S8 (edges preparing->degraded, degraded->preparing) ----------
 await ev(`window.__tFailCells = [[43.820929, -79.56024]]`);
-await jEnter();
+const E5 = await jEnter();
 const degE = await poll(`crPrepState === 'degraded'`, 40000).catch(() => false);
 const SE1 = await snap('S5-degraded');
 ok('S5a (one failed cell, S5) settles DEGRADED - 3 done / 1 failed - with the resume offer on the button | state=' + SE1.state + ' btn="' + SE1.btn + '"',
-  degE === true && SE1.grid && SE1.grid.done === 3 && SE1.grid.failed === 1 && SE1.btn === 'Retry missing parts');
+  E5.wipeEmpty === true && degE === true && SE1.grid && SE1.grid.done === 3 && SE1.grid.failed === 1 && SE1.btn === 'Retry missing parts');
 await ev(`window.__tFailCells = null`);
 await ev(`document.getElementById('crHintBtn').click()`); // degraded remedy: crGridResume (S8)
 const readyE = await poll(`crPrepState === 'ready'`, 30000).catch(() => false);
@@ -263,14 +310,14 @@ await jExitDiscard();
 
 // ---------- S6: exit MID-LOAD (edge preparing->none, S10) ----------
 await ev(`window.__jDelayMs = 6000`);
-await jEnter();
+const E6 = await jEnter();
 const flyingF = await poll(`!!(crGrid && crGrid.cells.some(c => c.state === 'fetching'))`, 15000).catch(() => false);
 await ev(`document.getElementById('crExit').click()`); // empty draft: exits without the discard confirm
 const exitedF = await poll(`typeof creating !== 'undefined' && creating === false`, 10000).catch(() => false);
 const SF = await J(`({ state: crPrepState, ffg: crFailFromGrid, viol: crPrepViolations.length })`);
 await ev(`window.__jDelayMs = 0`);
 ok('S6 (exit mid-load, S10) exiting during PREPARING lands none, session closed, no refusal recorded | flying=' + flyingF + ' exited=' + exitedF + ' post=' + JSON.stringify(SF),
-  flyingF === true && exitedF === true && SF.state === 'none' && SF.viol === TEETH_SO_FAR);
+  E6.wipeEmpty === true && flyingF === true && exitedF === true && SF.state === 'none' && SF.viol === TEETH_SO_FAR);
 
 // ---------- S7: the sector session record ----------
 await jEnter();
