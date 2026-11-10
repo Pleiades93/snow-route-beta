@@ -225,6 +225,57 @@ const { proc, ev, consoleLog, sleep } = await launchDrive();
 // profile's maximum over the live viewport width - while the
 // bar itself, measured live in the same page, stands within
 // 2px of the pinned 58.
+// Beta 1.162 (Andrew's design, 2026-11-10): the icon and the
+// title become ONE BLOCK. He picked Option B on the title-caps
+// samples (SNOW ROUTE - capitals only, same size, weight and
+// spacing) and directed the splash restructure in the same
+// breath: the icon above the title is the menu look he wants,
+// so the two stop being separate acts - both fade in together
+// after the snow-only window, both rise together, and the icon
+// no longer fades away. Implementation: #splashBrand and its
+// mirror are retired; the icon moves into #brandLayer as the
+// title's sibling inside #brandBlock (a rigid 236px column:
+// the icon's 168 + the 26px gap + the title's 42px line - the
+// column as it has stood since 1.157); the block's ONE fade-in
+// (.35s at 1.25s) is the shared arrival; arm() FLIPs THE BLOCK
+// (one element, one transform) to a menu pose whose top puts
+// the TITLE on the unchanged +72 slot (block top
+// calc(21% - 143px) = the slot top minus the 194px of icon +
+// gap riding above the title), so the landed menu is the icon
+// above SNOW ROUTE and everything below the title is unmoved.
+// Judged here: SEQ1 keeps the dark window (the block's opacity
+// multiplies both children's effective opacities); SEQ2
+// re-pins to the shared arrival (icon AND title fully in from
+// 1.7s - the block's fade ends at 1.6s); SEQ3 keeps its hold
+// window (the title arrived with the block at 1.6s; S1 still
+// proves the settle); F0 and DURATION re-hook to the BLOCK's
+// transition (the title carries none of its own now), F0
+// comparing the block's from-rect against its hold rect on
+// centre + height under the same reasoning as before (the
+// block's width is pose-dependent by design - shrink-wrapped
+// in the splash pose, full-width in the menu pose); S2
+// extends to the icon (both keep the parent brandBlock across
+// every sample); N1/N2/N3/S1/S3/SIZE/S5 judge the title
+// exactly as before - it rides the block, and its painted
+// continuity is still the failure property that started this
+// drive; GAP keeps the hold's 26px, now the block's own
+// internal gap. OVERLAP is RETIRED: its premise (the icon
+// fading at the flip while the title rises past it) no
+// longer exists. In its place the BLOCK checks judge
+// Andrew's explicit requirement - they move together, with
+// no glitches - on the failure properties themselves:
+// BLOCK1 the icon-to-title gap stays 26 +/- 2px on every
+// flight sample from the hold to the settle; BLOCK2 BOTH
+// opacities stay at 1 through the whole rise (every
+// post-flip sample to settle: icon and title effective
+// opacity >= .99 - no fade, either way); BLOCK3 the block's
+// horizontal centre does not drift (centre-x spread across
+// the flight within 2px - the rise is purely vertical). N4
+// re-pins to the block. SLOT/CLEAR are untouched (the
+// title's landed geometry is the 1.159 slot by
+// construction). drive132 S1 re-pins in the same release
+// (the SNOW ROUTE text; the icon's arrival read as effective
+// opacity through the block).
 const R = { checks: [] };
 const ok = (name, cond) => R.checks.push([name, cond === true]);
 
@@ -239,8 +290,9 @@ await ev(`(() => {
     var rm = document.getElementById('routeMenu');
     if (ti) {
       if (!ti.__mark) ti.__mark = 'same-node';
-      if (!ti.__toHooked) { ti.__toHooked = true; ti.addEventListener('transitionend', function (e) { if (e.propertyName === 'transform' && !window.__splashTo) window.__splashTo = { t: Math.round(performance.now()) }; }); }
-      if (!window.__splashFromHooked) { window.__splashFromHooked = true; ti.addEventListener('transitionstart', function () { var r = ti.getBoundingClientRect(); window.__splashFrom = { t: Math.round(performance.now()), x: R2(r.left), y: R2(r.top), w: R2(r.width), h: R2(r.height) }; }); }
+      var bb = document.getElementById('brandBlock');
+      if (bb && !bb.__toHooked) { bb.__toHooked = true; bb.addEventListener('transitionend', function (e) { if (e.propertyName === 'transform' && !window.__splashTo) window.__splashTo = { t: Math.round(performance.now()) }; }); }
+      if (bb && !window.__splashFromHooked) { window.__splashFromHooked = true; bb.addEventListener('transitionstart', function () { var r = bb.getBoundingClientRect(); window.__splashFrom = { t: Math.round(performance.now()), x: R2(r.left), y: R2(r.top), w: R2(r.width), h: R2(r.height) }; }); }
       var r = ti.getBoundingClientRect();
       var op = 1, vis = true, el = ti;
       while (el && el.nodeType === 1) { var cs = getComputedStyle(el); if (cs.display === 'none' || cs.visibility === 'hidden') { vis = false; break; } op = op * parseFloat(cs.opacity); if (el === document.documentElement) break; el = el.parentElement; }
@@ -248,6 +300,9 @@ await ev(`(() => {
       var ir = ic ? ic.getBoundingClientRect() : null;
       var iop = 1;
       if (ic) { var el2 = ic; while (el2 && el2.nodeType === 1) { var cs2 = getComputedStyle(el2); iop = iop * parseFloat(cs2.opacity); if (el2 === document.documentElement) break; el2 = el2.parentElement; } }
+      var br2 = bb ? bb.getBoundingClientRect() : null;
+      var bop = 1;
+      if (bb) { var el3 = bb; while (el3 && el3.nodeType === 1) { var cs3 = getComputedStyle(el3); bop = bop * parseFloat(cs3.opacity); if (el3 === document.documentElement) break; el3 = el3.parentElement; } }
       var pane = document.getElementById('rmMain');
       var btn = document.getElementById('rmChoose');
       var rcs = rm ? getComputedStyle(rm) : null;
@@ -267,7 +322,7 @@ await ev(`(() => {
           if (swsum > 0) { var srect = scv.getBoundingClientRect(); if (srect.width > 0) snCx = R2(srect.left + (sxsum / swsum) / 105 * srect.width); }
         }
       } catch (e) { snArr = []; snCx = -1; }
-      window.__splashTrace.push({ t: Math.round(performance.now()), x: R2(r.left), y: R2(r.top), w: R2(r.width), h: R2(r.height), cx: R2(r.left + r.width / 2), cy: R2(r.top + r.height / 2), parent: ti.parentElement ? ti.parentElement.id : '', mark: ti.__mark || '', vis: vis, op: R2(op), painted: vis && op >= 0.99, shown: rm ? rm.classList.contains('show') : false, rmOp: rcs ? rcs.opacity : '', rmVis: rcs ? rcs.visibility : '', rmTx: rcs ? rcs.transform : '', paneOp: pane ? getComputedStyle(pane).opacity : '', btnH: btn ? R2(btn.getBoundingClientRect().height) : -1, ix: ir ? R2(ir.left) : -1, iy: ir ? R2(ir.top) : -1, iw: ir ? R2(ir.width) : -1, ih: ir ? R2(ir.height) : -1, iop: R2(iop), sn: snArr, snCx: snCx });
+      window.__splashTrace.push({ t: Math.round(performance.now()), x: R2(r.left), y: R2(r.top), w: R2(r.width), h: R2(r.height), cx: R2(r.left + r.width / 2), cy: R2(r.top + r.height / 2), parent: ti.parentElement ? ti.parentElement.id : '', mark: ti.__mark || '', vis: vis, op: R2(op), painted: vis && op >= 0.99, shown: rm ? rm.classList.contains('show') : false, rmOp: rcs ? rcs.opacity : '', rmVis: rcs ? rcs.visibility : '', rmTx: rcs ? rcs.transform : '', paneOp: pane ? getComputedStyle(pane).opacity : '', btnH: btn ? R2(btn.getBoundingClientRect().height) : -1, ix: ir ? R2(ir.left) : -1, iy: ir ? R2(ir.top) : -1, iw: ir ? R2(ir.width) : -1, ih: ir ? R2(ir.height) : -1, iop: R2(iop), ipar: ic && ic.parentElement ? ic.parentElement.id : '', bx: br2 ? R2(br2.left) : -1, by: br2 ? R2(br2.top) : -1, bw: br2 ? R2(br2.width) : -1, bh: br2 ? R2(br2.height) : -1, bcx: br2 ? R2(br2.left + br2.width / 2) : -1, bop: R2(bop), sn: snArr, snCx: snCx });
     }
     if (performance.now() < 14000 && !window.__splashTraceStop) requestAnimationFrame(step);
     else window.__splashTraceDone = true;
@@ -306,6 +361,7 @@ const flipIdx = trace.findIndex(s => s.shown);
 const pre = flipIdx > 0 ? trace.slice(0, flipIdx) : [];
 const post = flipIdx >= 0 ? trace.slice(flipIdx) : [];
 const hold = pre.length ? pre[pre.length - 1] : null;
+const holdBlk = hold ? { x: hold.bx, y: hold.by, w: hold.bw, h: hold.bh } : null;
 const holdTail = pre.slice(-3);
 const holdSpread = holdTail.length ? Math.max(...holdTail.map(s => Math.abs(s.cy - hold.cy)), ...holdTail.map(s => Math.abs(s.h - hold.h))) : 999;
 const firstPainted = post.find(s => s.painted) || null;
@@ -345,6 +401,7 @@ for (let i = 1; i < flight.length; i++) {
 const unpainted = (settleIdx >= 0 ? post.slice(0, settleIdx + 1) : post).filter(s => !s.painted);
 const midRise = (hold && lastS) ? post.filter(s => s.cy < hold.cy - 15 && s.cy > lastS.cy + 15) : [];
 const parents = [...new Set(trace.map(s => s.parent))];
+const iparents = [...new Set(trace.map(s => s.ipar))];
 const box = b => b ? ('[x' + b.x + ' y' + b.y + ' w' + b.w + ' h' + b.h + ']') : 'none';
 const dBox = (a, b) => (a && b) ? ('dx' + Math.abs(a.x - b.x).toFixed(1) + ' dy' + Math.abs(a.y - b.y).toFixed(1) + ' dw' + Math.abs(a.w - b.w).toFixed(1) + ' dh' + Math.abs(a.h - b.h).toFixed(1)) : 'n/a';
 const nearBox = (a, b, tol) => !!(a && b && Math.abs(a.x - b.x) <= tol && Math.abs(a.y - b.y) <= tol && Math.abs(a.w - b.w) <= tol && Math.abs(a.h - b.h) <= tol);
@@ -354,10 +411,10 @@ const nearCtr = (a, b, tol) => !!(a && b && Math.abs((a.x + a.w / 2) - (b.x + b.
 
 ok('S1 the title is SETTLED in the splash hold before the flip (last 3 hold samples agree within 1.5px) | hold box ' + box(hold) + ' spread ' + holdSpread.toFixed(1) + 'px over ' + pre.length + ' hold samples',
   pre.length >= 3 && holdSpread <= 1.5);
-ok('F0 the transition FROM-value (rect at the title\'s transitionstart) equals the hold frame (centre + height) within 3px | from ' + ctr(fromBox) + ' vs hold ' + ctr(hold) + ' -> ' + dCtr(fromBox, hold),
-  nearCtr(fromBox, hold, 3));
-ok('S2 ONE title element lives through both scenes: its parent NEVER changes across all ' + trace.length + ' samples | parents seen: ' + JSON.stringify(parents) + ', end mark ' + (lastS ? lastS.mark : 'none'),
-  trace.length > 10 && parents.length === 1 && !!lastS && lastS.mark === 'same-node');
+ok('F0 the transition FROM-value (rect at the BLOCK\'s transitionstart - Beta 1.162: the transform rides #brandBlock now) equals the block\'s splash hold frame (centre + height) within 3px | from ' + ctr(fromBox) + ' vs hold block ' + ctr(holdBlk) + ' -> ' + dCtr(fromBox, holdBlk),
+  nearCtr(fromBox, holdBlk, 3));
+ok('S2 ONE brand block lives through both scenes: the title\'s parent NEVER changes across all ' + trace.length + ' samples, and neither does the icon\'s (Beta 1.162: both are #brandBlock\'s children from the first frame to the settle - no reparent, no swap, for either) | title parents seen: ' + JSON.stringify(parents) + ', icon parents seen: ' + JSON.stringify(iparents) + ', end mark ' + (lastS ? lastS.mark : 'none'),
+  trace.length > 10 && parents.length === 1 && parents[0] === 'brandBlock' && iparents.length === 1 && iparents[0] === 'brandBlock' && !!lastS && lastS.mark === 'same-node');
 ok('N1 START IDENTITY: the first PAINTED frame after the flip is the splash hold frame (<= 2px on centre-x, centre-y, height) | first painted ' + ctr(firstPainted) + ' at flip+' + ((firstPainted && flipIdx >= 0) ? (firstPainted.t - trace[flipIdx].t) : -1) + 'ms vs hold ' + ctr(hold) + ' -> ' + dCtr(firstPainted, hold),
   nearCtr(firstPainted, hold, 2));
 ok('N2 the title NEVER disappears mid-flight: every sample from the flip to settle is painted (chain visible, effective opacity >= .99) | unpainted samples: ' + unpainted.length + (unpainted.length ? ' (first at flip+' + (unpainted[0].t - trace[flipIdx].t) + 'ms, last at flip+' + (unpainted[unpainted.length - 1].t - trace[flipIdx].t) + 'ms, min effective opacity ' + Math.min(...unpainted.map(s => s.op)) + ')' : ''),
@@ -372,21 +429,29 @@ ok('SIZE the title NEVER changes size (Beta 1.157: one size from splash to menu 
 const holdGap = hold ? (hold.y - (hold.iy + hold.ih)) : -999;
 ok('GAP the splash hold restores the PRE-UPDATE icon-to-title spacing: icon box y' + (hold ? hold.iy : -1) + ' h' + (hold ? hold.ih : -1) + ', title top y' + (hold ? hold.y : -1) + ' -> gap ' + holdGap.toFixed(1) + 'px (the original was 26px; Beta 1.155 measured an 8px overlap)',
   !!hold && Math.abs(holdGap - 26) <= 2 && Math.abs(hold.ih - 168) <= 2);
-let ovBad = 0, ovWorst = 0;
-for (const s of (settleIdx >= 0 ? post.slice(0, settleIdx + 1) : post)) {
-  const inter = Math.min(s.y + s.h, s.iy + s.ih) - Math.max(s.y, s.iy);
-  if (inter > 0 && s.iop > 0.05) { ovBad++; if (inter > ovWorst) ovWorst = inter; }
-}
-ok('OVERLAP the rising title NEVER crosses the icon while the icon is still visible: frames intersecting the icon span with icon opacity > .05: ' + ovBad + ' (worst intersection ' + ovWorst.toFixed(1) + 'px)',
-  post.length > 0 && settleIdx >= 0 && ovBad === 0);
+// BLOCK1-3 (Beta 1.162) replace OVERLAP: the 1.157 check
+// guarded a separation that existed because the icon faded
+// while the title rose past it. The block makes the pair one
+// rigid unit, so the guarded properties are now togetherness
+// itself - gap, opacity, and straightness, measured per frame.
+const gapWorst = flight.length ? Math.max(...flight.map(s => Math.abs((s.y - (s.iy + s.ih)) - 26))) : 999;
+ok('BLOCK1 TOGETHER: the icon-to-title gap NEVER changes mid-rise - across all ' + flight.length + ' flight samples (the hold sample through the settle) the gap stays at 26px with a worst deviation of ' + gapWorst.toFixed(1) + 'px (tolerance 2px: one rigid block - no separation, no compression, at any point of the travel)',
+  flight.length > 2 && gapWorst <= 2);
+const riseSamples = settleIdx >= 0 ? post.slice(0, settleIdx + 1) : post;
+const fadeBad = riseSamples.filter(sv => !(sv.iop >= 0.99 && sv.op >= 0.99));
+ok('BLOCK2 NO FADE: the icon does NOT fade away at the flip any more, and neither does the title - every one of the ' + riseSamples.length + ' samples from the flip to the settle has BOTH at full effective opacity (>= .99); samples below full: ' + fadeBad.length + (fadeBad.length ? ' (worst icon ' + Math.min(...fadeBad.map(sv => sv.iop)).toFixed(3) + ', worst title ' + Math.min(...fadeBad.map(sv => sv.op)).toFixed(3) + ')' : ''),
+  riseSamples.length > 0 && settleIdx >= 0 && fadeBad.length === 0);
+const bcxSpread = flight.length ? (Math.max(...flight.map(s => s.bcx)) - Math.min(...flight.map(s => s.bcx))) : 999;
+ok('BLOCK3 NO SIDEWAYS DRIFT: the block rises STRAIGHT - its horizontal centre moves at most ' + bcxSpread.toFixed(1) + 'px across all ' + flight.length + ' flight samples (tolerance 2px; the FLIP is translate-only and both poses are viewport-centred, so the invert\'s dx is ~0 by construction)',
+  flight.length > 2 && bcxSpread <= 2);
 const durMs = (fromBox && toBox) ? (toBox.t - fromBox.t) : -1;
-ok('DURATION the rise runs at the Beta 1.157 pace: transitionstart -> transitionend ' + durMs + 'ms (band 1200-1450ms for the 1.3s flip; Beta 1.155 ran 950ms)',
+ok('DURATION the rise runs at the Beta 1.157 pace (Beta 1.162: measured on #brandBlock, the element carrying the transform): transitionstart -> transitionend ' + durMs + 'ms (band 1200-1450ms for the 1.3s flip; Beta 1.155 ran 950ms)',
   durMs >= 1200 && durMs <= 1450);
 ok('S5 the title is caught MID-RISE (samples strictly between the splash centre and the landing - it travels, it does not jump-cut) | mid-rise samples: ' + midRise.length,
   midRise.length >= 1);
 ok('S7 the menu buttons arrive beneath it: at settle the main pane is fully opaque with the Choose button at full height | ' + JSON.stringify({ paneOp: lastS ? lastS.paneOp : 'none', btnH: lastS ? lastS.btnH : -1 }),
   !!lastS && lastS.paneOp === '1' && lastS.btnH > 30);
-ok('S8 the boot gate flips at the Beta 1.160 floor (flip at ' + (flipIdx >= 0 ? trace[flipIdx].t : -1) + 'ms on the page clock; arm() holds a 2700ms splash floor on the animated path - the flip lands after the icon fade-in, the title slide-in and the hold, so it cannot precede 2400ms on this clock - and the 6000ms escape still caps a stalled boot well under the 12000ms ceiling)',
+ok('S8 the boot gate flips at the Beta 1.160 floor (flip at ' + (flipIdx >= 0 ? trace[flipIdx].t : -1) + 'ms on the page clock; arm() holds a 2700ms splash floor on the animated path - the flip lands after the block fade-in and the hold (Beta 1.162: one shared arrival at 1.25s; through 1.161 the icon faded in at 1.25s and the title slid in at 1.5s), so it cannot precede 2400ms on this clock - and the 6000ms escape still caps a stalled boot well under the 12000ms ceiling)',
   flipIdx >= 0 && trace[flipIdx].t >= 2400 && trace[flipIdx].t < 12000);
 const darkSamples = trace.filter(s => s.t <= 1200);
 const darkWorstI = darkSamples.reduce((m, s) => Math.max(m, s.iop), 0);
@@ -394,21 +459,23 @@ const darkWorstT = darkSamples.reduce((m, s) => Math.max(m, s.op), 0);
 ok('SEQ1 DARK WINDOW (Beta 1.160, Option 3): before 1.2s NEITHER the icon nor the title is painted - ' + darkSamples.length + ' trace samples at t <= 1200ms (first at ' + (trace.length ? trace[0].t : -1) + 'ms), worst icon effective opacity ' + darkWorstI.toFixed(3) + ', worst title effective opacity ' + darkWorstT.toFixed(3) + ' (both must stay <= .05; the launch still is plain blue to match - the icon sits out the iOS handoff from both sides)',
   darkSamples.length >= 5 && darkWorstI <= 0.05 && darkWorstT <= 0.05);
 const flipT2 = flipIdx >= 0 ? trace[flipIdx].t : -1;
-const iconIn = trace.filter(s => s.t >= 1700 && flipT2 > 0 && s.t < flipT2 && s.iop >= 0.99);
-ok('SEQ2 the icon is FULLY IN after its 1.25s fade and before the flip: ' + iconIn.length + ' trace samples in [1700ms, flip) with icon effective opacity >= .99' + (iconIn.length ? ' (first at ' + iconIn[0].t + 'ms)' : ''),
+const iconIn = trace.filter(s => s.t >= 1700 && flipT2 > 0 && s.t < flipT2 && s.iop >= 0.99 && s.op >= 0.99);
+ok('SEQ2 the BLOCK is FULLY IN after its shared 1.25s fade and before the flip (Beta 1.162: icon and title arrive as ONE thing - the fade rides #brandBlock, .35s from 1.25s, complete at 1.6s; through 1.161 this judged the icon\'s own fade alone): ' + iconIn.length + ' trace samples in [1700ms, flip) with BOTH icon and title effective opacity >= .99' + (iconIn.length ? ' (first at ' + iconIn[0].t + 'ms)' : ''),
   iconIn.length >= 1);
 const titleIn = trace.filter(s => s.t >= 2300 && flipT2 > 0 && s.t < flipT2 && s.op >= 0.99);
-ok('SEQ3 the title is fully in and settled in the hold before the flip: ' + titleIn.length + ' trace samples in [2300ms, flip) with title effective opacity >= .99' + (titleIn.length ? ' (first at ' + titleIn[0].t + 'ms)' : ''),
+ok('SEQ3 the title is fully in and settled in the hold before the flip (Beta 1.162: it arrived WITH the block at 1.6s - its own 1.5s slide-in is retired - and S1 proves the settle at the flip): ' + titleIn.length + ' trace samples in [2300ms, flip) with title effective opacity >= .99' + (titleIn.length ? ' (first at ' + titleIn[0].t + 'ms)' : ''),
   titleIn.length >= 1);
 
-// N4: the resting box is the CSS slot itself - clearing any inline
-// transform must not move the title.
+// N4: the resting box is the CSS pose itself - clearing any
+// inline transform must not move the block (Beta 1.162: the
+// transform rides the block; SLOT below pins the title inside
+// it to its slot).
 let restA = null, restB = null;
 try {
-  restA = await ev(`(() => { const ti = document.getElementById('splashTitle'); if (!ti) return ''; const r = ti.getBoundingClientRect(); return JSON.stringify({ x: r.left, y: r.top, w: r.width, h: r.height }); })()`).then(x => typeof x === 'string' && x ? JSON.parse(x) : null);
-  restB = await ev(`(() => { const ti = document.getElementById('splashTitle'); if (!ti) return ''; const keepT = ti.style.transition, keepX = ti.style.transform; ti.style.transition = 'none'; ti.style.transform = 'none'; const r = ti.getBoundingClientRect(); const out = JSON.stringify({ x: r.left, y: r.top, w: r.width, h: r.height }); ti.style.transition = keepT; ti.style.transform = keepX; return out; })()`).then(x => typeof x === 'string' && x ? JSON.parse(x) : null);
+  restA = await ev(`(() => { const ti = document.getElementById('brandBlock'); if (!ti) return ''; const r = ti.getBoundingClientRect(); return JSON.stringify({ x: r.left, y: r.top, w: r.width, h: r.height }); })()`).then(x => typeof x === 'string' && x ? JSON.parse(x) : null);
+  restB = await ev(`(() => { const ti = document.getElementById('brandBlock'); if (!ti) return ''; const keepT = ti.style.transition, keepX = ti.style.transform; ti.style.transition = 'none'; ti.style.transform = 'none'; const r = ti.getBoundingClientRect(); const out = JSON.stringify({ x: r.left, y: r.top, w: r.width, h: r.height }); ti.style.transition = keepT; ti.style.transform = keepX; return out; })()`).then(x => typeof x === 'string' && x ? JSON.parse(x) : null);
 } catch (e) { restA = null; restB = null; }
-ok('N4 at rest the title sits exactly on its menu slot: the rect with inline transform forced clear equals the settled rect (<= 1.5px) | settled ' + box(restA) + ' vs cleared ' + box(restB) + ' -> ' + dBox(restA, restB),
+ok('N4 at rest the BLOCK sits exactly on its menu pose: the rect with inline transform forced clear equals the settled rect (<= 1.5px) | settled ' + box(restA) + ' vs cleared ' + box(restB) + ' -> ' + dBox(restA, restB),
   nearBox(restA, restB, 1.5));
 
 // SLOT + CLEAR (Beta 1.158): the landed slot is the 21% line
