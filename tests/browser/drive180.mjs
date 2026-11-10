@@ -276,6 +276,43 @@ const { proc, ev, consoleLog, sleep } = await launchDrive();
 // construction). drive132 S1 re-pins in the same release
 // (the SNOW ROUTE text; the icon's arrival read as effective
 // opacity through the block).
+// Beta 1.163 (Andrew's correction + landing pick, 2026-11-10):
+// two changes, both in his words. (1) THE ENTRANCE is the
+// original choreography again - "I wanted to keep the original
+// animation where the icon fades in, then the text slides in
+// like the original, and then they both move up together":
+// 1.162's shared block fade (one release) is retired; the
+// icon's own .35s fade at 1.25s (splashIconIn) and the title's
+// own .65s slide at 1.5s (splashSlide) are restored on the
+// children inside #brandBlock, byte-for-byte the through-1.161
+// rules (the caps text stands). The RISE is 1.162's, untouched:
+// at the flip arm() FLIPs the block and the pair travel as one
+// rigid unit. Judged here: SEQ2 restores its 1.161 form (the
+// icon's own fade alone: fully in from 1.7s); SEQ3 keeps its
+// hold window with its justification restored (the slide's
+// opacity completes at ~1.85s and it settles at 2.15s); SEQ1's
+// dark window is unchanged in form (both children sit at
+// opacity 0 before 1.2s - by their own rules now, not the
+// block's); S8's justification returns to the separate
+// arrivals. BLOCK1-3 still judge the RISE only, unweakened:
+// during the flight the title's slide fill is identity
+// (opacity 1, translateX(0)), so the gap, opacity and
+// straightness measurements read the block's travel exactly
+// as in 1.162. (2) THE LANDING drops 24px: his landing-samples
+// pick (Option B - 24 lower of today's / 24 / 48 / 72), on the
+// axis he corrected himself - not the start ("I didn't mean
+// the animation has to start lower") but the menu landing
+// ("the final position for the next menu is too high up - I
+// want it closer"). The block's menu pose top moves
+// calc(21% - 143px) -> calc(21% - 119px); the title's landed
+// centre moves from the 21% line + 72 to the 21% line + 96.
+// SLOT re-pins to +96; CLEAR re-measures its margin at the
+// lower landing (the safeguard stands: a non-positive margin
+// stops the ship). The splash START - the centred hold - does
+// not move, and the block's top clearance only grows.
+// drive132 S1's rationale re-pins in the same release (the
+// fade is the icon's own again; its effective-opacity read
+// stands).
 const R = { checks: [] };
 const ok = (name, cond) => R.checks.push([name, cond === true]);
 
@@ -451,7 +488,7 @@ ok('S5 the title is caught MID-RISE (samples strictly between the splash centre 
   midRise.length >= 1);
 ok('S7 the menu buttons arrive beneath it: at settle the main pane is fully opaque with the Choose button at full height | ' + JSON.stringify({ paneOp: lastS ? lastS.paneOp : 'none', btnH: lastS ? lastS.btnH : -1 }),
   !!lastS && lastS.paneOp === '1' && lastS.btnH > 30);
-ok('S8 the boot gate flips at the Beta 1.160 floor (flip at ' + (flipIdx >= 0 ? trace[flipIdx].t : -1) + 'ms on the page clock; arm() holds a 2700ms splash floor on the animated path - the flip lands after the block fade-in and the hold (Beta 1.162: one shared arrival at 1.25s; through 1.161 the icon faded in at 1.25s and the title slid in at 1.5s), so it cannot precede 2400ms on this clock - and the 6000ms escape still caps a stalled boot well under the 12000ms ceiling)',
+ok('S8 the boot gate flips at the Beta 1.160 floor (flip at ' + (flipIdx >= 0 ? trace[flipIdx].t : -1) + 'ms on the page clock; arm() holds a 2700ms splash floor on the animated path - the flip lands after the icon fade-in, the title slide-in and the hold (Beta 1.163: the original separate arrivals restored - the icon at 1.25s, the title at 1.5s, as through 1.161; Beta 1.162\'s one shared arrival stood for one release), so it cannot precede 2400ms on this clock - and the 6000ms escape still caps a stalled boot well under the 12000ms ceiling)',
   flipIdx >= 0 && trace[flipIdx].t >= 2400 && trace[flipIdx].t < 12000);
 const darkSamples = trace.filter(s => s.t <= 1200);
 const darkWorstI = darkSamples.reduce((m, s) => Math.max(m, s.iop), 0);
@@ -459,11 +496,11 @@ const darkWorstT = darkSamples.reduce((m, s) => Math.max(m, s.op), 0);
 ok('SEQ1 DARK WINDOW (Beta 1.160, Option 3): before 1.2s NEITHER the icon nor the title is painted - ' + darkSamples.length + ' trace samples at t <= 1200ms (first at ' + (trace.length ? trace[0].t : -1) + 'ms), worst icon effective opacity ' + darkWorstI.toFixed(3) + ', worst title effective opacity ' + darkWorstT.toFixed(3) + ' (both must stay <= .05; the launch still is plain blue to match - the icon sits out the iOS handoff from both sides)',
   darkSamples.length >= 5 && darkWorstI <= 0.05 && darkWorstT <= 0.05);
 const flipT2 = flipIdx >= 0 ? trace[flipIdx].t : -1;
-const iconIn = trace.filter(s => s.t >= 1700 && flipT2 > 0 && s.t < flipT2 && s.iop >= 0.99 && s.op >= 0.99);
-ok('SEQ2 the BLOCK is FULLY IN after its shared 1.25s fade and before the flip (Beta 1.162: icon and title arrive as ONE thing - the fade rides #brandBlock, .35s from 1.25s, complete at 1.6s; through 1.161 this judged the icon\'s own fade alone): ' + iconIn.length + ' trace samples in [1700ms, flip) with BOTH icon and title effective opacity >= .99' + (iconIn.length ? ' (first at ' + iconIn[0].t + 'ms)' : ''),
+const iconIn = trace.filter(s => s.t >= 1700 && flipT2 > 0 && s.t < flipT2 && s.iop >= 0.99);
+ok('SEQ2 the icon is FULLY IN after its 1.25s fade and before the flip (Beta 1.163: the 1.161 form restored - the fade is the icon\'s OWN again (splashIconIn, .35s from 1.25s, complete at 1.6s), as Andrew directed; Beta 1.162 judged the block\'s shared arrival here for one release): ' + iconIn.length + ' trace samples in [1700ms, flip) with icon effective opacity >= .99' + (iconIn.length ? ' (first at ' + iconIn[0].t + 'ms)' : ''),
   iconIn.length >= 1);
 const titleIn = trace.filter(s => s.t >= 2300 && flipT2 > 0 && s.t < flipT2 && s.op >= 0.99);
-ok('SEQ3 the title is fully in and settled in the hold before the flip (Beta 1.162: it arrived WITH the block at 1.6s - its own 1.5s slide-in is retired - and S1 proves the settle at the flip): ' + titleIn.length + ' trace samples in [2300ms, flip) with title effective opacity >= .99' + (titleIn.length ? ' (first at ' + titleIn[0].t + 'ms)' : ''),
+ok('SEQ3 the title is fully in and settled in the hold before the flip (Beta 1.163: its own 1.5s slide-in is restored - splashSlide\'s opacity completes at ~1.85s and the slide settles at 2.15s, so this 2.3s window judges the settled hold exactly as it did through 1.161; Beta 1.162\'s shared-arrival note stood for one release; S1 proves the settle at the flip): ' + titleIn.length + ' trace samples in [2300ms, flip) with title effective opacity >= .99' + (titleIn.length ? ' (first at ' + titleIn[0].t + 'ms)' : ''),
   titleIn.length >= 1);
 
 // N4: the resting box is the CSS pose itself - clearing any
@@ -479,17 +516,19 @@ ok('N4 at rest the BLOCK sits exactly on its menu pose: the rect with inline tra
   nearBox(restA, restB, 1.5));
 
 // SLOT + CLEAR (Beta 1.158): the landed slot is the 21% line
-// + 48 (Andrew's pick), and the landed title must clear the
-// first button - the buttons never moved.
+// + an offset Andrew picks (1.158: +48; 1.159: +72; 1.163:
+// +96 - 24px below +72 on his landing-samples pick), and the
+// landed title must clear the first button - the buttons
+// never moved.
 let slot = null;
 try {
   slot = await ev(`(() => { const ti = document.getElementById('splashTitle'); const btn = document.getElementById('rmChoose'); if (!ti || !btn) return ''; const tr = ti.getBoundingClientRect(); const br = btn.getBoundingClientRect(); return JSON.stringify({ cy: tr.top + tr.height / 2, tBot: tr.bottom, btnTop: br.top, ih: window.innerHeight }); })()`).then(x => typeof x === 'string' && x ? JSON.parse(x) : null);
 } catch (e) { slot = null; }
-const slotExp = slot ? (0.21 * slot.ih + 72) : -1;
-ok('SLOT the landed title sits on the PICKED slot (Beta 1.159: the 21% line + 72px - the examples page\'s LAST option, Andrew\'s tap after 1.158\'s +48): settled centre-y ' + (slot ? slot.cy.toFixed(1) : 'n/a') + 'px vs expected ' + slotExp.toFixed(1) + 'px (21% of viewport height ' + (slot ? slot.ih : -1) + ' + 72), off by ' + (slot ? Math.abs(slot.cy - slotExp).toFixed(1) : 'n/a') + 'px',
+const slotExp = slot ? (0.21 * slot.ih + 96) : -1;
+ok('SLOT the landed title sits on the PICKED slot (Beta 1.163: the 21% line + 96px - Andrew\'s landing-samples pick, Option B: 24px BELOW the 1.159 +72 slot, the start and the buttons unmoved): settled centre-y ' + (slot ? slot.cy.toFixed(1) : 'n/a') + 'px vs expected ' + slotExp.toFixed(1) + 'px (21% of viewport height ' + (slot ? slot.ih : -1) + ' + 96), off by ' + (slot ? Math.abs(slot.cy - slotExp).toFixed(1) : 'n/a') + 'px',
   !!slot && Math.abs(slot.cy - slotExp) <= 2);
 const clearMargin = slot ? (slot.btnTop - slot.tBot) : -999;
-ok('CLEAR the landed title still clears the first menu button at +72 (the buttons never moved): title bottom ' + (slot ? slot.tBot.toFixed(1) : 'n/a') + 'px, Choose button top ' + (slot ? slot.btnTop.toFixed(1) : 'n/a') + 'px -> margin ' + clearMargin.toFixed(1) + 'px (must be > 0 - the safeguard Andrew was told: if +72 broke this, the ship stops rather than forcing it)',
+ok('CLEAR the landed title still clears the first menu button at the 1.163 landing (24px below the +72 slot; the buttons never moved): title bottom ' + (slot ? slot.tBot.toFixed(1) : 'n/a') + 'px, Choose button top ' + (slot ? slot.btnTop.toFixed(1) : 'n/a') + 'px -> margin ' + clearMargin.toFixed(1) + 'px (must be > 0 - the safeguard Andrew was told: if the lower landing broke this, the ship stops rather than forcing it)',
   !!slot && clearMargin > 0);
 
 // PILLS (Beta 1.158): the boot menu's two pills wear the
