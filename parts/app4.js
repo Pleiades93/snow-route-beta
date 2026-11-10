@@ -661,7 +661,7 @@ $('stDel').addEventListener('click', async () => {
 });
 // ---- About / What's new ----
 const WHATSNEW = { // the curated in-app notes: plain words, LATEST RELEASE ONLY (Beta 1.114, Andrew: the accumulated list cluttered the About pane). A release REPLACES this entry with its own in the same change - it never accumulates; the full history lives in CHANGELOG.md, not the app
-  v: 'Beta 1.160', items: ["The opening is calmer: the app now starts with the blue screen and the falling snow, and the icon and the words fade in a moment later — no more flicker as it opens.", "Everything after that is unchanged: the same rise into the menu, the same landing spot, the same snow."]};
+  v: 'Beta 1.161', items: ["The falling snow is new: a dense field of tiny twinkling specks, soft flakes, and a few big blurred flakes drifting past \u2014 the snowfall from the video, brought into the app.", "The snow still piles up exactly the way it did before. It just finishes higher \u2014 about as tall as the bottom bar."]};
 function renderAbout() {
   const cur = $('ver').textContent.trim();
   $('wnHead').textContent = "WHAT'S NEW · " + cur; // the header names the LIVE version, read from the title's version element - never a second hard-coded copy that can go stale
