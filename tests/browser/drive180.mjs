@@ -164,6 +164,39 @@ const { proc, ev, consoleLog, sleep } = await launchDrive();
 // sub lines (Range-measured, <= 2px) and the unified pill
 // font tokens (.routeName at the .rmBtn size/weight, the
 // row wearing the .rmBtn secondary fill/ring/radius).
+//
+// Beta 1.160 (Andrew - OPTION 3, adopted after his device verdict on
+// the Snow Probe): the opening retimes so the icon and title sit out
+// the iOS launch-handoff window - the launch stills are plain blue
+// and the live scene opens on blue + snow alone. SEQ1 judges the
+// DARK WINDOW (neither the icon nor the title painted before 1.2s,
+// on the trace's effective opacities - the ancestor-multiplied
+// quantities, so the brand's flip fade counts toward the icon after
+// the flip; every SEQ window is pre-flip by construction). SEQ2
+// judges the icon fully in after its 1.25s fade (a .35s fade on
+// #splashIcon itself, so SEQ2's window opens at 1.7s). SEQ3 judges
+// the title fully in and settled in the hold before the flip (its
+// slide ends at 2.15s; the window opens at 2.3s). S8 is RE-PINNED
+// to the new gate: arm()'s splash floor is 2700ms on the animated
+// path (1900ms under reduced motion, which this drive does not
+// emulate), so the flip cannot precede 2400ms on the trace clock
+// and the 6000ms escape still caps a stalled boot under the 12000ms
+// ceiling. SNOW7/SNOW8 are Andrew's adoption condition as standing
+// guards - the probe (a minimal page with none of the app's
+// viewport defences) sometimes showed the snow stopping short of
+// the screen bottom, a blue gap under the ground line: SNOW7
+// judges the canvas's BOX at every trace sample (the trace's sn
+// entries now carry bottom and height alongside left/top - indices
+// 4/5; SNOW4 keeps reading 0-3), top within 2px of the viewport
+// top and bottom within 2px of the viewport height; SNOW8 judges
+// the PAINT itself at the settle - a downscaled read of the canvas
+// requires the bottom rows near-fully near-white while the engine
+// reports ground (it shares SNOW3's moment, deep in the build
+// phase, so the ground band is at least ~7px tall and the bottom
+// rows sit inside the filled ground polygon at every x). The snow
+// engine, its canvas, its container and the viewport defences are
+// untouched by 1.160 - these two checks exist so the retime can
+// never smuggle the probe's flaw in.
 const R = { checks: [] };
 const ok = (name, cond) => R.checks.push([name, cond === true]);
 
@@ -193,7 +226,7 @@ await ev(`(() => {
       var snArr = [], snCx = -1;
       try {
         var scs = document.querySelectorAll('#snowCv, #snowCvM');
-        for (var si = 0; si < scs.length; si++) { var sr = scs[si].getBoundingClientRect(); snArr.push([scs[si].id, scs[si].parentElement ? scs[si].parentElement.id : '', R2(sr.left), R2(sr.top)]); }
+        for (var si = 0; si < scs.length; si++) { var sr = scs[si].getBoundingClientRect(); snArr.push([scs[si].id, scs[si].parentElement ? scs[si].parentElement.id : '', R2(sr.left), R2(sr.top), R2(sr.bottom), R2(sr.height)]); }
         var scv = document.getElementById('snowCv');
         if (scv && scv.width > 0) {
           if (!window.__snOff) { var oc = document.createElement('canvas'); oc.width = 105; oc.height = 225; window.__snOff = oc; }
@@ -325,8 +358,20 @@ ok('S5 the title is caught MID-RISE (samples strictly between the splash centre 
   midRise.length >= 1);
 ok('S7 the menu buttons arrive beneath it: at settle the main pane is fully opaque with the Choose button at full height | ' + JSON.stringify({ paneOp: lastS ? lastS.paneOp : 'none', btnH: lastS ? lastS.btnH : -1 }),
   !!lastS && lastS.paneOp === '1' && lastS.btnH > 30);
-ok('S8 the boot gate armed promptly (the transition adds no dwell: flip at ' + (flipIdx >= 0 ? trace[flipIdx].t : -1) + 'ms on the page clock)',
-  flipIdx >= 0 && trace[flipIdx].t < 12000);
+ok('S8 the boot gate flips at the Beta 1.160 floor (flip at ' + (flipIdx >= 0 ? trace[flipIdx].t : -1) + 'ms on the page clock; arm() holds a 2700ms splash floor on the animated path - the flip lands after the icon fade-in, the title slide-in and the hold, so it cannot precede 2400ms on this clock - and the 6000ms escape still caps a stalled boot well under the 12000ms ceiling)',
+  flipIdx >= 0 && trace[flipIdx].t >= 2400 && trace[flipIdx].t < 12000);
+const darkSamples = trace.filter(s => s.t <= 1200);
+const darkWorstI = darkSamples.reduce((m, s) => Math.max(m, s.iop), 0);
+const darkWorstT = darkSamples.reduce((m, s) => Math.max(m, s.op), 0);
+ok('SEQ1 DARK WINDOW (Beta 1.160, Option 3): before 1.2s NEITHER the icon nor the title is painted - ' + darkSamples.length + ' trace samples at t <= 1200ms (first at ' + (trace.length ? trace[0].t : -1) + 'ms), worst icon effective opacity ' + darkWorstI.toFixed(3) + ', worst title effective opacity ' + darkWorstT.toFixed(3) + ' (both must stay <= .05; the launch still is plain blue to match - the icon sits out the iOS handoff from both sides)',
+  darkSamples.length >= 5 && darkWorstI <= 0.05 && darkWorstT <= 0.05);
+const flipT2 = flipIdx >= 0 ? trace[flipIdx].t : -1;
+const iconIn = trace.filter(s => s.t >= 1700 && flipT2 > 0 && s.t < flipT2 && s.iop >= 0.99);
+ok('SEQ2 the icon is FULLY IN after its 1.25s fade and before the flip: ' + iconIn.length + ' trace samples in [1700ms, flip) with icon effective opacity >= .99' + (iconIn.length ? ' (first at ' + iconIn[0].t + 'ms)' : ''),
+  iconIn.length >= 1);
+const titleIn = trace.filter(s => s.t >= 2300 && flipT2 > 0 && s.t < flipT2 && s.op >= 0.99);
+ok('SEQ3 the title is fully in and settled in the hold before the flip: ' + titleIn.length + ' trace samples in [2300ms, flip) with title effective opacity >= .99' + (titleIn.length ? ' (first at ' + titleIn[0].t + 'ms)' : ''),
+  titleIn.length >= 1);
 
 // N4: the resting box is the CSS slot itself - clearing any inline
 // transform must not move the title.
@@ -376,7 +421,7 @@ ok('PILLF the pill hierarchy is the mock\'s: Choose (primary) is SOLID white [' 
 // the painted field's lateral continuity across the handoff window.
 let snowA = null, snowYs2 = null;
 try {
-  snowA = await ev(`(() => { const w = window; const all = document.querySelectorAll('#snowCv, #snowCvM'); return JSON.stringify({ n: all.length, one: all.length === 1 && all[0].id === 'snowCv', run: !!(w.__snow && w.__snow.running()), amt: w.__snow ? w.__snow.amount() : -1, gnd: w.__snow ? w.__snow.ground() : -1, ys: w.__snow ? w.__snow.flakes().map(f => Math.round(f.y)) : [] }); })()`).then(x => typeof x === 'string' && x ? JSON.parse(x) : null);
+  snowA = await ev(`(() => { const w = window; const all = document.querySelectorAll('#snowCv, #snowCvM'); return JSON.stringify({ n: all.length, one: all.length === 1 && all[0].id === 'snowCv', run: !!(w.__snow && w.__snow.running()), amt: w.__snow ? w.__snow.amount() : -1, gnd: w.__snow ? w.__snow.ground() : -1, ih: window.innerHeight, ys: w.__snow ? w.__snow.flakes().map(f => Math.round(f.y)) : [] }); })()`).then(x => typeof x === 'string' && x ? JSON.parse(x) : null);
   await new Promise(r => setTimeout(r, 650));
   snowYs2 = await ev(`(() => JSON.stringify(window.__snow ? window.__snow.flakes().map(f => Math.round(f.y)) : []))()`).then(x => typeof x === 'string' && x ? JSON.parse(x) : null);
 } catch (e) { snowA = null; snowYs2 = null; }
@@ -412,6 +457,17 @@ for (let i = 1; i < snWin.length; i++) {
 }
 ok('SNOW5 NO TWITCH: the painted snow field never jumps sideways across the splash-to-menu handoff - the field centroid (pixel centroid of the one canvas, screen coordinates) moves at most ' + snWorst.toFixed(1) + 'px between consecutive trace samples in the flip-to-settle window (bound 10px per pair; ' + snPairs + ' pairs judged, ' + snSkip + ' starved pairs over 120ms excluded, ' + snViol + ' violations; legitimate motion is sway at <= 7.6px/s per flake plus <= ~5px respawn steps)',
   snPairs >= 12 && snViol === 0);
+const snIh = snowA ? snowA.ih : -1;
+let snTopWorst = -1, snBotWorst = -1, snCoverN = 0;
+for (const s of snSamples) { for (const e of s.sn) { if (e.length >= 6) { snCoverN++; const dTop = Math.abs(e[3]); const dBot = Math.abs(e[4] - snIh); if (dTop > snTopWorst) snTopWorst = dTop; if (dBot > snBotWorst) snBotWorst = dBot; } } }
+ok('SNOW7 ANTI-GAP (Beta 1.160 - the adoption condition): the snow canvas COVERS the full viewport height at every traced frame - ' + snCoverN + ' canvas samples from the first traced frame at ' + (snSamples.length ? snSamples[0].t : -1) + 'ms, worst top offset ' + (snTopWorst < 0 ? 'n/a' : snTopWorst.toFixed(1)) + 'px, worst bottom offset from the viewport height (' + snIh + 'px) ' + (snBotWorst < 0 ? 'n/a' : snBotWorst.toFixed(1)) + 'px (both must stay <= 2px - no blue gap can open under the snow)',
+  snCoverN > 10 && snIh > 0 && snTopWorst <= 2 && snBotWorst <= 2);
+let snowPx = null;
+try {
+  snowPx = await ev(`(() => { const cv = document.getElementById('snowCv'); if (!cv || !cv.width) return ''; const r = cv.getBoundingClientRect(); const oc = document.createElement('canvas'); oc.width = 210; oc.height = 450; const c2 = oc.getContext('2d'); c2.drawImage(cv, 0, 0, 210, 450); const dd = c2.getImageData(0, 0, 210, 450).data; let wht = 0, nn = 0; for (let y = 448; y < 450; y++) { for (let x = 0; x < 210; x++) { const i = (y * 210 + x) * 4; nn++; if (dd[i + 3] > 200 && dd[i] > 200 && dd[i + 1] > 200 && dd[i + 2] > 200) wht++; } } return JSON.stringify({ top: Math.round(r.top * 100) / 100, bottom: Math.round(r.bottom * 100) / 100, ih: window.innerHeight, bot: nn ? Math.round(wht / nn * 1000) / 1000 : 0 }); })()`).then(x => typeof x === 'string' && x ? JSON.parse(x) : null);
+} catch (e) { snowPx = null; }
+ok('SNOW8 the accumulation is painted AT the canvas bottom edge (the ground forms on the viewport floor, not above it): the bottom rows of the painted canvas are ' + (snowPx ? Math.round(snowPx.bot * 100) : 'n/a') + '% near-white with engine ground ' + (snowA ? snowA.gnd.toFixed(1) : 'n/a') + 'px, canvas rect top ' + (snowPx ? snowPx.top : 'n/a') + ' / bottom ' + (snowPx ? snowPx.bottom : 'n/a') + ' against viewport height ' + (snowPx ? snowPx.ih : 'n/a'),
+  !!snowPx && !!snowA && snowA.gnd > 0 && snowPx.bot >= 0.8 && Math.abs(snowPx.bottom - snowPx.ih) <= 2 && Math.abs(snowPx.top) <= 2);
 
 // TITLE LIFETIME + SUB-PANE SNOW + LIST ROWS (Beta 1.159): navigate
 // the boot menu's panes with real clicks and judge what Andrew's
