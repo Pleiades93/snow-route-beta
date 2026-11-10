@@ -23,10 +23,10 @@ name: checks
 # A push to main runs the Tier A core set (the browser-smoke job): the
 # merge gate is the tree-identity proof (the merged tree must equal the
 # tested branch tree - verified at merge time, see
-# docs/DEVELOPMENT_RULES.md), the build checks below, and the live
+# DEVELOPMENT_RULES.md), the build checks below, and the live
 # read-back; if the trees ever differ, the full suite is re-run via
 # workflow_dispatch before the round is called shipped. The nightly
-# schedule runs the full battery on main regardless - the
+# full battery on main is dispatched by Muse's 1 AM job - the
 # environment-drift audit a tree hash cannot see (runner/browser
 # changes). scripts/check-shard-coverage.py runs in build-and-test and
 # fails the build if the shard lists ever stop covering every drive in
@@ -34,12 +34,6 @@ name: checks
 on:
   push:
   pull_request:
-  schedule:
-    # Nightly full battery at 06:00 UTC = 1:00 AM EST / 2:00 AM EDT (GitHub
-    # cron is UTC-only, no daylight saving). Set 2026-11-05 (Andrew): the
-    # pipeline is schedule 1 AM -> Muse catch-up check 4 AM (dispatches
-    # this workflow if the slot was skipped) -> summary 6 AM.
-    - cron: '0 6 * * *'
   workflow_dispatch:
     inputs:
       tier:
