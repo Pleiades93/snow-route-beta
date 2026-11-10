@@ -37,7 +37,9 @@ Gate: build-and-test + the touched surface's family:
 | session | `parts/app2.js`, `parts/app3.js`, `parts/app4.js` | 83 86 88 89* 114 118 125 135 136 140 145 146 147 159 161 162 163 169 170 184 |
 
 *quarantined drives are removed from the set by the selector (drive89
-today); they are listed here so the family's full membership stays
+today; drive181 was quarantined 2026-11-09 and re-admitted 2026-11-10
+after its hardening proved out — entry removed in the housekeeping
+cleanup); they are listed here so the family's full membership stays
 visible.
 
 ## Tier C — deep mechanics
