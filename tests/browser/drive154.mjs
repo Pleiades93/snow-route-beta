@@ -219,13 +219,19 @@ ok('E2 THE ASK: the Delete tap does NOT load the route (5W stays active, the men
 // but the app's automatic theme is sunset-driven (autoNightAt), so any run after
 // local sunset booted into night and the day sample read the night values
 // (deterministic evening failure: local + branch CI 42302781608 shard 3).
-await ev2(`(() => { setThemeOverride(false); applyNight(); setBasemap(); return true; })()`);
+await ev2(`(() => { setThemeOverride(false); applyNight(); return true; })()`);
 await poll(`!document.body.classList.contains('night')`, 10000); // T4: poll the terminal state E3's day sample asserts (the day theme applied)
 const dayE = await J(`(() => { const c = document.querySelector('#crModal .card'); const s = getComputedStyle(c); return { bg: s.backgroundColor, col: s.color }; })()`);
-await ev2(`(() => { setThemeOverride(true); applyNight(); setBasemap(); return true; })()`);
+await ev2(`(() => { setThemeOverride(true); applyNight(); return true; })()`);
 await poll(`document.body.classList.contains('night')`, 10000); // T4: poll the terminal state E3's night sample asserts (the night theme applied)
 const nightE = await J(`(() => { const c = document.querySelector('#crModal .card'); const s = getComputedStyle(c); return { bg: s.backgroundColor, col: s.color }; })()`);
-await ev2(`(() => { clearThemeOverride(); applyNight(); setBasemap(); return true; })()`);
+await ev2(`(() => { clearThemeOverride(); applyNight(); return true; })()`);
+// Test-suite restructure (2026-11-09): E3's three setBasemap() calls are
+// DELETED. E3 asserts computed CSS of a DOM modal; applyNight() is DOM-only
+// (body class + theme-color + button icon) and the samples poll the body
+// class - the terminal state they assert. setBasemap() only rebuilt the
+// map style, which E3 never reads, and each rebuild opened a "Style is not
+// done loading" window for the steps after it (the style-flake family).
 ok('E3 NIGHT TOKENS (Andrew\'s requirement): the confirm card\'s computed background + text colour EQUAL the theme tokens in BOTH modes - day rgba(255, 255, 255, 0.92) / rgb(28, 37, 52), night rgba(32, 33, 37, 0.94) / rgb(237, 242, 249) - a hardcoded-white card fails the night half | day: ' + JSON.stringify(dayE) + ' night: ' + JSON.stringify(nightE),
   dayE.bg === 'rgba(255, 255, 255, 0.92)' && dayE.col === 'rgb(28, 37, 52)' && nightE.bg === 'rgba(32, 33, 37, 0.94)' && nightE.col === 'rgb(237, 242, 249)');
 await ev2(`document.getElementById('crModalNo').click()`);

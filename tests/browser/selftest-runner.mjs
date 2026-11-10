@@ -9,6 +9,13 @@
 //   fixture-empty    result block with ZERO checks, exit 0 -> runner FAIL
 //                    (Beta 1.94, deep audit SR-193-06: an empty checks array
 //                    used to pass - a drive that ran nothing proved nothing)
+//   fixture-fatal    all checks pass BUT the block records a fatal, exit 0
+//                    -> runner FAIL, and the fatal text is printed in the
+//                    drive's summary line (test-suite restructure,
+//                    2026-11-09: drives record a mid-scenario crash as
+//                    R.fatal in their catch; the runner used to ignore it,
+//                    so a drive that died halfway passed on its surviving
+//                    checks - the false-green hole)
 //   fixture-hang     never prints, never exits             -> runner FAIL
 //                    (killed via RUNNER_TIMEOUT_MS, set short for this test)
 //   fixture-truthy   a check recorded as 1 (truthy, not    -> runner FAIL
@@ -41,6 +48,7 @@ const FIXTURES = {
   'fixture-exc': BLOCK([['a', true]], 2),
   'fixture-noblock': `console.log('just noise, no result block');`,
   'fixture-empty': BLOCK([], 0),
+  'fixture-fatal': `console.log(JSON.stringify({ checks: [['a', true], ['b', true]], exceptions: 0, fatal: 'fixture mid-scenario boom' }));`,
   'fixture-hang': `setInterval(() => {}, 1000);`,
   'fixture-truthy': BLOCK([['a', 1], ['b', true]], 0),
   'fixture-throw': [
@@ -70,6 +78,7 @@ try {
     check(`${name}: runner exit ${wantPass ? 0 : 1}`, (r.status === 0) === wantPass);
     check(`${name}: runner printed a verdict`, new RegExp(name + ':.*(PASS|FAIL)').test(r.stdout || ''));
     if (name === 'fixture-hang') check('fixture-hang: killed promptly by the runner timeout', elapsed < 30000);
+    if (name === 'fixture-fatal') check('fixture-fatal: the recorded fatal is printed in the drive summary', /FATAL: fixture mid-scenario boom/.test(r.stdout || ''));
   }
   // Beta 1.96 (deep audit SR-195-09): browser STARTUP failures get a bounded
   // retry in the harness - a cold runner's first Chrome launch can die with

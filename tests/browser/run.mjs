@@ -3,8 +3,14 @@
 // Chrome DevTools Protocol, Node built-ins only), prints a JSON block
 //   { checks: [[name, passed], ...], exceptions: <count> }
 // as its final output. The verdict is computed here and requires ALL of:
-// a parseable result block, every check passed, zero page exceptions, and
-// the child exiting with code 0. A drive that prints a passing block and
+// a parseable result block, every check passed, zero page exceptions, NO
+// recorded fatal, and the child exiting with code 0. (Test-suite
+// restructure, 2026-11-09: drives record a mid-scenario crash as R.fatal
+// in their catch and still print their surviving checks - before this fix
+// the runner never read R.fatal, so a drive that died halfway could PASS
+// on the checks it happened to complete. A recorded fatal now FAILS the
+// drive and is printed in its summary line. Proven by the fixture-fatal
+// case in tests/browser/selftest-runner.mjs.) A drive that prints a passing block and
 // then terminates abnormally FAILS (audit finding T-01, 2026-10-28), and a
 // drive that never finishes is killed at the timeout and FAILS.
 // tests/browser/selftest-runner.mjs proves each of these verdicts.
@@ -78,9 +84,9 @@ for (const name of names) {
   const failed = R.checks.filter(c => c[1] !== true); // Beta 1.95 (deep audit SR-194-07): a check passes only on literal true - a truthy non-boolean (1, a string, an object) is a FAIL, so a drive cannot pass on a value it never actually verified
   const exc = Array.isArray(R.exceptions) ? R.exceptions.length : (R.exceptions ?? 0);
   const empty = R.checks.length === 0; // Beta 1.94 (deep audit SR-193-06): an empty checks array used to PASS - a drive that ran nothing proved nothing, and a harness break that swallowed a drive's checks would have shipped as green. Zero checks is a failure, named as such.
-  const pass = r.code === 0 && !empty && failed.length === 0 && exc === 0;
+  const pass = r.code === 0 && !empty && failed.length === 0 && exc === 0 && !R.fatal;
   if (!pass) allPass = false;
-  console.log(`${name}: ${R.checks.length - failed.length}/${R.checks.length} checks, ${exc} exceptions - ${pass ? 'PASS' : 'FAIL'}` + (r.code !== 0 ? ` (child exit ${r.code})` : '') + (empty ? ' (no checks ran)' : ''));
+  console.log(`${name}: ${R.checks.length - failed.length}/${R.checks.length} checks, ${exc} exceptions - ${pass ? 'PASS' : 'FAIL'}` + (r.code !== 0 ? ` (child exit ${r.code})` : '') + (empty ? ' (no checks ran)' : '') + (R.fatal ? ` FATAL: ${String(R.fatal).slice(0, 300)}` : ''));
   for (const [n] of failed) console.log(`  FAILED: ${n}`);
   if (Array.isArray(R.exceptions)) for (const x of R.exceptions) console.log(`  EXC: ${x}`);
 }

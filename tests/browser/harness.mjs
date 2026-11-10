@@ -202,7 +202,18 @@ export async function waitAbsent(poll, id, ms) {
   return await waitTrue(poll, `!document.getElementById(${JSON.stringify(id)})`, ms);
 }
 export async function pinDayTheme(ev) {
-  return await ev(`(function(){ if (typeof setThemeOverride === 'function') { setThemeOverride(false); if (typeof applyNight === 'function') applyNight(); if (typeof map !== 'undefined' && map && typeof setBasemap === 'function') setBasemap(); } return true; })()`);
+  // Test-suite restructure (2026-11-09): the basemap rebuild is CONDITIONAL.
+  // This used to call setBasemap() unconditionally, and bootThrough calls
+  // pinDayTheme on every boot - so nearly every drive started while the map
+  // style was mid-rebuild (the systemic "Style is not done loading" flake
+  // family). Now the day override is still always pinned (deterministic
+  // theme for the whole drive) and applyNight() still always runs (DOM-only,
+  // idempotent), but setBasemap() runs ONLY when the effective theme
+  // actually changes (night -> day). When it does run, the expression
+  // returns a promise that resolves once the new style reports loaded (or a
+  // 20 s bound passes), and evaluate() awaits promises - so the drive never
+  // walks into a half-loaded style, and a day boot pays nothing at all.
+  return await ev(`(function(){ if (typeof setThemeOverride === 'function') { const wasNight = (typeof isNight === 'function') ? isNight() : false; setThemeOverride(false); if (typeof applyNight === 'function') applyNight(); if (wasNight && typeof map !== 'undefined' && map && typeof setBasemap === 'function') { setBasemap(); return new Promise(res => { const t0 = Date.now(); (function chk(){ let loaded = false; try { loaded = !map || map.isStyleLoaded(); } catch (e) {} if (loaded || Date.now() - t0 > 20000) res(true); else setTimeout(chk, 200); })(); }); } } return true; })()`);
 }
 
 // T4/T7 (Tranche 4): scoped per-scenario reset. Deletes exactly the keys
