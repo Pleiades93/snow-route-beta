@@ -149,7 +149,7 @@ const { proc, ev, consoleLog, sleep } = await launchDrive();
 // the handoff window and bounds consecutive-pair lateral
 // displacement at 10px for pairs up to 120ms apart - the
 // legitimate motions are sway (<= 7.6px/s per flake, and
-// the centroid of 85 flakes moves far less) plus respawn
+// the centroid of the whole field moves far less) plus respawn
 // centroid steps (<= ~5px worst case per respawn, ~0.2
 // expected per pair). TITLE1-TITLE5 judge his title
 // lifetime rule (the title lives ONLY on the main pane:
@@ -197,6 +197,34 @@ const { proc, ev, consoleLog, sleep } = await launchDrive();
 // engine, its canvas, its container and the viewport defences are
 // untouched by 1.160 - these two checks exist so the retime can
 // never smuggle the probe's flaw in.
+//
+// Beta 1.161 (Andrew, 2026-11-10: approved Stage E of the
+// snow-realism examples page - "Stage E is perfect" - with his
+// condition in the same breath: the snow keeps accumulating
+// like the original, just higher up). The FALLING ports the
+// sample's recipe into parts/brand-snow.js (three layers sized
+// by scene area: a dense field of tiny twinkling specks, soft
+// sprite flakes, and a few rare extra-soft near blobs drifting
+// past). No check here pins the recipe itself - SNOW1/SNOW2
+// keep their structure/motion judgements over the whole field,
+// and SNOW5 keeps its bound and form: the new layers' worst
+// lateral sway is 6.6px/s per flake (the mid layer's amplitude
+// x frequency cap), under the 7.6px/s its name states, and
+// respawn centroid steps shrink with the far larger particle
+// count. The ACCUMULATION changes by exactly one value: the
+// ground peak 20 -> 58px, 58 being the rendered height of the
+// app's bottom bar (#tabBar) measured in the assembled page at
+// 390x844 (identically 58 at this drive's 420x900 - the bar's
+// height is width-independent). SNOW9 is the proof, not an
+// assumption: it waits for the settle cycle's full amount,
+// reads the PAINTED crest off the canvas (the 99th-percentile
+// column height of the unbroken near-white run from the canvas
+// floor, the lower of two reads 700ms apart, so a flake caught
+// landing cannot fake the crest), and demands it within 5px of
+// the expected crest - the pinned 58px peak x the two-sine
+// profile's maximum over the live viewport width - while the
+// bar itself, measured live in the same page, stands within
+// 2px of the pinned 58.
 const R = { checks: [] };
 const ok = (name, cond) => R.checks.push([name, cond === true]);
 
@@ -468,6 +496,31 @@ try {
 } catch (e) { snowPx = null; }
 ok('SNOW8 the accumulation is painted AT the canvas bottom edge (the ground forms on the viewport floor, not above it): the bottom rows of the painted canvas are ' + (snowPx ? Math.round(snowPx.bot * 100) : 'n/a') + '% near-white with engine ground ' + (snowA ? snowA.gnd.toFixed(1) : 'n/a') + 'px, canvas rect top ' + (snowPx ? snowPx.top : 'n/a') + ' / bottom ' + (snowPx ? snowPx.bottom : 'n/a') + ' against viewport height ' + (snowPx ? snowPx.ih : 'n/a'),
   !!snowPx && !!snowA && snowA.gnd > 0 && snowPx.bot >= 0.8 && Math.abs(snowPx.bottom - snowPx.ih) <= 2 && Math.abs(snowPx.top) <= 2);
+
+// SNOW9 (Beta 1.161): the raised peak, PROVEN on the painted
+// canvas - see the header. Poll the engine's own amount to the
+// top of its cycle, then read the crest twice, 700ms apart.
+const SNOW9_PEAK = 58; // the pinned peak: #tabBar's measured height at 390x844
+let snow9 = null;
+try {
+  const t9 = Date.now();
+  let amt9 = -1;
+  while (Date.now() - t9 < 30000) {
+    amt9 = await ev(`(() => (window.__snow ? window.__snow.amount() : -1))()`).then(x => (typeof x === 'number' ? x : -1)).catch(() => -1);
+    if (amt9 >= 0.995) break;
+    await new Promise(r => setTimeout(r, 300));
+  }
+  const scan9 = `(() => { const cv = document.getElementById('snowCv'); if (!cv || !cv.width) return ''; const W = window.innerWidth, H = window.innerHeight; const oc = document.createElement('canvas'); oc.width = W; oc.height = H; const c2 = oc.getContext('2d'); c2.drawImage(cv, 0, 0, W, H); const dd = c2.getImageData(0, 0, W, H).data; const crest = new Array(W).fill(0); for (let x = 0; x < W; x++) { let run = 0; for (let y = H - 1; y >= 0; y--) { const i = (y * W + x) * 4; if (dd[i + 3] > 200 && dd[i] > 200 && dd[i + 1] > 200 && dd[i + 2] > 200) run++; else break; } crest[x] = run; } crest.sort((a, b) => a - b); const p99 = crest[Math.min(W - 1, Math.floor(W * 0.99))]; const bar = document.getElementById('tabBar'); const br = bar ? bar.getBoundingClientRect() : null; return JSON.stringify({ p99: p99, barH: br ? Math.round(br.height * 100) / 100 : -1, w: W }); })()`;
+  const s91 = await ev(scan9).then(x => typeof x === 'string' && x ? JSON.parse(x) : null);
+  await new Promise(r => setTimeout(r, 700));
+  const s92 = await ev(scan9).then(x => typeof x === 'string' && x ? JSON.parse(x) : null);
+  let shapeMax = 0;
+  const wLive = (s91 && s91.w) || 420;
+  for (let x = 0; x <= wLive; x++) { const v = 0.72 + 0.16 * Math.sin(x * 0.045 + 1.7) + 0.12 * Math.sin(x * 0.013 + 0.4); if (v > shapeMax) shapeMax = v; }
+  snow9 = { amt: amt9, peak: (s91 && s92) ? Math.min(s91.p99, s92.p99) : -1, exp: SNOW9_PEAK * shapeMax, barH: s91 ? s91.barH : -1, s1: s91 ? s91.p99 : -1, s2: s92 ? s92.p99 : -1 };
+} catch (e) { snow9 = null; }
+ok('SNOW9 RAISED PEAK (Beta 1.161 - Andrew: accumulating like the original, just higher): at the settle cycle\'s full amount (' + (snow9 ? snow9.amt.toFixed(3) : 'n/a') + ') the PAINTED snow crest stands ' + (snow9 ? snow9.peak : 'n/a') + 'px (two reads ' + (snow9 ? snow9.s1 : 'n/a') + '/' + (snow9 ? snow9.s2 : 'n/a') + 'px, the lower judged) against the expected crest ' + (snow9 ? snow9.exp.toFixed(1) : 'n/a') + 'px = the pinned 58px peak (the bottom bar\'s measured height) x the ground profile\'s maximum over the live width; the bar itself measures ' + (snow9 ? snow9.barH : 'n/a') + 'px in this same page (58 +/- 2)',
+  !!snow9 && snow9.amt >= 0.995 && Math.abs(snow9.peak - snow9.exp) <= 5 && Math.abs(snow9.barH - SNOW9_PEAK) <= 2);
 
 // TITLE LIFETIME + SUB-PANE SNOW + LIST ROWS (Beta 1.159): navigate
 // the boot menu's panes with real clicks and judge what Andrew's
