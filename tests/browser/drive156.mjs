@@ -119,8 +119,8 @@ ok('A6 PREVIEW BILLS THE TRIM (Beta 1.130, re-scan N1): on the check screen the 
 await ev2(`document.getElementById('pvSaveBtn').click()`);
 await poll(`document.getElementById('rmNamePane').classList.contains('on')`, 10000);
 await ev2(`(() => { document.getElementById('crNameInput').value = 'Sector Test Route'; document.getElementById('crSaveBtn').click(); return true; })()`);
-const savedA = await poll(`(() => { try { const rec = JSON.parse(localStorage.getItem('snowroute.v2.userpacks') || '{}'); return Object.values(rec).some(p => p.name === 'Sector Test Route'); } catch (e) { return false; } })()`, 15000);
-const packA = await J(`(() => { const rec = JSON.parse(localStorage.getItem('snowroute.v2.userpacks') || '{}'); const p = Object.values(rec).find(x => x.name === 'Sector Test Route'); if (!p) return { found: false }; const g = computeStretches(p.roads); return { found: true, segs: p.roads['Long Road'].length, total: Math.round(g['Long Road'].total), pts: p.roads['Long Road'].reduce((a, s) => a + s.length, 0) }; })()`);
+const savedA = await poll(`(async () => { const m = await upGetAll(); return !!m && Object.values(m).some(p => p.name === 'Sector Test Route'); })()`, 15000); // Beta 1.166: the saved pack's home is the IndexedDB store - the poll reads it there
+const packA = JSON.parse(await ev2(`(async () => { const m = await upGetAll(); const p = m ? Object.values(m).find(x => x.name === 'Sector Test Route') : null; if (!p) return JSON.stringify({ found: false }); const g = computeStretches(p.roads); return JSON.stringify({ found: true, segs: p.roads['Long Road'].length, total: Math.round(g['Long Road'].total), pts: p.roads['Long Road'].reduce((a, s) => a + s.length, 0) }); })()`));
 ok('A7 THE SAVE STORES CHOSEN SECTORS ONLY: the saved pack\'s Long Road is THREE segments measuring ~964 m (the draft\'s whole street was 1,608 m) - the unchosen ends never entered the pack, and the pack format is the plain segment list it always was | saved: ' + savedA + ' | ' + JSON.stringify(packA),
   savedA === true && packA.found === true && packA.segs === 3 && Math.abs(packA.total - 964) <= 10);
 
@@ -310,8 +310,8 @@ const nameC = await poll(`document.getElementById('rmNamePane').classList.contai
 const preC = await J(`({ prefill: document.getElementById('crNameInput').value, saveLbl: document.getElementById('crSaveBtn').textContent, summary: document.getElementById('crNameSummary').textContent })`);
 await ev2(`(() => { document.getElementById('crNameInput').value = 'Mapped Route 128'; return true; })()`);
 await ev2(`document.getElementById('crSaveBtn').click()`);
-const savedC = await poll(`!creating && Object.values(JSON.parse(localStorage.getItem('snowroute.v2.userpacks') || '{}')).some(p => p.name === 'Mapped Route 128')`, 15000);
-const packC = await J(`(() => { const rec = JSON.parse(localStorage.getItem('snowroute.v2.userpacks') || '{}'); const p = Object.values(rec).find(x => x.name === 'Mapped Route 128'); return p ? { roads: Object.keys(p.roads).sort() } : { roads: [] }; })()`);
+const savedC = await poll(`(async () => { if (creating) return false; const m = await upGetAll(); return !!m && Object.values(m).some(p => p.name === 'Mapped Route 128'); })()`, 15000); // Beta 1.166: store read, as in A7 above
+const packC = JSON.parse(await ev2(`(async () => { const m = await upGetAll(); const p = m ? Object.values(m).find(x => x.name === 'Mapped Route 128') : null; return JSON.stringify(p ? { roads: Object.keys(p.roads).sort() } : { roads: [] }); })()`));
 ok('157-C2 THE KEPT FLOW SAVES END-TO-END: after a "+ Add a street" round trip (Done still reads "Done"), "Save route" on the check screen advances to name-it - its own step, name pre-filled with the next Route guess, the summary billing 2 streets, its button also "Save route" - and that button is the actual save | Done label: ' + doneC2 + ', name-it: ' + nameC + ' | ' + JSON.stringify(preC) + ' | saved: ' + savedC + ' ' + JSON.stringify(packC),
   doneC2 === 'Done' && nameC === true && /^Route \d+$/.test(preC.prefill) && preC.saveLbl === 'Save route' && preC.summary.indexOf('2 streets') >= 0 && savedC === true && packC.roads.join() === 'Alpha Street,Long Road');
 

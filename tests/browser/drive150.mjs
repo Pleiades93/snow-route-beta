@@ -249,8 +249,8 @@ ok('A9 name-it is its own step (kept, Andrew - the preview\'s "Save route" advan
 await ev(`document.getElementById('crNameInput').value = 'Route 6W'`);
 await ev(`document.getElementById('crSaveBtn').click()`);
 await poll(`ROUTE_PACKS.some(p => p.id === 'route-6w') && !creating`, 10000);
-const A10 = await J(`({ rec: JSON.parse(localStorage.getItem('snowroute.v2.userpacks') || '{}'), listed: !!document.querySelector('#rmRoutes .routeRow[data-route="route-6w"]'), pre: JSON.parse(localStorage.getItem('snowroute.route-6w.v5.preload') || 'null') })`);
-ok('A10 save persists the pack in snowroute.v2.userpacks (2 streets, Bordeaux main), lists it in the Routes menu, and gives it an honest preload record (0 of its tiles) | ' + JSON.stringify({ keys: Object.keys(A10.rec), pre: A10.pre }),
+const A10 = JSON.parse(await ev(`(async () => { const m = await upGetAll(); return JSON.stringify({ rec: m || {}, listed: !!document.querySelector('#rmRoutes .routeRow[data-route="route-6w"]'), pre: JSON.parse(localStorage.getItem('snowroute.route-6w.v5.preload') || 'null') }); })()`)); // Beta 1.166: the pack's home is the IndexedDB store now - read it there
+ok('A10 save persists the pack in the IndexedDB store (2 streets, Bordeaux main), lists it in the Routes menu, and gives it an honest preload record (0 of its tiles) | ' + JSON.stringify({ keys: Object.keys(A10.rec), pre: A10.pre }),
   !!A10.rec['route-6w'] && Object.keys(A10.rec['route-6w'].roads).length === 2 && A10.rec['route-6w'].main.join() === 'Bordeaux Drive' && A10.listed && A10.pre && A10.pre.routeSaved === 0 && A10.pre.routeTotal > 0);
 await ev(`document.querySelector('#rmRoutes .routeRow[data-route="route-6w"]').click()`);
 await poll(`typeof activeRoute !== 'undefined' && activeRoute && activeRoute.id === 'route-6w'`, 20000);
@@ -393,7 +393,7 @@ await poll(`performance.timeOrigin !== ${origin0}`, 20000);
 await poll(`!!window.__bootAt`, 30000);
 await ev(`document.getElementById('rmChoose').click()`);
 const P1 = await J(`({ rows: [...document.querySelectorAll('#rmRoutes .routeRow')].map(r => r.getAttribute('data-route')) })`);
-ok('D1 after a reload the created route is still listed (boot merge from the userpacks record) | ' + JSON.stringify(P1.rows), P1.rows.includes('route-6w') && P1.rows.includes('5w'));
+ok('D1 after a reload the created route is still listed (boot registration from the store) | ' + JSON.stringify(P1.rows), P1.rows.includes('route-6w') && P1.rows.includes('5w'));
 await ev(`document.querySelector('#rmRoutes .routeRow[data-route="5w"]').click()`);
 await poll(`typeof routeLoaded !== 'undefined' && routeLoaded === true`, 20000);
 await poll(`!document.getElementById('splash')`, 20000);
@@ -401,7 +401,7 @@ const bak = await ev(`buildBackup()`);
 const bakObj = JSON.parse(bak);
 ok('D2 the backup carries the created route\'s definition (userpacks) and its route state',
   !!bakObj.userpacks && !!bakObj.userpacks['route-6w'] && Object.keys(bakObj.userpacks['route-6w'].roads).length === 2 && !!bakObj.routes['route-6w']);
-await resetRoute(ev, '5w'); await resetRoute(ev, 'route-6w', ['snowroute.v2.userpacks']); // T7: scoped reset - D3 owns both routes' slots + the created-routes record, nothing else (premise statement in INVENTORY-T47.md)
+await resetRoute(ev, '5w'); await resetRoute(ev, 'route-6w'); await ev(`upDel('route-6w')`); // T7: scoped reset - D3 owns both routes' slots + the created route's definition, nothing else (premise statement in INVENTORY-T47.md). Beta 1.166: the definition's home is the IndexedDB store - resetRoute covers localStorage only, so the wipe deletes the store record explicitly
 const origin1 = await ev(`performance.timeOrigin`);
 await ev(`location.reload()`);
 await sleep(1200);
@@ -419,8 +419,8 @@ await sleep(1500);
 await poll(`typeof ROUTE_PACKS !== 'undefined'`, 30000);
 await poll(`!!window.__bootAt`, 30000);
 await ev(`document.getElementById('rmChoose').click()`);
-const P3 = await J(`({ rows: [...document.querySelectorAll('#rmRoutes .routeRow')].map(r => r.getAttribute('data-route')), rec: Object.keys(JSON.parse(localStorage.getItem('snowroute.v2.userpacks') || '{}')) })`);
-ok('D4 restore re-registers the created route (record written, route listed after the restore reload)', P3.rows.includes('route-6w') && P3.rec.includes('route-6w'));
+const P3 = JSON.parse(await ev(`(async () => { const m = await upGetAll(); return JSON.stringify({ rows: [...document.querySelectorAll('#rmRoutes .routeRow')].map(r => r.getAttribute('data-route')), rec: Object.keys(m || {}) }); })()`));
+ok('D4 restore re-registers the created route (definition back in the store, route listed after the restore reload)', P3.rows.includes('route-6w') && P3.rec.includes('route-6w'));
 await ev(`document.querySelector('#rmRoutes .routeRow[data-route="route-6w"]').click()`);
 await poll(`typeof activeRoute !== 'undefined' && activeRoute && activeRoute.id === 'route-6w'`, 20000);
 const P4 = await J(`({ names: STREETNAMES.length, bordeaux: streetComplete('Bordeaux Drive') })`);

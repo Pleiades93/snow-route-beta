@@ -59,8 +59,8 @@ await ev(`crToggleSector('Sectoria Avenue', 1)`); // un-pick the MIDDLE sector
 const a2 = await J(`(() => { const rec = crStreetParts('Sectoria Avenue') || { parts: [], total: 0 }; return { sectors: (draft.sectors['Sectoria Avenue'] || []).slice(), chosen: crStreetChosenM('Sectoria Avenue', rec), segs: (crFilteredRoads()['Sectoria Avenue'] || []).length, total: rec.total, parts: rec.parts.map(p => Math.round(crLineLen(p))) }; })()`);
 ok('A2 sectors 0+2 stay picked (the middle un-picked) and create bills exactly those two pieces | ' + JSON.stringify(a2),
   a2.sectors.join() === '0,2' && a2.segs === 2 && Math.abs(a2.chosen - (a2.parts[0] + a2.parts[2])) < 1.5);
-await ev(`(() => { $('crNameInput').value = 'Drive165 Route'; $('crAreaInput').value = 'Testville'; saveDraftRoute(); return true; })()`);
-const a3 = await J(`({ packs: ROUTE_PACKS.map(p => p.id), rec: JSON.parse(localStorage.getItem('snowroute.v2.userpacks') || '{}') })`);
+await ev(`(async () => { $('crNameInput').value = 'Drive165 Route'; $('crAreaInput').value = 'Testville'; await saveDraftRoute(); return true; })()`); // Beta 1.166: the save is an async store write now - awaited, and the record is read from the store below
+const a3 = JSON.parse(await ev(`(async () => { const m = await upGetAll(); return JSON.stringify({ packs: ROUTE_PACKS.map(p => p.id), rec: m || {} }); })()`));
 const packId = Object.keys(a3.rec).find(id => a3.rec[id].name === 'Drive165 Route');
 const savedSegs = packId ? (a3.rec[packId].roads['Sectoria Avenue'] || []).length : -1;
 ok('A3 the route saves with Sectoria stored as TWO disconnected segments (one per picked run) | pack ' + packId + ' segs ' + savedSegs,

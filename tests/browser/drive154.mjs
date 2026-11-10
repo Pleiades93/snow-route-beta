@@ -203,6 +203,7 @@ ok('D2 BOOT MANUAL DOOR: from boot, Search manually reaches the typed city pane 
 await ev2(`(() => { const rec = { 'route-2': ${JSON.stringify(TEST_PACK('Route 2'))}, 'route-3': ${JSON.stringify(TEST_PACK('Route 3'))}, 'route-4': ${JSON.stringify(TEST_PACK('Route 4'))} }; localStorage.setItem('snowroute.v2.userpacks', JSON.stringify(rec)); for (const id of Object.keys(rec)) { const rk = routeKeys(id); const vals = { done: '[]', times: '{}', hist: '[]', notes: '{}', via: '{}', trail: '[]', cov: '{}', start: '0', flip: '{}', sides: '{"p":{},"t":{}}', sess: '[]', pre: '{"at":0}', snap: '{"x":1}', mig: '1' }; for (const f of Object.keys(rk)) localStorage.setItem(rk[f], vals[f] || 'x'); } return true; })()`);
 await send('Page.reload', { ignoreCache: false }, PAGE_S);
 await bootRoute();
+await ev2(`window.__userPacksReady`); // Beta 1.166: the seeded record drains into the IndexedDB store at this boot - settle the drain before any store-side assertion (the rows themselves register synchronously from the legacy record, exactly as a real first-1.166 boot shows them)
 
 // ---- phase E: delete an INACTIVE created route ----
 const listE = await openListTab();
@@ -235,15 +236,15 @@ await ev2(`(() => { clearThemeOverride(); applyNight(); return true; })()`);
 ok('E3 NIGHT TOKENS (Andrew\'s requirement): the confirm card\'s computed background + text colour EQUAL the theme tokens in BOTH modes - day rgba(255, 255, 255, 0.92) / rgb(28, 37, 52), night rgba(32, 33, 37, 0.94) / rgb(237, 242, 249) - a hardcoded-white card fails the night half | day: ' + JSON.stringify(dayE) + ' night: ' + JSON.stringify(nightE),
   dayE.bg === 'rgba(255, 255, 255, 0.92)' && dayE.col === 'rgb(28, 37, 52)' && nightE.bg === 'rgba(32, 33, 37, 0.94)' && nightE.col === 'rgb(237, 242, 249)');
 await ev2(`document.getElementById('crModalNo').click()`);
-const cancelE = await J(`({ rec: !!readUserPacks()['route-2'], key: localStorage.getItem(routeKeys('route-2').done), row: !!document.querySelector('#rmRoutes .routeRow[data-route="route-2"]'), modalHidden: document.getElementById('crModal').classList.contains('hidden') })`);
+const cancelE = JSON.parse(await ev2(`(async () => { const rec = await upGet('route-2'); return JSON.stringify({ rec: !!rec, key: localStorage.getItem(routeKeys('route-2').done), row: !!document.querySelector('#rmRoutes .routeRow[data-route="route-2"]'), modalHidden: document.getElementById('crModal').classList.contains('hidden') }); })()`)); // Beta 1.166: the definition's home is the store - presence is read there
 ok('E4 CANCEL LEAVES EVERYTHING: the record, the route\'s storage keys and the row all survive a Cancel | ' + JSON.stringify(cancelE),
   cancelE.rec === true && cancelE.key === '[]' && cancelE.row === true && cancelE.modalHidden === true);
 await ev2(`(() => { const r = document.querySelector('#rmRoutes .routeRow[data-route="route-2"] .routeDel'); if (r) r.click(); return true; })()`);
 await poll(`!document.getElementById('crModal').classList.contains('hidden')`, 10000);
 await ev2(`document.getElementById('crModalYes').click()`);
-const goneE = await poll(`!readUserPacks()['route-2'] && !ROUTE_PACKS.some(p => p.id === 'route-2') && !document.querySelector('#rmRoutes .routeRow[data-route="route-2"]')`, 15000);
+const goneE = await poll(`(async () => !(await upGet('route-2')) && !ROUTE_PACKS.some(p => p.id === 'route-2') && !document.querySelector('#rmRoutes .routeRow[data-route="route-2"]'))()`, 15000);
 const keysE = await J(`({ left: Object.values(routeKeys('route-2')).filter(k => localStorage.getItem(k) !== null) })`);
-ok('E5 DELETE LANDS: the userpacks entry is gone, the pack is unregistered, the row is gone, and EVERY routeKeys key of the route reads null in localStorage (the whole slot, preload record + snapshot + migration flag included) | surviving keys: ' + JSON.stringify(keysE.left),
+ok('E5 DELETE LANDS: the store record is gone, the pack is unregistered, the row is gone, and EVERY routeKeys key of the route reads null in localStorage (the whole slot, preload record + snapshot + migration flag included) | surviving keys: ' + JSON.stringify(keysE.left),
   goneE === true && (keysE.left || []).length === 0);
 
 // ---- phase F: delete the ACTIVE created route -> the boot picker ----
@@ -254,21 +255,21 @@ await ev2(`(() => { const r = document.querySelector('#rmRoutes .routeRow[data-r
 await poll(`!document.getElementById('crModal').classList.contains('hidden')`, 10000);
 await ev2(`document.getElementById('crModalYes').click()`);
 const bootF = await poll(`routeLoaded === false && activeRoute === null && document.getElementById('routeMenu').classList.contains('boot') && document.getElementById('routeMenu').classList.contains('show') && !document.getElementById('routeMenu').classList.contains('tab') && document.getElementById('rmMain').classList.contains('on')`, 15000);
-const stateF = await J(`({ names: STREETNAMES.length, rec: !!readUserPacks()['route-3'], left: Object.values(routeKeys('route-3')).filter(k => localStorage.getItem(k) !== null), row: !!document.querySelector('#rmRoutes .routeRow[data-route="route-3"]') })`);
+const stateF = JSON.parse(await ev2(`(async () => { const rec = await upGet('route-3'); return JSON.stringify({ names: STREETNAMES.length, rec: !!rec, left: Object.values(routeKeys('route-3')).filter(k => localStorage.getItem(k) !== null), row: !!document.querySelector('#rmRoutes .routeRow[data-route="route-3"]') }); })()`));
 ok('F1 DELETE THE ACTIVE ROUTE: the app returns to the BOOT PICKER (route unloaded, menu in boot mode over the main pane, zero route geometry in memory), its record + keys are wiped and its row is gone | loaded first: ' + loadedF + ' | ' + JSON.stringify(stateF),
   loadedF === true && bootF === true && stateF.names === 0 && stateF.rec === false && (stateF.left || []).length === 0 && stateF.row === false);
 
 // ---- phase G: a storage failure leaves the route listed and intact ----
 await bootRoute();
 await openListTab();
-await ev2(`(() => { window.__origSet = localStorage.setItem.bind(localStorage); localStorage.setItem = (k, v) => { if (k === 'snowroute.v2.userpacks') throw new Error('quota'); return window.__origSet(k, v); }; return true; })()`);
+await ev2(`(() => { const orig = IDBObjectStore.prototype.delete; window.__origDel = orig; IDBObjectStore.prototype.delete = function (k) { if (this.name === 'packs') throw new DOMException('drive154 injected delete failure', 'QuotaExceededError'); return orig.apply(this, arguments); }; return true; })()`); // Beta 1.166: the gated write of a deletion is the STORE delete now - the fault seam moved from the localStorage record write to the IndexedDB delete, the claim is unchanged
 await ev2(`(() => { const r = document.querySelector('#rmRoutes .routeRow[data-route="route-4"] .routeDel'); if (r) r.click(); return true; })()`);
 await poll(`!document.getElementById('crModal').classList.contains('hidden')`, 10000);
 await ev2(`document.getElementById('crModalYes').click()`);
 const toastG = await poll(`/Storage problem/.test(document.getElementById('toast').textContent)`, 15000);
-const stateG = await J(`({ rec: !!readUserPacks()['route-4'], pack: ROUTE_PACKS.some(p => p.id === 'route-4'), row: !!document.querySelector('#rmRoutes .routeRow[data-route="route-4"]'), key: localStorage.getItem(routeKeys('route-4').done) })`);
-await ev2(`(() => { localStorage.setItem = window.__origSet; return true; })()`);
-ok('G1 STORAGE FAILURE: when the userpacks write throws, deletion toasts the storage problem and NOTHING is removed - the record, the pack, the row and the route\'s keys all stay | ' + JSON.stringify(stateG),
+const stateG = JSON.parse(await ev2(`(async () => { const rec = await upGet('route-4'); return JSON.stringify({ rec: !!rec, pack: ROUTE_PACKS.some(p => p.id === 'route-4'), row: !!document.querySelector('#rmRoutes .routeRow[data-route="route-4"]'), key: localStorage.getItem(routeKeys('route-4').done) }); })()`));
+await ev2(`(() => { IDBObjectStore.prototype.delete = window.__origDel; return true; })()`);
+ok('G1 STORAGE FAILURE: when the store delete throws, deletion toasts the storage problem and NOTHING is removed - the record, the pack, the row and the route\'s keys all stay | ' + JSON.stringify(stateG),
   toastG === true && stateG.rec === true && stateG.pack === true && stateG.row === true && stateG.key === '[]');
 
 // ---- phase H: Beta 1.146 (census C2) - the slot wipe is VERIFIED ----
@@ -282,13 +283,14 @@ ok('G1 STORAGE FAILURE: when the userpacks write throws, deletion toasts the sto
 await ev2(`(() => { const rec = readUserPacks() || {}; rec['route-5'] = ${JSON.stringify(TEST_PACK('Route 5'))}; localStorage.setItem('snowroute.v2.userpacks', JSON.stringify(rec)); const rk = routeKeys('route-5'); const vals = { done: '[]', times: '{}', hist: '[]', notes: '{}', via: '{}', trail: '[]', cov: '{}', start: '0', flip: '{}', sides: '{"p":{},"t":{}}', sess: '[]', pre: '{"at":0}', snap: '{"x":1}', mig: '1' }; for (const f of Object.keys(rk)) localStorage.setItem(rk[f], vals[f] || 'x'); return true; })()`);
 await send('Page.reload', { ignoreCache: false }, PAGE_S);
 await bootRoute();
+await ev2(`window.__userPacksReady`); // Beta 1.166: route-5's fresh legacy record drains at this boot - settle it before the delete (its shadow-removal path is exercised separately in drive185)
 await openListTab();
 await ev2(`(() => { window.__origRm = Storage.prototype.removeItem; Storage.prototype.removeItem = function (k) { if (k === routeKeys('route-5').hist) throw new Error('injected delete failure'); return window.__origRm.call(this, k); }; return true; })()`);
 await ev2(`(() => { const r = document.querySelector('#rmRoutes .routeRow[data-route="route-5"] .routeDel'); if (r) r.click(); return true; })()`);
 await poll(`!document.getElementById('crModal').classList.contains('hidden')`, 10000);
 await ev2(`document.getElementById('crModalYes').click()`);
 const toastH = await poll(`/could not be deleted/.test(document.getElementById('toast').textContent)`, 15000);
-const stateH = await J(`({ toast: document.getElementById('toast').textContent, rec: !!readUserPacks()['route-5'], pack: ROUTE_PACKS.some(p => p.id === 'route-5'), row: !!document.querySelector('#rmRoutes .routeRow[data-route="route-5"]'), histLeft: localStorage.getItem(routeKeys('route-5').hist), doneLeft: localStorage.getItem(routeKeys('route-5').done), notesLeft: localStorage.getItem(routeKeys('route-5').notes) })`);
+const stateH = JSON.parse(await ev2(`(async () => { const rec = await upGet('route-5'); return JSON.stringify({ toast: document.getElementById('toast').textContent, rec: !!rec, pack: ROUTE_PACKS.some(p => p.id === 'route-5'), row: !!document.querySelector('#rmRoutes .routeRow[data-route="route-5"]'), histLeft: localStorage.getItem(routeKeys('route-5').hist), doneLeft: localStorage.getItem(routeKeys('route-5').done), notesLeft: localStorage.getItem(routeKeys('route-5').notes) }); })()`));
 await ev2(`(() => { Storage.prototype.removeItem = window.__origRm; return true; })()`);
 ok('H1 VERIFIED WIPE, ONE KEY FAILS: the failure is SURFACED (toast says some saved data could not be deleted, never the plain success toast), the definition removal stands (record, pack and row all gone), every other key was still attempted and deleted, and the one failing key remains as the reported residue | ' + JSON.stringify(stateH),
   toastH === true && /could not be deleted/.test(stateH.toast || '') && stateH.toast !== 'Route deleted' && stateH.rec === false && stateH.pack === false && stateH.row === false && stateH.histLeft === '[]' && stateH.doneLeft === null && stateH.notesLeft === null);
