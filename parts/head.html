@@ -291,6 +291,8 @@ body.snow-scene #routeMenu.boot { background-color: transparent; } /* Beta 1.159
 /* Beta 1.153 (Variant A): the boot panes (the Choose/Create buttons) start lowered and clear, then fade/slide in beneath the rising title - entrance delay .55s, the mock's tuned figure, so they arrive as the title does. visibility rides the same delay so an invisible pane can never take a tap. Scoped to .boot: the tab-mode menu is untouched. */
 #routeMenu.boot .rmPane { opacity: 0; visibility: hidden; transform: translateY(14px); }
 #routeMenu.boot.show .rmPane { opacity: 1; visibility: visible; transform: none; transition: opacity .5s ease .55s, transform .5s cubic-bezier(.22,1,.36,1) .55s, visibility 0s linear .55s; }
+#routeMenu.boot #rmMain.hold { opacity: 0; visibility: hidden; transform: translateY(14px); } /* Beta 1.165 (Andrew, on his 1.164 phone test): the two main-menu pills WAIT for the rise. Through 1.164 the .boot.show pane fade above (its .55s delay, .5s ramp) ran while the brand block was still flying its 1.3s, so the rising icon and title crossed the fading pills for about a second; he directed the fade to begin only once the block has cleared the pills' path. arm() (create-save.js) puts .hold on rmMain in the same synchronous block that starts the flight: this rule pins the pane to its pre-show values against the .show fade (it outranks that rule on ids) until arm()'s geometric watch releases it. Scoped to rmMain in boot mode and to the cold open only - no other pane is ever held, and a later return to rmMain carries no hold (there is no flight to clear). */
+#routeMenu.boot.show #rmMain.go { transition: opacity .5s ease, transform .5s cubic-bezier(.22,1,.36,1), visibility 0s linear; } /* Beta 1.165: the release - the pane's OWN fade (the .boot.show durations and easings verbatim) with its .55s delay zeroed, so when arm() swaps .hold for .go at the clearance moment the fade starts AT that moment, not .55s after it. arm() removes .go when the fade ends. */
 #routeMenu.boot.show, #routeMenu.open { opacity: 1; visibility: visible; transform: none; pointer-events: auto; }
 #routeMenu.open { transition: transform var(--anim-dur) var(--ease-open), opacity .3s ease, visibility 0s; }
 #routeMenu.notrans { transition: none !important; } /* the boot-to-parked swap in finish() must not animate */
@@ -448,7 +450,7 @@ input, textarea { caret-color: currentColor; } /* Beta 1.125 (Andrew): the typin
 <div id="hud">
   <div id="warn">Not saving — storage is full or blocked</div>
   <div class="row">
-    <div class="titleStack"><div class="title">Snow Route Beta</div><div class="ver" id="ver">Beta 1.164</div></div>
+    <div class="titleStack"><div class="title">Snow Route Beta</div><div class="ver" id="ver">Beta 1.165</div></div>
   </div>
   <div id="stats"></div>
 </div>
