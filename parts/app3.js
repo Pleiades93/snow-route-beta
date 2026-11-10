@@ -5,7 +5,8 @@ function refRun() { // newest qualifying clean wins (history is chronological, s
   for (let i = history.length - 1; i >= 0; i--) { const h = history[i]; if (h.items && Object.keys(h.items).length >= 5) return h; }
   return null;
 }
-function cleanWorkM(h) { // side-metres a saved clean actually covered: its recorded sides when present, else its completed streets at full length
+function cleanWorkM(h) { // side-metres a saved clean actually covered
+  if (h && typeof h.workM === 'number' && isFinite(h.workM) && h.workM >= 0) return h.workM; // Beta 1.167 (run/pace fix round, B2): cleans archived by 1.167+ carry the run-attributed figure Finish measured (buildSnap's workM) - it is read VERBATIM, so pre-Start work never counts (RP-05), a later geometry edit cannot re-price the clean (RP-06), and a partially-recorded sides map cannot short-circuit into an undercount (RP-09). Legacy entries (no workM) derive below, exactly as they always have.
   if (h && h.sides && h.sides.p && typeof h.sides.p === 'object') { let s = 0; for (const n of STREETNAMES) { const p = h.sides.p[n]; if (!Array.isArray(p)) continue; STRETCH[n].parts.forEach((part, i) => { const v = p[i] | 0; const L = segLenM(part); if (v & 1) s += L; if (v & 2) s += L; }); } if (s > 0) return s; }
   const items = (h && h.items) || {}; let s = 0; for (const n of Object.keys(items)) if (STRETCH[n]) s += STRETCH[n].total * 2; return s;
 }
@@ -55,7 +56,8 @@ function renderPace() {
   if (histOpen) {
     let any = 0;
     for (let i = history.length - 1; i >= 0; i--) {
-      const d = histDur(history[i]); if (!d) continue;
+      const d = histDur(history[i]);
+      if (!d) { html += '<div class="prow histRow" data-i="' + i + '"><span>' + fmtWhen(history[i].at) + '</span><span>time not recorded · ' + Object.keys(history[i].items || {}).length + ' of ' + STREETNAMES.length + ' streets ›</span></div>'; any++; continue; } // Beta 1.167 (B4, RP-04): a legacy clean whose item times are all null is still LISTED - and opens, and deletes through the same two-tap flow. Through 1.166 histDur's null skipped it here while refRun could still pick it as the pace reference: it existed, set the pace, and could never be seen or removed.
       html += '<div class="prow histRow" data-i="' + i + '"><span>' + fmtWhen(history[i].at) + '</span><span>' + fmtDur(d.durMs) + ' · ' + d.count + ' of ' + STREETNAMES.length + ' streets ›</span></div>';
       any++;
     }
@@ -91,14 +93,16 @@ function openClean(i) {
   cv.appendChild(head);
   const d = histDur(h);
   const meta = document.createElement('div'); meta.className = 'cvMeta';
-  meta.textContent = (d ? ('Total time ' + fmtDur(d.durMs) + ' · ') : '') + (h.items ? Object.keys(h.items).length : 0) + ' streets' + (h.km ? (' · ' + h.km + ' km of GPS trail') : '') + (h.startedAt ? (' · started ' + fmtClock(new Date(h.startedAt))) : '') + '\nPer-street span = first side marked to last side marked (includes any work in between). Tap a street for its details.';
+  const elapsedMs = d ? Date.parse(h.at) - d.start : NaN; // Beta 1.167 (B3, RP-08): the SECOND interval - the run's start to the Finish tap (h.at). Through 1.166 the single 'Total time' figure was histDur's start-to-LAST-COMPLETION span while the pace rate divided by start-to-Finish: two different intervals, one label, a 15.8% skew on a 30-minute tail. Both are shown now, each under its own label; the math is unchanged.
+  const paceRate = (d && !isNaN(elapsedMs) && elapsedMs >= 0) ? workRateMh(cleanWorkM(h), d.start, Date.parse(h.at), 0.05) : null; // the pace divides the clean's work by the TOTAL ELAPSED window - the same window workRateMh uses for the reference figure in renderPace - and the meta line says so
+  meta.textContent = (d ? ('Streets done in ' + fmtDur(d.durMs) + ' · Total elapsed ' + fmtDur(Math.max(0, elapsedMs)) + ' · ') : '') + (h.items ? Object.keys(h.items).length : 0) + ' streets' + (h.km ? (' · ' + h.km + ' km of GPS trail') : '') + (h.pathShortened ? ' · saved GPS path shortened by the trail cap' : '') + (paceRate ? (' · Pace ' + fmtRate(paceRate) + ' (work / total elapsed)') : '') + (h.startedAt ? (' · started ' + fmtClock(new Date(h.startedAt))) : '') + '\nPace divides the clean\'s recorded work by its total elapsed time (start to the Finish tap). Per-street span = first side marked to last side marked (includes any work in between). Tap a street for its details.';
   cv.appendChild(meta);
   const items = h.items || {};
   const order = Object.keys(items).filter(n => STREETSET.has(n)).sort((x, y) => String(items[x] || '9999').localeCompare(String(items[y] || '9999')));
   let prev = h.startedAt ? Date.parse(h.startedAt) : NaN;
   order.forEach(n => {
     const t = items[n] ? Date.parse(items[n]) : NaN;
-    const dur = (!isNaN(t) && !isNaN(prev)) ? t - prev : NaN;
+    const dur = (!isNaN(t) && !isNaN(prev) && t >= prev) ? t - prev : NaN; // Beta 1.167 (B3, RP-07): a completion stamped BEFORE the previous one (a skewed import) yields no gap at all - never a negative duration
     const stArr = (h.sides && h.sides.t && Array.isArray(h.sides.t[n])) ? h.sides.t[n].flat().map(x => Date.parse(x)).filter(x => !isNaN(x)) : []; // Beta 1.91: the street's own side stamps - span = first side marked to last side marked
     const span = stArr.length ? Math.max.apply(null, stArr) - Math.min.apply(null, stArr) : NaN;
     if (!isNaN(t)) prev = t;
@@ -106,14 +110,14 @@ function openClean(i) {
     const top = document.createElement('div'); top.className = 'cvTop';
     top.innerHTML = '<div class="cvNm"></div><div class="cvTm"></div>';
     top.querySelector('.cvNm').textContent = n;
-    top.querySelector('.cvTm').textContent = (!isNaN(t) ? fmtClock(new Date(t)) : '—') + ((span > 0) ? (' · span ' + fmtDur(span)) : (!isNaN(dur) ? (' · took ' + fmtDur(dur)) : ''));
+    top.querySelector('.cvTm').textContent = (!isNaN(t) ? fmtClock(new Date(t)) : '—') + ((span > 0) ? (' · span ' + fmtDur(span)) : (stArr.length ? ' · marked in one go' : (!isNaN(dur) ? (' · gap ' + fmtDur(dur)) : ''))); // Beta 1.167 (B3, RP-07): a street whose recorded sides all carry ONE moment (span 0 - the whole-street mark) reads as marked in one go instead of inheriting the previous street's gap as its 'took'; the stamp-less fallback is a GAP since the previous completion, and is labelled as one
     rowEl.appendChild(top);
     const lines = cleanNoteLines((h.notes || {})[n]);
     if (lines.length) { const p = document.createElement('div'); p.className = 'cvNt'; p.textContent = lines[0] + (lines.length > 1 ? ' (+' + (lines.length - 1) + ' more)' : ''); rowEl.appendChild(p); }
     const det = document.createElement('div'); det.className = 'cvDet'; det.style.display = 'none';
     const parts = [];
     parts.push('Marked: ' + (items[n] ? fmtWhen(items[n]) : 'no time recorded'));
-    if (span > 0) parts.push('Span: ' + fmtDur(span) + ' - first side marked ' + fmtClock(new Date(Math.min.apply(null, stArr))) + ', last side ' + fmtClock(new Date(Math.max.apply(null, stArr))) + ' (includes any other work in between)'); else if (!isNaN(dur)) parts.push('Time taken: ' + fmtDur(dur) + ' (from the previous street or the start)');
+    if (span > 0) parts.push('Span: ' + fmtDur(span) + ' - first side marked ' + fmtClock(new Date(Math.min.apply(null, stArr))) + ', last side ' + fmtClock(new Date(Math.max.apply(null, stArr))) + ' (includes any other work in between)'); else if (stArr.length) parts.push('Marked in one go - every recorded side of this street carries the same moment'); else if (!isNaN(dur)) parts.push('Gap since previous street: ' + fmtDur(dur) + ' (no side times recorded for this street; measured from the previous completion, or the run start)');
     if ((h.via || {})[n]) parts.push('How: ' + ((h.via || {})[n] === 'gps' ? 'GPS suggestion' : 'marked by tap'));
     lines.forEach(L => parts.push(L));
     det.textContent = parts.join('\n');
@@ -229,7 +233,7 @@ function validateSnap(raw, expectAt, G) { // Beta 1.95 (deep audit SR-194-03): a
     return { pieces, pieceTimes, done, times, via, cov };
   } catch (e) { return null; }
 }
-function startClean() { runSnap = { pieces: JSON.parse(JSON.stringify(pieces)), pieceTimes: JSON.parse(JSON.stringify(pieceTimes)), done: [...doneSet], times: { ...doneTimes }, via: { ...doneVia }, cov: JSON.parse(JSON.stringify(coveredIdx)) }; runStart = Date.now(); const okSnap = saveSnap(); const okSess = noteSessionStart(); const okStart = saveAllWarned(); startGps(true); updateCount(); syncWake(); if (okStart.ok && okSess.ok && okSnap.ok) toast('Clean started · ' + fmtClock(new Date())); else if (!okStart.ok) toast('Clean started — warning: the run state could not be saved (storage problem)', 4200); else if (!okSess.ok) toast('Clean started — warning: the session marker could not be saved; it will keep retrying', 4200); else toast('Clean started — warning: the cancel safety snapshot could not be saved; it will keep retrying', 4200); drawTrail(true); checkStale(); } // Beta 1.73 (audit C04): the marker save is part of the start's honesty check, not a silent side write // Beta 1.63 (audit F04): the clean still starts - he is standing in the snow - but the message stops claiming a saved state that does not exist
+function startClean() { runSnap = { pieces: JSON.parse(JSON.stringify(pieces)), pieceTimes: JSON.parse(JSON.stringify(pieceTimes)), done: [...doneSet], times: { ...doneTimes }, via: { ...doneVia }, cov: JSON.parse(JSON.stringify(coveredIdx)) }; runStart = Date.now(); runDist = { run: runStart, m: 0, capped: false }; runDistWrote = { at: 0, m: 0, capped: false }; persistRunDist(true); const okSnap = saveSnap(); const okSess = noteSessionStart(); const okStart = saveAllWarned(); startGps(true); updateCount(); syncWake(); if (okStart.ok && okSess.ok && okSnap.ok) toast('Clean started · ' + fmtClock(new Date())); else if (!okStart.ok) toast('Clean started — warning: the run state could not be saved (storage problem)', 4200); else if (!okSess.ok) toast('Clean started — warning: the session marker could not be saved; it will keep retrying', 4200); else toast('Clean started — warning: the cancel safety snapshot could not be saved; it will keep retrying', 4200); drawTrail(true); checkStale(); } // Beta 1.167 (B5): startClean banks a fresh distance counter for the new run (the runDist assignment + persistRunDist(true) beside runStart above), so even an instant reload resumes THIS run's counter. // Beta 1.73 (audit C04): the marker save is part of the start's honesty check, not a silent side write // Beta 1.63 (audit F04): the clean still starts - he is standing in the snow - but the message stops claiming a saved state that does not exist
 // Beta 1.91 (Andrew): Cancel start erases everything the run recorded - its trail points, its session
 // marker, any sides marked during it, its coverage and suggestions - and stores nothing. Only Finish
 // stores a run. (Supersedes the Beta 1.70 A04 call that kept the trail as history - Andrew's word.)
@@ -255,7 +259,7 @@ function cancelStart() {
         coveredIdx = {}; // coverage cannot be attributed without a snapshot - and unlike hand marks it is GPS-derived and re-earns itself as he drives; drive143 C1 holds this line
       }
     }
-    lsDel(LS.snap); markClean('snap'); // the run is cancelled - its snapshot goes with it (a stale one could never match a future run's start stamp, but there is no reason to keep it)
+    lsDel(LS.snap); markClean('snap'); resetRunDist(); lsDel(LS.rundist); // Beta 1.167 (B5): the cancelled run's distance record goes with it. The run is cancelled - its snapshot goes with it (a stale one could never match a future run's start stamp, but there is no reason to keep it)
     markDirty('trail'); markDirty('sess');
   }
   runSnap = null;
@@ -318,12 +322,48 @@ function trailKm(sinceMs) {
   }
   return d / 1000;
 }
+// ===== RUN DISTANCE COUNTER (Beta 1.167, B5 - run/pace audit RP-02) =====
+// The GPS trail is capped at TRAIL_MAX points (oldest dropped), so a long run's archived path
+// silently loses its head - and through 1.166 the archived km was derived FROM that truncated
+// path (trailKm), understating the run. This counter instead accumulates each accepted fix's
+// segment AT RECORD TIME (acceptFix), under trailKm's own pair rule (both endpoints in the run,
+// <=300 s apart, <=1000 m), so the total survives any later truncation; buildSnap reads it when
+// it belongs to the finishing run. It persists (LS.rundist, throttled) so a mid-run reload
+// resumes it; a lost or foreign record re-derives from the surviving trail (adoptRunDist) - the
+// pre-1.167 figure, never worse. capped is set ONLY by direct observation (a live splice dropping
+// this run's points, or a banked record that observed it), and Finish stamps it onto the entry
+// (pathShortened) so the clean detail can say the saved path is shorter than the run.
+let runDist = { run: 0, m: 0, capped: false };
+let runDistWrote = { at: 0, m: 0, capped: false };
+function persistRunDist(force) {
+  const now = Date.now();
+  if (!force && runDistWrote.at && now - runDistWrote.at < 30000 && Math.abs(runDist.m - runDistWrote.m) < 25 && runDistWrote.capped === runDist.capped) return;
+  if (lsSet(LS.rundist, JSON.stringify(runDist))) runDistWrote = { at: now, m: runDist.m, capped: runDist.capped };
+}
+function adoptRunDist() {
+  if (!runStart) { runDist = { run: 0, m: 0, capped: false }; return; }
+  let raw = null; try { raw = JSON.parse(lsGet(LS.rundist) || 'null'); } catch (e) { raw = null; }
+  if (raw && raw.run === runStart && typeof raw.m === 'number' && isFinite(raw.m) && raw.m >= 0) { runDist = { run: runStart, m: raw.m, capped: !!raw.capped }; return; }
+  runDist = { run: runStart, m: trailKm(runStart) * 1000, capped: false };
+}
+function resetRunDist() { runDist = { run: 0, m: 0, capped: false }; runDistWrote = { at: 0, m: 0, capped: false }; }
+function geoFingerprint() { // Beta 1.167 (B2): a cheap fingerprint of the route geometry AS CLEANED - street names + each street's total side-metres at 0.1 m precision, FNV-1a hashed. Recorded on every new archive entry (snap.geoFP) so a later geometry edit is DETECTABLE against the entry priced under the old geometry; the pace math reads the stored workM, so the fingerprint is evidence, not an input.
+  let fp = 2166136261 >>> 0; const str = STREETNAMES.map(n => n + ':' + (STRETCH[n] ? STRETCH[n].total.toFixed(1) : '0')).join('|');
+  for (let i = 0; i < str.length; i++) { fp ^= str.charCodeAt(i); fp = Math.imul(fp, 16777619) >>> 0; }
+  return ('0000000' + fp.toString(16)).slice(-8);
+}
 function buildSnap() { // production archive shape: items is a street->time map; km is trail distance; the GPS path is thinned FROM the trail
   if (!doneSet.size && !Object.keys(notes).length) return null;
   const ts = [...doneSet].map(n => Date.parse(doneTimes[n])).filter(t => !isNaN(t)).sort((a, b) => a - b);
   const startMs = (runStart && ts.length && runStart <= ts[0]) ? runStart : (ts.length ? ts[0] : null); // Beta 1.70 (audit A05): distance and path are measured from the clean's actual start, not its first completed street - driving before the first street was silently dropped
-  const snap = { at: new Date().toISOString(), items: {}, via: { ...doneVia }, notes: JSON.parse(JSON.stringify(notes)), sides: JSON.parse(JSON.stringify({ p: pieces, t: pieceTimes })), km: startMs ? +trailKm(startMs).toFixed(1) : 0, startedAt: startMs ? new Date(startMs).toISOString() : null };
+  if (runStart && runDist.run !== runStart) adoptRunDist(); // Beta 1.167 (B5): the counter is the archive's distance source - adopt (or re-derive) before reading it
+  const snap = { at: new Date().toISOString(), items: {}, via: { ...doneVia }, notes: JSON.parse(JSON.stringify(notes)), sides: JSON.parse(JSON.stringify({ p: pieces, t: pieceTimes })), km: startMs ? +(((runStart && runDist.run === runStart) ? runDist.m / 1000 : trailKm(startMs))).toFixed(1) : 0, startedAt: startMs ? new Date(startMs).toISOString() : null };
   doneSet.forEach(n => { snap.items[n] = doneTimes[n] || null; });
+  // Beta 1.167 (run/pace fix round, B2 - RP-05/06/09): the run's own figures are BAKED INTO the entry, and cleanWorkM prefers them for the life of the entry. workM sums this snapshot's side stamps INSIDE the run's own window [the Start press, the Finish tap] - liveWorkM's stamp attribution (Beta 1.93) applied to the archived record. The window opens at runStart, NOT at startMs: when a street was marked before Start, startMs falls back to that first completion (A05), and opening the window there would count the pre-Start work right back in - so work banked before Start never counts toward this clean (RP-05), a later geometry edit cannot re-price it (RP-06; geoFP records the geometry it was priced against), and a partially-recorded sides map cannot short-circuit the derivation into an undercount (RP-09). winStart is runStart when a run is live, else startMs (a no-run finish has no earlier boundary to honour). Legacy entries carry none of these fields and derive exactly as before. (km above likewise reads the B5 counter's true total when it belongs to this run - trailKm only as the fallback for a run the counter never saw.)
+  if (startMs) { let wm = 0; const endMs = Date.parse(snap.at); const winStart = runStart || startMs; for (const n of Object.keys(snap.sides.p)) { const pv = snap.sides.p[n] || [], T = snap.sides.t[n] || []; const parts = STRETCH[n] ? STRETCH[n].parts : []; parts.forEach((part, i) => { const L = segLenM(part); const st = T[i] || [null, null]; if ((pv[i] & 1) && st[0]) { const ts = Date.parse(st[0]); if (ts >= winStart && ts <= endMs) wm += L; } if ((pv[i] & 2) && st[1]) { const ts = Date.parse(st[1]); if (ts >= winStart && ts <= endMs) wm += L; } }); } snap.workM = Math.round(wm); }
+  snap.totalWorkM = Math.round(totalWorkM());
+  snap.geoFP = geoFingerprint();
+  if (runStart && runDist.run === runStart && runDist.capped) snap.pathShortened = true; // Beta 1.167 (B5, RP-02): the stored path below was truncated by the trail cap - the entry says so (km above is the counter's true total, not the path's)
   const sMs = Date.parse(snap.startedAt);
   if (!isNaN(sMs)) { const pp = thinPath(trail.filter(p => p[2] >= Math.floor(sMs / 1000))); if (pp.length > 1) snap.path = pp; } // Beta 1.70 (audit A05): the old 60 s look-back admitted points from the previous session. Beta 1.71 (audit B04): second-precision comparison, matching the stored timestamps
   return snap;
@@ -342,7 +382,7 @@ function finishRun() {
   // written afterwards was not, so a failed sides write resurrected the
   // finished clean beside its own archive entry on the next launch.
   let newHist = null;
-  if (archiving) newHist = trimHistoryForFinish(history, snap); // Beta 1.104 (round 103, CG-103-01): the incoming archive is never an eviction candidate
+  if (archiving) newHist = appendHistory(history, snap); // Beta 1.167 (B1): the incoming archive JOINS the history - nothing is evicted, at any size (through 1.166 trimHistoryForFinish applied the 10-clean cap here, Beta 1.104 CG-103-01 protecting only the incoming entry itself)
   const clearedPieces = {}, clearedTimes = {};
   for (const n of STREETNAMES) { clearedPieces[n] = STRETCH[n].parts.map(() => 0); clearedTimes[n] = {}; }
   const prevSidesRaw = lsGet(LS.sides); // kept so the start step's rollback can restore this write exactly (including its absence)
@@ -361,7 +401,7 @@ function finishRun() {
     if (fTx.failedStep === 'archive') { toast('Storage full \u2014 finish stopped, run intact', 3600); return; }
     toast('Storage problem \u2014 finish stopped, your clean is intact', 4200); return;
   }
-  lsDel(LS.snap); markClean('snap'); // Beta 1.94 (SR-193-02): the run is finished - its cancel snapshot goes with it. Ungated on purpose: a leftover snapshot is stamped with THIS run's start, so it can never match a future run, and the next Start overwrites it anyway
+  lsDel(LS.snap); markClean('snap'); resetRunDist(); lsDel(LS.rundist); // Beta 1.167 (B5): the distance counter is consumed into the archive entry (km/pathShortened) - its record goes with the run. Beta 1.94 (SR-193-02): the run is finished - its cancel snapshot goes with it. Ungated on purpose: a leftover snapshot is stamped with THIS run's start, so it can never match a future run, and the next Start overwrites it anyway
   if (archiving) history = newHist;
   doneSet = new Set(); doneTimes = {}; doneVia = {}; notes = {}; runStart = 0; runSnap = null; coveredIdx = {}; suggested = new Set(); $('suggest').classList.add('hidden'); // Beta 1.70 (audit A04): the suggestion set is run-scoped too - finishRun used to clear the coverage but keep the set, so suggested streets never suggested again
   for (const n of STREETNAMES) { pieces[n] = STRETCH[n].parts.map(() => 0); pieceTimes[n] = {}; }
@@ -427,6 +467,7 @@ function buildSamples() { const built = samplesFor(STRETCH, STREETNAMES); for (c
 // (the coverage-index sanitizer lives in loadRouteState, app1 - Beta 1.76: it must run over the loaded state, and state now loads on route pick, not at eval)
 let suggested = new Set();
 function resetNotesHistorySession() { // Beta 1.148 (Tranche 5, A4(ii)): app3's OWN route-switch reset, called by app4's resetSwitchSession - the run-snapshot / history / modal-note / suggestion session's reset knowledge lives here, with its state
+  resetRunDist(); // Beta 1.167 (B5): the in-memory distance counter belongs to the outgoing run; its persisted record stays in the outgoing slot (like LS.snap below) and is re-adopted lazily if he switches back mid-run
   runSnap = null; // F3: the in-memory cancel snapshot belongs to the outgoing run. The PERSISTED copy (LS.snap, in the outgoing slot) is deliberately untouched - after switching back, Cancel validates it exactly as it does after a reload
   histOpen = false; cleanIdx = null; cleanDelArmed = false; if (cleanDelTimer) { clearTimeout(cleanDelTimer); cleanDelTimer = 0; } // the history panel and its delete-arming
   noteFor = null; $('noteModal').classList.add('hidden'); // the modal note editor
@@ -638,8 +679,14 @@ function acceptFix(pos) {
   if (!inB && offRouteArmed) { offRouteArmed = false; toast("You are outside the route area — GPS won't mark streets here", 3600); }
   if (inB) offRouteArmed = true;
   if (runStart && gpsFromRun) { // Beta 1.49 (Andrew's rule): route data is recorded ONLY by a clean's own GPS - the Locate tab's view-only watch never writes trail or coverage, even if a stale flag disagrees
-    trail.push([+sm[0].toFixed(6), +sm[1].toFixed(6), Math.floor(now / 1000)]);
-    if (trail.length > TRAIL_MAX) trail.splice(0, trail.length - TRAIL_MAX);
+    if (runDist.run !== runStart) adoptRunDist(); // Beta 1.167 (B5): first recorded fix of a run the counter has not met (a mid-run reload, a pre-1.167 start) - adopt the banked record or re-derive from the surviving trail
+    const runSec = Math.floor(runStart / 1000);
+    const prevPt = trail.length ? trail[trail.length - 1] : null;
+    const newPt = [+sm[0].toFixed(6), +sm[1].toFixed(6), Math.floor(now / 1000)];
+    if (prevPt && prevPt[2] >= runSec && newPt[2] - prevPt[2] <= 300) { const seg = distM(prevPt, newPt); if (seg <= 1000) runDist.m += seg; } // trailKm's own pair rule, applied at record time so the total survives the cap below
+    trail.push(newPt);
+    if (trail.length > TRAIL_MAX) { const dropped = trail.splice(0, trail.length - TRAIL_MAX); if (dropped.some(pt => pt[2] >= runSec)) runDist.capped = true; }
+    persistRunDist(false);
     markDirty('trail'); flushAux(false); drawTrail();
     coverFix(sm);
   }

@@ -11,8 +11,11 @@
 // 0.526 deg). NV3b: the tile enumerators (app4.js) gain a per-pack iteration
 // budget - proven against a worldwide box in a child process with a timeout,
 // because on the unfixed code the call never returns.
-// NV4: capHistoryList (app1.js) must reproduce trimHistory's eviction exactly
-// in linear time; the load/restore enforcement itself is drive177's job.
+// NV4: through 1.166, capHistoryList (app1.js) had to reproduce trimHistory's
+// eviction exactly in linear time. Beta 1.167 (B1) retired the history cap AND
+// the quadratic trim it defended against - the section below now proves their
+// ABSENCE plus appendHistory's linearity at crafted-oversize scale; the
+// load/restore retention behaviour itself is drive177/drive186's job.
 //
 // Run: node tests/browser/selftest-nv1152.mjs [--child-nv3b]
 import { readFileSync } from 'node:fs';
@@ -198,32 +201,18 @@ const childSize = child.stdout && child.stdout.match(/SIZE (\d+)/) ? Number(chil
 ok('NV3b: enumerating a worldwide-box pack returns bounded (child size ' + childSize + ', timeout/error: ' + (child.error ? child.error.code : 'none') + ')',
   !child.error && childSize > 0 && childSize <= 20000);
 
-// ============================ NV4: capHistoryList ============================
-const hasCap = app1.includes('function capHistoryList(');
-ok('NV4: capHistoryList exists in app1.js', hasCap);
-if (hasCap) {
-  const NAMES34 = Array.from({ length: 34 }, (_, i) => 'S' + i);
-  const hApi = new Function('STREETNAMES', `
-    ${extract(app1, 'function isFullRun(')}
-    ${extract(app1, 'function trimHistory(')}
-    ${extract(app1, 'function capHistoryList(')}
-    return { trimHistory, capHistoryList };`)(NAMES34);
-  // deterministic PRNG (mulberry32)
-  let seed = 42;
-  const rnd = () => { seed |= 0; seed = seed + 0x6D2B79F5 | 0; let t = Math.imul(seed ^ seed >>> 15, 1 | seed); t = t + Math.imul(t ^ t >>> 7, 61 | t) ^ t; return ((t ^ t >>> 14) >>> 0) / 4294967296; };
-  const mkEntry = (full) => { const items = {}; const n = full ? 34 : 1 + Math.floor(rnd() * 33); for (let i = 0; i < n; i++) items['S' + i] = null; return { at: 'x', items }; };
-  let equiv = true;
-  for (let trial = 0; trial < 300 && equiv; trial++) {
-    const len = Math.floor(rnd() * 41);
-    const list = []; for (let i = 0; i < len; i++) list.push(mkEntry(rnd() < 0.4));
-    list.forEach((e, i) => { e.tag = i; });
-    const a = hApi.trimHistory(JSON.parse(JSON.stringify(list))).map(e => e.tag);
-    const b = hApi.capHistoryList(JSON.parse(JSON.stringify(list)), 34).map(e => e.tag);
-    if (JSON.stringify(a) !== JSON.stringify(b)) { equiv = false; console.log('NV4 mismatch at trial', trial, 'len', len, JSON.stringify(a), JSON.stringify(b)); }
-  }
-  ok('NV4: capHistoryList reproduces trimHistory eviction exactly on 300 randomized lists', equiv);
-  const big = []; for (let i = 0; i < 25; i++) big.push({ at: 'x', items: { S0: null } });
-  ok('NV4: capHistoryList caps an oversized list at 10, keeping the newest', (() => { const r = hApi.capHistoryList(big.map((e, i) => ({ ...e, tag: i })), 34); return r.length === 10 && r[0].tag === 15 && r[9].tag === 24; })());
+// ============================ NV4: the history cap (RETIRED by Beta 1.167) ============================
+ok('NV4: trimHistory is absent from app1.js (retired by 1.167 B1)', !app1.includes('function trimHistory('));
+ok('NV4: capHistoryList is absent from app1.js', !app1.includes('function capHistoryList('));
+ok('NV4: trimHistoryForFinish is absent from app1.js', !app1.includes('function trimHistoryForFinish('));
+ok('NV4: capHistoryList is not called in app4.js (restore stores history whole)', !app4.includes('capHistoryList('));
+{
+  const appendHistory = new Function(extract(app1, 'function appendHistory(') + '\nreturn appendHistory;')();
+  const big = []; for (let i = 0; i < 20000; i++) big.push({ at: 'x' + i, items: { S0: null } });
+  const t0 = Date.now();
+  const out = appendHistory(big, { at: 'new', items: { S0: null } });
+  const dt = Date.now() - t0;
+  ok('NV4: appendHistory over a 20,000-entry list retains all 20,001 in ' + dt + ' ms (linear - the quadratic trim NV4 defended against no longer exists)', out.length === 20001 && out[20000].at === 'new' && out[0].at === 'x0' && dt < 2000);
 }
 
 console.log(`selftest-nv1152: ${pass} passed, ${fail} failed`);

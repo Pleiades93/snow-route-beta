@@ -131,7 +131,7 @@ jobs:
         run: node tests/browser/selftest-store-result.mjs
       - name: Transaction coordinator fixtures (Phase 4 gate)
         run: node tests/browser/selftest-tx.mjs
-      - name: History trim fixtures (round 103 gate)
+      - name: History retention fixtures (round 103 gate; cap retired Beta 1.167)
         run: node tests/browser/selftest-history.mjs
       - name: Round-112 honesty fixtures (round 112 gate)
         run: node tests/browser/selftest-round112.mjs
@@ -153,7 +153,7 @@ jobs:
         run: node tests/browser/selftest-judging-fixtures.mjs
       - name: Foreign-write census (Tranche 2 gate)
         run: node tests/browser/selftest-foreign-writes.mjs
-      - name: NV fix round proofs (Beta 1.152 - stretch parity, pack ceilings, tile budget, history cap)
+      - name: NV fix round proofs (Beta 1.152 - stretch parity, pack ceilings, tile budget; history cap retired Beta 1.167)
         run: node tests/browser/selftest-nv1152.mjs
       - name: Premise-lint fixtures (Tranche 4 gate)
         run: python3 scripts/premise-lint-fixtures/run-fixtures.py
@@ -179,21 +179,21 @@ jobs:
       matrix:
         include:
           - shard: 1
-            drives: "drive131 drive147 drive161 drive165 drive166 drive176 drive182"
+            drives: "drive116 drive149 drive151 drive161 drive166 drive176 drive187"
           - shard: 2
-            drives: "drive114 drive117 drive121 drive127 drive132 drive145 drive168 drive89"
+            drives: "drive114 drive127 drive145 drive164 drive165 drive177 drive89"
           - shard: 3
-            drives: "drive133 drive148 drive151 drive152 drive162 drive164 drive173 drive86"
+            drives: "drive131 drive133 drive141 drive143 drive148 drive162 drive170 drive186 drive86"
           - shard: 4
-            drives: "drive118 drive130 drive140 drive153 drive154 drive171 drive175 drive184"
+            drives: "drive118 drive121 drive132 drive153 drive154 drive168 drive171 drive175 drive184"
           - shard: 5
-            drives: "drive116 drive123 drive136 drive160 drive163 drive170 drive177 drive180 drive88"
+            drives: "drive123 drive130 drive136 drive152 drive160 drive163 drive173 drive182 drive88"
           - shard: 6
-            drives: "drive120 drive125 drive129 drive135 drive143 drive150 drive185 drive83"
+            drives: "drive117 drive125 drive129 drive135 drive150 drive155 drive180 drive185 drive83"
           - shard: 7
-            drives: "drive124 drive126 drive142 drive156 drive159 drive169 drive172 drive178"
+            drives: "drive124 drive126 drive140 drive147 drive156 drive159 drive169 drive178"
           - shard: 8
-            drives: "drive115 drive128 drive141 drive146 drive149 drive155 drive174 drive181 drive183"
+            drives: "drive115 drive120 drive128 drive142 drive146 drive172 drive174 drive181 drive183"
     steps:
       - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4
       - name: Set up Node
