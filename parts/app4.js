@@ -661,7 +661,7 @@ $('stDel').addEventListener('click', async () => {
 });
 // ---- About / What's new ----
 const WHATSNEW = { // the curated in-app notes: plain words, LATEST RELEASE ONLY (Beta 1.114, Andrew: the accumulated list cluttered the About pane). A release REPLACES this entry with its own in the same change - it never accumulates; the full history lives in CHANGELOG.md, not the app
-  v: 'Beta 1.159', items: ["The Snow Route title belongs to the first menu only: tap Choose a route or Create new route and it steps aside — and it is back again when you return to that first menu.", "City and route names on the blue menus now sit in the centre of their pills, in the same lettering as the menu buttons.", "The falling snow is one continuous layer from the opening screen into the menu, so it no longer twitches at the moment the menu arrives.", "The title settles a little lower on the menu screen than before — the lowest spot from the samples page."]};
+  v: 'Beta 1.160', items: ["The opening is calmer: the app now starts with the blue screen and the falling snow, and the icon and the words fade in a moment later — no more flicker as it opens.", "Everything after that is unchanged: the same rise into the menu, the same landing spot, the same snow."]};
 function renderAbout() {
   const cur = $('ver').textContent.trim();
   $('wnHead').textContent = "WHAT'S NEW · " + cur; // the header names the LIVE version, read from the title's version element - never a second hard-coded copy that can go stale
