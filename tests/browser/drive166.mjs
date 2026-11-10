@@ -197,6 +197,14 @@ await poll(`typeof routeLoaded !== 'undefined' && routeLoaded === true`, 20000);
 await poll(`!document.getElementById('splash')`, 20000);
 await poll(`typeof map === 'undefined' || !map || !map.isMoving()`, 25000);
 await ev(installStub);
+// Test-suite restructure (2026-11-09): the ONE static cap assertion. The two
+// 45 s latency cases (J2a2, J7a) now run SCALED through the CR_TIMING seam
+// (a tenth of the time at the same ratios), so this check pins the full-size
+// truth they stand for: the real caps exceed the measured 45 s service
+// profile on both fetch paths, with the attempt cap inside the budget.
+const CAPS = await J(`({ budget: CR_TIMING.budgetMs, attempt1: CR_TIMING.attempt1Ms, topupBudget: CR_TIMING.topupBudgetMs, topupAttempt1: CR_TIMING.topupAttempt1Ms })`);
+ok('J0 (static) the REAL fetch caps exceed the measured 45 s service profile on both paths (batch attempt inside its budget, top-up attempt inside its budget) - the scaled J2a2/J7a cases grade this structure at a tenth of the time | ' + JSON.stringify(CAPS),
+  CAPS.attempt1 > 45000 && CAPS.budget > CAPS.attempt1 && CAPS.topupAttempt1 > 45000 && CAPS.topupBudget > CAPS.topupAttempt1);
 
 // ---------- (f) preparation failure + Retry (Beta 1.121) ----------
 // 1.120's section (f) proved the per-tap wedge (a refused fetch latched
@@ -329,15 +337,15 @@ await ev(`document.getElementById('crDoorManual').click()`);
 await pickCityVaughan(); // Beta 1.121: create mode (and its backdrop) now starts at the city pick
 await sleep(600);
 const H1 = await J(`({ surf: map.getLayoutProperty('t1-surface', 'visibility') || 'visible', names: map.getLayoutProperty('streetnamespt1', 'visibility') || 'visible', sel: map.getLayoutProperty('t1-sel', 'visibility') || 'visible', rec: (typeof crHiddenLayers !== 'undefined' && crHiddenLayers) ? crHiddenLayers.length : -1, poi: map.getSource('crPoi') ? map.getSource('crPoi').serialize().data.features.map(f => f.properties.name) : null, poiLayers: ['crPoiRing', 'crPoiDot', 'crPoiTxt'].map(id => !!map.getLayer(id)), draftSrc: !!map.getSource('crDraft') })`);
-ok('H1 entering create hides the loaded route\'s paint, selection and street names (engine layers visibility none) - engine stack ready in this session: ' + engReady + ' (in the local rig the basemap style never readies, the documented drive149 limit, so no engine layers exist to hide and the recorded set is empty; CI readies the stack and exercises the hide for real; the hide/restore logic itself is proven against a faithful fake layer registry in the build evidence) | ' + JSON.stringify(H1),
-  (engReady === true && H1.surf === 'none' && H1.names === 'none' && H1.sel === 'none' && H1.rec === 28) || (engReady !== true && H1.rec === 0));
+ok('H1 entering create hides the loaded route\'s paint, selection and street names (engine layers visibility none) - the engine stack MUST be ready in this session (test-suite restructure, 2026-11-09: the old either/or form passed vacuously when the engine layers were absent; absent layers now FAIL, here and in H3) | engReady ' + engReady + ' | ' + JSON.stringify(H1),
+  engReady === true && H1.surf === 'none' && H1.names === 'none' && H1.sel === 'none' && H1.rec === 28);
 ok('H2 while creating, the backdrop shows a POI for EVERY pack in the database (5W, the created route, the fixture) and the draft overlay still exists | ' + JSON.stringify(H1.poi),
   !!H1.poi && H1.poi.length === H0.packs.length && H1.poi.indexOf('Route 5W') >= 0 && H1.poi.indexOf('Fixture Route') >= 0 && H1.poiLayers.every(Boolean) && H1.draftSrc === true);
 await ev(`document.getElementById('crExit').click()`);
 await sleep(500);
 const H2 = await J(`({ surf: map.getLayoutProperty('t1-surface', 'visibility') || 'visible', names: map.getLayoutProperty('streetnamespt1', 'visibility') || 'visible', sel: map.getLayoutProperty('t1-sel', 'visibility') || 'visible', poi: !!map.getSource('crPoi'), creating })`);
-ok('H3 exiting create restores the route paint exactly as it was and removes the POI backdrop (engine stack ready in this session: ' + engReady + ') | ' + JSON.stringify(H2),
-  H2.creating === false && H2.poi === false && (engReady !== true || (H2.surf === H0.surf && H2.names === H0.names && H2.sel === H0.sel)));
+ok('H3 exiting create restores the route paint exactly as it was and removes the POI backdrop (engine stack MUST be ready - no vacuous pass, see H1) | engReady ' + engReady + ' | ' + JSON.stringify(H2),
+  engReady === true && H2.creating === false && H2.poi === false && H2.surf === H0.surf && H2.names === H0.names && H2.sel === H0.sel);
 const Dpost = await ev(dump5wSrc);
 ok('H4 the backdrop cycle never touched the 5W slot (byte-identical)', Dpost === Dpre);
 
@@ -527,19 +535,24 @@ ok('J5 (offline after ready) with the service now THROWING on every request, Bor
   gotB5 === true && gotA5 === true && gcS1b === gcS1);
 await ev(`window.__jMode = 'healthy'`);
 await jExitDiscard();
-// S2: the fallback box at the measured latency (the fetcher's budgets, via the seam)
+// S2: the fallback box at the measured latency, SCALED through the CR_TIMING
+// seam (test-suite restructure, 2026-11-09): the delay and the budgets shrink
+// together at the real ratios (delay 4.5 s = 64% of the 7 s attempt cap,
+// itself inside a 12 s budget - the full-size form is 45 s / 70 s / 120 s,
+// pinned statically by J0), so the graded structure is identical and the
+// case costs a tenth of the time. J2b below already used this seam.
 await jEnter();
 await poll(`crPrepState === 'ready'`, 20000);
-await ev(`window.__jDelayMs = 45000`);
+await ev(`window.__savedTimingS2 = [CR_TIMING.budgetMs, CR_TIMING.attempt1Ms]; CR_TIMING.budgetMs = 12000; CR_TIMING.attempt1Ms = 7000; window.__jDelayMs = 4500`);
 const bt0 = Date.now();
 await ev(`crStartPrep({ lat: 43.9, lng: -79.56 })`); // an anchor OUTSIDE the city: the fallback box path
-await sleep(6000);
+await sleep(2000);
 const S2mid = await J(`({ state: crPrepState, hint: document.getElementById('createHint').textContent, btn: document.getElementById('crHintBtn').textContent })`);
-const s2Ready = await poll(`crPrepState === 'ready'`, 80000).catch(() => false);
+const s2Ready = await poll(`crPrepState === 'ready'`, 20000).catch(() => false);
 const s2Ms = Date.now() - bt0;
-await ev(`window.__jDelayMs = 0`);
-ok('J2a2 (latency, fallback box) a CORRECT answer arriving at a real 45 s (the measured overpass-api.de profile) SUCCEEDS inside the 120 s budget - mid-wait the hint ticks with Cancel up; 1.120 killed this answer at its 40 s attempt cap | mid: ' + JSON.stringify(S2mid) + ', elapsed ' + s2Ms + ' ms',
-  S2mid.state === 'preparing' && /Preparing street shapes for Vaughan… \d+ s/.test(S2mid.hint) && S2mid.btn === 'Cancel' && s2Ready === true && s2Ms >= 44000);
+await ev(`window.__jDelayMs = 0; CR_TIMING.budgetMs = window.__savedTimingS2[0]; CR_TIMING.attempt1Ms = window.__savedTimingS2[1]`);
+ok('J2a2 (latency, fallback box, scaled 10x via CR_TIMING - J0 pins the real caps) a CORRECT answer arriving at 64% of the attempt cap (4.5 s of 7 s; full-size 45 s of 70 s, the measured overpass-api.de profile) SUCCEEDS inside the budget - mid-wait the hint ticks with Cancel up; 1.120 killed this answer at its 40 s attempt cap | mid: ' + JSON.stringify(S2mid) + ', elapsed ' + s2Ms + ' ms',
+  S2mid.state === 'preparing' && /Preparing street shapes for Vaughan… \d+ s/.test(S2mid.hint) && S2mid.btn === 'Cancel' && s2Ready === true && s2Ms >= 4400);
 await jExitDiscard();
 // S3: the failure matrix on the GRID - every cell failing ends honestly
 const failGrid = async (mode, status) => {
@@ -569,8 +582,8 @@ const G5m = await failGrid('dense');
 ok('J8 (dense, grid) a >2 MB payload for every cell is cut off WHILE streaming -> FAILED kind=dense with the too-dense hint, no coverage | ' + JSON.stringify(G5m.F),
   G5m.r && G5m.F.state === 'failed' && G5m.F.kind === 'dense' && G5m.F.hint.indexOf('too dense') >= 0 && G5m.F.boxes === 0);
 await jEnter();
-await poll(`crPrepState === 'ready'`, 20000);
-ok('J4e after the failure matrix, a healthy city load still succeeds in a fresh session (no failure latches)', true);
+const j4eReady = await poll(`crPrepState === 'ready'`, 20000).catch(() => false);
+ok('J4e after the failure matrix, a healthy city load still succeeds in a fresh session (no failure latches)', j4eReady === true); // test-suite restructure (2026-11-09): this check was literally ok(..., true) with its readiness poll discarded - vacuous. The poll's result IS the assertion now.
 await jExitDiscard();
 // S4: silence + the stalled body, on the fallback box with shrunk budgets
 const failBox = async mode => {
@@ -674,17 +687,17 @@ const s8gPrep = await poll(`crCov && crCov.boxes.some(b => 43.91 >= b.s && 43.91
 ok('J9b (remedy works, CG-PF-09) with the city READY, a tap outside it still leaves a visible "Prepare this area" button (' + JSON.stringify(S8g) + '); tapping it prepares around the TAPPED point and the new coverage contains it | covered: ' + s8gPrep,
   S8g.btn === 'Prepare this area' && S8g.btnOn && S8g.state === 'ready' && s8gPrep === true);
 const gcS8 = await geoCount();
-await ev(`window.__jDelayMs = 45000`);
+await ev(`window.__savedTopup = [CR_TIMING.topupBudgetMs, CR_TIMING.topupAttempt1Ms]; CR_TIMING.topupBudgetMs = 9000; CR_TIMING.topupAttempt1Ms = 6000; window.__jDelayMs = 4500`); // scaled 10x via the seam (restructure, 2026-11-09): delay 4.5 s = 75% of the 6 s top-up attempt cap inside a 9 s top-up budget - the full-size form is 45 s / 60 s / 90 s, pinned statically by J0
 const ft0 = Date.now();
 await ev(tapStreet('Faraway Avenue'));
-const gotFar = await poll(`typeof draft !== 'undefined' && draft && !!draft.roads['Faraway Avenue']`, 90000).catch(() => false);
+const gotFar = await poll(`typeof draft !== 'undefined' && draft && !!draft.roads['Faraway Avenue']`, 20000).catch(() => false);
 const fMs = Date.now() - ft0;
-await ev(`window.__jDelayMs = 0`);
+await ev(`window.__jDelayMs = 0; CR_TIMING.topupBudgetMs = window.__savedTopup[0]; CR_TIMING.topupAttempt1Ms = window.__savedTopup[1]`);
 const S8log = await geoSince(gcS8);
 const farTopups = nameBodies(S8log, 'Faraway Avenue');
 const S8a = await J(`({ total: draft && draft.roads['Faraway Avenue'] ? Math.round(computeStretches(draft.roads)['Faraway Avenue'].total) : -1 })`);
-ok('J7a (edge rule + CG-PF-07) Faraway Avenue crosses the CITY edge: ONE targeted top-up fires with the correct grammar (way["name"="Faraway Avenue"]), its primary answer landing at a real 45 s is ACCEPTED (elapsed ' + fMs + ' ms - the verified build\'s 40 s top-up cap killed exactly this), and the street joins WHOLE (' + Math.round(farawayLen) + ' m) | top-ups: ' + farTopups.length + ', got ' + JSON.stringify(S8a),
-  gotFar === true && fMs >= 44000 && farTopups.length === 1 && Math.abs(S8a.total - farawayLen) <= farawayLen * 0.03);
+ok('J7a (edge rule + CG-PF-07, scaled 10x via CR_TIMING - J0 pins the real caps) Faraway Avenue crosses the CITY edge: ONE targeted top-up fires with the correct grammar (way["name"="Faraway Avenue"]), its primary answer landing at 75% of the top-up attempt cap (4.5 s of 6 s; full-size 45 s of 60 s) is ACCEPTED (elapsed ' + fMs + ' ms - the verified build\'s 40 s top-up cap killed exactly this), and the street joins WHOLE (' + Math.round(farawayLen) + ' m) | top-ups: ' + farTopups.length + ', got ' + JSON.stringify(S8a),
+  gotFar === true && fMs >= 4400 && farTopups.length === 1 && Math.abs(S8a.total - farawayLen) <= farawayLen * 0.03);
 await ev(tapStreet('Farfaraway Avenue'));
 const pendFF = await poll(`crPending['Farfaraway Avenue'] !== undefined`, 20000).catch(() => false);
 const S8b = await J(`({ inDraft: !!(draft && draft.roads['Farfaraway Avenue']), pendRow: (document.getElementById('crPickList').textContent || '').indexOf('PENDING') >= 0, count: document.getElementById('crCount').textContent })`);

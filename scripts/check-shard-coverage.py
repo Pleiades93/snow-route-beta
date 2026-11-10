@@ -21,8 +21,8 @@ ALL = re.findall(r"'(drive\d+)'", m.group(1))
 
 wf = open('.github/workflows/checks.yml').read()
 shards = re.findall(r'drives:\s*"([^"]+)"', wf)
-if len(shards) != 4:
-    print(f'FAIL: expected 4 shard drive lists in checks.yml, found {len(shards)}')
+if len(shards) != 8:
+    print(f'FAIL: expected 8 shard drive lists in checks.yml, found {len(shards)}')
     sys.exit(1)
 shard_lists = [s.split() for s in shards]
 

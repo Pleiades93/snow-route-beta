@@ -336,6 +336,35 @@ const backOk17b = (await poll(`typeof glOk !== 'undefined' && glOk === true`, 90
 await loadRouteE2E();
 const e17bAfter = JSON.parse(await ev2(`(() => { const before = { run: runStart, sess: JSON.parse(lsGet(LS.sess) || '[]') }; startClean(); const after = { sess: JSON.parse(lsGet(LS.sess) || '[]'), marker: Math.floor(runStart / 1000), dirty: sessDirty }; return JSON.stringify({ before, after }); })()`));
 ok('E17b after the kill: persisted run state intact, the never-persisted marker absent (expected loss), and a fresh start saves cleanly | ' + JSON.stringify(e17bAfter), backOk17b && e17bAfter.before.run === e17b.run && !e17bAfter.before.sess.includes(e17b.marker) && e17bAfter.after.sess.includes(e17bAfter.after.marker) && e17bAfter.after.dirty === false);
+// E24 (test-suite restructure, 2026-11-09): drive119's coverage, folded in -
+// 119 was deleted on the strength of this block existing. What 119 alone
+// proved: a mark MADE while offline survives another browser-process
+// restart. E14 cold-relaunches offline but marks nothing; E17's marks are
+// made ONLINE before its kill. So: cold-relaunch OFFLINE on this profile,
+// mark through the app's own save path (togglePiece), SIGKILL, relaunch
+// OFFLINE again - the offline-made mark must be present, in memory and in
+// storage. (119's other claims - offline boot, seeded progress visible
+// offline, completion offline - are E14/E17's and this block's premise.)
+netOff = true;
+proc.kill('SIGKILL');
+await sleep(1500);
+for (const f of ['SingletonLock', 'SingletonCookie', 'SingletonSocket']) { try { fs.rmSync(PROFILE + '/' + f, { force: true }); } catch (e) {} }
+await launchBrowser();
+const backOff24 = (await poll(`typeof glOk !== 'undefined' && glOk === true`, 90000)) && (await poll(`!!navigator.serviceWorker.controller`, 30000));
+await loadRouteE2E();
+const mark24 = JSON.parse(await ev2(`(() => { const n = STREETNAMES.find(x => STRETCH[x].parts.length === 1); const before = pieces[n][0]; togglePiece(n, 0, 0); const stored = (JSON.parse(localStorage.getItem(LS.sides))).p[n][0]; return JSON.stringify({ n, before, expected: before ^ 1, stored }); })()`));
+ok('E24a (ex-drive119) cold-booted OFFLINE on the persisted profile, a mark made through the app save path lands in storage | ' + JSON.stringify(mark24), backOff24 === true && mark24.stored === mark24.expected);
+await ev2(`(() => { try { flushAux(true); } catch (e) {} return true; })()`); // quiesce the writers, then the E17 commit settle, before the kill
+await sleep(10000);
+proc.kill('SIGKILL');
+await sleep(1500);
+for (const f of ['SingletonLock', 'SingletonCookie', 'SingletonSocket']) { try { fs.rmSync(PROFILE + '/' + f, { force: true }); } catch (e) {} }
+await launchBrowser();
+const backOff24b = (await poll(`typeof glOk !== 'undefined' && glOk === true`, 90000)) && (await poll(`!!navigator.serviceWorker.controller`, 30000));
+await loadRouteE2E();
+const after24 = JSON.parse(await ev2(`(() => { const n = ${JSON.stringify(mark24.n)}; return JSON.stringify({ v: pieces[n][0], stored: (JSON.parse(localStorage.getItem(LS.sides))).p[n][0] }); })()`));
+ok('E24b (ex-drive119) the OFFLINE-MADE mark survives a second process restart, still offline - in the loaded state and in storage | ' + JSON.stringify(after24), backOff24b === true && after24.v === mark24.expected && after24.stored === mark24.expected);
+netOff = false;
 // ---- E19/E20 (Beta 1.95, deep audit SR-194-05/06): the one-time pack
 // migration copies ONLY the deterministic preload manifest, verifies the
 // destination before it may call itself done, and retries on a later

@@ -50,9 +50,13 @@ A = await pollRead(`(() => JSON.stringify({ h: history.length, done: doneSet.siz
 ok('T3 Yes archives the clean with its notes', A.h === 1 && A.done === 0 && /Blocked driveway/.test(A.hn));
 ok('T3 after Yes the button shows NO Undo - label stays FINISH (Beta 1.110)', A.label === 'FINISH');
 // T4: NO Undo exists any more (Beta 1.110, Andrew): the Yes tap is the whole gate. T4 builds its
-// own finish, then watches the button for a full 9 seconds (past the old 8s window): the label must
-// never read Undo, the finished run must never come back, and tapping the button again must open
-// the finish pop-up for the CURRENT board - not resurrect anything.
+// own finish, then watches the button briefly: the label must never read Undo, the finished run
+// must never come back, and tapping the button again must open the finish pop-up for the CURRENT
+// board - not resurrect anything. Test-suite restructure (2026-11-09): the watch window is 1.5 s,
+// NOT the old 9 s - the old window sampled past the retired 8 s Undo window at full length on
+// every run, and the standing guard for a reintroduced Undo is drive146's C0/C1b (post-finish
+// button state + pop-up behaviour), which samples the same property at the moment it matters.
+// 1.5 s of local sampling remains as this drive's own smoke of the same claim.
 await ev(`(() => { history = []; saveHistory(); return true; })()`);
 await mark3();
 await ev(`(() => { $('resetBtn').click(); return true; })()`);
@@ -62,9 +66,9 @@ await ev(`(() => { $('finYes').click(); return true; })()`);
 A = await pollRead(`(() => JSON.stringify({ h: history.length, done: doneSet.size }))()`, v => v.h === 1 && v.done === 0);
 ok('T4 setup: the second clean archived', A.h === 1 && A.done === 0);
 const labels = [];
-const t4end = Date.now() + 9000;
-while (Date.now() < t4end) { labels.push(await ev(`(() => $('resetBtn').textContent + '|' + $('resetBtn').classList.contains('undoing'))()`)); await sleep(400); }
-ok('T4 no Undo is offered at any moment in the 9s after Yes | samples ' + labels.length + ' saw ' + JSON.stringify([...new Set(labels)]), labels.length >= 10 && labels.every(l => l === 'FINISH|false'));
+const t4end = Date.now() + 1500;
+while (Date.now() < t4end) { labels.push(await ev(`(() => $('resetBtn').textContent + '|' + $('resetBtn').classList.contains('undoing'))()`)); await sleep(300); }
+ok('T4 no Undo is offered in the 1.5s after Yes (the long-window guard is drive146 C0/C1b) | samples ' + labels.length + ' saw ' + JSON.stringify([...new Set(labels)]), labels.length >= 4 && labels.every(l => l === 'FINISH|false'));
 await ev(`(() => { $('resetBtn').click(); return true; })()`);
 A = await pollRead(`(() => JSON.stringify({ open: !$('finModal').classList.contains('hidden'), h: history.length, done: doneSet.size }))()`, v => v.open === true, 4000);
 ok('T4 tapping the button after a finish opens the pop-up - the run does NOT come back', A.open === true && A.h === 1 && A.done === 0);

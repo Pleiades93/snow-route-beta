@@ -61,12 +61,14 @@ try {
   ok('R2 the restored trail is STORED capped at 8000', Rr.trail === 8000);
   ok('R3 the restored session markers are STORED capped at 8000', Rr.sess === 8000);
 
-  // ---- Phase T: tile enumeration bounds (worldwide case LAST - on the
-  // unfixed code it never returns and the drive dies here, which is the RED) ----
-  const T1 = await J(`preloadUrlList().length`);
-  ok('T1 preloadUrlList() still returns the frozen 897 URLs', T1 === 897);
-  const T2 = await J(`packTileUrls({ box: { w: -180, s: -85, e: 180, n: 85 }, roads: ROUTE_PACKS[0].roads }).size`);
-  ok('T2 a worldwide-box pack enumerates bounded in-page (size ' + T2 + ', cap 20000)', typeof T2 === 'number' && T2 > 0 && T2 <= 20000);
+  // ---- Phase T: CUT (test-suite restructure, 2026-11-09) ----
+  // T1 (preloadUrlList() === the frozen 897) and T2 (a worldwide-box pack
+  // enumerates bounded, <= 20000) duplicated selftest-nv1152's NV3b, which
+  // runs in build-and-test on every run - and proves both claims STRONGER:
+  // the 897 in exact order against the fixture, and the worldwide bound in
+  // a child process with a timeout (so an unbounded enumeration fails as a
+  // timeout instead of hanging this drive). Phases L and R above remain
+  // this drive's own: the LOAD and RESTORE cap paths in a real page.
 } catch (e) {
   R.fatal = String(e && e.message || e);
 }
