@@ -28,12 +28,22 @@ const waitBoot = async () => { for (let i = 0; i < 40; i++) { try { if (await ev
 const toMenu = async () => { await ev(`localStorage.clear(); location.reload(); true`); await waitBoot(); await sleep(2200); };
 const SEED0 = new Date(1700000000000).toISOString();
 const seed10 = async () => { await ev(`(() => { const rk = routeKeys('5w'); const hist = []; for (let i = 0; i < 10; i++) { const at = new Date(1700000000000 + i * 86400000).toISOString(); hist.push({ at, items: { Velmar: at }, via: {}, notes: {}, sides: { p: {}, t: {} }, km: 0, startedAt: at }); } localStorage.setItem(rk.hist, JSON.stringify(hist)); return true; })()`); };
+// After a MANUAL reload the drive must re-establish bootThrough's readiness
+// contract before touching completion paths: loadRoute returns once the app1
+// geometry (STRETCH) is built, but the paint engine still holds the EMPTY
+// boot geometry until the map settles on the fitted view, and a street
+// completion in that window reads GEO[street].stitched of undefined (the
+// first two CI runs of this drive failed Phase D exactly there - 'Cannot
+// read properties of undefined (reading stitched)' - while local runs, with
+// faster settle, never saw it). Poll the same two readinesses bootThrough
+// polls (routeLoaded, map not moving).
+const loadSettled = async () => { await ev(`loadRoute('5w'); true`); await poll(`typeof routeLoaded !== 'undefined' && routeLoaded === true`, 20000); await poll(`typeof map === 'undefined' || !map || !map.isMoving()`, 25000); await sleep(300); };
 const finish3 = async () => { await ev(`(() => { const T = Date.now() - 7200000; runStart = T; saveStart(); markDone('Velmar', 'tap', new Date(T + 600000).toISOString()); markDone('Mellings', 'tap', new Date(T + 900000).toISOString()); markDone('Astona', 'tap', new Date(T + 1200000).toISOString()); finishRun(); return true; })()`); await sleep(400); };
 
 try {
   // ---- Phase A: retention through finish + reload ----
   await toMenu(); await seed10();
-  await ev(`loadRoute('5w'); true`); await sleep(600);
+  await loadSettled();
   const a0 = await J(`({ n: history.length })`);
   ok('A0 the 10 seeded cleans load', a0.n === 10);
   await finish3(); await finish3();
@@ -41,7 +51,7 @@ try {
   ok('A1 two finishes past the old cap: 12 retained in memory AND storage, the oldest seed intact (zero evictions) | ' + JSON.stringify(a1),
     a1.n === 12 && a1.stored === 12 && a1.first === SEED0);
   await ev(`location.reload(); true`); await waitBoot(); await sleep(1500);
-  await ev(`loadRoute('5w'); true`); await sleep(600);
+  await loadSettled();
   const a2 = await J(`({ n: history.length, first: history.length ? history[0].at : '', ats: history.map(h => h.at) })`);
   ok('A2 after a reload the 12 are all still there', a2.n === 12 && a2.first === SEED0);
 
@@ -51,17 +61,17 @@ try {
   await toMenu();
   await ev('(async () => { await restoreBackup(JSON.parse(' + JSON.stringify(bakStr) + ')); return true; })()');
   await sleep(3500); await waitBoot(); await sleep(1200);
-  await ev(`loadRoute('5w'); true`); await sleep(600);
+  await loadSettled();
   const b1 = await J(`({ n: history.length, ats: history.map(h => h.at) })`);
   ok('B1 the restore reproduces all 12 cleans, stamp-for-stamp, in order | n=' + b1.n,
     b1.n === 12 && JSON.stringify(b1.ats) === JSON.stringify(a2.ats));
 
   // ---- Phase C: the interrupted finish at the old capacity (RP-01) ----
   await toMenu(); await seed10();
-  await ev(`loadRoute('5w'); true`); await sleep(600);
+  await loadSettled();
   const cStage = await J(`(() => { const T = Date.now() - 7200000; runStart = T; saveStart(); markDone('Velmar', 'test'); markDone('Mellings', 'test'); markDone('Astona', 'test'); const e = buildSnap(); e.runId = T; localStorage.setItem(LS.hist, JSON.stringify([...history, e])); localStorage.setItem(LS.finclean, JSON.stringify({ run: T, at: Date.now() })); return { T }; })()`);
   await ev(`location.reload(); true`); await waitBoot(); await sleep(1500);
-  await ev(`loadRoute('5w'); true`); await sleep(800);
+  await loadSettled();
   const c1 = await J(`({ n: history.length, first: history.length ? history[0].at : '', done: doneSet.size, run: runStart })`);
   ok('C1 the interrupted finish at the old capacity loses NOTHING: the phantom entry rolls back, all 10 originals stand (oldest intact), the run resumes with its 3 streets | ' + JSON.stringify(c1),
     c1.n === 10 && c1.first === SEED0 && c1.done === 3 && c1.run === cStage.T);
