@@ -111,8 +111,13 @@ const { proc, ev, consoleLog, sleep } = await launchDrive();
 // measures the boot-menu pills' label centring on the
 // rendered text itself (not the computed style), and PILLF
 // their fills - the primary solid white, the secondary
-// tinted with the 1.5 px inset white ring. Every other
-// check is unchanged from 1.157.
+// tinted with the 1.5 px inset white ring. SNOW1-SNOW3
+// cover the same release's snowfall layer ("Falls and
+// settles", Andrew's pick from the falling-snow examples
+// page): the canvases exist in both halves of the scene,
+// flake positions change across sampled frames, and the
+// accumulation is present in the layer's state. Every
+// other check is unchanged from 1.157.
 const R = { checks: [] };
 const ok = (name, cond) => R.checks.push([name, cond === true]);
 
@@ -300,6 +305,24 @@ ok('PILLC the menu pills\' text is CENTRED, measured on the rendered label (not 
   !!pill && pillOffA <= 2 && pillOffB <= 2);
 ok('PILLF the pill hierarchy is the mock\'s: Choose (primary) is SOLID white [' + (pill && pill.a ? pill.a.bg : 'n/a') + ']; Create (secondary) is the TINTED fill [' + (pill && pill.b ? pill.b.bg : 'n/a') + '] wearing the 1.5px inset white ring [' + (pill && pill.b ? pill.b.sh : 'n/a') + ']',
   !!pill && !!pill.a && !!pill.b && pill.a.bg === 'rgb(255, 255, 255)' && pill.b.bg === 'rgba(255, 255, 255, 0.16)' && pill.b.sh.indexOf('inset') >= 0 && pill.b.sh.indexOf('1.5px') >= 0);
+
+// SNOW (Beta 1.158): the "Falls and settles" layer - canvases in both
+// halves of the boot/menu scene, the engine running, flake positions
+// changing across sampled frames, accumulation state present. State is
+// read through the engine's own handle (window.__snow) - no pixel checks.
+let snowA = null, snowYs2 = null;
+try {
+  snowA = await ev(`(() => { const w = window; return JSON.stringify({ has: !!document.getElementById('snowCv') && !!document.getElementById('snowCvM'), run: !!(w.__snow && w.__snow.running()), amt: w.__snow ? w.__snow.amount() : -1, gnd: w.__snow ? w.__snow.ground() : -1, ys: w.__snow ? w.__snow.flakes().map(f => Math.round(f.y)) : [] }); })()`).then(x => typeof x === 'string' && x ? JSON.parse(x) : null);
+  await new Promise(r => setTimeout(r, 650));
+  snowYs2 = await ev(`(() => JSON.stringify(window.__snow ? window.__snow.flakes().map(f => Math.round(f.y)) : []))()`).then(x => typeof x === 'string' && x ? JSON.parse(x) : null);
+} catch (e) { snowA = null; snowYs2 = null; }
+const snowMoved = !!(snowA && snowYs2 && snowA.ys.length > 0 && snowYs2.length === snowA.ys.length && snowYs2.some((y, i) => Math.abs(y - snowA.ys[i]) > 2));
+ok('SNOW1 the snow canvases live in both halves of the boot/menu scene (#snowCv in the splash, #snowCvM in the route menu) and the engine is running',
+  !!snowA && snowA.has && snowA.run);
+ok('SNOW2 the flakes actually fall: flake positions change across frames sampled 650ms apart',
+  snowMoved);
+ok('SNOW3 the accumulation is present in the layer state: settle amount ' + (snowA ? snowA.amt.toFixed(2) : 'n/a') + ' and ground height ' + (snowA ? snowA.gnd.toFixed(1) : 'n/a') + 'px, both > 0 in the build phase',
+  !!snowA && snowA.amt > 0 && snowA.gnd > 0);
 
 R.exceptions = consoleLog.filter(l => l.type === 'EXCEPTION').map(l => l.text.slice(0, 200));
 finish(R, proc);
