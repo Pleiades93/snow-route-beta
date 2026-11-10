@@ -208,9 +208,8 @@ async function restoreBackup(parsed) { // production doRestore semantics: valida
       if (field === 'done' && pv && typeof pv === 'object' && !Array.isArray(pv)) {
         v = JSON.stringify(Object.keys(pv).filter(nm => pv[nm] && (nameSet || STREETSET).has(nm))); // legacy done-set was a street->time map; migrate like the loader does. Beta 1.117 (F6): filtered against the TARGET route's names (nameSet), not the open route's
       } else if (shape === 'arr' ? !Array.isArray(pv) : !(pv && typeof pv === 'object' && !Array.isArray(pv))) { toast('Backup value for ' + label + ' has the wrong shape — nothing was changed', 3200); return false; }
-      if ((field === 'hist' || field === 'trail' || field === 'sess') && Array.isArray(pv) && pv.length > (field === 'hist' ? 10 : TRAIL_MAX)) { // Beta 1.152 (NV round, NV4): the writers' caps, enforced inside restore validation (validate-then-write: the STORED value is the capped one, so no backup can hand the load an oversized array). Only crafted backups are affected - a genuine backup never exceeds the caps its writers enforce. History caps with trimHistory's own eviction rule via the LINEAR capHistoryList (app1), fullness judged against the TARGET route's street count; the trail and the session markers keep their newest entries, as their writers keep them. Markers are first given the loader's own sanitize (finite, de-duplicated, sorted) so the stored value is exactly what the load would have made of it, capped.
-        if (field === 'hist') v = JSON.stringify(capHistoryList(pv, nameSet ? nameSet.size : STREETNAMES.length));
-        else if (field === 'trail') v = JSON.stringify(pv.slice(pv.length - TRAIL_MAX));
+      if ((field === 'trail' || field === 'sess') && Array.isArray(pv) && pv.length > TRAIL_MAX) { // Beta 1.152 (NV round, NV4): the writers' caps, enforced inside restore validation (validate-then-write: the STORED value is the capped one, so no backup can hand the load an oversized array). Only crafted backups are affected - a genuine backup never exceeds the caps its writers enforce. Beta 1.167 (B1): history is NO LONGER capped here - the writers (appendHistory at finish/save) and the loader dropped the 10-clean cap together, so a backup's history is stored whole; the trail and the session markers keep their newest entries, as their writers keep them. Markers are first given the loader's own sanitize (finite, de-duplicated, sorted) so the stored value is exactly what the load would have made of it, capped.
+        if (field === 'trail') v = JSON.stringify(pv.slice(pv.length - TRAIL_MAX));
         else { const cs = [...new Set(pv.map(x => Number(x)).filter(x => Number.isFinite(x)))].sort((a, b) => a - b); v = JSON.stringify(cs.slice(Math.max(0, cs.length - TRAIL_MAX))); }
       }
     }
@@ -693,7 +692,7 @@ $('stDel').addEventListener('click', async () => {
 });
 // ---- About / What's new ----
 const WHATSNEW = { // the curated in-app notes: plain words, LATEST RELEASE ONLY (Beta 1.114, Andrew: the accumulated list cluttered the About pane). A release REPLACES this entry with its own in the same change - it never accumulates; the full history lives in CHANGELOG.md, not the app
-  v: 'Beta 1.166', items: ["Backups now include your settings too — vibration, chime and chime sound — so restoring a backup brings the app back the way you had it. Your created routes also moved into roomier, safer storage: each route is kept on its own now, so one route can never crowd out or break another."]};
+  v: 'Beta 1.167', items: ["Your cleans are no longer capped at 10 \u2014 every finished clean is kept, and your full history comes along in backups and restores. Pace is tightened up too: each clean now remembers the work it actually did during the run, and a clean's details show both the time its streets took and the total time through to Finish."] };
 function renderAbout() {
   const cur = $('ver').textContent.trim();
   $('wnHead').textContent = "WHAT'S NEW · " + cur; // the header names the LIVE version, read from the title's version element - never a second hard-coded copy that can go stale

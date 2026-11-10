@@ -95,7 +95,7 @@ unchanged.
 |------|---------|-------|
 | `v2` | Completed streets (derived cache) | JSON array of street names. Re-derived from `v5.sides` at every load; a non-array value is ignored, never fatal (audit F-3). |
 | `v2.times` | Completion time per street | JSON object `{street: ISO time}`. |
-| `v2.history` | Archived cleans, oldest first, max 10 | JSON array of history entries (below). Load sanitizer drops malformed entries. |
+| `v2.history` | Archived cleans, oldest first — UNCAPPED since Beta 1.167 (was max 10 through 1.166) | JSON array of history entries (below). Load sanitizer drops malformed entries. |
 | `v4.notes` | Per-street notes and flags | JSON object `{street: [ {k, at, text?}, … ]}`; `k` is `note` or a flag kind (`car`, `hazard`, `missed`, `salt`). |
 | `v4.via` | How each street was marked | JSON object `{street: string}`. |
 | `v4.trail` | GPS trail, all sessions (recorded only during a run) | JSON array of `[lat, lng, epochSeconds]` triples; sanitizer enforces finite, in-range values. |
@@ -108,6 +108,7 @@ unchanged.
 | `v2.migrated` | Migration completion marker (Beta 1.94, audit SR-193-03) | The string `'1'`, written only after every legacy field the slot should hold is verified present in it (see Migration). Its presence is the ONLY thing that makes the slot authoritative; without it the legacy keys stay authoritative and the move retries. Not backed up. |
 | `v2.migfill` | Migration fill record (Beta 1.150, security-audit fix round) | JSON `{field: value}` — for each route field, the exact value the legacy migration's most recent landed fill wrote into the slot. It exists only while a migration is incomplete: each verified fill updates it (verified write), and it is deleted when the `v2.migrated` marker commits. On a retry it separates migration-owned fills (a slot value still equal to its record — re-copied when the legacy value has moved on, e.g. a fallback boot saved over it) from values another writer owns (a restore's — they win and their record is dropped). Transient working state — not a backup field, not migration-copied. |
 | `v5.finclean` | Finish-cleanup obligation (Beta 1.141, Package A / DA-10) | JSON `{run, at}` — the finishing run's start (or 0) and the finish time; forensic content only, the completion guards are state-based. Written as the FIRST step of Finish's transaction, so a committed finish whose post-commit notes/coverage writes failed carries a durable obligation instead of relying on the in-memory retry flag. Discharged by any fully successful saveAll, and by a successful restore (which replaces the slot's truth wholesale). Completed at load by `completeFinishCleanup` only when no run is live and the loaded board is the cleared post-finish board: `v4.notes` and `v4.cov` are rewritten to `'{}'` as verified writes and the key is deleted. Transient working state — not a backup field, not migration-copied. |
+| `v5.rundist` | Run-distance counter (Beta 1.167, B5) | JSON `{run, m, capped}` — the running clean's accumulated GPS distance in metres, accumulated at fix-record time so the archived `km` stays the true run total even when the 8,000-point trail cap truncates the stored trail; `run` is the run's start stamp (a record naming another run is never adopted), `capped` records that the trail splice dropped points from this run. Written at Start and throttled during the run; deleted by Finish (consumed into the archive entry) and by Cancel. Transient working state — not a backup field, not migration-copied. |
 | `v5.preload` | Preload record `{at, saved, total, routeSaved, routeTotal}` (local only) | Per-route; not backed up. `saved`/`total` count the whole offline pack (the union manifest — the pack is ONE shared cache). Beta 1.117: `routeSaved`/`routeTotal` count THIS route's own tile subset (its area + route core), so completion is accounted per route; records written before 1.117 lack the pair and read as pack-level only. Delete maps clears EVERY route's record along with the pack. |
 
 Global keys: `snowroute.v2.night` + `snowroute.v2.nightExp` (the theme
@@ -206,13 +207,24 @@ blocks the store half of the boot. Regression coverage: drive183.
 
 ## History entry
 
-`{at, items, via, notes, sides, km, startedAt, path?}` — `items` maps street →
-completion ISO time or null; `notes` and `sides` are deep snapshots taken at
-Finish; `path` is the thinned GPS path (optional). An entry archives ONLY when
-a run finishes with ≥ 3 streets; the store caps at 10 entries, evicting
-non-full runs first (full = every street in the route pack — 34 for
-Route 5W; the count is derived from the pack, never restated — Beta 1.94,
-audit F-01).
+`{at, items, via, notes, sides, km, startedAt, path?, workM?, totalWorkM?,
+geoFP?, pathShortened?}` — `items` maps street → completion ISO time or
+null; `notes` and `sides` are deep snapshots taken at Finish; `path` is the
+thinned GPS path (optional). An entry archives ONLY when a run finishes
+with ≥ 3 streets. **Beta 1.167 (run/pace fix round, B1): the store is
+UNCAPPED** — through 1.166 it capped at 10 entries, evicting non-full runs
+first (full = every street in the route pack — 34 for Route 5W; Beta 1.94,
+audit F-01); all four enforcement points (finish, save, load, restore) were
+retired together, and entries are retained whole at any count.
+**Beta 1.167 (B2):** entries archived by 1.167+ also carry `workM` (the
+run-attributed side-metres Finish measured from the entry's own side stamps
+inside the run's window), `totalWorkM` (the route's total side-metres at
+Finish) and `geoFP` (a fingerprint of the route geometry as cleaned); pace
+computations read `workM` verbatim when present and derive from `sides`
+exactly as before when it is absent — pre-1.167 entries are never rewritten.
+**Beta 1.167 (B5):** `km` is the run-distance counter's true total (see
+`v5.rundist` below), and `pathShortened: true` is set when the 8,000-point
+trail cap truncated the saved `path` — the detail view discloses it.
 
 ## Backup envelope
 
@@ -244,7 +256,7 @@ export, the **recovery backup**, shares this envelope with one added
 marker (`"recovery": true`): it serializes the live in-memory state of
 the active route directly, for the storage-failure moments when the
 normal backup refuses by design; it restores through this same path.
-The transient fields (`v5.snap`, `v2.migrated`, `v5.finclean`) are never part of
+The transient fields (`v5.snap`, `v2.migrated`, `v5.finclean`, `v5.rundist`) are never part of
 a backup as fields of their own. Beta 1.96 (SR-195-02): a recovery
 backup additionally carries the active run's cancel snapshot as an
 optional per-route `snap` string (the snapshot object, serialized) when

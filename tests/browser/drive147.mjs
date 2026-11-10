@@ -16,8 +16,9 @@ await bootThrough(ev, poll); // boots end at the route menu - click through to a
 // is strict: a previous run's identity never matches a new run (R3/R8), and
 // an entry with no identity (written before 1.104) is never reconciled (R9).
 // R10 proves finishRun stamps the identity while startedAt keeps the
-// pre-Start mark; R11 proves CG-103-01: a finish can never evict its own
-// incoming archive entry.
+// pre-Start mark; R11 proved CG-103-01 (a finish can never evict its own
+// incoming archive entry) - Beta 1.167 retired the cap entirely, and R11
+// now proves the stronger contract: NOTHING is evicted, ever.
 //
 // Test-suite restructure (2026-11-09): REWRITTEN table-driven, and drive167
 // absorbed. The old drive ran R1-R9 as nine virgin()+reboot() cycles (~20
@@ -164,8 +165,10 @@ try {
     return JSON.stringify({ T, n: h.length, runId: e.runId || null, startedAt: e.startedAt || null, wantStarted: new Date(T - 1800000).toISOString(), items: e.items ? Object.keys(e.items).length : 0 });
   })()`));
   ok('R10 finish stamps runId === run start; startedAt keeps the pre-Start mark | ' + JSON.stringify(r10), r10.n === 1 && r10.runId === r10.T && r10.startedAt === r10.wantStarted && r10.items === 3);
-  // R11 (CG-103-01): history full of 10 FULL cleans; a new partial finish must
-  // keep its own archive (the oldest pre-existing entry is evicted instead)
+  // R11 (CG-103-01, re-derived by Beta 1.167 B1): history full of 10 FULL
+  // cleans; a new partial finish keeps its own archive AND every
+  // pre-existing entry - the 10-clean cap that used to evict the oldest
+  // pre-existing entry here is retired at all four enforcement points.
   await wipe();
   const r11 = JSON.parse(await ev(`(() => {
     const T = Date.now() - 7200000;
@@ -179,9 +182,9 @@ try {
     finishRun();
     const h = JSON.parse(localStorage.getItem(LS.hist) || '[]');
     const last = h[h.length - 1] || {};
-    return JSON.stringify({ n: h.length, firstAt: h.length ? h[0].at : null, wantFirstAt: new Date(T - 9 * day).toISOString(), lastItems: last.items ? Object.keys(last.items).length : 0, lastRunId: last.runId || null, T });
+    return JSON.stringify({ n: h.length, firstAt: h.length ? h[0].at : null, wantFirstAt: new Date(T - 10 * day).toISOString(), lastItems: last.items ? Object.keys(last.items).length : 0, lastRunId: last.runId || null, T });
   })()`));
-  ok('R11 10 full cleans + new partial finish: incoming archive retained, oldest pre-existing evicted | ' + JSON.stringify(r11), r11.n === 10 && r11.firstAt === r11.wantFirstAt && r11.lastItems === 3 && r11.lastRunId === r11.T);
+  ok('R11 10 full cleans + new partial finish: incoming archive retained AND all 10 pre-existing kept (11 total, oldest intact) | ' + JSON.stringify(r11), r11.n === 11 && r11.firstAt === r11.wantFirstAt && r11.lastItems === 3 && r11.lastRunId === r11.T);
 
   // ---- Part 4: drive167 absorbed (Beta 1.146, state-machine census C1) ------
   // A finish with NO run has a reconciliation signature. finishRun stamps a
