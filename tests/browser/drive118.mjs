@@ -4,6 +4,8 @@ await bootThrough(ev, poll); // Beta 1.76: boots end at the route menu now - cli
 
 
 
+// Test-suite restructure (2026-11-09): drive65 + drive66 are absorbed
+// as appended segments at the tail of this file (see the markers).
 // drive118: audit remediation regression suite (spec 2026-10-29). Covers the gaps the older drives do not:
 // invalid coverage indexes (F-2), invalid GPS fixes (G-1), coverage suggestion behaviour incl. parallel
 // streets (spec GPS), restore write failure + rollback (suite 5), failed rollback verification (suite 6),
@@ -145,6 +147,108 @@ await ev(`loadRoute('5w'); true`); await sleep(600); // Beta 1.76: a reload land
 A = await J(`(() => { const bad = STREETNAMES.filter(x => doneSet.has(x) !== streetComplete(x)); return { bad, pn: window.__pn }; })()`);
 ok('T10 after partial save + reload, done set matches street pieces everywhere', A.bad && A.bad.length === 0);
 
+
+// ===== absorbed drive65 (test-suite restructure, 2026-11-09): the load
+// validators of drive65's Phase A, run in their own browser session and
+// appended to this drive's block. CUTS, line-proven against this file:
+// A2/A3 duplicated T7 above (T7 asserts both the surviving-entry count
+// AND the sanitized surviving items, in stronger form) - cut. A1 kept
+// (times sanitization is covered nowhere else); A4 kept (the done set
+// after the same load - not a proven duplicate of any check here). =====
+const R65 = await (async () => {
+const { proc, ev, consoleLog, sleep, poll } = await launchDrive();
+await bootThrough(ev, poll); // Beta 1.76: boots end at the route menu now - click through to a loaded route
+
+
+// drive65 tail: v5.39 audit-fix tests - load validators (BUG-04) + restore suite (BUG-01)
+const R = { checks: [] };
+const ok = (name, cond) => R.checks.push([name, cond === true]);
+await sleep(3200);
+
+// ---- Phase A: corrupt stored data is sanitized on load ----
+await ev(`(() => {
+  localStorage.setItem('snowroute.5w.v2', JSON.stringify(['Columbus']));
+  localStorage.setItem('snowroute.5w.v2.times', JSON.stringify({ Columbus: '2026-10-26T12:00:00.000Z', Galloway: 'not-a-date', Narnia: '2026-10-26T12:00:00.000Z' }));
+  localStorage.setItem('snowroute.5w.v2.history', JSON.stringify([
+    { at: '2026-10-20T12:00:00.000Z', items: { Velmar: '2026-10-20T12:30:00.000Z' } },
+    { at: 'junk', items: {} },
+    { at: '2026-10-21T12:00:00.000Z', items: { Columbus: '2026-10-21T12:30:00.000Z', Bad: '2026-10-21T12:30:00.000Z', Velmar: 'junk-time' } },
+    'garbage'
+  ]));
+  location.reload(); return true; })()`);
+await sleep(3800);
+await ev(`loadRoute('5w'); true`); await sleep(600); // Beta 1.76: a reload lands on the route menu
+const A = JSON.parse(await ev(`(() => JSON.stringify({ times: Object.keys(doneTimes), hist: history.map(h => Object.keys(h.items)), done: [...doneSet] }))()`));
+ok('A1 bad/foreign times dropped, good kept', JSON.stringify(A.times) === '["Columbus"]');
+ok('A4 doneSet intact', JSON.stringify(A.done) === '["Columbus"]');
+
+// NOTE (port): the original drive65 Phase B (backup/restore through the
+// export box) is intentionally not ported. It held the backup in a window
+// variable that the restore-triggered page reload wipes, so its B2/B3/B5
+// steps never reached the restore code - a test bug found 2026-10-26.
+// drive66 is the corrected re-run of that suite and supersedes it; the
+// Phase A validators above are drive65-only coverage and are kept.
+
 R.exceptions = consoleLog.filter(c => c.type === 'EXCEPTION').map(c => String((c.args && c.args[0]) || c.text || '').slice(0, 220));
+ok('no page exceptions (drive65)', R.exceptions.length === 0);
+  try { proc.kill('SIGKILL'); } catch (e) {}
+  return R;
+})();
+R.checks.push(...R65.checks);
+
+// ===== absorbed drive66 (test-suite restructure, 2026-11-09): the
+// restore suite (B1-B3), run in its own browser session and appended.
+// CUT, line-proven: B5 (setItem throws on the history key mid-restore ->
+// 'Restore failed' toast + pre-restore state kept) duplicates T5 above
+// (setItem throws on LS.sides mid-restore -> rollback reported + the
+// persisted pre-restore state intact): the same scenario, and T5's
+// storage-level assertion is the stronger form. B1-B3 have no
+// equivalent here and move whole. =====
+const R66 = await (async () => {
+const { proc, ev, consoleLog, sleep, poll } = await launchDrive();
+await bootThrough(ev, poll); // Beta 1.76: boots end at the route menu now - click through to a loaded route
+
+
+// drive66 tail: v5.39 restore suite only (drive65 Phase B fix: recapture backup after reload)
+const R = { checks: [] };
+const ok = (name, cond) => R.checks.push([name, cond === true]);
+const toast = async () => await ev(`(() => $('toast').textContent)()`);
+await sleep(3200);
+
+await ev(`(() => { markDone('Columbus', 'tap'); saveAll(); saveHistory(); window.__good = buildBackup(); return true; })()`);
+await sleep(300);
+await ev(`(() => { markDone('Galloway', 'tap'); return true; })()`);
+await sleep(300);
+await ev(`(() => { $('xText').value = window.__good; doRestore(); return true; })()`);
+await sleep(2200);
+await ev(`loadRoute('5w'); true`); await sleep(600); // Beta 1.76: the restore reload lands on the route menu
+const B1 = JSON.parse(await ev(`(() => JSON.stringify([...doneSet]))()`));
+ok('B1 valid backup restores exactly', JSON.stringify(B1) === '["Columbus"]');
+
+// recapture AFTER the reload wiped window.__good (the drive65 bug)
+await ev(`(() => { saveAll(); saveHistory(); window.__good = buildBackup(); markDone('Galloway', 'tap'); return true; })()`);
+await sleep(300);
+
+await ev(`(() => { const p = JSON.parse(window.__good); p.v = 99; $('xText').value = JSON.stringify(p); doRestore(); return true; })()`);
+await sleep(400);
+ok('B2 unsupported version rejected', (await toast()).includes('Unsupported backup version'));
+const B2s = JSON.parse(await ev(`(() => JSON.stringify([...doneSet].sort()))()`));
+ok('B2 state untouched', JSON.stringify(B2s) === '["Columbus","Galloway"]');
+
+await ev(`(() => { const p = JSON.parse(window.__good); p.routes['5w'].times = 'not json'; $('xText').value = JSON.stringify(p); doRestore(); return true; })()`);
+await sleep(400);
+ok('B3 corrupt value rejected', (await toast()).includes('not valid JSON'));
+const B3s = JSON.parse(await ev(`(() => JSON.stringify([...doneSet].sort()))()`));
+ok('B3 state untouched', JSON.stringify(B3s) === '["Columbus","Galloway"]');
+
+
+R.exceptions = consoleLog.filter(c => c.type === 'EXCEPTION').map(c => String((c.args && c.args[0]) || c.text || '').slice(0, 220));
+ok('no page exceptions (drive66)', R.exceptions.length === 0);
+  try { proc.kill('SIGKILL'); } catch (e) {}
+  return R;
+})();
+R.checks.push(...R66.checks);
+
+R.exceptions = [...consoleLog.filter(c => c.type === 'EXCEPTION').map(c => String((c.args && c.args[0]) || c.text || '').slice(0, 220)), ...(R65.exceptions || []), ...(R66.exceptions || [])];
 finish(R, proc);
 

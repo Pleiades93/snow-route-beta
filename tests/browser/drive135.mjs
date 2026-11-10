@@ -4,6 +4,8 @@ await bootThrough(ev, poll); // Beta 1.76: boots end at the route menu now - cli
 
 
 
+// Test-suite restructure (2026-11-09): drive122 + drive134 + drive139
+// are absorbed as leading segments in this session (see markers).
 // drive135: Beta 1.54 viewport/keyboard hardening (Andrew's deep-dive, 2026-11-01).
 // The app now keeps a SETTLED size (fullH) and trusts it over a stuck short report
 // in a home-screen install; while typing, the menus ride above the keyboard
@@ -17,6 +19,137 @@ await bootThrough(ev, poll); // Beta 1.76: boots end at the route menu now - cli
 // asserted here is the user-visible machinery: pin, settle-hold, trust, release.)
 const R = { checks: [] };
 const ok = (name, cond) => R.checks.push([name, cond === true]);
+
+// ===== absorbed drive122 (test-suite restructure, 2026-11-09): keyboard/
+// viewport anchoring, measured in THIS session before 135's own body.
+// Check IDs carry the 122- prefix (135 has its own K1/K2). =====
+const R122 = await (async () => {
+const poll120 = poll;
+const R = { checks: [] };
+const ok = (name, cond) => R.checks.push([name, cond === true]);
+const J = async (expr) => { const raw = await ev(`(() => { try { return JSON.stringify((${expr})); } catch (e) { return JSON.stringify({ __err: String(e && e.message || e) }); } })()`); return typeof raw === 'string' ? JSON.parse(raw) : {}; };
+await sleep(3000);
+
+// drive122 (Beta 1.18): keyboard/viewport regression - see body.
+// Every check measures the FAILURE property directly (overflow, overlap, out-of-bounds) in the
+// rendered page at phone size, in both themes - never a proxy like a radius or a class name.
+const RECTS = (sel) => `(() => [...document.querySelectorAll('${sel}')].filter(e => e.offsetParent !== null).map(e => { const r = e.getBoundingClientRect(); return { x: r.x, y: r.y, w: r.width, h: r.height, r: r.right, b: r.bottom }; }))()`;
+const overlaps = (a, b) => a.x < b.r - 1 && b.x < a.r - 1 && a.y < b.b - 1 && b.y < a.b - 1;
+const inView = (r) => r.x >= -1 && r.y >= -1 && r.r <= 421 && r.b <= 901;
+const noOverlap = (rs) => rs.every((a, i) => rs.every((b, j) => i === j || !overlaps(a, b)));
+let A;
+
+ok('122-K0 app boots with the map active', await poll120(`typeof glOk !== 'undefined' && glOk === true`, 30000));
+
+// ---- K1: the chrome is anchored to the visible screen, not the page ---------
+const anchoring = JSON.parse(await ev(`JSON.stringify({
+  hud: getComputedStyle($('hud')).position, sheet: getComputedStyle($('sheet')).position,
+  modal: getComputedStyle($('noteModal')).position, fan: getComputedStyle($('tabBar')).position })`));
+ok('122-K1 header, sheet, modal and menu button are fixed-anchored | ' + JSON.stringify(anchoring),
+  anchoring.hud === 'fixed' && anchoring.sheet === 'fixed' && anchoring.modal === 'fixed' && anchoring.fan === 'fixed');
+
+// ---- K2: both note editors are at the no-auto-zoom text size -----------------
+await ev(`(() => { $('streetsBtn').click(); return true; })()`);
+await poll120(`$('sheet').classList.contains('open')`, 5000);
+await sleep(500);
+await ev(`(() => { const r = document.querySelector('#streetList .srow'); if (r) r.click(); return true; })()`);
+await poll120(`!!document.querySelector('.noteEd textarea')`, 5000);
+const fonts = JSON.parse(await ev(`JSON.stringify({
+  ed: parseFloat(getComputedStyle(document.querySelector('.noteEd textarea')).fontSize),
+  modal: parseFloat(getComputedStyle($('noteText')).fontSize),
+  focused: document.activeElement && document.activeElement.tagName })`));
+ok('122-K2 note editors use >=16px text (no iOS focus auto-zoom) and the editor takes focus | ' + JSON.stringify(fonts),
+  fonts.ed >= 16 && fonts.modal >= 16 && fonts.focused === 'TEXTAREA');
+
+// ---- K3: keyboard state (Beta 1.61 contract): the layout does NOT chase the
+// shrunk visible screen - the published height stays frozen at the full size,
+// the bottom offset stays 0, the header keeps the top of the screen, and the
+// sheet keeps its pre-keyboard size, flush with the layout bottom (the
+// keyboard overlays it). The rig cannot split layout height from visible
+// height the way the phone does (layout 932 vs visible 740), so the sheet's
+// top is asserted through its unchanged height rather than the stage top:
+// on the phone the frozen size is .50 of the FULL height (Beta 1.79 half-open sheets; .74 through 1.78), so its top sits
+// on-screen by construction. ----------------------------------------------
+await send('Emulation.setDeviceMetricsOverride', { width: 420, height: 520, deviceScaleFactor: 2, mobile: true }, S);
+await sleep(900);
+const shrunk = JSON.parse(await ev(`(() => { const vv = window.visualViewport; const hud = $('hud').getBoundingClientRect(); const sh = $('sheet').getBoundingClientRect();
+  const cs = getComputedStyle(document.documentElement);
+  return JSON.stringify({ vvH: vv.height, vvT: vv.offsetTop, hudTop: hud.top, hudBottom: hud.bottom, sheetBottom: sh.bottom, sheetTop: sh.top, sheetH: sh.height,
+    vvh: cs.getPropertyValue('--vvh'), vvb: cs.getPropertyValue('--vvb'), ih: window.innerHeight }); })()`));
+ok('122-K3 keyboard-state: header unmoved at the top, sheet frozen at its pre-keyboard size and flush with the layout bottom, published height frozen at full | ' + JSON.stringify(shrunk),
+  shrunk.hudTop >= shrunk.vvT - 1 && shrunk.hudBottom <= shrunk.vvT + shrunk.vvH + 1 &&
+  Math.abs(shrunk.sheetBottom - shrunk.ih) <= 1 && shrunk.sheetH > 430 && shrunk.sheetH <= 470 &&
+  shrunk.vvh === '900px' && shrunk.vvb === '0px');
+
+// ---- K4: keyboard closed again - everything settles back (Andrew: "it never
+// moves back" - this is the regression for exactly that) -----------------------
+await send('Emulation.clearDeviceMetricsOverride', {}, S);
+await send('Emulation.setDeviceMetricsOverride', { width: 420, height: 900, deviceScaleFactor: 2, mobile: true }, S);
+await ev(`(() => { const ta = document.querySelector('.noteEd textarea'); if (ta) ta.blur(); return true; })()`);
+await sleep(900);
+const restored = JSON.parse(await ev(`(() => { const vv = window.visualViewport; const hud = $('hud').getBoundingClientRect(); const sh = $('sheet').getBoundingClientRect();
+  return JSON.stringify({ vvH: vv.height, hudTop: hud.top, sheetBottom: sh.bottom, sy: window.scrollY }); })()`));
+ok('122-K4 restored state: header back at the top, sheet back at the bottom, no leftover page pan | ' + JSON.stringify(restored),
+  Math.abs(restored.hudTop) <= 1 && Math.abs(restored.sheetBottom - restored.vvH) <= 2 && restored.sy === 0);
+
+  return R;
+})();
+R.checks.push(...R122.checks);
+await ev(`(() => { const ta = document.querySelector('.noteEd textarea'); if (ta) ta.blur(); closeSheets(); return true; })()`); await sleep(600); // segment reset: 122 leaves the Streets sheet open on its note editor
+
+// ===== absorbed drive134 (test-suite restructure, 2026-11-09): viewport
+// re-measure triggers, in this session. =====
+const R134 = await (async () => {
+const poll120 = poll;
+const R = { checks: [] };
+const ok = (name, cond) => R.checks.push([name, cond === true]);
+await sleep(3000);
+ok('134-W0 app boots with the map active', await poll120(`typeof glOk !== 'undefined' && glOk === true`));
+const expect = `(() => { const vv = window.visualViewport; const vvb = Math.max(0, window.innerHeight - vv.offsetTop - vv.height) + 'px'; const vvh = vv.height + 'px'; const de = document.documentElement.style; return de.getPropertyValue('--vvb') === vvb && de.getPropertyValue('--vvh') === vvh; })()`;
+const corrupt = `(() => { const de = document.documentElement.style; de.setProperty('--vvb', '77px'); de.setProperty('--vvh', '111px'); return de.getPropertyValue('--vvb') === '77px'; })()`;
+ok('134-W1 measured values are sane at boot', await ev(expect));
+ok('134-W2a corruption lands', await ev(corrupt));
+await ev(`window.dispatchEvent(new Event('pageshow'))`);
+ok('134-W2 pageshow re-measures and restores the values', await poll120(expect, 8000));
+ok('134-W3a corruption lands again', await ev(corrupt));
+await ev(`document.dispatchEvent(new Event('visibilitychange'))`);
+ok('134-W3 return-to-front re-measures and restores the values', await poll120(expect, 8000));
+ok('134-W4a corruption lands a third time', await ev(corrupt));
+await ev(`window.dispatchEvent(new Event('orientationchange'))`);
+ok('134-W4 rotation re-measures and restores the values', await poll120(expect, 10000));
+ok('134-W5 title block sits at its lowered position (header top padding 25px in the rig, no safe-area inset)', await ev(`getComputedStyle(document.getElementById('hud')).paddingTop === '25px'`));
+  return R;
+})();
+R.checks.push(...R134.checks);
+
+// ===== absorbed drive139 (test-suite restructure, 2026-11-09): the
+// document-height floor, in this session. It reloads the page at a
+// short stage and leaves it there; 135's own body re-stages and
+// re-picks the route itself, exactly as it always has after a reload. =====
+const R139 = await (async () => {
+const poll120 = poll;
+const R = { checks: [] };
+const ok = (name, cond) => R.checks.push([name, cond === true]);
+await sleep(2500);
+ok('139-P0 app boots for the floor tests', await poll120(`!!window.maplibregl && typeof glOk !== 'undefined'`, 45000));
+ok('139-P1 the document-height floor rule ships in the page CSS', await ev(`(() => { for (const sh of document.styleSheets) { try { for (const r of sh.cssRules) { if (r.cssText && r.cssText.indexOf('min(100lvh') >= 0) return true; } } catch (e) {} } return false; })()`));
+ok('139-P2 precondition: the document is at least viewport-tall | scrollH', await ev(`document.documentElement.scrollHeight >= window.innerHeight`));
+const lay = await ev(`(() => { const tb = document.getElementById('tabBar').getBoundingClientRect(); const mb = document.getElementById('map').getBoundingClientRect(); return { ih: window.innerHeight, tabB: Math.round(tb.bottom), mapB: Math.round(mb.bottom) }; })()`);
+ok('139-P3 layout at full size: bar and map reach the viewport bottom | ' + JSON.stringify(lay), !!lay && lay.tabB === lay.ih && lay.mapB === lay.ih);
+await ev(`window.scrollTo(0, 60); document.documentElement.scrollTop = 60; true`); await sleep(400);
+ok('139-P4 the taller document does not make the app scrollable', await ev(`window.scrollY === 0 && document.documentElement.scrollTop === 0`));
+await send('Page.addScriptToEvaluateOnNewDocument', { source: `(() => { const mm = window.matchMedia.bind(window); window.matchMedia = q => q.indexOf('display-mode') >= 0 ? { matches: true, media: q, addEventListener() {}, removeEventListener() {}, addListener() {}, removeListener() {} } : mm(q); })();` }, S);
+await send('Emulation.setDeviceMetricsOverride', { width: 420, height: 820, deviceScaleFactor: 2, mobile: true }, S);
+await ev(`location.reload()`);
+await sleep(2500);
+ok('139-P5 app reboots coherently in a short stage', await poll120(`!!window.maplibregl && window.innerHeight === 820`, 30000));
+ok('139-P5b the boot state has ended before layout is measured (Beta 1.86: chrome is absent BY DESIGN while booting, so a bar rect read mid-boot is the boot state, not the app layout)', await poll120(`!document.documentElement.classList.contains('boot')`, 20000));
+const lay2 = await ev(`(() => { const tb = document.getElementById('tabBar').getBoundingClientRect(); return { ih: window.innerHeight, tabB: Math.round(tb.bottom), sh: document.documentElement.scrollHeight }; })()`);
+ok('139-P6 short stage: bar still at the stage bottom and the floor precondition holds | ' + JSON.stringify(lay2), !!lay2 && lay2.tabB === lay2.ih && lay2.sh >= lay2.ih);
+  return R;
+})();
+R.checks.push(...R139.checks);
+
 await sleep(3000);
 ok('V0 app boots with the map active', await poll120(`typeof glOk !== 'undefined' && glOk === true`));
 await send('Emulation.setDeviceMetricsOverride', { width: 420, height: 820, deviceScaleFactor: 2, mobile: true }, S);

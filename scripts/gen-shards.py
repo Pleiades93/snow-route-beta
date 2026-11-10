@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 """Shard list generator (Beta 1.136, maintainability programme E).
 
-The four browser-test shard lists in .github/workflows/checks.yml are
+The eight browser-test shard lists in .github/workflows/checks.yml are
 GENERATED from the suite's single source - the ALL list in
 tests/browser/run.mjs - partitioned by measured duration
 (scripts/shard-durations.json, whose header records how and when the
@@ -33,7 +33,7 @@ from pathlib import Path
 
 ROOT = Path(__file__).resolve().parent.parent
 WF = ROOT / ".github" / "workflows" / "checks.yml"
-SHARDS = 4
+SHARDS = 8  # test-suite restructure (2026-11-09): eight shards
 
 
 def all_drives(root: Path = ROOT) -> list:
