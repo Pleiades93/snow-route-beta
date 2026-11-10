@@ -57,38 +57,60 @@ function saveDraftRoute() {
    rests 3 s, melts 3 s, empty 1 s) as a ground profile up to 20 px high
    shaped by 0.72 + 0.16 sin(x .045 + 1.7) + 0.12 sin(x .013 + .4), filled
    with the mock's white gradient at alpha min(1, amount x 1.4).
-   Two app adaptations, stated: (1) flakes respawn at the TOP and fall the
-   full height of the scene (the mock respawned them in a band around the
-   title - a replay-framing device); (2) ONE engine drives TWO canvases
-   from the same state - #snowCv inside #splash (over its blue, under the
-   brand) for the splash hold, #snowCvM inside #routeMenu (over its blue,
-   under the panes) for the menu - so the snow sits behind the title (the
-   brand layer) and behind the pills in both halves of the scene and never
-   covers text or controls. Lifetime mirrors the brand layer's: it starts
-   at boot, pauses while the page is hidden (rAF halts; the dt clamp keeps
-   the resume jump-free), and stops for good once the boot scene ends (the
-   pick fade's .bye / the layer's .off / the menu parked) - no snow
-   anywhere else in the app, and it never restarts for the tab-mode menu.
-   Under reduced motion it never starts (the app's standing convention -
-   the same media query arm() branches on). window.__snow is the test
-   handle drive180 measures (presence, motion, accumulation state). */
+   The one app adaptation that stands from 1.158: flakes respawn at the
+   TOP and fall the full height of the scene (the mock respawned them in
+   a band around the title - a replay framing device).
+   Beta 1.159 (Andrew's directed fix, on his phone test of 1.158): he
+   felt a consistent sideways TWITCH at the splash-to-menu handoff,
+   "like clockwork" at the same instant every cold open - and directed
+   the fix himself: one continuous layer, the way the title was fixed
+   at 1.155. The 1.158 engine drove TWO canvases from this state -
+   #snowCv inside #splash and #snowCvM inside #routeMenu - and the
+   menu's .boot entrance rides a translateX(-26px) slide home plus an
+   opacity ramp, so the menu-half field physically slid sideways while
+   fading in over the static splash-half field: the twitch. Now there
+   is ONE canvas - #snowCv, inside #splash (a top-level fixed layer
+   spanning the whole opening scene; the canvas is never reparented
+   and never transformed) - and while the scene is live the engine
+   carries body.snow-scene, under which #routeMenu.boot's background
+   is transparent (head.html), so the single field paints through
+   under the menu's panes: behind the title (the brand layer) and
+   behind the pills in both halves of the scene, never covering text
+   or controls. stop() removes the class when the scene ends for
+   good, so the tab menu, the delete-return picker and reduced-motion
+   boots (the engine never starts there) all keep the menu's own
+   opaque blue. A resize preserves flake positions PROPORTIONALLY
+   (the field scales, it does not re-scatter); no resize can occur
+   mid-transition, since nothing in the transition changes the
+   viewport or the canvas's box. Lifetime mirrors the brand layer's:
+   it starts at boot, pauses while the page is hidden (rAF halts; the
+   dt clamp keeps the resume jump-free), hides in the menu's
+   sub-panes alongside the title (showRmPane carries .away on the
+   canvas) and returns at the main pane, and stops for good once the
+   boot scene ends (the pick fade's .bye / the layer's .off / the
+   menu parked) - no snow anywhere else in the app, and it never
+   restarts for the tab-mode menu. Under reduced motion it never
+   starts (the app's standing convention - the same media query arm()
+   branches on). window.__snow is the test handle drive180 measures
+   (presence, motion, accumulation state, and - at 1.159 - the flakes'
+   RENDERED x: base + sway offset, the painted position). */
 (function snowLayer() {
-  var cvS = document.getElementById('snowCv'), cvM = document.getElementById('snowCvM');
+  var cvS = document.getElementById('snowCv');
   var handle = { cycle: 16, running: function () { return false; }, amount: function () { return 0; }, ground: function () { return 0; }, flakes: function () { return []; } };
   window.__snow = handle;
-  if (!cvS || !cvM) return;
+  if (!cvS) return;
   if (window.matchMedia && window.matchMedia('(prefers-reduced-motion: reduce)').matches) return;
   var CFG = { count: 85, rMin: 1.1, rMax: 3.6, vMin: 34, vMax: 72, swayAmp: 7, swaySpeed: 0.7, alpha: 0.9 };
   function rand(a, b) { return a + Math.random() * (b - a); }
   var W = 0, H = 0, flakes = [], clock = 0, lastTs = 0, raf = 0, running = false, deadFrames = 0;
-  var ctxS = cvS.getContext('2d'), ctxM = cvM.getContext('2d');
+  var ctxS = cvS.getContext('2d');
   function resize() {
     var dpr = Math.min(window.devicePixelRatio || 1, 1.5);
+    var oW = W, oH = H;
     W = window.innerWidth; H = window.innerHeight;
-    [[cvS, ctxS], [cvM, ctxM]].forEach(function (p) {
-      p[0].width = Math.round(W * dpr); p[0].height = Math.round(H * dpr);
-      p[1].setTransform(dpr, 0, 0, dpr, 0, 0);
-    });
+    cvS.width = Math.round(W * dpr); cvS.height = Math.round(H * dpr);
+    ctxS.setTransform(dpr, 0, 0, dpr, 0, 0);
+    if (oW > 0 && oH > 0 && flakes.length && (W !== oW || H !== oH)) { var sx = W / oW, sy = H / oH; for (var i = 0; i < flakes.length; i++) { flakes[i].bx *= sx; flakes[i].y *= sy; } } // Beta 1.159: a resize scales the field proportionally - positions are preserved, never re-scattered
   }
   function newFlake(scatter) {
     return { bx: rand(0, W), y: scatter ? rand(-4, H) : -4, r: rand(CFG.rMin, CFG.rMax), v: rand(CFG.vMin, CFG.vMax), phase: rand(0, Math.PI * 2), swayFreq: CFG.swaySpeed * rand(0.7, 1.3), amp: CFG.swayAmp * rand(0.5, 1.2), o: rand(0.55, 1), age: scatter ? rand(0.6, 3) : 0 };
@@ -105,7 +127,8 @@ function saveDraftRoute() {
     if (maxH <= 0) return 0;
     return maxH * (0.72 + 0.16 * Math.sin(x * 0.045 + 1.7) + 0.12 * Math.sin(x * 0.013 + 0.4));
   }
-  function render(ctx, amount) {
+  function render(amount) {
+    var ctx = ctxS;
     ctx.clearRect(0, 0, W, H);
     if (amount > 0) {
       var grad = ctx.createLinearGradient(0, H - 22, 0, H);
@@ -145,7 +168,7 @@ function saveDraftRoute() {
     if (raf) window.cancelAnimationFrame(raf);
     raf = 0;
     ctxS.clearRect(0, 0, W, H);
-    ctxM.clearRect(0, 0, W, H);
+    document.body.classList.remove('snow-scene'); // Beta 1.159: the scene is over for good - the route menu's own opaque blue is its background again from here on
   }
   function loop(ts) {
     if (!running) return;
@@ -161,18 +184,18 @@ function saveDraftRoute() {
       f.y += f.v * dt;
       if (f.y >= H - groundHeightAt(f.bx, amount) - f.r) flakes[i] = newFlake(false);
     }
-    render(ctxS, amount);
-    render(ctxM, amount);
+    render(amount);
     raf = window.requestAnimationFrame(loop);
   }
   resize();
   for (var i = 0; i < CFG.count; i++) flakes.push(newFlake(true));
+  document.body.classList.add('snow-scene'); // Beta 1.159: while the scene is live the boot menu's background steps aside for the one field (head.html's body.snow-scene rule)
   var rzT = 0;
   window.addEventListener('resize', function () { window.clearTimeout(rzT); rzT = window.setTimeout(resize, 150); });
   running = true;
   handle.running = function () { return running; };
   handle.amount = settleAmount;
   handle.ground = function () { return groundHeightAt(W / 2, settleAmount()); };
-  handle.flakes = function () { return flakes.map(function (f) { return { x: f.bx, y: f.y }; }); };
+  handle.flakes = function () { return flakes.map(function (f) { return { x: f.bx + Math.sin(clock * f.swayFreq + f.phase) * f.amp, y: f.y }; }); }; // Beta 1.159: x is the RENDERED position (base + sway offset) - the painted one
   raf = window.requestAnimationFrame(loop);
 })();
