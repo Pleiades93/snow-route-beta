@@ -661,7 +661,7 @@ $('stDel').addEventListener('click', async () => {
 });
 // ---- About / What's new ----
 const WHATSNEW = { // the curated in-app notes: plain words, LATEST RELEASE ONLY (Beta 1.114, Andrew: the accumulated list cluttered the About pane). A release REPLACES this entry with its own in the same change - it never accumulates; the full history lives in CHANGELOG.md, not the app
-  v: 'Beta 1.157', items: ["More precise road taps: when you are picking roads for a new route, or trimming a road into sectors, a tap now has to land closer to the road line to count — a tap well off to the side of a road no longer selects it. Tapping on or near a road works exactly as before.", "A smoother start: the Snow Route title now keeps its size as it rises into the menu, moves a little slower, and sits at its original distance from the icon again."]};
+  v: 'Beta 1.158', items: ["A lower landing: the Snow Route title now settles a little lower on the menu screen as it rises from the splash — the spot picked from the samples page. The rise itself is unchanged: same size, same pace, same distance from the icon at the start.", "Cleaner menu buttons: on the blue menus, the main action on each screen is now solid, the other buttons are softly tinted with a white outline, and the words sit in the centre of every button.", "Falling snow on the opening screens: flakes drift down over the splash and the route menu, pile up along the bottom, then melt away and start again."]};
 function renderAbout() {
   const cur = $('ver').textContent.trim();
   $('wnHead').textContent = "WHAT'S NEW · " + cur; // the header names the LIVE version, read from the title's version element - never a second hard-coded copy that can go stale

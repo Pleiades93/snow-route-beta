@@ -92,6 +92,32 @@ const { proc, ev, consoleLog, sleep } = await launchDrive();
 // (d) SLOWER: the flip runs 1.3 s - DURATION measures
 // transitionstart -> transitionend against the 1.2-1.45 s band,
 // and N3's bound is re-derived for cubic-bezier(.65,0,.35,1).
+//
+// Beta 1.158 (Andrew, from the landing-height examples page -
+// Current / +24 / +48 / +72): he picked +48, so the menu slot
+// moves 48 px DOWN - head.html's pose top is now
+// calc(21% + 27px), the 1.157 -21 px half-line offset plus his
+// 48, and the landed centre is the 21% line + 48. The buttons
+// do NOT move. Two checks judge exactly this decision: SLOT
+// pins the settled centre-y to the 21% line + 48 (on the 1.157
+// slot it misses by exactly 48 - the RED is arithmetic from
+// the 1.157 CSS: top calc(21% - 21px) over the 42 px line puts
+// the centre on the 21% line itself), and CLEAR measures the
+// landed title's bottom edge against the first button's top
+// edge - the margin must be positive (the examples page's +72
+// crowded the buttons; +48 was picked to clear). The same
+// release also unifies the blue menus' pill styling on the
+// examples mock's treatment (Andrew, same page): PILLC
+// measures the boot-menu pills' label centring on the
+// rendered text itself (not the computed style), and PILLF
+// their fills - the primary solid white, the secondary
+// tinted with the 1.5 px inset white ring. SNOW1-SNOW3
+// cover the same release's snowfall layer ("Falls and
+// settles", Andrew's pick from the falling-snow examples
+// page): the canvases exist in both halves of the scene,
+// flake positions change across sampled frames, and the
+// accumulation is present in the layer's state. Every
+// other check is unchanged from 1.157.
 const R = { checks: [] };
 const ok = (name, cond) => R.checks.push([name, cond === true]);
 
@@ -249,6 +275,54 @@ try {
 } catch (e) { restA = null; restB = null; }
 ok('N4 at rest the title sits exactly on its menu slot: the rect with inline transform forced clear equals the settled rect (<= 1.5px) | settled ' + box(restA) + ' vs cleared ' + box(restB) + ' -> ' + dBox(restA, restB),
   nearBox(restA, restB, 1.5));
+
+// SLOT + CLEAR (Beta 1.158): the landed slot is the 21% line
+// + 48 (Andrew's pick), and the landed title must clear the
+// first button - the buttons never moved.
+let slot = null;
+try {
+  slot = await ev(`(() => { const ti = document.getElementById('splashTitle'); const btn = document.getElementById('rmChoose'); if (!ti || !btn) return ''; const tr = ti.getBoundingClientRect(); const br = btn.getBoundingClientRect(); return JSON.stringify({ cy: tr.top + tr.height / 2, tBot: tr.bottom, btnTop: br.top, ih: window.innerHeight }); })()`).then(x => typeof x === 'string' && x ? JSON.parse(x) : null);
+} catch (e) { slot = null; }
+const slotExp = slot ? (0.21 * slot.ih + 48) : -1;
+ok('SLOT the landed title sits on the PICKED slot (Beta 1.158: the 21% line + 48px, the examples page\'s +48; the 1.157 slot was the 21% line itself): settled centre-y ' + (slot ? slot.cy.toFixed(1) : 'n/a') + 'px vs expected ' + slotExp.toFixed(1) + 'px (21% of viewport height ' + (slot ? slot.ih : -1) + ' + 48), off by ' + (slot ? Math.abs(slot.cy - slotExp).toFixed(1) : 'n/a') + 'px',
+  !!slot && Math.abs(slot.cy - slotExp) <= 2);
+const clearMargin = slot ? (slot.btnTop - slot.tBot) : -999;
+ok('CLEAR the landed title clears the first menu button (the buttons never moved): title bottom ' + (slot ? slot.tBot.toFixed(1) : 'n/a') + 'px, Choose button top ' + (slot ? slot.btnTop.toFixed(1) : 'n/a') + 'px -> margin ' + clearMargin.toFixed(1) + 'px (must be > 0; the examples page\'s +72 crowded the buttons, +48 was picked to clear)',
+  !!slot && clearMargin > 0);
+
+// PILLS (Beta 1.158): the boot menu's two pills wear the
+// unified blue-menu treatment from the examples mock -
+// centring MEASURED on the rendered label (a Range over the
+// button's contents vs the button's own box), the primary
+// solid, the secondary tinted with the inset ring.
+let pill = null;
+try {
+  pill = await ev(`(() => { const meas = id => { const b = document.getElementById(id); if (!b) return null; const br = b.getBoundingClientRect(); const rg = document.createRange(); rg.selectNodeContents(b); const tr = rg.getBoundingClientRect(); const cs = getComputedStyle(b); return { bcx: br.left + br.width / 2, tcx: tr.left + tr.width / 2, bg: cs.backgroundColor, sh: cs.boxShadow }; }; return JSON.stringify({ a: meas('rmChoose'), b: meas('rmCreate') }); })()`).then(x => typeof x === 'string' && x ? JSON.parse(x) : null);
+} catch (e) { pill = null; }
+const pillOffA = pill && pill.a ? Math.abs(pill.a.tcx - pill.a.bcx) : 999;
+const pillOffB = pill && pill.b ? Math.abs(pill.b.tcx - pill.b.bcx) : 999;
+ok('PILLC the menu pills\' text is CENTRED, measured on the rendered label (not the computed style): Choose label centre off the pill centre by ' + pillOffA.toFixed(1) + 'px, Create by ' + pillOffB.toFixed(1) + 'px (tolerance 2px)',
+  !!pill && pillOffA <= 2 && pillOffB <= 2);
+ok('PILLF the pill hierarchy is the mock\'s: Choose (primary) is SOLID white [' + (pill && pill.a ? pill.a.bg : 'n/a') + ']; Create (secondary) is the TINTED fill [' + (pill && pill.b ? pill.b.bg : 'n/a') + '] wearing the 1.5px inset white ring [' + (pill && pill.b ? pill.b.sh : 'n/a') + ']',
+  !!pill && !!pill.a && !!pill.b && pill.a.bg === 'rgb(255, 255, 255)' && pill.b.bg === 'rgba(255, 255, 255, 0.16)' && pill.b.sh.indexOf('inset') >= 0 && pill.b.sh.indexOf('1.5px') >= 0);
+
+// SNOW (Beta 1.158): the "Falls and settles" layer - canvases in both
+// halves of the boot/menu scene, the engine running, flake positions
+// changing across sampled frames, accumulation state present. State is
+// read through the engine's own handle (window.__snow) - no pixel checks.
+let snowA = null, snowYs2 = null;
+try {
+  snowA = await ev(`(() => { const w = window; return JSON.stringify({ has: !!document.getElementById('snowCv') && !!document.getElementById('snowCvM'), run: !!(w.__snow && w.__snow.running()), amt: w.__snow ? w.__snow.amount() : -1, gnd: w.__snow ? w.__snow.ground() : -1, ys: w.__snow ? w.__snow.flakes().map(f => Math.round(f.y)) : [] }); })()`).then(x => typeof x === 'string' && x ? JSON.parse(x) : null);
+  await new Promise(r => setTimeout(r, 650));
+  snowYs2 = await ev(`(() => JSON.stringify(window.__snow ? window.__snow.flakes().map(f => Math.round(f.y)) : []))()`).then(x => typeof x === 'string' && x ? JSON.parse(x) : null);
+} catch (e) { snowA = null; snowYs2 = null; }
+const snowMoved = !!(snowA && snowYs2 && snowA.ys.length > 0 && snowYs2.length === snowA.ys.length && snowYs2.some((y, i) => Math.abs(y - snowA.ys[i]) > 2));
+ok('SNOW1 the snow canvases live in both halves of the boot/menu scene (#snowCv in the splash, #snowCvM in the route menu) and the engine is running',
+  !!snowA && snowA.has && snowA.run);
+ok('SNOW2 the flakes actually fall: flake positions change across frames sampled 650ms apart',
+  snowMoved);
+ok('SNOW3 the accumulation is present in the layer state: settle amount ' + (snowA ? snowA.amt.toFixed(2) : 'n/a') + ' and ground height ' + (snowA ? snowA.gnd.toFixed(1) : 'n/a') + 'px, both > 0 in the build phase',
+  !!snowA && snowA.amt > 0 && snowA.gnd > 0);
 
 R.exceptions = consoleLog.filter(l => l.type === 'EXCEPTION').map(l => l.text.slice(0, 200));
 finish(R, proc);
