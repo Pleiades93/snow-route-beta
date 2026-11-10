@@ -53,12 +53,12 @@ ok('P2 live notes cleared for the next clean', A.live === 0 && A.done === 0);
 // Phase 3: clean detail screen
 await ev(`(() => { openClean(0); return true; })()`); await poll(`!$('cleanView').classList.contains('hidden')`, 10000); // T4: poll the terminal state P3 asserts (the clean view open)
 A = JSON.parse(await ev(`(() => { const cv = $('cleanView'); const rows = [...cv.querySelectorAll('.cvRow')]; return JSON.stringify({ open: !cv.classList.contains('hidden'), ttl: cv.querySelector('.cvTtl').textContent, meta: cv.querySelector('.cvMeta').textContent, rowNames: rows.map(r => r.querySelector('.cvNm').textContent), firstTm: rows[0] ? rows[0].querySelector('.cvTm').textContent : '', sec: (cv.querySelector('.cvSec') || {}).textContent || '' }); })()`));
-ok('P3 detail opens with the clean totals', A.open && /Clean/.test(A.ttl) && /Total time/.test(A.meta));
-ok('P3 streets in mark order with per-street times', JSON.stringify(A.rowNames.slice(0, 3)) === JSON.stringify(['Velmar', 'Mellings', 'Astona']) && /took/.test(A.firstTm));
+ok('P3 detail opens with the clean totals', A.open && /Clean/.test(A.ttl) && /Streets done in/.test(A.meta) && /Total elapsed/.test(A.meta)); // Beta 1.167 (B3): the single 'Total time' label was retired by the honest-durations change - the detail now shows both intervals under their own labels
+ok('P3 streets in mark order with per-street times', JSON.stringify(A.rowNames.slice(0, 3)) === JSON.stringify(['Velmar', 'Mellings', 'Astona']) && /gap/.test(A.firstTm)); // Beta 1.167 (B3): this seed marks via doneSet/doneTimes with no side stamps, so the first street's per-street time is the stamp-less GAP figure - through 1.166 the same figure was labelled 'took'
 ok('P3 noted-but-not-cleaned group present', /not cleaned/.test(A.sec));
 await ev(`(() => { [...$('cleanView').querySelectorAll('.cvRow')][0].click(); return true; })()`); await poll(`$('cleanView').querySelector('.cvDet').style.display !== 'none'`, 10000); // T4: poll the terminal state P3 asserts (the detail block shown)
 A = JSON.parse(await ev(`(() => { const det = $('cleanView').querySelector('.cvDet'); return JSON.stringify({ vis: det.style.display !== 'none', txt: det.textContent }); })()`));
-ok('P3 tapping a street expands its details incl. the note', A.vis && /Time taken/.test(A.txt) && /blocked by car/.test(A.txt));
+ok('P3 tapping a street expands its details incl. the note', A.vis && /Gap since previous street/.test(A.txt) && /blocked by car/.test(A.txt)); // Beta 1.167 (B3): the detail's duration line is the relabelled gap (was 'Time taken')
 // Phase 4: delete the clean (two-tap)
 await ev(`(() => { $('cleanView').querySelector('.cvDel').click(); return true; })()`); await poll(`$('cleanView').querySelector('.cvDel').textContent.includes('confirm')`, 10000); // T4: poll the terminal state P4 asserts (the delete armed)
 A = JSON.parse(await ev(`(() => JSON.stringify({ armed: $('cleanView').querySelector('.cvDel').textContent, h: history.length }))()`));

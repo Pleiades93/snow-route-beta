@@ -71,7 +71,13 @@ try {
     c2.n === 11 && c2.first === SEED0 && c2.done === 0);
 
   // ---- Phase D: B2 - the finish-baked pace figures ----
-  const d = await J(`(() => {
+  // Split in two evals (marks+finish, then the reads) and __err is surfaced:
+  // the first CI run of this drive (run 42919546870, shard 3) failed D1/D3/D5
+  // with the combined eval returning {} - an error the J wrapper swallowed,
+  // which also let D2/D4 pass vacuously on undefined === undefined. The
+  // assertions below now require real numbers, so that failure mode can
+  // never read as a pass again.
+  const dFin = await J(`(() => {
     const T = Date.now();
     runStart = T - 3600000; saveStart();
     markDone('Velmar', 'tap', new Date(T - 7200000).toISOString());
@@ -80,7 +86,11 @@ try {
     const expected = Math.round((STRETCH.Mellings.total + STRETCH.Astona.total) * 2);
     const preInclusive = Math.round((STRETCH.Velmar.total + STRETCH.Mellings.total + STRETCH.Astona.total) * 2);
     finishRun();
-    const e = history[history.length - 1];
+    const e = history[history.length - 1] || {};
+    return { n: history.length, workM: e.workM, expected, preInclusive, totalWorkM: e.totalWorkM, wantTotal: Math.round(totalWorkM()), geoFP: e.geoFP, fpNow: geoFingerprint(), stored: cleanWorkM(e) };
+  })()`);
+  const d = await J(`(() => {
+    const e = history[history.length - 1] || {};
     const legacy = JSON.parse(JSON.stringify(e)); delete legacy.workM;
     const legacyBefore = cleanWorkM(legacy);
     const savedParts = STRETCH.Mellings.parts;
@@ -88,14 +98,15 @@ try {
     const storedAfter = cleanWorkM(e);
     const legacyAfter = cleanWorkM(legacy);
     STRETCH.Mellings.parts = savedParts;
-    return { workM: e.workM, expected, preInclusive, totalWorkM: e.totalWorkM, wantTotal: Math.round(totalWorkM()), geoFP: e.geoFP, fpNow: geoFingerprint(), stored: cleanWorkM(e), storedAfter, legacyBefore, legacyAfter };
+    return { storedAfter, legacyBefore, legacyAfter };
   })()`);
-  ok('D1 the archived workM counts ONLY the in-run work (the pre-Start street is excluded) | ' + JSON.stringify({ workM: d.workM, expected: d.expected, preInclusive: d.preInclusive }),
+  Object.assign(d, dFin);
+  ok('D1 the archived workM counts ONLY the in-run work (the pre-Start street is excluded) | ' + JSON.stringify({ workM: d.workM, expected: d.expected, preInclusive: d.preInclusive, n: d.n, err: d.__err || null }),
     Math.abs(d.workM - d.expected) <= 1 && d.workM < d.preInclusive);
-  ok('D2 totalWorkM is baked and equals the route total at Finish', d.totalWorkM === d.wantTotal);
+  ok('D2 totalWorkM is baked and equals the route total at Finish | ' + JSON.stringify({ totalWorkM: d.totalWorkM, wantTotal: d.wantTotal, err: d.__err || null }), typeof d.totalWorkM === 'number' && d.totalWorkM === d.wantTotal);
   ok('D3 geoFP is baked and matches the live geometry fingerprint', d.geoFP === d.fpNow && /^[0-9a-f]{8}$/.test(d.geoFP || ''));
   ok('D4 cleanWorkM reads the stored figure verbatim - a geometry perturbation cannot re-price the clean (RP-06) | stored=' + d.stored + ' after=' + d.storedAfter,
-    d.stored === d.workM && d.storedAfter === d.workM);
+    typeof d.workM === 'number' && d.stored === d.workM && d.storedAfter === d.workM);
   ok('D5 the legacy fallback (workM stripped) still derives the OLD pre-Start-inclusive figure and follows live geometry - the exposure the bake closes | before=' + Math.round(d.legacyBefore || 0) + ' after=' + Math.round(d.legacyAfter || 0),
     Math.abs((d.legacyBefore || 0) - d.preInclusive) <= 1 && Math.abs((d.legacyAfter || 0) - (d.legacyBefore || 0)) > 1000);
   const d6 = await J(`(() => { const iso = new Date().toISOString(); const crafted = { at: iso, items: { Velmar: iso }, via: {}, notes: {}, sides: { p: { Velmar: [1] }, t: { Velmar: [[iso, null]] } }, km: 0, startedAt: iso, workM: 5000 }; const legacy = JSON.parse(JSON.stringify(crafted)); delete legacy.workM; return { stored: cleanWorkM(crafted), legacy: cleanWorkM(legacy), part: segLenM(STRETCH.Velmar.parts[0]) }; })()`);
