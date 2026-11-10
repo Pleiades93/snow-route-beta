@@ -2,10 +2,11 @@
 
 Status: **contract**. Changing any key name, value shape, or the missing-key
 policy requires a documented migration, migration tests, and Andrew's
-approval (DEVELOPMENT_RULES.md §4). All values live in `localStorage` under
-the serving origin, with ONE exception: the IndexedDB city shape cache
-(Beta 1.121, documented in its own section below — a re-downloadable
-cache, not user data). Formats below were verified against the app source and
+approval (DEVELOPMENT_RULES.md §4). Values live in `localStorage` under
+the serving origin, with TWO IndexedDB exceptions, each documented in its
+own section below: the city shape cache (Beta 1.121 — a re-downloadable
+cache, not user data) and the created-route store (Beta 1.166 — user data:
+the created-route definitions moved out of localStorage). Formats below were verified against the app source and
 the loaders' sanitizers; the slot layout and backup v2 landed in Beta 1.76
 (2026-11-02).
 
@@ -46,6 +47,16 @@ at boot, never half-loaded; its record entry and slot stay untouched.
 One more global rides along: `snowroute.v2.lastarea`, the create flow's
 last-used area (a name-it pre-fill memory, nothing more).
 
+Beta 1.166 (created routes move to IndexedDB): the definitions record
+above is the LEGACY home. The definitions now live in the IndexedDB
+store documented below (IndexedDB: created routes); `snowroute.v2.userpacks`
+survives only as the pre-1.166 record — read at every boot while one is
+present (it wins per id over the store copy while it stands), drained
+into the store on the first 1.166 launch, and deleted once the drain's
+parity check passes (the marker `snowroute.v2.userpacks.migrated` —
+below). A created route's own data still lives in its ordinary
+per-route slot, unchanged.
+
 Beta 1.127 (sectors): NO storage change. Sector selections made
 while creating live only in the creation draft (in-memory); the
 saved pack's `roads[name]` simply contains the chosen sectors'
@@ -72,6 +83,11 @@ reuses it) and `snowroute.v2.lastarea` (a city name, not a route
 reference). The offline pack-migration fingerprint is computed
 from the live pack list, so a deletion un-certifies the previous
 union download; the cached tiles themselves are not removed.
+Beta 1.166: the userpacks removal described above is now a verified
+IndexedDB store delete plus the removal of any not-yet-drained legacy
+shadow copy (a shadow-removal failure restores the store entry and the
+deletion refuses); the gate's strictness and refusal semantics are
+unchanged.
 
 ## Keys (tails; read `snowroute.5w.<tail>` for Route 5W)
 
@@ -113,7 +129,9 @@ object `{vib, chime, chimeSound}`, `chimeSound` one of
 `bell|two|rising|pop|melody`; defaults all toggles OFF and `chimeSound`
 `'two'`; a corrupt or partial value falls back per-field to the
 defaults; read/written only through `loadSettings`/`saveSettings` in
-app1; local only, not backed up. Beta 1.112: Keep screen awake
+app1. Beta 1.166: the record IS backed up — it rides the v2 envelope as
+the top-level `settings` field (see Backup envelope); before 1.166 it
+was local only. Beta 1.112: Keep screen awake
 (`settings.awake`) is NOT part of this record — it is session-only
 in-memory state, forced OFF at every load and never written; a
 Beta 1.111 record still carrying an `awake` field is never read for
@@ -136,6 +154,13 @@ ONE shared pack cache against the UNION manifest over all known packs —
 it is deliberately a global cache certificate, NOT a per-route
 completion flag; per-route completion lives in each route's own
 `v5.preload` record (above).
+`snowroute.v2.userpacks.migrated` (Beta 1.166: the created-route
+migration marker — the constant `'1'`, written (and verified) only
+after the legacy `snowroute.v2.userpacks` record has drained into the
+IndexedDB store with parity re-checked against a fresh full read; the
+legacy record is deleted in the same step. Housekeeping only: boot
+reads the legacy record whenever one is present, marker or not, so the
+marker never gates a read; local only, not backed up).
 
 ## Migration: legacy → 5W slot (Beta 1.76; commit rule revised Beta 1.94)
 
@@ -155,6 +180,30 @@ which is what the marker + fill-only rule exists to prevent. The
 migration is 5W-only by construction (only 5W has a legacy layout).
 Regression coverage: drive145 N11/N12/N12c/N12d/N12e.
 
+## Migration: userpacks record → IndexedDB store (Beta 1.166)
+
+On the first 1.166 launch (and every launch while a legacy record
+stands), the created-route definitions move from the single
+localStorage record `snowroute.v2.userpacks` into the IndexedDB store
+below. The discipline is the house no-wipe rule, the same shape as the
+5W slot migration and the 1.150 rk.migfill: (1) the legacy record
+registers SYNCHRONOUSLY at boot exactly as before — the app is fully
+usable on the legacy data before the store read lands, and the record
+remains the fallback read until the migration is verified; (2) the
+store registers fill-only (an id the legacy pass registered keeps the
+legacy copy — for drained ids the two are content-equal by the parity
+check, and a legacy record an older build wrote after a downgrade is
+the newer copy, so it wins); (3) the drain copies every legacy route
+into the store, each write verified by read-back; (4) parity is
+re-checked against a FRESH full store read, and only then is the
+marker (`snowroute.v2.userpacks.migrated`) written — itself verified —
+and the legacy record deleted (a failed delete is inert: the record
+drains again next boot against an already-complete store). A failed or
+interrupted drain commits nothing: no marker, the legacy record
+untouched, the app fully usable on it, and the drain retries next
+launch. A corrupt legacy record is never deleted blind and never
+blocks the store half of the boot. Regression coverage: drive183.
+
 ## History entry
 
 `{at, items, via, notes, sides, km, startedAt, path?}` — `items` maps street →
@@ -167,7 +216,7 @@ audit F-01).
 
 ## Backup envelope
 
-**v2 (current):** `{app: 'snowroute-backup', v: 2, at, routes, night?, nightExp?, userpacks?}` where
+**v2 (current):** `{app: 'snowroute-backup', v: 2, at, routes, night?, nightExp?, userpacks?, settings?}` where
 `routes` maps each route id to an object of field name → raw stored string,
 the field names being `done, times, hist, notes, via, trail, cov, start,
 flip, sides, sess` (the 11 stored fields; the per-route preload record is
@@ -222,7 +271,20 @@ any route state is applied; the reload that ends every restore
 re-registers them at boot before their state is read, and route ids
 known only through this field are accepted by the routes loop and the
 unknown-name count. Backups without the field (anything written before
-1.118) restore exactly as before. A carried snapshot that fails validation (or whose run's
+1.118) restore exactly as before. Beta 1.166 (the write target moved):
+on restore the definitions still validate FIRST, but they now land in
+the IndexedDB store: the store values they will overwrite are read
+STRICTLY beforehand (an unreadable route refuses the restore before any
+write), the definitions land as per-route verified puts in a first
+phase ahead of the localStorage write set, any failure rolls BOTH homes
+back, restored ids are also removed from any not-yet-drained legacy
+record inside the same write set (the legacy copy would otherwise win
+at the next boot and shadow the restore), and the exporters read the
+definitions from the verified in-memory picture of both homes
+(`userPackCache`, create-packs.js) — a boot whose store read failed
+fails the strict export whole, and the recovery export tops the picture
+up from validated memory. A restore adds/updates created routes; it
+does not delete ones the backup predates — unchanged. A carried snapshot that fails validation (or whose run's
 start is absent) is dropped and the result message says so. Beta 1.97
 (audit loop CG-196-01/-02): ordinary backups carry the field too, and
 every route entry in a current-format backup asserts its lifecycle
@@ -233,7 +295,17 @@ are deleted inside the restore transaction (verified, rolled back on
 failure like every entry), so an idle backup restored over an active
 run leaves no inherited run behind. A backup that OMITS `start`
 entirely (anything written before 1.97) keeps the missing-key rule
-below: the destination's run state is left untouched.
+below: the destination's run state is left untouched. Beta 1.166:
+`settings` (when present) is the Settings record VERBATIM — the raw
+`snowroute.v2.settings` string (the recovery export serializes the live
+settings object in the same shape). It is additive: builds before
+1.166 ignore it, and backups written before 1.166 omit it and leave the
+device's toggles untouched (the missing-key rule). On restore it is
+validated by `canonicalSettings` (the loader's per-field sanitize
+rules, re-serialized canonically; a value that is not a string holding
+a JSON object refuses the whole restore before any write) and lands
+inside the verified write set, with `snowroute.v2.settings` in the
+rollback scope.
 
 ## IndexedDB: the city shape cache (Beta 1.121 — a cache, NOT user data)
 
@@ -269,6 +341,38 @@ was approved by Andrew as part of the 1.121 gate amendment
 (DEVELOPMENT_RULES.md §4 note: a new storage surface with a documented
 schema — this section — and the owner's request as the approval).
 
+## IndexedDB: created routes (Beta 1.166 — user data)
+
+A second IndexedDB database lives beside the cache above:
+`snowroute-userdata` (version 1), object store `packs` (keyPath `id`).
+It holds the created-route DEFINITIONS — one record per route, the
+record being the pack object verbatim (the same object the legacy
+record held as its value, `id` included). This is USER data, the
+opposite contract from the city cache: it rides every backup (as the
+envelope's `userpacks` field), losing it loses the routes themselves,
+and it is never re-downloadable. The database is a sibling of the city
+cache — not a second store inside it — so the cache's failure domain
+(a re-download) never touches user data.
+
+Every write is one short transaction for ONE route, verified by
+read-back before its caller proceeds (`upPut`/`upDel` in
+parts/create-packs.js; equality is judged on canonical content, since
+a structured-clone round-trip is not a byte channel). A save touches
+one route and only that route; a failed save refuses that route only,
+disclosed, and boot never depends on any created-route write. Boot
+registration and the legacy drain are specified in the migration
+section above. The synchronous backup export reads `userPackCache` —
+the in-memory picture of both homes, updated only at verified commit
+points (boot read, save, delete, restore, drain) — so the export's
+all-or-nothing discipline survives the store's asynchrony: a boot
+whose store read failed leaves the picture provably incomplete
+(`upStoreComplete` false) and the strict export refuses, while the
+recovery export tops it up from validated memory (the DA-09 rule).
+Writers: the create flow's save, route deletion, and backup restore;
+readers: boot registration, both exporters. Approved by Andrew
+2026-11-10 (the storage fix round) under the same §4 note as the
+cache: a new storage surface with a documented schema — this section.
+
 ## Restore transaction (invariant)
 
 1. Validate envelope identity, version (1 or 2), and per-field string/shape
@@ -282,6 +386,12 @@ schema — this section — and the owner's request as the approval).
 5. Reload with the `restoring` flag set, so the unload flush cannot clobber
    the restored data. Nested content is sanitized by the loaders on that
    reload (documented design, audit G-2).
+6. Beta 1.166: when the backup carries created-route definitions, the
+   transaction gains a store phase — the overwritten routes' current
+   store values are snapshotted strictly in step 2 (an unreadable one
+   aborts the restore), the definitions are written as per-route
+   verified puts in step 3 BEFORE the localStorage write set, and a
+   failure in either home rolls BOTH homes back under step 4's rule.
 
 ## Versioning rules
 

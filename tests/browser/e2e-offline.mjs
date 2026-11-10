@@ -461,7 +461,7 @@ try {
   const e23 = JSON.parse(await ev2(`(async () => { const oc = await caches.open('snowroute-offline-v1'); const ks = new Set((await oc.keys()).map(r => r.url)); const extras = ${JSON.stringify(info23.extras)}; return JSON.stringify({ flag: localStorage.getItem('snowroute.v5.packmig'), extrasSurviving: extras.filter(u => ks.has(u)).length }); })()`));
   ok('E23 boot migration certifies the UNION with created packs registered: created tiles survive, flag = union fingerprint (Beta 1.143, DA-07) | settled ' + settled23 + ' union ' + JSON.stringify(info23) + ' after ' + JSON.stringify(e23),
     settled23 === true && e23.flag === info23.fp && e23.extrasSurviving === info23.extras.length);
-  await ev2(`(async () => { localStorage.removeItem('snowroute.v2.userpacks'); const r = await migratePack(); return JSON.stringify({ ok: !!(r && r.ok) }); })()`); // cleanup: with the record gone the explicit pass re-certifies the 897 state E22 left
+  await ev2(`(async () => { localStorage.removeItem('snowroute.v2.userpacks'); await upDel('e23-test'); const r = await migratePack(); return JSON.stringify({ ok: !!(r && r.ok) }); })()`); // cleanup: with the definition gone from BOTH homes (Beta 1.166: the legacy record - already drained away by the measured boot - and the IndexedDB store) the explicit pass re-certifies the 897 state E22 left
 } catch (e) { ok('E23 boot migration union certification (Beta 1.143, DA-07) | threw ' + String(e).slice(0, 150), false); }
 
 ok('E13 no page exceptions across the whole run', consoleLog.filter(c => String(c).startsWith('EXCEPTION')).length === 0);
