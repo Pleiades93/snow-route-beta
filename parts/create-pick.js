@@ -345,11 +345,15 @@ function crPickCity(it) {
   const name = crCityNameOf(it); if (!name) return;
   let bbox = null;
   if (Array.isArray(it.boundingbox) && it.boundingbox.length === 4) { const bb = it.boundingbox.map(Number); if (bb.every(isFinite)) bbox = { s: bb[0], n: bb[1], w: bb[2], e: bb[3] }; }
-  crCity = { name, lat, lon, bbox };
-  crAreaGuess = name;
-  if (draft && !draft.area) draft.area = name;
-  try { lsSet(LS_GLOBAL.lastArea, name); } catch (e) {}
-  crEnterPickFromCity();
+  const apply = () => {
+    crCity = { name, lat, lon, bbox };
+    crAreaGuess = name;
+    if (draft && !draft.area) draft.area = name;
+    try { lsSet(LS_GLOBAL.lastArea, name); } catch (e) {}
+    crEnterPickFromCity();
+  };
+  if (crCity) { askDiscard(() => { draft = newDraft(); crPending = {}; apply(); }); return; } // Beta 1.169 (Carbon fix round, D-08): a pick that REPLACES a chosen city is a draft reset, through the same askDiscard guard as the list door (crPackPickCity) and the manual door. Through 1.168 the search and last-city paths landed here directly: the old city's streets stayed in the draft under the new city's preparation, its pending rows were stranded on the old coverage, and draft.area kept the old city's name into the save form. The reset is a fresh draft plus crPending cleared (its rows belong to the old city's coverage); askDiscard no-ops on an empty draft, so re-picking with nothing picked costs no prompt. A FIRST pick (no city in force - e.g. answering the city step for a photo draft) is not a switch and keeps its draft, exactly as through 1.168.
+  apply();
 }
 function crEnterPickFromCity() { // the city is chosen: land in the pick stage, the map flown to the city, and its whole-city preparation started (from the on-device cache when saved - crCityPrepare)
   if (!creating) enterCreate('pick'); else { if (!routeLoaded) parkBootChrome(); else closeRouteMenu(); setCreateStage('pick'); }
@@ -580,7 +584,7 @@ function renderCrLists() {
   { const el = $('crPickList'); el.innerHTML = ''; for (const n of names) el.appendChild(crPanelRowEl(n, g)); }
   { const el = $('pvList'); el.innerHTML = ''; for (const n of names) el.appendChild(crRowEl(n, g)); }
   for (const pk of Object.keys(crPending).sort()) { // Beta 1.121: pending streets (shape reaches past verified coverage) list in the PICK sheet only - never in the preview, never in the count, never saved
-    if (draft.roads[pk]) continue;
+    if (Object.prototype.hasOwnProperty.call(draft.roads, pk)) continue; // Beta 1.169 (Carbon fix round, D-05): an OWN-key test, not a truthiness read - on a plain draft map 'constructor' / 'toString' read truthy through the prototype, so a pending street carrying one of those names was hidden from this list: its row never rendered, so it could neither be seen nor dropped
     const row = document.createElement('div'); row.className = 'crRow pending';
     const dot = document.createElement('span'); dot.className = 'crDot sec'; row.appendChild(dot);
     const nm = document.createElement('span'); nm.className = 'crName'; nm.textContent = shortStreetName(pk); row.appendChild(nm); // Beta 1.144 (DA-04): display form
@@ -634,7 +638,8 @@ function enterCreate(stage) {
 }
 function exitCreate() {
   creating = false; draft = null; crStage = 'pick'; crAreaGuess = '';
-  if (crPillT) clearTimeout(crPillT); crPillT = 0; crPillKey = ''; crPillGone = ''; // Beta 1.153: the pill's clock dies with the session, like every other create timer here crSectorReset(); crSectorSession.collapsed = false; // Beta 1.127: the panel + sector session state dies with the creation
+  if (crPillT) clearTimeout(crPillT); crPillT = 0; crPillKey = ''; crPillGone = ''; // Beta 1.153: the pill's clock dies with the session, like every other create timer here
+  crSectorReset(); crSectorSession.collapsed = false; // Beta 1.127: the panel + sector session state dies with the creation. Beta 1.169 (Carbon fix round, D-01): through 1.168 these two calls sat AFTER the 1.153 comment's slashes on the line above - inside the comment, dead since the line was written. enterCreate's own reset on the next entry fenced the consequence (the state merely outlived the exit instead of dying with it); the calls stand on their own line now and run.
   crSession++; crCovGen++; // every async completion born in this session is obsolete the moment the flow closes - it must not land in a later draft, hint or busy state (CG-PF-05)
   if (crPrep) { clearInterval(crPrep.ticker); crAbortOp(crPrep.op); crPrep = null; } // and the downloads themselves stop (CG-PF-10)
   if (crGrid) { crGridStop('exit'); crGrid = null; } // the grid's downloads stop too; its committed cells live on in the on-device city cache, by design
@@ -704,6 +709,7 @@ function importDraft(text) { // fail closed, named errors, nothing half-applied 
   if (!v.ok) { toast('Draft not imported — ' + v.error, 4000); return; }
   draft = newDraft();
   draft.roads = v.pack.roads; draft.mains = new Set(v.pack.main); draft.name = v.pack.name || ''; draft.area = v.pack.area || ''; draft.tileNames = v.pack.tileNames.slice();
+  draft.osmNames = {}; for (const k of Object.keys(v.pack.roads)) draft.osmNames[k] = k; // Beta 1.169 (Carbon fix round, D-02): an imported street's own OSM name is its pack key. Through 1.168 importDraft left osmNames empty, so crStreetParts' own-ways skip (nm === own) never matched for an imported street and the street's own geometry cut it into fragments at its own vertices. Tapped streets have always carried key -> itself (crAddStreet).
   enterCreate('preview');
   toast('Draft loaded — check it over', 2600);
 }
@@ -731,9 +737,13 @@ $('crCityLast').addEventListener('click', async () => {
     if (r.ok) { const list = await r.json(); if (!stillMine()) return; const hit = (Array.isArray(list) ? list : []).find(crIsPlace); if (hit) { crPickCity(hit); return; } }
   } catch (e) { if (e && e.name === 'AbortError') return; }
   if (!stillMine()) return;
-  crCity = { name: last, lat: null, lon: null, bbox: null };
-  crAreaGuess = last; if (draft && !draft.area) draft.area = last;
-  crEnterPickFromCity();
+  const applyLast = () => {
+    crCity = { name: last, lat: null, lon: null, bbox: null };
+    crAreaGuess = last; if (draft && !draft.area) draft.area = last;
+    crEnterPickFromCity();
+  };
+  if (crCity) { askDiscard(() => { draft = newDraft(); crPending = {}; applyLast(); }); return; } // Beta 1.169 (D-08): the name-only last-city landing is a city pick like any other - replacing a chosen city goes through the same discard + reset as crPickCity
+  applyLast();
 });
 $('crCityBack').addEventListener('click', () => {
   crCityLookupSeq++; if (crCityLastCtl) { try { crCityLastCtl.abort(); } catch (e) {} crCityLastCtl = null; } // leaving the pane kills a held lookup (CG-PF-11)

@@ -54,21 +54,23 @@ const PACK_TILES_MAX = 20000; // Beta 1.152 (NV round): the per-pack tile-URL it
 /** @param {string} id @returns {boolean} */ function migrateLegacyRoute(id) { // one-time, 5W only. Beta 1.94 (deep audit SR-193-03): the COMMIT RECORD is the explicit marker key (rk.mig), never field presence. The 1.93 parity gate (R04) could not tell an interrupted copy from a legitimately partial slot - sides restored from a backup, no history yet - and its retry recopied legacy sides OVER the newer restored ones. Now: with the marker absent, the copy fills ONLY fields the slot lacks (a present slot field is never overwritten), each fill verified by read-back; any failure reports false and the caller reads the legacy keys for this boot - verified fills already landed may stay, since without the marker they are never mistaken for a completed move, and each is an exact copy of the legacy value. Parity is re-checked before the marker is written. The legacy keys themselves are never deleted - they stay as the fallback copy. Beta 1.150 (security-audit fix round, finding legacy-migration-fallback-boot-stale-fill): the fill-only rule had one hole - when a fill failed PARTWAY, the fallback boot ran on the legacy keys and its saves wrote NEWER legacy values, and the next boot's retry skipped the fields that had already landed, so the stale partial copy became permanent under the committed marker. The record that tells a migration-owned fill from everyone else's write is rk.migfill: for each field, the exact value a landed fill wrote, persisted (verified) as each fill lands. On a retry, a slot value still EQUAL to its recorded fill is migration's own and is re-copied when the legacy value has moved on; a slot value that DIFFERS from its recorded fill was written by someone else (a restore) - it wins and its record is dropped, which is exactly the 1.94 protection, kept. The record is deleted when the marker commits; from then on the marker alone governs, as before.
   if (id !== '5w') return true;
   const rk = routeKeys(id);
-  if (lsGet(rk.mig) !== null) return true; // the move committed on an earlier boot - the slot is never re-examined against legacy again
-  if (lsGet(LEGACY_KEYS.sides) === null) return true; // nothing legacy to move
+  const migGet = k => { const v = rawRead(k); return v === RAW_READ_FAILED ? undefined : v; }; // Beta 1.169 (Carbon fix round, A-02): THIS pass's decision reads go through rawRead, not lsGet - lsGet reads a THROWN read as an absent key, and deciding what is absent is this pass's whole job: a transient throw on a legacy field used to read as 'legacy no longer holds it', the parity check below agreed, and the marker committed with that field never copied. undefined here means UNKNOWN, and every decision below treats it as 'not migrated - retry next boot', the fail-safe the commit's own comment already states. (The verified fill writes keep their lsSet/lsGet read-backs: a thrown read-back already fails those closed.)
+  const migMark = migGet(rk.mig); if (migMark === undefined) return false; if (migMark !== null) return true; // the move committed on an earlier boot - the slot is never re-examined against legacy again
+  const legSides = migGet(LEGACY_KEYS.sides); if (legSides === undefined) return false; if (legSides === null) return true; // nothing legacy to move
   let prog = {};
-  try { const rawProg = lsGet(rk.migfill); if (rawProg) { const p = JSON.parse(rawProg); if (p && typeof p === 'object' && !Array.isArray(p)) prog = p; } } catch (e) { prog = {}; }
+  try { const rawProg = migGet(rk.migfill); if (rawProg === undefined) return false; if (rawProg) { const p = JSON.parse(rawProg); if (p && typeof p === 'object' && !Array.isArray(p)) prog = p; } } catch (e) { prog = {}; }
   let progDirty = false;
   const saveProg = () => { if (!progDirty) return true; const s = JSON.stringify(prog); if (!lsSet(rk.migfill, s) || lsGet(rk.migfill) !== s) return false; progDirty = false; return true; };
   for (const f of ROUTE_FIELDS) {
-    const raw = lsGet(LEGACY_KEYS[f]);
+    const raw = migGet(LEGACY_KEYS[f]);
+    if (raw === undefined) return false; // A-02: an unreadable legacy field blocks the pass - it is not an absent one
     if (raw === null) { if (f in prog) { delete prog[f]; progDirty = true; } continue; } // legacy no longer holds the field: its fill record is moot
-    const slot = lsGet(rk[f]);
+    const slot = migGet(rk[f]); if (slot === undefined) return false;
     if (slot === null) { if (!lsSet(rk[f], raw) || lsGet(rk[f]) !== raw) return false; prog[f] = raw; progDirty = true; if (!saveProg()) return false; continue; } // fill the gap, verified, and record the fill as migration-owned before moving on
     if (f in prog && slot === prog[f]) { if (raw !== prog[f]) { if (!lsSet(rk[f], raw) || lsGet(rk[f]) !== raw) return false; prog[f] = raw; progDirty = true; if (!saveProg()) return false; } continue; } // migration's own earlier fill, and the legacy value has moved on (a fallback boot saved over it): re-copy, so the stale fill never becomes permanent
     if (f in prog) { delete prog[f]; progDirty = true; } // the slot value is NOT what migration wrote - someone else (a restore) owns it now; it wins, untouched
   }
-  for (const f of ROUTE_FIELDS) { if (lsGet(LEGACY_KEYS[f]) !== null && lsGet(rk[f]) === null) return false; } // parity before committing: every field legacy holds must now be present in the slot
+  for (const f of ROUTE_FIELDS) { const lg = migGet(LEGACY_KEYS[f]); if (lg === undefined) return false; if (lg !== null) { const sl = migGet(rk[f]); if (sl === undefined || sl === null) return false; } } // parity before committing: every field legacy holds must now be present in the slot (A-02: a field that cannot be READ on either side blocks the commit - parity over unknowns is not parity)
   if (!saveProg()) return false;
   lsSet(rk.mig, '1'); // commit. If THIS write fails the next boot re-runs the pass (by then a no-op) and retries the marker - safe either way
   lsDel(rk.migfill); // the marker governs from here - the fill record has no further meaning. If this delete fails, the stale record is inert: the marker short-circuits every later call before the record is read
@@ -373,7 +375,11 @@ pieces = {}; pieceTimes = {};
   // complete streets inherit their done-time on every side; doneSet is derived from pieces
   doneSet = new Set(STREETNAMES.filter(streetComplete));
   for (const n of STREETNAMES) {
-    if (streetComplete(n) && doneTimes[n] && !Object.keys(pieceTimes[n]).length) { pieceTimes[n] = pieces[n].map(v => [v & 1 ? doneTimes[n] : null, v & 2 ? doneTimes[n] : null]); }
+    if (streetComplete(n) && doneTimes[n]) { // Beta 1.169 (Carbon fix round, A-03): the done-time inheritance fills MISSING stamps, not only wholly-empty maps - through 1.168 a partially-recorded street (one stretch stamped, the next not) kept its holes, and liveWorkM read the unstamped stretches as never worked, undercounting the run's side-metres. A recorded stamp is never overwritten; a missing one inherits the street's done time exactly as the empty-map case always has.
+      const full = pieces[n].map(v => [v & 1 ? doneTimes[n] : null, v & 2 ? doneTimes[n] : null]);
+      if (!Object.keys(pieceTimes[n]).length) pieceTimes[n] = full;
+      else { const T = pieceTimes[n], out = []; for (let i = 0; i < full.length; i++) { const cur = T[i]; out[i] = [(cur && cur[0]) || full[i][0], (cur && cur[1]) || full[i][1]]; } pieceTimes[n] = out; }
+    }
   }
   for (const k of Object.keys(doneTimes)) if (!streetComplete(k)) delete doneTimes[k];
   for (const k of Object.keys(doneVia)) if (!streetComplete(k)) delete doneVia[k];
@@ -396,7 +402,7 @@ pieces = {}; pieceTimes = {};
   if (!STREETNAMES.every(n => pieces[n].every(v => v === 0))) return;
   if (!txSet(LS.notes, '{}').ok) return;
   if (!txSet(LS.cov, '{}').ok) return;
-  notes = {}; coveredIdx = {}; suggested = new Set();
+  notes = {}; coveredIdx = {}; suggested = new Set(); sugQueue = [];
   txDel(LS.finclean);
 }
 // ===== DAY/NIGHT (Beta 1.77, Andrew): the theme follows the sun by default.

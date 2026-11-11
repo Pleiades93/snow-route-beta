@@ -50,6 +50,7 @@ const factory = new Function(`
   ${extract(app1, 'function fmtClock(')}
   ${extract(app3, 'function samplesFor(')}
   ${extract(app3, 'function validateSnap(')}
+  ${extract(app3, 'function cleanCount(')}
   ${extract(app3, 'function refRun(')}
   ${extract(app3, 'function cleanWorkM(')}
   ${extract(app3, 'function workRateMh(')}

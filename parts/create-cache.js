@@ -166,6 +166,7 @@ function crCityPrepare() { // a city is picked: load its whole extract - from th
     let restored = 0;
     if (rec && rec.bbox && (rec.bbox.s !== bbox.s || rec.bbox.n !== bbox.n || rec.bbox.w !== bbox.w || rec.bbox.e !== bbox.e)) rec = null; // a record saved under a DIFFERENT bounding box (the lookup's answer changed) is not this grid's cache - its cell keys would restore the wrong streets
     if (rec && rec.cells) {
+      let folded = false; // Beta 1.169 (Carbon fix round, D-06): set by the fold below; the byName rebuild runs ONCE after the loop (see there)
       for (const cell of g.cells) {
         const saved = rec.cells[cell.key];
         if (saved && Array.isArray(saved.ways)) {
@@ -174,12 +175,11 @@ function crCityPrepare() { // a city is picked: load its whole extract - from th
           if (!Object.keys(byId).length && saved.ways.length) continue; // Beta 1.151 (hotfix for the 1.150 C2 gate's own regression): a cell is certified (box + done, below) when at least one VALIDATED way came out of it OR its stored list was legitimately EMPTY - phase 1 stores empty cells (no named streets: park/lake/city-edge) with ways: [], and the 1.150 rule conflated them with the audit's poison case, a NON-EMPTY list whose ways are all corrupt, which still stays pending here and is fetched fresh, never marked done on the cache's say-so
           crCovMerge([], null); // ensure the cov exists before the direct fold below
           for (const id of Object.keys(byId)) crCov.byId[id] = byId[id];
-          const fresh = crCovFromWays(crCov.byId, crCov.boxes);
-          crCov.byName = fresh.byName;
           if (!crCov.boxes.some(b => b.s === cell.box.s && b.w === cell.box.w && b.n === cell.box.n && b.e === cell.box.e)) crCov.boxes.push(cell.box);
-          cell.state = 'done'; restored++;
+          cell.state = 'done'; restored++; folded = true;
         }
       }
+      if (folded) { const fresh = crCovFromWays(crCov.byId, crCov.boxes); crCov.byName = fresh.byName; } // Beta 1.169 (D-06): the byName index is rebuilt ONCE, after the fold - through 1.168 crCovFromWays ran inside the per-cell loop above, reindexing every accumulated way for every restored cell (O(cells x ways) on a large cached city). Nothing observes byName mid-loop (the fold is one synchronous pass), so the single rebuild lands the identical index.
       if (restored) { g.fromCache = true; g.savedAt = rec.savedAt || null; }
     }
     if (restored === g.cells.length) { crSetPrepState('ready'); crSweepPending(); crRenderHint(); return; } // fully saved: instant ready, ZERO downloads (amendment C)

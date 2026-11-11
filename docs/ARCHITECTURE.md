@@ -163,7 +163,7 @@ search; on Andrew's phone it dead-ended (the defect below), so
 again (Andrew's approved mockup): the Create pane is titled
 "Create new route" and opens on TWO primary doors — **Select from
 list** (sub: "Choose a city that's ready to load instantly"), which
-opens its own pane titled "Select the city you'll be cleaning in"
+opens its own pane titled "Select City"
 listing the pack library's cities as rows with their street counts
 ("4,477 streets · ready to load") rendered from `packs/index.json`
 (the last-used city, `snowroute.v2.lastArea`, rides first when the
@@ -193,8 +193,10 @@ places only (a place of type city/town/village/hamlet/suburb, or
 an administrative boundary), with the last-used city as a one-tap
 choice. Picking a city — either door — scopes the creation (name
 + centre + bounding box), flies the map to it, biases the street
-search to the city's box (viewbox, bounded=0 — a bias, never a
-restriction), and STARTS the city's preparation (below). Both
+search to the city's box (viewbox, bounded=1, and the returned
+list also filtered to the box — that city only; the bounded=0 bias
+survives only when no city is loaded), and STARTS the city's
+preparation (below). Both
 doors land on the SAME pick stage, so the street search bar with
 its autocomplete is present and behaves identically after a list
 pick (drive154 proves it end to end on both paths).
@@ -239,8 +241,9 @@ flight but KEEPS every committed cell, and re-entering the city
 resumes only the missing cells. Committed cells are also written
 through to the **on-device city cache** (IndexedDB — see
 STORAGE-SCHEMA.md), so picking a city with a saved extract is
-instant and download-free, the hint says when it was loaded, and a
-Refresh affordance re-fetches the whole city. A first load is
+instant and download-free, and the hint says when it was loaded.
+(No reload is offered for a city that loaded fine — Beta 1.153
+removed the Refresh affordance; a failed load's remedy is Retry.) A first load is
 honest about its cost ("can take a few minutes — after that it's
 instant"); the constraint was never download size (~14 MB a city)
 but the service's compute time per query, which the grid bounds.
@@ -264,9 +267,8 @@ way can never collide with a service way in the merged index),
 filtered by the same point-in-box membership the service's
 bounding-box query applies. The grid, the cache write-through, the
 settled-state judge and everything downstream consume the identical
-result shape — a pack city commits, caches, resumes and refreshes
-exactly as a service-loaded city does (Refresh re-downloads the
-pack). If the pack fails to load, the context flips to the service
+result shape — a pack city commits, caches and resumes
+exactly as a service-loaded city does. If the pack fails to load, the context flips to the service
 for the rest of that preparation and the hint says the library
 didn't load. The **live Overpass service** is the other source —
 for cities with no pack, for boxes reaching past a pack's bounds,
@@ -364,16 +366,17 @@ beta1/work/create-sectors-mockups/; the surface itself rebuilt in
 Beta 1.129).** The pick stage's bottom surface is ONE persistent
 object: the sheet element itself (`#createSheet`) is the card —
 it owns the surface tokens (`--card-solid` background, shadow,
-radius) and its GEOMETRY is the state, via the `crG-panel` /
-`crG-strip` / `crG-bar` classes (panel = flush full-width with
-square bottom corners; strip and sector bar = the same box
+radius) and its GEOMETRY is the state, via the `crG-strip` /
+`crG-bar` classes (the panel face carries no geometry class —
+flush full-width with square bottom corners is the sheet's rest
+shape; strip and sector bar = the same box
 contracted to the tucked footprint — 12 px side insets, lifted
 12 px off the bottom, fully rounded: the "absorbed from all
 angles" shape). Inside it sit three CONTENT faces — the PANEL,
 the STRIP it tucks into, and the SECTOR BAR (below) — which
 carry no surface of their own (padding and layout only); exactly
 one shows at rest (`syncCrPanel` lands the rest state). The
-PANEL: "Your route so far", a live "N roads · X m", one compact
+PANEL: "Current selection", a live "N roads · X m", one compact
 row per street — category dot, name, a sub-line that always
 carries the sector affordance, the MAIN/2ND chip in the row, ✕ —
 plus a Clear all that empties the draft's streets behind the
@@ -416,7 +419,7 @@ actually used). Sector mode shows the sector bar
 (street name, "N of M sectors picked · X m", Cancel, Entire road,
 Done — labels as renamed in Beta 1.132) and the draft renders the street as one feature per
 sector — chosen in its category colour, unchosen thin grey, with
-a wide invisible hit layer picked with the same ±16/±28 px
+a wide invisible hit layer picked with the same ±12/±20 px
 discipline as street taps. The sector boundaries are
 the ONE junction-cut finishing policy — `finishJunctionCuts` (app1):
 4 m join tolerance, cuts merged under 15 m, none within 12 m of an
@@ -463,7 +466,7 @@ always. Every length the flow states — panel header and rows,
 preview count, name-it summary, the preview's map framing — bills
 chosen geometry only.
 
-**Shared preview + name-it.** "Is this correct?" draws the draft on the
+**Shared preview + name-it.** "Review selection" draws the draft on the
 map (framed on the geometry that will save — chosen sectors, not whole
 streets) and lists every street with its length; corrections (flip,
 remove, "+ Add a street" through the same picker — the pick panel's

@@ -15,8 +15,11 @@ the loaders' sanitizers; the slot layout and backup v2 landed in Beta 1.76
 Every route owns a storage slot: `snowroute.<routeId>.` followed by a field
 tail. Route 5W (id `5w`) is the first tenant. A few keys are **global** —
 they describe the app, not a route — and keep their historical names:
-`snowroute.v2.night` (+ its `nightExp` pair), `snowroute.v5.export`,
-`snowroute.prep.v1`, `snowroute.v5.packmig`.
+`snowroute.v2.night` (+ its `nightExp` pair), `snowroute.v2.settings`,
+`snowroute.v2.lastarea`, `snowroute.v5.export`, `snowroute.prep.v1`,
+`snowroute.v5.packmig`, and the created-routes record
+`snowroute.v2.userpacks` (+ its `snowroute.v2.userpacks.migrated`
+drain marker).
 
 The pre-1.76 layout is the same tails under a bare `snowroute.` prefix
 (e.g. `snowroute.v5.sides`). Those keys are now the **legacy fallback copy**
@@ -68,7 +71,8 @@ migration exists or is needed.
 Beta 1.124 (route deletion): deleting a created route removes its
 entry from `snowroute.v2.userpacks` and deletes EVERY key of its
 per-route slot — the full `routeKeys(id)` family (all `ROUTE_FIELDS`
-tails plus `v5.snap`, `v2.migrated`, `v2.migfill` and `v5.preload`), enumerated
+tails plus `v5.snap`, `v2.migrated`, `v2.migfill`, `v5.preload`,
+`v5.finclean` and `v5.rundist`), enumerated
 from `routeKeys` at deletion time rather than hand-listed, so a
 field added later joins the sweep automatically. The userpacks
 removal is the gated step: it goes through a strict read and a
@@ -267,7 +271,7 @@ backup cannot be built because saving failed, the press produces this
 recovery file instead — recovery-marked and recovery-named, with a
 result message that says the save could not be done first. There is no
 separate Recovery menu option anymore.
-key — inside the restore transaction and its rollback scope — only if
+The write lands inside the restore transaction and its rollback scope — only if
 it passes `validateSnap` against the start the same backup carries for
 that route. Beta 1.118: `userpacks` (when present and non-empty) carries
 the created-route definitions — `{<routeId>: <pack>}`, the same objects
@@ -389,8 +393,14 @@ cache: a new storage surface with a documented schema — this section.
 
 1. Validate envelope identity, version (1 or 2), and per-field string/shape
    BEFORE writing anything; reject malformed backups whole.
-2. Snapshot every key in scope — every known route's slot keys plus the
-   global night key; abort honestly if the snapshot cannot be read.
+2. Snapshot every key in scope — every known route's slot keys
+   (`slotKeys`: the `ROUTE_FIELDS` keys plus `v5.snap`), the
+   created-routes record when the backup carries route definitions,
+   the global night pair (`night` + `nightExp`), the settings record
+   and every route's `v5.finclean` key; abort honestly if the snapshot
+   cannot be read. (Beta 1.166: a geometry-carrying restore also
+   snapshots the overwritten created-route definitions in their
+   IndexedDB store, strictly before any write.)
 3. Write each key and re-read to verify.
 4. On any failure, roll back from the snapshot and verify the rollback; if
    the rollback itself cannot be verified, say so ("could NOT be fully put
