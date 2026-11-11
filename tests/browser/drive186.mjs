@@ -29,15 +29,44 @@ const toMenu = async () => { await ev(`localStorage.clear(); location.reload(); 
 const SEED0 = new Date(1700000000000).toISOString();
 const seed10 = async () => { await ev(`(() => { const rk = routeKeys('5w'); const hist = []; for (let i = 0; i < 10; i++) { const at = new Date(1700000000000 + i * 86400000).toISOString(); hist.push({ at, items: { Velmar: at }, via: {}, notes: {}, sides: { p: {}, t: {} }, km: 0, startedAt: at }); } localStorage.setItem(rk.hist, JSON.stringify(hist)); return true; })()`); };
 // After a MANUAL reload the drive must re-establish bootThrough's readiness
-// contract before touching completion paths: loadRoute returns once the app1
-// geometry (STRETCH) is built, but the paint engine still holds the EMPTY
-// boot geometry until the map settles on the fitted view, and a street
-// completion in that window reads GEO[street].stitched of undefined (the
-// first two CI runs of this drive failed Phase D exactly there - 'Cannot
-// read properties of undefined (reading stitched)' - while local runs, with
-// faster settle, never saw it). Poll the same two readinesses bootThrough
-// polls (routeLoaded, map not moving).
-const loadSettled = async () => { await ev(`loadRoute('5w'); true`); await poll(`typeof routeLoaded !== 'undefined' && routeLoaded === true`, 20000); await poll(`typeof map === 'undefined' || !map || !map.isMoving()`, 25000); await sleep(300); };
+// contract before touching completion paths. drive186-harden round
+// (2026-11-11) - the proven mechanism behind this drive's two D1-D5 flakes
+// on record (runs 43029275837 and 43060145115 attempt 1, identical
+// signature): the paint engine's per-street geometry (GEO[street].stitched,
+// parts/engine.js) is rebuilt ONLY by GLP.rebuildRoute(), which loadRoute
+// calls under `if (map)`. Called before bootMap() has run, loadRoute still
+// sets routeLoaded - but the rebuild is skipped, GEO stays the EMPTY boot
+// geometry for the life of the page, and the two polls this funnel used to
+// run pass anyway (routeLoaded is true; `!map || !map.isMoving()` is
+// vacuously true while the map is null). When the map style then loads,
+// GLP.init rebuilds over the empty geometry and throws 'stitched'; with
+// GLM left set, every later completion's GLP.sync() throws it again,
+// synchronously - the finish never bakes, workM stays undefined, D1-D5
+// fail. Reproduced on demand in the round's diagnostic: a pre-bootMap
+// loadRoute makes onStyleReady() throw 'stitched' out of
+// rebuildData/buildFamilies/junctionPairs and markDone throw it
+// identically, while the gated sequence below passes both. Production
+// cannot reach the window - the only loadRoute callers are route-picker
+// taps, and the picker is presented by the boot sequence whose tail
+// creates the map (the Beta 1.76 contract) - TEST class, no app change.
+// So: gate on the map existing BEFORE loadRoute (the exact precondition
+// under which the rebuild runs synchronously inside the call - the Beta
+// 1.76 idiom drive117/drive121 already use), then poll routeLoaded and
+// the camera settle. The funnel deliberately does NOT wait for
+// GLP.init/'centres': that signal hangs on the basemap service (2 of 3
+// cold local loads never fired the map 'load' event within 120 s) and is
+// not what decides the stitched values - they exist from the gated
+// loadRoute call itself, so init and every later sync rebuild over
+// populated geometry whenever they land. A gate that never opens fails
+// the drive loudly instead of certifying a wedged page.
+const loadSettled = async () => {
+  const gated = await poll(`typeof loadRoute === 'function' && !!window.__bootAt && typeof map !== 'undefined' && !!map`, 30000);
+  if (!gated) throw new Error('loadSettled: the boot gate (loadRoute defined, map created) never opened - refusing to load into the pre-bootMap window');
+  await ev(`loadRoute('5w'); true`);
+  const loaded = await poll(`typeof routeLoaded !== 'undefined' && routeLoaded === true`, 20000);
+  if (!loaded) throw new Error('loadSettled: routeLoaded never became true after a gated loadRoute');
+  await poll(`typeof map === 'undefined' || !map || !map.isMoving()`, 25000);
+};
 const finish3 = async () => { await ev(`(() => { const T = Date.now() - 7200000; runStart = T; saveStart(); markDone('Velmar', 'tap', new Date(T + 600000).toISOString()); markDone('Mellings', 'tap', new Date(T + 900000).toISOString()); markDone('Astona', 'tap', new Date(T + 1200000).toISOString()); finishRun(); return true; })()`); await sleep(400); };
 
 try {
