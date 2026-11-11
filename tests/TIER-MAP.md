@@ -43,7 +43,17 @@ cleanup; drive156 was quarantined 2026-11-11 — check 157-D1 flaked
 twice on record and the drive was hardened in the drive156-harden
 round — and is re-admitted in the spring-t0-fix round (Beta 1.172,
 2026-11-11): the app's first-frame spring artifact behind the residual
-failures is fixed, 157-D1 re-proved clean, entry removed there); they
+failures is fixed, 157-D1 re-proved clean, entry removed there;
+drive186 was quarantined 2026-11-11 — checks D1–D5 flaked twice on
+record with the identical 'stitched' undefined signature (runs
+43029275837 and 43060145115) and the drive was hardened in the
+drive186-harden round — and is re-admitted in the same round
+(2026-11-11): the flake was diagnosed TEST-class (a loadRoute fired
+before bootMap leaves the paint engine's geometry unbuilt for the
+page; the production route picker cannot reach that window),
+loadSettled now gates loadRoute on the map existing, and the
+hardened drive re-proved 13/13 in 10 consecutive local runs and in
+the Tier C battery, entry removed there); they
 are listed here so the family's full membership stays visible.
 
 ## Tier C — deep mechanics
