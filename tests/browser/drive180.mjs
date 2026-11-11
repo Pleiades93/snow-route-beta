@@ -313,6 +313,23 @@ const { proc, ev, consoleLog, sleep } = await launchDrive();
 // drive132 S1's rationale re-pins in the same release (the
 // fade is the icon's own again; its effective-opacity read
 // stands).
+//
+// Re-pin (2026-11-10, Andrew's approval - tests only, the app
+// unchanged): Beta 1.164 moved the landing itself (the block
+// pose calc(35.49% - 209.42px), his halved-gap rule) on his
+// direct no-battery order, so SLOT's 1.163 pin (the 21% line
+// + 96) went stale and failed by exactly 40.0 px at this
+// viewport on every build 1.164-1.167 - the failing check
+// behind the GitHub failure emails he objected to. The pin
+// now reads the MEASURED landing: the settled centre-y was
+// sampled with this drive's own snippet on the merged build
+// at three viewport heights (900/844/740 -> centres
+// 324.98/305.11/268.20, the title riding exactly 215.00 px
+// below the block's rendered pose top at every height), so
+// centre = 0.3549H + 5.58 with residuals <= 0.01 px and the
+// +/-2 px tolerance untouched. CLEAR's wording rolls to the
+// 1.164 landing with it; its margin at this viewport measures
+// 40.02 px - the halved gap itself.
 const R = { checks: [] };
 const ok = (name, cond) => R.checks.push([name, cond === true]);
 
@@ -519,16 +536,20 @@ ok('N4 at rest the BLOCK sits exactly on its menu pose: the rect with inline tra
 // + an offset Andrew picks (1.158: +48; 1.159: +72; 1.163:
 // +96 - 24px below +72 on his landing-samples pick), and the
 // landed title must clear the first button - the buttons
-// never moved.
+// never moved. Beta 1.164 replaced the pose itself (the
+// block's top calc(35.49% - 209.42px), Andrew's halved-gap
+// rule; the title rides 215px inside the block), putting the
+// landed centre on the 0.3549H + 5.58px line; SLOT re-pinned
+// to that measured line 2026-11-10 (see the header).
 let slot = null;
 try {
   slot = await ev(`(() => { const ti = document.getElementById('splashTitle'); const btn = document.getElementById('rmChoose'); if (!ti || !btn) return ''; const tr = ti.getBoundingClientRect(); const br = btn.getBoundingClientRect(); return JSON.stringify({ cy: tr.top + tr.height / 2, tBot: tr.bottom, btnTop: br.top, ih: window.innerHeight }); })()`).then(x => typeof x === 'string' && x ? JSON.parse(x) : null);
 } catch (e) { slot = null; }
-const slotExp = slot ? (0.21 * slot.ih + 96) : -1;
-ok('SLOT the landed title sits on the PICKED slot (Beta 1.163: the 21% line + 96px - Andrew\'s landing-samples pick, Option B: 24px BELOW the 1.159 +72 slot, the start and the buttons unmoved): settled centre-y ' + (slot ? slot.cy.toFixed(1) : 'n/a') + 'px vs expected ' + slotExp.toFixed(1) + 'px (21% of viewport height ' + (slot ? slot.ih : -1) + ' + 96), off by ' + (slot ? Math.abs(slot.cy - slotExp).toFixed(1) : 'n/a') + 'px',
+const slotExp = slot ? (0.3549 * slot.ih + 5.58) : -1;
+ok('SLOT the landed title sits on the PICKED slot (Beta 1.164 landing, re-pinned 2026-11-10 on Andrew\'s approval: the block pose calc(35.49% - 209.42px) plus the title\'s 215px ride inside the block puts the settled centre on the 0.3549H + 5.58px line - his halved-gap landing, the start and the buttons unmoved; the 1.163 pin (the 21% line + 96) stood stale through 1.164-1.167 and failed by exactly 40.0px at this viewport): settled centre-y ' + (slot ? slot.cy.toFixed(1) : 'n/a') + 'px vs expected ' + slotExp.toFixed(1) + 'px (0.3549 x viewport height ' + (slot ? slot.ih : -1) + ' + 5.58), off by ' + (slot ? Math.abs(slot.cy - slotExp).toFixed(1) : 'n/a') + 'px',
   !!slot && Math.abs(slot.cy - slotExp) <= 2);
 const clearMargin = slot ? (slot.btnTop - slot.tBot) : -999;
-ok('CLEAR the landed title still clears the first menu button at the 1.163 landing (24px below the +72 slot; the buttons never moved): title bottom ' + (slot ? slot.tBot.toFixed(1) : 'n/a') + 'px, Choose button top ' + (slot ? slot.btnTop.toFixed(1) : 'n/a') + 'px -> margin ' + clearMargin.toFixed(1) + 'px (must be > 0 - the safeguard Andrew was told: if the lower landing broke this, the ship stops rather than forcing it)',
+ok('CLEAR the landed title still clears the first menu button at the 1.164 landing (the halved-gap pose, re-pinned with SLOT 2026-11-10; the buttons never moved): title bottom ' + (slot ? slot.tBot.toFixed(1) : 'n/a') + 'px, Choose button top ' + (slot ? slot.btnTop.toFixed(1) : 'n/a') + 'px -> margin ' + clearMargin.toFixed(1) + 'px (must be > 0 - the safeguard Andrew was told: if the lower landing broke this, the ship stops rather than forcing it)',
   !!slot && clearMargin > 0);
 
 // PILLS (Beta 1.158): the boot menu's two pills wear the
