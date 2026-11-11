@@ -450,7 +450,7 @@ input, textarea { caret-color: currentColor; } /* Beta 1.125 (Andrew): the typin
 <div id="hud">
   <div id="warn">Not saving — storage is full or blocked</div>
   <div class="row">
-    <div class="titleStack"><div class="title">Snow Route Beta</div><div class="ver" id="ver">Beta 1.174</div></div>
+    <div class="titleStack"><div class="title">Snow Route Beta</div><div class="ver" id="ver">Beta 1.175</div></div>
   </div>
   <div id="stats"></div>
 </div>
@@ -5122,7 +5122,7 @@ $('stDel').addEventListener('click', async () => {
 });
 // ---- About / What's new ----
 const WHATSNEW = { // the curated in-app notes: plain words, LATEST RELEASE ONLY (Beta 1.114, Andrew: the accumulated list cluttered the About pane). A release REPLACES this entry with its own in the same change - it never accumulates; the full history lives in CHANGELOG.md, not the app
-  v: 'Beta 1.174', items: ["The app's blue now matches the app icon — the same shaded blue across the menus and buttons."] };
+  v: 'Beta 1.175', items: ["Tidier map screen: the extra hint messages under the search bar are gone — only the '<City> loaded' note shows, and it fades away by itself."] };
 function renderAbout() {
   const cur = $('ver').textContent.trim();
   $('wnHead').textContent = "WHAT'S NEW · " + cur; // the header names the LIVE version, read from the title's version element - never a second hard-coded copy that can go stale
@@ -6208,13 +6208,13 @@ function crRenderHint() { // the ONE writer of the pick-stage hint + its action 
   else if (crPrepState === 'failed') { text = crFailText(crPrepFail); btnLabel = crGrid ? 'Retry' : ((crPrepFail && crPrepFail.kind === 'dense') ? 'Prepare this area' : 'Retry'); if (crWanted) btnLabel = crWanted.label; } // grid failure: Retry resumes the missing cells. Box dense: Retry at the same anchor cannot help (fixed footprint) - the button prepares wherever the map now sits (CG-PF-09). Beta 1.154 (B3 build): the wanted override applies in this branch too, as it always did in the degraded/ready branches - through 1.153 an outstanding offer's button read 'Retry' here while the click actually started the fallback preparation at the wanted anchor (the 2026-11-09 lifecycle trace's label wart); with no offer outstanding the label stays 'Retry', and the click is then genuinely a retry
   else if (crPrepState === 'ready') {
     if (crGrid && crGrid.fromCache && crGrid.savedAt) { const d = new Date(crGrid.savedAt); text = crGrid.name + ' — loaded ' + d.toLocaleDateString('en-CA', { month: 'short', day: 'numeric' }); } // Beta 1.153 (Andrew): the pill is a load confirmation ONLY - city + when it loaded, no 'tap a road', and no Refresh button: a city that loaded fine offers no reload. The failed state's Retry (grid resume / re-prepare) is the one working remedy, and it predates this change.
-    else text = draftStreets().length ? 'Tap a road on the map to add it' : 'Street shapes ready — tap a road';
+    // Beta 1.175 (Andrew): a ready city that did NOT come from the cache shows NO pill text of its own - the 'Tap a road on the map to add it' / 'Street shapes ready — tap a road' hints are removed as unnecessary. The cached confirmation above is the only informational pill left; a disclosure note riding below, or an outstanding offer's button, still shows on its own.
     if (crWanted) btnLabel = crWanted.label; // an outstanding offer (a tap outside coverage, a pending street) keeps its working button in the ready state too (CG-PF-09: the first build's ready state hid it) - since Beta 1.153 removed the healthy-state Refresh, it is the ready state's only button
   }
   else { text = crCity ? 'Search for a street in ' + crCity.name + ', or zoom in and prepare this area' : 'Search, fly to a street, then tap it on the map'; if (crWanted) btnLabel = crWanted.label; else if (map && map.getZoom() >= 14) btnLabel = 'Prepare this area'; }
-  if (crCacheNote && crCity && crCacheNoteCity === crCity.name) text += ' · ' + crCacheNote; // the disclosed cache state rides the hint (amendment C: degradation is said, never silent) - Beta 1.143 (DA-06): only when the note belongs to the city on screen
-  if (crPackNote && crCity) text += ' · ' + crPackNote; // Beta 1.123: the disclosed pack state rides the hint the same way - a fallen-back load says the library didn't load, in every state the hint shows
-  hint.textContent = text; hint.classList.toggle('on', !(pillKey && crPillGone === pillKey)); // Beta 1.153: a confirmation already dismissed this session does not reappear on re-renders
+  if (crCacheNote && crCity && crCacheNoteCity === crCity.name) text = text ? text + ' · ' + crCacheNote : crCacheNote; // the disclosed cache state rides the hint (amendment C: degradation is said, never silent) - Beta 1.143 (DA-06): only when the note belongs to the city on screen. Beta 1.175: since the ready-state hints were removed, a note can ride an otherwise EMPTY hint - it then stands alone, with no dangling separator
+  if (crPackNote && crCity) text = text ? text + ' · ' + crPackNote : crPackNote; // Beta 1.123: the disclosed pack state rides the hint the same way - a fallen-back load says the library didn't load, in every state the hint shows. Beta 1.175: the same stand-alone rule as the cache note above
+  hint.textContent = text; hint.classList.toggle('on', !!text && !(pillKey && crPillGone === pillKey)); // Beta 1.153: a confirmation already dismissed this session does not reappear on re-renders. Beta 1.175: no text, no pill - with the ready-state hints gone, an empty render (a fresh ready city, nothing to disclose, no offer) never paints an empty pill
   if (btnLabel) { btn.textContent = btnLabel; btn.style.display = ''; } else btn.style.display = 'none';
   const cc = $('crCityChange'); if (cc) { if (crCity) { cc.textContent = 'City: ' + crCity.name + ' — change'; cc.style.display = ''; } else cc.style.display = 'none'; }
 }
