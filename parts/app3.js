@@ -1,14 +1,16 @@
 
 // ===== PACE (one source) =====
 function refRun() { // newest qualifying clean wins (history is chronological, so search from the end)
-  for (let i = history.length - 1; i >= 0; i--) { const h = history[i]; if (h.items && Object.keys(h.items).length === STREETNAMES.length) return h; } // Beta 1.94 (audit F-01): full = every street in the route's own list, not a hard-coded 34
-  for (let i = history.length - 1; i >= 0; i--) { const h = history[i]; if (h.items && Object.keys(h.items).length >= 5) return h; }
+  for (let i = history.length - 1; i >= 0; i--) { const h = history[i]; if (h.items && cleanCount(h) === STREETNAMES.length) return h; } // Beta 1.94 (audit F-01): full = every street in the route's own list, not a hard-coded 34. Beta 1.169 (B-07): counted by cleanCount, like every other surface - a null-timestamped street still counts (it was cleaned), a foreign key never does
+  for (let i = history.length - 1; i >= 0; i--) { const h = history[i]; if (h.items && cleanCount(h) >= 5) return h; }
   return null;
 }
+function cleanCount(h) { const items = (h && h.items) || {}; return Object.keys(items).filter(n => STREETSET.has(n)).length; } // Beta 1.169 (Carbon fix round, B-07): THE count of a clean's streets, in one place - the streets the clean covers: its item keys that belong to the route, timestamp or not (buildSnap writes a null time for a completed street whose moment was not recorded; the street was still cleaned, and openClean lists it). Through 1.168 refRun and the pace/detail headers counted raw keys while histDur counted only timestamped streets, so the same clean could read '34 streets' in one line and '33 of 34' in the next.
 function cleanWorkM(h) { // side-metres a saved clean actually covered
   if (h && typeof h.workM === 'number' && isFinite(h.workM) && h.workM >= 0) return h.workM; // Beta 1.167 (run/pace fix round, B2): cleans archived by 1.167+ carry the run-attributed figure Finish measured (buildSnap's workM) - it is read VERBATIM, so pre-Start work never counts (RP-05), a later geometry edit cannot re-price the clean (RP-06), and a partially-recorded sides map cannot short-circuit into an undercount (RP-09). Legacy entries (no workM) derive below, exactly as they always have.
-  if (h && h.sides && h.sides.p && typeof h.sides.p === 'object') { let s = 0; for (const n of STREETNAMES) { const p = h.sides.p[n]; if (!Array.isArray(p)) continue; STRETCH[n].parts.forEach((part, i) => { const v = p[i] | 0; const L = segLenM(part); if (v & 1) s += L; if (v & 2) s += L; }); } if (s > 0) return s; }
-  const items = (h && h.items) || {}; let s = 0; for (const n of Object.keys(items)) if (STRETCH[n]) s += STRETCH[n].total * 2; return s;
+  const items = (h && h.items) || {}; let si = 0; for (const n of Object.keys(items)) if (STRETCH[n]) si += STRETCH[n].total * 2; // the items derivation: every completed street at both sides of its full length
+  if (h && h.sides && h.sides.p && typeof h.sides.p === 'object') { let s = 0; for (const n of STREETNAMES) { const p = h.sides.p[n]; if (Array.isArray(p) && STRETCH[n]) { STRETCH[n].parts.forEach((part, i) => { const v = p[i] | 0; const L = segLenM(part); if (v & 1) s += L; if (v & 2) s += L; }); } else if (items[n] && STRETCH[n]) s += STRETCH[n].total * 2; } if (s > 0) return s; } // Beta 1.169 (Carbon fix round, B-06): the sides branch used to price ONLY the sides map and return it the moment it priced anything - a PARTIALLY-recorded map (some completed streets carry no sides entry at all) short-circuited into the very RP-09 undercount the stored workM exists to prevent, alive in the legacy branch. The merge is now PER STREET: a street WITH a sides entry is priced by its bits (authoritative - it alone sees partial-side work, including on streets never completed), a completed street MISSING from the map falls back to the items derivation for that street.
+  return si;
 }
 function workRateMh(workM, startMs, endMs, minH) { const h = (endMs - startMs) / 3600000; return (workM > 0 && h > minH) ? workM / h : null; } // NaN inputs fail the comparisons and yield null
 function fmtRate(r) { return (r / 1000).toFixed(1) + ' km of sides/hr'; }
@@ -40,14 +42,14 @@ function histDur(h) {
   if (!ts.length) return null;
   const stA = Date.parse(h.startedAt);
   const start = (!isNaN(stA) && stA <= ts[0]) ? stA : ts[0];
-  return { count: ks.length, durMs: ts[ts.length - 1] - start, start };
+  return { count: cleanCount(h), durMs: ts[ts.length - 1] - start, start }; // Beta 1.169 (B-07): the DURATION still spans the timestamped streets (ks above - a span needs moments), but the COUNT is cleanCount: every street the clean covers, null-timestamped ones included
 }
 let histOpen = false;
 function renderPace() {
   const p = paceInfo();
   const ref = p.ref;
   let html =
-    '<div>Reference clean: <b>' + (ref ? new Date(ref.at).toLocaleDateString() + ' (' + Object.keys(ref.items).length + ' streets)' : 'none yet — finish a clean to set your pace') + '</b></div>' +
+    '<div>Reference clean: <b>' + (ref ? new Date(ref.at).toLocaleDateString() + ' (' + cleanCount(ref) + ' streets)' : 'none yet — finish a clean to set your pace') + '</b></div>' +
     '<div>Pace: <b>' + (p.rateMh ? fmtRate(p.rateMh) + ' · full clean ≈ ' + fmtDur(totalWorkM() / p.rateMh * 3600000) + (p.live ? ' (this run so far)' : ' (reference clean)') : '—') + '</b></div>' +
     '<div>This run: <b>' + (runStart ? 'started ' + fmtClock(new Date(runStart)) + (p.etaTxt ? ' · ' + p.etaTxt : '') : 'not started') + '</b></div>' +
     '<div>Work done: <b>' + Math.round(workDoneM()) + ' m of ' + Math.round(totalWorkM()) + ' m of street sides</b></div>' +
@@ -57,7 +59,7 @@ function renderPace() {
     let any = 0;
     for (let i = history.length - 1; i >= 0; i--) {
       const d = histDur(history[i]);
-      if (!d) { html += '<div class="prow histRow" data-i="' + i + '"><span>' + fmtWhen(history[i].at) + '</span><span>time not recorded · ' + Object.keys(history[i].items || {}).length + ' of ' + STREETNAMES.length + ' streets ›</span></div>'; any++; continue; } // Beta 1.167 (B4, RP-04): a legacy clean whose item times are all null is still LISTED - and opens, and deletes through the same two-tap flow. Through 1.166 histDur's null skipped it here while refRun could still pick it as the pace reference: it existed, set the pace, and could never be seen or removed.
+      if (!d) { html += '<div class="prow histRow" data-i="' + i + '"><span>' + fmtWhen(history[i].at) + '</span><span>time not recorded · ' + cleanCount(history[i]) + ' of ' + STREETNAMES.length + ' streets ›</span></div>'; any++; continue; } // Beta 1.167 (B4, RP-04): a legacy clean whose item times are all null is still LISTED - and opens, and deletes through the same two-tap flow. Through 1.166 histDur's null skipped it here while refRun could still pick it as the pace reference: it existed, set the pace, and could never be seen or removed.
       html += '<div class="prow histRow" data-i="' + i + '"><span>' + fmtWhen(history[i].at) + '</span><span>' + fmtDur(d.durMs) + ' · ' + d.count + ' of ' + STREETNAMES.length + ' streets ›</span></div>';
       any++;
     }
@@ -95,7 +97,7 @@ function openClean(i) {
   const meta = document.createElement('div'); meta.className = 'cvMeta';
   const elapsedMs = d ? Date.parse(h.at) - d.start : NaN; // Beta 1.167 (B3, RP-08): the SECOND interval - the run's start to the Finish tap (h.at). Through 1.166 the single 'Total time' figure was histDur's start-to-LAST-COMPLETION span while the pace rate divided by start-to-Finish: two different intervals, one label, a 15.8% skew on a 30-minute tail. Both are shown now, each under its own label; the math is unchanged.
   const paceRate = (d && !isNaN(elapsedMs) && elapsedMs >= 0) ? workRateMh(cleanWorkM(h), d.start, Date.parse(h.at), 0.05) : null; // the pace divides the clean's work by the TOTAL ELAPSED window - the same window workRateMh uses for the reference figure in renderPace - and the meta line says so
-  meta.textContent = (d ? ('Streets done in ' + fmtDur(d.durMs) + ' · Total elapsed ' + fmtDur(Math.max(0, elapsedMs)) + ' · ') : '') + (h.items ? Object.keys(h.items).length : 0) + ' streets' + (h.km ? (' · ' + h.km + ' km of GPS trail') : '') + (h.pathShortened ? ' · saved GPS path shortened by the trail cap' : '') + (paceRate ? (' · Pace ' + fmtRate(paceRate) + ' (work / total elapsed)') : '') + (h.startedAt ? (' · started ' + fmtClock(new Date(h.startedAt))) : '') + '\nPace divides the clean\'s recorded work by its total elapsed time (start to the Finish tap). Per-street span = first side marked to last side marked (includes any work in between). Tap a street for its details.';
+  meta.textContent = (d ? ('Streets done in ' + fmtDur(d.durMs) + ' · Total elapsed ' + fmtDur(Math.max(0, elapsedMs)) + ' · ') : '') + cleanCount(h) + ' streets' + (h.km ? (' · ' + h.km + ' km of GPS trail') : '') + (h.pathShortened ? ' · saved GPS path shortened by the trail cap' : '') + (paceRate ? (' · Pace ' + fmtRate(paceRate) + ' (work / total elapsed)') : '') + (h.startedAt ? (' · started ' + fmtClock(new Date(h.startedAt))) : '') + '\nPace divides the clean\'s recorded work by its total elapsed time (start to the Finish tap). Per-street span = first side marked to last side marked (includes any work in between). Tap a street for its details.';
   cv.appendChild(meta);
   const items = h.items || {};
   const order = Object.keys(items).filter(n => STREETSET.has(n)).sort((x, y) => String(items[x] || '9999').localeCompare(String(items[y] || '9999')));
@@ -263,7 +265,7 @@ function cancelStart() {
     markDirty('trail'); markDirty('sess');
   }
   runSnap = null;
-  runStart = 0; suggested = new Set(); $('suggest').classList.add('hidden');
+  runStart = 0; suggested = new Set(); sugQueue = []; $('suggest').classList.add('hidden');
   const okCancel = saveAllWarned().ok; flushAux(true);
   const trailPending = writePending('trail') || writePending('sess'); // Beta 1.93 (follow-up audit R07): the erasure claim below is gated on the trail/session writes having actually landed
   if (wasRunGps) stopGps();
@@ -284,7 +286,7 @@ function clearAllMarks() {
   const any = doneSet.size > 0 || STREETNAMES.some(n => pieces[n].some(v => v !== 0)) || Object.keys(coveredIdx).length > 0 || suggested.size > 0; // Beta 1.70 (audit A04): coverage-only state is something to clear too - the old guard claimed 'nothing to clear' while coverage and suggestions sat untouched
   if (!any) { toast('Nothing marked to clear'); return; }
   for (const n of STREETNAMES) { pieces[n] = STRETCH[n].parts.map(() => 0); pieceTimes[n] = {}; }
-  doneSet = new Set(); doneTimes = {}; doneVia = {}; coveredIdx = {}; suggested = new Set();
+  doneSet = new Set(); doneTimes = {}; doneVia = {}; coveredIdx = {}; suggested = new Set(); sugQueue = [];
   $('suggest').classList.add('hidden'); delete $('suggest').dataset.n; // Beta 1.71 (audit B01): the one path the 1.70 dismissal sweep missed - Clear wiped the coverage behind the panel but left the panel itself up, its Yes still able to select the street
   deselect(); const okClear = finishChange();
   if (okClear.ok) toast('All marks cleared'); else toast('Storage problem — the clear could not be saved; marks may return on reload', 4200); // Beta 1.63 (audit F04)
@@ -403,7 +405,7 @@ function finishRun() {
   }
   lsDel(LS.snap); markClean('snap'); resetRunDist(); lsDel(LS.rundist); // Beta 1.167 (B5): the distance counter is consumed into the archive entry (km/pathShortened) - its record goes with the run. Beta 1.94 (SR-193-02): the run is finished - its cancel snapshot goes with it. Ungated on purpose: a leftover snapshot is stamped with THIS run's start, so it can never match a future run, and the next Start overwrites it anyway
   if (archiving) history = newHist;
-  doneSet = new Set(); doneTimes = {}; doneVia = {}; notes = {}; runStart = 0; runSnap = null; coveredIdx = {}; suggested = new Set(); $('suggest').classList.add('hidden'); // Beta 1.70 (audit A04): the suggestion set is run-scoped too - finishRun used to clear the coverage but keep the set, so suggested streets never suggested again
+  doneSet = new Set(); doneTimes = {}; doneVia = {}; notes = {}; runStart = 0; runSnap = null; coveredIdx = {}; suggested = new Set(); sugQueue = []; $('suggest').classList.add('hidden'); // Beta 1.70 (audit A04): the suggestion set is run-scoped too - finishRun used to clear the coverage but keep the set, so suggested streets never suggested again
   for (const n of STREETNAMES) { pieces[n] = STRETCH[n].parts.map(() => 0); pieceTimes[n] = {}; }
   stopGps(); deselect(); drawTrail(true); // Beta 1.69 (audit visual check): the run is over and runStart is 0, so this clears the finished line now instead of leaving it until the next throttled refresh
   const restRes = saveAll(); const restOk = restRes.ok; // the gated sides write already landed; this pass carries the metadata - a failure here warns but cannot resurrect anything (authority + archive agree)
@@ -471,7 +473,7 @@ function resetNotesHistorySession() { // Beta 1.148 (Tranche 5, A4(ii)): app3's 
   runSnap = null; // F3: the in-memory cancel snapshot belongs to the outgoing run. The PERSISTED copy (LS.snap, in the outgoing slot) is deliberately untouched - after switching back, Cancel validates it exactly as it does after a reload
   histOpen = false; cleanIdx = null; cleanDelArmed = false; if (cleanDelTimer) { clearTimeout(cleanDelTimer); cleanDelTimer = 0; } // the history panel and its delete-arming
   noteFor = null; $('noteModal').classList.add('hidden'); // the modal note editor
-  suggested = new Set(); $('suggest').classList.add('hidden'); $('stale').classList.add('hidden'); // run-scoped suggestion set + the two banners (checkStale re-judges the stale banner for the incoming route below)
+  suggested = new Set(); sugQueue = []; $('suggest').classList.add('hidden'); $('stale').classList.add('hidden'); // run-scoped suggestion set + the two banners (checkStale re-judges the stale banner for the incoming route below)
 }
 function pushGps() {
   const src = map && map.getSource('gps'); if (!src) return;
@@ -723,13 +725,21 @@ function coverFix(ll) {
   }
   if (changed) markDirty('aux');
 }
+let sugQueue = []; // Beta 1.169 (Carbon fix round, B-11): streets that qualify while the banner is busy showing another - each gets its turn instead of being overwritten into silence. Run-scoped like `suggested` itself: cleared at the same four resets (cancel, clear-all, finish, route switch)
 function showSuggest(n) {
+  const cur = $('suggest').dataset.n;
+  if (!$('suggest').classList.contains('hidden') && cur && cur !== n) { if (!sugQueue.includes(n)) sugQueue.push(n); return; } // Beta 1.169 (B-11): the banner is showing another street - queue behind it. The street is already in `suggested`, so coverFix will never offer it again this run; through 1.168 this call simply overwrote the banner and the earlier street's one offer was gone for the run.
   $('sugText').textContent = n + ' looks fully covered by GPS but is not marked done.';
   $('suggest').dataset.n = n;
   $('suggest').classList.remove('hidden');
 }
-$('sugYes').addEventListener('click', () => { const n = $('suggest').dataset.n; $('suggest').classList.add('hidden'); if (n) { const c = STRETCH[n].line[Math.floor(STRETCH[n].line.length / 2)]; map.flyTo({ center: [c[1], c[0]], zoom: Math.max(map.getZoom(), 15.5) }); selectStretch(n, 0, c); } });
-$('sugNo').addEventListener('click', () => $('suggest').classList.add('hidden'));
+function sugNext() { // the banner was answered or dismissed: the next queued street takes it - one that has since been marked, or left the route, is skipped
+  while (sugQueue.length && (streetComplete(sugQueue[0]) || !STREETSET.has(sugQueue[0]))) sugQueue.shift();
+  const nxt = sugQueue.shift();
+  if (nxt) { $('sugText').textContent = nxt + ' looks fully covered by GPS but is not marked done.'; $('suggest').dataset.n = nxt; $('suggest').classList.remove('hidden'); }
+}
+$('sugYes').addEventListener('click', () => { const n = $('suggest').dataset.n; $('suggest').classList.add('hidden'); if (n) { const c = STRETCH[n].line[Math.floor(STRETCH[n].line.length / 2)]; if (map) map.flyTo({ center: [c[1], c[0]], zoom: Math.max(map.getZoom(), 15.5) }); selectStretch(n, 0, c); } sugNext(); }); // Beta 1.169 (Carbon fix round, B-02): the flyTo rides the codebase's map===null discipline (the 1.146 C4 idiom - followCam, northUp): in the map-failure world the tap still SELECTS the street; through 1.168 map.getZoom() threw first and the selection never happened
+$('sugNo').addEventListener('click', () => { $('suggest').classList.add('hidden'); sugNext(); });
 let weakToastAt = 0;
 let gpsDenied = false; // Beta 1.111: the Status health GPS row's amber state - set by a permission denial (gpsError code 1), cleared by any accepted fix
 function gpsError(e) {

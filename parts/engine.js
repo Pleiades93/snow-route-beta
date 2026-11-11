@@ -1055,10 +1055,10 @@ function cornerTouchSlices(slices, pairs) {
         // Bloomingdale x Valeria, round 10 - the first version required
         // an end and skipped every terminating street at a through road).
         const partnerShown = endKeys.has(pr.n2 + '|' + pr.vi2 + '|' + pr.side2) || slices.some(o => o !== sl && o.mem.some(m => m.n === pr.n2 && m.side === pr.side2) && o.pts.some((p, pi) => pi + 1 < o.pts.length && H.ptSegM(pr.corner, p, o.pts[pi + 1]) < 1.0));
-        if (!partnerShown) return;
+        if (!partnerShown) continue; // Beta 1.169 (Carbon fix round, B-03): SKIP, not stop - these three rejections (here, the range test below, the crossing veto) used to `return`, abandoning every remaining partner candidate for this end; at a multi-way junction a valid second-choice corner touch was never tried and the corner kept its gap. The loop's only stop is the `return` after a LANDED hop: one corner touch per end.
         const endPt = atEnd ? sl.pts[sl.pts.length - 1] : sl.pts[0];
         const d = H.jDistM(endPt, pr.corner);
-        if (d < 0.05 || d > 12) return;
+        if (d < 0.05 || d > 12) continue;
         // vet: the short hop along this line to the corner must not
         // properly cross another street's marked side line
         const V = GEO[meta.n].stitched[meta.vi];
@@ -1078,7 +1078,7 @@ function cornerTouchSlices(slices, pairs) {
           }
           if (bad) break;
         }
-        if (bad) return;
+        if (bad) continue;
         // Retrace the line's own clipped-away points up to the corner
         // where they exist, so the hop follows the line instead of
         // cutting a chord across whatever bends nearby.
@@ -1657,6 +1657,7 @@ function addStack() {
 // ---- selection glow (round 16 treatment on the r15 paint base;
 // the five style toggle buttons were removed at Andrew's order) ----
 let pulseTimer = null;
+let glowAnim = { op: {}, road: [0, 0] }; // Beta 1.169 (Carbon fix round, B-01): DECLARED - through 1.168 applyGlow assigned this undeclared, an implicit global in the app's sloppy mode (harmless there, a ReferenceError waiting for any future strict context). applyGlow replaces it wholesale on every call; managePulse only reads it.
 function buildSelGlow() {
   const sg = selectedGeom();
   if (!sg) return EMPTYFC;

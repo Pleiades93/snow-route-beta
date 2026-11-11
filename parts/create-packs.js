@@ -72,7 +72,7 @@ function normalizePack(raw, opts) { // -> { ok: true, pack } | { ok: false, erro
   let totalLen = 0;
   const cleanRoads = (obj, label) => {
     if (!obj || typeof obj !== 'object' || Array.isArray(obj)) return { error: 'the ' + label + ' are missing or the wrong shape' };
-    const out = {}; const names = Object.keys(obj);
+    const out = Object.create(null); const names = Object.keys(obj); // Beta 1.169 (Carbon fix round, D-05 + X-05): prototype-free - on a plain object the duplicate test below reads ({}).constructor / ({}).toString as truthy and '__proto__' as the prototype itself, so a FIRST street carrying one of those names was falsely rejected as a duplicate (and a '__proto__' street could not be stored at all). The 1.150 city-cache fold set this precedent for stored names.
     if (names.length > PACK_STREETS_MAX) return { error: 'too many streets in the ' + label };
     for (const nm0 of names) {
       const nm = nm0.trim();

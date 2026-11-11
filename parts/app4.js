@@ -692,7 +692,7 @@ $('stDel').addEventListener('click', async () => {
 });
 // ---- About / What's new ----
 const WHATSNEW = { // the curated in-app notes: plain words, LATEST RELEASE ONLY (Beta 1.114, Andrew: the accumulated list cluttered the About pane). A release REPLACES this entry with its own in the same change - it never accumulates; the full history lives in CHANGELOG.md, not the app
-  v: 'Beta 1.168', items: ["The street panel that pops up when you tap a street now sits lower, clear of the day/night button."] };
+  v: 'Beta 1.169', items: ["A round of under-the-hood fixes from a full code audit: older cleans now count their streets and their work the same way on every screen, and a GPS suggestion for one street no longer hides the next one.", "Creating routes is safer too: switching city mid-route asks before throwing your picks away, imported drafts trim their streets properly, and a street with an unusual name (like “Constructor”) no longer breaks route creation."] };
 function renderAbout() {
   const cur = $('ver').textContent.trim();
   $('wnHead').textContent = "WHAT'S NEW · " + cur; // the header names the LIVE version, read from the title's version element - never a second hard-coded copy that can go stale

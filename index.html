@@ -2,7 +2,7 @@
 <html lang="en" class="boot">
 <head>
 <meta charset="UTF-8">
-<meta http-equiv="Content-Security-Policy" content="default-src 'none'; script-src 'sha384-HmMS2X7Jy13UjxHCGrV4uXs4Cni54G8QfeBGK+rT5lstRgSx+PeNFe89/dnZuvZ6' https://cdn.jsdelivr.net; style-src-elem 'sha384-ka9q7jNjoecT0prN9ehX03SwsZwR7EyG0i4tAOWKd8a2JIzeDHwbZGoGfYkpEity' https://cdn.jsdelivr.net; style-src-attr 'unsafe-inline'; img-src 'self' data: blob: https://tiles.basemaps.cartocdn.com https://protomaps.github.io https://cdn.jsdelivr.net; connect-src 'self' https://tiles.basemaps.cartocdn.com https://protomaps.github.io https://cdn.jsdelivr.net https://nominatim.openstreetmap.org https://overpass-api.de https://overpass.kumi.systems; worker-src blob: 'self'; child-src blob: 'self'; font-src 'none'; manifest-src 'self'; base-uri 'none'; form-action 'none'; object-src 'none'">
+<meta http-equiv="Content-Security-Policy" content="default-src 'none'; script-src 'sha384-1pxEPnNqgiaGuqTEjHUnBWvKFWdcwTGZ/luXBj3b1jPIJ1jk1WNQqRlrQJ2vhTNc' https://cdn.jsdelivr.net; style-src-elem 'sha384-dXzCpNH5v8NrIfxtq2VIwysmCU2TlfZoeQwzMogrAdCiYl2Y5bTxGK0Id6FghvNF' https://cdn.jsdelivr.net; style-src-attr 'unsafe-inline'; img-src 'self' data: blob: https://tiles.basemaps.cartocdn.com https://protomaps.github.io https://cdn.jsdelivr.net; connect-src 'self' https://tiles.basemaps.cartocdn.com https://protomaps.github.io https://cdn.jsdelivr.net https://nominatim.openstreetmap.org https://overpass-api.de https://overpass.kumi.systems; worker-src blob: 'self'; child-src blob: 'self'; font-src 'none'; manifest-src 'self'; base-uri 'none'; form-action 'none'; object-src 'none'">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="mobile-web-app-capable" content="yes">
@@ -278,7 +278,7 @@
 #routeMenu.boot { transform: translateX(-26px); transition: opacity .5s var(--ease-open) .15s, transform .5s var(--ease-open) .15s, visibility 0s linear .15s; }
 /* Beta 1.155 (Andrew, on his 1.153/1.154 phone test: "Right now the splash screen text and the text in the second menu are two separate things. We have to make them one, so it's just a smooth transition."): the title lives HERE, in a layer that spans both scenes - it is never reparented. The 1.153 design lifted it into #routeMenu at arm() (the #routeMenu > #splashTitle.rmLanded rules this block replaces), and the menu is mid-entrance at that moment (visibility hidden until +150 ms, opacity ramping in from 0, translateX(-26px) still sliding home), so the painted title vanished at the flip and faded back in part-risen on its new parent's own ramp - the two-texts trade he reported (drive180's requestAnimationFrame trace is the measuring record). In this layer the title's SPLASH pose reproduces the brand column by construction: the layer is the same centred flex column as #splash, over an invisible spacer of the icon's exact box (168px) with the title's own 26px margin below it, so its hold box IS the brand box it had through 1.154. Its MENU pose (.menu) is the 1.153 landing slot unchanged: centred, its centre on the mock's 21% line (top offset by half its ~34px line), 28px against the splash's 37px. arm() flips the pose class and FLIPs the title WITHIN the layer - transform only; the layer itself never transforms, fades or hides during the travel, so the animation's first painted frame is the splash hold frame and the one element simply moves into place as the brand fades. The layer is splash presentation, not app chrome: the html.boot chrome-absence rule excepts it beside #splash itself. Lifetime mirrors the menu's own: .bye fades it with the menu on a boot pick (the #routeMenu.bye shape), .off (set by finish()) and .parked (set by the boot-create park) hide it, and unloadRouteToBoot clears .off/.bye when the picker returns. Above the menu (10000), tied with the toast (10001) and below the modal (10002); pointer-events: none throughout - the title never takes a tap. Beta 1.157 (Andrew, phone test of 1.155 - the one-text structure stays; four refinements): (a) SPACING - the pose above reproduces the title's box, but 1.153 had taken the title out of #splashBrand, so the splash centred the lone icon 34px lower and the hold OVERLAPPED by 8px; the #brandMirror rule (above) restores the brand column and the original 26px icon-to-title gap. (b) ONE SIZE - the .menu pose no longer shrinks the title (37px throughout; see its rule). (c) NO OVERLAP IN TRAVEL - the brand's fade at the flip runs .3s and the rise eases in gently, so the icon is gone before the title arrives (see the #splash.menu rule). (d) SLOWER - the FLIP runs 1.3s (arm(), create-save.js). drive180 carries a measured check for each. */
 /* Beta 1.162 addendum to the 1.155 note above: the layer's poses now land ONE BLOCK, not the title alone. The splash pose centres #brandBlock (the icon + title column described at its rule); the menu pose (.menu > #brandBlock) sets the block's top so the title inside it keeps this note's landing slot unchanged; arm() FLIPs the block. The spacer this note describes is retired - the icon itself now occupies the layer, so the pose reproduces the brand column with the real thing instead of a stand-in. Everything else in the 1.155 note (never reparented, the layer never transforms during travel, lifetime via .bye/.off/.parked/.away) stands verbatim, now about the block. */
-#snowCv { position: absolute; inset: 0; width: 100%; height: 100%; pointer-events: none; transition: opacity .3s ease; } /* Beta 1.159 (Andrew's directed fix for the twitch he felt at the splash-to-menu handoff, "like clockwork" every cold open): ONE canvas. Through 1.158 there were two - this one inside #splash and a #snowCvM inside #routeMenu - and the menu's .boot entrance rides a translateX(-26px) slide home plus an opacity ramp, so the menu-half field physically slid sideways while fading in over the static splash-half field: two fields trading places at the same instant every time. A single canvas cannot be placed between the menu's background and its panes from outside (they are one stacking context), so the canvas's home is the splash layer itself - a top-level fixed layer spanning the whole opening scene, never reparented, never transformed, the same pattern that fixed the title at 1.155 - and the menu's boot background goes transparent while the scene is live (the body.snow-scene rule below), letting the one field paint through under the panes. The engine lives in create-save.js. */
+#snowCv { position: absolute; inset: 0; width: 100%; height: 100%; pointer-events: none; transition: opacity .3s ease; } /* Beta 1.159 (Andrew's directed fix for the twitch he felt at the splash-to-menu handoff, "like clockwork" every cold open): ONE canvas. Through 1.158 there were two - this one inside #splash and a #snowCvM inside #routeMenu - and the menu's .boot entrance rides a translateX(-26px) slide home plus an opacity ramp, so the menu-half field physically slid sideways while fading in over the static splash-half field: two fields trading places at the same instant every time. A single canvas cannot be placed between the menu's background and its panes from outside (they are one stacking context), so the canvas's home is the splash layer itself - a top-level fixed layer spanning the whole opening scene, never reparented, never transformed, the same pattern that fixed the title at 1.155 - and the menu's boot background goes transparent while the scene is live (the body.snow-scene rule below), letting the one field paint through under the panes. The engine lives in brand-snow.js. */
 #snowCv.away { opacity: 0; } /* Beta 1.159: the snow hides in the menu's sub-panes alongside the title (showRmPane carries .away on both) and returns at the main pane - the fade is the layer's own .3s shape */
 body.snow-scene #routeMenu.boot { background-color: transparent; } /* Beta 1.159: while the snow scene is live (the engine sets body.snow-scene at start and removes it when it stops for good), the boot menu's own blue steps aside so the single snow field in the splash layer shows through under its panes. Every other state keeps the menu's opaque blue: tab mode (not .boot), the delete-return picker (the scene ended at the original pick, so the class is gone), and reduced-motion boots (the engine never starts, so the class is never set). */
 #brandLayer { position: fixed; inset: 0; z-index: 10001; display: flex; flex-direction: column; align-items: center; justify-content: center; pointer-events: none; transition: opacity .3s ease; }
@@ -355,7 +355,7 @@ body.creating #dock, body.creating #tabBar, body.creating #hud, body.creating #n
 .crResult { display: block; width: 100%; text-align: left; border: none; border-bottom: 1px solid var(--hair); background: transparent; padding: 13px 16px; font-size: 16px; color: var(--ink); cursor: pointer; }
 .crResult:last-child { border-bottom: none; }
 .crResult:active { background: var(--chip); }
-#createHint { position: fixed; top: calc(66px + var(--cr-shift) + env(safe-area-inset-top, 0px)); left: 50%; transform: translateX(-50%); z-index: 4900; background: rgba(20,33,61,.92); color: #fff; font-size: 15px; font-weight: 600; padding: 9px 16px; border-radius: 999px; display: none; white-space: nowrap; }
+#createHint { position: fixed; top: calc(66px + var(--cr-shift) + env(safe-area-inset-top, 0px)); left: 50%; transform: translateX(-50%); z-index: 4900; background: rgba(20,33,61,.92); color: #fff; font-size: 15px; font-weight: 600; padding: 9px 16px; border-radius: 999px; display: none; max-width: min(94vw, 560px); white-space: normal; text-align: center; } /* Beta 1.169 (Carbon fix round, D-09): the pill may wrap - through 1.168 nowrap with no width bound let a long hint (a city name plus a cache note) render ~490px wide and clip at both edges on a narrow phone; the cap + wrap keep the whole hint on screen, centred (the 2026-11-10 proportionality audit's fix direction) */
 #createHint.on { display: block; }
 /* Beta 1.121: the preparation action button under the hint (Cancel while
    preparing, Retry after a failure, Prepare this area when zoomed in with
@@ -451,7 +451,7 @@ input, textarea { caret-color: currentColor; } /* Beta 1.125 (Andrew): the typin
 <div id="hud">
   <div id="warn">Not saving — storage is full or blocked</div>
   <div class="row">
-    <div class="titleStack"><div class="title">Snow Route Beta</div><div class="ver" id="ver">Beta 1.168</div></div>
+    <div class="titleStack"><div class="title">Snow Route Beta</div><div class="ver" id="ver">Beta 1.169</div></div>
   </div>
   <div id="stats"></div>
 </div>
@@ -648,21 +648,23 @@ const PACK_TILES_MAX = 20000; // Beta 1.152 (NV round): the per-pack tile-URL it
 /** @param {string} id @returns {boolean} */ function migrateLegacyRoute(id) { // one-time, 5W only. Beta 1.94 (deep audit SR-193-03): the COMMIT RECORD is the explicit marker key (rk.mig), never field presence. The 1.93 parity gate (R04) could not tell an interrupted copy from a legitimately partial slot - sides restored from a backup, no history yet - and its retry recopied legacy sides OVER the newer restored ones. Now: with the marker absent, the copy fills ONLY fields the slot lacks (a present slot field is never overwritten), each fill verified by read-back; any failure reports false and the caller reads the legacy keys for this boot - verified fills already landed may stay, since without the marker they are never mistaken for a completed move, and each is an exact copy of the legacy value. Parity is re-checked before the marker is written. The legacy keys themselves are never deleted - they stay as the fallback copy. Beta 1.150 (security-audit fix round, finding legacy-migration-fallback-boot-stale-fill): the fill-only rule had one hole - when a fill failed PARTWAY, the fallback boot ran on the legacy keys and its saves wrote NEWER legacy values, and the next boot's retry skipped the fields that had already landed, so the stale partial copy became permanent under the committed marker. The record that tells a migration-owned fill from everyone else's write is rk.migfill: for each field, the exact value a landed fill wrote, persisted (verified) as each fill lands. On a retry, a slot value still EQUAL to its recorded fill is migration's own and is re-copied when the legacy value has moved on; a slot value that DIFFERS from its recorded fill was written by someone else (a restore) - it wins and its record is dropped, which is exactly the 1.94 protection, kept. The record is deleted when the marker commits; from then on the marker alone governs, as before.
   if (id !== '5w') return true;
   const rk = routeKeys(id);
-  if (lsGet(rk.mig) !== null) return true; // the move committed on an earlier boot - the slot is never re-examined against legacy again
-  if (lsGet(LEGACY_KEYS.sides) === null) return true; // nothing legacy to move
+  const migGet = k => { const v = rawRead(k); return v === RAW_READ_FAILED ? undefined : v; }; // Beta 1.169 (Carbon fix round, A-02): THIS pass's decision reads go through rawRead, not lsGet - lsGet reads a THROWN read as an absent key, and deciding what is absent is this pass's whole job: a transient throw on a legacy field used to read as 'legacy no longer holds it', the parity check below agreed, and the marker committed with that field never copied. undefined here means UNKNOWN, and every decision below treats it as 'not migrated - retry next boot', the fail-safe the commit's own comment already states. (The verified fill writes keep their lsSet/lsGet read-backs: a thrown read-back already fails those closed.)
+  const migMark = migGet(rk.mig); if (migMark === undefined) return false; if (migMark !== null) return true; // the move committed on an earlier boot - the slot is never re-examined against legacy again
+  const legSides = migGet(LEGACY_KEYS.sides); if (legSides === undefined) return false; if (legSides === null) return true; // nothing legacy to move
   let prog = {};
-  try { const rawProg = lsGet(rk.migfill); if (rawProg) { const p = JSON.parse(rawProg); if (p && typeof p === 'object' && !Array.isArray(p)) prog = p; } } catch (e) { prog = {}; }
+  try { const rawProg = migGet(rk.migfill); if (rawProg === undefined) return false; if (rawProg) { const p = JSON.parse(rawProg); if (p && typeof p === 'object' && !Array.isArray(p)) prog = p; } } catch (e) { prog = {}; }
   let progDirty = false;
   const saveProg = () => { if (!progDirty) return true; const s = JSON.stringify(prog); if (!lsSet(rk.migfill, s) || lsGet(rk.migfill) !== s) return false; progDirty = false; return true; };
   for (const f of ROUTE_FIELDS) {
-    const raw = lsGet(LEGACY_KEYS[f]);
+    const raw = migGet(LEGACY_KEYS[f]);
+    if (raw === undefined) return false; // A-02: an unreadable legacy field blocks the pass - it is not an absent one
     if (raw === null) { if (f in prog) { delete prog[f]; progDirty = true; } continue; } // legacy no longer holds the field: its fill record is moot
-    const slot = lsGet(rk[f]);
+    const slot = migGet(rk[f]); if (slot === undefined) return false;
     if (slot === null) { if (!lsSet(rk[f], raw) || lsGet(rk[f]) !== raw) return false; prog[f] = raw; progDirty = true; if (!saveProg()) return false; continue; } // fill the gap, verified, and record the fill as migration-owned before moving on
     if (f in prog && slot === prog[f]) { if (raw !== prog[f]) { if (!lsSet(rk[f], raw) || lsGet(rk[f]) !== raw) return false; prog[f] = raw; progDirty = true; if (!saveProg()) return false; } continue; } // migration's own earlier fill, and the legacy value has moved on (a fallback boot saved over it): re-copy, so the stale fill never becomes permanent
     if (f in prog) { delete prog[f]; progDirty = true; } // the slot value is NOT what migration wrote - someone else (a restore) owns it now; it wins, untouched
   }
-  for (const f of ROUTE_FIELDS) { if (lsGet(LEGACY_KEYS[f]) !== null && lsGet(rk[f]) === null) return false; } // parity before committing: every field legacy holds must now be present in the slot
+  for (const f of ROUTE_FIELDS) { const lg = migGet(LEGACY_KEYS[f]); if (lg === undefined) return false; if (lg !== null) { const sl = migGet(rk[f]); if (sl === undefined || sl === null) return false; } } // parity before committing: every field legacy holds must now be present in the slot (A-02: a field that cannot be READ on either side blocks the commit - parity over unknowns is not parity)
   if (!saveProg()) return false;
   lsSet(rk.mig, '1'); // commit. If THIS write fails the next boot re-runs the pass (by then a no-op) and retries the marker - safe either way
   lsDel(rk.migfill); // the marker governs from here - the fill record has no further meaning. If this delete fails, the stale record is inert: the marker short-circuits every later call before the record is read
@@ -967,7 +969,11 @@ pieces = {}; pieceTimes = {};
   // complete streets inherit their done-time on every side; doneSet is derived from pieces
   doneSet = new Set(STREETNAMES.filter(streetComplete));
   for (const n of STREETNAMES) {
-    if (streetComplete(n) && doneTimes[n] && !Object.keys(pieceTimes[n]).length) { pieceTimes[n] = pieces[n].map(v => [v & 1 ? doneTimes[n] : null, v & 2 ? doneTimes[n] : null]); }
+    if (streetComplete(n) && doneTimes[n]) { // Beta 1.169 (Carbon fix round, A-03): the done-time inheritance fills MISSING stamps, not only wholly-empty maps - through 1.168 a partially-recorded street (one stretch stamped, the next not) kept its holes, and liveWorkM read the unstamped stretches as never worked, undercounting the run's side-metres. A recorded stamp is never overwritten; a missing one inherits the street's done time exactly as the empty-map case always has.
+      const full = pieces[n].map(v => [v & 1 ? doneTimes[n] : null, v & 2 ? doneTimes[n] : null]);
+      if (!Object.keys(pieceTimes[n]).length) pieceTimes[n] = full;
+      else { const T = pieceTimes[n], out = []; for (let i = 0; i < full.length; i++) { const cur = T[i]; out[i] = [(cur && cur[0]) || full[i][0], (cur && cur[1]) || full[i][1]]; } pieceTimes[n] = out; }
+    }
   }
   for (const k of Object.keys(doneTimes)) if (!streetComplete(k)) delete doneTimes[k];
   for (const k of Object.keys(doneVia)) if (!streetComplete(k)) delete doneVia[k];
@@ -990,7 +996,7 @@ pieces = {}; pieceTimes = {};
   if (!STREETNAMES.every(n => pieces[n].every(v => v === 0))) return;
   if (!txSet(LS.notes, '{}').ok) return;
   if (!txSet(LS.cov, '{}').ok) return;
-  notes = {}; coveredIdx = {}; suggested = new Set();
+  notes = {}; coveredIdx = {}; suggested = new Set(); sugQueue = [];
   txDel(LS.finclean);
 }
 // ===== DAY/NIGHT (Beta 1.77, Andrew): the theme follows the sun by default.
@@ -2206,10 +2212,10 @@ function cornerTouchSlices(slices, pairs) {
         // Bloomingdale x Valeria, round 10 - the first version required
         // an end and skipped every terminating street at a through road).
         const partnerShown = endKeys.has(pr.n2 + '|' + pr.vi2 + '|' + pr.side2) || slices.some(o => o !== sl && o.mem.some(m => m.n === pr.n2 && m.side === pr.side2) && o.pts.some((p, pi) => pi + 1 < o.pts.length && H.ptSegM(pr.corner, p, o.pts[pi + 1]) < 1.0));
-        if (!partnerShown) return;
+        if (!partnerShown) continue; // Beta 1.169 (Carbon fix round, B-03): SKIP, not stop - these three rejections (here, the range test below, the crossing veto) used to `return`, abandoning every remaining partner candidate for this end; at a multi-way junction a valid second-choice corner touch was never tried and the corner kept its gap. The loop's only stop is the `return` after a LANDED hop: one corner touch per end.
         const endPt = atEnd ? sl.pts[sl.pts.length - 1] : sl.pts[0];
         const d = H.jDistM(endPt, pr.corner);
-        if (d < 0.05 || d > 12) return;
+        if (d < 0.05 || d > 12) continue;
         // vet: the short hop along this line to the corner must not
         // properly cross another street's marked side line
         const V = GEO[meta.n].stitched[meta.vi];
@@ -2229,7 +2235,7 @@ function cornerTouchSlices(slices, pairs) {
           }
           if (bad) break;
         }
-        if (bad) return;
+        if (bad) continue;
         // Retrace the line's own clipped-away points up to the corner
         // where they exist, so the hop follows the line instead of
         // cutting a chord across whatever bends nearby.
@@ -2808,6 +2814,7 @@ function addStack() {
 // ---- selection glow (round 16 treatment on the r15 paint base;
 // the five style toggle buttons were removed at Andrew's order) ----
 let pulseTimer = null;
+let glowAnim = { op: {}, road: [0, 0] }; // Beta 1.169 (Carbon fix round, B-01): DECLARED - through 1.168 applyGlow assigned this undeclared, an implicit global in the app's sloppy mode (harmless there, a ReferenceError waiting for any future strict context). applyGlow replaces it wholesale on every call; managePulse only reads it.
 function buildSelGlow() {
   const sg = selectedGeom();
   if (!sg) return EMPTYFC;
@@ -3167,7 +3174,7 @@ function showChips() {
   positionChips();
 }
 function positionChips() {
-  if (!sel) return;
+  if (!sel || !map) return; // Beta 1.169 (Carbon fix round, B-02): the chips are placed by map projection - with no map there is nothing to project against, and throwing here (projLL) aborted the rest of refreshSelUI mid-selection
   const kids = $('chips').children; if (kids.length !== 2) return;
   const frame = geoSideFrame(sel.name, sel.idx, sel.anchor);
   const base = projLL(frame.baseLL);
@@ -3328,7 +3335,7 @@ function renderStreets() { // production row design: tap a street's name area to
   const openEd = el.querySelector('.noteEd textarea');
   const draft = openEd ? openEd.value : null; // an in-progress note survives re-renders
   const draftFor = openEd ? noteEdFor : null; // Beta 1.63 (audit F01): the draft belongs to draftFor's street only - never poured into another street's editor
-  if (draft !== null && draftFor && draftFor !== noteOpenFor) { clearTimeout(noteSaveTimer); setNoteText(draftFor, draft); } // switching streets finalizes the old editor against ITS street first (a destroyed editor's blur is not guaranteed to fire)
+  if (draft !== null && draftFor && draftFor !== noteOpenFor) { clearTimeout(noteSaveTimer); const wb = saveWarned; const r = setNoteText(draftFor, draft); if (!r.ok && wb) toast('Not saved \u2014 storage problem', 3200); } // switching streets finalizes the old editor against ITS street first (a destroyed editor's blur is not guaranteed to fire). Beta 1.169 (Carbon fix round, A-01): the flush's result used to be discarded - saveAllWarned toasts once per failure EPISODE, so when the warning had already fired, a failed finalization here was silent. The finishChangeMarked contract (Beta 1.97) is the codebase's answer for exactly this shape, applied verbatim: a fresh failure is covered by the warning setNoteText just raised; a suppressed one is owed the plain 'not saved'.
   let noteFlushed = false, noteFlushFailed = false; // Beta 1.79: a rebuild for the SAME street (the map style finishing its load, a theme flip - both end in refreshAll) replaces the open editor too. Finalize its pending save HERE, synchronously, instead of leaving the debounced timer pointing at a discarded textarea - that race is what stranded drive88's note checks when the style-ready refresh landed mid-edit
   if (draft !== null && draftFor && draftFor === noteOpenFor && noteSaveTimer) { clearTimeout(noteSaveTimer); noteSaveTimer = 0; if (setNoteText(draftFor, draft).ok) noteFlushed = true; else noteFlushFailed = true; } // Beta 1.113 (round 112, CG-112-01): setNoteText returns the 1.101 storage-outcome OBJECT - {ok:false} is truthy, so the old truthiness test marked a FAILED save flushed and the rebuilt editor announced 'Saved'
   const arr = STREETNAMES.filter(n => (listFilter === 'mains') === MAIN.has(n)); // Beta 1.109: the visible set is exactly the selected group - 6 mains or 28 secondaries on Route 5W
@@ -3398,7 +3405,7 @@ function renderStreets() { // production row design: tap a street's name area to
         clearTimeout(noteSaveTimer);
         noteSaveTimer = setTimeout(() => { const ok = setNoteText(n, ta.value); paintNt(); hint.textContent = ok.ok ? 'Saved ✓' : 'Not saved — storage problem'; }, 400); // Beta 1.63 (audit F04): the hint tells the truth about the write
       });
-      ta.addEventListener('blur', () => { clearTimeout(noteSaveTimer); setNoteText(n, ta.value); paintNt(); });
+      ta.addEventListener('blur', () => { clearTimeout(noteSaveTimer); const ok = setNoteText(n, ta.value); paintNt(); hint.textContent = ok.ok ? 'Saved ✓' : 'Not saved — storage problem'; }); // Beta 1.169 (Carbon fix round, A-01): blur finalizes like the debounced save above it - same result, same words in the same hint. Through 1.168 the result was discarded, so a blur save that failed (storage full, the episode warning already spent) told the user nothing while the editor still read 'Saves automatically'.
       el.appendChild(ed);
     }
   });
@@ -3616,14 +3623,16 @@ function refreshAll() { updateCount(); renderPanel(); renderStreets(); }
 
 // ===== PACE (one source) =====
 function refRun() { // newest qualifying clean wins (history is chronological, so search from the end)
-  for (let i = history.length - 1; i >= 0; i--) { const h = history[i]; if (h.items && Object.keys(h.items).length === STREETNAMES.length) return h; } // Beta 1.94 (audit F-01): full = every street in the route's own list, not a hard-coded 34
-  for (let i = history.length - 1; i >= 0; i--) { const h = history[i]; if (h.items && Object.keys(h.items).length >= 5) return h; }
+  for (let i = history.length - 1; i >= 0; i--) { const h = history[i]; if (h.items && cleanCount(h) === STREETNAMES.length) return h; } // Beta 1.94 (audit F-01): full = every street in the route's own list, not a hard-coded 34. Beta 1.169 (B-07): counted by cleanCount, like every other surface - a null-timestamped street still counts (it was cleaned), a foreign key never does
+  for (let i = history.length - 1; i >= 0; i--) { const h = history[i]; if (h.items && cleanCount(h) >= 5) return h; }
   return null;
 }
+function cleanCount(h) { const items = (h && h.items) || {}; return Object.keys(items).filter(n => STREETSET.has(n)).length; } // Beta 1.169 (Carbon fix round, B-07): THE count of a clean's streets, in one place - the streets the clean covers: its item keys that belong to the route, timestamp or not (buildSnap writes a null time for a completed street whose moment was not recorded; the street was still cleaned, and openClean lists it). Through 1.168 refRun and the pace/detail headers counted raw keys while histDur counted only timestamped streets, so the same clean could read '34 streets' in one line and '33 of 34' in the next.
 function cleanWorkM(h) { // side-metres a saved clean actually covered
   if (h && typeof h.workM === 'number' && isFinite(h.workM) && h.workM >= 0) return h.workM; // Beta 1.167 (run/pace fix round, B2): cleans archived by 1.167+ carry the run-attributed figure Finish measured (buildSnap's workM) - it is read VERBATIM, so pre-Start work never counts (RP-05), a later geometry edit cannot re-price the clean (RP-06), and a partially-recorded sides map cannot short-circuit into an undercount (RP-09). Legacy entries (no workM) derive below, exactly as they always have.
-  if (h && h.sides && h.sides.p && typeof h.sides.p === 'object') { let s = 0; for (const n of STREETNAMES) { const p = h.sides.p[n]; if (!Array.isArray(p)) continue; STRETCH[n].parts.forEach((part, i) => { const v = p[i] | 0; const L = segLenM(part); if (v & 1) s += L; if (v & 2) s += L; }); } if (s > 0) return s; }
-  const items = (h && h.items) || {}; let s = 0; for (const n of Object.keys(items)) if (STRETCH[n]) s += STRETCH[n].total * 2; return s;
+  const items = (h && h.items) || {}; let si = 0; for (const n of Object.keys(items)) if (STRETCH[n]) si += STRETCH[n].total * 2; // the items derivation: every completed street at both sides of its full length
+  if (h && h.sides && h.sides.p && typeof h.sides.p === 'object') { let s = 0; for (const n of STREETNAMES) { const p = h.sides.p[n]; if (Array.isArray(p) && STRETCH[n]) { STRETCH[n].parts.forEach((part, i) => { const v = p[i] | 0; const L = segLenM(part); if (v & 1) s += L; if (v & 2) s += L; }); } else if (items[n] && STRETCH[n]) s += STRETCH[n].total * 2; } if (s > 0) return s; } // Beta 1.169 (Carbon fix round, B-06): the sides branch used to price ONLY the sides map and return it the moment it priced anything - a PARTIALLY-recorded map (some completed streets carry no sides entry at all) short-circuited into the very RP-09 undercount the stored workM exists to prevent, alive in the legacy branch. The merge is now PER STREET: a street WITH a sides entry is priced by its bits (authoritative - it alone sees partial-side work, including on streets never completed), a completed street MISSING from the map falls back to the items derivation for that street.
+  return si;
 }
 function workRateMh(workM, startMs, endMs, minH) { const h = (endMs - startMs) / 3600000; return (workM > 0 && h > minH) ? workM / h : null; } // NaN inputs fail the comparisons and yield null
 function fmtRate(r) { return (r / 1000).toFixed(1) + ' km of sides/hr'; }
@@ -3655,14 +3664,14 @@ function histDur(h) {
   if (!ts.length) return null;
   const stA = Date.parse(h.startedAt);
   const start = (!isNaN(stA) && stA <= ts[0]) ? stA : ts[0];
-  return { count: ks.length, durMs: ts[ts.length - 1] - start, start };
+  return { count: cleanCount(h), durMs: ts[ts.length - 1] - start, start }; // Beta 1.169 (B-07): the DURATION still spans the timestamped streets (ks above - a span needs moments), but the COUNT is cleanCount: every street the clean covers, null-timestamped ones included
 }
 let histOpen = false;
 function renderPace() {
   const p = paceInfo();
   const ref = p.ref;
   let html =
-    '<div>Reference clean: <b>' + (ref ? new Date(ref.at).toLocaleDateString() + ' (' + Object.keys(ref.items).length + ' streets)' : 'none yet — finish a clean to set your pace') + '</b></div>' +
+    '<div>Reference clean: <b>' + (ref ? new Date(ref.at).toLocaleDateString() + ' (' + cleanCount(ref) + ' streets)' : 'none yet — finish a clean to set your pace') + '</b></div>' +
     '<div>Pace: <b>' + (p.rateMh ? fmtRate(p.rateMh) + ' · full clean ≈ ' + fmtDur(totalWorkM() / p.rateMh * 3600000) + (p.live ? ' (this run so far)' : ' (reference clean)') : '—') + '</b></div>' +
     '<div>This run: <b>' + (runStart ? 'started ' + fmtClock(new Date(runStart)) + (p.etaTxt ? ' · ' + p.etaTxt : '') : 'not started') + '</b></div>' +
     '<div>Work done: <b>' + Math.round(workDoneM()) + ' m of ' + Math.round(totalWorkM()) + ' m of street sides</b></div>' +
@@ -3672,7 +3681,7 @@ function renderPace() {
     let any = 0;
     for (let i = history.length - 1; i >= 0; i--) {
       const d = histDur(history[i]);
-      if (!d) { html += '<div class="prow histRow" data-i="' + i + '"><span>' + fmtWhen(history[i].at) + '</span><span>time not recorded · ' + Object.keys(history[i].items || {}).length + ' of ' + STREETNAMES.length + ' streets ›</span></div>'; any++; continue; } // Beta 1.167 (B4, RP-04): a legacy clean whose item times are all null is still LISTED - and opens, and deletes through the same two-tap flow. Through 1.166 histDur's null skipped it here while refRun could still pick it as the pace reference: it existed, set the pace, and could never be seen or removed.
+      if (!d) { html += '<div class="prow histRow" data-i="' + i + '"><span>' + fmtWhen(history[i].at) + '</span><span>time not recorded · ' + cleanCount(history[i]) + ' of ' + STREETNAMES.length + ' streets ›</span></div>'; any++; continue; } // Beta 1.167 (B4, RP-04): a legacy clean whose item times are all null is still LISTED - and opens, and deletes through the same two-tap flow. Through 1.166 histDur's null skipped it here while refRun could still pick it as the pace reference: it existed, set the pace, and could never be seen or removed.
       html += '<div class="prow histRow" data-i="' + i + '"><span>' + fmtWhen(history[i].at) + '</span><span>' + fmtDur(d.durMs) + ' · ' + d.count + ' of ' + STREETNAMES.length + ' streets ›</span></div>';
       any++;
     }
@@ -3710,7 +3719,7 @@ function openClean(i) {
   const meta = document.createElement('div'); meta.className = 'cvMeta';
   const elapsedMs = d ? Date.parse(h.at) - d.start : NaN; // Beta 1.167 (B3, RP-08): the SECOND interval - the run's start to the Finish tap (h.at). Through 1.166 the single 'Total time' figure was histDur's start-to-LAST-COMPLETION span while the pace rate divided by start-to-Finish: two different intervals, one label, a 15.8% skew on a 30-minute tail. Both are shown now, each under its own label; the math is unchanged.
   const paceRate = (d && !isNaN(elapsedMs) && elapsedMs >= 0) ? workRateMh(cleanWorkM(h), d.start, Date.parse(h.at), 0.05) : null; // the pace divides the clean's work by the TOTAL ELAPSED window - the same window workRateMh uses for the reference figure in renderPace - and the meta line says so
-  meta.textContent = (d ? ('Streets done in ' + fmtDur(d.durMs) + ' · Total elapsed ' + fmtDur(Math.max(0, elapsedMs)) + ' · ') : '') + (h.items ? Object.keys(h.items).length : 0) + ' streets' + (h.km ? (' · ' + h.km + ' km of GPS trail') : '') + (h.pathShortened ? ' · saved GPS path shortened by the trail cap' : '') + (paceRate ? (' · Pace ' + fmtRate(paceRate) + ' (work / total elapsed)') : '') + (h.startedAt ? (' · started ' + fmtClock(new Date(h.startedAt))) : '') + '\nPace divides the clean\'s recorded work by its total elapsed time (start to the Finish tap). Per-street span = first side marked to last side marked (includes any work in between). Tap a street for its details.';
+  meta.textContent = (d ? ('Streets done in ' + fmtDur(d.durMs) + ' · Total elapsed ' + fmtDur(Math.max(0, elapsedMs)) + ' · ') : '') + cleanCount(h) + ' streets' + (h.km ? (' · ' + h.km + ' km of GPS trail') : '') + (h.pathShortened ? ' · saved GPS path shortened by the trail cap' : '') + (paceRate ? (' · Pace ' + fmtRate(paceRate) + ' (work / total elapsed)') : '') + (h.startedAt ? (' · started ' + fmtClock(new Date(h.startedAt))) : '') + '\nPace divides the clean\'s recorded work by its total elapsed time (start to the Finish tap). Per-street span = first side marked to last side marked (includes any work in between). Tap a street for its details.';
   cv.appendChild(meta);
   const items = h.items || {};
   const order = Object.keys(items).filter(n => STREETSET.has(n)).sort((x, y) => String(items[x] || '9999').localeCompare(String(items[y] || '9999')));
@@ -3878,7 +3887,7 @@ function cancelStart() {
     markDirty('trail'); markDirty('sess');
   }
   runSnap = null;
-  runStart = 0; suggested = new Set(); $('suggest').classList.add('hidden');
+  runStart = 0; suggested = new Set(); sugQueue = []; $('suggest').classList.add('hidden');
   const okCancel = saveAllWarned().ok; flushAux(true);
   const trailPending = writePending('trail') || writePending('sess'); // Beta 1.93 (follow-up audit R07): the erasure claim below is gated on the trail/session writes having actually landed
   if (wasRunGps) stopGps();
@@ -3899,7 +3908,7 @@ function clearAllMarks() {
   const any = doneSet.size > 0 || STREETNAMES.some(n => pieces[n].some(v => v !== 0)) || Object.keys(coveredIdx).length > 0 || suggested.size > 0; // Beta 1.70 (audit A04): coverage-only state is something to clear too - the old guard claimed 'nothing to clear' while coverage and suggestions sat untouched
   if (!any) { toast('Nothing marked to clear'); return; }
   for (const n of STREETNAMES) { pieces[n] = STRETCH[n].parts.map(() => 0); pieceTimes[n] = {}; }
-  doneSet = new Set(); doneTimes = {}; doneVia = {}; coveredIdx = {}; suggested = new Set();
+  doneSet = new Set(); doneTimes = {}; doneVia = {}; coveredIdx = {}; suggested = new Set(); sugQueue = [];
   $('suggest').classList.add('hidden'); delete $('suggest').dataset.n; // Beta 1.71 (audit B01): the one path the 1.70 dismissal sweep missed - Clear wiped the coverage behind the panel but left the panel itself up, its Yes still able to select the street
   deselect(); const okClear = finishChange();
   if (okClear.ok) toast('All marks cleared'); else toast('Storage problem — the clear could not be saved; marks may return on reload', 4200); // Beta 1.63 (audit F04)
@@ -4018,7 +4027,7 @@ function finishRun() {
   }
   lsDel(LS.snap); markClean('snap'); resetRunDist(); lsDel(LS.rundist); // Beta 1.167 (B5): the distance counter is consumed into the archive entry (km/pathShortened) - its record goes with the run. Beta 1.94 (SR-193-02): the run is finished - its cancel snapshot goes with it. Ungated on purpose: a leftover snapshot is stamped with THIS run's start, so it can never match a future run, and the next Start overwrites it anyway
   if (archiving) history = newHist;
-  doneSet = new Set(); doneTimes = {}; doneVia = {}; notes = {}; runStart = 0; runSnap = null; coveredIdx = {}; suggested = new Set(); $('suggest').classList.add('hidden'); // Beta 1.70 (audit A04): the suggestion set is run-scoped too - finishRun used to clear the coverage but keep the set, so suggested streets never suggested again
+  doneSet = new Set(); doneTimes = {}; doneVia = {}; notes = {}; runStart = 0; runSnap = null; coveredIdx = {}; suggested = new Set(); sugQueue = []; $('suggest').classList.add('hidden'); // Beta 1.70 (audit A04): the suggestion set is run-scoped too - finishRun used to clear the coverage but keep the set, so suggested streets never suggested again
   for (const n of STREETNAMES) { pieces[n] = STRETCH[n].parts.map(() => 0); pieceTimes[n] = {}; }
   stopGps(); deselect(); drawTrail(true); // Beta 1.69 (audit visual check): the run is over and runStart is 0, so this clears the finished line now instead of leaving it until the next throttled refresh
   const restRes = saveAll(); const restOk = restRes.ok; // the gated sides write already landed; this pass carries the metadata - a failure here warns but cannot resurrect anything (authority + archive agree)
@@ -4086,7 +4095,7 @@ function resetNotesHistorySession() { // Beta 1.148 (Tranche 5, A4(ii)): app3's 
   runSnap = null; // F3: the in-memory cancel snapshot belongs to the outgoing run. The PERSISTED copy (LS.snap, in the outgoing slot) is deliberately untouched - after switching back, Cancel validates it exactly as it does after a reload
   histOpen = false; cleanIdx = null; cleanDelArmed = false; if (cleanDelTimer) { clearTimeout(cleanDelTimer); cleanDelTimer = 0; } // the history panel and its delete-arming
   noteFor = null; $('noteModal').classList.add('hidden'); // the modal note editor
-  suggested = new Set(); $('suggest').classList.add('hidden'); $('stale').classList.add('hidden'); // run-scoped suggestion set + the two banners (checkStale re-judges the stale banner for the incoming route below)
+  suggested = new Set(); sugQueue = []; $('suggest').classList.add('hidden'); $('stale').classList.add('hidden'); // run-scoped suggestion set + the two banners (checkStale re-judges the stale banner for the incoming route below)
 }
 function pushGps() {
   const src = map && map.getSource('gps'); if (!src) return;
@@ -4338,13 +4347,21 @@ function coverFix(ll) {
   }
   if (changed) markDirty('aux');
 }
+let sugQueue = []; // Beta 1.169 (Carbon fix round, B-11): streets that qualify while the banner is busy showing another - each gets its turn instead of being overwritten into silence. Run-scoped like `suggested` itself: cleared at the same four resets (cancel, clear-all, finish, route switch)
 function showSuggest(n) {
+  const cur = $('suggest').dataset.n;
+  if (!$('suggest').classList.contains('hidden') && cur && cur !== n) { if (!sugQueue.includes(n)) sugQueue.push(n); return; } // Beta 1.169 (B-11): the banner is showing another street - queue behind it. The street is already in `suggested`, so coverFix will never offer it again this run; through 1.168 this call simply overwrote the banner and the earlier street's one offer was gone for the run.
   $('sugText').textContent = n + ' looks fully covered by GPS but is not marked done.';
   $('suggest').dataset.n = n;
   $('suggest').classList.remove('hidden');
 }
-$('sugYes').addEventListener('click', () => { const n = $('suggest').dataset.n; $('suggest').classList.add('hidden'); if (n) { const c = STRETCH[n].line[Math.floor(STRETCH[n].line.length / 2)]; map.flyTo({ center: [c[1], c[0]], zoom: Math.max(map.getZoom(), 15.5) }); selectStretch(n, 0, c); } });
-$('sugNo').addEventListener('click', () => $('suggest').classList.add('hidden'));
+function sugNext() { // the banner was answered or dismissed: the next queued street takes it - one that has since been marked, or left the route, is skipped
+  while (sugQueue.length && (streetComplete(sugQueue[0]) || !STREETSET.has(sugQueue[0]))) sugQueue.shift();
+  const nxt = sugQueue.shift();
+  if (nxt) { $('sugText').textContent = nxt + ' looks fully covered by GPS but is not marked done.'; $('suggest').dataset.n = nxt; $('suggest').classList.remove('hidden'); }
+}
+$('sugYes').addEventListener('click', () => { const n = $('suggest').dataset.n; $('suggest').classList.add('hidden'); if (n) { const c = STRETCH[n].line[Math.floor(STRETCH[n].line.length / 2)]; if (map) map.flyTo({ center: [c[1], c[0]], zoom: Math.max(map.getZoom(), 15.5) }); selectStretch(n, 0, c); } sugNext(); }); // Beta 1.169 (Carbon fix round, B-02): the flyTo rides the codebase's map===null discipline (the 1.146 C4 idiom - followCam, northUp): in the map-failure world the tap still SELECTS the street; through 1.168 map.getZoom() threw first and the selection never happened
+$('sugNo').addEventListener('click', () => { $('suggest').classList.add('hidden'); sugNext(); });
 let weakToastAt = 0;
 let gpsDenied = false; // Beta 1.111: the Status health GPS row's amber state - set by a permission denial (gpsError code 1), cleared by any accepted fix
 function gpsError(e) {
@@ -5065,7 +5082,7 @@ $('stDel').addEventListener('click', async () => {
 });
 // ---- About / What's new ----
 const WHATSNEW = { // the curated in-app notes: plain words, LATEST RELEASE ONLY (Beta 1.114, Andrew: the accumulated list cluttered the About pane). A release REPLACES this entry with its own in the same change - it never accumulates; the full history lives in CHANGELOG.md, not the app
-  v: 'Beta 1.168', items: ["The street panel that pops up when you tap a street now sits lower, clear of the day/night button."] };
+  v: 'Beta 1.169', items: ["A round of under-the-hood fixes from a full code audit: older cleans now count their streets and their work the same way on every screen, and a GPS suggestion for one street no longer hides the next one.", "Creating routes is safer too: switching city mid-route asks before throwing your picks away, imported drafts trim their streets properly, and a street with an unusual name (like “Constructor”) no longer breaks route creation."] };
 function renderAbout() {
   const cur = $('ver').textContent.trim();
   $('wnHead').textContent = "WHAT'S NEW · " + cur; // the header names the LIVE version, read from the title's version element - never a second hard-coded copy that can go stale
@@ -5504,7 +5521,7 @@ function normalizePack(raw, opts) { // -> { ok: true, pack } | { ok: false, erro
   let totalLen = 0;
   const cleanRoads = (obj, label) => {
     if (!obj || typeof obj !== 'object' || Array.isArray(obj)) return { error: 'the ' + label + ' are missing or the wrong shape' };
-    const out = {}; const names = Object.keys(obj);
+    const out = Object.create(null); const names = Object.keys(obj); // Beta 1.169 (Carbon fix round, D-05 + X-05): prototype-free - on a plain object the duplicate test below reads ({}).constructor / ({}).toString as truthy and '__proto__' as the prototype itself, so a FIRST street carrying one of those names was falsely rejected as a duplicate (and a '__proto__' street could not be stored at all). The 1.150 city-cache fold set this precedent for stored names.
     if (names.length > PACK_STREETS_MAX) return { error: 'too many streets in the ' + label };
     for (const nm0 of names) {
       const nm = nm0.trim();
@@ -5575,8 +5592,8 @@ function nextRouteNameGuess() { let mx = 1; for (const p of ROUTE_PACKS) { const
 
 // ---- draft state: session only (not a route, not in any slot) ----
 let creating = false, crStage = 'pick', crBootParked = false, crAreaGuess = '', crPhoto = null, crPickBusy = false; // Beta 1.128: crReturnToPreview is GONE - it existed only to rewrite the panel's Done label on the return-from-preview errand, and the label no longer rewrites (Andrew: the button reads "Done", always)
-let draft = null; // { roads, mains: Set, osmNames, tileNames: [..], name, area, sectors, parts } - EVERY street key is the FULL map name (Beta 1.144, DA-04; osmNames maps a key to itself for tapped streets and stays empty for imported ones, whose pack keys are their own); sectors: {name: [chosen part indexes]} (Beta 1.127 - an ABSENT entry means the whole road), parts: {name: crStreetParts record} (session cache)
-function newDraft() { return { roads: {}, mains: new Set(), osmNames: {}, tileNames: [], name: '', area: '', sectors: {}, parts: {} }; }
+let draft = null; // { roads, mains: Set, osmNames, tileNames: [..], name, area, sectors, parts } - EVERY street key is the FULL map name (Beta 1.144, DA-04; osmNames maps every key to itself - tapped streets at the tap (crAddStreet), imported ones at importDraft, whose pack keys are their own OSM names (Beta 1.169, D-02: the map used to stay empty for imports, and an imported street's own ways then cut it in crStreetParts)); sectors: {name: [chosen part indexes]} (Beta 1.127 - an ABSENT entry means the whole road), parts: {name: crStreetParts record} (session cache)
+function newDraft() { return { roads: Object.create(null), mains: new Set(), osmNames: Object.create(null), tileNames: [], name: '', area: '', sectors: Object.create(null), parts: Object.create(null) }; } // Beta 1.169 (Carbon fix round, D-05): the name-keyed maps are prototype-free - a tapped street named '__proto__' joins by assignment (create-pick.js) and must land as an own key
 let crSectorSession = { street: null, snapshot: undefined, collapsed: false, face: 'panel' }; // Beta 1.154 (B3 build): the sector/panel session as ONE record - through 1.153 its fields were four loose bindings (crSectorStreet + crSectorSnapshot + crPanelCollapsed here, crFaceNow beside crMorph in create-pick.js). The fields: street (Beta 1.127: the street whose sectors are being trimmed, or null), snapshot (Beta 1.129: the street's sector pick as it stood when sector mode was ENTERED - null = the whole road, an array = the trim then in force; undefined = no sector session in flight), collapsed (Beta 1.127: the picked-roads panel's tucked-away state - the slim strip shows instead), face (the face the pick sheet's surface currently rests as; crMorph in create-pick.js stays a separate binding - it is the morph's in-flight descriptor, not session state). The session is three lifecycles sharing one surface (the blocked record's extraction): the sector pair, the panel's tuck, the sheet's face
 function crSectorReset() { crSectorSession.street = null; crSectorSession.snapshot = undefined; } // Beta 1.136 (programme F): a sector session's teardown in ONE place - through 1.135 the pair (street cleared, Cancel snapshot dropped) was written out at six sites (street removal, sector close, stage change, creation start, creation exit, draft start-over); every one of them now calls this. It closes the PAIR ONLY: a stage change resets the pair and deliberately leaves collapsed/face alone, and creation start/exit clear collapsed separately, exactly as through 1.153
 function draftStreets() { return draft ? Object.keys(draft.roads) : []; }
@@ -6055,6 +6072,7 @@ function crCityPrepare() { // a city is picked: load its whole extract - from th
     let restored = 0;
     if (rec && rec.bbox && (rec.bbox.s !== bbox.s || rec.bbox.n !== bbox.n || rec.bbox.w !== bbox.w || rec.bbox.e !== bbox.e)) rec = null; // a record saved under a DIFFERENT bounding box (the lookup's answer changed) is not this grid's cache - its cell keys would restore the wrong streets
     if (rec && rec.cells) {
+      let folded = false; // Beta 1.169 (Carbon fix round, D-06): set by the fold below; the byName rebuild runs ONCE after the loop (see there)
       for (const cell of g.cells) {
         const saved = rec.cells[cell.key];
         if (saved && Array.isArray(saved.ways)) {
@@ -6063,12 +6081,11 @@ function crCityPrepare() { // a city is picked: load its whole extract - from th
           if (!Object.keys(byId).length && saved.ways.length) continue; // Beta 1.151 (hotfix for the 1.150 C2 gate's own regression): a cell is certified (box + done, below) when at least one VALIDATED way came out of it OR its stored list was legitimately EMPTY - phase 1 stores empty cells (no named streets: park/lake/city-edge) with ways: [], and the 1.150 rule conflated them with the audit's poison case, a NON-EMPTY list whose ways are all corrupt, which still stays pending here and is fetched fresh, never marked done on the cache's say-so
           crCovMerge([], null); // ensure the cov exists before the direct fold below
           for (const id of Object.keys(byId)) crCov.byId[id] = byId[id];
-          const fresh = crCovFromWays(crCov.byId, crCov.boxes);
-          crCov.byName = fresh.byName;
           if (!crCov.boxes.some(b => b.s === cell.box.s && b.w === cell.box.w && b.n === cell.box.n && b.e === cell.box.e)) crCov.boxes.push(cell.box);
-          cell.state = 'done'; restored++;
+          cell.state = 'done'; restored++; folded = true;
         }
       }
+      if (folded) { const fresh = crCovFromWays(crCov.byId, crCov.boxes); crCov.byName = fresh.byName; } // Beta 1.169 (D-06): the byName index is rebuilt ONCE, after the fold - through 1.168 crCovFromWays ran inside the per-cell loop above, reindexing every accumulated way for every restored cell (O(cells x ways) on a large cached city). Nothing observes byName mid-loop (the fold is one synchronous pass), so the single rebuild lands the identical index.
       if (restored) { g.fromCache = true; g.savedAt = rec.savedAt || null; }
     }
     if (restored === g.cells.length) { crSetPrepState('ready'); crSweepPending(); crRenderHint(); return; } // fully saved: instant ready, ZERO downloads (amendment C)
@@ -6456,11 +6473,15 @@ function crPickCity(it) {
   const name = crCityNameOf(it); if (!name) return;
   let bbox = null;
   if (Array.isArray(it.boundingbox) && it.boundingbox.length === 4) { const bb = it.boundingbox.map(Number); if (bb.every(isFinite)) bbox = { s: bb[0], n: bb[1], w: bb[2], e: bb[3] }; }
-  crCity = { name, lat, lon, bbox };
-  crAreaGuess = name;
-  if (draft && !draft.area) draft.area = name;
-  try { lsSet(LS_GLOBAL.lastArea, name); } catch (e) {}
-  crEnterPickFromCity();
+  const apply = () => {
+    crCity = { name, lat, lon, bbox };
+    crAreaGuess = name;
+    if (draft && !draft.area) draft.area = name;
+    try { lsSet(LS_GLOBAL.lastArea, name); } catch (e) {}
+    crEnterPickFromCity();
+  };
+  if (crCity) { askDiscard(() => { draft = newDraft(); crPending = {}; apply(); }); return; } // Beta 1.169 (Carbon fix round, D-08): a pick that REPLACES a chosen city is a draft reset, through the same askDiscard guard as the list door (crPackPickCity) and the manual door. Through 1.168 the search and last-city paths landed here directly: the old city's streets stayed in the draft under the new city's preparation, its pending rows were stranded on the old coverage, and draft.area kept the old city's name into the save form. The reset is a fresh draft plus crPending cleared (its rows belong to the old city's coverage); askDiscard no-ops on an empty draft, so re-picking with nothing picked costs no prompt. A FIRST pick (no city in force - e.g. answering the city step for a photo draft) is not a switch and keeps its draft, exactly as through 1.168.
+  apply();
 }
 function crEnterPickFromCity() { // the city is chosen: land in the pick stage, the map flown to the city, and its whole-city preparation started (from the on-device cache when saved - crCityPrepare)
   if (!creating) enterCreate('pick'); else { if (!routeLoaded) parkBootChrome(); else closeRouteMenu(); setCreateStage('pick'); }
@@ -6691,7 +6712,7 @@ function renderCrLists() {
   { const el = $('crPickList'); el.innerHTML = ''; for (const n of names) el.appendChild(crPanelRowEl(n, g)); }
   { const el = $('pvList'); el.innerHTML = ''; for (const n of names) el.appendChild(crRowEl(n, g)); }
   for (const pk of Object.keys(crPending).sort()) { // Beta 1.121: pending streets (shape reaches past verified coverage) list in the PICK sheet only - never in the preview, never in the count, never saved
-    if (draft.roads[pk]) continue;
+    if (Object.prototype.hasOwnProperty.call(draft.roads, pk)) continue; // Beta 1.169 (Carbon fix round, D-05): an OWN-key test, not a truthiness read - on a plain draft map 'constructor' / 'toString' read truthy through the prototype, so a pending street carrying one of those names was hidden from this list: its row never rendered, so it could neither be seen nor dropped
     const row = document.createElement('div'); row.className = 'crRow pending';
     const dot = document.createElement('span'); dot.className = 'crDot sec'; row.appendChild(dot);
     const nm = document.createElement('span'); nm.className = 'crName'; nm.textContent = shortStreetName(pk); row.appendChild(nm); // Beta 1.144 (DA-04): display form
@@ -6745,7 +6766,8 @@ function enterCreate(stage) {
 }
 function exitCreate() {
   creating = false; draft = null; crStage = 'pick'; crAreaGuess = '';
-  if (crPillT) clearTimeout(crPillT); crPillT = 0; crPillKey = ''; crPillGone = ''; // Beta 1.153: the pill's clock dies with the session, like every other create timer here crSectorReset(); crSectorSession.collapsed = false; // Beta 1.127: the panel + sector session state dies with the creation
+  if (crPillT) clearTimeout(crPillT); crPillT = 0; crPillKey = ''; crPillGone = ''; // Beta 1.153: the pill's clock dies with the session, like every other create timer here
+  crSectorReset(); crSectorSession.collapsed = false; // Beta 1.127: the panel + sector session state dies with the creation. Beta 1.169 (Carbon fix round, D-01): through 1.168 these two calls sat AFTER the 1.153 comment's slashes on the line above - inside the comment, dead since the line was written. enterCreate's own reset on the next entry fenced the consequence (the state merely outlived the exit instead of dying with it); the calls stand on their own line now and run.
   crSession++; crCovGen++; // every async completion born in this session is obsolete the moment the flow closes - it must not land in a later draft, hint or busy state (CG-PF-05)
   if (crPrep) { clearInterval(crPrep.ticker); crAbortOp(crPrep.op); crPrep = null; } // and the downloads themselves stop (CG-PF-10)
   if (crGrid) { crGridStop('exit'); crGrid = null; } // the grid's downloads stop too; its committed cells live on in the on-device city cache, by design
@@ -6815,6 +6837,7 @@ function importDraft(text) { // fail closed, named errors, nothing half-applied 
   if (!v.ok) { toast('Draft not imported — ' + v.error, 4000); return; }
   draft = newDraft();
   draft.roads = v.pack.roads; draft.mains = new Set(v.pack.main); draft.name = v.pack.name || ''; draft.area = v.pack.area || ''; draft.tileNames = v.pack.tileNames.slice();
+  draft.osmNames = {}; for (const k of Object.keys(v.pack.roads)) draft.osmNames[k] = k; // Beta 1.169 (Carbon fix round, D-02): an imported street's own OSM name is its pack key. Through 1.168 importDraft left osmNames empty, so crStreetParts' own-ways skip (nm === own) never matched for an imported street and the street's own geometry cut it into fragments at its own vertices. Tapped streets have always carried key -> itself (crAddStreet).
   enterCreate('preview');
   toast('Draft loaded — check it over', 2600);
 }
@@ -6842,9 +6865,13 @@ $('crCityLast').addEventListener('click', async () => {
     if (r.ok) { const list = await r.json(); if (!stillMine()) return; const hit = (Array.isArray(list) ? list : []).find(crIsPlace); if (hit) { crPickCity(hit); return; } }
   } catch (e) { if (e && e.name === 'AbortError') return; }
   if (!stillMine()) return;
-  crCity = { name: last, lat: null, lon: null, bbox: null };
-  crAreaGuess = last; if (draft && !draft.area) draft.area = last;
-  crEnterPickFromCity();
+  const applyLast = () => {
+    crCity = { name: last, lat: null, lon: null, bbox: null };
+    crAreaGuess = last; if (draft && !draft.area) draft.area = last;
+    crEnterPickFromCity();
+  };
+  if (crCity) { askDiscard(() => { draft = newDraft(); crPending = {}; applyLast(); }); return; } // Beta 1.169 (D-08): the name-only last-city landing is a city pick like any other - replacing a chosen city goes through the same discard + reset as crPickCity
+  applyLast();
 });
 $('crCityBack').addEventListener('click', () => {
   crCityLookupSeq++; if (crCityLastCtl) { try { crCityLastCtl.abort(); } catch (e) {} crCityLastCtl = null; } // leaving the pane kills a held lookup (CG-PF-11)
