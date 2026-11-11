@@ -43,7 +43,11 @@ cleanup; drive156 was quarantined 2026-11-11 — check 157-D1 flaked
 twice on record and the drive was hardened in the drive156-harden
 round — and is re-admitted in the spring-t0-fix round (Beta 1.172,
 2026-11-11): the app's first-frame spring artifact behind the residual
-failures is fixed, 157-D1 re-proved clean, entry removed there); they
+failures is fixed, 157-D1 re-proved clean, entry removed there;
+drive186 was quarantined 2026-11-11 — checks D1–D5 flaked twice on
+record with the identical 'stitched' undefined signature (run
+43029275837 shard 3 and run 43060145115 attempt 1 shard 3) and the
+drive is being hardened in the drive186-harden round); they
 are listed here so the family's full membership stays visible.
 
 ## Tier C — deep mechanics
