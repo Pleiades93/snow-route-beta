@@ -27,10 +27,10 @@ const mark3 = () => ev(`(() => { const base = Date.now() - 3600000; runStart = b
 await sleep(3000);
 await ev(`(() => { localStorage.clear(); location.reload(); return true; })()`); await sleep(1200);   // floor wait: let the reload actually begin before polling, so the poll cannot be answered by the pre-reload page
 await bootThrough(ev, poll); // Beta 1.95 (SR-194-07 re-baseline): the strict harness exposed that this drive ran its whole flow after this reload with NO route loaded (pieces empty) - mark3's refreshAll threw on the empty board and the old {error} return swallowed it, the mutations before the throw carrying the checks. The flow now runs against a loaded route, as it reads.
-// T1: the button is FINISH, wearing Start's splash blue (Beta 1.100: Start and Finish share one style rule)
-let A = await pollRead(`(() => { const b = $('resetBtn'); const cs = getComputedStyle(b); return JSON.stringify({ label: b.textContent, bg: cs.backgroundColor }); })()`, v => v.label === 'FINISH');
+// T1: the button is FINISH, wearing Start's splash blue (Beta 1.100: Start and Finish share one style rule; Beta 1.174: that rule wears the icon's shaded-blue gradient)
+let A = await pollRead(`(() => { const b = $('resetBtn'); const cs = getComputedStyle(b); return JSON.stringify({ label: b.textContent, bg: cs.backgroundColor, bgi: cs.backgroundImage }); })()`, v => v.label === 'FINISH');
 ok('T1 button says FINISH', A.label === 'FINISH');
-ok('T1 button wears the shared splash-blue of Start (Beta 1.100)', A.bg === 'rgb(43, 75, 242)');
+ok('T1 button wears the shared splash-blue gradient of Start (Beta 1.100; Beta 1.174 gradient)', A.bgi.includes('linear-gradient') && A.bgi.includes('rgb(61, 101, 239)') && A.bgi.includes('rgb(27, 47, 182)'));
 // T2: pop-up flow - No changes nothing
 await ev(`(() => { $('resetBtn').click(); return true; })()`); await poll(`!$('finModal').classList.contains('hidden')`, 10000); // T4: poll the terminal state T2 asserts (the Finish pop-up open)
 A = JSON.parse(await ev(`(() => JSON.stringify({ vis: !$('finModal').classList.contains('hidden'), msg: $('finMsg').textContent }))()`));

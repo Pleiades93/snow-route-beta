@@ -37,11 +37,11 @@ const S22 = JSON.parse(await ev(`(() => { const sb = $('startBtn'); const cs = g
   const strip = $('tabBar'); const sr = strip.getBoundingClientRect(); const br = sb.getBoundingClientRect();
   const atBottom = document.elementFromPoint(window.innerWidth / 2, window.innerHeight - 3);
   const atStart = document.elementFromPoint(br.x + br.width / 2, br.y + br.height / 2);
-  return JSON.stringify({ label: sb.textContent.trim(), bg: cs.backgroundColor, count: $('count').textContent,
+  return JSON.stringify({ label: sb.textContent.trim(), bg: cs.backgroundColor, bgi: cs.backgroundImage, count: $('count').textContent,
     hudBg: getComputedStyle($('hud')).backgroundColor,
     strip: { x: sr.x, w: sr.width, top: sr.top, bottom: sr.bottom }, startB: br.bottom,
     atBottom: atBottom && (atBottom.id || (atBottom.closest('#tabBar') ? 'tabBar' : '')), atStart: atStart && atStart.id, color: cs.color, vw: window.innerWidth, vh: window.innerHeight }); })()`));
-ok('S1 Start button: splash-blue circle, white START word (Beta 1.75) | ' + JSON.stringify(S22), S22.label === 'START' && S22.bg === 'rgb(43, 75, 242)' && S22.color === 'rgb(255, 255, 255)');
+ok('S1 Start button: icon-shaded gradient circle, white START word (Beta 1.75; Beta 1.174: the circle wears the app icon\'s shaded-blue gradient) | ' + JSON.stringify(S22), S22.label === 'START' && S22.bgi.includes('linear-gradient') && S22.bgi.includes('rgb(61, 101, 239)') && S22.bgi.includes('rgb(27, 47, 182)') && S22.color === 'rgb(255, 255, 255)');
 ok('S2 count reads "0 of 34 · 0%" (no "completed") | ' + S22.count, S22.count === '0 of ' + PACK5W.names + ' · 0%');
 ok('S3 header slab is transparent (map full-screen at the top)', S22.hudBg === 'rgba(0, 0, 0, 0)');
 ok('S4 tab bar spans the bottom edge and takes the touch there (the old dead-strip job), dock clear above it | ' + JSON.stringify(S22),
@@ -60,11 +60,11 @@ ok('T2 tab order: Locate, Routes, Home dead centre, Clear, Settings (Beta 1.88: 
   JSON.stringify(T1.order) === JSON.stringify(['gpsBtn', 'routesBtn', 'homeBtn', 'clearBtn', 'setBtn']));
 ok('T3 the meter starts empty | fillW ' + T1.fillW, T1.fillW === 0);
 await tapById(ev, 'setBtn'); await sleep(600);
-const T3b = JSON.parse(await ev(`(() => JSON.stringify({ open: $('setMenu').classList.contains('open'), bg: getComputedStyle($('setMenu')).backgroundColor,
+const T3b = JSON.parse(await ev(`(() => JSON.stringify({ open: $('setMenu').classList.contains('open'), bg: getComputedStyle($('setMenu')).backgroundColor, bgi: getComputedStyle($('setMenu')).backgroundImage,
   rows: [...document.querySelectorAll('#setMainPane .rmBtn')].map(b => b.id), ver: $('setVer').textContent, titleVer: $('ver').textContent,
   chipOut: !$('setMenu').contains($('nightBtn')), chipW: $('nightBtn').offsetWidth, paceW: $('paceBtn').offsetWidth }))()`));
-ok('T3 Settings rises as the blue takeover: Status / On the job / Backup / About-What\'s new on the main pane (Beta 1.111 redesign - Update moved into About, offline maps into Status), the version riding bottom-right synced from the title, Day/Night out of the menu - its own button now, exactly Pace-sized (Beta 1.88) | ' + JSON.stringify(T3b),
-  T3b.open === true && T3b.bg === 'rgb(43, 75, 242)' && JSON.stringify(T3b.rows) === JSON.stringify(['stBtn', 'jobBtn', 'exportBtn', 'aboutBtn']) && T3b.ver === T3b.titleVer && T3b.ver.length > 0 && T3b.chipOut && T3b.chipW === 56 && T3b.chipW === T3b.paceW);
+ok('T3 Settings rises as the blue takeover (Beta 1.174: the icon\'s shaded-blue gradient): Status / On the job / Backup / About-What\'s new on the main pane (Beta 1.111 redesign - Update moved into About, offline maps into Status), the version riding bottom-right synced from the title, Day/Night out of the menu - its own button now, exactly Pace-sized (Beta 1.88) | ' + JSON.stringify(T3b),
+  T3b.open === true && T3b.bgi.includes('linear-gradient') && T3b.bgi.includes('rgb(61, 101, 239)') && T3b.bgi.includes('rgb(27, 47, 182)') && JSON.stringify(T3b.rows) === JSON.stringify(['stBtn', 'jobBtn', 'exportBtn', 'aboutBtn']) && T3b.ver === T3b.titleVer && T3b.ver.length > 0 && T3b.chipOut && T3b.chipW === 56 && T3b.chipW === T3b.paceW);
 await tapById(ev, 'setClose'); await sleep(600);
 ok('T3 the bare X closes the Settings takeover', await expectStrict(ev, `$('setMenu').classList.contains('open')`) === false);
 await tapById(ev, 'setBtn'); await sleep(500);
