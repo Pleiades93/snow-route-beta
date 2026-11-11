@@ -703,7 +703,7 @@ $('stDel').addEventListener('click', async () => {
 });
 // ---- About / What's new ----
 const WHATSNEW = { // the curated in-app notes: plain words, LATEST RELEASE ONLY (Beta 1.114, Andrew: the accumulated list cluttered the About pane). A release REPLACES this entry with its own in the same change - it never accumulates; the full history lives in CHANGELOG.md, not the app
-  v: 'Beta 1.170', items: ["More fixes from the code audit, all under the hood: a clean you finish now keeps its start time even when no street times were recorded, and an interrupted finish is put back exactly as it was stored.", "Route creation and offline maps get the same treatment: double-tapping Save can't duplicate a route, clearing your picks really clears them, and the Status screen counts each route's downloaded maps as its own."] };
+  v: 'Beta 1.171', items: ["New app icon — same snowflake, rebuilt crisp with a deep black road outline."] };
 function renderAbout() {
   const cur = $('ver').textContent.trim();
   $('wnHead').textContent = "WHAT'S NEW · " + cur; // the header names the LIVE version, read from the title's version element - never a second hard-coded copy that can go stale
