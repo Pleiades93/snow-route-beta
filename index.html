@@ -2,13 +2,13 @@
 <html lang="en" class="boot">
 <head>
 <meta charset="UTF-8">
-<meta http-equiv="Content-Security-Policy" content="default-src 'none'; script-src 'sha384-rRFQB/UpRPPbNEh4/NChhKua7CZfxFI2PDVgGA1D6v7/5WQQxo2K7x67jhKHPae9' https://cdn.jsdelivr.net; style-src-elem 'sha384-dXzCpNH5v8NrIfxtq2VIwysmCU2TlfZoeQwzMogrAdCiYl2Y5bTxGK0Id6FghvNF' https://cdn.jsdelivr.net; style-src-attr 'unsafe-inline'; img-src 'self' data: blob: https://tiles.basemaps.cartocdn.com https://protomaps.github.io https://cdn.jsdelivr.net; connect-src 'self' https://tiles.basemaps.cartocdn.com https://protomaps.github.io https://cdn.jsdelivr.net https://nominatim.openstreetmap.org https://overpass-api.de https://overpass.kumi.systems; worker-src blob: 'self'; child-src blob: 'self'; font-src 'none'; manifest-src 'self'; base-uri 'none'; form-action 'none'; object-src 'none'">
+<meta http-equiv="Content-Security-Policy" content="default-src 'none'; script-src 'sha384-1pHprWVXIFvxtFzOAAUXNU4pveFN+5ebXKe68GwmKCKZD/Gac1JyOIgP2BVxv9Gz' https://cdn.jsdelivr.net; style-src-elem 'sha384-+Nl2dGp4ordpJDbL5jb/g85toeSCbYw0rtJQWpOtq1zVVlFvL/TFTzbkZKAL7WNQ' https://cdn.jsdelivr.net; style-src-attr 'unsafe-inline'; img-src 'self' data: blob: https://tiles.basemaps.cartocdn.com https://protomaps.github.io https://cdn.jsdelivr.net; connect-src 'self' https://tiles.basemaps.cartocdn.com https://protomaps.github.io https://cdn.jsdelivr.net https://nominatim.openstreetmap.org https://overpass-api.de https://overpass.kumi.systems; worker-src blob: 'self'; child-src blob: 'self'; font-src 'none'; manifest-src 'self'; base-uri 'none'; form-action 'none'; object-src 'none'">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-title" content="Snow Route Beta">
 <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
-<meta name="theme-color" content="#2b4bf2">
+<meta name="theme-color" content="#2c4ad2">
 <link rel="manifest" href="manifest.json">
 <link rel="apple-touch-icon" href="apple-touch-icon.png">
 <link rel="apple-touch-startup-image" href="assets/launch/launch-1290x2796.png" media="(device-width: 430px) and (device-height: 932px) and (-webkit-device-pixel-ratio: 3)">
@@ -30,13 +30,13 @@
   html, body { height: 100%; height: 100dvh; overflow: hidden; font-family: -apple-system, sans-serif; background: #eceff2; -webkit-touch-callout: none; user-select: none; -webkit-user-select: none; overscroll-behavior: none; }
   html { min-height: min(100lvh, calc(100% + env(safe-area-inset-top))); } /* Beta 1.60: document-height floor. On iOS 26/27 a Home Screen app whose document is no taller than the (already short) viewport gets an undersized layout viewport - the 59pt strip (WebKit 313800 family). Forcing the document at least screen-tall makes WebKit grant the full viewport. Proven on Andrew's iPhone 2026-11-01 with bare probe pages (fresh installs: base probe ih 873, this rule ih 932 across launch/resume/keyboard). The app layout is fixed-position and unaffected by the taller document; overflow stays hidden. */
   body.night { background: #14171d; } /* frame colour follows the mode (Beta 1.48): Safari paints its strips and the area behind its bars with the page frame colour - light by day, dark by night, so the app reads as one full screen */
-  html.boot, html.boot body { background: #2b4bf2; } /* Beta 1.85: while the splash is up (html carries class=boot until finish() removes it), the page's root frame is splash blue - the light #eceff2 frame above is the app's colour, and any first frame iOS paints before the splash covers (or any edge the splash misses) must be blue, never a light flash. The static theme-color meta is splash blue for the same reason; applyNight() retakes it when the boot tail runs. */
-  html.boot #map { background: #2b4bf2; } /* Beta 1.86: even the map's own frame is splash blue while booting - its light day colour can never wash through an unsettled frame */
+  html.boot, html.boot body { background: linear-gradient(135deg, #3d65ef, #1b2fb6); } /* Beta 1.85: while the splash is up (html carries class=boot until finish() removes it), the page's root frame is splash blue - the light #eceff2 frame above is the app's colour, and any first frame iOS paints before the splash covers (or any edge the splash misses) must be blue, never a light flash. The static theme-color meta is splash blue for the same reason; applyNight() retakes it when the boot tail runs. */
+  html.boot #map { background: linear-gradient(135deg, #3d65ef, #1b2fb6); } /* Beta 1.86: even the map's own frame is splash blue while booting - its light day colour can never wash through an unsettled frame */
   html.boot body > *:not(#splash):not(#routeMenu):not(#brandLayer):not(#map) { display: none !important; } /* Beta 1.86 (Andrew's design): during boot the app chrome does not exist in the paint at all. The splash is not a lid over a finished app - boot is a STATE of the app, and in that state the tab bar, HUD, dock, sheets and pop-ups are absent (not merely covered), so no early or unsettled frame can contain them. The state flips in __bootPickRoute while both blue layers are still opaque: the finished app paints beneath the blue, and the blue's fade reveals it whole - nothing pops or loads in afterwards. */
   /* MENU ANIMATION BASELINE (Andrew, 2026-10-30; pace set by Andrew in Beta 1.29): every menu uses --anim-dur; opening plays --ease-open, closing plays its exact time-flip --ease-close, staggers mirror. This survives any redesign of the menus themselves. The pace is deliberately a touch slow - smooth and fluid beats snappy. */
   :root { --anim-dur: 420ms; --ease-open: cubic-bezier(.22,.9,.28,1); --ease-close: cubic-bezier(.72,0,.1,.78); }
   :root { --sat: env(safe-area-inset-top, 0px); --sab: env(safe-area-inset-bottom, 0px); --sal: env(safe-area-inset-left, 0px); --sar: env(safe-area-inset-right, 0px);
-    --card: rgba(255,255,255,.92); --card-solid: #ffffff; /* Beta 1.98: the card colour at full opacity - worn by a sheet while it is being dragged, when the frosted blur is off (see .sheet.dragging) */ --ink: #1c2534; --ink-dim: rgba(28,37,52,.64); --ink-faint: rgba(28,37,52,.32); --hair: rgba(20,28,44,.13); --chip: rgba(43,75,242,.06); --field: #ffffff; --sec: #47617f; --link: #2b4bf2; --done-nm: #177245; --tm-c: #4d7a5e; --nt-c: #96690f; /* Beta 1.29: menus follow the map - light glass by day (opaque enough that text never washes out on the bright map), a neutral charcoal by night */ --rad-card: 14px; --rad-btn: 11px; --shadow-card: 0 10px 34px rgba(10,14,20,.28); --shadow-float: 0 8px 24px rgba(10,14,20,.22); --glass-day: rgba(255,255,255,.78); --glass-night: rgba(32,33,37,.78); /* Beta 1.75: same neutral charcoal family as --card night */ --blur: blur(18px) saturate(1.6); } /* Beta 1.22 modern chrome: frosted glass surfaces, soft deep shadows */
+    --card: rgba(255,255,255,.92); --card-solid: #ffffff; /* Beta 1.98: the card colour at full opacity - worn by a sheet while it is being dragged, when the frosted blur is off (see .sheet.dragging) */ --ink: #1c2534; --ink-dim: rgba(28,37,52,.64); --ink-faint: rgba(28,37,52,.32); --hair: rgba(20,28,44,.13); --chip: rgba(44,74,210,.06); --field: #ffffff; --sec: #47617f; --link: #2c4ad2; --done-nm: #177245; --tm-c: #4d7a5e; --nt-c: #96690f; /* Beta 1.29: menus follow the map - light glass by day (opaque enough that text never washes out on the bright map), a neutral charcoal by night */ --rad-card: 14px; --rad-btn: 11px; --shadow-card: 0 10px 34px rgba(10,14,20,.28); --shadow-float: 0 8px 24px rgba(10,14,20,.22); --glass-day: rgba(255,255,255,.78); --glass-night: rgba(32,33,37,.78); /* Beta 1.75: same neutral charcoal family as --card night */ --blur: blur(18px) saturate(1.6); } /* Beta 1.22 modern chrome: frosted glass surfaces, soft deep shadows */
   #map { position: fixed; top: 0; left: 0; right: 0; bottom: 0; z-index: 1; background: #eceff2; }
   body.night #map { background: #14171d; }
   #hud { position: fixed; top: var(--vvt, 0px); left: 0; right: 0; z-index: 1000; background: transparent; box-shadow: none; color: #fff; padding: calc(25px + var(--sat)) calc(12px + var(--sar)) 8px calc(12px + var(--sal)); } /* Beta 1.22/1.23: no top banner - the map runs full-screen under the floating title */ /* Beta 1.21: slim title-only header; the 70px left inset clears the top-left hamburger */
@@ -48,7 +48,7 @@
   body.night #hud .ver { color: #8fa0b3; text-shadow: 0 0 6px rgba(0,0,0,.85); }
   #count { position: relative; overflow: hidden; margin-top: 9px; background: var(--glass-day); -webkit-backdrop-filter: var(--blur); backdrop-filter: var(--blur); color: #1d2530; border: 1px solid rgba(20,22,28,.09); padding: 6px 14px; border-radius: 999px; font-size: 12.5px; font-weight: 700; white-space: nowrap; box-shadow: var(--shadow-float); } /* Beta 1.23: the progress lives in its own pill under the circle, like the goal pill in Andrew's reference */
   #hud .spacer { margin-left: auto; }
-  #hud button { background: #2b4bf2; color: #fff; border: none; border-radius: var(--rad-btn); padding: 9px 8px; font-size: 13.5px; font-weight: 600; min-height: 40px; white-space: nowrap; }
+  #hud button { background: linear-gradient(135deg, #3d65ef, #1b2fb6); color: #fff; border: none; border-radius: var(--rad-btn); padding: 9px 8px; font-size: 13.5px; font-weight: 600; min-height: 40px; white-space: nowrap; }
   #hud button.ghost { background: #444; }
   #resetBtn.armed { background: #8c1f16; color: #fff; font-style: normal; }
   #stats { font-size: 12px; font-weight: 600; color: #33404e; margin-top: 6px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; text-shadow: 0 0 6px rgba(255,255,255,.95), 0 0 3px rgba(255,255,255,.9); }
@@ -72,7 +72,7 @@
   .banner { position: fixed; left: calc(10px + var(--sal)); right: calc(10px + var(--sar)); bottom: calc(var(--vvb, 0px) + 236px + var(--sab)); z-index: 1000; background: var(--card); -webkit-backdrop-filter: var(--blur); backdrop-filter: var(--blur); color: var(--ink); border-radius: 16px; box-shadow: var(--shadow-card); padding: 10px 12px; display: flex; align-items: center; gap: 10px; font-size: 13px; }
   .banner.hidden { display: none; }
   .banner span { flex: 1; line-height: 1.4; }
-  .banner button { border: none; border-radius: var(--rad-btn); padding: 8px 10px; font-size: 13px; font-weight: 700; min-height: 38px; background: #2b4bf2; color: #fff; white-space: nowrap; }
+  .banner button { border: none; border-radius: var(--rad-btn); padding: 8px 10px; font-size: 13px; font-weight: 700; min-height: 38px; background: linear-gradient(135deg, #3d65ef, #1b2fb6); color: #fff; white-space: nowrap; }
   .banner button.red { background: #e63a2e; }
   #stale { z-index: 1001; } #bakNudge { z-index: 1002; }
   #mapNote { position: fixed; left: calc(10px + var(--sal)); right: calc(10px + var(--sar)); bottom: calc(var(--vvb, 0px) + 240px + var(--sab)); z-index: 1003; background: var(--card); -webkit-backdrop-filter: var(--blur); backdrop-filter: var(--blur); color: var(--ink); border-radius: 16px; box-shadow: var(--shadow-card); padding: 10px 12px; display: flex; align-items: center; gap: 10px; font-size: 13px; }
@@ -93,10 +93,10 @@
   .tabItem { flex: 1; background: none; border: none; color: #2b3038; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 2px; padding: 4px 0 2px; cursor: pointer; font-family: inherit; }
   .tabItem svg { width: 24px; height: 24px; }
   .tabLbl { font-size: 10px; font-weight: 600; letter-spacing: .02em; }
-  .tabItem.on { color: #2b4bf2; }
+  .tabItem.on { color: #2c4ad2; }
   /* (the tab bar's night surface comes from --card via body.night - no separate override) */
   body.night .tabItem { color: #dde5ec; }
-  body.night .tabItem.on { color: #2b4bf2; }
+  body.night .tabItem.on { color: #2c4ad2; }
   .tabItem.rec { color: #d92c1e; } /* Beta 1.49: the Locate tab wears red while a clean's GPS is recording (blue = view only) */
   body.night .tabItem.rec { color: #ff6b5e; }
   .tabItem.red { color: #ff6b5e; }
@@ -106,11 +106,11 @@
   body.night .dockBtn { background: var(--glass-night); color: #f2f4f8; border-color: rgba(255,255,255,.16); }
   #runSlot { position: relative; width: 104px; flex: none; display: flex; flex-direction: column; align-items: center; }
   .runBtn { position: relative; width: 104px; height: 104px; flex: none; border-radius: 50%; border: none; box-shadow: var(--shadow-float); line-height: 1.1; cursor: pointer; padding: 0 8px; font-style: italic; font-weight: 900; letter-spacing: .01em; }
-  #startBtn, #resetBtn { background: #2b4bf2; color: #fff; font-size: 21px; } /* Beta 1.75 (Andrew): splash-blue circle, white text - supersedes the 1.23 black/volt treatment. Beta 1.100 (Andrew): Start and Finish share ONE rule - the swap changes only the word, so the two can never drift apart again (Finish kept the stale 1.23 black/volt + 19px until now) */
+  #startBtn, #resetBtn { background: linear-gradient(135deg, #3d65ef, #1b2fb6); color: #fff; font-size: 21px; } /* Beta 1.75 (Andrew): splash-blue circle, white text - supersedes the 1.23 black/volt treatment. Beta 1.100 (Andrew): Start and Finish share ONE rule - the swap changes only the word, so the two can never drift apart again (Finish kept the stale 1.23 black/volt + 19px until now) */
   body.night #count { background: var(--glass-night); color: #eef4ee; border-color: rgba(255,255,255,.16); }
   #countFill { position: absolute; left: 0; top: 0; bottom: 0; width: 0%; background: rgba(52,199,89,.42); box-shadow: inset -2px 0 0 #34c759; transition: width .7s var(--ease-open); } /* Beta 1.29: the pill is a meter - a translucent green wash fills it as the route gets cleaned, with a bright leading edge; translucent on purpose, so the themed text (dark by day, bright by night) stays readable over filled and unfilled parts alike */
   #countTxt { position: relative; z-index: 1; }
-  body.night { --card: rgba(32,33,37,.94); --card-solid: #202125; --ink: #edf2f9; --ink-dim: rgba(214,226,242,.62); --ink-faint: rgba(214,226,242,.32); --hair: rgba(160,190,235,.14); --chip: rgba(43,75,242,.10); --field: #3c4043; --sec: #9fb4c8; --link: #2b4bf2; --done-nm: #9fd3ae; --tm-c: #8fae99; --nt-c: #c9a86a; } /* Beta 1.75 night card: neutral charcoal (32,33,37) at 94% - Andrew's pick, sampled from a Google Maps dark reference (#202125) - replacing the 1.29 blue-black; fields take the reference's raised tone #3c4043 */
+  body.night { --card: rgba(32,33,37,.94); --card-solid: #202125; --ink: #edf2f9; --ink-dim: rgba(214,226,242,.62); --ink-faint: rgba(214,226,242,.32); --hair: rgba(160,190,235,.14); --chip: rgba(44,74,210,.10); --field: #3c4043; --sec: #9fb4c8; --link: #2c4ad2; --done-nm: #9fd3ae; --tm-c: #8fae99; --nt-c: #c9a86a; } /* Beta 1.75 night card: neutral charcoal (32,33,37) at 94% - Andrew's pick, sampled from a Google Maps dark reference (#202125) - replacing the 1.29 blue-black; fields take the reference's raised tone #3c4043 */
   #selPop { position: fixed; top: calc(var(--vvt, 0px) + 144px + var(--sat)); left: 50%; transform: translateX(-50%); z-index: 1001; display: flex; align-items: center; gap: 8px; background: var(--glass-day); -webkit-backdrop-filter: var(--blur); backdrop-filter: var(--blur); color: #1d2530; border: 1px solid rgba(20,22,28,.09); padding: 9px 12px 9px 15px; border-radius: 20px; box-shadow: inset 4px 0 0 var(--accent, transparent), var(--shadow-float); flex-direction: column; align-items: stretch; gap: 7px; width: min(342px, 92vw); --accent: transparent; } /* Beta 1.34 (Andrew): ONE fixed width, so the pop-up is the same size for one section or many - no growing/shrinking as the selection changes */ /* Beta 1.30: ONE selection pop-up (Andrew) - the multi-select pill he liked, widened into a card that also carries the old header strip's name/status/notes/mark actions; the street colour rides the left edge */ /* Beta 1.168 (Andrew): the top drops 54px -> 144px (+90) - the pop-up started above the Day/Night button (top 78 + 56 tall = bottom 134) and covered its left half (44px at 390 wide, 24px at 430); 144 lands the pop-up's top 10px below the button's bottom edge, measured in every selection state at 390x844 and 430x932 (the box is one fixed size, so one shift clears them all) */
   body.night #selPop { background: var(--glass-night); color: #eef4ee; border-color: rgba(255,255,255,.16); }
   #selPop.hidden { display: none; }
@@ -134,7 +134,7 @@
   .modal .card { max-height: calc(var(--vvh, 100dvh) - 44px); overflow-y: auto; } /* a modal card can never outgrow the visible area, keyboard or not */
   #filters { display: flex; gap: 6px; padding: 2px 14px 8px; }
   #filters button { flex: 1; border: none; border-radius: var(--rad-btn); padding: 8px; font-size: 13px; font-weight: 700; background: var(--chip); color: var(--ink-dim); min-height: 38px; }
-  #filters button.on { background: #2b4bf2; color: #fff; }
+  #filters button.on { background: linear-gradient(135deg, #3d65ef, #1b2fb6); color: #fff; }
   #sheetBody { overflow-y: auto; padding: 0 14px 14px; -webkit-overflow-scrolling: touch; }
   .srow { display: flex; align-items: center; gap: 11px; padding: 12px 4px; border-bottom: 1px solid var(--hair); font-size: 16px; cursor: pointer; min-height: 48px; }
   .srow .dot { width: 15px; height: 15px; border-radius: 50%; background: #ef476f; flex-shrink: 0; }
@@ -190,7 +190,7 @@
   .modal .row { display: flex; gap: 8px; }
   .modal .row button { flex: 1; border: none; border-radius: var(--rad-btn); padding: 11px; font-size: 14px; font-weight: 700; min-height: 44px; }
   #finYes { background: #c22f24; color: #fff; }
-  #noteYes { background: #2b4bf2; color: #fff; }
+  #noteYes { background: linear-gradient(135deg, #3d65ef, #1b2fb6); color: #fff; }
   #noteText { width: 100%; min-height: 74px; border-radius: var(--rad-btn); border: 1px solid var(--hair); background: var(--field); color: var(--ink); font-size: 16px; /* 16px: no iOS focus auto-zoom (Beta 1.18) */ padding: 9px; margin-bottom: 12px; font-family: inherit; }
   #xText { width: 100%; min-height: 150px; border-radius: 14px; border: 1px solid rgba(255,255,255,.45); background: #fff; color: #14161c; font-size: 11.5px; padding: 10px; font-family: inherit; resize: vertical; } /* Beta 1.88: the backup box, restyled for the blue pane (white box, dark text - the mock Andrew approved). Beta 1.153 (Andrew): the font joins the app's ONE stack (-apple-system, sans-serif via the root rule) - it was the UI's last monospace deviant. */
   .bkBtn { font-size: 16px; padding: 13px 16px; text-align: center; width: 100%; }
@@ -199,7 +199,7 @@
   #xPreBar { display: none; height: 6px; border-radius: 3px; background: rgba(255,255,255,.25); width: 100%; overflow: hidden; } /* Beta 1.87: the offline-download progress bar - shown only while a download runs (the .on class); Beta 1.88: the track went translucent white for the blue pane */
   #xPreBar.on { display: block; }
   #xPreFill { height: 100%; width: 0%; background: #2ecc71; border-radius: 3px; }
-  #setMenu { position: fixed; inset: 0; z-index: 10000; background: #2b4bf2; display: flex; flex-direction: column; align-items: center; justify-content: center; padding: 24px; opacity: 0; visibility: hidden; transform: translateY(103%); transition: transform var(--anim-dur) var(--ease-close), opacity .3s ease, visibility 0s linear var(--anim-dur); pointer-events: none; } /* Beta 1.88 (Andrew): Settings is a blue full-screen takeover like the Routes menu - same slide-up, same panes, same bare X; the Day/Night row left for its own button, Summary/GPX/Clear trail left with the old Snow log */
+  #setMenu { position: fixed; inset: 0; z-index: 10000; background: linear-gradient(135deg, #3d65ef, #1b2fb6); display: flex; flex-direction: column; align-items: center; justify-content: center; padding: 24px; opacity: 0; visibility: hidden; transform: translateY(103%); transition: transform var(--anim-dur) var(--ease-close), opacity .3s ease, visibility 0s linear var(--anim-dur); pointer-events: none; } /* Beta 1.88 (Andrew): Settings is a blue full-screen takeover like the Routes menu - same slide-up, same panes, same bare X; the Day/Night row left for its own button, Summary/GPX/Clear trail left with the old Snow log */
   #setMenu.open { opacity: 1; visibility: visible; transform: none; pointer-events: auto; transition: transform var(--anim-dur) var(--ease-open), opacity .3s ease, visibility 0s; }
   #setVer { position: absolute; right: 24px; bottom: calc(30px + env(safe-area-inset-bottom, 0px)); color: rgba(255,255,255,.75); font-size: 12px; font-weight: 600; letter-spacing: .04em; }
   /* Beta 1.111 (Andrew, settings redesign approved from mockups 2026-11-05): the settings card / switch / check language - values verbatim from the approved mockups (beta1/work/settings-mockups/), class names kept from them */
@@ -257,7 +257,7 @@
    iOS shows before the page loads (apple-touch-startup-image, head links) is the
    same blue + centred icon, so the two read as one continuous moment. */
 #splash { position: fixed; inset: 0; z-index: 9999; display: flex; flex-direction: column; align-items: center; justify-content: center; }
-#splashBg { position: absolute; inset: -70px 0; background: #2b4bf2; } /* Beta 1.65: the cover overshoots the screen top and bottom by 70px, so while the screen size is still settling in the first frames no sliver of the app beneath (the tab bar) can show under the splash */
+#splashBg { position: absolute; inset: -70px 0; background: linear-gradient(135deg, #3d65ef, #1b2fb6); } /* Beta 1.65: the cover overshoots the screen top and bottom by 70px, so while the screen size is still settling in the first frames no sliver of the app beneath (the tab bar) can show under the splash */
 /* Beta 1.83 (Andrew, test build for the launch-glitch code audit): two tweaks, tested together on his cold opens. (1) #splashIcon no longer carries the will-change layer hint - a leftover from the retired pre-1.76 icon-rush exit; nothing has transformed the icon since, so the hint only told the compositor to keep it on a dedicated layer for no reason. (2) The title's slide-in now starts at 1s instead of .1s, so it no longer crosses the screen during the still-to-live handover (the launch still has no title); the slide itself is unchanged. Identical glitch on 1.83 clears both permanently. */
 /* Beta 1.160 (Andrew — OPTION 3, his design, device-proven 2026-11-09 on the temporary Snow Probe and adopted on his verdict): the opening retimes so the icon and the title stay OUT of the iOS launch-handoff window from BOTH sides. The launch stills are plain blue now (no icon, no title — gen_launch.py's plain mode), and the live scene opens on blue + falling snow alone: the icon and title are in the layout from the first frame (boxes reserved — nothing shifts when they arrive) but not painted; the icon fades in at 1.25s (the #splashIcon rule below), the title slides in at 1.5s (the #splashTitle delay below), and the boot gate's splash floor moves 1900 -> 2700ms (arm(), create-save.js) so the flip lands at the probe's 2.7s, after the hold. This is NOT the reverted Beta 1.84 experiment: 1.84 blanked the LIVE side while the still still carried the icon, so the icon vanished for ~0.87s at the handover — the mismatch WAS the artifact. Option 3 removes the icon from both frames, so there is nothing to vanish or to double. Under reduced motion nothing animates (the media query below shows icon and title statically from the first frame) and the gate keeps its 1900ms floor. drive180's SEQ checks measure the dark window and the arrivals; its SNOW7/SNOW8 checks pin the canvas's full-viewport cover, so the probe's one observed flaw (the snow stopping short of the bottom on unsettled frames) cannot ride in with the retime — the production viewport defences (the overshooting #splashBg, the html,body height rule) are untouched by this release. */
 #splashIcon { position: relative; flex: none; width: 168px; height: 168px; border-radius: 38px; box-shadow: 0 18px 50px rgba(0,0,0,.35); opacity: 0; animation: splashIconIn .35s ease 1.25s forwards; } /* Beta 1.163 (Andrew's correction of 1.162, from his phone test - "I wanted to keep the original animation where the icon fades in, then the text slides in like the original, and then they both move up together"): the icon's OWN fade-in is RESTORED, the through-1.161 rule verbatim (Beta 1.160 put the fade on the icon itself; 1.162 moved it onto #brandBlock as one shared arrival, which stood for exactly one release). The icon is still a child of #brandBlock, still rises with the block at the flip (arm(), create-save.js) and still never fades out - only the ENTRANCE moves back onto the child; the block itself carries no animation now. The box exists from the first frame (opacity 0 until 1.25s), so the splash hold geometry is unmoved and drive180's SEQ1 dark window reads through the children's own opacities again. */
@@ -269,7 +269,7 @@
 #splash.go #splashBg { animation: splashBgOut .7s linear forwards; }
 #routeMenu.bye { opacity: 0 !important; transition: opacity .3s ease; } /* Beta 1.78: on a boot pick the menu fades while the splash blue dissolves - the menu itself stays in the page, parked below the screen for the Routes tab */
 @keyframes splashBgOut { 0%, 82% { opacity: 1; } 100% { opacity: 0; } }
-#routeMenu { position: fixed; inset: 0; z-index: 10000; background: #2b4bf2; display: flex; flex-direction: column; align-items: center; justify-content: center; padding: 24px; opacity: 0; visibility: hidden; transform: translateY(103%); transition: transform var(--anim-dur) var(--ease-close), opacity .3s ease, visibility 0s linear var(--anim-dur); pointer-events: none; } /* Beta 1.78 (Andrew): the route menu is a top-level full-screen menu on the splash blue and OUTLIVES the splash - parked below the screen; the Routes tab slides it up (.open, the shared menu motion, mirrored on close). At boot the splash borrows it in place via .boot (next rule) */
+#routeMenu { position: fixed; inset: 0; z-index: 10000; background: linear-gradient(135deg, #3d65ef, #1b2fb6); display: flex; flex-direction: column; align-items: center; justify-content: center; padding: 24px; opacity: 0; visibility: hidden; transform: translateY(103%); transition: transform var(--anim-dur) var(--ease-close), opacity .3s ease, visibility 0s linear var(--anim-dur); pointer-events: none; } /* Beta 1.78 (Andrew): the route menu is a top-level full-screen menu on the splash blue and OUTLIVES the splash - parked below the screen; the Routes tab slides it up (.open, the shared menu motion, mirrored on close). At boot the splash borrows it in place via .boot (next rule) */
 #routeMenu { overflow-y: auto; } /* Beta 1.137 (Andrew): the Routes menu scrolls like Settings - with 12 cities the Select-from-list pane outgrew the screen and, unlike #setMenu, this menu had no overflow rule, so the list could not be moved at all */
 #routeMenu .rmPane { flex-shrink: 0; margin-top: auto; margin-bottom: auto; position: relative; } /* panes centre when they fit and scroll from the top when they do not - the same treatment #setMenu got in 1.111. Beta 1.158: position:relative lifts the panes into the positioned layer in DOM order, above the #snowCvM canvas that is the menu's first child - the snow paints over the blue, never over a pane. Beta 1.159: that canvas is retired (the one-canvas fix - see the #snowCv rule); the panes' positioning stands, now simply their own layer above the menu's background */
 #crCityList, #rmRoutes { max-height: calc(var(--vvh, 100dvh) * .52); overflow-y: auto; overflow-x: hidden; overscroll-behavior: contain; -webkit-overflow-scrolling: touch; } /* Beta 1.140 (Andrew): vertical scroll ONLY - the rows' gutter margin gave the box a few px of sideways give, so the list could be dragged left/right and the city names slid under the edge */
@@ -280,7 +280,7 @@
 /* Beta 1.162 addendum to the 1.155 note above: the layer's poses now land ONE BLOCK, not the title alone. The splash pose centres #brandBlock (the icon + title column described at its rule); the menu pose (.menu > #brandBlock) sets the block's top so the title inside it keeps this note's landing slot unchanged; arm() FLIPs the block. The spacer this note describes is retired - the icon itself now occupies the layer, so the pose reproduces the brand column with the real thing instead of a stand-in. Everything else in the 1.155 note (never reparented, the layer never transforms during travel, lifetime via .bye/.off/.parked/.away) stands verbatim, now about the block. */
 #snowCv { position: absolute; inset: 0; width: 100%; height: 100%; pointer-events: none; transition: opacity .3s ease; } /* Beta 1.159 (Andrew's directed fix for the twitch he felt at the splash-to-menu handoff, "like clockwork" every cold open): ONE canvas. Through 1.158 there were two - this one inside #splash and a #snowCvM inside #routeMenu - and the menu's .boot entrance rides a translateX(-26px) slide home plus an opacity ramp, so the menu-half field physically slid sideways while fading in over the static splash-half field: two fields trading places at the same instant every time. A single canvas cannot be placed between the menu's background and its panes from outside (they are one stacking context), so the canvas's home is the splash layer itself - a top-level fixed layer spanning the whole opening scene, never reparented, never transformed, the same pattern that fixed the title at 1.155 - and the menu's boot background goes transparent while the scene is live (the body.snow-scene rule below), letting the one field paint through under the panes. The engine lives in brand-snow.js. */
 #snowCv.away { opacity: 0; } /* Beta 1.159: the snow hides in the menu's sub-panes alongside the title (showRmPane carries .away on both) and returns at the main pane - the fade is the layer's own .3s shape */
-body.snow-scene #routeMenu.boot { background-color: transparent; } /* Beta 1.159: while the snow scene is live (the engine sets body.snow-scene at start and removes it when it stops for good), the boot menu's own blue steps aside so the single snow field in the splash layer shows through under its panes. Every other state keeps the menu's opaque blue: tab mode (not .boot), the delete-return picker (the scene ended at the original pick, so the class is gone), and reduced-motion boots (the engine never starts, so the class is never set). */
+body.snow-scene #routeMenu.boot { background: transparent; } /* Beta 1.159: while the snow scene is live (the engine sets body.snow-scene at start and removes it when it stops for good), the boot menu's own blue steps aside so the single snow field in the splash layer shows through under its panes. Every other state keeps the menu's opaque blue: tab mode (not .boot), the delete-return picker (the scene ended at the original pick, so the class is gone), and reduced-motion boots (the engine never starts, so the class is never set). Beta 1.174: the rule clears the whole background (the shorthand), not background-color alone — the menu blue is a gradient (a background-image) now, and clearing only the colour would leave the gradient painted under the snow. */
 #brandLayer { position: fixed; inset: 0; z-index: 10001; display: flex; flex-direction: column; align-items: center; justify-content: center; pointer-events: none; transition: opacity .3s ease; }
 #brandBlock { display: flex; flex-direction: column; align-items: center; } /* Beta 1.163 (Andrew's correction of 1.162): the block carries NO entrance of its own any more - the shared fade-in that lived here for one release (1.162's brandBlockIn, retired with its keyframes below) is gone, and the entrances live on the CHILDREN again, exactly as through 1.161: the icon fades in at 1.25s (the #splashIcon rule), the title slides in at 1.5s (the #splashTitle rule), so before 1.2s neither child is painted (drive180's SEQ1 reads the dark window through the children's own opacities again, and its SEQ2/SEQ3 judge the two arrivals separately, as through 1.161). What 1.162 built and this release KEEPS UNCHANGED is the block as the RISE unit: the layer's only child, a rigid column (icon 168 + the title's 26px margin + its 42px line = 236, the pre-1.153 brand column exactly, so the splash hold's boxes are the ones the app has shown since 1.157), never reparented. The layer itself still never transforms, fades or hides during the travel; arm() FLIPs THE BLOCK (one element, one transform), so icon and title cannot separate, drift or trade places mid-rise - drive180's BLOCK checks measure exactly that (gap constant, both opacities 1, no sideways drift). */
 #brandBlock > * { flex: none; }
@@ -327,7 +327,7 @@ body.snow-scene #routeMenu.boot { background-color: transparent; } /* Beta 1.159
 #routeMenu .routeName { font-size: 19px; } /* Beta 1.159: the name takes the unified pill's own size (the .rmBtn 19px; its weight was already the pill's 650) */
 #routeMenu .routeArea { font-weight: 500; } /* Beta 1.159: the sub line takes the pill sub-line's weight (the .rmBtn .m-sub 500; its 13px size and .75 ink already matched) */
 #routeMenu .routeRow:active { background: rgba(255,255,255,.28); }
-#routeMenu .routeBadge { background: #fff; color: #2b4bf2; }
+#routeMenu .routeBadge { background: #fff; color: #2c4ad2; }
 /* Beta 1.118 (Step 2, Andrew's approved mockups): the hybrid create-a-route
    flow. Panes live in the blue route menu (doors, photo, name-it); the pick
    and preview stages live on the map (search bar + bottom sheets) while
@@ -348,7 +348,7 @@ body.creating #dock, body.creating #tabBar, body.creating #hud, body.creating #n
    stayed bright at night while the rest of the app went dark. */
 #crSearchWrap { flex: 1; display: flex; height: 50px; background: var(--card-solid); border-radius: 14px; box-shadow: 0 4px 18px rgba(8,12,40,.28); overflow: hidden; }
 #crSearchInput { flex: 1; min-width: 0; border: none; outline: none; font-size: 17px; padding: 13px 14px; color: var(--ink); background: transparent; }
-#crSearchBtn { border: none; background: #2b4bf2; color: #fff; font-size: 16px; font-weight: 700; padding: 0 18px; cursor: pointer; }
+#crSearchBtn { border: none; background: linear-gradient(135deg, #3d65ef, #1b2fb6); color: #fff; font-size: 16px; font-weight: 700; padding: 0 18px; cursor: pointer; }
 #crExit { width: 48px; height: 50px; border: none; border-radius: 14px; background: var(--card-solid); box-shadow: 0 4px 18px rgba(8,12,40,.28); font-size: 19px; font-weight: 800; color: var(--ink); cursor: pointer; }
 #createResults { position: fixed; top: calc(66px + var(--cr-shift) + env(safe-area-inset-top, 0px)); left: 10px; right: 10px; z-index: 5000; background: var(--card-solid); border-radius: 14px; box-shadow: 0 8px 26px rgba(8,12,40,.30); overflow: hidden; display: none; }
 #createResults.on { display: block; }
@@ -361,7 +361,7 @@ body.creating #dock, body.creating #tabBar, body.creating #hud, body.creating #n
    preparing, Retry after a failure, Prepare this area when zoomed in with
    no coverage) - a real button, not hint text, because it carries an
    action Andrew must be able to tap. */
-#crHintBtn { position: fixed; top: calc(114px + var(--cr-shift) + env(safe-area-inset-top, 0px)); left: 50%; transform: translateX(-50%); z-index: 4900; border: none; background: #2b4bf2; color: #fff; font-size: 15px; font-weight: 700; padding: 10px 20px; border-radius: 999px; box-shadow: 0 6px 20px rgba(8,12,40,.35); cursor: pointer; }
+#crHintBtn { position: fixed; top: calc(114px + var(--cr-shift) + env(safe-area-inset-top, 0px)); left: 50%; transform: translateX(-50%); z-index: 4900; border: none; background: linear-gradient(135deg, #3d65ef, #1b2fb6); color: #fff; font-size: 15px; font-weight: 700; padding: 10px 20px; border-radius: 999px; box-shadow: 0 6px 20px rgba(8,12,40,.35); cursor: pointer; }
 #crCityChange { border: 1px solid var(--hair); background: transparent; color: var(--ink-dim); font-size: 13px; font-weight: 650; padding: 6px 10px; border-radius: 999px; cursor: pointer; vertical-align: middle; }
 .crChip.pend { background: #a35b00; color: #fff; }
 .crRow.pending { opacity: .8; }
@@ -382,7 +382,7 @@ body.creating #dock, body.creating #tabBar, body.creating #hud, body.creating #n
 .crChip.main { background: #ffc233; color: #4a3200; }
 .crChip.sec { background: var(--chip); color: var(--ink-dim); }
 .crDel { border: none; background: none; color: #e63a2e; font-size: 18px; font-weight: 800; width: 34px; height: 34px; cursor: pointer; flex: none; }
-.crPrimary { appearance: none; -webkit-appearance: none; border: none; background: #2b4bf2; color: #fff; font-size: 17px; font-weight: 700; padding: 15px 18px; border-radius: 14px; width: 100%; cursor: pointer; }
+.crPrimary { appearance: none; -webkit-appearance: none; border: none; background: linear-gradient(135deg, #3d65ef, #1b2fb6); color: #fff; font-size: 17px; font-weight: 700; padding: 15px 18px; border-radius: 14px; width: 100%; cursor: pointer; }
 .crPrimary:disabled { opacity: .45; }
 .crGhost { appearance: none; -webkit-appearance: none; border: 1px solid var(--hair); background: transparent; color: var(--ink); font-size: 16px; font-weight: 650; padding: 13px 18px; border-radius: 14px; width: 100%; cursor: pointer; }
 .crDanger { appearance: none; -webkit-appearance: none; border: none; background: none; color: #e63a2e; font-size: 15px; font-weight: 650; padding: 8px; cursor: pointer; width: 100%; }
@@ -419,7 +419,7 @@ body.night .crPChip.sec { background: rgba(239,71,111,.16); color: #ff8fab; }
 .crStripTxt { flex: 1; min-width: 0; }
 .crStripTitle { font-size: 16px; font-weight: 700; color: var(--ink); }
 .crStripSub { font-size: 13px; color: var(--ink-dim); }
-#crReviewBtn { appearance: none; -webkit-appearance: none; border: none; background: #2b4bf2; color: #fff; font-weight: 700; font-size: 14.5px; padding: 9px 14px; border-radius: 10px; cursor: pointer; flex: none; }
+#crReviewBtn { appearance: none; -webkit-appearance: none; border: none; background: linear-gradient(135deg, #3d65ef, #1b2fb6); color: #fff; font-weight: 700; font-size: 14.5px; padding: 9px 14px; border-radius: 10px; cursor: pointer; flex: none; }
 #crSectorBar { padding: 14px 16px; }
 .crSbTitle { font-size: 17px; font-weight: 700; color: var(--ink); }
 .crSbSub { font-size: 13.5px; color: var(--ink-dim); margin-top: 2px; }
@@ -428,7 +428,7 @@ body.night .crPChip.sec { background: rgba(239,71,111,.16); color: #ff8fab; }
 #crSbWhole { background: var(--chip); color: var(--link); border: 1.5px solid var(--hair); }
 #crSbDone { background: #2ecc71; color: #fff; border: none; }
 #crSbCancel { background: transparent; color: var(--ink); border: 1.5px solid var(--hair); }
-body.night #crSbWhole { color: var(--sec); border-color: var(--sec); } /* Beta 1.132 (Andrew): on the dark map the Entire road button was hard to see - its text colour is --link (#2b4bf2 in BOTH themes; measured 2.44:1 on the night card vs 5.66:1 by day). --sec is the blue-grey token that DOES flip at night (#9fb4c8), so the button keeps its blue identity and reads. Night only; the day treatment is untouched. */
+body.night #crSbWhole { color: var(--sec); border-color: var(--sec); } /* Beta 1.132 (Andrew): on the dark map the Entire road button was hard to see - its text colour is --link (the app blue in BOTH themes; on the pre-1.174 flat blue it measured 2.44:1 on the night card vs 5.66:1 by day). --sec is the blue-grey token that DOES flip at night (#9fb4c8), so the button keeps its blue identity and reads. Night only; the day treatment is untouched. */
 .rmInput { appearance: none; -webkit-appearance: none; width: 100%; box-sizing: border-box; border: 1px solid rgba(255,255,255,.45); background: rgba(255,255,255,.14); color: #fff; font-size: 18px; padding: 14px 16px; border-radius: 14px; outline: none; }
 .rmInput::placeholder { color: rgba(255,255,255,.55); }
 input, textarea { caret-color: currentColor; } /* Beta 1.125 (Andrew): the typing caret - the flashing vertical line beside the last letter - is always visible in every search bar and field, in the field's own text colour (white on the blue menus, ink on cards) */
@@ -451,7 +451,7 @@ input, textarea { caret-color: currentColor; } /* Beta 1.125 (Andrew): the typin
 <div id="hud">
   <div id="warn">Not saving — storage is full or blocked</div>
   <div class="row">
-    <div class="titleStack"><div class="title">Snow Route Beta</div><div class="ver" id="ver">Beta 1.173</div></div>
+    <div class="titleStack"><div class="title">Snow Route Beta</div><div class="ver" id="ver">Beta 1.174</div></div>
   </div>
   <div id="stats"></div>
 </div>
@@ -3083,14 +3083,14 @@ function addReferenceLayers() {
   map.addSource('ref', { type: 'geojson', data: { type: 'FeatureCollection', features: feats } });
   map.addLayer({ id: 'ref-line', type: 'line', source: 'ref', filter: ['has', 'refName'], layout: { 'line-cap': 'round' }, paint: { 'line-color': isNight() ? '#aab4c0' : '#8a929c', 'line-width': 3, 'line-opacity': 0.55, 'line-dasharray': [2, 1.6] } }, map.getLayer('t1-casing') ? 't1-casing' : undefined);
 }
-function makeBeamImage() { // Beta 1.49: the facing beam as a painted fan (Andrew's reference image) - strong at the dot, fading with distance, with a soft skirt at the edges. Two passes (a wide faint fan under a narrower stronger one) fake the blur a flat polygon cannot do.
+function makeBeamImage() { // Beta 1.49: the facing beam as a painted fan (Andrew's reference image) - strong at the dot, fading with distance, with a soft skirt at the edges. Beta 1.174: the fan's hue is the GPS family's flat midpoint (44,74,210 — the icon-gradient family's centre) since the blue unification. Two passes (a wide faint fan under a narrower stronger one) fake the blur a flat polygon cannot do.
   const S = 512, cv = document.createElement('canvas'); cv.width = S; cv.height = S;
   const x = cv.getContext('2d'), c = S / 2;
   const pass = (halfDeg, len, a0) => {
     const g = x.createRadialGradient(c, c, 0, c, c, len);
-    g.addColorStop(0, 'rgba(43,75,242,' + a0 + ')');
-    g.addColorStop(0.55, 'rgba(43,75,242,' + (a0 * 0.55).toFixed(3) + ')');
-    g.addColorStop(1, 'rgba(43,75,242,0)');
+    g.addColorStop(0, 'rgba(44,74,210,' + a0 + ')');
+    g.addColorStop(0.55, 'rgba(44,74,210,' + (a0 * 0.55).toFixed(3) + ')');
+    g.addColorStop(1, 'rgba(44,74,210,0)');
     x.fillStyle = g; x.beginPath(); x.moveTo(c, c);
     const h = -Math.PI / 2, hd = halfDeg * Math.PI / 180;
     x.arc(c, c, len, h - hd, h + hd); x.closePath(); x.fill();
@@ -3104,14 +3104,14 @@ function addGpsLayers() {
   if (!map.hasImage('beam-img')) { const bcv = makeBeamImage(); map.addImage('beam-img', bcv.getContext('2d').getImageData(0, 0, bcv.width, bcv.height), { pixelRatio: 2 }); } // raw ImageData form: handing MapLibre the canvas element itself throws 'mismatched image size' (its size reads come back 0) and the throw silently killed this whole layer batch in the boot queue - found by drive129's layer checks before 1.49 ever shipped
   map.addLayer({ id: 'gps-shadow', type: 'circle', source: 'gps', filter: ['==', ['get', 'k'], 'dot'], paint: { 'circle-radius': 13, 'circle-color': '#000000', 'circle-opacity': 0.16, 'circle-blur': 1 } }); // Beta 1.49: the soft shadow under the dot (Andrew's reference image)
   map.addLayer({ id: 'gps-beam', type: 'symbol', source: 'gps', filter: ['==', ['get', 'k'], 'beam'], layout: { 'icon-image': 'beam-img', 'icon-size': 0.62, 'icon-rotate': ['get', 'rot'], 'icon-rotation-alignment': 'map', 'icon-pitch-alignment': 'map', 'icon-anchor': 'center', 'icon-allow-overlap': true, 'icon-ignore-placement': true } }); // Beta 1.49: gradient fan symbol, painted under the accuracy ring and the dot - replaces the flat cone polygon (Beta 1.28), which read as cheap
-  map.addLayer({ id: 'gps-ring', type: 'fill', source: 'gps', filter: ['==', ['get', 'k'], 'ring'], paint: { 'fill-color': '#2b4bf2', 'fill-opacity': 0.12 } });
-  map.addLayer({ id: 'gps-ring-line', type: 'line', source: 'gps', filter: ['==', ['get', 'k'], 'ring'], paint: { 'line-color': '#2b4bf2', 'line-width': 1.5, 'line-opacity': 0.5 } });
-  map.addLayer({ id: 'gps-dot', type: 'circle', source: 'gps', filter: ['==', ['get', 'k'], 'dot'], paint: { 'circle-radius': 9.5, 'circle-color': '#2b4bf2', 'circle-stroke-width': 4, 'circle-stroke-color': '#ffffff' } });
+  map.addLayer({ id: 'gps-ring', type: 'fill', source: 'gps', filter: ['==', ['get', 'k'], 'ring'], paint: { 'fill-color': '#2c4ad2', 'fill-opacity': 0.12 } });
+  map.addLayer({ id: 'gps-ring-line', type: 'line', source: 'gps', filter: ['==', ['get', 'k'], 'ring'], paint: { 'line-color': '#2c4ad2', 'line-width': 1.5, 'line-opacity': 0.5 } });
+  map.addLayer({ id: 'gps-dot', type: 'circle', source: 'gps', filter: ['==', ['get', 'k'], 'dot'], paint: { 'circle-radius': 9.5, 'circle-color': '#2c4ad2', 'circle-stroke-width': 4, 'circle-stroke-color': '#ffffff' } });
 }
 function addTrailLayers() {
   if (map.getSource('trail')) return;
   map.addSource('trail', { type: 'geojson', data: { type: 'FeatureCollection', features: [] } });
-  map.addLayer({ id: 'trail-line', type: 'line', source: 'trail', layout: { 'line-cap': 'round', 'line-join': 'round' }, paint: { 'line-color': '#2b4bf2', 'line-width': 3, 'line-opacity': 0.7 } }, 'gps-shadow'); // Beta 1.65 (Andrew's road report): anchored UNDER the GPS stack - unanchored, the line could paint across the dot's face
+  map.addLayer({ id: 'trail-line', type: 'line', source: 'trail', layout: { 'line-cap': 'round', 'line-join': 'round' }, paint: { 'line-color': '#2c4ad2', 'line-width': 3, 'line-opacity': 0.7 } }, 'gps-shadow'); // Beta 1.65 (Andrew's road report): anchored UNDER the GPS stack - unanchored, the line could paint across the dot's face
 }
 function pickFontFromStyle() { // adopt a NOTO stack from the CURRENT basemap for OUR route labels (Beta 1.6: same
   // typeface day and night - Versatiles names it noto_sans_regular, CARTO lists Noto Sans Regular inside its
@@ -5123,7 +5123,7 @@ $('stDel').addEventListener('click', async () => {
 });
 // ---- About / What's new ----
 const WHATSNEW = { // the curated in-app notes: plain words, LATEST RELEASE ONLY (Beta 1.114, Andrew: the accumulated list cluttered the About pane). A release REPLACES this entry with its own in the same change - it never accumulates; the full history lives in CHANGELOG.md, not the app
-  v: 'Beta 1.173', items: ["The snowbank on the opening screen now shades smoothly all the way up to its crest."] };
+  v: 'Beta 1.174', items: ["The app's blue now matches the app icon — the same shaded blue across the menus and buttons."] };
 function renderAbout() {
   const cur = $('ver').textContent.trim();
   $('wnHead').textContent = "WHAT'S NEW · " + cur; // the header names the LIVE version, read from the title's version element - never a second hard-coded copy that can go stale

@@ -136,14 +136,14 @@ function addReferenceLayers() {
   map.addSource('ref', { type: 'geojson', data: { type: 'FeatureCollection', features: feats } });
   map.addLayer({ id: 'ref-line', type: 'line', source: 'ref', filter: ['has', 'refName'], layout: { 'line-cap': 'round' }, paint: { 'line-color': isNight() ? '#aab4c0' : '#8a929c', 'line-width': 3, 'line-opacity': 0.55, 'line-dasharray': [2, 1.6] } }, map.getLayer('t1-casing') ? 't1-casing' : undefined);
 }
-function makeBeamImage() { // Beta 1.49: the facing beam as a painted fan (Andrew's reference image) - strong at the dot, fading with distance, with a soft skirt at the edges. Two passes (a wide faint fan under a narrower stronger one) fake the blur a flat polygon cannot do.
+function makeBeamImage() { // Beta 1.49: the facing beam as a painted fan (Andrew's reference image) - strong at the dot, fading with distance, with a soft skirt at the edges. Beta 1.174: the fan's hue is the GPS family's flat midpoint (44,74,210 — the icon-gradient family's centre) since the blue unification. Two passes (a wide faint fan under a narrower stronger one) fake the blur a flat polygon cannot do.
   const S = 512, cv = document.createElement('canvas'); cv.width = S; cv.height = S;
   const x = cv.getContext('2d'), c = S / 2;
   const pass = (halfDeg, len, a0) => {
     const g = x.createRadialGradient(c, c, 0, c, c, len);
-    g.addColorStop(0, 'rgba(43,75,242,' + a0 + ')');
-    g.addColorStop(0.55, 'rgba(43,75,242,' + (a0 * 0.55).toFixed(3) + ')');
-    g.addColorStop(1, 'rgba(43,75,242,0)');
+    g.addColorStop(0, 'rgba(44,74,210,' + a0 + ')');
+    g.addColorStop(0.55, 'rgba(44,74,210,' + (a0 * 0.55).toFixed(3) + ')');
+    g.addColorStop(1, 'rgba(44,74,210,0)');
     x.fillStyle = g; x.beginPath(); x.moveTo(c, c);
     const h = -Math.PI / 2, hd = halfDeg * Math.PI / 180;
     x.arc(c, c, len, h - hd, h + hd); x.closePath(); x.fill();
@@ -157,14 +157,14 @@ function addGpsLayers() {
   if (!map.hasImage('beam-img')) { const bcv = makeBeamImage(); map.addImage('beam-img', bcv.getContext('2d').getImageData(0, 0, bcv.width, bcv.height), { pixelRatio: 2 }); } // raw ImageData form: handing MapLibre the canvas element itself throws 'mismatched image size' (its size reads come back 0) and the throw silently killed this whole layer batch in the boot queue - found by drive129's layer checks before 1.49 ever shipped
   map.addLayer({ id: 'gps-shadow', type: 'circle', source: 'gps', filter: ['==', ['get', 'k'], 'dot'], paint: { 'circle-radius': 13, 'circle-color': '#000000', 'circle-opacity': 0.16, 'circle-blur': 1 } }); // Beta 1.49: the soft shadow under the dot (Andrew's reference image)
   map.addLayer({ id: 'gps-beam', type: 'symbol', source: 'gps', filter: ['==', ['get', 'k'], 'beam'], layout: { 'icon-image': 'beam-img', 'icon-size': 0.62, 'icon-rotate': ['get', 'rot'], 'icon-rotation-alignment': 'map', 'icon-pitch-alignment': 'map', 'icon-anchor': 'center', 'icon-allow-overlap': true, 'icon-ignore-placement': true } }); // Beta 1.49: gradient fan symbol, painted under the accuracy ring and the dot - replaces the flat cone polygon (Beta 1.28), which read as cheap
-  map.addLayer({ id: 'gps-ring', type: 'fill', source: 'gps', filter: ['==', ['get', 'k'], 'ring'], paint: { 'fill-color': '#2b4bf2', 'fill-opacity': 0.12 } });
-  map.addLayer({ id: 'gps-ring-line', type: 'line', source: 'gps', filter: ['==', ['get', 'k'], 'ring'], paint: { 'line-color': '#2b4bf2', 'line-width': 1.5, 'line-opacity': 0.5 } });
-  map.addLayer({ id: 'gps-dot', type: 'circle', source: 'gps', filter: ['==', ['get', 'k'], 'dot'], paint: { 'circle-radius': 9.5, 'circle-color': '#2b4bf2', 'circle-stroke-width': 4, 'circle-stroke-color': '#ffffff' } });
+  map.addLayer({ id: 'gps-ring', type: 'fill', source: 'gps', filter: ['==', ['get', 'k'], 'ring'], paint: { 'fill-color': '#2c4ad2', 'fill-opacity': 0.12 } });
+  map.addLayer({ id: 'gps-ring-line', type: 'line', source: 'gps', filter: ['==', ['get', 'k'], 'ring'], paint: { 'line-color': '#2c4ad2', 'line-width': 1.5, 'line-opacity': 0.5 } });
+  map.addLayer({ id: 'gps-dot', type: 'circle', source: 'gps', filter: ['==', ['get', 'k'], 'dot'], paint: { 'circle-radius': 9.5, 'circle-color': '#2c4ad2', 'circle-stroke-width': 4, 'circle-stroke-color': '#ffffff' } });
 }
 function addTrailLayers() {
   if (map.getSource('trail')) return;
   map.addSource('trail', { type: 'geojson', data: { type: 'FeatureCollection', features: [] } });
-  map.addLayer({ id: 'trail-line', type: 'line', source: 'trail', layout: { 'line-cap': 'round', 'line-join': 'round' }, paint: { 'line-color': '#2b4bf2', 'line-width': 3, 'line-opacity': 0.7 } }, 'gps-shadow'); // Beta 1.65 (Andrew's road report): anchored UNDER the GPS stack - unanchored, the line could paint across the dot's face
+  map.addLayer({ id: 'trail-line', type: 'line', source: 'trail', layout: { 'line-cap': 'round', 'line-join': 'round' }, paint: { 'line-color': '#2c4ad2', 'line-width': 3, 'line-opacity': 0.7 } }, 'gps-shadow'); // Beta 1.65 (Andrew's road report): anchored UNDER the GPS stack - unanchored, the line could paint across the dot's face
 }
 function pickFontFromStyle() { // adopt a NOTO stack from the CURRENT basemap for OUR route labels (Beta 1.6: same
   // typeface day and night - Versatiles names it noto_sans_regular, CARTO lists Noto Sans Regular inside its
