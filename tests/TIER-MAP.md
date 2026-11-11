@@ -32,15 +32,16 @@ Gate: build-and-test + the touched surface's family:
 
 | Family | Paths | Drives |
 | --- | --- | --- |
-| create | `parts/create-cache.js`, `create-citydata.js`, `create-fetch.js`, `create-packs.js`, `create-pick.js`, `packs/` | 151 152 153 154 155 156 160 164 166 181 183 185 |
+| create | `parts/create-cache.js`, `create-citydata.js`, `create-fetch.js`, `create-packs.js`, `create-pick.js`, `packs/` | 151 152 153 154 155 156* 160 164 166 181 183 185 |
 | map | `parts/engine.js` | 115 116 121 127 128 129 130 133 141 148 149 165 168 182 |
 | session | `parts/app2.js`, `parts/app3.js`, `parts/app4.js` | 83 86 88 89* 114 118 125 135 136 140 145 146 147 159 161 162 163 169 170 184 |
 
 *quarantined drives are removed from the set by the selector (drive89
-today; drive181 was quarantined 2026-11-09 and re-admitted 2026-11-10
-after its hardening proved out — entry removed in the housekeeping
-cleanup); they are listed here so the family's full membership stays
-visible.
+today; drive156 from 2026-11-11 — check 157-D1 flaked twice on record
+and the drive is hardened in the drive156-harden round; drive181 was
+quarantined 2026-11-09 and re-admitted 2026-11-10 after its hardening
+proved out — entry removed in the housekeeping cleanup); they are
+listed here so the family's full membership stays visible.
 
 ## Tier C — deep mechanics
 
