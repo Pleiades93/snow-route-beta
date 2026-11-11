@@ -23,7 +23,11 @@ self.addEventListener('install', e => {
         if (res && res.ok) await c.put(u, res);
       } catch (err) {}   // integrity failure or no network: cache nothing, the page fetches live instead
     }));
-    await c.add(new Request(self.registration.scope, { cache: 'reload' })).catch(() => {});
+    // Beta 1.170 (Carbon fix round Phase 2, C-07): the shell fetch is FATAL on failure and lands under TWO keys. Through 1.169 the add rode a swallowed catch, so a first install over a broken or portaled network still activated - a worker claiming offline capability while its shell cache held no HTML at all, and every later offline launch fell to Response.error(). A failed shell fetch now fails the install itself (the previous worker, if any, keeps serving; a first install simply retries on the next visit). The second key covers the explicit-file launch (scope + 'index.html') some launchers and shortcuts use.
+    const shellRes = await fetch(new Request(self.registration.scope, { cache: 'reload' }));
+    if (!shellRes || !shellRes.ok) throw new Error('app shell fetch failed during install');
+    await c.put(self.registration.scope, shellRes.clone());
+    await c.put(self.registration.scope + 'index.html', shellRes);
   }).then(() => self.skipWaiting()));
 });
 self.addEventListener('activate', e => {
@@ -46,10 +50,10 @@ async function netFirst(r, cacheName) {   // fresh when the network answers fast
     // (BUG-03, ChatGPT audit #2) - surface the error only when nothing is cached.
     // The app-shell fallback applies ONLY to page navigations (ISSUE-03,
     // audit #2): a map style or data request must never be handed HTML.
-    const hitErr = await c.match(r, { ignoreSearch: true }) || (r.mode === 'navigate' ? await c.match(self.registration.scope) : undefined);
+    const hitErr = await c.match(r, { ignoreSearch: true }) || (r.mode === 'navigate' ? await c.match(self.registration.scope, { ignoreSearch: true }) : undefined); // Beta 1.170 (C-07): the scope fallback ignores the query too - a stored shell key must answer a launch that arrives carrying one
     return hitErr || res || Response.error();   // res is null exactly when the network failed outright (netErr) and nothing is cached
   } catch (e) {
-    const hit = await c.match(r, { ignoreSearch: true }) || (r.mode === 'navigate' ? await c.match(self.registration.scope) : undefined);
+    const hit = await c.match(r, { ignoreSearch: true }) || (r.mode === 'navigate' ? await c.match(self.registration.scope, { ignoreSearch: true }) : undefined);
     return hit || Response.error();
   }
 }

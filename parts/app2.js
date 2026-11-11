@@ -379,8 +379,9 @@ $('selBtn').addEventListener('click', () => { if (!sel || !tapGuard('selBtn')) r
 $('selNote').addEventListener('click', () => { if (!sel || !tapGuard('selNote')) return; openNote(sel.name); });
 function updateCount() {
   const n = STREETNAMES.filter(streetComplete).length;
-  const pct = Math.round(workDoneM() / totalWorkM() * 100);
-  $('countTxt').textContent = n + ' of ' + STREETNAMES.length + ' · ' + pct + '%'; $('countFill').style.width = (workDoneM() / totalWorkM() * 100) + '%'; // the meter fills with the same work fraction the % is computed from. Beta 1.94 (audit F-01): the total derives from the route's street list
+  const tw = totalWorkM(); // Beta 1.170 (Carbon fix round Phase 2, A-05): the share's denominator, read once and GUARDED - a route with no work in it (an empty pack, or geometry whose totals are all zero) divided by zero through 1.169 and the counter read 'NaN%' with a 'NaN%' meter width; it now reads 0%
+  const pct = tw > 0 ? Math.round(workDoneM() / tw * 100) : 0;
+  $('countTxt').textContent = n + ' of ' + STREETNAMES.length + ' · ' + pct + '%'; $('countFill').style.width = (tw > 0 ? (workDoneM() / tw * 100) : 0) + '%'; // the meter fills with the same work fraction the % is computed from. Beta 1.94 (audit F-01): the total derives from the route's street list
   $('stats').textContent = statsLine();
   $('startBtn').style.display = runStart ? 'none' : '';
   $('cancelStartBtn').style.display = runStart ? '' : 'none'; // Beta 1.91: Cancel start is offered for the whole run - it erases the run's records, marks included

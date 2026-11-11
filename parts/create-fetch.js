@@ -98,7 +98,7 @@ async function crOverpassFetch(ql, budgetMs, attempt1Ms, sessionOk, op) {
         }
         const buf = new Uint8Array(total); let off = 0; for (const c of chunks) { buf.set(c, off); off += c.byteLength; }
         text = new TextDecoder().decode(buf);
-      } else { text = await r.text(); if (text.length > CR_TIMING.capBytes) { if (to) clearTimeout(to); return { ok: false, kind: 'dense' }; } }
+      } else { const cl = (r.headers && typeof r.headers.get === 'function') ? +(r.headers.get('content-length') || 0) : 0; if (cl > CR_TIMING.capBytes) { if (to) clearTimeout(to); return { ok: false, kind: 'dense' }; } text = await r.text(); if (new TextEncoder().encode(text).length > CR_TIMING.capBytes) { if (to) clearTimeout(to); return { ok: false, kind: 'dense' }; } } // Beta 1.170 (Carbon fix round Phase 2, D-07): the no-stream fallback measures the cap the way the streaming branch does - a declared Content-Length over the cap refuses BEFORE the body is buffered, and the buffered text is measured in BYTES (TextEncoder), where through 1.169 the only check ran after the full buffer landed and compared UTF-16 code units against the byte cap (a multi-byte body passed at up to twice the cap). What a reader-less response still cannot do is abort MID-body - that residual is inherent to the fallback, and is why the streaming branch is the primary
       if (to) clearTimeout(to);
       let json = null;
       try { json = JSON.parse(text); } catch (e) { lastFail = { ok: false, kind: 'badjson' }; continue; }

@@ -14,7 +14,11 @@ function openNameIt() {
 }
 $('crNameBack').addEventListener('click', () => { if (!routeLoaded) parkBootChrome(); else closeRouteMenu(); setCreateStage('preview'); });
 $('crSaveBtn').addEventListener('click', saveDraftRoute);
+let crSaveInFlight = false; // Beta 1.170 (Carbon fix round Phase 2, D-03): single-flight for the save - the function is async (the store write awaits) and had no re-entrancy guard through 1.169, and the button carries no tap guard, so a double-tap ran it twice: both calls computed the same uniqueRouteId before either registered the pack, the second overwrote the first's store record, and the pack was pushed twice under one id; a late tap landing after a completed save's exitCreate had nulled the draft threw on draft.mains instead
 async function saveDraftRoute() {
+  if (crSaveInFlight) return;
+  crSaveInFlight = true;
+  try {
   const name = $('crNameInput').value.trim();
   if (!name) { toast('Give the route a name first', 2600); return; }
   const area = $('crAreaInput').value.trim();
@@ -31,6 +35,7 @@ async function saveDraftRoute() {
   toast('Route saved — its maps are not downloaded yet; get them in Settings → Status → Download', 4600);
   if (wasBoot) { restoreBootChrome(); if (window.__bootPickRoute) window.__bootPickRoute(newId); }
   else { openRouteMenu(); showRmPane('rmListPane'); }
+  } finally { crSaveInFlight = false; }
 }
 
 (() => {
