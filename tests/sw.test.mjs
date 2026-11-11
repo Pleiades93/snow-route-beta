@@ -211,6 +211,39 @@ fetchImpl = async () => new Response('NETWORK-TILE', { status: 200 });
 r = await mapFetch(new Request(packTile.url, { cache: 'reload' }), null);
 check('N-2 a reload-mode request bypasses the pack and returns the network response', (await r.text()) === 'NETWORK-TILE');
 
+// 16. Beta 1.170 (Carbon fix round Phase 2, C-07): the install handler -
+// a failed shell fetch must FAIL the install (through 1.169 the add rode
+// a swallowed catch and the worker activated with no HTML cached at
+// all), and a good shell lands under BOTH the scope and
+// scope + 'index.html' (the explicit-file launch).
+{
+  const iStart = sw.indexOf("self.addEventListener('install'");
+  const iEnd = sw.indexOf("self.addEventListener('activate'");
+  const coreStart = sw.indexOf('const CORE = [');
+  const coreEnd = sw.indexOf('];', coreStart) + 2;
+  const shellStore = new Map();
+  const shellCache = {
+    async put(r, res) { const u = typeof r === 'string' ? r : r.url; shellStore.set(u, res); },
+    async add(r) { const res = await fetch(r); if (!res || !res.ok) throw new Error('add failed'); shellStore.set(typeof r === 'string' ? r : r.url, res); }
+  };
+  const handlers = {}; let skipped = false;
+  globalThis.caches = { async open() { return shellCache; } };
+  globalThis.self = { registration: { scope: 'https://example.test/app/' }, addEventListener: (n, f) => { handlers[n] = f; }, skipWaiting: async () => { skipped = true; } };
+  eval(constLine + '\n' + sw.slice(coreStart, coreEnd) + '\n' + sw.slice(iStart, iEnd));
+  const runInstall = async () => { let wu = null, err = null; handlers.install({ waitUntil(p) { wu = p; } }); try { await wu; } catch (e) { err = e; } return err; };
+  fetchImpl = async () => new Response('SHELL-HTML', { status: 200 });
+  let err = await runInstall();
+  check('C-07 install succeeds on a good shell fetch', err === null);
+  check('C-07 shell cached under the scope', shellStore.has('https://example.test/app/'));
+  check('C-07 shell cached under scope + index.html', shellStore.has('https://example.test/app/index.html'));
+  check('C-07 skipWaiting follows a good install', skipped === true);
+  shellStore.clear(); skipped = false;
+  fetchImpl = async (r) => { const u = typeof r === 'string' ? r : r.url; if (u === 'https://example.test/app/') throw new Error('offline'); return new Response('LIB', { status: 200 }); };
+  err = await runInstall();
+  check('C-07 a failed shell fetch FAILS the install', err !== null);
+  check('C-07 no skipWaiting after a failed install', skipped === false);
+}
+
 let fail = 0;
 for (const [n, ok] of results) { console.log((ok ? 'PASS' : 'FAIL') + '  ' + n); if (!ok) fail++; }
 process.exit(fail ? 1 : 0);

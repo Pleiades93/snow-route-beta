@@ -120,7 +120,7 @@ function buildEngineGeometry() { // Beta 1.117: the engine's route geometry (GEO
   nudgeFifth();
   assignTiers();
   let a = 90, b = -90, c = 180, d = -180; H.names.forEach(n => GEO[n].stitched.forEach(p => { a = Math.min(a, p[0]); b = Math.max(b, p[0]); c = Math.min(c, p[1]); d = Math.max(d, p[1]); }));
-  ROUTEPOI.geometry.coordinates = [(c + d) / 2, (a + b) / 2];
+  if (H.names.length) ROUTEPOI.geometry.coordinates = [(c + d) / 2, (a + b) / 2]; // Beta 1.170 (Carbon fix round Phase 2, B-10): an empty geometry keeps the last real centre - through 1.169 the extrema never moved off their seeds when there were no streets to visit, and the midpoint of the seeds is [0,0] (Null Island), where the route-name POI then rendered at overview zooms
   HIT.features = H.names.flatMap(n => GEO[n].cuts.map((ab, i) => ({ type: 'Feature', properties: { name: n, idx: i }, geometry: { type: 'LineString', coordinates: GJ(GEO[n].stitched.slice(ab[0], ab[1] + 1)) } })));
 }
 // Round 35 (Andrew): Fifth's label anchor sits at its Greenpark
@@ -154,6 +154,7 @@ const LABELS = { type: 'FeatureCollection', features: labelFeatures };
 // six MAIN streets are forced into the final tier regardless of
 // length (Astona is a main but only 187 m long).
 function assignTiers() {
+  if (!labelPointFeatures.length) return; // Beta 1.170 (B-10): no labels, no tiers - through 1.169 the quartile reads below indexed lens[-1] (undefined) and every comparison failed quietly; a no-op only because there were no features to tier either
   const lens = labelPointFeatures.map(f => f.properties.len).sort((a, b) => a - b);
   const q = p => lens[Math.min(lens.length - 1, Math.floor(p * lens.length))];
   const q1 = q(0.25), q2 = q(0.5), q3 = q(0.75);
@@ -1659,10 +1660,14 @@ function addStack() {
 let pulseTimer = null;
 let glowAnim = { op: {}, road: [0, 0] }; // Beta 1.169 (Carbon fix round, B-01): DECLARED - through 1.168 applyGlow assigned this undeclared, an implicit global in the app's sloppy mode (harmless there, a ReferenceError waiting for any future strict context). applyGlow replaces it wholesale on every call; managePulse only reads it.
 function buildSelGlow() {
-  const sg = selectedGeom();
-  if (!sg) return EMPTYFC;
-  const c = colOf(sel.name, sg.bits);
-  return { type: 'FeatureCollection', features: [{ type: 'Feature', properties: { col: c, colHot: lighten(c, 0.68), colLit: lighten(c, 0.30), band: sg.bits === 3 ? 1 : 0 }, geometry: { type: 'LineString', coordinates: GJ(sg.pts) } }] };
+  const feats = []; // Beta 1.170 (Carbon fix round Phase 2, B-04): one glow feature per selected stretch, the same iteration buildSel/buildSelC run - through 1.169 this built only the single anchor's geometry (selectedGeom() with no argument), so a multi-select glowed one stretch while the vibrant selection lines painted them all
+  for (const it of currentSelList()) {
+    const sg = selectedGeom(it);
+    if (!sg) continue;
+    const c = colOf(it.name, sg.bits);
+    feats.push({ type: 'Feature', properties: { col: c, colHot: lighten(c, 0.68), colLit: lighten(c, 0.30), band: sg.bits === 3 ? 1 : 0 }, geometry: { type: 'LineString', coordinates: GJ(sg.pts) } });
+  }
+  return feats.length ? { type: 'FeatureCollection', features: feats } : EMPTYFC;
 }
 
 // ---- glow presets (round 20, Andrew: panel toggles to compare live;
@@ -1710,7 +1715,7 @@ function managePulse() {
   // together so the selected stretch looks lit from within. The
   // glow preset (round 20) supplies the per-layer base opacity and
   // breathing amplitude via glowAnim; this loop is preset-blind.
-  const want = !!sel && !!GLM && !!GLM.getLayer('sel-glow1-s');
+  const want = currentSelList().length > 0 && !!GLM && !!GLM.getLayer('sel-glow1-s'); // Beta 1.170 (B-04): the pulse follows the selection LIST, not just the anchor - a selection held only in selSet breathes too
   if (want && !pulseTimer) {
     let ph = 0;
     pulseTimer = setInterval(() => {
@@ -1764,7 +1769,7 @@ function managePulse() {
     pushSelSources();
   }
   function active() { return !!GLM; }
-  function setFont(stack) { if (Array.isArray(stack) && stack.length) fontStack = stack.slice(); }
+  function setFont(stack) { if (Array.isArray(stack) && stack.length) { fontStack = stack.slice(); if (GLM) { for (const id of ['streetnamespt1', 'streetnamespt2', 'streetnamespt3', 'streetnamespt4', 'routepoi-txt']) { if (GLM.getLayer(id)) { try { GLM.setLayoutProperty(id, 'text-font', fontStack); } catch (e) {} } } } } } // Beta 1.170 (Carbon fix round Phase 2, B-09): layers already on the map take the new stack too - through 1.169 setFont replaced only the variable FUTURE layers are built from, so a basemap restyle (which re-picks the font, then calls sync - not init) left the live label layers rendering the retired stack until the next full rebuild
   return { init, drop, sync, syncSel, active, setFont, rebuildRoute };
 })();
 window.GLP = GLP;
