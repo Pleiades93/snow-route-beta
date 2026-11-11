@@ -1,8 +1,8 @@
 #!/usr/bin/env python3
 """Assemble the Snow Route page from its parts (Beta 1.94, audit F-02).
 
-The canonical app source is parts/ - nine files, concatenated in a fixed
-order into src/tracker-source.html, which scripts/build-pages.py then
+The canonical app source is parts/ - fifteen files, concatenated in a
+fixed order into src/tracker-source.html, which scripts/build-pages.py then
 stamps (CSP) and publishes as index.html. tracker-source.html is a
 GENERATED file: never hand-edit it; edit the part and re-run this script.
 
@@ -11,14 +11,19 @@ GENERATED file: never hand-edit it; edit the part and re-run this script.
 
 Recipe (byte-exact, the standing assembly since Beta 1.0's first build):
 head.html, then '<script>', then data.js, app1.js, engine.js, pmstyles.js,
-app2.js, app3.js, app4.js, create.js, then '</script></body></html>'.
+app2.js, app3.js, app4.js, create-cache.js, create-citydata.js,
+create-fetch.js, create-packs.js, create-pick.js, create-save.js,
+brand-snow.js, then '</script></body></html>'. (The PARTS list below is the
+operative enumeration.)
 
 Split (Beta 1.134, maintainability programme B): app4.js used to carry
 both the system code (backup, Settings, boot) and the whole create flow.
 It is now split at the Beta 1.118 CREATE A ROUTE banner: everything
 before the banner stays in app4.js; everything from the banner to the
 old file's end (the create flow, plus the boot-tail IIFE that physically
-follows it) is parts/create.js, assembled immediately after app4.js.
+follows it) is the create flow, assembled immediately after app4.js —
+since Beta 1.134's programme B split it lives in the six parts/create-*.js
+files (cache, citydata, fetch, packs, pick, save).
 The shipped script's bytes and order are unchanged by the split.
 
 Splash injection (Beta 1.133, maintainability programme C): head.html does

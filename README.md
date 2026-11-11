@@ -6,10 +6,10 @@ truck — in the dark, with gloves-adjacent tapping and spotty signal.
 It started as a tracker for one 34-street route in Vaughan, Ontario, and has
 grown into a small route system: routes are **data packs**, and storage,
 backups and the route menu are all per-route. **Route 5W (Vaughan)** is the
-pack that ships today. The system is *designed* so a new area is a new pack
-rather than a new app — storage, backups and the menu are already per-route —
-but only Route 5W ships today, in-app route switching is not built yet, and
-the offline map set is drawn around Vaughan. There is no server and no
+original pack; twelve city packs ship today (44,405 streets), routes switch
+in-app from the route menu, and a new route can be created in the app and
+saved on the device. The system is *designed* so a new area is a new pack
+rather than a new app — storage, backups and the menu are already per-route. There is no server and no
 account; all progress lives on the device.
 
 ## Live
@@ -18,8 +18,8 @@ account; all progress lives on the device.
 
 ## What it does
 
-- **Route menu:** the app opens on a route menu (Choose a route; route
-  creation is a placeholder for now). The Routes tab reopens it any time.
+- **Route menu:** the app opens on a route menu (Choose a route, or create
+  a route of your own). The Routes tab reopens it any time.
   Picking a route loads that route's own progress, notes and history.
 - **Streets and sides:** route streets are drawn from real OpenStreetMap
   centrelines, cut into stretches at every junction, and each stretch's two
@@ -62,7 +62,7 @@ the app update check under Settings → **About**.)
 - **Backup (JSON)** builds the backup and immediately offers to save or
   share it — one tap. The format is one JSON file, versioned (v2): every
   route's stored fields under its own route id, plus the global theme
-  preference.
+  preference and the Settings record (vibration, chime on/off, chime sound).
 - **Restore backup** offers **Import JSON** (pick the backup file) or
   **Import Text** (paste it instead). Both feed the same restore path.
 - Restore validates the file first — format version and every value's
@@ -82,7 +82,7 @@ the app update check under Settings → **About**.)
 
 | File | What it is |
 |---|---|
-| `parts/` | **The canonical application source — the only place the app itself is edited** (since Beta 1.94). Fourteen part files (markup/CSS, route data, the app in ten parts — the four core parts plus route creation in six — the paint engine, the generated basemap styles) that `scripts/assemble.py` concatenates into the single-file page, in the order listed in `docs/ARCHITECTURE.md`. |
+| `parts/` | **The canonical application source — the only place the app itself is edited** (since Beta 1.94). Fifteen part files (markup/CSS, route data, the four core app parts, route creation in six, the paint engine, the snow layer, the generated basemap styles) that `scripts/assemble.py` concatenates into the single-file page, in the order listed in `docs/ARCHITECTURE.md`. |
 | `src/tracker-source.html` | **Generated** by `scripts/assemble.py` from `parts/`. Never hand-edit — the build fails if it differs from what the parts assemble to. |
 | `src/sw.js` | The authored service worker source (offline open + tile caching). Edited here; copied to the root by the build. |
 | `index.html` | **Generated** deployable build: the source plus its stamped Content-Security-Policy. This is what GitHub Pages serves. Never hand-edit. |
@@ -134,8 +134,11 @@ inlines the exact bytes of `icon-512.png` there — the shipped page is
 unchanged, the source part is ~281 KB smaller and reviewable.
 
 CI (GitHub Actions) runs the build gate and the service-worker suite on
-every push; the browser battery runs sharded across four jobs on branches,
-as a smoke subset on `main`, and in full every night. How changes are
+every push; the browser battery runs sharded across eight jobs, at the
+tier the change classifies for (`tests/TIER-MAP.md`): the Tier A core set on
+`main` pushes, the touched families' drives (Tier B) or the full battery
+(Tier C) on branches, and the full battery nightly — dispatched by Muse's
+1 AM job, since checks.yml carries no schedule trigger. How changes are
 merged is in `DEVELOPMENT_RULES.md`; functional testing is in
 `docs/TESTING.md`; deployment is `docs/DEPLOYMENT.md`; architecture is
 `docs/ARCHITECTURE.md`; the storage layout is `docs/STORAGE-SCHEMA.md`.

@@ -33,12 +33,18 @@ hand-edit `index.html` or the root `sw.js`.
    never typed by hand; `build-pages.py` asserts the same derivation, so
    skipping this step fails the build), and prints the release checklist
    separating the generated steps from the editorial ones.
-3. Run the build and the full battery (`docs/TESTING.md`) locally.
-4. Push the branch. CI runs the build gate, the service-worker suite, the
-   full sharded browser battery and the offline end-to-end suite.
+3. Run the build and the gate for the change's tier (`docs/TESTING.md`,
+   operative table `tests/TIER-MAP.md`) locally — the full battery only for
+   Tier C changes.
+4. Push the branch. CI runs the build gate, the service-worker suite, and
+   the tier the plan job selects for the change: the Tier A core set, the
+   Tier B touched-family drives, or (Tier C) the full sharded browser
+   battery and the offline end-to-end suite.
 5. Merge to `main` only under the merge gate in `DEVELOPMENT_RULES.md`:
    the merged tree is proven identical to the tested branch tree, and
-   `main` then runs the build gate, a smoke subset and the offline suite.
+   `main` then runs the build gate and the Tier A core set (browser-smoke).
+   The offline suite does not run on `main` pushes — it gates Tier C
+   branches and the nightly run.
    Pages serves `main`, so the merge is the release.
 6. Pages picks the files up within a few minutes; GitHub's edge cache can
    lag ~10 minutes behind the push.

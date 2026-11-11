@@ -528,8 +528,10 @@ measured latency, splits headers/body, runs the failure matrix,
 proves offline-after-extract adds, and races the generations) after
 being demonstrated red on the 1.120 tree.
 
-**Persistence.** Created packs persist on-device in the global
-`snowroute.v2.userpacks` record (see STORAGE-SCHEMA) and merge into the
+**Persistence.** Created packs persist on-device as per-route records in
+the IndexedDB database `snowroute-userdata` (object store `packs`, one
+record per route id; moved there at Beta 1.166 — see STORAGE-SCHEMA) and
+merge into the
 runtime pack list at boot, so they are listed, switchable through the
 1.117 machinery, and covered by the offline manifest union (F5) like
 any pack. A freshly saved route gets an honest preload record (none of
@@ -544,8 +546,8 @@ refuses shipped ids in code). The shared create confirm asks first
 is the `--card` theme-token surface in both day and night, and the
 modal's z-index rises above the full-screen menus so it can be
 asked from inside the route list). On confirm, in order: the
-definition is removed from the userpacks record through a strict
-read + verified write (a storage failure leaves the route listed
+definition is removed from its `snowroute-userdata` record through a
+strict read + verified write (a storage failure leaves the route listed
 and intact, with a toast naming the problem); every key of the
 route's slot is wiped, enumerated from `routeKeys` — never
 hand-listed, so a future field joins the sweep by construction;
