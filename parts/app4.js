@@ -692,7 +692,7 @@ $('stDel').addEventListener('click', async () => {
 });
 // ---- About / What's new ----
 const WHATSNEW = { // the curated in-app notes: plain words, LATEST RELEASE ONLY (Beta 1.114, Andrew: the accumulated list cluttered the About pane). A release REPLACES this entry with its own in the same change - it never accumulates; the full history lives in CHANGELOG.md, not the app
-  v: 'Beta 1.167', items: ["Your cleans are no longer capped at 10 \u2014 every finished clean is kept, and your full history comes along in backups and restores. Pace is tightened up too: each clean now remembers the work it actually did during the run, and a clean's details show both the time its streets took and the total time through to Finish."] };
+  v: 'Beta 1.168', items: ["The street panel that pops up when you tap a street now sits lower, clear of the day/night button."] };
 function renderAbout() {
   const cur = $('ver').textContent.trim();
   $('wnHead').textContent = "WHAT'S NEW · " + cur; // the header names the LIVE version, read from the title's version element - never a second hard-coded copy that can go stale
