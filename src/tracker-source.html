@@ -450,7 +450,7 @@ input, textarea { caret-color: currentColor; } /* Beta 1.125 (Andrew): the typin
 <div id="hud">
   <div id="warn">Not saving — storage is full or blocked</div>
   <div class="row">
-    <div class="titleStack"><div class="title">Snow Route Beta</div><div class="ver" id="ver">Beta 1.172</div></div>
+    <div class="titleStack"><div class="title">Snow Route Beta</div><div class="ver" id="ver">Beta 1.173</div></div>
   </div>
   <div id="stats"></div>
 </div>
@@ -5122,7 +5122,7 @@ $('stDel').addEventListener('click', async () => {
 });
 // ---- About / What's new ----
 const WHATSNEW = { // the curated in-app notes: plain words, LATEST RELEASE ONLY (Beta 1.114, Andrew: the accumulated list cluttered the About pane). A release REPLACES this entry with its own in the same change - it never accumulates; the full history lives in CHANGELOG.md, not the app
-  v: 'Beta 1.172', items: ["Sheets now glide smoothly from the very first frame — no tiny hop as they open and close."] };
+  v: 'Beta 1.173', items: ["The snowbank on the opening screen now shades smoothly all the way up to its crest."] };
 function renderAbout() {
   const cur = $('ver').textContent.trim();
   $('wnHead').textContent = "WHAT'S NEW · " + cur; // the header names the LIVE version, read from the title's version element - never a second hard-coded copy that can go stale
@@ -7435,7 +7435,7 @@ async function saveDraftRoute() {
     var ctx = ctxS;
     ctx.clearRect(0, 0, W, H);
     if (amount > 0) {
-      var grad = ctx.createLinearGradient(0, H - 22, 0, H);
+      var grad = ctx.createLinearGradient(0, H - 58 * amount, 0, H); // Beta 1.173 (Andrew's call, 2026-11-11 - Carbon audit C-08): the fade anchors at the bank's actual crest, 58 x amount; it still anchored at H - 22, the 1.158 leftover from the 20 px peak, so since the peak rose in 1.161 the top ~36 px of the bank clamped to the flat first stop instead of shading
       grad.addColorStop(0, 'rgba(255,255,255,0.92)');
       grad.addColorStop(1, 'rgba(235,244,255,0.98)');
       ctx.beginPath();

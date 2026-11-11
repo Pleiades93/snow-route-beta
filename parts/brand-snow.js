@@ -131,7 +131,7 @@
     var ctx = ctxS;
     ctx.clearRect(0, 0, W, H);
     if (amount > 0) {
-      var grad = ctx.createLinearGradient(0, H - 22, 0, H);
+      var grad = ctx.createLinearGradient(0, H - 58 * amount, 0, H); // Beta 1.173 (Andrew's call, 2026-11-11 - Carbon audit C-08): the fade anchors at the bank's actual crest, 58 x amount; it still anchored at H - 22, the 1.158 leftover from the 20 px peak, so since the peak rose in 1.161 the top ~36 px of the bank clamped to the flat first stop instead of shading
       grad.addColorStop(0, 'rgba(255,255,255,0.92)');
       grad.addColorStop(1, 'rgba(235,244,255,0.98)');
       ctx.beginPath();
