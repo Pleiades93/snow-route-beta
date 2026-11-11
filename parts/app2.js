@@ -527,9 +527,21 @@ function springSheet(sheet, q0, qT, v0, apply, finish) {
   // 41686175718) while passing at the local rig's 60fps. The closed form is exact at any
   // frame rate. With v0 clamped to 4000px/s it cannot overshoot a stop: crossing needs
   // v0 > omega * distance, and 30 * distance exceeds the clamp beyond ~134px of travel.
-  const A = q0 - qT, B = Math.max(-4000, Math.min(4000, v0)) + SHEET_OMEGA * A, t0 = performance.now();
+  const A = q0 - qT, B = Math.max(-4000, Math.min(4000, v0)) + SHEET_OMEGA * A;
   if (window.matchMedia && matchMedia('(prefers-reduced-motion: reduce)').matches) { apply(qT); finish(); return; }
+  // Beta 1.172 (Andrew's call - the drive156-harden record's option (a)): the spring's
+  // clock starts at the FIRST FRAME's rAF timestamp, not at performance.now() inside
+  // the call. The call usually lands mid-frame during input dispatch, up to a frame
+  // after that frame's start timestamp, while step is evaluated AT frame timestamps -
+  // so the first step used to run the closed form at t ~ -10 ms, extrapolating backward
+  // along the curve: a collapse's first applied height dipped ~8 px past the start and
+  // rebounded (190 -> 182 -> 188), an expand's overshot (60 -> 73 -> 61) - the flight
+  // departed from monotonic for its first two frames whenever the spring made the same
+  // frame's callback batch. With t0 taken from the first step's own timestamp, t starts
+  // at exactly 0 and the flight is the closed form from its true start.
+  let t0 = null;
   const step = now => {
+    if (t0 === null) t0 = now;
     const t = (now - t0) / 1000;
     const e = Math.exp(-SHEET_OMEGA * t);
     const q = qT + (A + B * t) * e;

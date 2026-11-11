@@ -2,7 +2,7 @@
 <html lang="en" class="boot">
 <head>
 <meta charset="UTF-8">
-<meta http-equiv="Content-Security-Policy" content="default-src 'none'; script-src 'sha384-R4LQy33ooMUlyYg7XDXFZ1V/lUwyiITr2OEnqALMXYhwLLhKfxqAVlbSeQzlLEhq' https://cdn.jsdelivr.net; style-src-elem 'sha384-dXzCpNH5v8NrIfxtq2VIwysmCU2TlfZoeQwzMogrAdCiYl2Y5bTxGK0Id6FghvNF' https://cdn.jsdelivr.net; style-src-attr 'unsafe-inline'; img-src 'self' data: blob: https://tiles.basemaps.cartocdn.com https://protomaps.github.io https://cdn.jsdelivr.net; connect-src 'self' https://tiles.basemaps.cartocdn.com https://protomaps.github.io https://cdn.jsdelivr.net https://nominatim.openstreetmap.org https://overpass-api.de https://overpass.kumi.systems; worker-src blob: 'self'; child-src blob: 'self'; font-src 'none'; manifest-src 'self'; base-uri 'none'; form-action 'none'; object-src 'none'">
+<meta http-equiv="Content-Security-Policy" content="default-src 'none'; script-src 'sha384-qtcfm2b0+Z9eJHpA+WXjWIJ7E6WufGV2ufK0jHU9xswzmOnq6DIjWkHdfuYAha1s' https://cdn.jsdelivr.net; style-src-elem 'sha384-dXzCpNH5v8NrIfxtq2VIwysmCU2TlfZoeQwzMogrAdCiYl2Y5bTxGK0Id6FghvNF' https://cdn.jsdelivr.net; style-src-attr 'unsafe-inline'; img-src 'self' data: blob: https://tiles.basemaps.cartocdn.com https://protomaps.github.io https://cdn.jsdelivr.net; connect-src 'self' https://tiles.basemaps.cartocdn.com https://protomaps.github.io https://cdn.jsdelivr.net https://nominatim.openstreetmap.org https://overpass-api.de https://overpass.kumi.systems; worker-src blob: 'self'; child-src blob: 'self'; font-src 'none'; manifest-src 'self'; base-uri 'none'; form-action 'none'; object-src 'none'">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="mobile-web-app-capable" content="yes">
@@ -451,7 +451,7 @@ input, textarea { caret-color: currentColor; } /* Beta 1.125 (Andrew): the typin
 <div id="hud">
   <div id="warn">Not saving — storage is full or blocked</div>
   <div class="row">
-    <div class="titleStack"><div class="title">Snow Route Beta</div><div class="ver" id="ver">Beta 1.171</div></div>
+    <div class="titleStack"><div class="title">Snow Route Beta</div><div class="ver" id="ver">Beta 1.172</div></div>
   </div>
   <div id="stats"></div>
 </div>
@@ -3474,9 +3474,21 @@ function springSheet(sheet, q0, qT, v0, apply, finish) {
   // 41686175718) while passing at the local rig's 60fps. The closed form is exact at any
   // frame rate. With v0 clamped to 4000px/s it cannot overshoot a stop: crossing needs
   // v0 > omega * distance, and 30 * distance exceeds the clamp beyond ~134px of travel.
-  const A = q0 - qT, B = Math.max(-4000, Math.min(4000, v0)) + SHEET_OMEGA * A, t0 = performance.now();
+  const A = q0 - qT, B = Math.max(-4000, Math.min(4000, v0)) + SHEET_OMEGA * A;
   if (window.matchMedia && matchMedia('(prefers-reduced-motion: reduce)').matches) { apply(qT); finish(); return; }
+  // Beta 1.172 (Andrew's call - the drive156-harden record's option (a)): the spring's
+  // clock starts at the FIRST FRAME's rAF timestamp, not at performance.now() inside
+  // the call. The call usually lands mid-frame during input dispatch, up to a frame
+  // after that frame's start timestamp, while step is evaluated AT frame timestamps -
+  // so the first step used to run the closed form at t ~ -10 ms, extrapolating backward
+  // along the curve: a collapse's first applied height dipped ~8 px past the start and
+  // rebounded (190 -> 182 -> 188), an expand's overshot (60 -> 73 -> 61) - the flight
+  // departed from monotonic for its first two frames whenever the spring made the same
+  // frame's callback batch. With t0 taken from the first step's own timestamp, t starts
+  // at exactly 0 and the flight is the closed form from its true start.
+  let t0 = null;
   const step = now => {
+    if (t0 === null) t0 = now;
     const t = (now - t0) / 1000;
     const e = Math.exp(-SHEET_OMEGA * t);
     const q = qT + (A + B * t) * e;
@@ -5111,7 +5123,7 @@ $('stDel').addEventListener('click', async () => {
 });
 // ---- About / What's new ----
 const WHATSNEW = { // the curated in-app notes: plain words, LATEST RELEASE ONLY (Beta 1.114, Andrew: the accumulated list cluttered the About pane). A release REPLACES this entry with its own in the same change - it never accumulates; the full history lives in CHANGELOG.md, not the app
-  v: 'Beta 1.171', items: ["New app icon — same snowflake, rebuilt crisp with a deep black road outline."] };
+  v: 'Beta 1.172', items: ["Sheets now glide smoothly from the very first frame — no tiny hop as they open and close."] };
 function renderAbout() {
   const cur = $('ver').textContent.trim();
   $('wnHead').textContent = "WHAT'S NEW · " + cur; // the header names the LIVE version, read from the title's version element - never a second hard-coded copy that can go stale
