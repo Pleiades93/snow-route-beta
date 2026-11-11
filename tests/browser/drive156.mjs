@@ -229,7 +229,7 @@ const { server, ORIGIN } = await serveRepo(REPO);
 const rig = await startCreateRig({ profile: '/tmp/d157profile-' + Date.now() });
 const { proc, send, PAGE_S, ev2, poll, consoleLog, J, bootRoute } = rig;
 const mouse = async (type, x, y) => { await send('Input.dispatchMouseEvent', { type, x, y, button: 'left', clickCount: 1 }, PAGE_S); };
-const headTap = async () => { // a quick tap on the panel's grab head (short sleeps - the D-section sampling needs the spring still running)
+const headTap = async () => { // a quick tap on the panel's grab head (short sleeps - a tap, not a drag; the D-section frame recorder is armed before it fires)
   const g = await J(`(() => { const r = document.getElementById('crPanelHead').getBoundingClientRect(); return { x: Math.round(r.left + r.width / 2), y: Math.round(r.top + 10) }; })()`);
   await mouse('mousePressed', g.x, g.y); await sleep(50); await mouse('mouseReleased', g.x, g.y);
 };
@@ -316,38 +316,82 @@ ok('157-C2 THE KEPT FLOW SAVES END-TO-END: after a "+ Add a street" round trip (
   doneC2 === 'Done' && nameC === true && /^Route \d+$/.test(preC.prefill) && preC.saveLbl === 'Save route' && preC.summary.indexOf('2 streets') >= 0 && savedC === true && packC.roads.join() === 'Alpha Street,Long Road');
 
 // ================= D: the continuous morph =================
+// 157-D1/D2 HARDENING (2026-11-11, drive156-harden round - the flake
+// rule's quarantine + hardening for 157-D1's two recorded flakes):
+// D1 used to sample the collapse from OUTSIDE the page - one CDP
+// round trip per sample on a fixed 35 ms sleep - and count the
+// samples that caught the panel still displayed. The morph is a
+// closed-form spring (springSheet, parts/app2.js) whose height is a
+// function of elapsed wall time: it lands in ~0.3 s at ANY frame
+// rate, so under shard CPU contention the round trips stretch past
+// the flight and the sampler records the pre-flight rest, then the
+// landed rest, and nothing between (both recorded flakes: "3 visible
+// samples, max step 0 px", the app landed exactly - a TEST
+// synchronization defect, not an app defect; reproduced locally by
+// slowing the sampler's cadence alone). Its other signal was
+// vestigial: it read #crPanel's computed transform, which nothing
+// has set since the 1.129 one-object morph replaced the 1.128 face
+// slide - ty was 0 in every run, pass or fail. The checks now record
+// the motion IN the page on every animation frame, armed BEFORE the
+// trigger (the instrument drive158's B section proves this same
+// surface with), wait for the app's own terminal signal (crMorph
+// null + the sheet's inline height cleared + the destination face
+// alone displayed - polled, never a proxy), and analyse the recorded
+// frames: the claim is unchanged (one continuous motion, both faces
+// on screen together mid-change, an exact landing) and is now
+// measured on the quantities the morph actually moves - the sheet's
+// height and the faces' cross-fade. Per-frame step size is REPORTED,
+// not asserted: a starved frame legitimately covers more of the
+// spring's travel in one step (drive158's doctrine) - continuity is
+// proven by monotonic travel through distinct intermediate heights,
+// which a swap or teleport cannot produce at any cadence.
 const inD = await enterPickWithExtract();
 await ev2(`pickStreet('Long Road', { lat: 43.8, lng: -79.574 })`);
 await poll(`draft && !!draft.roads['Long Road']`, 10000);
 await faceSettled('crPanel');
+await ev2(`(() => { // the in-page frame recorder (armed before each trigger below)
+  window.__morphRec = { on: false, frames: [] };
+  window.__morphRecStart = () => { const a = window.__morphRec; a.frames = []; a.on = true;
+    const sh = document.getElementById('createSheet'), p = document.getElementById('crPanel'), st = document.getElementById('crStrip');
+    const step = () => { if (!a.on) return;
+      a.frames.push({ h: sh.offsetHeight, pd: getComputedStyle(p).display, sd: getComputedStyle(st).display, po: parseFloat(getComputedStyle(p).opacity), so: parseFloat(getComputedStyle(st).opacity), morph: typeof crMorph !== 'undefined' && crMorph !== null });
+      requestAnimationFrame(step); };
+    requestAnimationFrame(step); return true; };
+  window.__morphRecStop = () => { window.__morphRec.on = false; return window.__morphRec.frames; };
+  return true;
+})()`);
+const morphLanded = async (faceEl, otherEl) => await poll(`(typeof crMorph === 'undefined' || crMorph === null) && document.getElementById('createSheet').style.height === '' && getComputedStyle(document.getElementById('${faceEl}')).display !== 'none' && getComputedStyle(document.getElementById('${otherEl}')).display === 'none'`, 12000); // the terminal signal: the app's own settle state, not a motion proxy
+const preD = await J(`(() => { const sh = document.getElementById('createSheet'); return { h: sh.offsetHeight, pd: getComputedStyle(document.getElementById('crPanel')).display, sd: getComputedStyle(document.getElementById('crStrip')).display, morph: typeof crMorph !== 'undefined' && crMorph !== null, inlineH: sh.style.height }; })()`);
+await ev2(`window.__morphRecStart()`);
 await headTap();
-const samplesD = [];
-for (let i = 0; i < 30; i++) {
-  const s = await J(`(() => { const sh = document.getElementById('createSheet'); const p = document.getElementById('crPanel'); const st = document.getElementById('crStrip'); const cs = getComputedStyle(p).transform; let ty = 0; if (cs && cs.indexOf('matrix') === 0) ty = parseFloat(cs.split(',')[5]); return { ty, h: sh.offsetHeight, pd: getComputedStyle(p).display, sd: getComputedStyle(st).display }; })()`);
-  samplesD.push(s);
-  if (s.pd === 'none') break;
-  await sleep(35);
-}
-const visD = samplesD.filter(s => s.pd !== 'none'); // the in-flight samples only: the loop's last sample is the post-landing rest state (transform cleared by cleanup), which is asserted separately below, not as motion
-let monoD = true, maxStepD = 0;
-for (let i = 1; i < visD.length; i++) { const d = visD[i].ty - visD[i - 1].ty; if (d < -1.5) monoD = false; if (Math.abs(d) > maxStepD) maxStepD = Math.abs(d); }
-const bothD = samplesD.some(s => s.pd !== 'none' && s.sd !== 'none');
+const landedD = await morphLanded('crStrip', 'crPanel');
+await sleep(120); // a few resting frames so the recording brackets the whole flight
+const framesD = await J(`window.__morphRecStop()`);
 const restD = await J(`(() => { const sh = document.getElementById('createSheet'); const st = document.getElementById('crStrip'); return { sheetH: sh.offsetHeight, stripH: st.offsetHeight, pd: getComputedStyle(document.getElementById('crPanel')).display, sd: getComputedStyle(st).display }; })()`);
-ok('157-D1 COLLAPSE IS ONE CONTINUOUS MOTION: sampled mid-flight, the panel\'s slide is monotonic in bounded steps (' + visD.length + ' visible samples, max step ' + Math.round(maxStepD) + ' px), BOTH faces are displayed at once mid-change (no hard swap into the pill), and the sheet lands exactly at the bar\'s resting height | ' + JSON.stringify(restD),
-  visD.length >= 4 && monoD === true && maxStepD <= 220 && bothD === true && restD.pd === 'none' && restD.sd !== 'none' && Math.abs(restD.sheetH - (restD.stripH + 12)) <= 34);
+const flightD = framesD.filter(f => f.morph); // the frames the morph itself was live in
+let monoD = true, maxStepD = 0;
+for (let i = 1; i < flightD.length; i++) { const d = flightD[i].h - flightD[i - 1].h; if (d > 1.5) monoD = false; if (Math.abs(d) > maxStepD) maxStepD = Math.abs(d); }
+const travelD = preD.h - restD.sheetH;
+const interD = new Set(flightD.map(f => Math.round(f.h)).filter(h => h < preD.h - 1 && h > restD.sheetH + 1)).size;
+const needInterD = travelD < 20 ? 0 : (travelD >= 90 ? 2 : 1); // drive158's scale: a swap yields ZERO intermediate heights at any cadence; a spring passes through them however starved
+const bothD = flightD.some(f => f.pd !== 'none' && f.sd !== 'none');
+const fadeD = flightD.length ? { poMin: Math.min(...flightD.map(f => f.po)), soMax: Math.max(...flightD.map(f => f.so)) } : { poMin: -1, soMax: -1 };
+ok('157-D1 COLLAPSE IS ONE CONTINUOUS MOTION: the pre-collapse state is established first (panel up, bar gone, no morph in flight), then the flight is recorded in-page on every animation frame (' + flightD.length + ' frames in flight, ' + framesD.length + ' recorded): the sheet\'s height falls monotonically (max single-frame step ' + Math.round(maxStepD) + ' px, reported not asserted) through ' + interD + ' distinct intermediate heights, BOTH faces are displayed at once mid-change while they cross-fade (panel opacity dips to ' + fadeD.poMin + ', the bar\'s rises to ' + fadeD.soMax + ' - no hard swap into the pill), the wait ends on the app\'s terminal signal, and the sheet lands exactly at the bar\'s resting height | pre: ' + JSON.stringify(preD) + ' | landed: ' + landedD + ' | ' + JSON.stringify(restD),
+  preD.pd !== 'none' && preD.sd === 'none' && preD.morph === false && preD.inlineH === '' && landedD === true && flightD.length >= 3 && monoD === true && interD >= needInterD && bothD === true && restD.pd === 'none' && restD.sd !== 'none' && Math.abs(restD.sheetH - (restD.stripH + 12)) <= 34);
+await ev2(`window.__morphRecStart()`);
 await ev2(`document.getElementById('crReviewBtn').click()`);
-const samplesE = [];
-for (let i = 0; i < 30; i++) {
-  const s = await J(`(() => { const sh = document.getElementById('createSheet'); return { h: sh.offsetHeight, pd: getComputedStyle(document.getElementById('crPanel')).display, sd: getComputedStyle(document.getElementById('crStrip')).display }; })()`);
-  samplesE.push(s);
-  if (s.sd === 'none') break;
-  await sleep(35);
-}
+const landedE = await morphLanded('crPanel', 'crStrip');
+await sleep(120);
+const framesE = await J(`window.__morphRecStop()`);
+const flightE = framesE.filter(f => f.morph);
 let monoE = true, maxStepE = 0;
-for (let i = 1; i < samplesE.length; i++) { const d = samplesE[i].h - samplesE[i - 1].h; if (d < -2) monoE = false; if (Math.abs(d) > maxStepE) maxStepE = Math.abs(d); }
-const movingE = samplesE.filter(s => s.sd !== 'none').length;
-ok('157-D2 EXPAND IS THE SAME MOTION, REVERSED: the sheet\'s height grows monotonically in bounded steps (max step ' + Math.round(maxStepE) + ' px over ' + movingE + ' moving samples) until the panel is back and the bar is gone | last: ' + JSON.stringify(samplesE[samplesE.length - 1]),
-  movingE >= 4 && monoE === true && maxStepE <= 220 && samplesE[samplesE.length - 1].pd !== 'none' && samplesE[samplesE.length - 1].sd === 'none');
+for (let i = 1; i < flightE.length; i++) { const d = flightE[i].h - flightE[i - 1].h; if (d < -1.5) monoE = false; if (Math.abs(d) > maxStepE) maxStepE = Math.abs(d); }
+const travelE = preD.h - restD.sheetH;
+const interE = new Set(flightE.map(f => Math.round(f.h)).filter(h => h > restD.sheetH + 1 && h < preD.h - 1)).size;
+const needInterE = travelE < 20 ? 0 : (travelE >= 90 ? 2 : 1);
+const lastE = await J(`(() => { const sh = document.getElementById('createSheet'); return { h: sh.offsetHeight, pd: getComputedStyle(document.getElementById('crPanel')).display, sd: getComputedStyle(document.getElementById('crStrip')).display }; })()`);
+ok('157-D2 EXPAND IS THE SAME MOTION, REVERSED: recorded in-page the same way (' + flightE.length + ' frames in flight), the sheet\'s height grows monotonically (max single-frame step ' + Math.round(maxStepE) + ' px, reported not asserted) through ' + interE + ' distinct intermediate heights until the terminal signal lands it back on the panel with the bar gone | landed: ' + landedE + ' | last: ' + JSON.stringify(lastE),
+  landedE === true && flightE.length >= 3 && monoE === true && interE >= needInterE && lastE.pd !== 'none' && lastE.sd === 'none');
 
 // ================= E: the zero-pick bar =================
 await ev2(`exitCreate()`);
