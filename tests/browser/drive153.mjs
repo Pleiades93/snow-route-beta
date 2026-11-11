@@ -23,9 +23,9 @@ import { startCreateRig, serveRepo, makeResults, finishCreate, sleep } from './h
 //      pane ("Select City") with the 5 index
 //      cities as rows carrying their street counts; tapping Vaughan
 //      readies the city from the PACK with
-//      ZERO Overpass requests and the hint naming the app's own
-//      library; a pack street (Bordeaux) adds by tap at its pack
-//      length.
+//      ZERO Overpass requests (the in-flight hint itself is graded
+//      under the Beta 1.176 gate - see A3/A3b); a pack street
+//      (Bordeaux) adds by tap at its pack length.
 //   B (reload): re-picking Vaughan is ready from the on-device
 //      IndexedDB cache with ZERO pack-file and ZERO Overpass requests.
 //   C (pack failure): with the cache deleted and the pack file 404ing,
@@ -82,7 +82,7 @@ const CITY_CALEDON = [ // the NO-PACK fixture city: a real Ontario town with no 
 const segLen = pts => { let m = 0; for (let i = 1; i < pts.length; i++) { const dy = (pts[i][0] - pts[i - 1][0]) * 111320, dx = (pts[i][1] - pts[i - 1][1]) * 80386; m += Math.hypot(dx, dy); } return m; };
 const packStreetLen = name => (PACKFX.streets[name] || []).reduce((a, s) => a + segLen(s), 0);
 let packMode = 'ok'; // 'ok' | 'fail' - the vaughan pack file's wire behaviour
-let packDelayMs = 0; // phase A slows the pack download so the in-progress hint wording is observable before the ready state replaces it
+let packDelayMs = 0; // phase A slows the pack download so the in-progress state is observable before the ready state replaces it (Beta 1.176: what is graded there is the gate - nothing shown inside 5 s - and the seeded past-gate percentage form)
 
 // ---- static server + CDP rig (shared: harness-create.mjs; this drive's routing table is fulfil, below) ----
 const { server, ORIGIN } = await serveRepo(REPO);
@@ -153,14 +153,18 @@ const wireA0 = wire.length;
 packDelayMs = 2500;
 await clickChoice(VAUGHAN_NAME);
 const inPickA = await poll(`typeof creating !== 'undefined' && creating === true && crStage === 'pick'`, 15000);
-const libHintA = await poll(`/library/.test(document.getElementById('createHint').textContent) && crPrepState === 'preparing'`, 8000);
-const hintDuringA = await J(`({ hint: document.getElementById('createHint').textContent })`);
+const prepA = await poll(`crPrepState === 'preparing'`, 8000).catch(() => false);
+const hintDuringA = await J(`({ hint: document.getElementById('createHint').textContent, on: document.getElementById('createHint').classList.contains('on'), btnOn: document.getElementById('crHintBtn').style.display !== 'none' })`);
+await ev2(`crGrid.startedAt = Date.now() - 6000; crRenderHint(); true`); // the load's own clock seeded past the Beta 1.176 gate - deterministic; the pack file is still in flight (2.5 s fixture delay), so no cell can have landed yet
+const hintGateA = await J(`({ hint: document.getElementById('createHint').textContent, btn: document.getElementById('crHintBtn').textContent, btnOn: document.getElementById('crHintBtn').style.display !== 'none' })`);
 const readyA = await poll(`crPrepState === 'ready'`, 30000);
 packDelayMs = 0;
 const wA = wire.slice(wireA0);
 const gridA = await J(`({ fromPack: crGrid && crGrid.fromPack, cells: crGrid ? crGrid.cells.length : -1 })`);
-ok('A3 PACK PATH: Vaughan readies with ZERO Overpass requests, exactly ONE pack-file download, the grid marked fromPack, and DURING the wait the hint names the app\'s own library (never the service) | overpass: ' + wA.filter(w => w.kind === 'overpass').length + ', packfiles: ' + wA.filter(w => w.kind === 'packfile').length + ' | hint during: ' + (hintDuringA.hint || '') + ' | ' + JSON.stringify(gridA),
-  inPickA === true && libHintA === true && readyA === true && wA.filter(w => w.kind === 'overpass').length === 0 && wA.filter(w => w.kind === 'packfile' && w.slug === 'vaughan.json').length === 1 && gridA.fromPack === 'vaughan');
+ok('A3 PACK PATH: Vaughan readies with ZERO Overpass requests, exactly ONE pack-file download, the grid marked fromPack, and DURING the wait the hint shows NOTHING (Beta 1.176 - RE-DERIVED: through 1.175 this check pinned the pack readout naming the app\'s own library during the wait; the readout is now gated to loads past 5 s and the 2.5 s pack wait never reaches it) | overpass: ' + wA.filter(w => w.kind === 'overpass').length + ', packfiles: ' + wA.filter(w => w.kind === 'packfile').length + ' | hint during: ' + JSON.stringify(hintDuringA) + ' | ' + JSON.stringify(gridA),
+  inPickA === true && prepA === true && hintDuringA.hint === '' && hintDuringA.on === false && hintDuringA.btnOn === false && readyA === true && wA.filter(w => w.kind === 'overpass').length === 0 && wA.filter(w => w.kind === 'packfile' && w.slug === 'vaughan.json').length === 1 && gridA.fromPack === 'vaughan');
+ok('A3b (Beta 1.176) past the gate (the load\'s clock seeded) the SAME in-flight pack load reads "Loading Vaughan — 0%" with Cancel - ONE readout format for a city load whichever source serves it, the percentage being its own cells done of cells total | ' + JSON.stringify(hintGateA),
+  hintGateA.hint === 'Loading Vaughan — 0%' && hintGateA.btn === 'Cancel' && hintGateA.btnOn === true);
 await installFeatureSeam();
 await tapStreet('Bordeaux Drive');
 const gotBA = await poll(`typeof draft !== 'undefined' && draft && !!draft.roads['Bordeaux Drive']`, 15000).catch(() => false);

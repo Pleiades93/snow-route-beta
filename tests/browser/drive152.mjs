@@ -269,6 +269,13 @@ await poll(`typeof crPrepState !== 'undefined' && crPrepState === 'degraded' && 
 const K2b = await J(`({ state: crPrepState, failed: crGrid ? crGrid.cells.filter(c => c.state === 'failed').length : -1, hint: document.getElementById('createHint').textContent, btn: document.getElementById('crHintBtn').textContent })`);
 ok('K2b (fallback over a failed cell, CG-PF-14) the fallback box landed (' + k2Box + ') but the city is NOT promoted to ready: the settled state still counts the failed cell - DEGRADED, the missing part still disclosed, Retry missing parts still offered | ' + JSON.stringify(K2b),
   k2Box === true && K2b.state === 'degraded' && K2b.failed === 1 && K2b.hint.indexOf('loaded except 1 part') >= 0 && K2b.btn === 'Retry missing parts');
+const gapAt152 = async (w, h) => { await send('Emulation.setDeviceMetricsOverride', { width: w, height: h, deviceScaleFactor: 2, mobile: true }, S); await ev(`crRenderHint()`); return await J(`(() => { const hr = document.getElementById('createHint').getBoundingClientRect(), br = document.getElementById('crHintBtn').getBoundingClientRect(); return { gap: Math.round((br.top - hr.bottom) * 10) / 10, overlap: br.top < hr.bottom - 0.5, pillH: Math.round(hr.height) }; })()`); };
+const GK390 = await gapAt152(390, 844);
+const GK430 = await gapAt152(430, 932);
+await send('Emulation.setDeviceMetricsOverride', { width: 420, height: 900, deviceScaleFactor: 2, mobile: true }, S);
+await ev(`crRenderHint()`);
+ok('K2c (button placement, Beta 1.176) in the DEGRADED state - the missing-part wording wraps at these widths (pill heights ' + GK390.pillH + ' / ' + GK430.pillH + ' px) - the Retry-missing-parts button hangs BELOW the pill BY MEASUREMENT: gap > 0 and zero overlap at 390 px (gap ' + GK390.gap + ' px) and 430 px (gap ' + GK430.gap + ' px) | ' + JSON.stringify({ GK390, GK430 }),
+  GK390.gap > 0 && GK390.overlap === false && GK430.gap > 0 && GK430.overlap === false);
 await ev(`window.__kFailCell = null`);
 await jExitDiscard();
 // K3 (CG-PF-15): the same city NAME saved under two different bounding

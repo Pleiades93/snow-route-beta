@@ -2,7 +2,7 @@
 <html lang="en" class="boot">
 <head>
 <meta charset="UTF-8">
-<meta http-equiv="Content-Security-Policy" content="default-src 'none'; script-src 'sha384-FaCc2GSjRdS1KDIGy3uNSvMBQxFphEGJTEBqdUD2852d6XOtsrpuAfzQQF1TDac1' https://cdn.jsdelivr.net; style-src-elem 'sha384-+Nl2dGp4ordpJDbL5jb/g85toeSCbYw0rtJQWpOtq1zVVlFvL/TFTzbkZKAL7WNQ' https://cdn.jsdelivr.net; style-src-attr 'unsafe-inline'; img-src 'self' data: blob: https://tiles.basemaps.cartocdn.com https://protomaps.github.io https://cdn.jsdelivr.net; connect-src 'self' https://tiles.basemaps.cartocdn.com https://protomaps.github.io https://cdn.jsdelivr.net https://nominatim.openstreetmap.org https://overpass-api.de https://overpass.kumi.systems; worker-src blob: 'self'; child-src blob: 'self'; font-src 'none'; manifest-src 'self'; base-uri 'none'; form-action 'none'; object-src 'none'">
+<meta http-equiv="Content-Security-Policy" content="default-src 'none'; script-src 'sha384-yvndcGxiWhSWyYfOS8dUsQz+VRbLukX/AI35/3l/G6QOQURXp0iFhgbtQRjN5wOC' https://cdn.jsdelivr.net; style-src-elem 'sha384-+Nl2dGp4ordpJDbL5jb/g85toeSCbYw0rtJQWpOtq1zVVlFvL/TFTzbkZKAL7WNQ' https://cdn.jsdelivr.net; style-src-attr 'unsafe-inline'; img-src 'self' data: blob: https://tiles.basemaps.cartocdn.com https://protomaps.github.io https://cdn.jsdelivr.net; connect-src 'self' https://tiles.basemaps.cartocdn.com https://protomaps.github.io https://cdn.jsdelivr.net https://nominatim.openstreetmap.org https://overpass-api.de https://overpass.kumi.systems; worker-src blob: 'self'; child-src blob: 'self'; font-src 'none'; manifest-src 'self'; base-uri 'none'; form-action 'none'; object-src 'none'">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="mobile-web-app-capable" content="yes">
@@ -451,7 +451,7 @@ input, textarea { caret-color: currentColor; } /* Beta 1.125 (Andrew): the typin
 <div id="hud">
   <div id="warn">Not saving — storage is full or blocked</div>
   <div class="row">
-    <div class="titleStack"><div class="title">Snow Route Beta</div><div class="ver" id="ver">Beta 1.175</div></div>
+    <div class="titleStack"><div class="title">Snow Route Beta</div><div class="ver" id="ver">Beta 1.176</div></div>
   </div>
   <div id="stats"></div>
 </div>
@@ -4859,7 +4859,7 @@ const list = preloadUrlList();
     // cache count, exactly as before.
     const bar = $('xPreBar'), fill = $('xPreFill');
     let shown = 0;
-    const paint = () => { fill.style.width = (list.length ? shown / list.length * 100 : 0) + '%'; st.textContent = 'Downloading… ' + shown + '/' + list.length; };
+    const paint = () => { fill.style.width = (list.length ? shown / list.length * 100 : 0) + '%'; st.textContent = 'Downloading… ' + (list.length ? Math.round(shown / list.length * 100) : 0) + '%'; }; // Beta 1.176 (Andrew's standing rule): a loading readout shows a percentage, never a count - the line now reads the same fraction the bar already painted (the sweep still eases the shown value toward the true one, so the percentage sweeps exactly as the count did). The job's COMPLETION line below ('saved X of Y files') is an outcome report, not a readout, and keeps its counts
     bar.classList.add('on'); paint();
     const sweep = setInterval(() => { if (shown < done) { shown = Math.min(done, shown + Math.max(1, Math.ceil((done - shown) / 5))); paint(); } }, 30);
     // Beta 1.96 (audit-2, N-2): the fetch above uses cache 'reload' - a deliberate Download is a reload, not an ordinary request. Before 1.96 the request went through the service worker like any other, mapFetch answered from the very pack being refreshed, and the rebuilt pack stored the pack's own responses back: re-downloading could never refresh anything. The worker honours the mode (mapFetch's reload bypass, src/sw.js).
@@ -5123,7 +5123,7 @@ $('stDel').addEventListener('click', async () => {
 });
 // ---- About / What's new ----
 const WHATSNEW = { // the curated in-app notes: plain words, LATEST RELEASE ONLY (Beta 1.114, Andrew: the accumulated list cluttered the About pane). A release REPLACES this entry with its own in the same change - it never accumulates; the full history lives in CHANGELOG.md, not the app
-  v: 'Beta 1.175', items: ["Tidier map screen: the extra hint messages under the search bar are gone — only the '<City> loaded' note shows, and it fades away by itself."] };
+  v: 'Beta 1.176', items: ["Loading messages now only appear if a city is taking a while — quick loads just show the 'loaded' note, and a slow load shows its progress as a simple percentage."] };
 function renderAbout() {
   const cur = $('ver').textContent.trim();
   $('wnHead').textContent = "WHAT'S NEW · " + cur; // the header names the LIVE version, read from the title's version element - never a second hard-coded copy that can go stale
@@ -6176,12 +6176,24 @@ function crFailText(f) { // the honest taxonomy (scope item 5): unreachable / an
 // confirmation stays dismissed). Failures, progress, offers and disclosures never
 // ride this clock: they are not confirmations.
 let crPillT = 0, crPillKey = '', crPillGone = '';
+// Beta 1.176 (Andrew): the slow-load gate. A load's progress readout (and its
+// Cancel) renders only once the load has been running this long - a faster
+// load never shows it at all (on his phone the sub-second flash of the
+// readout read as a glitch). The terminal states - the load confirmation,
+// failure, degraded - are never gated: they are outcomes, not progress.
+const CR_LOAD_GATE_MS = 5000;
 function crRenderHint() { // the ONE writer of the pick-stage hint + its action button + the sheet's city chip: state-driven, so no stale text survives a state change
   if (!creating || crStage !== 'pick') return;
-  // The confirmation is exactly ONE render state: ready, restored from the
-  // on-device cache, with nothing outstanding - no wanted offer pending and no
-  // cache/pack note riding the text (a disclosure is not a confirmation).
-  const pillKey = (!crSectorSession.street && crPrepState === 'ready' && crGrid && crGrid.fromCache && crGrid.savedAt && !crWanted && !(crCacheNote && crCity && crCacheNoteCity === crCity.name) && !(crPackNote && crCity)) ? crGrid.name + '@' + crGrid.savedAt : '';
+  // The confirmation is exactly ONE render state: ready, with nothing
+  // outstanding - no wanted offer pending and no cache/pack note riding the
+  // text (a disclosure is not a confirmation). Through 1.175 only a restore
+  // from the on-device cache confirmed; Beta 1.176 (Andrew): a FRESH load
+  // confirms too - its
+  // key is the load's own start (a resume restarts startedAt, so a resumed
+  // load's success confirms as its own event). The cached key (city + saved
+  // date) is unchanged since 1.153, as is the fromCache-without-a-date corner
+  // (no key, no confirmation - the record carried no date to name).
+  const pillKey = (!crSectorSession.street && crPrepState === 'ready' && crGrid && !crWanted && !(crCacheNote && crCity && crCacheNoteCity === crCity.name) && !(crPackNote && crCity)) ? (crGrid.fromCache ? (crGrid.savedAt ? crGrid.name + '@' + crGrid.savedAt : '') : crGrid.name + '@fresh:' + crGrid.startedAt) : '';
   if (pillKey) {
     if (crPillKey !== pillKey) { // a NEW confirmation: start its clock (a re-render of the same one leaves the clock running)
       if (crPillT) clearTimeout(crPillT);
@@ -6193,30 +6205,45 @@ function crRenderHint() { // the ONE writer of the pick-stage hint + its action 
   const hint = $('createHint'), btn = $('crHintBtn');
   if (crSectorSession.street) { hint.textContent = 'Tap sectors to add or remove them'; hint.classList.add('on'); btn.style.display = 'none'; return; } // Beta 1.127 (mockup screen 1): while trimming, the pill says the one thing there is to do
   let text = '', btnLabel = '';
-  const secs = t0 => Math.max(0, Math.round((Date.now() - t0) / 1000));
-  if (crPrepState === 'preparing' && crPrep) { text = 'Preparing street shapes for ' + (crCity ? crCity.name : 'this area') + '… ' + secs(crPrep.startedAt) + ' s'; btnLabel = 'Cancel'; } // the fallback box, when IT is the in-flight operation: it outranks the grid text - a settled (or still-loading) city grid must not label a box wait with stale part counts
-  else if (crPrepState === 'preparing' && crGrid) { // the city grid: REAL progress - parts landed of parts total, and elapsed (amendment B: no fake percentages, the count is the count)
-    const done = crGridDoneCount(), total = crGrid.cells.length, failed = crGridFailedCount();
-    if (crGrid.fromPack && !crPackNote) text = 'Loading ' + crGrid.name + ' from the app’s own library… ' + secs(crGrid.startedAt) + ' s'; // Beta 1.123: a pack load is ONE download, not parts - the wording names the fast path and keeps only the honest elapsed clock (no part counts, no percentages, and never the service's name for the library's work)
-    else text = 'Loading ' + crGrid.name + ' — part ' + done + ' of ' + total + ' · ' + secs(crGrid.startedAt) + ' s' + (failed ? ' · ' + failed + ' failed so far' : '');
-    btnLabel = 'Cancel';
+  let gated = false; // Beta 1.176: true while the in-flight load is inside its 5 s gate - the render then paints NOTHING (no readout, no Cancel, and no disclosure note leaking the pill open early: the notes are state, not events, so they simply ride the first render past the gate, or the terminal state)
+  const pastGate = t0 => !!t0 && (Date.now() - t0) >= CR_LOAD_GATE_MS; // the gate reads the load's OWN start, so a readout that appears carries the load's true progress at that moment; the loads' own 1 s tickers re-render through this writer as the gate opens - no second clock exists to go stale
+  if (crPrepState === 'preparing' && crPrep) { // the fallback box, when IT is the in-flight operation: it outranks the grid text - a settled (or still-loading) city grid must not label a box wait with stale part counts
+    gated = !pastGate(crPrep.startedAt);
+    if (!gated) { text = 'Preparing street shapes for ' + (crCity ? crCity.name : 'this area') + '…'; btnLabel = 'Cancel'; } // Beta 1.176: gated like every load readout; past the gate it keeps its truthful wording minus the elapsed-seconds suffix - the box is ONE fetch with no countable parts, so no percentage exists for it (an invented one would be a fabrication, not a format)
+  }
+  else if (crPrepState === 'preparing' && crGrid) { // the city grid - the live service or the app's own library behind the one extract seam, and ONE readout for both since 1.176
+    gated = !pastGate(crGrid.startedAt);
+    if (!gated) { const done = crGridDoneCount(), total = crGrid.cells.length; text = 'Loading ' + crGrid.name + ' — ' + (total > 0 ? Math.round(done / total * 100) : 0) + '%'; btnLabel = 'Cancel'; } // Beta 1.176 (Andrew's amendment): name + percentage ONLY - no part counts ('part 0 of 30'), no elapsed seconds, no failed-so-far tally (failures surface in the degraded/failed states, which are never gated). The percentage is the honest count in the form he asked for - cells done of cells total, the same counters the retired part readout used - so the 1.123 pack wording ('from the app's own library…') retires with it: one readout format for a city load, and the pack's cells are the same counters
   }
   else if (crPrepState === 'degraded' && crGrid) {
-    if (crGrid.stopped === 'cancelled') { text = 'Loading stopped — ' + crGridDoneCount() + ' of ' + crGrid.cells.length + ' parts of ' + crGrid.name + ' loaded'; btnLabel = 'Resume'; }
+    if (crGrid.stopped === 'cancelled') { text = 'Loading stopped — ' + crGrid.name + ' ' + (crGrid.cells.length ? Math.round(crGridDoneCount() / crGrid.cells.length * 100) : 0) + '% loaded'; btnLabel = 'Resume'; } // Beta 1.176 (Andrew's standing rule): a loading readout speaks in percentages - the stopped state names how much of the city landed as a percentage of its cells, not a part count; the Resume remedy is unchanged
     else { text = crGrid.name + ' loaded except ' + (crGridFailedCount() + crGridPendingCount()) + ' part' + ((crGridFailedCount() + crGridPendingCount()) === 1 ? '' : 's') + ' — streets there may be missing'; btnLabel = 'Retry missing parts'; }
     if (crWanted) btnLabel = crWanted.label;
   }
   else if (crPrepState === 'failed') { text = crFailText(crPrepFail); btnLabel = crGrid ? 'Retry' : ((crPrepFail && crPrepFail.kind === 'dense') ? 'Prepare this area' : 'Retry'); if (crWanted) btnLabel = crWanted.label; } // grid failure: Retry resumes the missing cells. Box dense: Retry at the same anchor cannot help (fixed footprint) - the button prepares wherever the map now sits (CG-PF-09). Beta 1.154 (B3 build): the wanted override applies in this branch too, as it always did in the degraded/ready branches - through 1.153 an outstanding offer's button read 'Retry' here while the click actually started the fallback preparation at the wanted anchor (the 2026-11-09 lifecycle trace's label wart); with no offer outstanding the label stays 'Retry', and the click is then genuinely a retry
   else if (crPrepState === 'ready') {
     if (crGrid && crGrid.fromCache && crGrid.savedAt) { const d = new Date(crGrid.savedAt); text = crGrid.name + ' — loaded ' + d.toLocaleDateString('en-CA', { month: 'short', day: 'numeric' }); } // Beta 1.153 (Andrew): the pill is a load confirmation ONLY - city + when it loaded, no 'tap a road', and no Refresh button: a city that loaded fine offers no reload. The failed state's Retry (grid resume / re-prepare) is the one working remedy, and it predates this change.
-    // Beta 1.175 (Andrew): a ready city that did NOT come from the cache shows NO pill text of its own - the 'Tap a road on the map to add it' / 'Street shapes ready — tap a road' hints are removed as unnecessary. The cached confirmation above is the only informational pill left; a disclosure note riding below, or an outstanding offer's button, still shows on its own.
+    else if (crGrid) { text = crGrid.name + ' — loaded'; } // Beta 1.176 (Andrew): a FRESH load confirms too - the same note without the date (there is no saved date to name; the load just happened), riding the same 4 s clock through the extended pillKey above
+    // Beta 1.175 (Andrew): a ready city that did NOT come from the cache shows NO pill text of its own - the 'Tap a road on the map to add it' / 'Street shapes ready — tap a road' hints are removed as unnecessary. The cached confirmation above is the only informational pill left; a disclosure note riding below, or an outstanding offer's button, still shows on its own. Beta 1.176: the fresh-load confirmation directly above is the one successor to those hints - it is the load's own outcome note, on the same clock, not a standing hint.
     if (crWanted) btnLabel = crWanted.label; // an outstanding offer (a tap outside coverage, a pending street) keeps its working button in the ready state too (CG-PF-09: the first build's ready state hid it) - since Beta 1.153 removed the healthy-state Refresh, it is the ready state's only button
   }
   else { text = crCity ? 'Search for a street in ' + crCity.name + ', or zoom in and prepare this area' : 'Search, fly to a street, then tap it on the map'; if (crWanted) btnLabel = crWanted.label; else if (map && map.getZoom() >= 14) btnLabel = 'Prepare this area'; }
-  if (crCacheNote && crCity && crCacheNoteCity === crCity.name) text = text ? text + ' · ' + crCacheNote : crCacheNote; // the disclosed cache state rides the hint (amendment C: degradation is said, never silent) - Beta 1.143 (DA-06): only when the note belongs to the city on screen. Beta 1.175: since the ready-state hints were removed, a note can ride an otherwise EMPTY hint - it then stands alone, with no dangling separator
-  if (crPackNote && crCity) text = text ? text + ' · ' + crPackNote : crPackNote; // Beta 1.123: the disclosed pack state rides the hint the same way - a fallen-back load says the library didn't load, in every state the hint shows. Beta 1.175: the same stand-alone rule as the cache note above
+  if (!gated) { // Beta 1.176: inside the gate the pill renders nothing at all - a disclosure note does not leak it open early (the note is still state, and rides the first ungated render or the terminal state, so nothing is ever swallowed)
+    if (crCacheNote && crCity && crCacheNoteCity === crCity.name) text = text ? text + ' · ' + crCacheNote : crCacheNote; // the disclosed cache state rides the hint (amendment C: degradation is said, never silent) - Beta 1.143 (DA-06): only when the note belongs to the city on screen. Beta 1.175: since the ready-state hints were removed, a note can ride an otherwise EMPTY hint - it then stands alone, with no dangling separator
+    if (crPackNote && crCity) text = text ? text + ' · ' + crPackNote : crPackNote; // Beta 1.123: the disclosed pack state rides the hint the same way - a fallen-back load says the library didn't load, in every state the hint shows. Beta 1.175: the same stand-alone rule as the cache note above
+  }
   hint.textContent = text; hint.classList.toggle('on', !!text && !(pillKey && crPillGone === pillKey)); // Beta 1.153: a confirmation already dismissed this session does not reappear on re-renders. Beta 1.175: no text, no pill - with the ready-state hints gone, an empty render (a fresh ready city, nothing to disclose, no offer) never paints an empty pill
   if (btnLabel) { btn.textContent = btnLabel; btn.style.display = ''; } else btn.style.display = 'none';
+  // Beta 1.176 (Andrew): the button hangs from the pill's RENDERED bottom edge,
+  // not from a fixed offset. Through 1.175 the button's CSS top sat a fixed
+  // 48 px below the pill's top - tuned to a one-line pill - so a pill that
+  // wrapped to two lines (a long progress line in his screenshot, the failure
+  // wording) grew down OVER the button: Cancel sat on the pill's bottom edge.
+  // Measured placement instead, recomputed at every render: pill shown ->
+  // button top = the pill's rendered bottom + 8 px; pill hidden -> the inline
+  // top clears and the CSS offset stands (the button's pill-less perch is
+  // unchanged).
+  if (btnLabel && hint.classList.contains('on')) { const hb = hint.getBoundingClientRect(); btn.style.top = Math.round(hb.bottom + 8) + 'px'; } else btn.style.top = '';
   const cc = $('crCityChange'); if (cc) { if (crCity) { cc.textContent = 'City: ' + crCity.name + ' — change'; cc.style.display = ''; } else cc.style.display = 'none'; }
 }
 function crAddStreet(name, segs) { // Beta 1.144 (Package C, DA-04): the draft keys on the FULL map name - through 1.143 the key was shortStreetName(osmName), so two distinct streets sharing a shortened name (Addington Avenue / Addington Place) collided: only the first could ever enter a draft, and tapping the second opened the first's sectors. shortStreetName survives ONLY as the display form (toasts, rows, the sector bar's title); every key in the draft - roads, mains, sectors, parts, pending - is the full name, and the saved pack inherits the full names, so both streets can live in one route.

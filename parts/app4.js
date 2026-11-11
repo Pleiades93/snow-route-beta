@@ -439,7 +439,7 @@ const list = preloadUrlList();
     // cache count, exactly as before.
     const bar = $('xPreBar'), fill = $('xPreFill');
     let shown = 0;
-    const paint = () => { fill.style.width = (list.length ? shown / list.length * 100 : 0) + '%'; st.textContent = 'Downloading… ' + shown + '/' + list.length; };
+    const paint = () => { fill.style.width = (list.length ? shown / list.length * 100 : 0) + '%'; st.textContent = 'Downloading… ' + (list.length ? Math.round(shown / list.length * 100) : 0) + '%'; }; // Beta 1.176 (Andrew's standing rule): a loading readout shows a percentage, never a count - the line now reads the same fraction the bar already painted (the sweep still eases the shown value toward the true one, so the percentage sweeps exactly as the count did). The job's COMPLETION line below ('saved X of Y files') is an outcome report, not a readout, and keeps its counts
     bar.classList.add('on'); paint();
     const sweep = setInterval(() => { if (shown < done) { shown = Math.min(done, shown + Math.max(1, Math.ceil((done - shown) / 5))); paint(); } }, 30);
     // Beta 1.96 (audit-2, N-2): the fetch above uses cache 'reload' - a deliberate Download is a reload, not an ordinary request. Before 1.96 the request went through the service worker like any other, mapFetch answered from the very pack being refreshed, and the rebuilt pack stored the pack's own responses back: re-downloading could never refresh anything. The worker honours the mode (mapFetch's reload bypass, src/sw.js).
@@ -703,7 +703,7 @@ $('stDel').addEventListener('click', async () => {
 });
 // ---- About / What's new ----
 const WHATSNEW = { // the curated in-app notes: plain words, LATEST RELEASE ONLY (Beta 1.114, Andrew: the accumulated list cluttered the About pane). A release REPLACES this entry with its own in the same change - it never accumulates; the full history lives in CHANGELOG.md, not the app
-  v: 'Beta 1.175', items: ["Tidier map screen: the extra hint messages under the search bar are gone — only the '<City> loaded' note shows, and it fades away by itself."] };
+  v: 'Beta 1.176', items: ["Loading messages now only appear if a city is taking a while — quick loads just show the 'loaded' note, and a slow load shows its progress as a simple percentage."] };
 function renderAbout() {
   const cur = $('ver').textContent.trim();
   $('wnHead').textContent = "WHAT'S NEW · " + cur; // the header names the LIVE version, read from the title's version element - never a second hard-coded copy that can go stale

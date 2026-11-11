@@ -116,12 +116,26 @@ await sleep(4600); // longer than the confirmation pill's 4 s: a failure must NO
 const F2 = await hintSample();
 ok('P1b (failed load) 4.6 s later the failure is STILL up and actionable - failures never auto-dismiss | ' + JSON.stringify(F2),
   F2.state === 'failed' && F2.on === true && F2.btnShown === true && F2.btnText === 'Retry');
+const gapAt178 = async (w, h) => { await send('Emulation.setDeviceMetricsOverride', { width: w, height: h, deviceScaleFactor: 2, mobile: true }, S); await ev(`crRenderHint()`); return await J(`(() => { const hr = document.getElementById('createHint').getBoundingClientRect(), br = document.getElementById('crHintBtn').getBoundingClientRect(); return { gap: Math.round((br.top - hr.bottom) * 10) / 10, overlap: br.top < hr.bottom - 0.5, pillH: Math.round(hr.height) }; })()`); };
+const GP390 = await gapAt178(390, 844);
+const GP430 = await gapAt178(430, 932);
+await send('Emulation.setDeviceMetricsOverride', { width: 420, height: 900, deviceScaleFactor: 2, mobile: true }, S);
+await ev(`crRenderHint()`);
+ok('P1m (button placement, Beta 1.176) with the failure pill up - its wording wraps to two lines at these widths (pill heights ' + GP390.pillH + ' / ' + GP430.pillH + ' px), the Retry button hangs BELOW the pill BY MEASUREMENT: gap > 0 and zero overlap at 390 px (gap ' + GP390.gap + ' px) and 430 px (gap ' + GP430.gap + ' px) - through 1.175 the fixed offset sat the button on the bottom edge of the pill | ' + JSON.stringify({ GP390, GP430 }),
+  GP390.gap > 0 && GP390.overlap === false && GP430.gap > 0 && GP430.overlap === false);
 await ev(`window.__failGeo = false`);
 await ev(`document.getElementById('crHintBtn').click()`); // the failed state's Retry: resume the grid's failed cells
 const ready1 = await poll(`typeof crPrepState !== 'undefined' && crPrepState === 'ready'`, 30000).catch(() => false);
 const F3 = await J(`({ state: crPrepState, done: crGrid ? crGrid.cells.filter(c => c.state === 'done').length : -1, total: crGrid ? crGrid.cells.length : -1 })`);
 ok('P1c (failed load -> Retry) activating the failed state\'s Retry after the service recovers completes the load - every cell done, state ready | ' + JSON.stringify(F3),
   ready1 === true && F3.done === F3.total && F3.total > 0);
+const F4 = await hintSample();
+ok('P1d (fresh-load confirmation, Beta 1.176) the load the Retry just completed was FRESH (not restored from cache), and its success shows the confirmation anyway - exactly "Vaughan — loaded": no date (there is no saved date to name), no \'tap a road\', no button | ' + JSON.stringify(F4),
+  F4.state === 'ready' && F4.on === true && F4.text === 'Vaughan — loaded' && F4.btnShown === false);
+const dismissedFresh = await poll(`!document.getElementById('createHint').classList.contains('on')`, 9000).catch(() => false);
+const F5 = await hintSample();
+ok('P1e (fresh-load confirmation) the fresh confirmation dismisses ITSELF on the same ~4 s clock as the cached one, while the city stays ready | ' + JSON.stringify(F5),
+  dismissedFresh === true && F5.state === 'ready');
 await exitDiscard();
 
 // ---------- P2 (items 1a+3): the cached re-pick - no Refresh, confirmation pill, self-dismissal ----------
