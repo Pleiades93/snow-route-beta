@@ -190,6 +190,14 @@ sharded suite on `main` as the environment-drift audit.
   - Known limit: the bridge re-evaluates on PR lifecycle and commit events;
     if a review's findings are resolved without a new commit, re-run the
     `codex review gate` job from the Actions tab to refresh the verdict.
+  - Codex reviews a PR when it is opened (or marked ready). After any later
+    push changes the head, summon a fresh review with a `@codex review`
+    comment — the bridge accepts only a verdict naming the current head
+    commit, so an unsummoned push leaves the gate red by design.
+  - Changes to the gate itself (checks.yml, the bridge workflow or script,
+    the protection contexts) ride PRs like everything else. The bridge half
+    takes effect on the NEXT pull request: the running gate always comes
+    from the base branch, never from the PR being judged.
 
 ## 4. Data protection and backward compatibility
 
