@@ -32,7 +32,19 @@ name: checks
 # fails the build if the shard lists ever stop covering every drive in
 # run.mjs exactly once.
 on:
+  # Gate hardening (2026-11-12, Andrew approved): the push trigger is
+  # scoped to main ONLY. A push to a pull-request branch used to fire a
+  # second, competing run for the same head commit: the fixed-name
+  # "tier drives" aggregator below (tier-drives-gate) runs only on
+  # pull_request events, so in the push run it was skipped - and GitHub
+  # counts a skipped required check as passing, whichever event produced
+  # the verdict (PR #13 auto-merged ~10 minutes before its real battery
+  # finished). With branch pushes firing no run at all, the
+  # pull_request run is the ONLY source of the required checks for a PR
+  # head. Push-to-main (post-merge smoke) and workflow_dispatch (the
+  # nightly battery) are unchanged.
   push:
+    branches: [main]
   pull_request:
   workflow_dispatch:
     inputs:

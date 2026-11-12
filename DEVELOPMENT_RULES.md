@@ -13,8 +13,9 @@ turn every discovered bug into a permanent regression test.
    could be affected, and what the rollback is.
 4. **Branch** — work happens on a feature branch created from `main`
    (`github.py ref create-branch <name>`). Never commit feature work directly to
-   `main`. `main` is the known-good line. **Exception (2026-11-05, Andrew —
-   the shipping standard in §3): the visual tier ships directly to `main`.**
+   `main`. `main` is the known-good line. **No exceptions: every change
+   rides the pull-request gate in §3 — the 2026-11-05 direct-to-`main` form
+   and the 2026-11-12 Tier-1 direct-push exception are both retired (see §3).**
 5. **Implement the smallest appropriate change** — no unrelated refactoring in the
    same change. Visual changes must not alter backend behaviour; backend changes
    must not unexpectedly alter the interface.
@@ -93,7 +94,10 @@ fallbacks have been tried.
 
 ## 3. The regression gate
 
-CI (`.github/workflows/checks.yml`) runs on every push to any branch:
+CI (`.github/workflows/checks.yml`) runs on every pull request, on pushes
+to `main`, and on manual dispatch (since the 2026-11-12 gate hardening a
+branch push fires no run at all — the pull-request run is the only source
+of the required checks for a PR head):
 `build-pages.py --check` (parity + integrity + CSP), the shard-coverage guard,
 the service-worker unit suite, and the deterministic browser drives
 (`tests/browser/run.mjs`). Since Beta 1.83 the drives run in parallel
