@@ -239,6 +239,7 @@ sharded suite on `main` as the environment-drift audit.
   that derivation (and the What's New version alignment) on every build, so
   stale bookkeeping fails the build. The CHANGELOG entry and the What's New
   prose stay editorial; everything derivable is derived.
+- **Version rule (2026-11-12, Andrew):** the Beta number bumps only when a change is one Andrew would notice or asked for — a feature, a visual change, a behaviour change, or a fix for something he has seen. That PR carries the bump (version label + CHANGELOG top entry + WHATSNEW must agree). Maintenance merges silently with no bump: bot/sweep fixes, refactors, test and gate work, docs. Every bump's CHANGELOG entry notes 'plus N maintenance PRs since Beta <previous>' so silent merges stay accounted. The exact code at any moment is identified by the main commit SHA, not the version label.
 - Version 1.0 readiness requires, together: all critical workflows passing, zero
   open high-severity defects, existing beta data compatible, backup/restoration
   verified, offline behaviour verified under real disconnected conditions, the
