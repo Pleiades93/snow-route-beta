@@ -330,6 +330,53 @@ const { proc, ev, consoleLog, sleep } = await launchDrive();
 // +/-2 px tolerance untouched. CLEAR's wording rolls to the
 // 1.164 landing with it; its margin at this viewport measures
 // 40.02 px - the halved gap itself.
+// Beta 1.178 (Andrew, 2026-11-12 - variant A, 'Cut', picked from
+// the intro-transition demo): the brand no longer rises into the
+// menu. The splash is UNCHANGED (dark window, the icon's own fade
+// at 1.25s, the title's own slide at 1.5s, the hold, the 2700ms
+// floor - SEQ1-3, S1, S2, GAP and the hold-scoped SIZE judge it
+// exactly as before), and at arm() the whole brand layer cuts to
+// display:none (#brandLayer.cut) in the same synchronous block
+// that shows the menu: the icon + title are at full paint in the
+// hold and absent from the next frame - no fade, no drift, no
+// scale, no travel. The doors menu stands solo in every state
+// (.cut is never removed; the pane round trips below now judge
+// ABSENCE everywhere). The pills fade in on the pane's own .35s
+// fade (no delay, no 14px rise - the 1.153 lowered start retires
+// with the flight).
+// RETIRED with the flight they judged (named here so the roster
+// change is explicit, not silent): F0 (the FLIP's from-value),
+// N1 (first painted frame = hold frame), N2 (painted through the
+// flight), N3 (the easing continuity bound and its bezier
+// machinery), S3/S5 (the rise and its mid-rise samples), SIZE's
+// flight scope, BLOCK1-3 (togetherness in travel), DURATION
+// (the 1.3s band), N4 (the block at its menu pose), SLOT/CLEAR
+// (the landed title's slot and clearance). In their place the
+// CUT family measures the new design's failure properties
+// directly: CUT0 no transform transition ever runs on
+// #brandBlock (the trace's transitionstart/end hooks stay
+// silent); CUT1 no post-flip sample paints the title (and the
+// hold DID paint it - the disappearance is measured against a
+// present brand, not a missing one); CUT2 no post-flip sample
+// shows the brand at partial opacity, icon or title (a fade-out
+// in place of the cut fails here); CUT3 at rest the layer
+// computes display:none under .cut and the block carries no
+// inline transform/transition residue. TITLE1-5 invert: the
+// title is absent on the main pane (TITLE1, where the snow
+// stays present) and never returns across the round trips
+// (TITLE3/TITLE5); SNOW6's snow lifetime is unchanged - its
+// nav waits now key on the canvas's own fade (through 1.177
+// the title's shared .away fade was the settle proxy; the
+// title has no fade left to proxy with). SOLO replaces
+// SLOT/CLEAR's geometry duty for the menu itself: both pills
+// fully in bounds on the brand-free menu. SNOW5's handoff
+// window re-bases from the title's settle (there is none) to
+// the fixed 1300ms after the flip - the span the retired
+// flight used to occupy, and a superset of the menu's own
+// .65s slide-home the twitch would ride - while its pair
+// floor (12) and jump bound (10px, zero violations) stand
+// exactly as they were: the property is unchanged, only the
+// window's anchor moved.
 const R = { checks: [] };
 const ok = (name, cond) => R.checks.push([name, cond === true]);
 
@@ -415,95 +462,32 @@ const flipIdx = trace.findIndex(s => s.shown);
 const pre = flipIdx > 0 ? trace.slice(0, flipIdx) : [];
 const post = flipIdx >= 0 ? trace.slice(flipIdx) : [];
 const hold = pre.length ? pre[pre.length - 1] : null;
-const holdBlk = hold ? { x: hold.bx, y: hold.by, w: hold.bw, h: hold.bh } : null;
 const holdTail = pre.slice(-3);
 const holdSpread = holdTail.length ? Math.max(...holdTail.map(s => Math.abs(s.cy - hold.cy)), ...holdTail.map(s => Math.abs(s.h - hold.h))) : 999;
-const firstPainted = post.find(s => s.painted) || null;
 const lastS = trace.length ? trace[trace.length - 1] : null;
-// settle: first post-flip index from which cy/h never move > 1 px again
-let settleIdx = -1;
-for (let i = post.length - 1; i >= 0; i--) {
-  if (lastS && Math.abs(post[i].cy - lastS.cy) <= 1 && Math.abs(post[i].h - lastS.h) <= 1) settleIdx = i; else break;
-}
-const flight = (hold && settleIdx >= 0) ? [hold, ...post.slice(0, settleIdx + 1)] : [];
-// N3's bound, from the transition's own easing (arm(): 1.3 s
-// cubic-bezier(.65,0,.35,1) since Beta 1.157 - the gentle-start
-// easing Andrew's slower/smoother direction picked; at Beta
-// 1.155 it was .95 s cubic-bezier(.22,1,.36,1). If that easing
-// ever changes, this bound must be re-derived with it). yOfX
-// inverts the bezier. steepest(w) is the most progress the easing
-// makes over ANY window of x-length w - the honest per-pair bound
-// for a velocity-peaking easing.
-const DUR = 1300;
-const bezX = t => 3 * (1 - t) * (1 - t) * t * 0.65 + 3 * (1 - t) * t * t * 0.35 + t * t * t;
-const bezY = t => 3 * (1 - t) * t * t + t * t * t;
-const yOfX = x => { if (x <= 0) return 0; if (x >= 1) return 1; let lo = 0, hi = 1; for (let i = 0; i < 40; i++) { const mid = (lo + hi) / 2; if (bezX(mid) < x) lo = mid; else hi = mid; } return bezY((lo + hi) / 2); };
-const steepest = w => { let m = 0; for (let i = 0; i <= 200; i++) { const x = (i / 200) * Math.max(0, 1 - w); const p = yOfX(Math.min(1, x + w)) - yOfX(x); if (p > m) m = p; } return m; };
-let worstRatio = 0, worstDesc = 'none', rateViol = 0;
-const totCy = (hold && lastS) ? Math.abs(hold.cy - lastS.cy) : 0;
-const totCx = (hold && lastS) ? Math.abs(hold.cx - lastS.cx) : 0;
-for (let i = 1; i < flight.length; i++) {
-  const dt = Math.max(1, flight[i].t - flight[i - 1].t);
-  const win = steepest(Math.min(1, (dt + 17) / DUR));
-  const pairs = [[Math.abs(flight[i].cy - flight[i - 1].cy), totCy], [Math.abs(flight[i].cx - flight[i - 1].cx), totCx]];
-  for (const pr of pairs) {
-    const allowed = Math.max(pr[1], 10) * win + 3;
-    if (pr[0] / allowed > worstRatio) { worstRatio = pr[0] / allowed; worstDesc = pr[0].toFixed(1) + 'px vs allowed ' + allowed.toFixed(1) + 'px over a ' + dt + 'ms pair at t=' + flight[i].t + 'ms'; }
-    if (pr[0] > allowed) rateViol++;
-  }
-}
-const unpainted = (settleIdx >= 0 ? post.slice(0, settleIdx + 1) : post).filter(s => !s.painted);
-const midRise = (hold && lastS) ? post.filter(s => s.cy < hold.cy - 15 && s.cy > lastS.cy + 15) : [];
 const parents = [...new Set(trace.map(s => s.parent))];
 const iparents = [...new Set(trace.map(s => s.ipar))];
 const box = b => b ? ('[x' + b.x + ' y' + b.y + ' w' + b.w + ' h' + b.h + ']') : 'none';
-const dBox = (a, b) => (a && b) ? ('dx' + Math.abs(a.x - b.x).toFixed(1) + ' dy' + Math.abs(a.y - b.y).toFixed(1) + ' dw' + Math.abs(a.w - b.w).toFixed(1) + ' dh' + Math.abs(a.h - b.h).toFixed(1)) : 'n/a';
-const nearBox = (a, b, tol) => !!(a && b && Math.abs(a.x - b.x) <= tol && Math.abs(a.y - b.y) <= tol && Math.abs(a.w - b.w) <= tol && Math.abs(a.h - b.h) <= tol);
-const ctr = b => b ? ('[cx' + (b.x + b.w / 2).toFixed(1) + ' cy' + (b.y + b.h / 2).toFixed(1) + ' h' + b.h + ']') : 'none';
-const dCtr = (a, b) => (a && b) ? ('dcx' + Math.abs((a.x + a.w / 2) - (b.x + b.w / 2)).toFixed(1) + ' dcy' + Math.abs((a.y + a.h / 2) - (b.y + b.h / 2)).toFixed(1) + ' dh' + Math.abs(a.h - b.h).toFixed(1)) : 'n/a';
-const nearCtr = (a, b, tol) => !!(a && b && Math.abs((a.x + a.w / 2) - (b.x + b.w / 2)) <= tol && Math.abs((a.y + a.h / 2) - (b.y + b.h / 2)) <= tol && Math.abs(a.h - b.h) <= tol);
-
 ok('S1 the title is SETTLED in the splash hold before the flip (last 3 hold samples agree within 1.5px) | hold box ' + box(hold) + ' spread ' + holdSpread.toFixed(1) + 'px over ' + pre.length + ' hold samples',
   pre.length >= 3 && holdSpread <= 1.5);
-ok('F0 the transition FROM-value (rect at the BLOCK\'s transitionstart - Beta 1.162: the transform rides #brandBlock now) equals the block\'s splash hold frame (centre + height) within 3px | from ' + ctr(fromBox) + ' vs hold block ' + ctr(holdBlk) + ' -> ' + dCtr(fromBox, holdBlk),
-  nearCtr(fromBox, holdBlk, 3));
+ok('CUT0 NO TRANSITION (Beta 1.178): no transform transition ever runs on #brandBlock - the trace hooks for transitionstart/transitionend on the block never fired (from ' + JSON.stringify(fromBox) + ', to ' + JSON.stringify(toBox) + '); the 1.162-1.177 FLIP is gone, so there is no flight to start or end',
+  fromBox === null && toBox === null);
 ok('S2 ONE brand block lives through both scenes: the title\'s parent NEVER changes across all ' + trace.length + ' samples, and neither does the icon\'s (Beta 1.162: both are #brandBlock\'s children from the first frame to the settle - no reparent, no swap, for either) | title parents seen: ' + JSON.stringify(parents) + ', icon parents seen: ' + JSON.stringify(iparents) + ', end mark ' + (lastS ? lastS.mark : 'none'),
   trace.length > 10 && parents.length === 1 && parents[0] === 'brandBlock' && iparents.length === 1 && iparents[0] === 'brandBlock' && !!lastS && lastS.mark === 'same-node');
-ok('N1 START IDENTITY: the first PAINTED frame after the flip is the splash hold frame (<= 2px on centre-x, centre-y, height) | first painted ' + ctr(firstPainted) + ' at flip+' + ((firstPainted && flipIdx >= 0) ? (firstPainted.t - trace[flipIdx].t) : -1) + 'ms vs hold ' + ctr(hold) + ' -> ' + dCtr(firstPainted, hold),
-  nearCtr(firstPainted, hold, 2));
-ok('N2 the title NEVER disappears mid-flight: every sample from the flip to settle is painted (chain visible, effective opacity >= .99) | unpainted samples: ' + unpainted.length + (unpainted.length ? ' (first at flip+' + (unpainted[0].t - trace[flipIdx].t) + 'ms, last at flip+' + (unpainted[unpainted.length - 1].t - trace[flipIdx].t) + 'ms, min effective opacity ' + Math.min(...unpainted.map(s => s.op)) + ')' : ''),
-  post.length > 0 && settleIdx >= 0 && unpainted.length === 0);
-ok('N3 CONTINUITY: no teleport across the seam - no pair from the last hold sample to settle travels further than the easing itself can carry it in that window (steepest-window bound + one frame of anchor offset) | worst pair: ' + worstDesc + ', violating pairs: ' + rateViol,
-  flight.length > 2 && rateViol === 0);
-ok('S3 the title RISES into the menu position: centre ' + (hold ? hold.cy : -1) + 'px -> ' + (lastS ? lastS.cy : -1) + 'px (a rise of ' + ((hold && lastS) ? (hold.cy - lastS.cy).toFixed(1) : 'n/a') + 'px)',
-  !!hold && !!lastS && (hold.cy - lastS.cy) >= 60);
-const sizeDev = (hold && flight.length) ? Math.max(...flight.map(s => Math.abs(s.h - hold.h))) : 999;
-ok('SIZE the title NEVER changes size (Beta 1.157: one size from splash to menu - the 1.153-1.156 shrink is retired): height ' + (hold ? hold.h : -1) + 'px at the hold, worst deviation ' + sizeDev.toFixed(1) + 'px across ' + flight.length + ' flight samples, ' + (lastS ? lastS.h : -1) + 'px settled',
-  !!hold && !!lastS && sizeDev <= 2);
+const paintedPost = post.filter(sv => sv.painted).length;
+ok('CUT1 THE CUT (Beta 1.178): the brand IS painted in the hold (last hold sample painted: ' + !!(hold && hold.painted) + ') and in NO frame after the flip - ' + paintedPost + ' painted title samples among ' + post.length + ' post-flip samples; the icon + title do not travel into the menu, ride a parent ramp, or reappear - they are simply gone from the flip frame on',
+  !!hold && hold.painted === true && post.length > 0 && paintedPost === 0);
+const fadeT = post.filter(sv => sv.vis && sv.op > 0.01 && sv.op < 0.99).length;
+const fadeI = post.filter(sv => sv.iop > 0.01 && sv.iop < 0.99).length;
+ok('CUT2 NO FADE (Beta 1.178): no post-flip sample shows the brand at partial opacity - title fade frames: ' + fadeT + ', icon fade frames: ' + fadeI + ' (an opacity fade-out in place of the cut would pass through such frames on its way down; the display cut passes through none)',
+  post.length > 0 && fadeT === 0 && fadeI === 0);
+const sizeDev = (hold && pre.length) ? Math.max(...pre.map(sv => Math.abs(sv.h - hold.h))) : 999;
+ok('SIZE the title NEVER changes size during the splash (Beta 1.157: one size throughout the only scene the title now lives in - the 1.153-1.156 shrink stays retired): height ' + (hold ? hold.h : -1) + 'px at the hold, worst deviation ' + sizeDev.toFixed(1) + 'px across ' + pre.length + ' hold samples',
+  !!hold && sizeDev <= 2);
 const holdGap = hold ? (hold.y - (hold.iy + hold.ih)) : -999;
 ok('GAP the splash hold restores the PRE-UPDATE icon-to-title spacing: icon box y' + (hold ? hold.iy : -1) + ' h' + (hold ? hold.ih : -1) + ', title top y' + (hold ? hold.y : -1) + ' -> gap ' + holdGap.toFixed(1) + 'px (the original was 26px; Beta 1.155 measured an 8px overlap)',
   !!hold && Math.abs(holdGap - 26) <= 2 && Math.abs(hold.ih - 168) <= 2);
-// BLOCK1-3 (Beta 1.162) replace OVERLAP: the 1.157 check
-// guarded a separation that existed because the icon faded
-// while the title rose past it. The block makes the pair one
-// rigid unit, so the guarded properties are now togetherness
-// itself - gap, opacity, and straightness, measured per frame.
-const gapWorst = flight.length ? Math.max(...flight.map(s => Math.abs((s.y - (s.iy + s.ih)) - 26))) : 999;
-ok('BLOCK1 TOGETHER: the icon-to-title gap NEVER changes mid-rise - across all ' + flight.length + ' flight samples (the hold sample through the settle) the gap stays at 26px with a worst deviation of ' + gapWorst.toFixed(1) + 'px (tolerance 2px: one rigid block - no separation, no compression, at any point of the travel)',
-  flight.length > 2 && gapWorst <= 2);
-const riseSamples = settleIdx >= 0 ? post.slice(0, settleIdx + 1) : post;
-const fadeBad = riseSamples.filter(sv => !(sv.iop >= 0.99 && sv.op >= 0.99));
-ok('BLOCK2 NO FADE: the icon does NOT fade away at the flip any more, and neither does the title - every one of the ' + riseSamples.length + ' samples from the flip to the settle has BOTH at full effective opacity (>= .99); samples below full: ' + fadeBad.length + (fadeBad.length ? ' (worst icon ' + Math.min(...fadeBad.map(sv => sv.iop)).toFixed(3) + ', worst title ' + Math.min(...fadeBad.map(sv => sv.op)).toFixed(3) + ')' : ''),
-  riseSamples.length > 0 && settleIdx >= 0 && fadeBad.length === 0);
-const bcxSpread = flight.length ? (Math.max(...flight.map(s => s.bcx)) - Math.min(...flight.map(s => s.bcx))) : 999;
-ok('BLOCK3 NO SIDEWAYS DRIFT: the block rises STRAIGHT - its horizontal centre moves at most ' + bcxSpread.toFixed(1) + 'px across all ' + flight.length + ' flight samples (tolerance 2px; the FLIP is translate-only and both poses are viewport-centred, so the invert\'s dx is ~0 by construction)',
-  flight.length > 2 && bcxSpread <= 2);
-const durMs = (fromBox && toBox) ? (toBox.t - fromBox.t) : -1;
-ok('DURATION the rise runs at the Beta 1.157 pace (Beta 1.162: measured on #brandBlock, the element carrying the transform): transitionstart -> transitionend ' + durMs + 'ms (band 1200-1450ms for the 1.3s flip; Beta 1.155 ran 950ms)',
-  durMs >= 1200 && durMs <= 1450);
-ok('S5 the title is caught MID-RISE (samples strictly between the splash centre and the landing - it travels, it does not jump-cut) | mid-rise samples: ' + midRise.length,
-  midRise.length >= 1);
-ok('S7 the menu buttons arrive beneath it: at settle the main pane is fully opaque with the Choose button at full height | ' + JSON.stringify({ paneOp: lastS ? lastS.paneOp : 'none', btnH: lastS ? lastS.btnH : -1 }),
+ok('S7 the menu buttons arrive: at settle the main pane is fully opaque with the Choose button at full height | ' + JSON.stringify({ paneOp: lastS ? lastS.paneOp : 'none', btnH: lastS ? lastS.btnH : -1 }),
   !!lastS && lastS.paneOp === '1' && lastS.btnH > 30);
 ok('S8 the boot gate flips at the Beta 1.160 floor (flip at ' + (flipIdx >= 0 ? trace[flipIdx].t : -1) + 'ms on the page clock; arm() holds a 2700ms splash floor on the animated path - the flip lands after the icon fade-in, the title slide-in and the hold (Beta 1.163: the original separate arrivals restored - the icon at 1.25s, the title at 1.5s, as through 1.161; Beta 1.162\'s one shared arrival stood for one release), so it cannot precede 2400ms on this clock - and the 6000ms escape still caps a stalled boot well under the 12000ms ceiling)',
   flipIdx >= 0 && trace[flipIdx].t >= 2400 && trace[flipIdx].t < 12000);
@@ -520,37 +504,23 @@ const titleIn = trace.filter(s => s.t >= 2300 && flipT2 > 0 && s.t < flipT2 && s
 ok('SEQ3 the title is fully in and settled in the hold before the flip (Beta 1.163: its own 1.5s slide-in is restored - splashSlide\'s opacity completes at ~1.85s and the slide settles at 2.15s, so this 2.3s window judges the settled hold exactly as it did through 1.161; Beta 1.162\'s shared-arrival note stood for one release; S1 proves the settle at the flip): ' + titleIn.length + ' trace samples in [2300ms, flip) with title effective opacity >= .99' + (titleIn.length ? ' (first at ' + titleIn[0].t + 'ms)' : ''),
   titleIn.length >= 1);
 
-// N4: the resting box is the CSS pose itself - clearing any
-// inline transform must not move the block (Beta 1.162: the
-// transform rides the block; SLOT below pins the title inside
-// it to its slot).
-let restA = null, restB = null;
+// CUT3 + SOLO (Beta 1.178) replace N4/SLOT/CLEAR: there is no
+// resting pose to pin and no landed title to clear the button -
+// the resting facts are the layer's cut state and the pills'
+// own geometry on the brand-free menu.
+let restCut = null;
 try {
-  restA = await ev(`(() => { const ti = document.getElementById('brandBlock'); if (!ti) return ''; const r = ti.getBoundingClientRect(); return JSON.stringify({ x: r.left, y: r.top, w: r.width, h: r.height }); })()`).then(x => typeof x === 'string' && x ? JSON.parse(x) : null);
-  restB = await ev(`(() => { const ti = document.getElementById('brandBlock'); if (!ti) return ''; const keepT = ti.style.transition, keepX = ti.style.transform; ti.style.transition = 'none'; ti.style.transform = 'none'; const r = ti.getBoundingClientRect(); const out = JSON.stringify({ x: r.left, y: r.top, w: r.width, h: r.height }); ti.style.transition = keepT; ti.style.transform = keepX; return out; })()`).then(x => typeof x === 'string' && x ? JSON.parse(x) : null);
-} catch (e) { restA = null; restB = null; }
-ok('N4 at rest the BLOCK sits exactly on its menu pose: the rect with inline transform forced clear equals the settled rect (<= 1.5px) | settled ' + box(restA) + ' vs cleared ' + box(restB) + ' -> ' + dBox(restA, restB),
-  nearBox(restA, restB, 1.5));
-
-// SLOT + CLEAR (Beta 1.158): the landed slot is the 21% line
-// + an offset Andrew picks (1.158: +48; 1.159: +72; 1.163:
-// +96 - 24px below +72 on his landing-samples pick), and the
-// landed title must clear the first button - the buttons
-// never moved. Beta 1.164 replaced the pose itself (the
-// block's top calc(35.49% - 209.42px), Andrew's halved-gap
-// rule; the title rides 215px inside the block), putting the
-// landed centre on the 0.3549H + 5.58px line; SLOT re-pinned
-// to that measured line 2026-11-10 (see the header).
-let slot = null;
+  restCut = await ev(`(() => { const bl = document.getElementById('brandLayer'); const bb = document.getElementById('brandBlock'); if (!bl || !bb) return ''; const cs = getComputedStyle(bl); return JSON.stringify({ cut: bl.classList.contains('cut'), disp: cs.display, tx: bb.style.transform, tr: bb.style.transition }); })()`).then(x => typeof x === 'string' && x ? JSON.parse(x) : null);
+} catch (e) { restCut = null; }
+ok('CUT3 AT REST the brand layer stands cut: class .cut present, computed display ' + (restCut ? restCut.disp : 'n/a') + ', and #brandBlock carries no inline transform (' + JSON.stringify(restCut ? restCut.tx : null) + ') or transition (' + JSON.stringify(restCut ? restCut.tr : null) + ') residue - no leftover inline state from a flight that no longer exists',
+  !!restCut && restCut.cut === true && restCut.disp === 'none' && restCut.tx === '' && restCut.tr === '');
+let solo = null;
 try {
-  slot = await ev(`(() => { const ti = document.getElementById('splashTitle'); const btn = document.getElementById('rmChoose'); if (!ti || !btn) return ''; const tr = ti.getBoundingClientRect(); const br = btn.getBoundingClientRect(); return JSON.stringify({ cy: tr.top + tr.height / 2, tBot: tr.bottom, btnTop: br.top, ih: window.innerHeight }); })()`).then(x => typeof x === 'string' && x ? JSON.parse(x) : null);
-} catch (e) { slot = null; }
-const slotExp = slot ? (0.3549 * slot.ih + 5.58) : -1;
-ok('SLOT the landed title sits on the PICKED slot (Beta 1.164 landing, re-pinned 2026-11-10 on Andrew\'s approval: the block pose calc(35.49% - 209.42px) plus the title\'s 215px ride inside the block puts the settled centre on the 0.3549H + 5.58px line - his halved-gap landing, the start and the buttons unmoved; the 1.163 pin (the 21% line + 96) stood stale through 1.164-1.167 and failed by exactly 40.0px at this viewport): settled centre-y ' + (slot ? slot.cy.toFixed(1) : 'n/a') + 'px vs expected ' + slotExp.toFixed(1) + 'px (0.3549 x viewport height ' + (slot ? slot.ih : -1) + ' + 5.58), off by ' + (slot ? Math.abs(slot.cy - slotExp).toFixed(1) : 'n/a') + 'px',
-  !!slot && Math.abs(slot.cy - slotExp) <= 2);
-const clearMargin = slot ? (slot.btnTop - slot.tBot) : -999;
-ok('CLEAR the landed title still clears the first menu button at the 1.164 landing (the halved-gap pose, re-pinned with SLOT 2026-11-10; the buttons never moved): title bottom ' + (slot ? slot.tBot.toFixed(1) : 'n/a') + 'px, Choose button top ' + (slot ? slot.btnTop.toFixed(1) : 'n/a') + 'px -> margin ' + clearMargin.toFixed(1) + 'px (must be > 0 - the safeguard Andrew was told: if the lower landing broke this, the ship stops rather than forcing it)',
-  !!slot && clearMargin > 0);
+  solo = await ev(`(() => { const meas = id => { const b = document.getElementById(id); if (!b) return null; const r = b.getBoundingClientRect(); return { l: Math.round(r.left * 10) / 10, t: Math.round(r.top * 10) / 10, r: Math.round(r.right * 10) / 10, b: Math.round(r.bottom * 10) / 10 }; }; return JSON.stringify({ a: meas('rmChoose'), b: meas('rmCreate'), iw: window.innerWidth, ih: window.innerHeight }); })()`).then(x => typeof x === 'string' && x ? JSON.parse(x) : null);
+} catch (e) { solo = null; }
+const inBounds = r => !!r && r.l >= -0.5 && r.t >= -0.5 && r.r <= solo.iw + 0.5 && r.b <= solo.ih + 0.5 && r.r > r.l && r.b > r.t;
+ok('SOLO the two pills stand alone and FULLY IN BOUNDS on the brand-free menu (the design-QA bound for the touched state): Choose ' + JSON.stringify(solo ? solo.a : null) + ', Create ' + JSON.stringify(solo ? solo.b : null) + ' inside the ' + (solo ? solo.iw : 'n/a') + 'x' + (solo ? solo.ih : 'n/a') + ' viewport',
+  !!solo && inBounds(solo.a) && inBounds(solo.b));
 
 // PILLS (Beta 1.158): the boot menu's two pills wear the
 // unified blue-menu treatment from the examples mock -
@@ -598,7 +568,7 @@ let snDrift = 0;
 }
 ok('SNOW4 the snow layer is ONE element that never moves: across all ' + snSamples.length + ' trace samples the snow canvases are ' + JSON.stringify(snIds) + ' (counts per sample ' + JSON.stringify(snCounts) + ', parents ' + JSON.stringify(snParents) + ') and no snow canvas rect drifts more than ' + snDrift.toFixed(1) + 'px (tolerance 1px; the 1.158 build fails this twice over - two canvases, and #snowCvM\'s rect rides the menu\'s 26px entrance slide: the twitch Andrew felt)',
   snSamples.length > 10 && snCounts.length === 1 && snCounts[0] === 1 && snIds.length === 1 && snIds[0] === 'snowCv' && snParents.length === 1 && snDrift <= 1);
-const snWin = (flipIdx >= 0 && settleIdx >= 0) ? post.slice(0, settleIdx + 1) : [];
+const snWin = flipIdx >= 0 ? post.filter(sv => sv.t - trace[flipIdx].t <= 1300) : []; // Beta 1.178: the window is the fixed 1300ms after the flip (see the header) - the brand has no settle to end it
 let snPairs = 0, snSkip = 0, snViol = 0, snWorst = 0;
 for (let i = 1; i < snWin.length; i++) {
   const a = snWin[i - 1], b = snWin[i];
@@ -610,7 +580,7 @@ for (let i = 1; i < snWin.length; i++) {
   if (d > snWorst) snWorst = d;
   if (d > 10) snViol++;
 }
-ok('SNOW5 NO TWITCH: the painted snow field never jumps sideways across the splash-to-menu handoff - the field centroid (pixel centroid of the one canvas, screen coordinates) moves at most ' + snWorst.toFixed(1) + 'px between consecutive trace samples in the flip-to-settle window (bound 10px per pair; ' + snPairs + ' pairs judged, ' + snSkip + ' starved pairs over 120ms excluded, ' + snViol + ' violations; legitimate motion is sway at <= 7.6px/s per flake plus <= ~5px respawn steps)',
+ok('SNOW5 NO TWITCH: the painted snow field never jumps sideways across the splash-to-menu handoff - the field centroid (pixel centroid of the one canvas, screen coordinates) moves at most ' + snWorst.toFixed(1) + 'px between consecutive trace samples in the 1300ms after the flip (bound 10px per pair; ' + snPairs + ' pairs judged, ' + snSkip + ' starved pairs over 120ms excluded, ' + snViol + ' violations; legitimate motion is sway at <= 7.6px/s per flake plus <= ~5px respawn steps)',
   snPairs >= 12 && snViol === 0);
 const snIh = snowA ? snowA.ih : -1;
 let snTopWorst = -1, snBotWorst = -1, snCoverN = 0;
@@ -664,12 +634,12 @@ try {
   r.tMain0 = await effOp('splashTitle');
   r.cvMain0 = await effOp('snowCv');
   await clickId('rmChoose');
-  r.toList = await waitFor(async () => (await paneOn('rmListPane')) && (await effOp('splashTitle')) <= 0.05, 3000);
+  r.toList = await waitFor(async () => (await paneOn('rmListPane')) && (await effOp('splashTitle')) <= 0.05 && (await effOp('snowCv')) <= 0.05, 3000); // Beta 1.178: the canvas term is new - through 1.177 the title's own .away fade (same .3s, same showRmPane call) was the settle proxy for the canvas read below; the title is display:none now and cannot proxy, so the wait keys on the canvas itself
   r.tList = await effOp('splashTitle');
   r.cvList = await effOp('snowCv');
   r.rows = await ev(`(() => { const meas = row => { const rr = row.getBoundingClientRect(); const out = { rcx: rr.left + rr.width / 2 }; const nm = row.querySelector('.routeName'), ar = row.querySelector('.routeArea'); if (nm) { const g = document.createRange(); g.selectNodeContents(nm); const t = g.getBoundingClientRect(); out.nOff = Math.round(Math.abs(t.left + t.width / 2 - out.rcx) * 10) / 10; const cs = getComputedStyle(nm); out.nSize = cs.fontSize; out.nWeight = cs.fontWeight; } if (ar) { const g2 = document.createRange(); g2.selectNodeContents(ar); const t2 = g2.getBoundingClientRect(); out.aOff = Math.round(Math.abs(t2.left + t2.width / 2 - out.rcx) * 10) / 10; } const rcs = getComputedStyle(row); out.bg = rcs.backgroundColor; out.sh = rcs.boxShadow; out.rad = rcs.borderRadius; out.ff = rcs.fontFamily; return out; }; const rows = [...document.querySelectorAll('#rmRoutes .routeRow')]; const btn = document.getElementById('rmCreate'); const bcs = btn ? getComputedStyle(btn) : null; return JSON.stringify({ rows: rows.map(meas), btnFf: bcs ? bcs.fontFamily : '', btnSize: bcs ? bcs.fontSize : '' }); })()`).then(x => typeof x === 'string' && x ? JSON.parse(x) : null);
   await clickId('rmBack');
-  r.toMain1 = await waitFor(async () => (await paneOn('rmMain')) && (await effOp('splashTitle')) >= 0.99, 3000);
+  r.toMain1 = await waitFor(async () => (await paneOn('rmMain')) && (await effOp('snowCv')) >= 0.99, 3000); // Beta 1.178: the wait no longer asks the title back - it never returns (TITLE3 asserts its absence); it keys on the snow's return fade instead, which the cvMain1 read below judges
   r.tMain1 = await effOp('splashTitle');
   r.cvMain1 = await effOp('snowCv');
   await clickId('rmCreate');
@@ -677,27 +647,28 @@ try {
   await clickId('crDoorList');
   r.toCity = await waitFor(() => paneOn('rmCityListPane'), 3000);
   await waitFor(() => ev(`!!document.querySelector('#crCityList .rmNote') || document.querySelectorAll('#crCityList .routeRow').length > 1`).then(x => x === true).catch(() => false), 6000);
+  await waitFor(async () => (await effOp('snowCv')) <= 0.05, 3000); // Beta 1.178: settle the canvas fade before the city-list read (same proxy loss as toList)
   r.cityRow = await ev(`(() => { const box = document.getElementById('crCityList'); if (!box || typeof routeRowShell !== 'function') return null; const row = routeRowShell('button', 'Mississauga', '12,345 streets · ready to load', { chevron: true }); box.appendChild(row); const rr = row.getBoundingClientRect(); const rcx = rr.left + rr.width / 2; const nm = row.querySelector('.routeName'), ar = row.querySelector('.routeArea'); const g = document.createRange(); g.selectNodeContents(nm); const t = g.getBoundingClientRect(); const g2 = document.createRange(); g2.selectNodeContents(ar); const t2 = g2.getBoundingClientRect(); const cs = getComputedStyle(nm); return JSON.stringify({ nOff: Math.round(Math.abs(t.left + t.width / 2 - rcx) * 10) / 10, aOff: Math.round(Math.abs(t2.left + t2.width / 2 - rcx) * 10) / 10, nSize: cs.fontSize }); })()`).then(x => typeof x === 'string' && x ? JSON.parse(x) : null);
   r.tCity = await effOp('splashTitle');
   r.cvCity = await effOp('snowCv');
   await clickId('crCityListBack');
   await waitFor(() => paneOn('rmCreatePane'), 3000);
   await clickId('rmBack2');
-  r.toMain2 = await waitFor(async () => (await paneOn('rmMain')) && (await effOp('splashTitle')) >= 0.99, 3000);
+  r.toMain2 = await waitFor(async () => (await paneOn('rmMain')) && (await effOp('snowCv')) >= 0.99, 3000); // Beta 1.178: same - TITLE5 asserts the absence
   r.tMain2 = await effOp('splashTitle');
   nav = r;
 } catch (e) { nav = null; }
-ok('TITLE1 the title is PRESENT on the main pane (effective opacity ' + (nav ? nav.tMain0 : 'n/a') + ') and the snow with it (canvas effective opacity ' + (nav ? nav.cvMain0 : 'n/a') + ')',
-  !!nav && nav.tMain0 >= 0.99 && nav.cvMain0 >= 0.99);
-ok('TITLE2 the title is GONE on the route list after tapping Choose (effective opacity ' + (nav ? nav.tList : 'n/a') + ', reached the pane: ' + (nav ? nav.toList : 'n/a') + ') - Andrew\'s rule: it lives only in the main menu',
+ok('TITLE1 (Beta 1.178, inverted) the title is ABSENT on the main pane itself now (effective opacity ' + (nav ? nav.tMain0 : 'n/a') + ') - the doors stand solo from the first menu frame - while the snow stays present with the menu (canvas effective opacity ' + (nav ? nav.cvMain0 : 'n/a') + '): the cut took the brand only, never the snow',
+  !!nav && nav.tMain0 <= 0.05 && nav.cvMain0 >= 0.99);
+ok('TITLE2 the title is GONE on the route list after tapping Choose (effective opacity ' + (nav ? nav.tList : 'n/a') + ', reached the pane: ' + (nav ? nav.toList : 'n/a') + ') - through 1.177 it lived only in the main menu; at 1.178 it lives only in the splash',
   !!nav && nav.toList && nav.tList <= 0.05);
-ok('TITLE3 the title RETURNS on navigating back to the main pane (effective opacity ' + (nav ? nav.tMain1 : 'n/a') + ')',
-  !!nav && nav.toMain1 && nav.tMain1 >= 0.99);
+ok('TITLE3 (Beta 1.178, inverted) the title does NOT return on navigating back to the main pane (effective opacity ' + (nav ? nav.tMain1 : 'n/a') + ') - through 1.177 the landed brand rode the main pane; the cut is for the whole session',
+  !!nav && nav.toMain1 && nav.tMain1 <= 0.05);
 ok('TITLE4 the title is gone on the create doors AND the city list too (create pane reached: ' + (nav ? nav.toCreate : 'n/a') + '; city list opacity ' + (nav ? nav.tCity : 'n/a') + ')',
   !!nav && nav.toCreate && nav.toCity && nav.tCity <= 0.05);
-ok('TITLE5 the title returns again at the main pane after the full create-side round trip (effective opacity ' + (nav ? nav.tMain2 : 'n/a') + ')',
-  !!nav && nav.toMain2 && nav.tMain2 >= 0.99);
-ok('SNOW6 the snow hides in the sub-panes alongside the title and returns with it: canvas effective opacity on the route list ' + (nav ? nav.cvList : 'n/a') + ', on the city list ' + (nav ? nav.cvCity : 'n/a') + ', back at the main pane ' + (nav ? nav.cvMain1 : 'n/a'),
+ok('TITLE5 (Beta 1.178, inverted) the title is still absent at the main pane after the full create-side round trip (effective opacity ' + (nav ? nav.tMain2 : 'n/a') + ')',
+  !!nav && nav.toMain2 && nav.tMain2 <= 0.05);
+ok('SNOW6 the snow hides in the sub-panes and returns at the main pane (through 1.177 it hid alongside the title; the title is gone everywhere now, the snow lifetime itself is unchanged): canvas effective opacity on the route list ' + (nav ? nav.cvList : 'n/a') + ', on the city list ' + (nav ? nav.cvCity : 'n/a') + ', back at the main pane ' + (nav ? nav.cvMain1 : 'n/a'),
   !!nav && nav.cvList <= 0.05 && nav.cvCity <= 0.05 && nav.cvMain1 >= 0.99);
 const rowList = nav && nav.rows && Array.isArray(nav.rows.rows) ? nav.rows.rows : [];
 const rowNWorst = rowList.length ? Math.max(...rowList.map(x => (typeof x.nOff === 'number' ? x.nOff : 999))) : 999;
