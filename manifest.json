@@ -1,7 +1,7 @@
 {
  "name": "Snow Route Beta",
  "short_name": "Snow Route Beta",
- "description": "Snow Route driveway-clearing tracker - Route 5W, Vaughan ON.",
+ "description": "Snow Route is a snow-clearing route tracker for marking street sections and sides complete, following progress and pace, working offline, and using on-device backups.",
  "start_url": ".",
  "scope": ".",
  "display": "standalone",

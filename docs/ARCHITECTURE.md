@@ -2,15 +2,9 @@
 
 ## Overview
 
-Snow Route Beta is a single-page app for one operator clearing driveway
-windrows on both sides of a route's streets. It is built as a multi-route
-system: routes are data packs with per-route storage, and Route 5W in
-Vaughan, Ontario (34 streets) is the pack that ships today — the app
-itself is not tied to any one area. It is a
-from-scratch MapLibre GL application (no Leaflet): the vector basemap IS the
-map, and the tracker's own roads are painted as GeoJSON layers inserted into
-the basemap's road stack. There is no server and no account; all state lives
-on the device.
+Snow Route is a mobile-first, single-page web app for tracking snow-clearing route work. An operator can choose an existing route or create a new one, mark street sections and each side of a street as work is completed, and review that route’s progress, pace, notes, and previous work sessions. Each route keeps separate stored state.
+
+Snow Route has no server or account system. Its data is stored on the device, with exportable backups. It is a from-scratch MapLibre GL application: the vector basemap is the map, and route streets are painted as GeoJSON layers inserted into the basemap’s road stack. GPS follow, day and night styles, and downloadable offline maps support use in the field.
 
 The canonical source is assembled, not hand-written as one file. The
 parts live in the repo's `parts/` folder (Beta 1.94, audit F-02 — they
