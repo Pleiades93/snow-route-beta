@@ -198,6 +198,15 @@ sharded suite on `main` as the environment-drift audit.
     the protection contexts) ride PRs like everything else. The bridge half
     takes effect on the NEXT pull request: the running gate always comes
     from the base branch, never from the PR being judged.
+  - **No direct-push lane (2026-11-12, Andrew — the Tier-1 exception is
+    retired the day it was decided).** The Tier-1 exception adopted on
+    2026-11-12 (small visual changes — CSS, images, icons, moving or
+    adding a menu, button or icon — shipping direct to `main` on
+    mechanical integrity alone) is reversed: GitHub refused the first
+    direct ref update under this protection (HTTP 422 — required status
+    checks expected; with enforce_admins on, protection binds the push
+    route too, not just merges). As of 2026-11-12 every change rides this
+    gate, Tier-1 small visuals included.
 
 ## 4. Data protection and backward compatibility
 
