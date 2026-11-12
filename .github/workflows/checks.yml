@@ -278,3 +278,38 @@ jobs:
           python3 -m http.server 8077 --directory . >/dev/null 2>&1 &
           sleep 1
           node tests/browser/e2e-offline.mjs
+  tier-drives-gate:
+    # Audit gate (2026-11-11, Andrew approved): fixed-name aggregate of the
+    # drive gates. The tier job's own check name carries a variable tier
+    # suffix ("tier drives (A)"), so branch protection cannot require it.
+    # This job reports the drive-gate verdict under ONE fixed name -
+    # "tier drives" - on pull requests: it passes only when the drive gate
+    # that ran for the selected tier passed (tier-drives for Tier A/B, the
+    # browser-tests shards for Tier C), and fails when either drive job
+    # failed or was cancelled, or when neither ran (plan anomaly - fail
+    # closed). On push / workflow_dispatch events it is skipped by
+    # condition, so main pushes (browser-smoke reports there) and the
+    # nightly battery (shards report there) are completely untouched.
+    name: tier drives
+    needs: [tier-drives, browser-tests]
+    if: always() && github.event_name == 'pull_request'
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - name: Aggregate drive-gate verdict
+        env:
+          TIER_RESULT: ${{ needs.tier-drives.result }}
+          SHARDS_RESULT: ${{ needs.browser-tests.result }}
+        run: |
+          echo "tier-drives result: ${TIER_RESULT}"
+          echo "browser-tests (Tier C shards) result: ${SHARDS_RESULT}"
+          if [ "${TIER_RESULT}" = "failure" ] || [ "${TIER_RESULT}" = "cancelled" ] || [ "${SHARDS_RESULT}" = "failure" ] || [ "${SHARDS_RESULT}" = "cancelled" ]; then
+            echo "::error::A drive gate failed or was cancelled."
+            exit 1
+          fi
+          if [ "${TIER_RESULT}" = "success" ] || [ "${SHARDS_RESULT}" = "success" ]; then
+            echo "Drive gate passed."
+            exit 0
+          fi
+          echo "::error::Neither drive gate ran on this pull request - failing closed."
+          exit 1
