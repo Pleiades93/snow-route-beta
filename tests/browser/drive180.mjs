@@ -377,6 +377,26 @@ const { proc, ev, consoleLog, sleep } = await launchDrive();
 // floor (12) and jump bound (10px, zero violations) stand
 // exactly as they were: the property is unchanged, only the
 // window's anchor moved.
+// Beta 1.180 (Andrew, 2026-11-12): the splash title is REMOVED.
+// The icon is the only brand element: #splashTitle and its slide-in
+// are gone, and the brand layer's existing centring places the
+// icon's 168px box at the splash viewport centre. The trace below
+// therefore samples #splashIcon as the sole brand subject (its rect
+// rides the trace's x/y/w/h/cx/cy fields, exactly where the title's
+// rect used to ride). Judged now: SEQ1's dark window is the icon's
+// alone; SEQ2 keeps the icon's own 1.25s fade; CENTRE measures the
+// hold icon's rendered centre against the viewport centre; HOLD1
+// replaces SEQ3 (the settled title slide it judged no longer
+// exists) with the icon fully in AND centred from 2.3s to the flip;
+// ICONSIZE replaces SIZE+GAP (both were title geometry - there is
+// no gap with no second element); CUT1/CUT2 judge the icon's cut;
+// the TITLE round-trip family becomes the BRAND family, read on
+// #brandLayer itself (the element is absent in every menu state,
+// as 1.178 already made it). The boot tail's re-anchored
+// animationend trigger (icon fade, recalibrated breath, same
+// ~2.3s landing, 2.6s fallback still fallback-only) is judged by
+// drive132's S5 window. Everything else - snow, pills, rows, the
+// 2700ms floor in S8, the cut mechanics - stands as at 1.178.
 const R = { checks: [] };
 const ok = (name, cond) => R.checks.push([name, cond === true]);
 
@@ -387,7 +407,7 @@ await ev(`(() => {
   window.__splashFrom = null;
   var R2 = function (n) { return Math.round(n * 100) / 100; };
   var step = function () {
-    var ti = document.getElementById('splashTitle');
+    var ti = document.getElementById('splashIcon'); // Beta 1.180: the icon is the sole brand subject (see header)
     var rm = document.getElementById('routeMenu');
     if (ti) {
       if (!ti.__mark) ti.__mark = 'same-node';
@@ -423,7 +443,7 @@ await ev(`(() => {
           if (swsum > 0) { var srect = scv.getBoundingClientRect(); if (srect.width > 0) snCx = R2(srect.left + (sxsum / swsum) / 105 * srect.width); }
         }
       } catch (e) { snArr = []; snCx = -1; }
-      window.__splashTrace.push({ t: Math.round(performance.now()), x: R2(r.left), y: R2(r.top), w: R2(r.width), h: R2(r.height), cx: R2(r.left + r.width / 2), cy: R2(r.top + r.height / 2), parent: ti.parentElement ? ti.parentElement.id : '', mark: ti.__mark || '', vis: vis, op: R2(op), painted: vis && op >= 0.99, shown: rm ? rm.classList.contains('show') : false, rmOp: rcs ? rcs.opacity : '', rmVis: rcs ? rcs.visibility : '', rmTx: rcs ? rcs.transform : '', paneOp: pane ? getComputedStyle(pane).opacity : '', btnH: btn ? R2(btn.getBoundingClientRect().height) : -1, ix: ir ? R2(ir.left) : -1, iy: ir ? R2(ir.top) : -1, iw: ir ? R2(ir.width) : -1, ih: ir ? R2(ir.height) : -1, iop: R2(iop), ipar: ic && ic.parentElement ? ic.parentElement.id : '', bx: br2 ? R2(br2.left) : -1, by: br2 ? R2(br2.top) : -1, bw: br2 ? R2(br2.width) : -1, bh: br2 ? R2(br2.height) : -1, bcx: br2 ? R2(br2.left + br2.width / 2) : -1, bop: R2(bop), sn: snArr, snCx: snCx });
+      window.__splashTrace.push({ t: Math.round(performance.now()), x: R2(r.left), y: R2(r.top), w: R2(r.width), h: R2(r.height), cx: R2(r.left + r.width / 2), cy: R2(r.top + r.height / 2), parent: ti.parentElement ? ti.parentElement.id : '', mark: ti.__mark || '', vis: vis, op: R2(op), painted: vis && op >= 0.99, shown: rm ? rm.classList.contains('show') : false, rmOp: rcs ? rcs.opacity : '', rmVis: rcs ? rcs.visibility : '', rmTx: rcs ? rcs.transform : '', paneOp: pane ? getComputedStyle(pane).opacity : '', btnH: btn ? R2(btn.getBoundingClientRect().height) : -1, ix: ir ? R2(ir.left) : -1, iy: ir ? R2(ir.top) : -1, iw: ir ? R2(ir.width) : -1, ih: ir ? R2(ir.height) : -1, iop: R2(iop), ipar: ic && ic.parentElement ? ic.parentElement.id : '', bx: br2 ? R2(br2.left) : -1, by: br2 ? R2(br2.top) : -1, bw: br2 ? R2(br2.width) : -1, bh: br2 ? R2(br2.height) : -1, bcx: br2 ? R2(br2.left + br2.width / 2) : -1, bop: R2(bop), tp: !!document.getElementById('splashTitle'), vw: window.innerWidth, vh: window.innerHeight, sn: snArr, snCx: snCx });
     }
     if (performance.now() < 14000 && !window.__splashTraceStop) requestAnimationFrame(step);
     else window.__splashTraceDone = true;
@@ -468,42 +488,38 @@ const lastS = trace.length ? trace[trace.length - 1] : null;
 const parents = [...new Set(trace.map(s => s.parent))];
 const iparents = [...new Set(trace.map(s => s.ipar))];
 const box = b => b ? ('[x' + b.x + ' y' + b.y + ' w' + b.w + ' h' + b.h + ']') : 'none';
-ok('S1 the title is SETTLED in the splash hold before the flip (last 3 hold samples agree within 1.5px) | hold box ' + box(hold) + ' spread ' + holdSpread.toFixed(1) + 'px over ' + pre.length + ' hold samples',
+ok('S1 the icon is SETTLED in the splash hold before the flip (last 3 hold samples agree within 1.5px) | hold box ' + box(hold) + ' spread ' + holdSpread.toFixed(1) + 'px over ' + pre.length + ' hold samples',
   pre.length >= 3 && holdSpread <= 1.5);
+ok('CENTRE the hold icon is DEAD CENTRE in the splash viewport (Beta 1.180): its rendered centre (' + (hold ? hold.cx : 'n/a') + ', ' + (hold ? hold.cy : 'n/a') + ') against the viewport centre (' + (hold ? (hold.vw / 2) : 'n/a') + ', ' + (hold ? (hold.vh / 2) : 'n/a') + ') - offsets ' + (hold ? Math.abs(hold.cx - hold.vw / 2).toFixed(2) : 'n/a') + 'px x, ' + (hold ? Math.abs(hold.cy - hold.vh / 2).toFixed(2) : 'n/a') + 'px y (tolerance 2px; measured on the rendered box, not the CSS that claims it)',
+  !!hold && Math.abs(hold.cx - hold.vw / 2) <= 2 && Math.abs(hold.cy - hold.vh / 2) <= 2);
 ok('CUT0 NO TRANSITION (Beta 1.178): no transform transition ever runs on #brandBlock - the trace hooks for transitionstart/transitionend on the block never fired (from ' + JSON.stringify(fromBox) + ', to ' + JSON.stringify(toBox) + '); the 1.162-1.177 FLIP is gone, so there is no flight to start or end',
   fromBox === null && toBox === null);
-ok('S2 ONE brand block lives through both scenes: the title\'s parent NEVER changes across all ' + trace.length + ' samples, and neither does the icon\'s (Beta 1.162: both are #brandBlock\'s children from the first frame to the settle - no reparent, no swap, for either) | title parents seen: ' + JSON.stringify(parents) + ', icon parents seen: ' + JSON.stringify(iparents) + ', end mark ' + (lastS ? lastS.mark : 'none'),
-  trace.length > 10 && parents.length === 1 && parents[0] === 'brandBlock' && iparents.length === 1 && iparents[0] === 'brandBlock' && !!lastS && lastS.mark === 'same-node');
+ok('S2 ONE icon lives in ONE brand block through both scenes: the icon parent NEVER changes across all ' + trace.length + ' samples (Beta 1.180: the only child of #brandBlock from the first frame to the settle - no reparent, no swap) | icon parents seen: ' + JSON.stringify(iparents) + ', end mark ' + (lastS ? lastS.mark : 'none'),
+  trace.length > 10 && iparents.length === 1 && iparents[0] === 'brandBlock' && !!lastS && lastS.mark === 'same-node');
 const paintedPost = post.filter(sv => sv.painted).length;
-ok('CUT1 THE CUT (Beta 1.178): the brand IS painted in the hold (last hold sample painted: ' + !!(hold && hold.painted) + ') and in NO frame after the flip - ' + paintedPost + ' painted title samples among ' + post.length + ' post-flip samples; the icon + title do not travel into the menu, ride a parent ramp, or reappear - they are simply gone from the flip frame on',
-  !!hold && hold.painted === true && post.length > 0 && paintedPost === 0);
-const fadeT = post.filter(sv => sv.vis && sv.op > 0.01 && sv.op < 0.99).length;
+ok('CUT1 THE CUT (Beta 1.178, brand subject re-pinned at 1.180): the icon IS painted in the hold (last hold sample painted: ' + !!(hold && hold.painted) + ', and NO sample in the whole trace ever finds a #splashTitle: ' + trace.every(sv => sv.tp === false) + ') and in NO frame after the flip - ' + paintedPost + ' painted icon samples among ' + post.length + ' post-flip samples; the icon does not travel into the menu, ride a parent ramp, or reappear - it is simply gone from the flip frame on',
+  !!hold && hold.painted === true && post.length > 0 && paintedPost === 0 && trace.every(sv => sv.tp === false));
 const fadeI = post.filter(sv => sv.iop > 0.01 && sv.iop < 0.99).length;
-ok('CUT2 NO FADE (Beta 1.178): no post-flip sample shows the brand at partial opacity - title fade frames: ' + fadeT + ', icon fade frames: ' + fadeI + ' (an opacity fade-out in place of the cut would pass through such frames on its way down; the display cut passes through none)',
-  post.length > 0 && fadeT === 0 && fadeI === 0);
-const sizeDev = (hold && pre.length) ? Math.max(...pre.map(sv => Math.abs(sv.h - hold.h))) : 999;
-ok('SIZE the title NEVER changes size during the splash (Beta 1.157: one size throughout the only scene the title now lives in - the 1.153-1.156 shrink stays retired): height ' + (hold ? hold.h : -1) + 'px at the hold, worst deviation ' + sizeDev.toFixed(1) + 'px across ' + pre.length + ' hold samples',
-  !!hold && sizeDev <= 2);
-const holdGap = hold ? (hold.y - (hold.iy + hold.ih)) : -999;
-ok('GAP the splash hold restores the PRE-UPDATE icon-to-title spacing: icon box y' + (hold ? hold.iy : -1) + ' h' + (hold ? hold.ih : -1) + ', title top y' + (hold ? hold.y : -1) + ' -> gap ' + holdGap.toFixed(1) + 'px (the original was 26px; Beta 1.155 measured an 8px overlap)',
-  !!hold && Math.abs(holdGap - 26) <= 2 && Math.abs(hold.ih - 168) <= 2);
+ok('CUT2 NO FADE (Beta 1.178): no post-flip sample shows the icon at partial opacity - icon fade frames: ' + fadeI + ' (an opacity fade-out in place of the cut would pass through such frames on its way down; the display cut passes through none)',
+  post.length > 0 && fadeI === 0);
+const sizeDev = (hold && pre.length) ? Math.max(...pre.map(sv => Math.max(Math.abs(sv.h - hold.h), Math.abs(sv.w - hold.w)))) : 999;
+ok('ICONSIZE the icon NEVER changes size during the splash (Beta 1.180: the 168px box is the whole brand now): box ' + (hold ? hold.w : -1) + 'x' + (hold ? hold.h : -1) + 'px at the hold, worst deviation ' + sizeDev.toFixed(1) + 'px across ' + pre.length + ' hold samples',
+  !!hold && sizeDev <= 2 && Math.abs(hold.w - 168) <= 2 && Math.abs(hold.h - 168) <= 2);
 ok('S7 the menu buttons arrive: at settle the main pane is fully opaque with the Choose button at full height | ' + JSON.stringify({ paneOp: lastS ? lastS.paneOp : 'none', btnH: lastS ? lastS.btnH : -1 }),
   !!lastS && lastS.paneOp === '1' && lastS.btnH > 30);
-ok('S8 the boot gate flips at the Beta 1.160 floor (flip at ' + (flipIdx >= 0 ? trace[flipIdx].t : -1) + 'ms on the page clock; arm() holds a 2700ms splash floor on the animated path - the flip lands after the icon fade-in, the title slide-in and the hold (Beta 1.163: the original separate arrivals restored - the icon at 1.25s, the title at 1.5s, as through 1.161; Beta 1.162\'s one shared arrival stood for one release), so it cannot precede 2400ms on this clock - and the 6000ms escape still caps a stalled boot well under the 12000ms ceiling)',
+ok('S8 the boot gate flips at the Beta 1.160 floor (flip at ' + (flipIdx >= 0 ? trace[flipIdx].t : -1) + 'ms on the page clock; arm() holds a 2700ms splash floor on the animated path - the flip lands after the icon fade-in and the hold (Beta 1.180: the icon 1.25s fade is the only entrance left; the title and its 1.5s slide are retired), so it cannot precede 2400ms on this clock - and the 6000ms escape still caps a stalled boot well under the 12000ms ceiling)',
   flipIdx >= 0 && trace[flipIdx].t >= 2400 && trace[flipIdx].t < 12000);
 const darkSamples = trace.filter(s => s.t <= 1200);
 const darkWorstI = darkSamples.reduce((m, s) => Math.max(m, s.iop), 0);
-const darkWorstT = darkSamples.reduce((m, s) => Math.max(m, s.op), 0);
-ok('SEQ1 DARK WINDOW (Beta 1.160, Option 3): before 1.2s NEITHER the icon nor the title is painted - ' + darkSamples.length + ' trace samples at t <= 1200ms (first at ' + (trace.length ? trace[0].t : -1) + 'ms), worst icon effective opacity ' + darkWorstI.toFixed(3) + ', worst title effective opacity ' + darkWorstT.toFixed(3) + ' (both must stay <= .05; the launch still is plain blue to match - the icon sits out the iOS handoff from both sides)',
-  darkSamples.length >= 5 && darkWorstI <= 0.05 && darkWorstT <= 0.05);
+ok('SEQ1 DARK WINDOW (Beta 1.160, Option 3; brand subject re-pinned at 1.180): before 1.2s the icon is NOT painted - ' + darkSamples.length + ' trace samples at t <= 1200ms (first at ' + (trace.length ? trace[0].t : -1) + 'ms), worst icon effective opacity ' + darkWorstI.toFixed(3) + ' (must stay <= .05; the launch still is plain blue to match - the icon sits out the iOS handoff from both sides; there is no title left to keep dark)',
+  darkSamples.length >= 5 && darkWorstI <= 0.05);
 const flipT2 = flipIdx >= 0 ? trace[flipIdx].t : -1;
 const iconIn = trace.filter(s => s.t >= 1700 && flipT2 > 0 && s.t < flipT2 && s.iop >= 0.99);
 ok('SEQ2 the icon is FULLY IN after its 1.25s fade and before the flip (Beta 1.163: the 1.161 form restored - the fade is the icon\'s OWN again (splashIconIn, .35s from 1.25s, complete at 1.6s), as Andrew directed; Beta 1.162 judged the block\'s shared arrival here for one release): ' + iconIn.length + ' trace samples in [1700ms, flip) with icon effective opacity >= .99' + (iconIn.length ? ' (first at ' + iconIn[0].t + 'ms)' : ''),
   iconIn.length >= 1);
-const titleIn = trace.filter(s => s.t >= 2300 && flipT2 > 0 && s.t < flipT2 && s.op >= 0.99);
-ok('SEQ3 the title is fully in and settled in the hold before the flip (Beta 1.163: its own 1.5s slide-in is restored - splashSlide\'s opacity completes at ~1.85s and the slide settles at 2.15s, so this 2.3s window judges the settled hold exactly as it did through 1.161; Beta 1.162\'s shared-arrival note stood for one release; S1 proves the settle at the flip): ' + titleIn.length + ' trace samples in [2300ms, flip) with title effective opacity >= .99' + (titleIn.length ? ' (first at ' + titleIn[0].t + 'ms)' : ''),
-  titleIn.length >= 1);
-
+const holdIn = trace.filter(s => s.t >= 2300 && flipT2 > 0 && s.t < flipT2 && s.iop >= 0.99 && Math.abs(s.cx - s.vw / 2) <= 2 && Math.abs(s.cy - s.vh / 2) <= 2);
+ok('HOLD1 the icon is fully in AND still dead centre through the hold before the flip (Beta 1.180: replaces SEQ3, whose subject - the settled title slide - no longer exists): ' + holdIn.length + ' trace samples in [2300ms, flip) with icon effective opacity >= .99 and rendered centre within 2px of the viewport centre' + (holdIn.length ? ' (first at ' + holdIn[0].t + 'ms)' : ''),
+  holdIn.length >= 1);
 // CUT3 + SOLO (Beta 1.178) replace N4/SLOT/CLEAR: there is no
 // resting pose to pin and no landed title to clear the button -
 // the resting facts are the layer's cut state and the pills'
@@ -631,44 +647,44 @@ const waitFor = async (fn, ms) => { const t0 = Date.now(); while (Date.now() - t
 let nav = null;
 try {
   const r = {};
-  r.tMain0 = await effOp('splashTitle');
+  r.tMain0 = await effOp('brandLayer');
   r.cvMain0 = await effOp('snowCv');
   await clickId('rmChoose');
-  r.toList = await waitFor(async () => (await paneOn('rmListPane')) && (await effOp('splashTitle')) <= 0.05 && (await effOp('snowCv')) <= 0.05, 3000); // Beta 1.178: the canvas term is new - through 1.177 the title's own .away fade (same .3s, same showRmPane call) was the settle proxy for the canvas read below; the title is display:none now and cannot proxy, so the wait keys on the canvas itself
-  r.tList = await effOp('splashTitle');
+  r.toList = await waitFor(async () => (await paneOn('rmListPane')) && (await effOp('brandLayer')) <= 0.05 && (await effOp('snowCv')) <= 0.05, 3000); // Beta 1.178: the canvas term is new - through 1.177 the title's own .away fade (same .3s, same showRmPane call) was the settle proxy for the canvas read below; the title is display:none now and cannot proxy, so the wait keys on the canvas itself
+  r.tList = await effOp('brandLayer');
   r.cvList = await effOp('snowCv');
   r.rows = await ev(`(() => { const meas = row => { const rr = row.getBoundingClientRect(); const out = { rcx: rr.left + rr.width / 2 }; const nm = row.querySelector('.routeName'), ar = row.querySelector('.routeArea'); if (nm) { const g = document.createRange(); g.selectNodeContents(nm); const t = g.getBoundingClientRect(); out.nOff = Math.round(Math.abs(t.left + t.width / 2 - out.rcx) * 10) / 10; const cs = getComputedStyle(nm); out.nSize = cs.fontSize; out.nWeight = cs.fontWeight; } if (ar) { const g2 = document.createRange(); g2.selectNodeContents(ar); const t2 = g2.getBoundingClientRect(); out.aOff = Math.round(Math.abs(t2.left + t2.width / 2 - out.rcx) * 10) / 10; } const rcs = getComputedStyle(row); out.bg = rcs.backgroundColor; out.sh = rcs.boxShadow; out.rad = rcs.borderRadius; out.ff = rcs.fontFamily; return out; }; const rows = [...document.querySelectorAll('#rmRoutes .routeRow')]; const btn = document.getElementById('rmCreate'); const bcs = btn ? getComputedStyle(btn) : null; return JSON.stringify({ rows: rows.map(meas), btnFf: bcs ? bcs.fontFamily : '', btnSize: bcs ? bcs.fontSize : '' }); })()`).then(x => typeof x === 'string' && x ? JSON.parse(x) : null);
   await clickId('rmBack');
   r.toMain1 = await waitFor(async () => (await paneOn('rmMain')) && (await effOp('snowCv')) >= 0.99, 3000); // Beta 1.178: the wait no longer asks the title back - it never returns (TITLE3 asserts its absence); it keys on the snow's return fade instead, which the cvMain1 read below judges
-  r.tMain1 = await effOp('splashTitle');
+  r.tMain1 = await effOp('brandLayer');
   r.cvMain1 = await effOp('snowCv');
   await clickId('rmCreate');
-  r.toCreate = await waitFor(async () => (await paneOn('rmCreatePane')) && (await effOp('splashTitle')) <= 0.05, 3000);
+  r.toCreate = await waitFor(async () => (await paneOn('rmCreatePane')) && (await effOp('brandLayer')) <= 0.05, 3000);
   await clickId('crDoorList');
   r.toCity = await waitFor(() => paneOn('rmCityListPane'), 3000);
   await waitFor(() => ev(`!!document.querySelector('#crCityList .rmNote') || document.querySelectorAll('#crCityList .routeRow').length > 1`).then(x => x === true).catch(() => false), 6000);
   await waitFor(async () => (await effOp('snowCv')) <= 0.05, 3000); // Beta 1.178: settle the canvas fade before the city-list read (same proxy loss as toList)
   r.cityRow = await ev(`(() => { const box = document.getElementById('crCityList'); if (!box || typeof routeRowShell !== 'function') return null; const row = routeRowShell('button', 'Mississauga', '12,345 streets · ready to load', { chevron: true }); box.appendChild(row); const rr = row.getBoundingClientRect(); const rcx = rr.left + rr.width / 2; const nm = row.querySelector('.routeName'), ar = row.querySelector('.routeArea'); const g = document.createRange(); g.selectNodeContents(nm); const t = g.getBoundingClientRect(); const g2 = document.createRange(); g2.selectNodeContents(ar); const t2 = g2.getBoundingClientRect(); const cs = getComputedStyle(nm); return JSON.stringify({ nOff: Math.round(Math.abs(t.left + t.width / 2 - rcx) * 10) / 10, aOff: Math.round(Math.abs(t2.left + t2.width / 2 - rcx) * 10) / 10, nSize: cs.fontSize }); })()`).then(x => typeof x === 'string' && x ? JSON.parse(x) : null);
-  r.tCity = await effOp('splashTitle');
+  r.tCity = await effOp('brandLayer');
   r.cvCity = await effOp('snowCv');
   await clickId('crCityListBack');
   await waitFor(() => paneOn('rmCreatePane'), 3000);
   await clickId('rmBack2');
   r.toMain2 = await waitFor(async () => (await paneOn('rmMain')) && (await effOp('snowCv')) >= 0.99, 3000); // Beta 1.178: same - TITLE5 asserts the absence
-  r.tMain2 = await effOp('splashTitle');
+  r.tMain2 = await effOp('brandLayer');
   nav = r;
 } catch (e) { nav = null; }
-ok('TITLE1 (Beta 1.178, inverted) the title is ABSENT on the main pane itself now (effective opacity ' + (nav ? nav.tMain0 : 'n/a') + ') - the doors stand solo from the first menu frame - while the snow stays present with the menu (canvas effective opacity ' + (nav ? nav.cvMain0 : 'n/a') + '): the cut took the brand only, never the snow',
+ok('BRAND1 (Beta 1.180) the brand is ABSENT on the main pane itself (brand layer effective opacity ' + (nav ? nav.tMain0 : 'n/a') + ') - the doors stand solo from the first menu frame, and no #splashTitle exists anywhere in the session - while the snow stays present with the menu (canvas effective opacity ' + (nav ? nav.cvMain0 : 'n/a') + '): the cut took the brand only, never the snow',
   !!nav && nav.tMain0 <= 0.05 && nav.cvMain0 >= 0.99);
-ok('TITLE2 the title is GONE on the route list after tapping Choose (effective opacity ' + (nav ? nav.tList : 'n/a') + ', reached the pane: ' + (nav ? nav.toList : 'n/a') + ') - through 1.177 it lived only in the main menu; at 1.178 it lives only in the splash',
+ok('BRAND2 the brand stays gone on the route list after tapping Choose (brand layer effective opacity ' + (nav ? nav.tList : 'n/a') + ', reached the pane: ' + (nav ? nav.toList : 'n/a') + ')',
   !!nav && nav.toList && nav.tList <= 0.05);
-ok('TITLE3 (Beta 1.178, inverted) the title does NOT return on navigating back to the main pane (effective opacity ' + (nav ? nav.tMain1 : 'n/a') + ') - through 1.177 the landed brand rode the main pane; the cut is for the whole session',
+ok('BRAND3 (Beta 1.178/1.180) the brand does NOT return on navigating back to the main pane (brand layer effective opacity ' + (nav ? nav.tMain1 : 'n/a') + ') - the cut is for the whole session',
   !!nav && nav.toMain1 && nav.tMain1 <= 0.05);
-ok('TITLE4 the title is gone on the create doors AND the city list too (create pane reached: ' + (nav ? nav.toCreate : 'n/a') + '; city list opacity ' + (nav ? nav.tCity : 'n/a') + ')',
+ok('BRAND4 the brand is gone on the create doors AND the city list too (create pane reached: ' + (nav ? nav.toCreate : 'n/a') + '; city list brand opacity ' + (nav ? nav.tCity : 'n/a') + ')',
   !!nav && nav.toCreate && nav.toCity && nav.tCity <= 0.05);
-ok('TITLE5 (Beta 1.178, inverted) the title is still absent at the main pane after the full create-side round trip (effective opacity ' + (nav ? nav.tMain2 : 'n/a') + ')',
+ok('BRAND5 (Beta 1.178/1.180) the brand is still absent at the main pane after the full create-side round trip (brand layer effective opacity ' + (nav ? nav.tMain2 : 'n/a') + ')',
   !!nav && nav.toMain2 && nav.tMain2 <= 0.05);
-ok('SNOW6 the snow hides in the sub-panes and returns at the main pane (through 1.177 it hid alongside the title; the title is gone everywhere now, the snow lifetime itself is unchanged): canvas effective opacity on the route list ' + (nav ? nav.cvList : 'n/a') + ', on the city list ' + (nav ? nav.cvCity : 'n/a') + ', back at the main pane ' + (nav ? nav.cvMain1 : 'n/a'),
+ok('SNOW6 the snow hides in the sub-panes and returns at the main pane (the brand is gone everywhere now, the snow lifetime itself is unchanged): canvas effective opacity on the route list ' + (nav ? nav.cvList : 'n/a') + ', on the city list ' + (nav ? nav.cvCity : 'n/a') + ', back at the main pane ' + (nav ? nav.cvMain1 : 'n/a'),
   !!nav && nav.cvList <= 0.05 && nav.cvCity <= 0.05 && nav.cvMain1 >= 0.99);
 const rowList = nav && nav.rows && Array.isArray(nav.rows.rows) ? nav.rows.rows : [];
 const rowNWorst = rowList.length ? Math.max(...rowList.map(x => (typeof x.nOff === 'number' ? x.nOff : 999))) : 999;

@@ -703,7 +703,7 @@ $('stDel').addEventListener('click', async () => {
 });
 // ---- About / What's new ----
 const WHATSNEW = { // the curated in-app notes: plain words, LATEST RELEASE ONLY (Beta 1.114, Andrew: the accumulated list cluttered the About pane). A release REPLACES this entry with its own in the same change - it never accumulates; the full history lives in CHANGELOG.md, not the app
-  v: 'Beta 1.179', items: ["The name on the opening screen is written the plain way now: Snow Route — a capital S and a capital R, everything else lowercase."] };
+  v: 'Beta 1.180', items: ["The opening screen is just the Snow Route icon now, centred on the blue splash — no name underneath it. The opening sequence and route menu work exactly as before."] };
 function renderAbout() {
   const cur = $('ver').textContent.trim();
   $('wnHead').textContent = "WHAT'S NEW · " + cur; // the header names the LIVE version, read from the title's version element - never a second hard-coded copy that can go stale
@@ -954,12 +954,16 @@ function __bootTail() { if (__tailDone) return; __tailDone = true; bootMap(); ap
 // Reduced-motion (no splash) and no-splash pages boot immediately, as before.
 const __splashEl = document.getElementById('splash');
 if (__splashEl && !window.matchMedia('(prefers-reduced-motion: reduce)').matches) {
-  // Boot the moment the intro has actually finished on THIS device (the title's
-  // slide is the intro's only moving piece), plus a breath - never on a fixed clock, so a
-  // slow first paint cannot push the boot chunks back into the animation. The
-  // 2.6s timer is only a fallback if the animation event never lands.
-  const __titleEl = document.getElementById('splashTitle');
-  if (__titleEl) __titleEl.addEventListener('animationend', () => setTimeout(__bootTail, 150), { once: true });
+  // Boot the moment the intro has actually finished on THIS device, plus a
+  // breath - never on a fixed clock, so a slow first paint cannot push the
+  // boot chunks back into the animation. Beta 1.180: the trigger re-anchors
+  // from the retired title slide to the icon's own fade (splashIconIn, the
+  // intro's remaining CSS entrance). The icon's animation ends at 1.6s,
+  // where the title's slide ended at 2.15s, so the breath is 700ms rather
+  // than 150ms and the boot tail lands at the same ~2.3s point it always
+  // has. The 2.6s timer remains only a fallback if the event never lands.
+  const __iconEl = document.getElementById('splashIcon');
+  if (__iconEl) __iconEl.addEventListener('animationend', () => setTimeout(__bootTail, 700), { once: true });
   setTimeout(__bootTail, 2600);
 } else __bootTail();
 // Beta 1.33: no other-style pre-warm fetch - both Protomaps styles are embedded in the page, so the first day/night swap is instant by construction.
