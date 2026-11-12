@@ -680,8 +680,8 @@ const MUST = [
 // Beta 1.167 (run/pace fix round): pins moved on line count alone, same discipline - app1 suggested 409 -> 399 (the cap block's replacement by appendHistory, -10 above it), app4 restoring 333 -> 332 and the reset block 1030 -> 1029 with its neighbours (1010 -> 1009, 1031 -> 1030, 1032 -> 1031; the pushField hist-cap branch merged, -1 above them). Totals UNCHANGED again (52 expressions / 21 lines, same per-file counts, verified pair-for-pair against the recomputed diff before regenerating): the round's new app3 writes are to function locals or to app3's OWN new bindings (runDist, runDistWrote - declared in app3, written only there); app1's saveHistory no longer assigns the app1-owned history binding at all.
 for (const [f, ln, nm] of MUST) check(`census contains adjudicated site ${f}:${ln} ${nm}`, tree.sites.some(s => s.file === f && s.line === ln && s.name === nm));
 {
-  const at988 = tree.sites.filter(s => s.file === 'app4.js' && s.line === 1043);
-  check('census: app4.js:1043 carries exactly the 11 reset expressions', at988.length === 11, at988); // Beta 1.170: the reset block moved 1029 -> 1043 on line count alone (the C-03/C-04/C-09 app4 blocks grew the file above it), its neighbours with it (1023/1044/1045)
+  const at988 = tree.sites.filter(s => s.file === 'app4.js' && s.line === 1047);
+  check('census: app4.js:1047 carries exactly the 11 reset expressions', at988.length === 11, at988); // Beta 1.170: the reset block moved 1029 -> 1043 on line count alone (the C-03/C-04/C-09 app4 blocks grew the file above it), its neighbours with it (1023/1044/1045). Beta 1.180: moved 1043 -> 1047 the same way (the WHATSNEW roll + the boot-trigger comment above it), neighbours with it (1027/1048/1049); census JSON regenerated the same act
 }
 
 if (process.argv.includes('--write')) {

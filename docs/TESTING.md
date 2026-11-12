@@ -381,14 +381,20 @@ Coverage:
   on the city box and — although the stubbed service ignores the
   bound and returns both results — only the in-city suggestion
   renders.
-- `drive180` — the splash transition (Beta 1.153, item 8, Variant
-  A "Rise and settle"): geometry samples every ~120 ms from first
-  paint prove the SAME #splashTitle node (marker property) starts
-  in the splash brand and lands in the route menu, its centre
-  rising ≥ 60 px, its height shrinking, mid-rise samples strictly
-  between start and landing, opacity 1 in every post-flip sample,
-  the boot panes fully arrived beneath it, and the gate's arm
-  inside its usual budget.
+- `drive180` — the splash transition: requestAnimationFrame
+  samples judge the opening scene as it currently stands — at
+  Beta 1.178 the brand cuts away instantly at the gate and the
+  doors menu stands solo, and at Beta 1.180 the splash is icon
+  only (no #splashTitle exists; the sampled #splashIcon is the
+  sole brand subject). The drive proves the dark window, the
+  icon's own fade-in, the icon's rendered centre against the
+  viewport centre in the hold, the cut (no painted or
+  partial-opacity brand frame after the flip), the solo pills,
+  the one-canvas snow scene, and the brand's absence across the
+  menu pane round trips, with the gate's arm inside its usual
+  budget. (The 1.153–1.177 rise/settle and landed-title checks
+  retired with the designs they judged; their history is in the
+  drive's own header and the CHANGELOG.)
 
 ## The drive compatibility surface (frozen, Beta 1.136, programme E; census refreshed 2026-11-08, Improvement Tranche 4 / T2)
 
