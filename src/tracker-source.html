@@ -2611,11 +2611,13 @@ const EMPTYFC = { type: 'FeatureCollection', features: [] };
 function selectedGeom(it) {   // a selected stretch's painted slice: stitched points, edge-clipped at its junctions
   const s0 = it || sel;
   if (!s0) return null;
-  const g = GEO[s0.name], ab = g.cuts[s0.idx], bits = H.pieces[s0.name][s0.idx];
-  const half = bits === 3 ? BAND_HALF : SURF_HALF;
+  const n = s0.name, idx = s0.idx, g = GEO[n], ab = g.cuts[idx], bits = H.pieces[n][idx];
+  const isBand = bits === 3, half = isBand ? BAND_HALF : SURF_HALF;
+  const key = isBand ? 'band' : mute(colOf(n, bits));
+  const famKey = i => H.pieces[n][i] === 3 ? 'band' : mute(colOf(n, H.pieces[n][i]));
   let pts = g.stitched.slice(ab[0], ab[1] + 1);
-  pts = clipEndAtJunction(s0.name, ab[0], pts, true, half);
-  pts = clipEndAtJunction(s0.name, ab[1], pts, false, half);
+  if (idx === 0 || g.gaps.has(ab[0]) || famKey(idx - 1) !== key) pts = clipEndAtJunction(n, ab[0], pts, true, half);
+  if (idx === g.cuts.length - 1 || g.gaps.has(g.cuts[idx + 1][0]) || famKey(idx + 1) !== key) pts = clipEndAtJunction(n, ab[1], pts, false, half);
   return { pts, bits, half };
 }
 function buildSelC() {   // the selected sector's core: a vibrant BAND when complete, a vibrant core otherwise
