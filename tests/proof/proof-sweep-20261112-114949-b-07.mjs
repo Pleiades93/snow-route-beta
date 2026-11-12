@@ -106,7 +106,7 @@ host.selStretch = { name: 'MainSt', idx: 1 };
 GLP.sync(); GLP.syncSel();
 {
   const [x0, x1] = spanX(sources.sel.data);
-  check('family-boundary start clipped at J1 and continuing end unclipped at J2', Math.abs(x0 - 3.3) < 0.05 && Math.abs(x1 - 60) < 0.01, `got [${x0.toFixed(2)}, ${x1.toFixed(2)}]`);
+  check('family-boundary start clipped at J1 and continuing end unclipped at J2', Math.abs(x0 - 4.95) < 0.05 && Math.abs(x1 - 60) < 0.01, `got [${x0.toFixed(2)}, ${x1.toFixed(2)}]`);   // Beta 1.181: clip = SURF_HALF = 3.3 x WIDTH_K 1.5 = 4.95
 }
 
 // 4. Street-start stretch (idx=0) clips at street end (x=-120) and stays unclipped at continuing J1 (x=0)
@@ -115,7 +115,7 @@ host.selStretch = { name: 'MainSt', idx: 0 };
 GLP.sync(); GLP.syncSel();
 {
   const [x0, x1] = spanX(sources.sel.data);
-  check('street-start stretch clipped at outer end and unclipped at continuing junction', Math.abs(x0 - (-116.7)) < 0.05 && Math.abs(x1 - 0) < 0.01, `got [${x0.toFixed(2)}, ${x1.toFixed(2)}]`);
+  check('street-start stretch clipped at outer end and unclipped at continuing junction', Math.abs(x0 - (-115.05)) < 0.05 && Math.abs(x1 - 0) < 0.01, `got [${x0.toFixed(2)}, ${x1.toFixed(2)}]`);   // Beta 1.181: -120 + SURF_HALF 4.95 = -115.05
 }
 
 // 5. Disconnected multi-run street still clips run boundaries even when both runs share the same state
@@ -125,6 +125,6 @@ const [, splitRun0End] = spanX(sources.sel.data);
 host.selStretch = { name: 'SplitSt', idx: 1 };
 GLP.syncSel();
 const [splitRun1Start] = spanX(sources.sel.data);
-check('disconnected run-gap ends remain clipped at junctions', Math.abs(splitRun0End - (-3.3)) < 0.05 && Math.abs(splitRun1Start - 63.3) < 0.05, `got end=${splitRun0End.toFixed(2)}, start=${splitRun1Start.toFixed(2)}`);
+check('disconnected run-gap ends remain clipped at junctions', Math.abs(splitRun0End - (-4.95)) < 0.05 && Math.abs(splitRun1Start - 64.95) < 0.05, `got end=${splitRun0End.toFixed(2)}, start=${splitRun1Start.toFixed(2)}`);   // Beta 1.181: run-gap clips at SURF_HALF 4.95 (0 - 4.95; 60 + 4.95)
 
 process.exit(failed ? 1 : 0);

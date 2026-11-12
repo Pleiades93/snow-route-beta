@@ -91,7 +91,7 @@ function buildEngineGeometry() { // Beta 1.117: the engine's route geometry (GEO
     // consecutive sectors is one continuous line; both sides sit at the same
     // 3.3 m; and the lines end exactly at the run's ends - no overshoot
     // onto the next street, no uneven ends.
-    off0 = off0.concat(offsetLine(rStitched, 3.3)); off1 = off1.concat(offsetLine(rStitched, -3.3));
+    off0 = off0.concat(offsetLine(rStitched, 3.3 * WIDTH_K)); off1 = off1.concat(offsetLine(rStitched, -3.3 * WIDTH_K));
     stitchedLen += segLenM(rStitched);
   });
   GEO[n] = { stitched, cuts, off0, off1, gaps };
@@ -882,7 +882,7 @@ function lastResortConnect(edges, bands) {
     const touch = (A2, B2) => {
       const eA = [A2.pts[0], A2.pts[A2.pts.length - 1]], eB = [B2.pts[0], B2.pts[B2.pts.length - 1]];
       if (eA.some(p => eB.some(q => coordKey(p) === coordKey(q)))) return true;
-      const thr = (A2.band || B2.band) ? 4.8 : 1.0;
+      const thr = (A2.band || B2.band) ? 4.8 * WIDTH_K : 1.0;   // Beta 1.181: the band threshold lives in the same scaled metre-world as SURF_HALF/BAND_HALF
       return eA.some(p => onLine(p, B2, thr)) || eB.some(p => onLine(p, A2, thr));
     };
     frags.forEach((A2, i) => frags.forEach((B2, j) => { if (j > i && touch(A2, B2)) parent[find(i)] = find(j); }));
@@ -1091,6 +1091,12 @@ function cornerTouchSlices(slices, pairs) {
     });
   });
 }
+// ---- road width (Beta 1.181, Andrew): EVERY road is 1.5x wider -
+// the route paint curves, the side-offset geometry, the junction
+// trims and the selection glow all live in one world scaled by this
+// ONE number. The basemap carries the same factor, baked into its
+// styles at generation time (scripts/genstyles.mjs, ROAD_WIDTH_K).
+const WIDTH_K = 1.5;
 // ---- solid-paint end trims (Andrew, 2026-10-28, round 13): a wide
 // solid (centre surface, completed band, or the selection redraw of
 // one) ENDING at a junction must butt against the crossing street's
@@ -1099,7 +1105,7 @@ function cornerTouchSlices(slices, pairs) {
 // until both corners sit inside every crossing street's paint strip.
 // Where the corners already sit inside (most junctions), nothing moves
 // and same-colour paint stays seamless.
-const SURF_HALF = 3.3, BAND_HALF = 4.8;   // geographic half-widths the GL paint curves track (surfW ~6.6 m, BANDW ~9.6 m at working zooms)
+const SURF_HALF = 3.3 * WIDTH_K, BAND_HALF = 4.8 * WIDTH_K;   // geographic half-widths the GL paint curves track (base 3.3/4.8 m x WIDTH_K = 4.95/7.2 m at 1.5x; surfW ~9.9 m, BANDW ~14.4 m at working zooms)
 function ptSegDistM(p, a, b) {
   const P = XYOf(p), A = XYOf(a), B = XYOf(b);
   const vx = B[0] - A[0], vy = B[1] - A[1], L2 = vx * vx + vy * vy || 1;
@@ -1479,10 +1485,11 @@ function rebuildData() { const F = buildFamilies(); const SC = buildSelC();
   F.centres.features.sort((a, b) => yRank(a) - yRank(b));
   CUR = { centres: F.centres, bands: F.bands, edges: F.edges, sel: SC.sel, selBand: SC.selBand, selEdges: buildSel('e') }; }
 
-const surfW = ['interpolate', ['linear'], ['zoom'], 14, 2.5, 16, 6.5, 17, 9.5, 18, 15, 19, 24];
-const BANDW = ['interpolate', ['linear'], ['zoom'], 15, 3, 16, 6, 17, 11, 18, 22, 19, 44];       // ~9.6 m of road width, tracking the geographic side offsets
-const BANDCASE = ['interpolate', ['linear'], ['zoom'], 15, 5.5, 16, 9, 17, 15, 18, 27, 19, 50];
-const wPlus = (curve, d) => curve.map((v, i) => (i >= 4 && i % 2 === 0) ? v + d : v);   // widen an interpolate width curve by d px at every stop (widths sit at even indices >= 4)
+function scaleW(curve) { return curve.map((v, i) => (i >= 4 && i % 2 === 0) ? +(v * WIDTH_K).toFixed(3) : v); }   // Beta 1.181: scale an interpolate width curve by WIDTH_K (widths sit at even indices >= 4, the wPlus/wScale index rule)
+const surfW = scaleW(['interpolate', ['linear'], ['zoom'], 14, 2.5, 16, 6.5, 17, 9.5, 18, 15, 19, 24]);
+const BANDW = scaleW(['interpolate', ['linear'], ['zoom'], 15, 3, 16, 6, 17, 11, 18, 22, 19, 44]);       // ~14.4 m of road width at 1.5x, tracking the geographic side offsets
+const BANDCASE = scaleW(['interpolate', ['linear'], ['zoom'], 15, 5.5, 16, 9, 17, 15, 18, 27, 19, 50]);
+const wPlus = (curve, d) => curve.map((v, i) => (i >= 4 && i % 2 === 0) ? v + d * WIDTH_K : v);   // widen an interpolate width curve by d px at every stop (widths sit at even indices >= 4); Beta 1.181: the added px scale by WIDTH_K too, so the glow rim grows proportionally with the road
 const wScale = (curve, f) => curve.map((v, i) => (i >= 4 && i % 2 === 0) ? v * f : v);   // scale an interpolate width curve (same index rule as wPlus)
 // Round 29 (Andrew): ZOOM-TAPERED glow. Zoomed out, the glow kept
 // its full screen width while the road shrank to a few px, so the
@@ -1511,7 +1518,7 @@ function curveAt(curve, z) {
 }
 function glowW(curve, delta) {
   const ex = ['interpolate', ['linear'], ['zoom']];
-  for (const z of [14, 15, 16, 16.5, 17, 18, 19]) ex.push(z, +(curveAt(curve, z) + delta * taperAt(z)).toFixed(2));
+  for (const z of [14, 15, 16, 16.5, 17, 18, 19]) ex.push(z, +(curveAt(curve, z) + delta * WIDTH_K * taperAt(z)).toFixed(2));   // Beta 1.181: the live glow's extra width scales by WIDTH_K, same as the initial stack's wPlus
   return ex;
 }
 function glowB(b) { return ['interpolate', ['linear'], ['zoom'], 14, +(b * 0.35).toFixed(2), 15.5, +(b * 0.6).toFixed(2), 16.5, b]; }
@@ -1575,11 +1582,11 @@ function addStack() {
   // under yellow at junctions. The green (completed) family is back
   // where it was before round 21 (Andrew: revert the green part) -
   // band casing and band render above the unfinished centre paint.
-  add(line('t1-casing', 'centres', { 'line-color': H.isNight() ? '#000000' : '#5a5f6a', 'line-width': ['interpolate', ['linear'], ['zoom'], 14, 4.5, 16, 9, 17, 12.5, 18, 18.5, 19, 28], 'line-opacity': ['step', ['zoom'], 0, 12.6, 1], 'line-opacity-transition': { duration: 0, delay: 0 } }, { 'line-cap': 'butt' }));
+  add(line('t1-casing', 'centres', { 'line-color': H.isNight() ? '#000000' : '#5a5f6a', 'line-width': scaleW(['interpolate', ['linear'], ['zoom'], 14, 4.5, 16, 9, 17, 12.5, 18, 18.5, 19, 28]), 'line-opacity': ['step', ['zoom'], 0, 12.6, 1], 'line-opacity-transition': { duration: 0, delay: 0 } }, { 'line-cap': 'butt' }));
   add(line('t1-casingb', 'bands', { 'line-color': H.isNight() ? '#000000' : '#5a5f6a', 'line-width': BANDCASE, 'line-opacity': ['step', ['zoom'], 0, 12.6, 1], 'line-opacity-transition': { duration: 0, delay: 0 } }, { 'line-cap': 'butt' }));
   add(line('t1-surface', 'centres', { 'line-color': ['get', 'col'], 'line-width': surfW, 'line-opacity': ['step', ['zoom'], 0, 12.6, 1], 'line-opacity-transition': { duration: 0, delay: 0 } }, { 'line-cap': 'butt' }));
   add(line('t1-band', 'bands', { 'line-color': ['get', 'col'], 'line-width': BANDW, 'line-opacity': ['step', ['zoom'], 0, 12.6, 1], 'line-opacity-transition': { duration: 0, delay: 0 } }, { 'line-cap': 'butt' }));
-  add(line('t1-edge', 'edges', { 'line-color': ['get', 'col'], 'line-width': 3, 'line-opacity': ['step', ['zoom'], 0, 12.6, 1], 'line-opacity-transition': { duration: 0, delay: 0 } }, { 'line-cap': 'butt' }));
+  add(line('t1-edge', 'edges', { 'line-color': ['get', 'col'], 'line-width': 3 * WIDTH_K, 'line-opacity': ['step', ['zoom'], 0, 12.6, 1], 'line-opacity-transition': { duration: 0, delay: 0 } }, { 'line-cap': 'butt' }));
   // --- selection glow (round 16, restored onto the r15 paint at
   // Andrew's direction 2026-10-29): three nested widths in the
   // street's OWN colour under the vibrant redraw; managePulse
@@ -1608,9 +1615,9 @@ function addStack() {
   add(line('t1-selband', 'selBand', { 'line-color': ['get', 'col'], 'line-width': BANDW, 'line-opacity': 1 }, { 'line-cap': 'butt', 'line-join': 'round' }));
   add(line('sel-core-s', 'selGlow', { 'line-color': ['get', 'colHot'], 'line-width': wScale(surfW, 0.42), 'line-opacity': 0.85 }, { 'line-cap': 'butt', 'line-join': 'round' }, ['==', ['get', 'band'], 0]));
   add(line('sel-core-b', 'selGlow', { 'line-color': ['get', 'colHot'], 'line-width': wScale(BANDW, 0.42), 'line-opacity': 0.85 }, { 'line-cap': 'butt', 'line-join': 'round' }, ['==', ['get', 'band'], 1]));
-  add(line('t1-sele', 'selEdges', { 'line-color': ['get', 'col'], 'line-width': 3, 'line-opacity': 1 }, { 'line-cap': 'butt' }));
+  add(line('t1-sele', 'selEdges', { 'line-color': ['get', 'col'], 'line-width': 3 * WIDTH_K, 'line-opacity': 1 }, { 'line-cap': 'butt' }));
   // --- hit + labels (every treatment) ---
-  add(line('hit', 'hit', { 'line-color': '#fff', 'line-width': 24, 'line-opacity': 0 }));
+  add(line('hit', 'hit', { 'line-color': '#fff', 'line-width': 24 * WIDTH_K, 'line-opacity': 0 }));
   // Beta 1.40 (Andrew): our own line-following street names are RETIRED. Zoomed in, the
   // basemap's own road names take over on every street - ours are the overview titles,
   // the basemap's are the close-up names, restyled readable (see glHideLabels in app2).
