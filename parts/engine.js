@@ -6,7 +6,7 @@ const GLP = (() => {
   const pendingColor = n => H.MAIN.has(n) ? YELLOW : RED;
   let fontStack = ['Noto Sans Regular']; // replaced per-style by GLP.setFont (the app adopts the basemap's own stack, prototype pickFont rule)
   const glowPreset = 1;   // SOFT - the locked selection preset (prototype r24)
-  let lastSig = null;
+  let lastSig = null, lastNight = null;
   function pushSources() {
     if (!GLM || !CUR || !GLM.getSource('centres')) return;
     GLM.getSource('centres').setData(CUR.centres);
@@ -1654,6 +1654,7 @@ function addStack() {
   H.glHideLabels(GLM);
   pushSources();
   applyGlow();
+  syncTheme();
 }
 // ---- selection glow (round 16 treatment on the r15 paint base;
 // the five style toggle buttons were removed at Andrew's order) ----
@@ -1750,11 +1751,12 @@ function managePulse() {
     pushSources();
   }
   function drop() {       // GL failed / fell back to raster: stop touching GL entirely
-    GLM = null;
+    GLM = null; lastNight = null;
     if (pulseTimer) { clearInterval(pulseTimer); pulseTimer = null; }
   }
   function sync() {       // call after any pieces change; a signature check makes repeats free
     if (!GLM) return;
+    if (!!(H && H.isNight && H.isNight()) !== lastNight) syncTheme();
     const sig = stateSig();
     if (sig === lastSig && CUR) return;
     lastSig = sig;
@@ -1770,6 +1772,14 @@ function managePulse() {
   }
   function active() { return !!GLM; }
   function setFont(stack) { if (Array.isArray(stack) && stack.length) { fontStack = stack.slice(); if (GLM) { for (const id of ['streetnamespt1', 'streetnamespt2', 'streetnamespt3', 'streetnamespt4', 'routepoi-txt']) { if (GLM.getLayer(id)) { try { GLM.setLayoutProperty(id, 'text-font', fontStack); } catch (e) {} } } } } } // Beta 1.170 (Carbon fix round Phase 2, B-09): layers already on the map take the new stack too - through 1.169 setFont replaced only the variable FUTURE layers are built from, so a basemap restyle (which re-picks the font, then calls sync - not init) left the live label layers rendering the retired stack until the next full rebuild
-  return { init, drop, sync, syncSel, active, setFont, rebuildRoute };
+  function syncTheme() {
+    if (!GLM || !GLM.getLayer) return;
+    const night = !!(H && H.isNight && H.isNight());
+    lastNight = night;
+    const casing = night ? '#000000' : '#5a5f6a', txt = night ? '#e8e8e8' : '#333333', halo = night ? 'rgba(0,0,0,.8)' : 'rgba(255,255,255,.9)';
+    for (const id of ['t1-casing', 't1-casingb']) { if (GLM.getLayer(id)) { try { GLM.setPaintProperty(id, 'line-color', casing); } catch (e) {} } }
+    for (const id of ['streetnamespt1', 'streetnamespt2', 'streetnamespt3', 'streetnamespt4', 'routepoi-txt']) { if (GLM.getLayer(id)) { try { GLM.setPaintProperty(id, 'text-color', txt); GLM.setPaintProperty(id, 'text-halo-color', halo); } catch (e) {} } }
+  }
+  return { init, drop, sync, syncSel, syncTheme, active, setFont, rebuildRoute };
 })();
 window.GLP = GLP;
