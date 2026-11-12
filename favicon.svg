@@ -1,0 +1,38 @@
+<svg xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink" width="1254" height="1254" viewBox="0 0 1254 1254" role="img" aria-label="Snow Route snowplow icon">
+<defs>
+  <linearGradient id="background" x1="0" y1="0" x2="0.84" y2="1"><stop offset="0" stop-color="#10259b"/><stop offset="0.47" stop-color="#1B2FB6"/><stop offset="1" stop-color="#3D65EF"/></linearGradient>
+  <linearGradient id="cab" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#fff"/><stop offset="0.82" stop-color="#fff"/><stop offset="1" stop-color="#bddfff"/></linearGradient>
+  <linearGradient id="glass" x1="0" y1="1" x2="0.85" y2="0"><stop offset="0" stop-color="#05208e"/><stop offset="1" stop-color="#002181"/></linearGradient>
+  <linearGradient id="reflection" x1="0" y1="1" x2="1" y2="0"><stop offset="0" stop-color="#1665e8"/><stop offset="1" stop-color="#36a5ff"/></linearGradient>
+  <linearGradient id="blade" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#0935b6"/><stop offset="0.46" stop-color="#2074f3"/><stop offset="1" stop-color="#43baff"/></linearGradient>
+  <linearGradient id="bottomBlue" x1="0" y1="0" x2="0.5" y2="1"><stop offset="0" stop-color="#98d7ff"/><stop offset="0.47" stop-color="#3D65EF"/><stop offset="1" stop-color="#1B2FB6"/></linearGradient>
+  <linearGradient id="pale" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#fff"/><stop offset="1" stop-color="#d7ebff"/></linearGradient>
+  <radialGradient id="blueGlow" cx="0.5" cy="0.95" r="0.8"><stop offset="0" stop-color="#3D65EF" stop-opacity="0.65"/><stop offset="1" stop-color="#3D65EF" stop-opacity="0"/></radialGradient>
+</defs>
+<g id="00-opaque-background"><rect width="1254" height="1254" fill="url(#background)"/><rect width="1254" height="1254" fill="url(#blueGlow)"/></g><g id="01-lights" fill="#fff">
+ <rect x="456" y="220" width="88" height="55" rx="16"/>
+ <rect x="580" y="220" width="88" height="55" rx="16"/>
+ <rect x="704" y="220" width="88" height="55" rx="16"/>
+</g><g id="02-side-mirrors">
+  <path d="M285 521L313 573L336 565L308 520Z" fill="#1c78ee"/>
+  <path d="M958 521L926 575L908 566L942 520Z" fill="#1c78ee"/>
+  <rect x="240" y="398" width="73" height="141" rx="25" fill="#fff"/>
+  <rect x="933" y="398" width="74" height="141" rx="25" fill="#fff"/>
+</g><g id="03-snowplow-truck">
+ <path d="M262 728V642Q262 593 330 560L363 356Q375 297 426 297H823Q873 297 887 358L919 560Q982 590 982 642V728Z" fill="url(#cab)"/>
+ <path d="M427 351L810 346Q852 347 858 391L876 499Q881 519 857 520H389Q365 520 371 499L390 395Q397 354 427 351Z" fill="url(#glass)"/>
+ <path d="M466 365H539L435 504H383Q386 484 401 460Z" fill="url(#reflection)"/>
+ <path d="M569 365H624L519 504H465Z" fill="url(#reflection)"/>
+ <path d="M455 584H792Q814 584 809 604L805 619Q804 626 795 626H451Q443 626 442 618L438 604Q435 584 455 584Z" fill="#03248d"/>
+ <path d="M452 651H798L789 689H461Z" fill="#092c97"/>
+ <path d="M462 706H787V725H462Z" fill="#082e91"/>
+ <path d="M321 623Q298 623 302 647V688H415L402 645Q398 628 376 627Z" fill="#07288f"/>
+ <path d="M930 623Q950 623 946 647V688H835L847 643Q853 629 877 628Z" fill="#07288f"/>
+</g><g id="04-plow-blade">
+ <path d="M204 715H1043Q1073 714 1082 742Q1088 760 1077 780Q1031 877 1066 990Q1091 1064 1154 1115Q1115 1157 1058 1127H166Q121 1140 99 1112Q172 1031 190 945Q211 858 166 769Q160 743 179 727Q189 716 204 715Z" fill="url(#cab)"/>
+ <path d="M192 766H1056Q1012 858 1042 972Q1059 1031 1119 1091H129Q195 1005 218 914Q233 843 192 766Z" fill="url(#blade)"/>
+</g><g id="05-snow-in-front-of-plow">
+ <path d="M105 1091Q246 1007 358 1038Q491 914 627 1002Q769 868 893 922Q968 944 1050 1000Q1087 1054 1153 1119L1179 1159L108 1159Z" fill="url(#pale)"/>
+ <path d="M93 1105Q180 1068 233 1083Q310 1124 399 1099Q524 1044 607 1080L659 1097Q674 1102 694 1086Q809 986 925 999Q1026 1012 1164 1100L1254 1182V1254H0V1182Z" fill="url(#bottomBlue)"/>
+ <path d="M100 1089Q186 1104 248 1117Q327 1143 401 1115Q502 1071 581 1070Q633 1075 670 1094Q685 1099 704 1084Q807 1002 924 999Q1061 993 1142 1076Q1040 1029 967 1004Q825 953 710 1074Q678 1106 651 1095Q533 1040 416 1111Q310 1165 174 1107Z" fill="#fff"/>
+</g></svg>
