@@ -1,0 +1,62 @@
+# Codex review bridge — makes the Codex cloud review a require-able check.
+#
+# Why this exists: Codex's automatic review posts no check run and no commit
+# status — only a summary comment carrying a machine-readable state blob
+# (codex-review-state:v1). Branch protection can only require check runs and
+# statuses, so this workflow polls that blob and reports the verdict as the
+# fixed-name check "codex review gate" (scripts/codex-bridge.py).
+#
+# Why pull_request_target: the workflow definition and the verdict script
+# both come from the BASE branch, and the script is checked out at the base
+# SHA. A pull request therefore cannot rewrite its own gate: a PR that
+# replaced the script with an immediate success exit would otherwise mint a
+# green gate without reading any Codex state (the weakness Codex itself
+# flagged as P1 on this bridge's first version, which ran the script from
+# the PR head). The script only reads the PR's comments through the API —
+# no PR code is ever checked out or executed here — and permissions are
+# pinned read-only because pull_request_target otherwise runs with a
+# permissive token.
+#
+# Verdict rules: the blob must name the PR's current head SHA; completed
+# with no unresolved findings passes; completed with unresolved findings
+# fails; anything else is awaited up to a 15-minute timeout, then the gate
+# FAILS CLOSED. A blob for an older commit never satisfies a newer head.
+# Draft PRs are not reviewed by Codex, so a draft times out and fails by
+# design — mark it ready to get a verdict.
+#
+# Known limit: the gate re-evaluates on PR lifecycle and commit events only.
+# If a review's findings are resolved without a new commit, re-run this job
+# from the Actions tab to refresh the verdict for the current head.
+name: codex-bridge
+
+on:
+  pull_request_target:
+    types: [opened, ready_for_review, reopened, synchronize]
+
+permissions:
+  contents: read
+  issues: read
+  pull-requests: read
+
+concurrency:
+  group: codex-bridge-pr-${{ github.event.pull_request.number }}
+  cancel-in-progress: true
+
+jobs:
+  codex-review-gate:
+    name: codex review gate
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - name: Check out the verdict script from the base branch
+        uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4
+        with:
+          ref: ${{ github.event.pull_request.base.sha }}
+      - name: Await the Codex verdict for this head commit
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: >-
+          python3 scripts/codex-bridge.py
+          --repo ${{ github.repository }}
+          --pr ${{ github.event.pull_request.number }}
+          --head-sha ${{ github.event.pull_request.head.sha }}
