@@ -1,0 +1,35 @@
+# Audit gate (2026-11-11, Andrew approved): Codex review bridge.
+# Codex's automatic PR review posts no check run and no commit status -
+# only a summary comment carrying a machine-readable state blob
+# (codex-review-state:v1). Branch protection therefore cannot require
+# Codex directly. This workflow's single job reports ONE fixed check
+# name - "codex review gate" - whose verdict is Codex's: the job polls
+# the PR for Codex's state blob matching the PR head SHA and passes only
+# when the review completed with no unresolved findings. It fails closed
+# on unresolved findings, on timeout (15 min), or on an unreadable state.
+# Draft PRs are not reviewed by Codex, so the bridge times out on them -
+# that is intended: a draft cannot pass the gate.
+name: codex-bridge
+on:
+  pull_request:
+    types: [opened, ready_for_review, reopened, synchronize]
+permissions:
+  contents: read # checkout only
+  issues: read # PR conversation comments carry the Codex state blob
+  pull-requests: read
+concurrency:
+  group: codex-bridge-${{ github.event.pull_request.number }}
+  cancel-in-progress: true
+jobs:
+  codex-review-gate:
+    name: codex review gate
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4
+      - name: Wait for the Codex verdict on the head commit
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          PR_NUMBER: ${{ github.event.pull_request.number }}
+          HEAD_SHA: ${{ github.event.pull_request.head.sha }}
+        run: python3 scripts/codex-bridge.py --repo "${{ github.repository }}" --pr "${PR_NUMBER}" --head-sha "${HEAD_SHA}" --timeout-seconds 900 --interval-seconds 45
