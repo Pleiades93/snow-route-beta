@@ -1,82 +1,32 @@
-# Snow Route Beta
+# Snow Route
 
-A snow-clearing route tracker built for one operator working from a phone in a
-truck — in the dark, with gloves-adjacent tapping and spotty signal.
+**Status:** Beta
 
-It started as a tracker for one 34-street route in Vaughan, Ontario, and has
-grown into a small route system: routes are **data packs**, and storage,
-backups and the route menu are all per-route. **Route 5W (Vaughan)** is the
-original pack; twelve city packs ship today (44,405 streets), routes switch
-in-app from the route menu, and a new route can be created in the app and
-saved on the device. The system is *designed* so a new area is a new pack
-rather than a new app — storage, backups and the menu are already per-route. There is no server and no
-account; all progress lives on the device.
+Snow Route is a mobile-first web app for tracking snow-clearing work route by route. It lets a snow-clearing operator choose an existing route or create a new one, then mark street sections and each side of a street as they are completed, so finished and remaining work are visible at a glance.
 
-## Live
+Each route keeps its own progress, notes, and history. Snow Route is designed for phone use in the field, with GPS follow, pace information, day and night maps, and downloadable maps for offline use. It has no account or server: data is stored on the device, and a backup can be exported as a file.
 
-- **GitHub Pages:** https://pleiades93.github.io/snow-route-beta/
+## Live app
+
+- **Try Snow Route:** https://pleiades93.github.io/snow-route-beta/
 
 ## What it does
 
-- **Route menu:** the app opens on a route menu (Choose a route, or create
-  a route of your own). The Routes tab reopens it any time.
-  Picking a route loads that route's own progress, notes and history.
-- **Streets and sides:** route streets are drawn from real OpenStreetMap
-  centrelines, cut into stretches at every junction, and each stretch's two
-  physical sides are marked separately — the road plow leaves a windrow on
-  both sides, and the two sides are rarely cleaned in the same pass. Tap a
-  stretch and use the arrow chips that pop up on each side of the road; a
-  cleaned side shows as a green edge line, and consecutive finished
-  stretches join into one continuous line. Main streets (cleaned first) are
-  gold, the rest raspberry, finished mint; a street counts done when every
-  stretch is done on both sides, and the info panel can still complete a
-  whole street in one tap.
-- **Runs:** Start / Finish (one Yes/No confirmation — no undo after it), a pace readout against
-  your last full clean, a per-street progress count, and a history of
-  previous cleans. Per-street notes ride along.
-- **GPS:** follow mode with a heading-up camera during a run, a recorded
-  trail (only while a clean's own GPS is running), and coverage suggestions
-  — a street that looks covered is *offered*, never auto-marked.
-- **Sheets:** the Streets list and the Pace panel are draggable sheets with
-  three stops (closed / natural / full) and a spring settle.
-- **Day and night:** both basemaps are embedded Protomaps styles (day and
-  night flavours of the same map). The theme follows the sun — computed on
-  the device — with a manual override chip at the top right for the session.
-- **3D buildings:** tilt the map (two fingers, swipe up) and the buildings
-  stand up: the footprints already in the map tiles, extruded. The tiles
-  record no heights for residential streets, so heights are a standard
-  two-storey estimate (a real recorded height is used where one exists).
-  From directly above, the map looks exactly as it did before.
-- **Offline:** Settings → Status → **Download** (offline maps) saves the
-  area's vector tiles (zooms 8–14, plus the route core at zoom 15), styles,
-  glyphs and sprites — 897 files — and reports the count it actually saved.
-  Tiles are also cached as you view them, so a later cold start with no
-  signal still shows a map under the route.
+- **Choose or create a route:** Open an existing route or create a new route in the app. Each route keeps separate progress, notes, and history.
+- **Track street sections and sides:** Streets are divided into sections at junctions. Each side of a section can be marked complete independently, and a whole street can also be completed from its information panel.
+- **See work as it is completed:** Completed sections and sides are shown on the map, finished stretches join into a continuous line, and the app shows how much of each street and route is done.
+- **Run a work session:** Start and finish a work session, review the streets completed during it, and compare pace with the most recent full work session. Previous work sessions remain available in the route history.
+- **Use GPS without giving it control:** GPS follow keeps the operator’s position on the map during a work session. The app can suggest streets that appear covered, but it never marks a street automatically.
+- **Keep street notes:** Notes can be kept with individual streets and reviewed as part of that route’s information.
+- **Work in day or night conditions:** The map provides day and night styles, switches automatically according to the sun, and allows a manual override for the current session.
+- **See buildings in three dimensions:** Tilting the map can show building footprints as three-dimensional forms while the top-down view remains unchanged.
+- **Work offline:** Map data can be downloaded in advance for offline use. Maps viewed in the app are also cached for later use without a connection.
 
 ## Backup & restore
 
-Settings → **Backup** is a small menu of two options: **Backup (JSON)**
-and **Restore backup**. (Offline maps live under Settings → **Status**;
-the app update check under Settings → **About**.)
+Snow Route stores its data on the device. From Settings, an operator can export a JSON backup containing route data and app settings, or restore a backup from a JSON file or pasted text. A restore checks the backup before applying it and reports the result.
 
-- **Backup (JSON)** builds the backup and immediately offers to save or
-  share it — one tap. The format is one JSON file, versioned (v2): every
-  route's stored fields under its own route id, plus the global theme
-  preference and the Settings record (vibration, chime on/off, chime sound).
-- **Restore backup** offers **Import JSON** (pick the backup file) or
-  **Import Text** (paste it instead). Both feed the same restore path.
-- Restore validates the file first — format version and every value's
-  shape — before anything is written; a bad file changes nothing. Before
-  writing, restore snapshots the current data. Each restored value is
-  verified by reading it back; on any failure the snapshot is put back and
-  that rollback is itself verified. The result message reports what
-  actually happened, including if a rollback could not be completed.
-- **Missing fields:** a field absent from a backup leaves the current value
-  on the device untouched. Restore replaces what the backup contains; it
-  does not clear what it does not mention. This is deliberate.
-- **Legacy data:** v1 backups (the pre-multi-route format, including the
-  oldest form where the completion set was an object map instead of a list)
-  are accepted and converted on import.
+The detailed storage format and restore rules are documented in `docs/STORAGE-SCHEMA.md` and `docs/ARCHITECTURE.md`.
 
 ## Files
 
