@@ -703,7 +703,7 @@ $('stDel').addEventListener('click', async () => {
 });
 // ---- About / What's new ----
 const WHATSNEW = { // the curated in-app notes: plain words, LATEST RELEASE ONLY (Beta 1.114, Andrew: the accumulated list cluttered the About pane). A release REPLACES this entry with its own in the same change - it never accumulates; the full history lives in CHANGELOG.md, not the app
-  v: 'Beta 1.180', items: ["The opening screen is just the Snow Route icon now, centred on the blue splash — no name underneath it. The opening sequence and route menu work exactly as before."] };
+  v: 'Beta 1.181', items: ["Every road on the map is drawn half again as wide — your route streets and all the other streets too — so the coloured roads, finished sides and the selection glow are easier to see and tap. Your routes and saved progress are unchanged."] };
 function renderAbout() {
   const cur = $('ver').textContent.trim();
   $('wnHead').textContent = "WHAT'S NEW · " + cur; // the header names the LIVE version, read from the title's version element - never a second hard-coded copy that can go stale
