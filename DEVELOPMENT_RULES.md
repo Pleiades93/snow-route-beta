@@ -164,6 +164,41 @@ sharded suite on `main` as the environment-drift audit.
 - The critical-scenario benchmark is the drive battery itself; new critical
   workflows join it as they are discovered.
 
+- **The pull-request gate (set 2026-11-11, Andrew — the standing shipping
+  pipeline).** All feature work rides pull requests; `main` is protected and
+  merges happen only through the gate:
+  - Four required status checks, all on the PR's head commit: `plan`,
+    `build-and-test`, `tier drives` (the fixed-name aggregator in
+    checks.yml — it passes only when the tier job for the change's tier or
+    the full shard battery succeeded, and fails closed when neither ran),
+    and `codex review gate`.
+  - Codex's automatic cloud review is a required verdict, not a courtesy:
+    it posts no check of its own, so `.github/workflows/codex-bridge.yml`
+    (trigger: `pull_request_target`) runs `scripts/codex-bridge.py` from
+    the BASE branch and reports Codex's verdict as the `codex review gate`
+    check. The gate passes only when Codex's review of the exact head
+    commit completed with no unresolved findings; findings, an unreadable
+    state, or a 15-minute timeout all fail closed. Because the workflow and
+    script come from the base branch, a PR cannot rewrite its own gate.
+  - With auto-merge enabled on a PR, GitHub merges it itself once all four
+    checks are green and the branch is up to date — nobody merges by hand
+    around the gate. Administrators are bound by the same protection
+    (enforce_admins on); force pushes and branch deletion are off.
+  - Codex reviews draw on Andrew's ChatGPT plan allowance. Deliberate deep
+    audits are a separate, unchanged process: each round still needs
+    Andrew's explicit say-so.
+  - Known limit: the bridge re-evaluates on PR lifecycle and commit events;
+    if a review's findings are resolved without a new commit, re-run the
+    `codex review gate` job from the Actions tab to refresh the verdict.
+  - Codex reviews a PR when it is opened (or marked ready). After any later
+    push changes the head, summon a fresh review with a `@codex review`
+    comment — the bridge accepts only a verdict naming the current head
+    commit, so an unsummoned push leaves the gate red by design.
+  - Changes to the gate itself (checks.yml, the bridge workflow or script,
+    the protection contexts) ride PRs like everything else. The bridge half
+    takes effect on the NEXT pull request: the running gate always comes
+    from the base branch, never from the PR being judged.
+
 ## 4. Data protection and backward compatibility
 
 - Storage keys and the backup envelope (`{app:'snowroute-backup', v:1, at, data}`) are
