@@ -703,7 +703,7 @@ $('stDel').addEventListener('click', async () => {
 });
 // ---- About / What's new ----
 const WHATSNEW = { // the curated in-app notes: plain words, LATEST RELEASE ONLY (Beta 1.114, Andrew: the accumulated list cluttered the About pane). A release REPLACES this entry with its own in the same change - it never accumulates; the full history lives in CHANGELOG.md, not the app
-  v: 'Beta 1.177', items: ["A brand-new app icon — the plow truck, front and centre, in the app's own blues. (On an iPhone the home-screen picture only changes if the app is removed and added again.)"] };
+  v: 'Beta 1.178', items: ["A cleaner opening: when the splash finishes, the icon and the SNOW ROUTE name now disappear in a single cut — no rise, no fade — and the Choose / Create menu stands on its own, with nothing above the buttons."] };
 function renderAbout() {
   const cur = $('ver').textContent.trim();
   $('wnHead').textContent = "WHAT'S NEW · " + cur; // the header names the LIVE version, read from the title's version element - never a second hard-coded copy that can go stale
