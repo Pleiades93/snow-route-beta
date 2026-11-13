@@ -2,7 +2,7 @@
 <html lang="en" class="boot">
 <head>
 <meta charset="UTF-8">
-<meta http-equiv="Content-Security-Policy" content="default-src 'none'; script-src 'sha384-3P7txhlJj06sRlJLR5FnZyCu20jhI0UUcPJQwlMQ2IDAb6R7Th7LBoR+wpL7Truf' https://cdn.jsdelivr.net; style-src-elem 'sha384-edQTblksUQX4XwoFQMseYNI9/RcCixhrL6pwTAkd5MF/5diHuC/ua0p8/TRFLGOK' https://cdn.jsdelivr.net; style-src-attr 'unsafe-inline'; img-src 'self' data: blob: https://tiles.basemaps.cartocdn.com https://protomaps.github.io https://cdn.jsdelivr.net; connect-src 'self' https://tiles.basemaps.cartocdn.com https://protomaps.github.io https://cdn.jsdelivr.net https://nominatim.openstreetmap.org https://overpass-api.de https://overpass.kumi.systems; worker-src blob: 'self'; child-src blob: 'self'; font-src 'none'; manifest-src 'self'; base-uri 'none'; form-action 'none'; object-src 'none'">
+<meta http-equiv="Content-Security-Policy" content="default-src 'none'; script-src 'sha384-pPDBskuAySdW5YfKgyoPGi2S6UPf+W72bOTprArgTtcYglCMjT49ZKCCOiiS4M78' https://cdn.jsdelivr.net; style-src-elem 'sha384-NU7L6h37mzK4BxZrqVPvYOXM8mvUHOUlkEFWkZoMr5TO8uLL+3OjFb+UcquOeQUS' https://cdn.jsdelivr.net; style-src-attr 'unsafe-inline'; img-src 'self' data: blob: https://tiles.basemaps.cartocdn.com https://protomaps.github.io https://cdn.jsdelivr.net; connect-src 'self' https://tiles.basemaps.cartocdn.com https://protomaps.github.io https://cdn.jsdelivr.net https://nominatim.openstreetmap.org https://overpass-api.de https://overpass.kumi.systems; worker-src blob: 'self'; child-src blob: 'self'; font-src 'none'; manifest-src 'self'; base-uri 'none'; form-action 'none'; object-src 'none'">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="mobile-web-app-capable" content="yes">
@@ -123,7 +123,7 @@
   #cancelStartBtn { position: absolute; bottom: calc(100% + 10px); left: 50%; transform: translateX(-50%); border: none; border-radius: 999px; padding: 8px 14px; font-size: 12.5px; font-weight: 700; color: #fff; white-space: nowrap; cursor: pointer; box-shadow: var(--shadow-float); } /* Beta 1.24 (Andrew): above the Start circle - below it, the tab bar swallowed it */
   .sheet { position: fixed; left: 0; right: 0; bottom: var(--vvb, 0px); z-index: 1100; background: var(--card); -webkit-backdrop-filter: var(--blur); backdrop-filter: var(--blur); color: var(--ink); border-radius: 18px 18px 0 0; box-shadow: var(--shadow-card); max-height: calc(var(--vvh, 100dvh) * .5); /* Beta 1.79 (Andrew): sheets open at HALF height - the three stops are closed / half / full (drag or flick up to fill, down to half, down again to close) */ display: flex; flex-direction: column; transform: translateY(105%); visibility: hidden; transition: transform var(--anim-dur) var(--ease-close), height var(--anim-dur) var(--ease-close), max-height var(--anim-dur) var(--ease-close), visibility 0s linear var(--anim-dur); padding-bottom: var(--sab); }
   .grab, .sheetHead { touch-action: none; }
-  #sheetBody, #pacePad { touch-action: pan-y; }
+  #sheetBody, #pacePad, #cleanView { touch-action: pan-y; }
   .sheet.open { transform: translateY(0); visibility: visible; transition: transform var(--anim-dur) var(--ease-open), height var(--anim-dur) var(--ease-open), max-height var(--anim-dur) var(--ease-open), visibility 0s; }
   .grab { padding: 12px 0 7px; cursor: grab; touch-action: none; flex: none; }
   .grabBar { width: 44px; height: 5px; border-radius: 3px; background: var(--ink-faint); margin: 0 auto; }
@@ -135,28 +135,28 @@
   #sheetClose, #paceClose, #finNo, #noteNo, #xClose, #crModalX { position: absolute; top: 2px; right: 4px; z-index: 3; border: none; background: transparent; width: 38px; height: 38px; padding: 0; color: #e63a2e; font-size: 21px; font-weight: 800; cursor: pointer; } /* THE corner X (Beta 1.30/1.31, completed 1.34, Andrew): ONE plain red X, no box, pinned to the top-right corner of EVERY menu - sheets and dialogs alike. This single rule is the only place a close may be styled; the 1.34 bug was three dialogs carrying their own overrides (coloured-button rules and the Backup button grid) that silently repainted their X as a red box. Beta 1.77 (Andrew, live catch): routeClose shipped missing from this list in 1.76 and rendered as a boxed default button - a NEW menu's X joins this selector the day the menu is built, and drive145 N15 compares every sheet's X computed style so an omission fails the battery. Beta 1.78: the Routes sheet retired and the full-screen route menu's X briefly held its seat here; Beta 1.79 (Andrew) moves that menu's close to his own design - a translucent circle at bottom centre (its own rule below) - so this rule again covers sheets and dialogs only */
   body.kb .sheet { transition: none; } /* Beta 1.61 (was 1.31's near-full-visible-height rule): while the keyboard is up the sheet keeps its pre-keyboard size and place - the layout variables are frozen in syncViewport and the keyboard overlays the sheet; the field is surfaced by the sheet's own scroll (ensureFieldVisible). The 1.31/1.55 sizing chase after the shrinking visible height is what made note menus flicker and jump. */
   .modal .card { max-height: calc(var(--vvh, 100dvh) - 44px); overflow-y: auto; } /* a modal card can never outgrow the visible area, keyboard or not */
-  #filters { display: flex; gap: 6px; padding: 2px 14px 8px; }
-  #filters button { flex: 1; border: none; border-radius: var(--rad-btn); padding: 8px; font-size: 13px; font-weight: 700; background: var(--chip); color: var(--ink-dim); min-height: 38px; }
+  #filters { display: flex; gap: 0; background: #f0f0f3; border-radius: 999px; padding: 3px; margin: 2px 14px 8px; } /* Beta 1.184 (Andrew): the redesign's segmented pill track - the two group tabs ride one grey track, the selected tab wears the app gradient */
+  body.night #filters { background: #26282d; }
+  #filters button { flex: 1; border: none; border-radius: 999px; padding: 8px; font-size: 13px; font-weight: 600; background: transparent; color: #6e6e76; min-height: 38px; }
+  body.night #filters button { color: rgba(214,226,242,.62); }
   #filters button.on { background: linear-gradient(135deg, #3d65ef, #1b2fb6); color: #fff; }
   #sheetBody { overflow-y: auto; padding: 0 14px 14px; -webkit-overflow-scrolling: touch; }
-  .srow { display: flex; align-items: center; gap: 11px; padding: 12px 4px; border-bottom: 1px solid var(--hair); font-size: 16px; cursor: pointer; min-height: 48px; }
-  .srow .dot { width: 15px; height: 15px; border-radius: 50%; background: #ef476f; flex-shrink: 0; }
+  .srow { display: flex; align-items: center; gap: 11px; padding: 12px 4px; border-bottom: 1px solid var(--hair); font-size: 15px; cursor: pointer; min-height: 48px; } /* Beta 1.184: the redesign row type size */
+  .srow .dot { width: 9px; height: 9px; border-radius: 50%; background: #ef476f; flex-shrink: 0; } /* Beta 1.184: the redesign 9px state dot (colours unchanged: rose secondary-pending, gold main below, mint done) */
   .srow.main .dot { background: #ffc233; }
   .srow.done .dot { background: #06d6a0; }
   .srow.done .nm { color: var(--done-nm); }
-  .srow .tm { margin-left: auto; font-size: 12px; color: var(--tm-c); white-space: nowrap; }
+  .srow .tm { margin-left: auto; font-size: 12px; font-weight: 600; color: var(--tm-c); white-space: nowrap; } /* Beta 1.184: the status slot - its colour now comes from the .st-* state classes in the redesign block below */
   .srow .nwrap { display: flex; flex-direction: column; min-width: 0; }
   .srow .nmrow { display: flex; align-items: center; gap: 6px; min-width: 0; }
-  .srow .pill { font-size: 10px; font-weight: 700; letter-spacing: .05em; background: rgba(6,214,160,.18); color: #0b6e4f; border-radius: 999px; padding: 2px 7px; white-space: nowrap; } /* Beta 1.109 (Andrew): the COMPLETED pill from his V1 mockup, carried into the V2 two-chip layout he picked - values are the mockup's own */
-  body.night .srow .pill { color: #9fd3ae; } /* Beta 1.109: at night the pill text takes the app's own night done-name green (--done-nm) so it stays readable on the dark card; the mint tint is unchanged */
   .srow .nt { font-size: 12px; color: var(--nt-c); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; max-width: 36vw; }
-  .srow .sbtn svg { width: 20px; height: 20px; display: block; margin: auto; }
+  .srow .sbtn svg { width: 15px; height: 15px; display: block; margin: auto; } /* Beta 1.184: the pin glyph at redesign size */
   .srow .nt .ntIco svg { width: 11px; height: 11px; vertical-align: -1px; margin-right: 4px; }
-  .srow .sbtn { margin-left: 2px; width: 42px; height: 42px; flex-shrink: 0; border: 1px solid var(--hair); border-radius: var(--rad-btn); background: var(--chip); color: var(--ink); font-size: 17px; padding: 0; }
+  .srow .sbtn { margin-left: 0; width: 32px; height: 32px; flex-shrink: 0; border: none; border-radius: 999px; background: transparent; color: var(--link); font-size: 17px; padding: 0; cursor: pointer; } /* Beta 1.184: the pin rides INSIDE the name row as a bare glyph in the app link blue - the boxed 42px button belonged to the retired row layout */
   .noteEd { padding: 8px 4px 12px 30px; border-bottom: 1px solid var(--hair); }
   .noteEd textarea { width: 100%; min-height: 64px; box-sizing: border-box; background: var(--field); color: var(--ink); border: 1px solid var(--hair); border-radius: var(--rad-btn); padding: 9px; font-size: 16px; /* 16px minimum: below it iOS auto-zooms on focus, which shoves the whole layout around (Beta 1.18) */ font-family: inherit; }
   .noteEd .nhint { font-size: 12px; color: var(--tm-c); margin-top: 5px; }
-  #cleanView { padding: 4px 2px 14px; }
+  #cleanView { flex: 1 1 auto; min-height: 0; overflow-y: auto; -webkit-overflow-scrolling: touch; padding: 4px 14px 14px; } /* Beta 1.184: the clean detail lives in the Pace sheet now - while shown it takes the #pacePad seat and its scroll treatment */
   .cvHead { display: flex; align-items: center; gap: 8px; padding: 8px 2px; }
   .cvHead .cvTtl { font-weight: 800; font-size: 16px; flex: 1; }
   .cvHead button { border: 1px solid var(--hair); background: var(--chip); color: var(--ink); border-radius: var(--rad-btn); min-height: 40px; padding: 0 12px; font-size: 14px; font-weight: 700; }
@@ -168,16 +168,103 @@
   .cvRow .cvNt { font-size: 12px; color: var(--nt-c); margin-top: 3px; }
   .cvDet { font-size: 13px; color: var(--ink); line-height: 1.55; padding: 6px 2px 2px; white-space: pre-wrap; }
   .cvSec { font-weight: 800; font-size: 13px; color: var(--sec); padding: 12px 2px 4px; }
-  .cvDel { width: 100%; margin-top: 14px; min-height: 44px; border: 1px solid #7a3a3a; background: #4a2323; color: #fff; border-radius: var(--rad-btn); font-size: 14px; font-weight: 700; }
-  .cvDel.armed { background: #8c2f2f; }
+  .cvDel { display: block; width: 100%; margin-top: 16px; min-height: 44px; border: none; background: transparent; color: #e63a2e; font-size: 15px; font-weight: 600; cursor: pointer; } /* Beta 1.184: the redesign centred red text action (was a dark boxed button) */
+  .cvDel.armed { background: rgba(230,58,46,.12); border-radius: var(--rad-btn); font-weight: 800; } /* Beta 1.184: the armed second-tap state of the same text action */
   .psec { font-weight: 800; font-size: 13px; color: var(--sec); padding: 12px 2px 4px; }
   .prow { display: flex; justify-content: space-between; gap: 8px; padding: 7px 2px; font-size: 13.5px; border-bottom: 1px solid var(--hair); }
   .prow.histRow { cursor: pointer; }
-  .prow.histRow span:last-child { color: var(--link); }
+  /* Beta 1.184: the saved-clean row right span is its duration (.sc-t in the redesign block) - the old link colour on the whole line retires with the old row text */
   #pacePad { flex: 1 1 auto; min-height: 0; padding: 4px 14px 14px; font-size: 14px; line-height: 1.65; color: var(--ink); overflow-y: auto; -webkit-overflow-scrolling: touch; }
   #pacePad b { color: var(--ink); }
   #pacePad button { border: none; border-radius: var(--rad-btn); padding: 10px 14px; font-size: 14px; font-weight: 700; min-height: 42px; background: #1e7a46; color: #fff; margin-top: 10px; }
   #pacePad button.red { background: #e63a2e; }
+  /* ===== Beta 1.184 menu redesign (Andrew): Streets + Pace interiors in the approved design - app font only, upright, app blues. The shell (grab/sheetHead/stops/animation) is untouched; these rules govern the interiors, and where an older rule above names the same element (.cvHead, .cvTtl) these later rules win. ===== */
+  #stRoute { padding: 0 14px 2px; font-size: 15px; font-weight: 700; color: var(--ink); }
+  #stRouteS { color: var(--ink-dim); font-weight: 600; }
+  #stHero { padding: 2px 14px 0; }
+  .stHeroN { font-size: 80px; font-weight: 800; line-height: 1; color: var(--ink); }
+  .stHeroU { font-size: 17px; font-weight: 600; color: #9a9aa2; }
+  .stHeroL { font-size: 13px; color: #9a9aa2; margin-top: 2px; }
+  .stBar { height: 6px; border-radius: 3px; background: #eef0f6; margin-top: 10px; overflow: hidden; }
+  .stBarF { height: 100%; background: linear-gradient(90deg, #3d65ef, #1b2fb6); border-radius: 3px; }
+  .stCaps { display: flex; justify-content: space-between; font-size: 11.5px; color: #9a9aa2; margin-top: 5px; }
+  body.night .stHeroU, body.night .stHeroL, body.night .stCaps { color: rgba(214,226,242,.55); }
+  body.night .stBar { background: #26282d; }
+  #stGroup { padding: 4px 14px 6px; font-size: 12px; font-weight: 800; letter-spacing: .08em; color: var(--ink); }
+  #stGroupC { color: #9a9aa2; font-weight: 600; letter-spacing: 0; }
+  body.night #stGroupC { color: rgba(214,226,242,.55); }
+  .srow .nm { font-weight: 500; }
+  .srow.half .dot { background: linear-gradient(90deg, #06d6a0 50%, #ef476f 50%); box-shadow: inset 0 0 0 1px rgba(0,0,0,.12); } /* Beta 1.184: ONE SIDE DONE wears a split disc - done mint | the group pending colour (rose here, gold for a main below) */
+  .srow.main.half .dot { background: linear-gradient(90deg, #06d6a0 50%, #ffc233 50%); box-shadow: inset 0 0 0 1px rgba(0,0,0,.12); }
+  body.night .srow.done .dot { background: #9fd3ae; }
+  body.night .srow.half .dot { background: linear-gradient(90deg, #9fd3ae 50%, #ef476f 50%); }
+  body.night .srow.main.half .dot { background: linear-gradient(90deg, #9fd3ae 50%, #ffc233 50%); }
+  .srow .tm.st-done { color: #177245; }
+  .srow .tm.st-half { color: #9c6d00; }
+  .srow .tm.st-todo { color: #9a9aa2; }
+  body.night .srow .tm.st-done { color: #9fd3ae; }
+  body.night .srow .tm.st-half { color: #ffc233; }
+  body.night .srow .tm.st-todo { color: rgba(214,226,242,.45); }
+  .srow .nmNote { display: inline-flex; color: var(--link); flex-shrink: 0; }
+  .srow .nmNote svg { width: 14px; height: 14px; display: block; }
+  body.night .srow .sbtn, body.night .srow .nmNote { color: #8fa8ff; }
+  .noteEd .nedLbl { font-size: 12px; font-weight: 700; letter-spacing: .04em; color: var(--ink); padding-bottom: 6px; }
+  .noteEd .nedActs { display: flex; gap: 18px; align-items: center; margin-top: 7px; }
+  .noteEd .nedActs .nhint { margin-top: 0; margin-left: auto; }
+  .noteEd .nedSave { border: none; background: transparent; color: var(--link); font-size: 14px; font-weight: 700; padding: 4px 0; cursor: pointer; }
+  .noteEd .nedDone { border: none; background: transparent; color: var(--ink-dim); font-size: 14px; font-weight: 600; padding: 4px 0; cursor: pointer; }
+  body.night .noteEd .nedSave { color: #8fa8ff; }
+  #paceHead { display: flex; align-items: baseline; gap: 8px; padding: 2px 14px 8px; border-bottom: 1px solid var(--hair); }
+  #paceHead .ph-t { font-size: 25px; font-weight: 800; color: var(--ink); }
+  #paceHead .ph-s { font-size: 13.5px; color: #9a9aa2; }
+  body.night #paceHead .ph-s { color: rgba(214,226,242,.55); }
+  .statgrid { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 14px 8px; padding: 10px 0 4px; }
+  .statgrid.d2 { grid-template-columns: 1fr 1fr; max-width: 340px; margin: 0 auto; width: 100%; }
+  .statgrid .cell { text-align: center; }
+  .statgrid .ic { color: var(--link); display: inline-flex; }
+  body.night .statgrid .ic { color: #8fa8ff; }
+  .statgrid .v { font-size: 23px; font-weight: 800; line-height: 1.15; color: var(--ink); }
+  .statgrid .l { font-size: 10px; font-weight: 700; letter-spacing: .12em; color: #9a9aa2; }
+  body.night .statgrid .l { color: rgba(214,226,242,.55); }
+  .verd { margin-top: 12px; background: #e9eefc; border-radius: 10px; padding: 11px 12px; font-size: 14.5px; color: var(--ink); line-height: 1.4; }
+  body.night .verd { background: rgba(61,101,239,.18); }
+  .verd .vd-g { color: #177245; font-weight: 700; }
+  body.night .verd .vd-g { color: #9fd3ae; }
+  .verd .vd-r { color: #e63a2e; font-weight: 700; }
+  #pacePad button.red { width: 100%; }
+  .psec2 { font-size: 22px; font-weight: 800; padding: 16px 2px 6px; color: var(--ink); }
+  .gbar { padding: 2px 2px 8px; }
+  .gb-top { display: flex; justify-content: space-between; align-items: baseline; }
+  .gb-n { font-size: 15px; font-weight: 600; color: var(--ink); }
+  .gb-c { font-size: 14px; font-weight: 600; color: var(--link); }
+  body.night .gb-c { color: #8fa8ff; }
+  .gb-track { position: relative; height: 16px; background: #eef0f6; border-radius: 4px; margin-top: 5px; }
+  body.night .gb-track { background: #26282d; }
+  .gb-fill { height: 100%; background: linear-gradient(90deg, #3d65ef, #1b2fb6); border-radius: 4px; }
+  .gb-half { position: absolute; top: -4px; bottom: -4px; left: 50%; border-left: 2px dashed #a6a6ae; }
+  .gb-cap { text-align: right; font-size: 11px; color: #9a9aa2; padding: 0 2px 2px; }
+  body.night .gb-cap { color: rgba(214,226,242,.55); }
+  .prow .sc-d { font-size: 14.5px; font-weight: 600; color: var(--ink); }
+  .prow .sc-n { font-size: 12.5px; font-weight: 600; color: #9a9aa2; }
+  body.night .prow .sc-n { color: rgba(214,226,242,.55); }
+  .prow.histRow .sc-t { font-size: 17px; font-weight: 800; color: var(--ink); }
+  .prow.histRow .sc-t2 { font-size: 12.5px; color: var(--ink-dim); }
+  .cvHead { display: block; padding: 8px 2px 0; }
+  .cvHead .cvBack { border: none; background: transparent; color: var(--link); font-size: 14px; font-weight: 600; min-height: 36px; padding: 6px 0; cursor: pointer; }
+  body.night .cvHead .cvBack { color: #8fa8ff; }
+  .cvHead .cvTtlRow { display: flex; align-items: baseline; }
+  .cvHead .cvTtl { font-size: 25px; font-weight: 800; color: var(--ink); flex: none; }
+  .cvHead .cvSub { font-size: 13.5px; color: #9a9aa2; margin-left: 8px; }
+  body.night .cvHead .cvSub { color: rgba(214,226,242,.55); }
+  .cvRow .cvTop { align-items: center; }
+  .cvRow .dot { width: 9px; height: 9px; border-radius: 50%; display: inline-block; flex: 0 0 auto; }
+  .cvRow .dot-done { background: #06d6a0; }
+  body.night .cvRow .dot-done { background: #9fd3ae; }
+  .cvRow .dot-gold { background: #ffc233; }
+  .cvRow .dot-rose { background: #ef476f; }
+  .cvRow .cvNoteIco { display: inline-flex; color: var(--link); flex-shrink: 0; }
+  .cvRow .cvNoteIco svg { width: 14px; height: 14px; display: block; }
+  body.night .cvRow .cvNoteIco { color: #8fa8ff; }
   .modal { position: fixed; top: var(--vvt, 0px); left: 0; right: 0; height: var(--vvh, 100dvh); z-index: 1200; background: rgba(10,12,16,.55); display: flex; align-items: center; justify-content: center; padding: 22px; }
   .modal.hidden { display: none; }
   .modal:not(.hidden) { animation: menuFade var(--anim-dur) var(--ease-open); }
@@ -450,7 +537,7 @@ input, textarea { caret-color: currentColor; } /* Beta 1.125 (Andrew): the typin
 <div id="hud">
   <div id="warn">Not saving — storage is full or blocked</div>
   <div class="row">
-    <div class="titleStack"><div class="title">Snow Route Beta</div><div class="ver" id="ver">Beta 1.183</div></div>
+    <div class="titleStack"><div class="title">Snow Route Beta</div><div class="ver" id="ver">Beta 1.184</div></div>
   </div>
   <div id="stats"></div>
 </div>
@@ -565,13 +652,18 @@ input, textarea { caret-color: currentColor; } /* Beta 1.125 (Andrew): the typin
 <div id="sheet" class="sheet">
   <div class="grab"><div class="grabBar"></div></div>
   <div class="sheetHead"><div class="sheetTitle">Streets</div><button id="sheetClose">✕</button></div>
+  <div id="stRoute"><span id="stRouteN"></span><span id="stRouteS"></span></div>
+  <div id="stHero"></div>
   <div id="filters"><button data-f="mains" class="on">Mains</button><button data-f="secondaries">Secondaries</button></div>
-  <div id="sheetBody"><div id="streetList"></div><div id="cleanView"></div></div>
+  <div id="stGroup"><span id="stGroupN"></span><span id="stGroupC"></span></div>
+  <div id="sheetBody"><div id="streetList"></div></div>
 </div>
 <div id="pacePanel" class="sheet">
   <div class="grab"><div class="grabBar"></div></div>
   <div class="sheetHead"><div class="sheetTitle">Pace</div><button id="paceClose">✕</button></div>
+  <div id="paceHead"></div>
   <div id="pacePad"></div>
+  <div id="cleanView" style="display:none"></div>
 </div>
 <div id="finModal" class="modal hidden"><div class="card"><h3>Finish this clean?</h3><p id="finMsg"></p><div class="row"><button id="finNo">✕</button><button id="finYes">Finish clean</button></div></div></div>
 <div id="noteModal" class="modal hidden"><div class="card"><h3 id="noteTitle">Note</h3><textarea id="noteText"></textarea><div class="row"><button id="noteNo">✕</button><button id="noteYes">Save note</button></div></div></div>
@@ -3364,7 +3456,17 @@ function resetStreetsSession() { // Beta 1.148 (Tranche 5, A4(ii)): app2's OWN r
   srowCache = { sig: '', rows: new Map() };
   saveWarned = false; // the storage-warning episode belonged to the outgoing route's saves
 }
-function fmtLenM(v) { return String(Math.round(v)).replace(/\B(?=(\d{3})+(?!\d))/g, ',') + ' m'; } // Beta 1.107: street-length display for the Streets list's quiet line - whole metres, thousands separator, never kilometres
+function fmtLenM(v) { return String(Math.round(v)).replace(/\B(?=(\d{3})+(?!\d))/g, ',') + ' m'; }
+function streetHalf(n) { const p = pieces[n]; return Array.isArray(p) && !streetComplete(n) && p.some(v => v !== 0); } // Beta 1.184: ONE SIDE DONE - some side bit set on some stretch, the street not complete. The Streets list half state and the Pace menu Progress-by-group half count share this one predicate. Streets whose pieces are not an array (doneSet-only) are binary by construction and never half.
+function srowClass(n) { return 'srow' + (streetComplete(n) ? ' done' : '') + (MAIN.has(n) ? ' main' : '') + (streetHalf(n) ? ' half' : ''); }
+function srowStatus(n) { // Beta 1.184: the row right-hand status slot. A completed street keeps the list full historical string (done <when> (<ago>), check-flag prefix included); where the old list showed nothing, the redesign words apply: 'completed' (a completion with no recorded time), 'one side done' (a half), an em dash (untouched). The flag prefix rides every state, exactly as the old .tm string did.
+  const flag = (notes[n] && notes[n].some(f => f.k !== 'note')) ? '⚑ ' : '';
+  const doneAt = streetComplete(n) && doneTimes[n] ? fmtWhen(doneTimes[n]) : '';
+  if (doneAt) return { t: flag + 'done ' + doneAt + ' (' + fmtAgo(doneTimes[n]) + ')', c: 'st-done' };
+  if (streetComplete(n)) return { t: flag + 'completed', c: 'st-done' };
+  if (streetHalf(n)) return { t: flag + 'one side done', c: 'st-half' };
+  return { t: flag + '—', c: 'st-todo' };
+} // Beta 1.107: street-length display for the Streets list's quiet line - whole metres, thousands separator, never kilometres
 function renderStreets() { // production row design: tap a street's name area to open its inline note editor (auto-saves); the pin button flies to the street
   const el = $('streetList'); if (!el) return;
   const scroller = $('sheetBody'); const keepScroll = scroller ? scroller.scrollTop : 0; // Beta 1.31: a rebuild must not yank the list back to the top while he is working in it
@@ -3375,7 +3477,16 @@ function renderStreets() { // production row design: tap a street's name area to
   let noteFlushed = false, noteFlushFailed = false; // Beta 1.79: a rebuild for the SAME street (the map style finishing its load, a theme flip - both end in refreshAll) replaces the open editor too. Finalize its pending save HERE, synchronously, instead of leaving the debounced timer pointing at a discarded textarea - that race is what stranded drive88's note checks when the style-ready refresh landed mid-edit
   if (draft !== null && draftFor && draftFor === noteOpenFor && noteSaveTimer) { clearTimeout(noteSaveTimer); noteSaveTimer = 0; if (setNoteText(draftFor, draft).ok) noteFlushed = true; else noteFlushFailed = true; } // Beta 1.113 (round 112, CG-112-01): setNoteText returns the 1.101 storage-outcome OBJECT - {ok:false} is truthy, so the old truthiness test marked a FAILED save flushed and the rebuilt editor announced 'Saved'
   const arr = STREETNAMES.filter(n => (listFilter === 'mains') === MAIN.has(n)); // Beta 1.109: the visible set is exactly the selected group - 6 mains or 28 secondaries on Route 5W
-  arr.sort((a, b) => ((MAIN.has(a) ? 0 : 1) - (MAIN.has(b) ? 0 : 1)) || a.localeCompare(b)); // Beta 1.91 (Andrew): the Streets list leads with the mains (gold - cleaned first), then the secondary streets (raspberry), alphabetical inside each colour, in every filter view
+  arr.sort((a, b) => ((MAIN.has(a) ? 0 : 1) - (MAIN.has(b) ? 0 : 1)) || a.localeCompare(b));
+  // Beta 1.184 (Andrew): the redesign fixed head of the Streets sheet - route line, hero,
+  // group heading - rewritten on every render from the same live state the dock pill reads
+  // (updateCount counts and work fraction). Road km = side-metres / 2000 (sides come in pairs).
+  const stR = $('stRouteN'), stS = $('stRouteS');
+  if (stR && stS) { stR.textContent = activeRoute ? activeRoute.name : ''; stS.textContent = (activeRoute && activeRoute.area ? ' · ' + activeRoute.area : '') + (runStart ? ' · clean in progress' : ' · not started'); }
+  const stH = $('stHero');
+  if (stH) { const tw = totalWorkM(); stH.innerHTML = '<div class="stHeroN">' + STREETNAMES.filter(streetComplete).length + ' <span class="stHeroU">/ ' + STREETNAMES.length + ' streets</span></div><div class="stHeroL">streets completed so far</div><div class="stBar"><div class="stBarF" style="width:' + (tw > 0 ? (workDoneM() / tw * 100) : 0) + '%"></div></div><div class="stCaps"><span>' + (workDoneM() / 2000).toFixed(1) + ' km of road cleared</span><span>' + (tw / 2000).toFixed(1) + ' km total</span></div>'; }
+  const stGN = $('stGroupN'), stGC = $('stGroupC');
+  if (stGN && stGC) { stGN.textContent = listFilter === 'mains' ? 'MAINS' : 'SECONDARIES'; stGC.textContent = ' · ' + arr.length + ' streets'; } // Beta 1.91 (Andrew): the Streets list leads with the mains (gold - cleaned first), then the secondary streets (raspberry), alphabetical inside each colour, in every filter view
   if (!arr.length) { el.innerHTML = '<div style="padding:14px 4px;color:#8fa0b3">No streets in this group</div>'; srowCache = { sig: '', rows: new Map() }; return; } // Beta 1.109: unreachable with shipped route data (both groups are non-empty by construction) - kept as the safety net it was
   // Beta 1.50 (audit P06): a routine mark used to rebuild all 34 rows from
   // scratch. When the visible set and order are unchanged and no note editor
@@ -3386,14 +3497,7 @@ function renderStreets() { // production row design: tap a street's name area to
     let okAll = srowCache.rows.size === arr.length;
     if (okAll) for (const n of arr) { const c = srowCache.rows.get(n); if (!c || c.row.parentElement !== el) { okAll = false; break; } }
     if (okAll) {
-      for (const n of arr) {
-        const c = srowCache.rows.get(n);
-        c.row.className = 'srow' + (streetComplete(n) ? ' done' : '') + (MAIN.has(n) ? ' main' : '');
-        c.row.querySelector('.pill').style.display = streetComplete(n) ? '' : 'none'; // Beta 1.109: the COMPLETED pill rides the same done predicate as the row class (the mint dot comes from the .done rule)
-        const doneAt = streetComplete(n) && doneTimes[n] ? fmtWhen(doneTimes[n]) : '';
-        c.row.querySelector('.tm').textContent = (notes[n] && notes[n].some(f => f.k !== 'note') ? '⚑ ' : '') + (doneAt ? 'done ' + doneAt + ' (' + fmtAgo(doneTimes[n]) + ')' : '');
-        c.paintNt();
-      }
+      for (const n of arr) { srowCache.rows.get(n).paintNt(); } // Beta 1.184: the stored paintNt IS the full row painter now (row class, status slot, name-row note icon, quiet line) - the cache path just calls it
       if (scroller) scroller.scrollTop = keepScroll;
       kbSync(); // Beta 1.56: renders never touch the kb class - the keyboard owner (app4) reconciles
       return;
@@ -3403,16 +3507,20 @@ function renderStreets() { // production row design: tap a street's name area to
   srowCache = { sig, rows: new Map() };
   arr.forEach(n => {
     const d = document.createElement('div');
-    d.className = 'srow' + (streetComplete(n) ? ' done' : '') + (MAIN.has(n) ? ' main' : '');
-    d.innerHTML = '<div class="dot"></div><div class="nwrap"><div class="nmrow"><div class="nm"></div><span class="pill" style="display:none">COMPLETED</span></div><div class="nt"><span class="ntIco"></span><span class="ntTxt"></span></div></div><div class="tm"></div><button class="sbtn smap" title="Show on map"></button>';
+    d.className = srowClass(n);
+    d.innerHTML = '<div class="dot"></div><div class="nwrap"><div class="nmrow"><div class="nm"></div><button class="sbtn smap" title="Show on map"></button><span class="nmNote" style="display:none"></span></div><div class="nt"><span class="ntIco"></span><span class="ntTxt"></span></div></div><div class="tm"></div>'; // Beta 1.184: the pin rides INSIDE the name row, immediately right of the name; a note icon joins it only while the street carries note text; the COMPLETED pill is retired - its state folds into the status slot (srowStatus)
     d.querySelector('.nm').textContent = n;
-    if (streetComplete(n)) d.querySelector('.pill').style.display = ''; // Beta 1.109: a fully completed street (streetComplete - both sides done) wears the pill; a one-side partial never reaches this line's condition
     const ntEl = d.querySelector('.nt');
-    d.querySelector('.smap').innerHTML = ICONS.pin; d.querySelector('.ntIco').innerHTML = ICONS.note; // Pack D glyphs (Beta 1.30) in place of the emoji
-    const paintNt = () => { const t = noteTextOf(n); if (t) { d.querySelector('.ntTxt').textContent = t; d.querySelector('.ntIco').style.display = ''; ntEl.style.display = ''; } else { d.querySelector('.ntTxt').textContent = fmtLenM(STRETCH[n].total); d.querySelector('.ntIco').style.display = 'none'; ntEl.style.display = ''; } }; // Beta 1.107 (Andrew): the quiet line shows the street's length by default (live STRETCH total, exact); a note wins the slot while one exists
+    d.querySelector('.smap').innerHTML = ICONS.pin; d.querySelector('.ntIco').innerHTML = ICONS.note; d.querySelector('.nmNote').innerHTML = ICONS.note; // Pack D glyphs (Beta 1.30) in place of the emoji
+    const paintNt = () => { // Beta 1.184: ONE painter for everything state-shaped on the row - its class (done/main/half), the status slot, the name-row note icon, and the quiet line (length by default, note text while a note exists - the 1.107 rule, unchanged)
+      d.className = srowClass(n);
+      const st = srowStatus(n); const tmEl = d.querySelector('.tm'); tmEl.textContent = st.t; tmEl.className = 'tm ' + st.c;
+      const t = noteTextOf(n);
+      d.querySelector('.nmNote').style.display = t ? '' : 'none';
+      if (t) { d.querySelector('.ntTxt').textContent = t; d.querySelector('.ntIco').style.display = ''; ntEl.style.display = ''; }
+      else { d.querySelector('.ntTxt').textContent = fmtLenM(STRETCH[n].total); d.querySelector('.ntIco').style.display = 'none'; ntEl.style.display = ''; }
+    };
     paintNt();
-    const doneAt = streetComplete(n) && doneTimes[n] ? fmtWhen(doneTimes[n]) : '';
-    d.querySelector('.tm').textContent = (notes[n] && notes[n].some(f => f.k !== 'note') ? '⚑ ' : '') + (doneAt ? 'done ' + doneAt + ' (' + fmtAgo(doneTimes[n]) + ')' : '');
     d.querySelector('.smap').addEventListener('click', e => {
       e.stopPropagation();
       if (!tapGuard('li' + n)) return;
@@ -3432,7 +3540,8 @@ function renderStreets() { // production row design: tap a street's name area to
     if (noteOpenFor === n) {
       const ed = document.createElement('div');
       ed.className = 'noteEd';
-      ed.innerHTML = '<textarea placeholder="Note for this street — e.g. driveway at #12 could not be cleaned, car blocking"></textarea><div class="nhint">Saves automatically</div>';
+      ed.innerHTML = '<div class="nedLbl"></div><textarea placeholder="Note for this street — e.g. driveway at #12 could not be cleaned, car blocking"></textarea><div class="nedActs"><button class="nedSave">Save note</button><button class="nedDone">Done</button><div class="nhint">Saves automatically</div></div>'; // Beta 1.184: the redesign editor furniture - a Note label and explicit Save/Done actions over the SAME autosave mechanism (Save flushes the same setNoteText call now; Done closes the editor, like tapping the row again)
+      ed.querySelector('.nedLbl').textContent = 'Note — ' + n;
       const ta = ed.querySelector('textarea');
       ta.value = (draft !== null && draftFor === n) ? draft : noteTextOf(n); noteEdFor = n;
       const hint = ed.querySelector('.nhint'); if (noteFlushFailed && n === draftFor) hint.textContent = 'Not saved — storage problem'; else if (noteFlushed && n === draftFor) hint.textContent = 'Saved \u2713'; // Beta 1.113 (round 112, CG-112-01): a failed flush says so, in the debounced path's own words - never 'Saved' // Beta 1.79: the rebuilt editor tells the truth about the save the rebuild just finalized
@@ -3441,7 +3550,9 @@ function renderStreets() { // production row design: tap a street's name area to
         clearTimeout(noteSaveTimer);
         noteSaveTimer = setTimeout(() => { const ok = setNoteText(n, ta.value); paintNt(); hint.textContent = ok.ok ? 'Saved ✓' : 'Not saved — storage problem'; }, 400); // Beta 1.63 (audit F04): the hint tells the truth about the write
       });
-      ta.addEventListener('blur', () => { clearTimeout(noteSaveTimer); const ok = setNoteText(n, ta.value); paintNt(); hint.textContent = ok.ok ? 'Saved ✓' : 'Not saved — storage problem'; }); // Beta 1.169 (Carbon fix round, A-01): blur finalizes like the debounced save above it - same result, same words in the same hint. Through 1.168 the result was discarded, so a blur save that failed (storage full, the episode warning already spent) told the user nothing while the editor still read 'Saves automatically'.
+      ta.addEventListener('blur', () => { clearTimeout(noteSaveTimer); const ok = setNoteText(n, ta.value); paintNt(); hint.textContent = ok.ok ? 'Saved ✓' : 'Not saved — storage problem'; });
+      ed.querySelector('.nedSave').addEventListener('click', () => { clearTimeout(noteSaveTimer); const ok = setNoteText(n, ta.value); paintNt(); hint.textContent = ok.ok ? 'Saved ✓' : 'Not saved — storage problem'; });
+      ed.querySelector('.nedDone').addEventListener('click', () => { noteOpenFor = null; renderStreets(); }); // Beta 1.169 (Carbon fix round, A-01): blur finalizes like the debounced save above it - same result, same words in the same hint. Through 1.168 the result was discarded, so a blur save that failed (storage full, the episode warning already spent) told the user nothing while the editor still read 'Saves automatically'.
       el.appendChild(ed);
     }
   });
@@ -3684,15 +3795,45 @@ function cleanWorkM(h) { // side-metres a saved clean actually covered
 }
 function workRateMh(workM, startMs, endMs, minH) { const h = (endMs - startMs) / 3600000; return (workM > 0 && h > minH) ? workM / h : null; } // NaN inputs fail the comparisons and yield null
 function fmtRate(r) { return (r / 1000).toFixed(1) + ' km of sides/hr'; }
+const DAY3 = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
+function fmtDate3(iso) { const d = new Date(iso); if (isNaN(d)) return ''; return DAY3[d.getDay()] + ', ' + MON3[d.getMonth()] + ' ' + d.getDate(); } // Beta 1.184: 'Tue, Nov 10' - the redesign date form for saved-clean rows and the detail header
+function fmtHM(ms) { if (ms == null || isNaN(ms) || ms < 0) return '—'; const m = Math.round(ms / 60000); return Math.floor(m / 60) + ':' + String(m % 60).padStart(2, '0'); } // Beta 1.184: colon duration for the redesign stat cells and rows (1:24, 2:41) - presentation only; fmtDur keeps every existing surface
+function fmtPaceKm(msPerKm) { if (msPerKm == null || isNaN(msPerKm) || !isFinite(msPerKm) || msPerKm <= 0) return null; const s = Math.round(msPerKm / 1000); return Math.floor(s / 60) + ':' + String(s % 60).padStart(2, '0'); } // Beta 1.184: '8:56' - minutes:seconds per ROAD km
+function cleanPaceKm(h) { // Beta 1.184: a saved clean pace per ROAD km - its total elapsed (start to the Finish tap) over its road kilometres (cleanWorkM counts SIDES, so road km = cleanWorkM / 2000). null when underivable (a legacy clean with no usable times, or no recorded work)
+  const d = histDur(h); if (!d) return null;
+  const elapsed = Date.parse(h.at) - d.start; const roadKm = cleanWorkM(h) / 2000;
+  if (!(elapsed > 0) || !(roadKm > 0)) return null;
+  return fmtPaceKm(elapsed / roadKm);
+}
+function groupProgress(wantMain) { // Beta 1.184: Progress-by-group sums - a completed street counts 1, a street with any side done counts a half (the approved frame 3.5 of 6), else 0
+  let sum = 0, cnt = 0;
+  for (const n of STREETNAMES) { if (MAIN.has(n) === wantMain) { cnt++; sum += streetComplete(n) ? 1 : (streetHalf(n) ? 0.5 : 0); } }
+  return { sum, cnt };
+}
+function fmtCnt(v) { return v % 1 ? v.toFixed(1) : String(v); }
+const PACE_ICONS = { // Beta 1.184: the approved design line glyphs for the stat cells, stroke currentColor, coloured by the .ic rule
+  clock: '<svg width="26" height="26" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="8.5"/><path d="M12 7.5V12l3 2"/></svg>',
+  road: '<svg width="26" height="26" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M6.5 20 10.5 4"/><path d="M17.5 20 13.5 4"/><path d="M12 7v1.7M12 11.2v1.7M12 15.4v1.7"/></svg>',
+  flag: '<svg width="26" height="26" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M6 21V4.5"/><path d="M6 5h10.5l-2.3 3.2 2.3 3.3H6"/></svg>',
+  list: '<svg width="26" height="26" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M9.5 6h9.5M9.5 12h9.5M9.5 18h9.5"/><circle cx="5.2" cy="6" r="1.2" fill="currentColor" stroke="none"/><circle cx="5.2" cy="12" r="1.2" fill="currentColor" stroke="none"/><circle cx="5.2" cy="18" r="1.2" fill="currentColor" stroke="none"/></svg>',
+  cal: '<svg width="26" height="26" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="4" y="5.5" width="16" height="15" rx="2"/><path d="M4 10.2h16M8.5 3.5v4M15.5 3.5v4"/></svg>',
+  gauge: '<svg width="26" height="26" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M4.5 16.5a8 8 0 1 1 15 0"/><path d="M12 15l4.2-4.6"/><circle cx="12" cy="15" r="1.3" fill="currentColor" stroke="none"/></svg>',
+  trail: '<svg width="26" height="26" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M7.8 17.2c3.5-.8 2.8-4.3 5.4-5.4 1.9-.8 2.6-2 2.9-4"/><circle cx="6" cy="18" r="2.1"/><circle cx="18" cy="6" r="2.1"/></svg>'
+};
+function statCell(ic, v, l) { return '<div class="cell"><span class="ic">' + PACE_ICONS[ic] + '</span><div class="v">' + v + '</div><div class="l">' + l + '</div></div>'; }
+function groupBar(name, g) {
+  const pct = g.cnt ? (g.sum / g.cnt * 100) : 0;
+  return '<div class="gbar"><div class="gb-top"><span class="gb-n">' + name + '</span><span class="gb-c">' + fmtCnt(g.sum) + ' of ' + g.cnt + ' streets</span></div><div class="gb-track"><div class="gb-fill" style="width:' + pct + '%"></div><div class="gb-half"></div></div></div>';
+}
 function paceInfo() { // Beta 1.91 (Andrew): pace is a WORK RATE - side-metres per hour, cumulative (work done so far / time so far) off the per-side mark stamps. Interleaved streets and same-street batched marks cannot distort a cumulative rate; a mark left late only makes the live reading lag until it lands, and the totals are never touched by stamp timing.
   const ref = refRun();
   const refRateMh = ref ? workRateMh(cleanWorkM(ref), Date.parse(ref.startedAt || ''), Date.parse(ref.at || ''), 0.05) : null;
   let rateMh = null, live = false;
   if (runStart) { const r = workRateMh(liveWorkM(), runStart, Date.now(), 0.02); if (r) { rateMh = r; live = true; } } // Beta 1.93 (audit R06): the numerator is the RUN's work (liveWorkM), not the whole board's
   if (!rateMh) rateMh = refRateMh;
-  let etaTxt = '';
-  if (runStart && rateMh) { const leftM = totalWorkM() - workDoneM(); if (leftM > 0) { const leftH = leftM / rateMh; etaTxt = 'ETA ' + fmtDur(leftH * 3600000) + ' · done ~' + fmtClock(new Date(Date.now() + leftH * 3600000)); } }
-  return { rateMh, refRateMh, live, etaTxt, ref };
+  let etaTxt = '', etaClock = '';
+  if (runStart && rateMh) { const leftM = totalWorkM() - workDoneM(); if (leftM > 0) { const leftH = leftM / rateMh; etaClock = fmtClock(new Date(Date.now() + leftH * 3600000)); etaTxt = 'ETA ' + fmtDur(leftH * 3600000) + ' · done ~' + etaClock; } }
+  return { rateMh, refRateMh, live, etaTxt, etaClock, ref }; // Beta 1.184: etaClock is additive - the redesign ETA cell reads the done-at clock alone; etaTxt and statsLine are untouched
 }
 function statsLine() {
   const p = paceInfo();
@@ -3715,32 +3856,63 @@ function histDur(h) {
   return { count: cleanCount(h), durMs: ts[ts.length - 1] - start, start }; // Beta 1.169 (B-07): the DURATION still spans the timestamped streets (ks above - a span needs moments), but the COUNT is cleanCount: every street the clean covers, null-timestamped ones included
 }
 let histOpen = false;
-function renderPace() {
+function renderPace() { // Beta 1.184 (Andrew): the approved redesign - This run stat grid, verdict banner, Progress by group, Saved cleans (always expanded). Every figure binds to the same live data the old lines read; the old Reference/Pace/This-run/Work-done lines and the Previous-cleans collapse retire into these slots (see the 1.184 datum mapping in the round record).
   const p = paceInfo();
   const ref = p.ref;
-  let html =
-    '<div>Reference clean: <b>' + (ref ? new Date(ref.at).toLocaleDateString() + ' (' + cleanCount(ref) + ' streets)' : 'none yet — finish a clean to set your pace') + '</b></div>' +
-    '<div>Pace: <b>' + (p.rateMh ? fmtRate(p.rateMh) + ' · full clean ≈ ' + fmtDur(totalWorkM() / p.rateMh * 3600000) + (p.live ? ' (this run so far)' : ' (reference clean)') : '—') + '</b></div>' +
-    '<div>This run: <b>' + (runStart ? 'started ' + fmtClock(new Date(runStart)) + (p.etaTxt ? ' · ' + p.etaTxt : '') : 'not started') + '</b></div>' +
-    '<div>Work done: <b>' + Math.round(workDoneM()) + ' m of ' + Math.round(totalWorkM()) + ' m of street sides</b></div>' +
-    (runStart ? '<button class="red" id="paceCancel">Cancel start</button>' : '');
-  html += '<div class="psec" id="histHead">Previous cleans ' + (histOpen ? '▲' : '▼') + '</div>';
-  if (histOpen) {
-    let any = 0;
-    for (let i = history.length - 1; i >= 0; i--) {
-      const d = histDur(history[i]);
-      if (!d) { html += '<div class="prow histRow" data-i="' + i + '"><span>' + fmtWhen(history[i].at) + '</span><span>time not recorded · ' + cleanCount(history[i]) + ' of ' + STREETNAMES.length + ' streets ›</span></div>'; any++; continue; } // Beta 1.167 (B4, RP-04): a legacy clean whose item times are all null is still LISTED - and opens, and deletes through the same two-tap flow. Through 1.166 histDur's null skipped it here while refRun could still pick it as the pace reference: it existed, set the pace, and could never be seen or removed.
-      html += '<div class="prow histRow" data-i="' + i + '"><span>' + fmtWhen(history[i].at) + '</span><span>' + fmtDur(d.durMs) + ' · ' + d.count + ' of ' + STREETNAMES.length + ' streets ›</span></div>';
-      any++;
-    }
-    if (!any) html += '<div style="font-size:13px;color:var(--ink-dim);padding:4px 2px">No cleans saved yet — when you finish a run and tap Finish, it lands here with its total time.</div>';
+  const ph = $('paceHead');
+  if (ph) ph.innerHTML = '<span class="ph-t">This run</span><span class="ph-s">' + (activeRoute ? activeRoute.name : '') + (runStart ? ' · started ' + fmtClock(new Date(runStart)) : ' · not started') + '</span>';
+  // the verdict is honest only when a LIVE rate and a REFERENCE rate both exist: projected full-clean durations compared through the same totalWorkM the pace line always used. Otherwise the banner slot carries the reference line (or the no-reference line) - never a verdict against itself.
+  let banner;
+  if (runStart && p.live && p.rateMh && p.refRateMh) {
+    const diffMin = Math.round((totalWorkM() / p.refRateMh - totalWorkM() / p.rateMh) * 60);
+    const etaBit = p.etaClock ? ', ETA ' + p.etaClock : '';
+    if (diffMin > 0) banner = '<div class="verd"><span class="vd-g">▲ Faster by ' + diffMin + ' min</span> — verdict at today\'s pace' + etaBit + '</div>';
+    else if (diffMin < 0) banner = '<div class="verd"><span class="vd-r">▼ Slower by ' + (-diffMin) + ' min</span> — verdict at today\'s pace' + etaBit + '</div>';
+    else banner = '<div class="verd"><span class="vd-g">On pace with the reference clean</span> — verdict at today\'s pace' + etaBit + '</div>';
+  } else if (ref) {
+    const rd = histDur(ref), rp = cleanPaceKm(ref);
+    banner = '<div class="verd ref">Reference clean (' + fmtDate3(ref.at) + ')' + (rd && rp ? ' — ' + fmtHM(rd.durMs) + ' total · ' + rp + ' /km pace' : '') + '</div>';
+  } else {
+    banner = '<div class="verd ref">No reference clean yet — finish a clean to set your pace</div>';
   }
+  const last = history.length ? history[history.length - 1] : null; // most recent = the last element (history is chronological, append-only) - NOT the reference clean; the two can differ
+  const ld = last ? histDur(last) : null;
+  const lp = last ? cleanPaceKm(last) : null;
+  let html =
+    '<div class="statgrid">' +
+    statCell('clock', runStart ? fmtHM(Date.now() - runStart) : '—', 'ELAPSED') +
+    statCell('road', (workDoneM() / 2000).toFixed(1) + ' km', 'ROAD CLEARED') +
+    statCell('flag', p.etaClock || '—', 'ETA') +
+    statCell('list', STREETNAMES.filter(streetComplete).length + '/' + STREETNAMES.length, 'STREETS') +
+    statCell('cal', ld ? fmtHM(ld.durMs) : '—', 'LAST CLEAN') +
+    statCell('gauge', lp || '—', 'LAST PACE /KM') +
+    '</div>' +
+    banner +
+    (runStart ? '<button class="red" id="paceCancel">Cancel start</button>' : '') +
+    '<div class="psec2">Progress by group</div>' +
+    groupBar('Mains', groupProgress(true)) +
+    groupBar('Secondaries', groupProgress(false)) +
+    '<div class="gb-cap">dashed line = halfway</div>' +
+    '<div class="psec2">Saved cleans</div>';
+  let any = 0;
+  for (let i = history.length - 1; i >= 0; i--) {
+    const d = histDur(history[i]);
+    if (!d) { html += '<div class="prow histRow" data-i="' + i + '"><span><span class="sc-d">' + fmtDate3(history[i].at) + '</span> <span class="sc-n">· ' + cleanCount(history[i]) + ' streets</span></span><span class="sc-t2">time not recorded</span></div>'; any++; continue; } // Beta 1.167 (B4, RP-04) carries: a legacy clean whose item times are all null is still LISTED - and opens, and deletes through the same two-tap flow
+    html += '<div class="prow histRow" data-i="' + i + '"><span><span class="sc-d">' + fmtDate3(history[i].at) + '</span> <span class="sc-n">· ' + d.count + ' streets</span></span><span class="sc-t">' + fmtHM(d.durMs) + '</span></div>';
+    any++;
+  }
+  if (!any) html += '<div style="font-size:13px;color:var(--ink-dim);padding:4px 2px">No cleans saved yet — when you finish a run and tap Finish, it lands here with its total time.</div>';
   $('pacePad').innerHTML = html;
   const c = $('paceCancel'); if (c) c.addEventListener('click', () => { cancelStart(); closeSheets(); });
-  const hh = $('histHead'); if (hh) hh.addEventListener('click', () => { histOpen = !histOpen; renderPace(); });
   $('pacePad').querySelectorAll('.histRow').forEach(r => r.addEventListener('click', () => openClean(+r.dataset.i)));
 }
-function openPace() { deselect(); closeSheets(); $('pacePanel').style.height = ''; $('pacePanel').style.maxHeight = ''; renderPace(); $('pacePanel').classList.add('open'); }
+function showPaceMain() { // Beta 1.184: the Pace sheet main view - header + pace content visible, the clean detail hidden
+  const cv = $('cleanView'); if (cv) { cv.style.display = 'none'; cv.classList.add('hidden'); }
+  const ph = $('paceHead'); if (ph) ph.style.display = '';
+  const pp = $('pacePad'); if (pp) pp.style.display = '';
+  cleanIdx = null;
+}
+function openPace() { deselect(); closeSheets(); $('pacePanel').style.height = ''; $('pacePanel').style.maxHeight = ''; showPaceMain(); renderPace(); $('pacePanel').classList.add('open'); } // Beta 1.184: showPaceMain first - an open left on the clean detail returns to the Pace main view
 function closePace() { closeSheetEl($('pacePanel')); } // same animated close as every sheet (Beta 1.30)
 
 // ===== CLEAN DETAIL (production v5.53 model): one archived clean inside the list sheet - totals, its streets
@@ -3752,23 +3924,35 @@ function openClean(i) {
   const h = history[i];
   if (!h) return;
   cleanIdx = i; cleanDelArmed = false;
-  closePace(); deselect();
-  $('filters').style.display = 'none';
-  $('streetList').style.display = 'none';
+  deselect();
+  const d = histDur(h);
+  // Beta 1.184: the detail lives INSIDE the Pace sheet now - the pace content yields, the detail takes its seat; the Pace sheet itself stays open (it no longer closes into the Streets sheet)
+  const ph = $('paceHead'); if (ph) ph.style.display = 'none';
+  const pp = $('pacePad'); if (pp) pp.style.display = 'none';
   const cv = $('cleanView');
   cv.classList.remove('hidden');
+  cv.style.display = '';
   cv.innerHTML = '';
   const head = document.createElement('div'); head.className = 'cvHead';
-  head.innerHTML = '<button class="cvBack">‹ Back</button><div class="cvTtl"></div>';
-  head.querySelector('.cvTtl').textContent = 'Clean — ' + fmtWhen(h.at);
+  head.innerHTML = '<button class="cvBack">‹ Saved cleans</button><div class="cvTtlRow"><span class="cvTtl"></span><span class="cvSub"></span></div>';
+  head.querySelector('.cvTtl').textContent = fmtDate3(h.at);
+  head.querySelector('.cvSub').textContent = cleanCount(h) + ' streets · finished ' + fmtClock(new Date(h.at));
   head.querySelector('.cvBack').onclick = backToCleans;
   cv.appendChild(head);
-  const d = histDur(h);
+  const stats = document.createElement('div'); stats.className = 'statgrid d2'; // Beta 1.184: the design 2x2 cells - TOTAL TIME is histDur span (the same interval the Saved-cleans row shows); ROAD CLEARED is work, GPS TRAIL is travel: different measures, distinct labels, never merged
+  const cpk = cleanPaceKm(h);
+  stats.innerHTML =
+    statCell('clock', d ? fmtHM(d.durMs) : '—', 'TOTAL TIME') +
+    statCell('road', (cleanWorkM(h) / 2000).toFixed(1) + ' km', 'ROAD CLEARED') +
+    statCell('gauge', cpk ? cpk + ' /km' : '—', 'PACE') +
+    statCell('trail', h.km ? (+h.km).toFixed(1) + ' km' : '—', 'GPS TRAIL');
+  cv.appendChild(stats);
   const meta = document.createElement('div'); meta.className = 'cvMeta';
   const elapsedMs = d ? Date.parse(h.at) - d.start : NaN; // Beta 1.167 (B3, RP-08): the SECOND interval - the run's start to the Finish tap (h.at). Through 1.166 the single 'Total time' figure was histDur's start-to-LAST-COMPLETION span while the pace rate divided by start-to-Finish: two different intervals, one label, a 15.8% skew on a 30-minute tail. Both are shown now, each under its own label; the math is unchanged.
   const paceRate = (d && !isNaN(elapsedMs) && elapsedMs >= 0) ? workRateMh(cleanWorkM(h), d.start, Date.parse(h.at), 0.05) : null; // the pace divides the clean's work by the TOTAL ELAPSED window - the same window workRateMh uses for the reference figure in renderPace - and the meta line says so
   meta.textContent = (d ? ('Streets done in ' + fmtDur(d.durMs) + ' · Total elapsed ' + fmtDur(Math.max(0, elapsedMs)) + ' · ') : '') + cleanCount(h) + ' streets' + (h.km ? (' · ' + h.km + ' km of GPS trail') : '') + (h.pathShortened ? ' · saved GPS path shortened by the trail cap' : '') + (paceRate ? (' · Pace ' + fmtRate(paceRate) + ' (work / total elapsed)') : '') + (h.startedAt ? (' · started ' + fmtClock(new Date(h.startedAt))) : '') + '\nPace divides the clean\'s recorded work by its total elapsed time (start to the Finish tap). Per-street span = first side marked to last side marked (includes any work in between). Tap a street for its details.';
   cv.appendChild(meta);
+  const secH = document.createElement('div'); secH.className = 'psec2'; secH.textContent = 'Streets'; cv.appendChild(secH);
   const items = h.items || {};
   const order = Object.keys(items).filter(n => STREETSET.has(n)).sort((x, y) => String(items[x] || '9999').localeCompare(String(items[y] || '9999')));
   let prev = h.startedAt ? Date.parse(h.startedAt) : NaN;
@@ -3780,11 +3964,12 @@ function openClean(i) {
     if (!isNaN(t)) prev = t;
     const rowEl = document.createElement('div'); rowEl.className = 'cvRow';
     const top = document.createElement('div'); top.className = 'cvTop';
-    top.innerHTML = '<div class="cvNm"></div><div class="cvTm"></div>';
+    top.innerHTML = '<span class="dot dot-done"></span><div class="cvNm"></div><div class="cvTm"></div>'; // Beta 1.184: cleaned rows wear the done dot; NO pin anywhere in the detail (pins are the live list's locate control)
     top.querySelector('.cvNm').textContent = n;
     top.querySelector('.cvTm').textContent = (!isNaN(t) ? fmtClock(new Date(t)) : '—') + ((span > 0) ? (' · span ' + fmtDur(span)) : (stArr.length ? ' · marked in one go' : (!isNaN(dur) ? (' · gap ' + fmtDur(dur)) : ''))); // Beta 1.167 (B3, RP-07): a street whose recorded sides all carry ONE moment (span 0 - the whole-street mark) reads as marked in one go instead of inheriting the previous street's gap as its 'took'; the stamp-less fallback is a GAP since the previous completion, and is labelled as one
     rowEl.appendChild(top);
     const lines = cleanNoteLines((h.notes || {})[n]);
+    if (lines.length) { const ni = document.createElement('span'); ni.className = 'cvNoteIco'; ni.innerHTML = ICONS.note; top.insertBefore(ni, top.querySelector('.cvTm')); } // Beta 1.184 (Andrew): a note icon ONLY on a street that had a note saved on THIS clean; tapping the row opens the note read-only (the .cvDet below)
     if (lines.length) { const p = document.createElement('div'); p.className = 'cvNt'; p.textContent = lines[0] + (lines.length > 1 ? ' (+' + (lines.length - 1) + ' more)' : ''); rowEl.appendChild(p); }
     const det = document.createElement('div'); det.className = 'cvDet'; det.style.display = 'none';
     const parts = [];
@@ -3803,7 +3988,7 @@ function openClean(i) {
     notedOnly.forEach(n => {
       const rowEl = document.createElement('div'); rowEl.className = 'cvRow';
       const top = document.createElement('div'); top.className = 'cvTop';
-      top.innerHTML = '<div class="cvNm"></div>';
+      top.innerHTML = '<span class="dot ' + (MAIN.has(n) ? 'dot-gold' : 'dot-rose') + '"></span><div class="cvNm"></div>'; // Beta 1.184: not-cleaned rows wear their group pending dot
       top.querySelector('.cvNm').textContent = n;
       rowEl.appendChild(top);
       cleanNoteLines(h.notes[n]).forEach(L => { const p = document.createElement('div'); p.className = 'cvNt'; p.textContent = L; rowEl.appendChild(p); });
@@ -3826,21 +4011,18 @@ function openClean(i) {
     updateCount();
   };
   cv.appendChild(del);
-  $('sheet').classList.add('open');
+  $('pacePanel').classList.add('open');
+  cv.scrollTop = 0;
 }
 function backToCleans() {
   closeClean();
-  $('sheet').classList.remove('open');
   histOpen = true;
   openPace();
 }
 function closeClean() {
   cleanIdx = null;
-  const cv = $('cleanView');
-  if (cv) cv.classList.add('hidden');
-  const f = $('filters'); if (f) f.style.display = '';
-  const sl = $('streetList'); if (sl) sl.style.display = '';
-  renderStreets();
+  showPaceMain();
+  renderPace();
 }
 
 // ===== RUN LIFECYCLE =====
@@ -5188,7 +5370,7 @@ $('stDel').addEventListener('click', async () => {
 });
 // ---- About / What's new ----
 const WHATSNEW = { // the curated in-app notes: plain words, LATEST RELEASE ONLY (Beta 1.114, Andrew: the accumulated list cluttered the About pane). A release REPLACES this entry with its own in the same change - it never accumulates; the full history lives in CHANGELOG.md, not the app
-  v: 'Beta 1.183', items: ["Settings, then Status now shows your storage plainly: whether this device protects the app's data from being cleared away, and how much space the app is using.", "Offline maps show their size next to the file count, and a download now stops at a 250 MB storage limit instead of filling the device — whatever is already saved stays saved."] };
+  v: 'Beta 1.184', items: ["The Streets and Pace menus are redesigned. Streets opens with your progress and a Mains / Secondaries switch — tap the pin beside a street to find it on the map, tap the street itself to add a note.", "Pace shows this run at a glance — elapsed time, road cleared, ETA, streets done — plus progress by group and your saved cleans. Tap a saved clean to see its full detail, including its GPS trail distance.", "Both menus open at half screen; swipe up for full screen, swipe down to bring them back or close them."] };
 function renderAbout() {
   const cur = $('ver').textContent.trim();
   $('wnHead').textContent = "WHAT'S NEW · " + cur; // the header names the LIVE version, read from the title's version element - never a second hard-coded copy that can go stale

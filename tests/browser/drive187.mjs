@@ -12,7 +12,7 @@ await bootThrough(ev, poll);
 //      street'; and a skewed entry (startedAt after a completion) renders
 //      no negative duration anywhere.
 //   B4: a timestamp-less legacy clean (every item time null) is LISTED in
-//      Previous cleans ('time not recorded'), opens, and deletes through
+//      Saved cleans ('time not recorded'), opens, and deletes through
 //      the same two-tap flow (RP-04).
 //   B5: a run whose trail crosses the 8,000-point cap archives the counter's
 //      TRUE distance (banked 50.0 km + the recorded fixes), not the
@@ -60,12 +60,12 @@ try {
 
   // ---- B4: the legacy clean is listed, opens, and deletes ----
   const b4seed = await J(`(() => { const iso = new Date(Date.now() - 86400000).toISOString(); history = [{ at: iso, items: { Velmar: null, Mellings: null }, via: {}, notes: {}, sides: { p: {}, t: {} }, km: 0, startedAt: null }]; saveHistory(); histOpen = true; renderPace(); const rows = [...document.querySelectorAll('.histRow')]; return { n: rows.length, text: rows.length ? rows[0].textContent : '' }; })()`);
-  ok('B4a the timestamp-less legacy clean is LISTED in Previous cleans as time-not-recorded | ' + JSON.stringify(b4seed),
+  ok('B4a the timestamp-less legacy clean is LISTED in Saved cleans as time-not-recorded | ' + JSON.stringify(b4seed),
     b4seed.n === 1 && (b4seed.text || '').includes('time not recorded'));
   await ev(`document.querySelector('.histRow').click(); true`); await sleep(400);
-  const b4open = await J(`({ ttl: (document.querySelector('.cvTtl') || {}).textContent || '', del: !!document.querySelector('.cvDel') })`);
-  ok('B4b the legacy clean OPENS in the detail view with its delete button | ' + JSON.stringify(b4open),
-    (b4open.ttl || '').includes('Clean —') && b4open.del === true);
+  const b4open = await J(`({ ttl: (document.querySelector('.cvTtl') || {}).textContent || '', sub: (document.querySelector('.cvSub') || {}).textContent || '', want: fmtDate3(history[0].at), del: !!document.querySelector('.cvDel') })`);
+  ok('B4b the legacy clean OPENS in the detail view (Beta 1.184 header: the date + a streets/finished sub-line) with its delete button | ' + JSON.stringify(b4open),
+    (b4open.ttl || '') === b4open.want && (b4open.sub || '').includes('2 streets · finished') && b4open.del === true);
   await ev(`document.querySelector('.cvDel').click(); true`); await sleep(200);
   const b4arm = await J(`(document.querySelector('.cvDel') || {}).textContent || ''`);
   await ev(`document.querySelector('.cvDel').click(); true`); await sleep(400);

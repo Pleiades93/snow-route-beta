@@ -399,7 +399,17 @@ function resetStreetsSession() { // Beta 1.148 (Tranche 5, A4(ii)): app2's OWN r
   srowCache = { sig: '', rows: new Map() };
   saveWarned = false; // the storage-warning episode belonged to the outgoing route's saves
 }
-function fmtLenM(v) { return String(Math.round(v)).replace(/\B(?=(\d{3})+(?!\d))/g, ',') + ' m'; } // Beta 1.107: street-length display for the Streets list's quiet line - whole metres, thousands separator, never kilometres
+function fmtLenM(v) { return String(Math.round(v)).replace(/\B(?=(\d{3})+(?!\d))/g, ',') + ' m'; }
+function streetHalf(n) { const p = pieces[n]; return Array.isArray(p) && !streetComplete(n) && p.some(v => v !== 0); } // Beta 1.184: ONE SIDE DONE - some side bit set on some stretch, the street not complete. The Streets list half state and the Pace menu Progress-by-group half count share this one predicate. Streets whose pieces are not an array (doneSet-only) are binary by construction and never half.
+function srowClass(n) { return 'srow' + (streetComplete(n) ? ' done' : '') + (MAIN.has(n) ? ' main' : '') + (streetHalf(n) ? ' half' : ''); }
+function srowStatus(n) { // Beta 1.184: the row right-hand status slot. A completed street keeps the list full historical string (done <when> (<ago>), check-flag prefix included); where the old list showed nothing, the redesign words apply: 'completed' (a completion with no recorded time), 'one side done' (a half), an em dash (untouched). The flag prefix rides every state, exactly as the old .tm string did.
+  const flag = (notes[n] && notes[n].some(f => f.k !== 'note')) ? '⚑ ' : '';
+  const doneAt = streetComplete(n) && doneTimes[n] ? fmtWhen(doneTimes[n]) : '';
+  if (doneAt) return { t: flag + 'done ' + doneAt + ' (' + fmtAgo(doneTimes[n]) + ')', c: 'st-done' };
+  if (streetComplete(n)) return { t: flag + 'completed', c: 'st-done' };
+  if (streetHalf(n)) return { t: flag + 'one side done', c: 'st-half' };
+  return { t: flag + '—', c: 'st-todo' };
+} // Beta 1.107: street-length display for the Streets list's quiet line - whole metres, thousands separator, never kilometres
 function renderStreets() { // production row design: tap a street's name area to open its inline note editor (auto-saves); the pin button flies to the street
   const el = $('streetList'); if (!el) return;
   const scroller = $('sheetBody'); const keepScroll = scroller ? scroller.scrollTop : 0; // Beta 1.31: a rebuild must not yank the list back to the top while he is working in it
@@ -410,7 +420,16 @@ function renderStreets() { // production row design: tap a street's name area to
   let noteFlushed = false, noteFlushFailed = false; // Beta 1.79: a rebuild for the SAME street (the map style finishing its load, a theme flip - both end in refreshAll) replaces the open editor too. Finalize its pending save HERE, synchronously, instead of leaving the debounced timer pointing at a discarded textarea - that race is what stranded drive88's note checks when the style-ready refresh landed mid-edit
   if (draft !== null && draftFor && draftFor === noteOpenFor && noteSaveTimer) { clearTimeout(noteSaveTimer); noteSaveTimer = 0; if (setNoteText(draftFor, draft).ok) noteFlushed = true; else noteFlushFailed = true; } // Beta 1.113 (round 112, CG-112-01): setNoteText returns the 1.101 storage-outcome OBJECT - {ok:false} is truthy, so the old truthiness test marked a FAILED save flushed and the rebuilt editor announced 'Saved'
   const arr = STREETNAMES.filter(n => (listFilter === 'mains') === MAIN.has(n)); // Beta 1.109: the visible set is exactly the selected group - 6 mains or 28 secondaries on Route 5W
-  arr.sort((a, b) => ((MAIN.has(a) ? 0 : 1) - (MAIN.has(b) ? 0 : 1)) || a.localeCompare(b)); // Beta 1.91 (Andrew): the Streets list leads with the mains (gold - cleaned first), then the secondary streets (raspberry), alphabetical inside each colour, in every filter view
+  arr.sort((a, b) => ((MAIN.has(a) ? 0 : 1) - (MAIN.has(b) ? 0 : 1)) || a.localeCompare(b));
+  // Beta 1.184 (Andrew): the redesign fixed head of the Streets sheet - route line, hero,
+  // group heading - rewritten on every render from the same live state the dock pill reads
+  // (updateCount counts and work fraction). Road km = side-metres / 2000 (sides come in pairs).
+  const stR = $('stRouteN'), stS = $('stRouteS');
+  if (stR && stS) { stR.textContent = activeRoute ? activeRoute.name : ''; stS.textContent = (activeRoute && activeRoute.area ? ' · ' + activeRoute.area : '') + (runStart ? ' · clean in progress' : ' · not started'); }
+  const stH = $('stHero');
+  if (stH) { const tw = totalWorkM(); stH.innerHTML = '<div class="stHeroN">' + STREETNAMES.filter(streetComplete).length + ' <span class="stHeroU">/ ' + STREETNAMES.length + ' streets</span></div><div class="stHeroL">streets completed so far</div><div class="stBar"><div class="stBarF" style="width:' + (tw > 0 ? (workDoneM() / tw * 100) : 0) + '%"></div></div><div class="stCaps"><span>' + (workDoneM() / 2000).toFixed(1) + ' km of road cleared</span><span>' + (tw / 2000).toFixed(1) + ' km total</span></div>'; }
+  const stGN = $('stGroupN'), stGC = $('stGroupC');
+  if (stGN && stGC) { stGN.textContent = listFilter === 'mains' ? 'MAINS' : 'SECONDARIES'; stGC.textContent = ' · ' + arr.length + ' streets'; } // Beta 1.91 (Andrew): the Streets list leads with the mains (gold - cleaned first), then the secondary streets (raspberry), alphabetical inside each colour, in every filter view
   if (!arr.length) { el.innerHTML = '<div style="padding:14px 4px;color:#8fa0b3">No streets in this group</div>'; srowCache = { sig: '', rows: new Map() }; return; } // Beta 1.109: unreachable with shipped route data (both groups are non-empty by construction) - kept as the safety net it was
   // Beta 1.50 (audit P06): a routine mark used to rebuild all 34 rows from
   // scratch. When the visible set and order are unchanged and no note editor
@@ -421,14 +440,7 @@ function renderStreets() { // production row design: tap a street's name area to
     let okAll = srowCache.rows.size === arr.length;
     if (okAll) for (const n of arr) { const c = srowCache.rows.get(n); if (!c || c.row.parentElement !== el) { okAll = false; break; } }
     if (okAll) {
-      for (const n of arr) {
-        const c = srowCache.rows.get(n);
-        c.row.className = 'srow' + (streetComplete(n) ? ' done' : '') + (MAIN.has(n) ? ' main' : '');
-        c.row.querySelector('.pill').style.display = streetComplete(n) ? '' : 'none'; // Beta 1.109: the COMPLETED pill rides the same done predicate as the row class (the mint dot comes from the .done rule)
-        const doneAt = streetComplete(n) && doneTimes[n] ? fmtWhen(doneTimes[n]) : '';
-        c.row.querySelector('.tm').textContent = (notes[n] && notes[n].some(f => f.k !== 'note') ? '⚑ ' : '') + (doneAt ? 'done ' + doneAt + ' (' + fmtAgo(doneTimes[n]) + ')' : '');
-        c.paintNt();
-      }
+      for (const n of arr) { srowCache.rows.get(n).paintNt(); } // Beta 1.184: the stored paintNt IS the full row painter now (row class, status slot, name-row note icon, quiet line) - the cache path just calls it
       if (scroller) scroller.scrollTop = keepScroll;
       kbSync(); // Beta 1.56: renders never touch the kb class - the keyboard owner (app4) reconciles
       return;
@@ -438,16 +450,20 @@ function renderStreets() { // production row design: tap a street's name area to
   srowCache = { sig, rows: new Map() };
   arr.forEach(n => {
     const d = document.createElement('div');
-    d.className = 'srow' + (streetComplete(n) ? ' done' : '') + (MAIN.has(n) ? ' main' : '');
-    d.innerHTML = '<div class="dot"></div><div class="nwrap"><div class="nmrow"><div class="nm"></div><span class="pill" style="display:none">COMPLETED</span></div><div class="nt"><span class="ntIco"></span><span class="ntTxt"></span></div></div><div class="tm"></div><button class="sbtn smap" title="Show on map"></button>';
+    d.className = srowClass(n);
+    d.innerHTML = '<div class="dot"></div><div class="nwrap"><div class="nmrow"><div class="nm"></div><button class="sbtn smap" title="Show on map"></button><span class="nmNote" style="display:none"></span></div><div class="nt"><span class="ntIco"></span><span class="ntTxt"></span></div></div><div class="tm"></div>'; // Beta 1.184: the pin rides INSIDE the name row, immediately right of the name; a note icon joins it only while the street carries note text; the COMPLETED pill is retired - its state folds into the status slot (srowStatus)
     d.querySelector('.nm').textContent = n;
-    if (streetComplete(n)) d.querySelector('.pill').style.display = ''; // Beta 1.109: a fully completed street (streetComplete - both sides done) wears the pill; a one-side partial never reaches this line's condition
     const ntEl = d.querySelector('.nt');
-    d.querySelector('.smap').innerHTML = ICONS.pin; d.querySelector('.ntIco').innerHTML = ICONS.note; // Pack D glyphs (Beta 1.30) in place of the emoji
-    const paintNt = () => { const t = noteTextOf(n); if (t) { d.querySelector('.ntTxt').textContent = t; d.querySelector('.ntIco').style.display = ''; ntEl.style.display = ''; } else { d.querySelector('.ntTxt').textContent = fmtLenM(STRETCH[n].total); d.querySelector('.ntIco').style.display = 'none'; ntEl.style.display = ''; } }; // Beta 1.107 (Andrew): the quiet line shows the street's length by default (live STRETCH total, exact); a note wins the slot while one exists
+    d.querySelector('.smap').innerHTML = ICONS.pin; d.querySelector('.ntIco').innerHTML = ICONS.note; d.querySelector('.nmNote').innerHTML = ICONS.note; // Pack D glyphs (Beta 1.30) in place of the emoji
+    const paintNt = () => { // Beta 1.184: ONE painter for everything state-shaped on the row - its class (done/main/half), the status slot, the name-row note icon, and the quiet line (length by default, note text while a note exists - the 1.107 rule, unchanged)
+      d.className = srowClass(n);
+      const st = srowStatus(n); const tmEl = d.querySelector('.tm'); tmEl.textContent = st.t; tmEl.className = 'tm ' + st.c;
+      const t = noteTextOf(n);
+      d.querySelector('.nmNote').style.display = t ? '' : 'none';
+      if (t) { d.querySelector('.ntTxt').textContent = t; d.querySelector('.ntIco').style.display = ''; ntEl.style.display = ''; }
+      else { d.querySelector('.ntTxt').textContent = fmtLenM(STRETCH[n].total); d.querySelector('.ntIco').style.display = 'none'; ntEl.style.display = ''; }
+    };
     paintNt();
-    const doneAt = streetComplete(n) && doneTimes[n] ? fmtWhen(doneTimes[n]) : '';
-    d.querySelector('.tm').textContent = (notes[n] && notes[n].some(f => f.k !== 'note') ? '⚑ ' : '') + (doneAt ? 'done ' + doneAt + ' (' + fmtAgo(doneTimes[n]) + ')' : '');
     d.querySelector('.smap').addEventListener('click', e => {
       e.stopPropagation();
       if (!tapGuard('li' + n)) return;
@@ -467,7 +483,8 @@ function renderStreets() { // production row design: tap a street's name area to
     if (noteOpenFor === n) {
       const ed = document.createElement('div');
       ed.className = 'noteEd';
-      ed.innerHTML = '<textarea placeholder="Note for this street — e.g. driveway at #12 could not be cleaned, car blocking"></textarea><div class="nhint">Saves automatically</div>';
+      ed.innerHTML = '<div class="nedLbl"></div><textarea placeholder="Note for this street — e.g. driveway at #12 could not be cleaned, car blocking"></textarea><div class="nedActs"><button class="nedSave">Save note</button><button class="nedDone">Done</button><div class="nhint">Saves automatically</div></div>'; // Beta 1.184: the redesign editor furniture - a Note label and explicit Save/Done actions over the SAME autosave mechanism (Save flushes the same setNoteText call now; Done closes the editor, like tapping the row again)
+      ed.querySelector('.nedLbl').textContent = 'Note — ' + n;
       const ta = ed.querySelector('textarea');
       ta.value = (draft !== null && draftFor === n) ? draft : noteTextOf(n); noteEdFor = n;
       const hint = ed.querySelector('.nhint'); if (noteFlushFailed && n === draftFor) hint.textContent = 'Not saved — storage problem'; else if (noteFlushed && n === draftFor) hint.textContent = 'Saved \u2713'; // Beta 1.113 (round 112, CG-112-01): a failed flush says so, in the debounced path's own words - never 'Saved' // Beta 1.79: the rebuilt editor tells the truth about the save the rebuild just finalized
@@ -476,7 +493,9 @@ function renderStreets() { // production row design: tap a street's name area to
         clearTimeout(noteSaveTimer);
         noteSaveTimer = setTimeout(() => { const ok = setNoteText(n, ta.value); paintNt(); hint.textContent = ok.ok ? 'Saved ✓' : 'Not saved — storage problem'; }, 400); // Beta 1.63 (audit F04): the hint tells the truth about the write
       });
-      ta.addEventListener('blur', () => { clearTimeout(noteSaveTimer); const ok = setNoteText(n, ta.value); paintNt(); hint.textContent = ok.ok ? 'Saved ✓' : 'Not saved — storage problem'; }); // Beta 1.169 (Carbon fix round, A-01): blur finalizes like the debounced save above it - same result, same words in the same hint. Through 1.168 the result was discarded, so a blur save that failed (storage full, the episode warning already spent) told the user nothing while the editor still read 'Saves automatically'.
+      ta.addEventListener('blur', () => { clearTimeout(noteSaveTimer); const ok = setNoteText(n, ta.value); paintNt(); hint.textContent = ok.ok ? 'Saved ✓' : 'Not saved — storage problem'; });
+      ed.querySelector('.nedSave').addEventListener('click', () => { clearTimeout(noteSaveTimer); const ok = setNoteText(n, ta.value); paintNt(); hint.textContent = ok.ok ? 'Saved ✓' : 'Not saved — storage problem'; });
+      ed.querySelector('.nedDone').addEventListener('click', () => { noteOpenFor = null; renderStreets(); }); // Beta 1.169 (Carbon fix round, A-01): blur finalizes like the debounced save above it - same result, same words in the same hint. Through 1.168 the result was discarded, so a blur save that failed (storage full, the episode warning already spent) told the user nothing while the editor still read 'Saves automatically'.
       el.appendChild(ed);
     }
   });

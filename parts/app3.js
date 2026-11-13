@@ -14,15 +14,45 @@ function cleanWorkM(h) { // side-metres a saved clean actually covered
 }
 function workRateMh(workM, startMs, endMs, minH) { const h = (endMs - startMs) / 3600000; return (workM > 0 && h > minH) ? workM / h : null; } // NaN inputs fail the comparisons and yield null
 function fmtRate(r) { return (r / 1000).toFixed(1) + ' km of sides/hr'; }
+const DAY3 = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
+function fmtDate3(iso) { const d = new Date(iso); if (isNaN(d)) return ''; return DAY3[d.getDay()] + ', ' + MON3[d.getMonth()] + ' ' + d.getDate(); } // Beta 1.184: 'Tue, Nov 10' - the redesign date form for saved-clean rows and the detail header
+function fmtHM(ms) { if (ms == null || isNaN(ms) || ms < 0) return '—'; const m = Math.round(ms / 60000); return Math.floor(m / 60) + ':' + String(m % 60).padStart(2, '0'); } // Beta 1.184: colon duration for the redesign stat cells and rows (1:24, 2:41) - presentation only; fmtDur keeps every existing surface
+function fmtPaceKm(msPerKm) { if (msPerKm == null || isNaN(msPerKm) || !isFinite(msPerKm) || msPerKm <= 0) return null; const s = Math.round(msPerKm / 1000); return Math.floor(s / 60) + ':' + String(s % 60).padStart(2, '0'); } // Beta 1.184: '8:56' - minutes:seconds per ROAD km
+function cleanPaceKm(h) { // Beta 1.184: a saved clean pace per ROAD km - its total elapsed (start to the Finish tap) over its road kilometres (cleanWorkM counts SIDES, so road km = cleanWorkM / 2000). null when underivable (a legacy clean with no usable times, or no recorded work)
+  const d = histDur(h); if (!d) return null;
+  const elapsed = Date.parse(h.at) - d.start; const roadKm = cleanWorkM(h) / 2000;
+  if (!(elapsed > 0) || !(roadKm > 0)) return null;
+  return fmtPaceKm(elapsed / roadKm);
+}
+function groupProgress(wantMain) { // Beta 1.184: Progress-by-group sums - a completed street counts 1, a street with any side done counts a half (the approved frame 3.5 of 6), else 0
+  let sum = 0, cnt = 0;
+  for (const n of STREETNAMES) { if (MAIN.has(n) === wantMain) { cnt++; sum += streetComplete(n) ? 1 : (streetHalf(n) ? 0.5 : 0); } }
+  return { sum, cnt };
+}
+function fmtCnt(v) { return v % 1 ? v.toFixed(1) : String(v); }
+const PACE_ICONS = { // Beta 1.184: the approved design line glyphs for the stat cells, stroke currentColor, coloured by the .ic rule
+  clock: '<svg width="26" height="26" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="8.5"/><path d="M12 7.5V12l3 2"/></svg>',
+  road: '<svg width="26" height="26" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M6.5 20 10.5 4"/><path d="M17.5 20 13.5 4"/><path d="M12 7v1.7M12 11.2v1.7M12 15.4v1.7"/></svg>',
+  flag: '<svg width="26" height="26" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M6 21V4.5"/><path d="M6 5h10.5l-2.3 3.2 2.3 3.3H6"/></svg>',
+  list: '<svg width="26" height="26" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M9.5 6h9.5M9.5 12h9.5M9.5 18h9.5"/><circle cx="5.2" cy="6" r="1.2" fill="currentColor" stroke="none"/><circle cx="5.2" cy="12" r="1.2" fill="currentColor" stroke="none"/><circle cx="5.2" cy="18" r="1.2" fill="currentColor" stroke="none"/></svg>',
+  cal: '<svg width="26" height="26" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="4" y="5.5" width="16" height="15" rx="2"/><path d="M4 10.2h16M8.5 3.5v4M15.5 3.5v4"/></svg>',
+  gauge: '<svg width="26" height="26" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M4.5 16.5a8 8 0 1 1 15 0"/><path d="M12 15l4.2-4.6"/><circle cx="12" cy="15" r="1.3" fill="currentColor" stroke="none"/></svg>',
+  trail: '<svg width="26" height="26" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M7.8 17.2c3.5-.8 2.8-4.3 5.4-5.4 1.9-.8 2.6-2 2.9-4"/><circle cx="6" cy="18" r="2.1"/><circle cx="18" cy="6" r="2.1"/></svg>'
+};
+function statCell(ic, v, l) { return '<div class="cell"><span class="ic">' + PACE_ICONS[ic] + '</span><div class="v">' + v + '</div><div class="l">' + l + '</div></div>'; }
+function groupBar(name, g) {
+  const pct = g.cnt ? (g.sum / g.cnt * 100) : 0;
+  return '<div class="gbar"><div class="gb-top"><span class="gb-n">' + name + '</span><span class="gb-c">' + fmtCnt(g.sum) + ' of ' + g.cnt + ' streets</span></div><div class="gb-track"><div class="gb-fill" style="width:' + pct + '%"></div><div class="gb-half"></div></div></div>';
+}
 function paceInfo() { // Beta 1.91 (Andrew): pace is a WORK RATE - side-metres per hour, cumulative (work done so far / time so far) off the per-side mark stamps. Interleaved streets and same-street batched marks cannot distort a cumulative rate; a mark left late only makes the live reading lag until it lands, and the totals are never touched by stamp timing.
   const ref = refRun();
   const refRateMh = ref ? workRateMh(cleanWorkM(ref), Date.parse(ref.startedAt || ''), Date.parse(ref.at || ''), 0.05) : null;
   let rateMh = null, live = false;
   if (runStart) { const r = workRateMh(liveWorkM(), runStart, Date.now(), 0.02); if (r) { rateMh = r; live = true; } } // Beta 1.93 (audit R06): the numerator is the RUN's work (liveWorkM), not the whole board's
   if (!rateMh) rateMh = refRateMh;
-  let etaTxt = '';
-  if (runStart && rateMh) { const leftM = totalWorkM() - workDoneM(); if (leftM > 0) { const leftH = leftM / rateMh; etaTxt = 'ETA ' + fmtDur(leftH * 3600000) + ' · done ~' + fmtClock(new Date(Date.now() + leftH * 3600000)); } }
-  return { rateMh, refRateMh, live, etaTxt, ref };
+  let etaTxt = '', etaClock = '';
+  if (runStart && rateMh) { const leftM = totalWorkM() - workDoneM(); if (leftM > 0) { const leftH = leftM / rateMh; etaClock = fmtClock(new Date(Date.now() + leftH * 3600000)); etaTxt = 'ETA ' + fmtDur(leftH * 3600000) + ' · done ~' + etaClock; } }
+  return { rateMh, refRateMh, live, etaTxt, etaClock, ref }; // Beta 1.184: etaClock is additive - the redesign ETA cell reads the done-at clock alone; etaTxt and statsLine are untouched
 }
 function statsLine() {
   const p = paceInfo();
@@ -45,32 +75,63 @@ function histDur(h) {
   return { count: cleanCount(h), durMs: ts[ts.length - 1] - start, start }; // Beta 1.169 (B-07): the DURATION still spans the timestamped streets (ks above - a span needs moments), but the COUNT is cleanCount: every street the clean covers, null-timestamped ones included
 }
 let histOpen = false;
-function renderPace() {
+function renderPace() { // Beta 1.184 (Andrew): the approved redesign - This run stat grid, verdict banner, Progress by group, Saved cleans (always expanded). Every figure binds to the same live data the old lines read; the old Reference/Pace/This-run/Work-done lines and the Previous-cleans collapse retire into these slots (see the 1.184 datum mapping in the round record).
   const p = paceInfo();
   const ref = p.ref;
-  let html =
-    '<div>Reference clean: <b>' + (ref ? new Date(ref.at).toLocaleDateString() + ' (' + cleanCount(ref) + ' streets)' : 'none yet — finish a clean to set your pace') + '</b></div>' +
-    '<div>Pace: <b>' + (p.rateMh ? fmtRate(p.rateMh) + ' · full clean ≈ ' + fmtDur(totalWorkM() / p.rateMh * 3600000) + (p.live ? ' (this run so far)' : ' (reference clean)') : '—') + '</b></div>' +
-    '<div>This run: <b>' + (runStart ? 'started ' + fmtClock(new Date(runStart)) + (p.etaTxt ? ' · ' + p.etaTxt : '') : 'not started') + '</b></div>' +
-    '<div>Work done: <b>' + Math.round(workDoneM()) + ' m of ' + Math.round(totalWorkM()) + ' m of street sides</b></div>' +
-    (runStart ? '<button class="red" id="paceCancel">Cancel start</button>' : '');
-  html += '<div class="psec" id="histHead">Previous cleans ' + (histOpen ? '▲' : '▼') + '</div>';
-  if (histOpen) {
-    let any = 0;
-    for (let i = history.length - 1; i >= 0; i--) {
-      const d = histDur(history[i]);
-      if (!d) { html += '<div class="prow histRow" data-i="' + i + '"><span>' + fmtWhen(history[i].at) + '</span><span>time not recorded · ' + cleanCount(history[i]) + ' of ' + STREETNAMES.length + ' streets ›</span></div>'; any++; continue; } // Beta 1.167 (B4, RP-04): a legacy clean whose item times are all null is still LISTED - and opens, and deletes through the same two-tap flow. Through 1.166 histDur's null skipped it here while refRun could still pick it as the pace reference: it existed, set the pace, and could never be seen or removed.
-      html += '<div class="prow histRow" data-i="' + i + '"><span>' + fmtWhen(history[i].at) + '</span><span>' + fmtDur(d.durMs) + ' · ' + d.count + ' of ' + STREETNAMES.length + ' streets ›</span></div>';
-      any++;
-    }
-    if (!any) html += '<div style="font-size:13px;color:var(--ink-dim);padding:4px 2px">No cleans saved yet — when you finish a run and tap Finish, it lands here with its total time.</div>';
+  const ph = $('paceHead');
+  if (ph) ph.innerHTML = '<span class="ph-t">This run</span><span class="ph-s">' + (activeRoute ? activeRoute.name : '') + (runStart ? ' · started ' + fmtClock(new Date(runStart)) : ' · not started') + '</span>';
+  // the verdict is honest only when a LIVE rate and a REFERENCE rate both exist: projected full-clean durations compared through the same totalWorkM the pace line always used. Otherwise the banner slot carries the reference line (or the no-reference line) - never a verdict against itself.
+  let banner;
+  if (runStart && p.live && p.rateMh && p.refRateMh) {
+    const diffMin = Math.round((totalWorkM() / p.refRateMh - totalWorkM() / p.rateMh) * 60);
+    const etaBit = p.etaClock ? ', ETA ' + p.etaClock : '';
+    if (diffMin > 0) banner = '<div class="verd"><span class="vd-g">▲ Faster by ' + diffMin + ' min</span> — verdict at today\'s pace' + etaBit + '</div>';
+    else if (diffMin < 0) banner = '<div class="verd"><span class="vd-r">▼ Slower by ' + (-diffMin) + ' min</span> — verdict at today\'s pace' + etaBit + '</div>';
+    else banner = '<div class="verd"><span class="vd-g">On pace with the reference clean</span> — verdict at today\'s pace' + etaBit + '</div>';
+  } else if (ref) {
+    const rd = histDur(ref), rp = cleanPaceKm(ref);
+    banner = '<div class="verd ref">Reference clean (' + fmtDate3(ref.at) + ')' + (rd && rp ? ' — ' + fmtHM(rd.durMs) + ' total · ' + rp + ' /km pace' : '') + '</div>';
+  } else {
+    banner = '<div class="verd ref">No reference clean yet — finish a clean to set your pace</div>';
   }
+  const last = history.length ? history[history.length - 1] : null; // most recent = the last element (history is chronological, append-only) - NOT the reference clean; the two can differ
+  const ld = last ? histDur(last) : null;
+  const lp = last ? cleanPaceKm(last) : null;
+  let html =
+    '<div class="statgrid">' +
+    statCell('clock', runStart ? fmtHM(Date.now() - runStart) : '—', 'ELAPSED') +
+    statCell('road', (workDoneM() / 2000).toFixed(1) + ' km', 'ROAD CLEARED') +
+    statCell('flag', p.etaClock || '—', 'ETA') +
+    statCell('list', STREETNAMES.filter(streetComplete).length + '/' + STREETNAMES.length, 'STREETS') +
+    statCell('cal', ld ? fmtHM(ld.durMs) : '—', 'LAST CLEAN') +
+    statCell('gauge', lp || '—', 'LAST PACE /KM') +
+    '</div>' +
+    banner +
+    (runStart ? '<button class="red" id="paceCancel">Cancel start</button>' : '') +
+    '<div class="psec2">Progress by group</div>' +
+    groupBar('Mains', groupProgress(true)) +
+    groupBar('Secondaries', groupProgress(false)) +
+    '<div class="gb-cap">dashed line = halfway</div>' +
+    '<div class="psec2">Saved cleans</div>';
+  let any = 0;
+  for (let i = history.length - 1; i >= 0; i--) {
+    const d = histDur(history[i]);
+    if (!d) { html += '<div class="prow histRow" data-i="' + i + '"><span><span class="sc-d">' + fmtDate3(history[i].at) + '</span> <span class="sc-n">· ' + cleanCount(history[i]) + ' streets</span></span><span class="sc-t2">time not recorded</span></div>'; any++; continue; } // Beta 1.167 (B4, RP-04) carries: a legacy clean whose item times are all null is still LISTED - and opens, and deletes through the same two-tap flow
+    html += '<div class="prow histRow" data-i="' + i + '"><span><span class="sc-d">' + fmtDate3(history[i].at) + '</span> <span class="sc-n">· ' + d.count + ' streets</span></span><span class="sc-t">' + fmtHM(d.durMs) + '</span></div>';
+    any++;
+  }
+  if (!any) html += '<div style="font-size:13px;color:var(--ink-dim);padding:4px 2px">No cleans saved yet — when you finish a run and tap Finish, it lands here with its total time.</div>';
   $('pacePad').innerHTML = html;
   const c = $('paceCancel'); if (c) c.addEventListener('click', () => { cancelStart(); closeSheets(); });
-  const hh = $('histHead'); if (hh) hh.addEventListener('click', () => { histOpen = !histOpen; renderPace(); });
   $('pacePad').querySelectorAll('.histRow').forEach(r => r.addEventListener('click', () => openClean(+r.dataset.i)));
 }
-function openPace() { deselect(); closeSheets(); $('pacePanel').style.height = ''; $('pacePanel').style.maxHeight = ''; renderPace(); $('pacePanel').classList.add('open'); }
+function showPaceMain() { // Beta 1.184: the Pace sheet main view - header + pace content visible, the clean detail hidden
+  const cv = $('cleanView'); if (cv) { cv.style.display = 'none'; cv.classList.add('hidden'); }
+  const ph = $('paceHead'); if (ph) ph.style.display = '';
+  const pp = $('pacePad'); if (pp) pp.style.display = '';
+  cleanIdx = null;
+}
+function openPace() { deselect(); closeSheets(); $('pacePanel').style.height = ''; $('pacePanel').style.maxHeight = ''; showPaceMain(); renderPace(); $('pacePanel').classList.add('open'); } // Beta 1.184: showPaceMain first - an open left on the clean detail returns to the Pace main view
 function closePace() { closeSheetEl($('pacePanel')); } // same animated close as every sheet (Beta 1.30)
 
 // ===== CLEAN DETAIL (production v5.53 model): one archived clean inside the list sheet - totals, its streets
@@ -82,23 +143,35 @@ function openClean(i) {
   const h = history[i];
   if (!h) return;
   cleanIdx = i; cleanDelArmed = false;
-  closePace(); deselect();
-  $('filters').style.display = 'none';
-  $('streetList').style.display = 'none';
+  deselect();
+  const d = histDur(h);
+  // Beta 1.184: the detail lives INSIDE the Pace sheet now - the pace content yields, the detail takes its seat; the Pace sheet itself stays open (it no longer closes into the Streets sheet)
+  const ph = $('paceHead'); if (ph) ph.style.display = 'none';
+  const pp = $('pacePad'); if (pp) pp.style.display = 'none';
   const cv = $('cleanView');
   cv.classList.remove('hidden');
+  cv.style.display = '';
   cv.innerHTML = '';
   const head = document.createElement('div'); head.className = 'cvHead';
-  head.innerHTML = '<button class="cvBack">‹ Back</button><div class="cvTtl"></div>';
-  head.querySelector('.cvTtl').textContent = 'Clean — ' + fmtWhen(h.at);
+  head.innerHTML = '<button class="cvBack">‹ Saved cleans</button><div class="cvTtlRow"><span class="cvTtl"></span><span class="cvSub"></span></div>';
+  head.querySelector('.cvTtl').textContent = fmtDate3(h.at);
+  head.querySelector('.cvSub').textContent = cleanCount(h) + ' streets · finished ' + fmtClock(new Date(h.at));
   head.querySelector('.cvBack').onclick = backToCleans;
   cv.appendChild(head);
-  const d = histDur(h);
+  const stats = document.createElement('div'); stats.className = 'statgrid d2'; // Beta 1.184: the design 2x2 cells - TOTAL TIME is histDur span (the same interval the Saved-cleans row shows); ROAD CLEARED is work, GPS TRAIL is travel: different measures, distinct labels, never merged
+  const cpk = cleanPaceKm(h);
+  stats.innerHTML =
+    statCell('clock', d ? fmtHM(d.durMs) : '—', 'TOTAL TIME') +
+    statCell('road', (cleanWorkM(h) / 2000).toFixed(1) + ' km', 'ROAD CLEARED') +
+    statCell('gauge', cpk ? cpk + ' /km' : '—', 'PACE') +
+    statCell('trail', h.km ? (+h.km).toFixed(1) + ' km' : '—', 'GPS TRAIL');
+  cv.appendChild(stats);
   const meta = document.createElement('div'); meta.className = 'cvMeta';
   const elapsedMs = d ? Date.parse(h.at) - d.start : NaN; // Beta 1.167 (B3, RP-08): the SECOND interval - the run's start to the Finish tap (h.at). Through 1.166 the single 'Total time' figure was histDur's start-to-LAST-COMPLETION span while the pace rate divided by start-to-Finish: two different intervals, one label, a 15.8% skew on a 30-minute tail. Both are shown now, each under its own label; the math is unchanged.
   const paceRate = (d && !isNaN(elapsedMs) && elapsedMs >= 0) ? workRateMh(cleanWorkM(h), d.start, Date.parse(h.at), 0.05) : null; // the pace divides the clean's work by the TOTAL ELAPSED window - the same window workRateMh uses for the reference figure in renderPace - and the meta line says so
   meta.textContent = (d ? ('Streets done in ' + fmtDur(d.durMs) + ' · Total elapsed ' + fmtDur(Math.max(0, elapsedMs)) + ' · ') : '') + cleanCount(h) + ' streets' + (h.km ? (' · ' + h.km + ' km of GPS trail') : '') + (h.pathShortened ? ' · saved GPS path shortened by the trail cap' : '') + (paceRate ? (' · Pace ' + fmtRate(paceRate) + ' (work / total elapsed)') : '') + (h.startedAt ? (' · started ' + fmtClock(new Date(h.startedAt))) : '') + '\nPace divides the clean\'s recorded work by its total elapsed time (start to the Finish tap). Per-street span = first side marked to last side marked (includes any work in between). Tap a street for its details.';
   cv.appendChild(meta);
+  const secH = document.createElement('div'); secH.className = 'psec2'; secH.textContent = 'Streets'; cv.appendChild(secH);
   const items = h.items || {};
   const order = Object.keys(items).filter(n => STREETSET.has(n)).sort((x, y) => String(items[x] || '9999').localeCompare(String(items[y] || '9999')));
   let prev = h.startedAt ? Date.parse(h.startedAt) : NaN;
@@ -110,11 +183,12 @@ function openClean(i) {
     if (!isNaN(t)) prev = t;
     const rowEl = document.createElement('div'); rowEl.className = 'cvRow';
     const top = document.createElement('div'); top.className = 'cvTop';
-    top.innerHTML = '<div class="cvNm"></div><div class="cvTm"></div>';
+    top.innerHTML = '<span class="dot dot-done"></span><div class="cvNm"></div><div class="cvTm"></div>'; // Beta 1.184: cleaned rows wear the done dot; NO pin anywhere in the detail (pins are the live list's locate control)
     top.querySelector('.cvNm').textContent = n;
     top.querySelector('.cvTm').textContent = (!isNaN(t) ? fmtClock(new Date(t)) : '—') + ((span > 0) ? (' · span ' + fmtDur(span)) : (stArr.length ? ' · marked in one go' : (!isNaN(dur) ? (' · gap ' + fmtDur(dur)) : ''))); // Beta 1.167 (B3, RP-07): a street whose recorded sides all carry ONE moment (span 0 - the whole-street mark) reads as marked in one go instead of inheriting the previous street's gap as its 'took'; the stamp-less fallback is a GAP since the previous completion, and is labelled as one
     rowEl.appendChild(top);
     const lines = cleanNoteLines((h.notes || {})[n]);
+    if (lines.length) { const ni = document.createElement('span'); ni.className = 'cvNoteIco'; ni.innerHTML = ICONS.note; top.insertBefore(ni, top.querySelector('.cvTm')); } // Beta 1.184 (Andrew): a note icon ONLY on a street that had a note saved on THIS clean; tapping the row opens the note read-only (the .cvDet below)
     if (lines.length) { const p = document.createElement('div'); p.className = 'cvNt'; p.textContent = lines[0] + (lines.length > 1 ? ' (+' + (lines.length - 1) + ' more)' : ''); rowEl.appendChild(p); }
     const det = document.createElement('div'); det.className = 'cvDet'; det.style.display = 'none';
     const parts = [];
@@ -133,7 +207,7 @@ function openClean(i) {
     notedOnly.forEach(n => {
       const rowEl = document.createElement('div'); rowEl.className = 'cvRow';
       const top = document.createElement('div'); top.className = 'cvTop';
-      top.innerHTML = '<div class="cvNm"></div>';
+      top.innerHTML = '<span class="dot ' + (MAIN.has(n) ? 'dot-gold' : 'dot-rose') + '"></span><div class="cvNm"></div>'; // Beta 1.184: not-cleaned rows wear their group pending dot
       top.querySelector('.cvNm').textContent = n;
       rowEl.appendChild(top);
       cleanNoteLines(h.notes[n]).forEach(L => { const p = document.createElement('div'); p.className = 'cvNt'; p.textContent = L; rowEl.appendChild(p); });
@@ -156,21 +230,18 @@ function openClean(i) {
     updateCount();
   };
   cv.appendChild(del);
-  $('sheet').classList.add('open');
+  $('pacePanel').classList.add('open');
+  cv.scrollTop = 0;
 }
 function backToCleans() {
   closeClean();
-  $('sheet').classList.remove('open');
   histOpen = true;
   openPace();
 }
 function closeClean() {
   cleanIdx = null;
-  const cv = $('cleanView');
-  if (cv) cv.classList.add('hidden');
-  const f = $('filters'); if (f) f.style.display = '';
-  const sl = $('streetList'); if (sl) sl.style.display = '';
-  renderStreets();
+  showPaceMain();
+  renderPace();
 }
 
 // ===== RUN LIFECYCLE =====
