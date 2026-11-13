@@ -2,7 +2,7 @@
 <html lang="en" class="boot">
 <head>
 <meta charset="UTF-8">
-<meta http-equiv="Content-Security-Policy" content="default-src 'none'; script-src 'sha384-dPdWpGvzu+aqjBmAStvMajeIgCzLUzPGC5g0mU2m6/AImKFJ2r/d54HDmPPluLgf' https://cdn.jsdelivr.net; style-src-elem 'sha384-edQTblksUQX4XwoFQMseYNI9/RcCixhrL6pwTAkd5MF/5diHuC/ua0p8/TRFLGOK' https://cdn.jsdelivr.net; style-src-attr 'unsafe-inline'; img-src 'self' data: blob: https://tiles.basemaps.cartocdn.com https://protomaps.github.io https://cdn.jsdelivr.net; connect-src 'self' https://tiles.basemaps.cartocdn.com https://protomaps.github.io https://cdn.jsdelivr.net https://nominatim.openstreetmap.org https://overpass-api.de https://overpass.kumi.systems; worker-src blob: 'self'; child-src blob: 'self'; font-src 'none'; manifest-src 'self'; base-uri 'none'; form-action 'none'; object-src 'none'">
+<meta http-equiv="Content-Security-Policy" content="default-src 'none'; script-src 'sha384-t0HlwgMA6ZqRWt65E6qU5eLBv+Z4YPKzv3oRHUr7RMERrIThpwYFswHg8MBq069L' https://cdn.jsdelivr.net; style-src-elem 'sha384-edQTblksUQX4XwoFQMseYNI9/RcCixhrL6pwTAkd5MF/5diHuC/ua0p8/TRFLGOK' https://cdn.jsdelivr.net; style-src-attr 'unsafe-inline'; img-src 'self' data: blob: https://tiles.basemaps.cartocdn.com https://protomaps.github.io https://cdn.jsdelivr.net; connect-src 'self' https://tiles.basemaps.cartocdn.com https://protomaps.github.io https://cdn.jsdelivr.net https://nominatim.openstreetmap.org https://overpass-api.de https://overpass.kumi.systems; worker-src blob: 'self'; child-src blob: 'self'; font-src 'none'; manifest-src 'self'; base-uri 'none'; form-action 'none'; object-src 'none'">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="mobile-web-app-capable" content="yes">
@@ -4858,7 +4858,7 @@ function preloadUrlList() { // Beta 1.95 (deep audit SR-194-06): the determinist
 $('xPre').addEventListener('click', async () => {
   if (!tapGuard('xPre')) return;
   if (preloadRunning) { toast('Offline download already running'); return; }
-  preloadRunning = true;
+  preloadRunning = true; let releasePack = () => {};
   const st = $('xPreStat'); st.textContent = 'Preparing map list…';
   // Beta 1.53: the files are SAVED by the service worker as they pass through it - with no
   // worker controlling this page, fetching all 894 files saves nothing (2026-11-01: Andrew's
@@ -4881,7 +4881,7 @@ $('xPre').addEventListener('click', async () => {
     if (!swOk) { st.textContent = 'Offline maps NOT saved: the part of the app that saves them is not running' + (window.__swErr ? ' (' + window.__swErr + ')' : '') + '. The live map is unaffected.'; preloadRunning = false; return; } // Beta 1.57: wording stands on its own (second audit, item 5)
   }
   try {
-const list = preloadUrlList();
+const list = preloadUrlList(); releasePack = await takePackWriteTurn(); // Beta 1.183 (Codex P2, PR #21): the download takes the pack writers' turn before its census - see takePackWriteTurn (below, with packMigFingerprint)
     // Beta 1.94 (audit F-03): the downloaded pack is written into its OWN cache
     // ('snowroute-offline-v1'), which the service worker serves FIRST for map data and
     // whose contents the browsing cache's eviction can never touch. Before 1.94 the pack
@@ -4930,7 +4930,7 @@ const list = preloadUrlList();
     lsSet(LS.pre, JSON.stringify({ at: Date.now(), saved, total: list.length, routeSaved, routeTotal }));
     st.textContent = capHit ? 'Offline maps: saved ' + saved + ' of ' + list.length + ' files — stopped at the ' + fmtStoreSize(OFFLINE_PACK_CAP_BYTES) + ' storage limit' : 'Offline maps: saved ' + saved + ' of ' + list.length + ' files (tiles are kept by the offline cache)'; // Beta 1.183 (storage audit §3 item 4): a cap stop is reported in the completion line's own idiom - the confirmed saved-so-far count plus the reason; what is already stored stays stored (a partial pack is a supported, disclosed state - Status renders it 'Partial')
     toast('Offline maps: ' + saved + '/' + list.length);
-  } catch (e) { st.textContent = 'Preload failed — check connection and retry.'; } finally { preloadRunning = false; if ($('setStatusPane').classList.contains('on')) renderStatus(false); } // Beta 1.111: the download lives in Status now - when it ends with Status on screen, the maps line, buttons and health row re-read the pack state it just wrote (the stat line itself is the download's own report and is left alone)
+  } catch (e) { st.textContent = 'Preload failed — check connection and retry.'; } finally { preloadRunning = false; releasePack(); if ($('setStatusPane').classList.contains('on')) renderStatus(false); } // Beta 1.111: the download lives in Status now - when it ends with Status on screen, the maps line, buttons and health row re-read the pack state it just wrote (the stat line itself is the download's own report and is left alone)
 });
 
 // ===== UPDATE CHECK =====
@@ -5249,6 +5249,7 @@ if ('serviceWorker' in navigator) {
 // clean their browsing duplicates up). Best-effort: a failed copy retries on the next
 // boot, and a fresh Download offline maps always rebuilds the pack cache directly.
 const PACKMIG_KEY = 'snowroute.v5.packmig';
+let packWriteChain = Promise.resolve(); async function takePackWriteTurn() { let release; const held = new Promise(res => { release = res; }); const prev = packWriteChain; packWriteChain = prev.then(() => held); await prev; return release; } // Beta 1.183 (Codex P2, PR #21): the pack has TWO writers - this download (the xPre handler above) and migratePack's boot heal - and a byte budget is only SHARED if they take turns: each writer censuses the pack when its own turn starts, so serialized writers see each other's finished writes in their census and account against the true total; two writers holding independent snapshots could each pass the cap check and together overshoot it. A turn is held for the writer's whole run and released in its finally; the chain lives only in this page's memory, so a dead page takes its chain with it and no stale lock can persist.
 function packMigFingerprint(list) { // Beta 1.96 (deep audit SR-195-03): the pack-migration completion flag stops being the constant '1' and becomes a fingerprint of the manifest it certifies - a stored flag is believable only for the exact manifest it was earned on (a styles update changes tile/glyph URLs, hence the list, hence the fingerprint, and the full pass runs again). djb2 over the joined list: deterministic, dependency-free, cheap at 897 entries.
   let h = 0; const s = list.join('\n');
   for (let i = 0; i < s.length; i++) { h = ((h << 5) - h + s.charCodeAt(i)) | 0; }
@@ -5257,9 +5258,9 @@ function packMigFingerprint(list) { // Beta 1.96 (deep audit SR-195-03): the pac
 function anyPreloadRecord() { // Beta 1.170 (Carbon fix round Phase 2, C-03): was a pack EVER downloaded on this device, under ANY route? The two callers below used to read only the ACTIVE route's preload record (LS names whichever route is active - at boot, the eval-time default), so a pack downloaded under another route alone never earned its migration/heal pass. Every route's own record is the honest test; the manifest migratePack heals against is already the union over all packs (preloadUrlList).
   return ROUTE_PACKS.some(p => !!parseJ(lsGet(routeKeys(p.id).pre), null));
 }
-async function migratePack() { // Beta 1.95 (deep audit SR-194-05/06): the one-time move of a pre-1.94 pack from the browsing cache into the protected pack cache, under an honest contract. 1.94 copied EVERY browsing-cache key (any stray the map had ever fetched came along) through per-file catch-alls, then set the completion flag unconditionally - a partial copy was marked complete and never retried. Now: only the deterministic preload manifest (preloadUrlList) is migrated; non-manifest entries already in the pack cache are pruned, so the pack is exactly the manifest; the completion flag is set only after VERIFYING that everything that exists in either cache is present in the pack cache; any failed copy leaves the flag unset and the next boot retries (the function is idempotent). Returns a status object so the test battery can drive it directly.
+async function migratePack() { let migRelease = () => {}; // Beta 1.95 (deep audit SR-194-05/06): the one-time move of a pre-1.94 pack from the browsing cache into the protected pack cache, under an honest contract. 1.94 copied EVERY browsing-cache key (any stray the map had ever fetched came along) through per-file catch-alls, then set the completion flag unconditionally - a partial copy was marked complete and never retried. Now: only the deterministic preload manifest (preloadUrlList) is migrated; non-manifest entries already in the pack cache are pruned, so the pack is exactly the manifest; the completion flag is set only after VERIFYING that everything that exists in either cache is present in the pack cache; any failed copy leaves the flag unset and the next boot retries (the function is idempotent). Returns a status object so the test battery can drive it directly.
   try {
-    if (!('caches' in window)) return { ok: false, why: 'nocache' };
+    migRelease = await takePackWriteTurn(); if (!('caches' in window)) return { ok: false, why: 'nocache' };
     if (!anyPreloadRecord()) return { ok: true, skipped: true }; // no pack was ever downloaded on this install (Beta 1.170, C-03: under any route - see anyPreloadRecord)
     const list = preloadUrlList();
     const fp = packMigFingerprint(list);
@@ -5280,7 +5281,7 @@ async function migratePack() { // Beta 1.95 (deep audit SR-194-05/06): the one-t
     for (const u of list) { if (!(await oc.match(u)) && (await tc.match(u))) return { ok: false, why: 'verify' }; } // verify BEFORE the flag: everything recoverable must be in the pack cache
     const flagOk = lsSet(PACKMIG_KEY, fp); // Beta 1.96 (SR-195-07): the flag write is CHECKED - the fast path believes this flag, so a migration whose flag could not be persisted is not complete and must not report ok
     return { ok: flagOk, flag: flagOk ? fp : null, pruneOk };
-  } catch (e) { return { ok: false, why: String((e && e.message) || e) }; }
+  } catch (e) { return { ok: false, why: String((e && e.message) || e) }; } finally { migRelease(); }
 }
 // Beta 1.143 (DA-07): the boot invocation of migratePack() no longer lives here. It fired during
 // this part's evaluation and captured preloadUrlList() as its manifest BEFORE create.js evaluated
