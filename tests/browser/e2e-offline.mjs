@@ -5,6 +5,7 @@
 // (page, service worker) gets Fetch interception on its own session, and a
 // request pauses in exactly the session whose context issued it.
 import { spawn } from 'node:child_process';
+import { createHash } from 'node:crypto';
 import fs from 'node:fs';
 import { isRaceLoss } from './race-loss.mjs'; // the E17 race judge - fixture-proven by selftest-race-loss.mjs (test-change gate, docs/TESTING.md)
 // Phase 5 (architecture C4, Offline Contract v1): the migration checks below take their
@@ -463,6 +464,73 @@ try {
     settled23 === true && e23.flag === info23.fp && e23.extrasSurviving === info23.extras.length);
   await ev2(`(async () => { localStorage.removeItem('snowroute.v2.userpacks'); await upDel('e23-test'); const r = await migratePack(); return JSON.stringify({ ok: !!(r && r.ok) }); })()`); // cleanup: with the definition gone from BOTH homes (Beta 1.166: the legacy record - already drained away by the measured boot - and the IndexedDB store) the explicit pass re-certifies the 897 state E22 left
 } catch (e) { ok('E23 boot migration union certification (Beta 1.143, DA-07) | threw ' + String(e).slice(0, 150), false); }
+
+// E25 (Beta 1.183, storage audit §3 item 4): the offline pack is BUDGETED at
+// OFFLINE_PACK_CAP_BYTES (250 MB) - far too large to reach against a real
+// 897-file pack, so the check builds a VARIANT page (the E11 in-place
+// rewrite pattern; shipped code carries no test-only seam): the built
+// index.html's cap literal becomes 512 KB and sw.js takes a byte change so
+// the new worker installs and re-fetches the shell (its install fetch is a
+// reload and navigations are net-first, so the relaunched browser runs the
+// variant shell - proven directly by reading the constant in the page
+// before anything else is believed). The rewrite also restamps the
+// variant's CSP script hash (scripts/csp_stamp.py's computation, applied
+// to the script-src entry only): the cap literal sits inside the stamped
+// inline script, so an unrestamped variant's own policy blocks its script
+// and the constant never exists (Codex P1, PR #21). The download must then stop at the
+// cap, name the limit in its completion line, leave the stored pack at or
+// under the cap, and Status must read Partial with the measured bytes.
+try {
+  const idxFile = new URL('../../index.html', import.meta.url);
+  const idxOrig = fs.readFileSync(idxFile, 'utf8');
+  const NEEDLE = 'OFFLINE_PACK_CAP_BYTES = 250 * 1024 * 1024';
+  if (!idxOrig.includes(NEEDLE)) throw new Error('the cap literal was not found in the built page - the variant cannot be built');
+  const swF25 = new URL('../../sw.js', import.meta.url);
+  const swO25 = fs.readFileSync(swF25, 'utf8');
+  let e25 = null;
+  try {
+    const variant25 = idxOrig.replace(NEEDLE, 'OFFLINE_PACK_CAP_BYTES = 512 * 1024');
+    if (variant25 === idxOrig) throw new Error('the variant rewrite did not change the page');
+    // Codex P1 on PR #21: the cap literal lives inside the page's bundled inline script, whose
+    // SHA-384 is stamped into the CSP meta (scripts/csp_stamp.py) - rewriting the script without
+    // restamping its script-src hash makes the variant page's own policy block the script, so
+    // OFFLINE_PACK_CAP_BYTES never becomes available and the variant can never go live. Restamp:
+    // recompute ONLY the script hash from the variant's own inline script (the same computation
+    // csp_stamp.py performs) and swap it into the existing meta - the style hash and every other
+    // directive stay byte-identical to the shipped stamp.
+    const sm25 = variant25.match(/<script(?![^>]*\bsrc=)[^>]*>([\s\S]*?)<\/script>/);
+    if (!sm25) throw new Error('the variant page has no inline script to restamp');
+    const hash25 = createHash('sha384').update(sm25[1], 'utf8').digest('base64');
+    const variantStamped = variant25.replace(/(script-src )'sha384-[^']+'/, "$1'sha384-" + hash25 + "'");
+    if (variantStamped === variant25) throw new Error('the variant CSP restamp did not change the page');
+    fs.writeFileSync(idxFile, variantStamped);
+    fs.writeFileSync(swF25, swO25 + '\n// e2e E25 variant probe (byte change only)\n');
+    proc.kill('SIGKILL');
+    await launchBrowser();
+    const variantLive = await poll(`typeof OFFLINE_PACK_CAP_BYTES !== 'undefined' && OFFLINE_PACK_CAP_BYTES === 512 * 1024`, 120000);
+    if (!variantLive) throw new Error('the variant page never became live after relaunch');
+    await poll(`typeof glOk !== 'undefined' && glOk === true`, 90000);
+    await poll(`!!navigator.serviceWorker.controller`, 30000);
+    await ev2(`(async () => { const r = await migratePack(); return !!(r && r.ok); })()`); // quiesce the boot migration (E19's explicit-call pattern) before the pack is emptied, so no migration copy can land mid-download
+    await ev2(`(async () => { await caches.delete('snowroute-offline-v1'); return true; })()`);
+    await ev2(`document.getElementById('xPre').click()`);
+    const stopped = await poll(`document.getElementById('xPreStat').textContent.includes('stopped at the')`, 420000);
+    const stat25 = await ev2(`document.getElementById('xPreStat').textContent`);
+    await ev2(`document.getElementById('setBtn').click(); true`);
+    await ev2(`document.getElementById('stBtn').click(); true`);
+    await poll(`document.getElementById('stMapsSub').textContent.includes('files · ')`, 30000);
+    e25 = JSON.parse(await ev2(`(async () => { const c = await caches.open('snowroute-offline-v1'); let b = 0, n = 0; for (const r of await c.keys()) { const resp = await c.match(r); if (resp) { b += (await resp.blob()).size; n++; } } const ps = await packState(); return JSON.stringify({ bytes: b, n, psBytes: ps.bytes, fmt: fmtStoreSize(ps.bytes), line: document.getElementById('stMapsLine').textContent, sub: document.getElementById('stMapsSub').textContent }); })()`));
+    ok('E25 the download stops at the cap, names the limit, and the stored pack stays at or under it | ' + stat25 + ' | pack ' + JSON.stringify(e25), stopped && /saved \d+ of \d+ files — stopped at the 512 KB storage limit/.test(stat25 || '') && e25.n >= 1 && e25.n < OFFLINE_FIXTURE.count && e25.bytes > 0 && e25.bytes <= 512 * 1024);
+    ok('E25b Status reads the capped pack as Partial with its measured bytes | ' + JSON.stringify(e25), e25.line === 'Offline maps: Partial' && e25.psBytes === e25.bytes && e25.sub.includes(' · ' + e25.fmt + ' · '));
+    // E25c (Codex P2, PR #21): the download is not the pack's only write path - migratePack (the
+    // boot heal) copies missing manifest responses from the browsing cache into the pack. The same
+    // budget binds that door: with the pack at the variant cap and the browsing cache holding
+    // pass-through copies of the very files the cap refused, a heal pass must leave the pack at
+    // or under the cap (unguarded, it would copy the manifest in and land far over the limit).
+    const after25 = JSON.parse(await ev2(`(async () => { await migratePack(); const c = await caches.open('snowroute-offline-v1'); let b = 0; for (const r of await c.keys()) { const resp = await c.match(r); if (resp) b += (await resp.blob()).size; } return JSON.stringify({ bytes: b }); })()`));
+    ok('E25c the boot migration/healing copy honours the same cap (the healed pack stays at or under it) | ' + JSON.stringify(after25), after25.bytes <= 512 * 1024);
+  } finally { fs.writeFileSync(idxFile, idxOrig); fs.writeFileSync(swF25, swO25); }
+} catch (e) { ok('E25 the pack download stops at the storage cap (Beta 1.183) | threw ' + String(e).slice(0, 150), false); }
 
 ok('E13 no page exceptions across the whole run', consoleLog.filter(c => String(c).startsWith('EXCEPTION')).length === 0);
 const fails = R.checks.filter(c => !c[1]);

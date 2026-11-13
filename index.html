@@ -2,7 +2,7 @@
 <html lang="en" class="boot">
 <head>
 <meta charset="UTF-8">
-<meta http-equiv="Content-Security-Policy" content="default-src 'none'; script-src 'sha384-bIiCnLmSmdVq6g0TjK9jwUWViAckhAhj25MuY7SORKlmsnvvBuhYaFz8WBUaDtOM' https://cdn.jsdelivr.net; style-src-elem 'sha384-edQTblksUQX4XwoFQMseYNI9/RcCixhrL6pwTAkd5MF/5diHuC/ua0p8/TRFLGOK' https://cdn.jsdelivr.net; style-src-attr 'unsafe-inline'; img-src 'self' data: blob: https://tiles.basemaps.cartocdn.com https://protomaps.github.io https://cdn.jsdelivr.net; connect-src 'self' https://tiles.basemaps.cartocdn.com https://protomaps.github.io https://cdn.jsdelivr.net https://nominatim.openstreetmap.org https://overpass-api.de https://overpass.kumi.systems; worker-src blob: 'self'; child-src blob: 'self'; font-src 'none'; manifest-src 'self'; base-uri 'none'; form-action 'none'; object-src 'none'">
+<meta http-equiv="Content-Security-Policy" content="default-src 'none'; script-src 'sha384-3P7txhlJj06sRlJLR5FnZyCu20jhI0UUcPJQwlMQ2IDAb6R7Th7LBoR+wpL7Truf' https://cdn.jsdelivr.net; style-src-elem 'sha384-edQTblksUQX4XwoFQMseYNI9/RcCixhrL6pwTAkd5MF/5diHuC/ua0p8/TRFLGOK' https://cdn.jsdelivr.net; style-src-attr 'unsafe-inline'; img-src 'self' data: blob: https://tiles.basemaps.cartocdn.com https://protomaps.github.io https://cdn.jsdelivr.net; connect-src 'self' https://tiles.basemaps.cartocdn.com https://protomaps.github.io https://cdn.jsdelivr.net https://nominatim.openstreetmap.org https://overpass-api.de https://overpass.kumi.systems; worker-src blob: 'self'; child-src blob: 'self'; font-src 'none'; manifest-src 'self'; base-uri 'none'; form-action 'none'; object-src 'none'">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="mobile-web-app-capable" content="yes">
@@ -450,7 +450,7 @@ input, textarea { caret-color: currentColor; } /* Beta 1.125 (Andrew): the typin
 <div id="hud">
   <div id="warn">Not saving — storage is full or blocked</div>
   <div class="row">
-    <div class="titleStack"><div class="title">Snow Route Beta</div><div class="ver" id="ver">Beta 1.182</div></div>
+    <div class="titleStack"><div class="title">Snow Route Beta</div><div class="ver" id="ver">Beta 1.183</div></div>
   </div>
   <div id="stats"></div>
 </div>
@@ -4801,6 +4801,14 @@ $('xImp').addEventListener('click', () => doRestore());
 // ===== PRELOAD (offline route maps) =====
 function tileNums(lng, lat, z) { const n = 2 ** z; const x = Math.floor((lng + 180) / 360 * n); const la = lat * Math.PI / 180; const y = Math.floor((1 - Math.log(Math.tan(la) + 1 / Math.cos(la)) / Math.PI) / 2 * n); return [x, y]; }
 let preloadRunning = false; // Beta 1.92 (deep audit F07): single-flight - a second tap while a download runs starts no competing job
+const OFFLINE_PACK_CAP_BYTES = 250 * 1024 * 1024; // Beta 1.183 (storage audit 2026-11-10, §3 item 4): the offline pack's disclosed budget - the ONE home of the cap value. The preload weighs the pack before and during a download and stops at this many bytes (the xPre handler below); Status weighs the stored pack on the same scale. Andrew's call (2026-11-12): 250 MB - far above any legitimate pack (the 897-file manifest measures in the tens of MB), low enough to catch the union manifest growing silently into the origin's storage quota
+function fmtStoreSize(n) { // Beta 1.183: storage sizes in the Status pane's plain form - whole KB/MB, one decimal for GB ('250 MB', '1.2 GB'); an unmeasured value (negative) formats as nothing, never as an invented figure
+  if (!(n >= 0)) return '';
+  if (n < 1024) return n + ' B';
+  if (n < 1024 * 1024) return Math.round(n / 1024) + ' KB';
+  if (n < 1024 * 1024 * 1024) return Math.round(n / (1024 * 1024)) + ' MB';
+  return (n / (1024 * 1024 * 1024)).toFixed(1).replace(/\.0$/, '') + ' GB';
+}
 function packTileUrls(pk) { // Beta 1.117 (F5): the TILE urls attributable to ONE pack - its offline area (pack.box; a pack without one falls back to its own roads' bounds) at z8-14 plus its z15 route core. Sprites and glyphs are shared chrome, attributable to no route. preloadUrlList unions this over every known pack; the per-route preload record counts against it.
   // Beta 1.152 (NV round, NV3b): the enumeration itself is budgeted - PACK_TILES_MAX tile iterations for this pack, each zoom's span counted BEFORE its loop runs and the zoom skipped whole when it does not fit. normalizePack's extent ceiling (NV3a) rejects such a pack at every import path, but a pack record planted straight into storage never passes through the validator, and this function runs at every boot that carries a preload record: a worldwide box is ~356.8M iterations per source and never returned (measured). Under the budget the output is identical to the unbudgeted enumeration - proven against the frozen 897-URL fixture by tests/browser/selftest-nv1152.mjs.
   const urls = new Set();
@@ -4850,7 +4858,7 @@ function preloadUrlList() { // Beta 1.95 (deep audit SR-194-06): the determinist
 $('xPre').addEventListener('click', async () => {
   if (!tapGuard('xPre')) return;
   if (preloadRunning) { toast('Offline download already running'); return; }
-  preloadRunning = true;
+  preloadRunning = true; let releasePack = () => {};
   const st = $('xPreStat'); st.textContent = 'Preparing map list…';
   // Beta 1.53: the files are SAVED by the service worker as they pass through it - with no
   // worker controlling this page, fetching all 894 files saves nothing (2026-11-01: Andrew's
@@ -4873,7 +4881,7 @@ $('xPre').addEventListener('click', async () => {
     if (!swOk) { st.textContent = 'Offline maps NOT saved: the part of the app that saves them is not running' + (window.__swErr ? ' (' + window.__swErr + ')' : '') + '. The live map is unaffected.'; preloadRunning = false; return; } // Beta 1.57: wording stands on its own (second audit, item 5)
   }
   try {
-const list = preloadUrlList();
+const list = preloadUrlList(); releasePack = await takePackWriteTurn(); // Beta 1.183 (Codex P2, PR #21): the download takes the pack writers' turn before its census - see takePackWriteTurn (below, with packMigFingerprint)
     // Beta 1.94 (audit F-03): the downloaded pack is written into its OWN cache
     // ('snowroute-offline-v1'), which the service worker serves FIRST for map data and
     // whose contents the browsing cache's eviction can never touch. Before 1.94 the pack
@@ -4885,6 +4893,12 @@ const list = preloadUrlList();
     // so the pack lives in exactly one place.
     let packCache = null; try { packCache = await caches.open('snowroute-offline-v1'); } catch (e) { packCache = null; }
     let done = 0, nextU = 0;
+    // Beta 1.183 (storage audit §3 item 4): the pack is BUDGETED at its only write path. Weigh what is
+    // already stored first - per URL, so a re-download replaces a file's weight instead of double-counting
+    // it: the manifest is a union over routes sharing this one cache, so the cap is on the PACK, not on
+    // this run - re-downloads and added routes count against the same budget.
+    let capHit = false, packBytes = 0; const packSizes = new Map();
+    if (packCache) { try { for (const req of await packCache.keys()) { try { const r0 = await packCache.match(req); if (r0) { const sz0 = (await r0.blob()).size; packSizes.set(req.url, sz0); packBytes += sz0; } } catch (e) {} } } catch (e) {} }
     // Beta 1.87 (Andrew's request): a slim green progress bar under the buttons, and the
     // count SWEEPS up to the real number instead of jumping - the five workers finish
     // files in clusters and the pre-1.87 text only repainted every 200 files, so the
@@ -4898,8 +4912,11 @@ const list = preloadUrlList();
     bar.classList.add('on'); paint();
     const sweep = setInterval(() => { if (shown < done) { shown = Math.min(done, shown + Math.max(1, Math.ceil((done - shown) / 5))); paint(); } }, 30);
     // Beta 1.96 (audit-2, N-2): the fetch above uses cache 'reload' - a deliberate Download is a reload, not an ordinary request. Before 1.96 the request went through the service worker like any other, mapFetch answered from the very pack being refreshed, and the rebuilt pack stored the pack's own responses back: re-downloading could never refresh anything. The worker honours the mode (mapFetch's reload bypass, src/sw.js).
-    const preFetch = async (u) => { const ctl = new AbortController(); const to = setTimeout(() => ctl.abort(), 30000); try { const res = await fetch(u, { mode: 'cors', signal: ctl.signal, cache: 'reload' }); if (res && res.ok && packCache) { try { await packCache.put(u, res.clone()); } catch (e) { /* a failed pack write simply never confirms in the count below */ } } } catch (e) { /* failures and timeouts simply never confirm below */ } clearTimeout(to); }; // Beta 1.92 (audit F07): one stalled file gives up at 30 s instead of holding the whole job open forever. Beta 1.94 (F-03): a good response is ALSO stored into the pack cache by the page itself - the worker's pass-through copy in the browsing cache is the duplicate that gets cleaned up below, never the guarantee
-    const preWorker = async () => { while (nextU < list.length) { const u = list[nextU++]; await preFetch(u); done++; } }; // Beta 1.50 (audit P07): 894 files strictly one at a time was the slowest single wait in the app - five at a time (bounded, never unlimited); same list, same honest confirmed count below
+    const preFetch = async (u) => { if (capHit) return; const ctl = new AbortController(); const to = setTimeout(() => ctl.abort(), 30000); try { const res = await fetch(u, { mode: 'cors', signal: ctl.signal, cache: 'reload' }); if (res && res.ok && packCache) { let sz = -1; try { sz = (await res.clone().blob()).size; } catch (e) { sz = -1; } // Beta 1.183 (storage audit §3 item 4): the write is WEIGHED before it lands - a file that would carry the pack over OFFLINE_PACK_CAP_BYTES is refused and stops the download (capHit ends the workers below), so the pack can never grow past the cap through this, its only, write path; a GROWING file's extra bytes are RESERVED in packBytes synchronously before the write is awaited, so the five workers cannot all pass the check against the same stale total (Codex P2, PR #21), a failed write releases its reservation, and a SHRINKING replacement reserves nothing and frees its bytes only after its write succeeds - freeing them earlier would let another worker spend headroom that a failed shrink silently takes back; a file whose size cannot be read is stored unweighed rather than lost
+        let href = u; try { href = new URL(u).href; } catch (e) {}
+        if (sz >= 0) { const prevSz = packSizes.get(href) || 0; const dSz = sz - prevSz; if (dSz > 0 && packBytes + dSz > OFFLINE_PACK_CAP_BYTES) capHit = true; else { if (dSz > 0) packBytes += dSz; try { await packCache.put(u, res.clone()); packSizes.set(href, sz); if (dSz < 0) packBytes += dSz; } catch (e) { if (dSz > 0) packBytes -= dSz; /* a failed pack write releases the reservation it took (growth only - a shrink reserves nothing and frees its bytes only on success, above) and simply never confirms in the count below */ } } }
+        else { try { await packCache.put(u, res.clone()); } catch (e) { /* a failed pack write simply never confirms in the count below */ } } } } catch (e) { /* failures and timeouts simply never confirm below */ } clearTimeout(to); }; // Beta 1.92 (audit F07): one stalled file gives up at 30 s instead of holding the whole job open forever. Beta 1.94 (F-03): a good response is ALSO stored into the pack cache by the page itself - the worker's pass-through copy in the browsing cache is the duplicate that gets cleaned up below, never the guarantee
+    const preWorker = async () => { while (nextU < list.length && !capHit) { const u = list[nextU++]; await preFetch(u); done++; } }; // Beta 1.50 (audit P07): 894 files strictly one at a time was the slowest single wait in the app - five at a time (bounded, never unlimited); same list, same honest confirmed count below. Beta 1.183: a cap stop ends the workers too - no further files are even fetched
     await Promise.all([preWorker(), preWorker(), preWorker(), preWorker(), preWorker()]);
     clearInterval(sweep); shown = done; paint();
     let saved = 0; const confirmed = [];
@@ -4911,13 +4928,14 @@ const list = preloadUrlList();
     let routeSaved = saved, routeTotal = list.length;
     if (activeRoute) { const sub = packTileUrls(activeRoute); const confSet = new Set(confirmed); routeTotal = sub.size; routeSaved = 0; for (const u of sub) if (confSet.has(u)) routeSaved++; }
     lsSet(LS.pre, JSON.stringify({ at: Date.now(), saved, total: list.length, routeSaved, routeTotal }));
-    st.textContent = 'Offline maps: saved ' + saved + ' of ' + list.length + ' files (tiles are kept by the offline cache)';
+    st.textContent = capHit ? 'Offline maps: saved ' + saved + ' of ' + list.length + ' files — stopped at the ' + fmtStoreSize(OFFLINE_PACK_CAP_BYTES) + ' storage limit' : 'Offline maps: saved ' + saved + ' of ' + list.length + ' files (tiles are kept by the offline cache)'; // Beta 1.183 (storage audit §3 item 4): a cap stop is reported in the completion line's own idiom - the confirmed saved-so-far count plus the reason; what is already stored stays stored (a partial pack is a supported, disclosed state - Status renders it 'Partial')
     toast('Offline maps: ' + saved + '/' + list.length);
-  } catch (e) { st.textContent = 'Preload failed — check connection and retry.'; } finally { preloadRunning = false; if ($('setStatusPane').classList.contains('on')) renderStatus(false); } // Beta 1.111: the download lives in Status now - when it ends with Status on screen, the maps line, buttons and health row re-read the pack state it just wrote (the stat line itself is the download's own report and is left alone)
+  } catch (e) { st.textContent = 'Preload failed — check connection and retry.'; } finally { preloadRunning = false; releasePack(); if ($('setStatusPane').classList.contains('on')) renderStatus(false); } // Beta 1.111: the download lives in Status now - when it ends with Status on screen, the maps line, buttons and health row re-read the pack state it just wrote (the stat line itself is the download's own report and is left alone)
 });
 
 // ===== UPDATE CHECK =====
 let updState = ''; // Beta 1.111: the Status health row's App-version state - '' = not checked yet this session, 'ok' = up to date, 'avail' = a newer version was served. In-memory on purpose: a fresh boot honestly reports "not checked yet" again instead of trusting a stale stamp.
+let storagePersist = null; // Beta 1.183 (storage audit §3 item 2): the platform's answer to the boot persist() request, RECORDED instead of discarded (the boot block below) - true = this origin's data is exempt from automatic eviction, false = the browser refused, null = no answer (the API is absent, or it has not resolved yet). Read by the Status storage row at pane open; never itself persisted - every boot asks again, like updState above
 function parseVerLabel(s) { const m = typeof s === 'string' ? s.trim().match(/^Beta (\d+)\.(\d+)$/) : null; return m ? [Number(m[1]), Number(m[2])] : null; } // Beta 1.150 (security-audit fix round): the version ordering the update check compares by - two numeric components, nothing else parses
 $('updBtn').addEventListener('click', async () => {
   if (!tapGuard('updBtn')) return;
@@ -5088,17 +5106,21 @@ function renderChime() {
 $('swChime').addEventListener('click', () => { const prevChime = settings.chime; settings.chime = !settings.chime; if (!saveSettings()) { settings.chime = prevChime; renderSwitch($('swChime'), settings.chime); renderJob(); toast('Not saved — storage problem'); return; } renderSwitch($('swChime'), settings.chime); renderJob(); }); // Beta 1.113 (round 112, CG-112-03): same save-honesty as the vibration switch - a failed save reverts and warns
 $('chimeBack').addEventListener('click', () => { renderJob(); showSetPane('setJobPane'); });
 // ---- Status: maps + health, every value read live at pane open ----
-async function packState() { // how much of the deterministic manifest (preloadUrlList - the same list the download writes and the pack migration certifies) is actually in the pack cache right now; falls back to the preload record when the cache census cannot run. Beta 1.170 (Carbon fix round Phase 2, C-04): the result also carries per-route counts - the manifest is a UNION over routes, and Status used to label the union total as the active route's alone
+async function packState() { // how much of the deterministic manifest (preloadUrlList - the same list the download writes and the pack migration certifies) is actually in the pack cache right now; falls back to the preload record when the cache census cannot run. Beta 1.170 (Carbon fix round Phase 2, C-04): the result also carries per-route counts - the manifest is a UNION over routes, and Status used to label the union total as the active route's alone. Beta 1.183 (storage audit §3 item 4): the result also carries the pack's measured bytes (bytes; -1 when the census could not run - the fallback record carries counts only, so the byte figure is honestly absent there)
   const list = preloadUrlList(); const total = list.length;
   let cached = -1;
+  let bytes = -1; // Beta 1.183 (storage audit §3 item 4): the pack's measured BYTES ride the same census (below) - -1 = unmeasured (the census could not run), and Status omits the size rather than inventing one
   let haveSet = null;
   try {
     if ('caches' in window) {
       const oc = await caches.open('snowroute-offline-v1');
-      const have = new Set((await oc.keys()).map(r => r.url));
+      const reqs = await oc.keys();
+      const have = new Set(reqs.map(r => r.url));
       haveSet = have;
       cached = 0;
       for (const u of list) { let href = u; try { href = new URL(u).href; } catch (e) {} if (have.has(href)) cached++; }
+      bytes = 0; // the pack WEIGHED as well as counted - every stored entry's blob size. This census's only caller is renderStatus, so the ~897 reads are a sub-second one-off at Status open, never on boot or per frame. A single unreadable entry costs its own share, never the census
+      for (const req of reqs) { try { const resp = await oc.match(req); if (resp) bytes += (await resp.blob()).size; } catch (e) {} }
     }
   } catch (e) { cached = -1; }
   if (cached < 0) { const rec = parseJ(lsGet(LS.pre), null); cached = rec ? Math.min(total, rec.saved || 0) : 0; }
@@ -5106,7 +5128,7 @@ async function packState() { // how much of the deterministic manifest (preloadU
     if (haveSet) { for (const u of sub) { let href = u; try { href = new URL(u).href; } catch (e) {} if (haveSet.has(href)) c++; } }
     else { const rec = parseJ(lsGet(routeKeys(pk.id).pre), null); c = rec ? Math.min(sub.size, rec.routeSaved || 0) : 0; }
     return { id: pk.id, name: pk.name, total: sub.size, cached: c }; });
-  return { total, cached, complete: total > 0 && cached >= total, countsByRoute };
+  return { total, cached, bytes, complete: total > 0 && cached >= total, countsByRoute };
 }
 function setHealth(icoId, valId, state, text) { // state: 'ok' green tick / 'warn' amber warning / 'idle' neutral dash - honesty over decoration: a state that is merely unknown is never painted green
   const ico = $(icoId);
@@ -5118,9 +5140,10 @@ async function renderStatus(resetStat) {
   const ps = await packState();
   const multiRoute = ROUTE_PACKS.length > 1; // Beta 1.170 (C-04): the counts above are the UNION over every route - the label says so when there is more than one route to union over; the single-route label is unchanged
   const area = multiRoute ? ROUTE_PACKS.length + ' routes' : ((activeRoute ? activeRoute.name : 'Route') + ' area');
-  if (ps.complete) { $('stMapsLine').innerHTML = 'Offline maps: Downloaded <span class="m-tick">&#10003;</span>'; $('stMapsSub').textContent = ps.total + ' files · ' + area; }
-  else if (ps.cached > 0) { $('stMapsLine').textContent = 'Offline maps: Partial'; $('stMapsSub').textContent = ps.cached + ' of ' + ps.total + ' files · ' + area; }
-  else { $('stMapsLine').textContent = 'Offline maps: Not downloaded'; $('stMapsSub').textContent = ps.total + ' files · ' + area; }
+  const sizeTxt = ps.bytes >= 0 ? ' · ' + fmtStoreSize(ps.bytes) : ''; // Beta 1.183 (storage audit §3 item 4): the pack's measured size rides the same line ('897 files · 24 MB · Route area'); unmeasured (bytes -1) omits it - the line never carries an invented figure
+  if (ps.complete) { $('stMapsLine').innerHTML = 'Offline maps: Downloaded <span class="m-tick">&#10003;</span>'; $('stMapsSub').textContent = ps.total + ' files' + sizeTxt + ' · ' + area; }
+  else if (ps.cached > 0) { $('stMapsLine').textContent = 'Offline maps: Partial'; $('stMapsSub').textContent = ps.cached + ' of ' + ps.total + ' files' + sizeTxt + ' · ' + area; }
+  else { $('stMapsLine').textContent = 'Offline maps: Not downloaded'; $('stMapsSub').textContent = ps.total + ' files' + sizeTxt + ' · ' + area; }
   if (multiRoute) { const act = ps.countsByRoute.find(r => activeRoute && r.id === activeRoute.id); if (act) $('stMapsSub').textContent += ' · this route: ' + act.cached + ' of ' + act.total; } // the active route's own share, named as its own - never the union wearing its name
   $('xPre').textContent = ps.complete ? 'Re-download' : 'Download';
   $('stDel').style.display = ps.cached > 0 ? '' : 'none';
@@ -5128,7 +5151,14 @@ async function renderStatus(resetStat) {
   // HEALTH - each row from a real signal at this moment:
   let storageOk = false;
   try { storageOk = lsSet('snowroute.v2.healthprobe', '1') && lsGet('snowroute.v2.healthprobe') === '1'; lsDel('snowroute.v2.healthprobe'); } catch (e) { storageOk = false; } // a scratch-key write + read-back + delete - the same guarded helpers every save uses
-  setHealth('stIcoStorage', 'stValStorage', storageOk ? 'ok' : 'warn', storageOk ? 'saving normally' : 'storage problem — export a backup');
+  if (!storageOk) setHealth('stIcoStorage', 'stValStorage', 'warn', 'storage problem — export a backup');
+  else { // Beta 1.183 (storage audit §3 item 2): beside the probe, the row now reports the platform's own storage state - the RECORDED persist() answer (storagePersist) and a live estimate() measured at pane open, like every other row. The setHealth honesty rules: protected paints ok, a REFUSAL paints warn, an unreported answer paints idle - never green. estimate() is absent on older engines and may reject; either degrades the row to its unmeasured form - it never throws and never invents a figure
+    let est = null; try { if (navigator.storage && navigator.storage.estimate) est = await navigator.storage.estimate(); } catch (e) { est = null; }
+    const usedTxt = est && typeof est.usage === 'number' ? fmtStoreSize(est.usage) + ' used' : '';
+    if (storagePersist === true) setHealth('stIcoStorage', 'stValStorage', 'ok', 'protected' + (usedTxt ? ' · ' + usedTxt : '') + (est && typeof est.quota === 'number' && est.quota > 0 ? ' of ~' + fmtStoreSize(est.quota) : ''));
+    else if (storagePersist === false) setHealth('stIcoStorage', 'stValStorage', 'warn', 'not protected' + (usedTxt ? ' · ' + usedTxt : ''));
+    else setHealth('stIcoStorage', 'stValStorage', 'idle', usedTxt ? usedTxt + ' · protection not reported by this browser' : 'not reported by this browser');
+  }
   setHealth('stIcoMaps', 'stValMaps', ps.complete ? 'ok' : 'warn', ps.complete ? 'complete' : ps.cached > 0 ? 'partial — ' + ps.cached + ' of ' + ps.total : 'not downloaded');
   if (updState === 'ok') setHealth('stIcoVer', 'stValVer', 'ok', 'up to date (' + $('ver').textContent.trim() + ')');
   else if (updState === 'avail') setHealth('stIcoVer', 'stValVer', 'warn', 'update available');
@@ -5158,7 +5188,7 @@ $('stDel').addEventListener('click', async () => {
 });
 // ---- About / What's new ----
 const WHATSNEW = { // the curated in-app notes: plain words, LATEST RELEASE ONLY (Beta 1.114, Andrew: the accumulated list cluttered the About pane). A release REPLACES this entry with its own in the same change - it never accumulates; the full history lives in CHANGELOG.md, not the app
-  v: 'Beta 1.182', items: ["When you tilt the map, the buildings now stand half again as tall, and your GPS dot is a little 3D puck — blue with its white rim — that tilts with the map instead of floating flat on top of it.", "Fix: in Create New Route, the coloured line on a street you pick now matches the wider roads — it had stayed the old size when the roads grew in Beta 1.181."] };
+  v: 'Beta 1.183', items: ["Settings, then Status now shows your storage plainly: whether this device protects the app's data from being cleared away, and how much space the app is using.", "Offline maps show their size next to the file count, and a download now stops at a 250 MB storage limit instead of filling the device — whatever is already saved stays saved."] };
 function renderAbout() {
   const cur = $('ver').textContent.trim();
   $('wnHead').textContent = "WHAT'S NEW · " + cur; // the header names the LIVE version, read from the title's version element - never a second hard-coded copy that can go stale
@@ -5185,7 +5215,7 @@ $('homeBtn').addEventListener('click', () => { if (!tapGuard('homeBtn')) return;
 // ===== SERVICE WORKER + BOOT =====
 if ('serviceWorker' in navigator) {
   navigator.serviceWorker.register('sw.js').catch(e => { window.__swErr = (e && e.name) || 'error'; }); // Beta 1.53: a refused registration (e.g. policy-blocked) used to vanish into this catch - record WHY; online use is unaffected either way, but the offline preload below refuses to run without the worker and can now say why
-  if (navigator.storage && navigator.storage.persist) { try { navigator.storage.persist().catch(() => {}); } catch (e) {} } // Beta 1.57 (second audit, item 6): ask the platform to exempt this origin's data (progress + offline maps) from automatic storage eviction where supported. An installed home-screen app is already outside Safari's 7-day tab eviction; this covers tab use and other browsers. Fire-and-forget - the answer changes nothing in the UI.
+  if (navigator.storage && navigator.storage.persist) { try { navigator.storage.persist().then(v => { storagePersist = (v === true); }).catch(() => {}); } catch (e) {} } // Beta 1.57 (second audit, item 6): ask the platform to exempt this origin's data (progress + offline maps) from automatic storage eviction where supported. An installed home-screen app is already outside Safari's 7-day tab eviction; this covers tab use and other browsers. Beta 1.183 (storage audit §3 item 2): the answer is RECORDED now (storagePersist) and surfaced by the Status storage row - through 1.182 it was fire-and-forget, so a refusal was invisible
   // Stage 2 (audit G-6): the first-ever boot is not worker-controlled, so the map's own style
   // fetches cache nothing and the map cannot load offline until some later visit. Once the
   // worker is ready this page IS controlled - warm both style files through it if they are
@@ -5219,6 +5249,7 @@ if ('serviceWorker' in navigator) {
 // clean their browsing duplicates up). Best-effort: a failed copy retries on the next
 // boot, and a fresh Download offline maps always rebuilds the pack cache directly.
 const PACKMIG_KEY = 'snowroute.v5.packmig';
+let packWriteChain = Promise.resolve(); async function takePackWriteTurn() { if (navigator.locks && navigator.locks.request) { let release; const held = new Promise(res => { release = res; }); let acquired; const acq = new Promise(res => { acquired = res; }); let lockFailed = false; const done = navigator.locks.request('snowroute-pack-write', async () => { acquired(); await held; }); done.catch(() => { lockFailed = true; acquired(); }); await acq; if (!lockFailed) return release; } let release; const held = new Promise(res => { release = res; }); const prev = packWriteChain; packWriteChain = prev.then(() => held); await prev; return release; } // Beta 1.183 (Codex P2, PR #21): the pack has TWO writers - this download (the xPre handler above) and migratePack's boot heal - and a byte budget is only SHARED if they take turns: each writer censuses the pack when its own turn starts, so serialized writers see each other's finished writes in their census and account against the true total; two writers holding independent snapshots could each pass the cap check and together overshoot it. A turn is held for the writer's whole run and released in its finally. The turn is a WEB LOCK (navigator.locks) whenever the platform offers one: the lock is origin-wide, so two tabs of this app writing the same shared pack cache serialize as well - a per-page chain alone could not do that (Codex P2, PR #21) - and where Web Locks do not exist (older engines) the in-page promise chain is the fallback and the budget is shared within the page only. Either way a dead page takes its turn with it (the platform releases a Web Lock when its holder's context dies; the chain is page memory), so no stale lock can persist.
 function packMigFingerprint(list) { // Beta 1.96 (deep audit SR-195-03): the pack-migration completion flag stops being the constant '1' and becomes a fingerprint of the manifest it certifies - a stored flag is believable only for the exact manifest it was earned on (a styles update changes tile/glyph URLs, hence the list, hence the fingerprint, and the full pass runs again). djb2 over the joined list: deterministic, dependency-free, cheap at 897 entries.
   let h = 0; const s = list.join('\n');
   for (let i = 0; i < s.length; i++) { h = ((h << 5) - h + s.charCodeAt(i)) | 0; }
@@ -5227,9 +5258,9 @@ function packMigFingerprint(list) { // Beta 1.96 (deep audit SR-195-03): the pac
 function anyPreloadRecord() { // Beta 1.170 (Carbon fix round Phase 2, C-03): was a pack EVER downloaded on this device, under ANY route? The two callers below used to read only the ACTIVE route's preload record (LS names whichever route is active - at boot, the eval-time default), so a pack downloaded under another route alone never earned its migration/heal pass. Every route's own record is the honest test; the manifest migratePack heals against is already the union over all packs (preloadUrlList).
   return ROUTE_PACKS.some(p => !!parseJ(lsGet(routeKeys(p.id).pre), null));
 }
-async function migratePack() { // Beta 1.95 (deep audit SR-194-05/06): the one-time move of a pre-1.94 pack from the browsing cache into the protected pack cache, under an honest contract. 1.94 copied EVERY browsing-cache key (any stray the map had ever fetched came along) through per-file catch-alls, then set the completion flag unconditionally - a partial copy was marked complete and never retried. Now: only the deterministic preload manifest (preloadUrlList) is migrated; non-manifest entries already in the pack cache are pruned, so the pack is exactly the manifest; the completion flag is set only after VERIFYING that everything that exists in either cache is present in the pack cache; any failed copy leaves the flag unset and the next boot retries (the function is idempotent). Returns a status object so the test battery can drive it directly.
+async function migratePack() { let migRelease = () => {}; // Beta 1.95 (deep audit SR-194-05/06): the one-time move of a pre-1.94 pack from the browsing cache into the protected pack cache, under an honest contract. 1.94 copied EVERY browsing-cache key (any stray the map had ever fetched came along) through per-file catch-alls, then set the completion flag unconditionally - a partial copy was marked complete and never retried. Now: only the deterministic preload manifest (preloadUrlList) is migrated; non-manifest entries already in the pack cache are pruned, so the pack is exactly the manifest; the completion flag is set only after VERIFYING that everything that exists in either cache is present in the pack cache; any failed copy leaves the flag unset and the next boot retries (the function is idempotent). Returns a status object so the test battery can drive it directly.
   try {
-    if (!('caches' in window)) return { ok: false, why: 'nocache' };
+    migRelease = await takePackWriteTurn(); if (!('caches' in window)) return { ok: false, why: 'nocache' };
     if (!anyPreloadRecord()) return { ok: true, skipped: true }; // no pack was ever downloaded on this install (Beta 1.170, C-03: under any route - see anyPreloadRecord)
     const list = preloadUrlList();
     const fp = packMigFingerprint(list);
@@ -5237,20 +5268,20 @@ async function migratePack() { // Beta 1.95 (deep audit SR-194-05/06): the one-t
     const want = new Set(list.map(u => { try { return new URL(u).href; } catch (e) { return u; } })); // stored cache keys are URL-normalized (the glyph ranges' 'Noto Sans Regular' is stored %20-encoded) - the prune below must compare like with like, or it deletes the pack's own glyphs (the first CI run of 1.95 did exactly that: pack 897 -> 641)
     const oc = await caches.open('snowroute-offline-v1');
     const tc = await caches.open('snowroute-tiles-v1');
-    let failed = 0;
+    let pruneOk = true;
+    for (const rq of await oc.keys()) { if (!want.has(rq.url)) { try { await oc.delete(rq.url); } catch (e) { pruneOk = false; /* a stray that will not delete is inert - the pack still serves the manifest; Beta 1.96 (SR-195-07): the failure is REPORTED in the status now, not swallowed - copies are the readiness question, the prune is maintenance */ } } } // Beta 1.183 (Codex P2, PR #21): the prune runs FIRST - obsolete entries counted toward the heal budget below could refuse every copy and return before this loop ever ran, leaving their space unreclaimable on every boot; freed space counts toward the budget
+    let failed = 0, migBytes = 0; try { for (const req of await oc.keys()) { try { const r0 = await oc.match(req); if (r0) migBytes += (await r0.blob()).size; } catch (e) {} } } catch (e) {} // Beta 1.183 (Codex P2, PR #21): the pack budget binds this door too - migratePack is the pack's second write path (the boot heal), so after the prune above it weighs what remains and counts a copy that would cross OFFLINE_PACK_CAP_BYTES as failed (the flag stays unset and the next boot retries, exactly like a failed copy); a copy whose size cannot be read proceeds unweighed, the download path's own rule
     for (const u of list) {
       if (await oc.match(u)) continue;
       const hit = await tc.match(u);
       if (!hit) continue; // exists in neither cache - nothing to migrate (a re-download rebuilds the pack directly)
-      try { await oc.put(u, hit); } catch (e) { failed++; }
+      let hSz = -1; try { hSz = (await hit.clone().blob()).size; } catch (e) {} if (hSz >= 0 && migBytes + hSz > OFFLINE_PACK_CAP_BYTES) failed++; else { try { await oc.put(u, hit); if (hSz >= 0) migBytes += hSz; } catch (e) { failed++; } }
     }
     if (failed > 0) return { ok: false, failed };
-    let pruneOk = true;
-    for (const rq of await oc.keys()) { if (!want.has(rq.url)) { try { await oc.delete(rq.url); } catch (e) { pruneOk = false; /* a stray that will not delete is inert - the pack still serves the manifest; Beta 1.96 (SR-195-07): the failure is REPORTED in the status now, not swallowed - copies are the readiness question, the prune is maintenance */ } } }
     for (const u of list) { if (!(await oc.match(u)) && (await tc.match(u))) return { ok: false, why: 'verify' }; } // verify BEFORE the flag: everything recoverable must be in the pack cache
     const flagOk = lsSet(PACKMIG_KEY, fp); // Beta 1.96 (SR-195-07): the flag write is CHECKED - the fast path believes this flag, so a migration whose flag could not be persisted is not complete and must not report ok
     return { ok: flagOk, flag: flagOk ? fp : null, pruneOk };
-  } catch (e) { return { ok: false, why: String((e && e.message) || e) }; }
+  } catch (e) { return { ok: false, why: String((e && e.message) || e) }; } finally { migRelease(); }
 }
 // Beta 1.143 (DA-07): the boot invocation of migratePack() no longer lives here. It fired during
 // this part's evaluation and captured preloadUrlList() as its manifest BEFORE create.js evaluated
