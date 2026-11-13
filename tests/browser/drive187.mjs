@@ -152,6 +152,24 @@ try {
   })()`);
   ok('P2c a FORCED flush banks the counter past its throttle (the figure a mid-run reload resumes is the true one) | ' + JSON.stringify(p2flush),
     Math.abs(p2flush.afterBank - (p2flush.tm - 20)) < 0.01 && Math.abs(p2flush.afterThrottle - (p2flush.tm - 20)) < 0.01 && Math.abs(p2flush.afterForce - p2flush.tm) < 0.01);
+  // P2d (Beta 1.186 gate round, Codex finding): the forced flush must never bank
+  // an UN-ADOPTED counter. After a mid-run reload, runStart is restored at boot
+  // but runDist still boots as { run: 0, m: 0, capped: false } - adoption is lazy
+  // (buildSnap, the first recorded fix). A pagehide in that window fired P2c's
+  // forced bank with the zero counter and overwrote the stored record; for a
+  // CAPPED run the loss was permanent (the truncated trail cannot reproduce the
+  // banked total, and re-derivation also cleared the capped flag). persistRunDist
+  // now adopts before it writes, so the bank lands as the adopted record itself.
+  const p2zero = await J(`(() => {
+    const banked = 4321; // a capped total the truncated trail cannot reproduce
+    localStorage.setItem(LS.rundist, JSON.stringify({ run: runStart, m: banked, capped: true }));
+    runDist = { run: 0, m: 0, capped: false }; runDistWrote = { at: 0, m: 0, capped: false }; // the post-reload boot state
+    flushAux(true); // the pagehide-equivalent forced flush, before any fix or buildSnap
+    const rec = JSON.parse(localStorage.getItem(LS.rundist));
+    return { rec, banked, rs: runStart };
+  })()`);
+  ok('P2d a forced flush in the reload window cannot zero an un-adopted CAPPED bank (adoption precedes the write) | ' + JSON.stringify(p2zero),
+    p2zero.rec.run === p2zero.rs && p2zero.rec.m === p2zero.banked && p2zero.rec.capped === true);
 } catch (e) {
   R.fatal = String(e && e.message || e);
 }

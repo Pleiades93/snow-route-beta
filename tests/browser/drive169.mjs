@@ -190,6 +190,51 @@ try {
   ok('P1 FIXED: the in-window fix SURVIVES - the post-failure flush lands all 3 points | ' + JSON.stringify(p1after),
     p1after.storedTrail === 3);
   await ev(`(() => { upPut = window.__p1OrigUpPut; localStorage.removeItem = window.__p1OrigRemove; return true; })()`);
+
+  // ---- P1b (Beta 1.186 gate round, Codex finding): a primary edit refused by ----
+  // the fence is retried after a FAILED restore. Same fault-injection window as
+  // P1 above; inside it a street is marked. Its saveAll is refused by the fence
+  // and - by the 1.147 design that binds the SUCCESS path - arms nothing, so the
+  // mark lives only in memory. The P1 failure exit originally re-armed only
+  // trail/sess/aux, so the mark was never retried: a reload after the failed
+  // restore lost it. The exit now re-arms primary too - the rollback has put
+  // storage back to the pre-restore board, so the heartbeat retry writes the
+  // live board, in-window edit included.
+  await ev(`(() => {
+    window.__p1bOrigUpPut = upPut;
+    window.__p1bInWindow = false;
+    window.__p1bGate = new Promise(res => { window.__p1bRelease = res; });
+    upPut = async (id, pack) => { window.__p1bInWindow = true; await window.__p1bGate; return window.__p1bOrigUpPut(id, pack); };
+    window.__p1bOrigRemove = localStorage.removeItem.bind(localStorage);
+    window.__p1bStartKey = routeKeys('5w').start;
+    localStorage.removeItem = (k) => { if (k === window.__p1bStartKey) throw new Error('d169 refused delete'); return window.__p1bOrigRemove(k); };
+    return true;
+  })()`);
+  const P1BPACK = { name: 'D169 P1b Route', area: 'Vaughan', mains: [], roads: { 'Test Street': [[[43.8, -79.57], [43.801, -79.571]]] }, reference: {} };
+  const bkP1b = JSON.stringify({ app: 'snowroute-backup', v: 2, at: P1T * 1000, userpacks: { 'route-d169p1b': P1BPACK }, routes: { '5w': { start: null } } });
+  await injectBackup(bkP1b);
+  await ev(`(() => { window.__p1bSettled = false; window.__d169probe = 1; restoreBackup(JSON.parse(window.__d169b)).then(() => { window.__p1bSettled = true; }, () => { window.__p1bSettled = true; }); return true; })()`);
+  const inWindowB = await poll(`window.__p1bInWindow === true`, 15000);
+  ok('P1b phase 1 reached (the window is open)', inWindowB === true);
+  const p1bwin = JSON.parse(await ev(`(() => { const rk = routeKeys('5w');
+    const target = ['Velmar', 'Mellings', 'Astona', 'Santa Barbara', 'Valeria', 'Greenpark'].find(n => !doneSet.has(n));
+    window.__p1bTarget = target;
+    markDone(target, 'd169');
+    const storedDone = JSON.parse(localStorage.getItem(rk.done) || '[]');
+    return JSON.stringify({ target, fenceUp: restoring, armedInWindow: writePending('primary'), storedHas: storedDone.includes(target), memHas: doneSet.has(target) });
+  })()`));
+  ok('P1b inside the window the mark is memory-only (the fenced save was refused and armed nothing) | ' + JSON.stringify(p1bwin),
+    p1bwin.fenceUp === true && p1bwin.memHas === true && p1bwin.storedHas === false && p1bwin.armedInWindow === false);
+  await ev(`window.__p1bRelease(); true`);
+  const settledB = await poll(`window.__p1bSettled === true`, 20000);
+  ok('P1b the sabotaged restore ran its failure path to completion', settledB === true);
+  const p1bpost = JSON.parse(await ev(`(() => { return JSON.stringify({ fenceNow: restoring, pendingPrimary: writePending('primary') }); })()`));
+  ok('P1b the failure exit re-arms the PRIMARY retry (the in-window edit is owed a save) | ' + JSON.stringify(p1bpost),
+    p1bpost.fenceNow === false && p1bpost.pendingPrimary === true);
+  const p1bafter = JSON.parse(await ev(`(() => { const rk = routeKeys('5w'); flushAux(true); const storedDone = JSON.parse(localStorage.getItem(rk.done) || '[]'); return JSON.stringify({ storedHas: storedDone.includes(window.__p1bTarget) }); })()`));
+  ok('P1b FIXED: the in-window mark SURVIVES the failed restore - the re-armed retry lands it on the next flush | ' + JSON.stringify(p1bafter),
+    p1bafter.storedHas === true);
+  await ev(`(() => { upPut = window.__p1bOrigUpPut; localStorage.removeItem = window.__p1bOrigRemove; return true; })()`);
 } catch (e) {
   R.fatal = String(e && e.message || e);
 }

@@ -413,6 +413,7 @@ function trailKm(sinceMs) {
 let runDist = { run: 0, m: 0, capped: false };
 let runDistWrote = { at: 0, m: 0, capped: false };
 function persistRunDist(force) {
+  if (runStart && runDist.run !== runStart) adoptRunDist(); // Beta 1.186 (gate round, Codex finding): never bank an UN-ADOPTED counter. Adoption is lazy (buildSnap, the first recorded fix) and runDist boots as { run: 0, m: 0, capped: false }, so after a mid-run reload the new forced flush in flushAux (app1) could fire before either adoption point and write the zero record over the banked one - for a CAPPED run that loss was permanent (its trail is truncated by design, so re-derivation understates and the capped flag died with the record). Every other caller already guarantees the match (startClean sets the run before banking; acceptFix adopts before banking), so the guard is a no-op outside that window and the writer itself can no longer clobber a record it has not adopted.
   const now = Date.now();
   if (!force && runDistWrote.at && now - runDistWrote.at < 30000 && Math.abs(runDist.m - runDistWrote.m) < 25 && runDistWrote.capped === runDist.capped) return;
   if (lsSet(LS.rundist, JSON.stringify(runDist))) runDistWrote = { at: now, m: runDist.m, capped: runDist.capped };
