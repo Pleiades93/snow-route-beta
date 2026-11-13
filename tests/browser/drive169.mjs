@@ -200,6 +200,10 @@ try {
   // restore lost it. The exit now re-arms primary too - the rollback has put
   // storage back to the pre-restore board, so the heartbeat retry writes the
   // live board, in-window edit included.
+  await ev(`flushAux(true); true`); // settle every dirty flag the sections above legitimately left armed (the P1 failure exit re-arms several by design) - the window assertions below judge what the FENCE does, so they start from a clean flag state
+  const p1bpre = JSON.parse(await ev(`(() => JSON.stringify({ primary: writePending('primary') }))()`));
+  ok('P1b staged clean: no primary save is owed entering the window | ' + JSON.stringify(p1bpre),
+    p1bpre.primary === false);
   await ev(`(() => {
     window.__p1bOrigUpPut = upPut;
     window.__p1bInWindow = false;
