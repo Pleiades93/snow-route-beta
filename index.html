@@ -2,7 +2,7 @@
 <html lang="en" class="boot">
 <head>
 <meta charset="UTF-8">
-<meta http-equiv="Content-Security-Policy" content="default-src 'none'; script-src 'sha384-55/4NbyU9T6xHPz0O3xF2G6JjhKGzIudKn0ou/YVlvTWrLt+DcANBPXzq0kXaSCy' https://cdn.jsdelivr.net; style-src-elem 'sha384-NU7L6h37mzK4BxZrqVPvYOXM8mvUHOUlkEFWkZoMr5TO8uLL+3OjFb+UcquOeQUS' https://cdn.jsdelivr.net; style-src-attr 'unsafe-inline'; img-src 'self' data: blob: https://tiles.basemaps.cartocdn.com https://protomaps.github.io https://cdn.jsdelivr.net; connect-src 'self' https://tiles.basemaps.cartocdn.com https://protomaps.github.io https://cdn.jsdelivr.net https://nominatim.openstreetmap.org https://overpass-api.de https://overpass.kumi.systems; worker-src blob: 'self'; child-src blob: 'self'; font-src 'none'; manifest-src 'self'; base-uri 'none'; form-action 'none'; object-src 'none'">
+<meta http-equiv="Content-Security-Policy" content="default-src 'none'; script-src 'sha384-XaaDGZAF1IYGo2aEYT5YfcwKZvncJfmJZdSbdaoXjohngeDrne5SmfStwk/WMz7i' https://cdn.jsdelivr.net; style-src-elem 'sha384-NU7L6h37mzK4BxZrqVPvYOXM8mvUHOUlkEFWkZoMr5TO8uLL+3OjFb+UcquOeQUS' https://cdn.jsdelivr.net; style-src-attr 'unsafe-inline'; img-src 'self' data: blob: https://tiles.basemaps.cartocdn.com https://protomaps.github.io https://cdn.jsdelivr.net; connect-src 'self' https://tiles.basemaps.cartocdn.com https://protomaps.github.io https://cdn.jsdelivr.net https://nominatim.openstreetmap.org https://overpass-api.de https://overpass.kumi.systems; worker-src blob: 'self'; child-src blob: 'self'; font-src 'none'; manifest-src 'self'; base-uri 'none'; form-action 'none'; object-src 'none'">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="mobile-web-app-capable" content="yes">
@@ -537,7 +537,7 @@ input, textarea { caret-color: currentColor; } /* Beta 1.125 (Andrew): the typin
 <div id="hud">
   <div id="warn">Not saving — storage is full or blocked</div>
   <div class="row">
-    <div class="titleStack"><div class="title">Snow Route Beta</div><div class="ver" id="ver">Beta 1.185</div></div>
+    <div class="titleStack"><div class="title">Snow Route Beta</div><div class="ver" id="ver">Beta 1.186</div></div>
   </div>
   <div id="stats"></div>
 </div>
@@ -1228,6 +1228,7 @@ let lastCovSave = 0; // the last successful coverage write (0 = never: the first
   if (sessDirty && saveSess().ok) sessDirty = false;
   if (startDirty) saveStart(); // Beta 1.92 (audit F05): saveStart re-arms the flag itself on failure
   if (snapDirty && typeof saveSnap === 'function') saveSnap(); // Beta 1.94 (SR-193-02): the cancel snapshot retries on the same heartbeat (saveSnap lives in app3 beside runSnap; the typeof probe keeps this safe in any partial-load state)
+  if (force && runStart && typeof persistRunDist === 'function') persistRunDist(true); // Beta 1.186 (storage fix round, P2): a FORCED flush is the page's last word (pagehide, visibility hidden, the route switch's pre-flush), so the run-distance counter banks with it, past its own throttle. Through 1.185 flushAux never carried the counter, so a mid-run reload inside the throttle window resumed the stale banked figure and buildSnap baked it into the archived clean - the trail itself was always fully flushed; only the counter lagged. Forced only: unforced flushes keep the counter's own 30 s / 25 m throttle, driven by acceptFix as before (persistRunDist lives in app3; the typeof probe mirrors the saveSnap line above). The runStart gate matters: with no run in flight there is no counter to bank, and an ungated call would mint the zero record into the outgoing route's slot on every route switch - drive184's field-for-field round-trip caught exactly that.
   if (primaryDirty) saveAll(); // Beta 1.94 (SR-193-05): a failed primary save retries here - saveAll clears the flag itself when a save lands whole
 }
 setInterval(() => { flushAux(false); themeTick(); }, 15000); // Beta 1.77: the same 15 s heartbeat also walks the day/night cycle across its boundaries
@@ -4199,9 +4200,14 @@ function trailKm(sinceMs) {
 // pre-1.167 figure, never worse. capped is set ONLY by direct observation (a live splice dropping
 // this run's points, or a banked record that observed it), and Finish stamps it onto the entry
 // (pathShortened) so the clean detail can say the saved path is shorter than the run.
+// Beta 1.186 (storage fix round, P2) extends the never-worse rule to a matching but STALE
+// record: adoptRunDist reconciles an uncapped banked figure against the surviving trail,
+// and flushAux's forced flush (app1) banks the counter at page death so the stale case
+// stops arising there.
 let runDist = { run: 0, m: 0, capped: false };
 let runDistWrote = { at: 0, m: 0, capped: false };
 function persistRunDist(force) {
+  if (runStart && runDist.run !== runStart) adoptRunDist(); // Beta 1.186 (gate round, Codex finding): never bank an UN-ADOPTED counter. Adoption is lazy (buildSnap, the first recorded fix) and runDist boots as { run: 0, m: 0, capped: false }, so after a mid-run reload the new forced flush in flushAux (app1) could fire before either adoption point and write the zero record over the banked one - for a CAPPED run that loss was permanent (its trail is truncated by design, so re-derivation understates and the capped flag died with the record). Every other caller already guarantees the match (startClean sets the run before banking; acceptFix adopts before banking), so the guard is a no-op outside that window and the writer itself can no longer clobber a record it has not adopted.
   const now = Date.now();
   if (!force && runDistWrote.at && now - runDistWrote.at < 30000 && Math.abs(runDist.m - runDistWrote.m) < 25 && runDistWrote.capped === runDist.capped) return;
   if (lsSet(LS.rundist, JSON.stringify(runDist))) runDistWrote = { at: now, m: runDist.m, capped: runDist.capped };
@@ -4209,7 +4215,7 @@ function persistRunDist(force) {
 function adoptRunDist() {
   if (!runStart) { runDist = { run: 0, m: 0, capped: false }; return; }
   let raw = null; try { raw = JSON.parse(lsGet(LS.rundist) || 'null'); } catch (e) { raw = null; }
-  if (raw && raw.run === runStart && typeof raw.m === 'number' && isFinite(raw.m) && raw.m >= 0) { runDist = { run: runStart, m: raw.m, capped: !!raw.capped }; return; }
+  if (raw && raw.run === runStart && typeof raw.m === 'number' && isFinite(raw.m) && raw.m >= 0) { const capped = !!raw.capped; runDist = { run: runStart, m: capped ? raw.m : Math.max(raw.m, trailKm(runStart) * 1000), capped }; return; } // Beta 1.186 (storage fix round, P2): a matching UNCAPPED record reconciles against the surviving trail before it is believed - the trail is complete for this run (nothing was dropped), so where the throttle left the banked figure stale (up to <25 m per mid-run reload through 1.185) the trail's own measure wins and the loss never reaches the archive. A CAPPED record is exempt: its trail is truncated by design, its measure would UNDERSTATE the run, and the counter stays the sole authority - the max() must never run there.
   runDist = { run: runStart, m: trailKm(runStart) * 1000, capped: false };
 }
 function resetRunDist() { runDist = { run: 0, m: 0, capped: false }; runDistWrote = { at: 0, m: 0, capped: false }; }
@@ -4918,6 +4924,16 @@ async function restoreBackup(parsed) { // production doRestore semantics: valida
   // of this restore: the entry is written and verified like every other, and the snapshot +
   // rollback below cover the markers too. Applies per route (today: the 5W slot in both formats).
   for (const p of allPacks) { const rk = routeKeys(p.id); if (entries.some(e => e[0] === rk.trail) && !entries.some(e => e[0] === rk.sess)) entries.push([rk.sess, '[]']); }
+  // Beta 1.186 (storage fix round, C-01): a backup carrying a route's session markers but NOT
+  // its trail brings markers for a trail this restore is not bringing - the shape is genuine,
+  // not just crafted: the exporter carries each field only when its storage key exists, and the
+  // markers are born at Start while the trail key is born at the first accepted fix, so a clean
+  // that was started but never recorded a fix exports markers with no trail. Those markers must
+  // not land: laid over the resident trail they would split it at a boundary that never happened
+  // on it (trailSegments' consumers: drawTrail, buildGpx). But the resident markers are NOT
+  // cleared either - they describe the trail that STAYS, and what a backup does not bring, a
+  // restore does not touch. (C06 above is the true mirror: there the trail IS replaced.)
+  for (const p of allPacks) { const rk = routeKeys(p.id); const si = entries.findIndex(e => e[0] === rk.sess); if (si >= 0 && !entries.some(e => e[0] === rk.trail)) entries.splice(si, 1); }
   // Beta 1.92 (deep audit F06, Andrew's pick (a)): a backup carrying a route's completion
   // list but NO side-marks record (the old v1 shape) used to restore into silence - the
   // loader trusts the side-marks and rebuilt the list from the phone's existing ones,
@@ -4944,9 +4960,11 @@ async function restoreBackup(parsed) { // production doRestore semantics: valida
   restoreOverlayPacks = restoredPacks; const droppedNames = countUnknownNames(parsed); restoreOverlayPacks = null; // Beta 1.95 (SR-194-08): counted from the RAW backup before any normalization - see countUnknownNames. Beta 1.118: judged with this backup's own created-route definitions overlaid
   if (!entries.length) { toast('Nothing in that backup to restore', 3000); return; }
   const SCOPE = []; for (const p of allPacks) SCOPE.push(...slotKeys(p.id)); if (restoredPacks) SCOPE.push(USERPACKS_KEY); SCOPE.push(LS_GLOBAL.night, LS_GLOBAL.nightExp, SETTINGS_KEY); for (const p of allPacks) SCOPE.push(routeKeys(p.id).finclean); // Beta 1.166: SETTINGS_KEY joins the scope unconditionally (SETTINGS_DEF's home record) - a restore that writes the toggles must be able to put the device's own back, and one that does not write them snapshots-and-restores them to themselves, a no-op // Beta 1.150: the finclean keys join the rollback scope - a restore that discharges an obligation must be able to put the armed record back when a later write fails // Beta 1.136: the per-route keys come from slotKeys (app1) - the same ROUTE_FIELDS + snap list, enumerated in one place // Beta 1.118: the created-routes record and restored routes' slots join the rollback scope // Beta 1.96 (SR-195-02): the snapshot key joins the rollback scope - a restore that writes a carried snapshot must be able to put the previous one back
+  restoring = true; // Beta 1.186 (storage fix round, P1): the write fence rises BEFORE the snapshot, not on the success path after the commit (its through-1.185 position, beside the markClean calls below). That left the write stage's one yield - phase 1's awaited store puts - unfenced: a flush landing there wrote live records the snapshot had already frozen, and a later failure's rollback rewrote every scoped key from that snapshot, silently discarding the live write under a "nothing was changed" message. Fenced from here, flushAux refuses and saveAll returns its fenced outcome for the whole write stage, so storage cannot diverge from the snapshot before the commit; the restore's own writes are unfenced by construction (txSet/txDel and upPut write directly, never through the fenced doors). Every failure exit below ends through restoreFenceDown, so a failed restore - which leaves the page running - hands the live state back its flush.
+  const restoreFenceDown = () => { restoring = false; markDirty('trail'); markDirty('sess'); markDirty('aux'); markDirty('primary'); }; // Beta 1.186 (P1): clear the fence and re-arm the trail/session/coverage dirty flags - GPS work that arrived while the fence was up lives only in memory (the rollback restored storage, never memory), and the next flush (heartbeat or fix) must carry it instead of waiting for an incidental save. Both rollback exits (phase 1 and the entries loop) end through this one doorway, so the two failure paths treat concurrent live work identically - through 1.185 the phase-1 exit preserved in-window writes the entries exit discarded. Gate round (Codex finding): the PRIMARY flag re-arms here too - a street mark or note edit made during the write stage was refused by the fence (saveAll returns its fenced outcome and, by the 1.147 design that binds the success path, arms nothing), so without the re-arm it lived only in memory and a reload lost it even though the restore had failed and the page kept running. On a failure exit the rollback has put storage back to the pre-restore board, so the armed heartbeat retry writes the live board, in-window edit included; on success this doorway never runs (the fence stays up into the reload).
   const snap = {}; let snapOk = true;
   for (const k of SCOPE) { const v = rawRead(k); if (v === RAW_READ_FAILED) snapOk = false; else snap[k] = v; }
-  if (!snapOk) { toast('Restore stopped — your current data could not be read for safekeeping, so nothing was changed', 3600); return; }
+  if (!snapOk) { restoreFenceDown(); toast('Restore stopped — your current data could not be read for safekeeping, so nothing was changed', 3600); return; }
   const rollback = () => { // Beta 1.102 (Phase 4, C3): the restore-all rollback on the verified primitives - every scoped key put back (or removed) and read back
     let okBack = true;
     for (const k of SCOPE) { const r = snap[k] === null ? txDel(k) : txSet(k, snap[k]); if (!r.ok) okBack = false; }
@@ -4963,6 +4981,7 @@ async function restoreBackup(parsed) { // production doRestore semantics: valida
     if (packFail) {
       if (await rollbackPacks()) toast('Restore failed while saving the created route (' + packFail + ') — your current data was put back, nothing was changed', 3800);
       else toast('Restore failed while saving the created route (' + packFail + ') — and your previous data could NOT be fully put back. Restore from a known-good backup', 4200);
+      restoreFenceDown();
       return;
     }
   }
@@ -4973,6 +4992,7 @@ async function restoreBackup(parsed) { // production doRestore semantics: valida
       const lsOk = rollback(); const pkOk = restoredPacks ? await rollbackPacks() : true; // Beta 1.166: a localStorage failure after phase 1 rolls BOTH homes back - the result message only claims "put back" when both verifiably are
       if (lsOk && pkOk) toast('Restore failed while writing ' + k + ' \u2014 your current data was put back, nothing was changed', 3800);
       else toast('Restore failed while writing ' + k + ' \u2014 and your previous data could NOT be fully put back. Restore from a known-good backup', 4200);
+      restoreFenceDown();
       return;
     }
   }
@@ -5382,7 +5402,7 @@ $('stDel').addEventListener('click', async () => {
 });
 // ---- About / What's new ----
 const WHATSNEW = { // the curated in-app notes: plain words, LATEST RELEASE ONLY (Beta 1.114, Andrew: the accumulated list cluttered the About pane). A release REPLACES this entry with its own in the same change - it never accumulates; the full history lives in CHANGELOG.md, not the app
-  v: 'Beta 1.185', items: ["Five bugs found by an outside bug hunt are fixed. A finished street's green line could paint across another street's line at some junctions, and the work totals for older saved cleans could leave out streets that were finished without a recorded time.", "After a lot of circling in one direction — courts and crescents — the map's heading could have jumped instead of turning smoothly. A new route also can no longer be given the same ID as a saved route, which could have replaced it."] };
+  v: 'Beta 1.186', items: ["Three storage bugs found by review are fixed. A saved clean's distance can no longer come up short when the app reloads mid-clean — the distance is now saved whenever the app closes and checked against your GPS trail when the run resumes.", "Restoring a backup is fenced from the first moment to the last: nothing can write over your data while a restore runs, and if a restore fails, everything is put back exactly as it was — the 'nothing was changed' message is now guaranteed true. A backup carrying session markers without their trail also can no longer split the trail you already have."] };
 function renderAbout() {
   const cur = $('ver').textContent.trim();
   $('wnHead').textContent = "WHAT'S NEW · " + cur; // the header names the LIVE version, read from the title's version element - never a second hard-coded copy that can go stale

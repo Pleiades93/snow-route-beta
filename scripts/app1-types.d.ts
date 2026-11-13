@@ -143,6 +143,9 @@ declare function setBasemap(): void;
 /** app3.js: persists the pre-Start snapshot (LS.snap); retried by flushAux (app1). Returns the storage outcome. */
 declare function saveSnap(): StorageOutcome;
 
+/** app3.js: banks the run-distance counter (LS.rundist) past its 30 s / 25 m throttle when forced; called by flushAux (app1) on a forced flush so a mid-run reload resumes the true figure (Beta 1.186, storage fix round P2). Returns nothing. */
+declare function persistRunDist(force?: boolean): void;
+
 /** app2.js: the current stretch selection entries {name, idx, anchor}. app1 only forwards the array through GL_HOST's getter and never reads an entry's fields, so the entries are not field-typed here. */
 declare var selSet: any[];
 

@@ -269,6 +269,16 @@ async function restoreBackup(parsed) { // production doRestore semantics: valida
   // of this restore: the entry is written and verified like every other, and the snapshot +
   // rollback below cover the markers too. Applies per route (today: the 5W slot in both formats).
   for (const p of allPacks) { const rk = routeKeys(p.id); if (entries.some(e => e[0] === rk.trail) && !entries.some(e => e[0] === rk.sess)) entries.push([rk.sess, '[]']); }
+  // Beta 1.186 (storage fix round, C-01): a backup carrying a route's session markers but NOT
+  // its trail brings markers for a trail this restore is not bringing - the shape is genuine,
+  // not just crafted: the exporter carries each field only when its storage key exists, and the
+  // markers are born at Start while the trail key is born at the first accepted fix, so a clean
+  // that was started but never recorded a fix exports markers with no trail. Those markers must
+  // not land: laid over the resident trail they would split it at a boundary that never happened
+  // on it (trailSegments' consumers: drawTrail, buildGpx). But the resident markers are NOT
+  // cleared either - they describe the trail that STAYS, and what a backup does not bring, a
+  // restore does not touch. (C06 above is the true mirror: there the trail IS replaced.)
+  for (const p of allPacks) { const rk = routeKeys(p.id); const si = entries.findIndex(e => e[0] === rk.sess); if (si >= 0 && !entries.some(e => e[0] === rk.trail)) entries.splice(si, 1); }
   // Beta 1.92 (deep audit F06, Andrew's pick (a)): a backup carrying a route's completion
   // list but NO side-marks record (the old v1 shape) used to restore into silence - the
   // loader trusts the side-marks and rebuilt the list from the phone's existing ones,
@@ -295,9 +305,11 @@ async function restoreBackup(parsed) { // production doRestore semantics: valida
   restoreOverlayPacks = restoredPacks; const droppedNames = countUnknownNames(parsed); restoreOverlayPacks = null; // Beta 1.95 (SR-194-08): counted from the RAW backup before any normalization - see countUnknownNames. Beta 1.118: judged with this backup's own created-route definitions overlaid
   if (!entries.length) { toast('Nothing in that backup to restore', 3000); return; }
   const SCOPE = []; for (const p of allPacks) SCOPE.push(...slotKeys(p.id)); if (restoredPacks) SCOPE.push(USERPACKS_KEY); SCOPE.push(LS_GLOBAL.night, LS_GLOBAL.nightExp, SETTINGS_KEY); for (const p of allPacks) SCOPE.push(routeKeys(p.id).finclean); // Beta 1.166: SETTINGS_KEY joins the scope unconditionally (SETTINGS_DEF's home record) - a restore that writes the toggles must be able to put the device's own back, and one that does not write them snapshots-and-restores them to themselves, a no-op // Beta 1.150: the finclean keys join the rollback scope - a restore that discharges an obligation must be able to put the armed record back when a later write fails // Beta 1.136: the per-route keys come from slotKeys (app1) - the same ROUTE_FIELDS + snap list, enumerated in one place // Beta 1.118: the created-routes record and restored routes' slots join the rollback scope // Beta 1.96 (SR-195-02): the snapshot key joins the rollback scope - a restore that writes a carried snapshot must be able to put the previous one back
+  restoring = true; // Beta 1.186 (storage fix round, P1): the write fence rises BEFORE the snapshot, not on the success path after the commit (its through-1.185 position, beside the markClean calls below). That left the write stage's one yield - phase 1's awaited store puts - unfenced: a flush landing there wrote live records the snapshot had already frozen, and a later failure's rollback rewrote every scoped key from that snapshot, silently discarding the live write under a "nothing was changed" message. Fenced from here, flushAux refuses and saveAll returns its fenced outcome for the whole write stage, so storage cannot diverge from the snapshot before the commit; the restore's own writes are unfenced by construction (txSet/txDel and upPut write directly, never through the fenced doors). Every failure exit below ends through restoreFenceDown, so a failed restore - which leaves the page running - hands the live state back its flush.
+  const restoreFenceDown = () => { restoring = false; markDirty('trail'); markDirty('sess'); markDirty('aux'); markDirty('primary'); }; // Beta 1.186 (P1): clear the fence and re-arm the trail/session/coverage dirty flags - GPS work that arrived while the fence was up lives only in memory (the rollback restored storage, never memory), and the next flush (heartbeat or fix) must carry it instead of waiting for an incidental save. Both rollback exits (phase 1 and the entries loop) end through this one doorway, so the two failure paths treat concurrent live work identically - through 1.185 the phase-1 exit preserved in-window writes the entries exit discarded. Gate round (Codex finding): the PRIMARY flag re-arms here too - a street mark or note edit made during the write stage was refused by the fence (saveAll returns its fenced outcome and, by the 1.147 design that binds the success path, arms nothing), so without the re-arm it lived only in memory and a reload lost it even though the restore had failed and the page kept running. On a failure exit the rollback has put storage back to the pre-restore board, so the armed heartbeat retry writes the live board, in-window edit included; on success this doorway never runs (the fence stays up into the reload).
   const snap = {}; let snapOk = true;
   for (const k of SCOPE) { const v = rawRead(k); if (v === RAW_READ_FAILED) snapOk = false; else snap[k] = v; }
-  if (!snapOk) { toast('Restore stopped — your current data could not be read for safekeeping, so nothing was changed', 3600); return; }
+  if (!snapOk) { restoreFenceDown(); toast('Restore stopped — your current data could not be read for safekeeping, so nothing was changed', 3600); return; }
   const rollback = () => { // Beta 1.102 (Phase 4, C3): the restore-all rollback on the verified primitives - every scoped key put back (or removed) and read back
     let okBack = true;
     for (const k of SCOPE) { const r = snap[k] === null ? txDel(k) : txSet(k, snap[k]); if (!r.ok) okBack = false; }
@@ -314,6 +326,7 @@ async function restoreBackup(parsed) { // production doRestore semantics: valida
     if (packFail) {
       if (await rollbackPacks()) toast('Restore failed while saving the created route (' + packFail + ') — your current data was put back, nothing was changed', 3800);
       else toast('Restore failed while saving the created route (' + packFail + ') — and your previous data could NOT be fully put back. Restore from a known-good backup', 4200);
+      restoreFenceDown();
       return;
     }
   }
@@ -324,6 +337,7 @@ async function restoreBackup(parsed) { // production doRestore semantics: valida
       const lsOk = rollback(); const pkOk = restoredPacks ? await rollbackPacks() : true; // Beta 1.166: a localStorage failure after phase 1 rolls BOTH homes back - the result message only claims "put back" when both verifiably are
       if (lsOk && pkOk) toast('Restore failed while writing ' + k + ' \u2014 your current data was put back, nothing was changed', 3800);
       else toast('Restore failed while writing ' + k + ' \u2014 and your previous data could NOT be fully put back. Restore from a known-good backup', 4200);
+      restoreFenceDown();
       return;
     }
   }
@@ -733,7 +747,7 @@ $('stDel').addEventListener('click', async () => {
 });
 // ---- About / What's new ----
 const WHATSNEW = { // the curated in-app notes: plain words, LATEST RELEASE ONLY (Beta 1.114, Andrew: the accumulated list cluttered the About pane). A release REPLACES this entry with its own in the same change - it never accumulates; the full history lives in CHANGELOG.md, not the app
-  v: 'Beta 1.185', items: ["Five bugs found by an outside bug hunt are fixed. A finished street's green line could paint across another street's line at some junctions, and the work totals for older saved cleans could leave out streets that were finished without a recorded time.", "After a lot of circling in one direction — courts and crescents — the map's heading could have jumped instead of turning smoothly. A new route also can no longer be given the same ID as a saved route, which could have replaced it."] };
+  v: 'Beta 1.186', items: ["Three storage bugs found by review are fixed. A saved clean's distance can no longer come up short when the app reloads mid-clean — the distance is now saved whenever the app closes and checked against your GPS trail when the run resumes.", "Restoring a backup is fenced from the first moment to the last: nothing can write over your data while a restore runs, and if a restore fails, everything is put back exactly as it was — the 'nothing was changed' message is now guaranteed true. A backup carrying session markers without their trail also can no longer split the trail you already have."] };
 function renderAbout() {
   const cur = $('ver').textContent.trim();
   $('wnHead').textContent = "WHAT'S NEW · " + cur; // the header names the LIVE version, read from the title's version element - never a second hard-coded copy that can go stale
