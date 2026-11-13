@@ -157,6 +157,20 @@ try {
   const pinDist = Math.hypot((pinC.la - pinRes.la) * 111320, (pinC.ln - pinRes.ln) * 85100);
   ok('S13 the pin tap closes the sheet and centres the map on the street (within 150 m of its middle) | dist ' + Math.round(pinDist) + ' m', pinDist < 150);
 
+  // ---------- KB: the note editor stays reachable above the keyboard (Codex PR #22) ----------
+  await setVp(390, 844);
+  await ev(`(() => { if (!$('sheet').classList.contains('open')) $('streetsBtn').click(); return true; })()`); await sleep(650);
+  await ev(`(() => { const r = [...document.querySelectorAll('.srow')].find(x => x.querySelector('.nm').textContent === 'Velmar'); r.querySelector('.nwrap').click(); return true; })()`);
+  await poll(`typeof noteOpenFor !== 'undefined' && noteOpenFor === 'Velmar' && !!document.querySelector('.noteEd textarea')`, 10000); await sleep(700);
+  const kb = await J(`(() => { const sb = $('sheetBody').getBoundingClientRect(); const ta = document.querySelector('.noteEd textarea').getBoundingClientRect(); return { h: $('sheet').offsetHeight, full: $('sheet').classList.contains('full'), sbTop: Math.round(sb.top), taTop: Math.round(ta.top), taBot: Math.round(ta.bottom), sbBot: Math.round(sb.bottom) }; })()`);
+  ok('KB1 opening the note editor raises the Streets sheet to the full stop | ' + JSON.stringify(kb), kb.full === true && Math.abs(kb.h - 844 * 0.94) <= 10);
+  ok('KB2 at 390x844 the scroll region top clears a ~300px keyboard edge (544) and the editor sits inside the visible scroll region - the precondition ensureFieldVisible needs | ' + JSON.stringify(kb),
+    kb.sbTop < 544 && kb.taTop >= kb.sbTop - 2 && kb.taBot <= kb.sbBot + 2);
+  await ev(`(() => { document.querySelector('.noteEd .nedDone').click(); return true; })()`); await sleep(700);
+  const kb2 = await J(`(() => ({ h: $('sheet').offsetHeight, full: $('sheet').classList.contains('full') }))()`);
+  ok('KB3 closing the editor returns the sheet to the half stop | ' + JSON.stringify(kb2), kb2.full === false && Math.abs(kb2.h - 422) <= 10);
+  await ev(`closeSheets(); true`); await sleep(500);
+
   // ---------- D: detents, both sheets, three viewports, both themes ----------
   const VPS = [[360, 740], [390, 844], [430, 932]];
   for (const theme of ['day', 'night']) {

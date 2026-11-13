@@ -3447,6 +3447,7 @@ function updateCount() {
 // ===== LIST SHEET =====
 let listFilter = 'mains'; // Beta 1.109 (Andrew): the Streets filter is the route's two groups - Mains (the gold roads) or Secondaries (the raspberry ones) - replacing All / To do / Done; Mains is the opening view
 let noteOpenFor = null, noteSaveTimer = 0, noteEdFor = null; // Beta 1.63 (audit F01): noteEdFor names the street whose editor is actually in the DOM - the draft's owner
+let noteRaiseActive = false; // Beta 1.184 (Codex review, PR #22): true while the Streets sheet stands at the full stop BECAUSE the note editor raised it (the raise below) - a sheet the user dragged to full himself is never claimed, and never lowered by the editor closing
 let srowCache = { sig: '', rows: new Map() }; // Beta 1.50 (audit P06): rows kept between renders when the visible set is unchanged
 function resetStreetsSession() { // Beta 1.148 (Tranche 5, A4(ii)): app2's OWN route-switch reset, called by app4's resetSwitchSession - the Streets session's reset knowledge lives here, with its state, so a new app2 session field's reset is added where its author is looking
   deselect(); // selection + chips + the engine's selection, through the one proven path
@@ -3557,6 +3558,16 @@ function renderStreets() { // production row design: tap a street's name area to
   });
   if (scroller) scroller.scrollTop = keepScroll;
   if (!el.querySelector('.noteEd')) { noteEdFor = null; kbSync(); } // Beta 1.56: an editor removed by a rebuild must not leave the keyboard state stuck on - reported to the owner (app4 kbSync), which releases it through the settle path
+  syncNoteSheetRaise(); // Beta 1.184: the editor's sheet raise follows the editor's existence on every render
+}
+function syncNoteSheetRaise() { // Beta 1.184 (Codex review, PR #22): the redesign's pinned head (route line, hero, tabs, group heading) sits OUTSIDE #sheetBody, so at the half stop the scroll region's top can fall below the software keyboard's edge - and ensureFieldVisible, which scrolls only inside #sheetBody, can then never surface the note editor: the field it scrolls to is still under the keyboard. While the editor is open the sheet therefore stands at the FULL stop (the drag settle's own end state: .full, inline height, maxHeight none - the shared transition animates the move), which lifts the scroll region's top well above any keyboard; when the editor closes, a sheet this raise owns returns to the half stop's end state. A sheet already at full (the user's own drag) is left exactly as it is, both ways.
+  const sh = $('sheet'); if (!sh) return;
+  if (noteOpenFor && sh.classList.contains('open')) {
+    if (!sh.classList.contains('full')) { sh.classList.add('full'); sh.style.maxHeight = 'none'; sh.style.height = (vvHeight() * SHEET_FULL_VH) + 'px'; noteRaiseActive = true; }
+  } else if (noteRaiseActive) {
+    noteRaiseActive = false;
+    if (sh.classList.contains('open')) { sh.classList.remove('full'); sh.style.height = ''; sh.style.maxHeight = ''; }
+  }
 }
 function collapseNoteEditor() { // Beta 1.106 (Andrew): closing the Streets sheet resets the list - an editor left open must not still be open on the next open. Clearing noteOpenFor and re-rendering finalizes any pending debounced save first (renderStreets' draft flush runs against the editor's own street), so typed text is never lost; only the open-editor state resets. Called from BOTH close funnels of the Streets sheet: closeSheetEl (X, tab toggle, pin, opening another sheet, outside tap) and the drag settleClose landing in makeSheetDraggable.
   if (!noteOpenFor) return;
