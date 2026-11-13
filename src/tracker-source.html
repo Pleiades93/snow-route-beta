@@ -5267,7 +5267,9 @@ async function migratePack() { let migRelease = () => {}; // Beta 1.95 (deep aud
     const want = new Set(list.map(u => { try { return new URL(u).href; } catch (e) { return u; } })); // stored cache keys are URL-normalized (the glyph ranges' 'Noto Sans Regular' is stored %20-encoded) - the prune below must compare like with like, or it deletes the pack's own glyphs (the first CI run of 1.95 did exactly that: pack 897 -> 641)
     const oc = await caches.open('snowroute-offline-v1');
     const tc = await caches.open('snowroute-tiles-v1');
-    let failed = 0, migBytes = 0; try { for (const req of await oc.keys()) { try { const r0 = await oc.match(req); if (r0) migBytes += (await r0.blob()).size; } catch (e) {} } } catch (e) {} // Beta 1.183 (Codex P2, PR #21): the pack budget binds this door too - migratePack is the pack's second write path (the boot heal), so it weighs the pack first and counts a copy that would cross OFFLINE_PACK_CAP_BYTES as failed (the flag stays unset and the next boot retries, exactly like a failed copy); a copy whose size cannot be read proceeds unweighed, the download path's own rule
+    let pruneOk = true;
+    for (const rq of await oc.keys()) { if (!want.has(rq.url)) { try { await oc.delete(rq.url); } catch (e) { pruneOk = false; /* a stray that will not delete is inert - the pack still serves the manifest; Beta 1.96 (SR-195-07): the failure is REPORTED in the status now, not swallowed - copies are the readiness question, the prune is maintenance */ } } } // Beta 1.183 (Codex P2, PR #21): the prune runs FIRST - obsolete entries counted toward the heal budget below could refuse every copy and return before this loop ever ran, leaving their space unreclaimable on every boot; freed space counts toward the budget
+    let failed = 0, migBytes = 0; try { for (const req of await oc.keys()) { try { const r0 = await oc.match(req); if (r0) migBytes += (await r0.blob()).size; } catch (e) {} } } catch (e) {} // Beta 1.183 (Codex P2, PR #21): the pack budget binds this door too - migratePack is the pack's second write path (the boot heal), so after the prune above it weighs what remains and counts a copy that would cross OFFLINE_PACK_CAP_BYTES as failed (the flag stays unset and the next boot retries, exactly like a failed copy); a copy whose size cannot be read proceeds unweighed, the download path's own rule
     for (const u of list) {
       if (await oc.match(u)) continue;
       const hit = await tc.match(u);
@@ -5275,8 +5277,6 @@ async function migratePack() { let migRelease = () => {}; // Beta 1.95 (deep aud
       let hSz = -1; try { hSz = (await hit.clone().blob()).size; } catch (e) {} if (hSz >= 0 && migBytes + hSz > OFFLINE_PACK_CAP_BYTES) failed++; else { try { await oc.put(u, hit); if (hSz >= 0) migBytes += hSz; } catch (e) { failed++; } }
     }
     if (failed > 0) return { ok: false, failed };
-    let pruneOk = true;
-    for (const rq of await oc.keys()) { if (!want.has(rq.url)) { try { await oc.delete(rq.url); } catch (e) { pruneOk = false; /* a stray that will not delete is inert - the pack still serves the manifest; Beta 1.96 (SR-195-07): the failure is REPORTED in the status now, not swallowed - copies are the readiness question, the prune is maintenance */ } } }
     for (const u of list) { if (!(await oc.match(u)) && (await tc.match(u))) return { ok: false, why: 'verify' }; } // verify BEFORE the flag: everything recoverable must be in the pack cache
     const flagOk = lsSet(PACKMIG_KEY, fp); // Beta 1.96 (SR-195-07): the flag write is CHECKED - the fast path believes this flag, so a migration whose flag could not be persisted is not complete and must not report ok
     return { ok: flagOk, flag: flagOk ? fp : null, pruneOk };
