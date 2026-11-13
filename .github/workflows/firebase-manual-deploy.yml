@@ -96,8 +96,32 @@ jobs:
           test "$pack_count" -eq 13
           test "$total_count" -eq 32
           sha256sum "$stage/public/index.html" | awk '{print $1}' > "$stage/expected-index.sha256"
+          # Deliberate cache headers (cache fix-all S3, 2026-11-12): NO app
+          # file is hash-named and sw.js changes content under its name every
+          # release, so long-lived caching would strand users on stale files.
+          # The shell (index.html, sw.js, manifest.json) revalidates on every
+          # load (no-cache); packs, assets and icons - large, rarely changed,
+          # but still stable-named - get one hour with must-revalidate.
+          # Firebase matches header rules against the request URL, not the
+          # resolved file, so "/" needs its own rule beside "/index.html"
+          # (Codex review, PR #20) - the root URL is the primary launch path.
           cat > "$stage/firebase.json" <<'JSON'
-          {"hosting":{"public":"public","site":"snowroute-tracker","ignore":["firebase.json","**/.*","**/node_modules/**"]}}
+          {
+            "hosting": {
+              "public": "public",
+              "site": "snowroute-tracker",
+              "ignore": ["firebase.json", "**/.*", "**/node_modules/**"],
+              "headers": [
+                { "source": "/", "headers": [{ "key": "Cache-Control", "value": "no-cache" }] },
+                { "source": "/index.html", "headers": [{ "key": "Cache-Control", "value": "no-cache" }] },
+                { "source": "/sw.js", "headers": [{ "key": "Cache-Control", "value": "no-cache" }] },
+                { "source": "/manifest.json", "headers": [{ "key": "Cache-Control", "value": "no-cache" }] },
+                { "source": "/packs/*.json", "headers": [{ "key": "Cache-Control", "value": "public, max-age=3600, must-revalidate" }] },
+                { "source": "/assets/**", "headers": [{ "key": "Cache-Control", "value": "public, max-age=3600, must-revalidate" }] },
+                { "source": "/*.png", "headers": [{ "key": "Cache-Control", "value": "public, max-age=3600, must-revalidate" }] }
+              ]
+            }
+          }
           JSON
           echo "FIREBASE_STAGE=$stage" >> "$GITHUB_ENV"
 
