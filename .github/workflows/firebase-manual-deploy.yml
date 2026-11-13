@@ -102,6 +102,9 @@ jobs:
           # The shell (index.html, sw.js, manifest.json) revalidates on every
           # load (no-cache); packs, assets and icons - large, rarely changed,
           # but still stable-named - get one hour with must-revalidate.
+          # Firebase matches header rules against the request URL, not the
+          # resolved file, so "/" needs its own rule beside "/index.html"
+          # (Codex review, PR #20) - the root URL is the primary launch path.
           cat > "$stage/firebase.json" <<'JSON'
           {
             "hosting": {
@@ -109,6 +112,7 @@ jobs:
               "site": "snowroute-tracker",
               "ignore": ["firebase.json", "**/.*", "**/node_modules/**"],
               "headers": [
+                { "source": "/", "headers": [{ "key": "Cache-Control", "value": "no-cache" }] },
                 { "source": "/index.html", "headers": [{ "key": "Cache-Control", "value": "no-cache" }] },
                 { "source": "/sw.js", "headers": [{ "key": "Cache-Control", "value": "no-cache" }] },
                 { "source": "/manifest.json", "headers": [{ "key": "Cache-Control", "value": "no-cache" }] },
