@@ -29,7 +29,7 @@ await ev(`startGps(false)`);
 await march();
 let ST = await state();
 ok('V1 view-only watch records no trail and no coverage | ' + JSON.stringify(ST), ST.wid === 4242 && ST.run === false && ST.clean === false && ST.trail === 0 && ST.cov === 0);
-ok('V2 the live dot still shows in view-only mode | kinds ' + JSON.stringify(ST.kinds), ST.kinds.includes('dot'));
+ok('V2 the live puck still shows in view-only mode | kinds ' + JSON.stringify(ST.kinds), ST.kinds.includes('puckblue'));
 
 // Phase R: Start Clean on the already-running watch - recording begins.
 await ev(`startClean()`);

@@ -158,7 +158,7 @@ await ev(`(() => { markUndone('Woolacott'); deselect(); return true; })()`);
 // night -> day -> night and prove selection, progress, camera, route stack and the tuned
 // place zooms survive EVERY swap untouched.
 await ev(`(() => { markDone('Woolacott', 'tap'); selectStretch('Woolacott', 0, STRETCH.Woolacott.line[3]); map.jumpTo({ center: [-79.5595, 43.8155], zoom: 14.2 }); return true; })()`); await sleep(500);
-const swSnap = async () => JSON.parse(await ev(`(() => { const L = {}; for (const l of map.getStyle().layers) L[l.id] = l; return JSON.stringify({ night: document.body.classList.contains('night'), centre: map.getCenter().toArray(), zoom: map.getZoom(), name: $('selName').textContent, count: $('countTxt').textContent, route: !!map.getLayer('t1-surface'), gps: !!map.getLayer('gps-dot'), sub: L['places_subplace'] ? L['places_subplace'].minzoom : null, locMax: L['places_locality'] ? L['places_locality'].maxzoom : null }); })()`));
+const swSnap = async () => JSON.parse(await ev(`(() => { const L = {}; for (const l of map.getStyle().layers) L[l.id] = l; return JSON.stringify({ night: document.body.classList.contains('night'), centre: map.getCenter().toArray(), zoom: map.getZoom(), name: $('selName').textContent, count: $('countTxt').textContent, route: !!map.getLayer('t1-surface'), gps: !!map.getLayer('gps-puck-blue'), sub: L['places_subplace'] ? L['places_subplace'].minzoom : null, locMax: L['places_locality'] ? L['places_locality'].maxzoom : null }); })()`));
 const swWait = async () => { for (let i = 0; i < 20; i++) { if (await ev(`!!(window.map && map.getLayer && map.getLayer('t1-surface'))`)) return; await sleep(400); } };
 const SW0 = await swSnap();
 await tapById(ev, 'nightBtn'); await swWait(); await sleep(300);

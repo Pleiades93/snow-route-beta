@@ -482,7 +482,22 @@ function pushGps() {
     feats.push({ type: 'Feature', properties: { k: 'beam', rot: Math.round(facingDeg * 10) / 10 }, geometry: { type: 'Point', coordinates: [dispPos[1], dispPos[0]] } });
   }
   if (dispPos) {
-    feats.push({ type: 'Feature', properties: { k: 'dot' }, geometry: { type: 'Point', coordinates: [dispPos[1], dispPos[0]] } });
+    { // Beta 1.182 (Andrew): the position marker is a PUCK, not the flat 1.49 dot - two ground-plane discs that the puck layers in addGpsLayers (app2) extrude as ONE stepped object: a white disc (r 16 m) standing 3.5 m with the blue disc (r 11.5 m) standing 5 m on the same base. From above it reads as the familiar blue dot inside its white rim (the Apple Maps marker, Andrew's reference); tilted, the rim rises WITH the blue - never a 3D blue standing on a flat white ring (the samples' split, rejected). Rendering only: the estimator, dispPos and the watch logic are untouched.
+      // The radii are GROUND metres, so the screen size floats with zoom where the flat dot's never did (Codex review, PR #19 - verified against the map's z8-19 range: an unclamped 32 m disc reads ~2 px at z12 and ~297 px at z19). Clamp the READ, not the object: the white radius keeps its 16 m ground size wherever that projects inside 14-110 px across, and freezes at the band edge outside it; the blue keeps its 11.5/16 share. The metre scale is measured off the map's own projection at the puck as the WORST-DIRECTION stretch (the largest singular value of the projected 2x2 Jacobian of the east and north unit steps): Codex's second catch - an x-only measure diverges as the heading-up camera rotates toward an east/west course (at bearing 89 the x-only puck read ~802 px, at 90 it hit the epsilon floor) - and third catch - under the 60-degree pitch the projection is anisotropic, so any single axis can be the foreshortened one while the perpendicular ground direction projects up to 2x wider. The worst-direction stretch bounds the disc's widest screen extent in every direction at once, diagonals included.
+      const scaleAt = L => { // screen px per ground metre along east and north, from CENTRED probes L metres long either side of the puck
+        const e1 = map.project([dispPos[1] - (L / 2) / MLNG, dispPos[0]]), e2 = map.project([dispPos[1] + (L / 2) / MLNG, dispPos[0]]);
+        const n1 = map.project([dispPos[1], dispPos[0] - (L / 2) / MLAT]), n2 = map.project([dispPos[1], dispPos[0] + (L / 2) / MLAT]);
+        const ux = (e2.x - e1.x) / L, uy = (e2.y - e1.y) / L, vx = (n2.x - n1.x) / L, vy = (n2.y - n1.y) / L;
+        const jp = ux * ux + uy * uy, jq = ux * vx + uy * vy, jr = vx * vx + vy * vy;
+        return Math.sqrt(Math.max(0, (jp + jr) / 2 + Math.sqrt(((jp - jr) / 2) * ((jp - jr) / 2) + jq * jq))); // the largest singular value: px per metre in the most-stretched direction
+      };
+      // Two passes: a 100 m probe averages the perspective gradient and under-reads the local stretch at high zoom under pitch (measured: the z19 / bearing-45 / pitch-60 disc reached 156 px against the 110 cap), so re-probe over ~16 px of ground - local at any zoom, centred so the gradient cancels to first order.
+      const mPerPx = 1 / Math.max(1e-9, scaleAt(Math.min(100, Math.max(1, 16 / Math.max(1e-9, scaleAt(100))))));
+      const rW = Math.min(55, Math.max(7, 16 / mPerPx)) * mPerPx, rB = rW * 11.5 / 16;
+      const disc = r => { const pts = []; for (let a = 0; a <= 40; a++) { const th = a / 40 * Math.PI * 2; pts.push([dispPos[1] + (r * Math.sin(th)) / MLNG, dispPos[0] + (r * Math.cos(th)) / MLAT]); } return [pts]; };
+      feats.push({ type: 'Feature', properties: { k: 'puckwhite' }, geometry: { type: 'Polygon', coordinates: disc(rW) } });
+      feats.push({ type: 'Feature', properties: { k: 'puckblue' }, geometry: { type: 'Polygon', coordinates: disc(rB) } });
+    }
     if (gpsAccM > 0) { const ring = []; const R = gpsAccM; for (let a = 0; a <= 28; a++) { const th = a / 28 * Math.PI * 2; ring.push([dispPos[1] + (R * Math.sin(th)) / MLNG, dispPos[0] + (R * Math.cos(th)) / MLAT]); } feats.push({ type: 'Feature', properties: { k: 'ring' }, geometry: { type: 'Polygon', coordinates: [ring] } }); }
   }
   src.setData({ type: 'FeatureCollection', features: feats });
@@ -513,7 +528,9 @@ function renderTick(now) {
     if (dtF > 0 && !dispSettled()) { const k = Math.pow(0.2, dtF / 0.3); dispOff = [dispOff[0] * k, dispOff[1] * k]; if (dispSettled()) dispOff = [0, 0]; } // the correction offset decays with a ~0.3 s time constant, on the same performance clock the prediction reads
     dispPos = [pred[0] + dispOff[0] / MLAT, pred[1] + dispOff[1] / MLNG];
   }
-  const key = dispPos ? dispPos[0] + ',' + dispPos[1] + ',' + facingDeg + ',' + gpsAccM : '';
+  let camKey = ''; // Beta 1.182: the camera state that sizes the puck joins the push key, bucketed - quarter-zoom (sets the scale), half-degree bearing (rotates the projected measure), 2-degree pitch (sets its anisotropy), the puck's own projected position on a 16 px grid and the viewport size (Codex's fourth catch on PR #19: under pitch the local stretch varies across the viewport, so PANNING a pitched map with a stationary fix moves the puck through the perspective gradient without changing zoom, bearing or pitch - the stale radii could carry it past the cap near the viewport's bottom edge). Together these are every input the projection of a static ground point depends on, so any change that could resize the puck re-pushes the glyph even when nothing moved.
+  if (map) { camKey = Math.round(map.getZoom() * 4) / 4 + ',' + Math.round(map.getBearing() * 2) / 2 + ',' + Math.round(map.getPitch() / 2) * 2 + ',' + map.getCanvas().clientWidth + 'x' + map.getCanvas().clientHeight; if (dispPos) { const pp = map.project([dispPos[1], dispPos[0]]); camKey += ',' + Math.round(pp.x / 16) + ':' + Math.round(pp.y / 16); } }
+  const key = dispPos ? dispPos[0] + ',' + dispPos[1] + ',' + facingDeg + ',' + gpsAccM + ',' + camKey : '';
   if (key !== lastPushKey) { lastPushKey = key; pushGps(); } // redraw the dot/ring/beam only when something actually moved - the old timers rebuilt it on every tick regardless
   followCam(now); headCam(now); syncCentreBtn();
 }

@@ -25,8 +25,8 @@ await ev(`acceptFix({ coords: { latitude: ${base.lat}, longitude: ${base.lng}, a
 // still be settling right after boot - poll for the dot instead of reading
 // once at 500 ms and mistaking a settling style for a missing dot.
 let K = [];
-for (let i = 0; i < 40; i++) { K = await gpsData(); if (K.includes('dot')) break; await sleep(250); }
-ok('C1 a dot with no known facing carries no beam | kinds ' + JSON.stringify(K), K.includes('dot') && !K.includes('beam'));
+for (let i = 0; i < 40; i++) { K = await gpsData(); if (K.includes('puckblue')) break; await sleep(250); }
+ok('C1 a puck with no known facing carries no beam | kinds ' + JSON.stringify(K), K.includes('puckblue') && !K.includes('beam'));
 
 await ev(`setFacing(90, 1)`); await sleep(200);
 K = await gpsData(); const B1 = await coneBearing();
@@ -42,10 +42,10 @@ const B3 = await coneBearing();
 ok('C4 while moving, the GPS course takes over the beam | bearing ' + B3, bangDiff(B3, 90) <= 20);
 
 let LP = {};
-for (let i = 0; i < 40; i++) { LP = JSON.parse(await ev(`(() => JSON.stringify({ beam: !!map.getLayer('gps-beam'), img: map.getLayer('gps-beam') && map.getLayoutProperty('gps-beam', 'icon-image'), cone: !!map.getLayer('gps-cone'), shadow: !!map.getLayer('gps-shadow') }))()`)); if (LP.beam) break; await sleep(250); } // poll: a restack can be mid-flight at any single read
+for (let i = 0; i < 40; i++) { LP = JSON.parse(await ev(`(() => JSON.stringify({ beam: !!map.getLayer('gps-beam'), img: map.getLayer('gps-beam') && map.getLayoutProperty('gps-beam', 'icon-image'), cone: !!map.getLayer('gps-cone'), shadow: !!map.getLayer('gps-shadow'), puck: !!map.getLayer('gps-puck-blue') }))()`)); if (LP.beam) break; await sleep(250); } // poll: a restack can be mid-flight at any single read
 await ev(`(() => { watchId = null; pushGps(); return true; })()`); await sleep(200);
 K = await gpsData();
-ok('C5 GPS off removes the beam; the beam is the gradient fan symbol and the cone layer is retired | kinds ' + JSON.stringify(K) + ' layers ' + JSON.stringify(LP), !K.includes('beam') && LP.beam === true && LP.img === 'beam-img' && LP.cone === false && LP.shadow === true);
+ok('C5 GPS off removes the beam; the beam is the gradient fan symbol and the cone layer is retired | kinds ' + JSON.stringify(K) + ' layers ' + JSON.stringify(LP), !K.includes('beam') && LP.beam === true && LP.img === 'beam-img' && LP.cone === false && LP.shadow === false && LP.puck === true); // Beta 1.182: the flat gps-shadow retired WITH the dot it shadowed - the extruded puck carries its own presence now; shadow===false + puck===true is the new contract, at the same strength
 
 R.exceptions = consoleLog.filter(c => c.type === 'EXCEPTION').map(c => String(c.text || '').slice(0, 200));
 finish(R, proc);

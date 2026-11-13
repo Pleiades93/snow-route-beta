@@ -37,10 +37,10 @@ const probe = async () => { const raw = await ev(`(() => { try {
   const src = map.getSource('gps'); const data = src && src._data;
   const feats = data && data.features ? data.features.map(f => f.properties.k) : null;
   const pt = map.project([dispPos[1], dispPos[0]]);
-  const dotHits = map.queryRenderedFeatures(pt, { layers: ['gps-dot'] }).length;
+  const dotHits = map.queryRenderedFeatures(pt, { layers: ['gps-puck-blue', 'gps-puck-white'] }).length; // Beta 1.182: the rendered position marker is the extruded puck (gps-puck-blue over gps-puck-white) - the flat gps-dot circle is retired; the check's question is unchanged: is the marker RENDERED at the fix point
   const stack = map.queryRenderedFeatures(pt).map(f => f.layer.id);
-  const lay = map.getLayer('gps-dot');
-  return JSON.stringify({ layerExists: !!lay, vis: lay ? map.getLayoutProperty('gps-dot', 'visibility') : null, feats, dotHits, stack });
+  const lay = map.getLayer('gps-puck-blue');
+  return JSON.stringify({ layerExists: !!lay, vis: lay ? map.getLayoutProperty('gps-puck-blue', 'visibility') : null, feats, dotHits, stack });
 } catch (e) { return JSON.stringify({ __err: String(e && e.message || e) }); } })()`);
   return typeof raw === 'string' ? JSON.parse(raw) : { __err: 'non-string evaluate result' }; };
 
@@ -62,26 +62,26 @@ ok('G0b layer-chain state at probe time | ' + JSON.stringify(PRE), PRE.gps === t
 const DIAG = JSON.parse(await ev(`(() => { try {
   const before = { centres: !!map.getSource('centres'), ref: !!map.getSource('ref'), gps: !!map.getSource('gps'), trail: !!map.getSource('trail') };
   let callErr = null; try { addGpsLayers(); } catch (e) { callErr = String(e && e.message || e); }
-  const after = { gps: !!map.getSource('gps'), dotLayer: !!map.getLayer('gps-dot') };
+  const after = { gps: !!map.getSource('gps'), dotLayer: !!map.getLayer('gps-puck-blue') };
   if (after.gps) pushGps();
   return JSON.stringify({ before, callErr, after });
 } catch (e) { return JSON.stringify({ __err: String(e && e.message || e) }); } })()`));
 await sleep(400);
 let P = await probe();
-ok('G1 gps layers exist and the source carries the dot after a fix | diag ' + JSON.stringify(DIAG) + ' probe ' + JSON.stringify(P),
-  P.layerExists && P.vis !== 'none' && Array.isArray(P.feats) && P.feats.includes('dot'));
-ok('G2 the dot is actually rendered at the fix point | stack ' + JSON.stringify(P.stack), P.dotHits >= 1);
+ok('G1 gps layers exist and the source carries the puck after a fix | diag ' + JSON.stringify(DIAG) + ' probe ' + JSON.stringify(P),
+  P.layerExists && P.vis !== 'none' && Array.isArray(P.feats) && P.feats.includes('puckblue'));
+ok('G2 the puck is actually rendered at the fix point | stack ' + JSON.stringify(P.stack), P.dotHits >= 1);
 
 await ev(`(() => { togglePiece('Velmar', 0, 0); return true; })()`); // togglePiece is the real marking entry - an earlier draft called a setPiece that does not exist, so the rebuild was never actually exercised
 await sleep(700);
 P = await probe();
-ok('G3 dot still rendered after marking (engine rebuild) | stack ' + JSON.stringify(P.stack), P.dotHits >= 1);
+ok('G3 puck still rendered after marking (engine rebuild) | stack ' + JSON.stringify(P.stack), P.dotHits >= 1);
 
 await ev(`(() => { document.body.classList.toggle('night'); setBasemap(); return true; })()`);
 await poll120(`!!(map.getSource('centres') && map.getSource('gps'))`, 20000);
 await sleep(800);
 P = await probe();
-ok('G4 dot still rendered after a basemap swap (restack) | ' + JSON.stringify(P), P.dotHits >= 1 && Array.isArray(P.feats) && P.feats.includes('dot'));
+ok('G4 puck still rendered after a basemap swap (restack) | ' + JSON.stringify(P), P.dotHits >= 1 && Array.isArray(P.feats) && P.feats.includes('puckblue'));
 
 R.exceptions = consoleLog.filter(c => c.type === 'EXCEPTION').map(c => String(c.text || '').slice(0, 200));
 finish(R, proc);
