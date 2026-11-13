@@ -5,6 +5,7 @@
 // (page, service worker) gets Fetch interception on its own session, and a
 // request pauses in exactly the session whose context issued it.
 import { spawn } from 'node:child_process';
+import { createHash } from 'node:crypto';
 import fs from 'node:fs';
 import { isRaceLoss } from './race-loss.mjs'; // the E17 race judge - fixture-proven by selftest-race-loss.mjs (test-change gate, docs/TESTING.md)
 // Phase 5 (architecture C4, Offline Contract v1): the migration checks below take their
@@ -472,7 +473,11 @@ try {
 // the new worker installs and re-fetches the shell (its install fetch is a
 // reload and navigations are net-first, so the relaunched browser runs the
 // variant shell - proven directly by reading the constant in the page
-// before anything else is believed). The download must then stop at the
+// before anything else is believed). The rewrite also restamps the
+// variant's CSP script hash (scripts/csp_stamp.py's computation, applied
+// to the script-src entry only): the cap literal sits inside the stamped
+// inline script, so an unrestamped variant's own policy blocks its script
+// and the constant never exists (Codex P1, PR #21). The download must then stop at the
 // cap, name the limit in its completion line, leave the stored pack at or
 // under the cap, and Status must read Partial with the measured bytes.
 try {
@@ -484,7 +489,21 @@ try {
   const swO25 = fs.readFileSync(swF25, 'utf8');
   let e25 = null;
   try {
-    fs.writeFileSync(idxFile, idxOrig.replace(NEEDLE, 'OFFLINE_PACK_CAP_BYTES = 512 * 1024'));
+    const variant25 = idxOrig.replace(NEEDLE, 'OFFLINE_PACK_CAP_BYTES = 512 * 1024');
+    if (variant25 === idxOrig) throw new Error('the variant rewrite did not change the page');
+    // Codex P1 on PR #21: the cap literal lives inside the page's bundled inline script, whose
+    // SHA-384 is stamped into the CSP meta (scripts/csp_stamp.py) - rewriting the script without
+    // restamping its script-src hash makes the variant page's own policy block the script, so
+    // OFFLINE_PACK_CAP_BYTES never becomes available and the variant can never go live. Restamp:
+    // recompute ONLY the script hash from the variant's own inline script (the same computation
+    // csp_stamp.py performs) and swap it into the existing meta - the style hash and every other
+    // directive stay byte-identical to the shipped stamp.
+    const sm25 = variant25.match(/<script(?![^>]*\bsrc=)[^>]*>([\s\S]*?)<\/script>/);
+    if (!sm25) throw new Error('the variant page has no inline script to restamp');
+    const hash25 = createHash('sha384').update(sm25[1], 'utf8').digest('base64');
+    const variantStamped = variant25.replace(/(script-src )'sha384-[^']+'/, "$1'sha384-" + hash25 + "'");
+    if (variantStamped === variant25) throw new Error('the variant CSP restamp did not change the page');
+    fs.writeFileSync(idxFile, variantStamped);
     fs.writeFileSync(swF25, swO25 + '\n// e2e E25 variant probe (byte change only)\n');
     proc.kill('SIGKILL');
     await launchBrowser();
