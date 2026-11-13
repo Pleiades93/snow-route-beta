@@ -445,7 +445,8 @@ function edgeRunSlices(n, side, marked) {
         for (let si = 0; si + 1 < run.pts.length && !crosses; si++) {
           if (H.ptSegM(J.V, run.pts[si], run.pts[si + 1]) > CORRIDOR + 6) continue;
           for (const dn of H.names) {
-            if (dn === n || crosses) break;
+            if (crosses) break;
+            if (dn === n) continue;
             const gd = GEO[dn];
             for (const t of [0, 1]) {
               const marked = gd.cuts.some((ab, ci) => H.pieces[dn][ci] !== 3 && (H.pieces[dn][ci] & (1 << t)) && ab.some(v => H.jDistM(gd.stitched[v], J.V) < 16));
