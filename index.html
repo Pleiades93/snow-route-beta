@@ -2,7 +2,7 @@
 <html lang="en" class="boot">
 <head>
 <meta charset="UTF-8">
-<meta http-equiv="Content-Security-Policy" content="default-src 'none'; script-src 'sha384-3P7txhlJj06sRlJLR5FnZyCu20jhI0UUcPJQwlMQ2IDAb6R7Th7LBoR+wpL7Truf' https://cdn.jsdelivr.net; style-src-elem 'sha384-edQTblksUQX4XwoFQMseYNI9/RcCixhrL6pwTAkd5MF/5diHuC/ua0p8/TRFLGOK' https://cdn.jsdelivr.net; style-src-attr 'unsafe-inline'; img-src 'self' data: blob: https://tiles.basemaps.cartocdn.com https://protomaps.github.io https://cdn.jsdelivr.net; connect-src 'self' https://tiles.basemaps.cartocdn.com https://protomaps.github.io https://cdn.jsdelivr.net https://nominatim.openstreetmap.org https://overpass-api.de https://overpass.kumi.systems; worker-src blob: 'self'; child-src blob: 'self'; font-src 'none'; manifest-src 'self'; base-uri 'none'; form-action 'none'; object-src 'none'">
+<meta http-equiv="Content-Security-Policy" content="default-src 'none'; script-src 'sha384-Qfv/8bbJYZBFFHQqVPZXYZUfVJ5PEBiq3MHxXbLzjaqFPcm7bjgqPeqqunoWfKcL' https://cdn.jsdelivr.net; style-src-elem 'sha384-edQTblksUQX4XwoFQMseYNI9/RcCixhrL6pwTAkd5MF/5diHuC/ua0p8/TRFLGOK' https://cdn.jsdelivr.net; style-src-attr 'unsafe-inline'; img-src 'self' data: blob: https://tiles.basemaps.cartocdn.com https://protomaps.github.io https://cdn.jsdelivr.net; connect-src 'self' https://tiles.basemaps.cartocdn.com https://protomaps.github.io https://cdn.jsdelivr.net https://nominatim.openstreetmap.org https://overpass-api.de https://overpass.kumi.systems; worker-src blob: 'self'; child-src blob: 'self'; font-src 'none'; manifest-src 'self'; base-uri 'none'; form-action 'none'; object-src 'none'">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="mobile-web-app-capable" content="yes">
@@ -1613,7 +1613,8 @@ function edgeRunSlices(n, side, marked) {
         for (let si = 0; si + 1 < run.pts.length && !crosses; si++) {
           if (H.ptSegM(J.V, run.pts[si], run.pts[si + 1]) > CORRIDOR + 6) continue;
           for (const dn of H.names) {
-            if (dn === n || crosses) break;
+            if (crosses) break;
+            if (dn === n) continue;
             const gd = GEO[dn];
             for (const t of [0, 1]) {
               const marked = gd.cuts.some((ab, ci) => H.pieces[dn][ci] !== 3 && (H.pieces[dn][ci] & (1 << t)) && ab.some(v => H.jDistM(gd.stitched[v], J.V) < 16));
@@ -3679,7 +3680,7 @@ function cleanCount(h) { const items = (h && h.items) || {}; return Object.keys(
 function cleanWorkM(h) { // side-metres a saved clean actually covered
   if (h && typeof h.workM === 'number' && isFinite(h.workM) && h.workM >= 0) return h.workM; // Beta 1.167 (run/pace fix round, B2): cleans archived by 1.167+ carry the run-attributed figure Finish measured (buildSnap's workM) - it is read VERBATIM, so pre-Start work never counts (RP-05), a later geometry edit cannot re-price the clean (RP-06), and a partially-recorded sides map cannot short-circuit into an undercount (RP-09). Legacy entries (no workM) derive below, exactly as they always have.
   const items = (h && h.items) || {}; let si = 0; for (const n of Object.keys(items)) if (STRETCH[n]) si += STRETCH[n].total * 2; // the items derivation: every completed street at both sides of its full length
-  if (h && h.sides && h.sides.p && typeof h.sides.p === 'object') { let s = 0; for (const n of STREETNAMES) { const p = h.sides.p[n]; if (Array.isArray(p) && STRETCH[n]) { STRETCH[n].parts.forEach((part, i) => { const v = p[i] | 0; const L = segLenM(part); if (v & 1) s += L; if (v & 2) s += L; }); } else if (items[n] && STRETCH[n]) s += STRETCH[n].total * 2; } if (s > 0) return s; } // Beta 1.169 (Carbon fix round, B-06): the sides branch used to price ONLY the sides map and return it the moment it priced anything - a PARTIALLY-recorded map (some completed streets carry no sides entry at all) short-circuited into the very RP-09 undercount the stored workM exists to prevent, alive in the legacy branch. The merge is now PER STREET: a street WITH a sides entry is priced by its bits (authoritative - it alone sees partial-side work, including on streets never completed), a completed street MISSING from the map falls back to the items derivation for that street.
+  if (h && h.sides && h.sides.p && typeof h.sides.p === 'object') { let s = 0; for (const n of STREETNAMES) { const p = h.sides.p[n]; if (Array.isArray(p) && STRETCH[n]) { STRETCH[n].parts.forEach((part, i) => { const v = p[i] | 0; const L = segLenM(part); if (v & 1) s += L; if (v & 2) s += L; }); } else if (n in items && STRETCH[n]) s += STRETCH[n].total * 2; } if (s > 0) return s; } // Beta 1.169 (Carbon fix round, B-06): the sides branch used to price ONLY the sides map and return it the moment it priced anything - a PARTIALLY-recorded map (some completed streets carry no sides entry at all) short-circuited into the very RP-09 undercount the stored workM exists to prevent, alive in the legacy branch. The merge is now PER STREET: a street WITH a sides entry is priced by its bits (authoritative - it alone sees partial-side work, including on streets never completed), a completed street MISSING from the map falls back to the items derivation for that street.
   return si;
 }
 function workRateMh(workM, startMs, endMs, minH) { const h = (endMs - startMs) / 3600000; return (workM > 0 && h > minH) ? workM / h : null; } // NaN inputs fail the comparisons and yield null
@@ -4250,7 +4251,7 @@ onMapReady(() => { const c = map.getCanvas(); let press = null; // {x, y, id} - 
 // north: 'my north' is wherever he is heading. Smoothed around the circle so low-speed wobble can't spin
 // the map; under ~1 m/s the course is unreliable, so the map just holds its last bearing.
 let smHeading = null;
-function headDelta(a, b) { return ((b - a + 540) % 360) - 180; }
+function headDelta(a, b) { return ((((b - a + 180) % 360) + 360) % 360) - 180; }
 function updateHeading(hdg, speed) {
   if (typeof hdg !== 'number' || isNaN(hdg) || !speed || speed < 1) return;
   if (followPaused) return; // Beta 1.122 (Andrew): the smoothed course is maintained whenever location is on, not only during a run - headCam applies it whenever the camera follows
@@ -5699,7 +5700,7 @@ window.__userPacksReady.then(() => { if (anyPreloadRecord()) migratePack(); }); 
 function uniqueRouteId(name) { // a slug from the name, uniqueness-checked against shipped + created ids
   let base = name.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-+|-+$/g, '').slice(0, 32) || 'route';
   let id = base, i = 2;
-  while (ROUTE_PACKS.some(p => p.id === id)) { id = base + '-' + i; i++; }
+  while (ROUTE_PACKS.some(p => p.id === id) || Object.prototype.hasOwnProperty.call(userPackCache, id)) { id = base + '-' + i; i++; }
   return id;
 }
 function nextRouteNameGuess() { let mx = 1; for (const p of ROUTE_PACKS) { const m = /^Route (\d+)$/.exec(p.name || ''); if (m) mx = Math.max(mx, +m[1] + 1); } return 'Route ' + Math.max(mx, ROUTE_PACKS.length + 1); }
