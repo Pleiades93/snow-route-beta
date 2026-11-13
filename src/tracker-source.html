@@ -4923,16 +4923,16 @@ async function restoreBackup(parsed) { // production doRestore semantics: valida
   // of this restore: the entry is written and verified like every other, and the snapshot +
   // rollback below cover the markers too. Applies per route (today: the 5W slot in both formats).
   for (const p of allPacks) { const rk = routeKeys(p.id); if (entries.some(e => e[0] === rk.trail) && !entries.some(e => e[0] === rk.sess)) entries.push([rk.sess, '[]']); }
-  // Beta 1.186 (storage fix round, C-01): the mirror case - a backup carrying a route's session
-  // markers but NOT its trail must not lay those markers over the trail that STAYS. The shape is
-  // genuine, not just crafted: the exporter carries each field only when its storage key exists,
-  // and the markers are born at Start while the trail key is born at the first accepted fix, so a
-  // clean that was started but never recorded a fix exports markers with no trail. Those markers
-  // describe a trail this restore is not bringing; laid over the resident trail they split it at
-  // a session boundary that never happened on it (trailSegments' consumers: drawTrail, buildGpx -
-  // distances are unaffected, trailKm walks its segments without markers). Clear them inside this
-  // same verified write set, exactly as C06 above clears them for the trail a restore replaces.
-  for (const p of allPacks) { const rk = routeKeys(p.id); const se = entries.find(e => e[0] === rk.sess); if (se && !entries.some(e => e[0] === rk.trail)) se[1] = '[]'; }
+  // Beta 1.186 (storage fix round, C-01): a backup carrying a route's session markers but NOT
+  // its trail brings markers for a trail this restore is not bringing - the shape is genuine,
+  // not just crafted: the exporter carries each field only when its storage key exists, and the
+  // markers are born at Start while the trail key is born at the first accepted fix, so a clean
+  // that was started but never recorded a fix exports markers with no trail. Those markers must
+  // not land: laid over the resident trail they would split it at a boundary that never happened
+  // on it (trailSegments' consumers: drawTrail, buildGpx). But the resident markers are NOT
+  // cleared either - they describe the trail that STAYS, and what a backup does not bring, a
+  // restore does not touch. (C06 above is the true mirror: there the trail IS replaced.)
+  for (const p of allPacks) { const rk = routeKeys(p.id); const si = entries.findIndex(e => e[0] === rk.sess); if (si >= 0 && !entries.some(e => e[0] === rk.trail)) entries.splice(si, 1); }
   // Beta 1.92 (deep audit F06, Andrew's pick (a)): a backup carrying a route's completion
   // list but NO side-marks record (the old v1 shape) used to restore into silence - the
   // loader trusts the side-marks and rebuilt the list from the phone's existing ones,

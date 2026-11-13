@@ -110,8 +110,10 @@ try {
   // a route's session markers but NOT its trail (a genuine shape: a clean that was
   // started but never recorded a fix exports sess with no trail key) used to lay
   // those markers over the trail that STAYS, splitting it at a session boundary
-  // that never happened on it. The restore now clears them inside the verified
-  // write set. Control: a backup carrying the pair restores the pair untouched.
+  // that never happened on it. The restore now DROPS the incoming markers from
+  // the write set - and leaves the resident markers untouched, since they
+  // describe the trail that stays. Control: a backup carrying the pair
+  // restores the pair untouched.
   const C01B = 1762000000; // fixed epoch base (seconds) for the staged trail
   const C01PTS = []; for (let i = 0; i <= 10; i++) C01PTS.push([+(43.9 + i * 0.001).toFixed(6), -79.5, C01B + i * 60]);
   const sessTrailState = async () => JSON.parse(await ev(`(() => { const rk = routeKeys('5w'); const tr = JSON.parse(localStorage.getItem(rk.trail) || '[]'); const se = JSON.parse(localStorage.getItem(rk.sess) || '[]'); return JSON.stringify({ sess: se, pts: tr.length, segs: trailSegments(tr, se).length }); })()`));
@@ -124,8 +126,22 @@ try {
   await ev(`(() => { window.__d169probe = 1; restoreBackup(JSON.parse(window.__d169b)); return true; })()`);
   ok('C-01 restore (markers only) reloaded', await afterReload());
   const c01post = await sessTrailState();
-  ok('C-01 FIXED: the foreign markers were cleared in the write set - the resident trail still reads as ONE segment | ' + JSON.stringify(c01post),
-    c01post.pts === 11 && c01post.segs === 1 && c01post.sess.length === 0);
+  ok('C-01 FIXED: the foreign markers were dropped from the write set and the RESIDENT markers survive - the resident trail still reads as ONE segment with its own boundary | ' + JSON.stringify(c01post),
+    c01post.pts === 11 && c01post.segs === 1 && c01post.sess.length === 1 && c01post.sess[0] === C01B);
+  // Codex gate round on PR #25: a resident trail spanning TWO cleans, where the
+  // resident markers are the only thing keeping the cleans apart (their boundary
+  // points sit inside trailSegments' 300 s / 1000 m join). The first cut of this
+  // fix cleared the resident markers along with the incoming ones.
+  await ev(`(() => { const rk = routeKeys('5w'); localStorage.setItem(rk.sess, ${JSON.stringify(JSON.stringify([C01B, C01B + 300]))}); return true; })()`);
+  const c01two = await sessTrailState();
+  ok('C-01 staged: the resident trail with TWO markers (two cleans) reads as TWO segments - the markers alone keep the cleans apart | ' + JSON.stringify(c01two),
+    c01two.pts === 11 && c01two.segs === 2 && c01two.sess.length === 2);
+  await injectBackup(bkSessOnly);
+  await ev(`(() => { window.__d169probe = 1; restoreBackup(JSON.parse(window.__d169b)); return true; })()`);
+  ok('C-01 restore (markers only, over a two-clean trail) reloaded', await afterReload());
+  const c01twoPost = await sessTrailState();
+  ok('C-01 FIXED: the markers-only restore leaves a two-clean resident trail at TWO segments - its own markers survived untouched | ' + JSON.stringify(c01twoPost),
+    c01twoPost.pts === 11 && c01twoPost.segs === 2 && c01twoPost.sess.length === 2 && c01twoPost.sess[0] === C01B && c01twoPost.sess[1] === C01B + 300);
   const bkPair = JSON.stringify({ app: 'snowroute-backup', v: 2, at: C01B * 1000, routes: { '5w': { trail: JSON.stringify(C01PTS), sess: JSON.stringify([C01B]) } } });
   await injectBackup(bkPair);
   await ev(`(() => { window.__d169probe = 1; restoreBackup(JSON.parse(window.__d169b)); return true; })()`);
