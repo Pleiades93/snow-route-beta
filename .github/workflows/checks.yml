@@ -163,6 +163,10 @@ jobs:
         run: node tests/browser/selftest-nv1152.mjs
       - name: Premise-lint fixtures (Tranche 4 gate)
         run: python3 scripts/premise-lint-fixtures/run-fixtures.py
+      - name: Bug-hunt fix fixtures (PR #23 gate; Beta 1.185)
+        run: node tests/browser/selftest-pr23-fixes.mjs
+      - name: Tier selector fixtures (PR #23 gate; Beta 1.185)
+        run: python3 scripts/select-tier-fixtures/run-fixtures.py
       - name: Premise lint (advisory - drive premises this PR's app diff touches)
         if: github.event_name == 'pull_request'
         continue-on-error: true

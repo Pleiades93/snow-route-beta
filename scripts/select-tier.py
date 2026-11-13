@@ -113,6 +113,14 @@ def select(files, force=None):
     for f in app_files:
         if any(match(f, e) for e in tmap["tier_c_paths"]):
             return "C", [], True, f"deep path touched: {f}"
+    def known(f):
+        return (any(match(f, e) for fam in tmap["families"].values() for e in fam["paths"])
+                or any(match(f, e) for e in tmap["tier_a_paths"])
+                or any(f.endswith(x) for x in tmap["tier_a_suffixes"]))
+    other = [f for f in app_files if not known(f)]
+    if other:
+        d = tmap["default_tier_for_unmatched_app_code"]
+        return d, [], d == "C", f"unmatched app path(s): {', '.join(other[:4])}"
     fams = []
     for name, fam in tmap["families"].items():
         if any(match(f, e) for f in app_files for e in fam["paths"]):
@@ -120,11 +128,8 @@ def select(files, force=None):
     if fams:
         drives = sorted(({d for name in fams for d in tmap["families"][name]["drives"]} | set(touched)) - quar)
         return "B", drives, False, "families touched: " + ", ".join(fams) + ride
-    if all(any(match(f, e) for e in tmap["tier_a_paths"]) or any(f.endswith(s) for s in tmap["tier_a_suffixes"]) for f in app_files):
-        drives = sorted((set(tmap["tier_a_core"]) | set(touched)) - quar)
-        return "A", drives, False, "visual/constant/copy paths only" + ride
-    other = [f for f in app_files if not any(match(f, e) for e in tmap["tier_a_paths"])]
-    return tmap["default_tier_for_unmatched_app_code"], [], tmap["default_tier_for_unmatched_app_code"] == "C", f"unmatched app path(s): {', '.join(other[:4])}"
+    drives = sorted((set(tmap["tier_a_core"]) | set(touched)) - quar)
+    return "A", drives, False, "visual/constant/copy paths only" + ride
 
 
 def main():

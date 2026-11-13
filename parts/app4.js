@@ -733,7 +733,7 @@ $('stDel').addEventListener('click', async () => {
 });
 // ---- About / What's new ----
 const WHATSNEW = { // the curated in-app notes: plain words, LATEST RELEASE ONLY (Beta 1.114, Andrew: the accumulated list cluttered the About pane). A release REPLACES this entry with its own in the same change - it never accumulates; the full history lives in CHANGELOG.md, not the app
-  v: 'Beta 1.184', items: ["The Streets and Pace menus are redesigned. Streets opens with your progress and a Mains / Secondaries switch — tap the pin beside a street to find it on the map, tap the street itself to add a note.", "Pace shows this run at a glance — elapsed time, road cleared, ETA, streets done — plus progress by group and your saved cleans. Tap a saved clean to see its full detail, including its GPS trail distance.", "Both menus open at half screen; swipe up for full screen, swipe down to bring them back or close them."] };
+  v: 'Beta 1.185', items: ["Five bugs found by an outside bug hunt are fixed. A finished street's green line could paint across another street's line at some junctions, and the work totals for older saved cleans could leave out streets that were finished without a recorded time.", "After a lot of circling in one direction — courts and crescents — the map's heading could have jumped instead of turning smoothly. A new route also can no longer be given the same ID as a saved route, which could have replaced it."] };
 function renderAbout() {
   const cur = $('ver').textContent.trim();
   $('wnHead').textContent = "WHAT'S NEW · " + cur; // the header names the LIVE version, read from the title's version element - never a second hard-coded copy that can go stale

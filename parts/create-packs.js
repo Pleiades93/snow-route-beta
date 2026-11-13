@@ -136,7 +136,7 @@ window.__userPacksReady.then(() => { if (anyPreloadRecord()) migratePack(); }); 
 function uniqueRouteId(name) { // a slug from the name, uniqueness-checked against shipped + created ids
   let base = name.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-+|-+$/g, '').slice(0, 32) || 'route';
   let id = base, i = 2;
-  while (ROUTE_PACKS.some(p => p.id === id)) { id = base + '-' + i; i++; }
+  while (ROUTE_PACKS.some(p => p.id === id) || Object.prototype.hasOwnProperty.call(userPackCache, id)) { id = base + '-' + i; i++; }
   return id;
 }
 function nextRouteNameGuess() { let mx = 1; for (const p of ROUTE_PACKS) { const m = /^Route (\d+)$/.exec(p.name || ''); if (m) mx = Math.max(mx, +m[1] + 1); } return 'Route ' + Math.max(mx, ROUTE_PACKS.length + 1); }
