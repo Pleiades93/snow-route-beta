@@ -44,11 +44,11 @@ function style(flavor) {
     layers: layers('protomaps', namedFlavor(flavor), { lang: 'en' })
   };
 }
-function add3d(s) { // Beta 1.90 (Andrew): 3D buildings - the flat footprint fill hands over to a fill-extrusion twin parked just below the labels. The route tiles carry footprints but no heights (checked on his streets: 492 buildings, none with a height), so the height is an estimate - a standard two-storey 7 m, using a real recorded height where the tile happens to carry one. Top-down is unchanged: the extrusion's top face is the old fill (same colour, same 0.5 blend, height 0 below z15, rising to full by z15.3).
+function add3d(s) { // Beta 1.90 (Andrew): 3D buildings - the flat footprint fill hands over to a fill-extrusion twin parked just below the labels. The route tiles carry footprints but no heights (checked on his streets: 492 buildings, none with a height), so the height is an estimate - a standard two-storey 7 m, using a real recorded height where the tile happens to carry one. Beta 1.182 (Andrew, picked from the 3D samples): every height x 1.5 - the recorded height and the 7 m estimate scale together inside the same expression, and the zoom ramp (0 below z15, full by z15.3) is unchanged. Top-down is unchanged: the extrusion's top face is the old fill (same colour, same 0.5 blend, height 0 below z15, rising to full by z15.3).
   const flat = s.layers.find(l => l.id === 'buildings');
   flat.paint['fill-opacity'] = 0;
   const i = s.layers.findIndex(l => l.type === 'symbol');
-  s.layers.splice(i, 0, { id: 'buildings-3d', type: 'fill-extrusion', source: 'protomaps', 'source-layer': 'buildings', minzoom: 14, filter: ['in', 'kind', 'building', 'building_part'], paint: { 'fill-extrusion-color': flat.paint['fill-color'], 'fill-extrusion-opacity': 0.5, 'fill-extrusion-height': ['interpolate', ['linear'], ['zoom'], 15, 0, 15.3, ['coalesce', ['get', 'height'], 7]], 'fill-extrusion-base': 0 } });
+  s.layers.splice(i, 0, { id: 'buildings-3d', type: 'fill-extrusion', source: 'protomaps', 'source-layer': 'buildings', minzoom: 14, filter: ['in', 'kind', 'building', 'building_part'], paint: { 'fill-extrusion-color': flat.paint['fill-color'], 'fill-extrusion-opacity': 0.5, 'fill-extrusion-height': ['interpolate', ['linear'], ['zoom'], 15, 0, 15.3, ['*', ['coalesce', ['get', 'height'], 7], 1.5]], 'fill-extrusion-base': 0 } });
   return s;
 }
 const ROAD_WIDTH_K = 1.5;   // Beta 1.181 (Andrew): EVERY basemap road is 1.5x wider, the same factor as the route paint's WIDTH_K (parts/engine.js) - day and night are ONE width, so this transform runs on both flavours identically. Generation-time on purpose (road-width audit Q5, Option A): the shipped styles stay self-contained, no runtime override exists to drift on a day/night restyle.

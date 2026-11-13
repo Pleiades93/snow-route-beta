@@ -482,7 +482,11 @@ function pushGps() {
     feats.push({ type: 'Feature', properties: { k: 'beam', rot: Math.round(facingDeg * 10) / 10 }, geometry: { type: 'Point', coordinates: [dispPos[1], dispPos[0]] } });
   }
   if (dispPos) {
-    feats.push({ type: 'Feature', properties: { k: 'dot' }, geometry: { type: 'Point', coordinates: [dispPos[1], dispPos[0]] } });
+    { // Beta 1.182 (Andrew): the position marker is a PUCK, not the flat 1.49 dot - two ground-plane discs that the puck layers in addGpsLayers (app2) extrude as ONE stepped object: a white disc (r 16 m) standing 3.5 m with the blue disc (r 11.5 m) standing 5 m on the same base. From above it reads as the familiar blue dot inside its white rim (the Apple Maps marker, Andrew's reference); tilted, the rim rises WITH the blue - never a 3D blue standing on a flat white ring (the samples' split, rejected). Rendering only: the estimator, dispPos and the watch logic are untouched.
+      const disc = r => { const pts = []; for (let a = 0; a <= 40; a++) { const th = a / 40 * Math.PI * 2; pts.push([dispPos[1] + (r * Math.sin(th)) / MLNG, dispPos[0] + (r * Math.cos(th)) / MLAT]); } return [pts]; };
+      feats.push({ type: 'Feature', properties: { k: 'puckwhite' }, geometry: { type: 'Polygon', coordinates: disc(16) } });
+      feats.push({ type: 'Feature', properties: { k: 'puckblue' }, geometry: { type: 'Polygon', coordinates: disc(11.5) } });
+    }
     if (gpsAccM > 0) { const ring = []; const R = gpsAccM; for (let a = 0; a <= 28; a++) { const th = a / 28 * Math.PI * 2; ring.push([dispPos[1] + (R * Math.sin(th)) / MLNG, dispPos[0] + (R * Math.cos(th)) / MLAT]); } feats.push({ type: 'Feature', properties: { k: 'ring' }, geometry: { type: 'Polygon', coordinates: [ring] } }); }
   }
   src.setData({ type: 'FeatureCollection', features: feats });

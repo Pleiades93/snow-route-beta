@@ -703,7 +703,7 @@ $('stDel').addEventListener('click', async () => {
 });
 // ---- About / What's new ----
 const WHATSNEW = { // the curated in-app notes: plain words, LATEST RELEASE ONLY (Beta 1.114, Andrew: the accumulated list cluttered the About pane). A release REPLACES this entry with its own in the same change - it never accumulates; the full history lives in CHANGELOG.md, not the app
-  v: 'Beta 1.181', items: ["Every road on the map is drawn half again as wide — your route streets and all the other streets too — so the coloured roads, finished sides and the selection glow are easier to see and tap. Your routes and saved progress are unchanged."] };
+  v: 'Beta 1.182', items: ["When you tilt the map, the buildings now stand half again as tall, and your GPS dot is a little 3D puck — blue with its white rim — that tilts with the map instead of floating flat on top of it.", "Fix: in Create New Route, the coloured line on a street you pick now matches the wider roads — it had stayed the old size when the roads grew in Beta 1.181."] };
 function renderAbout() {
   const cur = $('ver').textContent.trim();
   $('wnHead').textContent = "WHAT'S NEW · " + cur; // the header names the LIVE version, read from the title's version element - never a second hard-coded copy that can go stale
