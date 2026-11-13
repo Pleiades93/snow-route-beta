@@ -79,7 +79,7 @@ function renderPace() { // Beta 1.184 (Andrew): the approved redesign - This run
   const p = paceInfo();
   const ref = p.ref;
   const ph = $('paceHead');
-  if (ph) ph.innerHTML = '<span class="ph-t">This run</span><span class="ph-s">' + (activeRoute ? activeRoute.name : '') + (runStart ? ' · started ' + fmtClock(new Date(runStart)) : ' · not started') + '</span>';
+  if (ph) { ph.innerHTML = ''; const phT = document.createElement('span'); phT.className = 'ph-t'; phT.textContent = 'This run'; const phS = document.createElement('span'); phS.className = 'ph-s'; phS.textContent = (activeRoute ? activeRoute.name : '') + (runStart ? ' · started ' + fmtClock(new Date(runStart)) : ' · not started'); ph.appendChild(phT); ph.appendChild(phS); } // Beta 1.184 (Codex review, PR #22): the route name is user-controlled (a created or restored route) - it reaches this header as TEXT, never markup, the same discipline as the Streets route line; a name carrying markup must not be able to mint elements (e.g. a second #paceCancel) inside the sheet
   // the verdict is honest only when a LIVE rate and a REFERENCE rate both exist: projected full-clean durations compared through the same totalWorkM the pace line always used. Otherwise the banner slot carries the reference line (or the no-reference line) - never a verdict against itself.
   let banner;
   if (runStart && p.live && p.rateMh && p.refRateMh) {

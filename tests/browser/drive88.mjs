@@ -27,14 +27,14 @@ ok('K1 keyboard up: sheet stops animating and KEEPS its pre-keyboard size (the 1
 await ev(`(() => { document.querySelector('.noteEd textarea').blur(); return true; })()`); await poll(`!document.body.classList.contains('kb')`, 10000); // T4: poll the terminal state K2 asserts (the keyboard-up class gone)
 ok('K2 keyboard down: the sheet returns to normal motion', await ev(`document.body.classList.contains('kb')`) === false);
 await ev(`(() => { const ta = document.querySelector('.noteEd textarea'); ta.value = 'Driveway at #12 blocked by car'; ta.dispatchEvent(new Event('input', { bubbles: true })); return true; })()`);
-await sleep(800);
+await poll(`noteTextOf('Velmar').includes('blocked by car') && (localStorage.getItem('snowroute.5w.v4.notes') || '').includes('blocked by car')`, 10000); // Beta 1.184 gate round: poll the terminal state (the debounced save landed in memory AND storage) instead of the old fixed 800ms sleep - on a throttled CI runner the 600ms debounce outlasted the fixed wait and this drive flaked once in PR #22's shard 5 (attempt 1 fail, attempt 2 pass on identical code, plus a local 16/16); the assertions below are unchanged
 A = JSON.parse(await ev(`(() => JSON.stringify({ ls: localStorage.getItem('snowroute.5w.v4.notes') || '', hint: document.querySelector('.noteEd .nhint').textContent, nt: noteTextOf('Velmar') }))()`));
 ok('P1 note auto-saves to storage (autosave fires on its own - no Save tap needed; Beta 1.184 adds an explicit Save action over the same mechanism)', A.ls.includes('blocked by car') && A.nt.includes('blocked by car'));
 ok('P1 editor confirms the save', /Saved/.test(A.hint));
 await ev(`(() => { document.querySelector('#filters button[data-f="secondaries"]').click(); return true; })()`); await poll(`!![...document.querySelectorAll('.srow')].find(x => x.querySelector('.nm').textContent === 'Angie')`, 10000); // T4: poll the terminal state the next step needs (Angie's rendered row). Beta 1.109: Angie lives in the Secondaries group now - select it through the real chip before picking her row
 await ev(`(() => { const r = [...document.querySelectorAll('.srow')].find(x => x.querySelector('.nm').textContent === 'Angie'); r.querySelector('.nwrap').click(); return true; })()`); await poll(`typeof noteOpenFor !== 'undefined' && noteOpenFor === 'Angie'`, 10000); // T4: poll the terminal state (the editor's open-for flag) the next steps assert
 await ev(`(() => { const ta = document.querySelector('.noteEd textarea'); ta.value = 'Could not clean - gate locked'; ta.dispatchEvent(new Event('input', { bubbles: true })); return true; })()`);
-await sleep(800);
+await poll(`noteTextOf('Angie').includes('gate locked')`, 10000); // Beta 1.184 gate round: same terminal-signal wait as the Velmar note above (this is the exact read that flaked in CI)
 A = JSON.parse(await ev(`(() => JSON.stringify({ nt: noteTextOf('Angie') }))()`));
 ok('P1 note works on a street that is not cleaned', A.nt.includes('gate locked'));
 await ev(`(() => { location.reload(); return true; })()`); await sleep(3000);
