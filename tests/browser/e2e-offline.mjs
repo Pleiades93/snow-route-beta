@@ -464,6 +464,48 @@ try {
   await ev2(`(async () => { localStorage.removeItem('snowroute.v2.userpacks'); await upDel('e23-test'); const r = await migratePack(); return JSON.stringify({ ok: !!(r && r.ok) }); })()`); // cleanup: with the definition gone from BOTH homes (Beta 1.166: the legacy record - already drained away by the measured boot - and the IndexedDB store) the explicit pass re-certifies the 897 state E22 left
 } catch (e) { ok('E23 boot migration union certification (Beta 1.143, DA-07) | threw ' + String(e).slice(0, 150), false); }
 
+// E25 (Beta 1.183, storage audit §3 item 4): the offline pack is BUDGETED at
+// OFFLINE_PACK_CAP_BYTES (250 MB) - far too large to reach against a real
+// 897-file pack, so the check builds a VARIANT page (the E11 in-place
+// rewrite pattern; shipped code carries no test-only seam): the built
+// index.html's cap literal becomes 512 KB and sw.js takes a byte change so
+// the new worker installs and re-fetches the shell (its install fetch is a
+// reload and navigations are net-first, so the relaunched browser runs the
+// variant shell - proven directly by reading the constant in the page
+// before anything else is believed). The download must then stop at the
+// cap, name the limit in its completion line, leave the stored pack at or
+// under the cap, and Status must read Partial with the measured bytes.
+try {
+  const idxFile = new URL('../../index.html', import.meta.url);
+  const idxOrig = fs.readFileSync(idxFile, 'utf8');
+  const NEEDLE = 'OFFLINE_PACK_CAP_BYTES = 250 * 1024 * 1024';
+  if (!idxOrig.includes(NEEDLE)) throw new Error('the cap literal was not found in the built page - the variant cannot be built');
+  const swF25 = new URL('../../sw.js', import.meta.url);
+  const swO25 = fs.readFileSync(swF25, 'utf8');
+  let e25 = null;
+  try {
+    fs.writeFileSync(idxFile, idxOrig.replace(NEEDLE, 'OFFLINE_PACK_CAP_BYTES = 512 * 1024'));
+    fs.writeFileSync(swF25, swO25 + '\n// e2e E25 variant probe (byte change only)\n');
+    proc.kill('SIGKILL');
+    await launchBrowser();
+    const variantLive = await poll(`typeof OFFLINE_PACK_CAP_BYTES !== 'undefined' && OFFLINE_PACK_CAP_BYTES === 512 * 1024`, 120000);
+    if (!variantLive) throw new Error('the variant page never became live after relaunch');
+    await poll(`typeof glOk !== 'undefined' && glOk === true`, 90000);
+    await poll(`!!navigator.serviceWorker.controller`, 30000);
+    await ev2(`(async () => { const r = await migratePack(); return !!(r && r.ok); })()`); // quiesce the boot migration (E19's explicit-call pattern) before the pack is emptied, so no migration copy can land mid-download
+    await ev2(`(async () => { await caches.delete('snowroute-offline-v1'); return true; })()`);
+    await ev2(`document.getElementById('xPre').click()`);
+    const stopped = await poll(`document.getElementById('xPreStat').textContent.includes('stopped at the')`, 420000);
+    const stat25 = await ev2(`document.getElementById('xPreStat').textContent`);
+    await ev2(`document.getElementById('setBtn').click(); true`);
+    await ev2(`document.getElementById('stBtn').click(); true`);
+    await poll(`document.getElementById('stMapsSub').textContent.includes('files · ')`, 30000);
+    e25 = JSON.parse(await ev2(`(async () => { const c = await caches.open('snowroute-offline-v1'); let b = 0, n = 0; for (const r of await c.keys()) { const resp = await c.match(r); if (resp) { b += (await resp.blob()).size; n++; } } const ps = await packState(); return JSON.stringify({ bytes: b, n, psBytes: ps.bytes, fmt: fmtStoreSize(ps.bytes), line: document.getElementById('stMapsLine').textContent, sub: document.getElementById('stMapsSub').textContent }); })()`));
+    ok('E25 the download stops at the cap, names the limit, and the stored pack stays at or under it | ' + stat25 + ' | pack ' + JSON.stringify(e25), stopped && /saved \d+ of \d+ files — stopped at the 512 KB storage limit/.test(stat25 || '') && e25.n >= 1 && e25.n < OFFLINE_FIXTURE.count && e25.bytes > 0 && e25.bytes <= 512 * 1024);
+    ok('E25b Status reads the capped pack as Partial with its measured bytes | ' + JSON.stringify(e25), e25.line === 'Offline maps: Partial' && e25.psBytes === e25.bytes && e25.sub.includes(' · ' + e25.fmt + ' · '));
+  } finally { fs.writeFileSync(idxFile, idxOrig); fs.writeFileSync(swF25, swO25); }
+} catch (e) { ok('E25 the pack download stops at the storage cap (Beta 1.183) | threw ' + String(e).slice(0, 150), false); }
+
 ok('E13 no page exceptions across the whole run', consoleLog.filter(c => String(c).startsWith('EXCEPTION')).length === 0);
 const fails = R.checks.filter(c => !c[1]);
 for (const c of R.checks) console.log((c[1] ? 'PASS ' : 'FAIL ') + c[0]);
