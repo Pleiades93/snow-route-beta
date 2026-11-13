@@ -733,7 +733,7 @@ $('stDel').addEventListener('click', async () => {
 });
 // ---- About / What's new ----
 const WHATSNEW = { // the curated in-app notes: plain words, LATEST RELEASE ONLY (Beta 1.114, Andrew: the accumulated list cluttered the About pane). A release REPLACES this entry with its own in the same change - it never accumulates; the full history lives in CHANGELOG.md, not the app
-  v: 'Beta 1.183', items: ["Settings, then Status now shows your storage plainly: whether this device protects the app's data from being cleared away, and how much space the app is using.", "Offline maps show their size next to the file count, and a download now stops at a 250 MB storage limit instead of filling the device — whatever is already saved stays saved."] };
+  v: 'Beta 1.184', items: ["The Streets and Pace menus are redesigned. Streets opens with your progress and a Mains / Secondaries switch — tap the pin beside a street to find it on the map, tap the street itself to add a note.", "Pace shows this run at a glance — elapsed time, road cleared, ETA, streets done — plus progress by group and your saved cleans. Tap a saved clean to see its full detail, including its GPS trail distance.", "Both menus open at half screen; swipe up for full screen, swipe down to bring them back or close them."] };
 function renderAbout() {
   const cur = $('ver').textContent.trim();
   $('wnHead').textContent = "WHAT'S NEW · " + cur; // the header names the LIVE version, read from the title's version element - never a second hard-coded copy that can go stale

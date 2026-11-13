@@ -122,7 +122,7 @@
   #cancelStartBtn { position: absolute; bottom: calc(100% + 10px); left: 50%; transform: translateX(-50%); border: none; border-radius: 999px; padding: 8px 14px; font-size: 12.5px; font-weight: 700; color: #fff; white-space: nowrap; cursor: pointer; box-shadow: var(--shadow-float); } /* Beta 1.24 (Andrew): above the Start circle - below it, the tab bar swallowed it */
   .sheet { position: fixed; left: 0; right: 0; bottom: var(--vvb, 0px); z-index: 1100; background: var(--card); -webkit-backdrop-filter: var(--blur); backdrop-filter: var(--blur); color: var(--ink); border-radius: 18px 18px 0 0; box-shadow: var(--shadow-card); max-height: calc(var(--vvh, 100dvh) * .5); /* Beta 1.79 (Andrew): sheets open at HALF height - the three stops are closed / half / full (drag or flick up to fill, down to half, down again to close) */ display: flex; flex-direction: column; transform: translateY(105%); visibility: hidden; transition: transform var(--anim-dur) var(--ease-close), height var(--anim-dur) var(--ease-close), max-height var(--anim-dur) var(--ease-close), visibility 0s linear var(--anim-dur); padding-bottom: var(--sab); }
   .grab, .sheetHead { touch-action: none; }
-  #sheetBody, #pacePad { touch-action: pan-y; }
+  #sheetBody, #pacePad, #cleanView { touch-action: pan-y; }
   .sheet.open { transform: translateY(0); visibility: visible; transition: transform var(--anim-dur) var(--ease-open), height var(--anim-dur) var(--ease-open), max-height var(--anim-dur) var(--ease-open), visibility 0s; }
   .grab { padding: 12px 0 7px; cursor: grab; touch-action: none; flex: none; }
   .grabBar { width: 44px; height: 5px; border-radius: 3px; background: var(--ink-faint); margin: 0 auto; }
@@ -134,28 +134,28 @@
   #sheetClose, #paceClose, #finNo, #noteNo, #xClose, #crModalX { position: absolute; top: 2px; right: 4px; z-index: 3; border: none; background: transparent; width: 38px; height: 38px; padding: 0; color: #e63a2e; font-size: 21px; font-weight: 800; cursor: pointer; } /* THE corner X (Beta 1.30/1.31, completed 1.34, Andrew): ONE plain red X, no box, pinned to the top-right corner of EVERY menu - sheets and dialogs alike. This single rule is the only place a close may be styled; the 1.34 bug was three dialogs carrying their own overrides (coloured-button rules and the Backup button grid) that silently repainted their X as a red box. Beta 1.77 (Andrew, live catch): routeClose shipped missing from this list in 1.76 and rendered as a boxed default button - a NEW menu's X joins this selector the day the menu is built, and drive145 N15 compares every sheet's X computed style so an omission fails the battery. Beta 1.78: the Routes sheet retired and the full-screen route menu's X briefly held its seat here; Beta 1.79 (Andrew) moves that menu's close to his own design - a translucent circle at bottom centre (its own rule below) - so this rule again covers sheets and dialogs only */
   body.kb .sheet { transition: none; } /* Beta 1.61 (was 1.31's near-full-visible-height rule): while the keyboard is up the sheet keeps its pre-keyboard size and place - the layout variables are frozen in syncViewport and the keyboard overlays the sheet; the field is surfaced by the sheet's own scroll (ensureFieldVisible). The 1.31/1.55 sizing chase after the shrinking visible height is what made note menus flicker and jump. */
   .modal .card { max-height: calc(var(--vvh, 100dvh) - 44px); overflow-y: auto; } /* a modal card can never outgrow the visible area, keyboard or not */
-  #filters { display: flex; gap: 6px; padding: 2px 14px 8px; }
-  #filters button { flex: 1; border: none; border-radius: var(--rad-btn); padding: 8px; font-size: 13px; font-weight: 700; background: var(--chip); color: var(--ink-dim); min-height: 38px; }
+  #filters { display: flex; gap: 0; background: #f0f0f3; border-radius: 999px; padding: 3px; margin: 2px 14px 8px; } /* Beta 1.184 (Andrew): the redesign's segmented pill track - the two group tabs ride one grey track, the selected tab wears the app gradient */
+  body.night #filters { background: #26282d; }
+  #filters button { flex: 1; border: none; border-radius: 999px; padding: 8px; font-size: 13px; font-weight: 600; background: transparent; color: #6e6e76; min-height: 38px; }
+  body.night #filters button { color: rgba(214,226,242,.62); }
   #filters button.on { background: linear-gradient(135deg, #3d65ef, #1b2fb6); color: #fff; }
   #sheetBody { overflow-y: auto; padding: 0 14px 14px; -webkit-overflow-scrolling: touch; }
-  .srow { display: flex; align-items: center; gap: 11px; padding: 12px 4px; border-bottom: 1px solid var(--hair); font-size: 16px; cursor: pointer; min-height: 48px; }
-  .srow .dot { width: 15px; height: 15px; border-radius: 50%; background: #ef476f; flex-shrink: 0; }
+  .srow { display: flex; align-items: center; gap: 11px; padding: 12px 4px; border-bottom: 1px solid var(--hair); font-size: 15px; cursor: pointer; min-height: 48px; } /* Beta 1.184: the redesign row type size */
+  .srow .dot { width: 9px; height: 9px; border-radius: 50%; background: #ef476f; flex-shrink: 0; } /* Beta 1.184: the redesign 9px state dot (colours unchanged: rose secondary-pending, gold main below, mint done) */
   .srow.main .dot { background: #ffc233; }
   .srow.done .dot { background: #06d6a0; }
   .srow.done .nm { color: var(--done-nm); }
-  .srow .tm { margin-left: auto; font-size: 12px; color: var(--tm-c); white-space: nowrap; }
+  .srow .tm { margin-left: auto; font-size: 12px; font-weight: 600; color: var(--tm-c); white-space: nowrap; } /* Beta 1.184: the status slot - its colour now comes from the .st-* state classes in the redesign block below */
   .srow .nwrap { display: flex; flex-direction: column; min-width: 0; }
   .srow .nmrow { display: flex; align-items: center; gap: 6px; min-width: 0; }
-  .srow .pill { font-size: 10px; font-weight: 700; letter-spacing: .05em; background: rgba(6,214,160,.18); color: #0b6e4f; border-radius: 999px; padding: 2px 7px; white-space: nowrap; } /* Beta 1.109 (Andrew): the COMPLETED pill from his V1 mockup, carried into the V2 two-chip layout he picked - values are the mockup's own */
-  body.night .srow .pill { color: #9fd3ae; } /* Beta 1.109: at night the pill text takes the app's own night done-name green (--done-nm) so it stays readable on the dark card; the mint tint is unchanged */
   .srow .nt { font-size: 12px; color: var(--nt-c); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; max-width: 36vw; }
-  .srow .sbtn svg { width: 20px; height: 20px; display: block; margin: auto; }
+  .srow .sbtn svg { width: 15px; height: 15px; display: block; margin: auto; } /* Beta 1.184: the pin glyph at redesign size */
   .srow .nt .ntIco svg { width: 11px; height: 11px; vertical-align: -1px; margin-right: 4px; }
-  .srow .sbtn { margin-left: 2px; width: 42px; height: 42px; flex-shrink: 0; border: 1px solid var(--hair); border-radius: var(--rad-btn); background: var(--chip); color: var(--ink); font-size: 17px; padding: 0; }
+  .srow .sbtn { margin-left: 0; width: 32px; height: 32px; flex-shrink: 0; border: none; border-radius: 999px; background: transparent; color: var(--link); font-size: 17px; padding: 0; cursor: pointer; } /* Beta 1.184: the pin rides INSIDE the name row as a bare glyph in the app link blue - the boxed 42px button belonged to the retired row layout */
   .noteEd { padding: 8px 4px 12px 30px; border-bottom: 1px solid var(--hair); }
   .noteEd textarea { width: 100%; min-height: 64px; box-sizing: border-box; background: var(--field); color: var(--ink); border: 1px solid var(--hair); border-radius: var(--rad-btn); padding: 9px; font-size: 16px; /* 16px minimum: below it iOS auto-zooms on focus, which shoves the whole layout around (Beta 1.18) */ font-family: inherit; }
   .noteEd .nhint { font-size: 12px; color: var(--tm-c); margin-top: 5px; }
-  #cleanView { padding: 4px 2px 14px; }
+  #cleanView { flex: 1 1 auto; min-height: 0; overflow-y: auto; -webkit-overflow-scrolling: touch; padding: 4px 14px 14px; } /* Beta 1.184: the clean detail lives in the Pace sheet now - while shown it takes the #pacePad seat and its scroll treatment */
   .cvHead { display: flex; align-items: center; gap: 8px; padding: 8px 2px; }
   .cvHead .cvTtl { font-weight: 800; font-size: 16px; flex: 1; }
   .cvHead button { border: 1px solid var(--hair); background: var(--chip); color: var(--ink); border-radius: var(--rad-btn); min-height: 40px; padding: 0 12px; font-size: 14px; font-weight: 700; }
@@ -167,16 +167,103 @@
   .cvRow .cvNt { font-size: 12px; color: var(--nt-c); margin-top: 3px; }
   .cvDet { font-size: 13px; color: var(--ink); line-height: 1.55; padding: 6px 2px 2px; white-space: pre-wrap; }
   .cvSec { font-weight: 800; font-size: 13px; color: var(--sec); padding: 12px 2px 4px; }
-  .cvDel { width: 100%; margin-top: 14px; min-height: 44px; border: 1px solid #7a3a3a; background: #4a2323; color: #fff; border-radius: var(--rad-btn); font-size: 14px; font-weight: 700; }
-  .cvDel.armed { background: #8c2f2f; }
+  .cvDel { display: block; width: 100%; margin-top: 16px; min-height: 44px; border: none; background: transparent; color: #e63a2e; font-size: 15px; font-weight: 600; cursor: pointer; } /* Beta 1.184: the redesign centred red text action (was a dark boxed button) */
+  .cvDel.armed { background: rgba(230,58,46,.12); border-radius: var(--rad-btn); font-weight: 800; } /* Beta 1.184: the armed second-tap state of the same text action */
   .psec { font-weight: 800; font-size: 13px; color: var(--sec); padding: 12px 2px 4px; }
   .prow { display: flex; justify-content: space-between; gap: 8px; padding: 7px 2px; font-size: 13.5px; border-bottom: 1px solid var(--hair); }
   .prow.histRow { cursor: pointer; }
-  .prow.histRow span:last-child { color: var(--link); }
+  /* Beta 1.184: the saved-clean row right span is its duration (.sc-t in the redesign block) - the old link colour on the whole line retires with the old row text */
   #pacePad { flex: 1 1 auto; min-height: 0; padding: 4px 14px 14px; font-size: 14px; line-height: 1.65; color: var(--ink); overflow-y: auto; -webkit-overflow-scrolling: touch; }
   #pacePad b { color: var(--ink); }
   #pacePad button { border: none; border-radius: var(--rad-btn); padding: 10px 14px; font-size: 14px; font-weight: 700; min-height: 42px; background: #1e7a46; color: #fff; margin-top: 10px; }
   #pacePad button.red { background: #e63a2e; }
+  /* ===== Beta 1.184 menu redesign (Andrew): Streets + Pace interiors in the approved design - app font only, upright, app blues. The shell (grab/sheetHead/stops/animation) is untouched; these rules govern the interiors, and where an older rule above names the same element (.cvHead, .cvTtl) these later rules win. ===== */
+  #stRoute { padding: 0 14px 2px; font-size: 15px; font-weight: 700; color: var(--ink); }
+  #stRouteS { color: var(--ink-dim); font-weight: 600; }
+  #stHero { padding: 2px 14px 0; }
+  .stHeroN { font-size: 80px; font-weight: 800; line-height: 1; color: var(--ink); }
+  .stHeroU { font-size: 17px; font-weight: 600; color: #9a9aa2; }
+  .stHeroL { font-size: 13px; color: #9a9aa2; margin-top: 2px; }
+  .stBar { height: 6px; border-radius: 3px; background: #eef0f6; margin-top: 10px; overflow: hidden; }
+  .stBarF { height: 100%; background: linear-gradient(90deg, #3d65ef, #1b2fb6); border-radius: 3px; }
+  .stCaps { display: flex; justify-content: space-between; font-size: 11.5px; color: #9a9aa2; margin-top: 5px; }
+  body.night .stHeroU, body.night .stHeroL, body.night .stCaps { color: rgba(214,226,242,.55); }
+  body.night .stBar { background: #26282d; }
+  #stGroup { padding: 4px 14px 6px; font-size: 12px; font-weight: 800; letter-spacing: .08em; color: var(--ink); }
+  #stGroupC { color: #9a9aa2; font-weight: 600; letter-spacing: 0; }
+  body.night #stGroupC { color: rgba(214,226,242,.55); }
+  .srow .nm { font-weight: 500; }
+  .srow.half .dot { background: linear-gradient(90deg, #06d6a0 50%, #ef476f 50%); box-shadow: inset 0 0 0 1px rgba(0,0,0,.12); } /* Beta 1.184: ONE SIDE DONE wears a split disc - done mint | the group pending colour (rose here, gold for a main below) */
+  .srow.main.half .dot { background: linear-gradient(90deg, #06d6a0 50%, #ffc233 50%); box-shadow: inset 0 0 0 1px rgba(0,0,0,.12); }
+  body.night .srow.done .dot { background: #9fd3ae; }
+  body.night .srow.half .dot { background: linear-gradient(90deg, #9fd3ae 50%, #ef476f 50%); }
+  body.night .srow.main.half .dot { background: linear-gradient(90deg, #9fd3ae 50%, #ffc233 50%); }
+  .srow .tm.st-done { color: #177245; }
+  .srow .tm.st-half { color: #9c6d00; }
+  .srow .tm.st-todo { color: #9a9aa2; }
+  body.night .srow .tm.st-done { color: #9fd3ae; }
+  body.night .srow .tm.st-half { color: #ffc233; }
+  body.night .srow .tm.st-todo { color: rgba(214,226,242,.45); }
+  .srow .nmNote { display: inline-flex; color: var(--link); flex-shrink: 0; }
+  .srow .nmNote svg { width: 14px; height: 14px; display: block; }
+  body.night .srow .sbtn, body.night .srow .nmNote { color: #8fa8ff; }
+  .noteEd .nedLbl { font-size: 12px; font-weight: 700; letter-spacing: .04em; color: var(--ink); padding-bottom: 6px; }
+  .noteEd .nedActs { display: flex; gap: 18px; align-items: center; margin-top: 7px; }
+  .noteEd .nedActs .nhint { margin-top: 0; margin-left: auto; }
+  .noteEd .nedSave { border: none; background: transparent; color: var(--link); font-size: 14px; font-weight: 700; padding: 4px 0; cursor: pointer; }
+  .noteEd .nedDone { border: none; background: transparent; color: var(--ink-dim); font-size: 14px; font-weight: 600; padding: 4px 0; cursor: pointer; }
+  body.night .noteEd .nedSave { color: #8fa8ff; }
+  #paceHead { display: flex; align-items: baseline; gap: 8px; padding: 2px 14px 8px; border-bottom: 1px solid var(--hair); }
+  #paceHead .ph-t { font-size: 25px; font-weight: 800; color: var(--ink); }
+  #paceHead .ph-s { font-size: 13.5px; color: #9a9aa2; }
+  body.night #paceHead .ph-s { color: rgba(214,226,242,.55); }
+  .statgrid { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 14px 8px; padding: 10px 0 4px; }
+  .statgrid.d2 { grid-template-columns: 1fr 1fr; max-width: 340px; margin: 0 auto; width: 100%; }
+  .statgrid .cell { text-align: center; }
+  .statgrid .ic { color: var(--link); display: inline-flex; }
+  body.night .statgrid .ic { color: #8fa8ff; }
+  .statgrid .v { font-size: 23px; font-weight: 800; line-height: 1.15; color: var(--ink); }
+  .statgrid .l { font-size: 10px; font-weight: 700; letter-spacing: .12em; color: #9a9aa2; }
+  body.night .statgrid .l { color: rgba(214,226,242,.55); }
+  .verd { margin-top: 12px; background: #e9eefc; border-radius: 10px; padding: 11px 12px; font-size: 14.5px; color: var(--ink); line-height: 1.4; }
+  body.night .verd { background: rgba(61,101,239,.18); }
+  .verd .vd-g { color: #177245; font-weight: 700; }
+  body.night .verd .vd-g { color: #9fd3ae; }
+  .verd .vd-r { color: #e63a2e; font-weight: 700; }
+  #pacePad button.red { width: 100%; }
+  .psec2 { font-size: 22px; font-weight: 800; padding: 16px 2px 6px; color: var(--ink); }
+  .gbar { padding: 2px 2px 8px; }
+  .gb-top { display: flex; justify-content: space-between; align-items: baseline; }
+  .gb-n { font-size: 15px; font-weight: 600; color: var(--ink); }
+  .gb-c { font-size: 14px; font-weight: 600; color: var(--link); }
+  body.night .gb-c { color: #8fa8ff; }
+  .gb-track { position: relative; height: 16px; background: #eef0f6; border-radius: 4px; margin-top: 5px; }
+  body.night .gb-track { background: #26282d; }
+  .gb-fill { height: 100%; background: linear-gradient(90deg, #3d65ef, #1b2fb6); border-radius: 4px; }
+  .gb-half { position: absolute; top: -4px; bottom: -4px; left: 50%; border-left: 2px dashed #a6a6ae; }
+  .gb-cap { text-align: right; font-size: 11px; color: #9a9aa2; padding: 0 2px 2px; }
+  body.night .gb-cap { color: rgba(214,226,242,.55); }
+  .prow .sc-d { font-size: 14.5px; font-weight: 600; color: var(--ink); }
+  .prow .sc-n { font-size: 12.5px; font-weight: 600; color: #9a9aa2; }
+  body.night .prow .sc-n { color: rgba(214,226,242,.55); }
+  .prow.histRow .sc-t { font-size: 17px; font-weight: 800; color: var(--ink); }
+  .prow.histRow .sc-t2 { font-size: 12.5px; color: var(--ink-dim); }
+  .cvHead { display: block; padding: 8px 2px 0; }
+  .cvHead .cvBack { border: none; background: transparent; color: var(--link); font-size: 14px; font-weight: 600; min-height: 36px; padding: 6px 0; cursor: pointer; }
+  body.night .cvHead .cvBack { color: #8fa8ff; }
+  .cvHead .cvTtlRow { display: flex; align-items: baseline; }
+  .cvHead .cvTtl { font-size: 25px; font-weight: 800; color: var(--ink); flex: none; }
+  .cvHead .cvSub { font-size: 13.5px; color: #9a9aa2; margin-left: 8px; }
+  body.night .cvHead .cvSub { color: rgba(214,226,242,.55); }
+  .cvRow .cvTop { align-items: center; }
+  .cvRow .dot { width: 9px; height: 9px; border-radius: 50%; display: inline-block; flex: 0 0 auto; }
+  .cvRow .dot-done { background: #06d6a0; }
+  body.night .cvRow .dot-done { background: #9fd3ae; }
+  .cvRow .dot-gold { background: #ffc233; }
+  .cvRow .dot-rose { background: #ef476f; }
+  .cvRow .cvNoteIco { display: inline-flex; color: var(--link); flex-shrink: 0; }
+  .cvRow .cvNoteIco svg { width: 14px; height: 14px; display: block; }
+  body.night .cvRow .cvNoteIco { color: #8fa8ff; }
   .modal { position: fixed; top: var(--vvt, 0px); left: 0; right: 0; height: var(--vvh, 100dvh); z-index: 1200; background: rgba(10,12,16,.55); display: flex; align-items: center; justify-content: center; padding: 22px; }
   .modal.hidden { display: none; }
   .modal:not(.hidden) { animation: menuFade var(--anim-dur) var(--ease-open); }
@@ -449,7 +536,7 @@ input, textarea { caret-color: currentColor; } /* Beta 1.125 (Andrew): the typin
 <div id="hud">
   <div id="warn">Not saving — storage is full or blocked</div>
   <div class="row">
-    <div class="titleStack"><div class="title">Snow Route Beta</div><div class="ver" id="ver">Beta 1.183</div></div>
+    <div class="titleStack"><div class="title">Snow Route Beta</div><div class="ver" id="ver">Beta 1.184</div></div>
   </div>
   <div id="stats"></div>
 </div>
@@ -564,13 +651,18 @@ input, textarea { caret-color: currentColor; } /* Beta 1.125 (Andrew): the typin
 <div id="sheet" class="sheet">
   <div class="grab"><div class="grabBar"></div></div>
   <div class="sheetHead"><div class="sheetTitle">Streets</div><button id="sheetClose">✕</button></div>
+  <div id="stRoute"><span id="stRouteN"></span><span id="stRouteS"></span></div>
+  <div id="stHero"></div>
   <div id="filters"><button data-f="mains" class="on">Mains</button><button data-f="secondaries">Secondaries</button></div>
-  <div id="sheetBody"><div id="streetList"></div><div id="cleanView"></div></div>
+  <div id="stGroup"><span id="stGroupN"></span><span id="stGroupC"></span></div>
+  <div id="sheetBody"><div id="streetList"></div></div>
 </div>
 <div id="pacePanel" class="sheet">
   <div class="grab"><div class="grabBar"></div></div>
   <div class="sheetHead"><div class="sheetTitle">Pace</div><button id="paceClose">✕</button></div>
+  <div id="paceHead"></div>
   <div id="pacePad"></div>
+  <div id="cleanView" style="display:none"></div>
 </div>
 <div id="finModal" class="modal hidden"><div class="card"><h3>Finish this clean?</h3><p id="finMsg"></p><div class="row"><button id="finNo">✕</button><button id="finYes">Finish clean</button></div></div></div>
 <div id="noteModal" class="modal hidden"><div class="card"><h3 id="noteTitle">Note</h3><textarea id="noteText"></textarea><div class="row"><button id="noteNo">✕</button><button id="noteYes">Save note</button></div></div></div>

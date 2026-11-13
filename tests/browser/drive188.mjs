@@ -55,11 +55,11 @@ try {
     const pad = document.getElementById('pacePad').textContent;
     openClean(0);
     const meta = document.querySelector('#cleanView .cvMeta').textContent;
-    return { n: names.length, dcount: d && d.count, refIs: ref === h, pad, meta };
+    return { n: names.length, dcount: d && d.count, refIs: ref === h, pad, meta, bannerWant: d ? fmtHM(d.durMs) : '' };
   })()`);
   ok('A1 histDur counts the null-timestamped street (count === route size) | ' + JSON.stringify({ n: a.n, dcount: a.dcount }), a.dcount === a.n && a.n > 5);
   ok('A2 refRun takes the clean as the FULL reference (a null time is still a cleaned street) | refIs=' + a.refIs, a.refIs === true);
-  ok('A3 the pace list and reference line read the same count | pad has "' + a.n + ' of ' + a.n + ' streets" and "(' + a.n + ' streets)"', a.pad.includes(a.n + ' of ' + a.n + ' streets') && a.pad.includes('(' + a.n + ' streets)'));
+  ok('A3 the pace surfaces read the same count in the Beta 1.184 slots (the saved-clean row count; the reference banner total = the histDur span) | ' + (a.pad || '').slice(0, 200), a.pad.includes('· ' + a.n + ' streets') && a.pad.includes('Reference clean (') && a.pad.includes(a.bannerWant + ' total'));
   ok('A4 the clean detail header agrees | meta: ' + (a.meta || '').slice(0, 120), (a.meta || '').includes(a.n + ' streets'));
 
   // ---- B: B-06 the fuller legacy derivation ----
@@ -94,7 +94,7 @@ try {
 
   // ---- D: A-01 note flush surfaces ----
   await ev(`if (!document.getElementById('sheet').classList.contains('open')) document.getElementById('streetsBtn').click(); true`); await sleep(300); // the sheet must be OPEN (the button TOGGLES - section A may have left it open) - a hidden textarea cannot take focus, and blur is the event under test
-  const d0 = await J(`(() => { closeClean(); listFilter = 'mains'; noteOpenFor = 'Velmar'; renderStreets(); const ta = document.querySelector('.noteEd textarea'); return { hasTa: !!ta }; })()`); // closeClean: section A's openClean hid #streetList (display:none) - a hidden textarea cannot take focus
+  const d0 = await J(`(() => { closeClean(); listFilter = 'mains'; noteOpenFor = 'Velmar'; renderStreets(); const ta = document.querySelector('.noteEd textarea'); return { hasTa: !!ta }; })()`); // closeClean: returns the Pace sheet to its main view after section A's openClean (Beta 1.184 topology: the detail lives in the Pace sheet now)
   ok('D0 the note editor opens on Velmar | ' + JSON.stringify(d0), d0.hasTa === true);
   const d1 = await J(`(() => {
     const orig = Storage.prototype.setItem; Storage.prototype.setItem = function () { throw new Error('quota'); };

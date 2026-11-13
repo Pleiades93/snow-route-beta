@@ -73,7 +73,7 @@ await ev(`(() => { $('resetBtn').click(); return true; })()`);
 A = await pollRead(`(() => JSON.stringify({ open: !$('finModal').classList.contains('hidden'), h: history.length, done: doneSet.size }))()`, v => v.open === true, 4000);
 ok('T4 tapping the button after a finish opens the pop-up - the run does NOT come back', A.open === true && A.h === 1 && A.done === 0);
 await ev(`(() => { $('finNo').click(); return true; })()`); await sleep(200);
-// T5: finish again, then delete returns to Previous cleans (the bug fix)
+// T5: finish again, then delete returns to Saved cleans (the bug fix)
 // Hardened (audit round 3): every tap waits for its observable EFFECT before the next tap - the fixed
 // sleeps raced the app's real double-tap guards (T5's resetBtn tap can land inside the 400ms guard
 // window of T4's Undo tap on the same button and be silently eaten, stranding the whole chain).
@@ -82,22 +82,23 @@ await sleep(600); // same guard window: T4's last tap on this very button can be
 await step(`(() => { $('resetBtn').click(); return true; })()`, `(() => JSON.stringify({ open: !$('finModal').classList.contains('hidden') }))()`, v => v.open === true);
 await step(`(() => { $('finYes').click(); return true; })()`, `(() => JSON.stringify({ label: $('resetBtn').textContent, h: history.length }))()`, v => v.label === 'FINISH' && v.h === 1);
 await step(`(() => { openPace(); return true; })()`, `(() => JSON.stringify({ vis: !$('pacePanel').classList.contains('hidden') }))()`, v => v.vis === true);
-await step(`(() => { $('histHead').click(); return true; })()`, `(() => JSON.stringify({ rows: document.querySelectorAll('.histRow').length }))()`, v => v.rows >= 1);
+A = await pollRead(`(() => JSON.stringify({ rows: document.querySelectorAll('.histRow').length }))()`, v => v.rows >= 1);
+ok('T5 Saved cleans are listed as soon as Pace opens (Beta 1.184: always expanded - the old Previous-cleans collapse toggle is retired)', A.rows >= 1);
 await step(`(() => { document.querySelector('.histRow').click(); return true; })()`, `(() => JSON.stringify({ cvOpen: !$('cleanView').classList.contains('hidden') }))()`, v => v.cvOpen === true);
 A = JSON.parse(await ev(`(() => JSON.stringify({ cvOpen: !$('cleanView').classList.contains('hidden') }))()`));
-ok('T5 clean detail opened from Previous cleans', A.cvOpen);
+ok('T5 clean detail opened from Saved cleans', A.cvOpen);
 await step(`(() => { $('cleanView').querySelector('.cvDel').click(); return true; })()`, `(() => JSON.stringify({ armed: $('cleanView').querySelector('.cvDel').classList.contains('armed') }))()`, v => v.armed === true);
 await ev(`(() => { $('cleanView').querySelector('.cvDel').click(); return true; })()`); // confirm tap IMMEDIATELY: the arm expires after 5s, so no poll may sit between the two taps
 A = await pollRead(`(() => JSON.stringify({ h: history.length, sheetOpen: $('sheet').classList.contains('open'), paceVis: !$('pacePanel').classList.contains('hidden'), cvHidden: $('cleanView').classList.contains('hidden'), histRows: document.querySelectorAll('.histRow').length }))()`, v => v.h === 0 && !v.sheetOpen && v.paceVis && v.cvHidden, 6000);
 ok('T5 clean deleted', A.h === 0);
-ok('T5 after delete: Previous cleans showing, NOT the Streets list', !A.sheetOpen && A.paceVis && A.cvHidden);
-// T6: Back also returns to Previous cleans
+ok('T5 after delete: Saved cleans showing, NOT the Streets list', !A.sheetOpen && A.paceVis && A.cvHidden);
+// T6: Back also returns to Saved cleans
 await mark3();
 await ev(`(() => { performReset(); openClean(0); return true; })()`);
 await pollRead(`(() => JSON.stringify({ cvOpen: !$('cleanView').classList.contains('hidden') }))()`, v => v.cvOpen === true, 6000);
 await step(`(() => { $('cleanView').querySelector('.cvBack').click(); return true; })()`, `(() => JSON.stringify({ sheetOpen: $('sheet').classList.contains('open'), paceVis: !$('pacePanel').classList.contains('hidden'), histRows: document.querySelectorAll('.histRow').length }))()`, v => !v.sheetOpen && v.paceVis && v.histRows === 1);
 A = JSON.parse(await ev(`(() => JSON.stringify({ sheetOpen: $('sheet').classList.contains('open'), paceVis: !$('pacePanel').classList.contains('hidden'), histRows: document.querySelectorAll('.histRow').length }))()`));
-ok('T6 Back returns to Previous cleans too', !A.sheetOpen && A.paceVis && A.histRows === 1);
+ok('T6 Back returns to Saved cleans too', !A.sheetOpen && A.paceVis && A.histRows === 1);
 R.exceptions = consoleLog.filter(c => c.type === 'EXCEPTION').map(c => String((c.args && c.args[0]) || c.text || '').slice(0, 220));
 finish(R, proc);
 
