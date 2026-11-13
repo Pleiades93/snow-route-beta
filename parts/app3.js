@@ -483,9 +483,13 @@ function pushGps() {
   }
   if (dispPos) {
     { // Beta 1.182 (Andrew): the position marker is a PUCK, not the flat 1.49 dot - two ground-plane discs that the puck layers in addGpsLayers (app2) extrude as ONE stepped object: a white disc (r 16 m) standing 3.5 m with the blue disc (r 11.5 m) standing 5 m on the same base. From above it reads as the familiar blue dot inside its white rim (the Apple Maps marker, Andrew's reference); tilted, the rim rises WITH the blue - never a 3D blue standing on a flat white ring (the samples' split, rejected). Rendering only: the estimator, dispPos and the watch logic are untouched.
+      // The radii are GROUND metres, so the screen size floats with zoom where the flat dot's never did (Codex review, PR #19 - verified against the map's z8-19 range: an unclamped 32 m disc reads ~2 px at z12 and ~297 px at z19). Clamp the READ, not the object: the white radius keeps its 16 m ground size wherever that projects inside 14-110 px across, and freezes at the band edge outside it; the blue keeps its 11.5/16 share. The metre scale is measured off the map's own projection at the puck, so the clamp is exact at any latitude or pitch.
+      const pxA = map.project([dispPos[1], dispPos[0]]), pxB = map.project([dispPos[1] + 100 / MLNG, dispPos[0]]);
+      const mPerPx = 100 / Math.max(1e-9, Math.abs(pxB.x - pxA.x));
+      const rW = Math.min(55, Math.max(7, 16 / mPerPx)) * mPerPx, rB = rW * 11.5 / 16;
       const disc = r => { const pts = []; for (let a = 0; a <= 40; a++) { const th = a / 40 * Math.PI * 2; pts.push([dispPos[1] + (r * Math.sin(th)) / MLNG, dispPos[0] + (r * Math.cos(th)) / MLAT]); } return [pts]; };
-      feats.push({ type: 'Feature', properties: { k: 'puckwhite' }, geometry: { type: 'Polygon', coordinates: disc(16) } });
-      feats.push({ type: 'Feature', properties: { k: 'puckblue' }, geometry: { type: 'Polygon', coordinates: disc(11.5) } });
+      feats.push({ type: 'Feature', properties: { k: 'puckwhite' }, geometry: { type: 'Polygon', coordinates: disc(rW) } });
+      feats.push({ type: 'Feature', properties: { k: 'puckblue' }, geometry: { type: 'Polygon', coordinates: disc(rB) } });
     }
     if (gpsAccM > 0) { const ring = []; const R = gpsAccM; for (let a = 0; a <= 28; a++) { const th = a / 28 * Math.PI * 2; ring.push([dispPos[1] + (R * Math.sin(th)) / MLNG, dispPos[0] + (R * Math.cos(th)) / MLAT]); } feats.push({ type: 'Feature', properties: { k: 'ring' }, geometry: { type: 'Polygon', coordinates: [ring] } }); }
   }
@@ -517,7 +521,7 @@ function renderTick(now) {
     if (dtF > 0 && !dispSettled()) { const k = Math.pow(0.2, dtF / 0.3); dispOff = [dispOff[0] * k, dispOff[1] * k]; if (dispSettled()) dispOff = [0, 0]; } // the correction offset decays with a ~0.3 s time constant, on the same performance clock the prediction reads
     dispPos = [pred[0] + dispOff[0] / MLAT, pred[1] + dispOff[1] / MLNG];
   }
-  const key = dispPos ? dispPos[0] + ',' + dispPos[1] + ',' + facingDeg + ',' + gpsAccM : '';
+  const key = dispPos ? dispPos[0] + ',' + dispPos[1] + ',' + facingDeg + ',' + gpsAccM + ',' + (map ? Math.round(map.getZoom() * 4) / 4 : '') : ''; // Beta 1.182: the quarter-zoom bucket joins the key - the puck's clamped radii are a function of zoom, so a zoom change must re-push the glyph even when nothing moved
   if (key !== lastPushKey) { lastPushKey = key; pushGps(); } // redraw the dot/ring/beam only when something actually moved - the old timers rebuilt it on every tick regardless
   followCam(now); headCam(now); syncCentreBtn();
 }
