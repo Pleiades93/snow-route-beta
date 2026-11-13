@@ -104,6 +104,92 @@ try {
   await ev(`markDone('Valeria', 'd169'); true`);
   const post = await poll(`[...doneSet].sort().join('|') === 'Mellings|Valeria|Velmar'`, 10000);
   ok('POST: after the reload, marking Valeria lands and saves normally (the fence did not leak past the window)', post === true);
+
+  // ---- C-01 (Beta 1.186, storage fix round): markers without their trail ----
+  // The mirror of the 1.73 C06 guard above it in restoreBackup. A backup carrying
+  // a route's session markers but NOT its trail (a genuine shape: a clean that was
+  // started but never recorded a fix exports sess with no trail key) used to lay
+  // those markers over the trail that STAYS, splitting it at a session boundary
+  // that never happened on it. The restore now clears them inside the verified
+  // write set. Control: a backup carrying the pair restores the pair untouched.
+  const C01B = 1762000000; // fixed epoch base (seconds) for the staged trail
+  const C01PTS = []; for (let i = 0; i <= 10; i++) C01PTS.push([+(43.9 + i * 0.001).toFixed(6), -79.5, C01B + i * 60]);
+  const sessTrailState = async () => JSON.parse(await ev(`(() => { const rk = routeKeys('5w'); const tr = JSON.parse(localStorage.getItem(rk.trail) || '[]'); const se = JSON.parse(localStorage.getItem(rk.sess) || '[]'); return JSON.stringify({ sess: se, pts: tr.length, segs: trailSegments(tr, se).length }); })()`));
+  await ev(`(() => { const rk = routeKeys('5w'); localStorage.setItem(rk.trail, ${JSON.stringify(JSON.stringify(C01PTS))}); localStorage.setItem(rk.sess, ${JSON.stringify(JSON.stringify([C01B]))}); return true; })()`);
+  const c01pre = await sessTrailState();
+  ok('C-01 staged: a resident trail with its OWN marker reads as one segment | ' + JSON.stringify(c01pre),
+    c01pre.pts === 11 && c01pre.segs === 1 && c01pre.sess.length === 1 && c01pre.sess[0] === C01B);
+  const bkSessOnly = JSON.stringify({ app: 'snowroute-backup', v: 2, at: C01B * 1000, routes: { '5w': { sess: JSON.stringify([C01B + 300]) } } });
+  await injectBackup(bkSessOnly);
+  await ev(`(() => { window.__d169probe = 1; restoreBackup(JSON.parse(window.__d169b)); return true; })()`);
+  ok('C-01 restore (markers only) reloaded', await afterReload());
+  const c01post = await sessTrailState();
+  ok('C-01 FIXED: the foreign markers were cleared in the write set - the resident trail still reads as ONE segment | ' + JSON.stringify(c01post),
+    c01post.pts === 11 && c01post.segs === 1 && c01post.sess.length === 0);
+  const bkPair = JSON.stringify({ app: 'snowroute-backup', v: 2, at: C01B * 1000, routes: { '5w': { trail: JSON.stringify(C01PTS), sess: JSON.stringify([C01B]) } } });
+  await injectBackup(bkPair);
+  await ev(`(() => { window.__d169probe = 1; restoreBackup(JSON.parse(window.__d169b)); return true; })()`);
+  ok('C-01 control restore (trail + markers together) reloaded', await afterReload());
+  const c01ctl = await sessTrailState();
+  ok('C-01 control: a backup carrying the pair restores the pair untouched | ' + JSON.stringify(c01ctl),
+    c01ctl.pts === 11 && c01ctl.segs === 1 && c01ctl.sess.length === 1 && c01ctl.sess[0] === C01B);
+
+  // ---- P1 (Beta 1.186, storage fix round): the fence rises BEFORE the snapshot ----
+  // Fault injection in this drive's family. The backup carries a created route, so
+  // phase 1's IndexedDB puts are the restore's one yield; upPut is gated on a
+  // promise this drive controls, making the window deterministic. Inside the
+  // window a GPS fix lands and its flush fires; the entries stage is then refused
+  // (the 5w start delete throws). Through 1.185 the fence rose only after the
+  // commit, so the in-window flush WROTE the live trail and the rollback rewrote
+  // it from the pre-window snapshot - the point was discarded under a "nothing
+  // was changed" message. Now: the fence is already up during phase 1 (the flush
+  // is refused), and the failure exit drops the fence with the dirty flags
+  // re-armed, so the in-window fix flushes from memory afterwards and survives.
+  const P1T = 1762100000; // staged trail base (seconds)
+  const p1stage = JSON.parse(await ev(`(() => { const rk = routeKeys('5w');
+    trail = [[43.9, -79.5, ${P1T}], [43.901, -79.501, ${P1T} + 60]];
+    trailSessions = [${P1T}];
+    saveTrail(); saveSess();
+    localStorage.setItem(rk.start, String(${P1T} * 1000));
+    return JSON.stringify({ storedTrail: JSON.parse(localStorage.getItem(rk.trail)).length, start: localStorage.getItem(rk.start) });
+  })()`));
+  ok('P1 staged: live trail (2 points) and a run start in storage | ' + JSON.stringify(p1stage),
+    p1stage.storedTrail === 2 && p1stage.start === String(P1T * 1000));
+  const P1PACK = { name: 'D169 P1 Route', area: 'Vaughan', mains: [], roads: { 'Test Street': [[[43.8, -79.57], [43.801, -79.571]]] }, reference: {} };
+  const bkP1 = JSON.stringify({ app: 'snowroute-backup', v: 2, at: P1T * 1000, userpacks: { 'route-d169p1': P1PACK }, routes: { '5w': { start: null } } });
+  await injectBackup(bkP1);
+  await ev(`(() => {
+    window.__p1OrigUpPut = upPut;
+    window.__p1InWindow = false;
+    window.__p1Gate = new Promise(res => { window.__p1Release = res; });
+    upPut = async (id, pack) => { window.__p1InWindow = true; await window.__p1Gate; return window.__p1OrigUpPut(id, pack); };
+    window.__p1OrigRemove = localStorage.removeItem.bind(localStorage);
+    window.__p1StartKey = routeKeys('5w').start;
+    localStorage.removeItem = (k) => { if (k === window.__p1StartKey) throw new Error('d169 refused delete'); return window.__p1OrigRemove(k); };
+    return true;
+  })()`);
+  await ev(`(() => { window.__p1Settled = false; window.__d169probe = 1; restoreBackup(JSON.parse(window.__d169b)).then(() => { window.__p1Settled = true; }, () => { window.__p1Settled = true; }); return true; })()`);
+  const inWindow = await poll(`window.__p1InWindow === true`, 15000);
+  ok('P1 phase 1 reached (the gated store write is in flight - the window is open)', inWindow === true);
+  const p1win = JSON.parse(await ev(`(() => { const rk = routeKeys('5w');
+    const fenceUp = restoring;
+    trail.push([43.902, -79.502, ${P1T} + 120]); markDirty('trail'); flushAux(true);
+    return JSON.stringify({ fenceUp, storedTrailNow: JSON.parse(localStorage.getItem(rk.trail)).length, memTrail: trail.length });
+  })()`));
+  ok('P1 the fence is UP during phase 1 and the in-window flush was refused (storage still holds the 2 staged points; the new fix lives only in memory) | ' + JSON.stringify(p1win),
+    p1win.fenceUp === true && p1win.storedTrailNow === 2 && p1win.memTrail === 3);
+  await ev(`window.__p1Release(); true`);
+  const settled = await poll(`window.__p1Settled === true`, 20000);
+  ok('P1 the sabotaged restore ran its failure path to completion (a failure never reloads)', settled === true);
+  const p1truth = JSON.parse(await ev(`(() => { const rk = routeKeys('5w'); return JSON.stringify({ start: localStorage.getItem(rk.start), fenceNow: restoring, pendingTrail: writePending('trail') }); })()`));
+  ok('P1 the rollback told the truth (the run start is the pre-restore one) and the fence came down after the failure | ' + JSON.stringify(p1truth),
+    p1truth.start === String(P1T * 1000) && p1truth.fenceNow === false);
+  ok('P1 the trail dirty flag is re-armed on the failure exit (the in-window work is owed a flush) | ' + JSON.stringify(p1truth),
+    p1truth.pendingTrail === true);
+  const p1after = JSON.parse(await ev(`(() => { const rk = routeKeys('5w'); flushAux(true); return JSON.stringify({ storedTrail: JSON.parse(localStorage.getItem(rk.trail)).length }); })()`));
+  ok('P1 FIXED: the in-window fix SURVIVES - the post-failure flush lands all 3 points | ' + JSON.stringify(p1after),
+    p1after.storedTrail === 3);
+  await ev(`(() => { upPut = window.__p1OrigUpPut; localStorage.removeItem = window.__p1OrigRemove; return true; })()`);
 } catch (e) {
   R.fatal = String(e && e.message || e);
 }

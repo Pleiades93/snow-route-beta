@@ -406,6 +406,10 @@ function trailKm(sinceMs) {
 // pre-1.167 figure, never worse. capped is set ONLY by direct observation (a live splice dropping
 // this run's points, or a banked record that observed it), and Finish stamps it onto the entry
 // (pathShortened) so the clean detail can say the saved path is shorter than the run.
+// Beta 1.186 (storage fix round, P2) extends the never-worse rule to a matching but STALE
+// record: adoptRunDist reconciles an uncapped banked figure against the surviving trail,
+// and flushAux's forced flush (app1) banks the counter at page death so the stale case
+// stops arising there.
 let runDist = { run: 0, m: 0, capped: false };
 let runDistWrote = { at: 0, m: 0, capped: false };
 function persistRunDist(force) {
@@ -416,7 +420,7 @@ function persistRunDist(force) {
 function adoptRunDist() {
   if (!runStart) { runDist = { run: 0, m: 0, capped: false }; return; }
   let raw = null; try { raw = JSON.parse(lsGet(LS.rundist) || 'null'); } catch (e) { raw = null; }
-  if (raw && raw.run === runStart && typeof raw.m === 'number' && isFinite(raw.m) && raw.m >= 0) { runDist = { run: runStart, m: raw.m, capped: !!raw.capped }; return; }
+  if (raw && raw.run === runStart && typeof raw.m === 'number' && isFinite(raw.m) && raw.m >= 0) { const capped = !!raw.capped; runDist = { run: runStart, m: capped ? raw.m : Math.max(raw.m, trailKm(runStart) * 1000), capped }; return; } // Beta 1.186 (storage fix round, P2): a matching UNCAPPED record reconciles against the surviving trail before it is believed - the trail is complete for this run (nothing was dropped), so where the throttle left the banked figure stale (up to <25 m per mid-run reload through 1.185) the trail's own measure wins and the loss never reaches the archive. A CAPPED record is exempt: its trail is truncated by design, its measure would UNDERSTATE the run, and the counter stays the sole authority - the max() must never run there.
   runDist = { run: runStart, m: trailKm(runStart) * 1000, capped: false };
 }
 function resetRunDist() { runDist = { run: 0, m: 0, capped: false }; runDistWrote = { at: 0, m: 0, capped: false }; }
