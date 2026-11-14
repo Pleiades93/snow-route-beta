@@ -844,6 +844,9 @@ function stopCompass() { compassGen++; if (compassHandler) { window.removeEventL
 // refused, and the refusal is itself replay data), else [filteredLat, filteredLng,
 // displayLat, displayLng, smoothedHeading] at the trail's precision.
 let fixLog = [], fixLogSession = null, fixLogCount = 0;
+let fixLogEnabled = false; // Beta 1.195 (Andrew's toggle conversion): the log records ONLY while this flag is on. It is RUNTIME-ONLY state, by design and by his spec: a plain in-memory let, re-initialized OFF at every boot (every cold open, every reload), never written into any record — it is not a member of SETTINGS / canonicalSettings, not a key in LS_GLOBAL, and not a field in any backup, so nothing stored anywhere can switch logging on and a restore cannot enable it; there is no stored representation for boot to honour even if one were planted. The Settings switch (app4) reaches the flag ONLY through the two doors below, and recording is gated at the one entry point (fixLogRaw) — while the flag is off, the watch runs exactly as if the logger did not exist and the stored log is never touched.
+function fixLogIsEnabled() { return fixLogEnabled; }
+function fixLogSetEnabled(on) { fixLogEnabled = !!on; } // flipping off stops recording at the next fix; it deliberately does NOT close the session or touch the stored log — the recorded sessions stay whole for the backup export Andrew makes after the drive
 // ===== Beta 1.190: the fix log's STORED form ("e3") =====
 // 1.189 stored the log as plain JSON of the in-memory sessions (~169 characters/fix
 // at full precision), and WebKit's localStorage quota is 5 MB per origin with
@@ -1094,9 +1097,11 @@ function fixLogTrim() { // the caps, enforced at open and at every append: whole
   }
 }
 fixLogTrim(); // a log written under a larger cap (or planted) is bounded at load too
-function fixLogOpen() { try { fixLogSession = { v: ($('ver') ? $('ver').textContent.trim() : ''), t0: Date.now(), f: [] }; _fxAcct.set(fixLogSession, { b: 0, bl: [] }); fixLog.push(fixLogSession); fixLogTrim(); markDirty('fixlog'); } catch (e) { fixLogSession = null; } }
+function fixLogOpen() { if (!fixLogEnabled) return; try { fixLogSession = { v: ($('ver') ? $('ver').textContent.trim() : ''), t0: Date.now(), f: [] }; _fxAcct.set(fixLogSession, { b: 0, bl: [] }); fixLog.push(fixLogSession); fixLogTrim(); markDirty('fixlog'); } catch (e) { fixLogSession = null; } }
 function fixLogRaw(pos) { // acceptFix's first act: the raw fix, before any gate. Returns the live entry for fixLogOut, or null (no session, or any fault — the GPS path never hears about it)
   try {
+    if (!fixLogEnabled) return null; // Beta 1.195: THE gate — off means the fix is never recorded and the log's storage is never touched
+    if (!fixLogSession) fixLogOpen(); // the switch may have been flipped on mid-watch (startGps's fixLogOpen was a no-op while off): open the session now, so recording starts with THIS fix
     if (!fixLogSession) return null;
     const c = pos.coords || {};
     const e = [typeof pos.timestamp === 'number' ? pos.timestamp : null, c.latitude, c.longitude, c.accuracy != null ? c.accuracy : null, c.speed != null ? c.speed : null, c.heading != null ? c.heading : null, null, runStart || 0];
@@ -1120,7 +1125,7 @@ function fixLogOut(e) { // the same fix, after the estimator has run on it: gpsP
     fixLogTrim(); // the output may have grown the account past the character cap since fixLogRaw's trim — re-apply the caps now, not at the next append: a save + reload in between would meet the overage at boot (Codex P2, PR #31)
   } catch (err) {}
 }
-function fixLogClose() { fixLogSession = null; markDirty('fixlog'); } // the tail flushes on the normal cadence (heartbeat / forced flush), like the trail's
+function fixLogClose() { if (!fixLogSession) return; fixLogSession = null; markDirty('fixlog'); } // the tail flushes on the normal cadence (heartbeat / forced flush), like the trail's. Beta 1.195: the no-session early return is load-bearing for the toggle — with logging off, fixLogOpen never opened a session, and a close that still marked the log dirty would make the next flush WRITE an (empty) record, breaking the off state's zero-writes rule (drive194 T1 caught exactly that: a stop with the switch off landed {"e":3,"s":[]} in storage)
 /** @returns {StorageOutcome} */ function saveFixLog() { const ok = lsSet(LS.fixlog, JSON.stringify(fixLogEncodeSessions(fixLog))); return ok ? storeOk() : storeFail('fixlog', true); } // Beta 1.190: the record lands in the e3 stored form (see the codec note at the loader) — the in-memory sessions stay absolute
 function acceptFix(pos) {
   const fxEnt = fixLogRaw(pos); // Beta 1.189: the raw fix is logged BEFORE every gate below — a refused fix is recorded as delivered, with no estimator output

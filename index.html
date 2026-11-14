@@ -2,7 +2,7 @@
 <html lang="en" class="boot">
 <head>
 <meta charset="UTF-8">
-<meta http-equiv="Content-Security-Policy" content="default-src 'none'; script-src 'sha384-CxwpeIK/td7B4aEejdD7WzpRltXnN5ifLgZipc7qEFGyU3zKBvF38p/8WnO2wkIB' https://cdn.jsdelivr.net; style-src-elem 'sha384-/T/JikVb23n4aLjpFyWkjX6p/b1mSYfC5CGj+DvwbP1p/3MT52mODHdVFqhAdVeA' https://cdn.jsdelivr.net; style-src-attr 'unsafe-inline'; img-src 'self' data: blob: https://tiles.basemaps.cartocdn.com https://protomaps.github.io https://cdn.jsdelivr.net; connect-src 'self' https://tiles.basemaps.cartocdn.com https://protomaps.github.io https://cdn.jsdelivr.net https://nominatim.openstreetmap.org https://overpass-api.de https://overpass.kumi.systems; worker-src blob: 'self'; child-src blob: 'self'; font-src 'none'; manifest-src 'self'; base-uri 'none'; form-action 'none'; object-src 'none'">
+<meta http-equiv="Content-Security-Policy" content="default-src 'none'; script-src 'sha384-73XCilFBzfz51lUTPxXuuKHEIJ2cS88CkdgEI+hYGkuWKA1A2K+gfM5D4QuVdFJz' https://cdn.jsdelivr.net; style-src-elem 'sha384-/T/JikVb23n4aLjpFyWkjX6p/b1mSYfC5CGj+DvwbP1p/3MT52mODHdVFqhAdVeA' https://cdn.jsdelivr.net; style-src-attr 'unsafe-inline'; img-src 'self' data: blob: https://tiles.basemaps.cartocdn.com https://protomaps.github.io https://cdn.jsdelivr.net; connect-src 'self' https://tiles.basemaps.cartocdn.com https://protomaps.github.io https://cdn.jsdelivr.net https://nominatim.openstreetmap.org https://overpass-api.de https://overpass.kumi.systems; worker-src blob: 'self'; child-src blob: 'self'; font-src 'none'; manifest-src 'self'; base-uri 'none'; form-action 'none'; object-src 'none'">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="mobile-web-app-capable" content="yes">
@@ -538,7 +538,7 @@ input, textarea { caret-color: currentColor; } /* Beta 1.125 (Andrew): the typin
 <div id="hud">
   <div id="warn">Not saving — storage is full or blocked</div>
   <div class="row">
-    <div class="titleStack"><div class="title">Snow Route Beta</div><div class="ver" id="ver">Beta 1.194</div></div>
+    <div class="titleStack"><div class="title">Snow Route Beta</div><div class="ver" id="ver">Beta 1.195</div></div>
   </div>
   <div id="stats"></div>
 </div>
@@ -638,6 +638,10 @@ input, textarea { caret-color: currentColor; } /* Beta 1.125 (Andrew): the typin
       <button class="rmBtn bkBtn primary" id="xBak">Backup (JSON)</button>
       <button class="rmBtn bkBtn" id="xRes">Restore backup</button>
     </div>
+    <div class="m-card m-togRow" id="fxLogRow">
+      <div class="m-togTxt"><div class="m-togLbl">GPS debug log</div><div class="m-togDesc">Records GPS fixes for debugging, up to an hour. Off every time the app opens — turn it on before a drive; the log rides in your backup.</div></div>
+      <button class="m-switch" id="swFixLog" role="switch" aria-checked="false" aria-label="GPS debug log"></button>
+    </div>
     <div id="xRestoreOpts" style="display:none">
       <button class="rmBtn bkBtn" id="xImpFile">Import JSON</button>
       <button class="rmBtn bkBtn" id="xImpText">Import Text</button>
@@ -694,8 +698,8 @@ const MAIN = new Set(); // Beta 1.117: the active pack's main streets - filled p
 const SPOT = {}; // Beta 1.117: the active pack's label-anchor hints - filled per load by buildGeometry from pack.spot
 const TRAIL_MAX = 8000;
 const TRAIL_WINDOW_S = 3600; // Beta 1.193 (trail redesign, Andrew's adopted design): the trail's retention window, in SECONDS of recorded points. Since 1.193 the trail is a backend-only fallback for the run-distance counter (no map line, no archived path): it keeps ONLY the live run's points from its last 60 minutes, windowed by trailWindow below at load, at append (acceptFix, app3), at Start, at Finish and at restore (app4). TRAIL_MAX above survives as the session markers' cap and the loader's absolute backstop - the point cap itself no longer bounds the trail (the window does: ~3,600 points at 1 Hz).
-const FIXLOG_MAX = 36000; // Beta 1.190: the raw fix log's cap, in FIXES (app3's fixLogTrim enforces it: oldest sessions evicted whole, a lone oversize session head-trimmed). 36,000 = 10 h of 1 Hz fixes, sized on Andrew's correction of the 1.189 basis the night it shipped: his cleans run 6-8 HOURS, so the old 12,000 (~3.3 h) would have head-trimmed the first hours of a long clean out of the log; one full 8 h clean (28,800 fixes) now fits whole inside a single session with a quarter of the cap to spare. Debug data, not clean data: cleans stay unlimited, this does not.
-const FIXLOG_MAX_CHARS = 1850000; // Beta 1.190: the same log's second cap, in CHARACTERS of its stored record (app3's fixLogTrim enforces it beside FIXLOG_MAX, on a byte-accounted estimate; drive194 asserts the real serialized length). The binding storage limit is WebKit's: localStorage allows 5 MB per origin and persists strings as UTF-16 — 2 bytes per character, so the whole origin holds 2,500,000 characters (WebKit's LocalStorageManager quota; webkit.org bug 245479). This cap leaves the trail (~112,000 characters at its most — the Beta 1.193 window's ~3,600 points) and a 250,000-character board/settings/history allowance inside that quota with headroom to spare: 1,850,000 + 112,000 + 250,000 = 2,212,000 ≤ 2,500,000. In the e3 stored form a realistic stream measures ~48 characters/fix at transit speed (full precision, outputs and run stamps carried), so the character cap does not bind before the fix cap; a stream noisier than any model here is trimmed by characters instead — retention degrades, the quota never breaks.
+const FIXLOG_MAX = 3600; // Beta 1.195 (the toggle conversion): the raw fix log's cap, in FIXES (app3's fixLogTrim enforces it: oldest sessions evicted whole, a lone oversize session head-trimmed). 3,600 = ONE HOUR of 1 Hz fixes — Andrew's cap for the log's new life as a deliberate debugging capture behind the Settings switch: he turns it on for a drive he wants examined, and an hour covers the judging drives with room to spare. The Beta 1.190 sizing (36,000, ten hours, fitted to 6-8 h cleans) belonged to the always-on design and is retired with it; cleans themselves stay unlimited, this never touched them.
+const FIXLOG_MAX_CHARS = 200000; // Beta 1.195: the same log's second cap, in CHARACTERS of its stored record (fixLogTrim enforces it beside FIXLOG_MAX, on a byte-accounted estimate; drive194 asserts the real serialized length). Sizing, from the codec's MEASURED worst case: the Beta 1.190 soak's densest stream ran 1,655,295 characters at the old 36,000-fix cap = ~46.0 characters per fix, so 3,600 fixes at that density need ~165,600 characters; this cap is set at 200,000 — about 55.6 characters per fix, a ~21% margin over the measured worst case, so the fix cap binds first in any stream resembling the measured ones and the character cap only trims a stream denser than anything yet recorded. The binding storage limit stays WebKit's: localStorage allows 5 MB per origin and persists strings as UTF-16 — 2 bytes per character, so the whole origin holds 2,500,000 characters (WebKit's LocalStorageManager quota; webkit.org bug 245479). The budget now: 200,000 (this log) + ~112,000 (the trail at its most — the Beta 1.193 window's ~3,600 points) + a 250,000-character board/settings/history allowance = ~562,000 ≤ 2,500,000, with most of the quota standing empty.
 // Beta 1.76 (Andrew): ROUTES. A route is a pack (geometry in data.js) plus its own
 // storage slot: every route-scoped record lives under 'snowroute.<routeId>.',
 // so a second route is a new tenant, never a reshuffle. App-wide records
@@ -4764,6 +4768,9 @@ function stopCompass() { compassGen++; if (compassHandler) { window.removeEventL
 // refused, and the refusal is itself replay data), else [filteredLat, filteredLng,
 // displayLat, displayLng, smoothedHeading] at the trail's precision.
 let fixLog = [], fixLogSession = null, fixLogCount = 0;
+let fixLogEnabled = false; // Beta 1.195 (Andrew's toggle conversion): the log records ONLY while this flag is on. It is RUNTIME-ONLY state, by design and by his spec: a plain in-memory let, re-initialized OFF at every boot (every cold open, every reload), never written into any record — it is not a member of SETTINGS / canonicalSettings, not a key in LS_GLOBAL, and not a field in any backup, so nothing stored anywhere can switch logging on and a restore cannot enable it; there is no stored representation for boot to honour even if one were planted. The Settings switch (app4) reaches the flag ONLY through the two doors below, and recording is gated at the one entry point (fixLogRaw) — while the flag is off, the watch runs exactly as if the logger did not exist and the stored log is never touched.
+function fixLogIsEnabled() { return fixLogEnabled; }
+function fixLogSetEnabled(on) { fixLogEnabled = !!on; } // flipping off stops recording at the next fix; it deliberately does NOT close the session or touch the stored log — the recorded sessions stay whole for the backup export Andrew makes after the drive
 // ===== Beta 1.190: the fix log's STORED form ("e3") =====
 // 1.189 stored the log as plain JSON of the in-memory sessions (~169 characters/fix
 // at full precision), and WebKit's localStorage quota is 5 MB per origin with
@@ -5014,9 +5021,11 @@ function fixLogTrim() { // the caps, enforced at open and at every append: whole
   }
 }
 fixLogTrim(); // a log written under a larger cap (or planted) is bounded at load too
-function fixLogOpen() { try { fixLogSession = { v: ($('ver') ? $('ver').textContent.trim() : ''), t0: Date.now(), f: [] }; _fxAcct.set(fixLogSession, { b: 0, bl: [] }); fixLog.push(fixLogSession); fixLogTrim(); markDirty('fixlog'); } catch (e) { fixLogSession = null; } }
+function fixLogOpen() { if (!fixLogEnabled) return; try { fixLogSession = { v: ($('ver') ? $('ver').textContent.trim() : ''), t0: Date.now(), f: [] }; _fxAcct.set(fixLogSession, { b: 0, bl: [] }); fixLog.push(fixLogSession); fixLogTrim(); markDirty('fixlog'); } catch (e) { fixLogSession = null; } }
 function fixLogRaw(pos) { // acceptFix's first act: the raw fix, before any gate. Returns the live entry for fixLogOut, or null (no session, or any fault — the GPS path never hears about it)
   try {
+    if (!fixLogEnabled) return null; // Beta 1.195: THE gate — off means the fix is never recorded and the log's storage is never touched
+    if (!fixLogSession) fixLogOpen(); // the switch may have been flipped on mid-watch (startGps's fixLogOpen was a no-op while off): open the session now, so recording starts with THIS fix
     if (!fixLogSession) return null;
     const c = pos.coords || {};
     const e = [typeof pos.timestamp === 'number' ? pos.timestamp : null, c.latitude, c.longitude, c.accuracy != null ? c.accuracy : null, c.speed != null ? c.speed : null, c.heading != null ? c.heading : null, null, runStart || 0];
@@ -5040,7 +5049,7 @@ function fixLogOut(e) { // the same fix, after the estimator has run on it: gpsP
     fixLogTrim(); // the output may have grown the account past the character cap since fixLogRaw's trim — re-apply the caps now, not at the next append: a save + reload in between would meet the overage at boot (Codex P2, PR #31)
   } catch (err) {}
 }
-function fixLogClose() { fixLogSession = null; markDirty('fixlog'); } // the tail flushes on the normal cadence (heartbeat / forced flush), like the trail's
+function fixLogClose() { if (!fixLogSession) return; fixLogSession = null; markDirty('fixlog'); } // the tail flushes on the normal cadence (heartbeat / forced flush), like the trail's. Beta 1.195: the no-session early return is load-bearing for the toggle — with logging off, fixLogOpen never opened a session, and a close that still marked the log dirty would make the next flush WRITE an (empty) record, breaking the off state's zero-writes rule (drive194 T1 caught exactly that: a stop with the switch off landed {"e":3,"s":[]} in storage)
 /** @returns {StorageOutcome} */ function saveFixLog() { const ok = lsSet(LS.fixlog, JSON.stringify(fixLogEncodeSessions(fixLog))); return ok ? storeOk() : storeFail('fixlog', true); } // Beta 1.190: the record lands in the e3 stored form (see the codec note at the loader) — the in-memory sessions stay absolute
 function acceptFix(pos) {
   const fxEnt = fixLogRaw(pos); // Beta 1.189: the raw fix is logged BEFORE every gate below — a refused fix is recorded as delivered, with no estimator output
@@ -5199,6 +5208,7 @@ function showX(mode) { // Beta 1.89 (Andrew): the backup pane is a small menu tr
   xMode = mode;
   const menu = mode === 'menu', restore = mode === 'restore', text = mode === 'text';
   $('xOpts').style.display = menu ? '' : 'none';
+  $('fxLogRow').style.display = menu ? '' : 'none'; // Beta 1.195: the GPS debug log switch lives in the Backup MENU mode, beside Backup (JSON) / Restore backup — the restore and import-text modes hide it with the other menu rows
   $('xRestoreOpts').style.display = restore ? '' : 'none';
   const ta = $('xText');
   ta.style.display = text ? '' : 'none';
@@ -5210,6 +5220,7 @@ function showX(mode) { // Beta 1.89 (Andrew): the backup pane is a small menu tr
 function openExport() { showX('menu'); showSetPane('setBackupPane'); $('setVer').textContent = $('ver').textContent; $('setMenu').classList.add('open'); } // Beta 1.89: opening Backup lands on the backup menu (Beta 1.111: two options - the maps download lives in Status now)
 $('xBak').addEventListener('click', () => shareBackup());
 $('xRes').addEventListener('click', () => showX('restore'));
+$('swFixLog').addEventListener('click', () => { fixLogSetEnabled(!fixLogIsEnabled()); renderSwitch($('swFixLog'), fixLogIsEnabled()); }); // Beta 1.195: the GPS debug log switch. Unlike the On-the-job switches there is NO saveSettings and no failure-revert path — the flag is runtime-only state (app3), so a flip cannot fail to persist because nothing persists; it takes effect at the next fix the watch delivers (fixLogRaw's gate), and flipping off never deletes the recorded log
 $('xImpText').addEventListener('click', () => showX('text'));
 $('xImpFile').addEventListener('click', () => $('xFile').click());
 $('xFile').addEventListener('change', async () => { const f = $('xFile').files && $('xFile').files[0]; $('xFile').value = ''; if (!f) return; let t = ''; try { t = await f.text(); } catch (e) { toast('That file could not be read', 3200); return; } $('xText').value = t; doRestore(); }); // Import JSON: the picked file feeds the SAME restore path as pasted text - one validator, one verdict, no second door to keep honest
@@ -5749,7 +5760,7 @@ $('setBtn').querySelector('.tabIco').innerHTML = ICONS.gear;
 $('selNote').innerHTML = ICONS.note;
 $('setBtn').addEventListener('click', () => { if (!tapGuard('setBtn')) return; showSetPane('setMainPane'); $('setVer').textContent = $('ver').textContent; $('setMenu').classList.add('open'); }); // the Settings menu (Beta 1.88, Andrew): a blue full-screen takeover like Routes - it always lands on the main pane, and the version re-syncs from the title's on every open
 const SET_PANES = ['setMainPane', 'setStatusPane', 'setJobPane', 'setChimePane', 'setBackupPane', 'setAboutPane'];
-function showSetPane(id) { for (const p of SET_PANES) $(p).classList.toggle('on', p === id); if (id === 'setMainPane') renderBakAge(); } // Beta 1.111: the pane set grew from two to six; landing on main refreshes the Backup button's last-backup line from the export stamp
+function showSetPane(id) { for (const p of SET_PANES) $(p).classList.toggle('on', p === id); if (id === 'setMainPane') renderBakAge(); if (id === 'setBackupPane') renderSwitch($('swFixLog'), fixLogIsEnabled()); } // Beta 1.195: landing on the Backup pane re-renders the debug-log switch FROM THE RUNTIME FLAG (fixLogIsEnabled, app3's door) — never from storage, because the flag is never stored // Beta 1.111: the pane set grew from two to six; landing on main refreshes the Backup button's last-backup line from the export stamp
 $('setClose').addEventListener('click', () => $('setMenu').classList.remove('open'));
 $('setBack').addEventListener('click', () => { const onBackup = $('setBackupPane').classList.contains('on'); if (onBackup && xMode === 'text') showX('restore'); else if (onBackup && xMode === 'restore') showX('menu'); else showSetPane('setMainPane'); }); // Beta 1.89: one Back walks the backup tree up a level at a time; from the backup menu it lands on the settings main pane. Beta 1.170 (Carbon fix round Phase 2, C-06): the xMode walk belongs to the BACKUP pane alone - through 1.169 it ran wherever Back was pressed, so with xMode left at 'text'/'restore' by an earlier Backup visit, Back on any other Settings pane reset the hidden Backup view instead of returning to the main pane.
 $('exportBtn').addEventListener('click', () => { if (!tapGuard('exportBtn')) return; openExport(); });
@@ -5950,7 +5961,7 @@ $('stDel').addEventListener('click', async () => {
 });
 // ---- About / What's new ----
 const WHATSNEW = { // the curated in-app notes: plain words, LATEST RELEASE ONLY (Beta 1.114, Andrew: the accumulated list cluttered the About pane). A release REPLACES this entry with its own in the same change - it never accumulates; the full history lives in CHANGELOG.md, not the app
-  v: 'Beta 1.194', items: ["The map now turns with you at corners. It used to keep pointing the old way for several seconds after each turn; a new heading filter follows your direction of travel almost immediately. It was proven on recordings of real drives before it shipped.", "The blue puck no longer twitches while you stand still. Once you're stopped and settled it holds perfectly still on screen, and it starts moving again the moment you do. This only changes how the puck is drawn \u2014 your distances and street coverage are measured exactly as before."] };
+  v: 'Beta 1.195', items: ["The GPS debug log is now a switch: Settings \u2192 Backup \u2192 GPS debug log. Turn it on before a drive to record GPS fixes for debugging.", "It's off every time the app opens, and it holds up to an hour of driving. The log still rides in your backup, so export after the drive."] };
 
 function renderAbout() {
   const cur = $('ver').textContent.trim();

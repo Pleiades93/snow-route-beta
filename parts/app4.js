@@ -32,6 +32,7 @@ function showX(mode) { // Beta 1.89 (Andrew): the backup pane is a small menu tr
   xMode = mode;
   const menu = mode === 'menu', restore = mode === 'restore', text = mode === 'text';
   $('xOpts').style.display = menu ? '' : 'none';
+  $('fxLogRow').style.display = menu ? '' : 'none'; // Beta 1.195: the GPS debug log switch lives in the Backup MENU mode, beside Backup (JSON) / Restore backup — the restore and import-text modes hide it with the other menu rows
   $('xRestoreOpts').style.display = restore ? '' : 'none';
   const ta = $('xText');
   ta.style.display = text ? '' : 'none';
@@ -43,6 +44,7 @@ function showX(mode) { // Beta 1.89 (Andrew): the backup pane is a small menu tr
 function openExport() { showX('menu'); showSetPane('setBackupPane'); $('setVer').textContent = $('ver').textContent; $('setMenu').classList.add('open'); } // Beta 1.89: opening Backup lands on the backup menu (Beta 1.111: two options - the maps download lives in Status now)
 $('xBak').addEventListener('click', () => shareBackup());
 $('xRes').addEventListener('click', () => showX('restore'));
+$('swFixLog').addEventListener('click', () => { fixLogSetEnabled(!fixLogIsEnabled()); renderSwitch($('swFixLog'), fixLogIsEnabled()); }); // Beta 1.195: the GPS debug log switch. Unlike the On-the-job switches there is NO saveSettings and no failure-revert path — the flag is runtime-only state (app3), so a flip cannot fail to persist because nothing persists; it takes effect at the next fix the watch delivers (fixLogRaw's gate), and flipping off never deletes the recorded log
 $('xImpText').addEventListener('click', () => showX('text'));
 $('xImpFile').addEventListener('click', () => $('xFile').click());
 $('xFile').addEventListener('change', async () => { const f = $('xFile').files && $('xFile').files[0]; $('xFile').value = ''; if (!f) return; let t = ''; try { t = await f.text(); } catch (e) { toast('That file could not be read', 3200); return; } $('xText').value = t; doRestore(); }); // Import JSON: the picked file feeds the SAME restore path as pasted text - one validator, one verdict, no second door to keep honest
@@ -582,7 +584,7 @@ $('setBtn').querySelector('.tabIco').innerHTML = ICONS.gear;
 $('selNote').innerHTML = ICONS.note;
 $('setBtn').addEventListener('click', () => { if (!tapGuard('setBtn')) return; showSetPane('setMainPane'); $('setVer').textContent = $('ver').textContent; $('setMenu').classList.add('open'); }); // the Settings menu (Beta 1.88, Andrew): a blue full-screen takeover like Routes - it always lands on the main pane, and the version re-syncs from the title's on every open
 const SET_PANES = ['setMainPane', 'setStatusPane', 'setJobPane', 'setChimePane', 'setBackupPane', 'setAboutPane'];
-function showSetPane(id) { for (const p of SET_PANES) $(p).classList.toggle('on', p === id); if (id === 'setMainPane') renderBakAge(); } // Beta 1.111: the pane set grew from two to six; landing on main refreshes the Backup button's last-backup line from the export stamp
+function showSetPane(id) { for (const p of SET_PANES) $(p).classList.toggle('on', p === id); if (id === 'setMainPane') renderBakAge(); if (id === 'setBackupPane') renderSwitch($('swFixLog'), fixLogIsEnabled()); } // Beta 1.195: landing on the Backup pane re-renders the debug-log switch FROM THE RUNTIME FLAG (fixLogIsEnabled, app3's door) — never from storage, because the flag is never stored // Beta 1.111: the pane set grew from two to six; landing on main refreshes the Backup button's last-backup line from the export stamp
 $('setClose').addEventListener('click', () => $('setMenu').classList.remove('open'));
 $('setBack').addEventListener('click', () => { const onBackup = $('setBackupPane').classList.contains('on'); if (onBackup && xMode === 'text') showX('restore'); else if (onBackup && xMode === 'restore') showX('menu'); else showSetPane('setMainPane'); }); // Beta 1.89: one Back walks the backup tree up a level at a time; from the backup menu it lands on the settings main pane. Beta 1.170 (Carbon fix round Phase 2, C-06): the xMode walk belongs to the BACKUP pane alone - through 1.169 it ran wherever Back was pressed, so with xMode left at 'text'/'restore' by an earlier Backup visit, Back on any other Settings pane reset the hidden Backup view instead of returning to the main pane.
 $('exportBtn').addEventListener('click', () => { if (!tapGuard('exportBtn')) return; openExport(); });
@@ -783,7 +785,7 @@ $('stDel').addEventListener('click', async () => {
 });
 // ---- About / What's new ----
 const WHATSNEW = { // the curated in-app notes: plain words, LATEST RELEASE ONLY (Beta 1.114, Andrew: the accumulated list cluttered the About pane). A release REPLACES this entry with its own in the same change - it never accumulates; the full history lives in CHANGELOG.md, not the app
-  v: 'Beta 1.194', items: ["The map now turns with you at corners. It used to keep pointing the old way for several seconds after each turn; a new heading filter follows your direction of travel almost immediately. It was proven on recordings of real drives before it shipped.", "The blue puck no longer twitches while you stand still. Once you're stopped and settled it holds perfectly still on screen, and it starts moving again the moment you do. This only changes how the puck is drawn \u2014 your distances and street coverage are measured exactly as before."] };
+  v: 'Beta 1.195', items: ["The GPS debug log is now a switch: Settings \u2192 Backup \u2192 GPS debug log. Turn it on before a drive to record GPS fixes for debugging.", "It's off every time the app opens, and it holds up to an hour of driving. The log still rides in your backup, so export after the drive."] };
 
 function renderAbout() {
   const cur = $('ver').textContent.trim();
