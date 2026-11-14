@@ -112,6 +112,8 @@ A push to `main` runs the build checks plus a critical-path smoke subset
 instead of the full suite, and a nightly scheduled run repeats the full
 sharded suite on `main` as the environment-drift audit.
 
+- **Absent checks — first diagnostic (grafted 2026-11-13 from SAFO's lessons, Andrew approved).** When a pull request shows NO checks at all — absent, not failed — read its mergeable state before suspecting the reviewers, the bridge, or the workflows: a PR that conflicts with `main` has no merge commit for GitHub to run checks against, so no run ever starts, and closing and reopening it does not help. Resolve the conflict (or rebase onto current `main`) and the checks appear. Status and audit reports name a CONFLICTING or BEHIND pull request as such, never as a gate failure.
+
 - **Shipping standard (set 2026-11-05, Andrew — supersedes the 2026-10-30
   tiers below wherever they conflict; its tier mechanics were themselves
   superseded by the 2026-11-09 test-suite restructure — the operative table
