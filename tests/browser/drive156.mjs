@@ -156,15 +156,24 @@ const deselB = await poll(`draft && !draft.roads['Alpha Street'] && Object.keys(
 ok('B4 TAP A PICKED STREET OPENS ITS SECTORS (Beta 1.128 - it no longer removes); the row x is the removal (7 roads left) | sectors opened: ' + secB + ', removed by x: ' + deselB,
   secB === true && deselB === true);
 // Beta 1.128 premise update: the panel's "+ Add a street" button is gone (it only ever tucked the panel) - a tap on the panel head does the tucking now
+// B5/B6 hardening (2026-11-13, drive156-b5b6): the tap below is a REAL press, and B4's Done can leave the
+// bar->panel morph still in flight - the head then travels the full sheet growth while the press is being
+// dispatched, the press lands where the head WAS, the gesture is lost, and B6 cascades (Review is a no-op
+// when the panel never collapsed). Proven with instrumented captures of both loss channels (stale point;
+// surface moving between pointerdown and pointerup). So: before the press, wait for the app's own terminal
+// signal - the wanted face displayed, the other faces gone, no morph in flight, and the sheet's inline
+// height cleared by the morph cleanup (the same rest state the D section's faceSettled waits for) - and
+// poll B5/B6 outcomes on that same terminal signal instead of face visibility alone.
+const restB = await poll(`getComputedStyle(document.getElementById('crPanel')).display !== 'none' && getComputedStyle(document.getElementById('crSectorBar')).display === 'none' && getComputedStyle(document.getElementById('crStrip')).display === 'none' && document.getElementById('createSheet').style.height === '' && (typeof crMorph === 'undefined' || !crMorph)`, 12000);
 const headB = await J(`(() => { const r = document.getElementById('crPanelHead').getBoundingClientRect(); return { x: Math.round(r.left + r.width / 2), y: Math.round(r.top + 10) }; })()`);
 await pressAt(headB.x, headB.y);
-const stripB = await poll(`getComputedStyle(document.getElementById('crStrip')).display !== 'none' && getComputedStyle(document.getElementById('crPanel')).display === 'none'`, 12000);
+const stripB = await poll(`getComputedStyle(document.getElementById('crStrip')).display !== 'none' && getComputedStyle(document.getElementById('crPanel')).display === 'none' && document.getElementById('createSheet').style.height === '' && (typeof crMorph === 'undefined' || !crMorph)`, 12000);
 const stripTxt = await J(`({ t: document.getElementById('crStripTitle').textContent, s: document.getElementById('crStripSub').textContent })`);
-ok('B5 TUCK-AWAY: a tap on the panel head collapses the panel to the slim strip, which carries the live counts ("7 roads picked" and the total metres) while the panel face is gone | collapsed: ' + stripB + ' | ' + JSON.stringify(stripTxt),
-  stripB === true && stripTxt.t === '7 roads picked');
+ok('B5 TUCK-AWAY: with the sheet at rest (panel face shown, no morph in flight, inline height cleared), a tap on the panel head collapses the panel to the slim strip and lands at rest (strip shown, panel face gone, inline height cleared), the strip carrying the live counts ("7 roads picked" and the total metres) | rested before tap: ' + restB + ', collapsed: ' + stripB + ' | ' + JSON.stringify(stripTxt),
+  restB === true && stripB === true && stripTxt.t === '7 roads picked');
 await ev2(`document.getElementById('crReviewBtn').click()`);
-const backB = await poll(`getComputedStyle(document.getElementById('crPanel')).display !== 'none' && getComputedStyle(document.getElementById('crStrip')).display === 'none'`, 12000);
-ok('B6 REVIEW RESTORES THE PANEL: the strip\'s Review button springs the full panel back (panel face shown, strip gone) | restored: ' + backB, backB === true);
+const backB = await poll(`getComputedStyle(document.getElementById('crPanel')).display !== 'none' && getComputedStyle(document.getElementById('crStrip')).display === 'none' && document.getElementById('createSheet').style.height === '' && (typeof crMorph === 'undefined' || !crMorph)`, 12000);
+ok('B6 REVIEW RESTORES THE PANEL: the strip\'s Review button springs the full panel back and lands at rest (panel face shown, strip gone, no morph in flight, inline height cleared) | restored: ' + backB, backB === true);
 await ev2(`document.getElementById('crClearAll').click()`);
 const askB = await poll(`!document.getElementById('crModal').classList.contains('hidden')`, 10000);
 const askTxt = await J(`({ yes: document.getElementById('crModalYes').textContent, title: document.getElementById('crModalTitle').textContent })`);
