@@ -865,7 +865,7 @@ function _fxEncEntry(w, e, st) { // append one entry's bytes; returns the state 
   const runCh = !st || runV !== st.run;
   w.u8((key ? 1 : 0) | (out ? 2 : 0) | (outFull ? 4 : 0) | (runCh ? 8 : 0));
   if (key) {
-    if (_fxFin(e[0])) { w.u8(1); w.sv(BigInt(e[0])); } else w.u8(0); // the absolute timestamp rides zigzag, so any integer sign is exact
+    if (_fxFin(e[0])) { w.u8(1); w.uv(_fxUBits(e[0])); } else w.u8(0); // the absolute timestamp rides as its float64 bit pattern: integer, fractional or negative, the exact delivered value survives (an integer-only conversion throws on a fractional timestamp — Codex P2, PR #31)
     if (_fxFin(e[1])) { w.u8(1); w.uv(_fxUBits(e[1])); } else w.u8(0);
     if (_fxFin(e[2])) { w.u8(1); w.uv(_fxUBits(e[2])); } else w.u8(0);
   } else { w.uv(BigInt(e[0] - st.ts)); w.sv(dLat); w.sv(dLng); }
@@ -895,7 +895,7 @@ function _fxDecEntry(r, st) { // read one entry back to its absolute in-memory f
   const fl = r.u8(), key = !!(fl & 1), hasOut = !!(fl & 2), outFull = !!(fl & 4), runCh = !!(fl & 8);
   let ts, lat, lng;
   if (key) {
-    ts = r.u8() === 1 ? Number(r.sv()) : null;
+    ts = r.u8() === 1 ? _fxUUnbits(r.uv()) : null;
     lat = r.u8() === 1 ? _fxUUnbits(r.uv()) : null;
     lng = r.u8() === 1 ? _fxUUnbits(r.uv()) : null;
   } else {
@@ -992,7 +992,7 @@ function fixLogTrim() { // the caps, enforced at open and at every append: whole
   for (const s of fixLog) if (!_fxAcct.has(s)) _fxMeasure(s); // a session that arrived without its byte account (a planted or pre-accounting record) is measured before any cap is judged on it
   while (fixLogCount > FIXLOG_MAX && fixLog.length) {
     const s = fixLog[0];
-    if (s === fixLogSession && fixLog.length === 1) { const drop = s.f.length - FIXLOG_MAX; if (drop > 0) { s.f.splice(0, drop); const a = _fxAcct.get(s); const rb = a.bl.splice(0, drop); let rs = 0; for (const x of rb) rs += x; a.b = Math.max(0, a.b - rs) + 80; fixLogCount -= drop; } break; } // +80 bytes on the account: the new head re-encodes as a keyframe, and the account must never under-read
+    if (s === fixLogSession && fixLog.length === 1) { const drop = s.f.length - FIXLOG_MAX; if (drop > 0) { s.f.splice(0, drop); const a = _fxAcct.get(s); const rb = a.bl.splice(0, drop); let rs = 0; for (const x of rb) rs += x; a.b = Math.max(0, a.b - rs); if (s.f.length) { const w = _FxWriter(); _fxEncEntry(w, s.f[0], null); a.b += w.b.length - (a.bl[0] || 0); a.bl[0] = w.b.length; } else a.b = 0; fixLogCount -= drop; } break; } // the new head's account entry is RE-MEASURED in its keyframe form, never bumped by an allowance: an allowance the per-entry lengths never repay would accumulate on every trim and inflate the estimate until the character cap ate the log (Codex P2, PR #31)
     fixLogCount -= s.f.length; fixLog.shift();
   }
   while (fixLogEstChars() > FIXLOG_MAX_CHARS && fixLog.length) {
@@ -1000,11 +1000,11 @@ function fixLogTrim() { // the caps, enforced at open and at every append: whole
     if (s === fixLogSession && fixLog.length === 1) {
       if (!s.f.length) break;
       const a = _fxAcct.get(s);
-      let drop = 0, rs = 0; const excess = fixLogEstChars() - FIXLOG_MAX_CHARS + 128; // ONE computed drop per trim, walked 128 characters past the excess: the new head's keyframe growth (+80 on the account below, ~91 characters) is already covered, so the estimate lands under the cap in a single pass — re-walking per pass would let the keyframe allowance out-grow a small drop and eat the session
+      let drop = 0, rs = 0; const excess = fixLogEstChars() - FIXLOG_MAX_CHARS + 128; // ONE computed drop per trim, walked 128 characters past the excess so the estimate's own deliberate over-read is covered and the landing is under the cap in a single pass
       const share = () => Math.ceil(a.b * 8 / 7) - Math.ceil(Math.max(0, a.b - rs) * 8 / 7); // the drop is judged on the AGGREGATE packed size, exactly as fixLogEstChars reads it — summing per-entry ceilings over-counts by up to a character per entry and the walk would stop hundreds of characters short of the cap
       while (drop < s.f.length && share() < excess) { rs += (a.bl[drop] || 0); drop++; }
       if (!drop) break;
-      s.f.splice(0, drop); a.bl.splice(0, drop); a.b = Math.max(0, a.b - rs) + 80; fixLogCount -= drop;
+      s.f.splice(0, drop); a.bl.splice(0, drop); a.b = Math.max(0, a.b - rs); if (s.f.length) { const w = _FxWriter(); _fxEncEntry(w, s.f[0], null); a.b += w.b.length - (a.bl[0] || 0); a.bl[0] = w.b.length; } else a.b = 0; fixLogCount -= drop;
       break;
     }
     fixLogCount -= s.f.length; fixLog.shift();
