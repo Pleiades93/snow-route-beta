@@ -4339,10 +4339,15 @@ function trailKm(sinceMs) {
 // total AHEAD of the stored trail; without the endpoint, adoption would restore
 // the newer total while the next segment is measured from the stored trail's
 // older tail - counting the in-between travel twice (gate round on PR #38,
-// Codex P2). Adoption restores the endpoint into the trail (it is a real recorded
-// point of this run - the flush lost it, the bank kept it), so the next segment
-// measures from the same point the total was banked to. Records written before
-// this round carry no endpoint and adopt exactly as they did.
+// Codex P2). Adoption restores the endpoint as the counter's SEGMENT ANCHOR
+// (runDist.end, read by acceptFix when it is newer than the trail's tail) -
+// deliberately NOT as a point in the trail: an appended endpoint would hand
+// trailKm a synthetic edge (flushed tail -> endpoint) that was never a
+// recorded pair, and where the lost span held pair-rule-rejected jumps that
+// edge's chord could invent distance the counter never banked (gate round 2,
+// Codex P2). Held outside the trail, the endpoint steers only the next
+// segment's measurement; the derivation keeps summing recorded pairs alone.
+// Records written before this round carry no endpoint and adopt as they did.
 let runDist = { run: 0, m: 0, end: null };
 let runDistWrote = { run: 0, m: 0, end: null };
 let runDistMirrorWrote = '';
@@ -4360,10 +4365,9 @@ function bankRunDistMirror() { // Beta 1.193 (counter hardening): the counter's 
 }
 function adoptRunDist() {
   if (!runStart) { runDist = { run: 0, m: 0, end: null }; return; }
-  let best = -1, bestEnd = null; // Beta 1.193: adoption order is primary (LS.rundist), then the mirror (LS.rundist2), then trail derivation - judged by VALUE, not by order: every candidate is a lower bound of the true total (the header invariant), so the largest matching bank is the closest to truth, and the derivation reconciles it upward only across the span the window still covers. Legacy records carrying the retired capped field are read for {run, m} and the field is ignored - under the window its old exemption (a capped bank as sole authority) is moot, because the derivation can no longer outvote a bank: it can only raise a stale one toward a truth it partially measures. The winning record's endpoint (end) is tracked beside its total for the restore below; a record without one (written before this round) leaves bestEnd null and adopts exactly as it did.
+  let best = -1, bestEnd = null; // Beta 1.193: adoption order is primary (LS.rundist), then the mirror (LS.rundist2), then trail derivation - judged by VALUE, not by order: every candidate is a lower bound of the true total (the header invariant), so the largest matching bank is the closest to truth, and the derivation reconciles it upward only across the span the window still covers. Legacy records carrying the retired capped field are read for {run, m} and the field is ignored - under the window its old exemption (a capped bank as sole authority) is moot, because the derivation can no longer outvote a bank: it can only raise a stale one toward a truth it partially measures. The winning record's endpoint (end) is tracked beside its total for the anchor below; a record without one (written before this round) leaves bestEnd null and adopts exactly as it did.
   for (const key of [LS.rundist, LS.rundist2]) { let raw = null; try { raw = JSON.parse(lsGet(key) || 'null'); } catch (e) { raw = null; } if (raw && raw.run === runStart && typeof raw.m === 'number' && isFinite(raw.m) && raw.m >= 0 && raw.m > best) { best = raw.m; bestEnd = (Array.isArray(raw.end) && raw.end.length === 3 && Number.isFinite(raw.end[0]) && Number.isFinite(raw.end[1]) && Number.isFinite(raw.end[2]) && raw.end[2] >= Math.floor(runStart / 1000)) ? raw.end : null; } }
-  if (best >= 0 && bestEnd && best >= trailKm(runStart) * 1000 && (!trail.length || bestEnd[2] > trail[trail.length - 1][2])) { trail.push(bestEnd); markDirty('trail'); } // Beta 1.193 (gate round, Codex P2): the winning bank is the authority and it is AHEAD of the flushed trail - restore its endpoint as the trail's tail, so the next recorded segment measures from the point the total was banked to instead of re-measuring the span the lost flush never stored. The endpoint is a real recorded point of this run (the bank kept it; the trail's buffered write lost it), appended only when it is newer than the trail's own tail.
-  runDist = { run: runStart, m: Math.max(best, trailKm(runStart) * 1000), end: trail.length ? trail[trail.length - 1] : bestEnd };
+  runDist = { run: runStart, m: Math.max(best, trailKm(runStart) * 1000), end: (bestEnd && (!trail.length || bestEnd[2] > trail[trail.length - 1][2])) ? bestEnd : (trail.length ? trail[trail.length - 1] : bestEnd) }; // Beta 1.193 (gate rounds, Codex P2 x2): the endpoint that survives is the NEWER of the winning bank's endpoint and the trail's own tail - it becomes the segment anchor (see the header): never appended to the trail, so the derivation below can never be handed a synthetic edge.
 }
 function resetRunDist() { runDist = { run: 0, m: 0, end: null }; runDistWrote = { run: 0, m: 0, end: null }; runDistMirrorWrote = ''; }
 function geoFingerprint() { // Beta 1.167 (B2): a cheap fingerprint of the route geometry AS CLEANED - street names + each street's total side-metres at 0.1 m precision, FNV-1a hashed. Recorded on every new archive entry (snap.geoFP) so a later geometry edit is DETECTABLE against the entry priced under the old geometry; the pace math reads the stored workM, so the fingerprint is evidence, not an input.
@@ -5002,11 +5006,11 @@ function acceptFix(pos) {
     const stillFix = typeof speed === 'number' && speed >= 0 && speed < GPS_STILL_MPS; // Beta 1.187 (GPS package, STOP B): a stopped fix records nothing - no trail point, no banked segment; coverage below still runs on it (a truck edging a driveway at creep pace keeps earning its streets), and the next moving fix measures its segment from the last RECORDED point, so genuine distance survives the guard. A fix reporting no speed is no evidence of stillness and records as before.
     if (!stillFix) {
       const runSec = Math.floor(runStart / 1000);
-      const prevPt = trail.length ? trail[trail.length - 1] : null;
+      const prevPt = (runDist.end && (!trail.length || runDist.end[2] > trail[trail.length - 1][2])) ? runDist.end : (trail.length ? trail[trail.length - 1] : null); // Beta 1.193 (gate rounds, Codex P2 x2): the segment anchor is the counter's endpoint when it is newer than the trail's tail (the crash case - the bank ahead of the flushed trail); the endpoint is never written into the trail, so trailKm keeps summing only recorded pairs. In the normal case end IS the trail's tail (it is replaced with every recorded point, just below) and nothing changes.
       const newPt = [+sm[0].toFixed(6), +sm[1].toFixed(6), Math.floor(now / 1000)];
       if (prevPt && prevPt[2] >= runSec && newPt[2] - prevPt[2] <= 300) { const seg = distM(prevPt, newPt); if (seg <= 1000) runDist.m += seg; } // trailKm's own pair rule, applied at record time so the total survives the cap below
       trail.push(newPt);
-      runDist.end = newPt; // Beta 1.193 (gate round, Codex P2): the endpoint rides the banked record - adoption restores it into the trail, so a crash that loses the trail's buffered tail cannot make the next segment re-measure banked travel
+      runDist.end = newPt; // Beta 1.193 (gate rounds, Codex P2 x2): the endpoint rides the banked record - adoption restores it as the segment anchor (never as a trail point), so a crash that loses the trail's buffered tail cannot make the next segment re-measure banked travel, and no synthetic edge ever reaches the derivation
       while (trail.length && trail[0][2] < newPt[2] - TRAIL_WINDOW_S) trail.shift(); // Beta 1.193 (trail redesign): the window eviction, applied at append - points are chronological, so the head is the oldest; everything older than the newest point minus 60 minutes leaves. Through 1.190 a TRAIL_MAX point cap spliced the head and flagged the counter (capped) when it ate this run's points; under the window the eviction is routine, flags nothing, and the counter above is the authority the fallback stands behind.
       persistRunDist(false);
       markDirty('trail');

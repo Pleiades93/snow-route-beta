@@ -187,6 +187,26 @@ try {
   })()`);
   ok('P2d a forced flush in the reload window cannot zero an un-adopted bank (adoption precedes the write; the mirror lands the adopted figure too) | ' + JSON.stringify(p2zero),
     p2zero.rec.run === p2zero.rs && p2zero.rec.m === p2zero.banked && !('capped' in p2zero.rec) && p2zero.mir && p2zero.mir.m === p2zero.banked && p2zero.mir.run === p2zero.rs);
+  // P2e (Beta 1.193 gate round 2, Codex P2): the restored endpoint must steer
+  // the next segment WITHOUT entering the trail. An appended endpoint hands
+  // trailKm a synthetic edge (flushed tail -> endpoint) that was never a
+  // recorded pair; where the lost span held pair-rule-rejected jumps, the
+  // edge's chord invents distance the counter never banked. The planted bank
+  // is Codex's example: two >1000 m jumps banked ZERO, leaving m 0 with an
+  // endpoint 500 m east of the one flushed point.
+  const p2e = await J(`(() => {
+    const rs = Math.floor(runStart / 1000);
+    const p0 = [43.82, -79.566, rs];
+    const pEnd = [43.82, -79.566 + 500 / 80386, rs + 120];
+    trail = [p0];
+    localStorage.setItem(LS.rundist, JSON.stringify({ run: runStart, m: 0, end: pEnd }));
+    localStorage.removeItem(LS.rundist2);
+    runDist = { run: 0, m: 0, end: null };
+    adoptRunDist();
+    return { m: runDist.m, tl: trail.length, endOk: JSON.stringify(runDist.end) === JSON.stringify(pEnd), tk: trailKm(runStart) * 1000 };
+  })()`);
+  ok('P2e (Beta 1.193) the restored endpoint anchors the counter WITHOUT entering the trail: no synthetic edge, the derivation stays zero, the anchor survives | ' + JSON.stringify(p2e),
+    p2e.m === 0 && p2e.tl === 1 && p2e.tk === 0 && p2e.endOk === true);
 } catch (e) {
   R.fatal = String(e && e.message || e);
 }

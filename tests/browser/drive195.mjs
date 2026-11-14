@@ -39,7 +39,7 @@ await bootThrough(ev, poll); // boots end at the route menu - click through to a
 //      banked counter, the app reloads with NO flush, and the first segment
 //      banked after adoption must be one step (~12.5 m), not the ~512 m
 //      re-measure of already-banked travel. The banked record's endpoint
-//      (end) is what adoption restores into the trail to make it so.
+//      (end), restored as the segment anchor, is what makes it so.
 //   K7 finishing the run (3 streets marked - the archive path; an under-3
 //      finish is the board-clear path by standing rule) archives a clean
 //      with NO path and NO pathShortened, and Finish clears the stored
