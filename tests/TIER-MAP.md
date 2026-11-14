@@ -32,11 +32,11 @@ Gate: build-and-test + the touched surface's family:
 
 | Family | Paths | Drives |
 | --- | --- | --- |
-| create | `parts/create-cache.js`, `create-citydata.js`, `create-fetch.js`, `create-packs.js`, `create-pick.js`, `packs/` | 151 152 153 154 155 156* 160 164 166 181 183 185 |
+| create | `parts/create-cache.js`, `create-citydata.js`, `create-fetch.js`, `create-packs.js`, `create-pick.js`, `packs/` | 151 152 153 154 155 156 160 164 166 181 183 185 |
 | map | `parts/engine.js` | 115 116 121 127 128 129 130 133 141 148 149 165 168 182 |
 | session | `parts/app2.js`, `parts/app3.js`, `parts/app4.js` | 83 86 88 89* 114 118 125 135 136 140 145 146 147 159 161 162 163 169 170 184 |
 
-*quarantined drives are removed from the set by the selector (drive89 and drive156
+*quarantined drives are removed from the set by the selector (drive89
 today; drive181 was quarantined 2026-11-09 and re-admitted 2026-11-10
 after its hardening proved out — entry removed in the housekeeping
 cleanup; drive156 was quarantined 2026-11-11 — check 157-D1 flaked
@@ -47,8 +47,16 @@ failures is fixed, 157-D1 re-proved clean, entry removed there —
 and RE-quarantined the same evening (2026-11-11) after check C1
 flaked twice more on identical app code (quarantine.json records 2
 and 3: the C1 press landing mid-layout, classified FLAKE both
-times); it remains quarantined today, and the next hardening round
-should give C1 the same terminal-signal wait the morph flights got;
+times); it remained quarantined until the B5/B6 round (PR #30,
+2026-11-13) proved the remaining failures a test synchronization
+defect — the press fired while the sheet was mid-flight, so the
+gesture never reached the panel head — and hardened the test with a
+rest-wait on the app's terminal signal (B5/B6 passing 9/9 completed
+exercises across local and CI runs); the quarantine is LIFTED
+2026-11-14 on Andrew's decision and the drive gates in Tier A/B
+again — standing watch item: the C section's single CI flake (the
+2026-11-13 dispatch) is UNHARDENED by his choice, and any C1
+failure in gating is now classified on first occurrence;
 drive186 was quarantined 2026-11-11 — checks D1–D5 flaked twice on
 record with the identical 'stitched' undefined signature (runs
 43029275837 and 43060145115) and the drive was hardened in the
