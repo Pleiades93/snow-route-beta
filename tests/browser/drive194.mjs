@@ -2,11 +2,14 @@ import { launchDrive, finish, bootThrough } from './harness.mjs';
 const { proc, ev, consoleLog, sleep, poll } = await launchDrive();
 await bootThrough(ev, poll); // boots end at the route menu - click through to a loaded route
 
-// drive194: Beta 1.189 - the raw fix log. A DEBUGGING instrument in the trail's
-// family: every fix the watch delivers is recorded in acceptFix BEFORE any gate
+// drive194: the raw fix log — Beta 1.189's instrument, Beta 1.195's switch.
+// A DEBUGGING instrument in the trail's family: while its Settings switch is
+// on, every fix the watch delivers is recorded in acceptFix BEFORE any gate
 // can refuse it (raw fields verbatim, nulls included), with the estimator's
 // outputs for the same fix beside it, segmented by locate-on session, persisted
-// on-device, capped, and carried ONLY inside the backup JSON. Claims:
+// on-device, capped, and carried ONLY inside the backup JSON. The Beta 1.195
+// claims (T sections) pin the switch itself: runtime-only state, off at every
+// cold open, gated at the recording entry point. Claims:
 //   L1 fixes fed through the REAL watch path (a stubbed geolocation whose
 //      captured callback is startGps's own) are recorded verbatim and in order -
 //      a null-speed/null-heading fix keeps its nulls, an accuracy-gated fix and
@@ -26,21 +29,40 @@ await bootThrough(ev, poll); // boots end at the route menu - click through to a
 //   L5 the stationary behaviour is unchanged with logging on: drive127's own
 //      noise table at its own corridor - the filtered position ends within
 //      3 m of truth.
-//   L6 the cap holds: FIXLOG_MAX is 36000; a flood evicts the oldest session
-//      whole, then head-trims a lone session to its newest 36000 fixes.
-//   L7 (Beta 1.190) the long clean fits and the storage fits: a synthetic
-//      8-hour session (28,800 fixes) survives WHOLE under the caps, zero
-//      trimmed; a worst-case full-cap log (36,000 full-precision transit-speed
-//      fixes with outputs and run stamps) written through the real save path
-//      measures within the character budget WebKit's quota imposes (the
-//      fixlog at most FIXLOG_MAX_CHARS = 1,850,000 characters; + 250,000
-//      trail at its cap + 250,000 board/settings allowance at most the
-//      2,500,000 characters a 5 MB UTF-16 quota holds), with the trim's
-//      byte-accounted estimate never under-reading the real length; a
-//      high-entropy flood is trimmed by the CHARACTER cap before the fix
-//      cap; and a 1.189-format (v1) fixture log loads field-for-field,
+//   L6 the cap holds: FIXLOG_MAX is 3600 (Beta 1.195: one hour at 1 Hz); a
+//      flood evicts the oldest session whole, then head-trims a lone session
+//      to its newest 3600 fixes.
+//   L7 (Beta 1.190, caps re-derived Beta 1.195) the hour fits and the storage
+//      fits: a synthetic full-hour session (3,600 fixes) survives WHOLE under
+//      the caps, zero trimmed; a worst-case full-cap log (3,600 full-precision
+//      transit-speed fixes with outputs and run stamps) written through the
+//      real save path measures within the character budget WebKit's quota
+//      imposes (the fixlog at most FIXLOG_MAX_CHARS = 200,000 characters —
+//      sized from the codec's measured ~46.0 chars/fix worst case: ~165,600
+//      at the fix cap, the rest margin; + ~112,000 trail at its most +
+//      250,000 board/settings allowance, far under the 2,500,000 characters
+//      a 5 MB UTF-16 quota holds), with the trim's byte-accounted estimate
+//      never under-reading the real length; a high-entropy flood (many short
+//      sessions, wide-noise fixes) is trimmed by the CHARACTER cap before
+//      the fix cap; and a 1.189-format (v1) fixture log loads field-for-field,
 //      survives the validator, and re-saves in the e3 form without losing or
 //      altering a single field (the stored-form equivalence proof).
+//   T1 (Beta 1.195) a cold open starts with logging OFF — the runtime flag is
+//      false and the Settings switch renders off — and a driven watch with
+//      the switch off records NOTHING: no session, no count, and the stored
+//      record is never created (storage untouched across the whole cycle).
+//   T2 (Beta 1.195) the REAL Settings switch (a DOM click on #swFixLog in the
+//      Backup pane) turns logging on; L1's recording claims then run under it.
+//   T3 (Beta 1.195) flipping the switch OFF mid-session stops recording at the
+//      next fix — the count freezes while fixes keep arriving — the recorded
+//      data stays intact, and flipping back ON resumes into the SAME session
+//      (segmentation is by locate-on, never by the switch).
+//   T4 (Beta 1.195) a backup exported with logging ON restores onto a cold
+//      boot WITHOUT enabling logging: the flag is off after the restore, the
+//      restored log lands whole, and a driven watch afterwards adds nothing.
+//      (No stored representation of the flag exists anywhere — the settings
+//      record and the backup format have no field for it — so there is
+//      nothing a restore could honour; these sections prove the behaviour.)
 const R = { checks: [] };
 const ok = (name, cond) => R.checks.push([name, cond === true]);
 const J = async (expr) => { const raw = await ev(`(() => { try { return JSON.stringify((${expr})); } catch (e) { return JSON.stringify({ __err: String(e && e.message || e) }); } })()`); return typeof raw === 'string' ? JSON.parse(raw) : {}; };
@@ -55,12 +77,26 @@ const reloadPage = async () => { // drive169's proven reload idiom
 
 ok('S0 app boots with the map active', await poll(`typeof glOk !== 'undefined' && glOk === true`, 30000));
 
+// ---------- T1 (Beta 1.195): cold open — logging OFF, storage untouched ----------
+const t1render = await J(`(() => { openExport(); const sw = document.getElementById('swFixLog'); return { en: fixLogIsEnabled(), aria: sw ? sw.getAttribute('aria-checked') : null, on: sw ? sw.classList.contains('on') : null, rowShown: document.getElementById('fxLogRow').style.display !== 'none' }; })()`);
+ok('T1 a cold open starts with logging OFF: the runtime flag is false and the Backup pane switch renders off | ' + JSON.stringify(t1render),
+  t1render.en === false && t1render.aria === 'false' && t1render.on === false && t1render.rowShown === true);
+// T1 feeds on its OWN earlier timeline (1759... < L1's 1760...): the estimator's lastFixTs must sit below L1's first fix, or L1's fixes would be refused as out-of-order — the sections share one page life
+const t1 = await J(`(() => { window.__wp = null; Object.defineProperty(navigator, 'geolocation', { value: { watchPosition: (okCb, errCb) => { window.__wp = okCb; return 555; }, clearWatch: () => {} }, configurable: true }); startGps(false); const T = 1759000000000; for (let i = 0; i < 3; i++) window.__wp({ coords: { latitude: 43.81 + i * 0.001, longitude: -79.56, accuracy: 8, speed: 3, heading: 90 }, timestamp: T + i * 1000 }); stopGps(); flushAux(true); return { key: localStorage.getItem(LS.fixlog), sessions: fixLog.length, count: fixLogCount, sessOpen: fixLogSession !== null }; })()`);
+ok('T1 with the switch off, a driven watch records NOTHING and the stored record is never created (storage untouched) | ' + JSON.stringify(t1),
+  t1.key === null && t1.sessions === 0 && t1.count === 0 && t1.sessOpen === false);
+
+// ---------- T2 (Beta 1.195): the real Settings switch turns logging on ----------
+const t2 = await J(`(() => { document.getElementById('swFixLog').click(); const sw = document.getElementById('swFixLog'); return { en: fixLogIsEnabled(), aria: sw.getAttribute('aria-checked'), on: sw.classList.contains('on') }; })()`);
+ok('T2 a tap on the Settings switch turns logging on, effective immediately (the flag and the rendered switch agree) | ' + JSON.stringify(t2),
+  t2.en === true && t2.aria === 'true' && t2.on === true);
+
 // ---------- L1: the real watch path records verbatim ----------
 const base = JSON.parse(await ev(`(() => { const part = STRETCH.Velmar.parts[0]; const mid = part[Math.floor(part.length / 2)]; return JSON.stringify({ lat: mid[0], lng: mid[1] }); })()`));
 const T0 = 1760000000000;
 const started = await J(`(() => { window.__wp = null; Object.defineProperty(navigator, 'geolocation', { value: { watchPosition: (okCb, errCb) => { window.__wp = okCb; return 777; }, clearWatch: () => {} }, configurable: true }); const t0 = Date.now(); startGps(false); return { wid: watchId, t0, sess: fixLogSession ? { v: fixLogSession.v, t0: fixLogSession.t0, n: fixLogSession.f.length } : null, sessions: fixLog.length }; })()`); // the stub must go through defineProperty: navigator.geolocation is a read-only prototype accessor, so a plain assignment is a silent no-op and the app would start the REAL watch (found on this drive's first run - the session still opened, the fixes never arrived)
 ok('L1 startGps opens a log session stamped with the live version | ' + JSON.stringify(started),
-  started.wid === 777 && !!started.sess && started.sess.v === 'Beta 1.194' && Math.abs(started.sess.t0 - started.t0) < 1000 && started.sess.n === 0);
+  started.wid === 777 && !!started.sess && started.sess.v === 'Beta 1.195' && Math.abs(started.sess.t0 - started.t0) < 1000 && started.sess.n === 0);
 const feed = async (f) => J(`(() => { window.__wp({ coords: { latitude: ${f[0]}, longitude: ${f[1]}, accuracy: ${f[2]}, speed: ${f[3]}, heading: ${f[4]} }, timestamp: ${f[5]} }); const s = fixLog[fixLog.length - 1]; return { ent: s.f[s.f.length - 1], gps: gpsPos, dsp: dispPos, smh: smHeading }; })()`);
 const M = (e, n) => [base.lat + n / 111320, base.lng + e / 80386];
 const p1 = M(0, 0), p2 = M(4, 1), p5 = M(14, 2);
@@ -133,7 +169,7 @@ ok('L4 the old-format backup restores clean (its board lands) and the resident l
   afterOld.done > 0 && afterOld.storedRaw === JSON.stringify(marker) && canon(afterOld.fixLog) === canon(marker));
 
 // ---------- L4b: the refused non-finite fix survives the round-trip ----------
-await ev(`(() => { fixLogOpen(); acceptFix({ coords: { latitude: NaN, longitude: ${base.lng}, accuracy: 10, speed: null, heading: null }, timestamp: ${T0} + 9000 }); fixLogClose(); flushAux(true); return true; })()`);
+await ev(`(() => { fixLogSetEnabled(true); fixLogOpen(); acceptFix({ coords: { latitude: NaN, longitude: ${base.lng}, accuracy: 10, speed: null, heading: null }, timestamp: ${T0} + 9000 }); fixLogClose(); flushAux(true); return true; })()`);
 const nanBakStr = await ev(`buildBackup()`);
 const nanBak = nanBakStr ? JSON.parse(nanBakStr) : null;
 const nanEntry = (log) => { for (const s of log || []) for (const e of s.f || []) if (e[1] === null && e[2] === base.lng) return e; return null; };
@@ -149,9 +185,47 @@ const afterNan = await J(`fixLog`);
 ok('L4b after the restore, the refused fix AND its session survive whole (the validator keeps what the loader keeps) | sessions=' + (afterNan || []).length,
   !!nanEntry(afterNan) && afterNan.length === 2);
 
+// ---------- T3 (Beta 1.195): switch OFF mid-session stops recording; the data stays; ON resumes the same session ----------
+const t3base = await J(`({ sess: fixLog.length, count: fixLogCount })`); // L4b's restore left its sessions resident and the per-boot flag OFF (its door-enable predates two reloads) — T3's bookkeeping is relative to this state, and its setup enables through the door (T2 already proved the switch itself)
+const t3open = await J(`(() => { fixLogSetEnabled(true); window.__wp = null; Object.defineProperty(navigator, 'geolocation', { value: { watchPosition: (okCb, errCb) => { window.__wp = okCb; return 777; }, clearWatch: () => {} }, configurable: true }); startGps(false); return { sess: fixLog.length, open: !!fixLogSession }; })()`);
+const feedN = async (n, t0) => { for (let i = 0; i < n; i++) await ev(`(() => { window.__wp({ coords: { latitude: ${base.lat} + ${t0 + i} * 0.00001, longitude: ${base.lng}, accuracy: 8, speed: 3, heading: 90 }, timestamp: ${1760100000000 + (t0 + i) * 1000} }); return true; })()`); };
+await feedN(3, 0);
+const t3a = await J(`({ sess: fixLog.length, n: fixLog[fixLog.length - 1].f.length, count: fixLogCount })`);
+const t3off = await J(`(() => { openExport(); document.getElementById('swFixLog').click(); return fixLogIsEnabled(); })()`);
+await feedN(3, 10);
+const t3b = await J(`({ sess: fixLog.length, n: fixLog[fixLog.length - 1].f.length, count: fixLogCount })`);
+ok('T3 flipping the switch OFF mid-session stops recording at the next fix: fixes keep arriving, the count is frozen | ' + JSON.stringify({ t3base, t3a, t3b, t3off }),
+  t3open.open === true && t3open.sess === t3base.sess + 1 && t3off === false && t3a.sess === t3open.sess && t3a.n === 3 && t3a.count === t3base.count + 3 && t3b.n === 3 && t3b.count === t3a.count && t3b.sess === t3a.sess);
+const t3on = await J(`(() => { document.getElementById('swFixLog').click(); return fixLogIsEnabled(); })()`);
+await feedN(2, 20);
+const t3c = await J(`({ sess: fixLog.length, n: fixLog[fixLog.length - 1].f.length })`);
+await ev(`(() => { stopGps(); flushAux(true); return true; })()`);
+ok('T3 flipping back ON resumes recording into the SAME session (segmentation is by locate-on, not by the switch), and the pre-off data was never touched | ' + JSON.stringify({ t3c, t3on }),
+  t3on === true && t3c.sess === t3a.sess && t3c.n === 5);
+
+// ---------- T4 (Beta 1.195): a backup cycle never enables logging on the receiving boot ----------
+await ev(`(() => { flushAux(true); return true; })()`); // the export reads the STORED record (B04 strict): land T3's sessions first
+const bakT4 = await ev(`buildBackup()`); // exported with logging ON (T3 left it on) and a log full of sessions
+await reloadPage(); // the cold open: runtime state is rebuilt from nothing
+const t4pre = await J(`({ en: fixLogIsEnabled(), sess: fixLog.length, total: fixLog.reduce((a, s) => a + s.f.length, 0) })`);
+ok('T4 the cold open after the export starts with logging OFF again (nothing about the flag persisted) | ' + JSON.stringify(t4pre),
+  t4pre.en === false && t4pre.sess > 0);
+const bakT4obj = JSON.parse(bakT4);
+await ev(`(async () => { await restoreBackup(JSON.parse(${JSON.stringify(JSON.stringify(bakT4obj))})); return true; })()`);
+await sleep(3500); // the restore reloads
+await waitBoot(); await bootThrough(ev, poll);
+const t4post = await J(`({ en: fixLogIsEnabled(), sess: fixLog.length, total: fixLog.reduce((a, s) => a + s.f.length, 0) })`);
+ok('T4 restoring the backup does NOT enable logging on the receiving boot, and the restored log lands whole | ' + JSON.stringify(t4post),
+  t4post.en === false && t4post.sess === t4pre.sess && t4post.total === t4pre.total);
+const t4watch = await J(`(() => { window.__wp = null; Object.defineProperty(navigator, 'geolocation', { value: { watchPosition: (okCb, errCb) => { window.__wp = okCb; return 777; }, clearWatch: () => {} }, configurable: true }); startGps(false); const T = 1760200000000; for (let i = 0; i < 3; i++) window.__wp({ coords: { latitude: 43.9 + i * 0.001, longitude: -79.4, accuracy: 8, speed: 3, heading: 90 }, timestamp: T + i * 1000 }); stopGps(); flushAux(true); return { sess: fixLog.length, total: fixLog.reduce((a, s) => a + s.f.length, 0), stored: localStorage.getItem(LS.fixlog) }; })()`);
+const t4dec = t4watch.stored ? await J(`fixLogDecodeSessions(JSON.parse(${JSON.stringify(t4watch.stored)}))`) : null;
+ok('T4 with the switch still off after the restore, a driven watch adds nothing — memory and the stored record both keep exactly the restored log | sess=' + t4watch.sess,
+  t4watch.sess === t4post.sess && t4watch.total === t4post.total && !!t4dec && canon(t4dec) === canon(await J(`fixLog`)));
+
 // ---------- L5: stationary behaviour unchanged with logging on ----------
 const NOISE = [[0, 0], [5, -3], [-6, 2], [3, 6], [-2, -6], [7, 1], [-5, -4], [1, 7], [-7, -1], [4, -5], [-3, 3], [6, 5], [-1, -7], [2, 2], [-4, 6], [5, -2]]; // drive127's own table
-await ev(`(() => { window.__fakeT0 = Date.now(); window.__fakeNow = window.__fakeT0; const rp = performance.now(); Date.now = () => window.__fakeNow; performance.now = () => rp - 3600000 + (window.__fakeNow - window.__fakeT0); fixLogClose(); fixLogOpen(); return true; })()`);
+// (the corridor runs with logging ON — its claim — so L5 enables through the door first: T4's restores left the per-boot flag off)
+await ev(`(() => { window.__fakeT0 = Date.now(); window.__fakeNow = window.__fakeT0; const rp = performance.now(); Date.now = () => window.__fakeNow; performance.now = () => rp - 3600000 + (window.__fakeNow - window.__fakeT0); fixLogSetEnabled(true); fixLogClose(); fixLogOpen(); return true; })()`);
 for (const [e, n] of NOISE) { const ll = M(e, n); await ev(`(() => { window.__fakeNow += 300; acceptFix({ coords: { latitude: ${ll[0]}, longitude: ${ll[1]}, accuracy: 12, speed: 0, heading: null }, timestamp: Date.now() }); return true; })()`); }
 const s5 = await J(`({ gps: gpsPos, entries: fixLog[fixLog.length - 1].f.length, withOut: fixLog[fixLog.length - 1].f.filter(x => Array.isArray(x[6])).length })`);
 ok('L5 a stationary dot under +-7 m fix noise ends within 3 m of truth (drive127\'s corridor) | err ' + (s5.gps ? hav([base.lat, base.lng], s5.gps).toFixed(2) : 'NO GPS') + ' m',
@@ -159,22 +233,22 @@ ok('L5 a stationary dot under +-7 m fix noise ends within 3 m of truth (drive127
 ok('L5 every stationary fix was logged with its estimator output', s5.entries === NOISE.length && s5.withOut === NOISE.length);
 
 // ---------- L6: the cap ----------
-const cap = await J(`(() => { const T = Date.now() + 1000; fixLogClose(); fixLogOpen(); for (let i = 1; i <= 100; i++) acceptFix({ coords: { latitude: 44 + i * 1e-7, longitude: -79.5, accuracy: 10, speed: 2, heading: 10 }, timestamp: T + i * 1000 }); fixLogClose(); fixLogOpen(); const S = fixLogSession; for (let i = 1; i <= 36050; i++) { S.f.push([T + 100000 + i * 1000, 44.1 + i * 1e-7, -79.5, 10, 2, 10, null, 0]); fixLogCount++; if (i % 5000 === 0) fixLogTrim(); } fixLogTrim(); const s = fixLog[fixLog.length - 1]; return { MAX: FIXLOG_MAX, sessions: fixLog.length, count: fixLogCount, lastN: s.f.length, firstLat: s.f[0][1], markerGone: !fixLog.some(x => x.v === 'MARKER') }; })()`); // Beta 1.190: the flood entries are pushed in the logger's own in-memory shape (2,000+ acceptFix calls proved the append path in 1.189; the claim here is the trim's end state, and the trim converges to it from any append cadence)
-ok('L6 the cap constant is 36000 and the flood respects it | ' + JSON.stringify(cap),
-  cap.MAX === 36000 && cap.count === 36000 && cap.lastN === 36000);
+const cap = await J(`(() => { const T = Date.now() + 1000; fixLogSetEnabled(true); fixLogClose(); fixLogOpen(); for (let i = 1; i <= 100; i++) acceptFix({ coords: { latitude: 44 + i * 1e-7, longitude: -79.5, accuracy: 10, speed: 2, heading: 10 }, timestamp: T + i * 1000 }); fixLogClose(); fixLogOpen(); const S = fixLogSession; for (let i = 1; i <= 3650; i++) { S.f.push([T + 100000 + i * 1000, 44.1 + i * 1e-7, -79.5, 10, 2, 10, null, 0]); fixLogCount++; if (i % 1000 === 0) fixLogTrim(); } fixLogTrim(); const s = fixLog[fixLog.length - 1]; return { MAX: FIXLOG_MAX, sessions: fixLog.length, count: fixLogCount, lastN: s.f.length, firstLat: s.f[0][1], markerGone: !fixLog.some(x => x.v === 'MARKER') }; })()`); // Beta 1.190: the flood entries are pushed in the logger's own in-memory shape (2,000+ acceptFix calls proved the append path in 1.189; the claim here is the trim's end state, and the trim converges to it from any append cadence)
+ok('L6 the cap constant is 3600 and the flood respects it | ' + JSON.stringify(cap),
+  cap.MAX === 3600 && cap.count === 3600 && cap.lastN === 3600);
 ok('L6 the oldest sessions are evicted whole; the lone surviving session is head-trimmed to its newest fixes (first survivor is flood fix 51)',
   cap.sessions === 1 && cap.markerGone === true && Math.abs(cap.firstLat - (44.1 + 51 * 1e-7)) < 1e-9);
 
 // ---------- L7 (Beta 1.190): the long clean fits, the bytes fit, the old form replays ----------
-const eight = await J(`(() => { fixLog = []; fixLogCount = 0; fixLogSession = null; fixLogOpen(); const S = fixLogSession; const T = 1761000000000; for (let i = 0; i < 28800; i++) { S.f.push([T + i * 1000, 44.2 + i * 1e-7, -79.6, 10, 2, 10, null, T]); fixLogCount++; } fixLogTrim(); _fxMeasure(S); return { n: S.f.length, count: fixLogCount, first: S.f[0][0], last: S.f[S.f.length - 1][0], est: fixLogEstChars(), maxChars: FIXLOG_MAX_CHARS }; })()`);
-ok('L7 a full 8-hour clean (28,800 fixes in one session) survives WHOLE under the caps - zero trimmed, and its measured stored size sits under the character cap | ' + JSON.stringify(eight),
-  eight.n === 28800 && eight.count === 28800 && eight.first === 1761000000000 && eight.last === 1761000000000 + 28799000 && eight.est <= eight.maxChars);
-const bytes = await J(`(() => { let lat = 43.8147013, lng = -79.5593017; const T = 1762000000000, f = []; for (let i = 0; i < 36000; i++) { lat += 0.00013489871; lng -= 0.00002134567; f.push([T + i * 1000, lat, lng, Math.fround(5 + (i % 61) * 0.983), 14.9 + (i % 37) * 0.0137123456789, 355.12345678901234, [+lat.toFixed(6), +lng.toFixed(6), +lat.toFixed(6), +lng.toFixed(6), 355.1], T - 600000]); } fixLog = [{ v: 'Beta 1.190', t0: T, f }]; fixLogCount = 36000; fixLogSession = null; const r = saveFixLog(); const raw = localStorage.getItem(LS.fixlog); _fxMeasure(fixLog[0]); return { ok: !!(r && r.ok), len: raw ? raw.length : -1, est: fixLogEstChars(), maxChars: FIXLOG_MAX_CHARS }; })()`);
-ok('L7 the stored log at the full 36,000 cap, written through the real save path on a worst-case stream, fits the WebKit quota arithmetic (fixlog <= FIXLOG_MAX_CHARS = 1,850,000 characters; + 250,000 trail at cap + 250,000 board/settings allowance <= 2,500,000 characters = the 5 MB UTF-16 quota), and the trim estimate never under-reads the real length | chars=' + bytes.len + ' (' + (bytes.len / 36000).toFixed(1) + '/fix), est=' + bytes.est,
-  bytes.ok === true && bytes.len > 0 && bytes.len <= bytes.maxChars && bytes.len + 250000 + 250000 <= 2500000 && bytes.est >= bytes.len && bytes.est <= bytes.maxChars);
-const ent = await J(`(() => { let seed = 987654321; const rnd = () => { seed = (seed * 1103515245 + 12345) & 0x7fffffff; return seed / 0x7fffffff; }; fixLog = []; fixLogCount = 0; fixLogSession = null; fixLogOpen(); const S = fixLogSession; const T = 1761500000000; let lat = 44.0, lng = -79.7; for (let i = 0; i < 36000; i++) { lat += (rnd() - 0.5) * 6e-5; lng += (rnd() - 0.5) * 8e-5; S.f.push([T + i * 1000, lat, lng, Math.fround(3 + rnd() * 30), rnd() * 18.765432109876543, rnd() * 359.987654321, [+lat.toFixed(6), +lng.toFixed(6), +lat.toFixed(6), +lng.toFixed(6), 123.4], T]); fixLogCount++; } _fxMeasure(S); const before = fixLogEstChars(); fixLogTrim(); saveFixLog(); markClean('fixlog'); const raw = localStorage.getItem(LS.fixlog); return { before, after: fixLogEstChars(), n: S.f.length, count: fixLogCount, rawLen: raw ? raw.length : -1, maxChars: FIXLOG_MAX_CHARS }; })()`); // markClean: the direct saveFixLog bypasses the storage doorway, so the test leaves the flag exactly as the doorway would — otherwise the page's own unload flush would rewrite this log over the planted one in the reload below, and the plant checks would be testing the flush, not the loader
-ok('L7 a high-entropy flood (white-noise fixes no real stream matches) is trimmed by the CHARACTER cap before the fix cap: the count lands below 36,000, the estimate and the real stored record both end within FIXLOG_MAX_CHARS | ' + JSON.stringify(ent),
-  ent.before > ent.maxChars && ent.n < 36000 && ent.count === ent.n && ent.after <= ent.maxChars && ent.rawLen > 0 && ent.rawLen <= ent.maxChars);
+const eight = await J(`(() => { fixLog = []; fixLogCount = 0; fixLogSession = null; fixLogOpen(); const S = fixLogSession; const T = 1761000000000; for (let i = 0; i < 3600; i++) { S.f.push([T + i * 1000, 44.2 + i * 1e-7, -79.6, 10, 2, 10, null, T]); fixLogCount++; } fixLogTrim(); _fxMeasure(S); return { n: S.f.length, count: fixLogCount, first: S.f[0][0], last: S.f[S.f.length - 1][0], est: fixLogEstChars(), maxChars: FIXLOG_MAX_CHARS }; })()`);
+ok('L7 a full hour (3,600 fixes in one session) survives WHOLE under the caps - zero trimmed, and its measured stored size sits under the character cap | ' + JSON.stringify(eight),
+  eight.n === 3600 && eight.count === 3600 && eight.first === 1761000000000 && eight.last === 1761000000000 + 3599000 && eight.est <= eight.maxChars);
+const bytes = await J(`(() => { let lat = 43.8147013, lng = -79.5593017; const T = 1762000000000, f = []; for (let i = 0; i < 3600; i++) { lat += 0.00013489871; lng -= 0.00002134567; f.push([T + i * 1000, lat, lng, Math.fround(5 + (i % 61) * 0.983), 14.9 + (i % 37) * 0.0137123456789, 355.12345678901234, [+lat.toFixed(6), +lng.toFixed(6), +lat.toFixed(6), +lng.toFixed(6), 355.1], T - 600000]); } fixLog = [{ v: 'Beta 1.195', t0: T, f }]; fixLogCount = 3600; fixLogSession = null; const r = saveFixLog(); const raw = localStorage.getItem(LS.fixlog); _fxMeasure(fixLog[0]); return { ok: !!(r && r.ok), len: raw ? raw.length : -1, est: fixLogEstChars(), maxChars: FIXLOG_MAX_CHARS }; })()`);
+ok('L7 the stored log at the full 3,600 cap, written through the real save path on the measured-worst-case stream, fits the WebKit quota arithmetic (fixlog <= FIXLOG_MAX_CHARS = 200,000 characters; + ~112,000 trail at its most + 250,000 board/settings allowance, far under the 2,500,000 characters a 5 MB UTF-16 quota holds), and the trim estimate never under-reads the real length | chars=' + bytes.len + ' (' + (bytes.len / 3600).toFixed(1) + '/fix), est=' + bytes.est,
+  bytes.ok === true && bytes.len > 0 && bytes.len <= bytes.maxChars && bytes.len + 112000 + 250000 <= 2500000 && bytes.est >= bytes.len && bytes.est <= bytes.maxChars);
+const ent = await J(`(() => { let seed = 987654321; const rnd = () => { seed = (seed * 1103515245 + 12345) & 0x7fffffff; return seed / 0x7fffffff; }; fixLog = []; fixLogCount = 0; fixLogSession = null; const T = 1761500000000; let lat = 44.0, lng = -79.7; for (let sIdx = 0; sIdx < 240; sIdx++) { fixLogOpen(); const S = fixLogSession; for (let i = 0; i < 15; i++) { lat += (rnd() - 0.5) * 0.04; lng += (rnd() - 0.5) * 0.05; S.f.push([T + (sIdx * 15 + i) * 1000, lat, lng, Math.fround(3 + rnd() * 30), rnd() * 18.765432109876543, rnd() * 359.987654321, [+lat.toFixed(6), +lng.toFixed(6), +lat.toFixed(6), +lng.toFixed(6), 123.4], T]); fixLogCount++; } _fxMeasure(S); fixLogClose(); } const before = fixLogEstChars(); fixLogTrim(); saveFixLog(); markClean('fixlog'); const raw = localStorage.getItem(LS.fixlog); return { before, after: fixLogEstChars(), sessions: fixLog.length, count: fixLogCount, rawLen: raw ? raw.length : -1, maxChars: FIXLOG_MAX_CHARS }; })()`); // Beta 1.195 re-derivation: at 200,000 chars / 3,600 fixes the character cap binds first only above ~55.6 chars/fix — a single smooth session never gets there (the measured worst case is ~46), so the flood is built the way real density actually spikes: MANY SHORT SESSIONS (every session head is a full-precision keyframe) with wide white-noise steps. markClean: the direct saveFixLog bypasses the storage doorway, so the test leaves the flag exactly as the doorway would — otherwise the page's own unload flush would rewrite this log over the planted one in the reload below, and the plant checks would be testing the flush, not the loader
+ok('L7 a high-entropy flood (240 short sessions of wide-noise fixes — the shape real per-fix density spikes take) is trimmed by the CHARACTER cap before the fix cap: the count lands below 3,600 with whole sessions evicted, and the estimate and the real stored record both end within FIXLOG_MAX_CHARS | ' + JSON.stringify(ent),
+  ent.before > ent.maxChars && ent.count < 3600 && ent.count > 0 && ent.after <= ent.maxChars && ent.rawLen > 0 && ent.rawLen <= ent.maxChars);
 const FIXV1 = [{ v: 'Beta 1.189', t0: 1760500000000, f: [
   [1760500001000, 43.814701299999997, -79.55930129999999, 8.5, 3.2123456789012345, 90.12345678901234, [43.814701, -79.559301, 43.8147, -79.5593, 90.1], 0],
   [1760500002000, 43.81471021234568, -79.55931304567892, 12, null, null, [43.81471, -79.559313, 43.81471, -79.559313, null], 0],
@@ -194,17 +268,18 @@ ok('L7 re-saving that log writes the e3 form, and the e3 form decodes back to th
   v1Resaved.e === 3 && canon(v1Resaved.dec) === canon(FIXV1));
 
 // ---------- L8 (gate fixes, PR #31): fractional timestamps, and the head-trim soak ----------
-const frac = await J(`(() => { fixLog = []; fixLogCount = 0; fixLogSession = null; fixLogOpen(); const T = 1761000000000; const e1 = fixLogRaw({ coords: { latitude: 44.3, longitude: -79.65, accuracy: 9, speed: 1.5, heading: 45 }, timestamp: T + 0.5 }); const e2 = fixLogRaw({ coords: { latitude: 44.300001, longitude: -79.65, accuracy: 9, speed: 1.5, heading: 45 }, timestamp: T + 1000.25 }); fixLogClose(); saveFixLog(); const dec = fixLogDecodeSessions(JSON.parse(localStorage.getItem(LS.fixlog))); const v1f = fixLogDecodeSessions([{ v: 'Beta 1.189', t0: T, f: [[T + 0.5, 44.3, -79.65, 9, 1.5, 45, null, 0]] }]); let v1Err = ''; try { _fxMeasure(v1f[0]); const re = fixLogDecodeSessions(fixLogEncodeSessions(v1f)); if (!re.length || re[0].f[0][0] !== T + 0.5) v1Err = 'round-trip mismatch'; } catch (err) { v1Err = String(err && err.message || err); } return { kept: [!!e1, !!e2], sess: fixLog[0].f.length, dec: dec.length && dec[0].f.length === 2 ? [dec[0].f[0][0], dec[0].f[1][0]] : null, v1Err }; })()`);
+// (the v1-plant reload above reset the per-boot flag; L8/L9 append through the real path, so they re-enable through the door)
+const frac = await J(`(() => { fixLogSetEnabled(true); fixLog = []; fixLogCount = 0; fixLogSession = null; fixLogOpen(); const T = 1761000000000; const e1 = fixLogRaw({ coords: { latitude: 44.3, longitude: -79.65, accuracy: 9, speed: 1.5, heading: 45 }, timestamp: T + 0.5 }); const e2 = fixLogRaw({ coords: { latitude: 44.300001, longitude: -79.65, accuracy: 9, speed: 1.5, heading: 45 }, timestamp: T + 1000.25 }); fixLogClose(); saveFixLog(); const dec = fixLogDecodeSessions(JSON.parse(localStorage.getItem(LS.fixlog))); const v1f = fixLogDecodeSessions([{ v: 'Beta 1.189', t0: T, f: [[T + 0.5, 44.3, -79.65, 9, 1.5, 45, null, 0]] }]); let v1Err = ''; try { _fxMeasure(v1f[0]); const re = fixLogDecodeSessions(fixLogEncodeSessions(v1f)); if (!re.length || re[0].f[0][0] !== T + 0.5) v1Err = 'round-trip mismatch'; } catch (err) { v1Err = String(err && err.message || err); } return { kept: [!!e1, !!e2], sess: fixLog[0].f.length, dec: dec.length && dec[0].f.length === 2 ? [dec[0].f[0][0], dec[0].f[1][0]] : null, v1Err }; })()`);
 ok('L8 a fractional-timestamp fix is recorded and replays exactly (no integer-only conversion anywhere on the path), and a v1 log carrying one measures + re-encodes without throwing | ' + JSON.stringify(frac),
   frac.kept[0] === true && frac.kept[1] === true && frac.sess === 2 && !!frac.dec && frac.dec[0] === 1761000000000.5 && frac.dec[1] === 1761000001000.25 && frac.v1Err === '');
-const soak = await J(`(() => { fixLog = []; fixLogCount = 0; fixLogSession = null; fixLogOpen(); const S = fixLogSession; const T = 1761200000000; for (let i = 0; i < 45000; i++) fixLogRaw({ coords: { latitude: 44.4 + i * 1e-7, longitude: -79.7, accuracy: 10, speed: 2, heading: 10 }, timestamp: T + i * 1000 }); fixLogClose(); const est = fixLogEstChars(); saveFixLog(); const raw = localStorage.getItem(LS.fixlog); return { n: S.f.length, count: fixLogCount, first: S.f[0][0], est, rawLen: raw ? raw.length : -1, maxChars: FIXLOG_MAX_CHARS }; })()`);
-ok('L8 the head-trim soak: 45,000 appends through the real append path retain exactly the newest 36,000 fixes, the estimate stays honest, and the stored record stays within the character cap (the accumulating-allowance repro) | ' + JSON.stringify(soak),
-  soak.n === 36000 && soak.count === 36000 && soak.first === 1761200000000 + 9000000 && soak.est <= soak.maxChars && soak.rawLen > 0 && soak.rawLen <= soak.maxChars);
+const soak = await J(`(() => { fixLog = []; fixLogCount = 0; fixLogSession = null; fixLogOpen(); const S = fixLogSession; const T = 1761200000000; for (let i = 0; i < 4500; i++) fixLogRaw({ coords: { latitude: 44.4 + i * 1e-7, longitude: -79.7, accuracy: 10, speed: 2, heading: 10 }, timestamp: T + i * 1000 }); fixLogClose(); const est = fixLogEstChars(); saveFixLog(); const raw = localStorage.getItem(LS.fixlog); return { n: S.f.length, count: fixLogCount, first: S.f[0][0], est, rawLen: raw ? raw.length : -1, maxChars: FIXLOG_MAX_CHARS }; })()`);
+ok('L8 the head-trim soak: 4,500 appends through the real append path retain exactly the newest 3,600 fixes, the estimate stays honest, and the stored record stays within the character cap (the accumulating-allowance repro) | ' + JSON.stringify(soak),
+  soak.n === 3600 && soak.count === 3600 && soak.first === 1761200000000 + 900000 && soak.est <= soak.maxChars && soak.rawLen > 0 && soak.rawLen <= soak.maxChars);
 
 // ---------- L9 (gate fix round 3, PR #31): the output's growth re-caps at once, and a lone session is never evicted whole ----------
-const recap = await J(`(() => { let seed = 246813579; const rnd = () => { seed = (seed * 1103515245 + 12345) & 0x7fffffff; return seed / 0x7fffffff; }; fixLog = []; fixLogCount = 0; fixLogSession = null; fixLogOpen(); const S = fixLogSession; const T = 1761300000000; let lat = 44.0, lng = -79.7; for (let i = 0; i < 36000; i++) { lat += (rnd() - 0.5) * 6e-5; lng += (rnd() - 0.5) * 8e-5; S.f.push([T + i * 1000, lat, lng, Math.fround(3 + rnd() * 30), rnd() * 18.765432109876543, rnd() * 359.987654321, null, T]); fixLogCount++; } _fxMeasure(S); fixLogTrim(); const n0 = S.f.length, est0 = fixLogEstChars(); const e = S.f[S.f.length - 1]; gpsPos = [e[1], e[2]]; dispPos = [e[1], e[2]]; smHeading = 10; fixLogOut(e); const est1 = fixLogEstChars(), n1 = S.f.length; saveFixLog(); markClean('fixlog'); const boot = (() => { const dec = fixLogDecodeSessions(JSON.parse(localStorage.getItem(LS.fixlog))); let c = 0; for (const s of dec) { c += s.f.length; _fxMeasure(s); } const keep = fixLog; fixLog = dec; const cnt = fixLogCount; fixLogCount = c; fixLogTrim(); const out = { sessions: fixLog.length, n: fixLog.length ? fixLog[0].f.length : 0 }; fixLog = keep; fixLogCount = cnt; return out; })(); return { n0, est0, est1, n1, boot, maxChars: FIXLOG_MAX_CHARS }; })()`);
+const recap = await J(`(() => { let seed = 246813579; const rnd = () => { seed = (seed * 1103515245 + 12345) & 0x7fffffff; return seed / 0x7fffffff; }; fixLog = []; fixLogCount = 0; fixLogSession = null; fixLogOpen(); const S = fixLogSession; const T = 1761300000000; let lat = 44.0, lng = -79.7; for (let i = 0; i < 3600; i++) { lat += (rnd() - 0.5) * 6e-5; lng += (rnd() - 0.5) * 8e-5; S.f.push([T + i * 1000, lat, lng, Math.fround(3 + rnd() * 30), rnd() * 18.765432109876543, rnd() * 359.987654321, null, T]); fixLogCount++; } _fxMeasure(S); fixLogTrim(); const n0 = S.f.length, est0 = fixLogEstChars(); const e = S.f[S.f.length - 1]; gpsPos = [e[1], e[2]]; dispPos = [e[1], e[2]]; smHeading = 10; fixLogOut(e); const est1 = fixLogEstChars(), n1 = S.f.length; saveFixLog(); markClean('fixlog'); const boot = (() => { const dec = fixLogDecodeSessions(JSON.parse(localStorage.getItem(LS.fixlog))); let c = 0; for (const s of dec) { c += s.f.length; _fxMeasure(s); } const keep = fixLog; fixLog = dec; const cnt = fixLogCount; fixLogCount = c; fixLogTrim(); const out = { sessions: fixLog.length, n: fixLog.length ? fixLog[0].f.length : 0 }; fixLog = keep; fixLogCount = cnt; return out; })(); return { n0, est0, est1, n1, boot, maxChars: FIXLOG_MAX_CHARS }; })()`);
 ok('L9 near the character cap, adding the estimator output re-caps at once: the estimate ends within FIXLOG_MAX_CHARS without waiting for the next append | ' + JSON.stringify(recap),
-  recap.est1 <= recap.maxChars && recap.n1 >= recap.n0 - 100 && recap.n1 > 30000);
+  recap.est1 <= recap.maxChars && recap.n1 >= recap.n0 - 100 && recap.n1 > 3000);
 ok('L9 the saved near-cap log survives the boot sequence whole-sessioned (the lone session is head-trimmed at most, never evicted whole) | ' + JSON.stringify(recap.boot),
   recap.boot.sessions === 1 && recap.boot.n >= recap.n1 - 100);
 
