@@ -26,8 +26,21 @@ await bootThrough(ev, poll); // boots end at the route menu - click through to a
 //   L5 the stationary behaviour is unchanged with logging on: drive127's own
 //      noise table at its own corridor - the filtered position ends within
 //      3 m of truth.
-//   L6 the cap holds: FIXLOG_MAX is 12000; a flood evicts the oldest session
-//      whole, then head-trims a lone session to its newest 12000 fixes.
+//   L6 the cap holds: FIXLOG_MAX is 36000; a flood evicts the oldest session
+//      whole, then head-trims a lone session to its newest 36000 fixes.
+//   L7 (Beta 1.190) the long clean fits and the storage fits: a synthetic
+//      8-hour session (28,800 fixes) survives WHOLE under the caps, zero
+//      trimmed; a worst-case full-cap log (36,000 full-precision transit-speed
+//      fixes with outputs and run stamps) written through the real save path
+//      measures within the character budget WebKit's quota imposes (the
+//      fixlog at most FIXLOG_MAX_CHARS = 1,850,000 characters; + 250,000
+//      trail at its cap + 250,000 board/settings allowance at most the
+//      2,500,000 characters a 5 MB UTF-16 quota holds), with the trim's
+//      byte-accounted estimate never under-reading the real length; a
+//      high-entropy flood is trimmed by the CHARACTER cap before the fix
+//      cap; and a 1.189-format (v1) fixture log loads field-for-field,
+//      survives the validator, and re-saves in the e3 form without losing or
+//      altering a single field (the stored-form equivalence proof).
 const R = { checks: [] };
 const ok = (name, cond) => R.checks.push([name, cond === true]);
 const J = async (expr) => { const raw = await ev(`(() => { try { return JSON.stringify((${expr})); } catch (e) { return JSON.stringify({ __err: String(e && e.message || e) }); } })()`); return typeof raw === 'string' ? JSON.parse(raw) : {}; };
@@ -47,7 +60,7 @@ const base = JSON.parse(await ev(`(() => { const part = STRETCH.Velmar.parts[0];
 const T0 = 1760000000000;
 const started = await J(`(() => { window.__wp = null; Object.defineProperty(navigator, 'geolocation', { value: { watchPosition: (okCb, errCb) => { window.__wp = okCb; return 777; }, clearWatch: () => {} }, configurable: true }); const t0 = Date.now(); startGps(false); return { wid: watchId, t0, sess: fixLogSession ? { v: fixLogSession.v, t0: fixLogSession.t0, n: fixLogSession.f.length } : null, sessions: fixLog.length }; })()`); // the stub must go through defineProperty: navigator.geolocation is a read-only prototype accessor, so a plain assignment is a silent no-op and the app would start the REAL watch (found on this drive's first run - the session still opened, the fixes never arrived)
 ok('L1 startGps opens a log session stamped with the live version | ' + JSON.stringify(started),
-  started.wid === 777 && !!started.sess && started.sess.v === 'Beta 1.189' && Math.abs(started.sess.t0 - started.t0) < 1000 && started.sess.n === 0);
+  started.wid === 777 && !!started.sess && started.sess.v === 'Beta 1.190' && Math.abs(started.sess.t0 - started.t0) < 1000 && started.sess.n === 0);
 const feed = async (f) => J(`(() => { window.__wp({ coords: { latitude: ${f[0]}, longitude: ${f[1]}, accuracy: ${f[2]}, speed: ${f[3]}, heading: ${f[4]} }, timestamp: ${f[5]} }); const s = fixLog[fixLog.length - 1]; return { ent: s.f[s.f.length - 1], gps: gpsPos, dsp: dispPos, smh: smHeading }; })()`);
 const M = (e, n) => [base.lat + n / 111320, base.lng + e / 80386];
 const p1 = M(0, 0), p2 = M(4, 1), p5 = M(14, 2);
@@ -82,8 +95,9 @@ ok('L1 stopGps closes the session (the watch is off, six entries kept)', closed.
 // ---------- L2: persistence across a reload ----------
 await ev(`(() => { flushAux(true); return true; })()`);
 const stored = await J(`(() => { const raw = localStorage.getItem(LS.fixlog); return { raw, mem: fixLog }; })()`);
-ok('L2 the forced flush lands the log in storage, identical to memory',
-  typeof stored.raw === 'string' && canon(JSON.parse(stored.raw)) === canon(stored.mem));
+const storedDec = await J(`fixLogDecodeSessions(JSON.parse(localStorage.getItem(LS.fixlog)))`);
+ok('L2 the forced flush lands the log in storage in the e3 form, decoding back to memory exactly',
+  typeof stored.raw === 'string' && JSON.parse(stored.raw).e === 3 && canon(storedDec) === canon(stored.mem));
 await reloadPage();
 const afterReload = await J(`({ fixLog, storedRaw: localStorage.getItem(LS.fixlog) })`);
 ok('L2 the log survives a reload - memory rebuilt from storage, field-for-field',
@@ -93,8 +107,9 @@ ok('L2 the log survives a reload - memory rebuilt from storage, field-for-field'
 await ev(`(() => { markDone('Velmar', 'tap'); saveAll(); return true; })()`); await sleep(300); // a non-trivial board, so L4 can prove the old backup's board lands
 const bakStr = await ev(`buildBackup()`);
 const bak = bakStr ? JSON.parse(bakStr) : null;
+const bakDec = bak && typeof bak.fixlog === 'string' ? await J(`fixLogDecodeSessions(JSON.parse(${JSON.stringify(bak.fixlog)}))`) : null;
 ok('L3 the backup carries the fix log, field-for-field | fixlog=' + (bak ? typeof bak.fixlog : 'NO BACKUP'),
-  !!bak && typeof bak.fixlog === 'string' && canon(JSON.parse(bak.fixlog)) === canon(stored.mem));
+  !!bak && typeof bak.fixlog === 'string' && canon(bakDec) === canon(stored.mem));
 await ev(`(() => { localStorage.removeItem(LS.fixlog); return true; })()`);
 await reloadPage();
 const wiped = await J(`fixLog.length`);
@@ -122,7 +137,7 @@ await ev(`(() => { fixLogOpen(); acceptFix({ coords: { latitude: NaN, longitude:
 const nanBakStr = await ev(`buildBackup()`);
 const nanBak = nanBakStr ? JSON.parse(nanBakStr) : null;
 const nanEntry = (log) => { for (const s of log || []) for (const e of s.f || []) if (e[1] === null && e[2] === base.lng) return e; return null; };
-const nanInBak = nanBak && typeof nanBak.fixlog === 'string' ? nanEntry(JSON.parse(nanBak.fixlog)) : null;
+const nanInBak = nanBak && typeof nanBak.fixlog === 'string' ? nanEntry(await J(`fixLogDecodeSessions(JSON.parse(${JSON.stringify(nanBak.fixlog)}))`)) : null;
 ok('L4b the backup itself carries the refused non-finite fix (null coordinate, null output slot) | ' + JSON.stringify(nanInBak),
   !!nanInBak && nanInBak[6] === null);
 await ev(`(() => { localStorage.removeItem(LS.fixlog); return true; })()`);
@@ -144,11 +159,54 @@ ok('L5 a stationary dot under +-7 m fix noise ends within 3 m of truth (drive127
 ok('L5 every stationary fix was logged with its estimator output', s5.entries === NOISE.length && s5.withOut === NOISE.length);
 
 // ---------- L6: the cap ----------
-const cap = await J(`(() => { const T = Date.now() + 1000; fixLogClose(); fixLogOpen(); for (let i = 1; i <= 100; i++) acceptFix({ coords: { latitude: 44 + i * 1e-7, longitude: -79.5, accuracy: 10, speed: 2, heading: 10 }, timestamp: T + i * 1000 }); fixLogClose(); fixLogOpen(); for (let i = 1; i <= 12050; i++) acceptFix({ coords: { latitude: 44.1 + i * 1e-7, longitude: -79.5, accuracy: 10, speed: 2, heading: 10 }, timestamp: T + 100000 + i * 1000 }); const s = fixLog[fixLog.length - 1]; return { MAX: FIXLOG_MAX, sessions: fixLog.length, count: fixLogCount, lastN: s.f.length, firstLat: s.f[0][1], markerGone: !fixLog.some(x => x.v === 'MARKER') }; })()`);
-ok('L6 the cap constant is 12000 and the flood respects it | ' + JSON.stringify(cap),
-  cap.MAX === 12000 && cap.count === 12000 && cap.lastN === 12000);
+const cap = await J(`(() => { const T = Date.now() + 1000; fixLogClose(); fixLogOpen(); for (let i = 1; i <= 100; i++) acceptFix({ coords: { latitude: 44 + i * 1e-7, longitude: -79.5, accuracy: 10, speed: 2, heading: 10 }, timestamp: T + i * 1000 }); fixLogClose(); fixLogOpen(); const S = fixLogSession; for (let i = 1; i <= 36050; i++) { S.f.push([T + 100000 + i * 1000, 44.1 + i * 1e-7, -79.5, 10, 2, 10, null, 0]); fixLogCount++; if (i % 5000 === 0) fixLogTrim(); } fixLogTrim(); const s = fixLog[fixLog.length - 1]; return { MAX: FIXLOG_MAX, sessions: fixLog.length, count: fixLogCount, lastN: s.f.length, firstLat: s.f[0][1], markerGone: !fixLog.some(x => x.v === 'MARKER') }; })()`); // Beta 1.190: the flood entries are pushed in the logger's own in-memory shape (2,000+ acceptFix calls proved the append path in 1.189; the claim here is the trim's end state, and the trim converges to it from any append cadence)
+ok('L6 the cap constant is 36000 and the flood respects it | ' + JSON.stringify(cap),
+  cap.MAX === 36000 && cap.count === 36000 && cap.lastN === 36000);
 ok('L6 the oldest sessions are evicted whole; the lone surviving session is head-trimmed to its newest fixes (first survivor is flood fix 51)',
   cap.sessions === 1 && cap.markerGone === true && Math.abs(cap.firstLat - (44.1 + 51 * 1e-7)) < 1e-9);
+
+// ---------- L7 (Beta 1.190): the long clean fits, the bytes fit, the old form replays ----------
+const eight = await J(`(() => { fixLog = []; fixLogCount = 0; fixLogSession = null; fixLogOpen(); const S = fixLogSession; const T = 1761000000000; for (let i = 0; i < 28800; i++) { S.f.push([T + i * 1000, 44.2 + i * 1e-7, -79.6, 10, 2, 10, null, T]); fixLogCount++; } fixLogTrim(); _fxMeasure(S); return { n: S.f.length, count: fixLogCount, first: S.f[0][0], last: S.f[S.f.length - 1][0], est: fixLogEstChars(), maxChars: FIXLOG_MAX_CHARS }; })()`);
+ok('L7 a full 8-hour clean (28,800 fixes in one session) survives WHOLE under the caps - zero trimmed, and its measured stored size sits under the character cap | ' + JSON.stringify(eight),
+  eight.n === 28800 && eight.count === 28800 && eight.first === 1761000000000 && eight.last === 1761000000000 + 28799000 && eight.est <= eight.maxChars);
+const bytes = await J(`(() => { let lat = 43.8147013, lng = -79.5593017; const T = 1762000000000, f = []; for (let i = 0; i < 36000; i++) { lat += 0.00013489871; lng -= 0.00002134567; f.push([T + i * 1000, lat, lng, Math.fround(5 + (i % 61) * 0.983), 14.9 + (i % 37) * 0.0137123456789, 355.12345678901234, [+lat.toFixed(6), +lng.toFixed(6), +lat.toFixed(6), +lng.toFixed(6), 355.1], T - 600000]); } fixLog = [{ v: 'Beta 1.190', t0: T, f }]; fixLogCount = 36000; fixLogSession = null; const r = saveFixLog(); const raw = localStorage.getItem(LS.fixlog); _fxMeasure(fixLog[0]); return { ok: !!(r && r.ok), len: raw ? raw.length : -1, est: fixLogEstChars(), maxChars: FIXLOG_MAX_CHARS }; })()`);
+ok('L7 the stored log at the full 36,000 cap, written through the real save path on a worst-case stream, fits the WebKit quota arithmetic (fixlog <= FIXLOG_MAX_CHARS = 1,850,000 characters; + 250,000 trail at cap + 250,000 board/settings allowance <= 2,500,000 characters = the 5 MB UTF-16 quota), and the trim estimate never under-reads the real length | chars=' + bytes.len + ' (' + (bytes.len / 36000).toFixed(1) + '/fix), est=' + bytes.est,
+  bytes.ok === true && bytes.len > 0 && bytes.len <= bytes.maxChars && bytes.len + 250000 + 250000 <= 2500000 && bytes.est >= bytes.len && bytes.est <= bytes.maxChars);
+const ent = await J(`(() => { let seed = 987654321; const rnd = () => { seed = (seed * 1103515245 + 12345) & 0x7fffffff; return seed / 0x7fffffff; }; fixLog = []; fixLogCount = 0; fixLogSession = null; fixLogOpen(); const S = fixLogSession; const T = 1761500000000; let lat = 44.0, lng = -79.7; for (let i = 0; i < 36000; i++) { lat += (rnd() - 0.5) * 6e-5; lng += (rnd() - 0.5) * 8e-5; S.f.push([T + i * 1000, lat, lng, Math.fround(3 + rnd() * 30), rnd() * 18.765432109876543, rnd() * 359.987654321, [+lat.toFixed(6), +lng.toFixed(6), +lat.toFixed(6), +lng.toFixed(6), 123.4], T]); fixLogCount++; } _fxMeasure(S); const before = fixLogEstChars(); fixLogTrim(); saveFixLog(); markClean('fixlog'); const raw = localStorage.getItem(LS.fixlog); return { before, after: fixLogEstChars(), n: S.f.length, count: fixLogCount, rawLen: raw ? raw.length : -1, maxChars: FIXLOG_MAX_CHARS }; })()`); // markClean: the direct saveFixLog bypasses the storage doorway, so the test leaves the flag exactly as the doorway would — otherwise the page's own unload flush would rewrite this log over the planted one in the reload below, and the plant checks would be testing the flush, not the loader
+ok('L7 a high-entropy flood (white-noise fixes no real stream matches) is trimmed by the CHARACTER cap before the fix cap: the count lands below 36,000, the estimate and the real stored record both end within FIXLOG_MAX_CHARS | ' + JSON.stringify(ent),
+  ent.before > ent.maxChars && ent.n < 36000 && ent.count === ent.n && ent.after <= ent.maxChars && ent.rawLen > 0 && ent.rawLen <= ent.maxChars);
+const FIXV1 = [{ v: 'Beta 1.189', t0: 1760500000000, f: [
+  [1760500001000, 43.814701299999997, -79.55930129999999, 8.5, 3.2123456789012345, 90.12345678901234, [43.814701, -79.559301, 43.8147, -79.5593, 90.1], 0],
+  [1760500002000, 43.81471021234568, -79.55931304567892, 12, null, null, [43.81471, -79.559313, 43.81471, -79.559313, null], 0],
+  [1760500003000, null, -79.55932000000001, 10, null, null, null, 0],
+  [1760500004000, 43.81472567890123, -79.55933012345678, 6.25, 4.0, 92.5, [43.814726, -79.55933, 43.814725, -79.559329, 92.4], 1760499000000],
+  [1760500005000, 43.81473000000001, -79.55933500000002, 200, 4.1, 93, null, 1760499000000]] }];
+const v1Canon = await J(`fixLogDecodeSessions(JSON.parse(canonicalFixLog(${JSON.stringify(JSON.stringify(FIXV1))})))`);
+ok('L7 the backup validator takes a 1.189-format log and loses nothing: its canonical form decodes back field-for-field',
+  canon(v1Canon) === canon(FIXV1));
+await ev(`(() => { localStorage.setItem(LS.fixlog, ${JSON.stringify(JSON.stringify(FIXV1))}); return true; })()`);
+await reloadPage();
+const v1Loaded = await J(`fixLog`);
+ok('L7 a 1.189-format log planted in storage loads field-for-field (every full-precision field, the nulls, the refused fix, the run-stamp change)',
+  canon(v1Loaded) === canon(FIXV1));
+const v1Resaved = await J(`(() => { saveFixLog(); const raw = localStorage.getItem(LS.fixlog); return { e: JSON.parse(raw).e, dec: fixLogDecodeSessions(JSON.parse(raw)) }; })()`);
+ok('L7 re-saving that log writes the e3 form, and the e3 form decodes back to the same fields exactly',
+  v1Resaved.e === 3 && canon(v1Resaved.dec) === canon(FIXV1));
+
+// ---------- L8 (gate fixes, PR #31): fractional timestamps, and the head-trim soak ----------
+const frac = await J(`(() => { fixLog = []; fixLogCount = 0; fixLogSession = null; fixLogOpen(); const T = 1761000000000; const e1 = fixLogRaw({ coords: { latitude: 44.3, longitude: -79.65, accuracy: 9, speed: 1.5, heading: 45 }, timestamp: T + 0.5 }); const e2 = fixLogRaw({ coords: { latitude: 44.300001, longitude: -79.65, accuracy: 9, speed: 1.5, heading: 45 }, timestamp: T + 1000.25 }); fixLogClose(); saveFixLog(); const dec = fixLogDecodeSessions(JSON.parse(localStorage.getItem(LS.fixlog))); const v1f = fixLogDecodeSessions([{ v: 'Beta 1.189', t0: T, f: [[T + 0.5, 44.3, -79.65, 9, 1.5, 45, null, 0]] }]); let v1Err = ''; try { _fxMeasure(v1f[0]); const re = fixLogDecodeSessions(fixLogEncodeSessions(v1f)); if (!re.length || re[0].f[0][0] !== T + 0.5) v1Err = 'round-trip mismatch'; } catch (err) { v1Err = String(err && err.message || err); } return { kept: [!!e1, !!e2], sess: fixLog[0].f.length, dec: dec.length && dec[0].f.length === 2 ? [dec[0].f[0][0], dec[0].f[1][0]] : null, v1Err }; })()`);
+ok('L8 a fractional-timestamp fix is recorded and replays exactly (no integer-only conversion anywhere on the path), and a v1 log carrying one measures + re-encodes without throwing | ' + JSON.stringify(frac),
+  frac.kept[0] === true && frac.kept[1] === true && frac.sess === 2 && !!frac.dec && frac.dec[0] === 1761000000000.5 && frac.dec[1] === 1761000001000.25 && frac.v1Err === '');
+const soak = await J(`(() => { fixLog = []; fixLogCount = 0; fixLogSession = null; fixLogOpen(); const S = fixLogSession; const T = 1761200000000; for (let i = 0; i < 45000; i++) fixLogRaw({ coords: { latitude: 44.4 + i * 1e-7, longitude: -79.7, accuracy: 10, speed: 2, heading: 10 }, timestamp: T + i * 1000 }); fixLogClose(); const est = fixLogEstChars(); saveFixLog(); const raw = localStorage.getItem(LS.fixlog); return { n: S.f.length, count: fixLogCount, first: S.f[0][0], est, rawLen: raw ? raw.length : -1, maxChars: FIXLOG_MAX_CHARS }; })()`);
+ok('L8 the head-trim soak: 45,000 appends through the real append path retain exactly the newest 36,000 fixes, the estimate stays honest, and the stored record stays within the character cap (the accumulating-allowance repro) | ' + JSON.stringify(soak),
+  soak.n === 36000 && soak.count === 36000 && soak.first === 1761200000000 + 9000000 && soak.est <= soak.maxChars && soak.rawLen > 0 && soak.rawLen <= soak.maxChars);
+
+// ---------- L9 (gate fix round 3, PR #31): the output's growth re-caps at once, and a lone session is never evicted whole ----------
+const recap = await J(`(() => { let seed = 246813579; const rnd = () => { seed = (seed * 1103515245 + 12345) & 0x7fffffff; return seed / 0x7fffffff; }; fixLog = []; fixLogCount = 0; fixLogSession = null; fixLogOpen(); const S = fixLogSession; const T = 1761300000000; let lat = 44.0, lng = -79.7; for (let i = 0; i < 36000; i++) { lat += (rnd() - 0.5) * 6e-5; lng += (rnd() - 0.5) * 8e-5; S.f.push([T + i * 1000, lat, lng, Math.fround(3 + rnd() * 30), rnd() * 18.765432109876543, rnd() * 359.987654321, null, T]); fixLogCount++; } _fxMeasure(S); fixLogTrim(); const n0 = S.f.length, est0 = fixLogEstChars(); const e = S.f[S.f.length - 1]; gpsPos = [e[1], e[2]]; dispPos = [e[1], e[2]]; smHeading = 10; fixLogOut(e); const est1 = fixLogEstChars(), n1 = S.f.length; saveFixLog(); markClean('fixlog'); const boot = (() => { const dec = fixLogDecodeSessions(JSON.parse(localStorage.getItem(LS.fixlog))); let c = 0; for (const s of dec) { c += s.f.length; _fxMeasure(s); } const keep = fixLog; fixLog = dec; const cnt = fixLogCount; fixLogCount = c; fixLogTrim(); const out = { sessions: fixLog.length, n: fixLog.length ? fixLog[0].f.length : 0 }; fixLog = keep; fixLogCount = cnt; return out; })(); return { n0, est0, est1, n1, boot, maxChars: FIXLOG_MAX_CHARS }; })()`);
+ok('L9 near the character cap, adding the estimator output re-caps at once: the estimate ends within FIXLOG_MAX_CHARS without waiting for the next append | ' + JSON.stringify(recap),
+  recap.est1 <= recap.maxChars && recap.n1 >= recap.n0 - 100 && recap.n1 > 30000);
+ok('L9 the saved near-cap log survives the boot sequence whole-sessioned (the lone session is head-trimmed at most, never evicted whole) | ' + JSON.stringify(recap.boot),
+  recap.boot.sessions === 1 && recap.boot.n >= recap.n1 - 100);
 
 R.exceptions = consoleLog.filter(c => c.type === 'EXCEPTION');
 finish(R, proc);
