@@ -41,6 +41,7 @@ const COV_SAMPLE_M = 15; // coverage samples are laid along a street every this 
 const COV_RADIUS_M = 22; // a GPS fix covers the samples within this radius of it (coverFix, app3)
 const COV_FRAC = 0.85; // the covered fraction at which an unmarked street is SUGGESTED (never auto-marked - coverFix, app3)
 const GPS_ACCURACY_M = 65; // fixes reported worse than this are rejected while a fresh good fix exists; the accept comparison (<=) and the reject comparison (>) are ONE rule - this constant (acceptFix, app3)
+const GPS_STILL_MPS = 0.5; // Beta 1.187 (GPS package, STOP B): a recorded fix reporting under this speed is a stopped fix - acceptFix's trail guard banks no distance and records no trail point from it (a parked truck's fix wander was banking a median 138 phantom metres a minute into saved cleans). The position path is NOT gated by it: the dot follows every accepted fix exactly as before. (A tighter 28 m accuracy gate and a stationary position hold were priced in the same harness and did NOT ship - both measured neutral-to-worse; the round record carries the numbers.)
 const GPS_STALE_MS = 45000; // a watch silent this long is restarted (app3) - a GPS policy
 const TRAIL_FLUSH_MS = 45000; // the buffered trail write's flush interval (flushAux, below) - a STORAGE policy; see the fence above
 const COV_SAVE_MS = 15000; // the coverage write's throttle window (flushAux, below; declared here with the rule constants since Beta 1.136 - its 1.135 flush discipline is unchanged)

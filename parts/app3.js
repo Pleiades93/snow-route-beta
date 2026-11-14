@@ -656,11 +656,14 @@ onMapReady(() => { const c = map.getCanvas(); let press = null; // {x, y, id} - 
 // north: 'my north' is wherever he is heading. Smoothed around the circle so low-speed wobble can't spin
 // the map; under ~1 m/s the course is unreliable, so the map just holds its last bearing.
 let smHeading = null;
+let lastHeadFixAt = 0; // Beta 1.187 (GPS package, TURN A): when the previous heading fix landed - the smoother below is sized by the TIME between fixes, not by fix count
 function headDelta(a, b) { return ((((b - a + 180) % 360) + 360) % 360) - 180; }
-function updateHeading(hdg, speed) {
+function updateHeading(hdg, speed, now) {
   if (typeof hdg !== 'number' || isNaN(hdg) || !speed || speed < 1) return;
   if (followPaused) return; // Beta 1.122 (Andrew): the smoothed course is maintained whenever location is on, not only during a run - headCam applies it whenever the camera follows
-  smHeading = smHeading === null ? hdg : smHeading + headDelta(smHeading, hdg) * 0.35; // Beta 1.115: this only maintains the smoothed course now - headCam, in the render loop, applies it to the map
+  if (smHeading === null) { smHeading = hdg; lastHeadFixAt = now; return; }
+  const dt = Math.min(3, Math.max(0.05, (now - lastHeadFixAt) / 1000)); lastHeadFixAt = now;
+  smHeading = smHeading + headDelta(smHeading, hdg) * (1 - Math.pow(0.65, dt)); // Beta 1.187 (GPS package, TURN A): the step used to be 0.35 per FIX - identical at a steady 1 Hz, but bursty delivery (two fixes 0.15 s apart, then a 3 s gap) stepped it twice in a blink or starved it for seconds; in the harness 9 of 10 bursty runs never settled within 5 degrees after a turn. Retention 0.65^dt makes the smoother a function of the time between fixes: bursty peak turn error 62.5 -> 55.6 degrees, regular cadence unchanged. (Driving the camera from the filter's own velocity instead was A/B'd in the same harness and LOST - peak 88 degrees - so the OS course stays the source.) // Beta 1.115: this only maintains the smoothed course now - headCam, in the render loop, applies it to the map
 }
 // Beta 1.115: heading-up is applied per render tick, fractionally, in the same pipeline
 // as followCam's pan. It used to be a map.easeTo fired from updateHeading - but a camera
@@ -764,7 +767,7 @@ function acceptFix(pos) {
   if (snap || !dispPos || !pred) { dispOff = [0, 0]; if (pred) dispPos = pred; }
   else dispOff = [(dispPos[0] - pred[0]) * MLAT, (dispPos[1] - pred[1]) * MLNG];
   startRenderLoop(); // the old glide started the loop here; the coasting display needs it just as much (a fix can arrive on an existing watch and must still render)
-  updateHeading(pos.coords.heading, speed);
+  updateHeading(pos.coords.heading, speed, now);
   if (typeof pos.coords.heading === 'number' && speed && speed >= 1) { lastCourseAt = now; setFacing(pos.coords.heading, 0.5); } // moving: face along the course
   const spd = $('spd');
   if (speed && speed > 0.5) { spd.textContent = Math.round(speed * 3.6) + ' km/h'; spd.classList.remove('hidden'); } else spd.classList.add('hidden');
@@ -775,14 +778,18 @@ function acceptFix(pos) {
   if (inB) offRouteArmed = true;
   if (runStart && gpsFromRun) { // Beta 1.49 (Andrew's rule): route data is recorded ONLY by a clean's own GPS - the Locate tab's view-only watch never writes trail or coverage, even if a stale flag disagrees
     if (runDist.run !== runStart) adoptRunDist(); // Beta 1.167 (B5): first recorded fix of a run the counter has not met (a mid-run reload, a pre-1.167 start) - adopt the banked record or re-derive from the surviving trail
-    const runSec = Math.floor(runStart / 1000);
-    const prevPt = trail.length ? trail[trail.length - 1] : null;
-    const newPt = [+sm[0].toFixed(6), +sm[1].toFixed(6), Math.floor(now / 1000)];
-    if (prevPt && prevPt[2] >= runSec && newPt[2] - prevPt[2] <= 300) { const seg = distM(prevPt, newPt); if (seg <= 1000) runDist.m += seg; } // trailKm's own pair rule, applied at record time so the total survives the cap below
-    trail.push(newPt);
-    if (trail.length > TRAIL_MAX) { const dropped = trail.splice(0, trail.length - TRAIL_MAX); if (dropped.some(pt => pt[2] >= runSec)) runDist.capped = true; }
-    persistRunDist(false);
-    markDirty('trail'); flushAux(false); drawTrail();
+    const stillFix = typeof speed === 'number' && speed >= 0 && speed < GPS_STILL_MPS; // Beta 1.187 (GPS package, STOP B): a stopped fix records nothing - no trail point, no banked segment; coverage below still runs on it (a truck edging a driveway at creep pace keeps earning its streets), and the next moving fix measures its segment from the last RECORDED point, so genuine distance survives the guard. A fix reporting no speed is no evidence of stillness and records as before.
+    if (!stillFix) {
+      const runSec = Math.floor(runStart / 1000);
+      const prevPt = trail.length ? trail[trail.length - 1] : null;
+      const newPt = [+sm[0].toFixed(6), +sm[1].toFixed(6), Math.floor(now / 1000)];
+      if (prevPt && prevPt[2] >= runSec && newPt[2] - prevPt[2] <= 300) { const seg = distM(prevPt, newPt); if (seg <= 1000) runDist.m += seg; } // trailKm's own pair rule, applied at record time so the total survives the cap below
+      trail.push(newPt);
+      if (trail.length > TRAIL_MAX) { const dropped = trail.splice(0, trail.length - TRAIL_MAX); if (dropped.some(pt => pt[2] >= runSec)) runDist.capped = true; }
+      persistRunDist(false);
+      markDirty('trail');
+    }
+    flushAux(false); drawTrail();
     coverFix(sm);
   }
 }
