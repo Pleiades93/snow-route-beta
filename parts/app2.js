@@ -226,7 +226,7 @@ function addGpsLayers() {
       const cssW = cnv.clientWidth, cssH = cnv.clientHeight;
       if (!cssW || !cssH || !cnv.width) return;
       const dev = cnv.width / cssW;
-      const pt = map.project([dispPos[1], dispPos[0]]);
+      const pt = map.project([dispShownPos()[1], dispShownPos()[0]]); // Beta 1.194: the puck centres on the RENDERED point - while the stillness hold (app3) is engaged this is the held point, so the puck sits truly still at rest instead of twitching with the display track
       const D = 0.054 * cssW * dev;
       const pitch = map.getPitch() * Math.PI / 180;
       const faceK = Math.max(0.30, Math.pow(Math.cos(pitch), 1.47));

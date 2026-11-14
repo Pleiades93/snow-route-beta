@@ -537,7 +537,7 @@ input, textarea { caret-color: currentColor; } /* Beta 1.125 (Andrew): the typin
 <div id="hud">
   <div id="warn">Not saving — storage is full or blocked</div>
   <div class="row">
-    <div class="titleStack"><div class="title">Snow Route Beta</div><div class="ver" id="ver">Beta 1.193</div></div>
+    <div class="titleStack"><div class="title">Snow Route Beta</div><div class="ver" id="ver">Beta 1.194</div></div>
   </div>
   <div id="stats"></div>
 </div>
@@ -3300,7 +3300,7 @@ function addGpsLayers() {
       const cssW = cnv.clientWidth, cssH = cnv.clientHeight;
       if (!cssW || !cssH || !cnv.width) return;
       const dev = cnv.width / cssW;
-      const pt = map.project([dispPos[1], dispPos[0]]);
+      const pt = map.project([dispShownPos()[1], dispShownPos()[0]]); // Beta 1.194: the puck centres on the RENDERED point - while the stillness hold (app3) is engaged this is the held point, so the puck sits truly still at rest instead of twitching with the display track
       const D = 0.054 * cssW * dev;
       const pitch = map.getPitch() * Math.PI / 180;
       const faceK = Math.max(0.30, Math.pow(Math.cos(pitch), 1.47));
@@ -4498,11 +4498,11 @@ function pushGps() {
   const src = map && map.getSource('gps'); if (!src) return;
   const feats = [];
   if (dispPos && watchId != null && facingDeg != null) { // the facing beam (Beta 1.49): a point carrying the facing - the gps-beam symbol layer paints the gradient fan image along it (Apple Maps style, Andrew's reference)
-    feats.push({ type: 'Feature', properties: { k: 'beam', rot: Math.round(facingDeg * 10) / 10 }, geometry: { type: 'Point', coordinates: [dispPos[1], dispPos[0]] } });
+    feats.push({ type: 'Feature', properties: { k: 'beam', rot: Math.round(facingDeg * 10) / 10 }, geometry: { type: 'Point', coordinates: [dispShownPos()[1], dispShownPos()[0]] } }); // Beta 1.194: drawn features sit on the rendered point (dispShownPos) with the puck they belong to
   }
   if (dispPos) {
     // Beta 1.188: the puck itself is NOT a feature any more - the gps-puck-shader custom layer (addGpsLayers, app2) draws it in screen space straight off dispPos on every rendered frame, so the 1.182 ground discs (puckwhite / puckblue) and their 14-110 px clamp machinery are retired from here. pushGps keeps the facing beam (above) and the accuracy ring (below); the puck's visibility rule is unchanged - drawn exactly while dispPos is set, the same condition that gated the discs.
-    if (gpsAccM > 0) { const ring = []; const R = gpsAccM; for (let a = 0; a <= 28; a++) { const th = a / 28 * Math.PI * 2; ring.push([dispPos[1] + (R * Math.sin(th)) / MLNG, dispPos[0] + (R * Math.cos(th)) / MLAT]); } feats.push({ type: 'Feature', properties: { k: 'ring' }, geometry: { type: 'Polygon', coordinates: [ring] } }); }
+    if (gpsAccM > 0) { const ring = []; const R = gpsAccM; for (let a = 0; a <= 28; a++) { const th = a / 28 * Math.PI * 2; ring.push([dispShownPos()[1] + (R * Math.sin(th)) / MLNG, dispShownPos()[0] + (R * Math.cos(th)) / MLAT]); } feats.push({ type: 'Feature', properties: { k: 'ring' }, geometry: { type: 'Polygon', coordinates: [ring] } }); }
   }
   src.setData({ type: 'FeatureCollection', features: feats });
 }
@@ -4516,6 +4516,42 @@ let gpsAccM = 0;
 let renderRaf = 0, renderPump = 0, lastFrameAt = 0, lastCamAt = 0, lastPushKey = ''; // Beta 1.65 (Andrew's road report: the GPS motion stuttered; third audit item 1): ONE frame-synced render loop drives the dot and the camera - the 40 ms glide timer and the 50 ms camera timer used to overlap at ~45 unsynced updates a second, and the camera's per-tick easing sped up whenever they overlapped
 let dispOff = [0, 0], lastDispAt = 0; // Beta 1.115 (Andrew's drive report: the dot stepped once a second): the display no longer glides toward a fixed aim and stops - it COASTS on the estimator's predicted track (kfPredict, by the filter below) every frame, and a fix's correction is absorbed into dispOff (metres, [lat, lng]) and decayed away over ~0.3 s, so a fix never teleports the dot either. Smoothing is DISPLAY-ONLY: trail, coverage and pace keep consuming the raw accepted estimate (gpsPos) exactly as before.
 function dispSettled() { return Math.abs(dispOff[0]) < 0.05 && Math.abs(dispOff[1]) < 0.05; }
+// Beta 1.194 (display stillness hold, round-3 judging REPORT3 S2): standing still, Andrew's puck
+// twitches - the position filter keeps re-settling in sub-metre steps (0.5-1.5 m display steps on
+// fixes whose raw step is under 0.02 m; ~4 px hops at zoom 18) even though this phone's raw at-rest
+// scatter measures 0.08-0.28 m. The twitch is a DISPLAY artefact, so the fix is display-only: once
+// the display has genuinely settled, the rendered point freezes at the held point until the vehicle
+// really moves. Nothing upstream changes - gpsPos, dispPos, coverage, trail, banking and the fix
+// logger (which records the un-held display track, keeping its data comparable with the 1.189-1.193
+// logs) all see true values exactly as before; only what is RENDERED (the puck, the beam and ring,
+// the follow camera's target) reads dispShownPos(). An estimator-level hold (ZUPT) was judged and
+// dropped on the same evidence: its target wander measured 20-70x smaller than its premise here.
+let dispHoldPt = null; // the held [lat, lng] while engaged, else null
+let dispHoldRaw = null; // the raw fix position at engagement (the displacement exit is judged on raw travel - at rest the raw position never moves more than 0.4 m in any window, a 3.75x margin under the exit threshold, while the display's own arrival convergence would false-trip a display-based exit)
+let dispHoldPrev = null; // dispPos at the previous fix - the display-step basis the engage test reads
+let dispHoldSteps = []; // the last 3 display steps (m)
+let dispHoldN = 0; // fixes the state machine has seen (the engage test needs three real steps behind it)
+let dispHoldLow = 0, dispHoldFast = 0, dispHoldFar = 0; // consecutive-fix counters: slow (engage), >= 0.5 m/s and raw-displaced (exit)
+function dispShownPos() { return dispHoldPt || dispPos; } // THE rendered position: the held point while the hold is engaged, the display track otherwise. Every rendered consumer reads this; every recording consumer keeps reading dispPos/gpsPos.
+function dispHoldReset() { dispHoldPt = null; dispHoldRaw = null; dispHoldPrev = null; dispHoldSteps = []; dispHoldN = 0; dispHoldLow = 0; dispHoldFast = 0; dispHoldFar = 0; }
+function dispHoldFix(speed, ll) { // fed once per accepted fix, at the same instant fixLogOut reads dispPos - the basis the judging simulation (analyze6c) was proven on
+  const dp = dispPos;
+  const step = (dp && dispHoldPrev) ? distM(dispHoldPrev, dp) : 0;
+  if (dp) dispHoldPrev = dp.slice();
+  dispHoldSteps.push(step); if (dispHoldSteps.length > 3) dispHoldSteps.shift();
+  dispHoldN++;
+  const spd = (typeof speed === 'number' && isFinite(speed)) ? speed : null; // a fix reporting no speed is no evidence either way: it neither engages nor releases on speed (the raw-displacement exit still guards it)
+  if (!dispHoldPt) {
+    if (spd !== null && spd < 0.5) {
+      dispHoldLow++;
+      if (dispHoldLow >= 2 && dispHoldN >= 4 && dispHoldSteps.length >= 3 && dispHoldSteps.every(s => s < 0.3) && dp) { dispHoldPt = dp.slice(); dispHoldRaw = ll.slice(); dispHoldFast = 0; dispHoldFar = 0; } // engage: 2 slow fixes AND the last 3 display steps each under 0.3 m - the settled test is what keeps the hold out of the arrival glide (a naive engage-on-speed hold false-fired repeatedly in simulation, exiting mid-stop with 1-3 m jumps)
+    } else dispHoldLow = 0;
+    return;
+  }
+  dispHoldFast = (spd !== null && spd >= 0.5) ? dispHoldFast + 1 : 0;
+  dispHoldFar = (dispHoldRaw && distM(ll, dispHoldRaw) > 1.5) ? dispHoldFar + 1 : 0;
+  if ((spd !== null && spd >= 0.8) || dispHoldFast >= 2 || dispHoldFar >= 2) { dispHoldPt = null; dispHoldRaw = null; dispHoldLow = 0; dispHoldFast = 0; dispHoldFar = 0; } // exit: one fix at honest moving speed, or two at creep threshold, or the raw position really has travelled - on the real data every exit jump measured 0.20-1.18 m and the one real creep released at its second fix with a 0.34 m jump
+}
 function renderTick(now) {
   const pred = kfPredict(); // Beta 1.115: the predicted track at THIS frame - between fixes it advances on the estimated velocity, so the dot flows instead of bursting once a second
   if (pred) {
@@ -4525,8 +4561,8 @@ function renderTick(now) {
     dispPos = [pred[0] + dispOff[0] / MLAT, pred[1] + dispOff[1] / MLNG];
   }
   let camKey = ''; // Beta 1.182: the camera state that sizes the puck joins the push key, bucketed - quarter-zoom (sets the scale), half-degree bearing (rotates the projected measure), 2-degree pitch (sets its anisotropy), the puck's own projected position on a 16 px grid and the viewport size (Codex's fourth catch on PR #19: under pitch the local stretch varies across the viewport, so PANNING a pitched map with a stationary fix moves the puck through the perspective gradient without changing zoom, bearing or pitch - the stale radii could carry it past the cap near the viewport's bottom edge). Together these are every input the projection of a static ground point depends on, so any change that could resize the puck re-pushes the glyph even when nothing moved.
-  if (map) { camKey = Math.round(map.getZoom() * 4) / 4 + ',' + Math.round(map.getBearing() * 2) / 2 + ',' + Math.round(map.getPitch() / 2) * 2 + ',' + map.getCanvas().clientWidth + 'x' + map.getCanvas().clientHeight; if (dispPos) { const pp = map.project([dispPos[1], dispPos[0]]); camKey += ',' + Math.round(pp.x / 16) + ':' + Math.round(pp.y / 16); } }
-  const key = dispPos ? dispPos[0] + ',' + dispPos[1] + ',' + facingDeg + ',' + gpsAccM + ',' + camKey : '';
+  if (map) { camKey = Math.round(map.getZoom() * 4) / 4 + ',' + Math.round(map.getBearing() * 2) / 2 + ',' + Math.round(map.getPitch() / 2) * 2 + ',' + map.getCanvas().clientWidth + 'x' + map.getCanvas().clientHeight; if (dispPos) { const pp = map.project([dispShownPos()[1], dispShownPos()[0]]); camKey += ',' + Math.round(pp.x / 16) + ':' + Math.round(pp.y / 16); } } // Beta 1.194: the puck's projected position is the RENDERED point (dispShownPos) - keyed on what is actually drawn, so a held puck does not re-push frames for display-track motion nobody sees
+  const key = dispPos ? dispShownPos()[0] + ',' + dispShownPos()[1] + ',' + facingDeg + ',' + gpsAccM + ',' + camKey : '';
   if (key !== lastPushKey) { lastPushKey = key; pushGps(); } // redraw the dot/ring/beam only when something actually moved - the old timers rebuilt it on every tick regardless
   followCam(now); headCam(now); syncCentreBtn();
 }
@@ -4539,7 +4575,7 @@ function renderLoop(now) {
 function startRenderLoop() { if (!renderRaf) { lastCamAt = lastFrameAt = performance.now(); renderRaf = requestAnimationFrame(renderLoop); } if (!renderPump) renderPump = setInterval(() => { if ((watchId != null || !dispSettled()) && performance.now() - lastFrameAt > 100) renderTick(performance.now()); if (watchId == null && dispSettled() && !renderRaf) { clearInterval(renderPump); renderPump = 0; } }, 100); } // the pump is a starvation fallback only: a browser that is not painting (headless, occluded) delivers no animation frames, and the GPS state must still advance - on a painting phone it never fires; it parks itself when nothing is left to render
 function followCam(now) {
   if (!map || !dispPos || followPaused || watchId == null) { lastCamAt = now; return; } // Beta 1.146 (census C4): the no-map guard in the SAME idiom as northUp/pushGps - in the map-failure world (MapLibre script dead, map === null) renderTick reaches this on every fix and the unguarded map.getCanvas() below threw before the fix could record. follow whenever location is ON (Beta 1.27, Andrew) - it used to engage only during a run, so the dot wandered off-screen on a plain drive. Trail recording stays run-only; heading-up applies whenever location is on and the camera follows (Beta 1.122, Andrew).
-  const c = map.getCanvas(); const p = projLL(dispPos);
+  const c = map.getCanvas(); const p = projLL(dispShownPos()); // Beta 1.194: the follow target is the rendered point - while the stillness hold is engaged the camera rests with the puck instead of creeping after the display track's re-settling
   const dx = p.x - c.clientWidth / 2, dy = p.y - c.clientHeight / 2;
   if (Math.abs(dx) < 0.5 && Math.abs(dy) < 0.5) { lastCamAt = now; return; } // Beta 1.115: the deadband was 2 px - at driving zoom the dot had to drift ~7 m off-centre before the camera moved at all, so the camera lurched in pulses behind a smoothly coasting dot; half a pixel keeps it glued without jitter (the settle band drive126 judges is 12% of the screen, two orders wider)
   const dt = Math.min(100, Math.max(1, now - lastCamAt)); lastCamAt = now;
@@ -4576,14 +4612,44 @@ onMapReady(() => { const c = map.getCanvas(); let press = null; // {x, y, id} - 
 // north: 'my north' is wherever he is heading. Smoothed around the circle so low-speed wobble can't spin
 // the map; under ~1 m/s the course is unreliable, so the map just holds its last bearing.
 let smHeading = null;
-let lastHeadFixAt = 0; // Beta 1.187 (GPS package, TURN A): when the previous heading fix landed - the smoother below is sized by the TIME between fixes, not by fix count
+let lastHeadFixAt = 0; // Beta 1.187 (GPS package, TURN A): when the previous heading fix landed - the heading path is sized by the TIME between fixes, not by fix count
+let lastHeadFixPerf = 0; // Beta 1.194: the performance-clock twin of lastHeadFixAt (kf keeps the same at/atF pair) - headCam's camera lead is measured on the frame clock
+let headF = null; // Beta 1.194 (heading filter 2a): the filter state beside smHeading (theta itself stays in smHeading - headCam, fixLogOut and northUp already read and reset it there; northUp's smHeading = null re-initializes the filter through updateHeading's init branch). {om: turn rate deg/s, p00/p01/p10/p11: the [theta, omega] covariance (NOT symmetric after an update - the predict uses both off-diagonals, exactly as the replayed prototype carries them), gate: the previous gated innovation's signed value (0 = none)}
+const HEAD_Q = 400; // Beta 1.194: 2a's process noise, deg^2/s^3 - the configuration the round-3 judging replay proved on Andrew's two real drives (REPORT3 S3: session-2 fixes over 20 deg of heading error 52 shipped -> 5 at q = 400 with the step escape). Its gate is the round-2 simulator's heading-burst guard; the mandated fallback on a guard failure is q = 100 (replay: 52 -> 8), never a tuned guard.
+function headSigma(v) { return 6 + 18 / Math.max(v, 0.5); } // the OS course's noise falls with speed (round-2 sim noise model; Claude's 2a R) - at rest the course is stale or absent, at speed it sharpens
 function headDelta(a, b) { return ((((b - a + 180) % 360) + 360) % 360) - 180; }
 function updateHeading(hdg, speed, now) {
-  if (typeof hdg !== 'number' || isNaN(hdg) || !speed || speed < 1) return;
-  if (followPaused) return; // Beta 1.122 (Andrew): the smoothed course is maintained whenever location is on, not only during a run - headCam applies it whenever the camera follows
-  if (smHeading === null) { smHeading = hdg; lastHeadFixAt = now; return; }
-  const dt = Math.min(3, Math.max(0.05, (now - lastHeadFixAt) / 1000)); lastHeadFixAt = now;
-  smHeading = smHeading + headDelta(smHeading, hdg) * (1 - Math.pow(0.65, dt)); // Beta 1.187 (GPS package, TURN A): the step used to be 0.35 per FIX - identical at a steady 1 Hz, but bursty delivery (two fixes 0.15 s apart, then a 3 s gap) stepped it twice in a blink or starved it for seconds; in the harness 9 of 10 bursty runs never settled within 5 degrees after a turn. Retention 0.65^dt makes the smoother a function of the time between fixes: bursty peak turn error 62.5 -> 55.6 degrees, regular cadence unchanged. (Driving the camera from the filter's own velocity instead was A/B'd in the same harness and LOST - peak 88 degrees - so the OS course stays the source.) // Beta 1.115: this only maintains the smoothed course now - headCam, in the render loop, applies it to the map
+  if (followPaused) return; // Beta 1.122 (Andrew): the heading state is maintained whenever location is on, not only during a run - headCam applies it whenever the camera follows; while the follow is suspended the state freezes with the camera (drive148 R3)
+  const spd = (typeof speed === 'number' && isFinite(speed)) ? speed : 0; // a fix reporting no speed is no evidence of motion: it takes the hold branch below, where the course is treated as the stale thing it is at rest
+  if (typeof hdg !== 'number' || isNaN(hdg)) { // Beta 1.194 (Codex P2, PR #40): no course on this fix (the OS reports none at rest) - no measurement exists, but a STOPPED state's turn rate must still decay: without this, headCam extrapolates the last moving turn rate at its 1 s cap forever and the parked camera sits a full omega off the frozen heading. A moving fix with no course changes nothing (a dropout mid-drive is not evidence about the rate).
+    if (headF && smHeading !== null && spd < 1) { const dt = Math.min(3, Math.max(0.05, (now - lastHeadFixAt) / 1000)); lastHeadFixAt = now; lastHeadFixPerf = performance.now(); headF.om *= Math.pow(0.5, dt); headF.gate = 0; }
+    return;
+  }
+  if (smHeading === null || !headF) { smHeading = hdg; headF = { om: 0, p00: headSigma(spd) ** 2, p01: 0, p10: 0, p11: 900, gate: 0 }; lastHeadFixAt = now; lastHeadFixPerf = performance.now(); return; }
+  const dt = Math.min(3, Math.max(0.05, (now - lastHeadFixAt) / 1000)); lastHeadFixAt = now; lastHeadFixPerf = performance.now(); // the clamp is the 1.187 smoother's own (inert on the real drives: their fixes land 0.996-1.001 s apart); it bounds the predict after a long silence
+  if (spd < 1) { headF.om *= Math.pow(0.5, dt); headF.gate = 0; return; } // Beta 1.194 (2a hold): under ~1 m/s the course is unreliable - frozen by the OS at rest and through the pause before a reverse (round-3 judging, labelled) - so theta holds, the turn rate decays, and NO reverse-specific handling exists anywhere: while the course is frozen the innovations are ~0 and theta holds on its own (excursion over the confirmed reverse: 0.3 deg on replay)
+  // Beta 1.194 (heading filter 2a, replacing the 1.187 time-normalized EMA): the EMA lagged a
+  // steady turn by omega * tau (tau = 2.32 s - the 60 deg peak the field test measured) and
+  // chased the OS course's STEPS for 5-9 s after every corner on Andrew's real drives (52 of
+  // 659 fixes over 20 deg out). This filter carries the turn rate as a state: predict theta
+  // forward by omega * dt, weigh each course fix by R = sigma(v)^2, soften outliers through
+  // the gate below - a steady turn then has no lag to chase, and a genuine step is classified
+  // as a manoeuvre within two fixes by the step escape.
+  const q = HEAD_Q;
+  const p00 = headF.p00 + dt * (headF.p10 + headF.p01) + dt * dt * headF.p11 + q * dt ** 3 / 3;
+  const p01 = headF.p01 + dt * headF.p11 + q * dt * dt / 2;
+  const p10 = headF.p10 + dt * headF.p11 + q * dt * dt / 2;
+  const p11 = headF.p11 + q * dt;
+  const y = headDelta(smHeading + headF.om * dt, hdg);
+  let R = headSigma(spd) ** 2, S = p00 + R;
+  if (Math.abs(y) > 3 * Math.sqrt(S)) { // the soft gate: a lone large innovation is probably noise - down-weight it ninefold...
+    if (!(headF.gate !== 0 && (y > 0) === (headF.gate > 0))) { R *= 9; S = p00 + R; } // ...but a SECOND consecutive gated innovation of the same sign is a manoeuvre, not noise (the step escape): accept it at normal R. Two same-sign surprises in a row are the vehicle turning, and fighting them is what made the EMA chase a post-reverse course snap for ~9 s (replay: 2a settles it in 1 fix)
+    headF.gate = y;
+  } else headF.gate = 0;
+  const K0 = p00 / S, K1 = p10 / S;
+  smHeading = smHeading + headF.om * dt + K0 * y;
+  headF.om = Math.max(-40, Math.min(40, headF.om + K1 * y)); // the turn-rate clamp: a plow turns slowly; anything faster is a course step being absorbed, and the clamp bounds the overshoot it can store
+  headF.p00 = (1 - K0) * p00; headF.p01 = (1 - K0) * p01; headF.p10 = p10 - K1 * p00; headF.p11 = p11 - K1 * p01;
 }
 // Beta 1.115: heading-up is applied per render tick, fractionally, in the same pipeline
 // as followCam's pan. It used to be a map.easeTo fired from updateHeading - but a camera
@@ -4595,7 +4661,8 @@ let lastHeadAt = 0;
 function headCam(now) {
   if (!map || watchId == null || followPaused || smHeading === null) { lastHeadAt = now; return; } // Beta 1.146 (census C4): no-map guard, same idiom as followCam above - headCam is the other renderTick caller that dereferenced the map unguarded
   const cur = map.getBearing();
-  const d = headDelta(cur, smHeading);
+  const h = lastHeadFixPerf ? Math.min(1, Math.max(0, (performance.now() - lastHeadFixPerf) / 1000)) : 0; // Beta 1.194 (2a): the camera reads theta + omega * h - the filter's own turn rate leads the bearing between fixes, capped at 1 s of lead, so a steady turn is tracked through the gaps instead of stair-stepping fix to fix
+  const d = headDelta(cur, smHeading + (headF ? headF.om : 0) * h);
   if (Math.abs(d) < 0.3) { lastHeadAt = now; return; }
   const dt = Math.min(100, Math.max(1, now - (lastHeadAt || now))); lastHeadAt = now;
   const f = 1 - Math.pow(0.65, dt / 50); // followCam's ease, time-based: identical convergence at any frame rate
@@ -4992,6 +5059,7 @@ function acceptFix(pos) {
   else dispOff = [(dispPos[0] - pred[0]) * MLAT, (dispPos[1] - pred[1]) * MLNG];
   startRenderLoop(); // the old glide started the loop here; the coasting display needs it just as much (a fix can arrive on an existing watch and must still render)
   updateHeading(pos.coords.heading, speed, now);
+  dispHoldFix(speed, ll); // Beta 1.194: the stillness hold's per-fix feed, at the same instant fixLogOut below reads dispPos - the basis the judging simulation was proven on. Display-only: nothing recorded reads its state.
   if (typeof pos.coords.heading === 'number' && speed && speed >= 1) { lastCourseAt = now; setFacing(pos.coords.heading, 0.5); } // moving: face along the course
   fixLogOut(fxEnt); // Beta 1.189: the estimator has run — filtered position, display position and smoothed heading join the raw fix in the log
   const spd = $('spd');
@@ -5088,7 +5156,9 @@ function stopGps(silent) {
   watchGen++; // Beta 1.69: invalidate any callback still queued from this watcher
   fixLogClose(); // Beta 1.189: the log session ends with the watch
   if (watchId != null) navigator.geolocation.clearWatch(watchId);
-  watchId = null; gpsFromRun = false; clearInterval(staleWatchTimer); dispOff = [0, 0]; if (renderRaf) { cancelAnimationFrame(renderRaf); renderRaf = 0; } clearInterval(renderPump); renderPump = 0; stopCompass(); // Beta 1.64 (audit F08); Beta 1.65: the render loop stops with the watch
+  watchId = null; gpsFromRun = false; clearInterval(staleWatchTimer); dispOff = [0, 0]; dispHoldReset(); // Beta 1.194: the stillness hold retires with the watch (dispHoldReset, beside the display offset's own reset) - a held point must never freeze the puck across location sessions
+  if (renderRaf) { cancelAnimationFrame(renderRaf); renderRaf = 0; }
+  clearInterval(renderPump); renderPump = 0; stopCompass(); // Beta 1.64 (audit F08); Beta 1.65: the render loop stops with the watch
   if (map) pushGps(); // Beta 1.48 (audit B05): the facing beam is only built while watchId lives - without a fresh push the last beam stayed drawn after stop
   $('gpsBtn').classList.remove('on'); $('gpsBtn').classList.remove('rec'); $('spd').classList.add('hidden'); syncCentreBtn(); // Beta 1.115: location off - the re-centre button goes with it
 }
@@ -5879,7 +5949,7 @@ $('stDel').addEventListener('click', async () => {
 });
 // ---- About / What's new ----
 const WHATSNEW = { // the curated in-app notes: plain words, LATEST RELEASE ONLY (Beta 1.114, Andrew: the accumulated list cluttered the About pane). A release REPLACES this entry with its own in the same change - it never accumulates; the full history lives in CHANGELOG.md, not the app
-  v: 'Beta 1.193', items: ["The blue GPS trail line is gone from the map. Your record of a clean is the streets you mark done - the line was only ever a picture of the app's backup data, and it is not drawn any more.", "Under the hood, the app now keeps just the last hour of GPS points, purely as a safety net for the distance counter, and the counter saves its total after every reading instead of every so often - so if the app is closed or reloads mid-clean, the recovered distance is the true one. Saved cleans no longer carry a drawn route path; cleans saved before this update keep theirs."] };
+  v: 'Beta 1.194', items: ["The map now turns with you at corners. It used to keep pointing the old way for several seconds after each turn; a new heading filter follows your direction of travel almost immediately. It was proven on recordings of real drives before it shipped.", "The blue puck no longer twitches while you stand still. Once you're stopped and settled it holds perfectly still on screen, and it starts moving again the moment you do. This only changes how the puck is drawn \u2014 your distances and street coverage are measured exactly as before."] };
 
 function renderAbout() {
   const cur = $('ver').textContent.trim();

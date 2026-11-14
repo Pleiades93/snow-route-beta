@@ -2,9 +2,22 @@
 // package from the 2026-11-13 field-test investigation; the investigation's
 // harness (same noise model, same centrelines, 10 seeds) priced every item
 // before shipping, and only two passed their evidence gates:
-//   TURN A - the heading smoother is sized by the TIME between fixes, not by
-//     fix count (bursty peak turn error 62.5 -> 55.6 deg; regular cadence
-//     unchanged). Proven below from the shipped updateHeading, verbatim.
+//   TURN A - as of Beta 1.194 this name carries heading filter 2a, which
+//     REPLACED the 1.187 time-normalized EMA the section used to pin
+//     (re-derived 2026-11-14 from the round-3 judging, REPORT3 S3, over
+//     Claude's [theta, omega] design): predict theta += omega*dt with
+//     process noise Q = q*[[dt^3/3, dt^2/2],[dt^2/2, dt]] at q = HEAD_Q =
+//     400, measurement noise R = sigma(v)^2 (sigma = 6 + 18/max(v, 0.5)
+//     deg), a soft innovation gate (|y| > 3 sqrt(S) -> R x9) WITH the step
+//     escape (a 2nd consecutive same-sign gated innovation is accepted at
+//     normal R - two large same-sign innovations in a row are a
+//     manoeuvre, not noise), omega clamped to +-40 deg/s, and a
+//     speed < 1 hold (theta frozen, omega decays 0.5^dt). The 1.187 EMA
+//     it replaced stepped by 1 - 0.65^dt per fix: on the real drives the
+//     OS course moves in STEPS at corners and that smoother chased each
+//     step for 5-9 s (52 fixes over 20 deg of error in one 11-minute
+//     drive). Proven below from the shipped updateHeading, verbatim; the
+//     same code path is replay-proven on both real sessions by drive197.
 //   STOP B - a recorded fix reporting under 0.5 m/s banks no distance and
 //     records no trail point (parked phantom distance 137.8 -> 13.6 m/min).
 //     Proven below from the shipped acceptFix trail block, verbatim.
@@ -31,51 +44,92 @@ const near = (a, b, eps) => Math.abs(a - b) <= eps;
 t('C1 GPS_STILL_MPS is 0.5 (the STOP B guard threshold)', /const GPS_STILL_MPS = 0\.5;/.test(app1));
 t('C2 GPS_ACCURACY_M stays 65 (the 28 m gate was priced in the harness and declined)', /const GPS_ACCURACY_M = 65;/.test(app1));
 
-// ---- TURN A: updateHeading, verbatim, in a stateful harness ----
+// ---- TURN A (Beta 1.194: heading filter 2a): updateHeading, verbatim ----
+const headQLine = app3.slice(app3.indexOf('const HEAD_Q'), app3.indexOf(';', app3.indexOf('const HEAD_Q')) + 1);
+if (!/const HEAD_Q = 400;/.test(headQLine)) throw new Error('HEAD_Q pin: the shipped process-noise configuration is not 400');
 const headFactory = new Function(`
-  let smHeading = null, lastHeadFixAt = 0, followPaused = false;
+  let smHeading = null, lastHeadFixAt = 0, lastHeadFixPerf = 0, followPaused = false;
+  let headF = null;
   ${extractFrom(app3, 'headDelta')}
+  ${headQLine}
+  ${extractFrom(app3, 'headSigma')}
   ${extractFrom(app3, 'updateHeading')}
-  return { updateHeading, get: () => smHeading, reset: () => { smHeading = null; lastHeadFixAt = 0; } };
+  return { updateHeading, get: () => smHeading, getF: () => headF, reset: () => { smHeading = null; lastHeadFixAt = 0; lastHeadFixPerf = 0; headF = null; } };
 `)();
-const legacy = (() => { // the pre-1.187 per-fix smoother, for the equality checks
-  let sm = null;
-  return { step(hdg, speed) { if (typeof hdg !== 'number' || isNaN(hdg) || !speed || speed < 1) return; sm = sm === null ? hdg : sm + headFactoryDelta(sm, hdg) * 0.35; }, get: () => sm, reset: () => { sm = null; } };
-  function headFactoryDelta(a, b) { return ((((b - a + 180) % 360) + 360) % 360) - 180; }
-})();
-{ // T1: at a steady 1 Hz the time-normalized step IS the old 0.35 step
-  headFactory.reset(); legacy.reset();
-  let okAll = true;
-  for (let k = 0; k < 12; k++) {
-    const hdg = (k * 17) % 360, now = 1000 * (k + 1);
-    headFactory.updateHeading(hdg, 4, now); legacy.step(hdg, 4);
-    if (!near(headFactory.get(), legacy.get(), 1e-9)) okAll = false;
-  }
-  t('T1 steady 1 Hz: time-normalized smoother equals the legacy per-fix smoother step for step', okAll);
-}
-{ // T2: a burst pair barely steps; the post-gap fix catches up hard
-  headFactory.reset(); legacy.reset();
-  headFactory.updateHeading(0, 4, 1000); legacy.step(0, 4); // settle at 0 deg
-  headFactory.updateHeading(90, 4, 1150); legacy.step(90, 4); // burst fix, 0.15 s later, course now 90
-  const burstNew = headFactory.get(), burstOld = legacy.get();
-  t('T2a burst pair: the new smoother steps less than the legacy 0.35 step', burstNew < burstOld && burstNew > 0);
-  headFactory.updateHeading(90, 4, 4150); legacy.step(90, 4); // 3 s gap, then the next fix
-  t('T2b post-gap fix: the new smoother catches up past the legacy step', headFactory.get() > legacy.get() && headFactory.get() < 90);
-}
-{ // T3: the dt clamp - a 30 s gap steps by 1 - 0.65^3 = 0.7253, not ~1
+const herr = (z) => Math.abs(((((headFactory.get() - z + 180) % 360) + 360) % 360) - 180);
+{ // T1: the first fix initializes theta outright - at ANY speed (the 1.187
+  // smoother refused a first fix under 1 m/s; 2a takes it, because the
+  // low-speed hold needs a theta to hold and the OS course at rest is
+  // frozen, not absent)
   headFactory.reset();
-  headFactory.updateHeading(0, 4, 1000);
-  headFactory.updateHeading(90, 4, 31000);
-  t('T3 long gap is clamped to dt = 3 s (step fraction 0.7253)', near(headFactory.get(), 90 * (1 - Math.pow(0.65, 3)), 1e-9));
-}
-{ // T4: gates preserved - low speed and null heading are no-ops; first fix sets outright
+  headFactory.updateHeading(200, 0.4, 1000);
+  t('T1a first fix at 0.4 m/s initializes theta outright', headFactory.get() === 200 && headFactory.getF() !== null);
   headFactory.reset();
-  headFactory.updateHeading(45, 0.5, 1000);
-  t('T4a speed under the 1 m/s gate: no heading is taken', headFactory.get() === null);
-  headFactory.updateHeading(null, 4, 1000);
-  t('T4b null heading: no heading is taken', headFactory.get() === null);
   headFactory.updateHeading(45, 4, 1000);
-  t('T4c first real fix sets the heading outright', headFactory.get() === 45);
+  t('T1b first fix at speed initializes theta outright', headFactory.get() === 45);
+  headFactory.reset();
+  headFactory.updateHeading(null, 4, 1000);
+  t('T1c null heading: no heading is taken', headFactory.get() === null && headFactory.getF() === null);
+}
+{ // T2: the speed < 1 hold - theta frozen exactly, omega decays 0.5^dt
+  headFactory.reset();
+  headFactory.updateHeading(40, 4, 1000);
+  headFactory.getF().om = 30; // plant a turn rate, then arrive at a stop
+  headFactory.updateHeading(123, 0.5, 2000); // dt = 1 s, course says 123 - must be ignored
+  t('T2 hold: theta frozen at low speed, omega decays by 0.5^dt (30 -> 15)', headFactory.get() === 40 && near(headFactory.getF().om, 15, 1e-9));
+  headFactory.updateHeading(80, null, 3000); // null speed reads as the hold too
+  t('T2b null speed: theta still frozen', headFactory.get() === 40);
+}
+{ // T3: a course TELEPORT (the post-reverse class: a ~176 deg step) - gated
+  // on the first fix, released by the escape on the second consecutive
+  // same-sign innovation. Basis, measured on the shipped filter: the gate
+  // threshold is 3 sqrt(S) and S carries the filter's own uncertainty, so
+  // at q = 400 ordinary 40-60 deg corner steps are NOT gated - the omega
+  // state absorbs them (that step response is what drive197 proves on the
+  // real sessions). The gate exists for innovations beyond ~90 deg, and a
+  // step on the second-ever fix is initialization, not a manoeuvre (the
+  // init omega variance is +-30 deg/s by design), so the step here is
+  // planted after 10 settling fixes on a straight.
+  headFactory.reset();
+  for (let k = 0; k < 10; k++) headFactory.updateHeading(0, 4, 1000 * (k + 1));
+  headFactory.updateHeading(170, 4, 11000);
+  const e1 = herr(170);
+  t(`T3a teleport fix: the soft gate holds most of a 170 deg step back (error ${e1.toFixed(1)} deg, bar > 20) and records the gated innovation`, e1 > 20 && headFactory.getF().gate === 170);
+  headFactory.updateHeading(170, 4, 12000);
+  const e2 = herr(170);
+  t(`T3b next fix: the step escape accepts the manoeuvre (error ${e2.toFixed(1)} deg, bar < 5)`, e2 < 5);
+}
+{ // T4: omega never leaves the +-40 clamp under a violent alternating course
+  headFactory.reset();
+  headFactory.updateHeading(0, 5, 1000);
+  let clamped = true;
+  for (let k = 1; k <= 12; k++) {
+    headFactory.updateHeading(k % 2 ? 179 : 0, 5, 1000 * (k + 1));
+    if (Math.abs(headFactory.getF().om) > 40 || !isFinite(headFactory.get())) clamped = false;
+  }
+  t('T4 alternating 179 deg steps: omega stays inside the +-40 clamp and theta stays finite', clamped);
+}
+{ // T6: a fix with NO course while stopped (the OS reports none at rest) -
+  // no measurement is taken, theta stays frozen, but the turn rate still
+  // decays, so the camera lead (theta + omega*h, h capped at 1 s) dies
+  // with it instead of parking the camera a full stale omega off the
+  // heading (Codex P2, PR #40 - before the fix the null-heading return
+  // skipped the decay entirely). A null course while MOVING changes
+  // nothing: a dropout mid-drive is not evidence about the rate.
+  headFactory.reset();
+  for (let k = 0; k < 5; k++) headFactory.updateHeading(k * 20, 4, 1000 * (k + 1)); // turning at 20 deg/s: omega ~20, theta tracking behind the ramp
+  const thRamp = headFactory.get(), omMoving = headFactory.getF().om;
+  headFactory.updateHeading(null, 4, 6000); // moving dropout
+  t('T6a null course while moving: theta and omega untouched', headFactory.get() === thRamp && headFactory.getF().om === omMoving);
+  for (let k = 0; k < 5; k++) headFactory.updateHeading(null, 0, 7000 + 1000 * k); // stopped, no course reported
+  t(`T6b null course while stopped: theta frozen, omega decayed ${omMoving.toFixed(1)} -> ${headFactory.getF().om.toFixed(2)} (bar < 1.5, so the 1 s camera lead errs by less)`, headFactory.get() === thRamp && headFactory.getF().om < 1.5);
+}
+{ // T5: the dt clamp - a long gap predicts with dt = 3, never more
+  headFactory.reset();
+  headFactory.updateHeading(50, 4, 1000);
+  headFactory.updateHeading(80, 4, 100000); // 99 s later
+  const th = headFactory.get();
+  t('T5 long gap is clamped to dt = 3 s (theta moved toward the new course, finite, no overshoot)', isFinite(th) && th > 50 && th < 80);
 }
 
 // ---- STOP B: the shipped acceptFix trail block, verbatim, over stub state ----

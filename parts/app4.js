@@ -783,7 +783,7 @@ $('stDel').addEventListener('click', async () => {
 });
 // ---- About / What's new ----
 const WHATSNEW = { // the curated in-app notes: plain words, LATEST RELEASE ONLY (Beta 1.114, Andrew: the accumulated list cluttered the About pane). A release REPLACES this entry with its own in the same change - it never accumulates; the full history lives in CHANGELOG.md, not the app
-  v: 'Beta 1.193', items: ["The blue GPS trail line is gone from the map. Your record of a clean is the streets you mark done - the line was only ever a picture of the app's backup data, and it is not drawn any more.", "Under the hood, the app now keeps just the last hour of GPS points, purely as a safety net for the distance counter, and the counter saves its total after every reading instead of every so often - so if the app is closed or reloads mid-clean, the recovered distance is the true one. Saved cleans no longer carry a drawn route path; cleans saved before this update keep theirs."] };
+  v: 'Beta 1.194', items: ["The map now turns with you at corners. It used to keep pointing the old way for several seconds after each turn; a new heading filter follows your direction of travel almost immediately. It was proven on recordings of real drives before it shipped.", "The blue puck no longer twitches while you stand still. Once you're stopped and settled it holds perfectly still on screen, and it starts moving again the moment you do. This only changes how the puck is drawn \u2014 your distances and street coverage are measured exactly as before."] };
 
 function renderAbout() {
   const cur = $('ver').textContent.trim();
