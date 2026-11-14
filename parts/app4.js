@@ -155,7 +155,7 @@ function recoveryObj() { // Beta 1.95 (deep audit SR-194-02): the RECOVERY backu
   if (upsCarry && Object.keys(upsCarry).length) o.userpacks = upsCarry; // Beta 1.118: created-route definitions ride the recovery backup too. Beta 1.142: from the strict record read, or from validated memory when the record cannot be read (DA-09)
   { const nt = rawRead(LS_GLOBAL.night); if (nt !== RAW_READ_FAILED) { if (nt != null) o.night = nt; const ne = rawRead(LS_GLOBAL.nightExp); if (ne !== RAW_READ_FAILED && ne != null) o.nightExp = ne; } } // the pair keeps its pre-1.136 one-try shape (Codex verify, 1.136 fix cycle): a FAILED night read skips the nightExp read entirely - the two values travel together, so a recovery file never carries an expiry whose override failed to read
   o.settings = JSON.stringify({ vib: settings.vib, chime: settings.chime, chimeSound: settings.chimeSound }); // Beta 1.166: the Settings toggles ride the recovery file too - from the LIVE settings object (this export never reads the board from storage, and the toggles are no different), serialized in exactly the record shape saveSettings writes, so a restore validates and lands it identically to a normal backup's
-  if (fixLog.length) o.fixlog = JSON.stringify(fixLog); // Beta 1.189: the raw fix log rides the recovery file too - from the LIVE log (this export never reads storage), in exactly the record shape saveFixLog writes, so a restore validates and lands it identically to a normal backup's
+  if (fixLog.length) o.fixlog = JSON.stringify(fixLogEncodeSessions(fixLog)); // Beta 1.189: the raw fix log rides the recovery file too - from the LIVE log (this export never reads storage), in exactly the record shape saveFixLog writes, so a restore validates and lands it identically to a normal backup's. Beta 1.190: that shape is the e2 stored form, so the live sessions are encoded on the way out
   return o;
 }
 function buildRecovery() { const o = recoveryObj(); return o ? JSON.stringify(o, null, 1) : null; }
@@ -193,26 +193,14 @@ function canonicalSettings(raw) { // Beta 1.166: the one validator for a backup'
   if (!p || typeof p !== 'object' || Array.isArray(p)) return null;
   return JSON.stringify({ vib: typeof p.vib === 'boolean' ? p.vib : SETTINGS_DEF.vib, chime: typeof p.chime === 'boolean' ? p.chime : SETTINGS_DEF.chime, chimeSound: CHIME_KEYS.includes(p.chimeSound) ? p.chimeSound : SETTINGS_DEF.chimeSound });
 }
-function canonicalFixLog(raw) { // Beta 1.189: the one validator for a backup's fixlog field - the loader's own rules (app3) applied to the candidate and re-serialized canonically, so what a restore writes is exactly what a load would have made of it. A session survives as an object holding a fixes array; an entry survives as an array of at least 6 fields with every field - the position included - kept through the loader's number-or-null lens: a fix delivered with a non-finite coordinate is recorded by the logger before acceptFix refuses it, serializes with a null coordinate, and is retained by the on-device loader, so the restore retains it too - a backup must not silently lose the refusal data the logger exists to collect (Codex P2, PR #29). The estimator output rides only as a 5-array of numbers-or-null or null, and the run stamp only as a finite number. Sessions left with no fixes drop. The FIXLOG_MAX cap is applied as the writers apply it (oldest sessions evicted whole, a lone oversize session head-trimmed). Returns the canonical record string, or null when the value is not a fix log at all (a string holding a JSON array)
+function canonicalFixLog(raw) { // Beta 1.189: the one validator for a backup's fixlog field - the loader's own rules (app3) applied to the candidate and re-serialized canonically, so what a restore writes is exactly what a load would have made of it. A session survives as an object holding a fixes array; an entry survives as an array of at least 6 fields with every field - the position included - kept through the loader's number-or-null lens: a fix delivered with a non-finite coordinate is recorded by the logger before acceptFix refuses it, serializes with a null coordinate, and is retained by the on-device loader, so the restore retains it too - a backup must not silently lose the refusal data the logger exists to collect (Codex P2, PR #29). The estimator output rides only as a 5-array of numbers-or-null or null, and the run stamp only as a finite number. Sessions left with no fixes drop. The FIXLOG_MAX cap is applied as the writers apply it (oldest sessions evicted whole, a lone oversize session head-trimmed). Returns the canonical record string, or null when the value is not a fix log at all (a string holding a JSON array). Beta 1.190: the candidate may be EITHER stored form - a v1 JSON array (≤ 1.189) or the e2 object (app3's codec note) - and the canonical write is always the e2 form: the candidate is decoded through fixLogDecodeSessions (the loader's one lens, both forms), capped as the writers cap, and re-encoded, so the restore lands exactly what a load of the candidate would have made of it, in the current stored form
   if (typeof raw !== 'string') return null;
-  const arr = parseJ(raw, null);
-  if (!Array.isArray(arr)) return null;
-  const numOrNull = x => (typeof x === 'number' && isFinite(x)) ? x : null;
-  const sessions = [];
-  for (const s of arr) {
-    if (!s || typeof s !== 'object' || Array.isArray(s) || !Array.isArray(s.f)) continue;
-    const fixes = [];
-    for (const e of s.f) {
-      if (!Array.isArray(e) || e.length < 6) continue;
-      // no coordinate gate here: e[1]/e[2] pass through numOrNull in the push below, so a null coordinate (a delivered non-finite position, recorded before its refusal) survives - the loader's lens exactly
-      const out = (Array.isArray(e[6]) && e[6].length === 5) ? e[6].map(numOrNull) : null;
-      fixes.push([numOrNull(e[0]), numOrNull(e[1]), numOrNull(e[2]), numOrNull(e[3]), numOrNull(e[4]), numOrNull(e[5]), out, Number.isFinite(e[7]) ? e[7] : 0]);
-    }
-    if (fixes.length) sessions.push({ v: typeof s.v === 'string' ? s.v : '', t0: Number.isFinite(s.t0) ? s.t0 : 0, f: fixes });
-  }
+  const parsed = parseJ(raw, null);
+  if (!Array.isArray(parsed) && !(parsed && typeof parsed === 'object' && parsed.e === 2 && Array.isArray(parsed.s))) return null;
+  const sessions = fixLogDecodeSessions(parsed);
   let total = 0; for (const s of sessions) total += s.f.length;
   while (total > FIXLOG_MAX && sessions.length) { if (sessions.length === 1) { const drop = sessions[0].f.length - FIXLOG_MAX; sessions[0].f.splice(0, drop); total -= drop; break; } total -= sessions[0].f.length; sessions.shift(); }
-  return JSON.stringify(sessions);
+  return JSON.stringify(fixLogEncodeSessions(sessions));
 }
 let restoreOverlayPacks = null; // Beta 1.118: during restoreBackup, the validated created-route definitions carried by the backup itself - visible to countUnknownNames and the route lookups so a route restored WITH its definition is never reported (or rejected) as unknown
 async function restoreBackup(parsed) { // production doRestore semantics: validate EVERYTHING before writing; snapshot; write + verify each; verified rollback on any failure. Beta 1.166: ASYNC - a backup carrying created-route definitions now writes them to the IndexedDB store (per-route verified puts, phase 1 below) ahead of the localStorage write set, with the store's own strict snapshot + rollback alongside the record one; every refusal and rollback keeps the validate-then-write order this function has always kept
@@ -772,7 +760,7 @@ $('stDel').addEventListener('click', async () => {
 });
 // ---- About / What's new ----
 const WHATSNEW = { // the curated in-app notes: plain words, LATEST RELEASE ONLY (Beta 1.114, Andrew: the accumulated list cluttered the About pane). A release REPLACES this entry with its own in the same change - it never accumulates; the full history lives in CHANGELOG.md, not the app
-  v: 'Beta 1.189', items: ["The app now keeps a private record of the raw GPS readings it receives — stored only on this phone, and carried only inside your own backups — so future GPS tuning can be tested against your real drives instead of a simulation.", "Nothing about how the app tracks or shows your position changes, and there is no new screen for it: the record has no display, and it leaves the phone only inside a backup you export yourself."] };
+  v: 'Beta 1.190', items: ["The private GPS record now holds a full long clean: it keeps up to 10 hours of readings (was about 3 hours), so a 6-to-8-hour clean is recorded from the first driveway to the last.", "The record is stored in a tighter form that takes less room on the phone; it still reads back every reading exactly as it was delivered, and backups from the previous version restore as before. Nothing about how the app tracks or shows your position changes."] };
 function renderAbout() {
   const cur = $('ver').textContent.trim();
   $('wnHead').textContent = "WHAT'S NEW · " + cur; // the header names the LIVE version, read from the title's version element - never a second hard-coded copy that can go stale

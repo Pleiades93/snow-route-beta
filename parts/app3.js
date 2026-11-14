@@ -761,7 +761,137 @@ function stopCompass() { compassGen++; if (compassHandler) { window.removeEventL
 // refused, and the refusal is itself replay data), else [filteredLat, filteredLng,
 // displayLat, displayLng, smoothedHeading] at the trail's precision.
 let fixLog = [], fixLogSession = null, fixLogCount = 0;
-try { const rawFx = parseJ(lsGet(LS.fixlog), []); if (Array.isArray(rawFx)) for (const s of rawFx) { if (s && typeof s === 'object' && Array.isArray(s.f)) { const fixes = s.f.filter(e => Array.isArray(e)); if (fixes.length) { fixLog.push({ v: typeof s.v === 'string' ? s.v : '', t0: Number.isFinite(s.t0) ? s.t0 : 0, f: fixes }); fixLogCount += fixes.length; } } } } catch (e) { fixLog = []; fixLogCount = 0; } // a damaged log record costs the debug history, never the boot
+// ===== Beta 1.190: the fix log's STORED form ("e2") =====
+// 1.189 stored the log as plain JSON of the in-memory sessions. That measured ~169
+// bytes/fix at full precision (epoch timestamps, full-precision coordinates, the
+// estimator outputs and a run stamp on every fix), so the 36,000-fix cap this release
+// sets would have measured ~6.1 MB — over the localStorage budget the log shares with
+// the trail and the board. The e2 form is a LOSSLESS delta encoding of exactly the
+// same in-memory sessions, applied only at the storage boundary: saveFixLog encodes,
+// the boot load below and canonicalFixLog (app4) decode through fixLogDecodeSessions,
+// and everything in between (fixLogRaw, fixLogOut, fixLogTrim) works on the absolute
+// in-memory entries exactly as in 1.189. The record is an object { e: 2, s: [...] } —
+// an object, not 1.189's top-level array, so a 1.189 build that meets an e2 record
+// ignores it whole (its loader required an array) instead of misreading deltas as
+// absolute fixes; this decoder accepts BOTH forms, so every 1.189 record and backup
+// still loads and restores. Inside a session the first entry is a keyframe
+// ['K', ...the absolute 8 fields]; each later entry is a delta
+// [dTs, dLatBits, dLngBits, acc, spd, hdg, outSlot, runMark]:
+// - dTs: whole milliseconds since the previous fix (an exact integer).
+// - dLatBits/dLngBits: the difference of the two doubles' IEEE-754 bit patterns;
+//   decode adds it back onto the previous fix's pattern and recovers the EXACT
+//   double, bit for bit. An entry whose coordinates cannot delta (null or
+//   non-finite on either side — a refused fix — or a bit delta beyond the
+//   safe-integer range) is written as a keyframe instead.
+// - acc/spd/hdg ride as their verbatim JSON number, or — when that text is longer —
+//   as the value's float64 bit pattern in base 36 (a string; the field's type says
+//   which form). Either way the decoded value is the identical double.
+// - outSlot: null (no estimator output — a refused fix); ['D', four micro-degree
+//   integer deltas of the output positions, the heading as an integer-tenths delta
+//   or 'n' for null] — fixLogOut only ever writes 6dp positions and a 1dp heading,
+//   so integer deltas restore them exactly, and the encoder emits the full form
+//   ['F', ...the 5 outputs] whenever a delta would not restore a value exactly;
+//   or the full form directly.
+// - runMark: the Start-Clean run stamp when it changed since the previous fix,
+//   else null (repeat the previous fix's stamp).
+// The decoder is the ONE lens for the boot load and the backup validator, as in
+// 1.189: leaf fields pass the number-or-null lens (a null coordinate survives —
+// the refusal data, per the PR #29 Codex fix); a structurally broken delta entry
+// ends its session there (later entries chain from it and cannot be recovered) —
+// never the boot, never the other sessions. Measured worst case at the 36,000
+// cap: ~3.7 MB stored (a transit-speed full-precision stream, 103.5 bytes/fix;
+// parked ~86, plow pace ~99) — drive194 asserts the measured bytes.
+const _fxDv = new DataView(new ArrayBuffer(8));
+function _fxBits(x) { _fxDv.setFloat64(0, x); return _fxDv.getBigInt64(0); }
+function _fxUnbits(b) { _fxDv.setBigInt64(0, b); return _fxDv.getFloat64(0); }
+function _fxScalar(x) { // a raw leaf field -> its stored scalar: the verbatim number, or the base-36 bit pattern when that text is shorter; non-finite collapses to null, exactly as JSON serialization treated it in the v1 form
+  if (typeof x !== 'number' || !isFinite(x)) return null;
+  _fxDv.setFloat64(0, x); const s = _fxDv.getBigUint64(0).toString(36);
+  return (s.length + 2 < JSON.stringify(x).length) ? s : x;
+}
+function _fxUnscalar(x) { // a stored scalar -> the absolute leaf field, through the number-or-null lens
+  if (typeof x === 'number') return isFinite(x) ? x : null;
+  if (typeof x === 'string' && /^[0-9a-z]{1,13}$/.test(x)) { let b = 0n; for (let i = 0; i < x.length; i++) { const c = x.charCodeAt(i); b = b * 36n + BigInt(c <= 57 ? c - 48 : c - 87); } _fxDv.setBigUint64(0, b); const v = _fxDv.getFloat64(0); return isFinite(v) ? v : null; }
+  return null;
+}
+function _fxMuExact(v) { return typeof v === 'number' && isFinite(v) && Math.round(v * 1e6) / 1e6 === v; } // an output position survives micro-degree delta encoding exactly
+function _fxHtExact(v) { return typeof v === 'number' && isFinite(v) && Math.round(v * 10) / 10 === v; } // an output heading survives tenths delta encoding exactly
+function _fxEncodeEntry(e, prev) {
+  const key = ['K', e[0], e[1], e[2], _fxScalar(e[3]), _fxScalar(e[4]), _fxScalar(e[5]), e[6], Number.isFinite(e[7]) ? e[7] : 0];
+  if (!prev) return key;
+  const dTs = (typeof e[0] === 'number' && typeof prev[0] === 'number') ? e[0] - prev[0] : NaN;
+  if (!Number.isInteger(dTs)) return key; // an unanchored or fractional timestamp cannot delta — the entry keyframes
+  if (typeof e[1] !== 'number' || typeof prev[1] !== 'number' || !isFinite(e[1]) || !isFinite(prev[1]) || typeof e[2] !== 'number' || typeof prev[2] !== 'number' || !isFinite(e[2]) || !isFinite(prev[2])) return key; // a refused (null / non-finite) coordinate on either side keyframes
+  const dLat = _fxBits(e[1]) - _fxBits(prev[1]), dLng = _fxBits(e[2]) - _fxBits(prev[2]), LIM = 9007199254740991n;
+  if (dLat > LIM || dLat < -LIM || dLng > LIM || dLng < -LIM) return key;
+  let outSlot = null;
+  if (e[6]) {
+    outSlot = ['F', e[6][0], e[6][1], e[6][2], e[6][3], e[6][4]];
+    const p = prev[6];
+    if (p && _fxMuExact(e[6][0]) && _fxMuExact(e[6][1]) && _fxMuExact(e[6][2]) && _fxMuExact(e[6][3]) && _fxMuExact(p[0]) && _fxMuExact(p[1]) && _fxMuExact(p[2]) && _fxMuExact(p[3])) {
+      const d = [Math.round(e[6][0] * 1e6) - Math.round(p[0] * 1e6), Math.round(e[6][1] * 1e6) - Math.round(p[1] * 1e6), Math.round(e[6][2] * 1e6) - Math.round(p[2] * 1e6), Math.round(e[6][3] * 1e6) - Math.round(p[3] * 1e6)];
+      if (e[6][4] === null || e[6][4] === undefined) outSlot = ['D', d[0], d[1], d[2], d[3], 'n'];
+      else if (_fxHtExact(e[6][4]) && _fxHtExact(p[4])) outSlot = ['D', d[0], d[1], d[2], d[3], Math.round(e[6][4] * 10) - Math.round(p[4] * 10)];
+    }
+  }
+  return [dTs, Number(dLat), Number(dLng), _fxScalar(e[3]), _fxScalar(e[4]), _fxScalar(e[5]), outSlot, e[7] === prev[7] ? null : (Number.isFinite(e[7]) ? e[7] : 0)];
+}
+function fixLogEncodeSessions(sessions) { return { e: 2, s: sessions.map(s => { const f = []; let prev = null; for (const e of s.f) { f.push(_fxEncodeEntry(e, prev)); prev = e; } return { v: s.v, t0: s.t0, f }; }) }; }
+function fixLogDecodeSessions(parsed) { // any stored / backup fix log value -> the absolute in-memory sessions, through the one lens (see the e2 note above); a value that is not a fix log at all decodes to []
+  const numOrNull = x => (typeof x === 'number' && isFinite(x)) ? x : null;
+  const sessions = [];
+  const pushS = (s, fixes) => { if (fixes.length) sessions.push({ v: typeof s.v === 'string' ? s.v : '', t0: Number.isFinite(s.t0) ? s.t0 : 0, f: fixes }); };
+  if (Array.isArray(parsed)) { // the v1 form (≤ Beta 1.189): absolute entries, the 1.189 lens verbatim
+    for (const s of parsed) {
+      if (!s || typeof s !== 'object' || Array.isArray(s) || !Array.isArray(s.f)) continue;
+      const fixes = [];
+      for (const e of s.f) {
+        if (!Array.isArray(e) || e.length < 6) continue;
+        const out = (Array.isArray(e[6]) && e[6].length === 5) ? e[6].map(numOrNull) : null;
+        fixes.push([numOrNull(e[0]), numOrNull(e[1]), numOrNull(e[2]), numOrNull(e[3]), numOrNull(e[4]), numOrNull(e[5]), out, Number.isFinite(e[7]) ? e[7] : 0]);
+      }
+      pushS(s, fixes);
+    }
+    return sessions;
+  }
+  if (parsed && typeof parsed === 'object' && parsed.e === 2 && Array.isArray(parsed.s)) {
+    for (const s of parsed.s) {
+      if (!s || typeof s !== 'object' || Array.isArray(s) || !Array.isArray(s.f)) continue;
+      const fixes = []; let prev = null;
+      for (const e of s.f) {
+        if (!Array.isArray(e)) break;
+        if (e[0] === 'K') {
+          if (e.length < 9) break;
+          const out = (Array.isArray(e[7]) && e[7].length === 5) ? e[7].map(numOrNull) : null;
+          prev = [numOrNull(e[1]), numOrNull(e[2]), numOrNull(e[3]), _fxUnscalar(e[4]), _fxUnscalar(e[5]), _fxUnscalar(e[6]), out, Number.isFinite(e[8]) ? e[8] : 0];
+          fixes.push(prev); continue;
+        }
+        if (!prev || e.length < 8) break;
+        if (!Number.isInteger(e[0]) || !Number.isInteger(e[1]) || !Number.isInteger(e[2]) || Math.abs(e[1]) > Number.MAX_SAFE_INTEGER || Math.abs(e[2]) > Number.MAX_SAFE_INTEGER) break; // the chain fields are exact integers or the record is corrupt — the session ends here
+        if (typeof prev[0] !== 'number' || typeof prev[1] !== 'number' || typeof prev[2] !== 'number') break; // a delta cannot chain from an unanchored or refused fix — the encoder keyframes there, so a record claiming otherwise is corrupt
+        let out = null, bad = false;
+        if (Array.isArray(e[6])) {
+          const os = e[6], p = prev[6];
+          if (os[0] === 'D') {
+            if (!p || os.length < 6 || !Number.isInteger(os[1]) || !Number.isInteger(os[2]) || !Number.isInteger(os[3]) || !Number.isInteger(os[4]) || typeof p[0] !== 'number' || typeof p[1] !== 'number' || typeof p[2] !== 'number' || typeof p[3] !== 'number') bad = true;
+            else if (os[5] === 'n') out = [(Math.round(p[0] * 1e6) + os[1]) / 1e6, (Math.round(p[1] * 1e6) + os[2]) / 1e6, (Math.round(p[2] * 1e6) + os[3]) / 1e6, (Math.round(p[3] * 1e6) + os[4]) / 1e6, null];
+            else if (Number.isInteger(os[5]) && _fxHtExact(p[4])) out = [(Math.round(p[0] * 1e6) + os[1]) / 1e6, (Math.round(p[1] * 1e6) + os[2]) / 1e6, (Math.round(p[2] * 1e6) + os[3]) / 1e6, (Math.round(p[3] * 1e6) + os[4]) / 1e6, (Math.round(p[4] * 10) + os[5]) / 10];
+            else bad = true;
+          } else if (os[0] === 'F') { if (os.length < 6) bad = true; else out = [numOrNull(os[1]), numOrNull(os[2]), numOrNull(os[3]), numOrNull(os[4]), numOrNull(os[5])]; }
+          else bad = true;
+        } else if (e[6] !== null) bad = true;
+        if (bad) break;
+        let run;
+        if (e[7] === null) run = prev[7]; else if (Number.isFinite(e[7])) run = e[7]; else break; // the run slot is a repeat mark or a stamp — anything else is corrupt
+        prev = [prev[0] + e[0], _fxUnbits(_fxBits(prev[1]) + BigInt(e[1])), _fxUnbits(_fxBits(prev[2]) + BigInt(e[2])), _fxUnscalar(e[3]), _fxUnscalar(e[4]), _fxUnscalar(e[5]), out, run];
+        fixes.push(prev);
+      }
+      pushS(s, fixes);
+    }
+  }
+  return sessions;
+}
+try { fixLog = fixLogDecodeSessions(parseJ(lsGet(LS.fixlog), [])); for (const s of fixLog) fixLogCount += s.f.length; } catch (e) { fixLog = []; fixLogCount = 0; } // a damaged log record costs the debug history, never the boot
 function fixLogTrim() { // the cap, enforced at open and at every append: whole oldest sessions go first; only a lone session longer than the cap is head-trimmed (its newest FIXLOG_MAX fixes survive)
   while (fixLogCount > FIXLOG_MAX && fixLog.length) {
     const s = fixLog[0];
@@ -784,7 +914,7 @@ function fixLogOut(e) { // the same fix, after the estimator has run on it: gpsP
   try { if (!e) return; e[6] = [+gpsPos[0].toFixed(6), +gpsPos[1].toFixed(6), dispPos ? +dispPos[0].toFixed(6) : null, dispPos ? +dispPos[1].toFixed(6) : null, smHeading != null ? Math.round(smHeading * 10) / 10 : null]; } catch (err) {}
 }
 function fixLogClose() { fixLogSession = null; markDirty('fixlog'); } // the tail flushes on the normal cadence (heartbeat / forced flush), like the trail's
-/** @returns {StorageOutcome} */ function saveFixLog() { const ok = lsSet(LS.fixlog, JSON.stringify(fixLog)); return ok ? storeOk() : storeFail('fixlog', true); }
+/** @returns {StorageOutcome} */ function saveFixLog() { const ok = lsSet(LS.fixlog, JSON.stringify(fixLogEncodeSessions(fixLog))); return ok ? storeOk() : storeFail('fixlog', true); } // Beta 1.190: the record lands in the e2 stored form (see the codec note at the loader) — the in-memory sessions stay absolute
 function acceptFix(pos) {
   const fxEnt = fixLogRaw(pos); // Beta 1.189: the raw fix is logged BEFORE every gate below — a refused fix is recorded as delivered, with no estimator output
   const now = Date.now(); const ll = [pos.coords.latitude, pos.coords.longitude]; const acc = pos.coords.accuracy || 999;
