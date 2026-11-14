@@ -32,6 +32,13 @@ placeholder token SPLASH_TOKEN where the payload belongs, and build()
 inlines the exact bytes of icon-512.png (base64) at assembly time. The
 assembled output is byte-identical to the pre-1.133 recipe — the artwork
 is untouched; this is source hygiene, NOT the declined icon re-encode.
+
+Splash artwork (the artwork-only splash): the inlined file is now
+splash-artwork-512.png - the app icon's artwork alone (truck, blade,
+snow) on a transparent background, cropped tight from Andrew's icon
+asset pack foreground (Android/adaptive-foreground-1024.png, rendered
+from his master vectors) and downscaled to 512px wide. icon-512.png
+remains the PWA / manifest icon; it is no longer the splash source.
 """
 import base64
 import hashlib
@@ -46,8 +53,8 @@ PARTS = ["head.html", "data.js", "app1.js", "engine.js", "pmstyles.js",
 OUT = ROOT / "src" / "tracker-source.html"
 
 
-SPLASH_TOKEN = b"@@SPLASH_ICON_512_B64@@"
-ICON = ROOT / "icon-512.png"
+SPLASH_TOKEN = b"@@SPLASH_ARTWORK_512_B64@@"
+ICON = ROOT / "splash-artwork-512.png"
 
 
 def build() -> bytes:
@@ -62,7 +69,7 @@ def build() -> bytes:
                 raise SystemExit(
                     "assemble: parts/head.html must carry the splash "
                     "placeholder token exactly once (the icon bytes are "
-                    "inlined from icon-512.png at assembly time, Beta 1.133)")
+                    "inlined from splash-artwork-512.png at assembly time)")
             if not ICON.is_file():
                 raise SystemExit(f"assemble: missing splash icon {ICON}")
             data = data.replace(SPLASH_TOKEN,

@@ -1,5 +1,7 @@
 import { launchDrive, finish } from './harness.mjs';
-const { proc, ev, consoleLog, sleep } = await launchDrive();
+import fs from 'node:fs';
+import zlib from 'node:zlib';
+const { proc, ev, consoleLog, sleep, shot } = await launchDrive();
 
 // drive180: the splash transition - Andrew's Variant A "Rise and
 // settle" (Beta 1.153), re-judged at Beta 1.155 against his phone-test
@@ -397,6 +399,22 @@ const { proc, ev, consoleLog, sleep } = await launchDrive();
 // ~2.3s landing, 2.6s fallback still fallback-only) is judged by
 // drive132's S5 window. Everything else - snow, pills, rows, the
 // 2700ms floor in S8, the cut mechanics - stands as at 1.178.
+// Beta 1.191 (Andrew, 2026-11-14 - picked from the splash-icon
+// sample): the splash retires the icon TILE. #splashIcon shows
+// the icon artwork alone (truck, blade, snow - the asset pack
+// foreground rendering, cropped tight, inlined as
+// splash-artwork-512.png at 512x423), no border-radius, no drop
+// shadow, directly on the splash gradient, at the tile's old
+// 168px width and the artwork's own height (138.8px).
+// ICONSIZE re-pins to that box (measured basis in its name);
+// NOTILE1 judges the tile dressing absent on the live element
+// (computed radius/shadow, natural size, the asset's measured
+// transparent corners); NOTILE2 judges the PAINT in a hold
+// screenshot (the harness shot()): the pixel at a point the
+// asset carries transparent must match the splash gradient
+// beside the box - the tile build painted opaque navy there.
+// CENTRE/HOLD1/SEQ/S8 stand unmodified and pass on the new
+// box: the choreography is untouched.
 const R = { checks: [] };
 const ok = (name, cond) => R.checks.push([name, cond === true]);
 
@@ -455,9 +473,14 @@ await ev(`(() => {
 // Wait for the transition to settle: the menu shown, its main pane
 // fully in, and the title's centre steady across two polls.
 let lastCy = null, steady = 0;
+let notileBox = null; // the artwork-only proof (NOTILE below): the rendered box at the first fully-in hold poll
 const waitT0 = Date.now();
 while (Date.now() - waitT0 < 30000) {
-  const s = await ev(`(() => { const tr = window.__splashTrace; if (!tr || !tr.length) return ''; const last = tr[tr.length - 1]; const pane = document.getElementById('rmMain'); return JSON.stringify({ n: tr.length, shown: last.shown, cy: last.cy, paneOp: pane ? getComputedStyle(pane).opacity : '' }); })()`).then(x => typeof x === 'string' && x ? JSON.parse(x) : null).catch(() => null);
+  const s = await ev(`(() => { const tr = window.__splashTrace; if (!tr || !tr.length) return ''; const last = tr[tr.length - 1]; const pane = document.getElementById('rmMain'); return JSON.stringify({ n: tr.length, shown: last.shown, cy: last.cy, t: last.t, iop: last.iop, ix: last.ix, iy: last.iy, iw: last.iw, ih: last.ih, paneOp: pane ? getComputedStyle(pane).opacity : '' }); })()`).then(x => typeof x === 'string' && x ? JSON.parse(x) : null).catch(() => null);
+  if (!notileBox && s && !s.shown && s.iop >= 0.99 && s.t >= 1600 && s.iw > 0) {
+    notileBox = { x: s.ix, y: s.iy, w: s.iw, h: s.ih };
+    try { await shot('drive180-notile.png'); } catch (e) { notileBox = null; }
+  }
   if (s && s.shown && s.paneOp === '1') {
     if (lastCy !== null && Math.abs(s.cy - lastCy) <= 1) { steady++; if (steady >= 2) break; }
     else steady = 0;
@@ -467,6 +490,46 @@ while (Date.now() - waitT0 < 30000) {
 }
 await ev(`(() => { window.__splashTraceStop = true; return true; })()`).catch(() => null);
 await sleep(150);
+
+// NOTILE raw material. decodePng is a minimal PNG reader (8-bit,
+// colour types 2/6, no interlace - exactly what Page.captureScreenshot
+// emits) so the rendered-pixel proof needs no new dependency.
+function decodePng(buf) {
+  let pos = 8, w = 0, h = 0, ct = 0; const idat = [];
+  while (pos < buf.length) {
+    const len = buf.readUInt32BE(pos); const type = buf.toString('ascii', pos + 4, pos + 8);
+    const data = buf.subarray(pos + 8, pos + 8 + len);
+    if (type === 'IHDR') { w = data.readUInt32BE(0); h = data.readUInt32BE(4); ct = data[9]; if (data[8] !== 8 || data[12] !== 0) throw new Error('png format'); }
+    if (type === 'IDAT') idat.push(data);
+    pos += 12 + len;
+  }
+  const raw = zlib.inflateSync(Buffer.concat(idat));
+  const bpp = ct === 6 ? 4 : 3; const stride = w * bpp;
+  const px = new Uint8Array(w * h * 4);
+  let prev = new Uint8Array(stride);
+  for (let y = 0; y < h; y++) {
+    const f = raw[y * (stride + 1)]; const row = raw.subarray(y * (stride + 1) + 1, (y + 1) * (stride + 1));
+    const cur = new Uint8Array(stride);
+    for (let x = 0; x < stride; x++) {
+      const a = x >= bpp ? cur[x - bpp] : 0, b = prev[x], c = x >= bpp ? prev[x - bpp] : 0;
+      let v = row[x];
+      if (f === 1) v = (v + a) & 255; else if (f === 2) v = (v + b) & 255; else if (f === 3) v = (v + ((a + b) >> 1)) & 255;
+      else if (f === 4) { const q = a + b - c, pa = Math.abs(q - a), pb = Math.abs(q - b), pc = Math.abs(q - c); v = (v + (pa <= pb && pa <= pc ? a : pb <= pc ? b : c)) & 255; }
+      cur[x] = v;
+    }
+    for (let x = 0; x < w; x++) { const o = (y * w + x) * 4, so = x * bpp; px[o] = cur[so]; px[o + 1] = cur[so + 1]; px[o + 2] = cur[so + 2]; px[o + 3] = bpp === 4 ? cur[so + 3] : 255; }
+    prev = cur;
+  }
+  return { w, h, px };
+}
+let notileShot = null;
+if (notileBox) {
+  try { notileShot = decodePng(fs.readFileSync('drive180-notile.png')); fs.unlinkSync('drive180-notile.png'); } catch (e) { notileShot = null; }
+}
+let notileFacts = null;
+try {
+  notileFacts = await ev(`(() => { const ic = document.getElementById('splashIcon'); if (!ic) return ''; const cs = getComputedStyle(ic); let alphas = null; try { const cv = document.createElement('canvas'); cv.width = ic.naturalWidth; cv.height = ic.naturalHeight; const c2 = cv.getContext('2d'); c2.drawImage(ic, 0, 0); const d = c2.getImageData(0, 0, cv.width, cv.height).data; const A = (x, y) => d[(y * cv.width + x) * 4 + 3]; alphas = { tl: A(0, 0), tr: A(cv.width - 1, 0), bl: A(0, cv.height - 1), br: A(cv.width - 1, cv.height - 1), lm: A(0, Math.floor(cv.height / 2)) }; } catch (e) { alphas = null; } return JSON.stringify({ rad: cs.borderTopLeftRadius, sh: cs.boxShadow, nw: ic.naturalWidth, nh: ic.naturalHeight, alphas }); })()`).then(x => typeof x === 'string' && x ? JSON.parse(x) : null);
+} catch (e) { notileFacts = null; }
 
 let trace = [], fromBox = null, toBox = null;
 try {
@@ -503,8 +566,8 @@ const fadeI = post.filter(sv => sv.iop > 0.01 && sv.iop < 0.99).length;
 ok('CUT2 NO FADE (Beta 1.178): no post-flip sample shows the icon at partial opacity - icon fade frames: ' + fadeI + ' (an opacity fade-out in place of the cut would pass through such frames on its way down; the display cut passes through none)',
   post.length > 0 && fadeI === 0);
 const sizeDev = (hold && pre.length) ? Math.max(...pre.map(sv => Math.max(Math.abs(sv.h - hold.h), Math.abs(sv.w - hold.w)))) : 999;
-ok('ICONSIZE the icon NEVER changes size during the splash (Beta 1.180: the 168px box is the whole brand now): box ' + (hold ? hold.w : -1) + 'x' + (hold ? hold.h : -1) + 'px at the hold, worst deviation ' + sizeDev.toFixed(1) + 'px across ' + pre.length + ' hold samples',
-  !!hold && sizeDev <= 2 && Math.abs(hold.w - 168) <= 2 && Math.abs(hold.h - 168) <= 2);
+ok('ICONSIZE the artwork NEVER changes size during the splash and wears the ARTWORK box (re-pinned for the artwork-only splash - measured basis: the shipped splash asset splash-artwork-512.png is 512x423px, the icon artwork cropped tight from the asset-pack foreground at aspect 423/512, so at the tile-era 168px display width its height is 168 x 423/512 = 138.8px; the 168x168 square was the TILE box and the tile is gone): box ' + (hold ? hold.w : -1) + 'x' + (hold ? hold.h : -1) + 'px at the hold, worst deviation ' + sizeDev.toFixed(1) + 'px across ' + pre.length + ' hold samples',
+  !!hold && sizeDev <= 2 && Math.abs(hold.w - 168) <= 2 && Math.abs(hold.h - 138.8) <= 2);
 ok('S7 the menu buttons arrive: at settle the main pane is fully opaque with the Choose button at full height | ' + JSON.stringify({ paneOp: lastS ? lastS.paneOp : 'none', btnH: lastS ? lastS.btnH : -1 }),
   !!lastS && lastS.paneOp === '1' && lastS.btnH > 30);
 ok('S8 the boot gate flips at the Beta 1.160 floor (flip at ' + (flipIdx >= 0 ? trace[flipIdx].t : -1) + 'ms on the page clock; arm() holds a 2700ms splash floor on the animated path - the flip lands after the icon fade-in and the hold (Beta 1.180: the icon 1.25s fade is the only entrance left; the title and its 1.5s slide are retired), so it cannot precede 2400ms on this clock - and the 6000ms escape still caps a stalled boot well under the 12000ms ceiling)',
@@ -520,6 +583,19 @@ ok('SEQ2 the icon is FULLY IN after its 1.25s fade and before the flip (Beta 1.1
 const holdIn = trace.filter(s => s.t >= 2300 && flipT2 > 0 && s.t < flipT2 && s.iop >= 0.99 && Math.abs(s.cx - s.vw / 2) <= 2 && Math.abs(s.cy - s.vh / 2) <= 2);
 ok('HOLD1 the icon is fully in AND still dead centre through the hold before the flip (Beta 1.180: replaces SEQ3, whose subject - the settled title slide - no longer exists): ' + holdIn.length + ' trace samples in [2300ms, flip) with icon effective opacity >= .99 and rendered centre within 2px of the viewport centre' + (holdIn.length ? ' (first at ' + holdIn[0].t + 'ms)' : ''),
   holdIn.length >= 1);
+ok('NOTILE1 NO TILE DRESSING (artwork-only splash): on the live #splashIcon the computed border radius is ' + (notileFacts ? notileFacts.rad : 'n/a') + ' and box-shadow ' + (notileFacts ? notileFacts.sh : 'n/a') + ' (the tile-era 38px radius and 0 18px 50px shadow are gone), the inlined image natural size is ' + (notileFacts ? notileFacts.nw : 'n/a') + 'x' + (notileFacts ? notileFacts.nh : 'n/a') + 'px (the 512x423 artwork asset), and the asset pixels themselves carry NO blue square: alpha at the top corners ' + (notileFacts && notileFacts.alphas ? notileFacts.alphas.tl + '/' + notileFacts.alphas.tr : 'n/a') + ' and the left edge midpoint ' + (notileFacts && notileFacts.alphas ? notileFacts.alphas.lm : 'n/a') + ' (all zero - fully transparent), bottom corners ' + (notileFacts && notileFacts.alphas ? notileFacts.alphas.bl + '/' + notileFacts.alphas.br : 'n/a') + ' (the snow swell soft edge, under 128; the tile-era opaque navy read 255 at all four corners)',
+  !!notileFacts && notileFacts.rad === '0px' && notileFacts.sh === 'none' && notileFacts.nw === 512 && notileFacts.nh === 423 && !!notileFacts.alphas && notileFacts.alphas.tl === 0 && notileFacts.alphas.tr === 0 && notileFacts.alphas.lm === 0 && notileFacts.alphas.bl < 128 && notileFacts.alphas.br < 128);
+let notileDiff = -1, notileIn = null, notileRef = null;
+if (notileShot && notileBox && trace.length) {
+  const dsf = notileShot.w / (trace[0].vw || 420);
+  const samp = (cx, cy) => { let r = 0, g = 0, b = 0, n = 0; const xi = Math.round(cx * dsf), yi = Math.round(cy * dsf); for (let dy = -2; dy <= 2; dy++) for (let dx = -2; dx <= 2; dx++) { const o = ((yi + dy) * notileShot.w + (xi + dx)) * 4; r += notileShot.px[o]; g += notileShot.px[o + 1]; b += notileShot.px[o + 2]; n++; } return [Math.round(r / n), Math.round(g / n), Math.round(b / n)]; };
+  const iy2 = notileBox.y + 0.12 * notileBox.h;
+  notileIn = samp(notileBox.x + 0.12 * notileBox.w, iy2);
+  notileRef = samp(notileBox.x - 60, iy2);
+  notileDiff = Math.max(Math.abs(notileIn[0] - notileRef[0]), Math.abs(notileIn[1] - notileRef[1]), Math.abs(notileIn[2] - notileRef[2]));
+}
+ok('NOTILE2 NO TILE PAINT (artwork-only splash, the rendered proof): in the hold screenshot the pixel at 12%/12% of the artwork box - a spot the asset itself carries as fully transparent (alpha 0 at asset (61,51)) - reads rgb' + JSON.stringify(notileIn) + ' against the splash gradient 60px left of the box at rgb' + JSON.stringify(notileRef) + ': max channel difference ' + notileDiff + ' (bound 14 - the smooth gradient alone accounts for single digits; the tile build painted its opaque navy square there, ~25+ per channel away from the gradient)',
+  notileShot !== null && notileBox !== null && notileDiff >= 0 && notileDiff <= 14);
 // CUT3 + SOLO (Beta 1.178) replace N4/SLOT/CLEAR: there is no
 // resting pose to pin and no landed title to clear the button -
 // the resting facts are the layer's cut state and the pills'
