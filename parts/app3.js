@@ -615,7 +615,7 @@ let dispHoldN = 0; // fixes the state machine has seen (the engage test needs th
 let dispHoldLow = 0, dispHoldFast = 0, dispHoldFar = 0; // consecutive-fix counters: slow (engage), >= 0.5 m/s and raw-displaced (exit)
 function dispShownPos() { return dispHoldPt || dispPos; } // THE rendered position: the held point while the hold is engaged, the display track otherwise. Every rendered consumer reads this; every recording consumer keeps reading dispPos/gpsPos.
 function dispHoldReset() { dispHoldPt = null; dispHoldRaw = null; dispHoldPrev = null; dispHoldSteps = []; dispHoldN = 0; dispHoldLow = 0; dispHoldFast = 0; dispHoldFar = 0; }
-function dispHoldFix(speed, ll) { // fed once per accepted fix, at the same instant the display position settles for this fix - the basis the judging simulation (analyze6c) was proven on
+function dispHoldFix(speed, ll) { // fed once per accepted fix, at the same instant fixLogOut reads dispPos - the basis the judging simulation (analyze6c) was proven on
   const dp = dispPos;
   const step = (dp && dispHoldPrev) ? distM(dispHoldPrev, dp) : 0;
   if (dp) dispHoldPrev = dp.slice();
@@ -695,7 +695,7 @@ onMapReady(() => { const c = map.getCanvas(); let press = null; // {x, y, id} - 
 let smHeading = null;
 let lastHeadFixAt = 0; // Beta 1.187 (GPS package, TURN A): when the previous heading fix landed - the heading path is sized by the TIME between fixes, not by fix count
 let lastHeadFixPerf = 0; // Beta 1.194: the performance-clock twin of lastHeadFixAt (kf keeps the same at/atF pair) - headCam's camera lead is measured on the frame clock
-let headF = null; // Beta 1.194 (heading filter 2a): the filter state beside smHeading (theta itself stays in smHeading - headCam and northUp already read and reset it there; northUp's smHeading = null re-initializes the filter through updateHeading's init branch). {om: turn rate deg/s, p00/p01/p10/p11: the [theta, omega] covariance (NOT symmetric after an update - the predict uses both off-diagonals, exactly as the replayed prototype carries them), gate: the previous gated innovation's signed value (0 = none)}
+let headF = null; // Beta 1.194 (heading filter 2a): the filter state beside smHeading (theta itself stays in smHeading - headCam, fixLogOut and northUp already read and reset it there; northUp's smHeading = null re-initializes the filter through updateHeading's init branch). {om: turn rate deg/s, p00/p01/p10/p11: the [theta, omega] covariance (NOT symmetric after an update - the predict uses both off-diagonals, exactly as the replayed prototype carries them), gate: the previous gated innovation's signed value (0 = none)}
 const HEAD_Q = 400; // Beta 1.194: 2a's process noise, deg^2/s^3 - the configuration the round-3 judging replay proved on Andrew's two real drives (REPORT3 S3: session-2 fixes over 20 deg of heading error 52 shipped -> 5 at q = 400 with the step escape). Its gate is the round-2 simulator's heading-burst guard; the mandated fallback on a guard failure is q = 100 (replay: 52 -> 8), never a tuned guard.
 function headSigma(v) { return 6 + 18 / Math.max(v, 0.5); } // the OS course's noise falls with speed (round-2 sim noise model; Claude's 2a R) - at rest the course is stale or absent, at speed it sharpens
 function headDelta(a, b) { return ((((b - a + 180) % 360) + 360) % 360) - 180; }
@@ -819,20 +819,311 @@ function startCompass() {
   else listen();
 }
 function stopCompass() { compassGen++; if (compassHandler) { window.removeEventListener('deviceorientationabsolute', compassHandler, true); window.removeEventListener('deviceorientation', compassHandler, true); } compassOn = false; }
-// ===== Beta 1.195: the raw fix log (Beta 1.189-1.194) is REMOVED =====
-// The debugging instrument Andrew approved for the GPS judging rounds has done its
-// work - the round-3 verdicts are judged (heading filter 2a and the display stillness
-// hold shipped in 1.194 on its evidence) - and it comes out, as decided when it went
-// in. Nothing records fixes anymore: acceptFix keeps no copy of the fix it judges, no
-// session opens with a watch, and backups carry no log field (the format stays v2;
-// the field is simply absent - the missing-key rule - and a pre-1.195 backup that
-// still carries one meets the restore's named drop in app4). A record a pre-1.195
-// build left on this device is ORPHANED data with no reader left: it is deleted
-// here, at boot, so the storage is actually reclaimed. lsDel names exactly the
-// retired key - no other LS_GLOBAL record and no route slot is touched (drive194
-// R1 proves both halves: the record goes, its neighbours stay byte-for-byte).
-lsDel(FIXLOG_KEY_RETIRED);
+// ===== RAW FIX LOG (Beta 1.189 — a DEBUGGING instrument, Andrew approved on the third-seat
+// pass's recommendation): every GPS verdict so far rests on a simulator whose fixes are
+// white noise; a real phone's fixes are autocorrelated, and only the phone's own record can
+// say by how much. This log is that record: EVERY fix the watch delivers, captured in
+// acceptFix BEFORE any gate (the finite/on-Earth check, the out-of-order drop, the accuracy
+// gate) can refuse it — the raw input exactly as delivered (timestamp, lat, lng, reported
+// accuracy, speed, course — nulls kept, they are data: a stationary fix reporting no speed
+// is half of what a replay needs) — with the estimator's outputs for the same fix beside it
+// (filtered position, display position, smoothed heading), so a replay compares raw against
+// filtered without re-deriving either. Segmented by SESSION (one locate-on period, opened
+// by startGps, closed by stopGps; each session stamps the app version that recorded it) and
+// every fix carries the Start-Clean run stamp live at its delivery (0 = no clean running),
+// so cleans are marked inside the stream. BOUNDARY (the trail's standing rule, identically):
+// on-device only, it rides inside Andrew's own backup JSON and NOWHERE else — there is NO
+// display, export or share surface for it anywhere in the app; it leaves the phone only
+// inside a backup he exports and hands over himself. It is debug data, not clean data:
+// capped at FIXLOG_MAX fixes and FIXLOG_MAX_CHARS stored characters (app1) with
+// oldest-session eviction, where cleans are unlimited. And it is a pure observer: every entry point is failure-isolated (a logging
+// fault fails silent and can never touch the estimator, camera, trail or runDist), the
+// per-fix cost is one in-memory append, and persistence rides the trail's throttled flush.
+// Entry shape: [timestamp, lat, lng, accuracy, speed, heading, out, run] — out is null
+// until the estimator has run on the fix (a gated fix keeps null forever: delivered,
+// refused, and the refusal is itself replay data), else [filteredLat, filteredLng,
+// displayLat, displayLng, smoothedHeading] at the trail's precision.
+let fixLog = [], fixLogSession = null, fixLogCount = 0;
+// ===== Beta 1.190: the fix log's STORED form ("e3") =====
+// 1.189 stored the log as plain JSON of the in-memory sessions (~169 characters/fix
+// at full precision), and WebKit's localStorage quota is 5 MB per origin with
+// strings persisted as UTF-16 — 2 bytes per character, so the WHOLE origin holds
+// 2,500,000 characters (LocalStorageManager's quota constant; webkit.org bug
+// 245479, comment 5). A plain 36,000-fix log alone would need ~6.1M characters.
+// The e3 form is a LOSSLESS packed encoding of exactly the same in-memory
+// sessions, applied only at the storage boundary: saveFixLog encodes, the boot
+// load below and canonicalFixLog (app4) decode through fixLogDecodeSessions, and
+// everything in between (fixLogRaw, fixLogOut, fixLogTrim) works on the absolute
+// in-memory entries exactly as in 1.189. The record is an object
+// { e: 3, s: [{ v, t0, n, b, f }] } — an object, not 1.189's top-level array, so a
+// 1.189 build that meets an e3 record ignores it whole (its loader required an
+// array) instead of misreading packed data as absolute fixes; this decoder
+// accepts BOTH forms, so every 1.189 record and backup still loads and restores.
+// Inside a session, f is the session's entry byte stream packed 7 bits per
+// character (code points 0x100-0x17F, all single UTF-16 units needing no JSON
+// escape); b is the stream's byte length and n the entry count, so a decoder can
+// prove it consumed exactly what was written. The byte stream is a chain of
+// entries in a small varint code (LEB128; signed values zigzag):
+// - a flags byte: keyframe / estimator output present / output in full form /
+//   run stamp carried by this entry.
+// - keyframes carry absolute values; delta entries carry the millisecond gap
+//   and the SIGNED DIFFERENCE OF THE COORDINATES' IEEE-754 BIT PATTERNS — decode
+//   adds it back onto the previous fix's pattern and recovers the EXACT double,
+//   bit for bit. An entry that cannot delta (a null or non-finite coordinate on
+//   either side — a refused fix — a non-integer timestamp, or a bit delta beyond
+//   2^53) is written as a keyframe instead.
+// - accuracy/speed/heading ride as bit-pattern deltas against the previous fix
+//   (tag 1), an absolute pattern (tag 2), or the null tag (0) — non-finite leaf
+//   values collapse to null, exactly as JSON serialization treated them in v1.
+// - the estimator output rides as micro-degree integer deltas of the four
+//   positions plus a tenths delta of the heading (fixLogOut only ever writes
+//   6dp positions and a 1dp heading, so the integers restore them exactly);
+//   whenever a delta would not restore a value exactly, the full form carries
+//   the absolutes instead (micro-degree integers, or raw bit patterns when a
+//   value is not even on the micro grid).
+// The decoder is the ONE lens for the boot load and the backup validator, as in
+// 1.189: leaf fields pass the number-or-null lens (a null coordinate survives —
+// the refusal data, per the PR #29 Codex fix); a structurally broken entry ends
+// its session there (later entries chain from it and cannot be recovered) —
+// never the boot, never the other sessions. Sizing is enforced by TWO caps
+// (app1): FIXLOG_MAX fixes, and FIXLOG_MAX_CHARS characters of stored record —
+// the logger keeps an exact per-entry byte account as it appends, so the
+// character cap is enforced on the packed size itself, not on a hope about
+// stream density. Measured on worst-case-realistic full-precision streams:
+// ~48 characters/fix at transit speed with stepwise accuracy (~55 with accuracy
+// jumping full-range every fix — a harsher model than the OS produces), ~44 at
+// plow pace, ~33 parked; drive194 asserts the measured characters against the
+// quota arithmetic in FIXLOG_MAX_CHARS' comment.
+const _fxDv = new DataView(new ArrayBuffer(8));
+function _fxBits(x) { _fxDv.setFloat64(0, x); return _fxDv.getBigInt64(0); }
+function _fxUnbits(b) { _fxDv.setBigInt64(0, b); return _fxDv.getFloat64(0); }
+function _fxUBits(x) { _fxDv.setFloat64(0, x); return _fxDv.getBigUint64(0); }
+function _fxUUnbits(b) { _fxDv.setBigUint64(0, b & 0xFFFFFFFFFFFFFFFFn); return _fxDv.getFloat64(0); }
+function _fxFin(x) { return typeof x === 'number' && isFinite(x); }
+function _fxMuExact(v) { return _fxFin(v) && Math.round(v * 1e6) / 1e6 === v; } // an output position survives micro-degree delta encoding exactly
+function _fxHtExact(v) { return _fxFin(v) && Math.round(v * 10) / 10 === v; } // an output heading survives tenths delta encoding exactly
+const _FX_LIM = 1n << 53n;
+function _fxDelta(a, b) { // the signed difference of two doubles' bit patterns, or null when it cannot ride exactly
+  let d = _fxUBits(a) - _fxUBits(b);
+  if (d > (1n << 63n)) d -= (1n << 64n); else if (d < -(1n << 63n)) d += (1n << 64n);
+  return (d <= _FX_LIM && d >= -_FX_LIM) ? d : null;
+}
+function _FxWriter() { return { b: [], u8(v) { this.b.push(v & 255); }, uv(v) { while (v > 127n) { this.b.push(Number(v & 127n) | 128); v >>= 7n; } this.b.push(Number(v)); }, sv(n) { this.uv(n >= 0n ? n * 2n : -n * 2n - 1n); } }; }
+function _FxReader(bytes) { return { b: bytes, i: 0, u8() { if (this.i >= this.b.length) throw new Error('fx eof'); return this.b[this.i++]; }, uv() { let v = 0n, s = 0n; for (;;) { const c = this.u8(); v |= BigInt(c & 127) << s; if (!(c & 128)) return v; s += 7n; if (s > 70n) throw new Error('fx varint'); } }, sv() { const u = this.uv(); return (u & 1n) === 0n ? u / 2n : -(u + 1n) / 2n; } }; }
+function _fxPack7(bytes) { let out = '', acc = 0, nb = 0; for (let i = 0; i < bytes.length; i++) { acc = (acc << 8) | bytes[i]; nb += 8; while (nb >= 7) { nb -= 7; out += String.fromCharCode(0x100 + ((acc >> nb) & 127)); } acc &= (1 << nb) - 1; } if (nb > 0) out += String.fromCharCode(0x100 + ((acc << (7 - nb)) & 127)); return out; }
+function _fxUnpack7(f, nbytes) { const bytes = []; let acc = 0, nb = 0; for (let i = 0; i < f.length; i++) { const v = f.charCodeAt(i) - 0x100; if (v < 0 || v > 127) throw new Error('fx pack char'); acc = (acc << 7) | v; nb += 7; while (nb >= 8) { nb -= 8; bytes.push((acc >> nb) & 255); } acc &= (1 << nb) - 1; if (bytes.length > nbytes) throw new Error('fx pack overflow'); } if (bytes.length !== nbytes) throw new Error('fx pack length'); return bytes; }
+function _fxState(e) { // the delta state an absolute entry leaves behind for the next entry's encoding (nulls where a field cannot anchor a delta)
+  return { ts: _fxFin(e[0]) ? e[0] : null, latB: _fxFin(e[1]) ? _fxUBits(e[1]) : null, lngB: _fxFin(e[2]) ? _fxUBits(e[2]) : null, accB: _fxFin(e[3]) ? _fxUBits(e[3]) : null, spdB: _fxFin(e[4]) ? _fxUBits(e[4]) : null, hdgB: _fxFin(e[5]) ? _fxUBits(e[5]) : null, out: Array.isArray(e[6]) ? e[6] : null, run: _fxFin(e[7]) ? e[7] : 0 };
+}
+function _fxScalarW(w, v, prevB) { // one raw leaf (acc/spd/hdg): null tag, bit-pattern delta, or absolute pattern
+  if (!_fxFin(v)) { w.u8(0); return; }
+  const p = _fxUBits(v);
+  if (prevB !== null && prevB !== undefined) { const d = _fxDelta(v, _fxUUnbits(prevB)); if (d !== null) { w.u8(1); w.sv(d); return; } }
+  w.u8(2); w.uv(p);
+}
+function _fxScalarR(r, prevB) {
+  const t = r.u8();
+  if (t === 0) return null;
+  if (t === 1) { if (prevB === null || prevB === undefined) throw new Error('fx scalar base'); return _fxUUnbits(prevB + r.sv()); }
+  if (t === 2) return _fxUUnbits(r.uv());
+  throw new Error('fx scalar tag');
+}
+function _fxEncEntry(w, e, st) { // append one entry's bytes; returns the state the NEXT entry chains from. The one encoder: save, measure and decode-mirror all follow it
+  const out = Array.isArray(e[6]) ? e[6] : null;
+  let key = !st || st.latB === null || st.lngB === null || !_fxFin(e[1]) || !_fxFin(e[2]) || !Number.isInteger(e[0]) || !Number.isInteger(st.ts);
+  let dLat = null, dLng = null;
+  if (!key) { dLat = _fxDelta(e[1], _fxUUnbits(st.latB)); dLng = _fxDelta(e[2], _fxUUnbits(st.lngB)); if (dLat === null || dLng === null) key = true; }
+  if (!key && e[0] < st.ts) key = true; // a backwards timestamp (the out-of-order fix the logger records before the gate refuses it) cannot ride the unsigned gap varint — the entry keyframes instead
+  let outFull = false;
+  if (out) {
+    outFull = key || !st || !st.out;
+    if (!outFull) {
+      const p = st.out;
+      for (let k = 0; k < 4 && !outFull; k++) if (!_fxMuExact(out[k]) || !_fxMuExact(p[k])) outFull = true;
+      if (!outFull && (out[4] === null || out[4] === undefined) !== (p[4] === null || p[4] === undefined)) outFull = true;
+      if (!outFull && out[4] !== null && out[4] !== undefined && (!_fxHtExact(out[4]) || !_fxHtExact(p[4]))) outFull = true;
+    }
+  }
+  const runV = _fxFin(e[7]) ? e[7] : 0;
+  const runCh = !st || runV !== st.run;
+  w.u8((key ? 1 : 0) | (out ? 2 : 0) | (outFull ? 4 : 0) | (runCh ? 8 : 0));
+  if (key) {
+    if (_fxFin(e[0])) { w.u8(1); w.uv(_fxUBits(e[0])); } else w.u8(0); // the absolute timestamp rides as its float64 bit pattern: integer, fractional or negative, the exact delivered value survives (an integer-only conversion throws on a fractional timestamp — Codex P2, PR #31)
+    if (_fxFin(e[1])) { w.u8(1); w.uv(_fxUBits(e[1])); } else w.u8(0);
+    if (_fxFin(e[2])) { w.u8(1); w.uv(_fxUBits(e[2])); } else w.u8(0);
+  } else { w.uv(BigInt(e[0] - st.ts)); w.sv(dLat); w.sv(dLng); }
+  _fxScalarW(w, e[3], st ? st.accB : null); _fxScalarW(w, e[4], st ? st.spdB : null); _fxScalarW(w, e[5], st ? st.hdgB : null);
+  if (out) {
+    if (outFull) {
+      const p = out;
+      if (_fxMuExact(p[0]) && _fxMuExact(p[1]) && _fxMuExact(p[2]) && _fxMuExact(p[3]) && (p[4] === null || p[4] === undefined || _fxHtExact(p[4]))) {
+        w.u8(0);
+        for (let k = 0; k < 4; k++) w.sv(BigInt(Math.round(p[k] * 1e6)));
+        if (p[4] === null || p[4] === undefined) w.u8(0); else { w.u8(1); w.sv(BigInt(Math.round(p[4] * 10))); }
+      } else {
+        w.u8(1);
+        for (let k = 0; k < 4; k++) { if (_fxFin(p[k])) { w.u8(1); w.uv(_fxUBits(p[k])); } else w.u8(0); }
+        if (_fxFin(p[4])) { w.u8(1); w.uv(_fxUBits(p[4])); } else w.u8(0);
+      }
+    } else {
+      const p = st.out;
+      for (let k = 0; k < 4; k++) w.sv(BigInt(Math.round(out[k] * 1e6) - Math.round(p[k] * 1e6)));
+      if (out[4] === null || out[4] === undefined) w.u8(0); else { w.u8(1); w.sv(BigInt(Math.round(out[4] * 10) - Math.round(p[4] * 10))); }
+    }
+  }
+  if (runCh) w.uv(BigInt(runV));
+  return _fxState(e);
+}
+function _fxDecEntry(r, st) { // read one entry back to its absolute in-memory form; throws on any structural fault (the caller ends the session there)
+  const fl = r.u8(), key = !!(fl & 1), hasOut = !!(fl & 2), outFull = !!(fl & 4), runCh = !!(fl & 8);
+  let ts, lat, lng;
+  if (key) {
+    ts = r.u8() === 1 ? _fxUUnbits(r.uv()) : null;
+    lat = r.u8() === 1 ? _fxUUnbits(r.uv()) : null;
+    lng = r.u8() === 1 ? _fxUUnbits(r.uv()) : null;
+  } else {
+    if (!st || st.latB === null || st.lngB === null || !Number.isInteger(st.ts)) throw new Error('fx delta base');
+    ts = st.ts + Number(r.uv());
+    lat = _fxUUnbits(st.latB + r.sv());
+    lng = _fxUUnbits(st.lngB + r.sv());
+  }
+  const acc = _fxScalarR(r, st ? st.accB : null), spd = _fxScalarR(r, st ? st.spdB : null), hdg = _fxScalarR(r, st ? st.hdgB : null);
+  let out = null;
+  if (hasOut) {
+    if (outFull) {
+      const t = r.u8();
+      if (t === 0) { out = [0, 0, 0, 0, null]; for (let k = 0; k < 4; k++) out[k] = Number(r.sv()) / 1e6; out[4] = r.u8() === 1 ? Number(r.sv()) / 10 : null; }
+      else if (t === 1) { out = [null, null, null, null, null]; for (let k = 0; k < 4; k++) out[k] = r.u8() === 1 ? _fxUUnbits(r.uv()) : null; out[4] = r.u8() === 1 ? _fxUUnbits(r.uv()) : null; }
+      else throw new Error('fx out form');
+    } else {
+      if (!st || !st.out) throw new Error('fx out base');
+      const p = st.out; out = [0, 0, 0, 0, null];
+      for (let k = 0; k < 4; k++) out[k] = (Math.round(p[k] * 1e6) + Number(r.sv())) / 1e6;
+      out[4] = r.u8() === 1 ? (Math.round(p[4] * 10) + Number(r.sv())) / 10 : null;
+    }
+  }
+  const run = runCh ? Number(r.uv()) : (st ? st.run : 0);
+  const e = [ts, lat, lng, acc, spd, hdg, out, run];
+  return { e, st: _fxState(e) };
+}
+function _fxEncodeEntry(e, prev) {
+  const key = ['K', e[0], e[1], e[2], _fxScalar(e[3]), _fxScalar(e[4]), _fxScalar(e[5]), e[6], Number.isFinite(e[7]) ? e[7] : 0];
+  if (!prev) return key;
+  const dTs = (typeof e[0] === 'number' && typeof prev[0] === 'number') ? e[0] - prev[0] : NaN;
+  if (!Number.isInteger(dTs)) return key; // an unanchored or fractional timestamp cannot delta — the entry keyframes
+  if (typeof e[1] !== 'number' || typeof prev[1] !== 'number' || !isFinite(e[1]) || !isFinite(prev[1]) || typeof e[2] !== 'number' || typeof prev[2] !== 'number' || !isFinite(e[2]) || !isFinite(prev[2])) return key; // a refused (null / non-finite) coordinate on either side keyframes
+  const dLat = _fxBits(e[1]) - _fxBits(prev[1]), dLng = _fxBits(e[2]) - _fxBits(prev[2]), LIM = 9007199254740991n;
+  if (dLat > LIM || dLat < -LIM || dLng > LIM || dLng < -LIM) return key;
+  let outSlot = null;
+  if (e[6]) {
+    outSlot = ['F', e[6][0], e[6][1], e[6][2], e[6][3], e[6][4]];
+    const p = prev[6];
+    if (p && _fxMuExact(e[6][0]) && _fxMuExact(e[6][1]) && _fxMuExact(e[6][2]) && _fxMuExact(e[6][3]) && _fxMuExact(p[0]) && _fxMuExact(p[1]) && _fxMuExact(p[2]) && _fxMuExact(p[3])) {
+      const d = [Math.round(e[6][0] * 1e6) - Math.round(p[0] * 1e6), Math.round(e[6][1] * 1e6) - Math.round(p[1] * 1e6), Math.round(e[6][2] * 1e6) - Math.round(p[2] * 1e6), Math.round(e[6][3] * 1e6) - Math.round(p[3] * 1e6)];
+      if (e[6][4] === null || e[6][4] === undefined) outSlot = ['D', d[0], d[1], d[2], d[3], 'n'];
+      else if (_fxHtExact(e[6][4]) && _fxHtExact(p[4])) outSlot = ['D', d[0], d[1], d[2], d[3], Math.round(e[6][4] * 10) - Math.round(p[4] * 10)];
+    }
+  }
+  return [dTs, Number(dLat), Number(dLng), _fxScalar(e[3]), _fxScalar(e[4]), _fxScalar(e[5]), outSlot, e[7] === prev[7] ? null : (Number.isFinite(e[7]) ? e[7] : 0)];
+}
+function fixLogEncodeSessions(sessions) { return { e: 3, s: sessions.map(s => { const w = _FxWriter(); let st = null; for (const e of s.f) st = _fxEncEntry(w, e, st); return { v: s.v, t0: s.t0, n: s.f.length, b: w.b.length, f: _fxPack7(w.b) }; }) }; }
+function fixLogDecodeSessions(parsed) { // any stored / backup fix log value -> the absolute in-memory sessions, through the one lens (see the e3 note above); a value that is not a fix log at all decodes to []
+  const numOrNull = x => (typeof x === 'number' && isFinite(x)) ? x : null;
+  const sessions = [];
+  const pushS = (s, fixes) => { if (fixes.length) sessions.push({ v: typeof s.v === 'string' ? s.v : '', t0: Number.isFinite(s.t0) ? s.t0 : 0, f: fixes }); };
+  if (Array.isArray(parsed)) { // the v1 form (≤ Beta 1.189): absolute entries, the 1.189 lens verbatim
+    for (const s of parsed) {
+      if (!s || typeof s !== 'object' || Array.isArray(s) || !Array.isArray(s.f)) continue;
+      const fixes = [];
+      for (const e of s.f) {
+        if (!Array.isArray(e) || e.length < 6) continue;
+        const out = (Array.isArray(e[6]) && e[6].length === 5) ? e[6].map(numOrNull) : null;
+        fixes.push([numOrNull(e[0]), numOrNull(e[1]), numOrNull(e[2]), numOrNull(e[3]), numOrNull(e[4]), numOrNull(e[5]), out, Number.isFinite(e[7]) ? e[7] : 0]);
+      }
+      pushS(s, fixes);
+    }
+    return sessions;
+  }
+  if (parsed && typeof parsed === 'object' && parsed.e === 3 && Array.isArray(parsed.s)) {
+    for (const s of parsed.s) {
+      if (!s || typeof s !== 'object' || Array.isArray(s) || typeof s.f !== 'string' || !Number.isInteger(s.n) || s.n < 0 || !Number.isInteger(s.b) || s.b < 0) continue;
+      const fixes = [];
+      try {
+        const r = _FxReader(_fxUnpack7(s.f, s.b));
+        let st = null;
+        for (let i = 0; i < s.n; i++) { const d = _fxDecEntry(r, st); fixes.push(d.e); st = d.st; }
+        if (r.i !== s.b) throw new Error('fx trailing'); // the stream must be consumed exactly — a length or count lie ends the session whole rather than trusting a prefix counted wrong
+      } catch (err) { continue; } // a broken packed session is dropped whole (see the e3 note) — never the boot, never the other sessions
+      pushS(s, fixes);
+    }
+  }
+  return sessions;
+}
+const _fxAcct = new WeakMap(); // session -> { b, bl }: the session's byte account (encoded bytes total + per-entry lengths). Kept in a WeakMap, never on the session object itself, so the in-memory sessions stay exactly the 1.189 shape for every other reader — backup rides, validators, snapshots — and the bookkeeping dies with its session
+function _fxMeasure(s) { // (re)build a session's byte account. Runs the one encoder into a scratch writer, so the account can never drift from the stored form
+  const w = _FxWriter(); let st = null; const bl = [];
+  for (const e of s.f) { const before = w.b.length; st = _fxEncEntry(w, e, st); bl.push(w.b.length - before); }
+  _fxAcct.set(s, { b: w.b.length, bl });
+}
+function fixLogEstChars() { // the stored record's estimated length in characters, from the byte accounts: 7 bits ride per packed character, plus each session's JSON shell and the record's own shell and key — deliberately rounded up, so the estimate never under-reads the truth
+  let t = 48;
+  for (const s of fixLog) { const a = _fxAcct.get(s); t += 80 + Math.ceil((a ? a.b : 0) * 8 / 7); }
+  return t;
+}
+try { fixLog = fixLogDecodeSessions(parseJ(lsGet(LS.fixlog), [])); for (const s of fixLog) { fixLogCount += s.f.length; _fxMeasure(s); } } catch (e) { fixLog = []; fixLogCount = 0; } // a damaged log record costs the debug history, never the boot
+function fixLogTrim() { // the caps, enforced at open and at every append: whole oldest sessions go first; only a lone session over a cap is head-trimmed (its newest fixes survive). Two caps (app1): FIXLOG_MAX fixes, and FIXLOG_MAX_CHARS characters of stored record — the second is judged on fixLogEstChars, the byte-accounted estimate, so a stream denser than any model is trimmed by size before the quota can break
+  for (const s of fixLog) if (!_fxAcct.has(s)) _fxMeasure(s); // a session that arrived without its byte account (a planted or pre-accounting record) is measured before any cap is judged on it
+  while (fixLogCount > FIXLOG_MAX && fixLog.length) {
+    const s = fixLog[0];
+    if (fixLog.length === 1) { const drop = s.f.length - FIXLOG_MAX; if (drop > 0) { s.f.splice(0, drop); const a = _fxAcct.get(s); const rb = a.bl.splice(0, drop); let rs = 0; for (const x of rb) rs += x; a.b = Math.max(0, a.b - rs); if (s.f.length) { const w = _FxWriter(); _fxEncEntry(w, s.f[0], null); a.b += w.b.length - (a.bl[0] || 0); a.bl[0] = w.b.length; } else a.b = 0; fixLogCount -= drop; } break; } // a LONE session is head-trimmed, live or not (at boot there is no live session, and evicting a whole log for a hair over a cap would be the tail eating the dog); with several sessions the oldest still goes whole. The new head's account entry is RE-MEASURED in its keyframe form, never bumped by an allowance: an allowance the per-entry lengths never repay would accumulate on every trim and inflate the estimate until the character cap ate the log (Codex P2, PR #31)
+    fixLogCount -= s.f.length; fixLog.shift();
+  }
+  while (fixLogEstChars() > FIXLOG_MAX_CHARS && fixLog.length) {
+    const s = fixLog[0];
+    if (fixLog.length === 1) {
+      if (!s.f.length) break;
+      const a = _fxAcct.get(s);
+      let drop = 0, rs = 0; const excess = fixLogEstChars() - FIXLOG_MAX_CHARS + 128; // ONE computed drop per trim, walked 128 characters past the excess so the estimate's own deliberate over-read is covered and the landing is under the cap in a single pass
+      const share = () => Math.ceil(a.b * 8 / 7) - Math.ceil(Math.max(0, a.b - rs) * 8 / 7); // the drop is judged on the AGGREGATE packed size, exactly as fixLogEstChars reads it — summing per-entry ceilings over-counts by up to a character per entry and the walk would stop hundreds of characters short of the cap
+      while (drop < s.f.length && share() < excess) { rs += (a.bl[drop] || 0); drop++; }
+      if (!drop) break;
+      s.f.splice(0, drop); a.bl.splice(0, drop); a.b = Math.max(0, a.b - rs); if (s.f.length) { const w = _FxWriter(); _fxEncEntry(w, s.f[0], null); a.b += w.b.length - (a.bl[0] || 0); a.bl[0] = w.b.length; } else a.b = 0; fixLogCount -= drop;
+      break;
+    }
+    fixLogCount -= s.f.length; fixLog.shift();
+  }
+}
+fixLogTrim(); // a log written under a larger cap (or planted) is bounded at load too
+function fixLogOpen() { try { fixLogSession = { v: ($('ver') ? $('ver').textContent.trim() : ''), t0: Date.now(), f: [] }; _fxAcct.set(fixLogSession, { b: 0, bl: [] }); fixLog.push(fixLogSession); fixLogTrim(); markDirty('fixlog'); } catch (e) { fixLogSession = null; } }
+function fixLogRaw(pos) { // acceptFix's first act: the raw fix, before any gate. Returns the live entry for fixLogOut, or null (no session, or any fault — the GPS path never hears about it)
+  try {
+    if (!fixLogSession) return null;
+    const c = pos.coords || {};
+    const e = [typeof pos.timestamp === 'number' ? pos.timestamp : null, c.latitude, c.longitude, c.accuracy != null ? c.accuracy : null, c.speed != null ? c.speed : null, c.heading != null ? c.heading : null, null, runStart || 0];
+    const f = fixLogSession.f, w = _FxWriter();
+    _fxEncEntry(w, e, f.length ? _fxState(f[f.length - 1]) : null); // measure the entry through the one encoder, so its byte account is exact
+    let a = _fxAcct.get(fixLogSession); if (!a) { a = { b: 0, bl: [] }; _fxAcct.set(fixLogSession, a); }
+    f.push(e); a.bl.push(w.b.length); a.b += w.b.length; fixLogCount++; fixLogTrim(); markDirty('fixlog');
+    return e;
+  } catch (err) { return null; }
+}
+function fixLogOut(e) { // the same fix, after the estimator has run on it: gpsPos IS the filtered position, dispPos the display's re-anchored point, smHeading the camera's course
+  try {
+    if (!e) return;
+    e[6] = [+gpsPos[0].toFixed(6), +gpsPos[1].toFixed(6), dispPos ? +dispPos[0].toFixed(6) : null, dispPos ? +dispPos[1].toFixed(6) : null, smHeading != null ? Math.round(smHeading * 10) / 10 : null];
+    const a = fixLogSession ? _fxAcct.get(fixLogSession) : null;
+    if (a) { // the output grew the entry: re-measure it and correct the byte account
+      const f = fixLogSession.f; let idx = f.length - 1;
+      if (f[idx] !== e) idx = f.lastIndexOf(e);
+      if (idx >= 0 && a.bl[idx] !== undefined) { const w = _FxWriter(); _fxEncEntry(w, e, idx > 0 ? _fxState(f[idx - 1]) : null); a.b += w.b.length - a.bl[idx]; a.bl[idx] = w.b.length; }
+    }
+    fixLogTrim(); // the output may have grown the account past the character cap since fixLogRaw's trim — re-apply the caps now, not at the next append: a save + reload in between would meet the overage at boot (Codex P2, PR #31)
+  } catch (err) {}
+}
+function fixLogClose() { fixLogSession = null; markDirty('fixlog'); } // the tail flushes on the normal cadence (heartbeat / forced flush), like the trail's
+/** @returns {StorageOutcome} */ function saveFixLog() { const ok = lsSet(LS.fixlog, JSON.stringify(fixLogEncodeSessions(fixLog))); return ok ? storeOk() : storeFail('fixlog', true); } // Beta 1.190: the record lands in the e3 stored form (see the codec note at the loader) — the in-memory sessions stay absolute
 function acceptFix(pos) {
+  const fxEnt = fixLogRaw(pos); // Beta 1.189: the raw fix is logged BEFORE every gate below — a refused fix is recorded as delivered, with no estimator output
   const now = Date.now(); const ll = [pos.coords.latitude, pos.coords.longitude]; const acc = pos.coords.accuracy || 999;
   if (!Number.isFinite(ll[0]) || !Number.isFinite(ll[1]) || Math.abs(ll[0]) > 90 || Math.abs(ll[1]) > 180) return; // audit G1: never let a non-finite or off-Earth fix reach the smoothing, trail or coverage math
   if (typeof pos.timestamp === 'number' && lastFixTs && pos.timestamp < lastFixTs) return; // Beta 1.64 (audit R01): a delayed or out-of-order callback must not move the dot, trail or coverage backwards
@@ -849,8 +1140,9 @@ function acceptFix(pos) {
   else dispOff = [(dispPos[0] - pred[0]) * MLAT, (dispPos[1] - pred[1]) * MLNG];
   startRenderLoop(); // the old glide started the loop here; the coasting display needs it just as much (a fix can arrive on an existing watch and must still render)
   updateHeading(pos.coords.heading, speed, now);
-  dispHoldFix(speed, ll); // Beta 1.194: the stillness hold's per-fix feed, at the same instant the display track settles for this fix - the basis the judging simulation was proven on. Display-only: nothing recorded reads its state.
+  dispHoldFix(speed, ll); // Beta 1.194: the stillness hold's per-fix feed, at the same instant fixLogOut below reads dispPos - the basis the judging simulation was proven on. Display-only: nothing recorded reads its state.
   if (typeof pos.coords.heading === 'number' && speed && speed >= 1) { lastCourseAt = now; setFacing(pos.coords.heading, 0.5); } // moving: face along the course
+  fixLogOut(fxEnt); // Beta 1.189: the estimator has run — filtered position, display position and smoothed heading join the raw fix in the log
   const spd = $('spd');
   if (speed && speed > 0.5) { spd.textContent = Math.round(speed * 3.6) + ' km/h'; spd.classList.remove('hidden'); } else spd.classList.add('hidden');
   if (firstFix && map && (gpsFromRun || watchId != null) && !followPaused) { map.jumpTo({ center: [sm[1], sm[0]], zoom: Math.max(map.getZoom(), 15) }); } // Beta 1.146 (census C4): the map && guard - this first-fix jump sat BEFORE the trail/coverage block below, so in the map-failure world its throw starved recording on fix 1 exactly as followCam's did from fix 2 on // Beta 1.116 (audit CG-115-02): a drag made while waiting for this fix already claimed the camera - the fix still records the position (gpsPos/dispPos above), and with dispPos set the syncCentreBtn rule lights the re-centre button as the way back; no jump, no clear
@@ -934,6 +1226,7 @@ function startGps(fromRun, restart) {
   if (!navigator.geolocation) { toast('This device has no GPS access here', 3000); return; }
   gpsFromRun = !!fromRun; if (!restart) followPaused = false; lastPushKey = ''; startCompass(); // Beta 1.116 (audit CG-115-01): the stale-watch restart passes restart=true - it is the app's own housekeeping, not a user action, so it must not clear a suspension the user deliberately made; only an explicit start begins un-suspended
   const wg = ++watchGen; watchId = navigator.geolocation.watchPosition(p => { if (wg === watchGen) acceptFix(p); }, e => { if (wg === watchGen) gpsError(e); }, { enableHighAccuracy: true, maximumAge: 2000, timeout: 20000 }); // Beta 1.69 (audit N04): callbacks carry their watcher's generation - a queued callback from a stopped or replaced watcher is dropped even when its timestamp is fresh (R01's guard cannot tell watchers apart)
+  fixLogOpen(); // Beta 1.189: a new watch is a new log session (the stale-watch restart re-opens one too - each locate-on period is segmented honestly)
   startRenderLoop(); // Beta 1.65: the frame-synced loop keeps centring between fixes (the Beta 1.28 camTimer's job, drive126 F2) - on the display's own clock now, not a second timer
   clearInterval(staleWatchTimer);
   staleWatchTimer = setInterval(() => { if (watchId != null && Date.now() - lastFixAt > GPS_STALE_MS && lastFixAt) { const wasRunGps = gpsFromRun; stopGps(true); startGps(wasRunGps, true); } }, 15000); // Beta 1.48 (audit B02): capture run ownership BEFORE stopGps clears it - the restart used to always come back as non-run GPS, so a mid-run watcher lost its run. Beta 1.116 (CG-115-01): the restart also preserves followPaused (startGps's restart flag) - a dead zone must not hand the camera back
@@ -942,6 +1235,7 @@ function startGps(fromRun, restart) {
 }
 function stopGps(silent) {
   watchGen++; // Beta 1.69: invalidate any callback still queued from this watcher
+  fixLogClose(); // Beta 1.189: the log session ends with the watch
   if (watchId != null) navigator.geolocation.clearWatch(watchId);
   watchId = null; gpsFromRun = false; clearInterval(staleWatchTimer); dispOff = [0, 0]; dispHoldReset(); // Beta 1.194: the stillness hold retires with the watch (dispHoldReset, beside the display offset's own reset) - a held point must never freeze the puck across location sessions
   if (renderRaf) { cancelAnimationFrame(renderRaf); renderRaf = 0; }
