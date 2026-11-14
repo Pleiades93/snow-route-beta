@@ -15,6 +15,13 @@ await bootThrough(ev, poll);
 // below now prove history is retained WHOLE at load and at restore, while
 // the trail/session caps (a storage bound on raw GPS points, unrelated to
 // retention) remain exactly as 1.152 left them and are still proven here.
+// Beta 1.193 RE-DERIVATION (trail redesign): the 60-minute window now binds
+// BEFORE the caps at both load and restore - a trail with no live run (this
+// drive's seeds carry none) windows to empty and its markers go with it, so
+// the stored outcome is 0/absent, tighter than the 8000 cap ever was. The
+// caps remain in the code as backstops (the loader's slice runs ahead of
+// the window; the marker slice likewise), and this drive now proves the
+// bound that actually governs: nothing oversized survives load or restore.
 const R = { checks: [] };
 const ok = (name, cond) => R.checks.push([name, cond === true]);
 const J = async (expr) => { const raw = await ev(`(() => { try { return JSON.stringify((${expr})); } catch (e) { return JSON.stringify({ __err: String(e && e.message || e) }); } })()`); return typeof raw === 'string' ? JSON.parse(raw) : {}; };
@@ -43,8 +50,8 @@ try {
   const L = await J(`({ hist: history.length, firstAt: history.length ? history[0].at : '', trail: trail.length, sess: trailSessions.length })`);
   ok('L1 load retains a 20,000-entry history WHOLE (the 1.167 uncapped store) | ' + JSON.stringify(L), L.hist === 20000);
   ok('L2 the retained history starts at the OLDEST entry (first = entry 0 - nothing evicted)', L.firstAt === new Date(1700000000000).toISOString());
-  ok('L3 load caps a 20,000-point trail at TRAIL_MAX 8000', L.trail === 8000);
-  ok('L4 load caps 20,000 session markers at 8000', L.sess === 8000);
+  ok('L3 load windows a 20,000-point trail to ZERO (no live run - the Beta 1.193 window binds tighter than the old 8000 cap) | trail ' + L.trail, L.trail === 0);
+  ok('L4 the 20,000 session markers go with the emptied trail (markers never outlive their trail) | sess ' + L.sess, L.sess === 0);
 
   // ---- Phase R: backup fields at restore - history stored whole, trail/sess capped ----
   await ev(`localStorage.clear(); location.reload(); true`); await waitBoot(); await sleep(2200);
@@ -58,10 +65,10 @@ try {
   await sleep(2500); // success path reloads at 600 ms
   await waitBoot(); await sleep(1200);
   const Rr = await J(`(() => { const rk = routeKeys('5w'); const len = k => { const v = localStorage.getItem(rk[k]); return v ? JSON.parse(v).length : -1; };
-    return { hist: len('hist'), trail: len('trail'), sess: len('sess') }; })()`);
+    const sl = localStorage.getItem(rk.sess); return { hist: len('hist'), trail: len('trail'), sess: sl ? JSON.parse(sl).length : 0 }; })()`);
   ok('R1 the restored history is STORED whole at 500 (restore no longer caps history) | ' + JSON.stringify(Rr), Rr.hist === 500);
-  ok('R2 the restored trail is STORED capped at 8000', Rr.trail === 8000);
-  ok('R3 the restored session markers are STORED capped at 8000', Rr.sess === 8000);
+  ok('R2 the restored trail is STORED windowed to empty (the pack carries no live start - Beta 1.193) | trail ' + Rr.trail, Rr.trail === 0);
+  ok('R3 no restored session marker survives (the write set drops them with their trail; the key reads absent or materialized empty after boot) | sess ' + Rr.sess, Rr.sess === 0);
 
   // ---- Phase T: CUT (test-suite restructure, 2026-11-09) ----
   // T1 (preloadUrlList() === the frozen 897) and T2 (a worldwide-box pack

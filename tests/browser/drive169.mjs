@@ -114,6 +114,12 @@ try {
   // the write set - and leaves the resident markers untouched, since they
   // describe the trail that stays. Control: a backup carrying the pair
   // restores the pair untouched.
+  // Beta 1.193 RE-DERIVATION (trail redesign): the window retires this family's
+  // scenery - a finished run's trail no longer persists (the loader windows it
+  // away with no live run, markers and all: markers never outlive their
+  // trail). C-01's RULE survives intact (foreign markers are dropped from the
+  // write set); what changed is the resident pair's fate: it retires together
+  // at load. The arms below assert exactly that, at the same strength.
   const C01B = 1762000000; // fixed epoch base (seconds) for the staged trail
   const C01PTS = []; for (let i = 0; i <= 10; i++) C01PTS.push([+(43.9 + i * 0.001).toFixed(6), -79.5, C01B + i * 60]);
   const sessTrailState = async () => JSON.parse(await ev(`(() => { const rk = routeKeys('5w'); const tr = JSON.parse(localStorage.getItem(rk.trail) || '[]'); const se = JSON.parse(localStorage.getItem(rk.sess) || '[]'); return JSON.stringify({ sess: se, pts: tr.length, segs: trailSegments(tr, se).length }); })()`));
@@ -125,30 +131,33 @@ try {
   await injectBackup(bkSessOnly);
   await ev(`(() => { window.__d169probe = 1; restoreBackup(JSON.parse(window.__d169b)); return true; })()`);
   ok('C-01 restore (markers only) reloaded', await afterReload());
+  await ev(`flushAux(true); true`); // land the loader's windowed state in storage before reading it
   const c01post = await sessTrailState();
-  ok('C-01 FIXED: the foreign markers were dropped from the write set and the RESIDENT markers survive - the resident trail still reads as ONE segment with its own boundary | ' + JSON.stringify(c01post),
-    c01post.pts === 11 && c01post.segs === 1 && c01post.sess.length === 1 && c01post.sess[0] === C01B);
+  ok('C-01 FIXED, windowed (Beta 1.193): the foreign markers were dropped from the write set as ever - and the resident pair retired together at load (the finished trail windows away with no live run; its markers go with it) | ' + JSON.stringify(c01post),
+    c01post.pts === 0 && c01post.segs === 0 && c01post.sess.length === 0);
   // Codex gate round on PR #25: a resident trail spanning TWO cleans, where the
   // resident markers are the only thing keeping the cleans apart (their boundary
   // points sit inside trailSegments' 300 s / 1000 m join). The first cut of this
   // fix cleared the resident markers along with the incoming ones.
-  await ev(`(() => { const rk = routeKeys('5w'); localStorage.setItem(rk.sess, ${JSON.stringify(JSON.stringify([C01B, C01B + 300]))}); return true; })()`);
+  await ev(`(() => { const rk = routeKeys('5w'); localStorage.setItem(rk.trail, ${JSON.stringify(JSON.stringify(C01PTS))}); localStorage.setItem(rk.sess, ${JSON.stringify(JSON.stringify([C01B, C01B + 300]))}); return true; })()`); // Beta 1.193: the trail is re-staged with the markers - arm 1's load window has already retired the first staging from storage
   const c01two = await sessTrailState();
   ok('C-01 staged: the resident trail with TWO markers (two cleans) reads as TWO segments - the markers alone keep the cleans apart | ' + JSON.stringify(c01two),
     c01two.pts === 11 && c01two.segs === 2 && c01two.sess.length === 2);
   await injectBackup(bkSessOnly);
   await ev(`(() => { window.__d169probe = 1; restoreBackup(JSON.parse(window.__d169b)); return true; })()`);
   ok('C-01 restore (markers only, over a two-clean trail) reloaded', await afterReload());
+  await ev(`flushAux(true); true`);
   const c01twoPost = await sessTrailState();
-  ok('C-01 FIXED: the markers-only restore leaves a two-clean resident trail at TWO segments - its own markers survived untouched | ' + JSON.stringify(c01twoPost),
-    c01twoPost.pts === 11 && c01twoPost.segs === 2 && c01twoPost.sess.length === 2 && c01twoPost.sess[0] === C01B && c01twoPost.sess[1] === C01B + 300);
+  ok('C-01 FIXED, windowed (Beta 1.193): the markers-only restore over a two-clean resident trail - the foreign markers dropped, and both cleans\u2019 points and markers retired together at load | ' + JSON.stringify(c01twoPost),
+    c01twoPost.pts === 0 && c01twoPost.segs === 0 && c01twoPost.sess.length === 0);
   const bkPair = JSON.stringify({ app: 'snowroute-backup', v: 2, at: C01B * 1000, routes: { '5w': { trail: JSON.stringify(C01PTS), sess: JSON.stringify([C01B]) } } });
   await injectBackup(bkPair);
   await ev(`(() => { window.__d169probe = 1; restoreBackup(JSON.parse(window.__d169b)); return true; })()`);
   ok('C-01 control restore (trail + markers together) reloaded', await afterReload());
+  await ev(`flushAux(true); true`);
   const c01ctl = await sessTrailState();
-  ok('C-01 control: a backup carrying the pair restores the pair untouched | ' + JSON.stringify(c01ctl),
-    c01ctl.pts === 11 && c01ctl.segs === 1 && c01ctl.sess.length === 1 && c01ctl.sess[0] === C01B);
+  ok('C-01 control (Beta 1.193 re-derivation): a backup carrying the pair restores it WINDOWED - no live run in the pack, so the trail lands empty and its markers leave the write set with it (the pair retires together; through 1.190 the pair restored untouched) | ' + JSON.stringify(c01ctl),
+    c01ctl.pts === 0 && c01ctl.segs === 0 && c01ctl.sess.length === 0);
 
   // ---- P1 (Beta 1.186, storage fix round): the fence rises BEFORE the snapshot ----
   // Fault injection in this drive's family. The backup carries a created route, so

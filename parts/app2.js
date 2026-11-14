@@ -270,11 +270,12 @@ function addGpsLayers() {
     onRemove(m, gl) { if (this._prog) gl.deleteProgram(this._prog); if (this._buf) gl.deleteBuffer(this._buf); this._prog = null; }
   }); // Beta 1.188 (Andrew's pick from the touchable demo): the puck is ONE custom WebGL layer drawing the approved coin in SCREEN SPACE, replacing the two 1.182 fill-extrusions (gps-puck-white / gps-puck-blue, retired). MapLibre projects geometry vertices into single-precision tile coordinates, so at z19 the extrusion edges stair-stepped no matter the segment count, the ground-disc size had to be clamped into a 14-110 px band (and still ballooned to the cap), and as a fellow extrusion the puck lost the depth fight to any 3D building in front of it (field report 2026-11-13: a house 7 m away hid ~95% of it). Here the puck is a quad centred on project(dispPos) read inside render() every frame - it cannot lag the camera - and a signed-distance fragment shader shapes the coin: D = 5.4% of canvas width at EVERY zoom/pitch/bearing, the blue core 62% of D recessed ~1 px under the rim (wall lift 0.14 x D, blue top 0.10 x D at pitch 60), face height cos(pitch)^1.47 so the tilt silhouette is 0.50 x D at pitch 60 and a true circle at pitch 0, app blue #2C4AD2. Edges are anti-aliased analytically (~1 device px) at any zoom. Depth test OFF + depth mask off: buildings can never cover it. GL state is snapshotted and restored around the draw. Visibility is the old puck's rule exactly: drawn while dispPos is set (render() returns early otherwise) - locate-off keeps the last position marked with the beam gone, no fix yet draws nothing. The beam and the accuracy ring are untouched, and the estimator/dispPos/watch logic is untouched - rendering only.
 }
-function addTrailLayers() {
-  if (map.getSource('trail')) return;
-  map.addSource('trail', { type: 'geojson', data: { type: 'FeatureCollection', features: [] } });
-  map.addLayer({ id: 'trail-line', type: 'line', source: 'trail', layout: { 'line-cap': 'round', 'line-join': 'round' }, paint: { 'line-color': '#2c4ad2', 'line-width': 3, 'line-opacity': 0.7 } }, 'gps-beam'); // Beta 1.65 (Andrew's road report): anchored UNDER the GPS stack (Beta 1.182: the anchor names the stack's bottom layer - gps-beam since the puck retired gps-shadow) - unanchored, the line could paint across the dot's face
-}
+// Beta 1.193 (trail redesign, Andrew's adopted design): addTrailLayers is RETIRED - the map
+// carries no 'trail' source and no 'trail-line' layer any more. Through 1.190 the recorded
+// trail painted as a blue line under the GPS stack (anchored before gps-beam since Beta
+// 1.65 so it could never cross the dot's face). Andrew's call: his trail is the streets he
+// marks done, not a line - the stored trail is a backend-only fallback for the distance
+// counter now, and nothing draws it.
 function pickFontFromStyle() { // adopt a NOTO stack from the CURRENT basemap for OUR route labels (Beta 1.6: same
   // typeface day and night - Versatiles names it noto_sans_regular, CARTO lists Noto Sans Regular inside its
   // stacks; a guessed stack renders NO text, so prefer a stack the style itself carries and mentions Noto)
@@ -292,8 +293,8 @@ function onStyleReady() {
   pickFontFromStyle();
   if (routeLoaded && window.GLP && !map.getSource('centres')) window.GLP.init(map, GL_HOST);
   else if (routeLoaded && window.GLP) window.GLP.sync();
-  for (const fn of [addReferenceLayers, addGpsLayers, addTrailLayers]) { try { fn(); } catch (e) { /* one bad layer must never kill the rest of the stack (the REFERENCE throw hid the GPS dot until 2026-10-30) */ } }
-  pushGps(); drawTrail(); if (routeLoaded) refreshAll(); // Beta 1.76: before a route is chosen the map is basemap-only - no route paint, no streets list, no count
+  for (const fn of [addReferenceLayers, addGpsLayers]) { try { fn(); } catch (e) { /* one bad layer must never kill the rest of the stack (the REFERENCE throw hid the GPS dot until 2026-10-30) */ } }
+  pushGps(); if (routeLoaded) refreshAll(); // Beta 1.76: before a route is chosen the map is basemap-only - no route paint, no streets list, no count
 }
 onMapReady(() => map.on('load', onStyleReady));
 let restackArmed = false;

@@ -103,7 +103,7 @@ type Stretch = { line: LatLng[], cum: number[], total: number, parts: LatLng[][]
 type StretchMap = { [street: string]: Stretch };
 
 /** A route slot's storage keys as routeKeys builds them: every value is a full localStorage key (schema, Layout section). */
-type RouteKeys = { done: string, times: string, hist: string, notes: string, via: string, trail: string, cov: string, start: string, flip: string, sides: string, sess: string, pre: string, snap: string, mig: string, migfill: string, finclean: string, rundist: string };
+type RouteKeys = { done: string, times: string, hist: string, notes: string, via: string, trail: string, cov: string, start: string, flip: string, sides: string, sess: string, pre: string, snap: string, mig: string, migfill: string, finclean: string, rundist: string, rundist2: string };
 
 /** sunTimes' return: the day's sunrise/sunset as epoch ms, null when the sun never rises or sets that day (CODE-ONLY, app1). */
 type SunTimes = { rise: number | null, set: number | null };
@@ -144,7 +144,7 @@ declare function setBasemap(): void;
 declare function saveSnap(): StorageOutcome;
 declare function saveFixLog(): StorageOutcome;
 
-/** app3.js: banks the run-distance counter (LS.rundist) past its 30 s / 25 m throttle when forced; called by flushAux (app1) on a forced flush so a mid-run reload resumes the true figure (Beta 1.186, storage fix round P2). Returns nothing. */
+/** app3.js: banks the run-distance counter (LS.rundist) - on every recorded fix since Beta 1.193 (the 30 s / 25 m throttle retired), and when forced by flushAux (app1) on a forced flush so a mid-run reload resumes the true figure (Beta 1.186, storage fix round P2). The force flag now only marks the page-death call; banking itself is change-gated. Returns nothing. */
 declare function persistRunDist(force?: boolean): void;
 
 /** app2.js: the current stretch selection entries {name, idx, anchor}. app1 only forwards the array through GL_HOST's getter and never reads an entry's fields, so the entries are not field-typed here. */

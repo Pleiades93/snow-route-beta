@@ -37,8 +37,8 @@ await march();
 ST = await state();
 const trailAfterClean = ST.trail;
 ok('R1 a clean records trail and coverage on the same watch | ' + JSON.stringify(ST), ST.run === true && ST.clean === true && ST.trail >= 6 && ST.cov > 0);
-const drawn = JSON.parse(await ev(`(() => { const d = (map.getSource('trail') || {})._data || { features: [] }; return JSON.stringify(d.features.length); })()`));
-ok('R2 the recorded trail is drawn | features ' + drawn, drawn >= 1);
+const surf = JSON.parse(await ev(`(() => JSON.stringify({ src: !!map.getSource('trail'), layer: !!map.getLayer('trail-line'), recorded: trail.length }))()`));
+ok('R2 (Beta 1.193, re-derived) recording continues with NO trail surface: the points land in the backend window and nothing is drawn | ' + JSON.stringify(surf), surf.src === false && surf.layer === false && surf.recorded >= 6);
 const recOn = await ev(`$('gpsBtn').classList.contains('rec')`);
 ok('R3 the Locate tab wears its recording face (red) when a clean starts on an already-running view-only watch (Beta 1.64, audit F06) | rec ' + recOn, recOn === true);
 

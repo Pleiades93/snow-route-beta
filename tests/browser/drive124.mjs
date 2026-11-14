@@ -53,14 +53,13 @@ const BISECT = JSON.parse(await ev(`(() => { const steps = {};
   run('glpInit', () => window.GLP.init(map));
   run('ref', () => addReferenceLayers());
   run('gps', () => addGpsLayers());
-  run('trail', () => addTrailLayers());
   return JSON.stringify(steps); })()`));
 ok('G0c onStyleReady step bisect | ' + JSON.stringify(BISECT), Object.values(BISECT).every(v => v === 'ok'));
 
 const PRE = JSON.parse(await ev(`(() => JSON.stringify({
   centres: !!map.getSource('centres'), ref: !!map.getSource('ref'), gps: !!map.getSource('gps'), trail: !!map.getSource('trail'),
   refLine: !!map.getLayer('ref-line'), trailLine: !!map.getLayer('trail-line') }))()`));
-ok('G0b layer-chain state at probe time | ' + JSON.stringify(PRE), PRE.gps === true);
+ok('G0b layer-chain state at probe time (Beta 1.193: the trail surface is retired by design - no trail source, no trail-line layer) | ' + JSON.stringify(PRE), PRE.gps === true && PRE.trail === false && PRE.trailLine === false);
 
 const DIAG = JSON.parse(await ev(`(() => { try {
   const before = { centres: !!map.getSource('centres'), ref: !!map.getSource('ref'), gps: !!map.getSource('gps'), trail: !!map.getSource('trail') };
