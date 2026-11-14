@@ -217,7 +217,10 @@ sharded suite on `main` as the environment-drift audit.
 ## 4. Data protection and backward compatibility
 
 - Storage keys and the backup envelope (`{app:'snowroute-backup', v:1, at, data}`) are
-  a contract with production v5.81 and with every existing beta install. Changing
+  a contract with every existing install (the contract originated with
+  production v5.81; that repo was deleted on 2026-11-13 — final archive
+  kept locally — and the contract now binds through the beta installs
+  and the archived v5.81 backups). Changing
   any key, shape, or the missing-key policy requires: a documented schema note,
   an explicit migration, migration tests (synthetic AND captured-data), and
   Andrew's approval — it is never a drive-by edit.
@@ -226,7 +229,10 @@ sharded suite on `main` as the environment-drift audit.
 - GPS suggestions never mark a street; manual confirmation is a product invariant.
 - Coverage thresholds (15m sampling / 22m radius / 85%) change only with
   reproducible-test evidence, never on a hunch.
-- Production (`snow-route-5w-tracker`) is never modified as part of beta work.
+- The old production repo (`snow-route-5w-tracker`) and the prototype repo
+  were deleted on 2026-11-13 (Andrew's decision; final archives kept
+  locally): Snow Route Beta is the only snow app, and no production
+  surface remains to be modified as part of beta work.
 
 ## 5. Releases and rollback
 
