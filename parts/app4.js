@@ -785,7 +785,7 @@ $('stDel').addEventListener('click', async () => {
 });
 // ---- About / What's new ----
 const WHATSNEW = { // the curated in-app notes: plain words, LATEST RELEASE ONLY (Beta 1.114, Andrew: the accumulated list cluttered the About pane). A release REPLACES this entry with its own in the same change - it never accumulates; the full history lives in CHANGELOG.md, not the app
-  v: 'Beta 1.195', items: ["The GPS debug log is now a switch: Settings \u2192 Backup \u2192 GPS debug log. Turn it on before a drive to record GPS fixes for debugging.", "It's off every time the app opens, and it holds up to an hour of driving. The log still rides in your backup, so export after the drive."] };
+  v: 'Beta 1.196', items: ["The GPS debug log switch in Settings \u2192 Backup is slimmer — one short line now."] };
 
 function renderAbout() {
   const cur = $('ver').textContent.trim();
