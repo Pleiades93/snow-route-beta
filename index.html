@@ -2,7 +2,7 @@
 <html lang="en" class="boot">
 <head>
 <meta charset="UTF-8">
-<meta http-equiv="Content-Security-Policy" content="default-src 'none'; script-src 'sha384-yEYgvCyC0aRYtyGHZSKelao6azg5i9mWIyqzV/g9Y8eh+pCjbtsTnf6p/QMVsoOL' https://cdn.jsdelivr.net; style-src-elem 'sha384-/T/JikVb23n4aLjpFyWkjX6p/b1mSYfC5CGj+DvwbP1p/3MT52mODHdVFqhAdVeA' https://cdn.jsdelivr.net; style-src-attr 'unsafe-inline'; img-src 'self' data: blob: https://tiles.basemaps.cartocdn.com https://protomaps.github.io https://cdn.jsdelivr.net; connect-src 'self' https://tiles.basemaps.cartocdn.com https://protomaps.github.io https://cdn.jsdelivr.net https://nominatim.openstreetmap.org https://overpass-api.de https://overpass.kumi.systems; worker-src blob: 'self'; child-src blob: 'self'; font-src 'none'; manifest-src 'self'; base-uri 'none'; form-action 'none'; object-src 'none'">
+<meta http-equiv="Content-Security-Policy" content="default-src 'none'; script-src 'sha384-sA7i9QWuDaTiw9AmsL8wyX1AzsQBheDl2GQ53WCYwDWz2eEnkCFvTTHDn/aLQD/3' https://cdn.jsdelivr.net; style-src-elem 'sha384-/T/JikVb23n4aLjpFyWkjX6p/b1mSYfC5CGj+DvwbP1p/3MT52mODHdVFqhAdVeA' https://cdn.jsdelivr.net; style-src-attr 'unsafe-inline'; img-src 'self' data: blob: https://tiles.basemaps.cartocdn.com https://protomaps.github.io https://cdn.jsdelivr.net; connect-src 'self' https://tiles.basemaps.cartocdn.com https://protomaps.github.io https://cdn.jsdelivr.net https://nominatim.openstreetmap.org https://overpass-api.de https://overpass.kumi.systems; worker-src blob: 'self'; child-src blob: 'self'; font-src 'none'; manifest-src 'self'; base-uri 'none'; form-action 'none'; object-src 'none'">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="mobile-web-app-capable" content="yes">
@@ -4577,14 +4577,41 @@ onMapReady(() => { const c = map.getCanvas(); let press = null; // {x, y, id} - 
 // north: 'my north' is wherever he is heading. Smoothed around the circle so low-speed wobble can't spin
 // the map; under ~1 m/s the course is unreliable, so the map just holds its last bearing.
 let smHeading = null;
-let lastHeadFixAt = 0; // Beta 1.187 (GPS package, TURN A): when the previous heading fix landed - the smoother below is sized by the TIME between fixes, not by fix count
+let lastHeadFixAt = 0; // Beta 1.187 (GPS package, TURN A): when the previous heading fix landed - the heading path is sized by the TIME between fixes, not by fix count
+let lastHeadFixPerf = 0; // Beta 1.194: the performance-clock twin of lastHeadFixAt (kf keeps the same at/atF pair) - headCam's camera lead is measured on the frame clock
+let headF = null; // Beta 1.194 (heading filter 2a): the filter state beside smHeading (theta itself stays in smHeading - headCam, fixLogOut and northUp already read and reset it there; northUp's smHeading = null re-initializes the filter through updateHeading's init branch). {om: turn rate deg/s, p00/p01/p10/p11: the [theta, omega] covariance (NOT symmetric after an update - the predict uses both off-diagonals, exactly as the replayed prototype carries them), gate: the previous gated innovation's signed value (0 = none)}
+const HEAD_Q = 400; // Beta 1.194: 2a's process noise, deg^2/s^3 - the configuration the round-3 judging replay proved on Andrew's two real drives (REPORT3 S3: session-2 fixes over 20 deg of heading error 52 shipped -> 5 at q = 400 with the step escape). Its gate is the round-2 simulator's heading-burst guard; the mandated fallback on a guard failure is q = 100 (replay: 52 -> 8), never a tuned guard.
+function headSigma(v) { return 6 + 18 / Math.max(v, 0.5); } // the OS course's noise falls with speed (round-2 sim noise model; Claude's 2a R) - at rest the course is stale or absent, at speed it sharpens
 function headDelta(a, b) { return ((((b - a + 180) % 360) + 360) % 360) - 180; }
 function updateHeading(hdg, speed, now) {
-  if (typeof hdg !== 'number' || isNaN(hdg) || !speed || speed < 1) return;
-  if (followPaused) return; // Beta 1.122 (Andrew): the smoothed course is maintained whenever location is on, not only during a run - headCam applies it whenever the camera follows
-  if (smHeading === null) { smHeading = hdg; lastHeadFixAt = now; return; }
-  const dt = Math.min(3, Math.max(0.05, (now - lastHeadFixAt) / 1000)); lastHeadFixAt = now;
-  smHeading = smHeading + headDelta(smHeading, hdg) * (1 - Math.pow(0.65, dt)); // Beta 1.187 (GPS package, TURN A): the step used to be 0.35 per FIX - identical at a steady 1 Hz, but bursty delivery (two fixes 0.15 s apart, then a 3 s gap) stepped it twice in a blink or starved it for seconds; in the harness 9 of 10 bursty runs never settled within 5 degrees after a turn. Retention 0.65^dt makes the smoother a function of the time between fixes: bursty peak turn error 62.5 -> 55.6 degrees, regular cadence unchanged. (Driving the camera from the filter's own velocity instead was A/B'd in the same harness and LOST - peak 88 degrees - so the OS course stays the source.) // Beta 1.115: this only maintains the smoothed course now - headCam, in the render loop, applies it to the map
+  if (typeof hdg !== 'number' || isNaN(hdg)) return;
+  if (followPaused) return; // Beta 1.122 (Andrew): the heading state is maintained whenever location is on, not only during a run - headCam applies it whenever the camera follows; while the follow is suspended the state freezes with the camera (drive148 R3)
+  const spd = (typeof speed === 'number' && isFinite(speed)) ? speed : 0; // a fix reporting no speed is no evidence of motion: it takes the hold branch below, where the course is treated as the stale thing it is at rest
+  if (smHeading === null || !headF) { smHeading = hdg; headF = { om: 0, p00: headSigma(spd) ** 2, p01: 0, p10: 0, p11: 900, gate: 0 }; lastHeadFixAt = now; lastHeadFixPerf = performance.now(); return; }
+  const dt = Math.min(3, Math.max(0.05, (now - lastHeadFixAt) / 1000)); lastHeadFixAt = now; lastHeadFixPerf = performance.now(); // the clamp is the 1.187 smoother's own (inert on the real drives: their fixes land 0.996-1.001 s apart); it bounds the predict after a long silence
+  if (spd < 1) { headF.om *= Math.pow(0.5, dt); headF.gate = 0; return; } // Beta 1.194 (2a hold): under ~1 m/s the course is unreliable - frozen by the OS at rest and through the pause before a reverse (round-3 judging, labelled) - so theta holds, the turn rate decays, and NO reverse-specific handling exists anywhere: while the course is frozen the innovations are ~0 and theta holds on its own (excursion over the confirmed reverse: 0.3 deg on replay)
+  // Beta 1.194 (heading filter 2a, replacing the 1.187 time-normalized EMA): the EMA lagged a
+  // steady turn by omega * tau (tau = 2.32 s - the 60 deg peak the field test measured) and
+  // chased the OS course's STEPS for 5-9 s after every corner on Andrew's real drives (52 of
+  // 659 fixes over 20 deg out). This filter carries the turn rate as a state: predict theta
+  // forward by omega * dt, weigh each course fix by R = sigma(v)^2, soften outliers through
+  // the gate below - a steady turn then has no lag to chase, and a genuine step is classified
+  // as a manoeuvre within two fixes by the step escape.
+  const q = HEAD_Q;
+  const p00 = headF.p00 + dt * (headF.p10 + headF.p01) + dt * dt * headF.p11 + q * dt ** 3 / 3;
+  const p01 = headF.p01 + dt * headF.p11 + q * dt * dt / 2;
+  const p10 = headF.p10 + dt * headF.p11 + q * dt * dt / 2;
+  const p11 = headF.p11 + q * dt;
+  const y = headDelta(smHeading + headF.om * dt, hdg);
+  let R = headSigma(spd) ** 2, S = p00 + R;
+  if (Math.abs(y) > 3 * Math.sqrt(S)) { // the soft gate: a lone large innovation is probably noise - down-weight it ninefold...
+    if (!(headF.gate !== 0 && (y > 0) === (headF.gate > 0))) { R *= 9; S = p00 + R; } // ...but a SECOND consecutive gated innovation of the same sign is a manoeuvre, not noise (the step escape): accept it at normal R. Two same-sign surprises in a row are the vehicle turning, and fighting them is what made the EMA chase a post-reverse course snap for ~9 s (replay: 2a settles it in 1 fix)
+    headF.gate = y;
+  } else headF.gate = 0;
+  const K0 = p00 / S, K1 = p10 / S;
+  smHeading = smHeading + headF.om * dt + K0 * y;
+  headF.om = Math.max(-40, Math.min(40, headF.om + K1 * y)); // the turn-rate clamp: a plow turns slowly; anything faster is a course step being absorbed, and the clamp bounds the overshoot it can store
+  headF.p00 = (1 - K0) * p00; headF.p01 = (1 - K0) * p01; headF.p10 = p10 - K1 * p00; headF.p11 = p11 - K1 * p01;
 }
 // Beta 1.115: heading-up is applied per render tick, fractionally, in the same pipeline
 // as followCam's pan. It used to be a map.easeTo fired from updateHeading - but a camera
@@ -4596,7 +4623,8 @@ let lastHeadAt = 0;
 function headCam(now) {
   if (!map || watchId == null || followPaused || smHeading === null) { lastHeadAt = now; return; } // Beta 1.146 (census C4): no-map guard, same idiom as followCam above - headCam is the other renderTick caller that dereferenced the map unguarded
   const cur = map.getBearing();
-  const d = headDelta(cur, smHeading);
+  const h = lastHeadFixPerf ? Math.min(1, Math.max(0, (performance.now() - lastHeadFixPerf) / 1000)) : 0; // Beta 1.194 (2a): the camera reads theta + omega * h - the filter's own turn rate leads the bearing between fixes, capped at 1 s of lead, so a steady turn is tracked through the gaps instead of stair-stepping fix to fix
+  const d = headDelta(cur, smHeading + (headF ? headF.om : 0) * h);
   if (Math.abs(d) < 0.3) { lastHeadAt = now; return; }
   const dt = Math.min(100, Math.max(1, now - (lastHeadAt || now))); lastHeadAt = now;
   const f = 1 - Math.pow(0.65, dt / 50); // followCam's ease, time-based: identical convergence at any frame rate
