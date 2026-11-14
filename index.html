@@ -2,7 +2,7 @@
 <html lang="en" class="boot">
 <head>
 <meta charset="UTF-8">
-<meta http-equiv="Content-Security-Policy" content="default-src 'none'; script-src 'sha384-lxX7lBBwadVZK9NWLM92Ev9gMMdD6PYaVXBZ/Wfajw76vT7zXtdxbEUK9CpgNXkA' https://cdn.jsdelivr.net; style-src-elem 'sha384-/T/JikVb23n4aLjpFyWkjX6p/b1mSYfC5CGj+DvwbP1p/3MT52mODHdVFqhAdVeA' https://cdn.jsdelivr.net; style-src-attr 'unsafe-inline'; img-src 'self' data: blob: https://tiles.basemaps.cartocdn.com https://protomaps.github.io https://cdn.jsdelivr.net; connect-src 'self' https://tiles.basemaps.cartocdn.com https://protomaps.github.io https://cdn.jsdelivr.net https://nominatim.openstreetmap.org https://overpass-api.de https://overpass.kumi.systems; worker-src blob: 'self'; child-src blob: 'self'; font-src 'none'; manifest-src 'self'; base-uri 'none'; form-action 'none'; object-src 'none'">
+<meta http-equiv="Content-Security-Policy" content="default-src 'none'; script-src 'sha384-CxwpeIK/td7B4aEejdD7WzpRltXnN5ifLgZipc7qEFGyU3zKBvF38p/8WnO2wkIB' https://cdn.jsdelivr.net; style-src-elem 'sha384-/T/JikVb23n4aLjpFyWkjX6p/b1mSYfC5CGj+DvwbP1p/3MT52mODHdVFqhAdVeA' https://cdn.jsdelivr.net; style-src-attr 'unsafe-inline'; img-src 'self' data: blob: https://tiles.basemaps.cartocdn.com https://protomaps.github.io https://cdn.jsdelivr.net; connect-src 'self' https://tiles.basemaps.cartocdn.com https://protomaps.github.io https://cdn.jsdelivr.net https://nominatim.openstreetmap.org https://overpass-api.de https://overpass.kumi.systems; worker-src blob: 'self'; child-src blob: 'self'; font-src 'none'; manifest-src 'self'; base-uri 'none'; form-action 'none'; object-src 'none'">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="mobile-web-app-capable" content="yes">
@@ -4620,9 +4620,12 @@ const HEAD_Q = 400; // Beta 1.194: 2a's process noise, deg^2/s^3 - the configura
 function headSigma(v) { return 6 + 18 / Math.max(v, 0.5); } // the OS course's noise falls with speed (round-2 sim noise model; Claude's 2a R) - at rest the course is stale or absent, at speed it sharpens
 function headDelta(a, b) { return ((((b - a + 180) % 360) + 360) % 360) - 180; }
 function updateHeading(hdg, speed, now) {
-  if (typeof hdg !== 'number' || isNaN(hdg)) return;
   if (followPaused) return; // Beta 1.122 (Andrew): the heading state is maintained whenever location is on, not only during a run - headCam applies it whenever the camera follows; while the follow is suspended the state freezes with the camera (drive148 R3)
   const spd = (typeof speed === 'number' && isFinite(speed)) ? speed : 0; // a fix reporting no speed is no evidence of motion: it takes the hold branch below, where the course is treated as the stale thing it is at rest
+  if (typeof hdg !== 'number' || isNaN(hdg)) { // Beta 1.194 (Codex P2, PR #40): no course on this fix (the OS reports none at rest) - no measurement exists, but a STOPPED state's turn rate must still decay: without this, headCam extrapolates the last moving turn rate at its 1 s cap forever and the parked camera sits a full omega off the frozen heading. A moving fix with no course changes nothing (a dropout mid-drive is not evidence about the rate).
+    if (headF && smHeading !== null && spd < 1) { const dt = Math.min(3, Math.max(0.05, (now - lastHeadFixAt) / 1000)); lastHeadFixAt = now; lastHeadFixPerf = performance.now(); headF.om *= Math.pow(0.5, dt); headF.gate = 0; }
+    return;
+  }
   if (smHeading === null || !headF) { smHeading = hdg; headF = { om: 0, p00: headSigma(spd) ** 2, p01: 0, p10: 0, p11: 900, gate: 0 }; lastHeadFixAt = now; lastHeadFixPerf = performance.now(); return; }
   const dt = Math.min(3, Math.max(0.05, (now - lastHeadFixAt) / 1000)); lastHeadFixAt = now; lastHeadFixPerf = performance.now(); // the clamp is the 1.187 smoother's own (inert on the real drives: their fixes land 0.996-1.001 s apart); it bounds the predict after a long silence
   if (spd < 1) { headF.om *= Math.pow(0.5, dt); headF.gate = 0; return; } // Beta 1.194 (2a hold): under ~1 m/s the course is unreliable - frozen by the OS at rest and through the pause before a reverse (round-3 judging, labelled) - so theta holds, the turn rate decays, and NO reverse-specific handling exists anywhere: while the course is frozen the innovations are ~0 and theta holds on its own (excursion over the confirmed reverse: 0.3 deg on replay)
@@ -5154,7 +5157,9 @@ function stopGps(silent) {
   watchGen++; // Beta 1.69: invalidate any callback still queued from this watcher
   fixLogClose(); // Beta 1.189: the log session ends with the watch
   if (watchId != null) navigator.geolocation.clearWatch(watchId);
-  watchId = null; gpsFromRun = false; clearInterval(staleWatchTimer); dispOff = [0, 0]; dispHoldReset(); if (renderRaf) { cancelAnimationFrame(renderRaf); renderRaf = 0; } // Beta 1.194: the stillness hold retires with the watch (dispHoldReset, beside the display offset's own reset) - a held point must never freeze the puck across location sessions clearInterval(renderPump); renderPump = 0; stopCompass(); // Beta 1.64 (audit F08); Beta 1.65: the render loop stops with the watch
+  watchId = null; gpsFromRun = false; clearInterval(staleWatchTimer); dispOff = [0, 0]; dispHoldReset(); // Beta 1.194: the stillness hold retires with the watch (dispHoldReset, beside the display offset's own reset) - a held point must never freeze the puck across location sessions
+  if (renderRaf) { cancelAnimationFrame(renderRaf); renderRaf = 0; }
+  clearInterval(renderPump); renderPump = 0; stopCompass(); // Beta 1.64 (audit F08); Beta 1.65: the render loop stops with the watch
   if (map) pushGps(); // Beta 1.48 (audit B05): the facing beam is only built while watchId lives - without a fresh push the last beam stayed drawn after stop
   $('gpsBtn').classList.remove('on'); $('gpsBtn').classList.remove('rec'); $('spd').classList.add('hidden'); syncCentreBtn(); // Beta 1.115: location off - the re-centre button goes with it
 }

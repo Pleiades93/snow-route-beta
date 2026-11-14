@@ -109,6 +109,21 @@ const herr = (z) => Math.abs(((((headFactory.get() - z + 180) % 360) + 360) % 36
   }
   t('T4 alternating 179 deg steps: omega stays inside the +-40 clamp and theta stays finite', clamped);
 }
+{ // T6: a fix with NO course while stopped (the OS reports none at rest) -
+  // no measurement is taken, theta stays frozen, but the turn rate still
+  // decays, so the camera lead (theta + omega*h, h capped at 1 s) dies
+  // with it instead of parking the camera a full stale omega off the
+  // heading (Codex P2, PR #40 - before the fix the null-heading return
+  // skipped the decay entirely). A null course while MOVING changes
+  // nothing: a dropout mid-drive is not evidence about the rate.
+  headFactory.reset();
+  for (let k = 0; k < 5; k++) headFactory.updateHeading(k * 20, 4, 1000 * (k + 1)); // turning at 20 deg/s: omega ~20, theta tracking behind the ramp
+  const thRamp = headFactory.get(), omMoving = headFactory.getF().om;
+  headFactory.updateHeading(null, 4, 6000); // moving dropout
+  t('T6a null course while moving: theta and omega untouched', headFactory.get() === thRamp && headFactory.getF().om === omMoving);
+  for (let k = 0; k < 5; k++) headFactory.updateHeading(null, 0, 7000 + 1000 * k); // stopped, no course reported
+  t(`T6b null course while stopped: theta frozen, omega decayed ${omMoving.toFixed(1)} -> ${headFactory.getF().om.toFixed(2)} (bar < 1.5, so the 1 s camera lead errs by less)`, headFactory.get() === thRamp && headFactory.getF().om < 1.5);
+}
 { // T5: the dt clamp - a long gap predicts with dt = 3, never more
   headFactory.reset();
   headFactory.updateHeading(50, 4, 1000);
