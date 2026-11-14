@@ -4899,12 +4899,12 @@ function fixLogTrim() { // the caps, enforced at open and at every append: whole
   for (const s of fixLog) if (!_fxAcct.has(s)) _fxMeasure(s); // a session that arrived without its byte account (a planted or pre-accounting record) is measured before any cap is judged on it
   while (fixLogCount > FIXLOG_MAX && fixLog.length) {
     const s = fixLog[0];
-    if (s === fixLogSession && fixLog.length === 1) { const drop = s.f.length - FIXLOG_MAX; if (drop > 0) { s.f.splice(0, drop); const a = _fxAcct.get(s); const rb = a.bl.splice(0, drop); let rs = 0; for (const x of rb) rs += x; a.b = Math.max(0, a.b - rs); if (s.f.length) { const w = _FxWriter(); _fxEncEntry(w, s.f[0], null); a.b += w.b.length - (a.bl[0] || 0); a.bl[0] = w.b.length; } else a.b = 0; fixLogCount -= drop; } break; } // the new head's account entry is RE-MEASURED in its keyframe form, never bumped by an allowance: an allowance the per-entry lengths never repay would accumulate on every trim and inflate the estimate until the character cap ate the log (Codex P2, PR #31)
+    if (fixLog.length === 1) { const drop = s.f.length - FIXLOG_MAX; if (drop > 0) { s.f.splice(0, drop); const a = _fxAcct.get(s); const rb = a.bl.splice(0, drop); let rs = 0; for (const x of rb) rs += x; a.b = Math.max(0, a.b - rs); if (s.f.length) { const w = _FxWriter(); _fxEncEntry(w, s.f[0], null); a.b += w.b.length - (a.bl[0] || 0); a.bl[0] = w.b.length; } else a.b = 0; fixLogCount -= drop; } break; } // a LONE session is head-trimmed, live or not (at boot there is no live session, and evicting a whole log for a hair over a cap would be the tail eating the dog); with several sessions the oldest still goes whole. The new head's account entry is RE-MEASURED in its keyframe form, never bumped by an allowance: an allowance the per-entry lengths never repay would accumulate on every trim and inflate the estimate until the character cap ate the log (Codex P2, PR #31)
     fixLogCount -= s.f.length; fixLog.shift();
   }
   while (fixLogEstChars() > FIXLOG_MAX_CHARS && fixLog.length) {
     const s = fixLog[0];
-    if (s === fixLogSession && fixLog.length === 1) {
+    if (fixLog.length === 1) {
       if (!s.f.length) break;
       const a = _fxAcct.get(s);
       let drop = 0, rs = 0; const excess = fixLogEstChars() - FIXLOG_MAX_CHARS + 128; // ONE computed drop per trim, walked 128 characters past the excess so the estimate's own deliberate over-read is covered and the landing is under the cap in a single pass
@@ -4941,6 +4941,7 @@ function fixLogOut(e) { // the same fix, after the estimator has run on it: gpsP
       if (f[idx] !== e) idx = f.lastIndexOf(e);
       if (idx >= 0 && a.bl[idx] !== undefined) { const w = _FxWriter(); _fxEncEntry(w, e, idx > 0 ? _fxState(f[idx - 1]) : null); a.b += w.b.length - a.bl[idx]; a.bl[idx] = w.b.length; }
     }
+    fixLogTrim(); // the output may have grown the account past the character cap since fixLogRaw's trim — re-apply the caps now, not at the next append: a save + reload in between would meet the overage at boot (Codex P2, PR #31)
   } catch (err) {}
 }
 function fixLogClose() { fixLogSession = null; markDirty('fixlog'); } // the tail flushes on the normal cadence (heartbeat / forced flush), like the trail's

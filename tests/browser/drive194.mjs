@@ -201,5 +201,12 @@ const soak = await J(`(() => { fixLog = []; fixLogCount = 0; fixLogSession = nul
 ok('L8 the head-trim soak: 45,000 appends through the real append path retain exactly the newest 36,000 fixes, the estimate stays honest, and the stored record stays within the character cap (the accumulating-allowance repro) | ' + JSON.stringify(soak),
   soak.n === 36000 && soak.count === 36000 && soak.first === 1761200000000 + 9000000 && soak.est <= soak.maxChars && soak.rawLen > 0 && soak.rawLen <= soak.maxChars);
 
+// ---------- L9 (gate fix round 3, PR #31): the output's growth re-caps at once, and a lone session is never evicted whole ----------
+const recap = await J(`(() => { let seed = 246813579; const rnd = () => { seed = (seed * 1103515245 + 12345) & 0x7fffffff; return seed / 0x7fffffff; }; fixLog = []; fixLogCount = 0; fixLogSession = null; fixLogOpen(); const S = fixLogSession; const T = 1761300000000; let lat = 44.0, lng = -79.7; for (let i = 0; i < 36000; i++) { lat += (rnd() - 0.5) * 6e-5; lng += (rnd() - 0.5) * 8e-5; S.f.push([T + i * 1000, lat, lng, Math.fround(3 + rnd() * 30), rnd() * 18.765432109876543, rnd() * 359.987654321, null, T]); fixLogCount++; } _fxMeasure(S); fixLogTrim(); const n0 = S.f.length, est0 = fixLogEstChars(); const e = S.f[S.f.length - 1]; gpsPos = [e[1], e[2]]; dispPos = [e[1], e[2]]; smHeading = 10; fixLogOut(e); const est1 = fixLogEstChars(), n1 = S.f.length; saveFixLog(); markClean('fixlog'); const boot = (() => { const dec = fixLogDecodeSessions(JSON.parse(localStorage.getItem(LS.fixlog))); let c = 0; for (const s of dec) { c += s.f.length; _fxMeasure(s); } const keep = fixLog; fixLog = dec; const cnt = fixLogCount; fixLogCount = c; fixLogTrim(); const out = { sessions: fixLog.length, n: fixLog.length ? fixLog[0].f.length : 0 }; fixLog = keep; fixLogCount = cnt; return out; })(); return { n0, est0, est1, n1, boot, maxChars: FIXLOG_MAX_CHARS }; })()`);
+ok('L9 near the character cap, adding the estimator output re-caps at once: the estimate ends within FIXLOG_MAX_CHARS without waiting for the next append | ' + JSON.stringify(recap),
+  recap.est1 <= recap.maxChars && recap.n1 >= recap.n0 - 100 && recap.n1 > 30000);
+ok('L9 the saved near-cap log survives the boot sequence whole-sessioned (the lone session is head-trimmed at most, never evicted whole) | ' + JSON.stringify(recap.boot),
+  recap.boot.sessions === 1 && recap.boot.n >= recap.n1 - 100);
+
 R.exceptions = consoleLog.filter(c => c.type === 'EXCEPTION');
 finish(R, proc);
