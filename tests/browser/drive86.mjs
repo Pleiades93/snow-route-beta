@@ -16,7 +16,10 @@ const seedReload = async (obj) => {
 };
 await sleep(3000);
 // T1 NEW-01 success: clear persists across reload
-await seedReload({ 'snowroute.5w.v4.trail': '[[43.81,-79.56,1767225600],[43.82,-79.57,1767225700]]' });
+// Beta 1.193: the seed carries a live run start - without one the trail window
+// (correctly) empties a finished run's points at load and there is nothing
+// left for the clear to clear; with the run live both points survive the load.
+await seedReload({ 'snowroute.5w.v4.trail': '[[43.81,-79.56,1767225600],[43.82,-79.57,1767225700]]', 'snowroute.5w.v5.start': '1767225500000' });
 let A = JSON.parse(await ev(`(() => JSON.stringify({ tl: trail.length }))()`));
 ok('T1 trail seeded (2 pts)', A.tl === 2);
 await ev(`(() => { clearTrailAll(); return true; })()`); await sleep(700); // Beta 1.88: the Clear trail button is gone (re-home comes later) - the drives call the clearing itself, which is what the button's second tap did

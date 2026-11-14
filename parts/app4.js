@@ -308,8 +308,12 @@ async function restoreBackup(parsed) { // production doRestore semantics: valida
   // When the window empties a pack's trail and the pack has no live run, the pack's
   // session markers leave the write set with it - the pair retires together (the C-01
   // rule: markers never outlive their trail), rather than landing as orphans over an
-  // empty trail.
-  for (const p of allPacks) { const rk = routeKeys(p.id); const ti = entries.findIndex(e => e[0] === rk.trail); if (ti < 0) continue; const se = entries.find(e => e[0] === rk.start); const startMs = se && /^\d+$/.test(se[1]) ? +se[1] : 0; let pts = parseJ(entries[ti][1], []); pts = Array.isArray(pts) ? pts.filter(q => Array.isArray(q) && q.length === 3 && Number.isFinite(q[0]) && Number.isFinite(q[1]) && Number.isFinite(q[2]) && q[2] >= 946684800 && q[2] <= 4102444800 && Math.abs(q[0]) <= 90 && Math.abs(q[1]) <= 180) : []; const windowed = trailWindow(pts, startMs); entries[ti][1] = JSON.stringify(windowed); if (!startMs && !windowed.length) { const si2 = entries.findIndex(e => e[0] === rk.sess); if (si2 >= 0) entries.splice(si2, 1); } }
+  // empty trail. Only a NON-EMPTY markers entry is spliced: an entry that already
+  // reads empty is either a genuine empty field or C06's synthetic clear (written
+  // just above when a trail arrives without markers), and writing it is precisely
+  // what clears the resident markers - splicing it would resurrect them by
+  // omission (drive145 N13 caught exactly that in this round's first gate).
+  for (const p of allPacks) { const rk = routeKeys(p.id); const ti = entries.findIndex(e => e[0] === rk.trail); if (ti < 0) continue; const se = entries.find(e => e[0] === rk.start); const startMs = se && /^\d+$/.test(se[1]) ? +se[1] : 0; let pts = parseJ(entries[ti][1], []); pts = Array.isArray(pts) ? pts.filter(q => Array.isArray(q) && q.length === 3 && Number.isFinite(q[0]) && Number.isFinite(q[1]) && Number.isFinite(q[2]) && q[2] >= 946684800 && q[2] <= 4102444800 && Math.abs(q[0]) <= 90 && Math.abs(q[1]) <= 180) : []; const windowed = trailWindow(pts, startMs); entries[ti][1] = JSON.stringify(windowed); if (!startMs && !windowed.length) { const si2 = entries.findIndex(e => e[0] === rk.sess); if (si2 >= 0) { const sv = parseJ(entries[si2][1], []); if (Array.isArray(sv) && sv.length) entries.splice(si2, 1); } } }
   // Beta 1.92 (deep audit F06, Andrew's pick (a)): a backup carrying a route's completion
   // list but NO side-marks record (the old v1 shape) used to restore into silence - the
   // loader trusts the side-marks and rebuilt the list from the phone's existing ones,

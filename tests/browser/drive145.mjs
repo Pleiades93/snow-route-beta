@@ -156,7 +156,7 @@ await ev(`(function(){ document.getElementById('xText').value = ${JSON.stringify
 await sleep(900);
 await poll(`!!window.__bootAt && window.__bootAt !== ${JSON.stringify(bootMark13)}`, 30000); // the restore's reload is app-triggered and async - a bare __bootAt poll can return on the OLD page (its marker is still set), and the loadRoute below would then no-op on already-loaded state
 await ev(`loadRoute('5w'); true`); await sleep(600);
-ok('N13 a v1 backup restores into the 5W slot, markers cleared by the C06 rule (trail without its sessions)', await ev(`(function(){ return doneSet.has('Velmar') && localStorage.getItem('snowroute.5w.v5.sess') === '[]' && JSON.parse(localStorage.getItem('snowroute.5w.v4.trail') || '[]').length === 2; })()`));
+ok('N13 a v1 backup restores into the 5W slot, markers cleared by the C06 rule (trail without its sessions); the trail itself restores WINDOWED to empty (Beta 1.193: the pack carries no live run, so its points have no consumer)', await ev(`(function(){ return doneSet.has('Velmar') && localStorage.getItem('snowroute.5w.v5.sess') === '[]' && JSON.parse(localStorage.getItem('snowroute.5w.v4.trail') || '[]').length === 0; })()`));
 
 // --- F06 (Beta 1.92, Andrew's pick (a)): a done-only backup derives its sides
 const v1doneOnly = JSON.stringify({ app: 'snowroute-backup', v: 1, at: '2026-11-02T00:00:00.000Z', data: { 'snowroute.v2': DONE_5W } });

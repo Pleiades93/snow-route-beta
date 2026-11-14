@@ -32,6 +32,14 @@ await bootThrough(ev, poll); // boots end at the route menu - click through to a
 //      tens of kilometres below the 7.5 h total.
 //   K6 no trail surface exists on the map (no 'trail' source, no
 //      'trail-line' layer) at any point.
+//   K9 the crash Codex's gate review found (PR #38, P2): per-fix banking
+//      leaves the counter AHEAD of the stored trail when the process dies
+//      inside the trail's flush buffer. Fault-injected deterministically -
+//      the stored trail is truncated by 40 points (500 m) under a live
+//      banked counter, the app reloads with NO flush, and the first segment
+//      banked after adoption must be one step (~12.5 m), not the ~512 m
+//      re-measure of already-banked travel. The banked record's endpoint
+//      (end) is what adoption restores into the trail to make it so.
 //   K7 finishing the run (3 streets marked - the archive path; an under-3
 //      finish is the board-clear path by standing rule) archives a clean
 //      with NO path and NO pathShortened, and Finish clears the stored
@@ -123,10 +131,31 @@ try {
   const surf = await J(`(() => ({ src: !!map.getSource('trail'), layer: !!map.getLayer('trail-line') }))()`);
   ok('K6 no trail surface exists on the map (no trail source, no trail-line layer) | ' + JSON.stringify(surf), surf.src === false && surf.layer === false);
 
+  // ---- K9: crash with the trail's buffered write lost (Codex PR #38, P2) ----
+  const rs3 = await J(`runStart`);
+  await install(rs3 + 27000000, null);
+  await J(`(() => { const last = trail[trail.length - 1]; window.__prev195 = [last[0], last[1]]; return true; })()`);
+  await leg(240); // 20 more minutes in this page; counter and trail advance together
+  const tail9 = await J(`trail[trail.length - 1]`); // the true tail - the phone never moves; only storage is about to lose it
+  const b9 = await J(`(() => { const st = JSON.parse(localStorage.getItem(LS.trail) || '[]'); localStorage.setItem(LS.trail, JSON.stringify(st.slice(0, -40))); return { m: runDist.m, cut: st.length - 40 }; })()`); // the fault: the stored trail now ends 40 points (500 m) behind the banked counter. NO flush - a flush would land the true trail and heal the fault, which is exactly what a hard crash prevents
+  await reloadPage();
+  await resumeRun();
+  await install(rs3 + 28200000, null);
+  const r9 = await recover();
+  await J(`(() => { window.__prev195 = [${tail9[0]}, ${tail9[1]}]; return true; })()`); // the feeder continues from the TRUE position, not from the stored trail's truncated tail
+  await leg(1);
+  const m9 = await J(`runDist.m`);
+  ok('K9 after a crash that loses the trail\u2019s buffered tail, adoption recovers the banked figure AND the first new segment is one step (~12.5 m), not a re-measure of banked travel | ' + JSON.stringify({ banked: b9.m, rec: r9.rec, firstSeg: m9 - r9.rec, storedAfterCut: b9.cut }),
+    Math.abs(r9.rec - b9.m) <= 5 && (m9 - r9.rec) >= 0 && (m9 - r9.rec) <= 13.5);
+  await leg(120); // 10 more minutes - the run continues clean on the restored endpoint
+  const b9b = await banked();
+  ok('K9b the continued run stays within 0.25% of the fed path (no double-count residue) | ' + JSON.stringify({ truth, banked: b9b.m }),
+    Math.abs(b9b.m - truth) <= 0.0025 * truth);
+
   // ---- K4: primary destroyed - the mirror carries it ----
   const k4 = await J(`(() => { localStorage.removeItem(LS.rundist); runDist = { run: 0, m: 0 }; adoptRunDist(); return { rec: runDist.m, mir: JSON.parse(localStorage.getItem(LS.rundist2) || 'null') }; })()`);
-  ok('K4 with the primary record destroyed, adoption recovers the MIRROR\u2019s figure within a few metres of the banked total | ' + JSON.stringify({ banked: b3.m, rec: k4.rec, mirM: k4.mir && k4.mir.m }),
-    Math.abs(k4.rec - b3.m) <= 5 && Math.abs((k4.mir || {}).m - b3.m) < 0.01);
+  ok('K4 with the primary record destroyed, adoption recovers the MIRROR\u2019s figure within a few metres of the banked total | ' + JSON.stringify({ banked: b9b.m, rec: k4.rec, mirM: k4.mir && k4.mir.m }),
+    Math.abs(k4.rec - b9b.m) <= 5 && Math.abs((k4.mir || {}).m - b9b.m) < 0.01);
 
   // ---- K5: both copies destroyed - exactly the window, nothing more ----
   const k5 = await J(`(() => { localStorage.setItem(LS.rundist, 'corrupt'); localStorage.setItem(LS.rundist2, 'corrupt'); runDist = { run: 0, m: 0 }; adoptRunDist(); return { rec: runDist.m, tk: trailKm(runStart) * 1000, tl: trail.length }; })()`);
