@@ -5005,7 +5005,7 @@ function canonicalSettings(raw) { // Beta 1.166: the one validator for a backup'
   if (!p || typeof p !== 'object' || Array.isArray(p)) return null;
   return JSON.stringify({ vib: typeof p.vib === 'boolean' ? p.vib : SETTINGS_DEF.vib, chime: typeof p.chime === 'boolean' ? p.chime : SETTINGS_DEF.chime, chimeSound: CHIME_KEYS.includes(p.chimeSound) ? p.chimeSound : SETTINGS_DEF.chimeSound });
 }
-function canonicalFixLog(raw) { // Beta 1.189: the one validator for a backup's fixlog field - the loader's own rules (app3) applied to the candidate and re-serialized canonically, so what a restore writes is exactly what a load would have made of it. A session survives as an object holding a fixes array; an entry survives as an array whose position (elements 1-2) is finite - a non-finite coordinate is not a fix - with the delivered fields (timestamp, accuracy, speed, course) kept as numbers-or-null, the estimator output only as a 5-array of numbers-or-null or null, and the run stamp only as a finite number. Sessions left with no fixes drop. The FIXLOG_MAX cap is applied as the writers apply it (oldest sessions evicted whole, a lone oversize session head-trimmed). Returns the canonical record string, or null when the value is not a fix log at all (a string holding a JSON array)
+function canonicalFixLog(raw) { // Beta 1.189: the one validator for a backup's fixlog field - the loader's own rules (app3) applied to the candidate and re-serialized canonically, so what a restore writes is exactly what a load would have made of it. A session survives as an object holding a fixes array; an entry survives as an array of at least 6 fields with every field - the position included - kept through the loader's number-or-null lens: a fix delivered with a non-finite coordinate is recorded by the logger before acceptFix refuses it, serializes with a null coordinate, and is retained by the on-device loader, so the restore retains it too - a backup must not silently lose the refusal data the logger exists to collect (Codex P2, PR #29). The estimator output rides only as a 5-array of numbers-or-null or null, and the run stamp only as a finite number. Sessions left with no fixes drop. The FIXLOG_MAX cap is applied as the writers apply it (oldest sessions evicted whole, a lone oversize session head-trimmed). Returns the canonical record string, or null when the value is not a fix log at all (a string holding a JSON array)
   if (typeof raw !== 'string') return null;
   const arr = parseJ(raw, null);
   if (!Array.isArray(arr)) return null;
@@ -5016,9 +5016,9 @@ function canonicalFixLog(raw) { // Beta 1.189: the one validator for a backup's 
     const fixes = [];
     for (const e of s.f) {
       if (!Array.isArray(e) || e.length < 6) continue;
-      if (!Number.isFinite(e[1]) || !Number.isFinite(e[2])) continue;
+      // no coordinate gate here: e[1]/e[2] pass through numOrNull in the push below, so a null coordinate (a delivered non-finite position, recorded before its refusal) survives - the loader's lens exactly
       const out = (Array.isArray(e[6]) && e[6].length === 5) ? e[6].map(numOrNull) : null;
-      fixes.push([numOrNull(e[0]), e[1], e[2], numOrNull(e[3]), numOrNull(e[4]), numOrNull(e[5]), out, Number.isFinite(e[7]) ? e[7] : 0]);
+      fixes.push([numOrNull(e[0]), numOrNull(e[1]), numOrNull(e[2]), numOrNull(e[3]), numOrNull(e[4]), numOrNull(e[5]), out, Number.isFinite(e[7]) ? e[7] : 0]);
     }
     if (fixes.length) sessions.push({ v: typeof s.v === 'string' ? s.v : '', t0: Number.isFinite(s.t0) ? s.t0 : 0, f: fixes });
   }

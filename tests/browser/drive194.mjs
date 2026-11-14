@@ -19,6 +19,10 @@ await bootThrough(ev, poll); // boots end at the route menu - click through to a
 //      and restoring, the log is the backup's, exactly.
 //   L4 a pre-1.189 backup (no fixlog field) restores clean and leaves the
 //      device's resident log byte-untouched (the missing-key rule).
+//   L4b a fix delivered with a NON-FINITE coordinate - recorded before
+//      acceptFix refuses it, serialized with a null coordinate, retained by
+//      the on-device loader - survives a backup round-trip whole, session
+//      included (the restore validator keeps what the loader keeps).
 //   L5 the stationary behaviour is unchanged with logging on: drive127's own
 //      noise table at its own corridor - the filtered position ends within
 //      3 m of truth.
@@ -112,6 +116,23 @@ await waitBoot(); await bootThrough(ev, poll);
 const afterOld = await J(`({ fixLog, storedRaw: localStorage.getItem(LS.fixlog), done: [...doneSet].length })`);
 ok('L4 the old-format backup restores clean (its board lands) and the resident log is byte-untouched | done=' + afterOld.done,
   afterOld.done > 0 && afterOld.storedRaw === JSON.stringify(marker) && canon(afterOld.fixLog) === canon(marker));
+
+// ---------- L4b: the refused non-finite fix survives the round-trip ----------
+await ev(`(() => { fixLogOpen(); acceptFix({ coords: { latitude: NaN, longitude: ${base.lng}, accuracy: 10, speed: null, heading: null }, timestamp: ${T0} + 9000 }); fixLogClose(); flushAux(true); return true; })()`);
+const nanBakStr = await ev(`buildBackup()`);
+const nanBak = nanBakStr ? JSON.parse(nanBakStr) : null;
+const nanEntry = (log) => { for (const s of log || []) for (const e of s.f || []) if (e[1] === null && e[2] === base.lng) return e; return null; };
+const nanInBak = nanBak && typeof nanBak.fixlog === 'string' ? nanEntry(JSON.parse(nanBak.fixlog)) : null;
+ok('L4b the backup itself carries the refused non-finite fix (null coordinate, null output slot) | ' + JSON.stringify(nanInBak),
+  !!nanInBak && nanInBak[6] === null);
+await ev(`(() => { localStorage.removeItem(LS.fixlog); return true; })()`);
+await reloadPage();
+await ev(`(async () => { await restoreBackup(JSON.parse(${JSON.stringify(JSON.stringify(nanBak))})); return true; })()`);
+await sleep(3500); // the restore reloads
+await waitBoot(); await bootThrough(ev, poll);
+const afterNan = await J(`fixLog`);
+ok('L4b after the restore, the refused fix AND its session survive whole (the validator keeps what the loader keeps) | sessions=' + (afterNan || []).length,
+  !!nanEntry(afterNan) && afterNan.length === 2);
 
 // ---------- L5: stationary behaviour unchanged with logging on ----------
 const NOISE = [[0, 0], [5, -3], [-6, 2], [3, 6], [-2, -6], [7, 1], [-5, -4], [1, 7], [-7, -1], [4, -5], [-3, 3], [6, 5], [-1, -7], [2, 2], [-4, 6], [5, -2]]; // drive127's own table
