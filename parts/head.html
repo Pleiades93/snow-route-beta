@@ -637,6 +637,10 @@ input, textarea { caret-color: currentColor; } /* Beta 1.125 (Andrew): the typin
       <button class="rmBtn bkBtn primary" id="xBak">Backup (JSON)</button>
       <button class="rmBtn bkBtn" id="xRes">Restore backup</button>
     </div>
+    <div class="m-card m-togRow" id="fxLogRow">
+      <div class="m-togTxt"><div class="m-togLbl">GPS debug log</div><div class="m-togDesc">Records GPS fixes for debugging, up to an hour. Off every time the app opens — turn it on before a drive; the log rides in your backup.</div></div>
+      <button class="m-switch" id="swFixLog" role="switch" aria-checked="false" aria-label="GPS debug log"></button>
+    </div>
     <div id="xRestoreOpts" style="display:none">
       <button class="rmBtn bkBtn" id="xImpFile">Import JSON</button>
       <button class="rmBtn bkBtn" id="xImpText">Import Text</button>
