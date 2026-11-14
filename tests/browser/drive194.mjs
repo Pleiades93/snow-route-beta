@@ -28,14 +28,18 @@ await bootThrough(ev, poll); // boots end at the route menu - click through to a
 //      3 m of truth.
 //   L6 the cap holds: FIXLOG_MAX is 36000; a flood evicts the oldest session
 //      whole, then head-trims a lone session to its newest 36000 fixes.
-//   L7 (Beta 1.190) the long clean fits and the bytes fit: a synthetic 8-hour
-//      session (28,800 fixes) survives WHOLE under the 36,000 cap, zero
+//   L7 (Beta 1.190) the long clean fits and the storage fits: a synthetic
+//      8-hour session (28,800 fixes) survives WHOLE under the caps, zero
 //      trimmed; a worst-case full-cap log (36,000 full-precision transit-speed
 //      fixes with outputs and run stamps) written through the real save path
-//      measures within the shared localStorage budget (the fixlog at most
-//      4.0 MB; fixlog + 250 KB trail + 250 KB board/settings allowance at most
-//      4.5 MB); and a 1.189-format (v1) fixture log loads field-for-field,
-//      survives the validator, and re-saves in the e2 form without losing or
+//      measures within the character budget WebKit's quota imposes (the
+//      fixlog at most FIXLOG_MAX_CHARS = 1,850,000 characters; + 250,000
+//      trail at its cap + 250,000 board/settings allowance at most the
+//      2,500,000 characters a 5 MB UTF-16 quota holds), with the trim's
+//      byte-accounted estimate never under-reading the real length; a
+//      high-entropy flood is trimmed by the CHARACTER cap before the fix
+//      cap; and a 1.189-format (v1) fixture log loads field-for-field,
+//      survives the validator, and re-saves in the e3 form without losing or
 //      altering a single field (the stored-form equivalence proof).
 const R = { checks: [] };
 const ok = (name, cond) => R.checks.push([name, cond === true]);
@@ -92,8 +96,8 @@ ok('L1 stopGps closes the session (the watch is off, six entries kept)', closed.
 await ev(`(() => { flushAux(true); return true; })()`);
 const stored = await J(`(() => { const raw = localStorage.getItem(LS.fixlog); return { raw, mem: fixLog }; })()`);
 const storedDec = await J(`fixLogDecodeSessions(JSON.parse(localStorage.getItem(LS.fixlog)))`);
-ok('L2 the forced flush lands the log in storage in the e2 form, decoding back to memory exactly',
-  typeof stored.raw === 'string' && JSON.parse(stored.raw).e === 2 && canon(storedDec) === canon(stored.mem));
+ok('L2 the forced flush lands the log in storage in the e3 form, decoding back to memory exactly',
+  typeof stored.raw === 'string' && JSON.parse(stored.raw).e === 3 && canon(storedDec) === canon(stored.mem));
 await reloadPage();
 const afterReload = await J(`({ fixLog, storedRaw: localStorage.getItem(LS.fixlog) })`);
 ok('L2 the log survives a reload - memory rebuilt from storage, field-for-field',
@@ -162,12 +166,15 @@ ok('L6 the oldest sessions are evicted whole; the lone surviving session is head
   cap.sessions === 1 && cap.markerGone === true && Math.abs(cap.firstLat - (44.1 + 51 * 1e-7)) < 1e-9);
 
 // ---------- L7 (Beta 1.190): the long clean fits, the bytes fit, the old form replays ----------
-const eight = await J(`(() => { fixLog = []; fixLogCount = 0; fixLogSession = null; fixLogOpen(); const S = fixLogSession; const T = 1761000000000; for (let i = 0; i < 28800; i++) { S.f.push([T + i * 1000, 44.2 + i * 1e-7, -79.6, 10, 2, 10, null, T]); fixLogCount++; } fixLogTrim(); return { n: S.f.length, count: fixLogCount, first: S.f[0][0], last: S.f[S.f.length - 1][0] }; })()`);
-ok('L7 a full 8-hour clean (28,800 fixes in one session) survives WHOLE under the cap - zero trimmed | ' + JSON.stringify(eight),
-  eight.n === 28800 && eight.count === 28800 && eight.first === 1761000000000 && eight.last === 1761000000000 + 28799000);
-const bytes = await J(`(() => { let lat = 43.8147013, lng = -79.5593017; const T = 1762000000000, f = []; for (let i = 0; i < 36000; i++) { lat += 0.00013489871; lng -= 0.00002134567; f.push([T + i * 1000, lat, lng, Math.fround(5 + (i % 61) * 0.983), 14.9 + (i % 37) * 0.0137123456789, 355.12345678901234, [+lat.toFixed(6), +lng.toFixed(6), +lat.toFixed(6), +lng.toFixed(6), 355.1], T - 600000]); } fixLog = [{ v: 'Beta 1.190', t0: T, f }]; fixLogCount = 36000; fixLogSession = null; const r = saveFixLog(); const raw = localStorage.getItem(LS.fixlog); return { ok: !!(r && r.ok), len: raw ? raw.length : -1 }; })()`);
-ok('L7 the stored log at the full 36,000 cap, written through the real save path on a worst-case stream, fits the shared budget (fixlog <= 4.0 MB; + 250 KB trail + 250 KB board/settings <= 4.5 MB) | bytes=' + bytes.len + ' (' + (bytes.len / 36000).toFixed(1) + '/fix)',
-  bytes.ok === true && bytes.len > 0 && bytes.len <= 4000000 && bytes.len + 250 * 1024 + 250 * 1024 <= 4500000);
+const eight = await J(`(() => { fixLog = []; fixLogCount = 0; fixLogSession = null; fixLogOpen(); const S = fixLogSession; const T = 1761000000000; for (let i = 0; i < 28800; i++) { S.f.push([T + i * 1000, 44.2 + i * 1e-7, -79.6, 10, 2, 10, null, T]); fixLogCount++; } fixLogTrim(); _fxMeasure(S); return { n: S.f.length, count: fixLogCount, first: S.f[0][0], last: S.f[S.f.length - 1][0], est: fixLogEstChars(), maxChars: FIXLOG_MAX_CHARS }; })()`);
+ok('L7 a full 8-hour clean (28,800 fixes in one session) survives WHOLE under the caps - zero trimmed, and its measured stored size sits under the character cap | ' + JSON.stringify(eight),
+  eight.n === 28800 && eight.count === 28800 && eight.first === 1761000000000 && eight.last === 1761000000000 + 28799000 && eight.est <= eight.maxChars);
+const bytes = await J(`(() => { let lat = 43.8147013, lng = -79.5593017; const T = 1762000000000, f = []; for (let i = 0; i < 36000; i++) { lat += 0.00013489871; lng -= 0.00002134567; f.push([T + i * 1000, lat, lng, Math.fround(5 + (i % 61) * 0.983), 14.9 + (i % 37) * 0.0137123456789, 355.12345678901234, [+lat.toFixed(6), +lng.toFixed(6), +lat.toFixed(6), +lng.toFixed(6), 355.1], T - 600000]); } fixLog = [{ v: 'Beta 1.190', t0: T, f }]; fixLogCount = 36000; fixLogSession = null; const r = saveFixLog(); const raw = localStorage.getItem(LS.fixlog); _fxMeasure(fixLog[0]); return { ok: !!(r && r.ok), len: raw ? raw.length : -1, est: fixLogEstChars(), maxChars: FIXLOG_MAX_CHARS }; })()`);
+ok('L7 the stored log at the full 36,000 cap, written through the real save path on a worst-case stream, fits the WebKit quota arithmetic (fixlog <= FIXLOG_MAX_CHARS = 1,850,000 characters; + 250,000 trail at cap + 250,000 board/settings allowance <= 2,500,000 characters = the 5 MB UTF-16 quota), and the trim estimate never under-reads the real length | chars=' + bytes.len + ' (' + (bytes.len / 36000).toFixed(1) + '/fix), est=' + bytes.est,
+  bytes.ok === true && bytes.len > 0 && bytes.len <= bytes.maxChars && bytes.len + 250000 + 250000 <= 2500000 && bytes.est >= bytes.len && bytes.est <= bytes.maxChars);
+const ent = await J(`(() => { let seed = 987654321; const rnd = () => { seed = (seed * 1103515245 + 12345) & 0x7fffffff; return seed / 0x7fffffff; }; fixLog = []; fixLogCount = 0; fixLogSession = null; fixLogOpen(); const S = fixLogSession; const T = 1761500000000; let lat = 44.0, lng = -79.7; for (let i = 0; i < 36000; i++) { lat += (rnd() - 0.5) * 6e-5; lng += (rnd() - 0.5) * 8e-5; S.f.push([T + i * 1000, lat, lng, Math.fround(3 + rnd() * 30), rnd() * 18.765432109876543, rnd() * 359.987654321, [+lat.toFixed(6), +lng.toFixed(6), +lat.toFixed(6), +lng.toFixed(6), 123.4], T]); fixLogCount++; } _fxMeasure(S); const before = fixLogEstChars(); fixLogTrim(); saveFixLog(); markClean('fixlog'); const raw = localStorage.getItem(LS.fixlog); return { before, after: fixLogEstChars(), n: S.f.length, count: fixLogCount, rawLen: raw ? raw.length : -1, maxChars: FIXLOG_MAX_CHARS }; })()`); // markClean: the direct saveFixLog bypasses the storage doorway, so the test leaves the flag exactly as the doorway would — otherwise the page's own unload flush would rewrite this log over the planted one in the reload below, and the plant checks would be testing the flush, not the loader
+ok('L7 a high-entropy flood (white-noise fixes no real stream matches) is trimmed by the CHARACTER cap before the fix cap: the count lands below 36,000, the estimate and the real stored record both end within FIXLOG_MAX_CHARS | ' + JSON.stringify(ent),
+  ent.before > ent.maxChars && ent.n < 36000 && ent.count === ent.n && ent.after <= ent.maxChars && ent.rawLen > 0 && ent.rawLen <= ent.maxChars);
 const FIXV1 = [{ v: 'Beta 1.189', t0: 1760500000000, f: [
   [1760500001000, 43.814701299999997, -79.55930129999999, 8.5, 3.2123456789012345, 90.12345678901234, [43.814701, -79.559301, 43.8147, -79.5593, 90.1], 0],
   [1760500002000, 43.81471021234568, -79.55931304567892, 12, null, null, [43.81471, -79.559313, 43.81471, -79.559313, null], 0],
@@ -183,8 +190,8 @@ const v1Loaded = await J(`fixLog`);
 ok('L7 a 1.189-format log planted in storage loads field-for-field (every full-precision field, the nulls, the refused fix, the run-stamp change)',
   canon(v1Loaded) === canon(FIXV1));
 const v1Resaved = await J(`(() => { saveFixLog(); const raw = localStorage.getItem(LS.fixlog); return { e: JSON.parse(raw).e, dec: fixLogDecodeSessions(JSON.parse(raw)) }; })()`);
-ok('L7 re-saving that log writes the e2 form, and the e2 form decodes back to the same fields exactly',
-  v1Resaved.e === 2 && canon(v1Resaved.dec) === canon(FIXV1));
+ok('L7 re-saving that log writes the e3 form, and the e3 form decodes back to the same fields exactly',
+  v1Resaved.e === 3 && canon(v1Resaved.dec) === canon(FIXV1));
 
 R.exceptions = consoleLog.filter(c => c.type === 'EXCEPTION');
 finish(R, proc);
