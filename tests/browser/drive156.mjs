@@ -189,32 +189,50 @@ ok('B7 CLEAR ALL, BEHIND ITS CONFIRM: the ask names all 7 roads with a "Clear al
 await ev2(`exitCreate()`);
 
 // ================= C: the Back hit area =================
+// C1/C2 hardening (2026-11-14, drive156-c-harden): both presses below are REAL, and both menus
+// arrive on the shared entrance flight - #routeMenu/#setMenu sit at translateY(103%) and .open
+// transitions the transform home over var(--anim-dur) - so a press aimed from a rect read while
+// the entrance is still travelling is aimed at where the button WAS: the surface keeps rising
+// through pressAt's 90 ms hold and the click retargets to the menu (down on the button, up off
+// it), or the point is still below the viewport entirely. Proven with instrumented captures
+// (forced-early presses 0/60/120/200 ms after pane-on all lost; at rest all landed; the width
+// reads were always correct - width is translation-invariant, which is why the flake printouts
+// showed a healthy w 60 in a 342 px pane). So: before reading either Back's geometry, wait for
+// the app's own terminal signal - the wanted pane on, the menu's computed transform 'none' (the
+// .open rest value), and no animation running on the menu - and judge the outcomes on the panes'
+// 'on' class, their actual terminal state. C2's three reads additionally carried an
+// inline-display clause (the pane's style.display compared against 'none') that could not fail
+// (Settings panes hide by class only, so the inline style is always ''), proven vacuous by
+// capture (presses that navigated nowhere still read as "back at main"); the clause is gone -
+// the claims are unchanged, the measurements now measure them.
 await ev2(`openRouteMenu()`);
 await ev2(`document.getElementById('rmCreate').click()`);
 await poll(`document.getElementById('rmCreatePane').classList.contains('on')`, 10000);
 await ev2(`document.getElementById('crDoorManual').click()`);
 await poll(`document.getElementById('rmCityPane').classList.contains('on')`, 10000);
+const restC1 = await poll(`document.getElementById('rmCityPane').classList.contains('on') && getComputedStyle(document.getElementById('routeMenu')).transform === 'none' && document.getElementById('routeMenu').getAnimations().every(a => a.playState !== 'running')`, 12000);
 const geoC1 = await J(`(() => { const b = document.getElementById('crCityBack'); const r = b.getBoundingClientRect(); const pane = document.getElementById('rmCityPane').getBoundingClientRect(); const hit = document.elementFromPoint(r.right + 60, r.top + r.height / 2); return { w: Math.round(r.width), paneW: Math.round(pane.width), right: r.right, midY: r.top + r.height / 2, hitIsBtn: hit === b }; })()`);
 await pressAt(geoC1.right + 60, geoC1.midY);
 const stillC1 = await J(`document.getElementById('rmCityPane').classList.contains('on')`);
 const wordsC1 = await J(`(() => { const b = document.getElementById('crCityBack'); const r = b.getBoundingClientRect(); return { x: r.left + 20, y: r.top + r.height / 2 }; })()`);
 await pressAt(wordsC1.x, wordsC1.y);
 const backC1 = await poll(`document.getElementById('rmCreatePane').classList.contains('on')`, 8000);
-ok('C1 ROUTE-MENU BACK: the city pane\'s Back is shrunk to its words (well under half the pane width); a real press 60 px right of its edge hits something else and navigates NOWHERE, while a press on the words goes back to the doors | ' + JSON.stringify(geoC1) + ' | still on city pane after the right-side press: ' + stillC1 + ', back after the words press: ' + backC1,
-  geoC1.w < geoC1.paneW * 0.5 && geoC1.hitIsBtn === false && stillC1 === true && backC1 === true);
+ok('C1 ROUTE-MENU BACK: with the menu at rest (its entrance landed - transform none, no animation running), the city pane\'s Back is shrunk to its words (well under half the pane width); a real press 60 px right of its edge hits something else and navigates NOWHERE, while a press on the words goes back to the doors | ' + JSON.stringify(geoC1) + ' | rested before presses: ' + restC1 + ', still on city pane after the right-side press: ' + stillC1 + ', back after the words press: ' + backC1,
+  restC1 === true && geoC1.w < geoC1.paneW * 0.5 && geoC1.hitIsBtn === false && stillC1 === true && backC1 === true);
 await ev2(`closeRouteMenu()`);
 await ev2(`document.getElementById('setBtn').click()`);
 await poll(`document.getElementById('setMenu').classList.contains('open')`, 10000);
 await ev2(`document.getElementById('stBtn').click()`);
-await poll(`document.getElementById('setStatusPane').classList.contains('on') || document.getElementById('setStatusPane').style.display !== 'none'`, 10000);
+await poll(`document.getElementById('setStatusPane').classList.contains('on')`, 10000);
+const restC2 = await poll(`document.getElementById('setStatusPane').classList.contains('on') && getComputedStyle(document.getElementById('setMenu')).transform === 'none' && document.getElementById('setMenu').getAnimations().every(a => a.playState !== 'running')`, 12000);
 const geoC2 = await J(`(() => { const b = document.getElementById('statusBack'); const r = b.getBoundingClientRect(); const pane = document.getElementById('setMenu').getBoundingClientRect(); const hit = document.elementFromPoint(r.right + 60, r.top + r.height / 2); return { w: Math.round(r.width), paneW: Math.round(pane.width), right: r.right, midY: r.top + r.height / 2, hitIsBtn: hit === b, vis: r.width > 0 }; })()`);
 await pressAt(geoC2.right + 60, geoC2.midY);
-const stillC2 = await J(`(() => { const p = document.getElementById('setStatusPane'); return p.classList.contains('on') || p.style.display !== 'none'; })()`);
+const stillC2 = await J(`document.getElementById('setStatusPane').classList.contains('on')`);
 const wordsC2 = await J(`(() => { const b = document.getElementById('statusBack'); const r = b.getBoundingClientRect(); return { x: r.left + 20, y: r.top + r.height / 2 }; })()`);
 await pressAt(wordsC2.x, wordsC2.y);
-const backC2 = await poll(`(() => { const p = document.getElementById('setMainPane'); return p.classList.contains('on') || p.style.display !== 'none'; })()`, 8000);
-ok('C2 SETTINGS BACK: the Status pane\'s Back (the same shared class) is likewise word-sized - the press right of it does nothing, the press on its words returns to the Settings main pane | ' + JSON.stringify(geoC2) + ' | still on status: ' + stillC2 + ', back at main: ' + backC2,
-  geoC2.vis === true && geoC2.w < geoC2.paneW * 0.5 && geoC2.hitIsBtn === false && stillC2 === true && backC2 === true);
+const backC2 = await poll(`document.getElementById('setMainPane').classList.contains('on')`, 8000);
+ok('C2 SETTINGS BACK: with the menu at rest (its entrance landed - transform none, no animation running), the Status pane\'s Back (the same shared class) is likewise word-sized - the press right of it does nothing, the press on its words returns to the Settings main pane | ' + JSON.stringify(geoC2) + ' | rested before presses: ' + restC2 + ', still on status: ' + stillC2 + ', back at main: ' + backC2,
+  restC2 === true && geoC2.vis === true && geoC2.w < geoC2.paneW * 0.5 && geoC2.hitIsBtn === false && stillC2 === true && backC2 === true);
 
 
 // ===== absorbed drive157 (test-suite restructure, 2026-11-09): run

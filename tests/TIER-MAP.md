@@ -54,9 +54,14 @@ gesture never reached the panel head — and hardened the test with a
 rest-wait on the app's terminal signal (B5/B6 passing 9/9 completed
 exercises across local and CI runs); the quarantine is LIFTED
 2026-11-14 on Andrew's decision and the drive gates in Tier A/B
-again — standing watch item: the C section's single CI flake (the
-2026-11-13 dispatch) is UNHARDENED by his choice, and any C1
-failure in gating is now classified on first occurrence;
+again; the C section was then hardened the same day (Andrew's
+call — 'Harden the C section anyway'): its presses now wait for
+the menu entrance's terminal signal (computed transform 'none',
+no animation running) before firing, and C2's outcome reads
+judge the pane 'on' class alone (their inline-display clause
+could not fail — Settings panes hide by class only), proven
+with instrumented captures of both loss channels and 10/10
+consecutive C-section exercises;
 drive186 was quarantined 2026-11-11 — checks D1–D5 flaked twice on
 record with the identical 'stitched' undefined signature (runs
 43029275837 and 43060145115) and the drive was hardened in the
