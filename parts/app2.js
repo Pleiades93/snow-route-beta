@@ -158,8 +158,117 @@ function addGpsLayers() {
   map.addLayer({ id: 'gps-beam', type: 'symbol', source: 'gps', filter: ['==', ['get', 'k'], 'beam'], layout: { 'icon-image': 'beam-img', 'icon-size': 0.62, 'icon-rotate': ['get', 'rot'], 'icon-rotation-alignment': 'map', 'icon-pitch-alignment': 'map', 'icon-anchor': 'center', 'icon-allow-overlap': true, 'icon-ignore-placement': true } }); // Beta 1.49: gradient fan symbol, painted under the accuracy ring and the dot - replaces the flat cone polygon (Beta 1.28), which read as cheap
   map.addLayer({ id: 'gps-ring', type: 'fill', source: 'gps', filter: ['==', ['get', 'k'], 'ring'], paint: { 'fill-color': '#2c4ad2', 'fill-opacity': 0.12 } });
   map.addLayer({ id: 'gps-ring-line', type: 'line', source: 'gps', filter: ['==', ['get', 'k'], 'ring'], paint: { 'line-color': '#2c4ad2', 'line-width': 1.5, 'line-opacity': 0.5 } });
-  map.addLayer({ id: 'gps-puck-white', type: 'fill-extrusion', source: 'gps', filter: ['==', ['get', 'k'], 'puckwhite'], paint: { 'fill-extrusion-color': '#ffffff', 'fill-extrusion-opacity': 1, 'fill-extrusion-height': 3.5, 'fill-extrusion-base': 0 } }); // Beta 1.182: the puck's WHITE RIM as a real extrusion - it and the blue below replace BOTH flat 1.49 circle layers (gps-dot and its gps-shadow): rim and blue are one object, so the tilted view never shows a 3D blue standing on a flat white ring
-  map.addLayer({ id: 'gps-puck-blue', type: 'fill-extrusion', source: 'gps', filter: ['==', ['get', 'k'], 'puckblue'], paint: { 'fill-extrusion-color': '#2c4ad2', 'fill-extrusion-opacity': 1, 'fill-extrusion-height': 5, 'fill-extrusion-base': 0 } }); // the blue core stands 5 m on the same base: from the side, a white band with blue above it; from above, the blue dot inside its white rim
+  map.addLayer({
+    id: 'gps-puck-shader', type: 'custom', _prog: null, _buf: null, _aPos: -1, _u: {},
+    onAdd(m, gl) {
+      const sh = (type, src) => { const s = gl.createShader(type); gl.shaderSource(s, src); gl.compileShader(s); if (!gl.getShaderParameter(s, gl.COMPILE_STATUS)) console.log('PUCKSHADER compile failed: ' + gl.getShaderInfoLog(s)); return s; };
+      const prog = gl.createProgram();
+      gl.attachShader(prog, sh(gl.VERTEX_SHADER, [
+        'attribute vec2 a_pos;',
+        'uniform vec4 u_rect;',
+        'uniform float u_half;',
+        'varying vec2 v_px;',
+        'void main() { v_px = vec2(a_pos.x, -a_pos.y) * u_half; gl_Position = vec4(u_rect.xy + a_pos * u_rect.zw, 0.0, 1.0); }'
+      ].join('\n')));
+      gl.attachShader(prog, sh(gl.FRAGMENT_SHADER, [
+        'precision highp float;',
+        'varying vec2 v_px;',
+        'uniform float u_D;',
+        'uniform float u_L;',
+        'uniform float u_faceK;',
+        'uniform float u_aa;',
+        'float sdEllipse(vec2 p, vec2 r) {',
+        '  vec2 rp = p / r; float l = length(rp);',
+        '  if (l < 1e-5) return -min(r.x, r.y);',
+        '  vec2 g = vec2(p.x / (r.x * r.x), p.y / (r.y * r.y)) / l;',
+        '  return (l - 1.0) / max(length(g), 1e-5);',
+        '}',
+        'float sdExtr(vec2 p, float L, vec2 r) {',
+        '  float cy = clamp(p.y, -L, 0.0);',
+        '  return sdEllipse(vec2(p.x, p.y - cy), r);',
+        '}',
+        'vec4 over(vec4 dst, vec4 src) { return src + dst * (1.0 - src.a); }',
+        'void main() {',
+        '  float Rx = u_D * 0.5;',
+        '  float Ry = max(u_D * u_faceK * 0.5, 0.6);',
+        '  vec2 rF = vec2(Rx, Ry);',
+        '  vec4 outc = vec4(0.0);',
+        '  float dSh = sdExtr(v_px - vec2(0.0, u_D * 0.10 + 1.5), u_L, rF * 1.05);',
+        '  float aSh = 0.30 * (1.0 - smoothstep(-u_D * 0.10, u_D * 0.10, dSh));',
+        '  outc = over(outc, vec4(vec3(0.0) * aSh, aSh));',
+        '  float dW = sdExtr(v_px, u_L, rF);',
+        '  float aW = 1.0 - smoothstep(-u_aa, u_aa, dW);',
+        '  float grad = clamp((v_px.y + u_L + Ry) / max(2.0 * Ry + u_L, 1.0), 0.0, 1.0);',
+        '  vec3 wallCol = mix(vec3(0.985), vec3(0.795, 0.83, 0.885), grad);',
+        '  outc = over(outc, vec4(wallCol * aW, aW));',
+        '  float dF = sdEllipse(v_px - vec2(0.0, -u_L), rF);',
+        '  float aF = 1.0 - smoothstep(-u_aa, u_aa, dF);',
+        '  vec3 rimCol = mix(vec3(1.0), vec3(0.95, 0.96, 0.985), clamp((v_px.y + u_L + Ry) / max(2.0 * Ry, 1.0), 0.0, 1.0));',
+        '  outc = over(outc, vec4(rimCol * aF, aF));',
+        '  float dC = sdEllipse(v_px - vec2(0.0, -u_L), rF * 0.62);',
+        '  float aC = 1.0 - smoothstep(-u_aa, u_aa, dC);',
+        '  outc = over(outc, vec4(vec3(0.173, 0.290, 0.824) * aC, aC));',
+        '  gl_FragColor = outc;',
+        '}'
+      ].join('\n')));
+      gl.linkProgram(prog);
+      if (!gl.getProgramParameter(prog, gl.LINK_STATUS)) console.log('PUCKSHADER link failed: ' + gl.getProgramInfoLog(prog));
+      this._prog = prog;
+      this._buf = gl.createBuffer();
+      gl.bindBuffer(gl.ARRAY_BUFFER, this._buf);
+      gl.bufferData(gl.ARRAY_BUFFER, new Float32Array([-1, -1, 1, -1, -1, 1, 1, 1]), gl.STATIC_DRAW);
+      this._aPos = gl.getAttribLocation(prog, 'a_pos');
+      for (const n of ['u_rect', 'u_half', 'u_D', 'u_L', 'u_faceK', 'u_aa']) this._u[n] = gl.getUniformLocation(prog, n);
+    },
+    render(gl, matrix) {
+      if (!dispPos || !this._prog) return;
+      const cnv = map.getCanvas();
+      const cssW = cnv.clientWidth, cssH = cnv.clientHeight;
+      if (!cssW || !cssH || !cnv.width) return;
+      const dev = cnv.width / cssW;
+      const pt = map.project([dispPos[1], dispPos[0]]);
+      const D = 0.054 * cssW * dev;
+      const pitch = map.getPitch() * Math.PI / 180;
+      const faceK = Math.max(0.30, Math.pow(Math.cos(pitch), 1.47));
+      const L = 0.14 * D * Math.min(1, Math.sin(pitch) / Math.sin(Math.PI / 3));
+      const half = D * 0.95;
+      const nx = (pt.x * dev / cnv.width) * 2 - 1;
+      const ny = 1 - (pt.y * dev / cnv.height) * 2;
+      const prevProg = gl.getParameter(gl.CURRENT_PROGRAM);
+      const prevBuf = gl.getParameter(gl.ARRAY_BUFFER_BINDING);
+      const prevBlend = gl.getParameter(gl.BLEND);
+      const prevDepth = gl.getParameter(gl.DEPTH_TEST);
+      const prevDepthMask = gl.getParameter(gl.DEPTH_WRITEMASK);
+      const prevStencil = gl.getParameter(gl.STENCIL_TEST);
+      const prevScissor = gl.getParameter(gl.SCISSOR_TEST);
+      const prevSrc = gl.getParameter(gl.BLEND_SRC_RGB);
+      const prevDst = gl.getParameter(gl.BLEND_DST_RGB);
+      gl.disable(gl.DEPTH_TEST); gl.depthMask(false);
+      gl.disable(gl.STENCIL_TEST); gl.disable(gl.SCISSOR_TEST);
+      gl.enable(gl.BLEND); gl.blendFunc(gl.ONE, gl.ONE_MINUS_SRC_ALPHA);
+      gl.useProgram(this._prog);
+      gl.bindBuffer(gl.ARRAY_BUFFER, this._buf);
+      gl.enableVertexAttribArray(this._aPos);
+      gl.vertexAttribPointer(this._aPos, 2, gl.FLOAT, false, 0, 0);
+      gl.uniform4f(this._u.u_rect, nx, ny, half / cnv.width * 2, half / cnv.height * 2);
+      gl.uniform1f(this._u.u_half, half);
+      gl.uniform1f(this._u.u_D, D);
+      gl.uniform1f(this._u.u_L, L);
+      gl.uniform1f(this._u.u_faceK, faceK);
+      gl.uniform1f(this._u.u_aa, Math.max(1.0, dev * 0.6));
+      gl.drawArrays(gl.TRIANGLE_STRIP, 0, 4);
+      gl.disableVertexAttribArray(this._aPos);
+      gl.bindBuffer(gl.ARRAY_BUFFER, prevBuf);
+      gl.useProgram(prevProg);
+      gl.blendFunc(prevSrc, prevDst);
+      if (!prevBlend) gl.disable(gl.BLEND);
+      if (prevDepth) gl.enable(gl.DEPTH_TEST);
+      gl.depthMask(prevDepthMask);
+      if (prevStencil) gl.enable(gl.STENCIL_TEST);
+      if (prevScissor) gl.enable(gl.SCISSOR_TEST);
+    },
+    onRemove(m, gl) { if (this._prog) gl.deleteProgram(this._prog); if (this._buf) gl.deleteBuffer(this._buf); this._prog = null; }
+  }); // Beta 1.188 (Andrew's pick from the touchable demo): the puck is ONE custom WebGL layer drawing the approved coin in SCREEN SPACE, replacing the two 1.182 fill-extrusions (gps-puck-white / gps-puck-blue, retired). MapLibre projects geometry vertices into single-precision tile coordinates, so at z19 the extrusion edges stair-stepped no matter the segment count, the ground-disc size had to be clamped into a 14-110 px band (and still ballooned to the cap), and as a fellow extrusion the puck lost the depth fight to any 3D building in front of it (field report 2026-11-13: a house 7 m away hid ~95% of it). Here the puck is a quad centred on project(dispPos) read inside render() every frame - it cannot lag the camera - and a signed-distance fragment shader shapes the coin: D = 5.4% of canvas width at EVERY zoom/pitch/bearing, the blue core 62% of D recessed ~1 px under the rim (wall lift 0.14 x D, blue top 0.10 x D at pitch 60), face height cos(pitch)^1.47 so the tilt silhouette is 0.50 x D at pitch 60 and a true circle at pitch 0, app blue #2C4AD2. Edges are anti-aliased analytically (~1 device px) at any zoom. Depth test OFF + depth mask off: buildings can never cover it. GL state is snapshotted and restored around the draw. Visibility is the old puck's rule exactly: drawn while dispPos is set (render() returns early otherwise) - locate-off keeps the last position marked with the beam gone, no fix yet draws nothing. The beam and the accuracy ring are untouched, and the estimator/dispPos/watch logic is untouched - rendering only.
 }
 function addTrailLayers() {
   if (map.getSource('trail')) return;

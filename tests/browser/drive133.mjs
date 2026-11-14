@@ -22,14 +22,14 @@ await ev(`(() => { window.__wpOk = null; navigator.geolocation.watchPosition = (
 const feed = async (lat, lng) => ev('window.__wpOk({ coords: { latitude: ' + lat + ', longitude: ' + lng + ', accuracy: 10, speed: 3, heading: null }, timestamp: Date.now() })'); // string concatenation, not a nested template substitution (drive126's pattern): the nested form inserts the literal text ${lat} into the page, where it is a syntax error and every feed silently dies. Beta 1.187: the march reports a moving speed (3 m/s) - the trail guard (STOP B) records nothing from a fix reporting under 0.5 m/s, so the old speed-0 march (a physically impossible feed: moving between points while claiming a standstill) would now record no trail by design; Phase R's premise is a MOVING clean
 const march = async () => { for (const p of PTS) { await feed(p[0], p[1]); await sleep(130); } await sleep(500); };
 const PTS = JSON.parse(await ev(`(() => { const L = STRETCH.Velmar.line; return JSON.stringify([12, 15, 18, 21, 24, 27].map(i => L[i])); })()`));
-const state = async () => JSON.parse(await ev(`(() => JSON.stringify({ wid: watchId, run: gpsFromRun, clean: !!runStart, trail: trail.length, cov: Object.values(coveredIdx).reduce((a, s) => a + s.length, 0), kinds: ((map.getSource('gps') || {})._data || { features: [] }).features.map(f => f.properties.k) }))()`));
+const state = async () => JSON.parse(await ev(`(() => JSON.stringify({ wid: watchId, run: gpsFromRun, clean: !!runStart, trail: trail.length, cov: Object.values(coveredIdx).reduce((a, s) => a + s.length, 0), kinds: ((map.getSource('gps') || {})._data || { features: [] }).features.map(f => f.properties.k), puck: !!map.getLayer('gps-puck-shader') && !!dispPos }))()`));
 
 // Phase V: Locate only - live dot, zero recording.
 await ev(`startGps(false)`);
 await march();
 let ST = await state();
 ok('V1 view-only watch records no trail and no coverage | ' + JSON.stringify(ST), ST.wid === 4242 && ST.run === false && ST.clean === false && ST.trail === 0 && ST.cov === 0);
-ok('V2 the live puck still shows in view-only mode | kinds ' + JSON.stringify(ST.kinds), ST.kinds.includes('puckblue'));
+ok('V2 the live puck still shows in view-only mode | kinds ' + JSON.stringify(ST.kinds) + ' puck ' + ST.puck, ST.puck === true); // Beta 1.188: the puck is the gps-puck-shader custom layer - presence = the layer + a live dispPos (its exact draw condition, pixel-proven in drive193); through 1.186 the kinds list carried puckblue for this arm
 
 // Phase R: Start Clean on the already-running watch - recording begins.
 await ev(`startClean()`);

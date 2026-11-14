@@ -24,9 +24,10 @@ await ev(`acceptFix({ coords: { latitude: ${base.lat}, longitude: ${base.lng}, a
 // Waits-hardened (Beta 1.49): the GPS layers land on a style restack that can
 // still be settling right after boot - poll for the dot instead of reading
 // once at 500 ms and mistaking a settling style for a missing dot.
-let K = [];
-for (let i = 0; i < 40; i++) { K = await gpsData(); if (K.includes('puckblue')) break; await sleep(250); }
-ok('C1 a puck with no known facing carries no beam | kinds ' + JSON.stringify(K), K.includes('puckblue') && !K.includes('beam'));
+let K = [], PS = {};
+for (let i = 0; i < 40; i++) { PS = await J(`({ layer: !!map.getLayer('gps-puck-shader'), disp: !!dispPos })`); if (PS.layer && PS.disp) break; await sleep(250); }
+K = await gpsData();
+ok('C1 a puck with no known facing carries no beam | kinds ' + JSON.stringify(K) + ' puck ' + JSON.stringify(PS), PS.layer === true && PS.disp === true && !K.includes('beam')); // Beta 1.188: the puck is the gps-puck-shader custom layer now - its presence is the layer + a live dispPos (its exact draw condition, proven at pixel level in drive193); through 1.186 the kinds list carried puckblue for this arm
 
 await ev(`setFacing(90, 1)`); await sleep(200);
 K = await gpsData(); const B1 = await coneBearing();
@@ -42,10 +43,10 @@ const B3 = await coneBearing();
 ok('C4 while moving, the GPS course takes over the beam | bearing ' + B3, bangDiff(B3, 90) <= 20);
 
 let LP = {};
-for (let i = 0; i < 40; i++) { LP = JSON.parse(await ev(`(() => JSON.stringify({ beam: !!map.getLayer('gps-beam'), img: map.getLayer('gps-beam') && map.getLayoutProperty('gps-beam', 'icon-image'), cone: !!map.getLayer('gps-cone'), shadow: !!map.getLayer('gps-shadow'), puck: !!map.getLayer('gps-puck-blue') }))()`)); if (LP.beam) break; await sleep(250); } // poll: a restack can be mid-flight at any single read
+for (let i = 0; i < 40; i++) { LP = JSON.parse(await ev(`(() => JSON.stringify({ beam: !!map.getLayer('gps-beam'), img: map.getLayer('gps-beam') && map.getLayoutProperty('gps-beam', 'icon-image'), cone: !!map.getLayer('gps-cone'), shadow: !!map.getLayer('gps-shadow'), puck: !!map.getLayer('gps-puck-shader') }))()`)); if (LP.beam) break; await sleep(250); } // poll: a restack can be mid-flight at any single read
 await ev(`(() => { watchId = null; pushGps(); return true; })()`); await sleep(200);
 K = await gpsData();
-ok('C5 GPS off removes the beam; the beam is the gradient fan symbol and the cone layer is retired | kinds ' + JSON.stringify(K) + ' layers ' + JSON.stringify(LP), !K.includes('beam') && LP.beam === true && LP.img === 'beam-img' && LP.cone === false && LP.shadow === false && LP.puck === true); // Beta 1.182: the flat gps-shadow retired WITH the dot it shadowed - the extruded puck carries its own presence now; shadow===false + puck===true is the new contract, at the same strength
+ok('C5 GPS off removes the beam; the beam is the gradient fan symbol and the cone layer is retired | kinds ' + JSON.stringify(K) + ' layers ' + JSON.stringify(LP), !K.includes('beam') && LP.beam === true && LP.img === 'beam-img' && LP.cone === false && LP.shadow === false && LP.puck === true); // Beta 1.182: the flat gps-shadow retired WITH the dot it shadowed - the puck carries its own presence now; shadow===false + puck===true is the contract, at the same strength (Beta 1.188: the puck is the shader layer - same presence read, new layer id)
 
 R.exceptions = consoleLog.filter(c => c.type === 'EXCEPTION').map(c => String(c.text || '').slice(0, 200));
 finish(R, proc);
