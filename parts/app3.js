@@ -736,7 +736,57 @@ function startCompass() {
   else listen();
 }
 function stopCompass() { compassGen++; if (compassHandler) { window.removeEventListener('deviceorientationabsolute', compassHandler, true); window.removeEventListener('deviceorientation', compassHandler, true); } compassOn = false; }
+// ===== RAW FIX LOG (Beta 1.189 — a DEBUGGING instrument, Andrew approved on the third-seat
+// pass's recommendation): every GPS verdict so far rests on a simulator whose fixes are
+// white noise; a real phone's fixes are autocorrelated, and only the phone's own record can
+// say by how much. This log is that record: EVERY fix the watch delivers, captured in
+// acceptFix BEFORE any gate (the finite/on-Earth check, the out-of-order drop, the accuracy
+// gate) can refuse it — the raw input exactly as delivered (timestamp, lat, lng, reported
+// accuracy, speed, course — nulls kept, they are data: a stationary fix reporting no speed
+// is half of what a replay needs) — with the estimator's outputs for the same fix beside it
+// (filtered position, display position, smoothed heading), so a replay compares raw against
+// filtered without re-deriving either. Segmented by SESSION (one locate-on period, opened
+// by startGps, closed by stopGps; each session stamps the app version that recorded it) and
+// every fix carries the Start-Clean run stamp live at its delivery (0 = no clean running),
+// so cleans are marked inside the stream. BOUNDARY (the trail's standing rule, identically):
+// on-device only, it rides inside Andrew's own backup JSON and NOWHERE else — there is NO
+// display, export or share surface for it anywhere in the app; it leaves the phone only
+// inside a backup he exports and hands over himself. It is debug data, not clean data:
+// capped at FIXLOG_MAX fixes (app1) with oldest-session eviction, where cleans are
+// unlimited. And it is a pure observer: every entry point is failure-isolated (a logging
+// fault fails silent and can never touch the estimator, camera, trail or runDist), the
+// per-fix cost is one in-memory append, and persistence rides the trail's throttled flush.
+// Entry shape: [timestamp, lat, lng, accuracy, speed, heading, out, run] — out is null
+// until the estimator has run on the fix (a gated fix keeps null forever: delivered,
+// refused, and the refusal is itself replay data), else [filteredLat, filteredLng,
+// displayLat, displayLng, smoothedHeading] at the trail's precision.
+let fixLog = [], fixLogSession = null, fixLogCount = 0;
+try { const rawFx = parseJ(lsGet(LS.fixlog), []); if (Array.isArray(rawFx)) for (const s of rawFx) { if (s && typeof s === 'object' && Array.isArray(s.f)) { const fixes = s.f.filter(e => Array.isArray(e)); if (fixes.length) { fixLog.push({ v: typeof s.v === 'string' ? s.v : '', t0: Number.isFinite(s.t0) ? s.t0 : 0, f: fixes }); fixLogCount += fixes.length; } } } } catch (e) { fixLog = []; fixLogCount = 0; } // a damaged log record costs the debug history, never the boot
+function fixLogTrim() { // the cap, enforced at open and at every append: whole oldest sessions go first; only a lone session longer than the cap is head-trimmed (its newest FIXLOG_MAX fixes survive)
+  while (fixLogCount > FIXLOG_MAX && fixLog.length) {
+    const s = fixLog[0];
+    if (s === fixLogSession && fixLog.length === 1) { const drop = s.f.length - FIXLOG_MAX; if (drop > 0) { s.f.splice(0, drop); fixLogCount -= drop; } break; }
+    fixLogCount -= s.f.length; fixLog.shift();
+  }
+}
+fixLogTrim(); // a log written under a larger cap (or planted) is bounded at load too
+function fixLogOpen() { try { fixLogSession = { v: ($('ver') ? $('ver').textContent.trim() : ''), t0: Date.now(), f: [] }; fixLog.push(fixLogSession); fixLogTrim(); markDirty('fixlog'); } catch (e) { fixLogSession = null; } }
+function fixLogRaw(pos) { // acceptFix's first act: the raw fix, before any gate. Returns the live entry for fixLogOut, or null (no session, or any fault — the GPS path never hears about it)
+  try {
+    if (!fixLogSession) return null;
+    const c = pos.coords || {};
+    const e = [typeof pos.timestamp === 'number' ? pos.timestamp : null, c.latitude, c.longitude, c.accuracy != null ? c.accuracy : null, c.speed != null ? c.speed : null, c.heading != null ? c.heading : null, null, runStart || 0];
+    fixLogSession.f.push(e); fixLogCount++; fixLogTrim(); markDirty('fixlog');
+    return e;
+  } catch (err) { return null; }
+}
+function fixLogOut(e) { // the same fix, after the estimator has run on it: gpsPos IS the filtered position, dispPos the display's re-anchored point, smHeading the camera's course
+  try { if (!e) return; e[6] = [+gpsPos[0].toFixed(6), +gpsPos[1].toFixed(6), dispPos ? +dispPos[0].toFixed(6) : null, dispPos ? +dispPos[1].toFixed(6) : null, smHeading != null ? Math.round(smHeading * 10) / 10 : null]; } catch (err) {}
+}
+function fixLogClose() { fixLogSession = null; markDirty('fixlog'); } // the tail flushes on the normal cadence (heartbeat / forced flush), like the trail's
+/** @returns {StorageOutcome} */ function saveFixLog() { const ok = lsSet(LS.fixlog, JSON.stringify(fixLog)); return ok ? storeOk() : storeFail('fixlog', true); }
 function acceptFix(pos) {
+  const fxEnt = fixLogRaw(pos); // Beta 1.189: the raw fix is logged BEFORE every gate below — a refused fix is recorded as delivered, with no estimator output
   const now = Date.now(); const ll = [pos.coords.latitude, pos.coords.longitude]; const acc = pos.coords.accuracy || 999;
   if (!Number.isFinite(ll[0]) || !Number.isFinite(ll[1]) || Math.abs(ll[0]) > 90 || Math.abs(ll[1]) > 180) return; // audit G1: never let a non-finite or off-Earth fix reach the smoothing, trail or coverage math
   if (typeof pos.timestamp === 'number' && lastFixTs && pos.timestamp < lastFixTs) return; // Beta 1.64 (audit R01): a delayed or out-of-order callback must not move the dot, trail or coverage backwards
@@ -754,6 +804,7 @@ function acceptFix(pos) {
   startRenderLoop(); // the old glide started the loop here; the coasting display needs it just as much (a fix can arrive on an existing watch and must still render)
   updateHeading(pos.coords.heading, speed, now);
   if (typeof pos.coords.heading === 'number' && speed && speed >= 1) { lastCourseAt = now; setFacing(pos.coords.heading, 0.5); } // moving: face along the course
+  fixLogOut(fxEnt); // Beta 1.189: the estimator has run — filtered position, display position and smoothed heading join the raw fix in the log
   const spd = $('spd');
   if (speed && speed > 0.5) { spd.textContent = Math.round(speed * 3.6) + ' km/h'; spd.classList.remove('hidden'); } else spd.classList.add('hidden');
   if (firstFix && map && (gpsFromRun || watchId != null) && !followPaused) { map.jumpTo({ center: [sm[1], sm[0]], zoom: Math.max(map.getZoom(), 15) }); } // Beta 1.146 (census C4): the map && guard - this first-fix jump sat BEFORE the trail/coverage block below, so in the map-failure world its throw starved recording on fix 1 exactly as followCam's did from fix 2 on // Beta 1.116 (audit CG-115-02): a drag made while waiting for this fix already claimed the camera - the fix still records the position (gpsPos/dispPos above), and with dispPos set the syncCentreBtn rule lights the re-centre button as the way back; no jump, no clear
@@ -836,6 +887,7 @@ function startGps(fromRun, restart) {
   if (!navigator.geolocation) { toast('This device has no GPS access here', 3000); return; }
   gpsFromRun = !!fromRun; if (!restart) followPaused = false; lastPushKey = ''; startCompass(); // Beta 1.116 (audit CG-115-01): the stale-watch restart passes restart=true - it is the app's own housekeeping, not a user action, so it must not clear a suspension the user deliberately made; only an explicit start begins un-suspended
   const wg = ++watchGen; watchId = navigator.geolocation.watchPosition(p => { if (wg === watchGen) acceptFix(p); }, e => { if (wg === watchGen) gpsError(e); }, { enableHighAccuracy: true, maximumAge: 2000, timeout: 20000 }); // Beta 1.69 (audit N04): callbacks carry their watcher's generation - a queued callback from a stopped or replaced watcher is dropped even when its timestamp is fresh (R01's guard cannot tell watchers apart)
+  fixLogOpen(); // Beta 1.189: a new watch is a new log session (the stale-watch restart re-opens one too - each locate-on period is segmented honestly)
   startRenderLoop(); // Beta 1.65: the frame-synced loop keeps centring between fixes (the Beta 1.28 camTimer's job, drive126 F2) - on the display's own clock now, not a second timer
   clearInterval(staleWatchTimer);
   staleWatchTimer = setInterval(() => { if (watchId != null && Date.now() - lastFixAt > GPS_STALE_MS && lastFixAt) { const wasRunGps = gpsFromRun; stopGps(true); startGps(wasRunGps, true); } }, 15000); // Beta 1.48 (audit B02): capture run ownership BEFORE stopGps clears it - the restart used to always come back as non-run GPS, so a mid-run watcher lost its run. Beta 1.116 (CG-115-01): the restart also preserves followPaused (startGps's restart flag) - a dead zone must not hand the camera back
@@ -844,6 +896,7 @@ function startGps(fromRun, restart) {
 }
 function stopGps(silent) {
   watchGen++; // Beta 1.69: invalidate any callback still queued from this watcher
+  fixLogClose(); // Beta 1.189: the log session ends with the watch
   if (watchId != null) navigator.geolocation.clearWatch(watchId);
   watchId = null; gpsFromRun = false; clearInterval(staleWatchTimer); dispOff = [0, 0]; if (renderRaf) { cancelAnimationFrame(renderRaf); renderRaf = 0; } clearInterval(renderPump); renderPump = 0; stopCompass(); // Beta 1.64 (audit F08); Beta 1.65: the render loop stops with the watch
   if (map) pushGps(); // Beta 1.48 (audit B05): the facing beam is only built while watchId lives - without a fresh push the last beam stayed drawn after stop
