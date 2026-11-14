@@ -142,7 +142,6 @@ declare function setBasemap(): void;
 
 /** app3.js: persists the pre-Start snapshot (LS.snap); retried by flushAux (app1). Returns the storage outcome. */
 declare function saveSnap(): StorageOutcome;
-declare function saveFixLog(): StorageOutcome;
 
 /** app3.js: banks the run-distance counter (LS.rundist) - on every recorded fix since Beta 1.193 (the 30 s / 25 m throttle retired), and when forced by flushAux (app1) on a forced flush so a mid-run reload resumes the true figure (Beta 1.186, storage fix round P2). The force flag now only marks the page-death call; banking itself is change-gated. Returns nothing. */
 declare function persistRunDist(force?: boolean): void;
