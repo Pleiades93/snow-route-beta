@@ -766,7 +766,7 @@ $('stDel').addEventListener('click', async () => {
 });
 // ---- About / What's new ----
 const WHATSNEW = { // the curated in-app notes: plain words, LATEST RELEASE ONLY (Beta 1.114, Andrew: the accumulated list cluttered the About pane). A release REPLACES this entry with its own in the same change - it never accumulates; the full history lives in CHANGELOG.md, not the app
-  v: 'Beta 1.191', items: ["The opening screen is simpler: the app icon's blue square is gone, so the truck and snow sit right on the blue background - part of the screen instead of a sticker on top of it.", "Nothing else about the opening changes: the picture fades in at the same moment, the snow falls the same, and your home-screen icon keeps its blue square as always."] };
+  v: 'Beta 1.192', items: ["The bottom bar is slimmer: it now stands at the standard height most apps use, so a little more of the map shows. The buttons, icons and words are the same size as before — only the empty space above and below them shrank.", "The round buttons and the small readouts that float just above the bar moved down with it, keeping the same spacing they had."] };
 function renderAbout() {
   const cur = $('ver').textContent.trim();
   $('wnHead').textContent = "WHAT'S NEW · " + cur; // the header names the LIVE version, read from the title's version element - never a second hard-coded copy that can go stale
