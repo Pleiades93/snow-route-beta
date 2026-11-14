@@ -35,7 +35,11 @@ ok('SEC-2 valid flag still in the backup', A.hasFlag);
 ok('SEC-2 string notes entry deleted at load', A.velmarNotes === undefined);
 ok('SEC-2 no exception from the backup open', exc() === e0);
 // P4 SEC-9a: absurd trail timestamp dropped, GPX export survives
-await seedReload({ 'snowroute.5w.v4.trail': '[[43.81,-79.56,1767225600],[43.82,-79.57,1e300]]' });
+// Beta 1.193: the seed carries a live run start - without one the trail window
+// (correctly) empties a finished run's points at load, leaving no survivor
+// for the sanitize claim to judge; with the run live, the window keeps the
+// valid point and the sanitize alone decides the absurd one's fate, as before.
+await seedReload({ 'snowroute.5w.v4.trail': '[[43.81,-79.56,1767225600],[43.82,-79.57,1e300]]', 'snowroute.5w.v5.start': '1767225500000' });
 A = JSON.parse(await ev(`(() => JSON.stringify({ tl: trail.length }))()`));
 ok('SEC-9a out-of-range trail point dropped', A.tl === 1);
 const e1 = exc();
@@ -47,14 +51,14 @@ ok('SEC-9a no exception from GPX export', exc() === e1);
 // P5 SEC-4: restore survives its own pagehide flush
 await resetRoute(ev, '5w'); await ev(`(() => { location.reload(); return true; })()`); await sleep(3000); // T7: scoped reset - P5 owns only the 5w slot (premise statement in INVENTORY-T47.md); the sleep stays PROCESS-LAUNCH (the reload's fresh page)
 await ev(`(() => { trail.push([43.9, -79.9, 1767225600]); trailDirty = true; $('xText').value = JSON.stringify({ app: 'snowroute-backup', v: 1, data: { 'snowroute.v4.trail': '[[43.8,-79.5,1767225600]]' } }); doRestore(); flushAux(true); return true; })()`);
-await poll(`localStorage.getItem('snowroute.5w.v4.trail') === '[[43.8,-79.5,1767225600]]'`, 10000); // T4: poll the terminal state P5 asserts (the commit landing in storage)
+await poll(`localStorage.getItem('snowroute.5w.v4.trail') === '[]'`, 10000); // T4: poll the terminal state P5 asserts (the commit landing in storage). Beta 1.193 re-derivation: the v1 trail carries no live run, so the restore commits it WINDOWED to empty - the committed value the flush must not clobber is '[]', and the pre-restore in-memory point (43.9) reappearing in storage is exactly the clobber this check exists to catch
 A = JSON.parse(await ev(`(() => JSON.stringify({ ls: localStorage.getItem('snowroute.5w.v4.trail') }))()`));
-ok('SEC-4 flush after restore does NOT clobber restored trail', A.ls === '[[43.8,-79.5,1767225600]]');
+ok('SEC-4 flush after restore does NOT clobber the restored trail (Beta 1.193: committed windowed-empty; the stale in-memory point must not reappear)', A.ls === '[]');
 await sleep(1500);   // the restore's reload lands
 // Beta 1.76 hardening: poll-with-load - a single loadRoute after a fixed sleep can land in the
 // pre-reload page (its routeLoaded guard then leaves the fresh page unloaded and the read races).
-for (let i = 0; i < 40; i++) { await ev(`(function(){ if (typeof routeLoaded !== 'undefined' && !routeLoaded && typeof loadRoute === 'function') { try { loadRoute('5w'); } catch (e) {} } return true; })()`); try { A = JSON.parse(await ev(`(() => JSON.stringify({ tl: trail.length, lat: trail.length ? trail[0][0] : null }))()`)); } catch (e) { A = { tl: 0, lat: null }; } if (A.tl === 1 && A.lat === 43.8) break; await sleep(300); } // Beta 1.88 hardening: an ev landing mid-navigation can return a non-string and the bare parse killed the drive (seen twice locally in the 1.88 round) - a bad read is just a poll that missed, the loop's own deadline still bounds it
-ok('SEC-4 after reload, trail is the restored one', A.tl === 1 && A.lat === 43.8);
+for (let i = 0; i < 40; i++) { await ev(`(function(){ if (typeof routeLoaded !== 'undefined' && !routeLoaded && typeof loadRoute === 'function') { try { loadRoute('5w'); } catch (e) {} } return true; })()`); try { A = JSON.parse(await ev(`(() => JSON.stringify({ tl: trail.length, rl: typeof routeLoaded !== 'undefined' && routeLoaded === true }))()`)); } catch (e) { A = { tl: -1, rl: false }; } if (A.rl && A.tl === 0) break; await sleep(300); } // Beta 1.88 hardening: an ev landing mid-navigation can return a non-string and the bare parse killed the drive (seen twice locally in the 1.88 round) - a bad read is just a poll that missed, the loop's own deadline still bounds it. Beta 1.193: the terminal state is the windowed-empty trail (the pre-restore page's in-memory trail holds the stale point, tl 1, so tl 0 still proves the reloaded page)
+ok('SEC-4 after reload, trail is the restored one (Beta 1.193: windowed to empty, the stale point gone)', A.rl === true && A.tl === 0);
 // P6 SEC-6a (rewritten Beta 1.48, audit B06): the old check called
 // prepOfflineMaps() - a function that no longer exists - so it passed while
 // testing nothing, and asserted an unrelated key. This drives the REAL

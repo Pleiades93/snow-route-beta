@@ -162,7 +162,7 @@ function buildRecovery() { const o = recoveryObj(); return o ? JSON.stringify(o,
 // Beta 1.96: downloadBackup follows the same one-button rule as shareBackup - a build failure is the recovery fallback, never a dead-end refusal.
 function downloadBackup() { const b = buildBackup(); if (!b) { shareRecovery(true); return; } dl(new Blob([b], { type: 'application/json' }), 'snowroute-backup.json'); noteExported(); toast('Backup downloaded'); } // Beta 1.48 (audit B09): the filename still carried the retired 5W name; the backup format and its internal marker are unchanged
 function clearTrailAll() { // Beta 1.88: the Clear trail BUTTON left with the old Snow log (Andrew: the clearing gets re-homed in a later round) - the clearing itself stays as one callable piece, two-tap guard and all its storage honesty intact, so the re-home is a button wired to this, not a rebuild
-  trail = []; trailSessions = []; const okSessClr = saveSess().ok; if (!okSessClr) markDirty('sess'); drawTrail(true); // Beta 1.71 (audit B02): the markers describe this trail - clearing the trail clears them. Beta 1.73 (audit C05): the marker write is CHECKED like the trail write - 1.71 dropped its result, so 'Trail cleared' could be claimed while the markers stayed stored
+  trail = []; trailSessions = []; const okSessClr = saveSess().ok; if (!okSessClr) markDirty('sess'); // Beta 1.71 (audit B02): the markers describe this trail - clearing the trail clears them. (Beta 1.193: the drawTrail(true) that rode here is gone with the map line it refreshed.) Beta 1.73 (audit C05): the marker write is CHECKED like the trail write - 1.71 dropped its result, so 'Trail cleared' could be claimed while the markers stayed stored
   // The clear is a storage write like any other: if it fails, the stored trail still holds every point and
   // would resurrect on the next load - say so honestly and keep the clear pending (trailDirty) so the flush retries it.
   const okTrailClr = saveTrail().ok;
@@ -225,9 +225,8 @@ async function restoreBackup(parsed) { // production doRestore semantics: valida
       if (field === 'done' && pv && typeof pv === 'object' && !Array.isArray(pv)) {
         v = JSON.stringify(Object.keys(pv).filter(nm => pv[nm] && (nameSet || STREETSET).has(nm))); // legacy done-set was a street->time map; migrate like the loader does. Beta 1.117 (F6): filtered against the TARGET route's names (nameSet), not the open route's
       } else if (shape === 'arr' ? !Array.isArray(pv) : !(pv && typeof pv === 'object' && !Array.isArray(pv))) { toast('Backup value for ' + label + ' has the wrong shape — nothing was changed', 3200); return false; }
-      if ((field === 'trail' || field === 'sess') && Array.isArray(pv) && pv.length > TRAIL_MAX) { // Beta 1.152 (NV round, NV4): the writers' caps, enforced inside restore validation (validate-then-write: the STORED value is the capped one, so no backup can hand the load an oversized array). Only crafted backups are affected - a genuine backup never exceeds the caps its writers enforce. Beta 1.167 (B1): history is NO LONGER capped here - the writers (appendHistory at finish/save) and the loader dropped the 10-clean cap together, so a backup's history is stored whole; the trail and the session markers keep their newest entries, as their writers keep them. Markers are first given the loader's own sanitize (finite, de-duplicated, sorted) so the stored value is exactly what the load would have made of it, capped.
-        if (field === 'trail') v = JSON.stringify(pv.slice(pv.length - TRAIL_MAX));
-        else { const cs = [...new Set(pv.map(x => Number(x)).filter(x => Number.isFinite(x)))].sort((a, b) => a - b); v = JSON.stringify(cs.slice(Math.max(0, cs.length - TRAIL_MAX))); }
+      if (field === 'sess' && Array.isArray(pv) && pv.length > TRAIL_MAX) { // Beta 1.152 (NV round, NV4): the writers' caps, enforced inside restore validation (validate-then-write: the STORED value is the capped one, so no backup can hand the load an oversized array). Only crafted backups are affected - a genuine backup never exceeds the caps its writers enforce. Beta 1.167 (B1): history is NO LONGER capped here - the writers (appendHistory at finish/save) and the loader dropped the 10-clean cap together, so a backup's history is stored whole; the session markers keep their newest entries, as their writers keep them. Markers are first given the loader's own sanitize (finite, de-duplicated, sorted) so the stored value is exactly what the load would have made of it, capped. Beta 1.193 (trail redesign): the TRAIL leaves this block - its bound is no longer a point count but the 60-minute window, which needs the pack's own start entry this per-field closure cannot see; the window is applied to the built entries in the post-pass below, with the same validate-then-write discipline (the stored value is the windowed one).
+        const cs = [...new Set(pv.map(x => Number(x)).filter(x => Number.isFinite(x)))].sort((a, b) => a - b); v = JSON.stringify(cs.slice(Math.max(0, cs.length - TRAIL_MAX)));
       }
     }
     entries.push([targetKey, v]); return true;
@@ -297,6 +296,24 @@ async function restoreBackup(parsed) { // production doRestore semantics: valida
   // cleared either - they describe the trail that STAYS, and what a backup does not bring, a
   // restore does not touch. (C06 above is the true mirror: there the trail IS replaced.)
   for (const p of allPacks) { const rk = routeKeys(p.id); const si = entries.findIndex(e => e[0] === rk.sess); if (si >= 0 && !entries.some(e => e[0] === rk.trail)) entries.splice(si, 1); }
+  // Beta 1.193 (trail redesign): a restored trail is WINDOWED to the pack's own live run
+  // before it is written (the NV4 discipline: the stored value is the bounded one). The
+  // window is trailWindow's rule applied to the pack's own start entry - a mid-run backup
+  // lands exactly the run's last 60 minutes of points, sanitized as the loader sanitizes,
+  // so no pre-1.191 trail (every clean, up to the old point cap) can resurrect points the
+  // window forbids. A pack carrying a trail but NO live start brings finished runs' points:
+  // under the window they have no consumer, so the stored trail is empty. A pack carrying
+  // no trail at all is untouched here, as ever - what a backup does not bring, a restore
+  // does not touch, and the load window governs the resident trail at the next boot.
+  // When the window empties a pack's trail and the pack has no live run, the pack's
+  // session markers leave the write set with it - the pair retires together (the C-01
+  // rule: markers never outlive their trail), rather than landing as orphans over an
+  // empty trail. Only a NON-EMPTY markers entry is spliced: an entry that already
+  // reads empty is either a genuine empty field or C06's synthetic clear (written
+  // just above when a trail arrives without markers), and writing it is precisely
+  // what clears the resident markers - splicing it would resurrect them by
+  // omission (drive145 N13 caught exactly that in this round's first gate).
+  for (const p of allPacks) { const rk = routeKeys(p.id); const ti = entries.findIndex(e => e[0] === rk.trail); if (ti < 0) continue; const se = entries.find(e => e[0] === rk.start); const startMs = se && /^\d+$/.test(se[1]) ? +se[1] : 0; let pts = parseJ(entries[ti][1], []); pts = Array.isArray(pts) ? pts.filter(q => Array.isArray(q) && q.length === 3 && Number.isFinite(q[0]) && Number.isFinite(q[1]) && Number.isFinite(q[2]) && q[2] >= 946684800 && q[2] <= 4102444800 && Math.abs(q[0]) <= 90 && Math.abs(q[1]) <= 180) : []; const windowed = trailWindow(pts, startMs); entries[ti][1] = JSON.stringify(windowed); if (!startMs && !windowed.length) { const si2 = entries.findIndex(e => e[0] === rk.sess); if (si2 >= 0) { const sv = parseJ(entries[si2][1], []); if (Array.isArray(sv) && sv.length) entries.splice(si2, 1); } } }
   // Beta 1.92 (deep audit F06, Andrew's pick (a)): a backup carrying a route's completion
   // list but NO side-marks record (the old v1 shape) used to restore into silence - the
   // loader trusts the side-marks and rebuilt the list from the phone's existing ones,
@@ -766,7 +783,8 @@ $('stDel').addEventListener('click', async () => {
 });
 // ---- About / What's new ----
 const WHATSNEW = { // the curated in-app notes: plain words, LATEST RELEASE ONLY (Beta 1.114, Andrew: the accumulated list cluttered the About pane). A release REPLACES this entry with its own in the same change - it never accumulates; the full history lives in CHANGELOG.md, not the app
-  v: 'Beta 1.192', items: ["The bottom bar is slimmer: it now stands at the standard height most apps use, so a little more of the map shows. The buttons, icons and words are the same size as before — only the empty space above and below them shrank.", "The round buttons and the small readouts that float just above the bar moved down with it, keeping the same spacing they had."] };
+  v: 'Beta 1.193', items: ["The blue GPS trail line is gone from the map. Your record of a clean is the streets you mark done - the line was only ever a picture of the app's backup data, and it is not drawn any more.", "Under the hood, the app now keeps just the last hour of GPS points, purely as a safety net for the distance counter, and the counter saves its total after every reading instead of every so often - so if the app is closed or reloads mid-clean, the recovered distance is the true one. Saved cleans no longer carry a drawn route path; cleans saved before this update keep theirs."] };
+
 function renderAbout() {
   const cur = $('ver').textContent.trim();
   $('wnHead').textContent = "WHAT'S NEW · " + cur; // the header names the LIVE version, read from the title's version element - never a second hard-coded copy that can go stale
@@ -1098,7 +1116,7 @@ function loadRoute(id) {
     if (switching) { try { addReferenceLayers(); } catch (e) {} if (routeBox) { try { map.fitBounds([[routeBox.w, routeBox.s], [routeBox.e, routeBox.n]], { padding: 28 }); } catch (e) {} } } // a switch frames the new route at once - the wide dwell + slow flight (introToRoute) is boot choreography only
     else introToRoute();
   }
-  refreshAll(); drawTrail(true); checkStale(); syncWake();
+  refreshAll(); checkStale(); syncWake();
   if (runStart && !validateSnap(parseJ(lsGet(LS.snap), null), runStart)) toast('Resumed run — no usable cancel snapshot, so Cancel will rebuild from the marks made during the run', 4600); // Beta 1.95 (deep audit SR-194-04): the honesty lives at RESUME - Start still never blocks (the settled 1.63 stance: he is standing in the snow), but a run whose cancel snapshot is missing or damaged is resumed with its reduced Cancel guarantee stated, not silent
   if (runStart) startGps(true);
 }

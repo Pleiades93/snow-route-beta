@@ -306,7 +306,11 @@ function validateSnap(raw, expectAt, G) { // Beta 1.95 (deep audit SR-194-03): a
     return { pieces, pieceTimes, done, times, via, cov };
   } catch (e) { return null; }
 }
-function startClean() { runSnap = { pieces: JSON.parse(JSON.stringify(pieces)), pieceTimes: JSON.parse(JSON.stringify(pieceTimes)), done: [...doneSet], times: { ...doneTimes }, via: { ...doneVia }, cov: JSON.parse(JSON.stringify(coveredIdx)) }; runStart = Date.now(); runDist = { run: runStart, m: 0, capped: false }; runDistWrote = { at: 0, m: 0, capped: false }; persistRunDist(true); const okSnap = saveSnap(); const okSess = noteSessionStart(); const okStart = saveAllWarned(); startGps(true); updateCount(); syncWake(); if (okStart.ok && okSess.ok && okSnap.ok) toast('Clean started · ' + fmtClock(new Date())); else if (!okStart.ok) toast('Clean started — warning: the run state could not be saved (storage problem)', 4200); else if (!okSess.ok) toast('Clean started — warning: the session marker could not be saved; it will keep retrying', 4200); else toast('Clean started — warning: the cancel safety snapshot could not be saved; it will keep retrying', 4200); drawTrail(true); checkStale(); } // Beta 1.167 (B5): startClean banks a fresh distance counter for the new run (the runDist assignment + persistRunDist(true) beside runStart above), so even an instant reload resumes THIS run's counter. // Beta 1.73 (audit C04): the marker save is part of the start's honesty check, not a silent side write // Beta 1.63 (audit F04): the clean still starts - he is standing in the snow - but the message stops claiming a saved state that does not exist
+// Beta 1.193 (trail redesign): startClean carries the Start fence - the four statements after
+// persistRunDist inside it window the trail to the new run, so anything recorded before this
+// Start is evicted here (finish/cancel already clear theirs; the fence makes the window
+// invariant local to Start rather than trusting every exit path).
+function startClean() { runSnap = { pieces: JSON.parse(JSON.stringify(pieces)), pieceTimes: JSON.parse(JSON.stringify(pieceTimes)), done: [...doneSet], times: { ...doneTimes }, via: { ...doneVia }, cov: JSON.parse(JSON.stringify(coveredIdx)) }; runStart = Date.now(); runDist = { run: runStart, m: 0, end: null }; runDistWrote = { run: 0, m: 0, end: null }; persistRunDist(true); const trailAtStart = trail.length; trail = trailWindow(trail, runStart); if (trail.length !== trailAtStart) markDirty('trail'); const okSnap = saveSnap(); const okSess = noteSessionStart(); const okStart = saveAllWarned(); startGps(true); updateCount(); syncWake(); if (okStart.ok && okSess.ok && okSnap.ok) toast('Clean started · ' + fmtClock(new Date())); else if (!okStart.ok) toast('Clean started — warning: the run state could not be saved (storage problem)', 4200); else if (!okSess.ok) toast('Clean started — warning: the session marker could not be saved; it will keep retrying', 4200); else toast('Clean started — warning: the cancel safety snapshot could not be saved; it will keep retrying', 4200); checkStale(); } // Beta 1.167 (B5): startClean banks a fresh distance counter for the new run (the runDist assignment + persistRunDist(true) beside runStart above), so even an instant reload resumes THIS run's counter. // Beta 1.73 (audit C04): the marker save is part of the start's honesty check, not a silent side write // Beta 1.63 (audit F04): the clean still starts - he is standing in the snow - but the message stops claiming a saved state that does not exist
 // Beta 1.91 (Andrew): Cancel start erases everything the run recorded - its trail points, its session
 // marker, any sides marked during it, its coverage and suggestions - and stores nothing. Only Finish
 // stores a run. (Supersedes the Beta 1.70 A04 call that kept the trail as history - Andrew's word.)
@@ -332,7 +336,7 @@ function cancelStart() {
         coveredIdx = {}; // coverage cannot be attributed without a snapshot - and unlike hand marks it is GPS-derived and re-earns itself as he drives; drive143 C1 holds this line
       }
     }
-    lsDel(LS.snap); markClean('snap'); resetRunDist(); lsDel(LS.rundist); // Beta 1.167 (B5): the cancelled run's distance record goes with it. The run is cancelled - its snapshot goes with it (a stale one could never match a future run's start stamp, but there is no reason to keep it)
+    lsDel(LS.snap); markClean('snap'); resetRunDist(); lsDel(LS.rundist); lsDel(LS.rundist2); // Beta 1.167 (B5): the cancelled run's distance record goes with it. Beta 1.193: its mirror copy (LS.rundist2) goes too. The run is cancelled - its snapshot goes with it (a stale one could never match a future run's start stamp, but there is no reason to keep it)
     markDirty('trail'); markDirty('sess');
   }
   runSnap = null;
@@ -341,7 +345,7 @@ function cancelStart() {
   const trailPending = writePending('trail') || writePending('sess'); // Beta 1.93 (follow-up audit R07): the erasure claim below is gated on the trail/session writes having actually landed
   if (wasRunGps) stopGps();
   if (window.GLP) window.GLP.sync(); renderPanel(); renderStreets();
-  drawTrail(true); updateCount(); syncWake();
+  updateCount(); syncWake();
   const rebuiltWhy = snapDamaged ? 'the saved snapshot was damaged' : (snapAbsent ? 'no start snapshot was saved' : ''); // Beta 1.96 (deep audit SR-195-01): the message is COMPOSED, not chained - 1.95's if-chain evaluated the damage branch before the unsaved-cleanup branch, so in the combined case (damaged snapshot AND a trail cleanup that could not be saved) the erasure message masked the storage warning entirely. The storage warning now leads whenever it applies, with the rebuild explanation attached; each single-failure message keeps its exact prior wording.
   if (okCancel && trailPending) toast('Start cancelled — erased here, but the trail cleanup could not be saved yet; it will keep retrying' + (rebuiltWhy ? ' — the board was rebuilt from the marks made during the run (' + rebuiltWhy + ')' : ''), 4600);
   else if (okCancel && snapDamaged) toast('Start cancelled — run erased (the saved snapshot was damaged, so the board was rebuilt from the marks made during the run)', 4600);
@@ -375,17 +379,6 @@ $('resetBtn').addEventListener('click', () => {
 });
 $('finNo').addEventListener('click', () => $('finModal').classList.add('hidden'));
 $('finYes').addEventListener('click', () => { if (!tapGuard('finYes')) return; $('finModal').classList.add('hidden'); finishRun(); });
-function thinOnce(pts, stepSec) {
-  const out = []; let last = -Infinity;
-  for (const p of pts) { if (p[2] - last >= stepSec) { out.push(p); last = p[2]; } }
-  if (pts.length && out.length && out[out.length - 1] !== pts[pts.length - 1]) out.push(pts[pts.length - 1]);
-  return out;
-}
-function thinPath(pts) {
-  let step = 15, out = thinOnce(pts, step);
-  while (out.length > 3000) { step *= 2; const nx = thinOnce(out, step); if (nx.length >= out.length) break; out = nx; }
-  return out;
-}
 function trailKm(sinceMs) {
   const sinceSec = Math.floor(sinceMs / 1000); // Beta 1.71 (audit B04): trail timestamps are whole seconds - the boundary is compared at the same precision, or a start mid-second discards the run's first legitimate segment (the map's trail filter has floored its boundary since 1.64)
   let d = 0;
@@ -396,41 +389,74 @@ function trailKm(sinceMs) {
   return d / 1000;
 }
 // ===== RUN DISTANCE COUNTER (Beta 1.167, B5 - run/pace audit RP-02) =====
-// The GPS trail is capped at TRAIL_MAX points (oldest dropped), so a long run's archived path
-// silently loses its head - and through 1.166 the archived km was derived FROM that truncated
-// path (trailKm), understating the run. This counter instead accumulates each accepted fix's
-// segment AT RECORD TIME (acceptFix), under trailKm's own pair rule (both endpoints in the run,
-// <=300 s apart, <=1000 m), so the total survives any later truncation; buildSnap reads it when
-// it belongs to the finishing run. It persists (LS.rundist, throttled) so a mid-run reload
-// resumes it; a lost or foreign record re-derives from the surviving trail (adoptRunDist) - the
-// pre-1.167 figure, never worse. capped is set ONLY by direct observation (a live splice dropping
-// this run's points, or a banked record that observed it), and Finish stamps it onto the entry
-// (pathShortened) so the clean detail can say the saved path is shorter than the run.
-// Beta 1.186 (storage fix round, P2) extends the never-worse rule to a matching but STALE
-// record: adoptRunDist reconciles an uncapped banked figure against the surviving trail,
-// and flushAux's forced flush (app1) banks the counter at page death so the stale case
-// stops arising there.
-let runDist = { run: 0, m: 0, capped: false };
-let runDistWrote = { at: 0, m: 0, capped: false };
+// The counter accumulates each accepted fix's segment AT RECORD TIME (acceptFix), under
+// trailKm's own pair rule (both endpoints in the run, <=300 s apart, <=1000 m), so the total
+// survives any later trail truncation; buildSnap reads it when it belongs to the finishing
+// run. It persists (LS.rundist) so a mid-run reload resumes it; a lost or foreign record
+// re-derives from the surviving trail (adoptRunDist) - the pre-1.167 figure, never worse.
+// Beta 1.186 (storage fix round, P2) extended the never-worse rule to a matching but STALE
+// record: adoption reconciles a banked figure against the surviving trail by max(), and
+// flushAux's forced flush (app1) banks the counter at page death.
+// Beta 1.193 (trail redesign + counter hardening, Andrew's adopted design): the trail is
+// now a backend-only rolling window - only the live run's last 60 minutes of points
+// (TRAIL_WINDOW_S, app1) - kept solely as this counter's fallback; there is no drawn trail
+// line and no archived path, so the 1.167 capped flag (which meant "the trail lost this
+// run's points, the stored path is shorter") retires with the surface it described: under
+// a window, eviction is the design, not an event, and nothing branches on it. The counter
+// is hardened instead: persistRunDist banks on EVERY recorded fix (the 30 s / 25 m throttle
+// is gone - the record is a few dozen characters, overwritten in place, so the storage
+// footprint is unchanged) and a second copy rides LS.rundist2, written only by the
+// trail-flush path (bankRunDistMirror via flushAux, app1) so the two records fail
+// independently. THE RECONCILIATION INVARIANT: every recovery candidate is a LOWER BOUND
+// of the run's true total - a banked record only ever accumulates real recorded segments,
+// and the window's trailKm sums a SUBSET of the run's recorded pairs under the same pair
+// rule - so max() can raise a stale bank toward truth but can never overstate it, and the
+// trail derivation is never the authority for a span the window does not cover. The named
+// residual: if BOTH counter copies are dead, recovery is exactly the window's own
+// distance - the last hour, nothing more is promised.
+// The record also carries the counter's ENDPOINT (end - the last recorded point).
+// Per-fix banking writes the counter synchronously while the trail's own write is
+// buffered in flushAux, so a process death inside that buffer leaves the banked
+// total AHEAD of the stored trail; without the endpoint, adoption would restore
+// the newer total while the next segment is measured from the stored trail's
+// older tail - counting the in-between travel twice (gate round on PR #38,
+// Codex P2). Adoption restores the endpoint as the counter's SEGMENT ANCHOR
+// (runDist.end, read by acceptFix when it is newer than the trail's tail) -
+// deliberately NOT as a point in the trail: an appended endpoint would hand
+// trailKm a synthetic edge (flushed tail -> endpoint) that was never a
+// recorded pair, and where the lost span held pair-rule-rejected jumps that
+// edge's chord could invent distance the counter never banked (gate round 2,
+// Codex P2). Held outside the trail, the endpoint steers only the next
+// segment's measurement; the derivation keeps summing recorded pairs alone.
+// Records written before this round carry no endpoint and adopt as they did.
+let runDist = { run: 0, m: 0, end: null };
+let runDistWrote = { run: 0, m: 0, end: null };
+let runDistMirrorWrote = '';
 function persistRunDist(force) {
-  if (runStart && runDist.run !== runStart) adoptRunDist(); // Beta 1.186 (gate round, Codex finding): never bank an UN-ADOPTED counter. Adoption is lazy (buildSnap, the first recorded fix) and runDist boots as { run: 0, m: 0, capped: false }, so after a mid-run reload the new forced flush in flushAux (app1) could fire before either adoption point and write the zero record over the banked one - for a CAPPED run that loss was permanent (its trail is truncated by design, so re-derivation understates and the capped flag died with the record). Every other caller already guarantees the match (startClean sets the run before banking; acceptFix adopts before banking), so the guard is a no-op outside that window and the writer itself can no longer clobber a record it has not adopted.
-  const now = Date.now();
-  if (!force && runDistWrote.at && now - runDistWrote.at < 30000 && Math.abs(runDist.m - runDistWrote.m) < 25 && runDistWrote.capped === runDist.capped) return;
-  if (lsSet(LS.rundist, JSON.stringify(runDist))) runDistWrote = { at: now, m: runDist.m, capped: runDist.capped };
+  if (runStart && runDist.run !== runStart) adoptRunDist(); // Beta 1.186 (gate round, Codex finding): never bank an UN-ADOPTED counter. Adoption is lazy (buildSnap, the first recorded fix) and runDist boots as { run: 0, m: 0 }, so after a mid-run reload the forced flush in flushAux (app1) could fire before either adoption point and write the zero record over the banked one - through 1.190 that loss was permanent for a capped run (its trail was truncated by design, so re-derivation understated). Every other caller already guarantees the match (startClean sets the run before banking; acceptFix adopts before banking), so the guard is a no-op outside that window and the writer itself can no longer clobber a record it has not adopted.
+  if (!force && runDistWrote.run === runDist.run && runDistWrote.m === runDist.m && runDistWrote.end === runDist.end) return; // Beta 1.193: no throttle - the only gate left is CHANGE. acceptFix calls this after every recorded fix, so the banked record is current to the last fix, not to the last 30 s / 25 m window (the pre-1.193 throttle, whose staleness the 1.186 reconciliation existed to absorb). The end term keeps the gate honest now that the endpoint rides the record: end is REPLACED (never mutated) on every recorded fix, so identity-equality means truly unchanged.
+  if (lsSet(LS.rundist, JSON.stringify(runDist))) runDistWrote = { run: runDist.run, m: runDist.m, end: runDist.end };
+}
+function bankRunDistMirror() { // Beta 1.193 (counter hardening): the counter's second copy (LS.rundist2), called ONLY by flushAux's trail-flush path (app1) - a different writer, trigger and cadence from persistRunDist's per-fix direct write, so a lost, torn or clobbered primary leaves this copy intact and vice versa. Banks the ADOPTED counter only (the same never-bank-an-un-adopted rule as persistRunDist: a post-reload flush before adoption must not mint the zero counter into the mirror either).
+  if (!runStart) return;
+  if (runDist.run !== runStart) adoptRunDist();
+  const s = JSON.stringify(runDist);
+  if (s === runDistMirrorWrote) return;
+  if (lsSet(LS.rundist2, s)) runDistMirrorWrote = s;
 }
 function adoptRunDist() {
-  if (!runStart) { runDist = { run: 0, m: 0, capped: false }; return; }
-  let raw = null; try { raw = JSON.parse(lsGet(LS.rundist) || 'null'); } catch (e) { raw = null; }
-  if (raw && raw.run === runStart && typeof raw.m === 'number' && isFinite(raw.m) && raw.m >= 0) { const capped = !!raw.capped; runDist = { run: runStart, m: capped ? raw.m : Math.max(raw.m, trailKm(runStart) * 1000), capped }; return; } // Beta 1.186 (storage fix round, P2): a matching UNCAPPED record reconciles against the surviving trail before it is believed - the trail is complete for this run (nothing was dropped), so where the throttle left the banked figure stale (up to <25 m per mid-run reload through 1.185) the trail's own measure wins and the loss never reaches the archive. A CAPPED record is exempt: its trail is truncated by design, its measure would UNDERSTATE the run, and the counter stays the sole authority - the max() must never run there.
-  runDist = { run: runStart, m: trailKm(runStart) * 1000, capped: false };
+  if (!runStart) { runDist = { run: 0, m: 0, end: null }; return; }
+  let best = -1, bestEnd = null; // Beta 1.193: adoption order is primary (LS.rundist), then the mirror (LS.rundist2), then trail derivation - judged by VALUE, not by order: every candidate is a lower bound of the true total (the header invariant), so the largest matching bank is the closest to truth, and the derivation reconciles it upward only across the span the window still covers. Legacy records carrying the retired capped field are read for {run, m} and the field is ignored - under the window its old exemption (a capped bank as sole authority) is moot, because the derivation can no longer outvote a bank: it can only raise a stale one toward a truth it partially measures. The winning record's endpoint (end) is tracked beside its total for the anchor below; a record without one (written before this round) leaves bestEnd null and adopts exactly as it did.
+  for (const key of [LS.rundist, LS.rundist2]) { let raw = null; try { raw = JSON.parse(lsGet(key) || 'null'); } catch (e) { raw = null; } if (raw && raw.run === runStart && typeof raw.m === 'number' && isFinite(raw.m) && raw.m >= 0) { const rawEnd = (Array.isArray(raw.end) && raw.end.length === 3 && Number.isFinite(raw.end[0]) && Number.isFinite(raw.end[1]) && Number.isFinite(raw.end[2]) && raw.end[2] >= Math.floor(runStart / 1000)) ? raw.end : null; if (raw.m > best || (raw.m === best && rawEnd && (!bestEnd || rawEnd[2] > bestEnd[2]))) { best = raw.m; bestEnd = rawEnd; } } } // Beta 1.193 (gate round 3, Codex P2): on a totals TIE the NEWER endpoint wins - a failed primary write beside a landed mirror leaves equal totals carrying different endpoints (rejected jumps advance the endpoint without adding distance), and anchoring on the older one would re-measure the span the newer already covers. bestEnd only ever comes from a record whose total IS the winning one (or its tie) - a lower record's endpoint sits behind the winner's true position and must not anchor.
+  runDist = { run: runStart, m: Math.max(best, trailKm(runStart) * 1000), end: (bestEnd && (!trail.length || bestEnd[2] > trail[trail.length - 1][2])) ? bestEnd : (trail.length ? trail[trail.length - 1] : bestEnd) }; // Beta 1.193 (gate rounds, Codex P2 x2): the endpoint that survives is the NEWER of the winning bank's endpoint and the trail's own tail - it becomes the segment anchor (see the header): never appended to the trail, so the derivation below can never be handed a synthetic edge.
 }
-function resetRunDist() { runDist = { run: 0, m: 0, capped: false }; runDistWrote = { at: 0, m: 0, capped: false }; }
+function resetRunDist() { runDist = { run: 0, m: 0, end: null }; runDistWrote = { run: 0, m: 0, end: null }; runDistMirrorWrote = ''; }
 function geoFingerprint() { // Beta 1.167 (B2): a cheap fingerprint of the route geometry AS CLEANED - street names + each street's total side-metres at 0.1 m precision, FNV-1a hashed. Recorded on every new archive entry (snap.geoFP) so a later geometry edit is DETECTABLE against the entry priced under the old geometry; the pace math reads the stored workM, so the fingerprint is evidence, not an input.
   let fp = 2166136261 >>> 0; const str = STREETNAMES.map(n => n + ':' + (STRETCH[n] ? STRETCH[n].total.toFixed(1) : '0')).join('|');
   for (let i = 0; i < str.length; i++) { fp ^= str.charCodeAt(i); fp = Math.imul(fp, 16777619) >>> 0; }
   return ('0000000' + fp.toString(16)).slice(-8);
 }
-function buildSnap() { // production archive shape: items is a street->time map; km is trail distance; the GPS path is thinned FROM the trail
+function buildSnap() { // production archive shape: items is a street->time map; km is the run-distance counter's total (trailKm only for a run the counter never saw). Beta 1.193: no GPS path is baked any more - the trail is a backend-only fallback window, so entries carry no path and no pathShortened; pre-1.193 entries keep theirs for the life of the entry.
   if (!doneSet.size && !Object.keys(notes).length) return null;
   const ts = [...doneSet].map(n => Date.parse(doneTimes[n])).filter(t => !isNaN(t)).sort((a, b) => a - b);
   const startMs = (runStart && ts.length && runStart <= ts[0]) ? runStart : (ts.length ? ts[0] : (runStart || null)); // Beta 1.170 (Carbon fix round Phase 2, B-12): a live run whose streets carry NO recorded stamps (every doneTime null - a finish after a state restore, say) still STARTED: fall back to the run start itself. Through 1.169 this read null, and the archived clean lost its startedAt - and with it the work metre and path bake below, both keyed off startMs // Beta 1.70 (audit A05): distance and path are measured from the clean's actual start, not its first completed street - driving before the first street was silently dropped
@@ -441,9 +467,7 @@ function buildSnap() { // production archive shape: items is a street->time map;
   if (startMs) { let wm = 0; const endMs = Date.parse(snap.at); const winStart = runStart || startMs; for (const n of Object.keys(snap.sides.p)) { const pv = snap.sides.p[n] || [], T = snap.sides.t[n] || []; const parts = STRETCH[n] ? STRETCH[n].parts : []; parts.forEach((part, i) => { const L = segLenM(part); const st = T[i] || [null, null]; if ((pv[i] & 1) && st[0]) { const ts = Date.parse(st[0]); if (ts >= winStart && ts <= endMs) wm += L; } if ((pv[i] & 2) && st[1]) { const ts = Date.parse(st[1]); if (ts >= winStart && ts <= endMs) wm += L; } }); } snap.workM = Math.round(wm); }
   snap.totalWorkM = Math.round(totalWorkM());
   snap.geoFP = geoFingerprint();
-  if (runStart && runDist.run === runStart && runDist.capped) snap.pathShortened = true; // Beta 1.167 (B5, RP-02): the stored path below was truncated by the trail cap - the entry says so (km above is the counter's true total, not the path's)
-  const sMs = Date.parse(snap.startedAt);
-  if (!isNaN(sMs)) { const pp = thinPath(trail.filter(p => p[2] >= Math.floor(sMs / 1000))); if (pp.length > 1) snap.path = pp; } // Beta 1.70 (audit A05): the old 60 s look-back admitted points from the previous session. Beta 1.71 (audit B04): second-precision comparison, matching the stored timestamps
+  // Beta 1.193 (trail redesign): no path bake and no pathShortened stamp - through 1.190 the entry carried a thinned copy of the trail (the 1.70 A05 bake) and flagged it when the trail cap had truncated it (1.167 RP-02). The trail's only remaining job is the counter's fallback, so the archive keeps the counter's km and nothing else; the bake and its thinning helpers are retired with the surface.
   return snap;
 }
 function finishRun() {
@@ -479,11 +503,11 @@ function finishRun() {
     if (fTx.failedStep === 'archive') { toast('Storage full \u2014 finish stopped, run intact', 3600); return; }
     toast('Storage problem \u2014 finish stopped, your clean is intact', 4200); return;
   }
-  lsDel(LS.snap); markClean('snap'); resetRunDist(); lsDel(LS.rundist); // Beta 1.167 (B5): the distance counter is consumed into the archive entry (km/pathShortened) - its record goes with the run. Beta 1.94 (SR-193-02): the run is finished - its cancel snapshot goes with it. Ungated on purpose: a leftover snapshot is stamped with THIS run's start, so it can never match a future run, and the next Start overwrites it anyway
+  lsDel(LS.snap); markClean('snap'); resetRunDist(); lsDel(LS.rundist); lsDel(LS.rundist2); trail = []; markDirty('trail'); // Beta 1.167 (B5): the distance counter is consumed into the archive entry (km) - its record goes with the run. Beta 1.193: its mirror copy goes too, and the trail window is cleared with them - the run is over, so the fallback's only consumer is gone (the Start fence and the load window would evict the points anyway; clearing here keeps the stored trail honest between runs). Beta 1.94 (SR-193-02): the run is finished - its cancel snapshot goes with it. Ungated on purpose: a leftover snapshot is stamped with THIS run's start, so it can never match a future run, and the next Start overwrites it anyway
   if (archiving) history = newHist;
   doneSet = new Set(); doneTimes = {}; doneVia = {}; notes = {}; runStart = 0; runSnap = null; coveredIdx = {}; suggested = new Set(); sugQueue = []; $('suggest').classList.add('hidden'); // Beta 1.70 (audit A04): the suggestion set is run-scoped too - finishRun used to clear the coverage but keep the set, so suggested streets never suggested again
   for (const n of STREETNAMES) { pieces[n] = STRETCH[n].parts.map(() => 0); pieceTimes[n] = {}; }
-  stopGps(); deselect(); drawTrail(true); // Beta 1.69 (audit visual check): the run is over and runStart is 0, so this clears the finished line now instead of leaving it until the next throttled refresh
+  stopGps(); deselect(); // Beta 1.193: through 1.190 this also force-drew the trail to clear the finished line (Beta 1.69) - there is no line any more; the window itself was cleared with the counter records above
   const restRes = saveAll(); const restOk = restRes.ok; // the gated sides write already landed; this pass carries the metadata - a failure here warns but cannot resurrect anything (authority + archive agree)
   finishChange();
   toast((archiving ? 'Clean archived · ' + Object.keys(snap.items).length + ' streets' : 'Board cleared — under 3 streets, nothing saved') + (restOk ? '' : ' — some details could not be written (' + restRes.failedKey + '); they retry on the next save'), 3400);
@@ -564,20 +588,12 @@ function pushGps() {
   src.setData({ type: 'FeatureCollection', features: feats });
 }
 let gpsAccM = 0;
-let lastTrailDraw = 0, lastTrailPts = 0; // Beta 1.64: drawTrail throttle state (audit 3)
-function drawTrail(force) {
-  const src = map && map.getSource('trail'); if (!src) return;
-  const t0s = runStart ? Math.floor(runStart / 1000) : 0; // Beta 1.64 (audit F05): only THIS clean's points draw as the active trail - the stored trail keeps every clean for the log and GPX; the display is run-scoped
-  if (!force && performance.now() - lastTrailDraw < 3000) { // Beta 1.135 (programme D): the throttle is decided BEFORE the trail filter now. Its count arm needs only the run-scoped COUNT - a bare counting pass, never a filtered copy of up to 8,000 points built on every GPS fix just to be discarded (the pre-1.135 order); the decision itself is unchanged (skip iff under 3 s AND fewer than 5 undrawn points), and forced draws (run start, trail clear) still ignore the throttle whole (Beta 1.64, audit 3)
-    let cnt = 0; if (runStart) for (const p of trail) if (p[2] >= t0s) cnt++;
-    if (cnt - lastTrailPts < 5) return;
-  }
-  const pts = runStart ? trail.filter(p => p[2] >= t0s) : [];
-  lastTrailDraw = performance.now(); lastTrailPts = pts.length;
-  const feats = [];
-  for (const seg of trailSegments(pts)) { if (seg.length > 1) feats.push({ type: 'Feature', properties: {}, geometry: { type: 'LineString', coordinates: seg.map(p => [p[1], p[0]]) } }); } // Beta 1.99 (Phase 2, C1): segmentation by the shared rule in trailSegments (was a private copy of the gap/jump test)
-  src.setData({ type: 'FeatureCollection', features: feats });
-}
+// Beta 1.193 (trail redesign): drawTrail is RETIRED with the surface it served - there is no
+// trail line on the map any more (the 'trail' source and 'trail-line' layer went with it,
+// app2). Through 1.190 this block filtered the stored trail to the live run and painted it
+// (run-scoped since Beta 1.64, throttled since 1.135). The stored trail itself survives as
+// the distance counter's backend fallback window (see the counter block above); its
+// remaining readers are trailKm (the derivation) and buildGpx (internal only, app4).
 let renderRaf = 0, renderPump = 0, lastFrameAt = 0, lastCamAt = 0, lastPushKey = ''; // Beta 1.65 (Andrew's road report: the GPS motion stuttered; third audit item 1): ONE frame-synced render loop drives the dot and the camera - the 40 ms glide timer and the 50 ms camera timer used to overlap at ~45 unsynced updates a second, and the camera's per-tick easing sped up whenever they overlapped
 let dispOff = [0, 0], lastDispAt = 0; // Beta 1.115 (Andrew's drive report: the dot stepped once a second): the display no longer glides toward a fixed aim and stops - it COASTS on the estimator's predicted track (kfPredict, by the filter below) every frame, and a fix's correction is absorbed into dispOff (metres, [lat, lng]) and decayed away over ~0.3 s, so a fix never teleports the dot either. Smoothing is DISPLAY-ONLY: trail, coverage and pace keep consuming the raw accepted estimate (gpsPos) exactly as before.
 function dispSettled() { return Math.abs(dispOff[0]) < 0.05 && Math.abs(dispOff[1]) < 0.05; }
@@ -603,7 +619,7 @@ function renderLoop(now) {
 }
 function startRenderLoop() { if (!renderRaf) { lastCamAt = lastFrameAt = performance.now(); renderRaf = requestAnimationFrame(renderLoop); } if (!renderPump) renderPump = setInterval(() => { if ((watchId != null || !dispSettled()) && performance.now() - lastFrameAt > 100) renderTick(performance.now()); if (watchId == null && dispSettled() && !renderRaf) { clearInterval(renderPump); renderPump = 0; } }, 100); } // the pump is a starvation fallback only: a browser that is not painting (headless, occluded) delivers no animation frames, and the GPS state must still advance - on a painting phone it never fires; it parks itself when nothing is left to render
 function followCam(now) {
-  if (!map || !dispPos || followPaused || watchId == null) { lastCamAt = now; return; } // Beta 1.146 (census C4): the no-map guard in the SAME idiom as northUp/pushGps/drawTrail - in the map-failure world (MapLibre script dead, map === null) renderTick reaches this on every fix and the unguarded map.getCanvas() below threw before the fix could record. follow whenever location is ON (Beta 1.27, Andrew) - it used to engage only during a run, so the dot wandered off-screen on a plain drive. Trail recording stays run-only; heading-up applies whenever location is on and the camera follows (Beta 1.122, Andrew).
+  if (!map || !dispPos || followPaused || watchId == null) { lastCamAt = now; return; } // Beta 1.146 (census C4): the no-map guard in the SAME idiom as northUp/pushGps - in the map-failure world (MapLibre script dead, map === null) renderTick reaches this on every fix and the unguarded map.getCanvas() below threw before the fix could record. follow whenever location is ON (Beta 1.27, Andrew) - it used to engage only during a run, so the dot wandered off-screen on a plain drive. Trail recording stays run-only; heading-up applies whenever location is on and the camera follows (Beta 1.122, Andrew).
   const c = map.getCanvas(); const p = projLL(dispPos);
   const dx = p.x - c.clientWidth / 2, dy = p.y - c.clientHeight / 2;
   if (Math.abs(dx) < 0.5 && Math.abs(dy) < 0.5) { lastCamAt = now; return; } // Beta 1.115: the deadband was 2 px - at driving zoom the dot had to drift ~7 m off-centre before the camera moved at all, so the camera lurched in pulses behind a smoothly coasting dot; half a pixel keeps it glued without jitter (the settle band drive126 judges is 12% of the screen, two orders wider)
@@ -666,7 +682,7 @@ function headCam(now) {
   const f = 1 - Math.pow(0.65, dt / 50); // followCam's ease, time-based: identical convergence at any frame rate
   map.jumpTo({ bearing: cur + d * f });
 }
-function northUp() { smHeading = null; if (!map) return; if (Math.abs(map.getBearing()) > 0.5) map.easeTo({ bearing: 0, duration: 400 }); } // Beta 1.76: same no-map tolerance as drawTrail/pushGps - a finish on a map-less page must reach its transaction, not throw here
+function northUp() { smHeading = null; if (!map) return; if (Math.abs(map.getBearing()) > 0.5) map.easeTo({ bearing: 0, duration: 400 }); } // Beta 1.76: same no-map tolerance as pushGps - a finish on a map-less page must reach its transaction, not throw here
 // ===== POSITION FILTER (Beta 1.28, Andrew: the dot jitters at slow speed) =====
 // A Kalman filter [the estimator navigation apps use: it carries a position AND a
 // velocity, and weighs each new fix by its stated accuracy against how well the fix
@@ -1071,15 +1087,16 @@ function acceptFix(pos) {
     const stillFix = typeof speed === 'number' && speed >= 0 && speed < GPS_STILL_MPS; // Beta 1.187 (GPS package, STOP B): a stopped fix records nothing - no trail point, no banked segment; coverage below still runs on it (a truck edging a driveway at creep pace keeps earning its streets), and the next moving fix measures its segment from the last RECORDED point, so genuine distance survives the guard. A fix reporting no speed is no evidence of stillness and records as before.
     if (!stillFix) {
       const runSec = Math.floor(runStart / 1000);
-      const prevPt = trail.length ? trail[trail.length - 1] : null;
+      const prevPt = (runDist.end && (!trail.length || runDist.end[2] > trail[trail.length - 1][2])) ? runDist.end : (trail.length ? trail[trail.length - 1] : null); // Beta 1.193 (gate rounds, Codex P2 x2): the segment anchor is the counter's endpoint when it is newer than the trail's tail (the crash case - the bank ahead of the flushed trail); the endpoint is never written into the trail, so trailKm keeps summing only recorded pairs. In the normal case end IS the trail's tail (it is replaced with every recorded point, just below) and nothing changes.
       const newPt = [+sm[0].toFixed(6), +sm[1].toFixed(6), Math.floor(now / 1000)];
       if (prevPt && prevPt[2] >= runSec && newPt[2] - prevPt[2] <= 300) { const seg = distM(prevPt, newPt); if (seg <= 1000) runDist.m += seg; } // trailKm's own pair rule, applied at record time so the total survives the cap below
       trail.push(newPt);
-      if (trail.length > TRAIL_MAX) { const dropped = trail.splice(0, trail.length - TRAIL_MAX); if (dropped.some(pt => pt[2] >= runSec)) runDist.capped = true; }
+      runDist.end = newPt; // Beta 1.193 (gate rounds, Codex P2 x2): the endpoint rides the banked record - adoption restores it as the segment anchor (never as a trail point), so a crash that loses the trail's buffered tail cannot make the next segment re-measure banked travel, and no synthetic edge ever reaches the derivation
+      while (trail.length && trail[0][2] < newPt[2] - TRAIL_WINDOW_S) trail.shift(); // Beta 1.193 (trail redesign): the window eviction, applied at append - points are chronological, so the head is the oldest; everything older than the newest point minus 60 minutes leaves. Through 1.190 a TRAIL_MAX point cap spliced the head and flagged the counter (capped) when it ate this run's points; under the window the eviction is routine, flags nothing, and the counter above is the authority the fallback stands behind.
       persistRunDist(false);
       markDirty('trail');
     }
-    flushAux(false); drawTrail();
+    flushAux(false);
     coverFix(sm);
   }
 }

@@ -23,14 +23,21 @@ const before = JSON.parse(await ev(`JSON.stringify({ ts: lastFixTs, pos: gpsPos 
 await ev(`(() => { ${fix(43.8250, -79.5700, 1700000030000)}; return true; })()`); await sleep(200);
 const after = JSON.parse(await ev(`JSON.stringify({ ts: lastFixTs, pos: gpsPos })`));
 ok('R01 a stale-timestamp fix is rejected: lastFixTs and the estimate do not move backwards | ' + JSON.stringify({ before, after }), after.ts === 1700000060000 && JSON.stringify(after.pos) === JSON.stringify(before.pos));
-// F05: seed a two-clean trail; only the current clean's points may draw.
-await poll120(`!!(window.map && map.getSource && map.getSource('trail'))`, 30000);
+// F05 (Beta 1.193, re-derived at the same strength): through 1.190 this section proved the
+// DRAWN trail was run-scoped while the stored trail kept every clean. The drawn surface is
+// retired - there is nothing to draw into - so the claim moves to the backend contract that
+// replaced it: a resident trail carrying a previous clean's points is WINDOWED to the live
+// run's last hour by a reload (the load path), and no trail surface ever exists.
+await poll120(`!!(window.map && map.getSource)`, 30000);
 const nowS = Math.floor(Date.now() / 1000);
-await ev(`(() => { trail = [[43.8200, -79.5660, ${nowS - 7200}], [43.8201, -79.5661, ${nowS - 7140}], [43.8202, -79.5662, ${nowS - 60}], [43.8203, -79.5663, ${nowS - 30}]]; runStart = Date.now() - 90000; drawTrail(true); return true; })()`); await sleep(200);
-const drawnPts = await ev(`(() => { const d = (map.getSource('trail') || {})._data || { features: [] }; return d.features.reduce((a, f) => a + f.geometry.coordinates.length, 0); })()`);
-ok('F05 the active trail draws only the current clean (2 of 4 stored points) | drawn ' + drawnPts, drawnPts === 2);
-const storedPts = await ev(`trail.length`);
-ok('F05b the stored trail is untouched (the log keeps every clean) | stored ' + storedPts, storedPts === 4);
+await ev(`(() => { const pts = [[43.8200, -79.5660, ${nowS - 7200}], [43.8201, -79.5661, ${nowS - 7140}], [43.8202, -79.5662, ${nowS - 60}], [43.8203, -79.5663, ${nowS - 30}]]; localStorage.setItem(LS.trail, JSON.stringify(pts)); localStorage.setItem(LS.start, String(Date.now() - 90000)); return true; })()`); await sleep(100);
+await send('Page.navigate', { url: url }, S);
+await poll120(`(function(){ if (typeof routeLoaded !== 'undefined' && !routeLoaded && typeof loadRoute === 'function') { try { loadRoute('5w'); } catch (e) {} } return typeof trail !== 'undefined' && routeLoaded === true; })()`, 30000);
+const f05 = JSON.parse(await ev(`JSON.stringify({ n: trail.length, first: trail.length ? trail[0][2] : 0, src: !!(map && map.getSource('trail')), layer: !!(map && map.getLayer('trail-line')) })`));
+ok('F05 a reload windows a planted two-clean trail to the live run (the 2 recent points survive) and no trail surface exists | ' + JSON.stringify(f05), f05.n === 2 && f05.first === nowS - 60 && f05.src === false && f05.layer === false);
+await ev(`(() => { flushAux(true); return true; })()`); await sleep(100);
+const storedPts = await ev(`JSON.parse(localStorage.getItem(LS.trail) || '[]').length`);
+ok('F05b the windowed trail is the stored one after a flush (the window is the storage contract, not a display filter) | stored ' + storedPts, storedPts === 2);
 // F08: compass starts and STOPS with its lifecycle.
 await ev(`(() => { try { DeviceOrientationEvent.requestPermission = undefined; } catch (e) {} startCompass(); return true; })()`); await sleep(100);
 const cOn = await ev(`compassOn`);

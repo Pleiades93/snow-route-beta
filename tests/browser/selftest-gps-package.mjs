@@ -89,7 +89,7 @@ function makeTrailHarness() {
   const calls = { persist: 0, dirty: [], flush: 0, draw: 0, cover: 0 };
   const state = { trail: [], runDist: { m: 0, run: 1000000, capped: false } };
   const run = new Function('speed', 'sm', 'now', 'state', 'calls', 'env', `
-    const GPS_STILL_MPS = 0.5, TRAIL_MAX = 100000;
+    const GPS_STILL_MPS = 0.5, TRAIL_MAX = 100000, TRAIL_WINDOW_S = 3600; // Beta 1.193: the shipped block's window eviction names the app1 constant - the harness stubs it at its shipped value, like TRAIL_MAX beside it
     const runStart = 1000000, trail = state.trail, runDist = state.runDist;
     const distM = env.distM, persistRunDist = () => calls.persist++, markDirty = k => calls.dirty.push(k),
       flushAux = () => calls.flush++, drawTrail = () => calls.draw++, coverFix = () => calls.cover++;
@@ -105,7 +105,7 @@ const P = (lat, lng) => [lat, lng];
   const dirtyBefore = h.calls.dirty.length;
   h.fix(0.3, P(43.8001, -79.5001), 1002000); // stopped fix ~14 m of wander away
   t('S2 a stopped fix records no point, banks no distance, persists nothing', h.state.trail.length === 1 && h.state.runDist.m === 0 && h.calls.persist === 1 && !h.calls.dirty.slice(dirtyBefore).includes('trail'));
-  t('S2b a stopped fix still runs coverage and the aux flush', h.calls.cover === 2 && h.calls.flush === 2 && h.calls.draw === 2);
+  t('S2b a stopped fix still runs coverage and the aux flush (Beta 1.193: the block makes NO draw call - drawTrail is retired with the map line, and the stub count staying at zero proves the shipped block never reaches for it)', h.calls.cover === 2 && h.calls.flush === 2 && h.calls.draw === 0);
   h.fix(0, P(43.8002, -79.5002), 1003000); // speed exactly 0: still stopped
   t('S3 a speed-0 fix records nothing either', h.state.trail.length === 1 && h.state.runDist.m === 0);
   h.fix(2, P(43.8010, -79.5000), 1004000); // moving again, ~111 m north of point 1
