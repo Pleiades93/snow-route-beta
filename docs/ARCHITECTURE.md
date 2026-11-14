@@ -589,9 +589,11 @@ and pace consume the raw accepted estimate. A follow camera keeps the
 dot centred whenever location is on and rotates heading-up (course over
 ground) while a run is active; a user drag suspends the follow (the
 camera, pan and bearing, stays where it was put) until the re-centre
-button below the day/night button — or the Locate tab — resumes it. The trail records only during a run, but the stored trail retains
-every session and rides in backups; only the on-map display is scoped
-to the current run. Coverage samples each street's centreline every 15m; a fix covers
+button below the day/night button — or the Locate tab — resumes it. The trail records only during a run; since Beta 1.193 the stored
+trail is a rolling 60-minute window of the live run's points only
+(`trailWindow`, app1) and rides in backups in that windowed form.
+There is no on-map trail display — the trail's only consumer is the
+run-distance counter's fallback. Coverage samples each street's centreline every 15m; a fix covers
 samples within 22m; at 85% of a street's samples the app SUGGESTS the
 street — it never marks it. Confirmation flies to and selects the street;
 marking is always manual. Per-fix cost is bounded (Beta 1.135,
@@ -601,10 +603,11 @@ per-street sample Sets cached across fixes, and the coverage record's
 persistence is throttled — unforced flushes write it at most every
 15 s, while forced flushes (app hidden, page closing, route switch)
 always write; a failed write retries on the next flush as before. The
-trail display's redraw throttle is likewise decided before the trail
-is filtered, and the coverage samples are built with a monotonic
-segment cursor. All outputs — coverage contents, suggestions, the
-drawn trail — are unchanged.
+coverage samples are built with a monotonic
+segment cursor. All outputs — coverage contents and suggestions — are unchanged.
+(The trail display whose redraw throttle this paragraph also described
+was removed whole in Beta 1.193: `drawTrail`, `addTrailLayers` and the
+`trail-line` layer are gone, and the trail has no display.)
 
 ## Offline
 
