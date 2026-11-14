@@ -16,7 +16,8 @@ Every route owns a storage slot: `snowroute.<routeId>.` followed by a field
 tail. Route 5W (id `5w`) is the first tenant. A few keys are **global** —
 they describe the app, not a route — and keep their historical names:
 `snowroute.v2.night` (+ its `nightExp` pair), `snowroute.v2.settings`,
-`snowroute.v2.lastarea`, `snowroute.v5.export`, `snowroute.prep.v1`,
+`snowroute.v1.fixlog`, `snowroute.v2.lastarea`, `snowroute.v5.export`,
+`snowroute.prep.v1`,
 `snowroute.v5.packmig`, and the created-routes record
 `snowroute.v2.userpacks` (+ its `snowroute.v2.userpacks.migrated`
 drain marker).
@@ -166,7 +167,32 @@ after the legacy `snowroute.v2.userpacks` record has drained into the
 IndexedDB store with parity re-checked against a fresh full read; the
 legacy record is deleted in the same step. Housekeeping only: boot
 reads the legacy record whenever one is present, marker or not, so the
-marker never gates a read; local only, not backed up).
+marker never gates a read; local only, not backed up),
+`snowroute.v1.fixlog` (the raw GPS fix log, Beta 1.189; a DEVICE
+record, not route data — it spans routes and locate sessions. Shape:
+the stored string of the e3 record `{e: 3, s: [...]}` — sessions of
+packed fix streams (each fix: timestamp, position, reported
+accuracy, speed and course verbatim, with the estimator's outputs
+beside it; a fix a gate refused is recorded with a null output).
+Caps (Beta 1.195): 3,600 fixes and 200,000 stored characters,
+enforced by `fixLogTrim` on device and by `canonicalFixLog` on
+restore (oldest sessions evicted whole; a lone oversize session is
+head-trimmed). The log's 200,000-character share restates the app1
+budget: 200,000 (this log) + ~112,000 (the trail window at its most)
++ a 250,000-character board/settings/history allowance = ~562,000
+of the origin's 2,500,000-character localStorage quota. Since Beta
+1.195 the log records ONLY behind the "GPS debug log" switch in
+Settings → Backup: the enable flag is runtime-only state — a plain
+in-memory value initialized OFF at every boot, with NO stored
+representation (it is not part of the settings record, not a storage
+key and not a backup field), so nothing stored anywhere can switch
+logging on and a restore cannot enable it. While the flag is off,
+recording never happens and the stored log is never touched; turning
+it off mid-watch stops recording without closing the session or
+touching stored data. The record itself is unchanged by the toggle
+and rides backups at top level as `fixlog` (see Backup envelope);
+there is no display, export or share surface for it — it leaves the
+device only inside a backup).
 
 ## Migration: legacy → 5W slot (Beta 1.76; commit rule revised Beta 1.94)
 
@@ -236,7 +262,7 @@ entries keep theirs, and the Pace detail still reads and discloses them.
 
 ## Backup envelope
 
-**v2 (current):** `{app: 'snowroute-backup', v: 2, at, routes, night?, nightExp?, userpacks?, settings?}` where
+**v2 (current):** `{app: 'snowroute-backup', v: 2, at, routes, night?, nightExp?, userpacks?, settings?, fixlog?}` where
 `routes` maps each route id to an object of field name → raw stored string,
 the field names being `done, times, hist, notes, via, trail, cov, start,
 flip, sides, sess` (the 11 stored fields; the per-route preload record is
@@ -325,7 +351,18 @@ validated by `canonicalSettings` (the loader's per-field sanitize
 rules, re-serialized canonically; a value that is not a string holding
 a JSON object refuses the whole restore before any write) and lands
 inside the verified write set, with `snowroute.v2.settings` in the
-rollback scope.
+rollback scope. Beta 1.189: `fixlog` (when present) is the raw GPS fix
+log record VERBATIM — the raw `snowroute.v1.fixlog` string (the
+recovery export encodes the live sessions into the same e3 form). It
+is additive: builds before 1.189 ignore it, and backups written
+before 1.189 omit it and leave the device's log untouched (the
+missing-key rule). On restore it is validated by `canonicalFixLog`
+(the loader's rules, both caps applied, canonical re-serialization)
+and lands inside the verified write set REPLACING the device log
+whole — never merged — with `snowroute.v1.fixlog` in the rollback
+scope. The Beta 1.195 debug-log enable flag never rides the envelope:
+a restore can carry recorded sessions but can never switch logging on
+(see Keys).
 
 ## IndexedDB: the city shape cache (Beta 1.121 — a cache, NOT user data)
 
