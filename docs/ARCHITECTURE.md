@@ -585,7 +585,21 @@ the estimate extrapolated along its own velocity (horizon capped at
 2.5 s) — with each fix's correction absorbed into an offset that decays
 over ~0.3 s, so the dot flows between fixes instead of stepping at fix
 cadence (Beta 1.115); the smoothing is display-only, and trail, coverage
-and pace consume the raw accepted estimate. A follow camera keeps the
+and pace consume the raw accepted estimate. Since Beta 1.194 the
+heading-up bearing comes from heading filter 2a, not the 1.187 EMA: a
+[θ, ω] state filter (process noise HEAD_Q = 400) weighs each course
+fix by R = σ_θ(v)², softens a lone large innovation through a gate
+(a second consecutive same-sign gated innovation is accepted at
+normal weight — the step escape), clamps ω to ±40°/s, holds θ below
+1 m/s while ω decays, and the camera reads θ + ω·h with the lead h
+capped at 1 s. Beta 1.194 also adds a display stillness hold:
+rendered consumers (the puck, the beam and ring, the follow camera's
+target) read `dispShownPos()`, which freezes at the held point once
+the display has settled (at least 2 fixes under 0.5 m/s and the last
+3 display steps each under 0.3 m) and releases on real movement (one
+fix at 0.8 m/s, two at 0.5 m/s, or raw displacement over 1.5 m on
+two consecutive fixes); it is presentation-only, and every recording
+consumer keeps the true values. A follow camera keeps the
 dot centred whenever location is on and rotates heading-up (course over
 ground) while a run is active; a user drag suspends the follow (the
 camera, pan and bearing, stays where it was put) until the re-centre
@@ -593,7 +607,13 @@ button below the day/night button — or the Locate tab — resumes it. The trai
 trail is a rolling 60-minute window of the live run's points only
 (`trailWindow`, app1) and rides in backups in that windowed form.
 There is no on-map trail display — the trail's only consumer is the
-run-distance counter's fallback. Coverage samples each street's centreline every 15m; a fix covers
+run-distance counter's fallback. The GPS debug log (Beta 1.195) is a
+deliberate capture, not an always-on recorder: its enable flag is
+runtime-only state, OFF at every cold open, switched from Settings →
+Backup; while it is on, every delivered fix is recorded (segmented
+by locate-on session, capped at 3,600 fixes and 200,000 stored
+characters), and while it is off the stored log is never touched.
+Coverage samples each street's centreline every 15m; a fix covers
 samples within 22m; at 85% of a street's samples the app SUGGESTS the
 street — it never marks it. Confirmation flies to and selects the street;
 marking is always manual. Per-fix cost is bounded (Beta 1.135,
