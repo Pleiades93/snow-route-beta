@@ -207,6 +207,24 @@ try {
   })()`);
   ok('P2e (Beta 1.193) the restored endpoint anchors the counter WITHOUT entering the trail: no synthetic edge, the derivation stays zero, the anchor survives | ' + JSON.stringify(p2e),
     p2e.m === 0 && p2e.tl === 1 && p2e.tk === 0 && p2e.endOk === true);
+  // P2f (Beta 1.193 gate round 3, Codex P2): on a totals TIE between the two
+  // copies, the NEWER endpoint must win - a failed primary write beside a
+  // landed mirror leaves equal totals with different endpoints (the P2e jumps
+  // advanced the mirror's endpoint without adding distance), and anchoring on
+  // the primary's older endpoint would re-measure the covered span.
+  const p2f = await J(`(() => {
+    const rs = Math.floor(runStart / 1000);
+    const p0 = [43.82, -79.566, rs];
+    const pEnd = [43.82, -79.566 + 500 / 80386, rs + 120];
+    trail = [p0];
+    localStorage.setItem(LS.rundist, JSON.stringify({ run: runStart, m: 0, end: p0 }));
+    localStorage.setItem(LS.rundist2, JSON.stringify({ run: runStart, m: 0, end: pEnd }));
+    runDist = { run: 0, m: 0, end: null };
+    adoptRunDist();
+    return { m: runDist.m, endOk: JSON.stringify(runDist.end) === JSON.stringify(pEnd) };
+  })()`);
+  ok('P2f (Beta 1.193) on a totals TIE the NEWER endpoint wins (the mirror\u2019s anchor survives over the primary\u2019s stale one) | ' + JSON.stringify(p2f),
+    p2f.m === 0 && p2f.endOk === true);
 } catch (e) {
   R.fatal = String(e && e.message || e);
 }
