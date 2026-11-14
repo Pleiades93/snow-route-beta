@@ -766,7 +766,7 @@ $('stDel').addEventListener('click', async () => {
 });
 // ---- About / What's new ----
 const WHATSNEW = { // the curated in-app notes: plain words, LATEST RELEASE ONLY (Beta 1.114, Andrew: the accumulated list cluttered the About pane). A release REPLACES this entry with its own in the same change - it never accumulates; the full history lives in CHANGELOG.md, not the app
-  v: 'Beta 1.190', items: ["The private GPS record now holds a full long clean: it keeps up to 10 hours of readings (was about 3 hours), so a 6-to-8-hour clean is recorded from the first driveway to the last.", "The record is stored in a tighter form that takes less room on the phone; it still reads back every reading exactly as it was delivered, and backups from the previous version restore as before. Nothing about how the app tracks or shows your position changes."] };
+  v: 'Beta 1.191', items: ["The opening screen is simpler: the app icon's blue square is gone, so the truck and snow sit right on the blue background - part of the screen instead of a sticker on top of it.", "Nothing else about the opening changes: the picture fades in at the same moment, the snow falls the same, and your home-screen icon keeps its blue square as always."] };
 function renderAbout() {
   const cur = $('ver').textContent.trim();
   $('wnHead').textContent = "WHAT'S NEW · " + cur; // the header names the LIVE version, read from the title's version element - never a second hard-coded copy that can go stale

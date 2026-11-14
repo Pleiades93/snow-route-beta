@@ -141,7 +141,7 @@ GENERATED — machines own these; never type them by hand:
                                            from the suite and rewritten)
   [ ] python3 scripts/assemble.py         (parts/ -> src/tracker-source.html;
                                            the splash icon bytes are inlined
-                                           from icon-512.png here)
+                                           from splash-artwork-512.png here)
   [ ] python3 scripts/build-pages.py      (build + gates: assembly, parity,
                                            CSP, SEC-10a, version ==
                                            CHANGELOG top, WHATSNEW.v ==
