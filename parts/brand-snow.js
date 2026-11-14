@@ -75,7 +75,13 @@
    width-independent: 6 px padding + a 46 px tab item + 6 px),
    so the finished snow band stands about as tall as that bar,
    as Andrew asked. drive180's SNOW9 proves the painted crest
-   reaches the new peak. */
+   reaches the new peak.
+   Beta 1.192: the bar takes the standard tab-bar height and
+   its rendered height falls 58 -> 51 px (4 px padding + a
+   44 px tab item + 3 px), so the peak follows it down,
+   58 -> 51 - the crest still stands exactly as tall as the
+   bar, which was the 1.161 condition. drive180's SNOW9 pin
+   is re-pinned to 51 in the same change. */
 (function snowLayer() {
   var cvS = document.getElementById('snowCv');
   var handle = { cycle: 16, running: function () { return false; }, amount: function () { return 0; }, ground: function () { return 0; }, flakes: function () { return []; } };
@@ -123,7 +129,7 @@
     return 0;
   }
   function groundHeightAt(x, amount) {
-    var maxH = 58 * amount; // Beta 1.161: the peak rises 20 -> 58px - the measured height of the app's bottom bar (see the header); the cycle, the profile and the paint are otherwise byte-identical to 1.158-1.160, per Andrew's condition
+    var maxH = 51 * amount; // Beta 1.161: the peak rises 20 -> 58px - the measured height of the app's bottom bar (see the header); the cycle, the profile and the paint are otherwise byte-identical to 1.158-1.160, per Andrew's condition. Beta 1.192: 58 -> 51, following the bar's rendered height down by the same 7px (see the header)
     if (maxH <= 0) return 0;
     return maxH * (0.72 + 0.16 * Math.sin(x * 0.045 + 1.7) + 0.12 * Math.sin(x * 0.013 + 0.4));
   }
@@ -131,7 +137,7 @@
     var ctx = ctxS;
     ctx.clearRect(0, 0, W, H);
     if (amount > 0) {
-      var grad = ctx.createLinearGradient(0, H - 58 * amount, 0, H); // Beta 1.173 (Andrew's call, 2026-11-11 - Carbon audit C-08): the fade anchors at the bank's actual crest, 58 x amount; it still anchored at H - 22, the 1.158 leftover from the 20 px peak, so since the peak rose in 1.161 the top ~36 px of the bank clamped to the flat first stop instead of shading
+      var grad = ctx.createLinearGradient(0, H - 51 * amount, 0, H); // Beta 1.173 (Andrew's call, 2026-11-11 - Carbon audit C-08): the fade anchors at the bank's actual crest, 58 x amount; it still anchored at H - 22, the 1.158 leftover from the 20 px peak, so since the peak rose in 1.161 the top ~36 px of the bank clamped to the flat first stop instead of shading. Beta 1.192: the anchor follows the peak, 58 -> 51
       grad.addColorStop(0, 'rgba(255,255,255,0.92)');
       grad.addColorStop(1, 'rgba(235,244,255,0.98)');
       ctx.beginPath();

@@ -227,6 +227,12 @@ const { proc, ev, consoleLog, sleep, shot } = await launchDrive();
 // profile's maximum over the live viewport width - while the
 // bar itself, measured live in the same page, stands within
 // 2px of the pinned 58.
+// Beta 1.192: the bar takes the standard tab-bar height and
+// its rendered height falls 58 -> 51, so the engine peak and
+// this pin follow it down together (58 -> 51 in
+// parts/brand-snow.js and SNOW9_PEAK below) - the pin is the
+// bar height drive180 itself measures on the built page,
+// re-measured for this change, not carried by arithmetic.
 // Beta 1.162 (Andrew's design, 2026-11-10): the icon and the
 // title become ONE BLOCK. He picked Option B on the title-caps
 // samples (SNOW ROUTE - capitals only, same size, weight and
@@ -689,7 +695,7 @@ ok('SNOW8 the accumulation is painted AT the canvas bottom edge (the ground form
 // SNOW9 (Beta 1.161): the raised peak, PROVEN on the painted
 // canvas - see the header. Poll the engine's own amount to the
 // top of its cycle, then read the crest twice, 700ms apart.
-const SNOW9_PEAK = 58; // the pinned peak: #tabBar's measured height at 390x844
+const SNOW9_PEAK = 51; // the pinned peak: #tabBar's measured height at 390x844 (58 through Beta 1.190; 51 from Beta 1.192, the standard-height bar - re-measured on the built page for that change)
 let snow9 = null;
 try {
   const t9 = Date.now();
@@ -708,7 +714,7 @@ try {
   for (let x = 0; x <= wLive; x++) { const v = 0.72 + 0.16 * Math.sin(x * 0.045 + 1.7) + 0.12 * Math.sin(x * 0.013 + 0.4); if (v > shapeMax) shapeMax = v; }
   snow9 = { amt: amt9, peak: (s91 && s92) ? Math.min(s91.p99, s92.p99) : -1, exp: SNOW9_PEAK * shapeMax, barH: s91 ? s91.barH : -1, s1: s91 ? s91.p99 : -1, s2: s92 ? s92.p99 : -1 };
 } catch (e) { snow9 = null; }
-ok('SNOW9 RAISED PEAK (Beta 1.161 - Andrew: accumulating like the original, just higher): at the settle cycle\'s full amount (' + (snow9 ? snow9.amt.toFixed(3) : 'n/a') + ') the PAINTED snow crest stands ' + (snow9 ? snow9.peak : 'n/a') + 'px (two reads ' + (snow9 ? snow9.s1 : 'n/a') + '/' + (snow9 ? snow9.s2 : 'n/a') + 'px, the lower judged) against the expected crest ' + (snow9 ? snow9.exp.toFixed(1) : 'n/a') + 'px = the pinned 58px peak (the bottom bar\'s measured height) x the ground profile\'s maximum over the live width; the bar itself measures ' + (snow9 ? snow9.barH : 'n/a') + 'px in this same page (58 +/- 2)',
+ok('SNOW9 RAISED PEAK (Beta 1.161 - Andrew: accumulating like the original, just higher): at the settle cycle\'s full amount (' + (snow9 ? snow9.amt.toFixed(3) : 'n/a') + ') the PAINTED snow crest stands ' + (snow9 ? snow9.peak : 'n/a') + 'px (two reads ' + (snow9 ? snow9.s1 : 'n/a') + '/' + (snow9 ? snow9.s2 : 'n/a') + 'px, the lower judged) against the expected crest ' + (snow9 ? snow9.exp.toFixed(1) : 'n/a') + 'px = the pinned 51px peak (the bottom bar\'s measured height) x the ground profile\'s maximum over the live width; the bar itself measures ' + (snow9 ? snow9.barH : 'n/a') + 'px in this same page (51 +/- 2)',
   !!snow9 && snow9.amt >= 0.995 && Math.abs(snow9.peak - snow9.exp) <= 5 && Math.abs(snow9.barH - SNOW9_PEAK) <= 2);
 
 // TITLE LIFETIME + SUB-PANE SNOW + LIST ROWS (Beta 1.159): navigate
