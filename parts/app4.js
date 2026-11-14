@@ -747,7 +747,7 @@ $('stDel').addEventListener('click', async () => {
 });
 // ---- About / What's new ----
 const WHATSNEW = { // the curated in-app notes: plain words, LATEST RELEASE ONLY (Beta 1.114, Andrew: the accumulated list cluttered the About pane). A release REPLACES this entry with its own in the same change - it never accumulates; the full history lives in CHANGELOG.md, not the app
-  v: 'Beta 1.187', items: ["Smoother map turns when the GPS signal comes in bursts. Phones often deliver fixes in clumps — two close together, then a gap — and the map's rotation used to lag behind corners and swing late. It now follows the actual time between fixes, so turns settle faster.", "No more phantom distance while you're parked. GPS wander at a standstill was quietly adding fake distance to a clean (about 138 metres for every parked minute). A stopped fix now records nothing — your saved distance counts real movement only. Streets still get marked while you edge along slowly."] };
+  v: 'Beta 1.188', items: ["A new position puck, drawn the way Apple Maps draws theirs: the exact same size at every zoom — the old one swelled up when you zoomed right in — with smooth edges instead of jagged ones, and the same gentle 3D coin shape you picked.", "The puck can't hide behind buildings any more. A house between you and the camera used to cover it almost completely; now it always stays on top and visible."] };
 function renderAbout() {
   const cur = $('ver').textContent.trim();
   $('wnHead').textContent = "WHAT'S NEW · " + cur; // the header names the LIVE version, read from the title's version element - never a second hard-coded copy that can go stale
