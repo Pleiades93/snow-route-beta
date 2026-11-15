@@ -2,7 +2,7 @@
 <html lang="en" class="boot">
 <head>
 <meta charset="UTF-8">
-<meta http-equiv="Content-Security-Policy" content="default-src 'none'; script-src 'sha384-Oc8L9ApEGQCahqmS0lhJeDi/jj4B8BYvLqDvX6Bw14SN3/s2EvKHWAMfcNzG0Qf3' https://cdn.jsdelivr.net; style-src-elem 'sha384-sLrliM8rHbTETHeNr3NToUuVunGMgUwF/1zCxNgRKd41DoDTUHJUJjEO8opm/k+c' https://cdn.jsdelivr.net; style-src-attr 'unsafe-inline'; img-src 'self' data: blob: https://tiles.basemaps.cartocdn.com https://protomaps.github.io https://cdn.jsdelivr.net; connect-src 'self' https://tiles.basemaps.cartocdn.com https://protomaps.github.io https://cdn.jsdelivr.net https://nominatim.openstreetmap.org https://overpass-api.de https://overpass.kumi.systems; worker-src blob: 'self'; child-src blob: 'self'; font-src 'none'; manifest-src 'self'; base-uri 'none'; form-action 'none'; object-src 'none'">
+<meta http-equiv="Content-Security-Policy" content="default-src 'none'; script-src 'sha384-9nF7bMNwAzuvkp40/edwlfKENspQq57I6UbjBtRL5Kz3bR0KUx32vLHOUs1VRsbk' https://cdn.jsdelivr.net; style-src-elem 'sha384-sLrliM8rHbTETHeNr3NToUuVunGMgUwF/1zCxNgRKd41DoDTUHJUJjEO8opm/k+c' https://cdn.jsdelivr.net; style-src-attr 'unsafe-inline'; img-src 'self' data: blob: https://tiles.basemaps.cartocdn.com https://protomaps.github.io https://cdn.jsdelivr.net; connect-src 'self' https://tiles.basemaps.cartocdn.com https://protomaps.github.io https://cdn.jsdelivr.net https://nominatim.openstreetmap.org https://overpass-api.de https://overpass.kumi.systems; worker-src blob: 'self'; child-src blob: 'self'; font-src 'none'; manifest-src 'self'; base-uri 'none'; form-action 'none'; object-src 'none'">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="mobile-web-app-capable" content="yes">
@@ -4703,7 +4703,7 @@ function snapFix(speed, acc, ll) { // fed once per accepted fix, beside dispHold
   let hd = snapHeldDist(ll);
   if (hd > SNAP_DROP_M) { // the held road is gone: drop it, and let this same fix take a fresh candidate if one is close (the sim's drop-and-reengage)
     snapDropHold();
-    if (near && near.d <= SNAP_ENGAGE_M) { snapTakeHold(near.poly, near.seg); hd = snapHeldDist(ll); } else return;
+    if (near && near.d <= SNAP_ENGAGE_M && acc <= SNAP_ACC_M) { snapTakeHold(near.poly, near.seg); hd = snapHeldDist(ll); } else return; // the accuracy gate guards this fresh take exactly as it guards the from-free engage: an unreliable fix releases the old road, it does not lock the puck onto another one
   }
   if (hd > SNAP_FAR_M) { if (++snapFar >= SNAP_FAR_N) { snapDropHold(); return; } } else snapFar = 0; // the evidence timeout: persistently far from the held road with no dominant rival - release to the true position rather than ride a wrong road
   if (near && near.poly !== snapHeld && hd - near.d >= SNAP_SWITCH_M) {

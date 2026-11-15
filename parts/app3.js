@@ -777,7 +777,7 @@ function snapFix(speed, acc, ll) { // fed once per accepted fix, beside dispHold
   let hd = snapHeldDist(ll);
   if (hd > SNAP_DROP_M) { // the held road is gone: drop it, and let this same fix take a fresh candidate if one is close (the sim's drop-and-reengage)
     snapDropHold();
-    if (near && near.d <= SNAP_ENGAGE_M) { snapTakeHold(near.poly, near.seg); hd = snapHeldDist(ll); } else return;
+    if (near && near.d <= SNAP_ENGAGE_M && acc <= SNAP_ACC_M) { snapTakeHold(near.poly, near.seg); hd = snapHeldDist(ll); } else return; // the accuracy gate guards this fresh take exactly as it guards the from-free engage: an unreliable fix releases the old road, it does not lock the puck onto another one
   }
   if (hd > SNAP_FAR_M) { if (++snapFar >= SNAP_FAR_N) { snapDropHold(); return; } } else snapFar = 0; // the evidence timeout: persistently far from the held road with no dominant rival - release to the true position rather than ride a wrong road
   if (near && near.poly !== snapHeld && hd - near.d >= SNAP_SWITCH_M) {
