@@ -197,11 +197,17 @@ try {
         const rr = row.getBoundingClientRect(), mr = meta.getBoundingClientRect();
         const range = document.createRange(); range.selectNodeContents(nm);
         const tr = range.getBoundingClientRect();
-        const res = { rowH: rr.height, metaH: mr.height, spills: mr.height > rr.height + 0.5, textExtra: null };
+        const res = { rowH: rr.height, metaH: mr.height, spills: mr.height > rr.height + 0.5, textExtra: null, areaExtra: null };
         if (extra) { const er = extra.getBoundingClientRect();
           const w = Math.min(tr.right, er.right) - Math.max(tr.x, er.x);
           const h = Math.min(tr.bottom, er.bottom) - Math.max(tr.y, er.y);
-          res.textExtra = (w > 0 && h > 0) ? { w: +w.toFixed(1), h: +h.toFixed(1) } : null; }
+          res.textExtra = (w > 0 && h > 0) ? { w: +w.toFixed(1), h: +h.toFixed(1) } : null;
+          // the subtitle's own box vs the extra: paint is clipped to the
+          // element box (overflow:hidden), so the box IS the painted area
+          const ar = row.querySelector('.routeArea').getBoundingClientRect();
+          const aw = Math.min(ar.right, er.right) - Math.max(ar.x, er.x);
+          const ah = Math.min(ar.bottom, er.bottom) - Math.max(ar.y, er.y);
+          res.areaExtra = (aw > 0 && ah > 0) ? { w: +aw.toFixed(1), h: +ah.toFixed(1) } : null; }
         return res;
       };
       return {
@@ -213,9 +219,11 @@ try {
     });
     for (const k of ['fills', 'wraps', 'control']) {
       ok(`E-04 name text clears the Delete button (${k})`, m[k].textExtra === null, JSON.stringify(m[k].textExtra));
+      ok(`E-04 subtitle box clears the Delete button (${k})`, m[k].areaExtra === null, JSON.stringify(m[k].areaExtra));
       ok(`E-04 meta stays inside the row (${k})`, m[k].spills === false, `meta ${m[k].metaH.toFixed(1)}px vs row ${m[k].rowH.toFixed(1)}px`);
     }
     ok('E-04 name text clears the chevron (no-Delete row)', m.chevron.textExtra === null, JSON.stringify(m.chevron.textExtra));
+    ok('E-04 subtitle box clears the chevron (no-Delete row)', m.chevron.areaExtra === null, JSON.stringify(m.chevron.areaExtra));
     await ctx.close();
   }
 
