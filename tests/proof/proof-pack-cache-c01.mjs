@@ -46,6 +46,19 @@ import vm from 'node:vm';
 // (The registration's own behaviour is the create battery's subject;
 // what is pinned here is the wiring - that the shipped handler
 // refreshes before it builds, the DA-07 lesson applied to this door.)
+//
+// The Codex P2 on PR #70 sharpened it once more: initUserPacks treats
+// a FAILED store read (upGetAll null) as a best-effort outcome and
+// still resolves 'done' with the store's routes unregistered, so the
+// refresh alone does not prove the manifest complete. The shipped
+// handler therefore gates the prune on a fresh full store read of its
+// own: the prune runs only when upGetAll() succeeds AND every route
+// it holds is registered in ROUTE_PACKS. The harness runs three
+// scenarios against the same seeded pack - proven read (prune runs,
+// the seven checks above), failed read (null: cache preserved whole,
+// orphan survives), and a read holding an unregistered route (cache
+// preserved whole) - because on any doubt the safe act is the
+// pre-C-01 status quo, never a destructive guess.
 
 const src = readFileSync('parts/app4.js', 'utf8');
 const lines = src.split('\n');
@@ -94,18 +107,15 @@ const fakeCaches = {
   async match(u) { for (const c of stores.values()) { const r = await c.match(u); if (r) return r; } return undefined; }
 };
 
-// ---- The scenario.
+// ---- The scenarios. Each run re-seeds the same pack (two manifest
+// files plus one orphan) and differs only in what the handler's fresh
+// store read finds.
 const A = 'https://tiles.example.test/tiles/1/2/3.png';
 const G = 'https://tiles.example.test/fonts/Noto Sans Regular/0-255.pbf'; // literal space, like the real glyph ranges
 const C = 'https://tiles.example.test/tiles/4/5/6.png';
 const ORPHAN = 'https://tiles.example.test/tiles/9/9/9.png';
 const SIZES = { [new URL(A).href]: 100, [new URL(G).href]: 50, [new URL(C).href]: 200, [new URL(ORPHAN).href]: 999 };
 const LIST = [A, G, C];
-
-const pack = await fakeCaches.open('snowroute-offline-v1');
-await pack.put(A, makeResponse(100));
-await pack.put(G, makeResponse(50));
-await pack.put(ORPHAN, makeResponse(999)); // left behind by a route that no longer exists
 
 const lsWrites = [];
 const callOrder = [];
@@ -128,6 +138,8 @@ const sandbox = {
   fetch: async u => { const sz = SIZES[new URL(u).href]; return sz === undefined ? { ok: false } : { ok: true, clone() { return makeResponse(sz); } }; },
   preloadUrlList: () => { callOrder.push('manifest'); return LIST.slice(); },
   initUserPacks: async () => { callOrder.push('refresh'); return { state: 'done' }; },
+  upGetAll: async () => ({ 'route-a': {} }), // scenario-controlled below
+  ROUTE_PACKS: [{ id: 'route-a' }], // scenario-controlled below
   OFFLINE_PACK_CAP_BYTES: 1200, // harness-scaled so the census arithmetic is observable (shipped: 250 MB)
   PACKMIG_KEY: 'snowroute.v5.packmig',
   LS: { pre: 'test.pre' },
@@ -144,21 +156,59 @@ const ctx = vm.createContext(sandbox);
 vm.runInContext(turnLine + '\n' + fingerprintSrc + '\n' + handlerSrc, ctx);
 if (typeof harness.click !== 'function') throw new Error('xPre click handler was not registered');
 
-await harness.click();
-
 let failures = 0;
 function check(desc, ok) {
   console.log((ok ? 'PASS: ' : 'FAIL: ') + desc);
   if (!ok) failures++;
 }
 
-const remaining = (await pack.keys()).map(r => r.url).sort();
-check('persisted route registrations refreshed before the manifest is built', callOrder[0] === 'refresh' && callOrder[1] === 'manifest');
-check('orphaned entry is pruned by the download', !remaining.includes(new URL(ORPHAN).href));
-check('pack holds exactly the manifest set after the download', JSON.stringify(remaining) === JSON.stringify(LIST.map(u => new URL(u).href).sort()));
-check("glyph entry survived under its normalized (%20) key", remaining.includes(new URL(G).href));
-check('all 3 manifest files saved (no early cap stop)', elements.xPreStat.textContent.includes('saved 3 of 3'));
-check('completion line reports no cap stop', !elements.xPreStat.textContent.includes('stopped at'));
-check('completion fingerprint written for the healed pack', lsWrites.some(([k]) => k === 'snowroute.v5.packmig'));
+async function runScenario(stored, registeredIds) {
+  stores.clear();
+  const pack = await fakeCaches.open('snowroute-offline-v1');
+  await pack.put(A, makeResponse(100));
+  await pack.put(G, makeResponse(50));
+  await pack.put(ORPHAN, makeResponse(999)); // left behind by a route that no longer exists
+  lsWrites.length = 0;
+  callOrder.length = 0;
+  elements.xPreStat.textContent = '';
+  sandbox.preloadRunning = false;
+  sandbox.upGetAll = async () => stored;
+  sandbox.ROUTE_PACKS = registeredIds.map(id => ({ id }));
+  await harness.click();
+  return pack;
+}
+
+// Scenario 1: the fresh store read succeeds and every stored route is
+// registered - the manifest is proven, so the prune runs.
+{
+  const pack = await runScenario({ 'route-a': {} }, ['route-a']);
+  const remaining = (await pack.keys()).map(r => r.url).sort();
+  check('persisted route registrations refreshed before the manifest is built', callOrder[0] === 'refresh' && callOrder[1] === 'manifest');
+  check('orphaned entry is pruned by the download', !remaining.includes(new URL(ORPHAN).href));
+  check('pack holds exactly the manifest set after the download', JSON.stringify(remaining) === JSON.stringify(LIST.map(u => new URL(u).href).sort()));
+  check("glyph entry survived under its normalized (%20) key", remaining.includes(new URL(G).href));
+  check('all 3 manifest files saved (no early cap stop)', elements.xPreStat.textContent.includes('saved 3 of 3'));
+  check('completion line reports no cap stop', !elements.xPreStat.textContent.includes('stopped at'));
+  check('completion fingerprint written for the healed pack', lsWrites.some(([k]) => k === 'snowroute.v5.packmig'));
+}
+
+// Scenario 2: the fresh store read FAILS (upGetAll null - the outcome
+// initUserPacks swallows). The registration is unproven, so the prune
+// must not run: the cache is preserved whole.
+{
+  const pack = await runScenario(null, ['route-a']);
+  const remaining = (await pack.keys()).map(r => r.url);
+  check('failed store read: orphan survives (prune skipped, cache preserved)', remaining.includes(new URL(ORPHAN).href));
+  check('failed store read: no completion fingerprint for the unhealed pack', !lsWrites.some(([k]) => k === 'snowroute.v5.packmig'));
+}
+
+// Scenario 3: the read succeeds but holds a route this page has not
+// registered - the manifest is still unproven, so the prune must not
+// run either.
+{
+  const pack = await runScenario({ 'route-a': {}, 'route-b': {} }, ['route-a']);
+  const remaining = (await pack.keys()).map(r => r.url);
+  check('unregistered stored route: orphan survives (prune skipped, cache preserved)', remaining.includes(new URL(ORPHAN).href));
+}
 
 if (failures > 0) process.exit(1);
