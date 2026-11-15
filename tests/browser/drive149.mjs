@@ -55,7 +55,7 @@ await poll(`typeof map === 'undefined' || !map || !map.isMoving()`, 25000);
 const L = await J(`({ names: STREETNAMES.length, mains: MAIN.size, velmar: Math.round(STRETCH.Velmar.total), total: Math.round(totalWorkM()), parts: Object.values(STRETCH).reduce((a, s) => a + s.parts.length, 0), box: !!routeBox, tiles: ROUTE_TILE_NAMES.length })`);
 ok('L1 5W loads as a pack with its exact geometry (34 streets, 6 mains, Velmar ~1686 m, 87 stretches, ~35352 m of sides, 68 tile names) | ' + JSON.stringify(L),
   L.names === PACK5W.names && L.mains === PACK5W.mains && L.velmar >= PACK5W.velmar - 3 && L.velmar <= PACK5W.velmar + 3 && L.parts === PACK5W.parts && L.total >= PACK5W.totalWork - 12 && L.total <= PACK5W.totalWork + 13 && L.box === (PACK5W.box !== null) && L.tiles === PACK5W.tiles);
-const L2 = await J(`document.body.innerText.indexOf('of ${PACK5W.names}') >= 0`);
+const L2 = await J(`document.getElementById('countTxt').textContent.indexOf('of ${PACK5W.names}') >= 0`); // Beta 1.199 re-derivation: this reads the count STATE updateCount wrote for the loaded pack; it used to scan document.body.innerText, but innerText only sees RENDERED text and the pill no longer renders outside a run - the state lives in #countTxt either way (drive198 P2 pins that it advances while the pill is hidden)
 ok('L2 the count reads "of 34" for the loaded pack', L2 === true);
 
 // ---------- W: work on 5W - marks, a note, a run, more run work ----------
@@ -93,7 +93,7 @@ const D1 = await ev(dump5wSrc);
 // ---------- work on the fixture; 5W's slot must not move ----------
 await ev(`markDone('Fixture Beta', 'drive149')`);
 await ev(`setNoteText('Fixture Beta', 'fixture note')`);
-const S7 = await J(`({ beta: streetComplete('Fixture Beta'), fxSides: !!localStorage.getItem('snowroute.fx149.v5.sides'), count4: document.body.innerText.indexOf('of 4') >= 0 })`);
+const S7 = await J(`({ beta: streetComplete('Fixture Beta'), fxSides: !!localStorage.getItem('snowroute.fx149.v5.sides'), count4: document.getElementById('countTxt').textContent.indexOf('of 4') >= 0 })`); // count4: the count STATE, read from #countTxt - see the L2 note (Beta 1.199: body.innerText no longer sees the pill outside a run)
 ok('S7 fixture work lands in the fixture slot and the count reads "of 4" | ' + JSON.stringify(S7), S7.beta === true && S7.fxSides === true && S7.count4 === true);
 const D1b = await ev(dump5wSrc);
 ok('S8 working on the fixture never touches the 5W slot (dump unchanged)', D1b === D1);

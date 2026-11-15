@@ -496,6 +496,7 @@ function updateCount() {
   $('startBtn').style.display = runStart ? 'none' : '';
   $('cancelStartBtn').style.display = runStart ? '' : 'none'; // Beta 1.91: Cancel start is offered for the whole run - it erases the run's records, marks included
   $('resetBtn').style.display = runStart ? '' : 'none';
+  $('count').style.display = runStart ? '' : 'none'; // Beta 1.199 (Andrew): the streets-done pill shows ONLY while a clean is running - this line is the ONE place that rule lives, beside the run chrome it keeps company with: Start Clean calls here with runStart set (the pill appears), Finish and Cancel call here with it cleared (the pill leaves), and a boot that restores a live run calls here through refreshAll (the pill is up). The text and meter above are written either way, so marking outside a clean still counts internally - the panel, the Streets header and Pace read the same state directly, never this pill
 }
 
 // ===== LIST SHEET =====

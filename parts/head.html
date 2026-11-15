@@ -537,7 +537,7 @@ input, textarea { caret-color: currentColor; } /* Beta 1.125 (Andrew): the typin
 <div id="hud">
   <div id="warn">Not saving — storage is full or blocked</div>
   <div class="row">
-    <div class="titleStack"><div class="title">Snow Route Beta</div><div class="ver" id="ver">Beta 1.201</div></div>
+    <div class="titleStack"><div class="title">Snow Route Beta</div><div class="ver" id="ver">Beta 1.202</div></div>
   </div>
   <div id="stats"></div>
 </div>
@@ -552,7 +552,7 @@ input, textarea { caret-color: currentColor; } /* Beta 1.125 (Andrew): the typin
   <div id="runSlot">
     <button id="startBtn" class="runBtn">START</button>
     <button id="resetBtn" class="runBtn" style="display:none">FINISH</button>
-    <div id="count"><span id="countFill"></span><span id="countTxt"></span></div> <!-- Beta 1.94 (audit F-01): no hard-coded street total in the static markup - updateCount fills this from the route's own street list the moment a route loads (the pill is chrome, hidden until then) -->
+    <div id="count" style="display:none"><span id="countFill"></span><span id="countTxt"></span></div> <!-- Beta 1.94 (audit F-01): no hard-coded street total in the static markup - updateCount fills this from the route's own street list the moment a route loads (the pill is chrome, hidden until then). Beta 1.199 (Andrew): the inline display:none is the pill's resting state, the resetBtn/cancelStartBtn pattern - updateCount owns its visibility from the first call on and shows it only while a clean is running -->
     <button id="cancelStartBtn" style="display:none;background:#e63a2e">Cancel start</button>
   </div>
   <button id="paceBtn" class="dockBtn" title="Pace"></button>

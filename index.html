@@ -2,7 +2,7 @@
 <html lang="en" class="boot">
 <head>
 <meta charset="UTF-8">
-<meta http-equiv="Content-Security-Policy" content="default-src 'none'; script-src 'sha384-2Zp/JW1xWKXx5u+8SCi2fipi1jufvqqipzOegG/ff5Q/ApNffOj4QdfOrcIHUbcy' https://cdn.jsdelivr.net; style-src-elem 'sha384-/T/JikVb23n4aLjpFyWkjX6p/b1mSYfC5CGj+DvwbP1p/3MT52mODHdVFqhAdVeA' https://cdn.jsdelivr.net; style-src-attr 'unsafe-inline'; img-src 'self' data: blob: https://tiles.basemaps.cartocdn.com https://protomaps.github.io https://cdn.jsdelivr.net; connect-src 'self' https://tiles.basemaps.cartocdn.com https://protomaps.github.io https://cdn.jsdelivr.net https://nominatim.openstreetmap.org https://overpass-api.de https://overpass.kumi.systems; worker-src blob: 'self'; child-src blob: 'self'; font-src 'none'; manifest-src 'self'; base-uri 'none'; form-action 'none'; object-src 'none'">
+<meta http-equiv="Content-Security-Policy" content="default-src 'none'; script-src 'sha384-4lqlBE6RdyO/bfqGqqxhpfA85fOkt/CFiNEvFX3mUXIOXYfcdAEcr672VRRn99kd' https://cdn.jsdelivr.net; style-src-elem 'sha384-/T/JikVb23n4aLjpFyWkjX6p/b1mSYfC5CGj+DvwbP1p/3MT52mODHdVFqhAdVeA' https://cdn.jsdelivr.net; style-src-attr 'unsafe-inline'; img-src 'self' data: blob: https://tiles.basemaps.cartocdn.com https://protomaps.github.io https://cdn.jsdelivr.net; connect-src 'self' https://tiles.basemaps.cartocdn.com https://protomaps.github.io https://cdn.jsdelivr.net https://nominatim.openstreetmap.org https://overpass-api.de https://overpass.kumi.systems; worker-src blob: 'self'; child-src blob: 'self'; font-src 'none'; manifest-src 'self'; base-uri 'none'; form-action 'none'; object-src 'none'">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="mobile-web-app-capable" content="yes">
@@ -538,7 +538,7 @@ input, textarea { caret-color: currentColor; } /* Beta 1.125 (Andrew): the typin
 <div id="hud">
   <div id="warn">Not saving — storage is full or blocked</div>
   <div class="row">
-    <div class="titleStack"><div class="title">Snow Route Beta</div><div class="ver" id="ver">Beta 1.201</div></div>
+    <div class="titleStack"><div class="title">Snow Route Beta</div><div class="ver" id="ver">Beta 1.202</div></div>
   </div>
   <div id="stats"></div>
 </div>
@@ -553,7 +553,7 @@ input, textarea { caret-color: currentColor; } /* Beta 1.125 (Andrew): the typin
   <div id="runSlot">
     <button id="startBtn" class="runBtn">START</button>
     <button id="resetBtn" class="runBtn" style="display:none">FINISH</button>
-    <div id="count"><span id="countFill"></span><span id="countTxt"></span></div> <!-- Beta 1.94 (audit F-01): no hard-coded street total in the static markup - updateCount fills this from the route's own street list the moment a route loads (the pill is chrome, hidden until then) -->
+    <div id="count" style="display:none"><span id="countFill"></span><span id="countTxt"></span></div> <!-- Beta 1.94 (audit F-01): no hard-coded street total in the static markup - updateCount fills this from the route's own street list the moment a route loads (the pill is chrome, hidden until then). Beta 1.199 (Andrew): the inline display:none is the pill's resting state, the resetBtn/cancelStartBtn pattern - updateCount owns its visibility from the first call on and shows it only while a clean is running -->
     <button id="cancelStartBtn" style="display:none;background:#e63a2e">Cancel start</button>
   </div>
   <button id="paceBtn" class="dockBtn" title="Pace"></button>
@@ -3575,6 +3575,7 @@ function updateCount() {
   $('startBtn').style.display = runStart ? 'none' : '';
   $('cancelStartBtn').style.display = runStart ? '' : 'none'; // Beta 1.91: Cancel start is offered for the whole run - it erases the run's records, marks included
   $('resetBtn').style.display = runStart ? '' : 'none';
+  $('count').style.display = runStart ? '' : 'none'; // Beta 1.199 (Andrew): the streets-done pill shows ONLY while a clean is running - this line is the ONE place that rule lives, beside the run chrome it keeps company with: Start Clean calls here with runStart set (the pill appears), Finish and Cancel call here with it cleared (the pill leaves), and a boot that restores a live run calls here through refreshAll (the pill is up). The text and meter above are written either way, so marking outside a clean still counts internally - the panel, the Streets header and Pace read the same state directly, never this pill
 }
 
 // ===== LIST SHEET =====
@@ -6003,7 +6004,7 @@ $('stDel').addEventListener('click', async () => {
 });
 // ---- About / What's new ----
 const WHATSNEW = { // the curated in-app notes: plain words, LATEST RELEASE ONLY (Beta 1.114, Andrew: the accumulated list cluttered the About pane). A release REPLACES this entry with its own in the same change - it never accumulates; the full history lives in CHANGELOG.md, not the app
-  v: 'Beta 1.201', items: ["The follow camera now catches up promptly after long jumps instead of gliding in slowly."] };
+  v: 'Beta 1.202', items: ["The streets-done pill under the Start button now only shows while a clean is running."] };
 
 function renderAbout() {
   const cur = $('ver').textContent.trim();
