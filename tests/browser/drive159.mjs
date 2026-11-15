@@ -34,7 +34,7 @@ import { startCreateRig, serveRepo, makeResults, finishCreate, sleep } from './h
 //      yet; when the download lands, the loading row is REPLACED by
 //      the city rows.
 //   C (failure): a 404 catalogue still degrades honestly - the
-//      "isn't available right now - use Search manually" note, no
+//      "isn't available right now - use Manual search" note, no
 //      rows, no dead end (the 1.124 behaviour, preserved).
 // Red side (pristine 1.129): A fails (no request exists until the list
 // tap; the tap then waits out the 6 s delay), B fails (the in-flight
@@ -123,9 +123,9 @@ await send('Page.reload', { ignoreCache: false }, PAGE_S);
 await bootPicker();
 await ev2(`document.getElementById('rmCreate').click()`);
 await ev2(`document.getElementById('crDoorList').click()`);
-const failNote = await poll(`/isn.t available right now/.test(document.getElementById('crCityList').textContent) && /Search manually/.test(document.getElementById('crCityList').textContent)`, 10000, 200);
+const failNote = await poll(`/isn.t available right now/.test(document.getElementById('crCityList').textContent) && /Manual search/.test(document.getElementById('crCityList').textContent)`, 10000, 200);
 const rowsC = await rowsN().catch(() => -1);
-ok('C1 HONEST FAILURE: a catalogue that fails to load still lands on the "isn\'t available right now - go back and use Search manually" note with no rows and no dead end', failNote === true && rowsC === 0);
+ok('C1 HONEST FAILURE: a catalogue that fails to load still lands on the "isn\'t available right now - go back and use Manual search" note with no rows and no dead end', failNote === true && rowsC === 0);
 
 R.exceptions = consoleLog.filter(l => l.indexOf('EXCEPTION') === 0);
 finishCreate(R, proc, server);
