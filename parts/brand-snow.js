@@ -94,6 +94,7 @@
   function rand(a, b) { return a + Math.random() * (b - a); }
   var W = 0, H = 0, specks = [], mids = [], blobs = [], clock = 0, lastTs = 0, raf = 0, running = false, deadFrames = 0;
   var ctxS = cvS.getContext('2d');
+  if (!ctxS) return;
   function resize() {
     var dpr = Math.min(window.devicePixelRatio || 1, 1.5);
     var oW = W, oH = H;
@@ -105,6 +106,7 @@
   function makeSprite(size, stops) {
     var c = document.createElement('canvas'); c.width = size; c.height = size;
     var g = c.getContext('2d');
+    if (!g) return c;
     var grad = g.createRadialGradient(size / 2, size / 2, 0, size / 2, size / 2, size / 2);
     for (var i = 0; i < stops.length; i++) grad.addColorStop(stops[i][0], 'rgba(255,255,255,' + stops[i][1] + ')');
     g.fillStyle = grad; g.fillRect(0, 0, size, size);

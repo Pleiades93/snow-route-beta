@@ -2,7 +2,7 @@
 <html lang="en" class="boot">
 <head>
 <meta charset="UTF-8">
-<meta http-equiv="Content-Security-Policy" content="default-src 'none'; script-src 'sha384-tkU3/xILw0A2I6B8qTTjRUBoRBapE4RbIdJa2ARKD+zbbCJ6khUHrsAghMO8VUOC' https://cdn.jsdelivr.net; style-src-elem 'sha384-T5odTrZ82iz2SpSIlEcnPGuZ4XQ8gAseKryjKLByVC4SC2W3Z7bxM9SuBWNXMBZ4' https://cdn.jsdelivr.net; style-src-attr 'unsafe-inline'; img-src 'self' data: blob: https://tiles.basemaps.cartocdn.com https://protomaps.github.io https://cdn.jsdelivr.net; connect-src 'self' https://tiles.basemaps.cartocdn.com https://protomaps.github.io https://cdn.jsdelivr.net https://nominatim.openstreetmap.org https://overpass-api.de https://overpass.kumi.systems; worker-src blob: 'self'; child-src blob: 'self'; font-src 'none'; manifest-src 'self'; base-uri 'none'; form-action 'none'; object-src 'none'">
+<meta http-equiv="Content-Security-Policy" content="default-src 'none'; script-src 'sha384-OmJF5VnBtwqvM0BjE5xUGT1jpVVtU6mIhXAPt8R1KS+udIkmb/Qea3uVY/vCdo0G' https://cdn.jsdelivr.net; style-src-elem 'sha384-T5odTrZ82iz2SpSIlEcnPGuZ4XQ8gAseKryjKLByVC4SC2W3Z7bxM9SuBWNXMBZ4' https://cdn.jsdelivr.net; style-src-attr 'unsafe-inline'; img-src 'self' data: blob: https://tiles.basemaps.cartocdn.com https://protomaps.github.io https://cdn.jsdelivr.net; connect-src 'self' https://tiles.basemaps.cartocdn.com https://protomaps.github.io https://cdn.jsdelivr.net https://nominatim.openstreetmap.org https://overpass-api.de https://overpass.kumi.systems; worker-src blob: 'self'; child-src blob: 'self'; font-src 'none'; manifest-src 'self'; base-uri 'none'; form-action 'none'; object-src 'none'">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="mobile-web-app-capable" content="yes">
@@ -8483,6 +8483,7 @@ async function saveDraftRoute() {
   function rand(a, b) { return a + Math.random() * (b - a); }
   var W = 0, H = 0, specks = [], mids = [], blobs = [], clock = 0, lastTs = 0, raf = 0, running = false, deadFrames = 0;
   var ctxS = cvS.getContext('2d');
+  if (!ctxS) return;
   function resize() {
     var dpr = Math.min(window.devicePixelRatio || 1, 1.5);
     var oW = W, oH = H;
@@ -8494,6 +8495,7 @@ async function saveDraftRoute() {
   function makeSprite(size, stops) {
     var c = document.createElement('canvas'); c.width = size; c.height = size;
     var g = c.getContext('2d');
+    if (!g) return c;
     var grad = g.createRadialGradient(size / 2, size / 2, 0, size / 2, size / 2, size / 2);
     for (var i = 0; i < stops.length; i++) grad.addColorStop(stops[i][0], 'rgba(255,255,255,' + stops[i][1] + ')');
     g.fillStyle = grad; g.fillRect(0, 0, size, size);
