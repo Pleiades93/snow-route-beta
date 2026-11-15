@@ -21,7 +21,7 @@ import { startCreateRig, serveRepo, makeResults, finishCreate, sleep } from './h
 //      selectable autocomplete result; selecting it closes the
 //      results, flies to the street and names the area - exactly the
 //      manual path's behaviour (Andrew's added requirement).
-//   C (manual path parity): Search manually -> King (grid) -> the
+//   C (manual path parity): Manual search -> King (grid) -> the
 //      same street search works there too.
 //   D (boot entry): the cold-start picker shows the IDENTICAL doors
 //      (same title, same door texts, same quiet photo door); its
@@ -124,9 +124,9 @@ const count = kind => wire.filter(w => w.kind === kind).length;
 await send('Page.navigate', { url: ORIGIN + '/index.html' }, PAGE_S);
 await bootRoute();
 const paneA = await openDoorsTab();
-const doorsA = await J(`({ t: (document.querySelector('#rmCreatePane .rmTitle') || {}).textContent || '', list: document.getElementById('crDoorList').textContent, manual: document.getElementById('crDoorManual').textContent, photo: document.getElementById('crDoorPhoto').textContent, photoQuiet: document.getElementById('crDoorPhoto').classList.contains('quiet'), fsList: parseFloat(getComputedStyle(document.getElementById('crDoorList')).fontSize), fsPhoto: parseFloat(getComputedStyle(document.getElementById('crDoorPhoto')).fontSize) })`);
-ok('A1 DOORS (tab entry): Create opens on "Create new route" - "Select from list" + "Choose a city that\'s ready to load instantly", "Search manually" + "Any other city or address — loaded from the map service", and the photo door quieter (class + smaller type) with "Muse builds the draft from a photo of the route map" | ' + JSON.stringify(doorsA),
-  paneA === true && doorsA.t === 'Create new route' && doorsA.list.indexOf('Select from list') === 0 && doorsA.list.includes("Choose a city that's ready to load instantly") && doorsA.manual.indexOf('Search manually') === 0 && doorsA.manual.includes('Any other city or address — loaded from the map service') && doorsA.photo.indexOf('From a photo') === 0 && doorsA.photo.includes('Muse builds the draft from a photo of the route map') && doorsA.photoQuiet === true && doorsA.fsPhoto < doorsA.fsList);
+const doorsA = await J(`({ t: (document.querySelector('#rmCreatePane .rmTitle') || {}).textContent || '', list: document.getElementById('crDoorList').textContent, manual: document.getElementById('crDoorManual').textContent, photo: document.getElementById('crDoorPhoto').textContent, photoQuiet: document.getElementById('crDoorPhoto').classList.contains('quiet'), subs: document.querySelectorAll('#rmCreatePane .m-sub').length, fsList: parseFloat(getComputedStyle(document.getElementById('crDoorList')).fontSize), fsPhoto: parseFloat(getComputedStyle(document.getElementById('crDoorPhoto')).fontSize) })`);
+ok('A1 DOORS (tab entry; titles-only Beta 1.206, Andrew): Create opens on "Create new route" - three doors carrying TITLES ONLY, exactly "Select from list" / "Manual search" / "Upload photo", no description element in the pane, and the photo door quieter (class + smaller type) | ' + JSON.stringify(doorsA),
+  paneA === true && doorsA.t === 'Create new route' && doorsA.list === 'Select from list' && doorsA.manual === 'Manual search' && doorsA.photo === 'Upload photo' && doorsA.subs === 0 && doorsA.photoQuiet === true && doorsA.fsPhoto < doorsA.fsList);
 await ev2(`document.getElementById('crDoorList').click()`);
 const toList = await poll(`document.getElementById('rmCityListPane').classList.contains('on')`, 10000);
 await ev2(`document.getElementById('rmCityListBack').click()`);
@@ -146,11 +146,11 @@ await poll(`document.getElementById('rmCreatePane').classList.contains('on')`, 1
 await ev2(`document.getElementById('crDoorList').click()`);
 await poll(`document.getElementById('rmCityListPane').classList.contains('on')`, 10000);
 const rowsB = await poll(`document.querySelectorAll('#crCityList .routeRow').length === ${INDEXFX.cities.length}`, 15000); // premise fix (2026-11-07, Andrew-approved, test-only): the row count derives from the shipped packs/index.json the drive serves - a future city self-adjusts
-const listB = await J(`({ t: (document.querySelector('#rmCityListPane .rmTitle') || {}).textContent || '', subs: [...document.querySelectorAll('#crCityList .routeRow')].map(r => (r.querySelector('.routeArea') || {}).textContent || '') })`);
-ok('B1 LIST ROWS: the list pane is titled "Select City" and renders the index cities as rows, each with its street count + "ready to load" | ' + JSON.stringify(listB),
-  rowsB === true && listB.t === "Select City" && (listB.subs || []).includes('4,477 streets · ready to load') && (listB.subs || []).every(s => /streets · ready to load/.test(s)));
+const listB = await J(`({ t: (document.querySelector('#rmCityListPane .rmTitle') || {}).textContent || '', names: [...document.querySelectorAll('#crCityList .routeRow')].map(r => ((r.querySelector('.routeName') || {}).childNodes && r.querySelector('.routeName').childNodes[0]) ? r.querySelector('.routeName').childNodes[0].textContent : ''), areas: [...document.querySelectorAll('#crCityList .routeRow')].filter(r => r.querySelector('.routeArea')).length })`);
+ok('B1 LIST ROWS: the list pane is titled "Select City" and renders the index cities as NAME-ONLY rows - every index city present, no .routeArea element on any row (Beta 1.206, Andrew) | ' + JSON.stringify(listB),
+  rowsB === true && listB.t === "Select City" && listB.areas === 0 && JSON.stringify(listB.names || []) === JSON.stringify(INDEXFX.cities.map(c => c.name)));
 const wireB0 = wire.length;
-await ev2(`(() => { const r = [...document.querySelectorAll('#crCityList .routeRow')].find(x => { const n = x.querySelector('.routeName'); return n && n.textContent === ${JSON.stringify(VAUGHAN_NAME)}; }); if (r) r.click(); return true; })()`);
+await ev2(`(() => { const r = [...document.querySelectorAll('#crCityList .routeRow')].find(x => { const n = x.querySelector('.routeName'); return n && n.childNodes[0] && n.childNodes[0].textContent === ${JSON.stringify(VAUGHAN_NAME)}; }); if (r) r.click(); return true; })()`); // Beta 1.206: match the name's own text node - the last-used row's .routeName also carries the gold ' · last used' span
 const readyB = await poll(`typeof creating !== 'undefined' && creating === true && crStage === 'pick' && crPrepState === 'ready'`, 30000);
 const wB = wire.slice(wireB0);
 const barB = await J(`({ barOn: document.getElementById('createBar').classList.contains('on'), inputThere: !!document.getElementById('crSearchInput') })`);
@@ -197,7 +197,7 @@ await ev2(`document.getElementById('crDoorManual').click()`);
 const cityD = await poll(`document.getElementById('rmCityPane').classList.contains('on')`, 10000);
 await ev2(`document.getElementById('crCityBack').click()`);
 const backD = await poll(`document.getElementById('rmCreatePane').classList.contains('on')`, 10000);
-ok('D2 BOOT MANUAL DOOR: from boot, Search manually reaches the typed city pane and its Back returns to the doors pane', cityD === true && backD === true);
+ok('D2 BOOT MANUAL DOOR: from boot, Manual search reaches the typed city pane and its Back returns to the doors pane', cityD === true && backD === true);
 
 // ---- seed created routes through the real userpacks record, then reload ----
 await ev2(`(() => { const rec = { 'route-2': ${JSON.stringify(TEST_PACK('Route 2'))}, 'route-3': ${JSON.stringify(TEST_PACK('Route 3'))}, 'route-4': ${JSON.stringify(TEST_PACK('Route 4'))} }; localStorage.setItem('snowroute.v2.userpacks', JSON.stringify(rec)); for (const id of Object.keys(rec)) { const rk = routeKeys(id); const vals = { done: '[]', times: '{}', hist: '[]', notes: '{}', via: '{}', trail: '[]', cov: '{}', start: '0', flip: '{}', sides: '{"p":{},"t":{}}', sess: '[]', pre: '{"at":0}', snap: '{"x":1}', mig: '1' }; for (const f of Object.keys(rk)) localStorage.setItem(rk[f], vals[f] || 'x'); } return true; })()`);

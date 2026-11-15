@@ -8,7 +8,7 @@ import { startCreateRig, serveRepo, makeResults, finishCreate, sleep } from './h
 // source, and the manual door's typed-search fix; Beta 1.124 rewired
 // the GATE NAVIGATION to Andrew's approved doors shape (premise
 // change, same pattern as drive148-P/drive151: the Create pane opens
-// on two doors - Select from list / Search manually - and the cities
+// on two doors - Select from list / Manual search - and the cities
 // render as rows in their own list pane). Same rig as drive151 (own
 // CDP session, Fetch
 // interception at the NETWORK layer, the page's window.fetch is the
@@ -31,7 +31,7 @@ import { startCreateRig, serveRepo, makeResults, finishCreate, sleep } from './h
 //   C (pack failure): with the cache deleted and the pack file 404ing,
 //      preparation falls back to the Overpass grid (one POST per cell)
 //      and the hint SAYS the library didn't load.
-//   D (manual door): "Search manually" opens the typed city search;
+//   D (manual door): "Manual search" opens the typed city search;
 //      against REAL jsonv2-shaped Nominatim answers (the payload
 //      carries `category`, not the `class` field 1.121's filter read -
 //      the defect that silently emptied every real result list) the
@@ -131,8 +131,8 @@ const openCityList = async () => { // tap Select from list -> the list pane
   return await poll(`document.getElementById('rmCityListPane').classList.contains('on')`, 10000);
 };
 const choicesReady = () => poll(`document.querySelectorAll('#crCityList .routeRow').length === ${INDEXFX.cities.length}`, 15000);
-const EXPECTED_CITY_ROWS = INDEXFX.cities.map(c => ({ n: c.name, s: c.streets.toLocaleString('en-US') + ' streets · ready to load' })); // premise fix (2026-11-07, Andrew-approved, test-only): expectations derive from the shipped packs/index.json itself, in served order - a future city self-adjusts instead of expiring this drive (the baked-in five-city list expired when the catalogue grew to twelve)
-const clickChoice = name => ev2(`(() => { const b = [...document.querySelectorAll('#crCityList .routeRow')].find(x => { const n = x.querySelector('.routeName'); return n && n.textContent === ${JSON.stringify(name)}; }); if (b) { b.click(); return true; } return false; })()`);
+const EXPECTED_CITY_ROWS = INDEXFX.cities.map(c => ({ n: c.name, s: null })); // premise fix (2026-11-07, Andrew-approved, test-only): expectations derive from the shipped packs/index.json itself, in served order - a future city self-adjusts instead of expiring this drive (the baked-in five-city list expired when the catalogue grew to twelve). Beta 1.206 premise update (Andrew): city rows carry the NAME ONLY - s is the row's .routeArea element, expected ABSENT (null) on every row
+const clickChoice = name => ev2(`(() => { const b = [...document.querySelectorAll('#crCityList .routeRow')].find(x => { const n = x.querySelector('.routeName'); return n && n.childNodes[0] && n.childNodes[0].textContent === ${JSON.stringify(name)}; }); if (b) { b.click(); return true; } return false; })()`); // Beta 1.206: match the name's own text node - the last-used row's .routeName also carries the gold ' · last used' span (it trailed the removed sub-line through 1.205)
 const TAP_POINTS = { 'Bordeaux Drive': { lat: 43.798972, lng: -79.574666 } };
 const installFeatureSeam = () => ev2(`(() => { if (!map.__qrfOrig) map.__qrfOrig = map.queryRenderedFeatures.bind(map); window.__fixtureRoads = []; map.queryRenderedFeatures = () => window.__fixtureRoads.map(n => ({ type: 'Feature', sourceLayer: 'roads', properties: { name: n }, geometry: { type: 'LineString', coordinates: [] } })); return true; })()`);
 const tapStreet = name => ev2(`(() => { window.__fixtureRoads = [${JSON.stringify(name)}]; const tp = ${JSON.stringify(TAP_POINTS[name])}; map.fire('click', { lngLat: tp, point: { x: 210, y: 320 }, originalEvent: {} }); return true; })()`);
@@ -143,12 +143,12 @@ const count = kind => wire.filter(w => w.kind === kind).length;
 await send('Page.navigate', { url: ORIGIN + '/index.html' }, PAGE_S);
 await bootRoute();
 const paneA = await openChooserTab();
-const doorsA = await J(`({ t: (document.querySelector('#rmCreatePane .rmTitle') || {}).textContent || '', list: document.getElementById('crDoorList').textContent, manual: document.getElementById('crDoorManual').textContent, photoQuiet: document.getElementById('crDoorPhoto').classList.contains('quiet') })`);
-ok('A1 DOORS (tab entry, Beta 1.124): the Create pane\'s first screen is "Create new route" with the two doors and their sub-lines (Select from list / "Choose a city that\'s ready to load instantly"; Search manually / "Any other city or address") and the quieter photo door | ' + JSON.stringify(doorsA), paneA === true && doorsA.t === 'Create new route' && doorsA.list.indexOf('Select from list') === 0 && doorsA.list.includes("Choose a city that's ready to load instantly") && doorsA.manual.indexOf('Search manually') === 0 && doorsA.manual.includes('Any other city or address') && doorsA.photoQuiet === true);
+const doorsA = await J(`({ t: (document.querySelector('#rmCreatePane .rmTitle') || {}).textContent || '', list: document.getElementById('crDoorList').textContent, manual: document.getElementById('crDoorManual').textContent, photo: document.getElementById('crDoorPhoto').textContent, photoQuiet: document.getElementById('crDoorPhoto').classList.contains('quiet'), subs: document.querySelectorAll('#rmCreatePane .m-sub').length })`);
+ok('A1 DOORS (tab entry, Beta 1.124; titles-only Beta 1.206, Andrew): the Create pane\'s first screen is "Create new route" with three doors carrying TITLES ONLY - exactly "Select from list", "Manual search", "Upload photo", no description element anywhere in the pane - and the quieter photo door | ' + JSON.stringify(doorsA), paneA === true && doorsA.t === 'Create new route' && doorsA.list === 'Select from list' && doorsA.manual === 'Manual search' && doorsA.photo === 'Upload photo' && doorsA.subs === 0 && doorsA.photoQuiet === true);
 const listA = await openCityList();
 const chA = await choicesReady();
-const namesA = await J(`({ rows: [...document.querySelectorAll('#crCityList .routeRow')].map(r => ({ n: (r.querySelector('.routeName') || {}).textContent || '', s: (r.querySelector('.routeArea') || {}).textContent || '' })), t: (document.querySelector('#rmCityListPane .rmTitle') || {}).textContent || '' })`);
-ok('A2 the list pane ("Select City") renders the pack index cities as rows carrying their street counts + "ready to load" (index-driven, no hardcoded list in the app) | ' + JSON.stringify(namesA), listA === true && chA === true && namesA.t === "Select City" && JSON.stringify(namesA.rows || []) === JSON.stringify(EXPECTED_CITY_ROWS));
+const namesA = await J(`({ rows: [...document.querySelectorAll('#crCityList .routeRow')].map(r => ({ n: ((r.querySelector('.routeName') || {}).childNodes && r.querySelector('.routeName').childNodes[0]) ? r.querySelector('.routeName').childNodes[0].textContent : '', s: r.querySelector('.routeArea') ? r.querySelector('.routeArea').textContent : null })), t: (document.querySelector('#rmCityListPane .rmTitle') || {}).textContent || '' })`);
+ok('A2 the list pane ("Select City") renders the pack index cities as NAME-ONLY rows - no .routeArea element on any row (Beta 1.206, Andrew; index-driven, no hardcoded list in the app) | ' + JSON.stringify(namesA), listA === true && chA === true && namesA.t === "Select City" && JSON.stringify(namesA.rows || []) === JSON.stringify(EXPECTED_CITY_ROWS));
 const wireA0 = wire.length;
 packDelayMs = 2500;
 await clickChoice(VAUGHAN_NAME);
@@ -259,7 +259,7 @@ const doorE = await J(`({ manual: !!document.getElementById('crDoorManual'), man
 await clickChoice(VAUGHAN_NAME);
 const inPickE = await poll(`typeof creating !== 'undefined' && creating === true && crStage === 'pick'`, 15000);
 ok('E1 COHESION: the cold-start picker\'s Create reaches the SAME doors surface (same pane, "Create new route", both doors, the 5 index cities behind Select from list) and a city pick enters creation from boot too | ' + JSON.stringify(doorE),
-  paneE === true && listE === true && chE === true && doorE.manual === true && doorE.manualLabel.indexOf('Search manually') === 0 && doorE.list === true && doorE.t === 'Create new route' && inPickE === true);
+  paneE === true && listE === true && chE === true && doorE.manual === true && doorE.manualLabel === 'Manual search' && doorE.list === true && doorE.t === 'Create new route' && inPickE === true);
 
 R.exceptions = consoleLog.filter(l => l.indexOf('EXCEPTION') === 0);
 finishCreate(R, proc, server);

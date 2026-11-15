@@ -174,7 +174,14 @@ load it during the splash; adjudicated to the catalogue only —
 the pack files stay on-demand), and the Create button, `openDoors`
 and `openRouteMenu` re-trigger the warm as no-ops on
 `crPackIndexLoad`'s cached promise (at most one catalogue fetch
-per session). 1.129 requested it for the first time at the
+per session). Beta 1.206 (Andrew): the doors are TITLES ONLY —
+the three description lines under the options are gone, and the
+doors read "Select from list", "Manual search" (was "Search
+manually") and "Upload photo" (was "From a photo"; the photo
+pane's title matches). The city rows likewise carry the city
+NAME ONLY — the "N streets · ready to load" sub-line is gone;
+the gold "· last used" tag survives, trailing the name on the
+last-used city's row. 1.129 requested it for the first time at the
 Select-from-list tap, so a cold open's list waited out the whole
 fetch (drive159 proves the boot start, the instant warmed walk,
 and the in-flight state below). While a fetch is genuinely in
@@ -374,7 +381,7 @@ carry no surface of their own (padding and layout only); exactly
 one shows at rest (`syncCrPanel` lands the rest state). The
 PANEL: "Current selection", a live "N roads · X m", one compact
 row per street — category dot, name, a sub-line that always
-carries the sector affordance, the PRIMARY/2ND chip in the row, ✕ —
+carries the sector affordance, the PRIMARY/SECONDARY chip in the row, ✕ —
 plus a Clear all that empties the draft's streets behind the
 shared confirm, the city/session staying, and a footer whose
 only button reads "Done". The panel never exceeds the sheet cap
