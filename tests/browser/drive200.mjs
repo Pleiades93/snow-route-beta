@@ -4,8 +4,10 @@ import { fileURLToPath } from 'node:url';
 import { startCreateRig, serveRepo, makeResults, finishCreate, sleep } from './harness-create.mjs';
 
 // drive200: Beta 1.204 acceptance - the driving road snap (display-only), proven on the
-// SAME two real drives the map-matching study scored (gps-round3-judging decoded.json /
-// decoded2.json, replayed fix-by-fix through the SHIPPED acceptFix -> snapFix on the
+// SAME two real drives the map-matching study scored (the round-3 judging sessions,
+// checked in as fixtures/gps-replay-sessions.json - the fixture drive197 replays;
+// its fix rows' indices 0-5 are the judging decodes verbatim - replayed fix-by-fix
+// through the SHIPPED acceptFix -> snapFix on the
 // create rig, whose HTTP server lets the app fetch its real shipped Vaughan pack - the
 // geometry the snap actually holds at runtime). Scoring geometry is the study's own
 // Overpass ways for the two drives' boxes (fixtures/gps-snap-ways.json, generated from
@@ -42,9 +44,9 @@ import { startCreateRig, serveRepo, makeResults, finishCreate, sleep } from './h
 // identical batched loop runs in seconds of page time. Follow stays paused (the snap
 // assertions are camera-independent) to keep the camera from queueing tile work.
 const REPO = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..', '..');
-const JUDGE = '/home/hatch/workspace/snow-route-5w/beta1/work/gps-round3-judging';
-const S1 = JSON.parse(fs.readFileSync(JUDGE + '/decoded.json', 'utf8'))[0].f;
-const S2 = JSON.parse(fs.readFileSync(JUDGE + '/decoded2.json', 'utf8'))[1].f;
+const FXS = JSON.parse(fs.readFileSync(path.join(REPO, 'tests/browser/fixtures/gps-replay-sessions.json'), 'utf8'));
+const S1 = FXS.s1;
+const S2 = FXS.s2;
 const WAYS = JSON.parse(fs.readFileSync(path.join(REPO, 'tests/browser/fixtures/gps-snap-ways.json'), 'utf8'));
 const { R, ok } = makeResults();
 const dbg = m => { if (process.env.D200DBG) console.error('D200', m); };
@@ -161,6 +163,37 @@ ok(`A1 NO POPPING: the first engagement's blend crosses ${btMid} intermediate we
 const sc1b = scorerFor(S1, WAYS.s1);
 const settled = a1.samples.find(s => s.pid >= 0 && s.w >= 0.999 && s.proj && s.shown);
 ok('A1 BLEND SETTLES ON THE CENTRELINE: a fully blended shown point equals the projection (< 0.01 m)', !!settled && sc1b.distLL(settled.shown, settled.proj) < 0.01);
+
+// ---- phase A1b: the release blend (pin for the PR #51 Codex P2) ----
+// A release at full blend must EASE OUT: the outgoing projection is kept
+// while the weight decays, so per-frame shown steps stay small. (The
+// defect this pins: snapDropHold cleared the hold and the shown point
+// teleported the full offset in the first frame while the weight still
+// read ~1.) The window is chosen from the data at runtime: 20 consecutive
+// fixes at >= 10 m/s whose last fix sits >= 3 m off the nearest way, so
+// the offset the release has to walk back is material by construction.
+await rig.ev2(RESET);
+let relWin = -1;
+for (let i = 0; i + 20 <= S1.length; i++) {
+  const w20 = S1.slice(i, i + 20);
+  if (w20.every(f => f[4] >= 10) && sc1b.nearest([w20[19][1], w20[19][2]]).d >= 3) { relWin = i; break; }
+}
+ok('A1 RELEASE BLEND SETUP: a 20-fix fast window ending >= 3 m off the nearest way exists in S1 (window at idx ' + relWin + ')', relWin >= 0);
+if (relWin >= 0) {
+  const win = S1.slice(relWin, relWin + 20);
+  await rig.ev2(batchExpr(win));
+  await rig.ev2(`(() => { for (let k = 0; k < 60; k++) { window.__fakeNow += 50; renderTick(performance.now()); } return true; })()`);
+  const pre = await rig.J(`({ w: snapW, held: !!snapHeld, shown: dispShownPos(), disp: dispPos && dispPos.slice() })`);
+  const off = pre.shown && pre.disp ? sc1b.distLL(pre.shown, pre.disp) : -1;
+  const last = win[win.length - 1];
+  const rel = await rig.J(`(() => { window.__trace = []; acceptFix({ coords: { latitude: ${last[1]}, longitude: ${last[2]}, accuracy: ${last[3]}, speed: 1.0, heading: ${last[5]} }, timestamp: ${last[0] + 1000} }); for (let k = 0; k < 300; k++) { window.__fakeNow += 16; renderTick(performance.now()); } const tr = window.__trace; window.__trace = null; return { tr, w: snapW, held: !!snapHeld, shown: dispShownPos(), disp: dispPos && dispPos.slice() }; })()`);
+  const pts = (rel.tr || []).filter(t => t[1] != null).map(t => [t[1], t[2]]);
+  const allPts = pre.shown ? [pre.shown, ...pts] : pts;
+  let maxStep = 0; for (let i = 1; i < allPts.length; i++) { const d = sc1b.distLL(allPts[i], allPts[i - 1]); if (d > maxStep) maxStep = d; }
+  const midW = (rel.tr || []).filter(t => t[0] > 0.05 && t[0] < 0.95).length;
+  const endGap = rel.shown && rel.disp ? sc1b.distLL(rel.shown, rel.disp) : -1;
+  ok(`A1 RELEASE BLEND: engaged at w ${pre.w.toFixed(2)} with a ${off.toFixed(1)} m offset; one 1.0 m/s fix releases and the shown point EASES OUT - max per-frame step ${maxStep.toFixed(2)} m over ${pts.length} frames (bar < 1.0 m), ${midW} frames at intermediate weights (bar >= 3), ending ${endGap.toFixed(3)} m from the true point (bar < 0.05 m), hold gone ${!rel.held}`, pre.held && pre.w >= 0.95 && off >= 2 && !rel.held && maxStep < 1.0 && midW >= 3 && endGap >= 0 && endGap < 0.05);
+}
 
 // ---- phase A2: S2 (residential drive) + the real turn-in ----
 await rig.ev2(RESET);
