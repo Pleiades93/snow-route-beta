@@ -195,6 +195,54 @@ if (relWin >= 0) {
   ok(`A1 RELEASE BLEND: engaged at w ${pre.w.toFixed(2)} with a ${off.toFixed(1)} m offset; one 1.0 m/s fix releases and the shown point EASES OUT - max per-frame step ${maxStep.toFixed(2)} m over ${pts.length} frames (bar < 1.0 m), ${midW} frames at intermediate weights (bar >= 3), ending ${endGap.toFixed(3)} m from the true point (bar < 0.05 m), hold gone ${!rel.held}`, pre.held && pre.w >= 0.95 && off >= 2 && !rel.held && maxStep < 1.0 && midW >= 3 && endGap >= 0 && endGap < 0.05);
 }
 
+// ---- T1: the projection seed (pin for the PR #51 Codex P1, second round) ----
+// Engagement must seed snapProject's window from the nearest search's
+// own segment. The defect, reproduced in review and re-measured offline
+// against the shipped pack: this fix sits ON segment 35 of Woodland
+// Acres Crescent's 75-point run (distance 0.0 m), while the windowed
+// projection from a hint of 0 accepted segment 3 - 813.6 m away - and
+// the full-line distance check reads the true distance (0), so the bad
+// projection could never release.
+await rig.ev2(RESET);
+const T1FIX = [43.89023765, -79.47968195];
+for (let k = 0; k < 6; k++) await rig.ev2(`(() => { acceptFix({ coords: { latitude: ${T1FIX[0]}, longitude: ${T1FIX[1]}, accuracy: 10, speed: 20, heading: 0 }, timestamp: ${1760000000000 + k * 1000} }); return true; })()`);
+const t1 = await rig.J(`({ held: typeof snapHeld !== 'undefined' && !!snapHeld, name: snapHeld ? snapHeld.name : '', proj: (typeof snapProject === 'function' && dispPos) ? snapProject(dispPos) : null, disp: dispPos && dispPos.slice(), hd: (typeof snapHeld !== 'undefined' && snapHeld && dispPos) ? snapHeldDist(dispPos) : -1 })`);
+const t1gap = t1.proj && t1.disp ? sc1b.distLL(t1.proj, t1.disp) : -1;
+ok(`T1 PROJECTION SEED: a fix ON Woodland Acres Crescent engages '${t1.name}' and its projection sits ${t1gap.toFixed(1)} m from the display point (bar < 5 m; the unseeded window landed 813.6 m away) with the full-line distance ${t1.hd.toFixed(1)} m`, t1.held && t1gap >= 0 && t1gap < 5 && t1.hd >= 0 && t1.hd < 5);
+
+// ---- phase A1c: the switch blend (pin for the PR #51 Codex P2, second round) ----
+// A rival switch at full blend must ease across, not teleport: two
+// synthetic parallel roads 8 m apart stand in as the index (the real
+// index object is saved and restored around the segment). Fixes on A
+// blend fully; three fixes on B win the rival vote; at the switch the
+// shown point must still sit on A (the anchor), then walk to B over the
+// frames with no per-frame step near the 8 m the defect jumped.
+await rig.ev2(RESET);
+const swSetup = await rig.J(`(() => { const a = [${T1FIX[0]}, ${T1FIX[1]}]; const slug = snapSlugFor(a); const want = ((typeof activeRoute !== 'undefined' && activeRoute && activeRoute.id) || '') + '|' + slug; const dLat = 8 / MLAT, step = 15 / MLNG; const mk = off => { const pts = []; for (let i = 0; i < 9; i++) pts.push([a[0] + off, a[1] - 4 * step + i * step]); return pts; }; window.__savedGeo = snapGeo; window.__swA = mk(0); window.__swB = mk(dLat); snapGeo = snapBuildIndex([{ name: 'Switch A', pts: window.__swA }, { name: 'Switch B', pts: window.__swB }], want); return { keyOk: snapGeo.key === want }; })()`);
+ok('A1 SWITCH BLEND SETUP: the synthetic two-road index installs under the key snapGeoEnsure wants (the real index is saved for restore)', swSetup.keyOk === true);
+if (swSetup.keyOk) {
+  const feedPt = async (pt, k) => rig.ev2(`(() => { acceptFix({ coords: { latitude: ${pt[0]}, longitude: ${pt[1]}, accuracy: 10, speed: 15, heading: 90 }, timestamp: ${1760001000000 + k * 1000} }); return true; })()`);
+  const frames = async (n, ms) => rig.ev2(`(() => { for (let k = 0; k < ${n}; k++) { window.__fakeNow += ${ms}; renderTick(performance.now()); } return true; })()`);
+  const swA = await rig.J(`window.__swA`), swB = await rig.J(`window.__swB`);
+  let fk = 0;
+  for (const vi of [2, 3, 4, 5]) await feedPt(swA[vi], fk++);
+  await frames(60, 50);
+  for (const vi of [5, 6]) await feedPt(swB[vi], fk++);
+  await frames(10, 50);
+  const preSw = await rig.J(`({ held: snapHeld ? snapHeld.name : '', w: snapW, shown: dispShownPos() })`);
+  await feedPt(swB[7], fk++);
+  await frames(3, 16);
+  const postSw = await rig.J(`({ held: snapHeld ? snapHeld.name : '', shown: dispShownPos() })`);
+  const walk = await rig.J(`(() => { window.__trace = []; for (let k = 0; k < 240; k++) { window.__fakeNow += 16; renderTick(performance.now()); } const tr = window.__trace; window.__trace = null; return { tr, shown: dispShownPos() }; })()`);
+  await rig.ev2(`(() => { snapGeo = window.__savedGeo; window.__savedGeo = null; return true; })()`);
+  const dPre = preSw.shown ? sc1b.distToPoly(preSw.shown, swB) : -1;
+  const dPost = postSw.shown ? sc1b.distToPoly(postSw.shown, swB) : -1;
+  const wpts = (walk.tr || []).filter(t => t[1] != null).map(t => [t[1], t[2]]);
+  let wMax = 0; for (let i = 1; i < wpts.length; i++) { const d = sc1b.distLL(wpts[i], wpts[i - 1]); if (d > wMax) wMax = d; }
+  const dEnd = walk.shown ? sc1b.distToPoly(walk.shown, swB) : -1;
+  ok(`A1 SWITCH BLEND: fully blended on A (w ${preSw.w.toFixed(2)}, shown ${dPre.toFixed(1)} m from B's line); the third B fix switches the hold to '${postSw.held}' with the shown point STILL ${dPost.toFixed(1)} m from B (bar > 6 m - the defect jumped to ~0), then it walks over with max per-frame step ${wMax.toFixed(2)} m (bar < 1.0 m) and lands ${dEnd.toFixed(2)} m from B's line (bar < 0.5 m)`, preSw.held === 'Switch A' && preSw.w >= 0.95 && dPre > 6 && postSw.held === 'Switch B' && dPost > 6 && wMax < 1.0 && dEnd >= 0 && dEnd < 0.5);
+}
+
 // ---- phase A2: S2 (residential drive) + the real turn-in ----
 await rig.ev2(RESET);
 dbg('A2');
