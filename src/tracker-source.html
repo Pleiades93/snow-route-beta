@@ -4609,13 +4609,14 @@ let snapFar = 0; // consecutive fixes farther than SNAP_FAR_M from the held road
 let snapW = 0; // the blend weight, 0..1: 0 = the true display point, 1 = fully on the centreline. Advanced per frame in renderTick toward (snapHeld ? 1 : 0)
 let snapOutPt = null; // the outgoing TARGET, kept when an ordinary release drops the hold mid-blend: the point the current blend weight reproduces the rendered point from, so snapBlendPt can ease the shown point back to the true position as the weight decays (cleared on engagement, on hard reset, and when the weight settles at 0)
 let snapAnchor = null; // the rendered point a road change (rival switch, drop-and-reengage, engage over a blend-out) eases FROM: the blend's origin while the weight re-rises toward the new road's projection, so a switch never teleports either (cleared when the weight settles at 1, on drop, and on hard reset)
+let snapReject = null; // the polyline the evidence timeout last rejected: re-entry hysteresis - it cannot be re-taken by any path while fixes land farther than SNAP_FAR_M from it (the band between SNAP_FAR_M and SNAP_ENGAGE_M would otherwise re-take it on the very next fix and loop the timeout forever, sweeping the puck sideways on a ~6-fix cycle). Cleared when any road is taken, when a fix lands within SNAP_FAR_M of it (the take then proceeds), and on hard reset.
 let snapSegHint = 0; // the held line's segment the last projection landed on (the per-frame projection searches outward from here)
 let snapFixN = 0; // fixes the matcher has processed (the acceptance drive's denominator guard)
 function snapDropHold() { // an ordinary release: the blend-out's TARGET is captured BEFORE the hold clears, normalized by the current weight - snapOutPt is the point the CURRENT weight must reproduce the rendered point from (rendered = dispPos + (snapOutPt - dispPos) * snapW), so storing the rendered point itself would apply the weight twice and jump by offset * w * (1 - w) at any partial weight. Normalized, the capture is idempotent across repeated drops and the decay walks the rendered point straight to the true position. At zero weight there is nothing showing to preserve.
   if (snapW > 0.001 && dispPos) { const cur = snapBlendPt(); if (cur) snapOutPt = [dispPos[0] + (cur[0] - dispPos[0]) / snapW, dispPos[1] + (cur[1] - dispPos[1]) / snapW]; }
   snapHeld = null; snapRival = null; snapFar = 0; snapSegHint = 0; snapAnchor = null;
 }
-function snapReset() { snapDropHold(); snapW = 0; snapOutPt = null; snapAnchor = null; } // the snap retires outright (watch stop, Start Clean): no blend-out - the state is simply gone before the next frame can show it (the weight is zeroed, so the captured outgoing point can never render, and it is cleared besides)
+function snapReset() { snapDropHold(); snapW = 0; snapOutPt = null; snapAnchor = null; snapReject = null; } // the snap retires outright (watch stop, Start Clean): no blend-out - the state is simply gone before the next frame can show it (the weight is zeroed, so the captured outgoing point can never render, and it is cleared besides)
 function ptSegProj(p, a, b) { // ptSegM's twin (app1) that also returns the projected point, in [lat, lng]
   const ax = a[1] * MLNG, ay = a[0] * MLAT, bx = b[1] * MLNG, by = b[0] * MLAT, px = p[1] * MLNG, py = p[0] * MLAT;
   const vx = bx - ax, vy = by - ay, L2 = vx * vx + vy * vy;
@@ -4643,7 +4644,7 @@ function snapBlendPt() { // the snapped rendering of the display track at the cu
 }
 function snapTakeHold(poly, seg) { // every road change funnels through here (engage, drop-and-reengage, rival switch). The projection hint is SEEDED from the nearest search's own segment: snapProject's per-frame window trusts its hint, and a hint of 0 on a curved or looping run accepts an interior local minimum - a projection potentially hundreds of metres from the fix, which the full-line distance check cannot release (it reads the true distance). And when the snap is currently SHOWING something (weight up), the rendered point becomes the anchor and the weight restarts, so the shown point walks to the new road instead of teleporting; from free (weight 0) nothing is showing and the plain engage blend runs.
   if (snapW > 0.001 && dispPos) { const cur = snapBlendPt(); if (cur) { snapAnchor = cur; snapW = 0; } }
-  snapHeld = poly; snapSegHint = seg; snapFar = 0; snapRival = null; snapOutPt = null;
+  snapHeld = poly; snapSegHint = seg; snapFar = 0; snapRival = null; snapOutPt = null; snapReject = null;
 }
 // ---- the road index: the active route's lines + one shipped city pack, segment-gridded ----
 let snapCat = null; // the pack catalogue once loaded ([{ slug, name, bbox: [s, w, n, e] }]); null before, [] when the library failed to load
@@ -4696,16 +4697,16 @@ function snapFix(speed, acc, ll) { // fed once per accepted fix, beside dispHold
   if (!snapGeo) { snapDropHold(); return; }
   const near = snapNearest(ll);
   if (!snapHeld) {
-    if (near && near.d <= SNAP_ENGAGE_M && acc <= SNAP_ACC_M) snapTakeHold(near.poly, near.seg);
+    if (near && near.d <= SNAP_ENGAGE_M && acc <= SNAP_ACC_M && !(near.poly === snapReject && near.d > SNAP_FAR_M)) snapTakeHold(near.poly, near.seg);
     return;
   }
   let hd = snapHeldDist(ll);
   if (hd > SNAP_DROP_M) { // the held road is gone: drop it, and let this same fix take a fresh candidate if one is close (the sim's drop-and-reengage)
     snapDropHold();
-    if (near && near.d <= SNAP_ENGAGE_M && acc <= SNAP_ACC_M) { snapTakeHold(near.poly, near.seg); hd = snapHeldDist(ll); } else return; // the accuracy gate guards this fresh take exactly as it guards the from-free engage: an unreliable fix releases the old road, it does not lock the puck onto another one
+    if (near && near.d <= SNAP_ENGAGE_M && acc <= SNAP_ACC_M && !(near.poly === snapReject && near.d > SNAP_FAR_M)) { snapTakeHold(near.poly, near.seg); hd = snapHeldDist(ll); } else return; // the accuracy gate guards this fresh take exactly as it guards the from-free engage: an unreliable fix releases the old road, it does not lock the puck onto another one
   }
-  if (hd > SNAP_FAR_M) { if (++snapFar >= SNAP_FAR_N) { snapDropHold(); return; } } else snapFar = 0; // the evidence timeout: persistently far from the held road with no dominant rival - release to the true position rather than ride a wrong road
-  if (near && near.poly !== snapHeld && hd - near.d >= SNAP_SWITCH_M) {
+  if (hd > SNAP_FAR_M) { if (++snapFar >= SNAP_FAR_N) { const rej = snapHeld; snapDropHold(); snapReject = rej; return; } } else snapFar = 0; // the evidence timeout: persistently far from the held road with no dominant rival - release to the true position rather than ride a wrong road, and REJECT it (snapReject): without the hysteresis the next fix inside the wider engage gate re-takes it and the timeout loops forever
+  if (near && near.poly !== snapHeld && hd - near.d >= SNAP_SWITCH_M && !(near.poly === snapReject && near.d > SNAP_FAR_M)) {
     if (snapRival && snapRival.poly === near.poly) snapRival.n++; else snapRival = { poly: near.poly, n: 1 };
     if (snapRival.n >= SNAP_SWITCH_N) snapTakeHold(near.poly, near.seg);
   } else snapRival = null;
