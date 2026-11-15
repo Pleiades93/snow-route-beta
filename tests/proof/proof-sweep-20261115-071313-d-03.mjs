@@ -20,6 +20,10 @@ function extractFn(source, name) {
 
 const importDraftSrc = extractFn(src, 'importDraft');
 const crStreetPartsSrc = extractFn(src, 'crStreetParts');
+// Sweep re-run D-04 fix: crStreetParts now also reads the coverage stamp
+// helper beside it - extract it when present so this harness keeps running
+// the shipped pair, not a fragment.
+const crCovStampSrc = src.includes('function crCovStamp(') ? extractFn(src, 'crCovStamp') : '';
 
 const line = [[43.8, -79.5], [43.801, -79.5], [43.802, -79.5]];
 
@@ -27,12 +31,17 @@ const ctx = vm.createContext({
   Object, Array, Set, JSON, Math,
   MLAT: 111320, MLNG: 80000,
   draft: null,
-  crCov: {
+  crSectorSession: { street: null, snapshot: undefined, collapsed: false, face: 'panel' }, // the D-04 fix's cache read consults the session's snapshot pin; no session in flight here
+  crCov: { // the full coverage shape (crCovFromWays): the D-04 stamp reads gen/boxes/byId as well as byName
+    gen: 0,
     byName: (() => {
       const m = Object.create(null);
       m['__proto__'] = [{ pts: line }];
       return m;
-    })()
+    })(),
+    byId: { 1: { name: '__proto__', pts: line } },
+    boxes: [],
+    fetchedAt: 0
   },
   newDraft() {
     return {
@@ -71,7 +80,7 @@ const ctx = vm.createContext({
   }
 });
 
-vm.runInContext(importDraftSrc + '\n' + crStreetPartsSrc, ctx);
+vm.runInContext(importDraftSrc + '\n' + crCovStampSrc + '\n' + crStreetPartsSrc, ctx);
 
 const json = '{"roads":{"__proto__":' + JSON.stringify([line]) + ',"Main Street":' + JSON.stringify([line]) + '}}';
 ctx.importDraft(json);
