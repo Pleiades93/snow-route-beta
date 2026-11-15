@@ -73,7 +73,7 @@ try {
     };
   })()`);
   ok('A1 a first street named constructor/toString/__proto__ VALIDATES (no false duplicate through the prototype) | ' + JSON.stringify(a), a.ok === true && JSON.stringify(a.keys) === JSON.stringify(['__proto__', 'constructor', 'toString']) && a.ownProto === true);
-  ok('A2 a prototype-named street can be a main | main: ' + JSON.stringify(a.main), JSON.stringify(a.main) === JSON.stringify(['constructor']));
+  ok('A2 a prototype-named street can be a primary | main: ' + JSON.stringify(a.main), JSON.stringify(a.main) === JSON.stringify(['constructor']));
   ok('A3 a genuine duplicate (trim collision) is still rejected | ' + JSON.stringify({ dupOk: a.dupOk, dupErr: a.dupErr }), a.dupOk === false && /appears twice/.test(a.dupErr || ''));
 
   // ---- B: D-05 pending row renders ----

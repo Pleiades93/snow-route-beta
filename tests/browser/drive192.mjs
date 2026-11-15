@@ -103,22 +103,22 @@ try {
   // ---------- S: Streets structure, tabs, states ----------
   await ev(`$('streetsBtn').click(); true`); await poll(`document.querySelectorAll('.srow').length > 0`, 10000);
   const s0 = await J(`(() => { const rows = [...document.querySelectorAll('.srow')]; return {
-    rows: rows.length, allMain: rows.every(r => r.classList.contains('main')),
+    rows: rows.length, allPrimary: rows.every(r => r.classList.contains('primary')),
     hero: $('stHero').textContent, routeN: $('stRouteN').textContent, routeS: $('stRouteS').textContent,
     grp: $('stGroupN').textContent + $('stGroupC').textContent,
     totalCap: (totalWorkM() / 2000).toFixed(1) + ' km total', names: STREETNAMES.length }; })()`);
-  ok('S1 Streets opens on the Primaries tab: 6 rows, every one a primary | ' + JSON.stringify(s0), s0.rows === 6 && s0.allMain === true);
+  ok('S1 Streets opens on the Primaries tab: 6 rows, every one a primary | ' + JSON.stringify(s0), s0.rows === 6 && s0.allPrimary === true);
   ok('S2 the hero reads the live zero state (0 of N streets, 0.0 km cleared, the computed total) | ' + s0.hero,
     s0.hero.includes('/ ' + s0.names + ' streets') && s0.hero.includes('0.0 km of road cleared') && s0.hero.includes(s0.totalCap) && s0.hero.includes('streets completed so far'));
   ok('S3 the route line names the route and its not-started state; the group heading counts the tab | ' + s0.routeN + s0.routeS + ' / ' + s0.grp,
     s0.routeN.length > 0 && s0.routeS.includes('not started') && s0.grp === 'PRIMARIES · 6 streets');
   await ev(`document.querySelector('#filters button[data-f="secondaries"]').click(); true`); await sleep(300);
   const s1 = await J(`(() => { const rows = [...document.querySelectorAll('.srow')]; return {
-    rows: rows.length, anyMain: rows.some(r => r.classList.contains('main')),
+    rows: rows.length, anyPrimary: rows.some(r => r.classList.contains('primary')),
     grp: $('stGroupN').textContent + $('stGroupC').textContent,
     cross: rows.filter(r => PRIMARIES.has(r.querySelector('.nm').textContent)).length }; })()`);
   ok('S4 the Secondaries tab swaps the WHOLE list: 28 rows, no main among them, heading follows | ' + JSON.stringify(s1),
-    s1.rows === 28 && s1.anyMain === false && s1.cross === 0 && s1.grp === 'SECONDARIES · 28 streets');
+    s1.rows === 28 && s1.anyPrimary === false && s1.cross === 0 && s1.grp === 'SECONDARIES · 28 streets');
   await ev(`document.querySelector('#filters button[data-f="primaries"]').click(); true`); await sleep(300);
 
   await ev(`(() => { markDone('Velmar', 'tap'); pieces['Mellings'][0] = (pieces['Mellings'][0] | 1); refreshAll(); renderStreets(); return true; })()`); await sleep(300);
