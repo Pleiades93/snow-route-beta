@@ -13,7 +13,8 @@
 let crPackCtx = null; // { slug, bbox, failed } while the active city's preparation is pack-backed; null = the service is the source
 let crPackNote = ''; // the disclosed pack state ('' = nothing to say); rides the hint like crCacheNote
 let crPackIndexP = null; // the session's catalogue promise (null result cached too: no library this session)
-let crPackLoads = {}; // slug -> Promise<elements>: the session's downloaded packs, adapted once
+let crPackLoads = Object.create(null); // slug -> Promise<elements>: the session's downloaded packs, adapted once
+function crPackSlugOk(s) { return typeof s === 'string' && /^[a-z0-9][a-z0-9_-]*$/i.test(s) && s.toLowerCase() !== 'index'; }
 function crPackIndexLoad() {
   if (!crPackIndexP) {
     crPackIndexP = (async () => {
@@ -32,7 +33,7 @@ async function crPackResolveCity(name, bbox) { // does the library hold THIS cit
   if (!name || !bbox) return null;
   const entries = await Promise.race([crPackIndexLoad(), new Promise(res => setTimeout(() => res(null), 8000))]);
   if (!entries) return null;
-  const e = entries.find(x => x && typeof x.name === 'string' && typeof x.slug === 'string' && x.name.toLowerCase() === String(name).toLowerCase() && Array.isArray(x.bbox) && x.bbox.length === 4);
+  const e = entries.find(x => x && typeof x.name === 'string' && crPackSlugOk(x.slug) && x.name.toLowerCase() === String(name).toLowerCase() && Array.isArray(x.bbox) && x.bbox.length === 4);
   if (!e) return null;
   const pb = { s: +e.bbox[0], w: +e.bbox[1], n: +e.bbox[2], e: +e.bbox[3] };
   if (![pb.s, pb.w, pb.n, pb.e].every(isFinite)) return null;
@@ -41,6 +42,7 @@ async function crPackResolveCity(name, bbox) { // does the library hold THIS cit
   return { slug: e.slug, bbox: pb };
 }
 function crPackLoad(slug, force) { // one same-origin download per session per city, adapted ONCE into the Overpass element shape the extract machinery consumes ({ id, tags: { name }, geometry: [{ lat, lon }] }). The pack holds raw segments per street ([[lat, lng], ...] runs, unchained - the app chains at resolve time, as it does for service extracts). Synthetic ids are NEGATIVE and sequential: OSM way ids are positive, so a pack way can never collide with a service way in the merged by-id index. A failed load is NOT cached - a later preparation may retry it.
+  if (!crPackSlugOk(slug)) return Promise.reject(new Error('pack slug'));
   if (!force && crPackLoads[slug]) return crPackLoads[slug];
   const p = (async () => {
     const r = await fetch('packs/' + slug + '.json', { cache: 'no-cache' });
