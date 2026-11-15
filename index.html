@@ -2,7 +2,7 @@
 <html lang="en" class="boot">
 <head>
 <meta charset="UTF-8">
-<meta http-equiv="Content-Security-Policy" content="default-src 'none'; script-src 'sha384-4lqlBE6RdyO/bfqGqqxhpfA85fOkt/CFiNEvFX3mUXIOXYfcdAEcr672VRRn99kd' https://cdn.jsdelivr.net; style-src-elem 'sha384-/T/JikVb23n4aLjpFyWkjX6p/b1mSYfC5CGj+DvwbP1p/3MT52mODHdVFqhAdVeA' https://cdn.jsdelivr.net; style-src-attr 'unsafe-inline'; img-src 'self' data: blob: https://tiles.basemaps.cartocdn.com https://protomaps.github.io https://cdn.jsdelivr.net; connect-src 'self' https://tiles.basemaps.cartocdn.com https://protomaps.github.io https://cdn.jsdelivr.net https://nominatim.openstreetmap.org https://overpass-api.de https://overpass.kumi.systems; worker-src blob: 'self'; child-src blob: 'self'; font-src 'none'; manifest-src 'self'; base-uri 'none'; form-action 'none'; object-src 'none'">
+<meta http-equiv="Content-Security-Policy" content="default-src 'none'; script-src 'sha384-h2IKzqhjdXhTLzEV5PtOI5xgEugrKk+BSS/fDeHm+XevjBMys9NCTBhPwCREO9zk' https://cdn.jsdelivr.net; style-src-elem 'sha384-sLrliM8rHbTETHeNr3NToUuVunGMgUwF/1zCxNgRKd41DoDTUHJUJjEO8opm/k+c' https://cdn.jsdelivr.net; style-src-attr 'unsafe-inline'; img-src 'self' data: blob: https://tiles.basemaps.cartocdn.com https://protomaps.github.io https://cdn.jsdelivr.net; connect-src 'self' https://tiles.basemaps.cartocdn.com https://protomaps.github.io https://cdn.jsdelivr.net https://nominatim.openstreetmap.org https://overpass-api.de https://overpass.kumi.systems; worker-src blob: 'self'; child-src blob: 'self'; font-src 'none'; manifest-src 'self'; base-uri 'none'; form-action 'none'; object-src 'none'">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="mobile-web-app-capable" content="yes">
@@ -90,8 +90,9 @@
   .sideChip.done .chipBtn { background: #2ecc71; color: #fff; }
   #attrChip { position: fixed; right: calc(8px + var(--sar)); bottom: calc(var(--vvb, 0px) + 61px + var(--sab)); z-index: 900; font-size: 9px; color: #5b6672; background: rgba(255,255,255,.7); padding: 2px 5px; border-radius: 4px; pointer-events: none; } /* Beta 1.192: 68 -> 61, riding the tab bar's -7 (its rendered gap above the bar's top edge is unchanged: 10px measured in the assembled page) */
   body.night #attrChip { background: rgba(20,23,29,.7); color: #9aa4b2; }
-  #spd { position: fixed; left: calc(10px + var(--sal)); bottom: calc(var(--vvb, 0px) + 69px + var(--sab)); z-index: 900; font-size: 13px; font-weight: 700; color: #fff; background: rgba(26,29,36,.85); padding: 5px 9px; border-radius: 8px; } /* Beta 1.192: 76 -> 69, riding the tab bar's -7 (its rendered gap above the bar's top edge is unchanged: 18px measured in the assembled page) */
-  #spd.hidden { display: none; }
+  #spdPill { position: fixed; top: calc(var(--vvt, 0px) + 88px + var(--sat)); left: 50%; transform: translateX(-50%); z-index: 1000; background: var(--glass-day); -webkit-backdrop-filter: var(--blur); backdrop-filter: var(--blur); color: #1d2530; border: 1px solid rgba(20,22,28,.09); padding: 6px 14px; border-radius: 999px; font-size: 12.5px; font-weight: 700; white-space: nowrap; box-shadow: var(--shadow-float); } /* Beta 1.203 (Andrew): the speed readout is a TOP-CENTRE pill built from the #count pill's own tokens - same glass, blur, border, radius, padding, type and shadow - so it reads as one family with the app's other pills; it replaces the bottom-left #spd chip whole (the chip's dark one-off styling goes with it). Top 88 sits below the HUD title block and clears #selPop (top 144) below it - both measured in the assembled page */
+  body.night #spdPill { background: var(--glass-night); color: #eef4ee; border-color: rgba(255,255,255,.16); }
+  #spdPill.hidden { display: none; }
   #tabBar { position: fixed; left: 0; right: 0; bottom: 0; z-index: 1000; display: flex; background: var(--card); /* Beta 1.29 cohesion (Andrew): the bottom bar wears the SAME surface as the Streets/Pace sheets and the Settings pop-up, day and night - one menu family */ -webkit-backdrop-filter: var(--blur); backdrop-filter: var(--blur); padding: 4px 4px calc(3px + var(--sab)); box-shadow: 0 -8px 28px rgba(10,14,20,.30); } /* Beta 1.23 (Andrew, from his reference screenshot): the menu lives in a bottom tab bar now - dark frosted, icon + label per action */ /* Beta 1.192 (Andrew, from his side-by-side with a standard tab bar): the bar takes the standard iOS tab-bar height - content zone 56px -> 49px (bar padding 6/6 -> 4/3 here and item padding 4/2 -> 3/1 below; the 24px icons and 10px labels are untouched) - and the floaters that hug its top edge ride down the same 7px so their rendered gaps over the bar are unchanged (measured in the assembled page, before and after: #dock 16px, #spd 18px, #attrChip 10px - the rendered bar stands 2px over its design zone, the label's line box, which is why the rendered gaps read 2px under the constant differences): #dock 74 -> 67, #spd 76 -> 69, #attrChip 68 -> 61. The banners (236), #mapNote (240) and #toast (120) do NOT ride: the banners clear the whole bottom chrome stack, not the bar alone, and the toast is a screen-level placement that must also read over the full-screen menus */
   .tabItem { flex: 1; background: none; border: none; color: #2b3038; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 2px; padding: 3px 0 1px; cursor: pointer; font-family: inherit; }
   .tabItem svg { width: 24px; height: 24px; }
@@ -534,11 +535,11 @@ input, textarea { caret-color: currentColor; } /* Beta 1.125 (Andrew): the typin
 <div id="chips"></div>
 <div id="selPop" class="hidden"><div class="selTxt"><div id="selName">No street selected</div><div id="selStatus">Tap a street on the map</div></div><div class="selActs"><button id="selNote" title="Note for this street"></button><button id="selAllBtn">Mark both sides</button><button id="selBtn">Mark completed</button><button id="selClearBtn">Clear</button></div></div>
 <div id="attrChip">© Protomaps © OpenStreetMap contributors © CARTO</div>
-<div id="spd" class="hidden"></div>
+<div id="spdPill" class="hidden">0 km/h</div>
 <div id="hud">
   <div id="warn">Not saving — storage is full or blocked</div>
   <div class="row">
-    <div class="titleStack"><div class="title">Snow Route Beta</div><div class="ver" id="ver">Beta 1.202</div></div>
+    <div class="titleStack"><div class="title">Snow Route Beta</div><div class="ver" id="ver">Beta 1.203</div></div>
   </div>
   <div id="stats"></div>
 </div>
@@ -5115,8 +5116,8 @@ function acceptFix(pos) {
   dispHoldFix(speed, ll); // Beta 1.194: the stillness hold's per-fix feed, at the same instant fixLogOut below reads dispPos - the basis the judging simulation was proven on. Display-only: nothing recorded reads its state.
   if (typeof pos.coords.heading === 'number' && speed && speed >= 1) { lastCourseAt = now; setFacing(pos.coords.heading, 0.5); } // moving: face along the course
   fixLogOut(fxEnt); // Beta 1.189: the estimator has run — filtered position, display position and smoothed heading join the raw fix in the log
-  const spd = $('spd');
-  if (speed && speed > 0.5) { spd.textContent = Math.round(speed * 3.6) + ' km/h'; spd.classList.remove('hidden'); } else spd.classList.add('hidden');
+  const spd = $('spdPill'); // Beta 1.203: the top-centre speed pill, written on the same per-fix cadence the retired bottom-left chip used. Visibility is the WATCH's alone now (startGps shows the pill, stopGps hides it - Andrew's gate is the location button), so a fix only ever updates the number: at rest, or with no speed reported, it reads 0 km/h rather than vanishing
+  spd.textContent = Math.round(Math.max(0, speed || 0) * 3.6) + ' km/h';
   if (firstFix && map && (gpsFromRun || watchId != null) && !followPaused) { map.jumpTo({ center: [sm[1], sm[0]], zoom: Math.max(map.getZoom(), 15) }); camVel = [0, 0]; camBVel = 0; camUncapped = false; } // Beta 1.198: a teleport voids the camera springs' velocity state — the glide starts from rest at the jumped centre // Beta 1.146 (census C4): the map && guard - this first-fix jump sat BEFORE the trail/coverage block below, so in the map-failure world its throw starved recording on fix 1 exactly as followCam's did from fix 2 on // Beta 1.116 (audit CG-115-02): a drag made while waiting for this fix already claimed the camera - the fix still records the position (gpsPos/dispPos above), and with dispPos set the syncCentreBtn rule lights the re-centre button as the way back; no jump, no clear
   // outside-route note (route box + 400 m)
   const inB = routeBox ? (sm[0] > routeBox.s - 0.0036 && sm[0] < routeBox.n + 0.0036 && sm[1] > routeBox.w - 0.005 && sm[1] < routeBox.e + 0.005) : true; // Beta 1.117: no box (no route / empty pack) - no area to be outside of, so no note
@@ -5204,6 +5205,7 @@ function startGps(fromRun, restart) {
   staleWatchTimer = setInterval(() => { if (watchId != null && Date.now() - lastFixAt > GPS_STALE_MS && lastFixAt) { const wasRunGps = gpsFromRun; stopGps(true); startGps(wasRunGps, true); } }, 15000); // Beta 1.48 (audit B02): capture run ownership BEFORE stopGps clears it - the restart used to always come back as non-run GPS, so a mid-run watcher lost its run. Beta 1.116 (CG-115-01): the restart also preserves followPaused (startGps's restart flag) - a dead zone must not hand the camera back
   $('gpsBtn').classList.add('on');
   $('gpsBtn').classList.toggle('rec', gpsFromRun); // Beta 1.49: recording wears red on the Locate tab; view-only wears blue
+  $('spdPill').textContent = '0 km/h'; $('spdPill').classList.remove('hidden'); // Beta 1.203: the speed pill's gate is the watch itself - it appears as location turns on, reading 0 until the first fix prices a speed; stopGps hides it again
 }
 function stopGps(silent) {
   watchGen++; // Beta 1.69: invalidate any callback still queued from this watcher
@@ -5213,7 +5215,7 @@ function stopGps(silent) {
   if (renderRaf) { cancelAnimationFrame(renderRaf); renderRaf = 0; }
   clearInterval(renderPump); renderPump = 0; stopCompass(); // Beta 1.64 (audit F08); Beta 1.65: the render loop stops with the watch
   if (map) pushGps(); // Beta 1.48 (audit B05): the facing beam is only built while watchId lives - without a fresh push the last beam stayed drawn after stop
-  $('gpsBtn').classList.remove('on'); $('gpsBtn').classList.remove('rec'); $('spd').classList.add('hidden'); syncCentreBtn(); // Beta 1.115: location off - the re-centre button goes with it
+  $('gpsBtn').classList.remove('on'); $('gpsBtn').classList.remove('rec'); $('spdPill').classList.add('hidden'); syncCentreBtn(); // Beta 1.115: location off - the re-centre button goes with it. Beta 1.203: the speed pill goes with it too - its gate is the watch
 }
 $('gpsBtn').addEventListener('click', () => { if (!tapGuard('gpsBtn')) return; if (watchId != null) { if (followPaused) { resumeFollow(); toast('Centred on you — following again', 1800); } else stopGps(); } else if (runStart) { startGps(true); toast('Clean in progress — recording your route', 2600); } else { startGps(false); toast('Location on — view only, not recording', 2400); } }); // Beta 1.49 (Andrew's rule): the Locate tab alone never records - with no clean open it is view-only; pressed during an open clean it resumes that clean's recording and says so. Beta 1.115 (Andrew): with the follow suspended, Locate means "take me back to my dot" and resumes it - off is the tap while following.
 $('centreBtn').addEventListener('click', () => { if (!tapGuard('centreBtn')) return; resumeFollow(); }); // Beta 1.115: the top-right re-centre button (below day/night) - visible only while suspended (syncCentreBtn)
@@ -6004,7 +6006,7 @@ $('stDel').addEventListener('click', async () => {
 });
 // ---- About / What's new ----
 const WHATSNEW = { // the curated in-app notes: plain words, LATEST RELEASE ONLY (Beta 1.114, Andrew: the accumulated list cluttered the About pane). A release REPLACES this entry with its own in the same change - it never accumulates; the full history lives in CHANGELOG.md, not the app
-  v: 'Beta 1.202', items: ["The streets-done pill under the Start button now only shows while a clean is running."] };
+  v: 'Beta 1.203', items: ["The map now settles into a tilted view when your route loads and when you tap Home — same zoom as before, just angled.", "Your speed now sits in a pill at the top centre of the map whenever location is on."] };
 
 function renderAbout() {
   const cur = $('ver').textContent.trim();
@@ -6028,7 +6030,14 @@ document.addEventListener('pointerdown', e => {
 ['finModal', 'noteModal'].forEach(id => { const mEl = $(id); mEl.addEventListener('pointerdown', e => { if (e.target === mEl) mEl.classList.add('hidden'); }); });
 function applyNight() { document.body.classList.toggle('night', isNight()); const tc = document.querySelector('meta[name="theme-color"]'); if (tc) tc.setAttribute('content', isNight() ? '#14171d' : '#eceff2'); $('nightBtn').innerHTML = isNight() ? ICONS.sun : ICONS.moon; } // the button shows where it TAKES you (Beta 1.28, Andrew): in day it offers Night (moon), in night it offers Day (sun). Beta 1.88: the button is the round chip at top-right - the icon alone flips, there is no label
 $('nightBtn').addEventListener('click', () => { if (!tapGuard('nightBtn')) return; setThemeOverride(!isNight()); applyNight(); setBasemap(); }); // Beta 1.77: the button sets a session override - the sun takes over again at the next sunrise/sunset or the next full app open (theme block, app1)
-$('homeBtn').addEventListener('click', () => { if (!tapGuard('homeBtn')) return; if (!routeBox) return; map.fitBounds([[routeBox.w, routeBox.s], [routeBox.e, routeBox.n]], { padding: 28 }); }); // Beta 1.117: no route loaded (or an empty pack) - no box to frame
+function goHomeView() { // Beta 1.203 (Andrew): the DEFAULT view - the route framed exactly as the flat fit frames it, tilted to 45 degrees, north up. The fit is computed FLAT (cameraForBounds with no pitch or bearing options is the flat fit: its centre and zoom are the fitBounds centre and zoom this replaces, bit for bit), and the tilt is applied AT that centre/zoom by the ease - never folded into the fit, because a pitch-aware fit recomputes a different zoom and Andrew's call was "keep the zoom level the same, just tilt it". Home and a route switch land here; the load-in flight (introToRoute) lands on the same view.
+  if (!routeBox) return;
+  const b = [[routeBox.w, routeBox.s], [routeBox.e, routeBox.n]];
+  let fit = null; try { fit = map.cameraForBounds(b, { padding: 28 }); } catch (e) {}
+  if (fit && fit.center && typeof fit.zoom === 'number') { try { map.easeTo({ center: fit.center, zoom: fit.zoom, pitch: 45, bearing: 0 }); return; } catch (e) {} }
+  try { map.fitBounds(b, { padding: 28 }); map.jumpTo({ pitch: 45, bearing: 0 }); } catch (e) {}
+}
+$('homeBtn').addEventListener('click', () => { if (!tapGuard('homeBtn')) return; if (!routeBox) return; goHomeView(); }); // Beta 1.117: no route loaded (or an empty pack) - no box to frame
 // ===== SERVICE WORKER + BOOT =====
 if ('serviceWorker' in navigator) {
   navigator.serviceWorker.register('sw.js').catch(e => { window.__swErr = (e && e.name) || 'error'; }); // Beta 1.53: a refused registration (e.g. policy-blocked) used to vanish into this catch - record WHY; online use is unaffected either way, but the offline preload below refuses to run without the worker and can now say why
@@ -6286,12 +6295,12 @@ if (__splashEl && !window.matchMedia('(prefers-reduced-motion: reduce)').matches
 function introToRoute() { // Beta 1.77 (Andrew): a pick opens WIDE on the route's area and flies in to the fitted view as the splash leaves, instead of the map simply appearing already zoomed in. Beta 1.81 (Andrew): the wide view dwells longer on the Route 5W point of interest and the flight in is slower and gentler - the old one was over before he could take the map in
   if (!routeBox) return; // Beta 1.117: an empty pack has no area to fly to - the map simply stays where it is
   const b = [[routeBox.w, routeBox.s], [routeBox.e, routeBox.n]];
-  const fit0 = () => { try { map.fitBounds(b, { padding: 28, animate: false }); } catch (e) {} };
+  const fit0 = () => { try { map.fitBounds(b, { padding: 28, animate: false }); map.jumpTo({ pitch: 45 }); } catch (e) {} }; // Beta 1.203: the no-flight fallback (reduced motion, no cameraForBounds) lands on the same tilted default, instantly - the flat fit first, the tilt applied at its centre/zoom
   if (!map.cameraForBounds || (window.matchMedia && matchMedia('(prefers-reduced-motion: reduce)').matches)) { fit0(); return; }
   let fit = null; try { fit = map.cameraForBounds(b, { padding: 28 }); } catch (e) {}
   if (!fit || !fit.center || typeof fit.zoom !== 'number') { fit0(); return; }
   try { map.jumpTo({ center: fit.center, zoom: Math.max(8, fit.zoom - 3) }); } catch (e) { fit0(); return; }
-  setTimeout(() => { if (!map) return; try { map.flyTo({ center: fit.center, zoom: fit.zoom, duration: 3000, curve: 1.2, essential: false }); } catch (e) {} }, 1500); // 1500ms: the splash's exit (780ms) has finished and the wide view - the Route 5W point of interest - has had a moment to sit, before the slow flight in
+  setTimeout(() => { if (!map) return; try { map.flyTo({ center: fit.center, zoom: fit.zoom, pitch: 45, duration: 3000, curve: 1.2, essential: false }); } catch (e) {} }, 1500); // 1500ms: the splash's exit (780ms) has finished and the wide view - the Route 5W point of interest - has had a moment to sit, before the slow flight in. Beta 1.203 (Andrew): the flight tilts into the 45-degree default as it comes in - centre and zoom are the flat fit's own, unchanged
 }
 function resetSwitchSession() { // Beta 1.117 (F3/F4): the ONE reset block a route switch runs - everything that names the OUTGOING route's session dies here, before the new pack's geometry or state exists. Runs after the F2 flush (loadRoute calls collapseNoteEditor first, so an open note draft has already finalized against the outgoing street).
   // Beta 1.148 (Tranche 5, A4(ii)): the reset knowledge now lives with the state
@@ -6334,7 +6343,7 @@ function loadRoute(id) {
     if (typeof glOk !== 'undefined' && glOk && window.GLP) {
       if (!map.getSource('centres')) window.GLP.init(map, GL_HOST); else if (!switching) window.GLP.sync();
     }
-    if (switching) { try { addReferenceLayers(); } catch (e) {} if (routeBox) { try { map.fitBounds([[routeBox.w, routeBox.s], [routeBox.e, routeBox.n]], { padding: 28 }); } catch (e) {} } } // a switch frames the new route at once - the wide dwell + slow flight (introToRoute) is boot choreography only
+    if (switching) { try { addReferenceLayers(); } catch (e) {} if (routeBox) goHomeView(); } // a switch frames the new route at once, on the same tilted default Home lands on (Beta 1.203) - the wide dwell + slow flight (introToRoute) is boot choreography only
     else introToRoute();
   }
   refreshAll(); checkStale(); syncWake();
