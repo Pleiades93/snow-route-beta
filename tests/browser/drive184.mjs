@@ -21,7 +21,7 @@ const R = { checks: [] };
 const ok = (name, cond) => R.checks.push([name, cond === true]);
 const UPKEY = 'snowroute.v2.userpacks';
 const SETKEY = 'snowroute.v2.settings';
-const PACK = (name, street) => ({ name, area: 'Vaughan', mains: [], roads: { [street]: [[[43.8, -79.57], [43.801, -79.571]]] }, reference: {} });
+const PACK = (name, street) => ({ name, area: 'Vaughan', primaries: [], roads: { [street]: [[[43.8, -79.57], [43.801, -79.571]]] }, reference: {} });
 const canon = v => { if (v === null || typeof v !== 'object') return JSON.stringify(v); if (Array.isArray(v)) return '[' + v.map(canon).join(',') + ']'; return '{' + Object.keys(v).sort().map(k => JSON.stringify(k) + ':' + canon(v[k])).join(',') + '}'; };
 const valEq = (a, b) => { if (a === b) return true; try { return canon(JSON.parse(a)) === canon(JSON.parse(b)); } catch (e) { return false; } }; // slot values compare semantically when they are JSON (a restore writes some records re-serialized), byte-exact otherwise
 const navigate = async () => { await send('Page.navigate', { url }, S); await sleep(3000); };
