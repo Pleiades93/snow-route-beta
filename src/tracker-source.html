@@ -1655,7 +1655,6 @@ function clipOne(pc, J, R) {
   }
   const tag = { clip: J.B, vi: J.viA };
   const res = [];
-  /** @type {{ pts: AnyPoint[], sTag: { clip: string, vi: number } | null, eTag: { clip: string, vi: number } | null } | null} */
   let cur = null;
   aug.forEach((p, i) => {
     if (!inside(p)) {
@@ -1970,11 +1969,10 @@ function mergeStrands(slices, pairs) {
   };
   const arr = slices.slice();
   for (;;) {
-    /** @type {{ i: number, j: number, score: number, merged: any } | null} */
     let best = null;
     for (let i = 0; i < arr.length; i++) for (let j = 0; j < arr.length; j++) {
       if (i === j || arr[i].key !== arr[j].key) continue;
-      joinInfo(arr[i], arr[j]).forEach(c => { if (!best || c.score > best.score) best = { i, j, score: c.score, merged: c.merged }; });
+      joinInfo(arr[i], arr[j]).forEach(c => { if (!best || c.score > best.score) best = { i, j, merged: c.merged }; });
     }
     if (!best) break;
     arr[best.i] = best.merged;
@@ -2068,7 +2066,7 @@ function bridgeStragglers(chains, pairs) {
 // short (a T-join, not a crossing).
 function throughTouch(chains, pairs) {
   chains.forEach(c => {
-    /** @type {[string, boolean][]} */ ([['e1', true], ['e0', false]]).forEach(([key, atEnd]) => {
+    [['e1', true], ['e0', false]].forEach(([key, atEnd]) => {
       const meta = c[key];
       if (!meta) return;
       (pairs[meta.n + '|' + meta.vi + '|' + meta.side] || []).forEach(pr => {
@@ -2327,7 +2325,7 @@ function cornerTouchSlices(slices, pairs) {
   slices.forEach(sl => { [sl.e0, sl.e1].forEach(m => { if (m) endKeys.add(m.n + '|' + m.vi + '|' + m.side); }); });
   const properX = (a, b, c, d) => { if (!segCross(a, b, c, d)) return false; const X = lineHit(a, b, c, d); return !!X && [a, b, c, d].every(pt => H.jDistM(X, pt) >= 0.35); };
   slices.forEach(sl => {
-    /** @type {[string, boolean][]} */ ([['e1', true], ['e0', false]]).forEach(([key, atEnd]) => {
+    [['e1', true], ['e0', false]].forEach(([key, atEnd]) => {
       const meta = sl[key];
       if (!meta) return;
       const tried = new Set();
@@ -2549,7 +2547,6 @@ function clipEndAtJunction(n, vi, pts, atStart, ownHalf) {
   for (let round = 0; round < 3; round++) {
     const corners = endCorners(pts, atStart, ownHalf);
     if (corners.length < 2) return pts;
-    /** @type {{ J: any, ex: number, viB: number | null, bHalf: number } | null} */
     let worst = null;
     entries.forEach(J => {
       if (tried.has(J.B)) return;
@@ -2802,7 +2799,6 @@ function curveAt(curve, z) {
   return curve[curve.length - 1];
 }
 function glowW(curve, delta) {
-  /** @type {any[]} */
   const ex = ['interpolate', ['linear'], ['zoom']];
   for (const z of [14, 15, 16, 16.5, 17, 18, 19]) ex.push(z, +(curveAt(curve, z) + delta * WIDTH_K * taperAt(z)).toFixed(2));   // Beta 1.181: the live glow's extra width scales by WIDTH_K, same as the initial stack's wPlus
   return ex;
@@ -7962,7 +7958,7 @@ function importDraft(text) { // fail closed, named errors, nothing half-applied 
   if (!v.ok) { toast('Draft not imported — ' + v.error, 4000); return; }
   draft = newDraft();
   draft.roads = v.pack.roads; draft.mains = new Set(v.pack.main); draft.name = v.pack.name || ''; draft.area = v.pack.area || ''; draft.tileNames = v.pack.tileNames.slice();
-  draft.osmNames = {}; for (const k of Object.keys(v.pack.roads)) draft.osmNames[k] = k; // Beta 1.169 (Carbon fix round, D-02): an imported street's own OSM name is its pack key. Through 1.168 importDraft left osmNames empty, so crStreetParts' own-ways skip (nm === own) never matched for an imported street and the street's own geometry cut it into fragments at its own vertices. Tapped streets have always carried key -> itself (crAddStreet).
+  draft.osmNames = Object.create(null); for (const k of Object.keys(v.pack.roads)) draft.osmNames[k] = k; // Beta 1.169 (Carbon fix round, D-02): an imported street's own OSM name is its pack key. Through 1.168 importDraft left osmNames empty, so crStreetParts' own-ways skip (nm === own) never matched for an imported street and the street's own geometry cut it into fragments at its own vertices. Tapped streets have always carried key -> itself (crAddStreet).
   enterCreate('preview');
   toast('Draft loaded — check it over', 2600);
 }
