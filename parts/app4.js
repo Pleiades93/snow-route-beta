@@ -794,7 +794,7 @@ $('stDel').addEventListener('click', async () => {
 });
 // ---- About / What's new ----
 const WHATSNEW = { // the curated in-app notes: plain words, LATEST RELEASE ONLY (Beta 1.114, Andrew: the accumulated list cluttered the About pane). A release REPLACES this entry with its own in the same change - it never accumulates; the full history lives in CHANGELOG.md, not the app
-  v: 'Beta 1.205', items: ["Your yellow main roads are now called Primaries — same roads, new name."] };
+  v: 'Beta 1.206', items: ["Zoomed in, a street's paint now runs right into the crossing street — no more small gaps where streets end."] };
 
 function renderAbout() {
   const cur = $('ver').textContent.trim();

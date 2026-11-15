@@ -1490,9 +1490,9 @@ function rebuildData() { const F = buildFamilies(); const SC = buildSelC();
   CUR = { centres: F.centres, bands: F.bands, edges: F.edges, sel: SC.sel, selBand: SC.selBand, selEdges: buildSel('e') }; }
 
 function scaleW(curve) { return curve.map((v, i) => (i >= 4 && i % 2 === 0) ? +(v * WIDTH_K).toFixed(3) : v); }   // Beta 1.181: scale an interpolate width curve by WIDTH_K (widths sit at even indices >= 4, the wPlus/wScale index rule)
-const surfW = scaleW(['interpolate', ['linear'], ['zoom'], 14, 2.5, 16, 6.5, 17, 9.5, 18, 15, 19, 24]);
-const BANDW = scaleW(['interpolate', ['linear'], ['zoom'], 15, 3, 16, 6, 17, 11, 18, 22, 19, 44]);       // ~14.4 m of road width at 1.5x, tracking the geographic side offsets
-const BANDCASE = scaleW(['interpolate', ['linear'], ['zoom'], 15, 5.5, 16, 9, 17, 15, 18, 27, 19, 50]);
+const surfW = scaleW(['interpolate', ['linear'], ['zoom'], 14, 2.5, 16, 7.63, 17, 15.25, 18, 30.5, 19, 61]);   // street-end width fix: z16-19 stops set so the DRAWN width holds the geographic 9.9 m on the app's true map scale (the old 6.5/9.5/15/24 drew only 8.4/6.2/4.9/3.9 m, so terminating ends — cut flush to the crossing paint's designed edge — hung gapped from the paint as drawn)
+const BANDW = scaleW(['interpolate', ['linear'], ['zoom'], 15, 5.54, 16, 11.1, 17, 22.2, 18, 44.4, 19, 88.8]);       // ~14.4 m of road width at 1.5x, tracking the geographic side offsets; street-end width fix: stops set so the DRAWN width holds 14.4 m on the app's true map scale (the old z15 stop drew only 7.8 m)
+const BANDCASE = scaleW(['interpolate', ['linear'], ['zoom'], 15, 8.04, 16, 14.1, 17, 26.2, 18, 49.3, 19, 94.8]);   // street-end width fix: BANDW + the same casing rim as before at every stop (z15 8.04 keeps the shipped 2.5 rim over the corrected BANDW z15)
 const wPlus = (curve, d) => curve.map((v, i) => (i >= 4 && i % 2 === 0) ? v + d * WIDTH_K : v);   // widen an interpolate width curve by d px at every stop (widths sit at even indices >= 4); Beta 1.181: the added px scale by WIDTH_K too, so the glow rim grows proportionally with the road
 const wScale = (curve, f) => curve.map((v, i) => (i >= 4 && i % 2 === 0) ? v * f : v);   // scale an interpolate width curve (same index rule as wPlus)
 // Round 29 (Andrew): ZOOM-TAPERED glow. Zoomed out, the glow kept
@@ -1587,7 +1587,7 @@ function addStack() {
   // under yellow at junctions. The green (completed) family is back
   // where it was before round 21 (Andrew: revert the green part) -
   // band casing and band render above the unfinished centre paint.
-  add(line('t1-casing', 'centres', { 'line-color': H.isNight() ? '#000000' : '#5a5f6a', 'line-width': scaleW(['interpolate', ['linear'], ['zoom'], 14, 4.5, 16, 9, 17, 12.5, 18, 18.5, 19, 28]), 'line-opacity': ['step', ['zoom'], 0, 12.6, 1], 'line-opacity-transition': { duration: 0, delay: 0 } }, { 'line-cap': 'butt' }));
+  add(line('t1-casing', 'centres', { 'line-color': H.isNight() ? '#000000' : '#5a5f6a', 'line-width': scaleW(['interpolate', ['linear'], ['zoom'], 14, 4.5, 16, 10.13, 17, 18.25, 18, 33.99, 19, 65]), 'line-opacity': ['step', ['zoom'], 0, 12.6, 1], 'line-opacity-transition': { duration: 0, delay: 0 } }, { 'line-cap': 'butt' }));
   add(line('t1-casingb', 'bands', { 'line-color': H.isNight() ? '#000000' : '#5a5f6a', 'line-width': BANDCASE, 'line-opacity': ['step', ['zoom'], 0, 12.6, 1], 'line-opacity-transition': { duration: 0, delay: 0 } }, { 'line-cap': 'butt' }));
   add(line('t1-surface', 'centres', { 'line-color': ['get', 'col'], 'line-width': surfW, 'line-opacity': ['step', ['zoom'], 0, 12.6, 1], 'line-opacity-transition': { duration: 0, delay: 0 } }, { 'line-cap': 'butt' }));
   add(line('t1-band', 'bands', { 'line-color': ['get', 'col'], 'line-width': BANDW, 'line-opacity': ['step', ['zoom'], 0, 12.6, 1], 'line-opacity-transition': { duration: 0, delay: 0 } }, { 'line-cap': 'butt' }));
@@ -1797,6 +1797,12 @@ function managePulse() {
     for (const id of ['t1-casing', 't1-casingb']) { if (GLM.getLayer(id)) { try { GLM.setPaintProperty(id, 'line-color', casing); } catch (e) {} } }
     for (const id of ['streetnamespt1', 'streetnamespt2', 'streetnamespt3', 'streetnamespt4', 'routepoi-txt']) { if (GLM.getLayer(id)) { try { GLM.setPaintProperty(id, 'text-color', txt); GLM.setPaintProperty(id, 'text-halo-color', halo); } catch (e) {} } }
   }
-  return { init, drop, sync, syncSel, syncTheme, active, setFont, rebuildRoute };
+  function evalCurvePx(curve, z) { // a scaleW-built interpolate curve evaluated at a zoom, in px (stops: zoom at odd indices from 3, width at even indices >= 4; clamped outside the stop range, linear between)
+    let prev = null;
+    for (let i = 3; i + 1 < curve.length; i += 2) { if (z <= curve[i]) { if (!prev) return curve[i + 1]; return prev[1] + (curve[i + 1] - prev[1]) * ((z - prev[0]) / (curve[i] - prev[0])); } prev = [curve[i], curve[i + 1]]; }
+    return prev[1];
+  }
+  function tapTolPx(z) { return Math.max(24, evalCurvePx(BANDCASE, z) / 2 + 2); } // Beta 1.206 (Codex P2 on the width fix): the map-tap tolerance follows the WIDEST paint (band + casing) at the tap's zoom, floored at 24 px — the Beta 1.181 rule ("a tap anywhere on the paint still selects instead of deselecting") kept by construction now that the width fix widened the paint past the old fixed 24 px at z18-19; at z17 and below the paint is narrower than the floor and the tolerance is the shipped 24 unchanged
+  return { init, drop, sync, syncSel, syncTheme, active, setFont, rebuildRoute, tapTolPx };
 })();
 window.GLP = GLP;

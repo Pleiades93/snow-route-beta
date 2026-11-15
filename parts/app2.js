@@ -400,7 +400,8 @@ onMapReady(() => map.on('click', e => {
   if (Date.now() < swallowClickUntil) return;
   const pt = map.project([e.lngLat.lng, e.lngLat.lat]);
   const near = nearestStreet(pt);
-  if (near.name && near.d <= 24) { const st = nearestStretch(near.name, pt); tapStretch(near.name, st.idx, [e.lngLat.lat, e.lngLat.lng]); }   // Beta 1.181: the tolerance is 16 x WIDTH_K (engine) = 24 px, so a tap anywhere on the 1.5x paint still selects instead of deselecting
+  const tol = (window.GLP && GLP.tapTolPx) ? GLP.tapTolPx(map.getZoom()) : 24;
+  if (near.name && near.d <= tol) { const st = nearestStretch(near.name, pt); tapStretch(near.name, st.idx, [e.lngLat.lat, e.lngLat.lng]); }   // Beta 1.181: the tolerance is 16 x WIDTH_K (engine) = 24 px, so a tap anywhere on the 1.5x paint still selects instead of deselecting; Beta 1.206: the tolerance now comes from the engine (GLP.tapTolPx) and follows the widest paint at this zoom, floored at that same 24 px — the width fix widened the paint past a fixed 24 px at z18-19
   else deselect();
 }));
 
