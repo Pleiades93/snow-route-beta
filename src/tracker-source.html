@@ -4481,7 +4481,7 @@ $('noteYes').addEventListener('click', () => {
 
 // ===== GPS (checklist SS7) =====
 // Beta 1.64 (audit R01): lastFixTs is the last accepted fix's OWN timestamp - a callback carrying an older one is stale
-let watchId = null, watchGen = 0, gpsFromRun = false, gpsPos = null, dispPos = null, lastFixAt = 0, lastFixTs = 0, lastGood = null, spdTimer = 0, offRouteArmed = true, followPaused = false, staleWatchTimer = 0;
+let watchId = null, watchGen = 0, gpsFromRun = false, gpsPos = null, dispPos = null, lastFixAt = 0, lastFixTs = 0, lastFixSpd = 0, lastGood = null, spdTimer = 0, offRouteArmed = true, followPaused = false, staleWatchTimer = 0; // Beta 1.198: lastFixSpd = the last ACCEPTED fix's own speed (m/s) — followCam's correction cap is relative to it (see the cap's comment there)
 const SAMPLES = {};
 function samplesFor(stretch, names) { // Beta 1.117: the coverage samples as a PURE function of a stretch set - the pre-1.117 eval-time IIFE, parameterized. buildSamples refills the live SAMPLES from it on every load (via buildGeometry); app4's packGeometry builds a non-active pack's samples from it for snapshot validation (F6).
   const out = {};
@@ -4621,7 +4621,7 @@ function followCam(now) {
   const sx = camSmoothDamp(cx, tx, camVel[0], 0.32, dt), sy = camSmoothDamp(cy, ty, camVel[1], 0.32, dt); // smoothTime 0.32 s (the study's mix): centre time-lag ~323 ms median on the judged drive (2.58 m at 8 m/s; under a metre at driveway pace), offset p95 ~5 px at z17 against the app's own ~47 px follow tolerance
   camVel = [sx[1], sy[1]];
   let nx = sx[0], ny = sy[0];
-  const step = Math.hypot(nx - cx, ny - cy), maxStep = 20 * dt; // the 20 m/s cap: a fix's re-anchor can hand the display a 17.6 m correction (fix 200 of the judged drive) and the shipped chase moved the camera at 44 m/s absorbing it; the cap makes that class impossible — this frame's travel is clamped to 20 m/s and the spring's velocity state is left as computed, so the glide resumes coherently once the cap releases. The cap governs GPS-driven following ONLY: an explicit re-centre return (camUncapped, set by resumeFollow) is exempt until it closes under 25 m — a user who panned a kilometre away and tapped Re-centre is owed a traverse, not a 50 s crawl
+  const step = Math.hypot(nx - cx, ny - cy), maxStep = (20 + lastFixSpd) * dt; // the correction cap, RELATIVE to the vehicle's own speed (Codex P2, PR #45): a fix's re-anchor can hand the display a 17.6 m correction (fix 200 of the judged drive) and the shipped chase moved the camera at 44 m/s absorbing it — the cap makes the correction component of the camera's motion at most 20 m/s: this frame's travel is clamped to (20 + the last fix's speed) and the spring's velocity state is left as computed, so the glide resumes coherently once the cap releases. An ABSOLUTE 20 m/s cap was the first form and it was wrong: above 72 km/h the camera could not even track the vehicle and fell behind without bound (~600 m in a minute at 30 m/s in Codex's mock run) — the judged drive never exceeds ~16 m/s, so the study could not see it. At rest lastFixSpd is ~0 and the cap is exactly the studied 20 m/s. The cap governs GPS-driven following ONLY: an explicit re-centre return (camUncapped, set by resumeFollow) is exempt until it closes under 25 m — a user who panned a kilometre away and tapped Re-centre is owed a traverse, not a 50 s crawl
   if (!camUncapped && step > maxStep) { const k = maxStep / step; nx = cx + (nx - cx) * k; ny = cy + (ny - cy) * k; }
   map.jumpTo({ center: [nx / MLNG, ny / MLAT] });
 }
@@ -5099,7 +5099,7 @@ function acceptFix(pos) {
   if (acc > GPS_ACCURACY_M && lastGood && now - lastGood.at < 10000) return;
   if (acc <= GPS_ACCURACY_M) lastGood = { ll, at: now };
   const speed = pos.coords.speed;
-  lastFixAt = now; if (typeof pos.timestamp === 'number') lastFixTs = pos.timestamp; gpsAccM = acc; gpsDenied = false; // Beta 1.111: a live fix clears any earlier denial for the Status row
+  lastFixAt = now; if (typeof pos.timestamp === 'number') lastFixTs = pos.timestamp; gpsAccM = acc; gpsDenied = false; if (typeof speed === 'number' && isFinite(speed) && speed >= 0) lastFixSpd = speed; // Beta 1.111: a live fix clears any earlier denial for the Status row. Beta 1.198 (Codex P2, PR #45): the tracked-speed credit for followCam's relative correction cap, refreshed here — past every refusal return above, so only an accepted fix can set it; the platform speed is Doppler-derived (the vehicle's true speed), so a position re-anchor can never inflate it
   renderTick(performance.now()); // Beta 1.66's settle, kept: advance the display to NOW on the OLD track before re-anchoring - a display re-anchored from a stale position makes the dot chase leftover distance, which is exactly the wander drive127 S1/S2 measure
   const { est: sm, snap } = kfUpdate(ll, acc, now); // the filter subsumes the old deadband: sub-noise moves barely shift the estimate, so no fix needs swallowing
   const firstFix = !gpsPos;
