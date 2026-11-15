@@ -13,9 +13,11 @@
 // stability contract, and the deliberate boundary: a street WITH a chosen
 // trim keeps its record (draft.sectors indexes mean pieces of THAT record;
 // recomputing under a live trim would reinterpret the user's picks) - and
-// the sector session's Cancel snapshot is a second holder of the same
-// indexes, so it pins the record too while it is in flight (Codex P2 on
-// PR #75), while a whole-road session (snapshot null) pins nothing.
+// an OPEN sector session is the second reference: its Cancel snapshot, its
+// sector bar and the rendered features a map tap reads all index the same
+// record, and coverage landings do not redraw the draft, so the record is
+// pinned for the whole session and the recompute lands at the next entry
+// (Codex P2s on PR #75, rounds 1 and 2).
 //
 // Run from the repo root: node tests/proof/proof-rerun-d04-streetparts-covstamp.mjs
 import { readFileSync } from 'node:fs';
@@ -173,7 +175,7 @@ ctx.crCov = covWith(1, [['Cross Street', CROSS]], [BOX]);
 const t2 = ctx.crStreetParts('Main Street');
 check('S4: trimmed street keeps its record after coverage arrives (indexes keep their meaning)', t2 === t1 && t2.parts.length === 2);
 
-// ---- Sequence 5 (Codex P2 on PR #75): the Cancel snapshot pins the record ----
+// ---- Sequence 5 (Codex P2 on PR #75, round 1): the Cancel snapshot's record ----
 // The street was trimmed at sector-mode entry, so the session snapshot holds
 // indexes into t1. Mid-session the user taps Entire road (the live trim is
 // stored as NO entry) while coverage has grown: the renders that follow must
@@ -197,10 +199,13 @@ delete ctx.draft.sectors['Main Street']; // a later Entire-road state with no se
 const p4 = ctx.crStreetParts('Main Street');
 check('S5: pin lifts with the session -> untrimmed record recomputes (3 pieces)', !!p4 && p4 !== p1 && p4.parts.length === 3);
 
-// ---- Sequence 6: an untrimmed session (snapshot null) does NOT pin ----
-// This is the assessed defect's own shape - the trim view opened on a whole
-// road before the extract lands. The snapshot is null (whole road at entry),
-// so coverage arriving mid-session must still recompute the record.
+// ---- Sequence 6 (Codex P2 round 2): an open session pins, entry settles ----
+// The trim view opened on a whole road before the extract lands: while the
+// view stays open the record must NOT move (the rendered features' sector
+// indexes and the bar index it, and a coverage landing does not redraw the
+// draft) - and the moment the session closes, the next read recomputes, so
+// reopening the view shows the cut pieces. The defect's freeze is cured at
+// the session boundary, not by a mid-view swap.
 ctx.draft = freshDraft({ 'Main Street': [MAIN] });
 ctx.crCov = null;
 const u1 = ctx.crStreetParts('Main Street');
@@ -208,8 +213,10 @@ ctx.crSectorSession.street = 'Main Street';
 ctx.crSectorSession.snapshot = null; // entered on the whole road
 ctx.crCov = covWith(1, [['Cross Street', CROSS]], [BOX]);
 const u2 = ctx.crStreetParts('Main Street');
-check('S6: whole-road session (snapshot null) -> record still recomputes to 2 pieces', !!u2 && u2 !== u1 && u2.parts.length === 2);
-ctx.crSectorSession.street = null; ctx.crSectorSession.snapshot = undefined;
+check('S6: session open -> record stable while coverage grows (rendered indexes stay valid)', u2 === u1);
+ctx.crSectorSession.street = null; ctx.crSectorSession.snapshot = undefined; // session closed
+const u3 = ctx.crStreetParts('Main Street');
+check('S6: session closed -> next read recomputes to 2 cut pieces', !!u3 && u3 !== u1 && u3.parts.length === 2);
 
 if (failures > 0) { console.log(failures + ' check(s) failed'); process.exit(1); }
 console.log('All checks passed');

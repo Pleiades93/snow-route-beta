@@ -124,21 +124,24 @@ function crStreetParts(name) { // the street's sectors: its stitched runs cut wh
   draft.parts = draft.parts || {};
   if (draft.parts[name]) {
     const rec = draft.parts[name];
-    // A street WITH a trim keeps its record whole even when the stamp has
-    // moved: draft.sectors indexes mean pieces of THIS record, and
-    // recomputing would silently reinterpret the user's picks against
-    // different pieces - the same priority crAddRun's before/after dance
-    // gives a trim. The sector session's Cancel snapshot is a second
-    // index-holder of the same kind: it stores the pick as it stood when
-    // sector mode was entered and Cancel restores those indexes
-    // verbatim, so while an array snapshot for THIS street is in flight
-    // the record it indexes is pinned too - even if the live trim is
-    // cleared mid-session (Entire road stores as no entry, and the
-    // renders that follow would otherwise recompute the record under
-    // the snapshot's feet). Untrimmed with no snapshot in flight, the
+    // A record may be replaced only when nothing live references its
+    // pieces. Two references do: a street WITH a trim (draft.sectors
+    // indexes mean pieces of THIS record, and recomputing would
+    // silently reinterpret the user's picks against different pieces -
+    // the same priority crAddRun's before/after dance gives a trim),
+    // and an OPEN sector session for the street - its Cancel snapshot,
+    // its sector bar, and the rendered draft features whose sector
+    // indexes a map tap reads (crSectorTap) all index this record, and
+    // coverage landings do not redraw the draft, so a mid-session
+    // recompute would desync every one of them (the snapshot case is
+    // the sharp end: clear the live trim mid-session - Entire road
+    // stores as no entry - and Cancel would restore the snapshot's
+    // indexes against different pieces). While either reference stands
+    // the record is pinned; the recompute lands at the next read after
+    // they clear - for a session, the next entry, which settles the
+    // record before the session's first render. Unreferenced, the
     // record is a pure cache and falls through to the recompute below.
-    const snapPinned = crSectorSession.street === name && Array.isArray(crSectorSession.snapshot);
-    if ((draft.sectors && draft.sectors[name]) || snapPinned || rec.covStamp === crCovStamp()) return rec;
+    if ((draft.sectors && draft.sectors[name]) || crSectorSession.street === name || rec.covStamp === crCovStamp()) return rec;
   }
   const one = {}; one[name] = draft.roads[name];
   const runLines = stitchRuns(name, one).filter(L => L && L.length >= 2);
