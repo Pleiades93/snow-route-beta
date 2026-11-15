@@ -1030,11 +1030,14 @@ if (!doneTimes || typeof doneTimes !== 'object' || Array.isArray(doneTimes)) don
 for (const k of Object.keys(doneTimes)) { if (typeof doneTimes[k] !== 'string' || isNaN(Date.parse(doneTimes[k]))) delete doneTimes[k]; }
 doneVia = parseJ(lsGet(LS.via), {});
 if (!doneVia || typeof doneVia !== 'object' || Array.isArray(doneVia)) doneVia = {};
+for (const k of Object.keys(doneVia)) { if (typeof doneVia[k] !== 'string') delete doneVia[k]; } // 2026-11-15 (load sanitizer round, A-01): via values get the doneTimes treatment above - the app writes only strings here ('gps'/'tap'/'sides'; validateSnap in app3 enforces the same string standard on cancel snapshots), so a non-string value can only arrive via a crafted restore or planted storage; every consumer compares === 'gps', and an unchecked value would otherwise be re-saved verbatim and ride backups
 notes = parseJ(lsGet(LS.notes), {});
 // Notes model (production): {street: [{k:'note', at, text} | {k:'car'|'hazard'|'missed'|'salt', at}]} - normalize at load:
-// a non-array value (e.g. a legacy string) is dropped, entries keep only object shapes with a string kind.
+// a non-array value (e.g. a legacy string) is dropped, entries keep only object shapes with a string kind,
+// a string text when one is present, and a parseable date string at when one is present (2026-11-15, A-02 -
+// an object text rendered '[object Object]' in note lines and a bad at rendered 'NaN:NaN AM' flag times).
 if (!notes || typeof notes !== 'object' || Array.isArray(notes)) notes = {};
-Object.keys(notes).forEach(n => { if (!STREETSET.has(n) || !Array.isArray(notes[n])) delete notes[n]; else notes[n] = notes[n].filter(f => f && typeof f === 'object' && typeof f.k === 'string'); });
+Object.keys(notes).forEach(n => { if (!STREETSET.has(n) || !Array.isArray(notes[n])) delete notes[n]; else notes[n] = notes[n].filter(f => f && typeof f === 'object' && typeof f.k === 'string' && (f.text === undefined || typeof f.text === 'string') && (f.at === undefined || (typeof f.at === 'string' && !isNaN(Date.parse(f.at))))); });
 const _histText = lsGet(LS.hist);
 history = parseJ(_histText, []);
 const rawHistory = parseJ(_histText, []); // Beta 1.170 (Carbon fix round Phase 2, A-04): a SECOND parse of the same text - the sanitizer below mutates the surviving entries in place, so the reconciliation at the end of this load needs its own untouched copy of the stored array (see reconcileInterruptedFinish).
@@ -5072,7 +5075,7 @@ function _fxEncEntry(w, e, st) { // append one entry's bytes; returns the state 
       if (!outFull && out[4] !== null && out[4] !== undefined && (!_fxHtExact(out[4]) || !_fxHtExact(p[4]))) outFull = true;
     }
   }
-  const runV = _fxFin(e[7]) ? e[7] : 0;
+  const runV = (_fxFin(e[7]) && Number.isInteger(e[7]) && e[7] >= 0) ? e[7] : 0; // 2026-11-15 (load sanitizer round, B-02 ride-along): the run rides w.uv(BigInt(runV)) below - BigInt throws on a fractional value and a negative one corrupts the unsigned varint stream. e[7]'s only sources (runStart || 0 at live construction, the decoder's unsigned varint) are non-negative integers, so the guard changes no reachable encoding (byte-identity corpus in tests/proof/proof-fixlog-runv-guard-b02.mjs); it hardens the encoder boundary only
   const runCh = !st || runV !== st.run;
   w.u8((key ? 1 : 0) | (out ? 2 : 0) | (outFull ? 4 : 0) | (runCh ? 8 : 0));
   if (key) {
