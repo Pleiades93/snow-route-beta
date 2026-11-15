@@ -2,7 +2,7 @@
 <html lang="en" class="boot">
 <head>
 <meta charset="UTF-8">
-<meta http-equiv="Content-Security-Policy" content="default-src 'none'; script-src 'sha384-yA7BJzmpPH8Gde/qyoqKt+9/XpJpAhocpzNR03PEqBHTUrs4MhvwJdit1bSEF4+X' https://cdn.jsdelivr.net; style-src-elem 'sha384-T5odTrZ82iz2SpSIlEcnPGuZ4XQ8gAseKryjKLByVC4SC2W3Z7bxM9SuBWNXMBZ4' https://cdn.jsdelivr.net; style-src-attr 'unsafe-inline'; img-src 'self' data: blob: https://tiles.basemaps.cartocdn.com https://protomaps.github.io https://cdn.jsdelivr.net; connect-src 'self' https://tiles.basemaps.cartocdn.com https://protomaps.github.io https://cdn.jsdelivr.net https://nominatim.openstreetmap.org https://overpass-api.de https://overpass.kumi.systems; worker-src blob: 'self'; child-src blob: 'self'; font-src 'none'; manifest-src 'self'; base-uri 'none'; form-action 'none'; object-src 'none'">
+<meta http-equiv="Content-Security-Policy" content="default-src 'none'; script-src 'sha384-lUCSb80j1nXlYZwPDdDnrm0ImHSRiz/Ii2PvFaLlkxCb4gCuhowoPMzGC9OWouKH' https://cdn.jsdelivr.net; style-src-elem 'sha384-T5odTrZ82iz2SpSIlEcnPGuZ4XQ8gAseKryjKLByVC4SC2W3Z7bxM9SuBWNXMBZ4' https://cdn.jsdelivr.net; style-src-attr 'unsafe-inline'; img-src 'self' data: blob: https://tiles.basemaps.cartocdn.com https://protomaps.github.io https://cdn.jsdelivr.net; connect-src 'self' https://tiles.basemaps.cartocdn.com https://protomaps.github.io https://cdn.jsdelivr.net https://nominatim.openstreetmap.org https://overpass-api.de https://overpass.kumi.systems; worker-src blob: 'self'; child-src blob: 'self'; font-src 'none'; manifest-src 'self'; base-uri 'none'; form-action 'none'; object-src 'none'">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="mobile-web-app-capable" content="yes">
@@ -8291,7 +8291,7 @@ $('crReviewBtn').addEventListener('click', () => crExpandPanel()); // the bar's 
 $('crClearAll').addEventListener('click', () => { // Andrew's addition (2026-11-06): empty the picks at once - behind the shared confirm, the same discipline as Start over and route deletion; the city and the session stay
   const n = draft ? draftStreets().length : 0; if (!n) return;
   crConfirm('Clear all ' + n + (n === 1 ? ' road?' : ' roads?'), 'Every road you picked will be taken off this route. The city stays loaded.', () => {
-    draft.roads = {}; draft.primaries.clear(); draft.osmNames = {}; draft.sectors = {}; draft.parts = {};
+    draft.roads = {}; draft.primaries.clear(); draft.osmNames = Object.create(null); draft.sectors = {}; draft.parts = {};
     crGeomGen++; crPending = {}; // Beta 1.170 (Carbon fix round Phase 2, D-04): the wholesale roads replacement obeys the same two duties as every other roads mutation - through 1.169 it was the one mutation that did not bump the geometry generation (the crDraftGeom cache's roads-identity key happens to catch this particular replacement, but the bump is the contract every other mutation keeps, and the cache's gen key exists to be moved by exactly this class of change) and it left the pending rows standing, so crSweepPending could re-add a street the user had just cleared
     crSectorReset();
     renderDraft(); renderCrLists(); crRenderHint();
