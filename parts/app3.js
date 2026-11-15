@@ -682,12 +682,12 @@ let snapHeld = null; // the held road: { name, pts } - ONE polyline (one street 
 let snapRival = null; // the switch challenger: { poly, n } - the rival polyline and its consecutive margin wins
 let snapFar = 0; // consecutive fixes farther than SNAP_FAR_M from the held road (the evidence timeout's counter)
 let snapW = 0; // the blend weight, 0..1: 0 = the true display point, 1 = fully on the centreline. Advanced per frame in renderTick toward (snapHeld ? 1 : 0)
-let snapOutPt = null; // the outgoing projection, kept when an ordinary release drops the hold mid-blend so snapBlendPt can ease the shown point back to the true position while the weight decays (cleared on engagement, on hard reset, and when the weight settles at 0)
+let snapOutPt = null; // the outgoing TARGET, kept when an ordinary release drops the hold mid-blend: the point the current blend weight reproduces the rendered point from, so snapBlendPt can ease the shown point back to the true position as the weight decays (cleared on engagement, on hard reset, and when the weight settles at 0)
 let snapAnchor = null; // the rendered point a road change (rival switch, drop-and-reengage, engage over a blend-out) eases FROM: the blend's origin while the weight re-rises toward the new road's projection, so a switch never teleports either (cleared when the weight settles at 1, on drop, and on hard reset)
 let snapSegHint = 0; // the held line's segment the last projection landed on (the per-frame projection searches outward from here)
 let snapFixN = 0; // fixes the matcher has processed (the acceptance drive's denominator guard)
-function snapDropHold() { // an ordinary release: the currently RENDERED point is captured BEFORE the hold clears, so the blend-out eases from exactly what is on screen (snapBlendPt reads snapOutPt while no hold stands); at zero weight there is nothing showing to preserve
-  if (snapW > 0.001 && dispPos) { const cur = snapBlendPt(); if (cur) snapOutPt = cur; }
+function snapDropHold() { // an ordinary release: the blend-out's TARGET is captured BEFORE the hold clears, normalized by the current weight - snapOutPt is the point the CURRENT weight must reproduce the rendered point from (rendered = dispPos + (snapOutPt - dispPos) * snapW), so storing the rendered point itself would apply the weight twice and jump by offset * w * (1 - w) at any partial weight. Normalized, the capture is idempotent across repeated drops and the decay walks the rendered point straight to the true position. At zero weight there is nothing showing to preserve.
+  if (snapW > 0.001 && dispPos) { const cur = snapBlendPt(); if (cur) snapOutPt = [dispPos[0] + (cur[0] - dispPos[0]) / snapW, dispPos[1] + (cur[1] - dispPos[1]) / snapW]; }
   snapHeld = null; snapRival = null; snapFar = 0; snapSegHint = 0; snapAnchor = null;
 }
 function snapReset() { snapDropHold(); snapW = 0; snapOutPt = null; snapAnchor = null; } // the snap retires outright (watch stop, Start Clean): no blend-out - the state is simply gone before the next frame can show it (the weight is zeroed, so the captured outgoing point can never render, and it is cleared besides)
@@ -709,7 +709,7 @@ function snapProject(ll) { // the nearest point of ll on the held road's line, o
     lo = Math.max(0, lo - 16); hi = Math.min(pts.length - 2, hi + 16);
   }
 }
-function snapBlendPt() { // the snapped rendering of the display track at the current blend weight, or null when the snap is showing nothing (no hold and no outgoing projection, no display point, or the blend fully out). While a hold stands the target is its live projection; during a release blend-out it is the point captured at the drop, so the shown point walks back to the true position as the weight decays instead of teleporting the full offset in one frame. The blend's ORIGIN is the true position normally, or the anchor after a road change (snapTakeHold), so a switch eases across from what was on screen.
+function snapBlendPt() { // the snapped rendering of the display track at the current blend weight, or null when the snap is showing nothing (no hold and no outgoing projection, no display point, or the blend fully out). While a hold stands the target is its live projection; during a release blend-out it is the outgoing target captured (weight-normalized) at the drop, so the shown point walks back to the true position as the weight decays instead of teleporting the full offset in one frame. The blend's ORIGIN is the true position normally, or the anchor after a road change (snapTakeHold), so a switch eases across from what was on screen.
   if (!dispPos || snapW <= 0.001) return null;
   const pr = snapHeld ? snapProject(dispPos) : snapOutPt; if (!pr) return null;
   if (snapW >= 0.999) return pr;
