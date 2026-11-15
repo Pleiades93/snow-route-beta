@@ -2682,7 +2682,7 @@ function clipEndAtJunction(n, vi, pts, atStart, ownHalf) {
   }
   return pts;
 }
-function clipStrandEnds(strands, half, guideFor) {
+function clipStrandEnds(strands, half, guideFor, skipEnd) {
   // post-merge pass: a merged strand can still END at a junction even
   // when its paint family continues on the same street - mergeStrands
   // refuses a join whose corner path is unsafe, and the two caps then
@@ -2693,6 +2693,7 @@ function clipStrandEnds(strands, half, guideFor) {
   strands.forEach(sl => {
     if (!sl.mem || !sl.mem.length) return;
     [true, false].forEach(atStart => {
+      if (skipEnd && skipEnd(sl, atStart)) return;   // Beta 1.208 (gate round 3): bands skip ends whose green continues as a neighbouring piece's fill - clipping them would reopen the fill/band break this round closed
       const E = atStart ? sl.pts[0] : sl.pts[sl.pts.length - 1];
       if (!E) return;
       const grp = sharedVertexMap()[coordKey(E)] || [];
@@ -2728,21 +2729,64 @@ function clipOnLine(n, vi, pts, atStart, ownHalf, line) {
   // 2.475 m, spilling green onto the unfinished side. The cap POSITION
   // the solve finds (flush on the crossing street's near paint edge)
   // is right; only the lateral placement is wrong for an offset line.
-  // So: run the generic clip, then pull every point it inserted
-  // (foreign to the line's own points) back onto the line by
-  // projection, walking from the cut end inward, and dedupe. Points
-  // the clip left alone are the line's own and never move; two slices
-  // ending back to back at a junction project the same solved point
-  // to the same on-line point, so exact joins survive.
+  // So: run the generic clip, then move its inserted end pair (the
+  // solved end E and its approach point P - the re-cut inserts
+  // exactly those two) so E sits at the intersection of the crossing
+  // paint edge's line with THIS line, translating the pair by the
+  // same vector: the cap stays parallel to the crossing edge and
+  // centred on it (both cap corners on the edge line), the approach
+  // keeps the solve's edge-normal shape, and E rides the offset line
+  // exactly. (Gate round 3, Codex P2: the first build PROJECTED the
+  // pair onto the line - exact at perpendicular crossings, but at a
+  // 45° crossing the nearest point is not the intersection, and the
+  // cap corners landed at 4.4 / 7.9 m from the crossing centreline
+  // instead of both on the 4.95 m edge - a ~3 m wedge. Intersection,
+  // not projection.) Points the clip left alone are the line's own
+  // and never move; two slices ending back to back at a junction
+  // solve the same intersection, so exact joins survive. When the
+  // pair shape is unexpected (or the lines run near-parallel), the
+  // projection remains as the fallback.
   const out = clipEndAtJunction(n, vi, pts, atStart, ownHalf);
   if (out === pts) return out;
   const own = new Set(line);
   const res = out.slice();
+  const ins = [];
   for (let k = 0; k < res.length; k++) {
     const i = atStart ? k : res.length - 1 - k;
     if (own.has(res[i])) break;
-    res[i] = nearestOnLine(res[i], line);
+    ins.push(i);
   }
+  let done = false;
+  if (ins.length === 2) {
+    const sIdx = atStart ? ins[1] + 1 : ins[1] - 1;
+    const s2Idx = atStart ? sIdx + 1 : sIdx - 1;
+    if (res[sIdx] && res[s2Idx]) {
+      const E = XYOf(res[ins[0]]), P = XYOf(res[ins[1]]);
+      const seg = [P[0] - E[0], P[1] - E[1]], sl = Math.hypot(seg[0], seg[1]) || 1;
+      const cap = [-seg[1] / sl, seg[0] / sl];
+      const S0 = XYOf(res[sIdx]), S1 = XYOf(res[s2Idx]);
+      const hd = [S0[0] - S1[0], S0[1] - S1[1]], hl = Math.hypot(hd[0], hd[1]) || 1; hd[0] /= hl; hd[1] /= hl;
+      const den = cap[0] * hd[1] - cap[1] * hd[0];
+      if (Math.abs(den) > 0.2) {
+        const rx = S0[0] - E[0], ry = S0[1] - E[1];
+        const lam = (rx * hd[1] - ry * hd[0]) / den;
+        const Ex = [E[0] + lam * cap[0], E[1] + lam * cap[1]];
+        const ExLL = [Ex[1] / H.MLAT, Ex[0] / H.MLNG];
+        // the validity window: the local segment extension can run
+        // away at a bent, skewed T (the intersection lands metres
+        // past the junction, across the crossing centreline) - accept
+        // the intersection only when it stays near the solved end AND
+        // near the line itself; otherwise the projection below is
+        // the bounded fallback.
+        if (Math.hypot(Ex[0] - E[0], Ex[1] - E[1]) <= 6 && H.jDistM(ExLL, nearestOnLine(ExLL, line)) <= 0.9) {
+          res[ins[0]] = ExLL;
+          res[ins[1]] = [(Ex[1] + seg[1]) / H.MLAT, (Ex[0] + seg[0]) / H.MLNG];
+          done = true;
+        }
+      }
+    }
+  }
+  if (!done) for (const i of ins) res[i] = nearestOnLine(res[i], line);
   const dd = [res[0]];
   for (let i = 1; i < res.length; i++) if (H.jDistM(res[i], dd[dd.length - 1]) > 0.05) dd.push(res[i]);
   if (dd.length < 2) dd.push(res[res.length - 1]);
@@ -2750,7 +2794,7 @@ function clipOnLine(n, vi, pts, atStart, ownHalf, line) {
 }
 function fillSlicePts(n, idx, side) {   // Beta 1.208: one piece's one-side FILL slice - the half-offset line over the piece, end-trimmed with the centre family's local rule (trim only where THIS side's fill actually ends: the neighbouring piece carries no fill for this side, a run gap intervenes, or the street ends). Shared by buildFamilies and buildSelFill, so the selection's side paint is the board's side paint by construction - the R3 fix (the retired one-piece edge rebuild could never reproduce the board's junction treatment).
   const g = GEO[n], ab = g.cuts[idx];
-  const fam = i => { const b = H.pieces[n][i]; return (b !== 3 && (b & (1 << side))) ? 'fill' : 'x' + b; };
+  const fam = i => { const b = H.pieces[n][i]; return ((b & (1 << side)) || b === 3) ? 'fill' : 'x' + b; };   // Beta 1.208 (Codex P2, gate round 3): a both-sides piece CONTINUES this side's paint (its band covers the side in full), so the fill keeps its shared vertex beside a band instead of clipping to the near edge - clipping on both sides of the boundary left the junction square's half unpainted, a 9.9 m break in the completed side
   const line = side === 0 ? g.offH0 : g.offH1;
   let pts = line.slice(ab[0], ab[1] + 1);
   if (idx === 0 || g.gaps.has(ab[0]) || fam(idx - 1) !== 'fill') pts = clipOnLine(n, ab[0], pts, true, HALF_HALF, line);
@@ -2826,7 +2870,12 @@ function buildFamilies() {
       // mergeStrands still joins it seamlessly.
       if (idx === 0 || g.gaps.has(ab[0]) || famKey(idx - 1) !== key) cPts = clipEndAtJunction(n, ab[0], cPts, true, ownHalf); // Beta 1.144: a run-start piece's leading end is a street end for its run - it earns the junction clip even when the previous piece (another run's end) wears the same family
       if (idx === g.cuts.length - 1 || g.gaps.has(g.cuts[idx + 1][0]) || famKey(idx + 1) !== key) cPts = clipEndAtJunction(n, ab[1], cPts, false, ownHalf);
-      if (isBand) bandSlices.push({ pts: cPts, key: 'band', mem: [{ n, idx }], e0: null, e1: null });
+      if (isBand) {   // Beta 1.208 (Codex P2, gate round 3): the band's own clip rule is per-side-paint, not per-family - a band end clips only where the GREEN fully ends (the neighbouring piece carries no marked side at all). Beside a one-side piece the band keeps its shared vertex, meeting the fill that starts there; clipping on both sides of that boundary left the junction square's half unpainted (a 9.9 m break in the completed side, LongAve [1,3,3] in the proof network). Recomputed from the stitched slice so the centre family's rule above is untouched.
+        let bPts = g.stitched.slice(ab[0], ab[1] + 1);
+        if (idx === 0 || g.gaps.has(ab[0]) || H.pieces[n][idx - 1] === 0) bPts = clipEndAtJunction(n, ab[0], bPts, true, ownHalf);
+        if (idx === g.cuts.length - 1 || g.gaps.has(g.cuts[idx + 1][0]) || H.pieces[n][idx + 1] === 0) bPts = clipEndAtJunction(n, ab[1], bPts, false, ownHalf);
+        bandSlices.push({ pts: bPts, key: 'band', mem: [{ n, idx }], e0: null, e1: null });
+      }
       else centreSlices.push({ pts: cPts, key, mem: [{ n, idx }], e0: null, e1: null });
       if (!isBand && bits !== 0) [0, 1].forEach(side => { if (bits & (1 << side)) fillSlices.push({ pts: fillSlicePts(n, idx, side), key: 'fill', mem: [{ n, idx, side }], e0: null, e1: null }); });   // Beta 1.208: a one-side-done piece also emits its side's FILL (the half-road green Andrew ordered in place of the kerb outline)
     });
@@ -2837,7 +2886,7 @@ function buildFamilies() {
   const centres = mergeStrands(centreSlices, null);
   const bands = mergeStrands(bandSlices, null);
   clipStrandEnds(centres, SURF_HALF);
-  clipStrandEnds(bands, SURF_HALF);
+  clipStrandEnds(bands, SURF_HALF, null, (sl, atStart) => { const m = atStart ? sl.mem[0] : sl.mem[sl.mem.length - 1]; if (!m) return false; const g = GEO[m.n], ni = atStart ? m.idx - 1 : m.idx + 1; if (ni < 0 || ni >= g.cuts.length) return false; if (g.gaps.has(g.cuts[atStart ? m.idx : ni][0])) return false; return H.pieces[m.n][ni] !== 0; });
   const fills = mergeStrands(fillSlices, null);   // Beta 1.208: exact joins only, like centres/bands - consecutive marked pieces share the half-line vertex, so a side's fill is one strand flowing through its junctions
   clipStrandEnds(fills, HALF_HALF, (sl, atStart) => { const m = atStart ? sl.mem[0] : sl.mem[sl.mem.length - 1]; return m && m.side !== undefined ? (m.side ? GEO[m.n].offH1 : GEO[m.n].offH0) : null; });   // Beta 1.208: fill strand ends clip ON their half-offset line (clipOnLine), never dragged toward the centreline
   fillCornerLinks(fills);   // Beta 1.208: and where a marked side turns a corner into another street's marked side, the fills wrap the corner (fillCornerLinks)
@@ -2871,6 +2920,11 @@ function selectedGeom(it) {   // a selected stretch's painted slice: stitched po
   const key = isBand ? 'band' : mute(colOf(n, bits));
   const famKey = i => H.pieces[n][i] === 3 ? 'band' : mute(colOf(n, H.pieces[n][i]));
   let pts = g.stitched.slice(ab[0], ab[1] + 1);
+  if (isBand) {   // Beta 1.208 (gate round 3): the selection's band redraw follows the board band's per-side-paint clip rule, so selected and deselected paint meet a neighbouring fill identically
+    if (idx === 0 || g.gaps.has(ab[0]) || H.pieces[n][idx - 1] === 0) pts = clipEndAtJunction(n, ab[0], pts, true, half);
+    if (idx === g.cuts.length - 1 || g.gaps.has(g.cuts[idx + 1][0]) || H.pieces[n][idx + 1] === 0) pts = clipEndAtJunction(n, ab[1], pts, false, half);
+    return { pts, bits, half };
+  }
   if (idx === 0 || g.gaps.has(ab[0]) || famKey(idx - 1) !== key) pts = clipEndAtJunction(n, ab[0], pts, true, half);
   if (idx === g.cuts.length - 1 || g.gaps.has(g.cuts[idx + 1][0]) || famKey(idx + 1) !== key) pts = clipEndAtJunction(n, ab[1], pts, false, half);
   return { pts, bits, half };

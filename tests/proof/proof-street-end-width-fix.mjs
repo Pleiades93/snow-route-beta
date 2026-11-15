@@ -125,8 +125,8 @@ for (const z of [17, 18, 19]) {
 ok('3S: BANDW and BANDCASE declarations are gone', !src.includes('const BANDW') && !src.includes('const BANDCASE'));
 ok('3S: t1-band and t1-selband draw with surfW',
   /'t1-band'[^;]*surfW/.test(src) && /'t1-selband'[^;]*surfW/.test(src));
-ok('3S: band end trims use SURF_HALF (clipStrandEnds(bands, SURF_HALF))',
-  src.includes('clipStrandEnds(bands, SURF_HALF)') && !/BAND_HALF\s*[,);]/.test(src));
+ok('3S: band end trims use SURF_HALF (clipStrandEnds(bands, SURF_HALF, ...) — 1.208R3: the call gained the gate-round-3 skip guard for ends whose green continues as a fill; the trim half is unchanged)',
+  src.includes('clipStrandEnds(bands, SURF_HALF, null, (sl, atStart)') && !/BAND_HALF\s*[,);]/.test(src));
 for (const z of [17, 18, 19]) {
   const half = drawnM(surfW, z) / 2;
   ok(`3S: band (== surface) half-width at z${z} meets its 4.95 m end cut`, half >= 4.95 - 0.05, half.toFixed(2) + ' m');

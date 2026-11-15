@@ -61,6 +61,7 @@ const STRETCH = {
   LongAve: { runs: [{ parts: [seg(-120, 0, 0, 0), seg(0, 0, 60, 0), seg(60, 0, 120, 0)] }] },
   NorthAve: { runs: [{ parts: [seg(-120, 60, 0, 60), seg(0, 60, 60, 60), seg(60, 60, 120, 60)] }] },
   CrossSt: { runs: [{ parts: [seg(0, -60, 0, 0), seg(0, 0, 0, 60), seg(0, 60, 0, 120)] }] },
+  DiagSt: { runs: [{ parts: [seg(0, -60, 60, 0), seg(60, 0, 120, 60)] }] },
 };
 const names = Object.keys(STRETCH);
 const host = {
@@ -78,7 +79,7 @@ const host = {
   names, STRETCH,
   ROADS: Object.fromEntries(names.map(n => [n, STRETCH[n].runs.flatMap(r => r.parts)])),
   SPOT: {},
-  pieces: { LongAve: [1, 1, 1], NorthAve: [0, 0, 0], CrossSt: [0, 0, 0] },
+  pieces: { LongAve: [1, 1, 1], NorthAve: [0, 0, 0], CrossSt: [0, 0, 0], DiagSt: [0, 0] },
   selStretch: null, selSet: [], isNight: () => false,
   activeRoute: { name: 'Proof' }, glHideLabels: () => {},
 };
@@ -183,6 +184,60 @@ GLP.sync();
 const fillsC1 = sources.fills ? strandsM(sources.fills.data) : [];
 check('R2c: no connector when the corner\u2019s other side is unmarked (a lone fill still ends at the near edge)',
   fillsC1.length === 1, 'strands=' + fillsC1.length);
+host.pieces.LongAve = [1, 1, 1];
+GLP.sync();
+
+// ---- R2d: fill <-> band continuity (Codex P2, gate round 3). A
+// one-side piece flowing into a both-sides piece is ONE completed
+// side: treating 3 as a different fill family clipped the fill at
+// the boundary while the band clipped at its own side, leaving the
+// junction square's half - 9.9 m - unpainted. The green strands must
+// MEET at the boundary vertex, in both directions.
+const stripEnds = () => {
+  const fills = strandsM(sources.fills.data).filter(s => s.filter(p => Math.abs(p[1] - 2.475) <= 0.5).length >= s.length * 0.7);
+  const bands = strandsM(sources.bands.data);
+  return { fillE: fills.length ? Math.max(...fills.map(s => Math.max(...s.map(p => p[0])))) : null,
+           fillW: fills.length ? Math.min(...fills.map(s => Math.min(...s.map(p => p[0])))) : null,
+           bandE: bands.length ? Math.max(...bands.map(s => Math.max(...s.map(p => p[0])))) : null,
+           bandW: bands.length ? Math.min(...bands.map(s => Math.min(...s.map(p => p[0])))) : null };
+};
+host.pieces.LongAve = [1, 3, 3];
+GLP.sync();
+let se = stripEnds();
+check('R2d: fill flowing into a band meets it at the boundary (no 9.9 m break in the completed side)',
+  se.fillE !== null && se.bandW !== null && se.fillE >= se.bandW - 0.3,
+  'fillE=' + se.fillE + ' bandW=' + se.bandW);
+host.pieces.LongAve = [3, 1, 0];
+GLP.sync();
+se = stripEnds();
+check('R2d: band flowing into a fill meets it at the boundary (the reverse transition)',
+  se.bandE !== null && se.fillW !== null && se.bandE >= se.fillW - 0.3,
+  'bandE=' + se.bandE + ' fillW=' + se.fillW);
+host.pieces.LongAve = [1, 1, 1];
+GLP.sync();
+
+// ---- R2e: oblique junction caps (Codex P2, gate round 3). At a 45
+// degree crossing (DiagSt crosses LongAve at x=60), a terminating
+// fill's cap must sit flush on the crossing street's near paint
+// edge: the end point ON the half-offset line AND on the edge line
+// (4.95 m from the diagonal's centreline), the approach running
+// normal to the diagonal. Projecting the solved end onto the line
+// (the gate-round-2 construction) put the cap's centre at ~6.7 m
+// from the diagonal's centreline - a ~3 m wedge.
+host.pieces.LongAve = [0, 1, 0];
+GLP.sync();
+const fillsO = strandsM(sources.fills.data);
+const oStrand = fillsO.find(s => s.some(p => p[0] > 30));
+const oEi = oStrand ? oStrand.reduce((bi, p, i) => (p[0] > oStrand[bi][0] ? i : bi), 0) : -1;
+const oEnd = oStrand ? oStrand[oEi] : null;   // east end, at the DiagSt junction
+const oPrev = oStrand ? oStrand[oEi > 0 ? oEi - 1 : oEi + 1] : null;
+const dDiag = p => Math.abs((p[0] - 60) - p[1]) / Math.SQRT2;   // distance to DiagSt's centreline (the y=x line through (60,0))
+check('R2e: the oblique fill end sits ON the crossing paint edge (4.95 m from the diagonal centreline, +/-0.5) and ON its half line (2.475, +/-0.45)',
+  !!oEnd && Math.abs(dDiag(oEnd) - 4.95) <= 0.5 && Math.abs(oEnd[1] - 2.475) <= 0.45,
+  oEnd ? 'end=(' + oEnd.map(v => +v.toFixed(2)) + ') dDiag=' + dDiag(oEnd).toFixed(2) : 'no strand');
+check('R2e: the oblique approach runs normal to the diagonal (edge-normal approach preserved)',
+  !!oEnd && !!oPrev && (() => { const vx = oPrev[0] - oEnd[0], vy = oPrev[1] - oEnd[1], L = Math.hypot(vx, vy) || 1; return Math.abs((vx / L + vy / L) / Math.SQRT2) <= 0.25; })(),
+  oPrev ? 'prev=(' + oPrev.map(v => +v.toFixed(2)) + ')' : 'no prev');
 host.pieces.LongAve = [1, 1, 1];
 GLP.sync();
 
