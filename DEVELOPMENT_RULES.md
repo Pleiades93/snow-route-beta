@@ -157,8 +157,10 @@ sharded suite on `main` as the environment-drift audit.
     covers what a tree hash cannot see (runner and browser drift). Test
     evidence is still recorded against exact commits (§6); a re-run that
     turns a failure green counts as green for that commit and is logged as a
-    flake in the goal's flake log — a check that flakes three times is
-    hardened or quarantined out of the gate, never just re-run forever.
+    flake in the goal's flake log. The operative flake policy — the
+    focused re-run and what a second flake triggers — is the FLAKE RULE
+    stated in the header of `.github/workflows/checks.yml`; it governs,
+    and this document does not restate it.
 - **Never weaken or delete a test assertion to obtain a pass.** When a test fails,
   establish whether the defect is in the app or in the test (state dumps, step
   traces, reproduction), fix the defective side, and say which it was. The

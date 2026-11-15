@@ -124,7 +124,7 @@ jobs:
         uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020 # v4
         with:
           node-version: '22'
-      - name: Type check (A1 pilot - parts/app1.js only, Beta 1.149)
+      - name: Type check (scope in scripts/tsconfig.json - data.js, app1.js, pmstyles.js; begun as the A1 pilot, Beta 1.149)
         working-directory: scripts
         run: |
           npm ci
@@ -305,11 +305,20 @@ jobs:
     # that ran for the selected tier passed (tier-drives for Tier A/B, the
     # browser-tests shards for Tier C), and fails when either drive job
     # failed or was cancelled, or when neither ran (plan anomaly - fail
-    # closed). On push / workflow_dispatch events it is skipped by
+    # closed). offline-e2e is in the aggregate on the same terms
+    # (retro-fixes round, 2026-11-14): when the plan flags offline (Tier C),
+    # its failure or cancellation fails this gate; when it is legitimately
+    # skipped (plan flag false, Tier A/B), its "skipped" result is ignored
+    # and the drive verdict decides - exactly how the not-selected drive
+    # job is treated. Fail-closed is preserved: offline-e2e can only be
+    # skipped when its plan-flag condition is false or the plan itself
+    # failed, and a failed plan skips both drive jobs too, so the
+    # neither-ran arm below still fails the gate. On push /
+    # workflow_dispatch events it is skipped by
     # condition, so main pushes (browser-smoke reports there) and the
     # nightly battery (shards report there) are completely untouched.
     name: tier drives
-    needs: [tier-drives, browser-tests]
+    needs: [tier-drives, browser-tests, offline-e2e]
     if: always() && github.event_name == 'pull_request'
     runs-on: ubuntu-latest
     timeout-minutes: 5
@@ -318,9 +327,15 @@ jobs:
         env:
           TIER_RESULT: ${{ needs.tier-drives.result }}
           SHARDS_RESULT: ${{ needs.browser-tests.result }}
+          OFFLINE_RESULT: ${{ needs.offline-e2e.result }}
         run: |
           echo "tier-drives result: ${TIER_RESULT}"
           echo "browser-tests (Tier C shards) result: ${SHARDS_RESULT}"
+          echo "offline-e2e result: ${OFFLINE_RESULT}"
+          if [ "${OFFLINE_RESULT}" = "failure" ] || [ "${OFFLINE_RESULT}" = "cancelled" ]; then
+            echo "::error::The offline end-to-end gate failed or was cancelled."
+            exit 1
+          fi
           if [ "${TIER_RESULT}" = "failure" ] || [ "${TIER_RESULT}" = "cancelled" ] || [ "${SHARDS_RESULT}" = "failure" ] || [ "${SHARDS_RESULT}" = "cancelled" ]; then
             echo "::error::A drive gate failed or was cancelled."
             exit 1

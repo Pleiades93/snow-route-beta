@@ -10,12 +10,19 @@ ordinary folders (Pages serves them too — the source is public by design).
 ## Build
 
 ```
+python3 scripts/assemble.py
 python3 scripts/build-pages.py
 ```
 
-Reads `src/tracker-source.html` + `src/sw.js`, writes `index.html` +
-`sw.js` at the root, and runs the parity and integrity checks. Never
-hand-edit `index.html` or the root `sw.js`.
+First the assemble step: `scripts/assemble.py` concatenates `parts/`
+(the canonical app source, in its fixed order) into
+`src/tracker-source.html`. That file is generated — never hand-edit
+it; edit the part and re-run the assemble.
+
+Then `scripts/build-pages.py` reads the assembled
+`src/tracker-source.html` + `src/sw.js`, writes `index.html` + `sw.js`
+at the root, and runs the parity and integrity checks. Never hand-edit
+`index.html` or the root `sw.js`.
 
 ## Release flow
 

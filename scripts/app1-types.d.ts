@@ -1,7 +1,12 @@
-// Type declarations for the A1 pilot (Beta 1.149, Improvement Tranche 5):
-// JSDoc + checkJs over parts/app1.js ONLY (tsconfig.json in this folder is
-// the whole scope - no other part is checked, and this file is never
-// assembled into the page; scripts/assemble.py's PARTS list is untouched).
+// Type declarations for the type check (begun as the A1 pilot, Beta
+// 1.149, Improvement Tranche 5): JSDoc + checkJs over the parts listed
+// in tsconfig.json in this folder (the whole scope - a part is checked
+// iff it is listed there; this file is never assembled into the page;
+// scripts/assemble.py's PARTS list is untouched). The scope expands
+// part by part (retro-fixes round, 2026-11-14): when a part joins the
+// include list, its section-2 mirrors below are REMOVED in the same
+// change - the part's real declarations govern, and a mirror left
+// behind reports a false redeclare against them.
 //
 // Three kinds of declarations live here, kept apart on purpose:
 //
@@ -29,8 +34,8 @@
 //    is app1's own top-level `let history` (the archived cleans), which
 //    shadows window.history for the whole script - the DOM lib therefore
 //    reports a false redeclare plus a cascade against the app's binding.
-//    So this file declares exactly the browser surface app1.js uses, with
-//    the shapes it uses: the elements app1 asks for by id all exist in
+//    So this file declares exactly the browser surface the checked parts
+//    use, with the shapes they use: the elements app1 asks for by id all exist in
 //    parts/head.html and are dereferenced directly (the pilot config runs
 //    with strictNullChecks off, so element nullability is not modelled).
 
@@ -39,8 +44,8 @@
 /** A map point as [lat, lng] - the pack/trail coordinate pair used throughout the schema. */
 type LatLng = [number, number];
 
-/** Any point whose first two elements are [lat, lng]: distM and ptSegM read only those two, and both plain geometry points and trail triples (which carry a third, time, element) pass through them. */
-type AnyPoint = [number, number, ...number[]];
+/** Any point whose first two elements are [lat, lng]: distM and ptSegM read only those two, and both plain geometry points and trail triples (which carry a third, time, element) pass through them. Typed as a plain number array (retro-fixes round, 2026-11-14): the geometry code builds points dynamically, so the checker cannot prove tuple shape at those call sites - the [lat, lng] contract is prose, as it was at runtime all along. */
+type AnyPoint = number[];
 
 /** A GPS trail point: [lat, lng, epochSeconds] (schema, v4.trail row). */
 type TrailPoint = [number, number, number];
@@ -159,7 +164,7 @@ declare var selStretch: { name: string, idx: number } | null;
 /** app2.js: normalizes basemap label layers for a map; app1 only forwards the function through GL_HOST's getter. Its map parameter is MapLibre's, unmodelled in this pilot (see `map` above). */
 declare function glHideLabels(m: any): void;
 
-// ---- 3. Browser surface actually used by app1.js ----
+// ---- 3. Browser surface actually used by the checked parts ----
 
 /** The classList surface app1 uses. */
 interface AppClassList {
@@ -185,19 +190,30 @@ interface AppStorage {
 declare var document: {
   getElementById(id: string): AppElement;
   body: AppElement;
-  addEventListener(type: string, listener: () => void): void;
+  addEventListener(type: string, listener: () => void, capture?: boolean): void;
   visibilityState: string;
+  hidden: boolean;
 };
 
 declare var window: {
   visualViewport: { height: number } | null;
   innerHeight: number;
-  addEventListener(type: string, listener: () => void): void;
+  addEventListener(type: string, listener: () => void, capture?: boolean): void;
+  /** The app's own paint host, assigned by engine.js (`window.GLP = GLP`) and read by app2.js. Typed as any like `map` above: its shape is engine's own returned object, not modelled here. */
+  GLP: any;
 };
 
 declare var localStorage: AppStorage;
 declare var sessionStorage: AppStorage;
 
+/** The console surface the parts use (retro-fixes round, 2026-11-14: engine/app2 log through it). */
+declare var console: {
+  log(...args: any[]): void;
+  warn(...args: any[]): void;
+  error(...args: any[]): void;
+};
+
 declare function setTimeout(fn: () => void, ms?: number): number;
 declare function clearTimeout(id: number): void;
 declare function setInterval(fn: () => void, ms?: number): number;
+declare function clearInterval(id: number): void;
