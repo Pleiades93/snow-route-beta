@@ -130,7 +130,7 @@ try {
   // ---- F: C-03 + C-04 any-route records + Status labels ----
   const f = await JA(`(async () => {
     const noneAtAll = anyPreloadRecord();
-    const fake = { id: 'zztest', name: 'ZZ Test', area: 'Nowhere', mains: [], roads: {}, reference: {}, box: { w: -79.60, s: 43.80, e: -79.50, n: 43.90 } };
+    const fake = { id: 'zztest', name: 'ZZ Test', area: 'Nowhere', primaries: [], roads: {}, reference: {}, box: { w: -79.60, s: 43.80, e: -79.50, n: 43.90 } };
     ROUTE_PACKS.push(fake);
     const rkz = routeKeys('zztest');
     const zTotal = packTileUrls(fake).size;

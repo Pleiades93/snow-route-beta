@@ -23,7 +23,7 @@ const ok = (name, cond) => R.checks.push([name, cond === true]);
 const J = async (expr) => { const raw = await ev(`(() => { try { return JSON.stringify((${expr})); } catch (e) { return JSON.stringify({ __err: String(e && e.message || e) }); } })()`); return typeof raw === 'string' ? JSON.parse(raw) : {}; };
 
 const FIXTURE = {
-  id: 'fx149', name: 'Fixture Route', area: 'Testville', main: ['Fixture Main'],
+  id: 'fx149', name: 'Fixture Route', area: 'Testville', primaries: ['Fixture Main'],
   roads: {
     'Fixture Main': [[[43.82, -79.575], [43.82, -79.57], [43.82, -79.565]]],
     'Fixture Alpha': [[[43.815, -79.57], [43.82, -79.57], [43.825, -79.57]]],

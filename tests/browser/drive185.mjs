@@ -18,7 +18,7 @@ const { proc, send, S, ev, consoleLog, sleep, poll, url } = await launchDrive({ 
 const R = { checks: [] };
 const ok = (name, cond) => R.checks.push([name, cond === true]);
 const UPKEY = 'snowroute.v2.userpacks';
-const PACK = (name, street) => ({ name, area: 'Vaughan', mains: [], roads: { [street]: [[[43.8, -79.57], [43.801, -79.571]]] }, reference: {} });
+const PACK = (name, street) => ({ name, area: 'Vaughan', primaries: [], roads: { [street]: [[[43.8, -79.57], [43.801, -79.571]]] }, reference: {} });
 const navigate = async () => { await send('Page.navigate', { url }, S); await sleep(3000); };
 const storeCanon = async () => JSON.parse(await ev(`(async () => { const m = await upGetAll(); const out = {}; for (const id of Object.keys(m || {})) out[id] = upCanon(m[id]); return JSON.stringify(out); })()`));
 

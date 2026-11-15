@@ -110,7 +110,7 @@ fs.writeFileSync('/tmp/d150-photo.png', Buffer.from('iVBORw0KGgoAAAANSUhEUgAAAAE
 fs.writeFileSync('/tmp/d150-bad.json', '{this is not a draft');
 const candidate = FIXDATA.candidate;
 fs.writeFileSync('/tmp/d150-candidate.json', JSON.stringify(candidate));
-const envelope = { name: 'Envelope Route', area: 'Vaughan', mains: ['Bordeaux'], roads: { Bordeaux: [elsByName['Bordeaux Drive'][0].geometry.map(g => [g.lat, g.lon])], Alderson: [elsByName['Alderson Avenue'][0].geometry.map(g => [g.lat, g.lon])] } };
+const envelope = { name: 'Envelope Route', area: 'Vaughan', primaries: ['Bordeaux'], roads: { Bordeaux: [elsByName['Bordeaux Drive'][0].geometry.map(g => [g.lat, g.lon])], Alderson: [elsByName['Alderson Avenue'][0].geometry.map(g => [g.lat, g.lon])] } };
 fs.writeFileSync('/tmp/d150-envelope.json', JSON.stringify(envelope));
 const CAND_N = Object.keys(candidate).length; // premise derivation (Tranche 4 / T2, 2026-11-08): expectations about the shipped world derive from source - see pack-expect.mjs (the candidate's street count derives from the candidate fixture itself)
 const candLen = Object.values(candidate).reduce((a, segs) => a + segs.reduce((b, s) => b + wayLen(s.map(p => ({ lat: p[0], lon: p[1] }))), 0), 0);
@@ -250,8 +250,8 @@ await ev(`document.getElementById('crNameInput').value = 'Route 6W'`);
 await ev(`document.getElementById('crSaveBtn').click()`);
 await poll(`ROUTE_PACKS.some(p => p.id === 'route-6w') && !creating`, 10000);
 const A10 = JSON.parse(await ev(`(async () => { const m = await upGetAll(); return JSON.stringify({ rec: m || {}, listed: !!document.querySelector('#rmRoutes .routeRow[data-route="route-6w"]'), pre: JSON.parse(localStorage.getItem('snowroute.route-6w.v5.preload') || 'null') }); })()`)); // Beta 1.166: the pack's home is the IndexedDB store now - read it there
-ok('A10 save persists the pack in the IndexedDB store (2 streets, Bordeaux main), lists it in the Routes menu, and gives it an honest preload record (0 of its tiles) | ' + JSON.stringify({ keys: Object.keys(A10.rec), pre: A10.pre }),
-  !!A10.rec['route-6w'] && Object.keys(A10.rec['route-6w'].roads).length === 2 && A10.rec['route-6w'].main.join() === 'Bordeaux Drive' && A10.listed && A10.pre && A10.pre.routeSaved === 0 && A10.pre.routeTotal > 0);
+ok('A10 save persists the pack in the IndexedDB store (2 streets, Bordeaux a primary), lists it in the Routes menu, and gives it an honest preload record (0 of its tiles) | ' + JSON.stringify({ keys: Object.keys(A10.rec), pre: A10.pre }),
+  !!A10.rec['route-6w'] && Object.keys(A10.rec['route-6w'].roads).length === 2 && A10.rec['route-6w'].primaries.join() === 'Bordeaux Drive' && A10.listed && A10.pre && A10.pre.routeSaved === 0 && A10.pre.routeTotal > 0);
 await ev(`document.querySelector('#rmRoutes .routeRow[data-route="route-6w"]').click()`);
 await poll(`typeof activeRoute !== 'undefined' && activeRoute && activeRoute.id === 'route-6w'`, 20000);
 await poll(`typeof map === 'undefined' || !map || !map.isMoving()`, 25000);

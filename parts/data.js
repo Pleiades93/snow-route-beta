@@ -4,7 +4,7 @@
 // data.js payloads - only the wrapper changed.) =====
 const ROUTE_PACKS = [{
   id: '5w', name: 'Route 5W', area: 'Vaughan',
-  main: ["Velmar", "Mellings", "Astona", "Santa Barbara", "Valeria", "Greenpark"],
+  primaries: ["Velmar", "Mellings", "Astona", "Santa Barbara", "Valeria", "Greenpark"],
   spot: {"Columbus": [1, 0.47], "Mellings": [1, 0.55], "Valeria": [1, 0.45], "Santa Barbara": [3, 0.4], "Kingsnorth": [0, 0.57], "Bell Harbour": [0, 0.45], "Romeo": [-1, 0.4], "Astona": [-1, 0.6], "Bourbon": [-1, 0.55], "Fifth": [-1, 0.55]},
   tileNames: ["Valeria", "Dianawood", "Cartwright", "Greenpark", "Bell Harbour", "Mellings", "Julian", "Bayside", "Santa Barbara", "Blackburn", "Radley", "Marconi", "Frankie", "Kingsnorth", "Tina", "Topper", "Astona", "Flushing", "Boddy", "Columbus", "Woolacott", "Galloway", "Bourbon", "Angie", "Romeo", "Ferrari", "Flatbush", "Bloomingdale", "Conti", "Brownlee", "Malden", "Velmar", "Fifth", "Wilshire", '5th Avenue', 'Angie Place', 'Astona Boulevard', 'Bayside Court', 'Bell Harbour Place', 'Blackburn Boulevard', 'Bloomingdale Lane', 'Boddy Court', 'Bourbon Street', 'Brownlee Avenue', 'Cartwright Boulevard', 'Columbus Avenue', 'Conti Crescent', 'Dianawood Ridge', 'Ferrari Court', 'Flatbush Avenue', 'Flushing Avenue', 'Frankie Lane', 'Galloway Drive', 'Greenpark Boulevard', 'Julian Court', 'Kingsnorth Boulevard', 'Malden Street', 'Marconi Avenue', 'Mellings Drive', 'Radley Street', 'Romeo Crescent', 'Santa Barbara Place', 'Tina Place', 'Topper Court', 'Valeria Boulevard', 'Velmar Drive', 'Wilshire Boulevard', 'Woolacott Road'],
   box: { w: -79.75, s: 43.70, e: -79.35, n: 44.05 }, // the pack's offline area (z8-14); the z15 core derives from its own roads

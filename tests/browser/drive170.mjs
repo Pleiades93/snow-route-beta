@@ -20,7 +20,7 @@ const R = { checks: [] };
 const ok = (name, cond) => R.checks.push([name, cond === true]);
 
 const ROADS = { 'H2 Alpha Street': [[[43.845, -79.575], [43.845, -79.565]]], 'H2 Beta Street': [[[43.855, -79.575], [43.855, -79.565]]] };
-fs.writeFileSync('/tmp/d170-draft.json', JSON.stringify({ name: 'D170 Probe Route', area: 'Vaughan', mains: ['H2 Alpha Street'], roads: ROADS }));
+fs.writeFileSync('/tmp/d170-draft.json', JSON.stringify({ name: 'D170 Probe Route', area: 'Vaughan', primaries: ['H2 Alpha Street'], roads: ROADS }));
 const CITY = [{ display_name: 'Vaughan, Ontario, Canada', category: 'place', type: 'city', lat: '43.8367', lon: '-79.4982', boundingbox: ['43.7256', '43.9538', '-79.6120', '-79.3858'], address: { city: 'Vaughan', state: 'Ontario', country: 'Canada' } }];
 
 const installStub = async () => {

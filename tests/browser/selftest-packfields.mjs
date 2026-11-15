@@ -8,7 +8,11 @@
 // Proven here in plain Node: (1) the outputs for written cases are
 // IDENTICAL to the pristine Beta 1.130 validator's - the expected values
 // in fixtures/packfields-cases.json were captured from the 1.130 code
-// before the change; (2) the list is genuinely the source - a field name
+// before the change (field-name re-base, 2026-11-15: the stored field
+// was renamed main -> primaries at Andrew's direction, completing Beta
+// 1.205 at the storage layer; the cases' input and expected keys were
+// renamed in place - values and key order untouched, so the identity
+// claim stands modulo the field's name); (2) the list is genuinely the source - a field name
 // appended to it (here only) is carried through, and the same field is
 // dropped while unlisted; (3) the fences hold - 'snap' is a storage-slot
 // field, never a pack field, before and after.
@@ -46,7 +50,7 @@ const t = (name, cond) => { if (cond) pass++; else { fail++; console.log('FAIL',
 const clone = o => JSON.parse(JSON.stringify(o));
 // ---- the list itself ----
 t('P1 PACK_FIELDS is exactly the pack format, in construction order',
-  JSON.stringify(PACK_FIELDS) === JSON.stringify(['name', 'area', 'main', 'spot', 'tileNames', 'box', 'roads', 'reference']));
+  JSON.stringify(PACK_FIELDS) === JSON.stringify(['name', 'area', 'primaries', 'spot', 'tileNames', 'box', 'roads', 'reference']));
 t('P2 fence: snap is in neither PACK_FIELDS nor ROUTE_FIELDS (a slot field, hand-carried at restore scope by design)',
   !PACK_FIELDS.includes('snap') && !ROUTE_FIELDS.includes('snap') &&
   JSON.stringify(ROUTE_FIELDS) === JSON.stringify(['done', 'times', 'hist', 'notes', 'via', 'trail', 'cov', 'start', 'flip', 'sides', 'sess']));

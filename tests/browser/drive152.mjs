@@ -42,7 +42,7 @@ fs.writeFileSync('/tmp/d150-photo.png', Buffer.from('iVBORw0KGgoAAAANSUhEUgAAAAE
 fs.writeFileSync('/tmp/d150-bad.json', '{this is not a draft');
 const candidate = FIXDATA.candidate;
 fs.writeFileSync('/tmp/d150-candidate.json', JSON.stringify(candidate));
-const envelope = { name: 'Envelope Route', area: 'Vaughan', mains: ['Bordeaux'], roads: { Bordeaux: [elsByName['Bordeaux Drive'][0].geometry.map(g => [g.lat, g.lon])], Alderson: [elsByName['Alderson Avenue'][0].geometry.map(g => [g.lat, g.lon])] } };
+const envelope = { name: 'Envelope Route', area: 'Vaughan', primaries: ['Bordeaux'], roads: { Bordeaux: [elsByName['Bordeaux Drive'][0].geometry.map(g => [g.lat, g.lon])], Alderson: [elsByName['Alderson Avenue'][0].geometry.map(g => [g.lat, g.lon])] } };
 fs.writeFileSync('/tmp/d150-envelope.json', JSON.stringify(envelope));
 const candLen = Object.values(candidate).reduce((a, segs) => a + segs.reduce((b, s) => b + wayLen(s.map(p => ({ lat: p[0], lon: p[1] }))), 0), 0);
 
