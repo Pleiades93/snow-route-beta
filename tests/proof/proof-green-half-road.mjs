@@ -1,0 +1,179 @@
+import { readFileSync } from 'node:fs';
+import vm from 'node:vm';
+
+// Green half-road proof (fix_id: green-half-road, Beta 1.208, 2026-11-15).
+//
+// Andrew's three paint rules from his Beta 1.206 phone screenshots
+// (Valeria Boulevard, one side done), plus the label rule R4:
+//
+//   R1 - a fully-done street's green must draw at the SAME width as
+//        the not-done surface. Shipped 1.206 drew the completed band
+//        on its own wider curve (BANDW, ~14.4 m vs the surface's
+//        9.9 m). The band layers now use surfW itself, and the band's
+//        casing uses the surface's casing curve (surfCASE).
+//   R2 - a one-side-done street's green must fill exactly that side's
+//        half of the road (centreline to kerb) at every zoom. Shipped
+//        1.206 drew a fixed-pixel line on the kerb offset (t1-edge,
+//        4.5 px at every zoom): half the road zoomed out, a thin kerb
+//        outline zoomed in (measured: 9 device px at z17, z18 AND
+//        z19). The fix builds a FILL family on half-offset lines
+//        (+/-2.475 m) drawn at half the surface width (surfW x 0.5).
+//   R3 - selecting a stretch must not break its green. The shipped
+//        selection rebuilt the stretch's side line from that piece
+//        alone (buildSel('e')), so it re-clipped the junction ends
+//        the board line runs through - measured on Valeria stretch
+//        10: the board's Romeo Crescent corner vertex sits 5.70 m
+//        off the selection's line. The selection's side paint is now
+//        built by the same fillSlicePts helper as the board's, so it
+//        is a contiguous sub-path of the board strand by construction.
+//   R4 - street-name labels must not multiply at close zoom. The
+//        repeats are the basemap's line labels (symbol-placement:
+//        line, MapLibre's default 250 px repeat): at z17-19 a screen
+//        holds ~1,100 px of street, so the name repeated 4-5 times.
+//        glHideLabels now sets symbol-spacing (~500 m in px at each
+//        zoom) on every road label layer and on the route clones.
+//
+// This proof drives the shipped engine (GLP, loaded verbatim from
+// parts/engine.js) over the mergeStrands proof's synthetic network,
+// with layer specs captured from a mock map, and reads parts/app2.js
+// for R4's spacing rule.
+//
+// On unmodified main (Beta 1.206) checks R1, R2, R3 and R4 FAIL (the
+// band has its own wider curve; there is no fills source and no
+// selFill; no LABEL_SPACING exists); with the fix all checks pass.
+//
+// Run from the repo root:  node tests/proof/proof-green-half-road.mjs
+
+const eng = readFileSync('parts/engine.js', 'utf8');
+const app2 = readFileSync('parts/app2.js', 'utf8');
+
+const MLAT = 111132, MLNG = 82000;
+const LAT0 = 43.8, LNG0 = -79.5;
+const pt = (xM, yM) => [LAT0 + yM / MLAT, LNG0 + xM / MLNG];
+const seg = (x0, y0, x1, y1) => {
+  const pts = [];
+  const n = Math.max(2, Math.round(Math.hypot(x1 - x0, y1 - y0) / 20));
+  for (let k = 0; k <= n; k++) pts.push(pt(x0 + (x1 - x0) * k / n, y0 + (y1 - y0) * k / n));
+  return pts;
+};
+
+const STRETCH = {
+  LongAve: { runs: [{ parts: [seg(-120, 0, 0, 0), seg(0, 0, 60, 0), seg(60, 0, 120, 0)] }] },
+  NorthAve: { runs: [{ parts: [seg(-120, 60, 0, 60), seg(0, 60, 60, 60), seg(60, 60, 120, 60)] }] },
+  CrossSt: { runs: [{ parts: [seg(0, -60, 0, 0), seg(0, 0, 0, 60), seg(0, 60, 0, 120)] }] },
+};
+const names = Object.keys(STRETCH);
+const host = {
+  PRIMARIES: new Set(),
+  MLAT, MLNG,
+  jDistM: (a, b) => Math.hypot((b[1] - a[1]) * MLNG, (b[0] - a[0]) * MLAT),
+  ptSegM(p, a, b) {
+    const px = p[1] * MLNG, py = p[0] * MLAT;
+    const ax = a[1] * MLNG, ay = a[0] * MLAT;
+    const bx = b[1] * MLNG, by = b[0] * MLAT;
+    const vx = bx - ax, vy = by - ay, L2 = vx * vx + vy * vy || 1;
+    const t = Math.max(0, Math.min(1, ((px - ax) * vx + (py - ay) * vy) / L2));
+    return Math.hypot(px - (ax + t * vx), py - (ay + t * vy));
+  },
+  names, STRETCH,
+  ROADS: Object.fromEntries(names.map(n => [n, STRETCH[n].runs.flatMap(r => r.parts)])),
+  SPOT: {},
+  pieces: { LongAve: [1, 1, 1], NorthAve: [0, 0, 0], CrossSt: [0, 0, 0] },
+  selStretch: null, selSet: [], isNight: () => false,
+  activeRoute: { name: 'Proof' }, glHideLabels: () => {},
+};
+
+const sources = {}, layers = [];
+const mockGLM = {
+  getStyle: () => ({ layers }),
+  getSource: id => sources[id],
+  addSource: (id, spec) => { sources[id] = { data: spec.data, setData(d) { this.data = d; } }; },
+  getLayer: id => layers.find(l => l.id === id),
+  addLayer: l => { layers.push(l); },
+  setLayerZoomRange: () => {}, setLayoutProperty: () => {}, setPaintProperty: () => {},
+};
+
+const ctx = { GL_HOST: host, window: {}, setInterval: () => 1, clearInterval: () => {} };
+vm.runInNewContext(eng, ctx);
+const { GLP } = ctx.window;
+GLP.init(mockGLM, host);
+
+let failed = 0;
+function check(label, cond, detail = '') {
+  if (cond) console.log(`PASS: ${label}`);
+  else { failed++; console.log(`FAIL: ${label}${detail ? ' — ' + detail : ''}`); }
+}
+const layerW = id => { const L = layers.find(l => l.id === id); return L ? L.paint['line-width'] : null; };
+const stopsOf = spec => { const o = {}; for (let i = 3; i + 1 < spec.length; i += 2) o[spec[i]] = spec[i + 1]; return o; };
+const evalSpec = (spec, z) => {
+  const pts = []; for (let i = 3; i + 1 < spec.length; i += 2) pts.push([spec[i], spec[i + 1]]);
+  if (z <= pts[0][0]) return pts[0][1];
+  for (let i = 0; i + 1 < pts.length; i++) { const [z0, w0] = pts[i], [z1, w1] = pts[i + 1]; if (z <= z1) return w0 + (w1 - w0) * ((z - z0) / (z1 - z0)); }
+  return pts[pts.length - 1][1];
+};
+const strandsM = fc => fc.features.map(f => f.geometry.coordinates.map(c => [(c[0] - LNG0) * MLNG, (c[1] - LAT0) * MLAT]));
+
+// ---- R1: the fully-done green draws at the surface's own width.
+check('R1: t1-band line-width IS the t1-surface curve (same stops)',
+  JSON.stringify(layerW('t1-band')) === JSON.stringify(layerW('t1-surface')),
+  'band=' + JSON.stringify(layerW('t1-band')) + ' surface=' + JSON.stringify(layerW('t1-surface')));
+check('R1: t1-casingb line-width IS the t1-casing curve (one casing for both)',
+  JSON.stringify(layerW('t1-casingb')) === JSON.stringify(layerW('t1-casing')),
+  'casingb=' + JSON.stringify(layerW('t1-casingb')) + ' casing=' + JSON.stringify(layerW('t1-casing')));
+check('R1: the retired wider-band constants are gone (no BANDW / BANDCASE declarations, no BAND_HALF in code)',
+  !eng.includes('const BANDW') && !eng.includes('const BANDCASE') && !/BAND_HALF\s*[,);]/.test(eng)
+  && !eng.includes("'line-width': BANDW") && !eng.includes("'line-width': BANDCASE"));
+
+// ---- R2: the one-side fill is half the road, on the half-offset line.
+check('R2: t1-fill line-width is exactly half the surface curve at every stop',
+  (() => { const f = stopsOf(layerW('t1-fill') || []), s = stopsOf(layerW('t1-surface') || []); const ks = Object.keys(s); return ks.length > 0 && ks.every(z => Math.abs((f[z] || NaN) - s[z] / 2) < 1e-9); })(),
+  'fill=' + JSON.stringify(layerW('t1-fill')));
+check('R2: the old fixed-pixel kerb line layer is gone (no t1-edge)',
+  !layers.some(l => l.id === 't1-edge'));
+const fills = sources.fills ? strandsM(sources.fills.data) : [];
+check('R2: a fills source exists and LongAve side 0 (all 3 pieces marked) paints as ONE strand through the CrossSt junction',
+  fills.length === 1 && fills[0].some(p => p[0] < -60) && fills[0].some(p => p[0] > 60),
+  'strands=' + fills.length);
+check('R2: every fill point rides the half-offset line (2.475 m off the centreline, +/-0.45 m)',
+  fills.length === 1 && fills[0].every(p => Math.abs(p[1] - 2.475) <= 0.45),
+  fills.length ? 'y range ' + Math.min(...fills[0].map(p => p[1])).toFixed(2) + '..' + Math.max(...fills[0].map(p => p[1])).toFixed(2) : 'no fills');
+
+// ---- R3: the selection's side paint is the board's own geometry.
+host.selStretch = { name: 'LongAve', idx: 1 };
+host.selSet = [host.selStretch];
+GLP.syncSel();
+const selFill = sources.selFill ? strandsM(sources.selFill.data) : [];
+check('R3: selecting a stretch produces selFill paint (not a rebuilt edge line)',
+  selFill.length === 1, 'selFill strands=' + selFill.length + ', selEdges source=' + (sources.selEdges ? 'present' : 'absent'));
+check('R3: the selection strand is a contiguous sub-path of the board fill strand (same points, same order)',
+  (() => {
+    if (!selFill.length || !fills.length) return false;
+    const key = p => p[0].toFixed(6) + ',' + p[1].toFixed(6);
+    const board = fills[0].map(key), sel = selFill[0].map(key);
+    const i0 = board.indexOf(sel[0]);
+    return i0 >= 0 && board.slice(i0, i0 + sel.length).join('|') === sel.join('|');
+  })());
+
+// ---- Tap tolerance follows the widest paint, which is now the surface casing.
+for (const z of [18, 19]) {
+  const want = Math.max(24, evalSpec(layerW('t1-casing'), z) / 2 + 2);
+  check(`tap tolerance at z${z} == surface-casing half + 2 (not the retired band casing)`,
+    Math.abs(GLP.tapTolPx(z) - want) <= 0.6, 'got ' + GLP.tapTolPx(z).toFixed(2) + ', want ' + want.toFixed(2));
+}
+check('tap tolerance keeps the 24 px floor at z17 and below',
+  [14, 15, 16, 17].every(z => GLP.tapTolPx(z) === 24), [14, 15, 16, 17].map(z => GLP.tapTolPx(z)).join(','));
+
+// ---- R4: label spacing rule in app2.js (~500 m between repeats).
+const spLine = app2.split('\n').find(l => l.includes('const LABEL_SPACING'));
+check('R4: LABEL_SPACING exists in app2.js', !!spLine);
+if (spLine) {
+  const nums = [...spLine.matchAll(/-?\d+(?:\.\d+)?/g)].map(m => parseFloat(m[0]));
+  const stops = {}; for (let i = 0; i + 1 < nums.length; i += 2) stops[nums[i]] = nums[i + 1];
+  check('R4: spacing stops keep repeats ~500 m apart and wider than any phone screen (z15 >= 430 px, z17 >= 1000 px, z19 >= 4000 px)',
+    stops[15] >= 430 && stops[17] >= 1000 && stops[19] >= 4000, JSON.stringify(stops));
+  check('R4: glHideLabels applies the spacing to the road label layers and sets it on the route clones at creation',
+    app2.includes("setL(L.id, 'symbol-spacing', LABEL_SPACING)") && app2.includes("clone.layout['symbol-spacing'] = LABEL_SPACING"));
+}
+
+console.log(failed === 0 ? 'ALL CHECKS PASS' : failed + ' CHECK(S) FAILED');
+process.exit(failed === 0 ? 0 : 1);

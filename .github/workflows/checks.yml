@@ -165,6 +165,8 @@ jobs:
         run: node tests/proof/proof-mergestrands-score.mjs
       - name: Street-end width proof (Beta 1.206 gate - drawn widths hold the geographic width the end cuts assume)
         run: node tests/proof/proof-street-end-width-fix.mjs
+      - name: Green half-road proof (Beta 1.208 gate - full green matches the surface width, one-side green fills half the road, selection paint is the board's own geometry, label spacing)
+        run: node tests/proof/proof-green-half-road.mjs
       - name: Premise-lint fixtures (Tranche 4 gate)
         run: python3 scripts/premise-lint-fixtures/run-fixtures.py
       - name: Bug-hunt fix fixtures (PR #23 gate; Beta 1.185)

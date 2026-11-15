@@ -12,9 +12,10 @@ const GLP = (() => {
     GLM.getSource('centres').setData(CUR.centres);
     GLM.getSource('bands').setData(CUR.bands);
     GLM.getSource('edges').setData(CUR.edges);
+    GLM.getSource('fills').setData(CUR.fills);
     GLM.getSource('sel').setData(CUR.sel);
     GLM.getSource('selBand').setData(CUR.selBand);
-    GLM.getSource('selEdges').setData(CUR.selEdges);
+    GLM.getSource('selFill').setData(CUR.selFill);
     if (GLM.getSource('selGlow')) GLM.getSource('selGlow').setData(buildSelGlow());
     managePulse();
   }
@@ -22,7 +23,7 @@ const GLP = (() => {
     if (!GLM || !CUR || !GLM.getSource('centres')) return;
     GLM.getSource('sel').setData(CUR.sel);
     GLM.getSource('selBand').setData(CUR.selBand);
-    GLM.getSource('selEdges').setData(CUR.selEdges);
+    GLM.getSource('selFill').setData(CUR.selFill);
     if (GLM.getSource('selGlow')) GLM.getSource('selGlow').setData(buildSelGlow());
     managePulse();
   }
@@ -77,7 +78,7 @@ function buildEngineGeometry() { // Beta 1.117: the engine's route geometry (GEO
   // at, so every segment walk in this engine can refuse to step across a
   // discontinuity. A single-run street builds byte-identically to before.
   const stitched = [], cuts = [], gaps = new Set();
-  let off0 = [], off1 = [], stitchedLen = 0;
+  let off0 = [], off1 = [], offH0 = [], offH1 = [], stitchedLen = 0;
   H.STRETCH[n].runs.forEach((run, ri) => {
     if (ri > 0) gaps.add(stitched.length);
     const base = stitched.length, rStitched = [];
@@ -92,9 +93,10 @@ function buildEngineGeometry() { // Beta 1.117: the engine's route geometry (GEO
     // 3.3 m; and the lines end exactly at the run's ends - no overshoot
     // onto the next street, no uneven ends.
     off0 = off0.concat(offsetLine(rStitched, 3.3 * WIDTH_K)); off1 = off1.concat(offsetLine(rStitched, -3.3 * WIDTH_K));
+    offH0 = offH0.concat(offsetLine(rStitched, 1.65 * WIDTH_K)); offH1 = offH1.concat(offsetLine(rStitched, -1.65 * WIDTH_K));   // Beta 1.208: the half-offset lines (centreline-to-kerb midlines) the one-side fills are built on - same per-run construction as the kerb lines
     stitchedLen += segLenM(rStitched);
   });
-  GEO[n] = { stitched, cuts, off0, off1, gaps };
+  GEO[n] = { stitched, cuts, off0, off1, offH0, offH1, gaps };
   const p0 = stitched[0], p1 = stitched[stitched.length - 1];
   const dLat = p1[0] - p0[0], dLng = p1[1] - p0[1];
   const canonicalForward = Math.abs(dLat) >= Math.abs(dLng) ? dLat >= 0 : dLng >= 0;
@@ -885,7 +887,7 @@ function lastResortConnect(edges, bands) {
     const touch = (A2, B2) => {
       const eA = [A2.pts[0], A2.pts[A2.pts.length - 1]], eB = [B2.pts[0], B2.pts[B2.pts.length - 1]];
       if (eA.some(p => eB.some(q => coordKey(p) === coordKey(q)))) return true;
-      const thr = (A2.band || B2.band) ? 4.8 * WIDTH_K : 1.0;   // Beta 1.181: the band threshold lives in the same scaled metre-world as SURF_HALF/BAND_HALF
+      const thr = (A2.band || B2.band) ? SURF_HALF : 1.0;   // Beta 1.181: the band threshold lives in the same scaled metre-world as SURF_HALF; Beta 1.208: bands draw at the surface's width, so the band touch threshold is SURF_HALF itself
       return eA.some(p => onLine(p, B2, thr)) || eB.some(p => onLine(p, A2, thr));
     };
     frags.forEach((A2, i) => frags.forEach((B2, j) => { if (j > i && touch(A2, B2)) parent[find(i)] = find(j); }));
@@ -1108,7 +1110,7 @@ const WIDTH_K = 1.5;
 // until both corners sit inside every crossing street's paint strip.
 // Where the corners already sit inside (most junctions), nothing moves
 // and same-colour paint stays seamless.
-const SURF_HALF = 3.3 * WIDTH_K, BAND_HALF = 4.8 * WIDTH_K;   // geographic half-widths the GL paint curves track (base 3.3/4.8 m x WIDTH_K = 4.95/7.2 m at 1.5x; surfW ~9.9 m, BANDW ~14.4 m at working zooms)
+const SURF_HALF = 3.3 * WIDTH_K, HALF_HALF = 1.65 * WIDTH_K;   // geographic half-widths the GL paint curves track (base 3.3 m x WIDTH_K = 4.95 m at 1.5x; surfW ~9.9 m at working zooms). Beta 1.208 (Andrew: "make the green match the others"): the completed band draws at the surface's width, so all full-road paint shares ONE half-width - SURF_HALF (the old BAND_HALF 7.2 m is retired with the BANDW curve). HALF_HALF (2.475 m) is the one-side fill's own half-width: the fill ribbon is centred HALF_HALF from the centreline and spans centreline to kerb.
 function ptSegDistM(p, a, b) {
   const P = XYOf(p), A = XYOf(a), B = XYOf(b);
   const vx = B[0] - A[0], vy = B[1] - A[1], L2 = vx * vx + vy * vy || 1;
@@ -1143,13 +1145,15 @@ function nearestPaintM(cp, B) {
   // surface arm, split by a double vertex), a corner must be judged
   // against the arm it actually lies along - judging it against
   // both arms' halves flags paint that is physically inside the
-  // wider arm (round 14, Fifth x Valeria).
+  // wider arm (round 14, Fifth x Valeria). Beta 1.208: band and
+  // surface arms are one width now, so the owning cut's half is
+  // always SURF_HALF; the per-cut tracking stays for the point.
   const st = GEO[B].stitched;
   let bd = 1e9, half = SURF_HALF, pt = null;
   for (let k = 0; k < st.length - 1; k++) {
     if (GEO[B].gaps.has(k + 1)) continue; // Beta 1.144: the between-runs pair is not a segment of B
     const d = ptSegDistM(cp, st[k], st[k + 1]);
-    if (d < bd) { bd = d; half = SURF_HALF; GEO[B].cuts.forEach((ab, i) => { if (ab[0] <= k && k + 1 <= ab[1] && H.pieces[B][i] === 3) half = BAND_HALF; }); pt = nearestPtOnSeg(cp, st[k], st[k + 1]); }
+    if (d < bd) { bd = d; half = SURF_HALF; pt = nearestPtOnSeg(cp, st[k], st[k + 1]); }
   }
   return { d: bd, half, pt };
 }
@@ -1208,9 +1212,9 @@ function capLineFor(B, viB, Ix, Vx) {
     // each arm's edge point uses THAT arm's paint half: at a
     // mixed-family bend (a band arm beside a surface arm) the true
     // near edge is the kinked line through both arms' own edges.
-    const segK = p === pPrev ? viB - 1 : viB;
-    let half = SURF_HALF;
-    GEO[B].cuts.forEach((ab, i) => { if (ab[0] <= segK && segK + 1 <= ab[1] && H.pieces[B][i] === 3) half = BAND_HALF; });
+    // Beta 1.208: both arms' halves are SURF_HALF (one width for
+    // all full-road paint); the kinked-line construction is unchanged.
+    const half = SURF_HALF;
     return [Vx[0] + nx * half, Vx[1] + ny * half, nx, ny];
   });
   if (W.length === 2) {
@@ -1396,11 +1400,19 @@ function clipStrandEnds(strands, half) {
     });
   });
 }
+function fillSlicePts(n, idx, side) {   // Beta 1.208: one piece's one-side FILL slice - the half-offset line over the piece, end-trimmed with the centre family's local rule (trim only where THIS side's fill actually ends: the neighbouring piece carries no fill for this side, a run gap intervenes, or the street ends). Shared by buildFamilies and buildSelFill, so the selection's side paint is the board's side paint by construction - the R3 fix (the retired one-piece edge rebuild could never reproduce the board's junction treatment).
+  const g = GEO[n], ab = g.cuts[idx];
+  const fam = i => { const b = H.pieces[n][i]; return (b !== 3 && (b & (1 << side))) ? 'fill' : 'x' + b; };
+  let pts = (side === 0 ? g.offH0 : g.offH1).slice(ab[0], ab[1] + 1);
+  if (idx === 0 || g.gaps.has(ab[0]) || fam(idx - 1) !== 'fill') pts = clipEndAtJunction(n, ab[0], pts, true, HALF_HALF);
+  if (idx === g.cuts.length - 1 || g.gaps.has(g.cuts[idx + 1][0]) || fam(idx + 1) !== 'fill') pts = clipEndAtJunction(n, ab[1], pts, false, HALF_HALF);
+  return pts;
+}
 function buildFamilies() {
   THROUGH_SEGS = [];
   const pairs = junctionPairs();
   PAIRS_CUR = pairs;
-  const centreSlices = [], bandSlices = [], edgeSlices = [];
+  const centreSlices = [], bandSlices = [], edgeSlices = [], fillSlices = [];
   H.names.forEach(n => {
     const g = GEO[n];
     g.cuts.forEach((ab, idx) => {
@@ -1409,7 +1421,7 @@ function buildFamilies() {
       const isBand = bits === 3;
       const key = isBand ? 'band' : mute(colOf(n, bits));
       const famKey = i => H.pieces[n][i] === 3 ? 'band' : mute(colOf(n, H.pieces[n][i]));
-      const ownHalf = isBand ? BAND_HALF : SURF_HALF;
+      const ownHalf = SURF_HALF;   // Beta 1.208: bands draw at the surface's width, so a band end trims against the same half-width as a surface end
       // clip an end only where the paint actually ends there: the
       // neighbouring cut is a different family/colour, or the street
       // ends. A continuing family keeps its exact shared vertex, so
@@ -1418,6 +1430,7 @@ function buildFamilies() {
       if (idx === g.cuts.length - 1 || g.gaps.has(g.cuts[idx + 1][0]) || famKey(idx + 1) !== key) cPts = clipEndAtJunction(n, ab[1], cPts, false, ownHalf);
       if (isBand) bandSlices.push({ pts: cPts, key: 'band', mem: [{ n, idx }], e0: null, e1: null });
       else centreSlices.push({ pts: cPts, key, mem: [{ n, idx }], e0: null, e1: null });
+      if (!isBand && bits !== 0) [0, 1].forEach(side => { if (bits & (1 << side)) fillSlices.push({ pts: fillSlicePts(n, idx, side), key: 'fill', mem: [{ n, idx, side }], e0: null, e1: null }); });   // Beta 1.208: a one-side-done piece also emits its side's FILL (the half-road green Andrew ordered in place of the kerb outline)
     });
     [0, 1].forEach(side => {
       edgeRunSlices(n, side, idx => H.pieces[n][idx] !== 3 && (H.pieces[n][idx] & (1 << side))).forEach(sl => edgeSlices.push(sl));
@@ -1426,25 +1439,27 @@ function buildFamilies() {
   const centres = mergeStrands(centreSlices, null);
   const bands = mergeStrands(bandSlices, null);
   clipStrandEnds(centres, SURF_HALF);
-  clipStrandEnds(bands, BAND_HALF);
+  clipStrandEnds(bands, SURF_HALF);
+  const fills = mergeStrands(fillSlices, null);   // Beta 1.208: exact joins only, like centres/bands - consecutive marked pieces share the half-line vertex, so a side's fill is one strand flowing through its junctions
+  clipStrandEnds(fills, HALF_HALF);
   cornerTouchSlices(edgeSlices, pairs);
   const edges = mergeStrands(edgeSlices, pairs);
   bridgeStragglers(edges, pairs);
   throughTouch(edges, pairs);
   extendIntoBands(edges, pairs);
   lastResortConnect(edges, bands);
-  LASTCHAINS = { centres, bands, edges };
+  LASTCHAINS = { centres, bands, edges, fills };
   const fc = (list, colFn) => ({ type: 'FeatureCollection', features: list.map(sl => { const c = colFn(sl); return { type: 'Feature', properties: { col: c, colG: mute(c) }, geometry: { type: 'LineString', coordinates: GJ(sl.pts) } }; }) });
-  return { centres: fc(centres, sl => sl.key), bands: fc(bands, () => MUGREEN), edges: fc(edges, () => MUGREEN) };
+  return { centres: fc(centres, sl => sl.key), bands: fc(bands, () => MUGREEN), edges: fc(edges, () => MUGREEN), fills: fc(fills, () => MUGREEN) };
 }
 function currentSelList() { // every selected stretch (Beta 1.28): the app's selSet when multi-selecting, else the single anchor - read live at build time, like the original builders read the app global sel
   return (typeof H.selSet !== 'undefined' && Array.isArray(H.selSet) && H.selSet.length) ? H.selSet : (sel ? [sel] : []);
 }
-function buildSel(which) {   // the selected sectors' side lines (vibrant)
+function buildSelFill() {   // the selected sectors' side fills (vibrant) - Beta 1.208 (R3): built by fillSlicePts, the SAME local rule that builds the board's fills, so a selected stretch's done side paints vertex-for-vertex as the board paints it and the green can no longer disconnect at the stretch boundary. The retired buildSel('e') rebuilt the side from a ONE-PIECE edge run: a lone piece can never earn the junction through-grant the full marked run gets (throughOK needs both arms in the run) and it received none of the corner/through post-passes, so the selected stretch's kerb line clipped at junctions the board line runs through - Andrew's disconnected green (his Valeria stretch 10 screenshot, 2026-11-15).
   const feats = [];
-  if (which === 'e') for (const it of currentSelList()) {
+  for (const it of currentSelList()) {
     const bits = H.pieces[it.name][it.idx];
-    if (bits !== 3) [0, 1].forEach(side => { if (bits & (1 << side)) edgeRunSlices(it.name, side, idx => idx === it.idx).forEach(sl => feats.push({ type: 'Feature', properties: { col: GREEN, colG: mute(GREEN) }, geometry: { type: 'LineString', coordinates: GJ(sl.pts) } })); });
+    if (bits !== 3) [0, 1].forEach(side => { if (bits & (1 << side)) feats.push({ type: 'Feature', properties: { col: GREEN, colG: mute(GREEN) }, geometry: { type: 'LineString', coordinates: GJ(fillSlicePts(it.name, it.idx, side)) } }); });
   }
   return { type: 'FeatureCollection', features: feats };
 }
@@ -1453,7 +1468,7 @@ function selectedGeom(it) {   // a selected stretch's painted slice: stitched po
   const s0 = it || sel;
   if (!s0) return null;
   const n = s0.name, idx = s0.idx, g = GEO[n], ab = g.cuts[idx], bits = H.pieces[n][idx];
-  const isBand = bits === 3, half = isBand ? BAND_HALF : SURF_HALF;
+  const isBand = bits === 3, half = SURF_HALF;   // Beta 1.208: the selection redraw of a band trims at the width the band now draws
   const key = isBand ? 'band' : mute(colOf(n, bits));
   const famKey = i => H.pieces[n][i] === 3 ? 'band' : mute(colOf(n, H.pieces[n][i]));
   let pts = g.stitched.slice(ab[0], ab[1] + 1);
@@ -1487,12 +1502,11 @@ function rebuildData() { const F = buildFamilies(); const SC = buildSelC();
   // colours the same way. Geometry untouched; features only reorder.
   const yRank = f => (f.properties.col === mute(YELLOW) || f.properties.col === YELLOW) ? 1 : 0;   // keys off the live scheme (round 25)
   F.centres.features.sort((a, b) => yRank(a) - yRank(b));
-  CUR = { centres: F.centres, bands: F.bands, edges: F.edges, sel: SC.sel, selBand: SC.selBand, selEdges: buildSel('e') }; }
+  CUR = { centres: F.centres, bands: F.bands, edges: F.edges, fills: F.fills, sel: SC.sel, selBand: SC.selBand, selFill: buildSelFill() }; }
 
 function scaleW(curve) { return curve.map((v, i) => (i >= 4 && i % 2 === 0) ? +(v * WIDTH_K).toFixed(3) : v); }   // Beta 1.181: scale an interpolate width curve by WIDTH_K (widths sit at even indices >= 4, the wPlus/wScale index rule)
 const surfW = scaleW(['interpolate', ['linear'], ['zoom'], 14, 2.5, 16, 7.63, 17, 15.25, 18, 30.5, 19, 61]);   // street-end width fix: z16-19 stops set so the DRAWN width holds the geographic 9.9 m on the app's true map scale (the old 6.5/9.5/15/24 drew only 8.4/6.2/4.9/3.9 m, so terminating ends — cut flush to the crossing paint's designed edge — hung gapped from the paint as drawn)
-const BANDW = scaleW(['interpolate', ['linear'], ['zoom'], 15, 5.54, 16, 11.1, 17, 22.2, 18, 44.4, 19, 88.8]);       // ~14.4 m of road width at 1.5x, tracking the geographic side offsets; street-end width fix: stops set so the DRAWN width holds 14.4 m on the app's true map scale (the old z15 stop drew only 7.8 m)
-const BANDCASE = scaleW(['interpolate', ['linear'], ['zoom'], 15, 8.04, 16, 14.1, 17, 26.2, 18, 49.3, 19, 94.8]);   // street-end width fix: BANDW + the same casing rim as before at every stop (z15 8.04 keeps the shipped 2.5 rim over the corrected BANDW z15)
+const surfCASE = scaleW(['interpolate', ['linear'], ['zoom'], 14, 4.5, 16, 10.13, 17, 18.25, 18, 33.99, 19, 65]);   // the surface's casing curve (the dark rim under the paint), factored out of the t1-casing layer at Beta 1.208: completed bands now draw at the surface's width, so their casing is THIS curve too, and tapTolPx reads the widest paint from it. BANDW/BANDCASE (the wider band curves, last set by the 1.206 street-end fix) are retired here - 1.208 supersedes them by Andrew's order.
 const wPlus = (curve, d) => curve.map((v, i) => (i >= 4 && i % 2 === 0) ? v + d * WIDTH_K : v);   // widen an interpolate width curve by d px at every stop (widths sit at even indices >= 4); Beta 1.181: the added px scale by WIDTH_K too, so the glow rim grows proportionally with the road
 const wScale = (curve, f) => curve.map((v, i) => (i >= 4 && i % 2 === 0) ? v * f : v);   // scale an interpolate width curve (same index rule as wPlus)
 // Round 29 (Andrew): ZOOM-TAPERED glow. Zoomed out, the glow kept
@@ -1570,9 +1584,10 @@ function addStack() {
     GLM.addSource('centres', { type: 'geojson', data: CUR.centres });
     GLM.addSource('bands', { type: 'geojson', data: CUR.bands });
     GLM.addSource('edges', { type: 'geojson', data: CUR.edges });
+    GLM.addSource('fills', { type: 'geojson', data: CUR.fills });
     GLM.addSource('sel', { type: 'geojson', data: CUR.sel });
     GLM.addSource('selBand', { type: 'geojson', data: CUR.selBand });
-    GLM.addSource('selEdges', { type: 'geojson', data: CUR.selEdges });
+    GLM.addSource('selFill', { type: 'geojson', data: CUR.selFill });
     GLM.addSource('selGlow', { type: 'geojson', data: buildSelGlow() });
     GLM.addSource('hit', { type: 'geojson', data: HIT });
     GLM.addSource('labelpts', { type: 'geojson', data: LABELPTS });
@@ -1587,11 +1602,11 @@ function addStack() {
   // under yellow at junctions. The green (completed) family is back
   // where it was before round 21 (Andrew: revert the green part) -
   // band casing and band render above the unfinished centre paint.
-  add(line('t1-casing', 'centres', { 'line-color': H.isNight() ? '#000000' : '#5a5f6a', 'line-width': scaleW(['interpolate', ['linear'], ['zoom'], 14, 4.5, 16, 10.13, 17, 18.25, 18, 33.99, 19, 65]), 'line-opacity': ['step', ['zoom'], 0, 12.6, 1], 'line-opacity-transition': { duration: 0, delay: 0 } }, { 'line-cap': 'butt' }));
-  add(line('t1-casingb', 'bands', { 'line-color': H.isNight() ? '#000000' : '#5a5f6a', 'line-width': BANDCASE, 'line-opacity': ['step', ['zoom'], 0, 12.6, 1], 'line-opacity-transition': { duration: 0, delay: 0 } }, { 'line-cap': 'butt' }));
+  add(line('t1-casing', 'centres', { 'line-color': H.isNight() ? '#000000' : '#5a5f6a', 'line-width': surfCASE, 'line-opacity': ['step', ['zoom'], 0, 12.6, 1], 'line-opacity-transition': { duration: 0, delay: 0 } }, { 'line-cap': 'butt' }));
+  add(line('t1-casingb', 'bands', { 'line-color': H.isNight() ? '#000000' : '#5a5f6a', 'line-width': surfCASE, 'line-opacity': ['step', ['zoom'], 0, 12.6, 1], 'line-opacity-transition': { duration: 0, delay: 0 } }, { 'line-cap': 'butt' }));
   add(line('t1-surface', 'centres', { 'line-color': ['get', 'col'], 'line-width': surfW, 'line-opacity': ['step', ['zoom'], 0, 12.6, 1], 'line-opacity-transition': { duration: 0, delay: 0 } }, { 'line-cap': 'butt' }));
-  add(line('t1-band', 'bands', { 'line-color': ['get', 'col'], 'line-width': BANDW, 'line-opacity': ['step', ['zoom'], 0, 12.6, 1], 'line-opacity-transition': { duration: 0, delay: 0 } }, { 'line-cap': 'butt' }));
-  add(line('t1-edge', 'edges', { 'line-color': ['get', 'col'], 'line-width': 3 * WIDTH_K, 'line-opacity': ['step', ['zoom'], 0, 12.6, 1], 'line-opacity-transition': { duration: 0, delay: 0 } }, { 'line-cap': 'butt' }));
+  add(line('t1-band', 'bands', { 'line-color': ['get', 'col'], 'line-width': surfW, 'line-opacity': ['step', ['zoom'], 0, 12.6, 1], 'line-opacity-transition': { duration: 0, delay: 0 } }, { 'line-cap': 'butt' }));   // Beta 1.208 (R1): the completed band draws at surfW - the same width as the not-done surface, per Andrew's order
+  add(line('t1-fill', 'fills', { 'line-color': ['get', 'col'], 'line-width': wScale(surfW, 0.5), 'line-opacity': ['step', ['zoom'], 0, 12.6, 1], 'line-opacity-transition': { duration: 0, delay: 0 } }, { 'line-cap': 'butt' }));   // Beta 1.208 (R2): a done side's green fills its half of the road (half-offset ribbon at half the surface's drawn width) - it replaces the t1-edge kerb line, whose fixed 4.5 px shrank to an outline at close zoom. The edges source itself is still built (its junction pipeline is untouched) but no longer drawn.
   // --- selection glow (round 16, restored onto the r15 paint at
   // Andrew's direction 2026-10-29): three nested widths in the
   // street's OWN colour under the vibrant redraw; managePulse
@@ -1605,22 +1620,22 @@ function addStack() {
   // joins wrap the corner in an arc so the blurred halo pools around
   // the bend instead. Base road paint keeps its settled joins/caps.
   add(line('sel-glow4-s', 'selGlow', { 'line-color': ['get', 'col'], 'line-width': wPlus(surfW, 30), 'line-opacity': 0.05, 'line-blur': 14 }, { 'line-cap': 'butt', 'line-join': 'round' }, ['==', ['get', 'band'], 0]));
-  add(line('sel-glow4-b', 'selGlow', { 'line-color': ['get', 'col'], 'line-width': wPlus(BANDW, 30), 'line-opacity': 0.05, 'line-blur': 14 }, { 'line-cap': 'butt', 'line-join': 'round' }, ['==', ['get', 'band'], 1]));
+  add(line('sel-glow4-b', 'selGlow', { 'line-color': ['get', 'col'], 'line-width': wPlus(surfW, 30), 'line-opacity': 0.05, 'line-blur': 14 }, { 'line-cap': 'butt', 'line-join': 'round' }, ['==', ['get', 'band'], 1]));
   add(line('sel-glow5-s', 'selGlow', { 'line-color': ['get', 'col'], 'line-width': wPlus(surfW, 23), 'line-opacity': 0.06, 'line-blur': 10 }, { 'line-cap': 'butt', 'line-join': 'round' }, ['==', ['get', 'band'], 0]));
-  add(line('sel-glow5-b', 'selGlow', { 'line-color': ['get', 'col'], 'line-width': wPlus(BANDW, 23), 'line-opacity': 0.06, 'line-blur': 10 }, { 'line-cap': 'butt', 'line-join': 'round' }, ['==', ['get', 'band'], 1]));
+  add(line('sel-glow5-b', 'selGlow', { 'line-color': ['get', 'col'], 'line-width': wPlus(surfW, 23), 'line-opacity': 0.06, 'line-blur': 10 }, { 'line-cap': 'butt', 'line-join': 'round' }, ['==', ['get', 'band'], 1]));
   add(line('sel-glow1-s', 'selGlow', { 'line-color': ['get', 'col'], 'line-width': wPlus(surfW, 17), 'line-opacity': 0.10 }, { 'line-cap': 'butt', 'line-join': 'round' }, ['==', ['get', 'band'], 0]));
-  add(line('sel-glow1-b', 'selGlow', { 'line-color': ['get', 'col'], 'line-width': wPlus(BANDW, 17), 'line-opacity': 0.10 }, { 'line-cap': 'butt', 'line-join': 'round' }, ['==', ['get', 'band'], 1]));
+  add(line('sel-glow1-b', 'selGlow', { 'line-color': ['get', 'col'], 'line-width': wPlus(surfW, 17), 'line-opacity': 0.10 }, { 'line-cap': 'butt', 'line-join': 'round' }, ['==', ['get', 'band'], 1]));
   add(line('sel-glow2-s', 'selGlow', { 'line-color': ['get', 'col'], 'line-width': wPlus(surfW, 9), 'line-opacity': 0.16 }, { 'line-cap': 'butt', 'line-join': 'round' }, ['==', ['get', 'band'], 0]));
-  add(line('sel-glow2-b', 'selGlow', { 'line-color': ['get', 'col'], 'line-width': wPlus(BANDW, 9), 'line-opacity': 0.16 }, { 'line-cap': 'butt', 'line-join': 'round' }, ['==', ['get', 'band'], 1]));
+  add(line('sel-glow2-b', 'selGlow', { 'line-color': ['get', 'col'], 'line-width': wPlus(surfW, 9), 'line-opacity': 0.16 }, { 'line-cap': 'butt', 'line-join': 'round' }, ['==', ['get', 'band'], 1]));
   add(line('sel-glow3-s', 'selGlow', { 'line-color': ['get', 'col'], 'line-width': wPlus(surfW, 4), 'line-opacity': 0.24 }, { 'line-cap': 'butt', 'line-join': 'round' }, ['==', ['get', 'band'], 0]));
-  add(line('sel-glow3-b', 'selGlow', { 'line-color': ['get', 'col'], 'line-width': wPlus(BANDW, 4), 'line-opacity': 0.24 }, { 'line-cap': 'butt', 'line-join': 'round' }, ['==', ['get', 'band'], 1]));
+  add(line('sel-glow3-b', 'selGlow', { 'line-color': ['get', 'col'], 'line-width': wPlus(surfW, 4), 'line-opacity': 0.24 }, { 'line-cap': 'butt', 'line-join': 'round' }, ['==', ['get', 'band'], 1]));
   // --- selection overlay: the base spec redrawn in the VIBRANT colour -
   // identical widths and glow, so the only difference is the colour pop ---
   add(line('t1-sel', 'sel', { 'line-color': ['get', 'col'], 'line-width': surfW, 'line-opacity': 1 }, { 'line-cap': 'butt', 'line-join': 'round' }));
-  add(line('t1-selband', 'selBand', { 'line-color': ['get', 'col'], 'line-width': BANDW, 'line-opacity': 1 }, { 'line-cap': 'butt', 'line-join': 'round' }));
+  add(line('t1-selband', 'selBand', { 'line-color': ['get', 'col'], 'line-width': surfW, 'line-opacity': 1 }, { 'line-cap': 'butt', 'line-join': 'round' }));
   add(line('sel-core-s', 'selGlow', { 'line-color': ['get', 'colHot'], 'line-width': wScale(surfW, 0.42), 'line-opacity': 0.85 }, { 'line-cap': 'butt', 'line-join': 'round' }, ['==', ['get', 'band'], 0]));
-  add(line('sel-core-b', 'selGlow', { 'line-color': ['get', 'colHot'], 'line-width': wScale(BANDW, 0.42), 'line-opacity': 0.85 }, { 'line-cap': 'butt', 'line-join': 'round' }, ['==', ['get', 'band'], 1]));
-  add(line('t1-sele', 'selEdges', { 'line-color': ['get', 'col'], 'line-width': 3 * WIDTH_K, 'line-opacity': 1 }, { 'line-cap': 'butt' }));
+  add(line('sel-core-b', 'selGlow', { 'line-color': ['get', 'colHot'], 'line-width': wScale(surfW, 0.42), 'line-opacity': 0.85 }, { 'line-cap': 'butt', 'line-join': 'round' }, ['==', ['get', 'band'], 1]));
+  add(line('t1-selfill', 'selFill', { 'line-color': ['get', 'col'], 'line-width': wScale(surfW, 0.5), 'line-opacity': 1 }, { 'line-cap': 'butt' }));   // Beta 1.208 (R3): the selection's vibrant side fill - same width as the board's t1-fill, geometry from the same builder
   // --- hit + labels (every treatment) ---
   add(line('hit', 'hit', { 'line-color': '#fff', 'line-width': 24 * WIDTH_K, 'line-opacity': 0 }));
   // Beta 1.40 (Andrew): our own line-following street names are RETIRED. Zoomed in, the
@@ -1664,7 +1679,7 @@ function addStack() {
   add({ id: 'routepoi-ring', type: 'circle', source: 'routepoi', maxzoom: 13.3, paint: { 'circle-radius': ['interpolate', ['linear'], ['zoom'], 10, 7, 13.5, 9], 'circle-color': '#ffffff', 'circle-opacity': ['step', ['zoom'], 1, 12.6, 0], 'circle-opacity-transition': { duration: 0, delay: 0 } } });
   add({ id: 'routepoi-dot', type: 'circle', source: 'routepoi', maxzoom: 13.3, paint: { 'circle-radius': ['interpolate', ['linear'], ['zoom'], 10, 4.5, 13.5, 6.5], 'circle-color': '#ef476f', 'circle-opacity': ['step', ['zoom'], 1, 12.6, 0], 'circle-opacity-transition': { duration: 0, delay: 0 } } });
   add({ id: 'routepoi-txt', type: 'symbol', source: 'routepoi', maxzoom: 13.3, layout: { 'text-field': (H.activeRoute && H.activeRoute.name) || 'Snow Route', 'text-font': fontStack, 'text-size': 11, 'text-anchor': 'left', 'text-offset': [1.1, 0], 'text-allow-overlap': false }, paint: { 'text-color': H.isNight() ? '#e8e8e8' : '#333333', 'text-halo-color': H.isNight() ? 'rgba(0,0,0,.8)' : 'rgba(255,255,255,.9)', 'text-opacity': ['step', ['zoom'], 1, 12.6, 0], 'text-opacity-transition': { duration: 0, delay: 0 }, 'text-halo-width': 1.6 } });
-  ['t1-casing', 't1-casingb', 't1-surface', 't1-band', 't1-edge', 't1-sel', 't1-selband', 't1-sele', 'sel-core-s', 'sel-core-b', 'hit'].concat([1, 2, 3, 4, 5].flatMap(i => ['sel-glow' + i + '-s', 'sel-glow' + i + '-b'])).forEach(id => { if (GLM.getLayer(id)) GLM.setLayerZoomRange(id, 12.5, 24); });
+  ['t1-casing', 't1-casingb', 't1-surface', 't1-band', 't1-fill', 't1-sel', 't1-selband', 't1-selfill', 'sel-core-s', 'sel-core-b', 'hit'].concat([1, 2, 3, 4, 5].flatMap(i => ['sel-glow' + i + '-s', 'sel-glow' + i + '-b'])).forEach(id => { if (GLM.getLayer(id)) GLM.setLayerZoomRange(id, 12.5, 24); });
   H.glHideLabels(GLM);
   pushSources();
   applyGlow();
@@ -1715,7 +1730,7 @@ function applyGlow() {
       if (!GLM.getLayer(id)) return;
       GLM.setLayoutProperty(id, 'visibility', L ? 'visible' : 'none');
       if (!L) return;
-      const curve = sfx === '-b' ? BANDW : surfW;
+      const curve = surfW;   // Beta 1.208: bands draw at the surface's width, so the '-b' glow variants follow surfW too
       GLM.setPaintProperty(id, 'line-width', L.p !== undefined ? glowW(curve, L.p) : wScale(curve, L.s));
       GLM.setPaintProperty(id, 'line-blur', L.b ? glowB(L.b) : 0);
       if (L.c) GLM.setPaintProperty(id, 'line-color', ['get', L.c]);
@@ -1752,7 +1767,7 @@ function managePulse() {
     sel = H.selStretch ? { name: H.selStretch.name, idx: H.selStretch.idx } : null;
     const sig = stateSig();
     if (!CUR || sig !== lastSig) { rebuildData(); lastSig = sig; }
-    else { const SC = buildSelC(); CUR.sel = SC.sel; CUR.selBand = SC.selBand; CUR.selEdges = buildSel('e'); }
+    else { const SC = buildSelC(); CUR.sel = SC.sel; CUR.selBand = SC.selBand; CUR.selFill = buildSelFill(); }
     addStack();           // re-adds sources+layers on the fresh GL map and pushes CUR
   }
   function rebuildRoute() { // Beta 1.117: the app switched routes and rebuilt its own geometry (buildGeometry, app1) - rebuild the engine's from the host's current data and re-point every route-shaped source at it. The basemap and layers are untouched; only data moves.
@@ -1784,7 +1799,7 @@ function managePulse() {
     sel = H.selStretch ? { name: H.selStretch.name, idx: H.selStretch.idx } : null;
     if (!GLM || !CUR) return;
     const SC = buildSelC();
-    CUR.sel = SC.sel; CUR.selBand = SC.selBand; CUR.selEdges = buildSel('e');
+    CUR.sel = SC.sel; CUR.selBand = SC.selBand; CUR.selFill = buildSelFill();
     pushSelSources();
   }
   function active() { return !!GLM; }
@@ -1802,7 +1817,7 @@ function managePulse() {
     for (let i = 3; i + 1 < curve.length; i += 2) { if (z <= curve[i]) { if (!prev) return curve[i + 1]; return prev[1] + (curve[i + 1] - prev[1]) * ((z - prev[0]) / (curve[i] - prev[0])); } prev = [curve[i], curve[i + 1]]; }
     return prev[1];
   }
-  function tapTolPx(z) { return Math.max(24, evalCurvePx(BANDCASE, z) / 2 + 2); } // Beta 1.206 (Codex P2 on the width fix): the map-tap tolerance follows the WIDEST paint (band + casing) at the tap's zoom, floored at 24 px — the Beta 1.181 rule ("a tap anywhere on the paint still selects instead of deselecting") kept by construction now that the width fix widened the paint past the old fixed 24 px at z18-19; at z17 and below the paint is narrower than the floor and the tolerance is the shipped 24 unchanged
+  function tapTolPx(z) { return Math.max(24, evalCurvePx(surfCASE, z) / 2 + 2); } // The map-tap tolerance follows the WIDEST paint at the tap's zoom, floored at 24 px — the Beta 1.181 rule ("a tap anywhere on the paint still selects instead of deselecting"). Beta 1.206 introduced this formula against BANDCASE, then the widest paint; Beta 1.208 retires the wide band, so the widest paint is now the surface casing (surfCASE): 24 px at z17 and below (the floor - shipped behaviour unchanged), ~27.5 px at z18, ~50.8 px at z19.
   return { init, drop, sync, syncSel, syncTheme, active, setFont, rebuildRoute, tapTolPx };
 })();
 window.GLP = GLP;

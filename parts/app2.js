@@ -43,6 +43,14 @@ function glHideLabels(m) { // BASEMAP LABEL UNIFICATION (Andrew, Beta 1.6): the 
       water: ['interpolate', ['linear'], ['zoom'], 10, 11, 15, 13],
       other: ['interpolate', ['linear'], ['zoom'], 15, 10, 18, 12]
     };
+    // Beta 1.208 (Andrew): a street's name must never crowd a screen. The road layers place
+    // names along the line with the renderer's default 250 px repeat, which at close zoom
+    // prints one name (his shot: Valeria Boulevard) 4-5 times down a single screen. The
+    // repeats now sit ~500 m apart on the app's own projection scale (px per metre =
+    // surfW / 9.9, the Beta 1.206 calibration: z16 578, z17 1155, z18 2311, z19 4621 px):
+    // at working zooms at most one name per street is on screen, and a repeat shows only
+    // when the street genuinely runs ~500 m on. Applied to the originals and the clones.
+    const LABEL_SPACING = ['interpolate', ['linear'], ['zoom'], 15, 460, 16, 578, 17, 1155, 18, 2311, 19, 4621];
     // Beta 1.40: route-street CLONES of the two road-label layers (the handover, see the
     // road branch below). A zoom ramp cannot nest inside a name test in one paint value
     // ('zoom may only feed a top-level step/interpolate' - the map rejects it), so route
@@ -68,6 +76,8 @@ function glHideLabels(m) { // BASEMAP LABEL UNIFICATION (Andrew, Beta 1.6): the 
       clone.filter = specL.filter ? ['all', convF(specL.filter), ['in', ['get', 'name'], ['literal', ROUTE_TILE_NAMES]]] : ['in', ['get', 'name'], ['literal', ROUTE_TILE_NAMES]];
       clone.paint = clone.paint || {};
       clone.paint['text-opacity'] = ['interpolate', ['linear'], ['zoom'], 15.4, 0, 16.4, 1];
+      clone.layout = clone.layout || {};
+      clone.layout['symbol-spacing'] = LABEL_SPACING; // Beta 1.208: the ~500 m name-repeat rule, on the route clones from birth (the main loop below re-asserts it on every restack)
       if (typeof isNight === 'function' && isNight()) { clone.paint['text-color'] = '#ccd6df'; clone.paint['text-halo-color'] = 'rgba(8,10,14,0.9)'; clone.paint['text-halo-width'] = 1.3; }
       else { clone.paint['text-color'] = '#333333'; clone.paint['text-halo-color'] = 'rgba(255,255,255,.92)'; clone.paint['text-halo-width'] = 1.5; }
       const order = m.getStyle().layers.map(x => x.id);
@@ -103,6 +113,7 @@ function glHideLabels(m) { // BASEMAP LABEL UNIFICATION (Andrew, Beta 1.6): the 
         }
       }
       if (kind === 'road') {
+        setL(L.id, 'symbol-spacing', LABEL_SPACING); // Beta 1.208: the ~500 m name-repeat rule on every road-name layer (originals and the route clones alike)
         if ((L.minzoom || 0) !== 13 || (L.maxzoom === undefined ? 24 : L.maxzoom) !== 24) m.setLayerZoomRange(L.id, 13, 24); // Beta 1.41 guard: same no-op rule as setL/setP
         // LABEL HANDOVER (Andrew, Beta 1.40): zoomed out, OUR titles name the route streets;
         // zooming in, the basemap's own names take over - on route streets they fade IN across

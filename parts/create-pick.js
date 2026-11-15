@@ -548,7 +548,7 @@ onMapReady(() => { if (creating) crSetBackdrop(true); }); // creation entered be
 // anchors, not the route POI). Orientation with zero clutter. The draft's
 // own overlay (crDraft) is untouched, and exitCreate restores the exact
 // visibility every hidden layer had before. ----
-const CR_ROUTE_LAYERS = ['t1-casing', 't1-casingb', 't1-surface', 't1-band', 't1-edge', 't1-sel', 't1-selband', 't1-sele', 'sel-core-s', 'sel-core-b', 'hit', 'routepoi-ring', 'routepoi-dot', 'routepoi-txt']
+const CR_ROUTE_LAYERS = ['t1-casing', 't1-casingb', 't1-surface', 't1-band', 't1-fill', 't1-sel', 't1-selband', 't1-selfill', 'sel-core-s', 'sel-core-b', 'hit', 'routepoi-ring', 'routepoi-dot', 'routepoi-txt']   // Beta 1.207: t1-edge/t1-sele retired with the kerb-line paint - the fill layers (t1-fill/t1-selfill) take their place in the hide list
   .concat([1, 2, 3, 4].map(t => 'streetnamespt' + t), [1, 2, 3, 4, 5].flatMap(i => ['sel-glow' + i + '-s', 'sel-glow' + i + '-b']));
 let crHiddenLayers = null; // [[id, visibilityBefore], ...] recorded on the first hide; null = backdrop off
 const CR_POI_SRC = 'crPoi';
