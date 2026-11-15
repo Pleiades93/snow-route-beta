@@ -123,7 +123,7 @@ fs.writeFileSync('/tmp/d150-photo.png', Buffer.from('iVBORw0KGgoAAAANSUhEUgAAAAE
 fs.writeFileSync('/tmp/d150-bad.json', '{this is not a draft');
 const candidate = FIXDATA.candidate;
 fs.writeFileSync('/tmp/d150-candidate.json', JSON.stringify(candidate));
-const envelope = { name: 'Envelope Route', area: 'Vaughan', mains: ['Bordeaux'], roads: { Bordeaux: [elsByName['Bordeaux Drive'][0].geometry.map(g => [g.lat, g.lon])], Alderson: [elsByName['Alderson Avenue'][0].geometry.map(g => [g.lat, g.lon])] } };
+const envelope = { name: 'Envelope Route', area: 'Vaughan', primaries: ['Bordeaux'], roads: { Bordeaux: [elsByName['Bordeaux Drive'][0].geometry.map(g => [g.lat, g.lon])], Alderson: [elsByName['Alderson Avenue'][0].geometry.map(g => [g.lat, g.lon])] } };
 fs.writeFileSync('/tmp/d150-envelope.json', JSON.stringify(envelope));
 const candLen = Object.values(candidate).reduce((a, segs) => a + segs.reduce((b, s) => b + wayLen(s.map(p => ({ lat: p[0], lon: p[1] }))), 0), 0);
 
@@ -330,7 +330,7 @@ ok('G4 the search-probe session exits create mode cleanly', SG4.creating === fal
 // selection covering the picking map. Now the engine's route paint and
 // street-name layers hide, and a POI for EVERY pack in the database
 // (the map's own zoomed-out treatment) gives orientation instead.
-const FX150 = { id: 'fx150', name: 'Fixture Route', area: 'Nowhere', main: [], roads: { 'Fixture Alpha': [[[43.845, -79.575], [43.845, -79.565]]], 'Fixture Beta': [[[43.855, -79.575], [43.855, -79.565]]] }, reference: {} };
+const FX150 = { id: 'fx150', name: 'Fixture Route', area: 'Nowhere', primaries: [], roads: { 'Fixture Alpha': [[[43.845, -79.575], [43.845, -79.565]]], 'Fixture Beta': [[[43.855, -79.575], [43.855, -79.565]]] }, reference: {} };
 await ev(`(() => { ROUTE_PACKS.push(${JSON.stringify(FX150)}); return true; })()`);
 const engReady = await poll(`!!(window.map && map.getLayer && map.getLayer('t1-surface'))`, 30000).catch(() => false);
 const H0 = await J(`({ surf: map.getLayoutProperty('t1-surface', 'visibility') || 'visible', names: map.getLayoutProperty('streetnamespt1', 'visibility') || 'visible', sel: map.getLayoutProperty('t1-sel', 'visibility') || 'visible', packs: ROUTE_PACKS.map(p => p.name) })`);

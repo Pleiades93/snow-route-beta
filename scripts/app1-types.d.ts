@@ -90,7 +90,7 @@ type NoteEntry = { k: string, at: string, text?: string };
 type HistoryEntry = { at: string, items: { [street: string]: string | null }, via: { [street: string]: string }, notes: { [street: string]: NoteEntry[] }, sides: SidesRecord, km: number, startedAt: string | null, path?: TrailPoint[], runId?: number, workM?: number, totalWorkM?: number, geoFP?: string, pathShortened?: boolean }; // Beta 1.167 (B2/B5): workM/totalWorkM/geoFP are the finish-baked pace figures; pathShortened flags a trail-cap-truncated saved path. All four are absent on pre-1.167 entries, which derive exactly as before
 
 /** A route pack as validated/carried (schema, Beta 1.118 + PACK_FIELDS sections): the fields of PACK_FIELDS in app1. */
-type RoutePack = { name: string, area: string, main: string[], spot: { [street: string]: number[] }, tileNames: string[], box: RouteBox | null, roads: RoadsMap, reference: RoadsMap };
+type RoutePack = { name: string, area: string, primaries: string[], spot: { [street: string]: number[] }, tileNames: string[], box: RouteBox | null, roads: RoadsMap, reference: RoadsMap };
 
 /** The stored snowroute.v2.settings record: {vib, chime, chimeSound} (schema, global keys). */
 type SettingsRecord = { vib: boolean, chime: boolean, chimeSound: string };

@@ -1133,7 +1133,7 @@ function unloadRouteToBoot() { // Beta 1.124: the ACTIVE route was deleted - ret
   const hadRun = !!runStart;
   resetSwitchSession();
   if (hadRun) stopGps(true); // a clean on a deleted route cannot keep recording - its trail's slot no longer exists
-  buildGeometry({ roads: {}, reference: {}, main: [] }); // the eval-time emptiness a cold boot shows before any pick (drive149's zero-geometry state)
+  buildGeometry({ roads: {}, reference: {}, primaries: [] }); // the eval-time emptiness a cold boot shows before any pick (drive149's zero-geometry state)
   if (map && window.GLP) window.GLP.rebuildRoute();
   doneSet = new Set(); doneTimes = {}; doneVia = {}; notes = {}; history = []; runStart = 0; trail = []; trailSessions = []; coveredIdx = {}; pieces = {}; pieceTimes = {}; // the eval empties (app1's declarations)
   LS = { ...routeKeys('5w'), ...LS_GLOBAL }; // the eval default - the next pick repoints it via loadRoute

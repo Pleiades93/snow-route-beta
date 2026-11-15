@@ -2,7 +2,7 @@
 <html lang="en" class="boot">
 <head>
 <meta charset="UTF-8">
-<meta http-equiv="Content-Security-Policy" content="default-src 'none'; script-src 'sha384-EFZ8NI7ZhhEaoGGR07ScAEMgRG7hi+eFfX/CecEe0WgnYViKqc4H6tvM8Gc7hpLs' https://cdn.jsdelivr.net; style-src-elem 'sha384-T5odTrZ82iz2SpSIlEcnPGuZ4XQ8gAseKryjKLByVC4SC2W3Z7bxM9SuBWNXMBZ4' https://cdn.jsdelivr.net; style-src-attr 'unsafe-inline'; img-src 'self' data: blob: https://tiles.basemaps.cartocdn.com https://protomaps.github.io https://cdn.jsdelivr.net; connect-src 'self' https://tiles.basemaps.cartocdn.com https://protomaps.github.io https://cdn.jsdelivr.net https://nominatim.openstreetmap.org https://overpass-api.de https://overpass.kumi.systems; worker-src blob: 'self'; child-src blob: 'self'; font-src 'none'; manifest-src 'self'; base-uri 'none'; form-action 'none'; object-src 'none'">
+<meta http-equiv="Content-Security-Policy" content="default-src 'none'; script-src 'sha384-KZjTJ0iUlrRDW3zrXzQN4q472iX53a9EqBFCNArw4ZgPV8NllGSrWhbAdhnbTqYD' https://cdn.jsdelivr.net; style-src-elem 'sha384-T5odTrZ82iz2SpSIlEcnPGuZ4XQ8gAseKryjKLByVC4SC2W3Z7bxM9SuBWNXMBZ4' https://cdn.jsdelivr.net; style-src-attr 'unsafe-inline'; img-src 'self' data: blob: https://tiles.basemaps.cartocdn.com https://protomaps.github.io https://cdn.jsdelivr.net; connect-src 'self' https://tiles.basemaps.cartocdn.com https://protomaps.github.io https://cdn.jsdelivr.net https://nominatim.openstreetmap.org https://overpass-api.de https://overpass.kumi.systems; worker-src blob: 'self'; child-src blob: 'self'; font-src 'none'; manifest-src 'self'; base-uri 'none'; form-action 'none'; object-src 'none'">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="mobile-web-app-capable" content="yes">
@@ -682,7 +682,7 @@ input, textarea { caret-color: currentColor; } /* Beta 1.125 (Andrew): the typin
 // data.js payloads - only the wrapper changed.) =====
 const ROUTE_PACKS = [{
   id: '5w', name: 'Route 5W', area: 'Vaughan',
-  main: ["Velmar", "Mellings", "Astona", "Santa Barbara", "Valeria", "Greenpark"],
+  primaries: ["Velmar", "Mellings", "Astona", "Santa Barbara", "Valeria", "Greenpark"],
   spot: {"Columbus": [1, 0.47], "Mellings": [1, 0.55], "Valeria": [1, 0.45], "Santa Barbara": [3, 0.4], "Kingsnorth": [0, 0.57], "Bell Harbour": [0, 0.45], "Romeo": [-1, 0.4], "Astona": [-1, 0.6], "Bourbon": [-1, 0.55], "Fifth": [-1, 0.55]},
   tileNames: ["Valeria", "Dianawood", "Cartwright", "Greenpark", "Bell Harbour", "Mellings", "Julian", "Bayside", "Santa Barbara", "Blackburn", "Radley", "Marconi", "Frankie", "Kingsnorth", "Tina", "Topper", "Astona", "Flushing", "Boddy", "Columbus", "Woolacott", "Galloway", "Bourbon", "Angie", "Romeo", "Ferrari", "Flatbush", "Bloomingdale", "Conti", "Brownlee", "Malden", "Velmar", "Fifth", "Wilshire", '5th Avenue', 'Angie Place', 'Astona Boulevard', 'Bayside Court', 'Bell Harbour Place', 'Blackburn Boulevard', 'Bloomingdale Lane', 'Boddy Court', 'Bourbon Street', 'Brownlee Avenue', 'Cartwright Boulevard', 'Columbus Avenue', 'Conti Crescent', 'Dianawood Ridge', 'Ferrari Court', 'Flatbush Avenue', 'Flushing Avenue', 'Frankie Lane', 'Galloway Drive', 'Greenpark Boulevard', 'Julian Court', 'Kingsnorth Boulevard', 'Malden Street', 'Marconi Avenue', 'Mellings Drive', 'Radley Street', 'Romeo Crescent', 'Santa Barbara Place', 'Tina Place', 'Topper Court', 'Valeria Boulevard', 'Velmar Drive', 'Wilshire Boulevard', 'Woolacott Road'],
   box: { w: -79.75, s: 43.70, e: -79.35, n: 44.05 }, // the pack's offline area (z8-14); the z15 core derives from its own roads
@@ -695,7 +695,7 @@ const ROUTE_PACKS = [{
 const MLAT = 111320, MLNG = 80386;
 /** @type {() => number} */ const vvHeight = () => (window.visualViewport ? window.visualViewport.height : window.innerHeight); // visible-screen height (shrinks when the phone keyboard opens)
 const YELLOW = '#ffc233', RED = '#ef476f', GREEN = '#06d6a0';
-const PRIMARIES = new Set(); // Beta 1.117: the active pack's primary streets - filled per load by buildGeometry from pack.main (the values live in the pack, data.js)
+const PRIMARIES = new Set(); // Beta 1.117: the active pack's primary streets - filled per load by buildGeometry from pack.primaries (the values live in the pack, data.js)
 const SPOT = {}; // Beta 1.117: the active pack's label-anchor hints - filled per load by buildGeometry from pack.spot
 const TRAIL_MAX = 8000;
 const TRAIL_WINDOW_S = 3600; // Beta 1.193 (trail redesign, Andrew's adopted design): the trail's retention window, in SECONDS of recorded points. Since 1.193 the trail is a backend-only fallback for the run-distance counter (no map line, no archived path): it keeps ONLY the live run's points from its last 60 minutes, windowed by trailWindow below at load, at append (acceptFix, app3), at Start, at Finish and at restore (app4). TRAIL_MAX above survives as the session markers' cap and the loader's absolute backstop - the point cap itself no longer bounds the trail (the window does: ~3,600 points at 1 Hz).
@@ -723,7 +723,7 @@ const FIXLOG_MAX_CHARS = 200000; // Beta 1.195: the same log's second cap, in CH
 const LS_GLOBAL = { night: 'snowroute.v2.night', nightExp: 'snowroute.v2.nightExp', exp: 'snowroute.v5.export', prep: 'snowroute.prep.v1', lastArea: 'snowroute.v2.lastarea', fixlog: 'snowroute.v1.fixlog' }; // Beta 1.118: lastArea = the create flow's area pre-fill memory. Beta 1.189: fixlog = the raw GPS fix log (app3) - a DEVICE record, not route data (it spans routes and locate sessions), so it lives with the globals and rides backups at top level like the settings record, never as a ROUTE_FIELDS member
 const LEGACY_KEYS = { done: 'snowroute.v2', times: 'snowroute.v2.times', hist: 'snowroute.v2.history', notes: 'snowroute.v4.notes', via: 'snowroute.v4.via', trail: 'snowroute.v4.trail', cov: 'snowroute.v4.cov', start: 'snowroute.v5.start', flip: 'snowroute.v5.flip', sides: 'snowroute.v5.sides', sess: 'snowroute.v5.sess', snap: 'snowroute.v5.snap', finclean: 'snowroute.v5.finclean', rundist: 'snowroute.v5.rundist', rundist2: 'snowroute.v5.rundist2' }; // Beta 1.193: 'rundist2' rides here on rundist's terms - the counter's second copy (bankRunDistMirror, app3), written only by the trail-flush path in flushAux below, never backed up; adoption reads it when the primary is lost (adoptRunDist, app3). snap rides here too so LS.snap is defined on a legacy-fallback boot (the pre-1.76 app never wrote one - the key is simply absent there, which the cancel path already treats as 'no snapshot'); finclean rides for the same reason (Beta 1.141); rundist rides for the same reason (Beta 1.167, B5)
 const ROUTE_FIELDS = ['done', 'times', 'hist', 'notes', 'via', 'trail', 'cov', 'start', 'flip', 'sides', 'sess'];
-const PACK_FIELDS = ['name', 'area', 'main', 'spot', 'tileNames', 'box', 'roads', 'reference']; // Beta 1.131 (maintainability programme A): the ONE list of fields a route pack carries - normalizePack (create-packs.js) builds every validated pack by walking THIS list, so a field joins the pack format by joining this list (with its cleaner there); a field absent from the list does not survive validation, by construction. Deliberately distinct from ROUTE_FIELDS above: those are storage-slot fields, and 'snap' in particular is a slot field that is NOT a pack field (hand-carried at restore scope by design) - it must never be added here.
+const PACK_FIELDS = ['name', 'area', 'primaries', 'spot', 'tileNames', 'box', 'roads', 'reference']; // Beta 1.131 (maintainability programme A): the ONE list of fields a route pack carries - normalizePack (create-packs.js) builds every validated pack by walking THIS list, so a field joins the pack format by joining this list (with its cleaner there); a field absent from the list does not survive validation, by construction. Deliberately distinct from ROUTE_FIELDS above: those are storage-slot fields, and 'snap' in particular is a slot field that is NOT a pack field (hand-carried at restore scope by design) - it must never be added here.
 // ===== RULE CONSTANTS (Beta 1.136, maintainability programme F): every number that IS a
 // product rule lives HERE, named once - coverage, GPS acceptance and the pack validator's
 // caps. A rule changes by changing its constant (with the evidence DEVELOPMENT_RULES asks
@@ -995,7 +995,7 @@ const STREETSET = new Set();
   for (const k of Object.keys(STRETCH)) delete STRETCH[k]; Object.assign(STRETCH, built);
   STREETNAMES.length = 0; for (const n of Object.keys(ROADS)) STREETNAMES.push(n);
   STREETSET.clear(); for (const n of STREETNAMES) STREETSET.add(n);
-  PRIMARIES.clear(); for (const n of ((pack && pack.main) || [])) if (STREETSET.has(n)) PRIMARIES.add(n);
+  PRIMARIES.clear(); for (const n of ((pack && pack.primaries) || [])) if (STREETSET.has(n)) PRIMARIES.add(n);
   for (const k of Object.keys(SPOT)) delete SPOT[k]; Object.assign(SPOT, (pack && pack.spot) || {});
   routeBox = computeRouteBox(ROADS);
   ROUTE_TILE_NAMES.length = 0; ROUTE_TILE_NAMES.push(...((pack && pack.tileNames && pack.tileNames.length) ? pack.tileNames : STREETNAMES));
@@ -6513,7 +6513,7 @@ function unloadRouteToBoot() { // Beta 1.124: the ACTIVE route was deleted - ret
   const hadRun = !!runStart;
   resetSwitchSession();
   if (hadRun) stopGps(true); // a clean on a deleted route cannot keep recording - its trail's slot no longer exists
-  buildGeometry({ roads: {}, reference: {}, main: [] }); // the eval-time emptiness a cold boot shows before any pick (drive149's zero-geometry state)
+  buildGeometry({ roads: {}, reference: {}, primaries: [] }); // the eval-time emptiness a cold boot shows before any pick (drive149's zero-geometry state)
   if (map && window.GLP) window.GLP.rebuildRoute();
   doneSet = new Set(); doneTimes = {}; doneVia = {}; notes = {}; history = []; runStart = 0; trail = []; trailSessions = []; coveredIdx = {}; pieces = {}; pieceTimes = {}; // the eval empties (app1's declarations)
   LS = { ...routeKeys('5w'), ...LS_GLOBAL }; // the eval default - the next pick repoints it via loadRoute
@@ -6558,7 +6558,7 @@ function askDeleteRoute(id) { // Beta 1.124: the Delete button on a created rout
 // land in one shared preview ("Review selection") with corrections, then a
 // name-it step, then the pack is saved on-device (below).
 // PACK FORMAT (defined once, here and in docs/ARCHITECTURE.md): the same
-// shape as a ROUTE_PACKS entry - { name, area, main: [names], roads:
+// shape as a ROUTE_PACKS entry - { name, area, primaries: [names], roads:
 // { street: [segment, ...] }, reference: {...}, tileNames?: [...] }, each
 // segment an array of [lat, lng] points. normalizePack is the one validator
 // every entry path (draft import, save, backup restore, boot merge) uses.
@@ -6649,7 +6649,7 @@ function normalizePack(raw, opts) { // -> { ok: true, pack } | { ok: false, erro
   if (!Object.keys(rc.roads).length) return bad(opts.draft ? 'the draft has no streets' : 'the route has no streets');
   let reference = {};
   if (raw.reference !== undefined) { const fc = cleanRoads(raw.reference, 'reference features'); if (fc.error) return bad(fc.error); reference = fc.roads; for (const nm of Object.keys(reference)) if (rc.roads[nm]) delete reference[nm]; }
-  const primariesIn = raw.primaries !== undefined ? raw.primaries : (raw.mains !== undefined ? raw.mains : raw.main); // Beta 1.205: the draft-side key is 'primaries' now; 'mains' stays accepted as the legacy input alias and 'main' is the stored pack field - all three read the same list
+  const primariesIn = raw.primaries; // the ONE stored key (2026-11-15, Andrew's override completing the Beta 1.205 rename at the storage layer): no aliases - a pack written by an older build (field 'main', or a draft-side 'mains') normalizes to an empty primaries list with its streets intact, never a rejection
   const primaries = [];
   if (primariesIn !== undefined) {
     if (!Array.isArray(primariesIn)) return bad('the primaries list is the wrong shape');
@@ -6662,7 +6662,7 @@ function normalizePack(raw, opts) { // -> { ok: true, pack } | { ok: false, erro
   if (raw.box && isFinite(raw.box.w) && isFinite(raw.box.s) && isFinite(raw.box.e) && isFinite(raw.box.n) && raw.box.w < raw.box.e && raw.box.s < raw.box.n) box = { w: raw.box.w, s: raw.box.s, e: raw.box.e, n: raw.box.n };
   else { const cb = computeRouteBox({ ...rc.roads, ...reference }); if (cb) box = { w: Math.max(-180, cb.w - 0.03), s: Math.max(-90, cb.s - 0.025), e: Math.min(180, cb.e + 0.03), n: Math.min(90, cb.n + 0.025) }; }
   if (box && (box.w < -180 || box.e > 180 || box.s < -90 || box.n > 90 || box.e - box.w > PACK_BOX_MAX_DEG || box.n - box.s > PACK_BOX_MAX_DEG)) return bad('the route area is too big'); // Beta 1.152 (NV round, NV3a): extent and world-bounds validation, fail-closed like every other check here, over the declared box and the derived one alike. A box is an offline-download area and the tile enumerators (app4) iterate it zoom by zoom: a worldwide box enumerates ~356.8M tile URLs per source and never returns (measured) - it is a preload wedge, not a route. The ceiling (~7.6x the widest shipped city bbox, 10x the declared 5W box) rejects it at EVERY entry point, this validator being the single gate for draft import, save, backup restore and the boot merge. The enumerators carry their own budget as well (NV3b), for records that never pass through here.
-  const cleaned = { name, area, main: primaries, spot: {}, tileNames: [...tileSet], box, roads: rc.roads, reference };
+  const cleaned = { name, area, primaries, spot: {}, tileNames: [...tileSet], box, roads: rc.roads, reference };
   const pack = {};
   for (const f of PACK_FIELDS) { if (f in cleaned) pack[f] = cleaned[f]; else if (raw[f] !== undefined) pack[f] = raw[f]; } // Beta 1.131 (programme A): the pack is built by walking PACK_FIELDS (app1) - the list is the single source for what a pack carries. Every listed field has a cleaner above today, so the raw fall-through never fires; it exists so a future field added to the list (before its cleaner lands) is carried through rather than silently dropped - the pre-1.131 trap was the hand-written return literal here forgetting a field.
   return { ok: true, pack };
@@ -7962,7 +7962,7 @@ function importDraft(text) { // fail closed, named errors, nothing half-applied 
   const v = normalizePack(raw, { draft: true });
   if (!v.ok) { toast('Draft not imported — ' + v.error, 4000); return; }
   draft = newDraft();
-  draft.roads = v.pack.roads; draft.primaries = new Set(v.pack.main); draft.name = v.pack.name || ''; draft.area = v.pack.area || ''; draft.tileNames = v.pack.tileNames.slice();
+  draft.roads = v.pack.roads; draft.primaries = new Set(v.pack.primaries); draft.name = v.pack.name || ''; draft.area = v.pack.area || ''; draft.tileNames = v.pack.tileNames.slice();
   draft.osmNames = {}; for (const k of Object.keys(v.pack.roads)) draft.osmNames[k] = k; // Beta 1.169 (Carbon fix round, D-02): an imported street's own OSM name is its pack key. Through 1.168 importDraft left osmNames empty, so crStreetParts' own-ways skip (nm === own) never matched for an imported street and the street's own geometry cut it into fragments at its own vertices. Tapped streets have always carried key -> itself (crAddStreet).
   enterCreate('preview');
   toast('Draft loaded — check it over', 2600);

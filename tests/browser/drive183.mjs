@@ -22,7 +22,7 @@ const R = { checks: [] };
 const ok = (name, cond) => R.checks.push([name, cond === true]);
 const UPKEY = 'snowroute.v2.userpacks';
 const MIGKEY = 'snowroute.v2.userpacks.migrated';
-const PACK = (name, street) => ({ name, area: 'Vaughan', mains: [], roads: { [street]: [[[43.8, -79.57], [43.801, -79.571]]] }, reference: {} });
+const PACK = (name, street) => ({ name, area: 'Vaughan', primaries: [], roads: { [street]: [[[43.8, -79.57], [43.801, -79.571]]] }, reference: {} });
 // The large pack is generated IN-PAGE by a deterministic builder (a ~3 MB
 // fixture string would have to cross CDP otherwise); the same builder
 // re-derives the expected value at verify time, so parity is judged
@@ -33,7 +33,7 @@ const PACK = (name, street) => ({ name, area: 'Vaughan', mains: [], roads: { [st
 // segments, not thousands of stubs (a 6,000-stub-segment first draft of
 // this fixture made loadRoute's chaining pass burn minutes of CPU -
 // the fixture was unrealistic, not the app slow).
-const BIG_BUILDER = `(() => { const roads = {}; for (let s = 0; s < 150; s++) { const segs = []; for (let g = 0; g < 8; g++) { const pts = []; for (let p = 0; p < 100; p++) pts.push([43.8 + s * 0.001 + g * 0.006 + p * 0.00005, -79.57 - s * 0.001 - p * 0.00004]); segs.push(pts); } roads['Big Street ' + s] = segs; } return { name: 'Big Route', area: 'Vaughan', mains: [], roads, reference: {} }; })()`;
+const BIG_BUILDER = `(() => { const roads = {}; for (let s = 0; s < 150; s++) { const segs = []; for (let g = 0; g < 8; g++) { const pts = []; for (let p = 0; p < 100; p++) pts.push([43.8 + s * 0.001 + g * 0.006 + p * 0.00005, -79.57 - s * 0.001 - p * 0.00004]); segs.push(pts); } roads['Big Street ' + s] = segs; } return { name: 'Big Route', area: 'Vaughan', primaries: [], roads, reference: {} }; })()`;
 const seedLegacy = () => ev(`(() => { const big = ${BIG_BUILDER}; const rec = { 'route-small-a': ${JSON.stringify(PACK('Small A', 'Alpha Street'))}, 'route-small-b': ${JSON.stringify(PACK('Small B', 'Beta Street'))}, 'route-big': big }; localStorage.setItem('${UPKEY}', JSON.stringify(rec)); return JSON.stringify({ bytes: JSON.stringify(rec).length, bigPts: Object.values(big.roads).flat().reduce((a, sg) => a + sg.length, 0) }); })()`);
 const navigate = async () => { await send('Page.navigate', { url }, S); await sleep(3000); }; // the house post-navigate settle (drive163's reboot shape): the new document must own the session before any status is read
 const waitInit = async () => { await poll(`!!window.__userPacksStatus && window.__userPacksStatus().state !== 'boot'`, 30000); await ev(`window.__userPacksReady`); };
