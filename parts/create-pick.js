@@ -414,7 +414,7 @@ function crEnterPickFromCity() { // the city is chosen: land in the pick stage, 
 // ---- the create gate: TWO DOORS, then the list (Beta 1.124, Andrew's
 // redesign, approved from the rendered mockup 2026-11-06) ----
 // The first screen of Create is "Create new route" with two primary
-// doors: Select from list and Search manually (the photo door sits
+// doors: Select from list and Manual search (the photo door sits
 // quieter below a divider). Select from list opens its own pane listing
 // the library's cities as clean rows - no typing required to proceed.
 // The list IS packs/index.json (the same catalogue the seam reads): a
@@ -429,13 +429,13 @@ function crRenderCityChoices() {
   crPackIndexLoad().then(entries => {
     if (!boxEl.isConnected) return;
     boxEl.innerHTML = '';
-    if (!entries || !entries.length) { const d = document.createElement('div'); d.className = 'rmNote'; d.textContent = 'The city library isn’t available right now — go back and use Search manually.'; boxEl.appendChild(d); return; } // honest unavailability, and the manual door behind Back still works - the gate never dead-ends
+    if (!entries || !entries.length) { const d = document.createElement('div'); d.className = 'rmNote'; d.textContent = 'The city library isn’t available right now — go back and use Manual search.'; boxEl.appendChild(d); return; } // honest unavailability, and the manual door behind Back still works - the gate never dead-ends
     const last = (lsGet(LS_GLOBAL.lastArea) || '').toLowerCase();
     const sorted = entries.slice().sort((a, b) => (((b.name || '').toLowerCase() === last) ? 1 : 0) - (((a.name || '').toLowerCase() === last) ? 1 : 0)); // the last-used city rides first when the library holds it (a convenience, never a requirement - the full list is always there)
     for (const e of sorted) {
       if (!e || !e.name || !e.slug || !Array.isArray(e.bbox) || e.bbox.length !== 4) continue;
-      const b = routeRowShell('button', e.name, (typeof e.streets === 'number' && isFinite(e.streets) ? e.streets.toLocaleString('en-US') + ' streets · ' : '') + 'ready to load', { chevron: true });
-      if (String(e.name).toLowerCase() === last) { const lu = document.createElement('span'); lu.className = 'crLastUsed'; lu.textContent = ' · last used'; const area = b.querySelector('.routeArea'); if (area) area.appendChild(lu); } // Beta 1.139 (Andrew): the last-used tag is its own gold span so it stands out - it was plain text trailing the sub-line
+      const b = routeRowShell('button', e.name, null, { chevron: true }); // Beta 1.207 (Andrew): city rows carry the NAME ONLY - the street-count sub-line is gone (sub null = no .routeArea element at all, so no leftover row height)
+      if (String(e.name).toLowerCase() === last) { const lu = document.createElement('span'); lu.className = 'crLastUsed'; lu.textContent = ' · last used'; const nmEl = b.querySelector('.routeName'); if (nmEl) nmEl.appendChild(lu); } // Beta 1.139 (Andrew): the last-used tag is its own gold span so it stands out. Beta 1.207: it trailed the sub-line until the sub-line was removed; it now trails the city NAME on the same row - same span, same words, same gold
       b.addEventListener('click', () => crPackPickCity(e));
       boxEl.appendChild(b);
     }
@@ -493,7 +493,7 @@ async function crRunCitySearch() {
 // object are replaced wholesale by every structural change except two (new draft,
 // photo-door import, Clear all, exit), which the identity keys catch; the only in-place
 // geometry mutations are crAddStreet joining a street and crRemoveStreet removing one,
-// and both bump crGeomGen. Selection-only changes - sector picks, PRIMARY/2ND flips - touch
+// and both bump crGeomGen. Selection-only changes - sector picks, PRIMARY/SECONDARY flips - touch
 // neither key and never recompute. Identity-proven in the 1.135 fixture harness (the
 // cached geometry deep-equals a fresh computeStretches at every step); drives 156-158
 // judge the flows.
@@ -596,7 +596,7 @@ function crRowEl(n, g) {
   const dot = document.createElement('span'); dot.className = 'crDot ' + (primary ? 'primary' : 'sec'); row.appendChild(dot);
   const nm = document.createElement('span'); nm.className = 'crName'; nm.textContent = shortStreetName(n); row.appendChild(nm); // Beta 1.144 (DA-04): rows display the short name; the draft key behind them is the full map name
   const ln = document.createElement('span'); ln.className = 'crLen'; ln.textContent = fmtLenM(crStreetChosenM(n, g)); row.appendChild(ln); // Beta 1.130 (maintainability re-scan N1): the preview's rows bill the CHOSEN length through the same helper as the panel's rows and every total - through 1.129 this read g[n].total, so a sector-trimmed street showed its WHOLE length on the check screen while the panel billed the trim and the preview's own total (renderCrLists sums crStreetChosenM) disagreed with its rows
-  const chip = document.createElement('button'); chip.className = 'crChip ' + (primary ? 'primary' : 'sec'); chip.textContent = primary ? 'PRIMARY' : '2ND';
+  const chip = document.createElement('button'); chip.className = 'crChip ' + (primary ? 'primary' : 'sec'); chip.textContent = primary ? 'PRIMARY' : 'SECONDARY';
   chip.addEventListener('click', () => { if (draft.primaries.has(n)) draft.primaries.delete(n); else draft.primaries.add(n); renderDraft(); renderCrLists(); });
   row.appendChild(chip);
   const del = document.createElement('button'); del.className = 'crDel'; del.textContent = '✕'; del.title = 'Remove ' + shortStreetName(n);
@@ -604,7 +604,7 @@ function crRowEl(n, g) {
   row.appendChild(del);
   return row;
 }
-function crPanelRowEl(n, g) { // Beta 1.127 (Andrew's approved mockup, screen 2): one short row per picked road - category dot, name, "Entire road · X m" or "N of M sectors · X m", the PRIMARY/2ND chip IN the row (one tap flips the road's type), x to remove; tapping the row itself opens the street's sector trimming
+function crPanelRowEl(n, g) { // Beta 1.127 (Andrew's approved mockup, screen 2): one short row per picked road - category dot, name, "Entire road · X m" or "N of M sectors · X m", the PRIMARY/SECONDARY chip IN the row (one tap flips the road's type), x to remove; tapping the row itself opens the street's sector trimming
   const primary = draft.primaries.has(n);
   const row = document.createElement('div'); row.className = 'crPRow';
   const dot = document.createElement('span'); dot.className = 'crDot ' + (primary ? 'primary' : 'sec'); row.appendChild(dot);
@@ -615,7 +615,7 @@ function crPanelRowEl(n, g) { // Beta 1.127 (Andrew's approved mockup, screen 2)
   if (sel) { const rec = crStreetParts(n); sub.textContent = sel.length + ' of ' + (rec ? rec.parts.length : sel.length) + ' sectors · ' + fmtLenM(crStreetChosenM(n, g)) + ' — tap row to adjust'; }
   else sub.textContent = 'Entire road · ' + fmtLenM(g[n] ? g[n].total : 0) + ' — tap row to adjust'; // Beta 1.128: the adjust affordance is stated BEFORE any trim exists - in 1.127 it appeared only after one, so an untrimmed row gave no hint it could be tapped at all
   meta.appendChild(sub); row.appendChild(meta);
-  const chip = document.createElement('button'); chip.className = 'crPChip ' + (primary ? 'primary' : 'sec'); chip.textContent = primary ? 'PRIMARY' : '2ND';
+  const chip = document.createElement('button'); chip.className = 'crPChip ' + (primary ? 'primary' : 'sec'); chip.textContent = primary ? 'PRIMARY' : 'SECONDARY';
   chip.addEventListener('click', e => { e.stopPropagation(); if (draft.primaries.has(n)) draft.primaries.delete(n); else draft.primaries.add(n); renderDraft(); renderCrLists(); });
   row.appendChild(chip);
   const del = document.createElement('button'); del.className = 'crPDel'; del.textContent = '✕'; del.title = 'Remove ' + shortStreetName(n);

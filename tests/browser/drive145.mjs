@@ -33,7 +33,7 @@ ok('N3 Choose lists Route 5W, unbadged while nothing is loaded', await ev(`(func
 await ev(`document.getElementById('rmBack').click(); true`); await sleep(400);
 ok('N4 Back returns to the main pane', await ev(`document.getElementById('rmMain').classList.contains('on') && !document.getElementById('rmListPane').classList.contains('on')`));
 await ev(`document.getElementById('rmCreate').click(); true`); await sleep(400);
-ok('N5 Create opens the two doors (Beta 1.118 remap: the 1.117 "Coming soon" placeholder is replaced by the real flow - From a photo / Select streets myself, and the placeholder text is gone)', await ev(`document.getElementById('rmCreatePane').classList.contains('on') && !!document.getElementById('crDoorPhoto') && !!document.getElementById('crDoorManual') && document.getElementById('rmCreatePane').textContent.indexOf('Coming soon') < 0`));
+ok('N5 Create opens the two doors (Beta 1.118 remap: the 1.117 "Coming soon" placeholder is replaced by the real flow - Upload photo / Select streets myself, and the placeholder text is gone)', await ev(`document.getElementById('rmCreatePane').classList.contains('on') && !!document.getElementById('crDoorPhoto') && !!document.getElementById('crDoorManual') && document.getElementById('rmCreatePane').textContent.indexOf('Coming soon') < 0`));
 await ev(`document.getElementById('rmBack2').click(); true`); await sleep(400);
 
 // --- the pick -------------------------------------------------------------

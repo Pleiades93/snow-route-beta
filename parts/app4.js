@@ -794,7 +794,7 @@ $('stDel').addEventListener('click', async () => {
 });
 // ---- About / What's new ----
 const WHATSNEW = { // the curated in-app notes: plain words, LATEST RELEASE ONLY (Beta 1.114, Andrew: the accumulated list cluttered the About pane). A release REPLACES this entry with its own in the same change - it never accumulates; the full history lives in CHANGELOG.md, not the app
-  v: 'Beta 1.206', items: ["Zoomed in, a street's paint now runs right into the crossing street — no more small gaps where streets end."] };
+  v: 'Beta 1.207', items: ["Creating a route is cleaner: the secondary pill now spells out SECONDARY and matches the PRIMARY pill — yellow for primary, red for secondary, in both steps. The create menu and city list lost their extra description lines, the Currently loaded badge sits beside the route name, and saving just says Route saved."] };
 
 function renderAbout() {
   const cur = $('ver').textContent.trim();

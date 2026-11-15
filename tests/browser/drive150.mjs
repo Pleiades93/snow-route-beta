@@ -225,8 +225,8 @@ await ev(tapStreet('Bordeaux Drive'));
 const gotB = await poll(`typeof draft !== 'undefined' && draft && !!draft.roads['Bordeaux Drive']`, 20000);
 ok('A3 tapping Bordeaux Drive (fixture roads feature through the real click handler) adds it from the prepared extract', gotB === true);
 const A4 = await J(`({ streets: Object.keys(draft.roads), primaries: draft.primaries.size, count: document.getElementById('crCount').textContent, chip: (document.querySelector('#crPickList .crPChip') || {}).textContent || '', total: Math.round(computeStretches(draft.roads)['Bordeaux Drive'].total), src: (map.getSource('crDraft').serialize().data.features || []).length })`); // Beta 1.127 premise updates in this drive: the pick rows are the picked-roads panel's rows - chip is .crPChip (A4), the panel header counts 'N roads' (A4/A6), the chip flip's proof is its own PRIMARY text (A7), and the theme probe reads the panel face #crPanel (I2)
-ok('A4 Bordeaux joined the draft as a SECONDARY (2ND chip, 0 primaries) with its shape drawn on the draft overlay | ' + JSON.stringify(A4),
-  A4.streets.length === 1 && A4.primaries === 0 && A4.count.indexOf('1 roads') === 0 && A4.chip === '2ND' && A4.src === 1);
+ok('A4 Bordeaux joined the draft as a SECONDARY (SECONDARY chip, 0 primaries) with its shape drawn on the draft overlay | ' + JSON.stringify(A4),
+  A4.streets.length === 1 && A4.primaries === 0 && A4.count.indexOf('1 roads') === 0 && A4.chip === 'SECONDARY' && A4.src === 1);
 ok('A5 the fetched Bordeaux length matches the fixture geometry (' + Math.round(fixtureLen('Bordeaux Drive')) + ' m) within 2% | got ' + A4.total,
   Math.abs(A4.total - fixtureLen('Bordeaux Drive')) <= fixtureLen('Bordeaux Drive') * 0.02);
 await ev(tapStreet('Alderson Avenue'));
@@ -237,7 +237,7 @@ ok('A6 Alderson Avenue tapped and added (2 streets); its stitched length matches
   A6.streets.length === 2 && A6.count.indexOf('2 roads') === 0 && Math.abs(A6.ald - fixtureLen('Alderson Avenue')) <= fixtureLen('Alderson Avenue') * 0.03);
 await ev(`(() => { const rows = [...document.querySelectorAll('#crPickList .crPRow')]; const row = rows.find(r => r.querySelector('.crPName').textContent === 'Bordeaux'); row.querySelector('.crPChip').click(); return true; })()`); // Beta 1.127 premise update: the chip lives in the panel row (.crPRow/.crPName/.crPChip)
 const A7 = await J(`({ primaries: [...draft.primaries], chip: (() => { const rows = [...document.querySelectorAll('#crPickList .crPRow')]; const row = rows.find(r => (r.querySelector('.crPName') || {}).textContent === 'Bordeaux'); return row ? (row.querySelector('.crPChip') || {}).textContent || '' : ''; })() })`); // Beta 1.127 premise update: the panel header has no primaries count - the flipped chip's PRIMARY text is the visible proof
-ok('A7 flipping Bordeaux to PRIMARY updates its panel chip (2ND -> PRIMARY)', A7.primaries.length === 1 && A7.primaries[0] === 'Bordeaux Drive' && A7.chip === 'PRIMARY'); // Beta 1.127 premise update: chip text replaces the old header primaries count
+ok('A7 flipping Bordeaux to PRIMARY updates its panel chip (SECONDARY -> PRIMARY)', A7.primaries.length === 1 && A7.primaries[0] === 'Bordeaux Drive' && A7.chip === 'PRIMARY'); // Beta 1.127 premise update: chip text replaces the old header primaries count
 await ev(`document.getElementById('crDoneBtn').click()`);
 const A8 = await J(`({ stage: crStage, pv: document.getElementById('previewSheet').classList.contains('on'), bar: document.getElementById('createBar').classList.contains('on'), rows: document.querySelectorAll('#pvList .crRow').length, pvCount: document.getElementById('pvCount').textContent })`);
 ok('A8 Done lands in the shared preview ("Review selection") with both streets and the count', A8.stage === 'preview' && A8.pv && !A8.bar && A8.rows === 2 && A8.pvCount.indexOf('2 streets') === 0);
