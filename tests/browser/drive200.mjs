@@ -233,7 +233,7 @@ ok(`T1 PROJECTION SEED: a fix ON Woodland Acres Crescent engages '${t1.name}' an
 // shown point must still sit on A (the anchor), then walk to B over the
 // frames with no per-frame step near the 8 m the defect jumped.
 await rig.ev2(RESET);
-const swSetup = await rig.J(`(() => { const a = [${T1FIX[0]}, ${T1FIX[1]}]; const slug = snapSlugFor(a); const want = ((typeof activeRoute !== 'undefined' && activeRoute && activeRoute.id) || '') + '|' + slug; const dLat = 8 / MLAT, step = 15 / MLNG; const mk = off => { const pts = []; for (let i = 0; i < 9; i++) pts.push([a[0] + off, a[1] - 4 * step + i * step]); return pts; }; window.__savedGeo = snapGeo; window.__swA = mk(0); window.__swB = mk(dLat); snapGeo = snapBuildIndex([{ name: 'Switch A', pts: window.__swA }, { name: 'Switch B', pts: window.__swB }], want); return { keyOk: snapGeo.key === want }; })()`);
+const swSetup = await rig.J(`(() => { const a = [${T1FIX[0]}, ${T1FIX[1]}]; const slug = snapSlugFor(a); const want = ((typeof activeRoute !== 'undefined' && activeRoute && activeRoute.id) || '') + '|' + slug; const dLat = 8 / MLAT, step = 15 / MLNG; const mk = off => { const pts = []; for (let i = 0; i < 9; i++) pts.push([a[0] + off, a[1] - 4 * step + i * step]); return pts; }; window.__savedGeo = snapGeo; window.__swA = mk(0); window.__swB = mk(dLat); window.__swC = mk(30 / MLAT); snapGeo = snapBuildIndex([{ name: 'Switch A', pts: window.__swA }, { name: 'Switch B', pts: window.__swB }, { name: 'Switch C', pts: window.__swC }], want); return { keyOk: snapGeo.key === want }; })()`);
 ok('A1 SWITCH BLEND SETUP: the synthetic two-road index installs under the key snapGeoEnsure wants (the real index is saved for restore)', swSetup.keyOk === true);
 if (swSetup.keyOk) {
   const feedPt = async (pt, k) => rig.ev2(`(() => { acceptFix({ coords: { latitude: ${pt[0]}, longitude: ${pt[1]}, accuracy: 10, speed: 15, heading: 90 }, timestamp: ${1760001000000 + k * 1000} }); return true; })()`);
@@ -249,6 +249,20 @@ if (swSetup.keyOk) {
   await frames(3, 16);
   const postSw = await rig.J(`({ held: snapHeld ? snapHeld.name : '', shown: dispShownPos() })`);
   const walk = await rig.J(`(() => { window.__trace = []; for (let k = 0; k < 240; k++) { window.__fakeNow += 16; renderTick(performance.now()); } const tr = window.__trace; window.__trace = null; return { tr, shown: dispShownPos() }; })()`);
+  // Accuracy gate on the drop-and-reengage (pin for the PR #51 Codex P2,
+  // fourth round): the fresh take after a drop must pass the same
+  // acc <= SNAP_ACC_M gate as the from-free engage. Road C sits 30 m
+  // from A (past SNAP_DROP_M from a hold on A, on top of C itself), so a
+  // fix on C forces the drop-and-reengage branch deterministically.
+  const swC = await rig.J(`window.__swC`);
+  await rig.ev2(RESET);
+  await feedPt(swA[4], fk++);
+  const accPre = await rig.J(`snapHeld ? snapHeld.name : ''`);
+  await rig.ev2(`(() => { acceptFix({ coords: { latitude: ${swC[4][0]}, longitude: ${swC[4][1]}, accuracy: 60, speed: 15, heading: 90 }, timestamp: ${1760001000000 + (fk++) * 1000} }); return true; })()`);
+  const accMid = await rig.J(`snapHeld ? snapHeld.name : ''`);
+  await rig.ev2(`(() => { acceptFix({ coords: { latitude: ${swC[4][0]}, longitude: ${swC[4][1]}, accuracy: 10, speed: 15, heading: 90 }, timestamp: ${1760001000000 + (fk++) * 1000} }); return true; })()`);
+  const accPost = await rig.J(`snapHeld ? snapHeld.name : ''`);
+  ok(`A1 ACC GATE ON RE-ENGAGE: holding '${accPre}' from a good fix, a 60 m-accuracy fix on road C (30 m away) drops the hold and takes NOTHING (held '${accMid}'; the ungated branch locked C), and the same fix at 10 m accuracy then engages '${accPost}'`, accPre === 'Switch A' && accMid === '' && accPost === 'Switch C');
   await rig.ev2(`(() => { snapGeo = window.__savedGeo; window.__savedGeo = null; return true; })()`);
   const dPre = preSw.shown ? sc1b.distToPoly(preSw.shown, swB) : -1;
   const dPost = postSw.shown ? sc1b.distToPoly(postSw.shown, swB) : -1;
