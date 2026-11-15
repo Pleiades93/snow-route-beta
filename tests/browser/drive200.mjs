@@ -193,6 +193,21 @@ if (relWin >= 0) {
   const midW = (rel.tr || []).filter(t => t[0] > 0.05 && t[0] < 0.95).length;
   const endGap = rel.shown && rel.disp ? sc1b.distLL(rel.shown, rel.disp) : -1;
   ok(`A1 RELEASE BLEND: engaged at w ${pre.w.toFixed(2)} with a ${off.toFixed(1)} m offset; one 1.0 m/s fix releases and the shown point EASES OUT - max per-frame step ${maxStep.toFixed(2)} m over ${pts.length} frames (bar < 1.0 m), ${midW} frames at intermediate weights (bar >= 3), ending ${endGap.toFixed(3)} m from the true point (bar < 0.05 m), hold gone ${!rel.held}`, pre.held && pre.w >= 0.95 && off >= 2 && !rel.held && maxStep < 1.0 && midW >= 3 && endGap >= 0 && endGap < 0.05);
+  // Partial-weight arm (pin for the PR #51 Codex P2, third round): a
+  // release arriving MID-BLEND must be continuous at the release instant
+  // itself. The capture is weight-normalized; storing the rendered point
+  // raw would apply the weight twice and jump by offset * w * (1 - w)
+  // (2 m at w 0.5 on an 8 m offset in review's repro). The weight is set
+  // to exactly 0.5 in-page so the expected defect jump is deterministic:
+  // off * 0.25, with off >= 2 m by the window's construction.
+  await rig.ev2(RESET);
+  await rig.ev2(batchExpr(win));
+  await rig.ev2(`(() => { for (let k = 0; k < 60; k++) { window.__fakeNow += 50; renderTick(performance.now()); } snapW = 0.5; return true; })()`);
+  const p0 = await rig.J(`({ held: !!snapHeld, shown: dispShownPos(), disp: dispPos && dispPos.slice() })`);
+  const pOff = p0.shown && p0.disp ? sc1b.distLL(p0.shown, p0.disp) : -1;
+  const p1 = await rig.J(`(() => { acceptFix({ coords: { latitude: ${last[1]}, longitude: ${last[2]}, accuracy: ${last[3]}, speed: 1.0, heading: ${last[5]} }, timestamp: ${last[0] + 1000} }); return { held: !!snapHeld, shown: dispShownPos() }; })()`);
+  const pJump = p0.shown && p1.shown ? sc1b.distLL(p0.shown, p1.shown) : -1;
+  ok(`A1 RELEASE BLEND (partial weight): at w 0.5 with a ${pOff.toFixed(1)} m rendered offset, the release fix moves the shown point ${pJump.toFixed(3)} m at the release instant (bar < 0.05 m; the double-weighted capture jumps ${(pOff * 0.5).toFixed(2)} m here), hold gone ${!p1.held}`, p0.held && pOff >= 1 && !p1.held && pJump >= 0 && pJump < 0.05);
 }
 
 // ---- T1: the projection seed (pin for the PR #51 Codex P1, second round) ----
