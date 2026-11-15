@@ -5857,6 +5857,7 @@ $('xPre').addEventListener('click', async () => {
     if (!swOk) { st.textContent = 'Offline maps NOT saved: the part of the app that saves them is not running' + (window.__swErr ? ' (' + window.__swErr + ')' : '') + '. The live map is unaffected.'; preloadRunning = false; return; } // Beta 1.57: wording stands on its own (second audit, item 5)
   }
   try {
+    await initUserPacks(); // Codex P2, PR #69 (2026-11-15): refresh the persisted route registrations BEFORE the manifest is built - ROUTE_PACKS is this page's boot picture, so a route created in ANOTHER tab since boot is persisted on this device (store + legacy record) but unregistered here, and a manifest built from the stale picture names that route's tiles as orphans to the C-01 prune below, which would delete a live route's pack out of the shared cache. initUserPacks is the boot's own registration (legacy merge + fill-only store pass + the verified drain) and never unregisters anything, so re-running it here - the same settle the boot chains migratePack on (DA-07) - makes the download list and the prune alike judge against the device's current route definitions
 const list = preloadUrlList(); releasePack = await takePackWriteTurn(); // Beta 1.183 (Codex P2, PR #21): the download takes the pack writers' turn before its census - see takePackWriteTurn (below, with packMigFingerprint)
     // Beta 1.94 (audit F-03): the downloaded pack is written into its OWN cache
     // ('snowroute-offline-v1'), which the service worker serves FIRST for map data and

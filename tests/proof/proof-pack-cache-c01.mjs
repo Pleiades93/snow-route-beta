@@ -34,6 +34,18 @@ import vm from 'node:vm';
 // stops at the cap with 2 of 3 saved and no completion fingerprint;
 // with the fix the orphan is pruned, all 3 files save, and the
 // fingerprint is written.
+//
+// The Codex P2 on PR #69 added one more requirement the harness pins:
+// the prune is destructive, so the manifest it judges against must be
+// built from the device's CURRENT persisted route definitions, not
+// this page's boot picture (a route created in another tab since boot
+// is persisted but unregistered here, and its tiles would read as
+// orphans). The handler therefore awaits initUserPacks() - the boot's
+// own registration - before preloadUrlList(). The harness stubs both
+// and records their call order: the refresh must precede the manifest.
+// (The registration's own behaviour is the create battery's subject;
+// what is pinned here is the wiring - that the shipped handler
+// refreshes before it builds, the DA-07 lesson applied to this door.)
 
 const src = readFileSync('parts/app4.js', 'utf8');
 const lines = src.split('\n');
@@ -96,6 +108,7 @@ await pack.put(G, makeResponse(50));
 await pack.put(ORPHAN, makeResponse(999)); // left behind by a route that no longer exists
 
 const lsWrites = [];
+const callOrder = [];
 const harness = { click: null };
 const elements = {
   xPre: { addEventListener(ev, fn) { harness.click = fn; } },
@@ -113,7 +126,8 @@ const sandbox = {
   navigator: {},
   caches: fakeCaches,
   fetch: async u => { const sz = SIZES[new URL(u).href]; return sz === undefined ? { ok: false } : { ok: true, clone() { return makeResponse(sz); } }; },
-  preloadUrlList: () => LIST.slice(),
+  preloadUrlList: () => { callOrder.push('manifest'); return LIST.slice(); },
+  initUserPacks: async () => { callOrder.push('refresh'); return { state: 'done' }; },
   OFFLINE_PACK_CAP_BYTES: 1200, // harness-scaled so the census arithmetic is observable (shipped: 250 MB)
   PACKMIG_KEY: 'snowroute.v5.packmig',
   LS: { pre: 'test.pre' },
@@ -139,6 +153,7 @@ function check(desc, ok) {
 }
 
 const remaining = (await pack.keys()).map(r => r.url).sort();
+check('persisted route registrations refreshed before the manifest is built', callOrder[0] === 'refresh' && callOrder[1] === 'manifest');
 check('orphaned entry is pruned by the download', !remaining.includes(new URL(ORPHAN).href));
 check('pack holds exactly the manifest set after the download', JSON.stringify(remaining) === JSON.stringify(LIST.map(u => new URL(u).href).sort()));
 check("glyph entry survived under its normalized (%20) key", remaining.includes(new URL(G).href));
