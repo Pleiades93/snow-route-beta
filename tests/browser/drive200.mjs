@@ -263,6 +263,26 @@ if (swSetup.keyOk) {
   await rig.ev2(`(() => { acceptFix({ coords: { latitude: ${swC[4][0]}, longitude: ${swC[4][1]}, accuracy: 10, speed: 15, heading: 90 }, timestamp: ${1760001000000 + (fk++) * 1000} }); return true; })()`);
   const accPost = await rig.J(`snapHeld ? snapHeld.name : ''`);
   ok(`A1 ACC GATE ON RE-ENGAGE: holding '${accPre}' from a good fix, a 60 m-accuracy fix on road C (30 m away) drops the hold and takes NOTHING (held '${accMid}'; the ungated branch locked C), and the same fix at 10 m accuracy then engages '${accPost}'`, accPre === 'Switch A' && accMid === '' && accPost === 'Switch C');
+  // Evidence-timeout hysteresis (pin for the PR #51 Codex P2, fifth
+  // round): a one-road index; fixes run 11 m alongside road A - inside
+  // the 12 m engage gate, past the 10 m evidence line. The timeout must
+  // release A and NOT re-take it on the next identical fix (the defect
+  // loops on a ~6-fix cycle, sweeping the puck sideways); a fix at 5 m
+  // (evidence improved) re-admits it.
+  await rig.ev2(`(() => { snapGeo = snapBuildIndex([{ name: 'Switch A', pts: window.__swA }], snapGeo.key); return true; })()`);
+  await rig.ev2(RESET);
+  const offPt = (pt, m) => [pt[0] + m / 111320, pt[1]];
+  const feedOff = async (m) => { const pt = offPt(swA[4], m); await rig.ev2(`(() => { acceptFix({ coords: { latitude: ${pt[0]}, longitude: ${pt[1]}, accuracy: 10, speed: 15, heading: 90 }, timestamp: ${1760001000000 + (fk++) * 1000} }); return true; })()`); };
+  const heldName = () => rig.J(`snapHeld ? snapHeld.name : ''`);
+  await feedOff(11);
+  const hyEngaged = await heldName();
+  for (let k = 0; k < 5; k++) await feedOff(11);
+  const hyDropped = await heldName();
+  await feedOff(11);
+  const hyRejected = await heldName();
+  await feedOff(5);
+  const hyReadmitted = await heldName();
+  ok(`A1 TIMEOUT HYSTERESIS: fixes 11 m alongside road A engage it ('${hyEngaged}'), the evidence timeout releases it (held '${hyDropped}'), the next 11 m fix does NOT re-take it (held '${hyRejected}'; the unguarded gate loops the timeout), and a 5 m fix re-admits it ('${hyReadmitted}')`, hyEngaged === 'Switch A' && hyDropped === '' && hyRejected === '' && hyReadmitted === 'Switch A');
   await rig.ev2(`(() => { snapGeo = window.__savedGeo; window.__savedGeo = null; return true; })()`);
   const dPre = preSw.shown ? sc1b.distToPoly(preSw.shown, swB) : -1;
   const dPost = postSw.shown ? sc1b.distToPoly(postSw.shown, swB) : -1;
