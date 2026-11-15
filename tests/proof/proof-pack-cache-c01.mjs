@@ -51,14 +51,29 @@ import vm from 'node:vm';
 // a FAILED store read (upGetAll null) as a best-effort outcome and
 // still resolves 'done' with the store's routes unregistered, so the
 // refresh alone does not prove the manifest complete. The shipped
-// handler therefore gates the prune on a fresh full store read of its
-// own: the prune runs only when upGetAll() succeeds AND every route
-// it holds is registered in ROUTE_PACKS. The harness runs three
-// scenarios against the same seeded pack - proven read (prune runs,
-// the seven checks above), failed read (null: cache preserved whole,
-// orphan survives), and a read holding an unregistered route (cache
-// preserved whole) - because on any doubt the safe act is the
-// pre-C-01 status quo, never a destructive guess.
+// handler therefore gates the prune on a proof of its own - a fresh
+// full store read plus a content comparison (next paragraph) - and
+// the harness runs the scenarios below against the same seeded pack:
+// a proven manifest (prune runs, the seven outcome checks), a failed
+// read (null: cache preserved whole, orphan survives), and reads
+// whose stored routes reach outside the manifest (cache preserved
+// whole) - because on any doubt the safe act is the pre-C-01 status
+// quo, never a destructive guess.
+//
+// Two further PR #70 P2s closed the remaining gaps in that gate, and
+// the harness pins both. (a) Definitions, not IDs: a route deleted in
+// another tab and recreated under the same name in a different area
+// REUSES the id, and fill-only registration keeps this page's older
+// definition - so the proof compares CONTENT: every persisted route,
+// normalized as the boot normalizes it, must have its whole tile set
+// (packTileUrls) inside the manifest. Scenario 4 is that recreation:
+// same id, tiles outside the manifest - the cache must be preserved.
+// (b) Freshness inside the turn: the registration snapshot and the
+// manifest are worthless if a preceding writer's completed download
+// lands between the snapshot and this handler's turn, so the handler
+// acquires takePackWriteTurn() FIRST and refreshes/builds inside it.
+// The harness's Web-Lock stub records the acquisition in the same
+// call order as the refresh and the manifest: turn, refresh, manifest.
 
 const src = readFileSync('parts/app4.js', 'utf8');
 const lines = src.split('\n');
@@ -133,19 +148,20 @@ const sandbox = {
   tapGuard: () => true,
   preloadRunning: false,
   location: { protocol: 'file:' }, // the shipped test-rig path: no service-worker gate
-  navigator: {},
+  navigator: { locks: { request: async (name, cb) => { callOrder.push('turn'); return cb(); } } }, // grants at once, records the acquisition: the shipped turn's Web-Lock path is the one under test for ORDER (turn before refresh before manifest)
   caches: fakeCaches,
   fetch: async u => { const sz = SIZES[new URL(u).href]; return sz === undefined ? { ok: false } : { ok: true, clone() { return makeResponse(sz); } }; },
   preloadUrlList: () => { callOrder.push('manifest'); return LIST.slice(); },
   initUserPacks: async () => { callOrder.push('refresh'); return { state: 'done' }; },
   upGetAll: async () => ({ 'route-a': {} }), // scenario-controlled below
   ROUTE_PACKS: [{ id: 'route-a' }], // scenario-controlled below
+  normalizePack: raw => (raw && typeof raw === 'object' && !raw.__bad) ? { ok: true, pack: { ...raw } } : { ok: false, error: 'stub rejects' }, // the boot's validator, stubbed to its contract: a stored record the validator refuses must fail the proof, never be waved through
   OFFLINE_PACK_CAP_BYTES: 1200, // harness-scaled so the census arithmetic is observable (shipped: 250 MB)
   PACKMIG_KEY: 'snowroute.v5.packmig',
   LS: { pre: 'test.pre' },
   lsSet: (k, v) => { lsWrites.push([k, v]); return true; },
   activeRoute: null,
-  packTileUrls: () => new Set(),
+  packTileUrls: pk => new Set((pk && pk.__tiles) || []), // a stored pack carries its tile set as __tiles in this harness; the shipped enumeration's geometry is the NV battery's subject - what is pinned here is that the handler PROVES coverage with it
   fmtStoreSize: () => 'TESTCAP',
   toast: () => {},
   renderStatus: () => {},
@@ -162,7 +178,7 @@ function check(desc, ok) {
   if (!ok) failures++;
 }
 
-async function runScenario(stored, registeredIds) {
+async function runScenario(stored) {
   stores.clear();
   const pack = await fakeCaches.open('snowroute-offline-v1');
   await pack.put(A, makeResponse(100));
@@ -173,17 +189,17 @@ async function runScenario(stored, registeredIds) {
   elements.xPreStat.textContent = '';
   sandbox.preloadRunning = false;
   sandbox.upGetAll = async () => stored;
-  sandbox.ROUTE_PACKS = registeredIds.map(id => ({ id }));
   await harness.click();
   return pack;
 }
 
-// Scenario 1: the fresh store read succeeds and every stored route is
-// registered - the manifest is proven, so the prune runs.
+// Scenario 1: the fresh store read succeeds and the one stored
+// route's whole tile set sits inside the manifest - the manifest is
+// proven, so the prune runs.
 {
-  const pack = await runScenario({ 'route-a': {} }, ['route-a']);
+  const pack = await runScenario({ 'route-a': { __tiles: [A, G, C] } });
   const remaining = (await pack.keys()).map(r => r.url).sort();
-  check('persisted route registrations refreshed before the manifest is built', callOrder[0] === 'refresh' && callOrder[1] === 'manifest');
+  check('pack turn acquired before the registration refresh and the manifest build', callOrder[0] === 'turn' && callOrder[1] === 'refresh' && callOrder[2] === 'manifest');
   check('orphaned entry is pruned by the download', !remaining.includes(new URL(ORPHAN).href));
   check('pack holds exactly the manifest set after the download', JSON.stringify(remaining) === JSON.stringify(LIST.map(u => new URL(u).href).sort()));
   check("glyph entry survived under its normalized (%20) key", remaining.includes(new URL(G).href));
@@ -196,19 +212,30 @@ async function runScenario(stored, registeredIds) {
 // initUserPacks swallows). The registration is unproven, so the prune
 // must not run: the cache is preserved whole.
 {
-  const pack = await runScenario(null, ['route-a']);
+  const pack = await runScenario(null);
   const remaining = (await pack.keys()).map(r => r.url);
   check('failed store read: orphan survives (prune skipped, cache preserved)', remaining.includes(new URL(ORPHAN).href));
   check('failed store read: no completion fingerprint for the unhealed pack', !lsWrites.some(([k]) => k === 'snowroute.v5.packmig'));
 }
 
-// Scenario 3: the read succeeds but holds a route this page has not
-// registered - the manifest is still unproven, so the prune must not
-// run either.
+// Scenario 3: the read succeeds but holds a route whose tiles the
+// manifest does not cover (created in another tab, unregistered
+// here) - unproven, so the prune must not run.
 {
-  const pack = await runScenario({ 'route-a': {}, 'route-b': {} }, ['route-a']);
+  const pack = await runScenario({ 'route-a': { __tiles: [A, G, C] }, 'route-b': { __tiles: [ORPHAN] } });
   const remaining = (await pack.keys()).map(r => r.url);
-  check('unregistered stored route: orphan survives (prune skipped, cache preserved)', remaining.includes(new URL(ORPHAN).href));
+  check('stored route outside the manifest: orphan survives (prune skipped, cache preserved)', remaining.includes(new URL(ORPHAN).href));
+}
+
+// Scenario 4: the recreation - the stored route carries the SAME id
+// this page registered, but its area moved, so part of its tile set
+// sits outside the manifest this page built from its older
+// definition. An id-level proof would bless the prune; the content
+// proof must refuse it.
+{
+  const pack = await runScenario({ 'route-a': { __tiles: [A, ORPHAN] } });
+  const remaining = (await pack.keys()).map(r => r.url);
+  check('recreated route, same id, moved area: orphan survives (prune skipped, cache preserved)', remaining.includes(new URL(ORPHAN).href));
 }
 
 if (failures > 0) process.exit(1);
