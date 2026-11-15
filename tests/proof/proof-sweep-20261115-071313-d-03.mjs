@@ -31,6 +31,7 @@ const ctx = vm.createContext({
   Object, Array, Set, JSON, Math,
   MLAT: 111320, MLNG: 80000,
   draft: null,
+  crSectorSession: { street: null, snapshot: undefined, collapsed: false, face: 'panel' }, // the D-04 fix's cache read consults the session's snapshot pin; no session in flight here
   crCov: { // the full coverage shape (crCovFromWays): the D-04 stamp reads gen/boxes/byId as well as byName
     gen: 0,
     byName: (() => {

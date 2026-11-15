@@ -12,7 +12,10 @@
 // the covering cell), the replacement-coverage path, the settled-cache
 // stability contract, and the deliberate boundary: a street WITH a chosen
 // trim keeps its record (draft.sectors indexes mean pieces of THAT record;
-// recomputing under a live trim would reinterpret the user's picks).
+// recomputing under a live trim would reinterpret the user's picks) - and
+// the sector session's Cancel snapshot is a second holder of the same
+// indexes, so it pins the record too while it is in flight (Codex P2 on
+// PR #75), while a whole-road session (snapshot null) pins nothing.
 //
 // Run from the repo root: node tests/proof/proof-rerun-d04-streetparts-covstamp.mjs
 import { readFileSync } from 'node:fs';
@@ -80,6 +83,7 @@ const ctx = vm.createContext({
   MLAT, MLNG,
   draft: null,
   crCov: null,
+  crSectorSession: { street: null, snapshot: undefined, collapsed: false, face: 'panel' },
   stitchRuns(name, one) { return one[name]; },
   distM(a, b) { return Math.hypot((a[0] - b[0]) * MLAT, (a[1] - b[1]) * MLNG); },
   projOnLine(line, cum, v) {
@@ -168,6 +172,44 @@ ctx.draft.sectors['Main Street'] = [0]; // the trim: run 0 only, indexed against
 ctx.crCov = covWith(1, [['Cross Street', CROSS]], [BOX]);
 const t2 = ctx.crStreetParts('Main Street');
 check('S4: trimmed street keeps its record after coverage arrives (indexes keep their meaning)', t2 === t1 && t2.parts.length === 2);
+
+// ---- Sequence 5 (Codex P2 on PR #75): the Cancel snapshot pins the record ----
+// The street was trimmed at sector-mode entry, so the session snapshot holds
+// indexes into t1. Mid-session the user taps Entire road (the live trim is
+// stored as NO entry) while coverage has grown: the renders that follow must
+// NOT recompute the record under the snapshot's feet, or Cancel would restore
+// the snapshot's indexes against different pieces.
+ctx.draft = freshDraft({ 'Main Street': [MAIN, MAIN_RUN2] });
+ctx.crCov = null;
+const p1 = ctx.crStreetParts('Main Street');
+ctx.draft.sectors['Main Street'] = [1]; // the trim in force at entry: run 2 only
+ctx.crSectorSession.street = 'Main Street';
+ctx.crSectorSession.snapshot = [1]; // crOpenSectors' entry snapshot of that trim
+ctx.crCov = covWith(1, [['Cross Street', CROSS]], [BOX]); // coverage arrives mid-session
+delete ctx.draft.sectors['Main Street']; // Entire road: full set stores as no entry
+const p2 = ctx.crStreetParts('Main Street'); // what renderDraft/renderSectorBar now read
+check('S5: snapshot in flight -> record pinned despite the cleared trim + grown coverage', p2 === p1);
+ctx.draft.sectors['Main Street'] = ctx.crSectorSession.snapshot.slice(); // Cancel restores the pick
+const p3 = ctx.crStreetParts('Main Street');
+check('S5: after Cancel the restored indexes still mean the same record', p3 === p1 && p3.parts.length === 2);
+ctx.crSectorSession.street = null; ctx.crSectorSession.snapshot = undefined; // session closed
+delete ctx.draft.sectors['Main Street']; // a later Entire-road state with no session
+const p4 = ctx.crStreetParts('Main Street');
+check('S5: pin lifts with the session -> untrimmed record recomputes (3 pieces)', !!p4 && p4 !== p1 && p4.parts.length === 3);
+
+// ---- Sequence 6: an untrimmed session (snapshot null) does NOT pin ----
+// This is the assessed defect's own shape - the trim view opened on a whole
+// road before the extract lands. The snapshot is null (whole road at entry),
+// so coverage arriving mid-session must still recompute the record.
+ctx.draft = freshDraft({ 'Main Street': [MAIN] });
+ctx.crCov = null;
+const u1 = ctx.crStreetParts('Main Street');
+ctx.crSectorSession.street = 'Main Street';
+ctx.crSectorSession.snapshot = null; // entered on the whole road
+ctx.crCov = covWith(1, [['Cross Street', CROSS]], [BOX]);
+const u2 = ctx.crStreetParts('Main Street');
+check('S6: whole-road session (snapshot null) -> record still recomputes to 2 pieces', !!u2 && u2 !== u1 && u2.parts.length === 2);
+ctx.crSectorSession.street = null; ctx.crSectorSession.snapshot = undefined;
 
 if (failures > 0) { console.log(failures + ' check(s) failed'); process.exit(1); }
 console.log('All checks passed');

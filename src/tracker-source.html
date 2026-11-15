@@ -7368,9 +7368,17 @@ function crStreetParts(name) { // the street's sectors: its stitched runs cut wh
     // moved: draft.sectors indexes mean pieces of THIS record, and
     // recomputing would silently reinterpret the user's picks against
     // different pieces - the same priority crAddRun's before/after dance
-    // gives a trim. Untrimmed, the record is a pure cache and falls
-    // through to the recompute below.
-    if ((draft.sectors && draft.sectors[name]) || rec.covStamp === crCovStamp()) return rec;
+    // gives a trim. The sector session's Cancel snapshot is a second
+    // index-holder of the same kind: it stores the pick as it stood when
+    // sector mode was entered and Cancel restores those indexes
+    // verbatim, so while an array snapshot for THIS street is in flight
+    // the record it indexes is pinned too - even if the live trim is
+    // cleared mid-session (Entire road stores as no entry, and the
+    // renders that follow would otherwise recompute the record under
+    // the snapshot's feet). Untrimmed with no snapshot in flight, the
+    // record is a pure cache and falls through to the recompute below.
+    const snapPinned = crSectorSession.street === name && Array.isArray(crSectorSession.snapshot);
+    if ((draft.sectors && draft.sectors[name]) || snapPinned || rec.covStamp === crCovStamp()) return rec;
   }
   const one = {}; one[name] = draft.roads[name];
   const runLines = stitchRuns(name, one).filter(L => L && L.length >= 2);

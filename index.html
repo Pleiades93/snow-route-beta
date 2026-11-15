@@ -2,7 +2,7 @@
 <html lang="en" class="boot">
 <head>
 <meta charset="UTF-8">
-<meta http-equiv="Content-Security-Policy" content="default-src 'none'; script-src 'sha384-nf4rlyyD9xABQQg3I2tnjC+yw71pHsZJ4/Pa9lBlbjflaixjH7MBPG9k7VGmMdM7' https://cdn.jsdelivr.net; style-src-elem 'sha384-Sp2RuLusni/cOsnuXj7Xr+lshX29mA+tQ+uZA41bjvsmXyDY1GriJmNQzchnXZif' https://cdn.jsdelivr.net; style-src-attr 'unsafe-inline'; img-src 'self' data: blob: https://tiles.basemaps.cartocdn.com https://protomaps.github.io https://cdn.jsdelivr.net; connect-src 'self' https://tiles.basemaps.cartocdn.com https://protomaps.github.io https://cdn.jsdelivr.net https://nominatim.openstreetmap.org https://overpass-api.de https://overpass.kumi.systems; worker-src blob: 'self'; child-src blob: 'self'; font-src 'none'; manifest-src 'self'; base-uri 'none'; form-action 'none'; object-src 'none'">
+<meta http-equiv="Content-Security-Policy" content="default-src 'none'; script-src 'sha384-pqitEhLFZqWT6HZv9jnTS03lzxTNYlrgjVQkjPoAlXWL0Dj0B4pG+o36gJMpB4QO' https://cdn.jsdelivr.net; style-src-elem 'sha384-Sp2RuLusni/cOsnuXj7Xr+lshX29mA+tQ+uZA41bjvsmXyDY1GriJmNQzchnXZif' https://cdn.jsdelivr.net; style-src-attr 'unsafe-inline'; img-src 'self' data: blob: https://tiles.basemaps.cartocdn.com https://protomaps.github.io https://cdn.jsdelivr.net; connect-src 'self' https://tiles.basemaps.cartocdn.com https://protomaps.github.io https://cdn.jsdelivr.net https://nominatim.openstreetmap.org https://overpass-api.de https://overpass.kumi.systems; worker-src blob: 'self'; child-src blob: 'self'; font-src 'none'; manifest-src 'self'; base-uri 'none'; form-action 'none'; object-src 'none'">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="mobile-web-app-capable" content="yes">
@@ -7369,9 +7369,17 @@ function crStreetParts(name) { // the street's sectors: its stitched runs cut wh
     // moved: draft.sectors indexes mean pieces of THIS record, and
     // recomputing would silently reinterpret the user's picks against
     // different pieces - the same priority crAddRun's before/after dance
-    // gives a trim. Untrimmed, the record is a pure cache and falls
-    // through to the recompute below.
-    if ((draft.sectors && draft.sectors[name]) || rec.covStamp === crCovStamp()) return rec;
+    // gives a trim. The sector session's Cancel snapshot is a second
+    // index-holder of the same kind: it stores the pick as it stood when
+    // sector mode was entered and Cancel restores those indexes
+    // verbatim, so while an array snapshot for THIS street is in flight
+    // the record it indexes is pinned too - even if the live trim is
+    // cleared mid-session (Entire road stores as no entry, and the
+    // renders that follow would otherwise recompute the record under
+    // the snapshot's feet). Untrimmed with no snapshot in flight, the
+    // record is a pure cache and falls through to the recompute below.
+    const snapPinned = crSectorSession.street === name && Array.isArray(crSectorSession.snapshot);
+    if ((draft.sectors && draft.sectors[name]) || snapPinned || rec.covStamp === crCovStamp()) return rec;
   }
   const one = {}; one[name] = draft.roads[name];
   const runLines = stitchRuns(name, one).filter(L => L && L.length >= 2);
