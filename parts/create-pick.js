@@ -116,10 +116,22 @@ function crRemoveStreet(name) { // Beta 1.127: the ONE removal path - the panel'
 // runs - the parts list is the runs' pieces concatenated in run order,
 // so non-adjacent picks (sectors 0 and 2, a middle skipped) save as
 // disconnected segments and the saved route tracks every chosen metre.
-function crStreetParts(name) { // the street's sectors: its stitched runs cut where OTHER streets of the prepared extract meet them - computeStretches' own cut rule (4 m join tolerance, cuts merged under 15 m, no cut within 12 m of an end) with the EXTRACT as the junction set. The extract, not the draft, is the context on purpose: the pieces are the real junction-to-junction pieces, and a street's sector boundaries never move as other streets join or leave the draft. Computed once per street per draft (cached on draft.parts); vertices are bbox-prefiltered to the run's neighbourhood, so a whole city's extract costs one bounded pass per run, paid only when sector mode first opens for the street. Beta 1.144: the cutting runs PER RUN (stitchRuns) and the record carries runs alongside the principal line - a single-run street's record is exactly the pre-1.144 one.
+function crCovStamp() { // the coverage fingerprint a sector record is cut against: the extract's birth generation plus its live size (verified boxes + indexed ways). Every landing that could add a cut for any street - a grid cell, the fallback box, a top-up merge, the cache fold - grows at least one of the two counts, and a replacement extract is born under a bumped crCovGen, so a changed stamp always means the extract has moved since the record was cut. No extract reads as the empty stamp.
+  return crCov ? crCov.gen + ':' + crCov.boxes.length + ':' + Object.keys(crCov.byId).length : '';
+}
+function crStreetParts(name) { // the street's sectors: its stitched runs cut where OTHER streets of the prepared extract meet them - computeStretches' own cut rule (4 m join tolerance, cuts merged under 15 m, no cut within 12 m of an end) with the EXTRACT as the junction set. The extract, not the draft, is the context on purpose: the pieces are the real junction-to-junction pieces, and a street's sector boundaries never move as other streets join or leave the draft. Cached on draft.parts, stamped against the extract it was cut from (crCovStamp): an untrimmed street's record recomputes when the extract has grown since it was cut, so a record computed before the extract covered the street never outlives that coverage; vertices are bbox-prefiltered to the run's neighbourhood, so a whole city's extract costs one bounded pass per run, paid only when sector mode first opens for the street. Beta 1.144: the cutting runs PER RUN (stitchRuns) and the record carries runs alongside the principal line - a single-run street's record is exactly the pre-1.144 one.
   if (!draft || !draft.roads[name]) return null;
   draft.parts = draft.parts || {};
-  if (draft.parts[name]) return draft.parts[name];
+  if (draft.parts[name]) {
+    const rec = draft.parts[name];
+    // A street WITH a trim keeps its record whole even when the stamp has
+    // moved: draft.sectors indexes mean pieces of THIS record, and
+    // recomputing would silently reinterpret the user's picks against
+    // different pieces - the same priority crAddRun's before/after dance
+    // gives a trim. Untrimmed, the record is a pure cache and falls
+    // through to the recompute below.
+    if ((draft.sectors && draft.sectors[name]) || rec.covStamp === crCovStamp()) return rec;
+  }
   const one = {}; one[name] = draft.roads[name];
   const runLines = stitchRuns(name, one).filter(L => L && L.length >= 2);
   if (!runLines.length) return null;
@@ -146,7 +158,7 @@ function crStreetParts(name) { // the street's sectors: its stitched runs cut wh
     for (const rp of rParts) parts.push(rp);
     total += rTotal;
   }
-  const rec = { line: runs[0].line, cum: runs[0].cum, total, parts, runs };
+  const rec = { line: runs[0].line, cum: runs[0].cum, total, parts, runs, covStamp: crCovStamp() };
   draft.parts[name] = rec;
   return rec;
 }
