@@ -68,7 +68,7 @@ Cancel after a reload). GPS is device state and is not switched.
 | `create-packs.js` | Route creation (Beta 1.118+), part 1 — created-route packs: the `USERPACKS` record (`USERPACKS_KEY`, read/load), `normalizePack` (the single pack validator), `mergeUserPacks` and the boot pack migration, and the route id/name helpers (`uniqueRouteId`, `nextRouteNameGuess`). The create family split from `app4.js` at the create banner in Beta 1.134 and now splits six ways (this row and the next five); assembly order and shipped bytes unchanged. |
 | `create-fetch.js` | Route creation, part 2 — draft and session state (`draft`, `crSession`, coverage and preparation state), the Overpass query builders (`crQL`, `crAreaQL`, `crNameQL`), and the source seam every street shape arrives through (`crOverpassFetch`, `crSourceExtract`). |
 | `create-citydata.js` | Route creation, part 3 — the city-pack seam (Beta 1.123): the packs catalogue and downloads (`crPack*`, `crWarmCityLibrary`), extract indexing and coverage (`crIndexWays`, `crCovFromWays`/`crCovMerge`, `crResolve`), and the fallback preparation lifecycle (`crStartPrep`, `crCancelPrep`, `crSweepPending`). |
-| `create-cache.js` | Route creation, part 4 — the persistent city cache and the whole-city grid: the IndexedDB city cache (`crIdb*`, `crCache*`), the ~4 × 4 km grid cells and pump, `crCityPrepare` (cache-first whole-city preparation, with resume/refresh), and `crFailText`. |
+| `create-cache.js` | Route creation, part 4 — the persistent city cache and the whole-city grid: the IndexedDB city cache (`crIdb*`, `crCache*`), the ~4 × 4 km grid cells and pump, `crCityPrepare` (cache-first whole-city preparation, with resume), and `crFailText`. |
 | `create-pick.js` | Route creation, part 5 — the picking stage: the hint (`crRenderHint`), chosen streets and their sector parts (`crStreetParts`, the chosen sets), the picked-roads panel and its faces/morph, the sector session, the doors and panes (the photo door, the city chooser and Nominatim city/street search), the shared create confirm (`crConfirm`), stage/enter/exit (`setCreateStage`, `enterCreate`, `exitCreate`), and map picking (`crMapTap`, `pickStreet`). |
 | `create-save.js` | Route creation, part 6 — name it + save: the name pane (`openNameIt`) and `saveDraftRoute` — plus the boot-tail IIFE that physically follows the create section. |
 | `brand-snow.js` | The boot/menu scene's falling-snow layer (Beta 1.158/1.159, "Falls and settles"): a single canvas inside the splash, one self-contained IIFE, `window.__snow` its test handle. Split out of `create-save.js` at the 2026-11-09 tier-map amendment so the visual layer no longer inherits the save path's Tier C classification; assembled immediately after `create-save.js`, so the shipped bytes are unchanged. |
@@ -223,10 +223,12 @@ dozen — and each cell is one batch request (`way["name"]["highway"]`
 over the cell) through the extract source seam (below), at most 3
 in flight. Each cell's answer commits to the merged extract the
 moment it lands (progress is real: the hint reads "Loading
-<City> — part N of M · T s" on the service path; a pack-backed
-load is one download, so its hint instead reads "Loading <City>
-from the app's own library… T s" — elapsed only, no part counts
-for a single file); a failed cell retries once inside the
+<City> — N%" — the city's name plus the percentage of cells
+landed — on both the service and pack paths; the readout is
+gated for the load's first 5 s, before which the pill shows
+nothing. The fallback box — a single fetch with no countable
+parts — reads "Preparing street shapes for <City>…", with no
+percentage); a failed cell retries once inside the
 run, then is marked failed while the rest continue — the state
 settles as ready, degraded ("loaded except K parts", with a
 Retry-missing-parts action that fetches ONLY the missing cells),
@@ -601,7 +603,8 @@ fix at 0.8 m/s, two at 0.5 m/s, or raw displacement over 1.5 m on
 two consecutive fixes); it is presentation-only, and every recording
 consumer keeps the true values. A follow camera keeps the
 dot centred whenever location is on and rotates heading-up (course over
-ground) while a run is active; a user drag suspends the follow (the
+ground) whenever it follows — location on is enough; a run need
+not be active (true since Beta 1.122); a user drag suspends the follow (the
 camera, pan and bearing, stays where it was put) until the re-centre
 button below the day/night button — or the Locate tab — resumes it. The trail records only during a run; since Beta 1.193 the stored
 trail is a rolling 60-minute window of the live run's points only

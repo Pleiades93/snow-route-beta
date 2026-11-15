@@ -73,7 +73,7 @@ Beta 1.124 (route deletion): deleting a created route removes its
 entry from `snowroute.v2.userpacks` and deletes EVERY key of its
 per-route slot — the full `routeKeys(id)` family (all `ROUTE_FIELDS`
 tails plus `v5.snap`, `v2.migrated`, `v2.migfill`, `v5.preload`,
-`v5.finclean` and `v5.rundist`), enumerated
+`v5.finclean`, `v5.rundist` and `v5.rundist2`), enumerated
 from `routeKeys` at deletion time rather than hand-listed, so a
 field added later joins the sweep automatically. The userpacks
 removal is the gated step: it goes through a strict read and a
@@ -290,7 +290,7 @@ export, the **recovery backup**, shares this envelope with one added
 marker (`"recovery": true`): it serializes the live in-memory state of
 the active route directly, for the storage-failure moments when the
 normal backup refuses by design; it restores through this same path.
-The transient fields (`v5.snap`, `v2.migrated`, `v5.finclean`, `v5.rundist`) are never part of
+The transient fields (`v5.snap`, `v2.migrated`, `v2.migfill`, `v5.finclean`, `v5.rundist`, `v5.rundist2`) are never part of
 a backup as fields of their own. Beta 1.96 (SR-195-02): a recovery
 backup additionally carries the active run's cancel snapshot as an
 optional per-route `snap` string (the snapshot object, serialized) when
@@ -437,8 +437,10 @@ cache: a new storage surface with a documented schema — this section.
 2. Snapshot every key in scope — every known route's slot keys
    (`slotKeys`: the `ROUTE_FIELDS` keys plus `v5.snap`), the
    created-routes record when the backup carries route definitions,
-   the global night pair (`night` + `nightExp`), the settings record
-   and every route's `v5.finclean` key; abort honestly if the snapshot
+   the global night pair (`night` + `nightExp`), the settings record,
+   every route's `v5.finclean` key and the fixlog record
+   (`snowroute.v1.fixlog` — in scope unconditionally, so a restore that
+   does not write it restores it to itself); abort honestly if the snapshot
    cannot be read. (Beta 1.166: a geometry-carrying restore also
    snapshots the overwritten created-route definitions in their
    IndexedDB store, strictly before any write.)
