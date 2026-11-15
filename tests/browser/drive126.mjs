@@ -93,6 +93,20 @@ const LC2 = JSON.parse(await ev(`(() => JSON.stringify({ wid: watchId, run: gpsF
 ok('F2d stopGps through the real handler clears the watch and run ownership', LC2.wid === null && LC2.run === false);
 const PMP2 = JSON.parse(await ev(`(() => JSON.stringify({ raf: renderRaf, pump: renderPump }))()`));
 ok('F2g stopGps clears BOTH the frame loop and the pump | ' + JSON.stringify(PMP2), PMP2.raf === 0 && PMP2.pump === 0);
+// F2h (retro-fixes round, 2026-11-14): the fold-in link between drive141's
+// F08 (stopCompass detaches, tested by calling it directly) and F2g above
+// (stopGps clears the loops): stopGps ITSELF detaches the compass
+// listeners. Proven behaviourally, not by flag: a synthetic orientation
+// event moves facingDeg while the compass is live (the control), and the
+// identical event after stopGps must not move it - a listener stopGps
+// forgot to remove would land it. lastCourseAt is zeroed before each
+// dispatch so the handler's course-freshness guard cannot swallow the
+// control event and fake either half of the proof.
+await ev(`(() => { try { DeviceOrientationEvent.requestPermission = undefined; } catch (e) {} startCompass(); return true; })()`); await sleep(100);
+const cLive = JSON.parse(await ev(`(() => { facingDeg = null; lastCourseAt = 0; window.dispatchEvent(new DeviceOrientationEvent('deviceorientationabsolute', { alpha: 90, absolute: true })); return JSON.stringify({ on: compassOn, facing: facingDeg }); })()`));
+await ev(`(() => { stopGps(); return true; })()`); await sleep(100);
+const cDead = JSON.parse(await ev(`(() => { facingDeg = null; lastCourseAt = 0; window.dispatchEvent(new DeviceOrientationEvent('deviceorientationabsolute', { alpha: 180, absolute: true })); return JSON.stringify({ on: compassOn, facing: facingDeg }); })()`));
+ok('F2h stopGps detaches the compass listeners: a live event lands before, an identical event after stopGps does not | ' + JSON.stringify({ cLive, cDead }), cLive.on === true && cLive.facing === 270 && cDead.on === false && cDead.facing === null);
 
 // Night labels: reload into night mode and read the basemap text paint back.
 await ev(`(() => { localStorage.setItem('snowroute.v2.night', '1'); localStorage.setItem('snowroute.v2.nightExp', '4102444800000'); location.reload(); return true; })()`); // Beta 1.77: a stored override carries its sun-boundary expiry with it
