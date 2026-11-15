@@ -1453,6 +1453,55 @@ function fillSlicePts(n, idx, side) {   // Beta 1.208: one piece's one-side FILL
   if (idx === g.cuts.length - 1 || g.gaps.has(g.cuts[idx + 1][0]) || fam(idx + 1) !== 'fill') pts = clipOnLine(n, ab[1], pts, false, HALF_HALF, line);
   return pts;
 }
+function fillCornerLinks(fills) {
+  // Beta 1.208 (Codex P2, gate round 2): the corner wrap for fills.
+  // A fill ends flush at the crossing street's near paint edge - the
+  // right end for a lone side - but where one street's marked side
+  // TURNS A CORNER into another street's marked side (the two sides
+  // of one continuous kerb line around the junction's corner), the
+  // two ends face each other across the junction square and the
+  // green pinched there instead of wrapping the corner (the retired
+  // kerb-line paint traced the kerb around corners via its own
+  // corner slices; the fills had no corner treatment). The wrap: for
+  // every pair of fill ends at one junction vertex (different
+  // streets) whose half lines meet on both ends' forward extensions,
+  // add a connector strand [end, corner point, end] - the corner
+  // point is the two half lines' own intersection, so the connector's
+  // ribbon (the same half-surface width) bends around the corner on
+  // exactly the path the two fills were already following. Through
+  // pairs never qualify (same street, or near-parallel lines), and a
+  // lone side earns no connector - it still ends at the near edge.
+  const verts = [];
+  const svm = sharedVertexMap();
+  for (const k in svm) { const g = svm[k]; if (new Set(g.map(e => e.n)).size >= 2) verts.push(GEO[g[0].n].stitched[g[0].vi]); }
+  if (!verts.length) return;
+  const ends = [];
+  fills.forEach(sl => {
+    if (!sl.mem || !sl.mem.length || sl.pts.length < 2) return;
+    [[sl.mem[0], sl.pts[0], sl.pts[1]], [sl.mem[sl.mem.length - 1], sl.pts[sl.pts.length - 1], sl.pts[sl.pts.length - 2]]].forEach(([m, E, I]) => {
+      if (!m || m.side === undefined) return;
+      const Exy = XYOf(E), Ixy = XYOf(I);
+      const dx = Exy[0] - Ixy[0], dy = Exy[1] - Ixy[1], L = Math.hypot(dx, dy) || 1;
+      ends.push({ E, Exy, dir: [dx / L, dy / L], mem: m });
+    });
+  });
+  const cross = (u, v) => u[0] * v[1] - u[1] * v[0];
+  for (let i = 0; i < ends.length; i++) for (let j = i + 1; j < ends.length; j++) {
+    const a = ends[i], b = ends[j];
+    if (a.mem.n === b.mem.n) continue;
+    const V = verts.find(v => H.jDistM(v, a.E) <= 7.5 && H.jDistM(v, b.E) <= 7.5);
+    if (!V) continue;
+    const den = cross(a.dir, b.dir);
+    if (Math.abs(den) < 0.35) continue;   // near-parallel: a through pair, not a corner
+    const rx = b.Exy[0] - a.Exy[0], ry = b.Exy[1] - a.Exy[1];
+    const t = cross([rx, ry], b.dir) / den, s = cross([rx, ry], a.dir) / den;
+    if (t < 0.3 || s < 0.3 || t > 13 || s > 13) continue;   // the corner must lie on BOTH forward extensions, within reach
+    const Cxy = [a.Exy[0] + t * a.dir[0], a.Exy[1] + t * a.dir[1]];
+    const Vxy = XYOf(V);
+    if (Math.hypot(Cxy[0] - Vxy[0], Cxy[1] - Vxy[1]) > 8) continue;
+    fills.push({ pts: [a.E, [Cxy[1] / H.MLAT, Cxy[0] / H.MLNG], b.E], key: 'fill', mem: [a.mem, b.mem] });
+  }
+}
 function buildFamilies() {
   THROUGH_SEGS = [];
   const pairs = junctionPairs();
@@ -1487,6 +1536,7 @@ function buildFamilies() {
   clipStrandEnds(bands, SURF_HALF);
   const fills = mergeStrands(fillSlices, null);   // Beta 1.208: exact joins only, like centres/bands - consecutive marked pieces share the half-line vertex, so a side's fill is one strand flowing through its junctions
   clipStrandEnds(fills, HALF_HALF, (sl, atStart) => { const m = atStart ? sl.mem[0] : sl.mem[sl.mem.length - 1]; return m && m.side !== undefined ? (m.side ? GEO[m.n].offH1 : GEO[m.n].offH0) : null; });   // Beta 1.208: fill strand ends clip ON their half-offset line (clipOnLine), never dragged toward the centreline
+  fillCornerLinks(fills);   // Beta 1.208: and where a marked side turns a corner into another street's marked side, the fills wrap the corner (fillCornerLinks)
   cornerTouchSlices(edgeSlices, pairs);
   const edges = mergeStrands(edgeSlices, pairs);
   bridgeStragglers(edges, pairs);

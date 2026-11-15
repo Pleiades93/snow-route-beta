@@ -158,6 +158,34 @@ check('R2b: the terminating fill ends flush at the crossing street\u2019s near p
 host.pieces.LongAve = [1, 1, 1];
 GLP.sync();
 
+// ---- R2c: corner connections (Codex P2 on PR #83's second head).
+// Where one street's marked side turns a corner into another street's
+// marked side, the two fills used to stop at the crossing street's
+// near paint edge with the junction square between them - the green
+// pinched instead of wrapping the corner (the retired kerb-line paint
+// traced the kerb around corners; the fills had no corner treatment).
+// LongAve [2,0,0] (south fill, west arm) + CrossSt [0,2,0] (east
+// fill, north arm): a connector strand must join them through the
+// half-lines' corner point (2.475, -2.475).
+host.pieces.LongAve = [2, 0, 0];
+host.pieces.CrossSt = [0, 2, 0];
+GLP.sync();
+const fillsC = sources.fills ? strandsM(sources.fills.data) : [];
+const nearPt = (s, x, y, tol) => s.some(p => Math.hypot(p[0] - x, p[1] - y) <= tol);
+const conn = fillsC.find(s => s.length >= 3 && nearPt(s, 2.475, -2.475, 1.6));
+check('R2c: a corner connector joins the two streets\u2019 fills through the half-corner point (2.475, -2.475)',
+  !!conn && fillsC.length === 3, 'strands=' + fillsC.length + ' ends=' + JSON.stringify(fillsC.map(s => [s[0].map(v => +v.toFixed(1)), s[s.length - 1].map(v => +v.toFixed(1))]))); 
+check('R2c: the connector\u2019s ends are the two fills\u2019 own ends (no new endpoints invented)',
+  !!conn && nearPt([conn[0]], -4.95, -2.475, 0.35) && nearPt([conn[conn.length - 1]], 2.475, 4.95, 0.35),
+  conn ? 'conn ends=' + JSON.stringify([conn[0].map(v => +v.toFixed(2)), conn[conn.length - 1].map(v => +v.toFixed(2))]) : 'no connector');
+host.pieces.CrossSt = [0, 0, 0];
+GLP.sync();
+const fillsC1 = sources.fills ? strandsM(sources.fills.data) : [];
+check('R2c: no connector when the corner\u2019s other side is unmarked (a lone fill still ends at the near edge)',
+  fillsC1.length === 1, 'strands=' + fillsC1.length);
+host.pieces.LongAve = [1, 1, 1];
+GLP.sync();
+
 // ---- R3: the selection's side paint is the board's own geometry.
 host.selStretch = { name: 'LongAve', idx: 1 };
 host.selSet = [host.selStretch];
