@@ -785,7 +785,7 @@ $('stDel').addEventListener('click', async () => {
 });
 // ---- About / What's new ----
 const WHATSNEW = { // the curated in-app notes: plain words, LATEST RELEASE ONLY (Beta 1.114, Andrew: the accumulated list cluttered the About pane). A release REPLACES this entry with its own in the same change - it never accumulates; the full history lives in CHANGELOG.md, not the app
-  v: 'Beta 1.198', items: ["The camera glides now — turns and stops ease in and out instead of stepping."] };
+  v: 'Beta 1.201', items: ["The follow camera now catches up promptly after long jumps instead of gliding in slowly."] };
 
 function renderAbout() {
   const cur = $('ver').textContent.trim();
