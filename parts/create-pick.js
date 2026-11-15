@@ -260,7 +260,7 @@ function crOpenSectors(name) { // opens a picked street's trimming - TWO doors s
   else syncCrPanel();
   renderDraft(); crRenderHint();
 }
-function crCloseSectors() { if (!crSectorSession.street) return; crSectorReset(); const sheet = $('createSheet'); if (sheet && sheet.classList.contains('on')) crMorphTo(crWantedFace()); else syncCrPanel(); crRenderHint(); }
+function crCloseSectors() { if (!crSectorSession.street) return; crSectorReset(); syncCrGlow(); const sheet = $('createSheet'); if (sheet && sheet.classList.contains('on')) crMorphTo(crWantedFace()); else syncCrPanel(); crRenderHint(); } // Beta 1.208: syncCrGlow stands here explicitly because Done's path does not re-render the draft - the glow dies with the session, not with the next render
 function crCancelSectors() { // Beta 1.129 (Andrew: "I still need a way to cancel selections while I'm selecting something"): the deliberate back-out of a sector session - the street's pick returns EXACTLY as it was when sector mode was entered (the whole road, or the trim then in force), every face repaints from the restored state, and sector mode closes back to the panel. Distinct from un-picking every sector by toggles, which still removes the street - that is a selection, this is an abandonment of the session's edits
   const s = crSectorSession.street; if (!s || !draft) return;
   if (crSectorSession.snapshot) { draft.sectors = draft.sectors || {}; draft.sectors[s] = crSectorSession.snapshot.slice(); }
@@ -514,6 +514,43 @@ function ensureDraftLayers() {
     if (!map.getLayer('crDraftHit')) map.addLayer({ id: 'crDraftHit', type: 'line', source: DRAFT_SRC, layout: { 'line-cap': 'round', 'line-join': 'round' }, paint: { 'line-color': '#000000', 'line-opacity': 0, 'line-width': 24 } }); // Beta 1.127: the sector pick's fat-finger target - invisible, queryable (crSectorTap)
   } catch (e) { /* the style may still be loading - renderDraft retries on every change */ }
 }
+const CR_GLOW_SRC = 'crGlow';
+function ensureCrGlowLayers() {
+  if (!map || typeof map.addSource !== 'function') return;
+  try {
+    if (!map.getSource(CR_GLOW_SRC)) map.addSource(CR_GLOW_SRC, { type: 'geojson', data: { type: 'FeatureCollection', features: [] } });
+    // Beta 1.208 (Andrew): the sector-trim street's glow, MIRRORED from
+    // the main map's selection glow (the engine's sel-glow stack: five
+    // halo layers in the street's own colour under the paint, at the
+    // surface width +30/+23/+17/+9/+4, opacities .05/.06/.10/.16/.24,
+    // blur 14/10 on the outer pair). The create map draws streets
+    // through its own layers (crDraft*), not the engine's, so the
+    // effect is reproduced here on the draft's scale - the chosen line
+    // is 6.75 px, so the same offsets give the widths below - rather
+    // than sharing the engine's code. Caps are round, matching the
+    // draft line's own caps (the main map's glow wears butt caps under
+    // a butt-capped surface).
+    const stack = [['crGlow4', 36.75, 0.05, 14], ['crGlow5', 29.75, 0.06, 10], ['crGlow1', 23.75, 0.10, 0], ['crGlow2', 15.75, 0.16, 0], ['crGlow3', 10.75, 0.24, 0]];
+    for (const s of stack) {
+      if (map.getLayer(s[0])) continue;
+      const paint = { 'line-color': ['get', 'col'], 'line-width': s[1], 'line-opacity': s[2] };
+      if (s[3]) paint['line-blur'] = s[3];
+      map.addLayer({ id: s[0], type: 'line', source: CR_GLOW_SRC, layout: { 'line-cap': 'round', 'line-join': 'round' }, paint }, 'crDraftCase');
+    }
+  } catch (e) { /* the style may still be loading - renderDraft retries on every change */ }
+}
+function syncCrGlow() { // the glow's ONE writer: it carries the sector session's street (its whole line, every run, in its category colour) exactly while that street's trim view is open, and nothing otherwise - so opening the trim lights the street and every close path (Done, Cancel, stage change, street removal, creation exit) puts it out, because every one of them re-renders the draft or the backdrop, and both call here
+  ensureCrGlowLayers();
+  if (!map || typeof map.getSource !== 'function') return;
+  const src = map.getSource(CR_GLOW_SRC); if (!src) return;
+  const feats = [];
+  const name = crSectorSession.street;
+  if (name && draft && draft.roads && Object.prototype.hasOwnProperty.call(draft.roads, name)) {
+    const g = crDraftGeom(); const st = g && g[name];
+    if (st) { const col = draft.primaries.has(name) ? '#ffc233' : '#ef476f'; for (const run of st.runs) { const L = run.line; if (L && L.length > 1) feats.push({ type: 'Feature', properties: { col }, geometry: { type: 'LineString', coordinates: L.map(p => [p[1], p[0]]) } }); } }
+  }
+  src.setData({ type: 'FeatureCollection', features: feats });
+}
 function renderDraft() { // the DRAFT renders through its own GeoJSON source, computed from the draft's own roads - the active route's geometry, engine sources and storage are never touched by the create flow. Beta 1.127: a street carrying a sector pick (or open in sector mode) renders PER SECTOR - chosen sectors in its category colour, unchosen thin grey (the approved mockup's language); every other street renders as its whole line, exactly as before.
   ensureDraftLayers();
   if (!map || typeof map.getSource !== 'function') return;
@@ -534,6 +571,7 @@ function renderDraft() { // the DRAFT renders through its own GeoJSON source, co
     }
   }
   src.setData({ type: 'FeatureCollection', features: feats });
+  syncCrGlow(); // Beta 1.208: the trim glow tracks the draft's own render - the street's normal draft paint is untouched above and below it
 }
 onMapReady(() => map.on('styledata', () => { if (creating) { renderDraft(); crSetBackdrop(true); } })); // a basemap swap mid-create wipes custom layers - redraw the draft and re-hide the backdrop
 onMapReady(() => { if (creating) crSetBackdrop(true); }); // creation entered before the map existed (boot mode): the backdrop lands when the map does
@@ -589,6 +627,7 @@ function crSetBackdrop(on) {
     for (const id of ['crPoiRing', 'crPoiDot', 'crPoiTxt']) { try { if (map.getLayer(id)) map.removeLayer(id); } catch (e) {} }
     try { if (map.getSource(CR_POI_SRC)) map.removeSource(CR_POI_SRC); } catch (e) {}
   }
+  syncCrGlow(); // Beta 1.208: the backdrop flip is the creation exit's reliable beat - if a trim session somehow outlived its render, the glow still dies here
 }
 function crRowEl(n, g) {
   const row = document.createElement('div'); row.className = 'crRow';
@@ -612,9 +651,11 @@ function crPanelRowEl(n, g) { // Beta 1.127 (Andrew's approved mockup, screen 2)
   const nm = document.createElement('span'); nm.className = 'crPName'; nm.textContent = shortStreetName(n); meta.appendChild(nm); // Beta 1.144 (DA-04): display form, as in the preview rows
   const sub = document.createElement('span'); sub.className = 'crPSub';
   const sel = draft.sectors ? draft.sectors[n] : null;
-  if (sel) { const rec = crStreetParts(n); sub.textContent = sel.length + ' of ' + (rec ? rec.parts.length : sel.length) + ' sectors · ' + fmtLenM(crStreetChosenM(n, g)) + ' — tap row to adjust'; }
-  else sub.textContent = 'Entire road · ' + fmtLenM(g[n] ? g[n].total : 0) + ' — tap row to adjust'; // Beta 1.128: the adjust affordance is stated BEFORE any trim exists - in 1.127 it appeared only after one, so an untrimmed row gave no hint it could be tapped at all
-  meta.appendChild(sub); row.appendChild(meta);
+  if (sel) { const rec = crStreetParts(n); sub.textContent = sel.length + ' of ' + (rec ? rec.parts.length : sel.length) + ' sectors · ' + fmtLenM(crStreetChosenM(n, g)); }
+  else sub.textContent = 'Entire road · ' + fmtLenM(g[n] ? g[n].total : 0); // Beta 1.128: the adjust affordance is stated BEFORE any trim exists - in 1.127 it appeared only after one, so an untrimmed row gave no hint it could be tapped at all
+  meta.appendChild(sub);
+  const hint = document.createElement('span'); hint.className = 'crPSub'; hint.textContent = 'Tap row to adjust'; meta.appendChild(hint); // Beta 1.208 (Andrew): the instruction gets its OWN line under the length line - through 1.207 it rode the same line after an em dash
+  row.appendChild(meta);
   const chip = document.createElement('button'); chip.className = 'crPChip ' + (primary ? 'primary' : 'sec'); chip.textContent = primary ? 'PRIMARY' : 'SECONDARY';
   chip.addEventListener('click', e => { e.stopPropagation(); if (draft.primaries.has(n)) draft.primaries.delete(n); else draft.primaries.add(n); renderDraft(); renderCrLists(); });
   row.appendChild(chip);

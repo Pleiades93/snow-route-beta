@@ -1378,7 +1378,7 @@ function clipEndAtJunction(n, vi, pts, atStart, ownHalf) {
   }
   return pts;
 }
-function clipStrandEnds(strands, half) {
+function clipStrandEnds(strands, half, guideFor) {
   // post-merge pass: a merged strand can still END at a junction even
   // when its paint family continues on the same street - mergeStrands
   // refuses a join whose corner path is unsafe, and the two caps then
@@ -1396,16 +1396,61 @@ function clipStrandEnds(strands, half) {
       const A = atStart ? sl.mem[0].n : sl.mem[sl.mem.length - 1].n;
       const ent = grp.find(e => e.n === A);
       if (!ent) return;
-      sl.pts = clipEndAtJunction(A, ent.vi, sl.pts, atStart, half);
+      const guide = guideFor ? guideFor(sl, atStart) : null;
+      sl.pts = guide ? clipOnLine(A, ent.vi, sl.pts, atStart, half, guide) : clipEndAtJunction(A, ent.vi, sl.pts, atStart, half);
     });
   });
+}
+function nearestOnLine(p, line) {
+  // the point on the polyline nearest p (flat-metre projection per segment)
+  const P = XYOf(p);
+  let best = null, bd = Infinity;
+  for (let i = 0; i + 1 < line.length; i++) {
+    const A = XYOf(line[i]), B = XYOf(line[i + 1]);
+    const vx = B[0] - A[0], vy = B[1] - A[1], L2 = vx * vx + vy * vy || 1;
+    let t = ((P[0] - A[0]) * vx + (P[1] - A[1]) * vy) / L2; t = Math.max(0, Math.min(1, t));
+    const qx = A[0] + t * vx, qy = A[1] + t * vy, d = Math.hypot(P[0] - qx, P[1] - qy);
+    if (d < bd) { bd = d; best = [qy / H.MLAT, qx / H.MLNG]; }
+  }
+  return best || p;
+}
+function clipOnLine(n, vi, pts, atStart, ownHalf, line) {
+  // clipEndAtJunction for an OFFSET line (a fill's half-offset line):
+  // the generic re-cut solves its new end along the street's
+  // CENTRELINE (its approach anchors on GEO[n].stitched), which drags
+  // an offset line's end sideways toward the middle of the road -
+  // Codex P2 on PR #83, reproduced on the proof network: a fill
+  // stopping at a junction ended 0.6 m from the centreline instead of
+  // 2.475 m, spilling green onto the unfinished side. The cap POSITION
+  // the solve finds (flush on the crossing street's near paint edge)
+  // is right; only the lateral placement is wrong for an offset line.
+  // So: run the generic clip, then pull every point it inserted
+  // (foreign to the line's own points) back onto the line by
+  // projection, walking from the cut end inward, and dedupe. Points
+  // the clip left alone are the line's own and never move; two slices
+  // ending back to back at a junction project the same solved point
+  // to the same on-line point, so exact joins survive.
+  const out = clipEndAtJunction(n, vi, pts, atStart, ownHalf);
+  if (out === pts) return out;
+  const own = new Set(line);
+  const res = out.slice();
+  for (let k = 0; k < res.length; k++) {
+    const i = atStart ? k : res.length - 1 - k;
+    if (own.has(res[i])) break;
+    res[i] = nearestOnLine(res[i], line);
+  }
+  const dd = [res[0]];
+  for (let i = 1; i < res.length; i++) if (H.jDistM(res[i], dd[dd.length - 1]) > 0.05) dd.push(res[i]);
+  if (dd.length < 2) dd.push(res[res.length - 1]);
+  return dd.length >= 2 ? dd : out;
 }
 function fillSlicePts(n, idx, side) {   // Beta 1.208: one piece's one-side FILL slice - the half-offset line over the piece, end-trimmed with the centre family's local rule (trim only where THIS side's fill actually ends: the neighbouring piece carries no fill for this side, a run gap intervenes, or the street ends). Shared by buildFamilies and buildSelFill, so the selection's side paint is the board's side paint by construction - the R3 fix (the retired one-piece edge rebuild could never reproduce the board's junction treatment).
   const g = GEO[n], ab = g.cuts[idx];
   const fam = i => { const b = H.pieces[n][i]; return (b !== 3 && (b & (1 << side))) ? 'fill' : 'x' + b; };
-  let pts = (side === 0 ? g.offH0 : g.offH1).slice(ab[0], ab[1] + 1);
-  if (idx === 0 || g.gaps.has(ab[0]) || fam(idx - 1) !== 'fill') pts = clipEndAtJunction(n, ab[0], pts, true, HALF_HALF);
-  if (idx === g.cuts.length - 1 || g.gaps.has(g.cuts[idx + 1][0]) || fam(idx + 1) !== 'fill') pts = clipEndAtJunction(n, ab[1], pts, false, HALF_HALF);
+  const line = side === 0 ? g.offH0 : g.offH1;
+  let pts = line.slice(ab[0], ab[1] + 1);
+  if (idx === 0 || g.gaps.has(ab[0]) || fam(idx - 1) !== 'fill') pts = clipOnLine(n, ab[0], pts, true, HALF_HALF, line);
+  if (idx === g.cuts.length - 1 || g.gaps.has(g.cuts[idx + 1][0]) || fam(idx + 1) !== 'fill') pts = clipOnLine(n, ab[1], pts, false, HALF_HALF, line);
   return pts;
 }
 function buildFamilies() {
@@ -1441,7 +1486,7 @@ function buildFamilies() {
   clipStrandEnds(centres, SURF_HALF);
   clipStrandEnds(bands, SURF_HALF);
   const fills = mergeStrands(fillSlices, null);   // Beta 1.208: exact joins only, like centres/bands - consecutive marked pieces share the half-line vertex, so a side's fill is one strand flowing through its junctions
-  clipStrandEnds(fills, HALF_HALF);
+  clipStrandEnds(fills, HALF_HALF, (sl, atStart) => { const m = atStart ? sl.mem[0] : sl.mem[sl.mem.length - 1]; return m && m.side !== undefined ? (m.side ? GEO[m.n].offH1 : GEO[m.n].offH0) : null; });   // Beta 1.208: fill strand ends clip ON their half-offset line (clipOnLine), never dragged toward the centreline
   cornerTouchSlices(edgeSlices, pairs);
   const edges = mergeStrands(edgeSlices, pairs);
   bridgeStragglers(edges, pairs);

@@ -469,7 +469,7 @@ body.creating #dock, body.creating #tabBar, body.creating #hud, body.creating #n
 .crLen { font-size: 13px; color: var(--ink-dim); font-weight: 600; }
 .crChip { border: none; border-radius: 999px; font-size: 12px; font-weight: 800; letter-spacing: .3px; padding: 6px 10px; cursor: pointer; flex: none; }
 .crChip.primary { background: #ffc233; color: #4a3200; }
-.crChip.sec { background: #ef476f; color: #fff; } /* Beta 1.207 (Andrew): the secondary chip is the PRIMARY pill's twin - filled, in the secondary raspberry - never the grey placeholder it wore through 1.205 */
+.crChip.sec { background: #ef476f; color: #4a3200; } /* Beta 1.207 (Andrew): the secondary chip is the PRIMARY pill's twin - filled, in the secondary raspberry - never the grey placeholder it wore through 1.205. Beta 1.208 (Andrew, from the three-variant sample, pick C): BOTH pills wear the same dark ink #4a3200 - the 1.207 white text on the raspberry was chosen for him, not by him */
 .crDel { border: none; background: none; color: #e63a2e; font-size: 18px; font-weight: 800; width: 34px; height: 34px; cursor: pointer; flex: none; }
 .crPrimary { appearance: none; -webkit-appearance: none; border: none; background: linear-gradient(135deg, #3d65ef, #1b2fb6); color: #fff; font-size: 17px; font-weight: 700; padding: 15px 18px; border-radius: 14px; width: 100%; cursor: pointer; }
 .crPrimary:disabled { opacity: .45; }
@@ -498,7 +498,7 @@ body.creating #dock, body.creating #tabBar, body.creating #hud, body.creating #n
 .crPSub { font-size: 13px; color: var(--ink-dim); }
 .crPChip { border: none; border-radius: 999px; font-size: 12px; font-weight: 800; letter-spacing: .3px; padding: 6px 10px; cursor: pointer; flex: none; appearance: none; -webkit-appearance: none; } /* Beta 1.207 (Andrew): the pick-stage chip wears the SAME filled pill as the review stage's .crChip - one design through the whole selection process */
 .crPChip.primary { background: #ffc233; color: #4a3200; }
-.crPChip.sec { background: #ef476f; color: #fff; }
+.crPChip.sec { background: #ef476f; color: #4a3200; } /* Beta 1.208: dark ink, matching .crChip.sec and both PRIMARY pills (Andrew's pick C) */
 .crPDel { border: none; background: rgba(230,58,46,.10); color: #c22f24; font-size: 14px; font-weight: 700; width: 34px; height: 34px; border-radius: 50%; cursor: pointer; flex: none; appearance: none; -webkit-appearance: none; }
 .crPanelBtns { flex-direction: row; }
 .crPanelBtns .crPrimary, .crPanelBtns .crGhost { flex: 1 1 0; width: auto; }
@@ -2682,7 +2682,7 @@ function clipEndAtJunction(n, vi, pts, atStart, ownHalf) {
   }
   return pts;
 }
-function clipStrandEnds(strands, half) {
+function clipStrandEnds(strands, half, guideFor) {
   // post-merge pass: a merged strand can still END at a junction even
   // when its paint family continues on the same street - mergeStrands
   // refuses a join whose corner path is unsafe, and the two caps then
@@ -2700,16 +2700,61 @@ function clipStrandEnds(strands, half) {
       const A = atStart ? sl.mem[0].n : sl.mem[sl.mem.length - 1].n;
       const ent = grp.find(e => e.n === A);
       if (!ent) return;
-      sl.pts = clipEndAtJunction(A, ent.vi, sl.pts, atStart, half);
+      const guide = guideFor ? guideFor(sl, atStart) : null;
+      sl.pts = guide ? clipOnLine(A, ent.vi, sl.pts, atStart, half, guide) : clipEndAtJunction(A, ent.vi, sl.pts, atStart, half);
     });
   });
+}
+function nearestOnLine(p, line) {
+  // the point on the polyline nearest p (flat-metre projection per segment)
+  const P = XYOf(p);
+  let best = null, bd = Infinity;
+  for (let i = 0; i + 1 < line.length; i++) {
+    const A = XYOf(line[i]), B = XYOf(line[i + 1]);
+    const vx = B[0] - A[0], vy = B[1] - A[1], L2 = vx * vx + vy * vy || 1;
+    let t = ((P[0] - A[0]) * vx + (P[1] - A[1]) * vy) / L2; t = Math.max(0, Math.min(1, t));
+    const qx = A[0] + t * vx, qy = A[1] + t * vy, d = Math.hypot(P[0] - qx, P[1] - qy);
+    if (d < bd) { bd = d; best = [qy / H.MLAT, qx / H.MLNG]; }
+  }
+  return best || p;
+}
+function clipOnLine(n, vi, pts, atStart, ownHalf, line) {
+  // clipEndAtJunction for an OFFSET line (a fill's half-offset line):
+  // the generic re-cut solves its new end along the street's
+  // CENTRELINE (its approach anchors on GEO[n].stitched), which drags
+  // an offset line's end sideways toward the middle of the road -
+  // Codex P2 on PR #83, reproduced on the proof network: a fill
+  // stopping at a junction ended 0.6 m from the centreline instead of
+  // 2.475 m, spilling green onto the unfinished side. The cap POSITION
+  // the solve finds (flush on the crossing street's near paint edge)
+  // is right; only the lateral placement is wrong for an offset line.
+  // So: run the generic clip, then pull every point it inserted
+  // (foreign to the line's own points) back onto the line by
+  // projection, walking from the cut end inward, and dedupe. Points
+  // the clip left alone are the line's own and never move; two slices
+  // ending back to back at a junction project the same solved point
+  // to the same on-line point, so exact joins survive.
+  const out = clipEndAtJunction(n, vi, pts, atStart, ownHalf);
+  if (out === pts) return out;
+  const own = new Set(line);
+  const res = out.slice();
+  for (let k = 0; k < res.length; k++) {
+    const i = atStart ? k : res.length - 1 - k;
+    if (own.has(res[i])) break;
+    res[i] = nearestOnLine(res[i], line);
+  }
+  const dd = [res[0]];
+  for (let i = 1; i < res.length; i++) if (H.jDistM(res[i], dd[dd.length - 1]) > 0.05) dd.push(res[i]);
+  if (dd.length < 2) dd.push(res[res.length - 1]);
+  return dd.length >= 2 ? dd : out;
 }
 function fillSlicePts(n, idx, side) {   // Beta 1.208: one piece's one-side FILL slice - the half-offset line over the piece, end-trimmed with the centre family's local rule (trim only where THIS side's fill actually ends: the neighbouring piece carries no fill for this side, a run gap intervenes, or the street ends). Shared by buildFamilies and buildSelFill, so the selection's side paint is the board's side paint by construction - the R3 fix (the retired one-piece edge rebuild could never reproduce the board's junction treatment).
   const g = GEO[n], ab = g.cuts[idx];
   const fam = i => { const b = H.pieces[n][i]; return (b !== 3 && (b & (1 << side))) ? 'fill' : 'x' + b; };
-  let pts = (side === 0 ? g.offH0 : g.offH1).slice(ab[0], ab[1] + 1);
-  if (idx === 0 || g.gaps.has(ab[0]) || fam(idx - 1) !== 'fill') pts = clipEndAtJunction(n, ab[0], pts, true, HALF_HALF);
-  if (idx === g.cuts.length - 1 || g.gaps.has(g.cuts[idx + 1][0]) || fam(idx + 1) !== 'fill') pts = clipEndAtJunction(n, ab[1], pts, false, HALF_HALF);
+  const line = side === 0 ? g.offH0 : g.offH1;
+  let pts = line.slice(ab[0], ab[1] + 1);
+  if (idx === 0 || g.gaps.has(ab[0]) || fam(idx - 1) !== 'fill') pts = clipOnLine(n, ab[0], pts, true, HALF_HALF, line);
+  if (idx === g.cuts.length - 1 || g.gaps.has(g.cuts[idx + 1][0]) || fam(idx + 1) !== 'fill') pts = clipOnLine(n, ab[1], pts, false, HALF_HALF, line);
   return pts;
 }
 function buildFamilies() {
@@ -2745,7 +2790,7 @@ function buildFamilies() {
   clipStrandEnds(centres, SURF_HALF);
   clipStrandEnds(bands, SURF_HALF);
   const fills = mergeStrands(fillSlices, null);   // Beta 1.208: exact joins only, like centres/bands - consecutive marked pieces share the half-line vertex, so a side's fill is one strand flowing through its junctions
-  clipStrandEnds(fills, HALF_HALF);
+  clipStrandEnds(fills, HALF_HALF, (sl, atStart) => { const m = atStart ? sl.mem[0] : sl.mem[sl.mem.length - 1]; return m && m.side !== undefined ? (m.side ? GEO[m.n].offH1 : GEO[m.n].offH0) : null; });   // Beta 1.208: fill strand ends clip ON their half-offset line (clipOnLine), never dragged toward the centreline
   cornerTouchSlices(edgeSlices, pairs);
   const edges = mergeStrands(edgeSlices, pairs);
   bridgeStragglers(edges, pairs);
@@ -6233,7 +6278,7 @@ $('stDel').addEventListener('click', async () => {
 });
 // ---- About / What's new ----
 const WHATSNEW = { // the curated in-app notes: plain words, LATEST RELEASE ONLY (Beta 1.114, Andrew: the accumulated list cluttered the About pane). A release REPLACES this entry with its own in the same change - it never accumulates; the full history lives in CHANGELOG.md, not the app
-  v: 'Beta 1.208', items: ["The green paint matches the street now. A finished street's green is the same width as the yellow and red streets — no more extra-wide green. When only one side of a street is done, the green fills that whole half of the road at every zoom, instead of shrinking to a thin line at the kerb when you zoom in. Selecting a stretch no longer breaks its green at the junctions. And a street's name no longer repeats over and over along the street when you zoom in."] };
+  v: 'Beta 1.208', items: ["The green paint matches the street now. A finished street's green is the same width as the yellow and red streets — no more extra-wide green. When only one side of a street is done, the green fills that whole half of the road at every zoom, instead of shrinking to a thin line at the kerb when you zoom in. Selecting a stretch no longer breaks its green at the junctions. And a street's name no longer repeats over and over along the street when you zoom in.", "Creating a route: both class pills now wear the same dark text, \u201CTap row to adjust\u201D stands on its own line, and the street you are trimming glows on the map while you trim it."] };
 
 function renderAbout() {
   const cur = $('ver').textContent.trim();
@@ -7558,7 +7603,7 @@ function crOpenSectors(name) { // opens a picked street's trimming - TWO doors s
   else syncCrPanel();
   renderDraft(); crRenderHint();
 }
-function crCloseSectors() { if (!crSectorSession.street) return; crSectorReset(); const sheet = $('createSheet'); if (sheet && sheet.classList.contains('on')) crMorphTo(crWantedFace()); else syncCrPanel(); crRenderHint(); }
+function crCloseSectors() { if (!crSectorSession.street) return; crSectorReset(); syncCrGlow(); const sheet = $('createSheet'); if (sheet && sheet.classList.contains('on')) crMorphTo(crWantedFace()); else syncCrPanel(); crRenderHint(); } // Beta 1.208: syncCrGlow stands here explicitly because Done's path does not re-render the draft - the glow dies with the session, not with the next render
 function crCancelSectors() { // Beta 1.129 (Andrew: "I still need a way to cancel selections while I'm selecting something"): the deliberate back-out of a sector session - the street's pick returns EXACTLY as it was when sector mode was entered (the whole road, or the trim then in force), every face repaints from the restored state, and sector mode closes back to the panel. Distinct from un-picking every sector by toggles, which still removes the street - that is a selection, this is an abandonment of the session's edits
   const s = crSectorSession.street; if (!s || !draft) return;
   if (crSectorSession.snapshot) { draft.sectors = draft.sectors || {}; draft.sectors[s] = crSectorSession.snapshot.slice(); }
@@ -7812,6 +7857,43 @@ function ensureDraftLayers() {
     if (!map.getLayer('crDraftHit')) map.addLayer({ id: 'crDraftHit', type: 'line', source: DRAFT_SRC, layout: { 'line-cap': 'round', 'line-join': 'round' }, paint: { 'line-color': '#000000', 'line-opacity': 0, 'line-width': 24 } }); // Beta 1.127: the sector pick's fat-finger target - invisible, queryable (crSectorTap)
   } catch (e) { /* the style may still be loading - renderDraft retries on every change */ }
 }
+const CR_GLOW_SRC = 'crGlow';
+function ensureCrGlowLayers() {
+  if (!map || typeof map.addSource !== 'function') return;
+  try {
+    if (!map.getSource(CR_GLOW_SRC)) map.addSource(CR_GLOW_SRC, { type: 'geojson', data: { type: 'FeatureCollection', features: [] } });
+    // Beta 1.208 (Andrew): the sector-trim street's glow, MIRRORED from
+    // the main map's selection glow (the engine's sel-glow stack: five
+    // halo layers in the street's own colour under the paint, at the
+    // surface width +30/+23/+17/+9/+4, opacities .05/.06/.10/.16/.24,
+    // blur 14/10 on the outer pair). The create map draws streets
+    // through its own layers (crDraft*), not the engine's, so the
+    // effect is reproduced here on the draft's scale - the chosen line
+    // is 6.75 px, so the same offsets give the widths below - rather
+    // than sharing the engine's code. Caps are round, matching the
+    // draft line's own caps (the main map's glow wears butt caps under
+    // a butt-capped surface).
+    const stack = [['crGlow4', 36.75, 0.05, 14], ['crGlow5', 29.75, 0.06, 10], ['crGlow1', 23.75, 0.10, 0], ['crGlow2', 15.75, 0.16, 0], ['crGlow3', 10.75, 0.24, 0]];
+    for (const s of stack) {
+      if (map.getLayer(s[0])) continue;
+      const paint = { 'line-color': ['get', 'col'], 'line-width': s[1], 'line-opacity': s[2] };
+      if (s[3]) paint['line-blur'] = s[3];
+      map.addLayer({ id: s[0], type: 'line', source: CR_GLOW_SRC, layout: { 'line-cap': 'round', 'line-join': 'round' }, paint }, 'crDraftCase');
+    }
+  } catch (e) { /* the style may still be loading - renderDraft retries on every change */ }
+}
+function syncCrGlow() { // the glow's ONE writer: it carries the sector session's street (its whole line, every run, in its category colour) exactly while that street's trim view is open, and nothing otherwise - so opening the trim lights the street and every close path (Done, Cancel, stage change, street removal, creation exit) puts it out, because every one of them re-renders the draft or the backdrop, and both call here
+  ensureCrGlowLayers();
+  if (!map || typeof map.getSource !== 'function') return;
+  const src = map.getSource(CR_GLOW_SRC); if (!src) return;
+  const feats = [];
+  const name = crSectorSession.street;
+  if (name && draft && draft.roads && Object.prototype.hasOwnProperty.call(draft.roads, name)) {
+    const g = crDraftGeom(); const st = g && g[name];
+    if (st) { const col = draft.primaries.has(name) ? '#ffc233' : '#ef476f'; for (const run of st.runs) { const L = run.line; if (L && L.length > 1) feats.push({ type: 'Feature', properties: { col }, geometry: { type: 'LineString', coordinates: L.map(p => [p[1], p[0]]) } }); } }
+  }
+  src.setData({ type: 'FeatureCollection', features: feats });
+}
 function renderDraft() { // the DRAFT renders through its own GeoJSON source, computed from the draft's own roads - the active route's geometry, engine sources and storage are never touched by the create flow. Beta 1.127: a street carrying a sector pick (or open in sector mode) renders PER SECTOR - chosen sectors in its category colour, unchosen thin grey (the approved mockup's language); every other street renders as its whole line, exactly as before.
   ensureDraftLayers();
   if (!map || typeof map.getSource !== 'function') return;
@@ -7832,6 +7914,7 @@ function renderDraft() { // the DRAFT renders through its own GeoJSON source, co
     }
   }
   src.setData({ type: 'FeatureCollection', features: feats });
+  syncCrGlow(); // Beta 1.208: the trim glow tracks the draft's own render - the street's normal draft paint is untouched above and below it
 }
 onMapReady(() => map.on('styledata', () => { if (creating) { renderDraft(); crSetBackdrop(true); } })); // a basemap swap mid-create wipes custom layers - redraw the draft and re-hide the backdrop
 onMapReady(() => { if (creating) crSetBackdrop(true); }); // creation entered before the map existed (boot mode): the backdrop lands when the map does
@@ -7887,6 +7970,7 @@ function crSetBackdrop(on) {
     for (const id of ['crPoiRing', 'crPoiDot', 'crPoiTxt']) { try { if (map.getLayer(id)) map.removeLayer(id); } catch (e) {} }
     try { if (map.getSource(CR_POI_SRC)) map.removeSource(CR_POI_SRC); } catch (e) {}
   }
+  syncCrGlow(); // Beta 1.208: the backdrop flip is the creation exit's reliable beat - if a trim session somehow outlived its render, the glow still dies here
 }
 function crRowEl(n, g) {
   const row = document.createElement('div'); row.className = 'crRow';
@@ -7910,9 +7994,11 @@ function crPanelRowEl(n, g) { // Beta 1.127 (Andrew's approved mockup, screen 2)
   const nm = document.createElement('span'); nm.className = 'crPName'; nm.textContent = shortStreetName(n); meta.appendChild(nm); // Beta 1.144 (DA-04): display form, as in the preview rows
   const sub = document.createElement('span'); sub.className = 'crPSub';
   const sel = draft.sectors ? draft.sectors[n] : null;
-  if (sel) { const rec = crStreetParts(n); sub.textContent = sel.length + ' of ' + (rec ? rec.parts.length : sel.length) + ' sectors · ' + fmtLenM(crStreetChosenM(n, g)) + ' — tap row to adjust'; }
-  else sub.textContent = 'Entire road · ' + fmtLenM(g[n] ? g[n].total : 0) + ' — tap row to adjust'; // Beta 1.128: the adjust affordance is stated BEFORE any trim exists - in 1.127 it appeared only after one, so an untrimmed row gave no hint it could be tapped at all
-  meta.appendChild(sub); row.appendChild(meta);
+  if (sel) { const rec = crStreetParts(n); sub.textContent = sel.length + ' of ' + (rec ? rec.parts.length : sel.length) + ' sectors · ' + fmtLenM(crStreetChosenM(n, g)); }
+  else sub.textContent = 'Entire road · ' + fmtLenM(g[n] ? g[n].total : 0); // Beta 1.128: the adjust affordance is stated BEFORE any trim exists - in 1.127 it appeared only after one, so an untrimmed row gave no hint it could be tapped at all
+  meta.appendChild(sub);
+  const hint = document.createElement('span'); hint.className = 'crPSub'; hint.textContent = 'Tap row to adjust'; meta.appendChild(hint); // Beta 1.208 (Andrew): the instruction gets its OWN line under the length line - through 1.207 it rode the same line after an em dash
+  row.appendChild(meta);
   const chip = document.createElement('button'); chip.className = 'crPChip ' + (primary ? 'primary' : 'sec'); chip.textContent = primary ? 'PRIMARY' : 'SECONDARY';
   chip.addEventListener('click', e => { e.stopPropagation(); if (draft.primaries.has(n)) draft.primaries.delete(n); else draft.primaries.add(n); renderDraft(); renderCrLists(); });
   row.appendChild(chip);

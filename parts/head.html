@@ -469,7 +469,7 @@ body.creating #dock, body.creating #tabBar, body.creating #hud, body.creating #n
 .crLen { font-size: 13px; color: var(--ink-dim); font-weight: 600; }
 .crChip { border: none; border-radius: 999px; font-size: 12px; font-weight: 800; letter-spacing: .3px; padding: 6px 10px; cursor: pointer; flex: none; }
 .crChip.primary { background: #ffc233; color: #4a3200; }
-.crChip.sec { background: #ef476f; color: #fff; } /* Beta 1.207 (Andrew): the secondary chip is the PRIMARY pill's twin - filled, in the secondary raspberry - never the grey placeholder it wore through 1.205 */
+.crChip.sec { background: #ef476f; color: #4a3200; } /* Beta 1.207 (Andrew): the secondary chip is the PRIMARY pill's twin - filled, in the secondary raspberry - never the grey placeholder it wore through 1.205. Beta 1.208 (Andrew, from the three-variant sample, pick C): BOTH pills wear the same dark ink #4a3200 - the 1.207 white text on the raspberry was chosen for him, not by him */
 .crDel { border: none; background: none; color: #e63a2e; font-size: 18px; font-weight: 800; width: 34px; height: 34px; cursor: pointer; flex: none; }
 .crPrimary { appearance: none; -webkit-appearance: none; border: none; background: linear-gradient(135deg, #3d65ef, #1b2fb6); color: #fff; font-size: 17px; font-weight: 700; padding: 15px 18px; border-radius: 14px; width: 100%; cursor: pointer; }
 .crPrimary:disabled { opacity: .45; }
@@ -498,7 +498,7 @@ body.creating #dock, body.creating #tabBar, body.creating #hud, body.creating #n
 .crPSub { font-size: 13px; color: var(--ink-dim); }
 .crPChip { border: none; border-radius: 999px; font-size: 12px; font-weight: 800; letter-spacing: .3px; padding: 6px 10px; cursor: pointer; flex: none; appearance: none; -webkit-appearance: none; } /* Beta 1.207 (Andrew): the pick-stage chip wears the SAME filled pill as the review stage's .crChip - one design through the whole selection process */
 .crPChip.primary { background: #ffc233; color: #4a3200; }
-.crPChip.sec { background: #ef476f; color: #fff; }
+.crPChip.sec { background: #ef476f; color: #4a3200; } /* Beta 1.208: dark ink, matching .crChip.sec and both PRIMARY pills (Andrew's pick C) */
 .crPDel { border: none; background: rgba(230,58,46,.10); color: #c22f24; font-size: 14px; font-weight: 700; width: 34px; height: 34px; border-radius: 50%; cursor: pointer; flex: none; appearance: none; -webkit-appearance: none; }
 .crPanelBtns { flex-direction: row; }
 .crPanelBtns .crPrimary, .crPanelBtns .crGhost { flex: 1 1 0; width: auto; }

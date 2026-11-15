@@ -138,6 +138,26 @@ check('R2: every fill point rides the half-offset line (2.475 m off the centreli
   fills.length === 1 && fills[0].every(p => Math.abs(p[1] - 2.475) <= 0.45),
   fills.length ? 'y range ' + Math.min(...fills[0].map(p => p[1])).toFixed(2) + '..' + Math.max(...fills[0].map(p => p[1])).toFixed(2) : 'no fills');
 
+// ---- R2b: a fill that STOPS at a junction keeps its offset to the
+// very end (Codex P2 on PR #83: the generic end clip solves along the
+// centreline, so a terminating fill's last vertices sat 0.613 m from
+// the centreline instead of 2.475 m — green spilling onto the
+// unfinished side). LongAve [1, 0, 0]: the fill ends at the CrossSt
+// junction; its end must sit ON the half-offset line, flush at the
+// crossing street's near paint edge (x ~= -4.95).
+host.pieces.LongAve = [1, 0, 0];
+GLP.sync();
+const fillsT = sources.fills ? strandsM(sources.fills.data) : [];
+check('R2b: a terminating fill exists (LongAve piece 0 only)', fillsT.length === 1, 'strands=' + fillsT.length);
+check('R2b: every point of the terminating fill — including its last vertices — rides the half-offset line (2.475 m, +/-0.45 m)',
+  fillsT.length === 1 && fillsT[0].every(p => Math.abs(p[1] - 2.475) <= 0.45),
+  fillsT.length ? 'last two points: ' + JSON.stringify(fillsT[0].slice(-2).map(p => [ +p[0].toFixed(2), +p[1].toFixed(2) ])) : 'no fills');
+check('R2b: the terminating fill ends flush at the crossing street\u2019s near paint edge (end x within [-6.5, -3.5], not cut far back, not overshooting)',
+  fillsT.length === 1 && (() => { const e = fillsT[0][fillsT[0].length - 1]; return e[0] >= -6.5 && e[0] <= -3.5; })(),
+  fillsT.length ? 'end=' + JSON.stringify(fillsT[0][fillsT[0].length - 1].map(v => +v.toFixed(2))) : 'no fills');
+host.pieces.LongAve = [1, 1, 1];
+GLP.sync();
+
 // ---- R3: the selection's side paint is the board's own geometry.
 host.selStretch = { name: 'LongAve', idx: 1 };
 host.selSet = [host.selStretch];
@@ -174,6 +194,39 @@ if (spLine) {
   check('R4: glHideLabels applies the spacing to the road label layers and sets it on the route clones at creation',
     app2.includes("setL(L.id, 'symbol-spacing', LABEL_SPACING)") && app2.includes("clone.layout['symbol-spacing'] = LABEL_SPACING"));
 }
+
+// ---- R5 (same round): both SECONDARY pills wear the dark ink
+// (Andrew's pick C from the three-variant sample) — the 1.207 white
+// text on the raspberry is gone from both stages' rules.
+const head = readFileSync('parts/head.html', 'utf8');
+check('R5: the review-stage SECONDARY chip (.crChip.sec) wears dark ink #4a3200',
+  head.includes('.crChip.sec { background: #ef476f; color: #4a3200; }'));
+check('R5: the pick-stage SECONDARY chip (.crPChip.sec) wears dark ink #4a3200',
+  head.includes('.crPChip.sec { background: #ef476f; color: #4a3200; }'));
+check('R5: no .sec rule keeps the retired white text',
+  !head.includes('.crChip.sec { background: #ef476f; color: #fff; }') && !head.includes('.crPChip.sec { background: #ef476f; color: #fff; }'));
+check('R5: the PRIMARY pills are untouched (gold, dark ink)',
+  head.includes('.crChip.primary { background: #ffc233; color: #4a3200; }') && head.includes('.crPChip.primary { background: #ffc233; color: #4a3200; }'));
+
+// ---- R6 (same round): "Tap row to adjust" stands on its own line in
+// the panel rows — the subtitle keeps only the length line.
+const pick = readFileSync('parts/create-pick.js', 'utf8');
+check('R6: the row hint is its own element with the exact wording',
+  pick.includes("hint.textContent = 'Tap row to adjust'"));
+check('R6: no subtitle still rides the length line after an em dash',
+  !pick.includes('— tap row to adjust'));
+check('R6: the whole-road subtitle is the length line only',
+  pick.includes("sub.textContent = 'Entire road · ' + fmtLenM(g[n] ? g[n].total : 0);"));
+
+// ---- R7 (same round): the sector-trim street glows on the create
+// map — a dedicated glow source + halo layers, synced from the draft
+// render and the sector close, mirroring the main map's sel-glow.
+check('R7: the create glow writer exists and reads the sector session',
+  pick.includes('function syncCrGlow()') && pick.includes('const name = crSectorSession.street;'));
+check('R7: the glow stack mirrors the main map halo (five layers, outer pair blurred)',
+  pick.includes("['crGlow4', 36.75, 0.05, 14]") && pick.includes("['crGlow3', 10.75, 0.24, 0]") && pick.includes("paint['line-blur'] = s[3]"));
+check('R7: the draft render syncs the glow, and the sector close puts it out explicitly',
+  pick.includes('syncCrGlow(); // Beta 1.208: the trim glow tracks the draft') && pick.includes('crSectorReset(); syncCrGlow();'));
 
 console.log(failed === 0 ? 'ALL CHECKS PASS' : failed + ' CHECK(S) FAILED');
 process.exit(failed === 0 ? 0 : 1);

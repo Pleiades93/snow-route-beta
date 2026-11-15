@@ -794,7 +794,7 @@ $('stDel').addEventListener('click', async () => {
 });
 // ---- About / What's new ----
 const WHATSNEW = { // the curated in-app notes: plain words, LATEST RELEASE ONLY (Beta 1.114, Andrew: the accumulated list cluttered the About pane). A release REPLACES this entry with its own in the same change - it never accumulates; the full history lives in CHANGELOG.md, not the app
-  v: 'Beta 1.208', items: ["The green paint matches the street now. A finished street's green is the same width as the yellow and red streets — no more extra-wide green. When only one side of a street is done, the green fills that whole half of the road at every zoom, instead of shrinking to a thin line at the kerb when you zoom in. Selecting a stretch no longer breaks its green at the junctions. And a street's name no longer repeats over and over along the street when you zoom in."] };
+  v: 'Beta 1.208', items: ["The green paint matches the street now. A finished street's green is the same width as the yellow and red streets — no more extra-wide green. When only one side of a street is done, the green fills that whole half of the road at every zoom, instead of shrinking to a thin line at the kerb when you zoom in. Selecting a stretch no longer breaks its green at the junctions. And a street's name no longer repeats over and over along the street when you zoom in.", "Creating a route: both class pills now wear the same dark text, \u201CTap row to adjust\u201D stands on its own line, and the street you are trimming glows on the map while you trim it."] };
 
 function renderAbout() {
   const cur = $('ver').textContent.trim();
