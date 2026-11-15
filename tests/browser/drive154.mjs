@@ -68,7 +68,7 @@ const CITY_KING = [
 const STREET_BORDEAUX = [
   { place_id: 991001, osm_type: 'way', osm_id: 555001, lat: '43.798972', lon: '-79.574666', category: 'highway', type: 'residential', place_rank: 26, name: 'Bordeaux Drive', display_name: 'Bordeaux Drive, Woodbridge, Vaughan, York Region, Ontario, Canada', address: { road: 'Bordeaux Drive', suburb: 'Woodbridge', city: 'Vaughan', county: 'York Region', state: 'Ontario', country: 'Canada', country_code: 'ca' } }
 ];
-const TEST_PACK = name => ({ name, area: 'Vaughan', mains: [], roads: { 'Test Street': [[[43.8, -79.57], [43.801, -79.571]]] }, reference: {} });
+const TEST_PACK = name => ({ name, area: 'Vaughan', primaries: [], roads: { 'Test Street': [[[43.8, -79.57], [43.801, -79.571]]] }, reference: {} });
 
 // ---- static server + CDP rig (shared: harness-create.mjs; this drive's routing table is fulfil, below) ----
 const { server, ORIGIN } = await serveRepo(REPO);

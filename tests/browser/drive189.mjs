@@ -69,12 +69,35 @@ try {
     return {
       ok: v.ok, keys: v.ok ? Object.keys(v.pack.roads).sort() : [],
       ownProto: v.ok ? Object.prototype.hasOwnProperty.call(v.pack.roads, '__proto__') : false,
-      main: v2.ok ? v2.pack.main : [], dupOk: dup.ok, dupErr: dup.ok ? '' : dup.error
+      primaries: v2.ok ? v2.pack.primaries : [], dupOk: dup.ok, dupErr: dup.ok ? '' : dup.error
     };
   })()`);
   ok('A1 a first street named constructor/toString/__proto__ VALIDATES (no false duplicate through the prototype) | ' + JSON.stringify(a), a.ok === true && JSON.stringify(a.keys) === JSON.stringify(['__proto__', 'constructor', 'toString']) && a.ownProto === true);
-  ok('A2 a prototype-named street can be a primary | main: ' + JSON.stringify(a.main), JSON.stringify(a.main) === JSON.stringify(['constructor']));
+  ok('A2 a prototype-named street can be a primary | primaries: ' + JSON.stringify(a.primaries), JSON.stringify(a.primaries) === JSON.stringify(['constructor']));
   ok('A3 a genuine duplicate (trim collision) is still rejected | ' + JSON.stringify({ dupOk: a.dupOk, dupErr: a.dupErr }), a.dupOk === false && /appears twice/.test(a.dupErr || ''));
+
+  // ---- A4/A5: primaries storage completion (2026-11-15, Andrew's override) ----
+  // The stored field is 'primaries' ONLY - no 'main'/'mains' aliases survive.
+  // A pack whose field is absent, or present only under a retired key (an
+  // old-format record on the phone: a stored created route, an old backup),
+  // normalizes to an EMPTY primaries list with its streets intact, and
+  // buildGeometry on it renders every street with no primaries and no throw.
+  const a45 = await J(`(() => {
+    const seg = ${JSON.stringify(SEG)};
+    const roads = { 'Degrade Street': seg, 'Second Street': seg };
+    const noField = normalizePack({ name: 'Degrade', roads });
+    const legacyOnly = normalizePack({ name: 'Degrade', roads, main: ['Degrade Street'], mains: ['Second Street'] });
+    let geo = null, geoErr = '';
+    try { buildGeometry(legacyOnly.pack); geo = { names: STREETNAMES.slice().sort(), prim: [...PRIMARIES] }; } catch (e) { geoErr = String(e && e.message || e); }
+    try { const p5 = ROUTE_PACKS.find(p => p.id === '5w'); buildGeometry(p5); if (window.GLP) window.GLP.rebuildRoute(); } catch (e) {} // restore the booted route's geometry for the sections below
+    return { noFieldOk: noField.ok, noFieldPrim: noField.ok ? noField.pack.primaries : null, noFieldRoads: noField.ok ? Object.keys(noField.pack.roads).length : 0,
+      legacyOk: legacyOnly.ok, legacyPrim: legacyOnly.ok ? legacyOnly.pack.primaries : null, legacyHasMain: legacyOnly.ok ? ('main' in legacyOnly.pack) : null,
+      geo, geoErr };
+  })()`);
+  ok('A4 a pack with no primaries field - or only the retired main/mains keys - VALIDATES to an empty primaries list, streets intact, no stored main key | ' + JSON.stringify(a45),
+    a45.noFieldOk === true && JSON.stringify(a45.noFieldPrim) === '[]' && a45.noFieldRoads === 2 && a45.legacyOk === true && JSON.stringify(a45.legacyPrim) === '[]' && a45.legacyHasMain === false);
+  ok('A5 buildGeometry on the legacy-only pack renders every street, primaries empty, no throw | ' + JSON.stringify(a45.geo) + ' err: ' + a45.geoErr,
+    !a45.geoErr && !!a45.geo && JSON.stringify(a45.geo.names) === JSON.stringify(['Degrade Street', 'Second Street']) && a45.geo.prim.length === 0);
 
   // ---- B: D-05 pending row renders ----
   const b = await J(`(() => {

@@ -5,7 +5,7 @@
   "raw": {
    "name": "  Test Route  ",
    "area": "  Vaughan  ",
-   "mains": [
+   "primaries": [
     "Alpha",
     "Ghost",
     "Alpha",
@@ -115,7 +115,7 @@
    "pack": {
     "name": "Test Route",
     "area": "Vaughan",
-    "main": [
+    "primaries": [
      "Alpha",
      "Beta"
     ],
@@ -202,7 +202,7 @@
   }
  },
  {
-  "id": "computed-box-legacy-main",
+  "id": "computed-box-primaries",
   "opts": {
    "tileNames": [
     "Opt Tile"
@@ -210,7 +210,7 @@
   },
   "raw": {
    "name": "Second",
-   "main": [
+   "primaries": [
     "Solo"
    ],
    "roads": {
@@ -233,7 +233,7 @@
    "pack": {
     "name": "Second",
     "area": "",
-    "main": [
+    "primaries": [
      "Solo"
     ],
     "spot": {},
@@ -291,7 +291,7 @@
    "pack": {
     "name": "",
     "area": "",
-    "main": [],
+    "primaries": [],
     "spot": {},
     "tileNames": [
      "Only"
@@ -326,7 +326,7 @@
   "raw": {
    "name": "Vaughan Slice",
    "area": "Vaughan",
-   "mains": [
+   "primaries": [
     "10th Concession"
    ],
    "roads": {
@@ -1157,7 +1157,7 @@
    "pack": {
     "name": "Vaughan Slice",
     "area": "Vaughan",
-    "main": [
+    "primaries": [
      "10th Concession"
     ],
     "spot": {},

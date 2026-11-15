@@ -180,7 +180,7 @@ try {
   })()`));
   ok('P1 staged: live trail (2 points) and a run start in storage | ' + JSON.stringify(p1stage),
     p1stage.storedTrail === 2 && p1stage.start === String(P1T * 1000));
-  const P1PACK = { name: 'D169 P1 Route', area: 'Vaughan', mains: [], roads: { 'Test Street': [[[43.8, -79.57], [43.801, -79.571]]] }, reference: {} };
+  const P1PACK = { name: 'D169 P1 Route', area: 'Vaughan', primaries: [], roads: { 'Test Street': [[[43.8, -79.57], [43.801, -79.571]]] }, reference: {} };
   const bkP1 = JSON.stringify({ app: 'snowroute-backup', v: 2, at: P1T * 1000, userpacks: { 'route-d169p1': P1PACK }, routes: { '5w': { start: null } } });
   await injectBackup(bkP1);
   await ev(`(() => {
@@ -239,7 +239,7 @@ try {
     localStorage.removeItem = (k) => { if (k === window.__p1bStartKey) throw new Error('d169 refused delete'); return window.__p1bOrigRemove(k); };
     return true;
   })()`);
-  const P1BPACK = { name: 'D169 P1b Route', area: 'Vaughan', mains: [], roads: { 'Test Street': [[[43.8, -79.57], [43.801, -79.571]]] }, reference: {} };
+  const P1BPACK = { name: 'D169 P1b Route', area: 'Vaughan', primaries: [], roads: { 'Test Street': [[[43.8, -79.57], [43.801, -79.571]]] }, reference: {} };
   const bkP1b = JSON.stringify({ app: 'snowroute-backup', v: 2, at: P1T * 1000, userpacks: { 'route-d169p1b': P1BPACK }, routes: { '5w': { start: null } } });
   await injectBackup(bkP1b);
   await ev(`(() => { window.__p1bSettled = false; window.__d169probe = 1; restoreBackup(JSON.parse(window.__d169b)).then(() => { window.__p1bSettled = true; }, () => { window.__p1bSettled = true; }); return true; })()`);

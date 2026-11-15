@@ -144,7 +144,7 @@ const chipB = await poll(`draft.primaries.has('Long Road')`, 10000);
 const chipTxt = await J(`(() => { const r = [...document.querySelectorAll('#crPickList .crPRow')].find(x => (x.querySelector('.crPName') || {}).textContent === 'Long'); return r ? (r.querySelector('.crPChip') || {}).textContent || '' : ''; })()`);
 await ev2(`(() => { const r = [...document.querySelectorAll('#crPickList .crPRow')].find(x => (x.querySelector('.crPName') || {}).textContent === 'Long'); if (r) r.querySelector('.crPChip').click(); return true; })()`);
 const chipBack = await poll(`!draft.primaries.has('Long Road') && crSectorSession.street === null`, 10000);
-ok('B3 THE IN-ROW CHIP FLIPS PRIMARY/2ND: one tap on Long\'s chip puts it in the primaries set and the chip reads PRIMARY; a second tap flips it back - and neither tap opened sector mode (the chip keeps its own tap) | to main: ' + chipB + ' (' + chipTxt + '), back: ' + chipBack,
+ok('B3 THE IN-ROW CHIP FLIPS PRIMARY/2ND: one tap on Long\'s chip puts it in the primaries set and the chip reads PRIMARY; a second tap flips it back - and neither tap opened sector mode (the chip keeps its own tap) | to primaries: ' + chipB + ' (' + chipTxt + '), back: ' + chipBack,
   chipB === true && chipTxt === 'PRIMARY' && chipBack === true);
 // Beta 1.128 premise update: tap-again-to-deselect is RETIRED (Andrew's fork) - picking a picked street opens its sectors instead; removal lives on the row's x and Clear all
 await ev2(`pickStreet('Alpha Street', { lat: 43.79, lng: -79.578 })`);

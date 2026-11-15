@@ -448,7 +448,7 @@ try {
 // UNION. The wait polls the flag's terminal value - the migration sets it
 // only at the end of its pass (E20's terminal-signal rule).
 try {
-  const SEED23 = { name: 'E23 Test Route', area: 'E23', roads: { 'E23 Test Street': [[[43.83, -79.44], [43.831, -79.439]]] }, main: [], tileNames: [], box: { w: -79.47, s: 43.815, e: -79.41, n: 43.845 } };
+  const SEED23 = { name: 'E23 Test Route', area: 'E23', roads: { 'E23 Test Street': [[[43.83, -79.44], [43.831, -79.439]]] }, primaries: [], tileNames: [], box: { w: -79.47, s: 43.815, e: -79.41, n: 43.845 } };
   await ev2(`(() => { localStorage.setItem('snowroute.v2.userpacks', ${JSON.stringify(JSON.stringify({ 'e23-test': SEED23 }))}); return true; })()`);
   await send('Page.reload', { ignoreCache: false }, PAGE_S); // the registration boot: both trees register the seeded pack here
   await poll(`typeof migratePack === 'function' && typeof preloadUrlList === 'function'`, 90000);

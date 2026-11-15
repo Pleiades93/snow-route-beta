@@ -735,7 +735,7 @@ function importDraft(text) { // fail closed, named errors, nothing half-applied 
   const v = normalizePack(raw, { draft: true });
   if (!v.ok) { toast('Draft not imported — ' + v.error, 4000); return; }
   draft = newDraft();
-  draft.roads = v.pack.roads; draft.primaries = new Set(v.pack.main); draft.name = v.pack.name || ''; draft.area = v.pack.area || ''; draft.tileNames = v.pack.tileNames.slice();
+  draft.roads = v.pack.roads; draft.primaries = new Set(v.pack.primaries); draft.name = v.pack.name || ''; draft.area = v.pack.area || ''; draft.tileNames = v.pack.tileNames.slice();
   draft.osmNames = Object.create(null); for (const k of Object.keys(v.pack.roads)) draft.osmNames[k] = k; // Beta 1.169 (Carbon fix round, D-02): an imported street's own OSM name is its pack key. Through 1.168 importDraft left osmNames empty, so crStreetParts' own-ways skip (nm === own) never matched for an imported street and the street's own geometry cut it into fragments at its own vertices. Tapped streets have always carried key -> itself (crAddStreet).
   enterCreate('preview');
   toast('Draft loaded — check it over', 2600);
