@@ -39,7 +39,7 @@ await sleep(3000);
 ok('S0 app boots for the created-route data-safety tests', await poll120(`!!window.maplibregl && !!document.querySelector('#map canvas')`, 45000));
 
 const UPKEY = 'snowroute.v2.userpacks';
-const PACK = (name, street) => ({ name, area: 'Vaughan', mains: [], roads: { [street]: [[[43.8, -79.57], [43.801, -79.571]]] }, reference: {} });
+const PACK = (name, street) => ({ name, area: 'Vaughan', primaries: [], roads: { [street]: [[[43.8, -79.57], [43.801, -79.571]]] }, reference: {} });
 const reboot5w = async () => { await send('Page.navigate', { url }, S); await sleep(3500); await ev(`window.__userPacksReady`); await ev(`loadRoute('5w'); true`); await sleep(500); };
 const seedLegacyAB = () => ev(`(() => { localStorage.setItem('${UPKEY}', JSON.stringify({ 'route-a': ${JSON.stringify(PACK('Route A', 'Alpha Street'))}, 'route-b': ${JSON.stringify(PACK('Route B', 'Beta Street'))} })); return true; })()`);
 const armDraft = async (nm) => ev(`(() => { draft = newDraft(); draft.roads['Test Street'] = [[[43.8, -79.57], [43.801, -79.571]]]; $('crNameInput').value = '${nm}'; $('crAreaInput').value = 'Vaughan'; return true; })()`);
@@ -77,7 +77,7 @@ await reboot5w(); // boot registers route-x with the OLD geometry (and drains it
 const setupC = await ev(`ROUTE_PACKS.some(p => p.id === 'route-x' && p.roads['Old Street'])`);
 ok('C0 setup: route-x registered with its OLD street', setupC === true);
 const cRes = JSON.parse(await ev(`(async () => {
-  const NEWRAW = { name: 'Route X', area: 'Vaughan', mains: [], roads: { 'New Street': [[[43.9, -79.6], [43.901, -79.601]]] }, reference: {} };
+  const NEWRAW = { name: 'Route X', area: 'Vaughan', primaries: [], roads: { 'New Street': [[[43.9, -79.6], [43.901, -79.601]]] }, reference: {} };
   const v = normalizePack(NEWRAW, {}); if (!v.ok) return JSON.stringify({ setupFail: v.error });
   const g = packGeometry(v.pack); const TS = 1794000000000;
   const pieces = {}, pieceTimes = {};
