@@ -785,7 +785,7 @@ $('stDel').addEventListener('click', async () => {
 });
 // ---- About / What's new ----
 const WHATSNEW = { // the curated in-app notes: plain words, LATEST RELEASE ONLY (Beta 1.114, Andrew: the accumulated list cluttered the About pane). A release REPLACES this entry with its own in the same change - it never accumulates; the full history lives in CHANGELOG.md, not the app
-  v: 'Beta 1.203', items: ["The map now settles into a tilted view when your route loads and when you tap Home — same zoom as before, just angled.", "Your speed now sits in a pill at the top centre of the map whenever location is on."] };
+  v: 'Beta 1.204', items: ["Driving to the route, the puck now sits on the road you're on instead of drifting beside it. It lets go when you slow down, and it never affects your cleans — what gets recorded is unchanged."] };
 
 function renderAbout() {
   const cur = $('ver').textContent.trim();
