@@ -163,6 +163,8 @@ jobs:
         run: node tests/browser/selftest-nv1152.mjs
       - name: mergeStrands best-score proof (dead-score fix gate, 2026-11-15)
         run: node tests/proof/proof-mergestrands-score.mjs
+      - name: Street-end width proof (Beta 1.206 gate - drawn widths hold the geographic width the end cuts assume)
+        run: node tests/proof/proof-street-end-width-fix.mjs
       - name: Premise-lint fixtures (Tranche 4 gate)
         run: python3 scripts/premise-lint-fixtures/run-fixtures.py
       - name: Bug-hunt fix fixtures (PR #23 gate; Beta 1.185)
