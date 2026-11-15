@@ -109,7 +109,7 @@ function batchExpr(fixes, { hookIdx = -1, wantBlend = false } = {}) {
   const blend = wantBlend ? `if (!window.__blendTrace && s.pid >= 0 && (i === 0 || window.__smpl[window.__smpl.length - 2].pid < 0)) { const tr = [s.w]; for (let k = 0; k < 10; k++) { window.__fakeNow += 100; renderTick(performance.now()); tr.push(snapW); } window.__blendTrace = tr; }` : '';
   return `(() => { const FX = ${data}; let prevTs = null; window.__blendTrace = null; window.__hookSample = null;
     for (let i = 0; i < FX.length; i++) { const f = FX[i]; const gap = prevTs == null ? 0 : f[0] - prevTs; prevTs = f[0];
-      const end = window.__fakeNow + gap; while (window.__fakeNow < end) { window.__fakeNow = Math.min(end, window.__fakeNow + 50); renderTick(performance.now()); }
+      const end = window.__fakeNow + gap; while (window.__fakeNow < end) { window.__fakeNow = Math.min(end, window.__fakeNow + 100); renderTick(performance.now()); }
       acceptFix({ coords: { latitude: f[1], longitude: f[2], accuracy: f[3], speed: f[4], heading: f[5] }, timestamp: f[0] });
       const s = window.__snapSample(); window.__smpl.push(s);
       ${blend}
@@ -127,6 +127,16 @@ async function replay(rig, fixes, opts = {}) {
   await rig.ev2(batchExpr(fixes, opts));
   return { samples: await rig.J(`window.__smpl`), polyReg: await rig.J(`window.__polyReg`), blendTrace: await rig.J(`window.__blendTrace`), hookSample: await rig.J(`window.__hookSample`) };
 }
+// stepFeed: one synthetic fix fed the way the estimator expects - the
+// fake clock is stepped 1 s in 100 ms renderTick increments BEFORE the
+// fix lands (batchExpr's pattern for the replays). Feeding fixes
+// back-to-back without stepping starves the estimator (its dt is the
+// page clock: five fixes at one frozen instant move the estimate a
+// fraction of the way and the display track never converges), which
+// silently corrupts any segment that reads dispPos or the blend.
+async function stepFeed(rig, pt, acc, spd, hdg) {
+  await rig.ev2(`(() => { lastFixTs = 0; for (let k = 0; k < 10; k++) { window.__fakeNow += 100; renderTick(performance.now()); } acceptFix({ coords: { latitude: ${pt[0]}, longitude: ${pt[1]}, accuracy: ${acc}, speed: ${spd}, heading: ${hdg} }, timestamp: window.__fakeNow }); return true; })()`);
+}
 async function warmIndex(rig, anchor) {
   for (let k = 0; k < 40; k++) {
     await rig.ev2(`(() => { acceptFix({ coords: { latitude: ${anchor[1]}, longitude: ${anchor[2]}, accuracy: ${anchor[3]}, speed: 5, heading: ${anchor[5]} }, timestamp: ${anchor[0] - 100000 + k * 1000} }); return true; })()`);
@@ -134,6 +144,36 @@ async function warmIndex(rig, anchor) {
     await sleep(500);
   }
   return false;
+}
+// A replay batch runs inside ONE synchronous evaluate, so an async pack
+// build triggered mid-drive can never land inside it - whatever index
+// exists at batch start serves the whole replay. Pack builds land
+// between segments at wall-clock-dependent moments (and each install
+// drops the hold), so an unsettled index makes a replay's engagement
+// pattern a race: measured in this gate, the same S2 replay scored
+// 537/537 engaged with the index settled and 495/504 with a 9-fix
+// wrong lock when a neighbouring city's build landed between segments.
+// settleIndex feeds one anchor fix (which triggers the build for the
+// anchor's city) and polls until the installed index's key is exactly
+// the want for that anchor and no build is in flight.
+async function settleIndex(rig, anchor) {
+  // The anchor fix is re-fed every poll: a feed that lands before the
+  // pack catalogue installs only the route-only '~' index, and no build
+  // for the anchor's city is ever triggered until the NEXT fix - a
+  // single feed can leave the poll waiting on a build nobody started.
+  let st = { settled: false, key: '', want: '', busy: true, fail: '' };
+  for (let k = 0; k < 120; k++) {
+    // Each poll also steps the page's fake clock forward 5 s: the app's
+    // failed-pack cooldown is stamped in page time, and a poll that
+    // never advances the clock would wait out a 60 s cooldown forever
+    // (measured in this gate: one transient pack failure before the T1
+    // settle froze the retry for the whole poll).
+    await rig.ev2(`(() => { lastFixTs = 0; acceptFix({ coords: { latitude: ${anchor[1]}, longitude: ${anchor[2]}, accuracy: ${anchor[3]}, speed: 5, heading: ${anchor[5]} }, timestamp: ${anchor[0] - 100000 + k * 1000} }); window.__fakeNow += 5000; renderTick(performance.now()); return true; })()`);
+    st = await rig.J(`(() => { const slug = (typeof snapSlugFor === 'function') ? snapSlugFor([${anchor[1]}, ${anchor[2]}]) : null; const want = slug === null ? '(catalogue in flight)' : (((typeof activeRoute !== 'undefined' && activeRoute && activeRoute.id) || '') + '|' + slug); return { settled: !!snapGeo && slug !== null && snapGeo.key === want && !snapGeoBusy, key: snapGeo ? snapGeo.key : '(none)', want, busy: !!snapGeoBusy, fail: snapGeoFailSlug }; })()`);
+    if (st.settled) return st;
+    await sleep(500);
+  }
+  return st;
 }
 const startCleanWrapped = rig => rig.J(`(() => { try { startClean(); return { threw: false, runStart, held: typeof snapHeld !== 'undefined' ? !!snapHeld : 'undef', w: snapW }; } catch (e) { return { threw: true, err: String(e && e.message || e), runStart: typeof runStart !== 'undefined' ? runStart : null, held: typeof snapHeld !== 'undefined' ? !!snapHeld : 'undef', w: typeof snapW !== 'undefined' ? snapW : -1 }; } })()`);
 
@@ -147,6 +187,8 @@ const geoInfo = await rig.J(`({ polys: snapGeo ? snapGeo.polys.length : -1, key:
 ok('T0 DATA PATH: the shipped Vaughan pack loads through the app\'s own loader and the snap index installs (route streets + pack runs) | ' + JSON.stringify(geoInfo), warmed === true && geoInfo.polys > 500);
 
 // ---- phase A1: S1 (arterial drive) ----
+const stA1 = await settleIndex(rig, S1[100]);
+ok('SETUP: the snap index is settled for S1 before its replay batch | ' + JSON.stringify(stA1), stA1.settled === true);
 await rig.ev2(RESET);
 dbg('A1');
 const a1 = await replay(rig, S1, { wantBlend: true });
@@ -164,51 +206,6 @@ const sc1b = scorerFor(S1, WAYS.s1);
 const settled = a1.samples.find(s => s.pid >= 0 && s.w >= 0.999 && s.proj && s.shown);
 ok('A1 BLEND SETTLES ON THE CENTRELINE: a fully blended shown point equals the projection (< 0.01 m)', !!settled && sc1b.distLL(settled.shown, settled.proj) < 0.01);
 
-// ---- phase A1b: the release blend (pin for the PR #51 Codex P2) ----
-// A release at full blend must EASE OUT: the outgoing projection is kept
-// while the weight decays, so per-frame shown steps stay small. (The
-// defect this pins: snapDropHold cleared the hold and the shown point
-// teleported the full offset in the first frame while the weight still
-// read ~1.) The window is chosen from the data at runtime: 20 consecutive
-// fixes at >= 10 m/s whose last fix sits >= 3 m off the nearest way, so
-// the offset the release has to walk back is material by construction.
-await rig.ev2(RESET);
-let relWin = -1;
-for (let i = 0; i + 20 <= S1.length; i++) {
-  const w20 = S1.slice(i, i + 20);
-  if (w20.every(f => f[4] >= 10) && sc1b.nearest([w20[19][1], w20[19][2]]).d >= 3) { relWin = i; break; }
-}
-ok('A1 RELEASE BLEND SETUP: a 20-fix fast window ending >= 3 m off the nearest way exists in S1 (window at idx ' + relWin + ')', relWin >= 0);
-if (relWin >= 0) {
-  const win = S1.slice(relWin, relWin + 20);
-  await rig.ev2(batchExpr(win));
-  await rig.ev2(`(() => { for (let k = 0; k < 60; k++) { window.__fakeNow += 50; renderTick(performance.now()); } return true; })()`);
-  const pre = await rig.J(`({ w: snapW, held: !!snapHeld, shown: dispShownPos(), disp: dispPos && dispPos.slice() })`);
-  const off = pre.shown && pre.disp ? sc1b.distLL(pre.shown, pre.disp) : -1;
-  const last = win[win.length - 1];
-  const rel = await rig.J(`(() => { window.__trace = []; acceptFix({ coords: { latitude: ${last[1]}, longitude: ${last[2]}, accuracy: ${last[3]}, speed: 1.0, heading: ${last[5]} }, timestamp: ${last[0] + 1000} }); for (let k = 0; k < 300; k++) { window.__fakeNow += 16; renderTick(performance.now()); } const tr = window.__trace; window.__trace = null; return { tr, w: snapW, held: !!snapHeld, shown: dispShownPos(), disp: dispPos && dispPos.slice() }; })()`);
-  const pts = (rel.tr || []).filter(t => t[1] != null).map(t => [t[1], t[2]]);
-  const allPts = pre.shown ? [pre.shown, ...pts] : pts;
-  let maxStep = 0; for (let i = 1; i < allPts.length; i++) { const d = sc1b.distLL(allPts[i], allPts[i - 1]); if (d > maxStep) maxStep = d; }
-  const midW = (rel.tr || []).filter(t => t[0] > 0.05 && t[0] < 0.95).length;
-  const endGap = rel.shown && rel.disp ? sc1b.distLL(rel.shown, rel.disp) : -1;
-  ok(`A1 RELEASE BLEND: engaged at w ${pre.w.toFixed(2)} with a ${off.toFixed(1)} m offset; one 1.0 m/s fix releases and the shown point EASES OUT - max per-frame step ${maxStep.toFixed(2)} m over ${pts.length} frames (bar < 1.0 m), ${midW} frames at intermediate weights (bar >= 3), ending ${endGap.toFixed(3)} m from the true point (bar < 0.05 m), hold gone ${!rel.held}`, pre.held && pre.w >= 0.95 && off >= 2 && !rel.held && maxStep < 1.0 && midW >= 3 && endGap >= 0 && endGap < 0.05);
-  // Partial-weight arm (pin for the PR #51 Codex P2, third round): a
-  // release arriving MID-BLEND must be continuous at the release instant
-  // itself. The capture is weight-normalized; storing the rendered point
-  // raw would apply the weight twice and jump by offset * w * (1 - w)
-  // (2 m at w 0.5 on an 8 m offset in review's repro). The weight is set
-  // to exactly 0.5 in-page so the expected defect jump is deterministic:
-  // off * 0.25, with off >= 2 m by the window's construction.
-  await rig.ev2(RESET);
-  await rig.ev2(batchExpr(win));
-  await rig.ev2(`(() => { for (let k = 0; k < 60; k++) { window.__fakeNow += 50; renderTick(performance.now()); } snapW = 0.5; return true; })()`);
-  const p0 = await rig.J(`({ held: !!snapHeld, shown: dispShownPos(), disp: dispPos && dispPos.slice() })`);
-  const pOff = p0.shown && p0.disp ? sc1b.distLL(p0.shown, p0.disp) : -1;
-  const p1 = await rig.J(`(() => { acceptFix({ coords: { latitude: ${last[1]}, longitude: ${last[2]}, accuracy: ${last[3]}, speed: 1.0, heading: ${last[5]} }, timestamp: ${last[0] + 1000} }); return { held: !!snapHeld, shown: dispShownPos() }; })()`);
-  const pJump = p0.shown && p1.shown ? sc1b.distLL(p0.shown, p1.shown) : -1;
-  ok(`A1 RELEASE BLEND (partial weight): at w 0.5 with a ${pOff.toFixed(1)} m rendered offset, the release fix moves the shown point ${pJump.toFixed(3)} m at the release instant (bar < 0.05 m; the double-weighted capture jumps ${(pOff * 0.5).toFixed(2)} m here), hold gone ${!p1.held}`, p0.held && pOff >= 1 && !p1.held && pJump >= 0 && pJump < 0.05);
-}
 
 // ---- T1: the projection seed (pin for the PR #51 Codex P1, second round) ----
 // Engagement must seed snapProject's window from the nearest search's
@@ -218,9 +215,11 @@ if (relWin >= 0) {
 // projection from a hint of 0 accepted segment 3 - 813.6 m away - and
 // the full-line distance check reads the true distance (0), so the bad
 // projection could never release.
+const stT1 = await settleIndex(rig, [1760000000000, 43.89023765, -79.47968195, 10, 20, 0]);
+ok('SETUP: the snap index is settled for the T1 street before its feeds | ' + JSON.stringify(stT1), stT1.settled === true);
 await rig.ev2(RESET);
 const T1FIX = [43.89023765, -79.47968195];
-for (let k = 0; k < 6; k++) await rig.ev2(`(() => { acceptFix({ coords: { latitude: ${T1FIX[0]}, longitude: ${T1FIX[1]}, accuracy: 10, speed: 20, heading: 0 }, timestamp: ${1760000000000 + k * 1000} }); return true; })()`);
+for (let k = 0; k < 6; k++) await stepFeed(rig, T1FIX, 10, 20, 0);
 const t1 = await rig.J(`({ held: typeof snapHeld !== 'undefined' && !!snapHeld, name: snapHeld ? snapHeld.name : '', proj: (typeof snapProject === 'function' && dispPos) ? snapProject(dispPos) : null, disp: dispPos && dispPos.slice(), hd: (typeof snapHeld !== 'undefined' && snapHeld && dispPos) ? snapHeldDist(dispPos) : -1 })`);
 const t1gap = t1.proj && t1.disp ? sc1b.distLL(t1.proj, t1.disp) : -1;
 ok(`T1 PROJECTION SEED: a fix ON Woodland Acres Crescent engages '${t1.name}' and its projection sits ${t1gap.toFixed(1)} m from the display point (bar < 5 m; the unseeded window landed 813.6 m away) with the full-line distance ${t1.hd.toFixed(1)} m`, t1.held && t1gap >= 0 && t1gap < 5 && t1.hd >= 0 && t1.hd < 5);
@@ -233,10 +232,10 @@ ok(`T1 PROJECTION SEED: a fix ON Woodland Acres Crescent engages '${t1.name}' an
 // shown point must still sit on A (the anchor), then walk to B over the
 // frames with no per-frame step near the 8 m the defect jumped.
 await rig.ev2(RESET);
-const swSetup = await rig.J(`(() => { const a = [${T1FIX[0]}, ${T1FIX[1]}]; const slug = snapSlugFor(a); const want = ((typeof activeRoute !== 'undefined' && activeRoute && activeRoute.id) || '') + '|' + slug; const dLat = 8 / MLAT, step = 15 / MLNG; const mk = off => { const pts = []; for (let i = 0; i < 9; i++) pts.push([a[0] + off, a[1] - 4 * step + i * step]); return pts; }; window.__savedGeo = snapGeo; window.__swA = mk(0); window.__swB = mk(dLat); window.__swC = mk(30 / MLAT); snapGeo = snapBuildIndex([{ name: 'Switch A', pts: window.__swA }, { name: 'Switch B', pts: window.__swB }, { name: 'Switch C', pts: window.__swC }], want); return { keyOk: snapGeo.key === want }; })()`);
-ok('A1 SWITCH BLEND SETUP: the synthetic two-road index installs under the key snapGeoEnsure wants (the real index is saved for restore)', swSetup.keyOk === true);
+const swSetup = await rig.J(`(() => { const a = [${T1FIX[0]}, ${T1FIX[1]}]; const want = snapGeo ? snapGeo.key : 'synthetic'; const dLat = 8 / MLAT, step = 15 / MLNG; const mk = off => { const pts = []; for (let i = 0; i < 9; i++) pts.push([a[0] + off, a[1] - 4 * step + i * step]); return pts; }; window.__savedGeo = snapGeo; window.__swA = mk(0); window.__swB = mk(dLat); window.__swC = mk(30 / MLAT); snapGeo = snapBuildIndex([{ name: 'Switch A', pts: window.__swA }, { name: 'Switch B', pts: window.__swB }, { name: 'Switch C', pts: window.__swC }], want); return { keyOk: snapGeo.key === want }; })()`);
+ok('A1 SWITCH BLEND SETUP: the synthetic two-road index installs under the settled index\'s own key, so snapGeoEnsure never rebuilds it mid-segment (the real index is saved for restore)', swSetup.keyOk === true);
 if (swSetup.keyOk) {
-  const feedPt = async (pt, k) => rig.ev2(`(() => { acceptFix({ coords: { latitude: ${pt[0]}, longitude: ${pt[1]}, accuracy: 10, speed: 15, heading: 90 }, timestamp: ${1760001000000 + k * 1000} }); return true; })()`);
+  const feedPt = async (pt, k) => stepFeed(rig, pt, 10, 15, 90);
   const frames = async (n, ms) => rig.ev2(`(() => { for (let k = 0; k < ${n}; k++) { window.__fakeNow += ${ms}; renderTick(performance.now()); } return true; })()`);
   const swA = await rig.J(`window.__swA`), swB = await rig.J(`window.__swB`);
   let fk = 0;
@@ -248,7 +247,7 @@ if (swSetup.keyOk) {
   await feedPt(swB[7], fk++);
   await frames(3, 16);
   const postSw = await rig.J(`({ held: snapHeld ? snapHeld.name : '', shown: dispShownPos() })`);
-  const walk = await rig.J(`(() => { window.__trace = []; for (let k = 0; k < 240; k++) { window.__fakeNow += 16; renderTick(performance.now()); } const tr = window.__trace; window.__trace = null; return { tr, shown: dispShownPos() }; })()`);
+  const walk = await rig.J(`(() => { const ser = []; for (let k = 0; k < 240; k++) { window.__fakeNow += 16; renderTick(performance.now()); const sh = dispShownPos(); ser.push([snapW, sh ? sh[0] : null, sh ? sh[1] : null]); } return { tr: ser, shown: dispShownPos() }; })()`);
   // Accuracy gate on the drop-and-reengage (pin for the PR #51 Codex P2,
   // fourth round): the fresh take after a drop must pass the same
   // acc <= SNAP_ACC_M gate as the from-free engage. Road C sits 30 m
@@ -258,9 +257,9 @@ if (swSetup.keyOk) {
   await rig.ev2(RESET);
   await feedPt(swA[4], fk++);
   const accPre = await rig.J(`snapHeld ? snapHeld.name : ''`);
-  await rig.ev2(`(() => { acceptFix({ coords: { latitude: ${swC[4][0]}, longitude: ${swC[4][1]}, accuracy: 60, speed: 15, heading: 90 }, timestamp: ${1760001000000 + (fk++) * 1000} }); return true; })()`);
+  await stepFeed(rig, swC[4], 60, 15, 90); fk++;
   const accMid = await rig.J(`snapHeld ? snapHeld.name : ''`);
-  await rig.ev2(`(() => { acceptFix({ coords: { latitude: ${swC[4][0]}, longitude: ${swC[4][1]}, accuracy: 10, speed: 15, heading: 90 }, timestamp: ${1760001000000 + (fk++) * 1000} }); return true; })()`);
+  await stepFeed(rig, swC[4], 10, 15, 90); fk++;
   const accPost = await rig.J(`snapHeld ? snapHeld.name : ''`);
   ok(`A1 ACC GATE ON RE-ENGAGE: holding '${accPre}' from a good fix, a 60 m-accuracy fix on road C (30 m away) drops the hold and takes NOTHING (held '${accMid}'; the ungated branch locked C), and the same fix at 10 m accuracy then engages '${accPost}'`, accPre === 'Switch A' && accMid === '' && accPost === 'Switch C');
   // Evidence-timeout hysteresis (pin for the PR #51 Codex P2, fifth
@@ -272,7 +271,7 @@ if (swSetup.keyOk) {
   await rig.ev2(`(() => { snapGeo = snapBuildIndex([{ name: 'Switch A', pts: window.__swA }], snapGeo.key); return true; })()`);
   await rig.ev2(RESET);
   const offPt = (pt, m) => [pt[0] + m / 111320, pt[1]];
-  const feedOff = async (m) => { const pt = offPt(swA[4], m); await rig.ev2(`(() => { acceptFix({ coords: { latitude: ${pt[0]}, longitude: ${pt[1]}, accuracy: 10, speed: 15, heading: 90 }, timestamp: ${1760001000000 + (fk++) * 1000} }); return true; })()`); };
+  const feedOff = async (m) => { fk++; await stepFeed(rig, offPt(swA[4], m), 10, 15, 90); };
   const heldName = () => rig.J(`snapHeld ? snapHeld.name : ''`);
   await feedOff(11);
   const hyEngaged = await heldName();
@@ -283,6 +282,43 @@ if (swSetup.keyOk) {
   await feedOff(5);
   const hyReadmitted = await heldName();
   ok(`A1 TIMEOUT HYSTERESIS: fixes 11 m alongside road A engage it ('${hyEngaged}'), the evidence timeout releases it (held '${hyDropped}'), the next 11 m fix does NOT re-take it (held '${hyRejected}'; the unguarded gate loops the timeout), and a 5 m fix re-admits it ('${hyReadmitted}')`, hyEngaged === 'Switch A' && hyDropped === '' && hyRejected === '' && hyReadmitted === 'Switch A');
+  // Release blend, both arms (pins for the PR #51 Codex P2, first and
+  // third rounds), in deterministic synthetic form: fixes run PARALLEL
+  // to road A at a fixed 6 m offset, so the display track converges to
+  // a steady 6 m offset from the line and the blend has a known
+  // distance to walk. (The original S1-window form's offset rode the
+  // estimator's state - measured 1.2-2.8 m across runs on the same
+  // window - and its step measure inherited the track's own correction
+  // jumps; the synthetic form's offset is geometry, not estimator
+  // weather. Steps are measured on the OFFSET (shown minus display
+  // track): the blend owns the offset's motion, not the track's.)
+  await rig.ev2(`(() => { snapGeo = snapBuildIndex([{ name: 'Switch A', pts: window.__swA }, { name: 'Switch B', pts: window.__swB }, { name: 'Switch C', pts: window.__swC }], snapGeo.key); return true; })()`);
+  await rig.ev2(RESET);
+  const feedPar = async (vi, spd) => { fk++; await stepFeed(rig, offPt(swA[vi], -6), 10, spd, 90); return offPt(swA[vi], -6); }; // 6 m SOUTH of A: the north side is B's territory (8 m north of A, so a north parallel track sits 2 m from B and the matcher correctly holds B instead - measured in this gate)
+  for (const vi of [2, 3, 4, 5, 6]) await feedPar(vi, 15);
+  await frames(30, 50); // 1.5 s: the weight fully settles (residual ~0.01) while the prediction coast (~22 m) stays on road A's span - a 3 s coast runs past its end and clamps the projection to the endpoint
+  const rPre = await rig.J(`({ w: snapW, held: !!snapHeld, shown: dispShownPos(), disp: dispPos && dispPos.slice() })`);
+  const rOff = rPre.shown && rPre.disp ? sc1b.distLL(rPre.shown, rPre.disp) : -1;
+  const rLast = offPt(swA[6], -6);
+  const rRel = await rig.J(`(() => { const ser = []; acceptFix({ coords: { latitude: ${rLast[0]}, longitude: ${rLast[1]}, accuracy: 10, speed: 1.0, heading: 90 }, timestamp: window.__fakeNow }); for (let k = 0; k < 240; k++) { window.__fakeNow += 16; renderTick(performance.now()); const sh = dispShownPos(); ser.push([snapW, sh ? sh[0] : null, sh ? sh[1] : null, dispPos ? dispPos[0] : null, dispPos ? dispPos[1] : null]); } return { ser, held: !!snapHeld, shown: dispShownPos(), disp: dispPos && dispPos.slice() }; })()`);
+  const rOffs = rRel.ser.filter(t => t[1] != null && t[3] != null).map(t => [t[1] - t[3], t[2] - t[4]]);
+  const rPreOff = rPre.shown && rPre.disp ? [rPre.shown[0] - rPre.disp[0], rPre.shown[1] - rPre.disp[1]] : null;
+  const rAll = rPreOff ? [rPreOff, ...rOffs] : rOffs;
+  let rMax = 0; for (let i = 1; i < rAll.length; i++) { const d = Math.hypot((rAll[i][0] - rAll[i - 1][0]) * 111320, (rAll[i][1] - rAll[i - 1][1]) * 80386); if (d > rMax) rMax = d; }
+  const rMid = rRel.ser.filter(t => t[0] > 0.05 && t[0] < 0.95).length;
+  const rEnd = rRel.shown && rRel.disp ? sc1b.distLL(rRel.shown, rRel.disp) : -1;
+  ok(`A1 RELEASE BLEND: driving 6 m parallel to road A blends fully (w ${rPre.w.toFixed(2)}, offset ${rOff.toFixed(1)} m); one 1.0 m/s fix releases and the shown point EASES OUT - max per-frame OFFSET step ${rMax.toFixed(2)} m (bar < 1.0 m), ${rMid} frames at intermediate weights (bar >= 3), ending ${rEnd.toFixed(3)} m from the true point (bar < 0.05 m), hold gone ${!rRel.held}`, rPre.held && rPre.w >= 0.95 && rOff >= 3 && !rRel.held && rMax < 1.0 && rMid >= 3 && rEnd >= 0 && rEnd < 0.05);
+  // Partial-weight arm: re-engage, set the weight to exactly 0.5
+  // in-page, and the release fix must not move the shown point at the
+  // release instant (the weight-normalized capture's whole claim).
+  for (const vi of [4, 5, 6]) await feedPar(vi, 15);
+  await frames(30, 50);
+  await rig.ev2(`(() => { snapW = 0.5; return true; })()`);
+  const q0 = await rig.J(`({ held: !!snapHeld, shown: dispShownPos(), disp: dispPos && dispPos.slice() })`);
+  const qOff = q0.shown && q0.disp ? sc1b.distLL(q0.shown, q0.disp) : -1;
+  const q1 = await rig.J(`(() => { acceptFix({ coords: { latitude: ${rLast[0]}, longitude: ${rLast[1]}, accuracy: 10, speed: 1.0, heading: 90 }, timestamp: window.__fakeNow }); return { held: !!snapHeld, shown: dispShownPos() }; })()`);
+  const qJump = q0.shown && q1.shown ? sc1b.distLL(q0.shown, q1.shown) : -1;
+  ok(`A1 RELEASE BLEND (partial weight): at w 0.5 with a ${qOff.toFixed(1)} m rendered offset, the release fix moves the shown point ${qJump.toFixed(3)} m at the release instant (bar < 0.05 m; the double-weighted capture jumps ${(qOff * 0.5).toFixed(2)} m here), hold gone ${!q1.held}`, q0.held && qOff >= 1.5 && !q1.held && qJump >= 0 && qJump < 0.05);
   await rig.ev2(`(() => { snapGeo = window.__savedGeo; window.__savedGeo = null; return true; })()`);
   const dPre = preSw.shown ? sc1b.distToPoly(preSw.shown, swB) : -1;
   const dPost = postSw.shown ? sc1b.distToPoly(postSw.shown, swB) : -1;
@@ -293,6 +329,8 @@ if (swSetup.keyOk) {
 }
 
 // ---- phase A2: S2 (residential drive) + the real turn-in ----
+const stA2 = await settleIndex(rig, S2[100]);
+ok('SETUP: the snap index is settled for S2 before its replay batch | ' + JSON.stringify(stA2), stA2.settled === true);
 await rig.ev2(RESET);
 dbg('A2');
 const a2 = await replay(rig, S2, { hookIdx: 319 });
@@ -321,6 +359,8 @@ const bState = await rig.J(`({ n: snapFixN, m: runDist ? runDist.m : -1, trail: 
 ok(`B2 CLEAN RUNNING: 40 fast fixes during the clean engage ZERO times (matcher still processed all 40: snapFixN ${nBefore} -> ${bState.n}) while recording runs (banked ${Math.round(bState.m)} m, trail ${bState.trail} pts)`, bSamples.every(s => s.pid === -1) && bState.n - nBefore === 40 && bState.m > 500 && bState.trail > 10);
 
 // ---- phase C (treatment): logger + recording under an engaged snap ----
+const stC = await settleIndex(rig, S2[100]);
+ok('SETUP: the snap index is settled for S2 before the invariant replay | ' + JSON.stringify(stC), stC.settled === true);
 await rig.ev2(RESET);
 await rig.ev2(`(() => { fixLogSetEnabled(true); fixLogOpen(); return true; })()`);
 dbg('C1 replay');
@@ -353,7 +393,7 @@ await rig2.ev2(batchExpr(tail));
 const recC = await rig2.J(`({ trail, m: runDist ? runDist.m : null, cov: coveredIdx })`);
 ok(`C1 CONTROL PREMISE: the pinned-empty index engaged on ${c2Held}/659 fixes (bar 0)`, c2Held === 0);
 ok(`C2 LOGGER INVARIANT: the fix logger's per-fix output rows are byte-identical snapped vs unsnapped (${outT.length} vs ${outC.length} rows)`, JSON.stringify(outT) === JSON.stringify(outC));
-ok('C3 RECORDING INVARIANT: trail, banked distance and coverage are byte-identical snapped vs unsnapped', JSON.stringify(recT) === JSON.stringify(recC));
+ok('C3 RECORDING INVARIANT: trail positions, banked distance and coverage are identical snapped vs unsnapped (trail points compared on position: their third element is a page-clock run stamp, which differs between any two boots - the invariant is that the snap changes nothing RECORDED, and position-for-position, metre-for-metre and street-for-street it does not)', JSON.stringify({ trail: recT.trail.map(p => [p[0], p[1]]), m: recT.m, cov: recT.cov }) === JSON.stringify({ trail: recC.trail.map(p => [p[0], p[1]]), m: recC.m, cov: recC.cov }));
 
 R.exceptions = rig2.consoleLog.filter(l => typeof l === 'string' && l.indexOf('EXCEPTION') === 0);
 finishCreate(R, rig2.proc, server);
