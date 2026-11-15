@@ -2,7 +2,7 @@
 <html lang="en" class="boot">
 <head>
 <meta charset="UTF-8">
-<meta http-equiv="Content-Security-Policy" content="default-src 'none'; script-src 'sha384-L69GcW6KElTaEh+J7G1D1vBRsFZPKC8jRYBGqN5CSeu6qYKA23IS+ln6ojQr6GpS' https://cdn.jsdelivr.net; style-src-elem 'sha384-tdcT0K4b/qWOuJ4hXqW5Xqo1uW+q6SqPhPtXqHrexa4ZntjcQMfoCYj7L80BUB1U' https://cdn.jsdelivr.net; style-src-attr 'unsafe-inline'; img-src 'self' data: blob: https://tiles.basemaps.cartocdn.com https://protomaps.github.io https://cdn.jsdelivr.net; connect-src 'self' https://tiles.basemaps.cartocdn.com https://protomaps.github.io https://cdn.jsdelivr.net https://nominatim.openstreetmap.org https://overpass-api.de https://overpass.kumi.systems; worker-src blob: 'self'; child-src blob: 'self'; font-src 'none'; manifest-src 'self'; base-uri 'none'; form-action 'none'; object-src 'none'">
+<meta http-equiv="Content-Security-Policy" content="default-src 'none'; script-src 'sha384-kKTH6ag3ESX8dmDbfSu2KlKGONZ6FmU57qKiDNyL0jvJMLneKyJapCV3lGNyMkXR' https://cdn.jsdelivr.net; style-src-elem 'sha384-tdcT0K4b/qWOuJ4hXqW5Xqo1uW+q6SqPhPtXqHrexa4ZntjcQMfoCYj7L80BUB1U' https://cdn.jsdelivr.net; style-src-attr 'unsafe-inline'; img-src 'self' data: blob: https://tiles.basemaps.cartocdn.com https://protomaps.github.io https://cdn.jsdelivr.net; connect-src 'self' https://tiles.basemaps.cartocdn.com https://protomaps.github.io https://cdn.jsdelivr.net https://nominatim.openstreetmap.org https://overpass-api.de https://overpass.kumi.systems; worker-src blob: 'self'; child-src blob: 'self'; font-src 'none'; manifest-src 'self'; base-uri 'none'; form-action 'none'; object-src 'none'">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="mobile-web-app-capable" content="yes">
@@ -3035,7 +3035,10 @@ function managePulse() {
   function init(gl, host) {
     GLM = gl;
     if (host) H = host; // adopt the passed host (the app passes the same GL_HOST it registered before this script evaluated; a one-argument init keeps the registered host)
-    if (!CUR) { rebuildData(); lastSig = stateSig(); }
+    sel = H.selStretch ? { name: H.selStretch.name, idx: H.selStretch.idx } : null;
+    const sig = stateSig();
+    if (!CUR || sig !== lastSig) { rebuildData(); lastSig = sig; }
+    else { const SC = buildSelC(); CUR.sel = SC.sel; CUR.selBand = SC.selBand; CUR.selEdges = buildSel('e'); }
     addStack();           // re-adds sources+layers on the fresh GL map and pushes CUR
   }
   function rebuildRoute() { // Beta 1.117: the app switched routes and rebuilt its own geometry (buildGeometry, app1) - rebuild the engine's from the host's current data and re-point every route-shaped source at it. The basemap and layers are untouched; only data moves.
