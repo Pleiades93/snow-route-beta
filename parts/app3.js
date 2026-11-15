@@ -1190,8 +1190,8 @@ function acceptFix(pos) {
   dispHoldFix(speed, ll); // Beta 1.194: the stillness hold's per-fix feed, at the same instant fixLogOut below reads dispPos - the basis the judging simulation was proven on. Display-only: nothing recorded reads its state.
   if (typeof pos.coords.heading === 'number' && speed && speed >= 1) { lastCourseAt = now; setFacing(pos.coords.heading, 0.5); } // moving: face along the course
   fixLogOut(fxEnt); // Beta 1.189: the estimator has run — filtered position, display position and smoothed heading join the raw fix in the log
-  const spd = $('spd');
-  if (speed && speed > 0.5) { spd.textContent = Math.round(speed * 3.6) + ' km/h'; spd.classList.remove('hidden'); } else spd.classList.add('hidden');
+  const spd = $('spdPill'); // Beta 1.203: the top-centre speed pill, written on the same per-fix cadence the retired bottom-left chip used. Visibility is the WATCH's alone now (startGps shows the pill, stopGps hides it - Andrew's gate is the location button), so a fix only ever updates the number: at rest, or with no speed reported, it reads 0 km/h rather than vanishing
+  spd.textContent = Math.round(Math.max(0, speed || 0) * 3.6) + ' km/h';
   if (firstFix && map && (gpsFromRun || watchId != null) && !followPaused) { map.jumpTo({ center: [sm[1], sm[0]], zoom: Math.max(map.getZoom(), 15) }); camVel = [0, 0]; camBVel = 0; camUncapped = false; } // Beta 1.198: a teleport voids the camera springs' velocity state — the glide starts from rest at the jumped centre // Beta 1.146 (census C4): the map && guard - this first-fix jump sat BEFORE the trail/coverage block below, so in the map-failure world its throw starved recording on fix 1 exactly as followCam's did from fix 2 on // Beta 1.116 (audit CG-115-02): a drag made while waiting for this fix already claimed the camera - the fix still records the position (gpsPos/dispPos above), and with dispPos set the syncCentreBtn rule lights the re-centre button as the way back; no jump, no clear
   // outside-route note (route box + 400 m)
   const inB = routeBox ? (sm[0] > routeBox.s - 0.0036 && sm[0] < routeBox.n + 0.0036 && sm[1] > routeBox.w - 0.005 && sm[1] < routeBox.e + 0.005) : true; // Beta 1.117: no box (no route / empty pack) - no area to be outside of, so no note
@@ -1279,6 +1279,7 @@ function startGps(fromRun, restart) {
   staleWatchTimer = setInterval(() => { if (watchId != null && Date.now() - lastFixAt > GPS_STALE_MS && lastFixAt) { const wasRunGps = gpsFromRun; stopGps(true); startGps(wasRunGps, true); } }, 15000); // Beta 1.48 (audit B02): capture run ownership BEFORE stopGps clears it - the restart used to always come back as non-run GPS, so a mid-run watcher lost its run. Beta 1.116 (CG-115-01): the restart also preserves followPaused (startGps's restart flag) - a dead zone must not hand the camera back
   $('gpsBtn').classList.add('on');
   $('gpsBtn').classList.toggle('rec', gpsFromRun); // Beta 1.49: recording wears red on the Locate tab; view-only wears blue
+  $('spdPill').textContent = '0 km/h'; $('spdPill').classList.remove('hidden'); // Beta 1.203: the speed pill's gate is the watch itself - it appears as location turns on, reading 0 until the first fix prices a speed; stopGps hides it again
 }
 function stopGps(silent) {
   watchGen++; // Beta 1.69: invalidate any callback still queued from this watcher
@@ -1288,7 +1289,7 @@ function stopGps(silent) {
   if (renderRaf) { cancelAnimationFrame(renderRaf); renderRaf = 0; }
   clearInterval(renderPump); renderPump = 0; stopCompass(); // Beta 1.64 (audit F08); Beta 1.65: the render loop stops with the watch
   if (map) pushGps(); // Beta 1.48 (audit B05): the facing beam is only built while watchId lives - without a fresh push the last beam stayed drawn after stop
-  $('gpsBtn').classList.remove('on'); $('gpsBtn').classList.remove('rec'); $('spd').classList.add('hidden'); syncCentreBtn(); // Beta 1.115: location off - the re-centre button goes with it
+  $('gpsBtn').classList.remove('on'); $('gpsBtn').classList.remove('rec'); $('spdPill').classList.add('hidden'); syncCentreBtn(); // Beta 1.115: location off - the re-centre button goes with it. Beta 1.203: the speed pill goes with it too - its gate is the watch
 }
 $('gpsBtn').addEventListener('click', () => { if (!tapGuard('gpsBtn')) return; if (watchId != null) { if (followPaused) { resumeFollow(); toast('Centred on you — following again', 1800); } else stopGps(); } else if (runStart) { startGps(true); toast('Clean in progress — recording your route', 2600); } else { startGps(false); toast('Location on — view only, not recording', 2400); } }); // Beta 1.49 (Andrew's rule): the Locate tab alone never records - with no clean open it is view-only; pressed during an open clean it resumes that clean's recording and says so. Beta 1.115 (Andrew): with the follow suspended, Locate means "take me back to my dot" and resumes it - off is the tap while following.
 $('centreBtn').addEventListener('click', () => { if (!tapGuard('centreBtn')) return; resumeFollow(); }); // Beta 1.115: the top-right re-centre button (below day/night) - visible only while suspended (syncCentreBtn)

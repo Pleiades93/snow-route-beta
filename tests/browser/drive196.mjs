@@ -16,7 +16,10 @@ await bootThrough(ev, poll); // boots end at the route menu - click through to a
 // peak in parts/brand-snow.js follows it too).
 // The offset audit this drive proves: #dock 74 -> 67, #spd 76 -> 69,
 // #attrChip 68 -> 61 (the floaters that hug the bar's top edge ride the -7,
-// rendered gaps unchanged); .banner 236, #mapNote 240, #toast 120 stay
+// rendered gaps unchanged); .banner 236, #mapNote 240, #toast 120 stay.
+// (The #spd chip itself was REMOVED in Beta 1.203 - replaced by the
+// top-centre speed pill - so its F6 gap check retired with it; drive198
+// proves the pill. The dock and attribution gaps below still stand.)
 // (the banners clear the whole bottom chrome stack, not the bar alone; the
 // toast is a screen-level placement that must also read over the menus).
 const R = { checks: [] };
@@ -33,7 +36,7 @@ const geom = () => J(`(() => { const r = (id) => { const e = document.getElement
   const bar = r('tabBar'); const cs = getComputedStyle(document.getElementById('tabBar')); const ci = getComputedStyle(document.querySelector('#tabBar .tabItem'));
   const gap = (id) => { const f = r(id); return f && f.h > 0 ? Math.round((bar.y - f.b) * 10) / 10 : null; };
   return { vh: window.innerHeight, bar, barPadT: cs.paddingTop, barPadB: cs.paddingBottom, itemPadT: ci.paddingTop, itemPadB: ci.paddingBottom,
-    dock: r('dock'), attr: r('attrChip'), spd: r('spd'), gapDock: gap('dock'), gapSpd: gap('spd'), gapAttr: gap('attrChip'),
+    dock: r('dock'), attr: r('attrChip'), gapDock: gap('dock'), gapAttr: gap('attrChip'),
     bannerBottom: getComputedStyle(document.getElementById('suggest')).bottom, noteBottom: getComputedStyle(document.getElementById('mapNote')).bottom,
     toastBottom: getComputedStyle(document.getElementById('toast')).bottom,
     items: [...document.querySelectorAll('#tabBar .tabItem')].map(e => { const b = e.getBoundingClientRect(); return { id: e.id, x: b.x, y: b.y, w: b.width, h: b.height, r: b.right, b: b.bottom }; }) }; })()`);
@@ -134,17 +137,10 @@ await ev(`(() => { navigator.geolocation.watchPosition = () => 4242; navigator.g
   }
   ok('T5 Clear fires from all four corners and the centre (marks wiped each time) | ' + JSON.stringify(seq), seq.every(Boolean));
 }
-// the speed chip's gap, with GPS on (its shown state) after the T1 cycle
-// ended OFF: one centre press turns Locate back on.
-{
-  await pressAt(...(await (async () => { const rc = await itemRect('gpsBtn'); return [rc.x + rc.w / 2, rc.y + rc.h / 2]; })()));
-  const shown = await poll(`(() => { const e = document.getElementById('spd'); const b = e.getBoundingClientRect(); return b.height > 0; })()`, 8000);
-  if (shown !== true) await ev(`document.getElementById('spd').classList.remove('hidden'); true`); // no fix arrived in the rig: show the chip to measure its CSS position (the offset is the property under test)
-  await sleep(400);
-  G = await geom();
-  ok('F6 speed chip gap above the bar top edge is the pre-change rendered gap: 18px (chip rode 76 -> 69) | gap ' + G.gapSpd, G.gapSpd !== null && Math.abs(G.gapSpd - 18) <= 1);
-  const rc = await itemRect('gpsBtn'); await pressAt(rc.x + rc.w / 2, rc.y + rc.h / 2); // Locate back off
-}
+// F6 (the speed chip's gap over the bar) RETIRED in Beta 1.203: the chip it
+// measured was removed whole and replaced by the top-centre speed pill,
+// whose placement drive198 proves. The T1 cycle above ended with Locate
+// OFF, as it began - nothing here needs it back on.
 
 // ---- the same bar, night --------------------------------------------------
 await tapById(ev, 'nightBtn'); await sleep(800);

@@ -785,7 +785,7 @@ $('stDel').addEventListener('click', async () => {
 });
 // ---- About / What's new ----
 const WHATSNEW = { // the curated in-app notes: plain words, LATEST RELEASE ONLY (Beta 1.114, Andrew: the accumulated list cluttered the About pane). A release REPLACES this entry with its own in the same change - it never accumulates; the full history lives in CHANGELOG.md, not the app
-  v: 'Beta 1.202', items: ["The streets-done pill under the Start button now only shows while a clean is running."] };
+  v: 'Beta 1.203', items: ["The map now settles into a tilted view when your route loads and when you tap Home — same zoom as before, just angled.", "Your speed now sits in a pill at the top centre of the map whenever location is on."] };
 
 function renderAbout() {
   const cur = $('ver').textContent.trim();
@@ -809,7 +809,14 @@ document.addEventListener('pointerdown', e => {
 ['finModal', 'noteModal'].forEach(id => { const mEl = $(id); mEl.addEventListener('pointerdown', e => { if (e.target === mEl) mEl.classList.add('hidden'); }); });
 function applyNight() { document.body.classList.toggle('night', isNight()); const tc = document.querySelector('meta[name="theme-color"]'); if (tc) tc.setAttribute('content', isNight() ? '#14171d' : '#eceff2'); $('nightBtn').innerHTML = isNight() ? ICONS.sun : ICONS.moon; } // the button shows where it TAKES you (Beta 1.28, Andrew): in day it offers Night (moon), in night it offers Day (sun). Beta 1.88: the button is the round chip at top-right - the icon alone flips, there is no label
 $('nightBtn').addEventListener('click', () => { if (!tapGuard('nightBtn')) return; setThemeOverride(!isNight()); applyNight(); setBasemap(); }); // Beta 1.77: the button sets a session override - the sun takes over again at the next sunrise/sunset or the next full app open (theme block, app1)
-$('homeBtn').addEventListener('click', () => { if (!tapGuard('homeBtn')) return; if (!routeBox) return; map.fitBounds([[routeBox.w, routeBox.s], [routeBox.e, routeBox.n]], { padding: 28 }); }); // Beta 1.117: no route loaded (or an empty pack) - no box to frame
+function goHomeView() { // Beta 1.203 (Andrew): the DEFAULT view - the route framed exactly as the flat fit frames it, tilted to 45 degrees, north up. The fit is computed FLAT (cameraForBounds with no pitch or bearing options is the flat fit: its centre and zoom are the fitBounds centre and zoom this replaces, bit for bit), and the tilt is applied AT that centre/zoom by the ease - never folded into the fit, because a pitch-aware fit recomputes a different zoom and Andrew's call was "keep the zoom level the same, just tilt it". Home and a route switch land here; the load-in flight (introToRoute) lands on the same view.
+  if (!routeBox) return;
+  const b = [[routeBox.w, routeBox.s], [routeBox.e, routeBox.n]];
+  let fit = null; try { fit = map.cameraForBounds(b, { padding: 28 }); } catch (e) {}
+  if (fit && fit.center && typeof fit.zoom === 'number') { try { map.easeTo({ center: fit.center, zoom: fit.zoom, pitch: 45, bearing: 0 }); return; } catch (e) {} }
+  try { map.fitBounds(b, { padding: 28 }); map.jumpTo({ pitch: 45, bearing: 0 }); } catch (e) {}
+}
+$('homeBtn').addEventListener('click', () => { if (!tapGuard('homeBtn')) return; if (!routeBox) return; goHomeView(); }); // Beta 1.117: no route loaded (or an empty pack) - no box to frame
 // ===== SERVICE WORKER + BOOT =====
 if ('serviceWorker' in navigator) {
   navigator.serviceWorker.register('sw.js').catch(e => { window.__swErr = (e && e.name) || 'error'; }); // Beta 1.53: a refused registration (e.g. policy-blocked) used to vanish into this catch - record WHY; online use is unaffected either way, but the offline preload below refuses to run without the worker and can now say why
@@ -1067,12 +1074,12 @@ if (__splashEl && !window.matchMedia('(prefers-reduced-motion: reduce)').matches
 function introToRoute() { // Beta 1.77 (Andrew): a pick opens WIDE on the route's area and flies in to the fitted view as the splash leaves, instead of the map simply appearing already zoomed in. Beta 1.81 (Andrew): the wide view dwells longer on the Route 5W point of interest and the flight in is slower and gentler - the old one was over before he could take the map in
   if (!routeBox) return; // Beta 1.117: an empty pack has no area to fly to - the map simply stays where it is
   const b = [[routeBox.w, routeBox.s], [routeBox.e, routeBox.n]];
-  const fit0 = () => { try { map.fitBounds(b, { padding: 28, animate: false }); } catch (e) {} };
+  const fit0 = () => { try { map.fitBounds(b, { padding: 28, animate: false }); map.jumpTo({ pitch: 45 }); } catch (e) {} }; // Beta 1.203: the no-flight fallback (reduced motion, no cameraForBounds) lands on the same tilted default, instantly - the flat fit first, the tilt applied at its centre/zoom
   if (!map.cameraForBounds || (window.matchMedia && matchMedia('(prefers-reduced-motion: reduce)').matches)) { fit0(); return; }
   let fit = null; try { fit = map.cameraForBounds(b, { padding: 28 }); } catch (e) {}
   if (!fit || !fit.center || typeof fit.zoom !== 'number') { fit0(); return; }
   try { map.jumpTo({ center: fit.center, zoom: Math.max(8, fit.zoom - 3) }); } catch (e) { fit0(); return; }
-  setTimeout(() => { if (!map) return; try { map.flyTo({ center: fit.center, zoom: fit.zoom, duration: 3000, curve: 1.2, essential: false }); } catch (e) {} }, 1500); // 1500ms: the splash's exit (780ms) has finished and the wide view - the Route 5W point of interest - has had a moment to sit, before the slow flight in
+  setTimeout(() => { if (!map) return; try { map.flyTo({ center: fit.center, zoom: fit.zoom, pitch: 45, duration: 3000, curve: 1.2, essential: false }); } catch (e) {} }, 1500); // 1500ms: the splash's exit (780ms) has finished and the wide view - the Route 5W point of interest - has had a moment to sit, before the slow flight in. Beta 1.203 (Andrew): the flight tilts into the 45-degree default as it comes in - centre and zoom are the flat fit's own, unchanged
 }
 function resetSwitchSession() { // Beta 1.117 (F3/F4): the ONE reset block a route switch runs - everything that names the OUTGOING route's session dies here, before the new pack's geometry or state exists. Runs after the F2 flush (loadRoute calls collapseNoteEditor first, so an open note draft has already finalized against the outgoing street).
   // Beta 1.148 (Tranche 5, A4(ii)): the reset knowledge now lives with the state
@@ -1115,7 +1122,7 @@ function loadRoute(id) {
     if (typeof glOk !== 'undefined' && glOk && window.GLP) {
       if (!map.getSource('centres')) window.GLP.init(map, GL_HOST); else if (!switching) window.GLP.sync();
     }
-    if (switching) { try { addReferenceLayers(); } catch (e) {} if (routeBox) { try { map.fitBounds([[routeBox.w, routeBox.s], [routeBox.e, routeBox.n]], { padding: 28 }); } catch (e) {} } } // a switch frames the new route at once - the wide dwell + slow flight (introToRoute) is boot choreography only
+    if (switching) { try { addReferenceLayers(); } catch (e) {} if (routeBox) goHomeView(); } // a switch frames the new route at once, on the same tilted default Home lands on (Beta 1.203) - the wide dwell + slow flight (introToRoute) is boot choreography only
     else introToRoute();
   }
   refreshAll(); checkStale(); syncWake();
