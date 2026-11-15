@@ -414,7 +414,7 @@ body.snow-scene #routeMenu.boot { background: transparent; } /* Beta 1.159: whil
 #routeMenu .routeArea { font-weight: 500; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; max-width: 100%; } /* Beta 1.159: the sub line takes the pill sub-line's weight (the .rmBtn .m-sub 500; its 13px size and .75 ink already matched). Sweep re-run E-04: the area holds one line (ellipsis past that) - the second half of the meta-height clamp above. max-width: 100% is load-bearing (Codex P2 on the batch's PR): .routeMeta centres its children (align-items: center), so without it a long subtitle's box grows to the meta's full width instead of the padded column and the ellipsis never engages - the text slid into the Delete/chevron zone exactly like the name did */
 #routeMenu .routeRow:active { background: rgba(255,255,255,.28); }
 #routeMenu .routeBadge { background: #fff; color: #2c4ad2; }
-#routeMenu .routeNameRow { display: flex; align-items: center; justify-content: center; gap: 8px; min-width: 0; } /* Beta 1.206: name + Currently-loaded badge as ONE centred group in the name's line - beside, never on top */
+#routeMenu .routeNameRow { display: flex; align-items: center; justify-content: center; gap: 8px; min-width: 0; max-width: 100%; } /* Beta 1.206: name + Currently-loaded badge as ONE centred group in the name's line - beside, never on top */
 #routeMenu .routeNameRow .routeName { min-width: 0; } /* a long name shrinks and clamps inside the group instead of sliding under the badge */
 #routeMenu .routeNameRow .routeBadge { flex: none; }
 /* Beta 1.118 (Step 2, Andrew's approved mockups): the hybrid create-a-route
