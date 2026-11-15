@@ -2,7 +2,7 @@
 <html lang="en" class="boot">
 <head>
 <meta charset="UTF-8">
-<meta http-equiv="Content-Security-Policy" content="default-src 'none'; script-src 'sha384-M9hH80h8yUI5QvAkOBm4VbBOG8hwXbdkAVYrpoqqrjgaULlVldSf0Wr5k3Mh6MkE' https://cdn.jsdelivr.net; style-src-elem 'sha384-4YbSDZvelcW6SvWWZwVFUbiJcKHVFEKQM6IChgMcdqSwAa7HC/C15oQ72KOLn+cg' https://cdn.jsdelivr.net; style-src-attr 'unsafe-inline'; img-src 'self' data: blob: https://tiles.basemaps.cartocdn.com https://protomaps.github.io https://cdn.jsdelivr.net; connect-src 'self' https://tiles.basemaps.cartocdn.com https://protomaps.github.io https://cdn.jsdelivr.net https://nominatim.openstreetmap.org https://overpass-api.de https://overpass.kumi.systems; worker-src blob: 'self'; child-src blob: 'self'; font-src 'none'; manifest-src 'self'; base-uri 'none'; form-action 'none'; object-src 'none'">
+<meta http-equiv="Content-Security-Policy" content="default-src 'none'; script-src 'sha384-M9hH80h8yUI5QvAkOBm4VbBOG8hwXbdkAVYrpoqqrjgaULlVldSf0Wr5k3Mh6MkE' https://cdn.jsdelivr.net; style-src-elem 'sha384-tdcT0K4b/qWOuJ4hXqW5Xqo1uW+q6SqPhPtXqHrexa4ZntjcQMfoCYj7L80BUB1U' https://cdn.jsdelivr.net; style-src-attr 'unsafe-inline'; img-src 'self' data: blob: https://tiles.basemaps.cartocdn.com https://protomaps.github.io https://cdn.jsdelivr.net; connect-src 'self' https://tiles.basemaps.cartocdn.com https://protomaps.github.io https://cdn.jsdelivr.net https://nominatim.openstreetmap.org https://overpass-api.de https://overpass.kumi.systems; worker-src blob: 'self'; child-src blob: 'self'; font-src 'none'; manifest-src 'self'; base-uri 'none'; form-action 'none'; object-src 'none'">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="mobile-web-app-capable" content="yes">
@@ -61,7 +61,7 @@
   /* Selection strip (Beta 1.14, Andrew): part of the header, not a floating card - it grows the top menu
      only while a street is selected, so Mark completed never floats over the map or fights the buttons. */
   #selPop .selTxt { min-width: 0; }
-  #selPop .selActs { display: flex; gap: 5px; align-items: center; }
+  #selPop .selActs { display: flex; gap: 5px; align-items: center; min-height: 40px; } /* min-height 40px (the batch's own gate catch, drive128 M7b): the note button is 40px tall and shows only in the single-section state, so without the reserve the card stood 100.5px for one section and 96.5px for many - the Beta 1.34 one-size invariant. The row now holds 40px in both states */
   #selPop .selActs #selBtn { flex: 1; }
   #selPop .selActs #selAllBtn { flex: 1; }
   #selName { white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }

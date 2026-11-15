@@ -171,6 +171,22 @@ try {
     ok(`E-06 note icon fits its content box (${tag})`, e06.contentW >= e06.svgW - 0.5, `content ${e06.contentW.toFixed(1)}px vs icon ${e06.svgW.toFixed(1)}px`);
     ok(`E-06 action row does not overflow (${tag})`, e06.actsScrollW <= e06.actsClientW + 0.5, `scrollWidth ${e06.actsScrollW} vs clientWidth ${e06.actsClientW}`);
     ok(`E-06 Clear stays inside the card (${tag})`, e06.btns.selClearBtn.right <= e06.spRight - 0.5 && e06.btns.selClearBtn.x >= e06.spX, `Clear right ${e06.btns.selClearBtn.right.toFixed(1)} vs card right ${e06.spRight.toFixed(1)}`);
+    // The card is ONE fixed size for one section or many (Beta 1.34,
+    // pinned by drive128 M7b): the note button (40px) shows only in the
+    // single state, so the action row must reserve its height in both.
+    const m7b = await page.evaluate(async () => {
+      const sleep = ms => new Promise(r => setTimeout(r, ms));
+      const pop = () => { const r = document.getElementById('selPop').getBoundingClientRect(); return { w: r.width, h: r.height }; };
+      selectStretch('Velmar', 0, STRETCH.Velmar.line[10]); await sleep(350);
+      const single = pop();
+      tapStretch('Velmar', 1, STRETCH.Velmar.line[10]); await sleep(350);
+      const multi = pop();
+      deselect();
+      return { single, multi };
+    });
+    ok(`E-06 card size identical for one section or many (${tag})`,
+      Math.abs(m7b.multi.w - m7b.single.w) <= 1 && Math.abs(m7b.multi.h - m7b.single.h) <= 1,
+      `single ${m7b.single.w.toFixed(1)}x${m7b.single.h.toFixed(1)} vs multi ${m7b.multi.w.toFixed(1)}x${m7b.multi.h.toFixed(1)}`);
     await ctx.close();
   }
 
