@@ -2,7 +2,7 @@
 <html lang="en" class="boot">
 <head>
 <meta charset="UTF-8">
-<meta http-equiv="Content-Security-Policy" content="default-src 'none'; script-src 'sha384-kKTH6ag3ESX8dmDbfSu2KlKGONZ6FmU57qKiDNyL0jvJMLneKyJapCV3lGNyMkXR' https://cdn.jsdelivr.net; style-src-elem 'sha384-tdcT0K4b/qWOuJ4hXqW5Xqo1uW+q6SqPhPtXqHrexa4ZntjcQMfoCYj7L80BUB1U' https://cdn.jsdelivr.net; style-src-attr 'unsafe-inline'; img-src 'self' data: blob: https://tiles.basemaps.cartocdn.com https://protomaps.github.io https://cdn.jsdelivr.net; connect-src 'self' https://tiles.basemaps.cartocdn.com https://protomaps.github.io https://cdn.jsdelivr.net https://nominatim.openstreetmap.org https://overpass-api.de https://overpass.kumi.systems; worker-src blob: 'self'; child-src blob: 'self'; font-src 'none'; manifest-src 'self'; base-uri 'none'; form-action 'none'; object-src 'none'">
+<meta http-equiv="Content-Security-Policy" content="default-src 'none'; script-src 'sha384-i15ugC9QvvHgIb/IIvzqts4xtglW6BHwj5K6LrIbtmLxOWV+uC1dq0hPBGWY/0Zo' https://cdn.jsdelivr.net; style-src-elem 'sha384-tdcT0K4b/qWOuJ4hXqW5Xqo1uW+q6SqPhPtXqHrexa4ZntjcQMfoCYj7L80BUB1U' https://cdn.jsdelivr.net; style-src-attr 'unsafe-inline'; img-src 'self' data: blob: https://tiles.basemaps.cartocdn.com https://protomaps.github.io https://cdn.jsdelivr.net; connect-src 'self' https://tiles.basemaps.cartocdn.com https://protomaps.github.io https://cdn.jsdelivr.net https://nominatim.openstreetmap.org https://overpass-api.de https://overpass.kumi.systems; worker-src blob: 'self'; child-src blob: 'self'; font-src 'none'; manifest-src 'self'; base-uri 'none'; form-action 'none'; object-src 'none'">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="mobile-web-app-capable" content="yes">
@@ -1009,7 +1009,16 @@ const STREETSET = new Set();
 // sanitizers, same order), wrapped.
 let doneSet = new Set(), doneTimes = {}, doneVia = {}, notes = {}, history = [], runStart = 0, trail = [], trailSessions = [], coveredIdx = {}, pieces = {}, pieceTimes = {};
 /** @param {HistoryEntry[]} list @param {HistoryEntry} entry @returns {HistoryEntry[]} */ function appendHistory(list, entry) { return [...list, entry]; } // Beta 1.167 (run/pace fix round, B1 - Andrew's requirement, run/pace audit RP-03/RP-01): THE HISTORY CAP IS GONE. Through 1.166 the archive was capped at 10 cleans per route - trimHistory (save), trimHistoryForFinish (finish) and capHistoryList (load + app4's restore) enforced one eviction rule (oldest non-full first, else oldest overall) at four points, and clean #11 silently erased an older clean; an interrupted finish at the cap could lose the evicted clean for good even though the finish itself rolled back. All four points are retired together: this append never drops, saveHistory writes history whole, loadRouteState below keeps everything its (linear) sanitizer passes, and app4's pushField stores a backup's history whole. The 1.152 NV round's crafted-oversize protection (NV4) is re-homed, not lost: the quadratic trim it defended against no longer exists, every remaining history consumer is linear (the load sanitizer, the save stringify, the pace render, the backup scan), and an oversize planted value is bounded by localStorage's own quota and the restore's verified write set. Retention is fixture-proven in tests/browser/selftest-history.mjs, the cap's absence in selftest-nv1152.mjs, and both at page level in drive177/drive186.
-/** @returns {boolean} */ function saveHistory() { return lsSet(LS.hist, JSON.stringify(history)); } // Beta 1.63 (audit F04): the delete-clean handler branches on this. Beta 1.167 (B1): no trim on the way out - history is written whole, however long it grows
+let histRawList = null, histRawView = null; // 2026-11-15 (denylist fix round, A-05): the load-time history snapshot - histRawList is the raw stored array (the second parse in loadRouteState), histRawView runs parallel to it: the view entry each raw entry produced at load, or null when the sanitizer dropped it. Writers persist historyForWrite(...), never the bare view: a load-time strip is a view, never a write (the rule dropPhantom already honours for its rollback write).
+/** @param {HistoryEntry[]} list @returns {HistoryEntry[]} */ function historyForWrite(list) { // 2026-11-15 (A-05): the array a history writer may persist. Raw entries the sanitizer dropped ride back verbatim (invisible in the view, undeletable from it, still storage's); surviving entries are written in their RAW form - entries are never mutated after load (deletes splice the array, finishes append), so raw is the stored truth and the strip never becomes permanent; entries appended since load ride at the end, in view order. A surviving entry missing from `list` was deleted by the user this session and stays deleted. No snapshot (no load ran for this slot, or the route was unloaded): the list is the whole truth and is written as-is.
+  if (!histRawList || !histRawView) return list;
+  const alive = new Set(list); const seen = new Set(); const out = [];
+  for (let i = 0; i < histRawList.length; i++) { const v = histRawView[i]; if (v == null) { out.push(histRawList[i]); continue; } seen.add(v); if (alive.has(v)) out.push(histRawList[i]); }
+  for (const h of list) if (!seen.has(h)) out.push(h);
+  return out;
+}
+/** @returns {void} */ function resetHistorySnapshot() { histRawList = null; histRawView = null; } // 2026-11-15 (A-05): unloadRouteToBoot (app4) calls this when it empties the route state - the snapshot dies with the route it describes, and a stale one must never merge into another route's slot. A call, not a foreign write: app4 never assigns app1's bindings directly (the foreign-write census discipline).
+/** @returns {boolean} */ function saveHistory() { return lsSet(LS.hist, JSON.stringify(historyForWrite(history))); } // Beta 1.63 (audit F04): the delete-clean handler branches on this. Beta 1.167 (B1): no trim on the way out - history is written whole, however long it grows
 let startDirty = false; // Beta 1.92 (deep audit F05): a failed start write/delete arms this retry, walked by the flushAux heartbeat until it lands - a stale start key must never resurrect a finished run on the next boot
 let snapDirty = false; // Beta 1.94 (deep audit SR-193-02): the same retry discipline for the persisted pre-Start snapshot (saveSnap, app3) - a failed snapshot write is retried by flushAux until it lands
 /** @returns {StorageOutcome} */ function saveStart() { const ok = runStart ? lsSet(LS.start, String(runStart)) : lsDel(LS.start); startDirty = !ok; return ok ? storeOk() : storeFail('start', true); } // Beta 1.57: reports its result like every other write, for the saveAll contract
@@ -1046,14 +1055,24 @@ const rawHistory = parseJ(_histText, []); // Beta 1.170 (Carbon fix round Phase 
 // History (production): chronological (oldest first); items is a street->time MAP (legacy array entries migrate to it).
 // Sanitized at load: real entries only, real streets only, times null or parseable - anything else is dropped, never crashes.
 if (!Array.isArray(history)) history = [];
-history = history.filter(h => h && typeof h === 'object' && !Array.isArray(h) && !isNaN(Date.parse(h.at)) && h.items && typeof h.items === 'object');
-for (const h of history) {
-  const m = {};
-  if (Array.isArray(h.items)) { for (const n of h.items) if (typeof n === 'string' && STREETSET.has(n)) m[n] = (h.times && typeof h.times[n] === 'string' && !isNaN(Date.parse(h.times[n]))) ? h.times[n] : null; }
-  else { for (const n of Object.keys(h.items)) { const t = h.items[n]; if (STREETSET.has(n) && (t === null || (typeof t === 'string' && !isNaN(Date.parse(t))))) m[n] = t; } }
-  h.items = m;
+// 2026-11-15 (denylist fix round, A-05): the sanitizer runs as ONE indexed pass over the parsed array - the same predicates and the same items rewrite as the filter/map/filter it replaces, in the same order - and records the A-05 snapshot as it goes: histRawList is the raw parse (rawHistory below, the same text parsed twice, so index i is the same entry in both), histRawView[i] is the view entry raw entry i produced, or null when the pass dropped it. The view the user works with is unchanged; the snapshot is what lets the writers keep the strip a view (historyForWrite).
+histRawList = Array.isArray(rawHistory) ? rawHistory : [];
+histRawView = [];
+{ const _view = [];
+  for (let i = 0; i < history.length; i++) {
+    const h = history[i]; let v = null;
+    if (h && typeof h === 'object' && !Array.isArray(h) && !isNaN(Date.parse(h.at)) && h.items && typeof h.items === 'object') {
+      const m = {};
+      if (Array.isArray(h.items)) { for (const n of h.items) if (typeof n === 'string' && STREETSET.has(n)) m[n] = (h.times && typeof h.times[n] === 'string' && !isNaN(Date.parse(h.times[n]))) ? h.times[n] : null; }
+      else { for (const n of Object.keys(h.items)) { const t = h.items[n]; if (STREETSET.has(n) && (t === null || (typeof t === 'string' && !isNaN(Date.parse(t))))) m[n] = t; } }
+      h.items = m;
+      if (Object.keys(m).length > 0) v = h;
+    }
+    histRawView.push(v);
+    if (v) _view.push(v);
+  }
+  history = _view;
 }
-history = history.filter(h => Object.keys(h.items).length > 0);
 // Beta 1.167 (B1): NO load cap (through 1.166 this line trimmed a planted oversize history to the writers' 10 with the linear capHistoryList). History is retained whole now; the sanitizer above is linear in the stored size, so a planted oversize array costs one linear pass and is bounded by the storage quota itself - and the quadratic trim such an array used to threaten no longer exists (appendHistory).
 // Run start (production): epoch milliseconds, stored as a bare digit string (NOT JSON).
 runStart = 0;
@@ -1108,6 +1127,7 @@ pieces = {}; pieceTimes = {};
   const dropPhantom = () => { // the verified rollback write: storage loses the signature entry only (when the signature came from the raw array, everything else storage holds stays byte-for-byte - a load-time strip is a view, never a write); memory drops the phantom too when the sanitized tail IS that entry (same run identity), and needs no drop when the sanitizer already removed it
     const src = (sig === rawLast && rawLast !== null) ? rawList : history;
     if (!txSet(LS.hist, JSON.stringify(src.slice(0, -1))).ok) return false;
+    if (src === rawList && histRawList === rawList) { histRawList.pop(); histRawView.pop(); } // 2026-11-15 (A-05): the A-05 snapshot pops in step with the raw array this write just shortened, so a later ordinary save cannot resurrect the phantom from the snapshot
     if (last && last.runId && +last.runId === lastMs) history = history.slice(0, -1);
     return true;
   };
@@ -1209,7 +1229,7 @@ let primaryDirty = false; // Beta 1.94 (deep audit SR-193-05): a failed saveAll 
     if (!lsSet(LS.times, JSON.stringify(doneTimes)) && !failedKey) failedKey = 'times';
     if (!lsSet(LS.via, JSON.stringify(doneVia)) && !failedKey) failedKey = 'via';
     if (!lsSet(LS.notes, JSON.stringify(notes)) && !failedKey) failedKey = 'notes';
-    if (!lsSet(LS.hist, JSON.stringify(history)) && !failedKey) failedKey = 'history';
+    if (!lsSet(LS.hist, JSON.stringify(historyForWrite(history))) && !failedKey) failedKey = 'history'; // 2026-11-15 (A-05): the ordinary save writes the merge, never the bare view - the load strip stays a view
     if (!saveStart().ok && !failedKey) failedKey = 'start';
     if (!lsSet(LS.cov, JSON.stringify(coveredIdx)) && !failedKey) failedKey = 'coverage';
   }
@@ -3943,8 +3963,9 @@ function refRun() { // newest qualifying clean wins (history is chronological, s
   return null;
 }
 function cleanCount(h) { const items = (h && h.items) || {}; return Object.keys(items).filter(n => STREETSET.has(n)).length; } // Beta 1.169 (Carbon fix round, B-07): THE count of a clean's streets, in one place - the streets the clean covers: its item keys that belong to the route, timestamp or not (buildSnap writes a null time for a completed street whose moment was not recorded; the street was still cleaned, and openClean lists it). Through 1.168 refRun and the pace/detail headers counted raw keys while histDur counted only timestamped streets, so the same clean could read '34 streets' in one line and '33 of 34' in the next.
+function snapHasStamps(h) { const T = h && h.sides && h.sides.t; if (!T || typeof T !== 'object') return false; for (const n of Object.keys(T)) { const arr = T[n]; if (!Array.isArray(arr)) continue; for (const pr of arr) { if (Array.isArray(pr) && ((typeof pr[0] === 'string' && !isNaN(Date.parse(pr[0]))) || (typeof pr[1] === 'string' && !isNaN(Date.parse(pr[1]))))) return true; } } return false; } // 2026-11-15 (denylist fix round, B-02): does the entry's stamp journal hold at least one real moment? A finish after a state restore archives with every stamp null, so buildSnap's window sum comes out 0 over NO evidence - that 0 was never measured. A measured 0 (the RP-05 case: real stamps, all before Start) always carries stamps.
 function cleanWorkM(h) { // side-metres a saved clean actually covered
-  if (h && typeof h.workM === 'number' && isFinite(h.workM) && h.workM >= 0) return h.workM; // Beta 1.167 (run/pace fix round, B2): cleans archived by 1.167+ carry the run-attributed figure Finish measured (buildSnap's workM) - it is read VERBATIM, so pre-Start work never counts (RP-05), a later geometry edit cannot re-price the clean (RP-06), and a partially-recorded sides map cannot short-circuit into an undercount (RP-09). Legacy entries (no workM) derive below, exactly as they always have.
+  if (h && typeof h.workM === 'number' && isFinite(h.workM) && h.workM >= 0 && (h.workM > 0 || snapHasStamps(h))) return h.workM; // Beta 1.167 (run/pace fix round, B2): cleans archived by 1.167+ carry the run-attributed figure Finish measured (buildSnap's workM) - it is read VERBATIM, so pre-Start work never counts (RP-05), a later geometry edit cannot re-price the clean (RP-06), and a partially-recorded sides map cannot short-circuit into an undercount (RP-09). 2026-11-15 (denylist fix round, B-02): the one exception is a stored 0 with no stamps anywhere in the entry - the finish-after-a-restore shape, where buildSnap's window sum measured nothing; that 0 is not trusted, and the entry derives below from its side bits like a legacy one. Legacy entries (no workM) derive below, exactly as they always have.
   const items = (h && h.items) || {}; let si = 0; for (const n of Object.keys(items)) if (STRETCH[n]) si += STRETCH[n].total * 2; // the items derivation: every completed street at both sides of its full length
   if (h && h.sides && h.sides.p && typeof h.sides.p === 'object') { let s = 0; for (const n of STREETNAMES) { const p = h.sides.p[n]; if (Array.isArray(p) && STRETCH[n]) { STRETCH[n].parts.forEach((part, i) => { const v = p[i] | 0; const L = segLenM(part); if (v & 1) s += L; if (v & 2) s += L; }); } else if (n in items && STRETCH[n]) s += STRETCH[n].total * 2; } if (s > 0) return s; } // Beta 1.169 (Carbon fix round, B-06): the sides branch used to price ONLY the sides map and return it the moment it priced anything - a PARTIALLY-recorded map (some completed streets carry no sides entry at all) short-circuited into the very RP-09 undercount the stored workM exists to prevent, alive in the legacy branch. The merge is now PER STREET: a street WITH a sides entry is priced by its bits (authoritative - it alone sees partial-side work, including on streets never completed), a completed street MISSING from the map falls back to the items derivation for that street.
   return si;
@@ -4432,7 +4453,7 @@ function finishRun() {
   // leaves a signature reconcileInterruptedFinish resolves at boot (CG-196-04).
   const fSteps = [];
   fSteps.push({ name: 'finclean', write: () => txSet(LS.finclean, JSON.stringify({ run: runStart || 0, at: finishAt })), undo: () => txDel(LS.finclean) }); // Beta 1.141 (Package A, DA-10): the metadata-cleanup obligation is the transaction's FIRST step, so every prefix reconciliation can call a committed finish carries it, and a rolled-back finish undoes it with the rest. The post-commit saveAll below normally discharges it at once; if those writes fail and the page dies first, completeFinishCleanup (app1) completes the cleanup at the next load instead of leaving the finished run's notes/coverage live forever.
-  if (archiving) fSteps.push({ name: 'archive', write: () => txSet(LS.hist, JSON.stringify(newHist)), undo: () => txSet(LS.hist, JSON.stringify(prevHist)) });
+  if (archiving) fSteps.push({ name: 'archive', write: () => txSet(LS.hist, JSON.stringify(historyForWrite(newHist))), undo: () => txSet(LS.hist, JSON.stringify(historyForWrite(prevHist))) }); // 2026-11-15 (denylist fix round, A-05): the archive write and its rollback write the historyForWrite merge, not the bare view - a finish is an ordinary save for the entries it does not touch, and the load strip stays a view through it and through its undo
   fSteps.push({ name: 'sides', write: () => txSet(LS.sides, JSON.stringify({ p: clearedPieces, t: clearedTimes })), undo: () => prevSidesRaw === null ? txDel(LS.sides) : txSet(LS.sides, prevSidesRaw) });
   if (runStart) fSteps.push({ name: 'start', write: () => txDel(LS.start), undo: () => txSet(LS.start, String(runStart)) });
   const fTx = runTx(fSteps);
@@ -6532,6 +6553,7 @@ function unloadRouteToBoot() { // Beta 1.124: the ACTIVE route was deleted - ret
   buildGeometry({ roads: {}, reference: {}, primaries: [] }); // the eval-time emptiness a cold boot shows before any pick (drive149's zero-geometry state)
   if (map && window.GLP) window.GLP.rebuildRoute();
   doneSet = new Set(); doneTimes = {}; doneVia = {}; notes = {}; history = []; runStart = 0; trail = []; trailSessions = []; coveredIdx = {}; pieces = {}; pieceTimes = {}; // the eval empties (app1's declarations)
+  resetHistorySnapshot(); // 2026-11-15 (denylist fix round, A-05): the A-05 history snapshot dies with the route it describes - this slot is about to be wiped, and a stale snapshot must never merge into another route's slot
   LS = { ...routeKeys('5w'), ...LS_GLOBAL }; // the eval default - the next pick repoints it via loadRoute
   activeRoute = null; routeLoaded = false;
   document.documentElement.classList.remove('boot'); // Beta 1.126: NOT add. A cold boot's RESTING picker carries no html.boot - the boot tail's arm() removes it when the menu arms (finish()/loadRoute are backstops), because while it stands the 1.86 chrome-absence rule (html.boot body > *:not(#splash):not(#routeMenu):not(#map) { display: none !important }) force-hides every other body child. 1.124 re-added it here and nothing on the create path removed it again, so after deleting the active route the whole create stage (#createBar, #createSheet, #createResults, #createHint - and the 'Route deleted' toast) was display:none for the rest of the session: Andrew's search bar and selected-roads panel never painted, though the map (excepted from the rule) still took taps and the draft filled invisibly. drive155 A1-A4 pin the resting state + computed visibility.
