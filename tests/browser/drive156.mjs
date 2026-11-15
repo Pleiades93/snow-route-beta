@@ -31,7 +31,7 @@ import { startCreateRig, serveRepo, makeResults, finishCreate, sleep } from './h
 //     measures ~964 m against the draft's 1,608 m whole).
 //   B panel: 8 streets -> the sheet stays under ~55% of the viewport
 //     while the rows list actually scrolls; the in-row chip flips
-//     MAIN/2ND both ways; picking a picked street again OPENS ITS
+//     PRIMARY/2ND both ways; picking a picked street again OPENS ITS
 //     SECTORS (Beta 1.128 - tap-again-to-deselect is retired; the
 //     row x removes); a tap on the panel head collapses to the strip
 //     with live counts and Review restores the panel; Clear all asks
@@ -140,12 +140,12 @@ const nightB = await J(`(() => { document.body.classList.add('night'); const pro
 ok('B2 NIGHT TOKENS: at night the ONE surface wears --card-solid exactly and the three faces inside it are transparent contents (no hardcoded white card) | ' + JSON.stringify(nightB),
   nightB.surface === nightB.token && nightB.panel === 'rgba(0, 0, 0, 0)' && nightB.strip === 'rgba(0, 0, 0, 0)' && nightB.bar === 'rgba(0, 0, 0, 0)');
 await ev2(`(() => { const r = [...document.querySelectorAll('#crPickList .crPRow')].find(x => (x.querySelector('.crPName') || {}).textContent === 'Long'); if (r) r.querySelector('.crPChip').click(); return true; })()`);
-const chipB = await poll(`draft.mains.has('Long Road')`, 10000);
+const chipB = await poll(`draft.primaries.has('Long Road')`, 10000);
 const chipTxt = await J(`(() => { const r = [...document.querySelectorAll('#crPickList .crPRow')].find(x => (x.querySelector('.crPName') || {}).textContent === 'Long'); return r ? (r.querySelector('.crPChip') || {}).textContent || '' : ''; })()`);
 await ev2(`(() => { const r = [...document.querySelectorAll('#crPickList .crPRow')].find(x => (x.querySelector('.crPName') || {}).textContent === 'Long'); if (r) r.querySelector('.crPChip').click(); return true; })()`);
-const chipBack = await poll(`!draft.mains.has('Long Road') && crSectorSession.street === null`, 10000);
-ok('B3 THE IN-ROW CHIP FLIPS MAIN/2ND: one tap on Long\'s chip puts it in the mains set and the chip reads MAIN; a second tap flips it back - and neither tap opened sector mode (the chip keeps its own tap) | to main: ' + chipB + ' (' + chipTxt + '), back: ' + chipBack,
-  chipB === true && chipTxt === 'MAIN' && chipBack === true);
+const chipBack = await poll(`!draft.primaries.has('Long Road') && crSectorSession.street === null`, 10000);
+ok('B3 THE IN-ROW CHIP FLIPS PRIMARY/2ND: one tap on Long\'s chip puts it in the primaries set and the chip reads PRIMARY; a second tap flips it back - and neither tap opened sector mode (the chip keeps its own tap) | to main: ' + chipB + ' (' + chipTxt + '), back: ' + chipBack,
+  chipB === true && chipTxt === 'PRIMARY' && chipBack === true);
 // Beta 1.128 premise update: tap-again-to-deselect is RETIRED (Andrew's fork) - picking a picked street opens its sectors instead; removal lives on the row's x and Clear all
 await ev2(`pickStreet('Alpha Street', { lat: 43.79, lng: -79.578 })`);
 const secB = await poll(`crSectorSession.street === 'Alpha Street' && draft && !!draft.roads['Alpha Street'] && Object.keys(draft.roads).length === 8`, 10000);

@@ -19,7 +19,7 @@ await bootThrough(ev, poll);
 //   in-window mark         = Valeria (in neither B nor P)
 const R = { checks: [] };
 const ok = (name, cond) => R.checks.push([name, cond === true]);
-const MAINS = ['Velmar', 'Mellings', 'Astona', 'Santa Barbara', 'Valeria', 'Greenpark'];
+const PRIMARIES = ['Velmar', 'Mellings', 'Astona', 'Santa Barbara', 'Valeria', 'Greenpark'];
 const B_DONE = 'Mellings|Velmar';
 const P_DONE = 'Astona|Mellings|Santa Barbara';
 
@@ -37,7 +37,7 @@ const afterReload = async () => { // drive167's proven reload idiom
   return gone && loaded;
 };
 const setBoard = async (names) => {
-  await ev(`(() => { for (const n of ${JSON.stringify(MAINS)}) { if (pieces[n] && pieces[n].some(v => v !== 0)) markUndone(n); } return true; })()`);
+  await ev(`(() => { for (const n of ${JSON.stringify(PRIMARIES)}) { if (pieces[n] && pieces[n].some(v => v !== 0)) markUndone(n); } return true; })()`);
   for (const n of names) await ev(`markDone(${JSON.stringify(n)}, 'd169'); true`);
   return await poll(`JSON.parse(localStorage.getItem(LS.done) || '[]').length === ${names.length}`, 10000);
 };

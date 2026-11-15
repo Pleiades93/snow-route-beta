@@ -28,7 +28,7 @@ const names = Object.keys(STRETCH);
 const ROADS = Object.fromEntries(names.map(n => [n, STRETCH[n].runs.flatMap(r => r.parts)]));
 
 const host = {
-  MAIN: new Set(['MainSt']),
+  PRIMARIES: new Set(['MainSt']),
   MLAT,
   MLNG,
   jDistM: (a, b) => Math.hypot((b[1] - a[1]) * MLNG, (b[0] - a[0]) * MLAT),

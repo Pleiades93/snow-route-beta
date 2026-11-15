@@ -8,13 +8,13 @@ function openNameIt() {
   $('crNameInput').value = draft.name || nextRouteNameGuess();
   $('crAreaInput').value = draft.area || crAreaGuess || lsGet(LS_GLOBAL.lastArea) || '';
   const g = crDraftGeom(); let tot = 0; for (const n of draftStreets()) tot += crStreetChosenM(n, g); // Beta 1.127: the summary bills what will actually save. Beta 1.135 (N3): the geometry comes through the shared cache like every other consumer
-  $('crNameSummary').textContent = draftStreets().length + ' streets · ' + draft.mains.size + ' mains · ' + fmtLenM(tot) + ' of road';
+  $('crNameSummary').textContent = draftStreets().length + ' streets · ' + draft.primaries.size + ' primaries · ' + fmtLenM(tot) + ' of road';
   if (!routeLoaded) restoreBootChrome(); else openRouteMenu();
   showRmPane('rmNamePane');
 }
 $('crNameBack').addEventListener('click', () => { if (!routeLoaded) parkBootChrome(); else closeRouteMenu(); setCreateStage('preview'); });
 $('crSaveBtn').addEventListener('click', saveDraftRoute);
-let crSaveInFlight = false; // Beta 1.170 (Carbon fix round Phase 2, D-03): single-flight for the save - the function is async (the store write awaits) and had no re-entrancy guard through 1.169, and the button carries no tap guard, so a double-tap ran it twice: both calls computed the same uniqueRouteId before either registered the pack, the second overwrote the first's store record, and the pack was pushed twice under one id; a late tap landing after a completed save's exitCreate had nulled the draft threw on draft.mains instead
+let crSaveInFlight = false; // Beta 1.170 (Carbon fix round Phase 2, D-03): single-flight for the save - the function is async (the store write awaits) and had no re-entrancy guard through 1.169, and the button carries no tap guard, so a double-tap ran it twice: both calls computed the same uniqueRouteId before either registered the pack, the second overwrote the first's store record, and the pack was pushed twice under one id; a late tap landing after a completed save's exitCreate had nulled the draft threw on draft.primaries instead
 async function saveDraftRoute() {
   if (crSaveInFlight) return;
   crSaveInFlight = true;
@@ -22,7 +22,7 @@ async function saveDraftRoute() {
   const name = $('crNameInput').value.trim();
   if (!name) { toast('Give the route a name first', 2600); return; }
   const area = $('crAreaInput').value.trim();
-  const v = normalizePack({ name, area, mains: [...draft.mains], roads: crFilteredRoads(), reference: {} }, { tileNames: [...Object.values(draft.osmNames), ...(draft.tileNames || [])] }); // Beta 1.127: the SAVE stores chosen sectors only - the draft keeps the whole streets, the pack never sees the unchosen ends
+  const v = normalizePack({ name, area, primaries: [...draft.primaries], roads: crFilteredRoads(), reference: {} }, { tileNames: [...Object.values(draft.osmNames), ...(draft.tileNames || [])] }); // Beta 1.127: the SAVE stores chosen sectors only - the draft keeps the whole streets, the pack never sees the unchosen ends
   if (!v.ok) { toast('Could not save — ' + v.error, 4000); return; }
   const pack = v.pack; pack.id = uniqueRouteId(name);
   if (!(await upPut(pack.id, pack))) { toast('Storage problem — the route could not be saved', 4000); return; } // Beta 1.166: the save is ONE route's own verified store write (create-packs.js) - the DA-05 hazard class is gone by construction: there is no whole-record read-modify-write left to erase another route, a corrupt legacy record cannot block a save it is no longer part of, and a failed write refuses THIS route only, before it is registered anywhere

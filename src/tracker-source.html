@@ -142,8 +142,8 @@
   #filters button.on { background: linear-gradient(135deg, #3d65ef, #1b2fb6); color: #fff; }
   #sheetBody { overflow-y: auto; padding: 0 14px 14px; -webkit-overflow-scrolling: touch; }
   .srow { display: flex; align-items: center; gap: 11px; padding: 12px 4px; border-bottom: 1px solid var(--hair); font-size: 15px; cursor: pointer; min-height: 48px; } /* Beta 1.184: the redesign row type size */
-  .srow .dot { width: 9px; height: 9px; border-radius: 50%; background: #ef476f; flex-shrink: 0; } /* Beta 1.184: the redesign 9px state dot (colours unchanged: rose secondary-pending, gold main below, mint done) */
-  .srow.main .dot { background: #ffc233; }
+  .srow .dot { width: 9px; height: 9px; border-radius: 50%; background: #ef476f; flex-shrink: 0; } /* Beta 1.184: the redesign 9px state dot (colours unchanged: rose secondary-pending, gold primary below, mint done) */
+  .srow.primary .dot { background: #ffc233; }
   .srow.done .dot { background: #06d6a0; }
   .srow.done .nm { color: var(--done-nm); }
   .srow .tm { margin-left: auto; font-size: 12px; font-weight: 600; color: var(--tm-c); white-space: nowrap; } /* Beta 1.184: the status slot - its colour now comes from the .st-* state classes in the redesign block below */
@@ -194,11 +194,11 @@
   #stGroupC { color: #9a9aa2; font-weight: 600; letter-spacing: 0; }
   body.night #stGroupC { color: rgba(214,226,242,.55); }
   .srow .nm { font-weight: 500; }
-  .srow.half .dot { background: linear-gradient(90deg, #06d6a0 50%, #ef476f 50%); box-shadow: inset 0 0 0 1px rgba(0,0,0,.12); } /* Beta 1.184: ONE SIDE DONE wears a split disc - done mint | the group pending colour (rose here, gold for a main below) */
-  .srow.main.half .dot { background: linear-gradient(90deg, #06d6a0 50%, #ffc233 50%); box-shadow: inset 0 0 0 1px rgba(0,0,0,.12); }
+  .srow.half .dot { background: linear-gradient(90deg, #06d6a0 50%, #ef476f 50%); box-shadow: inset 0 0 0 1px rgba(0,0,0,.12); } /* Beta 1.184: ONE SIDE DONE wears a split disc - done mint | the group pending colour (rose here, gold for a primary below) */
+  .srow.primary.half .dot { background: linear-gradient(90deg, #06d6a0 50%, #ffc233 50%); box-shadow: inset 0 0 0 1px rgba(0,0,0,.12); }
   body.night .srow.done .dot { background: #9fd3ae; }
   body.night .srow.half .dot { background: linear-gradient(90deg, #9fd3ae 50%, #ef476f 50%); }
-  body.night .srow.main.half .dot { background: linear-gradient(90deg, #9fd3ae 50%, #ffc233 50%); }
+  body.night .srow.primary.half .dot { background: linear-gradient(90deg, #9fd3ae 50%, #ffc233 50%); }
   .srow .tm.st-done { color: #177245; }
   .srow .tm.st-half { color: #9c6d00; }
   .srow .tm.st-todo { color: #9a9aa2; }
@@ -419,7 +419,7 @@ body.snow-scene #routeMenu.boot { background: transparent; } /* Beta 1.159: whil
    flow. Panes live in the blue route menu (doors, photo, name-it); the pick
    and preview stages live on the map (search bar + bottom sheets) while
    body.creating hides the working chrome. Route colours carry the meaning:
-   gold = main, raspberry = secondary. */
+   gold = primary, raspberry = secondary. */
 body.creating #dock, body.creating #tabBar, body.creating #hud, body.creating #nightBtn, body.creating #centreBtn, body.creating #selPop, body.creating #chips, body.creating #suggest, body.creating #stale, body.creating #bakNudge, body.creating #mapNote { display: none !important; }
 /* Beta 1.120 (Andrew): the whole create row sits lower by HALF ITS OWN
    HEIGHT - the row's height is fixed at 50px (the search wrap and the
@@ -461,12 +461,12 @@ body.creating #dock, body.creating #tabBar, body.creating #hud, body.creating #n
 .crRow { display: flex; align-items: center; gap: 9px; padding: 9px 2px; border-bottom: 1px solid var(--hair); }
 .crRow:last-child { border-bottom: none; }
 .crDot { width: 11px; height: 11px; border-radius: 50%; flex: none; }
-.crDot.main { background: #ffc233; }
+.crDot.primary { background: #ffc233; }
 .crDot.sec { background: #ef476f; }
 .crName { flex: 1; min-width: 0; font-size: 16px; font-weight: 600; color: var(--ink); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
 .crLen { font-size: 13px; color: var(--ink-dim); font-weight: 600; }
 .crChip { border: none; border-radius: 999px; font-size: 12px; font-weight: 800; letter-spacing: .3px; padding: 6px 10px; cursor: pointer; flex: none; }
-.crChip.main { background: #ffc233; color: #4a3200; }
+.crChip.primary { background: #ffc233; color: #4a3200; }
 .crChip.sec { background: var(--chip); color: var(--ink-dim); }
 .crDel { border: none; background: none; color: #e63a2e; font-size: 18px; font-weight: 800; width: 34px; height: 34px; cursor: pointer; flex: none; }
 .crPrimary { appearance: none; -webkit-appearance: none; border: none; background: linear-gradient(135deg, #3d65ef, #1b2fb6); color: #fff; font-size: 17px; font-weight: 700; padding: 15px 18px; border-radius: 14px; width: 100%; cursor: pointer; }
@@ -495,9 +495,9 @@ body.creating #dock, body.creating #tabBar, body.creating #hud, body.creating #n
 .crPName { font-size: 16.5px; font-weight: 650; color: var(--ink); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
 .crPSub { font-size: 13px; color: var(--ink-dim); }
 .crPChip { border-radius: 9px; font-size: 12.5px; font-weight: 800; letter-spacing: .4px; padding: 7px 10px; cursor: pointer; flex: none; appearance: none; -webkit-appearance: none; }
-.crPChip.main { background: rgba(255,194,51,.22); color: #8a6100; border: 1.5px solid #ffc233; }
+.crPChip.primary { background: rgba(255,194,51,.22); color: #8a6100; border: 1.5px solid #ffc233; }
 .crPChip.sec { background: rgba(239,71,111,.12); color: #b02348; border: 1.5px solid rgba(239,71,111,.55); }
-body.night .crPChip.main { background: rgba(255,194,51,.14); color: #ffc233; }
+body.night .crPChip.primary { background: rgba(255,194,51,.14); color: #ffc233; }
 body.night .crPChip.sec { background: rgba(239,71,111,.16); color: #ff8fab; }
 .crPDel { border: none; background: rgba(230,58,46,.10); color: #c22f24; font-size: 14px; font-weight: 700; width: 34px; height: 34px; border-radius: 50%; cursor: pointer; flex: none; appearance: none; -webkit-appearance: none; }
 .crPanelBtns { flex-direction: row; }
@@ -538,7 +538,7 @@ input, textarea { caret-color: currentColor; } /* Beta 1.125 (Andrew): the typin
 <div id="hud">
   <div id="warn">Not saving — storage is full or blocked</div>
   <div class="row">
-    <div class="titleStack"><div class="title">Snow Route Beta</div><div class="ver" id="ver">Beta 1.204</div></div>
+    <div class="titleStack"><div class="title">Snow Route Beta</div><div class="ver" id="ver">Beta 1.205</div></div>
   </div>
   <div id="stats"></div>
 </div>
@@ -659,7 +659,7 @@ input, textarea { caret-color: currentColor; } /* Beta 1.125 (Andrew): the typin
   <div class="sheetHead"><div class="sheetTitle">Streets</div><button id="sheetClose">✕</button></div>
   <div id="stRoute"><span id="stRouteN"></span><span id="stRouteS"></span></div>
   <div id="stHero"></div>
-  <div id="filters"><button data-f="mains" class="on">Mains</button><button data-f="secondaries">Secondaries</button></div>
+  <div id="filters"><button data-f="primaries" class="on">Primaries</button><button data-f="secondaries">Secondaries</button></div>
   <div id="stGroup"><span id="stGroupN"></span><span id="stGroupC"></span></div>
   <div id="sheetBody"><div id="streetList"></div></div>
 </div>
@@ -694,7 +694,7 @@ const ROUTE_PACKS = [{
 const MLAT = 111320, MLNG = 80386;
 /** @type {() => number} */ const vvHeight = () => (window.visualViewport ? window.visualViewport.height : window.innerHeight); // visible-screen height (shrinks when the phone keyboard opens)
 const YELLOW = '#ffc233', RED = '#ef476f', GREEN = '#06d6a0';
-const MAIN = new Set(); // Beta 1.117: the active pack's main streets - filled per load by buildGeometry from pack.main (the values live in the pack, data.js)
+const PRIMARIES = new Set(); // Beta 1.117: the active pack's primary streets - filled per load by buildGeometry from pack.main (the values live in the pack, data.js)
 const SPOT = {}; // Beta 1.117: the active pack's label-anchor hints - filled per load by buildGeometry from pack.spot
 const TRAIL_MAX = 8000;
 const TRAIL_WINDOW_S = 3600; // Beta 1.193 (trail redesign, Andrew's adopted design): the trail's retention window, in SECONDS of recorded points. Since 1.193 the trail is a backend-only fallback for the run-distance counter (no map line, no archived path): it keeps ONLY the live run's points from its last 60 minutes, windowed by trailWindow below at load, at append (acceptFix, app3), at Start, at Finish and at restore (app4). TRAIL_MAX above survives as the session markers' cap and the loader's absolute backstop - the point cap itself no longer bounds the trail (the window does: ~3,600 points at 1 Hz).
@@ -986,7 +986,7 @@ const names = STREETNAMES; // the paint engine's name for the street list
 
 // ===== STATE =====
 const STREETSET = new Set();
-/** @param {RoutePack} pack @returns {void} */ function buildGeometry(pack) { // Beta 1.117 (F1): ALL route geometry is (re)built HERE, per load, from the pack - nothing route-shaped is computed at script eval any more. The live containers (ROADS/REFERENCE/STRETCH/STREETNAMES/STREETSET/MAIN/SPOT, app2's routeBox and ROUTE_TILE_NAMES, app3's SAMPLES) are refilled IN PLACE, never rebound, so references captured earlier (GL_HOST's plain entries above all) stay valid. Runs BEFORE loadRouteState: the state sanitizers filter against this geometry. buildSamples (app3) and the paint engine's rebuild (GLP.rebuildRoute, called by loadRoute) complete the per-load rebuild.
+/** @param {RoutePack} pack @returns {void} */ function buildGeometry(pack) { // Beta 1.117 (F1): ALL route geometry is (re)built HERE, per load, from the pack - nothing route-shaped is computed at script eval any more. The live containers (ROADS/REFERENCE/STRETCH/STREETNAMES/STREETSET/PRIMARIES/SPOT, app2's routeBox and ROUTE_TILE_NAMES, app3's SAMPLES) are refilled IN PLACE, never rebound, so references captured earlier (GL_HOST's plain entries above all) stay valid. Runs BEFORE loadRouteState: the state sanitizers filter against this geometry. buildSamples (app3) and the paint engine's rebuild (GLP.rebuildRoute, called by loadRoute) complete the per-load rebuild.
   const roads = (pack && pack.roads) || {}, reference = (pack && pack.reference) || {};
   for (const k of Object.keys(ROADS)) delete ROADS[k]; Object.assign(ROADS, roads);
   for (const k of Object.keys(REFERENCE)) delete REFERENCE[k]; Object.assign(REFERENCE, reference);
@@ -994,7 +994,7 @@ const STREETSET = new Set();
   for (const k of Object.keys(STRETCH)) delete STRETCH[k]; Object.assign(STRETCH, built);
   STREETNAMES.length = 0; for (const n of Object.keys(ROADS)) STREETNAMES.push(n);
   STREETSET.clear(); for (const n of STREETNAMES) STREETSET.add(n);
-  MAIN.clear(); for (const n of ((pack && pack.main) || [])) if (STREETSET.has(n)) MAIN.add(n);
+  PRIMARIES.clear(); for (const n of ((pack && pack.main) || [])) if (STREETSET.has(n)) PRIMARIES.add(n);
   for (const k of Object.keys(SPOT)) delete SPOT[k]; Object.assign(SPOT, (pack && pack.spot) || {});
   routeBox = computeRouteBox(ROADS);
   ROUTE_TILE_NAMES.length = 0; ROUTE_TILE_NAMES.push(...((pack && pack.tileNames && pack.tileNames.length) ? pack.tileNames : STREETNAMES));
@@ -1267,12 +1267,12 @@ window.addEventListener('pagehide', () => flushAux(true));
 // is declared in app2.js, after this part, and the getter resolves it at
 // call time. Built here, at the end of app1.js, because the engine
 // evaluates immediately after this part in the assembled page. Beta 1.117:
-// the plain entries are the LIVE containers (MAIN/SPOT/STRETCH/ROADS/names)
+// the plain entries are the LIVE containers (PRIMARIES/SPOT/STRETCH/ROADS/names)
 // - buildGeometry refills them in place per load, so the engine's captured
 // references stay valid across a switch and GLP.rebuildRoute re-reads them.
 // Guarded by tests/browser/selftest-engine-surface.mjs (the frozen list).
 const GL_HOST = {
-  MLAT, MLNG, MAIN, SPOT, STRETCH, ROADS, names, jDistM, ptSegM, isNight,
+  MLAT, MLNG, PRIMARIES, SPOT, STRETCH, ROADS, names, jDistM, ptSegM, isNight,
   get pieces() { return pieces; },
   get selSet() { return selSet; },
   get selStretch() { return selStretch; },
@@ -1284,7 +1284,7 @@ const GLP = (() => {
   let GLM = null;                 // the MapLibre map instance (recreated per setBasemap)
   let sel = null;                 // {name, idx} - fed from the app's selStretch
   let YELLOW = '#ffc233', RED = '#ef476f', GREEN = '#06d6a0';   // METRO, locked in the prototype (r26)
-  const pendingColor = n => H.MAIN.has(n) ? YELLOW : RED;
+  const pendingColor = n => H.PRIMARIES.has(n) ? YELLOW : RED;
   let fontStack = ['Noto Sans Regular']; // replaced per-style by GLP.setFont (the app adopts the basemap's own stack, prototype pickFont rule)
   const glowPreset = 1;   // SOFT - the locked selection preset (prototype r24)
   let lastSig = null, lastNight = null;
@@ -1432,15 +1432,15 @@ const LABELS = { type: 'FeatureCollection', features: labelFeatures };
 // 13.7 the shortest streets' names drop away in tiers, longest last,
 // until 12.6 where the melt finishes everything. Tier = stitched-
 // length quartile (computed from the data, no hand-set lengths); the
-// six MAIN streets are forced into the final tier regardless of
-// length (Astona is a main but only 187 m long).
+// six PRIMARY streets are forced into the final tier regardless of
+// length (Astona is a primary but only 187 m long).
 function assignTiers() {
   if (!labelPointFeatures.length) return; // Beta 1.170 (B-10): no labels, no tiers - through 1.169 the quartile reads below indexed lens[-1] (undefined) and every comparison failed quietly; a no-op only because there were no features to tier either
   const lens = labelPointFeatures.map(f => f.properties.len).sort((a, b) => a - b);
   const q = p => lens[Math.min(lens.length - 1, Math.floor(p * lens.length))];
   const q1 = q(0.25), q2 = q(0.5), q3 = q(0.75);
   labelPointFeatures.forEach(f => {
-    f.properties.tier = H.MAIN.has(f.properties.name) ? 4 : (f.properties.len < q1 ? 1 : f.properties.len < q2 ? 2 : f.properties.len < q3 ? 3 : 4);
+    f.properties.tier = H.PRIMARIES.has(f.properties.name) ? 4 : (f.properties.len < q1 ? 1 : f.properties.len < q2 ? 2 : f.properties.len < q3 ? 3 : 4);
   });
 }
 const LABELPTS = { type: 'FeatureCollection', features: labelPointFeatures };
@@ -1453,7 +1453,7 @@ const ROUTEPOI = { type: 'Feature', properties: {}, geometry: { type: 'Point', c
 // one painted shape, the engine drawing every joint. A completed stretch
 // is not a core flanked by two side lines: completed stretches form the
 // BAND family - one solid ribbon at road width.
-function colOf(n, bits) { return bits === 3 ? GREEN : (H.MAIN.has(n) ? YELLOW : RED); }
+function colOf(n, bits) { return bits === 3 ? GREEN : (H.PRIMARIES.has(n) ? YELLOW : RED); }
 // Selection by vibrancy (Andrew, 2026-10-28 - the model he designed on
 // 2026-10-26): everything rests MUTED (same colour, saturation cut), the
 // selected sector renders the full vibrant colour at the same glow spec.
@@ -3545,7 +3545,7 @@ function renderPanel() { // ONE selection pop-up (Beta 1.30, Andrew): the header
   const multi = selSet.length >= 2; // Beta 1.34 (Andrew): single and multi are the SAME size now - same box, same two rows; only the words and buttons change
   const streetsIn = new Set(selSet.map(en => en.name)).size;
   const oneStreet = streetsIn === 1;
-  p.style.setProperty('--accent', !oneStreet ? 'transparent' : (streetComplete(sel.name) ? GREEN : (MAIN.has(sel.name) ? YELLOW : RED))); // the edge mirrors the street (Beta 1.32, Andrew): gold for a main road, raspberry for an unfinished regular road, mint once the street is complete
+  p.style.setProperty('--accent', !oneStreet ? 'transparent' : (streetComplete(sel.name) ? GREEN : (PRIMARIES.has(sel.name) ? YELLOW : RED))); // the edge mirrors the street (Beta 1.32, Andrew): gold for a primary road, raspberry for an unfinished regular road, mint once the street is complete
   if (!multi) {
     $('selName').textContent = sel.name;
     const total = STRETCH[sel.name].parts.length;
@@ -3583,20 +3583,20 @@ function updateCount() {
 }
 
 // ===== LIST SHEET =====
-let listFilter = 'mains'; // Beta 1.109 (Andrew): the Streets filter is the route's two groups - Mains (the gold roads) or Secondaries (the raspberry ones) - replacing All / To do / Done; Mains is the opening view
+let listFilter = 'primaries'; // Beta 1.109 (Andrew): the Streets filter is the route's two groups - Primaries (the gold roads) or Secondaries (the raspberry ones) - replacing All / To do / Done; Primaries is the opening view
 let noteOpenFor = null, noteSaveTimer = 0, noteEdFor = null; // Beta 1.63 (audit F01): noteEdFor names the street whose editor is actually in the DOM - the draft's owner
 let noteRaiseActive = false; // Beta 1.184 (Codex review, PR #22): true while the Streets sheet stands at the full stop BECAUSE the note editor raised it (the raise below) - a sheet the user dragged to full himself is never claimed, and never lowered by the editor closing
 let srowCache = { sig: '', rows: new Map() }; // Beta 1.50 (audit P06): rows kept between renders when the visible set is unchanged
 function resetStreetsSession() { // Beta 1.148 (Tranche 5, A4(ii)): app2's OWN route-switch reset, called by app4's resetSwitchSession - the Streets session's reset knowledge lives here, with its state, so a new app2 session field's reset is added where its author is looking
   deselect(); // selection + chips + the engine's selection, through the one proven path
   noteOpenFor = null; noteEdFor = null; if (noteSaveTimer) { clearTimeout(noteSaveTimer); noteSaveTimer = 0; } // the note editor's pending debounced save must never fire into the new route (its flush already happened via collapseNoteEditor)
-  listFilter = 'mains'; document.querySelectorAll('#filters button').forEach(x => x.classList.toggle('on', x.dataset.f === 'mains'));
+  listFilter = 'primaries'; document.querySelectorAll('#filters button').forEach(x => x.classList.toggle('on', x.dataset.f === 'primaries'));
   srowCache = { sig: '', rows: new Map() };
   saveWarned = false; // the storage-warning episode belonged to the outgoing route's saves
 }
 function fmtLenM(v) { return String(Math.round(v)).replace(/\B(?=(\d{3})+(?!\d))/g, ',') + ' m'; }
 function streetHalf(n) { const p = pieces[n]; return Array.isArray(p) && !streetComplete(n) && p.some(v => v !== 0); } // Beta 1.184: ONE SIDE DONE - some side bit set on some stretch, the street not complete. The Streets list half state and the Pace menu Progress-by-group half count share this one predicate. Streets whose pieces are not an array (doneSet-only) are binary by construction and never half.
-function srowClass(n) { return 'srow' + (streetComplete(n) ? ' done' : '') + (MAIN.has(n) ? ' main' : '') + (streetHalf(n) ? ' half' : ''); }
+function srowClass(n) { return 'srow' + (streetComplete(n) ? ' done' : '') + (PRIMARIES.has(n) ? ' primary' : '') + (streetHalf(n) ? ' half' : ''); }
 function srowStatus(n) { // Beta 1.184: the row right-hand status slot. A completed street keeps the list full historical string (done <when> (<ago>), check-flag prefix included); where the old list showed nothing, the redesign words apply: 'completed' (a completion with no recorded time), 'one side done' (a half), an em dash (untouched). The flag prefix rides every state, exactly as the old .tm string did.
   const flag = (notes[n] && notes[n].some(f => f.k !== 'note')) ? '⚑ ' : '';
   const doneAt = streetComplete(n) && doneTimes[n] ? fmtWhen(doneTimes[n]) : '';
@@ -3614,8 +3614,8 @@ function renderStreets() { // production row design: tap a street's name area to
   if (draft !== null && draftFor && draftFor !== noteOpenFor) { clearTimeout(noteSaveTimer); const wb = saveWarned; const r = setNoteText(draftFor, draft); if (!r.ok && wb) toast('Not saved \u2014 storage problem', 3200); } // switching streets finalizes the old editor against ITS street first (a destroyed editor's blur is not guaranteed to fire). Beta 1.169 (Carbon fix round, A-01): the flush's result used to be discarded - saveAllWarned toasts once per failure EPISODE, so when the warning had already fired, a failed finalization here was silent. The finishChangeMarked contract (Beta 1.97) is the codebase's answer for exactly this shape, applied verbatim: a fresh failure is covered by the warning setNoteText just raised; a suppressed one is owed the plain 'not saved'.
   let noteFlushed = false, noteFlushFailed = false; // Beta 1.79: a rebuild for the SAME street (the map style finishing its load, a theme flip - both end in refreshAll) replaces the open editor too. Finalize its pending save HERE, synchronously, instead of leaving the debounced timer pointing at a discarded textarea - that race is what stranded drive88's note checks when the style-ready refresh landed mid-edit
   if (draft !== null && draftFor && draftFor === noteOpenFor && noteSaveTimer) { clearTimeout(noteSaveTimer); noteSaveTimer = 0; if (setNoteText(draftFor, draft).ok) noteFlushed = true; else noteFlushFailed = true; } // Beta 1.113 (round 112, CG-112-01): setNoteText returns the 1.101 storage-outcome OBJECT - {ok:false} is truthy, so the old truthiness test marked a FAILED save flushed and the rebuilt editor announced 'Saved'
-  const arr = STREETNAMES.filter(n => (listFilter === 'mains') === MAIN.has(n)); // Beta 1.109: the visible set is exactly the selected group - 6 mains or 28 secondaries on Route 5W
-  arr.sort((a, b) => ((MAIN.has(a) ? 0 : 1) - (MAIN.has(b) ? 0 : 1)) || a.localeCompare(b));
+  const arr = STREETNAMES.filter(n => (listFilter === 'primaries') === PRIMARIES.has(n)); // Beta 1.109: the visible set is exactly the selected group - 6 primaries or 28 secondaries on Route 5W
+  arr.sort((a, b) => ((PRIMARIES.has(a) ? 0 : 1) - (PRIMARIES.has(b) ? 0 : 1)) || a.localeCompare(b));
   // Beta 1.184 (Andrew): the redesign fixed head of the Streets sheet - route line, hero,
   // group heading - rewritten on every render from the same live state the dock pill reads
   // (updateCount counts and work fraction). Road km = side-metres / 2000 (sides come in pairs).
@@ -3624,7 +3624,7 @@ function renderStreets() { // production row design: tap a street's name area to
   const stH = $('stHero');
   if (stH) { const tw = totalWorkM(); stH.innerHTML = '<div class="stHeroN">' + STREETNAMES.filter(streetComplete).length + ' <span class="stHeroU">/ ' + STREETNAMES.length + ' streets</span></div><div class="stHeroL">streets completed so far</div><div class="stBar"><div class="stBarF" style="width:' + (tw > 0 ? (workDoneM() / tw * 100) : 0) + '%"></div></div><div class="stCaps"><span>' + (workDoneM() / 2000).toFixed(1) + ' km of road cleared</span><span>' + (tw / 2000).toFixed(1) + ' km total</span></div>'; }
   const stGN = $('stGroupN'), stGC = $('stGroupC');
-  if (stGN && stGC) { stGN.textContent = listFilter === 'mains' ? 'MAINS' : 'SECONDARIES'; stGC.textContent = ' · ' + arr.length + ' streets'; } // Beta 1.91 (Andrew): the Streets list leads with the mains (gold - cleaned first), then the secondary streets (raspberry), alphabetical inside each colour, in every filter view
+  if (stGN && stGC) { stGN.textContent = listFilter === 'primaries' ? 'PRIMARIES' : 'SECONDARIES'; stGC.textContent = ' · ' + arr.length + ' streets'; } // Beta 1.91 (Andrew): the Streets list leads with the primaries (gold - cleaned first), then the secondary streets (raspberry), alphabetical inside each colour, in every filter view
   if (!arr.length) { el.innerHTML = '<div style="padding:14px 4px;color:#8fa0b3">No streets in this group</div>'; srowCache = { sig: '', rows: new Map() }; return; } // Beta 1.109: unreachable with shipped route data (both groups are non-empty by construction) - kept as the safety net it was
   // Beta 1.50 (audit P06): a routine mark used to rebuild all 34 rows from
   // scratch. When the visible set and order are unchanged and no note editor
@@ -3650,7 +3650,7 @@ function renderStreets() { // production row design: tap a street's name area to
     d.querySelector('.nm').textContent = n;
     const ntEl = d.querySelector('.nt');
     d.querySelector('.smap').innerHTML = ICONS.pin; d.querySelector('.ntIco').innerHTML = ICONS.note; d.querySelector('.nmNote').innerHTML = ICONS.note; // Pack D glyphs (Beta 1.30) in place of the emoji
-    const paintNt = () => { // Beta 1.184: ONE painter for everything state-shaped on the row - its class (done/main/half), the status slot, the name-row note icon, and the quiet line (length by default, note text while a note exists - the 1.107 rule, unchanged)
+    const paintNt = () => { // Beta 1.184: ONE painter for everything state-shaped on the row - its class (done/primary/half), the status slot, the name-row note icon, and the quiet line (length by default, note text while a note exists - the 1.107 rule, unchanged)
       d.className = srowClass(n);
       const st = srowStatus(n); const tmEl = d.querySelector('.tm'); tmEl.textContent = st.t; tmEl.className = 'tm ' + st.c;
       const t = noteTextOf(n);
@@ -3953,9 +3953,9 @@ function cleanPaceKm(h) { // Beta 1.184: a saved clean pace per ROAD km - its to
   if (!(elapsed > 0) || !(roadKm > 0)) return null;
   return fmtPaceKm(elapsed / roadKm);
 }
-function groupProgress(wantMain) { // Beta 1.184: Progress-by-group sums - a completed street counts 1, a street with any side done counts a half (the approved frame 3.5 of 6), else 0
+function groupProgress(wantPrimary) { // Beta 1.184: Progress-by-group sums - a completed street counts 1, a street with any side done counts a half (the approved frame 3.5 of 6), else 0
   let sum = 0, cnt = 0;
-  for (const n of STREETNAMES) { if (MAIN.has(n) === wantMain) { cnt++; sum += streetComplete(n) ? 1 : (streetHalf(n) ? 0.5 : 0); } }
+  for (const n of STREETNAMES) { if (PRIMARIES.has(n) === wantPrimary) { cnt++; sum += streetComplete(n) ? 1 : (streetHalf(n) ? 0.5 : 0); } }
   return { sum, cnt };
 }
 function fmtCnt(v) { return v % 1 ? v.toFixed(1) : String(v); }
@@ -4038,7 +4038,7 @@ function renderPace() { // Beta 1.184 (Andrew): the approved redesign - This run
     banner +
     (runStart ? '<button class="red" id="paceCancel">Cancel start</button>' : '') +
     '<div class="psec2">Progress by group</div>' +
-    groupBar('Mains', groupProgress(true)) +
+    groupBar('Primaries', groupProgress(true)) +
     groupBar('Secondaries', groupProgress(false)) +
     '<div class="gb-cap">dashed line = halfway</div>' +
     '<div class="psec2">Saved cleans</div>';
@@ -4136,7 +4136,7 @@ function openClean(i) {
     notedOnly.forEach(n => {
       const rowEl = document.createElement('div'); rowEl.className = 'cvRow';
       const top = document.createElement('div'); top.className = 'cvTop';
-      top.innerHTML = '<span class="dot ' + (MAIN.has(n) ? 'dot-gold' : 'dot-rose') + '"></span><div class="cvNm"></div>'; // Beta 1.184: not-cleaned rows wear their group pending dot
+      top.innerHTML = '<span class="dot ' + (PRIMARIES.has(n) ? 'dot-gold' : 'dot-rose') + '"></span><div class="cvNm"></div>'; // Beta 1.184: not-cleaned rows wear their group pending dot
       top.querySelector('.cvNm').textContent = n;
       rowEl.appendChild(top);
       cleanNoteLines(h.notes[n]).forEach(L => { const p = document.createElement('div'); p.className = 'cvNt'; p.textContent = L; rowEl.appendChild(p); });
@@ -6164,7 +6164,7 @@ $('stDel').addEventListener('click', async () => {
 });
 // ---- About / What's new ----
 const WHATSNEW = { // the curated in-app notes: plain words, LATEST RELEASE ONLY (Beta 1.114, Andrew: the accumulated list cluttered the About pane). A release REPLACES this entry with its own in the same change - it never accumulates; the full history lives in CHANGELOG.md, not the app
-  v: 'Beta 1.204', items: ["Driving to the route, the puck now sits on the road you're on instead of drifting beside it. It lets go when you slow down, and it never affects your cleans — what gets recorded is unchanged."] };
+  v: 'Beta 1.205', items: ["Your yellow main roads are now called Primaries — same roads, new name."] };
 
 function renderAbout() {
   const cur = $('ver').textContent.trim();
@@ -6512,7 +6512,7 @@ function unloadRouteToBoot() { // Beta 1.124: the ACTIVE route was deleted - ret
   const hadRun = !!runStart;
   resetSwitchSession();
   if (hadRun) stopGps(true); // a clean on a deleted route cannot keep recording - its trail's slot no longer exists
-  buildGeometry({ roads: {}, reference: {}, mains: [] }); // the eval-time emptiness a cold boot shows before any pick (drive149's zero-geometry state)
+  buildGeometry({ roads: {}, reference: {}, main: [] }); // the eval-time emptiness a cold boot shows before any pick (drive149's zero-geometry state)
   if (map && window.GLP) window.GLP.rebuildRoute();
   doneSet = new Set(); doneTimes = {}; doneVia = {}; notes = {}; history = []; runStart = 0; trail = []; trailSessions = []; coveredIdx = {}; pieces = {}; pieceTimes = {}; // the eval empties (app1's declarations)
   LS = { ...routeKeys('5w'), ...LS_GLOBAL }; // the eval default - the next pick repoints it via loadRoute
@@ -6557,7 +6557,7 @@ function askDeleteRoute(id) { // Beta 1.124: the Delete button on a created rout
 // land in one shared preview ("Review selection") with corrections, then a
 // name-it step, then the pack is saved on-device (below).
 // PACK FORMAT (defined once, here and in docs/ARCHITECTURE.md): the same
-// shape as a ROUTE_PACKS entry - { name, area, mains: [names], roads:
+// shape as a ROUTE_PACKS entry - { name, area, main: [names], roads:
 // { street: [segment, ...] }, reference: {...}, tileNames?: [...] }, each
 // segment an array of [lat, lng] points. normalizePack is the one validator
 // every entry path (draft import, save, backup restore, boot merge) uses.
@@ -6648,11 +6648,11 @@ function normalizePack(raw, opts) { // -> { ok: true, pack } | { ok: false, erro
   if (!Object.keys(rc.roads).length) return bad(opts.draft ? 'the draft has no streets' : 'the route has no streets');
   let reference = {};
   if (raw.reference !== undefined) { const fc = cleanRoads(raw.reference, 'reference features'); if (fc.error) return bad(fc.error); reference = fc.roads; for (const nm of Object.keys(reference)) if (rc.roads[nm]) delete reference[nm]; }
-  const mainsIn = raw.mains !== undefined ? raw.mains : raw.main;
-  const mains = [];
-  if (mainsIn !== undefined) {
-    if (!Array.isArray(mainsIn)) return bad('the mains list is the wrong shape');
-    for (const m of mainsIn) if (typeof m === 'string' && rc.roads[m] && !mains.includes(m)) mains.push(m);
+  const primariesIn = raw.primaries !== undefined ? raw.primaries : (raw.mains !== undefined ? raw.mains : raw.main); // Beta 1.205: the draft-side key is 'primaries' now; 'mains' stays accepted as the legacy input alias and 'main' is the stored pack field - all three read the same list
+  const primaries = [];
+  if (primariesIn !== undefined) {
+    if (!Array.isArray(primariesIn)) return bad('the primaries list is the wrong shape');
+    for (const m of primariesIn) if (typeof m === 'string' && rc.roads[m] && !primaries.includes(m)) primaries.push(m);
   }
   const tileSet = new Set(Object.keys(rc.roads));
   if (Array.isArray(raw.tileNames)) for (const t of raw.tileNames) if (typeof t === 'string' && t && t.length <= PACK_TILENAME_MAX && tileSet.size < PACK_TILENAMES_MAX) tileSet.add(t);
@@ -6661,7 +6661,7 @@ function normalizePack(raw, opts) { // -> { ok: true, pack } | { ok: false, erro
   if (raw.box && isFinite(raw.box.w) && isFinite(raw.box.s) && isFinite(raw.box.e) && isFinite(raw.box.n) && raw.box.w < raw.box.e && raw.box.s < raw.box.n) box = { w: raw.box.w, s: raw.box.s, e: raw.box.e, n: raw.box.n };
   else { const cb = computeRouteBox({ ...rc.roads, ...reference }); if (cb) box = { w: Math.max(-180, cb.w - 0.03), s: Math.max(-90, cb.s - 0.025), e: Math.min(180, cb.e + 0.03), n: Math.min(90, cb.n + 0.025) }; }
   if (box && (box.w < -180 || box.e > 180 || box.s < -90 || box.n > 90 || box.e - box.w > PACK_BOX_MAX_DEG || box.n - box.s > PACK_BOX_MAX_DEG)) return bad('the route area is too big'); // Beta 1.152 (NV round, NV3a): extent and world-bounds validation, fail-closed like every other check here, over the declared box and the derived one alike. A box is an offline-download area and the tile enumerators (app4) iterate it zoom by zoom: a worldwide box enumerates ~356.8M tile URLs per source and never returns (measured) - it is a preload wedge, not a route. The ceiling (~7.6x the widest shipped city bbox, 10x the declared 5W box) rejects it at EVERY entry point, this validator being the single gate for draft import, save, backup restore and the boot merge. The enumerators carry their own budget as well (NV3b), for records that never pass through here.
-  const cleaned = { name, area, main: mains, spot: {}, tileNames: [...tileSet], box, roads: rc.roads, reference };
+  const cleaned = { name, area, main: primaries, spot: {}, tileNames: [...tileSet], box, roads: rc.roads, reference };
   const pack = {};
   for (const f of PACK_FIELDS) { if (f in cleaned) pack[f] = cleaned[f]; else if (raw[f] !== undefined) pack[f] = raw[f]; } // Beta 1.131 (programme A): the pack is built by walking PACK_FIELDS (app1) - the list is the single source for what a pack carries. Every listed field has a cleaner above today, so the raw fall-through never fires; it exists so a future field added to the list (before its cleaner lands) is carried through rather than silently dropped - the pre-1.131 trap was the hand-written return literal here forgetting a field.
   return { ok: true, pack };
@@ -6690,8 +6690,8 @@ function nextRouteNameGuess() { let mx = 1; for (const p of ROUTE_PACKS) { const
 
 // ---- draft state: session only (not a route, not in any slot) ----
 let creating = false, crStage = 'pick', crBootParked = false, crAreaGuess = '', crPhoto = null, crPickBusy = false; // Beta 1.128: crReturnToPreview is GONE - it existed only to rewrite the panel's Done label on the return-from-preview errand, and the label no longer rewrites (Andrew: the button reads "Done", always)
-let draft = null; // { roads, mains: Set, osmNames, tileNames: [..], name, area, sectors, parts } - EVERY street key is the FULL map name (Beta 1.144, DA-04; osmNames maps every key to itself - tapped streets at the tap (crAddStreet), imported ones at importDraft, whose pack keys are their own OSM names (Beta 1.169, D-02: the map used to stay empty for imports, and an imported street's own ways then cut it in crStreetParts)); sectors: {name: [chosen part indexes]} (Beta 1.127 - an ABSENT entry means the whole road), parts: {name: crStreetParts record} (session cache)
-function newDraft() { return { roads: Object.create(null), mains: new Set(), osmNames: Object.create(null), tileNames: [], name: '', area: '', sectors: Object.create(null), parts: Object.create(null) }; } // Beta 1.169 (Carbon fix round, D-05): the name-keyed maps are prototype-free - a tapped street named '__proto__' joins by assignment (create-pick.js) and must land as an own key
+let draft = null; // { roads, primaries: Set, osmNames, tileNames: [..], name, area, sectors, parts } - EVERY street key is the FULL map name (Beta 1.144, DA-04; osmNames maps every key to itself - tapped streets at the tap (crAddStreet), imported ones at importDraft, whose pack keys are their own OSM names (Beta 1.169, D-02: the map used to stay empty for imports, and an imported street's own ways then cut it in crStreetParts)); sectors: {name: [chosen part indexes]} (Beta 1.127 - an ABSENT entry means the whole road), parts: {name: crStreetParts record} (session cache)
+function newDraft() { return { roads: Object.create(null), primaries: new Set(), osmNames: Object.create(null), tileNames: [], name: '', area: '', sectors: Object.create(null), parts: Object.create(null) }; } // Beta 1.169 (Carbon fix round, D-05): the name-keyed maps are prototype-free - a tapped street named '__proto__' joins by assignment (create-pick.js) and must land as an own key
 let crSectorSession = { street: null, snapshot: undefined, collapsed: false, face: 'panel' }; // Beta 1.154 (B3 build): the sector/panel session as ONE record - through 1.153 its fields were four loose bindings (crSectorStreet + crSectorSnapshot + crPanelCollapsed here, crFaceNow beside crMorph in create-pick.js). The fields: street (Beta 1.127: the street whose sectors are being trimmed, or null), snapshot (Beta 1.129: the street's sector pick as it stood when sector mode was ENTERED - null = the whole road, an array = the trim then in force; undefined = no sector session in flight), collapsed (Beta 1.127: the picked-roads panel's tucked-away state - the slim strip shows instead), face (the face the pick sheet's surface currently rests as; crMorph in create-pick.js stays a separate binding - it is the morph's in-flight descriptor, not session state). The session is three lifecycles sharing one surface (the blocked record's extraction): the sector pair, the panel's tuck, the sheet's face
 function crSectorReset() { crSectorSession.street = null; crSectorSession.snapshot = undefined; } // Beta 1.136 (programme F): a sector session's teardown in ONE place - through 1.135 the pair (street cleared, Cancel snapshot dropped) was written out at six sites (street removal, sector close, stage change, creation start, creation exit, draft start-over); every one of them now calls this. It closes the PAIR ONLY: a stage change resets the pair and deliberately leaves collapsed/face alone, and creation start/exit clear collapsed separately, exactly as through 1.153
 function draftStreets() { return draft ? Object.keys(draft.roads) : []; }
@@ -7300,8 +7300,8 @@ function crRenderHint() { // the ONE writer of the pick-stage hint + its action 
   if (btnLabel && hint.classList.contains('on')) { const hb = hint.getBoundingClientRect(); btn.style.top = Math.round(hb.bottom + 8) + 'px'; } else btn.style.top = '';
   const cc = $('crCityChange'); if (cc) { if (crCity) { cc.textContent = 'City: ' + crCity.name + ' — change'; cc.style.display = ''; } else cc.style.display = 'none'; }
 }
-function crAddStreet(name, segs) { // Beta 1.144 (Package C, DA-04): the draft keys on the FULL map name - through 1.143 the key was shortStreetName(osmName), so two distinct streets sharing a shortened name (Addington Avenue / Addington Place) collided: only the first could ever enter a draft, and tapping the second opened the first's sectors. shortStreetName survives ONLY as the display form (toasts, rows, the sector bar's title); every key in the draft - roads, mains, sectors, parts, pending - is the full name, and the saved pack inherits the full names, so both streets can live in one route.
-  draft.roads[name] = segs; draft.osmNames[name] = name; crGeomGen++; // a tapped street joins as a SECONDARY (fork 3) - flip it to MAIN in the list if it is one. Beta 1.135 (N3): the generation bump is the draft-geometry cache's invalidation for this in-place join (see crDraftGeom)
+function crAddStreet(name, segs) { // Beta 1.144 (Package C, DA-04): the draft keys on the FULL map name - through 1.143 the key was shortStreetName(osmName), so two distinct streets sharing a shortened name (Addington Avenue / Addington Place) collided: only the first could ever enter a draft, and tapping the second opened the first's sectors. shortStreetName survives ONLY as the display form (toasts, rows, the sector bar's title); every key in the draft - roads, primaries, sectors, parts, pending - is the full name, and the saved pack inherits the full names, so both streets can live in one route.
+  draft.roads[name] = segs; draft.osmNames[name] = name; crGeomGen++; // a tapped street joins as a SECONDARY (fork 3) - flip it to PRIMARY in the list if it is one. Beta 1.135 (N3): the generation bump is the draft-geometry cache's invalidation for this in-place join (see crDraftGeom)
   delete crPending[name];
   renderDraft(); renderCrLists(); crRenderHint();
   // Beta 1.153 (Andrew): no 'Added' popup - the road's own picked state on the map and in the panel is the feedback.
@@ -7321,9 +7321,9 @@ function crAddRun(name, segs) { // Beta 1.144 (OPT-L1): a further DISCONNECTED r
   renderDraft(); renderCrLists(); crRenderHint();
   // Beta 1.153 (Andrew): no 'Added the other part' popup either - same rule as crAddStreet.
 }
-function crRemoveStreet(name) { // Beta 1.127: the ONE removal path - the panel's x, the preview's x and Clear all land here (Beta 1.128: those are the ONLY doors; a map tap on a picked street opens its sectors instead), so a street leaves with ALL of its draft state (geometry, main flag, names, sector pick, cached parts) and every face re-renders from the same state
+function crRemoveStreet(name) { // Beta 1.127: the ONE removal path - the panel's x, the preview's x and Clear all land here (Beta 1.128: those are the ONLY doors; a map tap on a picked street opens its sectors instead), so a street leaves with ALL of its draft state (geometry, primary flag, names, sector pick, cached parts) and every face re-renders from the same state
   if (!draft || !draft.roads[name]) return;
-  delete draft.roads[name]; draft.mains.delete(name); delete draft.osmNames[name]; crGeomGen++; // Beta 1.135 (N3): the removal invalidates the shared draft geometry (see crDraftGeom)
+  delete draft.roads[name]; draft.primaries.delete(name); delete draft.osmNames[name]; crGeomGen++; // Beta 1.135 (N3): the removal invalidates the shared draft geometry (see crDraftGeom)
   if (draft.sectors) delete draft.sectors[name];
   if (draft.parts) delete draft.parts[name];
   delete crPending[name];
@@ -7696,7 +7696,7 @@ async function crRunCitySearch() {
 // object are replaced wholesale by every structural change except two (new draft,
 // photo-door import, Clear all, exit), which the identity keys catch; the only in-place
 // geometry mutations are crAddStreet joining a street and crRemoveStreet removing one,
-// and both bump crGeomGen. Selection-only changes - sector picks, MAIN/2ND flips - touch
+// and both bump crGeomGen. Selection-only changes - sector picks, PRIMARY/2ND flips - touch
 // neither key and never recompute. Identity-proven in the 1.135 fixture harness (the
 // cached geometry deep-equals a fresh computeStretches at every step); drives 156-158
 // judge the flows.
@@ -7713,7 +7713,7 @@ function ensureDraftLayers() {
   try {
     if (!map.getSource(DRAFT_SRC)) map.addSource(DRAFT_SRC, { type: 'geojson', data: { type: 'FeatureCollection', features: [] } });
     if (!map.getLayer('crDraftCase')) map.addLayer({ id: 'crDraftCase', type: 'line', source: DRAFT_SRC, filter: ['==', ['get', 'chosen'], 1], layout: { 'line-cap': 'round', 'line-join': 'round' }, paint: { 'line-color': 'rgba(10,14,34,.55)', 'line-width': 12.75 } }); // Beta 1.127: the casing underlines CHOSEN geometry only - an unchosen sector wears no casing, like the mockup's plain grey ends. Beta 1.182: 12.75 = the 1.127 casing x 1.5 - the draft's DRAWN widths carry the same factor Beta 1.181 gave every road (ROAD_WIDTH_K in the generator, WIDTH_K in the engine; both live outside this part's scope, so the coupled values are literals here), and a chosen street's selection again spans the widened road it sits on (measured on the live 1.181 build: casing 8.5 and line 4.5 against a 12 px minor road at z17 - the selection sat INSIDE the road with white showing both sides)
-    if (!map.getLayer('crDraftLine')) map.addLayer({ id: 'crDraftLine', type: 'line', source: DRAFT_SRC, layout: { 'line-cap': 'round', 'line-join': 'round' }, paint: { 'line-color': ['case', ['==', ['get', 'chosen'], 1], ['case', ['==', ['get', 'main'], 1], '#ffc233', '#ef476f'], '#b9c1cb'], 'line-width': ['case', ['==', ['get', 'chosen'], 1], 6.75, 4.5] } }); // Beta 1.127: chosen = category colour at full width; unchosen = thin grey. Beta 1.182: both branches x 1.5 with the casing above (6.75 chosen, 4.5 unchosen) - the chosen/unchosen ratio is the 1.127 design's, unchanged; crDraftHit below is the pick TARGET, not drawing, and is deliberately NOT scaled (the tap boxes are Andrew's device-tuned precision, 1.156)
+    if (!map.getLayer('crDraftLine')) map.addLayer({ id: 'crDraftLine', type: 'line', source: DRAFT_SRC, layout: { 'line-cap': 'round', 'line-join': 'round' }, paint: { 'line-color': ['case', ['==', ['get', 'chosen'], 1], ['case', ['==', ['get', 'primary'], 1], '#ffc233', '#ef476f'], '#b9c1cb'], 'line-width': ['case', ['==', ['get', 'chosen'], 1], 6.75, 4.5] } }); // Beta 1.127: chosen = category colour at full width; unchosen = thin grey. Beta 1.182: both branches x 1.5 with the casing above (6.75 chosen, 4.5 unchosen) - the chosen/unchosen ratio is the 1.127 design's, unchanged; crDraftHit below is the pick TARGET, not drawing, and is deliberately NOT scaled (the tap boxes are Andrew's device-tuned precision, 1.156)
     if (!map.getLayer('crDraftHit')) map.addLayer({ id: 'crDraftHit', type: 'line', source: DRAFT_SRC, layout: { 'line-cap': 'round', 'line-join': 'round' }, paint: { 'line-color': '#000000', 'line-opacity': 0, 'line-width': 24 } }); // Beta 1.127: the sector pick's fat-finger target - invisible, queryable (crSectorTap)
   } catch (e) { /* the style may still be loading - renderDraft retries on every change */ }
 }
@@ -7725,14 +7725,14 @@ function renderDraft() { // the DRAFT renders through its own GeoJSON source, co
   if (draft) {
     const g = crDraftGeom(); // Beta 1.135 (N3): the shared draft geometry - computed once per geometry change, not once per render
     for (const n of draftStreets()) {
-      const main = draft.mains.has(n) ? 1 : 0;
+      const primary = draft.primaries.has(n) ? 1 : 0;
       const sel = draft.sectors ? draft.sectors[n] : null;
       if (sel || crSectorSession.street === n) {
         const rec = crStreetParts(n); if (!rec) continue;
         const set = crChosenSet(n, rec);
-        for (let i = 0; i < rec.parts.length; i++) { const L = rec.parts[i]; if (L && L.length > 1) feats.push({ type: 'Feature', properties: { name: n, main, chosen: set.has(i) ? 1 : 0, sector: i }, geometry: { type: 'LineString', coordinates: L.map(p => [p[1], p[0]]) } }); }
+        for (let i = 0; i < rec.parts.length; i++) { const L = rec.parts[i]; if (L && L.length > 1) feats.push({ type: 'Feature', properties: { name: n, primary, chosen: set.has(i) ? 1 : 0, sector: i }, geometry: { type: 'LineString', coordinates: L.map(p => [p[1], p[0]]) } }); }
       } else {
-        const st = g[n]; if (st) for (const run of st.runs) { const L = run.line; if (L && L.length > 1) feats.push({ type: 'Feature', properties: { name: n, main, chosen: 1, sector: -1 }, geometry: { type: 'LineString', coordinates: L.map(p => [p[1], p[0]]) } }); } // Beta 1.144 (C1): an untrimmed street draws all its runs - one feature per run, never a line bridging them
+        const st = g[n]; if (st) for (const run of st.runs) { const L = run.line; if (L && L.length > 1) feats.push({ type: 'Feature', properties: { name: n, primary, chosen: 1, sector: -1 }, geometry: { type: 'LineString', coordinates: L.map(p => [p[1], p[0]]) } }); } // Beta 1.144 (C1): an untrimmed street draws all its runs - one feature per run, never a line bridging them
       }
     }
   }
@@ -7795,22 +7795,22 @@ function crSetBackdrop(on) {
 }
 function crRowEl(n, g) {
   const row = document.createElement('div'); row.className = 'crRow';
-  const main = draft.mains.has(n);
-  const dot = document.createElement('span'); dot.className = 'crDot ' + (main ? 'main' : 'sec'); row.appendChild(dot);
+  const primary = draft.primaries.has(n);
+  const dot = document.createElement('span'); dot.className = 'crDot ' + (primary ? 'primary' : 'sec'); row.appendChild(dot);
   const nm = document.createElement('span'); nm.className = 'crName'; nm.textContent = shortStreetName(n); row.appendChild(nm); // Beta 1.144 (DA-04): rows display the short name; the draft key behind them is the full map name
   const ln = document.createElement('span'); ln.className = 'crLen'; ln.textContent = fmtLenM(crStreetChosenM(n, g)); row.appendChild(ln); // Beta 1.130 (maintainability re-scan N1): the preview's rows bill the CHOSEN length through the same helper as the panel's rows and every total - through 1.129 this read g[n].total, so a sector-trimmed street showed its WHOLE length on the check screen while the panel billed the trim and the preview's own total (renderCrLists sums crStreetChosenM) disagreed with its rows
-  const chip = document.createElement('button'); chip.className = 'crChip ' + (main ? 'main' : 'sec'); chip.textContent = main ? 'MAIN' : '2ND';
-  chip.addEventListener('click', () => { if (draft.mains.has(n)) draft.mains.delete(n); else draft.mains.add(n); renderDraft(); renderCrLists(); });
+  const chip = document.createElement('button'); chip.className = 'crChip ' + (primary ? 'primary' : 'sec'); chip.textContent = primary ? 'PRIMARY' : '2ND';
+  chip.addEventListener('click', () => { if (draft.primaries.has(n)) draft.primaries.delete(n); else draft.primaries.add(n); renderDraft(); renderCrLists(); });
   row.appendChild(chip);
   const del = document.createElement('button'); del.className = 'crDel'; del.textContent = '✕'; del.title = 'Remove ' + shortStreetName(n);
   del.addEventListener('click', () => crRemoveStreet(n)); // Beta 1.127: the shared removal path (sector state leaves with the street)
   row.appendChild(del);
   return row;
 }
-function crPanelRowEl(n, g) { // Beta 1.127 (Andrew's approved mockup, screen 2): one short row per picked road - category dot, name, "Entire road · X m" or "N of M sectors · X m", the MAIN/2ND chip IN the row (one tap flips the road's type), x to remove; tapping the row itself opens the street's sector trimming
-  const main = draft.mains.has(n);
+function crPanelRowEl(n, g) { // Beta 1.127 (Andrew's approved mockup, screen 2): one short row per picked road - category dot, name, "Entire road · X m" or "N of M sectors · X m", the PRIMARY/2ND chip IN the row (one tap flips the road's type), x to remove; tapping the row itself opens the street's sector trimming
+  const primary = draft.primaries.has(n);
   const row = document.createElement('div'); row.className = 'crPRow';
-  const dot = document.createElement('span'); dot.className = 'crDot ' + (main ? 'main' : 'sec'); row.appendChild(dot);
+  const dot = document.createElement('span'); dot.className = 'crDot ' + (primary ? 'primary' : 'sec'); row.appendChild(dot);
   const meta = document.createElement('span'); meta.className = 'crPMeta';
   const nm = document.createElement('span'); nm.className = 'crPName'; nm.textContent = shortStreetName(n); meta.appendChild(nm); // Beta 1.144 (DA-04): display form, as in the preview rows
   const sub = document.createElement('span'); sub.className = 'crPSub';
@@ -7818,8 +7818,8 @@ function crPanelRowEl(n, g) { // Beta 1.127 (Andrew's approved mockup, screen 2)
   if (sel) { const rec = crStreetParts(n); sub.textContent = sel.length + ' of ' + (rec ? rec.parts.length : sel.length) + ' sectors · ' + fmtLenM(crStreetChosenM(n, g)) + ' — tap row to adjust'; }
   else sub.textContent = 'Entire road · ' + fmtLenM(g[n] ? g[n].total : 0) + ' — tap row to adjust'; // Beta 1.128: the adjust affordance is stated BEFORE any trim exists - in 1.127 it appeared only after one, so an untrimmed row gave no hint it could be tapped at all
   meta.appendChild(sub); row.appendChild(meta);
-  const chip = document.createElement('button'); chip.className = 'crPChip ' + (main ? 'main' : 'sec'); chip.textContent = main ? 'MAIN' : '2ND';
-  chip.addEventListener('click', e => { e.stopPropagation(); if (draft.mains.has(n)) draft.mains.delete(n); else draft.mains.add(n); renderDraft(); renderCrLists(); });
+  const chip = document.createElement('button'); chip.className = 'crPChip ' + (primary ? 'primary' : 'sec'); chip.textContent = primary ? 'PRIMARY' : '2ND';
+  chip.addEventListener('click', e => { e.stopPropagation(); if (draft.primaries.has(n)) draft.primaries.delete(n); else draft.primaries.add(n); renderDraft(); renderCrLists(); });
   row.appendChild(chip);
   const del = document.createElement('button'); del.className = 'crPDel'; del.textContent = '✕'; del.title = 'Remove ' + shortStreetName(n);
   del.addEventListener('click', e => { e.stopPropagation(); crRemoveStreet(n); });
@@ -7833,7 +7833,7 @@ function renderCrLists() {
   const names = draftStreets().sort((a, b) => a.localeCompare(b));
   let tot = 0; for (const n of names) tot += crStreetChosenM(n, g); // Beta 1.127: totals bill CHOSEN lengths - a trimmed street's unchosen ends never count
   $('crCount').textContent = names.length + ' roads · ' + fmtLenM(tot); // Beta 1.127: the panel header's count in the mockup's shape ("3 roads · 2,410 m")
-  $('pvCount').textContent = names.length + ' streets · ' + draft.mains.size + ' mains · ' + fmtLenM(tot); // the preview keeps its fuller count line
+  $('pvCount').textContent = names.length + ' streets · ' + draft.primaries.size + ' primaries · ' + fmtLenM(tot); // the preview keeps its fuller count line
   { const el = $('crPickList'); el.innerHTML = ''; for (const n of names) el.appendChild(crPanelRowEl(n, g)); }
   { const el = $('pvList'); el.innerHTML = ''; for (const n of names) el.appendChild(crRowEl(n, g)); }
   for (const pk of Object.keys(crPending).sort()) { // Beta 1.121: pending streets (shape reaches past verified coverage) list in the PICK sheet only - never in the preview, never in the count, never saved
@@ -7961,7 +7961,7 @@ function importDraft(text) { // fail closed, named errors, nothing half-applied 
   const v = normalizePack(raw, { draft: true });
   if (!v.ok) { toast('Draft not imported — ' + v.error, 4000); return; }
   draft = newDraft();
-  draft.roads = v.pack.roads; draft.mains = new Set(v.pack.main); draft.name = v.pack.name || ''; draft.area = v.pack.area || ''; draft.tileNames = v.pack.tileNames.slice();
+  draft.roads = v.pack.roads; draft.primaries = new Set(v.pack.main); draft.name = v.pack.name || ''; draft.area = v.pack.area || ''; draft.tileNames = v.pack.tileNames.slice();
   draft.osmNames = {}; for (const k of Object.keys(v.pack.roads)) draft.osmNames[k] = k; // Beta 1.169 (Carbon fix round, D-02): an imported street's own OSM name is its pack key. Through 1.168 importDraft left osmNames empty, so crStreetParts' own-ways skip (nm === own) never matched for an imported street and the street's own geometry cut it into fragments at its own vertices. Tapped streets have always carried key -> itself (crAddStreet).
   enterCreate('preview');
   toast('Draft loaded — check it over', 2600);
@@ -8288,7 +8288,7 @@ $('crReviewBtn').addEventListener('click', () => crExpandPanel()); // the bar's 
 $('crClearAll').addEventListener('click', () => { // Andrew's addition (2026-11-06): empty the picks at once - behind the shared confirm, the same discipline as Start over and route deletion; the city and the session stay
   const n = draft ? draftStreets().length : 0; if (!n) return;
   crConfirm('Clear all ' + n + (n === 1 ? ' road?' : ' roads?'), 'Every road you picked will be taken off this route. The city stays loaded.', () => {
-    draft.roads = {}; draft.mains.clear(); draft.osmNames = {}; draft.sectors = {}; draft.parts = {};
+    draft.roads = {}; draft.primaries.clear(); draft.osmNames = {}; draft.sectors = {}; draft.parts = {};
     crGeomGen++; crPending = {}; // Beta 1.170 (Carbon fix round Phase 2, D-04): the wholesale roads replacement obeys the same two duties as every other roads mutation - through 1.169 it was the one mutation that did not bump the geometry generation (the crDraftGeom cache's roads-identity key happens to catch this particular replacement, but the bump is the contract every other mutation keeps, and the cache's gen key exists to be moved by exactly this class of change) and it left the pending rows standing, so crSweepPending could re-add a street the user had just cleared
     crSectorReset();
     renderDraft(); renderCrLists(); crRenderHint();
@@ -8342,13 +8342,13 @@ function openNameIt() {
   $('crNameInput').value = draft.name || nextRouteNameGuess();
   $('crAreaInput').value = draft.area || crAreaGuess || lsGet(LS_GLOBAL.lastArea) || '';
   const g = crDraftGeom(); let tot = 0; for (const n of draftStreets()) tot += crStreetChosenM(n, g); // Beta 1.127: the summary bills what will actually save. Beta 1.135 (N3): the geometry comes through the shared cache like every other consumer
-  $('crNameSummary').textContent = draftStreets().length + ' streets · ' + draft.mains.size + ' mains · ' + fmtLenM(tot) + ' of road';
+  $('crNameSummary').textContent = draftStreets().length + ' streets · ' + draft.primaries.size + ' primaries · ' + fmtLenM(tot) + ' of road';
   if (!routeLoaded) restoreBootChrome(); else openRouteMenu();
   showRmPane('rmNamePane');
 }
 $('crNameBack').addEventListener('click', () => { if (!routeLoaded) parkBootChrome(); else closeRouteMenu(); setCreateStage('preview'); });
 $('crSaveBtn').addEventListener('click', saveDraftRoute);
-let crSaveInFlight = false; // Beta 1.170 (Carbon fix round Phase 2, D-03): single-flight for the save - the function is async (the store write awaits) and had no re-entrancy guard through 1.169, and the button carries no tap guard, so a double-tap ran it twice: both calls computed the same uniqueRouteId before either registered the pack, the second overwrote the first's store record, and the pack was pushed twice under one id; a late tap landing after a completed save's exitCreate had nulled the draft threw on draft.mains instead
+let crSaveInFlight = false; // Beta 1.170 (Carbon fix round Phase 2, D-03): single-flight for the save - the function is async (the store write awaits) and had no re-entrancy guard through 1.169, and the button carries no tap guard, so a double-tap ran it twice: both calls computed the same uniqueRouteId before either registered the pack, the second overwrote the first's store record, and the pack was pushed twice under one id; a late tap landing after a completed save's exitCreate had nulled the draft threw on draft.primaries instead
 async function saveDraftRoute() {
   if (crSaveInFlight) return;
   crSaveInFlight = true;
@@ -8356,7 +8356,7 @@ async function saveDraftRoute() {
   const name = $('crNameInput').value.trim();
   if (!name) { toast('Give the route a name first', 2600); return; }
   const area = $('crAreaInput').value.trim();
-  const v = normalizePack({ name, area, mains: [...draft.mains], roads: crFilteredRoads(), reference: {} }, { tileNames: [...Object.values(draft.osmNames), ...(draft.tileNames || [])] }); // Beta 1.127: the SAVE stores chosen sectors only - the draft keeps the whole streets, the pack never sees the unchosen ends
+  const v = normalizePack({ name, area, primaries: [...draft.primaries], roads: crFilteredRoads(), reference: {} }, { tileNames: [...Object.values(draft.osmNames), ...(draft.tileNames || [])] }); // Beta 1.127: the SAVE stores chosen sectors only - the draft keeps the whole streets, the pack never sees the unchosen ends
   if (!v.ok) { toast('Could not save — ' + v.error, 4000); return; }
   const pack = v.pack; pack.id = uniqueRouteId(name);
   if (!(await upPut(pack.id, pack))) { toast('Storage problem — the route could not be saved', 4000); return; } // Beta 1.166: the save is ONE route's own verified store write (create-packs.js) - the DA-05 hazard class is gone by construction: there is no whole-record read-modify-write left to erase another route, a corrupt legacy record cannot block a save it is no longer part of, and a failed write refuses THIS route only, before it is registered anywhere

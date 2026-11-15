@@ -8,7 +8,7 @@ const pts = [[43.0, -79.0], [43.002, -79.0]];
 const host = {
   MLAT,
   MLNG,
-  MAIN: new Set(['Main']),
+  PRIMARIES: new Set(['Main']),
   names: ['Main'],
   STRETCH: { Main: { runs: [{ parts: [pts] }] } },
   ROADS: { Main: [pts] },

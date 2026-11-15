@@ -142,8 +142,8 @@
   #filters button.on { background: linear-gradient(135deg, #3d65ef, #1b2fb6); color: #fff; }
   #sheetBody { overflow-y: auto; padding: 0 14px 14px; -webkit-overflow-scrolling: touch; }
   .srow { display: flex; align-items: center; gap: 11px; padding: 12px 4px; border-bottom: 1px solid var(--hair); font-size: 15px; cursor: pointer; min-height: 48px; } /* Beta 1.184: the redesign row type size */
-  .srow .dot { width: 9px; height: 9px; border-radius: 50%; background: #ef476f; flex-shrink: 0; } /* Beta 1.184: the redesign 9px state dot (colours unchanged: rose secondary-pending, gold main below, mint done) */
-  .srow.main .dot { background: #ffc233; }
+  .srow .dot { width: 9px; height: 9px; border-radius: 50%; background: #ef476f; flex-shrink: 0; } /* Beta 1.184: the redesign 9px state dot (colours unchanged: rose secondary-pending, gold primary below, mint done) */
+  .srow.primary .dot { background: #ffc233; }
   .srow.done .dot { background: #06d6a0; }
   .srow.done .nm { color: var(--done-nm); }
   .srow .tm { margin-left: auto; font-size: 12px; font-weight: 600; color: var(--tm-c); white-space: nowrap; } /* Beta 1.184: the status slot - its colour now comes from the .st-* state classes in the redesign block below */
@@ -194,11 +194,11 @@
   #stGroupC { color: #9a9aa2; font-weight: 600; letter-spacing: 0; }
   body.night #stGroupC { color: rgba(214,226,242,.55); }
   .srow .nm { font-weight: 500; }
-  .srow.half .dot { background: linear-gradient(90deg, #06d6a0 50%, #ef476f 50%); box-shadow: inset 0 0 0 1px rgba(0,0,0,.12); } /* Beta 1.184: ONE SIDE DONE wears a split disc - done mint | the group pending colour (rose here, gold for a main below) */
-  .srow.main.half .dot { background: linear-gradient(90deg, #06d6a0 50%, #ffc233 50%); box-shadow: inset 0 0 0 1px rgba(0,0,0,.12); }
+  .srow.half .dot { background: linear-gradient(90deg, #06d6a0 50%, #ef476f 50%); box-shadow: inset 0 0 0 1px rgba(0,0,0,.12); } /* Beta 1.184: ONE SIDE DONE wears a split disc - done mint | the group pending colour (rose here, gold for a primary below) */
+  .srow.primary.half .dot { background: linear-gradient(90deg, #06d6a0 50%, #ffc233 50%); box-shadow: inset 0 0 0 1px rgba(0,0,0,.12); }
   body.night .srow.done .dot { background: #9fd3ae; }
   body.night .srow.half .dot { background: linear-gradient(90deg, #9fd3ae 50%, #ef476f 50%); }
-  body.night .srow.main.half .dot { background: linear-gradient(90deg, #9fd3ae 50%, #ffc233 50%); }
+  body.night .srow.primary.half .dot { background: linear-gradient(90deg, #9fd3ae 50%, #ffc233 50%); }
   .srow .tm.st-done { color: #177245; }
   .srow .tm.st-half { color: #9c6d00; }
   .srow .tm.st-todo { color: #9a9aa2; }
@@ -419,7 +419,7 @@ body.snow-scene #routeMenu.boot { background: transparent; } /* Beta 1.159: whil
    flow. Panes live in the blue route menu (doors, photo, name-it); the pick
    and preview stages live on the map (search bar + bottom sheets) while
    body.creating hides the working chrome. Route colours carry the meaning:
-   gold = main, raspberry = secondary. */
+   gold = primary, raspberry = secondary. */
 body.creating #dock, body.creating #tabBar, body.creating #hud, body.creating #nightBtn, body.creating #centreBtn, body.creating #selPop, body.creating #chips, body.creating #suggest, body.creating #stale, body.creating #bakNudge, body.creating #mapNote { display: none !important; }
 /* Beta 1.120 (Andrew): the whole create row sits lower by HALF ITS OWN
    HEIGHT - the row's height is fixed at 50px (the search wrap and the
@@ -461,12 +461,12 @@ body.creating #dock, body.creating #tabBar, body.creating #hud, body.creating #n
 .crRow { display: flex; align-items: center; gap: 9px; padding: 9px 2px; border-bottom: 1px solid var(--hair); }
 .crRow:last-child { border-bottom: none; }
 .crDot { width: 11px; height: 11px; border-radius: 50%; flex: none; }
-.crDot.main { background: #ffc233; }
+.crDot.primary { background: #ffc233; }
 .crDot.sec { background: #ef476f; }
 .crName { flex: 1; min-width: 0; font-size: 16px; font-weight: 600; color: var(--ink); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
 .crLen { font-size: 13px; color: var(--ink-dim); font-weight: 600; }
 .crChip { border: none; border-radius: 999px; font-size: 12px; font-weight: 800; letter-spacing: .3px; padding: 6px 10px; cursor: pointer; flex: none; }
-.crChip.main { background: #ffc233; color: #4a3200; }
+.crChip.primary { background: #ffc233; color: #4a3200; }
 .crChip.sec { background: var(--chip); color: var(--ink-dim); }
 .crDel { border: none; background: none; color: #e63a2e; font-size: 18px; font-weight: 800; width: 34px; height: 34px; cursor: pointer; flex: none; }
 .crPrimary { appearance: none; -webkit-appearance: none; border: none; background: linear-gradient(135deg, #3d65ef, #1b2fb6); color: #fff; font-size: 17px; font-weight: 700; padding: 15px 18px; border-radius: 14px; width: 100%; cursor: pointer; }
@@ -495,9 +495,9 @@ body.creating #dock, body.creating #tabBar, body.creating #hud, body.creating #n
 .crPName { font-size: 16.5px; font-weight: 650; color: var(--ink); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
 .crPSub { font-size: 13px; color: var(--ink-dim); }
 .crPChip { border-radius: 9px; font-size: 12.5px; font-weight: 800; letter-spacing: .4px; padding: 7px 10px; cursor: pointer; flex: none; appearance: none; -webkit-appearance: none; }
-.crPChip.main { background: rgba(255,194,51,.22); color: #8a6100; border: 1.5px solid #ffc233; }
+.crPChip.primary { background: rgba(255,194,51,.22); color: #8a6100; border: 1.5px solid #ffc233; }
 .crPChip.sec { background: rgba(239,71,111,.12); color: #b02348; border: 1.5px solid rgba(239,71,111,.55); }
-body.night .crPChip.main { background: rgba(255,194,51,.14); color: #ffc233; }
+body.night .crPChip.primary { background: rgba(255,194,51,.14); color: #ffc233; }
 body.night .crPChip.sec { background: rgba(239,71,111,.16); color: #ff8fab; }
 .crPDel { border: none; background: rgba(230,58,46,.10); color: #c22f24; font-size: 14px; font-weight: 700; width: 34px; height: 34px; border-radius: 50%; cursor: pointer; flex: none; appearance: none; -webkit-appearance: none; }
 .crPanelBtns { flex-direction: row; }
@@ -538,7 +538,7 @@ input, textarea { caret-color: currentColor; } /* Beta 1.125 (Andrew): the typin
 <div id="hud">
   <div id="warn">Not saving — storage is full or blocked</div>
   <div class="row">
-    <div class="titleStack"><div class="title">Snow Route Beta</div><div class="ver" id="ver">Beta 1.204</div></div>
+    <div class="titleStack"><div class="title">Snow Route Beta</div><div class="ver" id="ver">Beta 1.205</div></div>
   </div>
   <div id="stats"></div>
 </div>
@@ -659,7 +659,7 @@ input, textarea { caret-color: currentColor; } /* Beta 1.125 (Andrew): the typin
   <div class="sheetHead"><div class="sheetTitle">Streets</div><button id="sheetClose">✕</button></div>
   <div id="stRoute"><span id="stRouteN"></span><span id="stRouteS"></span></div>
   <div id="stHero"></div>
-  <div id="filters"><button data-f="mains" class="on">Mains</button><button data-f="secondaries">Secondaries</button></div>
+  <div id="filters"><button data-f="primaries" class="on">Primaries</button><button data-f="secondaries">Secondaries</button></div>
   <div id="stGroup"><span id="stGroupN"></span><span id="stGroupC"></span></div>
   <div id="sheetBody"><div id="streetList"></div></div>
 </div>

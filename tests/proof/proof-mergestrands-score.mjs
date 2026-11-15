@@ -53,7 +53,7 @@ const STRETCH = {
 };
 const names = Object.keys(STRETCH);
 const host = {
-  MAIN: new Set(),
+  PRIMARIES: new Set(),
   MLAT, MLNG,
   jDistM: (a, b) => Math.hypot((b[1] - a[1]) * MLNG, (b[0] - a[0]) * MLAT),
   ptSegM(p, a, b) {
