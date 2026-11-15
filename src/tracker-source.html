@@ -4608,13 +4608,14 @@ let snapRival = null; // the switch challenger: { poly, n } - the rival polyline
 let snapFar = 0; // consecutive fixes farther than SNAP_FAR_M from the held road (the evidence timeout's counter)
 let snapW = 0; // the blend weight, 0..1: 0 = the true display point, 1 = fully on the centreline. Advanced per frame in renderTick toward (snapHeld ? 1 : 0)
 let snapOutPt = null; // the outgoing projection, kept when an ordinary release drops the hold mid-blend so snapBlendPt can ease the shown point back to the true position while the weight decays (cleared on engagement, on hard reset, and when the weight settles at 0)
+let snapAnchor = null; // the rendered point a road change (rival switch, drop-and-reengage, engage over a blend-out) eases FROM: the blend's origin while the weight re-rises toward the new road's projection, so a switch never teleports either (cleared when the weight settles at 1, on drop, and on hard reset)
 let snapSegHint = 0; // the held line's segment the last projection landed on (the per-frame projection searches outward from here)
 let snapFixN = 0; // fixes the matcher has processed (the acceptance drive's denominator guard)
-function snapDropHold() { // an ordinary release: the outgoing projection is captured BEFORE the hold clears, so the blend-out has geometry to ease from (snapBlendPt reads snapOutPt while no hold stands); at zero weight there is nothing showing to preserve
-  if (snapHeld && snapW > 0.001 && dispPos) { const pr = snapProject(dispPos); if (pr) snapOutPt = pr; }
-  snapHeld = null; snapRival = null; snapFar = 0; snapSegHint = 0;
+function snapDropHold() { // an ordinary release: the currently RENDERED point is captured BEFORE the hold clears, so the blend-out eases from exactly what is on screen (snapBlendPt reads snapOutPt while no hold stands); at zero weight there is nothing showing to preserve
+  if (snapW > 0.001 && dispPos) { const cur = snapBlendPt(); if (cur) snapOutPt = cur; }
+  snapHeld = null; snapRival = null; snapFar = 0; snapSegHint = 0; snapAnchor = null;
 }
-function snapReset() { snapDropHold(); snapW = 0; snapOutPt = null; } // the snap retires outright (watch stop, Start Clean): no blend-out - the state is simply gone before the next frame can show it (the weight is zeroed, so the captured outgoing point can never render, and it is cleared besides)
+function snapReset() { snapDropHold(); snapW = 0; snapOutPt = null; snapAnchor = null; } // the snap retires outright (watch stop, Start Clean): no blend-out - the state is simply gone before the next frame can show it (the weight is zeroed, so the captured outgoing point can never render, and it is cleared besides)
 function ptSegProj(p, a, b) { // ptSegM's twin (app1) that also returns the projected point, in [lat, lng]
   const ax = a[1] * MLNG, ay = a[0] * MLAT, bx = b[1] * MLNG, by = b[0] * MLAT, px = p[1] * MLNG, py = p[0] * MLAT;
   const vx = bx - ax, vy = by - ay, L2 = vx * vx + vy * vy;
@@ -4633,11 +4634,16 @@ function snapProject(ll) { // the nearest point of ll on the held road's line, o
     lo = Math.max(0, lo - 16); hi = Math.min(pts.length - 2, hi + 16);
   }
 }
-function snapBlendPt() { // the snapped rendering of the display track at the current blend weight, or null when the snap is showing nothing (no hold and no outgoing projection, no display point, or the blend fully out). While a hold stands the target is its live projection; during a release blend-out it is the projection captured at the drop, so the shown point walks back to the true position as the weight decays instead of teleporting the full offset in one frame.
+function snapBlendPt() { // the snapped rendering of the display track at the current blend weight, or null when the snap is showing nothing (no hold and no outgoing projection, no display point, or the blend fully out). While a hold stands the target is its live projection; during a release blend-out it is the point captured at the drop, so the shown point walks back to the true position as the weight decays instead of teleporting the full offset in one frame. The blend's ORIGIN is the true position normally, or the anchor after a road change (snapTakeHold), so a switch eases across from what was on screen.
   if (!dispPos || snapW <= 0.001) return null;
   const pr = snapHeld ? snapProject(dispPos) : snapOutPt; if (!pr) return null;
   if (snapW >= 0.999) return pr;
-  return [dispPos[0] + (pr[0] - dispPos[0]) * snapW, dispPos[1] + (pr[1] - dispPos[1]) * snapW];
+  const org = snapAnchor || dispPos;
+  return [org[0] + (pr[0] - org[0]) * snapW, org[1] + (pr[1] - org[1]) * snapW];
+}
+function snapTakeHold(poly, seg) { // every road change funnels through here (engage, drop-and-reengage, rival switch). The projection hint is SEEDED from the nearest search's own segment: snapProject's per-frame window trusts its hint, and a hint of 0 on a curved or looping run accepts an interior local minimum - a projection potentially hundreds of metres from the fix, which the full-line distance check cannot release (it reads the true distance). And when the snap is currently SHOWING something (weight up), the rendered point becomes the anchor and the weight restarts, so the shown point walks to the new road instead of teleporting; from free (weight 0) nothing is showing and the plain engage blend runs.
+  if (snapW > 0.001 && dispPos) { const cur = snapBlendPt(); if (cur) { snapAnchor = cur; snapW = 0; } }
+  snapHeld = poly; snapSegHint = seg; snapFar = 0; snapRival = null; snapOutPt = null;
 }
 // ---- the road index: the active route's lines + one shipped city pack, segment-gridded ----
 let snapCat = null; // the pack catalogue once loaded ([{ slug, name, bbox: [s, w, n, e] }]); null before, [] when the library failed to load
@@ -4672,13 +4678,13 @@ function snapGeoEnsure(ll) { // make the index match the area ll is in. Async by
     snapGeo = snapBuildIndex(polys, want); snapDropHold();
   }, () => { snapGeoBusy = false; snapGeoFailSlug = slug; snapGeoFailAt = Date.now(); if (!snapGeo) snapGeo = snapBuildIndex(snapRoutePolys(), routeKey + '|~'); });
 }
-function snapNearest(ll) { // the nearest indexed polyline to ll: { poly, d } or null. One ring of grid cells is a complete search (see SNAP_CELL_M): nothing found means no road within ~60 m, past every decision distance.
+function snapNearest(ll) { // the nearest indexed polyline to ll: { poly, d, seg } or null - seg is the polyline's own nearest segment, the seed every take of the hold hands snapProject (see snapTakeHold). One ring of grid cells is a complete search (see SNAP_CELL_M): nothing found means no road within ~60 m, past every decision distance.
   if (!snapGeo) return null;
   const cx = Math.floor(ll[1] * MLNG / SNAP_CELL_M), cy = Math.floor(ll[0] * MLAT / SNAP_CELL_M);
   const best = new Map();
-  for (let gx = cx - 1; gx <= cx + 1; gx++) for (let gy = cy - 1; gy <= cy + 1; gy++) { const arr = snapGeo.grid.get(gx + ':' + gy); if (!arr) continue; for (let j = 0; j < arr.length; j += 2) { const poly = snapGeo.polys[arr[j]]; const d = ptSegM(ll, poly.pts[arr[j + 1]], poly.pts[arr[j + 1] + 1]); if (!best.has(arr[j]) || d < best.get(arr[j])) best.set(arr[j], d); } }
-  let bp = null, bd = Infinity; for (const [pi, d] of best) if (d < bd) { bd = d; bp = snapGeo.polys[pi]; }
-  return bp ? { poly: bp, d: bd } : null;
+  for (let gx = cx - 1; gx <= cx + 1; gx++) for (let gy = cy - 1; gy <= cy + 1; gy++) { const arr = snapGeo.grid.get(gx + ':' + gy); if (!arr) continue; for (let j = 0; j < arr.length; j += 2) { const poly = snapGeo.polys[arr[j]]; const d = ptSegM(ll, poly.pts[arr[j + 1]], poly.pts[arr[j + 1] + 1]); const cur = best.get(arr[j]); if (!cur || d < cur.d) best.set(arr[j], { d, seg: arr[j + 1] }); } }
+  let bp = null, bd = Infinity, bs = 0; for (const [pi, b] of best) if (b.d < bd) { bd = b.d; bp = snapGeo.polys[pi]; bs = b.seg; }
+  return bp ? { poly: bp, d: bd, seg: bs } : null;
 }
 function snapHeldDist(ll) { let bd = Infinity; const pts = snapHeld.pts; for (let i = 0; i < pts.length - 1; i++) { const d = ptSegM(ll, pts[i], pts[i + 1]); if (d < bd) bd = d; } return bd; }
 function snapFix(speed, acc, ll) { // fed once per accepted fix, beside dispHoldFix - the study sim's state machine (measure3) on the raw fix, plus design (a)'s accuracy gate and evidence timeout and design (b)'s hard clean exit. Display-only: it writes nothing but the snap state above; the blend in renderTick/dispShownPos is its only mouth.
@@ -4690,18 +4696,18 @@ function snapFix(speed, acc, ll) { // fed once per accepted fix, beside dispHold
   if (!snapGeo) { snapDropHold(); return; }
   const near = snapNearest(ll);
   if (!snapHeld) {
-    if (near && near.d <= SNAP_ENGAGE_M && acc <= SNAP_ACC_M) { snapHeld = near.poly; snapSegHint = 0; snapFar = 0; snapRival = null; snapOutPt = null; }
+    if (near && near.d <= SNAP_ENGAGE_M && acc <= SNAP_ACC_M) snapTakeHold(near.poly, near.seg);
     return;
   }
   let hd = snapHeldDist(ll);
   if (hd > SNAP_DROP_M) { // the held road is gone: drop it, and let this same fix take a fresh candidate if one is close (the sim's drop-and-reengage)
     snapDropHold();
-    if (near && near.d <= SNAP_ENGAGE_M) { snapHeld = near.poly; snapSegHint = 0; snapOutPt = null; hd = snapHeldDist(ll); } else return;
+    if (near && near.d <= SNAP_ENGAGE_M) { snapTakeHold(near.poly, near.seg); hd = snapHeldDist(ll); } else return;
   }
   if (hd > SNAP_FAR_M) { if (++snapFar >= SNAP_FAR_N) { snapDropHold(); return; } } else snapFar = 0; // the evidence timeout: persistently far from the held road with no dominant rival - release to the true position rather than ride a wrong road
   if (near && near.poly !== snapHeld && hd - near.d >= SNAP_SWITCH_M) {
     if (snapRival && snapRival.poly === near.poly) snapRival.n++; else snapRival = { poly: near.poly, n: 1 };
-    if (snapRival.n >= SNAP_SWITCH_N) { snapHeld = near.poly; snapSegHint = 0; snapRival = null; snapFar = 0; snapOutPt = null; }
+    if (snapRival.n >= SNAP_SWITCH_N) snapTakeHold(near.poly, near.seg);
   } else snapRival = null;
 }
 function renderTick(now) {
@@ -4711,7 +4717,7 @@ function renderTick(now) {
     const dtF = lastDispAt ? Math.min(0.25, Math.max(0, (pNow - lastDispAt) / 1000)) : 0; lastDispAt = pNow;
     if (dtF > 0 && !dispSettled()) { const k = Math.pow(0.2, dtF / 0.3); dispOff = [dispOff[0] * k, dispOff[1] * k]; if (dispSettled()) dispOff = [0, 0]; } // the correction offset decays with a ~0.3 s time constant, on the same performance clock the prediction reads
     dispPos = [pred[0] + dispOff[0] / MLAT, pred[1] + dispOff[1] / MLNG];
-    { const tgt = snapHeld ? 1 : 0; if (dtF > 0 && snapW !== tgt) { snapW = tgt + (snapW - tgt) * Math.pow(0.1, dtF / SNAP_BLEND_S); if (Math.abs(snapW - tgt) < 0.002) snapW = tgt; if (snapW === 0) snapOutPt = null; } } // Beta 1.204: the snap blend advances per frame toward the held state (in on engage, out on release - the same ease both ways, so the shown point never teleports), on this same frame clock and step (dtF) as the correction decay above
+    { const tgt = snapHeld ? 1 : 0; if (dtF > 0 && snapW !== tgt) { snapW = tgt + (snapW - tgt) * Math.pow(0.1, dtF / SNAP_BLEND_S); if (Math.abs(snapW - tgt) < 0.002) snapW = tgt; if (snapW === 0) snapOutPt = null; else if (snapW === 1) snapAnchor = null; } } // Beta 1.204: the snap blend advances per frame toward the held state (in on engage, out on release - the same ease both ways, so the shown point never teleports), on this same frame clock and step (dtF) as the correction decay above
   }
   let camKey = ''; // Beta 1.182: the camera state that sizes the puck joins the push key, bucketed - quarter-zoom (sets the scale), half-degree bearing (rotates the projected measure), 2-degree pitch (sets its anisotropy), the puck's own projected position on a 16 px grid and the viewport size (Codex's fourth catch on PR #19: under pitch the local stretch varies across the viewport, so PANNING a pitched map with a stationary fix moves the puck through the perspective gradient without changing zoom, bearing or pitch - the stale radii could carry it past the cap near the viewport's bottom edge). Together these are every input the projection of a static ground point depends on, so any change that could resize the puck re-pushes the glyph even when nothing moved.
   if (map) { camKey = Math.round(map.getZoom() * 4) / 4 + ',' + Math.round(map.getBearing() * 2) / 2 + ',' + Math.round(map.getPitch() / 2) * 2 + ',' + map.getCanvas().clientWidth + 'x' + map.getCanvas().clientHeight; if (dispPos) { const pp = map.project([dispShownPos()[1], dispShownPos()[0]]); camKey += ',' + Math.round(pp.x / 16) + ':' + Math.round(pp.y / 16); } } // Beta 1.194: the puck's projected position is the RENDERED point (dispShownPos) - keyed on what is actually drawn, so a held puck does not re-push frames for display-track motion nobody sees
