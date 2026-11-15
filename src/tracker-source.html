@@ -538,7 +538,7 @@ input, textarea { caret-color: currentColor; } /* Beta 1.125 (Andrew): the typin
 <div id="hud">
   <div id="warn">Not saving — storage is full or blocked</div>
   <div class="row">
-    <div class="titleStack"><div class="title">Snow Route Beta</div><div class="ver" id="ver">Beta 1.203</div></div>
+    <div class="titleStack"><div class="title">Snow Route Beta</div><div class="ver" id="ver">Beta 1.204</div></div>
   </div>
   <div id="stats"></div>
 </div>
@@ -4235,7 +4235,8 @@ function validateSnap(raw, expectAt, G) { // Beta 1.95 (deep audit SR-194-03): a
 // persistRunDist inside it window the trail to the new run, so anything recorded before this
 // Start is evicted here (finish/cancel already clear theirs; the fence makes the window
 // invariant local to Start rather than trusting every exit path).
-function startClean() { runSnap = { pieces: JSON.parse(JSON.stringify(pieces)), pieceTimes: JSON.parse(JSON.stringify(pieceTimes)), done: [...doneSet], times: { ...doneTimes }, via: { ...doneVia }, cov: JSON.parse(JSON.stringify(coveredIdx)) }; runStart = Date.now(); runDist = { run: runStart, m: 0, end: null }; runDistWrote = { run: 0, m: 0, end: null }; persistRunDist(true); const trailAtStart = trail.length; trail = trailWindow(trail, runStart); if (trail.length !== trailAtStart) markDirty('trail'); const okSnap = saveSnap(); const okSess = noteSessionStart(); const okStart = saveAllWarned(); startGps(true); updateCount(); syncWake(); if (okStart.ok && okSess.ok && okSnap.ok) toast('Clean started · ' + fmtClock(new Date())); else if (!okStart.ok) toast('Clean started — warning: the run state could not be saved (storage problem)', 4200); else if (!okSess.ok) toast('Clean started — warning: the session marker could not be saved; it will keep retrying', 4200); else toast('Clean started — warning: the cancel safety snapshot could not be saved; it will keep retrying', 4200); checkStale(); } // Beta 1.167 (B5): startClean banks a fresh distance counter for the new run (the runDist assignment + persistRunDist(true) beside runStart above), so even an instant reload resumes THIS run's counter. // Beta 1.73 (audit C04): the marker save is part of the start's honesty check, not a silent side write // Beta 1.63 (audit F04): the clean still starts - he is standing in the snow - but the message stops claiming a saved state that does not exist
+function startClean() { snapReset(); // Beta 1.204: Start Clean is the driving snap's HARD EXIT - the hold and the blend die at the tap itself, so the shown point is already back on the true position before the clean's first fix; snapFix's runStart gate then keeps snapping impossible for the whole clean
+  runSnap = { pieces: JSON.parse(JSON.stringify(pieces)), pieceTimes: JSON.parse(JSON.stringify(pieceTimes)), done: [...doneSet], times: { ...doneTimes }, via: { ...doneVia }, cov: JSON.parse(JSON.stringify(coveredIdx)) }; runStart = Date.now(); runDist = { run: runStart, m: 0, end: null }; runDistWrote = { run: 0, m: 0, end: null }; persistRunDist(true); const trailAtStart = trail.length; trail = trailWindow(trail, runStart); if (trail.length !== trailAtStart) markDirty('trail'); const okSnap = saveSnap(); const okSess = noteSessionStart(); const okStart = saveAllWarned(); startGps(true); updateCount(); syncWake(); if (okStart.ok && okSess.ok && okSnap.ok) toast('Clean started · ' + fmtClock(new Date())); else if (!okStart.ok) toast('Clean started — warning: the run state could not be saved (storage problem)', 4200); else if (!okSess.ok) toast('Clean started — warning: the session marker could not be saved; it will keep retrying', 4200); else toast('Clean started — warning: the cancel safety snapshot could not be saved; it will keep retrying', 4200); checkStale(); } // Beta 1.167 (B5): startClean banks a fresh distance counter for the new run (the runDist assignment + persistRunDist(true) beside runStart above), so even an instant reload resumes THIS run's counter. // Beta 1.73 (audit C04): the marker save is part of the start's honesty check, not a silent side write // Beta 1.63 (audit F04): the clean still starts - he is standing in the snow - but the message stops claiming a saved state that does not exist
 // Beta 1.91 (Andrew): Cancel start erases everything the run recorded - its trail points, its session
 // marker, any sides marked during it, its coverage and suggestions - and stores nothing. Only Finish
 // stores a run. (Supersedes the Beta 1.70 A04 call that kept the trail as history - Andrew's word.)
@@ -4538,7 +4539,7 @@ let dispHoldPrev = null; // dispPos at the previous fix - the display-step basis
 let dispHoldSteps = []; // the last 3 display steps (m)
 let dispHoldN = 0; // fixes the state machine has seen (the engage test needs three real steps behind it)
 let dispHoldLow = 0, dispHoldFast = 0, dispHoldFar = 0; // consecutive-fix counters: slow (engage), >= 0.5 m/s and raw-displaced (exit)
-function dispShownPos() { return dispHoldPt || dispPos; } // THE rendered position: the held point while the hold is engaged, the display track otherwise. Every rendered consumer reads this; every recording consumer keeps reading dispPos/gpsPos.
+function dispShownPos() { return dispHoldPt || snapBlendPt() || dispPos; } // THE rendered position: the stillness hold's point while it is engaged, else the road snap's blended point while a driving snap holds (Beta 1.204, the snap block below), else the display track. Every rendered consumer reads this; every recording consumer keeps reading dispPos/gpsPos. The two display transforms can never fight: the hold engages under 0.5 m/s and the snap only above 4 m/s, and the hold is read first regardless.
 function dispHoldReset() { dispHoldPt = null; dispHoldRaw = null; dispHoldPrev = null; dispHoldSteps = []; dispHoldN = 0; dispHoldLow = 0; dispHoldFast = 0; dispHoldFar = 0; }
 function dispHoldFix(speed, ll) { // fed once per accepted fix, at the same instant fixLogOut reads dispPos - the basis the judging simulation (analyze6c) was proven on
   const dp = dispPos;
@@ -4558,6 +4559,147 @@ function dispHoldFix(speed, ll) { // fed once per accepted fix, at the same inst
   dispHoldFar = (dispHoldRaw && distM(ll, dispHoldRaw) > 1.5) ? dispHoldFar + 1 : 0;
   if ((spd !== null && spd >= 0.8) || dispHoldFast >= 2 || dispHoldFar >= 2) { dispHoldPt = null; dispHoldRaw = null; dispHoldLow = 0; dispHoldFast = 0; dispHoldFar = 0; } // exit: one fix at honest moving speed, or two at creep threshold, or the raw position really has travelled - on the real data every exit jump measured 0.20-1.18 m and the one real creep released at its second fix with a 0.34 m jump
 }
+// Beta 1.204 (driving road snap, Andrew's ask + the map-matching study, work/mapmatch-study):
+// driving, the puck drifts off the drawn road - measured on Andrew's two real logged drives,
+// the DISPLAYED position sat a median 5.2 m (arterials) / 2.9 m (residential) off the nearest
+// centreline, past 3.5 m for 59% / 41% of moving fixes, with sustained 6-9 m runs on Highway
+// 27. The big apps answer this with map matching over a road graph; this app has no graph,
+// and the study's continuity-hold matcher - proven in simulation on those same two drives
+// (shown point within 3.5 m of the true road on 98.1% / 99.1% of engaged fixes, longest
+// wrong-road lock 2-3 fixes) - is what ships here, in the study's design (b) shape: an
+// explicit DRIVING state wrapping the hold, DISPLAY-ONLY throughout.
+// THE INVARIANT (the 2026-11-13 rejection, reaffirmed by the study): the recorded position
+// is never snapped. Coverage, trail, distance banking and the fix logger read gpsPos /
+// dispPos exactly as before - the snap is a second presentation transform inside
+// dispShownPos, beside the stillness hold, reachable only by rendered consumers. Three
+// guarantees keep the driveway objection dead: (1) that data path - a snapped value has no
+// route to any record; (2) the speed gate - engagement needs driving speed on EVERY fix
+// (one sub-gate fix releases outright), while plow work runs 0.5-3 m/s; (3) the hard exit -
+// a clean running makes snapping impossible, full stop (snapFix's runStart gate, and
+// startClean calls snapReset at the tap itself, before the clean's first fix).
+// ENTRY FORM (measured deviation from the study's (b) example, evidence in the build
+// record): the study sketched a multi-fix sustained entry (~5 s); priced against the
+// acceptance bars before this build, a 2-fix entry delay costs Drive 1 to 0.98113 and a
+// 3-fix delay to 0.98077 against the study's 0.98148 - both below the bar. The shipped
+// form therefore enters on the FIRST qualifying fix (the exact form the study simulated
+// and the replay sample showed) and carries "sustained" the sim's way: the gate is
+// re-earned on every single fix, so a hold can only ever persist through continuously
+// driving-speed fixes. The switch margin (3 m x 3 fixes), the drop distance (18 m), the
+// engage distance (12 m) and the speed gate (4 m/s) are the study's values exactly.
+// ROAD DATA: the index is built from what the app itself holds - the ACTIVE ROUTE's street
+// lines (always resident) plus the SHIPPED CITY PACK for the city containing the fix,
+// loaded through the create flow's own pack loader (crPackLoad; one same-origin download
+// per session per city, the download create mode already performs; packs are network-only
+// by the service worker's design, so a failed load simply means no snap - silently,
+// today's behaviour). Outside the twelve pack cities and the route's streets the app
+// holds no road geometry, so nothing snaps there. Stale geometry degrades the same way:
+// "no candidate nearby" is always answered with the true position, never a guess.
+const SNAP_SPEED_MPS = 4; // the driving-speed gate: engage and hold are re-earned on every fix at or above it; one fix below it releases
+const SNAP_ENGAGE_M = 12; // a candidate road must be within this of the fix to take the hold
+const SNAP_DROP_M = 18; // the hold drops when the fix is farther than this from the held road
+const SNAP_SWITCH_M = 3; // a rival road must beat the held road's distance by this margin...
+const SNAP_SWITCH_N = 3; // ...on this many consecutive fixes to take the hold (the parallel-road / merge defence)
+const SNAP_ACC_M = 20; // engagement only on fixes reporting accuracy at least this good (design (a); measured inert on the acceptance drives - their fixes report 12-14 m)
+const SNAP_FAR_M = 10; // evidence timeout: fixes farther than this from the held road...
+const SNAP_FAR_N = 5; // ...this many in a row release the hold to the true position even with no dominant rival (design (a)'s build addition; measured inert on the acceptance drives)
+const SNAP_BLEND_S = 0.8; // the shown point eases between the true position and the centreline over ~this long, both ways - engaging and releasing BLEND, never a teleport (Andrew's no-popping condition, confirmed on the sample)
+let snapHeld = null; // the held road: { name, pts } - ONE polyline (one street run of the index), or null
+let snapRival = null; // the switch challenger: { poly, n } - the rival polyline and its consecutive margin wins
+let snapFar = 0; // consecutive fixes farther than SNAP_FAR_M from the held road (the evidence timeout's counter)
+let snapW = 0; // the blend weight, 0..1: 0 = the true display point, 1 = fully on the centreline. Advanced per frame in renderTick toward (snapHeld ? 1 : 0)
+let snapSegHint = 0; // the held line's segment the last projection landed on (the per-frame projection searches outward from here)
+let snapFixN = 0; // fixes the matcher has processed (the acceptance drive's denominator guard)
+function snapDropHold() { snapHeld = null; snapRival = null; snapFar = 0; snapSegHint = 0; }
+function snapReset() { snapDropHold(); snapW = 0; } // the snap retires outright (watch stop, Start Clean): no blend-out - the state is simply gone before the next frame can show it
+function ptSegProj(p, a, b) { // ptSegM's twin (app1) that also returns the projected point, in [lat, lng]
+  const ax = a[1] * MLNG, ay = a[0] * MLAT, bx = b[1] * MLNG, by = b[0] * MLAT, px = p[1] * MLNG, py = p[0] * MLAT;
+  const vx = bx - ax, vy = by - ay, L2 = vx * vx + vy * vy;
+  let t = L2 ? ((px - ax) * vx + (py - ay) * vy) / L2 : 0; t = Math.max(0, Math.min(1, t));
+  const qx = ax + vx * t, qy = ay + vy * t;
+  return { d: Math.hypot(px - qx, py - qy), pt: [qy / MLAT, qx / MLNG] };
+}
+function snapProject(ll) { // the nearest point of ll on the held road's line, or null when nothing is held. The search starts around the last segment and widens only when the best point sits at the window's edge - a held run is one street run (tens of segments), so even the widened scan is cheap, and the window keeps the per-frame cost flat on the long highway runs.
+  if (!snapHeld) return null;
+  const pts = snapHeld.pts; if (!pts || pts.length < 2) return null;
+  let lo = Math.max(0, snapSegHint - 8), hi = Math.min(pts.length - 2, snapSegHint + 8);
+  for (;;) {
+    let best = null;
+    for (let i = lo; i <= hi; i++) { const q = ptSegProj(ll, pts[i], pts[i + 1]); if (!best || q.d < best.d) best = { d: q.d, pt: q.pt, i }; }
+    if ((best.i > lo && best.i < hi) || (lo === 0 && hi === pts.length - 2)) { snapSegHint = best.i; return best.pt; }
+    lo = Math.max(0, lo - 16); hi = Math.min(pts.length - 2, hi + 16);
+  }
+}
+function snapBlendPt() { // the snapped rendering of the display track at the current blend weight, or null when the snap is showing nothing (no hold, no display point, or the blend fully out)
+  if (!snapHeld || !dispPos || snapW <= 0.001) return null;
+  const pr = snapProject(dispPos); if (!pr) return null;
+  if (snapW >= 0.999) return pr;
+  return [dispPos[0] + (pr[0] - dispPos[0]) * snapW, dispPos[1] + (pr[1] - dispPos[1]) * snapW];
+}
+// ---- the road index: the active route's lines + one shipped city pack, segment-gridded ----
+let snapCat = null; // the pack catalogue once loaded ([{ slug, name, bbox: [s, w, n, e] }]); null before, [] when the library failed to load
+let snapCatKicked = false; // the catalogue request has been fired
+let snapGeo = null; // { key, polys: [{ name, pts }], grid: Map<'gx:gy', flat [polyIdx, segIdx, ...]> } - the index the matcher reads
+let snapGeoBusy = false; // an async pack build is in flight
+let snapGeoFailSlug = '', snapGeoFailAt = 0; // the last failed pack build (60 s cooldown: a dead pack is retried at most once a minute, never per fix)
+const SNAP_CELL_M = 60; // the index grid cell; a 3x3 lookup around a fix always covers >= 60 m - past every decision distance (engage 12, drop 18), so one ring of cells is a complete candidate search
+function snapRoutePolys() { const out = []; for (const n of Object.keys(STRETCH)) { const st = STRETCH[n]; if (!st || !st.runs) continue; for (const r of st.runs) if (r.line && r.line.length > 1) out.push({ name: n, pts: r.line }); } return out; }
+function snapBuildIndex(polys, key) {
+  const grid = new Map();
+  for (let pi = 0; pi < polys.length; pi++) { const pts = polys[pi].pts; for (let i = 0; i < pts.length - 1; i++) { const ax = pts[i][1] * MLNG, ay = pts[i][0] * MLAT, bx = pts[i + 1][1] * MLNG, by = pts[i + 1][0] * MLAT; const x0 = Math.floor(Math.min(ax, bx) / SNAP_CELL_M), x1 = Math.floor(Math.max(ax, bx) / SNAP_CELL_M), y0 = Math.floor(Math.min(ay, by) / SNAP_CELL_M), y1 = Math.floor(Math.max(ay, by) / SNAP_CELL_M); for (let gx = x0; gx <= x1; gx++) for (let gy = y0; gy <= y1; gy++) { const k = gx + ':' + gy; let arr = grid.get(k); if (!arr) { arr = []; grid.set(k, arr); } arr.push(pi, i); } } }
+  return { key, polys, grid };
+}
+function snapSlugFor(ll) { if (!snapCat) return null; for (const c of snapCat) { if (c && Array.isArray(c.bbox) && c.bbox.length === 4 && ll[0] >= c.bbox[0] && ll[0] <= c.bbox[2] && ll[1] >= c.bbox[1] && ll[1] <= c.bbox[3]) return c.slug; } return ''; }
+function snapGeoEnsure(ll) { // make the index match the area ll is in. Async by nature (a pack download), and never blocking: while a pack is in flight the route-only index serves, and before the first build there is simply no index (no snap). An index install drops any hold - the held line's identity belongs to the index it was picked from.
+  if (!snapCat && !snapCatKicked) { snapCatKicked = true; crPackIndexLoad().then(cs => { snapCat = cs || []; }, () => { snapCat = []; }); }
+  const routeKey = (typeof activeRoute !== 'undefined' && activeRoute && activeRoute.id) || '';
+  const slug = snapSlugFor(ll); // null while the catalogue is in flight, '' outside every pack city
+  if (slug === null) { if (!snapGeo) snapGeo = snapBuildIndex(snapRoutePolys(), routeKey + '|~'); return; } // route streets only for now; the '~' key can never equal a settled want, so the first fix after the catalogue lands rebuilds with the pack
+  const want = routeKey + '|' + slug;
+  if (snapGeo && snapGeo.key === want) return;
+  if (!slug) { snapGeo = snapBuildIndex(snapRoutePolys(), want); snapDropHold(); return; } // outside the shipped cities: the route's own streets are all the app holds here
+  if (snapGeoFailSlug === slug && Date.now() - snapGeoFailAt < 60000) { if (!snapGeo) snapGeo = snapBuildIndex(snapRoutePolys(), routeKey + '|~'); return; } // this pack failed within the minute: route-only until the cooldown passes
+  if (snapGeoBusy) return;
+  snapGeoBusy = true;
+  crPackLoad(slug).then(els => {
+    snapGeoBusy = false;
+    if (((typeof activeRoute !== 'undefined' && activeRoute && activeRoute.id) || '') !== routeKey) return; // the route changed while the pack downloaded: land nowhere; the next fix rebuilds for the new route
+    const polys = snapRoutePolys();
+    for (const el of els) { if (el && el.tags && typeof el.tags.name === 'string' && el.tags.name && Array.isArray(el.geometry) && el.geometry.length > 1) polys.push({ name: el.tags.name, pts: el.geometry.map(g => [g.lat, g.lon]) }); }
+    snapGeo = snapBuildIndex(polys, want); snapDropHold();
+  }, () => { snapGeoBusy = false; snapGeoFailSlug = slug; snapGeoFailAt = Date.now(); if (!snapGeo) snapGeo = snapBuildIndex(snapRoutePolys(), routeKey + '|~'); });
+}
+function snapNearest(ll) { // the nearest indexed polyline to ll: { poly, d } or null. One ring of grid cells is a complete search (see SNAP_CELL_M): nothing found means no road within ~60 m, past every decision distance.
+  if (!snapGeo) return null;
+  const cx = Math.floor(ll[1] * MLNG / SNAP_CELL_M), cy = Math.floor(ll[0] * MLAT / SNAP_CELL_M);
+  const best = new Map();
+  for (let gx = cx - 1; gx <= cx + 1; gx++) for (let gy = cy - 1; gy <= cy + 1; gy++) { const arr = snapGeo.grid.get(gx + ':' + gy); if (!arr) continue; for (let j = 0; j < arr.length; j += 2) { const poly = snapGeo.polys[arr[j]]; const d = ptSegM(ll, poly.pts[arr[j + 1]], poly.pts[arr[j + 1] + 1]); if (!best.has(arr[j]) || d < best.get(arr[j])) best.set(arr[j], d); } }
+  let bp = null, bd = Infinity; for (const [pi, d] of best) if (d < bd) { bd = d; bp = snapGeo.polys[pi]; }
+  return bp ? { poly: bp, d: bd } : null;
+}
+function snapHeldDist(ll) { let bd = Infinity; const pts = snapHeld.pts; for (let i = 0; i < pts.length - 1; i++) { const d = ptSegM(ll, pts[i], pts[i + 1]); if (d < bd) bd = d; } return bd; }
+function snapFix(speed, acc, ll) { // fed once per accepted fix, beside dispHoldFix - the study sim's state machine (measure3) on the raw fix, plus design (a)'s accuracy gate and evidence timeout and design (b)'s hard clean exit. Display-only: it writes nothing but the snap state above; the blend in renderTick/dispShownPos is its only mouth.
+  snapFixN++;
+  if (runStart) { snapDropHold(); return; } // a clean running is a HARD EXIT: snapping is impossible for the whole clean, not merely disengaged - and startClean already called snapReset at the tap, so the shown point is back on the true position before the clean's first fix lands
+  const spd = (typeof speed === 'number' && isFinite(speed)) ? speed : null;
+  if (spd === null || spd < SNAP_SPEED_MPS) { snapDropHold(); return; } // no driving evidence (or none reported): the hold cannot survive it - the gate is re-earned on every fix
+  snapGeoEnsure(ll);
+  if (!snapGeo) { snapDropHold(); return; }
+  const near = snapNearest(ll);
+  if (!snapHeld) {
+    if (near && near.d <= SNAP_ENGAGE_M && acc <= SNAP_ACC_M) { snapHeld = near.poly; snapSegHint = 0; snapFar = 0; snapRival = null; }
+    return;
+  }
+  let hd = snapHeldDist(ll);
+  if (hd > SNAP_DROP_M) { // the held road is gone: drop it, and let this same fix take a fresh candidate if one is close (the sim's drop-and-reengage)
+    snapDropHold();
+    if (near && near.d <= SNAP_ENGAGE_M) { snapHeld = near.poly; snapSegHint = 0; hd = snapHeldDist(ll); } else return;
+  }
+  if (hd > SNAP_FAR_M) { if (++snapFar >= SNAP_FAR_N) { snapDropHold(); return; } } else snapFar = 0; // the evidence timeout: persistently far from the held road with no dominant rival - release to the true position rather than ride a wrong road
+  if (near && near.poly !== snapHeld && hd - near.d >= SNAP_SWITCH_M) {
+    if (snapRival && snapRival.poly === near.poly) snapRival.n++; else snapRival = { poly: near.poly, n: 1 };
+    if (snapRival.n >= SNAP_SWITCH_N) { snapHeld = near.poly; snapSegHint = 0; snapRival = null; snapFar = 0; }
+  } else snapRival = null;
+}
 function renderTick(now) {
   const pred = kfPredict(); // Beta 1.115: the predicted track at THIS frame - between fixes it advances on the estimated velocity, so the dot flows instead of bursting once a second
   if (pred) {
@@ -4565,6 +4707,7 @@ function renderTick(now) {
     const dtF = lastDispAt ? Math.min(0.25, Math.max(0, (pNow - lastDispAt) / 1000)) : 0; lastDispAt = pNow;
     if (dtF > 0 && !dispSettled()) { const k = Math.pow(0.2, dtF / 0.3); dispOff = [dispOff[0] * k, dispOff[1] * k]; if (dispSettled()) dispOff = [0, 0]; } // the correction offset decays with a ~0.3 s time constant, on the same performance clock the prediction reads
     dispPos = [pred[0] + dispOff[0] / MLAT, pred[1] + dispOff[1] / MLNG];
+    { const tgt = snapHeld ? 1 : 0; if (dtF > 0 && snapW !== tgt) { snapW = tgt + (snapW - tgt) * Math.pow(0.1, dtF / SNAP_BLEND_S); if (Math.abs(snapW - tgt) < 0.002) snapW = tgt; } } // Beta 1.204: the snap blend advances per frame toward the held state (in on engage, out on release - the same ease both ways, so the shown point never teleports), on this same frame clock and step (dtF) as the correction decay above
   }
   let camKey = ''; // Beta 1.182: the camera state that sizes the puck joins the push key, bucketed - quarter-zoom (sets the scale), half-degree bearing (rotates the projected measure), 2-degree pitch (sets its anisotropy), the puck's own projected position on a 16 px grid and the viewport size (Codex's fourth catch on PR #19: under pitch the local stretch varies across the viewport, so PANNING a pitched map with a stationary fix moves the puck through the perspective gradient without changing zoom, bearing or pitch - the stale radii could carry it past the cap near the viewport's bottom edge). Together these are every input the projection of a static ground point depends on, so any change that could resize the puck re-pushes the glyph even when nothing moved.
   if (map) { camKey = Math.round(map.getZoom() * 4) / 4 + ',' + Math.round(map.getBearing() * 2) / 2 + ',' + Math.round(map.getPitch() / 2) * 2 + ',' + map.getCanvas().clientWidth + 'x' + map.getCanvas().clientHeight; if (dispPos) { const pp = map.project([dispShownPos()[1], dispShownPos()[0]]); camKey += ',' + Math.round(pp.x / 16) + ':' + Math.round(pp.y / 16); } } // Beta 1.194: the puck's projected position is the RENDERED point (dispShownPos) - keyed on what is actually drawn, so a held puck does not re-push frames for display-track motion nobody sees
@@ -5113,6 +5256,7 @@ function acceptFix(pos) {
   startRenderLoop(); // the old glide started the loop here; the coasting display needs it just as much (a fix can arrive on an existing watch and must still render)
   updateHeading(pos.coords.heading, speed, now);
   dispHoldFix(speed, ll); // Beta 1.194: the stillness hold's per-fix feed, at the same instant fixLogOut below reads dispPos - the basis the judging simulation was proven on. Display-only: nothing recorded reads its state.
+  snapFix(speed, acc, ll); // Beta 1.204: the driving snap's per-fix feed, beside the hold's - raw fix in, snap state out. Display-only by the same invariant: it runs BEFORE fixLogOut and the recording block below, and neither reads its state (they read gpsPos/dispPos, which the snap never writes).
   if (typeof pos.coords.heading === 'number' && speed && speed >= 1) { lastCourseAt = now; setFacing(pos.coords.heading, 0.5); } // moving: face along the course
   fixLogOut(fxEnt); // Beta 1.189: the estimator has run — filtered position, display position and smoothed heading join the raw fix in the log
   const spd = $('spdPill'); // Beta 1.203: the top-centre speed pill, written on the same per-fix cadence the retired bottom-left chip used. Visibility is the WATCH's alone now (startGps shows the pill, stopGps hides it - Andrew's gate is the location button), so a fix only ever updates the number: at rest, or with no speed reported, it reads 0 km/h rather than vanishing
@@ -5210,7 +5354,7 @@ function stopGps(silent) {
   watchGen++; // Beta 1.69: invalidate any callback still queued from this watcher
   fixLogClose(); // Beta 1.189: the log session ends with the watch
   if (watchId != null) navigator.geolocation.clearWatch(watchId);
-  watchId = null; gpsFromRun = false; clearInterval(staleWatchTimer); dispOff = [0, 0]; dispHoldReset(); // Beta 1.194: the stillness hold retires with the watch (dispHoldReset, beside the display offset's own reset) - a held point must never freeze the puck across location sessions
+  watchId = null; gpsFromRun = false; clearInterval(staleWatchTimer); dispOff = [0, 0]; dispHoldReset(); snapReset(); // Beta 1.194: the stillness hold retires with the watch (dispHoldReset, beside the display offset's own reset) - a held point must never freeze the puck across location sessions. Beta 1.204: the road snap retires with it, for the same reason (snapReset, beside dispHoldReset).
   if (renderRaf) { cancelAnimationFrame(renderRaf); renderRaf = 0; }
   clearInterval(renderPump); renderPump = 0; stopCompass(); // Beta 1.64 (audit F08); Beta 1.65: the render loop stops with the watch
   if (map) pushGps(); // Beta 1.48 (audit B05): the facing beam is only built while watchId lives - without a fresh push the last beam stayed drawn after stop
@@ -6005,7 +6149,7 @@ $('stDel').addEventListener('click', async () => {
 });
 // ---- About / What's new ----
 const WHATSNEW = { // the curated in-app notes: plain words, LATEST RELEASE ONLY (Beta 1.114, Andrew: the accumulated list cluttered the About pane). A release REPLACES this entry with its own in the same change - it never accumulates; the full history lives in CHANGELOG.md, not the app
-  v: 'Beta 1.203', items: ["The map now settles into a tilted view when your route loads and when you tap Home — same zoom as before, just angled.", "Your speed now sits in a pill at the top centre of the map whenever location is on."] };
+  v: 'Beta 1.204', items: ["Driving to the route, the puck now sits on the road you're on instead of drifting beside it. It lets go when you slow down, and it never affects your cleans — what gets recorded is unchanged."] };
 
 function renderAbout() {
   const cur = $('ver').textContent.trim();
