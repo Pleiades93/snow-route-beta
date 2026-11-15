@@ -1797,6 +1797,12 @@ function managePulse() {
     for (const id of ['t1-casing', 't1-casingb']) { if (GLM.getLayer(id)) { try { GLM.setPaintProperty(id, 'line-color', casing); } catch (e) {} } }
     for (const id of ['streetnamespt1', 'streetnamespt2', 'streetnamespt3', 'streetnamespt4', 'routepoi-txt']) { if (GLM.getLayer(id)) { try { GLM.setPaintProperty(id, 'text-color', txt); GLM.setPaintProperty(id, 'text-halo-color', halo); } catch (e) {} } }
   }
-  return { init, drop, sync, syncSel, syncTheme, active, setFont, rebuildRoute };
+  function evalCurvePx(curve, z) { // a scaleW-built interpolate curve evaluated at a zoom, in px (stops: zoom at odd indices from 3, width at even indices >= 4; clamped outside the stop range, linear between)
+    let prev = null;
+    for (let i = 3; i + 1 < curve.length; i += 2) { if (z <= curve[i]) { if (!prev) return curve[i + 1]; return prev[1] + (curve[i + 1] - prev[1]) * ((z - prev[0]) / (curve[i] - prev[0])); } prev = [curve[i], curve[i + 1]]; }
+    return prev[1];
+  }
+  function tapTolPx(z) { return Math.max(24, evalCurvePx(BANDCASE, z) / 2 + 2); } // Beta 1.206 (Codex P2 on the width fix): the map-tap tolerance follows the WIDEST paint (band + casing) at the tap's zoom, floored at 24 px — the Beta 1.181 rule ("a tap anywhere on the paint still selects instead of deselecting") kept by construction now that the width fix widened the paint past the old fixed 24 px at z18-19; at z17 and below the paint is narrower than the floor and the tolerance is the shipped 24 unchanged
+  return { init, drop, sync, syncSel, syncTheme, active, setFont, rebuildRoute, tapTolPx };
 })();
 window.GLP = GLP;

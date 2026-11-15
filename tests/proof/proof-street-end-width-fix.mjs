@@ -137,5 +137,31 @@ ok('BANDCASE z15 stop is the ruled 8.04', !!z15 && Math.abs(z15[1] - 8.04) < 1e-
 const s14 = widthAt(surfW, 14);
 ok('surfW z14 stop unchanged (3.75 px)', Math.abs(s14 - 3.75) < 1e-9, s14.toFixed(3) + ' px');
 
+// Check 8 (Codex P2 on PR #81, fixed in-round): the map-tap tolerance
+// must follow the widest paint. The click handler's rule since Beta
+// 1.181 is "a tap anywhere on the paint still selects instead of
+// deselecting", implemented as a fixed 24 px — which the widened paint
+// outgrows at z18-19 (band + casing half-width 37 / 71 px). The engine
+// now owns the tolerance: GLP.tapTolPx(z) = max(24, BANDCASE(z)/2 + 2),
+// and the handler reads it. Pin the formula's presence and its numeric
+// coverage from the parsed curve: at every zoom the tolerance covers
+// the widest paint's half-width with margin, and at z17 and below it
+// is exactly the shipped 24 (the paint there is narrower than the
+// floor, so low-zoom tap behaviour is unchanged).
+const eng = src;
+const fnM = eng.match(/function tapTolPx\(z\) \{[^}]*\}/);
+ok('engine defines tapTolPx from BANDCASE with the 24 px floor',
+  !!fnM && fnM[0].includes('Math.max(24') && fnM[0].includes('BANDCASE') && /\/ 2 \+ 2/.test(fnM[0]),
+  fnM ? fnM[0].slice(0, 80) + '...' : 'missing');
+ok('GLP exposes tapTolPx', /return \{[^}]*tapTolPx/.test(eng), '');
+const app2 = readFileSync('parts/app2.js', 'utf8');
+ok('click handler reads GLP.tapTolPx', app2.includes('GLP.tapTolPx(map.getZoom())'), '');
+for (const z of [14, 15, 16, 17, 18, 19]) {
+  const widestHalf = widthAt(bandCase, z) / 2; // px, assembled scale
+  const tol = Math.max(24, widestHalf + 2);
+  ok(`tap tolerance at z${z} covers the widest paint`, tol >= widestHalf + 2 - 1e-9 && (z > 17 || tol === 24),
+    'tol ' + tol.toFixed(1) + ' px vs paint half ' + widestHalf.toFixed(1) + ' px');
+}
+
 console.log(failures === 0 ? 'ALL CHECKS PASS' : failures + ' CHECK(S) FAILED');
 process.exit(failures === 0 ? 0 : 1);
