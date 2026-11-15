@@ -1143,7 +1143,7 @@ function _fxEncEntry(w, e, st) { // append one entry's bytes; returns the state 
       if (!outFull && out[4] !== null && out[4] !== undefined && (!_fxHtExact(out[4]) || !_fxHtExact(p[4]))) outFull = true;
     }
   }
-  const runV = _fxFin(e[7]) ? e[7] : 0;
+  const runV = (_fxFin(e[7]) && Number.isInteger(e[7]) && e[7] >= 0) ? e[7] : 0; // 2026-11-15 (load sanitizer round, B-02 ride-along): the run rides w.uv(BigInt(runV)) below - BigInt throws on a fractional value and a negative one corrupts the unsigned varint stream. e[7]'s only sources (runStart || 0 at live construction, the decoder's unsigned varint) are non-negative integers, so the guard changes no reachable encoding (byte-identity corpus in tests/proof/proof-fixlog-runv-guard-b02.mjs); it hardens the encoder boundary only
   const runCh = !st || runV !== st.run;
   w.u8((key ? 1 : 0) | (out ? 2 : 0) | (outFull ? 4 : 0) | (runCh ? 8 : 0));
   if (key) {

@@ -340,11 +340,14 @@ if (!doneTimes || typeof doneTimes !== 'object' || Array.isArray(doneTimes)) don
 for (const k of Object.keys(doneTimes)) { if (typeof doneTimes[k] !== 'string' || isNaN(Date.parse(doneTimes[k]))) delete doneTimes[k]; }
 doneVia = parseJ(lsGet(LS.via), {});
 if (!doneVia || typeof doneVia !== 'object' || Array.isArray(doneVia)) doneVia = {};
+for (const k of Object.keys(doneVia)) { if (typeof doneVia[k] !== 'string') delete doneVia[k]; } // 2026-11-15 (load sanitizer round, A-01): via values get the doneTimes treatment above - the app writes only strings here ('gps'/'tap'/'sides'; validateSnap in app3 enforces the same string standard on cancel snapshots), so a non-string value can only arrive via a crafted restore or planted storage; every consumer compares === 'gps', and an unchecked value would otherwise be re-saved verbatim and ride backups
 notes = parseJ(lsGet(LS.notes), {});
 // Notes model (production): {street: [{k:'note', at, text} | {k:'car'|'hazard'|'missed'|'salt', at}]} - normalize at load:
-// a non-array value (e.g. a legacy string) is dropped, entries keep only object shapes with a string kind.
+// a non-array value (e.g. a legacy string) is dropped, entries keep only object shapes with a string kind,
+// a string text when one is present, and a parseable date string at when one is present (2026-11-15, A-02 -
+// an object text rendered '[object Object]' in note lines and a bad at rendered 'NaN:NaN AM' flag times).
 if (!notes || typeof notes !== 'object' || Array.isArray(notes)) notes = {};
-Object.keys(notes).forEach(n => { if (!STREETSET.has(n) || !Array.isArray(notes[n])) delete notes[n]; else notes[n] = notes[n].filter(f => f && typeof f === 'object' && typeof f.k === 'string'); });
+Object.keys(notes).forEach(n => { if (!STREETSET.has(n) || !Array.isArray(notes[n])) delete notes[n]; else notes[n] = notes[n].filter(f => f && typeof f === 'object' && typeof f.k === 'string' && (f.text === undefined || typeof f.text === 'string') && (f.at === undefined || (typeof f.at === 'string' && !isNaN(Date.parse(f.at))))); });
 const _histText = lsGet(LS.hist);
 history = parseJ(_histText, []);
 const rawHistory = parseJ(_histText, []); // Beta 1.170 (Carbon fix round Phase 2, A-04): a SECOND parse of the same text - the sanitizer below mutates the surviving entries in place, so the reconciliation at the end of this load needs its own untouched copy of the stored array (see reconcileInterruptedFinish).
