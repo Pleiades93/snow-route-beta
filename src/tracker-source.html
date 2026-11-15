@@ -1655,6 +1655,7 @@ function clipOne(pc, J, R) {
   }
   const tag = { clip: J.B, vi: J.viA };
   const res = [];
+  /** @type {{ pts: AnyPoint[], sTag: { clip: string, vi: number } | null, eTag: { clip: string, vi: number } | null } | null} */
   let cur = null;
   aug.forEach((p, i) => {
     if (!inside(p)) {
@@ -1969,10 +1970,11 @@ function mergeStrands(slices, pairs) {
   };
   const arr = slices.slice();
   for (;;) {
+    /** @type {{ i: number, j: number, score: number, merged: any } | null} */
     let best = null;
     for (let i = 0; i < arr.length; i++) for (let j = 0; j < arr.length; j++) {
       if (i === j || arr[i].key !== arr[j].key) continue;
-      joinInfo(arr[i], arr[j]).forEach(c => { if (!best || c.score > best.score) best = { i, j, merged: c.merged }; });
+      joinInfo(arr[i], arr[j]).forEach(c => { if (!best || c.score > best.score) best = { i, j, score: c.score, merged: c.merged }; });
     }
     if (!best) break;
     arr[best.i] = best.merged;
@@ -2066,7 +2068,7 @@ function bridgeStragglers(chains, pairs) {
 // short (a T-join, not a crossing).
 function throughTouch(chains, pairs) {
   chains.forEach(c => {
-    [['e1', true], ['e0', false]].forEach(([key, atEnd]) => {
+    /** @type {[string, boolean][]} */ ([['e1', true], ['e0', false]]).forEach(([key, atEnd]) => {
       const meta = c[key];
       if (!meta) return;
       (pairs[meta.n + '|' + meta.vi + '|' + meta.side] || []).forEach(pr => {
@@ -2325,7 +2327,7 @@ function cornerTouchSlices(slices, pairs) {
   slices.forEach(sl => { [sl.e0, sl.e1].forEach(m => { if (m) endKeys.add(m.n + '|' + m.vi + '|' + m.side); }); });
   const properX = (a, b, c, d) => { if (!segCross(a, b, c, d)) return false; const X = lineHit(a, b, c, d); return !!X && [a, b, c, d].every(pt => H.jDistM(X, pt) >= 0.35); };
   slices.forEach(sl => {
-    [['e1', true], ['e0', false]].forEach(([key, atEnd]) => {
+    /** @type {[string, boolean][]} */ ([['e1', true], ['e0', false]]).forEach(([key, atEnd]) => {
       const meta = sl[key];
       if (!meta) return;
       const tried = new Set();
@@ -2547,6 +2549,7 @@ function clipEndAtJunction(n, vi, pts, atStart, ownHalf) {
   for (let round = 0; round < 3; round++) {
     const corners = endCorners(pts, atStart, ownHalf);
     if (corners.length < 2) return pts;
+    /** @type {{ J: any, ex: number, viB: number | null, bHalf: number } | null} */
     let worst = null;
     entries.forEach(J => {
       if (tried.has(J.B)) return;
@@ -2799,6 +2802,7 @@ function curveAt(curve, z) {
   return curve[curve.length - 1];
 }
 function glowW(curve, delta) {
+  /** @type {any[]} */
   const ex = ['interpolate', ['linear'], ['zoom']];
   for (const z of [14, 15, 16, 16.5, 17, 18, 19]) ex.push(z, +(curveAt(curve, z) + delta * WIDTH_K * taperAt(z)).toFixed(2));   // Beta 1.181: the live glow's extra width scales by WIDTH_K, same as the initial stack's wPlus
   return ex;

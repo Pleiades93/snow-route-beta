@@ -124,7 +124,7 @@ jobs:
         uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020 # v4
         with:
           node-version: '22'
-      - name: Type check (scope in scripts/tsconfig.json - data.js, app1.js, pmstyles.js; begun as the A1 pilot, Beta 1.149)
+      - name: Type check (scope in scripts/tsconfig.json - data.js, app1.js, engine.js, pmstyles.js; begun as the A1 pilot, Beta 1.149)
         working-directory: scripts
         run: |
           npm ci
@@ -161,6 +161,8 @@ jobs:
         run: node tests/browser/selftest-foreign-writes.mjs
       - name: NV fix round proofs (Beta 1.152 - stretch parity, pack ceilings, tile budget; history cap retired Beta 1.167)
         run: node tests/browser/selftest-nv1152.mjs
+      - name: mergeStrands best-score proof (dead-score fix gate, 2026-11-15)
+        run: node tests/proof/proof-mergestrands-score.mjs
       - name: Premise-lint fixtures (Tranche 4 gate)
         run: python3 scripts/premise-lint-fixtures/run-fixtures.py
       - name: Bug-hunt fix fixtures (PR #23 gate; Beta 1.185)
