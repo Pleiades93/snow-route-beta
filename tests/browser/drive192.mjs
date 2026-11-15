@@ -14,7 +14,7 @@ await bootThrough(ev, poll);
 //      sheet (GPS trail as its own figure beside road cleared, note icons
 //      only on noted streets, no pin anywhere, the two-tap delete
 //      returning to Saved cleans).
-//   S: Streets - hero figures bind to the live state, the Mains|Secondaries
+//   S: Streets - hero figures bind to the live state, the Primaries|Secondaries
 //      tabs swap the WHOLE list (counts and membership, no cross-group
 //      rows), row states (complete keeps its full done string, a half reads
 //      'one side done' with the split-disc dot, untouched an em dash), the
@@ -58,7 +58,7 @@ try {
     pm['LAST CLEAN'] === seed.last && pm['LAST PACE /KM'] === seed.pace);
   ok('P3 the banner slot carries the REFERENCE line, never a verdict, when no run is live | ' + ph.banner,
     ph.bannerRef === true && ph.banner.includes('Reference clean (' + seed.ttl + ')') && ph.banner.includes(seed.last + ' total') && ph.head.includes('not started'));
-  ok('P4 Progress by group credits the half street (Velmar done + Mellings half on Mains) | ' + JSON.stringify(ph.gm),
+  ok('P4 Progress by group credits the half street (Velmar done + Mellings half on Primaries) | ' + JSON.stringify(ph.gm),
     ph.gm[0].includes('1.5 of 6 streets') && ph.gm[1].includes('0 of 28 streets'));
   ok('P5 the seeded clean is listed under Saved cleans | rows ' + ph.rows, ph.rows === 1);
 
@@ -107,19 +107,19 @@ try {
     hero: $('stHero').textContent, routeN: $('stRouteN').textContent, routeS: $('stRouteS').textContent,
     grp: $('stGroupN').textContent + $('stGroupC').textContent,
     totalCap: (totalWorkM() / 2000).toFixed(1) + ' km total', names: STREETNAMES.length }; })()`);
-  ok('S1 Streets opens on the Mains tab: 6 rows, every one a main | ' + JSON.stringify(s0), s0.rows === 6 && s0.allMain === true);
+  ok('S1 Streets opens on the Primaries tab: 6 rows, every one a primary | ' + JSON.stringify(s0), s0.rows === 6 && s0.allMain === true);
   ok('S2 the hero reads the live zero state (0 of N streets, 0.0 km cleared, the computed total) | ' + s0.hero,
     s0.hero.includes('/ ' + s0.names + ' streets') && s0.hero.includes('0.0 km of road cleared') && s0.hero.includes(s0.totalCap) && s0.hero.includes('streets completed so far'));
   ok('S3 the route line names the route and its not-started state; the group heading counts the tab | ' + s0.routeN + s0.routeS + ' / ' + s0.grp,
-    s0.routeN.length > 0 && s0.routeS.includes('not started') && s0.grp === 'MAINS · 6 streets');
+    s0.routeN.length > 0 && s0.routeS.includes('not started') && s0.grp === 'PRIMARIES · 6 streets');
   await ev(`document.querySelector('#filters button[data-f="secondaries"]').click(); true`); await sleep(300);
   const s1 = await J(`(() => { const rows = [...document.querySelectorAll('.srow')]; return {
     rows: rows.length, anyMain: rows.some(r => r.classList.contains('main')),
     grp: $('stGroupN').textContent + $('stGroupC').textContent,
-    cross: rows.filter(r => MAIN.has(r.querySelector('.nm').textContent)).length }; })()`);
+    cross: rows.filter(r => PRIMARIES.has(r.querySelector('.nm').textContent)).length }; })()`);
   ok('S4 the Secondaries tab swaps the WHOLE list: 28 rows, no main among them, heading follows | ' + JSON.stringify(s1),
     s1.rows === 28 && s1.anyMain === false && s1.cross === 0 && s1.grp === 'SECONDARIES · 28 streets');
-  await ev(`document.querySelector('#filters button[data-f="mains"]').click(); true`); await sleep(300);
+  await ev(`document.querySelector('#filters button[data-f="primaries"]').click(); true`); await sleep(300);
 
   await ev(`(() => { markDone('Velmar', 'tap'); pieces['Mellings'][0] = (pieces['Mellings'][0] | 1); refreshAll(); renderStreets(); return true; })()`); await sleep(300);
   const s2 = await J(`(() => { const rowOf = n => [...document.querySelectorAll('.srow')].find(r => r.querySelector('.nm').textContent === n);

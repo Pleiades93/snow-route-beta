@@ -38,9 +38,9 @@ const dump5wSrc = `(() => { const ks = []; for (let i = 0; i < localStorage.leng
 await poll(`typeof loadRoute === 'function'`, 20000);
 await poll(`!!window.__bootAt`, 30000);
 await poll(`!document.getElementById('splash') || document.getElementById('routeMenu').classList.contains('show')`, 30000);
-const B = await J(`({ loaded: routeLoaded, names: STREETNAMES.length, stretch: Object.keys(STRETCH).length, box: routeBox, mains: MAIN.size, spots: Object.keys(SPOT).length, roads: Object.keys(ROADS).length })`);
+const B = await J(`({ loaded: routeLoaded, names: STREETNAMES.length, stretch: Object.keys(STRETCH).length, box: routeBox, primaries: PRIMARIES.size, spots: Object.keys(SPOT).length, roads: Object.keys(ROADS).length })`);
 ok('B1 at boot no route is loaded and NO street geometry exists (names/stretch/roads empty, routeBox null) | ' + JSON.stringify(B),
-  B.loaded === false && B.names === 0 && B.stretch === 0 && B.box === null && B.mains === 0 && B.spots === 0 && B.roads === 0);
+  B.loaded === false && B.names === 0 && B.stretch === 0 && B.box === null && B.primaries === 0 && B.spots === 0 && B.roads === 0);
 await ev(`document.getElementById('rmChoose').click()`);
 const rows = await J(`({ n: document.querySelectorAll('#rmRoutes .routeRow').length, first: (document.querySelector('#rmRoutes .routeRow') || {}).textContent || '' })`);
 ok('B2 the boot picker offers exactly the one shipped pack (Route 5W) | ' + JSON.stringify(rows), rows.n === PACK_COUNT && rows.first.indexOf(PACK5W.name) >= 0);
@@ -52,9 +52,9 @@ await ev(`document.querySelector('#rmRoutes .routeRow').click()`);
 await poll(`typeof routeLoaded !== 'undefined' && routeLoaded === true`, 20000);
 await poll(`!document.getElementById('splash')`, 20000);
 await poll(`typeof map === 'undefined' || !map || !map.isMoving()`, 25000);
-const L = await J(`({ names: STREETNAMES.length, mains: MAIN.size, velmar: Math.round(STRETCH.Velmar.total), total: Math.round(totalWorkM()), parts: Object.values(STRETCH).reduce((a, s) => a + s.parts.length, 0), box: !!routeBox, tiles: ROUTE_TILE_NAMES.length })`);
-ok('L1 5W loads as a pack with its exact geometry (34 streets, 6 mains, Velmar ~1686 m, 87 stretches, ~35352 m of sides, 68 tile names) | ' + JSON.stringify(L),
-  L.names === PACK5W.names && L.mains === PACK5W.mains && L.velmar >= PACK5W.velmar - 3 && L.velmar <= PACK5W.velmar + 3 && L.parts === PACK5W.parts && L.total >= PACK5W.totalWork - 12 && L.total <= PACK5W.totalWork + 13 && L.box === (PACK5W.box !== null) && L.tiles === PACK5W.tiles);
+const L = await J(`({ names: STREETNAMES.length, primaries: PRIMARIES.size, velmar: Math.round(STRETCH.Velmar.total), total: Math.round(totalWorkM()), parts: Object.values(STRETCH).reduce((a, s) => a + s.parts.length, 0), box: !!routeBox, tiles: ROUTE_TILE_NAMES.length })`);
+ok('L1 5W loads as a pack with its exact geometry (34 streets, 6 primaries, Velmar ~1686 m, 87 stretches, ~35352 m of sides, 68 tile names) | ' + JSON.stringify(L),
+  L.names === PACK5W.names && L.primaries === PACK5W.primaries && L.velmar >= PACK5W.velmar - 3 && L.velmar <= PACK5W.velmar + 3 && L.parts === PACK5W.parts && L.total >= PACK5W.totalWork - 12 && L.total <= PACK5W.totalWork + 13 && L.box === (PACK5W.box !== null) && L.tiles === PACK5W.tiles);
 const L2 = await J(`document.getElementById('countTxt').textContent.indexOf('of ${PACK5W.names}') >= 0`); // Beta 1.199 re-derivation: this reads the count STATE updateCount wrote for the loaded pack; it used to scan document.body.innerText, but innerText only sees RENDERED text and the pill no longer renders outside a run - the state lives in #countTxt either way (drive198 P2 pins that it advances while the pill is hidden)
 ok('L2 the count reads "of 34" for the loaded pack', L2 === true);
 
@@ -72,9 +72,9 @@ const RS = await J(`runStart`);
 // ---------- S: switch to the fixture - atomically arming pending writes first (F2) ----------
 await ev(`(() => { ROUTE_PACKS.push(${JSON.stringify(FIXTURE)}); return true; })()`);
 await ev(`(() => { trail.push([43.820123, -79.570123, Math.floor(Date.now() / 1000)]); markDirty('trail'); notes['Astona'] = [{ k: 'note', at: new Date().toISOString(), text: 'armed at switch' }]; markDirty('primary'); loadRoute('fx149'); return true; })()`);
-const S1 = await J(`({ id: activeRoute && activeRoute.id, names: STREETNAMES.slice(), mains: [...MAIN], mainParts: STRETCH['Fixture Main'].parts.length, alphaParts: STRETCH['Fixture Alpha'].parts.length, hasVelmar: 'Velmar' in pieces, done: doneSet.size, notes: Object.keys(notes).length, snapMem: !!runSnap, run: runStart })`);
+const S1 = await J(`({ id: activeRoute && activeRoute.id, names: STREETNAMES.slice(), primaries: [...PRIMARIES], mainParts: STRETCH['Fixture Main'].parts.length, alphaParts: STRETCH['Fixture Alpha'].parts.length, hasVelmar: 'Velmar' in pieces, done: doneSet.size, notes: Object.keys(notes).length, snapMem: !!runSnap, run: runStart })`);
 ok('S1 the fixture is live with ITS geometry (4 streets in pack order, its one main, junction cuts give Main and Alpha 2 stretches each) | ' + JSON.stringify(S1),
-  S1.id === 'fx149' && JSON.stringify(S1.names) === JSON.stringify(['Fixture Main', 'Fixture Alpha', 'Fixture Beta', 'Fixture Gamma']) && JSON.stringify(S1.mains) === JSON.stringify(['Fixture Main']) && S1.mainParts === 2 && S1.alphaParts === 2);
+  S1.id === 'fx149' && JSON.stringify(S1.names) === JSON.stringify(['Fixture Main', 'Fixture Alpha', 'Fixture Beta', 'Fixture Gamma']) && JSON.stringify(S1.primaries) === JSON.stringify(['Fixture Main']) && S1.mainParts === 2 && S1.alphaParts === 2);
 ok('S2 none of 5W\'s state is visible on the fixture (no Velmar pieces, empty done set and notes, no run) | ' + JSON.stringify(S1),
   S1.hasVelmar === false && S1.done === 0 && S1.notes === 0 && S1.run === 0);
 ok('S3 F3: the in-memory cancel snapshot was cleared by the switch | runSnap ' + JSON.stringify(S1.snapMem), S1.snapMem === false);

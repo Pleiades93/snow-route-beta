@@ -4,7 +4,7 @@
 const MLAT = 111320, MLNG = 80386;
 /** @type {() => number} */ const vvHeight = () => (window.visualViewport ? window.visualViewport.height : window.innerHeight); // visible-screen height (shrinks when the phone keyboard opens)
 const YELLOW = '#ffc233', RED = '#ef476f', GREEN = '#06d6a0';
-const MAIN = new Set(); // Beta 1.117: the active pack's main streets - filled per load by buildGeometry from pack.main (the values live in the pack, data.js)
+const PRIMARIES = new Set(); // Beta 1.117: the active pack's primary streets - filled per load by buildGeometry from pack.main (the values live in the pack, data.js)
 const SPOT = {}; // Beta 1.117: the active pack's label-anchor hints - filled per load by buildGeometry from pack.spot
 const TRAIL_MAX = 8000;
 const TRAIL_WINDOW_S = 3600; // Beta 1.193 (trail redesign, Andrew's adopted design): the trail's retention window, in SECONDS of recorded points. Since 1.193 the trail is a backend-only fallback for the run-distance counter (no map line, no archived path): it keeps ONLY the live run's points from its last 60 minutes, windowed by trailWindow below at load, at append (acceptFix, app3), at Start, at Finish and at restore (app4). TRAIL_MAX above survives as the session markers' cap and the loader's absolute backstop - the point cap itself no longer bounds the trail (the window does: ~3,600 points at 1 Hz).
@@ -296,7 +296,7 @@ const names = STREETNAMES; // the paint engine's name for the street list
 
 // ===== STATE =====
 const STREETSET = new Set();
-/** @param {RoutePack} pack @returns {void} */ function buildGeometry(pack) { // Beta 1.117 (F1): ALL route geometry is (re)built HERE, per load, from the pack - nothing route-shaped is computed at script eval any more. The live containers (ROADS/REFERENCE/STRETCH/STREETNAMES/STREETSET/MAIN/SPOT, app2's routeBox and ROUTE_TILE_NAMES, app3's SAMPLES) are refilled IN PLACE, never rebound, so references captured earlier (GL_HOST's plain entries above all) stay valid. Runs BEFORE loadRouteState: the state sanitizers filter against this geometry. buildSamples (app3) and the paint engine's rebuild (GLP.rebuildRoute, called by loadRoute) complete the per-load rebuild.
+/** @param {RoutePack} pack @returns {void} */ function buildGeometry(pack) { // Beta 1.117 (F1): ALL route geometry is (re)built HERE, per load, from the pack - nothing route-shaped is computed at script eval any more. The live containers (ROADS/REFERENCE/STRETCH/STREETNAMES/STREETSET/PRIMARIES/SPOT, app2's routeBox and ROUTE_TILE_NAMES, app3's SAMPLES) are refilled IN PLACE, never rebound, so references captured earlier (GL_HOST's plain entries above all) stay valid. Runs BEFORE loadRouteState: the state sanitizers filter against this geometry. buildSamples (app3) and the paint engine's rebuild (GLP.rebuildRoute, called by loadRoute) complete the per-load rebuild.
   const roads = (pack && pack.roads) || {}, reference = (pack && pack.reference) || {};
   for (const k of Object.keys(ROADS)) delete ROADS[k]; Object.assign(ROADS, roads);
   for (const k of Object.keys(REFERENCE)) delete REFERENCE[k]; Object.assign(REFERENCE, reference);
@@ -304,7 +304,7 @@ const STREETSET = new Set();
   for (const k of Object.keys(STRETCH)) delete STRETCH[k]; Object.assign(STRETCH, built);
   STREETNAMES.length = 0; for (const n of Object.keys(ROADS)) STREETNAMES.push(n);
   STREETSET.clear(); for (const n of STREETNAMES) STREETSET.add(n);
-  MAIN.clear(); for (const n of ((pack && pack.main) || [])) if (STREETSET.has(n)) MAIN.add(n);
+  PRIMARIES.clear(); for (const n of ((pack && pack.main) || [])) if (STREETSET.has(n)) PRIMARIES.add(n);
   for (const k of Object.keys(SPOT)) delete SPOT[k]; Object.assign(SPOT, (pack && pack.spot) || {});
   routeBox = computeRouteBox(ROADS);
   ROUTE_TILE_NAMES.length = 0; ROUTE_TILE_NAMES.push(...((pack && pack.tileNames && pack.tileNames.length) ? pack.tileNames : STREETNAMES));
@@ -577,12 +577,12 @@ window.addEventListener('pagehide', () => flushAux(true));
 // is declared in app2.js, after this part, and the getter resolves it at
 // call time. Built here, at the end of app1.js, because the engine
 // evaluates immediately after this part in the assembled page. Beta 1.117:
-// the plain entries are the LIVE containers (MAIN/SPOT/STRETCH/ROADS/names)
+// the plain entries are the LIVE containers (PRIMARIES/SPOT/STRETCH/ROADS/names)
 // - buildGeometry refills them in place per load, so the engine's captured
 // references stay valid across a switch and GLP.rebuildRoute re-reads them.
 // Guarded by tests/browser/selftest-engine-surface.mjs (the frozen list).
 const GL_HOST = {
-  MLAT, MLNG, MAIN, SPOT, STRETCH, ROADS, names, jDistM, ptSegM, isNight,
+  MLAT, MLNG, PRIMARIES, SPOT, STRETCH, ROADS, names, jDistM, ptSegM, isNight,
   get pieces() { return pieces; },
   get selSet() { return selSet; },
   get selStretch() { return selStretch; },

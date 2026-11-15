@@ -24,9 +24,9 @@ function cleanPaceKm(h) { // Beta 1.184: a saved clean pace per ROAD km - its to
   if (!(elapsed > 0) || !(roadKm > 0)) return null;
   return fmtPaceKm(elapsed / roadKm);
 }
-function groupProgress(wantMain) { // Beta 1.184: Progress-by-group sums - a completed street counts 1, a street with any side done counts a half (the approved frame 3.5 of 6), else 0
+function groupProgress(wantPrimary) { // Beta 1.184: Progress-by-group sums - a completed street counts 1, a street with any side done counts a half (the approved frame 3.5 of 6), else 0
   let sum = 0, cnt = 0;
-  for (const n of STREETNAMES) { if (MAIN.has(n) === wantMain) { cnt++; sum += streetComplete(n) ? 1 : (streetHalf(n) ? 0.5 : 0); } }
+  for (const n of STREETNAMES) { if (PRIMARIES.has(n) === wantPrimary) { cnt++; sum += streetComplete(n) ? 1 : (streetHalf(n) ? 0.5 : 0); } }
   return { sum, cnt };
 }
 function fmtCnt(v) { return v % 1 ? v.toFixed(1) : String(v); }
@@ -109,7 +109,7 @@ function renderPace() { // Beta 1.184 (Andrew): the approved redesign - This run
     banner +
     (runStart ? '<button class="red" id="paceCancel">Cancel start</button>' : '') +
     '<div class="psec2">Progress by group</div>' +
-    groupBar('Mains', groupProgress(true)) +
+    groupBar('Primaries', groupProgress(true)) +
     groupBar('Secondaries', groupProgress(false)) +
     '<div class="gb-cap">dashed line = halfway</div>' +
     '<div class="psec2">Saved cleans</div>';
@@ -207,7 +207,7 @@ function openClean(i) {
     notedOnly.forEach(n => {
       const rowEl = document.createElement('div'); rowEl.className = 'cvRow';
       const top = document.createElement('div'); top.className = 'cvTop';
-      top.innerHTML = '<span class="dot ' + (MAIN.has(n) ? 'dot-gold' : 'dot-rose') + '"></span><div class="cvNm"></div>'; // Beta 1.184: not-cleaned rows wear their group pending dot
+      top.innerHTML = '<span class="dot ' + (PRIMARIES.has(n) ? 'dot-gold' : 'dot-rose') + '"></span><div class="cvNm"></div>'; // Beta 1.184: not-cleaned rows wear their group pending dot
       top.querySelector('.cvNm').textContent = n;
       rowEl.appendChild(top);
       cleanNoteLines(h.notes[n]).forEach(L => { const p = document.createElement('div'); p.className = 'cvNt'; p.textContent = L; rowEl.appendChild(p); });

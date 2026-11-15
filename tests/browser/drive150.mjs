@@ -1,6 +1,6 @@
 import { launchDrive, bootThrough, finish, resetRoute } from './harness.mjs';
 import { PACK5W } from './pack-expect.mjs'; // premise derivation (Tranche 4 / T2, 2026-11-08): expectations about the shipped world derive from source - see pack-expect.mjs
-// Beta 1.144 TEST-PREMISE UPDATE (Package C, DA-04): the create draft and the packs it saves now key streets by their FULL map name ('Bordeaux Drive', 'Alderson Avenue'); through 1.143 they keyed on the shortened name. Every key read in this drive (draft.roads, computeStretches, mains, markDone/streetComplete on the created route, saved-pack mains) follows the full name; DISPLAY reads (panel/preview row text, search text) still match the short form, and the photo-import fixtures' authored keys (the envelope's 'Bordeaux') are unchanged - the import keeps the file's own keys. Ship-gate completion (2026-11-07 night): the J-section fixture-street reads ('Faraway Avenue', 'Farfaraway Avenue', 'Edgewater Avenue', 'Crosscell Avenue', incl. the crPending key) and P1's saved-key expectation were missed by the first repair pass and are full-name now; the first local run exposed them as 6 failures + ~150 s of dead polls (TEST, flake log).
+// Beta 1.144 TEST-PREMISE UPDATE (Package C, DA-04): the create draft and the packs it saves now key streets by their FULL map name ('Bordeaux Drive', 'Alderson Avenue'); through 1.143 they keyed on the shortened name. Every key read in this drive (draft.roads, computeStretches, primaries, markDone/streetComplete on the created route, saved-pack primaries) follows the full name; DISPLAY reads (panel/preview row text, search text) still match the short form, and the photo-import fixtures' authored keys (the envelope's 'Bordeaux') are unchanged - the import keeps the file's own keys. Ship-gate completion (2026-11-07 night): the J-section fixture-street reads ('Faraway Avenue', 'Farfaraway Avenue', 'Edgewater Avenue', 'Crosscell Avenue', incl. the crPending key) and P1's saved-key expectation were missed by the first repair pass and are full-name now; the first local run exposed them as 6 failures + ~150 s of dead polls (TEST, flake log).
 import fs from 'node:fs';
 import path from 'node:path';
 import { execFileSync } from 'node:child_process';
@@ -224,9 +224,9 @@ ok('A2b a tap with no road feature under it says so and adds nothing | toast: ' 
 await ev(tapStreet('Bordeaux Drive'));
 const gotB = await poll(`typeof draft !== 'undefined' && draft && !!draft.roads['Bordeaux Drive']`, 20000);
 ok('A3 tapping Bordeaux Drive (fixture roads feature through the real click handler) adds it from the prepared extract', gotB === true);
-const A4 = await J(`({ streets: Object.keys(draft.roads), mains: draft.mains.size, count: document.getElementById('crCount').textContent, chip: (document.querySelector('#crPickList .crPChip') || {}).textContent || '', total: Math.round(computeStretches(draft.roads)['Bordeaux Drive'].total), src: (map.getSource('crDraft').serialize().data.features || []).length })`); // Beta 1.127 premise updates in this drive: the pick rows are the picked-roads panel's rows - chip is .crPChip (A4), the panel header counts 'N roads' (A4/A6), the chip flip's proof is its own MAIN text (A7), and the theme probe reads the panel face #crPanel (I2)
-ok('A4 Bordeaux joined the draft as a SECONDARY (2ND chip, 0 mains) with its shape drawn on the draft overlay | ' + JSON.stringify(A4),
-  A4.streets.length === 1 && A4.mains === 0 && A4.count.indexOf('1 roads') === 0 && A4.chip === '2ND' && A4.src === 1);
+const A4 = await J(`({ streets: Object.keys(draft.roads), primaries: draft.primaries.size, count: document.getElementById('crCount').textContent, chip: (document.querySelector('#crPickList .crPChip') || {}).textContent || '', total: Math.round(computeStretches(draft.roads)['Bordeaux Drive'].total), src: (map.getSource('crDraft').serialize().data.features || []).length })`); // Beta 1.127 premise updates in this drive: the pick rows are the picked-roads panel's rows - chip is .crPChip (A4), the panel header counts 'N roads' (A4/A6), the chip flip's proof is its own PRIMARY text (A7), and the theme probe reads the panel face #crPanel (I2)
+ok('A4 Bordeaux joined the draft as a SECONDARY (2ND chip, 0 primaries) with its shape drawn on the draft overlay | ' + JSON.stringify(A4),
+  A4.streets.length === 1 && A4.primaries === 0 && A4.count.indexOf('1 roads') === 0 && A4.chip === '2ND' && A4.src === 1);
 ok('A5 the fetched Bordeaux length matches the fixture geometry (' + Math.round(fixtureLen('Bordeaux Drive')) + ' m) within 2% | got ' + A4.total,
   Math.abs(A4.total - fixtureLen('Bordeaux Drive')) <= fixtureLen('Bordeaux Drive') * 0.02);
 await ev(tapStreet('Alderson Avenue'));
@@ -236,16 +236,16 @@ const A6 = await J(`({ streets: Object.keys(draft.roads).sort(), count: document
 ok('A6 Alderson Avenue tapped and added (2 streets); its stitched length matches the 5-way fixture (' + Math.round(fixtureLen('Alderson Avenue')) + ' m) within 3% | ' + JSON.stringify(A6),
   A6.streets.length === 2 && A6.count.indexOf('2 roads') === 0 && Math.abs(A6.ald - fixtureLen('Alderson Avenue')) <= fixtureLen('Alderson Avenue') * 0.03);
 await ev(`(() => { const rows = [...document.querySelectorAll('#crPickList .crPRow')]; const row = rows.find(r => r.querySelector('.crPName').textContent === 'Bordeaux'); row.querySelector('.crPChip').click(); return true; })()`); // Beta 1.127 premise update: the chip lives in the panel row (.crPRow/.crPName/.crPChip)
-const A7 = await J(`({ mains: [...draft.mains], chip: (() => { const rows = [...document.querySelectorAll('#crPickList .crPRow')]; const row = rows.find(r => (r.querySelector('.crPName') || {}).textContent === 'Bordeaux'); return row ? (row.querySelector('.crPChip') || {}).textContent || '' : ''; })() })`); // Beta 1.127 premise update: the panel header has no mains count - the flipped chip's MAIN text is the visible proof
-ok('A7 flipping Bordeaux to MAIN updates its panel chip (2ND -> MAIN)', A7.mains.length === 1 && A7.mains[0] === 'Bordeaux Drive' && A7.chip === 'MAIN'); // Beta 1.127 premise update: chip text replaces the old header mains count
+const A7 = await J(`({ primaries: [...draft.primaries], chip: (() => { const rows = [...document.querySelectorAll('#crPickList .crPRow')]; const row = rows.find(r => (r.querySelector('.crPName') || {}).textContent === 'Bordeaux'); return row ? (row.querySelector('.crPChip') || {}).textContent || '' : ''; })() })`); // Beta 1.127 premise update: the panel header has no primaries count - the flipped chip's PRIMARY text is the visible proof
+ok('A7 flipping Bordeaux to PRIMARY updates its panel chip (2ND -> PRIMARY)', A7.primaries.length === 1 && A7.primaries[0] === 'Bordeaux Drive' && A7.chip === 'PRIMARY'); // Beta 1.127 premise update: chip text replaces the old header primaries count
 await ev(`document.getElementById('crDoneBtn').click()`);
 const A8 = await J(`({ stage: crStage, pv: document.getElementById('previewSheet').classList.contains('on'), bar: document.getElementById('createBar').classList.contains('on'), rows: document.querySelectorAll('#pvList .crRow').length, pvCount: document.getElementById('pvCount').textContent })`);
 ok('A8 Done lands in the shared preview ("Review selection") with both streets and the count', A8.stage === 'preview' && A8.pv && !A8.bar && A8.rows === 2 && A8.pvCount.indexOf('2 streets') === 0);
 await ev(`document.getElementById('pvSaveBtn').click()`);
 await poll(`document.getElementById('rmNamePane').classList.contains('on')`, 10000);
 const A9 = await J(`({ name: document.getElementById('crNameInput').value, area: document.getElementById('crAreaInput').value, summary: document.getElementById('crNameSummary').textContent })`);
-ok('A9 name-it is its own step (kept, Andrew - the preview\'s "Save route" advances here): area pre-filled from the search (Vaughan), summary reads 2 streets · 1 mains | ' + JSON.stringify(A9),
-  A9.area === 'Vaughan' && A9.summary.indexOf('2 streets') >= 0 && A9.summary.indexOf('1 mains') >= 0);
+ok('A9 name-it is its own step (kept, Andrew - the preview\'s "Save route" advances here): area pre-filled from the search (Vaughan), summary reads 2 streets · 1 primaries | ' + JSON.stringify(A9),
+  A9.area === 'Vaughan' && A9.summary.indexOf('2 streets') >= 0 && A9.summary.indexOf('1 primaries') >= 0);
 await ev(`document.getElementById('crNameInput').value = 'Route 6W'`);
 await ev(`document.getElementById('crSaveBtn').click()`);
 await poll(`ROUTE_PACKS.some(p => p.id === 'route-6w') && !creating`, 10000);
@@ -372,9 +372,9 @@ ok('C4 the imported candidate draft discards cleanly back to the doors', C4.crea
 await ev(`document.getElementById('crDoorPhoto').click()`);
 await setFile('#crDraftFile', '/tmp/d150-envelope.json');
 await poll(`typeof creating !== 'undefined' && creating === true && crStage === 'preview'`, 10000).catch(() => false);
-let C5 = await J(`({ creating, name: draft ? draft.name : '', mains: draft ? [...draft.mains] : [] })`);
-if (!C5.creating) { await ev(`document.getElementById('crDraftFile').dispatchEvent(new Event('change'))`); await poll(`typeof creating !== 'undefined' && creating === true`, 10000); C5 = await J(`({ creating, name: draft ? draft.name : '', mains: draft ? [...draft.mains] : [] })`); }
-ok('C5 a pack-envelope draft imports with its name and mains carried into the draft', C5.creating && C5.name === 'Envelope Route' && C5.mains.join() === 'Bordeaux');
+let C5 = await J(`({ creating, name: draft ? draft.name : '', primaries: draft ? [...draft.primaries] : [] })`);
+if (!C5.creating) { await ev(`document.getElementById('crDraftFile').dispatchEvent(new Event('change'))`); await poll(`typeof creating !== 'undefined' && creating === true`, 10000); C5 = await J(`({ creating, name: draft ? draft.name : '', primaries: draft ? [...draft.primaries] : [] })`); }
+ok('C5 a pack-envelope draft imports with its name and primaries carried into the draft', C5.creating && C5.name === 'Envelope Route' && C5.primaries.join() === 'Bordeaux');
 await ev(`document.getElementById('pvSaveBtn').click()`);
 await poll(`document.getElementById('rmNamePane').classList.contains('on')`, 10000);
 const C6 = await J(`({ name: document.getElementById('crNameInput').value })`);

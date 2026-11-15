@@ -20,7 +20,7 @@ import { readFileSync } from 'node:fs';
 // across these 15 names, zero free writes, grouped (a) data/constants,
 // (b) functions called, (c) mutable state read live (via getters).
 const FROZEN = [
-  'MLAT', 'MLNG', 'MAIN', 'SPOT', 'STRETCH', 'ROADS', 'names',       // (a)
+  'MLAT', 'MLNG', 'PRIMARIES', 'SPOT', 'STRETCH', 'ROADS', 'names',       // (a)
   'jDistM', 'ptSegM', 'isNight', 'glHideLabels',                     // (b)
   'pieces', 'selSet', 'selStretch', 'activeRoute',                   // (c)
 ];

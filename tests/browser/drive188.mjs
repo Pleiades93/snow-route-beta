@@ -94,7 +94,7 @@ try {
 
   // ---- D: A-01 note flush surfaces ----
   await ev(`if (!document.getElementById('sheet').classList.contains('open')) document.getElementById('streetsBtn').click(); true`); await sleep(300); // the sheet must be OPEN (the button TOGGLES - section A may have left it open) - a hidden textarea cannot take focus, and blur is the event under test
-  const d0 = await J(`(() => { closeClean(); listFilter = 'mains'; noteOpenFor = 'Velmar'; renderStreets(); const ta = document.querySelector('.noteEd textarea'); return { hasTa: !!ta }; })()`); // closeClean: returns the Pace sheet to its main view after section A's openClean (Beta 1.184 topology: the detail lives in the Pace sheet now)
+  const d0 = await J(`(() => { closeClean(); listFilter = 'primaries'; noteOpenFor = 'Velmar'; renderStreets(); const ta = document.querySelector('.noteEd textarea'); return { hasTa: !!ta }; })()`); // closeClean: returns the Pace sheet to its main view after section A's openClean (Beta 1.184 topology: the detail lives in the Pace sheet now)
   ok('D0 the note editor opens on Velmar | ' + JSON.stringify(d0), d0.hasTa === true);
   const d1 = await J(`(() => {
     const orig = Storage.prototype.setItem; Storage.prototype.setItem = function () { throw new Error('quota'); };

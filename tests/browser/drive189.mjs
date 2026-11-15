@@ -64,7 +64,7 @@ try {
     // the roads map is parsed from raw JSON TEXT on purpose: an object literal cannot carry an own '__proto__' key (the literal form sets the prototype instead, and stringify then drops it) - JSON text is how such a name really arrives (imports, stored packs)
     const roadsIn = JSON.parse('{"constructor":' + JSON.stringify(seg) + ',"toString":' + JSON.stringify(seg) + ',"__proto__":' + JSON.stringify(seg) + '}');
     const v = normalizePack({ name: 'Proto Test', roads: roadsIn });
-    const v2 = normalizePack({ name: 'Proto Test', roads: { 'constructor': seg }, mains: ['constructor'] });
+    const v2 = normalizePack({ name: 'Proto Test', roads: { 'constructor': seg }, primaries: ['constructor'] });
     const dup = normalizePack({ name: 'Proto Test', roads: { 'Main Street': seg, ' Main Street ': seg } });
     return {
       ok: v.ok, keys: v.ok ? Object.keys(v.pack.roads).sort() : [],

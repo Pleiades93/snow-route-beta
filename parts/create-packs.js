@@ -10,7 +10,7 @@
 // land in one shared preview ("Review selection") with corrections, then a
 // name-it step, then the pack is saved on-device (below).
 // PACK FORMAT (defined once, here and in docs/ARCHITECTURE.md): the same
-// shape as a ROUTE_PACKS entry - { name, area, mains: [names], roads:
+// shape as a ROUTE_PACKS entry - { name, area, main: [names], roads:
 // { street: [segment, ...] }, reference: {...}, tileNames?: [...] }, each
 // segment an array of [lat, lng] points. normalizePack is the one validator
 // every entry path (draft import, save, backup restore, boot merge) uses.
@@ -101,11 +101,11 @@ function normalizePack(raw, opts) { // -> { ok: true, pack } | { ok: false, erro
   if (!Object.keys(rc.roads).length) return bad(opts.draft ? 'the draft has no streets' : 'the route has no streets');
   let reference = {};
   if (raw.reference !== undefined) { const fc = cleanRoads(raw.reference, 'reference features'); if (fc.error) return bad(fc.error); reference = fc.roads; for (const nm of Object.keys(reference)) if (rc.roads[nm]) delete reference[nm]; }
-  const mainsIn = raw.mains !== undefined ? raw.mains : raw.main;
-  const mains = [];
-  if (mainsIn !== undefined) {
-    if (!Array.isArray(mainsIn)) return bad('the mains list is the wrong shape');
-    for (const m of mainsIn) if (typeof m === 'string' && rc.roads[m] && !mains.includes(m)) mains.push(m);
+  const primariesIn = raw.primaries !== undefined ? raw.primaries : (raw.mains !== undefined ? raw.mains : raw.main); // Beta 1.205: the draft-side key is 'primaries' now; 'mains' stays accepted as the legacy input alias and 'main' is the stored pack field - all three read the same list
+  const primaries = [];
+  if (primariesIn !== undefined) {
+    if (!Array.isArray(primariesIn)) return bad('the primaries list is the wrong shape');
+    for (const m of primariesIn) if (typeof m === 'string' && rc.roads[m] && !primaries.includes(m)) primaries.push(m);
   }
   const tileSet = new Set(Object.keys(rc.roads));
   if (Array.isArray(raw.tileNames)) for (const t of raw.tileNames) if (typeof t === 'string' && t && t.length <= PACK_TILENAME_MAX && tileSet.size < PACK_TILENAMES_MAX) tileSet.add(t);
@@ -114,7 +114,7 @@ function normalizePack(raw, opts) { // -> { ok: true, pack } | { ok: false, erro
   if (raw.box && isFinite(raw.box.w) && isFinite(raw.box.s) && isFinite(raw.box.e) && isFinite(raw.box.n) && raw.box.w < raw.box.e && raw.box.s < raw.box.n) box = { w: raw.box.w, s: raw.box.s, e: raw.box.e, n: raw.box.n };
   else { const cb = computeRouteBox({ ...rc.roads, ...reference }); if (cb) box = { w: Math.max(-180, cb.w - 0.03), s: Math.max(-90, cb.s - 0.025), e: Math.min(180, cb.e + 0.03), n: Math.min(90, cb.n + 0.025) }; }
   if (box && (box.w < -180 || box.e > 180 || box.s < -90 || box.n > 90 || box.e - box.w > PACK_BOX_MAX_DEG || box.n - box.s > PACK_BOX_MAX_DEG)) return bad('the route area is too big'); // Beta 1.152 (NV round, NV3a): extent and world-bounds validation, fail-closed like every other check here, over the declared box and the derived one alike. A box is an offline-download area and the tile enumerators (app4) iterate it zoom by zoom: a worldwide box enumerates ~356.8M tile URLs per source and never returns (measured) - it is a preload wedge, not a route. The ceiling (~7.6x the widest shipped city bbox, 10x the declared 5W box) rejects it at EVERY entry point, this validator being the single gate for draft import, save, backup restore and the boot merge. The enumerators carry their own budget as well (NV3b), for records that never pass through here.
-  const cleaned = { name, area, main: mains, spot: {}, tileNames: [...tileSet], box, roads: rc.roads, reference };
+  const cleaned = { name, area, main: primaries, spot: {}, tileNames: [...tileSet], box, roads: rc.roads, reference };
   const pack = {};
   for (const f of PACK_FIELDS) { if (f in cleaned) pack[f] = cleaned[f]; else if (raw[f] !== undefined) pack[f] = raw[f]; } // Beta 1.131 (programme A): the pack is built by walking PACK_FIELDS (app1) - the list is the single source for what a pack carries. Every listed field has a cleaner above today, so the raw fall-through never fires; it exists so a future field added to the list (before its cleaner lands) is carried through rather than silently dropped - the pre-1.131 trap was the hand-written return literal here forgetting a field.
   return { ok: true, pack };

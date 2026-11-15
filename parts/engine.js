@@ -3,7 +3,7 @@ const GLP = (() => {
   let GLM = null;                 // the MapLibre map instance (recreated per setBasemap)
   let sel = null;                 // {name, idx} - fed from the app's selStretch
   let YELLOW = '#ffc233', RED = '#ef476f', GREEN = '#06d6a0';   // METRO, locked in the prototype (r26)
-  const pendingColor = n => H.MAIN.has(n) ? YELLOW : RED;
+  const pendingColor = n => H.PRIMARIES.has(n) ? YELLOW : RED;
   let fontStack = ['Noto Sans Regular']; // replaced per-style by GLP.setFont (the app adopts the basemap's own stack, prototype pickFont rule)
   const glowPreset = 1;   // SOFT - the locked selection preset (prototype r24)
   let lastSig = null, lastNight = null;
@@ -151,15 +151,15 @@ const LABELS = { type: 'FeatureCollection', features: labelFeatures };
 // 13.7 the shortest streets' names drop away in tiers, longest last,
 // until 12.6 where the melt finishes everything. Tier = stitched-
 // length quartile (computed from the data, no hand-set lengths); the
-// six MAIN streets are forced into the final tier regardless of
-// length (Astona is a main but only 187 m long).
+// six PRIMARY streets are forced into the final tier regardless of
+// length (Astona is a primary but only 187 m long).
 function assignTiers() {
   if (!labelPointFeatures.length) return; // Beta 1.170 (B-10): no labels, no tiers - through 1.169 the quartile reads below indexed lens[-1] (undefined) and every comparison failed quietly; a no-op only because there were no features to tier either
   const lens = labelPointFeatures.map(f => f.properties.len).sort((a, b) => a - b);
   const q = p => lens[Math.min(lens.length - 1, Math.floor(p * lens.length))];
   const q1 = q(0.25), q2 = q(0.5), q3 = q(0.75);
   labelPointFeatures.forEach(f => {
-    f.properties.tier = H.MAIN.has(f.properties.name) ? 4 : (f.properties.len < q1 ? 1 : f.properties.len < q2 ? 2 : f.properties.len < q3 ? 3 : 4);
+    f.properties.tier = H.PRIMARIES.has(f.properties.name) ? 4 : (f.properties.len < q1 ? 1 : f.properties.len < q2 ? 2 : f.properties.len < q3 ? 3 : 4);
   });
 }
 const LABELPTS = { type: 'FeatureCollection', features: labelPointFeatures };
@@ -172,7 +172,7 @@ const ROUTEPOI = { type: 'Feature', properties: {}, geometry: { type: 'Point', c
 // one painted shape, the engine drawing every joint. A completed stretch
 // is not a core flanked by two side lines: completed stretches form the
 // BAND family - one solid ribbon at road width.
-function colOf(n, bits) { return bits === 3 ? GREEN : (H.MAIN.has(n) ? YELLOW : RED); }
+function colOf(n, bits) { return bits === 3 ? GREEN : (H.PRIMARIES.has(n) ? YELLOW : RED); }
 // Selection by vibrancy (Andrew, 2026-10-28 - the model he designed on
 // 2026-10-26): everything rests MUTED (same colour, saturation cut), the
 // selected sector renders the full vibrant colour at the same glow spec.
