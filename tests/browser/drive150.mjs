@@ -255,7 +255,7 @@ ok('A10 save persists the pack in the IndexedDB store (2 streets, Bordeaux main)
 await ev(`document.querySelector('#rmRoutes .routeRow[data-route="route-6w"]').click()`);
 await poll(`typeof activeRoute !== 'undefined' && activeRoute && activeRoute.id === 'route-6w'`, 20000);
 await poll(`typeof map === 'undefined' || !map || !map.isMoving()`, 25000);
-const A11 = await J(`({ names: STREETNAMES.slice().sort(), count2: document.body.innerText.indexOf('of 2') >= 0 })`);
+const A11 = await J(`({ names: STREETNAMES.slice().sort(), count2: document.getElementById('countTxt').textContent.indexOf('of 2') >= 0 })`); // count2: the count STATE, read from #countTxt (Beta 1.199 re-derivation, same basis as drive149 L2: body.innerText only sees rendered text and the pill renders only while a clean is running; updateCount writes the state either way)
 ok('A11 the created route loads through the 1.117 machinery (2 streets, count reads "of 2")', A11.names.join() === 'Alderson Avenue,Bordeaux Drive' && A11.count2);
 await ev(`markDone('Bordeaux Drive', 'drive150')`);
 const A12 = await J(`({ done: streetComplete('Bordeaux Drive'), slot: (localStorage.getItem('snowroute.route-6w.v5.sides') || '').indexOf('Bordeaux') >= 0 })`);

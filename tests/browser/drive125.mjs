@@ -178,10 +178,21 @@ await markDoneScn(ev, 'Woolacott', 'tap');
 await waitTrue(poll, `$('count').textContent.indexOf('1 of ') === 0`, 10000); // T4: poll the terminal state S5 asserts (the count in the new format)
 const C2 = await ev(`$('count').textContent`);
 ok('S5 count climbs in the new format after a street is done | ' + C2, new RegExp('^1 of ' + PACK5W.names + ' · \\d+%$').test(C2));
+// Beta 1.199 re-derivation (Andrew's pill rule): the pill renders ONLY while a clean is running,
+// so T5's meter measurement - rendered widths, a property that exists only while the pill is on
+// screen - moves inside a run: Start is tapped, the measurement is taken on the shown pill, and
+// the start is then cancelled (restoring the pre-Start board; Woolacott's mark predates this
+// Start, so it survives the cancel). The property itself is unchanged - the meter's rendered
+// fill fraction equals the work fraction the % reports - and S5 above is untouched: the count
+// TEXT is written whether or not the pill is shown, and it still climbs outside a run.
+await tapById(ev, 'startBtn');
+await waitTrue(poll, `$('count').offsetParent !== null`, 10000); // the shown pill is T5's premise now
 await sleep(600);
 const T5 = JSON.parse(await ev(`(() => JSON.stringify({ ratio: $('countFill').offsetWidth / $('count').offsetWidth, want: workDoneM() / totalWorkM(), txt: $('countTxt').textContent, count: $('count').textContent }))()`));
-ok('T5 the pill meter fills with the same work fraction the % reports | ' + JSON.stringify(T5),
+ok('T5 the pill meter fills with the same work fraction the % reports (measured on the shown pill, inside a run - Beta 1.199) | ' + JSON.stringify(T5),
   Math.abs(T5.ratio - T5.want) < 0.04 && T5.want > 0 && T5.txt === T5.count);
+await tapById(ev, 'cancelStartBtn');
+await sleep(400);
 
 
 R.exceptions = consoleLog.filter(c => c.type === 'EXCEPTION').map(c => String(c.text || '').slice(0, 200));
