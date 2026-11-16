@@ -794,7 +794,7 @@ $('stDel').addEventListener('click', async () => {
 });
 // ---- About / What's new ----
 const WHATSNEW = { // the curated in-app notes: plain words, LATEST RELEASE ONLY (Beta 1.114, Andrew: the accumulated list cluttered the About pane). A release REPLACES this entry with its own in the same change - it never accumulates; the full history lives in CHANGELOG.md, not the app
-  v: 'Beta 1.212', items: ["Wording, finished: the last two spots that still called a clean a run now say clean too \u2014 the 'Archived clean' line in the text export, and a line in a saved clean's details."] };
+  v: 'Beta 1.213', items: ["New icon: the clay truck now stands everywhere the app shows its icon \u2014 home screen, splash and browser tab \u2014 and the maskable icon is composed so Android launchers can't crop the artwork."] };
 
 function renderAbout() {
   const cur = $('ver').textContent.trim();
