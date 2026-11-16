@@ -89,14 +89,15 @@ console.log('D - while the card is open, the re-centre button drops below it');
 // ================= V - the bump agrees =================
 // (The version pins below follow the SHIPPED version - the drive194
 // pattern: shipped at Beta 1.214 by this round; rolled in place to
-// Beta 1.215 by the selcard-width-262 round, 2026-11-16, TEST class.
+// Beta 1.215 by the selcard-width-262 round, then to Beta 1.216 by
+// the create-glow-casing-fix round, 2026-11-16, TEST class.
 // The S/C/B/D sections above are this proof's durable property and
 // are untouched.)
 console.log('V - version surfaces agree');
 {
-  check('V: the #ver label reads Beta 1.215', head.includes('<div class="ver" id="ver">Beta 1.215</div>'));
-  check('V: WHATSNEW is the Beta 1.215 entry', app4.includes("v: 'Beta 1.215', items:"));
-  check('V: the CHANGELOG top entry is Beta 1.215', changelog.includes('## Beta 1.215 — 2026-11-16'));
+  check('V: the #ver label reads Beta 1.216', head.includes('<div class="ver" id="ver">Beta 1.216</div>'));
+  check('V: WHATSNEW is the Beta 1.216 entry', app4.includes("v: 'Beta 1.216', items:"));
+  check('V: the CHANGELOG top entry is Beta 1.216', changelog.includes('## Beta 1.216 — 2026-11-16'));
 }
 
 console.log(pass + ' pass, ' + fail + ' fail');
