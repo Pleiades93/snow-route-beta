@@ -167,6 +167,8 @@ jobs:
         run: node tests/proof/proof-street-end-width-fix.mjs
       - name: Green half-road proof (Beta 1.208 gate - full green matches the surface width, one-side green fills half the road, selection paint is the board's own geometry, label spacing)
         run: node tests/proof/proof-green-half-road.mjs
+      - name: Trim-glow / path-side / pill-ink proof (Beta 1.209 gate - trim glow covers chosen sectors only, multi-select side arrows follow the driver's path, pill ink is true black)
+        run: node tests/proof/proof-trim-glow-path-pills.mjs
       - name: Premise-lint fixtures (Tranche 4 gate)
         run: python3 scripts/premise-lint-fixtures/run-fixtures.py
       - name: Bug-hunt fix fixtures (PR #23 gate; Beta 1.185)

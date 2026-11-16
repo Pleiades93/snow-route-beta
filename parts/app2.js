@@ -335,7 +335,38 @@ function geoSideFrame(name, idx, anchorLL) {
   return { baseLL: [best.gy / MLAT, best.gx / MLNG], left: [best.lx, best.ly] }; // left = [east, north] unit
 }
 function clearChips() { $('chips').innerHTML = ''; }
-function groupSideDone(side) { const bit = side ? 2 : 1; return selSet.length > 0 && selSet.every(en => !!(pieces[en.name][en.idx] & bit)); } // a side reads done only when EVERY selected stretch has it
+const GROUP_PATH_JOIN_M = 20; // metres: two consecutively tapped sections join into one drive when an end of one sits within this of an end of the next (Beta 1.209). Measured on Route 5W's real stretch data: true junction joins are exact (stretch parts share vertices, 0 m, within and across streets) and the nearest non-joining part ends anywhere on the route are 58.7 m apart - the tolerance sits in a wide empty band
+function groupSideMap(side) { // Beta 1.209 (Andrew): the stored side a press of chip `side` toggles on EACH selected stretch, in tap order. Through 1.208 the press applied `side` itself to every stretch - but a stored side is numbered against its own street's drawn direction, so across a turn one press lit his right on one street and his left on the next (his Valeria -> Greenpark drive). Andrew's rule: the tapped sections in tap order ARE his drive, and the press marks the side that was on his right (or his left) as he travels that drive, continuously through turns. So: consecutive taps chain into drives (an end of one within GROUP_PATH_JOIN_M of an end of the next); each section's travel direction comes from its drive neighbours (enter end -> exit end; a drive's first section derives its direction from its exit end, its last from its enter end; a section both neighbours join at the SAME end - he drove in and back out the one junction - is travelled from that end inward); the press's driver meaning is read off the ANCHOR section (the last tapped - the chips sit on it): the chip names a geographic side of the anchor's drawn line (0 = its left, 1 = its right, the engine's convention), and the anchor's own travel direction turns that into driver's right or left; each section then maps that meaning through its own travel-vs-drawn direction (same way: no flip; opposite: flip). Fallbacks keep today's raw mapping exactly: a lone section, any section whose drive is a single section, and the whole press when the anchor's own drive is a single section (a directionless anchor cannot name a driver side). Pure: reads selSet/sel/STRETCH, writes nothing.
+  const n = selSet.length;
+  const raw = selSet.map(() => side);
+  if (n < 2) return raw;
+  const ends = selSet.map(en => { const p = STRETCH[en.name].parts[en.idx]; return [p[0], p[p.length - 1]]; });
+  const join = [null]; // join[k] (k >= 1): {a, b} = selSet[k] joins selSet[k-1] at k-1's end a and k's end b (0 = first point, 1 = last); null = a new drive starts at k
+  for (let k = 1; k < n; k++) {
+    let best = null;
+    for (let a = 0; a < 2; a++) for (let b = 0; b < 2; b++) { const d = distM(ends[k - 1][a], ends[k][b]); if (d <= GROUP_PATH_JOIN_M && (!best || d < best.d)) best = { a, b, d }; }
+    join.push(best);
+  }
+  const drives = [];
+  for (let k = 0; k < n; k++) { if (k === 0 || !join[k]) drives.push([]); drives[drives.length - 1].push(k); }
+  const withDir = new Array(n).fill(null); // withDir[k]: the drive travels section k the way its line is drawn (first point -> last point); null = a single-section drive (no travel direction)
+  for (const drv of drives) {
+    if (drv.length < 2) continue;
+    drv.forEach((k, pos) => {
+      const enter = pos > 0 ? join[k].b : null;
+      const exit = pos < drv.length - 1 ? join[k + 1].a : null;
+      if (enter !== null && exit !== null) withDir[k] = enter === exit ? enter === 0 : (enter === 0 && exit === 1);
+      else if (enter !== null) withDir[k] = enter === 0;
+      else withDir[k] = exit === 1;
+    });
+  }
+  let ai = selSet.findIndex(en => sel && en.name === sel.name && en.idx === sel.idx);
+  if (ai < 0) ai = n - 1;
+  if (withDir[ai] === null) return raw;
+  const driverRight = withDir[ai] ? side === 1 : side === 0;
+  return selSet.map((en, k) => { if (withDir[k] === null) return side; return driverRight ? (withDir[k] ? 1 : 0) : (withDir[k] ? 0 : 1); });
+}
+function groupSideDone(side) { const map = groupSideMap(side); return selSet.length > 0 && selSet.every((en, k) => !!(pieces[en.name][en.idx] & (map[k] ? 2 : 1))); } // a side reads done only when EVERY selected stretch has it - Beta 1.209: "it" is the side this chip's press would toggle on that stretch (groupSideMap's per-stretch side), so the chip's done state reads the same side its press writes
 function showChips() {
   clearChips();
   if (!sel) return;
@@ -424,11 +455,12 @@ function togglePiece(name, idx, side) {
   showChips(); const okTp = finishChangeMarked();
   if (doneName && okTp.ok) toast('✓ ' + doneName + ' · ' + fmtClock(new Date()));
 }
-function togglePieceGroup(side) { // one chip, whole selection: a side not done everywhere gets completed everywhere; a side done everywhere gets cleared everywhere
+function togglePieceGroup(side) { // one chip, whole selection: a side not done everywhere gets completed everywhere; a side done everywhere gets cleared everywhere. Beta 1.209: the side is the DRIVER's side - groupSideMap turns the one press into the per-stretch stored side, so the marking follows his drive through a turn instead of landing on one raw index everywhere
   if (!selSet.length) return;
   const on = !groupSideDone(side);
+  const map = groupSideMap(side);
   const completed = [];
-  for (const en of selSet) { const c = applyPiece(en.name, en.idx, side, on); if (c && !completed.includes(c)) completed.push(c); }
+  selSet.forEach((en, k) => { const c = applyPiece(en.name, en.idx, map[k], on); if (c && !completed.includes(c)) completed.push(c); });
   showChips(); const okTg = finishChangeMarked();
   if (okTg.ok) completed.forEach(n => toast('✓ ' + n + ' · ' + fmtClock(new Date())));
 }

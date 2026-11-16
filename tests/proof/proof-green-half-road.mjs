@@ -342,14 +342,14 @@ check('R4: the title size ramp gains a high stop so names stay readable at z19',
 // (Andrew's pick C from the three-variant sample) — the 1.207 white
 // text on the raspberry is gone from both stages' rules.
 const head = readFileSync('parts/head.html', 'utf8');
-check('R5: the review-stage SECONDARY chip (.crChip.sec) wears dark ink #4a3200',
-  head.includes('.crChip.sec { background: #ef476f; color: #4a3200; }'));
-check('R5: the pick-stage SECONDARY chip (.crPChip.sec) wears dark ink #4a3200',
-  head.includes('.crPChip.sec { background: #ef476f; color: #4a3200; }'));
+check('R5: the review-stage SECONDARY chip (.crChip.sec) wears true black ink #000000 (1.209S: Beta 1.209 superseded the 1.208 #4a3200 ink — Andrew picked true black)',
+  head.includes('.crChip.sec { background: #ef476f; color: #000000; }'));
+check('R5: the pick-stage SECONDARY chip (.crPChip.sec) wears true black ink #000000 (1.209S: Beta 1.209 superseded the 1.208 #4a3200 ink — Andrew picked true black)',
+  head.includes('.crPChip.sec { background: #ef476f; color: #000000; }'));
 check('R5: no .sec rule keeps the retired white text',
   !head.includes('.crChip.sec { background: #ef476f; color: #fff; }') && !head.includes('.crPChip.sec { background: #ef476f; color: #fff; }'));
-check('R5: the PRIMARY pills are untouched (gold, dark ink)',
-  head.includes('.crChip.primary { background: #ffc233; color: #4a3200; }') && head.includes('.crPChip.primary { background: #ffc233; color: #4a3200; }'));
+check('R5: the PRIMARY pills wear the same true black on gold',
+  head.includes('.crChip.primary { background: #ffc233; color: #000000; }') && head.includes('.crPChip.primary { background: #ffc233; color: #000000; }'));
 
 // ---- R6 (same round): "Tap row to adjust" stands on its own line in
 // the panel rows — the subtitle keeps only the length line.

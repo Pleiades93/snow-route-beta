@@ -468,8 +468,8 @@ body.creating #dock, body.creating #tabBar, body.creating #hud, body.creating #n
 .crName { flex: 1; min-width: 0; font-size: 16px; font-weight: 600; color: var(--ink); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
 .crLen { font-size: 13px; color: var(--ink-dim); font-weight: 600; }
 .crChip { border: none; border-radius: 999px; font-size: 12px; font-weight: 800; letter-spacing: .3px; padding: 6px 10px; cursor: pointer; flex: none; }
-.crChip.primary { background: #ffc233; color: #4a3200; }
-.crChip.sec { background: #ef476f; color: #4a3200; } /* Beta 1.207 (Andrew): the secondary chip is the PRIMARY pill's twin - filled, in the secondary raspberry - never the grey placeholder it wore through 1.205. Beta 1.208 (Andrew, from the three-variant sample, pick C): BOTH pills wear the same dark ink #4a3200 - the 1.207 white text on the raspberry was chosen for him, not by him */
+.crChip.primary { background: #ffc233; color: #000000; }
+.crChip.sec { background: #ef476f; color: #000000; } /* Beta 1.207 (Andrew): the secondary chip is the PRIMARY pill's twin - filled, in the secondary raspberry - never the grey placeholder it wore through 1.205. Beta 1.208 (Andrew, from the three-variant sample, pick C): BOTH pills wear the same dark ink - the 1.207 white text on the raspberry was chosen for him, not by him. Beta 1.209 (Andrew): the ink is TRUE BLACK #000000 on both pills - the 1.208 #4a3200 read faded and muddy on the raspberry to his eye; shown ink variants, he picked true black, and shown the letter cases he kept ALL CAPS */
 .crDel { border: none; background: none; color: #e63a2e; font-size: 18px; font-weight: 800; width: 34px; height: 34px; cursor: pointer; flex: none; }
 .crPrimary { appearance: none; -webkit-appearance: none; border: none; background: linear-gradient(135deg, #3d65ef, #1b2fb6); color: #fff; font-size: 17px; font-weight: 700; padding: 15px 18px; border-radius: 14px; width: 100%; cursor: pointer; }
 .crPrimary:disabled { opacity: .45; }
@@ -497,8 +497,8 @@ body.creating #dock, body.creating #tabBar, body.creating #hud, body.creating #n
 .crPName { font-size: 16.5px; font-weight: 650; color: var(--ink); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
 .crPSub { font-size: 13px; color: var(--ink-dim); }
 .crPChip { border: none; border-radius: 999px; font-size: 12px; font-weight: 800; letter-spacing: .3px; padding: 6px 10px; cursor: pointer; flex: none; appearance: none; -webkit-appearance: none; } /* Beta 1.207 (Andrew): the pick-stage chip wears the SAME filled pill as the review stage's .crChip - one design through the whole selection process */
-.crPChip.primary { background: #ffc233; color: #4a3200; }
-.crPChip.sec { background: #ef476f; color: #4a3200; } /* Beta 1.208: dark ink, matching .crChip.sec and both PRIMARY pills (Andrew's pick C) */
+.crPChip.primary { background: #ffc233; color: #000000; }
+.crPChip.sec { background: #ef476f; color: #000000; } /* Beta 1.209: true black ink #000000, matching .crChip.sec and both PRIMARY pills (Andrew's pick, superseding 1.208's #4a3200) */
 .crPDel { border: none; background: rgba(230,58,46,.10); color: #c22f24; font-size: 14px; font-weight: 700; width: 34px; height: 34px; border-radius: 50%; cursor: pointer; flex: none; appearance: none; -webkit-appearance: none; }
 .crPanelBtns { flex-direction: row; }
 .crPanelBtns .crPrimary, .crPanelBtns .crGhost { flex: 1 1 0; width: auto; }
@@ -538,7 +538,7 @@ input, textarea { caret-color: currentColor; } /* Beta 1.125 (Andrew): the typin
 <div id="hud">
   <div id="warn">Not saving — storage is full or blocked</div>
   <div class="row">
-    <div class="titleStack"><div class="title">Snow Route Beta</div><div class="ver" id="ver">Beta 1.208</div></div>
+    <div class="titleStack"><div class="title">Snow Route Beta</div><div class="ver" id="ver">Beta 1.209</div></div>
   </div>
   <div id="stats"></div>
 </div>
@@ -3650,7 +3650,38 @@ function geoSideFrame(name, idx, anchorLL) {
   return { baseLL: [best.gy / MLAT, best.gx / MLNG], left: [best.lx, best.ly] }; // left = [east, north] unit
 }
 function clearChips() { $('chips').innerHTML = ''; }
-function groupSideDone(side) { const bit = side ? 2 : 1; return selSet.length > 0 && selSet.every(en => !!(pieces[en.name][en.idx] & bit)); } // a side reads done only when EVERY selected stretch has it
+const GROUP_PATH_JOIN_M = 20; // metres: two consecutively tapped sections join into one drive when an end of one sits within this of an end of the next (Beta 1.209). Measured on Route 5W's real stretch data: true junction joins are exact (stretch parts share vertices, 0 m, within and across streets) and the nearest non-joining part ends anywhere on the route are 58.7 m apart - the tolerance sits in a wide empty band
+function groupSideMap(side) { // Beta 1.209 (Andrew): the stored side a press of chip `side` toggles on EACH selected stretch, in tap order. Through 1.208 the press applied `side` itself to every stretch - but a stored side is numbered against its own street's drawn direction, so across a turn one press lit his right on one street and his left on the next (his Valeria -> Greenpark drive). Andrew's rule: the tapped sections in tap order ARE his drive, and the press marks the side that was on his right (or his left) as he travels that drive, continuously through turns. So: consecutive taps chain into drives (an end of one within GROUP_PATH_JOIN_M of an end of the next); each section's travel direction comes from its drive neighbours (enter end -> exit end; a drive's first section derives its direction from its exit end, its last from its enter end; a section both neighbours join at the SAME end - he drove in and back out the one junction - is travelled from that end inward); the press's driver meaning is read off the ANCHOR section (the last tapped - the chips sit on it): the chip names a geographic side of the anchor's drawn line (0 = its left, 1 = its right, the engine's convention), and the anchor's own travel direction turns that into driver's right or left; each section then maps that meaning through its own travel-vs-drawn direction (same way: no flip; opposite: flip). Fallbacks keep today's raw mapping exactly: a lone section, any section whose drive is a single section, and the whole press when the anchor's own drive is a single section (a directionless anchor cannot name a driver side). Pure: reads selSet/sel/STRETCH, writes nothing.
+  const n = selSet.length;
+  const raw = selSet.map(() => side);
+  if (n < 2) return raw;
+  const ends = selSet.map(en => { const p = STRETCH[en.name].parts[en.idx]; return [p[0], p[p.length - 1]]; });
+  const join = [null]; // join[k] (k >= 1): {a, b} = selSet[k] joins selSet[k-1] at k-1's end a and k's end b (0 = first point, 1 = last); null = a new drive starts at k
+  for (let k = 1; k < n; k++) {
+    let best = null;
+    for (let a = 0; a < 2; a++) for (let b = 0; b < 2; b++) { const d = distM(ends[k - 1][a], ends[k][b]); if (d <= GROUP_PATH_JOIN_M && (!best || d < best.d)) best = { a, b, d }; }
+    join.push(best);
+  }
+  const drives = [];
+  for (let k = 0; k < n; k++) { if (k === 0 || !join[k]) drives.push([]); drives[drives.length - 1].push(k); }
+  const withDir = new Array(n).fill(null); // withDir[k]: the drive travels section k the way its line is drawn (first point -> last point); null = a single-section drive (no travel direction)
+  for (const drv of drives) {
+    if (drv.length < 2) continue;
+    drv.forEach((k, pos) => {
+      const enter = pos > 0 ? join[k].b : null;
+      const exit = pos < drv.length - 1 ? join[k + 1].a : null;
+      if (enter !== null && exit !== null) withDir[k] = enter === exit ? enter === 0 : (enter === 0 && exit === 1);
+      else if (enter !== null) withDir[k] = enter === 0;
+      else withDir[k] = exit === 1;
+    });
+  }
+  let ai = selSet.findIndex(en => sel && en.name === sel.name && en.idx === sel.idx);
+  if (ai < 0) ai = n - 1;
+  if (withDir[ai] === null) return raw;
+  const driverRight = withDir[ai] ? side === 1 : side === 0;
+  return selSet.map((en, k) => { if (withDir[k] === null) return side; return driverRight ? (withDir[k] ? 1 : 0) : (withDir[k] ? 0 : 1); });
+}
+function groupSideDone(side) { const map = groupSideMap(side); return selSet.length > 0 && selSet.every((en, k) => !!(pieces[en.name][en.idx] & (map[k] ? 2 : 1))); } // a side reads done only when EVERY selected stretch has it - Beta 1.209: "it" is the side this chip's press would toggle on that stretch (groupSideMap's per-stretch side), so the chip's done state reads the same side its press writes
 function showChips() {
   clearChips();
   if (!sel) return;
@@ -3739,11 +3770,12 @@ function togglePiece(name, idx, side) {
   showChips(); const okTp = finishChangeMarked();
   if (doneName && okTp.ok) toast('✓ ' + doneName + ' · ' + fmtClock(new Date()));
 }
-function togglePieceGroup(side) { // one chip, whole selection: a side not done everywhere gets completed everywhere; a side done everywhere gets cleared everywhere
+function togglePieceGroup(side) { // one chip, whole selection: a side not done everywhere gets completed everywhere; a side done everywhere gets cleared everywhere. Beta 1.209: the side is the DRIVER's side - groupSideMap turns the one press into the per-stretch stored side, so the marking follows his drive through a turn instead of landing on one raw index everywhere
   if (!selSet.length) return;
   const on = !groupSideDone(side);
+  const map = groupSideMap(side);
   const completed = [];
-  for (const en of selSet) { const c = applyPiece(en.name, en.idx, side, on); if (c && !completed.includes(c)) completed.push(c); }
+  selSet.forEach((en, k) => { const c = applyPiece(en.name, en.idx, map[k], on); if (c && !completed.includes(c)) completed.push(c); });
   showChips(); const okTg = finishChangeMarked();
   if (okTg.ok) completed.forEach(n => toast('✓ ' + n + ' · ' + fmtClock(new Date())));
 }
@@ -6404,7 +6436,7 @@ $('stDel').addEventListener('click', async () => {
 });
 // ---- About / What's new ----
 const WHATSNEW = { // the curated in-app notes: plain words, LATEST RELEASE ONLY (Beta 1.114, Andrew: the accumulated list cluttered the About pane). A release REPLACES this entry with its own in the same change - it never accumulates; the full history lives in CHANGELOG.md, not the app
-  v: 'Beta 1.208', items: ["The green paint matches the street now. A finished street's green is the same width as the yellow and red streets — no more extra-wide green. When only one side of a street is done, the green fills that whole half of the road at every zoom, instead of shrinking to a thin line at the kerb when you zoom in. Selecting a stretch no longer breaks its green at the junctions. And a street's name no longer repeats over and over along the street when you zoom in.", "Creating a route: both class pills now wear the same dark text, \u201CTap row to adjust\u201D stands on its own line, and the street you are trimming glows on the map while you trim it."] };
+  v: 'Beta 1.209', items: ["Marking sides follows your drive now. When you select several sections and tap a side arrow, the green lands on the side that was on your right (or your left) as you drove them \u2014 even when your sections turn a corner onto another street. Before, one tap could light your right side on one street and your left side on the next.", "Creating a route: when you trim a street's sectors, the glow now covers only the sectors still picked \u2014 a sector you remove stays grey and stops glowing. And the PRIMARY and SECONDARY pills now wear true black text."] };
 
 function renderAbout() {
   const cur = $('ver').textContent.trim();
@@ -8008,15 +8040,17 @@ function ensureCrGlowLayers() {
     }
   } catch (e) { /* the style may still be loading - renderDraft retries on every change */ }
 }
-function syncCrGlow() { // the glow's ONE writer: it carries the sector session's street (its whole line, every run, in its category colour) exactly while that street's trim view is open, and nothing otherwise - so opening the trim lights the street and every close path (Done, Cancel, stage change, street removal, creation exit) puts it out, because every one of them re-renders the draft or the backdrop, and both call here
+function syncCrGlow() { // the glow's ONE writer: it carries the sector session's street (in its category colour) exactly while that street's trim view is open, and nothing otherwise - so opening the trim lights the street and every close path (Done, Cancel, stage change, street removal, creation exit) puts it out, because every one of them re-renders the draft or the backdrop, and both call here. Beta 1.209 (Andrew, from his Beta 1.208 phone session): the glow covers the street's CHOSEN sectors only - through 1.208 it carried the whole stitched line, so a sector he tapped OFF turned grey (its draft paint) but kept glowing. The glow is now built from the same sector record renderDraft paints from (crStreetParts + crChosenSet): a removed sector carries no glow, re-adding it restores the glow, and every toggle re-renders the draft, which lands here - so the glow tracks each tap. The sector record is the trim session's own (crOpenSectors opens no session without one); the whole-run line below is only the fallback if that record is ever unavailable mid-session.
   ensureCrGlowLayers();
   if (!map || typeof map.getSource !== 'function') return;
   const src = map.getSource(CR_GLOW_SRC); if (!src) return;
   const feats = [];
   const name = crSectorSession.street;
   if (name && draft && draft.roads && Object.prototype.hasOwnProperty.call(draft.roads, name)) {
-    const g = crDraftGeom(); const st = g && g[name];
-    if (st) { const col = draft.primaries.has(name) ? '#ffc233' : '#ef476f'; for (const run of st.runs) { const L = run.line; if (L && L.length > 1) feats.push({ type: 'Feature', properties: { col }, geometry: { type: 'LineString', coordinates: L.map(p => [p[1], p[0]]) } }); } }
+    const col = draft.primaries.has(name) ? '#ffc233' : '#ef476f';
+    const rec = crStreetParts(name);
+    if (rec) { const set = crChosenSet(name, rec); for (let i = 0; i < rec.parts.length; i++) { if (!set.has(i)) continue; const L = rec.parts[i]; if (L && L.length > 1) feats.push({ type: 'Feature', properties: { col }, geometry: { type: 'LineString', coordinates: L.map(p => [p[1], p[0]]) } }); } }
+    else { const g = crDraftGeom(); const st = g && g[name]; if (st) { for (const run of st.runs) { const L = run.line; if (L && L.length > 1) feats.push({ type: 'Feature', properties: { col }, geometry: { type: 'LineString', coordinates: L.map(p => [p[1], p[0]]) } }); } } }
   }
   src.setData({ type: 'FeatureCollection', features: feats });
 }

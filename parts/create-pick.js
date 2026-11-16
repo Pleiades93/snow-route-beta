@@ -539,15 +539,17 @@ function ensureCrGlowLayers() {
     }
   } catch (e) { /* the style may still be loading - renderDraft retries on every change */ }
 }
-function syncCrGlow() { // the glow's ONE writer: it carries the sector session's street (its whole line, every run, in its category colour) exactly while that street's trim view is open, and nothing otherwise - so opening the trim lights the street and every close path (Done, Cancel, stage change, street removal, creation exit) puts it out, because every one of them re-renders the draft or the backdrop, and both call here
+function syncCrGlow() { // the glow's ONE writer: it carries the sector session's street (in its category colour) exactly while that street's trim view is open, and nothing otherwise - so opening the trim lights the street and every close path (Done, Cancel, stage change, street removal, creation exit) puts it out, because every one of them re-renders the draft or the backdrop, and both call here. Beta 1.209 (Andrew, from his Beta 1.208 phone session): the glow covers the street's CHOSEN sectors only - through 1.208 it carried the whole stitched line, so a sector he tapped OFF turned grey (its draft paint) but kept glowing. The glow is now built from the same sector record renderDraft paints from (crStreetParts + crChosenSet): a removed sector carries no glow, re-adding it restores the glow, and every toggle re-renders the draft, which lands here - so the glow tracks each tap. The sector record is the trim session's own (crOpenSectors opens no session without one); the whole-run line below is only the fallback if that record is ever unavailable mid-session.
   ensureCrGlowLayers();
   if (!map || typeof map.getSource !== 'function') return;
   const src = map.getSource(CR_GLOW_SRC); if (!src) return;
   const feats = [];
   const name = crSectorSession.street;
   if (name && draft && draft.roads && Object.prototype.hasOwnProperty.call(draft.roads, name)) {
-    const g = crDraftGeom(); const st = g && g[name];
-    if (st) { const col = draft.primaries.has(name) ? '#ffc233' : '#ef476f'; for (const run of st.runs) { const L = run.line; if (L && L.length > 1) feats.push({ type: 'Feature', properties: { col }, geometry: { type: 'LineString', coordinates: L.map(p => [p[1], p[0]]) } }); } }
+    const col = draft.primaries.has(name) ? '#ffc233' : '#ef476f';
+    const rec = crStreetParts(name);
+    if (rec) { const set = crChosenSet(name, rec); for (let i = 0; i < rec.parts.length; i++) { if (!set.has(i)) continue; const L = rec.parts[i]; if (L && L.length > 1) feats.push({ type: 'Feature', properties: { col }, geometry: { type: 'LineString', coordinates: L.map(p => [p[1], p[0]]) } }); } }
+    else { const g = crDraftGeom(); const st = g && g[name]; if (st) { for (const run of st.runs) { const L = run.line; if (L && L.length > 1) feats.push({ type: 'Feature', properties: { col }, geometry: { type: 'LineString', coordinates: L.map(p => [p[1], p[0]]) } }); } } }
   }
   src.setData({ type: 'FeatureCollection', features: feats });
 }
