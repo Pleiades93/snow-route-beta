@@ -2,7 +2,7 @@
 <html lang="en" class="boot">
 <head>
 <meta charset="UTF-8">
-<meta http-equiv="Content-Security-Policy" content="default-src 'none'; script-src 'sha384-xmQR3yPScz3eJtkt19ARAMYQUt/pL2qLKbdKIsIU7RCGJhLHiaMEd9tYJ5+5Dn0y' https://cdn.jsdelivr.net; style-src-elem 'sha384-u96Ng+nqd0lOCjrm/+wpa1LxSRPI7Xklvw2UZ0vCxp8OiXZy066/w7Vkl0l1Uutx' https://cdn.jsdelivr.net; style-src-attr 'unsafe-inline'; img-src 'self' data: blob: https://tiles.basemaps.cartocdn.com https://protomaps.github.io https://cdn.jsdelivr.net; connect-src 'self' https://tiles.basemaps.cartocdn.com https://protomaps.github.io https://cdn.jsdelivr.net https://nominatim.openstreetmap.org https://overpass-api.de https://overpass.kumi.systems; worker-src blob: 'self'; child-src blob: 'self'; font-src 'none'; manifest-src 'self'; base-uri 'none'; form-action 'none'; object-src 'none'">
+<meta http-equiv="Content-Security-Policy" content="default-src 'none'; script-src 'sha384-02bTYuTs2IzuLFDj2iGpsVDykG2AR8GNblMQQxExxq1Mbt4R7AeeQH+QiGRsHZBR' https://cdn.jsdelivr.net; style-src-elem 'sha384-u96Ng+nqd0lOCjrm/+wpa1LxSRPI7Xklvw2UZ0vCxp8OiXZy066/w7Vkl0l1Uutx' https://cdn.jsdelivr.net; style-src-attr 'unsafe-inline'; img-src 'self' data: blob: https://tiles.basemaps.cartocdn.com https://protomaps.github.io https://cdn.jsdelivr.net; connect-src 'self' https://tiles.basemaps.cartocdn.com https://protomaps.github.io https://cdn.jsdelivr.net https://nominatim.openstreetmap.org https://overpass-api.de https://overpass.kumi.systems; worker-src blob: 'self'; child-src blob: 'self'; font-src 'none'; manifest-src 'self'; base-uri 'none'; form-action 'none'; object-src 'none'">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="mobile-web-app-capable" content="yes">
@@ -2906,9 +2906,27 @@ function currentSelList() { // every selected stretch (Beta 1.28): the app's sel
 }
 function buildSelFill() {   // the selected sectors' side fills (vibrant) - Beta 1.208 (R3): built by fillSlicePts, the SAME local rule that builds the board's fills, so a selected stretch's done side paints vertex-for-vertex as the board paints it and the green can no longer disconnect at the stretch boundary. The retired buildSel('e') rebuilt the side from a ONE-PIECE edge run: a lone piece can never earn the junction through-grant the full marked run gets (throughOK needs both arms in the run) and it received none of the corner/through post-passes, so the selected stretch's kerb line clipped at junctions the board line runs through - Andrew's disconnected green (his Valeria stretch 10 screenshot, 2026-11-15).
   const feats = [];
+  const selSides = [];
   for (const it of currentSelList()) {
     const bits = H.pieces[it.name][it.idx];
-    if (bits !== 3) [0, 1].forEach(side => { if (bits & (1 << side)) feats.push({ type: 'Feature', properties: { col: GREEN, colG: mute(GREEN) }, geometry: { type: 'LineString', coordinates: GJ(fillSlicePts(it.name, it.idx, side)) } }); });
+    if (bits !== 3) [0, 1].forEach(side => { if (bits & (1 << side)) { feats.push({ type: 'Feature', properties: { col: GREEN, colG: mute(GREEN) }, geometry: { type: 'LineString', coordinates: GJ(fillSlicePts(it.name, it.idx, side)) } }); selSides.push({ n: it.name, idx: it.idx, side }); } });
+  }
+  // Beta 1.208 (Codex P2, gate round 4): the corner connectors ride along.
+  // fillCornerLinks wraps a marked side around a junction corner with a
+  // connector strand on the BOARD's fills; the selection redraw above
+  // rebuilds only the piece's own slice, so at a connected corner the
+  // selected surface (t1-sel, above the board fills) painted over the
+  // connector's first arm and the green broke by ~5 m for exactly as
+  // long as the stretch stayed selected. Any board connector touching a
+  // selected side is therefore redrawn here too, from the board's own
+  // strand (LASTCHAINS), in the selection's vibrant green - t1-selfill
+  // sits above t1-sel, so selected and deselected paint identically.
+  if (selSides.length && typeof LASTCHAINS !== 'undefined' && LASTCHAINS && LASTCHAINS.fills) {
+    for (const sl of LASTCHAINS.fills) {
+      if (!sl.mem || sl.mem.length !== 2) continue;   // connectors are the only two-mem fill strands
+      if (sl.mem.some(m => m && selSides.some(s => s.n === m.n && s.idx === m.idx && s.side === m.side)))
+        feats.push({ type: 'Feature', properties: { col: GREEN, colG: mute(GREEN) }, geometry: { type: 'LineString', coordinates: GJ(sl.pts) } });
+    }
   }
   return { type: 'FeatureCollection', features: feats };
 }
@@ -3113,11 +3131,23 @@ function addStack() {
   // basemap's own names fade IN on route streets across the same band (glHideLabels),
   // so the two systems crossfade and never print together. The 12.6 arrival stays a
   // near-pop (0.03 of a zoom), per his Beta 1.12 no-fading call for the far switch.
+  // Beta 1.208 (Andrew): the handover is RETIRED at his order - zoomed in, the
+  // basemap printed a route street's name 4-5 times down one screen (the clone
+  // layers repeat along the line at the renderer's 250 px default), and the
+  // spacing cure is not available in this renderer: measured in the real app,
+  // a 300 px repeat already loses Malden Street's label and a 400 px repeat
+  // loses every label in the test view (anchors earn their place per tile
+  // segment, and segments shorter than the repeat get none). So our titles -
+  // exactly one per street, at the street's own anchor - now stay up at EVERY
+  // zoom: no maxzoom, no fade-out stop, and the size ramp gains one high stop
+  // so the name stays readable at z19. glHideLabels no longer builds the
+  // basemap clones, and the originals keep excluding route names, so the
+  // basemap never prints a route street's name at any zoom.
   const PT_MIN = [13.7, 13.35, 13.0, 12.6];
   for (let t = 1; t <= 4; t++) {
     const id = 'streetnamespt' + t;
     if (!GLM.getLayer(id)) {
-      GLM.addLayer({ id, type: 'symbol', source: 'labelpts', minzoom: PT_MIN[t - 1], maxzoom: 16.4, filter: ['==', ['get', 'tier'], t], layout: { 'text-field': ['get', 'name'], 'text-font': fontStack, 'text-size': ['interpolate', ['linear'], ['zoom'], 14, 10, 14.6, 10.5, 16.2, 12], 'text-padding': 1, 'text-variable-anchor': ['center', 'top', 'bottom', 'left', 'right'], 'text-radial-offset': 0.8, 'symbol-sort-key': ['-', ['get', 'len']], 'text-allow-overlap': false }, paint: { 'text-color': H.isNight() ? '#e8e8e8' : '#333333', 'text-halo-color': H.isNight() ? 'rgba(0,0,0,.8)' : 'rgba(255,255,255,.9)', 'text-opacity': ['interpolate', ['linear'], ['zoom'], 12.59, 0, 12.62, 1, 15.4, 1, 16.4, 0], 'text-opacity-transition': { duration: 0, delay: 0 }, 'text-halo-width': 1.4 } });
+      GLM.addLayer({ id, type: 'symbol', source: 'labelpts', minzoom: PT_MIN[t - 1], filter: ['==', ['get', 'tier'], t], layout: { 'text-field': ['get', 'name'], 'text-font': fontStack, 'text-size': ['interpolate', ['linear'], ['zoom'], 14, 10, 14.6, 10.5, 16.2, 12, 19, 13.5], 'text-padding': 1, 'text-variable-anchor': ['center', 'top', 'bottom', 'left', 'right'], 'text-radial-offset': 0.8, 'symbol-sort-key': ['-', ['get', 'len']], 'text-allow-overlap': false }, paint: { 'text-color': H.isNight() ? '#e8e8e8' : '#333333', 'text-halo-color': H.isNight() ? 'rgba(0,0,0,.8)' : 'rgba(255,255,255,.9)', 'text-opacity': ['interpolate', ['linear'], ['zoom'], 12.59, 0, 12.62, 1, 15.4, 1], 'text-opacity-transition': { duration: 0, delay: 0 }, 'text-halo-width': 1.4 } });
     }
   }
   // Round 35/37 (Andrew): zoomed far out, the route cluster blurs
@@ -3323,20 +3353,21 @@ function glHideLabels(m) { // BASEMAP LABEL UNIFICATION (Andrew, Beta 1.6): the 
       water: ['interpolate', ['linear'], ['zoom'], 10, 11, 15, 13],
       other: ['interpolate', ['linear'], ['zoom'], 15, 10, 18, 12]
     };
-    // Beta 1.208 (Andrew): a street's name must never crowd a screen. The road layers place
-    // names along the line with the renderer's default 250 px repeat, which at close zoom
-    // prints one name (his shot: Valeria Boulevard) 4-5 times down a single screen. The
-    // repeats now sit ~500 m apart on the app's own projection scale (px per metre =
-    // surfW / 9.9, the Beta 1.206 calibration: z16 578, z17 1155, z18 2311, z19 4621 px):
-    // at working zooms at most one name per street is on screen, and a repeat shows only
-    // when the street genuinely runs ~500 m on. Applied to the originals and the clones.
-    const LABEL_SPACING = ['interpolate', ['linear'], ['zoom'], 15, 460, 16, 578, 17, 1155, 18, 2311, 19, 4621];
     // Beta 1.40: route-street CLONES of the two road-label layers (the handover, see the
     // road branch below). A zoom ramp cannot nest inside a name test in one paint value
     // ('zoom may only feed a top-level step/interpolate' - the map rejects it), so route
     // streets get their own copy of each label layer: only route names, fading in across
     // 15.4-16.4, restyled at creation for the current theme. The originals exclude route
     // names by filter instead. Rebuilt from the embedded style spec on every restack.
+    // Beta 1.208 (Andrew): the clones are RETIRED - zoomed in, they printed a route
+    // street's name 4-5 times down one screen (the renderer's 250 px line repeat),
+    // and a wider repeat is not a cure in this renderer (measured: 300 px already
+    // loses Malden Street's label, 400 px loses every label in the test view -
+    // anchors earn their place per tile segment). Route streets are now named by
+    // the app's own titles at EVERY zoom (engine labelpts: one name per street at
+    // its anchor, no maxzoom, no fade-out); the originals below keep excluding
+    // route names, so the basemap never prints one. Any clone an older build left
+    // on this map is removed, never refreshed or rebuilt.
     const spec = (typeof isNight === 'function' && isNight()) ? PM_NIGHT : PM_DAY;
     const eq = (a, b) => JSON.stringify(a) === JSON.stringify(b);
     const setL = (id, k, v) => { if (!eq(m.getLayoutProperty(id, k), v)) m.setLayoutProperty(id, k, v); }; // Beta 1.41: no-op guards - every redundant style mutation re-triggers symbol placement in the workers, and this pass runs on EVERY stack build (boot, every theme flip, every marking tap). When the value already matches, the mutation is skipped; the end state is identical.
@@ -3344,24 +3375,7 @@ function glHideLabels(m) { // BASEMAP LABEL UNIFICATION (Andrew, Beta 1.6): the 
     const convF = f => (Array.isArray(f) && f[0] === 'in' && typeof f[1] === 'string') ? ['in', ['get', f[1]], ['literal', f.slice(2)]] : f; // the generated styles author kind filters in legacy form; as expressions they must be rebuilt or any combined filter is rejected whole
     for (const baseId of ['roads_labels_major', 'roads_labels_minor']) {
       const cloneId = baseId + '-route';
-      const specL = (spec.layers || []).find(x => x.id === baseId);
-      if (m.getLayer(cloneId)) { // Beta 1.117: the clone already exists (built for a previous route) - refresh its name filter to the ACTIVE pack's tile names, or a switched route keeps the old route's label handover
-        if (specL) { const cf = specL.filter ? ['all', convF(specL.filter), ['in', ['get', 'name'], ['literal', ROUTE_TILE_NAMES]]] : ['in', ['get', 'name'], ['literal', ROUTE_TILE_NAMES]]; if (!eq(m.getFilter(cloneId), cf)) { try { m.setFilter(cloneId, cf); } catch (e2) {} } }
-        continue;
-      }
-      if (!m.getLayer(baseId)) continue;
-      if (!specL) continue;
-      const clone = JSON.parse(JSON.stringify(specL));
-      clone.id = cloneId;
-      clone.filter = specL.filter ? ['all', convF(specL.filter), ['in', ['get', 'name'], ['literal', ROUTE_TILE_NAMES]]] : ['in', ['get', 'name'], ['literal', ROUTE_TILE_NAMES]];
-      clone.paint = clone.paint || {};
-      clone.paint['text-opacity'] = ['interpolate', ['linear'], ['zoom'], 15.4, 0, 16.4, 1];
-      clone.layout = clone.layout || {};
-      clone.layout['symbol-spacing'] = LABEL_SPACING; // Beta 1.208: the ~500 m name-repeat rule, on the route clones from birth (the main loop below re-asserts it on every restack)
-      if (typeof isNight === 'function' && isNight()) { clone.paint['text-color'] = '#ccd6df'; clone.paint['text-halo-color'] = 'rgba(8,10,14,0.9)'; clone.paint['text-halo-width'] = 1.3; }
-      else { clone.paint['text-color'] = '#333333'; clone.paint['text-halo-color'] = 'rgba(255,255,255,.92)'; clone.paint['text-halo-width'] = 1.5; }
-      const order = m.getStyle().layers.map(x => x.id);
-      try { m.addLayer(clone, order[order.indexOf(baseId) + 1]); } catch (e2) {}
+      if (m.getLayer(cloneId)) { try { m.removeLayer(cloneId); } catch (e2) {} } // Beta 1.208: retired - see the note above
     }
     for (const L of m.getStyle().layers) {
       if (L.type !== 'symbol' || !L.layout || !L.layout['text-field'] || !L['source-layer']) continue;
@@ -3393,16 +3407,18 @@ function glHideLabels(m) { // BASEMAP LABEL UNIFICATION (Andrew, Beta 1.6): the 
         }
       }
       if (kind === 'road') {
-        setL(L.id, 'symbol-spacing', LABEL_SPACING); // Beta 1.208: the ~500 m name-repeat rule on every road-name layer (originals and the route clones alike)
         if ((L.minzoom || 0) !== 13 || (L.maxzoom === undefined ? 24 : L.maxzoom) !== 24) m.setLayerZoomRange(L.id, 13, 24); // Beta 1.41 guard: same no-op rule as setL/setP
-        // LABEL HANDOVER (Andrew, Beta 1.40): zoomed out, OUR titles name the route streets;
-        // zooming in, the basemap's own names take over - on route streets they fade IN across
-        // 15.4-16.4 while our titles fade OUT on the same band (engine labelpts), so the two
-        // never print together. Non-route streets keep their basemap names at every zoom.
+        // LABEL RULE (Andrew, Beta 1.40; revised Beta 1.208): OUR titles name the route
+        // streets at EVERY zoom - one name per street at its anchor (engine labelpts).
+        // Through 1.207 the basemap's own names took over zoomed in (the handover, on
+        // clone layers), but the clones repeated a name 4-5 times down a close-zoom
+        // screen, so the handover is retired: the clones are never built (removed
+        // above if an older build left one), and the originals exclude route names
+        // at every zoom. Non-route streets keep their basemap names at every zoom.
         // (The Beta 1.7 clash-exclusion filter that used to live here silently stopped working:
         // it mixed legacy filter syntax with an expression, and the map rejected it outright.)
         if (id === 'roads_labels_major' || id === 'roads_labels_minor') {
-          // The originals keep every NON-route name; route names move to the clones above.
+          // The originals keep every NON-route name; route names are the titles' job.
           const specL = (spec.layers || []).find(x => x.id === id);
           const baseF = specL && specL.filter ? convF(specL.filter) : null;
           const targetF = baseF ? ['all', baseF, ['!', ['in', ['get', 'name'], ['literal', ROUTE_TILE_NAMES]]]] : ['!', ['in', ['get', 'name'], ['literal', ROUTE_TILE_NAMES]]];

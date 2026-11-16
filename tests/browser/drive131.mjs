@@ -4,12 +4,13 @@ await bootThrough(ev, poll); // Beta 1.76: boots end at the route menu now - cli
 
 
 
-// drive130: Beta 1.40 label handover (Andrew): zoomed out, OUR titles name the route
-// streets; zooming in, they fade out across 15.4-16.4 while the basemap's own road names
-// fade in on route streets (clone layers) across the same band; day basemap road names
-// are restyled dark for readability; our old line-following labels are retired; the
-// West link reference line no longer draws. The L4 rendered-feature check is the one
-// that would have caught the Beta 1.33-era clash, where the exclusion filter was
+// drive130: the street-name rule (Andrew, Beta 1.40; revised Beta 1.208): OUR titles
+// name the route streets at every zoom - one name per street at its anchor - and the
+// basemap never prints a route name (the 1.40 handover to basemap clone layers is
+// retired: the clones repeated a name 4-5 times down a close-zoom screen). Day
+// basemap road names are restyled dark for readability; our old line-following
+// labels are retired; the West link reference line no longer draws. The L4
+// rendered-feature check is the one that would have caught the Beta 1.33-era clash, where the exclusion filter was
 // silently rejected and basemap names printed on route streets at every zoom.
 const R = { checks: [] };
 const ok = (name, cond) => R.checks.push([name, cond === true]);
@@ -27,7 +28,8 @@ const W = JSON.parse(await ev(`(() => { const sc = map.style && map.style.source
 ok('W1 canvas pixel ratio is capped at 2 | ' + JSON.stringify(W), W.pr === 2);
 ok('W2 tile fade duration is 200ms (tiles melt in, no snap) | fade=' + W.fade, W.fade === 200);
 ok('W3 tile cache sized for a zoom sweep and back (200 tiles / 6 zoom levels) | ' + W.mcs + '/' + W.mcz, W.mcs === 200 && W.mcz === 6);
-ok('W4 the label handover survived the new constructor (route clones present)', await poll120(`!!map.getLayer('roads_labels_major-route')`, 20000));
+const W4 = JSON.parse(await ev(`(() => JSON.stringify({ titles: !!map.getLayer('streetnamespt4'), clone: !!map.getLayer('roads_labels_major-route') }))()`));
+ok('W4 the label rule survived the new constructor (titles present, route clones retired in Beta 1.208)', W4.titles === true && W4.clone === false);
 
 R.exceptions = consoleLog.filter(c => c.type === 'EXCEPTION').map(c => String(c.text || '').slice(0, 200));
 finish(R, proc);

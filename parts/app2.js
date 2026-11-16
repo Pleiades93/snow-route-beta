@@ -43,20 +43,21 @@ function glHideLabels(m) { // BASEMAP LABEL UNIFICATION (Andrew, Beta 1.6): the 
       water: ['interpolate', ['linear'], ['zoom'], 10, 11, 15, 13],
       other: ['interpolate', ['linear'], ['zoom'], 15, 10, 18, 12]
     };
-    // Beta 1.208 (Andrew): a street's name must never crowd a screen. The road layers place
-    // names along the line with the renderer's default 250 px repeat, which at close zoom
-    // prints one name (his shot: Valeria Boulevard) 4-5 times down a single screen. The
-    // repeats now sit ~500 m apart on the app's own projection scale (px per metre =
-    // surfW / 9.9, the Beta 1.206 calibration: z16 578, z17 1155, z18 2311, z19 4621 px):
-    // at working zooms at most one name per street is on screen, and a repeat shows only
-    // when the street genuinely runs ~500 m on. Applied to the originals and the clones.
-    const LABEL_SPACING = ['interpolate', ['linear'], ['zoom'], 15, 460, 16, 578, 17, 1155, 18, 2311, 19, 4621];
     // Beta 1.40: route-street CLONES of the two road-label layers (the handover, see the
     // road branch below). A zoom ramp cannot nest inside a name test in one paint value
     // ('zoom may only feed a top-level step/interpolate' - the map rejects it), so route
     // streets get their own copy of each label layer: only route names, fading in across
     // 15.4-16.4, restyled at creation for the current theme. The originals exclude route
     // names by filter instead. Rebuilt from the embedded style spec on every restack.
+    // Beta 1.208 (Andrew): the clones are RETIRED - zoomed in, they printed a route
+    // street's name 4-5 times down one screen (the renderer's 250 px line repeat),
+    // and a wider repeat is not a cure in this renderer (measured: 300 px already
+    // loses Malden Street's label, 400 px loses every label in the test view -
+    // anchors earn their place per tile segment). Route streets are now named by
+    // the app's own titles at EVERY zoom (engine labelpts: one name per street at
+    // its anchor, no maxzoom, no fade-out); the originals below keep excluding
+    // route names, so the basemap never prints one. Any clone an older build left
+    // on this map is removed, never refreshed or rebuilt.
     const spec = (typeof isNight === 'function' && isNight()) ? PM_NIGHT : PM_DAY;
     const eq = (a, b) => JSON.stringify(a) === JSON.stringify(b);
     const setL = (id, k, v) => { if (!eq(m.getLayoutProperty(id, k), v)) m.setLayoutProperty(id, k, v); }; // Beta 1.41: no-op guards - every redundant style mutation re-triggers symbol placement in the workers, and this pass runs on EVERY stack build (boot, every theme flip, every marking tap). When the value already matches, the mutation is skipped; the end state is identical.
@@ -64,24 +65,7 @@ function glHideLabels(m) { // BASEMAP LABEL UNIFICATION (Andrew, Beta 1.6): the 
     const convF = f => (Array.isArray(f) && f[0] === 'in' && typeof f[1] === 'string') ? ['in', ['get', f[1]], ['literal', f.slice(2)]] : f; // the generated styles author kind filters in legacy form; as expressions they must be rebuilt or any combined filter is rejected whole
     for (const baseId of ['roads_labels_major', 'roads_labels_minor']) {
       const cloneId = baseId + '-route';
-      const specL = (spec.layers || []).find(x => x.id === baseId);
-      if (m.getLayer(cloneId)) { // Beta 1.117: the clone already exists (built for a previous route) - refresh its name filter to the ACTIVE pack's tile names, or a switched route keeps the old route's label handover
-        if (specL) { const cf = specL.filter ? ['all', convF(specL.filter), ['in', ['get', 'name'], ['literal', ROUTE_TILE_NAMES]]] : ['in', ['get', 'name'], ['literal', ROUTE_TILE_NAMES]]; if (!eq(m.getFilter(cloneId), cf)) { try { m.setFilter(cloneId, cf); } catch (e2) {} } }
-        continue;
-      }
-      if (!m.getLayer(baseId)) continue;
-      if (!specL) continue;
-      const clone = JSON.parse(JSON.stringify(specL));
-      clone.id = cloneId;
-      clone.filter = specL.filter ? ['all', convF(specL.filter), ['in', ['get', 'name'], ['literal', ROUTE_TILE_NAMES]]] : ['in', ['get', 'name'], ['literal', ROUTE_TILE_NAMES]];
-      clone.paint = clone.paint || {};
-      clone.paint['text-opacity'] = ['interpolate', ['linear'], ['zoom'], 15.4, 0, 16.4, 1];
-      clone.layout = clone.layout || {};
-      clone.layout['symbol-spacing'] = LABEL_SPACING; // Beta 1.208: the ~500 m name-repeat rule, on the route clones from birth (the main loop below re-asserts it on every restack)
-      if (typeof isNight === 'function' && isNight()) { clone.paint['text-color'] = '#ccd6df'; clone.paint['text-halo-color'] = 'rgba(8,10,14,0.9)'; clone.paint['text-halo-width'] = 1.3; }
-      else { clone.paint['text-color'] = '#333333'; clone.paint['text-halo-color'] = 'rgba(255,255,255,.92)'; clone.paint['text-halo-width'] = 1.5; }
-      const order = m.getStyle().layers.map(x => x.id);
-      try { m.addLayer(clone, order[order.indexOf(baseId) + 1]); } catch (e2) {}
+      if (m.getLayer(cloneId)) { try { m.removeLayer(cloneId); } catch (e2) {} } // Beta 1.208: retired - see the note above
     }
     for (const L of m.getStyle().layers) {
       if (L.type !== 'symbol' || !L.layout || !L.layout['text-field'] || !L['source-layer']) continue;
@@ -113,16 +97,18 @@ function glHideLabels(m) { // BASEMAP LABEL UNIFICATION (Andrew, Beta 1.6): the 
         }
       }
       if (kind === 'road') {
-        setL(L.id, 'symbol-spacing', LABEL_SPACING); // Beta 1.208: the ~500 m name-repeat rule on every road-name layer (originals and the route clones alike)
         if ((L.minzoom || 0) !== 13 || (L.maxzoom === undefined ? 24 : L.maxzoom) !== 24) m.setLayerZoomRange(L.id, 13, 24); // Beta 1.41 guard: same no-op rule as setL/setP
-        // LABEL HANDOVER (Andrew, Beta 1.40): zoomed out, OUR titles name the route streets;
-        // zooming in, the basemap's own names take over - on route streets they fade IN across
-        // 15.4-16.4 while our titles fade OUT on the same band (engine labelpts), so the two
-        // never print together. Non-route streets keep their basemap names at every zoom.
+        // LABEL RULE (Andrew, Beta 1.40; revised Beta 1.208): OUR titles name the route
+        // streets at EVERY zoom - one name per street at its anchor (engine labelpts).
+        // Through 1.207 the basemap's own names took over zoomed in (the handover, on
+        // clone layers), but the clones repeated a name 4-5 times down a close-zoom
+        // screen, so the handover is retired: the clones are never built (removed
+        // above if an older build left one), and the originals exclude route names
+        // at every zoom. Non-route streets keep their basemap names at every zoom.
         // (The Beta 1.7 clash-exclusion filter that used to live here silently stopped working:
         // it mixed legacy filter syntax with an expression, and the map rejected it outright.)
         if (id === 'roads_labels_major' || id === 'roads_labels_minor') {
-          // The originals keep every NON-route name; route names move to the clones above.
+          // The originals keep every NON-route name; route names are the titles' job.
           const specL = (spec.layers || []).find(x => x.id === id);
           const baseF = specL && specL.filter ? convF(specL.filter) : null;
           const targetF = baseF ? ['all', baseF, ['!', ['in', ['get', 'name'], ['literal', ROUTE_TILE_NAMES]]]] : ['!', ['in', ['get', 'name'], ['literal', ROUTE_TILE_NAMES]]];

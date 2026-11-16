@@ -4,12 +4,13 @@ await bootThrough(ev, poll); // Beta 1.76: boots end at the route menu now - cli
 
 
 
-// drive130: Beta 1.40 label handover (Andrew): zoomed out, OUR titles name the route
-// streets; zooming in, they fade out across 15.4-16.4 while the basemap's own road names
-// fade in on route streets (clone layers) across the same band; day basemap road names
-// are restyled dark for readability; our old line-following labels are retired; the
-// West link reference line no longer draws. The L4 rendered-feature check is the one
-// that would have caught the Beta 1.33-era clash, where the exclusion filter was
+// drive130: the street-name rule (Andrew, Beta 1.40; revised Beta 1.208): OUR titles
+// name the route streets at every zoom - one name per street at its anchor - and the
+// basemap never prints a route name (the 1.40 handover to basemap clone layers is
+// retired: the clones repeated a name 4-5 times down a close-zoom screen). Day
+// basemap road names are restyled dark for readability; our old line-following
+// labels are retired; the West link reference line no longer draws. The L4
+// rendered-feature check is the one that would have caught the Beta 1.33-era clash, where the exclusion filter was
 // silently rejected and basemap names printed on route streets at every zoom.
 const R = { checks: [] };
 const ok = (name, cond) => R.checks.push([name, cond === true]);

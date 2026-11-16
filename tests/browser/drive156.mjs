@@ -274,9 +274,9 @@ await bootRoute();
 const inA = await enterPickWithExtract();
 await ev2(`pickStreet('Long Road', { lat: 43.8, lng: -79.574 })`);
 const addedA = await poll(`typeof draft !== 'undefined' && draft && !!draft.roads['Long Road']`, 15000);
-const rowA = await J(`(() => { const r = document.querySelector('#crPickList .crPRow'); return r ? (r.querySelector('.crPSub') || {}).textContent || '' : ''; })()`);
-ok('157-A1 THE UNTRIMMED ROW STATES THE AFFORDANCE: a freshly picked road\'s row reads "Entire road · X m — tap row to adjust" (the hint exists before any trim, not only after one) | entered: ' + inA + ', added: ' + addedA + ' | ' + rowA,
-  inA === true && addedA === true && rowA.indexOf('Entire road') === 0 && rowA.indexOf('tap row to adjust') > 0);
+const rowA = await J(`(() => { const r = document.querySelector('#crPickList .crPRow'); return r ? [...r.querySelectorAll('.crPSub')].map(e => e.textContent) : []; })()`);
+ok('157-A1 THE UNTRIMMED ROW STATES THE AFFORDANCE: a freshly picked road\'s row states the length on line 1 ("Entire road · X m") and the hint on its OWN line 2 ("Tap row to adjust") (the hint exists before any trim, not only after one) | entered: ' + inA + ', added: ' + addedA + ' | ' + JSON.stringify(rowA),
+  inA === true && addedA === true && rowA.length === 2 && rowA[0].indexOf('Entire road') === 0 && rowA[1] === 'Tap row to adjust');
 await ev2(`(() => { // the tap seam: a box query names Long Road under the tap (drive150's stub shape); the point query names nothing
   if (!map.__qrfOrig) map.__qrfOrig = map.queryRenderedFeatures.bind(map);
   map.queryRenderedFeatures = (arg) => {

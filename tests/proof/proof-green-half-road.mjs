@@ -27,20 +27,26 @@ import vm from 'node:vm';
 //        built by the same fillSlicePts helper as the board's, so it
 //        is a contiguous sub-path of the board strand by construction.
 //   R4 - street-name labels must not multiply at close zoom. The
-//        repeats are the basemap's line labels (symbol-placement:
-//        line, MapLibre's default 250 px repeat): at z17-19 a screen
-//        holds ~1,100 px of street, so the name repeated 4-5 times.
-//        glHideLabels now sets symbol-spacing (~500 m in px at each
-//        zoom) on every road label layer and on the route clones.
+//        repeats were the basemap's line labels on the route clones
+//        (symbol-placement: line, the renderer's default 250 px
+//        repeat): at z17-19 a screen holds ~1,100 px of street, so
+//        the name repeated 4-5 times. Widening the repeat is not a
+//        cure in this renderer (measured in the real app: 300 px
+//        loses Malden Street's label, 400 px loses them all), so the
+//        shipped rule is the app's own titles at every zoom - the
+//        title layers no longer end at 16.4, the clones are retired,
+//        and labelpts' one anchor per street is the only route name
+//        a screen can show.
 //
 // This proof drives the shipped engine (GLP, loaded verbatim from
 // parts/engine.js) over the mergeStrands proof's synthetic network,
 // with layer specs captured from a mock map, and reads parts/app2.js
-// for R4's spacing rule.
+// and parts/engine.js for R4's rule.
 //
 // On unmodified main (Beta 1.206) checks R1, R2, R3 and R4 FAIL (the
 // band has its own wider curve; there is no fills source and no
-// selFill; no LABEL_SPACING exists); with the fix all checks pass.
+// selFill; the titles end at 16.4 and the clones exist); with the
+// fix all checks pass.
 //
 // Run from the repo root:  node tests/proof/proof-green-half-road.mjs
 
@@ -266,17 +272,49 @@ for (const z of [18, 19]) {
 check('tap tolerance keeps the 24 px floor at z17 and below',
   [14, 15, 16, 17].every(z => GLP.tapTolPx(z) === 24), [14, 15, 16, 17].map(z => GLP.tapTolPx(z)).join(','));
 
-// ---- R4: label spacing rule in app2.js (~500 m between repeats).
-const spLine = app2.split('\n').find(l => l.includes('const LABEL_SPACING'));
-check('R4: LABEL_SPACING exists in app2.js', !!spLine);
-if (spLine) {
-  const nums = [...spLine.matchAll(/-?\d+(?:\.\d+)?/g)].map(m => parseFloat(m[0]));
-  const stops = {}; for (let i = 0; i + 1 < nums.length; i += 2) stops[nums[i]] = nums[i + 1];
-  check('R4: spacing stops keep repeats ~500 m apart and wider than any phone screen (z15 >= 430 px, z17 >= 1000 px, z19 >= 4000 px)',
-    stops[15] >= 430 && stops[17] >= 1000 && stops[19] >= 4000, JSON.stringify(stops));
-  check('R4: glHideLabels applies the spacing to the road label layers and sets it on the route clones at creation',
-    app2.includes("setL(L.id, 'symbol-spacing', LABEL_SPACING)") && app2.includes("clone.layout['symbol-spacing'] = LABEL_SPACING"));
-}
+// ---- R3b (gate round 4, Codex P2): the corner connector rides the
+// selection redraw. LongAve [2, 0, 0] + CrossSt [0, 2, 0] is the R2c
+// corner: the board's fills wrap it with a connector through
+// (2.475, -2.475) to CrossSt's fill end (2.475, 4.95). Selecting
+// LongAve piece 0 must redraw that connector in selFill, or the
+// selected surface covers its first arm and the green breaks while
+// the stretch is selected.
+host.pieces.LongAve = [2, 0, 0];
+host.pieces.CrossSt = [0, 2, 0];
+host.selStretch = { name: 'LongAve', idx: 0 };
+host.selSet = [host.selStretch];
+GLP.sync();
+GLP.syncSel();
+const selFillC = sources.selFill ? strandsM(sources.selFill.data) : [];
+const nearPtC = (s, x, y) => s.some(p => Math.hypot(p[0] - x, p[1] - y) <= 0.6);
+check('R3b: selecting a corner piece redraws its corner connector (through the corner point to the other street\'s fill end)',
+  selFillC.some(s => nearPtC(s, 2.475, -2.475) && nearPtC(s, 2.475, 4.95)),
+  'selFill strands=' + selFillC.length);
+host.pieces.LongAve = [1, 1, 1];
+host.pieces.CrossSt = [0, 0, 0];
+host.selStretch = null; host.selSet = [];
+GLP.sync();
+
+// ---- R4: a street's name never crowds a screen (Andrew). The first
+// build widened the basemap clones' symbol-spacing toward ~500 m;
+// measured in the real app (drive130, gate rounds 1-3) that kills the
+// names instead - the renderer's line placement earns anchors per
+// tile segment, so a 300 px repeat already loses Malden Street's
+// label and 400 px loses every label in the test view. The shipped
+// rule is therefore the app's own titles at EVERY zoom: labelpts
+// carries exactly one point per street (its anchor), the title layers
+// no longer end at 16.4, and the basemap clones are retired (never
+// built; removed if an older build left one), with the originals
+// still excluding route names - so a route street's name can print
+// at most once on any screen, at any zoom.
+check('R4: no symbol-spacing is set anywhere in app2.js (the measured-dead cure is not shipped)',
+  !app2.includes('symbol-spacing'));
+check('R4: the basemap clones are never built and any leftover is removed',
+  !app2.includes('addLayer(clone') && app2.includes('removeLayer(cloneId)'));
+check('R4: the title layers stay up at close zoom (no 16.4 maxzoom, no fade-out stop)',
+  !eng.includes('maxzoom: 16.4') && !eng.includes('16.4, 0]') && eng.includes('15.4, 1]'));
+check('R4: the title size ramp gains a high stop so names stay readable at z19',
+  eng.includes('16.2, 12, 19, 13.5'));
 
 // ---- R5 (same round): both SECONDARY pills wear the dark ink
 // (Andrew's pick C from the three-variant sample) — the 1.207 white

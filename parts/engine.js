@@ -1601,9 +1601,27 @@ function currentSelList() { // every selected stretch (Beta 1.28): the app's sel
 }
 function buildSelFill() {   // the selected sectors' side fills (vibrant) - Beta 1.208 (R3): built by fillSlicePts, the SAME local rule that builds the board's fills, so a selected stretch's done side paints vertex-for-vertex as the board paints it and the green can no longer disconnect at the stretch boundary. The retired buildSel('e') rebuilt the side from a ONE-PIECE edge run: a lone piece can never earn the junction through-grant the full marked run gets (throughOK needs both arms in the run) and it received none of the corner/through post-passes, so the selected stretch's kerb line clipped at junctions the board line runs through - Andrew's disconnected green (his Valeria stretch 10 screenshot, 2026-11-15).
   const feats = [];
+  const selSides = [];
   for (const it of currentSelList()) {
     const bits = H.pieces[it.name][it.idx];
-    if (bits !== 3) [0, 1].forEach(side => { if (bits & (1 << side)) feats.push({ type: 'Feature', properties: { col: GREEN, colG: mute(GREEN) }, geometry: { type: 'LineString', coordinates: GJ(fillSlicePts(it.name, it.idx, side)) } }); });
+    if (bits !== 3) [0, 1].forEach(side => { if (bits & (1 << side)) { feats.push({ type: 'Feature', properties: { col: GREEN, colG: mute(GREEN) }, geometry: { type: 'LineString', coordinates: GJ(fillSlicePts(it.name, it.idx, side)) } }); selSides.push({ n: it.name, idx: it.idx, side }); } });
+  }
+  // Beta 1.208 (Codex P2, gate round 4): the corner connectors ride along.
+  // fillCornerLinks wraps a marked side around a junction corner with a
+  // connector strand on the BOARD's fills; the selection redraw above
+  // rebuilds only the piece's own slice, so at a connected corner the
+  // selected surface (t1-sel, above the board fills) painted over the
+  // connector's first arm and the green broke by ~5 m for exactly as
+  // long as the stretch stayed selected. Any board connector touching a
+  // selected side is therefore redrawn here too, from the board's own
+  // strand (LASTCHAINS), in the selection's vibrant green - t1-selfill
+  // sits above t1-sel, so selected and deselected paint identically.
+  if (selSides.length && typeof LASTCHAINS !== 'undefined' && LASTCHAINS && LASTCHAINS.fills) {
+    for (const sl of LASTCHAINS.fills) {
+      if (!sl.mem || sl.mem.length !== 2) continue;   // connectors are the only two-mem fill strands
+      if (sl.mem.some(m => m && selSides.some(s => s.n === m.n && s.idx === m.idx && s.side === m.side)))
+        feats.push({ type: 'Feature', properties: { col: GREEN, colG: mute(GREEN) }, geometry: { type: 'LineString', coordinates: GJ(sl.pts) } });
+    }
   }
   return { type: 'FeatureCollection', features: feats };
 }
@@ -1808,11 +1826,23 @@ function addStack() {
   // basemap's own names fade IN on route streets across the same band (glHideLabels),
   // so the two systems crossfade and never print together. The 12.6 arrival stays a
   // near-pop (0.03 of a zoom), per his Beta 1.12 no-fading call for the far switch.
+  // Beta 1.208 (Andrew): the handover is RETIRED at his order - zoomed in, the
+  // basemap printed a route street's name 4-5 times down one screen (the clone
+  // layers repeat along the line at the renderer's 250 px default), and the
+  // spacing cure is not available in this renderer: measured in the real app,
+  // a 300 px repeat already loses Malden Street's label and a 400 px repeat
+  // loses every label in the test view (anchors earn their place per tile
+  // segment, and segments shorter than the repeat get none). So our titles -
+  // exactly one per street, at the street's own anchor - now stay up at EVERY
+  // zoom: no maxzoom, no fade-out stop, and the size ramp gains one high stop
+  // so the name stays readable at z19. glHideLabels no longer builds the
+  // basemap clones, and the originals keep excluding route names, so the
+  // basemap never prints a route street's name at any zoom.
   const PT_MIN = [13.7, 13.35, 13.0, 12.6];
   for (let t = 1; t <= 4; t++) {
     const id = 'streetnamespt' + t;
     if (!GLM.getLayer(id)) {
-      GLM.addLayer({ id, type: 'symbol', source: 'labelpts', minzoom: PT_MIN[t - 1], maxzoom: 16.4, filter: ['==', ['get', 'tier'], t], layout: { 'text-field': ['get', 'name'], 'text-font': fontStack, 'text-size': ['interpolate', ['linear'], ['zoom'], 14, 10, 14.6, 10.5, 16.2, 12], 'text-padding': 1, 'text-variable-anchor': ['center', 'top', 'bottom', 'left', 'right'], 'text-radial-offset': 0.8, 'symbol-sort-key': ['-', ['get', 'len']], 'text-allow-overlap': false }, paint: { 'text-color': H.isNight() ? '#e8e8e8' : '#333333', 'text-halo-color': H.isNight() ? 'rgba(0,0,0,.8)' : 'rgba(255,255,255,.9)', 'text-opacity': ['interpolate', ['linear'], ['zoom'], 12.59, 0, 12.62, 1, 15.4, 1, 16.4, 0], 'text-opacity-transition': { duration: 0, delay: 0 }, 'text-halo-width': 1.4 } });
+      GLM.addLayer({ id, type: 'symbol', source: 'labelpts', minzoom: PT_MIN[t - 1], filter: ['==', ['get', 'tier'], t], layout: { 'text-field': ['get', 'name'], 'text-font': fontStack, 'text-size': ['interpolate', ['linear'], ['zoom'], 14, 10, 14.6, 10.5, 16.2, 12, 19, 13.5], 'text-padding': 1, 'text-variable-anchor': ['center', 'top', 'bottom', 'left', 'right'], 'text-radial-offset': 0.8, 'symbol-sort-key': ['-', ['get', 'len']], 'text-allow-overlap': false }, paint: { 'text-color': H.isNight() ? '#e8e8e8' : '#333333', 'text-halo-color': H.isNight() ? 'rgba(0,0,0,.8)' : 'rgba(255,255,255,.9)', 'text-opacity': ['interpolate', ['linear'], ['zoom'], 12.59, 0, 12.62, 1, 15.4, 1], 'text-opacity-transition': { duration: 0, delay: 0 }, 'text-halo-width': 1.4 } });
     }
   }
   // Round 35/37 (Andrew): zoomed far out, the route cluster blurs
