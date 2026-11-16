@@ -27,13 +27,13 @@ ok('chip text PRIMARY/SECONDARY at both sites', count(pick, "chip.textContent = 
 ok("'2ND' absent from create-pick.js", !pick.includes("'2ND'") && !pick.includes('PRIMARY/2ND'));
 
 // 2 — review chip colours
-ok('.crChip.sec is filled raspberry with white text', head.includes('.crChip.sec { background: #ef476f; color: #fff; }'));
+ok('.crChip.sec is filled raspberry with dark ink (1.208S: Beta 1.208 superseded the 1.207 white text — Andrew\u2019s pick C, both pills dark)', head.includes('.crChip.sec { background: #ef476f; color: #4a3200; }'));
 ok('.crChip.primary unchanged (solid gold)', head.includes('.crChip.primary { background: #ffc233; color: #4a3200; }'));
 
 // 3 — pick chip = same pill design
 ok('.crPChip base wears the .crChip pill metrics', head.includes('.crPChip { border: none; border-radius: 999px; font-size: 12px; font-weight: 800; letter-spacing: .3px; padding: 6px 10px;'));
 ok('.crPChip.primary solid gold', head.includes('.crPChip.primary { background: #ffc233; color: #4a3200; }'));
-ok('.crPChip.sec filled raspberry', head.includes('.crPChip.sec { background: #ef476f; color: #fff; }'));
+ok('.crPChip.sec filled raspberry with dark ink (1.208S: Beta 1.208 superseded the 1.207 white text — Andrew\u2019s pick C, both pills dark)', head.includes('.crPChip.sec { background: #ef476f; color: #4a3200; }'));
 ok('pick chip tint rules gone (no rgba gold/pink chip fills, no night tints)', !head.includes('.crPChip.primary { background: rgba(') && !head.includes('body.night .crPChip'));
 
 // 4 — doors

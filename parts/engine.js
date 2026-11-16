@@ -12,9 +12,10 @@ const GLP = (() => {
     GLM.getSource('centres').setData(CUR.centres);
     GLM.getSource('bands').setData(CUR.bands);
     GLM.getSource('edges').setData(CUR.edges);
+    GLM.getSource('fills').setData(CUR.fills);
     GLM.getSource('sel').setData(CUR.sel);
     GLM.getSource('selBand').setData(CUR.selBand);
-    GLM.getSource('selEdges').setData(CUR.selEdges);
+    GLM.getSource('selFill').setData(CUR.selFill);
     if (GLM.getSource('selGlow')) GLM.getSource('selGlow').setData(buildSelGlow());
     managePulse();
   }
@@ -22,7 +23,7 @@ const GLP = (() => {
     if (!GLM || !CUR || !GLM.getSource('centres')) return;
     GLM.getSource('sel').setData(CUR.sel);
     GLM.getSource('selBand').setData(CUR.selBand);
-    GLM.getSource('selEdges').setData(CUR.selEdges);
+    GLM.getSource('selFill').setData(CUR.selFill);
     if (GLM.getSource('selGlow')) GLM.getSource('selGlow').setData(buildSelGlow());
     managePulse();
   }
@@ -77,7 +78,7 @@ function buildEngineGeometry() { // Beta 1.117: the engine's route geometry (GEO
   // at, so every segment walk in this engine can refuse to step across a
   // discontinuity. A single-run street builds byte-identically to before.
   const stitched = [], cuts = [], gaps = new Set();
-  let off0 = [], off1 = [], stitchedLen = 0;
+  let off0 = [], off1 = [], offH0 = [], offH1 = [], stitchedLen = 0;
   H.STRETCH[n].runs.forEach((run, ri) => {
     if (ri > 0) gaps.add(stitched.length);
     const base = stitched.length, rStitched = [];
@@ -92,9 +93,10 @@ function buildEngineGeometry() { // Beta 1.117: the engine's route geometry (GEO
     // 3.3 m; and the lines end exactly at the run's ends - no overshoot
     // onto the next street, no uneven ends.
     off0 = off0.concat(offsetLine(rStitched, 3.3 * WIDTH_K)); off1 = off1.concat(offsetLine(rStitched, -3.3 * WIDTH_K));
+    offH0 = offH0.concat(offsetLine(rStitched, 1.65 * WIDTH_K)); offH1 = offH1.concat(offsetLine(rStitched, -1.65 * WIDTH_K));   // Beta 1.208: the half-offset lines (centreline-to-kerb midlines) the one-side fills are built on - same per-run construction as the kerb lines
     stitchedLen += segLenM(rStitched);
   });
-  GEO[n] = { stitched, cuts, off0, off1, gaps };
+  GEO[n] = { stitched, cuts, off0, off1, offH0, offH1, gaps };
   const p0 = stitched[0], p1 = stitched[stitched.length - 1];
   const dLat = p1[0] - p0[0], dLng = p1[1] - p0[1];
   const canonicalForward = Math.abs(dLat) >= Math.abs(dLng) ? dLat >= 0 : dLng >= 0;
@@ -885,7 +887,7 @@ function lastResortConnect(edges, bands) {
     const touch = (A2, B2) => {
       const eA = [A2.pts[0], A2.pts[A2.pts.length - 1]], eB = [B2.pts[0], B2.pts[B2.pts.length - 1]];
       if (eA.some(p => eB.some(q => coordKey(p) === coordKey(q)))) return true;
-      const thr = (A2.band || B2.band) ? 4.8 * WIDTH_K : 1.0;   // Beta 1.181: the band threshold lives in the same scaled metre-world as SURF_HALF/BAND_HALF
+      const thr = (A2.band || B2.band) ? SURF_HALF : 1.0;   // Beta 1.181: the band threshold lives in the same scaled metre-world as SURF_HALF; Beta 1.208: bands draw at the surface's width, so the band touch threshold is SURF_HALF itself
       return eA.some(p => onLine(p, B2, thr)) || eB.some(p => onLine(p, A2, thr));
     };
     frags.forEach((A2, i) => frags.forEach((B2, j) => { if (j > i && touch(A2, B2)) parent[find(i)] = find(j); }));
@@ -1108,7 +1110,7 @@ const WIDTH_K = 1.5;
 // until both corners sit inside every crossing street's paint strip.
 // Where the corners already sit inside (most junctions), nothing moves
 // and same-colour paint stays seamless.
-const SURF_HALF = 3.3 * WIDTH_K, BAND_HALF = 4.8 * WIDTH_K;   // geographic half-widths the GL paint curves track (base 3.3/4.8 m x WIDTH_K = 4.95/7.2 m at 1.5x; surfW ~9.9 m, BANDW ~14.4 m at working zooms)
+const SURF_HALF = 3.3 * WIDTH_K, HALF_HALF = 1.65 * WIDTH_K;   // geographic half-widths the GL paint curves track (base 3.3 m x WIDTH_K = 4.95 m at 1.5x; surfW ~9.9 m at working zooms). Beta 1.208 (Andrew: "make the green match the others"): the completed band draws at the surface's width, so all full-road paint shares ONE half-width - SURF_HALF (the old BAND_HALF 7.2 m is retired with the BANDW curve). HALF_HALF (2.475 m) is the one-side fill's own half-width: the fill ribbon is centred HALF_HALF from the centreline and spans centreline to kerb.
 function ptSegDistM(p, a, b) {
   const P = XYOf(p), A = XYOf(a), B = XYOf(b);
   const vx = B[0] - A[0], vy = B[1] - A[1], L2 = vx * vx + vy * vy || 1;
@@ -1143,13 +1145,15 @@ function nearestPaintM(cp, B) {
   // surface arm, split by a double vertex), a corner must be judged
   // against the arm it actually lies along - judging it against
   // both arms' halves flags paint that is physically inside the
-  // wider arm (round 14, Fifth x Valeria).
+  // wider arm (round 14, Fifth x Valeria). Beta 1.208: band and
+  // surface arms are one width now, so the owning cut's half is
+  // always SURF_HALF; the per-cut tracking stays for the point.
   const st = GEO[B].stitched;
   let bd = 1e9, half = SURF_HALF, pt = null;
   for (let k = 0; k < st.length - 1; k++) {
     if (GEO[B].gaps.has(k + 1)) continue; // Beta 1.144: the between-runs pair is not a segment of B
     const d = ptSegDistM(cp, st[k], st[k + 1]);
-    if (d < bd) { bd = d; half = SURF_HALF; GEO[B].cuts.forEach((ab, i) => { if (ab[0] <= k && k + 1 <= ab[1] && H.pieces[B][i] === 3) half = BAND_HALF; }); pt = nearestPtOnSeg(cp, st[k], st[k + 1]); }
+    if (d < bd) { bd = d; half = SURF_HALF; pt = nearestPtOnSeg(cp, st[k], st[k + 1]); }
   }
   return { d: bd, half, pt };
 }
@@ -1208,9 +1212,9 @@ function capLineFor(B, viB, Ix, Vx) {
     // each arm's edge point uses THAT arm's paint half: at a
     // mixed-family bend (a band arm beside a surface arm) the true
     // near edge is the kinked line through both arms' own edges.
-    const segK = p === pPrev ? viB - 1 : viB;
-    let half = SURF_HALF;
-    GEO[B].cuts.forEach((ab, i) => { if (ab[0] <= segK && segK + 1 <= ab[1] && H.pieces[B][i] === 3) half = BAND_HALF; });
+    // Beta 1.208: both arms' halves are SURF_HALF (one width for
+    // all full-road paint); the kinked-line construction is unchanged.
+    const half = SURF_HALF;
     return [Vx[0] + nx * half, Vx[1] + ny * half, nx, ny];
   });
   if (W.length === 2) {
@@ -1374,7 +1378,7 @@ function clipEndAtJunction(n, vi, pts, atStart, ownHalf) {
   }
   return pts;
 }
-function clipStrandEnds(strands, half) {
+function clipStrandEnds(strands, half, guideFor, skipEnd) {
   // post-merge pass: a merged strand can still END at a junction even
   // when its paint family continues on the same street - mergeStrands
   // refuses a join whose corner path is unsafe, and the two caps then
@@ -1385,6 +1389,7 @@ function clipStrandEnds(strands, half) {
   strands.forEach(sl => {
     if (!sl.mem || !sl.mem.length) return;
     [true, false].forEach(atStart => {
+      if (skipEnd && skipEnd(sl, atStart)) return;   // Beta 1.208 (gate round 3): bands skip ends whose green continues as a neighbouring piece's fill - clipping them would reopen the fill/band break this round closed
       const E = atStart ? sl.pts[0] : sl.pts[sl.pts.length - 1];
       if (!E) return;
       const grp = sharedVertexMap()[coordKey(E)] || [];
@@ -1392,15 +1397,160 @@ function clipStrandEnds(strands, half) {
       const A = atStart ? sl.mem[0].n : sl.mem[sl.mem.length - 1].n;
       const ent = grp.find(e => e.n === A);
       if (!ent) return;
-      sl.pts = clipEndAtJunction(A, ent.vi, sl.pts, atStart, half);
+      const guide = guideFor ? guideFor(sl, atStart) : null;
+      sl.pts = guide ? clipOnLine(A, ent.vi, sl.pts, atStart, half, guide) : clipEndAtJunction(A, ent.vi, sl.pts, atStart, half);
     });
   });
+}
+function nearestOnLine(p, line) {
+  // the point on the polyline nearest p (flat-metre projection per segment)
+  const P = XYOf(p);
+  let best = null, bd = Infinity;
+  for (let i = 0; i + 1 < line.length; i++) {
+    const A = XYOf(line[i]), B = XYOf(line[i + 1]);
+    const vx = B[0] - A[0], vy = B[1] - A[1], L2 = vx * vx + vy * vy || 1;
+    let t = ((P[0] - A[0]) * vx + (P[1] - A[1]) * vy) / L2; t = Math.max(0, Math.min(1, t));
+    const qx = A[0] + t * vx, qy = A[1] + t * vy, d = Math.hypot(P[0] - qx, P[1] - qy);
+    if (d < bd) { bd = d; best = [qy / H.MLAT, qx / H.MLNG]; }
+  }
+  return best || p;
+}
+function clipOnLine(n, vi, pts, atStart, ownHalf, line) {
+  // clipEndAtJunction for an OFFSET line (a fill's half-offset line):
+  // the generic re-cut solves its new end along the street's
+  // CENTRELINE (its approach anchors on GEO[n].stitched), which drags
+  // an offset line's end sideways toward the middle of the road -
+  // Codex P2 on PR #83, reproduced on the proof network: a fill
+  // stopping at a junction ended 0.6 m from the centreline instead of
+  // 2.475 m, spilling green onto the unfinished side. The cap POSITION
+  // the solve finds (flush on the crossing street's near paint edge)
+  // is right; only the lateral placement is wrong for an offset line.
+  // So: run the generic clip, then move its inserted end pair (the
+  // solved end E and its approach point P - the re-cut inserts
+  // exactly those two) so E sits at the intersection of the crossing
+  // paint edge's line with THIS line, translating the pair by the
+  // same vector: the cap stays parallel to the crossing edge and
+  // centred on it (both cap corners on the edge line), the approach
+  // keeps the solve's edge-normal shape, and E rides the offset line
+  // exactly. (Gate round 3, Codex P2: the first build PROJECTED the
+  // pair onto the line - exact at perpendicular crossings, but at a
+  // 45° crossing the nearest point is not the intersection, and the
+  // cap corners landed at 4.4 / 7.9 m from the crossing centreline
+  // instead of both on the 4.95 m edge - a ~3 m wedge. Intersection,
+  // not projection.) Points the clip left alone are the line's own
+  // and never move; two slices ending back to back at a junction
+  // solve the same intersection, so exact joins survive. When the
+  // pair shape is unexpected (or the lines run near-parallel), the
+  // projection remains as the fallback.
+  const out = clipEndAtJunction(n, vi, pts, atStart, ownHalf);
+  if (out === pts) return out;
+  const own = new Set(line);
+  const res = out.slice();
+  const ins = [];
+  for (let k = 0; k < res.length; k++) {
+    const i = atStart ? k : res.length - 1 - k;
+    if (own.has(res[i])) break;
+    ins.push(i);
+  }
+  let done = false;
+  if (ins.length === 2) {
+    const sIdx = atStart ? ins[1] + 1 : ins[1] - 1;
+    const s2Idx = atStart ? sIdx + 1 : sIdx - 1;
+    if (res[sIdx] && res[s2Idx]) {
+      const E = XYOf(res[ins[0]]), P = XYOf(res[ins[1]]);
+      const seg = [P[0] - E[0], P[1] - E[1]], sl = Math.hypot(seg[0], seg[1]) || 1;
+      const cap = [-seg[1] / sl, seg[0] / sl];
+      const S0 = XYOf(res[sIdx]), S1 = XYOf(res[s2Idx]);
+      const hd = [S0[0] - S1[0], S0[1] - S1[1]], hl = Math.hypot(hd[0], hd[1]) || 1; hd[0] /= hl; hd[1] /= hl;
+      const den = cap[0] * hd[1] - cap[1] * hd[0];
+      if (Math.abs(den) > 0.2) {
+        const rx = S0[0] - E[0], ry = S0[1] - E[1];
+        const lam = (rx * hd[1] - ry * hd[0]) / den;
+        const Ex = [E[0] + lam * cap[0], E[1] + lam * cap[1]];
+        const ExLL = [Ex[1] / H.MLAT, Ex[0] / H.MLNG];
+        // the validity window: the local segment extension can run
+        // away at a bent, skewed T (the intersection lands metres
+        // past the junction, across the crossing centreline) - accept
+        // the intersection only when it stays near the solved end AND
+        // near the line itself; otherwise the projection below is
+        // the bounded fallback.
+        if (Math.hypot(Ex[0] - E[0], Ex[1] - E[1]) <= 6 && H.jDistM(ExLL, nearestOnLine(ExLL, line)) <= 0.9) {
+          res[ins[0]] = ExLL;
+          res[ins[1]] = [(Ex[1] + seg[1]) / H.MLAT, (Ex[0] + seg[0]) / H.MLNG];
+          done = true;
+        }
+      }
+    }
+  }
+  if (!done) for (const i of ins) res[i] = nearestOnLine(res[i], line);
+  const dd = [res[0]];
+  for (let i = 1; i < res.length; i++) if (H.jDistM(res[i], dd[dd.length - 1]) > 0.05) dd.push(res[i]);
+  if (dd.length < 2) dd.push(res[res.length - 1]);
+  return dd.length >= 2 ? dd : out;
+}
+function fillSlicePts(n, idx, side) {   // Beta 1.208: one piece's one-side FILL slice - the half-offset line over the piece, end-trimmed with the centre family's local rule (trim only where THIS side's fill actually ends: the neighbouring piece carries no fill for this side, a run gap intervenes, or the street ends). Shared by buildFamilies and buildSelFill, so the selection's side paint is the board's side paint by construction - the R3 fix (the retired one-piece edge rebuild could never reproduce the board's junction treatment).
+  const g = GEO[n], ab = g.cuts[idx];
+  const fam = i => { const b = H.pieces[n][i]; return ((b & (1 << side)) || b === 3) ? 'fill' : 'x' + b; };   // Beta 1.208 (Codex P2, gate round 3): a both-sides piece CONTINUES this side's paint (its band covers the side in full), so the fill keeps its shared vertex beside a band instead of clipping to the near edge - clipping on both sides of the boundary left the junction square's half unpainted, a 9.9 m break in the completed side
+  const line = side === 0 ? g.offH0 : g.offH1;
+  let pts = line.slice(ab[0], ab[1] + 1);
+  if (idx === 0 || g.gaps.has(ab[0]) || fam(idx - 1) !== 'fill') pts = clipOnLine(n, ab[0], pts, true, HALF_HALF, line);
+  if (idx === g.cuts.length - 1 || g.gaps.has(g.cuts[idx + 1][0]) || fam(idx + 1) !== 'fill') pts = clipOnLine(n, ab[1], pts, false, HALF_HALF, line);
+  return pts;
+}
+function fillCornerLinks(fills) {
+  // Beta 1.208 (Codex P2, gate round 2): the corner wrap for fills.
+  // A fill ends flush at the crossing street's near paint edge - the
+  // right end for a lone side - but where one street's marked side
+  // TURNS A CORNER into another street's marked side (the two sides
+  // of one continuous kerb line around the junction's corner), the
+  // two ends face each other across the junction square and the
+  // green pinched there instead of wrapping the corner (the retired
+  // kerb-line paint traced the kerb around corners via its own
+  // corner slices; the fills had no corner treatment). The wrap: for
+  // every pair of fill ends at one junction vertex (different
+  // streets) whose half lines meet on both ends' forward extensions,
+  // add a connector strand [end, corner point, end] - the corner
+  // point is the two half lines' own intersection, so the connector's
+  // ribbon (the same half-surface width) bends around the corner on
+  // exactly the path the two fills were already following. Through
+  // pairs never qualify (same street, or near-parallel lines), and a
+  // lone side earns no connector - it still ends at the near edge.
+  const verts = [];
+  const svm = sharedVertexMap();
+  for (const k in svm) { const g = svm[k]; if (new Set(g.map(e => e.n)).size >= 2) verts.push(GEO[g[0].n].stitched[g[0].vi]); }
+  if (!verts.length) return;
+  const ends = [];
+  fills.forEach(sl => {
+    if (!sl.mem || !sl.mem.length || sl.pts.length < 2) return;
+    [[sl.mem[0], sl.pts[0], sl.pts[1]], [sl.mem[sl.mem.length - 1], sl.pts[sl.pts.length - 1], sl.pts[sl.pts.length - 2]]].forEach(([m, E, I]) => {
+      if (!m || m.side === undefined) return;
+      const Exy = XYOf(E), Ixy = XYOf(I);
+      const dx = Exy[0] - Ixy[0], dy = Exy[1] - Ixy[1], L = Math.hypot(dx, dy) || 1;
+      ends.push({ E, Exy, dir: [dx / L, dy / L], mem: m });
+    });
+  });
+  const cross = (u, v) => u[0] * v[1] - u[1] * v[0];
+  for (let i = 0; i < ends.length; i++) for (let j = i + 1; j < ends.length; j++) {
+    const a = ends[i], b = ends[j];
+    if (a.mem.n === b.mem.n) continue;
+    const V = verts.find(v => H.jDistM(v, a.E) <= 7.5 && H.jDistM(v, b.E) <= 7.5);
+    if (!V) continue;
+    const den = cross(a.dir, b.dir);
+    if (Math.abs(den) < 0.35) continue;   // near-parallel: a through pair, not a corner
+    const rx = b.Exy[0] - a.Exy[0], ry = b.Exy[1] - a.Exy[1];
+    const t = cross([rx, ry], b.dir) / den, s = cross([rx, ry], a.dir) / den;
+    if (t < 0.3 || s < 0.3 || t > 13 || s > 13) continue;   // the corner must lie on BOTH forward extensions, within reach
+    const Cxy = [a.Exy[0] + t * a.dir[0], a.Exy[1] + t * a.dir[1]];
+    const Vxy = XYOf(V);
+    if (Math.hypot(Cxy[0] - Vxy[0], Cxy[1] - Vxy[1]) > 8) continue;
+    fills.push({ pts: [a.E, [Cxy[1] / H.MLAT, Cxy[0] / H.MLNG], b.E], key: 'fill', mem: [a.mem, b.mem], corner: true });   // the corner flag is explicit (gate round 4, Codex P2): an ordinary strand merged from two consecutive pieces ALSO carries two mem entries, so mem-count alone cannot identify a connector
+  }
 }
 function buildFamilies() {
   THROUGH_SEGS = [];
   const pairs = junctionPairs();
   PAIRS_CUR = pairs;
-  const centreSlices = [], bandSlices = [], edgeSlices = [];
+  const centreSlices = [], bandSlices = [], edgeSlices = [], fillSlices = [];
   H.names.forEach(n => {
     const g = GEO[n];
     g.cuts.forEach((ab, idx) => {
@@ -1409,15 +1559,21 @@ function buildFamilies() {
       const isBand = bits === 3;
       const key = isBand ? 'band' : mute(colOf(n, bits));
       const famKey = i => H.pieces[n][i] === 3 ? 'band' : mute(colOf(n, H.pieces[n][i]));
-      const ownHalf = isBand ? BAND_HALF : SURF_HALF;
+      const ownHalf = SURF_HALF;   // Beta 1.208: bands draw at the surface's width, so a band end trims against the same half-width as a surface end
       // clip an end only where the paint actually ends there: the
       // neighbouring cut is a different family/colour, or the street
       // ends. A continuing family keeps its exact shared vertex, so
       // mergeStrands still joins it seamlessly.
       if (idx === 0 || g.gaps.has(ab[0]) || famKey(idx - 1) !== key) cPts = clipEndAtJunction(n, ab[0], cPts, true, ownHalf); // Beta 1.144: a run-start piece's leading end is a street end for its run - it earns the junction clip even when the previous piece (another run's end) wears the same family
       if (idx === g.cuts.length - 1 || g.gaps.has(g.cuts[idx + 1][0]) || famKey(idx + 1) !== key) cPts = clipEndAtJunction(n, ab[1], cPts, false, ownHalf);
-      if (isBand) bandSlices.push({ pts: cPts, key: 'band', mem: [{ n, idx }], e0: null, e1: null });
+      if (isBand) {   // Beta 1.208 (Codex P2, gate round 3): the band's own clip rule is per-side-paint, not per-family - a band end clips only where the GREEN fully ends (the neighbouring piece carries no marked side at all). Beside a one-side piece the band keeps its shared vertex, meeting the fill that starts there; clipping on both sides of that boundary left the junction square's half unpainted (a 9.9 m break in the completed side, LongAve [1,3,3] in the proof network). Recomputed from the stitched slice so the centre family's rule above is untouched.
+        let bPts = g.stitched.slice(ab[0], ab[1] + 1);
+        if (idx === 0 || g.gaps.has(ab[0]) || H.pieces[n][idx - 1] === 0) bPts = clipEndAtJunction(n, ab[0], bPts, true, ownHalf);
+        if (idx === g.cuts.length - 1 || g.gaps.has(g.cuts[idx + 1][0]) || H.pieces[n][idx + 1] === 0) bPts = clipEndAtJunction(n, ab[1], bPts, false, ownHalf);
+        bandSlices.push({ pts: bPts, key: 'band', mem: [{ n, idx }], e0: null, e1: null });
+      }
       else centreSlices.push({ pts: cPts, key, mem: [{ n, idx }], e0: null, e1: null });
+      if (!isBand && bits !== 0) [0, 1].forEach(side => { if (bits & (1 << side)) fillSlices.push({ pts: fillSlicePts(n, idx, side), key: 'fill', mem: [{ n, idx, side }], e0: null, e1: null }); });   // Beta 1.208: a one-side-done piece also emits its side's FILL (the half-road green Andrew ordered in place of the kerb outline)
     });
     [0, 1].forEach(side => {
       edgeRunSlices(n, side, idx => H.pieces[n][idx] !== 3 && (H.pieces[n][idx] & (1 << side))).forEach(sl => edgeSlices.push(sl));
@@ -1426,25 +1582,52 @@ function buildFamilies() {
   const centres = mergeStrands(centreSlices, null);
   const bands = mergeStrands(bandSlices, null);
   clipStrandEnds(centres, SURF_HALF);
-  clipStrandEnds(bands, BAND_HALF);
+  clipStrandEnds(bands, SURF_HALF, null, (sl, atStart) => { const m = atStart ? sl.mem[0] : sl.mem[sl.mem.length - 1]; if (!m) return false; const g = GEO[m.n], ni = atStart ? m.idx - 1 : m.idx + 1; if (ni < 0 || ni >= g.cuts.length) return false; if (g.gaps.has(g.cuts[atStart ? m.idx : ni][0])) return false; return H.pieces[m.n][ni] !== 0; });
+  const fills = mergeStrands(fillSlices, null);   // Beta 1.208: exact joins only, like centres/bands - consecutive marked pieces share the half-line vertex, so a side's fill is one strand flowing through its junctions
+  clipStrandEnds(fills, HALF_HALF, (sl, atStart) => { const m = atStart ? sl.mem[0] : sl.mem[sl.mem.length - 1]; return m && m.side !== undefined ? (m.side ? GEO[m.n].offH1 : GEO[m.n].offH0) : null; });   // Beta 1.208: fill strand ends clip ON their half-offset line (clipOnLine), never dragged toward the centreline
+  fillCornerLinks(fills);   // Beta 1.208: and where a marked side turns a corner into another street's marked side, the fills wrap the corner (fillCornerLinks)
   cornerTouchSlices(edgeSlices, pairs);
   const edges = mergeStrands(edgeSlices, pairs);
   bridgeStragglers(edges, pairs);
   throughTouch(edges, pairs);
   extendIntoBands(edges, pairs);
   lastResortConnect(edges, bands);
-  LASTCHAINS = { centres, bands, edges };
+  LASTCHAINS = { centres, bands, edges, fills };
   const fc = (list, colFn) => ({ type: 'FeatureCollection', features: list.map(sl => { const c = colFn(sl); return { type: 'Feature', properties: { col: c, colG: mute(c) }, geometry: { type: 'LineString', coordinates: GJ(sl.pts) } }; }) });
-  return { centres: fc(centres, sl => sl.key), bands: fc(bands, () => MUGREEN), edges: fc(edges, () => MUGREEN) };
+  return { centres: fc(centres, sl => sl.key), bands: fc(bands, () => MUGREEN), edges: fc(edges, () => MUGREEN), fills: fc(fills, () => MUGREEN) };
 }
 function currentSelList() { // every selected stretch (Beta 1.28): the app's selSet when multi-selecting, else the single anchor - read live at build time, like the original builders read the app global sel
   return (typeof H.selSet !== 'undefined' && Array.isArray(H.selSet) && H.selSet.length) ? H.selSet : (sel ? [sel] : []);
 }
-function buildSel(which) {   // the selected sectors' side lines (vibrant)
+function buildSelFill() {   // the selected sectors' side fills (vibrant) - Beta 1.208 (R3): built by fillSlicePts, the SAME local rule that builds the board's fills, so a selected stretch's done side paints vertex-for-vertex as the board paints it and the green can no longer disconnect at the stretch boundary. The retired buildSel('e') rebuilt the side from a ONE-PIECE edge run: a lone piece can never earn the junction through-grant the full marked run gets (throughOK needs both arms in the run) and it received none of the corner/through post-passes, so the selected stretch's kerb line clipped at junctions the board line runs through - Andrew's disconnected green (his Valeria stretch 10 screenshot, 2026-11-15).
   const feats = [];
-  if (which === 'e') for (const it of currentSelList()) {
+  const selSides = [];
+  for (const it of currentSelList()) {
     const bits = H.pieces[it.name][it.idx];
-    if (bits !== 3) [0, 1].forEach(side => { if (bits & (1 << side)) edgeRunSlices(it.name, side, idx => idx === it.idx).forEach(sl => feats.push({ type: 'Feature', properties: { col: GREEN, colG: mute(GREEN) }, geometry: { type: 'LineString', coordinates: GJ(sl.pts) } })); });
+    if (bits !== 3) [0, 1].forEach(side => { if (bits & (1 << side)) { feats.push({ type: 'Feature', properties: { col: GREEN, colG: mute(GREEN) }, geometry: { type: 'LineString', coordinates: GJ(fillSlicePts(it.name, it.idx, side)) } }); selSides.push({ n: it.name, idx: it.idx, side }); } });
+  }
+  // Beta 1.208 (Codex P2, gate round 4): the corner connectors ride along.
+  // fillCornerLinks wraps a marked side around a junction corner with a
+  // connector strand on the BOARD's fills; the selection redraw above
+  // rebuilds only the piece's own slice, so at a connected corner the
+  // selected surface (t1-sel, above the board fills) painted over the
+  // connector's first arm and the green broke by ~5 m for exactly as
+  // long as the stretch stayed selected. Any board connector touching a
+  // selected side is therefore redrawn here too, from the board's own
+  // strand (LASTCHAINS), in the selection's vibrant green - t1-selfill
+  // sits above t1-sel, so selected and deselected paint identically.
+  // Connectors are identified by the explicit flag fillCornerLinks
+  // sets at creation - NOT by mem count: an ordinary fill strand
+  // merged from two consecutive pieces carries two mem entries too,
+  // and an early build of this fix mistook exactly that for a
+  // connector and painted the unselected piece in selection green
+  // (gate round 4, Codex P2).
+  if (selSides.length && typeof LASTCHAINS !== 'undefined' && LASTCHAINS && LASTCHAINS.fills) {
+    for (const sl of LASTCHAINS.fills) {
+      if (!sl.corner || !sl.mem) continue;
+      if (sl.mem.some(m => m && selSides.some(s => s.n === m.n && s.idx === m.idx && s.side === m.side)))
+        feats.push({ type: 'Feature', properties: { col: GREEN, colG: mute(GREEN) }, geometry: { type: 'LineString', coordinates: GJ(sl.pts) } });
+    }
   }
   return { type: 'FeatureCollection', features: feats };
 }
@@ -1453,10 +1636,15 @@ function selectedGeom(it) {   // a selected stretch's painted slice: stitched po
   const s0 = it || sel;
   if (!s0) return null;
   const n = s0.name, idx = s0.idx, g = GEO[n], ab = g.cuts[idx], bits = H.pieces[n][idx];
-  const isBand = bits === 3, half = isBand ? BAND_HALF : SURF_HALF;
+  const isBand = bits === 3, half = SURF_HALF;   // Beta 1.208: the selection redraw of a band trims at the width the band now draws
   const key = isBand ? 'band' : mute(colOf(n, bits));
   const famKey = i => H.pieces[n][i] === 3 ? 'band' : mute(colOf(n, H.pieces[n][i]));
   let pts = g.stitched.slice(ab[0], ab[1] + 1);
+  if (isBand) {   // Beta 1.208 (gate round 3): the selection's band redraw follows the board band's per-side-paint clip rule, so selected and deselected paint meet a neighbouring fill identically
+    if (idx === 0 || g.gaps.has(ab[0]) || H.pieces[n][idx - 1] === 0) pts = clipEndAtJunction(n, ab[0], pts, true, half);
+    if (idx === g.cuts.length - 1 || g.gaps.has(g.cuts[idx + 1][0]) || H.pieces[n][idx + 1] === 0) pts = clipEndAtJunction(n, ab[1], pts, false, half);
+    return { pts, bits, half };
+  }
   if (idx === 0 || g.gaps.has(ab[0]) || famKey(idx - 1) !== key) pts = clipEndAtJunction(n, ab[0], pts, true, half);
   if (idx === g.cuts.length - 1 || g.gaps.has(g.cuts[idx + 1][0]) || famKey(idx + 1) !== key) pts = clipEndAtJunction(n, ab[1], pts, false, half);
   return { pts, bits, half };
@@ -1487,12 +1675,11 @@ function rebuildData() { const F = buildFamilies(); const SC = buildSelC();
   // colours the same way. Geometry untouched; features only reorder.
   const yRank = f => (f.properties.col === mute(YELLOW) || f.properties.col === YELLOW) ? 1 : 0;   // keys off the live scheme (round 25)
   F.centres.features.sort((a, b) => yRank(a) - yRank(b));
-  CUR = { centres: F.centres, bands: F.bands, edges: F.edges, sel: SC.sel, selBand: SC.selBand, selEdges: buildSel('e') }; }
+  CUR = { centres: F.centres, bands: F.bands, edges: F.edges, fills: F.fills, sel: SC.sel, selBand: SC.selBand, selFill: buildSelFill() }; }
 
 function scaleW(curve) { return curve.map((v, i) => (i >= 4 && i % 2 === 0) ? +(v * WIDTH_K).toFixed(3) : v); }   // Beta 1.181: scale an interpolate width curve by WIDTH_K (widths sit at even indices >= 4, the wPlus/wScale index rule)
 const surfW = scaleW(['interpolate', ['linear'], ['zoom'], 14, 2.5, 16, 7.63, 17, 15.25, 18, 30.5, 19, 61]);   // street-end width fix: z16-19 stops set so the DRAWN width holds the geographic 9.9 m on the app's true map scale (the old 6.5/9.5/15/24 drew only 8.4/6.2/4.9/3.9 m, so terminating ends — cut flush to the crossing paint's designed edge — hung gapped from the paint as drawn)
-const BANDW = scaleW(['interpolate', ['linear'], ['zoom'], 15, 5.54, 16, 11.1, 17, 22.2, 18, 44.4, 19, 88.8]);       // ~14.4 m of road width at 1.5x, tracking the geographic side offsets; street-end width fix: stops set so the DRAWN width holds 14.4 m on the app's true map scale (the old z15 stop drew only 7.8 m)
-const BANDCASE = scaleW(['interpolate', ['linear'], ['zoom'], 15, 8.04, 16, 14.1, 17, 26.2, 18, 49.3, 19, 94.8]);   // street-end width fix: BANDW + the same casing rim as before at every stop (z15 8.04 keeps the shipped 2.5 rim over the corrected BANDW z15)
+const surfCASE = scaleW(['interpolate', ['linear'], ['zoom'], 14, 4.5, 16, 10.13, 17, 18.25, 18, 33.99, 19, 65]);   // the surface's casing curve (the dark rim under the paint), factored out of the t1-casing layer at Beta 1.208: completed bands now draw at the surface's width, so their casing is THIS curve too, and tapTolPx reads the widest paint from it. BANDW/BANDCASE (the wider band curves, last set by the 1.206 street-end fix) are retired here - 1.208 supersedes them by Andrew's order.
 const wPlus = (curve, d) => curve.map((v, i) => (i >= 4 && i % 2 === 0) ? v + d * WIDTH_K : v);   // widen an interpolate width curve by d px at every stop (widths sit at even indices >= 4); Beta 1.181: the added px scale by WIDTH_K too, so the glow rim grows proportionally with the road
 const wScale = (curve, f) => curve.map((v, i) => (i >= 4 && i % 2 === 0) ? v * f : v);   // scale an interpolate width curve (same index rule as wPlus)
 // Round 29 (Andrew): ZOOM-TAPERED glow. Zoomed out, the glow kept
@@ -1570,9 +1757,10 @@ function addStack() {
     GLM.addSource('centres', { type: 'geojson', data: CUR.centres });
     GLM.addSource('bands', { type: 'geojson', data: CUR.bands });
     GLM.addSource('edges', { type: 'geojson', data: CUR.edges });
+    GLM.addSource('fills', { type: 'geojson', data: CUR.fills });
     GLM.addSource('sel', { type: 'geojson', data: CUR.sel });
     GLM.addSource('selBand', { type: 'geojson', data: CUR.selBand });
-    GLM.addSource('selEdges', { type: 'geojson', data: CUR.selEdges });
+    GLM.addSource('selFill', { type: 'geojson', data: CUR.selFill });
     GLM.addSource('selGlow', { type: 'geojson', data: buildSelGlow() });
     GLM.addSource('hit', { type: 'geojson', data: HIT });
     GLM.addSource('labelpts', { type: 'geojson', data: LABELPTS });
@@ -1587,11 +1775,11 @@ function addStack() {
   // under yellow at junctions. The green (completed) family is back
   // where it was before round 21 (Andrew: revert the green part) -
   // band casing and band render above the unfinished centre paint.
-  add(line('t1-casing', 'centres', { 'line-color': H.isNight() ? '#000000' : '#5a5f6a', 'line-width': scaleW(['interpolate', ['linear'], ['zoom'], 14, 4.5, 16, 10.13, 17, 18.25, 18, 33.99, 19, 65]), 'line-opacity': ['step', ['zoom'], 0, 12.6, 1], 'line-opacity-transition': { duration: 0, delay: 0 } }, { 'line-cap': 'butt' }));
-  add(line('t1-casingb', 'bands', { 'line-color': H.isNight() ? '#000000' : '#5a5f6a', 'line-width': BANDCASE, 'line-opacity': ['step', ['zoom'], 0, 12.6, 1], 'line-opacity-transition': { duration: 0, delay: 0 } }, { 'line-cap': 'butt' }));
+  add(line('t1-casing', 'centres', { 'line-color': H.isNight() ? '#000000' : '#5a5f6a', 'line-width': surfCASE, 'line-opacity': ['step', ['zoom'], 0, 12.6, 1], 'line-opacity-transition': { duration: 0, delay: 0 } }, { 'line-cap': 'butt' }));
+  add(line('t1-casingb', 'bands', { 'line-color': H.isNight() ? '#000000' : '#5a5f6a', 'line-width': surfCASE, 'line-opacity': ['step', ['zoom'], 0, 12.6, 1], 'line-opacity-transition': { duration: 0, delay: 0 } }, { 'line-cap': 'butt' }));
   add(line('t1-surface', 'centres', { 'line-color': ['get', 'col'], 'line-width': surfW, 'line-opacity': ['step', ['zoom'], 0, 12.6, 1], 'line-opacity-transition': { duration: 0, delay: 0 } }, { 'line-cap': 'butt' }));
-  add(line('t1-band', 'bands', { 'line-color': ['get', 'col'], 'line-width': BANDW, 'line-opacity': ['step', ['zoom'], 0, 12.6, 1], 'line-opacity-transition': { duration: 0, delay: 0 } }, { 'line-cap': 'butt' }));
-  add(line('t1-edge', 'edges', { 'line-color': ['get', 'col'], 'line-width': 3 * WIDTH_K, 'line-opacity': ['step', ['zoom'], 0, 12.6, 1], 'line-opacity-transition': { duration: 0, delay: 0 } }, { 'line-cap': 'butt' }));
+  add(line('t1-band', 'bands', { 'line-color': ['get', 'col'], 'line-width': surfW, 'line-opacity': ['step', ['zoom'], 0, 12.6, 1], 'line-opacity-transition': { duration: 0, delay: 0 } }, { 'line-cap': 'butt' }));   // Beta 1.208 (R1): the completed band draws at surfW - the same width as the not-done surface, per Andrew's order
+  add(line('t1-fill', 'fills', { 'line-color': ['get', 'col'], 'line-width': wScale(surfW, 0.5), 'line-opacity': ['step', ['zoom'], 0, 12.6, 1], 'line-opacity-transition': { duration: 0, delay: 0 } }, { 'line-cap': 'butt' }));   // Beta 1.208 (R2): a done side's green fills its half of the road (half-offset ribbon at half the surface's drawn width) - it replaces the t1-edge kerb line, whose fixed 4.5 px shrank to an outline at close zoom. The edges source itself is still built (its junction pipeline is untouched) but no longer drawn.
   // --- selection glow (round 16, restored onto the r15 paint at
   // Andrew's direction 2026-10-29): three nested widths in the
   // street's OWN colour under the vibrant redraw; managePulse
@@ -1605,22 +1793,22 @@ function addStack() {
   // joins wrap the corner in an arc so the blurred halo pools around
   // the bend instead. Base road paint keeps its settled joins/caps.
   add(line('sel-glow4-s', 'selGlow', { 'line-color': ['get', 'col'], 'line-width': wPlus(surfW, 30), 'line-opacity': 0.05, 'line-blur': 14 }, { 'line-cap': 'butt', 'line-join': 'round' }, ['==', ['get', 'band'], 0]));
-  add(line('sel-glow4-b', 'selGlow', { 'line-color': ['get', 'col'], 'line-width': wPlus(BANDW, 30), 'line-opacity': 0.05, 'line-blur': 14 }, { 'line-cap': 'butt', 'line-join': 'round' }, ['==', ['get', 'band'], 1]));
+  add(line('sel-glow4-b', 'selGlow', { 'line-color': ['get', 'col'], 'line-width': wPlus(surfW, 30), 'line-opacity': 0.05, 'line-blur': 14 }, { 'line-cap': 'butt', 'line-join': 'round' }, ['==', ['get', 'band'], 1]));
   add(line('sel-glow5-s', 'selGlow', { 'line-color': ['get', 'col'], 'line-width': wPlus(surfW, 23), 'line-opacity': 0.06, 'line-blur': 10 }, { 'line-cap': 'butt', 'line-join': 'round' }, ['==', ['get', 'band'], 0]));
-  add(line('sel-glow5-b', 'selGlow', { 'line-color': ['get', 'col'], 'line-width': wPlus(BANDW, 23), 'line-opacity': 0.06, 'line-blur': 10 }, { 'line-cap': 'butt', 'line-join': 'round' }, ['==', ['get', 'band'], 1]));
+  add(line('sel-glow5-b', 'selGlow', { 'line-color': ['get', 'col'], 'line-width': wPlus(surfW, 23), 'line-opacity': 0.06, 'line-blur': 10 }, { 'line-cap': 'butt', 'line-join': 'round' }, ['==', ['get', 'band'], 1]));
   add(line('sel-glow1-s', 'selGlow', { 'line-color': ['get', 'col'], 'line-width': wPlus(surfW, 17), 'line-opacity': 0.10 }, { 'line-cap': 'butt', 'line-join': 'round' }, ['==', ['get', 'band'], 0]));
-  add(line('sel-glow1-b', 'selGlow', { 'line-color': ['get', 'col'], 'line-width': wPlus(BANDW, 17), 'line-opacity': 0.10 }, { 'line-cap': 'butt', 'line-join': 'round' }, ['==', ['get', 'band'], 1]));
+  add(line('sel-glow1-b', 'selGlow', { 'line-color': ['get', 'col'], 'line-width': wPlus(surfW, 17), 'line-opacity': 0.10 }, { 'line-cap': 'butt', 'line-join': 'round' }, ['==', ['get', 'band'], 1]));
   add(line('sel-glow2-s', 'selGlow', { 'line-color': ['get', 'col'], 'line-width': wPlus(surfW, 9), 'line-opacity': 0.16 }, { 'line-cap': 'butt', 'line-join': 'round' }, ['==', ['get', 'band'], 0]));
-  add(line('sel-glow2-b', 'selGlow', { 'line-color': ['get', 'col'], 'line-width': wPlus(BANDW, 9), 'line-opacity': 0.16 }, { 'line-cap': 'butt', 'line-join': 'round' }, ['==', ['get', 'band'], 1]));
+  add(line('sel-glow2-b', 'selGlow', { 'line-color': ['get', 'col'], 'line-width': wPlus(surfW, 9), 'line-opacity': 0.16 }, { 'line-cap': 'butt', 'line-join': 'round' }, ['==', ['get', 'band'], 1]));
   add(line('sel-glow3-s', 'selGlow', { 'line-color': ['get', 'col'], 'line-width': wPlus(surfW, 4), 'line-opacity': 0.24 }, { 'line-cap': 'butt', 'line-join': 'round' }, ['==', ['get', 'band'], 0]));
-  add(line('sel-glow3-b', 'selGlow', { 'line-color': ['get', 'col'], 'line-width': wPlus(BANDW, 4), 'line-opacity': 0.24 }, { 'line-cap': 'butt', 'line-join': 'round' }, ['==', ['get', 'band'], 1]));
+  add(line('sel-glow3-b', 'selGlow', { 'line-color': ['get', 'col'], 'line-width': wPlus(surfW, 4), 'line-opacity': 0.24 }, { 'line-cap': 'butt', 'line-join': 'round' }, ['==', ['get', 'band'], 1]));
   // --- selection overlay: the base spec redrawn in the VIBRANT colour -
   // identical widths and glow, so the only difference is the colour pop ---
   add(line('t1-sel', 'sel', { 'line-color': ['get', 'col'], 'line-width': surfW, 'line-opacity': 1 }, { 'line-cap': 'butt', 'line-join': 'round' }));
-  add(line('t1-selband', 'selBand', { 'line-color': ['get', 'col'], 'line-width': BANDW, 'line-opacity': 1 }, { 'line-cap': 'butt', 'line-join': 'round' }));
+  add(line('t1-selband', 'selBand', { 'line-color': ['get', 'col'], 'line-width': surfW, 'line-opacity': 1 }, { 'line-cap': 'butt', 'line-join': 'round' }));
   add(line('sel-core-s', 'selGlow', { 'line-color': ['get', 'colHot'], 'line-width': wScale(surfW, 0.42), 'line-opacity': 0.85 }, { 'line-cap': 'butt', 'line-join': 'round' }, ['==', ['get', 'band'], 0]));
-  add(line('sel-core-b', 'selGlow', { 'line-color': ['get', 'colHot'], 'line-width': wScale(BANDW, 0.42), 'line-opacity': 0.85 }, { 'line-cap': 'butt', 'line-join': 'round' }, ['==', ['get', 'band'], 1]));
-  add(line('t1-sele', 'selEdges', { 'line-color': ['get', 'col'], 'line-width': 3 * WIDTH_K, 'line-opacity': 1 }, { 'line-cap': 'butt' }));
+  add(line('sel-core-b', 'selGlow', { 'line-color': ['get', 'colHot'], 'line-width': wScale(surfW, 0.42), 'line-opacity': 0.85 }, { 'line-cap': 'butt', 'line-join': 'round' }, ['==', ['get', 'band'], 1]));
+  add(line('t1-selfill', 'selFill', { 'line-color': ['get', 'col'], 'line-width': wScale(surfW, 0.5), 'line-opacity': 1 }, { 'line-cap': 'butt' }));   // Beta 1.208 (R3): the selection's vibrant side fill - same width as the board's t1-fill, geometry from the same builder
   // --- hit + labels (every treatment) ---
   add(line('hit', 'hit', { 'line-color': '#fff', 'line-width': 24 * WIDTH_K, 'line-opacity': 0 }));
   // Beta 1.40 (Andrew): our own line-following street names are RETIRED. Zoomed in, the
@@ -1644,11 +1832,23 @@ function addStack() {
   // basemap's own names fade IN on route streets across the same band (glHideLabels),
   // so the two systems crossfade and never print together. The 12.6 arrival stays a
   // near-pop (0.03 of a zoom), per his Beta 1.12 no-fading call for the far switch.
+  // Beta 1.208 (Andrew): the handover is RETIRED at his order - zoomed in, the
+  // basemap printed a route street's name 4-5 times down one screen (the clone
+  // layers repeat along the line at the renderer's 250 px default), and the
+  // spacing cure is not available in this renderer: measured in the real app,
+  // a 300 px repeat already loses Malden Street's label and a 400 px repeat
+  // loses every label in the test view (anchors earn their place per tile
+  // segment, and segments shorter than the repeat get none). So our titles -
+  // exactly one per street, at the street's own anchor - now stay up at EVERY
+  // zoom: no maxzoom, no fade-out stop, and the size ramp gains one high stop
+  // so the name stays readable at z19. glHideLabels no longer builds the
+  // basemap clones, and the originals keep excluding route names, so the
+  // basemap never prints a route street's name at any zoom.
   const PT_MIN = [13.7, 13.35, 13.0, 12.6];
   for (let t = 1; t <= 4; t++) {
     const id = 'streetnamespt' + t;
     if (!GLM.getLayer(id)) {
-      GLM.addLayer({ id, type: 'symbol', source: 'labelpts', minzoom: PT_MIN[t - 1], maxzoom: 16.4, filter: ['==', ['get', 'tier'], t], layout: { 'text-field': ['get', 'name'], 'text-font': fontStack, 'text-size': ['interpolate', ['linear'], ['zoom'], 14, 10, 14.6, 10.5, 16.2, 12], 'text-padding': 1, 'text-variable-anchor': ['center', 'top', 'bottom', 'left', 'right'], 'text-radial-offset': 0.8, 'symbol-sort-key': ['-', ['get', 'len']], 'text-allow-overlap': false }, paint: { 'text-color': H.isNight() ? '#e8e8e8' : '#333333', 'text-halo-color': H.isNight() ? 'rgba(0,0,0,.8)' : 'rgba(255,255,255,.9)', 'text-opacity': ['interpolate', ['linear'], ['zoom'], 12.59, 0, 12.62, 1, 15.4, 1, 16.4, 0], 'text-opacity-transition': { duration: 0, delay: 0 }, 'text-halo-width': 1.4 } });
+      GLM.addLayer({ id, type: 'symbol', source: 'labelpts', minzoom: PT_MIN[t - 1], filter: ['==', ['get', 'tier'], t], layout: { 'text-field': ['get', 'name'], 'text-font': fontStack, 'text-size': ['interpolate', ['linear'], ['zoom'], 14, 10, 14.6, 10.5, 16.2, 12, 19, 13.5], 'text-padding': 1, 'text-variable-anchor': ['center', 'top', 'bottom', 'left', 'right'], 'text-radial-offset': 0.8, 'symbol-sort-key': ['-', ['get', 'len']], 'text-allow-overlap': false }, paint: { 'text-color': H.isNight() ? '#e8e8e8' : '#333333', 'text-halo-color': H.isNight() ? 'rgba(0,0,0,.8)' : 'rgba(255,255,255,.9)', 'text-opacity': ['interpolate', ['linear'], ['zoom'], 12.59, 0, 12.62, 1, 15.4, 1], 'text-opacity-transition': { duration: 0, delay: 0 }, 'text-halo-width': 1.4 } });
     }
   }
   // Round 35/37 (Andrew): zoomed far out, the route cluster blurs
@@ -1664,7 +1864,7 @@ function addStack() {
   add({ id: 'routepoi-ring', type: 'circle', source: 'routepoi', maxzoom: 13.3, paint: { 'circle-radius': ['interpolate', ['linear'], ['zoom'], 10, 7, 13.5, 9], 'circle-color': '#ffffff', 'circle-opacity': ['step', ['zoom'], 1, 12.6, 0], 'circle-opacity-transition': { duration: 0, delay: 0 } } });
   add({ id: 'routepoi-dot', type: 'circle', source: 'routepoi', maxzoom: 13.3, paint: { 'circle-radius': ['interpolate', ['linear'], ['zoom'], 10, 4.5, 13.5, 6.5], 'circle-color': '#ef476f', 'circle-opacity': ['step', ['zoom'], 1, 12.6, 0], 'circle-opacity-transition': { duration: 0, delay: 0 } } });
   add({ id: 'routepoi-txt', type: 'symbol', source: 'routepoi', maxzoom: 13.3, layout: { 'text-field': (H.activeRoute && H.activeRoute.name) || 'Snow Route', 'text-font': fontStack, 'text-size': 11, 'text-anchor': 'left', 'text-offset': [1.1, 0], 'text-allow-overlap': false }, paint: { 'text-color': H.isNight() ? '#e8e8e8' : '#333333', 'text-halo-color': H.isNight() ? 'rgba(0,0,0,.8)' : 'rgba(255,255,255,.9)', 'text-opacity': ['step', ['zoom'], 1, 12.6, 0], 'text-opacity-transition': { duration: 0, delay: 0 }, 'text-halo-width': 1.6 } });
-  ['t1-casing', 't1-casingb', 't1-surface', 't1-band', 't1-edge', 't1-sel', 't1-selband', 't1-sele', 'sel-core-s', 'sel-core-b', 'hit'].concat([1, 2, 3, 4, 5].flatMap(i => ['sel-glow' + i + '-s', 'sel-glow' + i + '-b'])).forEach(id => { if (GLM.getLayer(id)) GLM.setLayerZoomRange(id, 12.5, 24); });
+  ['t1-casing', 't1-casingb', 't1-surface', 't1-band', 't1-fill', 't1-sel', 't1-selband', 't1-selfill', 'sel-core-s', 'sel-core-b', 'hit'].concat([1, 2, 3, 4, 5].flatMap(i => ['sel-glow' + i + '-s', 'sel-glow' + i + '-b'])).forEach(id => { if (GLM.getLayer(id)) GLM.setLayerZoomRange(id, 12.5, 24); });
   H.glHideLabels(GLM);
   pushSources();
   applyGlow();
@@ -1715,7 +1915,7 @@ function applyGlow() {
       if (!GLM.getLayer(id)) return;
       GLM.setLayoutProperty(id, 'visibility', L ? 'visible' : 'none');
       if (!L) return;
-      const curve = sfx === '-b' ? BANDW : surfW;
+      const curve = surfW;   // Beta 1.208: bands draw at the surface's width, so the '-b' glow variants follow surfW too
       GLM.setPaintProperty(id, 'line-width', L.p !== undefined ? glowW(curve, L.p) : wScale(curve, L.s));
       GLM.setPaintProperty(id, 'line-blur', L.b ? glowB(L.b) : 0);
       if (L.c) GLM.setPaintProperty(id, 'line-color', ['get', L.c]);
@@ -1752,7 +1952,7 @@ function managePulse() {
     sel = H.selStretch ? { name: H.selStretch.name, idx: H.selStretch.idx } : null;
     const sig = stateSig();
     if (!CUR || sig !== lastSig) { rebuildData(); lastSig = sig; }
-    else { const SC = buildSelC(); CUR.sel = SC.sel; CUR.selBand = SC.selBand; CUR.selEdges = buildSel('e'); }
+    else { const SC = buildSelC(); CUR.sel = SC.sel; CUR.selBand = SC.selBand; CUR.selFill = buildSelFill(); }
     addStack();           // re-adds sources+layers on the fresh GL map and pushes CUR
   }
   function rebuildRoute() { // Beta 1.117: the app switched routes and rebuilt its own geometry (buildGeometry, app1) - rebuild the engine's from the host's current data and re-point every route-shaped source at it. The basemap and layers are untouched; only data moves.
@@ -1784,7 +1984,7 @@ function managePulse() {
     sel = H.selStretch ? { name: H.selStretch.name, idx: H.selStretch.idx } : null;
     if (!GLM || !CUR) return;
     const SC = buildSelC();
-    CUR.sel = SC.sel; CUR.selBand = SC.selBand; CUR.selEdges = buildSel('e');
+    CUR.sel = SC.sel; CUR.selBand = SC.selBand; CUR.selFill = buildSelFill();
     pushSelSources();
   }
   function active() { return !!GLM; }
@@ -1802,7 +2002,7 @@ function managePulse() {
     for (let i = 3; i + 1 < curve.length; i += 2) { if (z <= curve[i]) { if (!prev) return curve[i + 1]; return prev[1] + (curve[i + 1] - prev[1]) * ((z - prev[0]) / (curve[i] - prev[0])); } prev = [curve[i], curve[i + 1]]; }
     return prev[1];
   }
-  function tapTolPx(z) { return Math.max(24, evalCurvePx(BANDCASE, z) / 2 + 2); } // Beta 1.206 (Codex P2 on the width fix): the map-tap tolerance follows the WIDEST paint (band + casing) at the tap's zoom, floored at 24 px — the Beta 1.181 rule ("a tap anywhere on the paint still selects instead of deselecting") kept by construction now that the width fix widened the paint past the old fixed 24 px at z18-19; at z17 and below the paint is narrower than the floor and the tolerance is the shipped 24 unchanged
+  function tapTolPx(z) { return Math.max(24, evalCurvePx(surfCASE, z) / 2 + 2); } // The map-tap tolerance follows the WIDEST paint at the tap's zoom, floored at 24 px — the Beta 1.181 rule ("a tap anywhere on the paint still selects instead of deselecting"). Beta 1.206 introduced this formula against BANDCASE, then the widest paint; Beta 1.208 retires the wide band, so the widest paint is now the surface casing (surfCASE): 24 px at z17 and below (the floor - shipped behaviour unchanged), ~27.5 px at z18, ~50.8 px at z19.
   return { init, drop, sync, syncSel, syncTheme, active, setFont, rebuildRoute, tapTolPx };
 })();
 window.GLP = GLP;

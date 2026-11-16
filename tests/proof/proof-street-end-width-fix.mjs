@@ -45,6 +45,17 @@ import { readFileSync } from 'node:fs';
 // checks 4-5 and 7 pass there — they pin the rims and the z14 stop
 // against drift in either direction. With the fix all checks pass.
 //
+// SUPERSESSION (Beta 1.208, green-half-road round, Andrew's ruling:
+// "make the green match the others"): the completed band no longer
+// draws wider than the surface — BANDW and BANDCASE are retired, the
+// band layers use surfW, both casings share the one surfCASE curve,
+// band end trims use SURF_HALF, and tapTolPx follows surfCASE. The
+// 1.206-era checks 3, 5, 6 and 8 are replaced below by the new spec's
+// pins (3S, 5S, 6S, 8S); checks 1, 2, 4 and 7 are unchanged — the
+// street-end property itself (surface half-width meets the 4.95 m
+// flush cut) is untouched by the supersession, and band ends now cut
+// at that same 4.95 m edge, which check 3S pins.
+//
 // Run from the repo root:  node tests/proof/proof-street-end-width-fix.mjs
 
 const src = readFileSync('parts/engine.js', 'utf8');
@@ -87,9 +98,10 @@ function widthAt(pairs, z) {
 }
 
 const surfW = curveStops('const surfW = ');
-const bandW = curveStops('const BANDW = ');
-const bandCase = curveStops('const BANDCASE = ');
-const casing = curveStops("'t1-casing', 'centres'");
+// Beta 1.208: the two casings share the surfCASE const; on the 1.206
+// tree it does not exist and the dependent checks fail by name.
+let casing = null;
+try { casing = curveStops('const surfCASE = '); } catch (e) { casing = null; }
 
 // Web-Mercator metres per pixel at latitude 43.81 (Route 5W), 512px tiles.
 const M_PER_PX = z => (40075016.686 * Math.cos(43.81 * Math.PI / 180)) / (512 * Math.pow(2, z));
@@ -106,61 +118,76 @@ for (const z of [17, 18, 19]) {
   const half = drawnM(surfW, z) / 2;
   ok(`surface half-width at z${z} meets the 4.95 m end cut`, half >= 4.95 - 0.05, half.toFixed(2) + ' m');
 }
-// Check 3: drawn band holds 14.4 m at z15-19; half meets the 7.2 m cut.
-for (const z of [15, 16, 17, 18, 19]) {
-  const d = drawnM(bandW, z);
-  ok(`BANDW drawn width at z${z} ~= 14.4 m`, Math.abs(d - 14.4) <= 0.45, d.toFixed(2) + ' m');
-}
+// Check 3S (supersedes 1.206 check 3): the wider band is retired —
+// the band layers draw with surfW itself, so the drawn band equals
+// the drawn surface at every zoom by construction, and band ends are
+// trimmed at SURF_HALF like surface ends.
+ok('3S: BANDW and BANDCASE declarations are gone', !src.includes('const BANDW') && !src.includes('const BANDCASE'));
+ok('3S: t1-band and t1-selband draw with surfW',
+  /'t1-band'[^;]*surfW/.test(src) && /'t1-selband'[^;]*surfW/.test(src));
+ok('3S: band end trims use SURF_HALF (clipStrandEnds(bands, SURF_HALF, ...) — 1.208R3: the call gained the gate-round-3 skip guard for ends whose green continues as a fill; the trim half is unchanged)',
+  src.includes('clipStrandEnds(bands, SURF_HALF, null, (sl, atStart)') && !/BAND_HALF\s*[,);]/.test(src));
 for (const z of [17, 18, 19]) {
-  const half = drawnM(bandW, z) / 2;
-  ok(`band half-width at z${z} meets the 7.2 m end cut`, half >= 7.2 - 0.07, half.toFixed(2) + ' m');
+  const half = drawnM(surfW, z) / 2;
+  ok(`3S: band (== surface) half-width at z${z} meets its 4.95 m end cut`, half >= 4.95 - 0.05, half.toFixed(2) + ' m');
 }
 // Check 4: t1-casing rim over surfW equals the shipped rim at every stop
 // (shipped spec rims 2.0/2.5/3.0/3.5/4.0 at z14/16/17/18/19, x WIDTH_K px).
 const SHIP_CASING_RIM = { 14: 2.0, 16: 2.5, 17: 3.0, 18: 3.5, 19: 4.0 };
 for (const [z, rim] of Object.entries(SHIP_CASING_RIM)) {
-  const got = widthAt(casing, +z) - widthAt(surfW, +z);
-  ok(`t1-casing rim at z${z} == shipped`, Math.abs(got - rim * WIDTH_K) <= 0.3, got.toFixed(2) + ' px vs ' + (rim * WIDTH_K).toFixed(2));
+  const got = casing ? widthAt(casing, +z) - widthAt(surfW, +z) : NaN;
+  ok(`t1-casing rim at z${z} == shipped`, Math.abs(got - rim * WIDTH_K) <= 0.3, isNaN(got) ? 'surfCASE missing' : got.toFixed(2) + ' px vs ' + (rim * WIDTH_K).toFixed(2));
 }
-// Check 5: BANDCASE rim over BANDW equals the shipped rim at every stop
-// (shipped spec rims 2.5/3/4/5/6 at z15/16/17/18/19, x WIDTH_K px).
-const SHIP_BANDCASE_RIM = { 15: 2.5, 16: 3.0, 17: 4.0, 18: 5.0, 19: 6.0 };
-for (const [z, rim] of Object.entries(SHIP_BANDCASE_RIM)) {
-  const got = widthAt(bandCase, +z) - widthAt(bandW, +z);
-  ok(`BANDCASE rim at z${z} == shipped`, Math.abs(got - rim * WIDTH_K) <= 0.3, got.toFixed(2) + ' px vs ' + (rim * WIDTH_K).toFixed(2));
-}
-// Check 6: the ruled BANDCASE z15 stop — raw stop value is 8.04, i.e.
-// the z15 rim is exactly the shipped 2.5 spec over the corrected BANDW.
-const z15 = bandCase.find(([z]) => z === 15);
-ok('BANDCASE z15 stop is the ruled 8.04', !!z15 && Math.abs(z15[1] - 8.04) < 1e-9, z15 ? String(z15[1]) : 'missing');
+// Check 5S (supersedes 1.206 check 5): the band's casing is the
+// surface's casing — t1-casingb references the same surfCASE const
+// as t1-casing, so the rim check 4 pins both layers at once.
+ok('5S: t1-casing and t1-casingb both draw with surfCASE',
+  /'t1-casing', 'centres'[^;]*surfCASE/.test(src) && /'t1-casingb', 'bands'[^;]*surfCASE/.test(src));
+// Check 6S (supersedes 1.206 check 6): the surfCASE stops are exactly
+// the shipped surface-casing stops — the supersession shares the
+// curve, it does not retune it.
+const SHIP_SURFCASE = { 14: 4.5, 16: 10.13, 17: 18.25, 18: 33.99, 19: 65 };
+ok('6S: surfCASE stops == the shipped casing stops',
+  !!casing && Object.entries(SHIP_SURFCASE).every(([z, w]) => { const p = casing.find(([zz]) => zz === +z); return p && Math.abs(p[1] - w) < 1e-9; }),
+  casing ? JSON.stringify(casing) : 'surfCASE missing');
 // Check 7: surfW z14 stop untouched (2.5 raw = 3.75 px assembled).
 const s14 = widthAt(surfW, 14);
 ok('surfW z14 stop unchanged (3.75 px)', Math.abs(s14 - 3.75) < 1e-9, s14.toFixed(3) + ' px');
 
-// Check 8 (Codex P2 on PR #81, fixed in-round): the map-tap tolerance
-// must follow the widest paint. The click handler's rule since Beta
-// 1.181 is "a tap anywhere on the paint still selects instead of
-// deselecting", implemented as a fixed 24 px — which the widened paint
-// outgrows at z18-19 (band + casing half-width 37 / 71 px). The engine
-// now owns the tolerance: GLP.tapTolPx(z) = max(24, BANDCASE(z)/2 + 2),
-// and the handler reads it. Pin the formula's presence and its numeric
-// coverage from the parsed curve: at every zoom the tolerance covers
-// the widest paint's half-width with margin, and at z17 and below it
-// is exactly the shipped 24 (the paint there is narrower than the
-// floor, so low-zoom tap behaviour is unchanged).
+// Check 8S (was check 8, Codex P2 on PR #81, re-based by the Beta
+// 1.208 supersession): the map-tap tolerance must follow the widest
+// paint. The click handler's rule since Beta 1.181 is "a tap anywhere
+// on the paint still selects instead of deselecting"; the engine owns
+// the tolerance as GLP.tapTolPx(z) = max(24, WIDEST(z)/2 + 2) and the
+// handler reads it. Under 1.206 the widest paint was the band casing
+// (BANDCASE, half-width 37 / 71 px at z18/19, tolerance 39 / 73.1);
+// since 1.208 the widest paint is the surface casing, so the formula
+// reads surfCASE (tolerance 27.49 / 50.75). Pin the formula's
+// presence and its numeric coverage from the parsed curve: at every
+// zoom the tolerance covers the widest paint's half-width with
+// margin, and at z17 and below it is exactly the shipped 24 (the
+// paint there is narrower than the floor, so low-zoom tap behaviour
+// is unchanged).
 const eng = src;
 const fnM = eng.match(/function tapTolPx\(z\) \{[^}]*\}/);
-ok('engine defines tapTolPx from BANDCASE with the 24 px floor',
-  !!fnM && fnM[0].includes('Math.max(24') && fnM[0].includes('BANDCASE') && /\/ 2 \+ 2/.test(fnM[0]),
+ok('8S: engine defines tapTolPx from surfCASE with the 24 px floor (supersedes the BANDCASE form)',
+  !!fnM && fnM[0].includes('Math.max(24') && fnM[0].includes('surfCASE') && /\/ 2 \+ 2/.test(fnM[0]),
   fnM ? fnM[0].slice(0, 80) + '...' : 'missing');
 ok('GLP exposes tapTolPx', /return \{[^}]*tapTolPx/.test(eng), '');
 const app2 = readFileSync('parts/app2.js', 'utf8');
 ok('click handler reads GLP.tapTolPx', app2.includes('GLP.tapTolPx(map.getZoom())'), '');
 for (const z of [14, 15, 16, 17, 18, 19]) {
-  const widestHalf = widthAt(bandCase, z) / 2; // px, assembled scale
+  const widestHalf = casing ? widthAt(casing, z) / 2 : NaN; // px, assembled scale — the surface casing is now the widest paint
   const tol = Math.max(24, widestHalf + 2);
-  ok(`tap tolerance at z${z} covers the widest paint`, tol >= widestHalf + 2 - 1e-9 && (z > 17 || tol === 24),
-    'tol ' + tol.toFixed(1) + ' px vs paint half ' + widestHalf.toFixed(1) + ' px');
+  ok(`tap tolerance at z${z} covers the widest paint`, !isNaN(widestHalf) && tol >= widestHalf + 2 - 1e-9 && (z > 17 || tol === 24),
+    isNaN(widestHalf) ? 'surfCASE missing' : 'tol ' + tol.toFixed(1) + ' px vs paint half ' + widestHalf.toFixed(1) + ' px');
+}
+// The live values the formula yields on the shipped curves (measured
+// in the running app, green-half-road QA): 27.49 px at z18, 50.75 at
+// z19 — down from 38.98 / 73.1 under the retired band casing.
+if (casing) {
+  ok('8S: tap tolerance at z18 == 27.49 px (live value)', Math.abs(Math.max(24, widthAt(casing, 18) / 2 + 2) - 27.49) <= 0.1, (widthAt(casing, 18) / 2 + 2).toFixed(2));
+  ok('8S: tap tolerance at z19 == 50.75 px (live value)', Math.abs(Math.max(24, widthAt(casing, 19) / 2 + 2) - 50.75) <= 0.1, (widthAt(casing, 19) / 2 + 2).toFixed(2));
 }
 
 console.log(failures === 0 ? 'ALL CHECKS PASS' : failures + ' CHECK(S) FAILED');
