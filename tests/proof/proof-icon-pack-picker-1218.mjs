@@ -28,6 +28,13 @@ import { createHash } from 'node:crypto';
 //
 // Run from the repo root:  node tests/proof/proof-icon-pack-picker-1218.mjs
 
+// Beta 1.219 re-derivation (TEST/design class): the picker is THREE packs -
+// §H (the Puffy byte-pins) retires with the pack and is replaced by a short
+// absence section; §G's streets/sun pins are the new artwork (the highway
+// fill; the summer fill); §E follows iconPackId (two ids) and the restore
+// write (a carried 'puffy' maps to 'pulsar'); §F lists three rows; §V rolls
+// to Beta 1.219. The extras themselves are pinned by
+// tests/proof/proof-icon-extras-1219.mjs.
 let pass = 0, fail = 0;
 function check(name, cond, detail) {
   if (cond) { pass++; console.log('  PASS ' + name); }
@@ -109,12 +116,12 @@ check('D: order is view, night-view, recording, night-recording (green wins when
 // ================= E - persistence: the stored global and its backup ride =================
 console.log('E - snowroute.v2.iconpack: LS_GLOBAL global, strict export, recovery ride, validated restore, rollback scope');
 check('E: the global key exists beside night', app1.includes("iconpack: 'snowroute.v2.iconpack'"));
-check('E: the default is pulsar (anything unstored or unknown reads as pulsar)', app4.includes("function iconPackId() { const v = lsGet(LS.iconpack); return v === 'original' || v === 'glyph' || v === 'puffy' ? v : 'pulsar'; }"));
+check('E: the default is pulsar (anything unstored or unknown reads as pulsar; Beta 1.219: a stored puffy too)', app4.includes("function iconPackId() { const v = lsGet(LS.iconpack); return v === 'original' || v === 'glyph' ? v : 'pulsar'; }"));
 check('E: the strict export reads it with the B04 refusal', app4.includes('const iconpack = rawRead(LS_GLOBAL.iconpack); if (iconpack === RAW_READ_FAILED) return null;'));
 check('E: the strict export writes it at top level', app4.includes('if (iconpack != null) o.iconpack = iconpack;'));
 check('E: the recovery export carries it best-effort', app4.includes('{ const ip = rawRead(LS_GLOBAL.iconpack); if (ip !== RAW_READ_FAILED && ip != null) o.iconpack = ip; }'));
-check('E: the v2 restore validates to the two pack ids', app4.includes("if (parsed.iconpack !== 'pulsar' && parsed.iconpack !== 'original' && parsed.iconpack !== 'glyph' && parsed.iconpack !== 'puffy')"));
-check('E: the v2 restore writes it inside the verified set', app4.includes("pushField(LS_GLOBAL.iconpack, 'iconpack', parsed.iconpack, 'icon pack')"));
+check('E: the v2 restore validates the pack ids (puffy stays readable - it maps to pulsar on the write)', app4.includes("if (parsed.iconpack !== 'pulsar' && parsed.iconpack !== 'original' && parsed.iconpack !== 'glyph' && parsed.iconpack !== 'puffy')"));
+check('E: the v2 restore writes it inside the verified set (a carried puffy as pulsar)', app4.includes("pushField(LS_GLOBAL.iconpack, 'iconpack', parsed.iconpack === 'puffy' ? 'pulsar' : parsed.iconpack, 'icon pack')"));
 check('E: the v1 restore carries it too', app4.includes("parsed.data['snowroute.v2.iconpack'] !== undefined"));
 check('E: the key joins the rollback scope', app4.includes('SCOPE.push(LS_GLOBAL.night, LS_GLOBAL.nightExp, LS_GLOBAL.iconpack, SETTINGS_KEY);'));
 check('E: the switch stores through lsSet and refuses honestly on failure', app4.includes("if (!lsSet(LS.iconpack, id)) { toast('That choice could not be saved"));
@@ -124,11 +131,11 @@ console.log('F - the testing-only section: markup in the On-the-job pane, the tw
 check('F: the section label stands in setJobPane', head.includes('<div class="m-secLbl">ICON PACK &middot; TESTING ONLY</div>'));
 check('F: the card host stands in setJobPane', head.includes('<div class="m-card pkCard" id="pkCard"></div>'));
 check('F: the note stands under the card', head.includes("Tap a pack to preview it. 'Use this pack' switches the whole app right away"));
-check('F: the pack list carries both packs with their approved subs',
+check('F: the pack list carries the three packs with their approved subs (Beta 1.219: Puffy retired)',
   app4.includes("{ id: 'pulsar', name: 'Pulsar Color', sub: 'The new set \\u2014 Icons8, recoloured to our blue' }") &&
   app4.includes("{ id: 'original', name: 'Original', sub: 'Pack D \\u2014 the set the app shipped with' }") &&
   app4.includes("{ id: 'glyph', name: 'Glyph Neue', sub: 'Solid glyphs \\u2014 black by day, white by night' }") &&
-  app4.includes("{ id: 'puffy', name: 'Puffy Filled', sub: 'Soft, rounded glyphs \\u2014 black by day, white by night' }"));
+  !app4.includes("{ id: 'puffy'"));
 check('F: the CURRENT pill renders on the active pack', app4.includes("'<span class=\"pkCur\">CURRENT</span>'"));
 check('F: the strip is built from the pack assets (chips, dock, tab bar)', app4.includes('function pkStrip(pack)') && app4.includes('pkChipMoon') && app4.includes('pkDockRow') && app4.includes('pkTabs'));
 check('F: the strip shows Locate in its recording face', app4.includes("k === 'gps' ? ST.rd : MAP[k].d") && app4.includes('pkGpsRec'));
@@ -145,10 +152,10 @@ const GLYPH = {
   home: ['d9f918f9b18021b2f56a44bc8c632295380c68e0eb62d28bb2dc07358fcb86a7', 'c4618304795b42a5bf61f2d72ed6a6765f2b231a9fcdc0a6a35dcb248dd6cd0b'],
   clear: ['1c63b7212b5cfa95e7fa4a38431ab9e9176fba7556c5508260bc8e148f4afbcf', 'df3f3d536a4b641e0413f58d7101a73a00326573d41e3498a828c62b797ec136'],
   gear: ['8489699db6e106ef23e74ae42dabfe5f5f8da0dab39355270815865cb83c6295', '353952ee4852cee2e813c6287e5461ef6b4c3c7525bf70f74d86e659eb0c0b24'],
-  streets: ['6503f88f79337bf284735947eb0ae86d4bb00309ac7991f253a6c0891a3ef72c', 'ea85825be0b9c79e9cceea255d7e6d7cc6e2e8b546e4ef01bd0b06293937849a'],
+  streets: ['7efa94714891e191f88b95da0b6857783a5617da5d4d5fe0dd83f7c92c618241', 'c4819f8a13c65b325b67b63ff8e77974ec002c5c3d2ba4c78d0cf6ed8c2f83c9'], // Beta 1.219: the HIGHWAY fill (the basic road moved to the Pace stat set, pinned in the extras proof)
   pace: ['06fa1cfe973ba7e8a8321680087544a0e788bf9bba86b08babc7da98f71a542c', 'd79850b5fa99a761694b9cb97419b9264729928d00dc6e0915c8004eabdfdb41'],
   moon: ['944117bf510c4895224a60b38efbd2dda4900d5eda6c6d241ddddc13705543f2', 'c5ceae492607b62fcd8ec3647158d5b88525f0a19d3477439e2e2e52baef8881'],
-  sun: ['0891e30362924a09e3de57beb54d4b2e1aac6b9be6a1d77f8ad8ab30e1edda27', '7b91ca56493f95951b2c19e026a4751d4701fb47a7c4a27f378ad25eada2d307'],
+  sun: ['f7df7b2cd24fb708a163b72b03f19b1dfb9607c4e6f68e5e8a79d869301667a1', '2bb193f75b3e5f67df6231783fa304ab05177618c58023016b0bf525f4b3a86d'], // Beta 1.219: the SUMMER fill (Andrew: the plain sun read as a settings cog)
   centre: ['1a227addaa5cfa886b1718a080372524c8c73f9170a1416b3bea773fdd87e85f', 'd49e3e30e60e529b0d85d456ea22438f9d02f96bc49a1d88d55e4bdfb6a3a169'],
 };
 const gBlock = (app4.match(/const GLYPH_ICONS = \{([\s\S]*?)\n\};/) || [])[1] || '';
@@ -169,43 +176,18 @@ for (const [k, h] of Object.entries(GSTATES)) {
 check('G: day and night glyph artwork DIFFER (black by day, white by night - the opposite of the pulsar rule)',
   Object.values(GLYPH).every(([d, n]) => d !== n));
 
-// ================= H - the Puffy Filled pack is complete and byte-exact =================
-console.log('H - PUFFY_ICONS carries all ten soft fills (sha256), day TRUE BLACK / night white, plus the four state fills');
-const PUFFY = {
-  gps: ['25521ba293b12e7ff0179bcf30fb9379f64b8990ad5543b919adba234bfaf168', '9df887bd4eef906b2eeb7d8c6bb0e42382fd2f251f7194c6ec36d13593adf635'],
-  routes: ['032c5bac935419813e3c0f77b2fec0fb4f087b4e379c1b4dc8a393508bd7496e', '1afbbed39f4a71530ca0025f16b4096ab2bc62c5bd41b373c138cc850026001b'],
-  home: ['ed2e674b0ccba27a85645215f1dffae1bcebc51f9ec6251504d600f0267a197f', 'f74df26a58a307b412d2d0629da1f3ba270f91a46195d1e6377b468a6239d6aa'],
-  clear: ['3b8175ea6c1b36e2846ca7626e096da1689252a96b8565dd5e60b84d5c08a545', 'e899480ca845113085212e39eb8f1dd84e2fc8b311eb3c3858a30ff99f01e112'],
-  gear: ['c2c901bca6c5a240e07aa0dd0766dcce1711e677f3153db98f31cd6d4e8c7e1f', '95a498c11c4bb4d8c8a64e1aba68efae93f3ed6e4a55865158a9874cebaa4df4'],
-  streets: ['89cdae5e03359cc0914dde9f2d8347830a3d1cdb4be140d3193b2379c2e57f30', '827195b7700b742645b7451189aa7526fd6aee06067f75f0055a5d6922d35336'],
-  pace: ['5a5560f7fac6296827bef2bb9bfcc7653cf3af0be6748cd468e66dff3e711cc2', '5e3ec33aa0bd4f3d2d186b1b54edadfe2dfb86510a5f07c72969f6f51035315c'],
-  moon: ['2f38acfc863c9ae4103edbdd18aca349938ae15019757c0e57525647ae2f164b', '88fb196eeffcaa1e850c08981d8d9a65b59c4b2c10c6328e6a3c47d2baeeceea'],
-  sun: ['7363da661f15c27702e033ffc0bbc4a2fb1b858fa55c132ffa1f44cb3a35c9ab', '59213f3f672f6692eba1e35b7cd76228d40b2695efd8f1f7dd0b44d5cb7f7a14'],
-  centre: ['11546346ddf1e87c634f97c32d84522122df3aa4f3158530a7df80ed4774fa5b', '784dd7a2d987e72c834377563c5c6b83b7bd6ab96ba23e9edc7637f8696c7240'],
-};
-const hBlock = (app4.match(/const PUFFY_ICONS = \{([\s\S]*?)\n\};/) || [])[1] || '';
-check('H: the puffy map exists', hBlock.length > 0);
-for (const [k, [dh, nh]] of Object.entries(PUFFY)) {
-  const line = (hBlock.match(new RegExp('^  ' + k + ": \\{ d: '([^']+)', n: '([^']+)' \\},?", 'm')) || []);
-  check(`H: ${k} day fill is the generated artwork byte-for-byte`, line[1] ? uriHash(line[1]) === dh : false, line[1] ? uriHash(line[1]) : 'missing');
-  check(`H: ${k} night fill is the generated artwork byte-for-byte`, line[2] ? uriHash(line[2]) === nh : false, line[2] ? uriHash(line[2]) : 'missing');
-}
-check('H: no eleventh key in the puffy map', (hBlock.match(/^  \w+: \{ d:/gm) || []).length === 10);
-const hm = app4.match(/const PUFFY_GPS_STATES = \{ vd: '([^']+)', vn: '([^']+)', rd: '([^']+)', rn: '([^']+)' \};/);
-check('H: the puffy states map exists with all four faces', !!hm);
-const HSTATES = { vd: '67bc7f247c2784ceb4a2d0becf22a54a4b580251d137e6a3677aaa322b775f76', vn: 'bf6f941f1b33187e1e2950dfdce091d552b3593979d619ae73c4af79efcd8d24', rd: '681ae8b2471d30fd322906499360ccfcc18c4bb99b2b86e319fd2bb26faa546e', rn: '681ae8b2471d30fd322906499360ccfcc18c4bb99b2b86e319fd2bb26faa546e' };
-for (const [k, h] of Object.entries(HSTATES)) {
-  const i = ['vd', 'vn', 'rd', 'rn'].indexOf(k) + 1;
-  check(`H: puffy ${k} is the generated state fill byte-for-byte`, !!hm && uriHash(hm[i]) === h, hm ? uriHash(hm[i]) : 'missing');
-}
-check('H: day and night puffy artwork DIFFER (true black by day, white by night)',
-  Object.values(PUFFY).every(([d, n]) => d !== n));
+// ================= H - the Puffy Filled pack is RETIRED (Beta 1.219) =================
+console.log('H - Puffy Filled stood here through Beta 1.218; Andrew retired it in 1.219 - its maps, states and picker row are gone whole');
+check('H: no PUFFY_ICONS map remains', !app4.includes('PUFFY_ICONS'));
+check('H: no PUFFY_GPS_STATES map remains', !app4.includes('PUFFY_GPS_STATES'));
+check('H: no puffy picker row remains', !app4.includes("{ id: 'puffy'"));
+check('H: no pack branch routes to a puffy map', !app4.includes('PUFFY'));
 
 // ================= V - version agreement =================
-console.log('V - Beta 1.218 agrees everywhere');
-check('V: the #ver label reads Beta 1.218', head.includes('<div class="ver" id="ver">Beta 1.218</div>'));
-check('V: WHATSNEW is the Beta 1.218 entry', app4.includes("v: 'Beta 1.218', items:"));
-check('V: the CHANGELOG top entry is Beta 1.218', changelog.split('\n').find(l => l.startsWith('## Beta')) === '## Beta 1.218 — 2026-11-16');
+console.log('V - Beta 1.219 agrees everywhere');
+check('V: the #ver label reads Beta 1.219', head.includes('<div class="ver" id="ver">Beta 1.219</div>'));
+check('V: WHATSNEW is the Beta 1.219 entry', app4.includes("v: 'Beta 1.219', items:"));
+check('V: the CHANGELOG top entry is Beta 1.219', changelog.split('\n').find(l => l.startsWith('## Beta')) === '## Beta 1.219 — 2026-11-16');
 
 console.log(pass + ' pass, ' + fail + ' fail');
 process.exit(fail === 0 ? 0 : 1);

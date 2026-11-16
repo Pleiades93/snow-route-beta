@@ -150,7 +150,7 @@ const uriHash = entry => { const m = entry.match(/src="data:image\/png;base64,([
 check('I: both entries are Pulsar img spans in their wrappers (Streets dock, Settings tab)',
   streets.startsWith('<span class="pwrapD"><img class="pico" data-k="streets"') && gear.startsWith('<span class="pwrapT"><img class="pico" data-k="gear"'));
 check('I: Streets wears the approved Pulsar road artwork (decoded day URI sha256)',
-  uriHash(streets) === '2d9d8e22ee3b3414eeb3b30e8eb539bb2f5766010611d7a79a50588910bfabe6', uriHash(streets));
+  uriHash(streets) === '39e5ee880ca5404d44c76b9bdafb7919e860d444f279f7cbb8bf6739bbe4e4b3', uriHash(streets));
 check('I: Settings wears the approved Pulsar settings artwork (decoded day URI sha256)',
   uriHash(gear) === '1a2b541bfd1bd1600af0f93fdd4dc25b7ef3106aeb7851f83ddc8150e72576e3', uriHash(gear));
 

@@ -31,7 +31,7 @@ function groupProgress(wantPrimary) { // Beta 1.184: Progress-by-group sums - a 
   return { sum, cnt };
 }
 function fmtCnt(v) { return v % 1 ? v.toFixed(1) : String(v); }
-const PACE_ICONS = { // Beta 1.184: the approved design line glyphs for the stat cells, stroke currentColor, coloured by the .ic rule
+const PACE_ICONS = { // Beta 1.184: the approved design line glyphs for the stat cells, stroke currentColor, coloured by the .ic rule. Beta 1.219: this table is the ORIGINAL pack's stat set - renderIcons (app4) re-mints these entries from the active pack and restores these vectors for Original (PACE_ORIGINALS)
   clock: '<svg width="26" height="26" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="8.5"/><path d="M12 7.5V12l3 2"/></svg>',
   road: '<svg width="26" height="26" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M6.5 20 10.5 4"/><path d="M17.5 20 13.5 4"/><path d="M12 7v1.7M12 11.2v1.7M12 15.4v1.7"/></svg>',
   flag: '<svg width="26" height="26" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M6 21V4.5"/><path d="M6 5h10.5l-2.3 3.2 2.3 3.3H6"/></svg>',
@@ -40,7 +40,7 @@ const PACE_ICONS = { // Beta 1.184: the approved design line glyphs for the stat
   gauge: '<svg width="26" height="26" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M4.5 16.5a8 8 0 1 1 15 0"/><path d="M12 15l4.2-4.6"/><circle cx="12" cy="15" r="1.3" fill="currentColor" stroke="none"/></svg>',
   trail: '<svg width="26" height="26" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M7.8 17.2c3.5-.8 2.8-4.3 5.4-5.4 1.9-.8 2.6-2 2.9-4"/><circle cx="6" cy="18" r="2.1"/><circle cx="18" cy="6" r="2.1"/></svg>'
 };
-function statCell(ic, v, l) { return '<div class="cell"><span class="ic">' + PACE_ICONS[ic] + '</span><div class="v">' + v + '</div><div class="l">' + l + '</div></div>'; }
+function statCell(ic, v, l) { return '<div class="cell"><span class="ic" data-ic="' + ic + '">' + PACE_ICONS[ic] + '</span><div class="v">' + v + '</div><div class="l">' + l + '</div></div>'; } // Beta 1.219: data-ic lets renderIcons re-stamp a rendered cell in place on a pack switch
 function groupBar(name, g) {
   const pct = g.cnt ? (g.sum / g.cnt * 100) : 0;
   return '<div class="gbar"><div class="gb-top"><span class="gb-n">' + name + '</span><span class="gb-c">' + fmtCnt(g.sum) + ' of ' + g.cnt + ' streets</span></div><div class="gb-track"><div class="gb-fill" style="width:' + pct + '%"></div><div class="gb-half"></div></div></div>';

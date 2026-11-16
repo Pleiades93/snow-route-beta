@@ -47,7 +47,7 @@ const ART = {
   home:    ['T', '5dbc633403087af7aaaef1bcd428070569042033bd3d074fac0d8d271f81b38f', '5dbc633403087af7aaaef1bcd428070569042033bd3d074fac0d8d271f81b38f'],
   clear:   ['T', '9750cf0af897b9d0d45d18536847230125e6a49cc686199ec38533a6ec5e9b9e', '9750cf0af897b9d0d45d18536847230125e6a49cc686199ec38533a6ec5e9b9e'],
   gear:    ['T', '1a2b541bfd1bd1600af0f93fdd4dc25b7ef3106aeb7851f83ddc8150e72576e3', '1a2b541bfd1bd1600af0f93fdd4dc25b7ef3106aeb7851f83ddc8150e72576e3'],
-  streets: ['D', '2d9d8e22ee3b3414eeb3b30e8eb539bb2f5766010611d7a79a50588910bfabe6', '2d9d8e22ee3b3414eeb3b30e8eb539bb2f5766010611d7a79a50588910bfabe6'],
+  streets: ['D', '39e5ee880ca5404d44c76b9bdafb7919e860d444f279f7cbb8bf6739bbe4e4b3', '39e5ee880ca5404d44c76b9bdafb7919e860d444f279f7cbb8bf6739bbe4e4b3'],
   pace:    ['D', '57b0a8b5a6dadc0b97e830841268f4aba86ee8cadff2dfb0106a82b16dbb23b8', '57b0a8b5a6dadc0b97e830841268f4aba86ee8cadff2dfb0106a82b16dbb23b8'],
   moon:    ['D', 'a368922747aa99c65cbcbe52a913473f2ee249c012bf8006dde582e4cf78e74b', 'a368922747aa99c65cbcbe52a913473f2ee249c012bf8006dde582e4cf78e74b'],
   sun:     ['D', 'ba1d748297a5a7ec4c03a8b695bbbecd39c54a3d0028ac3a86b16d79357348dd', 'ba1d748297a5a7ec4c03a8b695bbbecd39c54a3d0028ac3a86b16d79357348dd'],
@@ -126,10 +126,10 @@ console.log('F - the About pane credits Icons8');
 check('F: the Icons8 line stands in the About pane', head.includes('<div class="m-credits">Icons by <a href="https://icons8.com">Icons8</a></div>'));
 
 // ================= V - version agreement =================
-console.log('V - Beta 1.218 agrees everywhere');
-check('V: the #ver label reads Beta 1.218', head.includes('<div class="ver" id="ver">Beta 1.218</div>'));
-check('V: WHATSNEW is the Beta 1.218 entry', app4.includes("v: 'Beta 1.218', items:"));
-check('V: the CHANGELOG top entry is Beta 1.218', changelog.split('\n').find(l => l.startsWith('## Beta')) === '## Beta 1.218 — 2026-11-16');
+console.log('V - Beta 1.219 agrees everywhere');
+check('V: the #ver label reads Beta 1.219', head.includes('<div class="ver" id="ver">Beta 1.219</div>'));
+check('V: WHATSNEW is the Beta 1.219 entry', app4.includes("v: 'Beta 1.219', items:"));
+check('V: the CHANGELOG top entry is Beta 1.219', changelog.split('\n').find(l => l.startsWith('## Beta')) === '## Beta 1.219 — 2026-11-16');
 
 console.log(pass + ' pass, ' + fail + ' fail');
 process.exit(fail === 0 ? 0 : 1);
