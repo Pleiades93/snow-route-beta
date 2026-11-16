@@ -132,7 +132,7 @@ ok('S7 day mode: chrome is light glass with dark icons (GPS-app behaviour) | ' +
 await tapById(ev, 'nightBtn');
 await sleep(600);
 ok('S7 day mode: the day/night button offers Night - the moon shows where it takes you, not where you are (Beta 1.28)', S6.moonIcon === true);
-const S7 = JSON.parse(await ev(`(() => JSON.stringify({ night: document.body.classList.contains('night'), sunIcon: (() => { const t = document.createElement('span'); t.innerHTML = ICONS.sun; return $('nightBtn').innerHTML === t.innerHTML; })(),
+const S7 = JSON.parse(await ev(`(() => JSON.stringify({ night: document.body.classList.contains('night'), sunIcon: (() => { const t = document.createElement('span'); t.innerHTML = ICONS.sun; const im = t.querySelector('img.pico'); if (im) im.src = PULSAR_ICONS.sun.n; return $('nightBtn').innerHTML === t.innerHTML; })(), // Beta 1.217 (Codex P2 on PR #94, REAL): the button wears the sun glyph in its NIGHT artwork - refreshPulsarIcons re-points the img inside applyNight - so the expected markup is themed the same way before the serialized compare; the sun-identity assertion itself is unchanged
   listCol: getComputedStyle($('streetsBtn')).color, tabCol: getComputedStyle($('homeBtn')).color,
   barBg: getComputedStyle($('tabBar')).backgroundColor, countCol: getComputedStyle($('count')).color }))()`));
 ok('S7 night mode: chrome flips to dark glass with bright icons | ' + JSON.stringify(S7),
