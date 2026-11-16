@@ -1,0 +1,171 @@
+<svg xmlns="http://www.w3.org/2000/svg" xmlns:inkscape="http://www.inkscape.org/namespaces/inkscape" viewBox="0 0 1254 1254" width="1254" height="1254" version="1.1">
+
+<defs>
+ <radialGradient id="bg" cx="46%" cy="34%" r="81%" fx="48%" fy="35%">
+  <stop offset="0" stop-color="#2549d0"/><stop offset=".36" stop-color="#1b2fb6"/><stop offset=".78" stop-color="#122a9e"/><stop offset="1" stop-color="#0d238a"/>
+ </radialGradient>
+ <linearGradient id="whiteClay" x1="0" y1="0" x2=".11" y2="1" gradientUnits="objectBoundingBox">
+  <stop offset="0" stop-color="#ffffff"/><stop offset=".22" stop-color="#fffefe"/><stop offset=".63" stop-color="#f3f5ff"/><stop offset=".86" stop-color="#e5ebfb"/><stop offset="1" stop-color="#a7b9e0"/>
+ </linearGradient>
+ <linearGradient id="whiteTop" x1="0" y1="0" x2="0" y2="1">
+  <stop offset="0" stop-color="#ffffff"/><stop offset=".58" stop-color="#f9faff"/><stop offset="1" stop-color="#cad6f2"/>
+ </linearGradient>
+ <linearGradient id="lightsWhite" x1="0" y1="0" x2="0" y2="1">
+  <stop offset="0" stop-color="#ffffff"/><stop offset=".5" stop-color="#f9faff"/><stop offset=".86" stop-color="#e7eafb"/><stop offset="1" stop-color="#b1c3e6"/>
+ </linearGradient>
+ <linearGradient id="windowBlue" x1=".2" y1="0" x2=".76" y2="1">
+  <stop offset="0" stop-color="#058cfa"/><stop offset=".34" stop-color="#0878e9"/><stop offset=".73" stop-color="#0755cc"/><stop offset="1" stop-color="#092d94"/>
+ </linearGradient>
+ <linearGradient id="windReflection" x1="0" y1="0" x2="1" y2="1">
+  <stop offset="0" stop-color="#71d7ff" stop-opacity=".84"/><stop offset="1" stop-color="#3d65ef" stop-opacity=".66"/>
+ </linearGradient>
+ <linearGradient id="vent" x1="0" y1="0" x2="0" y2="1">
+  <stop offset="0" stop-color="#071a66"/><stop offset=".48" stop-color="#0b3baf"/><stop offset="1" stop-color="#123fc9"/>
+ </linearGradient>
+ <linearGradient id="bladeBlue" x1=".13" y1="0" x2=".89" y2="1">
+  <stop offset="0" stop-color="#086dff"/><stop offset=".25" stop-color="#0c88ff"/><stop offset=".59" stop-color="#196df7"/><stop offset="1" stop-color="#1b2fb6"/>
+ </linearGradient>
+ <linearGradient id="bladeRim" x1="0" y1="0" x2="0" y2="1">
+  <stop offset="0" stop-color="#ffffff"/><stop offset=".45" stop-color="#f9faff"/><stop offset=".77" stop-color="#e2e9fb"/><stop offset="1" stop-color="#94aedb"/>
+ </linearGradient>
+ <linearGradient id="snowBack" x1="0" y1="0" x2=".3" y2="1">
+  <stop offset="0" stop-color="#ffffff"/><stop offset=".43" stop-color="#f9fbff"/><stop offset=".78" stop-color="#d9e7fe"/><stop offset="1" stop-color="#a9caff"/>
+ </linearGradient>
+ <linearGradient id="snowMid" x1="0" y1="0" x2="0" y2="1">
+  <stop offset="0" stop-color="#fff"/><stop offset=".42" stop-color="#f4f9ff"/><stop offset=".78" stop-color="#bedbff"/><stop offset="1" stop-color="#6ea8f7"/>
+ </linearGradient>
+ <linearGradient id="snowFront" x1="0" y1="0" x2=".18" y2="1">
+  <stop offset="0" stop-color="#f7fbff"/><stop offset=".34" stop-color="#d1e5ff"/><stop offset=".77" stop-color="#7eb6ff"/><stop offset="1" stop-color="#3974e4"/>
+ </linearGradient>
+ <linearGradient id="edgeLite" x1="0" y1="0" x2="0" y2="1">
+  <stop offset="0" stop-color="#ffffff" stop-opacity=".87"/><stop offset=".45" stop-color="#ffffff" stop-opacity=".12"/><stop offset="1" stop-color="#7fbcff" stop-opacity=".31"/>
+ </linearGradient>
+ <filter id="softDrop" x="-20%" y="-30%" width="140%" height="155%" color-interpolation-filters="sRGB">
+   <feGaussianBlur in="SourceAlpha" stdDeviation="9" result="blur"/>
+   <feOffset in="blur" dx="0" dy="8" result="offset"/>
+   <feFlood flood-color="#00125e" flood-opacity=".38" result="tone"/>
+   <feComposite in="tone" in2="offset" operator="in" result="shadow"/>
+   <feMerge><feMergeNode in="shadow"/><feMergeNode in="SourceGraphic"/></feMerge>
+ </filter>
+ <filter id="fineDrop" x="-28%" y="-30%" width="156%" height="165%" color-interpolation-filters="sRGB">
+   <feGaussianBlur in="SourceAlpha" stdDeviation="4" result="blur"/>
+   <feOffset in="blur" dx="0" dy="4" result="offset"/>
+   <feFlood flood-color="#00155c" flood-opacity=".38" result="tone"/>
+   <feComposite in="tone" in2="offset" operator="in" result="shadow"/>
+   <feMerge><feMergeNode in="shadow"/><feMergeNode in="SourceGraphic"/></feMerge>
+ </filter>
+ <clipPath id="bubbleClip"><rect x="0" y="0" width="1254" height="1254" rx="299"/></clipPath>
+ <clipPath id="windClip"><path d="M 434,344 C 414,344 399,359 393,383 L 374,477 C 369,503 381,516 409,516 H 842 C 868,516 877,501 870,476 L 854,385 C 849,358 834,344 810,344 Z"/></clipPath>
+</defs>
+
+<g id="layer-background" inkscape:groupmode="layer" inkscape:label="Background">
+
+<rect id="base-blue" x="0" y="0" width="1254" height="1254" fill="url(#bg)"/>
+
+</g>
+<g id="layer-mirrors-and-lights" inkscape:groupmode="layer" inkscape:label="Mirrors And Lights">
+
+<!-- Independent arms, mirrors and hazard lights -->
+<path id="mirror-arm-left" d="M 304 520 L 343 587" fill="none" stroke="#287bf2" stroke-width="25" stroke-linecap="round"/>
+<path id="mirror-arm-right" d="M 951 520 L 911 587" fill="none" stroke="#287bf2" stroke-width="25" stroke-linecap="round"/>
+<rect id="mirror-left" x="219" y="389" width="95" height="154" rx="34" fill="url(#lightsWhite)" filter="url(#fineDrop)"/>
+<rect id="mirror-right" x="940" y="389" width="95" height="154" rx="34" fill="url(#lightsWhite)" filter="url(#fineDrop)"/>
+<g id="beacon-lamps" fill="url(#lightsWhite)" filter="url(#fineDrop)">
+ <rect x="444" y="208" width="102" height="69" rx="30"/>
+ <rect x="575" y="208" width="102" height="69" rx="30"/>
+ <rect x="706" y="208" width="102" height="69" rx="30"/>
+</g>
+
+</g>
+<g id="layer-truck-body" inkscape:groupmode="layer" inkscape:label="Truck Body">
+
+<!-- Connected cab and curved hood; authored Bezier geometry, not image tracing -->
+<path id="truck-chassis" fill="url(#whiteClay)" filter="url(#softDrop)" d="M 419 283
+  C 371 283 343 318 331 367 L 312 558
+  C 269 570 251 605 249 640 L 249 721 H 1005 V 638
+  C 1003 602 985 570 943 558 L 923 366
+  C 911 318 885 283 838 283 Z"/>
+<path id="rounded-hood" fill="url(#whiteTop)" d="M 321 558
+   C 275 566 251 601 250 646 L 250 720 H 1004 V 645
+   C 1003 602 983 567 937 558
+   C 927 543 918 534 908 529 H 348 C 336 535 324 548 321 558 Z"/>
+<path id="truck-rim-highlight" fill="none" stroke="#fff" stroke-opacity=".63" stroke-width="8" stroke-linecap="round" d="M 343 558 L 357 370 C 364 339 382 312 423 309 L 838 309 C 877 311 897 333 905 370 L 920 555"/>
+
+</g>
+<g id="layer-windshield" inkscape:groupmode="layer" inkscape:label="Windshield">
+
+<!-- Inset window: dark recessed rim, blue glass, independent vector reflection polygons -->
+<path id="wind-recess" d="M 428 337 C 405 337 391 351 384 380 L 364 476 C 357 510 377 531 407 531 H 846 C 876 531 891 512 883 474 L 865 382 C 856 352 842 337 811 337 Z" fill="#c4d2f2" opacity=".88"/>
+<path id="glass" d="M 434 344 C 414 344 399 359 393 383 L 374 477 C 369 503 381 516 409 516 H 842 C 868 516 877 501 870 476 L 854 385 C 849 358 834 344 810 344 Z" fill="url(#windowBlue)"/>
+<g id="glass-reflections" clip-path="url(#windClip)" opacity=".85">
+ <path id="reflect-1" d="M 486 352 H 551 L 440 505 H 376 Z" fill="url(#windReflection)"/>
+ <path id="reflect-2" d="M 588 352 H 651 L 539 505 H 476 Z" fill="url(#windReflection)" opacity=".79"/>
+</g>
+<path id="top-glass-glint" d="M 424 348 H 809" fill="none" stroke="#9ce7ff" stroke-width="4" stroke-opacity=".25" stroke-linecap="round"/>
+
+</g>
+<g id="layer-grille-and-headlights" inkscape:groupmode="layer" inkscape:label="Grille And Headlights">
+
+<g id="facial-details" filter="url(#fineDrop)">
+ <rect id="top-intake" x="438" y="575" width="372" height="44" rx="22" fill="url(#vent)"/>
+ <rect id="lower-intake" x="455" y="644" width="338" height="43" rx="21" fill="url(#vent)"/>
+ <path id="lamp-left" d="M 314 625 H 373 C 389 625 399 638 402 654 L 411 683 H 291 V 655 C 291 637 297 625 314 625 Z" fill="url(#vent)"/>
+ <path id="lamp-right" d="M 880 625 H 938 C 956 625 962 638 962 656 V 683 H 840 L 850 655 C 855 637 864 625 880 625 Z" fill="url(#vent)"/>
+</g>
+<path id="grille-small-glint" d="M 463 578 H 785" stroke="#79bbff" stroke-width="3" stroke-linecap="round" opacity=".25"/>
+
+</g>
+<g id="layer-plow-blade" inkscape:groupmode="layer" inkscape:label="Plow Blade">
+
+<!-- plow constructed as two independent smooth Bezier paths -->
+<path id="blade-body" fill="url(#bladeRim)" filter="url(#softDrop)" d="M 188 714
+  C 155 714 145 739 153 764 C 159 786 175 801 183 825
+  C 200 886 179 984 143 1083
+  C 358 1143 897 1149 1113 1080
+  C 1079 974 1055 878 1073 826 C 1081 801 1095 783 1102 760
+  C 1110 736 1096 714 1065 714 Z"/>
+<path id="blade-blue-front" fill="url(#bladeBlue)" d="M 210 767 H 1048
+  C 1059 767 1060 777 1056 788
+  C 1035 836 1033 895 1046 953
+  C 1059 1023 1078 1056 1089 1080
+  C 872 1124 362 1120 165 1080
+  C 182 1031 197 977 203 911
+  C 210 861 201 827 192 790 C 188 775 194 767 210 767 Z"/>
+<path id="blade-top-bevel" d="M 213 747 H 1044" fill="none" stroke="#fff" stroke-width="21" stroke-linecap="round" opacity=".96"/>
+<path id="blade-soft-gloss" d="M 214 778 H 1042" fill="none" stroke="#99d8ff" stroke-width="9" stroke-linecap="round" stroke-opacity=".32"/>
+
+</g>
+<g id="layer-snow-back" inkscape:groupmode="layer" inkscape:label="Snow Back">
+
+<path id="rear-snow" fill="url(#snowBack)" filter="url(#fineDrop)" d="M 31 1127
+  C 91 1044 198 993 289 1017
+  C 322 1025 345 1036 369 1045
+  C 441 970 535 946 622 995
+  C 718 907 832 876 923 931
+  C 976 962 1004 993 1037 1028
+  C 1129 1004 1205 1070 1254 1163 V 1254 H 0 V 1178 Z"/>
+
+</g>
+<g id="layer-snow-middle" inkscape:groupmode="layer" inkscape:label="Snow Middle">
+
+<path id="middle-snow" fill="url(#snowMid)" d="M 0 1185
+  C 88 1093 167 1062 249 1066
+  C 313 1068 352 1095 385 1107
+  C 447 1060 518 1038 585 1058
+  C 623 1067 644 1093 673 1095
+  C 768 1039 834 1006 906 1011
+  C 1041 1014 1151 1081 1254 1188 V 1254 H 0 Z"/>
+
+</g>
+<g id="layer-snow-front" inkscape:groupmode="layer" inkscape:label="Snow Front">
+
+<path id="front-snow" fill="url(#snowFront)" d="M 0 1248
+  C 143 1201 229 1148 346 1129
+  C 440 1114 486 1124 561 1142
+  C 628 1161 635 1160 682 1132
+  C 781 1073 877 1047 963 1057
+  C 1087 1063 1170 1121 1254 1178 V 1254 H 0 Z"/>
+<path id="front-snow-highlight" d="M 118 1230 C 254 1163 345 1135 440 1130 C 554 1128 592 1184 673 1150 C 779 1090 884 1059 954 1064" fill="none" stroke="#effaff" stroke-opacity=".48" stroke-width="7" stroke-linecap="round"/>
+
+</g>
+</svg>

@@ -421,23 +421,34 @@ const { proc, ev, consoleLog, sleep, shot } = await launchDrive();
 // beside the box - the tile build painted opaque navy there.
 // CENTRE/HOLD1/SEQ/S8 stand unmodified and pass on the new
 // box: the choreography is untouched.
-// Beta 1.213 (Andrew, 2026-11-16 - the clay icon swap): the
-// splash artwork file is replaced by the clay pack's
-// transparent artwork, SQUARE at 512x512 where the 1.191
-// asset was 512x423, so the box the icon wears at the same
-// 168px width is now 168x168. ICONSIZE and NOTILE1 re-pin
-// to the square asset (TEST class - re-derived from the new
-// asset's own measurements at the same strength: ICONSIZE
-// still demands the rendered box wear the asset's aspect
-// within 2px and never change size in the hold; NOTILE1
-// still demands the natural size and transparent corners,
-// all measured 0 on the new asset before the pin moved);
-// NOTILE2's code is unchanged - it samples 12%/12% of the
-// box wherever the box is - and its name text now cites the
-// square asset's transparent point (61,61), measured alpha
-// 0. CENTRE/HOLD1/SEQ/S8/CUT stand unmodified: the brand
-// layer centres the taller box exactly as it centred the
-// shorter one, and the choreography is untouched again.
+// Beta 1.213 (Andrew, 2026-11-16 - the icon swap; he
+// replaced the source pack mid-round and the professional
+// pack is what ships): the splash artwork file is the
+// pack's transparent foreground rendering, SQUARE at
+// 512x512 where the 1.191 asset was 512x423, so the box
+// the icon wears at the same 168px width is now 168x168.
+// ICONSIZE and NOTILE1 re-pin to the square asset (TEST
+// class - re-derived from the new asset's own measurements
+// at the same strength: ICONSIZE still demands the
+// rendered box wear the asset's aspect within 2px and
+// never change size in the hold; NOTILE1 still demands
+// the natural size and a transparent probe at every point
+// the artwork leaves clear - the probe set moves to this
+// artwork's clear points, measured alpha 0 before the pin
+// moved: both top corners, top-mid, left-mid, right-mid.
+// This artwork's snow band runs opaque across the full
+// bottom edge BY DESIGN (bottom row opaque x0..511,
+// corners 255), so the old bottom-corner clauses
+// (soft edge <128) cannot describe it; the bottom corners
+// are instead pinned AS artwork (255) - the asset's shape
+// is asserted, not assumed, and a tiled asset still fails
+// all five clear probes); NOTILE2's code is unchanged -
+// it samples 12%/12% of the box wherever the box is - and
+// its name text now cites the square asset's transparent
+// point (61,61), measured alpha 0. CENTRE/HOLD1/SEQ/S8/
+// CUT stand unmodified: the brand layer centres the
+// taller box exactly as it centred the shorter one, and
+// the choreography is untouched again.
 const R = { checks: [] };
 const ok = (name, cond) => R.checks.push([name, cond === true]);
 
@@ -551,7 +562,7 @@ if (notileBox) {
 }
 let notileFacts = null;
 try {
-  notileFacts = await ev(`(() => { const ic = document.getElementById('splashIcon'); if (!ic) return ''; const cs = getComputedStyle(ic); let alphas = null; try { const cv = document.createElement('canvas'); cv.width = ic.naturalWidth; cv.height = ic.naturalHeight; const c2 = cv.getContext('2d'); c2.drawImage(ic, 0, 0); const d = c2.getImageData(0, 0, cv.width, cv.height).data; const A = (x, y) => d[(y * cv.width + x) * 4 + 3]; alphas = { tl: A(0, 0), tr: A(cv.width - 1, 0), bl: A(0, cv.height - 1), br: A(cv.width - 1, cv.height - 1), lm: A(0, Math.floor(cv.height / 2)) }; } catch (e) { alphas = null; } return JSON.stringify({ rad: cs.borderTopLeftRadius, sh: cs.boxShadow, nw: ic.naturalWidth, nh: ic.naturalHeight, alphas }); })()`).then(x => typeof x === 'string' && x ? JSON.parse(x) : null);
+  notileFacts = await ev(`(() => { const ic = document.getElementById('splashIcon'); if (!ic) return ''; const cs = getComputedStyle(ic); let alphas = null; try { const cv = document.createElement('canvas'); cv.width = ic.naturalWidth; cv.height = ic.naturalHeight; const c2 = cv.getContext('2d'); c2.drawImage(ic, 0, 0); const d = c2.getImageData(0, 0, cv.width, cv.height).data; const A = (x, y) => d[(y * cv.width + x) * 4 + 3]; alphas = { tl: A(0, 0), tr: A(cv.width - 1, 0), bl: A(0, cv.height - 1), br: A(cv.width - 1, cv.height - 1), lm: A(0, Math.floor(cv.height / 2)), tm: A(Math.floor(cv.width / 2), 0), rm: A(cv.width - 1, Math.floor(cv.height / 2)) }; } catch (e) { alphas = null; } return JSON.stringify({ rad: cs.borderTopLeftRadius, sh: cs.boxShadow, nw: ic.naturalWidth, nh: ic.naturalHeight, alphas }); })()`).then(x => typeof x === 'string' && x ? JSON.parse(x) : null);
 } catch (e) { notileFacts = null; }
 
 let trace = [], fromBox = null, toBox = null;
@@ -589,7 +600,7 @@ const fadeI = post.filter(sv => sv.iop > 0.01 && sv.iop < 0.99).length;
 ok('CUT2 NO FADE (Beta 1.178): no post-flip sample shows the icon at partial opacity - icon fade frames: ' + fadeI + ' (an opacity fade-out in place of the cut would pass through such frames on its way down; the display cut passes through none)',
   post.length > 0 && fadeI === 0);
 const sizeDev = (hold && pre.length) ? Math.max(...pre.map(sv => Math.max(Math.abs(sv.h - hold.h), Math.abs(sv.w - hold.w)))) : 999;
-ok('ICONSIZE the artwork NEVER changes size during the splash and wears the ARTWORK box (re-pinned for the artwork-only splash - measured basis: the shipped splash asset splash-artwork-512.png is 512x512px (Beta 1.213: the clay pack\'s transparent artwork, square - the 1.191 asset was 512x423, aspect 423/512, height 138.8px at this width), so at the tile-era 168px display width its height is 168 x 512/512 = 168px; the 168x168 square was the TILE box in the tile era - the tile is still gone, the artwork itself is square now): box ' + (hold ? hold.w : -1) + 'x' + (hold ? hold.h : -1) + 'px at the hold, worst deviation ' + sizeDev.toFixed(1) + 'px across ' + pre.length + ' hold samples',
+ok('ICONSIZE the artwork NEVER changes size during the splash and wears the ARTWORK box (re-pinned for the artwork-only splash - measured basis: the shipped splash asset splash-artwork-512.png is 512x512px (Beta 1.213: the professional pack\'s transparent foreground, square - the 1.191 asset was 512x423, aspect 423/512, height 138.8px at this width), so at the tile-era 168px display width its height is 168 x 512/512 = 168px; the 168x168 square was the TILE box in the tile era - the tile is still gone, the artwork itself is square now): box ' + (hold ? hold.w : -1) + 'x' + (hold ? hold.h : -1) + 'px at the hold, worst deviation ' + sizeDev.toFixed(1) + 'px across ' + pre.length + ' hold samples',
   !!hold && sizeDev <= 2 && Math.abs(hold.w - 168) <= 2 && Math.abs(hold.h - 168) <= 2);
 ok('S7 the menu buttons arrive: at settle the main pane is fully opaque with the Choose button at full height | ' + JSON.stringify({ paneOp: lastS ? lastS.paneOp : 'none', btnH: lastS ? lastS.btnH : -1 }),
   !!lastS && lastS.paneOp === '1' && lastS.btnH > 30);
@@ -606,8 +617,8 @@ ok('SEQ2 the icon is FULLY IN after its 1.25s fade and before the flip (Beta 1.1
 const holdIn = trace.filter(s => s.t >= 2300 && flipT2 > 0 && s.t < flipT2 && s.iop >= 0.99 && Math.abs(s.cx - s.vw / 2) <= 2 && Math.abs(s.cy - s.vh / 2) <= 2);
 ok('HOLD1 the icon is fully in AND still dead centre through the hold before the flip (Beta 1.180: replaces SEQ3, whose subject - the settled title slide - no longer exists): ' + holdIn.length + ' trace samples in [2300ms, flip) with icon effective opacity >= .99 and rendered centre within 2px of the viewport centre' + (holdIn.length ? ' (first at ' + holdIn[0].t + 'ms)' : ''),
   holdIn.length >= 1);
-ok('NOTILE1 NO TILE DRESSING (artwork-only splash): on the live #splashIcon the computed border radius is ' + (notileFacts ? notileFacts.rad : 'n/a') + ' and box-shadow ' + (notileFacts ? notileFacts.sh : 'n/a') + ' (the tile-era 38px radius and 0 18px 50px shadow are gone), the inlined image natural size is ' + (notileFacts ? notileFacts.nw : 'n/a') + 'x' + (notileFacts ? notileFacts.nh : 'n/a') + 'px (the 512x512 artwork asset), and the asset pixels themselves carry NO blue square: alpha at the top corners ' + (notileFacts && notileFacts.alphas ? notileFacts.alphas.tl + '/' + notileFacts.alphas.tr : 'n/a') + ' and the left edge midpoint ' + (notileFacts && notileFacts.alphas ? notileFacts.alphas.lm : 'n/a') + ' (all zero - fully transparent), bottom corners ' + (notileFacts && notileFacts.alphas ? notileFacts.alphas.bl + '/' + notileFacts.alphas.br : 'n/a') + ' (the snow swell soft edge, under 128; the tile-era opaque navy read 255 at all four corners)',
-  !!notileFacts && notileFacts.rad === '0px' && notileFacts.sh === 'none' && notileFacts.nw === 512 && notileFacts.nh === 512 && !!notileFacts.alphas && notileFacts.alphas.tl === 0 && notileFacts.alphas.tr === 0 && notileFacts.alphas.lm === 0 && notileFacts.alphas.bl < 128 && notileFacts.alphas.br < 128);
+ok('NOTILE1 NO TILE DRESSING (artwork-only splash): on the live #splashIcon the computed border radius is ' + (notileFacts ? notileFacts.rad : 'n/a') + ' and box-shadow ' + (notileFacts ? notileFacts.sh : 'n/a') + ' (the tile-era 38px radius and 0 18px 50px shadow are gone), the inlined image natural size is ' + (notileFacts ? notileFacts.nw : 'n/a') + 'x' + (notileFacts ? notileFacts.nh : 'n/a') + 'px (the 512x512 artwork asset), and the asset pixels themselves carry NO blue square: alpha at every point this artwork leaves clear - top corners ' + (notileFacts && notileFacts.alphas ? notileFacts.alphas.tl + '/' + notileFacts.alphas.tr : 'n/a') + ', top-mid ' + (notileFacts && notileFacts.alphas ? notileFacts.alphas.tm : 'n/a') + ', left-mid ' + (notileFacts && notileFacts.alphas ? notileFacts.alphas.lm : 'n/a') + ', right-mid ' + (notileFacts && notileFacts.alphas ? notileFacts.alphas.rm : 'n/a') + ' (all zero - fully transparent; a tile would paint every one opaque) - while the bottom corners read ' + (notileFacts && notileFacts.alphas ? notileFacts.alphas.bl + '/' + notileFacts.alphas.br : 'n/a') + ' because this artwork\'s snow band runs opaque across the full bottom edge by design (Beta 1.213 re-pin, TEST class: the 1.191 asset\'s soft snow-swell edge read <128 there; the professional pack\'s band is the artwork itself, pinned at 255 so the asset\'s shape is asserted, not assumed)',
+  !!notileFacts && notileFacts.rad === '0px' && notileFacts.sh === 'none' && notileFacts.nw === 512 && notileFacts.nh === 512 && !!notileFacts.alphas && notileFacts.alphas.tl === 0 && notileFacts.alphas.tr === 0 && notileFacts.alphas.lm === 0 && notileFacts.alphas.tm === 0 && notileFacts.alphas.rm === 0 && notileFacts.alphas.bl === 255 && notileFacts.alphas.br === 255);
 let notileDiff = -1, notileIn = null, notileRef = null;
 if (notileShot && notileBox && trace.length) {
   const dsf = notileShot.w / (trace[0].vw || 420);
