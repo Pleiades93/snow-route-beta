@@ -140,6 +140,7 @@ check('W: none of the old run strings remain in UI literals',
 
 // ================= I - the two tab icons =================
 // Beta 1.217 re-derivation: the 1.211 vector pins retired WITH the artwork —
+// Beta 1.218 re-derivation (TEST/design class): the two artwork hashes below are the GRADIENT set (Andrew's scope update, 2026-11-16 — white lines over the START-button gradient), superseding the flat set pinned at 1.217.
 // Streets and Settings are Pulsar imgs now; the checks pin the new entries at
 // the same strength (the picked artwork's identity, byte-for-byte).
 console.log('I - Streets and Settings icons are Andrew\'s picks (Pulsar artwork since Beta 1.217)');
@@ -149,9 +150,9 @@ const uriHash = entry => { const m = entry.match(/src="data:image\/png;base64,([
 check('I: both entries are Pulsar img spans in their wrappers (Streets dock, Settings tab)',
   streets.startsWith('<span class="pwrapD"><img class="pico" data-k="streets"') && gear.startsWith('<span class="pwrapT"><img class="pico" data-k="gear"'));
 check('I: Streets wears the approved Pulsar road artwork (decoded day URI sha256)',
-  uriHash(streets) === 'be1ca4dcbc2fc41dbd67066975098b51c5a6b7d2850a0fed3838616828895210', uriHash(streets));
+  uriHash(streets) === '2d9d8e22ee3b3414eeb3b30e8eb539bb2f5766010611d7a79a50588910bfabe6', uriHash(streets));
 check('I: Settings wears the approved Pulsar settings artwork (decoded day URI sha256)',
-  uriHash(gear) === 'ef2df0082b705ab8ecf0ade6e6986eb46f07a326b73daf3ae6e96be3ae2ee1c1', uriHash(gear));
+  uriHash(gear) === '1a2b541bfd1bd1600af0f93fdd4dc25b7ef3106aeb7851f83ddc8150e72576e3', uriHash(gear));
 
 console.log(pass + ' pass, ' + fail + ' fail');
 process.exit(fail === 0 ? 0 : 1);
