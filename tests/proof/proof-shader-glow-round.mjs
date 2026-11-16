@@ -1,4 +1,5 @@
 import { readFileSync } from 'node:fs';
+import { createHash } from 'node:crypto';
 import vm from 'node:vm';
 
 // Shader glow round proof (fix_id: shader-glow-round, Beta 1.211,
@@ -138,22 +139,19 @@ check('W: none of the old run strings remain in UI literals',
   !app4.includes("toast('Resumed run") && !app4.includes('marks made during the run'));
 
 // ================= I - the two tab icons =================
-console.log('I - Streets and Settings icons are Andrew\'s picks, single paths');
-const iconEntry = key => { const m = app4.match(new RegExp(key + ": '(<svg[^']*)'")); return m ? m[1] : ''; };
+// Beta 1.217 re-derivation: the 1.211 vector pins retired WITH the artwork —
+// Streets and Settings are Pulsar imgs now; the checks pin the new entries at
+// the same strength (the picked artwork's identity, byte-for-byte).
+console.log('I - Streets and Settings icons are Andrew\'s picks (Pulsar artwork since Beta 1.217)');
+const iconEntry = key => { const m = app4.match(new RegExp(key + ": '(<span[^']*)'")); return m ? m[1] : ''; };
 const streets = iconEntry('streets'), gear = iconEntry('gear');
-check('I: both entries present in the pack frame', streets.startsWith('<svg viewBox="0 0 24 24" fill="currentColor"') && gear.startsWith('<svg viewBox="0 0 24 24" fill="currentColor"'));
-check('I: Streets is exactly one path', (streets.match(/<path/g) || []).length === 1);
-check('I: Streets wears the approved straight-on road path (slab + three centre dashes, evenodd)',
-  streets.includes('fill-rule="evenodd"') && streets.includes('d="M7 2.6h10v18.8H7zM11.1 4.6h1.8v3.4h-1.8zM11.1 10.3h1.8v3.4h-1.8zM11.1 16h1.8v3.4h-1.8z"'));
-const gearD = (gear.match(/ d="([^"]*)"/) || [])[1] || '';
-check('I: Settings is exactly one path, nonzero-filled (winding makes the ring hole)',
-  (gear.match(/<path/g) || []).length === 1 && !gear.includes('fill-rule'));
-check('I: the cog path has 18 subpaths (12 teeth + ring outer + ring inner + 3 spokes + hub)',
-  (gearD.match(/M/g) || []).length === 18, 'M count=' + (gearD.match(/M/g) || []).length);
-check('I: ring outer r8.6 wound with the silhouette, inner r6.9 wound against it, hub r2.3',
-  gearD.includes('A8.6 8.6 0 0 1') && gearD.includes('A6.9 6.9 0 0 0') && gearD.includes('A2.3 2.3 0 0 1'));
-check('I: spokes run from inside the ring band to the centre (connected by construction)',
-  gearD.includes('M19.8 11.05L19.8 12.95L12 12.95L12 11.05Z'));
+const uriHash = entry => { const m = entry.match(/src="data:image\/png;base64,([^"]+)"/); return m ? createHash('sha256').update(Buffer.from(m[1], 'base64')).digest('hex') : ''; };
+check('I: both entries are Pulsar img spans in their wrappers (Streets dock, Settings tab)',
+  streets.startsWith('<span class="pwrapD"><img class="pico" data-k="streets"') && gear.startsWith('<span class="pwrapT"><img class="pico" data-k="gear"'));
+check('I: Streets wears the approved Pulsar road artwork (decoded day URI sha256)',
+  uriHash(streets) === 'be1ca4dcbc2fc41dbd67066975098b51c5a6b7d2850a0fed3838616828895210', uriHash(streets));
+check('I: Settings wears the approved Pulsar settings artwork (decoded day URI sha256)',
+  uriHash(gear) === 'ef2df0082b705ab8ecf0ade6e6986eb46f07a326b73daf3ae6e96be3ae2ee1c1', uriHash(gear));
 
 console.log(pass + ' pass, ' + fail + ' fail');
 process.exit(fail === 0 ? 0 : 1);
