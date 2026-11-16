@@ -149,31 +149,54 @@ try {
       });
       ok('E-03 re-centre button owns its centre tap (night)', night === true);
     }
-    const e06 = await page.evaluate(() => {
+    // Beta 1.209 re-derivation (TEST-class): through 1.208 this block read
+    // the buttons in a FORCED all-four-visible state (the card unhidden by
+    // hand, renderPanel never run) - a state the app cannot take, since
+    // renderPanel's display toggles are the only visibility path and they
+    // never show more than two of the four buttons. Look 2's 14.5px type
+    // and the longer 'Complete entire road' label make that artificial
+    // row geometrically impossible, so the same failure properties (row
+    // overflow; a button pushed past the card's edge; the note icon
+    // squeezed) are now measured in the two states the card really takes,
+    // driven through the app's own selection functions - the properties
+    // are unchanged, the states are the reachable ones.
+    const e06 = await page.evaluate(async () => {
+      const sleep = ms => new Promise(r => setTimeout(r, ms));
       const sp = document.getElementById('selPop');
       const note = document.getElementById('selNote');
       const svg = note.querySelector('svg');
       const acts = sp.querySelector('.selActs');
       const cs = getComputedStyle(note);
-      const spr = sp.getBoundingClientRect();
-      const btns = {};
-      for (const id of ['selNote', 'selAllBtn', 'selBtn', 'selClearBtn']) { const r = document.getElementById(id).getBoundingClientRect(); btns[id] = { x: r.x, y: r.y, w: r.width, h: r.height, right: r.right, bottom: r.bottom }; }
+      const meas = () => {
+        const spr = sp.getBoundingClientRect();
+        const btns = {};
+        for (const id of ['selNote', 'selAllBtn', 'selBtn', 'selClearBtn']) { const el = document.getElementById(id); if (el.style.display === 'none') continue; const r = el.getBoundingClientRect(); btns[id] = { x: r.x, y: r.y, w: r.width, h: r.height, right: r.right, bottom: r.bottom }; }
+        return { actsClientW: acts.clientWidth, actsScrollW: acts.scrollWidth, spRight: spr.right, spX: spr.x, btns };
+      };
+      selectStretch('Velmar', 0, STRETCH.Velmar.line[10]); await sleep(350);
+      const single = meas();
+      tapStretch('Velmar', 1, STRETCH.Velmar.line[10]); await sleep(350);
+      const multi = meas();
+      deselect();
       return {
         padL: cs.paddingLeft, padR: cs.paddingRight, minH: cs.minHeight,
         contentW: note.clientWidth - parseFloat(cs.paddingLeft) - parseFloat(cs.paddingRight),
         svgW: svg ? svg.getBoundingClientRect().width : 0,
-        actsClientW: acts.clientWidth, actsScrollW: acts.scrollWidth,
-        spRight: spr.right, spX: spr.x, btns,
+        single, multi,
       };
     });
+    const inside = st => Object.values(st.btns).every(b => b.right <= st.spRight - 0.5 && b.x >= st.spX - 0.5);
     ok(`E-06 note button keeps its own padding (${tag})`, e06.padL === '0px' && e06.padR === '0px', `padding = ${e06.padL}/${e06.padR}`);
-    ok(`E-06 note button keeps its own min-height (${tag})`, e06.minH === '40px', `min-height = ${e06.minH}`);
+    ok(`E-06 note button keeps its own min-height (${tag})`, e06.minH === '34px', `min-height = ${e06.minH}`); // Beta 1.209: Look 2 specs the note button at 34px (was 40px) - the pin follows the spec at the same strength
     ok(`E-06 note icon fits its content box (${tag})`, e06.contentW >= e06.svgW - 0.5, `content ${e06.contentW.toFixed(1)}px vs icon ${e06.svgW.toFixed(1)}px`);
-    ok(`E-06 action row does not overflow (${tag})`, e06.actsScrollW <= e06.actsClientW + 0.5, `scrollWidth ${e06.actsScrollW} vs clientWidth ${e06.actsClientW}`);
-    ok(`E-06 Clear stays inside the card (${tag})`, e06.btns.selClearBtn.right <= e06.spRight - 0.5 && e06.btns.selClearBtn.x >= e06.spX, `Clear right ${e06.btns.selClearBtn.right.toFixed(1)} vs card right ${e06.spRight.toFixed(1)}`);
+    ok(`E-06 action row does not overflow - single state (${tag})`, e06.single.actsScrollW <= e06.single.actsClientW + 0.5, `scrollWidth ${e06.single.actsScrollW} vs clientWidth ${e06.single.actsClientW}`);
+    ok(`E-06 action row does not overflow - multi state (${tag})`, e06.multi.actsScrollW <= e06.multi.actsClientW + 0.5, `scrollWidth ${e06.multi.actsScrollW} vs clientWidth ${e06.multi.actsClientW}`);
+    ok(`E-06 every visible button stays inside the card - single state (${tag})`, inside(e06.single), JSON.stringify(e06.single.btns));
+    ok(`E-06 Clear stays inside the card - multi state (${tag})`, inside(e06.multi) && !!e06.multi.btns.selClearBtn, `Clear right ${e06.multi.btns.selClearBtn ? e06.multi.btns.selClearBtn.right.toFixed(1) : 'hidden'} vs card right ${e06.multi.spRight.toFixed(1)}`);
     // The card is ONE fixed size for one section or many (Beta 1.34,
-    // pinned by drive128 M7b): the note button (40px) shows only in the
-    // single state, so the action row must reserve its height in both.
+    // pinned by drive128 M7b): the note button (34px since Look 2,
+    // Beta 1.209; 40px before) shows only in the single state, so the
+    // action row must reserve its height in both.
     const m7b = await page.evaluate(async () => {
       const sleep = ms => new Promise(r => setTimeout(r, ms));
       const pop = () => { const r = document.getElementById('selPop').getBoundingClientRect(); return { w: r.width, h: r.height }; };

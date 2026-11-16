@@ -490,9 +490,6 @@ function renderPanel() { // ONE selection pop-up (Beta 1.30, Andrew): the header
   if (!sel) { p.classList.add('hidden'); return; }
   p.classList.remove('hidden');
   const multi = selSet.length >= 2; // Beta 1.34 (Andrew): single and multi are the SAME size now - same box, same two rows; only the words and buttons change
-  const streetsIn = new Set(selSet.map(en => en.name)).size;
-  const oneStreet = streetsIn === 1;
-  p.style.setProperty('--accent', !oneStreet ? 'transparent' : (streetComplete(sel.name) ? GREEN : (PRIMARIES.has(sel.name) ? YELLOW : RED))); // the edge mirrors the street (Beta 1.32, Andrew): gold for a primary road, raspberry for an unfinished regular road, mint once the street is complete
   if (!multi) {
     $('selName').textContent = sel.name;
     const total = STRETCH[sel.name].parts.length;
@@ -512,7 +509,7 @@ function renderPanel() { // ONE selection pop-up (Beta 1.30, Andrew): the header
   b.style.display = multi ? 'none' : '';
   if (!multi) {
     if (streetComplete(sel.name)) { b.textContent = 'Mark not done'; b.className = 'notdone'; b.disabled = false; }
-    else { b.textContent = 'Mark completed'; b.className = ''; b.disabled = false; }
+    else { b.textContent = 'Complete entire road'; b.className = ''; b.disabled = false; } // Beta 1.209 (Andrew): the button completes the WHOLE road (markStreet), so it says so - the old label read as if it finished only the lit stretch
   }
 }
 $('selBtn').addEventListener('click', () => { if (!sel || !tapGuard('selBtn')) return; markStreet(sel.name, !streetComplete(sel.name)); });
@@ -526,7 +523,7 @@ function updateCount() {
   $('startBtn').style.display = runStart ? 'none' : '';
   $('cancelStartBtn').style.display = runStart ? '' : 'none'; // Beta 1.91: Cancel start is offered for the whole run - it erases the run's records, marks included
   $('resetBtn').style.display = runStart ? '' : 'none';
-  $('count').style.display = runStart ? '' : 'none'; // Beta 1.199 (Andrew): the streets-done pill shows ONLY while a clean is running - this line is the ONE place that rule lives, beside the run chrome it keeps company with: Start Clean calls here with runStart set (the pill appears), Finish and Cancel call here with it cleared (the pill leaves), and a boot that restores a live run calls here through refreshAll (the pill is up). The text and meter above are written either way, so marking outside a clean still counts internally - the panel, the Streets header and Pace read the same state directly, never this pill
+  $('count').style.visibility = runStart ? 'visible' : 'hidden'; // Beta 1.199 (Andrew): the streets-done pill shows ONLY while a clean is running - this line is the ONE place that rule lives, beside the run chrome it keeps company with: Start Clean calls here with runStart set (the pill appears), Finish and Cancel call here with it cleared (the pill leaves), and a boot that restores a live run calls here through refreshAll (the pill is up). The text and meter above are written either way, so marking outside a clean still counts internally - the panel, the Streets header and Pace read the same state directly, never this pill. Beta 1.209 (Andrew): the toggle is VISIBILITY, not display - the pill's slot is permanently reserved in the dock, so it appears INTO its spot and the Start circle and flanking buttons never move (the display toggle compacted the dock by the pill's 37px footprint, the jump the 1.202 delivery flagged and Andrew later hit live)
 }
 
 // ===== LIST SHEET =====

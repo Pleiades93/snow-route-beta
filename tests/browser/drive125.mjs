@@ -148,9 +148,9 @@ ok('T4 night menus share the neutral charcoal (bar = sheets), text bright (Beta 
 const PL2 = JSON.parse(await ev(`(() => { const byId = {}; for (const L of map.getStyle().layers) byId[L.id] = { mn: L.minzoom, mx: L.maxzoom }; return JSON.stringify({ sub: byId['places_subplace'], loc: byId['places_locality'] }); })()`));
 ok('P2 night map too: same Protomaps ladder (subplace 9, locality capped 15.5) | ' + JSON.stringify(PL2),
   !!PL2.sub && PL2.sub.mn === 9 && !!PL2.loc && PL2.loc.mx === 15.5);
-await ev(`(() => { markDone('Woolacott', 'tap'); selectStretch('Woolacott', 0, STRETCH.Woolacott.line[3]); return true; })()`); await waitTrue(poll, `getComputedStyle($('selPop')).boxShadow.includes('6, 214, 160')`, 10000); // T4: poll the terminal state P4 asserts (the mint colour edge computed on the popup)
+await ev(`(() => { markDone('Woolacott', 'tap'); selectStretch('Woolacott', 0, STRETCH.Woolacott.line[3]); return true; })()`); await waitTrue(poll, `$('selBtn').textContent === 'Mark not done'`, 10000); // poll the terminal state P4 asserts (the completed street's card, rendered). Beta 1.209 re-derivation (TEST-class): through 1.208 this polled the mint colour edge in the card's shadow; Look 2 retired the edge, so the poll targets the completion state itself
 const NAC = await ev(`getComputedStyle($('selPop')).boxShadow`);
-ok('P4 the colour edge survives the night theme (mint for the completed Woolacott) | ' + NAC, NAC.includes('6, 214, 160'));
+ok('P4 the card chrome survives the night theme in its Look 2 night form (flat black shadow, no colour edge, for the completed Woolacott) | ' + NAC, NAC.includes('0px 8px 22px') && NAC.includes('0, 0, 0') && !NAC.includes('6, 214, 160'));
 await ev(`(() => { markUndone('Woolacott'); deselect(); return true; })()`);
 
 // P5 (Beta 1.33, Andrew: "make sure nothing breaks when switching and everything stays

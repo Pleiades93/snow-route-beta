@@ -97,15 +97,17 @@ ok('M7b the two-section pop-up is exactly the single card size (same width, same
   Math.abs(PM7b.w - PM7.w) <= 1 && Math.abs(PM7b.h - PM7.h) <= 1 && PM7b.status !== 'none');
 await ev(`(() => { selectStretch('Velmar', 0, [${MIDS[0][0]}, ${MIDS[0][1]}]); return true; })()`); await sleep(300);
 const L7 = JSON.parse(await ev(`(() => { const nm = $('selName').getBoundingClientRect(), acts = document.querySelector('.selActs').getBoundingClientRect(); return JSON.stringify({ nameH: nm.height, actsBelow: acts.top >= nm.bottom - 1, shadow: getComputedStyle($('selPop')).boxShadow }); })()`));
-ok('M7 the card is stacked clean: one-line name on top, actions in their own row below, gold edge for the unfinished main road | ' + JSON.stringify(L7),
-  L7.nameH <= 24 && L7.actsBelow === true && L7.shadow.includes('255, 194, 51'));
+ok('M7 the card is stacked clean: one-line name on top, actions in their own row below, the Look 2 soft shadow (Beta 1.209 re-derivation, TEST-class: the 1.32 street-colour edge is retired, so the shadow is the flat Look 2 constant, no gold in it) | ' + JSON.stringify(L7),
+  L7.nameH <= 24 && L7.actsBelow === true && L7.shadow.includes('0px 8px 22px') && L7.shadow.includes('20, 22, 26') && !L7.shadow.includes('255, 194, 51'));
 
-// M11 (Beta 1.39, Andrew): Mark completed and Mark both sides are ONE green -
-// the both-sides green (#2ecc71) is the official one. Measured as computed
-// style on the live buttons, not read from the stylesheet.
+// M11 (Beta 1.39, Andrew): the complete-road button and Mark both sides are ONE green -
+// measured as computed style on the live buttons, not read from the stylesheet.
+// Beta 1.209 re-derivation (TEST-class): the one official green is now Look 2's mint
+// TINT (day rgba(6,180,130,.13)) instead of the solid #2ecc71 - the sharing property
+// is unchanged and asserted exactly, in the drive's day theme.
 const GRN = JSON.parse(await ev(`(() => { const b1 = getComputedStyle($('selBtn')), b2 = getComputedStyle($('selAllBtn')); return JSON.stringify({ a: b1.backgroundColor, b: b2.backgroundColor, vis: b1.display !== 'none' }); })()`));
-ok('M11 Mark completed and Mark both sides share the one official green (both-sides button hides when the stretch is fully done - its colour is still read live) | ' + JSON.stringify(GRN),
-  GRN.vis && GRN.a === 'rgb(46, 204, 113)' && GRN.b === 'rgb(46, 204, 113)');
+ok('M11 Complete entire road and Mark both sides share the one official green (both-sides button hides when the stretch is fully done - its colour is still read live) | ' + JSON.stringify(GRN),
+  GRN.vis && GRN.a === 'rgba(6, 180, 130, 0.13)' && GRN.b === 'rgba(6, 180, 130, 0.13)');
 
 // ---- M8: tap away from a menu spends the tap (Beta 1.30) ----
 await ev(`(() => { $('sheet').classList.add('open'); return true; })()`); await sleep(300);
@@ -127,13 +129,17 @@ ok('M9 two roads selected: same card, same wording, sides tally on the status li
   SS9.n === 2 && SS9.txt === '2 sections selected' && PM9.status !== 'none' && /^\d+ of 4 sides done$/.test(PM9.statusTxt));
 await ev(`deselect()`);
 
-// ---- M10: the colour edge mirrors the street's state ----
+// ---- M10: the card chrome no longer mirrors the street (Beta 1.209 re-derivation,
+// TEST-class: Look 2 retires the 1.32 colour edge - the property flips from
+// state-DEPENDENCE to state-INDEPENDENCE at the same strength: the shadow is the
+// exact Look 2 constant with an unfinished street selected AND with it complete,
+// and neither street colour ever appears in it) ----
 await ev(`(() => { selectStretch('Boddy', 0, STRETCH.Boddy.line[3]); return true; })()`); await sleep(250);
 let AC = await ev(`getComputedStyle($('selPop')).boxShadow`);
-ok('M10 a regular unfinished street wears the raspberry edge | ' + AC, AC.includes('239, 71, 111'));
+ok('M10 a regular unfinished street: the card keeps the flat Look 2 shadow (no raspberry edge) | ' + AC, AC.includes('0px 8px 22px') && !AC.includes('239, 71, 111'));
 await ev(`(() => { $('selBtn').click(); return true; })()`); await sleep(400);
 AC = await ev(`getComputedStyle($('selPop')).boxShadow`);
-ok('M10 once the street is complete the edge turns mint | ' + AC, AC.includes('6, 214, 160'));
+ok('M10 once the street is complete the shadow is unchanged (no mint edge) | ' + AC, AC.includes('0px 8px 22px') && !AC.includes('6, 214, 160'));
 await ev(`(() => { markUndone('Boddy'); deselect(); return true; })()`);
 
 // ---- M12: Beta 1.146 (census C3) - Mark both sides on a FAILED save ----

@@ -22,10 +22,22 @@ import vm from 'node:vm';
 //        implementation's bookkeeping.
 //   S3 - the class pills' ink: #4a3200 -> true black #000000 on
 //        .crChip and .crPChip, both classes; metrics unchanged.
+//   S4 - (added later the same evening) the selection card wears
+//        Look 2 (Andrew's approved sample): solid card, 16px radius,
+//        13/14 padding, flat soft shadow - the glass and the 1.32
+//        street-colour edge retired; the complete-road button reads
+//        'Complete entire road' ('Mark completed' retired everywhere);
+//        the action buttons wear the shared mint tint at 42px.
+//   S5 - (added later the same evening) the progress pill's slot is
+//        permanently reserved: updateCount toggles VISIBILITY, the
+//        markup rests at visibility:hidden - the dock never compacts
+//        (the 1.202 display toggle moved the Start circle by the
+//        pill's 37px footprint; Andrew hit the jump and ruled it out).
 //
 // On unmodified main (Beta 1.208): S1's glow carries the whole run
 // (checks fail), S2's groupSideMap does not exist (checks fail), S3's
-// ink is #4a3200 (checks fail). With the fix all checks pass.
+// ink is #4a3200 (checks fail), S4's card is glass with the old label,
+// S5's pill toggles display. With the fix all checks pass.
 //
 // Run from the repo root:  node tests/proof/proof-trim-glow-path-pills.mjs
 
@@ -251,6 +263,52 @@ console.log('S2 - multi-select side arrows follow the driver path');
       vm.runInContext('STRETCH = computeStretches(ROUTE_PACKS.find(p => p.id === "5w").roads)', ctx);
     }
   }
+}
+
+// ================= S4 - selection card Look 2 + wording =================
+console.log('S4 - selection card Look 2 chrome; button says Complete entire road');
+{
+  const selPopRule = (head.match(/#selPop \{[^}]*\}/) || [''])[0];
+  check('card is Look 2 day: solid white, hairline border, 16px radius, 13/14 padding, flat soft shadow',
+    selPopRule.includes('background: #ffffff') && selPopRule.includes('border: 1px solid rgba(20,22,26,.08)') &&
+    selPopRule.includes('border-radius: 16px') && selPopRule.includes('padding: 13px 14px') &&
+    selPopRule.includes('box-shadow: 0 8px 22px rgba(20,22,26,.13)'), selPopRule.slice(0, 160));
+  check('the street-colour edge is retired (no --accent in the card shadow, no accent feed left)',
+    !selPopRule.includes('--accent') && !app2.includes("setProperty('--accent'") && !app2.includes('oneStreet'));
+  const nightRule = (head.match(/body\.night #selPop \{[^}]*\}/) || [''])[0];
+  check('card is Look 2 night: rgba(20,21,27,.97), hairline white border, black shadow',
+    nightRule.includes('background: rgba(20,21,27,.97)') && nightRule.includes('rgba(255,255,255,.07)') && nightRule.includes('0 8px 22px rgba(0,0,0,.4)'), nightRule.slice(0, 120));
+  check('title 16px/800, sub-line 12px in the Look 2 greys',
+    /#selName \{ font-size: 16px; font-weight: 800;/.test(head) && /#selStatus \{ font-size: 12px; color: #6f757f;/.test(head) && /body\.night #selStatus \{ color: #9aa0aa; \}/.test(head));
+  const btnRule = (head.match(/\n  #selPop #selBtn \{[^}]*\}/) || [''])[0];
+  const allRule = (head.match(/\n  #selPop #selAllBtn \{[^}]*\}/) || [''])[0];
+  const noteRule = (head.match(/#selPop #selNote \{[^}]*\}/) || [''])[0];
+  check('action button: 42px, radius 11, mint tint day + night; Mark both sides shares it',
+    btnRule.includes('height: 42px') && btnRule.includes('border-radius: 11px') && btnRule.includes('background: rgba(6,180,130,.13)') && btnRule.includes('color: #087a5b') &&
+    /body\.night #selPop #selBtn \{ background: rgba\(6,214,160,\.15\); color: #2fe0ae; \}/.test(head) &&
+    allRule.includes('background: rgba(6,180,130,.13)') && allRule.includes('color: #087a5b') && allRule.includes('height: 42px'));
+  check('the card button rules carry the load-bearing #selPop prefix (the generic rule would otherwise win)',
+    head.includes('#selPop #selBtn {') && head.includes('#selPop #selAllBtn {') && head.includes('#selPop #selClearBtn {')
+    && !/\n  #selBtn \{/.test(head) && !/\n  #selAllBtn \{/.test(head) && !/\n  #selClearBtn \{/.test(head));
+  check('note button: 34px ghost circle, 16px icon, Look 2 ghosts per theme',
+    noteRule.includes('width: 34px') && noteRule.includes('background: rgba(20,22,26,.05)') && noteRule.includes('color: #3c4149') &&
+    /body\.night #selPop #selNote \{ background: rgba\(255,255,255,\.06\); color: #c9cdd4; \}/.test(head) &&
+    /#selNote svg \{ width: 16px; height: 16px;/.test(head));
+  check('the button reads Complete entire road (JS + resting markup)',
+    app2.includes("b.textContent = 'Complete entire road'") && head.includes('<button id="selBtn">Complete entire road</button>'));
+  check("'Mark completed' is retired from every part", !head.includes('Mark completed') && !app2.includes('Mark completed')
+    && !app1.includes('Mark completed') && !createPick.includes('Mark completed'));
+  check("'Mark both sides' and 'Clear' labels untouched", head.includes('<button id="selAllBtn">Mark both sides</button>') && head.includes('<button id="selClearBtn">Clear</button>'));
+}
+
+// ================= S5 - the pill slot is always reserved =================
+console.log('S5 - progress pill slot permanently reserved (visibility, never display)');
+{
+  check('updateCount toggles visibility from runStart (the ONE place the rule lives)',
+    app2.includes("$('count').style.visibility = runStart ? 'visible' : 'hidden'"));
+  check('the old display toggle is gone', !app2.includes("$('count').style.display"));
+  check('the resting markup reserves the slot (visibility:hidden, no display:none on #count)',
+    head.includes('<div id="count" style="visibility:hidden">') && !head.includes('<div id="count" style="display:none">'));
 }
 
 console.log(`\n${pass} pass, ${fail} fail`);
