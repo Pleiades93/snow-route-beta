@@ -42,9 +42,13 @@ check('F: the assembled page carries the new gap line, not the old',
   page.includes('or the clean start)') && !page.includes('or the run start)'));
 
 // ================= V - the bump agrees, the 1.211 set is intact =================
+// (The two version pins below follow the SHIPPED version - the
+// drive194 pattern: rolled in place to Beta 1.213 by the icon-swap
+// round, 2026-11-16, TEST class. The F section above is this proof's
+// durable property and is untouched.)
 console.log('V - version surfaces agree; the 1.211 in-progress sweep is intact');
-check('V: the #ver label reads Beta 1.212', head.includes('<div class="ver" id="ver">Beta 1.212</div>'));
-check('V: WHATSNEW is the Beta 1.212 entry', app4.includes("v: 'Beta 1.212', items:"));
+check('V: the #ver label reads Beta 1.213', head.includes('<div class="ver" id="ver">Beta 1.213</div>'));
+check('V: WHATSNEW is the Beta 1.213 entry', app4.includes("v: 'Beta 1.213', items:"));
 check('V: the 1.211 in-progress wording still stands',
   app3.includes("phT.textContent = 'Current clean'") && app4.includes("toast('Resumed clean — "));
 
