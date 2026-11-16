@@ -130,6 +130,24 @@ const M13b = JSON.parse(await ev(`(() => { const nm = $('selName').getBoundingCl
 ok('M13 a stress name ellipsizes against the button and never reaches it | ' + JSON.stringify(M13b),
   M13b.nameRight <= M13b.noteX - 5 && M13b.scrollW > M13b.clientW);
 await ev(`(() => { renderPanel(); return true; })()`); await sleep(300); // restore the real name text WITHOUT re-selecting: an extra selectStretch here disturbed M8's tap-away precondition (its spent-tap guard reads the selection's freshness) - renderPanel rewrites the name from the standing selection and touches nothing else
+// M13c (Beta 1.214, Codex P2 on PR #90): with GPS on and the follow
+// suspended - the state a map press puts the app in just before the
+// selecting tap lands - the re-centre button shows at the card's own
+// top (144) and, since the E-03 lift, paints OVER the card's top-right
+// corner. That corner now holds the note button: measured at 390 wide
+// the re-centre button covered 29 of its 34 px and took its centre tap.
+// While the card is open the re-centre button must drop BELOW the card
+// (body.selOpen) - still shown, still tappable - and the note button's
+// centre tap must land on the note button itself.
+await ev(`(() => { watchId = 1; followPaused = true; dispPos = [43.683, -79.451]; syncCentreBtn(); return true; })()`); await sleep(300);
+const M13c = JSON.parse(await ev(`(() => { const R = el => { const r = el.getBoundingClientRect(); return { x: r.x, y: r.y, right: r.right, bottom: r.bottom, w: r.width, h: r.height }; };
+  const nt = $('selNote'), cb = $('centreBtn'), nr = nt.getBoundingClientRect();
+  const hit = document.elementFromPoint((nr.x + nr.right) / 2, (nr.y + nr.bottom) / 2);
+  return JSON.stringify({ card: R($('selPop')), note: R(nt), centre: R(cb), centreShown: !cb.classList.contains('hidden') && getComputedStyle(cb).display !== 'none', hitNote: !!(hit && (hit === nt || nt.contains(hit))) }); })()`));
+ok('M13 the re-centre button, shown in the suspended state, drops below the open card and never touches the note button | ' + JSON.stringify(M13c),
+  M13c.centreShown === true && M13c.centre.y >= M13c.card.bottom + 5 && !(M13c.note.x < M13c.centre.right - 0.5 && M13c.centre.x < M13c.note.right - 0.5 && M13c.note.y < M13c.centre.bottom - 0.5 && M13c.centre.y < M13c.note.bottom - 0.5));
+ok('M13 a tap on the note button centre lands on the note button, not the re-centre button | ' + JSON.stringify(M13c), M13c.hitNote === true);
+await ev(`(() => { watchId = null; followPaused = false; dispPos = null; syncCentreBtn(); return true; })()`); await sleep(200);
 
 // ---- M8: tap away from a menu spends the tap (Beta 1.30) ----
 await ev(`(() => { $('sheet').classList.add('open'); return true; })()`); await sleep(300);

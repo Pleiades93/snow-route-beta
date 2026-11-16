@@ -73,6 +73,18 @@ console.log('B - behaviour: the by-ID contract renderPanel and the editor rely o
     app2.includes("$('selNote').addEventListener('click'") && app2.includes('openNote(sel.name)'));
 }
 
+// ================= D - the re-centre button separation (Codex P2, PR #90) =================
+console.log('D - while the card is open, the re-centre button drops below it');
+{
+  check('D: the drop rule stands (267 = card top 144 + card height 112.2 + the ~10 gap)',
+    head.includes('body.selOpen #centreBtn { top: calc(var(--vvt, 0px) + 267px + var(--sat)); }'));
+  check('D: the base re-centre rule is untouched (E-03: 144 top, z 1002)',
+    head.includes('#centreBtn { position: fixed; top: calc(var(--vvt, 0px) + 144px + var(--sat)); right: calc(12px + var(--sar)); z-index: 1002;'));
+  check('D: renderPanel raises body.selOpen with the card and drops it with the card',
+    app2.includes("p.classList.remove('hidden'); document.body.classList.add('selOpen');") &&
+    app2.includes("p.classList.add('hidden'); document.body.classList.remove('selOpen'); return;"));
+}
+
 // ================= V - the bump agrees =================
 console.log('V - version surfaces agree');
 {
