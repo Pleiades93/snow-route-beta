@@ -175,20 +175,25 @@ try {
       };
       selectStretch('Velmar', 0, STRETCH.Velmar.line[10]); await sleep(350);
       const single = meas();
-      tapStretch('Velmar', 1, STRETCH.Velmar.line[10]); await sleep(350);
-      const multi = meas();
-      deselect();
-      return {
+      // the note metrics are captured NOW, while the single state is
+      // visible - after deselect() the card is display:none and both
+      // widths read 0, which would pass the icon-fit check vacuously
+      // (Codex P2 on PR #84, real: the first re-derived form read them
+      // after the state walk)
+      const noteM = {
         padL: cs.paddingLeft, padR: cs.paddingRight, minH: cs.minHeight,
         contentW: note.clientWidth - parseFloat(cs.paddingLeft) - parseFloat(cs.paddingRight),
         svgW: svg ? svg.getBoundingClientRect().width : 0,
-        single, multi,
       };
+      tapStretch('Velmar', 1, STRETCH.Velmar.line[10]); await sleep(350);
+      const multi = meas();
+      deselect();
+      return { ...noteM, single, multi };
     });
     const inside = st => Object.values(st.btns).every(b => b.right <= st.spRight - 0.5 && b.x >= st.spX - 0.5);
     ok(`E-06 note button keeps its own padding (${tag})`, e06.padL === '0px' && e06.padR === '0px', `padding = ${e06.padL}/${e06.padR}`);
     ok(`E-06 note button keeps its own min-height (${tag})`, e06.minH === '34px', `min-height = ${e06.minH}`); // Beta 1.209: Look 2 specs the note button at 34px (was 40px) - the pin follows the spec at the same strength
-    ok(`E-06 note icon fits its content box (${tag})`, e06.contentW >= e06.svgW - 0.5, `content ${e06.contentW.toFixed(1)}px vs icon ${e06.svgW.toFixed(1)}px`);
+    ok(`E-06 note icon fits its content box (${tag})`, e06.contentW > 0 && e06.svgW > 0 && e06.contentW >= e06.svgW - 0.5, `content ${e06.contentW.toFixed(1)}px vs icon ${e06.svgW.toFixed(1)}px`); // non-zero guards: a hidden-card read is 0/0 and must never pass (Codex P2, PR #84)
     ok(`E-06 action row does not overflow - single state (${tag})`, e06.single.actsScrollW <= e06.single.actsClientW + 0.5, `scrollWidth ${e06.single.actsScrollW} vs clientWidth ${e06.single.actsClientW}`);
     ok(`E-06 action row does not overflow - multi state (${tag})`, e06.multi.actsScrollW <= e06.multi.actsClientW + 0.5, `scrollWidth ${e06.multi.actsScrollW} vs clientWidth ${e06.multi.actsClientW}`);
     ok(`E-06 every visible button stays inside the card - single state (${tag})`, inside(e06.single), JSON.stringify(e06.single.btns));
