@@ -96,7 +96,7 @@ const base = JSON.parse(await ev(`(() => { const part = STRETCH.Velmar.parts[0];
 const T0 = 1760000000000;
 const started = await J(`(() => { window.__wp = null; Object.defineProperty(navigator, 'geolocation', { value: { watchPosition: (okCb, errCb) => { window.__wp = okCb; return 777; }, clearWatch: () => {} }, configurable: true }); const t0 = Date.now(); startGps(false); return { wid: watchId, t0, sess: fixLogSession ? { v: fixLogSession.v, t0: fixLogSession.t0, n: fixLogSession.f.length } : null, sessions: fixLog.length }; })()`); // the stub must go through defineProperty: navigator.geolocation is a read-only prototype accessor, so a plain assignment is a silent no-op and the app would start the REAL watch (found on this drive's first run - the session still opened, the fixes never arrived)
 ok('L1 startGps opens a log session stamped with the live version | ' + JSON.stringify(started),
-  started.wid === 777 && !!started.sess && started.sess.v === 'Beta 1.210' && Math.abs(started.sess.t0 - started.t0) < 1000 && started.sess.n === 0);
+  started.wid === 777 && !!started.sess && started.sess.v === 'Beta 1.211' && Math.abs(started.sess.t0 - started.t0) < 1000 && started.sess.n === 0);
 const feed = async (f) => J(`(() => { window.__wp({ coords: { latitude: ${f[0]}, longitude: ${f[1]}, accuracy: ${f[2]}, speed: ${f[3]}, heading: ${f[4]} }, timestamp: ${f[5]} }); const s = fixLog[fixLog.length - 1]; return { ent: s.f[s.f.length - 1], gps: gpsPos, dsp: dispPos, smh: smHeading }; })()`);
 const M = (e, n) => [base.lat + n / 111320, base.lng + e / 80386];
 const p1 = M(0, 0), p2 = M(4, 1), p5 = M(14, 2);
