@@ -177,6 +177,8 @@ jobs:
         run: node tests/proof/proof-wording-finished-cleans.mjs
       - name: Icon swap proof (Beta 1.213 gate - the professional pack's files serve byte-for-byte including the master-vector favicon, corners opaque, the pack maskable measured inside the safe zone, the splash artwork is the pack's square transparent foreground)
         run: node tests/proof/proof-icon-swap-1213.mjs
+      - name: Selection-card note-button move proof (Beta 1.214 gate - the note button stands in the title row beside the street name, the action row belongs to Complete entire road alone, renderPanel's by-ID contract untouched)
+        run: node tests/proof/proof-selcard-note-move.mjs
       - name: Premise-lint fixtures (Tranche 4 gate)
         run: python3 scripts/premise-lint-fixtures/run-fixtures.py
       - name: Bug-hunt fix fixtures (PR #23 gate; Beta 1.185)

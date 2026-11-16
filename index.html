@@ -2,7 +2,7 @@
 <html lang="en" class="boot">
 <head>
 <meta charset="UTF-8">
-<meta http-equiv="Content-Security-Policy" content="default-src 'none'; script-src 'sha384-8vfzzgdBrJbq9pTyyb6gcbuu4VzrBMJEpLqT7f3sh8xu5DgQI4tJDdwcX1yBS6/u' https://cdn.jsdelivr.net; style-src-elem 'sha384-KIyUUJAFJofHnCw2V+6A4F0Rw/tezpEJXPsmS6mFXUHj3DD7V2QDfuB8yvrzUx4h' https://cdn.jsdelivr.net; style-src-attr 'unsafe-inline'; img-src 'self' data: blob: https://tiles.basemaps.cartocdn.com https://protomaps.github.io https://cdn.jsdelivr.net; connect-src 'self' https://tiles.basemaps.cartocdn.com https://protomaps.github.io https://cdn.jsdelivr.net https://nominatim.openstreetmap.org https://overpass-api.de https://overpass.kumi.systems; worker-src blob: 'self'; child-src blob: 'self'; font-src 'none'; manifest-src 'self'; base-uri 'none'; form-action 'none'; object-src 'none'">
+<meta http-equiv="Content-Security-Policy" content="default-src 'none'; script-src 'sha384-N2q5bvZhrYC5Mm1CMoVFm2fWRtUds+cxPM2Ndf4w+zr6juWptCjgZTfAm4NmbnOf' https://cdn.jsdelivr.net; style-src-elem 'sha384-9BxnM4zS4roPBgUoh0hO+PWoYOCJrSntctNamRb1idtD3NSXT5UmPMKunUq5TKTY' https://cdn.jsdelivr.net; style-src-attr 'unsafe-inline'; img-src 'self' data: blob: https://tiles.basemaps.cartocdn.com https://protomaps.github.io https://cdn.jsdelivr.net; connect-src 'self' https://tiles.basemaps.cartocdn.com https://protomaps.github.io https://cdn.jsdelivr.net https://nominatim.openstreetmap.org https://overpass-api.de https://overpass.kumi.systems; worker-src blob: 'self'; child-src blob: 'self'; font-src 'none'; manifest-src 'self'; base-uri 'none'; form-action 'none'; object-src 'none'">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="mobile-web-app-capable" content="yes">
@@ -60,8 +60,9 @@
   body.storage-bad #warn { display: block; }
   /* Selection strip (Beta 1.14, Andrew): part of the header, not a floating card - it grows the top menu
      only while a street is selected, so the complete-road button never floats over the map or fights the buttons. */
-  #selPop .selTxt { min-width: 0; }
-  #selPop .selActs { display: flex; gap: 5px; align-items: center; min-height: 42px; } /* min-height 42px = the Look 2 action buttons' height (Beta 1.209): the note button is 34px and shows only in the single-section state, so the reserve is what holds the Beta 1.34 one-size invariant - the row stands 42px in both states (it was 40px for the pre-Look-2 40px note button, the batch's own gate catch, drive128 M7b) */
+  #selPop .selTop { display: flex; align-items: center; gap: 10px; } /* Beta 1.214 (Andrew): the title row - the text block at the left, the note button at the right end, centred on the block: the layout of his approved Look 2 sample */
+  #selPop .selTxt { flex: 1; min-width: 0; } /* Beta 1.214: the text block takes the title row's free width, so the name ellipsizes against the note button (its own nowrap/ellipsis rules below), never under it */
+  #selPop .selActs { display: flex; gap: 5px; align-items: center; min-height: 42px; } /* min-height 42px = the Look 2 action buttons' height (Beta 1.209): the reserve is what holds the Beta 1.34 one-size invariant - the row stands 42px in both states (it was 40px for the pre-Look-2 40px note button, the batch's own gate catch, drive128 M7b). Beta 1.214: the note button lives in the title row now - this row's two states (Complete alone at flex:1 / Mark both sides + Clear) both stand on the buttons' own 42px, and the reserve stays as the guarantee */
   #selPop .selActs #selBtn { flex: 1; }
   #selPop .selActs #selAllBtn { flex: 1; }
   #selName { white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
@@ -538,13 +539,13 @@ input, textarea { caret-color: currentColor; } /* Beta 1.125 (Andrew): the typin
 <button id="crHintBtn" style="display:none"></button><div id="createSheet" class="csheet"><div id="crPanel"><div class="crPanelHead" id="crPanelHead"><div class="crGrab"><span></span></div><div class="crHeadRow"><div class="crPanelTitle">Current selection <button id="crCityChange" style="display:none"></button></div><div class="crPanelMeta"><div class="crCount" id="crCount">0 roads &middot; 0 m</div><button id="crClearAll" type="button">Clear all</button></div></div></div><div class="crList" id="crPickList"></div><div class="crBtns crPanelBtns"><button class="crPrimary" id="crDoneBtn" type="button" disabled>Done</button></div></div><div id="crStrip" style="display:none"><div class="crStripTxt"><div class="crStripTitle" id="crStripTitle">0 roads picked</div><div class="crStripSub" id="crStripSub"></div></div><button id="crReviewBtn" type="button">Review &#9650;</button></div><div id="crSectorBar" style="display:none"><div class="crSbTitle" id="crSbName"></div><div class="crSbSub" id="crSbSub"></div><div class="crSbBtns"><button id="crSbCancel" type="button">Cancel</button><button id="crSbWhole" type="button">Entire road</button><button id="crSbDone" type="button">Done</button></div></div></div><div id="previewSheet" class="csheet"><div class="csheetTitle">Review selection</div><div class="crCount" id="pvCount"></div><div class="crList" id="pvList"></div><div class="crBtns"><button class="crGhost" id="pvAddBtn">+ Add a street</button><button class="crPrimary" id="pvSaveBtn">Save route</button><button class="crDanger" id="pvStartOverBtn">Start over</button></div></div><div id="crModal" class="modal hidden"><div class="card"><button id="crModalX" type="button" style="display:none">&#10005;</button><h3 id="crModalTitle">Throw away this draft?</h3><p id="crModalMsg"></p><div class="row"><button id="crModalNo">&#10005;</button><button id="crModalYes">Discard</button></div></div></div>
 <div id="map"></div>
 <div id="chips"></div>
-<div id="selPop" class="hidden"><div class="selTxt"><div id="selName">No street selected</div><div id="selStatus">Tap a street on the map</div></div><div class="selActs"><button id="selNote" title="Note for this street"></button><button id="selAllBtn">Mark both sides</button><button id="selBtn">Complete entire road</button><button id="selClearBtn">Clear</button></div></div>
+<div id="selPop" class="hidden"><div class="selTop"><div class="selTxt"><div id="selName">No street selected</div><div id="selStatus">Tap a street on the map</div></div><button id="selNote" title="Note for this street"></button></div><div class="selActs"><button id="selAllBtn">Mark both sides</button><button id="selBtn">Complete entire road</button><button id="selClearBtn">Clear</button></div></div>
 <div id="attrChip">© Protomaps © OpenStreetMap contributors © CARTO</div>
 <div id="spdPill" class="hidden">0 km/h</div>
 <div id="hud">
   <div id="warn">Not saving — storage is full or blocked</div>
   <div class="row">
-    <div class="titleStack"><div class="title">Snow Route Beta</div><div class="ver" id="ver">Beta 1.213</div></div>
+    <div class="titleStack"><div class="title">Snow Route Beta</div><div class="ver" id="ver">Beta 1.214</div></div>
   </div>
   <div id="stats"></div>
 </div>
@@ -6439,7 +6440,7 @@ $('stDel').addEventListener('click', async () => {
 });
 // ---- About / What's new ----
 const WHATSNEW = { // the curated in-app notes: plain words, LATEST RELEASE ONLY (Beta 1.114, Andrew: the accumulated list cluttered the About pane). A release REPLACES this entry with its own in the same change - it never accumulates; the full history lives in CHANGELOG.md, not the app
-  v: 'Beta 1.213', items: ["New icon: the new truck now stands everywhere the app shows its icon \u2014 home screen, splash and browser tab \u2014 drawn from one master so it stays sharp at every size, and the Android icon is composed so launchers can't crop the artwork."] };
+  v: 'Beta 1.214', items: ["Selection card: the note button now sits up beside the street name, like the sample \u2014 and the Complete entire road button has the whole bottom row to itself."] };
 
 function renderAbout() {
   const cur = $('ver').textContent.trim();

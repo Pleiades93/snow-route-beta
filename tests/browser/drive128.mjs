@@ -109,6 +109,28 @@ const GRN = JSON.parse(await ev(`(() => { const b1 = getComputedStyle($('selBtn'
 ok('M11 Complete entire road and Mark both sides share the one official green (both-sides button hides when the stretch is fully done - its colour is still read live) | ' + JSON.stringify(GRN),
   GRN.vis && GRN.a === 'rgba(6, 180, 130, 0.13)' && GRN.b === 'rgba(6, 180, 130, 0.13)');
 
+// M13 (Beta 1.214, Andrew: "Move it up beside the title, like the
+// sample"): the note button stands in the TITLE row - top-right beside
+// the street name, centred on the name+status block - and "Complete
+// entire road" takes the whole action row. Measured on the rendered
+// card; the rects are polled stable first (the card has an entrance
+// animation - a mid-flight rect reads ~0.98 scale, the round QA's
+// finding). On Beta 1.213 the button sits at the action row's left end
+// and every M13 position check fails.
+const stableCard128 = async () => { let last = ''; for (let i = 0; i < 24; i++) { const k = await ev(`(() => { const r = $('selPop').getBoundingClientRect(); return [r.width, r.height, r.x, r.y].map(v => Math.round(v * 20) / 20).join(','); })()`); if (k === last) return; last = k; await sleep(150); } };
+await stableCard128();
+const M13 = JSON.parse(await ev(`(() => { const R = el => { const r = el.getBoundingClientRect(); return { x: r.x, y: r.y, right: r.right, bottom: r.bottom, w: r.width, h: r.height, cy: (r.y + r.bottom) / 2 }; };
+  return JSON.stringify({ card: R($('selPop')), note: R($('selNote')), name: R($('selName')), status: R($('selStatus')), acts: R(document.querySelector('.selActs')), btn: R($('selBtn')) }); })()`));
+ok('M13 the note button stands in the title row: fully above the action row, its right edge on the card inner edge, centred on the title block, still 34px | ' + JSON.stringify(M13),
+  M13.note.bottom <= M13.acts.y + 1 && Math.abs(M13.note.right - (M13.card.right - 15)) <= 1.5 && Math.abs(M13.note.cy - (M13.name.y + M13.status.bottom) / 2) <= 4 && Math.abs(M13.note.w - 34) <= 1 && Math.abs(M13.note.h - 34) <= 1);
+ok('M13 Complete entire road spans the full inner width of the action row | ' + JSON.stringify(M13.btn),
+  Math.abs(M13.btn.x - (M13.card.x + 15)) <= 1.5 && Math.abs(M13.btn.right - (M13.card.right - 15)) <= 1.5);
+await ev(`(() => { $('selName').textContent = 'Bloomingdale Crescent Boulevard West Extension'; return true; })()`); await sleep(250);
+const M13b = JSON.parse(await ev(`(() => { const nm = $('selName').getBoundingClientRect(), nt = $('selNote').getBoundingClientRect(); return JSON.stringify({ nameRight: nm.right, noteX: nt.x, scrollW: $('selName').scrollWidth, clientW: $('selName').clientWidth }); })()`));
+ok('M13 a stress name ellipsizes against the button and never reaches it | ' + JSON.stringify(M13b),
+  M13b.nameRight <= M13b.noteX - 5 && M13b.scrollW > M13b.clientW);
+await ev(`(() => { renderPanel(); return true; })()`); await sleep(300); // restore the real name text WITHOUT re-selecting: an extra selectStretch here disturbed M8's tap-away precondition (its spent-tap guard reads the selection's freshness) - renderPanel rewrites the name from the standing selection and touches nothing else
+
 // ---- M8: tap away from a menu spends the tap (Beta 1.30) ----
 await ev(`(() => { $('sheet').classList.add('open'); return true; })()`); await sleep(300);
 const tapPx = async (x, y) => { // a real tap at raw viewport pixels (the open sheet covers the centre, so tapAt's centred tap would land on the sheet itself)
