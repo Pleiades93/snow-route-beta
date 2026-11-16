@@ -215,9 +215,9 @@ function crToggleSector(name, idx) {
 // but a tap must be honestly near the line. One literal for the whole
 // discipline: both loops and the fallback cap read it here.
 const CR_TAP_BOXES = [12, 20];
-function crSectorTap(lngLat) { // a map tap while trimming: the sector under the tap toggles. The rendered draft features answer first (the wide invisible crDraftHit layer, the street pick's own CR_TAP_BOXES box discipline); the geometry fallback - the nearest part of THIS street - covers what the renderer cannot answer, and never reaches for another street
-  const name = crSectorSession.street; if (!name || !draft || !draft.roads[name]) return;
-  const rec = crStreetParts(name); if (!rec) return;
+function crSectorTap(lngLat) { // a map tap while trimming: the sector under the tap toggles. The rendered draft features answer first (the wide invisible crDraftHit layer, the street pick's own CR_TAP_BOXES box discipline); the geometry fallback - the nearest part of THIS street - covers what the renderer cannot answer, and never reaches for another street. Beta 1.210: returns TRUE when a sector toggled, FALSE when the tap resolved to no sector of this street - crMapTap reads that as a tap-away (the trim's Cancel). The broken-session early returns are FALSE too: a session whose street or record is gone has no honest tap answer, and cancelling out of it is the only safe exit
+  const name = crSectorSession.street; if (!name || !draft || !draft.roads[name]) return false;
+  const rec = crStreetParts(name); if (!rec) return false;
   let idx = -1;
   if (map && typeof map.queryRenderedFeatures === 'function' && typeof map.project === 'function') {
     try {
@@ -247,7 +247,8 @@ function crSectorTap(lngLat) { // a map tap while trimming: the sector under the
     if (idx >= 0 && bd > (canPx ? CR_TAP_BOXES[1] : 75)) idx = -1; // beyond the tap discipline's reach - not a sector tap
     else if (idx >= 0 && canPx && crFeatDistM(lngLat, { type: 'LineString', coordinates: rec.parts[idx].map(p => [p[1], p[0]]) }) > 75) idx = -1; // the standing 75 m absolute guard
   }
-  if (idx >= 0) crToggleSector(name, idx);
+  if (idx >= 0) { crToggleSector(name, idx); return true; }
+  return false;
 }
 function crOpenSectors(name) { // opens a picked street's trimming - TWO doors since Beta 1.128 (Andrew's fork, decided from his 1.127 device session): the panel row (1.127) AND a map tap on the already-picked street (pickStreet routes here), which is where his finger went on device. Beta 1.129: entry SNAPSHOTS the street's pick as it stands (whole road, or the trim in force) - the sector bar's Cancel restores that snapshot exactly
   if (!draft || !draft.roads || !Object.prototype.hasOwnProperty.call(draft.roads, name)) return; // Beta 1.150: own-property at this door too - a prototype member must not read as a held run and carry the call into the parts work below
@@ -505,12 +506,16 @@ function crDraftGeom() {
   return g;
 }
 const DRAFT_SRC = 'crDraft';
+function crZoomW(w) { // Beta 1.210 (Andrew, from his Beta 1.209 phone session): the create selection paint's zoom curve. Through 1.209 the draft widths were CONSTANT px (tuned at z17, Beta 1.182), so the drawn width in metres doubled with every zoom level down - at z13 the casing drew ~88 m wide and nearby picks melted into one blob on his zoomed-out screen. The curve keeps w itself at z15 and above (the picking zooms look exactly as they did) and halves the px width per level below z15, so the drawn width holds its z15 metre value all the way down - the same constant-metres principle the main map's surfW/surfCASE curves follow. ONE helper for the whole selection family (draft casing, draft line, trim glow) so the layers can never drift apart again.
+  return ['interpolate', ['linear'], ['zoom'], 8, w / 128, 9, w / 64, 10, w / 32, 11, w / 16, 12, w / 8, 13, w / 4, 14, w / 2, 15, w, 19, w];
+}
 function ensureDraftLayers() {
   if (!map || typeof map.addSource !== 'function') return;
   try {
     if (!map.getSource(DRAFT_SRC)) map.addSource(DRAFT_SRC, { type: 'geojson', data: { type: 'FeatureCollection', features: [] } });
-    if (!map.getLayer('crDraftCase')) map.addLayer({ id: 'crDraftCase', type: 'line', source: DRAFT_SRC, filter: ['==', ['get', 'chosen'], 1], layout: { 'line-cap': 'round', 'line-join': 'round' }, paint: { 'line-color': 'rgba(10,14,34,.55)', 'line-width': 12.75 } }); // Beta 1.127: the casing underlines CHOSEN geometry only - an unchosen sector wears no casing, like the mockup's plain grey ends. Beta 1.182: 12.75 = the 1.127 casing x 1.5 - the draft's DRAWN widths carry the same factor Beta 1.181 gave every road (ROAD_WIDTH_K in the generator, WIDTH_K in the engine; both live outside this part's scope, so the coupled values are literals here), and a chosen street's selection again spans the widened road it sits on (measured on the live 1.181 build: casing 8.5 and line 4.5 against a 12 px minor road at z17 - the selection sat INSIDE the road with white showing both sides)
-    if (!map.getLayer('crDraftLine')) map.addLayer({ id: 'crDraftLine', type: 'line', source: DRAFT_SRC, layout: { 'line-cap': 'round', 'line-join': 'round' }, paint: { 'line-color': ['case', ['==', ['get', 'chosen'], 1], ['case', ['==', ['get', 'primary'], 1], '#ffc233', '#ef476f'], '#b9c1cb'], 'line-width': ['case', ['==', ['get', 'chosen'], 1], 6.75, 4.5] } }); // Beta 1.127: chosen = category colour at full width; unchosen = thin grey. Beta 1.182: both branches x 1.5 with the casing above (6.75 chosen, 4.5 unchosen) - the chosen/unchosen ratio is the 1.127 design's, unchanged; crDraftHit below is the pick TARGET, not drawing, and is deliberately NOT scaled (the tap boxes are Andrew's device-tuned precision, 1.156)
+    if (!map.getLayer('crDraftCase')) map.addLayer({ id: 'crDraftCase', type: 'line', source: DRAFT_SRC, filter: ['==', ['get', 'chosen'], 1], layout: { 'line-cap': 'round', 'line-join': 'round' }, paint: { 'line-color': 'rgba(10,14,34,.55)', 'line-width': crZoomW(12.75) } }); // Beta 1.127: the casing underlines CHOSEN geometry only - an unchosen sector wears no casing, like the mockup's plain grey ends. Beta 1.182: 12.75 = the 1.127 casing x 1.5 - the draft's DRAWN widths carry the same factor Beta 1.181 gave every road (ROAD_WIDTH_K in the generator, WIDTH_K in the engine; both live outside this part's scope, so the coupled values are literals here), and a chosen street's selection again spans the widened road it sits on (measured on the live 1.181 build: casing 8.5 and line 4.5 against a 12 px minor road at z17 - the selection sat INSIDE the road with white showing both sides). Beta 1.210: the literal is now the crZoomW curve's anchor (its value at z15 and above) - below z15 the casing thins with the zoom instead of blobbing over zoomed-out streets
+    if (!map.getLayer('crDraftLineDim')) map.addLayer({ id: 'crDraftLineDim', type: 'line', source: DRAFT_SRC, filter: ['!=', ['get', 'chosen'], 1], layout: { 'line-cap': 'round', 'line-join': 'round' }, paint: { 'line-color': '#b9c1cb', 'line-width': crZoomW(4.5) } }); // Beta 1.210: the unchosen line as its OWN layer under the chosen one - see the crDraftLine note below for why the 1.127 single layer became two
+    if (!map.getLayer('crDraftLine')) map.addLayer({ id: 'crDraftLine', type: 'line', source: DRAFT_SRC, filter: ['==', ['get', 'chosen'], 1], layout: { 'line-cap': 'round', 'line-join': 'round' }, paint: { 'line-color': ['case', ['==', ['get', 'primary'], 1], '#ffc233', '#ef476f'], 'line-width': crZoomW(6.75) } }); // Beta 1.127: chosen = category colour at full width; unchosen = thin grey. Beta 1.182: both widths x 1.5 with the casing above (6.75 chosen, 4.5 unchosen) - the chosen/unchosen ratio is the 1.127 design's, unchanged; crDraftHit below is the pick TARGET, not drawing, and is deliberately NOT scaled (the tap boxes are Andrew's device-tuned precision, 1.156). Beta 1.210: both widths ride crZoomW like the casing - the literals are the z15-and-above anchors; below z15 the line thins with the zoom (crDraftHit still does NOT scale: it is a tap target, not paint, so picking keeps its generous reach at every zoom). The widths ride the curve in TWO layers (this one filtered to chosen, crDraftLineDim above it to unchosen) because MapLibre silently drops a layer whose line-width nests a zoom curve inside the chosen switch (['case', ..., interpolate, interpolate] never enters the style - measured in the 1.210 round's rendered QA: addLayer does not throw, getLayer stays false); a bare curve as the whole width is fine
     if (!map.getLayer('crDraftHit')) map.addLayer({ id: 'crDraftHit', type: 'line', source: DRAFT_SRC, layout: { 'line-cap': 'round', 'line-join': 'round' }, paint: { 'line-color': '#000000', 'line-opacity': 0, 'line-width': 24 } }); // Beta 1.127: the sector pick's fat-finger target - invisible, queryable (crSectorTap)
   } catch (e) { /* the style may still be loading - renderDraft retries on every change */ }
 }
@@ -533,7 +538,7 @@ function ensureCrGlowLayers() {
     const stack = [['crGlow4', 36.75, 0.05, 14], ['crGlow5', 29.75, 0.06, 10], ['crGlow1', 23.75, 0.10, 0], ['crGlow2', 15.75, 0.16, 0], ['crGlow3', 10.75, 0.24, 0]];
     for (const s of stack) {
       if (map.getLayer(s[0])) continue;
-      const paint = { 'line-color': ['get', 'col'], 'line-width': s[1], 'line-opacity': s[2] };
+      const paint = { 'line-color': ['get', 'col'], 'line-width': crZoomW(s[1]), 'line-opacity': s[2] }; // Beta 1.210: the glow is selection family - its stack widths ride the same crZoomW curve as the draft paint (the table's widths stay the z15-and-above anchors; the blur stays constant, as the main map's glow blur does)
       if (s[3]) paint['line-blur'] = s[3];
       map.addLayer({ id: s[0], type: 'line', source: CR_GLOW_SRC, layout: { 'line-cap': 'round', 'line-join': 'round' }, paint }, 'crDraftCase');
     }
@@ -1094,7 +1099,7 @@ function crFeatDistPx(lngLat, part) { // pixels from the tap to the nearest poin
 }
 function crMapTap(e) {
   if (!creating || crStage !== 'pick' || !map) return;
-  if (crSectorSession.street) { crSectorTap(e.lngLat); return; } // Beta 1.127: while trimming, a map tap speaks only to the street being trimmed - it can neither add nor remove another street
+  if (crSectorSession.street) { if (!crSectorTap(e.lngLat)) crCancelSectors(); return; } // Beta 1.127: while trimming, a map tap speaks only to the street being trimmed - it can neither add nor remove another street. Beta 1.210 (Andrew): a tap that resolves to NO sector of the trim street is a tap-away and acts exactly like the bar's Cancel - the whole crCancelSectors path (snapshot restored, session closed, glow out), never a parallel exit. Taps on sectors still toggle and never exit (crSectorTap answers true); taps on the card, the search bar and the other create chrome are DOM and never reach the map; and a drag/pan cannot land here at all - MapLibre's click fires only when press and release land within its click tolerance, the same tap-vs-drag discipline the main map's tap-away deselect already rests on
   // Beta 1.119: query a small BOX around the tap, not the tap's single pixel.
   // Rendered road lines are a few px wide and a fingertip lands +/-10-20 px
   // off them, so the 1.118 point query almost never held a road and every

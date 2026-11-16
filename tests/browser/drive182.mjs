@@ -303,6 +303,16 @@ await sleep(600);
 const S2 = await chosenOf();
 ok('S2 a tap beyond the new rendered reach toggles NOTHING - its square misses every sector line under the new reach (retry 20 + hit width 12; the old reach, 28 + 12, caught this tap; point distance ' + (SPROBES.s36 ? SPROBES.s36.dMine.toFixed(1) : '?') + ' px) | chosen=' + JSON.stringify(S2) + ' probe=' + JSON.stringify(SPROBES.s36),
   S2pre.length === SEC.parts && JSON.stringify(S2) === JSON.stringify(S2pre));
+// Beta 1.210 re-derivation (TEST-class): a during-trim tap that
+// resolves to no sector is now a TAP-AWAY = Cancel (Andrew's rule) -
+// S2's far tap therefore CLOSED the session, restoring the entry
+// snapshot (here: every part chosen, which is why the set assertion
+// above still reads unchanged). The old drive premised the session
+// surviving such taps; S3/S4 below need an open session, so it is
+// re-opened explicitly after each tap-away probe.
+const S2sess = await J(`crSectorSession.street`);
+ok('S2 the far tap acted as tap-away: the trim session is closed (Beta 1.210) | session=' + JSON.stringify(S2sess), !S2sess);
+await ev(`crOpenSectors('Alderson Avenue')`);
 
 // ---------- S3: renderer muted, 36 px off (~31 m) - the fallback must not catch it ----------
 await ev(`window.__qrfMute = true`);
@@ -313,6 +323,13 @@ const S3 = await chosenOf();
 await ev(`window.__qrfMute = false`);
 ok('S3 with the renderer answering nothing, the far tap (' + (SPROBES.s36 ? SPROBES.s36.dMine.toFixed(1) : '?') + ' px off, ~31 m at this zoom) still toggles NOTHING - the geometry fallback now honours the same 20 px reach (through 1.155 its only cap was 75 m, which caught this tap) | chosen=' + JSON.stringify(S3),
   JSON.stringify(S3) === JSON.stringify(S3pre));
+// Beta 1.210 re-derivation (TEST-class): the muted far tap likewise
+// acted as tap-away = Cancel (the fallback did not catch it, so
+// crSectorTap answered false and crMapTap ran crCancelSectors) -
+// re-open the session so S4 meets the open trim it claims to test.
+const S3sess = await J(`crSectorSession.street`);
+ok('S3 the muted far tap acted as tap-away: the trim session is closed (Beta 1.210) | session=' + JSON.stringify(S3sess), !S3sess);
+await ev(`crOpenSectors('Alderson Avenue')`);
 
 // ---------- S4: renderer muted, 15 px off - the fallback lives ----------
 await ev(`window.__qrfMute = true`);
