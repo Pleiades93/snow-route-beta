@@ -57,13 +57,11 @@ const GEO = {};
 // direction - south end to north end, or west end to east end for
 // east-west streets. Left is the left-hand side in that direction: the
 // same rule for every street, fixed to the street itself, never flipping
-// with the direction of travel. LEFTBIT[name] = which state bit is Left;
-// LEFTSIDE[name] = the compass side that is, for the status line.
-const LEFTBIT = {}, LEFTSIDE = {};
-function buildEngineGeometry() { // Beta 1.117: the engine's route geometry (GEO offsets, LEFTBIT/LEFTSIDE, label features + tiers, the route POI, the hit features) is built HERE from the host's CURRENT data - once at eval (no route loaded yet: empty) and again on every route switch via GLP.rebuildRoute. The containers are refilled in place, never rebound, so every module-level reader (buildFamilies, selectedGeom, addStack) keeps working unchanged.
+// with the direction of travel. LEFTBIT[name] = which state bit is Left.
+const LEFTBIT = {};
+function buildEngineGeometry() { // Beta 1.117: the engine's route geometry (GEO offsets, LEFTBIT, label features + tiers, the route POI, the hit features) is built HERE from the host's CURRENT data - once at eval (no route loaded yet: empty) and again on every route switch via GLP.rebuildRoute. The containers are refilled in place, never rebound, so every module-level reader (buildFamilies, selectedGeom, addStack) keeps working unchanged.
   for (const k of Object.keys(GEO)) delete GEO[k];
   for (const k of Object.keys(LEFTBIT)) delete LEFTBIT[k];
-  for (const k of Object.keys(LEFTSIDE)) delete LEFTSIDE[k];
   labelFeatures.length = 0; labelPointFeatures.length = 0;
   SVMAP = null; // the shared-vertex map is a memoized derivative of GEO (sharedVertexMap) - it must die with the geometry it was built from, or the strand builders read the previous route's streets (the first switch build threw exactly there)
   H.names.forEach(n => {
@@ -103,7 +101,6 @@ function buildEngineGeometry() { // Beta 1.117: the engine's route geometry (GEO
   LEFTBIT[n] = canonicalForward ? 0 : 1;   // bit 0 is the left of the stitched direction
   const leftOff = LEFTBIT[n] === 0 ? off0 : off1, mid = Math.floor(stitched.length / 2);
   const dx = (leftOff[mid][1] - stitched[mid][1]) * H.MLNG, dy = (leftOff[mid][0] - stitched[mid][0]) * H.MLAT;
-  LEFTSIDE[n] = Math.abs(dx) >= Math.abs(dy) ? (dx < 0 ? 'west side' : 'east side') : (dy > 0 ? 'north side' : 'south side');
   // label line: the SPOT segment (or the longest), like the app's labels
   const segs = H.ROADS[n];
   let li = (H.SPOT[n] ? H.SPOT[n][0] : -1);
