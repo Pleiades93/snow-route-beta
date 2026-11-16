@@ -93,6 +93,8 @@ check('D: tab wrapper keeps the 24px box', head.includes('.tabItem .pwrapT { dis
 check('D: tab img is 30px inside the box', head.includes('.tabItem .pwrapT .pico { width: 30px; height: 30px; flex: none; display: block; }'));
 check('D: dock wrapper keeps the 27px box', head.includes('.dockBtn .pwrapD { display: inline-flex; width: 27px; height: 27px; align-items: center; justify-content: center; }'));
 check('D: dock img is 34px inside the box', head.includes('.dockBtn .pwrapD .pico { width: 34px; height: 34px; flex: none; display: block; }'));
+check('D: the tab icon slot keeps its shipped rendered height (27px - the svg line box always carried it; measured by drive196)',
+  head.includes('.tabIco { display: flex; height: 27px; align-items: center; justify-content: center; }'));
 
 // ================= E - the theme-swap wiring =================
 console.log('E - refreshPulsarIcons: defined once, called after the boot assignments and inside applyNight');
