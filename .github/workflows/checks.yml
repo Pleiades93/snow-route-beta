@@ -181,6 +181,8 @@ jobs:
         run: node tests/proof/proof-selcard-note-move.mjs
       - name: Selection-card width proof (Beta 1.215 gate - the card narrows 342 to 262 centred, the one-size invariant restated at 262 x 112.2, 342 surviving only on the route-menu pane)
         run: node tests/proof/proof-selcard-width-262.mjs
+      - name: LEFTSIDE removal proof (B-05 closure - the written-never-read LEFTSIDE state is gone from the assembled app, LEFTBIT's declaration/write/read stand verbatim, and every paint source hashes byte-identical to the unmodified engine in two board states)
+        run: node tests/proof/proof-leftside-removal-b05.mjs
       - name: Premise-lint fixtures (Tranche 4 gate)
         run: python3 scripts/premise-lint-fixtures/run-fixtures.py
       - name: Bug-hunt fix fixtures (PR #23 gate; Beta 1.185)
