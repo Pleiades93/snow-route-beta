@@ -2,7 +2,7 @@
 <html lang="en" class="boot">
 <head>
 <meta charset="UTF-8">
-<meta http-equiv="Content-Security-Policy" content="default-src 'none'; script-src 'sha384-gfLJ19NxRQf4hYIghGdidLZ90RlImRzrpynU558XnNUegdjUTjbdzoUpFODw0ctN' https://cdn.jsdelivr.net; style-src-elem 'sha384-u96Ng+nqd0lOCjrm/+wpa1LxSRPI7Xklvw2UZ0vCxp8OiXZy066/w7Vkl0l1Uutx' https://cdn.jsdelivr.net; style-src-attr 'unsafe-inline'; img-src 'self' data: blob: https://tiles.basemaps.cartocdn.com https://protomaps.github.io https://cdn.jsdelivr.net; connect-src 'self' https://tiles.basemaps.cartocdn.com https://protomaps.github.io https://cdn.jsdelivr.net https://nominatim.openstreetmap.org https://overpass-api.de https://overpass.kumi.systems; worker-src blob: 'self'; child-src blob: 'self'; font-src 'none'; manifest-src 'self'; base-uri 'none'; form-action 'none'; object-src 'none'">
+<meta http-equiv="Content-Security-Policy" content="default-src 'none'; script-src 'sha384-AnBAmCAR+4wH1f6Uic+LjrZhoffJ5ymiZ8zuiAO3VN1+C78jfGMlqJIIf0SdKDX2' https://cdn.jsdelivr.net; style-src-elem 'sha384-o4IVv4Row8YBumJ4+uizziD2z0lWQoPAWlG9+cg+F4SuYUBCZ31Xgnc079D2XM+a' https://cdn.jsdelivr.net; style-src-attr 'unsafe-inline'; img-src 'self' data: blob: https://tiles.basemaps.cartocdn.com https://protomaps.github.io https://cdn.jsdelivr.net; connect-src 'self' https://tiles.basemaps.cartocdn.com https://protomaps.github.io https://cdn.jsdelivr.net https://nominatim.openstreetmap.org https://overpass-api.de https://overpass.kumi.systems; worker-src blob: 'self'; child-src blob: 'self'; font-src 'none'; manifest-src 'self'; base-uri 'none'; form-action 'none'; object-src 'none'">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="mobile-web-app-capable" content="yes">
@@ -59,19 +59,23 @@
   #warn { display: none; background: #c22f24; color: #fff; font-size: 12px; font-weight: 700; text-align: center; padding: 5px 4px; border-radius: 9px; margin-bottom: 6px; }
   body.storage-bad #warn { display: block; }
   /* Selection strip (Beta 1.14, Andrew): part of the header, not a floating card - it grows the top menu
-     only while a street is selected, so Mark completed never floats over the map or fights the buttons. */
+     only while a street is selected, so the complete-road button never floats over the map or fights the buttons. */
   #selPop .selTxt { min-width: 0; }
-  #selPop .selActs { display: flex; gap: 5px; align-items: center; min-height: 40px; } /* min-height 40px (the batch's own gate catch, drive128 M7b): the note button is 40px tall and shows only in the single-section state, so without the reserve the card stood 100.5px for one section and 96.5px for many - the Beta 1.34 one-size invariant. The row now holds 40px in both states */
+  #selPop .selActs { display: flex; gap: 5px; align-items: center; min-height: 42px; } /* min-height 42px = the Look 2 action buttons' height (Beta 1.209): the note button is 34px and shows only in the single-section state, so the reserve is what holds the Beta 1.34 one-size invariant - the row stands 42px in both states (it was 40px for the pre-Look-2 40px note button, the batch's own gate catch, drive128 M7b) */
   #selPop .selActs #selBtn { flex: 1; }
   #selPop .selActs #selAllBtn { flex: 1; }
   #selName { white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
-  #selName { font-size: 15px; font-weight: 700; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
-  #selStatus { font-size: 11.5px; opacity: .65; margin-top: 1px; line-height: 1.35; }
-  #selBtn { flex: none; border: none; border-radius: var(--rad-btn); padding: 9px 12px; font-size: 13.5px; font-weight: 700; min-height: 40px; background: #2ecc71; color: #fff; }
-  #selBtn.notdone { background: #c22f24; }
-  #selBtn:disabled { background: #3a4150; color: #8fa0b3; }
-  #selPop #selNote { flex: none; width: 40px; min-height: 40px; border: none; border-radius: 999px; padding: 0; background: var(--chip); color: inherit; } /* the #selPop prefix is load-bearing: the generic #selPop button rule (1,0,1) otherwise beats a bare #selNote (1,0,0) and the note chip inherits its 7px 12px padding + 36px min-height, squeezing the 19px icon into a 16px content box (sweep re-run E-06) */
-  #selNote svg { width: 19px; height: 19px; display: block; margin: auto; }
+  #selName { font-size: 16px; font-weight: 800; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; } /* Beta 1.209 Look 2: the title steps 15px/700 -> 16px/800 */
+  #selStatus { font-size: 12px; color: #6f757f; margin-top: 1px; line-height: 1.35; } /* Beta 1.209 Look 2: the sub-line is 12px in a flat grey (was 11.5px at 65% opacity) */
+  body.night #selStatus { color: #9aa0aa; }
+  #selPop #selBtn { flex: none; border: none; border-radius: 11px; padding: 0 12px; font-size: 14.5px; font-weight: 700; min-height: 42px; height: 42px; background: rgba(6,180,130,.13); color: #087a5b; } /* Beta 1.209 Look 2: the action button is a 42px mint-TINT slab with deep-green text (was the solid #2ecc71 with white text) - Mark both sides wears the same tint, so the two still share the one official green (drive128 M11). The #selPop prefix is load-bearing on ALL the card's button rules (selBtn/selAllBtn/selClearBtn, like selNote above): the generic #selPop button rule (1,0,1) beats a bare #selBtn (1,0,0) and would hand the buttons back their 999px radius, 7px 12px padding and 12px type - the old design's values happened to match the generic rule's, which is why the bare rules went unnoticed until Look 2 moved the values */
+  body.night #selPop #selBtn { background: rgba(6,214,160,.15); color: #2fe0ae; }
+  #selPop #selBtn.notdone { background: rgba(194,47,36,.13); color: #b3271e; } /* the not-done state keeps its red, in the same tint form */
+  body.night #selPop #selBtn.notdone { background: rgba(255,92,82,.16); color: #ff9d97; }
+  #selPop #selBtn:disabled { background: rgba(120,128,140,.18); color: #8fa0b3; }
+  #selPop #selNote { flex: none; width: 34px; min-height: 34px; height: 34px; border: none; border-radius: 999px; padding: 0; background: rgba(20,22,26,.05); color: #3c4149; } /* Beta 1.209 Look 2: the note button is a 34px ghost circle (was 40px on the chip grey). The #selPop prefix is load-bearing: the generic #selPop button rule (1,0,1) otherwise beats a bare #selNote (1,0,0) and the note chip inherits its 7px 12px padding + 36px min-height, squeezing the icon into a smaller content box (sweep re-run E-06) */
+  body.night #selPop #selNote { background: rgba(255,255,255,.06); color: #c9cdd4; }
+  #selNote svg { width: 16px; height: 16px; display: block; margin: auto; } /* Beta 1.209 Look 2: the note icon steps 19px -> 16px */
   .banner { position: fixed; left: calc(10px + var(--sal)); right: calc(10px + var(--sar)); bottom: calc(var(--vvb, 0px) + 236px + var(--sab)); z-index: 1000; background: var(--card); -webkit-backdrop-filter: var(--blur); backdrop-filter: var(--blur); color: var(--ink); border-radius: 16px; box-shadow: var(--shadow-card); padding: 10px 12px; display: flex; align-items: center; gap: 10px; font-size: 13px; }
   .banner.hidden { display: none; }
   .banner span { flex: 1; line-height: 1.4; }
@@ -115,12 +119,13 @@
   #countFill { position: absolute; left: 0; top: 0; bottom: 0; width: 0%; background: rgba(52,199,89,.42); box-shadow: inset -2px 0 0 #34c759; transition: width .7s var(--ease-open); } /* Beta 1.29: the pill is a meter - a translucent green wash fills it as the route gets cleaned, with a bright leading edge; translucent on purpose, so the themed text (dark by day, bright by night) stays readable over filled and unfilled parts alike */
   #countTxt { position: relative; z-index: 1; }
   body.night { --card: rgba(32,33,37,.94); --card-solid: #202125; --ink: #edf2f9; --ink-dim: rgba(214,226,242,.62); --ink-faint: rgba(214,226,242,.32); --hair: rgba(160,190,235,.14); --chip: rgba(44,74,210,.10); --field: #3c4043; --sec: #9fb4c8; --link: #2c4ad2; --done-nm: #9fd3ae; --tm-c: #8fae99; --nt-c: #c9a86a; } /* Beta 1.75 night card: neutral charcoal (32,33,37) at 94% - Andrew's pick, sampled from a Google Maps dark reference (#202125) - replacing the 1.29 blue-black; fields take the reference's raised tone #3c4043 */
-  #selPop { position: fixed; top: calc(var(--vvt, 0px) + 144px + var(--sat)); left: 50%; transform: translateX(-50%); z-index: 1001; display: flex; align-items: center; gap: 8px; background: var(--glass-day); -webkit-backdrop-filter: var(--blur); backdrop-filter: var(--blur); color: #1d2530; border: 1px solid rgba(20,22,28,.09); padding: 9px 9px 9px 12px; border-radius: 20px; box-shadow: inset 4px 0 0 var(--accent, transparent), var(--shadow-float); flex-direction: column; align-items: stretch; gap: 7px; width: min(342px, 92vw); --accent: transparent; } /* Beta 1.34 (Andrew): ONE fixed width, so the pop-up is the same size for one section or many - no growing/shrinking as the selection changes */ /* Beta 1.30: ONE selection pop-up (Andrew) - the multi-select pill he liked, widened into a card that also carries the old header strip's name/status/notes/mark actions; the street colour rides the left edge */ /* Beta 1.168 (Andrew): the top drops 54px -> 144px (+90) - the pop-up started above the Day/Night button (top 78 + 56 tall = bottom 134) and covered its left half (44px at 390 wide, 24px at 430); 144 lands the pop-up's top 10px below the button's bottom edge, measured in every selection state at 390x844 and 430x932 (the box is one fixed size, so one shift clears them all) */
-  body.night #selPop { background: var(--glass-night); color: #eef4ee; border-color: rgba(255,255,255,.16); }
+  #selPop { position: fixed; top: calc(var(--vvt, 0px) + 144px + var(--sat)); left: 50%; transform: translateX(-50%); z-index: 1001; display: flex; align-items: center; gap: 8px; background: #ffffff; color: #14161a; border: 1px solid rgba(20,22,26,.08); padding: 13px 14px; border-radius: 16px; box-shadow: 0 8px 22px rgba(20,22,26,.13); flex-direction: column; align-items: stretch; gap: 7px; width: min(342px, 92vw); } /* Beta 1.209 (Andrew): the card wears LOOK 2, the sample he approved - a solid card (white by day), a hairline border, 16px radius, 13/14 padding and a soft drop shadow; the 1.30 glass + blur and the 1.32 street-colour left edge are retired (the edge's --accent feed in renderPanel goes with it). Beta 1.34 (Andrew): ONE fixed width, so the pop-up is the same size for one section or many - no growing/shrinking as the selection changes */ /* Beta 1.30: ONE selection pop-up (Andrew) - the multi-select pill he liked, widened into a card that also carries the old header strip's name/status/notes/mark actions */ /* Beta 1.168 (Andrew): the top drops 54px -> 144px (+90) - the pop-up started above the Day/Night button (top 78 + 56 tall = bottom 134) and covered its left half (44px at 390 wide, 24px at 430); 144 lands the pop-up's top 10px below the button's bottom edge, measured in every selection state at 390x844 and 430x932 (the box is one fixed size, so one shift clears them all) */
+  body.night #selPop { background: rgba(20,21,27,.97); color: #f2f3f5; border-color: rgba(255,255,255,.07); box-shadow: 0 8px 22px rgba(0,0,0,.4); } /* Beta 1.209 Look 2 night: near-solid charcoal, hairline white border, black shadow */
   #selPop.hidden { display: none; }
   #selPop button { border: 0; border-radius: 999px; padding: 7px 8px; font-size: 12px; font-weight: 700; cursor: pointer; touch-action: manipulation; min-height: 36px; white-space: nowrap; } /* tightened with the .selActs gap (8px -> 5px) and the card's side padding below: the four action buttons' min-content floor (358px) overflowed the card's 313px inner row and pushed Clear 31px past the card's edge at 390 wide (sweep re-run E-06) */
-  #selAllBtn { background: #2ecc71; color: #fff; }
-  #selClearBtn { background: transparent; color: inherit; }
+  #selPop #selAllBtn { background: rgba(6,180,130,.13); color: #087a5b; height: 42px; min-height: 42px; border-radius: 11px; font-size: 14.5px; padding: 0 12px; } /* Beta 1.209 Look 2: Mark both sides wears the action button's mint tint + 42px geometry, so the two mark buttons still share the one official green (drive128 M11) */
+  body.night #selPop #selAllBtn { background: rgba(6,214,160,.15); color: #2fe0ae; }
+  #selPop #selClearBtn { background: transparent; color: inherit; height: 42px; min-height: 42px; border-radius: 11px; font-size: 14.5px; padding: 0 10px; } /* Beta 1.209: Clear stays a ghost, at the row's 42px height so the multi card stands the same as the single */
   #cancelStartBtn { position: absolute; bottom: calc(100% + 10px); left: 50%; transform: translateX(-50%); border: none; border-radius: 999px; padding: 8px 14px; font-size: 12.5px; font-weight: 700; color: #fff; white-space: nowrap; cursor: pointer; box-shadow: var(--shadow-float); } /* Beta 1.24 (Andrew): above the Start circle - below it, the tab bar swallowed it */
   .sheet { position: fixed; left: 0; right: 0; bottom: var(--vvb, 0px); z-index: 1100; background: var(--card); -webkit-backdrop-filter: var(--blur); backdrop-filter: var(--blur); color: var(--ink); border-radius: 18px 18px 0 0; box-shadow: var(--shadow-card); max-height: calc(var(--vvh, 100dvh) * .5); /* Beta 1.79 (Andrew): sheets open at HALF height - the three stops are closed / half / full (drag or flick up to fill, down to half, down again to close) */ display: flex; flex-direction: column; transform: translateY(105%); visibility: hidden; transition: transform var(--anim-dur) var(--ease-close), height var(--anim-dur) var(--ease-close), max-height var(--anim-dur) var(--ease-close), visibility 0s linear var(--anim-dur); padding-bottom: var(--sab); }
   .grab, .sheetHead { touch-action: none; }
@@ -469,8 +474,8 @@ body.creating #dock, body.creating #tabBar, body.creating #hud, body.creating #n
 .crName { flex: 1; min-width: 0; font-size: 16px; font-weight: 600; color: var(--ink); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
 .crLen { font-size: 13px; color: var(--ink-dim); font-weight: 600; }
 .crChip { border: none; border-radius: 999px; font-size: 12px; font-weight: 800; letter-spacing: .3px; padding: 6px 10px; cursor: pointer; flex: none; }
-.crChip.primary { background: #ffc233; color: #4a3200; }
-.crChip.sec { background: #ef476f; color: #4a3200; } /* Beta 1.207 (Andrew): the secondary chip is the PRIMARY pill's twin - filled, in the secondary raspberry - never the grey placeholder it wore through 1.205. Beta 1.208 (Andrew, from the three-variant sample, pick C): BOTH pills wear the same dark ink #4a3200 - the 1.207 white text on the raspberry was chosen for him, not by him */
+.crChip.primary { background: #ffc233; color: #000000; }
+.crChip.sec { background: #ef476f; color: #000000; } /* Beta 1.207 (Andrew): the secondary chip is the PRIMARY pill's twin - filled, in the secondary raspberry - never the grey placeholder it wore through 1.205. Beta 1.208 (Andrew, from the three-variant sample, pick C): BOTH pills wear the same dark ink - the 1.207 white text on the raspberry was chosen for him, not by him. Beta 1.209 (Andrew): the ink is TRUE BLACK #000000 on both pills - the 1.208 #4a3200 read faded and muddy on the raspberry to his eye; shown ink variants, he picked true black, and shown the letter cases he kept ALL CAPS */
 .crDel { border: none; background: none; color: #e63a2e; font-size: 18px; font-weight: 800; width: 34px; height: 34px; cursor: pointer; flex: none; }
 .crPrimary { appearance: none; -webkit-appearance: none; border: none; background: linear-gradient(135deg, #3d65ef, #1b2fb6); color: #fff; font-size: 17px; font-weight: 700; padding: 15px 18px; border-radius: 14px; width: 100%; cursor: pointer; }
 .crPrimary:disabled { opacity: .45; }
@@ -498,8 +503,8 @@ body.creating #dock, body.creating #tabBar, body.creating #hud, body.creating #n
 .crPName { font-size: 16.5px; font-weight: 650; color: var(--ink); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
 .crPSub { font-size: 13px; color: var(--ink-dim); }
 .crPChip { border: none; border-radius: 999px; font-size: 12px; font-weight: 800; letter-spacing: .3px; padding: 6px 10px; cursor: pointer; flex: none; appearance: none; -webkit-appearance: none; } /* Beta 1.207 (Andrew): the pick-stage chip wears the SAME filled pill as the review stage's .crChip - one design through the whole selection process */
-.crPChip.primary { background: #ffc233; color: #4a3200; }
-.crPChip.sec { background: #ef476f; color: #4a3200; } /* Beta 1.208: dark ink, matching .crChip.sec and both PRIMARY pills (Andrew's pick C) */
+.crPChip.primary { background: #ffc233; color: #000000; }
+.crPChip.sec { background: #ef476f; color: #000000; } /* Beta 1.209: true black ink #000000, matching .crChip.sec and both PRIMARY pills (Andrew's pick, superseding 1.208's #4a3200) */
 .crPDel { border: none; background: rgba(230,58,46,.10); color: #c22f24; font-size: 14px; font-weight: 700; width: 34px; height: 34px; border-radius: 50%; cursor: pointer; flex: none; appearance: none; -webkit-appearance: none; }
 .crPanelBtns { flex-direction: row; }
 .crPanelBtns .crPrimary, .crPanelBtns .crGhost { flex: 1 1 0; width: auto; }
@@ -533,13 +538,13 @@ input, textarea { caret-color: currentColor; } /* Beta 1.125 (Andrew): the typin
 <button id="crHintBtn" style="display:none"></button><div id="createSheet" class="csheet"><div id="crPanel"><div class="crPanelHead" id="crPanelHead"><div class="crGrab"><span></span></div><div class="crHeadRow"><div class="crPanelTitle">Current selection <button id="crCityChange" style="display:none"></button></div><div class="crPanelMeta"><div class="crCount" id="crCount">0 roads &middot; 0 m</div><button id="crClearAll" type="button">Clear all</button></div></div></div><div class="crList" id="crPickList"></div><div class="crBtns crPanelBtns"><button class="crPrimary" id="crDoneBtn" type="button" disabled>Done</button></div></div><div id="crStrip" style="display:none"><div class="crStripTxt"><div class="crStripTitle" id="crStripTitle">0 roads picked</div><div class="crStripSub" id="crStripSub"></div></div><button id="crReviewBtn" type="button">Review &#9650;</button></div><div id="crSectorBar" style="display:none"><div class="crSbTitle" id="crSbName"></div><div class="crSbSub" id="crSbSub"></div><div class="crSbBtns"><button id="crSbCancel" type="button">Cancel</button><button id="crSbWhole" type="button">Entire road</button><button id="crSbDone" type="button">Done</button></div></div></div><div id="previewSheet" class="csheet"><div class="csheetTitle">Review selection</div><div class="crCount" id="pvCount"></div><div class="crList" id="pvList"></div><div class="crBtns"><button class="crGhost" id="pvAddBtn">+ Add a street</button><button class="crPrimary" id="pvSaveBtn">Save route</button><button class="crDanger" id="pvStartOverBtn">Start over</button></div></div><div id="crModal" class="modal hidden"><div class="card"><button id="crModalX" type="button" style="display:none">&#10005;</button><h3 id="crModalTitle">Throw away this draft?</h3><p id="crModalMsg"></p><div class="row"><button id="crModalNo">&#10005;</button><button id="crModalYes">Discard</button></div></div></div>
 <div id="map"></div>
 <div id="chips"></div>
-<div id="selPop" class="hidden"><div class="selTxt"><div id="selName">No street selected</div><div id="selStatus">Tap a street on the map</div></div><div class="selActs"><button id="selNote" title="Note for this street"></button><button id="selAllBtn">Mark both sides</button><button id="selBtn">Mark completed</button><button id="selClearBtn">Clear</button></div></div>
+<div id="selPop" class="hidden"><div class="selTxt"><div id="selName">No street selected</div><div id="selStatus">Tap a street on the map</div></div><div class="selActs"><button id="selNote" title="Note for this street"></button><button id="selAllBtn">Mark both sides</button><button id="selBtn">Complete entire road</button><button id="selClearBtn">Clear</button></div></div>
 <div id="attrChip">© Protomaps © OpenStreetMap contributors © CARTO</div>
 <div id="spdPill" class="hidden">0 km/h</div>
 <div id="hud">
   <div id="warn">Not saving — storage is full or blocked</div>
   <div class="row">
-    <div class="titleStack"><div class="title">Snow Route Beta</div><div class="ver" id="ver">Beta 1.208</div></div>
+    <div class="titleStack"><div class="title">Snow Route Beta</div><div class="ver" id="ver">Beta 1.209</div></div>
   </div>
   <div id="stats"></div>
 </div>
@@ -554,7 +559,7 @@ input, textarea { caret-color: currentColor; } /* Beta 1.125 (Andrew): the typin
   <div id="runSlot">
     <button id="startBtn" class="runBtn">START</button>
     <button id="resetBtn" class="runBtn" style="display:none">FINISH</button>
-    <div id="count" style="display:none"><span id="countFill"></span><span id="countTxt"></span></div> <!-- Beta 1.94 (audit F-01): no hard-coded street total in the static markup - updateCount fills this from the route's own street list the moment a route loads (the pill is chrome, hidden until then). Beta 1.199 (Andrew): the inline display:none is the pill's resting state, the resetBtn/cancelStartBtn pattern - updateCount owns its visibility from the first call on and shows it only while a clean is running -->
+    <div id="count" style="visibility:hidden"><span id="countFill"></span><span id="countTxt"></span></div> <!-- Beta 1.94 (audit F-01): no hard-coded street total in the static markup - updateCount fills this from the route's own street list the moment a route loads (the pill is chrome, hidden until then). Beta 1.199 (Andrew): the pill PAINTS only while a clean is running - updateCount owns that from the first call on. Beta 1.209 (Andrew): the pill's slot is PERMANENTLY RESERVED - the resting state is visibility:hidden, never display:none, so the pill always occupies its footprint in the dock and the Start circle + flanking buttons never move when it appears or leaves (the 1.202 build toggled display and the dock compacted by the pill's 37px footprint; Andrew hit the jump live and ruled the slot stays) -->
     <button id="cancelStartBtn" style="display:none;background:#e63a2e">Cancel start</button>
   </div>
   <button id="paceBtn" class="dockBtn" title="Pace"></button>
@@ -3651,7 +3656,38 @@ function geoSideFrame(name, idx, anchorLL) {
   return { baseLL: [best.gy / MLAT, best.gx / MLNG], left: [best.lx, best.ly] }; // left = [east, north] unit
 }
 function clearChips() { $('chips').innerHTML = ''; }
-function groupSideDone(side) { const bit = side ? 2 : 1; return selSet.length > 0 && selSet.every(en => !!(pieces[en.name][en.idx] & bit)); } // a side reads done only when EVERY selected stretch has it
+const GROUP_PATH_JOIN_M = 20; // metres: two consecutively tapped sections join into one drive when an end of one sits within this of an end of the next (Beta 1.209). Measured on Route 5W's real stretch data: true junction joins are exact (stretch parts share vertices, 0 m, within and across streets) and the nearest non-joining part ends anywhere on the route are 58.7 m apart - the tolerance sits in a wide empty band
+function groupSideMap(side) { // Beta 1.209 (Andrew): the stored side a press of chip `side` toggles on EACH selected stretch, in tap order. Through 1.208 the press applied `side` itself to every stretch - but a stored side is numbered against its own street's drawn direction, so across a turn one press lit his right on one street and his left on the next (his Valeria -> Greenpark drive). Andrew's rule: the tapped sections in tap order ARE his drive, and the press marks the side that was on his right (or his left) as he travels that drive, continuously through turns. So: consecutive taps chain into drives (an end of one within GROUP_PATH_JOIN_M of an end of the next); each section's travel direction comes from its drive neighbours (enter end -> exit end; a drive's first section derives its direction from its exit end, its last from its enter end; a section both neighbours join at the SAME end - he drove in and back out the one junction - is travelled from that end inward); the press's driver meaning is read off the ANCHOR section (the last tapped - the chips sit on it): the chip names a geographic side of the anchor's drawn line (0 = its left, 1 = its right, the engine's convention), and the anchor's own travel direction turns that into driver's right or left; each section then maps that meaning through its own travel-vs-drawn direction (same way: no flip; opposite: flip). Fallbacks keep today's raw mapping exactly: a lone section, any section whose drive is a single section, and the whole press when the anchor's own drive is a single section (a directionless anchor cannot name a driver side). Pure: reads selSet/sel/STRETCH, writes nothing.
+  const n = selSet.length;
+  const raw = selSet.map(() => side);
+  if (n < 2) return raw;
+  const ends = selSet.map(en => { const p = STRETCH[en.name].parts[en.idx]; return [p[0], p[p.length - 1]]; });
+  const join = [null]; // join[k] (k >= 1): {a, b} = selSet[k] joins selSet[k-1] at k-1's end a and k's end b (0 = first point, 1 = last); null = a new drive starts at k
+  for (let k = 1; k < n; k++) {
+    let best = null;
+    for (let a = 0; a < 2; a++) for (let b = 0; b < 2; b++) { const d = distM(ends[k - 1][a], ends[k][b]); if (d <= GROUP_PATH_JOIN_M && (!best || d < best.d)) best = { a, b, d }; }
+    join.push(best);
+  }
+  const drives = [];
+  for (let k = 0; k < n; k++) { if (k === 0 || !join[k]) drives.push([]); drives[drives.length - 1].push(k); }
+  const withDir = new Array(n).fill(null); // withDir[k]: the drive travels section k the way its line is drawn (first point -> last point); null = a single-section drive (no travel direction)
+  for (const drv of drives) {
+    if (drv.length < 2) continue;
+    drv.forEach((k, pos) => {
+      const enter = pos > 0 ? join[k].b : null;
+      const exit = pos < drv.length - 1 ? join[k + 1].a : null;
+      if (enter !== null && exit !== null) withDir[k] = enter === exit ? enter === 0 : (enter === 0 && exit === 1);
+      else if (enter !== null) withDir[k] = enter === 0;
+      else withDir[k] = exit === 1;
+    });
+  }
+  let ai = selSet.findIndex(en => sel && en.name === sel.name && en.idx === sel.idx);
+  if (ai < 0) ai = n - 1;
+  if (withDir[ai] === null) return raw;
+  const driverRight = withDir[ai] ? side === 1 : side === 0;
+  return selSet.map((en, k) => { if (withDir[k] === null) return side; return driverRight ? (withDir[k] ? 1 : 0) : (withDir[k] ? 0 : 1); });
+}
+function groupSideDone(side) { const map = groupSideMap(side); return selSet.length > 0 && selSet.every((en, k) => !!(pieces[en.name][en.idx] & (map[k] ? 2 : 1))); } // a side reads done only when EVERY selected stretch has it - Beta 1.209: "it" is the side this chip's press would toggle on that stretch (groupSideMap's per-stretch side), so the chip's done state reads the same side its press writes
 function showChips() {
   clearChips();
   if (!sel) return;
@@ -3740,11 +3776,12 @@ function togglePiece(name, idx, side) {
   showChips(); const okTp = finishChangeMarked();
   if (doneName && okTp.ok) toast('✓ ' + doneName + ' · ' + fmtClock(new Date()));
 }
-function togglePieceGroup(side) { // one chip, whole selection: a side not done everywhere gets completed everywhere; a side done everywhere gets cleared everywhere
+function togglePieceGroup(side) { // one chip, whole selection: a side not done everywhere gets completed everywhere; a side done everywhere gets cleared everywhere. Beta 1.209: the side is the DRIVER's side - groupSideMap turns the one press into the per-stretch stored side, so the marking follows his drive through a turn instead of landing on one raw index everywhere
   if (!selSet.length) return;
   const on = !groupSideDone(side);
+  const map = groupSideMap(side);
   const completed = [];
-  for (const en of selSet) { const c = applyPiece(en.name, en.idx, side, on); if (c && !completed.includes(c)) completed.push(c); }
+  selSet.forEach((en, k) => { const c = applyPiece(en.name, en.idx, map[k], on); if (c && !completed.includes(c)) completed.push(c); });
   showChips(); const okTg = finishChangeMarked();
   if (okTg.ok) completed.forEach(n => toast('✓ ' + n + ' · ' + fmtClock(new Date())));
 }
@@ -3774,9 +3811,6 @@ function renderPanel() { // ONE selection pop-up (Beta 1.30, Andrew): the header
   if (!sel) { p.classList.add('hidden'); return; }
   p.classList.remove('hidden');
   const multi = selSet.length >= 2; // Beta 1.34 (Andrew): single and multi are the SAME size now - same box, same two rows; only the words and buttons change
-  const streetsIn = new Set(selSet.map(en => en.name)).size;
-  const oneStreet = streetsIn === 1;
-  p.style.setProperty('--accent', !oneStreet ? 'transparent' : (streetComplete(sel.name) ? GREEN : (PRIMARIES.has(sel.name) ? YELLOW : RED))); // the edge mirrors the street (Beta 1.32, Andrew): gold for a primary road, raspberry for an unfinished regular road, mint once the street is complete
   if (!multi) {
     $('selName').textContent = sel.name;
     const total = STRETCH[sel.name].parts.length;
@@ -3796,7 +3830,7 @@ function renderPanel() { // ONE selection pop-up (Beta 1.30, Andrew): the header
   b.style.display = multi ? 'none' : '';
   if (!multi) {
     if (streetComplete(sel.name)) { b.textContent = 'Mark not done'; b.className = 'notdone'; b.disabled = false; }
-    else { b.textContent = 'Mark completed'; b.className = ''; b.disabled = false; }
+    else { b.textContent = 'Complete entire road'; b.className = ''; b.disabled = false; } // Beta 1.209 (Andrew): the button completes the WHOLE road (markStreet), so it says so - the old label read as if it finished only the lit stretch
   }
 }
 $('selBtn').addEventListener('click', () => { if (!sel || !tapGuard('selBtn')) return; markStreet(sel.name, !streetComplete(sel.name)); });
@@ -3810,7 +3844,7 @@ function updateCount() {
   $('startBtn').style.display = runStart ? 'none' : '';
   $('cancelStartBtn').style.display = runStart ? '' : 'none'; // Beta 1.91: Cancel start is offered for the whole run - it erases the run's records, marks included
   $('resetBtn').style.display = runStart ? '' : 'none';
-  $('count').style.display = runStart ? '' : 'none'; // Beta 1.199 (Andrew): the streets-done pill shows ONLY while a clean is running - this line is the ONE place that rule lives, beside the run chrome it keeps company with: Start Clean calls here with runStart set (the pill appears), Finish and Cancel call here with it cleared (the pill leaves), and a boot that restores a live run calls here through refreshAll (the pill is up). The text and meter above are written either way, so marking outside a clean still counts internally - the panel, the Streets header and Pace read the same state directly, never this pill
+  $('count').style.visibility = runStart ? 'visible' : 'hidden'; // Beta 1.199 (Andrew): the streets-done pill shows ONLY while a clean is running - this line is the ONE place that rule lives, beside the run chrome it keeps company with: Start Clean calls here with runStart set (the pill appears), Finish and Cancel call here with it cleared (the pill leaves), and a boot that restores a live run calls here through refreshAll (the pill is up). The text and meter above are written either way, so marking outside a clean still counts internally - the panel, the Streets header and Pace read the same state directly, never this pill. Beta 1.209 (Andrew): the toggle is VISIBILITY, not display - the pill's slot is permanently reserved in the dock, so it appears INTO its spot and the Start circle and flanking buttons never move (the display toggle compacted the dock by the pill's 37px footprint, the jump the 1.202 delivery flagged and Andrew later hit live)
 }
 
 // ===== LIST SHEET =====
@@ -6405,7 +6439,7 @@ $('stDel').addEventListener('click', async () => {
 });
 // ---- About / What's new ----
 const WHATSNEW = { // the curated in-app notes: plain words, LATEST RELEASE ONLY (Beta 1.114, Andrew: the accumulated list cluttered the About pane). A release REPLACES this entry with its own in the same change - it never accumulates; the full history lives in CHANGELOG.md, not the app
-  v: 'Beta 1.208', items: ["The green paint matches the street now. A finished street's green is the same width as the yellow and red streets — no more extra-wide green. When only one side of a street is done, the green fills that whole half of the road at every zoom, instead of shrinking to a thin line at the kerb when you zoom in. Selecting a stretch no longer breaks its green at the junctions. And a street's name no longer repeats over and over along the street when you zoom in.", "Creating a route: both class pills now wear the same dark text, \u201CTap row to adjust\u201D stands on its own line, and the street you are trimming glows on the map while you trim it."] };
+  v: 'Beta 1.209', items: ["Marking sides follows your drive now. When you select several sections and tap a side arrow, the green lands on the side that was on your right (or your left) as you drove them \u2014 even when your sections turn a corner onto another street. Before, one tap could light your right side on one street and your left side on the next.", "The selection card has a calmer new look, and its button now says \u201cComplete entire road\u201d \u2014 because that is what it does: the whole road, not just the stretch you tapped.", "The Start button no longer jumps when a clean begins: the progress pill's space is always kept for it, so the dock stays in one position whether a clean is running or not.", "Creating a route: when you trim a street's sectors, the glow now covers only the sectors still picked \u2014 a sector you remove stays grey and stops glowing. And the PRIMARY and SECONDARY pills now wear true black text."] };
 
 function renderAbout() {
   const cur = $('ver').textContent.trim();
@@ -8009,15 +8043,17 @@ function ensureCrGlowLayers() {
     }
   } catch (e) { /* the style may still be loading - renderDraft retries on every change */ }
 }
-function syncCrGlow() { // the glow's ONE writer: it carries the sector session's street (its whole line, every run, in its category colour) exactly while that street's trim view is open, and nothing otherwise - so opening the trim lights the street and every close path (Done, Cancel, stage change, street removal, creation exit) puts it out, because every one of them re-renders the draft or the backdrop, and both call here
+function syncCrGlow() { // the glow's ONE writer: it carries the sector session's street (in its category colour) exactly while that street's trim view is open, and nothing otherwise - so opening the trim lights the street and every close path (Done, Cancel, stage change, street removal, creation exit) puts it out, because every one of them re-renders the draft or the backdrop, and both call here. Beta 1.209 (Andrew, from his Beta 1.208 phone session): the glow covers the street's CHOSEN sectors only - through 1.208 it carried the whole stitched line, so a sector he tapped OFF turned grey (its draft paint) but kept glowing. The glow is now built from the same sector record renderDraft paints from (crStreetParts + crChosenSet): a removed sector carries no glow, re-adding it restores the glow, and every toggle re-renders the draft, which lands here - so the glow tracks each tap. The sector record is the trim session's own (crOpenSectors opens no session without one); the whole-run line below is only the fallback if that record is ever unavailable mid-session.
   ensureCrGlowLayers();
   if (!map || typeof map.getSource !== 'function') return;
   const src = map.getSource(CR_GLOW_SRC); if (!src) return;
   const feats = [];
   const name = crSectorSession.street;
   if (name && draft && draft.roads && Object.prototype.hasOwnProperty.call(draft.roads, name)) {
-    const g = crDraftGeom(); const st = g && g[name];
-    if (st) { const col = draft.primaries.has(name) ? '#ffc233' : '#ef476f'; for (const run of st.runs) { const L = run.line; if (L && L.length > 1) feats.push({ type: 'Feature', properties: { col }, geometry: { type: 'LineString', coordinates: L.map(p => [p[1], p[0]]) } }); } }
+    const col = draft.primaries.has(name) ? '#ffc233' : '#ef476f';
+    const rec = crStreetParts(name);
+    if (rec) { const set = crChosenSet(name, rec); for (let i = 0; i < rec.parts.length; i++) { if (!set.has(i)) continue; const L = rec.parts[i]; if (L && L.length > 1) feats.push({ type: 'Feature', properties: { col }, geometry: { type: 'LineString', coordinates: L.map(p => [p[1], p[0]]) } }); } }
+    else { const g = crDraftGeom(); const st = g && g[name]; if (st) { for (const run of st.runs) { const L = run.line; if (L && L.length > 1) feats.push({ type: 'Feature', properties: { col }, geometry: { type: 'LineString', coordinates: L.map(p => [p[1], p[0]]) } }); } } }
   }
   src.setData({ type: 'FeatureCollection', features: feats });
 }
