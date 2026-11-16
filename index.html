@@ -2,7 +2,7 @@
 <html lang="en" class="boot">
 <head>
 <meta charset="UTF-8">
-<meta http-equiv="Content-Security-Policy" content="default-src 'none'; script-src 'sha384-02bTYuTs2IzuLFDj2iGpsVDykG2AR8GNblMQQxExxq1Mbt4R7AeeQH+QiGRsHZBR' https://cdn.jsdelivr.net; style-src-elem 'sha384-u96Ng+nqd0lOCjrm/+wpa1LxSRPI7Xklvw2UZ0vCxp8OiXZy066/w7Vkl0l1Uutx' https://cdn.jsdelivr.net; style-src-attr 'unsafe-inline'; img-src 'self' data: blob: https://tiles.basemaps.cartocdn.com https://protomaps.github.io https://cdn.jsdelivr.net; connect-src 'self' https://tiles.basemaps.cartocdn.com https://protomaps.github.io https://cdn.jsdelivr.net https://nominatim.openstreetmap.org https://overpass-api.de https://overpass.kumi.systems; worker-src blob: 'self'; child-src blob: 'self'; font-src 'none'; manifest-src 'self'; base-uri 'none'; form-action 'none'; object-src 'none'">
+<meta http-equiv="Content-Security-Policy" content="default-src 'none'; script-src 'sha384-gfLJ19NxRQf4hYIghGdidLZ90RlImRzrpynU558XnNUegdjUTjbdzoUpFODw0ctN' https://cdn.jsdelivr.net; style-src-elem 'sha384-u96Ng+nqd0lOCjrm/+wpa1LxSRPI7Xklvw2UZ0vCxp8OiXZy066/w7Vkl0l1Uutx' https://cdn.jsdelivr.net; style-src-attr 'unsafe-inline'; img-src 'self' data: blob: https://tiles.basemaps.cartocdn.com https://protomaps.github.io https://cdn.jsdelivr.net; connect-src 'self' https://tiles.basemaps.cartocdn.com https://protomaps.github.io https://cdn.jsdelivr.net https://nominatim.openstreetmap.org https://overpass-api.de https://overpass.kumi.systems; worker-src blob: 'self'; child-src blob: 'self'; font-src 'none'; manifest-src 'self'; base-uri 'none'; form-action 'none'; object-src 'none'">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="mobile-web-app-capable" content="yes">
@@ -2848,7 +2848,7 @@ function fillCornerLinks(fills) {
     const Cxy = [a.Exy[0] + t * a.dir[0], a.Exy[1] + t * a.dir[1]];
     const Vxy = XYOf(V);
     if (Math.hypot(Cxy[0] - Vxy[0], Cxy[1] - Vxy[1]) > 8) continue;
-    fills.push({ pts: [a.E, [Cxy[1] / H.MLAT, Cxy[0] / H.MLNG], b.E], key: 'fill', mem: [a.mem, b.mem] });
+    fills.push({ pts: [a.E, [Cxy[1] / H.MLAT, Cxy[0] / H.MLNG], b.E], key: 'fill', mem: [a.mem, b.mem], corner: true });   // the corner flag is explicit (gate round 4, Codex P2): an ordinary strand merged from two consecutive pieces ALSO carries two mem entries, so mem-count alone cannot identify a connector
   }
 }
 function buildFamilies() {
@@ -2921,9 +2921,15 @@ function buildSelFill() {   // the selected sectors' side fills (vibrant) - Beta
   // selected side is therefore redrawn here too, from the board's own
   // strand (LASTCHAINS), in the selection's vibrant green - t1-selfill
   // sits above t1-sel, so selected and deselected paint identically.
+  // Connectors are identified by the explicit flag fillCornerLinks
+  // sets at creation - NOT by mem count: an ordinary fill strand
+  // merged from two consecutive pieces carries two mem entries too,
+  // and an early build of this fix mistook exactly that for a
+  // connector and painted the unselected piece in selection green
+  // (gate round 4, Codex P2).
   if (selSides.length && typeof LASTCHAINS !== 'undefined' && LASTCHAINS && LASTCHAINS.fills) {
     for (const sl of LASTCHAINS.fills) {
-      if (!sl.mem || sl.mem.length !== 2) continue;   // connectors are the only two-mem fill strands
+      if (!sl.corner || !sl.mem) continue;
       if (sl.mem.some(m => m && selSides.some(s => s.n === m.n && s.idx === m.idx && s.side === m.side)))
         feats.push({ type: 'Feature', properties: { col: GREEN, colG: mute(GREEN) }, geometry: { type: 'LineString', coordinates: GJ(sl.pts) } });
     }

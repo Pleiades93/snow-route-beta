@@ -295,6 +295,28 @@ host.pieces.CrossSt = [0, 0, 0];
 host.selStretch = null; host.selSet = [];
 GLP.sync();
 
+// ---- R3c (gate round 4, Codex P2): only TRUE corner connectors ride
+// the selection redraw. Two consecutive pieces carrying the same side
+// merge into ONE ordinary fill strand with two mem entries - the
+// first build of the R3b fix mistook that strand for a connector and
+// redrew it whole, painting the UNSELECTED piece in selection green
+// (to x ~= 55.47 in this network). Selecting piece 0 of LongAve
+// [1, 1, 0] must paint piece 0's side and nothing past the boundary.
+host.pieces.LongAve = [1, 1, 0];
+host.selStretch = { name: 'LongAve', idx: 0 };
+host.selSet = [host.selStretch];
+GLP.sync();
+GLP.syncSel();
+const selFillM = sources.selFill ? strandsM(sources.selFill.data) : [];
+const maxX = selFillM.length ? Math.max(...selFillM.flat().map(p => p[0])) : -Infinity;
+const minX = selFillM.length ? Math.min(...selFillM.flat().map(p => p[0])) : Infinity;
+check('R3c: selecting one of two same-side pieces paints only that piece (no strand past the boundary)',
+  selFillM.length >= 1 && maxX <= 1 && minX < -30,
+  'strands=' + selFillM.length + ' x range ' + (isFinite(minX) ? minX.toFixed(1) : '?') + '..' + (isFinite(maxX) ? maxX.toFixed(1) : '?'));
+host.pieces.LongAve = [1, 1, 1];
+host.selStretch = null; host.selSet = [];
+GLP.sync();
+
 // ---- R4: a street's name never crowds a screen (Andrew). The first
 // build widened the basemap clones' symbol-spacing toward ~500 m;
 // measured in the real app (drive130, gate rounds 1-3) that kills the

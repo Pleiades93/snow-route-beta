@@ -2847,7 +2847,7 @@ function fillCornerLinks(fills) {
     const Cxy = [a.Exy[0] + t * a.dir[0], a.Exy[1] + t * a.dir[1]];
     const Vxy = XYOf(V);
     if (Math.hypot(Cxy[0] - Vxy[0], Cxy[1] - Vxy[1]) > 8) continue;
-    fills.push({ pts: [a.E, [Cxy[1] / H.MLAT, Cxy[0] / H.MLNG], b.E], key: 'fill', mem: [a.mem, b.mem] });
+    fills.push({ pts: [a.E, [Cxy[1] / H.MLAT, Cxy[0] / H.MLNG], b.E], key: 'fill', mem: [a.mem, b.mem], corner: true });   // the corner flag is explicit (gate round 4, Codex P2): an ordinary strand merged from two consecutive pieces ALSO carries two mem entries, so mem-count alone cannot identify a connector
   }
 }
 function buildFamilies() {
@@ -2920,9 +2920,15 @@ function buildSelFill() {   // the selected sectors' side fills (vibrant) - Beta
   // selected side is therefore redrawn here too, from the board's own
   // strand (LASTCHAINS), in the selection's vibrant green - t1-selfill
   // sits above t1-sel, so selected and deselected paint identically.
+  // Connectors are identified by the explicit flag fillCornerLinks
+  // sets at creation - NOT by mem count: an ordinary fill strand
+  // merged from two consecutive pieces carries two mem entries too,
+  // and an early build of this fix mistook exactly that for a
+  // connector and painted the unselected piece in selection green
+  // (gate round 4, Codex P2).
   if (selSides.length && typeof LASTCHAINS !== 'undefined' && LASTCHAINS && LASTCHAINS.fills) {
     for (const sl of LASTCHAINS.fills) {
-      if (!sl.mem || sl.mem.length !== 2) continue;   // connectors are the only two-mem fill strands
+      if (!sl.corner || !sl.mem) continue;
       if (sl.mem.some(m => m && selSides.some(s => s.n === m.n && s.idx === m.idx && s.side === m.side)))
         feats.push({ type: 'Feature', properties: { col: GREEN, colG: mute(GREEN) }, geometry: { type: 'LineString', coordinates: GJ(sl.pts) } });
     }
