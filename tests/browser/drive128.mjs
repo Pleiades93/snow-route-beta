@@ -149,6 +149,25 @@ ok('M13 the re-centre button, shown in the suspended state, drops below the open
 ok('M13 a tap on the note button centre lands on the note button, not the re-centre button | ' + JSON.stringify(M13c), M13c.hitNote === true);
 await ev(`(() => { watchId = null; followPaused = false; dispPos = null; syncCentreBtn(); return true; })()`); await sleep(200);
 
+// M14 (Beta 1.215, Andrew's pick "C" from the width samples): the card
+// narrows 342 -> 262 - CENTRED as ever (his correction: same centre
+// line, same top, same height), so the top-right corner stands clear
+// of the card. Measured on the rendered card, stable-polled like M13.
+// On Beta 1.214 the width check fails (342); the centre and the
+// height are kept properties and pass on both builds.
+await stableCard128();
+const M14 = JSON.parse(await ev(`(() => { const R = el => { const r = el.getBoundingClientRect(); return { x: r.x, y: r.y, right: r.right, bottom: r.bottom, w: r.width, h: r.height, cx: (r.x + r.right) / 2 }; };
+  const btn = $('selBtn');
+  return JSON.stringify({ card: R($('selPop')), night: R($('nightBtn')), vw: window.innerWidth, btnScrollW: btn.scrollWidth, btnClientW: btn.clientWidth, btnH: btn.getBoundingClientRect().height }); })()`));
+ok('M14 the card is 262 wide and 112.2 high - the one-size invariant restated at the new width | ' + JSON.stringify(M14.card),
+  Math.abs(M14.card.w - 262) <= 1 && Math.abs(M14.card.h - 112.2) <= 1);
+ok('M14 the narrowed card stays centred on the screen centre | ' + JSON.stringify({ cx: M14.card.cx, vw: M14.vw }),
+  Math.abs(M14.card.cx - M14.vw / 2) <= 1);
+ok('M14 the Day/Night toggle never meets the open card (it stands above the card top, clear at the new width) | night ' + JSON.stringify(M14.night) + ' card ' + JSON.stringify(M14.card),
+  !(M14.night.x < M14.card.right - 0.5 && M14.card.x < M14.night.right - 0.5 && M14.night.y < M14.card.bottom - 0.5 && M14.card.y < M14.night.bottom - 0.5) && M14.card.y - M14.night.bottom >= 5);
+ok('M14 Complete entire road keeps its text on one line at 262 | ' + JSON.stringify({ s: M14.btnScrollW, c: M14.btnClientW, h: M14.btnH }),
+  M14.btnScrollW <= M14.btnClientW + 0.5 && Math.abs(M14.btnH - 42) <= 1);
+
 // ---- M8: tap away from a menu spends the tap (Beta 1.30) ----
 await ev(`(() => { $('sheet').classList.add('open'); return true; })()`); await sleep(300);
 const tapPx = async (x, y) => { // a real tap at raw viewport pixels (the open sheet covers the centre, so tapAt's centred tap would land on the sheet itself)
