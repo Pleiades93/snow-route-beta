@@ -513,7 +513,7 @@ function ensureDraftLayers() {
   if (!map || typeof map.addSource !== 'function') return;
   try {
     if (!map.getSource(DRAFT_SRC)) map.addSource(DRAFT_SRC, { type: 'geojson', data: { type: 'FeatureCollection', features: [] } });
-    if (!map.getLayer('crDraftCase')) map.addLayer({ id: 'crDraftCase', type: 'line', source: DRAFT_SRC, filter: ['==', ['get', 'chosen'], 1], layout: { 'line-cap': 'round', 'line-join': 'round' }, paint: { 'line-color': 'rgba(10,14,34,.55)', 'line-width': crZoomW(12.75) } }); // Beta 1.127: the casing underlines CHOSEN geometry only - an unchosen sector wears no casing, like the mockup's plain grey ends. Beta 1.182: 12.75 = the 1.127 casing x 1.5 - the draft's DRAWN widths carry the same factor Beta 1.181 gave every road (ROAD_WIDTH_K in the generator, WIDTH_K in the engine; both live outside this part's scope, so the coupled values are literals here), and a chosen street's selection again spans the widened road it sits on (measured on the live 1.181 build: casing 8.5 and line 4.5 against a 12 px minor road at z17 - the selection sat INSIDE the road with white showing both sides). Beta 1.210: the literal is now the crZoomW curve's anchor (its value at z15 and above) - below z15 the casing thins with the zoom instead of blobbing over zoomed-out streets
+    if (!map.getLayer('crDraftCase')) map.addLayer({ id: 'crDraftCase', type: 'line', source: DRAFT_SRC, filter: ['==', ['get', 'chosen'], 1], layout: { 'line-cap': 'round', 'line-join': 'round' }, paint: { 'line-color': 'rgba(10,14,34,.55)', 'line-width': crZoomW(9.75) } }); // Beta 1.127: the casing underlines CHOSEN geometry only - an unchosen sector wears no casing, like the mockup's plain grey ends. Beta 1.182: 12.75 = the 1.127 casing x 1.5 - the draft's DRAWN widths carry the same factor Beta 1.181 gave every road (ROAD_WIDTH_K in the generator, WIDTH_K in the engine; both live outside this part's scope, so the coupled values are literals here), and a chosen street's selection again spans the widened road it sits on (measured on the live 1.181 build: casing 8.5 and line 4.5 against a 12 px minor road at z17 - the selection sat INSIDE the road with white showing both sides). Beta 1.210: the literal is now the crZoomW curve's anchor (its value at z15 and above) - below z15 the casing thins with the zoom instead of blobbing over zoomed-out streets. Beta 1.216 (Andrew, from the casing samples): the anchor drops 12.75 -> 9.75 - the casing's EXTRA width over the line is halved (the dark reveal per side 3.0 -> 1.5 px at the anchor, the drawn band 8.25 -> 6.75 m at z16.5), same near-black, same round caps; at the old reveal the near-black outline around the thin 4.1 m core read thick and bulgy (outline-to-core 0.89 against the finished rim's 0.24). crGlowCasingHalfM below follows this anchor (4.875 px)
     if (!map.getLayer('crDraftLineDim')) map.addLayer({ id: 'crDraftLineDim', type: 'line', source: DRAFT_SRC, filter: ['!=', ['get', 'chosen'], 1], layout: { 'line-cap': 'round', 'line-join': 'round' }, paint: { 'line-color': '#b9c1cb', 'line-width': crZoomW(4.5) } }); // Beta 1.210: the unchosen line as its OWN layer under the chosen one - see the crDraftLine note below for why the 1.127 single layer became two
     if (!map.getLayer('crDraftLine')) map.addLayer({ id: 'crDraftLine', type: 'line', source: DRAFT_SRC, filter: ['==', ['get', 'chosen'], 1], layout: { 'line-cap': 'round', 'line-join': 'round' }, paint: { 'line-color': ['case', ['==', ['get', 'primary'], 1], '#ffc233', '#ef476f'], 'line-width': crZoomW(6.75) } }); // Beta 1.127: chosen = category colour at full width; unchosen = thin grey. Beta 1.182: both widths x 1.5 with the casing above (6.75 chosen, 4.5 unchosen) - the chosen/unchosen ratio is the 1.127 design's, unchanged; crDraftHit below is the pick TARGET, not drawing, and is deliberately NOT scaled (the tap boxes are Andrew's device-tuned precision, 1.156). Beta 1.210: both widths ride crZoomW like the casing - the literals are the z15-and-above anchors; below z15 the line thins with the zoom (crDraftHit still does NOT scale: it is a tap target, not paint, so picking keeps its generous reach at every zoom). The widths ride the curve in TWO layers (this one filtered to chosen, crDraftLineDim above it to unchosen) because MapLibre silently drops a layer whose line-width nests a zoom curve inside the chosen switch (['case', ..., interpolate, interpolate] never enters the style - measured in the 1.210 round's rendered QA: addLayer does not throw, getLayer stays false); a bare curve as the whole width is fine
     if (!map.getLayer('crDraftHit')) map.addLayer({ id: 'crDraftHit', type: 'line', source: DRAFT_SRC, layout: { 'line-cap': 'round', 'line-join': 'round' }, paint: { 'line-color': '#000000', 'line-opacity': 0, 'line-width': 24 } }); // Beta 1.127: the sector pick's fat-finger target - invisible, queryable (crSectorTap)
@@ -541,9 +541,48 @@ function ensureDraftLayers() {
 // 1.209); only its sink changed: features feed crGlowSetFeatures, which
 // rebuilds this mesh. The main map's clean-time selection glow is a different
 // stack in the engine and is untouched.
+// Beta 1.216 (Andrew, from his Davos trim-view screenshots): the 1.211 mesh
+// construction had a defect the shader sample could not show - the sample
+// was built on clean geometry. The sector parts the trim session feeds in
+// carry REPEATED consecutive points where the sector cuts and way-stitches
+// inserted a point equal to its neighbour (Velmar: 13 across its 14 parts,
+// sitting at the junctions). A repeated point makes a zero-length segment
+// whose normal comes out (0,0); the miter at the station beside it dots
+// against that zero normal, the cos clamp takes its floor (0.45), and the
+// whole cross-section stretches x2.22 along the surviving normal while its
+// distance attribute still claims the ring distance - a spear of
+// full-strength glow thrown sideways at every joint. Measured on the
+// shipped construction (the sample round's mesh census): 336 of 5,268
+// vertices sit more than 4 m farther from the line than claimed, the worst
+// claiming 20 m and sitting at 44.8 m; on screen the glow ran ~4.3x
+// stronger near joints than mid-part - Andrew's blotches. The fix lives in
+// the mesh path only: crGlowBuildMesh stitches the fed parts into
+// continuous runs first (crGlowStitchFeats - interior joints also lose
+// their stacked end-cap fans) and drops repeated consecutive points, so no
+// zero-length segment can poison a normal. Measured on the same Velmar
+// feed after the fix: 0 vertices beyond their claimed distance +0.9 m.
+// syncCrGlow's chosen-sectors computation (1.209) is untouched - WHICH
+// sectors glow is unchanged; only how the ribbon is built from them.
+// proof-create-glow-casing-fix.mjs pins the no-spear property permanently.
 const CR_GLOW_RINGS = [-20, -13, -9.9, -4.95, 0, 4.95, 9.9, 13, 20]; // signed distances from the centreline: the kerb (4.95), the sample's falloff rings (9.9), and outer rings (13, 20) that carry the low-zoom reach floor's tail (below) - at the picking zooms the falloff is done by 13.95 m and the outer rings just carry alpha 0
 function crGlowRgb(hex) { const n = parseInt(hex.slice(1), 16); return [((n >> 16) & 255) / 255, ((n >> 8) & 255) / 255, (n & 255) / 255]; }
+function crGlowStitchFeats(feats) { // Beta 1.216: chain same-colour features whose endpoints coincide into continuous lines, so the mesh is built per continuous run and interior joints get NO end-cap fans (at a joint two fans plus the ribbons composite there and bump the glow - the sample round's secondary contributor). Chaining is by exact endpoint coincidence (1e-9): the sector parts are cut from one line, so true neighbours share their endpoint values
+  const same = (a, b) => Math.abs(a[0] - b[0]) < 1e-9 && Math.abs(a[1] - b[1]) < 1e-9;
+  const lines = [];
+  for (const f of feats) {
+    const c = f.geometry && f.geometry.coordinates; if (!c || c.length < 2) continue;
+    let placed = false;
+    for (const L of lines) {
+      if (L.col !== f.properties.col) continue;
+      if (same(L.coords[L.coords.length - 1], c[0])) { L.coords.push(...c.slice(1)); placed = true; break; }
+      if (same(c[c.length - 1], L.coords[0])) { L.coords.unshift(...c.slice(0, -1)); placed = true; break; }
+    }
+    if (!placed) lines.push({ col: f.properties.col, coords: c.slice() });
+  }
+  return lines.map(L => ({ type: 'Feature', properties: { col: L.col }, geometry: { type: 'LineString', coordinates: L.coords } }));
+}
 function crGlowBuildMesh(feats) { // features -> one expanded triangle vertex array, 6 floats per vertex: mercator x, y, |distance from the centreline| in metres, r, g, b
+  feats = crGlowStitchFeats(feats).map(f => ({ type: 'Feature', properties: f.properties, geometry: { type: 'LineString', coordinates: f.geometry.coordinates.filter((c, i, a) => i === 0 || Math.abs(c[0] - a[i - 1][0]) > 1e-12 || Math.abs(c[1] - a[i - 1][1]) > 1e-12) } })); // Beta 1.216: stitch the fed parts into continuous runs and drop repeated consecutive points BEFORE any normal is computed - a repeated point is a zero-length segment with a (0,0) normal, and the miter clamp turns that into a x2.22 spear (the 1.216 note above). The feed itself (syncCrGlow's chosen sectors, 1.209) is unchanged
   const verts = [];
   const push = (x, y, d, rgb) => { verts.push(x, y, d, rgb[0], rgb[1], rgb[2]); };
   for (const f of feats) {
@@ -637,7 +676,7 @@ function crGlowLayerObj() {
       gl.enableVertexAttribArray(this._aCol); gl.vertexAttribPointer(this._aCol, 3, gl.FLOAT, false, 24, 12);
       gl.uniformMatrix4fv(this._u.matrix, false, matrix);
       gl.uniform1f(this._u.half, 4.95);
-      gl.uniform1f(this._u.reach, Math.max(5 + 4 * s, (crGlowCasingHalfM() - 4.95) * 2.21)); // the breath's reach, with a visibility floor: the create casing balloons in metres toward the z15 anchor (22 m wide there, holding those metres below z15 - the 1.210 curve), which would swallow a purely metric halo whole at z15 and below (measured in this round's QA: at z15 the visible fringe ended inside the casing; at z13 there was none). The floor sizes the reach so the falloff still holds 30% of peak alpha at the casing's edge - (casingHalf - kerb) / (1 - sqrt(0.30)), the 2.21 factor - giving a real fringe past the paint plus a warm tint through the 55%-opaque casing. At the picking zooms (z16+) the casing half is 5.5 m or less, the floor (<=1.2) sits under the breath's own trough, and the approved sample form runs untouched; the floor's widest falloff (4.95 + ~13.4 = ~18.3 m) stays inside the mesh's 20 m outer rings.
+      gl.uniform1f(this._u.reach, Math.max(5 + 4 * s, (crGlowCasingHalfM() - 4.95) * 2.21)); // the breath's reach, with a visibility floor: the create casing balloons in metres toward the z15 anchor (16.8 m wide there since Beta 1.216 narrowed the anchor to 9.75 px - 22 m before - holding those metres below z15, the 1.210 curve), which would swallow a purely metric halo whole at z15 and below (measured in the 1.211 round's QA: at z15 the visible fringe ended inside the casing; at z13 there was none). The floor sizes the reach so the falloff still holds 30% of peak alpha at the casing's edge - (casingHalf - kerb) / (1 - sqrt(0.30)), the 2.21 factor - giving a real fringe past the paint plus a warm tint through the 55%-opaque casing. Beta 1.216 re-verified the floor against the narrowed casing (crGlowCasingHalfM now reads the 9.75 px anchor): at the picking zooms (z16+) the casing half is ~4.2 m - under the 4.95 m kerb itself - so the floor term is <= 0 and the approved sample form runs untouched; at z15 the floor is ~7.6 m and governs only the breath's trough half (the old casing's ~13.4 m floor governed the whole cycle), and the floor's widest falloff (4.95 + ~7.6 = ~12.6 m) stays inside the mesh's 20 m outer rings
       gl.uniform1f(this._u.peak, 0.50 + 0.30 * s);
       gl.drawArrays(gl.TRIANGLES, 0, this._data.length / 6);
       gl.disableVertexAttribArray(this._aPos); gl.disableVertexAttribArray(this._aDist); gl.disableVertexAttribArray(this._aCol);
@@ -656,10 +695,10 @@ function crGlowLayerObj() {
   return crGlowShaderLayer;
 }
 function crGlowSetFeatures(feats) { const layer = crGlowLayerObj(); layer._data = crGlowBuildMesh(feats); layer._dirty = true; if (map && typeof map.triggerRepaint === 'function') map.triggerRepaint(); }
-function crGlowCasingHalfM() { // the draft casing's half-width in metres at the current zoom: its crZoomW anchor (12.75 px) holds from z15 up and holds its z15 metres below that (the 1.210 curve), so the metre half-width is 6.375 px x the metres-per-px at max(z, 15) - the repo's own ruler (proof-street-end-width-fix: Web-Mercator, 512 px tiles)
+function crGlowCasingHalfM() { // the draft casing's half-width in metres at the current zoom: its crZoomW anchor (9.75 px since Beta 1.216; 12.75 px through 1.215) holds from z15 up and holds its z15 metres below that (the 1.210 curve), so the metre half-width is 4.875 px x the metres-per-px at max(z, 15) - the repo's own ruler (proof-street-end-width-fix: Web-Mercator, 512 px tiles)
   if (!map) return 0;
   const c = map.getCenter(); const lat = c ? c.lat * Math.PI / 180 : 0.765;
-  return 6.375 * (40075016.686 * Math.cos(lat)) / (512 * Math.pow(2, Math.max(map.getZoom(), 15)));
+  return 4.875 * (40075016.686 * Math.cos(lat)) / (512 * Math.pow(2, Math.max(map.getZoom(), 15)));
 }
 function ensureCrGlowLayers() {
   if (!map || typeof map.addLayer !== 'function') return;

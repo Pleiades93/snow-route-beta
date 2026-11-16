@@ -183,6 +183,8 @@ jobs:
         run: node tests/proof/proof-selcard-width-262.mjs
       - name: LEFTSIDE removal proof (B-05 closure - the written-never-read LEFTSIDE state is gone from the assembled app, LEFTBIT's declaration/write/read stand verbatim, and every paint source hashes byte-identical to the unmodified engine in two board states)
         run: node tests/proof/proof-leftside-removal-b05.mjs
+      - name: Create glow + casing fix proof (Beta 1.216 gate - the trim glow mesh stitches sector parts and drops repeated points so no vertex sits beyond its claimed distance + 1 m (the spear assertion), and the draft casing anchor is halved to crZoomW(9.75) with the reach floor following it)
+        run: node tests/proof/proof-create-glow-casing-fix.mjs
       - name: Premise-lint fixtures (Tranche 4 gate)
         run: python3 scripts/premise-lint-fixtures/run-fixtures.py
       - name: Bug-hunt fix fixtures (PR #23 gate; Beta 1.185)

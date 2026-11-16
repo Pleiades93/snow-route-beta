@@ -6,6 +6,8 @@ import vm from 'node:vm';
 // Andrew-directed fixes from his Beta 1.209 phone session:
 //
 //   S1 - the create flow's selection paint (crDraftCase 12.75 px,
+//        9.75 px since Beta 1.216 - the casing anchor was halved to
+//        variant B; the curve behaviour pinned here is unchanged),
 //        crDraftLine 6.75 chosen / crDraftLineDim 4.5 unchosen px, the
 //        crGlow stack) wore CONSTANT px
 //        widths, so its drawn width in metres doubled with every zoom
@@ -75,9 +77,9 @@ check('S1: crZoomW exists in create-pick.js', !!crZoomWSrc);
 let crZoomW = null;
 if (crZoomWSrc) { const ctx = {}; vm.createContext(ctx); vm.runInContext(crZoomWSrc + '\nthis.crZoomW = crZoomW;', ctx); crZoomW = ctx.crZoomW; }
 if (crZoomW) {
-  for (const [label, w] of [['casing', 12.75], ['chosen line', 6.75], ['unchosen line', 4.5]]) { // Beta 1.211 re-derivation: the 'glow outer' entry retired with the glow stack itself - the trim glow is a metric shader mesh now and wears no px width for this curve to hold (its metre construction is pinned by proof-shader-glow-round.mjs)
+  for (const [label, w] of [['casing', 9.75], ['chosen line', 6.75], ['unchosen line', 4.5]]) { // Beta 1.211 re-derivation: the 'glow outer' entry retired with the glow stack itself - the trim glow is a metric shader mesh now and wears no px width for this curve to hold (its metre construction is pinned by proof-shader-glow-round.mjs). Beta 1.216 re-derivation: the casing anchor 12.75 -> 9.75 (variant B, Andrew's pick) - the chosen/unchosen line anchors are unchanged from 1.209, the casing now rides its 1.216 anchor
     const e = crZoomW(w);
-    check(`S1: ${label} px at z15/17/19 unchanged from 1.209 (${w})`,
+    check(`S1: ${label} px at z15/17/19 equals its anchor (${w})`,
       evalW(e, 15) === w && evalW(e, 17) === w && evalW(e, 19) === w,
       `z15=${evalW(e, 15)} z17=${evalW(e, 17)} z19=${evalW(e, 19)}`);
     check(`S1: ${label} halves per level below z15 (z14=${w / 2}, z12=${w / 8}, z10=${w / 32})`,
@@ -95,7 +97,7 @@ if (crZoomW) {
   }
 }
 // ---------- S1: layer wiring ----------
-check('S1: crDraftCase width rides crZoomW(12.75)', pick.includes("'line-width': crZoomW(12.75)"));
+check('S1: crDraftCase width rides crZoomW(9.75)', pick.includes("'line-width': crZoomW(9.75)"));
 check('S1: crDraftLine (chosen layer) width rides crZoomW(6.75)', pick.includes("id: 'crDraftLine', type: 'line', source: DRAFT_SRC, filter: ['==', ['get', 'chosen'], 1]") && pick.includes("'line-width': crZoomW(6.75)"));
 check('S1: crDraftLineDim (unchosen layer) width rides crZoomW(4.5)', pick.includes("id: 'crDraftLineDim', type: 'line', source: DRAFT_SRC, filter: ['!=', ['get', 'chosen'], 1]") && pick.includes("'line-width': crZoomW(4.5)"));
 // Regression guard for the defect the 1.210 rendered QA caught: a zoom

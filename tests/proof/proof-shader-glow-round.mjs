@@ -71,9 +71,10 @@ check('G: the breathing repaint is gated on a live mesh (render returns before a
 const ringsM = pick.match(/const CR_GLOW_RINGS = \[([^\]]+)\];/);
 check('G: the ring table (kerb + falloff rings + the floor tail rings at 13/20 m)', !!ringsM && ringsM[1] === '-20, -13, -9.9, -4.95, 0, 4.95, 9.9, 13, 20', ringsM && ringsM[1]);
 const buildSrc = extractFn(pick, 'crGlowBuildMesh');
+const stitchSrc = extractFn(pick, 'crGlowStitchFeats'); // Beta 1.216: the builder stitches its feed first - the harness must lift the helper too
 const rgbSrc = extractFn(pick, 'crGlowRgb');
-check('G: mesh builder extractable', !!(buildSrc && rgbSrc && ringsM));
-if (buildSrc && rgbSrc && ringsM) {
+check('G: mesh builder extractable', !!(buildSrc && stitchSrc && rgbSrc && ringsM));
+if (buildSrc && stitchSrc && rgbSrc && ringsM) {
   const ctx = { console };
   vm.createContext(ctx);
   vm.runInContext(`
@@ -85,6 +86,7 @@ if (buildSrc && rgbSrc && ringsM) {
   `, ctx);
   vm.runInContext(ringsM[0], ctx);
   vm.runInContext(rgbSrc, ctx);
+  vm.runInContext(stitchSrc, ctx);
   vm.runInContext(buildSrc, ctx);
   const run = expr => vm.runInContext(expr, ctx);
   const feat = (coords, col) => ({ type: 'Feature', properties: { col }, geometry: { type: 'LineString', coordinates: coords } });
