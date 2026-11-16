@@ -237,10 +237,10 @@ const p2 = await J(`(() => ({ paused: followPaused }))()`);
 ok('P2 the arming pointer own drag holds the suspension its press took | followPaused ' + p2.paused, p2.paused === true);
 await touchEv('touchEnd', [{ id: 1, x: cv.x - 70, y: cv.y }, { id: 2, x: cv.x + 70, y: cv.y }]);
 
-// ---- I (Beta 1.116, CG-115-04 as amended by Andrew at the gate): centre button = standard GPS crosshair; the Locate face is untouched ----
+// ---- I (Beta 1.116, CG-115-04 as amended by Andrew at the gate; artwork re-derived Beta 1.217): centre button wears its own picked glyph, distinct from the Locate face — since 1.217 both are Pulsar imgs (centre = North Direction, Locate = the navigation arrow) ----
 const iFace = await J(`(() => { const cb = $('centreBtn'); const gb = $('gpsBtn'); return { cbHtml: cb.innerHTML, lbl: gb.querySelector('.tabLbl').textContent, ico: gb.querySelector('.tabIco').innerHTML, paused: followPaused }; })()`);
-ok('I1 the re-centre button wears Andrew\'s picked crosshair artwork (mockup sheet candidate #2: stroked ring r6 + four ticks + filled dot r2.2), not the navigation arrow | ' + String(iFace.cbHtml).slice(0, 110), iFace.paused === true && String(iFace.cbHtml).includes('r="2.2"') && String(iFace.cbHtml).includes('M12 1.5v4') && !String(iFace.cbHtml).includes('M12 2.6 19.6 20.6'));
-ok('I2 while suspended, the Locate tab face is still the 1.115 face (Locate label + the pack navigation-arrow icon; the file-level diff proves byte-identity) | label ' + JSON.stringify(iFace.lbl), iFace.lbl === 'Locate' && String(iFace.ico).includes('M12 2.6 19.6 20.6') && !String(iFace.ico).includes('<circle'));
+ok('I1 the re-centre button wears the Pulsar centre artwork (Beta 1.217 re-derivation: Andrew\'s picked North Direction img, data-k centre — the 1.116 crosshair check at the same strength, the artwork itself is the change) | ' + String(iFace.cbHtml).slice(0, 110), iFace.paused === true && String(iFace.cbHtml).includes('data-k="centre"') && String(iFace.cbHtml).includes('class="pico"') && !String(iFace.cbHtml).includes('data-k="gps"'));
+ok('I2 while suspended, the Locate tab face is the Pulsar locate face (Locate label + the data-k gps img; Beta 1.217 re-derivation of the 1.115 face check) | label ' + JSON.stringify(iFace.lbl), iFace.lbl === 'Locate' && String(iFace.ico).includes('data-k="gps"') && !String(iFace.ico).includes('data-k="centre"'));
 await ev(`(() => { window.__feed.on = false; stopGps(); return true; })()`);
 
 R.exceptions = consoleLog.filter(c => c.type === 'EXCEPTION').map(c => String(c.text || '').slice(0, 200));

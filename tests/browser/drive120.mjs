@@ -28,7 +28,7 @@ ok('V0 app boots with the map active', await poll120(`typeof glOk !== 'undefined
 // V1 (Beta 1.21 layout): the dock - List | round run button | Pace on one level,
 // centred and symmetrical; the gear alone at the top left; the header is title-only.
 const dockGeom = async () => JSON.parse(await ev(`(() => { const r = (id) => { const b = $(id).getBoundingClientRect(); return { x: b.x, y: b.y, w: b.width, h: b.height, r: b.right, b: b.bottom, cx: b.x + b.width / 2, cy: b.y + b.height / 2 }; };
-  return JSON.stringify({ list: r('streetsBtn'), pace: r('paceBtn'), start: r('startBtn'), tabs: [...document.querySelectorAll('#tabBar .tabItem')].map(e => { const b = e.getBoundingClientRect(); return { x: b.x, y: b.y, w: b.width, h: b.height, r: b.right, b: b.bottom, lbl: e.querySelector('.tabLbl').textContent, svg: !!e.querySelector('svg') }; }), vw: window.innerWidth }); })()`));
+  return JSON.stringify({ list: r('streetsBtn'), pace: r('paceBtn'), start: r('startBtn'), tabs: [...document.querySelectorAll('#tabBar .tabItem')].map(e => { const b = e.getBoundingClientRect(); return { x: b.x, y: b.y, w: b.width, h: b.height, r: b.right, b: b.bottom, lbl: e.querySelector('.tabLbl').textContent, svg: !!e.querySelector('.tabIco .pico') }; }), vw: window.innerWidth }); })()`));
 let D = await dockGeom();
 let rects = [D.list, D.pace, D.start];
 ok('V1 dock buttons all inside the viewport | dock ' + JSON.stringify(D), rects.every(inView));

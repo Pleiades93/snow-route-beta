@@ -100,6 +100,9 @@
   #tabBar { position: fixed; left: 0; right: 0; bottom: 0; z-index: 1000; display: flex; background: var(--card); /* Beta 1.29 cohesion (Andrew): the bottom bar wears the SAME surface as the Streets/Pace sheets and the Settings pop-up, day and night - one menu family */ -webkit-backdrop-filter: var(--blur); backdrop-filter: var(--blur); padding: 4px 4px calc(3px + var(--sab)); box-shadow: 0 -8px 28px rgba(10,14,20,.30); } /* Beta 1.23 (Andrew, from his reference screenshot): the menu lives in a bottom tab bar now - dark frosted, icon + label per action */ /* Beta 1.192 (Andrew, from his side-by-side with a standard tab bar): the bar takes the standard iOS tab-bar height - content zone 56px -> 49px (bar padding 6/6 -> 4/3 here and item padding 4/2 -> 3/1 below; the 24px icons and 10px labels are untouched) - and the floaters that hug its top edge ride down the same 7px so their rendered gaps over the bar are unchanged (measured in the assembled page, before and after: #dock 16px, #spd 18px, #attrChip 10px - the rendered bar stands 2px over its design zone, the label's line box, which is why the rendered gaps read 2px under the constant differences): #dock 74 -> 67, #spd 76 -> 69, #attrChip 68 -> 61. The banners (236), #mapNote (240) and #toast (120) do NOT ride: the banners clear the whole bottom chrome stack, not the bar alone, and the toast is a screen-level placement that must also read over the full-screen menus */
   .tabItem { flex: 1; background: none; border: none; color: #2b3038; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 2px; padding: 3px 0 1px; cursor: pointer; font-family: inherit; }
   .tabItem svg { width: 24px; height: 24px; }
+  .tabIco { display: flex; height: 27px; align-items: center; justify-content: center; } /* Beta 1.217: the icon slot keeps its SHIPPED rendered height - the 24px svg always rendered in a 27px line box (its font descent), and the Pulsar img centred in the bare 24px wrapper measured 30px as line content (its overflow moves the baseline) or 24px as a flex child; the slot height is now explicit at the shipped 27px, so the tab bar stands at its standard 51px and no gap moves (drive196) */
+  .tabItem .pwrapT { display: inline-flex; width: 24px; height: 24px; align-items: center; justify-content: center; } /* Beta 1.217: the Pulsar tab wrapper keeps the svg's exact 24px layout box - no tab changes size */
+  .tabItem .pwrapT .pico { width: 30px; height: 30px; flex: none; display: block; } /* the PNG artwork carries its own padding, so the img runs larger inside the same box to put the glyph at the old glyph's size */
   .tabLbl { font-size: 10px; font-weight: 600; letter-spacing: .02em; }
   .tabItem.on { color: #2c4ad2; }
   /* (the tab bar's night surface comes from --card via body.night - no separate override) */
@@ -111,6 +114,8 @@
   #dock { position: fixed; left: 50%; transform: translateX(-50%); bottom: calc(var(--vvb, 0px) + 67px + var(--sab)); z-index: 1000; display: flex; align-items: flex-start; gap: 18px; } /* Beta 1.192: 74 -> 67, riding the tab bar's -7 (its rendered gap above the bar's top edge is unchanged: 16px measured in the assembled page) */ /* flex-start + the dock buttons' 24px top margin centres them on the big circle, not on the taller slot (Beta 1.23 fix - drive120 V1 measured a 29px offset) */ /* Beta 1.21 (Andrew): List | round run button | Pace, one level, symmetrical */
   .dockBtn { width: 56px; height: 56px; margin-top: 24px; border-radius: 50%; background: var(--glass-day); -webkit-backdrop-filter: var(--blur); backdrop-filter: var(--blur); color: #22262e; border: 1px solid rgba(20,22,28,.09); box-shadow: var(--shadow-float); font-size: 13.5px; font-weight: 700; cursor: pointer; display: flex; align-items: center; justify-content: center; }
   .dockBtn svg { width: 27px; height: 27px; }
+  .dockBtn .pwrapD { display: inline-flex; width: 27px; height: 27px; align-items: center; justify-content: center; } /* Beta 1.217: the Pulsar dock wrapper keeps the svg's exact 27px layout box - no button changes size */
+  .dockBtn .pwrapD .pico { width: 34px; height: 34px; flex: none; display: block; }
   body.night .dockBtn { background: var(--glass-night); color: #f2f4f8; border-color: rgba(255,255,255,.16); }
   #runSlot { position: relative; width: 104px; flex: none; display: flex; flex-direction: column; align-items: center; }
   .runBtn { position: relative; width: 104px; height: 104px; flex: none; border-radius: 50%; border: none; box-shadow: var(--shadow-float); line-height: 1.1; cursor: pointer; padding: 0 8px; font-style: italic; font-weight: 900; letter-spacing: .01em; }
@@ -545,7 +550,7 @@ input, textarea { caret-color: currentColor; } /* Beta 1.125 (Andrew): the typin
 <div id="hud">
   <div id="warn">Not saving — storage is full or blocked</div>
   <div class="row">
-    <div class="titleStack"><div class="title">Snow Route Beta</div><div class="ver" id="ver">Beta 1.216</div></div>
+    <div class="titleStack"><div class="title">Snow Route Beta</div><div class="ver" id="ver">Beta 1.217</div></div>
   </div>
   <div id="stats"></div>
 </div>
@@ -634,6 +639,7 @@ input, textarea { caret-color: currentColor; } /* Beta 1.125 (Andrew): the typin
       <div class="m-quiet">Route tracker for driveway snow clearing &middot; Vaughan</div>
     </div>
     <div class="m-credits">Map data: &copy; OpenStreetMap contributors &middot; Protomaps &middot; CARTO</div>
+    <div class="m-credits">Icons by <a href="https://icons8.com">Icons8</a></div>
     <div class="m-secLbl" id="wnHead">WHAT'S NEW</div>
     <div id="wnList"></div>
     <button class="rmBtn primary" id="updBtn">Update</button>
