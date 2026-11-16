@@ -487,8 +487,8 @@ function markUndone(name) {
 function markStreet(name, done) { if (done) markDone(name, 'tap'); else markUndone(name); showChips(); }
 function renderPanel() { // ONE selection pop-up (Beta 1.30, Andrew): the header strip and the multi-select pill are the same pop-up now - pill glass, every action inside, content follows the selection
   const p = $('selPop');
-  if (!sel) { p.classList.add('hidden'); return; }
-  p.classList.remove('hidden');
+  if (!sel) { p.classList.add('hidden'); document.body.classList.remove('selOpen'); return; }
+  p.classList.remove('hidden'); document.body.classList.add('selOpen'); // Beta 1.214: body.selOpen drops the re-centre button below the card while it is open (head.html) - the card's title-row note button lives in the corner that button otherwise paints over
   const multi = selSet.length >= 2; // Beta 1.34 (Andrew): single and multi are the SAME size now - same box, same two rows; only the words and buttons change
   if (!multi) {
     $('selName').textContent = sel.name;

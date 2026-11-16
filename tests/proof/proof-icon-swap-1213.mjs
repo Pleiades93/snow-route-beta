@@ -125,10 +125,15 @@ check('F: the assembled page serves the SVG icon link', page.includes('<link rel
 check('F: the PNG favicon links stand behind it', head.includes('<link rel="icon" type="image/png" sizes="32x32" href="icon-32.png">') && head.includes('<link rel="icon" type="image/png" sizes="16x16" href="icon-16.png">'));
 
 // ================= V - the bump agrees =================
+// (The two version pins below follow the SHIPPED version - the
+// drive194 pattern: this proof shipped them at Beta 1.213; rolled in
+// place to Beta 1.214 by the selcard-note-move round, 2026-11-16,
+// TEST class. The icon sections above are this proof's durable
+// property and are untouched.)
 console.log('V - version surfaces agree');
 const app4 = readFileSync('parts/app4.js', 'utf8');
-check('V: the #ver label reads Beta 1.213', head.includes('<div class="ver" id="ver">Beta 1.213</div>'));
-check('V: WHATSNEW is the Beta 1.213 entry', app4.includes("v: 'Beta 1.213', items:"));
+check('V: the #ver label reads Beta 1.214', head.includes('<div class="ver" id="ver">Beta 1.214</div>'));
+check('V: WHATSNEW is the Beta 1.214 entry', app4.includes("v: 'Beta 1.214', items:"));
 
 console.log(pass + ' pass, ' + fail + ' fail');
 process.exit(fail === 0 ? 0 : 1);
