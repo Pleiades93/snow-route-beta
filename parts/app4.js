@@ -18,7 +18,7 @@ function buildReport() {
   if (fl.length) { L.push('', 'Notes & flags:'); fl.forEach(n => L.push(n + ' — ' + flagText(n))); }
   history.slice().reverse().forEach(h => {
     const items = h.items || {}, ks = Object.keys(items).sort(byTime(items));
-    L.push('', 'Archived run (finished ' + fmtStamp(h.at) + ', ' + ks.length + ' streets' + (h.startedAt ? ', started ' + fmtStamp(h.startedAt) : '') + (h.km ? ', ' + h.km + ' km' : '') + ')');
+    L.push('', 'Archived clean (finished ' + fmtStamp(h.at) + ', ' + ks.length + ' streets' + (h.startedAt ? ', started ' + fmtStamp(h.startedAt) : '') + (h.km ? ', ' + h.km + ' km' : '') + ')');
     ks.forEach(n => L.push(n + ', ' + (items[n] ? fmtStamp(items[n]) : '(no time)') + ((h.via || {})[n] === 'gps' ? ' (GPS-verified)' : '')));
   });
   return L.join('\n');
@@ -794,7 +794,7 @@ $('stDel').addEventListener('click', async () => {
 });
 // ---- About / What's new ----
 const WHATSNEW = { // the curated in-app notes: plain words, LATEST RELEASE ONLY (Beta 1.114, Andrew: the accumulated list cluttered the About pane). A release REPLACES this entry with its own in the same change - it never accumulates; the full history lives in CHANGELOG.md, not the app
-  v: 'Beta 1.211', items: ["Creating a route: the glow around the street you are trimming is now drawn the same way as the GPS puck \u2014 a shader, not stacked blurred lines. It fades smoothly away from the road's edge, breathes gently on a four-second cycle, and keeps its size in metres at every zoom. It still lights only the sectors you have kept picked; a sector you remove stays grey and glow-free.", "Wording: the app no longer calls a clean a run. The Pace menu's top section reads 'Current clean', and the start, finish, cancel and resume messages all say clean \u2014 you are cleaning, not running.", "Two new icons, both drawn as single clean vector paths: Streets is now a straight-on road with centre dashes, and Settings is the spoked cog from the photo you sent \u2014 twelve teeth, three spokes meeting at the hub, all one connected piece."] };
+  v: 'Beta 1.212', items: ["Wording, finished: the last two spots that still called a clean a run now say clean too \u2014 the 'Archived clean' line in the text export, and a line in a saved clean's details."] };
 
 function renderAbout() {
   const cur = $('ver').textContent.trim();

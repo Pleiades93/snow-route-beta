@@ -173,6 +173,8 @@ jobs:
         run: node tests/proof/proof-create-zoom-tapaway.mjs
       - name: Shader glow round proof (Beta 1.211 gate - create trim glow is a metric shader mesh with the approved falloff and breath, no user-facing string calls a clean a run, Streets and Settings icons are the approved single paths)
         run: node tests/proof/proof-shader-glow-round.mjs
+      - name: Wording finished-cleans proof (Beta 1.212 gate - the last two user-facing strings that called a finished clean a run now say clean)
+        run: node tests/proof/proof-wording-finished-cleans.mjs
       - name: Premise-lint fixtures (Tranche 4 gate)
         run: python3 scripts/premise-lint-fixtures/run-fixtures.py
       - name: Bug-hunt fix fixtures (PR #23 gate; Beta 1.185)

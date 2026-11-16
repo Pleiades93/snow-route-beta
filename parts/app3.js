@@ -194,7 +194,7 @@ function openClean(i) {
     const det = document.createElement('div'); det.className = 'cvDet'; det.style.display = 'none';
     const parts = [];
     parts.push('Marked: ' + (items[n] ? fmtWhen(items[n]) : 'no time recorded'));
-    if (span > 0) parts.push('Span: ' + fmtDur(span) + ' - first side marked ' + fmtClock(new Date(Math.min.apply(null, stArr))) + ', last side ' + fmtClock(new Date(Math.max.apply(null, stArr))) + ' (includes any other work in between)'); else if (stArr.length) parts.push('Marked in one go - every recorded side of this street carries the same moment'); else if (!isNaN(dur)) parts.push('Gap since previous street: ' + fmtDur(dur) + ' (no side times recorded for this street; measured from the previous completion, or the run start)');
+    if (span > 0) parts.push('Span: ' + fmtDur(span) + ' - first side marked ' + fmtClock(new Date(Math.min.apply(null, stArr))) + ', last side ' + fmtClock(new Date(Math.max.apply(null, stArr))) + ' (includes any other work in between)'); else if (stArr.length) parts.push('Marked in one go - every recorded side of this street carries the same moment'); else if (!isNaN(dur)) parts.push('Gap since previous street: ' + fmtDur(dur) + ' (no side times recorded for this street; measured from the previous completion, or the clean start)');
     if ((h.via || {})[n]) parts.push('How: ' + ((h.via || {})[n] === 'gps' ? 'GPS suggestion' : 'marked by tap'));
     lines.forEach(L => parts.push(L));
     det.textContent = parts.join('\n');
