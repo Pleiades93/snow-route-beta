@@ -794,7 +794,7 @@ $('stDel').addEventListener('click', async () => {
 });
 // ---- About / What's new ----
 const WHATSNEW = { // the curated in-app notes: plain words, LATEST RELEASE ONLY (Beta 1.114, Andrew: the accumulated list cluttered the About pane). A release REPLACES this entry with its own in the same change - it never accumulates; the full history lives in CHANGELOG.md, not the app
-  v: 'Beta 1.214', items: ["Selection card: the note button now sits up beside the street name, like the sample \u2014 and the Complete entire road button has the whole bottom row to itself."] };
+  v: 'Beta 1.215', items: ["Selection card: the card is narrower now \u2014 still centred, same height, everything inside just as it was \u2014 so the buttons at the top right always have clear space beside it."] };
 
 function renderAbout() {
   const cur = $('ver').textContent.trim();

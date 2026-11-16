@@ -179,6 +179,8 @@ jobs:
         run: node tests/proof/proof-icon-swap-1213.mjs
       - name: Selection-card note-button move proof (Beta 1.214 gate - the note button stands in the title row beside the street name, the action row belongs to Complete entire road alone, renderPanel's by-ID contract untouched)
         run: node tests/proof/proof-selcard-note-move.mjs
+      - name: Selection-card width proof (Beta 1.215 gate - the card narrows 342 to 262 centred, the one-size invariant restated at 262 x 112.2, 342 surviving only on the route-menu pane)
+        run: node tests/proof/proof-selcard-width-262.mjs
       - name: Premise-lint fixtures (Tranche 4 gate)
         run: python3 scripts/premise-lint-fixtures/run-fixtures.py
       - name: Bug-hunt fix fixtures (PR #23 gate; Beta 1.185)
