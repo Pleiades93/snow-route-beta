@@ -366,8 +366,14 @@ check('R6: the whole-road subtitle is the length line only',
 // render and the sector close, mirroring the main map's sel-glow.
 check('R7: the create glow writer exists and reads the sector session',
   pick.includes('function syncCrGlow()') && pick.includes('const name = crSectorSession.street;'));
-check('R7: the glow stack mirrors the main map halo (five layers, outer pair blurred)',
-  pick.includes("['crGlow4', 36.75, 0.05, 14]") && pick.includes("['crGlow3', 10.75, 0.24, 0]") && pick.includes("paint['line-blur'] = s[3]"));
+// Beta 1.211 re-derivation (TEST, deliberate scope replacement): R7's
+// five-layer blur stack was replaced by Andrew's approved shader glow -
+// ONE custom layer fed by the same writer. The invariant that survives:
+// the writer feeds exactly one glow sink, the shader layer, and no blur
+// stack remains in the create flow (mesh/shader pins live in
+// proof-shader-glow-round.mjs).
+check('R7: the glow is one custom shader layer fed by the writer, blur stack gone',
+  pick.includes("id: 'crGlowShader', type: 'custom'") && pick.includes('crGlowSetFeatures(feats)') && !pick.includes('crGlow4') && !pick.includes("paint['line-blur'] = s[3]"));
 check('R7: the draft render syncs the glow, and the sector close puts it out explicitly',
   pick.includes('syncCrGlow(); // Beta 1.208: the trim glow tracks the draft') && pick.includes('crSectorReset(); syncCrGlow();'));
 

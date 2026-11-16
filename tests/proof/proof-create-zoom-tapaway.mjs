@@ -75,7 +75,7 @@ check('S1: crZoomW exists in create-pick.js', !!crZoomWSrc);
 let crZoomW = null;
 if (crZoomWSrc) { const ctx = {}; vm.createContext(ctx); vm.runInContext(crZoomWSrc + '\nthis.crZoomW = crZoomW;', ctx); crZoomW = ctx.crZoomW; }
 if (crZoomW) {
-  for (const [label, w] of [['casing', 12.75], ['chosen line', 6.75], ['unchosen line', 4.5], ['glow outer', 36.75]]) {
+  for (const [label, w] of [['casing', 12.75], ['chosen line', 6.75], ['unchosen line', 4.5]]) { // Beta 1.211 re-derivation: the 'glow outer' entry retired with the glow stack itself - the trim glow is a metric shader mesh now and wears no px width for this curve to hold (its metre construction is pinned by proof-shader-glow-round.mjs)
     const e = crZoomW(w);
     check(`S1: ${label} px at z15/17/19 unchanged from 1.209 (${w})`,
       evalW(e, 15) === w && evalW(e, 17) === w && evalW(e, 19) === w,
@@ -104,8 +104,16 @@ check('S1: crDraftLineDim (unchosen layer) width rides crZoomW(4.5)', pick.inclu
 // enters the style and the paint simply never renders). No line-width
 // in the create flow may wear that shape again.
 check('S1: no line-width nests a curve inside a case (MapLibre silently drops such a layer)', !/'line-width': \['case'/.test(pick));
-check('S1: the glow stack widths ride crZoomW(s[1])', pick.includes("'line-width': crZoomW(s[1])"));
-check('S1: the glow stack anchor table is untouched', pick.includes("['crGlow4', 36.75, 0.05, 14]") && pick.includes("['crGlow3', 10.75, 0.24, 0]"));
+// Beta 1.211 re-derivation (TEST, deliberate scope replacement): through
+// 1.210 the trim glow was a five-layer line stack whose widths rode this
+// curve and whose anchor table was pinned here. The glow is now the
+// crGlowShader custom layer (a metric mesh - it scales with the map by
+// construction, the property this file's curve gave the stack by hand).
+// The invariant that survives: no crZoomW-fed glow wiring remains, and
+// the shader layer + its ring table are present (mesh pins live in
+// proof-shader-glow-round.mjs).
+check('S1: the glow no longer rides crZoomW (shader mesh since 1.211)', !pick.includes('crZoomW(s[1])') && !pick.includes('crGlow4'));
+check('S1: the shader glow layer and its metre ring table are present', pick.includes("id: 'crGlowShader', type: 'custom'") && pick.includes('const CR_GLOW_RINGS = [-20, -13, -9.9, -4.95, 0, 4.95, 9.9, 13, 20];'));
 check('S1: crDraftHit stays the constant 24 px tap target (no crZoomW)', /crDraftHit'[^;]*'line-width': 24/.test(pick));
 
 // ---------- S2: crSectorTap's return contract, behaviourally ----------

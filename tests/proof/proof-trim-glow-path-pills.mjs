@@ -85,26 +85,32 @@ console.log('S1 - trim glow covers the chosen sectors only');
     // a four-sector street; each sector a distinct two-point line
     const parts = [0, 1, 2, 3].map(i => [[43.80 + i * 0.01, -79.55], [43.80 + i * 0.01 + 0.004, -79.54]]);
     const wholeRun = [[43.80, -79.55], [43.85, -79.53]];
-    let glowData = null;
-    const srcObj = { setData(d) { glowData = d; } };
+    // Beta 1.211 re-derivation (TEST, deliberate scope replacement): the
+    // glow's sink is no longer a GeoJSON source's setData - syncCrGlow now
+    // hands its feature set to crGlowSetFeatures (the shader layer's mesh
+    // builder, pinned by proof-shader-glow-round.mjs). The S1 invariant is
+    // the FEATURE SET (chosen sectors only), so the sink is stubbed with a
+    // capture and every feature-set check below runs unchanged.
+    let glowFeats = null;
     const ctx = { console };
     vm.createContext(ctx);
+    ctx.__sink = feats => { glowFeats = feats; };
     vm.runInContext(`
-      const CR_GLOW_SRC = 'crGlow';
       var crSectorSession = { street: 'Davos' };
       var draft = { roads: { Davos: {} }, sectors: { Davos: [0, 2] }, primaries: new Set() };
-      var map = { getSource: () => srcObj, addSource() {}, addLayer() {}, getLayer: () => ({}) };
+      var map = { addLayer() {}, getLayer: () => ({}) };
       var crStreetParts = () => ({ parts });
       var crDraftGeom = () => ({ Davos: { runs: [{ line: wholeRun }] } });
+      var crGlowSetFeatures = feats => { __sink(feats); };
     `, ctx);
-    ctx.srcObj = srcObj; ctx.parts = parts; ctx.wholeRun = wholeRun;
+    ctx.parts = parts; ctx.wholeRun = wholeRun;
     vm.runInContext(ensure, ctx);
     vm.runInContext(chosen, ctx);
     vm.runInContext(sync, ctx);
     const run = expr => vm.runInContext(expr, ctx);
     const coordsOf = feats => feats.map(f => JSON.stringify(f.geometry.coordinates));
     const partCoord = i => JSON.stringify(parts[i].map(p => [p[1], p[0]]));
-    const read = () => glowData; // the mock source's setData lands here (Node-side closure)
+    const read = () => glowFeats ? { features: glowFeats } : null; // the crGlowSetFeatures capture, wrapped in the shape the checks read
     run('syncCrGlow()');
     let d = read();
     check('sectors [0,2] picked: glow is exactly parts 0 and 2', !!d && d.features.length === 2 && JSON.stringify(coordsOf(d.features).sort()) === JSON.stringify([partCoord(0), partCoord(2)].sort()), d ? 'features=' + d.features.length : 'no data');

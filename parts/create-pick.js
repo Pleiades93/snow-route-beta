@@ -506,7 +506,7 @@ function crDraftGeom() {
   return g;
 }
 const DRAFT_SRC = 'crDraft';
-function crZoomW(w) { // Beta 1.210 (Andrew, from his Beta 1.209 phone session): the create selection paint's zoom curve. Through 1.209 the draft widths were CONSTANT px (tuned at z17, Beta 1.182), so the drawn width in metres doubled with every zoom level down - at z13 the casing drew ~88 m wide and nearby picks melted into one blob on his zoomed-out screen. The curve keeps w itself at z15 and above (the picking zooms look exactly as they did) and halves the px width per level below z15, so the drawn width holds its z15 metre value all the way down - the same constant-metres principle the main map's surfW/surfCASE curves follow. ONE helper for the whole selection family (draft casing, draft line, trim glow) so the layers can never drift apart again.
+function crZoomW(w) { // Beta 1.210 (Andrew, from his Beta 1.209 phone session): the create selection paint's zoom curve. Through 1.209 the draft widths were CONSTANT px (tuned at z17, Beta 1.182), so the drawn width in metres doubled with every zoom level down - at z13 the casing drew ~88 m wide and nearby picks melted into one blob on his zoomed-out screen. The curve keeps w itself at z15 and above (the picking zooms look exactly as they did) and halves the px width per level below z15, so the drawn width holds its z15 metre value all the way down - the same constant-metres principle the main map's surfW/surfCASE curves follow. ONE helper for the whole selection family (draft casing, draft line) so the layers can never drift apart again. (The trim glow rode this curve too until Beta 1.211, when it became a metric shader mesh and stopped needing a px curve.)
   return ['interpolate', ['linear'], ['zoom'], 8, w / 128, 9, w / 64, 10, w / 32, 11, w / 16, 12, w / 8, 13, w / 4, 14, w / 2, 15, w, 19, w];
 }
 function ensureDraftLayers() {
@@ -519,35 +519,155 @@ function ensureDraftLayers() {
     if (!map.getLayer('crDraftHit')) map.addLayer({ id: 'crDraftHit', type: 'line', source: DRAFT_SRC, layout: { 'line-cap': 'round', 'line-join': 'round' }, paint: { 'line-color': '#000000', 'line-opacity': 0, 'line-width': 24 } }); // Beta 1.127: the sector pick's fat-finger target - invisible, queryable (crSectorTap)
   } catch (e) { /* the style may still be loading - renderDraft retries on every change */ }
 }
-const CR_GLOW_SRC = 'crGlow';
-function ensureCrGlowLayers() {
-  if (!map || typeof map.addSource !== 'function') return;
-  try {
-    if (!map.getSource(CR_GLOW_SRC)) map.addSource(CR_GLOW_SRC, { type: 'geojson', data: { type: 'FeatureCollection', features: [] } });
-    // Beta 1.208 (Andrew): the sector-trim street's glow, MIRRORED from
-    // the main map's selection glow (the engine's sel-glow stack: five
-    // halo layers in the street's own colour under the paint, at the
-    // surface width +30/+23/+17/+9/+4, opacities .05/.06/.10/.16/.24,
-    // blur 14/10 on the outer pair). The create map draws streets
-    // through its own layers (crDraft*), not the engine's, so the
-    // effect is reproduced here on the draft's scale - the chosen line
-    // is 6.75 px, so the same offsets give the widths below - rather
-    // than sharing the engine's code. Caps are round, matching the
-    // draft line's own caps (the main map's glow wears butt caps under
-    // a butt-capped surface).
-    const stack = [['crGlow4', 36.75, 0.05, 14], ['crGlow5', 29.75, 0.06, 10], ['crGlow1', 23.75, 0.10, 0], ['crGlow2', 15.75, 0.16, 0], ['crGlow3', 10.75, 0.24, 0]];
-    for (const s of stack) {
-      if (map.getLayer(s[0])) continue;
-      const paint = { 'line-color': ['get', 'col'], 'line-width': crZoomW(s[1]), 'line-opacity': s[2] }; // Beta 1.210: the glow is selection family - its stack widths ride the same crZoomW curve as the draft paint (the table's widths stay the z15-and-above anchors; the blur stays constant, as the main map's glow blur does)
-      if (s[3]) paint['line-blur'] = s[3];
-      map.addLayer({ id: s[0], type: 'line', source: CR_GLOW_SRC, layout: { 'line-cap': 'round', 'line-join': 'round' }, paint }, 'crDraftCase');
+// Beta 1.211 (Andrew, approved from the real shader sample on 2026-11-15): the
+// create trim glow is a SHADER now - the 1.208 five-layer blur stack (the five crGlow line layers
+// over their GeoJSON source, retired here) is replaced by ONE custom WebGL layer,
+// crGlowShader, porting the sample's proven construction
+// (work/glow-shader-sample/RECORD.md): a ribbon mesh built in METRES around
+// the glow's lines, the falloff computed per pixel in the fragment shader -
+// full strength inside the road's kerb (4.95 m, the engine's SURF_HALF), then
+// a smooth (1-t)^2 decay across a breathing reach, 4.0 s cycle, reach 5<->9 m
+// and peak alpha 0.50<->0.80 in phase. SEVEN cross-section rings carry the
+// distance attribute (a two-row ribbon interpolates it to the outer value
+// everywhere and shades to nothing - measured in the sample round); miter
+// joins clamp at cos 0.45 with a segment-normal fallback on hairpins; round
+// end-cap fans close the ends; premultiplied "over" blending (ONE /
+// ONE_MINUS_SRC_ALPHA) makes crossings saturate at the class colour and
+// never blow out; depth test and depth write are OFF and the GL state is
+// snapshotted and restored around the draw - the GPS puck layer's discipline
+// (app2). Because the mesh is metric, the glow scales with the map like real
+// paint at every zoom - the property 1.210's crZoomW curve gave the old stack
+// by hand. syncCrGlow below stays the glow's ONE writer (chosen sectors only,
+// 1.209); only its sink changed: features feed crGlowSetFeatures, which
+// rebuilds this mesh. The main map's clean-time selection glow is a different
+// stack in the engine and is untouched.
+const CR_GLOW_RINGS = [-20, -13, -9.9, -4.95, 0, 4.95, 9.9, 13, 20]; // signed distances from the centreline: the kerb (4.95), the sample's falloff rings (9.9), and outer rings (13, 20) that carry the low-zoom reach floor's tail (below) - at the picking zooms the falloff is done by 13.95 m and the outer rings just carry alpha 0
+function crGlowRgb(hex) { const n = parseInt(hex.slice(1), 16); return [((n >> 16) & 255) / 255, ((n >> 8) & 255) / 255, (n & 255) / 255]; }
+function crGlowBuildMesh(feats) { // features -> one expanded triangle vertex array, 6 floats per vertex: mercator x, y, |distance from the centreline| in metres, r, g, b
+  const verts = [];
+  const push = (x, y, d, rgb) => { verts.push(x, y, d, rgb[0], rgb[1], rgb[2]); };
+  for (const f of feats) {
+    const coords = f.geometry && f.geometry.coordinates; if (!coords || coords.length < 2) continue;
+    const rgb = crGlowRgb(f.properties.col);
+    const mc = coords.map(c => maplibregl.MercatorCoordinate.fromLngLat({ lng: c[0], lat: c[1] }));
+    const mm = mc[0].meterInMercatorCoordinateUnits();
+    const P = mc.map(p => [p.x, p.y]);
+    const N = P.length;
+    const segN = [];
+    for (let i = 0; i < N - 1; i++) { const dx = P[i + 1][0] - P[i][0], dy = P[i + 1][1] - P[i][1]; const L = Math.hypot(dx, dy) || 1; segN.push([-dy / L, dx / L]); }
+    const staN = [];
+    for (let i = 0; i < N; i++) {
+      if (i === 0) staN.push(segN[0]); else if (i === N - 1) staN.push(segN[N - 2]);
+      else { let nx = segN[i - 1][0] + segN[i][0], ny = segN[i - 1][1] + segN[i][1]; const nl = Math.hypot(nx, ny); if (nl < 1e-9) { nx = segN[i][0]; ny = segN[i][1]; } else { nx /= nl; ny /= nl; const cos = Math.max(0.45, nx * segN[i][0] + ny * segN[i][1]); nx /= cos; ny /= cos; } staN.push([nx, ny]); }
     }
-  } catch (e) { /* the style may still be loading - renderDraft retries on every change */ }
+    const ringPt = (i, off) => [P[i][0] + staN[i][0] * off * mm, P[i][1] + staN[i][1] * off * mm];
+    const R = CR_GLOW_RINGS.length;
+    for (let i = 0; i < N - 1; i++) for (let k = 0; k < R - 1; k++) { // the ribbon: two triangles per station pair per ring band
+      const a = ringPt(i, CR_GLOW_RINGS[k]), b = ringPt(i, CR_GLOW_RINGS[k + 1]), c = ringPt(i + 1, CR_GLOW_RINGS[k]), d2 = ringPt(i + 1, CR_GLOW_RINGS[k + 1]);
+      const da = Math.abs(CR_GLOW_RINGS[k]), db = Math.abs(CR_GLOW_RINGS[k + 1]);
+      push(a[0], a[1], da, rgb); push(c[0], c[1], da, rgb); push(b[0], b[1], db, rgb);
+      push(b[0], b[1], db, rgb); push(c[0], c[1], da, rgb); push(d2[0], d2[1], db, rgb);
+    }
+    for (const endCap of [0, N - 1]) { // round end-cap fans: centre vertex at distance 0, rim at the mesh's 20 m outer edge, five steps sweeping the outward half-circle
+      const i = endCap, sgn = i === 0 ? -1 : 1;
+      const dirx = sgn * (i === 0 ? (P[1][0] - P[0][0]) : (P[N - 1][0] - P[N - 2][0])), diry = sgn * (i === 0 ? (P[1][1] - P[0][1]) : (P[N - 1][1] - P[N - 2][1]));
+      const dl = Math.hypot(dirx, diry) || 1, dx = dirx / dl, dy = diry / dl;
+      const nx = segN[i === 0 ? 0 : N - 2][0], ny = segN[i === 0 ? 0 : N - 2][1];
+      let prev = null;
+      for (let j = 0; j <= 5; j++) { const th = (j / 5) * Math.PI, ox = nx * Math.cos(th) + dx * Math.sin(th), oy = ny * Math.cos(th) + dy * Math.sin(th); const rim = [P[i][0] + ox * 20 * mm, P[i][1] + oy * 20 * mm]; if (prev) { push(P[i][0], P[i][1], 0, rgb); push(prev[0], prev[1], 20, rgb); push(rim[0], rim[1], 20, rgb); } prev = rim; }
+    }
+  }
+  return new Float32Array(verts);
+}
+let crGlowShaderLayer = null;
+function crGlowLayerObj() {
+  if (crGlowShaderLayer) return crGlowShaderLayer;
+  crGlowShaderLayer = {
+    id: 'crGlowShader', type: 'custom', _data: null, _dirty: false, _prog: null, _buf: null, _aPos: -1, _aDist: -1, _aCol: -1, _u: {},
+    onAdd(m, gl) {
+      const sh = (type, src) => { const s2 = gl.createShader(type); gl.shaderSource(s2, src); gl.compileShader(s2); if (!gl.getShaderParameter(s2, gl.COMPILE_STATUS)) console.log('CRGLOWSHADER compile failed: ' + gl.getShaderInfoLog(s2)); return s2; };
+      const prog = gl.createProgram();
+      gl.attachShader(prog, sh(gl.VERTEX_SHADER, [
+        'attribute vec2 a_pos;',
+        'attribute float a_dist;',
+        'attribute vec3 a_col;',
+        'uniform mat4 u_matrix;',
+        'varying float v_dist;',
+        'varying vec3 v_col;',
+        'void main() { v_dist = a_dist; v_col = a_col; gl_Position = u_matrix * vec4(a_pos, 0.0, 1.0); }'
+      ].join('\n')));
+      gl.attachShader(prog, sh(gl.FRAGMENT_SHADER, [
+        'precision highp float;',
+        'varying float v_dist;',
+        'varying vec3 v_col;',
+        'uniform float u_half;',
+        'uniform float u_reach;',
+        'uniform float u_peak;',
+        'void main() { float d = abs(v_dist); float a; if (d <= u_half) { a = u_peak; } else { float t = clamp((d - u_half) / u_reach, 0.0, 1.0); a = u_peak * (1.0 - t) * (1.0 - t); } gl_FragColor = vec4(v_col * a, a); }'
+      ].join('\n')));
+      gl.linkProgram(prog);
+      if (!gl.getProgramParameter(prog, gl.LINK_STATUS)) { console.log('CRGLOWSHADER link failed: ' + gl.getProgramInfoLog(prog)); this._prog = null; return; }
+      this._prog = prog;
+      this._aPos = gl.getAttribLocation(prog, 'a_pos'); this._aDist = gl.getAttribLocation(prog, 'a_dist'); this._aCol = gl.getAttribLocation(prog, 'a_col');
+      this._u = { matrix: gl.getUniformLocation(prog, 'u_matrix'), half: gl.getUniformLocation(prog, 'u_half'), reach: gl.getUniformLocation(prog, 'u_reach'), peak: gl.getUniformLocation(prog, 'u_peak') };
+      this._buf = gl.createBuffer();
+      if (this._data) this._dirty = true;
+    },
+    render(gl, matrix) {
+      if (!this._prog || !this._data || !this._data.length) return; // no glow features: draw nothing AND do not ask for another frame - the breathing repaint runs only while the glow is live
+      if (this._dirty && this._buf) { gl.bindBuffer(gl.ARRAY_BUFFER, this._buf); gl.bufferData(gl.ARRAY_BUFFER, this._data, gl.DYNAMIC_DRAW); this._dirty = false; }
+      const t = (typeof performance !== 'undefined' ? performance.now() : Date.now()) / 1000;
+      const s = 0.5 + 0.5 * Math.sin(2 * Math.PI * ((t % 4) / 4) - Math.PI / 2); // the 4.0 s breath, trough at t=0 (the sample's measured phase form)
+      const prevProg = gl.getParameter(gl.CURRENT_PROGRAM);
+      const prevBuf = gl.getParameter(gl.ARRAY_BUFFER_BINDING);
+      const prevBlend = gl.getParameter(gl.BLEND);
+      const prevDepth = gl.getParameter(gl.DEPTH_TEST);
+      const prevDepthMask = gl.getParameter(gl.DEPTH_WRITEMASK);
+      const prevStencil = gl.getParameter(gl.STENCIL_TEST);
+      const prevScissor = gl.getParameter(gl.SCISSOR_TEST);
+      const prevSrc = gl.getParameter(gl.BLEND_SRC_RGB);
+      const prevDst = gl.getParameter(gl.BLEND_DST_RGB);
+      gl.disable(gl.DEPTH_TEST); gl.depthMask(false);
+      gl.disable(gl.STENCIL_TEST); gl.disable(gl.SCISSOR_TEST);
+      gl.enable(gl.BLEND); gl.blendFunc(gl.ONE, gl.ONE_MINUS_SRC_ALPHA);
+      gl.useProgram(this._prog);
+      gl.bindBuffer(gl.ARRAY_BUFFER, this._buf);
+      gl.enableVertexAttribArray(this._aPos); gl.vertexAttribPointer(this._aPos, 2, gl.FLOAT, false, 24, 0);
+      gl.enableVertexAttribArray(this._aDist); gl.vertexAttribPointer(this._aDist, 1, gl.FLOAT, false, 24, 8);
+      gl.enableVertexAttribArray(this._aCol); gl.vertexAttribPointer(this._aCol, 3, gl.FLOAT, false, 24, 12);
+      gl.uniformMatrix4fv(this._u.matrix, false, matrix);
+      gl.uniform1f(this._u.half, 4.95);
+      gl.uniform1f(this._u.reach, Math.max(5 + 4 * s, (crGlowCasingHalfM() - 4.95) * 2.21)); // the breath's reach, with a visibility floor: the create casing balloons in metres toward the z15 anchor (22 m wide there, holding those metres below z15 - the 1.210 curve), which would swallow a purely metric halo whole at z15 and below (measured in this round's QA: at z15 the visible fringe ended inside the casing; at z13 there was none). The floor sizes the reach so the falloff still holds 30% of peak alpha at the casing's edge - (casingHalf - kerb) / (1 - sqrt(0.30)), the 2.21 factor - giving a real fringe past the paint plus a warm tint through the 55%-opaque casing. At the picking zooms (z16+) the casing half is 5.5 m or less, the floor (<=1.2) sits under the breath's own trough, and the approved sample form runs untouched; the floor's widest falloff (4.95 + ~13.4 = ~18.3 m) stays inside the mesh's 20 m outer rings.
+      gl.uniform1f(this._u.peak, 0.50 + 0.30 * s);
+      gl.drawArrays(gl.TRIANGLES, 0, this._data.length / 6);
+      gl.disableVertexAttribArray(this._aPos); gl.disableVertexAttribArray(this._aDist); gl.disableVertexAttribArray(this._aCol);
+      gl.bindBuffer(gl.ARRAY_BUFFER, prevBuf);
+      gl.useProgram(prevProg);
+      gl.blendFunc(prevSrc, prevDst);
+      if (!prevBlend) gl.disable(gl.BLEND);
+      if (prevDepth) gl.enable(gl.DEPTH_TEST);
+      gl.depthMask(prevDepthMask);
+      if (prevStencil) gl.enable(gl.STENCIL_TEST);
+      if (prevScissor) gl.enable(gl.SCISSOR_TEST);
+      if (map) map.triggerRepaint(); // breathing: keep frames coming while the glow is live
+    },
+    onRemove(m, gl) { if (this._prog) gl.deleteProgram(this._prog); if (this._buf) gl.deleteBuffer(this._buf); this._prog = null; this._buf = null; }
+  };
+  return crGlowShaderLayer;
+}
+function crGlowSetFeatures(feats) { const layer = crGlowLayerObj(); layer._data = crGlowBuildMesh(feats); layer._dirty = true; if (map && typeof map.triggerRepaint === 'function') map.triggerRepaint(); }
+function crGlowCasingHalfM() { // the draft casing's half-width in metres at the current zoom: its crZoomW anchor (12.75 px) holds from z15 up and holds its z15 metres below that (the 1.210 curve), so the metre half-width is 6.375 px x the metres-per-px at max(z, 15) - the repo's own ruler (proof-street-end-width-fix: Web-Mercator, 512 px tiles)
+  if (!map) return 0;
+  const c = map.getCenter(); const lat = c ? c.lat * Math.PI / 180 : 0.765;
+  return 6.375 * (40075016.686 * Math.cos(lat)) / (512 * Math.pow(2, Math.max(map.getZoom(), 15)));
+}
+function ensureCrGlowLayers() {
+  if (!map || typeof map.addLayer !== 'function') return;
+  try { if (!map.getLayer('crGlowShader')) map.addLayer(crGlowLayerObj(), 'crDraftCase'); } catch (e) { /* the style may still be loading - renderDraft retries on every change */ }
 }
 function syncCrGlow() { // the glow's ONE writer: it carries the sector session's street (in its category colour) exactly while that street's trim view is open, and nothing otherwise - so opening the trim lights the street and every close path (Done, Cancel, stage change, street removal, creation exit) puts it out, because every one of them re-renders the draft or the backdrop, and both call here. Beta 1.209 (Andrew, from his Beta 1.208 phone session): the glow covers the street's CHOSEN sectors only - through 1.208 it carried the whole stitched line, so a sector he tapped OFF turned grey (its draft paint) but kept glowing. The glow is now built from the same sector record renderDraft paints from (crStreetParts + crChosenSet): a removed sector carries no glow, re-adding it restores the glow, and every toggle re-renders the draft, which lands here - so the glow tracks each tap. The sector record is the trim session's own (crOpenSectors opens no session without one); the whole-run line below is only the fallback if that record is ever unavailable mid-session.
   ensureCrGlowLayers();
-  if (!map || typeof map.getSource !== 'function') return;
-  const src = map.getSource(CR_GLOW_SRC); if (!src) return;
+  if (!map) return;
   const feats = [];
   const name = crSectorSession.street;
   if (name && draft && draft.roads && Object.prototype.hasOwnProperty.call(draft.roads, name)) {
@@ -556,7 +676,7 @@ function syncCrGlow() { // the glow's ONE writer: it carries the sector session'
     if (rec) { const set = crChosenSet(name, rec); for (let i = 0; i < rec.parts.length; i++) { if (!set.has(i)) continue; const L = rec.parts[i]; if (L && L.length > 1) feats.push({ type: 'Feature', properties: { col }, geometry: { type: 'LineString', coordinates: L.map(p => [p[1], p[0]]) } }); } }
     else { const g = crDraftGeom(); const st = g && g[name]; if (st) { for (const run of st.runs) { const L = run.line; if (L && L.length > 1) feats.push({ type: 'Feature', properties: { col }, geometry: { type: 'LineString', coordinates: L.map(p => [p[1], p[0]]) } }); } } }
   }
-  src.setData({ type: 'FeatureCollection', features: feats });
+  crGlowSetFeatures(feats);
 }
 function renderDraft() { // the DRAFT renders through its own GeoJSON source, computed from the draft's own roads - the active route's geometry, engine sources and storage are never touched by the create flow. Beta 1.127: a street carrying a sector pick (or open in sector mode) renders PER SECTOR - chosen sectors in its category colour, unchosen thin grey (the approved mockup's language); every other street renders as its whole line, exactly as before.
   ensureDraftLayers();
