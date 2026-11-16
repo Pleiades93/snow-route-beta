@@ -187,6 +187,8 @@ jobs:
         run: node tests/proof/proof-create-glow-casing-fix.mjs
       - name: Pulsar icons proof (Beta 1.217 gate - the ten main-screen icons are the approved Pulsar PNGs byte-for-byte day and night, the wrappers keep the vectors' exact layout boxes so no button or bar changes size, the theme refresh is wired at boot and inside applyNight, the six off-screen entries stay byte-identical vectors, the About pane credits Icons8)
         run: node tests/proof/proof-pulsar-icons-1217.mjs
+      - name: Icon pack picker proof (Beta 1.218 gate - both packs complete against the icon-set standard with the artwork byte-pinned, the Pulsar Locate state variants are the script-generated remaps, the choice persists as a stored global riding backups like the night setting, the Locate colours are scoped to #gpsBtn alone, renderIcons is wired at boot, inside applyNight, at the three GPS transitions and on the switch, the picker markup and strings pin)
+        run: node tests/proof/proof-icon-pack-picker-1218.mjs
       - name: Premise-lint fixtures (Tranche 4 gate)
         run: python3 scripts/premise-lint-fixtures/run-fixtures.py
       - name: Bug-hunt fix fixtures (PR #23 gate; Beta 1.185)

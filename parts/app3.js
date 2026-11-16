@@ -1425,7 +1425,7 @@ function gpsError(e) {
   if (Date.now() - weakToastAt > 60000) { weakToastAt = Date.now(); toast('GPS signal weak — still trying', 2600); }
 }
 function startGps(fromRun, restart) {
-  if (watchId != null) { if (fromRun) { gpsFromRun = true; $('gpsBtn').classList.add('on'); $('gpsBtn').classList.toggle('rec', true); } return; } // Beta 1.64 (audit F06): reusing a view-only watcher for a clean must still flip the Locate tab to its recording face - the class sync sits below this early return, so the tab used to stay blue while recording
+  if (watchId != null) { if (fromRun) { gpsFromRun = true; $('gpsBtn').classList.add('on'); $('gpsBtn').classList.toggle('rec', true); renderIcons(); } return; } // Beta 1.64 (audit F06): reusing a view-only watcher for a clean must still flip the Locate tab to its recording face - the class sync sits below this early return, so the tab used to stay blue while recording
   if (!navigator.geolocation) { toast('This device has no GPS access here', 3000); return; }
   gpsFromRun = !!fromRun; if (!restart) followPaused = false; lastPushKey = ''; startCompass(); // Beta 1.116 (audit CG-115-01): the stale-watch restart passes restart=true - it is the app's own housekeeping, not a user action, so it must not clear a suspension the user deliberately made; only an explicit start begins un-suspended
   const wg = ++watchGen; watchId = navigator.geolocation.watchPosition(p => { if (wg === watchGen) acceptFix(p); }, e => { if (wg === watchGen) gpsError(e); }, { enableHighAccuracy: true, maximumAge: 2000, timeout: 20000 }); // Beta 1.69 (audit N04): callbacks carry their watcher's generation - a queued callback from a stopped or replaced watcher is dropped even when its timestamp is fresh (R01's guard cannot tell watchers apart)
@@ -1435,6 +1435,7 @@ function startGps(fromRun, restart) {
   staleWatchTimer = setInterval(() => { if (watchId != null && Date.now() - lastFixAt > GPS_STALE_MS && lastFixAt) { const wasRunGps = gpsFromRun; stopGps(true); startGps(wasRunGps, true); } }, 15000); // Beta 1.48 (audit B02): capture run ownership BEFORE stopGps clears it - the restart used to always come back as non-run GPS, so a mid-run watcher lost its run. Beta 1.116 (CG-115-01): the restart also preserves followPaused (startGps's restart flag) - a dead zone must not hand the camera back
   $('gpsBtn').classList.add('on');
   $('gpsBtn').classList.toggle('rec', gpsFromRun); // Beta 1.49: recording wears red on the Locate tab; view-only wears blue
+  renderIcons(); // Beta 1.218: the Locate face (red view-only / green recording, per pack) follows the state flip at once
   $('spdPill').textContent = '0 km/h'; $('spdPill').classList.remove('hidden'); // Beta 1.203: the speed pill's gate is the watch itself - it appears as location turns on, reading 0 until the first fix prices a speed; stopGps hides it again
 }
 function stopGps(silent) {
@@ -1445,7 +1446,7 @@ function stopGps(silent) {
   if (renderRaf) { cancelAnimationFrame(renderRaf); renderRaf = 0; }
   clearInterval(renderPump); renderPump = 0; stopCompass(); // Beta 1.64 (audit F08); Beta 1.65: the render loop stops with the watch
   if (map) pushGps(); // Beta 1.48 (audit B05): the facing beam is only built while watchId lives - without a fresh push the last beam stayed drawn after stop
-  $('gpsBtn').classList.remove('on'); $('gpsBtn').classList.remove('rec'); $('spdPill').classList.add('hidden'); syncCentreBtn(); // Beta 1.115: location off - the re-centre button goes with it. Beta 1.203: the speed pill goes with it too - its gate is the watch
+  $('gpsBtn').classList.remove('on'); $('gpsBtn').classList.remove('rec'); renderIcons(); $('spdPill').classList.add('hidden'); syncCentreBtn(); // Beta 1.115: location off - the re-centre button goes with it. Beta 1.203: the speed pill goes with it too - its gate is the watch
 }
 $('gpsBtn').addEventListener('click', () => { if (!tapGuard('gpsBtn')) return; if (watchId != null) { if (followPaused) { resumeFollow(); toast('Centred on you — following again', 1800); } else stopGps(); } else if (runStart) { startGps(true); toast('Clean in progress — recording your route', 2600); } else { startGps(false); toast('Location on — view only, not recording', 2400); } }); // Beta 1.49 (Andrew's rule): the Locate tab alone never records - with no clean open it is view-only; pressed during an open clean it resumes that clean's recording and says so. Beta 1.115 (Andrew): with the follow suspended, Locate means "take me back to my dot" and resumes it - off is the tap while following.
 $('centreBtn').addEventListener('click', () => { if (!tapGuard('centreBtn')) return; resumeFollow(); }); // Beta 1.115: the top-right re-centre button (below day/night) - visible only while suspended (syncCentreBtn)

@@ -111,11 +111,46 @@
   .tabItem.rec { color: #d92c1e; } /* Beta 1.49: the Locate tab wears red while a clean's GPS is recording (blue = view only) */
   body.night .tabItem.rec { color: #ff6b5e; }
   .tabItem.red { color: #ff6b5e; }
+  #gpsBtn.on { color: #d92c1e; } /* Beta 1.218 (Andrew's icon-set standard): the Locate tab ALONE wears the state colours - view-only is RED, recording (the .rec rules below) is GREEN #06D6A0 in both themes. Scoped to #gpsBtn so the generic .tabItem.on above stays the blue selected-tab colour for the other tabs; the Original pack's glyph takes these colours through currentColor, the Pulsar label wears them (its faces are the PULSAR_GPS_STATES artwork) */
+  body.night #gpsBtn.on { color: #ff6b5e; }
+  #gpsBtn.rec { color: #06d6a0; }
+  body.night #gpsBtn.rec { color: #06d6a0; }
   #dock { position: fixed; left: 50%; transform: translateX(-50%); bottom: calc(var(--vvb, 0px) + 67px + var(--sab)); z-index: 1000; display: flex; align-items: flex-start; gap: 18px; } /* Beta 1.192: 74 -> 67, riding the tab bar's -7 (its rendered gap above the bar's top edge is unchanged: 16px measured in the assembled page) */ /* flex-start + the dock buttons' 24px top margin centres them on the big circle, not on the taller slot (Beta 1.23 fix - drive120 V1 measured a 29px offset) */ /* Beta 1.21 (Andrew): List | round run button | Pace, one level, symmetrical */
   .dockBtn { width: 56px; height: 56px; margin-top: 24px; border-radius: 50%; background: var(--glass-day); -webkit-backdrop-filter: var(--blur); backdrop-filter: var(--blur); color: #22262e; border: 1px solid rgba(20,22,28,.09); box-shadow: var(--shadow-float); font-size: 13.5px; font-weight: 700; cursor: pointer; display: flex; align-items: center; justify-content: center; }
   .dockBtn svg { width: 27px; height: 27px; }
   .dockBtn .pwrapD { display: inline-flex; width: 27px; height: 27px; align-items: center; justify-content: center; } /* Beta 1.217: the Pulsar dock wrapper keeps the svg's exact 27px layout box - no button changes size */
   .dockBtn .pwrapD .pico { width: 34px; height: 34px; flex: none; display: block; }
+  /* ===== ICON PACK PICKER (TESTING ONLY - Beta 1.218): every pk- rule is the picker's; delete this block with the section ===== */
+  .pkCard { padding: 0; overflow: hidden; }
+  .pkRow { display: flex; align-items: center; gap: 10px; width: 100%; padding: 14px 16px; background: none; border: none; appearance: none; -webkit-appearance: none; font: inherit; color: #fff; text-align: left; cursor: pointer; }
+  .pkPack + .pkPack { border-top: 1px solid rgba(255,255,255,.14); }
+  .pkNm { font-size: 16px; font-weight: 700; }
+  .pkSub { display: block; font-size: 12px; font-weight: 500; color: rgba(255,255,255,.72); margin-top: 2px; line-height: 1.35; }
+  .pkCur { flex: none; background: #06D6A0; color: #06382a; font-size: 10.5px; font-weight: 800; padding: 3px 8px; border-radius: 999px; letter-spacing: .04em; }
+  .pkChev { margin-left: auto; flex: none; color: rgba(255,255,255,.7); font-size: 15px; transition: transform .18s; }
+  .pkPack.open .pkChev { transform: rotate(90deg); }
+  .pkPrevWrap { padding: 2px 14px 16px; }
+  .pkStrip { background: #eceff2; border-radius: 14px; padding: 10px 10px 8px; color: #14161c; position: relative; }
+  .pkChip { position: absolute; right: 8px; width: 34px; height: 34px; border-radius: 50%; background: #fff; box-shadow: 0 2px 8px rgba(10,14,30,.18); display: flex; align-items: center; justify-content: center; }
+  .pkChipMoon { top: 8px; }
+  .pkChipCentre { top: 50px; }
+  .pkChip img { width: 21px; height: 21px; }
+  .pkChip svg { width: 21px; height: 21px; }
+  .pkDockRow { display: flex; align-items: flex-end; justify-content: center; gap: 14px; padding: 16px 0 10px; }
+  .pkDockBtn { width: 44px; height: 44px; border-radius: 50%; background: #fff; box-shadow: 0 2px 8px rgba(10,14,30,.16); display: flex; align-items: center; justify-content: center; }
+  .pkDockBtn img { width: 27px; height: 27px; }
+  .pkDockBtn svg { width: 22px; height: 22px; }
+  .pkStart { width: 62px; height: 62px; border-radius: 50%; background: linear-gradient(160deg, #3D65EF, #1B2FB6); color: #fff; font-weight: 800; font-size: 13px; display: flex; align-items: center; justify-content: center; }
+  .pkTabs { display: flex; border-top: 1px solid #d8dce4; padding-top: 7px; }
+  .pkTab { flex: 1; min-width: 0; text-align: center; font-size: 9.5px; font-weight: 600; color: #14161c; }
+  .pkTabIc { height: 26px; display: flex; align-items: center; justify-content: center; }
+  .pkTabIc img { width: 25px; height: 25px; }
+  .pkTabIc svg { width: 21px; height: 21px; }
+  .pkGpsRec { color: #06D6A0; display: flex; }
+  .pkCap { font-size: 12px; color: rgba(255,255,255,.85); margin: 9px 2px 0; line-height: 1.45; }
+  .pkUse { margin-top: 12px; width: 100%; border: 0; appearance: none; -webkit-appearance: none; border-radius: 12px; padding: 12px; font: inherit; font-size: 15px; font-weight: 800; background: #fff; color: #1B2FB6; cursor: pointer; }
+  .pkUse.on { background: #06D6A0; color: #06382a; }
+  .pkNote { font-size: 12.5px; line-height: 1.5; color: rgba(255,255,255,.8); margin: 2px 2px 0; }
   body.night .dockBtn { background: var(--glass-night); color: #f2f4f8; border-color: rgba(255,255,255,.16); }
   #runSlot { position: relative; width: 104px; flex: none; display: flex; flex-direction: column; align-items: center; }
   .runBtn { position: relative; width: 104px; height: 104px; flex: none; border-radius: 50%; border: none; box-shadow: var(--shadow-float); line-height: 1.1; cursor: pointer; padding: 0 8px; font-style: italic; font-weight: 900; letter-spacing: .01em; }
@@ -550,7 +585,7 @@ input, textarea { caret-color: currentColor; } /* Beta 1.125 (Andrew): the typin
 <div id="hud">
   <div id="warn">Not saving — storage is full or blocked</div>
   <div class="row">
-    <div class="titleStack"><div class="title">Snow Route Beta</div><div class="ver" id="ver">Beta 1.217</div></div>
+    <div class="titleStack"><div class="title">Snow Route Beta</div><div class="ver" id="ver">Beta 1.218</div></div>
   </div>
   <div id="stats"></div>
 </div>
@@ -620,6 +655,9 @@ input, textarea { caret-color: currentColor; } /* Beta 1.125 (Andrew): the typin
       <div class="m-togTxt"><div class="m-togLbl">Done chime</div></div>
       <div class="m-navVal"><span id="chimeVal">Two-Tone</span> <span class="m-navChev">&#8250;</span></div>
     </button>
+    <div class="m-secLbl">ICON PACK &middot; TESTING ONLY</div>
+    <div class="m-card pkCard" id="pkCard"></div>
+    <p class="pkNote">Tap a pack to preview it. 'Use this pack' switches the whole app right away &mdash; flip back and forth as much as you like. This section is removed once you've decided.</p>
     <button class="rmBack" id="jobBack">&#8592; Back</button>
   </div>
   <div class="rmPane" id="setChimePane">

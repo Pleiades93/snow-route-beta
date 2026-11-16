@@ -2,6 +2,12 @@ import { readFileSync } from 'node:fs';
 import { createHash } from 'node:crypto';
 
 // Pulsar icons proof (fix_id: pulsar-icons-1217, Beta 1.217, 2026-11-16).
+// Beta 1.218 re-derivation (TEST/design class, Andrew's scope update of
+// 2026-11-16): the artwork pins below are the GRADIENT set - white lines in
+// both themes over the START-button gradient backdrop (#3D65EF -> #1B2FB6,
+// diagonal), day and night the same URI - which superseded the flat
+// #ACBBF5 set this proof originally pinned, before 1.218 shipped. The
+// wrapper/size/licence/wiring sections are unchanged from the 1.217 gate.
 // Andrew's approved Icons8 Pulsar Color set replaces the ten main-screen
 // ICONS entries (gps, routes, home, clear, gear, streets, pace, moon, sun,
 // centre): recoloured artwork (black lines on the #ACBBF5 backdrop by day,
@@ -9,9 +15,10 @@ import { createHash } from 'node:crypto';
 // (A/current everywhere except Moon = the plain crescent, Pace = the
 // checkered finish flag; Sun = the A sun). The PNGs ride as base64 data
 // URIs - the ICONS entries carry the day URI, PULSAR_ICONS carries both -
-// and refreshPulsarIcons() re-points every rendered img at the current
+// and the render layer re-points every rendered img at the current
 // theme's artwork (called after the boot assignments and inside
-// applyNight). The hard rule of the release: NO button, bar or layout box
+// applyNight; Beta 1.218: that layer is renderIcons(), the pack registry's
+// renderer - with the default pack active its behaviour is this release's). The hard rule of the release: NO button, bar or layout box
 // changes size - the wrappers keep the vectors' exact boxes (24px tabs,
 // 27px dock) and the img runs larger inside the box (30px / 34px) only
 // because the PNG artwork carries its own padding.
@@ -35,16 +42,16 @@ const changelog = readFileSync('CHANGELOG.md', 'utf8');
 
 // key -> [wrapper, day sha256, night sha256] of Andrew's approved artwork
 const ART = {
-  gps:     ['T', 'c9fac0015fcbfb0571fcc7f66ffce9c49497a27e09aff7e2aaf7f95305dc2339', '8d3109c443b7ca77d9502f7cf14672a3b03ee7963c8abbda669414cfbbe3c383'],
-  routes:  ['T', '59f381c07f950b465dd38e48b95faab5455f240d541e0091489da76fd0c068a1', 'c079ac590a182a3d5345511f4a8886e7e9b1d37c7d49385d3d16e529761507ae'],
-  home:    ['T', 'a3ed1023c521b9ad4fe99e6e7a42fe616123e9dd46051ce384e20d89a72d9398', '4d1426b6fd02eec789876f194cae599d1e8521ff510d049f23e24312501239ed'],
-  clear:   ['T', '3b06224a6622b3e928a8058f34dbc8b89c88ad2dddcf664f20a90d3fbf5e89ee', '45a5cc5dadde6fb56c4306af0a9f49632d572dc6e7e9a9bd518ae2d804340eb5'],
-  gear:    ['T', 'ef2df0082b705ab8ecf0ade6e6986eb46f07a326b73daf3ae6e96be3ae2ee1c1', 'e7092f72a49b60e8b0322dd9b79d23cc2cd23682bfd412a2c2b1b4f9d08d3a3b'],
-  streets: ['D', 'be1ca4dcbc2fc41dbd67066975098b51c5a6b7d2850a0fed3838616828895210', 'de217684c9b93095890bac26d9ab47fea53e667550e15658cc78aaa7705f48df'],
-  pace:    ['D', 'dbf72de171cb63bdabaa1b82415c29e82ba11c91f9d531d183718dd8c51d760e', 'aadf65c87417715718eca432696be4ae2ef85883fed88237cfbf7d5584384d48'],
-  moon:    ['D', '05947b37956f6a94aaf5e25d0eed387b223bfb1fc42b3a1dade0d795d99a83f9', '65187bb193b01070f21706650990e2d5db1e0f32d446e40326681e06d87a289f'],
-  sun:     ['D', 'c5ff38d7adbc145c8a484c48d0c8de8b24425060d4ae1f55e28b43b99c82ee83', '026f1cb0659f916cb34cce31289560bcdd762c5ca0cd1598d9d785d7528531bc'],
-  centre:  ['D', 'f9410d166de364e392760e4ef72f1b34e84d28fb5c732e39d0e0b1ae9851275d', '27654aa185f769fd9855adfbaf3d34dafd4344debc182a2ef566b6e88561660b'],
+  gps:     ['T', 'f53511cd4a0d01e09a337310a930c33cd14f3b2db97165a553378662940727d5', 'f53511cd4a0d01e09a337310a930c33cd14f3b2db97165a553378662940727d5'],
+  routes:  ['T', '18aed867eb2c8e67170920424cc1f8b6b4d91dd446549ac5129940d9f6480a3d', '18aed867eb2c8e67170920424cc1f8b6b4d91dd446549ac5129940d9f6480a3d'],
+  home:    ['T', '5dbc633403087af7aaaef1bcd428070569042033bd3d074fac0d8d271f81b38f', '5dbc633403087af7aaaef1bcd428070569042033bd3d074fac0d8d271f81b38f'],
+  clear:   ['T', '9750cf0af897b9d0d45d18536847230125e6a49cc686199ec38533a6ec5e9b9e', '9750cf0af897b9d0d45d18536847230125e6a49cc686199ec38533a6ec5e9b9e'],
+  gear:    ['T', '1a2b541bfd1bd1600af0f93fdd4dc25b7ef3106aeb7851f83ddc8150e72576e3', '1a2b541bfd1bd1600af0f93fdd4dc25b7ef3106aeb7851f83ddc8150e72576e3'],
+  streets: ['D', '2d9d8e22ee3b3414eeb3b30e8eb539bb2f5766010611d7a79a50588910bfabe6', '2d9d8e22ee3b3414eeb3b30e8eb539bb2f5766010611d7a79a50588910bfabe6'],
+  pace:    ['D', '57b0a8b5a6dadc0b97e830841268f4aba86ee8cadff2dfb0106a82b16dbb23b8', '57b0a8b5a6dadc0b97e830841268f4aba86ee8cadff2dfb0106a82b16dbb23b8'],
+  moon:    ['D', 'a368922747aa99c65cbcbe52a913473f2ee249c012bf8006dde582e4cf78e74b', 'a368922747aa99c65cbcbe52a913473f2ee249c012bf8006dde582e4cf78e74b'],
+  sun:     ['D', 'ba1d748297a5a7ec4c03a8b695bbbecd39c54a3d0028ac3a86b16d79357348dd', 'ba1d748297a5a7ec4c03a8b695bbbecd39c54a3d0028ac3a86b16d79357348dd'],
+  centre:  ['D', '84d666ba994e668b65f1898a90edc3940e85940a38bc88f9bdf82ab552ec4cbc', '84d666ba994e668b65f1898a90edc3940e85940a38bc88f9bdf82ab552ec4cbc'],
 };
 const entryOf = key => { const m = app4.match(new RegExp('^  ' + key + ": '([^']*)'", 'm')); return m ? m[1] : ''; };
 const uriHash = str => { const m = str.match(/data:image\/png;base64,([A-Za-z0-9+/=]+)/); return m ? sha256buf(Buffer.from(m[1], 'base64')) : ''; };
@@ -97,25 +104,32 @@ check('D: the tab icon slot keeps its shipped rendered height (27px - the svg li
   head.includes('.tabIco { display: flex; height: 27px; align-items: center; justify-content: center; }'));
 
 // ================= E - the theme-swap wiring =================
-console.log('E - refreshPulsarIcons: defined once, called after the boot assignments and inside applyNight');
-check('E: the function is defined and reads the night class + the map',
-  app4.includes("function refreshPulsarIcons() { const night = document.body.classList.contains('night'); document.querySelectorAll('img.pico').forEach(im => { const u = PULSAR_ICONS[im.dataset.k]; if (u) im.src = night ? u.n : u.d; }); }"));
-const noteIdx = app4.indexOf("$('selNote').innerHTML = ICONS.note;");
-const bootIdx = app4.indexOf('refreshPulsarIcons(); // Beta 1.217');
-check('E: the boot call stands right after the icon assignments', noteIdx > 0 && bootIdx > noteIdx && bootIdx - noteIdx < 220, String(bootIdx - noteIdx));
-check('E: applyNight refreshes after re-setting the toggle button',
-  app4.includes("$('nightBtn').innerHTML = isNight() ? ICONS.sun : ICONS.moon; refreshPulsarIcons(); }"));
+// Beta 1.218 re-derivation (TEST class): the 1.217 refreshPulsarIcons generalized
+// into renderIcons(), the pack render layer - it re-mints the ten entries from the
+// ACTIVE pack (Pulsar by default, so this proof's subject is unchanged) for the
+// current theme + Locate state and stamps every host. The wiring points pinned
+// here are the same two (boot, applyNight); the GPS-transition and pack-switch
+// calls are pinned by proof-icon-pack-picker-1218.
+console.log('E - renderIcons: defined once, called after the boot assignments and inside applyNight');
+check('E: renderIcons is defined and re-mints the entries from the map by theme',
+  app4.includes('function renderIcons() {') && app4.includes('else u = night ? MAP[k].n : MAP[k].d;')); // Beta 1.218: the branch generalizes over the two image packs (MAP is PULSAR_ICONS unless the glyph pack is active)
+const bootAssignIdx = app4.indexOf("$('streetsBtn').innerHTML = ICONS.streets; $('paceBtn').innerHTML = ICONS.pace; $('centreBtn').innerHTML = ICONS.centre; // Beta 1.116");
+const bootIdx = app4.indexOf('renderIcons(); // Beta 1.218');
+check('E: the boot call stands right after the icon assignments', bootAssignIdx > 0 && bootIdx > bootAssignIdx && bootIdx - bootAssignIdx < 900, String(bootIdx - bootAssignIdx));
+check('E: applyNight re-renders after re-setting the toggle button',
+  app4.includes("$('nightBtn').innerHTML = isNight() ? ICONS.sun : ICONS.moon; renderIcons(); }"));
 check('E: no MutationObserver anywhere in app4 (deterministic calls only)', !app4.includes('MutationObserver'));
+check('E: the retired refresh function is gone (one render layer, no second copy)', !app4.includes('refreshPulsarIcons'));
 
 // ================= F - licence =================
 console.log('F - the About pane credits Icons8');
 check('F: the Icons8 line stands in the About pane', head.includes('<div class="m-credits">Icons by <a href="https://icons8.com">Icons8</a></div>'));
 
 // ================= V - version agreement =================
-console.log('V - Beta 1.217 agrees everywhere');
-check('V: the #ver label reads Beta 1.217', head.includes('<div class="ver" id="ver">Beta 1.217</div>'));
-check('V: WHATSNEW is the Beta 1.217 entry', app4.includes("v: 'Beta 1.217', items:"));
-check('V: the CHANGELOG top entry is Beta 1.217', changelog.split('\n').find(l => l.startsWith('## Beta')) === '## Beta 1.217 — 2026-11-16');
+console.log('V - Beta 1.218 agrees everywhere');
+check('V: the #ver label reads Beta 1.218', head.includes('<div class="ver" id="ver">Beta 1.218</div>'));
+check('V: WHATSNEW is the Beta 1.218 entry', app4.includes("v: 'Beta 1.218', items:"));
+check('V: the CHANGELOG top entry is Beta 1.218', changelog.split('\n').find(l => l.startsWith('## Beta')) === '## Beta 1.218 — 2026-11-16');
 
 console.log(pass + ' pass, ' + fail + ' fail');
 process.exit(fail === 0 ? 0 : 1);
