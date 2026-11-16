@@ -37,10 +37,9 @@ Splash artwork (the artwork-only splash): the inlined file is now
 splash-artwork-512.png - the app icon's artwork alone (truck, blade,
 snow) on a transparent background. Through Beta 1.212 it was the
 1.177 pack's foreground rendering cropped tight at 512x423; Beta
-1.213 replaces it with Andrew's clay icon pack's transparent
-artwork (the corner-fix pack's
-source/generated-transparent-artwork-EXPERIMENTAL.png), resized to
-512x512. icon-512.png remains the PWA / manifest icon; it is no
+1.213 replaces it with the professional icon pack's transparent
+foreground rendering (web/icons/foreground-transparent-512.png),
+already 512x512 as shipped. icon-512.png remains the PWA / manifest icon; it is no
 longer the splash source.
 """
 import base64

@@ -3,19 +3,18 @@ import { createHash } from 'node:crypto';
 import zlib from 'node:zlib';
 
 // Icon-swap proof (fix_id: icon-swap-1213, Beta 1.213, 2026-11-16).
-// Andrew's clay icon pack (the corner-fix pack he supplied) replaces
-// the Beta 1.177 icon set whole: the six launcher/manifest files are
-// byte-for-byte copies of the pack's with-background files; the
-// maskable is RECOMPOSED (the pack's maskable is a byte-copy of its
-// regular icon - artwork nearly edge-to-edge, which Android masks
-// would clip - so the new artwork is scaled into the previous
-// maskable's safe box on the pack's flat field colour); the splash
-// artwork is the pack's transparent artwork resized to 512x512; and
-// favicon.svg is deleted with its head link removed (Andrew: drop
-// the SVG, new icon everywhere - the PNG links take over the tab).
+// Andrew's professional icon pack replaces the Beta 1.177 icon set
+// whole (he replaced the source pack mid-round; a clay-pack build
+// was discarded before it shipped). EVERY file is a byte-for-byte
+// copy of the pack's: the six launcher/manifest PNGs, the pack's own
+// maskable composition, the splash artwork (the pack's transparent
+// foreground rendering, already 512x512), and favicon.svg - the
+// pack's master vector (a true vector: zero embedded rasters), so
+// the SVG stays and becomes the new icon; the head link is unchanged.
+//
 // On unmodified main (Beta 1.212) the S/M/P/F checks fail: every
 // hash differs, the maskable wears the old composition, the splash
-// asset is 512x423, and favicon.svg is present and linked.
+// asset is 512x423, and favicon.svg is the old artwork.
 //
 // Run from the repo root:  node tests/proof/proof-icon-swap-1213.mjs
 
@@ -56,19 +55,19 @@ function decodePng(buf) {
   }
   return { w, h, px };
 }
-const FIELD = [16, 44, 184];
+const FIELD = [27, 47, 182]; // the pack maskable's flat field
 const pxAt = (img, x, y) => { const o = (y * img.w + x) * 4; return [img.px[o], img.px[o + 1], img.px[o + 2], img.px[o + 3]]; };
 const isField = p => p[0] === FIELD[0] && p[1] === FIELD[1] && p[2] === FIELD[2];
 
 // ================= S - the swapped files are the pack's bytes =================
-console.log('S - shipped icon files match the supplied pack, corners flat');
+console.log('S - shipped icon files match the professional pack, corners opaque');
 const PACK_SHA = {
-  'icon-192.png': 'e39de27955fdd6f959ac7c0fa5da4bacbd52fe3e028adc3eabd25282cee5a43c',
-  'icon-512.png': '0644615fbbe0d04101e8b29ce07ce0d4e546155ee5229c970e927aababe85a39',
-  'icon-1024.png': '89ab3b403a8ced98a16fe9327fb0f666fdc5d8f1b98aeb22188529c260f10f29',
-  'apple-touch-icon.png': '98434725225be0ca046909966f69629a32713d2570e7d4c3d80aba2535005ce6',
-  'icon-32.png': '776eb5c5b6e79511862b9da6acb2fd19015ca631bb04338a51064eb8aeede99b',
-  'icon-16.png': '55d33e77b16eddcb7ee893ddd96a586450df5a3bc0956751ce811da10b74edf9',
+  'icon-192.png': 'c18049d2aa2a8e016f9839e9f807cc150f540c83a6865769fea87c24781b5be5',
+  'icon-512.png': '3f6ef90f233835bbc6718fb082b32717f25bc90af0be725d93505113c2ee5bc8',
+  'icon-1024.png': '6530056b2b42c93223f3c276d844e702f275ff392b9b3331b2dbfd22806e2b51',
+  'apple-touch-icon.png': '27907214c656ef1f359cc68f5b007affba70cbfbc9c6c2a8c6dffafd0facfdb2',
+  'icon-32.png': '31f60dac685e0ec348f6e7e0360469f9b5b1b7f1377aaf0df9e494837f43b52a',
+  'icon-16.png': '40caf2e359b4f5c5be1bf57424f7dba4169b572284113e486e5f587edb4e8162',
 };
 for (const [f, want] of Object.entries(PACK_SHA)) {
   check('S: ' + f + ' is byte-identical to the pack source', existsSync(f) && sha256(f) === want);
@@ -76,47 +75,54 @@ for (const [f, want] of Object.entries(PACK_SHA)) {
 for (const f of ['icon-512.png', 'icon-192.png', 'icon-1024.png', 'apple-touch-icon.png']) {
   const img = decodePng(readFileSync(f));
   const corners = [pxAt(img, 0, 0), pxAt(img, img.w - 1, 0), pxAt(img, 0, img.h - 1), pxAt(img, img.w - 1, img.h - 1)];
-  check('S: ' + f + ' corners are the flat field (16,44,184) - zero white, zero transparency',
-    corners.every(isField), JSON.stringify(corners));
+  check('S: ' + f + ' corners are the designed gradient field - fully opaque, no white corner (the corner defect this swap fixes)',
+    corners.every(c => c[3] === 255 && !(c[0] >= 245 && c[1] >= 245 && c[2] >= 245)), JSON.stringify(corners));
 }
 
-// ================= M - the maskable is recomposed into the safe zone =================
-console.log('M - maskable: artwork inside the safe zone on the flat field');
+// ================= M - the maskable is the pack's composition =================
+console.log('M - maskable: the pack composition, artwork inside the safe zone');
 const mask = decodePng(readFileSync('icon-maskable-512.png'));
-check('M: the recomposed maskable matches the verified build (sha256)',
-  sha256('icon-maskable-512.png') === 'db08af2add3fc73c4e0f9e00de01e244a8952c2dc1eb1bb352e5959a1a5a6a25');
-check('M: maskable corners and edge midpoints are the flat field',
+check('M: the maskable is byte-identical to the pack composition (sha256)',
+  sha256('icon-maskable-512.png') === 'dde7c142e5da20333d7638c2ecab32e8473e089cc2df76529c5e5c8a34e67151');
+check('M: maskable corners and edge midpoints are the flat field (27,47,182)',
   [pxAt(mask, 0, 0), pxAt(mask, 511, 0), pxAt(mask, 0, 511), pxAt(mask, 511, 511), pxAt(mask, 0, 256), pxAt(mask, 511, 256), pxAt(mask, 256, 0), pxAt(mask, 256, 511)].every(isField));
-let minx = 512, miny = 512, maxx = -1, maxy = -1, outside = 0;
+let minx = 512, miny = 512, maxx = -1, maxy = -1, sqOut = 0;
 for (let y = 0; y < 512; y++) for (let x = 0; x < 512; x++) {
   const p = pxAt(mask, x, y);
   if (Math.abs(p[0] - FIELD[0]) + Math.abs(p[1] - FIELD[1]) + Math.abs(p[2] - FIELD[2]) > 60) {
     if (x < minx) minx = x; if (x > maxx) maxx = x; if (y < miny) miny = y; if (y > maxy) maxy = y;
-    const dx = x - 255.5, dy = y - 255.5;
-    if (dx * dx + dy * dy > 204.8 * 204.8) outside++;
+    // the squircle of the round's rendered mask QA (rounded rect, r=115):
+    const qx = Math.max(Math.abs(x - 255.5) - (255.5 - 115), 0), qy = Math.max(Math.abs(y - 255.5) - (255.5 - 115), 0);
+    if (qx * qx + qy * qy > 115 * 115) sqOut++;
   }
 }
-check('M: maskable artwork bbox (' + minx + ',' + miny + ')-(' + maxx + ',' + maxy + ') sits inside the 80% safe zone [64..448] with margin',
-  minx >= 64 && maxx <= 448 && miny >= 64 && maxy <= 448);
-check('M: zero artwork pixels outside the 80% safe circle (no Android mask can clip the artwork)', outside === 0, outside + ' outside');
+check('M: maskable artwork bbox (' + minx + ',' + miny + ')-(' + maxx + ',' + maxy + ') sits inside the 80% safe zone [51..461] on every side',
+  minx >= 51 && maxx <= 461 && miny >= 51 && maxy <= 461);
+check('M: zero artwork pixels outside the squircle mask (the rendered overlay QA crops nothing)', sqOut === 0, sqOut + ' outside');
 
-// ================= P - the splash artwork is the square transparent artwork =================
+// ================= P - the splash artwork is the pack's transparent foreground =================
 console.log('P - splash artwork: 512x512, transparent where the tile would have painted');
 const splash = decodePng(readFileSync('splash-artwork-512.png'));
-check('P: the derived splash artwork matches the verified build (sha256)',
-  sha256('splash-artwork-512.png') === '71603512603509990dc786e2d8688fa12c4ab5d63ecef55e90b7595aea21f0c2');
+check('P: the splash artwork is byte-identical to the pack foreground (sha256)',
+  sha256('splash-artwork-512.png') === '44daff74588abf708fe79393a5fd96bd5be072db1ecb2801b65e7d813287b39a');
 check('P: splash asset is 512x512 (the 1.191 asset was 512x423)', splash.w === 512 && splash.h === 512);
-check('P: splash alpha is 0 at the corners, the left edge midpoint and (61,61) - drive180 NOTILE\u2019s points',
-  pxAt(splash, 0, 0)[3] === 0 && pxAt(splash, 511, 0)[3] === 0 && pxAt(splash, 0, 511)[3] === 0 && pxAt(splash, 511, 511)[3] === 0 && pxAt(splash, 0, 256)[3] === 0 && pxAt(splash, 61, 61)[3] === 0);
+check('P: splash alpha is 0 at every point the artwork leaves clear - top corners, top-mid, left-mid, right-mid and (61,61) (drive180 NOTILE\u2019s points)',
+  pxAt(splash, 0, 0)[3] === 0 && pxAt(splash, 511, 0)[3] === 0 && pxAt(splash, 256, 0)[3] === 0 && pxAt(splash, 0, 256)[3] === 0 && pxAt(splash, 511, 256)[3] === 0 && pxAt(splash, 61, 61)[3] === 0);
+check('P: the bottom corners are the artwork\u2019s own snow band (alpha 255) - the asset\u2019s shape, asserted',
+  pxAt(splash, 0, 511)[3] === 255 && pxAt(splash, 511, 511)[3] === 255);
 
-// ================= F - favicon.svg is gone and unreferenced =================
-console.log('F - no SVG favicon: file deleted, link removed, page clean');
+// ================= F - favicon.svg is the pack's master vector =================
+console.log('F - favicon: the pack master vector, truly vector, link stands');
 const head = readFileSync('parts/head.html', 'utf8');
 const page = readFileSync('index.html', 'utf8');
-check('F: favicon.svg no longer exists in the repo', !existsSync('favicon.svg'));
-check('F: the head carries no favicon.svg link (the PNG links take over)', !head.includes('favicon.svg'));
-check('F: the assembled page carries no favicon.svg reference', !page.includes('favicon.svg'));
-check('F: the PNG favicon links stand', head.includes('<link rel="icon" type="image/png" sizes="32x32" href="icon-32.png">') && head.includes('<link rel="icon" type="image/png" sizes="16x16" href="icon-16.png">'));
+const fav = existsSync('favicon.svg') ? readFileSync('favicon.svg', 'utf8') : '';
+check('F: favicon.svg is byte-identical to the pack master (sha256)',
+  existsSync('favicon.svg') && sha256('favicon.svg') === '899e3847f9f871ec00e87e14f37b32ce8c1f50ab4093f3be626e4473a0e9844c');
+check('F: favicon.svg is a true vector - an <svg> document with no embedded raster',
+  fav.includes('<svg') && !fav.includes('<image') && !fav.includes('base64'));
+check('F: the head SVG icon link stands', head.includes('<link rel="icon" type="image/svg+xml" href="favicon.svg">'));
+check('F: the assembled page serves the SVG icon link', page.includes('<link rel="icon" type="image/svg+xml" href="favicon.svg">'));
+check('F: the PNG favicon links stand behind it', head.includes('<link rel="icon" type="image/png" sizes="32x32" href="icon-32.png">') && head.includes('<link rel="icon" type="image/png" sizes="16x16" href="icon-16.png">'));
 
 // ================= V - the bump agrees =================
 console.log('V - version surfaces agree');

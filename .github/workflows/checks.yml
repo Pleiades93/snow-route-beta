@@ -175,7 +175,7 @@ jobs:
         run: node tests/proof/proof-shader-glow-round.mjs
       - name: Wording finished-cleans proof (Beta 1.212 gate - the last two user-facing strings that called a finished clean a run now say clean)
         run: node tests/proof/proof-wording-finished-cleans.mjs
-      - name: Icon swap proof (Beta 1.213 gate - the clay pack's files serve byte-for-byte, corners flat, the maskable is recomposed into the safe zone, the splash artwork is the square transparent artwork, favicon.svg is gone and unreferenced)
+      - name: Icon swap proof (Beta 1.213 gate - the professional pack's files serve byte-for-byte including the master-vector favicon, corners opaque, the pack maskable measured inside the safe zone, the splash artwork is the pack's square transparent foreground)
         run: node tests/proof/proof-icon-swap-1213.mjs
       - name: Premise-lint fixtures (Tranche 4 gate)
         run: python3 scripts/premise-lint-fixtures/run-fixtures.py

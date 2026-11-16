@@ -794,7 +794,7 @@ $('stDel').addEventListener('click', async () => {
 });
 // ---- About / What's new ----
 const WHATSNEW = { // the curated in-app notes: plain words, LATEST RELEASE ONLY (Beta 1.114, Andrew: the accumulated list cluttered the About pane). A release REPLACES this entry with its own in the same change - it never accumulates; the full history lives in CHANGELOG.md, not the app
-  v: 'Beta 1.213', items: ["New icon: the clay truck now stands everywhere the app shows its icon \u2014 home screen, splash and browser tab \u2014 and the maskable icon is composed so Android launchers can't crop the artwork."] };
+  v: 'Beta 1.213', items: ["New icon: the new truck now stands everywhere the app shows its icon \u2014 home screen, splash and browser tab \u2014 drawn from one master so it stays sharp at every size, and the Android icon is composed so launchers can't crop the artwork."] };
 
 function renderAbout() {
   const cur = $('ver').textContent.trim();
