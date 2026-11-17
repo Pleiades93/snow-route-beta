@@ -73,7 +73,7 @@ async function crPackServe(box, name, sessionOk) { // the seam's pack answer: th
   if (sessionOk && !sessionOk()) return { ok: false, kind: 'stale' }; // superseded while the pack downloaded: land nowhere (CG-PF-05)
   if (!els) {
     ctx.failed = true;
-    if (!crPackNote) { crPackNote = 'The app’s street library didn’t load. Loading from the street service instead'; crRenderHint(); }
+    if (!crPackNote) { crPackNote = 'The app’s street library didn’t load - loading from the street service instead'; crRenderHint(); }
     return null;
   }
   const t0 = Date.now();

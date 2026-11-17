@@ -29,7 +29,7 @@ ok('S1 seeded clean: 3 streets done, nothing archived yet | ' + JSON.stringify(s
 await ev(`__stub('snowroute.5w.v2.history')`);
 await ev(`(() => { performReset(); return true; })()`); await sleep(300);
 st = await state();
-ok('F3 archive write fails: finish stops, run intact, nothing archived | ' + JSON.stringify(st), st.done === 3 && st.lsHist === 0 && st.label === 'FINISH' && /Finish stopped/.test(st.toast));
+ok('F3 archive write fails: finish stops, run intact, nothing archived | ' + JSON.stringify(st), st.done === 3 && st.lsHist === 0 && st.label === 'FINISH' && /finish stopped/.test(st.toast));
 await ev(`__unstub()`);
 // F2: the cleared AUTHORITY write fails during Finish - the archive write
 // lands first and must be ROLLED BACK; the clean survives whole.
@@ -191,7 +191,7 @@ await ev(`togglePiece('Velmar', 1, 0); true`); await sleep(200);
 await ev(`shareBackup(); true`);
 await poll(`!!window.__shared136`, 15000); await sleep(200);
 const f12a = JSON.parse(await ev(`(() => { try { const o = JSON.parse(window.__shared136); return JSON.stringify({ isRec: o.recovery === true, toast: $('toast').textContent }); } catch (e) { return JSON.stringify({ err: String(e) }); } })()`));
-ok('F12a with saving broken, the Backup press shares a RECOVERY file and the toast says so | ' + JSON.stringify(f12a), f12a.isRec === true && f12a.toast.indexOf('Recovery backup') >= 0 && f12a.toast.indexOf('could not be saved') >= 0);
+ok('F12a with saving broken, the Backup press shares a RECOVERY file and the toast says so | ' + JSON.stringify(f12a), f12a.isRec === true && f12a.toast.indexOf('recovery backup shared instead') >= 0 && f12a.toast.indexOf('could not be saved') >= 0);
 await ev(`__unstub()`);
 await ev(`flushAux(true); window.__shared136 = null; true`); await sleep(200);
 await ev(`shareBackup(); true`);

@@ -19,6 +19,9 @@ import { createHash } from 'node:crypto';
 //    identity with the PNGs was verified at encode time (decode-compare
 //    of all 43 unique payloads, round round-1221 patch 1), and the pins
 //    below freeze the encoded bytes so any later drift fails here.
+//    Beta 1.225: the routes pair is Andrew's Journey pick (Icons8
+//    glyph-neue sGNEMWKG3WcQ), filled and encoded by the same treatment
+//    in round-1225 patch 1; its two pins and the set total roll here.
 //  - the registry dispatch: MASK_PACKS stands with ONE row (glyph) and
 //    renderIcons reads it directly - no picker, no stored choice, no
 //    fallback packs;
@@ -62,7 +65,7 @@ console.log('A - GLYPH maps carry the lossless WebP set (sha256, 200x200, RIFF/W
 const PINS = {
   GLYPH_ICONS: [
     'b9b6a2f3f6d751198194f5765d7e869bcea86a088caa5981032a8286198dc7f7', 'ec0b308c1265280699ee2238fd3bfc7e8693119e46d8075b33b7d527b8a517c7',
-    '6a672ad0bfdf258fe9a8316abaf6f788050fd0a50906f2b4b725f1214e4a0b57', 'e09469369f185b3363ba0e069b69b3dedcbccd6d91377cca4084047cbcd76b78',
+    '12daed8f399b941e5a3a08be518e3a0b23b2796614f311807c78162376e30ab3', '0dffb6f1159795c31880bcad459d4d94f4ef3618f4293ae5cf41241165df5da1',
     '941023d0b94a361dcef4c8b647b384216593988dd12eb56becd239e96add59e4', '5539b3575ac8bb40b25c9230e511881cb7baf3ccab6d5a486e412b482ed8e093',
     'a72ea64193d2ce28eea4f4b557d5b9199e8b691cebf3d01d1ec90eb5ba2fddfc', '9d4945056ffa6372fb9a161dcc73dba2e3aa17585cdc69f3e3b600b50df02323',
     '903ed9f57d1aa48fe28fc1f0d75a3723afe6d966dfd2f3ac56e7ff0a4172691e', '87005ea2cc64d0974bad24ae5ed97f3b236f504a9dcb81831a0c92e4386bdca1',
@@ -103,7 +106,7 @@ for (const [name, pins] of Object.entries(PINS)) {
   });
 }
 check('A: the set totals 48 image occurrences, 43 unique payloads', occ === 48 && seen.size === 43, occ + '/' + seen.size);
-check('A: the unique WebP payloads total 79,064 decoded bytes (the PNG set they replaced totalled 180,082 on the encode-time census)', uniqBytes === 79064, String(uniqBytes));
+check('A: the unique WebP payloads total 80,422 decoded bytes (the 1.221 set totalled 79,064; Beta 1.225 swapped the routes artwork to Journey, +1,358)', uniqBytes === 80422, String(uniqBytes));
 check('A: no PNG artwork remains in the Glyph maps', !/data:image\/png/.test(app4.split('const WHATSNEW')[0].slice(app4.indexOf('const GLYPH_ICONS'), app4.indexOf('const MASK_PACKS'))));
 
 // ================= B - completeness of the one set =================

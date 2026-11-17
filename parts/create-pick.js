@@ -24,8 +24,8 @@ function crRenderHint() { // the ONE writer of the pick-stage hint + its action 
     if (!gated) { const done = crGridDoneCount(), total = crGrid.cells.length; text = 'Loading ' + crGrid.name + ', ' + (total > 0 ? Math.round(done / total * 100) : 0) + '%'; btnLabel = 'Cancel'; } // Beta 1.176 (Andrew's amendment): name + percentage ONLY - no part counts ('part 0 of 30'), no elapsed seconds, no failed-so-far tally (failures surface in the degraded/failed states, which are never gated). The percentage is the honest count in the form he asked for - cells done of cells total, the same counters the retired part readout used - so the 1.123 pack wording ('from the app's own library…') retires with it: one readout format for a city load, and the pack's cells are the same counters
   }
   else if (crPrepState === 'degraded' && crGrid) {
-    if (crGrid.stopped === 'cancelled') { text = 'Loading stopped. ' + crGrid.name + ' ' + (crGrid.cells.length ? Math.round(crGridDoneCount() / crGrid.cells.length * 100) : 0) + '% loaded'; btnLabel = 'Resume'; } // Beta 1.176 (Andrew's standing rule): a loading readout speaks in percentages - the stopped state names how much of the city landed as a percentage of its cells, not a part count; the Resume remedy is unchanged
-    else { text = crGrid.name + ' loaded except ' + (crGridFailedCount() + crGridPendingCount()) + ' part' + ((crGridFailedCount() + crGridPendingCount()) === 1 ? '' : 's') + '. Streets there may be missing'; btnLabel = 'Retry missing parts'; }
+    if (crGrid.stopped === 'cancelled') { text = 'Loading stopped - ' + crGrid.name + ' ' + (crGrid.cells.length ? Math.round(crGridDoneCount() / crGrid.cells.length * 100) : 0) + '% loaded'; btnLabel = 'Resume'; } // Beta 1.176 (Andrew's standing rule): a loading readout speaks in percentages - the stopped state names how much of the city landed as a percentage of its cells, not a part count; the Resume remedy is unchanged
+    else { text = crGrid.name + ' loaded except ' + (crGridFailedCount() + crGridPendingCount()) + ' part' + ((crGridFailedCount() + crGridPendingCount()) === 1 ? '' : 's') + ' - streets there may be missing'; btnLabel = 'Retry missing parts'; }
     if (crWanted) btnLabel = crWanted.label;
   }
   else if (crPrepState === 'failed') { text = crFailText(crPrepFail); btnLabel = crGrid ? 'Retry' : ((crPrepFail && crPrepFail.kind === 'dense') ? 'Prepare this area' : 'Retry'); if (crWanted) btnLabel = crWanted.label; } // grid failure: Retry resumes the missing cells. Box dense: Retry at the same anchor cannot help (fixed footprint) - the button prepares wherever the map now sits (CG-PF-09). Beta 1.154 (B3 build): the wanted override applies in this branch too, as it always did in the degraded/ready branches - through 1.153 an outstanding offer's button read 'Retry' here while the click actually started the fallback preparation at the wanted anchor (the 2026-11-09 lifecycle trace's label wart); with no offer outstanding the label stays 'Retry', and the click is then genuinely a retry
@@ -362,7 +362,7 @@ function crPendStreet(name, lngLat, run, boundary) { // fail-closed (Codex (c)):
   crPending[name] = { osmName: name, lngLat, openEnd };
   if (openEnd) crWanted = { anchor: openEnd, label: 'Prepare wider area' }; // verify round (CG-PF-09): the promised wider preparation is a REAL button - it prepares around the street's own open end, the point coverage must grow from
   renderCrLists(); crRenderHint();
-  toast(shortStreetName(name) + ' runs past the prepared area, it is pending, not added. Prepare a wider area to complete it', 4200);
+  toast(shortStreetName(name) + ' runs past the prepared area, it is pending, not added - prepare a wider area to complete it', 4200);
 }
 // ---- the city step (Andrew's amendment): Door 2 STARTS here ----
 function crCityNameOf(it) { const a = (it && it.address) || {}; return a.city || a.town || a.village || a.municipality || a.county || String((it && it.display_name) || '').split(',')[0].trim(); }
@@ -939,12 +939,12 @@ $('crDraftFile').addEventListener('change', async () => {
   importDraft(text);
 });
 function importDraft(text) { // fail closed, named errors, nothing half-applied - the same discipline as a backup restore
-  let obj; try { obj = JSON.parse(text); } catch (e) { toast('That draft file could not be read. It is not valid JSON', 3600); return; }
+  let obj; try { obj = JSON.parse(text); } catch (e) { toast('That draft file could not be read - it is not valid JSON', 3600); return; }
   let raw = obj;
   if (obj && typeof obj === 'object' && !Array.isArray(obj) && obj.roads === undefined) { // the sandbox pipeline's candidate shape: a bare roads object
     const vals = Object.values(obj);
     if (vals.length && vals.every(v => Array.isArray(v))) raw = { roads: obj };
-    else { toast('That draft file has no roads in it. Nothing was imported', 3600); return; }
+    else { toast('That draft file has no roads in it - nothing was imported', 3600); return; }
   }
   const v = normalizePack(raw, { draft: true });
   if (!v.ok) { toast('Draft not imported: ' + v.error, 4000); return; }
@@ -1153,18 +1153,18 @@ async function pickStreet(osmName, lngLat) {
       crAddRun(name, res0.segs); return; // Beta 1.144 (OPT-L1): the tap landed on a DIFFERENT disconnected run of the picked street - it joins the same street entry (docs/ARCHITECTURE.md carries the rule)
     }
     if (exists) {
-      if (res0.status === 'edge' && res0.run && !crRunHeld(name, res0.run.exact ? res0.run.segments : [res0.run.line])) { toast('The other part of ' + shortStreetName(name) + ' runs past the prepared area, it was not added. Prepare a wider area, then tap it again', 4200); return; } // an unheld run that reaches past verified coverage is never half-added over an existing pick; the wider preparation + a fresh tap is the honest path
+      if (res0.status === 'edge' && res0.run && !crRunHeld(name, res0.run.exact ? res0.run.segments : [res0.run.line])) { toast('The other part of ' + shortStreetName(name) + ' runs past the prepared area, it was not added - prepare a wider area, then tap it again', 4200); return; } // an unheld run that reaches past verified coverage is never half-added over an existing pick; the wider preparation + a fresh tap is the honest path
       crOpenSectors(name); return; // absent/nocov against committed coverage, or an edge tap on the held run itself: the sectors door is the answer the 1.128 fork chose
     }
     if (res0.status === 'absent') {
-      if (crInAnyBox(crCov.boxes, lngLat.lat, lngLat.lng)) { toast('No shape found for ' + shortStreetName(name) + ' here. The map data holds no line for it', 3600); return; }
+      if (crInAnyBox(crCov.boxes, lngLat.lat, lngLat.lng)) { toast('No shape found for ' + shortStreetName(name) + ' here - the map data holds no line for it', 3600); return; }
       if (crGrid && crInBox(crGrid.bbox, lngLat.lat, lngLat.lng)) {
         const cell = crGrid.cells.find(c => crInBox(c.box, lngLat.lat, lngLat.lng));
-        if (cell && cell.state === 'failed') toast('That part of ' + crGrid.name + ' didn’t load. ' + shortStreetName(name) + ' can be added after Retry missing parts', 3800);
-        else toast('That part of ' + (crCity ? crCity.name : 'the city') + ' is still loading. ' + shortStreetName(name) + ' can be added as soon as it lands', 3400);
+        if (cell && cell.state === 'failed') toast('That part of ' + crGrid.name + ' didn’t load - ' + shortStreetName(name) + ' can be added after Retry missing parts', 3800);
+        else toast('That part of ' + (crCity ? crCity.name : 'the city') + ' is still loading - ' + shortStreetName(name) + ' can be added as soon as it lands', 3400);
         return;
       }
-      crPrepAnchor = { lat: lngLat.lat, lng: lngLat.lng }; crWanted = { anchor: { lat: lngLat.lat, lng: lngLat.lng }, label: 'Prepare this area' }; crRenderHint(); toast(shortStreetName(name) + ' is outside the prepared area. Prepare this area, then tap it again', 3800);
+      crPrepAnchor = { lat: lngLat.lat, lng: lngLat.lng }; crWanted = { anchor: { lat: lngLat.lat, lng: lngLat.lng }, label: 'Prepare this area' }; crRenderHint(); toast(shortStreetName(name) + ' is outside the prepared area - prepare this area, then tap it again', 3800);
       return;
     }
     // edge (Codex (c)): the run reaches beyond verified coverage - ONE
@@ -1184,9 +1184,9 @@ async function pickStreet(osmName, lngLat) {
       const got = await crSourceExtract(box, osmName, CR_TIMING.topupBudgetMs, CR_TIMING.topupAttempt1Ms, () => creating && crSession === session && crCovGen === gen, op);
       if (!creating || crSession !== session || crCovGen !== gen || !draft) return; // obsolete: land nowhere (CG-PF-05)
       if (!got.ok) {
-        if (got.kind === 'dense') toast('That area is too dense to check ' + shortStreetName(name) + ' against. It stays out of your route for now', 4000);
-        else if (got.kind === 'error' || got.kind === 'badjson') toast('The street-shape service answered with an error. ' + shortStreetName(name) + ' was not added', 3800);
-        else if (got.kind !== 'stale') toast('The street-shape service didn’t answer. ' + shortStreetName(name) + ' was not added', 3800);
+        if (got.kind === 'dense') toast('That area is too dense to check ' + shortStreetName(name) + ' against - it stays out of your route for now', 4000);
+        else if (got.kind === 'error' || got.kind === 'badjson') toast('The street-shape service answered with an error - ' + shortStreetName(name) + ' was not added', 3800);
+        else if (got.kind !== 'stale') toast('The street-shape service didn’t answer - ' + shortStreetName(name) + ' was not added', 3800);
         crRenderHint();
         return;
       }
@@ -1197,10 +1197,10 @@ async function pickStreet(osmName, lngLat) {
     return;
   }
   if (exists) { crOpenSectors(name); return; } // an extract exists but holds no verified box yet - the picked street's sectors are still the honest door
-  if (crPrepState === 'preparing') { toast('Still preparing street shapes. ' + shortStreetName(name) + ' can be added as soon as they are ready', 3200); return; }
+  if (crPrepState === 'preparing') { toast('Still preparing street shapes - ' + shortStreetName(name) + ' can be added as soon as they are ready', 3200); return; }
   crPrepAnchor = { lat: lngLat.lat, lng: lngLat.lng };
   crWanted = { anchor: { lat: lngLat.lat, lng: lngLat.lng }, label: 'Prepare this area' }; // the offer names THIS tap's area, and the hint button prepares exactly there (CG-PF-09)
-  toast('Street shapes aren’t ready for this area yet. Tap Prepare this area, then tap ' + shortStreetName(name) + ' again', 3800);
+  toast('Street shapes aren’t ready for this area yet - tap Prepare this area, then tap ' + shortStreetName(name) + ' again', 3800);
   crRenderHint();
 }
 function crFeatDistM(lngLat, geom) { // metres from the tap to the nearest point of a tile feature's line(s), in distM's flat-earth metres. CHOICE ONLY (see crMapTap): the number judges which named street a tap meant - it is never stored and never shapes the route
@@ -1264,7 +1264,7 @@ function crMapTap(e) {
     if (!pick) pick = named[0].properties.name; // a named road whose tile line is unusable still names the street - the name is the identity
     break; // the first box that names any road decides
   }
-  if (!pick) { toast('No road there. Tap on a road line', 2400); return; }
+  if (!pick) { toast('No road there - tap on a road line', 2400); return; }
   pickStreet(pick, e.lngLat);
 }
 onMapReady(() => map.on('click', crMapTap));

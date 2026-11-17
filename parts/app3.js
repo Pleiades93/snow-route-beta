@@ -227,7 +227,7 @@ function openClean(i) {
     history.splice(cleanIdx, 1);
     const okDel = saveHistory();
     backToCleans();
-    if (!okDel) toast('Storage problem. The delete could not be saved; the clean may return on reload', 4200); // Beta 1.63 (audit F04)
+    if (!okDel) toast('Storage problem - the delete could not be saved; the clean may return on reload', 4200); // Beta 1.63 (audit F04)
     updateCount();
   };
   cv.appendChild(del);
@@ -312,7 +312,7 @@ function validateSnap(raw, expectAt, G) { // Beta 1.95 (deep audit SR-194-03): a
 // Start is evicted here (finish/cancel already clear theirs; the fence makes the window
 // invariant local to Start rather than trusting every exit path).
 function startClean() { snapReset(); // Beta 1.204: Start Clean is the driving snap's HARD EXIT - the hold and the blend die at the tap itself, so the shown point is already back on the true position before the clean's first fix; snapFix's runStart gate then keeps snapping impossible for the whole clean
-  runSnap = { pieces: JSON.parse(JSON.stringify(pieces)), pieceTimes: JSON.parse(JSON.stringify(pieceTimes)), done: [...doneSet], times: { ...doneTimes }, via: { ...doneVia }, cov: JSON.parse(JSON.stringify(coveredIdx)) }; runStart = Date.now(); runDist = { run: runStart, m: 0, end: null }; runDistWrote = { run: 0, m: 0, end: null }; persistRunDist(true); const trailAtStart = trail.length; trail = trailWindow(trail, runStart); if (trail.length !== trailAtStart) markDirty('trail'); const okSnap = saveSnap(); const okSess = noteSessionStart(); const okStart = saveAllWarned(); startGps(true); updateCount(); syncWake(); if (!okStart.ok) toast('Clean started. Warning: the clean state could not be saved (storage problem)', 4200); else if (!okSess.ok) toast('Clean started. Warning: the session marker could not be saved; it will keep retrying', 4200); else if (!okSnap.ok) toast('Clean started. Warning: the cancel safety snapshot could not be saved; it will keep retrying', 4200); checkStale(); } // Beta 1.221 gate fix (Codex P2, PR #98): the snapshot branch is guarded by !okSnap.ok - when the toast cuts removed the old success pill, the chain's last branch lost its condition and EVERY healthy Start showed this failure warning; the healthy path must stay silent (drive146 S1/S2) // Beta 1.167 (B5): startClean banks a fresh distance counter for the new run (the runDist assignment + persistRunDist(true) beside runStart above), so even an instant reload resumes THIS run's counter. // Beta 1.73 (audit C04): the marker save is part of the start's honesty check, not a silent side write // Beta 1.63 (audit F04): the clean still starts - he is standing in the snow - but the message stops claiming a saved state that does not exist
+  runSnap = { pieces: JSON.parse(JSON.stringify(pieces)), pieceTimes: JSON.parse(JSON.stringify(pieceTimes)), done: [...doneSet], times: { ...doneTimes }, via: { ...doneVia }, cov: JSON.parse(JSON.stringify(coveredIdx)) }; runStart = Date.now(); runDist = { run: runStart, m: 0, end: null }; runDistWrote = { run: 0, m: 0, end: null }; persistRunDist(true); const trailAtStart = trail.length; trail = trailWindow(trail, runStart); if (trail.length !== trailAtStart) markDirty('trail'); const okSnap = saveSnap(); const okSess = noteSessionStart(); const okStart = saveAllWarned(); startGps(true); updateCount(); syncWake(); if (!okStart.ok) toast('Clean started - warning: the clean state could not be saved (storage problem)', 4200); else if (!okSess.ok) toast('Clean started - warning: the session marker could not be saved; it will keep retrying', 4200); else if (!okSnap.ok) toast('Clean started - warning: the cancel safety snapshot could not be saved; it will keep retrying', 4200); checkStale(); } // Beta 1.221 gate fix (Codex P2, PR #98): the snapshot branch is guarded by !okSnap.ok - when the toast cuts removed the old success pill, the chain's last branch lost its condition and EVERY healthy Start showed this failure warning; the healthy path must stay silent (drive146 S1/S2) // Beta 1.167 (B5): startClean banks a fresh distance counter for the new run (the runDist assignment + persistRunDist(true) beside runStart above), so even an instant reload resumes THIS run's counter. // Beta 1.73 (audit C04): the marker save is part of the start's honesty check, not a silent side write // Beta 1.63 (audit F04): the clean still starts - he is standing in the snow - but the message stops claiming a saved state that does not exist
 // Beta 1.91 (Andrew): Cancel start erases everything the run recorded - its trail points, its session
 // marker, any sides marked during it, its coverage and suggestions - and stores nothing. Only Finish
 // stores a run. (Supersedes the Beta 1.70 A04 call that kept the trail as history - Andrew's word.)
@@ -349,8 +349,8 @@ function cancelStart() {
   if (window.GLP) window.GLP.sync(); renderPanel(); renderStreets();
   updateCount(); syncWake();
   const rebuiltWhy = snapDamaged ? 'the saved snapshot was damaged' : (snapAbsent ? 'no start snapshot was saved' : ''); // Beta 1.96 (deep audit SR-195-01): the message is COMPOSED, not chained - 1.95's if-chain evaluated the damage branch before the unsaved-cleanup branch, so in the combined case (damaged snapshot AND a trail cleanup that could not be saved) the erasure message masked the storage warning entirely. The storage warning now leads whenever it applies, with the rebuild explanation attached; each single-failure message keeps its exact prior wording.
-  if (okCancel && trailPending) toast('Start cancelled. Erased here, but the trail cleanup could not be saved yet; it will keep retrying' + (rebuiltWhy ? '. The board was rebuilt from the marks made during the clean (' + rebuiltWhy + ')' : ''), 4600);
-  else if (okCancel && snapDamaged) toast('Start cancelled. Clean erased (the saved snapshot was damaged, so the board was rebuilt from the marks made during the clean)', 4600); // Beta 1.221 gate fix (drive133 S12a, CI): the DAMAGED disclosure was cut with the plain success pill, but it is not a confirmation - it is the ONLY surface that tells him the cancel REBUILT the board approximately because the saved snapshot was corrupt (the Beta 1.95 SR-194-03 design). Andrew's named cut was the PLAIN form, which stays cut, and the ABSENT form stays cut too (drive143 C1/C2 assert a clean cancel with no snapshot fires no pill - through the real Start path an absent snapshot already warned at Start, when saveSnap failed). The damaged form is an adjudicated keep beside the trail-cleanup warning, under his severe + no-other-surface rule
+  if (okCancel && trailPending) toast('Start cancelled - erased here, but the trail cleanup could not be saved yet; it will keep retrying' + (rebuiltWhy ? ' - the board was rebuilt from the marks made during the clean (' + rebuiltWhy + ')' : ''), 4600);
+  else if (okCancel && snapDamaged) toast('Start cancelled - clean erased (the saved snapshot was damaged, so the board was rebuilt from the marks made during the clean)', 4600); // Beta 1.221 gate fix (drive133 S12a, CI): the DAMAGED disclosure was cut with the plain success pill, but it is not a confirmation - it is the ONLY surface that tells him the cancel REBUILT the board approximately because the saved snapshot was corrupt (the Beta 1.95 SR-194-03 design). Andrew's named cut was the PLAIN form, which stays cut, and the ABSENT form stays cut too (drive143 C1/C2 assert a clean cancel with no snapshot fires no pill - through the real Start path an absent snapshot already warned at Start, when saveSnap failed). The damaged form is an adjudicated keep beside the trail-cleanup warning, under his severe + no-other-surface rule
   else if (!okCancel) toast('Start cancelled - warning: the cancellation could not be saved; the clean may return on reload', 4200);
 } // Beta 1.69 (audits N03 + trail): cancelStart ignored saveAll's result and claimed success unconditionally; it also never refreshed the trail, so a cancelled run's line lingered
 $('startBtn').addEventListener('click', () => { if (!tapGuard('startBtn')) return; startClean(); });
@@ -364,7 +364,7 @@ function clearAllMarks() {
   doneSet = new Set(); doneTimes = {}; doneVia = {}; coveredIdx = {}; suggested = new Set(); sugQueue = [];
   $('suggest').classList.add('hidden'); delete $('suggest').dataset.n; // Beta 1.71 (audit B01): the one path the 1.70 dismissal sweep missed - Clear wiped the coverage behind the panel but left the panel itself up, its Yes still able to select the street
   deselect(); const okClear = finishChange();
-  if (!okClear.ok) toast('Storage problem. The clear could not be saved; marks may return on reload', 4200); // Beta 1.63 (audit F04)
+  if (!okClear.ok) toast('Storage problem - the clear could not be saved; marks may return on reload', 4200); // Beta 1.63 (audit F04)
 }
 $('clearBtn').addEventListener('click', () => { if (!tapGuard('clearBtn')) return; clearAllMarks(); });
 $('cancelStartBtn').addEventListener('click', () => { if (!tapGuard('cancelStartBtn')) return; cancelStart(); });
@@ -499,9 +499,9 @@ function finishRun() {
   if (runStart) fSteps.push({ name: 'start', write: () => txDel(LS.start), undo: () => txSet(LS.start, String(runStart)) });
   const fTx = runTx(fSteps);
   if (fTx.outcome !== 'committed') {
-    if (fTx.outcome === 'degraded') { toast(fTx.failedStep === 'sides' && archiving ? 'Storage failure. Finish stopped, but the archive could not be undone. Export a backup now' : 'Storage failure. Finish stopped, but the rollback could not be verified. Export a backup now', 6000); return; } // Beta 1.141 verify cycle 1: degraded is judged FIRST - an archive failure whose rollback could not be verified is not "run intact", whatever step failed
-    if (fTx.failedStep === 'archive') { toast('Storage full. Finish stopped, clean intact', 3600); return; }
-    toast('Storage problem. Finish stopped, your clean is intact', 4200); return;
+    if (fTx.outcome === 'degraded') { toast(fTx.failedStep === 'sides' && archiving ? 'Storage failure - finish stopped, but the archive could not be undone - export a backup now' : 'Storage failure - finish stopped, but the rollback could not be verified - export a backup now', 6000); return; } // Beta 1.141 verify cycle 1: degraded is judged FIRST - an archive failure whose rollback could not be verified is not "run intact", whatever step failed
+    if (fTx.failedStep === 'archive') { toast('Storage full - finish stopped, clean intact', 3600); return; }
+    toast('Storage problem - finish stopped, your clean is intact', 4200); return;
   }
   lsDel(LS.snap); markClean('snap'); resetRunDist(); lsDel(LS.rundist); lsDel(LS.rundist2); trail = []; markDirty('trail'); // Beta 1.167 (B5): the distance counter is consumed into the archive entry (km) - its record goes with the run. Beta 1.193: its mirror copy goes too, and the trail window is cleared with them - the run is over, so the fallback's only consumer is gone (the Start fence and the load window would evict the points anyway; clearing here keeps the stored trail honest between runs). Beta 1.94 (SR-193-02): the run is finished - its cancel snapshot goes with it. Ungated on purpose: a leftover snapshot is stamped with THIS run's start, so it can never match a future run, and the next Start overwrites it anyway
   if (archiving) history = newHist;
@@ -510,7 +510,7 @@ function finishRun() {
   stopGps(); deselect(); // Beta 1.193: through 1.190 this also force-drew the trail to clear the finished line (Beta 1.69) - there is no line any more; the window itself was cleared with the counter records above
   const restRes = saveAll(); const restOk = restRes.ok; // the gated sides write already landed; this pass carries the metadata - a failure here warns but cannot resurrect anything (authority + archive agree)
   finishChange();
-  if (!restOk) toast((archiving ? 'Clean archived · ' + Object.keys(snap.items).length + ' streets' : 'Board cleared. Under 3 streets, nothing saved') + '. Some details could not be written (' + restRes.failedKey + '); they retry on the next save', 3400); // Beta 1.221 adjudication: the finish SUCCESS pill is cut (the board and history are the report), but its failure suffix is a storage-problem warning with no other surface - the pill survives for the failure case only, text verbatim
+  if (!restOk) toast((archiving ? 'Clean archived · ' + Object.keys(snap.items).length + ' streets' : 'Board cleared - under 3 streets, nothing saved') + ' - some details could not be written (' + restRes.failedKey + '); they retry on the next save', 3400); // Beta 1.221 adjudication: the finish SUCCESS pill is cut (the board and history are the report), but its failure suffix is a storage-problem warning with no other surface - the pill survives for the failure case only, text verbatim
   onFinishFeedback(); // Beta 1.111: only on the COMMITTED path (every failure return above leaves the run intact and silent) - the Done chime plays twice here (once for Chime Melody) plus the finish vibration pattern, per the On-the-job settings; fully guarded in app4
 }
 function performReset() { finishRun(); } // production's name for the finish action (the test battery calls it directly)
@@ -543,7 +543,7 @@ $('noteNo').addEventListener('click', () => $('noteModal').classList.add('hidden
 $('noteYes').addEventListener('click', () => {
   if (!noteFor) return;
   const okNote = setNoteText(noteFor, $('noteText').value);
-  $('noteModal').classList.add('hidden'); renderStreets(); if (!okNote.ok) toast('Storage problem. The note could not be saved', 4200); // Beta 1.63 (audit F04)
+  $('noteModal').classList.add('hidden'); renderStreets(); if (!okNote.ok) toast('Storage problem - the note could not be saved', 4200); // Beta 1.63 (audit F04)
 });
 
 // ===== GPS (checklist SS7) =====
@@ -1426,8 +1426,8 @@ $('sugNo').addEventListener('click', () => { $('suggest').classList.add('hidden'
 let weakToastAt = 0;
 let gpsDenied = false; // Beta 1.111: the Status health GPS row's amber state - set by a permission denial (gpsError code 1), cleared by any accepted fix
 function gpsError(e) {
-  if (e && e.code === 1) { gpsDenied = true; toast('Location is off. Allow location for this site in your browser settings', 4200); stopGps(); return; }
-  if (Date.now() - weakToastAt > 60000) { weakToastAt = Date.now(); toast('GPS signal weak. Still trying', 2600); }
+  if (e && e.code === 1) { gpsDenied = true; toast('Location is off - allow location for this site in your browser settings', 4200); stopGps(); return; }
+  if (Date.now() - weakToastAt > 60000) { weakToastAt = Date.now(); toast('GPS signal weak - still trying', 2600); }
 }
 function startGps(fromRun, restart) {
   if (watchId != null) { if (fromRun) { gpsFromRun = true; $('gpsBtn').classList.add('on'); $('gpsBtn').classList.toggle('rec', true); renderIcons(); } return; } // Beta 1.64 (audit F06): reusing a view-only watcher for a clean must still flip the Locate tab to its recording face - the class sync sits below this early return, so the tab used to stay blue while recording

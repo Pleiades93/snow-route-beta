@@ -95,9 +95,9 @@ console.log('D - while the card is open, the re-centre button drops below it');
 // are untouched.)
 console.log('V - version surfaces agree');
 {
-  check('V: the #ver label reads Beta 1.224', head.includes('<div class="ver" id="ver">Beta 1.224</div>'));
-  check('V: WHATSNEW is the Beta 1.224 entry', app4.includes("v: 'Beta 1.224', items:"));
-  check('V: the CHANGELOG top entry is Beta 1.224', changelog.includes('## Beta 1.224 — 2026-11-17'));
+  check('V: the #ver label reads Beta 1.225', head.includes('<div class="ver" id="ver">Beta 1.225</div>'));
+  check('V: WHATSNEW is the Beta 1.225 entry', app4.includes("v: 'Beta 1.225', items:"));
+  check('V: the CHANGELOG top entry is Beta 1.225', changelog.includes('## Beta 1.225 — 2026-11-17'));
 }
 
 console.log(pass + ' pass, ' + fail + ' fail');

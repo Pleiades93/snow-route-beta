@@ -193,6 +193,8 @@ jobs:
         run: node tests/proof/proof-1223.mjs
       - name: Tabular numbers and backup bar removal proof (Beta 1.224 gate - the five live readouts wear tabular-nums and no other rule does; the backup nudge bar, its function, handlers and stamp are gone whole; the three surviving bars and the exportedAt stamp stand; the version in agreement)
         run: node tests/proof/proof-1224.mjs
+      - name: Journey icon and placeholder dash proof (Beta 1.225 gate - the Routes tab wears the Journey artwork under the set's exact treatment with the turn-sign payloads gone and the rest of the set byte-untouched; the ten pure placeholder strings show a plain hyphen, app2 and app3 carry no en dash, and app4's two classified en dashes stand; the version in agreement)
+        run: node tests/proof/proof-1225.mjs
       - name: Premise-lint fixtures (Tranche 4 gate)
         run: python3 scripts/premise-lint-fixtures/run-fixtures.py
       - name: Bug-hunt fix fixtures (PR #23 gate; Beta 1.185)

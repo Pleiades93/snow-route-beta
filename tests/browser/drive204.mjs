@@ -19,9 +19,9 @@ const R = { checks: [] };
 const ok = (name, cond) => R.checks.push([name, cond === true]);
 const J = async (expr) => { const raw = await ev(`(() => { try { return JSON.stringify((${expr})); } catch (e) { return JSON.stringify({ __err: String(e && e.message || e) }); } })()`); return typeof raw === 'string' ? JSON.parse(raw) : {}; };
 
-const LONG = 'Start cancelled. Erased here, but the trail cleanup could not be saved yet; it will keep retrying. The board was rebuilt from the marks made during the clean (the saved snapshot was damaged)';
-const STORAGE = 'Restore failed while writing the route. And your previous data could NOT be fully put back. Restore from a known-good backup';
-const SHORT = 'GPS signal weak. Still trying';
+const LONG = 'Start cancelled - erased here, but the trail cleanup could not be saved yet; it will keep retrying - the board was rebuilt from the marks made during the clean (the saved snapshot was damaged)';
+const STORAGE = 'Restore failed while writing the route - and your previous data could NOT be fully put back - restore from a known-good backup';
+const SHORT = 'GPS signal weak - still trying';
 
 const measure = () => J(`(() => {
   const t = document.getElementById('toast'); const tr = t.getBoundingClientRect();
