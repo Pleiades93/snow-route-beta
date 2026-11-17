@@ -514,7 +514,7 @@ try {
     await ev2(`(async () => { const r = await migratePack(); return !!(r && r.ok); })()`); // quiesce the boot migration (E19's explicit-call pattern) before the pack is emptied, so no migration copy can land mid-download
     await ev2(`(async () => { await caches.delete('snowroute-offline-v1'); return true; })()`);
     await ev2(`document.getElementById('xPre').click()`);
-    const stopped = await poll(`document.getElementById('xPreStat').textContent.includes('stopped at the')`, 420000);
+    const stopped = await poll(`document.getElementById('xPreStat').textContent.includes('Stopped at the')`, 420000);
     const stat25 = await ev2(`document.getElementById('xPreStat').textContent`);
     await ev2(`document.getElementById('setBtn').click(); true`);
     await ev2(`document.getElementById('stBtn').click(); true`);
