@@ -33,7 +33,7 @@ ok('T2c a recorded persist grant paints the row ok: protected, with the measured
 await ev(`storagePersist = null; renderStatus(false); true`);
 ok('T2d an unreported persist answer paints the row idle - never green', await poll(`document.getElementById('stValStorage').textContent.includes('not reported by this browser')`, 15000) && await ev(`document.getElementById('stIcoStorage').className.includes('idle')`));
 await ev(`window.__estOrig161 = navigator.storage.estimate; navigator.storage.estimate = () => Promise.reject(new Error('rig')); storagePersist = true; renderStatus(false); true`);
-ok('T2e a rejecting estimate() degrades the row to its unmeasured form - protected, no figure, no throw', await poll(`document.getElementById('stValStorage').textContent.trim() === '— protected'`, 15000));
+ok('T2e a rejecting estimate() degrades the row to its unmeasured form - protected, no figure, no throw', await poll(`document.getElementById('stValStorage').textContent.trim() === '– protected'`, 15000));
 await ev(`navigator.storage.estimate = window.__estOrig161; storagePersist = false; renderStatus(false); true`); await sleep(300);
 await ev(`document.getElementById('statusBack').click(); true`); await sleep(400);
 ok('T3 Back returns to the main pane', await ev(`document.getElementById('setMainPane').classList.contains('on')`));
