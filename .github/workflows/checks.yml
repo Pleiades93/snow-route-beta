@@ -187,8 +187,10 @@ jobs:
         run: node tests/proof/proof-create-glow-casing-fix.mjs
       - name: Icon glyph proof (Beta 1.221 gate - Glyph is the only icon set - the complete set byte-pinned as lossless WebP at 200x200, the registry dispatching through the single glyph row, the picker section and the retired packs absent, the backup icon-pack field gone; replaces the 1218/1219/1220 pack proofs, whose subjects left with the picker)
         run: node tests/proof/proof-icon-glyph-1221.mjs
-      - name: Soft fill and Soft Lift proof (Beta 1.222 gate - the blue-menu pills wear the soft fill with the inset ring retired, the solid-white carve-out byte-identical, the round buttons wear the lift stacks day and night, the speed readout and the shared tokens untouched, the version in agreement)
+      - name: Soft fill proof + Soft Lift revert (Beta 1.222 gate, revert pinned Beta 1.223 - the blue-menu pills wear the soft fill with the inset ring retired, the solid-white carve-out byte-identical, the round buttons wear their restored Beta 1.221 surfaces with the lift stacks absent, the speed readout and the shared tokens untouched, the version in agreement)
         run: node tests/proof/proof-soft-1222.mjs
+      - name: Create states, About room, city bar and one pop-up style proof (Beta 1.223 gate - the create draft paints gentle-mute selected, vibrant active and grey removed; the Settings menu keeps its panes clear of the top blur and the fixed X; the city control is the option-E bar above Done; the toast and the create hint wear the one blue pill; the loaded-city confirmation is gone; no em dash in any user-facing string)
+        run: node tests/proof/proof-1223.mjs
       - name: Premise-lint fixtures (Tranche 4 gate)
         run: python3 scripts/premise-lint-fixtures/run-fixtures.py
       - name: Bug-hunt fix fixtures (PR #23 gate; Beta 1.185)

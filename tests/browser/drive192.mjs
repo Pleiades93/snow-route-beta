@@ -53,7 +53,7 @@ try {
   const ph = await J(`(() => ({ head: $('paceHead').textContent, banner: document.querySelector('#pacePad .verd').textContent, bannerRef: document.querySelector('#pacePad .verd').classList.contains('ref'),
     gm: [...document.querySelectorAll('#pacePad .gb-top')].map(e => e.textContent), rows: document.querySelectorAll('#pacePad .histRow').length }))()`);
   ok('P1 Pace not-started is honest: Elapsed and ETA are dashes while road cleared and streets read the live board | ' + JSON.stringify(pm),
-    pm['ELAPSED'] === '—' && pm['ETA'] === '—' && pm['ROAD CLEARED'] === seed.wantRoad && pm['STREETS'] === seed.wantStreets);
+    pm['ELAPSED'] === '–' && pm['ETA'] === '–' && pm['ROAD CLEARED'] === seed.wantRoad && pm['STREETS'] === seed.wantStreets);
   ok('P2 Last clean and Last pace /km still populate from the most recent clean | ' + JSON.stringify({ seed: { last: seed.last, pace: seed.pace }, pm }),
     pm['LAST CLEAN'] === seed.last && pm['LAST PACE /KM'] === seed.pace);
   ok('P3 the banner slot carries the REFERENCE line, never a verdict, when no run is live | ' + ph.banner,
@@ -67,7 +67,7 @@ try {
   const vd = await J(`(() => { const v = document.querySelector('#pacePad .verd'); return { t: v.textContent, ref: v.classList.contains('ref'), cancel: !!$('paceCancel') }; })()`);
   const vm = await J(cellMap('#pacePad'));
   ok('P6 with a live rate and a reference the banner becomes a verdict with an ETA, Elapsed runs, and Cancel start sits under the banner | ' + JSON.stringify({ vd, el: vm['ELAPSED'], eta: vm['ETA'] }),
-    vd.ref === false && /Faster by|Slower by|On pace/.test(vd.t) && vd.t.includes('ETA') && vm['ELAPSED'] === '0:30' && vm['ETA'] !== '—' && vd.cancel === true);
+    vd.ref === false && /Faster by|Slower by|On pace/.test(vd.t) && vd.t.includes('ETA') && vm['ELAPSED'] === '0:30' && vm['ETA'] !== '–' && vd.cancel === true);
   await ev(`$('paceCancel').click(); true`); await sleep(300);
 
   // ---------- clean detail inside the Pace sheet ----------
@@ -129,7 +129,7 @@ try {
   ok('S5 a completed street keeps its full done string in the status slot | ' + s2.v.tm, /^done /.test(s2.v.tm) && s2.v.tmCls.includes('st-done') && s2.v.cls.includes('done'));
   ok('S6 a half street reads "one side done" with the split-disc dot | ' + JSON.stringify(s2.m), s2.m.tm === 'one side done' && s2.m.cls.includes('half') && (s2.m.dotBg || '').includes('linear-gradient'));
   ok('S7 an untouched street reads an em dash; the pin rides in the name row of every row; dots measure 9px | ' + JSON.stringify(s2.a),
-    s2.a.tm === '—' && s2.v.pinInRow && s2.m.pinInRow && s2.a.pinInRow && Math.abs(s2.a.dotW - 9) <= 1.5);
+    s2.a.tm === '–' && s2.v.pinInRow && s2.m.pinInRow && s2.a.pinInRow && Math.abs(s2.a.dotW - 9) <= 1.5);
   ok('S8 the hero follows the marks (one street done, road cleared off zero) | ' + s2.hero, s2.hero.includes('1') && !s2.hero.includes('0.0 km of road cleared'));
   ok('S9 no note icons yet (no street carries note text) | ' + JSON.stringify({ v: s2.v.noteIco, m: s2.m.noteIco }), s2.v.noteIco === false && s2.m.noteIco === false);
 
@@ -138,7 +138,7 @@ try {
   await poll(`typeof noteOpenFor !== 'undefined' && noteOpenFor === 'Velmar' && !!document.querySelector('.noteEd textarea')`, 10000);
   const e0 = await J(`(() => ({ lbl: document.querySelector('.noteEd .nedLbl').textContent, save: !!document.querySelector('.noteEd .nedSave'), done: !!document.querySelector('.noteEd .nedDone') }))()`);
   ok('S10 a row tap opens the note editor with its Note label and Save/Done actions | ' + JSON.stringify(e0),
-    e0.lbl === 'Note — Velmar' && e0.save === true && e0.done === true);
+    e0.lbl === 'Note: Velmar' && e0.save === true && e0.done === true);
   await ev(`(() => { const ta = document.querySelector('.noteEd textarea'); ta.value = 'drive192 note'; ta.dispatchEvent(new Event('input', { bubbles: true })); document.querySelector('.noteEd .nedSave').click(); return true; })()`); await sleep(300);
   const e1 = await J(`(() => { const r = [...document.querySelectorAll('.srow')].find(x => x.querySelector('.nm').textContent === 'Velmar'); const r2 = [...document.querySelectorAll('.srow')].find(x => x.querySelector('.nm').textContent === 'Astona'); return { saved: noteTextOf('Velmar'), ico: r.querySelector('.nmNote').style.display !== 'none', ico2: r2.querySelector('.nmNote').style.display !== 'none' }; })()`);
   ok('S11 Save note writes through the same store, and the note icon appears on that street only | ' + JSON.stringify(e1),

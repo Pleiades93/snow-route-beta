@@ -243,8 +243,8 @@ ok('F1 (Beta 1.176 - RE-DERIVED: through 1.175 this check pinned the in-flight "
   F0.state === 'preparing' && F0.hint === '' && F0.hintOn === false && F0.btnOn === false);
 await ev(`crGrid.startedAt = Date.now() - 6000; crRenderHint(); true`); // the load's own clock seeded past the gate - deterministic fixture control of the boundary, never a network wait
 const F0b = await J(`({ state: crPrepState, hint: document.getElementById('createHint').textContent, btn: document.getElementById('crHintBtn').textContent, btnOn: document.getElementById('crHintBtn').style.display !== 'none' })`);
-ok('F1b (Beta 1.176, Andrew\'s amendment) past the 5 s gate the SAME in-flight load reads "Loading Vaughan — N%" - percentage only: no part counts, no elapsed seconds, no failed-so-far tally - with its Cancel back | ' + JSON.stringify(F0b),
-  F0b.state === 'preparing' && /^Loading Vaughan — \d+%$/.test(F0b.hint) && F0b.btn === 'Cancel' && F0b.btnOn === true);
+ok('F1b (Beta 1.176, Andrew\'s amendment) past the 5 s gate the SAME in-flight load reads "Loading Vaughan, N%" - percentage only: no part counts, no elapsed seconds, no failed-so-far tally - with its Cancel back | ' + JSON.stringify(F0b),
+  F0b.state === 'preparing' && /^Loading Vaughan, \d+%$/.test(F0b.hint) && F0b.btn === 'Cancel' && F0b.btnOn === true);
 const fFailed = await poll(`crPrepState === 'failed'`, 45000).catch(() => false);
 const F1 = await J(`({ state: crPrepState, kind: crPrepFail && crPrepFail.kind, status: crPrepFail && crPrepFail.status, hint: document.getElementById('createHint').textContent, btn: document.getElementById('crHintBtn').textContent, boxes: crCov ? crCov.boxes.length : -1, streets: draft ? Object.keys(draft.roads).length : -1, busy: crPickBusy })`);
 ok('F2 a shape service that refuses on BOTH instances (503) fails EVERY cell and ends FAILED with the honest reason persistent in the hint, a Retry button, NO coverage committed, nothing added, and the picker free (the 1.119/1.120 wedge cannot recur at the preparation layer) | ' + JSON.stringify(F1),
@@ -519,8 +519,8 @@ const g166a = await gapAt166(390, 844);
 const g166b = await gapAt166(430, 932);
 await send('Emulation.setDeviceMetricsOverride', { width: 420, height: 900, deviceScaleFactor: 2, mobile: true }, S);
 await ev(`crRenderHint(); true`);
-ok('J2a1 (Beta 1.176) past the gate the SAME in-flight load reads "Loading Vaughan — N%" with Cancel - and Cancel sits CLEAR of the pill BY MEASUREMENT (rendered bounding boxes: gap > 0, zero overlap) at 390 px (gap ' + g166a.gap + ' px) and 430 px (gap ' + g166b.gap + ' px) | ' + JSON.stringify(S1gate),
-  S1gate.state === 'preparing' && /^Loading Vaughan — \d+%$/.test(S1gate.hint) && S1gate.btn === 'Cancel' && S1gate.btnOn === true && g166a.gap > 0 && g166a.overlap === false && g166b.gap > 0 && g166b.overlap === false);
+ok('J2a1 (Beta 1.176) past the gate the SAME in-flight load reads "Loading Vaughan, N%" with Cancel - and Cancel sits CLEAR of the pill BY MEASUREMENT (rendered bounding boxes: gap > 0, zero overlap) at 390 px (gap ' + g166a.gap + ' px) and 430 px (gap ' + g166b.gap + ' px) | ' + JSON.stringify(S1gate),
+  S1gate.state === 'preparing' && /^Loading Vaughan, \d+%$/.test(S1gate.hint) && S1gate.btn === 'Cancel' && S1gate.btnOn === true && g166a.gap > 0 && g166a.overlap === false && g166b.gap > 0 && g166b.overlap === false);
 const s1Ready = await poll(`crPrepState === 'ready'`, 30000).catch(() => false);
 await ev(`window.__jDelayMs = 0`);
 const S1log = await geoSince(0);
@@ -652,9 +652,9 @@ await ev(`document.getElementById('crDoorManual').click()`);
 await pickCityVaughan();
 const s5Cached = await poll(`crPrepState === 'ready'`, 15000).catch(() => false);
 const gcS5e = await geoCount();
-const S5b = await J(`({ fromCache: crGrid && crGrid.fromCache, hint: document.getElementById('createHint').textContent, btnShown: document.getElementById('crHintBtn').style.display !== 'none' })`);
-ok('J11a (persistence) re-picking the completed city loads it from the ON-DEVICE CACHE: ready with ZERO new geometry requests (' + gcS5d + ' -> ' + gcS5e + '), the hint says when it was loaded, and NO Refresh button is offered (Beta 1.153: a healthy cached city offers no reload - the pre-1.153 claim here asserted the Refresh offer this round removed) | ' + JSON.stringify(S5b),
-  s5Cached === true && gcS5e === gcS5d && S5b.fromCache === true && S5b.hint.indexOf('loaded') >= 0 && S5b.btnShown === false);
+const S5b = await J(`({ fromCache: crGrid && crGrid.fromCache, hint: document.getElementById('createHint').textContent, on: document.getElementById('createHint').classList.contains('on'), btnShown: document.getElementById('crHintBtn').style.display !== 'none' })`);
+ok('J11a (persistence) re-picking the completed city loads it from the ON-DEVICE CACHE: ready with ZERO new geometry requests (' + gcS5d + ' -> ' + gcS5e + '), the hint says NOTHING (Beta 1.223: the loaded-city confirmation is removed - silence means it loaded), and NO Refresh button is offered (Beta 1.153: a healthy cached city offers no reload - the pre-1.153 claim here asserted the Refresh offer this round removed) | ' + JSON.stringify(S5b),
+  s5Cached === true && gcS5e === gcS5d && S5b.fromCache === true && S5b.hint === '' && S5b.on === false && S5b.btnShown === false);
 await jExitDiscard();
 // S6: exit mid-load - the downloads stop; nothing lands in the next session
 await jWipe();

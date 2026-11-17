@@ -104,7 +104,7 @@ try {
     Storage.prototype.setItem = orig;
     return { hint };
   })()`);
-  ok('D1 a blur save that FAILS says so in the hint, in the debounced path\'s own words | hint: ' + d1.hint, d1.hint === 'Not saved — storage problem');
+  ok('D1 a blur save that FAILS says so in the hint, in the debounced path\'s own words | hint: ' + d1.hint, d1.hint === 'Not saved. Storage problem');
   const d2 = await J(`(() => {
     saveWarned = true; // the episode warning already fired earlier in this session - saveAllWarned will NOT toast again
     const orig = Storage.prototype.setItem; Storage.prototype.setItem = function () { throw new Error('quota'); };
@@ -115,7 +115,7 @@ try {
     const t = document.getElementById('toast');
     return { toast: t.textContent, shown: t.classList.contains('show') };
   })()`);
-  ok('D2 a street-switch flush that fails with the episode warning already spent is owed the plain not-saved toast | ' + JSON.stringify(d2), d2.toast === 'Not saved — storage problem' && d2.shown === true);
+  ok('D2 a street-switch flush that fails with the episode warning already spent is owed the plain not-saved toast | ' + JSON.stringify(d2), d2.toast === 'Not saved. Storage problem' && d2.shown === true);
 
   // ---- E: A-03 partial pieceTimes inheritance ----
   const e = await J(`(() => {

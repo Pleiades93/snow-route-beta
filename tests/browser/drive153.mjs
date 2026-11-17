@@ -163,8 +163,8 @@ const wA = wire.slice(wireA0);
 const gridA = await J(`({ fromPack: crGrid && crGrid.fromPack, cells: crGrid ? crGrid.cells.length : -1 })`);
 ok('A3 PACK PATH: Vaughan readies with ZERO Overpass requests, exactly ONE pack-file download, the grid marked fromPack, and DURING the wait the hint shows NOTHING (Beta 1.176 - RE-DERIVED: through 1.175 this check pinned the pack readout naming the app\'s own library during the wait; the readout is now gated to loads past 5 s and the 2.5 s pack wait never reaches it) | overpass: ' + wA.filter(w => w.kind === 'overpass').length + ', packfiles: ' + wA.filter(w => w.kind === 'packfile').length + ' | hint during: ' + JSON.stringify(hintDuringA) + ' | ' + JSON.stringify(gridA),
   inPickA === true && prepA === true && hintDuringA.hint === '' && hintDuringA.on === false && hintDuringA.btnOn === false && readyA === true && wA.filter(w => w.kind === 'overpass').length === 0 && wA.filter(w => w.kind === 'packfile' && w.slug === 'vaughan.json').length === 1 && gridA.fromPack === 'vaughan');
-ok('A3b (Beta 1.176) past the gate (the load\'s clock seeded) the SAME in-flight pack load reads "Loading Vaughan — 0%" with Cancel - ONE readout format for a city load whichever source serves it, the percentage being its own cells done of cells total | ' + JSON.stringify(hintGateA),
-  hintGateA.hint === 'Loading Vaughan — 0%' && hintGateA.btn === 'Cancel' && hintGateA.btnOn === true);
+ok('A3b (Beta 1.176) past the gate (the load\'s clock seeded) the SAME in-flight pack load reads "Loading Vaughan, 0%" with Cancel - ONE readout format for a city load whichever source serves it, the percentage being its own cells done of cells total | ' + JSON.stringify(hintGateA),
+  hintGateA.hint === 'Loading Vaughan, 0%' && hintGateA.btn === 'Cancel' && hintGateA.btnOn === true);
 await installFeatureSeam();
 await tapStreet('Bordeaux Drive');
 const gotBA = await poll(`typeof draft !== 'undefined' && draft && !!draft.roads['Bordeaux Drive']`, 15000).catch(() => false);

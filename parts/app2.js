@@ -437,7 +437,7 @@ onMapReady(() => map.on('click', e => {
 let saveWarned = false; // Beta 1.101 (Phase 3 / C2): the storage-warning episode state - app-layer messaging state, moved out of the storage layer with the warning itself. One warning per failure episode; resets on the next fully successful save (the 1.63 discipline, unchanged).
 function saveAllWarned() { const r = saveAll(); if (!r.ok) { if (!saveWarned) { saveWarned = true; toast('Storage is not saving (' + r.failedKey + ') - export a recovery backup now', 4200); } } else saveWarned = false; return r; } // the non-transactional save path: saveAll plus the episode warning. The finish transaction calls saveAll directly and does its own gated messaging.
 function finishChange() { if (window.GLP) window.GLP.sync(); renderPanel(); updateCount(); renderStreets(); const r = saveAllWarned(); syncWake(); return r; } // Beta 1.63 (audit F04): callers that announce an outcome branch on the save result - since Beta 1.101 (Phase 3) that result is the storage-outcome object
-function finishChangeMarked() { const wb = saveWarned; const r = finishChange(); if (!r.ok && wb) toast('Not saved \u2014 storage problem', 3200); return r; } // Beta 1.97 (audit loop CG-196-05): the marking callers' half of the save-honesty contract - when the save fails, NO outcome toast may replace the storage warning; saveAll raises that warning once per episode (saveWarned), so when it was already raised before this call, the caller still owes a plain 'not saved' rather than silence
+function finishChangeMarked() { const wb = saveWarned; const r = finishChange(); if (!r.ok && wb) toast('Not saved. Storage problem', 3200); return r; } // Beta 1.97 (audit loop CG-196-05): the marking callers' half of the save-honesty contract - when the save fails, NO outcome toast may replace the storage warning; saveAll raises that warning once per episode (saveWarned), so when it was already raised before this call, the caller still owes a plain 'not saved' rather than silence
 function applyPiece(name, idx, side, on) { // the piece mutation with NO rendering - returns the street name if this change completed it
   const bit = side ? 2 : 1; const was = pieces[name][idx];
   const now = on ? (was | bit) : (was & ~bit);
@@ -542,7 +542,7 @@ function srowStatus(n) { // Beta 1.184: the row right-hand status slot. A comple
   if (doneAt) return { t: flag + 'done ' + doneAt + ' (' + fmtAgo(doneTimes[n]) + ')', c: 'st-done' };
   if (streetComplete(n)) return { t: flag + 'completed', c: 'st-done' };
   if (streetHalf(n)) return { t: flag + 'one side done', c: 'st-half' };
-  return { t: flag + '—', c: 'st-todo' };
+  return { t: flag + '–', c: 'st-todo' };
 } // Beta 1.107: street-length display for the Streets list's quiet line - whole metres, thousands separator, never kilometres
 function renderStreets() { // production row design: tap a street's name area to open its inline note editor (auto-saves); the pin button flies to the street
   const el = $('streetList'); if (!el) return;
@@ -550,7 +550,7 @@ function renderStreets() { // production row design: tap a street's name area to
   const openEd = el.querySelector('.noteEd textarea');
   const draft = openEd ? openEd.value : null; // an in-progress note survives re-renders
   const draftFor = openEd ? noteEdFor : null; // Beta 1.63 (audit F01): the draft belongs to draftFor's street only - never poured into another street's editor
-  if (draft !== null && draftFor && draftFor !== noteOpenFor) { clearTimeout(noteSaveTimer); const wb = saveWarned; const r = setNoteText(draftFor, draft); if (!r.ok && wb) toast('Not saved \u2014 storage problem', 3200); } // switching streets finalizes the old editor against ITS street first (a destroyed editor's blur is not guaranteed to fire). Beta 1.169 (Carbon fix round, A-01): the flush's result used to be discarded - saveAllWarned toasts once per failure EPISODE, so when the warning had already fired, a failed finalization here was silent. The finishChangeMarked contract (Beta 1.97) is the codebase's answer for exactly this shape, applied verbatim: a fresh failure is covered by the warning setNoteText just raised; a suppressed one is owed the plain 'not saved'.
+  if (draft !== null && draftFor && draftFor !== noteOpenFor) { clearTimeout(noteSaveTimer); const wb = saveWarned; const r = setNoteText(draftFor, draft); if (!r.ok && wb) toast('Not saved. Storage problem', 3200); } // switching streets finalizes the old editor against ITS street first (a destroyed editor's blur is not guaranteed to fire). Beta 1.169 (Carbon fix round, A-01): the flush's result used to be discarded - saveAllWarned toasts once per failure EPISODE, so when the warning had already fired, a failed finalization here was silent. The finishChangeMarked contract (Beta 1.97) is the codebase's answer for exactly this shape, applied verbatim: a fresh failure is covered by the warning setNoteText just raised; a suppressed one is owed the plain 'not saved'.
   let noteFlushed = false, noteFlushFailed = false; // Beta 1.79: a rebuild for the SAME street (the map style finishing its load, a theme flip - both end in refreshAll) replaces the open editor too. Finalize its pending save HERE, synchronously, instead of leaving the debounced timer pointing at a discarded textarea - that race is what stranded drive88's note checks when the style-ready refresh landed mid-edit
   if (draft !== null && draftFor && draftFor === noteOpenFor && noteSaveTimer) { clearTimeout(noteSaveTimer); noteSaveTimer = 0; if (setNoteText(draftFor, draft).ok) noteFlushed = true; else noteFlushFailed = true; } // Beta 1.113 (round 112, CG-112-01): setNoteText returns the 1.101 storage-outcome OBJECT - {ok:false} is truthy, so the old truthiness test marked a FAILED save flushed and the rebuilt editor announced 'Saved'
   const arr = STREETNAMES.filter(n => (listFilter === 'primaries') === PRIMARIES.has(n)); // Beta 1.109: the visible set is exactly the selected group - 6 primaries or 28 secondaries on Route 5W
@@ -617,18 +617,18 @@ function renderStreets() { // production row design: tap a street's name area to
     if (noteOpenFor === n) {
       const ed = document.createElement('div');
       ed.className = 'noteEd';
-      ed.innerHTML = '<div class="nedLbl"></div><textarea placeholder="Note for this street — e.g. driveway at #12 could not be cleaned, car blocking"></textarea><div class="nedActs"><button class="nedSave">Save note</button><button class="nedDone">Done</button><div class="nhint">Saves automatically</div></div>'; // Beta 1.184: the redesign editor furniture - a Note label and explicit Save/Done actions over the SAME autosave mechanism (Save flushes the same setNoteText call now; Done closes the editor, like tapping the row again)
-      ed.querySelector('.nedLbl').textContent = 'Note — ' + n;
+      ed.innerHTML = '<div class="nedLbl"></div><textarea placeholder="Note for this street. E.g. driveway at #12 could not be cleaned, car blocking"></textarea><div class="nedActs"><button class="nedSave">Save note</button><button class="nedDone">Done</button><div class="nhint">Saves automatically</div></div>'; // Beta 1.184: the redesign editor furniture - a Note label and explicit Save/Done actions over the SAME autosave mechanism (Save flushes the same setNoteText call now; Done closes the editor, like tapping the row again)
+      ed.querySelector('.nedLbl').textContent = 'Note: ' + n;
       const ta = ed.querySelector('textarea');
       ta.value = (draft !== null && draftFor === n) ? draft : noteTextOf(n); noteEdFor = n;
-      const hint = ed.querySelector('.nhint'); if (noteFlushFailed && n === draftFor) hint.textContent = 'Not saved — storage problem'; else if (noteFlushed && n === draftFor) hint.textContent = 'Saved \u2713'; // Beta 1.113 (round 112, CG-112-01): a failed flush says so, in the debounced path's own words - never 'Saved' // Beta 1.79: the rebuilt editor tells the truth about the save the rebuild just finalized
+      const hint = ed.querySelector('.nhint'); if (noteFlushFailed && n === draftFor) hint.textContent = 'Not saved. Storage problem'; else if (noteFlushed && n === draftFor) hint.textContent = 'Saved \u2713'; // Beta 1.113 (round 112, CG-112-01): a failed flush says so, in the debounced path's own words - never 'Saved' // Beta 1.79: the rebuilt editor tells the truth about the save the rebuild just finalized
       ta.addEventListener('input', () => {
         hint.textContent = 'Saving…';
         clearTimeout(noteSaveTimer);
-        noteSaveTimer = setTimeout(() => { const ok = setNoteText(n, ta.value); paintNt(); hint.textContent = ok.ok ? 'Saved ✓' : 'Not saved — storage problem'; }, 400); // Beta 1.63 (audit F04): the hint tells the truth about the write
+        noteSaveTimer = setTimeout(() => { const ok = setNoteText(n, ta.value); paintNt(); hint.textContent = ok.ok ? 'Saved ✓' : 'Not saved. Storage problem'; }, 400); // Beta 1.63 (audit F04): the hint tells the truth about the write
       });
-      ta.addEventListener('blur', () => { clearTimeout(noteSaveTimer); const ok = setNoteText(n, ta.value); paintNt(); hint.textContent = ok.ok ? 'Saved ✓' : 'Not saved — storage problem'; });
-      ed.querySelector('.nedSave').addEventListener('click', () => { clearTimeout(noteSaveTimer); const ok = setNoteText(n, ta.value); paintNt(); hint.textContent = ok.ok ? 'Saved ✓' : 'Not saved — storage problem'; });
+      ta.addEventListener('blur', () => { clearTimeout(noteSaveTimer); const ok = setNoteText(n, ta.value); paintNt(); hint.textContent = ok.ok ? 'Saved ✓' : 'Not saved. Storage problem'; });
+      ed.querySelector('.nedSave').addEventListener('click', () => { clearTimeout(noteSaveTimer); const ok = setNoteText(n, ta.value); paintNt(); hint.textContent = ok.ok ? 'Saved ✓' : 'Not saved. Storage problem'; });
       ed.querySelector('.nedDone').addEventListener('click', () => { noteOpenFor = null; renderStreets(); }); // Beta 1.169 (Carbon fix round, A-01): blur finalizes like the debounced save above it - same result, same words in the same hint. Through 1.168 the result was discarded, so a blur save that failed (storage full, the episode warning already spent) told the user nothing while the editor still read 'Saves automatically'.
       el.appendChild(ed);
     }

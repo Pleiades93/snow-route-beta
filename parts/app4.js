@@ -4,7 +4,7 @@ function fmtStamp(iso) { const d = new Date(iso); return isNaN(d) ? '' : d.toLoc
 function buildReport() {
   const byTime = m => (a, b) => String(m[a] || '').localeCompare(String(m[b] || ''));
   const ts = [...doneSet].map(n => Date.parse(doneTimes[n])).filter(t => !isNaN(t)).sort((a, b) => a - b);
-  const L = ['Snow Route — snow log', 'Exported: ' + fmtStamp(new Date().toISOString()), 'Completed: ' + doneSet.size + ' of ' + STREETNAMES.length]; // Beta 1.94 (audit F-01): the total derives from the route's street list
+  const L = ['Snow Route: snow log', 'Exported: ' + fmtStamp(new Date().toISOString()), 'Completed: ' + doneSet.size + ' of ' + STREETNAMES.length]; // Beta 1.94 (audit F-01): the total derives from the route's street list
   if (ts.length) {
     const startMs = (runStart && runStart <= ts[0]) ? runStart : ts[0]; // Beta 1.71 (audit B05): one start for the whole log - the real clean start when it is recorded, the first completion only as the fallback for states that never recorded one. The 1.70 round had aligned the distance to the real start but left Started/Duration on the first completion, so the log disagreed with itself
     L.push('Started: ' + fmtStamp(new Date(startMs).toISOString()) + '   Last: ' + fmtStamp(new Date(ts[ts.length - 1]).toISOString()) + '   Duration: ' + fmtDur(ts[ts.length - 1] - startMs));
@@ -15,7 +15,7 @@ function buildReport() {
   const todo = STREETNAMES.filter(n => !doneSet.has(n));
   if (todo.length) L.push('', 'Not done: ' + todo.join(', '));
   const fl = STREETNAMES.filter(n => notes[n] && notes[n].length);
-  if (fl.length) { L.push('', 'Notes & flags:'); fl.forEach(n => L.push(n + ' — ' + flagText(n))); }
+  if (fl.length) { L.push('', 'Notes & flags:'); fl.forEach(n => L.push(n + ': ' + flagText(n))); }
   history.slice().reverse().forEach(h => {
     const items = h.items || {}, ks = Object.keys(items).sort(byTime(items));
     L.push('', 'Archived clean (finished ' + fmtStamp(h.at) + ', ' + ks.length + ' streets' + (h.startedAt ? ', started ' + fmtStamp(h.startedAt) : '') + (h.km ? ', ' + h.km + ' km' : '') + ')');
@@ -170,8 +170,8 @@ function clearTrailAll() { // Beta 1.88: the Clear trail BUTTON left with the ol
   // would resurrect on the next load - say so honestly and keep the clear pending (trailDirty) so the flush retries it.
   const okTrailClr = saveTrail().ok;
   if (okTrailClr && okSessClr) { markClean('trail'); lastTrailSave = Date.now(); }
-  else if (okTrailClr) { toast('Trail cleared, but the session markers could not be saved — will keep retrying', 3200); }
-  else { markDirty('trail'); toast('Trail cleared on screen, but saving failed — will keep retrying', 3200); }
+  else if (okTrailClr) { toast('Trail cleared, but the session markers could not be saved; will keep retrying', 3200); }
+  else { markDirty('trail'); toast('Trail cleared on screen, but saving failed; will keep retrying', 3200); }
 }
 function countUnknownNames(parsed) { // Beta 1.95 (deep audit SR-194-08): how many street names in a backup this route does not know - counted from the RAW parsed backup, BEFORE any normalization, each name ONCE. 1.94 counted what survived pushField into the write list: an object-form done map was filtered to known streets before it was pushed (its unknowns invisible), history entries in the legacy array form were skipped entirely, and a name repeated across fields counted per occurrence. The restore itself is unchanged; only the report is honest now. Beta 1.117 (F6): "known" is judged PER ROUTE - each entry against its own pack's street set, not the open route's.
   const bad = new Set();
@@ -217,17 +217,17 @@ async function restoreBackup(parsed) { // production doRestore semantics: valida
   const FIELD_SHAPES = { done: 'arr', times: 'obj', hist: 'arr', notes: 'obj', via: 'obj', trail: 'arr', cov: 'obj', sides: 'obj', sess: 'arr' };
   const entries = []; // [targetKey, value]
   const pushField = (targetKey, field, v, label, nameSet) => {
-    if (typeof v !== 'string') { toast('Backup has a bad value for ' + label + ' — nothing was changed', 3200); return false; }
+    if (typeof v !== 'string') { toast('Backup has a bad value for ' + label + '. Nothing was changed', 3200); return false; }
     if (field === 'start') { // Beta 1.150 (security-audit fix round, finding restore-start-scalar-unvalidated): the run-start has no FIELD_SHAPES entry, so its check is semantic, not a shape - the storage contract makes it an epoch-ms digit string, and the loader range-bounds every other epoch it accepts (946684800..4102444800 s), so the restore accepts exactly that band in milliseconds. A crafted '1' used to be committed verbatim through this verified write set and coerced by the loader into a phantom run whose Cancel wiped the route
-      if (!/^\d+$/.test(v) || !isFinite(+v) || +v < 946684800000 || +v > 4102444800000) { toast('Backup has a bad value for ' + label + ' — nothing was changed', 3200); return false; }
+      if (!/^\d+$/.test(v) || !isFinite(+v) || +v < 946684800000 || +v > 4102444800000) { toast('Backup has a bad value for ' + label + '. Nothing was changed', 3200); return false; }
     }
-    if (field === 'night' && v !== '0' && v !== '1') { toast('Backup has a bad value for ' + label + ' — nothing was changed', 3200); return false; } // Beta 1.150: night rode the same unchecked path - its writer (setThemeOverride) stores only the enum '0'/'1'. Its pair nightExp was already validated (1.92 F01) and both keys already land in this one verified write set with rollback, so the pair stays atomic; only the enum was missing
+    if (field === 'night' && v !== '0' && v !== '1') { toast('Backup has a bad value for ' + label + '. Nothing was changed', 3200); return false; } // Beta 1.150: night rode the same unchecked path - its writer (setThemeOverride) stores only the enum '0'/'1'. Its pair nightExp was already validated (1.92 F01) and both keys already land in this one verified write set with rollback, so the pair stays atomic; only the enum was missing
     const shape = FIELD_SHAPES[field];
     if (shape) {
-      let pv; try { pv = JSON.parse(v); } catch (e) { toast('Backup value for ' + label + ' is not valid JSON — nothing was changed', 3200); return false; }
+      let pv; try { pv = JSON.parse(v); } catch (e) { toast('Backup value for ' + label + ' is not valid JSON. Nothing was changed', 3200); return false; }
       if (field === 'done' && pv && typeof pv === 'object' && !Array.isArray(pv)) {
         v = JSON.stringify(Object.keys(pv).filter(nm => pv[nm] && (nameSet || STREETSET).has(nm))); // legacy done-set was a street->time map; migrate like the loader does. Beta 1.117 (F6): filtered against the TARGET route's names (nameSet), not the open route's
-      } else if (shape === 'arr' ? !Array.isArray(pv) : !(pv && typeof pv === 'object' && !Array.isArray(pv))) { toast('Backup value for ' + label + ' has the wrong shape — nothing was changed', 3200); return false; }
+      } else if (shape === 'arr' ? !Array.isArray(pv) : !(pv && typeof pv === 'object' && !Array.isArray(pv))) { toast('Backup value for ' + label + ' has the wrong shape. Nothing was changed', 3200); return false; }
       if (field === 'sess' && Array.isArray(pv) && pv.length > TRAIL_MAX) { // Beta 1.152 (NV round, NV4): the writers' caps, enforced inside restore validation (validate-then-write: the STORED value is the capped one, so no backup can hand the load an oversized array). Only crafted backups are affected - a genuine backup never exceeds the caps its writers enforce. Beta 1.167 (B1): history is NO LONGER capped here - the writers (appendHistory at finish/save) and the loader dropped the 10-clean cap together, so a backup's history is stored whole; the session markers keep their newest entries, as their writers keep them. Markers are first given the loader's own sanitize (finite, de-duplicated, sorted) so the stored value is exactly what the load would have made of it, capped. Beta 1.193 (trail redesign): the TRAIL leaves this block - its bound is no longer a point count but the 60-minute window, which needs the pack's own start entry this per-field closure cannot see; the window is applied to the built entries in the post-pass below, with the same validate-then-write discipline (the stored value is the windowed one).
         const cs = [...new Set(pv.map(x => Number(x)).filter(x => Number.isFinite(x)))].sort((a, b) => a - b); v = JSON.stringify(cs.slice(Math.max(0, cs.length - TRAIL_MAX)));
       }
@@ -240,18 +240,18 @@ async function restoreBackup(parsed) { // production doRestore semantics: valida
   if (parsed.v === 2) {
     if (!parsed.routes || typeof parsed.routes !== 'object' || Array.isArray(parsed.routes)) { toast('That is not a Snow Route backup', 3200); return; }
     if (parsed.userpacks !== undefined) { // Beta 1.118: validate the created-route definitions FIRST - they register before any route state is applied, fail-closed like everything else in this function. An id that collides with a SHIPPED pack is rejected outright: created ids are generated slugs that never collide, so a collision means the file is corrupt or tampered with.
-      if (!parsed.userpacks || typeof parsed.userpacks !== 'object' || Array.isArray(parsed.userpacks)) { toast('Backup has a bad created-routes record — nothing was changed', 3200); return; }
+      if (!parsed.userpacks || typeof parsed.userpacks !== 'object' || Array.isArray(parsed.userpacks)) { toast('Backup has a bad created-routes record. Nothing was changed', 3200); return; }
       restoredPacks = {};
       for (const rid of Object.keys(parsed.userpacks)) {
-        if (!/^[a-z0-9][a-z0-9-]{0,40}$/.test(rid) || SHIPPED_PACK_IDS.has(rid)) { toast('Backup has a bad created route id (' + rid + ') — nothing was changed', 3200); return; }
+        if (!/^[a-z0-9][a-z0-9-]{0,40}$/.test(rid) || SHIPPED_PACK_IDS.has(rid)) { toast('Backup has a bad created route id (' + rid + '). Nothing was changed', 3200); return; }
         const v = normalizePack(parsed.userpacks[rid], {});
-        if (!v.ok) { toast('Backup has a bad created route (' + rid + ': ' + v.error + ') — nothing was changed', 3200); return; }
+        if (!v.ok) { toast('Backup has a bad created route (' + rid + ': ' + v.error + '). Nothing was changed', 3200); return; }
         v.pack.id = rid; restoredPacks[rid] = v.pack;
       }
       allPacks = ROUTE_PACKS.filter(p => !restoredPacks[p.id]).concat(Object.values(restoredPacks)); // Beta 1.142 (Package B, DA-01): ONE entry per route id, the INCOMING definition in it - everything below that iterates allPacks (session clearing, derived sides, the rollback scope) must see the definition this backup installs, never a duplicate of the one it replaces
     }
     for (const id of Object.keys(parsed.routes)) {
-      const pack = (restoredPacks ? restoredPacks[id] : null) || ROUTE_PACKS.find(p => p.id === id); if (!pack) { toast('Backup mentions an unknown route (' + id + ') — nothing was changed', 3200); return; } // Beta 1.118: a route whose definition rides this same backup is known. Beta 1.142 (Package B, DA-01): the incoming definition is judged FIRST - pre-1.142 the existing pack won this lookup, so a replaced route's name filter and snapshot validation ran against its OLD geometry while the new definition was installed underneath them
+      const pack = (restoredPacks ? restoredPacks[id] : null) || ROUTE_PACKS.find(p => p.id === id); if (!pack) { toast('Backup mentions an unknown route (' + id + '). Nothing was changed', 3200); return; } // Beta 1.118: a route whose definition rides this same backup is known. Beta 1.142 (Package B, DA-01): the incoming definition is judged FIRST - pre-1.142 the existing pack won this lookup, so a replaced route's name filter and snapshot validation ran against its OLD geometry while the new definition was installed underneath them
       const data = parsed.routes[id]; if (!data || typeof data !== 'object' || Array.isArray(data)) { toast('That is not a Snow Route backup', 3200); return; }
       const rk = routeKeys(id);
       const pg = packGeometry(pack); // Beta 1.117 (F6): this route's own geometry, for its name filter and snapshot validation below
@@ -266,9 +266,9 @@ async function restoreBackup(parsed) { // production doRestore semantics: valida
     }
     if (parsed.night !== undefined && !pushField(LS_GLOBAL.night, 'night', parsed.night, 'night')) return;
 
-    if (parsed.nightExp !== undefined) { const ne = parsed.nightExp; if (typeof ne !== 'string' || !isFinite(+ne) || +ne <= 0) { toast('Backup has a bad value for night override expiry — nothing was changed', 3200); return; } if (!pushField(LS_GLOBAL.nightExp, 'nightExp', ne, 'night override expiry')) return; } // Beta 1.92 (audit F01): the expiry must be a finite positive epoch string - any other text used to sail through and poison the next boot
-    if (parsed.settings !== undefined) { const cs = canonicalSettings(parsed.settings); if (cs === null) { toast('Backup has a bad settings value — nothing was changed', 3200); return; } entries.push([SETTINGS_KEY, cs]); } // Beta 1.166: the Settings toggles restore inside this same verified write set (SETTINGS_KEY joins the rollback scope unconditionally below, like the night pair, so a failed restore puts the device's toggles back too). A backup WITHOUT the field - every backup written before 1.166 - leaves the device's settings untouched: the missing-key rule, as always
-    if (parsed.fixlog !== undefined) { const cf = canonicalFixLog(parsed.fixlog); if (cf === null) { toast('Backup has a bad fix log value — nothing was changed', 3200); return; } entries.push([LS.fixlog, cf]); } // Beta 1.189: the raw fix log restores inside this same verified write set, validated and capped by canonicalFixLog (its key joins the rollback scope unconditionally below, like the settings record, so a failed restore puts the device's own log back too). A backup WITHOUT the field - every backup written before 1.189 - leaves the device's log untouched: the missing-key rule, as always. The field REPLACES the device log whole (never merged), so no C-01-style split of a resident record by an incoming boundary is possible
+    if (parsed.nightExp !== undefined) { const ne = parsed.nightExp; if (typeof ne !== 'string' || !isFinite(+ne) || +ne <= 0) { toast('Backup has a bad value for night override expiry. Nothing was changed', 3200); return; } if (!pushField(LS_GLOBAL.nightExp, 'nightExp', ne, 'night override expiry')) return; } // Beta 1.92 (audit F01): the expiry must be a finite positive epoch string - any other text used to sail through and poison the next boot
+    if (parsed.settings !== undefined) { const cs = canonicalSettings(parsed.settings); if (cs === null) { toast('Backup has a bad settings value. Nothing was changed', 3200); return; } entries.push([SETTINGS_KEY, cs]); } // Beta 1.166: the Settings toggles restore inside this same verified write set (SETTINGS_KEY joins the rollback scope unconditionally below, like the night pair, so a failed restore puts the device's toggles back too). A backup WITHOUT the field - every backup written before 1.166 - leaves the device's settings untouched: the missing-key rule, as always
+    if (parsed.fixlog !== undefined) { const cf = canonicalFixLog(parsed.fixlog); if (cf === null) { toast('Backup has a bad fix log value. Nothing was changed', 3200); return; } entries.push([LS.fixlog, cf]); } // Beta 1.189: the raw fix log restores inside this same verified write set, validated and capped by canonicalFixLog (its key joins the rollback scope unconditionally below, like the settings record, so a failed restore puts the device's own log back too). A backup WITHOUT the field - every backup written before 1.189 - leaves the device's log untouched: the missing-key rule, as always. The field REPLACES the device log whole (never merged), so no C-01-style split of a resident record by an incoming boundary is possible
   } else if (parsed.v === 1) { // Beta 1.76: a v1 backup is the pre-routes format - its data map (keyed by the legacy storage names) belongs to Route 5W and lands in the 5W slot
     if (!parsed.data || typeof parsed.data !== 'object' || Array.isArray(parsed.data)) { toast('That is not a Snow Route backup', 3200); return; }
     const rk5 = routeKeys('5w');
@@ -276,13 +276,13 @@ async function restoreBackup(parsed) { // production doRestore semantics: valida
     for (const f of ROUTE_FIELDS) { const lv = parsed.data[LEGACY_KEYS[f]]; if (lv === undefined) continue; if (!pushField(rk5[f], f, lv, 'Route 5W ' + f, pg5 ? pg5.set : null)) return; }
     if (parsed.data['snowroute.v2.night'] !== undefined && !pushField(LS_GLOBAL.night, 'night', parsed.data['snowroute.v2.night'], 'night')) return;
 
-  } else { toast('Unsupported backup version (' + String(parsed.v) + ') — nothing was changed', 3200); return; }
+  } else { toast('Unsupported backup version (' + String(parsed.v) + '). Nothing was changed', 3200); return; }
   let packPriors = null; // Beta 1.166: the store values a geometry-carrying restore is about to overwrite, snapshotted STRICTLY before anything is written - the store phase's rollback material, and the DA-05 strict gate re-seated: a route whose current definition cannot be read refuses the restore here, before a single write, instead of being silently overwritten (1.142's merge-base refusal, carried to the definitions' new home)
   if (restoredPacks) {
     packPriors = {};
-    for (const rid of Object.keys(restoredPacks)) { const cur = await upGet(rid); if (cur === UP_READ_FAILED) { toast('Restore stopped — your created-routes store could not be read, so nothing was changed', 3600); return; } packPriors[rid] = cur; }
+    for (const rid of Object.keys(restoredPacks)) { const cur = await upGet(rid); if (cur === UP_READ_FAILED) { toast('Restore stopped. Your created-routes store could not be read, so nothing was changed', 3600); return; } packPriors[rid] = cur; }
     const legacy = readUserPacks(); // a not-yet-drained legacy record still SHADOWS the store at boot for the ids it holds (create-packs.js: the legacy copy wins per id while it stands), so a restored id must leave the legacy record too, inside this same verified write set - and a legacy record that cannot be read refuses the restore for the same DA-05 reason its merge base once did
-    if (legacy === null) { toast('Restore stopped — your created-routes record could not be read, so nothing was changed', 3600); return; }
+    if (legacy === null) { toast('Restore stopped. Your created-routes record could not be read, so nothing was changed', 3600); return; }
     if (Object.keys(legacy).some(rid => rid in restoredPacks)) { const shadow = { ...legacy }; for (const rid of Object.keys(restoredPacks)) delete shadow[rid]; entries.push([USERPACKS_KEY, Object.keys(shadow).length ? JSON.stringify(shadow) : null]); }
   } // Beta 1.166: the definitions themselves land in the IndexedDB store as per-route verified writes (phase 1 of the write stage below, ahead of the localStorage write set). A restore adds/updates routes - it does not delete ones the backup predates: the store keeps every id this backup does not carry, and packPriors covers exactly the ids it overwrites. The reload that ends every restore re-registers the definitions at boot before their state is read
   // Beta 1.73 (audit C06, Andrew's call): a backup that replaces a route's TRAIL but carries no
@@ -350,7 +350,7 @@ async function restoreBackup(parsed) { // production doRestore semantics: valida
   const restoreFenceDown = () => { restoring = false; markDirty('trail'); markDirty('sess'); markDirty('aux'); markDirty('primary'); markDirty('fixlog'); }; // Beta 1.189: the fix log's flag re-arms through this same doorway - fixes logged while the fence was up live only in memory, exactly like the trail's. Beta 1.186 (P1): clear the fence and re-arm the trail/session/coverage dirty flags - GPS work that arrived while the fence was up lives only in memory (the rollback restored storage, never memory), and the next flush (heartbeat or fix) must carry it instead of waiting for an incidental save. Both rollback exits (phase 1 and the entries loop) end through this one doorway, so the two failure paths treat concurrent live work identically - through 1.185 the phase-1 exit preserved in-window writes the entries exit discarded. Gate round (Codex finding): the PRIMARY flag re-arms here too - a street mark or note edit made during the write stage was refused by the fence (saveAll returns its fenced outcome and, by the 1.147 design that binds the success path, arms nothing), so without the re-arm it lived only in memory and a reload lost it even though the restore had failed and the page kept running. On a failure exit the rollback has put storage back to the pre-restore board, so the armed heartbeat retry writes the live board, in-window edit included; on success this doorway never runs (the fence stays up into the reload).
   const snap = {}; let snapOk = true;
   for (const k of SCOPE) { const v = rawRead(k); if (v === RAW_READ_FAILED) snapOk = false; else snap[k] = v; }
-  if (!snapOk) { restoreFenceDown(); toast('Restore stopped — your current data could not be read for safekeeping, so nothing was changed', 3600); return; }
+  if (!snapOk) { restoreFenceDown(); toast('Restore stopped. Your current data could not be read for safekeeping, so nothing was changed', 3600); return; }
   const rollback = () => { // Beta 1.102 (Phase 4, C3): the restore-all rollback on the verified primitives - every scoped key put back (or removed) and read back
     let okBack = true;
     for (const k of SCOPE) { const r = snap[k] === null ? txDel(k) : txSet(k, snap[k]); if (!r.ok) okBack = false; }
@@ -365,8 +365,8 @@ async function restoreBackup(parsed) { // production doRestore semantics: valida
     let packFail = null;
     for (const rid of Object.keys(restoredPacks)) { if (!(await upPut(rid, restoredPacks[rid]))) { packFail = rid; break; } }
     if (packFail) {
-      if (await rollbackPacks()) toast('Restore failed while saving the created route (' + packFail + ') — your current data was put back, nothing was changed', 3800);
-      else toast('Restore failed while saving the created route (' + packFail + ') — and your previous data could NOT be fully put back. Restore from a known-good backup', 4200);
+      if (await rollbackPacks()) toast('Restore failed while saving the created route (' + packFail + '). Your current data was put back, nothing was changed', 3800);
+      else toast('Restore failed while saving the created route (' + packFail + '). And your previous data could NOT be fully put back. Restore from a known-good backup', 4200);
       restoreFenceDown();
       return;
     }
@@ -376,8 +376,8 @@ async function restoreBackup(parsed) { // production doRestore semantics: valida
     const wr = v === null ? txDel(k) : txSet(k, v); // Beta 1.97 (CG-196-01) + 1.102 (Phase 4): a null entry is a DELETE (the idle assertion) - every entry written and verified by the same primitives
     if (!wr.ok) {
       const lsOk = rollback(); const pkOk = restoredPacks ? await rollbackPacks() : true; // Beta 1.166: a localStorage failure after phase 1 rolls BOTH homes back - the result message only claims "put back" when both verifiably are
-      if (lsOk && pkOk) toast('Restore failed while writing ' + k + ' \u2014 your current data was put back, nothing was changed', 3800);
-      else toast('Restore failed while writing ' + k + ' \u2014 and your previous data could NOT be fully put back. Restore from a known-good backup', 4200);
+      if (lsOk && pkOk) toast('Restore failed while writing ' + k + '. Your current data was put back, nothing was changed', 3800);
+      else toast('Restore failed while writing ' + k + '. And your previous data could NOT be fully put back. Restore from a known-good backup', 4200);
       restoreFenceDown();
       return;
     }
@@ -385,14 +385,14 @@ async function restoreBackup(parsed) { // production doRestore semantics: valida
   if (restoredPacks) for (const rid of Object.keys(restoredPacks)) userPackCache[rid] = restoredPacks[rid]; // Beta 1.166: the backup picture joins the commit - the reload follows immediately, but the cache must never describe a store state that was rolled back or never written
   // Beta 1.141 (Package A, DA-10) discharge note: the finish-cleanup discharge itself moved INTO the verified write set above in Beta 1.150 (see the finclean entries) - the 1.141 rule stands unchanged (a restore discharges the obligations of exactly the routes it rewrites; an omitted route's obligation stays armed), only its mechanism is now verified like every other write in this function
   restoring = true; markClean('trail'); markClean('aux'); markClean('sess'); // the reload's pagehide flush must not write the old in-memory trail/coverage over the restored data
-  toast('Backup restored — reloading' + (droppedNames ? ' · ' + droppedNames + ' unknown street name' + (droppedNames === 1 ? '' : 's') + ' in the backup were ignored' : '') + (snapDropped ? ' · the saved start snapshot was not usable, so Cancel will rebuild from the marks made during the clean' : ''), snapDropped ? 4600 : undefined); // Beta 1.94 (audit F-05): the drop count is part of the result, not a silent loader detail. Beta 1.96 (SR-195-02): a dropped start snapshot is reported the same way
+  toast('Backup restored. Reloading' + (droppedNames ? ' · ' + droppedNames + ' unknown street name' + (droppedNames === 1 ? '' : 's') + ' in the backup were ignored' : '') + (snapDropped ? ' · the saved start snapshot was not usable, so Cancel will rebuild from the marks made during the clean' : ''), snapDropped ? 4600 : undefined); // Beta 1.94 (audit F-05): the drop count is part of the result, not a silent loader detail. Beta 1.96 (SR-195-02): a dropped start snapshot is reported the same way
   setTimeout(() => location.reload(), 600);
 }
 let restoreInFlight = false; // Beta 1.170 (Carbon fix round Phase 2, C-09): single-flight for the restore door, same shape as preloadRunning below - restoreBackup is ASYNC (its created-route store writes await), so through 1.169 a second tap, or a file pick landing while a paste restore ran, started a competing restore whose pre-write snapshot could capture the first restore's half-written state
 function doRestore() {
   if (restoreInFlight) return;
   let parsed;
-  try { parsed = JSON.parse($('xText').value); } catch (e) { toast('That is not a valid backup — paste the whole backup text', 3200); return; }
+  try { parsed = JSON.parse($('xText').value); } catch (e) { toast('That is not a valid backup. Paste the whole backup text', 3200); return; }
   restoreInFlight = true;
   Promise.resolve(restoreBackup(parsed)).catch(() => {}).finally(() => { restoreInFlight = false; }); // restoreBackup reports its own refusals by contract and is not expected to throw; the catch is belt-and-braces so the flag can never wedge the door shut
 }
@@ -534,8 +534,8 @@ const list = preloadUrlList();
     let routeSaved = saved, routeTotal = list.length;
     if (activeRoute) { const sub = packTileUrls(activeRoute); const confSet = new Set(confirmed); routeTotal = sub.size; routeSaved = 0; for (const u of sub) if (confSet.has(u)) routeSaved++; }
     lsSet(LS.pre, JSON.stringify({ at: Date.now(), saved, total: list.length, routeSaved, routeTotal }));
-    st.textContent = capHit ? 'Offline maps: saved ' + saved + ' of ' + list.length + ' files — stopped at the ' + fmtStoreSize(OFFLINE_PACK_CAP_BYTES) + ' storage limit' : 'Offline maps: saved ' + saved + ' of ' + list.length + ' files (tiles are kept by the offline cache)'; // Beta 1.183 (storage audit §3 item 4): a cap stop is reported in the completion line's own idiom - the confirmed saved-so-far count plus the reason; what is already stored stays stored (a partial pack is a supported, disclosed state - Status renders it 'Partial')
-  } catch (e) { st.textContent = 'Preload failed — check connection and retry.'; } finally { preloadRunning = false; releasePack(); if ($('setStatusPane').classList.contains('on')) renderStatus(false); } // Beta 1.111: the download lives in Status now - when it ends with Status on screen, the maps line, buttons and health row re-read the pack state it just wrote (the stat line itself is the download's own report and is left alone)
+    st.textContent = capHit ? 'Offline maps: saved ' + saved + ' of ' + list.length + ' files. Stopped at the ' + fmtStoreSize(OFFLINE_PACK_CAP_BYTES) + ' storage limit' : 'Offline maps: saved ' + saved + ' of ' + list.length + ' files (tiles are kept by the offline cache)'; // Beta 1.183 (storage audit §3 item 4): a cap stop is reported in the completion line's own idiom - the confirmed saved-so-far count plus the reason; what is already stored stays stored (a partial pack is a supported, disclosed state - Status renders it 'Partial')
+  } catch (e) { st.textContent = 'Preload failed. Check connection and retry.'; } finally { preloadRunning = false; releasePack(); if ($('setStatusPane').classList.contains('on')) renderStatus(false); } // Beta 1.111: the download lives in Status now - when it ends with Status on screen, the maps line, buttons and health row re-read the pack state it just wrote (the stat line itself is the download's own report and is left alone)
 });
 
 // ===== UPDATE CHECK =====
@@ -559,7 +559,7 @@ $('updBtn').addEventListener('click', async () => {
     if (sv && mv) {
       if (sv[0] < mv[0] || (sv[0] === mv[0] && sv[1] < mv[1])) { updState = 'older'; updDone(); return; }
       updState = 'avail';
-      toast('New version found — reloading…', 2600);
+      toast('New version found. Reloading…', 2600);
       setTimeout(() => location.replace(location.pathname + '?updnav=1&v=' + Date.now()), 900); // Beta 1.221 gate fix (Codex P2, PR #98): the reload carries updnav so the worker loads the confirmed new version over its network path (updNav in src/sw.js) instead of racing it against the cached shell
       return;
     }
@@ -684,12 +684,12 @@ async function shareBackup() { // Beta 1.88 (Andrew), moved into the backup menu
 }
 async function shareRecovery(viaFallback) { // Beta 1.95 (SR-194-02): the recovery export - same share sheet, but the file is NAMED recovery and the result message repeats what it is: the live on-screen state, not fully saved on this device. Beta 1.96: since Andrew's one-button change this runs as Backup's AUTOMATIC fallback (viaFallback) - the standalone Recovery menu option is gone
   const b = buildRecovery();
-  if (!b) { toast('Recovery backup unavailable — open the route first', 3600); return; }
+  if (!b) { toast('Recovery backup unavailable. Open the route first', 3600); return; }
   const disc = (recoveryDisclosure && recoveryDisclosure.length) ? ' · WARNING: the definition for ' + recoveryDisclosure.join(', ') + ' could not be carried, so that route is NOT in this file' : ''; // Beta 1.142 (Package B, DA-09): an excluded route is named in the result - the file is honest about what it lacks
   let f = null; try { f = new File([b], 'snowroute-recovery.json', { type: 'application/json' }); } catch (e) { /* older engine: the text share below still works */ }
-  if (f && navigator.canShare && navigator.canShare({ files: [f] })) { try { await navigator.share({ files: [f] }); noteExported(); toast((viaFallback ? 'Backup could not be saved — recovery backup shared instead: ' : 'Recovery backup shared — ') + 'the open route is the live on-screen state, not fully saved on this device; other routes are included as last saved' + disc, 4200); return; } catch (e) { if (e && e.name === 'AbortError') return; } }
-  if (navigator.share) { try { await navigator.share({ text: b }); noteExported(); toast((viaFallback ? 'Backup could not be saved — recovery backup shared instead: ' : 'Recovery backup shared — ') + 'the open route is the live on-screen state, not fully saved on this device; other routes are included as last saved' + disc, 4200); return; } catch (e) { if (e && e.name === 'AbortError') return; } }
-  dl(new Blob([b], { type: 'application/json' }), 'snowroute-recovery.json'); noteExported(); toast((viaFallback ? 'Backup could not be saved — recovery backup downloaded instead: ' : 'Recovery backup downloaded — ') + 'the open route is the live on-screen state, not fully saved on this device; other routes are included as last saved' + disc, 4200); // Beta 1.96 (audit-2, N-5b): the wording distinguishes what the file actually holds - the ACTIVE route is serialized from live memory; any other route pack in the same file is read from storage, as last saved
+  if (f && navigator.canShare && navigator.canShare({ files: [f] })) { try { await navigator.share({ files: [f] }); noteExported(); toast((viaFallback ? 'Backup could not be saved. Recovery backup shared instead: ' : 'Recovery backup shared. ') + 'the open route is the live on-screen state, not fully saved on this device; other routes are included as last saved' + disc, 4200); return; } catch (e) { if (e && e.name === 'AbortError') return; } }
+  if (navigator.share) { try { await navigator.share({ text: b }); noteExported(); toast((viaFallback ? 'Backup could not be saved. Recovery backup shared instead: ' : 'Recovery backup shared. ') + 'the open route is the live on-screen state, not fully saved on this device; other routes are included as last saved' + disc, 4200); return; } catch (e) { if (e && e.name === 'AbortError') return; } }
+  dl(new Blob([b], { type: 'application/json' }), 'snowroute-recovery.json'); noteExported(); toast((viaFallback ? 'Backup could not be saved. Recovery backup downloaded instead: ' : 'Recovery backup downloaded. ') + 'the open route is the live on-screen state, not fully saved on this device; other routes are included as last saved' + disc, 4200); // Beta 1.96 (audit-2, N-5b): the wording distinguishes what the file actually holds - the ACTIVE route is serialized from live memory; any other route pack in the same file is read from storage, as last saved
 }
 $('updBtn').addEventListener('click', () => $('setMenu').classList.remove('open')); // the menu steps aside for the update check - its result reads in the System Health pane's version row, and its one surviving pill is 'New version found — reloading…' over the map (the old pop-up's pick-and-close)
 
@@ -718,8 +718,8 @@ function renderJob() {
   renderSwitch($('swVib'), settings.vib);
   $('chimeVal').textContent = settings.chime ? CHIME_SOUNDS[settings.chimeSound].name : 'Off';
 }
-$('swAwake').addEventListener('click', () => { const prevAwake = settings.awake; settings.awake = !settings.awake; if (!saveSettings()) { settings.awake = prevAwake; toast('Not saved — storage problem'); } renderSwitch($('swAwake'), settings.awake); if (settings.awake !== prevAwake) syncWake(); }); // syncWake applies the new gate at once: ON mid-run requests the lock, OFF (or a run ending) releases it; an absent WakeLock API makes the request a silent no-op while the toggle still saves (app3). Beta 1.170 (Carbon fix round Phase 2, C-02): the Beta 1.113 save-honesty contract applied to the one Settings switch that skipped it - through 1.169 a failed save still flipped the switch and synced the wake lock on a value storage never took; a failure now reverts the value and toasts, and syncWake runs only when the value actually changed. The awake value itself stays session-only by design (Beta 1.112); this is failure-surfacing only, and saveSettings is still the write the handler owes its answer to.
-$('swVib').addEventListener('click', () => { const prevVib = settings.vib; settings.vib = !settings.vib; if (!saveSettings()) { settings.vib = prevVib; renderSwitch($('swVib'), settings.vib); toast('Not saved — storage problem'); return; } renderSwitch($('swVib'), settings.vib); if (settings.vib && navigator.vibrate) { try { navigator.vibrate(60); } catch (e) {} } }); // Beta 1.113 (round 112, CG-112-03): a failed save reverts the value AND the switch and warns - the 1.101 save-honesty contract every other save path honours; on a saved flip, a confirming buzz where the platform supports vibration at all
+$('swAwake').addEventListener('click', () => { const prevAwake = settings.awake; settings.awake = !settings.awake; if (!saveSettings()) { settings.awake = prevAwake; toast('Not saved. Storage problem'); } renderSwitch($('swAwake'), settings.awake); if (settings.awake !== prevAwake) syncWake(); }); // syncWake applies the new gate at once: ON mid-run requests the lock, OFF (or a run ending) releases it; an absent WakeLock API makes the request a silent no-op while the toggle still saves (app3). Beta 1.170 (Carbon fix round Phase 2, C-02): the Beta 1.113 save-honesty contract applied to the one Settings switch that skipped it - through 1.169 a failed save still flipped the switch and synced the wake lock on a value storage never took; a failure now reverts the value and toasts, and syncWake runs only when the value actually changed. The awake value itself stays session-only by design (Beta 1.112); this is failure-surfacing only, and saveSettings is still the write the handler owes its answer to.
+$('swVib').addEventListener('click', () => { const prevVib = settings.vib; settings.vib = !settings.vib; if (!saveSettings()) { settings.vib = prevVib; renderSwitch($('swVib'), settings.vib); toast('Not saved. Storage problem'); return; } renderSwitch($('swVib'), settings.vib); if (settings.vib && navigator.vibrate) { try { navigator.vibrate(60); } catch (e) {} } }); // Beta 1.113 (round 112, CG-112-03): a failed save reverts the value AND the switch and warns - the 1.101 save-honesty contract every other save path honours; on a saved flip, a confirming buzz where the platform supports vibration at all
 $('chimeRow').addEventListener('click', () => { renderChime(); showSetPane('setChimePane'); });
 $('jobBtn').addEventListener('click', () => { renderJob(); showSetPane('setJobPane'); });
 $('jobBack').addEventListener('click', () => showSetPane('setMainPane'));
@@ -780,11 +780,11 @@ function renderChime() {
     const row = document.createElement('button');
     row.className = 'm-card m-sndRow' + (sel ? ' sel' : ''); row.dataset.snd = key;
     row.innerHTML = '<div class="m-togTxt"><div class="m-togLbl">' + snd.name + '</div><div class="m-togDesc">' + snd.desc + '</div></div>' + (sel ? '<div class="m-selTick">&#10003;</div>' : '<div class="m-play">&#9654;</div>'); // one fixed 30px right slot per row, per the mockup: the tick on the selected row, the play affordance on the rest
-    row.addEventListener('click', () => { const prevSnd = settings.chimeSound; settings.chimeSound = key; if (!saveSettings()) { settings.chimeSound = prevSnd; renderChime(); renderJob(); toast('Not saved — storage problem'); return; } renderChime(); renderJob(); playChime(key, 1); }); // a tap PREVIEWs and selects (the mockup's contract). The preview is a deliberate tap, so it sounds even while the chime toggle is off - the toggle gates only the in-clean playback. Beta 1.113 (round 112, CG-112-03): an unsaved pick reverts and warns instead of previewing a selection storage never took
+    row.addEventListener('click', () => { const prevSnd = settings.chimeSound; settings.chimeSound = key; if (!saveSettings()) { settings.chimeSound = prevSnd; renderChime(); renderJob(); toast('Not saved. Storage problem'); return; } renderChime(); renderJob(); playChime(key, 1); }); // a tap PREVIEWs and selects (the mockup's contract). The preview is a deliberate tap, so it sounds even while the chime toggle is off - the toggle gates only the in-clean playback. Beta 1.113 (round 112, CG-112-03): an unsaved pick reverts and warns instead of previewing a selection storage never took
     list.appendChild(row);
   }
 }
-$('swChime').addEventListener('click', () => { const prevChime = settings.chime; settings.chime = !settings.chime; if (!saveSettings()) { settings.chime = prevChime; renderSwitch($('swChime'), settings.chime); renderJob(); toast('Not saved — storage problem'); return; } renderSwitch($('swChime'), settings.chime); renderJob(); }); // Beta 1.113 (round 112, CG-112-03): same save-honesty as the vibration switch - a failed save reverts and warns
+$('swChime').addEventListener('click', () => { const prevChime = settings.chime; settings.chime = !settings.chime; if (!saveSettings()) { settings.chime = prevChime; renderSwitch($('swChime'), settings.chime); renderJob(); toast('Not saved. Storage problem'); return; } renderSwitch($('swChime'), settings.chime); renderJob(); }); // Beta 1.113 (round 112, CG-112-03): same save-honesty as the vibration switch - a failed save reverts and warns
 $('chimeBack').addEventListener('click', () => { renderJob(); showSetPane('setJobPane'); });
 // ---- Status: maps + health, every value read live at pane open ----
 async function packState() { // how much of the deterministic manifest (preloadUrlList - the same list the download writes and the pack migration certifies) is actually in the pack cache right now; falls back to the preload record when the cache census cannot run. Beta 1.170 (Carbon fix round Phase 2, C-04): the result also carries per-route counts - the manifest is a UNION over routes, and Status used to label the union total as the active route's alone. Beta 1.183 (storage audit §3 item 4): the result also carries the pack's measured bytes (bytes; -1 when the census could not run - the fallback record carries counts only, so the byte figure is honestly absent there)
@@ -815,7 +815,7 @@ function setHealth(icoId, valId, state, text) { // state: 'ok' green tick / 'war
   const ico = $(icoId);
   ico.textContent = state === 'ok' ? '✓' : state === 'warn' ? '⚠' : '–';
   ico.className = 'm-chk' + (state === 'warn' ? ' warn' : state === 'idle' ? ' idle' : '');
-  $(valId).textContent = '— ' + text;
+  $(valId).textContent = '– ' + text;
 }
 async function renderStatus(resetStat) {
   const ps = await packState();
@@ -828,11 +828,11 @@ async function renderStatus(resetStat) {
   if (multiRoute) { const act = ps.countsByRoute.find(r => activeRoute && r.id === activeRoute.id); if (act) $('stMapsSub').textContent += ' · this route: ' + act.cached + ' of ' + act.total; } // the active route's own share, named as its own - never the union wearing its name
   $('xPre').textContent = ps.complete ? 'Re-download' : 'Download';
   $('stDel').style.display = ps.cached > 0 ? '' : 'none';
-  if (resetStat && !preloadRunning) { const rec = parseJ(lsGet(LS.pre), null) || ROUTE_PACKS.map(p => parseJ(lsGet(routeKeys(p.id).pre), null)).find(r => r && r.saved > 0) || null; $('xPreStat').textContent = rec ? 'Offline maps downloaded ' + new Date(rec.at).toLocaleDateString() + ' (' + rec.saved + ' files)' : 'Offline maps not downloaded yet — download for offline use.'; $('xPreBar').classList.remove('on'); $('xPreFill').style.width = '0%'; } // the bar/stat belong to a live download - landing on Status with none running starts them clean (the 1.87 reset, re-homed with the elements). Beta 1.170 (C-04): the record read falls back to ANY route's download record - through 1.169 it read only the active route's slot, so right after a route switch this line could say 'not downloaded yet' directly under a 'Downloaded' maps line for the pack another route had fetched
+  if (resetStat && !preloadRunning) { const rec = parseJ(lsGet(LS.pre), null) || ROUTE_PACKS.map(p => parseJ(lsGet(routeKeys(p.id).pre), null)).find(r => r && r.saved > 0) || null; $('xPreStat').textContent = rec ? 'Offline maps downloaded ' + new Date(rec.at).toLocaleDateString() + ' (' + rec.saved + ' files)' : 'Offline maps not downloaded yet. Download for offline use.'; $('xPreBar').classList.remove('on'); $('xPreFill').style.width = '0%'; } // the bar/stat belong to a live download - landing on Status with none running starts them clean (the 1.87 reset, re-homed with the elements). Beta 1.170 (C-04): the record read falls back to ANY route's download record - through 1.169 it read only the active route's slot, so right after a route switch this line could say 'not downloaded yet' directly under a 'Downloaded' maps line for the pack another route had fetched
   // HEALTH - each row from a real signal at this moment:
   let storageOk = false;
   try { storageOk = lsSet('snowroute.v2.healthprobe', '1') && lsGet('snowroute.v2.healthprobe') === '1'; lsDel('snowroute.v2.healthprobe'); } catch (e) { storageOk = false; } // a scratch-key write + read-back + delete - the same guarded helpers every save uses
-  if (!storageOk) setHealth('stIcoStorage', 'stValStorage', 'warn', 'storage problem — export a backup');
+  if (!storageOk) setHealth('stIcoStorage', 'stValStorage', 'warn', 'storage problem. Export a backup');
   else { // Beta 1.183 (storage audit §3 item 2): beside the probe, the row now reports the platform's own storage state - the RECORDED persist() answer (storagePersist) and a live estimate() measured at pane open, like every other row. The setHealth honesty rules: protected paints ok, a REFUSAL paints warn, an unreported answer paints idle - never green. estimate() is absent on older engines and may reject; either degrades the row to its unmeasured form - it never throws and never invents a figure
     let est = null; try { if (navigator.storage && navigator.storage.estimate) est = await navigator.storage.estimate(); } catch (e) { est = null; }
     const usedTxt = est && typeof est.usage === 'number' ? fmtStoreSize(est.usage) + ' used' : '';
@@ -840,10 +840,10 @@ async function renderStatus(resetStat) {
     else if (storagePersist === false) setHealth('stIcoStorage', 'stValStorage', 'warn', 'not protected' + (usedTxt ? ' · ' + usedTxt : ''));
     else setHealth('stIcoStorage', 'stValStorage', 'idle', usedTxt ? usedTxt + ' · protection not reported by this browser' : 'not reported by this browser');
   }
-  setHealth('stIcoMaps', 'stValMaps', ps.complete ? 'ok' : 'warn', ps.complete ? 'complete' : ps.cached > 0 ? 'partial — ' + ps.cached + ' of ' + ps.total : 'not downloaded');
+  setHealth('stIcoMaps', 'stValMaps', ps.complete ? 'ok' : 'warn', ps.complete ? 'complete' : ps.cached > 0 ? 'partial: ' + ps.cached + ' of ' + ps.total : 'not downloaded');
   if (updState === 'ok') setHealth('stIcoVer', 'stValVer', 'ok', 'up to date (' + $('ver').textContent.trim() + ')');
   else if (updState === 'avail') setHealth('stIcoVer', 'stValVer', 'warn', 'update available');
-  else if (updState === 'fail') setHealth('stIcoVer', 'stValVer', 'warn', 'could not check — the server did not answer');
+  else if (updState === 'fail') setHealth('stIcoVer', 'stValVer', 'warn', 'could not check. The server did not answer');
   else if (updState === 'older') setHealth('stIcoVer', 'stValVer', 'warn', 'the server has an older version');
   else if (updState === 'diff') setHealth('stIcoVer', 'stValVer', 'warn', 'the server has a different version');
   else setHealth('stIcoVer', 'stValVer', 'idle', 'not checked yet');
@@ -864,14 +864,14 @@ $('stDel').addEventListener('click', async () => {
       if ('caches' in window) gone = (await caches.delete('snowroute-offline-v1')) || !(await caches.has('snowroute-offline-v1'));
       else gone = true; // no Cache Storage in this browser: no pack exists to delete
     } catch (e) { gone = false; }
-    if (!gone) { toast('Offline maps could not be deleted — they are still on this device'); renderStatus(true); return; }
+    if (!gone) { toast('Offline maps could not be deleted. They are still on this device'); renderStatus(true); return; }
     lsDel(PACKMIG_KEY); for (const p of ROUTE_PACKS) lsDel(routeKeys(p.id).pre); // the completion flag and EVERY route's preload record go with the pack (Beta 1.117: the records are per-route - clearing only the active route's would leave another route claiming a download that no longer exists); the browsing tile cache ('snowroute-tiles-v1') is a cache, not the pack - it stays
     renderStatus(true);
   } finally { releaseDel(); }
 });
 // ---- About ----
 const WHATSNEW = { // the curated in-app notes: plain words, LATEST RELEASE ONLY (Beta 1.114, Andrew: the accumulated list cluttered the About pane). A release REPLACES this entry with its own in the same change - it never accumulates; the full history lives in CHANGELOG.md, not the app
-  v: 'Beta 1.222', items: ["The blue menus' buttons are softer now: the white outline around them is gone, replaced by a lighter fill and a soft shadow. The solid white main buttons stay exactly as they were.", "The round buttons have a little depth now instead of sitting flat - Start and Finish, and the Streets, Pace, Centre and day/night buttons too, in daylight and at night."] };
+  v: 'Beta 1.223', items: ["Creating a route: a picked road rests in a softer colour. Tap it again and it lights up while you trim it.", "Removed sectors show grey again.", "Every pop-up wears the same blue pill now, with shorter wording.", "The city switch is a slim bar above Done.", "A city that loads fine stays quiet. Only problems speak up.", "About: nothing clipped at the top, nothing crowded at the bottom.", "The button lift from 1.222 is gone. Buttons look like 1.221 again."] }; // Beta 1.223 (Andrew): What's New entries are SHORT from now on - point form, one short plain line each, no prose paragraphs, no em dashes
 
 function renderAbout() {
   const cur = $('ver').textContent.trim();
@@ -1195,7 +1195,7 @@ function loadRoute(id) {
   if (switching) {
     collapseNoteEditor(); // an open note draft finalizes against the OUTGOING street first (renderStreets' draft flush, through saveAllWarned)
     flushAux(true); // F2: the outgoing route's pending trail/session/snapshot/start/coverage writes land in ITS slot before LS repoints
-    if (writePending('primary')) { const okPrim = saveAll(); if (!okPrim.ok) toast('Storage problem — some changes on the route you left could not be saved', 4200); } // F2: one verified retry of a failed primary save before the repoint; a failure is said out loud, never silently dropped
+    if (writePending('primary')) { const okPrim = saveAll(); if (!okPrim.ok) toast('Storage problem. Some changes on the route you left could not be saved', 4200); } // F2: one verified retry of a failed primary save before the repoint; a failure is said out loud, never silently dropped
     resetSwitchSession(); // F3/F4
   }
   document.documentElement.classList.remove('boot'); /* Beta 1.86: a loaded route IS the end of the boot state, whichever path loaded it - the boot pick, a relaunch, a test harness. The chrome returns as the state flips (in the pick flow that is still before the blue fade, so the reveal choreography is unchanged) */
@@ -1233,12 +1233,12 @@ async function deleteRoute(id) { // Beta 1.124 (Andrew): delete a route HE creat
   const ix = ROUTE_PACKS.findIndex(p => p.id === id); if (ix < 0 || SHIPPED_PACK_IDS.has(id)) return;
   const pack = ROUTE_PACKS[ix];
   const legacy = readUserPacks(); // strict, as ever: a legacy record that cannot be read is never rewritten blind - rescuing one deletion must never cost every created route
-  if (legacy === null) { toast('Storage problem — the route could not be deleted', 4000); return; }
-  if (!(await upDel(id))) { toast('Storage problem — the route could not be deleted', 4000); return; } // the storage-outcome contract, unchanged: the definition's removal is verified before any data is wiped - a route whose definition survived keeps its data and its row
+  if (legacy === null) { toast('Storage problem. The route could not be deleted', 4000); return; }
+  if (!(await upDel(id))) { toast('Storage problem. The route could not be deleted', 4000); return; } // the storage-outcome contract, unchanged: the definition's removal is verified before any data is wiped - a route whose definition survived keeps its data and its row
   if (legacy[id]) {
     const shadow = { ...legacy }; delete shadow[id];
     const okShadow = Object.keys(shadow).length ? (lsSet(USERPACKS_KEY, JSON.stringify(shadow)) && !(readUserPacks() || {})[id]) : (lsDel(USERPACKS_KEY) && localStorage.getItem(USERPACKS_KEY) === null);
-    if (!okShadow) { await upPut(id, pack); toast('Storage problem — the route could not be deleted', 4000); return; }
+    if (!okShadow) { await upPut(id, pack); toast('Storage problem. The route could not be deleted', 4000); return; }
   }
   delete userPackCache[id]; // the backup picture joins the commit
   const wasActive = !!(activeRoute && activeRoute.id === id && routeLoaded);
@@ -1246,9 +1246,9 @@ async function deleteRoute(id) { // Beta 1.124 (Andrew): delete a route HE creat
   const rk = routeKeys(id); let wipeFailed = false; for (const k of Object.values(rk)) { if (!txDel(k).ok) wipeFailed = true; } // Beta 1.146 (census C2): the slot wipe is VERIFIED like the definition write above it (txDel - the app's own verified delete), every key attempted even after a failure. The old lsDel loop ignored every result: a failed delete left residue in an orphaned slot, and uniqueRouteId checks ROUTE_PACKS only, so a later same-named route regenerated the same slug and loadRouteState loaded the residue as the new route's own progress/history/notes.
   // Reference sweep (1.124): nothing else keys on a route id - the IndexedDB city cache is keyed by CITY (a deleted route's city stays cached for the next route there), LS_GLOBAL.lastArea is a city name, and PACKMIG's fingerprint derives from preloadUrlList() over ROUTE_PACKS, so removing the pack honestly un-certifies the old union download (the tiles themselves stay cached; the Settings line simply offers the current set's download again).
   if (wasActive) unloadRouteToBoot(); else renderRouteLists();
-  if (wipeFailed) toast('Route deleted — but some of its saved data could not be deleted (storage problem)', 4200); // Beta 1.146 (census C2): the definition IS gone (verified above) and the pack stays unregistered - in-memory tenancy matches storage - but the success toast must NOT fire over a slot that could not be fully wiped; the failure is said out loud, on deleteRoute's own storage-problem surface (the same toast form its definition-write failures use)
+  if (wipeFailed) toast('Route deleted, but some of its saved data could not be deleted (storage problem)', 4200); // Beta 1.146 (census C2): the definition IS gone (verified above) and the pack stays unregistered - in-memory tenancy matches storage - but the success toast must NOT fire over a slot that could not be fully wiped; the failure is said out loud, on deleteRoute's own storage-problem surface (the same toast form its definition-write failures use)
 }
 function askDeleteRoute(id) { // Beta 1.124: the Delete button on a created route's row (app2's routeRowEl) - the shared create confirm asks, with the deletion labels; the confirm's card is the theme-token surface in both day and night.
   const pack = ROUTE_PACKS.find(p => p.id === id); if (!pack || SHIPPED_PACK_IDS.has(id)) return;
-  crConfirm('Delete ' + pack.name + '?', 'The route and everything saved for it on this phone — progress, notes, history — will be removed. This can’t be undone.', () => deleteRoute(id), { yes: 'Delete', no: 'Cancel', danger: true });
+  crConfirm('Delete ' + pack.name + '?', 'The route and everything saved for it on this phone (progress, notes, history) will be removed. This can’t be undone.', () => deleteRoute(id), { yes: 'Delete', no: 'Cancel', danger: true });
 }

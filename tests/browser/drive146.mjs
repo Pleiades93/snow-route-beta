@@ -105,7 +105,7 @@ ok('D1 failed save: NO success toast - the storage warning stands instead (CG-19
 await ev(`(() => { $('toast').textContent = ''; return true; })()`);
 await ev(`togglePiece('Astona', 0, 0); true`); await sleep(200);
 const d2 = await ev(`$('toast').textContent`);
-ok('D2 a later failure in the same episode still says not saved (the episode warning only fires once) (CG-196-05) | ' + JSON.stringify(d2), d2 === 'Not saved — storage problem');
+ok('D2 a later failure in the same episode still says not saved (the episode warning only fires once) (CG-196-05) | ' + JSON.stringify(d2), d2 === 'Not saved. Storage problem');
 await ev(`(() => { lsSet = window.__ls146; $('toast').textContent = ''; $('toast').classList.remove('show'); return true; })()`); // same isolation: D2's KEPT storage pill may still be standing inside its display window - it is not the unmark's pill
 await ev(`markUndone('Velmar'); true`); await sleep(200);
 ok('D3 healthy again: the unmark lands and no pill fires since Beta 1.221 | ' + await ev(`$('toast').textContent`), (await ev(`!doneSet.has('Velmar') && !$('toast').classList.contains('show')`)) === true);

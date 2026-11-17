@@ -1,9 +1,7 @@
-// Beta 1.153 (Andrew): the loaded-city confirmation pill's self-dismissal clock.
-// crPillKey is the confirmation currently on its 4 s clock; crPillGone is the one
-// already dismissed this create session (road taps re-render the hint - a dismissed
-// confirmation stays dismissed). Failures, progress, offers and disclosures never
-// ride this clock: they are not confirmations.
-let crPillT = 0, crPillKey = '', crPillGone = '';
+// Beta 1.223 (Andrew): the loaded-city confirmation is REMOVED - silence means the
+// city loaded. The 1.153/1.176 confirmation pill and its 4 s self-dismissal clock
+// (crPillT/crPillKey/crPillGone) retire with it: the hint now speaks only for the
+// not-loaded and failed states (preparing, degraded, failed, offers, disclosures).
 // Beta 1.176 (Andrew): the slow-load gate. A load's progress readout (and its
 // Cancel) renders only once the load has been running this long - a faster
 // load never shows it at all (on his phone the sub-second flash of the
@@ -12,24 +10,6 @@ let crPillT = 0, crPillKey = '', crPillGone = '';
 const CR_LOAD_GATE_MS = 5000;
 function crRenderHint() { // the ONE writer of the pick-stage hint + its action button + the sheet's city chip: state-driven, so no stale text survives a state change
   if (!creating || crStage !== 'pick') return;
-  // The confirmation is exactly ONE render state: ready, with nothing
-  // outstanding - no wanted offer pending and no cache/pack note riding the
-  // text (a disclosure is not a confirmation). Through 1.175 only a restore
-  // from the on-device cache confirmed; Beta 1.176 (Andrew): a FRESH load
-  // confirms too - its
-  // key is the load's own start (a resume restarts startedAt, so a resumed
-  // load's success confirms as its own event). The cached key (city + saved
-  // date) is unchanged since 1.153, as is the fromCache-without-a-date corner
-  // (no key, no confirmation - the record carried no date to name).
-  const pillKey = (!crSectorSession.street && crPrepState === 'ready' && crGrid && !crWanted && !(crCacheNote && crCity && crCacheNoteCity === crCity.name) && !(crPackNote && crCity)) ? (crGrid.fromCache ? (crGrid.savedAt ? crGrid.name + '@' + crGrid.savedAt : '') : crGrid.name + '@fresh:' + crGrid.startedAt) : '';
-  if (pillKey) {
-    if (crPillKey !== pillKey) { // a NEW confirmation: start its clock (a re-render of the same one leaves the clock running)
-      if (crPillT) clearTimeout(crPillT);
-      crPillKey = pillKey;
-      const key = pillKey;
-      crPillT = setTimeout(() => { crPillT = 0; if (crPillKey !== key) return; crPillKey = ''; crPillGone = key; $('createHint').classList.remove('on'); $('crHintBtn').style.display = 'none'; }, 4000);
-    }
-  } else if (crPillKey) { if (crPillT) clearTimeout(crPillT); crPillT = 0; crPillKey = ''; }
   const hint = $('createHint'), btn = $('crHintBtn');
   if (crSectorSession.street) { hint.textContent = 'Tap sectors to add or remove them'; hint.classList.add('on'); btn.style.display = 'none'; return; } // Beta 1.127 (mockup screen 1): while trimming, the pill says the one thing there is to do
   let text = '', btnLabel = '';
@@ -41,18 +21,20 @@ function crRenderHint() { // the ONE writer of the pick-stage hint + its action 
   }
   else if (crPrepState === 'preparing' && crGrid) { // the city grid - the live service or the app's own library behind the one extract seam, and ONE readout for both since 1.176
     gated = !pastGate(crGrid.startedAt);
-    if (!gated) { const done = crGridDoneCount(), total = crGrid.cells.length; text = 'Loading ' + crGrid.name + ' — ' + (total > 0 ? Math.round(done / total * 100) : 0) + '%'; btnLabel = 'Cancel'; } // Beta 1.176 (Andrew's amendment): name + percentage ONLY - no part counts ('part 0 of 30'), no elapsed seconds, no failed-so-far tally (failures surface in the degraded/failed states, which are never gated). The percentage is the honest count in the form he asked for - cells done of cells total, the same counters the retired part readout used - so the 1.123 pack wording ('from the app's own library…') retires with it: one readout format for a city load, and the pack's cells are the same counters
+    if (!gated) { const done = crGridDoneCount(), total = crGrid.cells.length; text = 'Loading ' + crGrid.name + ', ' + (total > 0 ? Math.round(done / total * 100) : 0) + '%'; btnLabel = 'Cancel'; } // Beta 1.176 (Andrew's amendment): name + percentage ONLY - no part counts ('part 0 of 30'), no elapsed seconds, no failed-so-far tally (failures surface in the degraded/failed states, which are never gated). The percentage is the honest count in the form he asked for - cells done of cells total, the same counters the retired part readout used - so the 1.123 pack wording ('from the app's own library…') retires with it: one readout format for a city load, and the pack's cells are the same counters
   }
   else if (crPrepState === 'degraded' && crGrid) {
-    if (crGrid.stopped === 'cancelled') { text = 'Loading stopped — ' + crGrid.name + ' ' + (crGrid.cells.length ? Math.round(crGridDoneCount() / crGrid.cells.length * 100) : 0) + '% loaded'; btnLabel = 'Resume'; } // Beta 1.176 (Andrew's standing rule): a loading readout speaks in percentages - the stopped state names how much of the city landed as a percentage of its cells, not a part count; the Resume remedy is unchanged
-    else { text = crGrid.name + ' loaded except ' + (crGridFailedCount() + crGridPendingCount()) + ' part' + ((crGridFailedCount() + crGridPendingCount()) === 1 ? '' : 's') + ' — streets there may be missing'; btnLabel = 'Retry missing parts'; }
+    if (crGrid.stopped === 'cancelled') { text = 'Loading stopped. ' + crGrid.name + ' ' + (crGrid.cells.length ? Math.round(crGridDoneCount() / crGrid.cells.length * 100) : 0) + '% loaded'; btnLabel = 'Resume'; } // Beta 1.176 (Andrew's standing rule): a loading readout speaks in percentages - the stopped state names how much of the city landed as a percentage of its cells, not a part count; the Resume remedy is unchanged
+    else { text = crGrid.name + ' loaded except ' + (crGridFailedCount() + crGridPendingCount()) + ' part' + ((crGridFailedCount() + crGridPendingCount()) === 1 ? '' : 's') + '. Streets there may be missing'; btnLabel = 'Retry missing parts'; }
     if (crWanted) btnLabel = crWanted.label;
   }
   else if (crPrepState === 'failed') { text = crFailText(crPrepFail); btnLabel = crGrid ? 'Retry' : ((crPrepFail && crPrepFail.kind === 'dense') ? 'Prepare this area' : 'Retry'); if (crWanted) btnLabel = crWanted.label; } // grid failure: Retry resumes the missing cells. Box dense: Retry at the same anchor cannot help (fixed footprint) - the button prepares wherever the map now sits (CG-PF-09). Beta 1.154 (B3 build): the wanted override applies in this branch too, as it always did in the degraded/ready branches - through 1.153 an outstanding offer's button read 'Retry' here while the click actually started the fallback preparation at the wanted anchor (the 2026-11-09 lifecycle trace's label wart); with no offer outstanding the label stays 'Retry', and the click is then genuinely a retry
   else if (crPrepState === 'ready') {
-    if (crGrid && crGrid.fromCache && crGrid.savedAt) { const d = new Date(crGrid.savedAt); text = crGrid.name + ' — loaded ' + d.toLocaleDateString('en-CA', { month: 'short', day: 'numeric' }); } // Beta 1.153 (Andrew): the pill is a load confirmation ONLY - city + when it loaded, no 'tap a road', and no Refresh button: a city that loaded fine offers no reload. The failed state's Retry (grid resume / re-prepare) is the one working remedy, and it predates this change.
-    else if (crGrid) { text = crGrid.name + ' — loaded'; } // Beta 1.176 (Andrew): a FRESH load confirms too - the same note without the date (there is no saved date to name; the load just happened), riding the same 4 s clock through the extended pillKey above
-    // Beta 1.175 (Andrew): a ready city that did NOT come from the cache shows NO pill text of its own - the 'Tap a road on the map to add it' / 'Street shapes ready — tap a road' hints are removed as unnecessary. The cached confirmation above is the only informational pill left; a disclosure note riding below, or an outstanding offer's button, still shows on its own. Beta 1.176: the fresh-load confirmation directly above is the one successor to those hints - it is the load's own outcome note, on the same clock, not a standing hint.
+    // Beta 1.223 (Andrew): NO success text in the ready state - the loaded-city
+    // confirmation ('<City> — loaded ...', cached and fresh forms, Beta 1.153/1.176)
+    // is removed whole; silence means it loaded. What still speaks in the ready
+    // state: a disclosure note riding below (cache/pack), standing alone per the
+    // 1.175 rule, and an outstanding offer's button.
     if (crWanted) btnLabel = crWanted.label; // an outstanding offer (a tap outside coverage, a pending street) keeps its working button in the ready state too (CG-PF-09: the first build's ready state hid it) - since Beta 1.153 removed the healthy-state Refresh, it is the ready state's only button
   }
   else { text = crCity ? 'Search for a street in ' + crCity.name + ', or zoom in and prepare this area' : 'Search, fly to a street, then tap it on the map'; if (crWanted) btnLabel = crWanted.label; else if (map && map.getZoom() >= 14) btnLabel = 'Prepare this area'; }
@@ -60,7 +42,7 @@ function crRenderHint() { // the ONE writer of the pick-stage hint + its action 
     if (crCacheNote && crCity && crCacheNoteCity === crCity.name) text = text ? text + ' · ' + crCacheNote : crCacheNote; // the disclosed cache state rides the hint (amendment C: degradation is said, never silent) - Beta 1.143 (DA-06): only when the note belongs to the city on screen. Beta 1.175: since the ready-state hints were removed, a note can ride an otherwise EMPTY hint - it then stands alone, with no dangling separator
     if (crPackNote && crCity) text = text ? text + ' · ' + crPackNote : crPackNote; // Beta 1.123: the disclosed pack state rides the hint the same way - a fallen-back load says the library didn't load, in every state the hint shows. Beta 1.175: the same stand-alone rule as the cache note above
   }
-  hint.textContent = text; hint.classList.toggle('on', !!text && !(pillKey && crPillGone === pillKey)); // Beta 1.153: a confirmation already dismissed this session does not reappear on re-renders. Beta 1.175: no text, no pill - with the ready-state hints gone, an empty render (a fresh ready city, nothing to disclose, no offer) never paints an empty pill
+  hint.textContent = text; hint.classList.toggle('on', !!text); // Beta 1.175: no text, no pill - an empty render (a fresh ready city, nothing to disclose, no offer) never paints an empty pill. Beta 1.223: the 1.153 dismissed-confirmation condition retires with the confirmation itself
   if (btnLabel) { btn.textContent = btnLabel; btn.style.display = ''; } else btn.style.display = 'none';
   // Beta 1.176 (Andrew): the button hangs from the pill's RENDERED bottom edge,
   // not from a fixed offset. Through 1.175 the button's CSS top sat a fixed
@@ -72,7 +54,8 @@ function crRenderHint() { // the ONE writer of the pick-stage hint + its action 
   // top clears and the CSS offset stands (the button's pill-less perch is
   // unchanged).
   if (btnLabel && hint.classList.contains('on')) { const hb = hint.getBoundingClientRect(); btn.style.top = Math.round(hb.bottom + 8) + 'px'; } else btn.style.top = '';
-  const cc = $('crCityChange'); if (cc) { if (crCity) { cc.textContent = 'City: ' + crCity.name + ' — change'; cc.style.display = ''; } else cc.style.display = 'none'; }
+  const cc = $('crCityChange'); if (cc) { if (crCity) { // Beta 1.223 (Andrew, option E): the city control is the slim bar above Done - 'Working in <City> · change', the city bold, 'change' in the app's link blue (var(--link) via .crCityGo). Built from text nodes: the city name is typed text and never becomes markup
+      cc.textContent = ''; const b = document.createElement('b'); b.textContent = crCity.name; const go = document.createElement('span'); go.className = 'crCityGo'; go.textContent = 'change'; cc.append('Working in ', b, ' · ', go); cc.style.display = ''; } else cc.style.display = 'none'; }
 }
 function crAddStreet(name, segs) { // Beta 1.144 (Package C, DA-04): the draft keys on the FULL map name - through 1.143 the key was shortStreetName(osmName), so two distinct streets sharing a shortened name (Addington Avenue / Addington Place) collided: only the first could ever enter a draft, and tapping the second opened the first's sectors. shortStreetName survives ONLY as the display form (toasts, rows, the sector bar's title); every key in the draft - roads, primaries, sectors, parts, pending - is the full name, and the saved pack inherits the full names, so both streets can live in one route.
   draft.roads[name] = segs; draft.osmNames[name] = name; crGeomGen++; // a tapped street joins as a SECONDARY (fork 3) - flip it to PRIMARY in the list if it is one. Beta 1.135 (N3): the generation bump is the draft-geometry cache's invalidation for this in-place join (see crDraftGeom)
@@ -274,10 +257,10 @@ function renderSectorBar() {
   const rec = crStreetParts(s); if (!rec) return;
   const chosen = crChosenSet(s, rec);
   $('crSbName').textContent = shortStreetName(s); // Beta 1.144 (DA-04): the bar's title is a display surface - the short name, while the draft keys on the full one
-  if (rec.parts.length === 1) { $('crSbSub').textContent = 'One piece · ' + fmtLenM(rec.total) + ' — no cross-streets to split it at, so it goes into your route whole'; return; } // Beta 1.128: honest about the streets the cut rules cannot split (measured on the shipped Vaughan pack: 221 of 1,299 streets ≥ 500 m compute to exactly one part) - 1.127's "tap sectors to trim it" promised a trim whose only outcome was deleting the road
+  if (rec.parts.length === 1) { $('crSbSub').textContent = 'One piece · ' + fmtLenM(rec.total) + ', no cross-streets to split it at, so it goes into your route whole'; return; } // Beta 1.128: honest about the streets the cut rules cannot split (measured on the shipped Vaughan pack: 221 of 1,299 streets ≥ 500 m compute to exactly one part) - 1.127's "tap sectors to trim it" promised a trim whose only outcome was deleting the road
   $('crSbSub').textContent = chosen.size >= rec.parts.length
-    ? 'Entire road picked · ' + fmtLenM(rec.total) + ' — tap sectors to trim it'
-    : chosen.size + ' of ' + rec.parts.length + ' sectors picked · ' + fmtLenM(crChosenLenM(s, rec)) + ' — the grey ends stay out of your route';
+    ? 'Entire road picked · ' + fmtLenM(rec.total) + '. Tap sectors to trim it'
+    : chosen.size + ' of ' + rec.parts.length + ' sectors picked · ' + fmtLenM(crChosenLenM(s, rec)) + '. The grey ends stay out of your route';
 }
 // ---- the pick sheet's ONE surface (Beta 1.129): the panel, the
 // tucked-away strip and the sector bar are three CONTENTS of a single
@@ -379,7 +362,7 @@ function crPendStreet(name, lngLat, run, boundary) { // fail-closed (Codex (c)):
   crPending[name] = { osmName: name, lngLat, openEnd };
   if (openEnd) crWanted = { anchor: openEnd, label: 'Prepare wider area' }; // verify round (CG-PF-09): the promised wider preparation is a REAL button - it prepares around the street's own open end, the point coverage must grow from
   renderCrLists(); crRenderHint();
-  toast(shortStreetName(name) + ' runs past the prepared area — it is pending, not added. Prepare a wider area to complete it', 4200);
+  toast(shortStreetName(name) + ' runs past the prepared area, it is pending, not added. Prepare a wider area to complete it', 4200);
 }
 // ---- the city step (Andrew's amendment): Door 2 STARTS here ----
 function crCityNameOf(it) { const a = (it && it.address) || {}; return a.city || a.town || a.village || a.municipality || a.county || String((it && it.display_name) || '').split(',')[0].trim(); }
@@ -430,7 +413,7 @@ function crRenderCityChoices() {
   crPackIndexLoad().then(entries => {
     if (!boxEl.isConnected) return;
     boxEl.innerHTML = '';
-    if (!entries || !entries.length) { const d = document.createElement('div'); d.className = 'rmNote'; d.textContent = 'The city library isn’t available right now — go back and use Manual search.'; boxEl.appendChild(d); return; } // honest unavailability, and the manual door behind Back still works - the gate never dead-ends
+    if (!entries || !entries.length) { const d = document.createElement('div'); d.className = 'rmNote'; d.textContent = 'The city library isn’t available right now. Go back and use Manual search.'; boxEl.appendChild(d); return; } // honest unavailability, and the manual door behind Back still works - the gate never dead-ends
     const last = (lsGet(LS_GLOBAL.lastArea) || '').toLowerCase();
     const sorted = entries.slice().sort((a, b) => (((b.name || '').toLowerCase() === last) ? 1 : 0) - (((a.name || '').toLowerCase() === last) ? 1 : 0)); // the last-used city rides first when the library holds it (a convenience, never a requirement - the full list is always there)
     for (const e of sorted) {
@@ -481,7 +464,7 @@ async function crRunCitySearch() {
       b.addEventListener('click', () => crPickCity(it));
       box.appendChild(b);
     }
-    if (!places.length) { const d = document.createElement('div'); d.className = 'rmNote'; d.textContent = 'No city matched that search — check the spelling, or go Back and pick from the list.'; box.appendChild(d); } // Beta 1.123: an empty answer SAYS so in the pane - 1.121 rendered nothing at all, which reads as a dead app (the same silence as the class/category defect, and just as unhelpful)
+    if (!places.length) { const d = document.createElement('div'); d.className = 'rmNote'; d.textContent = 'No city matched that search. Check the spelling, or go Back and pick from the list.'; box.appendChild(d); } // Beta 1.123: an empty answer SAYS so in the pane - 1.121 rendered nothing at all, which reads as a dead app (the same silence as the class/category defect, and just as unhelpful)
   } catch (e) { if (crCitySearchSeqCurrent(seq) && !(e && e.name === 'AbortError')) { box.innerHTML = ''; } }
 }
 
@@ -514,8 +497,9 @@ function ensureDraftLayers() {
   try {
     if (!map.getSource(DRAFT_SRC)) map.addSource(DRAFT_SRC, { type: 'geojson', data: { type: 'FeatureCollection', features: [] } });
     if (!map.getLayer('crDraftCase')) map.addLayer({ id: 'crDraftCase', type: 'line', source: DRAFT_SRC, filter: ['==', ['get', 'chosen'], 1], layout: { 'line-cap': 'round', 'line-join': 'round' }, paint: { 'line-color': 'rgba(10,14,34,.55)', 'line-width': crZoomW(9.75) } }); // Beta 1.127: the casing underlines CHOSEN geometry only - an unchosen sector wears no casing, like the mockup's plain grey ends. Beta 1.182: 12.75 = the 1.127 casing x 1.5 - the draft's DRAWN widths carry the same factor Beta 1.181 gave every road (ROAD_WIDTH_K in the generator, WIDTH_K in the engine; both live outside this part's scope, so the coupled values are literals here), and a chosen street's selection again spans the widened road it sits on (measured on the live 1.181 build: casing 8.5 and line 4.5 against a 12 px minor road at z17 - the selection sat INSIDE the road with white showing both sides). Beta 1.210: the literal is now the crZoomW curve's anchor (its value at z15 and above) - below z15 the casing thins with the zoom instead of blobbing over zoomed-out streets. Beta 1.216 (Andrew, from the casing samples): the anchor drops 12.75 -> 9.75 - the casing's EXTRA width over the line is halved (the dark reveal per side 3.0 -> 1.5 px at the anchor, the drawn band 8.25 -> 6.75 m at z16.5), same near-black, same round caps; at the old reveal the near-black outline around the thin 4.1 m core read thick and bulgy (outline-to-core 0.89 against the finished rim's 0.24). crGlowCasingHalfM below follows this anchor (4.875 px)
-    if (!map.getLayer('crDraftLineDim')) map.addLayer({ id: 'crDraftLineDim', type: 'line', source: DRAFT_SRC, filter: ['!=', ['get', 'chosen'], 1], layout: { 'line-cap': 'round', 'line-join': 'round' }, paint: { 'line-color': ['case', ['==', ['get', 'primary'], 1], GLP.mute('#ffc233'), GLP.mute('#ef476f')], 'line-width': crZoomW(4.5) } }); // Beta 1.221 (Andrew): the unchosen line wears its OWN class colour through the created-route view's mute treatment (GLP.mute - the helper is the engine's, exported from its IIFE; a bare mute() call here threw at init and silently cost the draft its dim/chosen/hit layers until the PR #98 gate caught it) - the same desaturation a finished route rests at - instead of the flat grey it wore through 1.220, which read as a different thing from the route it becomes. Picking moves the sector to the chosen layer (full saturation) in the same render that lights its glow, so the raise and the glow land together. Beta 1.210: the unchosen line as its OWN layer under the chosen one - see the crDraftLine note below for why the 1.127 single layer became two
-    if (!map.getLayer('crDraftLine')) map.addLayer({ id: 'crDraftLine', type: 'line', source: DRAFT_SRC, filter: ['==', ['get', 'chosen'], 1], layout: { 'line-cap': 'round', 'line-join': 'round' }, paint: { 'line-color': ['case', ['==', ['get', 'primary'], 1], '#ffc233', '#ef476f'], 'line-width': crZoomW(6.75) } }); // Beta 1.127: chosen = category colour at full width; unchosen = thin, in its muted class colour (Beta 1.221). Beta 1.182: both widths x 1.5 with the casing above (6.75 chosen, 4.5 unchosen) - the chosen/unchosen ratio is the 1.127 design's, unchanged; crDraftHit below is the pick TARGET, not drawing, and is deliberately NOT scaled (the tap boxes are Andrew's device-tuned precision, 1.156). Beta 1.210: both widths ride crZoomW like the casing - the literals are the z15-and-above anchors; below z15 the line thins with the zoom (crDraftHit still does NOT scale: it is a tap target, not paint, so picking keeps its generous reach at every zoom). The widths ride the curve in TWO layers (this one filtered to chosen, crDraftLineDim above it to unchosen) because MapLibre silently drops a layer whose line-width nests a zoom curve inside the chosen switch (['case', ..., interpolate, interpolate] never enters the style - measured in the 1.210 round's rendered QA: addLayer does not throw, getLayer stays false); a bare curve as the whole width is fine
+    if (!map.getLayer('crDraftLineDim')) map.addLayer({ id: 'crDraftLineDim', type: 'line', source: DRAFT_SRC, filter: ['!=', ['get', 'chosen'], 1], layout: { 'line-cap': 'round', 'line-join': 'round' }, paint: { 'line-color': '#b9c1cb', 'line-width': crZoomW(4.5) } }); // Beta 1.223 (Andrew's corrected model): a REMOVED sector is flat GREY - the #b9c1cb this layer wore through 1.220, restored. The 1.221 muted-category-colour paint is reverted: muted colour now belongs to the SELECTED-but-not-active road (crDraftLine below), never to a removed sector. Beta 1.210: the unchosen line as its OWN layer under the chosen one - see the crDraftLine note below for why the 1.127 single layer became two Beta 1.210: the unchosen line as its OWN layer under the chosen one - see the crDraftLine note below for why the 1.127 single layer became two
+    if (!map.getLayer('crDraftLine')) map.addLayer({ id: 'crDraftLine', type: 'line', source: DRAFT_SRC, filter: ['all', ['==', ['get', 'chosen'], 1], ['!=', ['get', 'active'], 1]], layout: { 'line-cap': 'round', 'line-join': 'round' }, paint: { 'line-color': ['case', ['==', ['get', 'primary'], 1], '#dbb457', '#d2647e'], 'line-width': crZoomW(6.75) } }); // Beta 1.223 (Andrew's corrected model): a chosen street that is NOT the one being trimmed paints GENTLE-MUTED - its category colour at saturation x0.65, lightness unchanged (gold #ffc233 -> #dbb457, red #ef476f -> #d2647e; the strength Andrew approved from the create-route-states sample: just enough to notice the step up when the road goes active). The ACTIVE street (the sector session's, features carry active=1) paints full colour on crDraftLineActive below, with the session glow - the muted->vibrant step is at ROAD level, on the click that opens the trim, not per sector tap (the 1.221 model tied the raise to sector picking; reverted). Beta 1.127: chosen = category colour at full width; unchosen = thin grey. Beta 1.182: both widths x 1.5 with the casing above (6.75 chosen, 4.5 unchosen) - the chosen/unchosen ratio is the 1.127 design's, unchanged; crDraftHit below is the pick TARGET, not drawing, and is deliberately NOT scaled (the tap boxes are Andrew's device-tuned precision, 1.156). Beta 1.210: both widths ride crZoomW like the casing - the literals are the z15-and-above anchors; below z15 the line thins with the zoom (crDraftHit still does NOT scale: it is a tap target, not paint, so picking keeps its generous reach at every zoom). The widths ride the curve in TWO layers (this one filtered to chosen, crDraftLineDim above it to unchosen) because MapLibre silently drops a layer whose line-width nests a zoom curve inside the chosen switch (['case', ..., interpolate, interpolate] never enters the style - measured in the 1.210 round's rendered QA: addLayer does not throw, getLayer stays false); a bare curve as the whole width is fine
+    if (!map.getLayer('crDraftLineActive')) map.addLayer({ id: 'crDraftLineActive', type: 'line', source: DRAFT_SRC, filter: ['all', ['==', ['get', 'chosen'], 1], ['==', ['get', 'active'], 1]], layout: { 'line-cap': 'round', 'line-join': 'round' }, paint: { 'line-color': ['case', ['==', ['get', 'primary'], 1], '#ffc233', '#ef476f'], 'line-width': crZoomW(6.75) } }); // Beta 1.223: the ACTIVE street's chosen sectors at FULL category colour - the vibrant half of the corrected model (its glow rides the crGlowShader, session-only since 1.209). A separate layer on the same two-layer pattern as crDraftLine/crDraftLineDim: the widths stay bare crZoomW curves (a case nested around the width curve is dropped by MapLibre - see the crDraftLine note)
     if (!map.getLayer('crDraftHit')) map.addLayer({ id: 'crDraftHit', type: 'line', source: DRAFT_SRC, layout: { 'line-cap': 'round', 'line-join': 'round' }, paint: { 'line-color': '#000000', 'line-opacity': 0, 'line-width': 24 } }); // Beta 1.127: the sector pick's fat-finger target - invisible, queryable (crSectorTap)
   } catch (e) { /* the style may still be loading - renderDraft retries on every change */ }
 }
@@ -730,9 +714,9 @@ function renderDraft() { // the DRAFT renders through its own GeoJSON source, co
       if (sel || crSectorSession.street === n) {
         const rec = crStreetParts(n); if (!rec) continue;
         const set = crChosenSet(n, rec);
-        for (let i = 0; i < rec.parts.length; i++) { const L = rec.parts[i]; if (L && L.length > 1) feats.push({ type: 'Feature', properties: { name: n, primary, chosen: set.has(i) ? 1 : 0, sector: i }, geometry: { type: 'LineString', coordinates: L.map(p => [p[1], p[0]]) } }); }
+        for (let i = 0; i < rec.parts.length; i++) { const L = rec.parts[i]; if (L && L.length > 1) feats.push({ type: 'Feature', properties: { name: n, primary, chosen: set.has(i) ? 1 : 0, active: crSectorSession.street === n ? 1 : 0, sector: i }, geometry: { type: 'LineString', coordinates: L.map(p => [p[1], p[0]]) } }); } // Beta 1.223: active=1 only on the sector session's street - it alone paints vibrant (crDraftLineActive); every other chosen street rests gentle-muted (crDraftLine)
       } else {
-        const st = g[n]; if (st) for (const run of st.runs) { const L = run.line; if (L && L.length > 1) feats.push({ type: 'Feature', properties: { name: n, primary, chosen: 1, sector: -1 }, geometry: { type: 'LineString', coordinates: L.map(p => [p[1], p[0]]) } }); } // Beta 1.144 (C1): an untrimmed street draws all its runs - one feature per run, never a line bridging them
+        const st = g[n]; if (st) for (const run of st.runs) { const L = run.line; if (L && L.length > 1) feats.push({ type: 'Feature', properties: { name: n, primary, chosen: 1, active: 0, sector: -1 }, geometry: { type: 'LineString', coordinates: L.map(p => [p[1], p[0]]) } }); } // Beta 1.144 (C1): an untrimmed street draws all its runs - one feature per run, never a line bridging them
       }
     }
   }
@@ -883,7 +867,7 @@ function setCreateStage(stage) {
 function enterCreate(stage) {
   if (!draft) draft = newDraft();
   creating = true;
-  if (crPillT) clearTimeout(crPillT); crPillT = 0; crPillKey = ''; crPillGone = ''; // Beta 1.153: a new create session re-arms the confirmation pill (a cached city confirms again on entry)
+  // Beta 1.223: the 1.153 confirmation-pill reset that stood here retires with the pill clock itself (see the crRenderHint note)
   crSectorReset(); crSectorSession.collapsed = false; crSettleMorph(); // Beta 1.127: every creation starts un-trimmed with the panel up (Beta 1.129: any surface morph a previous creation left in flight lands first)
   crSession++; // a fresh creation session: async completions born in any earlier session are obsolete from here (CG-PF-05)
   document.body.classList.add('creating');
@@ -895,7 +879,7 @@ function enterCreate(stage) {
 }
 function exitCreate() {
   creating = false; draft = null; crStage = 'pick'; crAreaGuess = '';
-  if (crPillT) clearTimeout(crPillT); crPillT = 0; crPillKey = ''; crPillGone = ''; // Beta 1.153: the pill's clock dies with the session, like every other create timer here
+  // Beta 1.223: the 1.153 pill-clock teardown that stood here retires with the clock itself
   crSectorReset(); crSectorSession.collapsed = false; // Beta 1.127: the panel + sector session state dies with the creation. Beta 1.169 (Carbon fix round, D-01): through 1.168 these two calls sat AFTER the 1.153 comment's slashes on the line above - inside the comment, dead since the line was written. enterCreate's own reset on the next entry fenced the consequence (the state merely outlived the exit instead of dying with it); the calls stand on their own line now and run.
   crSession++; crCovGen++; // every async completion born in this session is obsolete the moment the flow closes - it must not land in a later draft, hint or busy state (CG-PF-05)
   if (crPrep) { clearInterval(crPrep.ticker); crAbortOp(crPrep.op); crPrep = null; } // and the downloads themselves stop (CG-PF-10)
@@ -955,15 +939,15 @@ $('crDraftFile').addEventListener('change', async () => {
   importDraft(text);
 });
 function importDraft(text) { // fail closed, named errors, nothing half-applied - the same discipline as a backup restore
-  let obj; try { obj = JSON.parse(text); } catch (e) { toast('That draft file could not be read — it is not valid JSON', 3600); return; }
+  let obj; try { obj = JSON.parse(text); } catch (e) { toast('That draft file could not be read. It is not valid JSON', 3600); return; }
   let raw = obj;
   if (obj && typeof obj === 'object' && !Array.isArray(obj) && obj.roads === undefined) { // the sandbox pipeline's candidate shape: a bare roads object
     const vals = Object.values(obj);
     if (vals.length && vals.every(v => Array.isArray(v))) raw = { roads: obj };
-    else { toast('That draft file has no roads in it — nothing was imported', 3600); return; }
+    else { toast('That draft file has no roads in it. Nothing was imported', 3600); return; }
   }
   const v = normalizePack(raw, { draft: true });
-  if (!v.ok) { toast('Draft not imported — ' + v.error, 4000); return; }
+  if (!v.ok) { toast('Draft not imported: ' + v.error, 4000); return; }
   draft = newDraft();
   draft.roads = v.pack.roads; draft.primaries = new Set(v.pack.primaries); draft.name = v.pack.name || ''; draft.area = v.pack.area || ''; draft.tileNames = v.pack.tileNames.slice();
   draft.osmNames = Object.create(null); for (const k of Object.keys(v.pack.roads)) draft.osmNames[k] = k; // Beta 1.169 (Carbon fix round, D-02): an imported street's own OSM name is its pack key. Through 1.168 importDraft left osmNames empty, so crStreetParts' own-ways skip (nm === own) never matched for an imported street and the street's own geometry cut it into fragments at its own vertices. Tapped streets have always carried key -> itself (crAddStreet).
@@ -1152,7 +1136,7 @@ async function pickStreet(osmName, lngLat) {
   const name = osmName; // Beta 1.144 (DA-04): the draft key IS the full map name; the short form appears only in display text (shortStreetName at the toast sites below)
   const exists = Object.prototype.hasOwnProperty.call(draft.roads, name); // Beta 1.150 (security-audit fix round, finding covfromways-prototype-name-throw): own-property, not a bare read - on a plain object a street named 'constructor' reads Object.prototype's member as if the street were already picked, and the tap was routed to the sectors door for a street that was never picked
   if (exists && (crPickBusy || !(crCov && crCov.boxes.length))) { crOpenSectors(name); return; } // already picked, and either no prepared extract to resolve the tap against or a pick is in flight: the 1.128 sectors door, exactly as before (the pre-1.144 order - the picked check always outranked the busy flag)
-  if (Object.prototype.hasOwnProperty.call(crPending, name)) { toast(shortStreetName(name) + ' is pending — it runs past the prepared area and is not in your route yet', 3400); return; } // Beta 1.150: the same own-property rule for the pending read
+  if (Object.prototype.hasOwnProperty.call(crPending, name)) { toast(shortStreetName(name) + ' is pending, it runs past the prepared area and is not in your route yet', 3400); return; } // Beta 1.150: the same own-property rule for the pending read
   if (crPickBusy) return;
   // Beta 1.121: the tap resolves LOCALLY from the prepared extract - no
   // network on the ordinary path (CG-PF-04). Before the extract is ready
@@ -1169,18 +1153,18 @@ async function pickStreet(osmName, lngLat) {
       crAddRun(name, res0.segs); return; // Beta 1.144 (OPT-L1): the tap landed on a DIFFERENT disconnected run of the picked street - it joins the same street entry (docs/ARCHITECTURE.md carries the rule)
     }
     if (exists) {
-      if (res0.status === 'edge' && res0.run && !crRunHeld(name, res0.run.exact ? res0.run.segments : [res0.run.line])) { toast('The other part of ' + shortStreetName(name) + ' runs past the prepared area — it was not added. Prepare a wider area, then tap it again', 4200); return; } // an unheld run that reaches past verified coverage is never half-added over an existing pick; the wider preparation + a fresh tap is the honest path
+      if (res0.status === 'edge' && res0.run && !crRunHeld(name, res0.run.exact ? res0.run.segments : [res0.run.line])) { toast('The other part of ' + shortStreetName(name) + ' runs past the prepared area, it was not added. Prepare a wider area, then tap it again', 4200); return; } // an unheld run that reaches past verified coverage is never half-added over an existing pick; the wider preparation + a fresh tap is the honest path
       crOpenSectors(name); return; // absent/nocov against committed coverage, or an edge tap on the held run itself: the sectors door is the answer the 1.128 fork chose
     }
     if (res0.status === 'absent') {
-      if (crInAnyBox(crCov.boxes, lngLat.lat, lngLat.lng)) { toast('No shape found for ' + shortStreetName(name) + ' here — the map data holds no line for it', 3600); return; }
+      if (crInAnyBox(crCov.boxes, lngLat.lat, lngLat.lng)) { toast('No shape found for ' + shortStreetName(name) + ' here. The map data holds no line for it', 3600); return; }
       if (crGrid && crInBox(crGrid.bbox, lngLat.lat, lngLat.lng)) {
         const cell = crGrid.cells.find(c => crInBox(c.box, lngLat.lat, lngLat.lng));
-        if (cell && cell.state === 'failed') toast('That part of ' + crGrid.name + ' didn’t load — ' + shortStreetName(name) + ' can be added after Retry missing parts', 3800);
-        else toast('That part of ' + (crCity ? crCity.name : 'the city') + ' is still loading — ' + shortStreetName(name) + ' can be added as soon as it lands', 3400);
+        if (cell && cell.state === 'failed') toast('That part of ' + crGrid.name + ' didn’t load. ' + shortStreetName(name) + ' can be added after Retry missing parts', 3800);
+        else toast('That part of ' + (crCity ? crCity.name : 'the city') + ' is still loading. ' + shortStreetName(name) + ' can be added as soon as it lands', 3400);
         return;
       }
-      crPrepAnchor = { lat: lngLat.lat, lng: lngLat.lng }; crWanted = { anchor: { lat: lngLat.lat, lng: lngLat.lng }, label: 'Prepare this area' }; crRenderHint(); toast(shortStreetName(name) + ' is outside the prepared area — prepare this area, then tap it again', 3800);
+      crPrepAnchor = { lat: lngLat.lat, lng: lngLat.lng }; crWanted = { anchor: { lat: lngLat.lat, lng: lngLat.lng }, label: 'Prepare this area' }; crRenderHint(); toast(shortStreetName(name) + ' is outside the prepared area. Prepare this area, then tap it again', 3800);
       return;
     }
     // edge (Codex (c)): the run reaches beyond verified coverage - ONE
@@ -1200,9 +1184,9 @@ async function pickStreet(osmName, lngLat) {
       const got = await crSourceExtract(box, osmName, CR_TIMING.topupBudgetMs, CR_TIMING.topupAttempt1Ms, () => creating && crSession === session && crCovGen === gen, op);
       if (!creating || crSession !== session || crCovGen !== gen || !draft) return; // obsolete: land nowhere (CG-PF-05)
       if (!got.ok) {
-        if (got.kind === 'dense') toast('That area is too dense to check ' + shortStreetName(name) + ' against — it stays out of your route for now', 4000);
-        else if (got.kind === 'error' || got.kind === 'badjson') toast('The street-shape service answered with an error — ' + shortStreetName(name) + ' was not added', 3800);
-        else if (got.kind !== 'stale') toast('The street-shape service didn’t answer — ' + shortStreetName(name) + ' was not added', 3800);
+        if (got.kind === 'dense') toast('That area is too dense to check ' + shortStreetName(name) + ' against. It stays out of your route for now', 4000);
+        else if (got.kind === 'error' || got.kind === 'badjson') toast('The street-shape service answered with an error. ' + shortStreetName(name) + ' was not added', 3800);
+        else if (got.kind !== 'stale') toast('The street-shape service didn’t answer. ' + shortStreetName(name) + ' was not added', 3800);
         crRenderHint();
         return;
       }
@@ -1213,10 +1197,10 @@ async function pickStreet(osmName, lngLat) {
     return;
   }
   if (exists) { crOpenSectors(name); return; } // an extract exists but holds no verified box yet - the picked street's sectors are still the honest door
-  if (crPrepState === 'preparing') { toast('Still preparing street shapes — ' + shortStreetName(name) + ' can be added as soon as they are ready', 3200); return; }
+  if (crPrepState === 'preparing') { toast('Still preparing street shapes. ' + shortStreetName(name) + ' can be added as soon as they are ready', 3200); return; }
   crPrepAnchor = { lat: lngLat.lat, lng: lngLat.lng };
   crWanted = { anchor: { lat: lngLat.lat, lng: lngLat.lng }, label: 'Prepare this area' }; // the offer names THIS tap's area, and the hint button prepares exactly there (CG-PF-09)
-  toast('Street shapes aren’t ready for this area yet — tap Prepare this area, then tap ' + shortStreetName(name) + ' again', 3800);
+  toast('Street shapes aren’t ready for this area yet. Tap Prepare this area, then tap ' + shortStreetName(name) + ' again', 3800);
   crRenderHint();
 }
 function crFeatDistM(lngLat, geom) { // metres from the tap to the nearest point of a tile feature's line(s), in distM's flat-earth metres. CHOICE ONLY (see crMapTap): the number judges which named street a tap meant - it is never stored and never shapes the route
@@ -1280,7 +1264,7 @@ function crMapTap(e) {
     if (!pick) pick = named[0].properties.name; // a named road whose tile line is unusable still names the street - the name is the identity
     break; // the first box that names any road decides
   }
-  if (!pick) { toast('No road there — tap right on a road line', 2400); return; }
+  if (!pick) { toast('No road there. Tap on a road line', 2400); return; }
   pickStreet(pick, e.lngLat);
 }
 onMapReady(() => map.on('click', crMapTap));
