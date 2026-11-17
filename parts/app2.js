@@ -593,7 +593,7 @@ function renderStreets() { // production row design: tap a street's name area to
     d.innerHTML = '<div class="dot"></div><div class="nwrap"><div class="nmrow"><div class="nm"></div><button class="sbtn smap" title="Show on map"></button><span class="nmNote" style="display:none"></span></div><div class="nt"><span class="ntIco"></span><span class="ntTxt"></span></div></div><div class="tm"></div>'; // Beta 1.184: the pin rides INSIDE the name row, immediately right of the name; a note icon joins it only while the street carries note text; the COMPLETED pill is retired - its state folds into the status slot (srowStatus)
     d.querySelector('.nm').textContent = n;
     const ntEl = d.querySelector('.nt');
-    d.querySelector('.smap').innerHTML = ICONS.pin; d.querySelector('.ntIco').innerHTML = ICONS.note; d.querySelector('.nmNote').innerHTML = ICONS.note; // Pack D glyphs (Beta 1.30) in place of the emoji
+    d.querySelector('.smap').innerHTML = ICONS.pin; d.querySelector('.ntIco').innerHTML = ICONS.note; d.querySelector('.nmNote').innerHTML = ICONS.note; // the active pack's glyphs (Beta 1.30 put glyphs in place of the emoji; Beta 1.219: ICONS.* rides the chosen pack and renderIcons re-stamps these hosts on a switch)
     const paintNt = () => { // Beta 1.184: ONE painter for everything state-shaped on the row - its class (done/primary/half), the status slot, the name-row note icon, and the quiet line (length by default, note text while a note exists - the 1.107 rule, unchanged)
       d.className = srowClass(n);
       const st = srowStatus(n); const tmEl = d.querySelector('.tm'); tmEl.textContent = st.t; tmEl.className = 'tm ' + st.c;

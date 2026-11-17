@@ -173,9 +173,9 @@ check('C: floor at the picking zooms (z16+) - casing half ~4.2 m is under the ke
 
 // ================= V - the bump =================
 console.log('V - the current version agrees everywhere (pin rolled to Beta 1.218 by the pulsar-icons round)');
-check('V: the #ver label reads Beta 1.218', head.includes('<div class="ver" id="ver">Beta 1.218</div>'));
-check('V: WHATSNEW is the Beta 1.218 entry', app4.includes("v: 'Beta 1.218', items:"));
-check('V: the CHANGELOG top entry is Beta 1.218', changelog.split('\n').find(l => l.startsWith('## Beta')) === '## Beta 1.218 — 2026-11-16');
+check('V: the #ver label reads Beta 1.219', head.includes('<div class="ver" id="ver">Beta 1.219</div>'));
+check('V: WHATSNEW is the Beta 1.219 entry', app4.includes("v: 'Beta 1.219', items:"));
+check('V: the CHANGELOG top entry is Beta 1.219', changelog.split('\n').find(l => l.startsWith('## Beta')) === '## Beta 1.219 — 2026-11-16');
 check('V: the CHANGELOG accounts the maintenance PR since 1.215', changelog.includes('plus 1 maintenance PR since Beta 1.215'));
 
 console.log(pass + ' pass, ' + fail + ' fail');

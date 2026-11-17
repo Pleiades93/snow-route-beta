@@ -34,7 +34,7 @@ Gate: build-and-test + the touched surface's family:
 | --- | --- | --- |
 | create | `parts/create-cache.js`, `create-citydata.js`, `create-fetch.js`, `create-packs.js`, `create-pick.js`, `packs/` | 151 152 153 154 155 156 160 164 166 181 183 185 |
 | map | `parts/engine.js` | 115 116 121 127 128 129 130 133 141 148 149 165 168 182 |
-| session | `parts/app2.js`, `parts/app3.js`, `parts/app4.js` | 83 86 88 89* 114 118 125 135 136 140 145 146 147 159 161 162 163 169 170 184 201 |
+| session | `parts/app2.js`, `parts/app3.js`, `parts/app4.js` | 83 86 88 89* 114 118 125 135 136 140 145 146 147 159 161 162 163 169 170 184 201 202 |
 
 *quarantined drives are removed from the set by the selector (drive89
 today; drive181 was quarantined 2026-11-09 and re-admitted 2026-11-10

@@ -75,7 +75,8 @@
   #selPop #selBtn:disabled { background: rgba(120,128,140,.18); color: #8fa0b3; }
   #selPop #selNote { flex: none; width: 34px; min-height: 34px; height: 34px; border: none; border-radius: 999px; padding: 0; background: rgba(20,22,26,.05); color: #3c4149; } /* Beta 1.209 Look 2: the note button is a 34px ghost circle (was 40px on the chip grey). The #selPop prefix is load-bearing: the generic #selPop button rule (1,0,1) otherwise beats a bare #selNote (1,0,0) and the note chip inherits its 7px 12px padding + 36px min-height, squeezing the icon into a smaller content box (sweep re-run E-06) */
   body.night #selPop #selNote { background: rgba(255,255,255,.06); color: #c9cdd4; }
-  #selNote svg { width: 16px; height: 16px; display: block; margin: auto; } /* Beta 1.209 Look 2: the note icon steps 19px -> 16px */
+  #selNote svg { width: 16px; height: 16px; display: block; margin: auto; }
+  #selNote img { width: 16px; height: 16px; display: block; margin: auto; } /* Beta 1.219: the img form (a pack artwork) fills the same 16px box as the svg form - a separate rule, so the pinned svg rule above never moves */ /* Beta 1.209 Look 2: the note icon steps 19px -> 16px */
   .banner { position: fixed; left: calc(10px + var(--sal)); right: calc(10px + var(--sar)); bottom: calc(var(--vvb, 0px) + 236px + var(--sab)); z-index: 1000; background: var(--card); -webkit-backdrop-filter: var(--blur); backdrop-filter: var(--blur); color: var(--ink); border-radius: 16px; box-shadow: var(--shadow-card); padding: 10px 12px; display: flex; align-items: center; gap: 10px; font-size: 13px; }
   .banner.hidden { display: none; }
   .banner span { flex: 1; line-height: 1.4; }
@@ -179,6 +180,11 @@
   .sheetHead { display: flex; align-items: center; gap: 8px; padding: 8px 48px 6px 14px; }
   .sheetTitle { font-size: 16px; font-weight: 700; flex: 1; }
   #sheetClose, #paceClose, #finNo, #noteNo, #xClose, #crModalX { position: absolute; top: 2px; right: 4px; z-index: 3; border: none; background: transparent; width: 38px; height: 38px; padding: 0; color: #e63a2e; font-size: 21px; font-weight: 800; cursor: pointer; } /* THE corner X (Beta 1.30/1.31, completed 1.34, Andrew): ONE plain red X, no box, pinned to the top-right corner of EVERY menu - sheets and dialogs alike. This single rule is the only place a close may be styled; the 1.34 bug was three dialogs carrying their own overrides (coloured-button rules and the Backup button grid) that silently repainted their X as a red box. Beta 1.77 (Andrew, live catch): routeClose shipped missing from this list in 1.76 and rendered as a boxed default button - a NEW menu's X joins this selector the day the menu is built, and drive145 N15 compares every sheet's X computed style so an omission fails the battery. Beta 1.78: the Routes sheet retired and the full-screen route menu's X briefly held its seat here; Beta 1.79 (Andrew) moves that menu's close to his own design - a translucent circle at bottom centre (its own rule below) - so this rule again covers sheets and dialogs only */
+  /* Beta 1.219 (Andrew): the close ✕ wears the chosen pack - under an image pack the button's content is the pack's cancel artwork (Pulsar's native cancel; Glyph's disc fill, red for the corner family, white for the bottom pair), centred by flex while the artwork rides; the Original pack keeps the text glyph and these rules never engage. The BUTTON boxes are the rules above and below - they never change, in any pack. */
+  #sheetClose:has(img), #paceClose:has(img), #finNo:has(img), #noteNo:has(img), #xClose:has(img), #crModalX:has(img), #mapNoteNo:has(img) { display: flex; align-items: center; justify-content: center; }
+  #sheetClose img, #paceClose img, #finNo img, #noteNo img, #xClose img, #crModalX img { width: 21px; height: 21px; display: block; } /* the artwork at the text glyph's own size (the corner rule's 21px) inside the same 38px box */
+  #mapNoteNo img { width: 19px; height: 19px; display: block; } /* the artwork at its text glyph's size (19px) */
+  #rmClose img, #setClose img { width: 30px; height: 30px; display: block; } /* the artwork at the bottom pair's glyph size (30px) inside the same 44px box - those buttons already centre by flex */
   body.kb .sheet { transition: none; } /* Beta 1.61 (was 1.31's near-full-visible-height rule): while the keyboard is up the sheet keeps its pre-keyboard size and place - the layout variables are frozen in syncViewport and the keyboard overlays the sheet; the field is surfaced by the sheet's own scroll (ensureFieldVisible). The 1.31/1.55 sizing chase after the shrinking visible height is what made note menus flicker and jump. */
   .modal .card { max-height: calc(var(--vvh, 100dvh) - 44px); overflow-y: auto; } /* a modal card can never outgrow the visible area, keyboard or not */
   #filters { display: flex; gap: 0; background: #f0f0f3; border-radius: 999px; padding: 3px; margin: 2px 14px 8px; } /* Beta 1.184 (Andrew): the redesign's segmented pill track - the two group tabs ride one grey track, the selected tab wears the app gradient */
@@ -196,8 +202,8 @@
   .srow .nwrap { display: flex; flex-direction: column; min-width: 0; }
   .srow .nmrow { display: flex; align-items: center; gap: 6px; min-width: 0; }
   .srow .nt { font-size: 12px; color: var(--nt-c); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; max-width: 36vw; }
-  .srow .sbtn svg { width: 15px; height: 15px; display: block; margin: auto; } /* Beta 1.184: the pin glyph at redesign size */
-  .srow .nt .ntIco svg { width: 11px; height: 11px; vertical-align: -1px; margin-right: 4px; }
+  .srow .sbtn svg, .srow .sbtn img { width: 15px; height: 15px; display: block; margin: auto; } /* Beta 1.219: the img form fills the same box */ /* Beta 1.184: the pin glyph at redesign size */
+  .srow .nt .ntIco svg, .srow .nt .ntIco img { width: 11px; height: 11px; vertical-align: -1px; margin-right: 4px; } /* Beta 1.219: the img form fills the same box */
   .srow .sbtn { margin-left: 0; width: 32px; height: 32px; flex-shrink: 0; border: none; border-radius: 999px; background: transparent; color: var(--link); font-size: 17px; padding: 0; cursor: pointer; } /* Beta 1.184: the pin rides INSIDE the name row as a bare glyph in the app link blue - the boxed 42px button belonged to the retired row layout */
   .noteEd { padding: 8px 4px 12px 30px; border-bottom: 1px solid var(--hair); }
   .noteEd textarea { width: 100%; min-height: 64px; box-sizing: border-box; background: var(--field); color: var(--ink); border: 1px solid var(--hair); border-radius: var(--rad-btn); padding: 9px; font-size: 16px; /* 16px minimum: below it iOS auto-zooms on focus, which shoves the whole layout around (Beta 1.18) */ font-family: inherit; }
@@ -252,7 +258,7 @@
   body.night .srow .tm.st-half { color: #ffc233; }
   body.night .srow .tm.st-todo { color: rgba(214,226,242,.45); }
   .srow .nmNote { display: inline-flex; color: var(--link); flex-shrink: 0; }
-  .srow .nmNote svg { width: 14px; height: 14px; display: block; }
+  .srow .nmNote svg, .srow .nmNote img { width: 14px; height: 14px; display: block; } /* Beta 1.219: the img form fills the same box */
   body.night .srow .sbtn, body.night .srow .nmNote { color: #8fa8ff; }
   .noteEd .nedLbl { font-size: 12px; font-weight: 700; letter-spacing: .04em; color: var(--ink); padding-bottom: 6px; }
   .noteEd .nedActs { display: flex; gap: 18px; align-items: center; margin-top: 7px; }
@@ -269,6 +275,7 @@
   .statgrid .cell { text-align: center; }
   .statgrid .ic { color: var(--link); display: inline-flex; }
   body.night .statgrid .ic { color: #8fa8ff; }
+  .statgrid .ic img { width: 26px; height: 26px; display: block; } /* Beta 1.219: a pack stat glyph (an img) fills the vector's exact 26px box - the cell cannot move */
   .statgrid .v { font-size: 23px; font-weight: 800; line-height: 1.15; color: var(--ink); }
   .statgrid .l { font-size: 10px; font-weight: 700; letter-spacing: .12em; color: #9a9aa2; }
   body.night .statgrid .l { color: rgba(214,226,242,.55); }
@@ -309,7 +316,7 @@
   .cvRow .dot-gold { background: #ffc233; }
   .cvRow .dot-rose { background: #ef476f; }
   .cvRow .cvNoteIco { display: inline-flex; color: var(--link); flex-shrink: 0; }
-  .cvRow .cvNoteIco svg { width: 14px; height: 14px; display: block; }
+  .cvRow .cvNoteIco svg, .cvRow .cvNoteIco img { width: 14px; height: 14px; display: block; } /* Beta 1.219: the img form fills the same box */
   body.night .cvRow .cvNoteIco { color: #8fa8ff; }
   .modal { position: fixed; top: var(--vvt, 0px); left: 0; right: 0; height: var(--vvh, 100dvh); z-index: 1200; background: rgba(10,12,16,.55); display: flex; align-items: center; justify-content: center; padding: 22px; }
   .modal.hidden { display: none; }
@@ -585,7 +592,7 @@ input, textarea { caret-color: currentColor; } /* Beta 1.125 (Andrew): the typin
 <div id="hud">
   <div id="warn">Not saving — storage is full or blocked</div>
   <div class="row">
-    <div class="titleStack"><div class="title">Snow Route Beta</div><div class="ver" id="ver">Beta 1.218</div></div>
+    <div class="titleStack"><div class="title">Snow Route Beta</div><div class="ver" id="ver">Beta 1.219</div></div>
   </div>
   <div id="stats"></div>
 </div>

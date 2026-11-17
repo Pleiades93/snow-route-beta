@@ -2,10 +2,13 @@ import { launchDrive, finish, bootThrough, tapSelector } from './harness.mjs';
 const { proc, ev, consoleLog, sleep, poll } = await launchDrive();
 await bootThrough(ev, poll); // boots end at the route menu - click through to a loaded route
 
-// drive201 (SESSION tier): Beta 1.218 - the icon-pack picker (TESTING ONLY).
+// drive201 (SESSION tier): Beta 1.218 - the icon-pack picker (TESTING ONLY); Beta 1.219
+// re-derivation: the Puffy Filled pack is retired whole (Andrew), so the picker stands at
+// THREE packs and this drive's Puffy sections (X11/X12, W, R4) retire with it - every other
+// check stands at its 1.218 strength.
 // Andrew's acceptance, proven live in the rendered app:
-//  - the section stands in Settings (On-the-job pane) with FOUR pack rows - Pulsar Color,
-//    Original, Glyph Neue and Puffy Filled (Andrew's third and fourth packs, added 2026-11-16) - the active row carrying
+//  - the section stands in Settings (On-the-job pane) with THREE pack rows - Pulsar Color,
+//    Original and Glyph Neue - the active row carrying
 //    the green CURRENT pill; default = pulsar (the shipped 1.217 look, now the gradient set);
 //  - tapping a row accordion-expands a preview strip under it (the other strip closes): a
 //    mini home screen built from that pack's REAL assets - moon chip top-right, centre chip
@@ -17,7 +20,7 @@ await bootThrough(ev, poll); // boots end at the route menu - click through to a
 //    (no reload), every icon host re-stamps to the other pack and back, the Settings pane
 //    stays open on the picker with its scroll kept, the map does not move, and the choice
 //    persists (a reload keeps it);
-//  - the Locate state colours hold for ALL FOUR packs in both themes - viewing RED
+//  - the Locate state colours hold for ALL THREE packs in both themes - viewing RED
 //    (day #D92C1E / night #FF6B5E), recording GREEN #06D6A0, off = the pack's normal face -
 //    and the pulsar artwork is identical day and night (the gradient rule) while the glyph
 //    artwork flips black/white;
@@ -61,10 +64,9 @@ const hosts = () => J(`(() => {
 })()`);
 const PK = () => J(`(() => {
   const out = {};
-  for (const k of Object.keys(PULSAR_ICONS)) { out['p_' + k + '_d'] = PULSAR_ICONS[k].d; out['p_' + k + '_n'] = PULSAR_ICONS[k].n; out['g_' + k + '_d'] = GLYPH_ICONS[k].d; out['g_' + k + '_n'] = GLYPH_ICONS[k].n; out['f_' + k + '_d'] = PUFFY_ICONS[k].d; out['f_' + k + '_n'] = PUFFY_ICONS[k].n; }
+  for (const k of Object.keys(PULSAR_ICONS)) { out['p_' + k + '_d'] = PULSAR_ICONS[k].d; out['p_' + k + '_n'] = PULSAR_ICONS[k].n; out['g_' + k + '_d'] = GLYPH_ICONS[k].d; out['g_' + k + '_n'] = GLYPH_ICONS[k].n; }
   out.p_vd = PULSAR_GPS_STATES.vd; out.p_vn = PULSAR_GPS_STATES.vn; out.p_rd = PULSAR_GPS_STATES.rd; out.p_rn = PULSAR_GPS_STATES.rn;
   out.g_vd = GLYPH_GPS_STATES.vd; out.g_vn = GLYPH_GPS_STATES.vn; out.g_rd = GLYPH_GPS_STATES.rd; out.g_rn = GLYPH_GPS_STATES.rn;
-  out.f_vd = PUFFY_GPS_STATES.vd; out.f_vn = PUFFY_GPS_STATES.vn; out.f_rd = PUFFY_GPS_STATES.rd; out.f_rn = PUFFY_GPS_STATES.rn;
   return out;
 })()`);
 const setGps = async (on, rec) => { await ev(`(() => { const b = document.getElementById('gpsBtn'); b.classList.toggle('on', ${on}); b.classList.toggle('rec', ${rec}); renderIcons(); return true; })()`); };
@@ -78,8 +80,8 @@ const gpsFace = () => J(`(() => {
 await openJobPane();
 let st = await pkState();
 ok('P1: the section label reads ICON PACK - TESTING ONLY', /ICON PACK/.test(st.label || '') && /TESTING ONLY/.test(st.label || ''));
-ok('P2: four rows in order pulsar / original / glyph / puffy, CURRENT on pulsar, the note stands',
-  st.rows.length === 4 && st.rows[0].id === 'pulsar' && st.rows[1].id === 'original' && st.rows[2].id === 'glyph' && st.rows[3].id === 'puffy' && st.rows[0].cur && !st.rows[1].cur && !st.rows[2].cur && !st.rows[3].cur && st.note === true);
+ok('P2: three rows in order pulsar / original / glyph, CURRENT on pulsar, the note stands',
+  st.rows.length === 3 && st.rows[0].id === 'pulsar' && st.rows[1].id === 'original' && st.rows[2].id === 'glyph' && st.rows[0].cur && !st.rows[1].cur && !st.rows[2].cur && st.note === true);
 ok('P3: the default pack is pulsar and nothing is stored yet', st.active === 'pulsar' && st.stored === null);
 
 // ---------- X: preview strips from the real assets, accordion ----------
@@ -111,13 +113,6 @@ const gStripGps = await ev(`(() => { const i = document.querySelector('.pkPack.o
 ok('X9: the Glyph strip Locate is the green recording fill', gStripGps === pk.g_rd);
 g = await stripGeom();
 ok('X10: the Glyph strip geometry holds too', !!g && g.centreUnder && !g.overflowX);
-await tapSelector(ev, '.pkRow[data-pkrow="puffy"]'); await sleep(200);
-st = await pkState();
-ok('X11: accordion - opening Puffy closes Glyph; the Puffy strip is 9 soft-fill images, Locate the green recording fill',
-  !st.rows[2].stripOpen && st.rows[3].stripOpen && st.rows[3].imgs === 9 && st.rows[3].svgs === 0 &&
-  (await ev(`(() => { const i = document.querySelector('.pkPack.open .pkTab .pkTabIc img'); return i ? i.getAttribute('src') : null; })()`)) === pk.f_rd);
-g = await stripGeom();
-ok('X12: the Puffy strip geometry holds too', !!g && g.centreUnder && !g.overflowX);
 
 // ---------- S: the seamless switch to Original (Andrew's acceptance) ----------
 await ev(`(() => { window.__pkMark = 'still-here'; document.getElementById('setMenu').scrollTop = 120; return true; })()`); // #setMenu is the scroller (overflow-y auto) - the pane itself never scrolls
@@ -166,29 +161,6 @@ await setGps(true, false); const gv = await gpsFace();
 await setGps(true, true); const gr = await gpsFace();
 await setGps(false, false);
 ok('Y5: glyph day viewing/recording fills + labels', gv.img === pk.g_vd && gv.label === 'rgb(217, 44, 30)' && gr.img === pk.g_rd && gr.label === 'rgb(6, 214, 160)');
-await ev(`(() => { useIconPack('pulsar'); return true; })()`);
-
-// ---------- W: the Puffy pack, seamless + its own day/night faces ----------
-await tapSelector(ev, '.pkRow[data-pkrow="puffy"]'); await sleep(150);
-await tapSelector(ev, '.pkUse[data-pkuse="puffy"]'); await sleep(250);
-st = await pkState(); const h4 = await hosts();
-ok('W1: the Puffy switch is seamless too - marker alive, stored puffy, CURRENT on Puffy, hosts on the TRUE BLACK day fills',
-  (await ev(`(() => window.__pkMark)()`)) === 'still-here' && st.stored === 'puffy' && st.active === 'puffy' && st.rows[3].cur && h4.gpsImg === pk.f_gps_d && h4.homeImg === pk.f_home_d && h4.streetsImg === pk.f_streets_d);
-await ev(`(() => { setThemeOverride(true); applyNight(); return true; })()`);
-let wf = await gpsFace();
-ok('W2: puffy at night - the faces flip to the WHITE fills (gps off = white navigation)', wf.img === pk.f_gps_n && (await hosts()).homeImg === pk.f_home_n);
-await setGps(true, false); wf = await gpsFace();
-ok('W3: puffy night viewing - solid light-red fill + light-red label', wf.img === pk.f_vn && wf.label === 'rgb(255, 107, 94)');
-await setGps(true, true); wf = await gpsFace();
-ok('W4: puffy night recording - solid green fill + green label', wf.img === pk.f_rn && wf.label === 'rgb(6, 214, 160)');
-await setGps(false, false);
-await ev(`(() => { setThemeOverride(false); applyNight(); return true; })()`);
-await setGps(true, false); const wv = await gpsFace();
-await setGps(true, true); const wr = await gpsFace();
-await setGps(false, false);
-ok('W5: puffy day viewing/recording fills + labels', wv.img === pk.f_vd && wv.label === 'rgb(217, 44, 30)' && wr.img === pk.f_rd && wr.label === 'rgb(6, 214, 160)');
-const dimsW = await J(`(() => ({ bar: document.getElementById('tabBar').offsetHeight, slot: document.querySelector('#gpsBtn .tabIco').offsetHeight }))()`);
-ok('W6: sizes unmoved under Puffy - bar 51px, slot 27px', dimsW.bar === 51 && dimsW.slot === 27);
 await ev(`(() => { useIconPack('pulsar'); return true; })()`);
 
 // ---------- D: Locate colours, pulsar (day) ----------
@@ -244,12 +216,6 @@ await poll(`(() => typeof map !== 'undefined' && !!map && typeof ICONS !== 'unde
 await sleep(600);
 st = await pkState(); const hg = await hosts();
 ok('R3: Glyph persists across a reload too (black day fills from boot)', st.active === 'glyph' && hg.gpsImg === pk.g_gps_d);
-await ev(`(() => { useIconPack('puffy'); return true; })()`);
-await ev(`(() => { location.reload(); return true; })()`);
-await poll(`(() => typeof map !== 'undefined' && !!map && typeof ICONS !== 'undefined')()`, 30000);
-await sleep(600);
-st = await pkState(); const hf = await hosts();
-ok('R4: Puffy persists across a reload too (true-black day fills from boot)', st.active === 'puffy' && hf.gpsImg === pk.f_gps_d);
 
 R.exceptions = consoleLog.filter(c => c.type === 'EXCEPTION').map(c => String(c.text || '').slice(0, 200));
 ok('Z: zero page exceptions across the whole drive', R.exceptions.length === 0);

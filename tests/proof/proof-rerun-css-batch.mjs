@@ -164,7 +164,7 @@ try {
       const sleep = ms => new Promise(r => setTimeout(r, ms));
       const sp = document.getElementById('selPop');
       const note = document.getElementById('selNote');
-      const svg = note.querySelector('svg');
+      const svg = note.querySelector('svg, img'); // Beta 1.219 re-derivation: the note icon's ELEMENT form is pack-dependent now (an <svg> under the Original pack, an <img> under the image packs) - the measured property is unchanged (the icon's rendered width vs the button's content box, non-zero guards intact)
       const acts = sp.querySelector('.selActs');
       const cs = getComputedStyle(note);
       const meas = () => {
