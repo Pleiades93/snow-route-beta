@@ -32,7 +32,7 @@ async function saveDraftRoute() {
   if (area) lsSet(LS_GLOBAL.lastArea, area);
   const wasBoot = !routeLoaded, newId = pack.id;
   exitCreate();
-  toast('Route saved', 4600); // Beta 1.207 (Andrew): the pop-up says exactly this - the maps-download sentence it carried through 1.205 is gone (the duration, and so the fade, is unchanged)
+
   if (wasBoot) { restoreBootChrome(); if (window.__bootPickRoute) window.__bootPickRoute(newId); }
   else { openRouteMenu(); showRmPane('rmListPane'); }
   } finally { crSaveInFlight = false; }

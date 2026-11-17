@@ -29,7 +29,7 @@ const FIXLOG_MAX_CHARS = 200000; // Beta 1.195: the same log's second cap, in CH
 /** @type {RoadsMap} */ const ROADS = {};
 /** @type {RoadsMap} */ const REFERENCE = {};
 /** @param {string} id @returns {RouteKeys} */ function routeKeys(id) { const p = 'snowroute.' + id + '.'; return { done: p + 'v2', times: p + 'v2.times', hist: p + 'v2.history', notes: p + 'v4.notes', via: p + 'v4.via', trail: p + 'v4.trail', cov: p + 'v4.cov', start: p + 'v5.start', flip: p + 'v5.flip', sides: p + 'v5.sides', sess: p + 'v5.sess', pre: p + 'v5.preload', snap: p + 'v5.snap', mig: p + 'v2.migrated', migfill: p + 'v2.migfill', finclean: p + 'v5.finclean', rundist: p + 'v5.rundist', rundist2: p + 'v5.rundist2' }; } // Beta 1.94 (deep audit SR-193-02/03): two slot-local records join the layout - 'snap' is the running clean's persisted pre-Start board (Start writes it, Finish/Cancel delete it; transient, and not a ROUTE_FIELDS member - it rides backups only in normalized form, via snapForExport in app4, since Beta 1.96/1.97) and 'mig' is the legacy migration's explicit completion marker (see migrateLegacyRoute) and never a backup field. Beta 1.141 (Package A, DA-10): 'finclean' joins them on the same terms - the durable finish-cleanup obligation (finishRun's transaction writes it, saveAll's success discharges it, completeFinishCleanup completes it at load); transient, never backed up, not in ROUTE_FIELDS. Beta 1.150 (security-audit fix round): 'migfill' joins them on the same terms - the migration's per-field fill record (see migrateLegacyRoute); written only while a migration is incomplete, deleted when its marker commits. Beta 1.167 (run/pace fix round, B5): 'rundist' joins on the finclean terms WITHOUT any backup ride - the running clean's accumulated-distance record (app3's runDist), genuinely never backed up: Finish bakes its value into the archive entry's km, and a lost record re-derives from the surviving trail (adoptRunDist, app3).
-const LS_GLOBAL = { night: 'snowroute.v2.night', nightExp: 'snowroute.v2.nightExp', iconpack: 'snowroute.v2.iconpack', exp: 'snowroute.v5.export', prep: 'snowroute.prep.v1', lastArea: 'snowroute.v2.lastarea', fixlog: 'snowroute.v1.fixlog' }; // Beta 1.118: lastArea = the create flow's area pre-fill memory. Beta 1.189: fixlog = the raw GPS fix log (app3) - a DEVICE record, not route data (it spans routes and locate sessions), so it lives with the globals and rides backups at top level like the settings record, never as a ROUTE_FIELDS member
+const LS_GLOBAL = { night: 'snowroute.v2.night', nightExp: 'snowroute.v2.nightExp', exp: 'snowroute.v5.export', prep: 'snowroute.prep.v1', lastArea: 'snowroute.v2.lastarea', fixlog: 'snowroute.v1.fixlog' }; // Beta 1.118: lastArea = the create flow's area pre-fill memory. Beta 1.189: fixlog = the raw GPS fix log (app3) - a DEVICE record, not route data (it spans routes and locate sessions), so it lives with the globals and rides backups at top level like the settings record, never as a ROUTE_FIELDS member
 const LEGACY_KEYS = { done: 'snowroute.v2', times: 'snowroute.v2.times', hist: 'snowroute.v2.history', notes: 'snowroute.v4.notes', via: 'snowroute.v4.via', trail: 'snowroute.v4.trail', cov: 'snowroute.v4.cov', start: 'snowroute.v5.start', flip: 'snowroute.v5.flip', sides: 'snowroute.v5.sides', sess: 'snowroute.v5.sess', snap: 'snowroute.v5.snap', finclean: 'snowroute.v5.finclean', rundist: 'snowroute.v5.rundist', rundist2: 'snowroute.v5.rundist2' }; // Beta 1.193: 'rundist2' rides here on rundist's terms - the counter's second copy (bankRunDistMirror, app3), written only by the trail-flush path in flushAux below, never backed up; adoption reads it when the primary is lost (adoptRunDist, app3). snap rides here too so LS.snap is defined on a legacy-fallback boot (the pre-1.76 app never wrote one - the key is simply absent there, which the cancel path already treats as 'no snapshot'); finclean rides for the same reason (Beta 1.141); rundist rides for the same reason (Beta 1.167, B5)
 const ROUTE_FIELDS = ['done', 'times', 'hist', 'notes', 'via', 'trail', 'cov', 'start', 'flip', 'sides', 'sess'];
 const PACK_FIELDS = ['name', 'area', 'primaries', 'spot', 'tileNames', 'box', 'roads', 'reference']; // Beta 1.131 (maintainability programme A): the ONE list of fields a route pack carries - normalizePack (create-packs.js) builds every validated pack by walking THIS list, so a field joins the pack format by joining this list (with its cleaner there); a field absent from the list does not survive validation, by construction. Deliberately distinct from ROUTE_FIELDS above: those are storage-slot fields, and 'snap' in particular is a slot field that is NOT a pack field (hand-carried at restore scope by design) - it must never be added here.
@@ -108,7 +108,47 @@ const jDistM = distM; // the paint engine's name for the same two-point distance
 /** @param {LatLng[]} pts @returns {number} */ function segLenM(pts) { let s = 0; for (let i = 1; i < pts.length; i++) s += distM(pts[i - 1], pts[i]); return s; } // the APP-global segment length (plain distM) - workDoneM's progress math. NOT a duplicate of the paint engine's private segLenM inside the GLP closure, which sums jDistM for label/anchor geometry: different scope, different metric, both load-bearing (third audit's 'delete one' was wrong - removing this one broke the progress meter, drive141 F07b caught it)
 // Toast (native dialogs are banned)
 let toastTimer = 0;
-/** @param {string} msg @param {number} [ms] @returns {void} */ function toast(msg, ms) { const t = $('toast'); t.textContent = msg; t.classList.add('show'); clearTimeout(toastTimer); toastTimer = setTimeout(() => t.classList.remove('show'), ms || 2400); }
+// Toast placement (Beta 1.221, Andrew's bar: the pill must never sit on a
+// control - "make those perfect"). No fixed offset can promise that: the
+// dock stack's top rides at ~208px, the note banner's band sits above it,
+// sheets and modals bring their own controls, and the pill's own height
+// changes with its text. So the pill is placed by MEASUREMENT at fire
+// time: it starts at its CSS floor and hops above anything it would
+// cover - the app's interactive inventory below - until its band is
+// clear, keeping a 6px gap. drive204 measures the result in the rendered
+// page across every state a surviving toast can fire, day and night.
+const TOAST_CLEAR_OF = ['#dock button', '#tabBar button', '#setMenu button', '#setMenu input', '#setMenu .swRow', '.sheet button', '#sheet .srow', '#mapNote', '#mapNote button', '#mapNote textarea', '#finModal .card', '#finModal button', '#createSheet button', '#createBar input', '#createBar button', '#selPop', '#selPop button', '#spdPill', '#nightBtn', '#centreBtn'];
+/** @param {HTMLElement} t @returns {void} */ function placeToast(t) {
+  t.style.bottom = ''; // back to the CSS floor; re-measured on every fire
+  for (let hop = 0; hop < 8; hop++) {
+    const r = t.getBoundingClientRect();
+    // the resting (shown) band: the pill's rise transition may be partway
+    // (a re-fire can land mid-fade of the previous pill), so read the LIVE
+    // transform offset - the shown state always lands at offset 0
+    let ty = 0;
+    try { ty = new DOMMatrixReadOnly(getComputedStyle(t).transform).m42 || 0; } catch (e) { /* transform 'none' reads as 0 */ }
+    const top = r.top - ty, bottom = r.bottom - ty;
+    let raise = 0;
+    for (const sel of TOAST_CLEAR_OF) document.querySelectorAll(sel).forEach(e => {
+      if (e === t) return;
+      const b = e.getBoundingClientRect(), cs = getComputedStyle(e);
+      if (!(b.width > 0 && b.height > 0) || cs.display === 'none' || cs.visibility === 'hidden') return;
+      // An element running its entrance animation (the menuRise family)
+      // starts at opacity 0 and 10px low, then rises into its resting
+      // band - it counts as the obstruction it is BECOMING: never skip it
+      // for the fade, and judge it by its resting top, not its first frame.
+      let restTop = b.top;
+      const rising = (e.getAnimations ? e.getAnimations() : []).some(a => a.animationName);
+      if (cs.opacity === '0' && !rising) return;
+      if (rising) { try { restTop = b.top - (new DOMMatrixReadOnly(cs.transform).m42 || 0); } catch (err) { /* keep the live top */ } }
+      const ox = Math.min(r.right, b.right) - Math.max(r.left, b.left);
+      if (ox > 0 && top < restTop + b.height && restTop < bottom) raise = Math.max(raise, bottom - restTop + 6);
+    });
+    if (!raise) return;
+    t.style.bottom = (window.innerHeight - bottom + raise) + 'px';
+  }
+}
+/** @param {string} msg @param {number} [ms] @returns {void} */ function toast(msg, ms) { const t = $('toast'); t.textContent = msg; placeToast(t); t.classList.add('show'); clearTimeout(toastTimer); toastTimer = setTimeout(() => t.classList.remove('show'), ms || 2400); }
 // Storage — guarded; a failure is SHOWN, never silent
 /** @returns {void} */ function flagStorage() { document.body.classList.add('storage-bad'); }
 /** @param {string} k @returns {string | null} */ function lsGet(k) { try { return localStorage.getItem(k); } catch (e) { flagStorage(); return null; } }

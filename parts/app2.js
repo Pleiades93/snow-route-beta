@@ -22,7 +22,7 @@ function bootMap() {
   __onMap.length = 0;
 } // Beta 1.41 (performance round, Andrew approved): tiles MELT in over 200ms instead of snapping (fadeDuration was 0); the canvas renders at pixel ratio 2 instead of the phone's 3 - 4/9 the pixels per frame across all 106 layers, the biggest single fluidity win (labels are SDF and stay crisp); the tile cache is sized so a 13->17 sweep AND the trip back stay parsed. // full gestures (Beta 1.27, Andrew): drag/two-finger rotate and two-finger pitch stay ON, as in the prototype - the fresh build had them switched off
 let routeBox = null; // Beta 1.117: the ACTIVE pack's bounding box - set by buildGeometry (app1) on every load via computeRouteBox; null before any route is chosen and for an empty pack. (Pre-1.117 this was an eval-time IIFE over the baked-in 5W ROADS.)
-function noteMapState() { const dead = !mapNoteOff && ((mapNoteArmed && !glOk) || basemapDead); $('mapNote').classList.toggle('hidden', !dead); }
+function noteMapState() { const dead = !mapNoteOff && ((mapNoteArmed && !glOk) || basemapDead); $('mapNote').classList.toggle('hidden', !dead); if (dead) { const t = $('toast'); if (t && t.classList.contains('show')) placeToast(t); } } // Beta 1.221: this banner can appear WHILE a pill is up (it arms on a timer / a late map error) - a pill placed before it arrived would be covered by it, so a shown pill re-places itself the moment the banner lands (Andrew's placement bar: zero overlap, measured by drive204)
 $('mapNoteNo').addEventListener('click', () => { if (!tapGuard('mapNoteNo')) return; mapNoteOff = true; noteMapState(); });
 setTimeout(() => { if (!glOk) { mapNoteArmed = true; noteMapState(); } }, 15000);
 onMapReady(() => map.on('error', e => { if (!glOk && e && e.error && /fetch|Failed/i.test(e.error.message || '') && !mapNoteArmed) { mapNoteArmed = true; noteMapState(); } }));
@@ -451,20 +451,17 @@ function applyPiece(name, idx, side, on) { // the piece mutation with NO renderi
 }
 function togglePiece(name, idx, side) {
   const bit = side ? 2 : 1;
-  const doneName = applyPiece(name, idx, side, !(pieces[name][idx] & bit));
-  showChips(); const okTp = finishChangeMarked();
-  if (doneName && okTp.ok) toast('✓ ' + doneName + ' · ' + fmtClock(new Date()));
+  applyPiece(name, idx, side, !(pieces[name][idx] & bit));
+  showChips(); finishChangeMarked();
 }
 function togglePieceGroup(side) { // one chip, whole selection: a side not done everywhere gets completed everywhere; a side done everywhere gets cleared everywhere. Beta 1.209: the side is the DRIVER's side - groupSideMap turns the one press into the per-stretch stored side, so the marking follows his drive through a turn instead of landing on one raw index everywhere
   if (!selSet.length) return;
   const on = !groupSideDone(side);
   const map = groupSideMap(side);
-  const completed = [];
-  selSet.forEach((en, k) => { const c = applyPiece(en.name, en.idx, map[k], on); if (c && !completed.includes(c)) completed.push(c); });
-  showChips(); const okTg = finishChangeMarked();
-  if (okTg.ok) completed.forEach(n => toast('✓ ' + n + ' · ' + fmtClock(new Date())));
+  selSet.forEach((en, k) => { applyPiece(en.name, en.idx, map[k], on); });
+  showChips(); finishChangeMarked();
 }
-$('selAllBtn').addEventListener('click', () => { if (!tapGuard('selAll')) return; const completed = []; for (const en of selSet) for (const side of [0, 1]) { const c = applyPiece(en.name, en.idx, side, true); if (c && !completed.includes(c)) completed.push(c); } showChips(); const okSa = finishChangeMarked(); if (okSa.ok) completed.forEach(n => toast('✓ ' + n + ' · ' + fmtClock(new Date()))); }); // Beta 1.146 (census C3): the outcome is the 1.101 storage-outcome OBJECT - {ok:false} is truthy, so the old bare test fired the success toasts beside the storage warning; every sibling marking caller (okTp/okTg/okMd/okMu) already branches on .ok
+$('selAllBtn').addEventListener('click', () => { if (!tapGuard('selAll')) return; for (const en of selSet) for (const side of [0, 1]) { applyPiece(en.name, en.idx, side, true); } showChips(); finishChangeMarked(); }); // Beta 1.146 (census C3): the outcome is the 1.101 storage-outcome OBJECT - {ok:false} is truthy, so the old bare test fired the success toasts beside the storage warning; every sibling marking caller (okTp/okTg/okMd/okMu) already branches on .ok
 $('selClearBtn').addEventListener('click', () => { if (!tapGuard('selClear')) return; deselect(); });
 function markDone(name, via, at) { // production contract: whole street done; sides already marked keep their real times, the rest inherit the completion moment
   const wasComplete111 = streetComplete(name); // Beta 1.111: whole-street marking bypasses applyPiece - the completion feedback fires only on a real false-to-true flip here too
@@ -474,15 +471,13 @@ function markDone(name, via, at) { // production contract: whole street done; si
   pieceTimes[name] = STRETCH[name].parts.map((_, i) => { const pr = Array.isArray(cur[i]) ? cur[i] : [null, null]; return [pr[0] || mts, pr[1] || mts]; });
   doneSet.add(name); doneTimes[name] = mts; doneVia[name] = via || 'tap';
   if (!wasComplete111) onStreetComplete(name); // Beta 1.111: see applyPiece
-  const okMd = finishChangeMarked();
-  if (okMd.ok) toast('✓ ' + name + ' · ' + fmtClock(new Date(mts)) + (doneSet.size === STREETNAMES.length ? ' — ALL ' + STREETNAMES.length + ' DONE' : '')); // Beta 1.94 (audit F-01): the total derives from the route's street list
+  finishChangeMarked(); // Beta 1.94 (audit F-01): the total derives from the route's street list
 }
 function markUndone(name) {
   pieces[name] = STRETCH[name].parts.map(() => 0);
   pieceTimes[name] = STRETCH[name].parts.map(() => [null, null]);
   doneSet.delete(name); delete doneTimes[name]; delete doneVia[name];
-  const okMu = finishChangeMarked();
-  if (okMu.ok) toast('Unmarked ' + name);
+  finishChangeMarked();
 }
 function markStreet(name, done) { if (done) markDone(name, 'tap'); else markUndone(name); showChips(); }
 function renderPanel() { // ONE selection pop-up (Beta 1.30, Andrew): the header strip and the multi-select pill are the same pop-up now - pill glass, every action inside, content follows the selection

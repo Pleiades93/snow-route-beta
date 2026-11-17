@@ -123,13 +123,14 @@ const ev = async (code) => evaluate(code);
 const okS = (n, v) => ok(n, v === true);
 const waitBoot = async () => { for (let i = 0; i < 25; i++) { try { if (await ev(`!!document.getElementById('ver')`)) return true; } catch (e) {} await sleep(400); } return false; };
 const until = async (fn, ms) => { const t0 = Date.now(); while (Date.now() - t0 < (ms || 20000)) { const v = await fn(); if (v && !(typeof v === 'object' && 'error' in v)) return v; await sleep(400); } return false; };
-const readState = async () => { const raw = await ev(`(() => { try { return JSON.stringify({ state: typeof updState !== 'undefined' ? updState : '?', toast: (document.getElementById('toast') || {}).textContent || '', label: (document.getElementById('ver') || {}).textContent || '' }); } catch (e) { return JSON.stringify({ err: String(e && e.message || e) }); } })()`);
+const readState = async () => { const raw = await ev(`(() => { try { const t = document.getElementById('toast'); return JSON.stringify({ state: typeof updState !== 'undefined' ? updState : '?', toast: (t || {}).textContent || '', shown: !!(t && t.classList.contains('show')), label: (document.getElementById('ver') || {}).textContent || '' }); } catch (e) { return JSON.stringify({ err: String(e && e.message || e) }); } })()`);
   try { return typeof raw === 'string' ? JSON.parse(raw) : { err: 'nonstring' }; } catch (e) { return { err: 'parse' }; } };
 const clickCheck = async () => { await ev(`(function(){ const b = document.getElementById('updBtn'); if (b) b.click(); return !!b; })()`); };
-const VERDICT = /up to date|new version found|could not|older|different version|update check failed/i;
-const settleCheck = async (ms) => { const t0 = Date.now(); let st = {};
+const VERDICT = /new version found/i; // Beta 1.221: the found-update pill is the check's only surviving pill - the fail/older/up-to-date outcomes now settle in the version-row state (updState) alone
+const settleCheck = async (ms) => { const before = (await readState()).state; const t0 = Date.now(); let st = {};
   while (Date.now() - t0 < (ms || 20000)) { st = await readState();
     if (st.label && st.label.trim() !== v1Label) break; // a navigation is itself the settled outcome
+    if (st.state && st.state !== before) break; // the outcome landed in the row state
     if (VERDICT.test(st.toast || '')) break;
     await sleep(250); }
   await sleep(1800); // let a pending update navigation (900 ms timer) fire and land before the final read
@@ -146,8 +147,8 @@ try {
   await clickCheck();
   const p1 = await settleCheck(15000);
   shellErr = false;
-  ok('P1 a 503 shell is reported as could-not-check, never up-to-date | ' + JSON.stringify(p1),
-    p1.state === 'fail' && /could not check/i.test(p1.toast || ''));
+  ok('P1 a 503 shell is reported as could-not-check in the row state, never up-to-date, and no pill fires since Beta 1.221 | ' + JSON.stringify(p1),
+    p1.state === 'fail' && p1.shown === false);
   ok('P1 the failed check neither navigates nor reloads (label unchanged)', (p1.label || '').trim() === v1Label);
 
   // P2 (finding 6): the server serves an OLDER build - reported as older,
@@ -156,8 +157,8 @@ try {
   await clickCheck();
   const p2 = await settleCheck(15000);
   const p2label = (p2.label || '').trim();
-  ok('P2 an older server build is reported as older, not as a new version | ' + JSON.stringify(p2),
-    p2.state === 'older' && /older/i.test(p2.toast || ''));
+  ok('P2 an older server build is reported as older in the row state, not as a new version, and no pill fires since Beta 1.221 | ' + JSON.stringify(p2),
+    p2.state === 'older' && p2.shown === false);
   ok('P2 the older build is NOT installed (page still runs ' + v1Label + ')', p2label === v1Label);
   current = 'v1';
   if (p2label !== v1Label) { await ev(`location.reload(); true`); await sleep(2500); await waitBoot(); await sleep(1500); }

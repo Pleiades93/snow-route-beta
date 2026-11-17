@@ -11,8 +11,9 @@ await bootThrough(ev, poll); // boots end at the route menu - click through to a
 // C: Beta 1.110 - post-finish board work: the Undo is removed, so mutations after a
 //    confirmed finish are simply new work and the archived clean never comes back
 //    (this section was CG-196-03's undo-invalidation suite).
-// D: CG-196-05 - marking outcome toasts are gated on the save result; a failed save never
-//    gets a success toast, and a later failure in the same episode still says "not saved".
+// D: CG-196-05 - marking outcomes are gated on the save result; a failed save never
+//    gets a success claim, and a later failure in the same episode still says "not saved".
+//    (Beta 1.221: the success pills themselves are cut - D0/D3 assert the silence.)
 const R = { checks: [] };
 const ok = (name, cond) => R.checks.push([name, cond === true]);
 
@@ -88,8 +89,13 @@ ok('C6 starting a new run after the finish begins cleanly; the archived cleans s
 await ev(`cancelStart(); true`); await sleep(250);
 
 // ---- D: toast gating on save failure ---- //
+// Beta 1.221 re-derivation: the marking outcome pills are CUT (Andrew's
+// toast rule) - a healthy save fires NO pill at all now. The gating
+// property survives on the failure side, which is the side CG-196-05
+// exists for: a failed save still warns, and never claims success.
+await ev(`(() => { $('toast').textContent = ''; $('toast').classList.remove('show'); return true; })()`); // isolate the action's own pill (the D1/D2 idiom below): an ambient KEPT pill standing from boot (the rig's location-off warning) is not this save's pill
 await ev(`markDone('Boddy', 'tap'); true`); await sleep(200);
-ok('D0 healthy save: the completion toast shows | ' + await ev(`$('toast').textContent`), (await ev(`$('toast').textContent`)).indexOf('✓ Boddy') === 0);
+ok('D0 healthy save: NO completion pill fires since Beta 1.221 | ' + await ev(`$('toast').textContent`), (await ev(`$('toast').textContent`)).indexOf('✓') !== 0 && (await ev(`$('toast').classList.contains('show')`)) === false);
 await ev(`(() => { window.__ls146 = lsSet; lsSet = () => false; $('toast').textContent = ''; return true; })()`);
 await ev(`markDone('Velmar', 'tap'); true`); await sleep(200);
 const d1 = await ev(`$('toast').textContent`);
@@ -98,9 +104,9 @@ await ev(`(() => { $('toast').textContent = ''; return true; })()`);
 await ev(`togglePiece('Astona', 0, 0); true`); await sleep(200);
 const d2 = await ev(`$('toast').textContent`);
 ok('D2 a later failure in the same episode still says not saved (the episode warning only fires once) (CG-196-05) | ' + JSON.stringify(d2), d2 === 'Not saved — storage problem');
-await ev(`(() => { lsSet = window.__ls146; return true; })()`);
+await ev(`(() => { lsSet = window.__ls146; $('toast').textContent = ''; $('toast').classList.remove('show'); return true; })()`); // same isolation: D2's KEPT storage pill may still be standing inside its display window - it is not the unmark's pill
 await ev(`markUndone('Velmar'); true`); await sleep(200);
-ok('D3 healthy again: the outcome toast returns | ' + await ev(`$('toast').textContent`), (await ev(`$('toast').textContent`)) === 'Unmarked Velmar');
+ok('D3 healthy again: the unmark lands and no pill fires since Beta 1.221 | ' + await ev(`$('toast').textContent`), (await ev(`!doneSet.has('Velmar') && !$('toast').classList.contains('show')`)) === true);
 
 // ---- E: verify-cycle-1 corrections (Codex, 2026-11-04) ---- //
 await ev(`startClean(); true`); await sleep(250);

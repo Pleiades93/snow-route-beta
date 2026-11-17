@@ -190,7 +190,6 @@ function crCityPrepare() { // a city is picked: load its whole extract - from th
     crPackResolveCity(name, bbox).then(pk => {
       if (!crGridCurrent(g)) return; // the session moved on while the catalogue answered: land nowhere (CG-PF-05)
       if (pk) { g.fromPack = pk.slug; crPackCtx = { slug: pk.slug, bbox: pk.bbox, failed: false }; }
-      if (restored === 0 && !pk) toast('First load of ' + name + ' can take a few minutes — after that it’s instant', 5000); // timing honesty (amendment E): said once, when a real first download starts
       g.ticker = setInterval(() => { if (crGridCurrent(g) && crPrepState === 'preparing') crRenderHint(); else if (g.ticker) clearInterval(g.ticker); }, 1000);
       crRenderHint();
       crGridPump(g);

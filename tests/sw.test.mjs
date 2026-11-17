@@ -125,6 +125,28 @@ const t0 = Date.now();
 r = await netFirst(navReq, 'c');
 check('B03 stalled navigation falls back to cache', (await r.text()) === 'CACHED-SHELL');
 check('B03 fallback is bounded (<20s)', Date.now() - t0 < 20000);
+check('1.221 stalled navigation serves the cache FAST (<4s, was ~8.5s)', Date.now() - t0 < 4000);
+
+// 11b. Beta 1.221 (webperf piece 6): a stalled navigation with a cached shell
+// serves the shell at the 2 s mark, and the SAME fetch, still running in the
+// background, refreshes the cache when it finally lands - update freshness
+// survives the early serve.
+store.clear(); store.set(req.url, cachedResp.clone());
+fetchImpl = async () => { await new Promise(res => setTimeout(res, 4200)); return new Response('FRESH-SHELL', { status: 200 }); };
+const navReq2 = { url: req.url, mode: 'navigate' };
+const t1 = Date.now();
+r = await netFirst(navReq2, 'c');
+check('1.221 slow navigation serves the cached shell at once', (await r.text()) === 'CACHED-SHELL' && Date.now() - t1 < 4000);
+await new Promise(res => setTimeout(res, 3000));   // let the background fetch land (4.2s mark + the put)
+check('1.221 background refresh updates the cached shell', (await store.get(req.url).text()) === 'FRESH-SHELL');
+
+// 11c. Beta 1.221: a slow navigation with NOTHING cached still awaits the real
+// answer inside the bounded wait (SEC-7 for first launches - no shell exists
+// to serve early).
+store.clear();
+fetchImpl = async () => { await new Promise(res => setTimeout(res, 4200)); return new Response('FIRST-SHELL', { status: 200 }); };
+r = await netFirst(navReq2, 'c');
+check('1.221 uncached slow navigation awaits the network answer', (await r.text()) === 'FIRST-SHELL');
 
 // 12. Beta 1.48 (audit B07): SWR answers from cache at once AND binds the
 // background refresh to the fetch event's lifetime; the refresh lands.
@@ -242,6 +264,19 @@ check('N-2 a reload-mode request bypasses the pack and returns the network respo
   err = await runInstall();
   check('C-07 a failed shell fetch FAILS the install', err !== null);
   check('C-07 no skipWaiting after a failed install', skipped === false);
+  // Beta 1.221 (webperf piece 6): a failed CORE (map library) fetch now fails
+  // the install too - through 1.220 it was swallowed and the worker activated
+  // holding a shell whose map library was never cached, so an offline launch
+  // opened a page that could never draw its map.
+  shellStore.clear(); skipped = false;
+  fetchImpl = async (r) => { const u = typeof r === 'string' ? r : r.url; if (u.includes('cdn.jsdelivr.net')) throw new Error('offline'); return new Response('SHELL-HTML', { status: 200 }); };
+  err = await runInstall();
+  check('1.221 a failed CORE fetch FAILS the install', err !== null);
+  check('1.221 no skipWaiting after a CORE-failed install', skipped === false);
+  shellStore.clear(); skipped = false;
+  fetchImpl = async (r) => { const u = typeof r === 'string' ? r : r.url; if (u.includes('cdn.jsdelivr.net')) return new Response('PORTAL', { status: 503 }); return new Response('SHELL-HTML', { status: 200 }); };
+  err = await runInstall();
+  check('1.221 a non-ok CORE answer FAILS the install', err !== null);
 }
 
 let fail = 0;

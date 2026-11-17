@@ -185,12 +185,8 @@ jobs:
         run: node tests/proof/proof-leftside-removal-b05.mjs
       - name: Create glow + casing fix proof (Beta 1.216 gate - the trim glow mesh stitches sector parts and drops repeated points so no vertex sits beyond its claimed distance + 1 m (the spear assertion), and the draft casing anchor is halved to crZoomW(9.75) with the reach floor following it)
         run: node tests/proof/proof-create-glow-casing-fix.mjs
-      - name: Icon pack picker proof (Beta 1.218 gate, Beta 1.220 roster - the three live packs complete against the icon-set standard with the artwork byte-pinned, the Locate state faces script-generated, the render layer wired at boot/night/GPS transitions, persistence and restore validation, the retired packs absent)
-        run: node tests/proof/proof-icon-pack-picker-1218.mjs
-      - name: Icon extras proof (Beta 1.219 gate, Beta 1.220 roster - the live extras ride the three packs with the artwork byte-pinned, Andrew's road rule puts the highway variant on Streets and the basic road on the stat, the flag rule, the stopwatch Elapsed and the Glyph Speed stat, the close buttons wear the pack, the retired packs absent)
-        run: node tests/proof/proof-icon-extras-1219.mjs
-      - name: Icon packs proof (Beta 1.220 gate - Material Filled and Windows 10 join the picker as complete monochrome packs with every artwork byte pinned, the mask packs dispatch through the MASK_PACKS table, and the picker carries five rows)
-        run: node tests/proof/proof-icon-packs-1220.mjs
+      - name: Icon glyph proof (Beta 1.221 gate - Glyph is the only icon set: the complete set byte-pinned as lossless WebP at 200x200, the registry dispatching through the single glyph row, the picker section and the retired packs absent, the backup icon-pack field gone; replaces the 1218/1219/1220 pack proofs, whose subjects left with the picker)
+        run: node tests/proof/proof-icon-glyph-1221.mjs
       - name: Premise-lint fixtures (Tranche 4 gate)
         run: python3 scripts/premise-lint-fixtures/run-fixtures.py
       - name: Bug-hunt fix fixtures (PR #23 gate; Beta 1.185)
@@ -225,15 +221,15 @@ jobs:
           - shard: 2
             drives: "drive114 drive127 drive145 drive164 drive165 drive177 drive190 drive198 drive89"
           - shard: 3
-            drives: "drive131 drive133 drive141 drive143 drive148 drive162 drive170 drive186 drive194 drive202 drive86"
+            drives: "drive131 drive133 drive141 drive143 drive148 drive162 drive170 drive186 drive194 drive86"
           - shard: 4
             drives: "drive118 drive121 drive132 drive153 drive154 drive171 drive174 drive175 drive184 drive192 drive200"
           - shard: 5
             drives: "drive123 drive130 drive136 drive152 drive160 drive163 drive173 drive182 drive188 drive196 drive88"
           - shard: 6
-            drives: "drive117 drive125 drive129 drive135 drive150 drive155 drive180 drive185 drive193 drive201 drive83"
+            drives: "drive117 drive125 drive129 drive135 drive150 drive155 drive180 drive185 drive193 drive83"
           - shard: 7
-            drives: "drive124 drive126 drive140 drive147 drive156 drive159 drive169 drive178 drive189 drive197"
+            drives: "drive124 drive126 drive140 drive147 drive156 drive159 drive169 drive178 drive189 drive197 drive204"
           - shard: 8
             drives: "drive115 drive120 drive128 drive142 drive146 drive168 drive172 drive181 drive183 drive191 drive199"
     steps:

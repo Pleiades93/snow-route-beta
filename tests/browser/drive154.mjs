@@ -297,10 +297,10 @@ ok('H1 VERIFIED WIPE, ONE KEY FAILS: the failure is SURFACED (toast says some sa
 await ev2(`(() => { const r = document.querySelector('#rmRoutes .routeRow[data-route="route-4"] .routeDel'); if (r) r.click(); return true; })()`);
 await poll(`!document.getElementById('crModal').classList.contains('hidden')`, 10000);
 await ev2(`document.getElementById('crModalYes').click()`);
-const toastH2 = await poll(`document.getElementById('toast').textContent === 'Route deleted'`, 15000);
+const goneH2 = await poll(`!document.querySelector('#rmRoutes .routeRow[data-route="route-4"]')`, 15000);
 const keysH2 = await J(`({ left: Object.values(routeKeys('route-4')).filter(k => localStorage.getItem(k) !== null) })`);
-ok('H2 NORMAL DELETE STILL FULLY GREEN: with healthy storage the success toast fires and every slot key reads null | surviving keys: ' + JSON.stringify(keysH2.left),
-  toastH2 === true && (keysH2.left || []).length === 0);
+ok('H2 NORMAL DELETE STILL FULLY GREEN: with healthy storage the row leaves and every slot key reads null (the success pill was cut in Beta 1.221 - the vanished row is the report) | surviving keys: ' + JSON.stringify(keysH2.left),
+  goneH2 === true && (keysH2.left || []).length === 0);
 
 R.exceptions = consoleLog.filter(l => l.indexOf('EXCEPTION') === 0);
 finishCreate(R, proc, server);

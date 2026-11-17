@@ -50,10 +50,10 @@ check('F: the assembled page carries the new gap line, not the old',
 // class. The F section above is this proof's durable property and
 // is untouched.)
 console.log('V - version surfaces agree; the 1.211 in-progress sweep is intact');
-check('V: the #ver label reads Beta 1.220', head.includes('<div class="ver" id="ver">Beta 1.220</div>'));
-check('V: WHATSNEW is the Beta 1.220 entry', app4.includes("v: 'Beta 1.220', items:"));
-check('V: the 1.211 in-progress wording still stands',
-  app3.includes("phT.textContent = 'Current clean'") && app4.includes("toast('Resumed clean — "));
+check('V: the #ver label reads Beta 1.221', head.includes('<div class="ver" id="ver">Beta 1.221</div>'));
+check('V: WHATSNEW is the Beta 1.221 entry', app4.includes("v: 'Beta 1.221', items:"));
+check('V: the 1.211 in-progress wording still stands (the resume pill itself was cut in 1.221 - the wording property now guards its absence)',
+  app3.includes("phT.textContent = 'Current clean'") && !app4.includes("toast('Resumed clean") && !app4.includes("toast('Resumed run"));
 
 console.log(pass + ' pass, ' + fail + ' fail');
 process.exit(fail === 0 ? 0 : 1);

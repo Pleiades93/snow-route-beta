@@ -48,10 +48,10 @@ ok('city rows built with sub null (name only)', pick.includes("routeRowShell('bu
 ok("'ready to load' absent from create-pick.js", !pick.includes('ready to load'));
 ok('last-used span survives on .routeName', pick.includes("lu.className = 'crLastUsed'") && pick.includes("b.querySelector('.routeName')"));
 
-// 6 — badge beside the name + the short toast
+// 6 — badge beside the name + the save confirmation (a pill through 1.220; cut in 1.221, the menu transition confirms)
 ok('badge wrapped into the name line', app2.includes("wrap.className = 'routeNameRow'") && app2.includes('wrap.appendChild(bd)') && !app2.includes("bd.textContent = 'Currently loaded'; b.appendChild(bd); }"));
 ok('name-row group CSS present', head.includes('#routeMenu .routeNameRow { display: flex; align-items: center; justify-content: center; gap: 8px; min-width: 0; max-width: 100%; }'));
-ok("toast is exactly 'Route saved'", save.includes("toast('Route saved', 4600);") && !save.includes('its maps are not downloaded yet'));
+ok("the save success path fires NO pill since 1.221 (the route menu opening on the new route is the confirmation) and the long maps-note variant stays absent", !save.includes("toast('Route saved'") && save.includes('exitCreate();') && save.includes("showRmPane('rmListPane')") && !save.includes('its maps are not downloaded yet'));
 
 console.log(failed === 0 ? 'ALL PASS' : failed + ' FAILED');
 process.exit(failed === 0 ? 0 : 1);
