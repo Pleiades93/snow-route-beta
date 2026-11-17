@@ -144,6 +144,15 @@ export function createBridgeServer(up) {
         const idx = buf.indexOf('\r\n\r\n');
         if (idx === -1) { if (buf.length > 65536) clientSocket.destroy(); return; }
         clientSocket.removeListener('data', onData);
+        // PAUSE until the forwarder installs its pipe: a socket that
+        // has had a data listener stays in flowing mode when the
+        // listener is removed, and bytes arriving while the upstream
+        // connection is still opening would be discarded - the client
+        // would send a body the upstream never receives (Codex
+        // review, PR #101). pipe() resumes the socket when it is
+        // installed, in forwardHttp's connect callback and in
+        // tunnel's CONNECT-response handler alike.
+        clientSocket.pause();
         const lines = buf.slice(0, idx).toString('latin1').split('\r\n');
         const rest = buf.slice(idx + 4);
         const parts = lines[0].split(' ');
