@@ -18,13 +18,16 @@ const { proc, send, S, ev, consoleLog, sleep, poll } = await launchDrive({ patte
 // (the southernmost latitude crossed with the extreme longitudes); every
 // actual road coordinate sits inside with 40px+ of margin at both sizes,
 // which is the property "the route is framed" means.
-// PART 2, THE SPEED PILL: #spdPill, top-centre, built from the #count pill's
-// tokens - parity is judged on COMPUTED styles against #count itself, day
-// and night. Its gate is the watch: hidden at boot and whenever location is
-// off, shown by startGps reading "0 km/h", updated per fix (10.5 m/s ->
-// "38 km/h"), reading "0 km/h" at rest instead of vanishing, hidden by
-// stopGps - through the real gpsBtn presses and through a clean's own GPS.
-// The retired #spd chip must not exist anywhere in the document.
+// PART 2, THE SPEED CIRCLE (Beta 1.220 re-derivation): the top-centre pill of
+// Beta 1.200 is REPLACED by Andrew's approved circle - 64px across at the top
+// LEFT under the title, its top edge level with the night button's top edge
+// (measured, both themes), the speed number big and centred with "KM/H"
+// centred directly below it, on the app's glass tokens (parity judged on the
+// glass properties against the #count pill's computed styles, day and night).
+// Its gate is unchanged: hidden at boot and whenever location is off, shown
+// by startGps reading 0, updated per fix (10.5 m/s -> 38), reading 0 at rest
+// instead of vanishing, hidden by stopGps - through the real gpsBtn presses
+// and through a clean's own GPS. The retired #spd chip must not exist.
 const R = { checks: [] };
 const ok = (name, cond) => R.checks.push([name, cond === true]);
 const J = async (expr) => { const raw = await ev(`(() => { try { return JSON.stringify((${expr})); } catch (e) { return JSON.stringify({ __err: String(e && e.message || e) }); } })()`); return typeof raw === 'string' ? JSON.parse(raw) : {}; };
@@ -125,50 +128,54 @@ await poll(`!map.isMoving()`, 15000); await sleep(300);
 C = await camState();
 ok('T11 switching back lands tilted too | cam ' + JSON.stringify(C), Math.abs(C.pitch - 45) <= 0.5 && Math.abs(C.bearing) <= 0.5);
 
-// ---------- the speed pill: gate, values, rest state ----------
+// ---------- the speed circle: gate, values, rest state ----------
 const pillState = () => J(`(() => { const e = document.getElementById('spdPill'); const b = e.getBoundingClientRect();
-  return { shown: b.height > 0, txt: e.textContent, x: b.x, y: b.y, w: b.width, h: b.height, r: b.right, b: b.bottom, cx: b.x + b.width / 2 }; })()`);
+  const nb = document.getElementById('nightBtn').getBoundingClientRect();
+  const num = document.getElementById('spdNum'), unit = document.getElementById('spdUnit');
+  const nr = num.getBoundingClientRect(), ur = unit.getBoundingClientRect();
+  return { shown: b.height > 0, txt: num.textContent, unit: unit.textContent, x: b.x, y: b.y, w: b.width, h: b.height, r: b.right, b: b.bottom, cx: b.x + b.width / 2,
+    nightTop: nb.y, numCx: nr.x + nr.width / 2, unitCx: ur.x + ur.width / 2, unitBelow: ur.y >= nr.y, br: getComputedStyle(e).borderRadius }; })()`);
 let P = await pillState();
 ok('P1 route loaded, location off: the pill is hidden | ' + JSON.stringify(P), P.shown === false);
 await ev(`(() => { window.__wp = null; Object.defineProperty(navigator, 'geolocation', { value: { watchPosition: (okCb, errCb) => { window.__wp = okCb; return 4242; }, clearWatch: () => {} }, configurable: true }); return true; })()`);
 await tapById(ev, 'gpsBtn'); await sleep(500);
 P = await pillState();
 const wid = await ev(`watchId`);
-ok('P2 pressing Locate (the real gpsBtn path, stubbed watch) shows the pill at once, reading "0 km/h" before any fix | ' + JSON.stringify(P) + ' watchId ' + wid,
-  wid === 4242 && P.shown === true && P.txt === '0 km/h');
-ok('P3 the pill sits top-centre: centred on the screen, top edge at 88 (the sample-C placement) | ' + JSON.stringify(P),
-  Math.abs(P.cx - 195) <= 1 && Math.abs(P.y - 88) <= 1.5);
+ok('P2 pressing Locate (the real gpsBtn path, stubbed watch) shows the circle at once, reading 0 with KM/H under it, before any fix | ' + JSON.stringify(P) + ' watchId ' + wid,
+  wid === 4242 && P.shown === true && P.txt === '0' && P.unit === 'KM/H');
+ok('P3 the circle: 64px across at the top LEFT, its top edge LEVEL with the night button top edge (0.5px, both measured live), round, number and KM/H a centred stacked pair | ' + JSON.stringify(P),
+  Math.abs(P.w - 64) <= 0.5 && Math.abs(P.h - 64) <= 0.5 && P.x <= 20 && Math.abs(P.y - P.nightTop) <= 0.5 && (P.br === '50%' || P.br === '32px') && Math.abs(P.numCx - P.cx) <= 1 && Math.abs(P.unitCx - P.cx) <= 1 && P.unitBelow);
 const base = await J(`(() => { const part = STRETCH.Velmar.parts[0]; const mid = part[Math.floor(part.length / 2)]; return { lat: mid[0], lng: mid[1] }; })()`);
 const feed = async (lat, lng, spd, ts) => ev(`window.__wp({ coords: { latitude: ${lat}, longitude: ${lng}, accuracy: 8, speed: ${spd}, heading: 90 }, timestamp: ${ts} })`);
 const T0 = Date.now();
 await feed(base.lat, base.lng, 10.5, T0); await sleep(400);
 P = await pillState();
-ok('P4 a fix at 10.5 m/s prices the pill: "38 km/h" | ' + JSON.stringify(P), P.txt === '38 km/h');
+ok('P4 a fix at 10.5 m/s prices the circle: 38 | ' + JSON.stringify(P), P.txt === '38' && P.unit === 'KM/H');
 await feed(base.lat, base.lng + 0.0002, 0, T0 + 2000); await sleep(400);
 P = await pillState();
-ok('P5 at rest the pill reads "0 km/h" and STAYS shown (it does not vanish the way the old chip did) | ' + JSON.stringify(P), P.txt === '0 km/h' && P.shown === true);
+ok('P5 at rest the circle reads 0 and STAYS shown (it does not vanish the way the old chip did) | ' + JSON.stringify(P), P.txt === '0' && P.shown === true);
 await feed(base.lat, base.lng + 0.0003, null, T0 + 4000); await sleep(400);
 P = await pillState();
-ok('P6 a fix reporting no speed also reads "0 km/h", still shown | ' + JSON.stringify(P), P.txt === '0 km/h' && P.shown === true);
+ok('P6 a fix reporting no speed also reads 0, still shown | ' + JSON.stringify(P), P.txt === '0' && P.shown === true);
 
-// ---------- overlaps, with the pill live ----------
+// ---------- overlaps, with the circle live ----------
 const ov = await J(`(() => { const r = (id) => { const e = document.getElementById(id); if (!e) return null; const b = e.getBoundingClientRect(); return b.height > 0 ? { x: b.x, y: b.y, w: b.width, h: b.height, r: b.right, b: b.bottom } : null; };
   const ts = document.querySelector('#hud .titleStack').getBoundingClientRect();
   return { pill: r('spdPill'), night: r('nightBtn'), centre: r('centreBtn'), title: { x: ts.x, y: ts.y, w: ts.width, h: ts.height, r: ts.right, b: ts.bottom } }; })()`);
-ok('P7 the pill overlaps nothing at the top: not the day/night button, not the re-centre button, not the HUD title block | ' + JSON.stringify(ov),
+ok('P7 the circle overlaps nothing at the top: not the day/night button, not the re-centre button, not the HUD title block | ' + JSON.stringify(ov),
   !!ov.pill && (!ov.night || !overlaps(ov.pill, ov.night)) && (!ov.centre || !overlaps(ov.pill, ov.centre)) && !overlaps(ov.pill, ov.title));
 await ev(`(() => { markDone('Velmar', 'tap'); const line = STRETCH.Velmar.line; selectStretch('Velmar', 0, line[Math.floor(line.length / 2)]); return true; })()`);
 await poll(`(() => { const e = document.getElementById('selPop'); return !e.classList.contains('hidden') && e.getBoundingClientRect().height > 0; })()`, 8000);
 const ov2 = await J(`(() => { const r = (id) => { const e = document.getElementById(id); const b = e.getBoundingClientRect(); return { x: b.x, y: b.y, w: b.width, h: b.height, r: b.right, b: b.bottom }; }; return { pill: r('spdPill'), pop: r('selPop') }; })()`);
-ok('P8 with a street selected, the pill clears the selection pop-up below it | ' + JSON.stringify(ov2), !overlaps(ov2.pill, ov2.pop) && ov2.pop.y - ov2.pill.b >= 10);
+ok('P8 with a street selected, the circle clears the selection pop-up below it | ' + JSON.stringify(ov2), !overlaps(ov2.pill, ov2.pop) && ov2.pop.y - ov2.pill.b >= 10);
 await ev(`deselect()`); await sleep(300);
 
-// ---------- styling parity with the #count pill (day, then night) ----------
+// ---------- glass parity with the #count pill (day, then night) ----------
 const parity = () => J(`(() => { const a = getComputedStyle(document.getElementById('spdPill')); const c = getComputedStyle(document.getElementById('count'));
-  const pick = (s) => ({ ff: s.fontFamily, fs: s.fontSize, fw: s.fontWeight, br: s.borderRadius, bg: s.backgroundColor, col: s.color, bc: s.borderColor, bs: s.boxShadow, bf: s.backdropFilter, pad: s.padding });
+  const pick = (s) => ({ ff: s.fontFamily, bg: s.backgroundColor, col: s.color, bc: s.borderColor, bs: s.boxShadow, bf: s.backdropFilter });
   return { pill: pick(a), count: pick(c) }; })()`);
 let par = await parity();
-ok('P9 styling parity (day): the speed pill\'s computed font, radius, glass, colour, border, shadow, blur and padding EQUAL the #count pill\'s | pill ' + JSON.stringify(par.pill) + ' count ' + JSON.stringify(par.count),
+ok('P9 glass parity (day): the circle\'s computed font family, glass background, ink colour, border, shadow and blur EQUAL the #count pill\'s (the glass language is shared; the shape is the circle\'s own) | pill ' + JSON.stringify(par.pill) + ' count ' + JSON.stringify(par.count),
   JSON.stringify(par.pill) === JSON.stringify(par.count));
 // P10's height comparison is measured in the P13 segment below, where a clean is
 // running: since Beta 1.202 the #count pill renders ONLY while a clean runs, so its
@@ -177,24 +184,24 @@ ok('P9 styling parity (day): the speed pill\'s computed font, radius, glass, col
 // property - same height as #count - is unchanged.
 await tapById(ev, 'nightBtn'); await sleep(800);
 par = await parity();
-ok('P11 styling parity (night): the same equality on the dark glass | pill ' + JSON.stringify(par.pill) + ' count ' + JSON.stringify(par.count),
-  JSON.stringify(par.pill) === JSON.stringify(par.count) && par.pill.bg !== 'rgba(255, 255, 255, 0.78)');
+ok('P11 glass parity (night): the same equality on the dark glass, and the circle top still levels with the night button top at night | pill ' + JSON.stringify(par.pill) + ' count ' + JSON.stringify(par.count),
+  JSON.stringify(par.pill) === JSON.stringify(par.count) && par.pill.bg !== 'rgba(255, 255, 255, 0.78)' && Math.abs((await pillState()).y - (await pillState()).nightTop) <= 0.5);
 await tapById(ev, 'nightBtn'); await sleep(800);
 
 // ---------- the gate closes: Locate off hides it; a clean's GPS shows it ----------
 await tapById(ev, 'gpsBtn'); await sleep(500);
 P = await pillState();
-ok('P12 pressing Locate again (stopGps) hides the pill | ' + JSON.stringify(P) + ' watchId ' + (await ev(`watchId`)), P.shown === false);
+ok('P12 pressing Locate again (stopGps) hides the circle | ' + JSON.stringify(P) + ' watchId ' + (await ev(`watchId`)), P.shown === false);
 await ev(`startClean()`); await sleep(600);
 P = await pillState();
 const runGate = await J(`({ run: !!runStart, fromRun: gpsFromRun, wid: watchId })`);
-ok('P13 a clean\'s own GPS shows the pill too (startClean -> startGps(true)) | ' + JSON.stringify(P) + ' ' + JSON.stringify(runGate),
-  P.shown === true && P.txt === '0 km/h' && runGate.run === true && runGate.fromRun === true && runGate.wid === 4242);
-const heights = await J(`(() => ({ pill: document.getElementById('spdPill').getBoundingClientRect().height, count: document.getElementById('count').getBoundingClientRect().height }))()`);
-ok('P10 the pill stands the same height as the #count pill (measured in this run - the only state where #count renders since Beta 1.202) | ' + JSON.stringify(heights), heights.count > 0 && Math.abs(heights.pill - heights.count) <= 1);
+ok('P13 a clean\'s own GPS shows the circle too (startClean -> startGps(true)) | ' + JSON.stringify(P) + ' ' + JSON.stringify(runGate),
+  P.shown === true && P.txt === '0' && runGate.run === true && runGate.fromRun === true && runGate.wid === 4242);
+const heights = await J(`(() => { const b = document.getElementById('spdPill').getBoundingClientRect(); return { w: b.width, h: b.height }; })()`);
+ok('P10 the circle measures exactly 64 x 64 in the run state too | ' + JSON.stringify(heights), Math.abs(heights.w - 64) <= 0.5 && Math.abs(heights.h - 64) <= 0.5);
 await ev(`stopGps()`); await sleep(400);
 P = await pillState();
-ok('P14 stopGps hides the pill on the run path too | ' + JSON.stringify(P), P.shown === false);
+ok('P14 stopGps hides the circle on the run path too | ' + JSON.stringify(P), P.shown === false);
 
 R.exceptions = consoleLog.filter(c => c.type === 'EXCEPTION');
 finish(R, proc);

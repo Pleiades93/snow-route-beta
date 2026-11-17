@@ -185,12 +185,12 @@ jobs:
         run: node tests/proof/proof-leftside-removal-b05.mjs
       - name: Create glow + casing fix proof (Beta 1.216 gate - the trim glow mesh stitches sector parts and drops repeated points so no vertex sits beyond its claimed distance + 1 m (the spear assertion), and the draft casing anchor is halved to crZoomW(9.75) with the reach floor following it)
         run: node tests/proof/proof-create-glow-casing-fix.mjs
-      - name: Pulsar icons proof (Beta 1.217 gate - the ten main-screen icons are the approved Pulsar PNGs byte-for-byte day and night, the wrappers keep the vectors' exact layout boxes so no button or bar changes size, the theme refresh is wired at boot and inside applyNight, the six off-screen entries stay byte-identical vectors, the About pane credits Icons8)
-        run: node tests/proof/proof-pulsar-icons-1217.mjs
-      - name: Icon pack picker proof (Beta 1.218 gate - both packs complete against the icon-set standard with the artwork byte-pinned, the Pulsar Locate state variants are the script-generated remaps, the choice persists as a stored global riding backups like the night setting, the Locate colours are scoped to #gpsBtn alone, renderIcons is wired at boot, inside applyNight, at the three GPS transitions and on the switch, the picker markup and strings pin)
+      - name: Icon pack picker proof (Beta 1.218 gate, Beta 1.220 roster - the three live packs complete against the icon-set standard with the artwork byte-pinned, the Locate state faces script-generated, the render layer wired at boot/night/GPS transitions, persistence and restore validation, the retired packs absent)
         run: node tests/proof/proof-icon-pack-picker-1218.mjs
-      - name: Icon extras proof (Beta 1.219 gate - the live extras ride the packs with the artwork byte-pinned, Andrew's road rule puts the highway variant on the Streets button and the basic road on the Road-cleared stat, the ETA stat is a plain flag apart from the checkered Pace button, the Glyph sun is the summer glyph, Puffy Filled is removed whole with a stored or backed-up puffy landing on the pulsar default, and the host CSS fills one box for svg and img alike)
+      - name: Icon extras proof (Beta 1.219 gate, Beta 1.220 roster - the live extras ride the three packs with the artwork byte-pinned, Andrew's road rule puts the highway variant on Streets and the basic road on the stat, the flag rule, the stopwatch Elapsed and the Glyph Speed stat, the close buttons wear the pack, the retired packs absent)
         run: node tests/proof/proof-icon-extras-1219.mjs
+      - name: Icon packs proof (Beta 1.220 gate - Material Filled and Windows 10 join the picker as complete monochrome packs with every artwork byte pinned, the mask packs dispatch through the MASK_PACKS table, and the picker carries five rows)
+        run: node tests/proof/proof-icon-packs-1220.mjs
       - name: Premise-lint fixtures (Tranche 4 gate)
         run: python3 scripts/premise-lint-fixtures/run-fixtures.py
       - name: Bug-hunt fix fixtures (PR #23 gate; Beta 1.185)
@@ -221,21 +221,21 @@ jobs:
       matrix:
         include:
           - shard: 1
-            drives: "drive120 drive141 drive152 drive166 drive173 drive176 drive187 drive195"
+            drives: "drive116 drive149 drive151 drive161 drive166 drive176 drive187 drive195 drive203"
           - shard: 2
-            drives: "drive114 drive127 drive132 drive145 drive172 drive174 drive175 drive190 drive198 drive89"
+            drives: "drive114 drive127 drive145 drive164 drive165 drive177 drive190 drive198 drive89"
           - shard: 3
-            drives: "drive130 drive133 drive148 drive161 drive162 drive180 drive182 drive186 drive194 drive202 drive86"
+            drives: "drive131 drive133 drive141 drive143 drive148 drive162 drive170 drive186 drive194 drive202 drive86"
           - shard: 4
-            drives: "drive118 drive140 drive143 drive153 drive154 drive155 drive171 drive184 drive192 drive200"
+            drives: "drive118 drive121 drive132 drive153 drive154 drive171 drive174 drive175 drive184 drive192 drive200"
           - shard: 5
-            drives: "drive116 drive123 drive136 drive147 drive149 drive151 drive160 drive163 drive188 drive196 drive88"
+            drives: "drive123 drive130 drive136 drive152 drive160 drive163 drive173 drive182 drive188 drive196 drive88"
           - shard: 6
-            drives: "drive117 drive125 drive129 drive135 drive150 drive168 drive170 drive185 drive193 drive201 drive83"
+            drives: "drive117 drive125 drive129 drive135 drive150 drive155 drive180 drive185 drive193 drive201 drive83"
           - shard: 7
-            drives: "drive126 drive131 drive156 drive159 drive164 drive165 drive169 drive177 drive178 drive189 drive197"
+            drives: "drive124 drive126 drive140 drive147 drive156 drive159 drive169 drive178 drive189 drive197"
           - shard: 8
-            drives: "drive115 drive121 drive124 drive128 drive142 drive146 drive181 drive183 drive191 drive199"
+            drives: "drive115 drive120 drive128 drive142 drive146 drive168 drive172 drive181 drive183 drive191 drive199"
     steps:
       - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4
       - name: Set up Node

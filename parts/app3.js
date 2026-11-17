@@ -31,14 +31,14 @@ function groupProgress(wantPrimary) { // Beta 1.184: Progress-by-group sums - a 
   return { sum, cnt };
 }
 function fmtCnt(v) { return v % 1 ? v.toFixed(1) : String(v); }
-const PACE_ICONS = { // Beta 1.184: the approved design line glyphs for the stat cells, stroke currentColor, coloured by the .ic rule. Beta 1.219: this table is the ORIGINAL pack's stat set - renderIcons (app4) re-mints these entries from the active pack and restores these vectors for Original (PACE_ORIGINALS)
-  clock: '<svg width="26" height="26" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="8.5"/><path d="M12 7.5V12l3 2"/></svg>',
-  road: '<svg width="26" height="26" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M6.5 20 10.5 4"/><path d="M17.5 20 13.5 4"/><path d="M12 7v1.7M12 11.2v1.7M12 15.4v1.7"/></svg>',
-  flag: '<svg width="26" height="26" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M6 21V4.5"/><path d="M6 5h10.5l-2.3 3.2 2.3 3.3H6"/></svg>',
-  list: '<svg width="26" height="26" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M9.5 6h9.5M9.5 12h9.5M9.5 18h9.5"/><circle cx="5.2" cy="6" r="1.2" fill="currentColor" stroke="none"/><circle cx="5.2" cy="12" r="1.2" fill="currentColor" stroke="none"/><circle cx="5.2" cy="18" r="1.2" fill="currentColor" stroke="none"/></svg>',
-  cal: '<svg width="26" height="26" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="4" y="5.5" width="16" height="15" rx="2"/><path d="M4 10.2h16M8.5 3.5v4M15.5 3.5v4"/></svg>',
-  gauge: '<svg width="26" height="26" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M4.5 16.5a8 8 0 1 1 15 0"/><path d="M12 15l4.2-4.6"/><circle cx="12" cy="15" r="1.3" fill="currentColor" stroke="none"/></svg>',
-  trail: '<svg width="26" height="26" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M7.8 17.2c3.5-.8 2.8-4.3 5.4-5.4 1.9-.8 2.6-2 2.9-4"/><circle cx="6" cy="18" r="2.1"/><circle cx="18" cy="6" r="2.1"/></svg>'
+const PACE_ICONS = { // the Pace stat mint table: renderIcons (app4) fills every entry from the ACTIVE pack at boot, so the table ships EMPTY (Beta 1.220: the line glyphs that initialized it through Beta 1.219 went with their retired pack)
+  clock: '',
+  road: '',
+  flag: '',
+  list: '',
+  cal: '',
+  gauge: '',
+  trail: ''
 };
 function statCell(ic, v, l) { return '<div class="cell"><span class="ic" data-ic="' + ic + '">' + PACE_ICONS[ic] + '</span><div class="v">' + v + '</div><div class="l">' + l + '</div></div>'; } // Beta 1.219: data-ic lets renderIcons re-stamp a rendered cell in place on a pack switch
 function groupBar(name, g) {
@@ -581,7 +581,7 @@ function pushGps() {
   const src = map && map.getSource('gps'); if (!src) return;
   const feats = [];
   if (dispPos && watchId != null && facingDeg != null) { // the facing beam (Beta 1.49): a point carrying the facing - the gps-beam symbol layer paints the gradient fan image along it (Apple Maps style, Andrew's reference)
-    feats.push({ type: 'Feature', properties: { k: 'beam', rot: Math.round(facingDeg * 10) / 10 }, geometry: { type: 'Point', coordinates: [dispShownPos()[1], dispShownPos()[0]] } }); // Beta 1.194: drawn features sit on the rendered point (dispShownPos) with the puck they belong to
+    feats.push({ type: 'Feature', properties: { k: 'beam', rot: Math.round((beamDeg != null ? beamDeg : facingDeg) * 10) / 10 }, geometry: { type: 'Point', coordinates: [dispShownPos()[1], dispShownPos()[0]] } }); // Beta 1.220: the painted rot is beamDeg - facingDeg smoothed per frame by beamTick (below); facingDeg remains the heading of record everywhere else // Beta 1.194: drawn features sit on the rendered point (dispShownPos) with the puck they belong to
   }
   if (dispPos) {
     // Beta 1.188: the puck itself is NOT a feature any more - the gps-puck-shader custom layer (addGpsLayers, app2) draws it in screen space straight off dispPos on every rendered frame, so the 1.182 ground discs (puckwhite / puckblue) and their 14-110 px clamp machinery are retired from here. pushGps keeps the facing beam (above) and the accuracy ring (below); the puck's visibility rule is unchanged - drawn exactly while dispPos is set, the same condition that gated the discs.
@@ -798,9 +798,9 @@ function renderTick(now) {
   }
   let camKey = ''; // Beta 1.182: the camera state that sizes the puck joins the push key, bucketed - quarter-zoom (sets the scale), half-degree bearing (rotates the projected measure), 2-degree pitch (sets its anisotropy), the puck's own projected position on a 16 px grid and the viewport size (Codex's fourth catch on PR #19: under pitch the local stretch varies across the viewport, so PANNING a pitched map with a stationary fix moves the puck through the perspective gradient without changing zoom, bearing or pitch - the stale radii could carry it past the cap near the viewport's bottom edge). Together these are every input the projection of a static ground point depends on, so any change that could resize the puck re-pushes the glyph even when nothing moved.
   if (map) { camKey = Math.round(map.getZoom() * 4) / 4 + ',' + Math.round(map.getBearing() * 2) / 2 + ',' + Math.round(map.getPitch() / 2) * 2 + ',' + map.getCanvas().clientWidth + 'x' + map.getCanvas().clientHeight; if (dispPos) { const pp = map.project([dispShownPos()[1], dispShownPos()[0]]); camKey += ',' + Math.round(pp.x / 16) + ':' + Math.round(pp.y / 16); } } // Beta 1.194: the puck's projected position is the RENDERED point (dispShownPos) - keyed on what is actually drawn, so a held puck does not re-push frames for display-track motion nobody sees
-  const key = dispPos ? dispShownPos()[0] + ',' + dispShownPos()[1] + ',' + facingDeg + ',' + gpsAccM + ',' + camKey : '';
+  const key = dispPos ? dispShownPos()[0] + ',' + dispShownPos()[1] + ',' + (beamDeg != null ? Math.round(beamDeg * 10) / 10 : facingDeg) + ',' + gpsAccM + ',' + camKey : ''; // Beta 1.220: the key carries the PAINTED beam rot, so the per-frame spring repaints through this same gate and the pushes stop when the spring rests
   if (key !== lastPushKey) { lastPushKey = key; pushGps(); } // redraw the dot/ring/beam only when something actually moved - the old timers rebuilt it on every tick regardless
-  followCam(now); headCam(now); syncCentreBtn();
+  beamTick(now); followCam(now); headCam(now); syncCentreBtn();
 }
 function renderLoop(now) {
   lastFrameAt = now;
@@ -994,6 +994,23 @@ function kfPredict() { if (!kf) return null; const h = Math.min(Math.max((perfor
 // device compass while still. On iOS the compass needs a permission granted from a
 // tap, so it is requested from startGps - a genuine user gesture.
 let facingDeg = null, lastCourseAt = 0, compassOn = false;
+// Beta 1.220 (Andrew's field report): the puck's direction light stepped about once a second -
+// facingDeg only moves when a fix or compass event lands, while the position and the camera
+// glide per frame. beamDeg is the beam's RENDERED angle: a critically-damped spring
+// (camSmoothDampAngle - the camera bearing spring's own controller, the same 0.22 s smoothTime)
+// chases facingDeg on every rendered frame, so a turn sweeps continuously between fixes and
+// lands exactly on facingDeg at rest. Presentation only: facingDeg, the recorded position,
+// the position glide and the camera are untouched, and the spring converges to the same
+// heading - no accuracy is added or taken away.
+let beamDeg = null, beamVel = 0, lastBeamAt = 0;
+function beamTick(now) {
+  if (facingDeg == null) { beamDeg = null; beamVel = 0; lastBeamAt = now; return; }
+  if (beamDeg == null) { beamDeg = facingDeg; beamVel = 0; lastBeamAt = now; return; } // first sighting: start on the heading, never sweep to it
+  const dt = Math.min(100, Math.max(1, now - lastBeamAt)) / 1000; lastBeamAt = now;
+  if (Math.abs(headDelta(beamDeg, facingDeg)) < 0.02 && Math.abs(beamVel) < 0.5) { if (beamDeg !== facingDeg) { beamDeg = facingDeg; beamVel = 0; } return; } // at rest: land exactly and stop (headCam's rest rule)
+  const r = camSmoothDampAngle(beamDeg, facingDeg, beamVel, 0.22, dt);
+  beamDeg = ((r[0] % 360) + 360) % 360; beamVel = r[1];
+}
 function setFacing(deg, w) {
   if (typeof deg !== 'number' || isNaN(deg)) return;
   const before = facingDeg;
@@ -1346,8 +1363,8 @@ function acceptFix(pos) {
   snapFix(speed, acc, ll); // Beta 1.204: the driving snap's per-fix feed, beside the hold's - raw fix in, snap state out. Display-only by the same invariant: it runs BEFORE fixLogOut and the recording block below, and neither reads its state (they read gpsPos/dispPos, which the snap never writes).
   if (typeof pos.coords.heading === 'number' && speed && speed >= 1) { lastCourseAt = now; setFacing(pos.coords.heading, 0.5); } // moving: face along the course
   fixLogOut(fxEnt); // Beta 1.189: the estimator has run — filtered position, display position and smoothed heading join the raw fix in the log
-  const spd = $('spdPill'); // Beta 1.203: the top-centre speed pill, written on the same per-fix cadence the retired bottom-left chip used. Visibility is the WATCH's alone now (startGps shows the pill, stopGps hides it - Andrew's gate is the location button), so a fix only ever updates the number: at rest, or with no speed reported, it reads 0 km/h rather than vanishing
-  spd.textContent = Math.round(Math.max(0, speed || 0) * 3.6) + ' km/h';
+  const spd = $('spdNum'); // Beta 1.220: the speed circle's number, written on the same per-fix cadence the retired pill used. Visibility is the WATCH's alone now (startGps shows the circle, stopGps hides it - Andrew's gate is the location button), so a fix only ever updates the number: at rest, or with no speed reported, it reads 0 km/h rather than vanishing
+  spd.textContent = String(Math.round(Math.max(0, speed || 0) * 3.6)); // the bare number - the KM/H unit is the circle's own centred label now
   if (firstFix && map && (gpsFromRun || watchId != null) && !followPaused) { map.jumpTo({ center: [sm[1], sm[0]], zoom: Math.max(map.getZoom(), 15) }); camVel = [0, 0]; camBVel = 0; camUncapped = false; } // Beta 1.198: a teleport voids the camera springs' velocity state — the glide starts from rest at the jumped centre // Beta 1.146 (census C4): the map && guard - this first-fix jump sat BEFORE the trail/coverage block below, so in the map-failure world its throw starved recording on fix 1 exactly as followCam's did from fix 2 on // Beta 1.116 (audit CG-115-02): a drag made while waiting for this fix already claimed the camera - the fix still records the position (gpsPos/dispPos above), and with dispPos set the syncCentreBtn rule lights the re-centre button as the way back; no jump, no clear
   // outside-route note (route box + 400 m)
   const inB = routeBox ? (sm[0] > routeBox.s - 0.0036 && sm[0] < routeBox.n + 0.0036 && sm[1] > routeBox.w - 0.005 && sm[1] < routeBox.e + 0.005) : true; // Beta 1.117: no box (no route / empty pack) - no area to be outside of, so no note
@@ -1436,13 +1453,13 @@ function startGps(fromRun, restart) {
   $('gpsBtn').classList.add('on');
   $('gpsBtn').classList.toggle('rec', gpsFromRun); // Beta 1.49: recording wears red on the Locate tab; view-only wears blue
   renderIcons(); // Beta 1.218: the Locate face (red view-only / green recording, per pack) follows the state flip at once
-  $('spdPill').textContent = '0 km/h'; $('spdPill').classList.remove('hidden'); // Beta 1.203: the speed pill's gate is the watch itself - it appears as location turns on, reading 0 until the first fix prices a speed; stopGps hides it again
+  $('spdNum').textContent = '0'; $('spdPill').classList.remove('hidden'); // Beta 1.220: the speed circle's gate is the watch itself - it appears as location turns on, reading 0 until the first fix prices a speed; stopGps hides it again
 }
 function stopGps(silent) {
   watchGen++; // Beta 1.69: invalidate any callback still queued from this watcher
   fixLogClose(); // Beta 1.189: the log session ends with the watch
   if (watchId != null) navigator.geolocation.clearWatch(watchId);
-  watchId = null; gpsFromRun = false; clearInterval(staleWatchTimer); dispOff = [0, 0]; dispHoldReset(); snapReset(); // Beta 1.194: the stillness hold retires with the watch (dispHoldReset, beside the display offset's own reset) - a held point must never freeze the puck across location sessions. Beta 1.204: the road snap retires with it, for the same reason (snapReset, beside dispHoldReset).
+  watchId = null; gpsFromRun = false; clearInterval(staleWatchTimer); dispOff = [0, 0]; dispHoldReset(); snapReset(); beamDeg = null; beamVel = 0; lastBeamAt = 0; // Beta 1.220: the beam spring resets with the display state // Beta 1.194: the stillness hold retires with the watch (dispHoldReset, beside the display offset's own reset) - a held point must never freeze the puck across location sessions. Beta 1.204: the road snap retires with it, for the same reason (snapReset, beside dispHoldReset).
   if (renderRaf) { cancelAnimationFrame(renderRaf); renderRaf = 0; }
   clearInterval(renderPump); renderPump = 0; stopCompass(); // Beta 1.64 (audit F08); Beta 1.65: the render loop stops with the watch
   if (map) pushGps(); // Beta 1.48 (audit B05): the facing beam is only built while watchId lives - without a fresh push the last beam stayed drawn after stop

@@ -95,14 +95,17 @@
   .sideChip.done .chipBtn { background: #2ecc71; color: #fff; }
   #attrChip { position: fixed; right: calc(8px + var(--sar)); bottom: calc(var(--vvb, 0px) + 61px + var(--sab)); z-index: 900; font-size: 9px; color: #5b6672; background: rgba(255,255,255,.7); padding: 2px 5px; border-radius: 4px; pointer-events: none; } /* Beta 1.192: 68 -> 61, riding the tab bar's -7 (its rendered gap above the bar's top edge is unchanged: 10px measured in the assembled page) */
   body.night #attrChip { background: rgba(20,23,29,.7); color: #9aa4b2; }
-  #spdPill { position: fixed; top: calc(var(--vvt, 0px) + 88px + var(--sat)); left: 50%; transform: translateX(-50%); z-index: 1000; background: var(--glass-day); -webkit-backdrop-filter: var(--blur); backdrop-filter: var(--blur); color: #1d2530; border: 1px solid rgba(20,22,28,.09); padding: 6px 14px; border-radius: 999px; font-size: 12.5px; font-weight: 700; white-space: nowrap; box-shadow: var(--shadow-float); } /* Beta 1.203 (Andrew): the speed readout is a TOP-CENTRE pill built from the #count pill's own tokens - same glass, blur, border, radius, padding, type and shadow - so it reads as one family with the app's other pills; it replaces the bottom-left #spd chip whole (the chip's dark one-off styling goes with it). Top 88 sits below the HUD title block and clears #selPop (top 144) below it - both measured in the assembled page */
+  #spdPill { position: fixed; top: calc(var(--vvt, 0px) + 78px + var(--sat)); left: calc(12px + var(--sal)); width: 64px; height: 64px; border-radius: 50%; z-index: 1000; background: var(--glass-day); -webkit-backdrop-filter: var(--blur); backdrop-filter: var(--blur); color: #1d2530; border: 1px solid rgba(20,22,28,.09); box-shadow: var(--shadow-float); display: flex; flex-direction: column; align-items: center; justify-content: center; } /* Beta 1.220 (Andrew, approved sample): the speed readout is a CIRCLE at the top left, under the title - it replaces the Beta 1.203 top-centre pill whole. Its top is #nightBtn's own top expression (78px) and its left the same 12px inset mirrored, so the circle's top edge stands level with the moon button's - the drives measure the level in the rendered page. The glass tokens are the pill's own (glass, blur, border, shadow) - one family with the app's other pills */
+  #spdNum { font-size: 27px; font-weight: 800; line-height: 1; text-align: center; }
+  #spdUnit { font-size: 9.5px; font-weight: 800; letter-spacing: .4px; text-align: center; color: #5a5f6a; margin-top: 3px; } /* Andrew's correction: KM/H sits directly below the number, perfectly centred - the number and unit are one centred stacked pair */
   body.night #spdPill { background: var(--glass-night); color: #eef4ee; border-color: rgba(255,255,255,.16); }
+  body.night #spdUnit { color: #ACBBF5; }
   #spdPill.hidden { display: none; }
   #tabBar { position: fixed; left: 0; right: 0; bottom: 0; z-index: 1000; display: flex; background: var(--card); /* Beta 1.29 cohesion (Andrew): the bottom bar wears the SAME surface as the Streets/Pace sheets and the Settings pop-up, day and night - one menu family */ -webkit-backdrop-filter: var(--blur); backdrop-filter: var(--blur); padding: 4px 4px calc(3px + var(--sab)); box-shadow: 0 -8px 28px rgba(10,14,20,.30); } /* Beta 1.23 (Andrew, from his reference screenshot): the menu lives in a bottom tab bar now - dark frosted, icon + label per action */ /* Beta 1.192 (Andrew, from his side-by-side with a standard tab bar): the bar takes the standard iOS tab-bar height - content zone 56px -> 49px (bar padding 6/6 -> 4/3 here and item padding 4/2 -> 3/1 below; the 24px icons and 10px labels are untouched) - and the floaters that hug its top edge ride down the same 7px so their rendered gaps over the bar are unchanged (measured in the assembled page, before and after: #dock 16px, #spd 18px, #attrChip 10px - the rendered bar stands 2px over its design zone, the label's line box, which is why the rendered gaps read 2px under the constant differences): #dock 74 -> 67, #spd 76 -> 69, #attrChip 68 -> 61. The banners (236), #mapNote (240) and #toast (120) do NOT ride: the banners clear the whole bottom chrome stack, not the bar alone, and the toast is a screen-level placement that must also read over the full-screen menus */
   .tabItem { flex: 1; background: none; border: none; color: #2b3038; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 2px; padding: 3px 0 1px; cursor: pointer; font-family: inherit; }
   .tabItem svg { width: 24px; height: 24px; }
-  .tabIco { display: flex; height: 27px; align-items: center; justify-content: center; } /* Beta 1.217: the icon slot keeps its SHIPPED rendered height - the 24px svg always rendered in a 27px line box (its font descent), and the Pulsar img centred in the bare 24px wrapper measured 30px as line content (its overflow moves the baseline) or 24px as a flex child; the slot height is now explicit at the shipped 27px, so the tab bar stands at its standard 51px and no gap moves (drive196) */
-  .tabItem .pwrapT { display: inline-flex; width: 24px; height: 24px; align-items: center; justify-content: center; } /* Beta 1.217: the Pulsar tab wrapper keeps the svg's exact 24px layout box - no tab changes size */
+  .tabIco { display: flex; height: 27px; align-items: center; justify-content: center; } /* Beta 1.217: the icon slot keeps its SHIPPED rendered height - the 24px svg always rendered in a 27px line box (its font descent), and the pack img centred in the bare 24px wrapper measured 30px as line content (its overflow moves the baseline) or 24px as a flex child; the slot height is now explicit at the shipped 27px, so the tab bar stands at its standard 51px and no gap moves (drive196) */
+  .tabItem .pwrapT { display: inline-flex; width: 24px; height: 24px; align-items: center; justify-content: center; } /* Beta 1.217: the tab icon wrapper keeps the shipped 24px layout box - no tab changes size */
   .tabItem .pwrapT .pico { width: 30px; height: 30px; flex: none; display: block; } /* the PNG artwork carries its own padding, so the img runs larger inside the same box to put the glyph at the old glyph's size */
   .tabLbl { font-size: 10px; font-weight: 600; letter-spacing: .02em; }
   .tabItem.on { color: #2c4ad2; }
@@ -112,14 +115,14 @@
   .tabItem.rec { color: #d92c1e; } /* Beta 1.49: the Locate tab wears red while a clean's GPS is recording (blue = view only) */
   body.night .tabItem.rec { color: #ff6b5e; }
   .tabItem.red { color: #ff6b5e; }
-  #gpsBtn.on { color: #d92c1e; } /* Beta 1.218 (Andrew's icon-set standard): the Locate tab ALONE wears the state colours - view-only is RED, recording (the .rec rules below) is GREEN #06D6A0 in both themes. Scoped to #gpsBtn so the generic .tabItem.on above stays the blue selected-tab colour for the other tabs; the Original pack's glyph takes these colours through currentColor, the Pulsar label wears them (its faces are the PULSAR_GPS_STATES artwork) */
+  #gpsBtn.on { color: #d92c1e; } /* Beta 1.218 (Andrew's icon-set standard): the Locate tab ALONE wears the state colours - view-only is RED, recording (the .rec rules below) is GREEN #06D6A0 in both themes. Scoped to #gpsBtn so the generic .tabItem.on above stays the blue selected-tab colour for the other tabs; every pack's label wears them (its faces are the pack artwork beside it) */
   body.night #gpsBtn.on { color: #ff6b5e; }
   #gpsBtn.rec { color: #06d6a0; }
   body.night #gpsBtn.rec { color: #06d6a0; }
   #dock { position: fixed; left: 50%; transform: translateX(-50%); bottom: calc(var(--vvb, 0px) + 67px + var(--sab)); z-index: 1000; display: flex; align-items: flex-start; gap: 18px; } /* Beta 1.192: 74 -> 67, riding the tab bar's -7 (its rendered gap above the bar's top edge is unchanged: 16px measured in the assembled page) */ /* flex-start + the dock buttons' 24px top margin centres them on the big circle, not on the taller slot (Beta 1.23 fix - drive120 V1 measured a 29px offset) */ /* Beta 1.21 (Andrew): List | round run button | Pace, one level, symmetrical */
   .dockBtn { width: 56px; height: 56px; margin-top: 24px; border-radius: 50%; background: var(--glass-day); -webkit-backdrop-filter: var(--blur); backdrop-filter: var(--blur); color: #22262e; border: 1px solid rgba(20,22,28,.09); box-shadow: var(--shadow-float); font-size: 13.5px; font-weight: 700; cursor: pointer; display: flex; align-items: center; justify-content: center; }
   .dockBtn svg { width: 27px; height: 27px; }
-  .dockBtn .pwrapD { display: inline-flex; width: 27px; height: 27px; align-items: center; justify-content: center; } /* Beta 1.217: the Pulsar dock wrapper keeps the svg's exact 27px layout box - no button changes size */
+  .dockBtn .pwrapD { display: inline-flex; width: 27px; height: 27px; align-items: center; justify-content: center; } /* Beta 1.217: the dock icon wrapper keeps the shipped 27px layout box - no button changes size */
   .dockBtn .pwrapD .pico { width: 34px; height: 34px; flex: none; display: block; }
   /* ===== ICON PACK PICKER (TESTING ONLY - Beta 1.218): every pk- rule is the picker's; delete this block with the section ===== */
   .pkCard { padding: 0; overflow: hidden; }
@@ -146,8 +149,6 @@
   .pkTab { flex: 1; min-width: 0; text-align: center; font-size: 9.5px; font-weight: 600; color: #14161c; }
   .pkTabIc { height: 26px; display: flex; align-items: center; justify-content: center; }
   .pkTabIc img { width: 25px; height: 25px; }
-  .pkTabIc svg { width: 21px; height: 21px; }
-  .pkGpsRec { color: #06D6A0; display: flex; }
   .pkCap { font-size: 12px; color: rgba(255,255,255,.85); margin: 9px 2px 0; line-height: 1.45; }
   .pkUse { margin-top: 12px; width: 100%; border: 0; appearance: none; -webkit-appearance: none; border-radius: 12px; padding: 12px; font: inherit; font-size: 15px; font-weight: 800; background: #fff; color: #1B2FB6; cursor: pointer; }
   .pkUse.on { background: #06D6A0; color: #06382a; }
@@ -180,7 +181,7 @@
   .sheetHead { display: flex; align-items: center; gap: 8px; padding: 8px 48px 6px 14px; }
   .sheetTitle { font-size: 16px; font-weight: 700; flex: 1; }
   #sheetClose, #paceClose, #finNo, #noteNo, #xClose, #crModalX { position: absolute; top: 2px; right: 4px; z-index: 3; border: none; background: transparent; width: 38px; height: 38px; padding: 0; color: #e63a2e; font-size: 21px; font-weight: 800; cursor: pointer; } /* THE corner X (Beta 1.30/1.31, completed 1.34, Andrew): ONE plain red X, no box, pinned to the top-right corner of EVERY menu - sheets and dialogs alike. This single rule is the only place a close may be styled; the 1.34 bug was three dialogs carrying their own overrides (coloured-button rules and the Backup button grid) that silently repainted their X as a red box. Beta 1.77 (Andrew, live catch): routeClose shipped missing from this list in 1.76 and rendered as a boxed default button - a NEW menu's X joins this selector the day the menu is built, and drive145 N15 compares every sheet's X computed style so an omission fails the battery. Beta 1.78: the Routes sheet retired and the full-screen route menu's X briefly held its seat here; Beta 1.79 (Andrew) moves that menu's close to his own design - a translucent circle at bottom centre (its own rule below) - so this rule again covers sheets and dialogs only */
-  /* Beta 1.219 (Andrew): the close ✕ wears the chosen pack - under an image pack the button's content is the pack's cancel artwork (Pulsar's native cancel; Glyph's disc fill, red for the corner family, white for the bottom pair), centred by flex while the artwork rides; the Original pack keeps the text glyph and these rules never engage. The BUTTON boxes are the rules above and below - they never change, in any pack. */
+  /* Beta 1.219 (Andrew): the close ✕ wears the chosen pack - the button's content is the pack's cancel artwork (a mask fill: red for the corner family, white for the bottom pair), centred by flex while the artwork rides. The BUTTON boxes are the rules above and below - they never change, in any pack. */
   #sheetClose:has(img), #paceClose:has(img), #finNo:has(img), #noteNo:has(img), #xClose:has(img), #crModalX:has(img), #mapNoteNo:has(img) { display: flex; align-items: center; justify-content: center; }
   #sheetClose img, #paceClose img, #finNo img, #noteNo img, #xClose img, #crModalX img { width: 21px; height: 21px; display: block; } /* the artwork at the text glyph's own size (the corner rule's 21px) inside the same 38px box */
   #mapNoteNo img { width: 19px; height: 19px; display: block; } /* the artwork at its text glyph's size (19px) */
@@ -588,11 +589,11 @@ input, textarea { caret-color: currentColor; } /* Beta 1.125 (Andrew): the typin
 <div id="chips"></div>
 <div id="selPop" class="hidden"><div class="selTop"><div class="selTxt"><div id="selName">No street selected</div><div id="selStatus">Tap a street on the map</div></div><button id="selNote" title="Note for this street"></button></div><div class="selActs"><button id="selAllBtn">Mark both sides</button><button id="selBtn">Complete entire road</button><button id="selClearBtn">Clear</button></div></div>
 <div id="attrChip">© Protomaps © OpenStreetMap contributors © CARTO</div>
-<div id="spdPill" class="hidden">0 km/h</div>
+<div id="spdPill" class="hidden"><span id="spdNum">0</span><span id="spdUnit">KM/H</span></div>
 <div id="hud">
   <div id="warn">Not saving — storage is full or blocked</div>
   <div class="row">
-    <div class="titleStack"><div class="title">Snow Route Beta</div><div class="ver" id="ver">Beta 1.219</div></div>
+    <div class="titleStack"><div class="title">Snow Route Beta</div><div class="ver" id="ver">Beta 1.220</div></div>
   </div>
   <div id="stats"></div>
 </div>
