@@ -62,11 +62,11 @@ check('2a: #setMenu top padding carries the safe-area inset',
   rule('#setMenu').includes('padding: calc(24px + env(safe-area-inset-top, 0px)) 24px calc(88px + env(safe-area-inset-bottom, 0px))'));
 check('2a2: #setMenu lays its column from flex-start (a centred column clips an overflowing pane top beyond the scroller)',
   rule('#setMenu').includes('justify-content: flex-start'));
-check('2b: WHATSNEW is the Beta 1.224 entry', app4.includes("v: 'Beta 1.224', items:"));
-const wnM = app4.match(/v: 'Beta 1\.224', items: \[([\s\S]*?)\] \}/); // Beta 1.224 roll: the extractor reads the CURRENT entry, like 2b - the claim (the live items are short and dash-free) is unchanged
+check('2b: WHATSNEW is the Beta 1.225 entry', app4.includes("v: 'Beta 1.225', items:"));
+const wnM = app4.match(/v: 'Beta 1\.225', items: \[([\s\S]*?)\] \}/); // Beta 1.225 roll: the extractor reads the CURRENT entry, like 2b - the claim (the live items are short and dash-free) is unchanged
 const wnItems = wnM ? [...wnM[1].matchAll(/"([^"]*)"/g)].map(m => m[1]) : [];
 check('2c: every What\'s New item is one short line (<= 110 chars) and dash-free',
-  wnItems.length >= 4 && wnItems.every(t => t.length <= 110 && !t.includes('—')), JSON.stringify(wnItems.map(t => t.length)));
+  wnItems.length >= 1 && wnItems.every(t => t.length <= 110 && !t.includes('—')), JSON.stringify(wnItems.map(t => t.length))); // Beta 1.225 re-derivation (same claim, same strength): the >= 4 floor was the 1.223/1.224 entries' item count, not a rule - Andrew's rule is short point-form entries, and the 1.225 entry carries its two pieces as two items; the floor's job (the check must not pass on an empty extraction) stands at >= 1
 
 // ---------- 3: the city bar (option E) ----------
 check('3a: the city element is out of the panel title',
@@ -94,8 +94,8 @@ check('4f: the loaded-city confirmation text is gone from the hint state machine
 check('4g: the confirmation clock machinery retired with it (no crPillKey/crPillGone writers)',
   !pick.includes('let crPillT = 0') && !pick.includes('const pillKey ='));
 check('4h: the failure states still speak (preparing readout, degraded disclosure, failed remedy)',
-  pick.includes("'Loading ' + crGrid.name + ', '") && pick.includes("'. Streets there may be missing'") && pick.includes('crFailText(crPrepFail)'));
-check('4i: the road message is Andrew\'s locked wording', pick.includes("'No road there. Tap on a road line'") && !pick.includes('tap right on a road line'));
+  pick.includes("'Loading ' + crGrid.name + ', '") && pick.includes("' - streets there may be missing'") && pick.includes('crFailText(crPrepFail)'));
+check('4i: the road message is Andrew\'s locked wording', pick.includes("'No road there - tap on a road line'") && !pick.includes('tap right on a road line'));
 // the dash census: no string literal in any part carries an em dash
 import { readdirSync } from 'node:fs';
 let dashFree = true, dashWhere = '';
@@ -110,8 +110,8 @@ check('4j: no em dash in any part\'s code (strings included; comments stripped)'
 check('4k: the static sheet texts are dash-free too', !head.includes('Not saving —') && !head.includes("can't load —"));
 
 // ---------- version agreement ----------
-check('V: the #ver label reads Beta 1.224', head.includes('<div class="ver" id="ver">Beta 1.224</div>'));
-check('V: the CHANGELOG top entry is Beta 1.224', changelog.split('\n').find(l => l.startsWith('## Beta')) === '## Beta 1.224 — 2026-11-17');
+check('V: the #ver label reads Beta 1.225', head.includes('<div class="ver" id="ver">Beta 1.225</div>'));
+check('V: the CHANGELOG top entry is Beta 1.225', changelog.split('\n').find(l => l.startsWith('## Beta')) === '## Beta 1.225 — 2026-11-17');
 
 console.log(`\nproof-1223: ${pass} passed, ${fail} failed`);
 process.exit(fail ? 1 : 0);

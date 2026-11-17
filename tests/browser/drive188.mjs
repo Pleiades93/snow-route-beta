@@ -115,7 +115,7 @@ try {
     const t = document.getElementById('toast');
     return { toast: t.textContent, shown: t.classList.contains('show') };
   })()`);
-  ok('D2 a street-switch flush that fails with the episode warning already spent is owed the plain not-saved toast | ' + JSON.stringify(d2), d2.toast === 'Not saved. Storage problem' && d2.shown === true);
+  ok('D2 a street-switch flush that fails with the episode warning already spent is owed the plain not-saved toast | ' + JSON.stringify(d2), d2.toast === 'Not saved - storage problem' && d2.shown === true);
 
   // ---- E: A-03 partial pieceTimes inheritance ----
   const e = await J(`(() => {
