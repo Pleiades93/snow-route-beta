@@ -62,8 +62,8 @@ check('2a: #setMenu top padding carries the safe-area inset',
   rule('#setMenu').includes('padding: calc(24px + env(safe-area-inset-top, 0px)) 24px calc(88px + env(safe-area-inset-bottom, 0px))'));
 check('2a2: #setMenu lays its column from flex-start (a centred column clips an overflowing pane top beyond the scroller)',
   rule('#setMenu').includes('justify-content: flex-start'));
-check('2b: WHATSNEW is the Beta 1.223 entry', app4.includes("v: 'Beta 1.223', items:"));
-const wnM = app4.match(/v: 'Beta 1\.223', items: \[([\s\S]*?)\] \}/);
+check('2b: WHATSNEW is the Beta 1.224 entry', app4.includes("v: 'Beta 1.224', items:"));
+const wnM = app4.match(/v: 'Beta 1\.224', items: \[([\s\S]*?)\] \}/); // Beta 1.224 roll: the extractor reads the CURRENT entry, like 2b - the claim (the live items are short and dash-free) is unchanged
 const wnItems = wnM ? [...wnM[1].matchAll(/"([^"]*)"/g)].map(m => m[1]) : [];
 check('2c: every What\'s New item is one short line (<= 110 chars) and dash-free',
   wnItems.length >= 4 && wnItems.every(t => t.length <= 110 && !t.includes('—')), JSON.stringify(wnItems.map(t => t.length)));
@@ -110,8 +110,8 @@ check('4j: no em dash in any part\'s code (strings included; comments stripped)'
 check('4k: the static sheet texts are dash-free too', !head.includes('Not saving —') && !head.includes("can't load —"));
 
 // ---------- version agreement ----------
-check('V: the #ver label reads Beta 1.223', head.includes('<div class="ver" id="ver">Beta 1.223</div>'));
-check('V: the CHANGELOG top entry is Beta 1.223', changelog.split('\n').find(l => l.startsWith('## Beta')) === '## Beta 1.223 — 2026-11-17');
+check('V: the #ver label reads Beta 1.224', head.includes('<div class="ver" id="ver">Beta 1.224</div>'));
+check('V: the CHANGELOG top entry is Beta 1.224', changelog.split('\n').find(l => l.startsWith('## Beta')) === '## Beta 1.224 — 2026-11-17');
 
 console.log(`\nproof-1223: ${pass} passed, ${fail} failed`);
 process.exit(fail ? 1 : 0);
