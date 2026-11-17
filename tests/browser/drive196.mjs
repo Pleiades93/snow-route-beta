@@ -62,12 +62,13 @@ ok('F4 nothing overlaps the bar: dock and attribution chip clear it | dock ' + J
   !!G.dock && !!G.attr && !overlaps(G.dock, G.bar) && !overlaps(G.attr, G.bar));
 
 // a shown banner must also clear the bar by its stack margin (it did not ride)
-await ev(`document.getElementById('bakNudge').classList.remove('hidden'); true`); await sleep(500);
+// Beta 1.224 re-derivation (same claim, same strength): the representative banner is #stale now - the backup-nudge bar this check used to borrow is REMOVED with the nudge; #stale wears the same .banner slot at the same 236px bottom.
+await ev(`document.getElementById('stale').classList.remove('hidden'); true`); await sleep(500);
 G = await geom();
-const bannerRect = await J(`(() => { const b = document.getElementById('bakNudge').getBoundingClientRect(); return { x: b.x, y: b.y, w: b.width, h: b.height, r: b.right, b: b.bottom }; })()`);
+const bannerRect = await J(`(() => { const b = document.getElementById('stale').getBoundingClientRect(); return { x: b.x, y: b.y, w: b.width, h: b.height, r: b.right, b: b.bottom }; })()`);
 ok('F5 a shown banner clears the bar entirely (no overlap, in viewport) | banner ' + JSON.stringify(bannerRect) + ' bar ' + JSON.stringify(G.bar),
   bannerRect.h > 0 && !overlaps(bannerRect, G.bar) && bannerRect.b <= G.bar.y && bannerRect.x >= 0 && bannerRect.r <= 390);
-await ev(`document.getElementById('bakNudge').classList.add('hidden'); true`); await sleep(300);
+await ev(`document.getElementById('stale').classList.add('hidden'); true`); await sleep(300);
 
 // ---- real presses: corners and centres of all five tab items -------------
 const itemRect = async (id) => (await geom()).items.find(it => it.id === id);

@@ -76,37 +76,37 @@ const t = (name, cond) => { if (cond) pass++; else { fail++; console.log('FAIL',
     !goneAbsent.toasts.includes('Offline maps deleted') && goneAbsent.toasts.length === 0 && goneAbsent.dels.length === 2);
 }
 
-// ---------- CG-112-05: nudge dismissal must MERGE, not replace, LS.exp ----------
-// noteExported + bakAgeText verbatim from app4.js; the two nudge handler
-// lines verbatim from app3.js.
+// ---------- CG-112-05: the LS.exp writers must MERGE, not replace ----------
+// Beta 1.224 re-derivation (same invariant, surviving surface): the backup
+// nudge whose dismissal handlers carried half this check is REMOVED (the
+// bar, maybeBackupNudge and the nudgedAt stamp are gone from app3.js -
+// pinned absent by the first assertion). What survives of CG-112-05 is
+// noteExported's discipline: the exportedAt stamp merges into the EXISTING
+// LS.exp record, so a field already there (an old install's nudgedAt, say)
+// is never erased by a backup, and bakAgeText still reads the stamp.
+// noteExported + bakAgeText verbatim from app4.js.
 {
   const noteExp = extract(app4, 'function noteExported() {', 'async function shareBackup()', 'noteExported');
   const age = extract(app4, 'function bakAgeText() {', 'function renderBakAge()', 'bakAgeText');
-  const laterLine = lineOf(app3, "$('bakLater').addEventListener", 'bakLater line');
-  const saveLine = lineOf(app3, "$('bakSave').addEventListener", 'bakSave line');
-  const runNudge = (which) => {
+  t('05 the nudge is gone: no maybeBackupNudge, no nudgedAt, no bakSave/bakLater in app3',
+    !app3.includes('maybeBackupNudge') && !app3.includes('nudgedAt') && !app3.includes('bakSave') && !app3.includes('bakLater') && !app3.includes('bakNudge'));
+  const runStamp = () => {
     const store = new Map();
     const lsGet = k => store.has(k) ? store.get(k) : null;
     const lsSet = (k, v) => { store.set(k, String(v)); return true; };
     const parseJ = (s, d) => { try { return s ? JSON.parse(s) : d; } catch (e) { return d; } };
     const LS = { exp: 'snowroute.v5.export' };
-    const handlers = {};
-    const $ = id => ({ addEventListener: (ev, fn) => { handlers[id] = fn; }, classList: { add: () => {}, remove: () => {} } });
-    const api = new Function('lsGet', 'lsSet', 'parseJ', 'LS', '$', 'openExport', 'downloadBackup',
-      [noteExp, age, laterLine, saveLine, 'return { noteExported, bakAgeText };'].join('\n'))(
-      lsGet, lsSet, parseJ, LS, $, () => {}, () => {});
+    store.set(LS.exp, JSON.stringify({ nudgedAt: 123 })); // a legacy field an old install still carries
+    const api = new Function('lsGet', 'lsSet', 'parseJ', 'LS',
+      [noteExp, age, 'return { noteExported, bakAgeText };'].join('\n'))(
+      lsGet, lsSet, parseJ, LS);
     api.noteExported(); // a successful backup just happened
-    const before = api.bakAgeText();
-    handlers[which](); // captured by the $ stub's own closure
     const rec = JSON.parse(store.get(LS.exp) || '{}');
-    return { before, after: api.bakAgeText(), rec };
+    return { age: api.bakAgeText(), rec };
   };
-  const later = runNudge('bakLater');
-  t('05 export -> Later: exportedAt survives, nudgedAt recorded, age still today',
-    later.before === 'today' && later.after === 'today' && typeof later.rec.exportedAt === 'number' && typeof later.rec.nudgedAt === 'number');
-  const save = runNudge('bakSave');
-  t('05 export -> Save: exportedAt survives, nudgedAt recorded, age still today',
-    save.before === 'today' && save.after === 'today' && typeof save.rec.exportedAt === 'number' && typeof save.rec.nudgedAt === 'number');
+  const stamped = runStamp();
+  t('05 export stamp merges: exportedAt recorded, the pre-existing field survives, age reads today',
+    typeof stamped.rec.exportedAt === 'number' && stamped.rec.nudgedAt === 123 && stamped.age === 'today');
 }
 
 // ---------- CG-112-03: settings handlers must honour saveSettings() ----------

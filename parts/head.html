@@ -54,12 +54,12 @@
   #hud .titleStack { display: flex; flex-direction: column; }
   #hud .ver { font-size: 9px; font-weight: 600; color: #46536a; line-height: 1; margin-top: 2px; letter-spacing: .04em; text-shadow: 0 0 6px rgba(255,255,255,.95); }
   body.night #hud .ver { color: #8fa0b3; text-shadow: 0 0 6px rgba(0,0,0,.85); }
-  #count { position: relative; overflow: hidden; margin-top: 9px; background: var(--glass-day); -webkit-backdrop-filter: var(--blur); backdrop-filter: var(--blur); color: #1d2530; border: 1px solid rgba(20,22,28,.09); padding: 6px 14px; border-radius: 999px; font-size: 12.5px; font-weight: 700; white-space: nowrap; box-shadow: var(--shadow-float); } /* Beta 1.23: the progress lives in its own pill under the circle, like the goal pill in Andrew's reference */
+  #count { position: relative; overflow: hidden; margin-top: 9px; background: var(--glass-day); -webkit-backdrop-filter: var(--blur); backdrop-filter: var(--blur); color: #1d2530; border: 1px solid rgba(20,22,28,.09); padding: 6px 14px; border-radius: 999px; font-size: 12.5px; font-weight: 700; font-variant-numeric: tabular-nums; white-space: nowrap; box-shadow: var(--shadow-float); } /* Beta 1.23: the progress lives in its own pill under the circle, like the goal pill in Andrew's reference */
   #hud .spacer { margin-left: auto; }
   #hud button { background: linear-gradient(135deg, #3d65ef, #1b2fb6); color: #fff; border: none; border-radius: var(--rad-btn); padding: 9px 8px; font-size: 13.5px; font-weight: 600; min-height: 40px; white-space: nowrap; }
   #hud button.ghost { background: #444; }
   #resetBtn.armed { background: #8c1f16; color: #fff; font-style: normal; }
-  #stats { font-size: 12px; font-weight: 600; color: #33404e; margin-top: 6px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; text-shadow: 0 0 6px rgba(255,255,255,.95), 0 0 3px rgba(255,255,255,.9); }
+  #stats { font-size: 12px; font-weight: 600; font-variant-numeric: tabular-nums; color: #33404e; margin-top: 6px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; text-shadow: 0 0 6px rgba(255,255,255,.95), 0 0 3px rgba(255,255,255,.9); }
   body.night #stats { color: #9fb4c8; text-shadow: 0 0 6px rgba(0,0,0,.85), 0 0 3px rgba(0,0,0,.85); }
   #warn { display: none; background: #c22f24; color: #fff; font-size: 12px; font-weight: 700; text-align: center; padding: 5px 4px; border-radius: 9px; margin-bottom: 6px; }
   body.storage-bad #warn { display: block; }
@@ -88,7 +88,7 @@
   .banner span { flex: 1; line-height: 1.4; }
   .banner button { border: none; border-radius: var(--rad-btn); padding: 8px 10px; font-size: 13px; font-weight: 700; min-height: 38px; background: linear-gradient(135deg, #3d65ef, #1b2fb6); color: #fff; white-space: nowrap; }
   .banner button.red { background: #e63a2e; }
-  #stale { z-index: 1001; } #bakNudge { z-index: 1002; }
+  #stale { z-index: 1001; }
   #mapNote { position: fixed; left: calc(10px + var(--sal)); right: calc(10px + var(--sar)); bottom: calc(var(--vvb, 0px) + 240px + var(--sab)); z-index: 1003; background: var(--card); -webkit-backdrop-filter: var(--blur); backdrop-filter: var(--blur); color: var(--ink); border-radius: 16px; box-shadow: var(--shadow-card); padding: 10px 12px; display: flex; align-items: center; gap: 10px; font-size: 13px; }
   #mapNote.hidden { display: none; }
   #mapNote span { flex: 1; line-height: 1.4; }
@@ -101,7 +101,7 @@
   .sideChip.done .chipBtn { background: #2ecc71; color: #fff; }
   #attrChip { position: fixed; right: calc(8px + var(--sar)); bottom: calc(var(--vvb, 0px) + 61px + var(--sab)); z-index: 900; font-size: 9px; color: #5b6672; background: rgba(255,255,255,.7); padding: 2px 5px; border-radius: 4px; pointer-events: none; } /* Beta 1.192: 68 -> 61, riding the tab bar's -7 (its rendered gap above the bar's top edge is unchanged: 10px measured in the assembled page) */
   body.night #attrChip { background: rgba(20,23,29,.7); color: #9aa4b2; }
-  #spdPill { position: fixed; top: calc(var(--vvt, 0px) + 78px + var(--sat)); left: calc(12px + var(--sal)); width: 64px; height: 64px; border-radius: 50%; z-index: 1000; background: var(--glass-day); -webkit-backdrop-filter: var(--blur); backdrop-filter: var(--blur); color: #1d2530; border: 1px solid rgba(20,22,28,.09); box-shadow: var(--shadow-float); display: flex; flex-direction: column; align-items: center; justify-content: center; } /* Beta 1.220 (Andrew, approved sample): the speed readout is a CIRCLE at the top left, under the title - it replaces the Beta 1.203 top-centre pill whole. Its top is #nightBtn's own top expression (78px) and its left the same 12px inset mirrored, so the circle's top edge stands level with the moon button's - the drives measure the level in the rendered page. The glass tokens are the pill's own (glass, blur, border, shadow) - one family with the app's other pills */
+  #spdPill { position: fixed; top: calc(var(--vvt, 0px) + 78px + var(--sat)); left: calc(12px + var(--sal)); width: 64px; height: 64px; border-radius: 50%; z-index: 1000; background: var(--glass-day); -webkit-backdrop-filter: var(--blur); backdrop-filter: var(--blur); color: #1d2530; border: 1px solid rgba(20,22,28,.09); box-shadow: var(--shadow-float); display: flex; flex-direction: column; align-items: center; justify-content: center; font-variant-numeric: tabular-nums; } /* Beta 1.220 (Andrew, approved sample): the speed readout is a CIRCLE at the top left, under the title - it replaces the Beta 1.203 top-centre pill whole. Its top is #nightBtn's own top expression (78px) and its left the same 12px inset mirrored, so the circle's top edge stands level with the moon button's - the drives measure the level in the rendered page. The glass tokens are the pill's own (glass, blur, border, shadow) - one family with the app's other pills */
   #spdNum { font-size: 27px; font-weight: 800; line-height: 1; text-align: center; }
   #spdUnit { font-size: 9.5px; font-weight: 800; letter-spacing: .4px; text-align: center; color: #5a5f6a; margin-top: 3px; } /* Andrew's correction: KM/H sits directly below the number, perfectly centred - the number and unit are one centred stacked pair */
   body.night #spdPill { background: var(--glass-night); color: #eef4ee; border-color: rgba(255,255,255,.16); }
@@ -126,15 +126,16 @@
   #gpsBtn.rec { color: #06d6a0; }
   body.night #gpsBtn.rec { color: #06d6a0; }
   #dock { position: fixed; left: 50%; transform: translateX(-50%); bottom: calc(var(--vvb, 0px) + 67px + var(--sab)); z-index: 1000; display: flex; align-items: flex-start; gap: 18px; } /* Beta 1.192: 74 -> 67, riding the tab bar's -7 (its rendered gap above the bar's top edge is unchanged: 16px measured in the assembled page) */ /* flex-start + the dock buttons' 24px top margin centres them on the big circle, not on the taller slot (Beta 1.23 fix - drive120 V1 measured a 29px offset) */ /* Beta 1.21 (Andrew): List | round run button | Pace, one level, symmetrical */
-  /* Beta 1.223 (Andrew): the Beta 1.222 Soft Lift is REVERTED in full - he did not like how it rendered (the night-map glow was the trigger). .runBtn and .dockBtn (day + night) wear their exact Beta 1.221 surfaces again: the glass dock with its hairline border and blur, the float-token shadow on both. The 1.222 soft fill on the blue-menu pills is NOT part of the revert and stays. */
-  .dockBtn { width: 56px; height: 56px; margin-top: 24px; border-radius: 50%; background: var(--glass-day); -webkit-backdrop-filter: var(--blur); backdrop-filter: var(--blur); color: #22262e; border: 1px solid rgba(20,22,28,.09); box-shadow: var(--shadow-float); font-size: 13.5px; font-weight: 700; cursor: pointer; display: flex; align-items: center; justify-content: center; }
+  /* Beta 1.224 (Andrew): the buttons settle as a PAIR, both halves from his samples of 2026-11-17 - by day the DIALED Soft Lift (the 1.222 lift at roughly half strength: an opaque light gradient with a soft dual shadow on .dockBtn, a softer lift stack on .runBtn), by night the ELEVATION recipe (a surface lit from above, a thin white border brightest on the top edge, a highlight line on top: shadows barely show on dark, so the lift comes from the surface). The 1.223 revert above is superseded by this settlement. Night Start is fenced off below and keeps the 1.221 float token exactly. The 1.222 soft fill on the blue-menu pills stays; #spdPill keeps its own glass (a readout, not a button). The .dockBtn backdrop blur retires in both themes with the glass: the day surface is opaque and the night surface is .94 alpha, so the blur had nothing left to show through. */
+  .dockBtn { width: 56px; height: 56px; margin-top: 24px; border-radius: 50%; background: linear-gradient(145deg, #ffffff, #eceef2); color: #22262e; border: none; box-shadow: 4px 5px 10px rgba(20,30,60,.18), -3px -3px 7px rgba(255,255,255,.6), inset 0 1px 2px rgba(255,255,255,.9), inset 0 -3px 6px rgba(90,100,120,.18); font-size: 13.5px; font-weight: 700; cursor: pointer; display: flex; align-items: center; justify-content: center; }
   .dockBtn svg { width: 27px; height: 27px; }
   .dockBtn .pwrapD { display: inline-flex; width: 27px; height: 27px; align-items: center; justify-content: center; } /* Beta 1.217: the dock icon wrapper keeps the shipped 27px layout box - no button changes size */
   .dockBtn .pwrapD .pico { width: 34px; height: 34px; flex: none; display: block; }
-  body.night .dockBtn { background: var(--glass-night); color: #f2f4f8; border-color: rgba(255,255,255,.16); }
+  body.night .dockBtn { background: linear-gradient(180deg, rgba(78,81,90,.94), rgba(43,45,51,.94)); color: #f2f4f8; border: 1px solid rgba(255,255,255,.22); border-top-color: rgba(255,255,255,.55); box-shadow: inset 0 1px 0 rgba(255,255,255,.45), 0 10px 26px rgba(0,0,0,.45); }
   #runSlot { position: relative; width: 104px; flex: none; display: flex; flex-direction: column; align-items: center; }
-  .runBtn { position: relative; width: 104px; height: 104px; flex: none; border-radius: 50%; border: none; box-shadow: var(--shadow-float); line-height: 1.1; cursor: pointer; padding: 0 8px; font-style: italic; font-weight: 900; letter-spacing: .01em; }
-  #startBtn, #resetBtn { background: linear-gradient(135deg, #3d65ef, #1b2fb6); color: #fff; font-size: 21px; } /* Beta 1.75 (Andrew): splash-blue circle, white text - supersedes the 1.23 black/volt treatment. Beta 1.100 (Andrew): Start and Finish share ONE rule - the swap changes only the word, so the two can never drift apart again (Finish kept the stale 1.23 black/volt + 19px until now). Beta 1.222 (Andrew): the circle wears the SOFT LIFT (variant E from his start-button sample) - the shadow stack lives on .runBtn (dual shadows, inset top light, inset bottom shade); the blue and this one-rule swap are unchanged */
+  .runBtn { position: relative; width: 104px; height: 104px; flex: none; border-radius: 50%; border: none; box-shadow: 6px 8px 16px rgba(20,30,80,.26), -4px -4px 11px rgba(255,255,255,.38), inset 0 2px 3px rgba(255,255,255,.28), inset 0 -4px 8px rgba(8,12,50,.20); line-height: 1.1; cursor: pointer; padding: 0 8px; font-style: italic; font-weight: 900; letter-spacing: .01em; }
+  body.night .runBtn { box-shadow: var(--shadow-float); } /* Beta 1.224: the lift is DAY-ONLY - night Start keeps the 1.221 float token exactly (the approved night sample left Start untouched) */
+  #startBtn, #resetBtn { background: linear-gradient(135deg, #3d65ef, #1b2fb6); color: #fff; font-size: 21px; } /* Beta 1.75 (Andrew): splash-blue circle, white text - supersedes the 1.23 black/volt treatment. Beta 1.100 (Andrew): Start and Finish share ONE rule - the swap changes only the word, so the two can never drift apart again (Finish kept the stale 1.23 black/volt + 19px until now). Beta 1.224 (Andrew): the circle wears the DIALED Soft Lift by day (the softer stack lives on .runBtn, fenced off at night by the body.night rule above it); the blue and this one-rule swap are unchanged */
   body.night #count { background: var(--glass-night); color: #eef4ee; border-color: rgba(255,255,255,.16); }
   #countFill { position: absolute; left: 0; top: 0; bottom: 0; width: 0%; background: rgba(52,199,89,.42); box-shadow: inset -2px 0 0 #34c759; transition: width .7s var(--ease-open); } /* Beta 1.29: the pill is a meter - a translucent green wash fills it as the route gets cleaned, with a bright leading edge; translucent on purpose, so the themed text (dark by day, bright by night) stays readable over filled and unfilled parts alike */
   #countTxt { position: relative; z-index: 1; }
@@ -255,7 +256,7 @@
   .statgrid .ic { color: var(--link); display: inline-flex; }
   body.night .statgrid .ic { color: #8fa8ff; }
   .statgrid .ic img { width: 26px; height: 26px; display: block; } /* Beta 1.219: a pack stat glyph (an img) fills the vector's exact 26px box - the cell cannot move */
-  .statgrid .v { font-size: 23px; font-weight: 800; line-height: 1.15; color: var(--ink); }
+  .statgrid .v { font-size: 23px; font-weight: 800; font-variant-numeric: tabular-nums; line-height: 1.15; color: var(--ink); }
   .statgrid .l { font-size: 10px; font-weight: 700; letter-spacing: .12em; color: #9a9aa2; }
   body.night .statgrid .l { color: rgba(214,226,242,.55); }
   .verd { margin-top: 12px; background: #e9eefc; border-radius: 10px; padding: 11px 12px; font-size: 14.5px; color: var(--ink); line-height: 1.4; }
@@ -268,7 +269,7 @@
   .gbar { padding: 2px 2px 8px; }
   .gb-top { display: flex; justify-content: space-between; align-items: baseline; }
   .gb-n { font-size: 15px; font-weight: 600; color: var(--ink); }
-  .gb-c { font-size: 14px; font-weight: 600; color: var(--link); }
+  .gb-c { font-size: 14px; font-weight: 600; font-variant-numeric: tabular-nums; color: var(--link); }
   body.night .gb-c { color: #8fa8ff; }
   .gb-track { position: relative; height: 16px; background: #eef0f6; border-radius: 4px; margin-top: 5px; }
   body.night .gb-track { background: #26282d; }
@@ -455,7 +456,7 @@ body.snow-scene #routeMenu.boot { background: transparent; } /* Beta 1.159: whil
    and preview stages live on the map (search bar + bottom sheets) while
    body.creating hides the working chrome. Route colours carry the meaning:
    gold = primary, raspberry = secondary. */
-body.creating #dock, body.creating #tabBar, body.creating #hud, body.creating #nightBtn, body.creating #centreBtn, body.creating #selPop, body.creating #chips, body.creating #suggest, body.creating #stale, body.creating #bakNudge, body.creating #mapNote { display: none !important; }
+body.creating #dock, body.creating #tabBar, body.creating #hud, body.creating #nightBtn, body.creating #centreBtn, body.creating #selPop, body.creating #chips, body.creating #suggest, body.creating #stale, body.creating #mapNote { display: none !important; }
 /* Beta 1.120 (Andrew): the whole create row sits lower by HALF ITS OWN
    HEIGHT - the row's height is fixed at 50px (the search wrap and the
    exit button both wear it), so the shift is a fixed 25px, named once
@@ -573,13 +574,12 @@ input, textarea { caret-color: currentColor; } /* Beta 1.125 (Andrew): the typin
 <div id="hud">
   <div id="warn">Not saving. Storage is full or blocked</div>
   <div class="row">
-    <div class="titleStack"><div class="title">Snow Route Beta</div><div class="ver" id="ver">Beta 1.223</div></div>
+    <div class="titleStack"><div class="title">Snow Route Beta</div><div class="ver" id="ver">Beta 1.224</div></div>
   </div>
   <div id="stats"></div>
 </div>
 <div id="suggest" class="banner hidden"><span id="sugText"></span><button id="sugYes">Show street</button><button id="sugNo" class="red">Dismiss</button></div>
 <div id="stale" class="banner hidden"><span id="staleText"></span><button id="staleYes">Finish it</button><button id="staleNo" class="red">Keep going</button></div>
-<div id="bakNudge" class="banner hidden"><span id="bakText"></span><button id="bakSave">Save backup</button><button id="bakLater" class="red">Later</button></div>
 <div id="mapNote" class="hidden"><span>Maps can't load. Streets, GPS and marking still work. Check your connection.</span><button id="mapNoteNo">✕</button></div>
 <button id="nightBtn" class="dockBtn"></button>
 <button id="centreBtn" class="dockBtn hidden" title="Centre on me"></button>

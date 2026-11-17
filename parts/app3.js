@@ -511,7 +511,6 @@ function finishRun() {
   const restRes = saveAll(); const restOk = restRes.ok; // the gated sides write already landed; this pass carries the metadata - a failure here warns but cannot resurrect anything (authority + archive agree)
   finishChange();
   if (!restOk) toast((archiving ? 'Clean archived · ' + Object.keys(snap.items).length + ' streets' : 'Board cleared. Under 3 streets, nothing saved') + '. Some details could not be written (' + restRes.failedKey + '); they retry on the next save', 3400); // Beta 1.221 adjudication: the finish SUCCESS pill is cut (the board and history are the report), but its failure suffix is a storage-problem warning with no other surface - the pill survives for the failure case only, text verbatim
-  if (archiving) maybeBackupNudge();
   onFinishFeedback(); // Beta 1.111: only on the COMMITTED path (every failure return above leaves the run intact and silent) - the Done chime plays twice here (once for Chime Melody) plus the finish vibration pattern, per the On-the-job settings; fully guarded in app4
 }
 function performReset() { finishRun(); } // production's name for the finish action (the test battery calls it directly)
@@ -522,15 +521,6 @@ function checkStale() {
 }
 $('staleYes').addEventListener('click', () => { $('stale').classList.add('hidden'); $('resetBtn').click(); });
 $('staleNo').addEventListener('click', () => $('stale').classList.add('hidden'));
-// Backup nudge
-function maybeBackupNudge() {
-  const st = parseJ(lsGet(LS.exp), {});
-  if (st.nudgedAt && Date.now() - st.nudgedAt < 7 * 86400000) return;
-  $('bakText').textContent = 'Clean saved. Export a backup so your history survives a lost phone.';
-  $('bakNudge').classList.remove('hidden');
-}
-$('bakLater').addEventListener('click', () => { const st = parseJ(lsGet(LS.exp), {}); st.nudgedAt = Date.now(); lsSet(LS.exp, JSON.stringify(st)); $('bakNudge').classList.add('hidden'); }); // Beta 1.113 (round 112, CG-112-05): MERGE nudgedAt into the export record (the noteExported pattern) - the record also carries 1.111's exportedAt, and replacing it here erased the Settings 'Last backup' stamp on every dismissal
-$('bakSave').addEventListener('click', () => { const st = parseJ(lsGet(LS.exp), {}); st.nudgedAt = Date.now(); lsSet(LS.exp, JSON.stringify(st)); $('bakNudge').classList.add('hidden'); openExport(); downloadBackup(); }); // Beta 1.113 (round 112, CG-112-05): same merge as bakLater
 
 // ===== NOTES (production model: notes[street] = [{k:'note', at, text} | {k: flag kind, at}]) =====
 const FLAGS = { car: 'Car blocking', hazard: 'Hazard', missed: 'Missed spot', salt: 'Needs salt' };
