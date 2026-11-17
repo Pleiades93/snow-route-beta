@@ -174,10 +174,42 @@ interface AppClassList {
   toggle(c: string, force?: boolean): void;
 }
 
-/** An element as app1 uses it: text content and its class list. */
+/** A measured element's band (Beta 1.221: placeToast measures the pill and every control it must clear). */
+interface AppRect {
+  top: number;
+  bottom: number;
+  left: number;
+  right: number;
+  width: number;
+  height: number;
+}
+
+/** An element as app1 uses it: text content, its class list, and (Beta 1.221, placeToast) its inline bottom offset, its measured band and its running animations. */
 interface AppElement {
   textContent: string;
   classList: AppClassList;
+  style: { bottom: string };
+  getBoundingClientRect(): AppRect;
+  getAnimations(): { animationName?: string }[];
+}
+
+/** The element name placeToast's JSDoc uses: the same element shape as AppElement (every element app1 holds is one). */
+interface HTMLElement extends AppElement {}
+
+/** The computed-style fields placeToast reads (Beta 1.221). */
+interface AppComputedStyle {
+  transform: string;
+  display: string;
+  visibility: string;
+  opacity: string;
+}
+
+declare function getComputedStyle(el: any): AppComputedStyle;
+
+/** The transform reader placeToast uses: constructed from a computed transform string, only m42 (the Y offset) is read. */
+declare class DOMMatrixReadOnly {
+  constructor(transform?: string);
+  readonly m42: number;
 }
 
 /** The Web Storage surface app1 uses (localStorage / sessionStorage). */
@@ -189,6 +221,7 @@ interface AppStorage {
 
 declare var document: {
   getElementById(id: string): AppElement;
+  querySelectorAll(sel: string): { forEach(cb: (e: HTMLElement) => void): void };
   body: AppElement;
   addEventListener(type: string, listener: () => void, capture?: boolean): void;
   visibilityState: string;
