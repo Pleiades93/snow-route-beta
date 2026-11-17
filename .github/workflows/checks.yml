@@ -195,6 +195,8 @@ jobs:
         run: node tests/proof/proof-1224.mjs
       - name: Journey icon and placeholder dash proof (Beta 1.225 gate - the Routes tab wears the Journey artwork under the set's exact treatment with the turn-sign payloads gone and the rest of the set byte-untouched; the ten pure placeholder strings show a plain hyphen, app2 and app3 carry no en dash, and app4's two classified en dashes stand; the version in agreement)
         run: node tests/proof/proof-1225.mjs
+      - name: Press shrink and half day lift proof (Beta 1.226 gate - every pressable button or pill shrinks on press at scale(.97) with the centred pressables composing their rest transform, the six blue-menu :active flashes hold their rest fills, the display-only readouts excluded; the day lift halves to Andrew's exact stacks and every night rule stands; the version in agreement)
+        run: node tests/proof/proof-1226.mjs
       - name: Premise-lint fixtures (Tranche 4 gate)
         run: python3 scripts/premise-lint-fixtures/run-fixtures.py
       - name: Bug-hunt fix fixtures (PR #23 gate; Beta 1.185)
