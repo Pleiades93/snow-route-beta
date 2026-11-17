@@ -197,6 +197,8 @@ jobs:
         run: node tests/proof/proof-1225.mjs
       - name: Press shrink and half day lift proof (Beta 1.226 gate - every pressable button or pill shrinks on press at scale(.97) with the centred pressables composing their rest transform, the six blue-menu :active flashes hold their rest fills, the display-only readouts excluded; the day lift halves to Andrew's exact stacks and every night rule stands; the version in agreement)
         run: node tests/proof/proof-1226.mjs
+      - name: Create search bar proof (Beta 1.227 gate - the create search is one blue bar with a back pill that only goes back and a clear disc that only clears, the Glyph Neue glyphs byte-pinned under the set treatment, the results rows split pin + name + area on the approved sample surfaces, the version in agreement)
+        run: node tests/proof/proof-1227.mjs
       - name: Premise-lint fixtures (Tranche 4 gate)
         run: python3 scripts/premise-lint-fixtures/run-fixtures.py
       - name: Bug-hunt fix fixtures (PR #23 gate; Beta 1.185)

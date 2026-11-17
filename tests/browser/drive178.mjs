@@ -240,7 +240,7 @@ const pickCityVaughan = async () => {
 };
 const runStreetSearch = async () => {
   await ev(`(() => { const i = document.getElementById('crSearchInput'); i.value = 'Vaughan'; document.getElementById('createResults').innerHTML = ''; return true; })()`); // cleared first, so the poll below can only be satisfied by THIS query's render
-  await ev(`crSearch()`); // the search button's own path: cancel any debounce, run the typed query now
+  await ev(`crSearch()`); // the Enter path (Beta 1.227: the Search button is gone): cancel any debounce, run the typed query now
   return await poll(`document.querySelectorAll('#createResults .crResult').length > 0`, 10000).catch(() => false);
 };
 const resultSample = () => J(`({ rows: [...document.querySelectorAll('#createResults .crResult')].map(b => b.textContent), urls: (window.__searchUrls || []).slice() })`);

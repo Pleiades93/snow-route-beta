@@ -856,6 +856,7 @@ function setCreateStage(stage) {
   if (stage !== 'pick') crSectorReset(); // Beta 1.127: sector mode belongs to the pick stage - the preview never inherits a half-trimmed street's bar (Beta 1.129: its Cancel snapshot dies with it)
   crStage = stage;
   $('createBar').classList.toggle('on', stage === 'pick');
+  if (stage === 'pick') crSyncClear(); // Beta 1.227: a search text that outlives a stage change shows its clear disc again with the bar
   $('createSheet').classList.toggle('on', stage === 'pick');
   $('previewSheet').classList.toggle('on', stage === 'preview');
   $('createResults').classList.remove('on');
@@ -904,14 +905,7 @@ function fitDraft() {
   const bb = computeRouteBox(crFilteredRoads()); if (!bb) return; // Beta 1.127: the preview frames what will save (chosen sectors), not the whole streets
   try { map.fitBounds([[bb.w, bb.s], [bb.e, bb.n]], { padding: 56, duration: 800 }); } catch (e) {}
 }
-$('crExit').addEventListener('click', () => { // Beta 1.120: the ✕ beside the search first CLEARS the search (text + open results) when there is anything to clear - that is what a ✕ beside a search bar means; pressed with an empty search it exits creating, as before
-  const box = $('createResults');
-  if (box.classList.contains('on') || $('crSearchInput').value) {
-    box.classList.remove('on'); $('crSearchInput').value = '';
-    if (crSearchTimer) { clearTimeout(crSearchTimer); crSearchTimer = null; }
-    crSearchSeq++; if (crSearchCtl) { try { crSearchCtl.abort(); } catch (e) {} }
-    return;
-  }
+$('crExit').addEventListener('click', () => { // Beta 1.227 (Andrew): the back pill ONLY goes back - it runs the exit the old ✕ ran once the search was empty (discard confirm, exit creating, the doors if boot). Clearing the search is the bar's own clear disc now: through 1.226 this one button carried both jobs (Beta 1.120: clear first, exit second), the two-meanings-one-button confusion the redesign removes
   askDiscard(() => { const wasBoot = !routeLoaded; exitCreate(); if (wasBoot) openDoors(); });
 });
 $('pvStartOverBtn').addEventListener('click', () => askDiscard(() => { exitCreate(); openDoors(); }));
@@ -1005,26 +999,34 @@ $('crHintBtn').addEventListener('click', () => {
   if (map) { const c = map.getCenter(); crStartPrep({ lat: c.lat, lng: c.lng }); } // Prepare this area: the anchor is the map centre he is looking at. (Beta 1.153: the ready state's Refresh dispatch is GONE with the button - a healthy cached city offers no reload, so no state routes here to crGridRefresh any more.)
 });
 onMapReady(() => map.on('moveend', () => { if (creating && crStage === 'pick' && crPrepState === 'none') crRenderHint(); })); // the Prepare-this-area offer follows the zoom (it appears only at picking zoom) - never a silent download while merely panning
-$('crSearchBtn').addEventListener('click', crSearch);
 $('crSearchInput').addEventListener('keydown', e => { if (e.key === 'Enter') crSearch(); });
 // Beta 1.120 (Andrew): search AS YOU TYPE. 1.118/1.119 searched only on
 // the Search button - his call then; on the phone he asked for
 // suggestions while typing, and this supersedes it. The volume stays
-// honest: a keystroke burst becomes ONE query (500 ms debounce, 3+
-// characters), a newer query aborts and supersedes the one in flight
-// (sequence token + AbortController, so a slow earlier answer can never
-// overwrite newer results), and the Search button / Enter still run the
+// honest: a keystroke burst becomes ONE query (300 ms debounce since
+// Beta 1.227, 3+ characters), a newer query aborts and supersedes the
+// one in flight (sequence token + AbortController, so a slow earlier
+// answer can never overwrite newer results), and Enter still runs the
 // typed query immediately. Results are biased toward the visible map
-// (viewbox, bounded=0 - a bias, never a restriction).
+// (viewbox, bounded=0 - a bias, never a restriction). Beta 1.227: the
+// Search button is GONE - the bar is one blue pill now - so typing and
+// Enter are the only triggers, both onto this same crRunSearch path.
 let crSearchTimer = null, crSearchSeq = 0, crSearchCtl = null;
+function crSyncClear() { $('crClear').classList.toggle('on', !!$('crSearchInput').value); } // Beta 1.227: the clear disc exists only while the input holds text
+$('crClear').addEventListener('click', () => { // Beta 1.227 (Andrew): the clear disc empties the text and the results and keeps the focus in the input - it never exits anything. The body is the old ✕'s first-press job (Beta 1.120), moved whole onto its own control
+  $('createResults').classList.remove('on'); $('crSearchInput').value = '';
+  if (crSearchTimer) { clearTimeout(crSearchTimer); crSearchTimer = null; }
+  crSearchSeq++; if (crSearchCtl) { try { crSearchCtl.abort(); } catch (e) {} crSearchCtl = null; }
+  crSyncClear(); $('crSearchInput').focus();
+});
 $('crSearchInput').addEventListener('input', () => {
   if (crSearchTimer) { clearTimeout(crSearchTimer); crSearchTimer = null; }
-  $('crSearchBtn').disabled = false;
+  crSyncClear();
   const q = $('crSearchInput').value.trim();
   if (q.length < 3) { crSearchSeq++; if (crSearchCtl) { try { crSearchCtl.abort(); } catch (e) {} } $('createResults').classList.remove('on'); return; }
-  crSearchTimer = setTimeout(() => { crSearchTimer = null; crRunSearch(true); }, 500);
+  crSearchTimer = setTimeout(() => { crSearchTimer = null; crRunSearch(true); }, 300);
 });
-function crSearch() { // the button / Enter: cancel any pending debounce and run the typed query NOW
+function crSearch() { // Enter: cancel any pending debounce and run the typed query NOW
   if (crSearchTimer) { clearTimeout(crSearchTimer); crSearchTimer = null; }
   crRunSearch(false);
 }
@@ -1048,7 +1050,6 @@ async function crRunSearch(fromTyping) {
   const seq = ++crSearchSeq;
   if (crSearchCtl) { try { crSearchCtl.abort(); } catch (e) {} }
   const ctl = (typeof AbortController !== 'undefined') ? new AbortController() : null; crSearchCtl = ctl;
-  if (!fromTyping) $('crSearchBtn').disabled = true;
   try {
     let url = 'https://nominatim.openstreetmap.org/search?format=jsonv2&addressdetails=1&limit=5&q=' + encodeURIComponent(q);
     const scoped = !!(crCity && crCity.bbox); // Beta 1.153 (Andrew): with a city loaded, suggestions come from THAT city only. The 1.121 bias (bounded=0: "a bias, never a restriction") becomes a bound (bounded=1) and the returned list is ALSO filtered to the box below, so a service that ignores the bound cannot leak an out-of-city suggestion. With NO city loaded, the visible-map bias is exactly the old behaviour.
@@ -1065,7 +1066,6 @@ async function crRunSearch(fromTyping) {
     renderCrResults(results);
   } catch (e) {
   }
-  if (!fromTyping && crSearchCurrent(seq)) $('crSearchBtn').disabled = false;
 }
 document.addEventListener('pointerdown', (e) => { // Beta 1.120 (Andrew): tapping anywhere outside the results dropdown dismisses it - map taps included (the pick still runs: this only closes the list, in the capture phase, before the map's own click)
   if (!creating) return;
@@ -1077,7 +1077,12 @@ document.addEventListener('pointerdown', (e) => { // Beta 1.120 (Andrew): tappin
 function renderCrResults(list) {
   const box = $('createResults'); box.innerHTML = '';
   for (const it of list) {
-    const b = document.createElement('button'); b.className = 'crResult'; b.textContent = it.display_name || '';
+    const b = document.createElement('button'); b.className = 'crResult'; // Beta 1.227 (Andrew): the row is the set's pin + the street name + the area - the display name split at its first comma (the name semibold at the left, the remainder lighter at the right edge), the pin the set's own teardrop with no chip behind it
+    const nm = it.display_name || ''; const cut = nm.indexOf(',');
+    const pin = document.createElement('span'); pin.className = 'crPin'; pin.innerHTML = ICONS.pin;
+    const nameEl = document.createElement('span'); nameEl.className = 'crName'; nameEl.textContent = cut >= 0 ? nm.slice(0, cut) : nm;
+    const areaEl = document.createElement('span'); areaEl.className = 'crArea'; areaEl.textContent = cut >= 0 ? nm.slice(cut + 1).trim() : '';
+    b.append(pin, nameEl, areaEl);
     b.addEventListener('click', () => {
       box.classList.remove('on');
       const lat = parseFloat(it.lat), lon = parseFloat(it.lon); if (!isFinite(lat) || !isFinite(lon)) return;
