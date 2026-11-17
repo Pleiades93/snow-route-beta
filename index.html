@@ -2,7 +2,7 @@
 <html lang="en" class="boot">
 <head>
 <meta charset="UTF-8">
-<meta http-equiv="Content-Security-Policy" content="default-src 'none'; script-src 'sha384-B1VLFC9zKFhIn5M+GJwZ1o+tsvUTm66RT8cgpGAoQdST66Zmc7IsnUGuor0EE1Va' https://cdn.jsdelivr.net; style-src-elem 'sha384-PGJMHepN0p7WKDfFViSvPqwdew175chEVIdjFPFlmCxMGFV5R3m7iwVc2YX3iUbq' https://cdn.jsdelivr.net; style-src-attr 'unsafe-inline'; img-src 'self' data: blob: https://tiles.basemaps.cartocdn.com https://protomaps.github.io https://cdn.jsdelivr.net; connect-src 'self' https://tiles.basemaps.cartocdn.com https://protomaps.github.io https://cdn.jsdelivr.net https://nominatim.openstreetmap.org https://overpass-api.de https://overpass.kumi.systems; worker-src blob: 'self'; child-src blob: 'self'; font-src 'none'; manifest-src 'self'; base-uri 'none'; form-action 'none'; object-src 'none'">
+<meta http-equiv="Content-Security-Policy" content="default-src 'none'; script-src 'sha384-B1VLFC9zKFhIn5M+GJwZ1o+tsvUTm66RT8cgpGAoQdST66Zmc7IsnUGuor0EE1Va' https://cdn.jsdelivr.net; style-src-elem 'sha384-7G+G01yMyRVuro3mqbOayJ1srgm71yop/GhmR0HCjbz2gbUq+C9UAoJnRtOPt7Rv' https://cdn.jsdelivr.net; style-src-attr 'unsafe-inline'; img-src 'self' data: blob: https://tiles.basemaps.cartocdn.com https://protomaps.github.io https://cdn.jsdelivr.net; connect-src 'self' https://tiles.basemaps.cartocdn.com https://protomaps.github.io https://cdn.jsdelivr.net https://nominatim.openstreetmap.org https://overpass-api.de https://overpass.kumi.systems; worker-src blob: 'self'; child-src blob: 'self'; font-src 'none'; manifest-src 'self'; base-uri 'none'; form-action 'none'; object-src 'none'">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="mobile-web-app-capable" content="yes">
@@ -505,7 +505,7 @@ body.night .crResult:first-child { background: rgba(255,255,255,.06); }
 .crPin img { width: 17px; height: 17px; display: block; }
 .crName { font-weight: 600; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
 #createResults .crName { color: inherit; font-size: 15.5px; } /* the pick list's .crName rule (var(--ink), 16px) must not leak into the results rows: the row's own ink rules govern here */
-.crArea { margin-left: auto; flex: none; font-size: 13px; color: #7a8194; }
+.crArea { margin-left: auto; flex: none; max-width: 55%; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; font-size: 13px; color: #7a8194; }
 body.night .crArea { color: #9aa3b2; }
 .crResult:active { background: transparent; } /* Beta 1.226: holds the rest (no fill) on press - the shrink is the feedback */
 .crResult:first-child:active { background: #f2f5ff; } /* Beta 1.227: the tinted first row holds its tint on press, like every other rest fill */

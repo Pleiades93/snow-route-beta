@@ -504,7 +504,7 @@ body.night .crResult:first-child { background: rgba(255,255,255,.06); }
 .crPin img { width: 17px; height: 17px; display: block; }
 .crName { font-weight: 600; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
 #createResults .crName { color: inherit; font-size: 15.5px; } /* the pick list's .crName rule (var(--ink), 16px) must not leak into the results rows: the row's own ink rules govern here */
-.crArea { margin-left: auto; flex: none; font-size: 13px; color: #7a8194; }
+.crArea { margin-left: auto; flex: none; max-width: 55%; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; font-size: 13px; color: #7a8194; }
 body.night .crArea { color: #9aa3b2; }
 .crResult:active { background: transparent; } /* Beta 1.226: holds the rest (no fill) on press - the shrink is the feedback */
 .crResult:first-child:active { background: #f2f5ff; } /* Beta 1.227: the tinted first row holds its tint on press, like every other rest fill */
