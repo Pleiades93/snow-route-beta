@@ -59,16 +59,21 @@ function proxyAuthorization(up) {
 
 export function createBridgeServer(up) {
   const auth = proxyAuthorization(up);
-  const upHost = up.hostname;
+  // URL.hostname keeps the square brackets of an IPv6 literal
+  // ('[::1]'); socket connects treat that as a DNS name and fail
+  // (Codex review, PR #101). Strip them once, here.
+  const rawHost = up.hostname;
+  const upHost = rawHost.startsWith('[') && rawHost.endsWith(']') ? rawHost.slice(1, -1) : rawHost;
   // Honour the upstream URL's transport scheme (Codex review,
   // PR #101): an https:// proxy URL means the bridge-to-proxy leg
   // itself runs over TLS - speaking plaintext to it both breaks
   // TLS-only proxies and would send the credentials unencrypted
   // despite the configured scheme. Default ports follow the scheme.
+  // SNI applies to hostnames only, never to IP literals.
   const useTls = up.protocol === 'https:';
   const upPort = Number(up.port) || (useTls ? 443 : 80);
   const connectUpstream = onConnect => useTls
-    ? tls.connect({ host: upHost, port: upPort, servername: upHost }, onConnect)
+    ? tls.connect({ host: upHost, port: upPort, ...(net.isIP(upHost) ? {} : { servername: upHost }) }, onConnect)
     : net.connect(upPort, upHost, onConnect);
 
   // CONNECT tunnel: ask the upstream for a tunnel to host:port, and on
