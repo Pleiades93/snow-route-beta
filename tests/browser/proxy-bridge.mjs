@@ -33,11 +33,27 @@
 // the one bridge via the health check below).
 import net from 'node:net';
 import tls from 'node:tls';
+import { createHash } from 'node:crypto';
 import { spawn } from 'node:child_process';
 import { fileURLToPath } from 'node:url';
 
 export const BRIDGE_PORT = 18123;
 const HEALTH_MARKER = 'snow-route-proxy-bridge';
+// When the preferred port is held by a bridge serving a DIFFERENT
+// upstream configuration, ensure walks upward through this many ports
+// rather than reusing the stale bridge (see ensureProxyBridge).
+const PORT_SCAN = 10;
+
+// A one-way fingerprint of the upstream configuration (scheme, host,
+// port, credentials): the health response carries it so a later run
+// can tell whether the bridge already listening serves THIS run's
+// configuration. 16 hex chars of SHA-256 identify the configuration
+// without exposing any of it - the credentials themselves are never
+// written or printed anywhere, per the security contract above.
+export function configTag(up) {
+  return createHash('sha256').update(up.href).digest('hex').slice(0, 16);
+}
+function healthBody(up) { return HEALTH_MARKER + ':' + configTag(up); }
 
 // The upstream proxy URL when - and only when - the environment carries
 // one WITH credentials. A credential-free proxy needs no bridge (Chromium
@@ -174,7 +190,8 @@ export function createBridgeServer(up) {
         const method = parts[0], target = parts[1];
         if (method === 'CONNECT') { tunnel(clientSocket, target, rest); return; }
         if (method === 'GET' && target === '/') {
-          clientSocket.end('HTTP/1.1 200 OK\r\nContent-Type: text/plain\r\nContent-Length: ' + HEALTH_MARKER.length + '\r\nConnection: close\r\n\r\n' + HEALTH_MARKER);
+          const body = healthBody(up);
+          clientSocket.end('HTTP/1.1 200 OK\r\nContent-Type: text/plain\r\nContent-Length: ' + body.length + '\r\nConnection: close\r\n\r\n' + body);
           return;
         }
         forwardHttp(clientSocket, lines, rest);
@@ -185,39 +202,66 @@ export function createBridgeServer(up) {
   return server;
 }
 
-async function bridgeAlive() {
+async function bridgeHealth(port) {
   try {
-    const r = await fetch('http://127.0.0.1:' + BRIDGE_PORT + '/', { signal: AbortSignal.timeout(1500) });
-    return r.ok && (await r.text()) === HEALTH_MARKER;
-  } catch (e) { return false; }
+    const r = await fetch('http://127.0.0.1:' + port + '/', { signal: AbortSignal.timeout(1500) });
+    return r.ok ? await r.text() : null;
+  } catch (e) { return null; }
 }
 
-// Ensure the bridge is listening; spawn it (detached, unref'd, stdio
-// ignored) when it is not. Returns { port } when the browser should use
-// the bridge, or null when no authenticated proxy is configured (the CI
-// path - the caller launches exactly as before). A bridge that cannot be
-// started degrades to null WITH a stderr note: the pre-fix launch is the
-// fallback, and the drive's own checks still judge the outcome - nothing
-// passes or fails by this module's say-so.
+function portFree(port) {
+  return new Promise(resolve => {
+    const s = net.connect(port, '127.0.0.1');
+    const done = v => { try { s.destroy(); } catch (e) {} resolve(v); };
+    s.setTimeout(1000, () => done(false));
+    s.once('connect', () => done(false));
+    s.once('error', () => done(true));
+  });
+}
+
+// Ensure a bridge serving THIS run's upstream configuration is
+// listening; reuse the one already up when its health fingerprint
+// matches, spawn a fresh one otherwise. The bridge is deliberately
+// left running between runs (startup cost, shared across drives), so
+// reuse must be validated, not assumed: if the environment's proxy
+// endpoint or credentials changed since the resident bridge started,
+// reusing it would silently route this run through the OLD upstream
+// (Codex review, PR #101). A resident bridge with a different
+// fingerprint is left alone - it may belong to a concurrent run with
+// its own configuration - and this run's bridge takes the next free
+// port in the scan range. Returns { port } when the browser should
+// use the bridge, or null when no authenticated proxy is configured
+// (the CI path - the caller launches exactly as before). A bridge
+// that cannot be started degrades to null WITH a stderr note: the
+// pre-fix launch is the fallback, and the drive's own checks still
+// judge the outcome - nothing passes or fails by this module's say-so.
 export async function ensureProxyBridge(env = process.env) {
   const up = authenticatedProxyFromEnv(env);
   if (!up) return null;
-  if (await bridgeAlive()) return { port: BRIDGE_PORT };
-  const child = spawn(process.execPath, [fileURLToPath(import.meta.url)], { detached: true, stdio: 'ignore', env });
-  child.unref();
-  const t0 = Date.now();
-  while (Date.now() - t0 < 10000) {
-    if (await bridgeAlive()) return { port: BRIDGE_PORT };
-    await new Promise(r => setTimeout(r, 200));
+  const want = healthBody(up);
+  for (let port = BRIDGE_PORT; port < BRIDGE_PORT + PORT_SCAN; port++) {
+    if ((await bridgeHealth(port)) === want) return { port };
+    if (!(await portFree(port))) continue;
+    const childEnv = { ...env, SNOW_BRIDGE_PORT: String(port) };
+    const child = spawn(process.execPath, [fileURLToPath(import.meta.url)], { detached: true, stdio: 'ignore', env: childEnv });
+    child.unref();
+    const t0 = Date.now();
+    while (Date.now() - t0 < 10000) {
+      if ((await bridgeHealth(port)) === want) return { port };
+      await new Promise(r => setTimeout(r, 200));
+    }
+    console.error('proxy-bridge: spawned bridge on port ' + port + ' did not come up within 10s; trying onward');
   }
-  console.error('proxy-bridge: bridge did not come up within 10s; launching without it (pre-fix behaviour)');
+  console.error('proxy-bridge: no usable bridge port; launching without it (pre-fix behaviour)');
   return null;
 }
 
 // Standalone mode: `node tests/browser/proxy-bridge.mjs` runs the bridge
-// in the foreground (manual debugging; the harness spawns it this way).
+// in the foreground (manual debugging; the harness spawns it this way,
+// passing the chosen port through SNOW_BRIDGE_PORT).
 if (process.argv[1] && fileURLToPath(import.meta.url) === process.argv[1]) {
   const up = authenticatedProxyFromEnv();
   if (!up) { console.error('proxy-bridge: no authenticated proxy in the environment; nothing to bridge'); process.exit(1); }
-  createBridgeServer(up).listen(BRIDGE_PORT, '127.0.0.1', () => console.log('proxy-bridge listening on 127.0.0.1:' + BRIDGE_PORT));
+  const port = Number(process.env.SNOW_BRIDGE_PORT) || BRIDGE_PORT;
+  createBridgeServer(up).listen(port, '127.0.0.1', () => console.log('proxy-bridge listening on 127.0.0.1:' + port));
 }
