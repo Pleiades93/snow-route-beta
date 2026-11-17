@@ -185,7 +185,7 @@ jobs:
         run: node tests/proof/proof-leftside-removal-b05.mjs
       - name: Create glow + casing fix proof (Beta 1.216 gate - the trim glow mesh stitches sector parts and drops repeated points so no vertex sits beyond its claimed distance + 1 m (the spear assertion), and the draft casing anchor is halved to crZoomW(9.75) with the reach floor following it)
         run: node tests/proof/proof-create-glow-casing-fix.mjs
-      - name: Icon glyph proof (Beta 1.221 gate - Glyph is the only icon set: the complete set byte-pinned as lossless WebP at 200x200, the registry dispatching through the single glyph row, the picker section and the retired packs absent, the backup icon-pack field gone; replaces the 1218/1219/1220 pack proofs, whose subjects left with the picker)
+      - name: Icon glyph proof (Beta 1.221 gate - Glyph is the only icon set - the complete set byte-pinned as lossless WebP at 200x200, the registry dispatching through the single glyph row, the picker section and the retired packs absent, the backup icon-pack field gone; replaces the 1218/1219/1220 pack proofs, whose subjects left with the picker)
         run: node tests/proof/proof-icon-glyph-1221.mjs
       - name: Premise-lint fixtures (Tranche 4 gate)
         run: python3 scripts/premise-lint-fixtures/run-fixtures.py
