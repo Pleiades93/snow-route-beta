@@ -306,97 +306,97 @@
     },
     {
       "file": "app4.js",
-      "line": 1204,
+      "line": 1222,
       "name": "activeRoute",
       "owner": "app1.js"
     },
     {
       "file": "app4.js",
-      "line": 1204,
+      "line": 1222,
       "name": "routeLoaded",
       "owner": "app1.js"
     },
     {
       "file": "app4.js",
-      "line": 1224,
+      "line": 1242,
       "name": "coveredIdx",
       "owner": "app1.js"
     },
     {
       "file": "app4.js",
-      "line": 1224,
+      "line": 1242,
       "name": "doneSet",
       "owner": "app1.js"
     },
     {
       "file": "app4.js",
-      "line": 1224,
+      "line": 1242,
       "name": "doneTimes",
       "owner": "app1.js"
     },
     {
       "file": "app4.js",
-      "line": 1224,
+      "line": 1242,
       "name": "doneVia",
       "owner": "app1.js"
     },
     {
       "file": "app4.js",
-      "line": 1224,
+      "line": 1242,
       "name": "history",
       "owner": "app1.js"
     },
     {
       "file": "app4.js",
-      "line": 1224,
+      "line": 1242,
       "name": "notes",
       "owner": "app1.js"
     },
     {
       "file": "app4.js",
-      "line": 1224,
+      "line": 1242,
       "name": "pieceTimes",
       "owner": "app1.js"
     },
     {
       "file": "app4.js",
-      "line": 1224,
+      "line": 1242,
       "name": "pieces",
       "owner": "app1.js"
     },
     {
       "file": "app4.js",
-      "line": 1224,
+      "line": 1242,
       "name": "runStart",
       "owner": "app1.js"
     },
     {
       "file": "app4.js",
-      "line": 1224,
+      "line": 1242,
       "name": "trail",
       "owner": "app1.js"
     },
     {
       "file": "app4.js",
-      "line": 1224,
+      "line": 1242,
       "name": "trailSessions",
       "owner": "app1.js"
     },
     {
       "file": "app4.js",
-      "line": 1226,
+      "line": 1244,
       "name": "LS",
       "owner": "app1.js"
     },
     {
       "file": "app4.js",
-      "line": 1227,
+      "line": 1245,
       "name": "activeRoute",
       "owner": "app1.js"
     },
     {
       "file": "app4.js",
-      "line": 1227,
+      "line": 1245,
       "name": "routeLoaded",
       "owner": "app1.js"
     },
