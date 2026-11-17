@@ -112,18 +112,30 @@ export function createBridgeServer(up) {
     });
     const bail = () => { try { clientSocket.destroy(); } catch (e) {} try { upSocket.destroy(); } catch (e) {} };
     upSocket.setTimeout(30000, bail);
-    upSocket.once('data', d => {
-      const idx = d.indexOf('\r\n\r\n');
-      const statusLine = d.slice(0, d.indexOf('\r\n')).toString();
-      if (idx === -1 || !/ 200 /.test(statusLine)) { bail(); return; }
-      upSocket.setTimeout(0);
-      clientSocket.write('HTTP/1.1 200 Connection Established\r\n\r\n');
-      const rest = d.slice(idx + 4);
-      if (rest.length) clientSocket.write(rest);
-      if (head && head.length) upSocket.write(head);
-      upSocket.pipe(clientSocket);
-      clientSocket.pipe(upSocket);
-    });
+    // Buffer the upstream's CONNECT response until its header block is
+    // complete: the response can arrive split across TCP chunks, and
+    // judging the first chunk alone destroys valid tunnels depending on
+    // packetization (Codex review, PR #101). A 64 KB cap + the 30 s
+    // socket timeout bound a response that never completes.
+    let upBuf = Buffer.alloc(0);
+    const onData = d => {
+      try {
+        upBuf = Buffer.concat([upBuf, d]);
+        const idx = upBuf.indexOf('\r\n\r\n');
+        if (idx === -1) { if (upBuf.length > 65536) bail(); return; }
+        upSocket.removeListener('data', onData);
+        const statusLine = upBuf.slice(0, upBuf.indexOf('\r\n')).toString();
+        if (!/ 200 /.test(statusLine)) { bail(); return; }
+        upSocket.setTimeout(0);
+        clientSocket.write('HTTP/1.1 200 Connection Established\r\n\r\n');
+        const rest = upBuf.slice(idx + 4);
+        if (rest.length) clientSocket.write(rest);
+        if (head && head.length) upSocket.write(head);
+        upSocket.pipe(clientSocket);
+        clientSocket.pipe(upSocket);
+      } catch (e) { bail(); }
+    };
+    upSocket.on('data', onData);
     upSocket.on('error', bail);
     clientSocket.on('error', () => { try { upSocket.destroy(); } catch (e) {} });
   });
