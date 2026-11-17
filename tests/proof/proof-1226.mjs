@@ -47,9 +47,9 @@ check('2c: the 1.224 dialed stacks survive nowhere in the page', !head.includes(
 check('2d: the night fence stands (night Start keeps the float token; the night dock recipe is byte-identical)', rule('body.night .runBtn {').includes('box-shadow: var(--shadow-float);') && rule('body.night .dockBtn {').includes('background: linear-gradient(180deg, rgba(78,81,90,.94), rgba(43,45,51,.94));') && rule('body.night .dockBtn {').includes('border-top-color: rgba(255,255,255,.55);') && rule('body.night .dockBtn {').includes('box-shadow: inset 0 1px 0 rgba(255,255,255,.45), 0 10px 26px rgba(0,0,0,.45);'));
 
 // ---------- Version agreement ----------
-check('V: the #ver label reads Beta 1.226', head.includes('<div class="ver" id="ver">Beta 1.226</div>'));
-check('V: WHATSNEW is the Beta 1.226 entry with the two short bullets', app4.includes("v: 'Beta 1.226', items: [\"Buttons now shrink a little when you press them.\", \"The round buttons wear a softer lift by day.\"]"));
-check('V: the CHANGELOG top entry is Beta 1.226', changelog.split('\n').find(l => l.startsWith('## Beta')) === '## Beta 1.226 — 2026-11-17');
+check('V: the #ver label reads Beta 1.227', head.includes('<div class="ver" id="ver">Beta 1.227</div>'));
+check('V: WHATSNEW is the Beta 1.227 entry with the two short bullets', app4.includes("v: 'Beta 1.227', items: [\"Creating a route has a new search bar with a round back button.\", \"Street results appear as you type, each with its area named.\"]"));
+check('V: the CHANGELOG top entry is Beta 1.227', changelog.split('\n').find(l => l.startsWith('## Beta')) === '## Beta 1.227 — 2026-11-17');
 
 console.log(`proof-1226: ${pass}/${pass + fail} checks passed`);
 process.exit(fail ? 1 : 0);

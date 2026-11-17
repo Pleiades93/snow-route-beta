@@ -312,15 +312,15 @@ ok('G2 a slow earlier answer arriving after a newer search does NOT overwrite th
 await ev(typeText('bor'));
 await sleep(120);
 await ev(`document.getElementById('crSearchInput').dispatchEvent(new KeyboardEvent('keydown', { key: 'Enter', bubbles: true }))`);
-await sleep(250); // well inside the 500 ms debounce: only Enter can have queried
+await sleep(250); // well inside the 300 ms debounce (Beta 1.227): only Enter can have queried
 const SG3a = await J(`({ calls: window.__nomCalls.slice() })`);
 await sleep(700); // the cancelled debounce must NOT fire a duplicate
 const SG3 = await J(`({ calls: window.__nomCalls.slice() })`);
 ok('G3 Enter runs the typed query immediately and cancels the pending debounce (no duplicate "bor" query) | ' + JSON.stringify(SG3),
   SG3a.calls.filter(c => c === 'bor').length === 1 && SG3.calls.filter(c => c === 'bor').length === 1);
-await ev(`document.getElementById('crExit').click()`); // input holds text: this click CLEARS (Beta 1.120) - covered in full in section (i)
+await ev(`document.getElementById('crClear').click()`); // Beta 1.227: the clear disc empties the search - the old x's first job, on its own control now; covered in full in section (i)
 await sleep(200);
-await ev(`document.getElementById('crExit').click()`); // now empty: exits (the draft is empty, so no confirm)
+await ev(`document.getElementById('crExit').click()`); // the back pill exits (the draft is empty, so no confirm)
 await sleep(400);
 const SG4 = await J(`({ creating })`);
 ok('G4 the search-probe session exits create mode cleanly', SG4.creating === false);
@@ -364,16 +364,16 @@ const IBday = await J(barRect);
 await ev(`document.body.classList.add('night')`);
 const IBnight = await J(barRect);
 // Beta 1.129 premise update: the pick sheet's card is #createSheet itself now (one surface) - I2's "sheet" probe reads it instead of the #crPanel content, which is transparent by design. The meaning is unchanged: the create sheet wears --card-solid in both modes.
-const themeProbe = `(() => { const cs = (sel) => { const el = document.querySelector(sel); return el ? getComputedStyle(el).backgroundColor : ''; }; const probe = document.createElement('div'); probe.style.background = 'var(--card-solid)'; document.body.appendChild(probe); const token = getComputedStyle(probe).backgroundColor; probe.remove(); return { wrap: cs('#crSearchWrap'), sheet: cs('#createSheet'), res: cs('#createResults'), row: cs('.crResult'), token }; })()`;
+const themeProbe = `(() => { const cs = (sel) => { const el = document.querySelector(sel); return el ? getComputedStyle(el).backgroundColor : ''; }; const probe = document.createElement('div'); probe.style.background = 'var(--card-solid)'; document.body.appendChild(probe); const token = getComputedStyle(probe).backgroundColor; probe.remove(); const wrapEl = document.querySelector('#crSearchWrap'); const wrapImg = wrapEl ? getComputedStyle(wrapEl).backgroundImage : ''; return { wrapImg, sheet: cs('#createSheet'), res: cs('#createResults'), row: cs('.crResult'), token }; })()`; // Beta 1.227: the wrap's surface is a background IMAGE (the app blue gradient), so the probe reads backgroundImage for it
 const ITnight = await J(themeProbe);
 await ev(`document.body.classList.remove('night')`);
 const ITday = await J(themeProbe);
 ok('I1 the search row sits lower by half its own height (fixed 50px row; top = 10 + 25 in the rig, no safe-area inset) in BOTH themes, nothing clipped | day ' + JSON.stringify(IBday) + ' night ' + JSON.stringify(IBnight),
   Math.abs(IBday.height - 50) <= 2 && Math.abs((IBday.top - 10) - IBday.height / 2) <= 3 && Math.abs(IBnight.height - 50) <= 2 && Math.abs((IBnight.top - 10) - IBnight.height / 2) <= 3);
-ok('I2 the create surfaces wear the app\'s theme token: search bar + "Your route" sheet backgrounds EQUAL --card-solid by day and by night, and the two modes differ | day ' + JSON.stringify(ITday) + ' night ' + JSON.stringify(ITnight),
-  ITday.wrap === ITday.token && ITday.sheet === ITday.token && ITnight.wrap === ITnight.token && ITnight.sheet === ITnight.token && ITday.wrap !== ITnight.wrap);
-ok('I3 the results dropdown is themed too (background equals --card-solid in both modes - never the 1.119 hardcoded white at night) and its rows sit transparent over it | night res ' + ITnight.res,
-  ITday.res === ITday.token && ITnight.res === ITnight.token && ITnight.res !== 'rgb(255, 255, 255)' && ITnight.row === 'rgba(0, 0, 0, 0)');
+ok('I2 (Beta 1.227 re-derived) the search bar wears the app blue gradient in BOTH modes (the same two stops, serialized from the computed backgroundImage), while the "Your route" sheet still wears --card-solid by day and by night | day ' + JSON.stringify(ITday) + ' night ' + JSON.stringify(ITnight),
+  ITday.wrapImg.includes('rgb(61, 101, 239)') && ITday.wrapImg.includes('rgb(27, 47, 182)') && ITnight.wrapImg.includes('rgb(61, 101, 239)') && ITnight.wrapImg.includes('rgb(27, 47, 182)') && ITday.sheet === ITday.token && ITnight.sheet === ITnight.token && ITday.sheet !== ITnight.sheet);
+ok('I3 (Beta 1.227 re-derived) the results dropdown wears the approved sample surfaces: white by day, #1b1e26 by night (never white at night), and the standing row - the single row a previous search left in the DOM - wears the first-row tint in both modes | day ' + JSON.stringify(ITday) + ' night ' + JSON.stringify(ITnight),
+  ITday.res === 'rgb(255, 255, 255)' && ITnight.res === 'rgb(27, 30, 38)' && ITday.row === 'rgb(242, 245, 255)' && ITnight.row === 'rgba(255, 255, 255, 0.06)');
 await ev(typeText('borde'));
 await poll(`document.getElementById('createResults').classList.contains('on') && document.querySelectorAll('#createResults .crResult').length === 1`, 8000);
 const I4a = await J(`({ on: document.getElementById('createResults').classList.contains('on') })`);
@@ -387,16 +387,18 @@ const gotI = await poll(`typeof draft !== 'undefined' && draft && !!draft.roads[
 ok('I5 after dismissing the dropdown, tapping a road still picks it (the dismissal never eats the pick)', gotI === true);
 await ev(typeText('borde'));
 await poll(`document.getElementById('createResults').classList.contains('on') && document.querySelectorAll('#createResults .crResult').length === 1`, 8000);
-await ev(`document.getElementById('crExit').click()`);
-const I6 = await J(`({ val: document.getElementById('crSearchInput').value, on: document.getElementById('createResults').classList.contains('on'), creating })`);
-ok('I6 the ✕ beside the search first CLEARS the text and closes the results - it does not exit creating | ' + JSON.stringify(I6),
-  I6.val === '' && I6.on === false && I6.creating === true);
+await ev(`document.getElementById('crClear').click()`);
+const I6 = await J(`({ val: document.getElementById('crSearchInput').value, on: document.getElementById('createResults').classList.contains('on'), creating, disc: document.getElementById('crClear').classList.contains('on'), focus: document.activeElement === document.getElementById('crSearchInput') })`);
+ok('I6 (Beta 1.227) the clear disc CLEARS the text and closes the results, hides itself, and keeps the focus in the input - it does not exit creating | ' + JSON.stringify(I6),
+  I6.val === '' && I6.on === false && I6.creating === true && I6.disc === false && I6.focus === true);
+await ev(typeText('borde'));
+await poll(`document.getElementById('createResults').classList.contains('on') && document.querySelectorAll('#createResults .crResult').length === 1`, 8000);
 await ev(`document.getElementById('crExit').click()`);
 await sleep(400);
 await ev(`(() => { const y = document.getElementById('crModalYes'); if (y && !document.getElementById('crModal').classList.contains('hidden')) y.click(); return true; })()`);
 await sleep(400);
 const I7 = await J(`({ creating })`);
-ok('I7 pressed again with an empty search, the ✕ exits creating (the discard confirm still guards the draft)', I7.creating === false);
+ok('I7 (Beta 1.227) pressed with a search still up, the back pill EXITS creating in one press - it never clears first (the discard confirm still guards the draft)', I7.creating === false);
 
 // ---------- (j) the preparation battery (Beta 1.121, CG-PF-06 + the whole-city amendment) ----------
 // The network seam, controlled at fetch level with the app's REAL request

@@ -206,7 +206,7 @@ const A1 = await J(`({ creating, body: document.body.classList.contains('creatin
 ok('A1 picking the city enters create mode on the map (bar + pick sheet up, menu closed), scoped to Vaughan - the sheet names the city with a change affordance | ' + JSON.stringify(A1),
   AC.inPick && A1.creating === true && A1.body && A1.bar && A1.sheet && !A1.menuOpen && A1.city === 'Vaughan' && A1.chip.indexOf('Vaughan') >= 0);
 await ev(`document.getElementById('crSearchInput').value = 'borde'`);
-await ev(`document.getElementById('crSearchBtn').click()`);
+await ev(`crSearch()`); // Beta 1.227: the Search button is gone - crSearch() is the Enter path (cancel the debounce, run the typed query now)
 await poll(`document.querySelectorAll('#createResults .crResult').length === 1`, 15000);
 const A2 = await J(`({ n: document.querySelectorAll('#createResults .crResult').length, txt: (document.querySelector('#createResults .crResult') || {}).textContent || '' })`);
 ok('A2 search "borde" returns the fixture result (Bordeaux Drive, Vaughan)', A2.n === 1 && A2.txt.indexOf('Bordeaux Drive') >= 0);
@@ -302,9 +302,7 @@ const PK = await J(`({ streets: draft ? Object.keys(draft.roads) : [], total: dr
 ok('P1 (pick seam) a tap whose exact pixel holds NO road still picks the street whose tile line passes nearest the tap (Bordeaux, 12 px) and the pick reaches pickStreet -> the prepared extract (length ' + Math.round(fixtureLen('Bordeaux Drive')) + ' m) | ' + JSON.stringify(PK),
   gotPick === true && PK.streets.join() === 'Bordeaux Drive' && Math.abs(PK.total - fixtureLen('Bordeaux Drive')) <= fixtureLen('Bordeaux Drive') * 0.02);
 ok('P2 (pick seam) the farther street inside the same box (Alderson, 15 px, listed first) is NOT picked', !PK.streets.includes('Alderson Avenue'));
-await ev(`document.getElementById('crExit').click()`);
-await sleep(300);
-await ev(`document.getElementById('crExit').click()`); // Beta 1.120: the ✕ clears a leftover search text FIRST (section (a) left "borde" in the box) - the second press is the exit this section means
+await ev(`document.getElementById('crExit').click()`); // Beta 1.227: the back pill exits in ONE press - it never clears first (clearing is the bar's own disc now), so section (a)'s leftover "borde" no longer needs a clearing press before the exit this section means
 await sleep(500);
 await ev(`(() => { const y = document.getElementById('crModalYes'); if (y && !document.getElementById('crModal').classList.contains('hidden')) y.click(); return true; })()`);
 await sleep(400);
