@@ -33,13 +33,23 @@ await ev(`setFacing(90, 1)`); await sleep(200);
 K = await gpsData(); const B1 = await coneBearing();
 ok('C2 facing east draws the beam pointing east | kinds ' + JSON.stringify(K) + ' bearing ' + B1, K.includes('beam') && bangDiff(B1, 90) <= 7);
 
-await ev(`setFacing(350, 1)`); await sleep(200);
-const B2 = await coneBearing();
-ok('C3 the beam swings to 350 across the north wrap | bearing ' + B2, bangDiff(B2, 350) <= 7);
+await ev(`setFacing(350, 1)`);
+// Beta 1.220 re-derivation: the painted beam is a spring chasing the heading now
+// (it no longer teleports with facingDeg), so the swing is POLLED to its landing
+// and the sweep itself is part of the check - the beam must pass through the
+// wrap approach (a mid-swing reading between 15 and 75, coming down from 90)
+// and land within 7 of 350, at the same strength as the shipped instant read.
+const swing = [];
+for (let i = 0; i < 40; i++) { const b = await coneBearing(); swing.push(b); if (bangDiff(b, 350) <= 7) break; await sleep(100); }
+const B2 = swing[swing.length - 1];
+ok('C3 the beam swings to 350 across the north wrap (a sweep through the wrap, landed within 7) | samples ' + JSON.stringify(swing) + ' bearing ' + B2,
+  bangDiff(B2, 350) <= 7 && swing.some(b => b >= 15 && b <= 75));
 
 for (let i = 0; i < 4; i++) { await ev(`acceptFix({ coords: { latitude: ${base.lat}, longitude: ${base.lng}, accuracy: 9, speed: 6, heading: 90 }, timestamp: Date.now() })`); await sleep(150); }
-await sleep(400);
-const B3 = await coneBearing();
+// Beta 1.220: same re-derivation as C3 - the course still takes the beam over;
+// the painted arrival is polled (the spring lands it), same tolerance.
+let B3 = -1;
+for (let i = 0; i < 40; i++) { B3 = await coneBearing(); if (bangDiff(B3, 90) <= 20) break; await sleep(100); }
 ok('C4 while moving, the GPS course takes over the beam | bearing ' + B3, bangDiff(B3, 90) <= 20);
 
 let LP = {};
