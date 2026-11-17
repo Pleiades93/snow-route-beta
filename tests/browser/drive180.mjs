@@ -113,7 +113,8 @@ const { proc, ev, consoleLog, sleep, shot } = await launchDrive();
 // measures the boot-menu pills' label centring on the
 // rendered text itself (not the computed style), and PILLF
 // their fills - the primary solid white, the secondary
-// tinted with the 1.5 px inset white ring. SNOW1-SNOW3
+// tinted (through Beta 1.221 with the 1.5 px inset white
+// ring; Beta 1.222 retires the ring for the soft fill). SNOW1-SNOW3
 // cover the same release's snowfall layer ("Falls and
 // settles", Andrew's pick from the falling-snow examples
 // page): the canvases exist in both halves of the scene,
@@ -652,7 +653,7 @@ ok('SOLO the two pills stand alone and FULLY IN BOUNDS on the brand-free menu (t
 // unified blue-menu treatment from the examples mock -
 // centring MEASURED on the rendered label (a Range over the
 // button's contents vs the button's own box), the primary
-// solid, the secondary tinted with the inset ring.
+// solid, the secondary tinted (Beta 1.222: the soft fill, no ring).
 let pill = null;
 try {
   pill = await ev(`(() => { const meas = id => { const b = document.getElementById(id); if (!b) return null; const br = b.getBoundingClientRect(); const rg = document.createRange(); rg.selectNodeContents(b); const tr = rg.getBoundingClientRect(); const cs = getComputedStyle(b); return { bcx: br.left + br.width / 2, tcx: tr.left + tr.width / 2, bg: cs.backgroundColor, sh: cs.boxShadow }; }; return JSON.stringify({ a: meas('rmChoose'), b: meas('rmCreate') }); })()`).then(x => typeof x === 'string' && x ? JSON.parse(x) : null);
@@ -661,8 +662,8 @@ const pillOffA = pill && pill.a ? Math.abs(pill.a.tcx - pill.a.bcx) : 999;
 const pillOffB = pill && pill.b ? Math.abs(pill.b.tcx - pill.b.bcx) : 999;
 ok('PILLC the menu pills\' text is CENTRED, measured on the rendered label (not the computed style): Choose label centre off the pill centre by ' + pillOffA.toFixed(1) + 'px, Create by ' + pillOffB.toFixed(1) + 'px (tolerance 2px)',
   !!pill && pillOffA <= 2 && pillOffB <= 2);
-ok('PILLF the pill hierarchy is the mock\'s: Choose (primary) is SOLID white [' + (pill && pill.a ? pill.a.bg : 'n/a') + ']; Create (secondary) is the TINTED fill [' + (pill && pill.b ? pill.b.bg : 'n/a') + '] wearing the 1.5px inset white ring [' + (pill && pill.b ? pill.b.sh : 'n/a') + ']',
-  !!pill && !!pill.a && !!pill.b && pill.a.bg === 'rgb(255, 255, 255)' && pill.b.bg === 'rgba(255, 255, 255, 0.16)' && pill.b.sh.indexOf('inset') >= 0 && pill.b.sh.indexOf('1.5px') >= 0);
+ok('PILLF the pill hierarchy is Andrew\'s (Beta 1.222 soft fill; the 1.158 mock hierarchy under it): Choose (primary) is SOLID white, its fill AND shadow byte-identical to 1.221 [' + (pill && pill.a ? pill.a.bg + ' / ' + pill.a.sh : 'n/a') + ']; Create (secondary) is the SOFT fill [' + (pill && pill.b ? pill.b.bg : 'n/a') + '] wearing the soft shadow and NO outline - the exact shadow equality leaves no room for the retired inset ring [' + (pill && pill.b ? pill.b.sh : 'n/a') + ']',
+  !!pill && !!pill.a && !!pill.b && pill.a.bg === 'rgb(255, 255, 255)' && pill.a.sh === 'rgba(0, 0, 0, 0.18) 0px 6px 18px 0px' && pill.b.bg === 'rgba(255, 255, 255, 0.18)' && pill.b.sh === 'rgba(10, 16, 60, 0.25) 0px 2px 8px 0px');
 
 // SNOW (Beta 1.159): ONE canvas now - see the header. SNOW1 judges
 // the single-canvas structure + the running engine; SNOW2/SNOW3 keep
@@ -801,8 +802,8 @@ const rowNWorst = rowList.length ? Math.max(...rowList.map(x => (typeof x.nOff =
 const rowAWorst = rowList.length ? Math.max(...rowList.map(x => (typeof x.aOff === 'number' ? x.aOff : 999))) : 999;
 ok('ROWC the choose list\'s rows carry CENTRED text, Range-measured on the rendered lines: ' + rowList.length + ' rows, worst name-line offset ' + rowNWorst.toFixed(1) + 'px and worst sub-line offset ' + rowAWorst.toFixed(1) + 'px from the row centre (tolerance 2px; through 1.158 the rows were left-aligned)',
   rowList.length >= 1 && rowNWorst <= 2 && rowAWorst <= 2);
-ok('ROWF the rows wear the unified pill tokens: name at the pill\'s size/weight (' + (rowList.length ? rowList[0].nSize + '/' + rowList[0].nWeight : 'n/a') + ' vs the .rmBtn ' + (nav && nav.rows ? nav.rows.btnSize : 'n/a') + '), the row font stack equals the pill\'s (' + (rowList.length && nav && nav.rows && rowList[0].ff === nav.rows.btnFf ? 'identical' : 'DIFFERENT') + '), fill ' + (rowList.length ? rowList[0].bg : 'n/a') + ', ring ' + (rowList.length ? rowList[0].sh : 'n/a') + ', radius ' + (rowList.length ? rowList[0].rad : 'n/a'),
-  rowList.length >= 1 && !!nav && !!nav.rows && rowList.every(x => x.nSize === nav.rows.btnSize && x.nWeight === '650' && x.ff === nav.rows.btnFf && x.bg === 'rgba(255, 255, 255, 0.16)' && x.sh.indexOf('inset') >= 0 && x.sh.indexOf('1.5px') >= 0 && x.rad === '14px'));
+ok('ROWF the rows wear the unified pill tokens: name at the pill\'s size/weight (' + (rowList.length ? rowList[0].nSize + '/' + rowList[0].nWeight : 'n/a') + ' vs the .rmBtn ' + (nav && nav.rows ? nav.rows.btnSize : 'n/a') + '), the row font stack equals the pill\'s (' + (rowList.length && nav && nav.rows && rowList[0].ff === nav.rows.btnFf ? 'identical' : 'DIFFERENT') + '), fill ' + (rowList.length ? rowList[0].bg : 'n/a') + ', shadow ' + (rowList.length ? rowList[0].sh : 'n/a') + ', radius ' + (rowList.length ? rowList[0].rad : 'n/a'),
+  rowList.length >= 1 && !!nav && !!nav.rows && rowList.every(x => x.nSize === nav.rows.btnSize && x.nWeight === '650' && x.ff === nav.rows.btnFf && x.bg === 'rgba(255, 255, 255, 0.18)' && x.sh === 'rgba(10, 16, 60, 0.25) 0px 2px 8px 0px' && x.rad === '14px'));
 ok('ROWC2 a city-list row (the app\'s own routeRowShell factory, in the real #crCityList) is centred the same way: name offset ' + (nav && nav.cityRow ? nav.cityRow.nOff : 'n/a') + 'px, sub offset ' + (nav && nav.cityRow ? nav.cityRow.aOff : 'n/a') + 'px, name size ' + (nav && nav.cityRow ? nav.cityRow.nSize : 'n/a'),
   !!nav && !!nav.cityRow && nav.cityRow.nOff <= 2 && nav.cityRow.aOff <= 2 && !!nav.rows && nav.cityRow.nSize === nav.rows.btnSize);
 

@@ -871,7 +871,7 @@ $('stDel').addEventListener('click', async () => {
 });
 // ---- About ----
 const WHATSNEW = { // the curated in-app notes: plain words, LATEST RELEASE ONLY (Beta 1.114, Andrew: the accumulated list cluttered the About pane). A release REPLACES this entry with its own in the same change - it never accumulates; the full history lives in CHANGELOG.md, not the app
-  v: 'Beta 1.221', items: ["One icon set now: Glyph. The icon picker is gone from Settings — Glyph is simply the app's icons — and its artwork is stored in a lighter format, so the app file is smaller and opens faster.", "Settings sections renamed: System Health, Display and Sound, and About.", "In the route builder, an unpicked part of a street now rests in its own colour, faded the way a finished route looks — picking it brings the full colour up at the same moment as its glow.", "Far fewer pop-up messages: only the warnings that matter stay (storage problems, backup and restore failures, GPS trouble, and the route builder's 'why didn't that street add' notes). Everything else is gone — the change itself shows on screen instead.", "On a weak connection the app opens from its saved copy in about 2 seconds instead of waiting over 8 — and new versions still arrive the same way as before."] };
+  v: 'Beta 1.222', items: ["The blue menus' buttons are softer now: the white outline around them is gone, replaced by a lighter fill and a soft shadow. The solid white main buttons stay exactly as they were.", "The round buttons have a little depth now instead of sitting flat - Start and Finish, and the Streets, Pace, Centre and day/night buttons too, in daylight and at night."] };
 
 function renderAbout() {
   const cur = $('ver').textContent.trim();
