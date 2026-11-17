@@ -32,6 +32,7 @@
 // battery's duration (startup is idempotent - concurrent drives share
 // the one bridge via the health check below).
 import net from 'node:net';
+import tls from 'node:tls';
 import { spawn } from 'node:child_process';
 import { fileURLToPath } from 'node:url';
 
@@ -59,7 +60,16 @@ function proxyAuthorization(up) {
 export function createBridgeServer(up) {
   const auth = proxyAuthorization(up);
   const upHost = up.hostname;
-  const upPort = Number(up.port) || 80;
+  // Honour the upstream URL's transport scheme (Codex review,
+  // PR #101): an https:// proxy URL means the bridge-to-proxy leg
+  // itself runs over TLS - speaking plaintext to it both breaks
+  // TLS-only proxies and would send the credentials unencrypted
+  // despite the configured scheme. Default ports follow the scheme.
+  const useTls = up.protocol === 'https:';
+  const upPort = Number(up.port) || (useTls ? 443 : 80);
+  const connectUpstream = onConnect => useTls
+    ? tls.connect({ host: upHost, port: upPort, servername: upHost }, onConnect)
+    : net.connect(upPort, upHost, onConnect);
 
   // CONNECT tunnel: ask the upstream for a tunnel to host:port, and on
   // its 200 splice the two sockets together. The upstream's response is
@@ -68,7 +78,7 @@ export function createBridgeServer(up) {
   // (Codex review, PR #101). A 64 KB cap + the 30 s socket timeout
   // bound a response that never completes.
   function tunnel(clientSocket, target, head) {
-    const upSocket = net.connect(upPort, upHost, () => {
+    const upSocket = connectUpstream(() => {
       try {
         upSocket.write('CONNECT ' + target + ' HTTP/1.1\r\nHost: ' + target + '\r\nProxy-Authorization: ' + auth + '\r\nProxy-Connection: Keep-Alive\r\n\r\n');
       } catch (e) { bail(); }
@@ -114,7 +124,7 @@ export function createBridgeServer(up) {
       kept.push(lines[i]);
     }
     kept.push('Proxy-Authorization: ' + auth, 'Proxy-Connection: close', '', '');
-    const upSocket = net.connect(upPort, upHost, () => {
+    const upSocket = connectUpstream(() => {
       try {
         upSocket.write(kept.join('\r\n'));
         if (rest.length) upSocket.write(rest);
