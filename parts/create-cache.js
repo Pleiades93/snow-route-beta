@@ -64,7 +64,7 @@ function crCacheDisclose(cityName, sess) { // the one wording for every cache fa
   if (sess !== crSession) return; // the failure belongs to a CLOSED session (the register's session binding): it is dropped - recording it would charge a dead session's failure to the live one and suppress its writes
   if (crCacheNote && crCacheNoteCity === cityName && crCacheNoteSession === sess) return; // already disclosed for this city in this session: the state stands
   crCacheNoteCity = cityName; crCacheNoteSession = sess;
-  crCacheNote = 'Couldn’t save ' + cityName + ' on this phone — it will reload next time';
+  crCacheNote = 'Couldn’t save ' + cityName + ' on this phone, it will reload next time';
   crRenderHint();
 }
 function crCacheSaveCell(cityName, bbox, totalCells, key, ways) { // write-through, one cell at a time, serialized; ways in the compact stored form [[id, name, pts], ...]
@@ -214,8 +214,8 @@ function crGridResume() { // the degraded/stopped remedy: fetch ONLY the missing
 // crStartPrep), which was never this function. Nothing calls it any more.
 function crFailText(f) { // the honest taxonomy (scope item 5): unreachable / answered-with-error / too-dense read differently because they ARE different
   if (!f) return '';
-  if (f.kind === 'dense') return crGrid ? 'Parts of ' + (crCity ? crCity.name : 'the city') + ' were too dense to load — tap Retry to try those parts again' : 'That area is too dense to load at once — move the map to a less busy part of ' + (crCity ? crCity.name : 'the city') + ', then tap Prepare this area'; // box form per CG-PF-09: the footprint is FIXED, so zooming changes nothing - the working remedy is preparing a less dense area, and the button in this state does exactly that (map centre). Grid form: the dense cells are the failed parts, and Retry resumes exactly them
-  if (f.kind === 'error') return 'The street-shape service answered with an error' + (f.status ? ' (' + f.status + ')' : '') + ' — tap Retry';
-  if (f.kind === 'badjson') return 'The street-shape service sent back something unreadable — tap Retry';
-  return 'The street-shape service didn’t answer — tap Retry';
+  if (f.kind === 'dense') return crGrid ? 'Parts of ' + (crCity ? crCity.name : 'the city') + ' were too dense to load. Tap Retry to try those parts again' : 'That area is too dense to load at once. Move the map to a less busy part of ' + (crCity ? crCity.name : 'the city') + ', then tap Prepare this area'; // box form per CG-PF-09: the footprint is FIXED, so zooming changes nothing - the working remedy is preparing a less dense area, and the button in this state does exactly that (map centre). Grid form: the dense cells are the failed parts, and Retry resumes exactly them
+  if (f.kind === 'error') return 'The street-shape service answered with an error' + (f.status ? ' (' + f.status + ')' : '') + '. Tap Retry';
+  if (f.kind === 'badjson') return 'The street-shape service sent back something unreadable. Tap Retry';
+  return 'The street-shape service didn’t answer. Tap Retry';
 }

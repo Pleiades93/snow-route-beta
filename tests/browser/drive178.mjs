@@ -13,10 +13,11 @@ const { proc, send, S, ev, consoleLog, sleep, poll } = await launchDrive();
 // with it. A FAILED load keeps its working remedy: the hint stays up
 // (no auto-dismiss in a failure state) with its 'Retry' button, and
 // activating it after the service recovers completes the load.
-// (Item 3) The pill under the search bar in the ready-from-cache state
-// reads '<City> - loaded <date>' only (no 'tap a road') and dismisses
-// itself ~4 s after appearing; a dismissed confirmation stays dismissed
-// across the re-renders road taps cause.
+// (Item 3, SUPERSEDED Beta 1.223, Andrew) The ready state shows NO pill at
+// all: the loaded-city confirmation ('<City> - loaded ...', cached and
+// fresh forms) is removed whole - silence means loaded. P1d/P1e/P2a/P2b
+// below are re-derived to assert exactly that absence at the same strength
+// (ready + pill off + empty text + no button, held past the old 4 s clock).
 // (Item 4) Tapping a road shows no 'Added' toast any more.
 // (Items 2+6) The pick panel is headed 'Current selection'; the review
 // sheet is titled 'Review selection', carries no 'Check every street'
@@ -111,7 +112,7 @@ const inPick1 = await enterManual();
 const failed = await poll(`typeof crPrepState !== 'undefined' && crPrepState === 'failed'`, 45000).catch(() => false);
 const F1 = await hintSample();
 ok('P1a (failed load) with the map service down the preparation settles FAILED and the hint shows the failure with a working remedy offered (entered pick: ' + inPick1 + ') | ' + JSON.stringify(F1),
-  inPick1 === true && failed === true && F1.on === true && F1.text.indexOf('tap Retry') >= 0 && F1.btnShown === true && F1.btnText === 'Retry'); // the failure copy for an HTTP-status failure is the service-error wording ('The street-shape service answered with an error (503) — tap Retry') - the claim is the failure + remedy are shown, not one wording
+  inPick1 === true && failed === true && F1.on === true && F1.text.indexOf('Tap Retry') >= 0 && F1.btnShown === true && F1.btnText === 'Retry'); // the failure copy for an HTTP-status failure is the service-error wording ('The street-shape service answered with an error (503). Tap Retry' - the Beta 1.223 dash sweep split the old em-dash form into two sentences) - the claim is the failure + remedy are shown, not one wording
 await sleep(4600); // longer than the confirmation pill's 4 s: a failure must NOT dismiss itself
 const F2 = await hintSample();
 ok('P1b (failed load) 4.6 s later the failure is STILL up and actionable - failures never auto-dismiss | ' + JSON.stringify(F2),
@@ -130,24 +131,24 @@ const F3 = await J(`({ state: crPrepState, done: crGrid ? crGrid.cells.filter(c 
 ok('P1c (failed load -> Retry) activating the failed state\'s Retry after the service recovers completes the load - every cell done, state ready | ' + JSON.stringify(F3),
   ready1 === true && F3.done === F3.total && F3.total > 0);
 const F4 = await hintSample();
-ok('P1d (fresh-load confirmation, Beta 1.176) the load the Retry just completed was FRESH (not restored from cache), and its success shows the confirmation anyway - exactly "Vaughan — loaded": no date (there is no saved date to name), no \'tap a road\', no button | ' + JSON.stringify(F4),
-  F4.state === 'ready' && F4.on === true && F4.text === 'Vaughan — loaded' && F4.btnShown === false);
-const dismissedFresh = await poll(`!document.getElementById('createHint').classList.contains('on')`, 9000).catch(() => false);
+ok('P1d (no loaded confirmation, Beta 1.223 - re-derived from the Beta 1.176 fresh-load confirmation check) the load the Retry just completed was FRESH (not restored from cache), the state is ready, and the hint shows NOTHING: pill off, empty text, no button - silence means loaded | ' + JSON.stringify(F4),
+  F4.state === 'ready' && F4.on === false && F4.text === '' && F4.btnShown === false);
+await sleep(4600); // past the retired confirmation's 4 s clock: nothing may appear late either
 const F5 = await hintSample();
-ok('P1e (fresh-load confirmation) the fresh confirmation dismisses ITSELF on the same ~4 s clock as the cached one, while the city stays ready | ' + JSON.stringify(F5),
-  dismissedFresh === true && F5.state === 'ready');
+ok('P1e (no loaded confirmation, Beta 1.223) 4.6 s after the fresh load readied the hint is STILL off with empty text while the city stays ready - no confirmation appears, late or otherwise | ' + JSON.stringify(F5),
+  F5.state === 'ready' && F5.on === false && F5.text === '');
 await exitDiscard();
 
-// ---------- P2 (items 1a+3): the cached re-pick - no Refresh, confirmation pill, self-dismissal ----------
+// ---------- P2 (items 1a+3): the cached re-pick - no Refresh, no confirmation pill (Beta 1.223) ----------
 const inPick2 = await enterManual();
 const ready2 = await poll(`typeof crPrepState !== 'undefined' && crPrepState === 'ready' && !!(crGrid && crGrid.fromCache)`, 30000).catch(() => false);
 const C1 = await hintSample();
-ok('P2a (cached re-pick) the city readies FROM CACHE and the pill is the plain load confirmation - city + loaded date, no \'tap a road\', and NO refresh control is shown in the healthy state | ' + JSON.stringify(C1),
-  inPick2 === true && ready2 === true && C1.on === true && C1.text.indexOf('Vaughan — loaded') === 0 && C1.text.indexOf('tap a road') < 0 && C1.btnShown === false);
-const dismissed = await poll(`!document.getElementById('createHint').classList.contains('on')`, 9000).catch(() => false);
+ok('P2a (cached re-pick, Beta 1.223) the city readies FROM CACHE and the hint shows NOTHING - no loaded confirmation, no tap-a-road line, and NO refresh control in the healthy state | ' + JSON.stringify(C1),
+  inPick2 === true && ready2 === true && C1.on === false && C1.text === '' && C1.btnShown === false);
+await sleep(4600); // past the retired confirmation's 4 s clock
 const C2 = await hintSample();
-ok('P2b (confirmation pill) the pill dismisses ITSELF a few seconds after appearing while the city stays ready | ' + JSON.stringify(C2),
-  dismissed === true && C2.state === 'ready');
+ok('P2b (no confirmation pill, Beta 1.223) seconds after the cached re-pick readied, the hint is STILL off with empty text while the city stays ready | ' + JSON.stringify(C2),
+  C2.state === 'ready' && C2.on === false && C2.text === '');
 
 // ---------- P3 (items 4+2+3): road tap - no 'Added' toast, panel title, pill stays dismissed ----------
 await ev(tapStreet('Bordeaux Drive'));
@@ -157,7 +158,7 @@ ok('P3a (road tap) tapping a road adds it with NO \'Added\' popup - the toast ne
   T1.streets.includes('Bordeaux Drive') && T1.toast.indexOf('Added') < 0);
 ok('P3b (panel title) the pick panel is headed \'Current selection\' | ' + JSON.stringify(T1.panel),
   T1.panel.indexOf('Current selection') === 0);
-ok('P3c (pill stays dismissed) the road tap\'s hint re-render does not resurrect the dismissed confirmation pill',
+ok('P3c (no confirmation to resurrect, Beta 1.223) the road tap\'s hint re-render keeps the hint off - the loaded confirmation no longer exists',
   T1.pillOn === false);
 
 // ---------- P4 (item 6): the review sheet ----------

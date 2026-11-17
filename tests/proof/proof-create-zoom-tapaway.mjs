@@ -98,9 +98,10 @@ if (crZoomW) {
 }
 // ---------- S1: layer wiring ----------
 check('S1: crDraftCase width rides crZoomW(9.75)', pick.includes("'line-width': crZoomW(9.75)"));
-check('S1: crDraftLine (chosen layer) width rides crZoomW(6.75)', pick.includes("id: 'crDraftLine', type: 'line', source: DRAFT_SRC, filter: ['==', ['get', 'chosen'], 1]") && pick.includes("'line-width': crZoomW(6.75)"));
+check('S1: crDraftLine (chosen, not active) width rides crZoomW(6.75)', pick.includes("id: 'crDraftLine', type: 'line', source: DRAFT_SRC, filter: ['all', ['==', ['get', 'chosen'], 1], ['!=', ['get', 'active'], 1]]") && pick.includes("'line-width': crZoomW(6.75)"));
 check('S1: crDraftLineDim (unchosen layer) width rides crZoomW(4.5)', pick.includes("id: 'crDraftLineDim', type: 'line', source: DRAFT_SRC, filter: ['!=', ['get', 'chosen'], 1]") && pick.includes("'line-width': crZoomW(4.5)"));
-check('S1: the unchosen layer wears its class colours through the engine mute (Beta 1.221 saturation parity - never the flat grey again; called as GLP.mute, the exported form - a bare mute() is private to the engine IIFE and throws at init)', pick.includes("'line-color': ['case', ['==', ['get', 'primary'], 1], GLP.mute('#ffc233'), GLP.mute('#ef476f')]") && !pick.includes("'line-color': '#b9c1cb'"));
+check('S1: the unchosen layer wears the flat grey #b9c1cb again (Beta 1.223 - the corrected model reverts the Beta 1.221 muted-colour paint for removed sectors; the engine mute no longer paints any draft layer)', pick.includes("'line-color': '#b9c1cb'") && !pick.includes("GLP.mute('#ffc233')"));
+check('S1: the chosen-not-active layer wears the GENTLE mute (saturation x0.65: gold #dbb457, red #d2647e) and the active layer the full colours (Beta 1.223)', pick.includes("'line-color': ['case', ['==', ['get', 'primary'], 1], '#dbb457', '#d2647e']") && pick.includes("id: 'crDraftLineActive', type: 'line', source: DRAFT_SRC, filter: ['all', ['==', ['get', 'chosen'], 1], ['==', ['get', 'active'], 1]]") && pick.includes("'line-color': ['case', ['==', ['get', 'primary'], 1], '#ffc233', '#ef476f']"));
 // Regression guard for the defect the 1.210 rendered QA caught: a zoom
 // curve nested inside a case as a line-width makes MapLibre silently
 // drop the whole layer (addLayer does not throw; the layer never

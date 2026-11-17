@@ -17,7 +17,7 @@ function workRateMh(workM, startMs, endMs, minH) { const h = (endMs - startMs) /
 function fmtRate(r) { return (r / 1000).toFixed(1) + ' km of sides/hr'; }
 const DAY3 = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
 function fmtDate3(iso) { const d = new Date(iso); if (isNaN(d)) return ''; return DAY3[d.getDay()] + ', ' + MON3[d.getMonth()] + ' ' + d.getDate(); } // Beta 1.184: 'Tue, Nov 10' - the redesign date form for saved-clean rows and the detail header
-function fmtHM(ms) { if (ms == null || isNaN(ms) || ms < 0) return '—'; const m = Math.round(ms / 60000); return Math.floor(m / 60) + ':' + String(m % 60).padStart(2, '0'); } // Beta 1.184: colon duration for the redesign stat cells and rows (1:24, 2:41) - presentation only; fmtDur keeps every existing surface
+function fmtHM(ms) { if (ms == null || isNaN(ms) || ms < 0) return '–'; const m = Math.round(ms / 60000); return Math.floor(m / 60) + ':' + String(m % 60).padStart(2, '0'); } // Beta 1.184: colon duration for the redesign stat cells and rows (1:24, 2:41) - presentation only; fmtDur keeps every existing surface
 function fmtPaceKm(msPerKm) { if (msPerKm == null || isNaN(msPerKm) || !isFinite(msPerKm) || msPerKm <= 0) return null; const s = Math.round(msPerKm / 1000); return Math.floor(s / 60) + ':' + String(s % 60).padStart(2, '0'); } // Beta 1.184: '8:56' - minutes:seconds per ROAD km
 function cleanPaceKm(h) { // Beta 1.184: a saved clean pace per ROAD km - its total elapsed (start to the Finish tap) over its road kilometres (cleanWorkM counts SIDES, so road km = cleanWorkM / 2000). null when underivable (a legacy clean with no usable times, or no recorded work)
   const d = histDur(h); if (!d) return null;
@@ -86,26 +86,26 @@ function renderPace() { // Beta 1.184 (Andrew): the approved redesign - This run
   if (runStart && p.live && p.rateMh && p.refRateMh) {
     const diffMin = Math.round((totalWorkM() / p.refRateMh - totalWorkM() / p.rateMh) * 60);
     const etaBit = p.etaClock ? ', ETA ' + p.etaClock : '';
-    if (diffMin > 0) banner = '<div class="verd"><span class="vd-g">▲ Faster by ' + diffMin + ' min</span> — verdict at today\'s pace' + etaBit + '</div>';
-    else if (diffMin < 0) banner = '<div class="verd"><span class="vd-r">▼ Slower by ' + (-diffMin) + ' min</span> — verdict at today\'s pace' + etaBit + '</div>';
-    else banner = '<div class="verd"><span class="vd-g">On pace with the reference clean</span> — verdict at today\'s pace' + etaBit + '</div>';
+    if (diffMin > 0) banner = '<div class="verd"><span class="vd-g">▲ Faster by ' + diffMin + ' min</span>. Verdict at today\'s pace' + etaBit + '</div>';
+    else if (diffMin < 0) banner = '<div class="verd"><span class="vd-r">▼ Slower by ' + (-diffMin) + ' min</span>. Verdict at today\'s pace' + etaBit + '</div>';
+    else banner = '<div class="verd"><span class="vd-g">On pace with the reference clean</span>. Verdict at today\'s pace' + etaBit + '</div>';
   } else if (ref) {
     const rd = histDur(ref), rp = cleanPaceKm(ref);
-    banner = '<div class="verd ref">Reference clean (' + fmtDate3(ref.at) + ')' + (rd && rp ? ' — ' + fmtHM(rd.durMs) + ' total · ' + rp + ' /km pace' : '') + '</div>';
+    banner = '<div class="verd ref">Reference clean (' + fmtDate3(ref.at) + ')' + (rd && rp ? ', ' + fmtHM(rd.durMs) + ' total · ' + rp + ' /km pace' : '') + '</div>';
   } else {
-    banner = '<div class="verd ref">No reference clean yet — finish a clean to set your pace</div>';
+    banner = '<div class="verd ref">No reference clean yet. Finish a clean to set your pace</div>';
   }
   const last = history.length ? history[history.length - 1] : null; // most recent = the last element (history is chronological, append-only) - NOT the reference clean; the two can differ
   const ld = last ? histDur(last) : null;
   const lp = last ? cleanPaceKm(last) : null;
   let html =
     '<div class="statgrid">' +
-    statCell('clock', runStart ? fmtHM(Date.now() - runStart) : '—', 'ELAPSED') +
+    statCell('clock', runStart ? fmtHM(Date.now() - runStart) : '–', 'ELAPSED') +
     statCell('road', (workDoneM() / 2000).toFixed(1) + ' km', 'ROAD CLEARED') +
-    statCell('flag', p.etaClock || '—', 'ETA') +
+    statCell('flag', p.etaClock || '–', 'ETA') +
     statCell('list', STREETNAMES.filter(streetComplete).length + '/' + STREETNAMES.length, 'STREETS') +
-    statCell('cal', ld ? fmtHM(ld.durMs) : '—', 'LAST CLEAN') +
-    statCell('gauge', lp || '—', 'LAST PACE /KM') +
+    statCell('cal', ld ? fmtHM(ld.durMs) : '–', 'LAST CLEAN') +
+    statCell('gauge', lp || '–', 'LAST PACE /KM') +
     '</div>' +
     banner +
     (runStart ? '<button class="red" id="paceCancel">Cancel start</button>' : '') +
@@ -121,7 +121,7 @@ function renderPace() { // Beta 1.184 (Andrew): the approved redesign - This run
     html += '<div class="prow histRow" data-i="' + i + '"><span><span class="sc-d">' + fmtDate3(history[i].at) + '</span> <span class="sc-n">· ' + d.count + ' streets</span></span><span class="sc-t">' + fmtHM(d.durMs) + '</span></div>';
     any++;
   }
-  if (!any) html += '<div style="font-size:13px;color:var(--ink-dim);padding:4px 2px">No cleans saved yet — when you finish a clean and tap Finish, it lands here with its total time.</div>';
+  if (!any) html += '<div style="font-size:13px;color:var(--ink-dim);padding:4px 2px">No cleans saved yet. When you finish a clean and tap Finish, it lands here with its total time.</div>';
   $('pacePad').innerHTML = html;
   const c = $('paceCancel'); if (c) c.addEventListener('click', () => { cancelStart(); closeSheets(); });
   $('pacePad').querySelectorAll('.histRow').forEach(r => r.addEventListener('click', () => openClean(+r.dataset.i)));
@@ -162,10 +162,10 @@ function openClean(i) {
   const stats = document.createElement('div'); stats.className = 'statgrid d2'; // Beta 1.184: the design 2x2 cells - TOTAL TIME is histDur span (the same interval the Saved-cleans row shows); ROAD CLEARED is work, GPS TRAIL is travel: different measures, distinct labels, never merged
   const cpk = cleanPaceKm(h);
   stats.innerHTML =
-    statCell('clock', d ? fmtHM(d.durMs) : '—', 'TOTAL TIME') +
+    statCell('clock', d ? fmtHM(d.durMs) : '–', 'TOTAL TIME') +
     statCell('road', (cleanWorkM(h) / 2000).toFixed(1) + ' km', 'ROAD CLEARED') +
-    statCell('gauge', cpk ? cpk + ' /km' : '—', 'PACE') +
-    statCell('trail', h.km ? (+h.km).toFixed(1) + ' km' : '—', 'GPS TRAIL');
+    statCell('gauge', cpk ? cpk + ' /km' : '–', 'PACE') +
+    statCell('trail', h.km ? (+h.km).toFixed(1) + ' km' : '–', 'GPS TRAIL');
   cv.appendChild(stats);
   const meta = document.createElement('div'); meta.className = 'cvMeta';
   const elapsedMs = d ? Date.parse(h.at) - d.start : NaN; // Beta 1.167 (B3, RP-08): the SECOND interval - the run's start to the Finish tap (h.at). Through 1.166 the single 'Total time' figure was histDur's start-to-LAST-COMPLETION span while the pace rate divided by start-to-Finish: two different intervals, one label, a 15.8% skew on a 30-minute tail. Both are shown now, each under its own label; the math is unchanged.
@@ -186,7 +186,7 @@ function openClean(i) {
     const top = document.createElement('div'); top.className = 'cvTop';
     top.innerHTML = '<span class="dot dot-done"></span><div class="cvNm"></div><div class="cvTm"></div>'; // Beta 1.184: cleaned rows wear the done dot; NO pin anywhere in the detail (pins are the live list's locate control)
     top.querySelector('.cvNm').textContent = n;
-    top.querySelector('.cvTm').textContent = (!isNaN(t) ? fmtClock(new Date(t)) : '—') + ((span > 0) ? (' · span ' + fmtDur(span)) : (stArr.length ? ' · marked in one go' : (!isNaN(dur) ? (' · gap ' + fmtDur(dur)) : ''))); // Beta 1.167 (B3, RP-07): a street whose recorded sides all carry ONE moment (span 0 - the whole-street mark) reads as marked in one go instead of inheriting the previous street's gap as its 'took'; the stamp-less fallback is a GAP since the previous completion, and is labelled as one
+    top.querySelector('.cvTm').textContent = (!isNaN(t) ? fmtClock(new Date(t)) : '–') + ((span > 0) ? (' · span ' + fmtDur(span)) : (stArr.length ? ' · marked in one go' : (!isNaN(dur) ? (' · gap ' + fmtDur(dur)) : ''))); // Beta 1.167 (B3, RP-07): a street whose recorded sides all carry ONE moment (span 0 - the whole-street mark) reads as marked in one go instead of inheriting the previous street's gap as its 'took'; the stamp-less fallback is a GAP since the previous completion, and is labelled as one
     rowEl.appendChild(top);
     const lines = cleanNoteLines((h.notes || {})[n]);
     if (lines.length) { const ni = document.createElement('span'); ni.className = 'cvNoteIco'; ni.innerHTML = ICONS.note; top.insertBefore(ni, top.querySelector('.cvTm')); } // Beta 1.184 (Andrew): a note icon ONLY on a street that had a note saved on THIS clean; tapping the row opens the note read-only (the .cvDet below)
@@ -227,7 +227,7 @@ function openClean(i) {
     history.splice(cleanIdx, 1);
     const okDel = saveHistory();
     backToCleans();
-    if (!okDel) toast('Storage problem — the delete could not be saved; the clean may return on reload', 4200); // Beta 1.63 (audit F04)
+    if (!okDel) toast('Storage problem. The delete could not be saved; the clean may return on reload', 4200); // Beta 1.63 (audit F04)
     updateCount();
   };
   cv.appendChild(del);
@@ -312,7 +312,7 @@ function validateSnap(raw, expectAt, G) { // Beta 1.95 (deep audit SR-194-03): a
 // Start is evicted here (finish/cancel already clear theirs; the fence makes the window
 // invariant local to Start rather than trusting every exit path).
 function startClean() { snapReset(); // Beta 1.204: Start Clean is the driving snap's HARD EXIT - the hold and the blend die at the tap itself, so the shown point is already back on the true position before the clean's first fix; snapFix's runStart gate then keeps snapping impossible for the whole clean
-  runSnap = { pieces: JSON.parse(JSON.stringify(pieces)), pieceTimes: JSON.parse(JSON.stringify(pieceTimes)), done: [...doneSet], times: { ...doneTimes }, via: { ...doneVia }, cov: JSON.parse(JSON.stringify(coveredIdx)) }; runStart = Date.now(); runDist = { run: runStart, m: 0, end: null }; runDistWrote = { run: 0, m: 0, end: null }; persistRunDist(true); const trailAtStart = trail.length; trail = trailWindow(trail, runStart); if (trail.length !== trailAtStart) markDirty('trail'); const okSnap = saveSnap(); const okSess = noteSessionStart(); const okStart = saveAllWarned(); startGps(true); updateCount(); syncWake(); if (!okStart.ok) toast('Clean started — warning: the clean state could not be saved (storage problem)', 4200); else if (!okSess.ok) toast('Clean started — warning: the session marker could not be saved; it will keep retrying', 4200); else if (!okSnap.ok) toast('Clean started — warning: the cancel safety snapshot could not be saved; it will keep retrying', 4200); checkStale(); } // Beta 1.221 gate fix (Codex P2, PR #98): the snapshot branch is guarded by !okSnap.ok - when the toast cuts removed the old success pill, the chain's last branch lost its condition and EVERY healthy Start showed this failure warning; the healthy path must stay silent (drive146 S1/S2) // Beta 1.167 (B5): startClean banks a fresh distance counter for the new run (the runDist assignment + persistRunDist(true) beside runStart above), so even an instant reload resumes THIS run's counter. // Beta 1.73 (audit C04): the marker save is part of the start's honesty check, not a silent side write // Beta 1.63 (audit F04): the clean still starts - he is standing in the snow - but the message stops claiming a saved state that does not exist
+  runSnap = { pieces: JSON.parse(JSON.stringify(pieces)), pieceTimes: JSON.parse(JSON.stringify(pieceTimes)), done: [...doneSet], times: { ...doneTimes }, via: { ...doneVia }, cov: JSON.parse(JSON.stringify(coveredIdx)) }; runStart = Date.now(); runDist = { run: runStart, m: 0, end: null }; runDistWrote = { run: 0, m: 0, end: null }; persistRunDist(true); const trailAtStart = trail.length; trail = trailWindow(trail, runStart); if (trail.length !== trailAtStart) markDirty('trail'); const okSnap = saveSnap(); const okSess = noteSessionStart(); const okStart = saveAllWarned(); startGps(true); updateCount(); syncWake(); if (!okStart.ok) toast('Clean started. Warning: the clean state could not be saved (storage problem)', 4200); else if (!okSess.ok) toast('Clean started. Warning: the session marker could not be saved; it will keep retrying', 4200); else if (!okSnap.ok) toast('Clean started. Warning: the cancel safety snapshot could not be saved; it will keep retrying', 4200); checkStale(); } // Beta 1.221 gate fix (Codex P2, PR #98): the snapshot branch is guarded by !okSnap.ok - when the toast cuts removed the old success pill, the chain's last branch lost its condition and EVERY healthy Start showed this failure warning; the healthy path must stay silent (drive146 S1/S2) // Beta 1.167 (B5): startClean banks a fresh distance counter for the new run (the runDist assignment + persistRunDist(true) beside runStart above), so even an instant reload resumes THIS run's counter. // Beta 1.73 (audit C04): the marker save is part of the start's honesty check, not a silent side write // Beta 1.63 (audit F04): the clean still starts - he is standing in the snow - but the message stops claiming a saved state that does not exist
 // Beta 1.91 (Andrew): Cancel start erases everything the run recorded - its trail points, its session
 // marker, any sides marked during it, its coverage and suggestions - and stores nothing. Only Finish
 // stores a run. (Supersedes the Beta 1.70 A04 call that kept the trail as history - Andrew's word.)
@@ -349,8 +349,8 @@ function cancelStart() {
   if (window.GLP) window.GLP.sync(); renderPanel(); renderStreets();
   updateCount(); syncWake();
   const rebuiltWhy = snapDamaged ? 'the saved snapshot was damaged' : (snapAbsent ? 'no start snapshot was saved' : ''); // Beta 1.96 (deep audit SR-195-01): the message is COMPOSED, not chained - 1.95's if-chain evaluated the damage branch before the unsaved-cleanup branch, so in the combined case (damaged snapshot AND a trail cleanup that could not be saved) the erasure message masked the storage warning entirely. The storage warning now leads whenever it applies, with the rebuild explanation attached; each single-failure message keeps its exact prior wording.
-  if (okCancel && trailPending) toast('Start cancelled — erased here, but the trail cleanup could not be saved yet; it will keep retrying' + (rebuiltWhy ? ' — the board was rebuilt from the marks made during the clean (' + rebuiltWhy + ')' : ''), 4600);
-  else if (okCancel && snapDamaged) toast('Start cancelled — clean erased (the saved snapshot was damaged, so the board was rebuilt from the marks made during the clean)', 4600); // Beta 1.221 gate fix (drive133 S12a, CI): the DAMAGED disclosure was cut with the plain success pill, but it is not a confirmation - it is the ONLY surface that tells him the cancel REBUILT the board approximately because the saved snapshot was corrupt (the Beta 1.95 SR-194-03 design). Andrew's named cut was the PLAIN form, which stays cut, and the ABSENT form stays cut too (drive143 C1/C2 assert a clean cancel with no snapshot fires no pill - through the real Start path an absent snapshot already warned at Start, when saveSnap failed). The damaged form is an adjudicated keep beside the trail-cleanup warning, under his severe + no-other-surface rule
+  if (okCancel && trailPending) toast('Start cancelled. Erased here, but the trail cleanup could not be saved yet; it will keep retrying' + (rebuiltWhy ? '. The board was rebuilt from the marks made during the clean (' + rebuiltWhy + ')' : ''), 4600);
+  else if (okCancel && snapDamaged) toast('Start cancelled. Clean erased (the saved snapshot was damaged, so the board was rebuilt from the marks made during the clean)', 4600); // Beta 1.221 gate fix (drive133 S12a, CI): the DAMAGED disclosure was cut with the plain success pill, but it is not a confirmation - it is the ONLY surface that tells him the cancel REBUILT the board approximately because the saved snapshot was corrupt (the Beta 1.95 SR-194-03 design). Andrew's named cut was the PLAIN form, which stays cut, and the ABSENT form stays cut too (drive143 C1/C2 assert a clean cancel with no snapshot fires no pill - through the real Start path an absent snapshot already warned at Start, when saveSnap failed). The damaged form is an adjudicated keep beside the trail-cleanup warning, under his severe + no-other-surface rule
   else if (!okCancel) toast('Start cancelled - warning: the cancellation could not be saved; the clean may return on reload', 4200);
 } // Beta 1.69 (audits N03 + trail): cancelStart ignored saveAll's result and claimed success unconditionally; it also never refreshed the trail, so a cancelled run's line lingered
 $('startBtn').addEventListener('click', () => { if (!tapGuard('startBtn')) return; startClean(); });
@@ -364,7 +364,7 @@ function clearAllMarks() {
   doneSet = new Set(); doneTimes = {}; doneVia = {}; coveredIdx = {}; suggested = new Set(); sugQueue = [];
   $('suggest').classList.add('hidden'); delete $('suggest').dataset.n; // Beta 1.71 (audit B01): the one path the 1.70 dismissal sweep missed - Clear wiped the coverage behind the panel but left the panel itself up, its Yes still able to select the street
   deselect(); const okClear = finishChange();
-  if (!okClear.ok) toast('Storage problem — the clear could not be saved; marks may return on reload', 4200); // Beta 1.63 (audit F04)
+  if (!okClear.ok) toast('Storage problem. The clear could not be saved; marks may return on reload', 4200); // Beta 1.63 (audit F04)
 }
 $('clearBtn').addEventListener('click', () => { if (!tapGuard('clearBtn')) return; clearAllMarks(); });
 $('cancelStartBtn').addEventListener('click', () => { if (!tapGuard('cancelStartBtn')) return; cancelStart(); });
@@ -499,9 +499,9 @@ function finishRun() {
   if (runStart) fSteps.push({ name: 'start', write: () => txDel(LS.start), undo: () => txSet(LS.start, String(runStart)) });
   const fTx = runTx(fSteps);
   if (fTx.outcome !== 'committed') {
-    if (fTx.outcome === 'degraded') { toast(fTx.failedStep === 'sides' && archiving ? 'Storage failure \u2014 finish stopped, but the archive could not be undone. Export a backup now' : 'Storage failure \u2014 finish stopped, but the rollback could not be verified. Export a backup now', 6000); return; } // Beta 1.141 verify cycle 1: degraded is judged FIRST - an archive failure whose rollback could not be verified is not "run intact", whatever step failed
-    if (fTx.failedStep === 'archive') { toast('Storage full \u2014 finish stopped, clean intact', 3600); return; }
-    toast('Storage problem \u2014 finish stopped, your clean is intact', 4200); return;
+    if (fTx.outcome === 'degraded') { toast(fTx.failedStep === 'sides' && archiving ? 'Storage failure. Finish stopped, but the archive could not be undone. Export a backup now' : 'Storage failure. Finish stopped, but the rollback could not be verified. Export a backup now', 6000); return; } // Beta 1.141 verify cycle 1: degraded is judged FIRST - an archive failure whose rollback could not be verified is not "run intact", whatever step failed
+    if (fTx.failedStep === 'archive') { toast('Storage full. Finish stopped, clean intact', 3600); return; }
+    toast('Storage problem. Finish stopped, your clean is intact', 4200); return;
   }
   lsDel(LS.snap); markClean('snap'); resetRunDist(); lsDel(LS.rundist); lsDel(LS.rundist2); trail = []; markDirty('trail'); // Beta 1.167 (B5): the distance counter is consumed into the archive entry (km) - its record goes with the run. Beta 1.193: its mirror copy goes too, and the trail window is cleared with them - the run is over, so the fallback's only consumer is gone (the Start fence and the load window would evict the points anyway; clearing here keeps the stored trail honest between runs). Beta 1.94 (SR-193-02): the run is finished - its cancel snapshot goes with it. Ungated on purpose: a leftover snapshot is stamped with THIS run's start, so it can never match a future run, and the next Start overwrites it anyway
   if (archiving) history = newHist;
@@ -510,7 +510,7 @@ function finishRun() {
   stopGps(); deselect(); // Beta 1.193: through 1.190 this also force-drew the trail to clear the finished line (Beta 1.69) - there is no line any more; the window itself was cleared with the counter records above
   const restRes = saveAll(); const restOk = restRes.ok; // the gated sides write already landed; this pass carries the metadata - a failure here warns but cannot resurrect anything (authority + archive agree)
   finishChange();
-  if (!restOk) toast((archiving ? 'Clean archived · ' + Object.keys(snap.items).length + ' streets' : 'Board cleared — under 3 streets, nothing saved') + ' — some details could not be written (' + restRes.failedKey + '); they retry on the next save', 3400); // Beta 1.221 adjudication: the finish SUCCESS pill is cut (the board and history are the report), but its failure suffix is a storage-problem warning with no other surface - the pill survives for the failure case only, text verbatim
+  if (!restOk) toast((archiving ? 'Clean archived · ' + Object.keys(snap.items).length + ' streets' : 'Board cleared. Under 3 streets, nothing saved') + '. Some details could not be written (' + restRes.failedKey + '); they retry on the next save', 3400); // Beta 1.221 adjudication: the finish SUCCESS pill is cut (the board and history are the report), but its failure suffix is a storage-problem warning with no other surface - the pill survives for the failure case only, text verbatim
   if (archiving) maybeBackupNudge();
   onFinishFeedback(); // Beta 1.111: only on the COMMITTED path (every failure return above leaves the run intact and silent) - the Done chime plays twice here (once for Chime Melody) plus the finish vibration pattern, per the On-the-job settings; fully guarded in app4
 }
@@ -518,7 +518,7 @@ function performReset() { finishRun(); } // production's name for the finish act
 function checkStale() {
   const stale = runStart && (Date.now() - runStart > 12 * 3600000);
   $('stale').classList.toggle('hidden', !stale);
-  if (stale) $('staleText').textContent = 'This clean started ' + fmtClock(new Date(runStart)) + ' — over 12 hours ago. Finish it, or keep going?';
+  if (stale) $('staleText').textContent = 'This clean started ' + fmtClock(new Date(runStart)) + ', over 12 hours ago. Finish it, or keep going?';
 }
 $('staleYes').addEventListener('click', () => { $('stale').classList.add('hidden'); $('resetBtn').click(); });
 $('staleNo').addEventListener('click', () => $('stale').classList.add('hidden'));
@@ -548,12 +548,12 @@ function setNoteText(n, txt) {
 }
 function flagText(n) { return (Array.isArray(notes[n]) ? notes[n] : []).map(f => f.k === 'note' ? ('📝 ' + (f.text || '')) : (FLAGS[f.k] || f.k) + (f.at ? ' ' + fmtClock(new Date(f.at)) : '')).join('; '); }
 let noteFor = null;
-function openNote(name) { noteFor = name; $('noteTitle').textContent = 'Note — ' + name; $('noteText').value = noteTextOf(name); $('noteModal').classList.remove('hidden'); }
+function openNote(name) { noteFor = name; $('noteTitle').textContent = 'Note: ' + name; $('noteText').value = noteTextOf(name); $('noteModal').classList.remove('hidden'); }
 $('noteNo').addEventListener('click', () => $('noteModal').classList.add('hidden'));
 $('noteYes').addEventListener('click', () => {
   if (!noteFor) return;
   const okNote = setNoteText(noteFor, $('noteText').value);
-  $('noteModal').classList.add('hidden'); renderStreets(); if (!okNote.ok) toast('Storage problem — the note could not be saved', 4200); // Beta 1.63 (audit F04)
+  $('noteModal').classList.add('hidden'); renderStreets(); if (!okNote.ok) toast('Storage problem. The note could not be saved', 4200); // Beta 1.63 (audit F04)
 });
 
 // ===== GPS (checklist SS7) =====
@@ -1436,8 +1436,8 @@ $('sugNo').addEventListener('click', () => { $('suggest').classList.add('hidden'
 let weakToastAt = 0;
 let gpsDenied = false; // Beta 1.111: the Status health GPS row's amber state - set by a permission denial (gpsError code 1), cleared by any accepted fix
 function gpsError(e) {
-  if (e && e.code === 1) { gpsDenied = true; toast('Location is off — allow location for this site in your browser settings', 4200); stopGps(); return; }
-  if (Date.now() - weakToastAt > 60000) { weakToastAt = Date.now(); toast('GPS signal weak — still trying', 2600); }
+  if (e && e.code === 1) { gpsDenied = true; toast('Location is off. Allow location for this site in your browser settings', 4200); stopGps(); return; }
+  if (Date.now() - weakToastAt > 60000) { weakToastAt = Date.now(); toast('GPS signal weak. Still trying', 2600); }
 }
 function startGps(fromRun, restart) {
   if (watchId != null) { if (fromRun) { gpsFromRun = true; $('gpsBtn').classList.add('on'); $('gpsBtn').classList.toggle('rec', true); renderIcons(); } return; } // Beta 1.64 (audit F06): reusing a view-only watcher for a clean must still flip the Locate tab to its recording face - the class sync sits below this early return, so the tab used to stay blue while recording

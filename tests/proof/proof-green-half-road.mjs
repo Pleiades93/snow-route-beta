@@ -374,8 +374,13 @@ check('R7: the create glow writer exists and reads the sector session',
 // proof-shader-glow-round.mjs).
 check('R7: the glow is one custom shader layer fed by the writer, blur stack gone',
   pick.includes("id: 'crGlowShader', type: 'custom'") && pick.includes('crGlowSetFeatures(feats)') && !pick.includes('crGlow4') && !pick.includes("paint['line-blur'] = s[3]"));
+// Beta 1.223 re-derivation (TEST, same invariant): the sector close still puts
+// the glow out explicitly (syncCrGlow stands in crCloseSectors), and since the
+// Codex P2 fix on PR #100 the close ALSO re-renders the draft between the reset
+// and the glow sync - the 1.223 active flags live in the source features, so
+// the close must rebuild them or the street stays vibrant.
 check('R7: the draft render syncs the glow, and the sector close puts it out explicitly',
-  pick.includes('syncCrGlow(); // Beta 1.208: the trim glow tracks the draft') && pick.includes('crSectorReset(); syncCrGlow();'));
+  pick.includes('syncCrGlow(); // Beta 1.208: the trim glow tracks the draft') && pick.includes('crSectorReset(); renderDraft(); syncCrGlow();'));
 
 console.log(failed === 0 ? 'ALL CHECKS PASS' : failed + ' CHECK(S) FAILED');
 process.exit(failed === 0 ? 0 : 1);

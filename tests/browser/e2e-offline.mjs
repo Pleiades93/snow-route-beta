@@ -514,13 +514,13 @@ try {
     await ev2(`(async () => { const r = await migratePack(); return !!(r && r.ok); })()`); // quiesce the boot migration (E19's explicit-call pattern) before the pack is emptied, so no migration copy can land mid-download
     await ev2(`(async () => { await caches.delete('snowroute-offline-v1'); return true; })()`);
     await ev2(`document.getElementById('xPre').click()`);
-    const stopped = await poll(`document.getElementById('xPreStat').textContent.includes('stopped at the')`, 420000);
+    const stopped = await poll(`document.getElementById('xPreStat').textContent.includes('Stopped at the')`, 420000);
     const stat25 = await ev2(`document.getElementById('xPreStat').textContent`);
     await ev2(`document.getElementById('setBtn').click(); true`);
     await ev2(`document.getElementById('stBtn').click(); true`);
     await poll(`document.getElementById('stMapsSub').textContent.includes('files · ')`, 30000);
     e25 = JSON.parse(await ev2(`(async () => { const c = await caches.open('snowroute-offline-v1'); let b = 0, n = 0; for (const r of await c.keys()) { const resp = await c.match(r); if (resp) { b += (await resp.blob()).size; n++; } } const ps = await packState(); return JSON.stringify({ bytes: b, n, psBytes: ps.bytes, fmt: fmtStoreSize(ps.bytes), line: document.getElementById('stMapsLine').textContent, sub: document.getElementById('stMapsSub').textContent }); })()`));
-    ok('E25 the download stops at the cap, names the limit, and the stored pack stays at or under it | ' + stat25 + ' | pack ' + JSON.stringify(e25), stopped && /saved \d+ of \d+ files — stopped at the 512 KB storage limit/.test(stat25 || '') && e25.n >= 1 && e25.n < OFFLINE_FIXTURE.count && e25.bytes > 0 && e25.bytes <= 512 * 1024);
+    ok('E25 the download stops at the cap, names the limit, and the stored pack stays at or under it | ' + stat25 + ' | pack ' + JSON.stringify(e25), stopped && /saved \d+ of \d+ files. Stopped at the 512 KB storage limit/.test(stat25 || '') && e25.n >= 1 && e25.n < OFFLINE_FIXTURE.count && e25.bytes > 0 && e25.bytes <= 512 * 1024);
     ok('E25b Status reads the capped pack as Partial with its measured bytes | ' + JSON.stringify(e25), e25.line === 'Offline maps: Partial' && e25.psBytes === e25.bytes && e25.sub.includes(' · ' + e25.fmt + ' · '));
     // E25c (Codex P2, PR #21): the download is not the pack's only write path - migratePack (the
     // boot heal) copies missing manifest responses from the browsing cache into the pack. The same

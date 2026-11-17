@@ -23,9 +23,9 @@ async function saveDraftRoute() {
   if (!name) { toast('Give the route a name first', 2600); return; }
   const area = $('crAreaInput').value.trim();
   const v = normalizePack({ name, area, primaries: [...draft.primaries], roads: crFilteredRoads(), reference: {} }, { tileNames: [...Object.values(draft.osmNames), ...(draft.tileNames || [])] }); // Beta 1.127: the SAVE stores chosen sectors only - the draft keeps the whole streets, the pack never sees the unchosen ends
-  if (!v.ok) { toast('Could not save — ' + v.error, 4000); return; }
+  if (!v.ok) { toast('Could not save: ' + v.error, 4000); return; }
   const pack = v.pack; pack.id = uniqueRouteId(name);
-  if (!(await upPut(pack.id, pack))) { toast('Storage problem — the route could not be saved', 4000); return; } // Beta 1.166: the save is ONE route's own verified store write (create-packs.js) - the DA-05 hazard class is gone by construction: there is no whole-record read-modify-write left to erase another route, a corrupt legacy record cannot block a save it is no longer part of, and a failed write refuses THIS route only, before it is registered anywhere
+  if (!(await upPut(pack.id, pack))) { toast('Storage problem. The route could not be saved', 4000); return; } // Beta 1.166: the save is ONE route's own verified store write (create-packs.js) - the DA-05 hazard class is gone by construction: there is no whole-record read-modify-write left to erase another route, a corrupt legacy record cannot block a save it is no longer part of, and a failed write refuses THIS route only, before it is registered anywhere
   userPackCache[pack.id] = pack; // the backup picture joins the commit (create-packs.js: the cache moves only at verified commit points)
   ROUTE_PACKS.push(pack); // live in the runtime list at once - listed and switchable without a reload
   try { lsSet(routeKeys(pack.id).pre, JSON.stringify({ at: 0, saved: 0, total: preloadUrlList().length, routeSaved: 0, routeTotal: packTileUrls(pack).size })); } catch (e) {} // F5: the new route starts with an honest preload record - none of its area is downloaded yet; Status offers the (grown) union download

@@ -41,7 +41,7 @@ ok('door titles exact', head.includes('id="crDoorList">Select from list</button>
 ok('no m-sub inside the create pane', !head.slice(head.indexOf('id="rmCreatePane"'), head.indexOf('id="rmCityListPane"')).includes('m-sub'));
 ok('old door titles absent from head.html', !head.includes('Search manually') && !head.includes('From a photo'));
 ok('photo pane title renamed', head.includes('id="rmPhotoPane"><div class="rmTitle">Upload photo</div>'));
-ok('failure note names Manual search', pick.includes('go back and use Manual search.') && !pick.includes('Search manually'));
+ok('failure note names Manual search', pick.includes('Go back and use Manual search.') && !pick.includes('Search manually'));
 
 // 5 — city rows
 ok('city rows built with sub null (name only)', pick.includes("routeRowShell('button', e.name, null, { chevron: true })"));
