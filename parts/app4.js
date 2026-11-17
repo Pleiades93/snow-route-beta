@@ -544,19 +544,20 @@ let storagePersist = null; // Beta 1.183 (storage audit §3 item 2): the platfor
 function parseVerLabel(s) { const m = typeof s === 'string' ? s.trim().match(/^Beta (\d+)\.(\d+)$/) : null; return m ? [Number(m[1]), Number(m[2])] : null; } // Beta 1.150 (security-audit fix round): the version ordering the update check compares by - two numeric components, nothing else parses
 $('updBtn').addEventListener('click', async () => {
   if (!tapGuard('updBtn')) return;
+  const updDone = () => { showSetPane('setStatusPane'); renderStatus(true); }; // Beta 1.221 gate fix (Codex P2, PR #98): the outcome toasts are cut (Andrew's keep-list), and the result's surviving surface is the System Health version row - so a finished manual check takes him to that row, rendered fresh. Without this the tap appeared to do nothing: updState changed where nobody was looking.
   try {
     if (navigator.serviceWorker) { const reg = await navigator.serviceWorker.getRegistration(); if (reg) await reg.update(); }
     const r = await fetch(location.pathname + '?updprobe=1&v=' + Date.now(), { cache: 'no-store' }); // Beta 1.150 (finding update-check-reports-cached-copy-as-server-copy): the probe carries the updprobe marker and the worker answers it with the network itself or a network error, NEVER its cached shell (src/sw.js) - pre-1.150 this fetch went through netFirst, which substitutes the cached shell on any error status, rejection or stall, so a server answering 503 still produced 'Up to date' from the cache
-    if (!r.ok) { updState = 'fail'; return; }
+    if (!r.ok) { updState = 'fail'; updDone(); return; }
     const html = await r.text();
     const m = html.match(/id="ver">([^<]+)</);
     const served = m && m[1].trim();
     const mine = $('ver').textContent.trim();
-    if (!served) { updState = 'fail'; return; }
-    if (served === mine) { updState = 'ok'; return; }
+    if (!served) { updState = 'fail'; updDone(); return; }
+    if (served === mine) { updState = 'ok'; updDone(); return; }
     const sv = parseVerLabel(served), mv = parseVerLabel(mine); // Beta 1.150 (finding update-check-treats-any-difference-as-newer): a difference is an update only when it is strictly NEWER - an older server build is a fact to report, never a version to install, and an unparseable label cannot be ordered so it is never installed on a guess
     if (sv && mv) {
-      if (sv[0] < mv[0] || (sv[0] === mv[0] && sv[1] < mv[1])) { updState = 'older'; return; }
+      if (sv[0] < mv[0] || (sv[0] === mv[0] && sv[1] < mv[1])) { updState = 'older'; updDone(); return; }
       updState = 'avail';
       toast('New version found — reloading…', 2600);
       setTimeout(() => location.replace(location.pathname + '?v=' + Date.now()), 900);
@@ -564,6 +565,7 @@ $('updBtn').addEventListener('click', async () => {
     }
     updState = 'diff';
   } catch (e) { updState = 'fail'; } // Beta 1.150: a failed check is reported as a failed check - the pre-1.150 catch reloaded 'to be safe', which could only land on the same cached shell the probe just failed to get past
+  updDone(); // the 'diff' outcome and the catch's 'fail' land here - same trip to the version row as the early returns above
 });
 
 // ===== FAN / NIGHT / FLIP / HOME =====

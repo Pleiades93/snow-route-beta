@@ -29,6 +29,8 @@ ok('B0 an idle backup asserts idle explicitly (start: null, not an omitted key) 
 // ---- A: snapshot in a normal backup ---- //
 // (the pre-Start mark is the fixture's Velmar side, marked above)
 await ev(`startClean(); true`); await sleep(250);
+const S1 = JSON.parse(await ev(`(() => JSON.stringify({ show: $('toast').classList.contains('show'), text: $('toast').textContent }))()`));
+ok('S1 a HEALTHY Start shows NO snapshot-failure warning (Beta 1.221 gate regression - Codex P2 on PR #98: cutting the success pill left the warning branch unguarded, so every healthy Start cried storage failure) | ' + JSON.stringify(S1), !(S1.show && S1.text.indexOf('cancel safety snapshot') >= 0));
 await ev(`togglePiece('Velmar', 0, 0); true`); await sleep(250); // unmark it mid-run - the journal-blind act
 const bkA = JSON.parse(JSON.parse(JSON.stringify(await ev(`buildBackup()`))));
 const snapA = (() => { try { return JSON.parse(bkA.routes['5w'].snap); } catch (e) { return null; } })();
@@ -129,6 +131,13 @@ await ev(`(() => { Storage.prototype.getItem = window.__og146; return true; })()
 const healthy = JSON.parse(JSON.parse(JSON.stringify(await ev(`buildBackup()`))));
 ok('E2b healthy again: the export carries the snapshot | snap ' + (typeof healthy.routes['5w'].snap), typeof healthy.routes['5w'].snap === 'string');
 await ev(`cancelStart(); true`); await sleep(250);
+
+// ---- S2: the snapshot warning lives, gated on the failure (Beta 1.221 gate fix) ---- //
+await ev(`(() => { window.__os146 = Storage.prototype.setItem; Storage.prototype.setItem = function (k, v) { if (k === LS.snap) throw new Error('rig: snap write fails'); return window.__os146.call(this, k, v); }; window.__pillLog146 = []; window.__pillRec146 = setInterval(() => { const t = $('toast'); window.__pillLog146.push(t.classList.contains('show') ? t.textContent : ''); }, 25); return true; })()`);
+await ev(`startClean(); true`); await sleep(1200);
+const S2 = JSON.parse(await ev(`(() => { clearInterval(window.__pillRec146); return JSON.stringify(window.__pillLog146); })()`));
+ok('S2 a FAILED snapshot save at Start DOES warn - the warning is gated on !okSnap.ok, not deleted (Beta 1.221 gate fix; an in-page recorder samples the pill every 25 ms because the ambient location-off pill legitimately overwrites it within a second) | saw snapshot warning: ' + S2.some(x => x.indexOf('cancel safety snapshot could not be saved') >= 0), S2.some(x => x.indexOf('cancel safety snapshot could not be saved') >= 0));
+await ev(`(() => { Storage.prototype.setItem = window.__os146; cancelStart(); return true; })()`); await sleep(250);
 
 R.exceptions = consoleLog.filter(l => l.type === 'error');
 await finish(R, proc);

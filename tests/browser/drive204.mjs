@@ -41,7 +41,13 @@ const measure = () => J(`(() => {
 
 const fire = async (state, text) => {
   await ev(`(() => { toast(${JSON.stringify(text)}, 60000); return true; })()`);
-  await sleep(420); // the fade+rise transition settles (transform lands at 0)
+  // Wait for the rise to actually SETTLE (the pill's live transform offset back to 0)
+  // before measuring: the standing band is the property under test, and a fixed sleep
+  // races the transition on a loaded rig - a mid-rise pill sweeps the space below its
+  // band and reads as an overlap that is not its standing position (idle-day flaked
+  // 104x10 against startBtn exactly this way, Beta 1.221 gate round).
+  await poll(`(() => { try { return Math.abs(new DOMMatrixReadOnly(getComputedStyle($('toast')).transform).m42 || 0) < 0.5; } catch (e) { return false; } })()`, 5000).catch(() => false);
+  await sleep(60);
   const m = await measure();
   ok(state + ': zero overlap with any control', m.hits && m.hits.length === 0);
   if (m.hits && m.hits.length) R.checks[R.checks.length - 1][0] += ' | OVERLAPS: ' + m.hits.join('; ');
