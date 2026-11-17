@@ -31,7 +31,6 @@
 // own VM, started on demand by the harness and left running for the
 // battery's duration (startup is idempotent - concurrent drives share
 // the one bridge via the health check below).
-import http from 'node:http';
 import net from 'node:net';
 import { spawn } from 'node:child_process';
 import { fileURLToPath } from 'node:url';
@@ -61,62 +60,21 @@ export function createBridgeServer(up) {
   const auth = proxyAuthorization(up);
   const upHost = up.hostname;
   const upPort = Number(up.port) || 80;
-  const server = http.createServer();
-  // Health check + plain-HTTP proxying. A bare GET / is the harness's
-  // liveness probe and is answered by the bridge itself; any other
-  // request is an absolute-form proxy request and is forwarded upstream
-  // over a raw socket with the authorization header added. (Raw socket,
-  // not http.request: this Node routes its own http client through the
-  // environment proxy, which would double-proxy the forward - and its
-  // authority check threw on the target Host header, an uncaught throw
-  // that killed the first productionized bridge mid-battery. Every
-  // handler here is throw-proof for the same reason: one bad request
-  // must never take the bridge down.)
-  server.on('request', (req, res) => {
-    try {
-      if (req.url === '/' && req.method === 'GET') {
-        res.writeHead(200, { 'Content-Type': 'text/plain' });
-        res.end(HEALTH_MARKER);
-        return;
-      }
-      let target;
-      try { target = new URL(req.url); } catch (e) { res.writeHead(400); res.end(); return; }
-      const clientSocket = req.socket;
-      const upSocket = net.connect(upPort, upHost, () => {
-        const lines = [req.method + ' ' + req.url + ' HTTP/' + req.httpVersion];
-        let hasHost = false;
-        for (let i = 0; i + 1 < req.rawHeaders.length; i += 2) {
-          const name = req.rawHeaders[i], lower = name.toLowerCase();
-          if (lower === 'proxy-authorization' || lower === 'proxy-connection') continue;
-          if (lower === 'host') hasHost = true;
-          lines.push(name + ': ' + req.rawHeaders[i + 1]);
-        }
-        if (!hasHost) lines.push('Host: ' + target.host);
-        lines.push('Proxy-Authorization: ' + auth, 'Proxy-Connection: close', '', '');
-        upSocket.write(lines.join('\r\n'));
-        req.pipe(upSocket);
-      });
-      const bail = () => { try { clientSocket.destroy(); } catch (e) {} try { upSocket.destroy(); } catch (e) {} };
-      upSocket.on('error', bail);
-      clientSocket.on('error', () => { try { upSocket.destroy(); } catch (e) {} });
-      upSocket.pipe(clientSocket);
-    } catch (e) {
-      try { if (!res.headersSent) res.writeHead(502); res.end(); } catch (e2) {}
-    }
-  });
-  server.on('connect', (req, clientSocket, head) => {
+
+  // CONNECT tunnel: ask the upstream for a tunnel to host:port, and on
+  // its 200 splice the two sockets together. The upstream's response is
+  // BUFFERED until its header block completes - judging the first TCP
+  // chunk alone destroys valid tunnels depending on packetization
+  // (Codex review, PR #101). A 64 KB cap + the 30 s socket timeout
+  // bound a response that never completes.
+  function tunnel(clientSocket, target, head) {
     const upSocket = net.connect(upPort, upHost, () => {
       try {
-        upSocket.write('CONNECT ' + req.url + ' HTTP/1.1\r\nHost: ' + req.url + '\r\nProxy-Authorization: ' + auth + '\r\nProxy-Connection: Keep-Alive\r\n\r\n');
+        upSocket.write('CONNECT ' + target + ' HTTP/1.1\r\nHost: ' + target + '\r\nProxy-Authorization: ' + auth + '\r\nProxy-Connection: Keep-Alive\r\n\r\n');
       } catch (e) { bail(); }
     });
     const bail = () => { try { clientSocket.destroy(); } catch (e) {} try { upSocket.destroy(); } catch (e) {} };
     upSocket.setTimeout(30000, bail);
-    // Buffer the upstream's CONNECT response until its header block is
-    // complete: the response can arrive split across TCP chunks, and
-    // judging the first chunk alone destroys valid tunnels depending on
-    // packetization (Codex review, PR #101). A 64 KB cap + the 30 s
-    // socket timeout bound a response that never completes.
     let upBuf = Buffer.alloc(0);
     const onData = d => {
       try {
@@ -138,6 +96,67 @@ export function createBridgeServer(up) {
     upSocket.on('data', onData);
     upSocket.on('error', bail);
     clientSocket.on('error', () => { try { upSocket.destroy(); } catch (e) {} });
+  }
+
+  // Plain-HTTP proxying: rebuild the request head (client proxy headers
+  // out, upstream authorization in) and then pipe the remainder RAW in
+  // both directions. The body is never decoded, so its framing -
+  // Content-Length or chunked - crosses verbatim; decoding it and
+  // forwarding it under the original chunked header corrupts it
+  // (Codex review, PR #101). Proxy-Connection: close makes the
+  // upstream close when the response completes, which is the
+  // client socket's close signal.
+  function forwardHttp(clientSocket, lines, rest) {
+    const kept = [lines[0]];
+    for (let i = 1; i < lines.length; i++) {
+      const lower = lines[i].toLowerCase();
+      if (lower.startsWith('proxy-authorization:') || lower.startsWith('proxy-connection:')) continue;
+      kept.push(lines[i]);
+    }
+    kept.push('Proxy-Authorization: ' + auth, 'Proxy-Connection: close', '', '');
+    const upSocket = net.connect(upPort, upHost, () => {
+      try {
+        upSocket.write(kept.join('\r\n'));
+        if (rest.length) upSocket.write(rest);
+        clientSocket.pipe(upSocket);
+      } catch (e) { bail(); }
+    });
+    const bail = () => { try { clientSocket.destroy(); } catch (e) {} try { upSocket.destroy(); } catch (e) {} };
+    upSocket.on('error', bail);
+    clientSocket.on('error', () => { try { upSocket.destroy(); } catch (e) {} });
+    upSocket.pipe(clientSocket);
+  }
+
+  // One raw TCP server for both proxy dialects plus the health check.
+  // Raw by design: Node's http server fights a socket takeover (it
+  // closes a Connection: close request socket whose response is never
+  // written through it), and Node's http client routes through the
+  // environment proxy itself - a proxy built on either inherits
+  // failure modes that have nothing to do with proxying. Owning the
+  // bytes removes that whole class. Every path is throw-proof: one
+  // bad request must never take the bridge down.
+  const server = net.createServer(clientSocket => {
+    clientSocket.on('error', () => {});
+    let buf = Buffer.alloc(0);
+    const onData = d => {
+      try {
+        buf = Buffer.concat([buf, d]);
+        const idx = buf.indexOf('\r\n\r\n');
+        if (idx === -1) { if (buf.length > 65536) clientSocket.destroy(); return; }
+        clientSocket.removeListener('data', onData);
+        const lines = buf.slice(0, idx).toString('latin1').split('\r\n');
+        const rest = buf.slice(idx + 4);
+        const parts = lines[0].split(' ');
+        const method = parts[0], target = parts[1];
+        if (method === 'CONNECT') { tunnel(clientSocket, target, rest); return; }
+        if (method === 'GET' && target === '/') {
+          clientSocket.end('HTTP/1.1 200 OK\r\nContent-Type: text/plain\r\nContent-Length: ' + HEALTH_MARKER.length + '\r\nConnection: close\r\n\r\n' + HEALTH_MARKER);
+          return;
+        }
+        forwardHttp(clientSocket, lines, rest);
+      } catch (e) { try { clientSocket.destroy(); } catch (e2) {} }
+    };
+    clientSocket.on('data', onData);
   });
   return server;
 }
