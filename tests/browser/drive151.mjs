@@ -118,6 +118,9 @@ const gotA = await poll(`typeof draft !== 'undefined' && draft && !!draft.roads[
 const NT = await J(`({ b: draft && draft.roads['Bordeaux Drive'] ? Math.round(computeStretches(draft.roads)['Bordeaux Drive'].total) : -1, a: draft && draft.roads['Alderson Avenue'] ? Math.round(computeStretches(draft.roads)['Alderson Avenue'].total) : -1 })`);
 ok('N5 both streets ADD from the wire-delivered geometry at their fixture lengths (Bordeaux ' + Math.round(streetLen('Bordeaux Drive')) + ' m, Alderson ' + Math.round(streetLen('Alderson Avenue')) + ' m) | ' + JSON.stringify(NT),
   gotB === true && gotA === true && Math.abs(NT.b - streetLen('Bordeaux Drive')) <= streetLen('Bordeaux Drive') * 0.03 && Math.abs(NT.a - streetLen('Alderson Avenue')) <= streetLen('Alderson Avenue') * 0.03);
+const NLAYERS = await J(`map.getStyle().layers.map(l => l.id).filter(id => id.indexOf('crDraft') === 0)`);
+ok('N5b ALL FOUR draft layers stand on the map (casing, dim unchosen, chosen, hit target) - the Beta 1.221 gate regression: the dim layer\'s spec called the engine\'s mute helper in its private form, threw at init, and the catch silently left the casing alone on the map | layers: ' + JSON.stringify(NLAYERS),
+  ['crDraftCase', 'crDraftLineDim', 'crDraftLine', 'crDraftHit'].every(id => NLAYERS.includes(id)));
 ok('N6 after the extract, the adds made ZERO further Overpass requests (the wire count is still the 4 cells) | total overpass requests: ' + wire.filter(w => w.kind === 'overpass').length,
   wire.filter(w => w.kind === 'overpass').length === 4);
 // ---- phase 2: reload - the saved city must load with ZERO Overpass requests ----
