@@ -44,5 +44,17 @@ ok('T4 Backup opens with its two actions (Backup + Restore)', await ev(`document
 await ev(`document.getElementById('setClose').click(); true`); await sleep(400);
 ok('T5 the menu X closes the takeover', await ev(`!document.getElementById('setMenu').classList.contains('open')`));
 
+// Beta 1.221 gate fix (Codex P2, PR #98): a manual Update check must LAND on its result.
+// The outcome toasts are cut (Andrew's keep-list); the surviving surface is the System
+// Health version row, so the finished check takes him there, rendered fresh - through
+// this fix the tap only changed updState where nobody was looking and appeared dead.
+// (The rig's probe answer is a refusal, so the row shows the could-not-check form -
+// the assertion is the landing + a CHECKED row, not which outcome the rig serves.)
+await ev(`document.getElementById('setBtn').click(); true`); await sleep(400);
+await ev(`document.getElementById('aboutBtn').click(); true`); await sleep(300);
+await ev(`document.getElementById('updBtn').click(); true`);
+const T6 = await poll(`document.getElementById('setStatusPane').classList.contains('on') && !/not checked yet/.test(document.getElementById('stValVer').textContent)`, 20000).catch(() => false);
+ok('T6 a manual Update check lands on its result: System Health pane in front, version row showing the checked outcome | ' + await ev(`document.getElementById('stValVer').textContent`), T6 === true);
+
 R.exceptions = consoleLog.filter(c => c.type === 'EXCEPTION').map(c => String(c.text || '').slice(0, 200));
 finish(R, proc);

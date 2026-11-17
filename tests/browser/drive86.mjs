@@ -23,9 +23,9 @@ await seedReload({ 'snowroute.5w.v4.trail': '[[43.81,-79.56,1767225600],[43.82,-
 let A = JSON.parse(await ev(`(() => JSON.stringify({ tl: trail.length }))()`));
 ok('T1 trail seeded (2 pts)', A.tl === 2);
 await ev(`(() => { clearTrailAll(); return true; })()`); await sleep(700); // Beta 1.88: the Clear trail button is gone (re-home comes later) - the drives call the clearing itself, which is what the button's second tap did
-A = JSON.parse(await ev(`(() => JSON.stringify({ ls: localStorage.getItem('snowroute.5w.v4.trail'), toast: $('toast').textContent }))()`));
+A = JSON.parse(await ev(`(() => JSON.stringify({ ls: localStorage.getItem('snowroute.5w.v4.trail'), toast: $('toast').textContent, shown: $('toast').classList.contains('show') }))()`));
 ok('T1 clear writes [] to storage', A.ls === '[]');
-ok('T1 toast says Trail cleared', A.toast === 'Trail cleared');
+ok('T1 no pill fires on a successful clear since Beta 1.221 (the emptied trail is the confirmation)', !(A.shown && A.toast === 'Trail cleared')); // Beta 1.221 gate fix: the first form (shown === false) also failed on an unrelated KEPT pill standing from boot - the drive rig's location-off warning, proven by trace (the clear itself fires nothing; 'Trail cleared' never appears). The property is the clear's own pill: shown WITH its text is the failure, at the same strength.
 await ev(`(() => { location.reload(); return true; })()`); await sleep(3000);
 await ev(`loadRoute('5w'); true`); await sleep(600);
 A = JSON.parse(await ev(`(() => JSON.stringify({ tl: trail.length }))()`));

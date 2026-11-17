@@ -103,13 +103,13 @@ await ev(`(() => { $('xPre').click(); return true; })()`);
 await sleep(600);
 await ev(`(() => { $('xPre').click(); return true; })()`); // Beta 1.92 (audit F07): a second tap mid-download must start NO second job
 await sleep(250);
-const A8toast = await ev(`$('toast').textContent`);
+const A8toast = JSON.parse(await ev(`(() => JSON.stringify({ shown: $('toast').classList.contains('show'), running: preloadRunning }))()`));
 let preStat = '';
 for (let i = 0; i < 90; i++) { preStat = await ev(`$('xPreStat').textContent`); if (/Offline maps: saved/.test(preStat)) break; await sleep(250); }
 const A8 = JSON.parse(await ev(`(() => { const seen = window.__preSeen || []; window.fetch = window.__realFetch; const tiles = seen.filter(u => u.endsWith('.mvt')); const inBox = tiles.every(u => { const m = u.match(/\\/(\\d+)\\/(\\d+)\\/(\\d+)\\.mvt$/); if (!m) return false; const z = +m[1], x = +m[2], y = +m[3], n = 2 ** z; const xw = Math.floor((-79.75 + 180) / 360 * n), xe = Math.floor((-79.35 + 180) / 360 * n); const yOf = lat => Math.floor((1 - Math.log(Math.tan(lat * Math.PI / 180) + 1 / Math.cos(lat * Math.PI / 180)) / Math.PI) / 2 * n); return x >= xw && x <= xe && y >= yOf(44.05) && y <= yOf(43.70); }); return JSON.stringify({ total: seen.length, tiles: tiles.length, inBox, glyphs: seen.filter(u => u.endsWith('.pbf')).length, sprites: seen.filter(u => u.includes('/sprites/')).length, stat: $('xPreStat').textContent }); })()`));
 ok('A8 offline download fetches the full Vaughan tile set + the z15 route core (633 tiles incl. the z8/9 wide zooms since 1.72, every one inside the area) + glyphs + both sprite flavours | ' + JSON.stringify(A8),
   A8.tiles === OFFLINE.tiles && A8.inBox === true && A8.glyphs === OFFLINE.glyphs && A8.sprites === OFFLINE.sprites && A8.total === OFFLINE.count);
-ok('A8b the second tap was refused while the download ran (single-flight, Beta 1.92) | toast: ' + A8toast, A8toast === 'Offline download already running');
+ok('A8b the second tap was refused while the download ran (single-flight, Beta 1.92) - since Beta 1.221 the refusal is silent (the nag pill is cut): the first job is still running and no pill fires; A8\'s exact fetch count above proves no second job started | ' + JSON.stringify(A8toast), A8toast.running === true && A8toast.shown === false);
 
 // A8c (Beta 1.93, follow-up audit V02): a genuinely STALLED file (a fetch that
 // never answers but honours the abort signal, as a real fetch does) is

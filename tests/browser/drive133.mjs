@@ -157,9 +157,12 @@ await ev(`(function(){ lsSet = window.__lsSetOrig; flushAux(true); return true; 
 ok('S14b when storage recovers the pending trail cleanup lands on retry (Beta 1.96, SR-195-01)', (await ev(`trailDirty === false && sessDirty === false`)) === true);
 
 // S13 (Beta 1.95, deep audit SR-194-04): a run resumed WITHOUT a usable
-// cancel snapshot must say so at load - its Cancel guarantee is reduced to
-// the stamp journal, and 1.94 resumed it in silence. Start itself still
-// never blocks (the settled 1.63 stance); the honesty moves to resume.
+// cancel snapshot has a reduced Cancel guarantee - it rebuilds from the
+// marks instead of restoring. Through 1.220 a resume pill said so; Beta
+// 1.221 cut that pill (Andrew's toast rule), so the reduced guarantee is
+// asserted here as STATE (the snapshot on disk is unusable for this run,
+// so the cancel path will rebuild - the behaviour S14 exercises) and the
+// resume itself fires no pill. Start still never blocks (the 1.63 stance).
 await ev(`markDone('Velmar', 'test')`);
 await ev(`startClean()`);
 await ev(`(function(){ localStorage.removeItem(LS.snap); return true; })()`); // the snapshot never landed / was lost - the run itself is legitimately open
@@ -167,8 +170,8 @@ await ev(`location.reload(); true`);
 await poll(`!!window.__bootAt`, 30000);
 await ev(`(function(){ window.__toasts133 = []; const t = $('toast'); new MutationObserver(() => { const x = t.textContent; if (x && window.__toasts133[window.__toasts133.length - 1] !== x) window.__toasts133.push(x); }).observe(t, { childList: true, characterData: true, subtree: true }); return true; })()`);
 await ev(`loadRoute('5w'); true`); await sleep(700);
-const S13a = JSON.parse(await ev(`JSON.stringify(window.__toasts133 || [])`));
-ok('S13a a resumed run with no snapshot warns that Cancel is reduced (Beta 1.95, SR-194-04) | ' + JSON.stringify(S13a), S13a.some(t => /no usable cancel snapshot/.test(t)));
+const S13a = JSON.parse(await ev(`(() => JSON.stringify({ toasts: window.__toasts133 || [], resumed: !!runStart, snapOk: validateSnap(parseJ(lsGet(LS.snap), null), runStart) }))()`));
+ok('S13a a resumed run with no snapshot: the resume lands, the snapshot on disk is unusable for it (Cancel is reduced to a rebuild), and no resume pill fires since Beta 1.221 | ' + JSON.stringify(S13a), S13a.resumed === true && !S13a.snapOk && !S13a.toasts.some(t => /no usable cancel snapshot/.test(t))); // Beta 1.221 gate fix: the unusable test is !snapOk, not === false - validateSnap's contract is a normalized copy or NULL (never false), so the strict-false form could never pass; the property (no usable snapshot for this run) is asserted at the same strength
 await ev(`cancelStart()`); await sleep(300);
 await ev(`startClean()`); await sleep(300); // a fresh Start writes a fresh, valid snapshot
 await ev(`location.reload(); true`);

@@ -128,10 +128,10 @@ console.log('W - no user-facing string calls the in-progress clean a run');
 check('W: Pace header reads Current clean', app3.includes("phT.textContent = 'Current clean'"));
 check('W: Pace empty line says finish a clean', app3.includes('when you finish a clean and tap Finish'));
 check('W: start warning says the clean state', app3.includes('the clean state could not be saved'));
-check('W: cancel toasts say clean erased / during the clean / clean may return',
-  app3.includes("toast('Start cancelled — clean erased')") && app3.includes('the board was rebuilt from the marks made during the clean') && app3.includes('the clean may return on reload'));
+check('W: the surviving cancel warnings say clean / during the clean / clean may return (the plain erased pill was cut in 1.221)',
+  app3.includes("toast('Start cancelled — erased here, but the trail cleanup could not be saved yet") && app3.includes('the board was rebuilt from the marks made during the clean') && app3.includes('the clean may return on reload'));
 check('W: finish storage toast says clean intact', app3.includes('finish stopped, clean intact'));
-check('W: resume + restore toasts say clean', app4.includes("toast('Resumed clean — ") && app4.includes('Cancel will rebuild from the marks made during the clean'));
+check('W: the resume pill is gone since 1.221 and no resume wording calls it a run', !app4.includes("toast('Resumed clean") && !app4.includes("toast('Resumed run"));
 check('W: none of the old run strings remain in UI literals',
   !app3.includes("phT.textContent = 'This run'") && !app3.includes('finish a run and tap Finish') &&
   !app3.includes('the run state could not be saved') && !app3.includes('— run erased') &&
@@ -150,9 +150,9 @@ const gBlockI = (app4.match(/const GLYPH_ICONS = \{([\s\S]*?)\n\};/) || [])[1] |
 const gLine = k => (gBlockI.match(new RegExp('^  ' + k + ": \\{ d: '([^']+)', n: '([^']+)' \\},?", 'm')) || []);
 const uriHashB = u => createHash('sha256').update(Buffer.from(u.split(',')[1], 'base64')).digest('hex');
 check('I: Streets wears the picked highway artwork in the default pack (decoded day URI sha256)',
-  !!gLine('streets')[1] && uriHashB(gLine('streets')[1]) === '7efa94714891e191f88b95da0b6857783a5617da5d4d5fe0dd83f7c92c618241', gLine('streets')[1] ? uriHashB(gLine('streets')[1]) : 'missing');
+  !!gLine('streets')[1] && uriHashB(gLine('streets')[1]) === 'c5afd163544bcf2e85ddfa49cbe20c3e0dee5ded3c4813bd82aaaaff67050b85', gLine('streets')[1] ? uriHashB(gLine('streets')[1]) : 'missing');
 check('I: Settings wears the picked cog artwork in the default pack (decoded day URI sha256)',
-  !!gLine('gear')[1] && uriHashB(gLine('gear')[1]) === '8489699db6e106ef23e74ae42dabfe5f5f8da0dab39355270815865cb83c6295', gLine('gear')[1] ? uriHashB(gLine('gear')[1]) : 'missing');
+  !!gLine('gear')[1] && uriHashB(gLine('gear')[1]) === '903ed9f57d1aa48fe28fc1f0d75a3723afe6d966dfd2f3ac56e7ff0a4172691e', gLine('gear')[1] ? uriHashB(gLine('gear')[1]) : 'missing');
 
 console.log(pass + ' pass, ' + fail + ' fail');
 process.exit(fail === 0 ? 0 : 1);

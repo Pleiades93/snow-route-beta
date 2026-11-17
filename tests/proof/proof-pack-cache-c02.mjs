@@ -78,6 +78,7 @@ const fakeCaches = {
 
 const lsDels = [];
 const toasts = [];
+let statusRenders = 0;
 const harness = { click: null };
 const sandbox = {
   URL, Set, Map, Promise, setTimeout, clearTimeout,
@@ -91,7 +92,7 @@ const sandbox = {
   PACKMIG_KEY: 'snowroute.v5.packmig',
   ROUTE_PACKS: [],
   routeKeys: id => ({ pre: 'pre.' + id }),
-  renderStatus: () => {},
+  renderStatus: () => { statusRenders++; },
   __harness: harness
 };
 sandbox.window = sandbox;
@@ -125,7 +126,7 @@ await withTimeout(del, 5000);
 
 check('cache is deleted once the turn is free', !stores.has('snowroute-offline-v1'));
 check('pack metadata cleared with the delete', lsDels.includes('snowroute.v5.packmig'));
-check('success announced after the delete', toasts.includes('Offline maps deleted'));
+check('success announced after the delete (the pane status re-render since Beta 1.221; the deleted pill itself stays absent)', statusRenders > 0 && !toasts.includes('Offline maps deleted'));
 
 // The common path still works: with the turn free, a delete completes promptly (the fix must not wedge it).
 stores.add('snowroute-offline-v1');

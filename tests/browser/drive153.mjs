@@ -243,8 +243,13 @@ await typeCity('Zzzzz');
 const emptyD = await poll(`document.querySelectorAll('#crCityResults .routeRow').length === 0 && /No city matched/.test(document.getElementById('crCityResults').textContent)`, 15000);
 ok('D4 HONEST EMPTY: a search with no matches shows a "No city matched" line in the results - not the 1.121 silence', emptyD === true);
 await typeCity('Failtown');
-const failD = await poll(`/internet connection/.test((document.getElementById('toast') || {}).textContent || '')`, 15000);
-ok('D5 HONEST FAILURE: when the search request itself fails, the app SAYS so (a toast naming the connection) instead of showing nothing', failD === true);
+const failBox = await poll(`document.querySelectorAll('#crCityResults .routeRow').length === 0 && document.getElementById('crCityResults').textContent.trim() === ''`, 15000);
+await sleep(1200);
+const failSettled = await J(`({ rows: document.querySelectorAll('#crCityResults .routeRow').length, txt: document.getElementById('crCityResults').textContent })`);
+ok('D5 HONEST FAILURE (Beta 1.221 form): when the search request itself fails, the app shows NOTHING false - no rows, and no "No city matched" line masquerading as an answer it never got (the connection pill itself was cut under Andrew\'s keep-list ruling; the honesty that survives is that a failure never claims an empty result)', failBox === true && failSettled.rows === 0 && !/No city matched/.test(failSettled.txt));
+await typeCity('Zzzzz');
+const failRec = await poll(`/No city matched/.test(document.getElementById('crCityResults').textContent)`, 15000);
+ok('D5 RECOVERY: the failure does not wedge the pane - the next search answers normally', failRec === true);
 
 // ---- phase E: boot entry - the SAME chooser at the cold-start picker ----
 await send('Page.reload', { ignoreCache: false }, PAGE_S);

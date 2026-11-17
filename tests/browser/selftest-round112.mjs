@@ -49,7 +49,7 @@ const t = (name, cond) => { if (cond) pass++; else { fail++; console.log('FAIL',
 // The stDel handler body is extracted verbatim from app4.js and run against
 // cache stubs: rejecting / true / false-with-cache-absent / false-but-present.
 {
-  const body = extract(app4, "$('stDel').addEventListener('click', async () => {", '// ---- About / What\'s new ----', 'stDel handler');
+  const body = extract(app4, "$('stDel').addEventListener('click', async () => {", '// ---- About ----', 'stDel handler');
   const runStDel = async (del, has) => {
     const toasts = [], dels = [];
     let handler = null;
@@ -69,11 +69,11 @@ const t = (name, cond) => { if (cond) pass++; else { fail++; console.log('FAIL',
   t('02 delete false + cache still present -> NO success toast, metadata kept',
     !stillThere.toasts.includes('Offline maps deleted') && stillThere.dels.length === 0 && stillThere.toasts.length >= 1);
   const goneTrue = await runStDel(async () => true, true);
-  t('02 delete true -> success toast + metadata cleared (control)',
-    goneTrue.toasts.includes('Offline maps deleted') && goneTrue.dels.length === 2);
+  t('02 delete true -> metadata cleared, NO pill since Beta 1.221 (the pane status re-render is the report) (control)',
+    !goneTrue.toasts.includes('Offline maps deleted') && goneTrue.toasts.length === 0 && goneTrue.dels.length === 2);
   const goneAbsent = await runStDel(async () => false, false);
-  t('02 delete false + cache verifiably absent -> success path (control)',
-    goneAbsent.toasts.includes('Offline maps deleted') && goneAbsent.dels.length === 2);
+  t('02 delete false + cache verifiably absent -> success path, no pill (control)',
+    !goneAbsent.toasts.includes('Offline maps deleted') && goneAbsent.toasts.length === 0 && goneAbsent.dels.length === 2);
 }
 
 // ---------- CG-112-05: nudge dismissal must MERGE, not replace, LS.exp ----------
@@ -114,7 +114,7 @@ const t = (name, cond) => { if (cond) pass++; else { fail++; console.log('FAIL',
 // app4.js; the three persistent-setting handler lines verbatim from app4.js.
 {
   const region = extract(app1, 'function loadSettings() {', '// Tap guard', 'settings region');
-  const renderSwitch = extract(app4, 'function renderSwitch(el, on) {', '// ---- On the job ----', 'renderSwitch');
+  const renderSwitch = extract(app4, 'function renderSwitch(el, on) {', '// ---- Display and Sound ----', 'renderSwitch');
   const vibLine = lineOf(app4, "$('swVib').addEventListener('click'", 'swVib line');
   const chimeLine = lineOf(app4, "$('swChime').addEventListener('click'", 'swChime line');
   const rowLine = app4.split('\n').find(x => x.includes('row.addEventListener') && x.includes('chimeSound'));

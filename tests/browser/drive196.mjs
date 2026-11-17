@@ -56,8 +56,8 @@ ok('B3 all five items fill the content zone (44px tall, equal widths, no overlap
 // ---- the floaters' gaps over the bar's NEW top edge ----------------------
 ok('F1 dock gap above the bar top edge is the pre-change rendered gap: 16px (dock rode 74 -> 67) | gap ' + G.gapDock, G.gapDock !== null && Math.abs(G.gapDock - 16) <= 1);
 ok('F2 attribution chip gap above the bar top edge is the pre-change rendered gap: 10px (chip rode 68 -> 61) | gap ' + G.gapAttr, G.gapAttr !== null && Math.abs(G.gapAttr - 10) <= 1);
-ok('F3 the non-riding offsets are byte-identical: banner bottom 236px, mapNote 240px, toast 120px | ' + [G.bannerBottom, G.noteBottom, G.toastBottom].join('/'),
-  G.bannerBottom === '236px' && G.noteBottom === '240px' && G.toastBottom === '120px');
+ok('F3 the non-riding offsets are byte-identical: banner bottom 236px, mapNote 240px, toast 188px | ' + [G.bannerBottom, G.noteBottom, G.toastBottom].join('/'),
+  G.bannerBottom === '236px' && G.noteBottom === '240px' && G.toastBottom === '188px'); // Beta 1.221 gate fix: the toast constant is 188px, not 120px - the placement round raised the pill's CSS floor (placeToast starts from it and hops clear by measurement; drive204 holds the placement property). The F3 property is unchanged: the non-riding offsets equal their design constants exactly
 ok('F4 nothing overlaps the bar: dock and attribution chip clear it | dock ' + JSON.stringify(G.dock) + ' attr ' + JSON.stringify(G.attr),
   !!G.dock && !!G.attr && !overlaps(G.dock, G.bar) && !overlaps(G.attr, G.bar));
 

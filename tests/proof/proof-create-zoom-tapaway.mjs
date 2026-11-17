@@ -100,6 +100,7 @@ if (crZoomW) {
 check('S1: crDraftCase width rides crZoomW(9.75)', pick.includes("'line-width': crZoomW(9.75)"));
 check('S1: crDraftLine (chosen layer) width rides crZoomW(6.75)', pick.includes("id: 'crDraftLine', type: 'line', source: DRAFT_SRC, filter: ['==', ['get', 'chosen'], 1]") && pick.includes("'line-width': crZoomW(6.75)"));
 check('S1: crDraftLineDim (unchosen layer) width rides crZoomW(4.5)', pick.includes("id: 'crDraftLineDim', type: 'line', source: DRAFT_SRC, filter: ['!=', ['get', 'chosen'], 1]") && pick.includes("'line-width': crZoomW(4.5)"));
+check('S1: the unchosen layer wears its class colours through the engine mute (Beta 1.221 saturation parity - never the flat grey again; called as GLP.mute, the exported form - a bare mute() is private to the engine IIFE and throws at init)', pick.includes("'line-color': ['case', ['==', ['get', 'primary'], 1], GLP.mute('#ffc233'), GLP.mute('#ef476f')]") && !pick.includes("'line-color': '#b9c1cb'"));
 // Regression guard for the defect the 1.210 rendered QA caught: a zoom
 // curve nested inside a case as a line-width makes MapLibre silently
 // drop the whole layer (addLayer does not throw; the layer never

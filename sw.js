@@ -18,11 +18,10 @@ const CORE = [
 self.addEventListener('install', e => {
   e.waitUntil(caches.open(CACHE).then(async c => {
     await Promise.all(CORE.map(async ([u, integrity]) => {
-      try {
-        const res = await fetch(new Request(u, { integrity, mode: 'cors' }));
-        if (res && res.ok) await c.put(u, res);
-      } catch (err) {}   // integrity failure or no network: cache nothing, the page fetches live instead
-    }));
+      const res = await fetch(new Request(u, { integrity, mode: 'cors' }));
+      if (!res || !res.ok) throw new Error('core fetch failed during install: ' + u);
+      await c.put(u, res);
+    }));   // Beta 1.221 (webperf piece 6): a CORE failure is FATAL now, like the shell fetch below. Through 1.220 it was swallowed ('cache nothing, the page fetches live instead') - so an interrupted or integrity-failed first install still ACTIVATED, holding a shell whose map library was never cached: the next offline launch opened a page that could never draw its map. Install is all-or-nothing: any failure discards the worker (the previous one, if any, keeps serving; a first install retries on the next visit) and the page online is unaffected - it loads its libraries live either way.
     // Beta 1.170 (Carbon fix round Phase 2, C-07): the shell fetch is FATAL on failure and lands under TWO keys. Through 1.169 the add rode a swallowed catch, so a first install over a broken or portaled network still activated - a worker claiming offline capability while its shell cache held no HTML at all, and every later offline launch fell to Response.error(). A failed shell fetch now fails the install itself (the previous worker, if any, keeps serving; a first install simply retries on the next visit). The second key covers the explicit-file launch (scope + 'index.html') some launchers and shortcuts use.
     const shellRes = await fetch(new Request(self.registration.scope, { cache: 'reload' }));
     if (!shellRes || !shellRes.ok) throw new Error('app shell fetch failed during install');
@@ -35,14 +34,24 @@ self.addEventListener('activate', e => {
   e.waitUntil(caches.keys().then(ks => Promise.all(ks.filter(k => (k.startsWith('snowroute-') || k === 'snow5wbeta1-shell-v1' || k === 'snow5wbeta1-tiles-v1') && k !== CACHE && k !== TILES && k !== OFFLINE).map(k => caches.delete(k))))
     .then(() => self.clients.claim()));
 });
-async function netFirst(r, cacheName) {   // fresh when the network answers fast, cached otherwise
+async function netFirst(r, cacheName, ev) {   // fresh when the network answers fast, cached otherwise
   const c = await caches.open(cacheName);
   let fp; try { fp = fetch(r); } catch (e) { fp = Promise.reject(e); }   // a synchronous throw becomes a rejection the fallback below already handles
-  let res = null, netErr = false;
-  try { res = await Promise.race([fp, new Promise((_, j) => setTimeout(() => j(new Error('slow')), 3500))]); }
-  catch (e) {   // SEC-7: a slow network is still a network - wait for the real answer before surrendering to cache/error. Beta 1.48 (audit B03): for NAVIGATIONS that wait is bounded (a further 5 s) - a connection that never answers at all must not hang the app's start when a cached copy exists; non-navigations get a further 8 s (Beta 1.64, audit F09).
-    if (r.mode === 'navigate') { try { res = await Promise.race([fp, new Promise((_, j) => setTimeout(() => j(new Error('stalled')), 5000))]); } catch (e2) { netErr = true; } }
-    else { try { res = await Promise.race([fp, new Promise((_, j) => setTimeout(() => j(new Error('stalled')), 8000))]); } catch (e2) { netErr = true; } } // Beta 1.64 (audit F09): the wait is bounded for every request class now - a never-settling fetch used to hang a map JSON request forever despite a cached copy; 8 s still honours a slow-but-working network before the cache fallback engages
+  let res = null, netErr = false, timedOut = false;
+  const TIMEOUT = Symbol('timeout');
+  try { const w = await Promise.race([fp, new Promise(done => setTimeout(() => done(TIMEOUT), 2000))]); if (w === TIMEOUT) timedOut = true; else res = w; }
+  catch (e) { netErr = true; }   // the network answered with a rejection (offline, DNS, reset): straight to the cache fallback below, as before
+  if (timedOut && r.mode === 'navigate') {
+    // Beta 1.221 (webperf piece 6): a NAVIGATION that has not answered in 2 s checks the cache NOW instead of waiting out the old second race (3.5 s + 5 s = ~8.5 s before an installed app opened on a hanging connection). A cached shell is served at once and the SAME fetch keeps running in the background - bound to the fetch event's lifetime where the caller passed it - so a genuinely new version still lands in the cache for the next launch, and the page's own update check (network-only probe + forced reload) is untouched. With NOTHING cached there is no shell to serve, so the bounded wait stays: a further 5 s for the real answer (SEC-7's slow-network respect, ~7 s worst case, down from ~8.5 s).
+    const early = await c.match(r, { ignoreSearch: true }).catch(() => undefined) || await c.match(self.registration.scope, { ignoreSearch: true }).catch(() => undefined);
+    if (early) {
+      const bg = fp.then(late => { if (late && late.ok) return Promise.all([c.put(self.registration.scope, late.clone()).catch(() => {}), c.put(self.registration.scope + 'index.html', late.clone()).catch(() => {})]); }).catch(() => {}); // Beta 1.221 gate fix (Codex P2, PR #98): the refresh lands under the CANONICAL shell keys (the install's two), not under the navigation's own URL - a launch carrying a query (?v=, a shortcut's parameter) otherwise refreshed a junk key and left the shell the next launch reads stale
+      if (ev) { try { ev.waitUntil(bg); } catch (err) {} }
+      return early;
+    }
+    try { res = await Promise.race([fp, new Promise((_, j) => setTimeout(() => j(new Error('stalled')), 5000))]); } catch (e2) { netErr = true; }
+  } else if (timedOut) {   // Beta 1.64 (audit F09): non-navigations keep their bounded wait - 8 s still honours a slow-but-working network before the cache fallback engages; a never-settling fetch used to hang a map JSON request forever despite a cached copy
+    try { res = await Promise.race([fp, new Promise((_, j) => setTimeout(() => j(new Error('stalled')), 8000))]); } catch (e2) { netErr = true; }
   }
   try {
     if (res && res.ok) { try { await c.put(r, res.clone()); } catch (e) {} return res; }   // NEW-02 (audit 5): awaited + caught like cacheFirst - a failed cache write must never sink a good response or escape as an unhandled rejection
@@ -54,6 +63,21 @@ async function netFirst(r, cacheName) {   // fresh when the network answers fast
     return hitErr || res || Response.error();   // res is null exactly when the network failed outright (netErr) and nothing is cached
   } catch (e) {
     const hit = await c.match(r, { ignoreSearch: true }) || (r.mode === 'navigate' ? await c.match(self.registration.scope, { ignoreSearch: true }) : undefined);
+    return hit || Response.error();
+  }
+}
+async function updNav(r, cacheName) {   // Beta 1.221 gate fix (Codex P2, PR #98): the Settings Update reload's OWN path. The probe has already confirmed a newer version on the server; the reload navigation must LOAD it, not race it - under netFirst's 2 s navigation shortcut a slower answer served the OLD cached shell for that launch, and the background refresh stored the new one under the timestamped ?v= key, leaving the canonical shell stale. An updnav navigation waits for the network (bounded at 10 s), stores the answer under the canonical shell keys (the install's two), and only a failed or errored network falls back to the cached shell - an update reload must never strand him on a browser error page.
+  const c = await caches.open(cacheName);
+  try {
+    const res = await Promise.race([fetch(r), new Promise((_, j) => setTimeout(() => j(new Error('updnav stalled')), 10000))]);
+    if (res && res.ok) {
+      try { await c.put(self.registration.scope, res.clone()); await c.put(self.registration.scope + 'index.html', res.clone()); } catch (e) {}   // a failed cache write must not sink the fresh shell he is about to run
+      return res;
+    }
+    const hit = await c.match(self.registration.scope).catch(() => undefined);   // BUG-03 discipline: an error status prefers the cached shell
+    return hit || res;
+  } catch (e) {
+    const hit = await c.match(self.registration.scope).catch(() => undefined);
     return hit || Response.error();
   }
 }
@@ -121,7 +145,8 @@ self.addEventListener('fetch', e => {
   if (u.origin === self.location.origin && u.pathname.includes('/packs/')) return; // Beta 1.123: the city street packs (packs/*.json) are NETWORK-ONLY - the worker does not intercept them at all. The generic same-origin branch below (netFirst into the shell cache) would otherwise store multi-megabyte JSON beside the app page AND serve a stale cached copy whenever the server answers an error status - a removed or broken pack must read as a failure, because that failure is exactly the signal the create flow's grid fallback keys on. Not the tile cache, not the offline pack: straight to the network, and offline it simply fails.
   const mapHost = u.hostname === 'tiles.basemaps.cartocdn.com' || u.hostname === 'protomaps.github.io'; // Beta 1.33: Protomaps tiles (CARTO-hosted) + glyphs/sprites; the styles themselves are embedded in the page
   if (u.origin === self.location.origin && u.searchParams.has('updprobe')) { e.respondWith(fetch(r)); return; } // Beta 1.150 (security-audit fix round, finding update-check-reports-cached-copy-as-server-copy): the Settings update check must hear the SERVER, not this worker - the generic same-origin branch below (netFirst) substitutes the cached shell on any error status, rejection or stall, so the check reported 'Up to date' from the cache when the server never answered. A probe request is answered by the network itself or fails as a network error, and its response is never cached
+  if (u.origin === self.location.origin && u.searchParams.has('updnav')) { e.respondWith(updNav(r, CACHE)); return; } // Beta 1.221 gate fix (Codex P2, PR #98): the Update reload navigation carries updnav - it follows the probe's confirmation, so it takes updNav's network path (see updNav), never netFirst's early cached serve
   if (mapHost) e.respondWith(mapFetch(r, e));
   else if (u.hostname === 'unpkg.com' || u.hostname === 'cdn.jsdelivr.net') e.respondWith(cacheFirst(r, CACHE));
-  else if (r.mode === 'navigate' || u.origin === self.location.origin) e.respondWith(netFirst(r, CACHE));
+  else if (r.mode === 'navigate' || u.origin === self.location.origin) e.respondWith(netFirst(r, CACHE, e));
 });
