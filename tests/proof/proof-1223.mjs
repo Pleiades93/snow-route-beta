@@ -52,6 +52,8 @@ check('1d: the active layer exists, session features only, at full category colo
   pick.includes("id: 'crDraftLineActive', type: 'line', source: DRAFT_SRC, filter: ['all', ['==', ['get', 'chosen'], 1], ['==', ['get', 'active'], 1]]") && pick.includes("'line-color': ['case', ['==', ['get', 'primary'], 1], '#ffc233', '#ef476f']"));
 check('1e: renderDraft stamps active=1 only on the sector session street',
   pick.includes("active: crSectorSession.street === n ? 1 : 0") && pick.includes("active: 0, sector: -1"));
+check('1g: the Done close path re-renders the draft (the active flags live in the source; without the rebuild the closed street stays vibrant - Codex P2, PR #100)',
+  pick.includes('function crCloseSectors() { if (!crSectorSession.street) return; crSectorReset(); renderDraft();'));
 check('1f: both chosen layers keep the bare crZoomW(6.75) width (no case-nested width curve)',
   (pick.match(/'line-width': crZoomW\(6\.75\)/g) || []).length >= 2 && !/'line-width': \['case'/.test(pick));
 
