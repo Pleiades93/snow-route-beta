@@ -198,73 +198,73 @@
     },
     {
       "file": "app3.js",
-      "line": 363,
+      "line": 365,
       "name": "coveredIdx",
       "owner": "app1.js"
     },
     {
       "file": "app3.js",
-      "line": 363,
+      "line": 365,
       "name": "doneSet",
       "owner": "app1.js"
     },
     {
       "file": "app3.js",
-      "line": 363,
+      "line": 365,
       "name": "doneTimes",
       "owner": "app1.js"
     },
     {
       "file": "app3.js",
-      "line": 363,
+      "line": 365,
       "name": "doneVia",
       "owner": "app1.js"
     },
     {
       "file": "app3.js",
-      "line": 505,
+      "line": 507,
       "name": "trail",
       "owner": "app1.js"
     },
     {
       "file": "app3.js",
-      "line": 506,
+      "line": 508,
       "name": "history",
       "owner": "app1.js"
     },
     {
       "file": "app3.js",
-      "line": 507,
+      "line": 509,
       "name": "coveredIdx",
       "owner": "app1.js"
     },
     {
       "file": "app3.js",
-      "line": 507,
+      "line": 509,
       "name": "doneSet",
       "owner": "app1.js"
     },
     {
       "file": "app3.js",
-      "line": 507,
+      "line": 509,
       "name": "doneTimes",
       "owner": "app1.js"
     },
     {
       "file": "app3.js",
-      "line": 507,
+      "line": 509,
       "name": "doneVia",
       "owner": "app1.js"
     },
     {
       "file": "app3.js",
-      "line": 507,
+      "line": 509,
       "name": "notes",
       "owner": "app1.js"
     },
     {
       "file": "app3.js",
-      "line": 507,
+      "line": 509,
       "name": "runStart",
       "owner": "app1.js"
     },

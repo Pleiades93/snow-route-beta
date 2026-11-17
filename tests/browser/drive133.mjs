@@ -171,7 +171,7 @@ await poll(`!!window.__bootAt`, 30000);
 await ev(`(function(){ window.__toasts133 = []; const t = $('toast'); new MutationObserver(() => { const x = t.textContent; if (x && window.__toasts133[window.__toasts133.length - 1] !== x) window.__toasts133.push(x); }).observe(t, { childList: true, characterData: true, subtree: true }); return true; })()`);
 await ev(`loadRoute('5w'); true`); await sleep(700);
 const S13a = JSON.parse(await ev(`(() => JSON.stringify({ toasts: window.__toasts133 || [], resumed: !!runStart, snapOk: validateSnap(parseJ(lsGet(LS.snap), null), runStart) }))()`));
-ok('S13a a resumed run with no snapshot: the resume lands, the snapshot on disk is unusable for it (Cancel is reduced to a rebuild), and no resume pill fires since Beta 1.221 | ' + JSON.stringify(S13a), S13a.resumed === true && S13a.snapOk === false && !S13a.toasts.some(t => /no usable cancel snapshot/.test(t)));
+ok('S13a a resumed run with no snapshot: the resume lands, the snapshot on disk is unusable for it (Cancel is reduced to a rebuild), and no resume pill fires since Beta 1.221 | ' + JSON.stringify(S13a), S13a.resumed === true && !S13a.snapOk && !S13a.toasts.some(t => /no usable cancel snapshot/.test(t))); // Beta 1.221 gate fix: the unusable test is !snapOk, not === false - validateSnap's contract is a normalized copy or NULL (never false), so the strict-false form could never pass; the property (no usable snapshot for this run) is asserted at the same strength
 await ev(`cancelStart()`); await sleep(300);
 await ev(`startClean()`); await sleep(300); // a fresh Start writes a fresh, valid snapshot
 await ev(`location.reload(); true`);
