@@ -12,10 +12,17 @@
 // Log domain into consoleLog as { type: 'LOG' } entries (drive116's CSP
 // violation capture). Both are opt-in; defaults reproduce the plain
 // preamble exactly.
+// Harness fix (2026-11-17): the one deliberate deviation from the
+// verbatim preamble - when the environment carries an authenticated
+// egress proxy, Chromium launches through the localhost CONNECT bridge
+// (proxy-bridge.mjs) because the browser cannot authenticate to that
+// proxy itself; with no authenticated proxy the spawn flags are the
+// preamble's, unchanged. See the launch site in launchDrive.
 // The http-origin drives (117/119/121) run a different preamble family
 // (local origin + SRI mirror) and are NOT on this harness yet.
 import { spawn } from 'node:child_process';
 import fs from 'node:fs';
+import { ensureProxyBridge } from './proxy-bridge.mjs';
 
 export const sleep = ms => new Promise(r => setTimeout(r, ms));
 // Tranche 1 (2026-11-07) cleanup ownership: every browser this harness
@@ -65,10 +72,21 @@ export async function launchDrive({ patterns = PATTERNS_DEFAULT, page = process.
   // pass), each attempt's stderr is logged to the drive's stderr for diagnosis, a browser that
   // EXITS is rejected at once instead of burning the 25 s timeout, and every attempt gets a
   // fresh profile dir where the harness uses one per launch.
+  // Harness fix (2026-11-17): when the environment carries an
+  // AUTHENTICATED egress proxy (the maintainer's VM), the browser's own
+  // requests die on it - Chromium cannot authenticate the proxy tunnel
+  // and rejects its re-signed certificates - so the launch goes through
+  // the localhost CONNECT bridge (proxy-bridge.mjs) instead. When no
+  // authenticated proxy is present (CI), bridge is null and the spawn
+  // args are exactly the pre-fix args, '--no-proxy-server' included.
+  const bridge = await ensureProxyBridge();
+  const proxyArgs = bridge
+    ? ['--proxy-server=http://127.0.0.1:' + bridge.port, '--ignore-certificate-errors']
+    : ['--no-proxy-server'];
   let proc = null, wsUrl = null, lastLaunchErr = null;
   for (let attempt = 1; attempt <= 3 && !wsUrl; attempt++) {
     proc = spawn(CHROME, [
-    '--headless=new', '--no-sandbox', '--disable-gpu', '--hide-scrollbars', '--no-proxy-server',
+    '--headless=new', '--no-sandbox', '--disable-gpu', '--hide-scrollbars', ...proxyArgs,
     '--remote-debugging-port=0', '--disable-features=LocalNetworkAccessChecks', '--user-data-dir=/tmp/v6profile-' + Date.now() + '-a' + attempt,
     '--window-size=420,900', 'about:blank'
   ], { stdio: ['ignore', 'pipe', 'pipe'] });
