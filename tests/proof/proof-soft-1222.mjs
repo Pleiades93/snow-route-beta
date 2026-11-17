@@ -66,19 +66,22 @@ check('B: .rmBtn.primary is the 1.221 solid white, unchanged', rule('.rmBtn.prim
 check('B: .routeBadge is the 1.221 solid white, unchanged', rule('#routeMenu .routeBadge {').includes('background: #fff; color: #2c4ad2;'));
 // C — the Beta 1.224 settlement: dialed lift by day, elevation recipe by
 // night, night Start fenced to the float token (re-derived from the 1.223
-// revert pins at the same strength: exact computed values, both themes)
-check('C: .runBtn day shadow is the DIALED lift stack', rule('.runBtn {').includes('box-shadow: 6px 8px 16px rgba(20,30,80,.26), -4px -4px 11px rgba(255,255,255,.38), inset 0 2px 3px rgba(255,255,255,.28), inset 0 -4px 8px rgba(8,12,50,.20);'));
+// revert pins at the same strength: exact computed values, both themes).
+// Beta 1.226: the DAY stacks halve again (Andrew's lift-sample pick) - the
+// two day pins below re-derive to the half stacks at the same strength;
+// every night pin stands byte-identical.
+check('C: .runBtn day shadow is the HALF lift stack (Beta 1.226)', rule('.runBtn {').includes('box-shadow: 4px 6px 12px rgba(20,30,80,.15), -3px -3px 8px rgba(255,255,255,.22), inset 0 1px 2px rgba(255,255,255,.18), inset 0 -3px 6px rgba(8,12,50,.12);'));
 check('C: night Start is fenced to the 1.221 float token (the day lift cannot leak into night)', rule('body.night .runBtn {').includes('box-shadow: var(--shadow-float);'));
 check('C: the Start/Finish blue is untouched', rule('#startBtn, #resetBtn {').includes('background: linear-gradient(135deg, #3d65ef, #1b2fb6);'));
-check('C: .dockBtn day wears the dialed lift (light gradient, no border, soft dual shadow, glass and blur gone)', rule('.dockBtn {').includes('background: linear-gradient(145deg, #ffffff, #eceef2);') && rule('.dockBtn {').includes('border: none; box-shadow: 4px 5px 10px rgba(20,30,60,.18), -3px -3px 7px rgba(255,255,255,.6), inset 0 1px 2px rgba(255,255,255,.9), inset 0 -3px 6px rgba(90,100,120,.18);') && !rule('.dockBtn {').includes('backdrop-filter') && !rule('.dockBtn {').includes('var(--glass'));
+check('C: .dockBtn day wears the HALF lift (Beta 1.226: light gradient, no border, soft dual shadow, glass and blur gone)', rule('.dockBtn {').includes('background: linear-gradient(145deg, #ffffff, #eceef2);') && rule('.dockBtn {').includes('border: none; box-shadow: 3px 4px 8px rgba(20,30,60,.10), -2px -2px 5px rgba(255,255,255,.35), inset 0 1px 1px rgba(255,255,255,.6), inset 0 -2px 4px rgba(90,100,120,.10);') && !rule('.dockBtn {').includes('backdrop-filter') && !rule('.dockBtn {').includes('var(--glass'));
 check('C: .dockBtn night wears the elevation recipe (top-lit surface, thin white border brightest on top, highlight line, drop shadow)', rule('body.night .dockBtn {').includes('background: linear-gradient(180deg, rgba(78,81,90,.94), rgba(43,45,51,.94));') && rule('body.night .dockBtn {').includes('color: #f2f4f8; border: 1px solid rgba(255,255,255,.22); border-top-color: rgba(255,255,255,.55);') && rule('body.night .dockBtn {').includes('box-shadow: inset 0 1px 0 rgba(255,255,255,.45), 0 10px 26px rgba(0,0,0,.45);') && !rule('body.night .dockBtn {').includes('var(--glass'));
-check('C: the FULL 1.222 stacks are gone from the page (no full-strength shadow, no 1.222 gradients)', !head.includes('10px 12px 24px rgba(20,30,80,.38)') && !head.includes('6px 8px 16px rgba(20,30,60,.30)') && !head.includes('linear-gradient(145deg, #ffffff, #e8ebee)') && !head.includes('linear-gradient(145deg, #232833, #05070b)'));
+check('C: the FULL 1.222 stacks are gone from the page (no full-strength shadow, no 1.222 gradients; Beta 1.226: the 1.224 DIALED stacks join the gone list)', !head.includes('10px 12px 24px rgba(20,30,80,.38)') && !head.includes('6px 8px 16px rgba(20,30,60,.30)') && !head.includes('linear-gradient(145deg, #ffffff, #e8ebee)') && !head.includes('linear-gradient(145deg, #232833, #05070b)') && !head.includes('4px 5px 10px rgba(20,30,60,.18)') && !head.includes('6px 8px 16px rgba(20,30,80,.26)'));
 // D — the readout is not a button and is not lifted
 check('D: #spdPill keeps its own glass rule', rule('#spdPill {').includes('background: var(--glass-day);') && rule('#spdPill {').includes('box-shadow: var(--shadow-float);'));
 check('D: the shared tokens stand at their 1.221 values', head.includes('--shadow-float: 0 8px 24px rgba(10,14,20,.22); --glass-day: rgba(255,255,255,.78); --glass-night: rgba(32,33,37,.78);'));
 // E — version agreement
-check('E: #ver reads Beta 1.225', head.includes('id="ver">Beta 1.225</div>'));
-check('E: WHATSNEW is stamped Beta 1.225', app4.includes("v: 'Beta 1.225'"));
+check('E: #ver reads Beta 1.226', head.includes('id="ver">Beta 1.226</div>'));
+check('E: WHATSNEW is stamped Beta 1.226', app4.includes("v: 'Beta 1.226'"));
 
 console.log(pass + ' pass, ' + fail + ' fail');
 process.exit(fail === 0 ? 0 : 1);

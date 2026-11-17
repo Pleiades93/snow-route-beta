@@ -871,7 +871,7 @@ $('stDel').addEventListener('click', async () => {
 });
 // ---- About ----
 const WHATSNEW = { // the curated in-app notes: plain words, LATEST RELEASE ONLY (Beta 1.114, Andrew: the accumulated list cluttered the About pane). A release REPLACES this entry with its own in the same change - it never accumulates; the full history lives in CHANGELOG.md, not the app
-  v: 'Beta 1.225', items: ["The Routes tab has a new icon: a winding trail of dots.", "Pop-up messages now use a dash instead of a period."] }; // Beta 1.223 (Andrew): What's New entries are SHORT from now on - point form, one short plain line each, no prose paragraphs, no em dashes
+  v: 'Beta 1.226', items: ["Buttons now shrink a little when you press them.", "The round buttons wear a softer lift by day."] }; // Beta 1.223 (Andrew): What's New entries are SHORT from now on - point form, one short plain line each, no prose paragraphs, no em dashes
 
 function renderAbout() {
   const cur = $('ver').textContent.trim();
@@ -893,6 +893,24 @@ document.addEventListener('pointerdown', e => {
   if (!$('stale').classList.contains('hidden') && !e.target.closest('#stale')) { $('stale').classList.add('hidden'); spendTap(400); }
 });
 ['finModal', 'noteModal'].forEach(id => { const mEl = $(id); mEl.addEventListener('pointerdown', e => { if (e.target === mEl) mEl.classList.add('hidden'); }); });
+// Beta 1.226: the press shrink for the DIV row families. Buttons shrink through the stylesheet's
+// :active rule, but a plain div row never enters :active on a press in some browsers (verified in
+// the test browser: a div with an :active rule stays unshrunk while every button shrinks) - so the
+// row families (.srow street rows, .crPRow pick rows, .cvRow cover rows, .prow.histRow history
+// rows) get the same scale through this class. A press that lands on a real button (the row's pin
+// button included) is the button's own press - it shrinks through :active and the row does not
+// compound a second scale on top of it.
+let pressRowEl = null;
+const pressRowOff = () => { if (pressRowEl) { pressRowEl.classList.remove('pressOn'); pressRowEl = null; } };
+document.addEventListener('pointerdown', e => {
+  pressRowOff();
+  if (e.target.closest('button')) return;
+  const row = e.target.closest('.srow, .crPRow, .cvRow, .prow.histRow');
+  if (row) { pressRowEl = row; row.classList.add('pressOn'); }
+});
+document.addEventListener('pointerup', pressRowOff);
+document.addEventListener('pointercancel', pressRowOff); // a scroll takeover cancels the pointer - the row must not stay shrunk
+window.addEventListener('blur', pressRowOff);
 function applyNight() { document.body.classList.toggle('night', isNight()); const tc = document.querySelector('meta[name="theme-color"]'); if (tc) tc.setAttribute('content', isNight() ? '#14171d' : '#eceff2'); $('nightBtn').innerHTML = isNight() ? ICONS.sun : ICONS.moon; renderIcons(); } // the button shows where it TAKES you (Beta 1.28, Andrew): in day it offers Night (moon), in night it offers Day (sun). Beta 1.88: the button is the round chip at top-right - the icon alone flips, there is no label
 $('nightBtn').addEventListener('click', () => { if (!tapGuard('nightBtn')) return; setThemeOverride(!isNight()); applyNight(); setBasemap(); }); // Beta 1.77: the button sets a session override - the sun takes over again at the next sunrise/sunset or the next full app open (theme block, app1)
 function goHomeView() { // Beta 1.203 (Andrew): the DEFAULT view - the route framed exactly as the flat fit frames it, tilted to 45 degrees, north up. The fit is computed FLAT (cameraForBounds with no pitch or bearing options is the flat fit: its centre and zoom are the fitBounds centre and zoom this replaces, bit for bit), and the tilt is applied AT that centre/zoom by the ease - never folded into the fit, because a pitch-aware fit recomputes a different zoom and Andrew's call was "keep the zoom level the same, just tilt it". Home and a route switch land here; the load-in flight (introToRoute) lands on the same view.
