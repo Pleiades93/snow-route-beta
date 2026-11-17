@@ -2,7 +2,7 @@
 <html lang="en" class="boot">
 <head>
 <meta charset="UTF-8">
-<meta http-equiv="Content-Security-Policy" content="default-src 'none'; script-src 'sha384-fq0NVrOMYwOxUSu+KYOAQHQXTp0v/Sp/jC7FPX2F9iYOHjWA+ph5T1T+0GMcbLgy' https://cdn.jsdelivr.net; style-src-elem 'sha384-GAxg13hHZV+SyjBOLf/ElTOeK+73d6VdjfGZX2TDKY10Q9jf5tPtfHJ9lrEXW2Ho' https://cdn.jsdelivr.net; style-src-attr 'unsafe-inline'; img-src 'self' data: blob: https://tiles.basemaps.cartocdn.com https://protomaps.github.io https://cdn.jsdelivr.net; connect-src 'self' https://tiles.basemaps.cartocdn.com https://protomaps.github.io https://cdn.jsdelivr.net https://nominatim.openstreetmap.org https://overpass-api.de https://overpass.kumi.systems; worker-src blob: 'self'; child-src blob: 'self'; font-src 'none'; manifest-src 'self'; base-uri 'none'; form-action 'none'; object-src 'none'">
+<meta http-equiv="Content-Security-Policy" content="default-src 'none'; script-src 'sha384-8dRmp6mBp/m173osmkUbdljfDue9s7DwCP6VvTDS3Vqk4E6V+CEHtk5tvEXrd/yU' https://cdn.jsdelivr.net; style-src-elem 'sha384-GAxg13hHZV+SyjBOLf/ElTOeK+73d6VdjfGZX2TDKY10Q9jf5tPtfHJ9lrEXW2Ho' https://cdn.jsdelivr.net; style-src-attr 'unsafe-inline'; img-src 'self' data: blob: https://tiles.basemaps.cartocdn.com https://protomaps.github.io https://cdn.jsdelivr.net; connect-src 'self' https://tiles.basemaps.cartocdn.com https://protomaps.github.io https://cdn.jsdelivr.net https://nominatim.openstreetmap.org https://overpass-api.de https://overpass.kumi.systems; worker-src blob: 'self'; child-src blob: 'self'; font-src 'none'; manifest-src 'self'; base-uri 'none'; form-action 'none'; object-src 'none'">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="mobile-web-app-capable" content="yes">
@@ -6281,7 +6281,7 @@ $('updBtn').addEventListener('click', async () => {
       if (sv[0] < mv[0] || (sv[0] === mv[0] && sv[1] < mv[1])) { updState = 'older'; updDone(); return; }
       updState = 'avail';
       toast('New version found — reloading…', 2600);
-      setTimeout(() => location.replace(location.pathname + '?v=' + Date.now()), 900);
+      setTimeout(() => location.replace(location.pathname + '?updnav=1&v=' + Date.now()), 900); // Beta 1.221 gate fix (Codex P2, PR #98): the reload carries updnav so the worker loads the confirmed new version over its network path (updNav in src/sw.js) instead of racing it against the cached shell
       return;
     }
     updState = 'diff';

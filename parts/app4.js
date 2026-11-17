@@ -560,7 +560,7 @@ $('updBtn').addEventListener('click', async () => {
       if (sv[0] < mv[0] || (sv[0] === mv[0] && sv[1] < mv[1])) { updState = 'older'; updDone(); return; }
       updState = 'avail';
       toast('New version found — reloading…', 2600);
-      setTimeout(() => location.replace(location.pathname + '?v=' + Date.now()), 900);
+      setTimeout(() => location.replace(location.pathname + '?updnav=1&v=' + Date.now()), 900); // Beta 1.221 gate fix (Codex P2, PR #98): the reload carries updnav so the worker loads the confirmed new version over its network path (updNav in src/sw.js) instead of racing it against the cached shell
       return;
     }
     updState = 'diff';
