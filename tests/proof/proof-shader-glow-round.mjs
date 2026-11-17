@@ -139,20 +139,20 @@ check('W: none of the old run strings remain in UI literals',
   !app4.includes("toast('Resumed run") && !app4.includes('marks made during the run'));
 
 // ================= I - the two tab icons =================
-// Beta 1.217 re-derivation: the 1.211 vector pins retired WITH the artwork —
-// Beta 1.218 re-derivation (TEST/design class): the two artwork hashes below are the GRADIENT set (Andrew's scope update, 2026-11-16 — white lines over the START-button gradient), superseding the flat set pinned at 1.217.
-// Streets and Settings are Pulsar imgs now; the checks pin the new entries at
-// the same strength (the picked artwork's identity, byte-for-byte).
-console.log('I - Streets and Settings icons are Andrew\'s picks (Pulsar artwork since Beta 1.217)');
-const iconEntry = key => { const m = app4.match(new RegExp(key + ": '(<span[^']*)'")); return m ? m[1] : ''; };
-const streets = iconEntry('streets'), gear = iconEntry('gear');
-const uriHash = entry => { const m = entry.match(/src="data:image\/png;base64,([^"]+)"/); return m ? createHash('sha256').update(Buffer.from(m[1], 'base64')).digest('hex') : ''; };
-check('I: both entries are Pulsar img spans in their wrappers (Streets dock, Settings tab)',
-  streets.startsWith('<span class="pwrapD"><img class="pico" data-k="streets"') && gear.startsWith('<span class="pwrapT"><img class="pico" data-k="gear"'));
-check('I: Streets wears the approved Pulsar road artwork (decoded day URI sha256)',
-  uriHash(streets) === '39e5ee880ca5404d44c76b9bdafb7919e860d444f279f7cbb8bf6739bbe4e4b3', uriHash(streets));
-check('I: Settings wears the approved Pulsar settings artwork (decoded day URI sha256)',
-  uriHash(gear) === '1a2b541bfd1bd1600af0f93fdd4dc25b7ef3106aeb7851f83ddc8150e72576e3', uriHash(gear));
+// Beta 1.220 re-derivation (TEST/design class): the ICONS table ships EMPTY
+// now and the artwork Andrew picked for these two slots lives in the pack
+// maps - the default pack (Glyph Neue) carries them. The checks pin the
+// picks' identity at their new home, byte-for-byte, at the same strength,
+// and pin the table's emptiness that makes the pack the only source.
+console.log('I - Streets and Settings icons are the picked artwork (the default pack carries them since Beta 1.220)');
+check('I: the ICONS entries for streets and gear ship empty (the mint table carries no artwork)', /^  streets: ''/m.test(app4) && /^  gear: ''/m.test(app4));
+const gBlockI = (app4.match(/const GLYPH_ICONS = \{([\s\S]*?)\n\};/) || [])[1] || '';
+const gLine = k => (gBlockI.match(new RegExp('^  ' + k + ": \\{ d: '([^']+)', n: '([^']+)' \\},?", 'm')) || []);
+const uriHashB = u => createHash('sha256').update(Buffer.from(u.split(',')[1], 'base64')).digest('hex');
+check('I: Streets wears the picked highway artwork in the default pack (decoded day URI sha256)',
+  !!gLine('streets')[1] && uriHashB(gLine('streets')[1]) === '7efa94714891e191f88b95da0b6857783a5617da5d4d5fe0dd83f7c92c618241', gLine('streets')[1] ? uriHashB(gLine('streets')[1]) : 'missing');
+check('I: Settings wears the picked cog artwork in the default pack (decoded day URI sha256)',
+  !!gLine('gear')[1] && uriHashB(gLine('gear')[1]) === '8489699db6e106ef23e74ae42dabfe5f5f8da0dab39355270815865cb83c6295', gLine('gear')[1] ? uriHashB(gLine('gear')[1]) : 'missing');
 
 console.log(pass + ' pass, ' + fail + ' fail');
 process.exit(fail === 0 ? 0 : 1);

@@ -35,6 +35,18 @@ import { createHash } from 'node:crypto';
 // write (a carried 'puffy' maps to 'pulsar'); §F lists three rows; §V rolls
 // to Beta 1.219. The extras themselves are pinned by
 // tests/proof/proof-icon-extras-1219.mjs.
+//
+// Beta 1.220 re-derivation (TEST/design class): the picker is THREE packs -
+// Glyph Neue (the default), Material Filled, Windows 10. The two packs
+// retired here (the vector pack of §A, the colour pack of §B) become
+// absence sections at the same strength; §E follows iconPackId (glyph
+// default) and the restore mapping (retired ids read as glyph); §F lists
+// the three live rows. The Glyph byte-pins (§G) stand untouched.
+//
+// Beta 1.220 re-derivation (TEST class): §E follows iconPackId and the
+// restore validator (four known ids now: + material, win10; puffy still
+// readable, mapping to pulsar); §V rolls to Beta 1.220. The two new packs'
+// rows and artwork are pinned by tests/proof/proof-icon-packs-1220.mjs.
 let pass = 0, fail = 0;
 function check(name, cond, detail) {
   if (cond) { pass++; console.log('  PASS ' + name); }
@@ -48,40 +60,17 @@ const head = readFileSync('parts/head.html', 'utf8');
 const changelog = readFileSync('CHANGELOG.md', 'utf8');
 const uriHash = str => { const m = String(str).match(/data:image\/png;base64,([A-Za-z0-9+/=]+)/); return m ? sha256buf(Buffer.from(m[1], 'base64')) : ''; };
 
-// ================= A - the Original pack is complete and byte-exact =================
-console.log('A - PACKD_ICONS carries all ten Pack D vectors, byte-identical to the Beta 1.216 build (sha256)');
-const PACKD = {
-  gps: '35974fd278c02aee9dff78b4bee784bf31efc346b4854fb2146006e133aa3d11',
-  routes: '1a0fe9c4184b2e05bb19120633c532f8d5416a4db2709ece858583bb1a0dff2a',
-  home: 'cb36048b935905870d1f0e12dbab85806c808e831b442a951f4a0b4c54d0433f',
-  clear: '4dddc37dca41afb023300d4cc5fa9f097171570ff9e8af301c2775f180b0bfb4',
-  gear: '1f3b8b2e4ce79a24662d993c8734430cce42e7d1633b1bcc717390fe9f396ed6',
-  streets: 'b8cb0a83b84574c937223bb8af00d81cc32d8161d324a9e71aed06182bebca6e',
-  pace: 'af9e612e8d4089869db8ac1daefba3b6f8397eb64caad58c5ad629dce4cccbcb',
-  moon: '2e38aeec19aacc85f14f034e8f4763dfca6242f30a645b1c50616872e6cd756c',
-  sun: '7712c5d286bc23bc395f36d2e38843d9bfb999ef8968d5fd6dd9ccfbf9f47e00',
-  centre: '8121f4de26b7cb7400499a9a39f52b0dcc50add9037c07b9f7c8c87746bbaac4',
-};
-check('A: the registry block exists', app4.includes('const PACKD_ICONS = {'));
-for (const [k, h] of Object.entries(PACKD)) {
-  const m = app4.match(new RegExp('^  ' + k + ": '(<svg.*?</svg>)'", 'm'));
-  check(`A: ${k} is the 1.216 Pack D vector byte-for-byte`, !!m && sha256buf(Buffer.from(m[1])) === h, m ? sha256buf(Buffer.from(m[1])) : 'missing');
-}
+// ================= A - the retired vector pack is GONE (Beta 1.220) =================
+console.log('A - the vector pack stood here through Beta 1.219; Andrew retired it in 1.220 - its registry copy is gone whole and the mint table ships empty');
+check('A: no PACKD registry block remains', !app4.includes('const PACKD_ICONS'));
+check('A: no PACKD reference remains anywhere in app4', !app4.includes('PACKD'));
+check('A: the ICONS mint table ships empty (every entry an empty string)', (() => { const b = (app4.match(/const ICONS = \{([\s\S]*?)\n\};/) || [])[1] || ''; const es = b.split('\n').filter(l => /^  \w+: /.test(l)); return es.length >= 14 && es.every(l => /^  \w+: '',?/.test(l) || /^  \w+: ''/.test(l)); })());
 
-// ================= B - the Pulsar Locate state variants =================
-console.log('B - PULSAR_GPS_STATES carries the four script-generated Locate faces (sha256 of the remap output)');
-const STATES = {
-  vd: '528c8eba753ef7d034e1f92f15774e50e390b2f7dcac8196bdd2a34c7e55c76b',
-  vn: '6966b8fc7219cf948eadd67d729746442f8dffa939bcbb1d0cf65a295720f564',
-  rd: 'daeece353b39034cede6b5dd0eb922b043fd24fc405509eddd52e420a6e31c12',
-  rn: 'daeece353b39034cede6b5dd0eb922b043fd24fc405509eddd52e420a6e31c12',
-};
-const sm = app4.match(/const PULSAR_GPS_STATES = \{ vd: '([^']+)', vn: '([^']+)', rd: '([^']+)', rn: '([^']+)' \};/);
-check('B: the states map exists with all four faces', !!sm);
-for (const [k, h] of Object.entries(STATES)) {
-  const i = ['vd', 'vn', 'rd', 'rn'].indexOf(k) + 1;
-  check(`B: ${k} is the generated artwork byte-for-byte`, !!sm && uriHash(sm[i]) === h, sm ? uriHash(sm[i]) : 'missing');
-}
+// ================= B - the retired colour pack is GONE (Beta 1.220) =================
+console.log('B - the colour pack stood here through Beta 1.219; Andrew retired it in 1.220 - its artwork maps, state faces and gradient treatment are gone whole');
+check('B: no PULSAR_ICONS map remains', !app4.includes('PULSAR_ICONS'));
+check('B: no PULSAR_GPS_STATES map remains', !app4.includes('PULSAR_GPS_STATES'));
+check('B: no PULSAR reference remains anywhere in app4', !app4.includes('PULSAR'));
 check('B: renderIcons picks the Locate face from the gpsBtn state x theme',
   app4.includes("if (k === 'gps') u = rec ? (night ? ST.rn : ST.rd) : on ? (night ? ST.vn : ST.vd) : (night ? MAP.gps.n : MAP.gps.d);"));
 
@@ -92,7 +81,7 @@ check('C: renderIcons is defined and stamps every host',
   app4.includes("$('streetsBtn').innerHTML = ICONS.streets; $('paceBtn').innerHTML = ICONS.pace; $('centreBtn').innerHTML = ICONS.centre;") &&
   app4.includes("$('setBtn').querySelector('.tabIco').innerHTML = ICONS.gear;") &&
   app4.includes("$('selNote').innerHTML = ICONS.note;"));
-check('C: the boot call stands after the icon assignments', app4.includes('renderIcons(); // Beta 1.218: the assignments above mint the shipped Pulsar day faces'));
+check('C: the boot call stands after the registry (the mint tables ship empty - it mints every host before first paint)', app4.includes('renderIcons(); // the mint tables ship empty - this puts every host on the ACTIVE pack'));
 check('C: applyNight re-renders', app4.includes("$('nightBtn').innerHTML = isNight() ? ICONS.sun : ICONS.moon; renderIcons(); }"));
 check('C: app3 startGps early return re-renders', app3.includes("$('gpsBtn').classList.toggle('rec', true); renderIcons(); } return; }"));
 check('C: app3 startGps main path re-renders', app3.includes('renderIcons(); // Beta 1.218: the Locate face (red view-only / green recording, per pack) follows the state flip at once'));
@@ -116,12 +105,12 @@ check('D: order is view, night-view, recording, night-recording (green wins when
 // ================= E - persistence: the stored global and its backup ride =================
 console.log('E - snowroute.v2.iconpack: LS_GLOBAL global, strict export, recovery ride, validated restore, rollback scope');
 check('E: the global key exists beside night', app1.includes("iconpack: 'snowroute.v2.iconpack'"));
-check('E: the default is pulsar (anything unstored or unknown reads as pulsar; Beta 1.219: a stored puffy too)', app4.includes("function iconPackId() { const v = lsGet(LS.iconpack); return v === 'original' || v === 'glyph' ? v : 'pulsar'; }"));
+check('E: the default is glyph (anything unstored, unknown or retired reads as glyph)', app4.includes("function iconPackId() { const v = lsGet(LS.iconpack); return v === 'glyph' || v === 'material' || v === 'win10' ? v : 'glyph'; }"));
 check('E: the strict export reads it with the B04 refusal', app4.includes('const iconpack = rawRead(LS_GLOBAL.iconpack); if (iconpack === RAW_READ_FAILED) return null;'));
 check('E: the strict export writes it at top level', app4.includes('if (iconpack != null) o.iconpack = iconpack;'));
 check('E: the recovery export carries it best-effort', app4.includes('{ const ip = rawRead(LS_GLOBAL.iconpack); if (ip !== RAW_READ_FAILED && ip != null) o.iconpack = ip; }'));
-check('E: the v2 restore validates the pack ids (puffy stays readable - it maps to pulsar on the write)', app4.includes("if (parsed.iconpack !== 'pulsar' && parsed.iconpack !== 'original' && parsed.iconpack !== 'glyph' && parsed.iconpack !== 'puffy')"));
-check('E: the v2 restore writes it inside the verified set (a carried puffy as pulsar)', app4.includes("pushField(LS_GLOBAL.iconpack, 'iconpack', parsed.iconpack === 'puffy' ? 'pulsar' : parsed.iconpack, 'icon pack')"));
+check('E: the v2 restore validates the pack ids (the retired ids stay readable - they map to glyph on the write)', app4.includes("if (parsed.iconpack !== 'glyph' && parsed.iconpack !== 'material' && parsed.iconpack !== 'win10' && parsed.iconpack !== 'pulsar' && parsed.iconpack !== 'original' && parsed.iconpack !== 'puffy') { toast('Backup has a bad value for icon pack \\u2014 nothing was changed', 3200); return; } if (!pushField(LS_GLOBAL.iconpack, 'iconpack', (parsed.iconpack === 'pulsar' || parsed.iconpack === 'original' || parsed.iconpack === 'puffy') ? 'glyph' : parsed.iconpack, 'icon pack')) return; }"));
+check('E: the v2 restore writes it inside the verified set (a carried retired id as glyph)', app4.includes("pushField(LS_GLOBAL.iconpack, 'iconpack', (parsed.iconpack === 'pulsar' || parsed.iconpack === 'original' || parsed.iconpack === 'puffy') ? 'glyph' : parsed.iconpack, 'icon pack')"));
 check('E: the v1 restore carries it too', app4.includes("parsed.data['snowroute.v2.iconpack'] !== undefined"));
 check('E: the key joins the rollback scope', app4.includes('SCOPE.push(LS_GLOBAL.night, LS_GLOBAL.nightExp, LS_GLOBAL.iconpack, SETTINGS_KEY);'));
 check('E: the switch stores through lsSet and refuses honestly on failure', app4.includes("if (!lsSet(LS.iconpack, id)) { toast('That choice could not be saved"));
@@ -131,14 +120,14 @@ console.log('F - the testing-only section: markup in the On-the-job pane, the tw
 check('F: the section label stands in setJobPane', head.includes('<div class="m-secLbl">ICON PACK &middot; TESTING ONLY</div>'));
 check('F: the card host stands in setJobPane', head.includes('<div class="m-card pkCard" id="pkCard"></div>'));
 check('F: the note stands under the card', head.includes("Tap a pack to preview it. 'Use this pack' switches the whole app right away"));
-check('F: the pack list carries the three packs with their approved subs (Beta 1.219: Puffy retired)',
-  app4.includes("{ id: 'pulsar', name: 'Pulsar Color', sub: 'The new set \\u2014 Icons8, recoloured to our blue' }") &&
-  app4.includes("{ id: 'original', name: 'Original', sub: 'Pack D \\u2014 the set the app shipped with' }") &&
+check('F: the pack list carries the three live packs with their approved subs (Beta 1.220 roster)',
   app4.includes("{ id: 'glyph', name: 'Glyph Neue', sub: 'Solid glyphs \\u2014 black by day, white by night' }") &&
-  !app4.includes("{ id: 'puffy'"));
+  app4.includes("{ id: 'material', name: 'Material Filled', sub: 'Solid glyphs \\u2014 black by day, white by night' }") &&
+  app4.includes("{ id: 'win10', name: 'Windows 10', sub: 'Outline glyphs \\u2014 black by day, white by night' }") &&
+  !app4.includes("{ id: 'pulsar'") && !app4.includes("{ id: 'original'") && !app4.includes("{ id: 'puffy'"));
 check('F: the CURRENT pill renders on the active pack', app4.includes("'<span class=\"pkCur\">CURRENT</span>'"));
 check('F: the strip is built from the pack assets (chips, dock, tab bar)', app4.includes('function pkStrip(pack)') && app4.includes('pkChipMoon') && app4.includes('pkDockRow') && app4.includes('pkTabs'));
-check('F: the strip shows Locate in its recording face', app4.includes("k === 'gps' ? ST.rd : MAP[k].d") && app4.includes('pkGpsRec'));
+check('F: the strip shows Locate in its recording face', app4.includes("k === 'gps' ? MP.states.rd : MP.icons[k].d") && !app4.includes('pkGpsRec'));
 check('F: the caption stands as approved', app4.includes('Locate is shown green \\u2014 how it looks while a clean is recording. Just viewing is red.'));
 check('F: the Use button reads Use this pack / In use', app4.includes(": 'Use this pack'") && app4.includes("'\\u2713 In use'"));
 check('F: the section is marked testing-only at its JS home', app4.includes('// ===== ICON PACK PICKER (TESTING ONLY - Beta 1.218) ====='));
@@ -184,10 +173,10 @@ check('H: no puffy picker row remains', !app4.includes("{ id: 'puffy'"));
 check('H: no pack branch routes to a puffy map', !app4.includes('PUFFY'));
 
 // ================= V - version agreement =================
-console.log('V - Beta 1.219 agrees everywhere');
-check('V: the #ver label reads Beta 1.219', head.includes('<div class="ver" id="ver">Beta 1.219</div>'));
-check('V: WHATSNEW is the Beta 1.219 entry', app4.includes("v: 'Beta 1.219', items:"));
-check('V: the CHANGELOG top entry is Beta 1.219', changelog.split('\n').find(l => l.startsWith('## Beta')) === '## Beta 1.219 — 2026-11-16');
+console.log('V - Beta 1.220 agrees everywhere');
+check('V: the #ver label reads Beta 1.220', head.includes('<div class="ver" id="ver">Beta 1.220</div>'));
+check('V: WHATSNEW is the Beta 1.220 entry', app4.includes("v: 'Beta 1.220', items:"));
+check('V: the CHANGELOG top entry is Beta 1.220', changelog.split('\n').find(l => l.startsWith('## Beta')) === '## Beta 1.220 — 2026-11-16');
 
 console.log(pass + ' pass, ' + fail + ' fail');
 process.exit(fail === 0 ? 0 : 1);
