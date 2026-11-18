@@ -755,21 +755,29 @@ const ADV = await ev(`(() => { const els = [
   { type: 'way', id: 2, tags: { name: 'Cross Road' }, geometry: [{ lat: 0.6, lon: 0.6 }, { lat: 0.5, lon: 2 }] }
 ]; const keep = crCov; crCov = crCovFromWays(crIndexWays(els, {}), [{ s: 0, w: 0, n: 1, e: 1 }]); const r = crResolve('Main Road', { lat: 0.5, lng: 0.75 }); crCov = keep; return r.status; })()`);
 ok('J8b (adversarial junction, CG-PF-08) a cross street touching an out-of-coverage endpoint does NOT certify the street complete: resolve returns edge, not ok | got ' + ADV, ADV === 'edge');
-// S11: a name-only city (the lookup failed) still gets the fallback box - and its dense remedy
-await ev(`window.__jMode = 'cityfail'`);
-await ev(`openRouteMenu()`);
-await ev(`document.getElementById('rmCreate').click()`);
-await ev(`document.getElementById('crDoorManual').click()`);
-await poll(`document.getElementById('rmCityPane').classList.contains('on')`, 10000);
-await ev(`document.getElementById('crCityLast').click()`); // the lookup fails in this profile: the remembered NAME alone scopes the creation
-const s11Pick = await poll(`typeof creating !== 'undefined' && creating === true && crStage === 'pick' && crGrid === null`, 10000).catch(() => false);
+// S11: the fallback box - and its dense remedy
+// Beta 1.229 PREMISE UPDATE: through 1.228 this section entered through the
+// name-only city the 'Use <city>' button's failed lookup left behind (a crCity
+// with no coordinates and no grid). Beta 1.229 DELETES that button and its
+// Nominatim name re-resolution whole (Andrew: it re-resolved the remembered
+// name and took the first hit - Aurora, Ontario's name landed on Aurora,
+// Illinois), so the name-only entry no longer exists. The machinery this
+// section protects - the fallback box preparation and its dense remedy - is
+// unchanged, and is driven here from the loaded-city pick stage through the
+// hint button's own Prepare-this-area dispatch (the map-centre anchor, fired
+// programmatically as this drive fires hidden controls elsewhere). Both
+// anchors sit OUTSIDE Vaughan's committed coverage - a box whose anchor is
+// already covered is a no-op by design (CG-PF-04), which is also why the
+// section's expected box bounds move with the new remedy centre.
+await jEnter();
+const s11Pick = await poll(`typeof creating !== 'undefined' && creating === true && crStage === 'pick' && crGrid !== null && crPrepState === 'ready'`, 20000).catch(() => false);
 await ev(`window.__jMode = 'dense'`);
-await ev(`map.jumpTo({ center: [-79.574666, 43.798972], zoom: 15 })`);
+await ev(`map.jumpTo({ center: [-79.574666, 43.95], zoom: 15 })`);
 await sleep(600);
 await ev(`document.getElementById('crHintBtn').click()`); // Prepare this area - the box, which the dense profile refuses
 const s11Dense = await poll(`crPrepState === 'failed' && crPrepFail && crPrepFail.kind === 'dense'`, 20000).catch(() => false);
 const S11a = await J(`({ btn: document.getElementById('crHintBtn').textContent, grid: !!crGrid })`);
-await ev(`map.jumpTo({ center: [-79.56, 43.815], zoom: 13 })`);
+await ev(`map.jumpTo({ center: [-79.35, 43.95], zoom: 13 })`);
 const gcS11 = await geoCount();
 await ev(`window.__jMode = 'healthy'`);
 await ev(`document.getElementById('crHintBtn').click()`);
@@ -777,8 +785,8 @@ const s11Ready = await poll(`crPrepState === 'ready'`, 20000).catch(() => false)
 const S11log = await geoSince(gcS11);
 const s11Body = batchBodies(S11log)[0] || '';
 const s11M = /\(([-\d.]+),([-\d.]+),([-\d.]+),([-\d.]+)\)/.exec(s11Body);
-ok('J9/J8c (no-city fallback + dense remedy) with the city lookup DOWN, the remembered name alone still reaches the pick stage with NO grid (' + s11Pick + '); Prepare-this-area runs the fallback box; a dense refusal leaves a working "Prepare this area" button (' + JSON.stringify(S11a) + ') - moving the map and tapping it prepares the NEW centre\'s box (bounds ' + (s11M ? s11M.slice(1).join(',') : '?') + ') | dense failed: ' + s11Dense + ', ready after remedy: ' + s11Ready,
-  s11Pick === true && s11Dense === true && S11a.btn === 'Prepare this area' && S11a.grid === false && s11Ready === true && !!s11M && Math.abs(+s11M[1] - 43.788054) < 0.002 && Math.abs(+s11M[3] - 43.841946) < 0.002);
+ok('J9/J8c (fallback box + dense remedy; Beta 1.229 entry) with Vaughan loaded (' + s11Pick + '), Prepare-this-area runs the fallback box at the map centre; a dense refusal leaves the failed state with its remedy on the button (' + JSON.stringify(S11a) + ' - with a city grid present the button reads Retry, and its click is the handler\'s dense branch: prepare wherever the map now sits) - moving the map and tapping it prepares the NEW centre\'s box (bounds ' + (s11M ? s11M.slice(1).join(',') : '?') + ') | dense failed: ' + s11Dense + ', ready after remedy: ' + s11Ready,
+  s11Pick === true && s11Dense === true && S11a.btn === 'Retry' && S11a.grid === true && s11Ready === true && !!s11M && Math.abs(+s11M[1] - 43.923054) < 0.002 && Math.abs(+s11M[3] - 43.976946) < 0.002);
 await jExitDiscard();
 // S12: the quota/cap degradation is DISCLOSED, and the session still works
 await jWipe();
@@ -792,24 +800,26 @@ await ev(`CR_TIMING.cityCapBytes = 60 * 1024 * 1024`);
 ok('J11b (cache cap, amendment C) with the storage cap shrunk below any city, the load still completes - and the refusal is DISCLOSED in the hint ("Couldn\'t save Vaughan on this phone"), with nothing silently half-saved (record cells: ' + s12Rec + ') | ' + JSON.stringify(S12),
   s12Ready === true && S12.note.indexOf('Couldn’t save') === 0 && S12.hint.indexOf('Couldn’t save Vaughan') >= 0 && s12Rec <= 0);
 await jExitDiscard();
-// S13: the last-city lookup race (CG-PF-11), end to end through the real UI
+// S13: Beta 1.229 - the last-city lookup race (CG-PF-11) retires WITH the feature.
+// The 'Use <city>' button, its click handler and its Nominatim name
+// re-resolution are DELETED (Andrew: the shortcut re-resolved the remembered
+// name and silently took the first place hit - Aurora, Ontario's name landed
+// on Aurora, Illinois). There is no second writer left to race the typed
+// search, so the race this section guarded is impossible rather than
+// defended. What remains to prove end to end: the button is ABSENT from the
+// pane, and the typed search it used to race still lands its pick cleanly.
 await ev(`openRouteMenu()`);
 await ev(`document.getElementById('rmCreate').click()`);
 await ev(`document.getElementById('crDoorManual').click()`);
 await poll(`document.getElementById('rmCityPane').classList.contains('on')`, 10000);
-const hasLastJ = await poll(`document.getElementById('crCityLast').style.display !== 'none'`, 5000).catch(() => false);
-await ev(`window.__jCityHold = true`);
-await ev(`document.getElementById('crCityLast').click()`); // the held lookup starts
-await sleep(300);
+const hasLastJ = await J(`!!document.getElementById('crCityLast')`);
 await ev(`(() => { const i = document.getElementById('crCityInput'); i.value = 'toronto'; i.dispatchEvent(new Event('input', { bubbles: true })); return true; })()`);
 await poll(`document.querySelectorAll('#crCityResults .routeRow').length === 1`, 10000);
 await ev(`document.querySelector('#crCityResults .routeRow').click()`);
 await poll(`typeof creating !== 'undefined' && creating === true && crStage === 'pick'`, 10000);
-await sleep(4500); // the held Vaughan lookup lands inside this window
-await ev(`window.__jCityHold = false`);
 const J10 = await J(`({ city: crCity && crCity.name, area: draft && draft.area, stage: crStage })`);
-ok('J10 (last-city race, CG-PF-11) the remembered-city button is offered (' + hasLastJ + '); its lookup held 4 s while Toronto is searched and picked - the late Vaughan answer CANNOT overwrite the session: city and draft area stay Toronto | ' + JSON.stringify(J10),
-  hasLastJ === true && J10.city === 'Toronto' && J10.area === 'Toronto' && J10.stage === 'pick');
+ok('J10 (Beta 1.229: the last-city shortcut is REMOVED) the Manual pane carries NO Use-city button (' + hasLastJ + '); a typed Toronto search picks Toronto, and no other writer touches the session: city and draft area are Toronto | ' + JSON.stringify(J10),
+  hasLastJ === false && J10.city === 'Toronto' && J10.area === 'Toronto' && J10.stage === 'pick');
 await jExitDiscard();
 
 // ---------- (e) the CSP seam: the app's real calls under the real stamped policy (Beta 1.119) ----------
