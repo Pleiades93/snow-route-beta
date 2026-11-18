@@ -9066,6 +9066,8 @@ document.addEventListener('pointerdown', (e) => { // Beta 1.120 (Andrew): tappin
   if (!box.classList.contains('on')) return;
   if (e.target && (box.contains(e.target) || $('createBar').contains(e.target))) return;
   box.classList.remove('on');
+  if (crSearchTimer) { clearTimeout(crSearchTimer); crSearchTimer = null; }
+  crSearchSeq++; if (crSearchCtl) { try { crSearchCtl.abort(); } catch (e) {} crSearchCtl = null; } // Beta 1.232 fix round 5 (PR #112, Codex P2): dismissing the results ENDS the search too - since fix round 1 the crossing renders while its fetch is still in flight, and un-invalidated that fetch's landing (the success merge, or the catch's crossing re-render under crSearchCurrent) reopened this box over the tap-away that dismissed it. The form is the standing one (fix round 3 seated it at the row click; the clear disc and the flow close end the search exactly so), and the pending debounce is cleared with it, or it would fire a fresh search 300 ms after the user tapped away. The tap-away itself is untouched: the box still hides here, and the map pick still runs
 }, true);
 function renderCrResults(list) {
   const box = $('createResults'); box.innerHTML = '';
