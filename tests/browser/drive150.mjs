@@ -197,7 +197,7 @@ const A0 = await J(`({ doors: document.getElementById('rmCreatePane').classList.
 ok('A0 the Create pane shows the two doors (photo / select streets myself)', A0.doors && A0.photo && A0.manual);
 await ev(`document.getElementById('crDoorManual').click()`);
 const AC0 = await J(`({ pane: document.getElementById('rmCityPane').classList.contains('on'), creating, title: document.querySelector('#rmCityPane .rmTitle').textContent })`);
-ok('A0b (Beta 1.121, Andrew\'s amendment) the manual door now opens the CITY STEP first - "What city will you be cleaning in?" - before any picking (not yet creating) | ' + JSON.stringify(AC0),
+ok('A0b (Beta 1.121, Andrew\'s amendment) the manual door now opens the CITY STEP first - "What city are you cleaning in?" (the title reworded in Beta 1.235) - before any picking (not yet creating) | ' + JSON.stringify(AC0),
   AC0.pane && AC0.creating === false && AC0.title.indexOf('What city') === 0);
 const AC = await pickCityVaughan();
 ok('A0c the city suggestions list populated places only: exactly ONE row for "Vaughan" (the same-named STREET in the fixture is filtered out) | ' + JSON.stringify(AC),
