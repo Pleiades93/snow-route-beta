@@ -239,8 +239,15 @@ sharded suite on `main` as the environment-drift audit.
 ## 5. Releases and rollback
 
 - Known-good states are tagged (`baseline-*`, `v1.0.0`, …) so any state can be
-  restored exactly. Rollback = push the tagged tree to `main` (or re-point Pages)
-  and re-run the battery.
+  restored exactly. Rollback (revised 2026-11-17, protocol fix round) = a
+  revert PR through the gate that restores the prior code under a NEW version
+  label — the bad build's code is backed out but the label goes UP to N+1,
+  with a CHANGELOG entry saying so — because the app's update check installs
+  only a strictly newer label and ignores an older or equal one; a pure
+  revert to N−1 would never reach the phones that took the bad build. Two
+  limits, stated plainly: a phone that never comes online keeps the bad build
+  until it does, and a rollback cannot undo data a bad build already wrote
+  to storage.
 - Version identity (cache names, title, `#ver` label) changes only in a release
   change, never inside a feature change.
 - Release bookkeeping is generated, not hand-kept (Beta 1.133, programme C):

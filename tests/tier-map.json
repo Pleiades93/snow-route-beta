@@ -1,5 +1,5 @@
 {
- "about": "Operative tier table for scripts/select-tier.py (test-suite restructure, 2026-11-09; amended 2026-11-09, Andrew approved). tests/TIER-MAP.md is the human document; THIS file is the machine copy the workflow reads. Keep the two in step: a change here without the doc, or the reverse, is drift. Precedence: tier C beats B beats A; a change touching several families runs the union of their drives; quarantined drives (tests/quarantine.json) are removed from tier A and B sets. Path entries ending in / are directory prefixes; tier_a_suffixes match file suffixes. Amendment: drive files (tests/browser/drive*.mjs) never escalate - they ride along with the app change's tier (a drives-only change is Tier B, running the touched drives); the test machinery (test_machinery_paths, glob: entries are fnmatch patterns) is Tier C on its own; generated outputs (generated_outputs) never classify - build-and-test proves them byte-equal to their sources, so the sources alone carry the tier; parts/brand-snow.js is a Tier A visual path (the snow layer, split out of parts/create-save.js by the amendment).",
+ "about": "Operative tier table for scripts/select-tier.py (test-suite restructure, 2026-11-09; amended 2026-11-09, Andrew approved). tests/TIER-MAP.md is the human document; THIS file is the machine copy the workflow reads. Keep the two in step: a change here without the doc, or the reverse, is drift. Precedence: tier C beats B beats A; a change touching several families runs the union of their drives; quarantined drives (tests/quarantine.json) are removed from tier A and B sets. Path entries ending in / are directory prefixes; tier_a_suffixes match file suffixes. Amendment: drive files (tests/browser/drive*.mjs) never escalate - they ride along with the app change's tier (a drives-only change is Tier B, running the touched drives); the test machinery (test_machinery_paths, glob: entries are fnmatch patterns) is Tier C on its own; generated outputs (generated_outputs) never classify - build-and-test proves them byte-equal to their sources, so the sources alone carry the tier; parts/brand-snow.js is a Tier A visual path (the snow layer, split out of parts/create-save.js by the amendment). Protocol fix round (2026-11-17, Andrew approved): Tier B selections union tier_a_core (B = core + family, per the protocol); a drive the change itself touches always runs, quarantined or not; proof files (tests/proof/**) ride along like drive files and never classify (the gate runs the proof manifest in build-and-test at every tier); parts/head.html and parts/brand-snow.js LEAVE Tier A (page structure + global styles, and a running animation program - neither's breakage is caught by the core set alone; both now fall to the default, C); parts/pmstyles.js is a GENERATED output (scripts/genstyles.mjs from the vendored CARTO style; build-and-test proves regeneration byte-identical) and never classifies - its sources under scripts/ carry the tier; drive201/drive202 are removed from the session family (deleted in Beta 1.221 with the icon-pack picker they tested; their coverage retired with that feature).",
  "default_tier_for_unmatched_app_code": "C",
  "families": {
   "create": {
@@ -68,7 +68,9 @@
     "drive163",
     "drive169",
     "drive170",
-    "drive184", "drive201", "drive202", "drive203"],
+    "drive184",
+    "drive203"
+   ],
    "paths": [
     "parts/app2.js",
     "parts/app3.js",
@@ -78,7 +80,8 @@
  },
  "generated_outputs": [
   "index.html",
-  "src/tracker-source.html"
+  "src/tracker-source.html",
+  "parts/pmstyles.js"
  ],
  "test_machinery_paths": [
   "tests/browser/harness.mjs",
@@ -98,9 +101,6 @@
   "drive180"
  ],
  "tier_a_paths": [
-  "parts/head.html",
-  "parts/pmstyles.js",
-  "parts/brand-snow.js",
   "docs/",
   "assets/",
   "manifest.json"
