@@ -1087,6 +1087,8 @@ function crResultName(it) { // Beta 1.233 (Andrew, package C): a result row show
   const head = (it.display_name || '').split(',')[0].trim();
   const a = it.address || {};
   if (crStreetIdentity(it)) return a.road || head;
+  const own = (it.name || '').trim() || head; // Beta 1.233 fix round 1 (PR #113, Codex P2): a result's OWN name - the answer's name field, else the display head. A pure address result has neither (its name is empty, or just the house number, and its head is the house number); a named place carries a name that is not its address.
+  if (own && own !== (a.house_number || '') && own.toLowerCase() !== (a.road || '').trim().toLowerCase()) return own; // a named place keeps its name - house number + road is where it STANDS, not what it is called, and two places at one address stay tellable apart
   if (a.house_number && a.road) return a.house_number + ' ' + a.road;
   return head;
 }

@@ -4436,7 +4436,7 @@ function routeRowEl(p) { // Beta 1.94 (audit F-04): rows are built as DOM nodes 
   const user = !SHIPPED_PACK_IDS.has(p.id); // Beta 1.124: a route Andrew created (not a shipped pack) can be deleted - its row is a DIV, not a <button>, because the Delete control is a real button and buttons cannot nest; the row's choose behaviour is unchanged (the container delegation reads data-route on any .routeRow)
   const b = routeRowShell(user ? 'div' : 'button', p.name, p.area + ' · ' + Object.keys(p.roads).length + ' streets'); b.dataset.route = p.id;
   if (user) { const del = document.createElement('button'); del.className = 'routeDel'; del.type = 'button'; del.textContent = 'Delete'; del.addEventListener('click', e => { e.stopPropagation(); askDeleteRoute(p.id); }); b.appendChild(del); } // the Delete tap stops here - it must never read as a tap on the row itself (which would load the route it is about to delete)
-  if (tab && activeRoute && activeRoute.id === p.id) { const ck = document.createElement('img'); ck.className = 'routeCheck'; ck.alt = ''; ck.src = GLYPH_MENU.check; b.appendChild(ck); } // Beta 1.233 (Andrew): the loaded route wears the Glyph disc check at the pill's right edge - appended last so it holds the edge even beside a Delete; the 1.207 "Currently loaded" badge and its centred name-row wrap are gone, and the name + area stay dead centre in the meta column
+  if (tab && activeRoute && activeRoute.id === p.id) { const ck = document.createElement('img'); ck.className = 'routeCheck'; ck.alt = 'Currently loaded'; ck.src = GLYPH_MENU.check; b.appendChild(ck); } // Beta 1.233 (Andrew): the loaded route wears the Glyph disc check at the pill's right edge - appended last so it holds the edge even beside a Delete; the 1.207 "Currently loaded" badge and its centred name-row wrap are gone, and the name + area stay dead centre in the meta column. Beta 1.233 fix round 1 (PR #113, Codex P2): the check's alt text carries the loaded state's name for a screen reader - the words stay off the screen, per Andrew's design
   return b;
 }
 function renderRouteLists() { document.querySelectorAll('.routeList').forEach(el => { el.replaceChildren(...ROUTE_PACKS.map(routeRowEl)); menuListFade(el); }); }
@@ -9081,6 +9081,8 @@ function crResultName(it) { // Beta 1.233 (Andrew, package C): a result row show
   const head = (it.display_name || '').split(',')[0].trim();
   const a = it.address || {};
   if (crStreetIdentity(it)) return a.road || head;
+  const own = (it.name || '').trim() || head; // Beta 1.233 fix round 1 (PR #113, Codex P2): a result's OWN name - the answer's name field, else the display head. A pure address result has neither (its name is empty, or just the house number, and its head is the house number); a named place carries a name that is not its address.
+  if (own && own !== (a.house_number || '') && own.toLowerCase() !== (a.road || '').trim().toLowerCase()) return own; // a named place keeps its name - house number + road is where it STANDS, not what it is called, and two places at one address stay tellable apart
   if (a.house_number && a.road) return a.house_number + ' ' + a.road;
   return head;
 }

@@ -25,6 +25,13 @@
 // identity's road, else house number + road, else the display head), the
 // grey tail is never built, and the name wraps instead of truncating; the
 // ' · near X' label stays inside the name.
+// Fix round 1 (PR #113, Codex P2s): crResultName gains the named-place
+// branch ahead of the house-number branch - a result with its own name
+// (the answer's name field, else the display head) keeps it, so a named
+// place carrying a full address block no longer renders as its own
+// address and two places at one address stay tellable apart; and the
+// loaded route's disc check carries alt="Currently loaded" - the loaded
+// state has an accessible name while the words stay off the screen.
 // On the Beta 1.232 tree every section fails somewhere: no stem map, the
 // period form of the note line, 68px rows, the badge present, no stretch,
 // no fade masks, the old Home/Clear faces, the credits standing, and the
@@ -75,8 +82,9 @@ check('B1f: the skeleton stand-ins match the rows at 58', head.includes('.crSkel
 check('B1g: the tallest meta still fits - the pair leading is tightened', head.includes('#routeMenu .routeName { font-size: 19px; line-height: 1.08;') && head.includes('#routeMenu .routeArea { font-weight: 500; line-height: 1.12;'));
 
 // ---------- B2: the disc check ----------
-check('B2a: the badge build is gone from app2', !app2.includes('routeBadge') && !app2.includes('routeNameRow') && !app2.includes("'Currently loaded'"));
-check('B2b: the loaded row is stamped with the disc check, tab mode only, after Delete', app2.includes("ck.className = 'routeCheck'; ck.alt = ''; ck.src = GLYPH_MENU.check; b.appendChild(ck);") && app2.indexOf("ck.className = 'routeCheck'") > app2.indexOf('b.appendChild(del);'));
+check('B2a: the badge build is gone from app2 (no visible loaded text is built; fix round 1: the words survive only as the check alt)', !app2.includes('routeBadge') && !app2.includes('routeNameRow') && !app2.includes("textContent = 'Currently loaded'"));
+check('B2b: the loaded row is stamped with the disc check, tab mode only, after Delete', app2.includes("ck.className = 'routeCheck'; ck.alt = 'Currently loaded'; ck.src = GLYPH_MENU.check; b.appendChild(ck);") && app2.indexOf("ck.className = 'routeCheck'") > app2.indexOf('b.appendChild(del);'));
+check('B2e (fix round 1): the loaded state has exactly one accessible name - the check alt - and no visible loaded text returns', (app2.match(/ck\.alt = 'Currently loaded';/g) || []).length === 1 && !app2.includes("ck.alt = '';") && !head.includes('Currently loaded'));
 check('B2c: the badge CSS is gone and the check stands at 25px', !head.includes('.routeBadge') && !head.includes('.routeNameRow') && head.includes('#routeMenu .routeCheck { width: 25px; height: 25px; flex: none; }'));
 check('B2d: a loaded created route clears both right-edge controls', head.includes('#routeMenu .routeRow:has(> .routeDel):has(> .routeCheck) .routeMeta { padding-right: 157px; }'));
 check('B2e: the check payload is byte-pinned', sha(Buffer.from(payload('GLYPH_MENU', 'check'), 'base64')) === 'a629ee0b2959ea4604e566af0f2def1ffc5aeb18653b2407fc65a4b02ee9c9fb');
@@ -106,6 +114,8 @@ check('C1: rows are named by crResultName (street identity road, else house numb
 check('C2: the row builds pin + name only - no tail element anywhere', pick.includes('nameEl.textContent = crResultName(it);') && pick.includes('b.append(pin, nameEl);') && !pick.includes('areaEl') && !head.includes('.crArea'));
 check('C3: the name wraps in the rows instead of truncating', head.includes('#createResults .crName { color: inherit; font-size: 15.5px; white-space: normal; overflow: visible; text-overflow: clip; }'));
 check('C4: the cross-street label still rides inside the name', pick.includes("ns.textContent = ' · near ' + near; nameEl.appendChild(ns);"));
+check('C5a (fix round 1): a named place keeps its own name - the own-name test stands ahead of the house-number branch', pick.includes("const own = (it.name || '').trim() || head;") && pick.includes("if (own && own !== (a.house_number || '') && own.toLowerCase() !== (a.road || '').trim().toLowerCase()) return own;") && pick.indexOf('return own;') > pick.indexOf('if (crStreetIdentity(it)) return a.road || head;') && pick.indexOf('return own;') < pick.indexOf("if (a.house_number && a.road) return a.house_number + ' ' + a.road;"));
+check('C5b (fix round 1): the own name is refused only when it is just the house number or the road itself', pick.includes("own !== (a.house_number || '')") && pick.includes("own.toLowerCase() !== (a.road || '').trim().toLowerCase()"));
 
 // ---------- V: version agreement ----------
 check('V: the #ver label reads Beta 1.233', head.includes('<div class="ver" id="ver">Beta 1.233</div>'));
