@@ -43,12 +43,13 @@ const root = new URL('../../', import.meta.url);
 const read = (p) => readFileSync(new URL(p, root), 'utf8');
 const head = read('parts/head.html');
 const pick = read('parts/create-pick.js');
+const citydata = read('parts/create-citydata.js');
 const app4 = read('parts/app4.js');
 const changelog = read('CHANGELOG.md');
 
 let pass = 0, fail = 0;
 const check = (name, cond) => { if (cond) { pass++; } else { fail++; console.log('FAIL:', name); } };
-const runSearchBody = pick.slice(pick.indexOf('function crRunSearch(fromTyping) {'), pick.indexOf("document.addEventListener('pointerdown'"));
+const runSearchBody = pick.slice(pick.indexOf('function crRunSearch(fromTyping, cont) {'), pick.indexOf("document.addEventListener('pointerdown'"));
 
 // ---------- A: the city pane anchors ----------
 check('A1: the pane pads its top by the HUD formula less the menu padding', head.includes('#rmCityListPane { height: 100%; padding-top: calc(25px + var(--sat) - 24px); }'));
@@ -59,7 +60,7 @@ check('A5: scope - the routes list keeps its 52% cap and no other pane gains the
 
 // ---------- B: intersections only, on-device ----------
 check('B1: the placeholder teaches the intersection form (and the old wording is gone)', head.includes('placeholder="Search an intersection - Weston & Rutherford"') && !head.includes('Search a street or address'));
-check('B2: the street search fetches nothing - crRunSearch is synchronous, its span holds no fetch call and no service URL, and the file\'s one Nominatim URL is the city search\'s', pick.includes('function crRunSearch(fromTyping) {') && !pick.includes('async function crRunSearch') && !runSearchBody.includes('fetch(') && !runSearchBody.includes('nominatim.openstreetmap.org') && (pick.match(/nominatim\.openstreetmap\.org/g) || []).length === 1);
+check('B2: the street search fetches nothing - crRunSearch is synchronous, its span holds no fetch call and no service URL, and the file\'s one Nominatim URL is the city search\'s', pick.includes('function crRunSearch(fromTyping, cont) {') && !pick.includes('async function crRunSearch') && !runSearchBody.includes('fetch(') && !runSearchBody.includes('nominatim.openstreetmap.org') && (pick.match(/nominatim\.openstreetmap\.org/g) || []).length === 1);
 check('B3: the resolve tries the exact pair first and a hit renders as exactly that crossing', pick.includes('const pair = crIntersectionItem(q);') && pick.includes('if (pair) return { items: [pair], streets: new Set([pair.display_name.split(\' & \')[0]]) };') && pick.indexOf('const pair = crIntersectionItem(q);') < pick.indexOf('crFragmentStreetItems(q)'));
 check('B4: the fragment matcher - full name, short form, or any word, on the normalized keys, closeness-ordered', pick.includes('function crMatchFragment(frag)') && pick.includes("else if (full.split(' ').some(w => w.startsWith(key))) s = 2;") && pick.includes('scored.sort((a, b) => a.s - b.s || a.len - b.len'));
 check('B5: a street\'s crossings are deduped by cross-street name and city-bound like the pair path', pick.includes('function crCrossingRows(name)') && pick.includes('if (seen.has(x.other)) continue;') && (pick.match(/crInBox\(cityBox, x\.pt\[0\], x\.pt\[1\]\)/g) || []).length >= 2);
@@ -105,6 +106,28 @@ check('F1c: the click reads the row\'s current item at tap time, not the creatio
 // in qa-fix1.mjs on a LEAVING row's computed opacity mid-fade (the
 // original QA measured only a survivor's delay).
 check('F2: the exit seat releases the entrance animation, commits it, then starts the fade-out', pick.includes("st.el.classList.remove('crRowIn'); void st.el.offsetWidth; st.el.classList.add('crRowOut');"));
+
+// ---------- R: fix round 3 (PR #114, Codex P2 4619119230) ----------
+// A search run before its city's extract finished landing answered against
+// the empty or partial coverage and stood stale: only typing and Enter
+// invoked crRunSearch, and neither crCovMerge nor the prepare completions
+// (which call crRenderHint) re-ran it. crRefreshSearch now re-runs the
+// CURRENTLY OPEN search when coverage changes - from crCovMerge as each
+// extract folds in, and from crRenderHint's tail (every prepare completion
+// renders the hint as it lands coverage; the saved-city fold rebuilds the
+// index directly and then renders it). Its guards keep a dismissed search
+// dismissed: every closing seat removes the box's 'on' as it bumps the
+// sequence, so the refresh requires the box open, the flow live and a
+// non-empty query - and it routes through crRunSearch itself (the sequence
+// guard), never around it. The render is a continuation (cont): the same
+// search's answer arriving, at the 30ms re-populate stagger - pinned here,
+// measured end-to-end in the round's rendered QA (qa-fix3.mjs), whose
+// search-before-coverage and partial-to-full pins fail on the pre-fix page.
+const refreshBody = pick.slice(pick.indexOf('function crRefreshSearch() {'), pick.indexOf('function crSearchResolve(q)'));
+check('R1: the coverage refresh exists and is guarded - flow live, box open, non-empty query, then through crRunSearch itself', pick.includes('function crRefreshSearch() {') && refreshBody.includes('if (!creating) return;') && refreshBody.includes("if (!box.classList.contains('on')) return;") && refreshBody.includes("if (!$('crSearchInput').value.trim()) return;") && refreshBody.includes('crRunSearch(false, true);'));
+check('R2: crCovMerge re-runs the open search as each extract folds in', citydata.slice(citydata.indexOf('function crCovMerge(elements, box)'), citydata.indexOf('function crResolve(osmName')).includes('crRefreshSearch();'));
+check('R3: crRenderHint\'s tail carries the second trigger (the prepare completions and the saved-city fold land coverage through it), exactly one call in the file', (pick.match(/crRefreshSearch\(\);/g) || []).length === 1 && pick.includes('every coverage landing renders this hint as it lands'));
+check('R4: a refresh render is a continuation, never a fresh populate - the renderer takes cont and the freshness rule yields to it', pick.includes('function crRenderRows(res, cont)') && pick.includes('const fresh = !cont && (') && pick.includes('crRenderRows(res, cont);'));
 
 // ---------- V: version agreement ----------
 check('V: the #ver label reads Beta 1.234', head.includes('<div class="ver" id="ver">Beta 1.234</div>'));
