@@ -60,9 +60,9 @@ check('5f: the focus exemption stands - an opener whose handler focuses a text f
 check('5g: the exemption names the street row only - the other row families stay gated', (() => { const line = app4.split('\n').find(l => l.includes('const OPEN_FOCUS_EXEMPT_SEL')) || ''; return line.includes("'.srow'") && !line.includes('crPRow') && !line.includes('histRow'); })());
 
 // ---------- Version agreement ----------
-check('V: the #ver label reads Beta 1.237', head.includes('<div class="ver" id="ver">Beta 1.237</div>'));
-check('V: WHATSNEW is the Beta 1.237 entry (its one short bullet)', app4.includes("v: 'Beta 1.237', items: [\"The blue menu titles are in the middle now.\"]"));
-check('V: the CHANGELOG top entry is Beta 1.231', changelog.split('\n').find(l => l.startsWith('## Beta')) === '## Beta 1.237 — 2026-11-18');
+check('V: the #ver label reads Beta 1.238', head.includes('<div class="ver" id="ver">Beta 1.238</div>'));
+check('V: WHATSNEW is the Beta 1.238 entry (its one short bullet)', app4.includes("v: 'Beta 1.238', items: [\"Fixed: on a cold open the Select City sheet sits over the falling snow, like it does over the map.\"]"));
+check('V: the CHANGELOG top entry is Beta 1.231', changelog.split('\n').find(l => l.startsWith('## Beta')) === '## Beta 1.238 — 2026-11-18');
 
 console.log(`proof-1231: ${pass} pass, ${fail} fail`);
 if (fail) process.exit(1);

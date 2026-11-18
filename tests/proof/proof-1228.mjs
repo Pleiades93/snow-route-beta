@@ -65,9 +65,9 @@ check('4d: no full-stop site still multiplies the viewport by the fraction', !ap
 check('4e: the stops\' constants stand (half and fallback untouched)', app2.includes('const SHEET_DEF_VH = 0.50, SHEET_FULL_VH = 0.94, SHEET_MIN_PX = 150;'));
 
 // ---------- Version agreement ----------
-check('V: the #ver label reads Beta 1.237', head.includes('<div class="ver" id="ver">Beta 1.237</div>'));
-check('V: WHATSNEW is the Beta 1.237 entry (its one short bullet)', app4.includes("v: 'Beta 1.237', items: [\"The blue menu titles are in the middle now.\"]"));
-check('V: the CHANGELOG top entry is Beta 1.229', changelog.split('\n').find(l => l.startsWith('## Beta')) === '## Beta 1.237 — 2026-11-18');
+check('V: the #ver label reads Beta 1.238', head.includes('<div class="ver" id="ver">Beta 1.238</div>'));
+check('V: WHATSNEW is the Beta 1.238 entry (its one short bullet)', app4.includes("v: 'Beta 1.238', items: [\"Fixed: on a cold open the Select City sheet sits over the falling snow, like it does over the map.\"]"));
+check('V: the CHANGELOG top entry is Beta 1.229', changelog.split('\n').find(l => l.startsWith('## Beta')) === '## Beta 1.238 — 2026-11-18');
 
 console.log(`proof-1228: ${pass} passed, ${fail} failed`);
 process.exit(fail ? 1 : 0);

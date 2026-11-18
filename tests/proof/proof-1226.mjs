@@ -47,9 +47,9 @@ check('2c: the 1.224 dialed stacks survive nowhere in the page', !head.includes(
 check('2d: the night fence stands (night Start keeps the float token; the night dock recipe is byte-identical)', rule('body.night .runBtn {').includes('box-shadow: var(--shadow-float);') && rule('body.night .dockBtn {').includes('background: linear-gradient(180deg, rgba(78,81,90,.94), rgba(43,45,51,.94));') && rule('body.night .dockBtn {').includes('border-top-color: rgba(255,255,255,.55);') && rule('body.night .dockBtn {').includes('box-shadow: inset 0 1px 0 rgba(255,255,255,.45), 0 10px 26px rgba(0,0,0,.45);'));
 
 // ---------- Version agreement ----------
-check('V: the #ver label reads Beta 1.237', head.includes('<div class="ver" id="ver">Beta 1.237</div>'));
-check('V: WHATSNEW is the Beta 1.237 entry (its one short bullet)', app4.includes("v: 'Beta 1.237', items: [\"The blue menu titles are in the middle now.\"]"));
-check('V: the CHANGELOG top entry is Beta 1.229', changelog.split('\n').find(l => l.startsWith('## Beta')) === '## Beta 1.237 — 2026-11-18');
+check('V: the #ver label reads Beta 1.238', head.includes('<div class="ver" id="ver">Beta 1.238</div>'));
+check('V: WHATSNEW is the Beta 1.238 entry (its one short bullet)', app4.includes("v: 'Beta 1.238', items: [\"Fixed: on a cold open the Select City sheet sits over the falling snow, like it does over the map.\"]"));
+check('V: the CHANGELOG top entry is Beta 1.229', changelog.split('\n').find(l => l.startsWith('## Beta')) === '## Beta 1.238 — 2026-11-18');
 
 console.log(`proof-1226: ${pass}/${pass + fail} checks passed`);
 process.exit(fail ? 1 : 0);

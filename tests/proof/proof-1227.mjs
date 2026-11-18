@@ -85,9 +85,9 @@ check('6b: the six payloads are byte-pinned (set treatment: alpha fills, lossles
 check('6c: renderIcons stamps the bar hosts (theme variants throughout since Beta 1.232 - the magnifier and disc follow the theme like the arrow) and re-stamps row pins', app4.includes('GLYPH_CREATE.back.n : GLYPH_CREATE.back.d') && app4.includes('night ? GLYPH_CREATE.search.n : GLYPH_CREATE.search.d') && app4.includes('night ? GLYPH_CREATE.cancel.n : GLYPH_CREATE.cancel.d') && app4.includes("document.querySelectorAll('.crPin').forEach(el => { el.innerHTML = ICONS.pin; });"));
 
 // ---------- Version agreement ----------
-check('V: the #ver label reads Beta 1.237', head.includes('<div class="ver" id="ver">Beta 1.237</div>'));
-check('V: WHATSNEW is the Beta 1.237 entry (its one short bullet)', app4.includes("v: 'Beta 1.237', items: [\"The blue menu titles are in the middle now.\"]"));
-check('V: the CHANGELOG top entry is Beta 1.229', changelog.split('\n').find(l => l.startsWith('## Beta')) === '## Beta 1.237 \u2014 2026-11-18');
+check('V: the #ver label reads Beta 1.238', head.includes('<div class="ver" id="ver">Beta 1.238</div>'));
+check('V: WHATSNEW is the Beta 1.238 entry (its one short bullet)', app4.includes("v: 'Beta 1.238', items: [\"Fixed: on a cold open the Select City sheet sits over the falling snow, like it does over the map.\"]"));
+check('V: the CHANGELOG top entry is Beta 1.229', changelog.split('\n').find(l => l.startsWith('## Beta')) === '## Beta 1.238 \u2014 2026-11-18');
 
 console.log(`proof-1227: ${pass}/${pass + fail} checks passed`);
 process.exit(fail ? 1 : 0);
