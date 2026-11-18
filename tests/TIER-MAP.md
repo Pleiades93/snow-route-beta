@@ -12,9 +12,10 @@ pass.
 
 ## Tier A — small visual / constant / copy changes
 
-Paths: `parts/head.html`, `parts/pmstyles.js`, `parts/brand-snow.js`
-(the boot/menu snow layer — see the amendment below), `docs/`, `assets/`,
-`manifest.json`, any `*.md`.
+Paths: `docs/`, `assets/`, `manifest.json`, any `*.md`.
+(Until 2026-11-17 this list also carried `parts/head.html`,
+`parts/pmstyles.js` and `parts/brand-snow.js` — see the 2026-11-17
+amendment below for where each went and why.)
 Gate: build-and-test + the **core set** (~40 s of drives):
 `drive131 drive160 drive161 drive168 drive174 drive180`.
 `drive180` (the assembled-page census) is mandatory in the core set.
@@ -28,16 +29,20 @@ read-back, as before).
 
 ## Tier B — feature work
 
-Gate: build-and-test + the touched surface's family:
+Gate: build-and-test + the **core set** + the touched surface's family
+(the protocol's "B = core + family" — the core union was added by the
+2026-11-17 amendment below; before it, the selector ran the family
+alone and the protocol text and the machine disagreed):
 
 | Family | Paths | Drives |
 | --- | --- | --- |
 | create | `parts/create-cache.js`, `create-citydata.js`, `create-fetch.js`, `create-packs.js`, `create-pick.js`, `packs/` | 151 152 153 154 155 156 160 164 166 181 183 185 |
 | map | `parts/engine.js` | 115 116 121 127 128 129 130 133 141 148 149 165 168 182 |
-| session | `parts/app2.js`, `parts/app3.js`, `parts/app4.js` | 83 86 88 89* 114 118 125 135 136 140 145 146 147 159 161 162 163 169 170 184 201 202 |
+| session | `parts/app2.js`, `parts/app3.js`, `parts/app4.js` | 83 86 88 89* 114 118 125 135 136 140 145 146 147 159 161 162 163 169 170 184 203 |
 
-*quarantined drives are removed from the set by the selector (drive89
-today; drive181 was quarantined 2026-11-09 and re-admitted 2026-11-10
+*quarantined drives are removed from the set by the selector, unless
+the change itself touches them — a touched drive always runs
+(2026-11-17) — (drive89 today; drive181 was quarantined 2026-11-09 and re-admitted 2026-11-10
 after its hardening proved out — entry removed in the housekeeping
 cleanup; drive156 was quarantined 2026-11-11 — check 157-D1 flaked
 twice on record and the drive was hardened in the drive156-harden
@@ -77,18 +82,24 @@ are listed here so the family's full membership stays visible.
 ## Tier C — deep mechanics
 
 Paths: `tests/` and `scripts/` and `.github/` and `src/` (for `tests/`,
-read the amendment below first: drive files ride with their feature,
-and only the machinery itself is Tier C on its own — the `tests/`
+read the amendments below first: drive files and proof files ride with
+their feature, and only the machinery itself is Tier C on its own — the `tests/`
 prefix remains the backstop for everything else under it, fixtures and
 selftests included), `parts/app1.js` (route
 state, storage slots, history, the finish state machine),
 `parts/create-save.js` (the create→save write path), `parts/data.js`,
 `sw.js`.
 Gate: the FULL battery (all eight shards) + offline-e2e.
-The nightly battery on main is unchanged: full battery + offline-e2e on
-schedule, whatever the day's changes were. A manual `workflow_dispatch`
-can force any tier (`tier` input: auto / A / B / C / full); the default
-is a full (Tier C) run, as before.
+The nightly battery on main is unchanged: full battery + offline-e2e,
+dispatched by Muse's cron via `workflow_dispatch` (01:00
+America/Toronto, with a 04:00 catch-up dispatch and a 06:00 summary —
+checks.yml carries no schedule trigger), whatever the day's changes
+were. A manual `workflow_dispatch` can force any tier (`tier` input:
+auto / A / B / C / full); the default is a full (Tier C) run, as
+before. Since 2026-11-17 a dispatch is only honoured on `main`: the
+plan job fails any dispatch on another ref, because a manual run on a
+pull-request branch would post a skipped `tier drives` check on the
+PR's head and GitHub counts a skipped required check as passing.
 
 ## Amendment — 2026-11-09 (Andrew approved)
 
@@ -130,6 +141,51 @@ save path's Tier C. The engine now lives in its own part,
 (the shipped bytes are identical — the split moved text, nothing
 else), and it classifies as what it is: a Tier A visual path.
 `parts/create-save.js` stays Tier C for its save logic.
+
+## Amendment — 2026-11-17 (protocol fix round, Andrew approved)
+
+Four clauses from the 2026-11-17 protocol audit (Codex: SOUND WITH
+FIXES) as adjudicated by the Claude third seat; Andrew approved the
+full list the same day.
+
+**Clause 1 — Tier B is core + family.** The protocol (§3) always said
+"B = core + the touched family's drives"; the selector ran the family
+alone. The machine now matches the text: every Tier B selection unions
+the core set, and the selector fixtures assert the complete sets.
+
+**Clause 2 — a touched drive always runs.** Quarantine removes a drive
+from sets it was pulled into (core, family), never from a change that
+edits the drive itself — its own checks must verify its own change.
+
+**Clause 3 — Tier A narrows to what the core set can see.**
+`parts/head.html` leaves Tier A: it holds the page structure (the
+selection card's markup, found by ID from the code) plus the global
+styles, so a filename-only Tier A could wave a behaviour break through
+on a core set that never exercises it. `parts/brand-snow.js` leaves
+too: it is a 240-line running animation program, not a style (this
+supersedes clause 2 of the 2026-11-09 amendment above). Both now fall
+to the map default (C). `parts/pmstyles.js` is a generated output
+(`scripts/genstyles.mjs` from the vendored CARTO style; build-and-test
+proves regeneration byte-identical), so it never classifies — its
+sources under `scripts/` carry the tier.
+
+**Clause 4 — proofs ride along, and the manifest is the wiring.**
+Proof files (`tests/proof/**`) never classify a round, like drive
+files: build-and-test runs every proof from `tests/proof/manifest.json`
+at every tier (`scripts/run-proofs.py`), and
+`scripts/check-proof-coverage.py` fails the build unless every proof
+file is gate-run or retired with a reason. Registering a proof is one
+manifest line — the old per-proof steps in checks.yml, whose edits
+forced nearly every round to Tier C, are gone. The gate's own
+machinery (workflows, bridge, selector, guards, this map) stays Tier C.
+
+Also in this round: drive201/drive202 left the session family (the
+drives were deleted in Beta 1.221 with the icon-pack picker they
+tested; the roster entries were the drift), drive203 joined this
+document's session row to match the JSON, `scripts/check-tier-map.py`
+now guards every roster entry and the JSON/MD pair on every build, and
+the plan job fails any `workflow_dispatch` on a ref other than `main`
+(the skipped-check hole — see the Tier C section above).
 
 ## The flake rule (replaces the 2026-11-09 whole-battery rule)
 

@@ -12,13 +12,34 @@ written map in tests/TIER-MAP.md whose operative table is tests/tier-map.json:
 
 Quarantined drives (tests/quarantine.json) are removed from the A and B
 sets: they do not gate the fast tiers until hardened. They still run at
-Tier C and nightly.
+Tier C and nightly. Exception (2026-11-17): a drive the change itself
+touches always runs, quarantined or not - its own checks must verify
+its own change.
+
+Amendment (2026-11-17, protocol fix round, Andrew approved):
+  * Tier B selections always include the core set (the protocol's
+    "B = core + family"): the selector unions tier_a_core into every
+    Tier B drive set, family selections and drive-only changes alike.
+  * Proof files (tests/proof/**) never escalate a round: like drive
+    files they ride along with the app change's tier. The gate runs
+    every proof in build-and-test at every tier from
+    tests/proof/manifest.json (guard: scripts/check-proof-coverage.py),
+    so a proof's own classification carries no verdict weight.
+  * parts/head.html and parts/brand-snow.js are no longer Tier A paths:
+    the first holds the page structure plus the global styles, the
+    second is a running animation program - neither's breakage is
+    caught by the core set alone, so both fall to the map's default
+    (C). parts/pmstyles.js is a generated output (scripts/genstyles.mjs
+    from the vendored CARTO style); build-and-test proves its
+    regeneration byte-identical, so it never classifies - its sources
+    (under scripts/) carry the tier.
 
 Amendment (2026-11-09, Andrew approved):
   * Drive files (tests/browser/drive*.mjs) never escalate a round. When
     they accompany an app change they RIDE ALONG: the tier comes from the
     app paths alone, and the touched drives join the gate set. A change
-    to drive files only is Tier B and runs the touched drives.
+    to drive files only is Tier B and runs the touched drives plus the
+    core set (every Tier B selection includes the core).
   * The test MACHINERY itself (harness, runners, this selector, the
     checks workflow, the tier-map files, the quarantine file) stays
     Tier C on its own - a change to the referee gets the full battery.
@@ -103,12 +124,21 @@ def select(files, force=None):
             return "C", [], True, f"test machinery touched: {f}"
     touched = sorted({drive_name(f) for f in files if is_drive(f)})
     generated = set(tmap.get("generated_outputs", []))
-    app_files = [f for f in files if not is_drive(f) and f not in generated]
+    proofs = sorted({f for f in files if f.startswith("tests/proof/")})
+    app_files = [f for f in files if not is_drive(f) and f not in generated and f not in proofs]
     ride = f"; drive files ride along: {', '.join(touched)}" if touched else ""
+    if proofs:
+        ride += "; proof files ride along: " + ", ".join(p.rsplit("/", 1)[-1] for p in proofs)
     if not app_files:
         if touched:
-            drives = sorted(set(touched) - quar)
-            return "B", drives, False, "drives only: " + ", ".join(touched)
+            # A touched drive always runs, quarantined or not
+            # (2026-11-17), and the core set rides along: every Tier B
+            # selection includes the core (PR #107 Codex P2 caught this
+            # early return bypassing the union).
+            sel = sorted(set(touched) | set(core_set(tmap, quar)))
+            return "B", sel, False, "drives only: " + ", ".join(touched) + " (+ core)"
+        if proofs:
+            return "A", core_set(tmap, quar), False, "proof files only - proofs ride along" + ride
         return "A", core_set(tmap, quar), False, "generated outputs only - no source change"
     for f in app_files:
         if any(match(f, e) for e in tmap["tier_c_paths"]):
@@ -126,9 +156,12 @@ def select(files, force=None):
         if any(match(f, e) for f in app_files for e in fam["paths"]):
             fams.append(name)
     if fams:
-        drives = sorted(({d for name in fams for d in tmap["families"][name]["drives"]} | set(touched)) - quar)
+        fam_drives = {d for name in fams for d in tmap["families"][name]["drives"]}
+        # Tier B = core + family (protocol section 3, 2026-11-17). Quarantine
+        # removes a drive from the pulled-in sets, never a touched drive.
+        drives = sorted(((fam_drives | set(tmap["tier_a_core"])) - quar) | set(touched))
         return "B", drives, False, "families touched: " + ", ".join(fams) + ride
-    drives = sorted((set(tmap["tier_a_core"]) | set(touched)) - quar)
+    drives = sorted((set(tmap["tier_a_core"]) - quar) | set(touched))
     return "A", drives, False, "visual/constant/copy paths only" + ride
 
 

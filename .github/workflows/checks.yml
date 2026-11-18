@@ -31,6 +31,14 @@ name: checks
 # changes). scripts/check-shard-coverage.py runs in build-and-test and
 # fails the build if the shard lists ever stop covering every drive in
 # run.mjs exactly once.
+# Protocol fix round (2026-11-17, Andrew approved): the plan job FAILS
+# any workflow_dispatch on a ref other than main (the skipped-check
+# hole through the dispatch door - see the plan job); Tier B selections
+# union the core set; a touched drive always runs, quarantined or not;
+# proofs run from tests/proof/manifest.json in build-and-test (no
+# per-proof steps - registering a proof no longer edits this file);
+# the tier-map and proof-coverage guards run in build-and-test; and
+# build-and-test proves parts/pmstyles.js regenerates byte-identical.
 on:
   # Gate hardening (2026-11-12, Andrew approved): the push trigger is
   # scoped to main ONLY. A push to a pull-request branch used to fire a
@@ -64,10 +72,16 @@ jobs:
   plan:
     # Tier selection (test-suite restructure, 2026-11-09): diffs the change
     # and applies the written map (tests/TIER-MAP.md) via
-    # scripts/select-tier.py. Schedule and a default manual dispatch are
-    # Tier C (the nightly provenance flow is unchanged); a push to main is
-    # Tier A (the browser-smoke job runs the core set); everything else is
-    # decided by the paths the change touches.
+    # scripts/select-tier.py. A default manual dispatch is Tier C (the
+    # nightly battery, dispatched on main); a push to main is Tier A (the
+    # browser-smoke job runs the core set); everything else is decided by
+    # the paths the change touches. Protocol fix round (2026-11-17): a
+    # workflow_dispatch on any ref other than main FAILS in this job by
+    # design - on a pull-request branch its fixed-name "tier drives"
+    # aggregator would be skipped, and GitHub counts a skipped required
+    # check as passing (the hole class closed for branch pushes on
+    # 2026-11-12, through the dispatch door). Failing here posts a red
+    # required check on that head instead of a skipped one.
     runs-on: ubuntu-latest
     timeout-minutes: 10
     outputs:
@@ -88,9 +102,11 @@ jobs:
           REF: ${{ github.ref }}
           FORCE: ${{ inputs.tier }}
         run: |
-          if [ "$EVENT" = "schedule" ]; then
-            python3 scripts/select-tier.py --files /dev/null --force C --github-output
-          elif [ -n "$FORCE" ] && [ "$FORCE" != "auto" ]; then
+          if [ "$EVENT" = "workflow_dispatch" ] && [ "$REF" != "refs/heads/main" ]; then
+            echo "::error::workflow_dispatch is only allowed on main (got $REF). A manual run on a pull-request branch posts a skipped 'tier drives' check on that head, and GitHub counts a skipped required check as passing - this job fails instead, so the run posts a red required check (protocol fix round, 2026-11-17)."
+            exit 1
+          fi
+          if [ -n "$FORCE" ] && [ "$FORCE" != "auto" ]; then
             F="$FORCE"; [ "$F" = "full" ] && F="C"
             python3 scripts/select-tier.py --files /dev/null --force "$F" --github-output
           elif [ "$EVENT" = "push" ] && [ "$REF" = "refs/heads/main" ]; then
@@ -120,6 +136,10 @@ jobs:
         run: python3 scripts/build-pages.py --check
       - name: Shard coverage (every drive in exactly one shard)
         run: python3 scripts/check-shard-coverage.py
+      - name: Tier-map coverage (every roster entry runnable; tier-map.json and TIER-MAP.md in step)
+        run: python3 scripts/check-tier-map.py
+      - name: Proof coverage (every proof gate-run or retired with a reason)
+        run: python3 scripts/check-proof-coverage.py
       - name: Set up Node
         uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020 # v4
         with:
@@ -129,6 +149,11 @@ jobs:
         run: |
           npm ci
           ./node_modules/.bin/tsc -p tsconfig.json
+      - name: Basemap style parity (parts/pmstyles.js is generated - regeneration must be byte-identical)
+        working-directory: scripts
+        run: |
+          node genstyles.mjs
+          git -C "$GITHUB_WORKSPACE" diff --exit-code -- parts/pmstyles.js
       - name: Service worker tests
         run: node tests/sw.test.mjs
       - name: Trail segmentation fixtures (test-change gate)
@@ -161,46 +186,8 @@ jobs:
         run: node tests/browser/selftest-foreign-writes.mjs
       - name: NV fix round proofs (Beta 1.152 - stretch parity, pack ceilings, tile budget; history cap retired Beta 1.167)
         run: node tests/browser/selftest-nv1152.mjs
-      - name: mergeStrands best-score proof (dead-score fix gate, 2026-11-15)
-        run: node tests/proof/proof-mergestrands-score.mjs
-      - name: Street-end width proof (Beta 1.206 gate - drawn widths hold the geographic width the end cuts assume)
-        run: node tests/proof/proof-street-end-width-fix.mjs
-      - name: Green half-road proof (Beta 1.208 gate - full green matches the surface width, one-side green fills half the road, selection paint is the board's own geometry, label spacing)
-        run: node tests/proof/proof-green-half-road.mjs
-      - name: Trim-glow / path-side / pill-ink proof (Beta 1.209 gate - trim glow covers chosen sectors only, multi-select side arrows follow the driver's path, pill ink is true black)
-        run: node tests/proof/proof-trim-glow-path-pills.mjs
-      - name: Create zoom paint + trim tap-away proof (Beta 1.210 gate - create selection paint holds its metres below z15 instead of blobbing, a trim tap that resolves to no sector acts as Cancel)
-        run: node tests/proof/proof-create-zoom-tapaway.mjs
-      - name: Shader glow round proof (Beta 1.211 gate - create trim glow is a metric shader mesh with the approved falloff and breath, no user-facing string calls a clean a run, Streets and Settings icons are the approved single paths)
-        run: node tests/proof/proof-shader-glow-round.mjs
-      - name: Wording finished-cleans proof (Beta 1.212 gate - the last two user-facing strings that called a finished clean a run now say clean)
-        run: node tests/proof/proof-wording-finished-cleans.mjs
-      - name: Icon swap proof (Beta 1.213 gate - the professional pack's files serve byte-for-byte including the master-vector favicon, corners opaque, the pack maskable measured inside the safe zone, the splash artwork is the pack's square transparent foreground)
-        run: node tests/proof/proof-icon-swap-1213.mjs
-      - name: Selection-card note-button move proof (Beta 1.214 gate - the note button stands in the title row beside the street name, the action row belongs to Complete entire road alone, renderPanel's by-ID contract untouched)
-        run: node tests/proof/proof-selcard-note-move.mjs
-      - name: Selection-card width proof (Beta 1.215 gate - the card narrows 342 to 262 centred, the one-size invariant restated at 262 x 112.2, 342 surviving only on the route-menu pane)
-        run: node tests/proof/proof-selcard-width-262.mjs
-      - name: LEFTSIDE removal proof (B-05 closure - the written-never-read LEFTSIDE state is gone from the assembled app, LEFTBIT's declaration/write/read stand verbatim, and every paint source hashes byte-identical to the unmodified engine in two board states)
-        run: node tests/proof/proof-leftside-removal-b05.mjs
-      - name: Create glow + casing fix proof (Beta 1.216 gate - the trim glow mesh stitches sector parts and drops repeated points so no vertex sits beyond its claimed distance + 1 m (the spear assertion), and the draft casing anchor is halved to crZoomW(9.75) with the reach floor following it)
-        run: node tests/proof/proof-create-glow-casing-fix.mjs
-      - name: Icon glyph proof (Beta 1.221 gate - Glyph is the only icon set - the complete set byte-pinned as lossless WebP at 200x200, the registry dispatching through the single glyph row, the picker section and the retired packs absent, the backup icon-pack field gone; replaces the 1218/1219/1220 pack proofs, whose subjects left with the picker)
-        run: node tests/proof/proof-icon-glyph-1221.mjs
-      - name: Soft fill proof + button settlement (Beta 1.222 gate, settlement pinned Beta 1.224 - the blue-menu pills wear the soft fill with the inset ring retired, the solid-white carve-out byte-identical, the round buttons wear the dialed Soft Lift by day and the elevation recipe by night with night Start fenced to the float token, the speed readout and the shared tokens untouched, the version in agreement)
-        run: node tests/proof/proof-soft-1222.mjs
-      - name: Create states, About room, city bar and one pop-up style proof (Beta 1.223 gate - the create draft paints gentle-mute selected, vibrant active and grey removed; the Settings menu keeps its panes clear of the top blur and the fixed X; the city control is the option-E bar above Done; the toast and the create hint wear the one blue pill; the loaded-city confirmation is gone; no em dash in any user-facing string)
-        run: node tests/proof/proof-1223.mjs
-      - name: Tabular numbers and backup bar removal proof (Beta 1.224 gate - the five live readouts wear tabular-nums and no other rule does; the backup nudge bar, its function, handlers and stamp are gone whole; the three surviving bars and the exportedAt stamp stand; the version in agreement)
-        run: node tests/proof/proof-1224.mjs
-      - name: Journey icon and placeholder dash proof (Beta 1.225 gate - the Routes tab wears the Journey artwork under the set's exact treatment with the turn-sign payloads gone and the rest of the set byte-untouched; the ten pure placeholder strings show a plain hyphen, app2 and app3 carry no en dash, and app4's two classified en dashes stand; the version in agreement)
-        run: node tests/proof/proof-1225.mjs
-      - name: Press shrink and half day lift proof (Beta 1.226 gate - every pressable button or pill shrinks on press at scale(.97) with the centred pressables composing their rest transform, the six blue-menu :active flashes hold their rest fills, the display-only readouts excluded; the day lift halves to Andrew's exact stacks and every night rule stands; the version in agreement)
-        run: node tests/proof/proof-1226.mjs
-      - name: Create search bar proof (Beta 1.227 gate - the create search is one blue bar with a back pill that only goes back and a clear disc that only clears, the Glyph Neue glyphs byte-pinned under the set treatment, the results rows split pin + name + area on the approved sample surfaces, the version in agreement)
-        run: node tests/proof/proof-1227.mjs
-      - name: Locate pill, title-line stack and sheet cap proof (Beta 1.228 gate - the pin becomes a labelled Locate pill with a full-row-height touch area and a press separate from the row's, the day/night and re-centre buttons stand on the title's line with the speed circle's seat kept, and both sheets' full stop is the title cap computed by sheetFullH with the 0.94 fallback; the version in agreement)
-        run: node tests/proof/proof-1228.mjs
+      - name: Proofs (manifest-driven - every proof in tests/proof/manifest.json; protocol fix round, 2026-11-17)
+        run: python3 scripts/run-proofs.py
       - name: Premise-lint fixtures (Tranche 4 gate)
         run: python3 scripts/premise-lint-fixtures/run-fixtures.py
       - name: Bug-hunt fix fixtures (PR #23 gate; Beta 1.185)
@@ -209,6 +196,8 @@ jobs:
         run: node tests/browser/selftest-gps-package.mjs
       - name: Tier selector fixtures (PR #23 gate; Beta 1.185)
         run: python3 scripts/select-tier-fixtures/run-fixtures.py
+      - name: Gate-script verdict fixtures (protocol fix round, 2026-11-17 - the tier-map guard, the proof-coverage guard and the proof runner prove both verdicts on synthetic trees)
+        run: python3 scripts/gate-fixtures/run-fixtures.py
       - name: Premise lint (advisory - drive premises this PR's app diff touches)
         if: github.event_name == 'pull_request'
         continue-on-error: true
@@ -219,7 +208,7 @@ jobs:
   browser-tests:
     # Tier C: the full battery. Runs everywhere the plan selects Tier C
     # EXCEPT a push to main (the smoke job takes that; a main push plans
-    # Tier A in any case). The nightly schedule plans Tier C, so the
+    # Tier A in any case). The nightly dispatch plans Tier C, so the
     # nightly full battery on main is unchanged.
     needs: plan
     if: needs.plan.outputs.tier == 'C' && !(github.event_name == 'push' && github.ref == 'refs/heads/main')
@@ -316,7 +305,7 @@ jobs:
     # Tier C and nightly only (test-suite restructure, 2026-11-09): the
     # service-worker shell does not change on every ship - see the finding
     # in tests/TIER-MAP.md. The plan job flags offline=true exactly for
-    # Tier C (which the nightly schedule and a default dispatch select).
+    # Tier C (which the nightly dispatch and a default dispatch select).
     needs: plan
     if: needs.plan.outputs.offline == 'true'
     runs-on: ubuntu-latest

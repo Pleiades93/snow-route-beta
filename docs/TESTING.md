@@ -545,6 +545,15 @@ locally, first:
    bug's permanent regression test. Current instance:
    `tests/browser/race-loss.mjs` + `selftest-race-loss.mjs` (runs in the
    offline-e2e CI job before the suite; also a snow fix-checks probe).
+   Gate-machinery instance (protocol fix round, 2026-11-17): the tier-map
+   guard (`scripts/check-tier-map.py`), the proof-coverage guard
+   (`scripts/check-proof-coverage.py`) and the proof runner
+   (`scripts/run-proofs.py`) are proven in
+   `scripts/gate-fixtures/run-fixtures.py` — synthetic trees assert both
+   verdicts for every documented failure class (dangling roster entry,
+   JSON/MD roster drift, unlisted/duplicated proof, reasonless
+   retirement, nonzero proof exit, proof timeout); the suite runs in
+   build-and-test beside the tier-selector fixtures.
    Third instance (Phase 5, 2026-11-04): the offline pack's expectations —
    the e2e migration checks (E19/E20/E22, the E20 quiesce poll) and the
    post-preload census (E6b) take the manifest set and fingerprint from the
