@@ -223,17 +223,27 @@ declare var document: {
   getElementById(id: string): AppElement;
   querySelectorAll(sel: string): { forEach(cb: (e: HTMLElement) => void): void };
   body: AppElement;
-  addEventListener(type: string, listener: () => void, capture?: boolean): void;
+  documentElement: AppElement;
+  addEventListener(type: string, listener: () => void, capture?: boolean | { capture?: boolean; passive?: boolean }): void;
   visibilityState: string;
   hidden: boolean;
+};
+
+/** The navigator surface the device profile reads (Beta 1.230): the agent string and the touch-point count its platform gate is built from. */
+declare var navigator: {
+  userAgent: string;
+  maxTouchPoints: number;
 };
 
 declare var window: {
   visualViewport: { height: number } | null;
   innerHeight: number;
+  navigator: { userAgent: string; maxTouchPoints: number };
   addEventListener(type: string, listener: () => void, capture?: boolean): void;
   /** The app's own paint host, assigned by engine.js (`window.GLP = GLP`) and read by app2.js. Typed as any like `map` above: its shape is engine's own returned object, not modelled here. */
   GLP: any;
+  /** The device profile's state object, assigned by app1 (`window.__dp = DP`, Beta 1.230) and read by QA and the drives. Typed as any like `map` above: its shape is app1's own record, not modelled here. */
+  __dp: any;
 };
 
 declare var localStorage: AppStorage;
@@ -245,6 +255,10 @@ declare var console: {
   warn(...args: any[]): void;
   error(...args: any[]): void;
 };
+
+/** The clock and frame surface the device profile's sampler uses (Beta 1.230). */
+declare var performance: { now(): number };
+declare function requestAnimationFrame(fn: (now: number) => void): number;
 
 declare function setTimeout(fn: () => void, ms?: number): number;
 declare function clearTimeout(id: number): void;

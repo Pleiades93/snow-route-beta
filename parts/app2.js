@@ -15,7 +15,7 @@ function onMapReady(fn) { if (map) fn(); else __onMap.push(fn); }
 function bootMap() {
   if (map) return;
   window.__bootAt = Date.now();
-  map = new maplibregl.Map({ container: 'map', style: glStyleFor(isNight()), attributionControl: false, fadeDuration: 200, pixelRatio: 2, maxTileCacheSize: 200, maxTileCacheZoomLevels: 6, minZoom: 8, maxZoom: 19, maxPitch: 60 });
+  map = new maplibregl.Map({ container: 'map', style: glStyleFor(isNight()), attributionControl: false, fadeDuration: 200, pixelRatio: dpPixelRatio(), maxTileCacheSize: 200, maxTileCacheZoomLevels: 6, minZoom: 8, maxZoom: 19, maxPitch: 60 }); // Beta 1.230: the canvas ratio comes from the device profile (app1) - on Android the applied tier's ratio (the boot starts from the stored hint, the boot grade lands it at the first idle), everywhere else dpPixelRatio() answers the literal 2 this constructor carried through 1.229, so an iPhone's map is built exactly as before (drive131's W1 reads the live value)
   map.setCenter(routeBox ? [(routeBox.w + routeBox.e) / 2, (routeBox.s + routeBox.n) / 2] : [-79.57, 43.82]); map.setZoom(12); // Beta 1.76: a plain area view - the camera frames the ROUTE only when one is chosen (loadRoute does the fitBounds). Beta 1.117: no route is baked in, so before any pick there is no routeBox - the map opens on the plain fallback view (themePos's constants) behind the picker
   setTimeout(() => { if (!tilesOk) { basemapDead = true; noteMapState(); } }, 9000);
   for (const fn of __onMap) fn();
