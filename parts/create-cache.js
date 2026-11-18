@@ -136,6 +136,8 @@ function crGridStall(g) { // Beta 1.229: a stalled grid lands where every failed
   for (const op of Array.from(g.ops)) crAbortOp(op);
   g.ops.clear(); g.active = 0;
   for (const c of g.cells) if (c.state !== 'done') c.state = 'failed';
+  if (g.fromPack) { try { delete crPackLoads[g.fromPack]; } catch (e) {} } // the pack download itself may be the wedged piece (its fetch carries no timeout): its cached promise is dropped, so Retry downloads the pack FRESH instead of re-awaiting the same never-settling promise and stalling a second time on the spot
+  crCovGen++; // the stall orphans the grid's generation, exactly as Cancel does: an initialization callback still in flight (the saved-grid read, the pack resolve) checks crGridCurrent and lands nowhere, instead of arming a ticker and a pump over a grid that has already finished. crGridResume re-adopts the grid into the live generation, so Retry is unaffected
   crGridFinish(g);
 }
 function crGridPump(g) { // keep at most CR_GRID_PARALLEL cell fetches in flight; a cell that fails is retried once inside the run, then marked failed while the rest continue (amendment A)

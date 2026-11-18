@@ -2,7 +2,7 @@
 <html lang="en" class="boot">
 <head>
 <meta charset="UTF-8">
-<meta http-equiv="Content-Security-Policy" content="default-src 'none'; script-src 'sha384-XE8rSehI6TLW0Vm1BXNDxpn/3+Qtef2ce0sBOixQtAMU+O5a8dIrhJSfol6fwUOr' https://cdn.jsdelivr.net; style-src-elem 'sha384-DH4JDTviExs6osVMorWJBcM0AkLXC/M82IyJrXh0chiylGKjmabugZ4ajg2aJdyM' https://cdn.jsdelivr.net; style-src-attr 'unsafe-inline'; img-src 'self' data: blob: https://tiles.basemaps.cartocdn.com https://protomaps.github.io https://cdn.jsdelivr.net; connect-src 'self' https://tiles.basemaps.cartocdn.com https://protomaps.github.io https://cdn.jsdelivr.net https://nominatim.openstreetmap.org https://overpass-api.de https://overpass.kumi.systems; worker-src blob: 'self'; child-src blob: 'self'; font-src 'none'; manifest-src 'self'; base-uri 'none'; form-action 'none'; object-src 'none'">
+<meta http-equiv="Content-Security-Policy" content="default-src 'none'; script-src 'sha384-3E6zbdtDnO0hC2qD/a14Yh+Z+ZatlkOsnEPATZ0TL1gkIc/t+NXoKInUDrIBCQRG' https://cdn.jsdelivr.net; style-src-elem 'sha384-DH4JDTviExs6osVMorWJBcM0AkLXC/M82IyJrXh0chiylGKjmabugZ4ajg2aJdyM' https://cdn.jsdelivr.net; style-src-attr 'unsafe-inline'; img-src 'self' data: blob: https://tiles.basemaps.cartocdn.com https://protomaps.github.io https://cdn.jsdelivr.net; connect-src 'self' https://tiles.basemaps.cartocdn.com https://protomaps.github.io https://cdn.jsdelivr.net https://nominatim.openstreetmap.org https://overpass-api.de https://overpass.kumi.systems; worker-src blob: 'self'; child-src blob: 'self'; font-src 'none'; manifest-src 'self'; base-uri 'none'; form-action 'none'; object-src 'none'">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="mobile-web-app-capable" content="yes">
@@ -7671,6 +7671,8 @@ function crGridStall(g) { // Beta 1.229: a stalled grid lands where every failed
   for (const op of Array.from(g.ops)) crAbortOp(op);
   g.ops.clear(); g.active = 0;
   for (const c of g.cells) if (c.state !== 'done') c.state = 'failed';
+  if (g.fromPack) { try { delete crPackLoads[g.fromPack]; } catch (e) {} } // the pack download itself may be the wedged piece (its fetch carries no timeout): its cached promise is dropped, so Retry downloads the pack FRESH instead of re-awaiting the same never-settling promise and stalling a second time on the spot
+  crCovGen++; // the stall orphans the grid's generation, exactly as Cancel does: an initialization callback still in flight (the saved-grid read, the pack resolve) checks crGridCurrent and lands nowhere, instead of arming a ticker and a pump over a grid that has already finished. crGridResume re-adopts the grid into the live generation, so Retry is unaffected
   crGridFinish(g);
 }
 function crGridPump(g) { // keep at most CR_GRID_PARALLEL cell fetches in flight; a cell that fails is retried once inside the run, then marked failed while the rest continue (amendment A)
@@ -8228,12 +8230,17 @@ let crCityTimer = null, crCitySeq = 0, crCityCtl = null;
 function crCitySearchCurrent(seq, session) { return seq === crCitySeq && session === crSession; } // Beta 1.154 (B3 build, G3 option (i)): the city-search LANDING's current-check - sequence AND session (the convention is stated at crSearchCurrent above)
 function crCitySearchSeqCurrent(seq) { return seq === crCitySeq; } // Beta 1.154: the city-search CATCH's current-check - sequence ONLY, deliberately weaker than the landing's: exitCreate does not bump crCitySeq (lifecycle trace T7: +0 across four exits), so a late failure from a closed session whose sequence still matches stays silent here exactly as it did inline through 1.153; the name carries the asymmetry so it is never "fixed" by accident
 let crCityBoxTok = 0;
-function crCityBoxSwap(build) { // Beta 1.229 (Andrew, from the approved motion sample): the results area ANIMATES between contents - freeze the height it stands at, swap the content, then let the CSS transition (420ms on var(--ease-open), the #crCityResults rule in head.html) carry the box to its new height, so the Back button below glides instead of jumping. The release back to natural height binds to the swap's own token: a newer swap is never released by an older swap's timer.
+function crCityBoxSwap(build) { // Beta 1.229 (Andrew, from the approved motion sample): the results area ANIMATES between contents - freeze the height it stands at, swap the content, then let the CSS transition (420ms on var(--ease-open), the #crCityResults rule in head.html) carry the box to its new height, so the Back button below glides instead of jumping. The target is measured on the UNFROZEN box: with the height frozen and overflow hidden, scrollHeight never reports less than the frozen height, so a shrinking swap (results down to the no-results note, a clear) would animate to the old height and snap at the release - the unfreeze/measure/refreeze happens inside one synchronous turn, so no paint ever sees the unfrozen box. The release back to natural height binds to the swap's own token: a newer swap is never released by an older swap's timer.
   const box = $('crCityResults'); if (!box) return;
   const tok = ++crCityBoxTok;
-  box.style.height = box.offsetHeight + 'px';
+  const from = box.offsetHeight;
+  box.style.height = from + 'px';
   build(box);
-  box.style.height = box.scrollHeight + 'px';
+  box.style.height = '';
+  const target = box.offsetHeight;
+  box.style.height = from + 'px';
+  void box.offsetHeight; // commit the frozen start, so the transition runs from it
+  box.style.height = target + 'px';
   setTimeout(() => { if (tok === crCityBoxTok) box.style.height = ''; }, 480);
 }
 function crCityShowSkeletons() { crCityBoxSwap(b => { b.innerHTML = ''; for (let i = 0; i < 3; i++) { const d = document.createElement('div'); d.className = 'crSkel'; b.appendChild(d); } }); } // Beta 1.229: three soft rows at the result rows' own height, pulsing while the search is in flight (the .crSkel rule, head.html) - the wait is shown, never a blank pane that suddenly fills
