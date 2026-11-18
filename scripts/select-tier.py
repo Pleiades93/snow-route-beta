@@ -38,7 +38,8 @@ Amendment (2026-11-09, Andrew approved):
   * Drive files (tests/browser/drive*.mjs) never escalate a round. When
     they accompany an app change they RIDE ALONG: the tier comes from the
     app paths alone, and the touched drives join the gate set. A change
-    to drive files only is Tier B and runs the touched drives.
+    to drive files only is Tier B and runs the touched drives plus the
+    core set (every Tier B selection includes the core).
   * The test MACHINERY itself (harness, runners, this selector, the
     checks workflow, the tier-map files, the quarantine file) stays
     Tier C on its own - a change to the referee gets the full battery.
@@ -130,8 +131,12 @@ def select(files, force=None):
         ride += "; proof files ride along: " + ", ".join(p.rsplit("/", 1)[-1] for p in proofs)
     if not app_files:
         if touched:
-            # A touched drive always runs, quarantined or not (2026-11-17).
-            return "B", sorted(set(touched)), False, "drives only: " + ", ".join(touched)
+            # A touched drive always runs, quarantined or not
+            # (2026-11-17), and the core set rides along: every Tier B
+            # selection includes the core (PR #107 Codex P2 caught this
+            # early return bypassing the union).
+            sel = sorted(set(touched) | set(core_set(tmap, quar)))
+            return "B", sel, False, "drives only: " + ", ".join(touched) + " (+ core)"
         if proofs:
             return "A", core_set(tmap, quar), False, "proof files only - proofs ride along" + ride
         return "A", core_set(tmap, quar), False, "generated outputs only - no source change"
