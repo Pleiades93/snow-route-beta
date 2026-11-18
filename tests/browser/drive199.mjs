@@ -131,10 +131,11 @@ ok('T11 switching back lands tilted too | cam ' + JSON.stringify(C), Math.abs(C.
 // ---------- the speed circle: gate, values, rest state ----------
 const pillState = () => J(`(() => { const e = document.getElementById('spdPill'); const b = e.getBoundingClientRect();
   const nb = document.getElementById('nightBtn').getBoundingClientRect();
+  const tt = document.querySelector('#hud .title').getBoundingClientRect();
   const num = document.getElementById('spdNum'), unit = document.getElementById('spdUnit');
   const nr = num.getBoundingClientRect(), ur = unit.getBoundingClientRect();
   return { shown: b.height > 0, txt: num.textContent, unit: unit.textContent, x: b.x, y: b.y, w: b.width, h: b.height, r: b.right, b: b.bottom, cx: b.x + b.width / 2,
-    nightTop: nb.y, numCx: nr.x + nr.width / 2, unitCx: ur.x + ur.width / 2, unitBelow: ur.y >= nr.y, br: getComputedStyle(e).borderRadius }; })()`);
+    nightTop: nb.y, titleTop: tt.y, numCx: nr.x + nr.width / 2, unitCx: ur.x + ur.width / 2, unitBelow: ur.y >= nr.y, br: getComputedStyle(e).borderRadius }; })()`);
 let P = await pillState();
 ok('P1 route loaded, location off: the pill is hidden | ' + JSON.stringify(P), P.shown === false);
 await ev(`(() => { window.__wp = null; Object.defineProperty(navigator, 'geolocation', { value: { watchPosition: (okCb, errCb) => { window.__wp = okCb; return 4242; }, clearWatch: () => {} }, configurable: true }); return true; })()`);
@@ -143,8 +144,8 @@ P = await pillState();
 const wid = await ev(`watchId`);
 ok('P2 pressing Locate (the real gpsBtn path, stubbed watch) shows the circle at once, reading 0 with KM/H under it, before any fix | ' + JSON.stringify(P) + ' watchId ' + wid,
   wid === 4242 && P.shown === true && P.txt === '0' && P.unit === 'KM/H');
-ok('P3 the circle: 64px across at the top LEFT, its top edge LEVEL with the night button top edge (0.5px, both measured live), round, number and KM/H a centred stacked pair | ' + JSON.stringify(P),
-  Math.abs(P.w - 64) <= 0.5 && Math.abs(P.h - 64) <= 0.5 && P.x <= 20 && Math.abs(P.y - P.nightTop) <= 0.5 && (P.br === '50%' || P.br === '32px') && Math.abs(P.numCx - P.cx) <= 1 && Math.abs(P.unitCx - P.cx) <= 1 && P.unitBelow);
+ok('P3 the circle: 64px across at the top LEFT, keeping its own 78px seat - 53px below the title top, both measured live - while the night button top edge stands LEVEL with the title top edge (0.5px; Beta 1.228 raised the button to the title line, the circle did not move), round, number and KM/H a centred stacked pair | ' + JSON.stringify(P),
+  Math.abs(P.w - 64) <= 0.5 && Math.abs(P.h - 64) <= 0.5 && P.x <= 20 && Math.abs(P.nightTop - P.titleTop) <= 0.5 && Math.abs(P.y - (P.titleTop + 53)) <= 0.5 && (P.br === '50%' || P.br === '32px') && Math.abs(P.numCx - P.cx) <= 1 && Math.abs(P.unitCx - P.cx) <= 1 && P.unitBelow);
 const base = await J(`(() => { const part = STRETCH.Velmar.parts[0]; const mid = part[Math.floor(part.length / 2)]; return { lat: mid[0], lng: mid[1] }; })()`);
 const feed = async (lat, lng, spd, ts) => ev(`window.__wp({ coords: { latitude: ${lat}, longitude: ${lng}, accuracy: 8, speed: ${spd}, heading: 90 }, timestamp: ${ts} })`);
 const T0 = Date.now();
@@ -184,8 +185,9 @@ ok('P9 glass parity (day): the circle\'s computed font family, glass background,
 // property - same height as #count - is unchanged.
 await tapById(ev, 'nightBtn'); await sleep(800);
 par = await parity();
-ok('P11 glass parity (night): the same equality on the dark glass, and the circle top still levels with the night button top at night | pill ' + JSON.stringify(par.pill) + ' count ' + JSON.stringify(par.count),
-  JSON.stringify(par.pill) === JSON.stringify(par.count) && par.pill.bg !== 'rgba(255, 255, 255, 0.78)' && Math.abs((await pillState()).y - (await pillState()).nightTop) <= 0.5);
+const psN = await pillState();
+ok('P11 glass parity (night): the same equality on the dark glass, and the title line holds at night too - the night button top levels with the title top and the circle keeps its seat 53px below it | pill ' + JSON.stringify(par.pill) + ' count ' + JSON.stringify(par.count),
+  JSON.stringify(par.pill) === JSON.stringify(par.count) && par.pill.bg !== 'rgba(255, 255, 255, 0.78)' && Math.abs(psN.nightTop - psN.titleTop) <= 0.5 && Math.abs(psN.y - (psN.titleTop + 53)) <= 0.5);
 await tapById(ev, 'nightBtn'); await sleep(800);
 
 // ---------- the gate closes: Locate off hides it; a clean's GPS shows it ----------

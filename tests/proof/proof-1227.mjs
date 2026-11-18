@@ -80,9 +80,9 @@ check('6b: the six payloads are byte-pinned (set treatment: alpha fills, lossles
 check('6c: renderIcons stamps the bar hosts (theme arrow, white magnifier + disc) and re-stamps row pins', app4.includes('GLYPH_CREATE.back.n : GLYPH_CREATE.back.d') && app4.includes('GLYPH_CREATE.search.n') && app4.includes('GLYPH_CREATE.cancel.n') && app4.includes("document.querySelectorAll('.crPin').forEach(el => { el.innerHTML = ICONS.pin; });"));
 
 // ---------- Version agreement ----------
-check('V: the #ver label reads Beta 1.227', head.includes('<div class="ver" id="ver">Beta 1.227</div>'));
-check('V: WHATSNEW is the Beta 1.227 entry with the two short bullets', app4.includes("v: 'Beta 1.227', items: [\"Creating a route has a new search bar with a round back button.\", \"Street results appear as you type, each with its area named.\"]"));
-check('V: the CHANGELOG top entry is Beta 1.227', changelog.split('\n').find(l => l.startsWith('## Beta')) === '## Beta 1.227 \u2014 2026-11-17');
+check('V: the #ver label reads Beta 1.228', head.includes('<div class="ver" id="ver">Beta 1.228</div>'));
+check('V: WHATSNEW is the Beta 1.228 entry with the three short bullets', app4.includes("v: 'Beta 1.228', items: [\"Street rows trade the pin for a Locate pill with its own press.\", \"The day/night and re-centre buttons rise to line up with the title.\", \"Streets and Pace open fully just above the title, not to the top of the screen.\"]"));
+check('V: the CHANGELOG top entry is Beta 1.228', changelog.split('\n').find(l => l.startsWith('## Beta')) === '## Beta 1.228 \u2014 2026-11-17');
 
 console.log(`proof-1227: ${pass}/${pass + fail} checks passed`);
 process.exit(fail ? 1 : 0);

@@ -310,8 +310,8 @@ await mMove(hp.x, hp.y - 60); await sleep(60); await mMove(hp.x, hp.y - 150); aw
 const drag150 = await ev(`$('sheet').offsetHeight`);
 ok('N26 the drag follows the finger 1:1 | h ' + drag150 + ' at +150px of travel', Math.abs(drag150 - 600) <= 4);
 await mMove(hp.x, hp.y - 300); await sleep(200); await mUp(hp.x, hp.y - 300); await sleep(650);
-const full = JSON.parse(await ev(`(() => JSON.stringify({ h: $('sheet').offsetHeight, full: $('sheet').classList.contains('full') }))()`));
-ok('N27 release past the midpoint snaps to FULL | ' + JSON.stringify(full), Math.abs(full.h - 846) <= 8 && full.full === true);
+const full = JSON.parse(await ev(`(() => JSON.stringify({ h: $('sheet').offsetHeight, full: $('sheet').classList.contains('full'), tt: document.querySelector('#hud .title').getBoundingClientRect().top }))()`));
+ok('N27 release past the midpoint snaps to FULL (Beta 1.228: the title cap - 900 less the title top, less the 8px margin, the title measured in the same read; the .94 era read 846) | ' + JSON.stringify(full), Math.abs(full.h - (900 - (full.tt - 8))) <= 8 && full.full === true);
 hp = await headPt();
 await mDown(hp.x, hp.y); await mMove(hp.x, hp.y + 130); await sleep(60); await mMove(hp.x, hp.y + 250); await sleep(200); await mUp(hp.x, hp.y + 250); await sleep(650);
 const half = JSON.parse(await ev(`(() => JSON.stringify({ h: $('sheet').offsetHeight, full: $('sheet').classList.contains('full'), open: $('sheet').classList.contains('open') }))()`));

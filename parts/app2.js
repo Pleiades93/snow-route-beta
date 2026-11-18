@@ -585,10 +585,10 @@ function renderStreets() { // production row design: tap a street's name area to
   arr.forEach(n => {
     const d = document.createElement('div');
     d.className = srowClass(n);
-    d.innerHTML = '<div class="dot"></div><div class="nwrap"><div class="nmrow"><div class="nm"></div><button class="sbtn smap" title="Show on map"></button><span class="nmNote" style="display:none"></span></div><div class="nt"><span class="ntIco"></span><span class="ntTxt"></span></div></div><div class="tm"></div>'; // Beta 1.184: the pin rides INSIDE the name row, immediately right of the name; a note icon joins it only while the street carries note text; the COMPLETED pill is retired - its state folds into the status slot (srowStatus)
+    d.innerHTML = '<div class="dot"></div><div class="nwrap"><div class="nmrow"><div class="nm"></div><button class="sbtn sloc">Locate</button><span class="nmNote" style="display:none"></span></div><div class="nt"><span class="ntIco"></span><span class="ntTxt"></span></div></div><div class="tm"></div>'; // Beta 1.184: the pin rides INSIDE the name row, immediately right of the name; a note icon joins it only while the street carries note text; the COMPLETED pill is retired - its state folds into the status slot (srowStatus). Beta 1.228 (Andrew): the pin is a labelled 'Locate' pill now - same seat in the name row, same handler below, but a word instead of a bare glyph (the glyph was too small to hit cleanly, and its press read as the row's own)
     d.querySelector('.nm').textContent = n;
     const ntEl = d.querySelector('.nt');
-    d.querySelector('.smap').innerHTML = ICONS.pin; d.querySelector('.ntIco').innerHTML = ICONS.note; d.querySelector('.nmNote').innerHTML = ICONS.note; // the active pack's glyphs (Beta 1.30 put glyphs in place of the emoji; Beta 1.219: ICONS.* rides the chosen pack and renderIcons re-stamps these hosts on a switch)
+    d.querySelector('.ntIco').innerHTML = ICONS.note; d.querySelector('.nmNote').innerHTML = ICONS.note; // the active pack's glyphs (Beta 1.30 put glyphs in place of the emoji; Beta 1.219: ICONS.* rides the chosen pack and renderIcons re-stamps these hosts on a switch). Beta 1.228: the row's locate control is stamped with nothing - its label is the markup's own text
     const paintNt = () => { // Beta 1.184: ONE painter for everything state-shaped on the row - its class (done/primary/half), the status slot, the name-row note icon, and the quiet line (length by default, note text while a note exists - the 1.107 rule, unchanged)
       d.className = srowClass(n);
       const st = srowStatus(n); const tmEl = d.querySelector('.tm'); tmEl.textContent = st.t; tmEl.className = 'tm ' + st.c;
@@ -598,7 +598,7 @@ function renderStreets() { // production row design: tap a street's name area to
       else { d.querySelector('.ntTxt').textContent = fmtLenM(STRETCH[n].total); d.querySelector('.ntIco').style.display = 'none'; ntEl.style.display = ''; }
     };
     paintNt();
-    d.querySelector('.smap').addEventListener('click', e => {
+    d.querySelector('.sloc').addEventListener('click', e => {
       e.stopPropagation();
       if (!tapGuard('li' + n)) return;
       closeSheets();
@@ -640,13 +640,13 @@ function renderStreets() { // production row design: tap a street's name area to
 function syncNoteSheetRaise() { // Beta 1.184 (Codex review, PR #22): the redesign's pinned head (route line, hero, tabs, group heading) sits OUTSIDE #sheetBody, so at the half stop the scroll region's top can fall below the software keyboard's edge - and ensureFieldVisible, which scrolls only inside #sheetBody, can then never surface the note editor: the field it scrolls to is still under the keyboard. While the editor is open the sheet therefore stands at the FULL stop (the drag settle's own end state: .full, inline height, maxHeight none - the shared transition animates the move), which lifts the scroll region's top well above any keyboard; when the editor closes, a sheet this raise owns returns to the half stop's end state. A sheet already at full (the user's own drag) is left exactly as it is, both ways.
   const sh = $('sheet'); if (!sh) return;
   if (noteOpenFor && sh.classList.contains('open')) {
-    if (!sh.classList.contains('full')) { sh.classList.add('full'); sh.style.maxHeight = 'none'; sh.style.height = (vvHeight() * SHEET_FULL_VH) + 'px'; noteRaiseActive = true; }
+    if (!sh.classList.contains('full')) { sh.classList.add('full'); sh.style.maxHeight = 'none'; sh.style.height = sheetFullH(vvHeight()) + 'px'; noteRaiseActive = true; }
   } else if (noteRaiseActive) {
     noteRaiseActive = false;
     if (sh.classList.contains('open')) { sh.classList.remove('full'); sh.style.height = ''; sh.style.maxHeight = ''; }
   }
 }
-function collapseNoteEditor() { // Beta 1.106 (Andrew): closing the Streets sheet resets the list - an editor left open must not still be open on the next open. Clearing noteOpenFor and re-rendering finalizes any pending debounced save first (renderStreets' draft flush runs against the editor's own street), so typed text is never lost; only the open-editor state resets. Called from BOTH close funnels of the Streets sheet: closeSheetEl (X, tab toggle, pin, opening another sheet, outside tap) and the drag settleClose landing in makeSheetDraggable.
+function collapseNoteEditor() { // Beta 1.106 (Andrew): closing the Streets sheet resets the list - an editor left open must not still be open on the next open. Clearing noteOpenFor and re-rendering finalizes any pending debounced save first (renderStreets' draft flush runs against the editor's own street), so typed text is never lost; only the open-editor state resets. Called from BOTH close funnels of the Streets sheet: closeSheetEl (X, tab toggle, Locate pill, opening another sheet, outside tap) and the drag settleClose landing in makeSheetDraggable.
   if (!noteOpenFor) return;
   noteOpenFor = null;
   renderStreets();
@@ -665,10 +665,20 @@ function closeSheets() { document.querySelectorAll('.sheet').forEach(closeSheetE
 // Draggable sheets (Andrew, Beta 1.9 spec; refined 1.10 flick; refined 1.13 touch zone): the drag/flick touch
 // zone is the panel's EMPTY TOP STRIP - the grab handle plus the title row - a comfortable area with no
 // controls except Close (a flick starting on a button never starts a drag). The content area below is pure
-// scrolling again, so flicks never fight the streets list. Three stops: flick/drag up = fill the screen
-// (FULL), down = back to the standard open height (DEFAULT), down again = closed. Slow drags follow the
+// scrolling again, so flicks never fight the streets list. Three stops: flick/drag up = the
+// full stop (FULL - through Beta 1.227 that filled the screen; Beta 1.228 caps it just above
+// the title, see sheetFullH), down = back to the standard open height (DEFAULT), down again = closed. Slow drags follow the
 // finger; quick flicks throw the panel to the next stop on release. Taps pass through untouched.
-const SHEET_DEF_VH = 0.50, SHEET_FULL_VH = 0.94, SHEET_MIN_PX = 150; // Beta 1.79 (Andrew): the three stops - closed / half (SHEET_DEF_VH, where a sheet opens) / full (SHEET_FULL_VH)
+const SHEET_DEF_VH = 0.50, SHEET_FULL_VH = 0.94, SHEET_MIN_PX = 150; // Beta 1.79 (Andrew): the three stops - closed / half (SHEET_DEF_VH, where a sheet opens) / full (SHEET_FULL_VH). Beta 1.228 (Andrew): the full stop is no longer the 0.94 fraction - it is the title cap computed by sheetFullH below; SHEET_FULL_VH survives only as that helper's fallback for when the title cannot be measured
+const SHEET_FULL_MARGIN_PX = 8; // Beta 1.228 (Andrew): at the full stop the sheet's top edge stands this far ABOVE the "Snow Route Beta" title's top edge - the sheet covers the title and stops a notch past it, never reaching the screen top
+function sheetFullH(vh) { // Beta 1.228: the full stop's height. The sheet is bottom-anchored at the visual viewport's own bottom edge (--vvb is exactly the occluded band), so a height of vh - (titleTop - margin) lands the sheet's top edge precisely the margin above the title's top edge, in any safe-area state - the title's rect already carries the inset. Measured live on every call: drags and settles are rare events, and a stale cache is how geometry rules drift. When the title cannot be measured (hidden in create mode, rect height 0) the old 0.94 fraction stands.
+  const t = document.querySelector('#hud .title');
+  if (!t) return vh * SHEET_FULL_VH;
+  const r = t.getBoundingClientRect();
+  if (!r.height) return vh * SHEET_FULL_VH;
+  const vvTop = window.visualViewport ? window.visualViewport.offsetTop : 0;
+  return vh - Math.max(0, r.top - vvTop - SHEET_FULL_MARGIN_PX);
+}
 // Beta 1.81 (Andrew, reverse-engineered from his Waze screen recording): a drag release used to
 // hand the sheet to a fixed 420ms CSS transition that restarted from rest - measured on the rig,
 // a flick thrown at ~1600px/s crawled +3/+12/+21px in its first 120ms and only then accelerated
@@ -737,7 +747,7 @@ function makeSheetDraggable(sheet) {
     }
     const vh = vvHeight();
     // the panel follows the finger (the content area below the top strip scrolls natively - drags can't start there)
-    const h = Math.max(SHEET_MIN_PX, Math.min(vh * SHEET_FULL_VH, startH + total));
+    const h = Math.max(SHEET_MIN_PX, Math.min(sheetFullH(vh), startH + total));
     sheet.style.maxHeight = 'none';
     sheet.style.height = h + 'px';
     panelMoved = true;
@@ -777,12 +787,12 @@ function makeSheetDraggable(sheet) {
     // the panel itself moved (a flick that scrolled the list stays a scroll).
     const flick = panelMoved && Math.abs(v) > 0.30 ? (v > 0 ? 1 : -1) : 0;
     const settleStop = targetH => { // spring the height to a stop; end state = the old snap's end state
-      const isFull = targetH >= vh * SHEET_FULL_VH - 1;
+      const isFull = targetH >= sheetFullH(vh) - 1;
       if (isFull) sheet.classList.add('full'); else sheet.classList.remove('full');
       sheet.style.maxHeight = 'none';
       springSheet(sheet, h, targetH, v * 1000, q => { sheet.style.height = q + 'px'; }, () => {
         sheet.classList.remove('dragging');
-        if (isFull) sheet.style.height = (vh * SHEET_FULL_VH) + 'px';
+        if (isFull) sheet.style.height = sheetFullH(vh) + 'px';
         else { sheet.style.height = ''; sheet.style.maxHeight = ''; }
       });
     };
@@ -809,10 +819,10 @@ function makeSheetDraggable(sheet) {
         requestAnimationFrame(() => requestAnimationFrame(() => { if (!sheet.classList.contains('open')) sheet.classList.remove('dragging'); }));
       });
     };
-    if (flick > 0) { settleStop(vh * SHEET_FULL_VH); return; }
+    if (flick > 0) { settleStop(sheetFullH(vh)); return; }
     if (flick < 0) { if (sheet.classList.contains('full')) settleStop(naturalH); else settleClose(); return; }
     if (h < defH * 0.55) { settleClose(); return; }
-    if (h > (defH + vh * SHEET_FULL_VH) / 2) { settleStop(vh * SHEET_FULL_VH); return; }
+    if (h > (defH + sheetFullH(vh)) / 2) { settleStop(sheetFullH(vh)); return; }
     settleStop(naturalH);
   };
   sheet.addEventListener('pointerup', end);

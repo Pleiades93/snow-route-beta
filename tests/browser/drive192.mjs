@@ -78,14 +78,14 @@ try {
     const velmar = [...cv.querySelectorAll('.cvRow')].find(r => r.querySelector('.cvNm').textContent === 'Velmar');
     return { open: $('pacePanel').classList.contains('open'), cvShown: cv.style.display !== 'none', padHidden: $('pacePad').style.display === 'none',
       ttl: cv.querySelector('.cvTtl').textContent, sub: cv.querySelector('.cvSub').textContent,
-      pins: cv.querySelectorAll('.smap').length, icons: cv.querySelectorAll('.cvNoteIco').length,
+      locs: cv.querySelectorAll('.sloc').length, icons: cv.querySelectorAll('.cvNoteIco').length,
       velmarIcon: !!velmar.querySelector('.cvNoteIco'), rows: cv.querySelectorAll('.cvRow').length }; })()`);
   ok('P7 tapping a saved clean opens its detail INSIDE the Pace sheet (sheet stays open, pace content yields) | ' + JSON.stringify({ open: dt.open, cvShown: dt.cvShown, padHidden: dt.padHidden }),
     dt.open === true && dt.cvShown === true && dt.padHidden === true);
   ok('P8 the detail header and stats bind to the clean - GPS trail is its OWN figure, distinct from road cleared | ' + JSON.stringify({ dt, dm }),
     dt.ttl === seed.ttl && dt.sub.includes(PACK5W.names + ' streets · finished') && dm['TOTAL TIME'] === seed.last && dm['GPS TRAIL'] === '21.4 km' && dm['ROAD CLEARED'] === seed.tw + ' km' && dm['ROAD CLEARED'] !== dm['GPS TRAIL'] && dm['PACE'] === seed.pace + ' /km' && dt.rows === PACK5W.names);
-  ok('P9 no pin anywhere in the detail; a note icon ONLY on the street that had a note saved on this clean | pins ' + dt.pins + ' icons ' + dt.icons,
-    dt.pins === 0 && dt.icons === 1 && dt.velmarIcon === true);
+  ok('P9 no Locate pill anywhere in the detail; a note icon ONLY on the street that had a note saved on this clean | pills ' + dt.locs + ' icons ' + dt.icons,
+    dt.locs === 0 && dt.icons === 1 && dt.velmarIcon === true);
   await ev(`(() => { const r = [...$('cleanView').querySelectorAll('.cvRow')].find(x => x.querySelector('.cvNm').textContent === 'Velmar'); r.click(); return true; })()`); await sleep(200);
   const det = await J(`(() => { const r = [...$('cleanView').querySelectorAll('.cvRow')].find(x => x.querySelector('.cvNm').textContent === 'Velmar'); const d = r.querySelector('.cvDet'); return { vis: d.style.display !== 'none', txt: d.textContent }; })()`);
   ok('P10 the noted street detail opens read-only with the note readable | ' + (det.txt || '').slice(0, 80), det.vis === true && (det.txt || '').includes('drive192 detail note'));
@@ -124,12 +124,12 @@ try {
   await ev(`(() => { markDone('Velmar', 'tap'); pieces['Mellings'][0] = (pieces['Mellings'][0] | 1); refreshAll(); renderStreets(); return true; })()`); await sleep(300);
   const s2 = await J(`(() => { const rowOf = n => [...document.querySelectorAll('.srow')].find(r => r.querySelector('.nm').textContent === n);
     const rd = n => { const r = rowOf(n); const dot = r.querySelector('.dot'); return { cls: r.className, tm: r.querySelector('.tm').textContent, tmCls: r.querySelector('.tm').className, dotBg: getComputedStyle(dot).backgroundImage, dotW: dot.getBoundingClientRect().width,
-      pinInRow: !!r.querySelector('.nmrow .smap'), noteIco: r.querySelector('.nmNote').style.display !== 'none' }; };
+      locInRow: !!r.querySelector('.nmrow .sloc'), noteIco: r.querySelector('.nmNote').style.display !== 'none' }; };
     return { v: rd('Velmar'), m: rd('Mellings'), a: rd('Astona'), hero: $('stHero').textContent }; })()`);
   ok('S5 a completed street keeps its full done string in the status slot | ' + s2.v.tm, /^done /.test(s2.v.tm) && s2.v.tmCls.includes('st-done') && s2.v.cls.includes('done'));
   ok('S6 a half street reads "one side done" with the split-disc dot | ' + JSON.stringify(s2.m), s2.m.tm === 'one side done' && s2.m.cls.includes('half') && (s2.m.dotBg || '').includes('linear-gradient'));
-  ok('S7 an untouched street reads an em dash; the pin rides in the name row of every row; dots measure 9px | ' + JSON.stringify(s2.a),
-    s2.a.tm === '–' && s2.v.pinInRow && s2.m.pinInRow && s2.a.pinInRow && Math.abs(s2.a.dotW - 9) <= 1.5);
+  ok('S7 an untouched street reads an em dash; the Locate pill rides in the name row of every row; dots measure 9px | ' + JSON.stringify(s2.a),
+    s2.a.tm === '–' && s2.v.locInRow && s2.m.locInRow && s2.a.locInRow && Math.abs(s2.a.dotW - 9) <= 1.5);
   ok('S8 the hero follows the marks (one street done, road cleared off zero) | ' + s2.hero, s2.hero.includes('1') && !s2.hero.includes('0.0 km of road cleared'));
   ok('S9 no note icons yet (no street carries note text) | ' + JSON.stringify({ v: s2.v.noteIco, m: s2.m.noteIco }), s2.v.noteIco === false && s2.m.noteIco === false);
 
@@ -146,24 +146,24 @@ try {
   await ev(`(() => { document.querySelector('.noteEd .nedDone').click(); return true; })()`); await sleep(300);
   ok('S12 Done closes the editor', await ev(`!document.querySelector('.noteEd') && noteOpenFor === null`) === true);
 
-  // ---------- pin tap locates ----------
-  const pinRes = await J(`(() => { const c = STRETCH['Astona'].line[Math.floor(STRETCH['Astona'].line.length / 2)]; // the pin handler's own target (app2): the middle point of the street's line
-    const r = [...document.querySelectorAll('.srow')].find(x => x.querySelector('.nm').textContent === 'Astona'); r.querySelector('.smap').click();
+  // ---------- Locate pill tap locates ----------
+  const pinRes = await J(`(() => { const c = STRETCH['Astona'].line[Math.floor(STRETCH['Astona'].line.length / 2)]; // the pill handler's own target (app2): the middle point of the street's line
+    const r = [...document.querySelectorAll('.srow')].find(x => x.querySelector('.nm').textContent === 'Astona'); r.querySelector('.sloc').click();
     return { la: c[0], ln: c[1] }; })()`);
   await poll(`!$('sheet').classList.contains('open')`, 10000);
   await poll(`(() => { const c = map.getCenter(); return Math.abs(c.lat - ${pinRes.la}) < 0.0015 && Math.abs(c.lng - ${pinRes.ln}) < 0.002; })()`, 15000); // the flyTo's terminal state: the centre ON the street's middle point
   await sleep(300);
   const pinC = await J(`(() => { const c = map.getCenter(); return { la: c.lat, ln: c.lng }; })()`);
   const pinDist = Math.hypot((pinC.la - pinRes.la) * 111320, (pinC.ln - pinRes.ln) * 85100);
-  ok('S13 the pin tap closes the sheet and centres the map on the street (within 150 m of its middle) | dist ' + Math.round(pinDist) + ' m', pinDist < 150);
+  ok('S13 the Locate pill tap closes the sheet and centres the map on the street (within 150 m of its middle) | dist ' + Math.round(pinDist) + ' m', pinDist < 150);
 
   // ---------- KB: the note editor stays reachable above the keyboard (Codex PR #22) ----------
   await setVp(390, 844);
   await ev(`(() => { if (!$('sheet').classList.contains('open')) $('streetsBtn').click(); return true; })()`); await sleep(650);
   await ev(`(() => { const r = [...document.querySelectorAll('.srow')].find(x => x.querySelector('.nm').textContent === 'Velmar'); r.querySelector('.nwrap').click(); return true; })()`);
   await poll(`typeof noteOpenFor !== 'undefined' && noteOpenFor === 'Velmar' && !!document.querySelector('.noteEd textarea')`, 10000); await sleep(700);
-  const kb = await J(`(() => { const sb = $('sheetBody').getBoundingClientRect(); const ta = document.querySelector('.noteEd textarea').getBoundingClientRect(); return { h: $('sheet').offsetHeight, full: $('sheet').classList.contains('full'), sbTop: Math.round(sb.top), taTop: Math.round(ta.top), taBot: Math.round(ta.bottom), sbBot: Math.round(sb.bottom) }; })()`);
-  ok('KB1 opening the note editor raises the Streets sheet to the full stop | ' + JSON.stringify(kb), kb.full === true && Math.abs(kb.h - 844 * 0.94) <= 10);
+  const kb = await J(`(() => { const sb = $('sheetBody').getBoundingClientRect(); const ta = document.querySelector('.noteEd textarea').getBoundingClientRect(); return { h: $('sheet').offsetHeight, full: $('sheet').classList.contains('full'), sbTop: Math.round(sb.top), taTop: Math.round(ta.top), taBot: Math.round(ta.bottom), sbBot: Math.round(sb.bottom), titleTop: document.querySelector('#hud .title').getBoundingClientRect().top }; })()`);
+  ok('KB1 opening the note editor raises the Streets sheet to the full stop (Beta 1.228: the title cap - viewport less the title top, less the 8px margin) | ' + JSON.stringify(kb), kb.full === true && Math.abs(kb.h - (844 - (kb.titleTop - 8))) <= 10);
   ok('KB2 at 390x844 the scroll region top clears a ~300px keyboard edge (544) and the editor sits inside the visible scroll region - the precondition ensureFieldVisible needs | ' + JSON.stringify(kb),
     kb.sbTop < 544 && kb.taTop >= kb.sbTop - 2 && kb.taBot <= kb.sbBot + 2);
   await ev(`(() => { document.querySelector('.noteEd .nedDone').click(); return true; })()`); await sleep(700);
@@ -180,6 +180,7 @@ try {
       for (const [id, opener] of [['sheet', `(() => { if (!$('sheet').classList.contains('open')) $('streetsBtn').click(); return true; })()`], ['pacePanel', 'openPace()']]) {
         await ev(opener); await sleep(650);
         const h0 = await sheetH(id);
+        const titleTop = await J(`document.querySelector('#hud .title').getBoundingClientRect().top`); // Beta 1.228: the full stop is the title cap, measured live in the same state
         const pt = await grabPt(id);
         await drag(pt, -Math.round(h * 0.33));
         const hFull = await sheetH(id);
@@ -190,7 +191,7 @@ try {
         await drag(pt3, Math.round(h * 0.28));
         const closed = await ev(`!document.getElementById('${id}').classList.contains('open')`);
         ok(`D detents ${theme} ${w}x${h} ${id}: open half (${h0}) -> full (${hFull}) -> half (${hHalf}) -> closed`,
-          Math.abs(h0 - h / 2) <= 12 && Math.abs(hFull - h * 0.94) <= 16 && Math.abs(hHalf - h / 2) <= 12 && closed === true);
+          Math.abs(h0 - h / 2) <= 12 && Math.abs(hFull - (h - (titleTop - 8))) <= 16 && Math.abs(hHalf - h / 2) <= 12 && closed === true);
         await ev(opener); await sleep(650);
         const b = await J(`(() => { const s = document.getElementById('${id}'); const hd = s.querySelector('.sheetHead').getBoundingClientRect(); const x = s.querySelector('.sheetHead button').getBoundingClientRect(); return { l: hd.left, r: hd.right, xl: x.left, xr: x.right }; })()`);
         ok(`D bounds ${theme} ${w}x${h} ${id}: head and close button in-bounds at half`, b.l >= -1 && b.r <= w + 1 && b.xl >= 0 && b.xr <= w + 1);
