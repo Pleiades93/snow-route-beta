@@ -2,7 +2,7 @@
 <html lang="en" class="boot">
 <head>
 <meta charset="UTF-8">
-<meta http-equiv="Content-Security-Policy" content="default-src 'none'; script-src 'sha384-3NbSX2Hc34SYpPjHfFdn7KQNGSalWKYjjIs174jHxun4OMS7tJjG4fr318yA3FLZ' https://cdn.jsdelivr.net; style-src-elem 'sha384-w+j79uCv9tRnPJ0QBQzU5tDTXNJuPP7iIlPLHqSu3mGW+dBWmpfE3r/rjIYR7xJd' https://cdn.jsdelivr.net; style-src-attr 'unsafe-inline'; img-src 'self' data: blob: https://tiles.basemaps.cartocdn.com https://protomaps.github.io https://cdn.jsdelivr.net; connect-src 'self' https://tiles.basemaps.cartocdn.com https://protomaps.github.io https://cdn.jsdelivr.net https://nominatim.openstreetmap.org https://overpass-api.de https://overpass.kumi.systems; worker-src blob: 'self'; child-src blob: 'self'; font-src 'none'; manifest-src 'self'; base-uri 'none'; form-action 'none'; object-src 'none'">
+<meta http-equiv="Content-Security-Policy" content="default-src 'none'; script-src 'sha384-aDzLu3Od7UfDZvvmpUQFzg63Ml2ioO1TSJxOH1zVgOl1akFJVlsX5BxqTVc5C7vu' https://cdn.jsdelivr.net; style-src-elem 'sha384-w+j79uCv9tRnPJ0QBQzU5tDTXNJuPP7iIlPLHqSu3mGW+dBWmpfE3r/rjIYR7xJd' https://cdn.jsdelivr.net; style-src-attr 'unsafe-inline'; img-src 'self' data: blob: https://tiles.basemaps.cartocdn.com https://protomaps.github.io https://cdn.jsdelivr.net; connect-src 'self' https://tiles.basemaps.cartocdn.com https://protomaps.github.io https://cdn.jsdelivr.net https://nominatim.openstreetmap.org https://overpass-api.de https://overpass.kumi.systems; worker-src blob: 'self'; child-src blob: 'self'; font-src 'none'; manifest-src 'self'; base-uri 'none'; form-action 'none'; object-src 'none'">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="mobile-web-app-capable" content="yes">
@@ -6845,7 +6845,8 @@ window.addEventListener('blur', pressRowOff);
 // against the opener set below; a short press's click is swallowed here and the SAME
 // element is re-dispatched its click when the floor arrives, so the button's own handler -
 // tapGuard and all - runs exactly once, unchanged. The set is ids for the fixed furniture
-// plus the three dynamic row families that open a surface. A press that lands on a real
+// plus the three dynamic row families that open a surface (one of them exempt at match
+// time - see OPEN_FOCUS_EXEMPT_SEL below). A press that lands on a real
 // <button> belongs to that button (the street row's Locate pill is the pill's own press,
 // never the row's - the same guard the pressOn block above keeps). Finger and pen presses
 // only: a mouse press passes through untouched (the feedback this fixes is a finger
@@ -6855,13 +6856,24 @@ window.addEventListener('blur', pressRowOff);
 const OPEN_MIN_MS = 150;
 const OPEN_ID_SEL = '#streetsBtn, #paceBtn, #routesBtn, #setBtn, #selNote, #rmChoose, #rmCreate, #rmBack, #rmBack2, #setBack, #jobBtn, #jobBack, #chimeRow, #chimeBack, #stBtn, #statusBack, #aboutBtn, #aboutBack, #exportBtn, #xRes, #xImpText, #crDoorList, #crDoorManual, #crDoorPhoto, #crPhotoBack, #rmCityListBack, #crCityBack, #crCityChange, #pvStartOverBtn, #pvSaveBtn, #crNameBack, #crDoneBtn, #crReviewBtn, #pvAddBtn';
 const OPEN_ROW_SEL = '.srow, .crPRow, .prow.histRow';
+// The street row is EXEMPT from the floor (Beta 1.231, Codex fix round on PR #111): its
+// handler (app2) opens the inline note editor and focuses the editor's textarea inside
+// the same gesture, and iOS raises the software keyboard only for a focus() called
+// within the real user-gesture handler - a deferred synthetic click would open the
+// editor with no keyboard and force a second tap on the field, so this opener's real
+// click runs untouched, exactly as before this round. Any opener whose handler focuses
+// a text field synchronously belongs in this exemption, never in the gated set; the
+// gated set was re-audited for this fix and the street row is the only one (the note
+// modal's openNote does not focus on open, the create panes never focus their inputs,
+// and the app's only other focus() rides the ungated #crClear handler).
+const OPEN_FOCUS_EXEMPT_SEL = '.srow';
 let openPressRec = null, openPendingEl = null, openPendingTimer = 0;
 /** @param {any} t @returns {Element | null} */
 const openerElOf = t => { // the opener a press belongs to, or null
   if (!t || !t.closest) return null;
   const btn = t.closest('button');
-  if (btn) return btn.matches(OPEN_ID_SEL) ? btn : null;
-  return t.closest(OPEN_ID_SEL + ', ' + OPEN_ROW_SEL);
+  const el = btn ? (btn.matches(OPEN_ID_SEL) ? btn : null) : t.closest(OPEN_ID_SEL + ', ' + OPEN_ROW_SEL);
+  return el && el.matches(OPEN_FOCUS_EXEMPT_SEL) ? null : el; // a focus-exempt opener's press is no press to the gate: its click proceeds synchronously
 };
 document.addEventListener('pointerdown', e => {
   if (e.pointerType === 'mouse') return;

@@ -56,6 +56,8 @@ check('5b: the opener set carries the load-bearing seats', app4.includes('#stree
 check('5c: the checked non-openers stay out of the id set', (() => { const line = app4.split('\n').find(l => l.includes('const OPEN_ID_SEL')) || ''; return !line.includes('#resetBtn') && !line.includes('#startBtn') && !line.includes('#nightBtn') && !line.includes('#gpsBtn'); })());
 check('5d: the gate is capture-phase, finger/pen only, and re-dispatches the same element', app4.includes("if (e.pointerType === 'mouse') return;") && app4.includes("rec.el.dispatchEvent(new MouseEvent('click', { bubbles: true, cancelable: true }))"));
 check('5e: a moved press fires nothing and a fresh press supersedes a pending open', app4.includes('if (rec.moved) { e.stopPropagation(); e.preventDefault(); return; }') && app4.includes('el === openPendingEl'));
+check('5f: the focus exemption stands - an opener whose handler focuses a text field synchronously is never gated (Codex fix round, PR #111)', app4.includes("const OPEN_FOCUS_EXEMPT_SEL = '.srow';") && app4.includes('el.matches(OPEN_FOCUS_EXEMPT_SEL) ? null : el'));
+check('5g: the exemption names the street row only - the other row families stay gated', (() => { const line = app4.split('\n').find(l => l.includes('const OPEN_FOCUS_EXEMPT_SEL')) || ''; return line.includes("'.srow'") && !line.includes('crPRow') && !line.includes('histRow'); })());
 
 // ---------- Version agreement ----------
 check('V: the #ver label reads Beta 1.231', head.includes('<div class="ver" id="ver">Beta 1.231</div>'));
