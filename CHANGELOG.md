@@ -4,7 +4,7 @@
 
 The blue Routes menu's titles sit in the middle now (Andrew, from the centred-titles sample he approved): one scoped rule centres the title of every pane in that menu - Choose a route, Create new route, Select City (centred inside its floating sheet), Upload photo, Name your route, and "What city are you cleaning in?", which centres on one line at phone width. Nothing else moves: same size, weight, colour and spacing, and no pane geometry changes - the 1.236 sheet anchors stand. The centring is scoped to the Routes menu on purpose: the Settings menu wears the same title class and was not in the approved sample, so its titles stay at the left exactly as they were; widening the scope is a one-word change if it is ever wanted. Proof: tests/proof/proof-1237.mjs pins the scoped rule, the untouched base rule, and the Settings menu's exclusion; the standing version blocks rolled in-round, with the registry's pin probe rolled beside them.
 
-Rollback: revert this commit; 1.236 behaviour returns in full (every menu title at the left).
+Rollback: a revert PR through the gate that restores the 1.236 behaviour (every menu title at the left) under a new version, Beta 1.238 - the label goes up, never back, so every phone that took 1.237 receives the rollback (DEVELOPMENT_RULES.md section 5).
 
 ## Beta 1.236 — 2026-11-18
 
