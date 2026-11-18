@@ -37,6 +37,7 @@
   * { box-sizing: border-box; margin: 0; padding: 0; -webkit-tap-highlight-color: transparent; }
   html, body { height: 100%; height: 100dvh; overflow: hidden; font-family: -apple-system, sans-serif; background: #eceff2; -webkit-touch-callout: none; user-select: none; -webkit-user-select: none; overscroll-behavior: none; }
   html { min-height: min(100lvh, calc(100% + env(safe-area-inset-top))); } /* Beta 1.60: document-height floor. On iOS 26/27 a Home Screen app whose document is no taller than the (already short) viewport gets an undersized layout viewport - the 59pt strip (WebKit 313800 family). Forcing the document at least screen-tall makes WebKit grant the full viewport. Proven on Andrew's iPhone 2026-11-01 with bare probe pages (fresh installs: base probe ih 873, this rule ih 932 across launch/resume/keyboard). The app layout is fixed-position and unaffected by the taller document; overflow stays hidden. */
+  html.android { min-height: 100lvh; } /* Beta 1.230 (Andrew's Pixel 7 report): ANDROID ONLY - the class is set by the device profile's platform gate (app1 dpBoot), which runs only on Android, so this rule can never touch an iPhone. The 1.60 floor above resolves to the plain layout height on Android (its min() takes the 100% arm where the inset is 0) and claims nothing; this rule gives the Android document the same full claim the floor gives iOS - the document stands at the LARGEST viewport height (the whole screen, under both system bars), so the fixed stage is measured against the true screen and no short measure can leave the app's frame standing inside it. The layout itself is fixed-position and unaffected by the taller document, exactly as on iOS; syncViewport's Android anchor (app4) is the matching half for the chrome variables. */
   body.night { background: #14171d; } /* frame colour follows the mode (Beta 1.48): Safari paints its strips and the area behind its bars with the page frame colour - light by day, dark by night, so the app reads as one full screen */
   html.boot, html.boot body { background: linear-gradient(135deg, #3d65ef, #1b2fb6); } /* Beta 1.85: while the splash is up (html carries class=boot until finish() removes it), the page's root frame is splash blue - the light #eceff2 frame above is the app's colour, and any first frame iOS paints before the splash covers (or any edge the splash misses) must be blue, never a light flash. The static theme-color meta is splash blue for the same reason; applyNight() retakes it when the boot tail runs. */
   html.boot #map { background: linear-gradient(135deg, #3d65ef, #1b2fb6); } /* Beta 1.86: even the map's own frame is splash blue while booting - its light day colour can never wash through an unsettled frame */
@@ -626,7 +627,7 @@ input, textarea { caret-color: currentColor; } /* Beta 1.125 (Andrew): the typin
 <div id="hud">
   <div id="warn">Not saving. Storage is full or blocked</div>
   <div class="row">
-    <div class="titleStack"><div class="title">Snow Route Beta</div><div class="ver" id="ver">Beta 1.229</div></div>
+    <div class="titleStack"><div class="title">Snow Route Beta</div><div class="ver" id="ver">Beta 1.230</div></div>
   </div>
   <div id="stats"></div>
 </div>

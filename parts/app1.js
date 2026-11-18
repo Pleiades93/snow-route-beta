@@ -29,7 +29,7 @@ const FIXLOG_MAX_CHARS = 200000; // Beta 1.195: the same log's second cap, in CH
 /** @type {RoadsMap} */ const ROADS = {};
 /** @type {RoadsMap} */ const REFERENCE = {};
 /** @param {string} id @returns {RouteKeys} */ function routeKeys(id) { const p = 'snowroute.' + id + '.'; return { done: p + 'v2', times: p + 'v2.times', hist: p + 'v2.history', notes: p + 'v4.notes', via: p + 'v4.via', trail: p + 'v4.trail', cov: p + 'v4.cov', start: p + 'v5.start', flip: p + 'v5.flip', sides: p + 'v5.sides', sess: p + 'v5.sess', pre: p + 'v5.preload', snap: p + 'v5.snap', mig: p + 'v2.migrated', migfill: p + 'v2.migfill', finclean: p + 'v5.finclean', rundist: p + 'v5.rundist', rundist2: p + 'v5.rundist2' }; } // Beta 1.94 (deep audit SR-193-02/03): two slot-local records join the layout - 'snap' is the running clean's persisted pre-Start board (Start writes it, Finish/Cancel delete it; transient, and not a ROUTE_FIELDS member - it rides backups only in normalized form, via snapForExport in app4, since Beta 1.96/1.97) and 'mig' is the legacy migration's explicit completion marker (see migrateLegacyRoute) and never a backup field. Beta 1.141 (Package A, DA-10): 'finclean' joins them on the same terms - the durable finish-cleanup obligation (finishRun's transaction writes it, saveAll's success discharges it, completeFinishCleanup completes it at load); transient, never backed up, not in ROUTE_FIELDS. Beta 1.150 (security-audit fix round): 'migfill' joins them on the same terms - the migration's per-field fill record (see migrateLegacyRoute); written only while a migration is incomplete, deleted when its marker commits. Beta 1.167 (run/pace fix round, B5): 'rundist' joins on the finclean terms WITHOUT any backup ride - the running clean's accumulated-distance record (app3's runDist), genuinely never backed up: Finish bakes its value into the archive entry's km, and a lost record re-derives from the surviving trail (adoptRunDist, app3).
-const LS_GLOBAL = { night: 'snowroute.v2.night', nightExp: 'snowroute.v2.nightExp', exp: 'snowroute.v5.export', prep: 'snowroute.prep.v1', lastArea: 'snowroute.v2.lastarea', fixlog: 'snowroute.v1.fixlog' }; // Beta 1.118: lastArea = the create flow's area pre-fill memory. Beta 1.189: fixlog = the raw GPS fix log (app3) - a DEVICE record, not route data (it spans routes and locate sessions), so it lives with the globals and rides backups at top level like the settings record, never as a ROUTE_FIELDS member
+const LS_GLOBAL = { night: 'snowroute.v2.night', nightExp: 'snowroute.v2.nightExp', exp: 'snowroute.v5.export', prep: 'snowroute.prep.v1', lastArea: 'snowroute.v2.lastarea', fixlog: 'snowroute.v1.fixlog', dp: 'snowroute.v1.dp' }; // Beta 1.118: lastArea = the create flow's area pre-fill memory. Beta 1.189: fixlog = the raw GPS fix log (app3) - a DEVICE record, not route data (it spans routes and locate sessions), so it lives with the globals and rides backups at top level like the settings record, never as a ROUTE_FIELDS member. Beta 1.230: dp = the device profile's stored tier hint (the DEVICE PROFILE section below) - a DEVICE record on fixlog's storage terms (global, spans routes, never a ROUTE_FIELDS member) but NOT backed up: the hint is a measurement of THIS device, and a backup restored onto another phone must not import it; a missing key is the standing default (full quality, no hint)
 const LEGACY_KEYS = { done: 'snowroute.v2', times: 'snowroute.v2.times', hist: 'snowroute.v2.history', notes: 'snowroute.v4.notes', via: 'snowroute.v4.via', trail: 'snowroute.v4.trail', cov: 'snowroute.v4.cov', start: 'snowroute.v5.start', flip: 'snowroute.v5.flip', sides: 'snowroute.v5.sides', sess: 'snowroute.v5.sess', snap: 'snowroute.v5.snap', finclean: 'snowroute.v5.finclean', rundist: 'snowroute.v5.rundist', rundist2: 'snowroute.v5.rundist2' }; // Beta 1.193: 'rundist2' rides here on rundist's terms - the counter's second copy (bankRunDistMirror, app3), written only by the trail-flush path in flushAux below, never backed up; adoption reads it when the primary is lost (adoptRunDist, app3). snap rides here too so LS.snap is defined on a legacy-fallback boot (the pre-1.76 app never wrote one - the key is simply absent there, which the cancel path already treats as 'no snapshot'); finclean rides for the same reason (Beta 1.141); rundist rides for the same reason (Beta 1.167, B5)
 const ROUTE_FIELDS = ['done', 'times', 'hist', 'notes', 'via', 'trail', 'cov', 'start', 'flip', 'sides', 'sess'];
 const PACK_FIELDS = ['name', 'area', 'primaries', 'spot', 'tileNames', 'box', 'roads', 'reference']; // Beta 1.131 (maintainability programme A): the ONE list of fields a route pack carries - normalizePack (create-packs.js) builds every validated pack by walking THIS list, so a field joins the pack format by joining this list (with its cleaner there); a field absent from the list does not survive validation, by construction. Deliberately distinct from ROUTE_FIELDS above: those are storage-slot fields, and 'snap' in particular is a slot field that is NOT a pack field (hand-carried at restore scope by design) - it must never be added here.
@@ -154,6 +154,123 @@ const TOAST_CLEAR_OF = ['#dock button', '#tabBar button', '#setMenu button', '#s
 /** @param {string} k @returns {string | null} */ function lsGet(k) { try { return localStorage.getItem(k); } catch (e) { flagStorage(); return null; } }
 /** @param {string} k @param {string} v @returns {boolean} */ function lsSet(k, v) { try { localStorage.setItem(k, v); return true; } catch (e) { flagStorage(); return false; } }
 /** @param {string} k @returns {boolean} */ function lsDel(k) { try { localStorage.removeItem(k); return true; } catch (e) { flagStorage(); return false; } }
+// ===== DEVICE PROFILE (Beta 1.230, Andrew) =====
+// Andrew opened the beta on his Pixel 7 and found one set of settings serving
+// every phone: marking a side green took about a second there while the
+// iPhone's stronger chip hides the same cost. The profile grades THIS device
+// by MEASURED render speed - never by model name (UA model strings lie, and
+// the core/RAM hints are coarse and Chromium-only) - and, ON ANDROID ONLY,
+// trades canvas resolution for speed when the measurements prove the device
+// needs it. The one knob is the map canvas pixel ratio: the round's
+// measurement (Pixel-class profile, throttled CPU, software GL) put a mark's
+// repaint at ~3.1s of a ~7.6s mark-to-painted at ratio 2, falling to ~1.7s of
+// ~4.5s at 1.25 - the ratio is the lever with a measured effect; the engine's
+// per-mark geometry rebuild is shared, junction-correct machinery and is NOT
+// forked per platform. Tiers: 0 full (ratio 2, today's exact behaviour),
+// 1 mid (1.5), 2 low (1.25).
+// TOTAL SEPARATION (Andrew, locked): the Android machinery - the fit rules
+// (head.html's html.android rule, syncViewport's Android anchor in app4), the
+// grading application, the reduced settings - activates ONLY on Android. On
+// iPhone it does not run at all: dpBoot returns before the Android branch is
+// entered (DP.entered stays false), no class is set, no sampler runs, no
+// listener is attached, and dpPixelRatio() answers the literal 2 the map
+// constructor always used. The grading machinery below the gate is
+// platform-neutral code; everything it can CHANGE sits behind the gate.
+// ANDREW'S EIGHT GRADING RULES, as built: (1) never a single measurement -
+// the boot grade is the MEDIAN of at least 24 work frames, session grades
+// are medians of the last 72; (2) the sampler times real work for the whole
+// session - the grade is a living estimate, not a boot verdict; (3) a
+// session change needs SUSTAINED evidence - two consecutive agreeing
+// evaluations over full windows - plus a 45s minimum dwell between applied
+// changes, so the tier cannot flap; (4) the default is FULL quality and the
+// burden of proof is on slowness (the grade thresholds sit far past smooth:
+// a window's median frame must exceed 26ms to leave full, 45ms to reach
+// low); (5) the grade recovers when the phone recovers - an earned upgrade
+// applies LIVE through map.setPixelRatio, no reload; (6) the stored record
+// is only the starting hint - the fresh boot median judges the session
+// within the first minute and the stored record is rewritten by every
+// evaluation that disagrees with it; (7) NO VISIBLE FLIPS - an earned
+// change applies only when the map is fully idle (not moving, no pointer
+// down, 600ms quiet since the last touch, no keyboard up), never
+// mid-gesture or mid-mark; (8) UPGRADES ONLY MID-SESSION - live re-grading
+// can only RAISE the tier during a session; a downgrade is written to the
+// stored record and takes effect at the NEXT launch, judged there by the
+// cold phone's fresh median together with the record (the boot grade may
+// apply in either direction, inside its first-minute window, before work
+// starts - after that window a pending downgrade is dropped, never
+// applied late).
+const DP_PLATFORM = (() => { try { const ua = (window.navigator && navigator.userAgent) || ''; if (/Android/i.test(ua)) return 'android'; if (/iPhone|iPad|iPod/i.test(ua)) return 'ios'; if (/Macintosh/i.test(ua) && (navigator.maxTouchPoints || 0) > 1) return 'ios'; return 'other'; } catch (e) { return 'other'; } })(); // iPadOS asks for the desktop UA - a 'Macintosh' agent with a multi-touch screen is an iPad, never an Android
+const DP_ANDROID = DP_PLATFORM === 'android';
+const DP_TIERS = [{ pr: 2 }, { pr: 1.5 }, { pr: 1.25 }]; // the closed knob list: canvas pixel ratio per tier (0 full / 1 mid / 2 low)
+const DP = { platform: DP_PLATFORM, entered: false, tier: 0, hint: 0, stored: -1, bootGrade: -1, booted: false, bootApplyUntil: 0, pending: -1, lastEvalTier: -1, agree: 0, lastApplyAt: 0, lastInteractAt: 0, pointerDown: false, renderSeen: false, hooked: false, samples: [] };
+/** @returns {number} */ function dpPixelRatio() { return DP_ANDROID ? DP_TIERS[DP.tier].pr : 2; } // the map constructor's ratio: on Android the applied tier's, everywhere else the literal 2 the constructor carried through 1.229 (drive131's W1 reads it live)
+/** @param {number[]} a @returns {number} */ function dpMedian(a) { if (!a.length) return 0; const s = a.slice().sort((x, y) => x - y); return s[Math.floor(s.length / 2)]; }
+/** @param {number} ms @returns {number} */ function dpGradeOf(ms) { return ms <= 26 ? 0 : (ms <= 45 ? 1 : 2); } // median work-frame ms -> tier: full holds ~38fps+ through real render work; past 45ms the full-quality canvas is the strain the Pixel showed
+/** @param {number} t @returns {void} */ function dpWriteStore(t) { if (DP.stored === t) return; DP.stored = t; try { lsSet(LS_GLOBAL.dp, JSON.stringify({ t, at: Date.now() })); } catch (e) { /* the hint is a cache of a measurement - a failed write costs nothing, the next evaluation rewrites it */ } }
+/** @returns {void} */ function dpBootGrade() { // the launch judgment (rules 1 + 6): the fresh median of the boot's first draws grades the session; the stored hint only chose the starting tier while these frames accumulated
+  DP.booted = true;
+  const g = dpGradeOf(dpMedian(DP.samples));
+  DP.bootGrade = g;
+  dpWriteStore(g);
+  if (g !== DP.tier) DP.pending = g; // either direction - this is the launch judging, before work starts; dpTryApply lands it at the first idle inside the window
+}
+/** @returns {void} */ function dpEvaluate() { // a session evaluation over the living window (rules 2 + 3 + 8)
+  const w = DP.samples.slice(-72); if (w.length < 36) return;
+  const cand = dpGradeOf(dpMedian(w));
+  if (cand < DP.tier) { // faster than the applied tier: two consecutive agreeing evaluations earn the upgrade (applied at idle by dpTryApply)
+    if (DP.pending > DP.tier) DP.pending = -1; // fresh evidence acquits a pending boot downgrade
+    if (DP.lastEvalTier === cand) DP.agree++; else { DP.lastEvalTier = cand; DP.agree = 1; }
+    if (DP.agree >= 2) DP.pending = cand;
+  } else if (cand > DP.tier) { // slower: NEVER applied this session (rule 8) - the stored record carries it to the next launch's judgment
+    DP.lastEvalTier = cand; DP.agree = 0; if (DP.pending < 0 || DP.pending >= DP.tier) DP.pending = -1;
+    dpWriteStore(cand);
+  } else { DP.lastEvalTier = cand; DP.agree = 0; if (DP.pending > DP.tier) DP.pending = -1; } // evidence matches the applied tier: a pending boot downgrade is acquitted
+}
+/** @returns {void} */ function dpTryApply() { // lands a pending tier, only at a fully idle moment (rule 7), inside its direction's window (rule 8), past the dwell (rule 3)
+  if (DP.pending < 0) return;
+  if (DP.pending === DP.tier) { DP.pending = -1; return; }
+  const now = Date.now();
+  if (DP.pending > DP.tier && now > DP.bootApplyUntil) { DP.pending = -1; return; } // a downgrade applies only as the launch judgment, inside the first minute - never late
+  if (DP.lastApplyAt && now - DP.lastApplyAt < 45000) return; // minimum dwell between applied changes
+  let idle = false;
+  try { idle = typeof map !== 'undefined' && !!map && !map.isMoving() && !DP.pointerDown && (now - DP.lastInteractAt > 600) && !(document.body && document.body.classList.contains('kb')); } catch (e) { idle = false; }
+  if (!idle) return;
+  DP.tier = DP.pending; DP.pending = -1; DP.lastApplyAt = now;
+  try { if (typeof map !== 'undefined' && map && typeof map.setPixelRatio === 'function') map.setPixelRatio(DP_TIERS[DP.tier].pr); } catch (e) { /* a map without the setter keeps the constructor's ratio; the tier still governs the next map built */ }
+}
+/** @returns {void} */ function dpSamplerStart() { // times REAL work only: a frame counts when the map rendered since the last frame or is moving - an idle screen earns no samples and can neither convict nor acquit
+  let last = performance.now(), sinceEval = 0;
+  const frame = now => {
+    requestAnimationFrame(frame);
+    const dt = now - last; last = now;
+    if (document.hidden) return;
+    let work = DP.renderSeen; DP.renderSeen = false;
+    try { if (typeof map !== 'undefined' && map) { if (!DP.hooked) { DP.hooked = true; map.on('render', () => { DP.renderSeen = true; }); } if (map.isMoving()) work = true; } } catch (e) { /* the map is not up yet - frames before it exists are not work samples */ }
+    if (!work || !(dt > 0) || dt > 1000) return; // a >1s frame is a stall or a tab switch, not a speed sample - it must not convict the device alone. The cap stands at 1s, not lower: the devices this profile exists for render their honest work frames in the hundreds of ms (the round's throttled QA starved its own boot grade at a 250ms cap - every boot frame was discarded as a 'stall' and the grade never landed), and hidden tabs are already excluded by the document.hidden check above
+    DP.samples.push(dt); if (DP.samples.length > 240) DP.samples.splice(0, DP.samples.length - 240);
+    sinceEval++;
+    if (!DP.booted) { if (DP.samples.length >= 24) dpBootGrade(); }
+    else if (sinceEval >= 30) { sinceEval = 0; dpEvaluate(); }
+  };
+  requestAnimationFrame(frame);
+}
+/** @returns {void} */ function dpBoot() {
+  window.__dp = DP; // the diagnostic handle: the QA profiles and drives read the profile's state here (entered / tier / samples), the same way they read the app's other live state
+  if (!DP_ANDROID) return; // TOTAL SEPARATION: off Android the branch is never entered - no class, no sampler, no listeners, no stored hint read
+  DP.entered = true;
+  document.documentElement.classList.add('android'); // the fit rules' gate (head.html): the class exists only where the Android branch ran
+  let hint = 0;
+  try { const raw = lsGet(LS_GLOBAL.dp); if (raw) { const o = JSON.parse(raw); if (o && (o.t === 1 || o.t === 2)) hint = o.t; } } catch (e) { /* a corrupt hint is no hint - full quality stands */ }
+  DP.hint = hint; DP.tier = hint; DP.stored = hint; DP.bootApplyUntil = Date.now() + 60000;
+  const down = () => { DP.pointerDown = true; DP.lastInteractAt = Date.now(); };
+  const up = () => { DP.pointerDown = false; DP.lastInteractAt = Date.now(); };
+  document.addEventListener('pointerdown', down, true); document.addEventListener('pointerup', up, true); document.addEventListener('pointercancel', up, true);
+  document.addEventListener('touchstart', down, { capture: true, passive: true }); document.addEventListener('touchend', up, { capture: true, passive: true });
+  document.addEventListener('wheel', () => { DP.lastInteractAt = Date.now(); }, { capture: true, passive: true });
+  dpSamplerStart();
+  setInterval(dpTryApply, 500);
+}
+dpBoot();
 const RAW_READ_FAILED = {}; // Beta 1.136 (programme F): rawRead's failure sentinel - a unique object no stored value can equal, so a THROWN read is distinguishable from an absent key (getItem's null), which lsGet deliberately cannot tell apart
 /** @param {string} k @returns {string | Object | null} */ function rawRead(k) { try { return localStorage.getItem(k); } catch (e) { return RAW_READ_FAILED; } } // Beta 1.136 (programme F): the ONE raw storage read for the backup paths - they read RAW by design (Beta 1.48, audit B04) and each caller keeps its own failure mode against the sentinel: the strict export aborts (null/undefined), the recovery export skips the field, the restore stops before writing // Beta 1.63 (audit F03): deletions report like writes - a failed removeItem used to be invisible while saveStart claimed success
 // Storage outcomes (Beta 1.101, architecture Phase 3 / C2): every save-family function
