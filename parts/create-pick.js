@@ -1232,14 +1232,23 @@ function crIntersectionItem(q) { // piece 1: the crossing of two named streets, 
   if (!best) return null;
   return { lat: String(best.pt[0]), lon: String(best.pt[1]), display_name: best.A + ' & ' + best.B, address: {}, _isect: true };
 }
-function crCollapseResults(list) { // piece 2's merge: one street can print as several near-identical points - the first stands, the repeats (within 100 m, same name) drop BEFORE any labelling
+function crStreetIdentity(it) { // Beta 1.232 fix round 2 (PR #112, Codex P2): the street a result IS, or null when the result is not a street feature at all - the collapse below may merge street features only, so this is its gate. The search speaks format=jsonv2, whose results always carry category (the old format's class - the city filter's idiom), type and osm_type. A street itself is a highway WAY (a long route may arrive as a route/road relation); the osm_type clause keeps out the point features that share the highway category (a bus stop is a highway node, not the street). An address (building/place) and a POI (amenity/leisure/shop/...) merely STAND on a street: their address.road names where they are, never what they are, and their display head is a house number or a place's own name - so they earn no identity and never collapse. A street feature's identity is its own name: address.road when the details carry it, else the display head (a street result's head IS its name)
+  if (!it || it._isect) return null; // the on-device crossing never collapses and nothing collapses into it - structural, not just positional (it is concatenated after the collapse today)
+  const cls = it.category || it.class;
+  const isStreet = (cls === 'highway' && (it.osm_type === 'way' || it.osm_type === 'relation')) || (cls === 'route' && it.type === 'road');
+  if (!isStreet) return null;
+  const head = (it.display_name || '').split(',')[0].trim();
+  const nm = ((it.address && it.address.road) || head).trim().toLowerCase();
+  return nm || null;
+}
+function crCollapseResults(list) { // piece 2's merge, scoped by fix round 2: one STREET can print as several near-identical points - the first stands, the repeats (within 100 m, same street identity) drop BEFORE any labelling. The first build keyed on the display head alone, which for an address result is just its house number - '10, Alpha Road' and '10, Beta Road', 45 m apart, merged into one row and a real destination vanished (PR #112, Codex P2). Only street features carry an identity now (crStreetIdentity); addresses and POIs always stand, and are never entered into the kept set, so nothing can collapse into them either
   const out = [], kept = [];
   for (const it of list) {
-    const head = (it.display_name || '').split(',')[0].trim().toLowerCase();
+    const id = crStreetIdentity(it);
     const la = parseFloat(it.lat), lo = parseFloat(it.lon);
     let dup = false;
-    if (head && isFinite(la) && isFinite(lo)) for (const k of kept) if (k.head === head && distM([la, lo], k.pt) <= 100) { dup = true; break; }
-    if (!dup) { out.push(it); kept.push({ head, pt: [la, lo] }); }
+    if (id && isFinite(la) && isFinite(lo)) for (const k of kept) if (k.id === id && distM([la, lo], k.pt) <= 100) { dup = true; break; }
+    if (!dup) { out.push(it); if (id && isFinite(la) && isFinite(lo)) kept.push({ id, pt: [la, lo] }); }
   }
   return out;
 }
