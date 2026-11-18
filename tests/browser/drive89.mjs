@@ -102,3 +102,5 @@ ok('T6 Back returns to Saved cleans too', !A.sheetOpen && A.paceVis && A.histRow
 R.exceptions = consoleLog.filter(c => c.type === 'EXCEPTION').map(c => String((c.args && c.args[0]) || c.text || '').slice(0, 220));
 finish(R, proc);
 
+
+// throwaway dispatch-proof scratch line (protocol fix round, deleted after the proof)
