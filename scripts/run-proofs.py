@@ -10,15 +10,19 @@ every file in tests/proof/.
 
 Each proof runs as `node tests/proof/<file>` from the repo root -
 the same invocation the old named steps used. A proof fails the run
-on a nonzero exit or a timeout. Run from the repo root.
+on a nonzero exit or a timeout. Run from the repo root; an optional
+argv[1] names another root and PROOF_TIMEOUT_S overrides the
+per-proof timeout (the verdict fixtures in scripts/gate-fixtures/
+use both against synthetic trees).
 """
 import json
+import os
 import subprocess
 import sys
 from pathlib import Path
 
-ROOT = Path(__file__).resolve().parent.parent
-TIMEOUT_S = 180
+ROOT = Path(sys.argv[1]).resolve() if len(sys.argv) > 1 else Path(__file__).resolve().parent.parent
+TIMEOUT_S = int(os.environ.get("PROOF_TIMEOUT_S", "180"))
 
 manifest = json.loads((ROOT / "tests" / "proof" / "manifest.json").read_text(encoding="utf-8"))
 names = list(manifest.get("run", []))
