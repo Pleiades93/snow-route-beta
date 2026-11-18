@@ -484,15 +484,25 @@ body.creating #dock, body.creating #tabBar, body.creating #hud, body.creating #n
    from app4's GLYPH_CREATE map and the set's own pin. The results card
    hangs 12px under the bar and wears the samples' surfaces (white by
    day, #1b1e26 by night - the night sample's literal). */
-#crExit { width: 50px; height: 50px; flex: none; border: none; border-radius: 50%; background: #fff; box-shadow: 0 8px 24px rgba(15,23,64,.18); cursor: pointer; display: flex; align-items: center; justify-content: center; padding: 0; }
-body.night #crExit { background: linear-gradient(180deg, rgba(78,81,90,.94), rgba(43,45,51,.94)); border-top: 1px solid rgba(255,255,255,.55); box-shadow: inset 0 1px 1px rgba(255,255,255,.35), 0 8px 24px rgba(0,0,0,.45); }
+/* Beta 1.232 (Andrew, variant A from the monochrome samples): the bar
+   went black-and-white - the app blue is gone from it. By day the bar
+   and the back pill are white with the samples' half-strength Soft Lift
+   shadow and hairline border; by night the bar wears the back pill's
+   own N2 glass recipe exactly, so the two read as one piece. The
+   glyphs follow the theme (dark by day, white by night - app4's
+   GLYPH_CREATE .d/.n stamps). The results card stays card-themed; its
+   first-row tint went neutral with the bar. */
+#crExit { width: 50px; height: 50px; flex: none; border: 1px solid rgba(20,25,40,.08); border-radius: 50%; background: #fff; box-shadow: 3px 4px 8px rgba(20,30,60,.10), -2px -2px 5px rgba(255,255,255,.35), inset 0 1px 1px rgba(255,255,255,.6), inset 0 -2px 4px rgba(90,100,120,.10); cursor: pointer; display: flex; align-items: center; justify-content: center; padding: 0; }
+body.night #crExit { background: linear-gradient(180deg, rgba(78,81,90,.94), rgba(43,45,51,.94)); border-color: transparent; border-top: 1px solid rgba(255,255,255,.55); box-shadow: inset 0 1px 1px rgba(255,255,255,.35), 0 8px 24px rgba(0,0,0,.45); }
 .crBackIco { width: 22px; height: 22px; display: block; }
-#crSearchWrap { flex: 1; display: flex; align-items: center; gap: 10px; height: 50px; background: linear-gradient(135deg, #3D65EF, #1B2FB6); border-radius: 25px; box-shadow: 0 8px 24px rgba(15,23,64,.30); padding: 0 12px 0 16px; }
-body.night #crSearchWrap { box-shadow: 0 8px 24px rgba(0,0,0,.45); }
+#crSearchWrap { flex: 1; display: flex; align-items: center; gap: 10px; height: 50px; background: #fff; border: 1px solid rgba(20,25,40,.08); border-radius: 25px; box-shadow: 3px 4px 8px rgba(20,30,60,.10), -2px -2px 5px rgba(255,255,255,.35), inset 0 1px 1px rgba(255,255,255,.6), inset 0 -2px 4px rgba(90,100,120,.10); padding: 0 12px 0 16px; }
+body.night #crSearchWrap { background: linear-gradient(180deg, rgba(78,81,90,.94), rgba(43,45,51,.94)); border-color: transparent; border-top: 1px solid rgba(255,255,255,.55); box-shadow: inset 0 1px 1px rgba(255,255,255,.35), 0 8px 24px rgba(0,0,0,.45); }
 #crSearchIco { display: flex; flex: none; }
 .crMagIco { width: 19px; height: 19px; display: block; }
-#crSearchInput { flex: 1; min-width: 0; border: none; outline: none; font-size: 16px; padding: 0; color: #fff; background: transparent; }
-#crSearchInput::placeholder { color: rgba(255,255,255,.75); }
+#crSearchInput { flex: 1; min-width: 0; border: none; outline: none; font-size: 16px; padding: 0; color: #111111; background: transparent; }
+#crSearchInput::placeholder { color: rgba(17,17,17,.42); }
+body.night #crSearchInput { color: #fff; }
+body.night #crSearchInput::placeholder { color: rgba(255,255,255,.75); }
 #crSearchInput::-webkit-search-decoration, #crSearchInput::-webkit-search-cancel-button { -webkit-appearance: none; appearance: none; } /* the bar's own clear disc is the only clear - the OS one never doubles it */
 #crClear { display: none; flex: none; border: none; background: transparent; padding: 0; cursor: pointer; align-items: center; justify-content: center; }
 #crClear.on { display: flex; }
@@ -501,7 +511,7 @@ body.night #crSearchWrap { box-shadow: 0 8px 24px rgba(0,0,0,.45); }
 body.night #createResults { background: #1b1e26; box-shadow: 0 12px 28px rgba(0,0,0,.5); }
 #createResults.on { display: block; }
 .crResult { display: flex; align-items: center; gap: 11px; width: 100%; text-align: left; border: none; border-top: 1px solid #e7e9ee; background: transparent; padding: 11px 16px; font-size: 15.5px; color: #14181f; cursor: pointer; }
-.crResult:first-child { border-top: none; background: #f2f5ff; }
+.crResult:first-child { border-top: none; background: #f2f3f5; }
 body.night .crResult { border-top-color: rgba(255,255,255,.08); color: #f2f4f8; }
 body.night .crResult:first-child { background: rgba(255,255,255,.06); }
 .crPin { display: flex; flex: none; }
@@ -510,8 +520,10 @@ body.night .crResult:first-child { background: rgba(255,255,255,.06); }
 #createResults .crName { color: inherit; font-size: 15.5px; } /* the pick list's .crName rule (var(--ink), 16px) must not leak into the results rows: the row's own ink rules govern here */
 .crArea { margin-left: auto; flex: none; max-width: 55%; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; font-size: 13px; color: #7a8194; }
 body.night .crArea { color: #9aa3b2; }
+.crNear { font-weight: 400; color: #7a8194; } /* Beta 1.232 (piece 2): the cross-street label inside the name, at the area line's grey and weight */
+body.night .crNear { color: #9aa3b2; }
 .crResult:active { background: transparent; } /* Beta 1.226: holds the rest (no fill) on press - the shrink is the feedback */
-.crResult:first-child:active { background: #f2f5ff; } /* Beta 1.227: the tinted first row holds its tint on press, like every other rest fill */
+.crResult:first-child:active { background: #f2f3f5; } /* Beta 1.227: the tinted first row holds its tint on press, like every other rest fill */
 body.night .crResult:first-child:active { background: rgba(255,255,255,.06); }
 #createHint { position: fixed; top: calc(66px + var(--cr-shift) + env(safe-area-inset-top, 0px)); left: 50%; transform: translateX(-50%); z-index: 4900; background: linear-gradient(135deg, #3d65ef, #1b2fb6); color: #fff; font-size: 15px; font-weight: 700; padding: 10px 18px; border-radius: 999px; box-shadow: 0 8px 20px rgba(20,35,110,.45); display: none; /* Beta 1.223 (Andrew, option A): the hint pill wears the ONE pop-up style, identical to #toast above - same gradient, size, weight, padding, shadow; through 1.222 it was a translucent dark-blue glass (rgba(20,33,61,.92)) that matched neither the toast nor anything else */ max-width: min(94vw, 560px); white-space: normal; text-align: center; } /* Beta 1.169 (Carbon fix round, D-09): the pill may wrap - through 1.168 nowrap with no width bound let a long hint (a city name plus a cache note) render ~490px wide and clip at both edges on a narrow phone; the cap + wrap keep the whole hint on screen, centred (the 2026-11-10 proportionality audit's fix direction) */
 #createHint.on { display: block; }
@@ -629,7 +641,7 @@ html.theme-swap *, html.theme-swap *::before, html.theme-swap *::after { transit
 <div id="hud">
   <div id="warn">Not saving. Storage is full or blocked</div>
   <div class="row">
-    <div class="titleStack"><div class="title">Snow Route Beta</div><div class="ver" id="ver">Beta 1.231</div></div>
+    <div class="titleStack"><div class="title">Snow Route Beta</div><div class="ver" id="ver">Beta 1.232</div></div>
   </div>
   <div id="stats"></div>
 </div>

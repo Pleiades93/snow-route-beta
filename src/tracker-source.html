@@ -484,15 +484,25 @@ body.creating #dock, body.creating #tabBar, body.creating #hud, body.creating #n
    from app4's GLYPH_CREATE map and the set's own pin. The results card
    hangs 12px under the bar and wears the samples' surfaces (white by
    day, #1b1e26 by night - the night sample's literal). */
-#crExit { width: 50px; height: 50px; flex: none; border: none; border-radius: 50%; background: #fff; box-shadow: 0 8px 24px rgba(15,23,64,.18); cursor: pointer; display: flex; align-items: center; justify-content: center; padding: 0; }
-body.night #crExit { background: linear-gradient(180deg, rgba(78,81,90,.94), rgba(43,45,51,.94)); border-top: 1px solid rgba(255,255,255,.55); box-shadow: inset 0 1px 1px rgba(255,255,255,.35), 0 8px 24px rgba(0,0,0,.45); }
+/* Beta 1.232 (Andrew, variant A from the monochrome samples): the bar
+   went black-and-white - the app blue is gone from it. By day the bar
+   and the back pill are white with the samples' half-strength Soft Lift
+   shadow and hairline border; by night the bar wears the back pill's
+   own N2 glass recipe exactly, so the two read as one piece. The
+   glyphs follow the theme (dark by day, white by night - app4's
+   GLYPH_CREATE .d/.n stamps). The results card stays card-themed; its
+   first-row tint went neutral with the bar. */
+#crExit { width: 50px; height: 50px; flex: none; border: 1px solid rgba(20,25,40,.08); border-radius: 50%; background: #fff; box-shadow: 3px 4px 8px rgba(20,30,60,.10), -2px -2px 5px rgba(255,255,255,.35), inset 0 1px 1px rgba(255,255,255,.6), inset 0 -2px 4px rgba(90,100,120,.10); cursor: pointer; display: flex; align-items: center; justify-content: center; padding: 0; }
+body.night #crExit { background: linear-gradient(180deg, rgba(78,81,90,.94), rgba(43,45,51,.94)); border-color: transparent; border-top: 1px solid rgba(255,255,255,.55); box-shadow: inset 0 1px 1px rgba(255,255,255,.35), 0 8px 24px rgba(0,0,0,.45); }
 .crBackIco { width: 22px; height: 22px; display: block; }
-#crSearchWrap { flex: 1; display: flex; align-items: center; gap: 10px; height: 50px; background: linear-gradient(135deg, #3D65EF, #1B2FB6); border-radius: 25px; box-shadow: 0 8px 24px rgba(15,23,64,.30); padding: 0 12px 0 16px; }
-body.night #crSearchWrap { box-shadow: 0 8px 24px rgba(0,0,0,.45); }
+#crSearchWrap { flex: 1; display: flex; align-items: center; gap: 10px; height: 50px; background: #fff; border: 1px solid rgba(20,25,40,.08); border-radius: 25px; box-shadow: 3px 4px 8px rgba(20,30,60,.10), -2px -2px 5px rgba(255,255,255,.35), inset 0 1px 1px rgba(255,255,255,.6), inset 0 -2px 4px rgba(90,100,120,.10); padding: 0 12px 0 16px; }
+body.night #crSearchWrap { background: linear-gradient(180deg, rgba(78,81,90,.94), rgba(43,45,51,.94)); border-color: transparent; border-top: 1px solid rgba(255,255,255,.55); box-shadow: inset 0 1px 1px rgba(255,255,255,.35), 0 8px 24px rgba(0,0,0,.45); }
 #crSearchIco { display: flex; flex: none; }
 .crMagIco { width: 19px; height: 19px; display: block; }
-#crSearchInput { flex: 1; min-width: 0; border: none; outline: none; font-size: 16px; padding: 0; color: #fff; background: transparent; }
-#crSearchInput::placeholder { color: rgba(255,255,255,.75); }
+#crSearchInput { flex: 1; min-width: 0; border: none; outline: none; font-size: 16px; padding: 0; color: #111111; background: transparent; }
+#crSearchInput::placeholder { color: rgba(17,17,17,.42); }
+body.night #crSearchInput { color: #fff; }
+body.night #crSearchInput::placeholder { color: rgba(255,255,255,.75); }
 #crSearchInput::-webkit-search-decoration, #crSearchInput::-webkit-search-cancel-button { -webkit-appearance: none; appearance: none; } /* the bar's own clear disc is the only clear - the OS one never doubles it */
 #crClear { display: none; flex: none; border: none; background: transparent; padding: 0; cursor: pointer; align-items: center; justify-content: center; }
 #crClear.on { display: flex; }
@@ -501,7 +511,7 @@ body.night #crSearchWrap { box-shadow: 0 8px 24px rgba(0,0,0,.45); }
 body.night #createResults { background: #1b1e26; box-shadow: 0 12px 28px rgba(0,0,0,.5); }
 #createResults.on { display: block; }
 .crResult { display: flex; align-items: center; gap: 11px; width: 100%; text-align: left; border: none; border-top: 1px solid #e7e9ee; background: transparent; padding: 11px 16px; font-size: 15.5px; color: #14181f; cursor: pointer; }
-.crResult:first-child { border-top: none; background: #f2f5ff; }
+.crResult:first-child { border-top: none; background: #f2f3f5; }
 body.night .crResult { border-top-color: rgba(255,255,255,.08); color: #f2f4f8; }
 body.night .crResult:first-child { background: rgba(255,255,255,.06); }
 .crPin { display: flex; flex: none; }
@@ -510,8 +520,10 @@ body.night .crResult:first-child { background: rgba(255,255,255,.06); }
 #createResults .crName { color: inherit; font-size: 15.5px; } /* the pick list's .crName rule (var(--ink), 16px) must not leak into the results rows: the row's own ink rules govern here */
 .crArea { margin-left: auto; flex: none; max-width: 55%; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; font-size: 13px; color: #7a8194; }
 body.night .crArea { color: #9aa3b2; }
+.crNear { font-weight: 400; color: #7a8194; } /* Beta 1.232 (piece 2): the cross-street label inside the name, at the area line's grey and weight */
+body.night .crNear { color: #9aa3b2; }
 .crResult:active { background: transparent; } /* Beta 1.226: holds the rest (no fill) on press - the shrink is the feedback */
-.crResult:first-child:active { background: #f2f5ff; } /* Beta 1.227: the tinted first row holds its tint on press, like every other rest fill */
+.crResult:first-child:active { background: #f2f3f5; } /* Beta 1.227: the tinted first row holds its tint on press, like every other rest fill */
 body.night .crResult:first-child:active { background: rgba(255,255,255,.06); }
 #createHint { position: fixed; top: calc(66px + var(--cr-shift) + env(safe-area-inset-top, 0px)); left: 50%; transform: translateX(-50%); z-index: 4900; background: linear-gradient(135deg, #3d65ef, #1b2fb6); color: #fff; font-size: 15px; font-weight: 700; padding: 10px 18px; border-radius: 999px; box-shadow: 0 8px 20px rgba(20,35,110,.45); display: none; /* Beta 1.223 (Andrew, option A): the hint pill wears the ONE pop-up style, identical to #toast above - same gradient, size, weight, padding, shadow; through 1.222 it was a translucent dark-blue glass (rgba(20,33,61,.92)) that matched neither the toast nor anything else */ max-width: min(94vw, 560px); white-space: normal; text-align: center; } /* Beta 1.169 (Carbon fix round, D-09): the pill may wrap - through 1.168 nowrap with no width bound let a long hint (a city name plus a cache note) render ~490px wide and clip at both edges on a narrow phone; the cap + wrap keep the whole hint on screen, centred (the 2026-11-10 proportionality audit's fix direction) */
 #createHint.on { display: block; }
@@ -629,7 +641,7 @@ html.theme-swap *, html.theme-swap *::before, html.theme-swap *::after { transit
 <div id="hud">
   <div id="warn">Not saving. Storage is full or blocked</div>
   <div class="row">
-    <div class="titleStack"><div class="title">Snow Route Beta</div><div class="ver" id="ver">Beta 1.231</div></div>
+    <div class="titleStack"><div class="title">Snow Route Beta</div><div class="ver" id="ver">Beta 1.232</div></div>
   </div>
   <div id="stats"></div>
 </div>
@@ -6578,7 +6590,7 @@ function renderIcons() { // the icon render layer (it generalizes the 1.217 them
   $('nightBtn').innerHTML = isNight() ? ICONS.sun : ICONS.moon;
   // Beta 1.228: the street rows' pin host retired with the pin itself - the Locate pill is text and carries no stamp. The note marks below still re-stamp on the same render, as do the clean view's icons and every rendered stat cell (its .ic span carries data-ic since 1.219)
   document.querySelectorAll('.ntIco, .nmNote, .cvNoteIco').forEach(el => { el.innerHTML = ICONS.note; });
-  { const bx = $('crExit'); if (bx) bx.innerHTML = `<img class="crBackIco" alt="" src="${night ? GLYPH_CREATE.back.n : GLYPH_CREATE.back.d}">`; const si = $('crSearchIco'); if (si) si.innerHTML = `<img class="crMagIco" alt="" src="${GLYPH_CREATE.search.n}">`; const cl = $('crClear'); if (cl) cl.innerHTML = `<img class="crClrIco" alt="" src="${GLYPH_CREATE.cancel.n}">`; } // Beta 1.227: the create bar's hosts - the back pill wears the theme variant of the arrow; the magnifier and the clear disc sit on the app blue, so they wear the white fill in both modes
+  { const bx = $('crExit'); if (bx) bx.innerHTML = `<img class="crBackIco" alt="" src="${night ? GLYPH_CREATE.back.n : GLYPH_CREATE.back.d}">`; const si = $('crSearchIco'); if (si) si.innerHTML = `<img class="crMagIco" alt="" src="${night ? GLYPH_CREATE.search.n : GLYPH_CREATE.search.d}">`; const cl = $('crClear'); if (cl) cl.innerHTML = `<img class="crClrIco" alt="" src="${night ? GLYPH_CREATE.cancel.n : GLYPH_CREATE.cancel.d}">`; } // Beta 1.227: the create bar's hosts - the back pill wears the theme variant of the arrow. Beta 1.232: the bar is monochrome now, so the magnifier and the clear disc wear the theme variant too - dark on the white day bar, white on the night glass
   document.querySelectorAll('.crPin').forEach(el => { el.innerHTML = ICONS.pin; }); // Beta 1.227: the result rows' pins re-stamp with the extras, like the note hosts above
   document.querySelectorAll('.statgrid .ic[data-ic]').forEach(el => { el.innerHTML = PACE_ICONS[el.getAttribute('data-ic')]; });
   for (const id of ['sheetClose', 'paceClose', 'finNo', 'noteNo', 'xClose', 'crModalX', 'mapNoteNo']) { const el = $(id); if (el) el.innerHTML = `<img class="xico" alt="Close" src="${MP.x.corner}">`; } // Beta 1.219: the close ✕ wears the pack too (Andrew) - the corner family: the shared red job (every pack stamps its own cancel artwork, the corner job in the close red). xClose is a selector seat in the shared rule with no element today - the guard skips it until a menu carries one The artwork carries alt="Close": the text it replaces was the button's only accessible name, so the name survives the swap (Codex P2, PR #96).
@@ -6795,7 +6807,7 @@ $('stDel').addEventListener('click', async () => {
 });
 // ---- About ----
 const WHATSNEW = { // the curated in-app notes: plain words, LATEST RELEASE ONLY (Beta 1.114, Andrew: the accumulated list cluttered the About pane). A release REPLACES this entry with its own in the same change - it never accumulates; the full history lives in CHANGELOG.md, not the app
-  v: 'Beta 1.231', items: ["Buttons that open a menu or panel take a short beat now, so you can see the press land first.", "Switching between day and night is instant - no slow colour fade across the screen.", "Pop-ups and panels ease in a little smaller as they appear."] }; // Beta 1.223 (Andrew): What's New entries are SHORT from now on - point form, one short plain line each, no prose paragraphs, no em dashes
+  v: 'Beta 1.232', items: ["Type two street names - like Weston and Rutherford - and search jumps to where they cross.", "Street results now name the nearest cross street, so same-name streets are easy to tell apart.", "The create search bar is black and white now - white by day, dark glass by night."] }; // Beta 1.223 (Andrew): What's New entries are SHORT from now on - point form, one short plain line each, no prose paragraphs, no em dashes
 
 function renderAbout() {
   const cur = $('ver').textContent.trim();
@@ -9026,6 +9038,7 @@ async function crRunSearch(fromTyping) {
   const seq = ++crSearchSeq;
   if (crSearchCtl) { try { crSearchCtl.abort(); } catch (e) {} }
   const ctl = (typeof AbortController !== 'undefined') ? new AbortController() : null; crSearchCtl = ctl;
+  const isect = crIntersectionItem(q); // Beta 1.232 (piece 1): a two-street query's crossing is resolved from the loaded extract BEFORE the network is even asked - it costs a cache hit by the second keystroke burst and never waits on Nominatim
   try {
     let url = 'https://nominatim.openstreetmap.org/search?format=jsonv2&addressdetails=1&limit=5&q=' + encodeURIComponent(q);
     const scoped = !!(crCity && crCity.bbox); // Beta 1.153 (Andrew): with a city loaded, suggestions come from THAT city only. The 1.121 bias (bounded=0: "a bias, never a restriction") becomes a bound (bounded=1) and the returned list is ALSO filtered to the box below, so a service that ignores the bound cannot leak an out-of-city suggestion.
@@ -9040,8 +9053,10 @@ async function crRunSearch(fromTyping) {
     let results = Array.isArray(list) ? list : [];
     if (scoped) results = results.filter(it => { const la = parseFloat(it.lat), lo = parseFloat(it.lon); return isFinite(la) && isFinite(lo) && crInBox(crCity.bbox, la, lo); }); // Beta 1.153: the city bound, enforced on the results themselves
     results = results.filter(crInOntario); // Beta 1.229: Ontario-only on the results themselves, on BOTH paths - belt-and-braces on the city path, the guarantee on the no-city path
-    renderCrResults(results);
+    results = crCollapseResults(results); // Beta 1.232 (piece 2): near-duplicate points of one street merge before anything renders
+    renderCrResults(isect ? [isect].concat(results) : results); // Beta 1.232 (piece 1): the on-device crossing leads the list
   } catch (e) {
+    if (isect && crSearchCurrent(seq)) renderCrResults([isect]); // Beta 1.232: the device's own answer survives a dead network; without a crossing, a failure stays silent exactly as before
   }
 }
 document.addEventListener('pointerdown', (e) => { // Beta 1.120 (Andrew): tapping anywhere outside the results dropdown dismisses it - map taps included (the pick still runs: this only closes the list, in the capture phase, before the map's own click)
@@ -9058,6 +9073,7 @@ function renderCrResults(list) {
     const nm = it.display_name || ''; const cut = nm.indexOf(',');
     const pin = document.createElement('span'); pin.className = 'crPin'; pin.innerHTML = ICONS.pin;
     const nameEl = document.createElement('span'); nameEl.className = 'crName'; nameEl.textContent = cut >= 0 ? nm.slice(0, cut) : nm;
+    if (!it._isect) { const near = crNearCrossName(it); if (near) { const ns = document.createElement('span'); ns.className = 'crNear'; ns.textContent = ' · near ' + near; nameEl.appendChild(ns); } } // Beta 1.232 (piece 2): the cross-street label rides inside the name, in the area line's grey
     const areaEl = document.createElement('span'); areaEl.className = 'crArea'; areaEl.textContent = cut >= 0 ? nm.slice(cut + 1).trim() : '';
     b.append(pin, nameEl, areaEl);
     b.addEventListener('click', () => {
@@ -9071,6 +9087,159 @@ function renderCrResults(list) {
     box.appendChild(b);
   }
   box.classList.toggle('on', list.length > 0);
+}
+// ================= Beta 1.232: crossings, computed on-device =================
+// Pieces 1 and 2 both answer from the prepared extract itself: crCov.byName
+// holds every street's polylines for the loaded city, so they work offline
+// and never invent geometry the device does not hold. A crossing follows the
+// app's own junction semantics (crStreetParts): a true segment intersection,
+// or a vertex of either street lying on the other's line (<= 4 m, projected
+// onto it). One pair's points dedupe at 15 m - the merge the sector cuts use.
+let crXIndexCache = null; // { stamp, cells, segs, cross } - rebuilt whenever crCovStamp() moves
+function crSegProjM(p, a, b) { // p projected onto segment a-b, in metres: { pt, d }
+  const ax = a[1] * MLNG, ay = a[0] * MLAT, bx = b[1] * MLNG, by = b[0] * MLAT, px = p[1] * MLNG, py = p[0] * MLAT;
+  const dx = bx - ax, dy = by - ay, l2 = dx * dx + dy * dy;
+  let t = l2 > 0 ? ((px - ax) * dx + (py - ay) * dy) / l2 : 0; t = t < 0 ? 0 : (t > 1 ? 1 : t);
+  const qx = ax + t * dx, qy = ay + t * dy;
+  return { pt: [qy / MLAT, qx / MLNG], d: Math.hypot(px - qx, py - qy) };
+}
+function crSegCrossPt(a, b, c, d) { // where segments a-b and c-d cross, or null; a shared endpoint counts (parallel pairs still register through the vertex test below)
+  const ax = a[1] * MLNG, ay = a[0] * MLAT, bx = b[1] * MLNG, by = b[0] * MLAT, cx = c[1] * MLNG, cy = c[0] * MLAT, dx = d[1] * MLNG, dy = d[0] * MLAT;
+  const rx = bx - ax, ry = by - ay, sx = dx - cx, sy = dy - cy, den = rx * sy - ry * sx;
+  if (Math.abs(den) < 1e-9) return null;
+  const t = ((cx - ax) * sy - (cy - ay) * sx) / den, u = ((cx - ax) * ry - (cy - ay) * rx) / den;
+  if (t < -1e-9 || t > 1 + 1e-9 || u < -1e-9 || u > 1 + 1e-9) return null;
+  const tc = t < 0 ? 0 : (t > 1 ? 1 : t);
+  return [(ay + tc * ry) / MLAT, (ax + tc * rx) / MLNG];
+}
+function crXIndex() { // a lazy segment grid over the whole extract (~220 m cells), keyed by the extract's own stamp
+  if (!crCov || !crCov.byName || !Object.keys(crCov.byName).length) return null;
+  const stamp = crCovStamp();
+  if (crXIndexCache && crXIndexCache.stamp === stamp) return crXIndexCache;
+  const CS = 220, cells = new Map(), segs = new Map();
+  for (const nm of Object.keys(crCov.byName)) {
+    const ss = [];
+    for (const w of crCov.byName[nm]) for (let i = 1; i < w.pts.length; i++) ss.push([w.pts[i - 1], w.pts[i]]);
+    segs.set(nm, ss);
+    for (const s of ss) {
+      const a0 = Math.floor(Math.min(s[0][0], s[1][0]) * MLAT / CS), a1 = Math.floor(Math.max(s[0][0], s[1][0]) * MLAT / CS);
+      const o0 = Math.floor(Math.min(s[0][1], s[1][1]) * MLNG / CS), o1 = Math.floor(Math.max(s[0][1], s[1][1]) * MLNG / CS);
+      for (let a = a0; a <= a1; a++) for (let o = o0; o <= o1; o++) { const k = a + ':' + o; let arr = cells.get(k); if (!arr) { arr = []; cells.set(k, arr); } arr.push([nm, s]); }
+    }
+  }
+  crXIndexCache = { stamp, cells, segs, cross: new Map() };
+  return crXIndexCache;
+}
+function crCrossingsOf(name) { // [{ other, pt }] - every crossing of one street with the rest of the extract, cached per stamp
+  const ix = crXIndex(); if (!ix || !ix.segs.has(name)) return [];
+  const hit = ix.cross.get(name); if (hit) return hit;
+  const CS = 220, byOther = new Map();
+  const add = (other, pt) => { let arr = byOther.get(other); if (!arr) { arr = []; byOther.set(other, arr); } for (const p of arr) if (distM(p, pt) <= 15) return; arr.push(pt); };
+  for (const s of ix.segs.get(name)) {
+    const a0 = Math.floor(Math.min(s[0][0], s[1][0]) * MLAT / CS), a1 = Math.floor(Math.max(s[0][0], s[1][0]) * MLAT / CS);
+    const o0 = Math.floor(Math.min(s[0][1], s[1][1]) * MLNG / CS), o1 = Math.floor(Math.max(s[0][1], s[1][1]) * MLNG / CS);
+    const seen = new Set();
+    for (let a = a0; a <= a1; a++) for (let o = o0; o <= o1; o++) {
+      const cellArr = ix.cells.get(a + ':' + o); if (!cellArr) continue;
+      for (const e of cellArr) {
+        if (e[0] === name || seen.has(e[1])) continue; seen.add(e[1]);
+        const t = e[1], xp = crSegCrossPt(s[0], s[1], t[0], t[1]); if (xp) add(e[0], xp);
+        for (const v of [t[0], t[1]]) { const pr = crSegProjM(v, s[0], s[1]); if (pr.d <= 4) add(e[0], pr.pt); }
+        for (const v of [s[0], s[1]]) { const pr = crSegProjM(v, t[0], t[1]); if (pr.d <= 4) add(e[0], pr.pt); }
+      }
+    }
+  }
+  const out = [];
+  byOther.forEach((pts, other) => { for (const pt of pts) out.push({ other, pt }); });
+  ix.cross.set(name, out);
+  return out;
+}
+function crClusterPts(pts, r) { // one junction can print as several points (a divided road's two carriageways); the centroid of each cluster is the crossing
+  const used = new Array(pts.length).fill(false), out = [];
+  for (let i = 0; i < pts.length; i++) {
+    if (used[i]) continue; used[i] = true; let sx = pts[i][0], sy = pts[i][1], n = 1;
+    for (let j = i + 1; j < pts.length; j++) if (!used[j] && distM(pts[i], pts[j]) <= r) { used[j] = true; sx += pts[j][0]; sy += pts[j][1]; n++; }
+    out.push([sx / n, sy / n]);
+  }
+  return out;
+}
+const CR_ABBR = { rd: 'road', st: 'street', ave: 'avenue', av: 'avenue', dr: 'drive', ct: 'court', crt: 'court', blvd: 'boulevard', ln: 'lane', cres: 'crescent', pl: 'place', ter: 'terrace', cir: 'circle', trl: 'trail', pkwy: 'parkway', sq: 'square', hwy: 'highway' };
+function crNameKey(s) { // a typed fragment and a pack name meet on one key: lower-case, dots off, a trailing abbreviation spelled out
+  const parts = String(s || '').trim().toLowerCase().replace(/\./g, '').split(/\s+/).filter(Boolean);
+  if (!parts.length) return '';
+  if (CR_ABBR[parts[parts.length - 1]]) parts[parts.length - 1] = CR_ABBR[parts[parts.length - 1]];
+  return parts.join(' ');
+}
+let crNameKeysCache = null; // { stamp, map } - a typed fragment's key -> the full pack names it can mean, rebuilt when the extract stamp moves (a per-query rescan of the whole catalogue would tax every keystroke burst on the big packs)
+function crNameKeys() { // both key forms of every street: its full name, and the app's short form of it
+  const stamp = crCovStamp();
+  if (crNameKeysCache && crNameKeysCache.stamp === stamp) return crNameKeysCache.map;
+  const map = new Map();
+  for (const nm of Object.keys(crCov.byName)) {
+    for (const k of [crNameKey(nm), crNameKey(shortStreetName(nm))]) {
+      if (!k) continue;
+      let arr = map.get(k); if (!arr) { arr = []; map.set(k, arr); }
+      if (!arr.includes(nm)) arr.push(nm);
+    }
+  }
+  crNameKeysCache = { stamp, map };
+  return map;
+}
+function crMatchStreetName(part) { // the full pack names a typed fragment can mean - the full name itself, or the app's short form of it
+  if (!crCov || !crCov.byName) return [];
+  const key = crNameKey(part); if (!key) return [];
+  const hit = crNameKeys().get(key);
+  return hit ? hit.slice() : [];
+}
+function crParseTwoStreets(q) { // 'A and B' / 'A & B' / 'A at B' / 'A, B' -> [a, b]; anything else is not a two-street query
+  const m = /^\s*(.+?)\s*(?:,|&)\s*(.+?)\s*$/.exec(q) || /^\s*(.+?)\s+(?:and|at)\s+(.+?)\s*$/i.exec(q);
+  if (!m) return null;
+  const a = m[1].trim(), b = m[2].trim();
+  return (a && b) ? [a, b] : null;
+}
+function crIntersectionItem(q) { // piece 1: the crossing of two named streets, resolved from the extract alone - no network involved
+  if (!crCov || !crCov.byName || !crCov.boxes.length) return null;
+  const parts = crParseTwoStreets(q); if (!parts) return null;
+  const As = crMatchStreetName(parts[0]), Bs = crMatchStreetName(parts[1]);
+  if (!As.length || !Bs.length) return null;
+  const ctr = (typeof map !== 'undefined' && map) ? map.getCenter() : null; // several crossings of one pair: the one nearest the map centre wins - the search's standing map bias
+  let best = null;
+  for (const A of As) {
+    const xs = crCrossingsOf(A); if (!xs.length) continue;
+    for (const B of Bs) {
+      if (B === A) continue;
+      const pts = [];
+      for (const x of xs) if (x.other === B) pts.push(x.pt);
+      if (!pts.length) continue;
+      for (const c of crClusterPts(pts, 30)) { const d = ctr ? distM(c, [ctr.lat, ctr.lng]) : 0; if (!best || d < best.d) best = { d, pt: c, A, B }; }
+    }
+  }
+  if (!best) return null;
+  return { lat: String(best.pt[0]), lon: String(best.pt[1]), display_name: best.A + ' & ' + best.B, address: {}, _isect: true };
+}
+function crCollapseResults(list) { // piece 2's merge: one street can print as several near-identical points - the first stands, the repeats (within 100 m, same name) drop BEFORE any labelling
+  const out = [], kept = [];
+  for (const it of list) {
+    const head = (it.display_name || '').split(',')[0].trim().toLowerCase();
+    const la = parseFloat(it.lat), lo = parseFloat(it.lon);
+    let dup = false;
+    if (head && isFinite(la) && isFinite(lo)) for (const k of kept) if (k.head === head && distM([la, lo], k.pt) <= 100) { dup = true; break; }
+    if (!dup) { out.push(it); kept.push({ head, pt: [la, lo] }); }
+  }
+  return out;
+}
+function crNearCrossName(it) { // piece 2: the cross street nearest this result's point - only when the result IS the street (its head is the street's own name); anything else stays plain
+  if (!crCov || !crCov.byName || !crCov.boxes.length) return null;
+  const head = (it.display_name || '').split(',')[0].trim();
+  const road = (it.address && it.address.road) || '';
+  let nm = null;
+  if (road && head === road && crCov.byName[road]) nm = road;
+  else if (head && crCov.byName[head]) nm = head;
+  if (!nm) return null;
+  const la = parseFloat(it.lat), lo = parseFloat(it.lon); if (!isFinite(la) || !isFinite(lo)) return null;
+  let best = null;
+  for (const x of crCrossingsOf(nm)) { const d = distM([la, lo], x.pt); if (!best || d < best.d) best = { d, other: x.other }; }
+  return best ? shortStreetName(best.other) : null;
 }
 const CR_SUFFIX = /\s+(Drive|Court|Boulevard|Lane|Street|Avenue|Crescent|Road|Place|Ridge|Way|Terrace|Circle|Gate|Heights|Trail|Parkway)$/;
 const CR_ORDINALS = { '1st': 'First', '2nd': 'Second', '3rd': 'Third', '4th': 'Fourth', '5th': 'Fifth', '6th': 'Sixth', '7th': 'Seventh', '8th': 'Eighth', '9th': 'Ninth', '10th': 'Tenth', '11th': 'Eleventh', '12th': 'Twelfth' };

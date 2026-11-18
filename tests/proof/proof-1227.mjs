@@ -7,6 +7,11 @@
 // and Enter run the same crRunSearch. Results rows are the set's pin (no
 // chip) + the display name split at its first comma (name semibold, the
 // remainder lighter at the right edge), on the samples' card surfaces.
+// Beta 1.232 supersession: the bar's BLUE left with the monochrome package
+// (variant A) - the surface pins below (2a, 2b, 2e, 3d, 6c) now pin the
+// 1.232 surfaces; everything else in this proof (markup, pill, card
+// geometry, press groups, the two-control contract, the glyph payloads)
+// stands exactly as 1.227 built it.
 import { readFileSync } from 'node:fs';
 import { createHash } from 'node:crypto';
 
@@ -31,16 +36,16 @@ const payload = (map, key, side) => {
 };
 
 // ---------- The bar markup ----------
-check('1a: the bar markup is the pill + blue bar (back button first, magnifier host, input, clear disc)', head.includes('<div id="createBar"><button id="crExit" aria-label="Back"></button><div id="crSearchWrap"><span id="crSearchIco" aria-hidden="true"></span><input id="crSearchInput" type="search" placeholder="Search a street or address" autocomplete="off"><button id="crClear" aria-label="Clear search"></button></div></div>'));
+check('1a: the bar markup is the pill + bar (back button first, magnifier host, input, clear disc)', head.includes('<div id="createBar"><button id="crExit" aria-label="Back"></button><div id="crSearchWrap"><span id="crSearchIco" aria-hidden="true"></span><input id="crSearchInput" type="search" placeholder="Search a street or address" autocomplete="off"><button id="crClear" aria-label="Clear search"></button></div></div>'));
 check('1b: the Search button survives nowhere in the parts', !head.includes('crSearchBtn') && !app4.includes('crSearchBtn') && !pick.includes('crSearchBtn'));
 check('1c: the old x tile is gone (no text-glyph exit, no Exit creating title)', !head.includes('title="Exit creating"') && !head.includes('<button id="crExit" title'));
 
 // ---------- The bar surfaces ----------
-check('2a: the bar wears the app blue gradient at radius 25 with the sampled day shadow', rule('#crSearchWrap {').includes('background: linear-gradient(135deg, #3D65EF, #1B2FB6);') && rule('#crSearchWrap {').includes('border-radius: 25px;') && rule('#crSearchWrap {').includes('box-shadow: 0 8px 24px rgba(15,23,64,.30);') && rule('#crSearchWrap {').includes('height: 50px;'));
-check('2b: the bar shadow deepens at night, the blue stands', rule('body.night #crSearchWrap {').includes('box-shadow: 0 8px 24px rgba(0,0,0,.45);'));
+check('2a: the bar is white at radius 25 with the mono day shadow (Beta 1.232 supersedes the 1.227 blue: variant A - white, hairline border, half-strength Soft Lift)', rule('#crSearchWrap {').includes('background: #fff;') && rule('#crSearchWrap {').includes('border: 1px solid rgba(20,25,40,.08);') && rule('#crSearchWrap {').includes('border-radius: 25px;') && rule('#crSearchWrap {').includes('box-shadow: 3px 4px 8px rgba(20,30,60,.10), -2px -2px 5px rgba(255,255,255,.35), inset 0 1px 1px rgba(255,255,255,.6), inset 0 -2px 4px rgba(90,100,120,.10);') && rule('#crSearchWrap {').includes('height: 50px;'));
+check('2b: at night the bar wears the back pill\'s N2 glass (Beta 1.232)', rule('body.night #crSearchWrap {').includes('background: linear-gradient(180deg, rgba(78,81,90,.94), rgba(43,45,51,.94));') && rule('body.night #crSearchWrap {').includes('box-shadow: inset 0 1px 1px rgba(255,255,255,.35), 0 8px 24px rgba(0,0,0,.45);'));
 check('2c: the back pill is a 50px white circle by day', rule('#crExit {').includes('width: 50px; height: 50px;') && rule('#crExit {').includes('border-radius: 50%;') && rule('#crExit {').includes('background: #fff;'));
 check('2d: the back pill wears the N2 night recipe (top-lit gradient, brightest top border, inset highlight)', rule('body.night #crExit {').includes('background: linear-gradient(180deg, rgba(78,81,90,.94), rgba(43,45,51,.94));') && rule('body.night #crExit {').includes('border-top: 1px solid rgba(255,255,255,.55);') && rule('body.night #crExit {').includes('box-shadow: inset 0 1px 1px rgba(255,255,255,.35), 0 8px 24px rgba(0,0,0,.45);'));
-check('2e: the input is white 16px (the iOS no-zoom floor) with the sampled placeholder ink', rule('#crSearchInput {').includes('font-size: 16px;') && rule('#crSearchInput {').includes('color: #fff;') && head.includes('#crSearchInput::placeholder { color: rgba(255,255,255,.75); }'));
+check('2e: the input is 16px (the iOS no-zoom floor) with theme ink (Beta 1.232: dark by day with the mono placeholder, white by night)', rule('#crSearchInput {').includes('font-size: 16px;') && rule('#crSearchInput {').includes('color: #111111;') && head.includes('#crSearchInput::placeholder { color: rgba(17,17,17,.42); }') && head.includes('body.night #crSearchInput { color: #fff; }') && head.includes('body.night #crSearchInput::placeholder { color: rgba(255,255,255,.75); }'));
 check('2f: the OS search clear is suppressed so it can never double the bar disc', head.includes('#crSearchInput::-webkit-search-cancel-button { -webkit-appearance: none; appearance: none; }'));
 check('2g: the clear disc exists only in its .on state', rule('#crClear {').includes('display: none;') && rule('#crClear.on {').includes('display: flex;'));
 
@@ -48,7 +53,7 @@ check('2g: the clear disc exists only in its .on state', rule('#crClear {').incl
 check('3a: the card hangs at the sampled offset (bar top + 62) with the day surface', rule('#createResults {').includes('top: calc(72px + var(--cr-shift)') && rule('#createResults {').includes('background: #fff;') && rule('#createResults {').includes('border-radius: 18px;'));
 check('3b: the night card is the night sample literal #1b1e26', rule('body.night #createResults {').includes('background: #1b1e26;'));
 check('3c: rows are pin + name + area (flex, sampled padding and hairlines)', rule('.crResult {').includes('display: flex; align-items: center; gap: 11px;') && rule('.crResult {').includes('padding: 11px 16px;') && rule('.crResult {').includes('border-top: 1px solid #e7e9ee;') && rule('.crResult {').includes('color: #14181f;'));
-check('3d: the first row wears the tint in both modes and holds it on press', rule('.crResult:first-child {').includes('background: #f2f5ff;') && rule('body.night .crResult:first-child {').includes('background: rgba(255,255,255,.06);') && rule('.crResult:first-child:active {').includes('background: #f2f5ff;'));
+check('3d: the first row wears the tint in both modes and holds it on press (Beta 1.232: the day tint went neutral with the bar)', rule('.crResult:first-child {').includes('background: #f2f3f5;') && rule('body.night .crResult:first-child {').includes('background: rgba(255,255,255,.06);') && rule('.crResult:first-child:active {').includes('background: #f2f3f5;'));
 check('3e: the name is semibold and truncates, the area rides the right edge in the secondary ink, bounded so long areas cannot squeeze the name out', rule('.crName {').includes('font-weight: 600;') && rule('.crName {').includes('text-overflow: ellipsis;') && rule('.crArea {').includes('margin-left: auto;') && rule('.crArea {').includes('color: #7a8194;') && rule('.crArea {').includes('max-width: 55%;') && rule('.crArea {').includes('text-overflow: ellipsis;') && rule('body.night .crArea {').includes('color: #9aa3b2;'));
 check('3e2: the pick-list .crName rule cannot leak into the rows (scoped colour + size)', head.includes('#createResults .crName { color: inherit; font-size: 15.5px; }'));
 check('3e3: while the results card is open the hint pill is not painted beneath it', head.includes('#createResults.on ~ #createHint { visibility: hidden; }'));
@@ -77,12 +82,12 @@ check('6b: the six payloads are byte-pinned (set treatment: alpha fills, lossles
   sha(payload('GLYPH_CREATE', 'cancel', 'n')) === 'a3c2e27fa54072de020a0e3a0b811afdd6c2c893d738719109f8ea67fe9cc72c' &&
   sha(payload('GLYPH_CREATE', 'back', 'd')) === 'cfbcf0d124b7d315b5a5bed7c217529a6bf50e36d3854ef1737d415ecb381d72' &&
   sha(payload('GLYPH_CREATE', 'back', 'n')) === '3bd81894f992b53e259fa847ce7ba12a9f96289823eb7478a44a82741f9ee293');
-check('6c: renderIcons stamps the bar hosts (theme arrow, white magnifier + disc) and re-stamps row pins', app4.includes('GLYPH_CREATE.back.n : GLYPH_CREATE.back.d') && app4.includes('GLYPH_CREATE.search.n') && app4.includes('GLYPH_CREATE.cancel.n') && app4.includes("document.querySelectorAll('.crPin').forEach(el => { el.innerHTML = ICONS.pin; });"));
+check('6c: renderIcons stamps the bar hosts (theme variants throughout since Beta 1.232 - the magnifier and disc follow the theme like the arrow) and re-stamps row pins', app4.includes('GLYPH_CREATE.back.n : GLYPH_CREATE.back.d') && app4.includes('night ? GLYPH_CREATE.search.n : GLYPH_CREATE.search.d') && app4.includes('night ? GLYPH_CREATE.cancel.n : GLYPH_CREATE.cancel.d') && app4.includes("document.querySelectorAll('.crPin').forEach(el => { el.innerHTML = ICONS.pin; });"));
 
 // ---------- Version agreement ----------
-check('V: the #ver label reads Beta 1.229', head.includes('<div class="ver" id="ver">Beta 1.231</div>'));
-check('V: WHATSNEW is the Beta 1.229 entry with the five short bullets', app4.includes("v: 'Beta 1.231', items: [\"Buttons that open a menu or panel take a short beat now, so you can see the press land first.\", \"Switching between day and night is instant - no slow colour fade across the screen.\", \"Pop-ups and panels ease in a little smaller as they appear.\"]"));
-check('V: the CHANGELOG top entry is Beta 1.229', changelog.split('\n').find(l => l.startsWith('## Beta')) === '## Beta 1.231 \u2014 2026-11-18');
+check('V: the #ver label reads Beta 1.229', head.includes('<div class="ver" id="ver">Beta 1.232</div>'));
+check('V: WHATSNEW is the Beta 1.229 entry with the five short bullets', app4.includes("v: 'Beta 1.232', items: [\"Type two street names - like Weston and Rutherford - and search jumps to where they cross.\", \"Street results now name the nearest cross street, so same-name streets are easy to tell apart.\", \"The create search bar is black and white now - white by day, dark glass by night.\"]"));
+check('V: the CHANGELOG top entry is Beta 1.229', changelog.split('\n').find(l => l.startsWith('## Beta')) === '## Beta 1.232 \u2014 2026-11-18');
 
 console.log(`proof-1227: ${pass}/${pass + fail} checks passed`);
 process.exit(fail ? 1 : 0);

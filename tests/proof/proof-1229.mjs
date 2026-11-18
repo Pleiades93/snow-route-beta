@@ -88,9 +88,9 @@ check('6d: Delete maps wears the in-menu Delete treatment', rule('#stDel {').inc
 check('6e: the confirm No button is red while it reads Cancel', rule('#crModalNo.cancelRed {').includes('color: #e63a2e;') && pick.includes("classList.toggle('cancelRed', !!labels && labels.no === 'Cancel')"));
 
 // ---------- Version agreement ----------
-check('V: the #ver label reads Beta 1.229', head.includes('<div class="ver" id="ver">Beta 1.231</div>'));
-check('V: WHATSNEW is the Beta 1.229 entry with the five short bullets', app4.includes("v: 'Beta 1.231', items: [\"Buttons that open a menu or panel take a short beat now, so you can see the press land first.\", \"Switching between day and night is instant - no slow colour fade across the screen.\", \"Pop-ups and panels ease in a little smaller as they appear.\"]"));
-check('V: the CHANGELOG top entry is Beta 1.229', changelog.split('\n').find(l => l.startsWith('## Beta')) === '## Beta 1.231 — 2026-11-18');
+check('V: the #ver label reads Beta 1.229', head.includes('<div class="ver" id="ver">Beta 1.232</div>'));
+check('V: WHATSNEW is the Beta 1.229 entry with the five short bullets', app4.includes("v: 'Beta 1.232', items: [\"Type two street names - like Weston and Rutherford - and search jumps to where they cross.\", \"Street results now name the nearest cross street, so same-name streets are easy to tell apart.\", \"The create search bar is black and white now - white by day, dark glass by night.\"]"));
+check('V: the CHANGELOG top entry is Beta 1.229', changelog.split('\n').find(l => l.startsWith('## Beta')) === '## Beta 1.232 — 2026-11-18');
 
 console.log(`proof-1229: ${pass} passed, ${fail} failed`);
 process.exit(fail ? 1 : 0);
