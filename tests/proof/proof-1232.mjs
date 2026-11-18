@@ -68,7 +68,7 @@ check('1d: a street never crosses itself', pick.includes('if (e[0] === name || s
 check('1e: the index is lazy and keyed by the extract stamp', pick.includes('function crXIndex()') && pick.includes('crXIndexCache.stamp === stamp') && pick.includes('const stamp = crCovStamp();'));
 check('1f: no prepared city, no engagement - both geometry pieces gate on the extract boxes', pick.includes('function crIntersectionItem(q)') && (pick.match(/!crCov\.boxes\.length/g) || []).length >= 2);
 check('1g: the two-street parse takes and / & / at / comma forms only', pick.includes("(?:,|&)") && pick.includes('(?:and|at)'));
-check('1h: names match on the full name, the short form, or a spelled-out abbreviation (one stamp-keyed key map, not a per-query rescan)', pick.includes('for (const k of [crNameKey(nm), crNameKey(shortStreetName(nm))])') && pick.includes('const hit = crNameKeys().get(key);') && pick.includes("rd: 'road'") && pick.includes("ave: 'avenue'"));
+check('1h: names match on the full name, the short form, or a spelled-out abbreviation (one stamp-keyed key map, not a per-query rescan; Beta 1.233: the same cache carries the stem map, exact first, stems on a miss)', pick.includes('for (const k of [crNameKey(nm), crNameKey(shortStreetName(nm))]) put(map, k, nm);') && pick.includes('const hit = keys.map.get(key) || keys.stem.get(key);') && pick.includes("rd: 'road'") && pick.includes("ave: 'avenue'"));
 check('1i: the synthetic result carries the two full names and the isect mark', pick.includes("display_name: best.A + ' & ' + best.B") && pick.includes('_isect: true'));
 check('1j: the crossing is computed BEFORE the fetch and leads the rendered list', pick.indexOf('const isect = crIntersectionItem(q);') > -1 && pick.indexOf('const isect = crIntersectionItem(q);') < pick.indexOf("let url = 'https://nominatim.openstreetmap.org/search?format=jsonv2&addressdetails=1&limit=5&q='") && pick.includes('renderCrResults(isect ? [isect].concat(results) : results);'));
 check('1k: a dead network still renders the crossing, under the sequence guard', pick.includes('if (isect && crSearchCurrent(seq)) renderCrResults([isect]);'));
@@ -106,9 +106,9 @@ check('3g: the first-row tint went neutral and the old blue tint is gone from th
 check('3h: the bar geometry stands (50px pill and bar, 25px radius)', pillLine.includes('width: 50px; height: 50px;') && wrapLine.includes('height: 50px;') && wrapLine.includes('border-radius: 25px;'));
 
 // ---------- Version agreement ----------
-check('V: the #ver label reads Beta 1.232', head.includes('<div class="ver" id="ver">Beta 1.232</div>'));
-check('V: WHATSNEW is the Beta 1.232 entry with the three short bullets', app4.includes("v: 'Beta 1.232', items: [\"Type two street names - like Weston and Rutherford - and search jumps to where they cross.\", \"Street results now name the nearest cross street, so same-name streets are easy to tell apart.\", \"The create search bar is black and white now - white by day, dark glass by night.\"]"));
-check('V: the CHANGELOG top entry is Beta 1.232', changelog.split('\n').find(l => l.startsWith('## Beta')) === '## Beta 1.232 — 2026-11-18');
+check('V: the #ver label reads Beta 1.232', head.includes('<div class="ver" id="ver">Beta 1.233</div>'));
+check('V: WHATSNEW is the Beta 1.232 entry with the three short bullets', app4.includes("v: 'Beta 1.233', items: [\"Menu buttons are one even height, and your current route wears a white check.\", \"Back, Home and Clear have new icons.\", \"Search results show just the street name - the city and postal code tail is gone.\", \"Crossing searches understand directions: Bloor finds Bloor Street East and Bloor Street West.\", \"The About page is cleaned up - the credit lines are gone.\"]"));
+check('V: the CHANGELOG top entry is Beta 1.232', changelog.split('\n').find(l => l.startsWith('## Beta')) === '## Beta 1.233 — 2026-11-18');
 
 console.log(`proof-1232: ${pass} pass, ${fail} fail`);
 if (fail) process.exit(1);

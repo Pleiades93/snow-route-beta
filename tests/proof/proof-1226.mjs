@@ -47,9 +47,9 @@ check('2c: the 1.224 dialed stacks survive nowhere in the page', !head.includes(
 check('2d: the night fence stands (night Start keeps the float token; the night dock recipe is byte-identical)', rule('body.night .runBtn {').includes('box-shadow: var(--shadow-float);') && rule('body.night .dockBtn {').includes('background: linear-gradient(180deg, rgba(78,81,90,.94), rgba(43,45,51,.94));') && rule('body.night .dockBtn {').includes('border-top-color: rgba(255,255,255,.55);') && rule('body.night .dockBtn {').includes('box-shadow: inset 0 1px 0 rgba(255,255,255,.45), 0 10px 26px rgba(0,0,0,.45);'));
 
 // ---------- Version agreement ----------
-check('V: the #ver label reads Beta 1.229', head.includes('<div class="ver" id="ver">Beta 1.232</div>'));
-check('V: WHATSNEW is the Beta 1.229 entry with the five short bullets', app4.includes("v: 'Beta 1.232', items: [\"Type two street names - like Weston and Rutherford - and search jumps to where they cross.\", \"Street results now name the nearest cross street, so same-name streets are easy to tell apart.\", \"The create search bar is black and white now - white by day, dark glass by night.\"]"));
-check('V: the CHANGELOG top entry is Beta 1.229', changelog.split('\n').find(l => l.startsWith('## Beta')) === '## Beta 1.232 — 2026-11-18');
+check('V: the #ver label reads Beta 1.229', head.includes('<div class="ver" id="ver">Beta 1.233</div>'));
+check('V: WHATSNEW is the Beta 1.229 entry with the five short bullets', app4.includes("v: 'Beta 1.233', items: [\"Menu buttons are one even height, and your current route wears a white check.\", \"Back, Home and Clear have new icons.\", \"Search results show just the street name - the city and postal code tail is gone.\", \"Crossing searches understand directions: Bloor finds Bloor Street East and Bloor Street West.\", \"The About page is cleaned up - the credit lines are gone.\"]"));
+check('V: the CHANGELOG top entry is Beta 1.229', changelog.split('\n').find(l => l.startsWith('## Beta')) === '## Beta 1.233 — 2026-11-18');
 
 console.log(`proof-1226: ${pass}/${pass + fail} checks passed`);
 process.exit(fail ? 1 : 0);

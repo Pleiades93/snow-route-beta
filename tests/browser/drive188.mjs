@@ -104,7 +104,7 @@ try {
     Storage.prototype.setItem = orig;
     return { hint };
   })()`);
-  ok('D1 a blur save that FAILS says so in the hint, in the debounced path\'s own words | hint: ' + d1.hint, d1.hint === 'Not saved. Storage problem');
+  ok('D1 a blur save that FAILS says so in the hint, in the debounced path\'s own words | hint: ' + d1.hint, d1.hint === 'Not saved - Storage problem');
   const d2 = await J(`(() => {
     saveWarned = true; // the episode warning already fired earlier in this session - saveAllWarned will NOT toast again
     const orig = Storage.prototype.setItem; Storage.prototype.setItem = function () { throw new Error('quota'); };

@@ -22,6 +22,9 @@ import { createHash } from 'node:crypto';
 //    Beta 1.225: the routes pair is Andrew's Journey pick (Icons8
 //    glyph-neue sGNEMWKG3WcQ), filled and encoded by the same treatment
 //    in round-1225 patch 1; its two pins and the set total roll here.
+//    Beta 1.233: home is Andrew's Home Page pick (Icons8 NzaHJt0XKIWl)
+//    and clear his Dustpan pick (Icons8 5TaZy8jiHIYy), filled and encoded
+//    by the same treatment; their four pins and the set total roll here.
 //  - the registry dispatch: MASK_PACKS stands with ONE row (glyph) and
 //    renderIcons reads it directly - no picker, no stored choice, no
 //    fallback packs;
@@ -66,8 +69,8 @@ const PINS = {
   GLYPH_ICONS: [
     'b9b6a2f3f6d751198194f5765d7e869bcea86a088caa5981032a8286198dc7f7', 'ec0b308c1265280699ee2238fd3bfc7e8693119e46d8075b33b7d527b8a517c7',
     '12daed8f399b941e5a3a08be518e3a0b23b2796614f311807c78162376e30ab3', '0dffb6f1159795c31880bcad459d4d94f4ef3618f4293ae5cf41241165df5da1',
-    '941023d0b94a361dcef4c8b647b384216593988dd12eb56becd239e96add59e4', '5539b3575ac8bb40b25c9230e511881cb7baf3ccab6d5a486e412b482ed8e093',
-    'a72ea64193d2ce28eea4f4b557d5b9199e8b691cebf3d01d1ec90eb5ba2fddfc', '9d4945056ffa6372fb9a161dcc73dba2e3aa17585cdc69f3e3b600b50df02323',
+    '996f856cd074886491bcb02fa8440117fbfd0afe626629517069492790581ed0', 'ff969cd1c1f46d502959734d07d934dff69e9d6cae85783d6a3c40277fbc8ed4',
+    '2d0af6eb1db2870352393ac8ca1f52326c9b3dec0d602c30640b219bb170137e', '520df60e1444041b763c0d5f9c4de11f0faac1ac55896e1bc6c006d51d24f224',
     '903ed9f57d1aa48fe28fc1f0d75a3723afe6d966dfd2f3ac56e7ff0a4172691e', '87005ea2cc64d0974bad24ae5ed97f3b236f504a9dcb81831a0c92e4386bdca1',
     'c5afd163544bcf2e85ddfa49cbe20c3e0dee5ded3c4813bd82aaaaff67050b85', '35acb058cc0b09c832dbf7f6cf60dea44a4404e907ceddeee5d0cf0f45d02540',
     'f6f4dd5150962b7714ea9dcb7aef605985f1eccca861b02acc9c07029dabbf69', 'de6c898896b82aab516dfee97588545db183841ebd949391d8e6c7237a93006c',
@@ -106,7 +109,7 @@ for (const [name, pins] of Object.entries(PINS)) {
   });
 }
 check('A: the set totals 48 image occurrences, 43 unique payloads', occ === 48 && seen.size === 43, occ + '/' + seen.size);
-check('A: the unique WebP payloads total 80,422 decoded bytes (the 1.221 set totalled 79,064; Beta 1.225 swapped the routes artwork to Journey, +1,358)', uniqBytes === 80422, String(uniqBytes));
+check('A: the unique WebP payloads total 79,166 decoded bytes (the 1.221 set totalled 79,064; Beta 1.225 swapped the routes artwork to Journey, +1,358; Beta 1.233 swapped home to Home Page and clear to Dustpan, -1,256)', uniqBytes === 79166, String(uniqBytes));
 check('A: no PNG artwork remains in the Glyph maps', !/data:image\/png/.test(app4.split('const WHATSNEW')[0].slice(app4.indexOf('const GLYPH_ICONS'), app4.indexOf('const MASK_PACKS'))));
 
 // ================= B - completeness of the one set =================

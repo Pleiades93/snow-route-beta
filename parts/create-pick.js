@@ -431,6 +431,7 @@ function crRenderCityChoices() {
       b.addEventListener('click', () => crPackPickCity(e));
       boxEl.appendChild(b);
     }
+    menuListFade(boxEl); // Beta 1.233: the feather settles on what the landed list covers
   });
 }
 function crPackPickCity(e) { // a chooser tap IS a city pick: it lands in the same crPickCity the typed search uses, with the catalogue's own bounds - so preparation, caching and the pick stage behave identically whichever door named the city. Beta 1.147 (hypothesis H2 hardening): the reset + pick run through askDiscard, so the discard guard is local to this handler and not just a property of the pane graph - askDiscard no-ops on an empty draft, so first entry is unchanged
@@ -1082,16 +1083,21 @@ document.addEventListener('pointerdown', (e) => { // Beta 1.120 (Andrew): tappin
   if (crSearchTimer) { clearTimeout(crSearchTimer); crSearchTimer = null; }
   crSearchSeq++; if (crSearchCtl) { try { crSearchCtl.abort(); } catch (e) {} crSearchCtl = null; } // Beta 1.232 fix round 5 (PR #112, Codex P2): dismissing the results ENDS the search too - since fix round 1 the crossing renders while its fetch is still in flight, and un-invalidated that fetch's landing (the success merge, or the catch's crossing re-render under crSearchCurrent) reopened this box over the tap-away that dismissed it. The form is the standing one (fix round 3 seated it at the row click; the clear disc and the flow close end the search exactly so), and the pending debounce is cleared with it, or it would fire a fresh search 300 ms after the user tapped away. The tap-away itself is untouched: the box still hides here, and the map pick still runs
 }, true);
+function crResultName(it) { // Beta 1.233 (Andrew, package C): a result row shows the result's NAME only - the grey address tail (city, region, province, postal code) is gone from every row; he already knows the search is in his city, and the tail ate the room the name needs. A street result shows its street (the same identity the 1.232 collapse trusts - address.road when the answer carries it, else the display name's head); an address result shows house number + road; anything else (a place) shows its own name. The on-device crossing's display name carries no comma and stands whole.
+  const head = (it.display_name || '').split(',')[0].trim();
+  const a = it.address || {};
+  if (crStreetIdentity(it)) return a.road || head;
+  if (a.house_number && a.road) return a.house_number + ' ' + a.road;
+  return head;
+}
 function renderCrResults(list) {
   const box = $('createResults'); box.innerHTML = '';
   for (const it of list) {
-    const b = document.createElement('button'); b.className = 'crResult'; // Beta 1.227 (Andrew): the row is the set's pin + the street name + the area - the display name split at its first comma (the name semibold at the left, the remainder lighter at the right edge), the pin the set's own teardrop with no chip behind it
-    const nm = it.display_name || ''; const cut = nm.indexOf(',');
+    const b = document.createElement('button'); b.className = 'crResult'; // Beta 1.227 (Andrew): the row is the set's pin + the name, the pin the set's own teardrop with no chip behind it. Beta 1.233 (package C): the name is the row's whole text now - crResultName above decides what a result is called, and no area tail is built at all
     const pin = document.createElement('span'); pin.className = 'crPin'; pin.innerHTML = ICONS.pin;
-    const nameEl = document.createElement('span'); nameEl.className = 'crName'; nameEl.textContent = cut >= 0 ? nm.slice(0, cut) : nm;
+    const nameEl = document.createElement('span'); nameEl.className = 'crName'; nameEl.textContent = crResultName(it);
     if (!it._isect) { const near = crNearCrossName(it); if (near) { const ns = document.createElement('span'); ns.className = 'crNear'; ns.textContent = ' · near ' + near; nameEl.appendChild(ns); } } // Beta 1.232 (piece 2): the cross-street label rides inside the name, in the area line's grey
-    const areaEl = document.createElement('span'); areaEl.className = 'crArea'; areaEl.textContent = cut >= 0 ? nm.slice(cut + 1).trim() : '';
-    b.append(pin, nameEl, areaEl);
+    b.append(pin, nameEl);
     b.addEventListener('click', () => {
       box.classList.remove('on');
       if (crSearchTimer) { clearTimeout(crSearchTimer); crSearchTimer = null; }
@@ -1189,25 +1195,29 @@ function crNameKey(s) { // a typed fragment and a pack name meet on one key: low
   if (CR_ABBR[parts[parts.length - 1]]) parts[parts.length - 1] = CR_ABBR[parts[parts.length - 1]];
   return parts.join(' ');
 }
-let crNameKeysCache = null; // { stamp, map } - a typed fragment's key -> the full pack names it can mean, rebuilt when the extract stamp moves (a per-query rescan of the whole catalogue would tax every keystroke burst on the big packs)
-function crNameKeys() { // both key forms of every street: its full name, and the app's short form of it
+let crNameKeysCache = null; // { stamp, map, stem } - a typed fragment's key -> the full pack names it can mean, rebuilt when the extract stamp moves (a per-query rescan of the whole catalogue would tax every keystroke burst on the big packs). The stem map is Beta 1.233's directional widening (package A), built in the same pass.
+const CR_DIR_TOKENS = ['east', 'west', 'north', 'south'];
+function crNameKeys() { // both key forms of every street: its full name, and the app's short form of it. PLUS, for a name ending in a directional (Bloor Street East), its stem's two key forms (Bloor Street, Bloor) in the stem map - so a bare stem typed in a crossing search finds the directional street. Only a TRAILING directional makes a stem: East Lynn Avenue is nobody's stem case, and a stem is registered only for a name with a suffix in front of the directional (three tokens or more).
   const stamp = crCovStamp();
-  if (crNameKeysCache && crNameKeysCache.stamp === stamp) return crNameKeysCache.map;
-  const map = new Map();
+  if (crNameKeysCache && crNameKeysCache.stamp === stamp) return crNameKeysCache;
+  const map = new Map(), stem = new Map();
+  const put = (m, k, nm) => { if (!k) return; let arr = m.get(k); if (!arr) { arr = []; m.set(k, arr); } if (!arr.includes(nm)) arr.push(nm); };
   for (const nm of Object.keys(crCov.byName)) {
-    for (const k of [crNameKey(nm), crNameKey(shortStreetName(nm))]) {
-      if (!k) continue;
-      let arr = map.get(k); if (!arr) { arr = []; map.set(k, arr); }
-      if (!arr.includes(nm)) arr.push(nm);
+    for (const k of [crNameKey(nm), crNameKey(shortStreetName(nm))]) put(map, k, nm);
+    const toks = String(nm).trim().split(/\s+/);
+    if (toks.length > 2 && CR_DIR_TOKENS.includes(toks[toks.length - 1].toLowerCase().replace(/\./g, ''))) {
+      const stemName = toks.slice(0, -1).join(' ');
+      for (const k of [crNameKey(stemName), crNameKey(shortStreetName(stemName))]) put(stem, k, nm);
     }
   }
-  crNameKeysCache = { stamp, map };
-  return map;
+  crNameKeysCache = { stamp, map, stem };
+  return crNameKeysCache;
 }
-function crMatchStreetName(part) { // the full pack names a typed fragment can mean - the full name itself, or the app's short form of it
+function crMatchStreetName(part) { // the full pack names a typed fragment can mean - the full name itself, or the app's short form of it. Beta 1.233 (package A): an exact miss falls to the directional stems, so Bloor resolves to Bloor Street East / Bloor Street West (both crossings of the pair are candidates; the intersection item's city bound and nearest-to-centre choice decide, unchanged). Exact names always win - the stem map is consulted only when the exact map has nothing, so a street really named Bloor Street is never shadowed by its directional kin, and when neither side resolves even widened, the caller falls back to the network exactly as before.
   if (!crCov || !crCov.byName) return [];
   const key = crNameKey(part); if (!key) return [];
-  const hit = crNameKeys().get(key);
+  const keys = crNameKeys();
+  const hit = keys.map.get(key) || keys.stem.get(key);
   return hit ? hit.slice() : [];
 }
 function crParseTwoStreets(q) { // 'A and B' / 'A & B' / 'A at B' / 'A, B' -> [a, b]; anything else is not a two-street query
@@ -1216,6 +1226,14 @@ function crParseTwoStreets(q) { // 'A and B' / 'A & B' / 'A at B' / 'A, B' -> [a
   const a = m[1].trim(), b = m[2].trim();
   return (a && b) ? [a, b] : null;
 }
+function crStreetFamily(part) { // Beta 1.233 (package A, tier 2): a typed fragment's exact names PLUS its directional kin, exact first. A crossing search needs this wider net as a fallback: Toronto really has a plain Bloor Street, so the exact map hits it - but the segment that actually crosses Yonge is named Bloor Street East, and an exact-only pair scan finds no junction and the search falls to the network for a crossing the device already knows. The family is consulted only when the exact pair yields no crossing (see crIntersectionItem), so a plain street that does cross still wins outright.
+  if (!crCov || !crCov.byName) return [];
+  const key = crNameKey(part); if (!key) return [];
+  const keys = crNameKeys();
+  const out = [];
+  for (const src of [keys.map.get(key), keys.stem.get(key)]) if (src) for (const n of src) if (!out.includes(n)) out.push(n);
+  return out;
+}
 function crIntersectionItem(q) { // piece 1: the crossing of two named streets, resolved from the extract alone - no network involved
   if (!crCov || !crCov.byName || !crCov.boxes.length) return null;
   const parts = crParseTwoStreets(q); if (!parts) return null;
@@ -1223,16 +1241,24 @@ function crIntersectionItem(q) { // piece 1: the crossing of two named streets, 
   if (!As.length || !Bs.length) return null;
   const ctr = (typeof map !== 'undefined' && map) ? map.getCenter() : null; // several crossings of one pair: the one nearest the map centre wins - the search's standing map bias
   const cityBox = (crCity && crCity.bbox) ? crCity.bbox : null; // Beta 1.232 fix round 4 (PR #112, Codex P2): since 1.153 the search is city-only - the network landing enforces it with crInBox on this same box - but the extract's ways run past the boundary, so the pair's CANDIDATES are bounded here, before clustering and nearest-selection: a pair crossing both inside and outside keeps its inside crossing (a post-check on the chosen point would kill exactly that pair), and a pair crossing only outside yields no item, falling back to the already city-bound network exactly as a non-crossing pair does. No city box in force, no bound - the same scoped test the network path applies
-  let best = null;
-  for (const A of As) {
-    const xs = crCrossingsOf(A); if (!xs.length) continue;
-    for (const B of Bs) {
-      if (B === A) continue;
-      const pts = [];
-      for (const x of xs) if (x.other === B && (!cityBox || crInBox(cityBox, x.pt[0], x.pt[1]))) pts.push(x.pt);
-      if (!pts.length) continue;
-      for (const c of crClusterPts(pts, 30)) { const d = ctr ? distM(c, [ctr.lat, ctr.lng]) : 0; if (!best || d < best.d) best = { d, pt: c, A, B }; }
+  const scan = (aNames, bNames) => {
+    let best = null;
+    for (const A of aNames) {
+      const xs = crCrossingsOf(A); if (!xs.length) continue;
+      for (const B of bNames) {
+        if (B === A) continue;
+        const pts = [];
+        for (const x of xs) if (x.other === B && (!cityBox || crInBox(cityBox, x.pt[0], x.pt[1]))) pts.push(x.pt);
+        if (!pts.length) continue;
+        for (const c of crClusterPts(pts, 30)) { const d = ctr ? distM(c, [ctr.lat, ctr.lng]) : 0; if (!best || d < best.d) best = { d, pt: c, A, B }; }
+      }
     }
+    return best;
+  };
+  let best = scan(As, Bs);
+  if (!best) { // Beta 1.233 tier 2: the exact pair may name real streets that never touch (plain Bloor Street vs the Bloor Street East segment at Yonge) - retry once with each side widened to its directional family before giving the search to the network
+    const fA = crStreetFamily(parts[0]), fB = crStreetFamily(parts[1]);
+    if (fA.length > As.length || fB.length > Bs.length) best = scan(fA, fB);
   }
   if (!best) return null;
   return { lat: String(best.pt[0]), lon: String(best.pt[1]), display_name: best.A + ' & ' + best.B, address: {}, _isect: true };

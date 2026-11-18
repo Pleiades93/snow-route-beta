@@ -621,14 +621,14 @@ function renderStreets() { // production row design: tap a street's name area to
       ed.querySelector('.nedLbl').textContent = 'Note: ' + n;
       const ta = ed.querySelector('textarea');
       ta.value = (draft !== null && draftFor === n) ? draft : noteTextOf(n); noteEdFor = n;
-      const hint = ed.querySelector('.nhint'); if (noteFlushFailed && n === draftFor) hint.textContent = 'Not saved. Storage problem'; else if (noteFlushed && n === draftFor) hint.textContent = 'Saved \u2713'; // Beta 1.113 (round 112, CG-112-01): a failed flush says so, in the debounced path's own words - never 'Saved' // Beta 1.79: the rebuilt editor tells the truth about the save the rebuild just finalized
+      const hint = ed.querySelector('.nhint'); if (noteFlushFailed && n === draftFor) hint.textContent = 'Not saved - Storage problem'; else if (noteFlushed && n === draftFor) hint.textContent = 'Saved \u2713'; // Beta 1.113 (round 112, CG-112-01): a failed flush says so, in the debounced path's own words - never 'Saved' // Beta 1.79: the rebuilt editor tells the truth about the save the rebuild just finalized
       ta.addEventListener('input', () => {
         hint.textContent = 'Saving…';
         clearTimeout(noteSaveTimer);
-        noteSaveTimer = setTimeout(() => { const ok = setNoteText(n, ta.value); paintNt(); hint.textContent = ok.ok ? 'Saved ✓' : 'Not saved. Storage problem'; }, 400); // Beta 1.63 (audit F04): the hint tells the truth about the write
+        noteSaveTimer = setTimeout(() => { const ok = setNoteText(n, ta.value); paintNt(); hint.textContent = ok.ok ? 'Saved ✓' : 'Not saved - Storage problem'; }, 400); // Beta 1.63 (audit F04): the hint tells the truth about the write
       });
-      ta.addEventListener('blur', () => { clearTimeout(noteSaveTimer); const ok = setNoteText(n, ta.value); paintNt(); hint.textContent = ok.ok ? 'Saved ✓' : 'Not saved. Storage problem'; });
-      ed.querySelector('.nedSave').addEventListener('click', () => { clearTimeout(noteSaveTimer); const ok = setNoteText(n, ta.value); paintNt(); hint.textContent = ok.ok ? 'Saved ✓' : 'Not saved. Storage problem'; });
+      ta.addEventListener('blur', () => { clearTimeout(noteSaveTimer); const ok = setNoteText(n, ta.value); paintNt(); hint.textContent = ok.ok ? 'Saved ✓' : 'Not saved - Storage problem'; });
+      ed.querySelector('.nedSave').addEventListener('click', () => { clearTimeout(noteSaveTimer); const ok = setNoteText(n, ta.value); paintNt(); hint.textContent = ok.ok ? 'Saved ✓' : 'Not saved - Storage problem'; });
       ed.querySelector('.nedDone').addEventListener('click', () => { noteOpenFor = null; renderStreets(); }); // Beta 1.169 (Carbon fix round, A-01): blur finalizes like the debounced save above it - same result, same words in the same hint. Through 1.168 the result was discarded, so a blur save that failed (storage full, the episode warning already spent) told the user nothing while the editor still read 'Saves automatically'.
       el.appendChild(ed);
     }
@@ -833,10 +833,12 @@ makeSheetDraggable($('pacePanel'));
 // Beta 1.78 (Andrew): ONE route surface - the full-screen blue route menu.
 // The splash borrows it at boot (.boot; a pick there runs app4's
 // __bootPickRoute) and the Routes tab reopens it any time, sliding up over
-// the app (.tab). The small Routes sheet is retired. The "Currently loaded"
-// badge is a TAB-mode-only signal: at boot nothing is loaded yet, and in
-// 1.76/1.77 the badge render landing mid-exit read as a flicker on the pick
-// (Andrew, live catch). wireRouteRows binds the rows to the mode's chooser.
+// the app (.tab). The small Routes sheet is retired. The loaded route's
+// marker (Beta 1.233: the Glyph disc check at the pill's right edge; through
+// 1.232 a "Currently loaded" badge) is a TAB-mode-only signal: at boot
+// nothing is loaded yet, and in 1.76/1.77 the marker render landing
+// mid-exit read as a flicker on the pick (Andrew, live catch).
+// wireRouteRows binds the rows to the mode's chooser.
 function routeRowShell(tag, name, sub, opts) { // Beta 1.136 (programme F): the ONE route-row builder - a .routeRow element carrying the .routeMeta column (a .routeName line, plus a .routeArea line unless sub is null) and, when opts.chevron, the .routeChev. Through 1.135 the row shape was hand-built at three sites (route rows below, the create flow's city rows and its manual-search rows); they all build through this now, so the shape can only drift in one place. Text is assigned via textContent throughout (the Beta 1.94 F-04 rule: pack/city names are data, never markup). opts.cls adds a class (the city list's loading row); callers hang their own extras (dataset, badge, Delete, listeners) on the returned row.
   opts = opts || {};
   const b = document.createElement(tag || 'button'); b.className = 'routeRow' + (opts.cls ? ' ' + opts.cls : '');
@@ -848,21 +850,25 @@ function routeRowShell(tag, name, sub, opts) { // Beta 1.136 (programme F): the 
   if (opts.chevron) { const chev = document.createElement('span'); chev.className = 'routeChev'; chev.textContent = '›'; b.appendChild(chev); }
   return b;
 }
-function routeRowEl(p) { // Beta 1.94 (audit F-04): rows are built as DOM nodes with textContent, never by interpolating pack data into innerHTML - a pack's name/area are data, and the day route creation lands, a typed name must not be able to become markup. The row shape (classes, badge rule) is unchanged; wireRouteRows' container delegation reads data-route as before. Beta 1.136: the row itself comes from routeRowShell above; this function adds the route-specific extras (the tab badge, a created route's Delete).
+function routeRowEl(p) { // Beta 1.94 (audit F-04): rows are built as DOM nodes with textContent, never by interpolating pack data into innerHTML - a pack's name/area are data, and the day route creation lands, a typed name must not be able to become markup. The row shape (classes, badge rule) is unchanged; wireRouteRows' container delegation reads data-route as before. Beta 1.136: the row itself comes from routeRowShell above; this function adds the route-specific extras (the tab-mode loaded check, a created route's Delete).
   const tab = $('routeMenu').classList.contains('tab');
   const user = !SHIPPED_PACK_IDS.has(p.id); // Beta 1.124: a route Andrew created (not a shipped pack) can be deleted - its row is a DIV, not a <button>, because the Delete control is a real button and buttons cannot nest; the row's choose behaviour is unchanged (the container delegation reads data-route on any .routeRow)
   const b = routeRowShell(user ? 'div' : 'button', p.name, p.area + ' · ' + Object.keys(p.roads).length + ' streets'); b.dataset.route = p.id;
-  if (tab && activeRoute && activeRoute.id === p.id) { const bd = document.createElement('span'); bd.className = 'routeBadge'; bd.textContent = 'Currently loaded'; const nm = b.querySelector('.routeName'); const wrap = document.createElement('span'); wrap.className = 'routeNameRow'; nm.replaceWith(wrap); wrap.appendChild(nm); wrap.appendChild(bd); } // Beta 1.207 (Andrew): the badge sits BESIDE the name, inside the name's own centred line - through 1.205 it rode the row's right edge in flow while the name centred across the row's full width, so the pill sat ON the name's end (his screenshot: it covered the tail of 'Route 5W')
   if (user) { const del = document.createElement('button'); del.className = 'routeDel'; del.type = 'button'; del.textContent = 'Delete'; del.addEventListener('click', e => { e.stopPropagation(); askDeleteRoute(p.id); }); b.appendChild(del); } // the Delete tap stops here - it must never read as a tap on the row itself (which would load the route it is about to delete)
+  if (tab && activeRoute && activeRoute.id === p.id) { const ck = document.createElement('img'); ck.className = 'routeCheck'; ck.alt = ''; ck.src = GLYPH_MENU.check; b.appendChild(ck); } // Beta 1.233 (Andrew): the loaded route wears the Glyph disc check at the pill's right edge - appended last so it holds the edge even beside a Delete; the 1.207 "Currently loaded" badge and its centred name-row wrap are gone, and the name + area stay dead centre in the meta column
   return b;
 }
-function renderRouteLists() { document.querySelectorAll('.routeList').forEach(el => { el.replaceChildren(...ROUTE_PACKS.map(routeRowEl)); }); }
+function renderRouteLists() { document.querySelectorAll('.routeList').forEach(el => { el.replaceChildren(...ROUTE_PACKS.map(routeRowEl)); menuListFade(el); }); }
+function menuListFade(el) { // Beta 1.233 (Andrew, the feathered-edges sample): a menu scroll list feathers an edge ONLY while that edge hides more content - 30px of dissolve at a covered end, none at a rested end, both ends dissolving at the same rate (one gradient, mirrored - the symmetry Andrew checked on the samples). Refreshed wherever what an edge covers can change: on scroll, on render, on pane show, on resize.
+  if (!el) return; const max = el.scrollHeight - el.clientHeight; el.classList.toggle('fadeT', el.scrollTop > 1); el.classList.toggle('fadeB', max > 1 && el.scrollTop < max - 1); }
 function wireRouteRows(container, choose) { container.addEventListener('click', e => { const row = e.target.closest('.routeRow'); if (row) choose(row.dataset.route); }); }
-function showRmPane(id) { ['rmMain', 'rmListPane', 'rmCreatePane', 'rmCityListPane', 'rmPhotoPane', 'rmNamePane', 'rmCityPane'].forEach(p => $(p).classList.toggle('on', p === id)); const __away = id !== 'rmMain'; const __bl = $('brandLayer'); if (__bl) __bl.classList.toggle('away', __away); const __cv = $('snowCv'); if (__cv) __cv.classList.toggle('away', __away); } // Beta 1.159 (Andrew, title lifetime rule): the "Snow Route" title - and the snowfall with it - appears ONLY on the main pane; every other pane carries .away on the title's layer and the snow canvas, and returning to rmMain clears it. This function is the ONE pane choke point (every menu navigation in boot and tab mode passes through it), so the rule lives here and nowhere else; in tab mode the brand layer is parked (.off) and the canvas is gone with the splash, so both toggles are inert there.
+function showRmPane(id) { ['rmMain', 'rmListPane', 'rmCreatePane', 'rmCityListPane', 'rmPhotoPane', 'rmNamePane', 'rmCityPane'].forEach(p => $(p).classList.toggle('on', p === id)); menuListFade($('crCityList')); menuListFade($('rmRoutes')); const __away = id !== 'rmMain'; const __bl = $('brandLayer'); if (__bl) __bl.classList.toggle('away', __away); const __cv = $('snowCv'); if (__cv) __cv.classList.toggle('away', __away); } // Beta 1.159 (Andrew, title lifetime rule): the "Snow Route" title - and the snowfall with it - appears ONLY on the main pane; every other pane carries .away on the title's layer and the snow canvas, and returning to rmMain clears it. This function is the ONE pane choke point (every menu navigation in boot and tab mode passes through it), so the rule lives here and nowhere else; in tab mode the brand layer is parked (.off) and the canvas is gone with the splash, so both toggles are inert there.
 function openRouteMenu() { crWarmCityLibrary(); const rm = $('routeMenu'); closeSheets(); showRmPane('rmMain'); rm.classList.add('tab'); renderRouteLists(); rm.classList.add('open'); } // Beta 1.130: showing the route menu warms the city catalogue - Create lives behind this menu, and the download is done or nearly done by the time the city list is tapped (the cold-open stutter fix; crWarmCityLibrary rides the cached promise, so this costs at most one small fetch per session)
 function closeRouteMenu() { const rm = $('routeMenu'); rm.classList.remove('open'); rm.classList.remove('tab'); }
 $('routesBtn').addEventListener('click', () => { if (!tapGuard('routesBtn')) return; if ($('routeMenu').classList.contains('open')) closeRouteMenu(); else openRouteMenu(); });
 $('rmClose').addEventListener('click', closeRouteMenu);
+['crCityList', 'rmRoutes'].forEach(id => { const el = $(id); if (el) el.addEventListener('scroll', () => menuListFade(el), { passive: true }); }); // Beta 1.233: the feather follows the scroll
+window.addEventListener('resize', () => { menuListFade($('crCityList')); menuListFade($('rmRoutes')); }); // Beta 1.233: a taller or shorter window changes what the list edges cover
 $('rmChoose').addEventListener('click', () => { renderRouteLists(); showRmPane('rmListPane'); });
 $('rmCreate').addEventListener('click', () => { crWarmCityLibrary(); showRmPane('rmCreatePane'); }); // Beta 1.124 (Andrew, approved mockup): the Create pane opens on the two doors - Select from list renders the city list fresh on ITS entry (crDoorList), not here. Beta 1.130: this tap IS the create gate opening for BOTH entries (the cold-start picker never passes through openRouteMenu, and the Routes menu shares this button), so the catalogue download starts here - by the Select-from-list tap it is in hand
 $('rmBack').addEventListener('click', () => showRmPane('rmMain'));
