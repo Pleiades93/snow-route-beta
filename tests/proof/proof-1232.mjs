@@ -48,6 +48,17 @@
 // same standing form - debounce cleared, sequence bumped, controller
 // aborted - while the tap-away itself (hide on the outside tap, the
 // map pick still runs) is untouched.
+// Beta 1.234 RE-DERIVATION (the intersection-only round): the street search
+// no longer fetches at all - every answer is on-device - so the checks that
+// pinned the network merge are re-derived to the stronger structural facts
+// (1j: the pair resolves first in crSearchResolve and renders alone; 1k: the
+// landing is synchronous under the sequence guard; 1m: the hostage hazard is
+// gone by construction - crRunSearch holds no fetch and no await). Piece 2's
+// subject (collapse + cross-street labels on NETWORK rows) left the app with
+// the network rows: its checks invert to absence pins, so the machinery
+// cannot creep back - the positive contract (rows are crossings, named by
+// their two streets) is proof-1234's. Piece 1's geometry, piece 3's bar and
+// the seat checks (1o/1p/1q) stand untouched.
 import { readFileSync } from 'node:fs';
 
 const root = new URL('../../', import.meta.url);
@@ -66,27 +77,25 @@ check('1b: a crossing follows the app junction semantics - vertex on the line wi
 check('1c: one pair\'s points dedupe at 15 m and cluster at 30 m', pick.includes('if (distM(p, pt) <= 15) return;') && pick.includes('crClusterPts(pts, 30)'));
 check('1d: a street never crosses itself', pick.includes('if (e[0] === name || seen.has(e[1])) continue;'));
 check('1e: the index is lazy and keyed by the extract stamp', pick.includes('function crXIndex()') && pick.includes('crXIndexCache.stamp === stamp') && pick.includes('const stamp = crCovStamp();'));
-check('1f: no prepared city, no engagement - both geometry pieces gate on the extract boxes', pick.includes('function crIntersectionItem(q)') && (pick.match(/!crCov\.boxes\.length/g) || []).length >= 2);
+check('1f: no prepared city, no engagement - the geometry piece gates on the extract boxes (Beta 1.234: the second gate was the retired label function; the pair path gate stands)', pick.includes('function crIntersectionItem(q)') && (pick.match(/!crCov\.boxes\.length/g) || []).length >= 1);
 check('1g: the two-street parse takes and / & / at / comma forms only', pick.includes("(?:,|&)") && pick.includes('(?:and|at)'));
 check('1h: names match on the full name, the short form, or a spelled-out abbreviation (one stamp-keyed key map, not a per-query rescan; Beta 1.233: the same cache carries the stem map, exact first, stems on a miss)', pick.includes('for (const k of [crNameKey(nm), crNameKey(shortStreetName(nm))]) put(map, k, nm);') && pick.includes('const hit = keys.map.get(key) || keys.stem.get(key);') && pick.includes("rd: 'road'") && pick.includes("ave: 'avenue'"));
 check('1i: the synthetic result carries the two full names and the isect mark', pick.includes("display_name: best.A + ' & ' + best.B") && pick.includes('_isect: true'));
-check('1j: the crossing is computed BEFORE the fetch and leads the rendered list', pick.indexOf('const isect = crIntersectionItem(q);') > -1 && pick.indexOf('const isect = crIntersectionItem(q);') < pick.indexOf("let url = 'https://nominatim.openstreetmap.org/search?format=jsonv2&addressdetails=1&limit=5&q='") && pick.includes('renderCrResults(isect ? [isect].concat(results) : results);'));
-check('1k: a dead network still renders the crossing, under the sequence guard', pick.includes('if (isect && crSearchCurrent(seq)) renderCrResults([isect]);'));
+check('1j (Beta 1.234 re-derived): the pair resolves FIRST in crSearchResolve and renders alone - there is no merged list any more', pick.includes('const pair = crIntersectionItem(q);') && pick.includes('if (pair) return { items: [pair], streets: new Set([pair.display_name.split(\' & \')[0]]) };') && pick.indexOf('const pair = crIntersectionItem(q);') < pick.indexOf('crFragmentStreetItems(q)'));
+check('1k (Beta 1.234 re-derived): the answer lands synchronously under the sequence guard - no network exists to die', pick.includes('const res = crSearchResolve(q);') && pick.includes('if (!crSearchCurrent(seq)) return;') && pick.includes('crRenderRows(res);'));
 check('1l: several clusters resolve to the one nearest the map centre', pick.includes('const ctr = (typeof map !== \'undefined\' && map) ? map.getCenter() : null;'));
-check('1m (fix round, PR #112 Codex P2): the crossing renders BEFORE the network is awaited - a hanging fetch cannot hold it hostage', pick.indexOf('if (isect) renderCrResults([isect]);') > pick.indexOf('const isect = crIntersectionItem(q);') && pick.indexOf('if (isect) renderCrResults([isect]);') < pick.indexOf('const r = await fetch(url'));
+check('1m (fix round, PR #112 Codex P2; Beta 1.234 re-derived): the hostage hazard is gone by construction - the search span holds no fetch call and no await, so no network can hold the crossing back', !pick.slice(pick.indexOf('function crRunSearch(fromTyping) {'), pick.indexOf("document.addEventListener('pointerdown'")).includes('fetch(') && !pick.slice(pick.indexOf('function crRunSearch(fromTyping) {'), pick.indexOf("document.addEventListener('pointerdown'")).includes('await '));
 check('1n (fix round, PR #112 Codex P2): the crossings gather window is padded by the 4 m junction tolerance, so a vertex across a cell boundary is never skipped', pick.includes('const PAD = 4;') && pick.includes('(Math.min(s[0][0], s[1][0]) - PAD / MLAT)') && pick.includes('(Math.max(s[0][1], s[1][1]) + PAD / MLNG)'));
-check('1o (fix round 3, PR #112 Codex P2): selecting a result ENDS the search - the shared row handler clears the pending debounce and bumps/aborts the in-flight search at its head, so neither landing can reopen the box over the chosen destination', pick.includes("b.addEventListener('click', () => {\n      box.classList.remove('on');\n      if (crSearchTimer) { clearTimeout(crSearchTimer); crSearchTimer = null; }\n      crSearchSeq++; if (crSearchCtl) { try { crSearchCtl.abort(); } catch (e) {} crSearchCtl = null; }"));
+check('1o (fix round 3, PR #112 Codex P2): selecting a result ENDS the search - the row handler clears the pending debounce and bumps/aborts the in-flight search at its head, so neither landing can reopen the box over the chosen destination (Beta 1.234: the seat stands in the row factory crResultRowEl, at its shallower nesting)', pick.includes("b.addEventListener('click', () => {\n    box.classList.remove('on');\n    if (crSearchTimer) { clearTimeout(crSearchTimer); crSearchTimer = null; }\n    crSearchSeq++; if (crSearchCtl) { try { crSearchCtl.abort(); } catch (e) {} crSearchCtl = null; }"));
 check('1p (fix round 4, PR #112 Codex P2): the crossing CANDIDATES are bounded to the picked city before clustering - the same crInBox test on crCity.bbox the network landing enforces, so a pair crossing only outside the city yields no item and a pair crossing both ways keeps its inside crossing', pick.includes('const cityBox = (crCity && crCity.bbox) ? crCity.bbox : null;') && pick.includes('if (x.other === B && (!cityBox || crInBox(cityBox, x.pt[0], x.pt[1]))) pts.push(x.pt);'));
 check('1q (fix round 5, PR #112 Codex P2): dismissing the results ENDS the search - the outside-pointer dismissal clears the pending debounce and bumps/aborts the in-flight search as it hides the box, so neither landing can reopen the box over the tap-away', pick.includes("box.classList.remove('on');\n  if (crSearchTimer) { clearTimeout(crSearchTimer); crSearchTimer = null; }\n  crSearchSeq++; if (crSearchCtl) { try { crSearchCtl.abort(); } catch (e) {} crSearchCtl = null; } // Beta 1.232 fix round 5"));
 
-// ---------- Piece 2: collapse + cross-street labels ----------
-check('2a: same-street points within 100 m collapse, first stands (fix round 2: the comparison is by street identity, not the display head)', pick.includes('function crCollapseResults(list)') && pick.includes('k.id === id && distM([la, lo], k.pt) <= 100'));
-check('2b: the collapse runs on the results before rendering', pick.indexOf('results = crCollapseResults(results);') > -1 && pick.indexOf('results = crCollapseResults(results);') < pick.indexOf('renderCrResults(isect ?'));
-check('2c: a row is labelled only when it IS the street (head is the pack name)', pick.includes('if (road && head === road && crCov.byName[road]) nm = road;') && pick.includes('else if (head && crCov.byName[head]) nm = head;'));
-check('2d: the label is the crossing nearest the result point, in short form', pick.includes('return best ? shortStreetName(best.other) : null;'));
-check('2e: the label rides inside the name as a .crNear span, and never on the intersection row', pick.includes("ns.className = 'crNear'; ns.textContent = ' · near ' + near;") && pick.includes('if (!it._isect) { const near = crNearCrossName(it);'));
-check('2f: the .crNear style stands at the area greys in both themes', head.includes('.crNear { font-weight: 400; color: #7a8194; }') && head.includes('body.night .crNear { color: #9aa3b2; }'));
-check('2g (fix round 2, PR #112 Codex P2): the collapse is scoped to street features - a highway way (or route/road relation) earns an identity from address.road or its head; the crossing is explicitly identity-less', pick.includes('function crStreetIdentity(it)') && pick.includes("(cls === 'highway' && (it.osm_type === 'way' || it.osm_type === 'relation')) || (cls === 'route' && it.type === 'road')") && pick.includes('((it.address && it.address.road) || head)') && pick.includes('if (!it || it._isect) return null;'));
+// ---------- Piece 2: collapse + cross-street labels (RETIRED Beta 1.234 - absence pins) ----------
+// The collapse and the ' · near X' label served the NETWORK rows; the network
+// rows are gone, and with them the functions and the style. These pins hold
+// the absence, so the machinery cannot creep back unnoticed.
+check('2a (Beta 1.234): the collapse and label machinery is gone from create-pick', !pick.includes('function crCollapseResults') && !pick.includes('function crStreetIdentity') && !pick.includes('function crNearCrossName') && !pick.includes('crNear'));
+check('2b (Beta 1.234): the .crNear styles are gone from the stylesheet', !head.includes('.crNear'));
 
 // ---------- Piece 3: the monochrome bar ----------
 const SOFT = '3px 4px 8px rgba(20,30,60,.10), -2px -2px 5px rgba(255,255,255,.35), inset 0 1px 1px rgba(255,255,255,.6), inset 0 -2px 4px rgba(90,100,120,.10)';
@@ -106,9 +115,9 @@ check('3g: the first-row tint went neutral and the old blue tint is gone from th
 check('3h: the bar geometry stands (50px pill and bar, 25px radius)', pillLine.includes('width: 50px; height: 50px;') && wrapLine.includes('height: 50px;') && wrapLine.includes('border-radius: 25px;'));
 
 // ---------- Version agreement ----------
-check('V: the #ver label reads Beta 1.232', head.includes('<div class="ver" id="ver">Beta 1.233</div>'));
-check('V: WHATSNEW is the Beta 1.232 entry with the three short bullets', app4.includes("v: 'Beta 1.233', items: [\"Menu buttons are one even height, and your current route wears a white check.\", \"Back, Home and Clear have new icons.\", \"Search results show just the street name - the city and postal code tail is gone.\", \"Crossing searches understand directions: Bloor finds Bloor Street East and Bloor Street West.\", \"The About page is cleaned up - the credit lines are gone.\"]"));
-check('V: the CHANGELOG top entry is Beta 1.232', changelog.split('\n').find(l => l.startsWith('## Beta')) === '## Beta 1.233 — 2026-11-18');
+check('V: the #ver label reads Beta 1.234', head.includes('<div class="ver" id="ver">Beta 1.234</div>'));
+check('V: WHATSNEW is the Beta 1.234 entry with the three short bullets', app4.includes("v: 'Beta 1.234', items: [\"The Select City title now sits level with the map title, and Back sits up at the bottom bar's height.\", \"Street search is intersections only: type a street and its crossings appear as you type.\", \"Search results fade in as they populate.\"]"));
+check('V: the CHANGELOG top entry is Beta 1.234', changelog.split('\n').find(l => l.startsWith('## Beta')) === '## Beta 1.234 — 2026-11-18');
 
 console.log(`proof-1232: ${pass} pass, ${fail} fail`);
 if (fail) process.exit(1);

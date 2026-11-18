@@ -36,7 +36,7 @@ const payload = (map, key, side) => {
 };
 
 // ---------- The bar markup ----------
-check('1a: the bar markup is the pill + bar (back button first, magnifier host, input, clear disc)', head.includes('<div id="createBar"><button id="crExit" aria-label="Back"></button><div id="crSearchWrap"><span id="crSearchIco" aria-hidden="true"></span><input id="crSearchInput" type="search" placeholder="Search a street or address" autocomplete="off"><button id="crClear" aria-label="Clear search"></button></div></div>'));
+check('1a: the bar markup is the pill + bar (back button first, magnifier host, input, clear disc)', head.includes('<div id="createBar"><button id="crExit" aria-label="Back"></button><div id="crSearchWrap"><span id="crSearchIco" aria-hidden="true"></span><input id="crSearchInput" type="search" placeholder="Search an intersection - Weston & Rutherford" autocomplete="off"><button id="crClear" aria-label="Clear search"></button></div></div>'));
 check('1b: the Search button survives nowhere in the parts', !head.includes('crSearchBtn') && !app4.includes('crSearchBtn') && !pick.includes('crSearchBtn'));
 check('1c: the old x tile is gone (no text-glyph exit, no Exit creating title)', !head.includes('title="Exit creating"') && !head.includes('<button id="crExit" title'));
 
@@ -71,7 +71,7 @@ check('5a: the back pill is a pure exit (the discard-guarded exitCreate path, no
 check('5b: the clear disc clears text + results, syncs itself, and keeps the focus in the input', pick.includes("$('crClear').addEventListener('click'") && pick.includes("crSyncClear(); $('crSearchInput').focus();"));
 check('5c: the disc visibility is one function, driven by the input and the stage setter', pick.includes("function crSyncClear() { $('crClear').classList.toggle('on', !!$('crSearchInput').value); }") && pick.includes("if (stage === 'pick') crSyncClear();"));
 check('5d: typing runs the same search at a 300 ms debounce; Enter runs it now', pick.includes('crRunSearch(true); }, 300);') && pick.includes("if (e.key === 'Enter') crSearch();"));
-check('5e: the rows are named by crResultName and wear the set pin (Beta 1.233 supersedes the first-comma split)', pick.includes('function crResultName(it)') && pick.includes("nameEl.textContent = crResultName(it);") && pick.includes("pin.className = 'crPin'; pin.innerHTML = ICONS.pin;") && pick.includes("nameEl.className = 'crName'") && !pick.includes('areaEl') && !pick.includes("const cut = nm.indexOf(',');"));
+check('5e: the rows are named by the crossing display name outright and wear the set pin (Beta 1.234 re-derived: crResultName and the network rows it named are gone - the display name IS the row text)', pick.includes('nameEl.textContent = it.display_name;') && !pick.includes('function crResultName') && pick.includes("pin.className = 'crPin'; pin.innerHTML = ICONS.pin;") && pick.includes("nameEl.className = 'crName'") && !pick.includes('areaEl'));
 
 // ---------- The glyphs ----------
 check('6a: GLYPH_CREATE carries search/cancel/back and NO pin (the rows reuse the set pin)', app4.includes('const GLYPH_CREATE = {') && payload('GLYPH_CREATE', 'search', 'd') !== '' && payload('GLYPH_CREATE', 'cancel', 'd') !== '' && payload('GLYPH_CREATE', 'back', 'd') !== '' && !app4.slice(app4.indexOf('const GLYPH_CREATE = {'), app4.indexOf('};', app4.indexOf('const GLYPH_CREATE = {'))).includes('pin:'));
@@ -85,9 +85,9 @@ check('6b: the six payloads are byte-pinned (set treatment: alpha fills, lossles
 check('6c: renderIcons stamps the bar hosts (theme variants throughout since Beta 1.232 - the magnifier and disc follow the theme like the arrow) and re-stamps row pins', app4.includes('GLYPH_CREATE.back.n : GLYPH_CREATE.back.d') && app4.includes('night ? GLYPH_CREATE.search.n : GLYPH_CREATE.search.d') && app4.includes('night ? GLYPH_CREATE.cancel.n : GLYPH_CREATE.cancel.d') && app4.includes("document.querySelectorAll('.crPin').forEach(el => { el.innerHTML = ICONS.pin; });"));
 
 // ---------- Version agreement ----------
-check('V: the #ver label reads Beta 1.229', head.includes('<div class="ver" id="ver">Beta 1.233</div>'));
-check('V: WHATSNEW is the Beta 1.229 entry with the five short bullets', app4.includes("v: 'Beta 1.233', items: [\"Menu buttons are one even height, and your current route wears a white check.\", \"Back, Home and Clear have new icons.\", \"Search results show just the street name - the city and postal code tail is gone.\", \"Crossing searches understand directions: Bloor finds Bloor Street East and Bloor Street West.\", \"The About page is cleaned up - the credit lines are gone.\"]"));
-check('V: the CHANGELOG top entry is Beta 1.229', changelog.split('\n').find(l => l.startsWith('## Beta')) === '## Beta 1.233 \u2014 2026-11-18');
+check('V: the #ver label reads Beta 1.234', head.includes('<div class="ver" id="ver">Beta 1.234</div>'));
+check('V: WHATSNEW is the Beta 1.234 entry with the three short bullets', app4.includes("v: 'Beta 1.234', items: [\"The Select City title now sits level with the map title, and Back sits up at the bottom bar's height.\", \"Street search is intersections only: type a street and its crossings appear as you type.\", \"Search results fade in as they populate.\"]"));
+check('V: the CHANGELOG top entry is Beta 1.229', changelog.split('\n').find(l => l.startsWith('## Beta')) === '## Beta 1.234 \u2014 2026-11-18');
 
 console.log(`proof-1227: ${pass}/${pass + fail} checks passed`);
 process.exit(fail ? 1 : 0);

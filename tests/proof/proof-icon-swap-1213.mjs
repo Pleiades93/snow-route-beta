@@ -134,8 +134,8 @@ check('F: the PNG favicon links stand behind it', head.includes('<link rel="icon
 // untouched.)
 console.log('V - version surfaces agree');
 const app4 = readFileSync('parts/app4.js', 'utf8');
-check('V: the #ver label reads Beta 1.226', head.includes('<div class="ver" id="ver">Beta 1.233</div>'));
-check('V: WHATSNEW is the Beta 1.226 entry', app4.includes("v: 'Beta 1.233', items:"));
+check('V: the #ver label reads Beta 1.234', head.includes('<div class="ver" id="ver">Beta 1.234</div>'));
+check('V: WHATSNEW is the Beta 1.234 entry', app4.includes("v: 'Beta 1.234', items:"));
 
 console.log(pass + ' pass, ' + fail + ' fail');
 process.exit(fail === 0 ? 0 : 1);

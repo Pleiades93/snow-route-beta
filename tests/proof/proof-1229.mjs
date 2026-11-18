@@ -77,8 +77,8 @@ check('5a: the Ontario bounds + filter exist', pick.includes('const CR_ON_BOUNDS
 check('5b: a result naming a non-Ontario province/state is refused (the border-strip leak is closed)', pick.includes("if (st) return st === 'Ontario';"));
 check('5c: the city search asks Canada-only inside the Ontario bound', pick.includes("countrycodes=ca&viewbox=' + [CR_ON_BOUNDS.w, CR_ON_BOUNDS.n, CR_ON_BOUNDS.e, CR_ON_BOUNDS.s].join(',') + '&bounded=1&q="));
 check('5d: the city search filters its results', pick.includes('.filter(crIsPlace).filter(crInOntario)'));
-check('5e: the street search filters its results on both paths', pick.includes('results = results.filter(crInOntario);'));
-check('5f: the no-city street path carries the Ontario bound, not the old visible-map bias', pick.includes("else url += '&countrycodes=ca&viewbox='") && !pick.includes('&bounded=0'));
+check('5e: the street search bounds its answers to the picked city (Beta 1.234 re-derived: there are no service results to filter - the crossings computation itself drops crossings outside the city box)', pick.includes('xs.filter(x => !cityBox || crInBox(cityBox, x.pt[0], x.pt[1]))') && !pick.includes('results = results.filter(crInOntario);'));
+check('5f: the no-city street path makes no request at all (Beta 1.234 re-derived: the Ontario bound holds by construction - the street search URL builder is gone; the CITY search keeps the live bounded request, proof-1232 check 1p)', !pick.includes("else url += '&countrycodes=ca&viewbox='") && !pick.includes('&bounded=0'));
 
 // ---------- 6: Cancel/Delete wear red ----------
 check('6a: the readout pill wears the destructive red while it reads Cancel', rule('#crHintBtn.danger {').includes('background: #c22f24;') && pick.includes("btn.classList.toggle('danger', btnLabel === 'Cancel')"));
@@ -88,9 +88,9 @@ check('6d: Delete maps wears the in-menu Delete treatment', rule('#stDel {').inc
 check('6e: the confirm No button is red while it reads Cancel', rule('#crModalNo.cancelRed {').includes('color: #e63a2e;') && pick.includes("classList.toggle('cancelRed', !!labels && labels.no === 'Cancel')"));
 
 // ---------- Version agreement ----------
-check('V: the #ver label reads Beta 1.229', head.includes('<div class="ver" id="ver">Beta 1.233</div>'));
-check('V: WHATSNEW is the Beta 1.229 entry with the five short bullets', app4.includes("v: 'Beta 1.233', items: [\"Menu buttons are one even height, and your current route wears a white check.\", \"Back, Home and Clear have new icons.\", \"Search results show just the street name - the city and postal code tail is gone.\", \"Crossing searches understand directions: Bloor finds Bloor Street East and Bloor Street West.\", \"The About page is cleaned up - the credit lines are gone.\"]"));
-check('V: the CHANGELOG top entry is Beta 1.229', changelog.split('\n').find(l => l.startsWith('## Beta')) === '## Beta 1.233 — 2026-11-18');
+check('V: the #ver label reads Beta 1.234', head.includes('<div class="ver" id="ver">Beta 1.234</div>'));
+check('V: WHATSNEW is the Beta 1.234 entry with the three short bullets', app4.includes("v: 'Beta 1.234', items: [\"The Select City title now sits level with the map title, and Back sits up at the bottom bar's height.\", \"Street search is intersections only: type a street and its crossings appear as you type.\", \"Search results fade in as they populate.\"]"));
+check('V: the CHANGELOG top entry is Beta 1.229', changelog.split('\n').find(l => l.startsWith('## Beta')) === '## Beta 1.234 — 2026-11-18');
 
 console.log(`proof-1229: ${pass} passed, ${fail} failed`);
 process.exit(fail ? 1 : 0);

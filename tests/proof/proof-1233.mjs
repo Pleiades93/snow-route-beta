@@ -38,6 +38,16 @@
 // tail built on every row.
 //
 // Run from the repo root:  node tests/proof/proof-1233.mjs
+// Beta 1.234 RE-DERIVATION (the citypane + intersection-search round): B3's
+// geometry literals rolled - the pane gained the HUD-line padding and Back
+// left the flow, so the list margin is the re-derived calc(58px +
+// var(--sab)); the 12px-above-the-X geometry itself is unchanged and is
+// pinned with the new literals in proof-1234 (A1/A3/A4). Section C's
+// subject (crResultName naming NETWORK rows) left the app with the network
+// rows: its checks re-derive to the surviving contract - every row is an
+// on-device crossing named by its display name outright, and the label
+// machinery is absent (proof-1232 piece 2 holds the same absence). A1, A2,
+// B1, B2, B4, B5, B6 stand untouched.
 import { readFileSync } from 'node:fs';
 import { createHash } from 'node:crypto';
 
@@ -90,8 +100,8 @@ check('B2d: a loaded created route clears both right-edge controls', head.includ
 check('B2e: the check payload is byte-pinned', sha(Buffer.from(payload('GLYPH_MENU', 'check'), 'base64')) === 'a629ee0b2959ea4604e566af0f2def1ffc5aeb18653b2407fc65a4b02ee9c9fb');
 
 // ---------- B3: the city list stretch ----------
-check('B3a: the city pane takes the menu full height', head.includes('#rmCityListPane { height: 100%; }'));
-check('B3b: the list flexes and its bottom margin carries the 12px-above-the-X geometry', head.includes('#rmCityListPane #crCityList { max-height: none; flex: 1 1 auto; min-height: 0; margin-bottom: calc(14px + env(safe-area-inset-bottom, 0px)); }'));
+check('B3a: the city pane takes the menu full height (Beta 1.234: the rule now also carries the HUD-line padding - proof-1234 A1 pins the whole rule)', head.includes('#rmCityListPane { height: 100%;'));
+check('B3b: the list flexes to fill the pane (Beta 1.234: the bottom margin rolled to calc(58px + var(--sab)) with Back out of the flow - the 12px-above-the-X geometry is unchanged, pinned in proof-1234 A4)', head.includes('#rmCityListPane #crCityList { max-height: none; flex: 1 1 auto; min-height: 0; margin-bottom: calc(58px + var(--sab)); }'));
 
 // ---------- B4: feathered edges ----------
 check('B4a: the three mask states stand for both lists (one gradient, mirrored)', head.includes('#crCityList.fadeT, #rmRoutes.fadeT {') && head.includes('#crCityList.fadeB, #rmRoutes.fadeB {') && head.includes('#crCityList.fadeT.fadeB, #rmRoutes.fadeT.fadeB {') && (head.match(/transparent 0, #000 30px/g) || []).length >= 4);
@@ -109,18 +119,20 @@ check('B6a: both credit lines are gone from the pane and the stylesheet', !head.
 check('B6b: the approved description stands verbatim', head.includes('Snow Route tracks snow-clearing work route by route. Create a route or pick an existing one, mark streets and each side as you clear them, and see what\'s done and what\'s left at a glance. GPS follow, pace, day and night maps, and offline maps - all stored on your device, no account needed.'));
 check('B6c: the old one-liner is gone', !head.includes('Route tracker for driveway snow clearing'));
 
-// ---------- C: clean rows ----------
-check('C1: rows are named by crResultName (street identity road, else house number + road, else the head)', pick.includes('function crResultName(it)') && pick.includes('if (crStreetIdentity(it)) return a.road || head;') && pick.includes("if (a.house_number && a.road) return a.house_number + ' ' + a.road;"));
-check('C2: the row builds pin + name only - no tail element anywhere', pick.includes('nameEl.textContent = crResultName(it);') && pick.includes('b.append(pin, nameEl);') && !pick.includes('areaEl') && !head.includes('.crArea'));
+// ---------- C: clean rows (Beta 1.234 re-derived) ----------
+// Through 1.233 the rows were network results named by crResultName. The
+// network rows are gone; every row is now an on-device crossing whose
+// display name IS the row text - the name-only rule survives in its
+// strongest form (there is no address tail anywhere in this search).
+check('C1 (Beta 1.234): the row is named by the crossing display name outright - no naming function stands between the data and the row', pick.includes('nameEl.textContent = it.display_name;') && !pick.includes('function crResultName'));
+check('C2: the row builds pin + name only - no tail element anywhere', pick.includes('b.append(pin, nameEl);') && !pick.includes('areaEl') && !head.includes('.crArea'));
 check('C3: the name wraps in the rows instead of truncating', head.includes('#createResults .crName { color: inherit; font-size: 15.5px; white-space: normal; overflow: visible; text-overflow: clip; }'));
-check('C4: the cross-street label still rides inside the name', pick.includes("ns.textContent = ' · near ' + near; nameEl.appendChild(ns);"));
-check('C5a (fix round 1): a named place keeps its own name - the own-name test stands ahead of the house-number branch', pick.includes("const own = (it.name || '').trim() || head;") && pick.includes("if (own && own !== (a.house_number || '') && own.toLowerCase() !== (a.road || '').trim().toLowerCase()) return own;") && pick.indexOf('return own;') > pick.indexOf('if (crStreetIdentity(it)) return a.road || head;') && pick.indexOf('return own;') < pick.indexOf("if (a.house_number && a.road) return a.house_number + ' ' + a.road;"));
-check('C5b (fix round 1): the own name is refused only when it is just the house number or the road itself', pick.includes("own !== (a.house_number || '')") && pick.includes("own.toLowerCase() !== (a.road || '').trim().toLowerCase()"));
+check('C4 (Beta 1.234): the cross-street label is gone with the network rows it labelled', !pick.includes('crNear') && !head.includes('.crNear'));
 
 // ---------- V: version agreement ----------
-check('V: the #ver label reads Beta 1.233', head.includes('<div class="ver" id="ver">Beta 1.233</div>'));
-check('V: WHATSNEW is the Beta 1.233 entry with the five short bullets', app4.includes("v: 'Beta 1.233', items: [\"Menu buttons are one even height, and your current route wears a white check.\""));
-check('V: the CHANGELOG top entry is Beta 1.233', changelog.split('\n').find(l => l.startsWith('## Beta')) === '## Beta 1.233 — 2026-11-18');
+check('V: the #ver label reads Beta 1.234', head.includes('<div class="ver" id="ver">Beta 1.234</div>'));
+check('V: WHATSNEW is the Beta 1.234 entry with the three short bullets', app4.includes("v: 'Beta 1.234', items: [\"The Select City title now sits level with the map title, and Back sits up at the bottom bar's height.\""));
+check('V: the CHANGELOG top entry is Beta 1.234', changelog.split('\n').find(l => l.startsWith('## Beta')) === '## Beta 1.234 — 2026-11-18');
 
 console.log(`proof-1233: ${pass} pass, ${fail} fail`);
 process.exit(fail === 0 ? 0 : 1);
