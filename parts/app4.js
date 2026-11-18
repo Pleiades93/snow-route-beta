@@ -892,7 +892,7 @@ $('stDel').addEventListener('click', async () => {
 });
 // ---- About ----
 const WHATSNEW = { // the curated in-app notes: plain words, LATEST RELEASE ONLY (Beta 1.114, Andrew: the accumulated list cluttered the About pane). A release REPLACES this entry with its own in the same change - it never accumulates; the full history lives in CHANGELOG.md, not the app
-  v: 'Beta 1.234', items: ["The Select City title now sits level with the map title, and Back sits up at the bottom bar's height.", "Street search is intersections only: type a street and its crossings appear as you type.", "Search results fade in as they populate."] }; // Beta 1.223 (Andrew): What's New entries are SHORT from now on - point form, one short plain line each, no prose paragraphs, no em dashes
+  v: 'Beta 1.235', items: ["The city step is cleaner: fewer words, more air, and a search pill with real depth.", "City search suggests as you type: a few letters of a city name are enough."] }; // Beta 1.223 (Andrew): What's New entries are SHORT from now on - point form, one short plain line each, no prose paragraphs, no em dashes
 
 function renderAbout() {
   const cur = $('ver').textContent.trim();

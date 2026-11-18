@@ -130,9 +130,9 @@ check('R3: crRenderHint\'s tail carries the second trigger (the prepare completi
 check('R4: a refresh render is a continuation, never a fresh populate - the renderer takes cont and the freshness rule yields to it', pick.includes('function crRenderRows(res, cont)') && pick.includes('const fresh = !cont && (') && pick.includes('crRenderRows(res, cont);'));
 
 // ---------- V: version agreement ----------
-check('V: the #ver label reads Beta 1.234', head.includes('<div class="ver" id="ver">Beta 1.234</div>'));
-check('V: WHATSNEW is the Beta 1.234 entry with the three short bullets', app4.includes("v: 'Beta 1.234', items: [\"The Select City title now sits level with the map title, and Back sits up at the bottom bar's height.\", \"Street search is intersections only: type a street and its crossings appear as you type.\", \"Search results fade in as they populate.\"]"));
-check('V: the CHANGELOG top entry is Beta 1.234', changelog.split('\n').find(l => l.startsWith('## Beta')) === '## Beta 1.234 — 2026-11-18');
+check('V: the #ver label reads Beta 1.235', head.includes('<div class="ver" id="ver">Beta 1.235</div>'));
+check('V: WHATSNEW is the Beta 1.235 entry with the three short bullets', app4.includes("v: 'Beta 1.235', items: [\"The city step is cleaner: fewer words, more air, and a search pill with real depth.\", \"City search suggests as you type: a few letters of a city name are enough.\"]"));
+check('V: the CHANGELOG top entry is Beta 1.234', changelog.split('\n').find(l => l.startsWith('## Beta')) === '## Beta 1.235 — 2026-11-18');
 
 console.log(`proof-1234: ${pass} pass, ${fail} fail`);
 process.exit(fail === 0 ? 0 : 1);

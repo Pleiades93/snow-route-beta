@@ -49,8 +49,8 @@ check('1f: the remembered-area write stays (the city list sort + last-used tag s
 // ---------- 2: the pane - note gone, field at the doors' level ----------
 check('2a: the city pane carries no note element', !pane.includes('rmNote'));
 check('2b: the note text is gone from the page', !head.includes("loads that area's street shapes once"));
-check('2c: the pane keeps its title and its search field', pane.includes('What city will you be cleaning in?') && pane.includes('id="crCityInput"'));
-check('2d: the pane rides the measured offset to the first-door level', rule('#rmCityPane {').includes('top: -54.5px;'));
+check('2c: the pane keeps its title and its search field (Beta 1.235 roll: the title reworded to Andrew\'s Option 3 - the claim, a title and the field stand in the pane, is unchanged)', pane.includes('What city are you cleaning in?') && pane.includes('id="crCityInput"'));
+check('2d: the pane rides the measured offset to the first-door level (Beta 1.235 roll: -54.5 -> -34.5, re-derived - the 1.235 stack above the field is a net 20px shorter (the City label left, the pill gained an 8px top margin) and the offset gives exactly those 20px back; re-measured in the rendered app: field top == first door top)', rule('#rmCityPane {').includes('top: -34.5px;'));
 
 // ---------- 3: the city-search motion ----------
 check('3a: the results area animates its height on the open easing', rule('#crCityResults {').includes('overflow: hidden;') && rule('#crCityResults {').includes('transition: height 420ms var(--ease-open);'));
@@ -88,9 +88,9 @@ check('6d: Delete maps wears the in-menu Delete treatment', rule('#stDel {').inc
 check('6e: the confirm No button is red while it reads Cancel', rule('#crModalNo.cancelRed {').includes('color: #e63a2e;') && pick.includes("classList.toggle('cancelRed', !!labels && labels.no === 'Cancel')"));
 
 // ---------- Version agreement ----------
-check('V: the #ver label reads Beta 1.234', head.includes('<div class="ver" id="ver">Beta 1.234</div>'));
-check('V: WHATSNEW is the Beta 1.234 entry with the three short bullets', app4.includes("v: 'Beta 1.234', items: [\"The Select City title now sits level with the map title, and Back sits up at the bottom bar's height.\", \"Street search is intersections only: type a street and its crossings appear as you type.\", \"Search results fade in as they populate.\"]"));
-check('V: the CHANGELOG top entry is Beta 1.229', changelog.split('\n').find(l => l.startsWith('## Beta')) === '## Beta 1.234 — 2026-11-18');
+check('V: the #ver label reads Beta 1.235', head.includes('<div class="ver" id="ver">Beta 1.235</div>'));
+check('V: WHATSNEW is the Beta 1.235 entry with the three short bullets', app4.includes("v: 'Beta 1.235', items: [\"The city step is cleaner: fewer words, more air, and a search pill with real depth.\", \"City search suggests as you type: a few letters of a city name are enough.\"]"));
+check('V: the CHANGELOG top entry is Beta 1.229', changelog.split('\n').find(l => l.startsWith('## Beta')) === '## Beta 1.235 — 2026-11-18');
 
 console.log(`proof-1229: ${pass} passed, ${fail} failed`);
 process.exit(fail ? 1 : 0);

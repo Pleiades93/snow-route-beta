@@ -130,9 +130,9 @@ check('C3: the name wraps in the rows instead of truncating', head.includes('#cr
 check('C4 (Beta 1.234): the cross-street label is gone with the network rows it labelled', !pick.includes('crNear') && !head.includes('.crNear'));
 
 // ---------- V: version agreement ----------
-check('V: the #ver label reads Beta 1.234', head.includes('<div class="ver" id="ver">Beta 1.234</div>'));
-check('V: WHATSNEW is the Beta 1.234 entry with the three short bullets', app4.includes("v: 'Beta 1.234', items: [\"The Select City title now sits level with the map title, and Back sits up at the bottom bar's height.\""));
-check('V: the CHANGELOG top entry is Beta 1.234', changelog.split('\n').find(l => l.startsWith('## Beta')) === '## Beta 1.234 — 2026-11-18');
+check('V: the #ver label reads Beta 1.235', head.includes('<div class="ver" id="ver">Beta 1.235</div>'));
+check('V: WHATSNEW is the Beta 1.235 entry (its first short bullet)', app4.includes("v: 'Beta 1.235', items: [\"The city step is cleaner: fewer words, more air, and a search pill with real depth.\""));
+check('V: the CHANGELOG top entry is Beta 1.234', changelog.split('\n').find(l => l.startsWith('## Beta')) === '## Beta 1.235 — 2026-11-18');
 
 console.log(`proof-1233: ${pass} pass, ${fail} fail`);
 process.exit(fail === 0 ? 0 : 1);
