@@ -269,6 +269,17 @@ ok('F4 the failure-probe draft discards cleanly and create mode exits', F3.creat
 // 'slowville' after 1500 ms - long after a newer 'borde' search has
 // rendered - so the stale-answer guard (sequence token + abort) is what
 // keeps the slow answer out of the dropdown.
+// Beta 1.234 RE-DERIVATION: the street search is intersections only and
+// answers ON-DEVICE - it makes no Nominatim query at all, so the stub now
+// stands as the witness: __nomCalls must stay EMPTY through every check
+// below (any call is a regression), and the stale-answer hazard is gone
+// by construction (no answer is ever in flight). The debounce discipline
+// is graded by a render counter instead (a MutationObserver over the
+// results box: one batched callback per synchronous render). The fixture
+// answer for 'borde' is the one crossing this fixture city holds -
+// Bordeaux Drive ends at Alderson Avenue (a shared node, the app's
+// vertex junction rule) - so the row is 'Bordeaux Drive & Alderson
+// Avenue', where through 1.233 it was the service's Bordeaux Drive row.
 const installStub3 = `(() => {
   const prev = window.fetch.bind(window);
   window.__nomCalls = [];
@@ -294,30 +305,33 @@ await ev(`openRouteMenu()`);
 await ev(`document.getElementById('rmCreate').click()`);
 await ev(`document.getElementById('crDoorManual').click()`);
 await pickCityVaughan(); // Beta 1.121: the city step precedes the street search (its query passed through unrecorded, so G1's call log still grades only the street search)
+await ev(`(() => { window.__rowRenders = 0; new MutationObserver(() => { window.__rowRenders++; }).observe(document.getElementById('createResults'), { childList: true }); return true; })()`); // Beta 1.234: the render counter (see the section note) - installed before the burst, so G1 grades the burst's renders themselves
 for (const p of ['b', 'bo', 'bor', 'bord']) { await ev(typeText(p)); await sleep(120); }
 await ev(typeText('borde'));
 const sgRows = await poll(`document.querySelectorAll('#createResults .crResult').length === 1`, 8000).catch(() => false);
-await sleep(700); // any second debounced query would have fired by now
-const SG1 = await J(`({ calls: window.__nomCalls.slice(), rows: document.querySelectorAll('#createResults .crResult').length, txt: (document.querySelector('#createResults .crResult') || {}).textContent || '' })`);
-ok('G1 typing "borde" keystroke by keystroke fires exactly ONE debounced query (for the full text) and renders its row | ' + JSON.stringify(SG1),
-  sgRows === true && SG1.calls.length === 1 && SG1.calls[0] === 'borde' && SG1.rows === 1 && SG1.txt.indexOf('Bordeaux Drive') >= 0);
+await sleep(700); // any second debounced render would have fired by now
+const SG1 = await J(`({ calls: window.__nomCalls.slice(), renders: window.__rowRenders, rows: document.querySelectorAll('#createResults .crResult').length, txt: (document.querySelector('#createResults .crResult') || {}).textContent || '' })`);
+ok('G1 (Beta 1.234 re-derived) typing "borde" keystroke by keystroke fires exactly ONE debounced render (for the full text), renders its crossing row, and makes NO network query at all | ' + JSON.stringify(SG1),
+  sgRows === true && SG1.calls.length === 0 && SG1.renders === 1 && SG1.rows === 1 && SG1.txt.indexOf('Bordeaux Drive') >= 0);
 await ev(typeText('slowville'));
-await poll(`window.__nomCalls.indexOf('slowville') >= 0`, 8000);
+await poll(`document.querySelectorAll('#createResults .crHintRow').length === 1`, 8000); // 'slowville' matches no street in the extract: the hint is its whole answer, rendered on-device
 await ev(typeText('borde'));
 await poll(`document.querySelectorAll('#createResults .crResult').length === 1 && document.querySelector('#createResults .crResult').textContent.indexOf('Bordeaux') >= 0`, 8000);
-await sleep(1800); // the slow 'slowville' answer lands inside this window - and must be dropped
+await sleep(1800); // the old slow-answer window: through 1.233 the stub's slow 'slowville' answer landed inside it and the stale guard had to drop it - now nothing is in flight, and the row must simply stand
 const SG2 = await J(`({ txt: (document.querySelector('#createResults .crResult') || {}).textContent || '', calls: window.__nomCalls.slice() })`);
-ok('G2 a slow earlier answer arriving after a newer search does NOT overwrite the newer results (stale guard) | ' + JSON.stringify(SG2),
-  SG2.txt.indexOf('Bordeaux') >= 0 && SG2.txt.indexOf('Slowville') < 0 && SG2.calls.join() === 'borde,slowville,borde');
+ok('G2 (Beta 1.234 re-derived) no answer exists outside the device, so nothing can overwrite a newer search - the Bordeaux row stands through the old slow-answer window and the stub recorded no query | ' + JSON.stringify(SG2),
+  SG2.txt.indexOf('Bordeaux') >= 0 && SG2.txt.indexOf('Slowville') < 0 && SG2.calls.length === 0);
+await ev(`document.getElementById('crClear').click()`); // start from a closed box, so only Enter can open it inside the window below
+await sleep(200);
 await ev(typeText('bor'));
 await sleep(120);
 await ev(`document.getElementById('crSearchInput').dispatchEvent(new KeyboardEvent('keydown', { key: 'Enter', bubbles: true }))`);
-await sleep(250); // well inside the 300 ms debounce (Beta 1.227): only Enter can have queried
-const SG3a = await J(`({ calls: window.__nomCalls.slice() })`);
-await sleep(700); // the cancelled debounce must NOT fire a duplicate
-const SG3 = await J(`({ calls: window.__nomCalls.slice() })`);
-ok('G3 Enter runs the typed query immediately and cancels the pending debounce (no duplicate "bor" query) | ' + JSON.stringify(SG3),
-  SG3a.calls.filter(c => c === 'bor').length === 1 && SG3.calls.filter(c => c === 'bor').length === 1);
+await sleep(80); // 200 ms after the keystroke - well inside the 300 ms debounce (Beta 1.227): only Enter can have rendered
+const SG3a = await J(`({ on: document.getElementById('createResults').classList.contains('on'), rows: document.querySelectorAll('#createResults .crResult').length, calls: window.__nomCalls.slice() })`);
+await sleep(800); // the cancelled debounce must NOT fire a second render that disturbs the first
+const SG3 = await J(`({ on: document.getElementById('createResults').classList.contains('on'), rows: document.querySelectorAll('#createResults .crResult').length, txt: (document.querySelector('#createResults .crResult') || {}).textContent || '', calls: window.__nomCalls.slice() })`);
+ok('G3 (Beta 1.234 re-derived) Enter runs the typed query immediately (the box is open with its row before the debounce could fire) and the cancelled debounce never lands a duplicate - the same single row stands, still with no network query | ' + JSON.stringify(SG3),
+  SG3a.on === true && SG3a.rows === 1 && SG3.on === true && SG3.rows === 1 && SG3.txt.indexOf('Bordeaux Drive') >= 0 && SG3.calls.length === 0);
 await ev(`document.getElementById('crClear').click()`); // Beta 1.227: the clear disc empties the search - the old x's first job, on its own control now; covered in full in section (i)
 await sleep(200);
 await ev(`document.getElementById('crExit').click()`); // the back pill exits (the draft is empty, so no confirm)

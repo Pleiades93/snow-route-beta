@@ -57,6 +57,7 @@ function crRenderHint() { // the ONE writer of the pick-stage hint + its action 
   if (btnLabel && hint.classList.contains('on')) { const hb = hint.getBoundingClientRect(); btn.style.top = Math.round(hb.bottom + 8) + 'px'; } else btn.style.top = '';
   const cc = $('crCityChange'); if (cc) { if (crCity) { // Beta 1.223 (Andrew, option E): the city control is the slim bar above Done - 'Working in <City> · change', the city bold, 'change' in the app's link blue (var(--link) via .crCityGo). Built from text nodes: the city name is typed text and never becomes markup
       cc.textContent = ''; const b = document.createElement('b'); b.textContent = crCity.name; const go = document.createElement('span'); go.className = 'crCityGo'; go.textContent = 'change'; cc.append('Working in ', b, ' · ', go); cc.style.display = ''; } else cc.style.display = 'none'; }
+  crRefreshSearch(); // Beta 1.234 fix round 3 (PR #114, Codex P2): every coverage landing renders this hint as it lands (the prepare completions, the grid pump, the saved-city fold's rebuild), so the open street search refreshes with it - see crRefreshSearch at crRunSearch for the guards that keep a dismissed search dismissed
 }
 function crAddStreet(name, segs) { // Beta 1.144 (Package C, DA-04): the draft keys on the FULL map name - through 1.143 the key was shortStreetName(osmName), so two distinct streets sharing a shortened name (Addington Avenue / Addington Place) collided: only the first could ever enter a draft, and tapping the second opened the first's sectors. shortStreetName survives ONLY as the display form (toasts, rows, the sector bar's title); every key in the draft - roads, primaries, sectors, parts, pending - is the full name, and the saved pack inherits the full names, so both streets can live in one route.
   draft.roads[name] = segs; draft.osmNames[name] = name; crGeomGen++; // a tapped street joins as a SECONDARY (fork 3) - flip it to PRIMARY in the list if it is one. Beta 1.135 (N3): the generation bump is the draft-geometry cache's invalidation for this in-place join (see crDraftGeom)
@@ -374,7 +375,7 @@ function crIsPlace(it) { // populated places only: a city/town/village place, or
   if (cls === 'boundary') return it.type === 'administrative';
   return false;
 }
-const CR_ON_BOUNDS = { s: 41.6, n: 56.9, w: -95.2, e: -74.3 }; // Beta 1.229 (Andrew's standing rule): EVERY creating-a-route search returns Ontario, Canada results only. This rectangle is the query bound, and the client filter's bound for results that name no province or state (crInOntario below).
+const CR_ON_BOUNDS = { s: 41.6, n: 56.9, w: -95.2, e: -74.3 }; // Beta 1.229 (Andrew's standing rule): the CITY search returns Ontario, Canada results only. This rectangle is the query bound, and the client filter's bound for results that name no province or state (crInOntario below). (Beta 1.234: the STREET search asks no service at all - it answers from the loaded extract - so this bound's remaining consumer is the city search.)
 function crInOntario(it) { // a search result survives only as an Ontario result - the service's bounding parameters are a request, this filter is the guarantee (the Beta 1.153 city-bound lesson, applied province-wide). A result that NAMES its province or state is judged by its own word, and only Ontario survives: the rectangle alone leaks the border strip (Aurora, Illinois stands at 41.76 degrees north, inside the rectangle's 41.6 south edge - the exact wrong-Aurora trap this round exists to close), and Gatineau's own word (Quebec) keeps it out the same way. A result naming neither is judged by the rectangle.
   if (!it) return false;
   const st = it.address && it.address.state;
@@ -1006,13 +1007,16 @@ $('crSearchInput').addEventListener('keydown', e => { if (e.key === 'Enter') crS
 // the Search button - his call then; on the phone he asked for
 // suggestions while typing, and this supersedes it. The volume stays
 // honest: a keystroke burst becomes ONE query (300 ms debounce since
-// Beta 1.227, 3+ characters), a newer query aborts and supersedes the
-// one in flight (sequence token + AbortController, so a slow earlier
-// answer can never overwrite newer results), and Enter still runs the
-// typed query immediately. Results are biased toward the visible map
-// (viewbox, bounded=0 - a bias, never a restriction). Beta 1.227: the
-// Search button is GONE - the bar is one blue pill now - so typing and
-// Enter are the only triggers, both onto this same crRunSearch path.
+// Beta 1.227, 3+ characters), and Enter still runs the typed query
+// immediately. Beta 1.227: the Search button is GONE - the bar is one
+// blue pill now - so typing and Enter are the only triggers, both onto
+// this same crRunSearch path. Beta 1.234: the answers are computed
+// on-device and land synchronously (see crRunSearch), so there is no
+// in-flight answer left to abort or supersede - the sequence token
+// below remains the family's invalidation seat (the clear disc, the
+// short-query return, the row pick, the outside tap and the flow close
+// all bump it, and a pending debounce is cleared at the same seats, so
+// a dismissed search can never reopen the box).
 let crSearchTimer = null, crSearchSeq = 0, crSearchCtl = null;
 function crSyncClear() { $('crClear').classList.toggle('on', !!$('crSearchInput').value); } // Beta 1.227: the clear disc exists only while the input holds text
 $('crClear').addEventListener('click', () => { // Beta 1.227 (Andrew): the clear disc empties the text and the results and keeps the focus in the input - it never exits anything. The body is the old ✕'s first-press job (Beta 1.120), moved whole onto its own control
@@ -1047,32 +1051,108 @@ function crSearch() { // Enter: cancel any pending debounce and run the typed qu
 // crCitySearchSeqCurrent(seq). (Beta 1.229: the last-city lookup family -
 // crCityLookupCurrent and its generation - retired with the shortcut.)
 function crSearchCurrent(seq) { return seq === crSearchSeq; } // the street-search family's current-check: the sequence ALONE - no session, by design
-async function crRunSearch(fromTyping) {
+function crRunSearch(fromTyping, cont) {
   const q = $('crSearchInput').value.trim(); if (!q) return;
   const seq = ++crSearchSeq;
-  if (crSearchCtl) { try { crSearchCtl.abort(); } catch (e) {} }
-  const ctl = (typeof AbortController !== 'undefined') ? new AbortController() : null; crSearchCtl = ctl;
-  const isect = crIntersectionItem(q); // Beta 1.232 (piece 1): a two-street query's crossing is resolved from the loaded extract BEFORE the network is even asked - it costs a cache hit by the second keystroke burst and never waits on Nominatim
-  if (isect) renderCrResults([isect]); // Beta 1.232 fix round (PR #112, Codex P2): the crossing renders NOW, before the network is awaited - a fetch that hangs (never resolves, never rejects; the search carries no timeout) must not hold the device's own answer hostage. It renders in the same tick that bumped the sequence, so it is current by construction; the landing below re-renders it at the head of the merged list under crSearchCurrent(seq), and a superseded query's early row is replaced by the newer query's own render, never merged into it
-  try {
-    let url = 'https://nominatim.openstreetmap.org/search?format=jsonv2&addressdetails=1&limit=5&q=' + encodeURIComponent(q);
-    const scoped = !!(crCity && crCity.bbox); // Beta 1.153 (Andrew): with a city loaded, suggestions come from THAT city only. The 1.121 bias (bounded=0: "a bias, never a restriction") becomes a bound (bounded=1) and the returned list is ALSO filtered to the box below, so a service that ignores the bound cannot leak an out-of-city suggestion.
-    try { // Beta 1.121: with a city chosen, the street search centres on the CITY (its Nominatim bounding box) - preparation and search live inside the city he picked. Beta 1.229 (Andrew's standing rule): with NO city loaded, the search is bounded to ONTARIO - the old visible-map bias (bounded=0 over whatever the map happened to show) could return the whole world; the province bound replaces it, and the Ontario filter below guarantees it on the results themselves.
-      if (scoped) url += '&viewbox=' + [crCity.bbox.w, crCity.bbox.n, crCity.bbox.e, crCity.bbox.s].map(v => +v.toFixed(5)).join(',') + '&bounded=1';
-      else url += '&countrycodes=ca&viewbox=' + [CR_ON_BOUNDS.w, CR_ON_BOUNDS.n, CR_ON_BOUNDS.e, CR_ON_BOUNDS.s].join(',') + '&bounded=1';
-    } catch (e) {}
-    const r = await fetch(url, { headers: { 'Accept': 'application/json' }, signal: ctl ? ctl.signal : undefined });
-    if (!r.ok) throw new Error('search HTTP ' + r.status);
-    const list = await r.json();
-    if (!crSearchCurrent(seq)) return; // superseded while in flight - a newer query owns the dropdown
-    let results = Array.isArray(list) ? list : [];
-    if (scoped) results = results.filter(it => { const la = parseFloat(it.lat), lo = parseFloat(it.lon); return isFinite(la) && isFinite(lo) && crInBox(crCity.bbox, la, lo); }); // Beta 1.153: the city bound, enforced on the results themselves
-    results = results.filter(crInOntario); // Beta 1.229: Ontario-only on the results themselves, on BOTH paths - belt-and-braces on the city path, the guarantee on the no-city path
-    results = crCollapseResults(results); // Beta 1.232 (piece 2): near-duplicate points of one street merge before anything renders
-    renderCrResults(isect ? [isect].concat(results) : results); // Beta 1.232 (piece 1): the on-device crossing leads the list
-  } catch (e) {
-    if (isect && crSearchCurrent(seq)) renderCrResults([isect]); // Beta 1.232: the device's own answer survives a dead network; without a crossing, a failure stays silent exactly as before
+  const res = crSearchResolve(q);
+  if (!crSearchCurrent(seq)) return; // the search is synchronous now, so nothing can supersede it mid-run - the check stands because the family's convention (stated above) is that every landing answers to its sequence, and the seats that bump it remain the box's only closers
+  crRenderRows(res, cont);
+}
+function crRefreshSearch() { // Beta 1.234 fix round 3 (PR #114, Codex P2): coverage landing under an OPEN search re-runs it. A search run before its city's extract finished landing answered against the empty or partial coverage - 'No crossing found', or a crossings list missing the streets still in flight - and through this fix nothing recomputed it: only typing and Enter invoked crRunSearch, so the stale answer stood until the query was edited (in 1.232 the network fallback masked this; with the network gone the stale state is sticky). The refresh triggers are the coverage paths themselves: crCovMerge calls this as it folds each extract in, and crRenderHint's tail calls it too, because every prepare completion path renders the hint as it lands coverage (and the saved-city fold in crCityPrepare rebuilds the index directly, then renders the hint). The guards keep a dismissed search dismissed: every closing seat (the row pick, the clear disc, the outside tap, the short-input return, the flow close) removes the box's 'on' as it bumps the sequence, so a closed box never reopens from here - and the re-run itself routes through crRunSearch, whose own sequence bump and current-check are the family's operative guard, never around them. An empty query has no box and nothing to refresh. The render is a CONTINUATION (cont), not a fresh populate: the same search, its answer arriving - entering rows take the 30ms re-populate stagger. No loop exists: the search reads coverage and merges none, so a refresh can never trigger itself.
+  if (!creating) return;
+  const box = $('createResults');
+  if (!box.classList.contains('on')) return; // dismissed stays dismissed (see above)
+  if (!$('crSearchInput').value.trim()) return; // nothing typed, nothing to refresh
+  crRunSearch(false, true);
+}
+// Beta 1.234 (Andrew): THE STREET SEARCH IS INTERSECTIONS ONLY, ANSWERED
+// ENTIRELY ON-DEVICE. Through 1.233 this search asked Nominatim and merged
+// its points with the on-device crossing - and a road name alone names no
+// place: a bare 'Weston' returned four bus stops named Weston and no Weston
+// Road at all, and 'Weston Road' returned the same road at four points
+// 0.7-1.5 km apart, which no merge can honestly collapse. Andrew's design:
+// the search speaks only in intersections, because a crossing IS a place.
+// The network fetch is GONE from this search (the CITY search in this same
+// file is a different search and is untouched) - which also retires the
+// recorded debt that this path's fetch carried no timeout and could hang a
+// render. Every answer below is computed from the loaded extract by the
+// 1.232 machinery (crIntersectionItem / crCrossingsOf), so the search works
+// offline and never invents a crossing the device does not hold.
+// crSearchCtl stands retired with the fetch: it is never created any more,
+// and the five invalidation seats keep their abort clause, which no-ops on
+// null exactly as it did whenever no fetch was in flight - their sequence
+// bump is the operative guard, and the seats' text is pinned by the
+// 1.232/1.233 proofs, so the idiom retires here, at its source, only.
+function crSearchResolve(q) { // -> { items, streets } for a render, or { hint } when the live filter yields nothing
+  const pair = crIntersectionItem(q); // a fully resolving pair narrows to exactly its crossing (the 1.232 path, unchanged)
+  if (pair) return { items: [pair], streets: new Set([pair.display_name.split(' & ')[0]]) };
+  const parts = crParseTwoStreets(q);
+  const got = parts ? crFragmentPairItems(parts[0], parts[1]) : crFragmentStreetItems(q);
+  if (got.items.length) return got;
+  return { hint: crCity ? 'No crossing found - try two streets, like Weston & Rutherford' : 'Choose a city first, then search an intersection' }; // Beta 1.234 (Andrew): the hint is the whole answer when nothing matches - with no city loaded it names the missing step; with one loaded it teaches the intersection form. A street that resolves never sees a hint: it shows its crossings.
+}
+function crMatchFragment(frag) { // the pack names a typed fragment can mean, best first. A fragment matches when it is a prefix of the street's full name, of the app's short form of it, or of any word of the full name - all on the pair path's normalized keys (crNameKey: lower-case, abbreviations spelled out), so 'Wes' finds Weston Road, 'Ruther' finds Rutherford Road and 'Lang' finds Langstaff Road, live, on incomplete words. Order is closeness: an exact name (or short form) first, then full/short prefixes, then word hits; shorter names before longer within a class, alphabetical on a tie - the grouped list renders in this order and the 40-row cap keeps the closest when it cuts.
+  if (!crCov || !crCov.byName) return [];
+  const key = crNameKey(frag); if (!key) return [];
+  const scored = [];
+  for (const nm of Object.keys(crCov.byName)) {
+    const full = crNameKey(nm), short = crNameKey(shortStreetName(nm));
+    let s = -1;
+    if (full === key || short === key) s = 0;
+    else if (full.startsWith(key) || short.startsWith(key)) s = 1;
+    else if (full.split(' ').some(w => w.startsWith(key))) s = 2;
+    if (s >= 0) scored.push({ nm, s, len: full.length });
   }
+  scored.sort((a, b) => a.s - b.s || a.len - b.len || (a.nm < b.nm ? -1 : a.nm > b.nm ? 1 : 0));
+  return scored.map(x => x.nm);
+}
+function crAlongSorter(name) { // a crossing's position ALONG one street, as a sort key: the street's own points (every way the extract holds for it) are centred, their dominant direction is taken (the first principal axis of the point cloud, in scaled metres), and a point's key is its projection on that axis. Two plainer ideas failed on the real packs first, in this round's rendered QA: ordering the stitched runs in discovery order scrambles a fragmented road (Weston Road is 20 runs in the Vaughan pack), and chaining the runs end to end is defeated by the road's parallel pieces - divided carriageways and service runs carrying the same name - whose ends chain backwards and interleave the order. A through road never doubles back against its own dominant direction, so the axis orders its crossings in drive order; on a short or looping street the order is approximate and harmless - the list is a finding aid, and every row still names a true crossing.
+  const ways = (crCov && crCov.byName && crCov.byName[name]) || [];
+  let n = 0, mx = 0, my = 0;
+  for (const w of ways) for (const p of w.pts) { mx += p[1]; my += p[0]; n++; }
+  if (!n) return () => 0;
+  mx /= n; my /= n;
+  const kx = 111320 * Math.cos(my * Math.PI / 180), ky = 110540; // degree-to-metre scales at the street's own latitude, so the axis is the ground's, not the grid's
+  let sxx = 0, syy = 0, sxy = 0;
+  for (const w of ways) for (const p of w.pts) { const dx = (p[1] - mx) * kx, dy = (p[0] - my) * ky; sxx += dx * dx; syy += dy * dy; sxy += dx * dy; }
+  const th = 0.5 * Math.atan2(2 * sxy, sxx - syy); // the major axis of the covariance ellipse
+  const ax = Math.cos(th), ay = Math.sin(th);
+  return pt => (pt[1] - mx) * kx * ax + (pt[0] - my) * ky * ay;
+}
+function crCrossingRows(name) { // [{ it, other }] - every crossing of ONE street as intersection rows, ordered along the road, one row per cross street (a winding pair can cross twice; the first along the road stands)
+  const xs = crCrossingsOf(name); if (!xs.length) return [];
+  const cityBox = (crCity && crCity.bbox) ? crCity.bbox : null; // the pair path's bound (Beta 1.232 fix round 4): the extract's ways run past the boundary, so a crossing outside the picked city is not offered - the same rule, applied to the list
+  const along = crAlongSorter(name);
+  const sorted = xs.filter(x => !cityBox || crInBox(cityBox, x.pt[0], x.pt[1])).map(x => ({ other: x.other, pt: x.pt, a: along(x.pt) })).sort((p, r) => p.a - r.a);
+  const seen = new Set(), rows = [];
+  for (const x of sorted) { if (seen.has(x.other)) continue; seen.add(x.other); rows.push({ it: { lat: String(x.pt[0]), lon: String(x.pt[1]), display_name: name + ' & ' + x.other, address: {}, _isect: true }, other: x.other }); }
+  return rows;
+}
+function crFragmentStreetItems(frag) { // one fragment: the crossings of EVERY street it matches, grouped by street in the matcher's closeness order, along the road within a street. The rendered list caps at 40 rows - the closest matches stand when the cap cuts.
+  const items = [], streets = new Set();
+  for (const nm of crMatchFragment(frag)) {
+    const rows = crCrossingRows(nm); if (!rows.length) continue;
+    streets.add(nm);
+    for (const r of rows) { items.push(r.it); if (items.length >= 40) return { items, streets }; }
+  }
+  return { items, streets };
+}
+function crFragmentPairItems(fa, fb) { // two fragments: crossings whose one side matches the left fragment and whose other side matches the right - the filter applies to BOTH sides (either orientation, as the pair path allows: if the left streets' crossings name no right street, the mirrored scan answers)
+  const A = crMatchFragment(fa), B = crMatchFragment(fb);
+  if (!A.length || !B.length) return { items: [], streets: new Set() };
+  const streets = new Set();
+  const scan = (fromNames, toSet) => {
+    const out = [];
+    for (const nm of fromNames) {
+      const rows = crCrossingRows(nm).filter(r => toSet.has(r.other)); if (!rows.length) continue;
+      streets.add(nm);
+      for (const r of rows) { out.push(r.it); if (out.length >= 40) return out; }
+    }
+    return out;
+  };
+  let items = scan(A, new Set(B));
+  if (!items.length) items = scan(B, new Set(A));
+  return { items, streets };
 }
 document.addEventListener('pointerdown', (e) => { // Beta 1.120 (Andrew): tapping anywhere outside the results dropdown dismisses it - map taps included (the pick still runs: this only closes the list, in the capture phase, before the map's own click)
   if (!creating) return;
@@ -1083,36 +1163,63 @@ document.addEventListener('pointerdown', (e) => { // Beta 1.120 (Andrew): tappin
   if (crSearchTimer) { clearTimeout(crSearchTimer); crSearchTimer = null; }
   crSearchSeq++; if (crSearchCtl) { try { crSearchCtl.abort(); } catch (e) {} crSearchCtl = null; } // Beta 1.232 fix round 5 (PR #112, Codex P2): dismissing the results ENDS the search too - since fix round 1 the crossing renders while its fetch is still in flight, and un-invalidated that fetch's landing (the success merge, or the catch's crossing re-render under crSearchCurrent) reopened this box over the tap-away that dismissed it. The form is the standing one (fix round 3 seated it at the row click; the clear disc and the flow close end the search exactly so), and the pending debounce is cleared with it, or it would fire a fresh search 300 ms after the user tapped away. The tap-away itself is untouched: the box still hides here, and the map pick still runs
 }, true);
-function crResultName(it) { // Beta 1.233 (Andrew, package C): a result row shows the result's NAME only - the grey address tail (city, region, province, postal code) is gone from every row; he already knows the search is in his city, and the tail ate the room the name needs. A street result shows its street (the same identity the 1.232 collapse trusts - address.road when the answer carries it, else the display name's head); an address result shows house number + road; anything else (a place) shows its own name. The on-device crossing's display name carries no comma and stands whole.
-  const head = (it.display_name || '').split(',')[0].trim();
-  const a = it.address || {};
-  if (crStreetIdentity(it)) return a.road || head;
-  const own = (it.name || '').trim() || head; // Beta 1.233 fix round 1 (PR #113, Codex P2): a result's OWN name - the answer's name field, else the display head. A pure address result has neither (its name is empty, or just the house number, and its head is the house number); a named place carries a name that is not its address.
-  if (own && own !== (a.house_number || '') && own.toLowerCase() !== (a.road || '').trim().toLowerCase()) return own; // a named place keeps its name - house number + road is where it STANDS, not what it is called, and two places at one address stay tellable apart
-  if (a.house_number && a.road) return a.house_number + ' ' + a.road;
-  return head;
-}
-function renderCrResults(list) {
-  const box = $('createResults'); box.innerHTML = '';
-  for (const it of list) {
-    const b = document.createElement('button'); b.className = 'crResult'; // Beta 1.227 (Andrew): the row is the set's pin + the name, the pin the set's own teardrop with no chip behind it. Beta 1.233 (package C): the name is the row's whole text now - crResultName above decides what a result is called, and no area tail is built at all
-    const pin = document.createElement('span'); pin.className = 'crPin'; pin.innerHTML = ICONS.pin;
-    const nameEl = document.createElement('span'); nameEl.className = 'crName'; nameEl.textContent = crResultName(it);
-    if (!it._isect) { const near = crNearCrossName(it); if (near) { const ns = document.createElement('span'); ns.className = 'crNear'; ns.textContent = ' · near ' + near; nameEl.appendChild(ns); } } // Beta 1.232 (piece 2): the cross-street label rides inside the name, in the area line's grey
-    b.append(pin, nameEl);
-    b.addEventListener('click', () => {
-      box.classList.remove('on');
-      if (crSearchTimer) { clearTimeout(crSearchTimer); crSearchTimer = null; }
-      crSearchSeq++; if (crSearchCtl) { try { crSearchCtl.abort(); } catch (e) {} crSearchCtl = null; } // Beta 1.232 fix round 3 (PR #112, Codex P2): selecting a result ENDS the search - since fix round 1 the crossing renders while its fetch is still in flight, and un-invalidated that fetch's landing (the success merge, or the catch's crossing re-render under crSearchCurrent) reopens this box over the destination just picked. The form is the standing one - the clear disc and the flow close end the search exactly so - and the pending debounce is cleared with it, or it would fire a fresh search over the chosen destination 300 ms later
-      const lat = parseFloat(it.lat), lon = parseFloat(it.lon); if (!isFinite(lat) || !isFinite(lon)) return;
-      const a = it.address || {}; crAreaGuess = a.city || a.town || a.village || a.municipality || a.county || '';
-      if (map) map.flyTo({ center: [lon, lat], zoom: Math.max(map.getZoom(), 15), duration: 900 });
-      if (crGrid && crCity && crInBox(crGrid.bbox, lat, lon)) { /* inside the picked city: its grid is the preparation (already running or saved) - no second download for a search pick */ }
-      else crStartPrep({ lat, lng: lon }); // Beta 1.121: outside any city coverage, the search pick ANCHORS the fallback box preparation (anchor rule (a)) - taps then resolve locally from the extract
-    });
-    box.appendChild(b);
+let crRowState = new Map(); // Beta 1.234: the results box's live rows, by row text -> { el, leaving, timer } - the populate animation's bookkeeping (below)
+let crRowCtx = null; // the last render's shape { streets, hint } - a fresh populate (55ms stagger) is a new search context: the box was closed, a hint stood (or gives way), or the new rows share no street with the last render's; a typing re-populate (30ms, with fade-outs) is any render that continues the same streets, narrowed or widened
+function crRenderRows(res, cont) { // Beta 1.234 (Andrew, the populate sample he approved): the render is a DIFF, not a rebuild. Entering rows fade in and rise 8px on the city search's own .crRowIn shape, staggered top to bottom - 55ms apart on a fresh populate, 30ms on a re-populate while typing. Rows that stop matching fade out in place (.crRowOut, removed when the fade lands) instead of vanishing; survivors keep their DOM nodes and never re-stagger on a pure narrow - the stagger is for rows ENTERING. Under reduced motion the CSS rests the animations and the removal below is instant, so rows simply rest.
+  const box = $('createResults');
+  const entries = res.hint ? [{ key: 'hint:' + res.hint, hint: res.hint }] : res.items.map(it => ({ key: it.display_name, it }));
+  const fresh = !cont && (!box.classList.contains('on') || !crRowCtx || crRowCtx.hint !== !!res.hint || (!res.hint && !crSharesStreet(crRowCtx.streets, res.streets))); // fresh = a NEW context. Beta 1.234 fix round 3: a coverage refresh (cont, from crRefreshSearch) is never fresh - it is the SAME search continuing as its answer lands, so its rows take the re-populate path even across the hint-to-rows boundary the rule below otherwise treats as a new context: the box was closed, a hint stands or gives way, or the new rows share no street with the last render's (a different street altogether). Sharing even one street makes it a typing continuation - the same search, narrowed or widened - however different the full street set is ('Wes' fans out to dozens of streets; 'Weston & Ru' is one of them, and the keystrokes between them narrow, they do not restart)
+  const stagger = fresh ? 55 : 30;
+  const reduced = !!(window.matchMedia && matchMedia('(prefers-reduced-motion: reduce)').matches);
+  const keep = new Set(entries.map(e => e.key));
+  for (const [key, st] of Array.from(crRowState)) {
+    if (keep.has(key)) continue;
+    if (fresh || reduced) { if (st.timer) clearTimeout(st.timer); st.el.remove(); crRowState.delete(key); } // a fresh context (or reduced motion) drops the old rows at once - no fade out of a closed box
+    else if (!st.leaving) { st.leaving = true; st.el.classList.remove('crRowIn'); void st.el.offsetWidth; st.el.classList.add('crRowOut'); st.timer = setTimeout(() => { st.el.remove(); crRowState.delete(key); }, 190); } // 190ms: just past the 180ms fade, so the node lands after it reads as gone. Beta 1.234 fix round 1 (PR #114, Codex P2): the entrance animation is RELEASED as the exit starts, in two beats - .crRowIn runs fill-mode both, so its final keyframe (opacity 1) kept overriding .crRowOut's opacity 0 and the row stayed opaque until this timer dropped it; and the release must COMMIT before the fade class lands (the forced reflow between them), or the browser folds both changes into one style update, the transition never starts, and the row still jumps straight to invisible (measured both ways in the round's QA: same-task remove+add reads opacity 0 at fade start and at +90ms; remove, reflow, add reads 1, then ~0.24 at +90ms)
   }
-  box.classList.toggle('on', list.length > 0);
+  let anchor = box.firstChild, enterIdx = 0;
+  const place = el => { if (el === anchor) anchor = el.nextSibling; else box.insertBefore(el, anchor); }; // survivors and entering rows take the list's order; leaving rows are stepped over and fade where they stand
+  for (const e of entries) {
+    let st = crRowState.get(e.key);
+    if (st && e.it) st.el._crItem = e.it; // Beta 1.234 fix round 1 (PR #114, Codex P2): a RETAINED row's pick destination refreshes to the current item on every render. The row text is the reuse key, but the same crossing name in another city's extract - or a different crossing of the same pair, when the nearest-crossing resolver's answer moves within a session - carries different coordinates, and the creation-time click closure would otherwise fly to the stale ones. The click reads _crItem at tap time (crResultRowEl), so a row always picks what it currently displays.
+    if (st && st.leaving) { // narrowed away and back inside one fade: the leave cancels and the row settles back in
+      clearTimeout(st.timer); st.timer = null; st.leaving = false; st.el.classList.remove('crRowOut');
+      st.el.classList.add('crRowIn'); st.el.style.animationDelay = (enterIdx++ * stagger) + 'ms';
+    } else if (!st) {
+      const el = e.hint ? crHintRowEl(e.hint) : crResultRowEl(e.it);
+      el.classList.add('crRowIn'); el.style.animationDelay = (enterIdx++ * stagger) + 'ms';
+      st = { el, leaving: false, timer: null }; crRowState.set(e.key, st);
+    } else if (fresh) { // a survivor on a fresh populate re-settles with the rest - its node outlived a closed box, so its entrance replays
+      st.el.classList.remove('crRowIn'); void st.el.offsetWidth; st.el.classList.add('crRowIn'); st.el.style.animationDelay = (enterIdx++ * stagger) + 'ms';
+    }
+    place(st.el);
+  }
+  box.classList.toggle('on', entries.length > 0);
+  crRowCtx = res.hint ? { streets: new Set(), hint: true } : { streets: res.streets, hint: false };
+}
+function crSharesStreet(a, b) { if (!a || !b) return false; for (const s of a) if (b.has(s)) return true; return false; }
+function crHintRowEl(text) { // Beta 1.234: the hint row - a message inside the results card, NOT a result: a plain div (no button, no pin, no handler), so it can be read and never tapped
+  const d = document.createElement('div'); d.className = 'crHintRow'; d.textContent = text; return d;
+}
+function crResultRowEl(it) { // one intersection row: the set's pin + the crossing's name. Beta 1.234: every row this search renders is an on-device crossing, so its display name IS the row text ('Weston Road & Rutherford Road') - the 1.233 name-only rule stands untouched; there is simply no address tail left anywhere in this search to strip, and no 'near' label: the row names its crossing outright.
+  const box = $('createResults');
+  const b = document.createElement('button'); b.className = 'crResult'; // Beta 1.227 (Andrew): the row is the set's pin + the name, the pin the set's own teardrop with no chip behind it
+  const pin = document.createElement('span'); pin.className = 'crPin'; pin.innerHTML = ICONS.pin;
+  const nameEl = document.createElement('span'); nameEl.className = 'crName'; nameEl.textContent = it.display_name;
+  b.append(pin, nameEl);
+  b._crItem = it; // Beta 1.234 fix round 1 (PR #114, Codex P2): the destination this row picks - crRenderRows refreshes it on every render that retains the row, and the click below reads it at tap time, never the creation-time item alone
+  b.addEventListener('click', () => {
+    box.classList.remove('on');
+    if (crSearchTimer) { clearTimeout(crSearchTimer); crSearchTimer = null; }
+    crSearchSeq++; if (crSearchCtl) { try { crSearchCtl.abort(); } catch (e) {} crSearchCtl = null; } // Beta 1.232 fix round 3 (PR #112, Codex P2): selecting a result ENDS the search - the pending debounce is cleared and the sequence bumped at this seat exactly as at the clear disc and the flow close, or a late keystroke burst would reopen the box over the destination just picked. Beta 1.234: with the search synchronous there is no in-flight landing left; the seat's form stands because the debounce + sequence ARE the search's invalidation now.
+    const cur = b._crItem || it; // the item this row displays NOW (see _crItem above) - a retained row re-rendered with another city's same-named crossing picks the new coordinates, not its first render's
+    const lat = parseFloat(cur.lat), lon = parseFloat(cur.lon); if (!isFinite(lat) || !isFinite(lon)) return;
+    const a = cur.address || {}; crAreaGuess = a.city || a.town || a.village || a.municipality || a.county || (cur._isect && crCity ? crCity.name : ''); // Beta 1.234: an on-device crossing carries no address block - its area is the city whose extract computed it, so the guess the city pick set (crPickCity) stands for a crossing pick instead of blanking
+    if (map) map.flyTo({ center: [lon, lat], zoom: Math.max(map.getZoom(), 15), duration: 900 });
+    if (crGrid && crCity && crInBox(crGrid.bbox, lat, lon)) { /* inside the picked city: its grid is the preparation (already running or saved) - no second download for a search pick */ }
+    else crStartPrep({ lat, lng: lon }); // Beta 1.121: outside any city coverage, the search pick ANCHORS the fallback box preparation (anchor rule (a)) - taps then resolve locally from the extract
+  });
+  return b;
 }
 // ================= Beta 1.232: crossings, computed on-device =================
 // Pieces 1 and 2 both answer from the prepared extract itself: crCov.byName
@@ -1264,39 +1371,6 @@ function crIntersectionItem(q) { // piece 1: the crossing of two named streets, 
   }
   if (!best) return null;
   return { lat: String(best.pt[0]), lon: String(best.pt[1]), display_name: best.A + ' & ' + best.B, address: {}, _isect: true };
-}
-function crStreetIdentity(it) { // Beta 1.232 fix round 2 (PR #112, Codex P2): the street a result IS, or null when the result is not a street feature at all - the collapse below may merge street features only, so this is its gate. The search speaks format=jsonv2, whose results always carry category (the old format's class - the city filter's idiom), type and osm_type. A street itself is a highway WAY (a long route may arrive as a route/road relation); the osm_type clause keeps out the point features that share the highway category (a bus stop is a highway node, not the street). An address (building/place) and a POI (amenity/leisure/shop/...) merely STAND on a street: their address.road names where they are, never what they are, and their display head is a house number or a place's own name - so they earn no identity and never collapse. A street feature's identity is its own name: address.road when the details carry it, else the display head (a street result's head IS its name)
-  if (!it || it._isect) return null; // the on-device crossing never collapses and nothing collapses into it - structural, not just positional (it is concatenated after the collapse today)
-  const cls = it.category || it.class;
-  const isStreet = (cls === 'highway' && (it.osm_type === 'way' || it.osm_type === 'relation')) || (cls === 'route' && it.type === 'road');
-  if (!isStreet) return null;
-  const head = (it.display_name || '').split(',')[0].trim();
-  const nm = ((it.address && it.address.road) || head).trim().toLowerCase();
-  return nm || null;
-}
-function crCollapseResults(list) { // piece 2's merge, scoped by fix round 2: one STREET can print as several near-identical points - the first stands, the repeats (within 100 m, same street identity) drop BEFORE any labelling. The first build keyed on the display head alone, which for an address result is just its house number - '10, Alpha Road' and '10, Beta Road', 45 m apart, merged into one row and a real destination vanished (PR #112, Codex P2). Only street features carry an identity now (crStreetIdentity); addresses and POIs always stand, and are never entered into the kept set, so nothing can collapse into them either
-  const out = [], kept = [];
-  for (const it of list) {
-    const id = crStreetIdentity(it);
-    const la = parseFloat(it.lat), lo = parseFloat(it.lon);
-    let dup = false;
-    if (id && isFinite(la) && isFinite(lo)) for (const k of kept) if (k.id === id && distM([la, lo], k.pt) <= 100) { dup = true; break; }
-    if (!dup) { out.push(it); if (id && isFinite(la) && isFinite(lo)) kept.push({ id, pt: [la, lo] }); }
-  }
-  return out;
-}
-function crNearCrossName(it) { // piece 2: the cross street nearest this result's point - only when the result IS the street (its head is the street's own name); anything else stays plain
-  if (!crCov || !crCov.byName || !crCov.boxes.length) return null;
-  const head = (it.display_name || '').split(',')[0].trim();
-  const road = (it.address && it.address.road) || '';
-  let nm = null;
-  if (road && head === road && crCov.byName[road]) nm = road;
-  else if (head && crCov.byName[head]) nm = head;
-  if (!nm) return null;
-  const la = parseFloat(it.lat), lo = parseFloat(it.lon); if (!isFinite(la) || !isFinite(lo)) return null;
-  let best = null;
-  for (const x of crCrossingsOf(nm)) { const d = distM([la, lo], x.pt); if (!best || d < best.d) best = { d, other: x.other }; }
-  return best ? shortStreetName(best.other) : null;
 }
 const CR_SUFFIX = /\s+(Drive|Court|Boulevard|Lane|Street|Avenue|Crescent|Road|Place|Ridge|Way|Terrace|Circle|Gate|Heights|Trail|Parkway)$/;
 const CR_ORDINALS = { '1st': 'First', '2nd': 'Second', '3rd': 'Third', '4th': 'Fourth', '5th': 'Fifth', '6th': 'Sixth', '7th': 'Seventh', '8th': 'Eighth', '9th': 'Ninth', '10th': 'Tenth', '11th': 'Eleventh', '12th': 'Twelfth' };

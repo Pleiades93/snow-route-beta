@@ -238,12 +238,12 @@ const pickCityVaughan = async () => {
   if (rows === true) await ev(`document.querySelector('#crCityResults .routeRow').click()`);
   return await poll(`typeof creating !== 'undefined' && creating === true && crStage === 'pick'`, 10000).catch(() => false);
 };
-const runStreetSearch = async () => {
-  await ev(`(() => { const i = document.getElementById('crSearchInput'); i.value = 'Vaughan'; document.getElementById('createResults').innerHTML = ''; return true; })()`); // cleared first, so the poll below can only be satisfied by THIS query's render
+const runStreetSearch = async (q, wantHint) => { // Beta 1.234 re-derived: the query and the expected shape are the caller's - a hint poll for the no-answer cases, a row poll for the crossing case (the helper's 1.229/1.233 form typed 'Vaughan' and polled for rows the service no longer returns, because there is no service)
+  await ev(`(() => { const i = document.getElementById('crSearchInput'); i.value = ${JSON.stringify(q)}; return true; })()`);
   await ev(`crSearch()`); // the Enter path (Beta 1.227: the Search button is gone): cancel any debounce, run the typed query now
-  return await poll(`document.querySelectorAll('#createResults .crResult').length > 0`, 10000).catch(() => false);
+  return await poll(wantHint ? `document.querySelectorAll('#createResults .crHintRow').length === 1` : `document.querySelectorAll('#createResults .crResult').length > 0`, 10000).catch(() => false);
 };
-const resultSample = () => J(`({ rows: [...document.querySelectorAll('#createResults .crResult')].map(b => b.textContent), urls: (window.__searchUrls || []).slice() })`);
+const resultSample = () => J(`({ rows: [...document.querySelectorAll('#createResults .crResult')].map(b => b.textContent), hint: (document.querySelector('#createResults .crHintRow') || {}).textContent || '', urls: (window.__searchUrls || []).slice() })`);
 
 // ---------- boot 5W ----------
 await poll(`typeof loadRoute === 'function'`, 20000);
@@ -286,21 +286,32 @@ ok('179 setup: creation is open at the city step with NO city loaded (the contro
 // name. CI on e734da45/c2d2d51d showed the behaviour itself was always
 // right (rows exactly ["Bordeaux Drive","Vaughan Road"], URL bounded);
 // only the tail-text probe had died.
-const ctlRan = await runStreetSearch();
+// Beta 1.234 PREMISE UPDATE: the street search makes NO request at all -
+// it answers from the loaded extract (intersections only), so the 1.229
+// Ontario bound's street-search half is satisfied by construction: no
+// request can leave the province because no request leaves the device.
+// The bound's live half is the CITY search, graded by this drive's city
+// sections above. The two street sections below are re-derived to the
+// no-request contract at the same strength: the stub records every
+// search URL the app attempts, and the sections assert the record stays
+// EMPTY while the on-device answer (a hint with no city, the fixture
+// crossing with one) renders.
+await ev(`window.__searchUrls = []`); // the record starts empty for this section, so empty at the sample is the section's own evidence
+const ctlRan = await runStreetSearch('Vaughan', true);
 const CTL = await resultSample();
-ok('control (no city loaded) the search is bounded to ONTARIO (Beta 1.229) - the request carries countrycodes=ca, the Ontario viewbox and bounded=1 (the old visible-map bias is gone), and BOTH fixture results render, the Toronto one included, because both are Ontario places | ' + JSON.stringify(CTL),
-  ctlRan === true && CTL.rows.length === 2 && CTL.urls.length >= 1 && CTL.urls[CTL.urls.length - 1].indexOf('bounded=1') >= 0 && CTL.urls[CTL.urls.length - 1].indexOf('countrycodes=ca') >= 0 && CTL.urls[CTL.urls.length - 1].indexOf('viewbox=-95.2,56.9,-74.3,41.6') >= 0 && CTL.rows.some(t => t.indexOf('Bordeaux Drive') === 0) && CTL.rows.some(t => t.indexOf('Vaughan Road') === 0));
+ok('control (no city loaded) (Beta 1.234 re-derived) the street search attempts NO request - the Ontario bound holds by construction - and with no city loaded its whole answer is the choose-a-city hint, no rows | ' + JSON.stringify(CTL),
+  ctlRan === true && CTL.rows.length === 0 && CTL.urls.length === 0 && CTL.hint === 'Choose a city first, then search an intersection');
 
 // ---------- scoped: pick Vaughan, search again ----------
 const inPick = await pickCityVaughan();
 const ready = await poll(`typeof crPrepState !== 'undefined' && crPrepState === 'ready'`, 30000).catch(() => false);
 await ev(`window.__searchUrls = []`);
-const scopedRan = await runStreetSearch();
+const scopedRan = await runStreetSearch('Bordeaux', false);
 const SC = await resultSample();
-ok('scoped (city loaded) the search request now carries the city BOUND (bounded=1 on the city viewbox) | ' + JSON.stringify(SC.urls),
-  inPick === true && ready === true && scopedRan === true && SC.urls.length >= 1 && SC.urls[SC.urls.length - 1].indexOf('bounded=1') >= 0);
-ok('scoped (city loaded) although the service returned BOTH results (it ignored the bound), only the in-city suggestion renders - the out-of-city Toronto result is filtered out | ' + JSON.stringify(SC.rows),
-  SC.rows.length === 1 && SC.rows[0].indexOf('Bordeaux Drive') === 0 && !SC.rows.some(t => t.indexOf('Vaughan Road') === 0));
+ok('scoped (city loaded) (Beta 1.234 re-derived) the street search still attempts NO request with a city loaded - the record the stub kept stays empty | ' + JSON.stringify(SC.urls),
+  inPick === true && ready === true && scopedRan === true && SC.urls.length === 0);
+ok('scoped (city loaded) (Beta 1.234 re-derived) the answer is the fixture city\'s own crossing - Bordeaux Drive & Alderson Avenue, the one junction the extract holds (a shared node) - and nothing out-of-city can render, because nothing is fetched: the city bound the 1.229 client filter enforced now lives in the crossings computation itself (proof-1232 check 1p) | ' + JSON.stringify(SC.rows),
+  SC.rows.length === 1 && SC.rows[0] === 'Bordeaux Drive & Alderson Avenue');
 
   return R;
 })();
