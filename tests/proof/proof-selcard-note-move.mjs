@@ -79,8 +79,8 @@ console.log('D - while the card is open, the re-centre button drops below it');
 {
   check('D: the drop rule stands (267 = card top 144 + card height 112.2 + the ~10 gap)',
     head.includes('body.selOpen #centreBtn { top: calc(var(--vvt, 0px) + 267px + var(--sat)); }'));
-  check('D: the base re-centre rule is untouched (E-03: 144 top, z 1002)',
-    head.includes('#centreBtn { position: fixed; top: calc(var(--vvt, 0px) + 144px + var(--sat)); right: calc(12px + var(--sar)); z-index: 1002;'));
+  check('D: the base re-centre rule rides the risen stack (Beta 1.228: 91 top = the title line 25 + 56 + the 10 gap, z 1002)',
+    head.includes('#centreBtn { position: fixed; top: calc(var(--vvt, 0px) + 91px + var(--sat)); right: calc(12px + var(--sar)); z-index: 1002;'));
   check('D: renderPanel raises body.selOpen with the card and drops it with the card',
     app2.includes("p.classList.remove('hidden'); document.body.classList.add('selOpen');") &&
     app2.includes("p.classList.add('hidden'); document.body.classList.remove('selOpen'); return;"));
@@ -95,9 +95,9 @@ console.log('D - while the card is open, the re-centre button drops below it');
 // are untouched.)
 console.log('V - version surfaces agree');
 {
-  check('V: the #ver label reads Beta 1.226', head.includes('<div class="ver" id="ver">Beta 1.227</div>'));
-  check('V: WHATSNEW is the Beta 1.226 entry', app4.includes("v: 'Beta 1.227', items:"));
-  check('V: the CHANGELOG top entry is Beta 1.226', changelog.includes('## Beta 1.227 — 2026-11-17'));
+  check('V: the #ver label reads Beta 1.226', head.includes('<div class="ver" id="ver">Beta 1.228</div>'));
+  check('V: WHATSNEW is the Beta 1.226 entry', app4.includes("v: 'Beta 1.228', items:"));
+  check('V: the CHANGELOG top entry is Beta 1.226', changelog.includes('## Beta 1.228 — 2026-11-17'));
 }
 
 console.log(pass + ' pass, ' + fail + ' fail');

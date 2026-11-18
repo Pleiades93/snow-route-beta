@@ -2,7 +2,7 @@
 <html lang="en" class="boot">
 <head>
 <meta charset="UTF-8">
-<meta http-equiv="Content-Security-Policy" content="default-src 'none'; script-src 'sha384-B1VLFC9zKFhIn5M+GJwZ1o+tsvUTm66RT8cgpGAoQdST66Zmc7IsnUGuor0EE1Va' https://cdn.jsdelivr.net; style-src-elem 'sha384-7G+G01yMyRVuro3mqbOayJ1srgm71yop/GhmR0HCjbz2gbUq+C9UAoJnRtOPt7Rv' https://cdn.jsdelivr.net; style-src-attr 'unsafe-inline'; img-src 'self' data: blob: https://tiles.basemaps.cartocdn.com https://protomaps.github.io https://cdn.jsdelivr.net; connect-src 'self' https://tiles.basemaps.cartocdn.com https://protomaps.github.io https://cdn.jsdelivr.net https://nominatim.openstreetmap.org https://overpass-api.de https://overpass.kumi.systems; worker-src blob: 'self'; child-src blob: 'self'; font-src 'none'; manifest-src 'self'; base-uri 'none'; form-action 'none'; object-src 'none'">
+<meta http-equiv="Content-Security-Policy" content="default-src 'none'; script-src 'sha384-szT1D4Ib33pHW52MUZr9obo508esmtgqkxkf9dZDQI6Zok227NpfUo43a7MorZpQ' https://cdn.jsdelivr.net; style-src-elem 'sha384-Nno/d3tWilp83Qcd4Ao+JwDumq4g4sAoMvTcq44EGF177COv9XyfP5XT9bXMX88a' https://cdn.jsdelivr.net; style-src-attr 'unsafe-inline'; img-src 'self' data: blob: https://tiles.basemaps.cartocdn.com https://protomaps.github.io https://cdn.jsdelivr.net; connect-src 'self' https://tiles.basemaps.cartocdn.com https://protomaps.github.io https://cdn.jsdelivr.net https://nominatim.openstreetmap.org https://overpass-api.de https://overpass.kumi.systems; worker-src blob: 'self'; child-src blob: 'self'; font-src 'none'; manifest-src 'self'; base-uri 'none'; form-action 'none'; object-src 'none'">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="mobile-web-app-capable" content="yes">
@@ -102,7 +102,7 @@
   .sideChip.done .chipBtn { background: #2ecc71; color: #fff; }
   #attrChip { position: fixed; right: calc(8px + var(--sar)); bottom: calc(var(--vvb, 0px) + 61px + var(--sab)); z-index: 900; font-size: 9px; color: #5b6672; background: rgba(255,255,255,.7); padding: 2px 5px; border-radius: 4px; pointer-events: none; } /* Beta 1.192: 68 -> 61, riding the tab bar's -7 (its rendered gap above the bar's top edge is unchanged: 10px measured in the assembled page) */
   body.night #attrChip { background: rgba(20,23,29,.7); color: #9aa4b2; }
-  #spdPill { position: fixed; top: calc(var(--vvt, 0px) + 78px + var(--sat)); left: calc(12px + var(--sal)); width: 64px; height: 64px; border-radius: 50%; z-index: 1000; background: var(--glass-day); -webkit-backdrop-filter: var(--blur); backdrop-filter: var(--blur); color: #1d2530; border: 1px solid rgba(20,22,28,.09); box-shadow: var(--shadow-float); display: flex; flex-direction: column; align-items: center; justify-content: center; font-variant-numeric: tabular-nums; } /* Beta 1.220 (Andrew, approved sample): the speed readout is a CIRCLE at the top left, under the title - it replaces the Beta 1.203 top-centre pill whole. Its top is #nightBtn's own top expression (78px) and its left the same 12px inset mirrored, so the circle's top edge stands level with the moon button's - the drives measure the level in the rendered page. The glass tokens are the pill's own (glass, blur, border, shadow) - one family with the app's other pills */
+  #spdPill { position: fixed; top: calc(var(--vvt, 0px) + 78px + var(--sat)); left: calc(12px + var(--sal)); width: 64px; height: 64px; border-radius: 50%; z-index: 1000; background: var(--glass-day); -webkit-backdrop-filter: var(--blur); backdrop-filter: var(--blur); color: #1d2530; border: 1px solid rgba(20,22,28,.09); box-shadow: var(--shadow-float); display: flex; flex-direction: column; align-items: center; justify-content: center; font-variant-numeric: tabular-nums; } /* Beta 1.220 (Andrew, approved sample): the speed readout is a CIRCLE at the top left, under the title - it replaces the Beta 1.203 top-centre pill whole. Its top was #nightBtn's own top expression (78px) through Beta 1.227 - the circle's top edge level with the moon button's, a level the drives measured in the rendered page. Beta 1.228 (Andrew) raised the moon button to the title's line; the circle keeps this 78px seat under the title, so it now stands 53px below the title's top edge - drive199 measures the new geometry (the moon level with the title, the circle at its seat). The glass tokens are the pill's own (glass, blur, border, shadow) - one family with the app's other pills */
   #spdNum { font-size: 27px; font-weight: 800; line-height: 1; text-align: center; }
   #spdUnit { font-size: 9.5px; font-weight: 800; letter-spacing: .4px; text-align: center; color: #5a5f6a; margin-top: 3px; } /* Andrew's correction: KM/H sits directly below the number, perfectly centred - the number and unit are one centred stacked pair */
   body.night #spdPill { background: var(--glass-night); color: #eef4ee; border-color: rgba(255,255,255,.16); }
@@ -183,9 +183,9 @@
   .srow .nwrap { display: flex; flex-direction: column; min-width: 0; }
   .srow .nmrow { display: flex; align-items: center; gap: 6px; min-width: 0; }
   .srow .nt { font-size: 12px; color: var(--nt-c); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; max-width: 36vw; }
-  .srow .sbtn svg, .srow .sbtn img { width: 15px; height: 15px; display: block; margin: auto; } /* Beta 1.219: the img form fills the same box */ /* Beta 1.184: the pin glyph at redesign size */
   .srow .nt .ntIco svg, .srow .nt .ntIco img { width: 11px; height: 11px; vertical-align: -1px; margin-right: 4px; } /* Beta 1.219: the img form fills the same box */
-  .srow .sbtn { margin-left: 0; width: 32px; height: 32px; flex-shrink: 0; border: none; border-radius: 999px; background: transparent; color: var(--link); font-size: 17px; padding: 0; cursor: pointer; } /* Beta 1.184: the pin rides INSIDE the name row as a bare glyph in the app link blue - the boxed 42px button belonged to the retired row layout */
+  .srow .sbtn { position: relative; margin-left: 0; flex-shrink: 0; border: none; border-radius: 999px; background: rgba(44,74,210,.12); color: var(--link); font-size: 11px; font-weight: 700; padding: 3px 9px; cursor: pointer; } /* Beta 1.228 (Andrew, from his Locate-pill samples: the soft blue at his smallest sampled size): the pin button becomes a labelled pill in the name row - a pale fill in the --chip family's blue, the link-blue word; the night rule below flips its ink to #8fa8ff exactly as it flipped the glyph's. Beta 1.184: the control rides INSIDE the name row, immediately right of the name - only its shape changed */
+  .srow .sbtn::after { content: ''; position: absolute; left: 0; right: 0; top: -12px; bottom: -27px; } /* Beta 1.228: the visible pill is slim (~19px) but its touch area covers the row's full height over the pill's own column - the offsets are the measured distances from the pill's edges to the row's edges, so a gloved tap anywhere in that column lands on the pill, and a tap in the next row never does */
   .noteEd { padding: 8px 4px 12px 30px; border-bottom: 1px solid var(--hair); }
   .noteEd textarea { width: 100%; min-height: 64px; box-sizing: border-box; background: var(--field); color: var(--ink); border: 1px solid var(--hair); border-radius: var(--rad-btn); padding: 9px; font-size: 16px; /* 16px minimum: below it iOS auto-zooms on focus, which shoves the whole layout around (Beta 1.18) */ font-family: inherit; }
   .noteEd .nhint { font-size: 12px; color: var(--tm-c); margin-top: 5px; }
@@ -368,10 +368,10 @@
   .m-selTick { flex-shrink: 0; width: 30px; text-align: center; color: #06d6a0; font-weight: 800; font-size: 19px; }
   #chimeList { display: flex; flex-direction: column; gap: 12px; }
   #wnList { display: flex; flex-direction: column; } /* Beta 1.88 (Andrew's pick): the version rides the settings menu family at bottom-right, in both panes, synced from the main title's version - never a second copy to go stale */
-  #nightBtn { position: fixed; top: calc(var(--vvt, 0px) + 78px + var(--sat)); right: calc(12px + var(--sar)); z-index: 1000; margin: 0; } /* Beta 1.88 (Andrew): Day/Night is its own round button at top-right - the dockBtn class itself, so it IS the Pace/Streets button (56px, same glass, same 27px icon), only placed (Beta 1.222: the shared surface is the Soft Lift - an opaque gradient with lift shadows - not glass any more; the glass tokens stand untouched for #spdPill, which keeps its own rule and is NOT lifted - it is a readout, not a button). Sweep re-run E-03: the top now rides var(--sat) like #hud / #spdPill / #selPop - without it the button sat a full safe-area higher than the rest of the top chrome on notched phones */
-  #centreBtn { position: fixed; top: calc(var(--vvt, 0px) + 144px + var(--sat)); right: calc(12px + var(--sar)); z-index: 1002; margin: 0; } /* Beta 1.115 (Andrew): the re-centre button - same dockBtn, same right edge, directly below Day/Night (78 + 56 + 10 gap). Shown only while the follow is suspended (syncCentreBtn, app3). Sweep re-run E-03: the top rides var(--sat) like the rest of the top chrome, and z-index 1002 lifts the button ABOVE #selPop (1001) - at the same 144px top the centred popup overlapped the button's left ~44px at 390 wide and, painting later, stole its taps; the button now paints over the card's corner instead, so it is never covered in the one state where both show (follow suspended + a street selected) */
+  #nightBtn { position: fixed; top: calc(var(--vvt, 0px) + 25px + var(--sat)); right: calc(12px + var(--sar)); z-index: 1000; margin: 0; } /* Beta 1.88 (Andrew): Day/Night is its own round button at top-right - the dockBtn class itself, so it IS the Pace/Streets button (56px, same glass, same 27px icon), only placed (Beta 1.222: the shared surface is the Soft Lift - an opaque gradient with lift shadows - not glass any more; the glass tokens stand untouched for #spdPill, which keeps its own rule and is NOT lifted - it is a readout, not a button). Sweep re-run E-03: the top now rides var(--sat) like #hud / #spdPill / #selPop - without it the button sat a full safe-area higher than the rest of the top chrome on notched phones. Beta 1.228 (Andrew): the offset is now the title's own - #hud's 25px padding-top - so this button's top edge stands level with the "Snow Route Beta" title's top edge, opposite sides of one line; the speed circle keeps its 78px seat under the title (its 1.220 level-with-the-moon property is superseded by this title line, and drive199 measures the new geometry) */
+  #centreBtn { position: fixed; top: calc(var(--vvt, 0px) + 91px + var(--sat)); right: calc(12px + var(--sar)); z-index: 1002; margin: 0; } /* Beta 1.115 (Andrew): the re-centre button - same dockBtn, same right edge, directly below Day/Night (25 + 56 + 10 gap - the stack rose with Day/Night in Beta 1.228, the 10px gap byte-identical). Shown only while the follow is suspended (syncCentreBtn, app3). Sweep re-run E-03: the top rides var(--sat) like the rest of the top chrome, and z-index 1002 lifts the button ABOVE #selPop (1001) - at the same 144px top the centred popup overlapped the button's left ~44px at 390 wide and, painting later, stole its taps; the button now paints over the card's corner instead, so it is never covered in the one state where both show (follow suspended + a street selected) */
   #centreBtn.hidden { display: none; }
-  body.selOpen #centreBtn { top: calc(var(--vvt, 0px) + 267px + var(--sat)); } /* Beta 1.214: the selection card's title row now holds the note button in the card's top-right corner - the corner the re-centre button paints over (the E-03 lift above assumed plain card surface there; measured at 390 wide the button covered 29 of the note button's 34 px and took its centre tap). While the card is open (body.selOpen, toggled by renderPanel - the card's only show/hide path) the re-centre button drops below the card instead: card top 144 + card height 112.2 + a 10.8 gap = 267, the same ~10 px gap language as its own 144 (day/night bottom 134 + 10). Both controls stay fully tappable; the button returns the moment the card closes */
+  body.selOpen #centreBtn { top: calc(var(--vvt, 0px) + 267px + var(--sat)); } /* Beta 1.214: the selection card's title row now holds the note button in the card's top-right corner - the corner the re-centre button paints over (the E-03 lift above assumed plain card surface there; measured at 390 wide the button covered 29 of the note button's 34 px and took its centre tap). While the card is open (body.selOpen, toggled by renderPanel - the card's only show/hide path) the re-centre button drops below the card instead: card top 144 + card height 112.2 + a 10.8 gap = 267, the same ~10 px gap language as its own 91 (day/night bottom 81 + 10, Beta 1.228). Both controls stay fully tappable; the button returns the moment the card closes */
   #toast { position: absolute; left: 50%; bottom: calc(var(--vvb) + 188px + var(--sab)); /* Beta 1.221 (placement, Andrew's bar: the pill never sits on a control): this 188px is only the FLOOR the pill starts from - the old fixed 120px band sat inside the dock stack's span (measured top ~208px), so a pill painted across the Start button it reported on, and no other fixed number clears every state either (the note banner rides above the dock, sheets and modals bring their own controls, and the pill's height changes with its text). placeToast() in app1.js therefore measures at fire time and raises the pill above whatever it would cover, with a 6px gap; drive204 verifies zero overlap in the rendered page across every state a surviving toast can fire. The floor rides var(--vvb) like the dock does, so the starting gap holds when browser chrome shows */ transform: translateX(-50%) translateY(16px); z-index: 10001; /* Beta 1.93 (deep audit F03): above the full-screen takeovers (10000) - backup/restore errors toasted from inside Settings were hidden behind its opaque blue */ background: linear-gradient(135deg, #3d65ef, #1b2fb6); color: #fff; font-size: 15px; font-weight: 700; padding: 10px 18px; border-radius: 999px; box-shadow: 0 8px 20px rgba(20,35,110,.45); /* Beta 1.223 (Andrew, option A): EVERY pop-up wears this one style - the app blue gradient pill, white bold text, one size standard, identical day and night; #createHint and #crHintBtn carry the same declarations. Through 1.222 the toast was a dark box (rgba(20,22,28,.95), radius 10px, 13px) that matched nothing else */ opacity: 0; pointer-events: none; transition: opacity var(--anim-dur) var(--ease-open), transform var(--anim-dur) var(--ease-open); max-width: 86vw; text-align: center; }
   #toast.show { opacity: 1; transform: translateX(-50%) translateY(0); }
   #map { transition: transform .45s ease-in-out; }
@@ -590,10 +590,10 @@ body.night #crSbWhole { color: var(--sec); border-color: var(--sec); } /* Beta 1
 input, textarea { caret-color: currentColor; } /* Beta 1.125 (Andrew): the typing caret - the flashing vertical line beside the last letter - is always visible in every search bar and field, in the field's own text colour (white on the blue menus, ink on cards) */
 .rmLbl { color: rgba(255,255,255,.85); font-size: 14px; font-weight: 650; margin-bottom: -6px; }
 #crPhotoName { color: #fff; font-weight: 700; }
-/* Beta 1.226 (Andrew, from the approved motion sample): THE PRESS - every pressable button or pill shrinks a touch while pressed (scale .97 over 120ms ease-out), and the blue menus no longer light up on press (their :active rules above now hold the rest fill), so the shrink is the whole press feedback. Display-only readouts never join this block: the speed circle (#spdPill), the street count (#count), the stats line and the stat values carry no rule here and gain no transition. Three pressables are centred by a rest transform - #cancelStartBtn, the menus' bottom X pair (#rmClose/#setClose) and #crHintBtn - so their :active composes the shrink with translateX(-50%) and they cannot jump sideways mid-press. Small controls inside a tappable row (.srow .sbtn, .crPChip/.crPDel, .routeDel) ride their row's shrink instead of compounding a second scale: an ancestor matches :active while a child is pressed. */
-.tabItem, .dockBtn, .runBtn, .sideChip .chipBtn, #selPop button, #sheetClose, #paceClose, #finNo, #noteNo, #xClose, #crModalX, #mapNoteNo, #filters button, .srow, .noteEd .nedSave, .noteEd .nedDone, #pacePad button, .cvHead button, .cvDel, .cvRow, .prow.histRow, .rmBtn, button.m-card, #routeMenu .routeRow, .rmBack, .modal .row button, .banner button, #crExit, #crClear, .crResult, .crPrimary, .crGhost, .crDanger, .crChip, .crDel, #crClearAll, #crCityChange, #crReviewBtn, .crSbBtns button, .crPRow, #cancelStartBtn, #rmClose, #setClose, #crHintBtn { transition: transform 120ms ease-out; }
+/* Beta 1.226 (Andrew, from the approved motion sample): THE PRESS - every pressable button or pill shrinks a touch while pressed (scale .97 over 120ms ease-out), and the blue menus no longer light up on press (their :active rules above now hold the rest fill), so the shrink is the whole press feedback. Display-only readouts never join this block: the speed circle (#spdPill), the street count (#count), the stats line and the stat values carry no rule here and gain no transition. Three pressables are centred by a rest transform - #cancelStartBtn, the menus' bottom X pair (#rmClose/#setClose) and #crHintBtn - so their :active composes the shrink with translateX(-50%) and they cannot jump sideways mid-press. Small controls inside a tappable row (.crPChip/.crPDel, .routeDel) ride their row's shrink instead of compounding a second scale: an ancestor matches :active while a child is pressed. Beta 1.228 (Andrew): the street rows' locate control leaves that family - it is a labelled pill with its OWN shrink, and the two presses are separate. So .srow leaves the :active group below (an ancestor :active on the pill's press would shrink the whole row - the exact read Andrew rejected) and the row's shrink is its pressOn twin alone: already its only path on a direct press, since a plain div never enters :active in the test browser, and the pressOn handler's button guard keeps a pill press from ever raising the class. */
+.tabItem, .dockBtn, .runBtn, .sideChip .chipBtn, #selPop button, #sheetClose, #paceClose, #finNo, #noteNo, #xClose, #crModalX, #mapNoteNo, #filters button, .srow, .srow .sloc, .noteEd .nedSave, .noteEd .nedDone, #pacePad button, .cvHead button, .cvDel, .cvRow, .prow.histRow, .rmBtn, button.m-card, #routeMenu .routeRow, .rmBack, .modal .row button, .banner button, #crExit, #crClear, .crResult, .crPrimary, .crGhost, .crDanger, .crChip, .crDel, #crClearAll, #crCityChange, #crReviewBtn, .crSbBtns button, .crPRow, #cancelStartBtn, #rmClose, #setClose, #crHintBtn { transition: transform 120ms ease-out; }
 .m-switch { transition: background .18s ease, transform 120ms ease-out; } /* the switch keeps its own background fade - this rule replaces its transition declaration, so the fade is restated beside the shrink */
-.tabItem:active, .dockBtn:active, .runBtn:active, .sideChip .chipBtn:active, #selPop button:active, #sheetClose:active, #paceClose:active, #finNo:active, #noteNo:active, #xClose:active, #crModalX:active, #mapNoteNo:active, #filters button:active, .srow:active, .noteEd .nedSave:active, .noteEd .nedDone:active, #pacePad button:active, .cvHead button:active, .cvDel:active, .cvRow:active, .prow.histRow:active, .rmBtn:active, button.m-card:active, #routeMenu .routeRow:active, .rmBack:active, .modal .row button:active, .banner button:active, #crExit:active, #crClear:active, .crResult:active, .crPrimary:active, .crGhost:active, .crDanger:active, .crChip:active, .crDel:active, #crClearAll:active, #crCityChange:active, #crReviewBtn:active, .crSbBtns button:active, .crPRow:active, .m-switch:active { transform: scale(.97); }
+.tabItem:active, .dockBtn:active, .runBtn:active, .sideChip .chipBtn:active, #selPop button:active, #sheetClose:active, #paceClose:active, #finNo:active, #noteNo:active, #xClose:active, #crModalX:active, #mapNoteNo:active, #filters button:active, .srow .sloc:active, .noteEd .nedSave:active, .noteEd .nedDone:active, #pacePad button:active, .cvHead button:active, .cvDel:active, .cvRow:active, .prow.histRow:active, .rmBtn:active, button.m-card:active, #routeMenu .routeRow:active, .rmBack:active, .modal .row button:active, .banner button:active, #crExit:active, #crClear:active, .crResult:active, .crPrimary:active, .crGhost:active, .crDanger:active, .crChip:active, .crDel:active, #crClearAll:active, #crCityChange:active, #crReviewBtn:active, .crSbBtns button:active, .crPRow:active, .m-switch:active { transform: scale(.97); }
 #cancelStartBtn:active { transform: translateX(-50%) scale(.97); }
 #rmClose:active, #setClose:active { transform: translateX(-50%) scale(.97); }
 #crHintBtn:active { transform: translateX(-50%) scale(.97); }
@@ -615,7 +615,7 @@ input, textarea { caret-color: currentColor; } /* Beta 1.125 (Andrew): the typin
 <div id="hud">
   <div id="warn">Not saving. Storage is full or blocked</div>
   <div class="row">
-    <div class="titleStack"><div class="title">Snow Route Beta</div><div class="ver" id="ver">Beta 1.227</div></div>
+    <div class="titleStack"><div class="title">Snow Route Beta</div><div class="ver" id="ver">Beta 1.228</div></div>
   </div>
   <div id="stats"></div>
 </div>
@@ -4014,10 +4014,10 @@ function renderStreets() { // production row design: tap a street's name area to
   arr.forEach(n => {
     const d = document.createElement('div');
     d.className = srowClass(n);
-    d.innerHTML = '<div class="dot"></div><div class="nwrap"><div class="nmrow"><div class="nm"></div><button class="sbtn smap" title="Show on map"></button><span class="nmNote" style="display:none"></span></div><div class="nt"><span class="ntIco"></span><span class="ntTxt"></span></div></div><div class="tm"></div>'; // Beta 1.184: the pin rides INSIDE the name row, immediately right of the name; a note icon joins it only while the street carries note text; the COMPLETED pill is retired - its state folds into the status slot (srowStatus)
+    d.innerHTML = '<div class="dot"></div><div class="nwrap"><div class="nmrow"><div class="nm"></div><button class="sbtn sloc">Locate</button><span class="nmNote" style="display:none"></span></div><div class="nt"><span class="ntIco"></span><span class="ntTxt"></span></div></div><div class="tm"></div>'; // Beta 1.184: the pin rides INSIDE the name row, immediately right of the name; a note icon joins it only while the street carries note text; the COMPLETED pill is retired - its state folds into the status slot (srowStatus). Beta 1.228 (Andrew): the pin is a labelled 'Locate' pill now - same seat in the name row, same handler below, but a word instead of a bare glyph (the glyph was too small to hit cleanly, and its press read as the row's own)
     d.querySelector('.nm').textContent = n;
     const ntEl = d.querySelector('.nt');
-    d.querySelector('.smap').innerHTML = ICONS.pin; d.querySelector('.ntIco').innerHTML = ICONS.note; d.querySelector('.nmNote').innerHTML = ICONS.note; // the active pack's glyphs (Beta 1.30 put glyphs in place of the emoji; Beta 1.219: ICONS.* rides the chosen pack and renderIcons re-stamps these hosts on a switch)
+    d.querySelector('.ntIco').innerHTML = ICONS.note; d.querySelector('.nmNote').innerHTML = ICONS.note; // the active pack's glyphs (Beta 1.30 put glyphs in place of the emoji; Beta 1.219: ICONS.* rides the chosen pack and renderIcons re-stamps these hosts on a switch). Beta 1.228: the row's locate control is stamped with nothing - its label is the markup's own text
     const paintNt = () => { // Beta 1.184: ONE painter for everything state-shaped on the row - its class (done/primary/half), the status slot, the name-row note icon, and the quiet line (length by default, note text while a note exists - the 1.107 rule, unchanged)
       d.className = srowClass(n);
       const st = srowStatus(n); const tmEl = d.querySelector('.tm'); tmEl.textContent = st.t; tmEl.className = 'tm ' + st.c;
@@ -4027,7 +4027,7 @@ function renderStreets() { // production row design: tap a street's name area to
       else { d.querySelector('.ntTxt').textContent = fmtLenM(STRETCH[n].total); d.querySelector('.ntIco').style.display = 'none'; ntEl.style.display = ''; }
     };
     paintNt();
-    d.querySelector('.smap').addEventListener('click', e => {
+    d.querySelector('.sloc').addEventListener('click', e => {
       e.stopPropagation();
       if (!tapGuard('li' + n)) return;
       closeSheets();
@@ -4069,13 +4069,13 @@ function renderStreets() { // production row design: tap a street's name area to
 function syncNoteSheetRaise() { // Beta 1.184 (Codex review, PR #22): the redesign's pinned head (route line, hero, tabs, group heading) sits OUTSIDE #sheetBody, so at the half stop the scroll region's top can fall below the software keyboard's edge - and ensureFieldVisible, which scrolls only inside #sheetBody, can then never surface the note editor: the field it scrolls to is still under the keyboard. While the editor is open the sheet therefore stands at the FULL stop (the drag settle's own end state: .full, inline height, maxHeight none - the shared transition animates the move), which lifts the scroll region's top well above any keyboard; when the editor closes, a sheet this raise owns returns to the half stop's end state. A sheet already at full (the user's own drag) is left exactly as it is, both ways.
   const sh = $('sheet'); if (!sh) return;
   if (noteOpenFor && sh.classList.contains('open')) {
-    if (!sh.classList.contains('full')) { sh.classList.add('full'); sh.style.maxHeight = 'none'; sh.style.height = (vvHeight() * SHEET_FULL_VH) + 'px'; noteRaiseActive = true; }
+    if (!sh.classList.contains('full')) { sh.classList.add('full'); sh.style.maxHeight = 'none'; sh.style.height = sheetFullH(vvHeight()) + 'px'; noteRaiseActive = true; }
   } else if (noteRaiseActive) {
     noteRaiseActive = false;
     if (sh.classList.contains('open')) { sh.classList.remove('full'); sh.style.height = ''; sh.style.maxHeight = ''; }
   }
 }
-function collapseNoteEditor() { // Beta 1.106 (Andrew): closing the Streets sheet resets the list - an editor left open must not still be open on the next open. Clearing noteOpenFor and re-rendering finalizes any pending debounced save first (renderStreets' draft flush runs against the editor's own street), so typed text is never lost; only the open-editor state resets. Called from BOTH close funnels of the Streets sheet: closeSheetEl (X, tab toggle, pin, opening another sheet, outside tap) and the drag settleClose landing in makeSheetDraggable.
+function collapseNoteEditor() { // Beta 1.106 (Andrew): closing the Streets sheet resets the list - an editor left open must not still be open on the next open. Clearing noteOpenFor and re-rendering finalizes any pending debounced save first (renderStreets' draft flush runs against the editor's own street), so typed text is never lost; only the open-editor state resets. Called from BOTH close funnels of the Streets sheet: closeSheetEl (X, tab toggle, Locate pill, opening another sheet, outside tap) and the drag settleClose landing in makeSheetDraggable.
   if (!noteOpenFor) return;
   noteOpenFor = null;
   renderStreets();
@@ -4094,10 +4094,20 @@ function closeSheets() { document.querySelectorAll('.sheet').forEach(closeSheetE
 // Draggable sheets (Andrew, Beta 1.9 spec; refined 1.10 flick; refined 1.13 touch zone): the drag/flick touch
 // zone is the panel's EMPTY TOP STRIP - the grab handle plus the title row - a comfortable area with no
 // controls except Close (a flick starting on a button never starts a drag). The content area below is pure
-// scrolling again, so flicks never fight the streets list. Three stops: flick/drag up = fill the screen
-// (FULL), down = back to the standard open height (DEFAULT), down again = closed. Slow drags follow the
+// scrolling again, so flicks never fight the streets list. Three stops: flick/drag up = the
+// full stop (FULL - through Beta 1.227 that filled the screen; Beta 1.228 caps it just above
+// the title, see sheetFullH), down = back to the standard open height (DEFAULT), down again = closed. Slow drags follow the
 // finger; quick flicks throw the panel to the next stop on release. Taps pass through untouched.
-const SHEET_DEF_VH = 0.50, SHEET_FULL_VH = 0.94, SHEET_MIN_PX = 150; // Beta 1.79 (Andrew): the three stops - closed / half (SHEET_DEF_VH, where a sheet opens) / full (SHEET_FULL_VH)
+const SHEET_DEF_VH = 0.50, SHEET_FULL_VH = 0.94, SHEET_MIN_PX = 150; // Beta 1.79 (Andrew): the three stops - closed / half (SHEET_DEF_VH, where a sheet opens) / full (SHEET_FULL_VH). Beta 1.228 (Andrew): the full stop is no longer the 0.94 fraction - it is the title cap computed by sheetFullH below; SHEET_FULL_VH survives only as that helper's fallback for when the title cannot be measured
+const SHEET_FULL_MARGIN_PX = 8; // Beta 1.228 (Andrew): at the full stop the sheet's top edge stands this far ABOVE the "Snow Route Beta" title's top edge - the sheet covers the title and stops a notch past it, never reaching the screen top
+function sheetFullH(vh) { // Beta 1.228: the full stop's height. The sheet is bottom-anchored at the visual viewport's own bottom edge (--vvb is exactly the occluded band), so a height of vh - (titleTop - margin) lands the sheet's top edge precisely the margin above the title's top edge, in any safe-area state - the title's rect already carries the inset. Measured live on every call: drags and settles are rare events, and a stale cache is how geometry rules drift. When the title cannot be measured (hidden in create mode, rect height 0) the old 0.94 fraction stands.
+  const t = document.querySelector('#hud .title');
+  if (!t) return vh * SHEET_FULL_VH;
+  const r = t.getBoundingClientRect();
+  if (!r.height) return vh * SHEET_FULL_VH;
+  const vvTop = window.visualViewport ? window.visualViewport.offsetTop : 0;
+  return vh - Math.max(0, r.top - vvTop - SHEET_FULL_MARGIN_PX);
+}
 // Beta 1.81 (Andrew, reverse-engineered from his Waze screen recording): a drag release used to
 // hand the sheet to a fixed 420ms CSS transition that restarted from rest - measured on the rig,
 // a flick thrown at ~1600px/s crawled +3/+12/+21px in its first 120ms and only then accelerated
@@ -4166,7 +4176,7 @@ function makeSheetDraggable(sheet) {
     }
     const vh = vvHeight();
     // the panel follows the finger (the content area below the top strip scrolls natively - drags can't start there)
-    const h = Math.max(SHEET_MIN_PX, Math.min(vh * SHEET_FULL_VH, startH + total));
+    const h = Math.max(SHEET_MIN_PX, Math.min(sheetFullH(vh), startH + total));
     sheet.style.maxHeight = 'none';
     sheet.style.height = h + 'px';
     panelMoved = true;
@@ -4206,12 +4216,12 @@ function makeSheetDraggable(sheet) {
     // the panel itself moved (a flick that scrolled the list stays a scroll).
     const flick = panelMoved && Math.abs(v) > 0.30 ? (v > 0 ? 1 : -1) : 0;
     const settleStop = targetH => { // spring the height to a stop; end state = the old snap's end state
-      const isFull = targetH >= vh * SHEET_FULL_VH - 1;
+      const isFull = targetH >= sheetFullH(vh) - 1;
       if (isFull) sheet.classList.add('full'); else sheet.classList.remove('full');
       sheet.style.maxHeight = 'none';
       springSheet(sheet, h, targetH, v * 1000, q => { sheet.style.height = q + 'px'; }, () => {
         sheet.classList.remove('dragging');
-        if (isFull) sheet.style.height = (vh * SHEET_FULL_VH) + 'px';
+        if (isFull) sheet.style.height = sheetFullH(vh) + 'px';
         else { sheet.style.height = ''; sheet.style.maxHeight = ''; }
       });
     };
@@ -4238,10 +4248,10 @@ function makeSheetDraggable(sheet) {
         requestAnimationFrame(() => requestAnimationFrame(() => { if (!sheet.classList.contains('open')) sheet.classList.remove('dragging'); }));
       });
     };
-    if (flick > 0) { settleStop(vh * SHEET_FULL_VH); return; }
+    if (flick > 0) { settleStop(sheetFullH(vh)); return; }
     if (flick < 0) { if (sheet.classList.contains('full')) settleStop(naturalH); else settleClose(); return; }
     if (h < defH * 0.55) { settleClose(); return; }
-    if (h > (defH + vh * SHEET_FULL_VH) / 2) { settleStop(vh * SHEET_FULL_VH); return; }
+    if (h > (defH + sheetFullH(vh)) / 2) { settleStop(sheetFullH(vh)); return; }
     settleStop(naturalH);
   };
   sheet.addEventListener('pointerup', end);
@@ -6424,10 +6434,10 @@ function renderIcons() { // the icon render layer (it generalizes the 1.217 them
   $('setBtn').querySelector('.tabIco').innerHTML = ICONS.gear;
   $('selNote').innerHTML = ICONS.note;
   $('nightBtn').innerHTML = isNight() ? ICONS.sun : ICONS.moon;
-  document.querySelectorAll('.smap').forEach(el => { el.innerHTML = ICONS.pin; }); // Beta 1.219: the extras' live hosts re-stamp in place on the same render - street rows, note marks, the clean view, and every rendered stat cell (its .ic span carries data-ic since 1.219)
+  // Beta 1.228: the street rows' pin host retired with the pin itself - the Locate pill is text and carries no stamp. The note marks below still re-stamp on the same render, as do the clean view's icons and every rendered stat cell (its .ic span carries data-ic since 1.219)
   document.querySelectorAll('.ntIco, .nmNote, .cvNoteIco').forEach(el => { el.innerHTML = ICONS.note; });
   { const bx = $('crExit'); if (bx) bx.innerHTML = `<img class="crBackIco" alt="" src="${night ? GLYPH_CREATE.back.n : GLYPH_CREATE.back.d}">`; const si = $('crSearchIco'); if (si) si.innerHTML = `<img class="crMagIco" alt="" src="${GLYPH_CREATE.search.n}">`; const cl = $('crClear'); if (cl) cl.innerHTML = `<img class="crClrIco" alt="" src="${GLYPH_CREATE.cancel.n}">`; } // Beta 1.227: the create bar's hosts - the back pill wears the theme variant of the arrow; the magnifier and the clear disc sit on the app blue, so they wear the white fill in both modes
-  document.querySelectorAll('.crPin').forEach(el => { el.innerHTML = ICONS.pin; }); // Beta 1.227: the result rows' pins re-stamp with the extras, like the .smap hosts above
+  document.querySelectorAll('.crPin').forEach(el => { el.innerHTML = ICONS.pin; }); // Beta 1.227: the result rows' pins re-stamp with the extras, like the note hosts above
   document.querySelectorAll('.statgrid .ic[data-ic]').forEach(el => { el.innerHTML = PACE_ICONS[el.getAttribute('data-ic')]; });
   for (const id of ['sheetClose', 'paceClose', 'finNo', 'noteNo', 'xClose', 'crModalX', 'mapNoteNo']) { const el = $(id); if (el) el.innerHTML = `<img class="xico" alt="Close" src="${MP.x.corner}">`; } // Beta 1.219: the close ✕ wears the pack too (Andrew) - the corner family: the shared red job (every pack stamps its own cancel artwork, the corner job in the close red). xClose is a selector seat in the shared rule with no element today - the guard skips it until a menu carries one The artwork carries alt="Close": the text it replaces was the button's only accessible name, so the name survives the swap (Codex P2, PR #96).
   for (const id of ['rmClose', 'setClose']) { const el = $(id); if (el) el.innerHTML = `<img class="xico" alt="Close" src="${MP.x.bottom}">`; } // the bottom-centre pair on the blue full-screen menus: the white job (Glyph's white fill - the knocked-out ✕ shows the blue through it)
@@ -6643,7 +6653,7 @@ $('stDel').addEventListener('click', async () => {
 });
 // ---- About ----
 const WHATSNEW = { // the curated in-app notes: plain words, LATEST RELEASE ONLY (Beta 1.114, Andrew: the accumulated list cluttered the About pane). A release REPLACES this entry with its own in the same change - it never accumulates; the full history lives in CHANGELOG.md, not the app
-  v: 'Beta 1.227', items: ["Creating a route has a new search bar with a round back button.", "Street results appear as you type, each with its area named."] }; // Beta 1.223 (Andrew): What's New entries are SHORT from now on - point form, one short plain line each, no prose paragraphs, no em dashes
+  v: 'Beta 1.228', items: ["Street rows trade the pin for a Locate pill with its own press.", "The day/night and re-centre buttons rise to line up with the title.", "Streets and Pace open fully just above the title, not to the top of the screen."] }; // Beta 1.223 (Andrew): What's New entries are SHORT from now on - point form, one short plain line each, no prose paragraphs, no em dashes
 
 function renderAbout() {
   const cur = $('ver').textContent.trim();
@@ -6669,8 +6679,8 @@ document.addEventListener('pointerdown', e => {
 // :active rule, but a plain div row never enters :active on a press in some browsers (verified in
 // the test browser: a div with an :active rule stays unshrunk while every button shrinks) - so the
 // row families (.srow street rows, .crPRow pick rows, .cvRow cover rows, .prow.histRow history
-// rows) get the same scale through this class. A press that lands on a real button (the row's pin
-// button included) is the button's own press - it shrinks through :active and the row does not
+// rows) get the same scale through this class. A press that lands on a real button (the street
+// row's Locate pill included) is the button's own press - it shrinks through :active and the row does not
 // compound a second scale on top of it.
 let pressRowEl = null;
 const pressRowOff = () => { if (pressRowEl) { pressRowEl.classList.remove('pressOn'); pressRowEl = null; } };

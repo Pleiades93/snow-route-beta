@@ -670,10 +670,10 @@ function renderIcons() { // the icon render layer (it generalizes the 1.217 them
   $('setBtn').querySelector('.tabIco').innerHTML = ICONS.gear;
   $('selNote').innerHTML = ICONS.note;
   $('nightBtn').innerHTML = isNight() ? ICONS.sun : ICONS.moon;
-  document.querySelectorAll('.smap').forEach(el => { el.innerHTML = ICONS.pin; }); // Beta 1.219: the extras' live hosts re-stamp in place on the same render - street rows, note marks, the clean view, and every rendered stat cell (its .ic span carries data-ic since 1.219)
+  // Beta 1.228: the street rows' pin host retired with the pin itself - the Locate pill is text and carries no stamp. The note marks below still re-stamp on the same render, as do the clean view's icons and every rendered stat cell (its .ic span carries data-ic since 1.219)
   document.querySelectorAll('.ntIco, .nmNote, .cvNoteIco').forEach(el => { el.innerHTML = ICONS.note; });
   { const bx = $('crExit'); if (bx) bx.innerHTML = `<img class="crBackIco" alt="" src="${night ? GLYPH_CREATE.back.n : GLYPH_CREATE.back.d}">`; const si = $('crSearchIco'); if (si) si.innerHTML = `<img class="crMagIco" alt="" src="${GLYPH_CREATE.search.n}">`; const cl = $('crClear'); if (cl) cl.innerHTML = `<img class="crClrIco" alt="" src="${GLYPH_CREATE.cancel.n}">`; } // Beta 1.227: the create bar's hosts - the back pill wears the theme variant of the arrow; the magnifier and the clear disc sit on the app blue, so they wear the white fill in both modes
-  document.querySelectorAll('.crPin').forEach(el => { el.innerHTML = ICONS.pin; }); // Beta 1.227: the result rows' pins re-stamp with the extras, like the .smap hosts above
+  document.querySelectorAll('.crPin').forEach(el => { el.innerHTML = ICONS.pin; }); // Beta 1.227: the result rows' pins re-stamp with the extras, like the note hosts above
   document.querySelectorAll('.statgrid .ic[data-ic]').forEach(el => { el.innerHTML = PACE_ICONS[el.getAttribute('data-ic')]; });
   for (const id of ['sheetClose', 'paceClose', 'finNo', 'noteNo', 'xClose', 'crModalX', 'mapNoteNo']) { const el = $(id); if (el) el.innerHTML = `<img class="xico" alt="Close" src="${MP.x.corner}">`; } // Beta 1.219: the close ✕ wears the pack too (Andrew) - the corner family: the shared red job (every pack stamps its own cancel artwork, the corner job in the close red). xClose is a selector seat in the shared rule with no element today - the guard skips it until a menu carries one The artwork carries alt="Close": the text it replaces was the button's only accessible name, so the name survives the swap (Codex P2, PR #96).
   for (const id of ['rmClose', 'setClose']) { const el = $(id); if (el) el.innerHTML = `<img class="xico" alt="Close" src="${MP.x.bottom}">`; } // the bottom-centre pair on the blue full-screen menus: the white job (Glyph's white fill - the knocked-out ✕ shows the blue through it)
@@ -889,7 +889,7 @@ $('stDel').addEventListener('click', async () => {
 });
 // ---- About ----
 const WHATSNEW = { // the curated in-app notes: plain words, LATEST RELEASE ONLY (Beta 1.114, Andrew: the accumulated list cluttered the About pane). A release REPLACES this entry with its own in the same change - it never accumulates; the full history lives in CHANGELOG.md, not the app
-  v: 'Beta 1.227', items: ["Creating a route has a new search bar with a round back button.", "Street results appear as you type, each with its area named."] }; // Beta 1.223 (Andrew): What's New entries are SHORT from now on - point form, one short plain line each, no prose paragraphs, no em dashes
+  v: 'Beta 1.228', items: ["Street rows trade the pin for a Locate pill with its own press.", "The day/night and re-centre buttons rise to line up with the title.", "Streets and Pace open fully just above the title, not to the top of the screen."] }; // Beta 1.223 (Andrew): What's New entries are SHORT from now on - point form, one short plain line each, no prose paragraphs, no em dashes
 
 function renderAbout() {
   const cur = $('ver').textContent.trim();
@@ -915,8 +915,8 @@ document.addEventListener('pointerdown', e => {
 // :active rule, but a plain div row never enters :active on a press in some browsers (verified in
 // the test browser: a div with an :active rule stays unshrunk while every button shrinks) - so the
 // row families (.srow street rows, .crPRow pick rows, .cvRow cover rows, .prow.histRow history
-// rows) get the same scale through this class. A press that lands on a real button (the row's pin
-// button included) is the button's own press - it shrinks through :active and the row does not
+// rows) get the same scale through this class. A press that lands on a real button (the street
+// row's Locate pill included) is the button's own press - it shrinks through :active and the row does not
 // compound a second scale on top of it.
 let pressRowEl = null;
 const pressRowOff = () => { if (pressRowEl) { pressRowEl.classList.remove('pressOn'); pressRowEl = null; } };

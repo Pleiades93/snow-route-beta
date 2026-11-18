@@ -80,8 +80,8 @@ check('C: the FULL 1.222 stacks are gone from the page (no full-strength shadow,
 check('D: #spdPill keeps its own glass rule', rule('#spdPill {').includes('background: var(--glass-day);') && rule('#spdPill {').includes('box-shadow: var(--shadow-float);'));
 check('D: the shared tokens stand at their 1.221 values', head.includes('--shadow-float: 0 8px 24px rgba(10,14,20,.22); --glass-day: rgba(255,255,255,.78); --glass-night: rgba(32,33,37,.78);'));
 // E — version agreement
-check('E: #ver reads Beta 1.226', head.includes('id="ver">Beta 1.227</div>'));
-check('E: WHATSNEW is stamped Beta 1.226', app4.includes("v: 'Beta 1.227'"));
+check('E: #ver reads Beta 1.226', head.includes('id="ver">Beta 1.228</div>'));
+check('E: WHATSNEW is stamped Beta 1.226', app4.includes("v: 'Beta 1.228'"));
 
 console.log(pass + ' pass, ' + fail + ' fail');
 process.exit(fail === 0 ? 0 : 1);

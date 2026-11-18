@@ -199,6 +199,8 @@ jobs:
         run: node tests/proof/proof-1226.mjs
       - name: Create search bar proof (Beta 1.227 gate - the create search is one blue bar with a back pill that only goes back and a clear disc that only clears, the Glyph Neue glyphs byte-pinned under the set treatment, the results rows split pin + name + area on the approved sample surfaces, the version in agreement)
         run: node tests/proof/proof-1227.mjs
+      - name: Locate pill, title-line stack and sheet cap proof (Beta 1.228 gate - the pin becomes a labelled Locate pill with a full-row-height touch area and a press separate from the row's, the day/night and re-centre buttons stand on the title's line with the speed circle's seat kept, and both sheets' full stop is the title cap computed by sheetFullH with the 0.94 fallback; the version in agreement)
+        run: node tests/proof/proof-1228.mjs
       - name: Premise-lint fixtures (Tranche 4 gate)
         run: python3 scripts/premise-lint-fixtures/run-fixtures.py
       - name: Bug-hunt fix fixtures (PR #23 gate; Beta 1.185)
