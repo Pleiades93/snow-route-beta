@@ -52,14 +52,14 @@ const check = (name, cond) => { if (cond) { pass++; } else { fail++; console.log
 const runSearchBody = pick.slice(pick.indexOf('function crRunSearch(fromTyping, cont) {'), pick.indexOf("document.addEventListener('pointerdown'"));
 
 // ---------- A: the city pane anchors ----------
-check('A1: the pane pads its top by the HUD formula less the menu padding', head.includes('#rmCityListPane { height: 100%; padding-top: calc(25px + var(--sat) - 24px); }'));
+check('A1 (Beta 1.236 roll: the full-bleed pane and its HUD-line padding retired - the pane is a floating sheet, pinned whole in proof-1236 A1)', head.includes('#rmCityListPane { height: calc(100% - 76px); width: calc(100% + 32px);'));
 check('A2: the anchor it follows stands - the HUD pads its title calc(25px + var(--sat))', head.includes('padding: calc(25px + var(--sat)) calc(12px + var(--sar)) 8px calc(12px + var(--sal));'));
-check('A3: Back pins to the tab-bar line (absolute, the derived bottom, the 32px row)', head.includes('#rmCityListPane #rmCityListBack { position: absolute; left: 0; bottom: calc(var(--sab) + 11.5px - 24px); height: 32px; }'));
-check('A4: the list keeps its flex stretch and the re-derived 12px-above-the-X margin', head.includes('#rmCityListPane #crCityList { max-height: none; flex: 1 1 auto; min-height: 0; margin-bottom: calc(58px + var(--sab)); }'));
+check('A3 (Beta 1.236 roll: the tab-bar pin retired - Back stands in the flow at the sheet\'s bottom-left, the 32px row stays)', head.includes('#rmCityListPane #rmCityListBack { height: 32px; }') && !head.includes('#rmCityListPane #rmCityListBack { position: absolute'));
+check('A4 (Beta 1.236 roll: the list\'s bottom bound is the sheet itself now - the close-X margin retired; the flex stretch is unchanged)', head.includes('#rmCityListPane #crCityList { max-height: none; flex: 1 1 auto; min-height: 0; margin-bottom: 0; }'));
 check('A5: scope - the routes list keeps its 52% cap and no other pane gains the full-height rule', head.includes('#crCityList, #rmRoutes { max-height: calc(var(--vvh, 100dvh) * .52);') && !head.includes('#rmListPane { height: 100%') && !head.includes('#rmCityPane { height: 100%'));
 
 // ---------- B: intersections only, on-device ----------
-check('B1: the placeholder teaches the intersection form (and the old wording is gone)', head.includes('placeholder="Search an intersection - Weston & Rutherford"') && !head.includes('Search a street or address'));
+check('B1 (Beta 1.236 roll: the placeholder is Andrew\'s shorter wording now - the intersection example retired)', head.includes('placeholder="Select a road or intersection"') && !head.includes('Search an intersection - Weston & Rutherford'));
 check('B2: the street search fetches nothing - crRunSearch is synchronous, its span holds no fetch call and no service URL, and the file\'s one Nominatim URL is the city search\'s', pick.includes('function crRunSearch(fromTyping, cont) {') && !pick.includes('async function crRunSearch') && !runSearchBody.includes('fetch(') && !runSearchBody.includes('nominatim.openstreetmap.org') && (pick.match(/nominatim\.openstreetmap\.org/g) || []).length === 1);
 check('B3: the resolve tries the exact pair first and a hit renders as exactly that crossing', pick.includes('const pair = crIntersectionItem(q);') && pick.includes('if (pair) return { items: [pair], streets: new Set([pair.display_name.split(\' & \')[0]]) };') && pick.indexOf('const pair = crIntersectionItem(q);') < pick.indexOf('crFragmentStreetItems(q)'));
 check('B4: the fragment matcher - full name, short form, or any word, on the normalized keys, closeness-ordered', pick.includes('function crMatchFragment(frag)') && pick.includes("else if (full.split(' ').some(w => w.startsWith(key))) s = 2;") && pick.includes('scored.sort((a, b) => a.s - b.s || a.len - b.len'));
@@ -69,7 +69,7 @@ check('B7: the rendered list caps at 40 rows on both fragment paths', pick.inclu
 check('B8: the pair-fragment filter applies to both sides, either orientation', pick.includes('let items = scan(A, new Set(B));') && pick.includes('if (!items.length) items = scan(B, new Set(A));'));
 check('B9: both hint wordings stand verbatim, chosen by whether a city is loaded', pick.includes("hint: crCity ? 'No crossing found - try two streets, like Weston & Rutherford' : 'Choose a city first, then search an intersection'"));
 check('B10: the hint row is a plain div - no button, no handler in its factory', pick.includes("function crHintRowEl(text) {") && pick.includes("d.className = 'crHintRow'; d.textContent = text; return d;") && !pick.slice(pick.indexOf('function crHintRowEl(text) {'), pick.indexOf('function crResultRowEl(it) {')).includes('addEventListener'));
-check('B11: the results box scrolls under its height cap', head.includes('max-height: calc(var(--vvh, 100dvh) - 88px - var(--cr-shift) - env(safe-area-inset-top, 0px)); overflow-x: hidden; overflow-y: auto;'));
+check('B11 (Beta 1.236 roll: the cap is a proportion now - 34% of the visible viewport height, his Option B)', head.includes('max-height: calc(var(--vvh, 100dvh) * .34); overflow-x: hidden; overflow-y: auto;'));
 check('B12: the retired network-row machinery is absent and cannot creep back', !pick.includes('function crResultName') && !pick.includes('function crStreetIdentity') && !pick.includes('function crCollapseResults') && !pick.includes('function crNearCrossName') && !pick.includes('crNear') && !head.includes('.crNear'));
 check('B13: crInOntario stays - the city search still filters with it', pick.includes('function crInOntario(it)') && pick.includes('.filter(crIsPlace).filter(crInOntario)'));
 check('B14: a crossing pick keeps the picked city as its area (the name step\'s pre-fill cannot blank)', pick.includes("(cur._isect && crCity ? crCity.name : '')")); // fix round 1: the operand rolled it -> cur with the F1 tap-time read; the rule (a crossing pick's area is the picked city) is unchanged
@@ -77,7 +77,7 @@ check('B15: Enter still cancels the pending debounce and runs the typed query NO
 
 // ---------- The populate animation ----------
 check('N1: entering rows ride the city search\'s own shape; leaving rows fade in place', head.includes('#createResults .crRowIn { animation: crRowIn 260ms var(--ease-open) both; }') && head.includes('#createResults .crRowOut { transition: opacity 180ms ease; opacity: 0; pointer-events: none; }'));
-check('N2: the stagger is 55ms fresh / 30ms re-populate, assigned by entering order', pick.includes('const stagger = fresh ? 55 : 30;') && pick.includes("el.style.animationDelay = (enterIdx++ * stagger) + 'ms';"));
+check('N2 (Beta 1.236 roll: the stagger reaches only the first screenful now - the first 8 rows by list position at 30ms steps; the 55ms fresh step and the entering-order counter are gone)', pick.includes("el.style.animationDelay = (ei * 30) + 'ms';") && !pick.includes('const stagger = fresh ? 55 : 30;') && !pick.includes('enterIdx'));
 check('N3: the render is a keyed diff - survivors keep their nodes (the row-state map and the shares-a-street continuation rule)', pick.includes('let crRowState = new Map();') && pick.includes('function crSharesStreet(a, b)'));
 check('N4: a leaving row is removed just past its fade, and reduced motion removes at once', pick.includes('}, 190);') && pick.includes("matchMedia('(prefers-reduced-motion: reduce)').matches") && head.includes('#createResults .crRowIn { animation: none; }') && head.includes('#createResults .crRowOut { transition: none; }'));
 check('N5: the hint row carries its own quiet style in both themes', head.includes('.crHintRow { padding: 11px 16px; font-size: 15.5px; color: rgba(20,24,31,.55); }') && head.includes('body.night .crHintRow { color: rgba(242,244,248,.55); }'));
@@ -130,9 +130,9 @@ check('R3: crRenderHint\'s tail carries the second trigger (the prepare completi
 check('R4: a refresh render is a continuation, never a fresh populate - the renderer takes cont and the freshness rule yields to it', pick.includes('function crRenderRows(res, cont)') && pick.includes('const fresh = !cont && (') && pick.includes('crRenderRows(res, cont);'));
 
 // ---------- V: version agreement ----------
-check('V: the #ver label reads Beta 1.235', head.includes('<div class="ver" id="ver">Beta 1.235</div>'));
-check('V: WHATSNEW is the Beta 1.235 entry with the three short bullets', app4.includes("v: 'Beta 1.235', items: [\"The city step is cleaner: fewer words, more air, and a search pill with real depth.\", \"City search suggests as you type: a few letters of a city name are enough.\"]"));
-check('V: the CHANGELOG top entry is Beta 1.234', changelog.split('\n').find(l => l.startsWith('## Beta')) === '## Beta 1.235 — 2026-11-18');
+check('V: the #ver label reads Beta 1.236', head.includes('<div class="ver" id="ver">Beta 1.236</div>'));
+check('V: WHATSNEW is the Beta 1.236 entry with the three short bullets', app4.includes("v: 'Beta 1.236', items: [\"The Select City list is a floating sheet now, with the map showing above and below it.\", \"Intersection results land all at once in a shorter box that scrolls to the very end.\", \"The search bar starts empty every time, and its hint is shorter: Select a road or intersection.\"]"));
+check('V: the CHANGELOG top entry is Beta 1.234', changelog.split('\n').find(l => l.startsWith('## Beta')) === '## Beta 1.236 — 2026-11-18');
 
 console.log(`proof-1234: ${pass} pass, ${fail} fail`);
 process.exit(fail === 0 ? 0 : 1);

@@ -100,8 +100,8 @@ check('B2d: a loaded created route clears both right-edge controls', head.includ
 check('B2e: the check payload is byte-pinned', sha(Buffer.from(payload('GLYPH_MENU', 'check'), 'base64')) === 'a629ee0b2959ea4604e566af0f2def1ffc5aeb18653b2407fc65a4b02ee9c9fb');
 
 // ---------- B3: the city list stretch ----------
-check('B3a: the city pane takes the menu full height (Beta 1.234: the rule now also carries the HUD-line padding - proof-1234 A1 pins the whole rule)', head.includes('#rmCityListPane { height: 100%;'));
-check('B3b: the list flexes to fill the pane (Beta 1.234: the bottom margin rolled to calc(58px + var(--sab)) with Back out of the flow - the 12px-above-the-X geometry is unchanged, pinned in proof-1234 A4)', head.includes('#rmCityListPane #crCityList { max-height: none; flex: 1 1 auto; min-height: 0; margin-bottom: calc(58px + var(--sab)); }'));
+check('B3a: the city pane stands in the menu (Beta 1.236 roll: the full-height full-bleed pane retired - it is a floating sheet now, pinned whole in proof-1236 A1)', head.includes('#rmCityListPane { height: calc(100% - 76px);'));
+check('B3b: the list flexes to fill the pane (Beta 1.236 roll: the bottom margin retired with the full-bleed pane - the list\'s bound is the sheet itself, pinned in proof-1234 A4)', head.includes('#rmCityListPane #crCityList { max-height: none; flex: 1 1 auto; min-height: 0; margin-bottom: 0; }'));
 
 // ---------- B4: feathered edges ----------
 check('B4a: the three mask states stand for both lists (one gradient, mirrored)', head.includes('#crCityList.fadeT, #rmRoutes.fadeT {') && head.includes('#crCityList.fadeB, #rmRoutes.fadeB {') && head.includes('#crCityList.fadeT.fadeB, #rmRoutes.fadeT.fadeB {') && (head.match(/transparent 0, #000 30px/g) || []).length >= 4);
@@ -130,9 +130,9 @@ check('C3: the name wraps in the rows instead of truncating', head.includes('#cr
 check('C4 (Beta 1.234): the cross-street label is gone with the network rows it labelled', !pick.includes('crNear') && !head.includes('.crNear'));
 
 // ---------- V: version agreement ----------
-check('V: the #ver label reads Beta 1.235', head.includes('<div class="ver" id="ver">Beta 1.235</div>'));
-check('V: WHATSNEW is the Beta 1.235 entry (its first short bullet)', app4.includes("v: 'Beta 1.235', items: [\"The city step is cleaner: fewer words, more air, and a search pill with real depth.\""));
-check('V: the CHANGELOG top entry is Beta 1.234', changelog.split('\n').find(l => l.startsWith('## Beta')) === '## Beta 1.235 — 2026-11-18');
+check('V: the #ver label reads Beta 1.236', head.includes('<div class="ver" id="ver">Beta 1.236</div>'));
+check('V: WHATSNEW is the Beta 1.236 entry (its first short bullet)', app4.includes("v: 'Beta 1.236', items: [\"The Select City list is a floating sheet now, with the map showing above and below it.\""));
+check('V: the CHANGELOG top entry is Beta 1.234', changelog.split('\n').find(l => l.startsWith('## Beta')) === '## Beta 1.236 — 2026-11-18');
 
 console.log(`proof-1233: ${pass} pass, ${fail} fail`);
 process.exit(fail === 0 ? 0 : 1);

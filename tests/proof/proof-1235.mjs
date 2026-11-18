@@ -67,9 +67,9 @@ check('B10: the merged list renders through the one box swap (locals land with t
 check('B11: a failed fetch still clears the box - no local fallback stands on a failure', pick.includes("} catch (e) { if (crCitySearchSeqCurrent(seq) && !(e && e.name === 'AbortError')) { crCityBoxSwap(b => { b.innerHTML = ''; }); } }"));
 
 // ---------- V: the version seats ----------
-check('V: the #ver label reads Beta 1.235', head.includes('<div class="ver" id="ver">Beta 1.235</div>'));
-check('V: WHATSNEW is the Beta 1.235 entry', app4.includes("v: 'Beta 1.235', items:"));
-check('V: the CHANGELOG top entry is Beta 1.235', changelog.split('\n').find(l => l.startsWith('## Beta')) === '## Beta 1.235 — 2026-11-18');
+check('V: the #ver label reads Beta 1.236', head.includes('<div class="ver" id="ver">Beta 1.236</div>'));
+check('V: WHATSNEW is the Beta 1.236 entry', app4.includes("v: 'Beta 1.236', items:"));
+check('V: the CHANGELOG top entry is Beta 1.235', changelog.split('\n').find(l => l.startsWith('## Beta')) === '## Beta 1.236 — 2026-11-18');
 
 console.log(`proof-1235: ${pass} passed, ${fail} failed`);
 process.exit(fail ? 1 : 0);

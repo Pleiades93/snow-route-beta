@@ -65,9 +65,9 @@ check('4d: no full-stop site still multiplies the viewport by the fraction', !ap
 check('4e: the stops\' constants stand (half and fallback untouched)', app2.includes('const SHEET_DEF_VH = 0.50, SHEET_FULL_VH = 0.94, SHEET_MIN_PX = 150;'));
 
 // ---------- Version agreement ----------
-check('V: the #ver label reads Beta 1.235', head.includes('<div class="ver" id="ver">Beta 1.235</div>'));
-check('V: WHATSNEW is the Beta 1.235 entry with the three short bullets', app4.includes("v: 'Beta 1.235', items: [\"The city step is cleaner: fewer words, more air, and a search pill with real depth.\", \"City search suggests as you type: a few letters of a city name are enough.\"]"));
-check('V: the CHANGELOG top entry is Beta 1.229', changelog.split('\n').find(l => l.startsWith('## Beta')) === '## Beta 1.235 — 2026-11-18');
+check('V: the #ver label reads Beta 1.236', head.includes('<div class="ver" id="ver">Beta 1.236</div>'));
+check('V: WHATSNEW is the Beta 1.236 entry with the three short bullets', app4.includes("v: 'Beta 1.236', items: [\"The Select City list is a floating sheet now, with the map showing above and below it.\", \"Intersection results land all at once in a shorter box that scrolls to the very end.\", \"The search bar starts empty every time, and its hint is shorter: Select a road or intersection.\"]"));
+check('V: the CHANGELOG top entry is Beta 1.229', changelog.split('\n').find(l => l.startsWith('## Beta')) === '## Beta 1.236 — 2026-11-18');
 
 console.log(`proof-1228: ${pass} passed, ${fail} failed`);
 process.exit(fail ? 1 : 0);

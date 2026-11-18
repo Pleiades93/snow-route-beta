@@ -62,8 +62,8 @@ check('2a: #setMenu top padding carries the safe-area inset',
   rule('#setMenu').includes('padding: calc(24px + env(safe-area-inset-top, 0px)) 24px calc(88px + env(safe-area-inset-bottom, 0px))'));
 check('2a2: #setMenu lays its column from flex-start (a centred column clips an overflowing pane top beyond the scroller)',
   rule('#setMenu').includes('justify-content: flex-start'));
-check('2b: WHATSNEW is the Beta 1.235 entry', app4.includes("v: 'Beta 1.235', items:"));
-const wnM = app4.match(/v: 'Beta 1\.235', items: \[([\s\S]*?)\] \}/); // Beta 1.225 roll: the extractor reads the CURRENT entry, like 2b - the claim (the live items are short and dash-free) is unchanged. Beta 1.230 roll: the pin's escaped form rolls with the release like every other form - the round's first sweep missed the backslash form and this check failed on the empty extraction until it was rolled too. Beta 1.232 roll: the escaped form again - the first sweep missed it the same way; the roll-list lesson stands (grep BOTH forms)
+check('2b: WHATSNEW is the Beta 1.236 entry', app4.includes("v: 'Beta 1.236', items:"));
+const wnM = app4.match(/v: 'Beta 1\.236', items: \[([\s\S]*?)\] \}/); // Beta 1.225 roll: the extractor reads the CURRENT entry, like 2b - the claim (the live items are short and dash-free) is unchanged. Beta 1.230 roll: the pin's escaped form rolls with the release like every other form - the round's first sweep missed the backslash form and this check failed on the empty extraction until it was rolled too. Beta 1.232 roll: the escaped form again - the first sweep missed it the same way; the roll-list lesson stands (grep BOTH forms)
 const wnItems = wnM ? [...wnM[1].matchAll(/"([^"]*)"/g)].map(m => m[1]) : [];
 check('2c: every What\'s New item is one short line (<= 110 chars) and dash-free',
   wnItems.length >= 1 && wnItems.every(t => t.length <= 110 && !t.includes('—')), JSON.stringify(wnItems.map(t => t.length))); // Beta 1.225 re-derivation (same claim, same strength): the >= 4 floor was the 1.223/1.224 entries' item count, not a rule - Andrew's rule is short point-form entries, and the 1.225 entry carries its two pieces as two items; the floor's job (the check must not pass on an empty extraction) stands at >= 1
@@ -110,8 +110,8 @@ check('4j: no em dash in any part\'s code (strings included; comments stripped)'
 check('4k: the static sheet texts are dash-free too', !head.includes('Not saving —') && !head.includes("can't load —"));
 
 // ---------- version agreement ----------
-check('V: the #ver label reads Beta 1.235', head.includes('<div class="ver" id="ver">Beta 1.235</div>'));
-check('V: the CHANGELOG top entry is Beta 1.226', changelog.split('\n').find(l => l.startsWith('## Beta')) === '## Beta 1.235 — 2026-11-18');
+check('V: the #ver label reads Beta 1.236', head.includes('<div class="ver" id="ver">Beta 1.236</div>'));
+check('V: the CHANGELOG top entry is Beta 1.226', changelog.split('\n').find(l => l.startsWith('## Beta')) === '## Beta 1.236 — 2026-11-18');
 
 console.log(`\nproof-1223: ${pass} passed, ${fail} failed`);
 process.exit(fail ? 1 : 0);
