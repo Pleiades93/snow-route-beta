@@ -1220,13 +1220,14 @@ function crIntersectionItem(q) { // piece 1: the crossing of two named streets, 
   const As = crMatchStreetName(parts[0]), Bs = crMatchStreetName(parts[1]);
   if (!As.length || !Bs.length) return null;
   const ctr = (typeof map !== 'undefined' && map) ? map.getCenter() : null; // several crossings of one pair: the one nearest the map centre wins - the search's standing map bias
+  const cityBox = (crCity && crCity.bbox) ? crCity.bbox : null; // Beta 1.232 fix round 4 (PR #112, Codex P2): since 1.153 the search is city-only - the network landing enforces it with crInBox on this same box - but the extract's ways run past the boundary, so the pair's CANDIDATES are bounded here, before clustering and nearest-selection: a pair crossing both inside and outside keeps its inside crossing (a post-check on the chosen point would kill exactly that pair), and a pair crossing only outside yields no item, falling back to the already city-bound network exactly as a non-crossing pair does. No city box in force, no bound - the same scoped test the network path applies
   let best = null;
   for (const A of As) {
     const xs = crCrossingsOf(A); if (!xs.length) continue;
     for (const B of Bs) {
       if (B === A) continue;
       const pts = [];
-      for (const x of xs) if (x.other === B) pts.push(x.pt);
+      for (const x of xs) if (x.other === B && (!cityBox || crInBox(cityBox, x.pt[0], x.pt[1]))) pts.push(x.pt);
       if (!pts.length) continue;
       for (const c of crClusterPts(pts, 30)) { const d = ctr ? distM(c, [ctr.lat, ctr.lng]) : 0; if (!best || d < best.d) best = { d, pt: c, A, B }; }
     }

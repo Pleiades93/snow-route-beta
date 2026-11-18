@@ -32,6 +32,13 @@
 // now ends the search, in the shared row handler, with the standing
 // invalidation form (debounce cleared, sequence bumped, controller
 // aborted - the clear disc's and the flow close's own form).
+// Fix round 4 (PR #112, Codex P2): check 1p added - the on-device
+// crossing never took the city bound the network landing has enforced
+// since 1.153: the extract's ways run past the boundary, so a pair
+// crossing only outside the picked city still led the list. The pair's
+// crossing candidates are now filtered by crInBox on crCity.bbox
+// BEFORE clustering and nearest-selection, so a pair crossing both
+// inside and outside keeps its inside crossing.
 import { readFileSync } from 'node:fs';
 
 const root = new URL('../../', import.meta.url);
@@ -60,6 +67,7 @@ check('1l: several clusters resolve to the one nearest the map centre', pick.inc
 check('1m (fix round, PR #112 Codex P2): the crossing renders BEFORE the network is awaited - a hanging fetch cannot hold it hostage', pick.indexOf('if (isect) renderCrResults([isect]);') > pick.indexOf('const isect = crIntersectionItem(q);') && pick.indexOf('if (isect) renderCrResults([isect]);') < pick.indexOf('const r = await fetch(url'));
 check('1n (fix round, PR #112 Codex P2): the crossings gather window is padded by the 4 m junction tolerance, so a vertex across a cell boundary is never skipped', pick.includes('const PAD = 4;') && pick.includes('(Math.min(s[0][0], s[1][0]) - PAD / MLAT)') && pick.includes('(Math.max(s[0][1], s[1][1]) + PAD / MLNG)'));
 check('1o (fix round 3, PR #112 Codex P2): selecting a result ENDS the search - the shared row handler clears the pending debounce and bumps/aborts the in-flight search at its head, so neither landing can reopen the box over the chosen destination', pick.includes("b.addEventListener('click', () => {\n      box.classList.remove('on');\n      if (crSearchTimer) { clearTimeout(crSearchTimer); crSearchTimer = null; }\n      crSearchSeq++; if (crSearchCtl) { try { crSearchCtl.abort(); } catch (e) {} crSearchCtl = null; }"));
+check('1p (fix round 4, PR #112 Codex P2): the crossing CANDIDATES are bounded to the picked city before clustering - the same crInBox test on crCity.bbox the network landing enforces, so a pair crossing only outside the city yields no item and a pair crossing both ways keeps its inside crossing', pick.includes('const cityBox = (crCity && crCity.bbox) ? crCity.bbox : null;') && pick.includes('if (x.other === B && (!cityBox || crInBox(cityBox, x.pt[0], x.pt[1]))) pts.push(x.pt);'));
 
 // ---------- Piece 2: collapse + cross-street labels ----------
 check('2a: same-street points within 100 m collapse, first stands (fix round 2: the comparison is by street identity, not the display head)', pick.includes('function crCollapseResults(list)') && pick.includes('k.id === id && distM([la, lo], k.pt) <= 100'));

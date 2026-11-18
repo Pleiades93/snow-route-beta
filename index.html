@@ -2,7 +2,7 @@
 <html lang="en" class="boot">
 <head>
 <meta charset="UTF-8">
-<meta http-equiv="Content-Security-Policy" content="default-src 'none'; script-src 'sha384-JyX1nek+sa6GLKJnJVmp5WIJtWzWO8U01HmVNMHEg/A3FDeDcFg8XqwJJZblOuMR' https://cdn.jsdelivr.net; style-src-elem 'sha384-NlD3MyF/BMtj+gK9m/QRzX0OJYprm0Z9nUVnaLf4Otk69jZWQ0HFC0mrXxeGOqSi' https://cdn.jsdelivr.net; style-src-attr 'unsafe-inline'; img-src 'self' data: blob: https://tiles.basemaps.cartocdn.com https://protomaps.github.io https://cdn.jsdelivr.net; connect-src 'self' https://tiles.basemaps.cartocdn.com https://protomaps.github.io https://cdn.jsdelivr.net https://nominatim.openstreetmap.org https://overpass-api.de https://overpass.kumi.systems; worker-src blob: 'self'; child-src blob: 'self'; font-src 'none'; manifest-src 'self'; base-uri 'none'; form-action 'none'; object-src 'none'">
+<meta http-equiv="Content-Security-Policy" content="default-src 'none'; script-src 'sha384-X9J82eVa9JanlI1iqnpPvo7J89KgCZ3DYN66ODmApXEX8QB+qVRIJSFH30hpxYFj' https://cdn.jsdelivr.net; style-src-elem 'sha384-NlD3MyF/BMtj+gK9m/QRzX0OJYprm0Z9nUVnaLf4Otk69jZWQ0HFC0mrXxeGOqSi' https://cdn.jsdelivr.net; style-src-attr 'unsafe-inline'; img-src 'self' data: blob: https://tiles.basemaps.cartocdn.com https://protomaps.github.io https://cdn.jsdelivr.net; connect-src 'self' https://tiles.basemaps.cartocdn.com https://protomaps.github.io https://cdn.jsdelivr.net https://nominatim.openstreetmap.org https://overpass-api.de https://overpass.kumi.systems; worker-src blob: 'self'; child-src blob: 'self'; font-src 'none'; manifest-src 'self'; base-uri 'none'; form-action 'none'; object-src 'none'">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="mobile-web-app-capable" content="yes">
@@ -9208,13 +9208,14 @@ function crIntersectionItem(q) { // piece 1: the crossing of two named streets, 
   const As = crMatchStreetName(parts[0]), Bs = crMatchStreetName(parts[1]);
   if (!As.length || !Bs.length) return null;
   const ctr = (typeof map !== 'undefined' && map) ? map.getCenter() : null; // several crossings of one pair: the one nearest the map centre wins - the search's standing map bias
+  const cityBox = (crCity && crCity.bbox) ? crCity.bbox : null; // Beta 1.232 fix round 4 (PR #112, Codex P2): since 1.153 the search is city-only - the network landing enforces it with crInBox on this same box - but the extract's ways run past the boundary, so the pair's CANDIDATES are bounded here, before clustering and nearest-selection: a pair crossing both inside and outside keeps its inside crossing (a post-check on the chosen point would kill exactly that pair), and a pair crossing only outside yields no item, falling back to the already city-bound network exactly as a non-crossing pair does. No city box in force, no bound - the same scoped test the network path applies
   let best = null;
   for (const A of As) {
     const xs = crCrossingsOf(A); if (!xs.length) continue;
     for (const B of Bs) {
       if (B === A) continue;
       const pts = [];
-      for (const x of xs) if (x.other === B) pts.push(x.pt);
+      for (const x of xs) if (x.other === B && (!cityBox || crInBox(cityBox, x.pt[0], x.pt[1]))) pts.push(x.pt);
       if (!pts.length) continue;
       for (const c of crClusterPts(pts, 30)) { const d = ctr ? distM(c, [ctr.lat, ctr.lng]) : 0; if (!best || d < best.d) best = { d, pt: c, A, B }; }
     }
