@@ -54,7 +54,7 @@ check('2d: the pane rides the measured offset to the first-door level', rule('#r
 
 // ---------- 3: the city-search motion ----------
 check('3a: the results area animates its height on the open easing', rule('#crCityResults {').includes('overflow: hidden;') && rule('#crCityResults {').includes('transition: height 420ms var(--ease-open);'));
-check('3b: skeleton rows stand at the result rows\' own height and stride, pulsing', rule('.crSkel {').includes('height: 68px;') && rule('.crSkel {').includes('margin-bottom: 10px;') && rule('.crSkel {').includes('animation: crSkelPulse 1.05s ease-in-out infinite;') && head.includes('@keyframes crSkelPulse'));
+check('3b: skeleton rows stand at the result rows\' own height and stride, pulsing (Beta 1.233: the rows stand at 58 now)', rule('.crSkel {').includes('height: 58px;') && rule('.crSkel {').includes('margin-bottom: 10px;') && rule('.crSkel {').includes('animation: crSkelPulse 1.05s ease-in-out infinite;') && head.includes('@keyframes crSkelPulse'));
 check('3c: result rows settle in (fade + small rise keyframes)', head.includes('@keyframes crRowIn') && rule('#crCityResults .crRowIn {').includes('animation: crRowIn 260ms var(--ease-open) both;'));
 check('3d: the swap helper + skeleton shower exist and the search shows skeletons while in flight',
   pick.includes('function crCityBoxSwap(build)') && pick.includes('function crCityShowSkeletons()') && pick.includes('crCityShowSkeletons();'));
@@ -88,9 +88,9 @@ check('6d: Delete maps wears the in-menu Delete treatment', rule('#stDel {').inc
 check('6e: the confirm No button is red while it reads Cancel', rule('#crModalNo.cancelRed {').includes('color: #e63a2e;') && pick.includes("classList.toggle('cancelRed', !!labels && labels.no === 'Cancel')"));
 
 // ---------- Version agreement ----------
-check('V: the #ver label reads Beta 1.229', head.includes('<div class="ver" id="ver">Beta 1.232</div>'));
-check('V: WHATSNEW is the Beta 1.229 entry with the five short bullets', app4.includes("v: 'Beta 1.232', items: [\"Type two street names - like Weston and Rutherford - and search jumps to where they cross.\", \"Street results now name the nearest cross street, so same-name streets are easy to tell apart.\", \"The create search bar is black and white now - white by day, dark glass by night.\"]"));
-check('V: the CHANGELOG top entry is Beta 1.229', changelog.split('\n').find(l => l.startsWith('## Beta')) === '## Beta 1.232 — 2026-11-18');
+check('V: the #ver label reads Beta 1.229', head.includes('<div class="ver" id="ver">Beta 1.233</div>'));
+check('V: WHATSNEW is the Beta 1.229 entry with the five short bullets', app4.includes("v: 'Beta 1.233', items: [\"Menu buttons are one even height, and your current route wears a white check.\", \"Back, Home and Clear have new icons.\", \"Search results show just the street name - the city and postal code tail is gone.\", \"Crossing searches understand directions: Bloor finds Bloor Street East and Bloor Street West.\", \"The About page is cleaned up - the credit lines are gone.\"]"));
+check('V: the CHANGELOG top entry is Beta 1.229', changelog.split('\n').find(l => l.startsWith('## Beta')) === '## Beta 1.233 — 2026-11-18');
 
 console.log(`proof-1229: ${pass} passed, ${fail} failed`);
 process.exit(fail ? 1 : 0);

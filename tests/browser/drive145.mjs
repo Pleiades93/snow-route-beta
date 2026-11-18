@@ -29,7 +29,7 @@ await poll(`!!window.__bootAt`, 30000);
 ok('N1 the splash hands over to the route menu (menu shown, main pane up, Choose + Create offered)', await poll(`(function(){ var sp = document.getElementById('splash'); return !!sp && sp.classList.contains('menu') && document.getElementById('routeMenu').classList.contains('show') && document.getElementById('rmMain').classList.contains('on') && !!document.getElementById('rmChoose') && !!document.getElementById('rmCreate'); })()`, 20000));
 ok('N2 no route is loaded behind the menu (no state, no route source)', await ev(`routeLoaded === false && activeRoute === null && !(typeof map !== 'undefined' && map && map.getSource('centres'))`));
 await ev(`document.getElementById('rmChoose').click(); true`); await sleep(500);
-ok('N3 Choose lists Route 5W, unbadged while nothing is loaded', await ev(`(function(){ var rows = document.querySelectorAll('#rmRoutes .routeRow'); return document.getElementById('rmListPane').classList.contains('on') && rows.length === 1 && rows[0].textContent.indexOf('Route 5W') >= 0 && !rows[0].querySelector('.routeBadge'); })()`));
+ok('N3 Choose lists Route 5W, unmarked while nothing is loaded (Beta 1.233: the disc check is the marker)', await ev(`(function(){ var rows = document.querySelectorAll('#rmRoutes .routeRow'); return document.getElementById('rmListPane').classList.contains('on') && rows.length === 1 && rows[0].textContent.indexOf('Route 5W') >= 0 && !rows[0].querySelector('.routeCheck'); })()`));
 await ev(`document.getElementById('rmBack').click(); true`); await sleep(400);
 ok('N4 Back returns to the main pane', await ev(`document.getElementById('rmMain').classList.contains('on') && !document.getElementById('rmListPane').classList.contains('on')`));
 await ev(`document.getElementById('rmCreate').click(); true`); await sleep(400);
@@ -40,7 +40,7 @@ await ev(`document.getElementById('rmBack2').click(); true`); await sleep(400);
 await ev(`document.getElementById('rmChoose').click(); true`); await sleep(400);
 await ev(`document.querySelector('#rmRoutes .routeRow').click(); true`);
 ok('N6 picking Route 5W loads it and removes the splash for good', (await poll(`typeof routeLoaded !== 'undefined' && routeLoaded === true && !!activeRoute && activeRoute.id === '5w'`, 15000)) && (await poll(`!document.getElementById('splash')`, 15000)));
-ok('N6b a boot-mode render never badges the loaded route (the 1.77 pick flicker, killed at the source)', await ev(`(function(){ renderRouteLists(); var r = document.querySelector('#rmRoutes .routeRow'); return !!r && !r.querySelector('.routeBadge'); })()`));
+ok('N6b a boot-mode render never marks the loaded route (the 1.77 pick flicker, killed at the source; Beta 1.233: the marker is the disc check)', await ev(`(function(){ renderRouteLists(); var r = document.querySelector('#rmRoutes .routeRow'); return !!r && !r.querySelector('.routeCheck'); })()`));
 ok('N6c after the boot pick the route menu is parked, not gone (the Routes tab can bring it back)', await ev(`(function(){ var rm = document.getElementById('routeMenu'); return !!rm && !rm.classList.contains('open') && !rm.classList.contains('boot') && getComputedStyle(rm).visibility === 'hidden'; })()`));
 
 // --- Settings order + theme from its new home -----------------------------
@@ -55,7 +55,7 @@ await ev(`(function(){ if (isNight() !== ${nightBefore}) $('nightBtn').click(); 
 await ev(`$('routesBtn').click(); true`);
 ok('N9 the Routes tab opens the full-screen blue route menu, main pane up', await poll(`$('routeMenu').classList.contains('open') && $('routeMenu').classList.contains('tab') && $('rmMain').classList.contains('on')`, 5000));
 await ev(`$('rmChoose').click(); true`); await sleep(400);
-ok('N9b the loaded route wears Currently loaded in the tab-opened menu', await ev(`(function(){ var rows = document.querySelectorAll('#rmRoutes .routeRow'); var b = rows.length === 1 && rows[0].querySelector('.routeBadge'); return rows.length === 1 && !!b && b.textContent === 'Currently loaded'; })()`));
+ok('N9b the loaded route wears the disc check in the tab-opened menu (Beta 1.233: the badge is gone)', await ev(`(function(){ var rows = document.querySelectorAll('#rmRoutes .routeRow'); var b = rows.length === 1 && rows[0].querySelector('.routeCheck'); return rows.length === 1 && !!b && b.tagName === 'IMG' && !rows[0].querySelector('.routeBadge'); })()`));
 await ev(`$('rmBack').click(); true`); await sleep(400);
 await ev(`$('rmClose').click(); true`); await sleep(600);
 ok('N9c the menu X closes the full-screen menu', await ev(`!$('routeMenu').classList.contains('open') && !$('routeMenu').classList.contains('tab')`));

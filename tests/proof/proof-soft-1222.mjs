@@ -18,8 +18,8 @@ import { readFileSync } from 'node:fs';
 //  A: the soft-fill token pair on every member of the pill family
 //     (.rmBtn, .rmBtn.quiet with its quieter delta, .m-card, the route
 //     rows) and the total absence of the retired inset ring;
-//  B: the carve-out - .rmBtn.primary and .routeBadge byte-identical to
-//     their Beta 1.221 rules;
+//  B: the carve-out - .rmBtn.primary byte-identical to its Beta 1.221
+//     rule (the .routeBadge half retired with the badge in Beta 1.233);
 //  C: the 1.224 button settlement (dialed day lift, night elevation
 //     recipe, the night Start fence), the Start circle's blue untouched;
 //  D: the speed readout NOT lifted - #spdPill keeps its own glass rule
@@ -63,7 +63,7 @@ check('A: .rmBtn.quiet keeps its quieter delta', rule('.rmBtn.quiet {').includes
 check('A: the inset ring is retired everywhere in the page', !head.includes('inset 0 0 0 1.5px'));
 // B — the solid-white carve-out, byte-identical to Beta 1.221
 check('B: .rmBtn.primary is the 1.221 solid white, unchanged', rule('.rmBtn.primary {').includes('background: #fff; color: #173a8a; box-shadow: 0 6px 18px rgba(0,0,0,.18);'));
-check('B: .routeBadge is the 1.221 solid white, unchanged', rule('#routeMenu .routeBadge {').includes('background: #fff; color: #2c4ad2;'));
+check('B: .routeBadge is GONE (Beta 1.233 supersedes the carve-out half: the badge retired with the disc check)', !head.includes('.routeBadge'));
 // C — the Beta 1.224 settlement: dialed lift by day, elevation recipe by
 // night, night Start fenced to the float token (re-derived from the 1.223
 // revert pins at the same strength: exact computed values, both themes).
@@ -80,8 +80,8 @@ check('C: the FULL 1.222 stacks are gone from the page (no full-strength shadow,
 check('D: #spdPill keeps its own glass rule', rule('#spdPill {').includes('background: var(--glass-day);') && rule('#spdPill {').includes('box-shadow: var(--shadow-float);'));
 check('D: the shared tokens stand at their 1.221 values', head.includes('--shadow-float: 0 8px 24px rgba(10,14,20,.22); --glass-day: rgba(255,255,255,.78); --glass-night: rgba(32,33,37,.78);'));
 // E — version agreement
-check('E: #ver reads Beta 1.226', head.includes('id="ver">Beta 1.232</div>'));
-check('E: WHATSNEW is stamped Beta 1.226', app4.includes("v: 'Beta 1.232'"));
+check('E: #ver reads Beta 1.226', head.includes('id="ver">Beta 1.233</div>'));
+check('E: WHATSNEW is stamped Beta 1.226', app4.includes("v: 'Beta 1.233'"));
 
 console.log(pass + ' pass, ' + fail + ' fail');
 process.exit(fail === 0 ? 0 : 1);

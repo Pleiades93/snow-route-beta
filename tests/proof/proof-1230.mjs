@@ -62,9 +62,9 @@ check('4d: the manifest theme_color is the app blue, matching the meta', manifes
 check('4e (Codex P2 on PR #110): the anchor is bound to the current window - it stands in only while the window spans the settled height', app4.includes('fullH > h && window.innerHeight >= fullH - 2') && app4.includes("BOUND (Codex P2, PR #110): the anchor stands in only while the window itself still spans the settled height"));
 
 // ---------- Version agreement ----------
-check('V: the #ver label reads Beta 1.230', head.includes('<div class="ver" id="ver">Beta 1.232</div>'));
-check('V: WHATSNEW is the Beta 1.230 entry with the three short bullets', app4.includes("v: 'Beta 1.232', items: [\"Type two street names - like Weston and Rutherford - and search jumps to where they cross.\", \"Street results now name the nearest cross street, so same-name streets are easy to tell apart.\", \"The create search bar is black and white now - white by day, dark glass by night.\"]"));
-check('V: the CHANGELOG top entry is Beta 1.230', changelog.split('\n').find(l => l.startsWith('## Beta')) === '## Beta 1.232 — 2026-11-18');
+check('V: the #ver label reads Beta 1.230', head.includes('<div class="ver" id="ver">Beta 1.233</div>'));
+check('V: WHATSNEW is the Beta 1.230 entry with the three short bullets', app4.includes("v: 'Beta 1.233', items: [\"Menu buttons are one even height, and your current route wears a white check.\", \"Back, Home and Clear have new icons.\", \"Search results show just the street name - the city and postal code tail is gone.\", \"Crossing searches understand directions: Bloor finds Bloor Street East and Bloor Street West.\", \"The About page is cleaned up - the credit lines are gone.\"]"));
+check('V: the CHANGELOG top entry is Beta 1.230', changelog.split('\n').find(l => l.startsWith('## Beta')) === '## Beta 1.233 — 2026-11-18');
 
 console.log(`proof-1230: ${pass} passed, ${fail} failed`);
 process.exit(fail ? 1 : 0);

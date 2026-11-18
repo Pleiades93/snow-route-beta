@@ -41,7 +41,7 @@ const t = (name, cond) => { if (cond) pass++; else { fail++; console.log('FAIL',
     ].join('\n');
     return new Function('setNoteText', '__hint', snippet)(fn, hint);
   };
-  t('01 failed flush -> rebuilt editor says Not saved. Storage problem', runFlush(false) === 'Not saved. Storage problem');
+  t('01 failed flush -> rebuilt editor says Not saved - Storage problem', runFlush(false) === 'Not saved - Storage problem');
   t('01 successful flush -> rebuilt editor says Saved ✓ (control)', runFlush(true) === 'Saved ✓');
 }
 

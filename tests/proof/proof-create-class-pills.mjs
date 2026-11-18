@@ -48,9 +48,9 @@ ok('city rows built with sub null (name only)', pick.includes("routeRowShell('bu
 ok("'ready to load' absent from create-pick.js", !pick.includes('ready to load'));
 ok('last-used span survives on .routeName', pick.includes("lu.className = 'crLastUsed'") && pick.includes("b.querySelector('.routeName')"));
 
-// 6 — badge beside the name + the save confirmation (a pill through 1.220; cut in 1.221, the menu transition confirms)
-ok('badge wrapped into the name line', app2.includes("wrap.className = 'routeNameRow'") && app2.includes('wrap.appendChild(bd)') && !app2.includes("bd.textContent = 'Currently loaded'; b.appendChild(bd); }"));
-ok('name-row group CSS present', head.includes('#routeMenu .routeNameRow { display: flex; align-items: center; justify-content: center; gap: 8px; min-width: 0; max-width: 100%; }'));
+// 6 — the loaded marker (through 1.232 the badge beside the name; Beta 1.233: the disc check at the right edge) + the save confirmation (a pill through 1.220; cut in 1.221, the menu transition confirms)
+ok('badge gone, disc check stamped (Beta 1.233)', !app2.includes('routeBadge') && !app2.includes('routeNameRow') && app2.includes("ck.className = 'routeCheck'") && app2.includes('ck.src = GLYPH_MENU.check') && !app2.includes("bd.textContent = 'Currently loaded'; b.appendChild(bd); }"));
+ok('name-row group CSS gone with the badge (Beta 1.233); the check CSS stands', !head.includes('.routeNameRow') && head.includes('#routeMenu .routeCheck { width: 25px; height: 25px; flex: none; }'));
 ok("the save success path fires NO pill since 1.221 (the route menu opening on the new route is the confirmation) and the long maps-note variant stays absent", !save.includes("toast('Route saved'") && save.includes('exitCreate();') && save.includes("showRmPane('rmListPane')") && !save.includes('its maps are not downloaded yet'));
 
 console.log(failed === 0 ? 'ALL PASS' : failed + ' FAILED');
