@@ -2,7 +2,7 @@
 <html lang="en" class="boot">
 <head>
 <meta charset="UTF-8">
-<meta http-equiv="Content-Security-Policy" content="default-src 'none'; script-src 'sha384-VNThF8cFo9X81loOlOFAjJ7irmuVbXU+vIuJdCYOdWW0+WIIcdQEShGWes1RzQwG' https://cdn.jsdelivr.net; style-src-elem 'sha384-D64CV+A3uVk6UG/h5ckjbRxXKqtGFd+3gsVwo2xGXgxvsqXrE+IV6m21LfsyZFMn' https://cdn.jsdelivr.net; style-src-attr 'unsafe-inline'; img-src 'self' data: blob: https://tiles.basemaps.cartocdn.com https://protomaps.github.io https://cdn.jsdelivr.net; connect-src 'self' https://tiles.basemaps.cartocdn.com https://protomaps.github.io https://cdn.jsdelivr.net https://nominatim.openstreetmap.org https://overpass-api.de https://overpass.kumi.systems; worker-src blob: 'self'; child-src blob: 'self'; font-src 'none'; manifest-src 'self'; base-uri 'none'; form-action 'none'; object-src 'none'">
+<meta http-equiv="Content-Security-Policy" content="default-src 'none'; script-src 'sha384-3GXzG8+MCB8Z7rAKldva9dVQCTq618MinuQIhyipSLiHxKI7uQzamfGKqrmQBf1Y' https://cdn.jsdelivr.net; style-src-elem 'sha384-3XnpqKpXIUyOreXL3c4OP4HXVPbfS17gbs9zjWR+l6l3SzvOZlJzaUwIYMOcnz/l' https://cdn.jsdelivr.net; style-src-attr 'unsafe-inline'; img-src 'self' data: blob: https://tiles.basemaps.cartocdn.com https://protomaps.github.io https://cdn.jsdelivr.net; connect-src 'self' https://tiles.basemaps.cartocdn.com https://protomaps.github.io https://cdn.jsdelivr.net https://nominatim.openstreetmap.org https://overpass-api.de https://overpass.kumi.systems; worker-src blob: 'self'; child-src blob: 'self'; font-src 'none'; manifest-src 'self'; base-uri 'none'; form-action 'none'; object-src 'none'">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="mobile-web-app-capable" content="yes">
@@ -445,7 +445,7 @@ body.snow-scene #routeMenu.boot { background: transparent; } /* Beta 1.159: whil
 #crModal { z-index: 10002; } /* Beta 1.124: the create confirm must also serve route deletion, which is asked from INSIDE the route menu (z 10000) - the shared modal rises above the takeovers for that call too (the toast at 10001 is the precedent); during creation the menu is closed and nothing changes */
 #crModalYes.danger { background: #c22f24; color: #fff; } /* Beta 1.124: a destructive confirm's Yes wears the app's destructive red (the finYes red) */
 #crModalNo.cancelRed { color: #e63a2e; } /* Beta 1.229 (Andrew's universal rule): the confirm's No button wears the app's red text while it reads 'Cancel' (crConfirm toggles the class with the label); the plain ✕ form keeps the card ink */
-.rmTitle { color: #fff; font-size: 22px; font-weight: 700; }
+.rmTitle { color: #fff; font-size: 22px; font-weight: 700; text-align: center; } /* Beta 1.237 (Andrew, from the centred-titles sample, widened by his ruling 2026-11-18 18:09 EST): EVERY blue menu's pane titles sit in the MIDDLE - the centring lives in this base rule so it covers every .rmTitle wearer in both blue menus: #routeMenu (Choose a route, Create new route, Select City inside its floating sheet, Upload photo, Name your route, the city question) and #setMenu (System Health, Display and Sound, Done chime, About, Backup). The round first shipped a #routeMenu-scoped rule because the sample showed only that menu; Andrew's ruling overruled the scope - "every blue menu that has a title", from the cold open to Settings to About. The Pace and Streets sheets are not blue menus (they wear .sheetTitle, not this class) and are untouched. Nothing else moves: same size, weight, colour and spacing, and no pane geometry changes (the 1.236 sheet anchors stand). Through 1.236 no alignment was set anywhere, so every title rode left. */
 .rmNote { color: rgba(255,255,255,.88); font-size: 16px; line-height: 1.45; }
 .rmBack { appearance: none; -webkit-appearance: none; background: none; border: none; color: rgba(255,255,255,.85); font-size: 16px; text-align: left; padding: 6px 2px; cursor: pointer; align-self: flex-start; display: flex; align-items: center; gap: 8px; } /* Beta 1.233: the flex row carries the Back To disc beside the word (renderIcons stamps the glyph in) */
 .rmBackIco { width: 20px; height: 20px; display: block; flex: none; } /* Beta 1.233: the sample's 20px disc */ /* Beta 1.127 (Andrew, device report): the panes are flex columns, which STRETCHED every Back button to full pane width - a tap anywhere along the row, far right of the words, went back. align-self:flex-start shrinks the hit area to the visible words (the padding stays as comfortable target room around them). One class serves both blue menus (route panes + Settings panes), so both are fixed by this one rule. */
@@ -650,7 +650,7 @@ html.theme-swap *, html.theme-swap *::before, html.theme-swap *::after { transit
 <div id="hud">
   <div id="warn">Not saving. Storage is full or blocked</div>
   <div class="row">
-    <div class="titleStack"><div class="title">Snow Route Beta</div><div class="ver" id="ver">Beta 1.236</div></div>
+    <div class="titleStack"><div class="title">Snow Route Beta</div><div class="ver" id="ver">Beta 1.237</div></div>
   </div>
   <div id="stats"></div>
 </div>
@@ -6824,7 +6824,7 @@ $('stDel').addEventListener('click', async () => {
 });
 // ---- About ----
 const WHATSNEW = { // the curated in-app notes: plain words, LATEST RELEASE ONLY (Beta 1.114, Andrew: the accumulated list cluttered the About pane). A release REPLACES this entry with its own in the same change - it never accumulates; the full history lives in CHANGELOG.md, not the app
-  v: 'Beta 1.236', items: ["The Select City list is a floating sheet now, with the map showing above and below it.", "Intersection results land all at once in a shorter box that scrolls to the very end.", "The search bar starts empty every time, and its hint is shorter: Select a road or intersection."] }; // Beta 1.223 (Andrew): What's New entries are SHORT from now on - point form, one short plain line each, no prose paragraphs, no em dashes
+  v: 'Beta 1.237', items: ["The blue menu titles are in the middle now."] }; // Beta 1.223 (Andrew): What's New entries are SHORT from now on - point form, one short plain line each, no prose paragraphs, no em dashes
 
 function renderAbout() {
   const cur = $('ver').textContent.trim();

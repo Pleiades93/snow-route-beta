@@ -130,9 +130,9 @@ check('R3: crRenderHint\'s tail carries the second trigger (the prepare completi
 check('R4: a refresh render is a continuation, never a fresh populate - the renderer takes cont and the freshness rule yields to it', pick.includes('function crRenderRows(res, cont)') && pick.includes('const fresh = !cont && (') && pick.includes('crRenderRows(res, cont);'));
 
 // ---------- V: version agreement ----------
-check('V: the #ver label reads Beta 1.236', head.includes('<div class="ver" id="ver">Beta 1.236</div>'));
-check('V: WHATSNEW is the Beta 1.236 entry with the three short bullets', app4.includes("v: 'Beta 1.236', items: [\"The Select City list is a floating sheet now, with the map showing above and below it.\", \"Intersection results land all at once in a shorter box that scrolls to the very end.\", \"The search bar starts empty every time, and its hint is shorter: Select a road or intersection.\"]"));
-check('V: the CHANGELOG top entry is Beta 1.234', changelog.split('\n').find(l => l.startsWith('## Beta')) === '## Beta 1.236 — 2026-11-18');
+check('V: the #ver label reads Beta 1.237', head.includes('<div class="ver" id="ver">Beta 1.237</div>'));
+check('V: WHATSNEW is the Beta 1.237 entry (its one short bullet)', app4.includes("v: 'Beta 1.237', items: [\"The blue menu titles are in the middle now.\"]"));
+check('V: the CHANGELOG top entry is Beta 1.234', changelog.split('\n').find(l => l.startsWith('## Beta')) === '## Beta 1.237 — 2026-11-18');
 
 console.log(`proof-1234: ${pass} pass, ${fail} fail`);
 process.exit(fail === 0 ? 0 : 1);
