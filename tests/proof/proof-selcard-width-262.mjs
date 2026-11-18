@@ -73,9 +73,9 @@ console.log('S - #selStatus keeps its shipped rule (the longest status measured 
 // ================= V - the bump agrees =================
 console.log('V - version surfaces agree');
 {
-  check('V: the #ver label reads Beta 1.235', head.includes('<div class="ver" id="ver">Beta 1.235</div>'));
-  check('V: WHATSNEW is the Beta 1.235 entry', app4.includes("v: 'Beta 1.235', items:"));
-  check('V: the CHANGELOG top entry is Beta 1.226', changelog.includes('## Beta 1.235 — 2026-11-18'));
+  check('V: the #ver label reads Beta 1.236', head.includes('<div class="ver" id="ver">Beta 1.236</div>'));
+  check('V: WHATSNEW is the Beta 1.236 entry', app4.includes("v: 'Beta 1.236', items:"));
+  check('V: the CHANGELOG top entry is Beta 1.226', changelog.includes('## Beta 1.236 — 2026-11-18'));
 }
 
 console.log(pass + ' pass, ' + fail + ' fail');

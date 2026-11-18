@@ -1356,6 +1356,7 @@ function exitCreate() {
   $('crHintBtn').style.display = 'none';
   if (crSearchTimer) { clearTimeout(crSearchTimer); crSearchTimer = null; }
   crSearchSeq++; if (crSearchCtl) { try { crSearchCtl.abort(); } catch (e) {} crSearchCtl = null; } // no in-flight suggestion may land after the flow has closed
+  $('crSearchInput').value = ''; crSyncClear(); // Beta 1.236 (Andrew): the typed street dies with the session too - through 1.235 this teardown closed the results and killed the in-flight search but never cleared the field itself, so the last typed street (his report: 'Weston') sat in the bar when a later creation opened, in any city; the clear disc's path was the only seat that ever emptied it. The disc's own state follows the field through crSyncClear, the same call that path makes.
   document.body.classList.remove('creating');
   for (const id of ['createBar', 'createSheet', 'previewSheet', 'createResults', 'createHint']) $(id).classList.remove('on');
   crSetBackdrop(false); // Beta 1.120: the loaded route's paint returns exactly as it was
@@ -1603,12 +1604,11 @@ document.addEventListener('pointerdown', (e) => { // Beta 1.120 (Andrew): tappin
   crSearchSeq++; if (crSearchCtl) { try { crSearchCtl.abort(); } catch (e) {} crSearchCtl = null; } // Beta 1.232 fix round 5 (PR #112, Codex P2): dismissing the results ENDS the search too - since fix round 1 the crossing renders while its fetch is still in flight, and un-invalidated that fetch's landing (the success merge, or the catch's crossing re-render under crSearchCurrent) reopened this box over the tap-away that dismissed it. The form is the standing one (fix round 3 seated it at the row click; the clear disc and the flow close end the search exactly so), and the pending debounce is cleared with it, or it would fire a fresh search 300 ms after the user tapped away. The tap-away itself is untouched: the box still hides here, and the map pick still runs
 }, true);
 let crRowState = new Map(); // Beta 1.234: the results box's live rows, by row text -> { el, leaving, timer } - the populate animation's bookkeeping (below)
-let crRowCtx = null; // the last render's shape { streets, hint } - a fresh populate (55ms stagger) is a new search context: the box was closed, a hint stood (or gives way), or the new rows share no street with the last render's; a typing re-populate (30ms, with fade-outs) is any render that continues the same streets, narrowed or widened
-function crRenderRows(res, cont) { // Beta 1.234 (Andrew, the populate sample he approved): the render is a DIFF, not a rebuild. Entering rows fade in and rise 8px on the city search's own .crRowIn shape, staggered top to bottom - 55ms apart on a fresh populate, 30ms on a re-populate while typing. Rows that stop matching fade out in place (.crRowOut, removed when the fade lands) instead of vanishing; survivors keep their DOM nodes and never re-stagger on a pure narrow - the stagger is for rows ENTERING. Under reduced motion the CSS rests the animations and the removal below is instant, so rows simply rest.
+let crRowCtx = null; // the last render's shape { streets, hint } - a fresh populate (the card fades in, the first screenful staggers) is a new search context: the box was closed, a hint stood (or gives way), or the new rows share no street with the last render's; a typing re-populate (fade-outs, no card fade) is any render that continues the same streets, narrowed or widened
+function crRenderRows(res, cont) { // Beta 1.234 (Andrew, the populate sample he approved): the render is a DIFF, not a rebuild. Entering rows fade in and rise 8px on the city search's own .crRowIn shape; rows that stop matching fade out in place (.crRowOut, removed when the fade lands) instead of vanishing; survivors keep their DOM nodes and never re-stagger on a pure narrow - the stagger is for rows ENTERING. Beta 1.236 (Andrew, from his results-box sample): the populate lands IN SYNC - on a fresh populate the rows are seated first and the CARD fades in with them (the .crCardIn seat at the tail, 160ms), so the box never paints empty and waits; and the entrance stagger now reaches ONLY the first screenful - the first 8 rows by list position, 30ms apart on every render - while a row past the eighth carries no entrance at all and simply rests, already present when scrolled to (through 1.235 every entering row staggered, 55ms apart on a fresh populate across up to 40 rows, so the tail of a long list drifted in for ~2s behind an already-painted card). Under reduced motion the CSS rests the animations and the removal below is instant, so rows simply rest.
   const box = $('createResults');
   const entries = res.hint ? [{ key: 'hint:' + res.hint, hint: res.hint }] : res.items.map(it => ({ key: it.display_name, it }));
   const fresh = !cont && (!box.classList.contains('on') || !crRowCtx || crRowCtx.hint !== !!res.hint || (!res.hint && !crSharesStreet(crRowCtx.streets, res.streets))); // fresh = a NEW context. Beta 1.234 fix round 3: a coverage refresh (cont, from crRefreshSearch) is never fresh - it is the SAME search continuing as its answer lands, so its rows take the re-populate path even across the hint-to-rows boundary the rule below otherwise treats as a new context: the box was closed, a hint stands or gives way, or the new rows share no street with the last render's (a different street altogether). Sharing even one street makes it a typing continuation - the same search, narrowed or widened - however different the full street set is ('Wes' fans out to dozens of streets; 'Weston & Ru' is one of them, and the keystrokes between them narrow, they do not restart)
-  const stagger = fresh ? 55 : 30;
   const reduced = !!(window.matchMedia && matchMedia('(prefers-reduced-motion: reduce)').matches);
   const keep = new Set(entries.map(e => e.key));
   for (const [key, st] of Array.from(crRowState)) {
@@ -1616,23 +1616,26 @@ function crRenderRows(res, cont) { // Beta 1.234 (Andrew, the populate sample he
     if (fresh || reduced) { if (st.timer) clearTimeout(st.timer); st.el.remove(); crRowState.delete(key); } // a fresh context (or reduced motion) drops the old rows at once - no fade out of a closed box
     else if (!st.leaving) { st.leaving = true; st.el.classList.remove('crRowIn'); void st.el.offsetWidth; st.el.classList.add('crRowOut'); st.timer = setTimeout(() => { st.el.remove(); crRowState.delete(key); }, 190); } // 190ms: just past the 180ms fade, so the node lands after it reads as gone. Beta 1.234 fix round 1 (PR #114, Codex P2): the entrance animation is RELEASED as the exit starts, in two beats - .crRowIn runs fill-mode both, so its final keyframe (opacity 1) kept overriding .crRowOut's opacity 0 and the row stayed opaque until this timer dropped it; and the release must COMMIT before the fade class lands (the forced reflow between them), or the browser folds both changes into one style update, the transition never starts, and the row still jumps straight to invisible (measured both ways in the round's QA: same-task remove+add reads opacity 0 at fade start and at +90ms; remove, reflow, add reads 1, then ~0.24 at +90ms)
   }
-  let anchor = box.firstChild, enterIdx = 0;
+  let anchor = box.firstChild;
   const place = el => { if (el === anchor) anchor = el.nextSibling; else box.insertBefore(el, anchor); }; // survivors and entering rows take the list's order; leaving rows are stepped over and fade where they stand
-  for (const e of entries) {
+  for (let ei = 0; ei < entries.length; ei++) {
+    const e = entries[ei];
     let st = crRowState.get(e.key);
     if (st && e.it) st.el._crItem = e.it; // Beta 1.234 fix round 1 (PR #114, Codex P2): a RETAINED row's pick destination refreshes to the current item on every render. The row text is the reuse key, but the same crossing name in another city's extract - or a different crossing of the same pair, when the nearest-crossing resolver's answer moves within a session - carries different coordinates, and the creation-time click closure would otherwise fly to the stale ones. The click reads _crItem at tap time (crResultRowEl), so a row always picks what it currently displays.
     if (st && st.leaving) { // narrowed away and back inside one fade: the leave cancels and the row settles back in
       clearTimeout(st.timer); st.timer = null; st.leaving = false; st.el.classList.remove('crRowOut');
-      st.el.classList.add('crRowIn'); st.el.style.animationDelay = (enterIdx++ * stagger) + 'ms';
+      if (ei < 8) { st.el.classList.add('crRowIn'); st.el.style.animationDelay = (ei * 30) + 'ms'; } // Beta 1.236: the settle-back joins the first-screenful stagger on the same gate as every entrance (below)
     } else if (!st) {
       const el = e.hint ? crHintRowEl(e.hint) : crResultRowEl(e.it);
-      el.classList.add('crRowIn'); el.style.animationDelay = (enterIdx++ * stagger) + 'ms';
+      if (ei < 8) { el.classList.add('crRowIn'); el.style.animationDelay = (ei * 30) + 'ms'; } // Beta 1.236: ONLY the first screenful staggers (the first 8 rows by list position, 30ms steps) - a row past the eighth takes no entrance class and no delay, so it is simply THERE when scrolled to, never still waiting on a stagger tail
       st = { el, leaving: false, timer: null }; crRowState.set(e.key, st);
-    } else if (fresh) { // a survivor on a fresh populate re-settles with the rest - its node outlived a closed box, so its entrance replays
-      st.el.classList.remove('crRowIn'); void st.el.offsetWidth; st.el.classList.add('crRowIn'); st.el.style.animationDelay = (enterIdx++ * stagger) + 'ms';
+    } else if (fresh) { // a survivor on a fresh populate: in the first screenful it re-settles with the rest - its node outlived a closed box, so its entrance replays; past the eighth its entrance is stripped instead, so no stale delay from an earlier render can hold it invisible - it rests, already present
+      if (ei < 8) { st.el.classList.remove('crRowIn'); void st.el.offsetWidth; st.el.classList.add('crRowIn'); st.el.style.animationDelay = (ei * 30) + 'ms'; }
+      else { st.el.classList.remove('crRowIn'); st.el.style.animationDelay = ''; }
     }
     place(st.el);
   }
+  if (fresh) { box.classList.remove('crCardIn'); void box.offsetWidth; box.classList.add('crCardIn'); } // Beta 1.236: the card lands WITH its first screen of names - the fade (the .crCardIn rule, 160ms) restarts through the reflow in this same render, after the rows above are seated, so the box's first painted frame already holds them. Fresh renders only: a typing continuation narrows inside the standing card and never re-fades it.
   box.classList.toggle('on', entries.length > 0);
   crRowCtx = res.hint ? { streets: new Set(), hint: true } : { streets: res.streets, hint: false };
 }

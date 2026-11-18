@@ -36,7 +36,7 @@ const payload = (map, key, side) => {
 };
 
 // ---------- The bar markup ----------
-check('1a: the bar markup is the pill + bar (back button first, magnifier host, input, clear disc)', head.includes('<div id="createBar"><button id="crExit" aria-label="Back"></button><div id="crSearchWrap"><span id="crSearchIco" aria-hidden="true"></span><input id="crSearchInput" type="search" placeholder="Search an intersection - Weston & Rutherford" autocomplete="off"><button id="crClear" aria-label="Clear search"></button></div></div>'));
+check('1a: the bar markup is the pill + bar (back button first, magnifier host, input, clear disc) (Beta 1.236 roll: the input\'s placeholder is Andrew\'s shorter wording now - the markup claim is unchanged)', head.includes('<div id="createBar"><button id="crExit" aria-label="Back"></button><div id="crSearchWrap"><span id="crSearchIco" aria-hidden="true"></span><input id="crSearchInput" type="search" placeholder="Select a road or intersection" autocomplete="off"><button id="crClear" aria-label="Clear search"></button></div></div>'));
 check('1b: the Search button survives nowhere in the parts', !head.includes('crSearchBtn') && !app4.includes('crSearchBtn') && !pick.includes('crSearchBtn'));
 check('1c: the old x tile is gone (no text-glyph exit, no Exit creating title)', !head.includes('title="Exit creating"') && !head.includes('<button id="crExit" title'));
 
@@ -85,9 +85,9 @@ check('6b: the six payloads are byte-pinned (set treatment: alpha fills, lossles
 check('6c: renderIcons stamps the bar hosts (theme variants throughout since Beta 1.232 - the magnifier and disc follow the theme like the arrow) and re-stamps row pins', app4.includes('GLYPH_CREATE.back.n : GLYPH_CREATE.back.d') && app4.includes('night ? GLYPH_CREATE.search.n : GLYPH_CREATE.search.d') && app4.includes('night ? GLYPH_CREATE.cancel.n : GLYPH_CREATE.cancel.d') && app4.includes("document.querySelectorAll('.crPin').forEach(el => { el.innerHTML = ICONS.pin; });"));
 
 // ---------- Version agreement ----------
-check('V: the #ver label reads Beta 1.235', head.includes('<div class="ver" id="ver">Beta 1.235</div>'));
-check('V: WHATSNEW is the Beta 1.235 entry with the three short bullets', app4.includes("v: 'Beta 1.235', items: [\"The city step is cleaner: fewer words, more air, and a search pill with real depth.\", \"City search suggests as you type: a few letters of a city name are enough.\"]"));
-check('V: the CHANGELOG top entry is Beta 1.229', changelog.split('\n').find(l => l.startsWith('## Beta')) === '## Beta 1.235 \u2014 2026-11-18');
+check('V: the #ver label reads Beta 1.236', head.includes('<div class="ver" id="ver">Beta 1.236</div>'));
+check('V: WHATSNEW is the Beta 1.236 entry with the three short bullets', app4.includes("v: 'Beta 1.236', items: [\"The Select City list is a floating sheet now, with the map showing above and below it.\", \"Intersection results land all at once in a shorter box that scrolls to the very end.\", \"The search bar starts empty every time, and its hint is shorter: Select a road or intersection.\"]"));
+check('V: the CHANGELOG top entry is Beta 1.229', changelog.split('\n').find(l => l.startsWith('## Beta')) === '## Beta 1.236 \u2014 2026-11-18');
 
 console.log(`proof-1227: ${pass}/${pass + fail} checks passed`);
 process.exit(fail ? 1 : 0);
