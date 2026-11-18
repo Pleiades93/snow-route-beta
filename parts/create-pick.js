@@ -44,6 +44,7 @@ function crRenderHint() { // the ONE writer of the pick-stage hint + its action 
   }
   hint.textContent = text; hint.classList.toggle('on', !!text); // Beta 1.175: no text, no pill - an empty render (a fresh ready city, nothing to disclose, no offer) never paints an empty pill. Beta 1.223: the 1.153 dismissed-confirmation condition retires with the confirmation itself
   if (btnLabel) { btn.textContent = btnLabel; btn.style.display = ''; } else btn.style.display = 'none';
+  btn.classList.toggle('danger', btnLabel === 'Cancel'); // Beta 1.229 (Andrew's universal rule): anything Cancel is red - while the readout's button reads Cancel it wears the app's destructive red (the #crHintBtn.danger rule, head.html); the same button's Resume/Retry/Prepare labels keep the blue
   // Beta 1.176 (Andrew): the button hangs from the pill's RENDERED bottom edge,
   // not from a fixed offset. Through 1.175 the button's CSS top sat a fixed
   // 48 px below the pill's top - tuned to a one-line pill - so a pill that
@@ -373,8 +374,15 @@ function crIsPlace(it) { // populated places only: a city/town/village place, or
   if (cls === 'boundary') return it.type === 'administrative';
   return false;
 }
+const CR_ON_BOUNDS = { s: 41.6, n: 56.9, w: -95.2, e: -74.3 }; // Beta 1.229 (Andrew's standing rule): EVERY creating-a-route search returns Ontario, Canada results only. This rectangle is the query bound, and the client filter's bound for results that name no province or state (crInOntario below).
+function crInOntario(it) { // a search result survives only as an Ontario result - the service's bounding parameters are a request, this filter is the guarantee (the Beta 1.153 city-bound lesson, applied province-wide). A result that NAMES its province or state is judged by its own word, and only Ontario survives: the rectangle alone leaks the border strip (Aurora, Illinois stands at 41.76 degrees north, inside the rectangle's 41.6 south edge - the exact wrong-Aurora trap this round exists to close), and Gatineau's own word (Quebec) keeps it out the same way. A result naming neither is judged by the rectangle.
+  if (!it) return false;
+  const st = it.address && it.address.state;
+  if (st) return st === 'Ontario';
+  const la = parseFloat(it.lat), lo = parseFloat(it.lon);
+  return isFinite(la) && isFinite(lo) && la >= CR_ON_BOUNDS.s && la <= CR_ON_BOUNDS.n && lo >= CR_ON_BOUNDS.w && lo <= CR_ON_BOUNDS.e;
+}
 function crPickCity(it) {
-  crCityLookupSeq++; if (crCityLastCtl) { try { crCityLastCtl.abort(); } catch (e) {} crCityLastCtl = null; } // a real pick supersedes any held last-city lookup (CG-PF-11)
   const lat = parseFloat(it.lat), lon = parseFloat(it.lon); if (!isFinite(lat) || !isFinite(lon)) return;
   const name = crCityNameOf(it); if (!name) return;
   let bbox = null;
@@ -431,41 +439,56 @@ function crPackPickCity(e) { // a chooser tap IS a city pick: it lands in the sa
   crPickCity({ lat: String((s + n) / 2), lon: String((w + ee) / 2), boundingbox: [String(s), String(n), String(w), String(ee)], display_name: e.name + ', Ontario, Canada', address: { city: e.name, state: 'Ontario', country: 'Canada', country_code: 'ca' } }); });
 }
 function crOpenCityPane(ret) {
-  crCityLookupSeq++; if (crCityLastCtl) { try { crCityLastCtl.abort(); } catch (e) {} crCityLastCtl = null; } // reopening the pane supersedes any held lookup (CG-PF-11)
   crCitySeq++; if (crCityCtl) { try { crCityCtl.abort(); } catch (e) {} crCityCtl = null; } if (crCityTimer) { clearTimeout(crCityTimer); crCityTimer = null; } // Beta 1.143 (DA-12): reopening the pane supersedes a held city SEARCH too - its late answer must not repopulate the pane it was asked from
   crCityReturn = ret;
-  const last = lsGet(LS_GLOBAL.lastArea), lb = $('crCityLast');
-  if (last) { lb.textContent = 'Use ' + last; lb.style.display = ''; } else lb.style.display = 'none';
-  $('crCityInput').value = ''; $('crCityResults').innerHTML = '';
+  $('crCityInput').value = ''; const rb = $('crCityResults'); rb.innerHTML = ''; rb.style.height = ''; crCityBoxTok++; // Beta 1.229: the pane reopens empty at natural height, and any swap release still pending from the last visit is invalidated with it
   if (creating) { if (!routeLoaded) restoreBootChrome(); else openRouteMenu(); }
   showRmPane('rmCityPane');
 }
 let crCityTimer = null, crCitySeq = 0, crCityCtl = null;
-let crCityLookupSeq = 0, crCityLastCtl = null; // the one-tap last-city lookup's generation + abort handle (CG-PF-11: it is an async completion like any other - it binds to its generation, and any competing pick, Back, pane reopen or exit kills it)
+// Beta 1.229: the last-city lookup's generation + abort handle (crCityLookupSeq / crCityLastCtl, CG-PF-11) retire WITH the shortcut they served - see the removal note at the handler's old seat below.
 function crCitySearchCurrent(seq, session) { return seq === crCitySeq && session === crSession; } // Beta 1.154 (B3 build, G3 option (i)): the city-search LANDING's current-check - sequence AND session (the convention is stated at crSearchCurrent above)
 function crCitySearchSeqCurrent(seq) { return seq === crCitySeq; } // Beta 1.154: the city-search CATCH's current-check - sequence ONLY, deliberately weaker than the landing's: exitCreate does not bump crCitySeq (lifecycle trace T7: +0 across four exits), so a late failure from a closed session whose sequence still matches stays silent here exactly as it did inline through 1.153; the name carries the asymmetry so it is never "fixed" by accident
-function crCityLookupCurrent(seq, session) { return seq === crCityLookupSeq && session === crSession && $('rmCityPane').classList.contains('on'); } // Beta 1.154: the last-city lookup's current-check (CG-PF-11) - sequence + session + its pane still open; the handler's stillMine closure delegates here
+let crCityBoxTok = 0;
+function crCityBoxSwap(build) { // Beta 1.229 (Andrew, from the approved motion sample): the results area ANIMATES between contents - freeze the height it stands at, swap the content, then let the CSS transition (420ms on var(--ease-open), the #crCityResults rule in head.html) carry the box to its new height, so the Back button below glides instead of jumping. The target is measured on the UNFROZEN box: with the height frozen and overflow hidden, scrollHeight never reports less than the frozen height, so a shrinking swap (results down to the no-results note, a clear) would animate to the old height and snap at the release - the unfreeze/measure/refreeze happens inside one synchronous turn, so no paint ever sees the unfrozen box. The release back to natural height binds to the swap's own token: a newer swap is never released by an older swap's timer.
+  const box = $('crCityResults'); if (!box) return;
+  const tok = ++crCityBoxTok;
+  const from = box.offsetHeight;
+  box.style.height = from + 'px';
+  build(box);
+  box.style.height = '';
+  const target = box.offsetHeight;
+  box.style.height = from + 'px';
+  void box.offsetHeight; // commit the frozen start, so the transition runs from it
+  box.style.height = target + 'px';
+  setTimeout(() => { if (tok === crCityBoxTok) box.style.height = ''; }, 480);
+}
+function crCityShowSkeletons() { crCityBoxSwap(b => { b.innerHTML = ''; for (let i = 0; i < 3; i++) { const d = document.createElement('div'); d.className = 'crSkel'; b.appendChild(d); } }); } // Beta 1.229: three soft rows at the result rows' own height, pulsing while the search is in flight (the .crSkel rule, head.html) - the wait is shown, never a blank pane that suddenly fills
 async function crRunCitySearch() {
   const q = $('crCityInput').value.trim(), box = $('crCityResults');
-  if (q.length < 3) { crCitySeq++; if (crCityCtl) { try { crCityCtl.abort(); } catch (e) {} crCityCtl = null; } box.innerHTML = ''; return; } // Beta 1.143 (DA-12): a short/cleared query invalidates like every other input change - through 1.142 this branch returned before the sequence bump + abort below, so the in-flight answer still held the current sequence when it landed and repopulated the cleared field
+  if (q.length < 3) { crCitySeq++; if (crCityCtl) { try { crCityCtl.abort(); } catch (e) {} crCityCtl = null; } crCityBoxSwap(b => { b.innerHTML = ''; }); return; } // Beta 1.143 (DA-12): a short/cleared query invalidates like every other input change - through 1.142 this branch returned before the sequence bump + abort below, so the in-flight answer still held the current sequence when it landed and repopulated the cleared field. Beta 1.229: the clear leaves through the same height animation as every other results change
   const seq = ++crCitySeq, session = crSession;
   if (crCityCtl) { try { crCityCtl.abort(); } catch (e) {} }
   const ctl = (typeof AbortController !== 'undefined') ? new AbortController() : null; crCityCtl = ctl;
+  crCityShowSkeletons();
   try {
-    const r = await fetch('https://nominatim.openstreetmap.org/search?format=jsonv2&addressdetails=1&featuretype=city&limit=6&q=' + encodeURIComponent(q), { headers: { 'Accept': 'application/json' }, signal: ctl ? ctl.signal : undefined });
+    const r = await fetch('https://nominatim.openstreetmap.org/search?format=jsonv2&addressdetails=1&featuretype=city&limit=6&countrycodes=ca&viewbox=' + [CR_ON_BOUNDS.w, CR_ON_BOUNDS.n, CR_ON_BOUNDS.e, CR_ON_BOUNDS.s].join(',') + '&bounded=1&q=' + encodeURIComponent(q), { headers: { 'Accept': 'application/json' }, signal: ctl ? ctl.signal : undefined }); // Beta 1.229 (Andrew's standing rule): Canada-only at the service, Ontario-bounded - and the filter below is the guarantee on top
     if (!r.ok) throw new Error('city search HTTP ' + r.status);
     const list = await r.json();
     if (!crCitySearchCurrent(seq, session)) return; // superseded, or the creation it belonged to has closed (CG-PF-05)
-    box.innerHTML = '';
-    const places = (Array.isArray(list) ? list : []).filter(crIsPlace);
-    for (const it of places) {
-      const dn = it.display_name || '', cut = dn.indexOf(',');
-      const b = routeRowShell('button', cut > 0 ? dn.slice(0, cut).trim() : dn, (cut > 0 && dn.slice(cut + 1).trim()) ? dn.slice(cut + 1).trim() : null); // Beta 1.125 (Andrew): manual-search results wear the SAME neat row as the city list - name on its own line, the rest of the address small and dim under it; full .rmBtn boxes stacked with no gap read as one bunched wall
-      b.addEventListener('click', () => crPickCity(it));
-      box.appendChild(b);
-    }
-    if (!places.length) { const d = document.createElement('div'); d.className = 'rmNote'; d.textContent = 'No city matched that search. Check the spelling, or go Back and pick from the list.'; box.appendChild(d); } // Beta 1.123: an empty answer SAYS so in the pane - 1.121 rendered nothing at all, which reads as a dead app (the same silence as the class/category defect, and just as unhelpful)
-  } catch (e) { if (crCitySearchSeqCurrent(seq) && !(e && e.name === 'AbortError')) { box.innerHTML = ''; } }
+    const places = (Array.isArray(list) ? list : []).filter(crIsPlace).filter(crInOntario);
+    crCityBoxSwap(b => {
+      b.innerHTML = '';
+      places.forEach((it, i) => {
+        const dn = it.display_name || '', cut = dn.indexOf(',');
+        const row = routeRowShell('button', cut > 0 ? dn.slice(0, cut).trim() : dn, (cut > 0 && dn.slice(cut + 1).trim()) ? dn.slice(cut + 1).trim() : null); // Beta 1.125 (Andrew): manual-search results wear the SAME neat row as the city list - name on its own line, the rest of the address small and dim under it; full .rmBtn boxes stacked with no gap read as one bunched wall
+        row.classList.add('crRowIn'); row.style.animationDelay = (i * 55) + 'ms'; // Beta 1.229: the approved stagger - each row settles in a beat after the one above it (fade + a small rise, the .crRowIn keyframes in head.html)
+        row.addEventListener('click', () => crPickCity(it));
+        b.appendChild(row);
+      });
+      if (!places.length) { const d = document.createElement('div'); d.className = 'rmNote'; d.textContent = 'No city matched that search. Check the spelling, or go Back and pick from the list.'; b.appendChild(d); } // Beta 1.123: an empty answer SAYS so in the pane - 1.121 rendered nothing at all, which reads as a dead app (the same silence as the class/category defect, and just as unhelpful)
+    });
+  } catch (e) { if (crCitySearchSeqCurrent(seq) && !(e && e.name === 'AbortError')) { crCityBoxSwap(b => { b.innerHTML = ''; }); } } // Beta 1.229: a failed search resolves through the same animation - the skeletons leave by the glide, never a pop and never a stuck skeleton
 }
 
 // ---- draft geometry cache (Beta 1.135, maintainability programme N3): through 1.134 a
@@ -844,7 +867,7 @@ function renderCrLists() {
 }
 let crConfirmCb = null;
 let crConfirmOneBtn = false; // Beta 1.132: true while the current confirm wears the one-button shape (the discard ask)
-function crConfirm(title, msg, cb, labels) { $('crModalTitle').textContent = title; $('crModalMsg').textContent = msg; crConfirmCb = cb; crConfirmOneBtn = !!(labels && labels.oneBtn); $('crModalYes').textContent = (labels && labels.yes) || 'Discard'; $('crModalYes').classList.toggle('danger', !!(labels && labels.danger) || crConfirmOneBtn); $('crModalNo').textContent = (labels && labels.no) || '✕'; $('crModalNo').style.display = crConfirmOneBtn ? 'none' : ''; $('crModalX').style.display = crConfirmOneBtn ? '' : 'none'; $('crModal').classList.remove('hidden'); } // Beta 1.124: labels are optional; route deletion passes {yes:'Delete', no:'Cancel', danger:true}. Beta 1.132 (Andrew): the DISCARD ask (askDiscard) passes {oneBtn:true} and changes shape - ONE red Discard button, nothing else in the row; dismissal lives on the card's plain red corner X (crModalX, styled by the shared corner-X rule in head.html) and on a tap of the backdrop, and dismissing always means keep editing. Every other confirm keeps its two-button row exactly as before. The card itself is the --card token surface in BOTH themes - the confirm never hardcodes a light background.
+function crConfirm(title, msg, cb, labels) { $('crModalTitle').textContent = title; $('crModalMsg').textContent = msg; crConfirmCb = cb; crConfirmOneBtn = !!(labels && labels.oneBtn); $('crModalYes').textContent = (labels && labels.yes) || 'Discard'; $('crModalYes').classList.toggle('danger', !!(labels && labels.danger) || crConfirmOneBtn); $('crModalNo').textContent = (labels && labels.no) || '✕'; $('crModalNo').classList.toggle('cancelRed', !!labels && labels.no === 'Cancel'); $('crModalNo').style.display = crConfirmOneBtn ? 'none' : ''; $('crModalX').style.display = crConfirmOneBtn ? '' : 'none'; $('crModal').classList.remove('hidden'); } // Beta 1.229 (Andrew's universal rule): when the No button reads 'Cancel' it wears the red too (the #crModalNo.cancelRed rule, head.html) - the toggle rides the label, so the plain ✕ form is untouched // Beta 1.124: labels are optional; route deletion passes {yes:'Delete', no:'Cancel', danger:true}. Beta 1.132 (Andrew): the DISCARD ask (askDiscard) passes {oneBtn:true} and changes shape - ONE red Discard button, nothing else in the row; dismissal lives on the card's plain red corner X (crModalX, styled by the shared corner-X rule in head.html) and on a tap of the backdrop, and dismissing always means keep editing. Every other confirm keeps its two-button row exactly as before. The card itself is the --card token surface in BOTH themes - the confirm never hardcodes a light background.
 function crConfirmDismiss() { $('crModal').classList.add('hidden'); crConfirmCb = null; }
 $('crModalYes').addEventListener('click', () => { $('crModal').classList.add('hidden'); const cb = crConfirmCb; crConfirmCb = null; if (cb) cb(); });
 $('crModalNo').addEventListener('click', crConfirmDismiss);
@@ -888,7 +911,6 @@ function exitCreate() {
   crCacheNote = ''; crCacheNoteCity = ''; // Beta 1.143 (DA-06): the owner binding resets with the note - no failure state outlives the session
   crPackCtx = null; crPackNote = ''; // Beta 1.123: the pack context belongs to the closed session's city - the next creation re-decides its source
   crAbortOp(crTopOp); crTopOp = null;
-  crCityLookupSeq++; if (crCityLastCtl) { try { crCityLastCtl.abort(); } catch (e) {} crCityLastCtl = null; } // a held last-city lookup dies with the session (CG-PF-11)
   crCov = null; crCity = null; crSetPrepState('none'); crPrepFail = null; crFailFromGrid = false; crPrepAnchor = null; crPending = {}; crToppedUp = {}; crWanted = null; // Beta 1.154 (B3 build): the state write routes through the prep record's setter, and crFailFromGrid clears with the session (the 2026-11-09 lifecycle trace's latch finding) - it must not survive into a new session
   $('crHintBtn').style.display = 'none';
   if (crSearchTimer) { clearTimeout(crSearchTimer); crSearchTimer = null; }
@@ -955,32 +977,11 @@ $('crDoorManual').addEventListener('click', () => { askDiscard(() => { draft = n
 $('crCityInput').addEventListener('input', () => { // Beta 1.143 (DA-12, verify cycle 1): EVERY input change invalidates the in-flight search AT THE EVENT - bump + abort here, not when the debounce next runs the search (a response landing inside the 500 ms window otherwise renders into a field the user has already moved past). The street search's handler below has always had this shape; crRunCitySearch's own bump remains the backstop for programmatic calls
   crCitySeq++; if (crCityCtl) { try { crCityCtl.abort(); } catch (e) {} crCityCtl = null; }
   if (crCityTimer) { clearTimeout(crCityTimer); crCityTimer = null; }
-  if ($('crCityInput').value.trim().length < 3) { $('crCityResults').innerHTML = ''; return; }
+  if ($('crCityInput').value.trim().length < 3) { crCityBoxSwap(b => { b.innerHTML = ''; }); return; } // Beta 1.229: the clear animates like every other results change
   crCityTimer = setTimeout(() => { crCityTimer = null; crRunCitySearch(); }, 500);
 });
-$('crCityLast').addEventListener('click', async () => {
-  const last = lsGet(LS_GLOBAL.lastArea); if (!last) return;
-  // resolve the remembered NAME back to a place (centre + bounds) through the same city search; if the lookup fails, the name alone still scopes the creation - anchors then come from street-search picks and Prepare this area.
-  // CG-PF-11 (verify round): this completion binds to (lookup generation, creation session, the pane still being open) - a slow lookup must never overwrite a city picked in the meantime, and Back / exit / a competing pick abort it outright.
-  const seq = ++crCityLookupSeq, session = crSession;
-  if (crCityLastCtl) { try { crCityLastCtl.abort(); } catch (e) {} }
-  const ctl = (typeof AbortController !== 'undefined') ? new AbortController() : null; crCityLastCtl = ctl;
-  const stillMine = () => crCityLookupCurrent(seq, session);
-  try {
-    const r = await fetch('https://nominatim.openstreetmap.org/search?format=jsonv2&addressdetails=1&featuretype=city&limit=6&q=' + encodeURIComponent(last), { headers: { 'Accept': 'application/json' }, signal: ctl ? ctl.signal : undefined });
-    if (r.ok) { const list = await r.json(); if (!stillMine()) return; const hit = (Array.isArray(list) ? list : []).find(crIsPlace); if (hit) { crPickCity(hit); return; } }
-  } catch (e) { if (e && e.name === 'AbortError') return; }
-  if (!stillMine()) return;
-  const applyLast = () => {
-    crCity = { name: last, lat: null, lon: null, bbox: null };
-    crAreaGuess = last; if (draft && !draft.area) draft.area = last;
-    crEnterPickFromCity();
-  };
-  if (crCity) { askDiscard(() => { draft = newDraft(); crPending = {}; applyLast(); }); return; } // Beta 1.169 (D-08): the name-only last-city landing is a city pick like any other - replacing a chosen city goes through the same discard + reset as crPickCity
-  applyLast();
-});
+// Beta 1.229 (Andrew): the 'Use <city>' last-city shortcut is REMOVED whole - the button (head.html), this handler, and its Nominatim name re-resolution. The shortcut re-resolved the remembered NAME and silently took the first place hit: Aurora, Ontario's name landed on Aurora, Illinois, whose grid load then sat at 0% (Andrew's live repro, 2026-11-17). Andrew ruled the button makes no sense to him; the bug is now impossible rather than patched - NO path resolves a typed or remembered city NAME to a place at search time. Typed searches go through the Ontario-scoped crRunCitySearch, list picks through the catalogue, and the remembered area's remaining reader is the city list itself (its sort + 'last used' tag in crRenderCityChoices), which is why crPickCity's lsSet(LS_GLOBAL.lastArea) write stays.
 $('crCityBack').addEventListener('click', () => {
-  crCityLookupSeq++; if (crCityLastCtl) { try { crCityLastCtl.abort(); } catch (e) {} crCityLastCtl = null; } // leaving the pane kills a held lookup (CG-PF-11)
   crCitySeq++; if (crCityCtl) { try { crCityCtl.abort(); } catch (e) {} crCityCtl = null; } if (crCityTimer) { clearTimeout(crCityTimer); crCityTimer = null; } // Beta 1.143 (DA-12): leaving the pane kills a held city search too - request AND pending debounce, as reopening does
   if (crCityReturn === 'preview' || crCityReturn === 'pick') { if (!routeLoaded) parkBootChrome(); else closeRouteMenu(); setCreateStage(crCityReturn); }
   else { showRmPane('rmCreatePane'); }
@@ -1038,12 +1039,12 @@ function crSearch() { // Enter: cancel any pending debounce and run the typed qu
 // shape exists: the street-search family below is session-free (its
 // invalidation rides on exitCreate's bump), the city-search family's catch
 // is seq-only while its landing is seq+session (S10 does not bump crCitySeq,
-// so the asymmetry is semantic), the last-city lookup adds a UI conjunct
-// (its pane still open), and crGeomGen is not a currency counter at all (a
+// so the asymmetry is semantic), and crGeomGen is not a currency counter at all (a
 // cache key - see its declaration). The members: crPrepCurrent(gen,
 // session) + crGridCurrent(g) (create-citydata.js / create-cache.js),
 // crSearchCurrent(seq), crCitySearchCurrent(seq, session) +
-// crCitySearchSeqCurrent(seq), crCityLookupCurrent(seq, session).
+// crCitySearchSeqCurrent(seq). (Beta 1.229: the last-city lookup family -
+// crCityLookupCurrent and its generation - retired with the shortcut.)
 function crSearchCurrent(seq) { return seq === crSearchSeq; } // the street-search family's current-check: the sequence ALONE - no session, by design
 async function crRunSearch(fromTyping) {
   const q = $('crSearchInput').value.trim(); if (!q) return;
@@ -1052,10 +1053,10 @@ async function crRunSearch(fromTyping) {
   const ctl = (typeof AbortController !== 'undefined') ? new AbortController() : null; crSearchCtl = ctl;
   try {
     let url = 'https://nominatim.openstreetmap.org/search?format=jsonv2&addressdetails=1&limit=5&q=' + encodeURIComponent(q);
-    const scoped = !!(crCity && crCity.bbox); // Beta 1.153 (Andrew): with a city loaded, suggestions come from THAT city only. The 1.121 bias (bounded=0: "a bias, never a restriction") becomes a bound (bounded=1) and the returned list is ALSO filtered to the box below, so a service that ignores the bound cannot leak an out-of-city suggestion. With NO city loaded, the visible-map bias is exactly the old behaviour.
-    try { // Beta 1.121: with a city chosen, the street search centres on the CITY (its Nominatim bounding box) - preparation and search live inside the city he picked; without one, the visible map biases as before.
+    const scoped = !!(crCity && crCity.bbox); // Beta 1.153 (Andrew): with a city loaded, suggestions come from THAT city only. The 1.121 bias (bounded=0: "a bias, never a restriction") becomes a bound (bounded=1) and the returned list is ALSO filtered to the box below, so a service that ignores the bound cannot leak an out-of-city suggestion.
+    try { // Beta 1.121: with a city chosen, the street search centres on the CITY (its Nominatim bounding box) - preparation and search live inside the city he picked. Beta 1.229 (Andrew's standing rule): with NO city loaded, the search is bounded to ONTARIO - the old visible-map bias (bounded=0 over whatever the map happened to show) could return the whole world; the province bound replaces it, and the Ontario filter below guarantees it on the results themselves.
       if (scoped) url += '&viewbox=' + [crCity.bbox.w, crCity.bbox.n, crCity.bbox.e, crCity.bbox.s].map(v => +v.toFixed(5)).join(',') + '&bounded=1';
-      else if (map) { const b = map.getBounds(); url += '&viewbox=' + [b.getWest(), b.getNorth(), b.getEast(), b.getSouth()].map(v => +v.toFixed(5)).join(',') + '&bounded=0'; }
+      else url += '&countrycodes=ca&viewbox=' + [CR_ON_BOUNDS.w, CR_ON_BOUNDS.n, CR_ON_BOUNDS.e, CR_ON_BOUNDS.s].join(',') + '&bounded=1';
     } catch (e) {}
     const r = await fetch(url, { headers: { 'Accept': 'application/json' }, signal: ctl ? ctl.signal : undefined });
     if (!r.ok) throw new Error('search HTTP ' + r.status);
@@ -1063,6 +1064,7 @@ async function crRunSearch(fromTyping) {
     if (!crSearchCurrent(seq)) return; // superseded while in flight - a newer query owns the dropdown
     let results = Array.isArray(list) ? list : [];
     if (scoped) results = results.filter(it => { const la = parseFloat(it.lat), lo = parseFloat(it.lon); return isFinite(la) && isFinite(lo) && crInBox(crCity.bbox, la, lo); }); // Beta 1.153: the city bound, enforced on the results themselves
+    results = results.filter(crInOntario); // Beta 1.229: Ontario-only on the results themselves, on BOTH paths - belt-and-braces on the city path, the guarantee on the no-city path
     renderCrResults(results);
   } catch (e) {
   }

@@ -80,9 +80,9 @@ check('6b: the six payloads are byte-pinned (set treatment: alpha fills, lossles
 check('6c: renderIcons stamps the bar hosts (theme arrow, white magnifier + disc) and re-stamps row pins', app4.includes('GLYPH_CREATE.back.n : GLYPH_CREATE.back.d') && app4.includes('GLYPH_CREATE.search.n') && app4.includes('GLYPH_CREATE.cancel.n') && app4.includes("document.querySelectorAll('.crPin').forEach(el => { el.innerHTML = ICONS.pin; });"));
 
 // ---------- Version agreement ----------
-check('V: the #ver label reads Beta 1.228', head.includes('<div class="ver" id="ver">Beta 1.228</div>'));
-check('V: WHATSNEW is the Beta 1.228 entry with the three short bullets', app4.includes("v: 'Beta 1.228', items: [\"Street rows trade the pin for a Locate pill with its own press.\", \"The day/night and re-centre buttons rise to line up with the title.\", \"Streets and Pace open fully just above the title, not to the top of the screen.\"]"));
-check('V: the CHANGELOG top entry is Beta 1.228', changelog.split('\n').find(l => l.startsWith('## Beta')) === '## Beta 1.228 \u2014 2026-11-17');
+check('V: the #ver label reads Beta 1.229', head.includes('<div class="ver" id="ver">Beta 1.229</div>'));
+check('V: WHATSNEW is the Beta 1.229 entry with the five short bullets', app4.includes("v: 'Beta 1.229', items: [\"The 'Use last city' shortcut in city search is gone - it could open the wrong place with the same name.\", \"City and street searches now return Ontario places only.\", \"City search results glide in, with soft rows showing while the search runs.\", \"A street load that cannot finish now says so and offers Retry, instead of sitting at a percentage.\", \"Cancel and Delete buttons wear red everywhere.\"]"));
+check('V: the CHANGELOG top entry is Beta 1.229', changelog.split('\n').find(l => l.startsWith('## Beta')) === '## Beta 1.229 \u2014 2026-11-17');
 
 console.log(`proof-1227: ${pass}/${pass + fail} checks passed`);
 process.exit(fail ? 1 : 0);

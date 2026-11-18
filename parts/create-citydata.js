@@ -140,6 +140,16 @@ function crResolve(osmName, lngLat, boundary) { // resolve a tapped street from 
   return { status: 'ok', segs: best.exact ? best.segments.slice().sort((a, b) => crLineLen(b) - crLineLen(a)) : [best.line] };
 }
 function crPrepCurrent(gen, session) { return creating && crSession === session && crCovGen === gen && crPrepState === 'preparing'; } // Beta 1.154 (B3 build, G3 option (i)): the prep family's current-check under the one convention - cr<Family>Current(<the family's own invalidation inputs>), answering "may this landing still write?" (the convention is stated at crSearchCurrent in create-pick.js); this family's true inputs are (gen, session)
+function crPrepWatchdog(prep, gen, session) { // Beta 1.229: the fallback preparation's progress watchdog - the box prep's mirror of the grid's (crGridWatchdog, create-cache.js). The prep's fetch carries the service budget, but its LANDING is one promise - a pack download inside it (crPackLoad's fetch carries no timeout of its own) can wedge that promise forever, and through 1.228 nothing watched the wait: the readout sat at 'Preparing this area' with no way out but leaving. Past CR_TIMING.stallMs, force the existing failed landing (the readout's Retry re-enters crStartPrep on the same anchor). The generation bump orphans the wedged landing first: if it ever settles, it finds a dead generation and lands nowhere, instead of completing a preparation the state table has already failed - a failed -> ready move it would refuse.
+  if (!crPrepCurrent(gen, session) || crPrep !== prep) return;
+  if (Date.now() - prep.startedAt < CR_TIMING.stallMs) return;
+  clearInterval(prep.ticker);
+  crCovGen++;
+  crAbortOp(prep.op);
+  crPrep = null;
+  crSetPrepState('failed'); crPrepFail = { ok: false, kind: 'unreachable' };
+  crRenderHint();
+}
 function crStartPrep(anchor) { // the FALLBACK preparation (second amendment, item D): one bounded box around an anchor, session-only - for places with no picked/saved city, and for anchors outside the city's coverage. The whole-city path is crCityPrepare below.
   if (!creating || !anchor || !isFinite(anchor.lat) || !isFinite(anchor.lng)) return;
   if (crCov && crInAnyBox(crCov.boxes, anchor.lat, anchor.lng) && crPrepState !== 'preparing') { crRenderHint(); return; } // verified coverage already includes this anchor - reuse it, no second download (CG-PF-04)
@@ -151,7 +161,7 @@ function crStartPrep(anchor) { // the FALLBACK preparation (second amendment, it
   crSetPrepState('preparing'); crPrepFail = null; crFailFromGrid = false; crPrepAnchor = anchor; crWanted = null; // starting a preparation IS the answer to any outstanding offer
   const prep = crPrep = { gen, session, anchor, startedAt: Date.now(), ticker: null, op: {} };
   crRenderHint();
-  prep.ticker = setInterval(() => { if (crPrepCurrent(gen, session)) crRenderHint(); else clearInterval(prep.ticker); }, 1000);
+  prep.ticker = setInterval(() => { crPrepWatchdog(prep, gen, session); if (crPrepCurrent(gen, session)) crRenderHint(); else clearInterval(prep.ticker); }, 1000); // Beta 1.229: every tick runs the progress watchdog before it renders
   crSourceExtract(outer, null, CR_TIMING.budgetMs, CR_TIMING.attempt1Ms, () => crPrepCurrent(gen, session), prep.op).then(res => {
     clearInterval(prep.ticker);
     if (!creating || crSession !== session || crCovGen !== gen) return; // obsolete: land NOWHERE - not the draft, not the hint, not a newer operation's state (CG-PF-05)

@@ -119,6 +119,27 @@ function crGridFinish(g) {
   if (crPrepState === 'ready' || crPrepState === 'degraded') crSweepPending();
   crRenderHint();
 }
+function crGridArmTicker(g) { // Beta 1.229: the grid's one heartbeat, armed at preparation entry (crCityPrepare), at the pack resolve and on resume - it renders the readout while preparing and runs the progress watchdog below. Through 1.228 the ticker was first armed inside the pack resolve's landing, so a preparation that wedged BEFORE the pump (a saved-grid read or a pack download that never settles - Andrew's Aurora stall) had no heartbeat at all: nothing rendered, nothing watched, the readout percentage froze forever.
+  if (g.ticker) clearInterval(g.ticker);
+  g.ticker = setInterval(() => {
+    if (crGridCurrent(g) && crPrepState === 'preparing') { crGridWatchdog(g); if (crGridCurrent(g) && crPrepState === 'preparing') crRenderHint(); }
+    else if (g.ticker) { clearInterval(g.ticker); g.ticker = null; }
+  }, 1000);
+}
+function crGridWatchdog(g) { // Beta 1.229: the grid's progress watchdog - how long since anything last LANDED (g.lastProgressAt). Past CR_TIMING.stallMs the load cannot progress: force the loud landing (crGridStall) instead of a percentage that never moves again.
+  if (!crGridCurrent(g) || g.stopped || crPrepState !== 'preparing') return;
+  if (Date.now() - (g.lastProgressAt || g.startedAt) < CR_TIMING.stallMs) return;
+  crGridStall(g);
+}
+function crGridStall(g) { // Beta 1.229: a stalled grid lands where every failed load lands. The downloads in flight are aborted, every unfinished cell is marked failed (each was given the whole stall bound), and crGridFinish settles the state honestly: nothing in = failed (the readout shows the fail text and Retry, which resumes exactly these cells), some in = degraded (usable, resumable). A late answer from an aborted download lands nowhere - crGridPump's settle path checks ops membership first, and the aborted ops are out of the set.
+  g.lastFail = g.lastFail || { ok: false, kind: 'unreachable' };
+  for (const op of Array.from(g.ops)) crAbortOp(op);
+  g.ops.clear(); g.active = 0;
+  for (const c of g.cells) if (c.state !== 'done') c.state = 'failed';
+  if (g.fromPack) { try { delete crPackLoads[g.fromPack]; } catch (e) {} } // the pack download itself may be the wedged piece (its fetch carries no timeout): its cached promise is dropped, so Retry downloads the pack FRESH instead of re-awaiting the same never-settling promise and stalling a second time on the spot
+  crCovGen++; // the stall orphans the grid's generation, exactly as Cancel does: an initialization callback still in flight (the saved-grid read, the pack resolve) checks crGridCurrent and lands nowhere, instead of arming a ticker and a pump over a grid that has already finished. crGridResume re-adopts the grid into the live generation, so Retry is unaffected
+  crGridFinish(g);
+}
 function crGridPump(g) { // keep at most CR_GRID_PARALLEL cell fetches in flight; a cell that fails is retried once inside the run, then marked failed while the rest continue (amendment A)
   if (!crGridCurrent(g) || g.stopped) return;
   while (g.active < CR_GRID_PARALLEL) {
@@ -131,6 +152,7 @@ function crGridPump(g) { // keep at most CR_GRID_PARALLEL cell fetches in flight
       if (!g.ops.has(op)) return; // stopped/superseded since launch: crGridStop already zeroed the accounting - a late answer lands NOWHERE, even if this grid is later resumed under a new generation
       g.ops.delete(op); g.active--;
       if (!crGridCurrent(g)) return; // the session moved on: land nowhere (CG-PF-05)
+      g.lastProgressAt = Date.now(); // Beta 1.229: a landed cell is progress - the watchdog's clock restarts here, whatever the answer was
       if (res.ok) {
         cell.state = 'done';
         crCovMerge(res.json.elements, cell.box);
@@ -158,11 +180,13 @@ function crCityPrepare() { // a city is picked: load its whole extract - from th
   crCacheNote = ''; crCacheNoteCity = ''; // a fresh preparation starts with no failure state (Beta 1.143, DA-06: the owner binding resets with the note)
   crPackCtx = null; crPackNote = ''; // Beta 1.123: a new city's preparation re-decides its source (pack vs service) below
   const cells = crGridCellsFor(bbox);
-  const g = crGrid = { name, bbox, cells, gen, session, startedAt: Date.now(), ticker: null, ops: new Set(), active: 0, fromCache: false, savedAt: null, stopped: null, lastFail: null };
+  const g = crGrid = { name, bbox, cells, gen, session, startedAt: Date.now(), lastProgressAt: Date.now(), ticker: null, ops: new Set(), active: 0, fromCache: false, savedAt: null, stopped: null, lastFail: null }; // Beta 1.229: lastProgressAt - the progress watchdog's clock (crGridWatchdog below): preparation starting is the first progress mark; the saved-grid read landing, the pack resolve landing, every landed cell and every resume restart it
   crSetPrepState('preparing'); crPrepFail = null; crFailFromGrid = false; crWanted = null; // Beta 1.154 (B3 build): crFailFromGrid clears at THIS entry too - through 1.153 it survived a city change (the 2026-11-09 lifecycle trace's cross-session latch finding); S1/S8 always cleared it at entry, S6 now does the same
   crRenderHint();
+  crGridArmTicker(g); // Beta 1.229: the heartbeat runs from preparation ENTRY - the saved-grid read and the pack resolve below are inside the watchdog's reach from here on, not just the pump
   crIdbGet(name).then(rec => {
     if (!crGridCurrent(g)) return;
+    g.lastProgressAt = Date.now(); // Beta 1.229: the saved-grid read landing is progress, restored cells or none
     let restored = 0;
     if (rec && rec.bbox && (rec.bbox.s !== bbox.s || rec.bbox.n !== bbox.n || rec.bbox.w !== bbox.w || rec.bbox.e !== bbox.e)) rec = null; // a record saved under a DIFFERENT bounding box (the lookup's answer changed) is not this grid's cache - its cell keys would restore the wrong streets
     if (rec && rec.cells) {
@@ -189,8 +213,9 @@ function crCityPrepare() { // a city is picked: load its whole extract - from th
     // static download, seconds not minutes.
     crPackResolveCity(name, bbox).then(pk => {
       if (!crGridCurrent(g)) return; // the session moved on while the catalogue answered: land nowhere (CG-PF-05)
+      g.lastProgressAt = Date.now(); // Beta 1.229: the pack resolve landing is progress - the pump's own clock starts from here
       if (pk) { g.fromPack = pk.slug; crPackCtx = { slug: pk.slug, bbox: pk.bbox, failed: false }; }
-      g.ticker = setInterval(() => { if (crGridCurrent(g) && crPrepState === 'preparing') crRenderHint(); else if (g.ticker) clearInterval(g.ticker); }, 1000);
+      crGridArmTicker(g); // Beta 1.229: re-armed fresh for the pump phase (the heartbeat has run since preparation entry - see crCityPrepare)
       crRenderHint();
       crGridPump(g);
     });
@@ -199,11 +224,10 @@ function crCityPrepare() { // a city is picked: load its whole extract - from th
 function crGridResume() { // the degraded/stopped remedy: fetch ONLY the missing cells (amendments A+B)
   const g = crGrid; if (!g || !creating) return;
   g.gen = ++crCovGen; // Cancel bumped the coverage generation to orphan late answers (CG-PF-05); resuming ADOPTS the grid into the live generation, or the pump would refuse it as obsolete and fetch nothing
-  g.stopped = null; g.startedAt = Date.now();
+  g.stopped = null; g.startedAt = Date.now(); g.lastProgressAt = Date.now(); // Beta 1.229: the resume restarts the watchdog's clock - the idle time before it is not a stall
   for (const c of g.cells) if (c.state === 'failed') { c.state = 'pending'; c.tries = 0; }
   crSetPrepState('preparing'); crPrepFail = null; crFailFromGrid = false; crWanted = null;
-  if (g.ticker) clearInterval(g.ticker);
-  g.ticker = setInterval(() => { if (crGridCurrent(g) && crPrepState === 'preparing') crRenderHint(); else if (g.ticker) clearInterval(g.ticker); }, 1000);
+  crGridArmTicker(g);
   crRenderHint();
   crGridPump(g);
 }

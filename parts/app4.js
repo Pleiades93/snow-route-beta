@@ -889,7 +889,7 @@ $('stDel').addEventListener('click', async () => {
 });
 // ---- About ----
 const WHATSNEW = { // the curated in-app notes: plain words, LATEST RELEASE ONLY (Beta 1.114, Andrew: the accumulated list cluttered the About pane). A release REPLACES this entry with its own in the same change - it never accumulates; the full history lives in CHANGELOG.md, not the app
-  v: 'Beta 1.228', items: ["Street rows trade the pin for a Locate pill with its own press.", "The day/night and re-centre buttons rise to line up with the title.", "Streets and Pace open fully just above the title, not to the top of the screen."] }; // Beta 1.223 (Andrew): What's New entries are SHORT from now on - point form, one short plain line each, no prose paragraphs, no em dashes
+  v: 'Beta 1.229', items: ["The 'Use last city' shortcut in city search is gone - it could open the wrong place with the same name.", "City and street searches now return Ontario places only.", "City search results glide in, with soft rows showing while the search runs.", "A street load that cannot finish now says so and offers Retry, instead of sitting at a percentage.", "Cancel and Delete buttons wear red everywhere."] }; // Beta 1.223 (Andrew): What's New entries are SHORT from now on - point form, one short plain line each, no prose paragraphs, no em dashes
 
 function renderAbout() {
   const cur = $('ver').textContent.trim();

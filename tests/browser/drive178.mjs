@@ -265,11 +265,20 @@ await poll(`document.getElementById('rmCityPane').classList.contains('on')`, 100
 const noCity = await J(`({ pane: document.getElementById('rmCityPane').classList.contains('on'), city: typeof crCity !== 'undefined' && !!crCity })`);
 ok('179 setup: creation is open at the city step with NO city loaded (the control state - the create session itself starts at the pick, so the premise is the city pane standing with crCity unset)', noCity.pane === true && noCity.city === false);
 
-// ---------- control: no city loaded - the old bias, both results ----------
+// ---------- control: no city loaded - the Ontario bound (Beta 1.229), both results ----------
+// Beta 1.229 PREMISE UPDATE (Andrew's standing rule: every creating-a-route
+// search returns Ontario results only): through 1.228 the no-city street
+// search carried the visible-map BIAS (bounded=0 over whatever the map
+// happened to show). It now carries the Ontario BOUND - countrycodes=ca,
+// the province viewbox, bounded=1 - and the results are filtered to Ontario
+// on the client (crInOntario). Both fixture results still render here: both
+// ARE Ontario places (the Toronto result sits inside the province bounds),
+// so the province filter passes them; the bound that drops the Toronto one
+// is the CITY bound, proven by the scoped section below.
 const ctlRan = await runStreetSearch();
 const CTL = await resultSample();
-ok('control (no city loaded) the search stays the old visible-map BIAS - the request carries bounded=0 and BOTH fixture results render, the Toronto one included | ' + JSON.stringify(CTL),
-  ctlRan === true && CTL.rows.length === 2 && CTL.urls.length >= 1 && CTL.urls[CTL.urls.length - 1].indexOf('bounded=0') >= 0 && CTL.rows.some(t => t.indexOf('Toronto') >= 0));
+ok('control (no city loaded) the search is bounded to ONTARIO (Beta 1.229) - the request carries countrycodes=ca, the Ontario viewbox and bounded=1 (the old visible-map bias is gone), and BOTH fixture results render, the Toronto one included, because both are Ontario places | ' + JSON.stringify(CTL),
+  ctlRan === true && CTL.rows.length === 2 && CTL.urls.length >= 1 && CTL.urls[CTL.urls.length - 1].indexOf('bounded=1') >= 0 && CTL.urls[CTL.urls.length - 1].indexOf('countrycodes=ca') >= 0 && CTL.urls[CTL.urls.length - 1].indexOf('viewbox=-95.2,56.9,-74.3,41.6') >= 0 && CTL.rows.some(t => t.indexOf('Toronto') >= 0));
 
 // ---------- scoped: pick Vaughan, search again ----------
 const inPick = await pickCityVaughan();
