@@ -1051,6 +1051,8 @@ async function crRunSearch(fromTyping) {
   const seq = ++crSearchSeq;
   if (crSearchCtl) { try { crSearchCtl.abort(); } catch (e) {} }
   const ctl = (typeof AbortController !== 'undefined') ? new AbortController() : null; crSearchCtl = ctl;
+  const isect = crIntersectionItem(q); // Beta 1.232 (piece 1): a two-street query's crossing is resolved from the loaded extract BEFORE the network is even asked - it costs a cache hit by the second keystroke burst and never waits on Nominatim
+  if (isect) renderCrResults([isect]); // Beta 1.232 fix round (PR #112, Codex P2): the crossing renders NOW, before the network is awaited - a fetch that hangs (never resolves, never rejects; the search carries no timeout) must not hold the device's own answer hostage. It renders in the same tick that bumped the sequence, so it is current by construction; the landing below re-renders it at the head of the merged list under crSearchCurrent(seq), and a superseded query's early row is replaced by the newer query's own render, never merged into it
   try {
     let url = 'https://nominatim.openstreetmap.org/search?format=jsonv2&addressdetails=1&limit=5&q=' + encodeURIComponent(q);
     const scoped = !!(crCity && crCity.bbox); // Beta 1.153 (Andrew): with a city loaded, suggestions come from THAT city only. The 1.121 bias (bounded=0: "a bias, never a restriction") becomes a bound (bounded=1) and the returned list is ALSO filtered to the box below, so a service that ignores the bound cannot leak an out-of-city suggestion.
@@ -1065,8 +1067,10 @@ async function crRunSearch(fromTyping) {
     let results = Array.isArray(list) ? list : [];
     if (scoped) results = results.filter(it => { const la = parseFloat(it.lat), lo = parseFloat(it.lon); return isFinite(la) && isFinite(lo) && crInBox(crCity.bbox, la, lo); }); // Beta 1.153: the city bound, enforced on the results themselves
     results = results.filter(crInOntario); // Beta 1.229: Ontario-only on the results themselves, on BOTH paths - belt-and-braces on the city path, the guarantee on the no-city path
-    renderCrResults(results);
+    results = crCollapseResults(results); // Beta 1.232 (piece 2): near-duplicate points of one street merge before anything renders
+    renderCrResults(isect ? [isect].concat(results) : results); // Beta 1.232 (piece 1): the on-device crossing leads the list
   } catch (e) {
+    if (isect && crSearchCurrent(seq)) renderCrResults([isect]); // Beta 1.232: the device's own answer survives a dead network; without a crossing, a failure stays silent exactly as before
   }
 }
 document.addEventListener('pointerdown', (e) => { // Beta 1.120 (Andrew): tapping anywhere outside the results dropdown dismisses it - map taps included (the pick still runs: this only closes the list, in the capture phase, before the map's own click)
@@ -1075,6 +1079,8 @@ document.addEventListener('pointerdown', (e) => { // Beta 1.120 (Andrew): tappin
   if (!box.classList.contains('on')) return;
   if (e.target && (box.contains(e.target) || $('createBar').contains(e.target))) return;
   box.classList.remove('on');
+  if (crSearchTimer) { clearTimeout(crSearchTimer); crSearchTimer = null; }
+  crSearchSeq++; if (crSearchCtl) { try { crSearchCtl.abort(); } catch (e) {} crSearchCtl = null; } // Beta 1.232 fix round 5 (PR #112, Codex P2): dismissing the results ENDS the search too - since fix round 1 the crossing renders while its fetch is still in flight, and un-invalidated that fetch's landing (the success merge, or the catch's crossing re-render under crSearchCurrent) reopened this box over the tap-away that dismissed it. The form is the standing one (fix round 3 seated it at the row click; the clear disc and the flow close end the search exactly so), and the pending debounce is cleared with it, or it would fire a fresh search 300 ms after the user tapped away. The tap-away itself is untouched: the box still hides here, and the map pick still runs
 }, true);
 function renderCrResults(list) {
   const box = $('createResults'); box.innerHTML = '';
@@ -1083,10 +1089,13 @@ function renderCrResults(list) {
     const nm = it.display_name || ''; const cut = nm.indexOf(',');
     const pin = document.createElement('span'); pin.className = 'crPin'; pin.innerHTML = ICONS.pin;
     const nameEl = document.createElement('span'); nameEl.className = 'crName'; nameEl.textContent = cut >= 0 ? nm.slice(0, cut) : nm;
+    if (!it._isect) { const near = crNearCrossName(it); if (near) { const ns = document.createElement('span'); ns.className = 'crNear'; ns.textContent = ' · near ' + near; nameEl.appendChild(ns); } } // Beta 1.232 (piece 2): the cross-street label rides inside the name, in the area line's grey
     const areaEl = document.createElement('span'); areaEl.className = 'crArea'; areaEl.textContent = cut >= 0 ? nm.slice(cut + 1).trim() : '';
     b.append(pin, nameEl, areaEl);
     b.addEventListener('click', () => {
       box.classList.remove('on');
+      if (crSearchTimer) { clearTimeout(crSearchTimer); crSearchTimer = null; }
+      crSearchSeq++; if (crSearchCtl) { try { crSearchCtl.abort(); } catch (e) {} crSearchCtl = null; } // Beta 1.232 fix round 3 (PR #112, Codex P2): selecting a result ENDS the search - since fix round 1 the crossing renders while its fetch is still in flight, and un-invalidated that fetch's landing (the success merge, or the catch's crossing re-render under crSearchCurrent) reopens this box over the destination just picked. The form is the standing one - the clear disc and the flow close end the search exactly so - and the pending debounce is cleared with it, or it would fire a fresh search over the chosen destination 300 ms later
       const lat = parseFloat(it.lat), lon = parseFloat(it.lon); if (!isFinite(lat) || !isFinite(lon)) return;
       const a = it.address || {}; crAreaGuess = a.city || a.town || a.village || a.municipality || a.county || '';
       if (map) map.flyTo({ center: [lon, lat], zoom: Math.max(map.getZoom(), 15), duration: 900 });
@@ -1096,6 +1105,170 @@ function renderCrResults(list) {
     box.appendChild(b);
   }
   box.classList.toggle('on', list.length > 0);
+}
+// ================= Beta 1.232: crossings, computed on-device =================
+// Pieces 1 and 2 both answer from the prepared extract itself: crCov.byName
+// holds every street's polylines for the loaded city, so they work offline
+// and never invent geometry the device does not hold. A crossing follows the
+// app's own junction semantics (crStreetParts): a true segment intersection,
+// or a vertex of either street lying on the other's line (<= 4 m, projected
+// onto it). One pair's points dedupe at 15 m - the merge the sector cuts use.
+let crXIndexCache = null; // { stamp, cells, segs, cross } - rebuilt whenever crCovStamp() moves
+function crSegProjM(p, a, b) { // p projected onto segment a-b, in metres: { pt, d }
+  const ax = a[1] * MLNG, ay = a[0] * MLAT, bx = b[1] * MLNG, by = b[0] * MLAT, px = p[1] * MLNG, py = p[0] * MLAT;
+  const dx = bx - ax, dy = by - ay, l2 = dx * dx + dy * dy;
+  let t = l2 > 0 ? ((px - ax) * dx + (py - ay) * dy) / l2 : 0; t = t < 0 ? 0 : (t > 1 ? 1 : t);
+  const qx = ax + t * dx, qy = ay + t * dy;
+  return { pt: [qy / MLAT, qx / MLNG], d: Math.hypot(px - qx, py - qy) };
+}
+function crSegCrossPt(a, b, c, d) { // where segments a-b and c-d cross, or null; a shared endpoint counts (parallel pairs still register through the vertex test below)
+  const ax = a[1] * MLNG, ay = a[0] * MLAT, bx = b[1] * MLNG, by = b[0] * MLAT, cx = c[1] * MLNG, cy = c[0] * MLAT, dx = d[1] * MLNG, dy = d[0] * MLAT;
+  const rx = bx - ax, ry = by - ay, sx = dx - cx, sy = dy - cy, den = rx * sy - ry * sx;
+  if (Math.abs(den) < 1e-9) return null;
+  const t = ((cx - ax) * sy - (cy - ay) * sx) / den, u = ((cx - ax) * ry - (cy - ay) * rx) / den;
+  if (t < -1e-9 || t > 1 + 1e-9 || u < -1e-9 || u > 1 + 1e-9) return null;
+  const tc = t < 0 ? 0 : (t > 1 ? 1 : t);
+  return [(ay + tc * ry) / MLAT, (ax + tc * rx) / MLNG];
+}
+function crXIndex() { // a lazy segment grid over the whole extract (~220 m cells), keyed by the extract's own stamp
+  if (!crCov || !crCov.byName || !Object.keys(crCov.byName).length) return null;
+  const stamp = crCovStamp();
+  if (crXIndexCache && crXIndexCache.stamp === stamp) return crXIndexCache;
+  const CS = 220, cells = new Map(), segs = new Map();
+  for (const nm of Object.keys(crCov.byName)) {
+    const ss = [];
+    for (const w of crCov.byName[nm]) for (let i = 1; i < w.pts.length; i++) ss.push([w.pts[i - 1], w.pts[i]]);
+    segs.set(nm, ss);
+    for (const s of ss) {
+      const a0 = Math.floor(Math.min(s[0][0], s[1][0]) * MLAT / CS), a1 = Math.floor(Math.max(s[0][0], s[1][0]) * MLAT / CS);
+      const o0 = Math.floor(Math.min(s[0][1], s[1][1]) * MLNG / CS), o1 = Math.floor(Math.max(s[0][1], s[1][1]) * MLNG / CS);
+      for (let a = a0; a <= a1; a++) for (let o = o0; o <= o1; o++) { const k = a + ':' + o; let arr = cells.get(k); if (!arr) { arr = []; cells.set(k, arr); } arr.push([nm, s]); }
+    }
+  }
+  crXIndexCache = { stamp, cells, segs, cross: new Map() };
+  return crXIndexCache;
+}
+function crCrossingsOf(name) { // [{ other, pt }] - every crossing of one street with the rest of the extract, cached per stamp
+  const ix = crXIndex(); if (!ix || !ix.segs.has(name)) return [];
+  const hit = ix.cross.get(name); if (hit) return hit;
+  const CS = 220, byOther = new Map();
+  const add = (other, pt) => { let arr = byOther.get(other); if (!arr) { arr = []; byOther.set(other, arr); } for (const p of arr) if (distM(p, pt) <= 15) return; arr.push(pt); };
+  const PAD = 4; // Beta 1.232 fix round (PR #112, Codex P2): the gather window below grows by the junction tolerance (4 m, converted per axis) - the index registers a segment in the cells its own bounds span, so a vertex lying within tolerance of this segment but across a 220 m cell boundary would otherwise never be gathered and its junction silently lost. Growing the QUERY keeps the invariant provable in this one place: any segment holding a vertex within tolerance of this one IS gathered, because that vertex's own cell (which its registration covers) lies inside the grown window. The index stays unpadded, so its one-time build cost is unchanged; the dedupe (15 m) and cluster (30 m) semantics are untouched
+  for (const s of ix.segs.get(name)) {
+    const a0 = Math.floor((Math.min(s[0][0], s[1][0]) - PAD / MLAT) * MLAT / CS), a1 = Math.floor((Math.max(s[0][0], s[1][0]) + PAD / MLAT) * MLAT / CS);
+    const o0 = Math.floor((Math.min(s[0][1], s[1][1]) - PAD / MLNG) * MLNG / CS), o1 = Math.floor((Math.max(s[0][1], s[1][1]) + PAD / MLNG) * MLNG / CS);
+    const seen = new Set();
+    for (let a = a0; a <= a1; a++) for (let o = o0; o <= o1; o++) {
+      const cellArr = ix.cells.get(a + ':' + o); if (!cellArr) continue;
+      for (const e of cellArr) {
+        if (e[0] === name || seen.has(e[1])) continue; seen.add(e[1]);
+        const t = e[1], xp = crSegCrossPt(s[0], s[1], t[0], t[1]); if (xp) add(e[0], xp);
+        for (const v of [t[0], t[1]]) { const pr = crSegProjM(v, s[0], s[1]); if (pr.d <= 4) add(e[0], pr.pt); }
+        for (const v of [s[0], s[1]]) { const pr = crSegProjM(v, t[0], t[1]); if (pr.d <= 4) add(e[0], pr.pt); }
+      }
+    }
+  }
+  const out = [];
+  byOther.forEach((pts, other) => { for (const pt of pts) out.push({ other, pt }); });
+  ix.cross.set(name, out);
+  return out;
+}
+function crClusterPts(pts, r) { // one junction can print as several points (a divided road's two carriageways); the centroid of each cluster is the crossing
+  const used = new Array(pts.length).fill(false), out = [];
+  for (let i = 0; i < pts.length; i++) {
+    if (used[i]) continue; used[i] = true; let sx = pts[i][0], sy = pts[i][1], n = 1;
+    for (let j = i + 1; j < pts.length; j++) if (!used[j] && distM(pts[i], pts[j]) <= r) { used[j] = true; sx += pts[j][0]; sy += pts[j][1]; n++; }
+    out.push([sx / n, sy / n]);
+  }
+  return out;
+}
+const CR_ABBR = { rd: 'road', st: 'street', ave: 'avenue', av: 'avenue', dr: 'drive', ct: 'court', crt: 'court', blvd: 'boulevard', ln: 'lane', cres: 'crescent', pl: 'place', ter: 'terrace', cir: 'circle', trl: 'trail', pkwy: 'parkway', sq: 'square', hwy: 'highway' };
+function crNameKey(s) { // a typed fragment and a pack name meet on one key: lower-case, dots off, a trailing abbreviation spelled out
+  const parts = String(s || '').trim().toLowerCase().replace(/\./g, '').split(/\s+/).filter(Boolean);
+  if (!parts.length) return '';
+  if (CR_ABBR[parts[parts.length - 1]]) parts[parts.length - 1] = CR_ABBR[parts[parts.length - 1]];
+  return parts.join(' ');
+}
+let crNameKeysCache = null; // { stamp, map } - a typed fragment's key -> the full pack names it can mean, rebuilt when the extract stamp moves (a per-query rescan of the whole catalogue would tax every keystroke burst on the big packs)
+function crNameKeys() { // both key forms of every street: its full name, and the app's short form of it
+  const stamp = crCovStamp();
+  if (crNameKeysCache && crNameKeysCache.stamp === stamp) return crNameKeysCache.map;
+  const map = new Map();
+  for (const nm of Object.keys(crCov.byName)) {
+    for (const k of [crNameKey(nm), crNameKey(shortStreetName(nm))]) {
+      if (!k) continue;
+      let arr = map.get(k); if (!arr) { arr = []; map.set(k, arr); }
+      if (!arr.includes(nm)) arr.push(nm);
+    }
+  }
+  crNameKeysCache = { stamp, map };
+  return map;
+}
+function crMatchStreetName(part) { // the full pack names a typed fragment can mean - the full name itself, or the app's short form of it
+  if (!crCov || !crCov.byName) return [];
+  const key = crNameKey(part); if (!key) return [];
+  const hit = crNameKeys().get(key);
+  return hit ? hit.slice() : [];
+}
+function crParseTwoStreets(q) { // 'A and B' / 'A & B' / 'A at B' / 'A, B' -> [a, b]; anything else is not a two-street query
+  const m = /^\s*(.+?)\s*(?:,|&)\s*(.+?)\s*$/.exec(q) || /^\s*(.+?)\s+(?:and|at)\s+(.+?)\s*$/i.exec(q);
+  if (!m) return null;
+  const a = m[1].trim(), b = m[2].trim();
+  return (a && b) ? [a, b] : null;
+}
+function crIntersectionItem(q) { // piece 1: the crossing of two named streets, resolved from the extract alone - no network involved
+  if (!crCov || !crCov.byName || !crCov.boxes.length) return null;
+  const parts = crParseTwoStreets(q); if (!parts) return null;
+  const As = crMatchStreetName(parts[0]), Bs = crMatchStreetName(parts[1]);
+  if (!As.length || !Bs.length) return null;
+  const ctr = (typeof map !== 'undefined' && map) ? map.getCenter() : null; // several crossings of one pair: the one nearest the map centre wins - the search's standing map bias
+  const cityBox = (crCity && crCity.bbox) ? crCity.bbox : null; // Beta 1.232 fix round 4 (PR #112, Codex P2): since 1.153 the search is city-only - the network landing enforces it with crInBox on this same box - but the extract's ways run past the boundary, so the pair's CANDIDATES are bounded here, before clustering and nearest-selection: a pair crossing both inside and outside keeps its inside crossing (a post-check on the chosen point would kill exactly that pair), and a pair crossing only outside yields no item, falling back to the already city-bound network exactly as a non-crossing pair does. No city box in force, no bound - the same scoped test the network path applies
+  let best = null;
+  for (const A of As) {
+    const xs = crCrossingsOf(A); if (!xs.length) continue;
+    for (const B of Bs) {
+      if (B === A) continue;
+      const pts = [];
+      for (const x of xs) if (x.other === B && (!cityBox || crInBox(cityBox, x.pt[0], x.pt[1]))) pts.push(x.pt);
+      if (!pts.length) continue;
+      for (const c of crClusterPts(pts, 30)) { const d = ctr ? distM(c, [ctr.lat, ctr.lng]) : 0; if (!best || d < best.d) best = { d, pt: c, A, B }; }
+    }
+  }
+  if (!best) return null;
+  return { lat: String(best.pt[0]), lon: String(best.pt[1]), display_name: best.A + ' & ' + best.B, address: {}, _isect: true };
+}
+function crStreetIdentity(it) { // Beta 1.232 fix round 2 (PR #112, Codex P2): the street a result IS, or null when the result is not a street feature at all - the collapse below may merge street features only, so this is its gate. The search speaks format=jsonv2, whose results always carry category (the old format's class - the city filter's idiom), type and osm_type. A street itself is a highway WAY (a long route may arrive as a route/road relation); the osm_type clause keeps out the point features that share the highway category (a bus stop is a highway node, not the street). An address (building/place) and a POI (amenity/leisure/shop/...) merely STAND on a street: their address.road names where they are, never what they are, and their display head is a house number or a place's own name - so they earn no identity and never collapse. A street feature's identity is its own name: address.road when the details carry it, else the display head (a street result's head IS its name)
+  if (!it || it._isect) return null; // the on-device crossing never collapses and nothing collapses into it - structural, not just positional (it is concatenated after the collapse today)
+  const cls = it.category || it.class;
+  const isStreet = (cls === 'highway' && (it.osm_type === 'way' || it.osm_type === 'relation')) || (cls === 'route' && it.type === 'road');
+  if (!isStreet) return null;
+  const head = (it.display_name || '').split(',')[0].trim();
+  const nm = ((it.address && it.address.road) || head).trim().toLowerCase();
+  return nm || null;
+}
+function crCollapseResults(list) { // piece 2's merge, scoped by fix round 2: one STREET can print as several near-identical points - the first stands, the repeats (within 100 m, same street identity) drop BEFORE any labelling. The first build keyed on the display head alone, which for an address result is just its house number - '10, Alpha Road' and '10, Beta Road', 45 m apart, merged into one row and a real destination vanished (PR #112, Codex P2). Only street features carry an identity now (crStreetIdentity); addresses and POIs always stand, and are never entered into the kept set, so nothing can collapse into them either
+  const out = [], kept = [];
+  for (const it of list) {
+    const id = crStreetIdentity(it);
+    const la = parseFloat(it.lat), lo = parseFloat(it.lon);
+    let dup = false;
+    if (id && isFinite(la) && isFinite(lo)) for (const k of kept) if (k.id === id && distM([la, lo], k.pt) <= 100) { dup = true; break; }
+    if (!dup) { out.push(it); if (id && isFinite(la) && isFinite(lo)) kept.push({ id, pt: [la, lo] }); }
+  }
+  return out;
+}
+function crNearCrossName(it) { // piece 2: the cross street nearest this result's point - only when the result IS the street (its head is the street's own name); anything else stays plain
+  if (!crCov || !crCov.byName || !crCov.boxes.length) return null;
+  const head = (it.display_name || '').split(',')[0].trim();
+  const road = (it.address && it.address.road) || '';
+  let nm = null;
+  if (road && head === road && crCov.byName[road]) nm = road;
+  else if (head && crCov.byName[head]) nm = head;
+  if (!nm) return null;
+  const la = parseFloat(it.lat), lo = parseFloat(it.lon); if (!isFinite(la) || !isFinite(lo)) return null;
+  let best = null;
+  for (const x of crCrossingsOf(nm)) { const d = distM([la, lo], x.pt); if (!best || d < best.d) best = { d, other: x.other }; }
+  return best ? shortStreetName(best.other) : null;
 }
 const CR_SUFFIX = /\s+(Drive|Court|Boulevard|Lane|Street|Avenue|Crescent|Road|Place|Ridge|Way|Terrace|Circle|Gate|Heights|Trail|Parkway)$/;
 const CR_ORDINALS = { '1st': 'First', '2nd': 'Second', '3rd': 'Third', '4th': 'Fourth', '5th': 'Fifth', '6th': 'Sixth', '7th': 'Seventh', '8th': 'Eighth', '9th': 'Ninth', '10th': 'Tenth', '11th': 'Eleventh', '12th': 'Twelfth' };

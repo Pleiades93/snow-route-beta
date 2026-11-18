@@ -60,9 +60,9 @@ check('5f: the focus exemption stands - an opener whose handler focuses a text f
 check('5g: the exemption names the street row only - the other row families stay gated', (() => { const line = app4.split('\n').find(l => l.includes('const OPEN_FOCUS_EXEMPT_SEL')) || ''; return line.includes("'.srow'") && !line.includes('crPRow') && !line.includes('histRow'); })());
 
 // ---------- Version agreement ----------
-check('V: the #ver label reads Beta 1.231', head.includes('<div class="ver" id="ver">Beta 1.231</div>'));
-check('V: WHATSNEW is the Beta 1.231 entry with the three short bullets', app4.includes("v: 'Beta 1.231', items: [\"Buttons that open a menu or panel take a short beat now, so you can see the press land first.\", \"Switching between day and night is instant - no slow colour fade across the screen.\", \"Pop-ups and panels ease in a little smaller as they appear.\"]"));
-check('V: the CHANGELOG top entry is Beta 1.231', changelog.split('\n').find(l => l.startsWith('## Beta')) === '## Beta 1.231 — 2026-11-18');
+check('V: the #ver label reads Beta 1.231', head.includes('<div class="ver" id="ver">Beta 1.232</div>'));
+check('V: WHATSNEW is the Beta 1.231 entry with the three short bullets', app4.includes("v: 'Beta 1.232', items: [\"Type two street names - like Weston and Rutherford - and search jumps to where they cross.\", \"Street results now name the nearest cross street, so same-name streets are easy to tell apart.\", \"The create search bar is black and white now - white by day, dark glass by night.\"]"));
+check('V: the CHANGELOG top entry is Beta 1.231', changelog.split('\n').find(l => l.startsWith('## Beta')) === '## Beta 1.232 — 2026-11-18');
 
 console.log(`proof-1231: ${pass} pass, ${fail} fail`);
 if (fail) process.exit(1);

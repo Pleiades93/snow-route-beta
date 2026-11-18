@@ -59,10 +59,10 @@ check('4: the stale bar keeps its slot (#stale z-index 1001 stands, the nudge\'s
 check('4: the exportedAt stamp survives (noteExported still writes LS.exp)', app4.includes('function noteExported()') && app4.includes('st.exportedAt = Date.now();'));
 
 // V — version agreement
-check('V: the #ver label reads Beta 1.226', head.includes('<div class="ver" id="ver">Beta 1.231</div>'));
-check('V: WHATSNEW is the Beta 1.226 entry', app4.includes("v: 'Beta 1.231', items:"));
-check('V: the CHANGELOG top entry is Beta 1.226', changelog.split('\n').find(l => l.startsWith('## Beta')) === '## Beta 1.231 — 2026-11-18');
-check('V: the What\'s New entry is dash-free (no em dash in the 1.225 items)', !app4.slice(app4.indexOf("v: 'Beta 1.231'"), app4.indexOf("v: 'Beta 1.231'") + 400).includes('—'));
+check('V: the #ver label reads Beta 1.226', head.includes('<div class="ver" id="ver">Beta 1.232</div>'));
+check('V: WHATSNEW is the Beta 1.226 entry', app4.includes("v: 'Beta 1.232', items:"));
+check('V: the CHANGELOG top entry is Beta 1.226', changelog.split('\n').find(l => l.startsWith('## Beta')) === '## Beta 1.232 — 2026-11-18');
+check('V: the What\'s New entry is dash-free (no em dash in the 1.225 items)', !app4.slice(app4.indexOf("v: 'Beta 1.232'"), app4.indexOf("v: 'Beta 1.232'") + 400).includes('—'));
 
 console.log(pass + ' pass, ' + fail + ' fail');
 process.exit(fail === 0 ? 0 : 1);
