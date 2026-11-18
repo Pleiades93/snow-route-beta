@@ -9164,12 +9164,13 @@ function crRenderRows(res) { // Beta 1.234 (Andrew, the populate sample he appro
   for (const [key, st] of Array.from(crRowState)) {
     if (keep.has(key)) continue;
     if (fresh || reduced) { if (st.timer) clearTimeout(st.timer); st.el.remove(); crRowState.delete(key); } // a fresh context (or reduced motion) drops the old rows at once - no fade out of a closed box
-    else if (!st.leaving) { st.leaving = true; st.el.classList.add('crRowOut'); st.timer = setTimeout(() => { st.el.remove(); crRowState.delete(key); }, 190); } // 190ms: just past the 180ms fade, so the node lands after it reads as gone
+    else if (!st.leaving) { st.leaving = true; st.el.classList.remove('crRowIn'); void st.el.offsetWidth; st.el.classList.add('crRowOut'); st.timer = setTimeout(() => { st.el.remove(); crRowState.delete(key); }, 190); } // 190ms: just past the 180ms fade, so the node lands after it reads as gone. Beta 1.234 fix round 1 (PR #114, Codex P2): the entrance animation is RELEASED as the exit starts, in two beats - .crRowIn runs fill-mode both, so its final keyframe (opacity 1) kept overriding .crRowOut's opacity 0 and the row stayed opaque until this timer dropped it; and the release must COMMIT before the fade class lands (the forced reflow between them), or the browser folds both changes into one style update, the transition never starts, and the row still jumps straight to invisible (measured both ways in the round's QA: same-task remove+add reads opacity 0 at fade start and at +90ms; remove, reflow, add reads 1, then ~0.24 at +90ms)
   }
   let anchor = box.firstChild, enterIdx = 0;
   const place = el => { if (el === anchor) anchor = el.nextSibling; else box.insertBefore(el, anchor); }; // survivors and entering rows take the list's order; leaving rows are stepped over and fade where they stand
   for (const e of entries) {
     let st = crRowState.get(e.key);
+    if (st && e.it) st.el._crItem = e.it; // Beta 1.234 fix round 1 (PR #114, Codex P2): a RETAINED row's pick destination refreshes to the current item on every render. The row text is the reuse key, but the same crossing name in another city's extract - or a different crossing of the same pair, when the nearest-crossing resolver's answer moves within a session - carries different coordinates, and the creation-time click closure would otherwise fly to the stale ones. The click reads _crItem at tap time (crResultRowEl), so a row always picks what it currently displays.
     if (st && st.leaving) { // narrowed away and back inside one fade: the leave cancels and the row settles back in
       clearTimeout(st.timer); st.timer = null; st.leaving = false; st.el.classList.remove('crRowOut');
       st.el.classList.add('crRowIn'); st.el.style.animationDelay = (enterIdx++ * stagger) + 'ms';
@@ -9195,12 +9196,14 @@ function crResultRowEl(it) { // one intersection row: the set's pin + the crossi
   const pin = document.createElement('span'); pin.className = 'crPin'; pin.innerHTML = ICONS.pin;
   const nameEl = document.createElement('span'); nameEl.className = 'crName'; nameEl.textContent = it.display_name;
   b.append(pin, nameEl);
+  b._crItem = it; // Beta 1.234 fix round 1 (PR #114, Codex P2): the destination this row picks - crRenderRows refreshes it on every render that retains the row, and the click below reads it at tap time, never the creation-time item alone
   b.addEventListener('click', () => {
     box.classList.remove('on');
     if (crSearchTimer) { clearTimeout(crSearchTimer); crSearchTimer = null; }
     crSearchSeq++; if (crSearchCtl) { try { crSearchCtl.abort(); } catch (e) {} crSearchCtl = null; } // Beta 1.232 fix round 3 (PR #112, Codex P2): selecting a result ENDS the search - the pending debounce is cleared and the sequence bumped at this seat exactly as at the clear disc and the flow close, or a late keystroke burst would reopen the box over the destination just picked. Beta 1.234: with the search synchronous there is no in-flight landing left; the seat's form stands because the debounce + sequence ARE the search's invalidation now.
-    const lat = parseFloat(it.lat), lon = parseFloat(it.lon); if (!isFinite(lat) || !isFinite(lon)) return;
-    const a = it.address || {}; crAreaGuess = a.city || a.town || a.village || a.municipality || a.county || (it._isect && crCity ? crCity.name : ''); // Beta 1.234: an on-device crossing carries no address block - its area is the city whose extract computed it, so the guess the city pick set (crPickCity) stands for a crossing pick instead of blanking
+    const cur = b._crItem || it; // the item this row displays NOW (see _crItem above) - a retained row re-rendered with another city's same-named crossing picks the new coordinates, not its first render's
+    const lat = parseFloat(cur.lat), lon = parseFloat(cur.lon); if (!isFinite(lat) || !isFinite(lon)) return;
+    const a = cur.address || {}; crAreaGuess = a.city || a.town || a.village || a.municipality || a.county || (cur._isect && crCity ? crCity.name : ''); // Beta 1.234: an on-device crossing carries no address block - its area is the city whose extract computed it, so the guess the city pick set (crPickCity) stands for a crossing pick instead of blanking
     if (map) map.flyTo({ center: [lon, lat], zoom: Math.max(map.getZoom(), 15), duration: 900 });
     if (crGrid && crCity && crInBox(crGrid.bbox, lat, lon)) { /* inside the picked city: its grid is the preparation (already running or saved) - no second download for a search pick */ }
     else crStartPrep({ lat, lng: lon }); // Beta 1.121: outside any city coverage, the search pick ANCHORS the fallback box preparation (anchor rule (a)) - taps then resolve locally from the extract

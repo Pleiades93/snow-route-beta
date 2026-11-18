@@ -71,7 +71,7 @@ check('B10: the hint row is a plain div - no button, no handler in its factory',
 check('B11: the results box scrolls under its height cap', head.includes('max-height: calc(var(--vvh, 100dvh) - 88px - var(--cr-shift) - env(safe-area-inset-top, 0px)); overflow-x: hidden; overflow-y: auto;'));
 check('B12: the retired network-row machinery is absent and cannot creep back', !pick.includes('function crResultName') && !pick.includes('function crStreetIdentity') && !pick.includes('function crCollapseResults') && !pick.includes('function crNearCrossName') && !pick.includes('crNear') && !head.includes('.crNear'));
 check('B13: crInOntario stays - the city search still filters with it', pick.includes('function crInOntario(it)') && pick.includes('.filter(crIsPlace).filter(crInOntario)'));
-check('B14: a crossing pick keeps the picked city as its area (the name step\'s pre-fill cannot blank)', pick.includes("(it._isect && crCity ? crCity.name : '')"));
+check('B14: a crossing pick keeps the picked city as its area (the name step\'s pre-fill cannot blank)', pick.includes("(cur._isect && crCity ? crCity.name : '')")); // fix round 1: the operand rolled it -> cur with the F1 tap-time read; the rule (a crossing pick's area is the picked city) is unchanged
 check('B15: Enter still cancels the pending debounce and runs the typed query NOW (the 1.227 form, driving the synchronous search)', pick.includes('function crSearch() { // Enter: cancel any pending debounce and run the typed query NOW') && pick.includes('crRunSearch(false);'));
 
 // ---------- The populate animation ----------
@@ -80,6 +80,31 @@ check('N2: the stagger is 55ms fresh / 30ms re-populate, assigned by entering or
 check('N3: the render is a keyed diff - survivors keep their nodes (the row-state map and the shares-a-street continuation rule)', pick.includes('let crRowState = new Map();') && pick.includes('function crSharesStreet(a, b)'));
 check('N4: a leaving row is removed just past its fade, and reduced motion removes at once', pick.includes('}, 190);') && pick.includes("matchMedia('(prefers-reduced-motion: reduce)').matches") && head.includes('#createResults .crRowIn { animation: none; }') && head.includes('#createResults .crRowOut { transition: none; }'));
 check('N5: the hint row carries its own quiet style in both themes', head.includes('.crHintRow { padding: 11px 16px; font-size: 15.5px; color: rgba(20,24,31,.55); }') && head.includes('body.night .crHintRow { color: rgba(242,244,248,.55); }'));
+
+// ---------- F: fix round 1 (PR #114, Codex P2s 4618470453 + 4618470463) ----------
+// F1: a retained row's pick destination refreshes on every render. The row
+// text is the reuse key, but crRowState survives exitCreate (which only
+// hides the box), so the same crossing name in another city's extract - or
+// a different crossing of the same pair within a session - rendered into a
+// node whose creation-time click closure still held the FIRST coordinates.
+// The row now carries its current item (el._crItem, set at creation,
+// refreshed for every retained row in crRenderRows) and the click reads it
+// at tap time. The rendered behaviour is measured in the round's QA
+// (qa-fix1.mjs): re-render the same display name with new coordinates, tap,
+// the fly-to target is the NEW point.
+check('F1a: a result row carries its current item from creation', pick.includes('b._crItem = it;'));
+check('F1b: every render refreshes a retained row\'s item to the current render\'s', pick.includes('if (st && e.it) st.el._crItem = e.it;'));
+check('F1c: the click reads the row\'s current item at tap time, not the creation closure', pick.includes('const cur = b._crItem || it;') && pick.includes('const lat = parseFloat(cur.lat), lon = parseFloat(cur.lon);'));
+// F2: a leaving row's entrance animation is released as its exit starts.
+// .crRowIn runs fill-mode both, so its final keyframe (opacity 1) kept
+// overriding .crRowOut's opacity 0 - narrowed-away rows stayed opaque and
+// vanished at the 190ms removal timer. The exit seat removes .crRowIn,
+// forces a reflow so the release commits, THEN adds .crRowOut: folded into
+// one style update, the two changes cancel the transition before it starts
+// and the row jumps straight to invisible (measured). Measured end-to-end
+// in qa-fix1.mjs on a LEAVING row's computed opacity mid-fade (the
+// original QA measured only a survivor's delay).
+check('F2: the exit seat releases the entrance animation, commits it, then starts the fade-out', pick.includes("st.el.classList.remove('crRowIn'); void st.el.offsetWidth; st.el.classList.add('crRowOut');"));
 
 // ---------- V: version agreement ----------
 check('V: the #ver label reads Beta 1.234', head.includes('<div class="ver" id="ver">Beta 1.234</div>'));
