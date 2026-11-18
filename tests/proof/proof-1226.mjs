@@ -1,6 +1,6 @@
 // proof-1226.mjs - Beta 1.226 (fix_ids: press-shrink-1226, day-lift-half-1226).
 // Piece 1 (Andrew, from the approved motion sample): every pressable button or
-// pill shrinks on press (transition transform 120ms ease-out, :active scale(.97)),
+// pill shrinks on press (transition transform 150ms ease-out, :active scale(.97)),
 // and the blue menus no longer light up on press - their six :active background
 // rules now hold the rest fill. Pressables centred by a rest transform compose
 // the shrink with it. Display-only readouts (#spdPill, #count, #stats, the stat
@@ -19,14 +19,14 @@ let pass = 0, fail = 0;
 const check = (name, cond) => { if (cond) { pass++; } else { fail++; console.log('FAIL:', name); } };
 const rule = (sel) => { const i = head.indexOf(sel); return i < 0 ? '' : head.slice(i, head.indexOf('}', i) + 1); };
 // The two 1.226 group rules, isolated so the exclusion checks read rules, not prose.
-const transLine = head.split('\n').find(l => l.includes('.tabItem, .dockBtn, .runBtn,') && l.includes('transition: transform 120ms ease-out;')) || '';
+const transLine = head.split('\n').find(l => l.includes('.tabItem, .dockBtn, .runBtn,') && l.includes('transition: transform 150ms ease-out;')) || '';
 const scaleLine = head.split('\n').find(l => l.includes('.tabItem:active, .dockBtn:active, .runBtn:active,') && l.includes('transform: scale(.97);')) || '';
 
 // ---------- Piece 1: the press shrink ----------
 check('1a: the press transition group exists and carries the core families (tab bar, dock, run button, road panel, blue menus, create)', !!transLine && transLine.includes('#selPop button') && transLine.includes('.rmBtn') && transLine.includes('button.m-card') && transLine.includes('#routeMenu .routeRow') && transLine.includes('.crPrimary') && transLine.includes('.banner button') && transLine.includes('.modal .row button'));
 check('1b: the press scale group exists at scale(.97) over the same families', !!scaleLine && scaleLine.includes('#selPop button:active') && scaleLine.includes('.rmBtn:active') && scaleLine.includes('#routeMenu .routeRow:active') && scaleLine.includes('.m-switch:active'));
 check('1c: the centred pressables compose the shrink with their rest transform (no sideways jump mid-press)', head.includes('#cancelStartBtn:active { transform: translateX(-50%) scale(.97); }') && head.includes('#rmClose:active, #setClose:active { transform: translateX(-50%) scale(.97); }') && head.includes('#crHintBtn:active { transform: translateX(-50%) scale(.97); }') && transLine.includes('#cancelStartBtn, #rmClose, #setClose, #crHintBtn'));
-check('1d: the switch transition merges its background fade with the shrink (the merged declaration stands AFTER the switch rule, so it wins the cascade)', head.includes('.m-switch { transition: background .18s ease, transform 120ms ease-out; }') && head.indexOf('.m-switch { transition: background .18s ease, transform 120ms ease-out; }') > head.indexOf('.m-switch { appearance: none;'));
+check('1d: the switch transition merges its background fade with the shrink (the merged declaration stands AFTER the switch rule, so it wins the cascade)', head.includes('.m-switch { transition: background .18s ease, transform 150ms ease-out; }') && head.indexOf('.m-switch { transition: background .18s ease, transform 150ms ease-out; }') > head.indexOf('.m-switch { appearance: none;'));
 // The flash is gone: the six :active background rules hold their rest fills.
 check('1e: the menu flash value is gone from the page (rgba(255,255,255,.28) survives nowhere)', !head.includes('rgba(255,255,255,.28)'));
 check('1f: the primary flash is gone (the old #dbe4fd :active rule no longer exists)', !head.includes('.rmBtn.primary:active { background: #dbe4fd; }') && head.includes('.rmBtn.primary:active { background: #fff; }'));
@@ -47,9 +47,9 @@ check('2c: the 1.224 dialed stacks survive nowhere in the page', !head.includes(
 check('2d: the night fence stands (night Start keeps the float token; the night dock recipe is byte-identical)', rule('body.night .runBtn {').includes('box-shadow: var(--shadow-float);') && rule('body.night .dockBtn {').includes('background: linear-gradient(180deg, rgba(78,81,90,.94), rgba(43,45,51,.94));') && rule('body.night .dockBtn {').includes('border-top-color: rgba(255,255,255,.55);') && rule('body.night .dockBtn {').includes('box-shadow: inset 0 1px 0 rgba(255,255,255,.45), 0 10px 26px rgba(0,0,0,.45);'));
 
 // ---------- Version agreement ----------
-check('V: the #ver label reads Beta 1.229', head.includes('<div class="ver" id="ver">Beta 1.230</div>'));
-check('V: WHATSNEW is the Beta 1.229 entry with the five short bullets', app4.includes("v: 'Beta 1.230', items: [\"Android: the app now fills the whole screen - no black band at the top, no white strip at the bottom.\", \"Android: marking is faster on phones that need it - the app measures its speed and adjusts on its own.\", \"On iPhone, nothing changes.\"]"));
-check('V: the CHANGELOG top entry is Beta 1.229', changelog.split('\n').find(l => l.startsWith('## Beta')) === '## Beta 1.230 — 2026-11-17');
+check('V: the #ver label reads Beta 1.229', head.includes('<div class="ver" id="ver">Beta 1.231</div>'));
+check('V: WHATSNEW is the Beta 1.229 entry with the five short bullets', app4.includes("v: 'Beta 1.231', items: [\"Buttons that open a menu or panel take a short beat now, so you can see the press land first.\", \"Switching between day and night is instant - no slow colour fade across the screen.\", \"Pop-ups and panels ease in a little smaller as they appear.\"]"));
+check('V: the CHANGELOG top entry is Beta 1.229', changelog.split('\n').find(l => l.startsWith('## Beta')) === '## Beta 1.231 — 2026-11-18');
 
 console.log(`proof-1226: ${pass}/${pass + fail} checks passed`);
 process.exit(fail ? 1 : 0);

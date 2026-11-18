@@ -55,7 +55,7 @@ check('3e3: while the results card is open the hint pill is not painted beneath 
 check('3f: the pin host is a bare 17px glyph (no chip)', rule('.crPin img {').includes('width: 17px; height: 17px;'));
 
 // ---------- The press groups ----------
-const transLine = head.split('\n').find(l => l.includes('.tabItem, .dockBtn, .runBtn,') && l.includes('transition: transform 120ms ease-out;')) || '';
+const transLine = head.split('\n').find(l => l.includes('.tabItem, .dockBtn, .runBtn,') && l.includes('transition: transform 150ms ease-out;')) || '';
 const scaleLine = head.split('\n').find(l => l.includes('.tabItem:active, .dockBtn:active, .runBtn:active,') && l.includes('transform: scale(.97);')) || '';
 check('4a: the clear disc joins the 1.226 press groups and the Search button is out of them', transLine.includes('#crClear') && scaleLine.includes('#crClear:active') && !transLine.includes('#crSearchBtn') && !scaleLine.includes('#crSearchBtn'));
 check('4b: the back pill keeps its press shrink', transLine.includes('#crExit') && scaleLine.includes('#crExit:active'));
@@ -80,9 +80,9 @@ check('6b: the six payloads are byte-pinned (set treatment: alpha fills, lossles
 check('6c: renderIcons stamps the bar hosts (theme arrow, white magnifier + disc) and re-stamps row pins', app4.includes('GLYPH_CREATE.back.n : GLYPH_CREATE.back.d') && app4.includes('GLYPH_CREATE.search.n') && app4.includes('GLYPH_CREATE.cancel.n') && app4.includes("document.querySelectorAll('.crPin').forEach(el => { el.innerHTML = ICONS.pin; });"));
 
 // ---------- Version agreement ----------
-check('V: the #ver label reads Beta 1.229', head.includes('<div class="ver" id="ver">Beta 1.230</div>'));
-check('V: WHATSNEW is the Beta 1.229 entry with the five short bullets', app4.includes("v: 'Beta 1.230', items: [\"Android: the app now fills the whole screen - no black band at the top, no white strip at the bottom.\", \"Android: marking is faster on phones that need it - the app measures its speed and adjusts on its own.\", \"On iPhone, nothing changes.\"]"));
-check('V: the CHANGELOG top entry is Beta 1.229', changelog.split('\n').find(l => l.startsWith('## Beta')) === '## Beta 1.230 \u2014 2026-11-17');
+check('V: the #ver label reads Beta 1.229', head.includes('<div class="ver" id="ver">Beta 1.231</div>'));
+check('V: WHATSNEW is the Beta 1.229 entry with the five short bullets', app4.includes("v: 'Beta 1.231', items: [\"Buttons that open a menu or panel take a short beat now, so you can see the press land first.\", \"Switching between day and night is instant - no slow colour fade across the screen.\", \"Pop-ups and panels ease in a little smaller as they appear.\"]"));
+check('V: the CHANGELOG top entry is Beta 1.229', changelog.split('\n').find(l => l.startsWith('## Beta')) === '## Beta 1.231 \u2014 2026-11-18');
 
 console.log(`proof-1227: ${pass}/${pass + fail} checks passed`);
 process.exit(fail ? 1 : 0);

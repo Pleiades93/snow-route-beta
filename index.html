@@ -2,7 +2,7 @@
 <html lang="en" class="boot">
 <head>
 <meta charset="UTF-8">
-<meta http-equiv="Content-Security-Policy" content="default-src 'none'; script-src 'sha384-4VWFmt+S10YQBVem4bL/ZLQdAIcxgEmeiiHaGzGtzToNMJUVKClHjgiRD+hw0fii' https://cdn.jsdelivr.net; style-src-elem 'sha384-kILeEc5fYolftrZJfATWdQg7da3Gf5ujUbzJz7KZZ8Z+GOno0pSPDiWwS2ha7lKB' https://cdn.jsdelivr.net; style-src-attr 'unsafe-inline'; img-src 'self' data: blob: https://tiles.basemaps.cartocdn.com https://protomaps.github.io https://cdn.jsdelivr.net; connect-src 'self' https://tiles.basemaps.cartocdn.com https://protomaps.github.io https://cdn.jsdelivr.net https://nominatim.openstreetmap.org https://overpass-api.de https://overpass.kumi.systems; worker-src blob: 'self'; child-src blob: 'self'; font-src 'none'; manifest-src 'self'; base-uri 'none'; form-action 'none'; object-src 'none'">
+<meta http-equiv="Content-Security-Policy" content="default-src 'none'; script-src 'sha384-aDzLu3Od7UfDZvvmpUQFzg63Ml2ioO1TSJxOH1zVgOl1akFJVlsX5BxqTVc5C7vu' https://cdn.jsdelivr.net; style-src-elem 'sha384-w+j79uCv9tRnPJ0QBQzU5tDTXNJuPP7iIlPLHqSu3mGW+dBWmpfE3r/rjIYR7xJd' https://cdn.jsdelivr.net; style-src-attr 'unsafe-inline'; img-src 'self' data: blob: https://tiles.basemaps.cartocdn.com https://protomaps.github.io https://cdn.jsdelivr.net; connect-src 'self' https://tiles.basemaps.cartocdn.com https://protomaps.github.io https://cdn.jsdelivr.net https://nominatim.openstreetmap.org https://overpass-api.de https://overpass.kumi.systems; worker-src blob: 'self'; child-src blob: 'self'; font-src 'none'; manifest-src 'self'; base-uri 'none'; form-action 'none'; object-src 'none'">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="mobile-web-app-capable" content="yes">
@@ -306,9 +306,9 @@
   .modal:not(.hidden) .card { animation: menuRise var(--anim-dur) var(--ease-open); }
   .banner:not(.hidden), #mapNote:not(.hidden) { animation: menuRise var(--anim-dur) var(--ease-open); }
   #selPop:not(.hidden) { animation: menuRiseC var(--anim-dur) var(--ease-open); } /* centred: its rise keyframes must carry the -50% X shift or the pop-up jumps sideways mid-animation */
-  @keyframes menuRiseC { from { opacity: 0; transform: translateX(-50%) translateY(10px) scale(.98); } }
+  @keyframes menuRiseC { from { opacity: 0; transform: translateX(-50%) translateY(10px) scale(.97); } }
   @keyframes menuFade { from { opacity: 0; } }
-  @keyframes menuRise { from { opacity: 0; transform: translateY(10px) scale(.98); } }
+  @keyframes menuRise { from { opacity: 0; transform: translateY(10px) scale(.97); } } /* Beta 1.231 (Andrew): the entrances start at scale .97 (was .98) - the number he picked from the motion samples; the rise distance, the fade and the duration are unchanged */
   .modal .card { position: relative; background: var(--card); -webkit-backdrop-filter: var(--blur); backdrop-filter: var(--blur); color: var(--ink); border-radius: 16px; box-shadow: var(--shadow-card); padding: 18px; width: 100%; max-width: 340px; }
   .modal .card h3 { font-size: 16px; margin-bottom: 8px; padding-right: 36px; }
   .modal .card p { font-size: 13px; color: var(--ink-dim); line-height: 1.5; margin-bottom: 14px; white-space: pre-wrap; }
@@ -603,14 +603,16 @@ body.night #crSbWhole { color: var(--sec); border-color: var(--sec); } /* Beta 1
 input, textarea { caret-color: currentColor; } /* Beta 1.125 (Andrew): the typing caret - the flashing vertical line beside the last letter - is always visible in every search bar and field, in the field's own text colour (white on the blue menus, ink on cards) */
 .rmLbl { color: rgba(255,255,255,.85); font-size: 14px; font-weight: 650; margin-bottom: -6px; }
 #crPhotoName { color: #fff; font-weight: 700; }
-/* Beta 1.226 (Andrew, from the approved motion sample): THE PRESS - every pressable button or pill shrinks a touch while pressed (scale .97 over 120ms ease-out), and the blue menus no longer light up on press (their :active rules above now hold the rest fill), so the shrink is the whole press feedback. Display-only readouts never join this block: the speed circle (#spdPill), the street count (#count), the stats line and the stat values carry no rule here and gain no transition. Three pressables are centred by a rest transform - #cancelStartBtn, the menus' bottom X pair (#rmClose/#setClose) and #crHintBtn - so their :active composes the shrink with translateX(-50%) and they cannot jump sideways mid-press. Small controls inside a tappable row (.crPChip/.crPDel, .routeDel) ride their row's shrink instead of compounding a second scale: an ancestor matches :active while a child is pressed. Beta 1.228 (Andrew): the street rows' locate control leaves that family - it is a labelled pill with its OWN shrink, and the two presses are separate. So .srow leaves the :active group below (an ancestor :active on the pill's press would shrink the whole row - the exact read Andrew rejected) and the row's shrink is its pressOn twin alone: already its only path on a direct press, since a plain div never enters :active in the test browser, and the pressOn handler's button guard keeps a pill press from ever raising the class. */
-.tabItem, .dockBtn, .runBtn, .sideChip .chipBtn, #selPop button, #sheetClose, #paceClose, #finNo, #noteNo, #xClose, #crModalX, #mapNoteNo, #filters button, .srow, .srow .sloc, .noteEd .nedSave, .noteEd .nedDone, #pacePad button, .cvHead button, .cvDel, .cvRow, .prow.histRow, .rmBtn, button.m-card, #routeMenu .routeRow, .rmBack, .modal .row button, .banner button, #crExit, #crClear, .crResult, .crPrimary, .crGhost, .crDanger, .crChip, .crDel, #crClearAll, #crCityChange, #crReviewBtn, .crSbBtns button, .crPRow, #cancelStartBtn, #rmClose, #setClose, #crHintBtn { transition: transform 120ms ease-out; }
-.m-switch { transition: background .18s ease, transform 120ms ease-out; } /* the switch keeps its own background fade - this rule replaces its transition declaration, so the fade is restated beside the shrink */
+/* Beta 1.226 (Andrew, from the approved motion sample): THE PRESS - every pressable button or pill shrinks a touch while pressed (scale .97 over 150ms ease-out; Beta 1.231: the timing was 120ms through 1.230 - at 150ms the shrink completes exactly as the minimum-press floor in app4 lets an opening button fire), and the blue menus no longer light up on press (their :active rules above now hold the rest fill), so the shrink is the whole press feedback. Display-only readouts never join this block: the speed circle (#spdPill), the street count (#count), the stats line and the stat values carry no rule here and gain no transition. Three pressables are centred by a rest transform - #cancelStartBtn, the menus' bottom X pair (#rmClose/#setClose) and #crHintBtn - so their :active composes the shrink with translateX(-50%) and they cannot jump sideways mid-press. Small controls inside a tappable row (.crPChip/.crPDel, .routeDel) ride their row's shrink instead of compounding a second scale: an ancestor matches :active while a child is pressed. Beta 1.228 (Andrew): the street rows' locate control leaves that family - it is a labelled pill with its OWN shrink, and the two presses are separate. So .srow leaves the :active group below (an ancestor :active on the pill's press would shrink the whole row - the exact read Andrew rejected) and the row's shrink is its pressOn twin alone: already its only path on a direct press, since a plain div never enters :active in the test browser, and the pressOn handler's button guard keeps a pill press from ever raising the class. */
+.tabItem, .dockBtn, .runBtn, .sideChip .chipBtn, #selPop button, #sheetClose, #paceClose, #finNo, #noteNo, #xClose, #crModalX, #mapNoteNo, #filters button, .srow, .srow .sloc, .noteEd .nedSave, .noteEd .nedDone, #pacePad button, .cvHead button, .cvDel, .cvRow, .prow.histRow, .rmBtn, button.m-card, #routeMenu .routeRow, .rmBack, .modal .row button, .banner button, #crExit, #crClear, .crResult, .crPrimary, .crGhost, .crDanger, .crChip, .crDel, #crClearAll, #crCityChange, #crReviewBtn, .crSbBtns button, .crPRow, #cancelStartBtn, #rmClose, #setClose, #crHintBtn { transition: transform 150ms ease-out; }
+.m-switch { transition: background .18s ease, transform 150ms ease-out; } /* the switch keeps its own background fade - this rule replaces its transition declaration, so the fade is restated beside the shrink */
 .tabItem:active, .dockBtn:active, .runBtn:active, .sideChip .chipBtn:active, #selPop button:active, #sheetClose:active, #paceClose:active, #finNo:active, #noteNo:active, #xClose:active, #crModalX:active, #mapNoteNo:active, #filters button:active, .srow .sloc:active, .noteEd .nedSave:active, .noteEd .nedDone:active, #pacePad button:active, .cvHead button:active, .cvDel:active, .cvRow:active, .prow.histRow:active, .rmBtn:active, button.m-card:active, #routeMenu .routeRow:active, .rmBack:active, .modal .row button:active, .banner button:active, #crExit:active, #crClear:active, .crResult:active, .crPrimary:active, .crGhost:active, .crDanger:active, .crChip:active, .crDel:active, #crClearAll:active, #crCityChange:active, #crReviewBtn:active, .crSbBtns button:active, .crPRow:active, .m-switch:active { transform: scale(.97); }
 #cancelStartBtn:active { transform: translateX(-50%) scale(.97); }
 #rmClose:active, #setClose:active { transform: translateX(-50%) scale(.97); }
 #crHintBtn:active { transform: translateX(-50%) scale(.97); }
 .srow.pressOn, .crPRow.pressOn, .cvRow.pressOn, .prow.histRow.pressOn { transform: scale(.97); } /* Beta 1.226: the JS-toggled twin of the :active rule above - a plain div row never enters :active on a press in some browsers (verified in the test browser: buttons shrink, div rows do not), so app4 toggles this class for the div row families; buttons keep the pure :active path */
+/* Beta 1.231 (Andrew): a theme switch is INSTANT - while applyNight (app4) flips the day/night class it holds this guard on <html>, so no transitioned colour can animate across the swap; the guard lifts on the next frame and transitions return. */
+html.theme-swap *, html.theme-swap *::before, html.theme-swap *::after { transition: none !important; }
 @media (prefers-reduced-motion: reduce) { #splashIcon { animation: none; opacity: 1; } #routeMenu, #routeMenu.boot, #routeMenu.open, #routeMenu.bye { transition: none; } /* Beta 1.163: under reduced motion the CHILDREN are static from the first frame (the entrances are theirs again, as through 1.161; 1.162's static-block form stood for one release) and arm() cuts the brand instantly (Beta 1.178: the cut is the transition in every motion mode - the block never lands in a menu pose any more). Sweep re-run E-02: the state selectors ride along because a media query adds NO specificity - a bare #routeMenu (1,0,0) lost to #routeMenu.boot / .open / .bye (1,1,0), so the menu still animated 0.5s/0.42s/0.3s for reduced-motion users; at equal specificity this block wins by source order */ #routeMenu.boot .rmPane, #routeMenu.boot.show .rmPane { transition: none; } #brandLayer, #brandLayer.bye { transition: none; } /* Beta 1.153: under reduced motion the boot panes simply appear (the FLIP in arm() is likewise skipped there). Beta 1.155: the title layer's pick fade is likewise instant */ #setMenu, #setMenu.open { transition: none; } /* sweep re-run E-02: the Settings menu has the same shape as #routeMenu - its .open rule (1,1,0) beat the bare-id form too */ #crCityResults { transition: none; } .crSkel { animation: none; opacity: .6; } #crCityResults .crRowIn { animation: none; } /* Beta 1.229: the city-search motion rests under reduced motion, like the rest of the menu system */ }
 </style>
 </head>
@@ -628,7 +630,7 @@ input, textarea { caret-color: currentColor; } /* Beta 1.125 (Andrew): the typin
 <div id="hud">
   <div id="warn">Not saving. Storage is full or blocked</div>
   <div class="row">
-    <div class="titleStack"><div class="title">Snow Route Beta</div><div class="ver" id="ver">Beta 1.230</div></div>
+    <div class="titleStack"><div class="title">Snow Route Beta</div><div class="ver" id="ver">Beta 1.231</div></div>
   </div>
   <div id="stats"></div>
 </div>
@@ -6794,7 +6796,7 @@ $('stDel').addEventListener('click', async () => {
 });
 // ---- About ----
 const WHATSNEW = { // the curated in-app notes: plain words, LATEST RELEASE ONLY (Beta 1.114, Andrew: the accumulated list cluttered the About pane). A release REPLACES this entry with its own in the same change - it never accumulates; the full history lives in CHANGELOG.md, not the app
-  v: 'Beta 1.230', items: ["Android: the app now fills the whole screen - no black band at the top, no white strip at the bottom.", "Android: marking is faster on phones that need it - the app measures its speed and adjusts on its own.", "On iPhone, nothing changes."] }; // Beta 1.223 (Andrew): What's New entries are SHORT from now on - point form, one short plain line each, no prose paragraphs, no em dashes
+  v: 'Beta 1.231', items: ["Buttons that open a menu or panel take a short beat now, so you can see the press land first.", "Switching between day and night is instant - no slow colour fade across the screen.", "Pop-ups and panels ease in a little smaller as they appear."] }; // Beta 1.223 (Andrew): What's New entries are SHORT from now on - point form, one short plain line each, no prose paragraphs, no em dashes
 
 function renderAbout() {
   const cur = $('ver').textContent.trim();
@@ -6834,7 +6836,71 @@ document.addEventListener('pointerdown', e => {
 document.addEventListener('pointerup', pressRowOff);
 document.addEventListener('pointercancel', pressRowOff); // a scroll takeover cancels the pointer - the row must not stay shrunk
 window.addEventListener('blur', pressRowOff);
-function applyNight() { document.body.classList.toggle('night', isNight()); const tc = document.querySelector('meta[name="theme-color"]'); if (tc) tc.setAttribute('content', isNight() ? '#14171d' : '#eceff2'); $('nightBtn').innerHTML = isNight() ? ICONS.sun : ICONS.moon; renderIcons(); } // the button shows where it TAKES you (Beta 1.28, Andrew): in day it offers Night (moon), in night it offers Day (sun). Beta 1.88: the button is the round chip at top-right - the icon alone flips, there is no label
+// Beta 1.231 (Andrew, from his 1.226 verdict - "on buttons that open something I rarely
+// notice it"): the MINIMUM PRESS. A button that opens a surface (a sheet, a menu, a pane,
+// a modal, the note editor) fires its open on release, but never earlier than 150ms after
+// touch-down - exactly the press shrink's own duration (head.html), so the shrink completes
+// just as the open is allowed to land. A press held past the floor fires on release with
+// zero added delay. The gate is this one block: capture-phase listeners match the press
+// against the opener set below; a short press's click is swallowed here and the SAME
+// element is re-dispatched its click when the floor arrives, so the button's own handler -
+// tapGuard and all - runs exactly once, unchanged. The set is ids for the fixed furniture
+// plus the three dynamic row families that open a surface (one of them exempt at match
+// time - see OPEN_FOCUS_EXEMPT_SEL below). A press that lands on a real
+// <button> belongs to that button (the street row's Locate pill is the pill's own press,
+// never the row's - the same guard the pressOn block above keeps). Finger and pen presses
+// only: a mouse press passes through untouched (the feedback this fixes is a finger
+// phenomenon). A press that becomes a drag or a scroll (>10px of travel) fires nothing at
+// all. A fresh press on the same element supersedes a pending dispatch, so a rapid
+// double-tap opens exactly once.
+const OPEN_MIN_MS = 150;
+const OPEN_ID_SEL = '#streetsBtn, #paceBtn, #routesBtn, #setBtn, #selNote, #rmChoose, #rmCreate, #rmBack, #rmBack2, #setBack, #jobBtn, #jobBack, #chimeRow, #chimeBack, #stBtn, #statusBack, #aboutBtn, #aboutBack, #exportBtn, #xRes, #xImpText, #crDoorList, #crDoorManual, #crDoorPhoto, #crPhotoBack, #rmCityListBack, #crCityBack, #crCityChange, #pvStartOverBtn, #pvSaveBtn, #crNameBack, #crDoneBtn, #crReviewBtn, #pvAddBtn';
+const OPEN_ROW_SEL = '.srow, .crPRow, .prow.histRow';
+// The street row is EXEMPT from the floor (Beta 1.231, Codex fix round on PR #111): its
+// handler (app2) opens the inline note editor and focuses the editor's textarea inside
+// the same gesture, and iOS raises the software keyboard only for a focus() called
+// within the real user-gesture handler - a deferred synthetic click would open the
+// editor with no keyboard and force a second tap on the field, so this opener's real
+// click runs untouched, exactly as before this round. Any opener whose handler focuses
+// a text field synchronously belongs in this exemption, never in the gated set; the
+// gated set was re-audited for this fix and the street row is the only one (the note
+// modal's openNote does not focus on open, the create panes never focus their inputs,
+// and the app's only other focus() rides the ungated #crClear handler).
+const OPEN_FOCUS_EXEMPT_SEL = '.srow';
+let openPressRec = null, openPendingEl = null, openPendingTimer = 0;
+/** @param {any} t @returns {Element | null} */
+const openerElOf = t => { // the opener a press belongs to, or null
+  if (!t || !t.closest) return null;
+  const btn = t.closest('button');
+  const el = btn ? (btn.matches(OPEN_ID_SEL) ? btn : null) : t.closest(OPEN_ID_SEL + ', ' + OPEN_ROW_SEL);
+  return el && el.matches(OPEN_FOCUS_EXEMPT_SEL) ? null : el; // a focus-exempt opener's press is no press to the gate: its click proceeds synchronously
+};
+document.addEventListener('pointerdown', e => {
+  if (e.pointerType === 'mouse') return;
+  const el = openerElOf(e.target);
+  if (el && el === openPendingEl) { clearTimeout(openPendingTimer); openPendingTimer = 0; openPendingEl = null; } // a fresh press on the same element supersedes its pending open
+  openPressRec = el ? { el, t: performance.now(), x: e.clientX, y: e.clientY, moved: false } : null;
+}, true);
+document.addEventListener('pointermove', e => { if (openPressRec && (Math.abs(e.clientX - openPressRec.x) > 10 || Math.abs(e.clientY - openPressRec.y) > 10)) openPressRec.moved = true; }, true);
+document.addEventListener('pointercancel', () => { openPressRec = null; }, true);
+document.addEventListener('click', e => {
+  const rec = openPressRec; openPressRec = null;
+  if (!rec) return;
+  if (openerElOf(e.target) !== rec.el) return;
+  if (rec.moved) { e.stopPropagation(); e.preventDefault(); return; } // the press became a drag/scroll: no open fires from it
+  const wait = OPEN_MIN_MS - (performance.now() - rec.t);
+  if (wait <= 0) return; // held past the floor: the real click proceeds untouched
+  e.stopPropagation(); e.preventDefault();
+  openPendingEl = rec.el;
+  openPendingTimer = setTimeout(() => { openPendingTimer = 0; openPendingEl = null; rec.el.dispatchEvent(new MouseEvent('click', { bubbles: true, cancelable: true })); }, wait);
+}, true);
+function applyNight() { // Beta 1.231 (Andrew): the swap is INSTANT - the theme-swap guard (head.html) suppresses every transition while the class flips, so colours step in one frame instead of animating across; the flush below commits the flipped theme under the guard, which then lifts on the next frame (a timer also lifts it, in case frames pause in a hidden tab)
+  const de = document.documentElement; de.classList.add('theme-swap');
+  document.body.classList.toggle('night', isNight()); const tc = document.querySelector('meta[name="theme-color"]'); if (tc) tc.setAttribute('content', isNight() ? '#14171d' : '#eceff2'); $('nightBtn').innerHTML = isNight() ? ICONS.sun : ICONS.moon; renderIcons();
+  void de.offsetWidth; // the flush: the flipped theme's styles commit now, transition-free
+  const lift = () => de.classList.remove('theme-swap');
+  requestAnimationFrame(lift); setTimeout(lift, 150);
+} // the button shows where it TAKES you (Beta 1.28, Andrew): in day it offers Night (moon), in night it offers Day (sun). Beta 1.88: the button is the round chip at top-right - the icon alone flips, there is no label
 $('nightBtn').addEventListener('click', () => { if (!tapGuard('nightBtn')) return; setThemeOverride(!isNight()); applyNight(); setBasemap(); }); // Beta 1.77: the button sets a session override - the sun takes over again at the next sunrise/sunset or the next full app open (theme block, app1)
 function goHomeView() { // Beta 1.203 (Andrew): the DEFAULT view - the route framed exactly as the flat fit frames it, tilted to 45 degrees, north up. The fit is computed FLAT (cameraForBounds with no pitch or bearing options is the flat fit: its centre and zoom are the fitBounds centre and zoom this replaces, bit for bit), and the tilt is applied AT that centre/zoom by the ease - never folded into the fit, because a pitch-aware fit recomputes a different zoom and Andrew's call was "keep the zoom level the same, just tilt it". Home and a route switch land here; the load-in flight (introToRoute) lands on the same view.
   if (!routeBox) return;
