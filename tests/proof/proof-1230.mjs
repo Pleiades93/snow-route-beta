@@ -62,9 +62,9 @@ check('4d: the manifest theme_color is the app blue, matching the meta', manifes
 check('4e (Codex P2 on PR #110): the anchor is bound to the current window - it stands in only while the window spans the settled height', app4.includes('fullH > h && window.innerHeight >= fullH - 2') && app4.includes("BOUND (Codex P2, PR #110): the anchor stands in only while the window itself still spans the settled height"));
 
 // ---------- Version agreement ----------
-check('V: the #ver label reads Beta 1.230', head.includes('<div class="ver" id="ver">Beta 1.230</div>'));
-check('V: WHATSNEW is the Beta 1.230 entry with the three short bullets', app4.includes("v: 'Beta 1.230', items: [\"Android: the app now fills the whole screen - no black band at the top, no white strip at the bottom.\", \"Android: marking is faster on phones that need it - the app measures its speed and adjusts on its own.\", \"On iPhone, nothing changes.\"]"));
-check('V: the CHANGELOG top entry is Beta 1.230', changelog.split('\n').find(l => l.startsWith('## Beta')) === '## Beta 1.230 — 2026-11-17');
+check('V: the #ver label reads Beta 1.230', head.includes('<div class="ver" id="ver">Beta 1.231</div>'));
+check('V: WHATSNEW is the Beta 1.230 entry with the three short bullets', app4.includes("v: 'Beta 1.231', items: [\"Buttons that open a menu or panel take a short beat now, so you can see the press land first.\", \"Switching between day and night is instant - no slow colour fade across the screen.\", \"Pop-ups and panels ease in a little smaller as they appear.\"]"));
+check('V: the CHANGELOG top entry is Beta 1.230', changelog.split('\n').find(l => l.startsWith('## Beta')) === '## Beta 1.231 — 2026-11-18');
 
 console.log(`proof-1230: ${pass} passed, ${fail} failed`);
 process.exit(fail ? 1 : 0);

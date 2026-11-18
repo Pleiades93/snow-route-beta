@@ -889,7 +889,7 @@ $('stDel').addEventListener('click', async () => {
 });
 // ---- About ----
 const WHATSNEW = { // the curated in-app notes: plain words, LATEST RELEASE ONLY (Beta 1.114, Andrew: the accumulated list cluttered the About pane). A release REPLACES this entry with its own in the same change - it never accumulates; the full history lives in CHANGELOG.md, not the app
-  v: 'Beta 1.230', items: ["Android: the app now fills the whole screen - no black band at the top, no white strip at the bottom.", "Android: marking is faster on phones that need it - the app measures its speed and adjusts on its own.", "On iPhone, nothing changes."] }; // Beta 1.223 (Andrew): What's New entries are SHORT from now on - point form, one short plain line each, no prose paragraphs, no em dashes
+  v: 'Beta 1.231', items: ["Buttons that open a menu or panel take a short beat now, so you can see the press land first.", "Switching between day and night is instant - no slow colour fade across the screen.", "Pop-ups and panels ease in a little smaller as they appear."] }; // Beta 1.223 (Andrew): What's New entries are SHORT from now on - point form, one short plain line each, no prose paragraphs, no em dashes
 
 function renderAbout() {
   const cur = $('ver').textContent.trim();
@@ -929,7 +929,59 @@ document.addEventListener('pointerdown', e => {
 document.addEventListener('pointerup', pressRowOff);
 document.addEventListener('pointercancel', pressRowOff); // a scroll takeover cancels the pointer - the row must not stay shrunk
 window.addEventListener('blur', pressRowOff);
-function applyNight() { document.body.classList.toggle('night', isNight()); const tc = document.querySelector('meta[name="theme-color"]'); if (tc) tc.setAttribute('content', isNight() ? '#14171d' : '#eceff2'); $('nightBtn').innerHTML = isNight() ? ICONS.sun : ICONS.moon; renderIcons(); } // the button shows where it TAKES you (Beta 1.28, Andrew): in day it offers Night (moon), in night it offers Day (sun). Beta 1.88: the button is the round chip at top-right - the icon alone flips, there is no label
+// Beta 1.231 (Andrew, from his 1.226 verdict - "on buttons that open something I rarely
+// notice it"): the MINIMUM PRESS. A button that opens a surface (a sheet, a menu, a pane,
+// a modal, the note editor) fires its open on release, but never earlier than 150ms after
+// touch-down - exactly the press shrink's own duration (head.html), so the shrink completes
+// just as the open is allowed to land. A press held past the floor fires on release with
+// zero added delay. The gate is this one block: capture-phase listeners match the press
+// against the opener set below; a short press's click is swallowed here and the SAME
+// element is re-dispatched its click when the floor arrives, so the button's own handler -
+// tapGuard and all - runs exactly once, unchanged. The set is ids for the fixed furniture
+// plus the three dynamic row families that open a surface. A press that lands on a real
+// <button> belongs to that button (the street row's Locate pill is the pill's own press,
+// never the row's - the same guard the pressOn block above keeps). Finger and pen presses
+// only: a mouse press passes through untouched (the feedback this fixes is a finger
+// phenomenon). A press that becomes a drag or a scroll (>10px of travel) fires nothing at
+// all. A fresh press on the same element supersedes a pending dispatch, so a rapid
+// double-tap opens exactly once.
+const OPEN_MIN_MS = 150;
+const OPEN_ID_SEL = '#streetsBtn, #paceBtn, #routesBtn, #setBtn, #selNote, #rmChoose, #rmCreate, #rmBack, #rmBack2, #setBack, #jobBtn, #jobBack, #chimeRow, #chimeBack, #stBtn, #statusBack, #aboutBtn, #aboutBack, #exportBtn, #xRes, #xImpText, #crDoorList, #crDoorManual, #crDoorPhoto, #crPhotoBack, #rmCityListBack, #crCityBack, #crCityChange, #pvStartOverBtn, #pvSaveBtn, #crNameBack, #crDoneBtn, #crReviewBtn, #pvAddBtn';
+const OPEN_ROW_SEL = '.srow, .crPRow, .prow.histRow';
+let openPressRec = null, openPendingEl = null, openPendingTimer = 0;
+/** @param {any} t @returns {Element | null} */
+const openerElOf = t => { // the opener a press belongs to, or null
+  if (!t || !t.closest) return null;
+  const btn = t.closest('button');
+  if (btn) return btn.matches(OPEN_ID_SEL) ? btn : null;
+  return t.closest(OPEN_ID_SEL + ', ' + OPEN_ROW_SEL);
+};
+document.addEventListener('pointerdown', e => {
+  if (e.pointerType === 'mouse') return;
+  const el = openerElOf(e.target);
+  if (el && el === openPendingEl) { clearTimeout(openPendingTimer); openPendingTimer = 0; openPendingEl = null; } // a fresh press on the same element supersedes its pending open
+  openPressRec = el ? { el, t: performance.now(), x: e.clientX, y: e.clientY, moved: false } : null;
+}, true);
+document.addEventListener('pointermove', e => { if (openPressRec && (Math.abs(e.clientX - openPressRec.x) > 10 || Math.abs(e.clientY - openPressRec.y) > 10)) openPressRec.moved = true; }, true);
+document.addEventListener('pointercancel', () => { openPressRec = null; }, true);
+document.addEventListener('click', e => {
+  const rec = openPressRec; openPressRec = null;
+  if (!rec) return;
+  if (openerElOf(e.target) !== rec.el) return;
+  if (rec.moved) { e.stopPropagation(); e.preventDefault(); return; } // the press became a drag/scroll: no open fires from it
+  const wait = OPEN_MIN_MS - (performance.now() - rec.t);
+  if (wait <= 0) return; // held past the floor: the real click proceeds untouched
+  e.stopPropagation(); e.preventDefault();
+  openPendingEl = rec.el;
+  openPendingTimer = setTimeout(() => { openPendingTimer = 0; openPendingEl = null; rec.el.dispatchEvent(new MouseEvent('click', { bubbles: true, cancelable: true })); }, wait);
+}, true);
+function applyNight() { // Beta 1.231 (Andrew): the swap is INSTANT - the theme-swap guard (head.html) suppresses every transition while the class flips, so colours step in one frame instead of animating across; the flush below commits the flipped theme under the guard, which then lifts on the next frame (a timer also lifts it, in case frames pause in a hidden tab)
+  const de = document.documentElement; de.classList.add('theme-swap');
+  document.body.classList.toggle('night', isNight()); const tc = document.querySelector('meta[name="theme-color"]'); if (tc) tc.setAttribute('content', isNight() ? '#14171d' : '#eceff2'); $('nightBtn').innerHTML = isNight() ? ICONS.sun : ICONS.moon; renderIcons();
+  void de.offsetWidth; // the flush: the flipped theme's styles commit now, transition-free
+  const lift = () => de.classList.remove('theme-swap');
+  requestAnimationFrame(lift); setTimeout(lift, 150);
+} // the button shows where it TAKES you (Beta 1.28, Andrew): in day it offers Night (moon), in night it offers Day (sun). Beta 1.88: the button is the round chip at top-right - the icon alone flips, there is no label
 $('nightBtn').addEventListener('click', () => { if (!tapGuard('nightBtn')) return; setThemeOverride(!isNight()); applyNight(); setBasemap(); }); // Beta 1.77: the button sets a session override - the sun takes over again at the next sunrise/sunset or the next full app open (theme block, app1)
 function goHomeView() { // Beta 1.203 (Andrew): the DEFAULT view - the route framed exactly as the flat fit frames it, tilted to 45 degrees, north up. The fit is computed FLAT (cameraForBounds with no pitch or bearing options is the flat fit: its centre and zoom are the fitBounds centre and zoom this replaces, bit for bit), and the tilt is applied AT that centre/zoom by the ease - never folded into the fit, because a pitch-aware fit recomputes a different zoom and Andrew's call was "keep the zoom level the same, just tilt it". Home and a route switch land here; the load-in flight (introToRoute) lands on the same view.
   if (!routeBox) return;
