@@ -21,7 +21,6 @@
   "proof-osmnames-clearall-twin.mjs",
   "proof-pack-cache-c01.mjs",
   "proof-pack-cache-c02.mjs",
-  "proof-rerun-css-batch.mjs",
   "proof-rerun-d04-streetparts-covstamp.mjs",
   "proof-rerun-denylist-a05.mjs",
   "proof-rerun-denylist-b02.mjs",
@@ -40,5 +39,10 @@
   "proof-trim-glow-path-pills.mjs",
   "proof-wording-finished-cleans.mjs"
  ],
- "retired": []
+ "retired": [
+  {
+   "file": "proof-rerun-css-batch.mjs",
+   "reason": "Needs playwright-core + a Chromium through maintainer-VM-only paths (its header: PLAYWRIGHT_CORE / CHROME_BIN env; it resolves the shots directory's node_modules on the maintainer VM), so it cannot run in CI's build-and-test - proven on PR #107, where it failed with 'playwright-core not resolvable' while the other 37 proofs passed. It passes locally (46/46 checks, 2026-11-17) and stays runnable there on demand; the CSS surfaces it measured are covered in CI by the drive battery. Retired from the gate manifest by the protocol fix round, 2026-11-17."
+  }
+ ]
 }
