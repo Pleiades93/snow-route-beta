@@ -1,5 +1,5 @@
 // proof-1230.mjs - Beta 1.230 (fix_ids: android-screen-fit-1230, device-profile-1230,
-// android-marking-speed-1230).
+// android-marking-speed-1230, codex-p2-android-anchor-window).
 // Andrew opened the beta on his Pixel 7 and reported a black band at the top
 // around the punch-hole camera, a white strip at the bottom, and marking a
 // side green taking about a second. THE FIT was iPhone-proven only: the 1.60
@@ -56,9 +56,10 @@ check('3l (rule 6, Codex P2 on PR #110): a sustained recovery or agreement verdi
 
 // ---------- 4: the Android fit ----------
 check('4a: the Android document claims the largest viewport height', rule('html.android {').includes('min-height: 100lvh;'));
-check('4b: syncViewport carries the Android anchor behind the gate', app4.includes('if (DP_ANDROID && !kb && inStandalone() && fullH > h)'));
+check('4b: syncViewport carries the Android anchor behind the gate', app4.includes('if (DP_ANDROID && !kb && inStandalone() && fullH > h && window.innerHeight >= fullH - 2)'));
 check('4c: the anchor publishes the settled height and the matching bottom strip', app4.includes("de.style.setProperty('--vvh', fullH + 'px'); de.style.setProperty('--vvb', Math.max(0, window.innerHeight - t - fullH) + 'px');"));
 check('4d: the manifest theme_color is the app blue, matching the meta', manifest.includes('"theme_color": "#2c4ad2"') && head.includes('<meta name="theme-color" content="#2c4ad2">'));
+check('4e (Codex P2 on PR #110): the anchor is bound to the current window - it stands in only while the window spans the settled height', app4.includes('fullH > h && window.innerHeight >= fullH - 2') && app4.includes("BOUND (Codex P2, PR #110): the anchor stands in only while the window itself still spans the settled height"));
 
 // ---------- Version agreement ----------
 check('V: the #ver label reads Beta 1.230', head.includes('<div class="ver" id="ver">Beta 1.230</div>'));
