@@ -1052,6 +1052,7 @@ async function crRunSearch(fromTyping) {
   if (crSearchCtl) { try { crSearchCtl.abort(); } catch (e) {} }
   const ctl = (typeof AbortController !== 'undefined') ? new AbortController() : null; crSearchCtl = ctl;
   const isect = crIntersectionItem(q); // Beta 1.232 (piece 1): a two-street query's crossing is resolved from the loaded extract BEFORE the network is even asked - it costs a cache hit by the second keystroke burst and never waits on Nominatim
+  if (isect) renderCrResults([isect]); // Beta 1.232 fix round (PR #112, Codex P2): the crossing renders NOW, before the network is awaited - a fetch that hangs (never resolves, never rejects; the search carries no timeout) must not hold the device's own answer hostage. It renders in the same tick that bumped the sequence, so it is current by construction; the landing below re-renders it at the head of the merged list under crSearchCurrent(seq), and a superseded query's early row is replaced by the newer query's own render, never merged into it
   try {
     let url = 'https://nominatim.openstreetmap.org/search?format=jsonv2&addressdetails=1&limit=5&q=' + encodeURIComponent(q);
     const scoped = !!(crCity && crCity.bbox); // Beta 1.153 (Andrew): with a city loaded, suggestions come from THAT city only. The 1.121 bias (bounded=0: "a bias, never a restriction") becomes a bound (bounded=1) and the returned list is ALSO filtered to the box below, so a service that ignores the bound cannot leak an out-of-city suggestion.
@@ -1148,9 +1149,10 @@ function crCrossingsOf(name) { // [{ other, pt }] - every crossing of one street
   const hit = ix.cross.get(name); if (hit) return hit;
   const CS = 220, byOther = new Map();
   const add = (other, pt) => { let arr = byOther.get(other); if (!arr) { arr = []; byOther.set(other, arr); } for (const p of arr) if (distM(p, pt) <= 15) return; arr.push(pt); };
+  const PAD = 4; // Beta 1.232 fix round (PR #112, Codex P2): the gather window below grows by the junction tolerance (4 m, converted per axis) - the index registers a segment in the cells its own bounds span, so a vertex lying within tolerance of this segment but across a 220 m cell boundary would otherwise never be gathered and its junction silently lost. Growing the QUERY keeps the invariant provable in this one place: any segment holding a vertex within tolerance of this one IS gathered, because that vertex's own cell (which its registration covers) lies inside the grown window. The index stays unpadded, so its one-time build cost is unchanged; the dedupe (15 m) and cluster (30 m) semantics are untouched
   for (const s of ix.segs.get(name)) {
-    const a0 = Math.floor(Math.min(s[0][0], s[1][0]) * MLAT / CS), a1 = Math.floor(Math.max(s[0][0], s[1][0]) * MLAT / CS);
-    const o0 = Math.floor(Math.min(s[0][1], s[1][1]) * MLNG / CS), o1 = Math.floor(Math.max(s[0][1], s[1][1]) * MLNG / CS);
+    const a0 = Math.floor((Math.min(s[0][0], s[1][0]) - PAD / MLAT) * MLAT / CS), a1 = Math.floor((Math.max(s[0][0], s[1][0]) + PAD / MLAT) * MLAT / CS);
+    const o0 = Math.floor((Math.min(s[0][1], s[1][1]) - PAD / MLNG) * MLNG / CS), o1 = Math.floor((Math.max(s[0][1], s[1][1]) + PAD / MLNG) * MLNG / CS);
     const seen = new Set();
     for (let a = a0; a <= a1; a++) for (let o = o0; o <= o1; o++) {
       const cellArr = ix.cells.get(a + ':' + o); if (!cellArr) continue;

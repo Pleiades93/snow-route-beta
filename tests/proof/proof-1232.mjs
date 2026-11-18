@@ -12,6 +12,10 @@
 // other rows stay plain. (3) The monochrome bar (variant A): day white +
 // the half-strength Soft Lift shadow on bar and back pill, night the bar
 // wears the back pill's N2 glass recipe exactly, glyphs theme-variant.
+// Fix round (PR #112, Codex P2 x2): checks 1m/1n pin the two corrections -
+// the crossing renders before the network is awaited (a hanging fetch held
+// it hostage), and the crossings gather window is padded by the junction
+// tolerance (a vertex across a grid-cell boundary was never compared).
 import { readFileSync } from 'node:fs';
 
 const root = new URL('../../', import.meta.url);
@@ -37,6 +41,8 @@ check('1i: the synthetic result carries the two full names and the isect mark', 
 check('1j: the crossing is computed BEFORE the fetch and leads the rendered list', pick.indexOf('const isect = crIntersectionItem(q);') > -1 && pick.indexOf('const isect = crIntersectionItem(q);') < pick.indexOf("let url = 'https://nominatim.openstreetmap.org/search?format=jsonv2&addressdetails=1&limit=5&q='") && pick.includes('renderCrResults(isect ? [isect].concat(results) : results);'));
 check('1k: a dead network still renders the crossing, under the sequence guard', pick.includes('if (isect && crSearchCurrent(seq)) renderCrResults([isect]);'));
 check('1l: several clusters resolve to the one nearest the map centre', pick.includes('const ctr = (typeof map !== \'undefined\' && map) ? map.getCenter() : null;'));
+check('1m (fix round, PR #112 Codex P2): the crossing renders BEFORE the network is awaited - a hanging fetch cannot hold it hostage', pick.indexOf('if (isect) renderCrResults([isect]);') > pick.indexOf('const isect = crIntersectionItem(q);') && pick.indexOf('if (isect) renderCrResults([isect]);') < pick.indexOf('const r = await fetch(url'));
+check('1n (fix round, PR #112 Codex P2): the crossings gather window is padded by the 4 m junction tolerance, so a vertex across a cell boundary is never skipped', pick.includes('const PAD = 4;') && pick.includes('(Math.min(s[0][0], s[1][0]) - PAD / MLAT)') && pick.includes('(Math.max(s[0][1], s[1][1]) + PAD / MLNG)'));
 
 // ---------- Piece 2: collapse + cross-street labels ----------
 check('2a: same-name points within 100 m collapse, first stands', pick.includes('function crCollapseResults(list)') && pick.includes('k.head === head && distM([la, lo], k.pt) <= 100'));
