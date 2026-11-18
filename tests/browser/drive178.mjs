@@ -275,10 +275,21 @@ ok('179 setup: creation is open at the city step with NO city loaded (the contro
 // ARE Ontario places (the Toronto result sits inside the province bounds),
 // so the province filter passes them; the bound that drops the Toronto one
 // is the CITY bound, proven by the scoped section below.
+// Beta 1.233 PREMISE UPDATE (fix round 2): Package C made every street-search
+// row NAME ONLY (crResultName) - the grey address tail the row used to carry
+// ("Vaughan Road, Toronto, Ontario, ...") is gone by Andrew's design, so the
+// word Toronto can no longer appear in ANY row's text. The two row probes
+// below are re-derived to the name-only format at the same strength: the
+// control proves both fixtures render by their names (Bordeaux Drive AND
+// Vaughan Road - the Vaughan Road fixture IS the Toronto result), and the
+// scoped section proves the city bound dropped it by the absence of its
+// name. CI on e734da45/c2d2d51d showed the behaviour itself was always
+// right (rows exactly ["Bordeaux Drive","Vaughan Road"], URL bounded);
+// only the tail-text probe had died.
 const ctlRan = await runStreetSearch();
 const CTL = await resultSample();
 ok('control (no city loaded) the search is bounded to ONTARIO (Beta 1.229) - the request carries countrycodes=ca, the Ontario viewbox and bounded=1 (the old visible-map bias is gone), and BOTH fixture results render, the Toronto one included, because both are Ontario places | ' + JSON.stringify(CTL),
-  ctlRan === true && CTL.rows.length === 2 && CTL.urls.length >= 1 && CTL.urls[CTL.urls.length - 1].indexOf('bounded=1') >= 0 && CTL.urls[CTL.urls.length - 1].indexOf('countrycodes=ca') >= 0 && CTL.urls[CTL.urls.length - 1].indexOf('viewbox=-95.2,56.9,-74.3,41.6') >= 0 && CTL.rows.some(t => t.indexOf('Toronto') >= 0));
+  ctlRan === true && CTL.rows.length === 2 && CTL.urls.length >= 1 && CTL.urls[CTL.urls.length - 1].indexOf('bounded=1') >= 0 && CTL.urls[CTL.urls.length - 1].indexOf('countrycodes=ca') >= 0 && CTL.urls[CTL.urls.length - 1].indexOf('viewbox=-95.2,56.9,-74.3,41.6') >= 0 && CTL.rows.some(t => t.indexOf('Bordeaux Drive') === 0) && CTL.rows.some(t => t.indexOf('Vaughan Road') === 0));
 
 // ---------- scoped: pick Vaughan, search again ----------
 const inPick = await pickCityVaughan();
@@ -289,7 +300,7 @@ const SC = await resultSample();
 ok('scoped (city loaded) the search request now carries the city BOUND (bounded=1 on the city viewbox) | ' + JSON.stringify(SC.urls),
   inPick === true && ready === true && scopedRan === true && SC.urls.length >= 1 && SC.urls[SC.urls.length - 1].indexOf('bounded=1') >= 0);
 ok('scoped (city loaded) although the service returned BOTH results (it ignored the bound), only the in-city suggestion renders - the out-of-city Toronto result is filtered out | ' + JSON.stringify(SC.rows),
-  SC.rows.length === 1 && SC.rows[0].indexOf('Bordeaux Drive') === 0 && !SC.rows.some(t => t.indexOf('Toronto') >= 0));
+  SC.rows.length === 1 && SC.rows[0].indexOf('Bordeaux Drive') === 0 && !SC.rows.some(t => t.indexOf('Vaughan Road') === 0));
 
   return R;
 })();
