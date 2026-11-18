@@ -2,7 +2,7 @@
 <html lang="en" class="boot">
 <head>
 <meta charset="UTF-8">
-<meta http-equiv="Content-Security-Policy" content="default-src 'none'; script-src 'sha384-lIUBwUuf2SzUUhtyexqPIFETgcjjyYXXRQ6sWAs5INqOgckJPNA7wlwpRZu6kPvk' https://cdn.jsdelivr.net; style-src-elem 'sha384-kILeEc5fYolftrZJfATWdQg7da3Gf5ujUbzJz7KZZ8Z+GOno0pSPDiWwS2ha7lKB' https://cdn.jsdelivr.net; style-src-attr 'unsafe-inline'; img-src 'self' data: blob: https://tiles.basemaps.cartocdn.com https://protomaps.github.io https://cdn.jsdelivr.net; connect-src 'self' https://tiles.basemaps.cartocdn.com https://protomaps.github.io https://cdn.jsdelivr.net https://nominatim.openstreetmap.org https://overpass-api.de https://overpass.kumi.systems; worker-src blob: 'self'; child-src blob: 'self'; font-src 'none'; manifest-src 'self'; base-uri 'none'; form-action 'none'; object-src 'none'">
+<meta http-equiv="Content-Security-Policy" content="default-src 'none'; script-src 'sha384-BAeq65chCYtARvaC2CXR/Mv1XvW5+5KDTnHC0wJGwvVYiJwYt6v+x54WqMTpT5Ed' https://cdn.jsdelivr.net; style-src-elem 'sha384-kILeEc5fYolftrZJfATWdQg7da3Gf5ujUbzJz7KZZ8Z+GOno0pSPDiWwS2ha7lKB' https://cdn.jsdelivr.net; style-src-attr 'unsafe-inline'; img-src 'self' data: blob: https://tiles.basemaps.cartocdn.com https://protomaps.github.io https://cdn.jsdelivr.net; connect-src 'self' https://tiles.basemaps.cartocdn.com https://protomaps.github.io https://cdn.jsdelivr.net https://nominatim.openstreetmap.org https://overpass-api.de https://overpass.kumi.systems; worker-src blob: 'self'; child-src blob: 'self'; font-src 'none'; manifest-src 'self'; base-uri 'none'; form-action 'none'; object-src 'none'">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="mobile-web-app-capable" content="yes">
@@ -962,14 +962,19 @@ const TOAST_CLEAR_OF = ['#dock button', '#tabBar button', '#setMenu button', '#s
 // session - the grade is a living estimate, not a boot verdict; (3) a
 // session change needs SUSTAINED evidence - two consecutive agreeing
 // evaluations over full windows - plus a 45s minimum dwell between applied
-// changes, so the tier cannot flap; (4) the default is FULL quality and the
+// changes, so the tier cannot flap, and a pending upgrade is held to the
+// latest verdict - an evaluation that stops supporting it cancels it, to be
+// re-earned, never landed on stale measurements; (4) the default is FULL quality and the
 // burden of proof is on slowness (the grade thresholds sit far past smooth:
 // a window's median frame must exceed 26ms to leave full, 45ms to reach
 // low); (5) the grade recovers when the phone recovers - an earned upgrade
 // applies LIVE through map.setPixelRatio, no reload; (6) the stored record
 // is only the starting hint - the fresh boot median judges the session
-// within the first minute and the stored record is rewritten by every
-// evaluation that disagrees with it; (7) NO VISIBLE FLIPS - an earned
+// within the first minute, and the record follows the session's sustained
+// verdicts in both directions (a slowdown writes it at once under rule 8;
+// a recovery, or sustained agreement with the applied tier, rewrites it
+// once two consecutive evaluations agree), so a launch never inherits a
+// grade the last session already disproved; (7) NO VISIBLE FLIPS - an earned
 // change applies only when the map is fully idle (not moving, no pointer
 // down, 600ms quiet since the last touch, no keyboard up), never
 // mid-gesture or mid-mark; (8) UPGRADES ONLY MID-SESSION - live re-grading
@@ -997,14 +1002,20 @@ const DP = { platform: DP_PLATFORM, entered: false, tier: 0, hint: 0, stored: -1
 /** @returns {void} */ function dpEvaluate() { // a session evaluation over the living window (rules 2 + 3 + 8)
   const w = DP.samples.slice(-72); if (w.length < 36) return;
   const cand = dpGradeOf(dpMedian(w));
+  if (DP.pending >= 0 && DP.pending < DP.tier && cand > DP.pending) DP.pending = -1; // a pending upgrade lives only while the latest verdict supports it: an evaluation that stops supporting it cancels it (to be re-earned below), so an earned upgrade blocked by a gesture or the dwell can never land later on stale measurements
   if (cand < DP.tier) { // faster than the applied tier: two consecutive agreeing evaluations earn the upgrade (applied at idle by dpTryApply)
     if (DP.pending > DP.tier) DP.pending = -1; // fresh evidence acquits a pending boot downgrade
     if (DP.lastEvalTier === cand) DP.agree++; else { DP.lastEvalTier = cand; DP.agree = 1; }
     if (DP.agree >= 2) DP.pending = cand;
+    if (DP.agree >= 2) dpWriteStore(cand); // the same sustained verdict refreshes the stored record: a session that recovered does not hand the next launch the stale slower hint it already disproved
   } else if (cand > DP.tier) { // slower: NEVER applied this session (rule 8) - the stored record carries it to the next launch's judgment
     DP.lastEvalTier = cand; DP.agree = 0; if (DP.pending < 0 || DP.pending >= DP.tier) DP.pending = -1;
     dpWriteStore(cand);
-  } else { DP.lastEvalTier = cand; DP.agree = 0; if (DP.pending > DP.tier) DP.pending = -1; } // evidence matches the applied tier: a pending boot downgrade is acquitted
+  } else { // evidence matches the applied tier: a pending boot downgrade is acquitted, and the agreement count runs on this candidate too
+    if (DP.lastEvalTier === cand) DP.agree++; else { DP.lastEvalTier = cand; DP.agree = 1; }
+    if (DP.pending > DP.tier) DP.pending = -1;
+    if (DP.agree >= 2) dpWriteStore(cand); // sustained agreement with the applied tier also rewrites a stale slower record (the session that slowed, stored low, then recovered to its own tier)
+  }
 }
 /** @returns {void} */ function dpTryApply() { // lands a pending tier, only at a fully idle moment (rule 7), inside its direction's window (rule 8), past the dwell (rule 3)
   if (DP.pending < 0) return;

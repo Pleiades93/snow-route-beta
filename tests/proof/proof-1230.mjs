@@ -51,6 +51,8 @@ check('3g (rule 5): an earned change applies live through setPixelRatio', app1.i
 check('3h (rule 8): a slower session evaluation is recorded, never applied', app1.includes('// slower: NEVER applied this session (rule 8)') && app1.includes('dpWriteStore(cand);'));
 check('3i (rules 6+8): the boot judgment window is the first minute', app1.includes('DP.bootApplyUntil = Date.now() + 60000') && app1.includes('DP.pending > DP.tier && now > DP.bootApplyUntil'));
 check('3j (rule 2): the sampler counts only frames where the map rendered or is moving', app1.includes("map.on('render', () => { DP.renderSeen = true; })") && app1.includes('if (map.isMoving()) work = true;'));
+check('3k (rule 3, Codex P2 on PR #110): a pending upgrade is cancelled when the latest verdict stops supporting it', app1.includes('if (DP.pending >= 0 && DP.pending < DP.tier && cand > DP.pending) DP.pending = -1;'));
+check('3l (rule 6, Codex P2 on PR #110): a sustained recovery or agreement verdict refreshes the stored record', app1.includes('if (DP.agree >= 2) dpWriteStore(cand);'));
 
 // ---------- 4: the Android fit ----------
 check('4a: the Android document claims the largest viewport height', rule('html.android {').includes('min-height: 100lvh;'));
