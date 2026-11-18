@@ -23,6 +23,15 @@
 // to street features (crStreetIdentity): only a result that IS a street
 // can collapse, against the same street identity; addresses and POIs
 // never collapse.
+// Fix round 3 (PR #112, Codex P2): check 1o added - the early render of
+// fix round 1 left a hole at the other end: the crossing row could be
+// tapped while its fetch was still in flight, and nothing invalidated
+// that search, so the landing (the success merge, or the catch's
+// crossing re-render under crSearchCurrent) reopened the results box
+// over the destination the user had just picked. Selecting a result
+// now ends the search, in the shared row handler, with the standing
+// invalidation form (debounce cleared, sequence bumped, controller
+// aborted - the clear disc's and the flow close's own form).
 import { readFileSync } from 'node:fs';
 
 const root = new URL('../../', import.meta.url);
@@ -50,6 +59,7 @@ check('1k: a dead network still renders the crossing, under the sequence guard',
 check('1l: several clusters resolve to the one nearest the map centre', pick.includes('const ctr = (typeof map !== \'undefined\' && map) ? map.getCenter() : null;'));
 check('1m (fix round, PR #112 Codex P2): the crossing renders BEFORE the network is awaited - a hanging fetch cannot hold it hostage', pick.indexOf('if (isect) renderCrResults([isect]);') > pick.indexOf('const isect = crIntersectionItem(q);') && pick.indexOf('if (isect) renderCrResults([isect]);') < pick.indexOf('const r = await fetch(url'));
 check('1n (fix round, PR #112 Codex P2): the crossings gather window is padded by the 4 m junction tolerance, so a vertex across a cell boundary is never skipped', pick.includes('const PAD = 4;') && pick.includes('(Math.min(s[0][0], s[1][0]) - PAD / MLAT)') && pick.includes('(Math.max(s[0][1], s[1][1]) + PAD / MLNG)'));
+check('1o (fix round 3, PR #112 Codex P2): selecting a result ENDS the search - the shared row handler clears the pending debounce and bumps/aborts the in-flight search at its head, so neither landing can reopen the box over the chosen destination', pick.includes("b.addEventListener('click', () => {\n      box.classList.remove('on');\n      if (crSearchTimer) { clearTimeout(crSearchTimer); crSearchTimer = null; }\n      crSearchSeq++; if (crSearchCtl) { try { crSearchCtl.abort(); } catch (e) {} crSearchCtl = null; }"));
 
 // ---------- Piece 2: collapse + cross-street labels ----------
 check('2a: same-street points within 100 m collapse, first stands (fix round 2: the comparison is by street identity, not the display head)', pick.includes('function crCollapseResults(list)') && pick.includes('k.id === id && distM([la, lo], k.pt) <= 100'));

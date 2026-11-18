@@ -9079,6 +9079,8 @@ function renderCrResults(list) {
     b.append(pin, nameEl, areaEl);
     b.addEventListener('click', () => {
       box.classList.remove('on');
+      if (crSearchTimer) { clearTimeout(crSearchTimer); crSearchTimer = null; }
+      crSearchSeq++; if (crSearchCtl) { try { crSearchCtl.abort(); } catch (e) {} crSearchCtl = null; } // Beta 1.232 fix round 3 (PR #112, Codex P2): selecting a result ENDS the search - since fix round 1 the crossing renders while its fetch is still in flight, and un-invalidated that fetch's landing (the success merge, or the catch's crossing re-render under crSearchCurrent) reopens this box over the destination just picked. The form is the standing one - the clear disc and the flow close end the search exactly so - and the pending debounce is cleared with it, or it would fire a fresh search over the chosen destination 300 ms later
       const lat = parseFloat(it.lat), lon = parseFloat(it.lon); if (!isFinite(lat) || !isFinite(lon)) return;
       const a = it.address || {}; crAreaGuess = a.city || a.town || a.village || a.municipality || a.county || '';
       if (map) map.flyTo({ center: [lon, lat], zoom: Math.max(map.getZoom(), 15), duration: 900 });

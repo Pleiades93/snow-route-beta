@@ -2,7 +2,7 @@
 <html lang="en" class="boot">
 <head>
 <meta charset="UTF-8">
-<meta http-equiv="Content-Security-Policy" content="default-src 'none'; script-src 'sha384-Dem29p4wR98ZA6ye96LuaY0FyQ1Hj5I/OG1eDzOCqwHrJLvEVf5LWMOXkh9Lrq6C' https://cdn.jsdelivr.net; style-src-elem 'sha384-NlD3MyF/BMtj+gK9m/QRzX0OJYprm0Z9nUVnaLf4Otk69jZWQ0HFC0mrXxeGOqSi' https://cdn.jsdelivr.net; style-src-attr 'unsafe-inline'; img-src 'self' data: blob: https://tiles.basemaps.cartocdn.com https://protomaps.github.io https://cdn.jsdelivr.net; connect-src 'self' https://tiles.basemaps.cartocdn.com https://protomaps.github.io https://cdn.jsdelivr.net https://nominatim.openstreetmap.org https://overpass-api.de https://overpass.kumi.systems; worker-src blob: 'self'; child-src blob: 'self'; font-src 'none'; manifest-src 'self'; base-uri 'none'; form-action 'none'; object-src 'none'">
+<meta http-equiv="Content-Security-Policy" content="default-src 'none'; script-src 'sha384-JyX1nek+sa6GLKJnJVmp5WIJtWzWO8U01HmVNMHEg/A3FDeDcFg8XqwJJZblOuMR' https://cdn.jsdelivr.net; style-src-elem 'sha384-NlD3MyF/BMtj+gK9m/QRzX0OJYprm0Z9nUVnaLf4Otk69jZWQ0HFC0mrXxeGOqSi' https://cdn.jsdelivr.net; style-src-attr 'unsafe-inline'; img-src 'self' data: blob: https://tiles.basemaps.cartocdn.com https://protomaps.github.io https://cdn.jsdelivr.net; connect-src 'self' https://tiles.basemaps.cartocdn.com https://protomaps.github.io https://cdn.jsdelivr.net https://nominatim.openstreetmap.org https://overpass-api.de https://overpass.kumi.systems; worker-src blob: 'self'; child-src blob: 'self'; font-src 'none'; manifest-src 'self'; base-uri 'none'; form-action 'none'; object-src 'none'">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="mobile-web-app-capable" content="yes">
@@ -9080,6 +9080,8 @@ function renderCrResults(list) {
     b.append(pin, nameEl, areaEl);
     b.addEventListener('click', () => {
       box.classList.remove('on');
+      if (crSearchTimer) { clearTimeout(crSearchTimer); crSearchTimer = null; }
+      crSearchSeq++; if (crSearchCtl) { try { crSearchCtl.abort(); } catch (e) {} crSearchCtl = null; } // Beta 1.232 fix round 3 (PR #112, Codex P2): selecting a result ENDS the search - since fix round 1 the crossing renders while its fetch is still in flight, and un-invalidated that fetch's landing (the success merge, or the catch's crossing re-render under crSearchCurrent) reopens this box over the destination just picked. The form is the standing one - the clear disc and the flow close end the search exactly so - and the pending debounce is cleared with it, or it would fire a fresh search over the chosen destination 300 ms later
       const lat = parseFloat(it.lat), lon = parseFloat(it.lon); if (!isFinite(lat) || !isFinite(lon)) return;
       const a = it.address || {}; crAreaGuess = a.city || a.town || a.village || a.municipality || a.county || '';
       if (map) map.flyTo({ center: [lon, lat], zoom: Math.max(map.getZoom(), 15), duration: 900 });
