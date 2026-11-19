@@ -48,6 +48,12 @@
 // on-device crossing named by its display name outright, and the label
 // machinery is absent (proof-1232 piece 2 holds the same absence). A1, A2,
 // B1, B2, B4, B5, B6 stand untouched.
+// Beta 1.240 RE-DERIVATION (the list-cap round): B3's subject changes
+// again - the list no longer stretches to fill the pane; it caps at
+// six row pitches (408px) with grow off, and the calc(58px +
+// var(--sab)) margin is retired with the bound it served. B3b rolls
+// to the new literals; the new geometry is pinned with them in
+// proof-1234 (A3/A4). B3a and B4 stand untouched.
 import { readFileSync } from 'node:fs';
 import { createHash } from 'node:crypto';
 
@@ -101,7 +107,7 @@ check('B2e: the check payload is byte-pinned', sha(Buffer.from(payload('GLYPH_ME
 
 // ---------- B3: the city list stretch ----------
 check('B3a: the city pane takes the menu full height (Beta 1.239 roll: the 1.236 floating sheet retired - the full-bleed pane restored; the rule now also carries the HUD-line padding - proof-1234 A1 pins the whole rule)', head.includes('#rmCityListPane { height: 100%;'));
-check('B3b: the list flexes to fill the pane (Beta 1.239 roll: the bottom margin restored to calc(58px + var(--sab)) with Back out of the flow - the 12px-above-the-X geometry is unchanged, pinned in proof-1234 A4)', head.includes('#rmCityListPane #crCityList { max-height: none; flex: 1 1 auto; min-height: 0; margin-bottom: calc(58px + var(--sab)); }'));
+check('B3b: the list box is capped, not stretched (Beta 1.240 roll: six row pitches at 408px, grow off, the calc(58px + var(--sab)) margin retired with the stretch - pinned in proof-1234 A4)', head.includes('#rmCityListPane #crCityList { max-height: 408px; flex: 0 1 auto; min-height: 0; margin-bottom: 0; }'));
 
 // ---------- B4: feathered edges ----------
 check('B4a: the three mask states stand for both lists (one gradient, mirrored)', head.includes('#crCityList.fadeT, #rmRoutes.fadeT {') && head.includes('#crCityList.fadeB, #rmRoutes.fadeB {') && head.includes('#crCityList.fadeT.fadeB, #rmRoutes.fadeT.fadeB {') && (head.match(/transparent 0, #000 30px/g) || []).length >= 4);
