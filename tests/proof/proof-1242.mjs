@@ -51,8 +51,8 @@ check('2: the rim rides a transparent border and the shadow is the two-layer pai
   rule('body.night .dockBtn {').includes('border: 1px solid transparent;') && rule('body.night .dockBtn {').includes('box-shadow: 0 1px 2px rgba(0,0,0,.45), 0 12px 28px -6px rgba(0,0,0,.55);'));
 check('3: NO inset highlight line and NO top-border step in the night dock rule (the 1.224 recipe is gone from it)',
   !rule('body.night .dockBtn {').includes('inset') && !rule('body.night .dockBtn {').includes('border-top-color') && !rule('body.night .dockBtn {').includes('rgba(78,81,90,.94), rgba(43,45,51,.94)'));
-check('4: scope guard - the create search bar keeps its own round\'s night recipe (not a dock button, untouched)',
-  head.includes('body.night #crSearchWrap { background: linear-gradient(180deg, rgba(78,81,90,.94), rgba(43,45,51,.94));'));
+check('4: scope guard, re-derived (Beta 1.243: the search bar is not a dock button and 1.242 left it untouched - but 1.243 moves it deliberately, to the create text boxes\' white pill in both themes, so its night glass rule is GONE)',
+  !head.includes('body.night #crSearchWrap'));
 check('5: the tab bar wears the same token the button now wears (one token, never a copied colour)',
   rule('#tabBar {').includes('background: var(--card);') && head.includes('body.night { --card: rgba(32,33,37,.94);'));
 check('6: the day dock face is byte-identical to 1.241 (opaque light gradient, half lift stack, no border)',
@@ -83,8 +83,8 @@ check('16: the hint styling is the original .crPSub (13px, the dim ink token) - 
   head.includes('.crPSub { font-size: 13px; color: var(--ink-dim); }'));
 
 // ---------- the frame ----------
-check('17: What\'s New carries the 1.242 bullets (and stays em-dash free)',
-  whatsnew.includes('Night buttons now wear the tab bar') && whatsnew.includes('Tap a road to adjust sectors.') && !whatsnew.includes('—'));
+check('17: What\'s New carries the current entry\'s bullets (rolled to 1.243: this check tracks the CURRENT entry each round; and stays em-dash free)',
+  whatsnew.includes('Create now has two doors') && whatsnew.includes('solid white pill') && !whatsnew.includes('—'));
 check('18: the CHANGELOG top entry is Beta 1.242', changelog.indexOf('## Beta 1.242') > -1 && changelog.indexOf('## Beta 1.242') < changelog.indexOf('## Beta 1.241'));
 
 console.log(`proof-1242: ${pass} pass, ${fail} fail`);

@@ -366,7 +366,7 @@ function crPendStreet(name, lngLat, run, boundary) { // fail-closed (Codex (c)):
   renderCrLists(); crRenderHint();
   toast(shortStreetName(name) + ' runs past the prepared area, it is pending, not added - prepare a wider area to complete it', 4200);
 }
-// ---- the city step (Andrew's amendment): Door 2 STARTS here ----
+// ---- the city step (Andrew's amendment) STARTS here ----
 function crCityNameOf(it) { const a = (it && it.address) || {}; return a.city || a.town || a.village || a.municipality || a.county || String((it && it.display_name) || '').split(',')[0].trim(); }
 function crIsPlace(it) { // populated places only: a city/town/village place, or an administrative boundary (a city's own boundary relation) - never a street, a POI or a postcode area
   if (!it) return false;
@@ -406,10 +406,10 @@ function crEnterPickFromCity() { // the city is chosen: land in the pick stage, 
 }
 // ---- the create gate: TWO DOORS, then the list (Beta 1.124, Andrew's
 // redesign, approved from the rendered mockup 2026-11-06) ----
-// The first screen of Create is "Create new route" with two primary
-// doors: Select from list and Manual search (the photo door sits
-// quieter below a divider). Select from list opens its own pane listing
-// the library's cities as clean rows - no typing required to proceed.
+// The first screen of Create is "Create new route" with two doors:
+// Select from list and Manual search. (Beta 1.243: the third door -
+// Upload photo, below its divider - is removed whole.) The list opens
+// its own pane of clean city rows - no typing required to proceed.
 // The list IS packs/index.json (the same catalogue the seam reads): a
 // city appears the day its pack is published, and the app carries no
 // hardcoded city names. Both entries into Create - the cold-start
@@ -939,7 +939,7 @@ async function crRunCitySearch() {
 // computes it ONCE per draft-geometry change and every consumer shares the result.
 // Invalidation is exact, keyed on identity + generation: the draft object and its roads
 // object are replaced wholesale by every structural change except two (new draft,
-// photo-door import, Clear all, exit), which the identity keys catch; the only in-place
+// Clear all, exit), which the identity keys catch; the only in-place
 // geometry mutations are crAddStreet joining a street and crRemoveStreet removing one,
 // and both bump crGeomGen. Selection-only changes - sector picks, PRIMARY/SECONDARY flips - touch
 // neither key and never recompute. Identity-proven in the 1.135 fixture harness (the
@@ -1354,8 +1354,7 @@ function exitCreate() {
   crAbortOp(crTopOp); crTopOp = null;
   crCov = null; crCity = null; crSetPrepState('none'); crPrepFail = null; crFailFromGrid = false; crPrepAnchor = null; crPending = {}; crToppedUp = {}; crWanted = null; // Beta 1.154 (B3 build): the state write routes through the prep record's setter, and crFailFromGrid clears with the session (the 2026-11-09 lifecycle trace's latch finding) - it must not survive into a new session
   $('crHintBtn').style.display = 'none';
-  if (crSearchTimer) { clearTimeout(crSearchTimer); crSearchTimer = null; }
-  crSearchSeq++; if (crSearchCtl) { try { crSearchCtl.abort(); } catch (e) {} crSearchCtl = null; } // no in-flight suggestion may land after the flow has closed
+  crResetSearch(); // Beta 1.243 (Arch-3): the flow close ends the search through the owner, like every closing seat - no in-flight suggestion may land after the flow has closed
   $('crSearchInput').value = ''; crSyncClear(); // Beta 1.236 (Andrew): the typed street dies with the session too - through 1.235 this teardown closed the results and killed the in-flight search but never cleared the field itself, so the last typed street (his report: 'Weston') sat in the bar when a later creation opened, in any city; the clear disc's path was the only seat that ever emptied it. The disc's own state follows the field through crSyncClear, the same call that path makes.
   document.body.classList.remove('creating');
   for (const id of ['createBar', 'createSheet', 'previewSheet', 'createResults', 'createHint']) $(id).classList.remove('on');
@@ -1374,45 +1373,7 @@ $('crExit').addEventListener('click', () => { // Beta 1.227 (Andrew): the back p
 });
 $('pvStartOverBtn').addEventListener('click', () => askDiscard(() => { exitCreate(); openDoors(); }));
 
-// ---- Door 1: photo -> waiting state -> draft import ----
-$('crDoorPhoto').addEventListener('click', () => showRmPane('rmPhotoPane'));
-$('crPhotoBack').addEventListener('click', () => showRmPane('rmCreatePane')); // Beta 1.124: the photo pane backs to the doors pane it came from (1.123's chooser pane was that pane's old shape)
-$('crPhotoBtn').addEventListener('click', () => $('crPhotoFile').click());
-$('crPhotoFile').addEventListener('change', () => {
-  const f = $('crPhotoFile').files && $('crPhotoFile').files[0]; $('crPhotoFile').value = '';
-  if (!f) return;
-  crPhoto = f;
-  $('crPhotoName').textContent = f.name || 'photo';
-  $('crPhotoPick').style.display = 'none'; $('crPhotoWait').style.display = '';
-  const sh = $('crShareBtn');
-  let can = false; try { can = !!(navigator.canShare && navigator.canShare({ files: [f] })); } catch (e) {}
-  sh.style.display = can ? '' : 'none'; // the share affordance exists only where the platform offers it - silent absence otherwise
-});
-$('crShareBtn').addEventListener('click', () => { if (crPhoto && navigator.share) navigator.share({ files: [crPhoto] }).catch(() => {}); });
-$('crImportBtn').addEventListener('click', () => $('crDraftFile').click());
-$('crDraftFile').addEventListener('change', async () => {
-  const f = $('crDraftFile').files && $('crDraftFile').files[0]; $('crDraftFile').value = '';
-  if (!f) return;
-  let text = ''; try { text = await f.text(); } catch (e) { toast('That draft file could not be read', 3200); return; }
-  importDraft(text);
-});
-function importDraft(text) { // fail closed, named errors, nothing half-applied - the same discipline as a backup restore
-  let obj; try { obj = JSON.parse(text); } catch (e) { toast('That draft file could not be read - it is not valid JSON', 3600); return; }
-  let raw = obj;
-  if (obj && typeof obj === 'object' && !Array.isArray(obj) && obj.roads === undefined) { // the sandbox pipeline's candidate shape: a bare roads object
-    const vals = Object.values(obj);
-    if (vals.length && vals.every(v => Array.isArray(v))) raw = { roads: obj };
-    else { toast('That draft file has no roads in it - nothing was imported', 3600); return; }
-  }
-  const v = normalizePack(raw, { draft: true });
-  if (!v.ok) { toast('Draft not imported: ' + v.error, 4000); return; }
-  draft = newDraft();
-  draft.roads = v.pack.roads; draft.primaries = new Set(v.pack.primaries); draft.name = v.pack.name || ''; draft.area = v.pack.area || ''; draft.tileNames = v.pack.tileNames.slice();
-  draft.osmNames = Object.create(null); for (const k of Object.keys(v.pack.roads)) draft.osmNames[k] = k; // Beta 1.169 (Carbon fix round, D-02): an imported street's own OSM name is its pack key. Through 1.168 importDraft left osmNames empty, so crStreetParts' own-ways skip (nm === own) never matched for an imported street and the street's own geometry cut it into fragments at its own vertices. Tapped streets have always carried key -> itself (crAddStreet).
-  enterCreate('preview');
-}
-
-// ---- Door 2: city first (Andrew's amendment) -> prepare the area's street shapes once -> tap roads, resolved locally ----
+// ---- The doors: city first (Andrew's amendment) -> prepare the area's street shapes once -> tap roads, resolved locally ----
 $('crDoorList').addEventListener('click', () => { showRmPane('rmCityListPane'); crRenderCityChoices(); }); // Beta 1.124: Select from list - the city rows render fresh on every entry to the list pane
 $('rmCityListBack').addEventListener('click', () => showRmPane('rmCreatePane')); // the list pane backs to the doors pane (the mockup's pane-to-pane Back chain)
 $('crDoorManual').addEventListener('click', () => { askDiscard(() => { draft = newDraft(); crOpenCityPane('doors'); }); }); // Beta 1.147 (hypothesis H2 hardening): the same local askDiscard wrap as crPackPickCity - no-op on an empty draft, so first entry is unchanged
@@ -1457,19 +1418,23 @@ $('crSearchInput').addEventListener('keydown', e => { if (e.key === 'Enter') crS
 // short-query return, the row pick, the outside tap and the flow close
 // all bump it, and a pending debounce is cleared at the same seats, so
 // a dismissed search can never reopen the box).
-let crSearchTimer = null, crSearchSeq = 0, crSearchCtl = null;
+let crSearchTimer = null, crSearchSeq = 0;
+function crResetSearch() { // Beta 1.243 (Arch-3, architecture scan candidate 3): THE search-close owner. Ending the street search was spelled out at five seats (the flow close in exitCreate, the clear disc, the short-input return, the outside-tap dismissal, the result-row pick) - every one of them the same three moves: clear the pending debounce, bump the sequence (the family's invalidation - crSearchCurrent answers to it), hide the results box. The ritual lives here now; the seats keep only their own extras (the flow close still empties the field, the disc still refocuses it). crSearchCtl is REMOVED with it: the fetch it aborted retired in Beta 1.234 when the search went on-device, it was never assigned again, and its abort clause no-opped on null at every seat - dead machinery, out cleanly rather than carried by the owner.
+  if (crSearchTimer) { clearTimeout(crSearchTimer); crSearchTimer = null; }
+  crSearchSeq++;
+  $('createResults').classList.remove('on');
+}
 function crSyncClear() { $('crClear').classList.toggle('on', !!$('crSearchInput').value); } // Beta 1.227: the clear disc exists only while the input holds text
 $('crClear').addEventListener('click', () => { // Beta 1.227 (Andrew): the clear disc empties the text and the results and keeps the focus in the input - it never exits anything. The body is the old ✕'s first-press job (Beta 1.120), moved whole onto its own control
-  $('createResults').classList.remove('on'); $('crSearchInput').value = '';
-  if (crSearchTimer) { clearTimeout(crSearchTimer); crSearchTimer = null; }
-  crSearchSeq++; if (crSearchCtl) { try { crSearchCtl.abort(); } catch (e) {} crSearchCtl = null; }
+  crResetSearch(); // Beta 1.243 (Arch-3): the close is the owner's - the disc's own remaining work is the field itself (empty it, sync the disc, keep the focus)
+  $('crSearchInput').value = '';
   crSyncClear(); $('crSearchInput').focus();
 });
 $('crSearchInput').addEventListener('input', () => {
   if (crSearchTimer) { clearTimeout(crSearchTimer); crSearchTimer = null; }
   crSyncClear();
   const q = $('crSearchInput').value.trim();
-  if (q.length < 3) { crSearchSeq++; if (crSearchCtl) { try { crSearchCtl.abort(); } catch (e) {} } $('createResults').classList.remove('on'); return; }
+  if (q.length < 3) { crResetSearch(); return; }
   crSearchTimer = setTimeout(() => { crSearchTimer = null; crRunSearch(true); }, 300);
 });
 function crSearch() { // Enter: cancel any pending debounce and run the typed query NOW
@@ -1518,11 +1483,13 @@ function crRefreshSearch() { // Beta 1.234 fix round 3 (PR #114, Codex P2): cove
 // render. Every answer below is computed from the loaded extract by the
 // 1.232 machinery (crIntersectionItem / crCrossingsOf), so the search works
 // offline and never invents a crossing the device does not hold.
-// crSearchCtl stands retired with the fetch: it is never created any more,
-// and the five invalidation seats keep their abort clause, which no-ops on
-// null exactly as it did whenever no fetch was in flight - their sequence
-// bump is the operative guard, and the seats' text is pinned by the
-// 1.232/1.233 proofs, so the idiom retires here, at its source, only.
+// The fetch's controller (crSearchCtl) stood retired with the fetch: it
+// was never created again, and the five closing seats kept an abort clause
+// that no-opped on null exactly as it did whenever no fetch was in flight,
+// their sequence bump being the operative guard. Beta 1.243 (Arch-3)
+// retires the idiom everywhere: crResetSearch owns the close (debounce,
+// sequence, box) and the controller is gone from the declaration and
+// every seat.
 function crSearchResolve(q) { // -> { items, streets } for a render, or { hint } when the live filter yields nothing
   const pair = crIntersectionItem(q); // a fully resolving pair narrows to exactly its crossing (the 1.232 path, unchanged)
   if (pair) return { items: [pair], streets: new Set([pair.display_name.split(' & ')[0]]) };
@@ -1599,9 +1566,7 @@ document.addEventListener('pointerdown', (e) => { // Beta 1.120 (Andrew): tappin
   const box = $('createResults');
   if (!box.classList.contains('on')) return;
   if (e.target && (box.contains(e.target) || $('createBar').contains(e.target))) return;
-  box.classList.remove('on');
-  if (crSearchTimer) { clearTimeout(crSearchTimer); crSearchTimer = null; }
-  crSearchSeq++; if (crSearchCtl) { try { crSearchCtl.abort(); } catch (e) {} crSearchCtl = null; } // Beta 1.232 fix round 5 (PR #112, Codex P2): dismissing the results ENDS the search too - since fix round 1 the crossing renders while its fetch is still in flight, and un-invalidated that fetch's landing (the success merge, or the catch's crossing re-render under crSearchCurrent) reopened this box over the tap-away that dismissed it. The form is the standing one (fix round 3 seated it at the row click; the clear disc and the flow close end the search exactly so), and the pending debounce is cleared with it, or it would fire a fresh search 300 ms after the user tapped away. The tap-away itself is untouched: the box still hides here, and the map pick still runs
+  crResetSearch(); // Beta 1.232 fix round 5 (PR #112, Codex P2): dismissing the results ENDS the search too - since fix round 1 the crossing renders while its fetch is still in flight, and un-invalidated that fetch's landing (the success merge, or the catch's crossing re-render under crSearchCurrent) reopened this box over the tap-away that dismissed it. The pending debounce is cleared with it, or it would fire a fresh search 300 ms after the user tapped away. The tap-away itself is untouched: the box still hides here, and the map pick still runs. Beta 1.243 (Arch-3): the close runs through crResetSearch, the one owner - as it does at the row pick, the clear disc, the short-input return and the flow close
 }, true);
 let crRowState = new Map(); // Beta 1.234: the results box's live rows, by row text -> { el, leaving, timer } - the populate animation's bookkeeping (below)
 let crRowCtx = null; // the last render's shape { streets, hint } - a fresh populate (the card fades in, the first screenful staggers) is a new search context: the box was closed, a hint stood (or gives way), or the new rows share no street with the last render's; a typing re-populate (fade-outs, no card fade) is any render that continues the same streets, narrowed or widened
@@ -1651,9 +1616,7 @@ function crResultRowEl(it) { // one intersection row: the set's pin + the crossi
   b.append(pin, nameEl);
   b._crItem = it; // Beta 1.234 fix round 1 (PR #114, Codex P2): the destination this row picks - crRenderRows refreshes it on every render that retains the row, and the click below reads it at tap time, never the creation-time item alone
   b.addEventListener('click', () => {
-    box.classList.remove('on');
-    if (crSearchTimer) { clearTimeout(crSearchTimer); crSearchTimer = null; }
-    crSearchSeq++; if (crSearchCtl) { try { crSearchCtl.abort(); } catch (e) {} crSearchCtl = null; } // Beta 1.232 fix round 3 (PR #112, Codex P2): selecting a result ENDS the search - the pending debounce is cleared and the sequence bumped at this seat exactly as at the clear disc and the flow close, or a late keystroke burst would reopen the box over the destination just picked. Beta 1.234: with the search synchronous there is no in-flight landing left; the seat's form stands because the debounce + sequence ARE the search's invalidation now.
+    crResetSearch(); // Beta 1.232 fix round 3 (PR #112, Codex P2): selecting a result ENDS the search - the pending debounce is cleared and the sequence bumped at this seat exactly as at the clear disc and the flow close, or a late keystroke burst would reopen the box over the destination just picked. Beta 1.234: with the search synchronous there is no in-flight landing left; the seat's form stands because the debounce + sequence ARE the search's invalidation now. Beta 1.243 (Arch-3): the close runs through crResetSearch, the one owner
     const cur = b._crItem || it; // the item this row displays NOW (see _crItem above) - a retained row re-rendered with another city's same-named crossing picks the new coordinates, not its first render's
     const lat = parseFloat(cur.lat), lon = parseFloat(cur.lon); if (!isFinite(lat) || !isFinite(lon)) return;
     const a = cur.address || {}; crAreaGuess = a.city || a.town || a.village || a.municipality || a.county || (cur._isect && crCity ? crCity.name : ''); // Beta 1.234: an on-device crossing carries no address block - its area is the city whose extract computed it, so the guess the city pick set (crPickCity) stands for a crossing pick instead of blanking
@@ -2037,7 +2000,7 @@ $('crSbCancel').addEventListener('click', () => crCancelSectors()); // Cancel (B
 })();
 $('pvAddBtn').addEventListener('click', () => { // back to picking for more streets; Done there returns to this same preview (Beta 1.128: the panel button never changes its label, so no return-mode state is needed)
   if (crCity) { setCreateStage('pick'); return; }
-  if (draft && draft.area) { crCity = { name: draft.area, lat: null, lon: null, bbox: null }; setCreateStage('pick'); return; } // Beta 1.121: a draft that already names its city (the photo door) pre-answers the city step - still changeable from the pick sheet's city chip
+  if (draft && draft.area) { crCity = { name: draft.area, lat: null, lon: null, bbox: null }; setCreateStage('pick'); return; } // Beta 1.121: a draft that already names its city pre-answers the city step - still changeable from the pick sheet's city chip (through 1.242 the photo door's imported drafts were this branch's shape; it stands as the general area fallback)
   crOpenCityPane('preview');
 });
 

@@ -9,8 +9,9 @@ const { proc, send, S, ev, consoleLog, sleep, poll } = await launchDrive();
 
 // Tranche 1 split (2026-11-07): sections (f)-(j) and (e) moved to
 // drive166 - this drive keeps the boot + baseline and sections (a)-(d).
-// The 96 checks are unchanged in name, meaning and total across the two
-// drives (45 here, 51 there; census in the tranche SHIP-RECORD). The
+// The 96 checks were unchanged in name, meaning and total across the two
+// drives (45 here, 51 there; census in the tranche SHIP-RECORD) until Beta
+// 1.243 retired section (c)'s 8 checks with the photo door - 37 here. The
 // split buys per-drive cap headroom only - drive150 ran ~279 s against
 // the 300 s per-drive CI cap - and claims no wall-clock saving.
 // drive150: create-a-route (Step 2, hybrid flow; Beta 1.121 city-first +
@@ -44,7 +45,8 @@ const { proc, send, S, ev, consoleLog, sleep, poll } = await launchDrive();
 // (c) the photo door (photo pick -> waiting state -> a MALFORMED draft
 // fails closed with a named error and no state change -> the sandbox
 // candidate draft imports into the preview with its 34 streets; a
-// pack-envelope draft carries its name into name-it); (d) persistence
+// pack-envelope draft carries its name into name-it) - RETIRED in Beta
+// 1.243 with the Upload photo door; (d) persistence
 // (reload keeps the route; backup carries userpacks; wipe + restore
 // brings the route AND its mark back);
 // (e) the CSP seam (Beta 1.119): a copy of the page stamped with the
@@ -106,14 +108,6 @@ const FIXTURE = {
   nominatimCity: CITY_FIXTURE,
   overpass: { 'Bordeaux Drive': elsByName['Bordeaux Drive'], 'Alderson Avenue': elsByName['Alderson Avenue'] }
 };
-fs.writeFileSync('/tmp/d150-photo.png', Buffer.from('iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mNk+M9QDwADhgGAWjR9awAAAABJRU5ErkJggg==', 'base64'));
-fs.writeFileSync('/tmp/d150-bad.json', '{this is not a draft');
-const candidate = FIXDATA.candidate;
-fs.writeFileSync('/tmp/d150-candidate.json', JSON.stringify(candidate));
-const envelope = { name: 'Envelope Route', area: 'Vaughan', primaries: ['Bordeaux'], roads: { Bordeaux: [elsByName['Bordeaux Drive'][0].geometry.map(g => [g.lat, g.lon])], Alderson: [elsByName['Alderson Avenue'][0].geometry.map(g => [g.lat, g.lon])] } };
-fs.writeFileSync('/tmp/d150-envelope.json', JSON.stringify(envelope));
-const CAND_N = Object.keys(candidate).length; // premise derivation (Tranche 4 / T2, 2026-11-08): expectations about the shipped world derive from source - see pack-expect.mjs (the candidate's street count derives from the candidate fixture itself)
-const candLen = Object.values(candidate).reduce((a, segs) => a + segs.reduce((b, s) => b + wayLen(s.map(p => ({ lat: p[0], lon: p[1] }))), 0), 0);
 
 const installStub = `(() => {
   const FIX = ${JSON.stringify(FIXTURE)};
@@ -137,15 +131,6 @@ const installStub = `(() => {
   return true;
 })()`;
 const dump5wSrc = `(() => { const ks = []; for (let i = 0; i < localStorage.length; i++) { const k = localStorage.key(i); if (k.indexOf('snowroute.5w.') === 0) ks.push(k); } ks.sort(); const o = {}; for (const k of ks) o[k] = localStorage.getItem(k); return JSON.stringify(o); })()`;
-const setFile = async (selector, path) => {
-  await send('DOM.enable', {}, S);
-  const doc = await send('DOM.getDocument', {}, S);
-  const q = await send('DOM.querySelector', { nodeId: doc.result.root.nodeId, selector }, S);
-  await send('DOM.setFileInputFiles', { nodeId: q.result.nodeId, files: [path] }, S);
-  await sleep(400);
-  const vis = await J(`!!document.querySelector('${selector}')`);
-  return vis;
-};
 const TAP_POINTS = { 'Bordeaux Drive': { lat: 43.798972, lng: -79.574666 }, 'Alderson Avenue': { lat: 43.8000667, lng: -79.573051 }, 'Edgewater Avenue': { lat: 43.8100, lng: -79.5750 }, 'Faraway Avenue': { lat: 43.8150, lng: -79.5600 }, 'Farfaraway Avenue': { lat: 43.8200, lng: -79.5600 } };
 // Beta 1.126 TEST-PREMISE UPDATE: 1.125 restyled the manual-search city
 // results from .rmBtn boxes to .routeRow rows (.routeName + .routeArea);
@@ -193,8 +178,8 @@ ok('setup: 5W loaded with baseline work (Velmar done + note) and the fixture stu
 // ---------- (a) manual door end-to-end ----------
 await ev(`openRouteMenu()`);
 await ev(`document.getElementById('rmCreate').click()`);
-const A0 = await J(`({ doors: document.getElementById('rmCreatePane').classList.contains('on'), photo: !!document.getElementById('crDoorPhoto'), manual: !!document.getElementById('crDoorManual') })`);
-ok('A0 the Create pane shows the two doors (photo / select streets myself)', A0.doors && A0.photo && A0.manual);
+const A0 = await J(`({ doors: document.getElementById('rmCreatePane').classList.contains('on'), photo: !!document.getElementById('crDoorPhoto'), manual: !!document.getElementById('crDoorManual'), list: !!document.getElementById('crDoorList') })`);
+ok('A0 the Create pane shows the two doors (Select from list / Manual search) and the photo door is GONE (Beta 1.243)', A0.doors && !A0.photo && A0.manual && A0.list);
 await ev(`document.getElementById('crDoorManual').click()`);
 const AC0 = await J(`({ pane: document.getElementById('rmCityPane').classList.contains('on'), creating, title: document.querySelector('#rmCityPane .rmTitle').textContent })`);
 ok('A0b (Beta 1.121, Andrew\'s amendment) the manual door now opens the CITY STEP first - "What city are you cleaning in?" (the title reworded in Beta 1.235) - before any picking (not yet creating) | ' + JSON.stringify(AC0),
@@ -342,46 +327,7 @@ ok('B6 confirming discards the draft and lands back at the doors', B6.creating =
 const D2 = await ev(dump5wSrc);
 ok('B7 the create-and-DISCARD cycle never touched the 5W slot (byte-identical)', D2 === D0);
 
-// ---------- (c) photo door: waiting state, fail-closed import, candidate import ----------
-await ev(`document.getElementById('crDoorPhoto').click()`);
-const C0 = await J(`({ pane: document.getElementById('rmPhotoPane').classList.contains('on') })`);
-ok('C0 the photo door opens its pane', C0.pane);
-await setFile('#crPhotoFile', '/tmp/d150-photo.png');
-await poll(`document.getElementById('crPhotoWait').style.display !== 'none'`, 8000).catch(() => false);
-let C1 = await J(`({ wait: document.getElementById('crPhotoWait').style.display !== 'none', name: document.getElementById('crPhotoName').textContent, copy: document.getElementById('crPhotoWait').textContent.indexOf('your draft is being built') >= 0 })`);
-if (!C1.wait) { await ev(`document.getElementById('crPhotoFile').dispatchEvent(new Event('change'))`); await sleep(500); C1 = await J(`({ wait: document.getElementById('crPhotoWait').style.display !== 'none', name: document.getElementById('crPhotoName').textContent, copy: document.getElementById('crPhotoWait').textContent.indexOf('your draft is being built') >= 0 })`); }
-ok('C1 picking a photo lands in the honest waiting state (photo named, "your draft is being built")', C1.wait && C1.name === 'd150-photo.png' && C1.copy);
-await setFile('#crDraftFile', '/tmp/d150-bad.json');
-await poll(`document.getElementById('toast').textContent.indexOf('could not be read') >= 0`, 10000); // T4: poll the terminal state C2 asserts (the named error toast)
-let C2 = await J(`({ creating, draft: draft === null, toast: document.getElementById('toast').textContent })`);
-if (!C2.toast) { await ev(`document.getElementById('crDraftFile').dispatchEvent(new Event('change'))`); await sleep(600); C2 = await J(`({ creating, draft: draft === null, toast: document.getElementById('toast').textContent })`); }
-ok('C2 a MALFORMED draft file fails closed: named error toast, no create mode, no draft | toast: ' + C2.toast,
-  C2.creating === false && C2.draft && C2.toast.indexOf('could not be read') >= 0);
-await setFile('#crDraftFile', '/tmp/d150-candidate.json');
-await poll(`typeof creating !== 'undefined' && creating === true && crStage === 'preview'`, 10000).catch(() => false);
-let C3 = await J(`({ creating, stage: crStage, streets: draft ? Object.keys(draft.roads).length : -1, rows: document.querySelectorAll('#pvList .crRow').length, total: draft ? Math.round(Object.values(computeStretches(draft.roads)).reduce((a, s) => a + s.total, 0)) : -1 })`);
-if (!C3.creating) { await ev(`document.getElementById('crDraftFile').dispatchEvent(new Event('change'))`); await poll(`typeof creating !== 'undefined' && creating === true`, 10000); C3 = await J(`({ creating, stage: crStage, streets: draft ? Object.keys(draft.roads).length : -1, rows: document.querySelectorAll('#pvList .crRow').length, total: draft ? Math.round(Object.values(computeStretches(draft.roads)).reduce((a, s) => a + s.total, 0)) : -1 })`); }
-ok('C3 the sandbox candidate draft (bare roads shape) imports into the preview with all 34 streets, total length matching the candidate (' + Math.round(candLen) + ' m) within 1% | ' + JSON.stringify(C3),
-  C3.creating && C3.stage === 'preview' && C3.streets === CAND_N && C3.rows === CAND_N && Math.abs(C3.total - candLen) <= candLen * 0.01);
-await ev(`document.getElementById('pvStartOverBtn').click()`);
-await ev(`document.getElementById('crModalYes').click()`);
-const C4 = await J(`({ creating, doors: document.getElementById('rmCreatePane').classList.contains('on') })`);
-ok('C4 the imported candidate draft discards cleanly back to the doors', C4.creating === false && C4.doors);
-await ev(`document.getElementById('crDoorPhoto').click()`);
-await setFile('#crDraftFile', '/tmp/d150-envelope.json');
-await poll(`typeof creating !== 'undefined' && creating === true && crStage === 'preview'`, 10000).catch(() => false);
-let C5 = await J(`({ creating, name: draft ? draft.name : '', primaries: draft ? [...draft.primaries] : [] })`);
-if (!C5.creating) { await ev(`document.getElementById('crDraftFile').dispatchEvent(new Event('change'))`); await poll(`typeof creating !== 'undefined' && creating === true`, 10000); C5 = await J(`({ creating, name: draft ? draft.name : '', primaries: draft ? [...draft.primaries] : [] })`); }
-ok('C5 a pack-envelope draft imports with its name and primaries carried into the draft', C5.creating && C5.name === 'Envelope Route' && C5.primaries.join() === 'Bordeaux');
-await ev(`document.getElementById('pvSaveBtn').click()`);
-await poll(`document.getElementById('rmNamePane').classList.contains('on')`, 10000);
-const C6 = await J(`({ name: document.getElementById('crNameInput').value })`);
-ok('C6 name-it pre-fills the imported draft\'s name', C6.name === 'Envelope Route');
-await ev(`document.getElementById('crNameBack').click()`);
-await ev(`document.getElementById('pvStartOverBtn').click()`);
-await ev(`document.getElementById('crModalYes').click()`);
-const D3 = await ev(dump5wSrc);
-ok('C7 the photo-door cycles (import, discard, import, discard) never touched the 5W slot', D3 === D0);
+// ---------- (c) RETIRED in Beta 1.243: the photo door section left with the door - its subject (the photo pane, the waiting state, importDraft's fail-closed import) is removed from the app. The Settings backup import is a SEPARATE feature and its restore is exercised in section (d). ----------
 
 // ---------- (d) persistence: reload, backup, wipe, restore ----------
 const origin0 = await ev(`performance.timeOrigin`);

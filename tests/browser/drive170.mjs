@@ -1,5 +1,4 @@
 import { launchDrive, finish, bootThrough } from './harness.mjs';
-import fs from 'node:fs';
 const { proc, send, S, ev, consoleLog, sleep, poll } = await launchDrive();
 await bootThrough(ev, poll);
 
@@ -20,7 +19,7 @@ const R = { checks: [] };
 const ok = (name, cond) => R.checks.push([name, cond === true]);
 
 const ROADS = { 'H2 Alpha Street': [[[43.845, -79.575], [43.845, -79.565]]], 'H2 Beta Street': [[[43.855, -79.575], [43.855, -79.565]]] };
-fs.writeFileSync('/tmp/d170-draft.json', JSON.stringify({ name: 'D170 Probe Route', area: 'Vaughan', primaries: ['H2 Alpha Street'], roads: ROADS }));
+const DRAFT = { name: 'D170 Probe Route', area: 'Vaughan', primaries: ['H2 Alpha Street'], roads: ROADS };
 const CITY = [{ display_name: 'Vaughan, Ontario, Canada', category: 'place', type: 'city', lat: '43.8367', lon: '-79.4982', boundingbox: ['43.7256', '43.9538', '-79.6120', '-79.3858'], address: { city: 'Vaughan', state: 'Ontario', country: 'Canada' } }];
 
 const installStub = async () => {
@@ -31,16 +30,9 @@ const installStub = async () => {
     return orig(u, o); }; return true; })()`);
   await ev(`crPackIndexP = null; true`); // the boot warm cached a pre-stub catalogue promise (driveH2's rig lesson)
 };
-const snap = async () => JSON.parse(await ev(`JSON.stringify({ creating, stage: crStage, pane: (['rmMain','rmListPane','rmCreatePane','rmCityListPane','rmPhotoPane','rmNamePane','rmCityPane'].find(p => $(p).classList.contains('on')) || null), menuOpen: $('routeMenu').classList.contains('open'), menuShow: $('routeMenu').classList.contains('show'), modal: !$('crModal').classList.contains('hidden'), modalTitle: $('crModalTitle').textContent, tag: !!(typeof draft !== 'undefined' && draft && draft.__d170tag), streets: (typeof draft !== 'undefined' && draft) ? draftStreets().slice().sort() : null, city: crCity ? crCity.name : null })`));
+const snap = async () => JSON.parse(await ev(`JSON.stringify({ creating, stage: crStage, pane: (['rmMain','rmListPane','rmCreatePane','rmCityListPane','rmNamePane','rmCityPane'].find(p => $(p).classList.contains('on')) || null), menuOpen: $('routeMenu').classList.contains('open'), menuShow: $('routeMenu').classList.contains('show'), modal: !$('crModal').classList.contains('hidden'), modalTitle: $('crModalTitle').textContent, tag: !!(typeof draft !== 'undefined' && draft && draft.__d170tag), streets: (typeof draft !== 'undefined' && draft) ? draftStreets().slice().sort() : null, city: crCity ? crCity.name : null })`));
 const tagDraft = async () => { await ev(`if (draft) draft.__d170tag = 'TAG'; true`); };
 const clickId = async (id) => ev(`(() => { const el = document.getElementById(${JSON.stringify(id)}); if (!el) return 'missing'; el.click(); return 'clicked'; })()`);
-const setFile = async (selector, path) => {
-  await send('DOM.enable', {}, S);
-  const doc = await send('DOM.getDocument', {}, S);
-  const q = await send('DOM.querySelector', { nodeId: doc.result.root.nodeId, selector }, S);
-  await send('DOM.setFileInputFiles', { nodeId: q.result.nodeId, files: [path] }, S);
-  await sleep(400);
-};
 const openDoorsViaUI = async () => {
   const s = await snap();
   if (!s.menuOpen && !s.menuShow) await clickId('routesBtn');
@@ -49,12 +41,15 @@ const openDoorsViaUI = async () => {
   await poll(`$('rmCreatePane').classList.contains('on')`, 8000);
 };
 const doImport = async () => {
+  // Beta 1.243: the Upload photo door - and importDraft, its import half - is
+  // REMOVED from the app, so the live draft this drive guards is seeded
+  // directly: the same fixture through the same fail-closed validator
+  // (normalizePack with its draft option, which stays for the backup / save /
+  // boot paths), landed with importDraft's own assignments verbatim, then
+  // enterCreate('preview') exactly as the import did.
   await openDoorsViaUI();
-  await clickId('crDoorPhoto');
-  await poll(`$('rmPhotoPane').classList.contains('on')`, 8000);
-  await clickId('crImportBtn');
-  await setFile('#crDraftFile', '/tmp/d170-draft.json');
-  const landed = await poll(`creating === true && crStage === 'preview' && draft && draftStreets().length === 2`, 12000);
+  const seeded = await ev(`(() => { const v = normalizePack(${JSON.stringify(DRAFT)}, { draft: true }); if (!v.ok) return 'bad: ' + v.error; const pk = v.pack; draft = newDraft(); draft.roads = pk.roads; draft.primaries = new Set(pk.primaries); draft.name = pk.name || ''; draft.area = pk.area || ''; draft.tileNames = pk.tileNames.slice(); draft.osmNames = Object.create(null); for (const k of Object.keys(pk.roads)) draft.osmNames[k] = k; enterCreate('preview'); return 'ok'; })()`);
+  const landed = seeded === 'ok' && (await poll(`creating === true && crStage === 'preview' && draft && draftStreets().length === 2`, 12000));
   await tagDraft();
   return landed;
 };
@@ -95,7 +90,7 @@ try {
   await ev(`closeRouteMenu(); true`); await sleep(300);
 
   // ---------- (a1) FORCED POKE, list door: the confirm now rises; dismissal keeps the draft ----------
-  ok('A1 setup: live tagged draft (2 streets) via the import door', await doImport());
+  ok('A1 setup: live tagged draft (2 streets), seeded as the retired import door landed it (Beta 1.243)', await doImport());
   const modalUp = await pokeListPick();
   s = await snap();
   ok('A1 POKE: a list pick over a live draft now raises the discard confirm ("' + s.modalTitle + '") instead of silently replacing the draft',

@@ -12,6 +12,11 @@
 // 1.232 surfaces; everything else in this proof (markup, pill, card
 // geometry, press groups, the two-control contract, the glyph payloads)
 // stands exactly as 1.227 built it.
+// Beta 1.243 supersession: the search WRAP leaves the 1.232 family for the
+// create text boxes' white pill in both themes - 2a/2b/2e/6c re-pin to the
+// pill (white fill, no border, the city shadow, the pill ink in both
+// themes, the dark glyph variants stamped in both themes). The back pill,
+// the results card and everything else stand.
 import { readFileSync } from 'node:fs';
 import { createHash } from 'node:crypto';
 
@@ -41,11 +46,11 @@ check('1b: the Search button survives nowhere in the parts', !head.includes('crS
 check('1c: the old x tile is gone (no text-glyph exit, no Exit creating title)', !head.includes('title="Exit creating"') && !head.includes('<button id="crExit" title'));
 
 // ---------- The bar surfaces ----------
-check('2a: the bar is white at radius 25 with the mono day shadow (Beta 1.232 supersedes the 1.227 blue: variant A - white, hairline border, half-strength Soft Lift)', rule('#crSearchWrap {').includes('background: #fff;') && rule('#crSearchWrap {').includes('border: 1px solid rgba(20,25,40,.08);') && rule('#crSearchWrap {').includes('border-radius: 25px;') && rule('#crSearchWrap {').includes('box-shadow: 3px 4px 8px rgba(20,30,60,.10), -2px -2px 5px rgba(255,255,255,.35), inset 0 1px 1px rgba(255,255,255,.6), inset 0 -2px 4px rgba(90,100,120,.10);') && rule('#crSearchWrap {').includes('height: 50px;'));
-check('2b: at night the bar wears the back pill\'s N2 glass (Beta 1.232)', rule('body.night #crSearchWrap {').includes('background: linear-gradient(180deg, rgba(78,81,90,.94), rgba(43,45,51,.94));') && rule('body.night #crSearchWrap {').includes('box-shadow: inset 0 1px 1px rgba(255,255,255,.35), 0 8px 24px rgba(0,0,0,.45);'));
+check('2a: the bar is white at radius 25 wearing the create pill (Beta 1.243 supersedes the 1.232 mono shadow: white fill, NO border, the city box shadow)', rule('#crSearchWrap {').includes('background: #fff;') && rule('#crSearchWrap {').includes('border: none;') && rule('#crSearchWrap {').includes('border-radius: 25px;') && rule('#crSearchWrap {').includes('box-shadow: 0 6px 18px rgba(0,0,0,.18);') && rule('#crSearchWrap {').includes('height: 50px;'));
+check('2b: at night the bar STILL wears the white pill (Beta 1.243: the 1.232 night glass rule is retired - no body.night wrap rule exists)', !head.includes('body.night #crSearchWrap'));
 check('2c: the back pill is a 50px white circle by day', rule('#crExit {').includes('width: 50px; height: 50px;') && rule('#crExit {').includes('border-radius: 50%;') && rule('#crExit {').includes('background: #fff;'));
 check('2d: the back pill wears the N2 night recipe (top-lit gradient, brightest top border, inset highlight)', rule('body.night #crExit {').includes('background: linear-gradient(180deg, rgba(78,81,90,.94), rgba(43,45,51,.94));') && rule('body.night #crExit {').includes('border-top: 1px solid rgba(255,255,255,.55);') && rule('body.night #crExit {').includes('box-shadow: inset 0 1px 1px rgba(255,255,255,.35), 0 8px 24px rgba(0,0,0,.45);'));
-check('2e: the input is 16px (the iOS no-zoom floor) with theme ink (Beta 1.232: dark by day with the mono placeholder, white by night)', rule('#crSearchInput {').includes('font-size: 16px;') && rule('#crSearchInput {').includes('color: #111111;') && head.includes('#crSearchInput::placeholder { color: rgba(17,17,17,.42); }') && head.includes('body.night #crSearchInput { color: #fff; }') && head.includes('body.night #crSearchInput::placeholder { color: rgba(255,255,255,.75); }'));
+check('2e: the input is 16px (the iOS no-zoom floor) with the pill ink in BOTH themes (Beta 1.243: #14161c; the day placeholder governs both)', rule('#crSearchInput {').includes('font-size: 16px;') && rule('#crSearchInput {').includes('color: #14161c;') && head.includes('#crSearchInput::placeholder { color: rgba(17,17,17,.42); }') && !head.includes('body.night #crSearchInput'));
 check('2f: the OS search clear is suppressed so it can never double the bar disc', head.includes('#crSearchInput::-webkit-search-cancel-button { -webkit-appearance: none; appearance: none; }'));
 check('2g: the clear disc exists only in its .on state', rule('#crClear {').includes('display: none;') && rule('#crClear.on {').includes('display: flex;'));
 
@@ -82,7 +87,7 @@ check('6b: the six payloads are byte-pinned (set treatment: alpha fills, lossles
   sha(payload('GLYPH_CREATE', 'cancel', 'n')) === 'a3c2e27fa54072de020a0e3a0b811afdd6c2c893d738719109f8ea67fe9cc72c' &&
   sha(payload('GLYPH_CREATE', 'back', 'd')) === 'cfbcf0d124b7d315b5a5bed7c217529a6bf50e36d3854ef1737d415ecb381d72' &&
   sha(payload('GLYPH_CREATE', 'back', 'n')) === '3bd81894f992b53e259fa847ce7ba12a9f96289823eb7478a44a82741f9ee293');
-check('6c: renderIcons stamps the bar hosts (theme variants throughout since Beta 1.232 - the magnifier and disc follow the theme like the arrow) and re-stamps row pins', app4.includes('GLYPH_CREATE.back.n : GLYPH_CREATE.back.d') && app4.includes('night ? GLYPH_CREATE.search.n : GLYPH_CREATE.search.d') && app4.includes('night ? GLYPH_CREATE.cancel.n : GLYPH_CREATE.cancel.d') && app4.includes("document.querySelectorAll('.crPin').forEach(el => { el.innerHTML = ICONS.pin; });"));
+check('6c: renderIcons stamps the bar hosts (Beta 1.243: the magnifier and disc wear the DARK variant in both themes - they follow the always-white bar; the arrow keeps the theme variant) and re-stamps row pins', app4.includes('GLYPH_CREATE.back.n : GLYPH_CREATE.back.d') && app4.includes('GLYPH_CREATE.search.d') && app4.includes('GLYPH_CREATE.cancel.d') && !app4.includes('night ? GLYPH_CREATE.search.n') && !app4.includes('night ? GLYPH_CREATE.cancel.n') && app4.includes("document.querySelectorAll('.crPin').forEach(el => { el.innerHTML = ICONS.pin; });"));
 
 
 console.log(`proof-1227: ${pass}/${pass + fail} checks passed`);

@@ -59,7 +59,7 @@ const SOFT = '0 2px 8px rgba(10,16,60,.25)';
 check('A: .rmBtn wears the soft fill + soft shadow', rule('.rmBtn {').includes('background: rgba(255,255,255,.18); box-shadow: ' + SOFT));
 check('A: .m-card wears the soft fill + soft shadow', rule('.m-card {').includes('box-shadow: ' + SOFT + '; background: rgba(255,255,255,.18);'));
 check('A: the route rows wear the soft fill + soft shadow', rule('#routeMenu .routeRow {').includes('background: rgba(255,255,255,.18); border: none; box-shadow: ' + SOFT));
-check('A: .rmBtn.quiet keeps its quieter delta', rule('.rmBtn.quiet {').includes('background: rgba(255,255,255,.10); box-shadow: 0 2px 8px rgba(10,16,60,.18);'));
+check('A: the quiet delta is GONE with its only wearer (Beta 1.243: the Upload photo door is removed whole - the .rmBtn.quiet rule retires with it)', !head.includes('.rmBtn.quiet'));
 check('A: the inset ring is retired everywhere in the page', !head.includes('inset 0 0 0 1.5px'));
 // B — the solid-white carve-out, byte-identical to Beta 1.221
 check('B: .rmBtn.primary is the 1.221 solid white, unchanged', rule('.rmBtn.primary {').includes('background: #fff; color: #173a8a; box-shadow: 0 6px 18px rgba(0,0,0,.18);'));

@@ -54,7 +54,7 @@ window.addEventListener('blur', pressRowOff);
 // all. A fresh press on the same element supersedes a pending dispatch, so a rapid
 // double-tap opens exactly once.
 const OPEN_MIN_MS = 150;
-const OPEN_ID_SEL = '#streetsBtn, #paceBtn, #routesBtn, #setBtn, #selNote, #rmChoose, #rmCreate, #rmBack, #rmBack2, #setBack, #jobBtn, #jobBack, #chimeRow, #chimeBack, #stBtn, #statusBack, #aboutBtn, #aboutBack, #exportBtn, #xRes, #xImpText, #crDoorList, #crDoorManual, #crDoorPhoto, #crPhotoBack, #rmCityListBack, #crCityBack, #crCityChange, #pvStartOverBtn, #pvSaveBtn, #crNameBack, #crDoneBtn, #crReviewBtn, #pvAddBtn';
+const OPEN_ID_SEL = '#streetsBtn, #paceBtn, #routesBtn, #setBtn, #selNote, #rmChoose, #rmCreate, #rmBack, #rmBack2, #setBack, #jobBtn, #jobBack, #chimeRow, #chimeBack, #stBtn, #statusBack, #aboutBtn, #aboutBack, #exportBtn, #xRes, #xImpText, #crDoorList, #crDoorManual, #rmCityListBack, #crCityBack, #crCityChange, #pvStartOverBtn, #pvSaveBtn, #crNameBack, #crDoneBtn, #crReviewBtn, #pvAddBtn';
 const OPEN_ROW_SEL = '.srow, .crPRow, .prow.histRow';
 // The street row is EXEMPT from the floor (Beta 1.231, Codex fix round on PR #111): its
 // handler (app2) opens the inline note editor and focuses the editor's textarea inside

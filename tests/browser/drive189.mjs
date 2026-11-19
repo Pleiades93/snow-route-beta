@@ -11,9 +11,10 @@ import { startCreateRig, serveRepo, makeResults, finishCreate, sleep } from './h
 //   B: D-05 - a PENDING street named 'constructor' renders its row in
 //      the pick list (the own-key test replaced the truthiness read
 //      that hid it through the prototype).
-//   C: D-02 - importDraft populates draft.osmNames (every imported key
-//      maps to itself), so an imported street's own OSM ways are
-//      skipped when its sectors are cut, exactly like a tapped street.
+//   C: D-02 - RETIRED in Beta 1.243 with importDraft itself (the Upload
+//      photo door's import half left the app with the door). The osmNames
+//      behaviour it pinned (every street key maps to itself) lives on in
+//      every tapped street via crAddStreet.
 //   D: D-08 - picking a city that REPLACES a chosen one mid-draft goes
 //      through askDiscard and lands a FULL reset (fresh draft, pending
 //      cleared, area follows the new city); a FIRST pick keeps its
@@ -111,12 +112,6 @@ try {
   })()`);
   ok('B1 a pending street named constructor RENDERS in the pick list (visible, so it can be dropped) | rows: ' + b.rows, b.rows === 1 && /constructor/i.test(b.txt || ''));
 
-  // ---- C: D-02 importDraft carries osmNames ----
-  const cDraft = JSON.stringify({ name: 'Imported Route', area: 'Vaughan', roads: { 'Alpha Street': SEG, 'Beta Road': SEG } });
-  await ev2(`importDraft(${JSON.stringify(cDraft)}); true`);
-  const cReady = await poll(`typeof draft !== 'undefined' && !!draft && !!draft.osmNames && Object.keys(draft.osmNames).length === 2`, 10000).catch(() => false);
-  const c = await J(`({ osm: draft ? draft.osmNames : null, creating: typeof creating !== 'undefined' && creating === true })`);
-  ok('C1 importDraft maps every imported street key to itself in osmNames | ' + JSON.stringify(c), cReady === true && c.creating === true && c.osm && c.osm['Alpha Street'] === 'Alpha Street' && c.osm['Beta Road'] === 'Beta Road');
 
   // ---- D: D-08 city switch discard + full reset ----
   await ev2(`exitCreate(); true`);

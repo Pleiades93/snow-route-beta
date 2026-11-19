@@ -1,19 +1,20 @@
 // ===== Beta 1.118: CREATE A ROUTE (Step 2 of the route programme; Andrew's approved mockups) =====
-// The HYBRID flow: Door 1 turns a photo of a route map into a draft (the
-// photo is read by Muse OUTSIDE the app - the app has no photo reader by
-// design; see docs/ARCHITECTURE.md) and imports the returned draft file;
-// Door 2 searches a street (Nominatim), flies there, and lets Andrew TAP
-// roads on the map - a tap chooses a street's IDENTITY from the basemap's
-// roads layer, never its geometry: the street's true shape is fetched from
-// the Overpass API at tap time and stitched with the sandbox's rules
-// (endpoint chaining, divided roads chain into their hairpin). Both doors
-// land in one shared preview ("Review selection") with corrections, then a
-// name-it step, then the pack is saved on-device (below).
+// The flow: two doors (Select from list, Manual search) pick a city, the
+// area's street shapes are prepared on-device, and Andrew TAPs roads on
+// the map - a tap chooses a street's IDENTITY from the basemap's roads
+// layer, never its geometry: the street's true shape comes from the
+// prepared extract and is stitched with the sandbox's rules (endpoint
+// chaining, divided roads chain into their hairpin). Both doors land in
+// one shared preview ("Review selection") with corrections, then a
+// name-it step, then the pack is saved on-device (below). (Beta 1.243:
+// the photo door - a photo read by Muse outside the app, the returned
+// draft file imported back - is removed whole; this file's normalizePack
+// keeps its draft option for the validator's own completeness.)
 // PACK FORMAT (defined once, here and in docs/ARCHITECTURE.md): the same
 // shape as a ROUTE_PACKS entry - { name, area, primaries: [names], roads:
 // { street: [segment, ...] }, reference: {...}, tileNames?: [...] }, each
 // segment an array of [lat, lng] points. normalizePack is the one validator
-// every entry path (draft import, save, backup restore, boot merge) uses.
+// every entry path (save, backup restore, boot merge) uses.
 const USERPACKS_KEY = 'snowroute.v2.userpacks'; // the on-device record of created routes: { <id>: <pack> }. Shipped packs live in data.js; created packs live here.
 const SHIPPED_PACK_IDS = new Set(ROUTE_PACKS.map(p => p.id)); // captured at eval, BEFORE any user pack merges - data.js holds shipped packs only
 function readUserPacks() { // the stored record, or null when it cannot be read/parsed at all (callers that must not lose data treat null as a failure; lenient callers use loadUserPacks)
