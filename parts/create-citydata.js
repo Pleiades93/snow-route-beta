@@ -126,6 +126,32 @@ function crCovMerge(elements, box) { // fold one answered extract (a grid cell, 
   crRefreshSearch(); // Beta 1.234 fix round 3 (PR #114, Codex P2): a merge is the moment coverage changes - an open street search re-runs against the fuller extract here, instead of standing on the answer it computed before these streets landed (the refresh and its dismissal guards live at crRefreshSearch in create-pick.js; the search itself merges nothing, so this cannot cascade)
   return cov;
 }
+function crClipLineToBox(line, box) { // Beta 1.245: the maximal sub-lines of a stitched line that lie inside a box, cut where the line crosses the boundary (parametric clip per segment, on the same flat-earth plane distM uses - a crossing point is a real point of the road, interpolated on its own segment). Each piece records whether its ends were made by the cut (startCut / endCut): a cut end sits ON the boundary; an uncut end is one of the line's own ends inside the box.
+  const pieces = [];
+  let cur = null;
+  const close = () => { if (cur && cur.line.length > 1) pieces.push(cur); cur = null; };
+  for (let i = 1; i < line.length; i++) {
+    const a = line[i - 1], b = line[i];
+    let t0 = 0, t1 = 1, miss = false;
+    const dx = b[1] - a[1], dy = b[0] - a[0];
+    const P = [-dx, dx, -dy, dy], Q = [a[1] - box.w, box.e - a[1], a[0] - box.s, box.n - a[0]];
+    for (let k = 0; k < 4; k++) {
+      if (Math.abs(P[k]) < 1e-12) { if (Q[k] < 0) { miss = true; break; } }
+      else { const r = Q[k] / P[k]; if (P[k] < 0) { if (r > t0) t0 = r; } else if (r < t1) t1 = r; if (t0 > t1) { miss = true; break; } }
+    }
+    if (miss) { close(); continue; }
+    const A = t0 === 0 ? a : [a[0] + dy * t0, a[1] + dx * t0];
+    const B = t1 === 1 ? b : [a[0] + dy * t1, a[1] + dx * t1];
+    if (!cur) cur = { line: [A], startCut: t0 > 0, endCut: false };
+    const last = cur.line[cur.line.length - 1];
+    if (last[0] !== A[0] || last[1] !== A[1]) cur.line.push(A);
+    if (B[0] !== A[0] || B[1] !== A[1]) cur.line.push(B);
+    cur.endCut = t1 < 1;
+    if (t1 < 1) close();
+  }
+  close();
+  return pieces;
+}
 function crResolve(osmName, lngLat, boundary) { // resolve a tapped street from the extract: the sandbox stitch + the run nearest the tap (the 1.118 rule), plus the fail-closed completeness check (Codex (c)): a run end is CLOSED only when it lies INSIDE verified coverage - any same-name continuation starts at that end, inside a query that was actually answered, and the source returns every way touching that box, so it would have been returned. Verified coverage is the extract's box SET (city cells + fallback boxes); an explicit boundary (a top-up's own box) replaces the set for that one resolution. Verify round (CG-PF-08): an earlier form also accepted an end touched by ANY other returned way ('junction proof') - unsound, and removed: a cross street touching the endpoint says nothing about a same-name continuation that starts there and runs wholly outside the box, which the extract never saw (Codex's adversarial fixture: Main Road certified complete by an unrelated Cross Road). Outside verified coverage the run is unproven, however many other streets touch it.
   const cov = crCov; if (!cov) return { status: 'nocov' };
   const ways = cov.byName[osmName];
@@ -134,6 +160,44 @@ function crResolve(osmName, lngLat, boundary) { // resolve a tapped street from 
   let best = null, bestD = Infinity;
   for (const run of runs) for (const p of run.line) { const d = distM(p, [lngLat.lat, lngLat.lng]); if (d < bestD) { bestD = d; best = run; } }
   if (!best) return { status: 'absent' };
+  // Beta 1.245 (Andrew's phone report): the CITY CLIP. The extract's ways
+  // carry their full geometry, so a stitched run follows its road OUT of
+  // the working city to wherever the ways end - and the completeness
+  // check below then finds those ends outside every verified box and
+  // sends the tap into the 90-second top-up for geometry the route
+  // should never hold (tapping Highway 400 in Vaughan burned the whole
+  // top-up budget and added nothing). When a working city is in force
+  // and the tap lies inside it - and this is not a top-up's own
+  // re-resolution (an explicit boundary stands in for the coverage set
+  // there, unchanged) - and the chosen run actually reaches past the box
+  // (a run wholly inside it resolves exactly as it always has, stored
+  // form included), the run is cut at the city box first: an end the
+  // cut makes sits ON the city boundary and is complete by definition
+  // (the city is the working extent; nothing past its edge is the user's
+  // to select), while an original end inside the box still faces the
+  // coverage test below - a genuinely unproven interior end falls
+  // through to the exact pre-1.245 logic (edge, top-up, pending). The
+  // stored shape of a clipped pick is the one stitched in-city line (the
+  // bridged-run form), so a clipped street's sectors cut from it exactly
+  // as a bridged street's do.
+  if (!boundary && crCity && crCity.bbox && crInBox(crCity.bbox, lngLat.lat, lngLat.lng) && best.line.some(p => !crInBox(crCity.bbox, p[0], p[1]))) {
+    const pieces = crClipLineToBox(best.line, crCity.bbox);
+    // the piece is chosen by distance to its SEGMENTS (crSegProjM), not
+    // its vertices: a road that leaves the city and comes back can put
+    // another piece's vertex nearer the tap than every vertex of the
+    // piece the tapped segment belongs to (the Codex catch on this
+    // round's gate: Aurora's Chambers Crescent returned its ~20 m piece
+    // instead of the ~398 m piece containing the tap).
+    let piece = null, pieceD = Infinity;
+    for (const pc of pieces) { let d = Infinity; for (let i = 1; i < pc.line.length; i++) { const sd = crSegProjM([lngLat.lat, lngLat.lng], pc.line[i - 1], pc.line[i]).d; if (sd < d) d = sd; } if (d < pieceD) { pieceD = d; piece = pc; } }
+    if (piece) {
+      let unproven = false;
+      for (const end of [{ pt: piece.line[0], cut: piece.startCut }, { pt: piece.line[piece.line.length - 1], cut: piece.endCut }]) {
+        if (!end.cut && !crInAnyBox(cov.boxes, end.pt[0], end.pt[1])) { unproven = true; break; }
+      }
+      if (!unproven) return { status: 'ok', segs: [piece.line] };
+    }
+  }
   for (const end of [best.line[0], best.line[best.line.length - 1]]) {
     const closed = boundary ? crInBox(boundary, end[0], end[1]) : crInAnyBox(cov.boxes, end[0], end[1]);
     if (!closed) return { status: 'edge', run: best };

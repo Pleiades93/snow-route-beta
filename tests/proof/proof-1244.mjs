@@ -67,9 +67,9 @@ check('13: the tab bar still wears the token the cluster now shares',
 check('14: night Start keeps its float fence and the speed readout keeps its glass (not buttons, not swept in)',
   rule('body.night .runBtn {').includes('box-shadow: var(--shadow-float);') && rule('#spdPill {').includes('background: var(--glass-day);'));
 // ---------- the frame ----------
-check('15: What\'s New carries the 1.244 bullet (and stays em-dash free)',
-  whatsnew.includes('same black as the bottom bar') && !whatsnew.includes('—'));
-check('16: the CHANGELOG top entry is Beta 1.244',
+check('15: What\'s New carried the 1.244 line at its release (latest-release-only: Beta 1.245 replaced the entry, so the line stands retired; and the file stays em-dash free)',
+  !whatsnew.includes('same black as the bottom bar') && !whatsnew.includes('—'));
+check('16: the CHANGELOG order stands (1.244 above 1.243; the 1.245 entry rides above both - proof-1245 pins the top)',
   changelog.indexOf('## Beta 1.244') > -1 && changelog.indexOf('## Beta 1.244') < changelog.indexOf('## Beta 1.243'));
 
 console.log(`proof-1244: ${pass} pass, ${fail} fail`);

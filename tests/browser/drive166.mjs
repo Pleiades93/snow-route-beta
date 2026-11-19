@@ -82,8 +82,11 @@ const { proc, send, S, ev, consoleLog, sleep, poll } = await launchDrive();
 // stalled body, runs the failure matrix (statuses, malformed JSON,
 // HTTP-200-with-remark, over-cap payload), proves offline-after-extract
 // adds with ZERO further geometry requests, exercises the edge rule
-// (one top-up completes Edgewater Avenue; Faraway Avenue stays
-// PENDING), races cancel / exit / supersede / top-up-after-exit, and
+// (one top-up completes Edgewater Avenue; since Beta 1.245 the two
+// city-edge streets join as their in-city stretches with NO top-up -
+// the city clip - and Gapwater Avenue, whose in-city end is genuinely
+// unproven, still tops up once and stays PENDING), races cancel /
+// exit / supersede / top-up-after-exit, and
 // walks the no-search Prepare-this-area path. The grammar, latency and
 // body-stall assertions were each demonstrated RED on the 1.120 tree
 // before the fix (beta1/work/create-prep-1121/). The VERIFY round then
@@ -158,7 +161,7 @@ const setFile = async (selector, path) => {
   const vis = await J(`!!document.querySelector('${selector}')`);
   return vis;
 };
-const TAP_POINTS = { 'Bordeaux Drive': { lat: 43.798972, lng: -79.574666 }, 'Alderson Avenue': { lat: 43.8000667, lng: -79.573051 }, 'Edgewater Avenue': { lat: 43.8100, lng: -79.5750 }, 'Faraway Avenue': { lat: 43.8150, lng: -79.5600 }, 'Farfaraway Avenue': { lat: 43.8200, lng: -79.5600 } };
+const TAP_POINTS = { 'Bordeaux Drive': { lat: 43.798972, lng: -79.574666 }, 'Alderson Avenue': { lat: 43.8000667, lng: -79.573051 }, 'Edgewater Avenue': { lat: 43.8100, lng: -79.5750 }, 'Faraway Avenue': { lat: 43.8150, lng: -79.5600 }, 'Farfaraway Avenue': { lat: 43.8200, lng: -79.5600 }, 'Gapwater Avenue': { lat: 43.8300, lng: -79.5400 } };
 // Beta 1.126 TEST-PREMISE UPDATE: 1.125 restyled the manual-search city
 // results from .rmBtn boxes to .routeRow rows (.routeName + .routeArea);
 // this helper's selectors and its first-row text read follow the shipped
@@ -198,12 +201,15 @@ await poll(`!document.getElementById('splash')`, 20000);
 await poll(`typeof map === 'undefined' || !map || !map.isMoving()`, 25000);
 await ev(installStub);
 // Test-suite restructure (2026-11-09): the ONE static cap assertion. The two
-// 45 s latency cases (J2a2, J7a) now run SCALED through the CR_TIMING seam
+// 45 s latency cases (J2a2, J7d) now run SCALED through the CR_TIMING seam
 // (a tenth of the time at the same ratios), so this check pins the full-size
 // truth they stand for: the real caps exceed the measured 45 s service
 // profile on both fetch paths, with the attempt cap inside the budget.
+// (Beta 1.245: the scaled top-up case moved from J7a's Faraway Avenue -
+// which the city clip now resolves locally - to J7d's Gapwater Avenue,
+// whose unproven in-city end still fires the top-up.)
 const CAPS = await J(`({ budget: CR_TIMING.budgetMs, attempt1: CR_TIMING.attempt1Ms, topupBudget: CR_TIMING.topupBudgetMs, topupAttempt1: CR_TIMING.topupAttempt1Ms })`);
-ok('J0 (static) the REAL fetch caps exceed the measured 45 s service profile on both paths (batch attempt inside its budget, top-up attempt inside its budget) - the scaled J2a2/J7a cases grade this structure at a tenth of the time | ' + JSON.stringify(CAPS),
+ok('J0 (static) the REAL fetch caps exceed the measured 45 s service profile on both paths (batch attempt inside its budget, top-up attempt inside its budget) - the scaled J2a2/J7d cases grade this structure at a tenth of the time | ' + JSON.stringify(CAPS),
   CAPS.attempt1 > 45000 && CAPS.budget > CAPS.attempt1 && CAPS.topupAttempt1 > 45000 && CAPS.topupBudget > CAPS.topupAttempt1);
 
 // ---------- (f) preparation failure + Retry (Beta 1.121) ----------
@@ -427,9 +433,15 @@ ok('I7 (Beta 1.227) pressed with a search still up, the back pill EXITS creating
 // Avenue (wholly inside the city - local now), Crosscell Avenue (crosses
 // a CELL border - its ways arrive from two cells and one way is returned
 // by BOTH, so the merged index must dedupe it by id and stitch it
-// whole), Faraway Avenue (crosses the CITY edge - completed by its ONE
-// top-up), Farfaraway Avenue (crosses and is NOT completed even by the
-// top-up - it must stay PENDING until a wider preparation sweeps it).
+// whole), Faraway Avenue and Farfaraway Avenue (both cross the CITY
+// edge - through Beta 1.244 the first was completed by its ONE top-up
+// and the second stayed PENDING; since Beta 1.245's city clip both join
+// as their IN-CITY stretches with no top-up at all), Gapwater Avenue
+// (crosses the city edge too, but its IN-CITY end sits in the grid's
+// south-east cell, which S8b/S9 hold back at the stub: that end is
+// genuinely unproven at tap time, so the clip cannot certify the
+// street - it still gets its ONE top-up and still stays PENDING until
+// a wider preparation sweeps it).
 // Profiles (window.__jMode): healthy / throw / silent / status / remark
 // / badjson / dense / stallbody / supersede / cityfail, plus __jDelayMs
 // for honest latency. Delays honour the AbortSignal, as a real fetch
@@ -447,6 +459,7 @@ const JDATA = (() => {
   seg(9003, 'Northgate Crescent', [[43.8285, -79.5800], [43.8285, -79.5750], [43.8285, -79.5700]]);
   seg(9010, 'Faraway Avenue', [[43.8060, -79.5600], [43.8200, -79.5600], [43.8500, -79.5600]]);
   seg(9011, 'Farfaraway Avenue', [[43.7950, -79.5600], [43.8440, -79.5600], [43.8750, -79.5600]]);
+  seg(9012, 'Gapwater Avenue', [[43.8120, -79.5400], [43.8380, -79.5400], [43.8750, -79.5400]]);
   seg(9020, 'Crosscell Avenue', [[43.8150, -79.5650], [43.82093, -79.5650], [43.8260, -79.5650]]);
   seg(9021, 'Crosscell Avenue', [[43.8260, -79.5650], [43.8320, -79.5650]]);
   return { byId };
@@ -454,6 +467,13 @@ const JDATA = (() => {
 const edgewaterLen = [9001, 9002, 9004].reduce((a, id) => a + wayLen(JDATA.byId[id].geometry), 0);
 const farawayLen = wayLen(JDATA.byId[9010].geometry);
 const farfarawayLen = wayLen(JDATA.byId[9011].geometry);
+// Beta 1.245: the IN-CITY stretches of the three city-edge streets - each
+// fixture line cut at the fixture city's north edge (43.845), computed
+// from the fixture's own points (the clip interpolates the crossing on
+// the segment that crosses, which is what these sums measure).
+const farawayCityLen = wayLen([{ lat: 43.8060, lon: -79.5600 }, { lat: 43.8200, lon: -79.5600 }, { lat: 43.8450, lon: -79.5600 }]);
+const farfarawayCityLen = wayLen([{ lat: 43.7950, lon: -79.5600 }, { lat: 43.8440, lon: -79.5600 }, { lat: 43.8450, lon: -79.5600 }]);
+const gapwaterCityLen = wayLen([{ lat: 43.8120, lon: -79.5400 }, { lat: 43.8380, lon: -79.5400 }, { lat: 43.8450, lon: -79.5400 }]);
 const crosscellLen = [9020, 9021].reduce((a, id) => a + wayLen(JDATA.byId[id].geometry), 0);
 const JCITY = [{ display_name: 'Vaughan, Ontario, Canada', lat: '43.8150', lon: '-79.5600', boundingbox: ['43.785', '43.845', '-79.610', '-79.5105'], class: 'place', type: 'city', address: { city: 'Vaughan', state: 'Ontario', country: 'Canada', country_code: 'ca' } }];
 const installStubJ = `(() => {
@@ -504,6 +524,7 @@ const installStubJ = `(() => {
         return Promise.resolve(new Response(stream, { status: 200, headers: { 'Content-Type': 'application/json' } }));
       }
       if (mode === 'supersede') { const box = boxOf(raw); const inSmall = box && (Math.abs(box.s - 43.785) < 0.001 || Math.abs(box.s - 43.82093) < 0.001) && (Math.abs(box.w - (-79.61)) < 0.001 || Math.abs(box.w - (-79.56024)) < 0.001); return inSmall ? delayed(() => json({ elements: elsFor(raw) }), 3000, opts) : Promise.resolve(json({ elements: [] })); } // only the fixture city's OWN cell boxes (their exact grid edges) are slow - a bigger city's cells never share both edges
+      if (window.__jHoldSE) { const box = boxOf(raw); if (box && raw.indexOf('"name"="') < 0 && Math.abs(box.s - 43.785) < 0.001 && Math.abs(box.w - (-79.56024)) < 0.001) return delayed(() => json({ elements: elsFor(raw) }), window.__jHoldMs || 12000, opts); } // Beta 1.245 (S8b/S9): the fixture grid's SOUTH-EAST cell (its exact edges: s 43.785, w -79.56024) answers __jHoldMs late - Gapwater Avenue's in-city end sits in that cell, so at tap time the end is genuinely unproven while the rest of the city has landed. Name-filtered requests (the top-up) carry a different box and are never held.
       const d = window.__jDelayMs || 0;
       const make = () => json({ elements: elsFor(raw) });
       return d > 0 ? delayed(make, d, opts) : Promise.resolve(make());
@@ -708,7 +729,7 @@ await ev(`window.__jMode = 'healthy'`);
 ok('J6c (race: supersede) switching city mid-load supersedes the old grid: Toronto\'s own (empty) extract commits, and Vaughan\'s late full dataset NEVER lands in it | ' + JSON.stringify(S7),
   s7Ready === true && S7.city === 'Toronto' && S7.gridName === 'Toronto' && S7.names.length === 0 && S7.boxes === S7.cells);
 await jExitDiscard();
-// S8: the edge chain - top-up completes Faraway; Farfaraway pends; the wider preparation sweeps it; an outside tap leaves a working remedy
+// S8: the city clip (Beta 1.245) - Faraway and Farfaraway join as their in-city stretches with NO top-up; an outside tap leaves a working remedy. (Through Beta 1.244 this section graded the old edge chain: Faraway completed by its ONE top-up, Farfaraway pending until the wider preparation swept it. Andrew's 1.245 direction - a tap selects only the stretch inside the working city - supersedes both; the fail-closed chain survives on Gapwater Avenue in S8b, whose in-city end is genuinely unproven.)
 await jEnter();
 await poll(`crPrepState === 'ready'`, 20000);
 await ev(tapRoad('Ghost Avenue', 43.91, -79.5)); // absent AND outside the city (east of it - a box there touches no fixture street)
@@ -718,43 +739,62 @@ const s8gPrep = await poll(`crCov && crCov.boxes.some(b => 43.91 >= b.s && 43.91
 ok('J9b (remedy works, CG-PF-09) with the city READY, a tap outside it still leaves a visible "Prepare this area" button (' + JSON.stringify(S8g) + '); tapping it prepares around the TAPPED point and the new coverage contains it | covered: ' + s8gPrep,
   S8g.btn === 'Prepare this area' && S8g.btnOn && S8g.state === 'ready' && s8gPrep === true);
 const gcS8 = await geoCount();
-await ev(`window.__savedTopup = [CR_TIMING.topupBudgetMs, CR_TIMING.topupAttempt1Ms]; CR_TIMING.topupBudgetMs = 9000; CR_TIMING.topupAttempt1Ms = 6000; window.__jDelayMs = 4500`); // scaled 10x via the seam (restructure, 2026-11-09): delay 4.5 s = 75% of the 6 s top-up attempt cap inside a 9 s top-up budget - the full-size form is 45 s / 60 s / 90 s, pinned statically by J0
 const ft0 = Date.now();
 await ev(tapStreet('Faraway Avenue'));
 const gotFar = await poll(`typeof draft !== 'undefined' && draft && !!draft.roads['Faraway Avenue']`, 20000).catch(() => false);
 const fMs = Date.now() - ft0;
-await ev(`window.__jDelayMs = 0; CR_TIMING.topupBudgetMs = window.__savedTopup[0]; CR_TIMING.topupAttempt1Ms = window.__savedTopup[1]`);
 const S8log = await geoSince(gcS8);
 const farTopups = nameBodies(S8log, 'Faraway Avenue');
-const S8a = await J(`({ total: draft && draft.roads['Faraway Avenue'] ? Math.round(computeStretches(draft.roads)['Faraway Avenue'].total) : -1 })`);
-ok('J7a (edge rule + CG-PF-07, scaled 10x via CR_TIMING - J0 pins the real caps) Faraway Avenue crosses the CITY edge: ONE targeted top-up fires with the correct grammar (way["name"="Faraway Avenue"]), its primary answer landing at 75% of the top-up attempt cap (4.5 s of 6 s; full-size 45 s of 60 s) is ACCEPTED (elapsed ' + fMs + ' ms - the verified build\'s 40 s top-up cap killed exactly this), and the street joins WHOLE (' + Math.round(farawayLen) + ' m) | top-ups: ' + farTopups.length + ', got ' + JSON.stringify(S8a),
-  gotFar === true && fMs >= 4400 && farTopups.length === 1 && Math.abs(S8a.total - farawayLen) <= farawayLen * 0.03);
+const S8a = await J(`({ total: draft && draft.roads['Faraway Avenue'] ? Math.round(computeStretches(draft.roads)['Faraway Avenue'].total) : -1, maxLat: draft && draft.roads['Faraway Avenue'] ? Math.max(...draft.roads['Faraway Avenue'].flat().map(p => p[0])) : -1 })`);
+ok('J7a (city clip, Beta 1.245) Faraway Avenue crosses the CITY edge: it now resolves LOCALLY as its IN-CITY stretch (' + Math.round(farawayCityLen) + ' m of the whole ' + Math.round(farawayLen) + ' m) - NO top-up fires (the pre-1.245 form burned the top-up\'s whole budget on out-of-city geometry), no stored point lies past the city edge, and the pick is immediate (elapsed ' + fMs + ' ms) | top-ups: ' + farTopups.length + ', got ' + JSON.stringify(S8a),
+  gotFar === true && fMs < 4000 && farTopups.length === 0 && Math.abs(S8a.total - farawayCityLen) <= farawayCityLen * 0.03 && S8a.maxLat <= 43.84501);
 await ev(tapStreet('Farfaraway Avenue'));
-const pendFF = await poll(`crPending['Farfaraway Avenue'] !== undefined`, 20000).catch(() => false);
-const S8b = await J(`({ inDraft: !!(draft && draft.roads['Farfaraway Avenue']), pendRow: (document.getElementById('crPickList').textContent || '').indexOf('PENDING') >= 0, count: document.getElementById('crCount').textContent })`);
-ok('J7b (edge rule, fail-closed) Farfaraway Avenue still reaches past the widened area after its ONE top-up: it stays PENDING - listed as pending, NOT in the draft, NOT in the count | ' + JSON.stringify(S8b),
-  pendFF === true && S8b.inDraft === false && S8b.pendRow && S8b.count.indexOf('Faraway') < 0);
-const S8c0 = await J(`({ btn: document.getElementById('crHintBtn').textContent, btnOn: document.getElementById('crHintBtn').style.display !== 'none' })`);
-await ev(`document.getElementById('crHintBtn').click()`); // Prepare wider area - around the street's open end; the landing box SWEEPS the pending street complete (its other end is verified by a city cell)
-const sweptFF = await poll(`typeof draft !== 'undefined' && draft && !!draft.roads['Farfaraway Avenue']`, 25000).catch(() => false);
-const S8c = await J(`({ total: draft && draft.roads['Farfaraway Avenue'] ? Math.round(computeStretches(draft.roads)['Farfaraway Avenue'].total) : -1, pend: Object.keys(crPending).length })`);
-ok('J9c (remedy works, CG-PF-09) the pending street offers a working "Prepare wider area" button (' + JSON.stringify(S8c0) + '): the wider preparation lands and the street completes WHOLE (' + Math.round(farfarawayLen) + ' m) by the sweep - pending cleared, no re-tap needed | ' + JSON.stringify(S8c),
-  S8c0.btn === 'Prepare wider area' && S8c0.btnOn && sweptFF === true && Math.abs(S8c.total - farfarawayLen) <= farfarawayLen * 0.03 && S8c.pend === 0);
+const gotFF = await poll(`typeof draft !== 'undefined' && draft && !!draft.roads['Farfaraway Avenue']`, 20000).catch(() => false);
+const S8b = await J(`({ inDraft: !!(draft && draft.roads['Farfaraway Avenue']), pend: crPending['Farfaraway Avenue'] !== undefined, total: draft && draft.roads['Farfaraway Avenue'] ? Math.round(computeStretches(draft.roads)['Farfaraway Avenue'].total) : -1 })`);
+const ffTopups = nameBodies(await geoSince(gcS8), 'Farfaraway Avenue');
+ok('J7b (city clip, Beta 1.245) Farfaraway Avenue - the pre-1.245 PENDING case, whose far end outran even its top-up - now joins at once as its IN-CITY stretch (' + Math.round(farfarawayCityLen) + ' m): in the draft, NOT pending, NO top-up | top-ups: ' + ffTopups.length + ', got ' + JSON.stringify(S8b),
+  gotFF === true && S8b.inDraft === true && S8b.pend === false && ffTopups.length === 0 && Math.abs(S8b.total - farfarawayCityLen) <= farfarawayCityLen * 0.03);
 await ev(tapStreet('Edgewater Avenue'));
 const gotEdge2 = await poll(`typeof draft !== 'undefined' && draft && !!draft.roads['Edgewater Avenue']`, 15000).catch(() => false);
 const S8d = await J(`({ total: draft && draft.roads['Edgewater Avenue'] ? Math.round(computeStretches(draft.roads)['Edgewater Avenue'].total) : -1 })`);
 ok('J7c (whole-city contrast) Edgewater Avenue - the OLD box design\'s edge case, completed only by a top-up - now resolves LOCALLY from the city extract (' + Math.round(edgewaterLen) + ' m), no top-up at all | ' + JSON.stringify(S8d),
   gotEdge2 === true && Math.abs(S8d.total - edgewaterLen) <= edgewaterLen * 0.03);
 await jExitDiscard();
-// S9: the top-up-after-exit race
+// S8b: the clip's fail-closed seam (Beta 1.245) - Gapwater Avenue crosses the city edge, but its IN-CITY end sits in the grid's south-east cell, which the stub holds back (__jHoldSE): at tap time that end is genuinely unproven, so the clip cannot certify the street - the ONE top-up still fires (its slow answer accepted, CG-PF-07), the street still PENDS, and the wider preparation's sweep completes it as its in-city stretch.
+await ev(`window.__jHoldSE = true; window.__jHoldMs = 12000`);
 await jEnter();
-await poll(`crPrepState === 'ready'`, 20000);
+const partialGap = await poll(`crCov && crCov.boxes.length >= 2 && crPrepState !== 'ready'`, 20000).catch(() => false);
+const gcS8b = await geoCount();
+await ev(`window.__savedTopup = [CR_TIMING.topupBudgetMs, CR_TIMING.topupAttempt1Ms]; CR_TIMING.topupBudgetMs = 9000; CR_TIMING.topupAttempt1Ms = 6000; window.__jDelayMs = 4500`); // scaled 10x via the seam (restructure, 2026-11-09): delay 4.5 s = 75% of the 6 s top-up attempt cap inside a 9 s top-up budget - the full-size form is 45 s / 60 s / 90 s, pinned statically by J0
+const gt0 = Date.now();
+await ev(tapStreet('Gapwater Avenue'));
+const pendGap = await poll(`crPending['Gapwater Avenue'] !== undefined`, 20000).catch(() => false);
+const gMs = Date.now() - gt0;
+await ev(`window.__jDelayMs = 0; CR_TIMING.topupBudgetMs = window.__savedTopup[0]; CR_TIMING.topupAttempt1Ms = window.__savedTopup[1]`);
+const S8blog = await geoSince(gcS8b);
+const gapTopups = nameBodies(S8blog, 'Gapwater Avenue');
+const S8e = await J(`({ inDraft: !!(draft && draft.roads['Gapwater Avenue']), pendRow: (document.getElementById('crPickList').textContent || '').indexOf('PENDING') >= 0, count: document.getElementById('crCount').textContent })`);
+ok('J7d (city clip fail-closed + CG-PF-07, scaled 10x via CR_TIMING - J0 pins the real caps) Gapwater Avenue crosses the city edge, but its IN-CITY end is unproven (the south-east cell has not landed): the clip does NOT certify it - ONE targeted top-up fires with the correct grammar (way["name"="Gapwater Avenue"]), its primary answer landing at 75% of the top-up attempt cap (4.5 s of 6 s; full-size 45 s of 60 s) is ACCEPTED (elapsed ' + gMs + ' ms - the verified build\'s 40 s top-up cap killed exactly this), and the street still stays PENDING - listed as pending, NOT in the draft, NOT in the count | partial coverage at tap: ' + partialGap + ', top-ups: ' + gapTopups.length + ', got ' + JSON.stringify(S8e),
+  partialGap === true && pendGap === true && gMs >= 4400 && gapTopups.length === 1 && S8e.inDraft === false && S8e.pendRow && S8e.count.indexOf('Gapwater') < 0);
+await poll(`crPrepState === 'ready'`, 25000).catch(() => false); // the held cell lands and the preparation settles first: while it is still landing, the hint button is the LOAD's Cancel, not the remedy - and a grid landing does not sweep pending streets, so Gapwater is still pending, with the remedy now on the button
+const S8f0 = await J(`({ btn: document.getElementById('crHintBtn').textContent, btnOn: document.getElementById('crHintBtn').style.display !== 'none' })`);
+await ev(`document.getElementById('crHintBtn').click()`); // Prepare wider area - around the street's open end; the landing box SWEEPS the pending street complete (Beta 1.245: as its in-city stretch - its in-city end is verified by the top-up's own committed box, its other end is the city edge itself)
+const sweptGap = await poll(`typeof draft !== 'undefined' && draft && !!draft.roads['Gapwater Avenue']`, 25000).catch(() => false);
+const S8f = await J(`({ total: draft && draft.roads['Gapwater Avenue'] ? Math.round(computeStretches(draft.roads)['Gapwater Avenue'].total) : -1, pend: Object.keys(crPending).length })`);
+ok('J9c (remedy works, CG-PF-09; Beta 1.245 form) the pending street offers a working "Prepare wider area" button (' + JSON.stringify(S8f0) + '): the wider preparation lands and the street completes by the sweep as its IN-CITY stretch (' + Math.round(gapwaterCityLen) + ' m) - pending cleared, no re-tap needed | ' + JSON.stringify(S8f),
+  S8f0.btn === 'Prepare wider area' && S8f0.btnOn && sweptGap === true && Math.abs(S8f.total - gapwaterCityLen) <= gapwaterCityLen * 0.03 && S8f.pend === 0);
+await ev(`window.__jHoldSE = false`);
+await jExitDiscard();
+// S9: the top-up-after-exit race (Beta 1.245: the tapping street is Gapwater Avenue - Faraway resolves locally now; Gapwater's held cell makes its top-up genuinely fire)
+await ev(`window.__jHoldSE = true; window.__jHoldMs = 12000`);
+await jEnter();
+await poll(`crCov && crCov.boxes.length >= 2 && crPrepState !== 'ready'`, 20000).catch(() => false);
 await ev(`window.__jDelayMs = 2500`);
-await ev(tapStreet('Faraway Avenue')); // edge street: its top-up is now in flight
+await ev(tapStreet('Gapwater Avenue')); // its in-city end is unproven: the top-up is now in flight
 await sleep(300);
 await ev(`exitCreate()`);
 await sleep(3200); // the top-up completes into a closed session
-await ev(`window.__jDelayMs = 0`);
+await ev(`window.__jDelayMs = 0; window.__jHoldSE = false`);
 await ev(`openRouteMenu()`);
 await ev(`document.getElementById('rmCreate').click()`);
 await ev(`document.getElementById('crDoorManual').click()`);
@@ -767,8 +807,43 @@ await jExitDiscard();
 const ADV = await ev(`(() => { const els = [
   { type: 'way', id: 1, tags: { name: 'Main Road' }, geometry: [{ lat: 0.5, lon: 0.5 }, { lat: 0.5, lon: 2 }] },
   { type: 'way', id: 2, tags: { name: 'Cross Road' }, geometry: [{ lat: 0.6, lon: 0.6 }, { lat: 0.5, lon: 2 }] }
-]; const keep = crCov; crCov = crCovFromWays(crIndexWays(els, {}), [{ s: 0, w: 0, n: 1, e: 1 }]); const r = crResolve('Main Road', { lat: 0.5, lng: 0.75 }); crCov = keep; return r.status; })()`);
+]; const keep = crCov, keepCity = crCity; crCity = null; crCov = crCovFromWays(crIndexWays(els, {}), [{ s: 0, w: 0, n: 1, e: 1 }]); const r = crResolve('Main Road', { lat: 0.5, lng: 0.75 }); crCov = keep; crCity = keepCity; return r.status; })()`);
 ok('J8b (adversarial junction, CG-PF-08) a cross street touching an out-of-coverage endpoint does NOT certify the street complete: resolve returns edge, not ok | got ' + ADV, ADV === 'edge');
+// S10b: the city clip at the resolver (Beta 1.245) - the same Gapwater line twice: its in-city end outside verified coverage (edge, the clip does not certify it) and covered (ok, the one stitched in-city line). crCity is SET here - the clip is the subject - where J8b above nulls it to isolate the junction rule.
+const CLIP = await ev(`(() => { const els = [
+  { type: 'way', id: 7, tags: { name: 'Gapwater Avenue' }, geometry: [{ lat: 43.8120, lon: -79.5400 }, { lat: 43.8380, lon: -79.5400 }, { lat: 43.8750, lon: -79.5400 }] }
+]; const keepCov = crCov, keepCity = crCity;
+  crCity = { name: 'Fixture', bbox: { s: 43.785, w: -79.610, n: 43.845, e: -79.5105 } };
+  const NE = { s: 43.82093, w: -79.56024, n: 43.845, e: -79.5105 }, SE = { s: 43.785, w: -79.56024, n: 43.82093, e: -79.5105 };
+  crCov = crCovFromWays(crIndexWays(els, {}), [NE]);
+  const unproven = crResolve('Gapwater Avenue', { lat: 43.8300, lng: -79.5400 });
+  crCov = crCovFromWays(crIndexWays(els, {}), [NE, SE]);
+  const proven = crResolve('Gapwater Avenue', { lat: 43.8300, lng: -79.5400 });
+  crCov = keepCov; crCity = keepCity;
+  const lineLen = line => { let s = 0; for (let i = 1; i < line.length; i++) s += distM(line[i - 1], line[i]); return s; };
+  return { unproven: unproven.status, proven: proven.status, segs: proven.segs ? proven.segs.length : -1,
+    metres: proven.segs ? Math.round(proven.segs.reduce((a, g) => a + lineLen(g), 0)) : -1,
+    maxLat: proven.segs ? Math.max(...proven.segs.flat().map(p => p[0])) : -1,
+    minLat: proven.segs ? Math.min(...proven.segs.flat().map(p => p[0])) : -1 };
+})()`);
+ok('J8c (city clip, fail-closed - Beta 1.245) with the working city in force, a run crossing the city edge whose IN-CITY end lies outside verified coverage is NOT certified by the clip: resolve returns edge, not ok | got ' + CLIP.unproven, CLIP.unproven === 'edge');
+ok('J8d (city clip - Beta 1.245) the same run with its in-city end covered resolves ok as the ONE stitched in-city line: no point past the city edge, its length the in-city stretch (' + Math.round(gapwaterCityLen) + ' m) | got ' + JSON.stringify(CLIP),
+  CLIP.proven === 'ok' && CLIP.segs === 1 && Math.abs(CLIP.metres - gapwaterCityLen) <= gapwaterCityLen * 0.03 && CLIP.maxLat <= 43.84501 && CLIP.minLat >= 43.81199);
+// S10c: the clip's piece choice (the PR #128 Codex catch) - a run that leaves the city and comes back: the tap sits ON the second piece's long segment, while the FIRST piece holds the vertex nearest the tap. The piece must be chosen by distance to its segments, or the tap selects the wrong stretch (the real case: Aurora's Chambers Crescent returned its ~20 m piece instead of the ~398 m piece containing the tap).
+const REENTER = await ev(`(() => { const els = [
+  { type: 'way', id: 9, tags: { name: 'Reenter Road' }, geometry: [{ lat: 43.8200, lon: -79.5600 }, { lat: 43.8205, lon: -79.5600 }, { lat: 43.8600, lon: -79.5600 }, { lat: 43.8430, lon: -79.5595 }, { lat: 43.8190, lon: -79.5595 }] }
+]; const keepCov = crCov, keepCity = crCity;
+  crCity = { name: 'Fixture', bbox: { s: 43.785, w: -79.610, n: 43.845, e: -79.5105 } };
+  crCov = crCovFromWays(crIndexWays(els, {}), [{ s: 43.785, w: -79.610, n: 43.845, e: -79.5105 }]);
+  const r = crResolve('Reenter Road', { lat: 43.8202, lng: -79.5595 });
+  crCov = keepCov; crCity = keepCity;
+  const lineLen = line => { let s = 0; for (let i = 1; i < line.length; i++) s += distM(line[i - 1], line[i]); return s; };
+  return { status: r.status, segs: r.segs ? r.segs.length : -1,
+    metres: r.segs ? Math.round(r.segs.reduce((a, g) => a + lineLen(g), 0)) : -1,
+    minLng: r.segs ? Math.min(...r.segs.flat().map(p => p[1])) : -1 };
+})()`);
+ok('J8e (city clip piece choice - Beta 1.245, the PR #128 Codex catch) a run that exits the city and re-enters resolves to the piece the TAP\'s segment belongs to (the -79.5595 piece, ~2,894 m), not the piece holding the nearest vertex (the -79.5600 piece) | got ' + JSON.stringify(REENTER),
+  REENTER.status === 'ok' && REENTER.segs === 1 && REENTER.minLng >= -79.5599 && Math.abs(REENTER.metres - 2894) <= 2894 * 0.03);
 // S11: the fallback box - and its dense remedy
 // Beta 1.229 PREMISE UPDATE: through 1.228 this section entered through the
 // name-only city the 'Use <city>' button's failed lookup left behind (a crCity

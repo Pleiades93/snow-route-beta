@@ -80,8 +80,8 @@ check('18: the seats keep their own extras (exitCreate still clears the field; t
   pick.includes("$('crSearchInput').value = ''; crSyncClear();") && pick.includes("crSyncClear(); $('crSearchInput').focus();"));
 
 // ---------- the frame ----------
-check('19: What\'s New carries the CURRENT entry\'s bullet (rolled to 1.244: this check tracks the current entry each round; and stays em-dash free)',
-  whatsnew.includes('same black as the bottom bar') && !whatsnew.includes('—'));
+check('19: What\'s New carries the CURRENT entry\'s bullet (rolled to 1.245: this check tracks the current entry each round; and stays em-dash free)',
+  whatsnew.includes('selects just its stretch in your city') && !whatsnew.includes('—'));
 check('20: the CHANGELOG order stands (1.243 above 1.242; the 1.244 entry rides above both - proof-1244 pins the top)',
   changelog.indexOf('## Beta 1.243') > -1 && changelog.indexOf('## Beta 1.243') < changelog.indexOf('## Beta 1.242'));
 
