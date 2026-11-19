@@ -131,11 +131,10 @@ check('F: the PNG favicon links stand behind it', head.includes('<link rel="icon
 // 1.215 by the selcard-width-262 round, then to Beta 1.216 by the
 // create-glow-casing-fix round, all 2026-11-16, TEST class.
 // The icon sections above are this proof's durable property and are
-// untouched.)
-console.log('V - version surfaces agree');
-const app4 = readFileSync('parts/app4.js', 'utf8');
-check('V: the #ver label reads Beta 1.238', head.includes('<div class="ver" id="ver">Beta 1.238</div>'));
-check('V: WHATSNEW is the Beta 1.238 entry', app4.includes("v: 'Beta 1.238', items:"));
+// untouched. Arch-1, 2026-11-18: the two pins are REMOVED - the
+// CHANGELOG top is the version's one home now, the assembler stamps
+// it into the label and the entry, and build-pages.py enforces the
+// agreement on every build; the pins only duplicated the gate.)
 
 console.log(pass + ' pass, ' + fail + ' fail');
 process.exit(fail === 0 ? 0 : 1);

@@ -42,10 +42,6 @@ check('5: the sheet rule stands byte-identical to 1.236 (geometry, radius, shado
 check('6: the citySheet step-aside rule stands', head.includes('#routeMenu.citySheet { background: transparent; }'));
 check('7: the snow canvas .away rule stands (opacity 0 - the exemption is the toggle, not the rule)', head.includes('#snowCv.away { opacity: 0; }'));
 
-// ---------- V: version agreement ----------
-check('V: the #ver label reads Beta 1.238', head.includes('<div class="ver" id="ver">Beta 1.238</div>'));
-check('V: WHATSNEW is the Beta 1.238 entry', app4.includes("v: 'Beta 1.238', items:"));
-check('V: the CHANGELOG top entry is Beta 1.238', changelog.split('\n').find(l => l.startsWith('## Beta')) === '## Beta 1.238 — 2026-11-18');
 
 console.log(`proof-1238: ${pass} pass, ${fail} fail`);
 process.exit(fail === 0 ? 0 : 1);

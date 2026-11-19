@@ -74,7 +74,8 @@
    "paths": [
     "parts/app2.js",
     "parts/app3.js",
-    "parts/app4.js"
+    "parts/app4.js",
+    "parts/app5.js"
    ]
   }
  },
@@ -103,7 +104,8 @@
  "tier_a_paths": [
   "docs/",
   "assets/",
-  "manifest.json"
+  "manifest.json",
+  "parts/whatsnew.js"
  ],
  "tier_a_suffixes": [
   ".md"

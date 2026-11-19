@@ -21,6 +21,7 @@ const head = read('parts/head.html');
 const app1 = read('parts/app1.js');
 const app2 = read('parts/app2.js');
 const app4 = read('parts/app4.js');
+const app5 = read('parts/app5.js'); // Arch-1: app4's tail (everything after the What's New entry) lives in this part now
 const manifest = read('manifest.json');
 const changelog = read('CHANGELOG.md');
 
@@ -56,15 +57,11 @@ check('3l (rule 6, Codex P2 on PR #110): a sustained recovery or agreement verdi
 
 // ---------- 4: the Android fit ----------
 check('4a: the Android document claims the largest viewport height', rule('html.android {').includes('min-height: 100lvh;'));
-check('4b: syncViewport carries the Android anchor behind the gate', app4.includes('if (DP_ANDROID && !kb && inStandalone() && fullH > h && window.innerHeight >= fullH - 2)'));
-check('4c: the anchor publishes the settled height and the matching bottom strip', app4.includes("de.style.setProperty('--vvh', fullH + 'px'); de.style.setProperty('--vvb', Math.max(0, window.innerHeight - t - fullH) + 'px');"));
+check('4b: syncViewport carries the Android anchor behind the gate', app5.includes('if (DP_ANDROID && !kb && inStandalone() && fullH > h && window.innerHeight >= fullH - 2)'));
+check('4c: the anchor publishes the settled height and the matching bottom strip', app5.includes("de.style.setProperty('--vvh', fullH + 'px'); de.style.setProperty('--vvb', Math.max(0, window.innerHeight - t - fullH) + 'px');"));
 check('4d: the manifest theme_color is the app blue, matching the meta', manifest.includes('"theme_color": "#2c4ad2"') && head.includes('<meta name="theme-color" content="#2c4ad2">'));
-check('4e (Codex P2 on PR #110): the anchor is bound to the current window - it stands in only while the window spans the settled height', app4.includes('fullH > h && window.innerHeight >= fullH - 2') && app4.includes("BOUND (Codex P2, PR #110): the anchor stands in only while the window itself still spans the settled height"));
+check('4e (Codex P2 on PR #110): the anchor is bound to the current window - it stands in only while the window spans the settled height', app5.includes('fullH > h && window.innerHeight >= fullH - 2') && app5.includes("BOUND (Codex P2, PR #110): the anchor stands in only while the window itself still spans the settled height"));
 
-// ---------- Version agreement ----------
-check('V: the #ver label reads Beta 1.238', head.includes('<div class="ver" id="ver">Beta 1.238</div>'));
-check('V: WHATSNEW is the Beta 1.238 entry (its one short bullet)', app4.includes("v: 'Beta 1.238', items: [\"Fixed: on a cold open the Select City sheet sits over the falling snow, like it does over the map.\"]"));
-check('V: the CHANGELOG top entry is Beta 1.230', changelog.split('\n').find(l => l.startsWith('## Beta')) === '## Beta 1.238 — 2026-11-18');
 
 console.log(`proof-1230: ${pass} passed, ${fail} failed`);
 process.exit(fail ? 1 : 0);

@@ -11,10 +11,10 @@ GENERATED file: never hand-edit it; edit the part and re-run this script.
 
 Recipe (byte-exact, the standing assembly since Beta 1.0's first build):
 head.html, then '<script>', then data.js, app1.js, engine.js, pmstyles.js,
-app2.js, app3.js, app4.js, create-cache.js, create-citydata.js,
-create-fetch.js, create-packs.js, create-pick.js, create-save.js,
-brand-snow.js, then '</script></body></html>'. (The PARTS list below is the
-operative enumeration.)
+app2.js, app3.js, app4.js, whatsnew.js, app5.js, create-cache.js,
+create-citydata.js, create-fetch.js, create-packs.js, create-pick.js,
+create-save.js, brand-snow.js, then '</script></body></html>'. (The PARTS
+list below is the operative enumeration.)
 
 Split (Beta 1.134, maintainability programme B): app4.js used to carry
 both the system code (backup, Settings, boot) and the whole create flow.
@@ -41,25 +41,61 @@ snow) on a transparent background. Through Beta 1.212 it was the
 foreground rendering (web/icons/foreground-transparent-512.png),
 already 512x512 as shipped. icon-512.png remains the PWA / manifest icon; it is no
 longer the splash source.
+
+Release stamp (Arch-1, 2026-11-18): the version number lives in exactly
+one place - the CHANGELOG.md top entry (`## Beta X.Y`). head.html
+carries the placeholder token @@VERSION@@ in the #ver label and
+parts/whatsnew.js carries it in WHATSNEW.v; build() stamps the
+CHANGELOG-derived version into both at assembly time, the same
+placeholder pattern as the splash artwork above. Before this round the
+number was hand-written in three source places and pinned as a literal
+in about twenty proof files; build-pages.py already enforced the
+three-way agreement on every build, so the pins only duplicated the
+gate and rolled with every release.
+
+Split (Arch-1): app4.js used to carry the What's New entry mid-file.
+The entry now lives in its own data part, parts/whatsnew.js, assembled
+at exactly the byte position it occupied inside app4.js; the code that
+followed it in app4.js (the About render, the press gate, theme and
+home view, service-worker and boot wiring, pack migration, viewport
+and keyboard handling, route switch/delete, the boot tail) is
+parts/app5.js, assembled immediately after. The shipped script's bytes
+and order are unchanged by the split.
 """
 import base64
 import hashlib
 import pathlib
+import re
 import sys
 
 ROOT = pathlib.Path(__file__).resolve().parent.parent
 PARTS = ["head.html", "data.js", "app1.js", "engine.js", "pmstyles.js",
-         "app2.js", "app3.js", "app4.js", "create-packs.js",
-         "create-fetch.js", "create-citydata.js", "create-cache.js",
-         "create-pick.js", "create-save.js", "brand-snow.js"]
+         "app2.js", "app3.js", "app4.js", "whatsnew.js", "app5.js",
+         "create-packs.js", "create-fetch.js", "create-citydata.js",
+         "create-cache.js", "create-pick.js", "create-save.js",
+         "brand-snow.js"]
 OUT = ROOT / "src" / "tracker-source.html"
 
 
 SPLASH_TOKEN = b"@@SPLASH_ARTWORK_512_B64@@"
 ICON = ROOT / "splash-artwork-512.png"
 
+VERSION_TOKEN = b"@@VERSION@@"
+CHANGELOG = ROOT / "CHANGELOG.md"
+
+
+def release_version() -> bytes:
+    """The one home of the version number: the CHANGELOG top entry."""
+    m = re.search(r"## Beta (\d+\.\d+)",
+                  CHANGELOG.read_text(encoding="utf-8"))
+    if not m:
+        raise SystemExit("assemble: CHANGELOG.md has no '## Beta X.Y' "
+                         "entry - the release stamp has no source")
+    return ("Beta " + m.group(1)).encode()
+
 
 def build() -> bytes:
+    version = release_version()
     chunks = []
     for name in PARTS:
         p = ROOT / "parts" / name
@@ -76,6 +112,21 @@ def build() -> bytes:
                 raise SystemExit(f"assemble: missing splash icon {ICON}")
             data = data.replace(SPLASH_TOKEN,
                                 base64.b64encode(ICON.read_bytes()))
+            if data.count(VERSION_TOKEN) != 1:
+                raise SystemExit(
+                    "assemble: parts/head.html must carry the version "
+                    "placeholder token exactly once in the #ver label "
+                    "(the release stamp is inlined from CHANGELOG.md at "
+                    "assembly time)")
+            data = data.replace(VERSION_TOKEN, version)
+        if name == "whatsnew.js":
+            if data.count(VERSION_TOKEN) != 1:
+                raise SystemExit(
+                    "assemble: parts/whatsnew.js must carry the version "
+                    "placeholder token exactly once in WHATSNEW.v (the "
+                    "release stamp is inlined from CHANGELOG.md at "
+                    "assembly time)")
+            data = data.replace(VERSION_TOKEN, version)
         chunks.append(data)
         if name == "head.html":
             chunks.append(b"<script>\n")

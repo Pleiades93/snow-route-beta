@@ -1,410 +1,421 @@
 {
- "rule": "Universe: parts/app1.js, app2.js, app3.js, app4.js, create-packs.js, create-fetch.js, create-citydata.js, create-cache.js, create-pick.js, create-save.js, engine.js (data.js and pmstyles.js excluded - data/generated). Owner = the part file holding a binding's top-level declaration, except the six create-*.js files form ONE owner group labelled create.js (the historical part name): a binding declared in any create-*.js file is owned by that group, and a write is foreign iff the target's owner group differs from the writing file's owner group; site records keep the concrete file holding the write. A FOREIGN WRITE is an assignment/update expression (=, +=, -=, *=, /=, %=, **=, ++, -- prefix or postfix) whose target is a bare identifier (not a member expression; a declaration initializer never counts) resolving through lexical scope to a top-level binding owned by a different part file or owner group. Comments/strings/templates masked (interpolations are code); scopes tracked by braces with their declarations (function/arrow/catch params, let/const/var at any depth, function declarations). Destructuring assignment targets count per bound identifier; for (x of ...) with a bare identifier assigns.",
- "universe": [
-  "app1.js",
-  "app2.js",
-  "app3.js",
-  "app4.js",
-  "create-packs.js",
-  "create-fetch.js",
-  "create-citydata.js",
-  "create-cache.js",
-  "create-pick.js",
-  "create-save.js",
-  "engine.js"
- ],
- "totals": {
-  "expressions": 57,
-  "lines": 24,
-  "byFile": {
-   "app1.js": {
-    "expressions": 3,
-    "lines": 2
-   },
-   "app2.js": {
-    "expressions": 0,
-    "lines": 0
-   },
-   "app3.js": {
-    "expressions": 31,
-    "lines": 12
-   },
-   "app4.js": {
-    "expressions": 22,
-    "lines": 9
-   },
-   "create-packs.js": {
-    "expressions": 0,
-    "lines": 0
-   },
-   "create-fetch.js": {
-    "expressions": 0,
-    "lines": 0
-   },
-   "create-citydata.js": {
-    "expressions": 0,
-    "lines": 0
-   },
-   "create-cache.js": {
-    "expressions": 0,
-    "lines": 0
-   },
-   "create-pick.js": {
-    "expressions": 1,
-    "lines": 1
-   },
-   "create-save.js": {
-    "expressions": 0,
-    "lines": 0
-   },
-   "engine.js": {
-    "expressions": 0,
-    "lines": 0
-   }
-  }
- },
- "sites": [
-  {
-   "file": "app1.js",
-   "line": 477,
-   "name": "routeBox",
-   "owner": "app2.js"
+  "rule": "Universe: parts/app1.js, app2.js, app3.js, app4.js, app5.js, create-packs.js, create-fetch.js, create-citydata.js, create-cache.js, create-pick.js, create-save.js, engine.js (data.js, whatsnew.js and pmstyles.js excluded - data/generated). Owner = the part file holding a binding's top-level declaration, except the six create-*.js files form ONE owner group labelled create.js (the historical part name): a binding declared in any create-*.js file is owned by that group, and a write is foreign iff the target's owner group differs from the writing file's owner group; site records keep the concrete file holding the write. A FOREIGN WRITE is an assignment/update expression (=, +=, -=, *=, /=, %=, **=, ++, -- prefix or postfix) whose target is a bare identifier (not a member expression; a declaration initializer never counts) resolving through lexical scope to a top-level binding owned by a different part file or owner group. Comments/strings/templates masked (interpolations are code); scopes tracked by braces with their declarations (function/arrow/catch params, let/const/var at any depth, function declarations). Destructuring assignment targets count per bound identifier; for (x of ...) with a bare identifier assigns.",
+  "universe": [
+    "app1.js",
+    "app2.js",
+    "app3.js",
+    "app4.js",
+    "app5.js",
+    "create-packs.js",
+    "create-fetch.js",
+    "create-citydata.js",
+    "create-cache.js",
+    "create-pick.js",
+    "create-save.js",
+    "engine.js"
+  ],
+  "totals": {
+    "expressions": 58,
+    "lines": 25,
+    "byFile": {
+      "app1.js": {
+        "expressions": 3,
+        "lines": 2
+      },
+      "app2.js": {
+        "expressions": 0,
+        "lines": 0
+      },
+      "app3.js": {
+        "expressions": 31,
+        "lines": 12
+      },
+      "app4.js": {
+        "expressions": 6,
+        "lines": 5
+      },
+      "app5.js": {
+        "expressions": 17,
+        "lines": 5
+      },
+      "create-packs.js": {
+        "expressions": 0,
+        "lines": 0
+      },
+      "create-fetch.js": {
+        "expressions": 0,
+        "lines": 0
+      },
+      "create-citydata.js": {
+        "expressions": 0,
+        "lines": 0
+      },
+      "create-cache.js": {
+        "expressions": 0,
+        "lines": 0
+      },
+      "create-pick.js": {
+        "expressions": 1,
+        "lines": 1
+      },
+      "create-save.js": {
+        "expressions": 0,
+        "lines": 0
+      },
+      "engine.js": {
+        "expressions": 0,
+        "lines": 0
+      }
+    }
   },
-  {
-   "file": "app1.js",
-   "line": 620,
-   "name": "sugQueue",
-   "owner": "app3.js"
-  },
-  {
-   "file": "app1.js",
-   "line": 620,
-   "name": "suggested",
-   "owner": "app3.js"
-  },
-  {
-   "file": "app3.js",
-   "line": 315,
-   "name": "runStart",
-   "owner": "app1.js"
-  },
-  {
-   "file": "app3.js",
-   "line": 315,
-   "name": "trail",
-   "owner": "app1.js"
-  },
-  {
-   "file": "app3.js",
-   "line": 325,
-   "name": "trail",
-   "owner": "app1.js"
-  },
-  {
-   "file": "app3.js",
-   "line": 326,
-   "name": "trailSessions",
-   "owner": "app1.js"
-  },
-  {
-   "file": "app3.js",
-   "line": 327,
-   "name": "coveredIdx",
-   "owner": "app1.js"
-  },
-  {
-   "file": "app3.js",
-   "line": 327,
-   "name": "doneSet",
-   "owner": "app1.js"
-  },
-  {
-   "file": "app3.js",
-   "line": 327,
-   "name": "doneTimes",
-   "owner": "app1.js"
-  },
-  {
-   "file": "app3.js",
-   "line": 327,
-   "name": "doneVia",
-   "owner": "app1.js"
-  },
-  {
-   "file": "app3.js",
-   "line": 327,
-   "name": "pieceTimes",
-   "owner": "app1.js"
-  },
-  {
-   "file": "app3.js",
-   "line": 327,
-   "name": "pieces",
-   "owner": "app1.js"
-  },
-  {
-   "file": "app3.js",
-   "line": 331,
-   "name": "coveredIdx",
-   "owner": "app1.js"
-  },
-  {
-   "file": "app3.js",
-   "line": 331,
-   "name": "doneSet",
-   "owner": "app1.js"
-  },
-  {
-   "file": "app3.js",
-   "line": 331,
-   "name": "doneTimes",
-   "owner": "app1.js"
-  },
-  {
-   "file": "app3.js",
-   "line": 331,
-   "name": "doneVia",
-   "owner": "app1.js"
-  },
-  {
-   "file": "app3.js",
-   "line": 331,
-   "name": "pieceTimes",
-   "owner": "app1.js"
-  },
-  {
-   "file": "app3.js",
-   "line": 331,
-   "name": "pieces",
-   "owner": "app1.js"
-  },
-  {
-   "file": "app3.js",
-   "line": 335,
-   "name": "doneSet",
-   "owner": "app1.js"
-  },
-  {
-   "file": "app3.js",
-   "line": 338,
-   "name": "coveredIdx",
-   "owner": "app1.js"
-  },
-  {
-   "file": "app3.js",
-   "line": 345,
-   "name": "runStart",
-   "owner": "app1.js"
-  },
-  {
-   "file": "app3.js",
-   "line": 364,
-   "name": "coveredIdx",
-   "owner": "app1.js"
-  },
-  {
-   "file": "app3.js",
-   "line": 364,
-   "name": "doneSet",
-   "owner": "app1.js"
-  },
-  {
-   "file": "app3.js",
-   "line": 364,
-   "name": "doneTimes",
-   "owner": "app1.js"
-  },
-  {
-   "file": "app3.js",
-   "line": 364,
-   "name": "doneVia",
-   "owner": "app1.js"
-  },
-  {
-   "file": "app3.js",
-   "line": 506,
-   "name": "trail",
-   "owner": "app1.js"
-  },
-  {
-   "file": "app3.js",
-   "line": 507,
-   "name": "history",
-   "owner": "app1.js"
-  },
-  {
-   "file": "app3.js",
-   "line": 508,
-   "name": "coveredIdx",
-   "owner": "app1.js"
-  },
-  {
-   "file": "app3.js",
-   "line": 508,
-   "name": "doneSet",
-   "owner": "app1.js"
-  },
-  {
-   "file": "app3.js",
-   "line": 508,
-   "name": "doneTimes",
-   "owner": "app1.js"
-  },
-  {
-   "file": "app3.js",
-   "line": 508,
-   "name": "doneVia",
-   "owner": "app1.js"
-  },
-  {
-   "file": "app3.js",
-   "line": 508,
-   "name": "notes",
-   "owner": "app1.js"
-  },
-  {
-   "file": "app3.js",
-   "line": 508,
-   "name": "runStart",
-   "owner": "app1.js"
-  },
-  {
-   "file": "app4.js",
-   "line": 168,
-   "name": "trail",
-   "owner": "app1.js"
-  },
-  {
-   "file": "app4.js",
-   "line": 168,
-   "name": "trailSessions",
-   "owner": "app1.js"
-  },
-  {
-   "file": "app4.js",
-   "line": 172,
-   "name": "lastTrailSave",
-   "owner": "app1.js"
-  },
-  {
-   "file": "app4.js",
-   "line": 349,
-   "name": "restoring",
-   "owner": "app1.js"
-  },
-  {
-   "file": "app4.js",
-   "line": 350,
-   "name": "restoring",
-   "owner": "app1.js"
-  },
-  {
-   "file": "app4.js",
-   "line": 387,
-   "name": "restoring",
-   "owner": "app1.js"
-  },
-  {
-   "file": "app4.js",
-   "line": 1308,
-   "name": "activeRoute",
-   "owner": "app1.js"
-  },
-  {
-   "file": "app4.js",
-   "line": 1308,
-   "name": "routeLoaded",
-   "owner": "app1.js"
-  },
-  {
-   "file": "app4.js",
-   "line": 1328,
-   "name": "coveredIdx",
-   "owner": "app1.js"
-  },
-  {
-   "file": "app4.js",
-   "line": 1328,
-   "name": "doneSet",
-   "owner": "app1.js"
-  },
-  {
-   "file": "app4.js",
-   "line": 1328,
-   "name": "doneTimes",
-   "owner": "app1.js"
-  },
-  {
-   "file": "app4.js",
-   "line": 1328,
-   "name": "doneVia",
-   "owner": "app1.js"
-  },
-  {
-   "file": "app4.js",
-   "line": 1328,
-   "name": "history",
-   "owner": "app1.js"
-  },
-  {
-   "file": "app4.js",
-   "line": 1328,
-   "name": "notes",
-   "owner": "app1.js"
-  },
-  {
-   "file": "app4.js",
-   "line": 1328,
-   "name": "pieceTimes",
-   "owner": "app1.js"
-  },
-  {
-   "file": "app4.js",
-   "line": 1328,
-   "name": "pieces",
-   "owner": "app1.js"
-  },
-  {
-   "file": "app4.js",
-   "line": 1328,
-   "name": "runStart",
-   "owner": "app1.js"
-  },
-  {
-   "file": "app4.js",
-   "line": 1328,
-   "name": "trail",
-   "owner": "app1.js"
-  },
-  {
-   "file": "app4.js",
-   "line": 1328,
-   "name": "trailSessions",
-   "owner": "app1.js"
-  },
-  {
-   "file": "app4.js",
-   "line": 1330,
-   "name": "LS",
-   "owner": "app1.js"
-  },
-  {
-   "file": "app4.js",
-   "line": 1331,
-   "name": "activeRoute",
-   "owner": "app1.js"
-  },
-  {
-   "file": "app4.js",
-   "line": 1331,
-   "name": "routeLoaded",
-   "owner": "app1.js"
-  },
-  {
-   "file": "create-pick.js",
-   "line": 1339,
-   "name": "followPaused",
-   "owner": "app3.js"
-  }
- ]
+  "sites": [
+    {
+      "file": "app1.js",
+      "line": 477,
+      "name": "routeBox",
+      "owner": "app2.js"
+    },
+    {
+      "file": "app1.js",
+      "line": 620,
+      "name": "sugQueue",
+      "owner": "app3.js"
+    },
+    {
+      "file": "app1.js",
+      "line": 620,
+      "name": "suggested",
+      "owner": "app3.js"
+    },
+    {
+      "file": "app3.js",
+      "line": 315,
+      "name": "runStart",
+      "owner": "app1.js"
+    },
+    {
+      "file": "app3.js",
+      "line": 315,
+      "name": "trail",
+      "owner": "app1.js"
+    },
+    {
+      "file": "app3.js",
+      "line": 325,
+      "name": "trail",
+      "owner": "app1.js"
+    },
+    {
+      "file": "app3.js",
+      "line": 326,
+      "name": "trailSessions",
+      "owner": "app1.js"
+    },
+    {
+      "file": "app3.js",
+      "line": 327,
+      "name": "coveredIdx",
+      "owner": "app1.js"
+    },
+    {
+      "file": "app3.js",
+      "line": 327,
+      "name": "doneSet",
+      "owner": "app1.js"
+    },
+    {
+      "file": "app3.js",
+      "line": 327,
+      "name": "doneTimes",
+      "owner": "app1.js"
+    },
+    {
+      "file": "app3.js",
+      "line": 327,
+      "name": "doneVia",
+      "owner": "app1.js"
+    },
+    {
+      "file": "app3.js",
+      "line": 327,
+      "name": "pieceTimes",
+      "owner": "app1.js"
+    },
+    {
+      "file": "app3.js",
+      "line": 327,
+      "name": "pieces",
+      "owner": "app1.js"
+    },
+    {
+      "file": "app3.js",
+      "line": 331,
+      "name": "coveredIdx",
+      "owner": "app1.js"
+    },
+    {
+      "file": "app3.js",
+      "line": 331,
+      "name": "doneSet",
+      "owner": "app1.js"
+    },
+    {
+      "file": "app3.js",
+      "line": 331,
+      "name": "doneTimes",
+      "owner": "app1.js"
+    },
+    {
+      "file": "app3.js",
+      "line": 331,
+      "name": "doneVia",
+      "owner": "app1.js"
+    },
+    {
+      "file": "app3.js",
+      "line": 331,
+      "name": "pieceTimes",
+      "owner": "app1.js"
+    },
+    {
+      "file": "app3.js",
+      "line": 331,
+      "name": "pieces",
+      "owner": "app1.js"
+    },
+    {
+      "file": "app3.js",
+      "line": 335,
+      "name": "doneSet",
+      "owner": "app1.js"
+    },
+    {
+      "file": "app3.js",
+      "line": 338,
+      "name": "coveredIdx",
+      "owner": "app1.js"
+    },
+    {
+      "file": "app3.js",
+      "line": 345,
+      "name": "runStart",
+      "owner": "app1.js"
+    },
+    {
+      "file": "app3.js",
+      "line": 364,
+      "name": "coveredIdx",
+      "owner": "app1.js"
+    },
+    {
+      "file": "app3.js",
+      "line": 364,
+      "name": "doneSet",
+      "owner": "app1.js"
+    },
+    {
+      "file": "app3.js",
+      "line": 364,
+      "name": "doneTimes",
+      "owner": "app1.js"
+    },
+    {
+      "file": "app3.js",
+      "line": 364,
+      "name": "doneVia",
+      "owner": "app1.js"
+    },
+    {
+      "file": "app3.js",
+      "line": 506,
+      "name": "trail",
+      "owner": "app1.js"
+    },
+    {
+      "file": "app3.js",
+      "line": 507,
+      "name": "history",
+      "owner": "app1.js"
+    },
+    {
+      "file": "app3.js",
+      "line": 508,
+      "name": "coveredIdx",
+      "owner": "app1.js"
+    },
+    {
+      "file": "app3.js",
+      "line": 508,
+      "name": "doneSet",
+      "owner": "app1.js"
+    },
+    {
+      "file": "app3.js",
+      "line": 508,
+      "name": "doneTimes",
+      "owner": "app1.js"
+    },
+    {
+      "file": "app3.js",
+      "line": 508,
+      "name": "doneVia",
+      "owner": "app1.js"
+    },
+    {
+      "file": "app3.js",
+      "line": 508,
+      "name": "notes",
+      "owner": "app1.js"
+    },
+    {
+      "file": "app3.js",
+      "line": 508,
+      "name": "runStart",
+      "owner": "app1.js"
+    },
+    {
+      "file": "app4.js",
+      "line": 168,
+      "name": "trail",
+      "owner": "app1.js"
+    },
+    {
+      "file": "app4.js",
+      "line": 168,
+      "name": "trailSessions",
+      "owner": "app1.js"
+    },
+    {
+      "file": "app4.js",
+      "line": 172,
+      "name": "lastTrailSave",
+      "owner": "app1.js"
+    },
+    {
+      "file": "app4.js",
+      "line": 349,
+      "name": "restoring",
+      "owner": "app1.js"
+    },
+    {
+      "file": "app4.js",
+      "line": 350,
+      "name": "restoring",
+      "owner": "app1.js"
+    },
+    {
+      "file": "app4.js",
+      "line": 387,
+      "name": "restoring",
+      "owner": "app1.js"
+    },
+    {
+      "file": "app5.js",
+      "line": 116,
+      "name": "storagePersist",
+      "owner": "app4.js"
+    },
+    {
+      "file": "app5.js",
+      "line": 412,
+      "name": "activeRoute",
+      "owner": "app1.js"
+    },
+    {
+      "file": "app5.js",
+      "line": 412,
+      "name": "routeLoaded",
+      "owner": "app1.js"
+    },
+    {
+      "file": "app5.js",
+      "line": 432,
+      "name": "coveredIdx",
+      "owner": "app1.js"
+    },
+    {
+      "file": "app5.js",
+      "line": 432,
+      "name": "doneSet",
+      "owner": "app1.js"
+    },
+    {
+      "file": "app5.js",
+      "line": 432,
+      "name": "doneTimes",
+      "owner": "app1.js"
+    },
+    {
+      "file": "app5.js",
+      "line": 432,
+      "name": "doneVia",
+      "owner": "app1.js"
+    },
+    {
+      "file": "app5.js",
+      "line": 432,
+      "name": "history",
+      "owner": "app1.js"
+    },
+    {
+      "file": "app5.js",
+      "line": 432,
+      "name": "notes",
+      "owner": "app1.js"
+    },
+    {
+      "file": "app5.js",
+      "line": 432,
+      "name": "pieceTimes",
+      "owner": "app1.js"
+    },
+    {
+      "file": "app5.js",
+      "line": 432,
+      "name": "pieces",
+      "owner": "app1.js"
+    },
+    {
+      "file": "app5.js",
+      "line": 432,
+      "name": "runStart",
+      "owner": "app1.js"
+    },
+    {
+      "file": "app5.js",
+      "line": 432,
+      "name": "trail",
+      "owner": "app1.js"
+    },
+    {
+      "file": "app5.js",
+      "line": 432,
+      "name": "trailSessions",
+      "owner": "app1.js"
+    },
+    {
+      "file": "app5.js",
+      "line": 434,
+      "name": "LS",
+      "owner": "app1.js"
+    },
+    {
+      "file": "app5.js",
+      "line": 435,
+      "name": "activeRoute",
+      "owner": "app1.js"
+    },
+    {
+      "file": "app5.js",
+      "line": 435,
+      "name": "routeLoaded",
+      "owner": "app1.js"
+    },
+    {
+      "file": "create-pick.js",
+      "line": 1339,
+      "name": "followPaused",
+      "owner": "app3.js"
+    }
+  ]
 }

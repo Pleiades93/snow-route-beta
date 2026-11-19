@@ -12,7 +12,12 @@ pass.
 
 ## Tier A — small visual / constant / copy changes
 
-Paths: `docs/`, `assets/`, `manifest.json`, any `*.md`.
+Paths: `docs/`, `assets/`, `manifest.json`, any `*.md`, `parts/whatsnew.js`.
+(Arch-1, 2026-11-18: `parts/whatsnew.js` joins this list — it is the
+What's New data part: editorial prose whose version is stamped from the
+CHANGELOG top by the assembler and whose alignment the build gate
+enforces on every build, so a prose-only edit is a copy change. Its
+render code lives in `parts/app5.js`, session family below.)
 (Until 2026-11-17 this list also carried `parts/head.html`,
 `parts/pmstyles.js` and `parts/brand-snow.js` — see the 2026-11-17
 amendment below for where each went and why.)
@@ -38,7 +43,7 @@ alone and the protocol text and the machine disagreed):
 | --- | --- | --- |
 | create | `parts/create-cache.js`, `create-citydata.js`, `create-fetch.js`, `create-packs.js`, `create-pick.js`, `packs/` | 151 152 153 154 155 156 160 164 166 181 183 185 |
 | map | `parts/engine.js` | 115 116 121 127 128 129 130 133 141 148 149 165 168 182 |
-| session | `parts/app2.js`, `parts/app3.js`, `parts/app4.js` | 83 86 88 89* 114 118 125 135 136 140 145 146 147 159 161 162 163 169 170 184 203 |
+| session | `parts/app2.js`, `parts/app3.js`, `parts/app4.js`, `parts/app5.js` | 83 86 88 89* 114 118 125 135 136 140 145 146 147 159 161 162 163 169 170 184 203 |
 
 *quarantined drives are removed from the set by the selector, unless
 the change itself touches them — a touched drive always runs

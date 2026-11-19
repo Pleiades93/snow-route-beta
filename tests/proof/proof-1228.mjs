@@ -23,6 +23,7 @@ const read = (p) => readFileSync(new URL(p, root), 'utf8');
 const head = read('parts/head.html');
 const app2 = read('parts/app2.js');
 const app4 = read('parts/app4.js');
+const app5 = read('parts/app5.js'); // Arch-1: app4's tail (everything after the What's New entry) lives in this part now
 const changelog = read('CHANGELOG.md');
 
 let pass = 0, fail = 0;
@@ -47,8 +48,8 @@ check('1g: the note mark still stamps beside the pill', app2.includes("d.querySe
 // ---------- The presses are separate ----------
 check('2a: the pill joins the press transition group beside the row', head.includes('#filters button, .srow, .srow .sloc, .noteEd .nedSave'));
 check('2b: the pill has its own :active shrink and the row is OUT of the :active group', head.includes('#filters button:active, .srow .sloc:active,') && !head.includes('.srow:active,'));
-check('2c: the pressOn twin still covers the row (its shrink path on a direct press)', app4.includes("const row = e.target.closest('.srow, .crPRow, .cvRow, .prow.histRow');"));
-check('2d: the pressOn handler still skips any press inside a button (a pill press never raises the row)', app4.includes("if (e.target.closest('button')) return;"));
+check('2c: the pressOn twin still covers the row (its shrink path on a direct press)', app5.includes("const row = e.target.closest('.srow, .crPRow, .cvRow, .prow.histRow');"));
+check('2d: the pressOn handler still skips any press inside a button (a pill press never raises the row)', app5.includes("if (e.target.closest('button')) return;"));
 
 // ---------- The stack on the title line ----------
 check('3a: the day/night top is the title\'s own offset (25px)', rule('#nightBtn {').includes('top: calc(var(--vvt, 0px) + 25px + var(--sat));'));
@@ -64,10 +65,6 @@ check('4c: every full-stop site reads the helper (definition, raise, clamp, sett
 check('4d: no full-stop site still multiplies the viewport by the fraction', !app2.includes('(vvHeight() * SHEET_FULL_VH)') && !app2.includes('Math.min(vh * SHEET_FULL_VH') && !app2.includes('targetH >= vh * SHEET_FULL_VH'));
 check('4e: the stops\' constants stand (half and fallback untouched)', app2.includes('const SHEET_DEF_VH = 0.50, SHEET_FULL_VH = 0.94, SHEET_MIN_PX = 150;'));
 
-// ---------- Version agreement ----------
-check('V: the #ver label reads Beta 1.238', head.includes('<div class="ver" id="ver">Beta 1.238</div>'));
-check('V: WHATSNEW is the Beta 1.238 entry (its one short bullet)', app4.includes("v: 'Beta 1.238', items: [\"Fixed: on a cold open the Select City sheet sits over the falling snow, like it does over the map.\"]"));
-check('V: the CHANGELOG top entry is Beta 1.229', changelog.split('\n').find(l => l.startsWith('## Beta')) === '## Beta 1.238 — 2026-11-18');
 
 console.log(`proof-1228: ${pass} passed, ${fail} failed`);
 process.exit(fail ? 1 : 0);
