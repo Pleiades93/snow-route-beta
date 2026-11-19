@@ -124,21 +124,17 @@ const count = kind => wire.filter(w => w.kind === kind).length;
 await send('Page.navigate', { url: ORIGIN + '/index.html' }, PAGE_S);
 await bootRoute();
 const paneA = await openDoorsTab();
-const doorsA = await J(`({ t: (document.querySelector('#rmCreatePane .rmTitle') || {}).textContent || '', list: document.getElementById('crDoorList').textContent, manual: document.getElementById('crDoorManual').textContent, photo: document.getElementById('crDoorPhoto').textContent, photoQuiet: document.getElementById('crDoorPhoto').classList.contains('quiet'), subs: document.querySelectorAll('#rmCreatePane .m-sub').length, fsList: parseFloat(getComputedStyle(document.getElementById('crDoorList')).fontSize), fsPhoto: parseFloat(getComputedStyle(document.getElementById('crDoorPhoto')).fontSize) })`);
-ok('A1 DOORS (tab entry; titles-only Beta 1.206, Andrew): Create opens on "Create new route" - three doors carrying TITLES ONLY, exactly "Select from list" / "Manual search" / "Upload photo", no description element in the pane, and the photo door quieter (class + smaller type) | ' + JSON.stringify(doorsA),
-  paneA === true && doorsA.t === 'Create new route' && doorsA.list === 'Select from list' && doorsA.manual === 'Manual search' && doorsA.photo === 'Upload photo' && doorsA.subs === 0 && doorsA.photoQuiet === true && doorsA.fsPhoto < doorsA.fsList);
+const doorsA = await J(`({ t: (document.querySelector('#rmCreatePane .rmTitle') || {}).textContent || '', list: document.getElementById('crDoorList').textContent, manual: document.getElementById('crDoorManual').textContent, photoGone: !document.getElementById('crDoorPhoto'), subs: document.querySelectorAll('#rmCreatePane .m-sub').length, fsList: parseFloat(getComputedStyle(document.getElementById('crDoorList')).fontSize) })`);
+ok('A1 DOORS (tab entry; titles-only Beta 1.206, Andrew): Create opens on "Create new route" - TWO doors carrying TITLES ONLY, exactly "Select from list" / "Manual search", no description element in the pane, and the Upload photo door GONE (Beta 1.243) | ' + JSON.stringify(doorsA),
+  paneA === true && doorsA.t === 'Create new route' && doorsA.list === 'Select from list' && doorsA.manual === 'Manual search' && doorsA.subs === 0 && doorsA.photoGone === true);
 await ev2(`document.getElementById('crDoorList').click()`);
 const toList = await poll(`document.getElementById('rmCityListPane').classList.contains('on')`, 10000);
 await ev2(`document.getElementById('rmCityListBack').click()`);
 const listBack = await poll(`document.getElementById('rmCreatePane').classList.contains('on')`, 10000);
-await ev2(`document.getElementById('crDoorPhoto').click()`);
-const toPhoto = await poll(`document.getElementById('rmPhotoPane').classList.contains('on')`, 10000);
-await ev2(`document.getElementById('crPhotoBack').click()`);
-const photoBack = await poll(`document.getElementById('rmCreatePane').classList.contains('on')`, 10000);
 await ev2(`document.getElementById('rmBack2').click()`);
 const doorsBack = await poll(`document.getElementById('rmMain').classList.contains('on')`, 10000);
-ok('A2 BACK CHAIN: every pane backs to the previous one (list -> doors, photo -> doors, doors -> main) - no pane dead-ends or skips a level | list:' + toList + ' listBack:' + listBack + ' photo:' + toPhoto + ' photoBack:' + photoBack + ' doorsBack:' + doorsBack,
-  toList === true && listBack === true && toPhoto === true && photoBack === true && doorsBack === true);
+ok('A2 BACK CHAIN: every pane backs to the previous one (list -> doors, doors -> main) - no pane dead-ends or skips a level (Beta 1.243: the photo pane leg retires with the pane) | list:' + toList + ' listBack:' + listBack + ' doorsBack:' + doorsBack,
+  toList === true && listBack === true && doorsBack === true);
 
 // ---- phase B: list pick readies from the pack; the STREET SEARCH still works ----
 await ev2(`document.getElementById('rmCreate').click()`);
@@ -190,9 +186,9 @@ await poll(`!!window.__bootAt`, 30000);
 await poll(`!!document.getElementById('rmCreate')`, 20000);
 await ev2(`document.getElementById('rmCreate').click()`);
 const paneD = await poll(`document.getElementById('rmCreatePane').classList.contains('on')`, 10000);
-const doorsD = await J(`({ t: (document.querySelector('#rmCreatePane .rmTitle') || {}).textContent || '', list: document.getElementById('crDoorList').textContent, manual: document.getElementById('crDoorManual').textContent, photo: document.getElementById('crDoorPhoto').textContent, photoQuiet: document.getElementById('crDoorPhoto').classList.contains('quiet') })`);
-ok('D1 BOOT ENTRY COHESION: the cold-start picker\'s Create shows the IDENTICAL doors surface (same title, same three door texts incl. sub-lines, same quiet photo door) - one shared menu, not two copies | ' + JSON.stringify(doorsD),
-  paneD === true && doorsD.t === doorsA.t && doorsD.list === doorsA.list && doorsD.manual === doorsA.manual && doorsD.photo === doorsA.photo && doorsD.photoQuiet === true);
+const doorsD = await J(`({ t: (document.querySelector('#rmCreatePane .rmTitle') || {}).textContent || '', list: document.getElementById('crDoorList').textContent, manual: document.getElementById('crDoorManual').textContent, photoGone: !document.getElementById('crDoorPhoto') })`);
+ok('D1 BOOT ENTRY COHESION: the cold-start picker\'s Create shows the IDENTICAL doors surface (same title, same two door texts, the photo door gone in both entries) - one shared menu, not two copies | ' + JSON.stringify(doorsD),
+  paneD === true && doorsD.t === doorsA.t && doorsD.list === doorsA.list && doorsD.manual === doorsA.manual && doorsD.photoGone === true && doorsA.photoGone === true);
 await ev2(`document.getElementById('crDoorManual').click()`);
 const cityD = await poll(`document.getElementById('rmCityPane').classList.contains('on')`, 10000);
 await ev2(`document.getElementById('crCityBack').click()`);

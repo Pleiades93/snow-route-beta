@@ -88,7 +88,7 @@ check('D2: the hint wordings keep their text (only the placeholder changed)', pi
 // ---------- E: the search text dies with the session ----------
 check('E1: exitCreate clears the street search field and syncs the clear disc, inside the teardown', exitBody.includes("$('crSearchInput').value = ''; crSyncClear();"));
 check('E2: the clear sits with the search teardown (after the sequence bump, before the chrome closes)', exitBody.indexOf("$('crSearchInput').value = '';") > exitBody.indexOf('crSearchSeq++;') && exitBody.indexOf("$('crSearchInput').value = '';") < exitBody.indexOf("document.body.classList.remove('creating');"));
-check('E3: the clear-disc path itself is untouched (its listener still empties the field, closes the box and refocuses)', pick.includes("$('crClear').addEventListener('click', () => {") && pick.slice(pick.indexOf("$('crClear').addEventListener('click'"), pick.indexOf("$('crClear').addEventListener('click'") + 500).includes("$('createResults').classList.remove('on'); $('crSearchInput').value = '';") && pick.includes("crSyncClear(); $('crSearchInput').focus();"));
+check('E3: the clear-disc path (Beta 1.243, Arch-3: the search close runs through its one owner crResetSearch - the disc still empties the field and refocuses)', pick.slice(pick.indexOf("$('crClear').addEventListener('click'"), pick.indexOf("$('crClear').addEventListener('click'") + 500).includes('crResetSearch();') && pick.slice(pick.indexOf("$('crClear').addEventListener('click'"), pick.indexOf("$('crClear').addEventListener('click'") + 500).includes("$('crSearchInput').value = '';") && pick.includes("crSyncClear(); $('crSearchInput').focus();"));
 
 
 console.log(`proof-1236: ${pass} pass, ${fail} fail`);

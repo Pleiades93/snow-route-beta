@@ -96,7 +96,7 @@ check('A2c: the lowercase toast form elsewhere stands untouched', read('parts/ap
 
 // ---------- B1: 58px pills ----------
 check('B1a: the pill class pins exactly 58px', head.includes('font-size: 19px; font-weight: 650; height: 58px; padding: 0 20px;'));
-check('B1b: the quiet door joins the one height', head.includes('.rmBtn.quiet { font-size: 16px; font-weight: 600; height: 58px; padding: 0 20px;'));
+check('B1b: the quiet door is GONE (Beta 1.243: the Upload photo door is removed whole - its one-height pin retires with it)', !head.includes('.rmBtn.quiet'));
 check('B1c: the Settings sub-pane buttons join the one height', head.includes('.bkBtn { font-size: 16px; height: 58px; padding: 0 16px;'));
 check('B1d: the list rows are exactly 58 with the tightened padding', head.includes('justify-content: flex-end; height: 58px; padding: 8px 16px;'));
 check('B1e: no menu row keeps the old 68 minimum', !head.includes('min-height: 68px'));

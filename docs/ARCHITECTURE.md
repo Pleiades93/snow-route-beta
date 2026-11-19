@@ -75,7 +75,7 @@ Cancel after a reload). GPS is device state and is not switched.
 | `create-fetch.js` | Route creation, part 2 — draft and session state (`draft`, `crSession`, coverage and preparation state), the Overpass query builders (`crQL`, `crAreaQL`, `crNameQL`), and the source seam every street shape arrives through (`crOverpassFetch`, `crSourceExtract`). |
 | `create-citydata.js` | Route creation, part 3 — the city-pack seam (Beta 1.123): the packs catalogue and downloads (`crPack*`, `crWarmCityLibrary`), extract indexing and coverage (`crIndexWays`, `crCovFromWays`/`crCovMerge`, `crResolve`), and the fallback preparation lifecycle (`crStartPrep`, `crCancelPrep`, `crSweepPending`). |
 | `create-cache.js` | Route creation, part 4 — the persistent city cache and the whole-city grid: the IndexedDB city cache (`crIdb*`, `crCache*`), the ~4 × 4 km grid cells and pump, `crCityPrepare` (cache-first whole-city preparation, with resume), and `crFailText`. |
-| `create-pick.js` | Route creation, part 5 — the picking stage: the hint (`crRenderHint`), chosen streets and their sector parts (`crStreetParts`, the chosen sets), the picked-roads panel and its faces/morph, the sector session, the doors and panes (the photo door, the city chooser and Nominatim city/street search), the shared create confirm (`crConfirm`), stage/enter/exit (`setCreateStage`, `enterCreate`, `exitCreate`), and map picking (`crMapTap`, `pickStreet`). |
+| `create-pick.js` | Route creation, part 5 — the picking stage: the hint (`crRenderHint`), chosen streets and their sector parts (`crStreetParts`, the chosen sets), the picked-roads panel and its faces/morph, the sector session, the doors and panes (the city chooser and Nominatim city/street search), the shared create confirm (`crConfirm`), stage/enter/exit (`setCreateStage`, `enterCreate`, `exitCreate`), and map picking (`crMapTap`, `pickStreet`). |
 | `create-save.js` | Route creation, part 6 — name it + save: the name pane (`openNameIt`) and `saveDraftRoute` — plus the boot-tail IIFE that physically follows the create section. |
 | `brand-snow.js` | The boot/menu scene's falling-snow layer (Beta 1.158/1.159, "Falls and settles"): a single canvas inside the splash, one self-contained IIFE, `window.__snow` its test handle. Split out of `create-save.js` at the 2026-11-09 tier-map amendment so the visual layer no longer inherits the save path's Tier C classification; assembled immediately after `create-save.js`, so the shipped bytes are unchanged. (Classification note, 2026-11-17: the protocol fix round took brand-snow.js back OUT of Tier A — it is a running animation program, not a style — so it classifies Tier C again by the map default; the split itself stands.) |
 
@@ -145,14 +145,12 @@ second, hand-kept copy of the format, and a field missing from it
 would have been silently dropped). The storage-slot field `snap` is
 deliberately NOT a pack field and stays out of the list.
 
-**Door 1 — from a photo.** The app takes the photo and holds it in an
-honest waiting state ("Photo received — your draft is being built…",
-with a Web Share affordance where the platform offers one). Reading
-street names off a photo is deliberately NOT an app function: the photo
-is read and the draft built by Muse outside the app, and the draft
-returns as a pack-format JSON file that "Import my draft" validates and
-loads into the preview. A bare roads object (the route-creation
-sandbox's candidate shape) is accepted as a roads-only draft.
+**Door 1 — from a photo. REMOVED in Beta 1.243 (Andrew's order).**
+The door, its pane, its handlers and the draft import behind it
+(`importDraft`) are gone whole; Create keeps two doors. The workflow it
+served (a photo read outside the app, the draft returning as a
+pack-format JSON file) no longer enters through Create — a pack enters
+the app through the Settings backup restore, a separate feature.
 
 **Door 2 — select streets myself (Beta 1.121: city first, then the
 whole city prepared; Beta 1.123: the gate is a chooser; Beta 1.124:
@@ -169,8 +167,8 @@ listing the pack library's cities as rows with their street counts
 (the last-used city, `snowroute.v2.lastArea`, rides first when the
 library holds it), and **Search manually** (sub: "Any other city
 or address — loaded from the map service"), which opens the typed
-search. The photo door sits quieter below a divider. Back links
-walk pane to pane (list/manual/photo → doors → main). The
+search. Back links
+walk pane to pane (list/manual → doors → main). The
 cold-start picker and the Routes menu show the SAME routeMenu
 and the SAME panes, so the gate exists once and both entries
 reach it (drive153 + drive154 prove both). Beta 1.130: the
@@ -184,7 +182,8 @@ per session). Beta 1.207 (Andrew): the doors are TITLES ONLY —
 the three description lines under the options are gone, and the
 doors read "Select from list", "Manual search" (was "Search
 manually") and "Upload photo" (was "From a photo"; the photo
-pane's title matches). The city rows likewise carry the city
+pane's title matches). Beta 1.243 removes the Upload photo door
+whole; the two doors above are what remain. The city rows likewise carry the city
 NAME ONLY — the "N streets · ready to load" sub-line is gone;
 the gold "· last used" tag survives, trailing the name on the
 last-used city's row. 1.129 requested it for the first time at the
@@ -208,7 +207,9 @@ doors land on the SAME pick stage, so the street search bar with
 its autocomplete is present and behaves identically after a list
 pick (drive154 proves it end to end on both paths).
 A draft
-that already names its city (the photo door) pre-answers the step;
+that already names its city pre-answers the step (through Beta 1.242
+that was the photo door's imported draft; the door is removed in
+1.243);
 the city stays changeable from the pick sheet without losing the
 draft. **The 1.121 dead end, for the record:** the app requests
 Nominatim `format=jsonv2`, whose results carry the place kind in a

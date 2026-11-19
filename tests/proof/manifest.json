@@ -39,7 +39,6 @@
   "proof-sweep-20261112-114949-b-08.mjs",
   "proof-sweep-20261115-071313-c-06.mjs",
   "proof-sweep-20261115-071313-d-01.mjs",
-  "proof-sweep-20261115-071313-d-03.mjs",
   "proof-sweep-20261115-171048-b-05.mjs",
   "proof-sweep-20261115-171048-e-01.mjs",
   "proof-trim-glow-path-pills.mjs",
@@ -54,12 +53,17 @@
   "proof-mut-map-ready.mjs",
   "proof-mut-nameit.mjs",
   "proof-mut-refrun.mjs",
-  "proof-1242.mjs"
+  "proof-1242.mjs",
+  "proof-1243.mjs"
  ],
  "retired": [
   {
    "file": "proof-rerun-css-batch.mjs",
    "reason": "Needs playwright-core + a Chromium through maintainer-VM-only paths (its header: PLAYWRIGHT_CORE / CHROME_BIN env; it resolves the shots directory's node_modules on the maintainer VM), so it cannot run in CI's build-and-test - proven on PR #107, where it failed with 'playwright-core not resolvable' while the other 37 proofs passed. It passes locally (46/46 checks, 2026-11-17) and stays runnable there on demand; the CSS surfaces it measured are covered in CI by the drive battery. Retired from the gate manifest by the protocol fix round, 2026-11-17."
+  },
+  {
+   "file": "proof-sweep-20261115-071313-d-03.mjs",
+   "reason": "Beta 1.243: its subject - importDraft, the photo door's draft-import half - is removed from the app with the Upload photo door, so the D-03 defect class it pinned dies with the feature. The file stays on disk as the record, like proof-rerun-css-batch."
   }
  ]
 }

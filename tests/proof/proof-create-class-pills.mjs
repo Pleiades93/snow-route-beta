@@ -37,10 +37,10 @@ ok('.crPChip.sec filled raspberry with dark ink (1.209S: Beta 1.209 superseded t
 ok('pick chip tint rules gone (no rgba gold/pink chip fills, no night tints)', !head.includes('.crPChip.primary { background: rgba(') && !head.includes('body.night .crPChip'));
 
 // 4 — doors
-ok('door titles exact', head.includes('id="crDoorList">Select from list</button>') && head.includes('id="crDoorManual">Manual search</button>') && head.includes('id="crDoorPhoto">Upload photo</button>'));
+ok('door titles exact (Beta 1.243: TWO doors - the Upload photo door is removed)', head.includes('id="crDoorList">Select from list</button>') && head.includes('id="crDoorManual">Manual search</button>') && !head.includes('crDoorPhoto'));
 ok('no m-sub inside the create pane', !head.slice(head.indexOf('id="rmCreatePane"'), head.indexOf('id="rmCityListPane"')).includes('m-sub'));
 ok('old door titles absent from head.html', !head.includes('Search manually') && !head.includes('From a photo'));
-ok('photo pane title renamed', head.includes('id="rmPhotoPane"><div class="rmTitle">Upload photo</div>'));
+ok('photo pane GONE (Beta 1.243)', !head.includes('rmPhotoPane'));
 ok('failure note names Manual search', pick.includes('Go back and use Manual search.') && !pick.includes('Search manually'));
 
 // 5 — city rows
