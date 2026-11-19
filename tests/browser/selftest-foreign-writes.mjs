@@ -397,9 +397,22 @@ function analyzeSource(src) {
         const nxt = toks[i + 1];
         if (nxt && nxt.v === '{') { queueParams(i + 1, names, true); const range = { open: paramOpen, close: i - 1, braceIdx: i + 1, regionId: null, fnName: null }; fnParamRanges.push(range); fnSlots.push({ braceIdx: i + 1, regionId: null, anchor: slotIdx, range }); }
         else if (nxt) {
-          // expression body: virtual region spanning the expression
+          // expression body: virtual region spanning the expression,
+          // bounded at depth-0 ASI breaks by the same predicate
+          // statementEnd uses (Codex P2 round 7, PR #126): without it
+          // the region ran on into the next statement and claimed
+          // its writes for this arrow's key.
           let d = 0, end = i + 1;
-          for (let j = i + 1; j < toks.length; j++) { const w = toks[j].v; if (d === 0 && [',', ';', ')', ']', '}'].includes(w)) break; if (OPEN[w]) d++; else if (CLOSE[w]) d--; end = j; }
+          for (let j = i + 1; j < toks.length; j++) {
+            const w = toks[j].v;
+            if (d === 0 && j > i + 1 && toks[j].line > toks[j - 1].line) {
+              if (isPostfixUpdate(toks, j - 1, i + 1) && !OPERATOR_CONTINUES.has(w)) break;
+              if (!CONTINUES.has(w) && w !== 'tpl' && !CONTINUES.has(toks[j - 1].v) && !PREFIX_BEFORE.has(toks[j - 1].v)) break;
+            }
+            if (d === 0 && [',', ';', ')', ']', '}'].includes(w)) break;
+            if (OPEN[w]) d++; else if (CLOSE[w]) d--;
+            end = j;
+          }
           const id = regions.length;
           regions.push({ id, start: i + 1, end, kind: 'arrow', isFunction: true, fnName: null });
           const range = { open: paramOpen, close: i - 1, braceIdx: null, regionId: id, fnName: null };
@@ -832,6 +845,12 @@ for (const [label, src, want] of FX_CASES) {
   check('key fixture: an arrow in a conditional alternate keys to the enclosing function, not the other branch', tern.length === 1 && tern[0].fn === 'gamma', tern);
   const tmove = (inAlpha) => analyzeFiles({ 'owner.js': FX_OWNER, 'case.js': 'function alpha() { const v = cond ? fallback : () => {' + (inAlpha ? ' ext = 1;' : '') + ' }; } function beta() { const v = cond ? fallback : () => {' + (inAlpha ? '' : ' ext = 1;') + ' }; }' }).sites.filter(s => s.file === 'case.js').map(key);
   check('key fixture: moving a conditional-alternate arrow between two functions changes its key', JSON.stringify(tmove(true)) !== JSON.stringify(tmove(false)) && tmove(true)[0].includes('|alpha|') && tmove(false)[0].includes('|beta|'), [tmove(true), tmove(false)]);
+  const asi = fx('const alpha = () => 0\next = 1;');
+  check('key fixture: a write after an ASI-ended expression arrow is not claimed by the arrow', asi.length === 1 && asi[0].fn === '<top-level>', asi);
+  const asemi = fx('const alpha = () => 0;\next = 1;');
+  check('key fixture: the same write after an explicit semicolon keys identically', asemi.length === 1 && asemi[0].fn === '<top-level>', asemi);
+  const amove2 = (asiForm) => analyzeFiles({ 'owner.js': FX_OWNER, 'case.js': asiForm ? 'const alpha = () => 0\next = 1;' : 'const alpha = () => { ext = 1; };' }).sites.filter(s => s.file === 'case.js').map(key);
+  check('key fixture: moving a write from after an expression arrow into its block body changes its key', JSON.stringify(amove2(true)) !== JSON.stringify(amove2(false)) && amove2(false)[0].includes('|alpha|'), [amove2(true), amove2(false)]);
 }
 
 // ---------------- the tree census ----------------
