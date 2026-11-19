@@ -57,9 +57,9 @@ check('6: the create text boxes keep their white pills',
 // ---------- the release editorial ----------
 check('7: the CHANGELOG top entry is Beta 1.247',
   changelog.indexOf('## Beta 1.247') > -1 && changelog.indexOf('## Beta 1.247') < changelog.indexOf('## Beta 1.246'));
-check('8: the What\'s New bullet is the round\'s own line, within the 108-char cap, em-dash free',
-  whatsnew.includes('Save route now wears the menu\'s soft button style, like Create new route.') &&
-  'Save route now wears the menu\'s soft button style, like Create new route.'.length <= 108 &&
+check('8: What\'s New carries the CURRENT entry\'s bullet (rolled to 1.248: this check tracks the current entry each round), within the 108-char cap, em-dash free',
+  whatsnew.includes('Street names now sit on their streets after the opening fly-in.') &&
+  'Street names now sit on their streets after the opening fly-in.'.length <= 108 &&
   !whatsnew.includes('—'));
 
 console.log(`proof-1247: ${pass} passed, ${fail} failed`);

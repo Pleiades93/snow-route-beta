@@ -1941,6 +1941,21 @@ function managePulse() {
     }, 50);
   } else if (!want && pulseTimer) { clearInterval(pulseTimer); pulseTimer = null; }
 }
+  function rePlaceTitles() { // Beta 1.248: the street titles' anchors are re-decided from scratch - the labelpts source is rebuilt in place (the same LABELPTS data; the four tier layers re-added with their live specs at their stack seats). MapLibre's placement PREFERS the anchor a symbol used in the previous placement pass and keeps it while it still places (placement.ts: prevPlacement.variableOffsets, keyed by crossTileID, which lives with the source's cross-tile index), so an anchor first chosen mid-flight - while the fit view's streets sat closer together on screen and the tile scene was still arriving - can stick for the whole session with the name beside its street (Andrew's cold-open report, 2026-11-18: names off their streets, zooming no cure, a day/night swap - a fresh style and placement chain - the only cure; measured in the round's harness: anchors are always on their streets, the rendered text is what sits off). A rebuilt source gets a fresh cross-tile index, so the next placement pass holds no preference and decides against the settled scene. Nothing about what renders changes - same data, same specs, same seats; only when the decision is (re)made. The host calls this once the pick flight settles (app5's introToRoute hook); a no-op without a map or the source.
+    if (!GLM || !GLM.getSource || !GLM.getSource('labelpts')) return;
+    const ids = [1, 2, 3, 4].map(t => 'streetnamespt' + t).filter(id => GLM.getLayer(id));
+    if (!ids.length) return;
+    const style = GLM.getStyle(); if (!style || !style.layers) return;
+    const specs = ids.map(id => style.layers.find(l => l.id === id));
+    if (specs.some(s => !s)) return;
+    const order = style.layers.map(l => l.id);
+    let succ = null;
+    for (let i = order.indexOf(ids[ids.length - 1]) + 1; i < order.length; i++) { if (ids.indexOf(order[i]) < 0) { succ = order[i]; break; } }
+    for (const id of ids) GLM.removeLayer(id);
+    GLM.removeSource('labelpts');
+    GLM.addSource('labelpts', { type: 'geojson', data: LABELPTS });
+    for (const s of specs) { if (succ) GLM.addLayer(s, succ); else GLM.addLayer(s); }
+  }
   // ---- public API (the app's only handles on the engine) ----
   function stateSig() { return JSON.stringify(H.pieces); }
   function init(gl, host) {
@@ -2000,6 +2015,6 @@ function managePulse() {
     return prev[1];
   }
   function tapTolPx(z) { return Math.max(24, evalCurvePx(surfCASE, z) / 2 + 2); } // The map-tap tolerance follows the WIDEST paint at the tap's zoom, floored at 24 px — the Beta 1.181 rule ("a tap anywhere on the paint still selects instead of deselecting"). Beta 1.206 introduced this formula against BANDCASE, then the widest paint; Beta 1.208 retires the wide band, so the widest paint is now the surface casing (surfCASE): 24 px at z17 and below (the floor - shipped behaviour unchanged), ~27.5 px at z18, ~50.8 px at z19.
-  return { init, drop, sync, syncSel, syncTheme, active, setFont, rebuildRoute, tapTolPx, mute }; // mute exported for the create flow's draft renderer (Beta 1.221 gate fix: create-pick's crDraftLineDim calls GLP.mute - the helper is private to this IIFE, and the bare call threw at draft-layer init, silently aborting every layer after the casing; Codex review P1 on PR #98)
+  return { init, drop, sync, syncSel, syncTheme, active, setFont, rebuildRoute, tapTolPx, mute, rePlaceTitles }; // mute exported for the create flow's draft renderer (Beta 1.221 gate fix: create-pick's crDraftLineDim calls GLP.mute - the helper is private to this IIFE, and the bare call threw at draft-layer init, silently aborting every layer after the casing; Codex review P1 on PR #98). Beta 1.248: rePlaceTitles exported for app5's post-flight hook
 })();
 window.GLP = GLP;
