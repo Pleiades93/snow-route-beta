@@ -61,7 +61,11 @@
 // an IIFE) is TRANSPARENT for keying: its writes key to the nearest
 // named enclosing function, or to '<top-level>' when there is none.
 // occ counts writes to the same target within that (file, fn) bucket
-// in source (token) order, starting at 1.
+// in source (token) order, starting at 1. A function's parameter list
+// is part of the function for keying: a write in a default
+// initializer keys to that function - and never to the parameter's
+// own name (a parameter name is not a function name, so a function
+// expression sitting in a default does not take it either).
 //
 // ADJUDICATION NOTES (counting-rule decisions, builder, 2026-11-07):
 //  - engine.js: only GLP is declared at engine.js top level; everything
@@ -145,7 +149,7 @@ const UNIVERSE = ['app1.js', 'app2.js', 'app3.js', 'app4.js', 'app5.js', 'create
 const CREATE_FAMILY = new Set(['create-packs.js', 'create-fetch.js', 'create-citydata.js', 'create-cache.js', 'create-pick.js', 'create-save.js']);
 const ownerGroup = (f) => CREATE_FAMILY.has(f) ? 'create.js' : f; // the six create-*.js files are ONE owner group, labelled by the historical part name
 const CENSUS_PATH = path.join(HERE, 'fixtures', 'foreign-writes-census.json');
-const RULE = 'Universe: parts/app1.js, app2.js, app3.js, app4.js, app5.js, create-packs.js, create-fetch.js, create-citydata.js, create-cache.js, create-pick.js, create-save.js, engine.js (data.js, whatsnew.js and pmstyles.js excluded - data/generated). Owner = the part file holding a binding\'s top-level declaration, except the six create-*.js files form ONE owner group labelled create.js (the historical part name): a binding declared in any create-*.js file is owned by that group, and a write is foreign iff the target\'s owner group differs from the writing file\'s owner group; site records keep the concrete file holding the write. A FOREIGN WRITE is an assignment/update expression (=, +=, -=, *=, /=, %=, **=, ++, -- prefix or postfix) whose target is a bare identifier (not a member expression; a declaration initializer never counts) resolving through lexical scope to a top-level binding owned by a different part file or owner group. Comments/strings/templates masked (interpolations are code); scopes tracked by braces with their declarations (function/arrow/catch params, let/const/var at any depth, function declarations). Destructuring assignment targets count per bound identifier; for (x of ...) with a bare identifier assigns. Site records are keyed by enclosing function (Arch-5 re-key, 2026-11-19): {file, fn, name, owner, occ} - fn is the innermost enclosing function with a name (a declaration name, a method name, or the binding/property an anonymous function is assigned to; an anonymous function with no such slot is transparent for keying, its writes keying to the nearest named enclosing function, or \'<top-level>\' when there is none), and occ is the 1-based ordinal of the write among writes to the same target within that function in source order. Line numbers are not part of the record.';
+const RULE = 'Universe: parts/app1.js, app2.js, app3.js, app4.js, app5.js, create-packs.js, create-fetch.js, create-citydata.js, create-cache.js, create-pick.js, create-save.js, engine.js (data.js, whatsnew.js and pmstyles.js excluded - data/generated). Owner = the part file holding a binding\'s top-level declaration, except the six create-*.js files form ONE owner group labelled create.js (the historical part name): a binding declared in any create-*.js file is owned by that group, and a write is foreign iff the target\'s owner group differs from the writing file\'s owner group; site records keep the concrete file holding the write. A FOREIGN WRITE is an assignment/update expression (=, +=, -=, *=, /=, %=, **=, ++, -- prefix or postfix) whose target is a bare identifier (not a member expression; a declaration initializer never counts) resolving through lexical scope to a top-level binding owned by a different part file or owner group. Comments/strings/templates masked (interpolations are code); scopes tracked by braces with their declarations (function/arrow/catch params, let/const/var at any depth, function declarations). Destructuring assignment targets count per bound identifier; for (x of ...) with a bare identifier assigns. Site records are keyed by enclosing function (Arch-5 re-key, 2026-11-19): {file, fn, name, owner, occ} - fn is the innermost enclosing function with a name (a declaration name, a method name, or the binding/property an anonymous function is assigned to; an anonymous function with no such slot is transparent for keying, its writes keying to the nearest named enclosing function, or \'<top-level>\' when there is none), and occ is the 1-based ordinal of the write among writes to the same target within that function in source order. Parameter lists are part of their function for keying: a write in a default initializer keys to that function, never to the parameter name. Line numbers are not part of the record.';
 
 // ---------------- tokenizer (comments/strings masked; templates: interpolations are code) ----------------
 const KEYWORDS = new Set(['if', 'else', 'for', 'while', 'do', 'switch', 'case', 'default', 'break', 'continue', 'return', 'function', 'var', 'let', 'const', 'new', 'delete', 'typeof', 'void', 'in', 'of', 'instanceof', 'try', 'catch', 'finally', 'throw', 'class', 'extends', 'super', 'this', 'null', 'true', 'false', 'undefined', 'yield', 'async', 'await', 'static', 'get', 'set', 'export', 'import', 'from']);
@@ -366,11 +370,17 @@ function analyzeSource(src) {
   const pendingByBrace = new Map(); // brace token idx -> [{name, tok}]
   const funcBraceIdx = new Set(); // brace token idx of function/arrow/method bodies (NOT catch)
   const fnNames = new Map(); // function-body brace token idx -> Arch-5 keying name (null = anonymous)
+  const fnParamRanges = []; // {open, close, braceIdx, regionId, fnName} - parameter-list spans: a function's parameters are part of the function for keying (a write in a default initializer keys to the function - Codex P2 round 2, PR #126)
+  const paramNameToks = new Set(); // token idx of parameter names - a parameter's name is never a function's keying name
   const forHeaders = []; // {open, close, id} of each for statement's (...) header
   const braceStack = [0];
   const tokBraceRegion = new Array(toks.length).fill(0);
   const addDecl = (name, tok, scope) => { declEvents.push({ name, tok, scope }); declNameToks.add(tok); };
-  const queueParams = (braceIdx, names, isFunc, fnName) => { if (braceIdx == null) return; if (isFunc) { funcBraceIdx.add(braceIdx); if (fnName !== undefined) fnNames.set(braceIdx, fnName); } if (!names.length) return; const arr = pendingByBrace.get(braceIdx) || []; arr.push(...names); pendingByBrace.set(braceIdx, arr); };
+  const queueParams = (braceIdx, names, isFunc, fnName) => { if (braceIdx == null) return; if (isFunc) { funcBraceIdx.add(braceIdx); if (fnName !== undefined) fnNames.set(braceIdx, fnName); for (const p of names) paramNameToks.add(p.tok); } if (!names.length) return; const arr = pendingByBrace.get(braceIdx) || []; arr.push(...names); pendingByBrace.set(braceIdx, arr); };
+  // Keying name from an assignment/property slot - except when the
+  // name at the slot is a parameter name: a function sitting in a
+  // parameter's default value is not named after the parameter.
+  const slotName = (opIdx) => { const nm = assignedName(toks, opIdx); return nm != null && paramNameToks.has(opIdx - 1) ? null : nm; };
 
   for (let i = 0; i < toks.length; i++) {
     const tk = toks[i], v = tk.v;
@@ -389,24 +399,26 @@ function analyzeSource(src) {
         // arrow params: '(...)' or a bare identifier immediately before
         let names = [];
         let slotIdx = null; // token index of the '=' / ':' slot this arrow sits in, if any (Arch-5 keying name)
-        if (toks[i - 1] && toks[i - 1].v === ')') { const o = matchOpen(toks, i - 1); names = patternNames(toks, o + 1, i - 2); slotIdx = o - 1; }
-        else if (toks[i - 1] && toks[i - 1].t === 'id') { names = [{ name: toks[i - 1].v, tok: i - 1 }]; slotIdx = i - 2; }
+        let paramOpen = null; // token index of this arrow's parameter-list '(' (or of its bare param)
+        if (toks[i - 1] && toks[i - 1].v === ')') { paramOpen = matchOpen(toks, i - 1); names = patternNames(toks, paramOpen + 1, i - 2); slotIdx = paramOpen - 1; }
+        else if (toks[i - 1] && toks[i - 1].t === 'id') { names = [{ name: toks[i - 1].v, tok: i - 1 }]; slotIdx = i - 2; paramOpen = i - 1; }
         // An assigned ASYNC arrow's slot sits one token further back
         // (`const x = async () => {}`): step over the modifier when it
         // directly follows the '=' / ':' (Codex P2, PR #126 - without
         // this, an async arrow's writes keyed as anonymous and moving
         // a write between two named async arrows was invisible).
         if (slotIdx != null && toks[slotIdx] && toks[slotIdx].v === 'async' && toks[slotIdx - 1] && (toks[slotIdx - 1].v === '=' || toks[slotIdx - 1].v === ':')) slotIdx--;
-        const arrowFnName = assignedName(toks, slotIdx);
+        const arrowFnName = slotName(slotIdx);
         const nxt = toks[i + 1];
-        if (nxt && nxt.v === '{') queueParams(i + 1, names, true, arrowFnName);
+        if (nxt && nxt.v === '{') { queueParams(i + 1, names, true, arrowFnName); fnParamRanges.push({ open: paramOpen, close: i - 1, braceIdx: i + 1, regionId: null, fnName: arrowFnName }); }
         else if (nxt) {
           // expression body: virtual region spanning the expression
           let d = 0, end = i + 1;
           for (let j = i + 1; j < toks.length; j++) { const w = toks[j].v; if (d === 0 && [',', ';', ')', ']', '}'].includes(w)) break; if (OPEN[w]) d++; else if (CLOSE[w]) d--; end = j; }
           const id = regions.length;
           regions.push({ id, start: i + 1, end, kind: 'arrow', isFunction: true, fnName: arrowFnName });
-          for (const p of names) addDecl(p.name, p.tok, id);
+          fnParamRanges.push({ open: paramOpen, close: i - 1, braceIdx: null, regionId: id, fnName: arrowFnName });
+          for (const p of names) { addDecl(p.name, p.tok, id); paramNameToks.add(p.tok); }
         }
       }
       continue;
@@ -471,7 +483,9 @@ function analyzeSource(src) {
         const close = matchClose(toks, j);
         const params = patternNames(toks, j + 1, close - 1);
         const braceIdx = toks[close + 1] && toks[close + 1].v === '{' ? close + 1 : null;
-        queueParams(braceIdx, params, true, nameTok != null ? toks[nameTok].v : assignedName(toks, toks[i - 1] && toks[i - 1].v === 'async' ? i - 2 : i - 1));
+        const fnKeyName = nameTok != null ? toks[nameTok].v : slotName(toks[i - 1] && toks[i - 1].v === 'async' ? i - 2 : i - 1);
+        queueParams(braceIdx, params, true, fnKeyName);
+        if (braceIdx != null) fnParamRanges.push({ open: j, close, braceIdx, regionId: null, fnName: fnKeyName });
         if (nameTok != null) {
           const prev = toks[i - 1];
           const isDecl = !prev || [';', '{', '}'].includes(prev.v);
@@ -497,7 +511,7 @@ function analyzeSource(src) {
       const ctxOk = !prev || ['{', ',', ';', '}'].includes(prev.v) || (prev.t === 'id' && ['get', 'set', 'async', 'static'].includes(prev.v)) || prev.v === '*';
       if (ctxOk) {
         const close = matchClose(toks, i + 1);
-        if (toks[close + 1] && toks[close + 1].v === '{') queueParams(close + 1, patternNames(toks, i + 2, close - 1), true, v);
+        if (toks[close + 1] && toks[close + 1].v === '{') { queueParams(close + 1, patternNames(toks, i + 2, close - 1), true, v); fnParamRanges.push({ open: i + 1, close, braceIdx: close + 1, regionId: null, fnName: v }); }
       }
     }
   }
@@ -514,14 +528,30 @@ function analyzeSource(src) {
   // function region containing it; anonymous regions are transparent -
   // the walk continues outward through region parents until a named
   // function region is found; no named ancestor = '<top-level>'.
+  // Parameter lists are part of their function (Codex P2 round 2,
+  // PR #126): a write in a default initializer sits BEFORE the body
+  // brace, outside every body region, so each function's parameter
+  // span is a candidate too, spanning the function's full extent.
+  const regionByStart = new Map();
+  for (const r of regions) if (r.kind === 'brace') regionByStart.set(r.start, r.id);
   const fnAt = (tokIdx) => {
-    let best = null;
+    const cands = [];
     for (const r of regions) {
       if (!r.isFunction || r.id === 0) continue;
-      if (r.start <= tokIdx && tokIdx <= r.end && (!best || (r.end - r.start) < (best.end - best.start))) best = r;
+      if (r.start <= tokIdx && tokIdx <= r.end) cands.push({ span: r.end - r.start, fnName: r.fnName, parent: r.parent });
     }
-    let r = best;
-    while (r) { if (r.fnName) return r.fnName; r = r.parent != null ? regions[r.parent] : null; }
+    for (const pr of fnParamRanges) {
+      const rid = pr.regionId != null ? pr.regionId : regionByStart.get(pr.braceIdx);
+      if (rid == null || !regions[rid]) continue;
+      if (pr.open <= tokIdx && tokIdx <= pr.close) cands.push({ span: regions[rid].end - pr.open, fnName: pr.fnName, parent: regions[rid].parent });
+    }
+    cands.sort((a, b) => a.span - b.span);
+    const seen = new Set();
+    for (const c of cands) {
+      if (c.fnName) return c.fnName;
+      let p = c.parent;
+      while (p != null && !seen.has(p)) { seen.add(p); const pr2 = regions[p]; if (pr2 && pr2.fnName) return pr2.fnName; p = pr2 ? pr2.parent : null; }
+    }
     return '<top-level>';
   };
   return { toks, regions, declEvents, declNameToks, initEqToks, tokBraceRegion, scopeNames, fnAt };
@@ -749,6 +779,14 @@ for (const [label, src, want] of FX_CASES) {
   check('key fixture: moving a write between two named async arrows changes its key', JSON.stringify(amove(true)) !== JSON.stringify(amove(false)) && amove(true)[0].includes('|alpha|') && amove(false)[0].includes('|beta|'), [amove(true), amove(false)]);
   const moved = (pad) => analyzeFiles({ 'owner.js': FX_OWNER, 'case.js': pad + 'function alpha() { ext = 1; ext2 = 2; }' }).sites.filter(s => s.file === 'case.js').map(key);
   check('key fixture: moving a function down the file changes no key', JSON.stringify(moved('')) === JSON.stringify(moved('\n\n\n// padding\n\n')), [moved(''), moved('\n\n\n// padding\n\n')]);
+  const dflt = fx('function gamma(q = (ext = 1)) {}');
+  check('key fixture: a write in a default parameter initializer keys to that function', dflt.length === 1 && dflt[0].fn === 'gamma', dflt);
+  const dfltA = fx('const gamma = (q = (ext = 1)) => {};');
+  check('key fixture: a write in an arrow default parameter keys to the arrow binding', dfltA.length === 1 && dfltA[0].fn === 'gamma', dfltA);
+  const dmove = (inAlpha) => analyzeFiles({ 'owner.js': FX_OWNER, 'case.js': 'function alpha(q = ' + (inAlpha ? '(ext = 1)' : '0') + ') {} function beta(q = ' + (inAlpha ? '0' : '(ext = 1)') + ') {}' }).sites.filter(s => s.file === 'case.js').map(key);
+  check('key fixture: moving a write between two functions default parameters changes its key', JSON.stringify(dmove(true)) !== JSON.stringify(dmove(false)) && dmove(true)[0].includes('|alpha|') && dmove(false)[0].includes('|beta|'), [dmove(true), dmove(false)]);
+  const pfun = fx('function gamma(q = function () { ext = 1; }) {}');
+  check('key fixture: a function expression in a parameter default keys to the enclosing function, not the parameter name', pfun.length === 1 && pfun[0].fn === 'gamma', pfun);
 }
 
 // ---------------- the tree census ----------------
