@@ -87,8 +87,8 @@ check('16: the hint styling is the original .crPSub (13px, the dim ink token) - 
   head.includes('.crPSub { font-size: 13px; color: var(--ink-dim); }'));
 
 // ---------- the frame ----------
-check('17: What\'s New carries the current entry\'s bullet (rolled to 1.245: this check tracks the CURRENT entry each round; and stays em-dash free)',
-  whatsnew.includes('selects just its stretch in your city') && !whatsnew.includes('—'));
+check('17: What\'s New carries the current entry\'s bullet (rolled to 1.246: this check tracks the CURRENT entry each round; and stays em-dash free)',
+  whatsnew.includes('gives up in a minute instead of hanging') && !whatsnew.includes('—'));
 check('18: the CHANGELOG order stands (1.242 above 1.241; the 1.244 entry rides above both - proof-1244 pins the top)', changelog.indexOf('## Beta 1.242') > -1 && changelog.indexOf('## Beta 1.242') < changelog.indexOf('## Beta 1.241'));
 
 console.log(`proof-1242: ${pass} pass, ${fail} fail`);

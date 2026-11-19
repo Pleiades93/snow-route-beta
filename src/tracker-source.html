@@ -658,7 +658,7 @@ html.theme-swap *, html.theme-swap *::before, html.theme-swap *::after { transit
 <div id="hud">
   <div id="warn">Not saving. Storage is full or blocked</div>
   <div class="row">
-    <div class="titleStack"><div class="title">Snow Route Beta</div><div class="ver" id="ver">Beta 1.245</div></div>
+    <div class="titleStack"><div class="title">Snow Route Beta</div><div class="ver" id="ver">Beta 1.246</div></div>
   </div>
   <div id="stats"></div>
 </div>
@@ -6831,7 +6831,7 @@ $('stDel').addEventListener('click', async () => {
 });
 // ---- About ----
 const WHATSNEW = { // the curated in-app notes: plain words, LATEST RELEASE ONLY (Beta 1.114, Andrew: the accumulated list cluttered the About pane). A release REPLACES this entry with its own in the same change - it never accumulates; the full history lives in CHANGELOG.md, not the app
-  v: 'Beta 1.245', items: ["Tapping a long road now selects just its stretch in your city - no more freezing."] }; // Beta 1.223 (Andrew): What's New entries are SHORT from now on - point form, one short plain line each, no prose paragraphs, no em dashes
+  v: 'Beta 1.246', items: ["A stuck street download now gives up in a minute instead of hanging."] }; // Beta 1.223 (Andrew): What's New entries are SHORT from now on - point form, one short plain line each, no prose paragraphs, no em dashes
 
 function renderAbout() {
   const cur = $('ver').textContent.trim();
@@ -7472,7 +7472,7 @@ function draftStreets() { return draft ? Object.keys(draft.roads) : []; }
 // Every async completion below binds to (creation session, coverage
 // generation): exitCreate and every new preparation invalidate older
 // generations, and an obsolete completion mutates nothing (CG-PF-05).
-const CR_TIMING = { budgetMs: 120000, attempt1Ms: 70000, topupBudgetMs: 90000, topupAttempt1Ms: 60000, capBytes: 2 * 1024 * 1024, cityCapBytes: 60 * 1024 * 1024, stallMs: 180000 }; // Beta 1.229: stallMs - the no-progress bound for a whole street-grid / area preparation: if NOTHING has landed for this long the load cannot progress, and the watchdogs (crGridTickCheck in create-cache.js, crPrepTickCheck in create-citydata.js) force the existing failed/degraded landing instead of a readout percentage that never moves again (Andrew's Aurora stall). Sized off the fetch budget above: a full budget of honest trying (120s) plus a minute of slack, so a slow-but-alive load is never cut. The battery shrinks it like every other budget here. // ONE overall deadline per fetch with the attempt budgets defined INSIDE it - the primary may take at most attempt1Ms, so the fallback always keeps a meaningful reserve. Verify round (CG-PF-07): the TOP-UP budgets obey the same measured profile as the batch - the primary's measured successes were 40.6/52.7 s, so a 40 s top-up cap reproduced the PF-02 failure on the exception path; the top-up primary now gets 60 s of its 90 s. An object (not bare consts) as the honest test seam: the battery shrinks budgets and caps instead of waiting out real minutes.
+const CR_TIMING = { budgetMs: 120000, attempt1Ms: 70000, topupBudgetMs: 90000, topupAttempt1Ms: 60000, capBytes: 2 * 1024 * 1024, cityCapBytes: 60 * 1024 * 1024, attemptStallMs: 60000, stallMs: 180000 }; // Beta 1.229: stallMs - the no-progress bound for a whole street-grid / area preparation: if NOTHING has landed for this long the load cannot progress, and the watchdogs (crGridWatchdog in create-cache.js, crPrepWatchdog in create-citydata.js) force the existing failed/degraded landing instead of a readout percentage that never moves again (Andrew's Aurora stall). Sized off the fetch budget above: a full budget of honest trying (120s) plus a minute of slack, so a slow-but-alive load is never cut - the preparation watchdogs see LANDINGS, not bytes, so their bound must stay above the whole fetch budget or they would cut fetches the budget itself would have let live. Beta 1.246: attemptStallMs - the OTHER stall rule, one level down (Andrew's Apple-standard rule): inside crOverpassFetch, an attempt that has produced NO BYTES for this long is aborted and the fetch moves to its next instance inside the same budget; the answer landing and every chunk re-arm it, so a slow-but-alive download (bytes trickling) is never cut by it - it lives or dies by its attempt cap and the budget alone. The two rules are not interchangeable: the attempt rule cannot see the unbudgeted wedges the watchdogs exist for (a pack download, a saved-grid read - promises with no bytes to watch), and the watchdogs cannot see bytes. The battery shrinks them like every other budget here. // ONE overall deadline per fetch with the attempt budgets defined INSIDE it - the primary may take at most attempt1Ms, so the fallback always keeps a meaningful reserve. Verify round (CG-PF-07): the TOP-UP budgets obey the same measured profile as the batch - the primary's measured successes were 40.6/52.7 s, so a 40 s top-up cap reproduced the PF-02 failure on the exception path; the top-up primary now gets 60 s of its 90 s. An object (not bare consts) as the honest test seam: the battery shrinks budgets and caps instead of waiting out real minutes.
 const CR_INNER_KM = 2, CR_BUFFER_KM = 1, CR_TOPUP_RING_KM = 2; // the FALLBACK preparation footprint: a fixed ~4 x 4 km picking box plus a 1 km buffer ring (Codex, debate 1: a fixed geographic footprint, never viewport-derived - the map can be panned anywhere)
 const CR_CELL_KM = 4, CR_GRID_PARALLEL = 3, CR_CELL_TRIES = 2; // the city grid: ~4 x 4 km cells, at most 3 fetches in flight, each cell retried once inside a preparation before it is marked failed
 let crSession = 0; // bumped on every enterCreate and exitCreate
@@ -7523,9 +7523,15 @@ async function crOverpassFetch(ql, budgetMs, attempt1Ms, sessionOk, op) {
     const ctl = (typeof AbortController !== 'undefined') ? new AbortController() : null;
     if (op) op.ctl = ctl; // the caller can stop THIS download (Cancel / exit / supersede - CG-PF-10)
     const to = ctl ? setTimeout(() => { try { ctl.abort(); } catch (e) {} }, cap) : null;
+    // Beta 1.246: the attempt's SILENCE timer (CR_TIMING.attemptStallMs), beside its cap timer: armed at the attempt's start (a service that never answers is silent from the start), re-armed when the answer lands and on every chunk; on expiry it aborts THIS attempt exactly as the cap does, and the loop gives the next instance the budget that remains. clearTimers retires both timers together, so no exit path can leave one armed over a settled attempt.
+    let stallTo = null;
+    const armStall = () => { if (!ctl) return; if (stallTo) clearTimeout(stallTo); stallTo = setTimeout(() => { try { ctl.abort(); } catch (e) {} }, CR_TIMING.attemptStallMs); };
+    const clearTimers = () => { if (to) clearTimeout(to); if (stallTo) clearTimeout(stallTo); };
+    armStall();
     try {
       const r = await fetch(OVERPASS_URLS[i], { method: 'POST', headers: { 'Content-Type': 'application/x-www-form-urlencoded' }, body: 'data=' + encodeURIComponent(ql), signal: ctl ? ctl.signal : undefined });
-      if (!r.ok) { lastFail = { ok: false, kind: 'error', status: r.status }; if (to) clearTimeout(to); continue; }
+      armStall(); // the answer landing is progress: the body's silence clock starts from here
+      if (!r.ok) { lastFail = { ok: false, kind: 'error', status: r.status }; clearTimers(); continue; }
       let text;
       if (r.body && typeof r.body.getReader === 'function') {
         const reader = r.body.getReader(), chunks = []; let total = 0;
@@ -7533,14 +7539,15 @@ async function crOverpassFetch(ql, budgetMs, attempt1Ms, sessionOk, op) {
           const part = await reader.read();
           if (part.done) break;
           total += part.value.byteLength;
-          if (total > CR_TIMING.capBytes) { try { if (ctl) ctl.abort(); } catch (e) {} if (to) clearTimeout(to); return { ok: false, kind: 'dense' }; }
+          if (total > CR_TIMING.capBytes) { try { if (ctl) ctl.abort(); } catch (e) {} clearTimers(); return { ok: false, kind: 'dense' }; }
           chunks.push(part.value);
-          if (sessionOk && !sessionOk()) { if (to) clearTimeout(to); try { await reader.cancel(); } catch (e) {} crAbortOp(op); return { ok: false, kind: 'stale' }; } // superseded mid-stream: stop the download, don't just discard its result (CG-PF-10)
+          armStall(); // a landed chunk is progress: the silence clock restarts here
+          if (sessionOk && !sessionOk()) { clearTimers(); try { await reader.cancel(); } catch (e) {} crAbortOp(op); return { ok: false, kind: 'stale' }; } // superseded mid-stream: stop the download, don't just discard its result (CG-PF-10)
         }
         const buf = new Uint8Array(total); let off = 0; for (const c of chunks) { buf.set(c, off); off += c.byteLength; }
         text = new TextDecoder().decode(buf);
-      } else { const cl = (r.headers && typeof r.headers.get === 'function') ? +(r.headers.get('content-length') || 0) : 0; if (cl > CR_TIMING.capBytes) { if (to) clearTimeout(to); return { ok: false, kind: 'dense' }; } text = await r.text(); if (new TextEncoder().encode(text).length > CR_TIMING.capBytes) { if (to) clearTimeout(to); return { ok: false, kind: 'dense' }; } } // Beta 1.170 (Carbon fix round Phase 2, D-07): the no-stream fallback measures the cap the way the streaming branch does - a declared Content-Length over the cap refuses BEFORE the body is buffered, and the buffered text is measured in BYTES (TextEncoder), where through 1.169 the only check ran after the full buffer landed and compared UTF-16 code units against the byte cap (a multi-byte body passed at up to twice the cap). What a reader-less response still cannot do is abort MID-body - that residual is inherent to the fallback, and is why the streaming branch is the primary
-      if (to) clearTimeout(to);
+      } else { const cl = (r.headers && typeof r.headers.get === 'function') ? +(r.headers.get('content-length') || 0) : 0; if (cl > CR_TIMING.capBytes) { clearTimers(); return { ok: false, kind: 'dense' }; } text = await r.text(); if (new TextEncoder().encode(text).length > CR_TIMING.capBytes) { clearTimers(); return { ok: false, kind: 'dense' }; } } // Beta 1.170 (Carbon fix round Phase 2, D-07): the no-stream fallback measures the cap the way the streaming branch does - a declared Content-Length over the cap refuses BEFORE the body is buffered, and the buffered text is measured in BYTES (TextEncoder), where through 1.169 the only check ran after the full buffer landed and compared UTF-16 code units against the byte cap (a multi-byte body passed at up to twice the cap). What a reader-less response still cannot do is abort MID-body - that residual is inherent to the fallback, and is why the streaming branch is the primary. Beta 1.246: the fallback likewise cannot SEE mid-body progress, so its silence timer runs from the answer landing - a text() that wedges is cut by the silence rule, where a trickling one cannot be told apart (the streaming branch remains the primary on every browser that has it)
+      clearTimers();
       let json = null;
       try { json = JSON.parse(text); } catch (e) { lastFail = { ok: false, kind: 'badjson' }; continue; }
       if (Date.now() > deadline) { lastFail = { ok: false, kind: 'unreachable' }; continue; } // the parse itself ate the deadline (CG-PF-03): a late success is not committed
@@ -7548,7 +7555,7 @@ async function crOverpassFetch(ql, budgetMs, attempt1Ms, sessionOk, op) {
       if (!json || !Array.isArray(json.elements)) { lastFail = { ok: false, kind: 'badjson' }; continue; }
       return { ok: true, json, ms: Date.now() - t0 };
     } catch (e) {
-      if (to) clearTimeout(to);
+      clearTimers();
       if (sessionOk && !sessionOk()) return { ok: false, kind: 'stale' };
       lastFail = { ok: false, kind: 'unreachable' };
     }
