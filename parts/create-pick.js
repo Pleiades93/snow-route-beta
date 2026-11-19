@@ -1788,10 +1788,11 @@ function shortStreetName(osm) { // the app's short-name convention (the sandbox'
 function crLineLen(pts) { let s = 0; for (let i = 1; i < pts.length; i++) s += distM(pts[i - 1], pts[i]); return s; }
 function chainWays(ways) { // the sandbox's stitch: greedy endpoint chaining at 1.5 m tolerance into runs. A run whose joins were all exact keeps its ways as segments (the app's own stitcher re-chains them identically); a run with a bridged join is stored as its single stitched line.
   const pool = ways.map(w => w.slice());
+  const lens = pool.map(w => crLineLen(w)); // Beta 1.245: each way's length is computed ONCE - the seed scan below re-reads it for every run it starts, where the 1.118 form re-walked every pooled way's points on every scan (the resolve's one quadratic habit, ~60 ms on the library's longest names). The values are the very numbers crLineLen always produced and the comparison is the same strict >, so the seed order - and every run built on it - is unchanged (the round's node differential over every name in every pack compares the two forms' runs byte for byte).
   const runs = [];
   while (pool.length) {
-    let bi = 0; for (let i = 1; i < pool.length; i++) if (crLineLen(pool[i]) > crLineLen(pool[bi])) bi = i;
-    const first = pool.splice(bi, 1)[0];
+    let bi = 0; for (let i = 1; i < pool.length; i++) if (lens[i] > lens[bi]) bi = i;
+    const first = pool.splice(bi, 1)[0]; lens.splice(bi, 1);
     let line = first.slice(); const segs = [first]; let exact = true;
     let grew = true;
     while (grew) {
@@ -1806,7 +1807,7 @@ function chainWays(ways) { // the sandbox's stitch: greedy endpoint chaining at 
         else if (dAL0 <= 1.5) { addLine = s.slice(1).reverse(); addSeg = s.slice().reverse(); dJoin = dAL0; line = addLine.concat(line); }
         else continue;
         if (dJoin > 0.01) exact = false;
-        segs.push(addSeg); pool.splice(i, 1); grew = true; break;
+        segs.push(addSeg); pool.splice(i, 1); lens.splice(i, 1); grew = true; break;
       }
     }
     runs.push({ segments: segs, line, exact });

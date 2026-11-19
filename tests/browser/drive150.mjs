@@ -71,8 +71,11 @@ const { proc, send, S, ev, consoleLog, sleep, poll } = await launchDrive();
 // stalled body, runs the failure matrix (statuses, malformed JSON,
 // HTTP-200-with-remark, over-cap payload), proves offline-after-extract
 // adds with ZERO further geometry requests, exercises the edge rule
-// (one top-up completes Edgewater Avenue; Faraway Avenue stays
-// PENDING), races cancel / exit / supersede / top-up-after-exit, and
+// (one top-up completes Edgewater Avenue; since Beta 1.245 the two
+// city-edge streets join as their in-city stretches with NO top-up -
+// the city clip, graded in drive166 - and a street whose in-city end
+// is genuinely unproven still tops up once and stays PENDING), races
+// cancel / exit / supersede / top-up-after-exit, and
 // walks the no-search Prepare-this-area path. The grammar, latency and
 // body-stall assertions were each demonstrated RED on the 1.120 tree
 // before the fix (beta1/work/create-prep-1121/). The VERIFY round then

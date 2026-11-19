@@ -2,7 +2,7 @@
 <html lang="en" class="boot">
 <head>
 <meta charset="UTF-8">
-<meta http-equiv="Content-Security-Policy" content="default-src 'none'; script-src 'sha384-1HuZIdrN13LBN/7RwVgnvHZp/HwQZ/Cq4WrcLL6i9rQt58drdRdnwoZyVF8zhvoP' https://cdn.jsdelivr.net; style-src-elem 'sha384-eqG3SdZ2IsgOinKfnmIFq/XY8kDsy2m15fyqxjwapIyIGNSeqjgGOs4DPCtIo5dc' https://cdn.jsdelivr.net; style-src-attr 'unsafe-inline'; img-src 'self' data: blob: https://tiles.basemaps.cartocdn.com https://protomaps.github.io https://cdn.jsdelivr.net; connect-src 'self' https://tiles.basemaps.cartocdn.com https://protomaps.github.io https://cdn.jsdelivr.net https://nominatim.openstreetmap.org https://overpass-api.de https://overpass.kumi.systems; worker-src blob: 'self'; child-src blob: 'self'; font-src 'none'; manifest-src 'self'; base-uri 'none'; form-action 'none'; object-src 'none'">
+<meta http-equiv="Content-Security-Policy" content="default-src 'none'; script-src 'sha384-yiMth9Id5iViHHrSHvFLPT0f0vEb7yrLzkCAOw9wxCC+Tfq47YXuL1/OX7Zzl8vQ' https://cdn.jsdelivr.net; style-src-elem 'sha384-eqG3SdZ2IsgOinKfnmIFq/XY8kDsy2m15fyqxjwapIyIGNSeqjgGOs4DPCtIo5dc' https://cdn.jsdelivr.net; style-src-attr 'unsafe-inline'; img-src 'self' data: blob: https://tiles.basemaps.cartocdn.com https://protomaps.github.io https://cdn.jsdelivr.net; connect-src 'self' https://tiles.basemaps.cartocdn.com https://protomaps.github.io https://cdn.jsdelivr.net https://nominatim.openstreetmap.org https://overpass-api.de https://overpass.kumi.systems; worker-src blob: 'self'; child-src blob: 'self'; font-src 'none'; manifest-src 'self'; base-uri 'none'; form-action 'none'; object-src 'none'">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="mobile-web-app-capable" content="yes">
@@ -659,7 +659,7 @@ html.theme-swap *, html.theme-swap *::before, html.theme-swap *::after { transit
 <div id="hud">
   <div id="warn">Not saving. Storage is full or blocked</div>
   <div class="row">
-    <div class="titleStack"><div class="title">Snow Route Beta</div><div class="ver" id="ver">Beta 1.244</div></div>
+    <div class="titleStack"><div class="title">Snow Route Beta</div><div class="ver" id="ver">Beta 1.245</div></div>
   </div>
   <div id="stats"></div>
 </div>
@@ -6832,7 +6832,7 @@ $('stDel').addEventListener('click', async () => {
 });
 // ---- About ----
 const WHATSNEW = { // the curated in-app notes: plain words, LATEST RELEASE ONLY (Beta 1.114, Andrew: the accumulated list cluttered the About pane). A release REPLACES this entry with its own in the same change - it never accumulates; the full history lives in CHANGELOG.md, not the app
-  v: 'Beta 1.244', items: ["At night, the create search bar, its back button and the results list wear the same black as the bottom bar."] }; // Beta 1.223 (Andrew): What's New entries are SHORT from now on - point form, one short plain line each, no prose paragraphs, no em dashes
+  v: 'Beta 1.245', items: ["Tapping a long road now selects just its stretch in your city - no more freezing."] }; // Beta 1.223 (Andrew): What's New entries are SHORT from now on - point form, one short plain line each, no prose paragraphs, no em dashes
 
 function renderAbout() {
   const cur = $('ver').textContent.trim();
@@ -7701,6 +7701,32 @@ function crCovMerge(elements, box) { // fold one answered extract (a grid cell, 
   crRefreshSearch(); // Beta 1.234 fix round 3 (PR #114, Codex P2): a merge is the moment coverage changes - an open street search re-runs against the fuller extract here, instead of standing on the answer it computed before these streets landed (the refresh and its dismissal guards live at crRefreshSearch in create-pick.js; the search itself merges nothing, so this cannot cascade)
   return cov;
 }
+function crClipLineToBox(line, box) { // Beta 1.245: the maximal sub-lines of a stitched line that lie inside a box, cut where the line crosses the boundary (parametric clip per segment, on the same flat-earth plane distM uses - a crossing point is a real point of the road, interpolated on its own segment). Each piece records whether its ends were made by the cut (startCut / endCut): a cut end sits ON the boundary; an uncut end is one of the line's own ends inside the box.
+  const pieces = [];
+  let cur = null;
+  const close = () => { if (cur && cur.line.length > 1) pieces.push(cur); cur = null; };
+  for (let i = 1; i < line.length; i++) {
+    const a = line[i - 1], b = line[i];
+    let t0 = 0, t1 = 1, miss = false;
+    const dx = b[1] - a[1], dy = b[0] - a[0];
+    const P = [-dx, dx, -dy, dy], Q = [a[1] - box.w, box.e - a[1], a[0] - box.s, box.n - a[0]];
+    for (let k = 0; k < 4; k++) {
+      if (Math.abs(P[k]) < 1e-12) { if (Q[k] < 0) { miss = true; break; } }
+      else { const r = Q[k] / P[k]; if (P[k] < 0) { if (r > t0) t0 = r; } else if (r < t1) t1 = r; if (t0 > t1) { miss = true; break; } }
+    }
+    if (miss) { close(); continue; }
+    const A = t0 === 0 ? a : [a[0] + dy * t0, a[1] + dx * t0];
+    const B = t1 === 1 ? b : [a[0] + dy * t1, a[1] + dx * t1];
+    if (!cur) cur = { line: [A], startCut: t0 > 0, endCut: false };
+    const last = cur.line[cur.line.length - 1];
+    if (last[0] !== A[0] || last[1] !== A[1]) cur.line.push(A);
+    if (B[0] !== A[0] || B[1] !== A[1]) cur.line.push(B);
+    cur.endCut = t1 < 1;
+    if (t1 < 1) close();
+  }
+  close();
+  return pieces;
+}
 function crResolve(osmName, lngLat, boundary) { // resolve a tapped street from the extract: the sandbox stitch + the run nearest the tap (the 1.118 rule), plus the fail-closed completeness check (Codex (c)): a run end is CLOSED only when it lies INSIDE verified coverage - any same-name continuation starts at that end, inside a query that was actually answered, and the source returns every way touching that box, so it would have been returned. Verified coverage is the extract's box SET (city cells + fallback boxes); an explicit boundary (a top-up's own box) replaces the set for that one resolution. Verify round (CG-PF-08): an earlier form also accepted an end touched by ANY other returned way ('junction proof') - unsound, and removed: a cross street touching the endpoint says nothing about a same-name continuation that starts there and runs wholly outside the box, which the extract never saw (Codex's adversarial fixture: Main Road certified complete by an unrelated Cross Road). Outside verified coverage the run is unproven, however many other streets touch it.
   const cov = crCov; if (!cov) return { status: 'nocov' };
   const ways = cov.byName[osmName];
@@ -7709,6 +7735,38 @@ function crResolve(osmName, lngLat, boundary) { // resolve a tapped street from 
   let best = null, bestD = Infinity;
   for (const run of runs) for (const p of run.line) { const d = distM(p, [lngLat.lat, lngLat.lng]); if (d < bestD) { bestD = d; best = run; } }
   if (!best) return { status: 'absent' };
+  // Beta 1.245 (Andrew's phone report): the CITY CLIP. The extract's ways
+  // carry their full geometry, so a stitched run follows its road OUT of
+  // the working city to wherever the ways end - and the completeness
+  // check below then finds those ends outside every verified box and
+  // sends the tap into the 90-second top-up for geometry the route
+  // should never hold (tapping Highway 400 in Vaughan burned the whole
+  // top-up budget and added nothing). When a working city is in force
+  // and the tap lies inside it - and this is not a top-up's own
+  // re-resolution (an explicit boundary stands in for the coverage set
+  // there, unchanged) - and the chosen run actually reaches past the box
+  // (a run wholly inside it resolves exactly as it always has, stored
+  // form included), the run is cut at the city box first: an end the
+  // cut makes sits ON the city boundary and is complete by definition
+  // (the city is the working extent; nothing past its edge is the user's
+  // to select), while an original end inside the box still faces the
+  // coverage test below - a genuinely unproven interior end falls
+  // through to the exact pre-1.245 logic (edge, top-up, pending). The
+  // stored shape of a clipped pick is the one stitched in-city line (the
+  // bridged-run form), so a clipped street's sectors cut from it exactly
+  // as a bridged street's do.
+  if (!boundary && crCity && crCity.bbox && crInBox(crCity.bbox, lngLat.lat, lngLat.lng) && best.line.some(p => !crInBox(crCity.bbox, p[0], p[1]))) {
+    const pieces = crClipLineToBox(best.line, crCity.bbox);
+    let piece = null, pieceD = Infinity;
+    for (const pc of pieces) for (const p of pc.line) { const d = distM(p, [lngLat.lat, lngLat.lng]); if (d < pieceD) { pieceD = d; piece = pc; } }
+    if (piece) {
+      let unproven = false;
+      for (const end of [{ pt: piece.line[0], cut: piece.startCut }, { pt: piece.line[piece.line.length - 1], cut: piece.endCut }]) {
+        if (!end.cut && !crInAnyBox(cov.boxes, end.pt[0], end.pt[1])) { unproven = true; break; }
+      }
+      if (!unproven) return { status: 'ok', segs: [piece.line] };
+    }
+  }
   for (const end of [best.line[0], best.line[best.line.length - 1]]) {
     const closed = boundary ? crInBox(boundary, end[0], end[1]) : crInAnyBox(cov.boxes, end[0], end[1]);
     if (!closed) return { status: 'edge', run: best };
@@ -9802,10 +9860,11 @@ function shortStreetName(osm) { // the app's short-name convention (the sandbox'
 function crLineLen(pts) { let s = 0; for (let i = 1; i < pts.length; i++) s += distM(pts[i - 1], pts[i]); return s; }
 function chainWays(ways) { // the sandbox's stitch: greedy endpoint chaining at 1.5 m tolerance into runs. A run whose joins were all exact keeps its ways as segments (the app's own stitcher re-chains them identically); a run with a bridged join is stored as its single stitched line.
   const pool = ways.map(w => w.slice());
+  const lens = pool.map(w => crLineLen(w)); // Beta 1.245: each way's length is computed ONCE - the seed scan below re-reads it for every run it starts, where the 1.118 form re-walked every pooled way's points on every scan (the resolve's one quadratic habit, ~60 ms on the library's longest names). The values are the very numbers crLineLen always produced and the comparison is the same strict >, so the seed order - and every run built on it - is unchanged (the round's node differential over every name in every pack compares the two forms' runs byte for byte).
   const runs = [];
   while (pool.length) {
-    let bi = 0; for (let i = 1; i < pool.length; i++) if (crLineLen(pool[i]) > crLineLen(pool[bi])) bi = i;
-    const first = pool.splice(bi, 1)[0];
+    let bi = 0; for (let i = 1; i < pool.length; i++) if (lens[i] > lens[bi]) bi = i;
+    const first = pool.splice(bi, 1)[0]; lens.splice(bi, 1);
     let line = first.slice(); const segs = [first]; let exact = true;
     let grew = true;
     while (grew) {
@@ -9820,7 +9879,7 @@ function chainWays(ways) { // the sandbox's stitch: greedy endpoint chaining at 
         else if (dAL0 <= 1.5) { addLine = s.slice(1).reverse(); addSeg = s.slice().reverse(); dJoin = dAL0; line = addLine.concat(line); }
         else continue;
         if (dJoin > 0.01) exact = false;
-        segs.push(addSeg); pool.splice(i, 1); grew = true; break;
+        segs.push(addSeg); pool.splice(i, 1); lens.splice(i, 1); grew = true; break;
       }
     }
     runs.push({ segments: segs, line, exact });

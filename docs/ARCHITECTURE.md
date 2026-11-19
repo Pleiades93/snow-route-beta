@@ -325,12 +325,20 @@ nearest the tap is the run resolved — subject to a fail-closed
 completeness check: a run end is CLOSED only when it lies inside
 verified coverage — the extract's box SET (any continuation starts
 there, inside a query that was actually answered, and would have
-been returned). An end outside verified coverage is unproven —
+been returned). One boundary is not a coverage question at all:
+when a working city is in force and the tap lies inside it, a run
+reaching past the city box is first CUT at the box (Beta 1.245 —
+the extract's ways carry their full geometry, so without the cut
+the stitch follows a highway out of the city and the check below
+would chase its out-of-city remainder): an end the cut makes sits
+on the city boundary and is closed by definition, the city being
+the working extent, and the pick is stored as the one stitched
+in-city line. An end outside verified coverage is unproven —
 however many other streets touch it (the verify round's
 adversarial case: a cross street touching the endpoint says
 nothing about a same-name continuation running wholly outside the
 box; an earlier "junction proof" form was removed as unsound,
-CG-PF-08) — so the street gets ONE targeted top-up (through the
+CG-PF-08) — so a street whose in-city stretch is unproven gets ONE targeted top-up (through the
 same source seam, its own budgets on the same measured profile —
 60 s primary of 90 s, CG-PF-07 — the name over a bounded box
 centred on the run's open end, merged by way id, resolved again
