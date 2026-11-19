@@ -402,13 +402,19 @@ function analyzeSource(src) {
           // statementEnd uses (Codex P2 round 7, PR #126): without it
           // the region ran on into the next statement and claimed
           // its writes for this arrow's key.
-          let d = 0, end = i + 1;
+          let d = 0, end = i + 1, q = 0;
           for (let j = i + 1; j < toks.length; j++) {
             const w = toks[j].v;
             if (d === 0 && j > i + 1 && toks[j].line > toks[j - 1].line) {
               if (isPostfixUpdate(toks, j - 1, i + 1) && !OPERATOR_CONTINUES.has(w)) break;
               if (!CONTINUES.has(w) && w !== 'tpl' && !CONTINUES.has(toks[j - 1].v) && !PREFIX_BEFORE.has(toks[j - 1].v)) break;
             }
+            // A depth-0 ':' ends the body only when it belongs to a
+            // conditional ENCLOSING the arrow (Codex P2 round 8,
+            // PR #126): the body's own conditionals consume their
+            // colons against the '?' count tracked here.
+            if (d === 0 && w === '?') q++;
+            else if (d === 0 && w === ':') { if (q > 0) q--; else break; }
             if (d === 0 && [',', ';', ')', ']', '}'].includes(w)) break;
             if (OPEN[w]) d++; else if (CLOSE[w]) d--;
             end = j;
@@ -851,6 +857,10 @@ for (const [label, src, want] of FX_CASES) {
   check('key fixture: the same write after an explicit semicolon keys identically', asemi.length === 1 && asemi[0].fn === '<top-level>', asemi);
   const amove2 = (asiForm) => analyzeFiles({ 'owner.js': FX_OWNER, 'case.js': asiForm ? 'const alpha = () => 0\next = 1;' : 'const alpha = () => { ext = 1; };' }).sites.filter(s => s.file === 'case.js').map(key);
   check('key fixture: moving a write from after an expression arrow into its block body changes its key', JSON.stringify(amove2(true)) !== JSON.stringify(amove2(false)) && amove2(false)[0].includes('|alpha|'), [amove2(true), amove2(false)]);
+  const cbound = fx('cond ? alpha = () => 0 : (ext = 1);');
+  check('key fixture: a write in the alternate of a conditional enclosing an expression arrow is not claimed by the arrow', cbound.length === 1 && cbound[0].fn === '<top-level>', cbound);
+  const cmove = (inArrow) => analyzeFiles({ 'owner.js': FX_OWNER, 'case.js': inArrow ? 'cond ? alpha = () => { ext = 1; } : 0;' : 'cond ? alpha = () => 0 : (ext = 1);' }).sites.filter(s => s.file === 'case.js').map(key);
+  check('key fixture: moving a write between an enclosing conditional alternate and the arrow body changes its key', JSON.stringify(cmove(true)) !== JSON.stringify(cmove(false)) && cmove(true)[0].includes('|alpha|'), [cmove(true), cmove(false)]);
 }
 
 // ---------------- the tree census ----------------
