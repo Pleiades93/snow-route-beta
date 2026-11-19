@@ -583,7 +583,12 @@ locally, first:
    bindings over the six app parts and compares exactly against
    `tests/browser/fixtures/foreign-writes-census.json` (68 expressions
    on 32 lines on the 1.144 tree; regeneration only via its `--write`
-   mode, a human-reviewed act). The census analyzer's
+   mode, a human-reviewed act). Since Arch-5 (2026-11-19) the census's
+   sites are keyed by enclosing function + target + the write's
+   occurrence ordinal within that function ({file, fn, name, owner,
+   occ}), not by line number, so an edit that merely shifts lines no
+   longer re-keys the pin; on the current tree the census holds 58
+   expressions. The census analyzer's
    statement-boundary logic is proven for the shapes in its fixture
    set; two named brace-less-loop shapes are known misreads, pinned
    in the selftest as labelled known-limitation fixtures asserting
