@@ -68,6 +68,9 @@
 // expression sitting in a default does not take it either). Wrapping
 // parentheses and an 'async' modifier around an assigned function
 // are transparent for keying: the name still resolves through them.
+// An immediately invoked function is the opposite case: the slot
+// binds its result, not the function, so it takes no slot name and
+// stays transparent like any other anonymous function.
 //
 // ADJUDICATION NOTES (counting-rule decisions, builder, 2026-11-07):
 //  - engine.js: only GLP is declared at engine.js top level; everything
@@ -534,17 +537,25 @@ function analyzeSource(src) {
   // identifier before it; anything else stays anonymous. String
   // property keys are masked by the tokenizer, so they resolve as
   // anonymous - accepted: identifier keys are the codebase norm.
-  const resolveSlot = (anchor) => {
-    let k = anchor;
-    while (k != null && k >= 0 && toks[k] && (toks[k].v === '(' || (toks[k].t === 'id' && toks[k].v === 'async'))) k--;
+  const resolveSlot = (anchor, bodyEnd) => {
+    let k = anchor, parens = 0;
+    while (k != null && k >= 0 && toks[k] && (toks[k].v === '(' || (toks[k].t === 'id' && toks[k].v === 'async'))) { if (toks[k].v === '(') parens++; k--; }
     if (k == null || k < 1) return null;
     if (toks[k].v !== '=' && toks[k].v !== ':') return null;
     const t = toks[k - 1];
-    return t && t.t === 'id' && !BIND_KEYWORDS.has(t.v) && !paramNameToks.has(k - 1) ? t.v : null;
+    if (!t || t.t !== 'id' || BIND_KEYWORDS.has(t.v) || paramNameToks.has(k - 1)) return null;
+    // Immediately invoked (Codex P2 round 5, PR #126): when the
+    // function's own wrapping parens close right after its body and
+    // a call follows, the slot binds the RESULT, not the function -
+    // an IIFE is transparent for keying and takes no slot name.
+    let m = bodyEnd + 1;
+    for (let n = 0; n < parens && toks[m] && toks[m].v === ')'; n++) m++;
+    if (toks[m] && toks[m].v === '(') return null;
+    return t.v;
   };
   for (const s of fnSlots) {
-    const nm = resolveSlot(s.anchor);
     const rid = s.regionId != null ? s.regionId : regionByStart.get(s.braceIdx);
+    const nm = rid != null && regions[rid] ? resolveSlot(s.anchor, regions[rid].end) : null;
     if (rid != null && regions[rid]) regions[rid].fnName = nm;
     if (s.range) s.range.fnName = nm;
   }
@@ -808,6 +819,10 @@ for (const [label, src, want] of FX_CASES) {
   check('key fixture: a call-argument arrow stays anonymous (keys to <top-level>)', callarg.length === 1 && callarg[0].fn === '<top-level>', callarg);
   const nmove = (inAlpha) => analyzeFiles({ 'owner.js': FX_OWNER, 'case.js': 'function outer() { function alpha(q = ' + (inAlpha ? '() => { ext = 1; }' : '0') + ') {} function beta(q = ' + (inAlpha ? '0' : '() => { ext = 1; }') + ') {} }' }).sites.filter(s => s.file === 'case.js').map(key);
   check('key fixture: moving a default callback between two nested functions changes its key (the nearer parameter span beats the outer body)', JSON.stringify(nmove(true)) !== JSON.stringify(nmove(false)) && nmove(true)[0].includes('|alpha|') && nmove(false)[0].includes('|beta|'), [nmove(true), nmove(false)]);
+  const iife = fx('function gamma() { const value = (() => { ext = 1; })(); }');
+  check('key fixture: an immediately invoked arrow keys to the enclosing function, not the result binding', iife.length === 1 && iife[0].fn === 'gamma', iife);
+  const imove = (inAlpha) => analyzeFiles({ 'owner.js': FX_OWNER, 'case.js': 'function alpha() { const v = (() => {' + (inAlpha ? ' ext = 1;' : '') + ' })(); } function beta() { const v = (() => {' + (inAlpha ? '' : ' ext = 1;') + ' })(); }' }).sites.filter(s => s.file === 'case.js').map(key);
+  check('key fixture: moving an assigned IIFE statement between two functions changes its key', JSON.stringify(imove(true)) !== JSON.stringify(imove(false)) && imove(true)[0].includes('|alpha|') && imove(false)[0].includes('|beta|'), [imove(true), imove(false)]);
 }
 
 // ---------------- the tree census ----------------
