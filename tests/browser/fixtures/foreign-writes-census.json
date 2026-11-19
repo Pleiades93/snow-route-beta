@@ -15,7 +15,7 @@
     "engine.js"
   ],
   "totals": {
-    "expressions": 58,
+    "expressions": 30,
     "byFile": {
       "app1.js": {
         "expressions": 3
@@ -24,13 +24,13 @@
         "expressions": 0
       },
       "app3.js": {
-        "expressions": 31
+        "expressions": 9
       },
       "app4.js": {
         "expressions": 6
       },
       "app5.js": {
-        "expressions": 17
+        "expressions": 11
       },
       "create-packs.js": {
         "expressions": 0
@@ -80,104 +80,6 @@
     {
       "file": "app3.js",
       "fn": "cancelStart",
-      "name": "coveredIdx",
-      "owner": "app1.js",
-      "occ": 1
-    },
-    {
-      "file": "app3.js",
-      "fn": "cancelStart",
-      "name": "coveredIdx",
-      "owner": "app1.js",
-      "occ": 2
-    },
-    {
-      "file": "app3.js",
-      "fn": "cancelStart",
-      "name": "coveredIdx",
-      "owner": "app1.js",
-      "occ": 3
-    },
-    {
-      "file": "app3.js",
-      "fn": "cancelStart",
-      "name": "doneSet",
-      "owner": "app1.js",
-      "occ": 1
-    },
-    {
-      "file": "app3.js",
-      "fn": "cancelStart",
-      "name": "doneSet",
-      "owner": "app1.js",
-      "occ": 2
-    },
-    {
-      "file": "app3.js",
-      "fn": "cancelStart",
-      "name": "doneSet",
-      "owner": "app1.js",
-      "occ": 3
-    },
-    {
-      "file": "app3.js",
-      "fn": "cancelStart",
-      "name": "doneTimes",
-      "owner": "app1.js",
-      "occ": 1
-    },
-    {
-      "file": "app3.js",
-      "fn": "cancelStart",
-      "name": "doneTimes",
-      "owner": "app1.js",
-      "occ": 2
-    },
-    {
-      "file": "app3.js",
-      "fn": "cancelStart",
-      "name": "doneVia",
-      "owner": "app1.js",
-      "occ": 1
-    },
-    {
-      "file": "app3.js",
-      "fn": "cancelStart",
-      "name": "doneVia",
-      "owner": "app1.js",
-      "occ": 2
-    },
-    {
-      "file": "app3.js",
-      "fn": "cancelStart",
-      "name": "pieceTimes",
-      "owner": "app1.js",
-      "occ": 1
-    },
-    {
-      "file": "app3.js",
-      "fn": "cancelStart",
-      "name": "pieceTimes",
-      "owner": "app1.js",
-      "occ": 2
-    },
-    {
-      "file": "app3.js",
-      "fn": "cancelStart",
-      "name": "pieces",
-      "owner": "app1.js",
-      "occ": 1
-    },
-    {
-      "file": "app3.js",
-      "fn": "cancelStart",
-      "name": "pieces",
-      "owner": "app1.js",
-      "occ": 2
-    },
-    {
-      "file": "app3.js",
-      "fn": "cancelStart",
       "name": "runStart",
       "owner": "app1.js",
       "occ": 1
@@ -193,62 +95,6 @@
       "file": "app3.js",
       "fn": "cancelStart",
       "name": "trailSessions",
-      "owner": "app1.js",
-      "occ": 1
-    },
-    {
-      "file": "app3.js",
-      "fn": "clearAllMarks",
-      "name": "coveredIdx",
-      "owner": "app1.js",
-      "occ": 1
-    },
-    {
-      "file": "app3.js",
-      "fn": "clearAllMarks",
-      "name": "doneSet",
-      "owner": "app1.js",
-      "occ": 1
-    },
-    {
-      "file": "app3.js",
-      "fn": "clearAllMarks",
-      "name": "doneTimes",
-      "owner": "app1.js",
-      "occ": 1
-    },
-    {
-      "file": "app3.js",
-      "fn": "clearAllMarks",
-      "name": "doneVia",
-      "owner": "app1.js",
-      "occ": 1
-    },
-    {
-      "file": "app3.js",
-      "fn": "finishRun",
-      "name": "coveredIdx",
-      "owner": "app1.js",
-      "occ": 1
-    },
-    {
-      "file": "app3.js",
-      "fn": "finishRun",
-      "name": "doneSet",
-      "owner": "app1.js",
-      "occ": 1
-    },
-    {
-      "file": "app3.js",
-      "fn": "finishRun",
-      "name": "doneTimes",
-      "owner": "app1.js",
-      "occ": 1
-    },
-    {
-      "file": "app3.js",
-      "fn": "finishRun",
-      "name": "doneVia",
       "owner": "app1.js",
       "occ": 1
     },
@@ -374,34 +220,6 @@
     {
       "file": "app5.js",
       "fn": "unloadRouteToBoot",
-      "name": "coveredIdx",
-      "owner": "app1.js",
-      "occ": 1
-    },
-    {
-      "file": "app5.js",
-      "fn": "unloadRouteToBoot",
-      "name": "doneSet",
-      "owner": "app1.js",
-      "occ": 1
-    },
-    {
-      "file": "app5.js",
-      "fn": "unloadRouteToBoot",
-      "name": "doneTimes",
-      "owner": "app1.js",
-      "occ": 1
-    },
-    {
-      "file": "app5.js",
-      "fn": "unloadRouteToBoot",
-      "name": "doneVia",
-      "owner": "app1.js",
-      "occ": 1
-    },
-    {
-      "file": "app5.js",
-      "fn": "unloadRouteToBoot",
       "name": "history",
       "owner": "app1.js",
       "occ": 1
@@ -410,20 +228,6 @@
       "file": "app5.js",
       "fn": "unloadRouteToBoot",
       "name": "notes",
-      "owner": "app1.js",
-      "occ": 1
-    },
-    {
-      "file": "app5.js",
-      "fn": "unloadRouteToBoot",
-      "name": "pieceTimes",
-      "owner": "app1.js",
-      "occ": 1
-    },
-    {
-      "file": "app5.js",
-      "fn": "unloadRouteToBoot",
-      "name": "pieces",
       "owner": "app1.js",
       "occ": 1
     },

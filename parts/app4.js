@@ -57,12 +57,12 @@ function packGeometry(pack) { // Beta 1.117 (F6): a pack's geometry built PURELY
 }
 function snapForExport(strict) { // Beta 1.97 (audit loop CG-196-02): the ACTIVE route's cancel snapshot in normalized object form - from the in-memory snapshot when there is one, else from the persisted copy after validation; null when the run has neither. Extracted from 1.96's recoveryObj so the normal backup carries the identical object through the identical construction. Verify cycle 1 (CG-196-02): in STRICT mode (the normal backup) a snapshot READ failure returns undefined instead of null - lsGet swallows read errors, which would silently ship a snapshot-less backup that looks complete; the strict caller fails the whole export, the recovery caller stays best-effort.
   if (!runStart) return null;
-  if (runSnap) return { at: runStart, pieces: runSnap.pieces, pieceTimes: runSnap.pieceTimes, done: runSnap.done, times: runSnap.times, via: runSnap.via, cov: runSnap.cov };
+  if (runSnap) return BOARD.snapshotObject(runSnap, runStart); // Arch-2: the snapshot-object shape is the board module's one construction
   let rawSnap = null;
   if (strict) { const rs = rawRead(LS.snap); if (rs === RAW_READ_FAILED) return undefined; rawSnap = rs; } // Beta 1.136: through the shared rawRead - the strict failure mode (undefined) is unchanged
   else rawSnap = lsGet(LS.snap);
   const pv = validateSnap(parseJ(rawSnap, null), runStart);
-  return pv ? { at: runStart, pieces: pv.pieces, pieceTimes: pv.pieceTimes, done: pv.done, times: pv.times, via: pv.via, cov: pv.cov } : null;
+  return pv ? BOARD.snapshotObject(pv, runStart) : null;
 }
 function backupObj() { // Beta 1.76: format v2 - routes carry their own slots ({routes: {id: {field: raw}}}) and the night preference rides at top level. Reads stay RAW (Beta 1.48, audit B04): a failed read fails the whole export (null) instead of producing a valid-looking backup with a piece silently missing.
   flushAux(true); // Beta 1.92 (deep audit F04): flush the buffered trail/coverage first - a backup must not lag the work it claims to hold
@@ -93,7 +93,7 @@ function backupObj() { // Beta 1.76: format v2 - routes carry their own slots ({
     if (startStr) {
       let snapObj = null;
       if (isActive) { snapObj = snapForExport(true); if (snapObj === undefined) return null; } // a snapshot read failure fails the whole export (B04 discipline) - never a valid-looking backup missing the snapshot
-      else { const rawSnap = rawRead(rk.snap); if (rawSnap === RAW_READ_FAILED) return null; const pv = validateSnap(parseJ(rawSnap, null), +startStr, packGeometry(p)); if (pv) snapObj = { at: +startStr, pieces: pv.pieces, pieceTimes: pv.pieceTimes, done: pv.done, times: pv.times, via: pv.via, cov: pv.cov }; } // Beta 1.117 (F6): a non-active pack's snapshot validates against ITS OWN geometry
+      else { const rawSnap = rawRead(rk.snap); if (rawSnap === RAW_READ_FAILED) return null; const pv = validateSnap(parseJ(rawSnap, null), +startStr, packGeometry(p)); if (pv) snapObj = BOARD.snapshotObject(pv, +startStr); } // Beta 1.117 (F6): a non-active pack's snapshot validates against ITS OWN geometry
       if (snapObj) data.snap = JSON.stringify(snapObj);
     }
     routes[p.id] = data;
@@ -114,14 +114,15 @@ let recoveryDisclosure = null; // Beta 1.142 (Package B, DA-09): the names of cr
 function recoveryObj() { // Beta 1.95 (deep audit SR-194-02): the RECOVERY backup - the live IN-MEMORY state of the active route, serialized directly. The normal Backup reads storage and REFUSES when storage is behind memory (it would ship a stale board as current); that refusal left the storage-failure warnings' "export a backup now" unactionable in exactly the state they fire in - the marks at risk had no exit before a reload. This export is that exit: same envelope (it restores through the normal path), plus the recovery marker, and the file/labels say plainly that it holds unsaved live data. It never reads the board from storage and never writes anything.
   if (!routeLoaded || !activeRoute) return null;
   const data = {};
-  data.sides = JSON.stringify({ p: pieces, t: pieceTimes });
-  data.done = JSON.stringify([...doneSet]);
-  data.times = JSON.stringify(doneTimes);
-  data.via = JSON.stringify(doneVia);
+  const ser = BOARD.serialiseLive(); // Arch-2: the live board's stored strings come from the board module
+  data.sides = ser.sides;
+  data.done = ser.done;
+  data.times = ser.times;
+  data.via = ser.via;
   data.notes = JSON.stringify(notes);
   data.hist = JSON.stringify(history);
   data.trail = JSON.stringify(trail);
-  data.cov = JSON.stringify(coveredIdx);
+  data.cov = ser.cov;
   data.sess = JSON.stringify(trailSessions);
   data.start = runStart ? String(runStart) : null; // Beta 1.97 (audit loop CG-196-01): the recovery backup asserts idle explicitly too - it is a complete backup by construction
   if (runStart) { // Beta 1.96 (deep audit SR-195-02, Andrew's pick: carry it, do not just warn): the run's cancel snapshot rides INSIDE the recovery file, so a run restored from it - on this phone or another - keeps the exact-restore Cancel it had. 1.95's recovery carried every field except the snapshot, quietly demoting a restored run's Cancel to the stamp journal (which cannot see an unmark). Taken from the in-memory snapshot when there is one, else from the persisted copy after validation; a run with neither simply carries none, and the restore side says so.
@@ -151,7 +152,7 @@ function recoveryObj() { // Beta 1.95 (deep audit SR-194-02): the RECOVERY backu
   if (excluded.has(activeRoute.id)) return null; // the open route's own definition cannot be carried - no honest recovery file exists, and shareRecovery's unavailable message is the truthful result
   const routes = {}; routes[activeRoute.id] = data;
   for (const pk of ROUTE_PACKS) { if (pk.id === activeRoute.id || excluded.has(pk.id)) continue; const rk = routeKeys(pk.id); const d = {}; for (const f of ROUTE_FIELDS) { const v = rawRead(rk[f]); if (v !== RAW_READ_FAILED && v != null) d[f] = v; } if (d.start === undefined) d.start = null;
-    if (d.start) { const rawSnap = rawRead(rk.snap); if (rawSnap !== RAW_READ_FAILED && rawSnap != null) { const pv = validateSnap(parseJ(rawSnap, null), +d.start, packGeometry(pk)); if (pv) d.snap = JSON.stringify({ at: +d.start, pieces: pv.pieces, pieceTimes: pv.pieceTimes, done: pv.done, times: pv.times, via: pv.via, cov: pv.cov }); } } // Beta 1.142 (Package B, DA-08): a non-active RUNNING route's cancel snapshot rides the recovery file too, validated against its own geometry and normalized exactly as the normal backup carries it (1.97) - pre-1.142 recovery copied ROUTE_FIELDS only, so a run restored from a recovery file lost its exact Cancel. Recovery stays best-effort: a snapshot read that fails simply leaves it out.
+    if (d.start) { const rawSnap = rawRead(rk.snap); if (rawSnap !== RAW_READ_FAILED && rawSnap != null) { const pv = validateSnap(parseJ(rawSnap, null), +d.start, packGeometry(pk)); if (pv) d.snap = BOARD.serialiseSnap(pv, +d.start); } } // Beta 1.142 (Package B, DA-08): a non-active RUNNING route's cancel snapshot rides the recovery file too, validated against its own geometry and normalized exactly as the normal backup carries it (1.97) - pre-1.142 recovery copied ROUTE_FIELDS only, so a run restored from a recovery file lost its exact Cancel. Recovery stays best-effort: a snapshot read that fails simply leaves it out.
     if (Object.keys(d).length) routes[pk.id] = d; } // Beta 1.97 (audit loop CG-196-01): an untouched pack in a recovery file asserts idle like any complete backup
   const o = { app: 'snowroute-backup', v: 2, recovery: true, at: new Date().toISOString(), routes };
   if (upsCarry && Object.keys(upsCarry).length) o.userpacks = upsCarry; // Beta 1.118: created-route definitions ride the recovery backup too. Beta 1.142: from the strict record read, or from validated memory when the record cannot be read (DA-09)
@@ -260,7 +261,7 @@ async function restoreBackup(parsed) { // production doRestore semantics: valida
       else if (data.snap !== undefined) { // Beta 1.96 (SR-195-02): a carried start snapshot (recovery backups) is restored WITH its run. Beta 1.97 verify cycle 1 (CG-196-01): ELSE - an explicit idle assertion already consumed this route's lifecycle state above; a snap string riding an idle assertion is dropped (and reported), never validated against the deleted start and written back - it earns a write only by passing validateSnap against the start this same backup carries for the route, and it is written in its normalized form through the same verified entries as every other field, so a failed restore rolls it back too. A snapshot that fails validation, or one whose run's start is not in the backup, is dropped and reported in the result message - never applied, never silently kept.
         const startEnt = entries.find(e => e[0] === rk.start);
         let restoredSnap = null;
-        if (startEnt && typeof data.snap === 'string') { try { const valid = validateSnap(JSON.parse(data.snap), +startEnt[1], pg); if (valid) restoredSnap = JSON.stringify({ at: +startEnt[1], pieces: valid.pieces, pieceTimes: valid.pieceTimes, done: valid.done, times: valid.times, via: valid.via, cov: valid.cov }); } catch (e) { /* an unparseable snapshot is a dropped snapshot */ } } // Beta 1.117 (F6): validated against THIS route's geometry (pg), not the open route's
+        if (startEnt && typeof data.snap === 'string') { try { const valid = validateSnap(JSON.parse(data.snap), +startEnt[1], pg); if (valid) restoredSnap = BOARD.serialiseSnap(valid, +startEnt[1]); } catch (e) { /* an unparseable snapshot is a dropped snapshot */ } } // Beta 1.117 (F6): validated against THIS route's geometry (pg), not the open route's
         if (restoredSnap) entries.push([rk.snap, restoredSnap]); else snapDropped = true;
       }
     }

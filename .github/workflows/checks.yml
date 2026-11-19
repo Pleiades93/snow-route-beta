@@ -184,6 +184,8 @@ jobs:
         run: node tests/browser/selftest-judging-fixtures.mjs
       - name: Foreign-write census (Tranche 2 gate)
         run: node tests/browser/selftest-foreign-writes.mjs
+      - name: Route board module fixtures (Arch-2 gate)
+        run: node tests/browser/selftest-board.mjs
       - name: NV fix round proofs (Beta 1.152 - stretch parity, pack ceilings, tile budget; history cap retired Beta 1.167)
         run: node tests/browser/selftest-nv1152.mjs
       - name: Proofs (manifest-driven - every proof in tests/proof/manifest.json; protocol fix round, 2026-11-17)
