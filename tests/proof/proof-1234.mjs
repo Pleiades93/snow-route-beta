@@ -52,10 +52,10 @@ const check = (name, cond) => { if (cond) { pass++; } else { fail++; console.log
 const runSearchBody = pick.slice(pick.indexOf('function crRunSearch(fromTyping, cont) {'), pick.indexOf("document.addEventListener('pointerdown'"));
 
 // ---------- A: the city pane anchors ----------
-check('A1 (Beta 1.236 roll: the full-bleed pane and its HUD-line padding retired - the pane is a floating sheet, pinned whole in proof-1236 A1)', head.includes('#rmCityListPane { height: calc(100% - 76px); width: calc(100% + 32px);'));
+check('A1 (Beta 1.239 roll: the 1.236 floating sheet retired - the full-bleed pane restored, pinned whole in proof-1236 A1): the pane pads its top by the HUD formula less the menu padding', head.includes('#rmCityListPane { height: 100%; padding-top: calc(25px + var(--sat) - 24px); }'));
 check('A2: the anchor it follows stands - the HUD pads its title calc(25px + var(--sat))', head.includes('padding: calc(25px + var(--sat)) calc(12px + var(--sar)) 8px calc(12px + var(--sal));'));
-check('A3 (Beta 1.236 roll: the tab-bar pin retired - Back stands in the flow at the sheet\'s bottom-left, the 32px row stays)', head.includes('#rmCityListPane #rmCityListBack { height: 32px; }') && !head.includes('#rmCityListPane #rmCityListBack { position: absolute'));
-check('A4 (Beta 1.236 roll: the list\'s bottom bound is the sheet itself now - the close-X margin retired; the flex stretch is unchanged)', head.includes('#rmCityListPane #crCityList { max-height: none; flex: 1 1 auto; min-height: 0; margin-bottom: 0; }'));
+check('A3 (Beta 1.239 roll: the tab-bar pin restored): Back pins to the tab-bar line (absolute, the derived bottom, the 32px row)', head.includes('#rmCityListPane #rmCityListBack { position: absolute; left: 0; bottom: calc(var(--sab) + 11.5px - 24px); height: 32px; }'));
+check('A4 (Beta 1.239 roll: the close-X margin restored): the list keeps its flex stretch and the re-derived 12px-above-the-X margin', head.includes('#rmCityListPane #crCityList { max-height: none; flex: 1 1 auto; min-height: 0; margin-bottom: calc(58px + var(--sab)); }'));
 check('A5: scope - the routes list keeps its 52% cap and no other pane gains the full-height rule', head.includes('#crCityList, #rmRoutes { max-height: calc(var(--vvh, 100dvh) * .52);') && !head.includes('#rmListPane { height: 100%') && !head.includes('#rmCityPane { height: 100%'));
 
 // ---------- B: intersections only, on-device ----------

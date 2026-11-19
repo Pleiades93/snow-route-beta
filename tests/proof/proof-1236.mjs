@@ -25,6 +25,15 @@
 // teardown never emptied the field, so the last typed street sat in the
 // bar when a later creation opened). The rendered behaviour of every
 // piece is measured in the round's QA (qa-1236.mjs).
+// Beta 1.239 RE-DERIVATION (Andrew's ruling, 2026-11-18): piece A is
+// REVERTED - the sheet read as a different-shaded bubble laid on the
+// menu, which the sample he picked from never rendered; Select City
+// is the plain blue menu again, its three rules restored verbatim
+// from the 1.235 tree. Section A below is re-derived to pin the
+// restored form and the sheet's absence. Pieces B-E were his actual
+// asks and stand untouched - their sections below are byte-identical
+// to the 1.236 form. The rendered behaviour of the restored pane is
+// measured in qa-1239 (the round-sheet-correction work dir).
 // Run from the repo root:  node tests/proof/proof-1236.mjs
 import { readFileSync } from 'node:fs';
 
@@ -41,16 +50,16 @@ const check = (name, cond) => { if (cond) { pass++; } else { fail++; console.log
 const exitBody = pick.slice(pick.indexOf('function exitCreate() {'), pick.indexOf('function openDoors()'));
 const renderBody = pick.slice(pick.indexOf('function crRenderRows(res, cont) {'), pick.indexOf('function crSharesStreet(a, b)'));
 
-// ---------- A: the floating sheet ----------
-check('A1: the pane is the sheet - pulled-in height, widened width, inner padding, its own blue, the sample corners and shadow', head.includes('#rmCityListPane { height: calc(100% - 76px); width: calc(100% + 32px); max-width: 640px; padding: 26px 16px 14px; background: linear-gradient(135deg, #3d65ef, #1b2fb6); border-radius: 26px; box-shadow: 0 14px 34px rgba(15,23,64,.35); }'));
-check('A2: the sheet blue is the menu blue (the same gradient the menu itself wears)', head.includes('#routeMenu { position: fixed; inset: 0; z-index: 10000; background: linear-gradient(135deg, #3d65ef, #1b2fb6);'));
-check('A3: the menu background steps aside under the sheet (the citySheet rule)', head.includes('#routeMenu.citySheet { background: transparent; }'));
-check('A4: showRmPane owns the step-aside at the choke point - on for the city list pane, off for every other', app2.includes("$('routeMenu').classList.toggle('citySheet', id === 'rmCityListPane');"));
-check('A5: the list flexes inside the sheet and its old close-X margin is gone', head.includes('#rmCityListPane #crCityList { max-height: none; flex: 1 1 auto; min-height: 0; margin-bottom: 0; }') && !head.includes('margin-bottom: calc(58px + var(--sab))'));
-check('A6: Back stands in the flow inside the sheet (the tab-bar pin is gone, the 32px row stays)', head.includes('#rmCityListPane #rmCityListBack { height: 32px; }') && !head.includes('#rmCityListPane #rmCityListBack { position: absolute'));
-check('A7: the 1.234 HUD-line padding retires with the full-bleed pane', !head.includes('#rmCityListPane { height: 100%; padding-top: calc(25px + var(--sat) - 24px); }'));
-check('A8: scope - no other pane gains the sheet (the routes pane and the city step keep their own shapes)', !head.includes('#rmListPane { height: calc(100% - 76px)') && !head.includes('#rmCityPane { height: calc(100% - 76px)') && head.includes('#crCityList, #rmRoutes { max-height: calc(var(--vvh, 100dvh) * .52);'));
-check('A9: the close X keeps its fixed bottom-centre seat (it bounds nothing in the sheet, and it did not move)', head.includes('#rmClose, #setClose { position: fixed; left: 50%; bottom: calc(26px + env(safe-area-inset-bottom, 0px));'));
+// ---------- A: the plain blue-menu pane (the sheet reverted, Beta 1.239) ----------
+check('A1: the pane is the full-bleed menu pane again - full height, its title padded onto the map title line', head.includes('#rmCityListPane { height: 100%; padding-top: calc(25px + var(--sat) - 24px); }'));
+check('A2: the pane wears no blue of its own (no background in its rule) - the menu gradient stands behind it directly, one surface', !/#rmCityListPane \{[^}]*background/.test(head) && head.includes('#routeMenu { position: fixed; inset: 0; z-index: 10000; background: linear-gradient(135deg, #3d65ef, #1b2fb6);'));
+check('A3: the step-aside is gone (no citySheet rule)', !head.includes('#routeMenu.citySheet'));
+check('A4: showRmPane carries no step-aside toggle (the choke point toggles panes and the lifetime layers only)', !app2.includes("classList.toggle('citySheet'"));
+check('A5: the list flexes in the pane and its bottom bound is the close X again (the 58px + safe-area margin restored, the sheet form gone)', head.includes('#rmCityListPane #crCityList { max-height: none; flex: 1 1 auto; min-height: 0; margin-bottom: calc(58px + var(--sab)); }') && !head.includes('#rmCityListPane #crCityList { max-height: none; flex: 1 1 auto; min-height: 0; margin-bottom: 0; }'));
+check('A6: Back pins to the tab bar line again (the absolute pin restored, the 32px row stays)', head.includes('#rmCityListPane #rmCityListBack { position: absolute; left: 0; bottom: calc(var(--sab) + 11.5px - 24px); height: 32px; }'));
+check('A7: the sheet rule itself is gone (no pulled-in height, no widened width, no sheet corners or shadow)', !head.includes('#rmCityListPane { height: calc(100% - 76px);') && !head.includes('#rmCityListPane { height: calc(100% - 76px); width: calc(100% + 32px); max-width: 640px; padding: 26px 16px 14px;'));
+check('A8: scope - no other pane gains a sheet or loses its shape (the routes pane and the city step keep their own forms)', !head.includes('#rmListPane { height: calc(100% - 76px)') && !head.includes('#rmCityPane { height: calc(100% - 76px)') && head.includes('#crCityList, #rmRoutes { max-height: calc(var(--vvh, 100dvh) * .52);'));
+check('A9: the close X keeps its fixed bottom-centre seat (it bounds the list again, and it did not move)', head.includes('#rmClose, #setClose { position: fixed; left: 50%; bottom: calc(26px + env(safe-area-inset-bottom, 0px));'));
 
 // ---------- B: the shorter box ----------
 check('B1: the results box caps at 34% of the visible viewport height', head.includes('max-height: calc(var(--vvh, 100dvh) * .34); overflow-x: hidden; overflow-y: auto;'));
