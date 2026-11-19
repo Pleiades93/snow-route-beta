@@ -70,13 +70,7 @@ console.log('S - #selStatus keeps its shipped rule (the longest status measured 
     head.includes('#selStatus { font-size: 12px; color: #6f757f; margin-top: 1px; line-height: 1.35; }'));
 }
 
-// ================= V - the bump agrees =================
-console.log('V - version surfaces agree');
-{
-  check('V: the #ver label reads Beta 1.238', head.includes('<div class="ver" id="ver">Beta 1.238</div>'));
-  check('V: WHATSNEW is the Beta 1.238 entry', app4.includes("v: 'Beta 1.238', items:"));
-  check('V: the CHANGELOG top entry is Beta 1.226', changelog.includes('## Beta 1.237 — 2026-11-18'));
-}
+// (The V version pins that stood here were removed in Arch-1, 2026-11-18: the CHANGELOG top is the version's one home, the assembler stamps it into the label and the What's New entry, and build-pages.py enforces the agreement on every build.)
 
 console.log(pass + ' pass, ' + fail + ' fail');
 process.exit(fail ? 1 : 0);

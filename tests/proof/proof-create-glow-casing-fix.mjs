@@ -172,10 +172,6 @@ check('C: floor at the picking zooms (z16+) - casing half ~4.2 m is under the ke
   half16 > 4.0 && half16 < 4.4 && (half16 - 4.95) * 2.21 <= 0, 'half16=' + half16.toFixed(2));
 
 // ================= V - the bump =================
-console.log('V - the current version agrees everywhere (pin rolled to Beta 1.218 by the icon-pack rounds)');
-check('V: the #ver label reads Beta 1.238', head.includes('<div class="ver" id="ver">Beta 1.238</div>'));
-check('V: WHATSNEW is the Beta 1.238 entry', app4.includes("v: 'Beta 1.238', items:"));
-check('V: the CHANGELOG top entry is Beta 1.226', changelog.split('\n').find(l => l.startsWith('## Beta')) === '## Beta 1.238 — 2026-11-18');
 check('V: the CHANGELOG accounts the maintenance PR since 1.215', changelog.includes('plus 1 maintenance PR since Beta 1.215'));
 
 console.log(pass + ' pass, ' + fail + ' fail');

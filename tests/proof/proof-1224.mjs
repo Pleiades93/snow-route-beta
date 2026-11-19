@@ -29,6 +29,7 @@ function check(name, cond, detail) {
 const head = readFileSync('parts/head.html', 'utf8');
 const app3 = readFileSync('parts/app3.js', 'utf8');
 const app4 = readFileSync('parts/app4.js', 'utf8');
+const whatsnew = readFileSync('parts/whatsnew.js', 'utf8'); // Arch-1: the What's New entry's own data part
 const changelog = readFileSync('CHANGELOG.md', 'utf8');
 function rule(selector) {
   selector = selector.replace(/\s*\{\s*$/, '');
@@ -58,11 +59,8 @@ check('4: the three surviving bars stand (#suggest, #stale, #mapNote)', head.inc
 check('4: the stale bar keeps its slot (#stale z-index 1001 stands, the nudge\'s own 1002 rule is gone)', head.includes('#stale { z-index: 1001; }') && !head.includes('#bakNudge { z-index: 1002; }'));
 check('4: the exportedAt stamp survives (noteExported still writes LS.exp)', app4.includes('function noteExported()') && app4.includes('st.exportedAt = Date.now();'));
 
-// V — version agreement
-check('V: the #ver label reads Beta 1.238', head.includes('<div class="ver" id="ver">Beta 1.238</div>'));
-check('V: WHATSNEW is the Beta 1.238 entry', app4.includes("v: 'Beta 1.238', items:"));
-check('V: the CHANGELOG top entry is Beta 1.226', changelog.split('\n').find(l => l.startsWith('## Beta')) === '## Beta 1.238 — 2026-11-18');
-check('V: the What\'s New entry is dash-free (no em dash in the 1.225 items)', !app4.slice(app4.indexOf("v: 'Beta 1.238'"), app4.indexOf("v: 'Beta 1.238'") + 400).includes('—'));
+// V — What's New editorial (version agreement itself is the build gate's since Arch-1)
+check('V: the What\'s New entry is dash-free (no em dash in the items)', !whatsnew.includes('—'));
 
 console.log(pass + ' pass, ' + fail + ' fail');
 process.exit(fail === 0 ? 0 : 1);

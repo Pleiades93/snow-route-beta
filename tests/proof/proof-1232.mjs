@@ -114,10 +114,6 @@ check('3f: the magnifier and the clear disc wear the theme glyph fill', app4.inc
 check('3g: the first-row tint went neutral and the old blue tint is gone from the page', head.includes('.crResult:first-child { border-top: none; background: #f2f3f5; }') && !head.includes('#f2f5ff'));
 check('3h: the bar geometry stands (50px pill and bar, 25px radius)', pillLine.includes('width: 50px; height: 50px;') && wrapLine.includes('height: 50px;') && wrapLine.includes('border-radius: 25px;'));
 
-// ---------- Version agreement ----------
-check('V: the #ver label reads Beta 1.238', head.includes('<div class="ver" id="ver">Beta 1.238</div>'));
-check('V: WHATSNEW is the Beta 1.238 entry (its one short bullet)', app4.includes("v: 'Beta 1.238', items: [\"Fixed: on a cold open the Select City sheet sits over the falling snow, like it does over the map.\"]"));
-check('V: the CHANGELOG top entry is Beta 1.234', changelog.split('\n').find(l => l.startsWith('## Beta')) === '## Beta 1.238 — 2026-11-18');
 
 console.log(`proof-1232: ${pass} pass, ${fail} fail`);
 if (fail) process.exit(1);

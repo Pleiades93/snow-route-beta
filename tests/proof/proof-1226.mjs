@@ -13,6 +13,7 @@ const root = new URL('../../', import.meta.url);
 const read = (p) => readFileSync(new URL(p, root), 'utf8');
 const head = read('parts/head.html');
 const app4 = read('parts/app4.js');
+const app5 = read('parts/app5.js'); // Arch-1: app4's tail (everything after the What's New entry) lives in this part now
 const changelog = read('CHANGELOG.md');
 
 let pass = 0, fail = 0;
@@ -38,7 +39,7 @@ check('1j: the readout rules themselves gained no transform (the speed circle ru
 // The div rows: :active never reaches a plain div on a press in some browsers, so the
 // four div row families carry a JS-toggled twin rule (app4) with the same scale.
 check('1k: the pressOn twin rule carries exactly the four div row families at the same scale', head.includes('.srow.pressOn, .crPRow.pressOn, .cvRow.pressOn, .prow.histRow.pressOn { transform: scale(.97); }'));
-check('1l: app4 toggles pressOn for the div rows and always clears it (pointerup, pointercancel, blur, next press)', app4.includes("e.target.closest('.srow, .crPRow, .cvRow, .prow.histRow')") && app4.includes("row.classList.add('pressOn')") && app4.includes("pressRowEl.classList.remove('pressOn')") && app4.includes("document.addEventListener('pointercancel', pressRowOff);") && app4.includes("if (e.target.closest('button')) return;"));
+check('1l: app5 toggles pressOn for the div rows and always clears it (pointerup, pointercancel, blur, next press)', app5.includes("e.target.closest('.srow, .crPRow, .cvRow, .prow.histRow')") && app5.includes("row.classList.add('pressOn')") && app5.includes("pressRowEl.classList.remove('pressOn')") && app5.includes("document.addEventListener('pointercancel', pressRowOff);") && app5.includes("if (e.target.closest('button')) return;"));
 
 // ---------- Piece 2: the day lift at half strength ----------
 check('2a: .dockBtn day shadow is the exact half stack', rule('.dockBtn {').includes('box-shadow: 3px 4px 8px rgba(20,30,60,.10), -2px -2px 5px rgba(255,255,255,.35), inset 0 1px 1px rgba(255,255,255,.6), inset 0 -2px 4px rgba(90,100,120,.10);'));
@@ -46,10 +47,6 @@ check('2b: .runBtn day shadow is the exact half stack', rule('.runBtn {').includ
 check('2c: the 1.224 dialed stacks survive nowhere in the page', !head.includes('4px 5px 10px rgba(20,30,60,.18)') && !head.includes('6px 8px 16px rgba(20,30,80,.26)'));
 check('2d: the night fence stands (night Start keeps the float token; the night dock recipe is byte-identical)', rule('body.night .runBtn {').includes('box-shadow: var(--shadow-float);') && rule('body.night .dockBtn {').includes('background: linear-gradient(180deg, rgba(78,81,90,.94), rgba(43,45,51,.94));') && rule('body.night .dockBtn {').includes('border-top-color: rgba(255,255,255,.55);') && rule('body.night .dockBtn {').includes('box-shadow: inset 0 1px 0 rgba(255,255,255,.45), 0 10px 26px rgba(0,0,0,.45);'));
 
-// ---------- Version agreement ----------
-check('V: the #ver label reads Beta 1.238', head.includes('<div class="ver" id="ver">Beta 1.238</div>'));
-check('V: WHATSNEW is the Beta 1.238 entry (its one short bullet)', app4.includes("v: 'Beta 1.238', items: [\"Fixed: on a cold open the Select City sheet sits over the falling snow, like it does over the map.\"]"));
-check('V: the CHANGELOG top entry is Beta 1.229', changelog.split('\n').find(l => l.startsWith('## Beta')) === '## Beta 1.238 — 2026-11-18');
 
 console.log(`proof-1226: ${pass}/${pass + fail} checks passed`);
 process.exit(fail ? 1 : 0);

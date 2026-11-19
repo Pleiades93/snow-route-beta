@@ -20,6 +20,7 @@ const read = (p) => readFileSync(new URL(p, root), 'utf8');
 const head = read('parts/head.html');
 const app2 = read('parts/app2.js');
 const app4 = read('parts/app4.js');
+const app5 = read('parts/app5.js'); // Arch-1: app4's tail (everything after the What's New entry) lives in this part now
 const changelog = read('CHANGELOG.md');
 
 let pass = 0, fail = 0;
@@ -34,8 +35,8 @@ check('1d: the press scale is unchanged at .97 (shrink group and pressOn twin)',
 
 // ---------- Piece 2: the instant theme swap ----------
 check('2a: the theme-swap guard rule stands in the page', head.includes('html.theme-swap *, html.theme-swap *::before, html.theme-swap *::after { transition: none !important; }'));
-check('2b: applyNight raises the guard BEFORE the class flip and lifts it after', app4.indexOf("de.classList.add('theme-swap')") > -1 && app4.indexOf("de.classList.add('theme-swap')") < app4.indexOf("document.body.classList.toggle('night', isNight())") && app4.includes("requestAnimationFrame(lift); setTimeout(lift, 150);"));
-check('2c: the swap still flips the theme-color meta and the night button icon', app4.includes("tc.setAttribute('content', isNight() ? '#14171d' : '#eceff2')") && app4.includes("$('nightBtn').innerHTML = isNight() ? ICONS.sun : ICONS.moon;"));
+check('2b: applyNight raises the guard BEFORE the class flip and lifts it after', app5.indexOf("de.classList.add('theme-swap')") > -1 && app5.indexOf("de.classList.add('theme-swap')") < app5.indexOf("document.body.classList.toggle('night', isNight())") && app5.includes("requestAnimationFrame(lift); setTimeout(lift, 150);"));
+check('2c: the swap still flips the theme-color meta and the night button icon', app5.includes("tc.setAttribute('content', isNight() ? '#14171d' : '#eceff2')") && app5.includes("$('nightBtn').innerHTML = isNight() ? ICONS.sun : ICONS.moon;"));
 
 // ---------- Piece 3: the 1.81 spring stands untouched ----------
 check('3a: springSheet stands with its closed form and omega', app2.includes('const SHEET_OMEGA = 30;') && app2.includes('function springSheet(sheet, q0, qT, v0, apply, finish)'));
@@ -51,18 +52,14 @@ check('4d: the backdrop fade stays fade-only (no transform in menuFade)', head.i
 check('4e: the 1.229 search-row stagger keeps its own approved form', head.includes('@keyframes crRowIn { from { opacity: 0; transform: translateY(8px); } to { opacity: 1; transform: translateY(0); } }'));
 
 // ---------- Piece 5: the minimum press ----------
-check('5a: the floor stands at 150ms', app4.includes('const OPEN_MIN_MS = 150;'));
-check('5b: the opener set carries the load-bearing seats', app4.includes('#streetsBtn') && app4.includes('#paceBtn') && app4.includes('#routesBtn') && app4.includes('#setBtn') && app4.includes('#selNote') && app4.includes("const OPEN_ROW_SEL = '.srow, .crPRow, .prow.histRow';"));
+check('5a: the floor stands at 150ms', app5.includes('const OPEN_MIN_MS = 150;'));
+check('5b: the opener set carries the load-bearing seats', app5.includes('#streetsBtn') && app5.includes('#paceBtn') && app5.includes('#routesBtn') && app5.includes('#setBtn') && app5.includes('#selNote') && app5.includes("const OPEN_ROW_SEL = '.srow, .crPRow, .prow.histRow';"));
 check('5c: the checked non-openers stay out of the id set', (() => { const line = app4.split('\n').find(l => l.includes('const OPEN_ID_SEL')) || ''; return !line.includes('#resetBtn') && !line.includes('#startBtn') && !line.includes('#nightBtn') && !line.includes('#gpsBtn'); })());
-check('5d: the gate is capture-phase, finger/pen only, and re-dispatches the same element', app4.includes("if (e.pointerType === 'mouse') return;") && app4.includes("rec.el.dispatchEvent(new MouseEvent('click', { bubbles: true, cancelable: true }))"));
-check('5e: a moved press fires nothing and a fresh press supersedes a pending open', app4.includes('if (rec.moved) { e.stopPropagation(); e.preventDefault(); return; }') && app4.includes('el === openPendingEl'));
-check('5f: the focus exemption stands - an opener whose handler focuses a text field synchronously is never gated (Codex fix round, PR #111)', app4.includes("const OPEN_FOCUS_EXEMPT_SEL = '.srow';") && app4.includes('el.matches(OPEN_FOCUS_EXEMPT_SEL) ? null : el'));
-check('5g: the exemption names the street row only - the other row families stay gated', (() => { const line = app4.split('\n').find(l => l.includes('const OPEN_FOCUS_EXEMPT_SEL')) || ''; return line.includes("'.srow'") && !line.includes('crPRow') && !line.includes('histRow'); })());
+check('5d: the gate is capture-phase, finger/pen only, and re-dispatches the same element', app5.includes("if (e.pointerType === 'mouse') return;") && app5.includes("rec.el.dispatchEvent(new MouseEvent('click', { bubbles: true, cancelable: true }))"));
+check('5e: a moved press fires nothing and a fresh press supersedes a pending open', app5.includes('if (rec.moved) { e.stopPropagation(); e.preventDefault(); return; }') && app5.includes('el === openPendingEl'));
+check('5f: the focus exemption stands - an opener whose handler focuses a text field synchronously is never gated (Codex fix round, PR #111)', app5.includes("const OPEN_FOCUS_EXEMPT_SEL = '.srow';") && app5.includes('el.matches(OPEN_FOCUS_EXEMPT_SEL) ? null : el'));
+check('5g: the exemption names the street row only - the other row families stay gated', (() => { const line = app5.split('\n').find(l => l.includes('const OPEN_FOCUS_EXEMPT_SEL')) || ''; return line.includes("'.srow'") && !line.includes('crPRow') && !line.includes('histRow'); })());
 
-// ---------- Version agreement ----------
-check('V: the #ver label reads Beta 1.238', head.includes('<div class="ver" id="ver">Beta 1.238</div>'));
-check('V: WHATSNEW is the Beta 1.238 entry (its one short bullet)', app4.includes("v: 'Beta 1.238', items: [\"Fixed: on a cold open the Select City sheet sits over the falling snow, like it does over the map.\"]"));
-check('V: the CHANGELOG top entry is Beta 1.231', changelog.split('\n').find(l => l.startsWith('## Beta')) === '## Beta 1.238 — 2026-11-18');
 
 console.log(`proof-1231: ${pass} pass, ${fail} fail`);
 if (fail) process.exit(1);

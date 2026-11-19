@@ -48,10 +48,11 @@ check('F: the assembled page carries the new gap line, not the old',
 // Beta 1.215 by the selcard-width-262 round, then to Beta 1.216 by
 // the create-glow-casing-fix round, all 2026-11-16, TEST
 // class. The F section above is this proof's durable property and
-// is untouched.)
-console.log('V - version surfaces agree; the 1.211 in-progress sweep is intact');
-check('V: the #ver label reads Beta 1.238', head.includes('<div class="ver" id="ver">Beta 1.238</div>'));
-check('V: WHATSNEW is the Beta 1.238 entry', app4.includes("v: 'Beta 1.238', items:"));
+// is untouched. Arch-1, 2026-11-18: the two version pins are
+// REMOVED - the CHANGELOG top is the version's one home now and
+// build-pages.py enforces the agreement; the 1.211 wording check
+// below is the durable property and stands.)
+console.log('V - the 1.211 in-progress sweep is intact');
 check('V: the 1.211 in-progress wording still stands (the resume pill itself was cut in 1.221 - the wording property now guards its absence)',
   app3.includes("phT.textContent = 'Current clean'") && !app4.includes("toast('Resumed clean") && !app4.includes("toast('Resumed run"));
 

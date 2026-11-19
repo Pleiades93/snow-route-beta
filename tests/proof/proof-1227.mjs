@@ -84,10 +84,6 @@ check('6b: the six payloads are byte-pinned (set treatment: alpha fills, lossles
   sha(payload('GLYPH_CREATE', 'back', 'n')) === '3bd81894f992b53e259fa847ce7ba12a9f96289823eb7478a44a82741f9ee293');
 check('6c: renderIcons stamps the bar hosts (theme variants throughout since Beta 1.232 - the magnifier and disc follow the theme like the arrow) and re-stamps row pins', app4.includes('GLYPH_CREATE.back.n : GLYPH_CREATE.back.d') && app4.includes('night ? GLYPH_CREATE.search.n : GLYPH_CREATE.search.d') && app4.includes('night ? GLYPH_CREATE.cancel.n : GLYPH_CREATE.cancel.d') && app4.includes("document.querySelectorAll('.crPin').forEach(el => { el.innerHTML = ICONS.pin; });"));
 
-// ---------- Version agreement ----------
-check('V: the #ver label reads Beta 1.238', head.includes('<div class="ver" id="ver">Beta 1.238</div>'));
-check('V: WHATSNEW is the Beta 1.238 entry (its one short bullet)', app4.includes("v: 'Beta 1.238', items: [\"Fixed: on a cold open the Select City sheet sits over the falling snow, like it does over the map.\"]"));
-check('V: the CHANGELOG top entry is Beta 1.229', changelog.split('\n').find(l => l.startsWith('## Beta')) === '## Beta 1.238 \u2014 2026-11-18');
 
 console.log(`proof-1227: ${pass}/${pass + fail} checks passed`);
 process.exit(fail ? 1 : 0);

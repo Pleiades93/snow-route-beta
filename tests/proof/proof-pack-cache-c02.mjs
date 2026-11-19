@@ -27,7 +27,7 @@ import vm from 'node:vm';
 // cache is gone while the turn is still held (the first check FAILs);
 // with the fix the delete waits, then completes once the turn frees.
 
-const src = readFileSync('parts/app4.js', 'utf8');
+const src = readFileSync('parts/app4.js', 'utf8') + '\n' + readFileSync('parts/app5.js', 'utf8'); // Arch-1: the handlers this proof extracts now span the split - the xPre handler stayed in app4.js, the write turn / migration / delete handlers moved with app4's tail into app5.js; the two parts are read in assembly order
 const lines = src.split('\n');
 
 function extractHandler(marker) {
@@ -39,7 +39,7 @@ function extractHandler(marker) {
   return lines.slice(start, end + 1).join('\n');
 }
 const turnLine = lines.find(l => l.includes('async function takePackWriteTurn'));
-if (!turnLine) throw new Error('takePackWriteTurn not found in parts/app4.js');
+if (!turnLine) throw new Error('takePackWriteTurn not found in parts/app4.js + parts/app5.js');
 const handlerSrc = extractHandler("$('stDel').addEventListener('click'");
 if (!handlerSrc.includes("caches.delete('snowroute-offline-v1')") || !handlerSrc.includes('PACKMIG_KEY')) {
   throw new Error('extracted stDel handler does not look like the pack delete handler');

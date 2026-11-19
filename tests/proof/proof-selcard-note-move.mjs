@@ -86,19 +86,7 @@ console.log('D - while the card is open, the re-centre button drops below it');
     app2.includes("p.classList.add('hidden'); document.body.classList.remove('selOpen'); return;"));
 }
 
-// ================= V - the bump agrees =================
-// (The version pins below follow the SHIPPED version - the drive194
-// pattern: shipped at Beta 1.214 by this round; rolled in place to
-// Beta 1.215 by the selcard-width-262 round, then to Beta 1.216 by
-// the create-glow-casing-fix round, 2026-11-16, TEST class.
-// The S/C/B/D sections above are this proof's durable property and
-// are untouched.)
-console.log('V - version surfaces agree');
-{
-  check('V: the #ver label reads Beta 1.238', head.includes('<div class="ver" id="ver">Beta 1.238</div>'));
-  check('V: WHATSNEW is the Beta 1.238 entry', app4.includes("v: 'Beta 1.238', items:"));
-  check('V: the CHANGELOG top entry is Beta 1.226', changelog.includes('## Beta 1.237 — 2026-11-18'));
-}
+// (The V version pins that stood here were removed in Arch-1, 2026-11-18: the CHANGELOG top is the version's one home, the assembler stamps it into the label and the What's New entry, and build-pages.py enforces the agreement on every build.)
 
 console.log(pass + ' pass, ' + fail + ' fail');
 process.exit(fail ? 1 : 0);
