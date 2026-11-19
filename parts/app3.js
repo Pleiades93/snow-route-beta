@@ -264,55 +264,16 @@ function noteSessionStart() { const s = Math.floor(runStart / 1000); if (trailSe
 let runSnap = null; // Beta 1.91: the board exactly as it was when Start was pressed - Cancel restores it, so a cancelled run erases ONLY what the run itself recorded (marks made before Start are not the run's to erase).
 function saveSnap() { // Beta 1.94 (deep audit SR-193-02): the pre-Start board is ALSO persisted (LS.snap, stamped with the run's start time) the moment a clean starts. The in-memory runSnap dies with the page; after a reload mid-run, Cancel used to fall back to the mark-stamp journal (1.93 R01) - which cannot see an UNMARK, because unmarking erases the stamp, so a pre-Start side removed during the run stayed removed. The persisted snapshot is the board itself: a resumed Cancel restores it exactly, like a live one. A failed write arms snapDirty and the flushAux heartbeat retries (app1), on the same discipline as the start key and the session markers.
   if (!runSnap || !runStart) { markClean('snap'); return storeOk(); }
-  const ok = lsSet(LS.snap, JSON.stringify({ at: runStart, pieces: runSnap.pieces, pieceTimes: runSnap.pieceTimes, done: runSnap.done, times: runSnap.times, via: runSnap.via, cov: runSnap.cov }));
+  const ok = lsSet(LS.snap, BOARD.serialiseSnap(runSnap, runStart)); // Arch-2: the snapshot string is the board module's one construction
   if (ok) markClean('snap'); else markDirty('snap'); return ok ? storeOk() : storeFail('snap', true);
-}
-function validateSnap(raw, expectAt, G) { // Beta 1.95 (deep audit SR-194-03): a persisted cancel snapshot is DATA FROM STORAGE, not trusted state - it earns application only by passing the same structural rules the loader enforces (every street present at its true stretch count, side values 0..3 only, stamp pairs of null-or-parseable strings, known street names everywhere, coverage indexes inside the street's samples). 1.94 checked only the stamp and the object-ness of two fields, then assigned the stored structures raw: an injected {Velmar:[99]} became the live board and was saved onward, destroying a valid mark. Any violation rejects the WHOLE snapshot (never a partial application); the caller falls back to the stamp journal. Returns a normalized deep copy, or null. Beta 1.117 (F6): the geometry it validates against is a parameter (G = {set, names, stretch, samples}) defaulting to the LIVE route's - backup/restore pass the TARGET pack's geometry (app4's packGeometry), so a snapshot belonging to a non-active route is judged by its own streets, not the open one's.
-  const set = G ? G.set : STREETSET, names = G ? G.names : STREETNAMES, stretch = G ? G.stretch : STRETCH, samples = G ? G.samples : SAMPLES;
-  try {
-    if (!raw || typeof raw !== 'object' || Array.isArray(raw)) return null;
-    if (raw.at !== expectAt) return null;
-    const P = raw.pieces, T = raw.pieceTimes, D = raw.done, TM = raw.times, V = raw.via, C = raw.cov;
-    if (!P || typeof P !== 'object' || Array.isArray(P)) return null;
-    if (!T || typeof T !== 'object' || Array.isArray(T)) return null;
-    if (!Array.isArray(D)) return null;
-    if (!TM || typeof TM !== 'object' || Array.isArray(TM)) return null;
-    if (!V || typeof V !== 'object' || Array.isArray(V)) return null;
-    if (!C || typeof C !== 'object' || Array.isArray(C)) return null;
-    for (const k of Object.keys(P)) if (!set.has(k)) return null;
-    for (const k of Object.keys(T)) if (!set.has(k)) return null;
-    const pieces = {}, pieceTimes = {};
-    for (const n of names) {
-      const arr = P[n];
-      if (!Array.isArray(arr) || arr.length !== stretch[n].parts.length) return null;
-      for (const v of arr) if (v !== 0 && v !== 1 && v !== 2 && v !== 3) return null;
-      pieces[n] = arr.slice();
-      const tn = T[n];
-      if (tn !== undefined && (!tn || typeof tn !== 'object')) return null; // a stamp record that is not a structure at all rejects the snapshot
-      pieceTimes[n] = sanitizePieceTimes(tn, stretch[n].parts.length); // the LOADER'S OWN sanitizer is the shape authority (it produces the array form the live state carries, accepting the numeric-keyed object form too) - the first 1.95 draft hand-rolled an object-only assumption and rejected every genuine snapshot; strictness lives in the structural checks around this call, not in a parallel shape
-    }
-    for (const n of names) { for (const pr of pieceTimes[n]) { if ((pr[0] !== null && isNaN(Date.parse(pr[0]))) || (pr[1] !== null && isNaN(Date.parse(pr[1])))) return null; } } // Beta 1.96 (SR-195-04): the sanitizer keeps any STRING stamp; the loader's standard for time values is a parseable date, so an unparseable stamp rejects the snapshot like an unparseable completion time below
-    const done = [];
-    for (const d of D) { if (typeof d !== 'string' || !set.has(d)) return null; if (!done.includes(d)) done.push(d); }
-    const times = {}, via = {};
-    for (const k of Object.keys(TM)) { if (!set.has(k) || typeof TM[k] !== 'string' || isNaN(Date.parse(TM[k]))) return null; times[k] = TM[k]; } // Beta 1.96 (deep audit SR-195-04): the VALUE must be a real date too - the loader itself deletes completion times that fail Date.parse (app1), so a snapshot carrying one asserts a state the loader would not honour
-    for (const k of Object.keys(V)) { if (!set.has(k) || typeof V[k] !== 'string') return null; via[k] = V[k]; }
-    const cov = {};
-    for (const k of Object.keys(C)) {
-      if (!set.has(k) || !samples[k] || !Array.isArray(C[k])) return null;
-      const arr = [];
-      for (const i of C[k]) { if (!Number.isInteger(i) || i < 0 || i >= samples[k].length) return null; arr.push(i); }
-      cov[k] = arr;
-    }
-    return { pieces, pieceTimes, done, times, via, cov };
-  } catch (e) { return null; }
 }
 // Beta 1.193 (trail redesign): startClean carries the Start fence - the four statements after
 // persistRunDist inside it window the trail to the new run, so anything recorded before this
 // Start is evicted here (finish/cancel already clear theirs; the fence makes the window
 // invariant local to Start rather than trusting every exit path).
+// Arch-2: the pre-Start snapshot is captured by the board module (BOARD.capture - its copy depths are the semantics Cancel relies on).
 function startClean() { snapReset(); // Beta 1.204: Start Clean is the driving snap's HARD EXIT - the hold and the blend die at the tap itself, so the shown point is already back on the true position before the clean's first fix; snapFix's runStart gate then keeps snapping impossible for the whole clean
-  runSnap = { pieces: JSON.parse(JSON.stringify(pieces)), pieceTimes: JSON.parse(JSON.stringify(pieceTimes)), done: [...doneSet], times: { ...doneTimes }, via: { ...doneVia }, cov: JSON.parse(JSON.stringify(coveredIdx)) }; runStart = Date.now(); runDist = { run: runStart, m: 0, end: null }; runDistWrote = { run: 0, m: 0, end: null }; persistRunDist(true); const trailAtStart = trail.length; trail = trailWindow(trail, runStart); if (trail.length !== trailAtStart) markDirty('trail'); const okSnap = saveSnap(); const okSess = noteSessionStart(); const okStart = saveAllWarned(); startGps(true); updateCount(); syncWake(); if (!okStart.ok) toast('Clean started - warning: the clean state could not be saved (storage problem)', 4200); else if (!okSess.ok) toast('Clean started - warning: the session marker could not be saved; it will keep retrying', 4200); else if (!okSnap.ok) toast('Clean started - warning: the cancel safety snapshot could not be saved; it will keep retrying', 4200); checkStale(); } // Beta 1.221 gate fix (Codex P2, PR #98): the snapshot branch is guarded by !okSnap.ok - when the toast cuts removed the old success pill, the chain's last branch lost its condition and EVERY healthy Start showed this failure warning; the healthy path must stay silent (drive146 S1/S2) // Beta 1.167 (B5): startClean banks a fresh distance counter for the new run (the runDist assignment + persistRunDist(true) beside runStart above), so even an instant reload resumes THIS run's counter. // Beta 1.73 (audit C04): the marker save is part of the start's honesty check, not a silent side write // Beta 1.63 (audit F04): the clean still starts - he is standing in the snow - but the message stops claiming a saved state that does not exist
+  runSnap = BOARD.capture(); runStart = Date.now(); runDist = { run: runStart, m: 0, end: null }; runDistWrote = { run: 0, m: 0, end: null }; persistRunDist(true); const trailAtStart = trail.length; trail = trailWindow(trail, runStart); if (trail.length !== trailAtStart) markDirty('trail'); const okSnap = saveSnap(); const okSess = noteSessionStart(); const okStart = saveAllWarned(); startGps(true); updateCount(); syncWake(); if (!okStart.ok) toast('Clean started - warning: the clean state could not be saved (storage problem)', 4200); else if (!okSess.ok) toast('Clean started - warning: the session marker could not be saved; it will keep retrying', 4200); else if (!okSnap.ok) toast('Clean started - warning: the cancel safety snapshot could not be saved; it will keep retrying', 4200); checkStale(); } // Beta 1.221 gate fix (Codex P2, PR #98): the snapshot branch is guarded by !okSnap.ok - when the toast cuts removed the old success pill, the chain's last branch lost its condition and EVERY healthy Start showed this failure warning; the healthy path must stay silent (drive146 S1/S2) // Beta 1.167 (B5): startClean banks a fresh distance counter for the new run (the runDist assignment + persistRunDist(true) beside runStart above), so even an instant reload resumes THIS run's counter. // Beta 1.73 (audit C04): the marker save is part of the start's honesty check, not a silent side write // Beta 1.63 (audit F04): the clean still starts - he is standing in the snow - but the message stops claiming a saved state that does not exist
 // Beta 1.91 (Andrew): Cancel start erases everything the run recorded - its trail points, its session
 // marker, any sides marked during it, its coverage and suggestions - and stores nothing. Only Finish
 // stores a run. (Supersedes the Beta 1.70 A04 call that kept the trail as history - Andrew's word.)
@@ -324,18 +285,14 @@ function cancelStart() {
   if (runStart) {
     trail = trail.filter(p => (p[2] || 0) < startSec);
     trailSessions = trailSessions.filter(s => s !== startSec);
-    if (runSnap) { pieces = runSnap.pieces; pieceTimes = runSnap.pieceTimes; doneSet = new Set(runSnap.done); doneTimes = runSnap.times; doneVia = runSnap.via; coveredIdx = runSnap.cov; }
+    if (runSnap) { BOARD.restore(runSnap); } // Arch-2: snapshot application is the board module's
     else { // No in-memory snapshot (the app reloaded mid-run). Beta 1.94 (deep audit SR-193-02): the PERSISTED snapshot Start wrote (LS.snap, stamped with this run's start) restores the pre-Start board exactly - including a pre-Start side that was UNMARKED during the run, which the 1.93 stamp journal could not see (unmarking erases the stamp). Only when no usable persisted snapshot exists (written before 1.94, or its write never landed) does the 1.93 journal fallback below run: revert ONLY sides stamped at or after Start - anything older is pre-Start progress and is not this run's to erase; the 1.91 full-board wipe could destroy it.
       const persisted = parseJ(lsGet(LS.snap), null);
       const validSnap = persisted ? validateSnap(persisted, runStart) : null; // Beta 1.95 (SR-194-03): validated + normalized before a single field is applied - never the raw stored structures
-      if (validSnap) { pieces = validSnap.pieces; pieceTimes = validSnap.pieceTimes; doneSet = new Set(validSnap.done); doneTimes = validSnap.times; doneVia = validSnap.via; coveredIdx = validSnap.cov; }
+      if (validSnap) { BOARD.restore(validSnap); }
       else {
         if (persisted) snapDamaged = true; else snapAbsent = true;
-        for (const n of STREETNAMES) { const P = pieces[n], T = pieceTimes[n] || {}; for (let i = 0; i < P.length; i++) { const st = T[i] || [null, null]; if ((P[i] & 1) && st[0] && Date.parse(st[0]) >= runStart) { P[i] &= ~1; st[0] = null; } if ((P[i] & 2) && st[1] && Date.parse(st[1]) >= runStart) { P[i] &= ~2; st[1] = null; } } }
-        doneSet = new Set(STREETNAMES.filter(streetComplete));
-        for (const k of Object.keys(doneTimes)) if (!doneSet.has(k)) delete doneTimes[k];
-        for (const k of Object.keys(doneVia)) if (!doneSet.has(k)) delete doneVia[k];
-        coveredIdx = {}; // coverage cannot be attributed without a snapshot - and unlike hand marks it is GPS-derived and re-earns itself as he drives; drive143 C1 holds this line
+        BOARD.revertRunMarks(runStart); // Arch-2: the journal fallback (unmark at/after Start, re-derive, drop coverage) is the board module's one operation
       }
     }
     lsDel(LS.snap); markClean('snap'); resetRunDist(); lsDel(LS.rundist); lsDel(LS.rundist2); // Beta 1.167 (B5): the cancelled run's distance record goes with it. Beta 1.193: its mirror copy (LS.rundist2) goes too. The run is cancelled - its snapshot goes with it (a stale one could never match a future run's start stamp, but there is no reason to keep it)
@@ -360,8 +317,7 @@ $('startBtn').addEventListener('click', () => { if (!tapGuard('startBtn')) retur
 function clearAllMarks() {
   const any = doneSet.size > 0 || STREETNAMES.some(n => pieces[n].some(v => v !== 0)) || Object.keys(coveredIdx).length > 0 || suggested.size > 0; // Beta 1.70 (audit A04): coverage-only state is something to clear too - the old guard claimed 'nothing to clear' while coverage and suggestions sat untouched
   if (!any) { return; }
-  for (const n of STREETNAMES) { pieces[n] = STRETCH[n].parts.map(() => 0); pieceTimes[n] = {}; }
-  doneSet = new Set(); doneTimes = {}; doneVia = {}; coveredIdx = {}; suggested = new Set(); sugQueue = [];
+  BOARD.zeroMarks(); suggested = new Set(); sugQueue = []; // Arch-2: the board emptying is the module's in-place zero
   $('suggest').classList.add('hidden'); delete $('suggest').dataset.n; // Beta 1.71 (audit B01): the one path the 1.70 dismissal sweep missed - Clear wiped the coverage behind the panel but left the panel itself up, its Yes still able to select the street
   deselect(); const okClear = finishChange();
   if (!okClear.ok) toast('Storage problem - the clear could not be saved; marks may return on reload', 4200); // Beta 1.63 (audit F04)
@@ -461,7 +417,7 @@ function buildSnap() { // production archive shape: items is a street->time map;
   const ts = [...doneSet].map(n => Date.parse(doneTimes[n])).filter(t => !isNaN(t)).sort((a, b) => a - b);
   const startMs = (runStart && ts.length && runStart <= ts[0]) ? runStart : (ts.length ? ts[0] : (runStart || null)); // Beta 1.170 (Carbon fix round Phase 2, B-12): a live run whose streets carry NO recorded stamps (every doneTime null - a finish after a state restore, say) still STARTED: fall back to the run start itself. Through 1.169 this read null, and the archived clean lost its startedAt - and with it the work metre and path bake below, both keyed off startMs // Beta 1.70 (audit A05): distance and path are measured from the clean's actual start, not its first completed street - driving before the first street was silently dropped
   if (runStart && runDist.run !== runStart) adoptRunDist(); // Beta 1.167 (B5): the counter is the archive's distance source - adopt (or re-derive) before reading it
-  const snap = { at: new Date().toISOString(), items: {}, via: { ...doneVia }, notes: JSON.parse(JSON.stringify(notes)), sides: JSON.parse(JSON.stringify({ p: pieces, t: pieceTimes })), km: startMs ? +(((runStart && runDist.run === runStart) ? runDist.m / 1000 : trailKm(startMs))).toFixed(1) : 0, startedAt: startMs ? new Date(startMs).toISOString() : null };
+  const snap = { at: new Date().toISOString(), items: {}, via: { ...doneVia }, notes: JSON.parse(JSON.stringify(notes)), sides: BOARD.sidesCopy(), km: startMs ? +(((runStart && runDist.run === runStart) ? runDist.m / 1000 : trailKm(startMs))).toFixed(1) : 0, startedAt: startMs ? new Date(startMs).toISOString() : null };
   doneSet.forEach(n => { snap.items[n] = doneTimes[n] || null; });
   // Beta 1.167 (run/pace fix round, B2 - RP-05/06/09): the run's own figures are BAKED INTO the entry, and cleanWorkM prefers them for the life of the entry. workM sums this snapshot's side stamps INSIDE the run's own window [the Start press, the Finish tap] - liveWorkM's stamp attribution (Beta 1.93) applied to the archived record. The window opens at runStart, NOT at startMs: when a street was marked before Start, startMs falls back to that first completion (A05), and opening the window there would count the pre-Start work right back in - so work banked before Start never counts toward this clean (RP-05), a later geometry edit cannot re-price it (RP-06; geoFP records the geometry it was priced against), and a partially-recorded sides map cannot short-circuit the derivation into an undercount (RP-09). winStart is runStart when a run is live, else startMs (a no-run finish has no earlier boundary to honour). Legacy entries carry none of these fields and derive exactly as before. (km above likewise reads the B5 counter's true total when it belongs to this run - trailKm only as the fallback for a run the counter never saw.)
   if (startMs) { let wm = 0; const endMs = Date.parse(snap.at); const winStart = runStart || startMs; for (const n of Object.keys(snap.sides.p)) { const pv = snap.sides.p[n] || [], T = snap.sides.t[n] || []; const parts = STRETCH[n] ? STRETCH[n].parts : []; parts.forEach((part, i) => { const L = segLenM(part); const st = T[i] || [null, null]; if ((pv[i] & 1) && st[0]) { const ts = Date.parse(st[0]); if (ts >= winStart && ts <= endMs) wm += L; } if ((pv[i] & 2) && st[1]) { const ts = Date.parse(st[1]); if (ts >= winStart && ts <= endMs) wm += L; } }); } snap.workM = Math.round(wm); }
@@ -485,8 +441,7 @@ function finishRun() {
   // finished clean beside its own archive entry on the next launch.
   let newHist = null;
   if (archiving) newHist = appendHistory(history, snap); // Beta 1.167 (B1): the incoming archive JOINS the history - nothing is evicted, at any size (through 1.166 trimHistoryForFinish applied the 10-clean cap here, Beta 1.104 CG-103-01 protecting only the incoming entry itself)
-  const clearedPieces = {}, clearedTimes = {};
-  for (const n of STREETNAMES) { clearedPieces[n] = STRETCH[n].parts.map(() => 0); clearedTimes[n] = {}; }
+  const cleared = BOARD.clearedSides(); // Arch-2: the zeroed sides a committed finish writes are built by the board module
   const prevSidesRaw = lsGet(LS.sides); // kept so the start step's rollback can restore this write exactly (including its absence)
   // Beta 1.102 (Phase 4, C3): the finish transaction on the ONE coordinator - the
   // 1.57-1.93 gate discipline mechanized: archive, cleared authority, start-key
@@ -495,7 +450,7 @@ function finishRun() {
   const fSteps = [];
   fSteps.push({ name: 'finclean', write: () => txSet(LS.finclean, JSON.stringify({ run: runStart || 0, at: finishAt })), undo: () => txDel(LS.finclean) }); // Beta 1.141 (Package A, DA-10): the metadata-cleanup obligation is the transaction's FIRST step, so every prefix reconciliation can call a committed finish carries it, and a rolled-back finish undoes it with the rest. The post-commit saveAll below normally discharges it at once; if those writes fail and the page dies first, completeFinishCleanup (app1) completes the cleanup at the next load instead of leaving the finished run's notes/coverage live forever.
   if (archiving) fSteps.push({ name: 'archive', write: () => txSet(LS.hist, JSON.stringify(historyForWrite(newHist))), undo: () => txSet(LS.hist, JSON.stringify(historyForWrite(prevHist))) }); // 2026-11-15 (denylist fix round, A-05): the archive write and its rollback write the historyForWrite merge, not the bare view - a finish is an ordinary save for the entries it does not touch, and the load strip stays a view through it and through its undo
-  fSteps.push({ name: 'sides', write: () => txSet(LS.sides, JSON.stringify({ p: clearedPieces, t: clearedTimes })), undo: () => prevSidesRaw === null ? txDel(LS.sides) : txSet(LS.sides, prevSidesRaw) });
+  fSteps.push({ name: 'sides', write: () => txSet(LS.sides, JSON.stringify(cleared)), undo: () => prevSidesRaw === null ? txDel(LS.sides) : txSet(LS.sides, prevSidesRaw) });
   if (runStart) fSteps.push({ name: 'start', write: () => txDel(LS.start), undo: () => txSet(LS.start, String(runStart)) });
   const fTx = runTx(fSteps);
   if (fTx.outcome !== 'committed') {
@@ -505,8 +460,7 @@ function finishRun() {
   }
   lsDel(LS.snap); markClean('snap'); resetRunDist(); lsDel(LS.rundist); lsDel(LS.rundist2); trail = []; markDirty('trail'); // Beta 1.167 (B5): the distance counter is consumed into the archive entry (km) - its record goes with the run. Beta 1.193: its mirror copy goes too, and the trail window is cleared with them - the run is over, so the fallback's only consumer is gone (the Start fence and the load window would evict the points anyway; clearing here keeps the stored trail honest between runs). Beta 1.94 (SR-193-02): the run is finished - its cancel snapshot goes with it. Ungated on purpose: a leftover snapshot is stamped with THIS run's start, so it can never match a future run, and the next Start overwrites it anyway
   if (archiving) history = newHist;
-  doneSet = new Set(); doneTimes = {}; doneVia = {}; notes = {}; runStart = 0; runSnap = null; coveredIdx = {}; suggested = new Set(); sugQueue = []; $('suggest').classList.add('hidden'); // Beta 1.70 (audit A04): the suggestion set is run-scoped too - finishRun used to clear the coverage but keep the set, so suggested streets never suggested again
-  for (const n of STREETNAMES) { pieces[n] = STRETCH[n].parts.map(() => 0); pieceTimes[n] = {}; }
+  BOARD.zeroMarks(); notes = {}; runStart = 0; runSnap = null; suggested = new Set(); sugQueue = []; $('suggest').classList.add('hidden'); // Arch-2: the board half of this reset is the module's in-place zero // Beta 1.70 (audit A04): the suggestion set is run-scoped too - finishRun used to clear the coverage but keep the set, so suggested streets never suggested again
   stopGps(); deselect(); // Beta 1.193: through 1.190 this also force-drew the trail to clear the finished line (Beta 1.69) - there is no line any more; the window itself was cleared with the counter records above
   const restRes = saveAll(); const restOk = restRes.ok; // the gated sides write already landed; this pass carries the metadata - a failure here warns but cannot resurrect anything (authority + archive agree)
   finishChange();

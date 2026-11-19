@@ -507,17 +507,146 @@ let snapDirty = false; // Beta 1.94 (deep audit SR-193-02): the same retry disci
   if (raw && typeof raw === 'object') { for (const k of Object.keys(raw)) { const i = Number(k); if (Number.isInteger(i) && i >= 0 && i < lim) out[i] = pair(raw[k]); } return out; }
   return out;
 }
+
+// ===== THE ROUTE BOARD MODULE (Arch-2, 2026-11-19) =====
+// The board (pieces, pieceTimes, doneSet, doneTimes, doneVia, coveredIdx -
+// declared above) has ONE owner: this module. Emptying, capture, restore,
+// serialise, load and the field rules live here and nowhere else; the other
+// parts call these operations instead of reassigning the bindings or
+// rebuilding the snapshot shape by hand (through Arch-1 the empty reset was
+// written out in five places, the snapshot literal in six, and the field
+// rules twice - as load repair below and as validateSnap's reject rules).
+// Two semantics stay DISTINCT by design, over one shared set of per-field
+// rules (sanitizePieceTimes, the 0..3 side clamp, the parseable-stamp
+// standard): load REPAIRS a stored board into the closest honest state;
+// validateSnap REJECTS a snapshot whole on any violation. Storage keys and
+// formats are untouched - every string this module produces is byte-identical
+// to the hand-built string it replaces.
+function validateSnap(raw, expectAt, G) { // Beta 1.95 (deep audit SR-194-03): a persisted cancel snapshot is DATA FROM STORAGE, not trusted state - it earns application only by passing the same structural rules the loader enforces (every street present at its true stretch count, side values 0..3 only, stamp pairs of null-or-parseable strings, known street names everywhere, coverage indexes inside the street's samples). 1.94 checked only the stamp and the object-ness of two fields, then assigned the stored structures raw: an injected {Velmar:[99]} became the live board and was saved onward, destroying a valid mark. Any violation rejects the WHOLE snapshot (never a partial application); the caller falls back to the stamp journal. Returns a normalized deep copy, or null. Beta 1.117 (F6): the geometry it validates against is a parameter (G = {set, names, stretch, samples}) defaulting to the LIVE route's - backup/restore pass the TARGET pack's geometry (app4's packGeometry), so a snapshot belonging to a non-active route is judged by its own streets, not the open one's.
+  const set = G ? G.set : STREETSET, names = G ? G.names : STREETNAMES, stretch = G ? G.stretch : STRETCH, samples = G ? G.samples : SAMPLES;
+  try {
+    if (!raw || typeof raw !== 'object' || Array.isArray(raw)) return null;
+    if (raw.at !== expectAt) return null;
+    const P = raw.pieces, T = raw.pieceTimes, D = raw.done, TM = raw.times, V = raw.via, C = raw.cov;
+    if (!P || typeof P !== 'object' || Array.isArray(P)) return null;
+    if (!T || typeof T !== 'object' || Array.isArray(T)) return null;
+    if (!Array.isArray(D)) return null;
+    if (!TM || typeof TM !== 'object' || Array.isArray(TM)) return null;
+    if (!V || typeof V !== 'object' || Array.isArray(V)) return null;
+    if (!C || typeof C !== 'object' || Array.isArray(C)) return null;
+    for (const k of Object.keys(P)) if (!set.has(k)) return null;
+    for (const k of Object.keys(T)) if (!set.has(k)) return null;
+    const pieces = {}, pieceTimes = {};
+    for (const n of names) {
+      const arr = P[n];
+      if (!Array.isArray(arr) || arr.length !== stretch[n].parts.length) return null;
+      for (const v of arr) if (v !== 0 && v !== 1 && v !== 2 && v !== 3) return null;
+      pieces[n] = arr.slice();
+      const tn = T[n];
+      if (tn !== undefined && (!tn || typeof tn !== 'object')) return null; // a stamp record that is not a structure at all rejects the snapshot
+      pieceTimes[n] = sanitizePieceTimes(tn, stretch[n].parts.length); // the LOADER'S OWN sanitizer is the shape authority (it produces the array form the live state carries, accepting the numeric-keyed object form too) - the first 1.95 draft hand-rolled an object-only assumption and rejected every genuine snapshot; strictness lives in the structural checks around this call, not in a parallel shape
+    }
+    for (const n of names) { for (const pr of pieceTimes[n]) { if ((pr[0] !== null && isNaN(Date.parse(pr[0]))) || (pr[1] !== null && isNaN(Date.parse(pr[1])))) return null; } } // Beta 1.96 (SR-195-04): the sanitizer keeps any STRING stamp; the loader's standard for time values is a parseable date, so an unparseable stamp rejects the snapshot like an unparseable completion time below
+    const done = [];
+    for (const d of D) { if (typeof d !== 'string' || !set.has(d)) return null; if (!done.includes(d)) done.push(d); }
+    const times = {}, via = {};
+    for (const k of Object.keys(TM)) { if (!set.has(k) || typeof TM[k] !== 'string' || isNaN(Date.parse(TM[k]))) return null; times[k] = TM[k]; } // Beta 1.96 (deep audit SR-195-04): the VALUE must be a real date too - the loader itself deletes completion times that fail Date.parse (app1), so a snapshot carrying one asserts a state the loader would not honour
+    for (const k of Object.keys(V)) { if (!set.has(k) || typeof V[k] !== 'string') return null; via[k] = V[k]; }
+    const cov = {};
+    for (const k of Object.keys(C)) {
+      if (!set.has(k) || !samples[k] || !Array.isArray(C[k])) return null;
+      const arr = [];
+      for (const i of C[k]) { if (!Number.isInteger(i) || i < 0 || i >= samples[k].length) return null; arr.push(i); }
+      cov[k] = arr;
+    }
+    return { pieces, pieceTimes, done, times, via, cov };
+  } catch (e) { return null; }
+}
+const BOARD = {
+  /** @returns {{pieces: *, pieceTimes: *, doneSet: *, doneTimes: *, doneVia: *, coveredIdx: *}} */ state() { return { pieces, pieceTimes, doneSet, doneTimes, doneVia, coveredIdx }; }, // the live bindings as one object - GL_HOST's pieces getter reads through this, so the engine always sees the current binding after a restore or reset
+  validate: validateSnap, // the reject-semantics entry, under the module's roof (the global function above keeps the drives' compatibility surface)
+  /** @returns {*} */ capture() { // the pre-Start snapshot (startClean, app3): pieces/pieceTimes/cov deep-copied, done array-copied, times/via shallow-copied - the copy depths are the semantics Cancel relies on, kept exactly
+    return { pieces: JSON.parse(JSON.stringify(pieces)), pieceTimes: JSON.parse(JSON.stringify(pieceTimes)), done: [...doneSet], times: { ...doneTimes }, via: { ...doneVia }, cov: JSON.parse(JSON.stringify(coveredIdx)) };
+  },
+  /** @param {*} snap @param {number} at @returns {*} */ snapshotObject(snap, at) { // the one snapshot-object shape ({at, pieces, pieceTimes, done, times, via, cov}, key order fixed): REFERENCES into the source, no copy - snapForExport and the backup builders return exactly this
+    return { at, pieces: snap.pieces, pieceTimes: snap.pieceTimes, done: snap.done, times: snap.times, via: snap.via, cov: snap.cov };
+  },
+  /** @param {*} snap @param {number} at @returns {string} */ serialiseSnap(snap, at) { return JSON.stringify(BOARD.snapshotObject(snap, at)); }, // saveSnap's persisted string and the restore's re-serialised snapshot
+  /** @param {*} snap @returns {void} */ restore(snap) { // apply a normalized snapshot whole (cancelStart, both branches): the six bindings are replaced from the snapshot, done re-set from its array
+    pieces = snap.pieces; pieceTimes = snap.pieceTimes; doneSet = new Set(snap.done); doneTimes = snap.times; doneVia = snap.via; coveredIdx = snap.cov;
+  },
+  /** @returns {void} */ rederive() { // THE board invariant, one home: doneSet is derived from pieces, and times/via are pruned to the streets that are complete. loadSides' tail and cancelStart's journal fallback both land here.
+    doneSet = new Set(STREETNAMES.filter(streetComplete));
+    for (const k of Object.keys(doneTimes)) if (!doneSet.has(k)) delete doneTimes[k];
+    for (const k of Object.keys(doneVia)) if (!doneSet.has(k)) delete doneVia[k];
+  },
+  /** @param {number} startMs @returns {void} */ revertRunMarks(startMs) { // cancelStart's journal fallback, whole: revert ONLY sides stamped at or after the run's start (anything older is pre-Start progress and is not this run's to erase), re-derive, and drop coverage - it cannot be attributed without a snapshot, and unlike hand marks it is GPS-derived and re-earns itself as he drives; drive143 C1 holds this line
+    for (const n of STREETNAMES) { const P = pieces[n], T = pieceTimes[n] || {}; for (let i = 0; i < P.length; i++) { const st = T[i] || [null, null]; if ((P[i] & 1) && st[0] && Date.parse(st[0]) >= startMs) { P[i] &= ~1; st[0] = null; } if ((P[i] & 2) && st[1] && Date.parse(st[1]) >= startMs) { P[i] &= ~2; st[1] = null; } } }
+    BOARD.rederive();
+    coveredIdx = {};
+  },
+  /** @returns {void} */ zeroMarks() { // the in-place empty (Clear, Finish): pieces zeroed per street - the pieces object itself is KEPT, only its per-street arrays are replaced - and the completion/coverage bindings rebound empty. The run's own state (notes, runStart, suggestions) is the caller's to clear.
+    for (const n of STREETNAMES) { pieces[n] = STRETCH[n].parts.map(() => 0); pieceTimes[n] = {}; }
+    doneSet = new Set(); doneTimes = {}; doneVia = {}; coveredIdx = {};
+  },
+  /** @returns {void} */ emptyBoard() { // the rebind empty (unloadRouteToBoot): all six bindings replaced with the eval empties - pieces/pieceTimes become {} and their identity is dropped, unlike zeroMarks. Notes/history/run state are the caller's.
+    doneSet = new Set(); doneTimes = {}; doneVia = {}; coveredIdx = {}; pieces = {}; pieceTimes = {};
+  },
+  /** @returns {void} */ clearNotesAndCoverage() { notes = {}; coveredIdx = {}; }, // completeFinishCleanup's board part: a committed finish's leftover notes/coverage clear once its verified writes land
+  /** @returns {{sides: string, done: string, times: string, via: string, cov: string}} */ serialiseLive() { // the live board's stored strings, one construction: saveAll writes them as the primary save and the recovery export reads them verbatim
+    return { sides: JSON.stringify({ p: pieces, t: pieceTimes }), done: JSON.stringify([...doneSet]), times: JSON.stringify(doneTimes), via: JSON.stringify(doneVia), cov: JSON.stringify(coveredIdx) };
+  },
+  /** @returns {string} */ serialiseCov() { return JSON.stringify(coveredIdx); }, // flushAux's throttled coverage write
+  /** @returns {*} */ sidesCopy() { return JSON.parse(JSON.stringify({ p: pieces, t: pieceTimes })); }, // buildSnap's archived sides: a deep copy in the stored {p, t} shape
+  /** @returns {*} */ clearedSides() { // finishRun's transaction input: the zeroed sides maps a committed finish writes as the cleared authority
+    const p = {}, t = {};
+    for (const n of STREETNAMES) { p[n] = STRETCH[n].parts.map(() => 0); t[n] = {}; }
+    return { p, t };
+  },
+  /** @returns {void} */ loadDoneMeta() { // loadRouteState segment 1 (repair): the stored done set and its times/via, per-field sanitized
+    const _doneRaw = parseJ(lsGet(LS.done), []);
+    doneSet = new Set(Array.isArray(_doneRaw) ? _doneRaw.filter(n => typeof n === 'string' && STREETSET.has(n)) : []); // audit D2: a non-array value (legacy object, number) made new Set() throw and killed the boot; loadSides re-derives this from pieces below regardless
+    doneTimes = parseJ(lsGet(LS.times), {});
+    if (!doneTimes || typeof doneTimes !== 'object' || Array.isArray(doneTimes)) doneTimes = {}; // Beta 1.64 (audit F07): normalize BEFORE the cleanup loop below - a stored JSON string made its `delete` throw under strict mode and killed the boot
+    for (const k of Object.keys(doneTimes)) { if (typeof doneTimes[k] !== 'string' || isNaN(Date.parse(doneTimes[k]))) delete doneTimes[k]; }
+    doneVia = parseJ(lsGet(LS.via), {});
+    if (!doneVia || typeof doneVia !== 'object' || Array.isArray(doneVia)) doneVia = {};
+    for (const k of Object.keys(doneVia)) { if (typeof doneVia[k] !== 'string') delete doneVia[k]; } // 2026-11-15 (load sanitizer round, A-01): via values get the doneTimes treatment above - the app writes only strings here ('gps'/'tap'/'sides'; validateSnap enforces the same string standard on cancel snapshots), so a non-string value can only arrive via a crafted restore or planted storage; every consumer compares === 'gps', and an unchecked value would otherwise be re-saved verbatim and ride backups
+  },
+  /** @returns {void} */ loadCoverage() { // loadRouteState segment 2 (repair): the stored coverage indexes, bounded to the street's real samples
+    coveredIdx = parseJ(lsGet(LS.cov), {});
+    if (!coveredIdx || typeof coveredIdx !== 'object' || Array.isArray(coveredIdx)) coveredIdx = {};
+    for (const n of Object.keys(coveredIdx)) { if (!SAMPLES[n] || !Array.isArray(coveredIdx[n])) { delete coveredIdx[n]; continue; } coveredIdx[n] = coveredIdx[n].filter(i => Number.isInteger(i) && i >= 0 && i < SAMPLES[n].length); } // audit D1: was upper-bound only - negatives, fractions and text values survived and each inflated the coverage count. Beta 1.76: this pass used to sit at script eval in app3, over the state the old eval-time load had just parsed; now that state loads on route pick, the pass lives here, over the data it just loaded (the eval-time copy saw an empty object and sanitized nothing).
+  },
+  /** @returns {void} */ loadSides() { // loadRouteState segment 3 (repair): the stored sides become the live board - values clamped to the 0..3 the app writes, a missing street derived from the done set, complete streets' done-times inherited into their side stamps, and times/via pruned to complete streets (the rederive invariant, applied after inheritance)
+    pieces = {}; pieceTimes = {};
+    const raw = parseJ(lsGet(LS.sides), null);
+    let P = null, T = {};
+    if (raw && typeof raw === 'object') { if (raw.p) { P = raw.p; T = raw.t || {}; } else P = raw; }
+    for (const n of STREETNAMES) {
+      const count = STRETCH[n].parts.length;
+      let arr = (P && Array.isArray(P[n]) && P[n].length === count) ? P[n].map(v => (v === 1 || v === 2 || v === 3) ? v : 0) : null; // audit G3: normalize side values to the 0..3 the app writes - a crafted 99 otherwise counted sides via bitwise reads while streetComplete (===3) disagreed
+      if (!arr) arr = new Array(count).fill(doneSet.has(n) ? 3 : 0);
+      pieces[n] = arr;
+      pieceTimes[n] = sanitizePieceTimes(T && T[n], STRETCH[n].parts.length);
+    }
+    // complete streets inherit their done-time on every side; doneSet is derived from pieces
+    doneSet = new Set(STREETNAMES.filter(streetComplete));
+    for (const n of STREETNAMES) {
+      if (streetComplete(n) && doneTimes[n]) { // Beta 1.169 (Carbon fix round, A-03): the done-time inheritance fills MISSING stamps, not only wholly-empty maps - through 1.168 a partially-recorded street (one stretch stamped, the next not) kept its holes, and liveWorkM read the unstamped stretches as never worked, undercounting the run's side-metres. A recorded stamp is never overwritten; a missing one inherits the street's done time exactly as the empty-map case always has.
+        const full = pieces[n].map(v => [v & 1 ? doneTimes[n] : null, v & 2 ? doneTimes[n] : null]);
+        if (!Object.keys(pieceTimes[n]).length) pieceTimes[n] = full;
+        else { const T2 = pieceTimes[n], out = []; for (let i = 0; i < full.length; i++) { const cur = T2[i]; out[i] = [(cur && cur[0]) || full[i][0], (cur && cur[1]) || full[i][1]]; } pieceTimes[n] = out; }
+      }
+    }
+    for (const k of Object.keys(doneTimes)) if (!streetComplete(k)) delete doneTimes[k];
+    for (const k of Object.keys(doneVia)) if (!streetComplete(k)) delete doneVia[k];
+  },
+};
 let routeLoaded = false, activeRoute = null; // Beta 1.76: set by loadRoute (app4) once a pack is chosen; app2's paint/render gates read them
 /** @param {string} id @returns {void} */ function loadRouteState(id) {
   LS = migrateLegacyRoute(id) ? { ...routeKeys(id), ...LS_GLOBAL } : { ...LEGACY_KEYS, ...LS_GLOBAL };
-const _doneRaw = parseJ(lsGet(LS.done), []);
-doneSet = new Set(Array.isArray(_doneRaw) ? _doneRaw.filter(n => typeof n === 'string' && STREETSET.has(n)) : []); // audit D2: a non-array value (legacy object, number) made new Set() throw and killed the boot; loadSides re-derives this from pieces below regardless
-doneTimes = parseJ(lsGet(LS.times), {});
-if (!doneTimes || typeof doneTimes !== 'object' || Array.isArray(doneTimes)) doneTimes = {}; // Beta 1.64 (audit F07): normalize BEFORE the cleanup loop below - a stored JSON string made its `delete` throw under strict mode and killed the boot
-for (const k of Object.keys(doneTimes)) { if (typeof doneTimes[k] !== 'string' || isNaN(Date.parse(doneTimes[k]))) delete doneTimes[k]; }
-doneVia = parseJ(lsGet(LS.via), {});
-if (!doneVia || typeof doneVia !== 'object' || Array.isArray(doneVia)) doneVia = {};
-for (const k of Object.keys(doneVia)) { if (typeof doneVia[k] !== 'string') delete doneVia[k]; } // 2026-11-15 (load sanitizer round, A-01): via values get the doneTimes treatment above - the app writes only strings here ('gps'/'tap'/'sides'; validateSnap in app3 enforces the same string standard on cancel snapshots), so a non-string value can only arrive via a crafted restore or planted storage; every consumer compares === 'gps', and an unchecked value would otherwise be re-saved verbatim and ride backups
+BOARD.loadDoneMeta(); // Arch-2: the board's load-repair lives in the module (BOARD.loadDoneMeta / loadCoverage / loadSides)
 notes = parseJ(lsGet(LS.notes), {});
 // Notes model (production): {street: [{k:'note', at, text} | {k:'car'|'hazard'|'missed'|'salt', at}]} - normalize at load:
 // a non-array value (e.g. a legacy string) is dropped, entries keep only object shapes with a string kind,
@@ -561,33 +690,8 @@ if (trailSessions.length > TRAIL_MAX) trailSessions = trailSessions.slice(trailS
 trail = Array.isArray(trail) ? trail.filter(p => Array.isArray(p) && p.length === 3 && Number.isFinite(p[0]) && Number.isFinite(p[1]) && Number.isFinite(p[2]) && p[2] >= 946684800 && p[2] <= 4102444800 && Math.abs(p[0]) <= 90 && Math.abs(p[1]) <= 180) : [];
 if (trail.length > TRAIL_MAX) trail = trail.slice(trail.length - TRAIL_MAX);
 const trailBeforeWindow = trail.length; trail = trailWindow(trail, runStart); if (trail.length !== trailBeforeWindow) markDirty('trail'); if (trailBeforeWindow > 0 && !trail.length && !runStart && trailSessions.length) { trailSessions = []; markDirty('sess'); } // Beta 1.193 (trail redesign): the window binds at load like everywhere else - a 1.190-era resident trail (every clean, up to the old point cap) is cut to the live run's last 60 minutes on the first 1.191 boot, and with no live run it empties: the fallback has no run to protect. runStart was parsed above (line order is load-bearing: the start record is read before the trail for exactly this). The binding is STORED, not just in memory: a shortened trail is marked dirty so the next flush writes the windowed value (a backup reads storage raw - it must never carry points the window forbids), and when the window empties a trail that EXISTED with no live run, its session markers go with it - markers never outlive their trail (the C-01 pair rule, applied at load; a live run keeps its markers, its own start among them). The clear is scoped to the window's own act (trailBeforeWindow > 0): markers stored with NO trail at all are not the window's business - the migration and restore layers govern those (C-01/C06), and clearing them here would eat records those layers legitimately carry (the slot migration's copied sess field - drive145 N12d caught exactly that in this round's first gate). // Beta 1.152 (NV round, NV4): the writer caps the trail at TRAIL_MAX by dropping the OLDEST points (recordFix, app3) - the load keeps the same end of the same cap, so a planted slot cannot resurrect an unbounded trail.
-coveredIdx = parseJ(lsGet(LS.cov), {});
-if (!coveredIdx || typeof coveredIdx !== 'object' || Array.isArray(coveredIdx)) coveredIdx = {};
-for (const n of Object.keys(coveredIdx)) { if (!SAMPLES[n] || !Array.isArray(coveredIdx[n])) { delete coveredIdx[n]; continue; } coveredIdx[n] = coveredIdx[n].filter(i => Number.isInteger(i) && i >= 0 && i < SAMPLES[n].length); } // audit D1: was upper-bound only - negatives, fractions and text values survived and each inflated the coverage count. Beta 1.76: this pass used to sit at script eval in app3, over the state the old eval-time load had just parsed; now that state loads on route pick, the pass lives here, over the data it just loaded (the eval-time copy saw an empty object and sanitized nothing).
-pieces = {}; pieceTimes = {};
-(function loadSides() {
-  const raw = parseJ(lsGet(LS.sides), null);
-  let P = null, T = {};
-  if (raw && typeof raw === 'object') { if (raw.p) { P = raw.p; T = raw.t || {}; } else P = raw; }
-  for (const n of STREETNAMES) {
-    const count = STRETCH[n].parts.length;
-    let arr = (P && Array.isArray(P[n]) && P[n].length === count) ? P[n].map(v => (v === 1 || v === 2 || v === 3) ? v : 0) : null; // audit G3: normalize side values to the 0..3 the app writes - a crafted 99 otherwise counted sides via bitwise reads while streetComplete (===3) disagreed
-    if (!arr) arr = new Array(count).fill(doneSet.has(n) ? 3 : 0);
-    pieces[n] = arr;
-    pieceTimes[n] = sanitizePieceTimes(T && T[n], STRETCH[n].parts.length);
-  }
-  // complete streets inherit their done-time on every side; doneSet is derived from pieces
-  doneSet = new Set(STREETNAMES.filter(streetComplete));
-  for (const n of STREETNAMES) {
-    if (streetComplete(n) && doneTimes[n]) { // Beta 1.169 (Carbon fix round, A-03): the done-time inheritance fills MISSING stamps, not only wholly-empty maps - through 1.168 a partially-recorded street (one stretch stamped, the next not) kept its holes, and liveWorkM read the unstamped stretches as never worked, undercounting the run's side-metres. A recorded stamp is never overwritten; a missing one inherits the street's done time exactly as the empty-map case always has.
-      const full = pieces[n].map(v => [v & 1 ? doneTimes[n] : null, v & 2 ? doneTimes[n] : null]);
-      if (!Object.keys(pieceTimes[n]).length) pieceTimes[n] = full;
-      else { const T = pieceTimes[n], out = []; for (let i = 0; i < full.length; i++) { const cur = T[i]; out[i] = [(cur && cur[0]) || full[i][0], (cur && cur[1]) || full[i][1]]; } pieceTimes[n] = out; }
-    }
-  }
-  for (const k of Object.keys(doneTimes)) if (!streetComplete(k)) delete doneTimes[k];
-  for (const k of Object.keys(doneVia)) if (!streetComplete(k)) delete doneVia[k];
-  })();
+BOARD.loadCoverage();
+BOARD.loadSides();
   reconcileInterruptedFinish(rawHistory); // Beta 1.102 (Phase 4, CG-196-04): resolve a finish that died between its gates before anything renders this state. Beta 1.170 (A-04): it judges the RAW stored array, not the sanitized one above
   completeFinishCleanup(); // Beta 1.141 (Package A, DA-10): complete a committed finish's metadata cleanup if its writes failed and a reload outlived the in-memory retry
 }
@@ -617,7 +721,7 @@ pieces = {}; pieceTimes = {};
   if (!STREETNAMES.every(n => pieces[n].every(v => v === 0))) return;
   if (!txSet(LS.notes, '{}').ok) return;
   if (!txSet(LS.cov, '{}').ok) return;
-  notes = {}; coveredIdx = {}; suggested = new Set(); sugQueue = [];
+  BOARD.clearNotesAndCoverage(); suggested = new Set(); sugQueue = [];
   txDel(LS.finclean);
 }
 // ===== DAY/NIGHT (Beta 1.77, Andrew): the theme follows the sun by default.
@@ -699,15 +803,16 @@ let primaryDirty = false; // Beta 1.94 (deep audit SR-193-05): a failed saveAll 
 /** @returns {StorageOutcome} */ function saveAll() { // Beta 1.101 (Phase 3 / C2): returns the storage-outcome result - the first failing record is named in failedKey and a retry is armed via primaryDirty. No toast here: storage never speaks to the user (saveAllWarned in app2 owns the warning).
   if (restoring) return storeFail('restoring', false); // Beta 1.147 (hypothesis H1, CONFIRMED): while a restore's reload is pending the in-memory board is still the PRE-restore one, so any save here would resurrect it over the restored records - fenced exactly like flushAux below: no write, and NO primaryDirty arm, so no retry ever fires against the restored data. Callers branch on the outcome object as for any failed save.
   let failedKey = null;
-  if (!lsSet(LS.sides, JSON.stringify({ p: pieces, t: pieceTimes }))) failedKey = 'sides';
+  const ser = BOARD.serialiseLive(); // Arch-2: the board's stored strings are built once, in the module
+  if (!lsSet(LS.sides, ser.sides)) failedKey = 'sides';
   else {
-    if (!lsSet(LS.done, JSON.stringify([...doneSet]))) failedKey = 'done';
-    if (!lsSet(LS.times, JSON.stringify(doneTimes)) && !failedKey) failedKey = 'times';
-    if (!lsSet(LS.via, JSON.stringify(doneVia)) && !failedKey) failedKey = 'via';
+    if (!lsSet(LS.done, ser.done)) failedKey = 'done';
+    if (!lsSet(LS.times, ser.times) && !failedKey) failedKey = 'times';
+    if (!lsSet(LS.via, ser.via) && !failedKey) failedKey = 'via';
     if (!lsSet(LS.notes, JSON.stringify(notes)) && !failedKey) failedKey = 'notes';
     if (!lsSet(LS.hist, JSON.stringify(historyForWrite(history))) && !failedKey) failedKey = 'history'; // 2026-11-15 (A-05): the ordinary save writes the merge, never the bare view - the load strip stays a view
     if (!saveStart().ok && !failedKey) failedKey = 'start';
-    if (!lsSet(LS.cov, JSON.stringify(coveredIdx)) && !failedKey) failedKey = 'coverage';
+    if (!lsSet(LS.cov, ser.cov) && !failedKey) failedKey = 'coverage';
   }
   if (failedKey) { primaryDirty = true; return storeFail(failedKey, true); }
   primaryDirty = false;
@@ -742,7 +847,7 @@ let fixlogDirty = false, lastFixLogSave = 0; // Beta 1.189: the raw fix log's re
 let lastCovSave = 0; // the last successful coverage write (0 = never: the first flush writes at once)
 /** @param {boolean} [force] @returns {void} */ function flushAux(force) {
   if (restoring) return;
-  if (auxDirty && (force || Date.now() - lastCovSave >= COV_SAVE_MS) && lsSet(LS.cov, JSON.stringify(coveredIdx))) { auxDirty = false; lastCovSave = Date.now(); }
+  if (auxDirty && (force || Date.now() - lastCovSave >= COV_SAVE_MS) && lsSet(LS.cov, BOARD.serialiseCov())) { auxDirty = false; lastCovSave = Date.now(); }
   if (trailDirty && (force || Date.now() - lastTrailSave > TRAIL_FLUSH_MS) && saveTrail().ok) { trailDirty = false; lastTrailSave = Date.now(); }
   if (sessDirty && saveSess().ok) sessDirty = false;
   if (fixlogDirty && typeof saveFixLog === 'function' && (force || Date.now() - lastFixLogSave > TRAIL_FLUSH_MS) && saveFixLog().ok) { fixlogDirty = false; lastFixLogSave = Date.now(); } // Beta 1.189: the fix log flushes on the trail's cadence (its JSON is the same size family - re-stringifying it per fix is out); forced flushes always write, so a backup or page death never leaves it behind
@@ -774,7 +879,7 @@ window.addEventListener('pagehide', () => flushAux(true));
 // Guarded by tests/browser/selftest-engine-surface.mjs (the frozen list).
 const GL_HOST = {
   MLAT, MLNG, PRIMARIES, SPOT, STRETCH, ROADS, names, jDistM, ptSegM, isNight,
-  get pieces() { return pieces; },
+  get pieces() { return BOARD.state().pieces; }, // Arch-2: read through the board module, so the engine sees the current binding after any restore/reset
   get selSet() { return selSet; },
   get selStretch() { return selStretch; },
   get activeRoute() { return activeRoute; },

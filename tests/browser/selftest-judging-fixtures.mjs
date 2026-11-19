@@ -49,7 +49,7 @@ const factory = new Function(`
   ${extract(app1, 'function fmtDur(')}
   ${extract(app1, 'function fmtClock(')}
   ${extract(app3, 'function samplesFor(')}
-  ${extract(app3, 'function validateSnap(')}
+  ${extract(app1, 'function validateSnap(')} // Arch-2: validateSnap lives in app1's board module now; the extraction follows it, the judged cases are unchanged
   ${extract(app3, 'function cleanCount(')}
   ${extract(app3, 'function refRun(')}
   ${extract(app3, 'function cleanWorkM(')}

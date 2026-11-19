@@ -28,12 +28,21 @@ import vm from 'node:vm';
 
 const src = readFileSync('parts/app1.js', 'utf8');
 
+// Arch-2 re-point: the doneVia sanitizer moved into the board module
+// (BOARD.loadDoneMeta in parts/app1.js); the notes sanitizer stayed in
+// loadRouteState. The proof extracts BOTH shipped blocks verbatim and runs
+// them in load order - the planted cases and the claims are unchanged.
 const startAt = src.indexOf('doneVia = parseJ(lsGet(LS.via), {});');
 if (startAt < 0) throw new Error('doneVia load line not found in parts/app1.js');
-const forEachAt = src.indexOf('Object.keys(notes).forEach', startAt);
-if (forEachAt < 0) throw new Error('notes forEach not found after the doneVia load');
+const viaEnd = src.indexOf('ride backups', startAt);
+if (viaEnd < 0) throw new Error('doneVia cleanup loop not found in BOARD.loadDoneMeta');
+const blockVia = src.slice(startAt, src.indexOf('\n', viaEnd));
+const notesAt = src.indexOf('notes = parseJ(lsGet(LS.notes), {});');
+if (notesAt < 0) throw new Error('notes load line not found in parts/app1.js');
+const forEachAt = src.indexOf('Object.keys(notes).forEach', notesAt);
+if (forEachAt < 0) throw new Error('notes forEach not found after the notes load');
 const endAt = src.indexOf('\n', forEachAt);
-const block = src.slice(startAt, endAt);
+const block = blockVia + '\n' + src.slice(notesAt, endAt);
 if (!block.includes('notes[n] = notes[n].filter(f =>')) {
   throw new Error('extracted block does not end at the notes filter: ' + block.slice(-120));
 }
