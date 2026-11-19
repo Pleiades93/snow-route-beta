@@ -391,6 +391,12 @@ function analyzeSource(src) {
         let slotIdx = null; // token index of the '=' / ':' slot this arrow sits in, if any (Arch-5 keying name)
         if (toks[i - 1] && toks[i - 1].v === ')') { const o = matchOpen(toks, i - 1); names = patternNames(toks, o + 1, i - 2); slotIdx = o - 1; }
         else if (toks[i - 1] && toks[i - 1].t === 'id') { names = [{ name: toks[i - 1].v, tok: i - 1 }]; slotIdx = i - 2; }
+        // An assigned ASYNC arrow's slot sits one token further back
+        // (`const x = async () => {}`): step over the modifier when it
+        // directly follows the '=' / ':' (Codex P2, PR #126 - without
+        // this, an async arrow's writes keyed as anonymous and moving
+        // a write between two named async arrows was invisible).
+        if (slotIdx != null && toks[slotIdx] && toks[slotIdx].v === 'async' && toks[slotIdx - 1] && (toks[slotIdx - 1].v === '=' || toks[slotIdx - 1].v === ':')) slotIdx--;
         const arrowFnName = assignedName(toks, slotIdx);
         const nxt = toks[i + 1];
         if (nxt && nxt.v === '{') queueParams(i + 1, names, true, arrowFnName);
@@ -733,6 +739,14 @@ for (const [label, src, want] of FX_CASES) {
   check('key fixture: a function expression assigned to a binding keys to that binding', fexpr.length === 1 && fexpr[0].fn === 'gamma', fexpr);
   const meth = fx('const o = { gamma() { ext = 1; } };');
   check('key fixture: a method keys to its method name', meth.length === 1 && meth[0].fn === 'gamma', meth);
+  const aarrow = fx('const gamma = async () => { ext = 1; };');
+  check('key fixture: an async arrow assigned to a binding keys to that binding', aarrow.length === 1 && aarrow[0].fn === 'gamma', aarrow);
+  const aarrowP = fx('const gamma = async (q) => { ext = 1; };');
+  check('key fixture: an async arrow with parenthesized params keys to its binding', aarrowP.length === 1 && aarrowP[0].fn === 'gamma', aarrowP);
+  const aarrowB = fx('const gamma = async q => { ext = 1; };');
+  check('key fixture: an async arrow with a bare param keys to its binding', aarrowB.length === 1 && aarrowB[0].fn === 'gamma', aarrowB);
+  const amove = (inAlpha) => analyzeFiles({ 'owner.js': FX_OWNER, 'case.js': 'const alpha = async () => {' + (inAlpha ? ' ext = 1;' : '') + ' }; const beta = async () => {' + (inAlpha ? '' : ' ext = 1;') + ' };' }).sites.filter(s => s.file === 'case.js').map(key);
+  check('key fixture: moving a write between two named async arrows changes its key', JSON.stringify(amove(true)) !== JSON.stringify(amove(false)) && amove(true)[0].includes('|alpha|') && amove(false)[0].includes('|beta|'), [amove(true), amove(false)]);
   const moved = (pad) => analyzeFiles({ 'owner.js': FX_OWNER, 'case.js': pad + 'function alpha() { ext = 1; ext2 = 2; }' }).sites.filter(s => s.file === 'case.js').map(key);
   check('key fixture: moving a function down the file changes no key', JSON.stringify(moved('')) === JSON.stringify(moved('\n\n\n// padding\n\n')), [moved(''), moved('\n\n\n// padding\n\n')]);
 }
