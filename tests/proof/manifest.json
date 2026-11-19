@@ -53,7 +53,8 @@
   "proof-mut-load-gate.mjs",
   "proof-mut-map-ready.mjs",
   "proof-mut-nameit.mjs",
-  "proof-mut-refrun.mjs"
+  "proof-mut-refrun.mjs",
+  "proof-1242.mjs"
  ],
  "retired": [
   {

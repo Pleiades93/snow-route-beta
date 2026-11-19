@@ -65,7 +65,7 @@ check('14: the arrow has exactly one seating call in app2 (no second owner)', (a
 
 // ---------- the frame ----------
 check('15: Back stands as ever (the 32px flow row, no pin)', head.includes('#rmCityListPane #rmCityListBack { height: 32px; }') && !head.includes('#rmCityListPane #rmCityListBack { position: absolute;'));
-check('16: What\'s New carries the 1.241 line', whatsnew.includes('Select City now shows seven cities with the next one peeking - and a small arrow that points the way.'));
+check('16: What\'s New carried the 1.241 line at its release (latest-release-only: Beta 1.242 replaced the entry, so the line stands retired)', !whatsnew.includes('Select City now shows seven cities with the next one peeking'));
 check('17: the CHANGELOG top entry is Beta 1.241', changelog.indexOf('## Beta 1.241') > -1 && changelog.indexOf('## Beta 1.241') < changelog.indexOf('## Beta 1.240'));
 
 console.log(`proof-1241: ${pass} pass, ${fail} fail`);
