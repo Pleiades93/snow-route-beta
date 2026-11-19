@@ -88,9 +88,9 @@ check('6d: Delete maps wears the in-menu Delete treatment', rule('#stDel {').inc
 check('6e: the confirm No button is red while it reads Cancel', rule('#crModalNo.cancelRed {').includes('color: #e63a2e;') && pick.includes("classList.toggle('cancelRed', !!labels && labels.no === 'Cancel')"));
 
 // ---------- Version agreement ----------
-check('V: the #ver label reads Beta 1.237', head.includes('<div class="ver" id="ver">Beta 1.237</div>'));
-check('V: WHATSNEW is the Beta 1.237 entry (its one short bullet)', app4.includes("v: 'Beta 1.237', items: [\"The blue menu titles are in the middle now.\"]"));
-check('V: the CHANGELOG top entry is Beta 1.229', changelog.split('\n').find(l => l.startsWith('## Beta')) === '## Beta 1.237 — 2026-11-18');
+check('V: the #ver label reads Beta 1.238', head.includes('<div class="ver" id="ver">Beta 1.238</div>'));
+check('V: WHATSNEW is the Beta 1.238 entry (its one short bullet)', app4.includes("v: 'Beta 1.238', items: [\"Fixed: on a cold open the Select City sheet sits over the falling snow, like it does over the map.\"]"));
+check('V: the CHANGELOG top entry is Beta 1.229', changelog.split('\n').find(l => l.startsWith('## Beta')) === '## Beta 1.238 — 2026-11-18');
 
 console.log(`proof-1229: ${pass} passed, ${fail} failed`);
 process.exit(fail ? 1 : 0);

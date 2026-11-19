@@ -36,9 +36,9 @@ check('6: every titled Settings-menu pane wears .rmTitle too (incl. #xTitle)', [
 check('7: the Pace and Streets sheets wear .sheetTitle, not .rmTitle (not blue menus, untouched)', head.includes('<div class="sheetTitle">Streets</div>') && head.includes('<div class="sheetTitle">Pace</div>') && !head.includes('sheetTitle { text-align: center'));
 
 // ---------- V: version agreement ----------
-check('V: the #ver label reads Beta 1.237', head.includes('<div class="ver" id="ver">Beta 1.237</div>'));
-check('V: WHATSNEW is the Beta 1.237 entry', app4.includes("v: 'Beta 1.237', items:"));
-check('V: the CHANGELOG top entry is Beta 1.237', changelog.split('\n').find(l => l.startsWith('## Beta')) === '## Beta 1.237 — 2026-11-18');
+check('V: the #ver label reads Beta 1.238', head.includes('<div class="ver" id="ver">Beta 1.238</div>'));
+check('V: WHATSNEW is the Beta 1.238 entry', app4.includes("v: 'Beta 1.238', items:"));
+check('V: the CHANGELOG top entry is Beta 1.238', changelog.split('\n').find(l => l.startsWith('## Beta')) === '## Beta 1.238 — 2026-11-18');
 
 console.log(`proof-1237: ${pass} pass, ${fail} fail`);
 process.exit(fail === 0 ? 0 : 1);

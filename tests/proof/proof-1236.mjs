@@ -76,9 +76,9 @@ check('E2: the clear sits with the search teardown (after the sequence bump, bef
 check('E3: the clear-disc path itself is untouched (its listener still empties the field, closes the box and refocuses)', pick.includes("$('crClear').addEventListener('click', () => {") && pick.slice(pick.indexOf("$('crClear').addEventListener('click'"), pick.indexOf("$('crClear').addEventListener('click'") + 500).includes("$('createResults').classList.remove('on'); $('crSearchInput').value = '';") && pick.includes("crSyncClear(); $('crSearchInput').focus();"));
 
 // ---------- V: version agreement ----------
-check('V: the #ver label reads Beta 1.237', head.includes('<div class="ver" id="ver">Beta 1.237</div>'));
-check('V: WHATSNEW is the Beta 1.237 entry', app4.includes("v: 'Beta 1.237', items:"));
-check('V: the CHANGELOG top entry is Beta 1.237', changelog.split('\n').find(l => l.startsWith('## Beta')) === '## Beta 1.237 — 2026-11-18');
+check('V: the #ver label reads Beta 1.238', head.includes('<div class="ver" id="ver">Beta 1.238</div>'));
+check('V: WHATSNEW is the Beta 1.238 entry', app4.includes("v: 'Beta 1.238', items:"));
+check('V: the CHANGELOG top entry is Beta 1.238', changelog.split('\n').find(l => l.startsWith('## Beta')) === '## Beta 1.238 — 2026-11-18');
 
 console.log(`proof-1236: ${pass} pass, ${fail} fail`);
 process.exit(fail === 0 ? 0 : 1);
