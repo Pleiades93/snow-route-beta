@@ -54,6 +54,12 @@
 // var(--sab)) margin is retired with the bound it served. B3b rolls
 // to the new literals; the new geometry is pinned with them in
 // proof-1234 (A3/A4). B3a and B4 stand untouched.
+// Beta 1.241 RE-DERIVATION (seven + peek + arrow + centring): B3a rolls
+// to the centred pane form (the HUD-line padding retired - the block
+// centres in the pane's full height now) and B3b rolls to the 510px
+// cap (seven and a half pitches, the eighth row peeking). B4 stands:
+// the feather's owner gains the arrow's seat inside the same function
+// and B4b's two toggle pins are untouched; proof-1241 pins the arrow.
 import { readFileSync } from 'node:fs';
 import { createHash } from 'node:crypto';
 
@@ -106,8 +112,8 @@ check('B2d: a loaded created route clears both right-edge controls', head.includ
 check('B2e: the check payload is byte-pinned', sha(Buffer.from(payload('GLYPH_MENU', 'check'), 'base64')) === 'a629ee0b2959ea4604e566af0f2def1ffc5aeb18653b2407fc65a4b02ee9c9fb');
 
 // ---------- B3: the city list stretch ----------
-check('B3a: the city pane takes the menu full height (Beta 1.239 roll: the 1.236 floating sheet retired - the full-bleed pane restored; the rule now also carries the HUD-line padding - proof-1234 A1 pins the whole rule)', head.includes('#rmCityListPane { height: 100%;'));
-check('B3b: the list box is capped, not stretched (Beta 1.240 roll: six row pitches at 408px, grow off, the calc(58px + var(--sab)) margin retired with the stretch - pinned in proof-1234 A4)', head.includes('#rmCityListPane #crCityList { max-height: 408px; flex: 0 1 auto; min-height: 0; margin-bottom: 0; }'));
+check('B3a: the city pane takes the menu full height and centres its block in it (Beta 1.241 roll: the HUD-line padding retired with the top flow - proof-1234 A1 pins the whole rule)', head.includes('#rmCityListPane { height: 100%; justify-content: center; }'));
+check('B3b: the list box is capped, not stretched (Beta 1.241 roll: seven and a half row pitches at 510px - seven rows full, the eighth peeking - grow off, the calc(58px + var(--sab)) margin retired with the stretch - pinned in proof-1234 A4)', head.includes('#rmCityListPane #crCityList { max-height: 510px; flex: 0 1 auto; min-height: 0; margin-bottom: 0; }'));
 
 // ---------- B4: feathered edges ----------
 check('B4a: the three mask states stand for both lists (one gradient, mirrored)', head.includes('#crCityList.fadeT, #rmRoutes.fadeT {') && head.includes('#crCityList.fadeB, #rmRoutes.fadeB {') && head.includes('#crCityList.fadeT.fadeB, #rmRoutes.fadeT.fadeB {') && (head.match(/transparent 0, #000 30px/g) || []).length >= 4);

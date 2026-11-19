@@ -34,6 +34,12 @@
 // asks and stand untouched - their sections below are byte-identical
 // to the 1.236 form. The rendered behaviour of the restored pane is
 // measured in qa-1239 (the round-sheet-correction work dir).
+// Beta 1.241 RE-DERIVATION (Andrew's picks from the seven-cities
+// samples): A1 rolls to the centred pane form (the full height kept,
+// the block centred in it, the HUD-line padding retired with the top
+// flow) and A5 rolls to the 510px cap (seven rows plus the eighth's
+// peek). The sheet stays gone - A7's absences stand untouched.
+// proof-1241 pins the arrow and the centred seat.
 // Run from the repo root:  node tests/proof/proof-1236.mjs
 import { readFileSync } from 'node:fs';
 
@@ -51,11 +57,11 @@ const exitBody = pick.slice(pick.indexOf('function exitCreate() {'), pick.indexO
 const renderBody = pick.slice(pick.indexOf('function crRenderRows(res, cont) {'), pick.indexOf('function crSharesStreet(a, b)'));
 
 // ---------- A: the plain blue-menu pane (the sheet reverted, Beta 1.239) ----------
-check('A1: the pane is the full-bleed menu pane again - full height, its title padded onto the map title line', head.includes('#rmCityListPane { height: 100%; padding-top: calc(25px + var(--sat) - 24px); }'));
+check('A1: the pane is the plain full-bleed menu pane - full height, its block centred in it (Beta 1.241 roll: the HUD-line padding retired with the top flow)', head.includes('#rmCityListPane { height: 100%; justify-content: center; }'));
 check('A2: the pane wears no blue of its own (no background in its rule) - the menu gradient stands behind it directly, one surface', !/#rmCityListPane \{[^}]*background/.test(head) && head.includes('#routeMenu { position: fixed; inset: 0; z-index: 10000; background: linear-gradient(135deg, #3d65ef, #1b2fb6);'));
 check('A3: the step-aside is gone (no citySheet rule)', !head.includes('#routeMenu.citySheet'));
 check('A4: showRmPane carries no step-aside toggle (the choke point toggles panes and the lifetime layers only)', !app2.includes("classList.toggle('citySheet'"));
-check('A5 (Beta 1.240 roll: the stretch retired): the list caps at six row pitches and hugs a short list, no bottom margin (the sheet form stays gone)', head.includes('#rmCityListPane #crCityList { max-height: 408px; flex: 0 1 auto; min-height: 0; margin-bottom: 0; }') && !head.includes('#rmCityListPane #crCityList { max-height: none; flex: 1 1 auto; min-height: 0; margin-bottom: 0; }'));
+check('A5 (Beta 1.241 roll: the cap rises to seven and a half pitches): the list caps at 510px - seven rows full, the eighth peeking - and hugs a short list, no bottom margin (the sheet form stays gone)', head.includes('#rmCityListPane #crCityList { max-height: 510px; flex: 0 1 auto; min-height: 0; margin-bottom: 0; }') && !head.includes('#rmCityListPane #crCityList { max-height: none; flex: 1 1 auto; min-height: 0; margin-bottom: 0; }'));
 check('A6 (Beta 1.240 roll: the tab-bar pin retired): Back stands in the flow under the list (the 32px row stays)', head.includes('#rmCityListPane #rmCityListBack { height: 32px; }') && !head.includes('#rmCityListPane #rmCityListBack { position: absolute;'));
 check('A7: the sheet rule itself is gone (no pulled-in height, no widened width, no sheet corners or shadow)', !head.includes('#rmCityListPane { height: calc(100% - 76px);') && !head.includes('#rmCityListPane { height: calc(100% - 76px); width: calc(100% + 32px); max-width: 640px; padding: 26px 16px 14px;'));
 check('A8: scope - no other pane gains a sheet or loses its shape (the routes pane and the city step keep their own forms)', !head.includes('#rmListPane { height: calc(100% - 76px)') && !head.includes('#rmCityPane { height: calc(100% - 76px)') && head.includes('#crCityList, #rmRoutes { max-height: calc(var(--vvh, 100dvh) * .52);'));

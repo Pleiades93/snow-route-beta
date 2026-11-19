@@ -1,3 +1,3 @@
 const WHATSNEW = { // the curated in-app notes: plain words, LATEST RELEASE ONLY (Beta 1.114, Andrew: the accumulated list cluttered the About pane). A release REPLACES this entry with its own in the same change - it never accumulates; the full history lives in CHANGELOG.md, not the app
-  v: '@@VERSION@@', items: ["Select City now shows six cities at a time - scroll for the rest."] }; // Beta 1.223 (Andrew): What's New entries are SHORT from now on - point form, one short plain line each, no prose paragraphs, no em dashes
+  v: '@@VERSION@@', items: ["Select City now shows seven cities with the next one peeking - and a small arrow that points the way."] }; // Beta 1.223 (Andrew): What's New entries are SHORT from now on - point form, one short plain line each, no prose paragraphs, no em dashes
 
