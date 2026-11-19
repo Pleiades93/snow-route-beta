@@ -41,7 +41,7 @@ check('3: no step-aside toggle rides the choke point (showRmPane never raises a 
 check('4: the exemption is absent in every form (no pane is named in a boot condition, no negated away conjunction)', !app2.includes("id === 'rmCityListPane' && $('routeMenu').classList.contains('boot')") && !app2.includes('__away && !('));
 
 // ---------- the restored pane ----------
-check('5: the sheet rule is gone and the plain full-bleed pane rule stands (the 1.235 form, restored verbatim)', !head.includes('#rmCityListPane { height: calc(100% - 76px);') && head.includes('#rmCityListPane { height: 100%; padding-top: calc(25px + var(--sat) - 24px); }'));
+check('5: the sheet rule is gone and the plain full-bleed pane rule stands (the 1.235 form, restored verbatim in 1.239; Beta 1.241 roll: the block centres in the pane - the HUD-line padding retired, the sheet absences stand)', !head.includes('#rmCityListPane { height: calc(100% - 76px);') && head.includes('#rmCityListPane { height: 100%; justify-content: center; }'));
 check('6: the citySheet step-aside rule is gone (the menu background never steps aside for this pane)', !head.includes('#routeMenu.citySheet'));
 check('7: the snow canvas .away rule stands (opacity 0 - the lifetime rule is the toggle and the rule, as through 1.235)', head.includes('#snowCv.away { opacity: 0; }'));
 

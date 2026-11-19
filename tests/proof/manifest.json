@@ -48,6 +48,7 @@
   "proof-1236.mjs",
   "proof-1237.mjs",
   "proof-1238.mjs",
+  "proof-1241.mjs",
   "proof-mut-idb-open.mjs",
   "proof-mut-load-gate.mjs",
   "proof-mut-map-ready.mjs",
