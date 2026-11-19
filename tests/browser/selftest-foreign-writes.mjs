@@ -508,14 +508,19 @@ function analyzeSource(src) {
   }
   const scopeNames = new Map();
   for (const e of declEvents) { if (!scopeNames.has(e.scope)) scopeNames.set(e.scope, new Set()); scopeNames.get(e.scope).add(e.name); }
-  // Arch-5 keying: the enclosing function of a token = the innermost
-  // function region containing it; anonymous regions are transparent -
-  // the walk continues outward through region parents until a named
-  // function region is found; no named ancestor = '<top-level>'.
-  // Parameter lists are part of their function (Codex P2 round 2,
-  // PR #126): a write in a default initializer sits BEFORE the body
-  // brace, outside every body region, so each function's parameter
-  // span is a candidate too, spanning the function's full extent.
+  // Arch-5 keying: the enclosing function of a token = the first
+  // NAMED candidate in nesting order. Candidates are every function
+  // body region containing the token plus every parameter span
+  // containing it (parameter lists are part of their function -
+  // Codex P2 round 2, PR #126: a write in a default initializer sits
+  // BEFORE the body brace, outside every body region, so each
+  // function's parameter span is a candidate spanning the function's
+  // full extent). Containing candidates nest, so span order IS
+  // nesting order; anonymous candidates are transparent - the walk
+  // simply continues to the next candidate outward. (Round 4: the
+  // walk must NOT follow an anonymous region's parent chain first -
+  // parameter spans are not region parents, and a nearer span would
+  // be jumped over.) No named candidate = '<top-level>'.
   const regionByStart = new Map();
   for (const r of regions) if (r.kind === 'brace') regionByStart.set(r.start, r.id);
   // Post-pass slot resolution (Codex P2 round 3, PR #126): an
@@ -547,20 +552,15 @@ function analyzeSource(src) {
     const cands = [];
     for (const r of regions) {
       if (!r.isFunction || r.id === 0) continue;
-      if (r.start <= tokIdx && tokIdx <= r.end) cands.push({ span: r.end - r.start, fnName: r.fnName, parent: r.parent });
+      if (r.start <= tokIdx && tokIdx <= r.end) cands.push({ span: r.end - r.start, fnName: r.fnName });
     }
     for (const pr of fnParamRanges) {
       const rid = pr.regionId != null ? pr.regionId : regionByStart.get(pr.braceIdx);
       if (rid == null || !regions[rid]) continue;
-      if (pr.open <= tokIdx && tokIdx <= pr.close) cands.push({ span: regions[rid].end - pr.open, fnName: pr.fnName, parent: regions[rid].parent });
+      if (pr.open <= tokIdx && tokIdx <= pr.close) cands.push({ span: regions[rid].end - pr.open, fnName: pr.fnName });
     }
     cands.sort((a, b) => a.span - b.span);
-    const seen = new Set();
-    for (const c of cands) {
-      if (c.fnName) return c.fnName;
-      let p = c.parent;
-      while (p != null && !seen.has(p)) { seen.add(p); const pr2 = regions[p]; if (pr2 && pr2.fnName) return pr2.fnName; p = pr2 ? pr2.parent : null; }
-    }
+    for (const c of cands) if (c.fnName) return c.fnName;
     return '<top-level>';
   };
   return { toks, regions, declEvents, declNameToks, initEqToks, tokBraceRegion, scopeNames, fnAt };
@@ -806,6 +806,8 @@ for (const [label, src, want] of FX_CASES) {
   check('key fixture: a function expression in an arrow parameter default keys to the arrow binding, not the parameter name', adflt.length === 1 && adflt[0].fn === 'gamma', adflt);
   const callarg = fx('foo(() => { ext = 1; });');
   check('key fixture: a call-argument arrow stays anonymous (keys to <top-level>)', callarg.length === 1 && callarg[0].fn === '<top-level>', callarg);
+  const nmove = (inAlpha) => analyzeFiles({ 'owner.js': FX_OWNER, 'case.js': 'function outer() { function alpha(q = ' + (inAlpha ? '() => { ext = 1; }' : '0') + ') {} function beta(q = ' + (inAlpha ? '0' : '() => { ext = 1; }') + ') {} }' }).sites.filter(s => s.file === 'case.js').map(key);
+  check('key fixture: moving a default callback between two nested functions changes its key (the nearer parameter span beats the outer body)', JSON.stringify(nmove(true)) !== JSON.stringify(nmove(false)) && nmove(true)[0].includes('|alpha|') && nmove(false)[0].includes('|beta|'), [nmove(true), nmove(false)]);
 }
 
 // ---------------- the tree census ----------------
