@@ -57,6 +57,8 @@ check('5: the fall-through stands AFTER the clip: the pre-1.245 completeness che
   && citydata.indexOf(CLIP_GUARD) > -1 && citydata.indexOf(CLIP_GUARD) < citydata.indexOf('const closed = boundary'));
 check('6: a cut end skips the coverage test; an original end faces it (the clip\'s ends loop)',
   citydata.includes('if (!end.cut && !crInAnyBox(cov.boxes, end.pt[0], end.pt[1])) { unproven = true; break; }'));
+check('6b: the piece is chosen by distance to its SEGMENTS (crSegProjM), not its vertices (the PR #128 Codex catch: a re-entering road\'s wrong piece)',
+  citydata.includes('const sd = crSegProjM([lngLat.lat, lngLat.lng], pc.line[i - 1], pc.line[i]).d;'));
 
 // ---------- the top-up path is untouched ----------
 check('7: the edge path still fires its ONE top-up on the same budgets (the clip narrows when it is reached, it does not remove it)',

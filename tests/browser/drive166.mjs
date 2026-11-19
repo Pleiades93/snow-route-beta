@@ -829,6 +829,21 @@ const CLIP = await ev(`(() => { const els = [
 ok('J8c (city clip, fail-closed - Beta 1.245) with the working city in force, a run crossing the city edge whose IN-CITY end lies outside verified coverage is NOT certified by the clip: resolve returns edge, not ok | got ' + CLIP.unproven, CLIP.unproven === 'edge');
 ok('J8d (city clip - Beta 1.245) the same run with its in-city end covered resolves ok as the ONE stitched in-city line: no point past the city edge, its length the in-city stretch (' + Math.round(gapwaterCityLen) + ' m) | got ' + JSON.stringify(CLIP),
   CLIP.proven === 'ok' && CLIP.segs === 1 && Math.abs(CLIP.metres - gapwaterCityLen) <= gapwaterCityLen * 0.03 && CLIP.maxLat <= 43.84501 && CLIP.minLat >= 43.81199);
+// S10c: the clip's piece choice (the PR #128 Codex catch) - a run that leaves the city and comes back: the tap sits ON the second piece's long segment, while the FIRST piece holds the vertex nearest the tap. The piece must be chosen by distance to its segments, or the tap selects the wrong stretch (the real case: Aurora's Chambers Crescent returned its ~20 m piece instead of the ~398 m piece containing the tap).
+const REENTER = await ev(`(() => { const els = [
+  { type: 'way', id: 9, tags: { name: 'Reenter Road' }, geometry: [{ lat: 43.8200, lon: -79.5600 }, { lat: 43.8205, lon: -79.5600 }, { lat: 43.8600, lon: -79.5600 }, { lat: 43.8430, lon: -79.5595 }, { lat: 43.8190, lon: -79.5595 }] }
+]; const keepCov = crCov, keepCity = crCity;
+  crCity = { name: 'Fixture', bbox: { s: 43.785, w: -79.610, n: 43.845, e: -79.5105 } };
+  crCov = crCovFromWays(crIndexWays(els, {}), [{ s: 43.785, w: -79.610, n: 43.845, e: -79.5105 }]);
+  const r = crResolve('Reenter Road', { lat: 43.8202, lng: -79.5595 });
+  crCov = keepCov; crCity = keepCity;
+  const lineLen = line => { let s = 0; for (let i = 1; i < line.length; i++) s += distM(line[i - 1], line[i]); return s; };
+  return { status: r.status, segs: r.segs ? r.segs.length : -1,
+    metres: r.segs ? Math.round(r.segs.reduce((a, g) => a + lineLen(g), 0)) : -1,
+    minLng: r.segs ? Math.min(...r.segs.flat().map(p => p[1])) : -1 };
+})()`);
+ok('J8e (city clip piece choice - Beta 1.245, the PR #128 Codex catch) a run that exits the city and re-enters resolves to the piece the TAP\'s segment belongs to (the -79.5595 piece, ~2,894 m), not the piece holding the nearest vertex (the -79.5600 piece) | got ' + JSON.stringify(REENTER),
+  REENTER.status === 'ok' && REENTER.segs === 1 && REENTER.minLng >= -79.5599 && Math.abs(REENTER.metres - 2894) <= 2894 * 0.03);
 // S11: the fallback box - and its dense remedy
 // Beta 1.229 PREMISE UPDATE: through 1.228 this section entered through the
 // name-only city the 'Use <city>' button's failed lookup left behind (a crCity

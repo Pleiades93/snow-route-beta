@@ -182,8 +182,14 @@ function crResolve(osmName, lngLat, boundary) { // resolve a tapped street from 
   // as a bridged street's do.
   if (!boundary && crCity && crCity.bbox && crInBox(crCity.bbox, lngLat.lat, lngLat.lng) && best.line.some(p => !crInBox(crCity.bbox, p[0], p[1]))) {
     const pieces = crClipLineToBox(best.line, crCity.bbox);
+    // the piece is chosen by distance to its SEGMENTS (crSegProjM), not
+    // its vertices: a road that leaves the city and comes back can put
+    // another piece's vertex nearer the tap than every vertex of the
+    // piece the tapped segment belongs to (the Codex catch on this
+    // round's gate: Aurora's Chambers Crescent returned its ~20 m piece
+    // instead of the ~398 m piece containing the tap).
     let piece = null, pieceD = Infinity;
-    for (const pc of pieces) for (const p of pc.line) { const d = distM(p, [lngLat.lat, lngLat.lng]); if (d < pieceD) { pieceD = d; piece = pc; } }
+    for (const pc of pieces) { let d = Infinity; for (let i = 1; i < pc.line.length; i++) { const sd = crSegProjM([lngLat.lat, lngLat.lng], pc.line[i - 1], pc.line[i]).d; if (sd < d) d = sd; } if (d < pieceD) { pieceD = d; piece = pc; } }
     if (piece) {
       let unproven = false;
       for (const end of [{ pt: piece.line[0], cut: piece.startCut }, { pt: piece.line[piece.line.length - 1], cut: piece.endCut }]) {

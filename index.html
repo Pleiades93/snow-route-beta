@@ -2,7 +2,7 @@
 <html lang="en" class="boot">
 <head>
 <meta charset="UTF-8">
-<meta http-equiv="Content-Security-Policy" content="default-src 'none'; script-src 'sha384-yiMth9Id5iViHHrSHvFLPT0f0vEb7yrLzkCAOw9wxCC+Tfq47YXuL1/OX7Zzl8vQ' https://cdn.jsdelivr.net; style-src-elem 'sha384-eqG3SdZ2IsgOinKfnmIFq/XY8kDsy2m15fyqxjwapIyIGNSeqjgGOs4DPCtIo5dc' https://cdn.jsdelivr.net; style-src-attr 'unsafe-inline'; img-src 'self' data: blob: https://tiles.basemaps.cartocdn.com https://protomaps.github.io https://cdn.jsdelivr.net; connect-src 'self' https://tiles.basemaps.cartocdn.com https://protomaps.github.io https://cdn.jsdelivr.net https://nominatim.openstreetmap.org https://overpass-api.de https://overpass.kumi.systems; worker-src blob: 'self'; child-src blob: 'self'; font-src 'none'; manifest-src 'self'; base-uri 'none'; form-action 'none'; object-src 'none'">
+<meta http-equiv="Content-Security-Policy" content="default-src 'none'; script-src 'sha384-5JoL8MqiILK9dsfPMCq1Gi1ezZSthlu2RulsC3HyaBdIzy2FXndGfVW9Jc1lOPcS' https://cdn.jsdelivr.net; style-src-elem 'sha384-eqG3SdZ2IsgOinKfnmIFq/XY8kDsy2m15fyqxjwapIyIGNSeqjgGOs4DPCtIo5dc' https://cdn.jsdelivr.net; style-src-attr 'unsafe-inline'; img-src 'self' data: blob: https://tiles.basemaps.cartocdn.com https://protomaps.github.io https://cdn.jsdelivr.net; connect-src 'self' https://tiles.basemaps.cartocdn.com https://protomaps.github.io https://cdn.jsdelivr.net https://nominatim.openstreetmap.org https://overpass-api.de https://overpass.kumi.systems; worker-src blob: 'self'; child-src blob: 'self'; font-src 'none'; manifest-src 'self'; base-uri 'none'; form-action 'none'; object-src 'none'">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="mobile-web-app-capable" content="yes">
@@ -7757,8 +7757,14 @@ function crResolve(osmName, lngLat, boundary) { // resolve a tapped street from 
   // as a bridged street's do.
   if (!boundary && crCity && crCity.bbox && crInBox(crCity.bbox, lngLat.lat, lngLat.lng) && best.line.some(p => !crInBox(crCity.bbox, p[0], p[1]))) {
     const pieces = crClipLineToBox(best.line, crCity.bbox);
+    // the piece is chosen by distance to its SEGMENTS (crSegProjM), not
+    // its vertices: a road that leaves the city and comes back can put
+    // another piece's vertex nearer the tap than every vertex of the
+    // piece the tapped segment belongs to (the Codex catch on this
+    // round's gate: Aurora's Chambers Crescent returned its ~20 m piece
+    // instead of the ~398 m piece containing the tap).
     let piece = null, pieceD = Infinity;
-    for (const pc of pieces) for (const p of pc.line) { const d = distM(p, [lngLat.lat, lngLat.lng]); if (d < pieceD) { pieceD = d; piece = pc; } }
+    for (const pc of pieces) { let d = Infinity; for (let i = 1; i < pc.line.length; i++) { const sd = crSegProjM([lngLat.lat, lngLat.lng], pc.line[i - 1], pc.line[i]).d; if (sd < d) d = sd; } if (d < pieceD) { pieceD = d; piece = pc; } }
     if (piece) {
       let unproven = false;
       for (const end of [{ pt: piece.line[0], cut: piece.startCut }, { pt: piece.line[piece.line.length - 1], cut: piece.endCut }]) {
