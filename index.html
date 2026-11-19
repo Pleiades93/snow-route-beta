@@ -2,7 +2,7 @@
 <html lang="en" class="boot">
 <head>
 <meta charset="UTF-8">
-<meta http-equiv="Content-Security-Policy" content="default-src 'none'; script-src 'sha384-ZonTZtTKtuFCnKmWOfn3UhxUFuZSvC0u49X2z0OV/BnmVWoQwEDECIO/U72sdaqP' https://cdn.jsdelivr.net; style-src-elem 'sha384-8GNDDr7+PCv3lCptqUAWuSJXwDQ1EtE8JiwObuUCF2S6K3iQQriLO8Acq/pW5k67' https://cdn.jsdelivr.net; style-src-attr 'unsafe-inline'; img-src 'self' data: blob: https://tiles.basemaps.cartocdn.com https://protomaps.github.io https://cdn.jsdelivr.net; connect-src 'self' https://tiles.basemaps.cartocdn.com https://protomaps.github.io https://cdn.jsdelivr.net https://nominatim.openstreetmap.org https://overpass-api.de https://overpass.kumi.systems; worker-src blob: 'self'; child-src blob: 'self'; font-src 'none'; manifest-src 'self'; base-uri 'none'; form-action 'none'; object-src 'none'">
+<meta http-equiv="Content-Security-Policy" content="default-src 'none'; script-src 'sha384-S7pLzwJw8w5fvS8fYR3DAPsEAhKtnp/4UDEvy/MTlDLr/fub1f1DSS6QXOJCkqmr' https://cdn.jsdelivr.net; style-src-elem 'sha384-FLntZI6lXi7D3spIkIOWzt8MgQGa9bolN46z2sxrSSBbtQ+hmc1l7GOSkh3TJYQA' https://cdn.jsdelivr.net; style-src-attr 'unsafe-inline'; img-src 'self' data: blob: https://tiles.basemaps.cartocdn.com https://protomaps.github.io https://cdn.jsdelivr.net; connect-src 'self' https://tiles.basemaps.cartocdn.com https://protomaps.github.io https://cdn.jsdelivr.net https://nominatim.openstreetmap.org https://overpass-api.de https://overpass.kumi.systems; worker-src blob: 'self'; child-src blob: 'self'; font-src 'none'; manifest-src 'self'; base-uri 'none'; form-action 'none'; object-src 'none'">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="mobile-web-app-capable" content="yes">
@@ -133,7 +133,7 @@
   .dockBtn svg { width: 27px; height: 27px; }
   .dockBtn .pwrapD { display: inline-flex; width: 27px; height: 27px; align-items: center; justify-content: center; } /* Beta 1.217: the dock icon wrapper keeps the shipped 27px layout box - no button changes size */
   .dockBtn .pwrapD .pico { width: 34px; height: 34px; flex: none; display: block; }
-  body.night .dockBtn { background: linear-gradient(180deg, rgba(78,81,90,.94), rgba(43,45,51,.94)); color: #f2f4f8; border: 1px solid rgba(255,255,255,.22); border-top-color: rgba(255,255,255,.55); box-shadow: inset 0 1px 0 rgba(255,255,255,.45), 0 10px 26px rgba(0,0,0,.45); }
+  body.night .dockBtn { background: linear-gradient(var(--card), var(--card)) padding-box, linear-gradient(180deg, rgba(255,255,255,.16), rgba(255,255,255,.05) 55%, rgba(255,255,255,.02)) border-box; color: #f2f4f8; border: 1px solid transparent; box-shadow: 0 1px 2px rgba(0,0,0,.45), 0 12px 28px -6px rgba(0,0,0,.55); } /* Beta 1.242 (Andrew, from the night-buttons-v2 research sample, row 4 'Bar black, rim light' - his pick 2026-11-18): the night dock surface is the tab bar's own black, the --card token itself (never a copied colour), with NO inset highlight line; the depth is a gradient rim that fades down the border (white 16% at the top, 5% at 55%, 2% at the bottom), drawn circle-safe as a border-box layer over a transparent border, over a two-layer shadow. The padding-box layer wears the token, so the button face and the bar can never drift apart. The 1.224 elevation recipe (grey gradient, 55% top border, 45% inset line) is superseded for .dockBtn only - the create search bar and the back pill keep their own rounds' recipes. Day .dockBtn, .runBtn (both themes) and the glass readouts are untouched. */
   #runSlot { position: relative; width: 104px; flex: none; display: flex; flex-direction: column; align-items: center; }
   .runBtn { position: relative; width: 104px; height: 104px; flex: none; border-radius: 50%; border: none; box-shadow: 4px 6px 12px rgba(20,30,80,.15), -3px -3px 8px rgba(255,255,255,.22), inset 0 1px 2px rgba(255,255,255,.18), inset 0 -3px 6px rgba(8,12,50,.12); /* Beta 1.226: half the 1.224 strength, matching .dockBtn; the night fence below stands */ line-height: 1.1; cursor: pointer; padding: 0 8px; font-style: italic; font-weight: 900; letter-spacing: .01em; }
   body.night .runBtn { box-shadow: var(--shadow-float); } /* Beta 1.224: the lift is DAY-ONLY - night Start keeps the 1.221 float token exactly (the approved night sample left Start untouched) */
@@ -653,7 +653,7 @@ html.theme-swap *, html.theme-swap *::before, html.theme-swap *::after { transit
 <div id="hud">
   <div id="warn">Not saving. Storage is full or blocked</div>
   <div class="row">
-    <div class="titleStack"><div class="title">Snow Route Beta</div><div class="ver" id="ver">Beta 1.241</div></div>
+    <div class="titleStack"><div class="title">Snow Route Beta</div><div class="ver" id="ver">Beta 1.242</div></div>
   </div>
   <div id="stats"></div>
 </div>
@@ -6826,7 +6826,7 @@ $('stDel').addEventListener('click', async () => {
 });
 // ---- About ----
 const WHATSNEW = { // the curated in-app notes: plain words, LATEST RELEASE ONLY (Beta 1.114, Andrew: the accumulated list cluttered the About pane). A release REPLACES this entry with its own in the same change - it never accumulates; the full history lives in CHANGELOG.md, not the app
-  v: 'Beta 1.241', items: ["Select City now shows seven cities with the next one peeking - and a small arrow that points the way."] }; // Beta 1.223 (Andrew): What's New entries are SHORT from now on - point form, one short plain line each, no prose paragraphs, no em dashes
+  v: 'Beta 1.242', items: ["Night buttons now wear the tab bar's black, with a soft rim of light for depth.", "Three pop-ups are gone for good: Clean in progress, Start cancelled, and the tap-sectors note while trimming.", "In Create, the hint under a picked road now says: Tap a road to adjust sectors."] }; // Beta 1.223 (Andrew): What's New entries are SHORT from now on - point form, one short plain line each, no prose paragraphs, no em dashes
 
 function renderAbout() {
   const cur = $('ver').textContent.trim();
@@ -8018,7 +8018,7 @@ const CR_LOAD_GATE_MS = 5000;
 function crRenderHint() { // the ONE writer of the pick-stage hint + its action button + the sheet's city chip: state-driven, so no stale text survives a state change
   if (!creating || crStage !== 'pick') return;
   const hint = $('createHint'), btn = $('crHintBtn');
-  if (crSectorSession.street) { hint.textContent = 'Tap sectors to add or remove them'; hint.classList.add('on'); btn.style.display = 'none'; return; } // Beta 1.127 (mockup screen 1): while trimming, the pill says the one thing there is to do
+  if (crSectorSession.street) { hint.textContent = ''; hint.classList.remove('on'); btn.style.display = 'none'; return; } // Beta 1.242 (Andrew): the 'Tap sectors to add or remove them' pill (Beta 1.127) is CUT under his toast rule - the sector bar's own line already says 'Tap sectors to trim it', so a visible mechanism tells him and the pill is redundant. The early return stands (the state branches below must not paint load/search text over the trim flow); while trimming the hint pill now stays silent and offers no button - the same end state the tail below produces for an empty render (Beta 1.175: no text, no pill)
   let text = '', btnLabel = '';
   let gated = false; // Beta 1.176: true while the in-flight load is inside its 5 s gate - the render then paints NOTHING (no readout, no Cancel, and no disclosure note leaking the pill open early: the notes are state, not events, so they simply ride the first render past the gate, or the terminal state)
   const pastGate = t0 => !!t0 && (Date.now() - t0) >= CR_LOAD_GATE_MS; // the gate reads the load's OWN start, so a readout that appears carries the load's true progress at that moment; the loads' own 1 s tickers re-render through this writer as the gate opens - no second clock exists to go stale
@@ -9275,7 +9275,7 @@ function crPanelRowEl(n, g) { // Beta 1.127 (Andrew's approved mockup, screen 2)
   if (sel) { const rec = crStreetParts(n); sub.textContent = sel.length + ' of ' + (rec ? rec.parts.length : sel.length) + ' sectors · ' + fmtLenM(crStreetChosenM(n, g)); }
   else sub.textContent = 'Entire road · ' + fmtLenM(g[n] ? g[n].total : 0); // Beta 1.128: the adjust affordance is stated BEFORE any trim exists - in 1.127 it appeared only after one, so an untrimmed row gave no hint it could be tapped at all
   meta.appendChild(sub);
-  const hint = document.createElement('span'); hint.className = 'crPSub'; hint.textContent = 'Tap row to adjust'; meta.appendChild(hint); // Beta 1.208 (Andrew): the instruction gets its OWN line under the length line - through 1.207 it rode the same line after an em dash
+  const hint = document.createElement('span'); hint.className = 'crPSub'; hint.textContent = 'Tap a road to adjust sectors'; meta.appendChild(hint); // Beta 1.208 (Andrew): the instruction gets its OWN line under the length line - through 1.207 it rode the same line after an em dash. Beta 1.242 (Andrew): the words are his exact words - through 1.241 the line read 'Tap row to adjust'. WORDING ONLY: he sampled restyles (bolder, app blue, pill, footnote, extra air) and rejected them all - the styling stays the original .crPSub
   row.appendChild(meta);
   const chip = document.createElement('button'); chip.className = 'crPChip ' + (primary ? 'primary' : 'sec'); chip.textContent = primary ? 'PRIMARY' : 'SECONDARY';
   chip.addEventListener('click', e => { e.stopPropagation(); if (draft.primaries.has(n)) draft.primaries.delete(n); else draft.primaries.add(n); renderDraft(); renderCrLists(); });

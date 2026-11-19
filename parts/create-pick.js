@@ -11,7 +11,7 @@ const CR_LOAD_GATE_MS = 5000;
 function crRenderHint() { // the ONE writer of the pick-stage hint + its action button + the sheet's city chip: state-driven, so no stale text survives a state change
   if (!creating || crStage !== 'pick') return;
   const hint = $('createHint'), btn = $('crHintBtn');
-  if (crSectorSession.street) { hint.textContent = 'Tap sectors to add or remove them'; hint.classList.add('on'); btn.style.display = 'none'; return; } // Beta 1.127 (mockup screen 1): while trimming, the pill says the one thing there is to do
+  if (crSectorSession.street) { hint.textContent = ''; hint.classList.remove('on'); btn.style.display = 'none'; return; } // Beta 1.242 (Andrew): the 'Tap sectors to add or remove them' pill (Beta 1.127) is CUT under his toast rule - the sector bar's own line already says 'Tap sectors to trim it', so a visible mechanism tells him and the pill is redundant. The early return stands (the state branches below must not paint load/search text over the trim flow); while trimming the hint pill now stays silent and offers no button - the same end state the tail below produces for an empty render (Beta 1.175: no text, no pill)
   let text = '', btnLabel = '';
   let gated = false; // Beta 1.176: true while the in-flight load is inside its 5 s gate - the render then paints NOTHING (no readout, no Cancel, and no disclosure note leaking the pill open early: the notes are state, not events, so they simply ride the first render past the gate, or the terminal state)
   const pastGate = t0 => !!t0 && (Date.now() - t0) >= CR_LOAD_GATE_MS; // the gate reads the load's OWN start, so a readout that appears carries the load's true progress at that moment; the loads' own 1 s tickers re-render through this writer as the gate opens - no second clock exists to go stale
@@ -1268,7 +1268,7 @@ function crPanelRowEl(n, g) { // Beta 1.127 (Andrew's approved mockup, screen 2)
   if (sel) { const rec = crStreetParts(n); sub.textContent = sel.length + ' of ' + (rec ? rec.parts.length : sel.length) + ' sectors · ' + fmtLenM(crStreetChosenM(n, g)); }
   else sub.textContent = 'Entire road · ' + fmtLenM(g[n] ? g[n].total : 0); // Beta 1.128: the adjust affordance is stated BEFORE any trim exists - in 1.127 it appeared only after one, so an untrimmed row gave no hint it could be tapped at all
   meta.appendChild(sub);
-  const hint = document.createElement('span'); hint.className = 'crPSub'; hint.textContent = 'Tap row to adjust'; meta.appendChild(hint); // Beta 1.208 (Andrew): the instruction gets its OWN line under the length line - through 1.207 it rode the same line after an em dash
+  const hint = document.createElement('span'); hint.className = 'crPSub'; hint.textContent = 'Tap a road to adjust sectors'; meta.appendChild(hint); // Beta 1.208 (Andrew): the instruction gets its OWN line under the length line - through 1.207 it rode the same line after an em dash. Beta 1.242 (Andrew): the words are his exact words - through 1.241 the line read 'Tap row to adjust'. WORDING ONLY: he sampled restyles (bolder, app blue, pill, footnote, extra air) and rejected them all - the styling stays the original .crPSub
   row.appendChild(meta);
   const chip = document.createElement('button'); chip.className = 'crPChip ' + (primary ? 'primary' : 'sec'); chip.textContent = primary ? 'PRIMARY' : 'SECONDARY';
   chip.addEventListener('click', e => { e.stopPropagation(); if (draft.primaries.has(n)) draft.primaries.delete(n); else draft.primaries.add(n); renderDraft(); renderCrLists(); });

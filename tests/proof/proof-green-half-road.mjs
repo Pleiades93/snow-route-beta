@@ -351,11 +351,11 @@ check('R5: no .sec rule keeps the retired white text',
 check('R5: the PRIMARY pills wear the same true black on gold',
   head.includes('.crChip.primary { background: #ffc233; color: #000000; }') && head.includes('.crPChip.primary { background: #ffc233; color: #000000; }'));
 
-// ---- R6 (same round): "Tap row to adjust" stands on its own line in
+// ---- R6 (same round): "Tap a road to adjust sectors" stands on its own line in
 // the panel rows — the subtitle keeps only the length line.
 const pick = readFileSync('parts/create-pick.js', 'utf8');
 check('R6: the row hint is its own element with the exact wording',
-  pick.includes("hint.textContent = 'Tap row to adjust'"));
+  pick.includes("hint.textContent = 'Tap a road to adjust sectors'"));
 check('R6: no subtitle still rides the length line after an em dash',
   !pick.includes('— tap row to adjust'));
 check('R6: the whole-road subtitle is the length line only',
