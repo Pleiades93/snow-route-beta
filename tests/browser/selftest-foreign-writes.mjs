@@ -542,6 +542,11 @@ function analyzeSource(src) {
     while (k != null && k >= 0 && toks[k] && (toks[k].v === '(' || (toks[k].t === 'id' && toks[k].v === 'async'))) { if (toks[k].v === '(') parens++; k--; }
     if (k == null || k < 1) return null;
     if (toks[k].v !== '=' && toks[k].v !== ':') return null;
+    // A ':' names a property only inside an object literal, where the
+    // key directly follows '{' or ',' (Codex P2 round 6, PR #126): a
+    // conditional's colon is preceded by '?' before its other branch,
+    // and that branch's last identifier is not a property name.
+    if (toks[k].v === ':' && !(toks[k - 2] && (toks[k - 2].v === '{' || toks[k - 2].v === ','))) return null;
     const t = toks[k - 1];
     if (!t || t.t !== 'id' || BIND_KEYWORDS.has(t.v) || paramNameToks.has(k - 1)) return null;
     // Immediately invoked (Codex P2 round 5, PR #126): when the
@@ -823,6 +828,10 @@ for (const [label, src, want] of FX_CASES) {
   check('key fixture: an immediately invoked arrow keys to the enclosing function, not the result binding', iife.length === 1 && iife[0].fn === 'gamma', iife);
   const imove = (inAlpha) => analyzeFiles({ 'owner.js': FX_OWNER, 'case.js': 'function alpha() { const v = (() => {' + (inAlpha ? ' ext = 1;' : '') + ' })(); } function beta() { const v = (() => {' + (inAlpha ? '' : ' ext = 1;') + ' })(); }' }).sites.filter(s => s.file === 'case.js').map(key);
   check('key fixture: moving an assigned IIFE statement between two functions changes its key', JSON.stringify(imove(true)) !== JSON.stringify(imove(false)) && imove(true)[0].includes('|alpha|') && imove(false)[0].includes('|beta|'), [imove(true), imove(false)]);
+  const tern = fx('function gamma() { const value = cond ? fallback : () => { ext = 1; }; }');
+  check('key fixture: an arrow in a conditional alternate keys to the enclosing function, not the other branch', tern.length === 1 && tern[0].fn === 'gamma', tern);
+  const tmove = (inAlpha) => analyzeFiles({ 'owner.js': FX_OWNER, 'case.js': 'function alpha() { const v = cond ? fallback : () => {' + (inAlpha ? ' ext = 1;' : '') + ' }; } function beta() { const v = cond ? fallback : () => {' + (inAlpha ? '' : ' ext = 1;') + ' }; }' }).sites.filter(s => s.file === 'case.js').map(key);
+  check('key fixture: moving a conditional-alternate arrow between two functions changes its key', JSON.stringify(tmove(true)) !== JSON.stringify(tmove(false)) && tmove(true)[0].includes('|alpha|') && tmove(false)[0].includes('|beta|'), [tmove(true), tmove(false)]);
 }
 
 // ---------------- the tree census ----------------
