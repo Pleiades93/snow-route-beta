@@ -10,7 +10,11 @@
 // shadow. The 1.224 elevation recipe is superseded for .dockBtn only:
 // the create search bar and the back pill keep their own rounds'
 // recipes (pinned below as a scope guard). Day .dockBtn, .runBtn in
-// both themes and the glass readouts are untouched. (The rendered
+// both themes and the glass readouts are untouched. (Beta 1.244
+// supersedes the scope sentence: Andrew's one-black ruling extends
+// the recipe to the back pill and the search bar, from this one
+// shared grouped rule - proof-1244 pins the unified form and
+// check 4 below re-derives to it.) (The rendered
 // pixel comparison - button face vs tab bar face over the same map
 // backdrop - is measured in the round's QA, qa-1242 in the
 // round-buttons-1242 work dir.)
@@ -45,14 +49,14 @@ let pass = 0, fail = 0;
 const check = (name, cond) => { if (cond) { pass++; } else { fail++; console.log('FAIL:', name); } };
 
 // ---------- (1) the night dock recipe ----------
-check('1: the night dock surface is the tab bar token itself over a fading rim (the exact two-layer background)',
-  rule('body.night .dockBtn {').includes('background: linear-gradient(var(--card), var(--card)) padding-box, linear-gradient(180deg, rgba(255,255,255,.16), rgba(255,255,255,.05) 55%, rgba(255,255,255,.02)) border-box;'));
+check('1: the night dock surface is the tab bar token itself over a fading rim (the exact two-layer background; Beta 1.244: the rule is the shared cluster rule - grouped selector, the recipe values byte-identical)',
+  rule('body.night .dockBtn, body.night #crExit, body.night #crSearchWrap {').includes('background: linear-gradient(var(--card), var(--card)) padding-box, linear-gradient(180deg, rgba(255,255,255,.16), rgba(255,255,255,.05) 55%, rgba(255,255,255,.02)) border-box;'));
 check('2: the rim rides a transparent border and the shadow is the two-layer pair',
-  rule('body.night .dockBtn {').includes('border: 1px solid transparent;') && rule('body.night .dockBtn {').includes('box-shadow: 0 1px 2px rgba(0,0,0,.45), 0 12px 28px -6px rgba(0,0,0,.55);'));
-check('3: NO inset highlight line and NO top-border step in the night dock rule (the 1.224 recipe is gone from it)',
-  !rule('body.night .dockBtn {').includes('inset') && !rule('body.night .dockBtn {').includes('border-top-color') && !rule('body.night .dockBtn {').includes('rgba(78,81,90,.94), rgba(43,45,51,.94)'));
-check('4: scope guard, re-derived (Beta 1.243: the search bar is not a dock button and 1.242 left it untouched - but 1.243 moves it deliberately, to the create text boxes\' white pill in both themes, so its night glass rule is GONE)',
-  !head.includes('body.night #crSearchWrap'));
+  rule('body.night .dockBtn, body.night #crExit, body.night #crSearchWrap {').includes('border: 1px solid transparent;') && rule('body.night .dockBtn, body.night #crExit, body.night #crSearchWrap {').includes('box-shadow: 0 1px 2px rgba(0,0,0,.45), 0 12px 28px -6px rgba(0,0,0,.55);'));
+check('3: NO inset highlight line and NO top-border step in the night rule (the 1.224 recipe is gone from it)',
+  !rule('body.night .dockBtn, body.night #crExit, body.night #crSearchWrap {').includes('inset') && !rule('body.night .dockBtn, body.night #crExit, body.night #crSearchWrap {').includes('border-top-color') && !rule('body.night .dockBtn, body.night #crExit, body.night #crSearchWrap {').includes('rgba(78,81,90,.94), rgba(43,45,51,.94)'));
+check('4: scope guard, re-derived (Beta 1.244: Andrew\'s one-black ruling EXTENDS the recipe deliberately - the back pill and the search bar wear this same shared rule now; the guard\'s new form: the grouped rule names all three, and the retired glass stands nowhere in the stylesheet)',
+  head.includes('body.night .dockBtn, body.night #crExit, body.night #crSearchWrap {') && !head.includes('rgba(78,81,90,.94)') && !head.includes('rgba(43,45,51,.94)'));
 check('5: the tab bar wears the same token the button now wears (one token, never a copied colour)',
   rule('#tabBar {').includes('background: var(--card);') && head.includes('body.night { --card: rgba(32,33,37,.94);'));
 check('6: the day dock face is byte-identical to 1.241 (opaque light gradient, half lift stack, no border)',
@@ -83,9 +87,9 @@ check('16: the hint styling is the original .crPSub (13px, the dim ink token) - 
   head.includes('.crPSub { font-size: 13px; color: var(--ink-dim); }'));
 
 // ---------- the frame ----------
-check('17: What\'s New carries the current entry\'s bullets (rolled to 1.243: this check tracks the CURRENT entry each round; and stays em-dash free)',
-  whatsnew.includes('Create now has two doors') && whatsnew.includes('solid white pill') && !whatsnew.includes('—'));
-check('18: the CHANGELOG top entry is Beta 1.242', changelog.indexOf('## Beta 1.242') > -1 && changelog.indexOf('## Beta 1.242') < changelog.indexOf('## Beta 1.241'));
+check('17: What\'s New carries the current entry\'s bullet (rolled to 1.244: this check tracks the CURRENT entry each round; and stays em-dash free)',
+  whatsnew.includes('same black as the bottom bar') && !whatsnew.includes('—'));
+check('18: the CHANGELOG order stands (1.242 above 1.241; the 1.244 entry rides above both - proof-1244 pins the top)', changelog.indexOf('## Beta 1.242') > -1 && changelog.indexOf('## Beta 1.242') < changelog.indexOf('## Beta 1.241'));
 
 console.log(`proof-1242: ${pass} pass, ${fail} fail`);
 process.exit(fail === 0 ? 0 : 1);

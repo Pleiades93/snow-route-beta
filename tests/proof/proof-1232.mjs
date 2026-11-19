@@ -97,7 +97,7 @@ check('1q (fix round 5, PR #112 Codex P2; Beta 1.243, Arch-3): dismissing the re
 check('2a (Beta 1.234): the collapse and label machinery is gone from create-pick', !pick.includes('function crCollapseResults') && !pick.includes('function crStreetIdentity') && !pick.includes('function crNearCrossName') && !pick.includes('crNear'));
 check('2b (Beta 1.234): the .crNear styles are gone from the stylesheet', !head.includes('.crNear'));
 
-// ---------- Piece 3: the monochrome bar (Beta 1.243: the bar itself leaves the family for the create text boxes' white pill - 3a/3d/3e/3f re-pin to it; the back pill keeps the 1.232 recipes and 3b stands) ----------
+// ---------- Piece 3: the monochrome bar (Beta 1.243: the bar itself leaves the family for the create text boxes' white pill - 3a/3d/3e/3f re-pin to it; the back pill keeps the 1.232 recipes and 3b stands. Beta 1.244: the one-black ruling - the bar's pill is its DAY face, at night bar and pill wear the shared token black; 3d/3e/3f re-pin again) ----------
 const SOFT = '3px 4px 8px rgba(20,30,60,.10), -2px -2px 5px rgba(255,255,255,.35), inset 0 1px 1px rgba(255,255,255,.6), inset 0 -2px 4px rgba(90,100,120,.10)';
 const wrapLine = head.split('\n').find(l => l.startsWith('#crSearchWrap {')) || '';
 const pillLine = head.split('\n').find(l => l.startsWith('#crExit {')) || '';
@@ -106,11 +106,10 @@ check('3b: the day back pill wears the same border and shadow', pillLine.include
 check('3c: no app blue survives in the day bar rule', !wrapLine.includes('#3D65EF') && !wrapLine.includes('#1B2FB6'));
 const NIGHT_BG = 'linear-gradient(180deg, rgba(78,81,90,.94), rgba(43,45,51,.94))';
 const NIGHT_SH = 'inset 0 1px 1px rgba(255,255,255,.35), 0 8px 24px rgba(0,0,0,.45)';
-const wrapNight = head.split('\n').find(l => l.startsWith('body.night #crSearchWrap {')) || '';
-const pillNight = head.split('\n').find(l => l.startsWith('body.night #crExit {')) || '';
-check('3d: the night bar is OUT of the glass family (Beta 1.243: no body.night wrap rule - the pill governs both themes) while the back pill keeps its N2 glass recipe exactly', wrapNight === '' && pillNight.includes('background: ' + NIGHT_BG + ';') && pillNight.includes('box-shadow: ' + NIGHT_SH + ';'));
-check('3e: the input ink is the pill ink in BOTH themes (Beta 1.243: #14161c, no night override, the day placeholder governs both)', head.includes('color: #14161c; background: transparent; }') && !head.includes('body.night #crSearchInput') && head.includes('#crSearchInput::placeholder { color: rgba(17,17,17,.42); }'));
-check('3f: the magnifier and the clear disc wear the DARK glyph fill in both themes (Beta 1.243: they follow the always-white bar)', app4.includes('GLYPH_CREATE.search.d') && app4.includes('GLYPH_CREATE.cancel.d') && !app4.includes('night ? GLYPH_CREATE.search.n') && !app4.includes('night ? GLYPH_CREATE.cancel.n'));
+const sharedNight = head.split('\n').find(l => l.includes('body.night .dockBtn, body.night #crExit, body.night #crSearchWrap {')) || '';
+check('3d: the night bar and back pill wear the ONE shared token black (Beta 1.244 supersedes both the 1.232 N2 glass pairing and the 1.243 both-themes pill: the grouped rim rule names both, and the glass gradient and its shadow stand nowhere in the stylesheet)', sharedNight.includes('background: linear-gradient(var(--card), var(--card)) padding-box') && sharedNight.includes('box-shadow: 0 1px 2px rgba(0,0,0,.45), 0 12px 28px -6px rgba(0,0,0,.55);') && !head.includes(NIGHT_BG) && !head.includes(NIGHT_SH));
+check('3e: the input ink is the pill ink by day and LIGHT at night (Beta 1.244 supersedes the 1.243 both-themes ink: the pre-1.243 night rules restored)', head.includes('color: #14161c; background: transparent; }') && head.includes('body.night #crSearchInput { color: #fff; }') && head.includes('#crSearchInput::placeholder { color: rgba(17,17,17,.42); }'));
+check('3f: the magnifier and the clear disc wear the THEME glyph fill (Beta 1.244 supersedes the 1.243 both-themes dark: dark by day, white at night, as in 1.232)', app4.includes('night ? GLYPH_CREATE.search.n : GLYPH_CREATE.search.d') && app4.includes('night ? GLYPH_CREATE.cancel.n : GLYPH_CREATE.cancel.d'));
 check('3g: the first-row tint went neutral and the old blue tint is gone from the page', head.includes('.crResult:first-child { border-top: none; background: #f2f3f5; }') && !head.includes('#f2f5ff'));
 check('3h: the bar geometry stands (50px pill and bar, 25px radius)', pillLine.includes('width: 50px; height: 50px;') && wrapLine.includes('height: 50px;') && wrapLine.includes('border-radius: 25px;'));
 

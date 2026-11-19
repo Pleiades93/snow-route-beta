@@ -10,6 +10,11 @@
 // search wrap wears the same pill values in BOTH themes (its night glass
 // rule is retired; the input wears the pill ink in both themes and its
 // magnifier/clear glyphs stamp the dark variant in both themes).
+// (Beta 1.244, Andrew's correction: the pill order covered the create
+// MENU text boxes only - the street search sentence above is superseded:
+// the wrap keeps the pill BY DAY and wears the shared token black at
+// night, its ink and glyphs flipping with the theme again. Checks 12/13
+// re-derive; the menu boxes' pill is untouched and checks 8-11/14 stand.)
 // (3) ARCH-3: "end the search" has ONE owner - crResetSearch() in
 // create-pick.js (clear the pending debounce, bump the sequence, hide the
 // results box) - called by all five seats; the dead crSearchCtl (never
@@ -56,11 +61,11 @@ check('9: the city box keeps its own margin rule (the group rule carries no marg
 check('10: the placeholder grey groups the same three inputs',
   head.includes('#crCityInput::placeholder, #crNameInput::placeholder, #crAreaInput::placeholder { color: #9aa0ab; }'));
 check('11: the search wrap wears the same pill values (white fill, no border, the city shadow)',
-  rule('#crSearchWrap {').includes('background: #fff;') && rule('#crSearchWrap {').includes('border: none;') && rule('#crSearchWrap {').includes('box-shadow: 0 6px 18px rgba(0,0,0,.18);'));
-check('12: the wrap wears the pill in BOTH themes (no night override survives)',
-  !head.includes('body.night #crSearchWrap'));
-check('13: the search input wears the pill ink in both themes (no night override survives)',
-  rule('#crSearchInput {').includes('color: #14161c;') && !head.includes('body.night #crSearchInput'));
+  rule('\n#crSearchWrap {').includes('background: #fff;') && rule('\n#crSearchWrap {').includes('border: none;') && rule('\n#crSearchWrap {').includes('box-shadow: 0 6px 18px rgba(0,0,0,.18);'));
+check('12: the wrap wears the pill BY DAY and the shared token black at night (Beta 1.244 supersedes the both-themes form: the grouped night rule names the wrap)',
+  head.includes('body.night .dockBtn, body.night #crExit, body.night #crSearchWrap {'));
+check('13: the search input wears the pill ink BY DAY and light ink at night (Beta 1.244: the pre-1.243 night override restored)',
+  rule('#crSearchInput {').includes('color: #14161c;') && head.includes('body.night #crSearchInput { color: #fff; }'));
 check('14: the shared .rmInput glass base is UNTOUCHED (the pill is scoped to the create boxes)',
   rule('.rmInput {').includes('background: rgba(255,255,255,.14);') && rule('.rmInput {').includes('border: 1px solid rgba(255,255,255,.45);'));
 
@@ -75,9 +80,9 @@ check('18: the seats keep their own extras (exitCreate still clears the field; t
   pick.includes("$('crSearchInput').value = ''; crSyncClear();") && pick.includes("crSyncClear(); $('crSearchInput').focus();"));
 
 // ---------- the frame ----------
-check('19: What\'s New carries the 1.243 bullets (and stays em-dash free)',
-  whatsnew.includes('Create now has two doors: Select from list and Manual search. The Upload photo door is gone.') && whatsnew.includes('Every text box in Create wears the same solid white pill now - city, route name, area and street search.') && !whatsnew.includes('—'));
-check('20: the CHANGELOG top entry is Beta 1.243',
+check('19: What\'s New carries the CURRENT entry\'s bullet (rolled to 1.244: this check tracks the current entry each round; and stays em-dash free)',
+  whatsnew.includes('same black as the bottom bar') && !whatsnew.includes('—'));
+check('20: the CHANGELOG order stands (1.243 above 1.242; the 1.244 entry rides above both - proof-1244 pins the top)',
   changelog.indexOf('## Beta 1.243') > -1 && changelog.indexOf('## Beta 1.243') < changelog.indexOf('## Beta 1.242'));
 
 console.log(`proof-1243: ${pass} pass, ${fail} fail`);
