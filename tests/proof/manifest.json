@@ -47,7 +47,12 @@
   "proof-1235.mjs",
   "proof-1236.mjs",
   "proof-1237.mjs",
-  "proof-1238.mjs"
+  "proof-1238.mjs",
+  "proof-mut-idb-open.mjs",
+  "proof-mut-load-gate.mjs",
+  "proof-mut-map-ready.mjs",
+  "proof-mut-nameit.mjs",
+  "proof-mut-refrun.mjs"
  ],
  "retired": [
   {
