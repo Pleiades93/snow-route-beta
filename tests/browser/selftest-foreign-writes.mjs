@@ -38,11 +38,39 @@
 //    targets ([a,b]= / ({a}=)) count per bound identifier.
 //    `for (const x of ...)` declares; `for (x of ...)` with a bare
 //    known identifier ASSIGNS.
-//  - The census record = the sorted list of sites {file, line, name,
-//    owner} + totals; line numbers are those of the current tree. This
-//    selftest recomputes and compares EXACTLY; a deliberate census
-//    update = regenerate the JSON via this file's --write mode (the
+//  - The census record = the sorted list of sites {file, fn, name,
+//    owner, occ} + totals (Arch-5 re-key, 2026-11-19). fn is the
+//    site's enclosing function under the keying rule below; occ is the
+//    write's ordinal among writes to the same target inside that
+//    function. Line numbers are NOT part of the record: through
+//    Beta 1.243 sites were keyed by file + line + name + owner, so
+//    any edit that shifted lines re-keyed the census and forced hand
+//    re-pins (the Arch-1 part split rolled a census pin on exactly
+//    that). The fn key survives code moving within a file and
+//    changes only when the write itself changes. This selftest
+//    recomputes and compares EXACTLY; a deliberate census update =
+//    regenerate the JSON via this file's --write mode (the
 //    regeneration is a human-reviewed act, never automatic in CI).
+//
+// KEYING RULE (Arch-5, 2026-11-19 - verbatim, also carried in the
+// census JSON's rule text): a site's fn is the innermost enclosing
+// function that HAS a name - a function declaration's name, a method's
+// name, or the binding/property an anonymous function is assigned to
+// (`const x = () => {}`, `x = function () {}`, `{ x: () => {} }` key
+// to x). An anonymous function with no such slot (a callback argument,
+// an IIFE) is TRANSPARENT for keying: its writes key to the nearest
+// named enclosing function, or to '<top-level>' when there is none.
+// occ counts writes to the same target within that (file, fn) bucket
+// in source (token) order, starting at 1. A function's parameter list
+// is part of the function for keying: a write in a default
+// initializer keys to that function - and never to the parameter's
+// own name (a parameter name is not a function name, so a function
+// expression sitting in a default does not take it either). Wrapping
+// parentheses and an 'async' modifier around an assigned function
+// are transparent for keying: the name still resolves through them.
+// An immediately invoked function is the opposite case: the slot
+// binds its result, not the function, so it takes no slot name and
+// stays transparent like any other anonymous function.
 //
 // ADJUDICATION NOTES (counting-rule decisions, builder, 2026-11-07):
 //  - engine.js: only GLP is declared at engine.js top level; everything
@@ -126,7 +154,7 @@ const UNIVERSE = ['app1.js', 'app2.js', 'app3.js', 'app4.js', 'app5.js', 'create
 const CREATE_FAMILY = new Set(['create-packs.js', 'create-fetch.js', 'create-citydata.js', 'create-cache.js', 'create-pick.js', 'create-save.js']);
 const ownerGroup = (f) => CREATE_FAMILY.has(f) ? 'create.js' : f; // the six create-*.js files are ONE owner group, labelled by the historical part name
 const CENSUS_PATH = path.join(HERE, 'fixtures', 'foreign-writes-census.json');
-const RULE = 'Universe: parts/app1.js, app2.js, app3.js, app4.js, app5.js, create-packs.js, create-fetch.js, create-citydata.js, create-cache.js, create-pick.js, create-save.js, engine.js (data.js, whatsnew.js and pmstyles.js excluded - data/generated). Owner = the part file holding a binding\'s top-level declaration, except the six create-*.js files form ONE owner group labelled create.js (the historical part name): a binding declared in any create-*.js file is owned by that group, and a write is foreign iff the target\'s owner group differs from the writing file\'s owner group; site records keep the concrete file holding the write. A FOREIGN WRITE is an assignment/update expression (=, +=, -=, *=, /=, %=, **=, ++, -- prefix or postfix) whose target is a bare identifier (not a member expression; a declaration initializer never counts) resolving through lexical scope to a top-level binding owned by a different part file or owner group. Comments/strings/templates masked (interpolations are code); scopes tracked by braces with their declarations (function/arrow/catch params, let/const/var at any depth, function declarations). Destructuring assignment targets count per bound identifier; for (x of ...) with a bare identifier assigns.';
+const RULE = 'Universe: parts/app1.js, app2.js, app3.js, app4.js, app5.js, create-packs.js, create-fetch.js, create-citydata.js, create-cache.js, create-pick.js, create-save.js, engine.js (data.js, whatsnew.js and pmstyles.js excluded - data/generated). Owner = the part file holding a binding\'s top-level declaration, except the six create-*.js files form ONE owner group labelled create.js (the historical part name): a binding declared in any create-*.js file is owned by that group, and a write is foreign iff the target\'s owner group differs from the writing file\'s owner group; site records keep the concrete file holding the write. A FOREIGN WRITE is an assignment/update expression (=, +=, -=, *=, /=, %=, **=, ++, -- prefix or postfix) whose target is a bare identifier (not a member expression; a declaration initializer never counts) resolving through lexical scope to a top-level binding owned by a different part file or owner group. Comments/strings/templates masked (interpolations are code); scopes tracked by braces with their declarations (function/arrow/catch params, let/const/var at any depth, function declarations). Destructuring assignment targets count per bound identifier; for (x of ...) with a bare identifier assigns. Site records are keyed by enclosing function (Arch-5 re-key, 2026-11-19): {file, fn, name, owner, occ} - fn is the innermost enclosing function with a name (a declaration name, a method name, or the binding/property an anonymous function is assigned to; an anonymous function with no such slot is transparent for keying, its writes keying to the nearest named enclosing function, or \'<top-level>\' when there is none), and occ is the 1-based ordinal of the write among writes to the same target within that function in source order. Parameter lists are part of their function for keying: a write in a default initializer keys to that function, never to the parameter name. Wrapping parentheses and an async modifier around an assigned function are transparent for keying. Line numbers are not part of the record.';
 
 // ---------------- tokenizer (comments/strings masked; templates: interpolations are code) ----------------
 const KEYWORDS = new Set(['if', 'else', 'for', 'while', 'do', 'switch', 'case', 'default', 'break', 'continue', 'return', 'function', 'var', 'let', 'const', 'new', 'delete', 'typeof', 'void', 'in', 'of', 'instanceof', 'try', 'catch', 'finally', 'throw', 'class', 'extends', 'super', 'this', 'null', 'true', 'false', 'undefined', 'yield', 'async', 'await', 'static', 'get', 'set', 'export', 'import', 'from']);
@@ -325,6 +353,9 @@ function skipInitializer(toks, j) { // from just after '=': stop AT the depth-0 
   return j;
 }
 
+// Anonymous functions' keying names resolve from their assignment /
+// property slots in a post-pass inside analyzeSource (resolveSlot).
+
 function analyzeSource(src) {
   const toks = tokenize(src);
   const regions = [{ id: 0, start: -1, end: Number.MAX_SAFE_INTEGER, kind: 'root', isFunction: true }];
@@ -333,18 +364,22 @@ function analyzeSource(src) {
   const initEqToks = new Set();
   const pendingByBrace = new Map(); // brace token idx -> [{name, tok}]
   const funcBraceIdx = new Set(); // brace token idx of function/arrow/method bodies (NOT catch)
+  const fnNames = new Map(); // function-body brace token idx -> Arch-5 keying name (null = anonymous)
+  const fnParamRanges = []; // {open, close, braceIdx, regionId, fnName} - parameter-list spans: a function's parameters are part of the function for keying (a write in a default initializer keys to the function - Codex P2 round 2, PR #126)
+  const paramNameToks = new Set(); // token idx of parameter names - a parameter's name is never a function's keying name
+  const fnSlots = []; // {braceIdx, regionId, anchor, range} - anonymous functions whose keying name resolves from their slot in the post-pass (resolveSlot)
   const forHeaders = []; // {open, close, id} of each for statement's (...) header
   const braceStack = [0];
   const tokBraceRegion = new Array(toks.length).fill(0);
   const addDecl = (name, tok, scope) => { declEvents.push({ name, tok, scope }); declNameToks.add(tok); };
-  const queueParams = (braceIdx, names, isFunc) => { if (braceIdx == null) return; if (isFunc) funcBraceIdx.add(braceIdx); if (!names.length) return; const arr = pendingByBrace.get(braceIdx) || []; arr.push(...names); pendingByBrace.set(braceIdx, arr); };
+  const queueParams = (braceIdx, names, isFunc, fnName) => { if (braceIdx == null) return; if (isFunc) { funcBraceIdx.add(braceIdx); if (fnName !== undefined) fnNames.set(braceIdx, fnName); for (const p of names) paramNameToks.add(p.tok); } if (!names.length) return; const arr = pendingByBrace.get(braceIdx) || []; arr.push(...names); pendingByBrace.set(braceIdx, arr); };
 
   for (let i = 0; i < toks.length; i++) {
     const tk = toks[i], v = tk.v;
     tokBraceRegion[i] = braceStack[braceStack.length - 1];
     if (v === '{') {
       const id = regions.length;
-      regions.push({ id, start: i, end: Number.MAX_SAFE_INTEGER, kind: 'brace', isFunction: funcBraceIdx.has(i) });
+      regions.push({ id, start: i, end: Number.MAX_SAFE_INTEGER, kind: 'brace', isFunction: funcBraceIdx.has(i), fnName: funcBraceIdx.has(i) ? (fnNames.get(i) ?? null) : undefined });
       braceStack.push(id);
       const pend = pendingByBrace.get(i);
       if (pend) { for (const p of pend) addDecl(p.name, p.tok, id); pendingByBrace.delete(i); }
@@ -355,17 +390,41 @@ function analyzeSource(src) {
       if (v === '=>') {
         // arrow params: '(...)' or a bare identifier immediately before
         let names = [];
-        if (toks[i - 1] && toks[i - 1].v === ')') { const o = matchOpen(toks, i - 1); names = patternNames(toks, o + 1, i - 2); }
-        else if (toks[i - 1] && toks[i - 1].t === 'id') names = [{ name: toks[i - 1].v, tok: i - 1 }];
+        let slotIdx = null; // anchor token just before this arrow's parameter list - its keying name resolves from here in the post-pass
+        let paramOpen = null; // token index of this arrow's parameter-list '(' (or of its bare param)
+        if (toks[i - 1] && toks[i - 1].v === ')') { paramOpen = matchOpen(toks, i - 1); names = patternNames(toks, paramOpen + 1, i - 2); slotIdx = paramOpen - 1; }
+        else if (toks[i - 1] && toks[i - 1].t === 'id') { names = [{ name: toks[i - 1].v, tok: i - 1 }]; slotIdx = i - 2; paramOpen = i - 1; }
         const nxt = toks[i + 1];
-        if (nxt && nxt.v === '{') queueParams(i + 1, names, true);
+        if (nxt && nxt.v === '{') { queueParams(i + 1, names, true); const range = { open: paramOpen, close: i - 1, braceIdx: i + 1, regionId: null, fnName: null }; fnParamRanges.push(range); fnSlots.push({ braceIdx: i + 1, regionId: null, anchor: slotIdx, range }); }
         else if (nxt) {
-          // expression body: virtual region spanning the expression
-          let d = 0, end = i + 1;
-          for (let j = i + 1; j < toks.length; j++) { const w = toks[j].v; if (d === 0 && [',', ';', ')', ']', '}'].includes(w)) break; if (OPEN[w]) d++; else if (CLOSE[w]) d--; end = j; }
+          // expression body: virtual region spanning the expression,
+          // bounded at depth-0 ASI breaks by the same predicate
+          // statementEnd uses (Codex P2 round 7, PR #126): without it
+          // the region ran on into the next statement and claimed
+          // its writes for this arrow's key.
+          let d = 0, end = i + 1, q = 0;
+          for (let j = i + 1; j < toks.length; j++) {
+            const w = toks[j].v;
+            if (d === 0 && j > i + 1 && toks[j].line > toks[j - 1].line) {
+              if (isPostfixUpdate(toks, j - 1, i + 1) && !OPERATOR_CONTINUES.has(w)) break;
+              if (!CONTINUES.has(w) && w !== 'tpl' && !CONTINUES.has(toks[j - 1].v) && !PREFIX_BEFORE.has(toks[j - 1].v)) break;
+            }
+            // A depth-0 ':' ends the body only when it belongs to a
+            // conditional ENCLOSING the arrow (Codex P2 round 8,
+            // PR #126): the body's own conditionals consume their
+            // colons against the '?' count tracked here.
+            if (d === 0 && w === '?') q++;
+            else if (d === 0 && w === ':') { if (q > 0) q--; else break; }
+            if (d === 0 && [',', ';', ')', ']', '}'].includes(w)) break;
+            if (OPEN[w]) d++; else if (CLOSE[w]) d--;
+            end = j;
+          }
           const id = regions.length;
-          regions.push({ id, start: i + 1, end, kind: 'arrow', isFunction: true });
-          for (const p of names) addDecl(p.name, p.tok, id);
+          regions.push({ id, start: i + 1, end, kind: 'arrow', isFunction: true, fnName: null });
+          const range = { open: paramOpen, close: i - 1, braceIdx: null, regionId: id, fnName: null };
+          fnParamRanges.push(range);
+          fnSlots.push({ braceIdx: null, regionId: id, anchor: slotIdx, range });
+          for (const p of names) { addDecl(p.name, p.tok, id); paramNameToks.add(p.tok); }
         }
       }
       continue;
@@ -430,7 +489,9 @@ function analyzeSource(src) {
         const close = matchClose(toks, j);
         const params = patternNames(toks, j + 1, close - 1);
         const braceIdx = toks[close + 1] && toks[close + 1].v === '{' ? close + 1 : null;
-        queueParams(braceIdx, params, true);
+        const fnKeyName = nameTok != null ? toks[nameTok].v : null;
+        queueParams(braceIdx, params, true, fnKeyName);
+        if (braceIdx != null) { const range = { open: j, close, braceIdx, regionId: null, fnName: fnKeyName }; fnParamRanges.push(range); if (nameTok == null) fnSlots.push({ braceIdx, regionId: null, anchor: i - 1, range }); }
         if (nameTok != null) {
           const prev = toks[i - 1];
           const isDecl = !prev || [';', '{', '}'].includes(prev.v);
@@ -456,7 +517,7 @@ function analyzeSource(src) {
       const ctxOk = !prev || ['{', ',', ';', '}'].includes(prev.v) || (prev.t === 'id' && ['get', 'set', 'async', 'static'].includes(prev.v)) || prev.v === '*';
       if (ctxOk) {
         const close = matchClose(toks, i + 1);
-        if (toks[close + 1] && toks[close + 1].v === '{') queueParams(close + 1, patternNames(toks, i + 2, close - 1), true);
+        if (toks[close + 1] && toks[close + 1].v === '{') { queueParams(close + 1, patternNames(toks, i + 2, close - 1), true, v); fnParamRanges.push({ open: i + 1, close, braceIdx: close + 1, regionId: null, fnName: v }); }
       }
     }
   }
@@ -469,7 +530,75 @@ function analyzeSource(src) {
   }
   const scopeNames = new Map();
   for (const e of declEvents) { if (!scopeNames.has(e.scope)) scopeNames.set(e.scope, new Set()); scopeNames.get(e.scope).add(e.name); }
-  return { toks, regions, declEvents, declNameToks, initEqToks, tokBraceRegion, scopeNames };
+  // Arch-5 keying: the enclosing function of a token = the first
+  // NAMED candidate in nesting order. Candidates are every function
+  // body region containing the token plus every parameter span
+  // containing it (parameter lists are part of their function -
+  // Codex P2 round 2, PR #126: a write in a default initializer sits
+  // BEFORE the body brace, outside every body region, so each
+  // function's parameter span is a candidate spanning the function's
+  // full extent). Containing candidates nest, so span order IS
+  // nesting order; anonymous candidates are transparent - the walk
+  // simply continues to the next candidate outward. (Round 4: the
+  // walk must NOT follow an anonymous region's parent chain first -
+  // parameter spans are not region parents, and a nearer span would
+  // be jumped over.) No named candidate = '<top-level>'.
+  const regionByStart = new Map();
+  for (const r of regions) if (r.kind === 'brace') regionByStart.set(r.start, r.id);
+  // Post-pass slot resolution (Codex P2 round 3, PR #126): an
+  // anonymous function's keying name comes from the slot it sits in,
+  // resolved HERE - after the scan, when every parameter name is
+  // registered (a function inside an arrow's parameter default is
+  // scanned before that arrow's own parameters are, so an in-pass
+  // resolution cannot know the name is a parameter's). The walk back
+  // from the function skips wrapping parentheses and an 'async'
+  // modifier, then requires '=' or ':' with a non-parameter
+  // identifier before it; anything else stays anonymous. String
+  // property keys are masked by the tokenizer, so they resolve as
+  // anonymous - accepted: identifier keys are the codebase norm.
+  const resolveSlot = (anchor, bodyEnd) => {
+    let k = anchor, parens = 0;
+    while (k != null && k >= 0 && toks[k] && (toks[k].v === '(' || (toks[k].t === 'id' && toks[k].v === 'async'))) { if (toks[k].v === '(') parens++; k--; }
+    if (k == null || k < 1) return null;
+    if (toks[k].v !== '=' && toks[k].v !== ':') return null;
+    // A ':' names a property only inside an object literal, where the
+    // key directly follows '{' or ',' (Codex P2 round 6, PR #126): a
+    // conditional's colon is preceded by '?' before its other branch,
+    // and that branch's last identifier is not a property name.
+    if (toks[k].v === ':' && !(toks[k - 2] && (toks[k - 2].v === '{' || toks[k - 2].v === ','))) return null;
+    const t = toks[k - 1];
+    if (!t || t.t !== 'id' || BIND_KEYWORDS.has(t.v) || paramNameToks.has(k - 1)) return null;
+    // Immediately invoked (Codex P2 round 5, PR #126): when the
+    // function's own wrapping parens close right after its body and
+    // a call follows, the slot binds the RESULT, not the function -
+    // an IIFE is transparent for keying and takes no slot name.
+    let m = bodyEnd + 1;
+    for (let n = 0; n < parens && toks[m] && toks[m].v === ')'; n++) m++;
+    if (toks[m] && toks[m].v === '(') return null;
+    return t.v;
+  };
+  for (const s of fnSlots) {
+    const rid = s.regionId != null ? s.regionId : regionByStart.get(s.braceIdx);
+    const nm = rid != null && regions[rid] ? resolveSlot(s.anchor, regions[rid].end) : null;
+    if (rid != null && regions[rid]) regions[rid].fnName = nm;
+    if (s.range) s.range.fnName = nm;
+  }
+  const fnAt = (tokIdx) => {
+    const cands = [];
+    for (const r of regions) {
+      if (!r.isFunction || r.id === 0) continue;
+      if (r.start <= tokIdx && tokIdx <= r.end) cands.push({ span: r.end - r.start, fnName: r.fnName });
+    }
+    for (const pr of fnParamRanges) {
+      const rid = pr.regionId != null ? pr.regionId : regionByStart.get(pr.braceIdx);
+      if (rid == null || !regions[rid]) continue;
+      if (pr.open <= tokIdx && tokIdx <= pr.close) cands.push({ span: regions[rid].end - pr.open, fnName: pr.fnName });
+    }
+    cands.sort((a, b) => a.span - b.span);
+    for (const c of cands) if (c.fnName) return c.fnName;
+    return '<top-level>';
+  };
+  return { toks, regions, declEvents, declNameToks, initEqToks, tokBraceRegion, scopeNames, fnAt };
 }
 
 // Destructuring-assignment targets inside a bracket group (the part
@@ -532,7 +661,7 @@ function analyzeFiles(fileSrcs) {
     const consider = (tokIdx) => {
       const name = toks[tokIdx].v;
       const owner = resolve(tokIdx, name);
-      if (owner && owner !== 'own' && owner !== 'local') sites.push({ file: f, line: toks[tokIdx].line, name, owner });
+      if (owner && owner !== 'own' && owner !== 'local') sites.push({ file: f, fn: an.fnAt(tokIdx), name, owner });
     };
     // pre-pass: destructuring assignment groups ([...] = / ({...}) =)
     const groupToks = new Set(), groupEq = new Map();
@@ -571,14 +700,20 @@ function analyzeFiles(fileSrcs) {
       if (isForAssign || isAssign || isPost || isPre) consider(i);
     }
   }
+  // Arch-5 occurrence ordinals: sites are generated in token order
+  // per file, so a running count per (file, fn, name) assigns each
+  // write its 1-based ordinal within its enclosing function.
+  const occCount = new Map();
+  for (const s of sites) { const k = s.file + '\0' + s.fn + '\0' + s.name; const n = (occCount.get(k) || 0) + 1; occCount.set(k, n); s.occ = n; }
+  const keyed = sites.map(s => ({ file: s.file, fn: s.fn, name: s.name, owner: s.owner, occ: s.occ }));
   const fileOrder = new Map(files.map((f, i) => [f, i]));
-  sites.sort((a, b) => fileOrder.get(a.file) - fileOrder.get(b.file) || a.line - b.line || (a.name < b.name ? -1 : a.name > b.name ? 1 : 0));
+  keyed.sort((a, b) => fileOrder.get(a.file) - fileOrder.get(b.file) || (a.fn < b.fn ? -1 : a.fn > b.fn ? 1 : 0) || (a.name < b.name ? -1 : a.name > b.name ? 1 : 0) || a.occ - b.occ);
   const byFile = {};
   for (const f of files) {
-    const mine = sites.filter(s => s.file === f);
-    byFile[f] = { expressions: mine.length, lines: new Set(mine.map(s => s.line)).size };
+    const mine = keyed.filter(s => s.file === f);
+    byFile[f] = { expressions: mine.length };
   }
-  return { sites, totals: { expressions: sites.length, lines: new Set(sites.map(s => s.file + ':' + s.line)).size, byFile }, implicit: [...implicit].sort(), duplicates };
+  return { sites: keyed, totals: { expressions: keyed.length, byFile }, implicit: [...implicit].sort(), duplicates };
 }
 
 function censusObject(res) {
@@ -659,7 +794,73 @@ for (const [label, src, want] of FX_CASES) {
 }
 {
   const two = fx('ext = 1; ext2 = 2;');
-  check('fixture: two writes on one line occupy exactly 1 census line', new Set(two.map(s => s.line)).size === 1 && two.length === 2, two);
+  check('fixture: two writes on one line are two sites (the unit is the expression, never the line)', two.length === 2 && two[0].name === 'ext' && two[1].name === 'ext2', two);
+}
+// Arch-5 keying fixtures (2026-11-19): the re-key's own behaviour,
+// pinned like every other analyzer behaviour above - a key that
+// cannot fail is not a key.
+{
+  const key = s => [s.file, s.fn, s.name, s.owner, s.occ].join('|');
+  const two = analyzeFiles({ 'owner.js': FX_OWNER, 'case.js': 'function alpha() { ext = 1; } function beta() { ext = 2; ext = 3; }' }).sites.filter(s => s.file === 'case.js');
+  check('key fixture: writes key to their enclosing function, occurrences counted per function', JSON.stringify(two.map(key)) === JSON.stringify(['case.js|alpha|ext|owner.js|1', 'case.js|beta|ext|owner.js|1', 'case.js|beta|ext|owner.js|2']), two);
+  const top = fx('ext = 1;');
+  check('key fixture: a top-level write keys to <top-level>', top.length === 1 && top[0].fn === '<top-level>' && top[0].occ === 1, top);
+  const anon = fx('function alpha() { [1].forEach(() => { ext = 1; }); }');
+  check('key fixture: an anonymous callback is transparent - its write keys to the named enclosing function', anon.length === 1 && anon[0].fn === 'alpha', anon);
+  const arrow = fx('const gamma = () => { ext = 1; };');
+  check('key fixture: an arrow assigned to a binding keys to that binding', arrow.length === 1 && arrow[0].fn === 'gamma', arrow);
+  const fexpr = fx('const gamma = function () { ext = 1; };');
+  check('key fixture: a function expression assigned to a binding keys to that binding', fexpr.length === 1 && fexpr[0].fn === 'gamma', fexpr);
+  const meth = fx('const o = { gamma() { ext = 1; } };');
+  check('key fixture: a method keys to its method name', meth.length === 1 && meth[0].fn === 'gamma', meth);
+  const aarrow = fx('const gamma = async () => { ext = 1; };');
+  check('key fixture: an async arrow assigned to a binding keys to that binding', aarrow.length === 1 && aarrow[0].fn === 'gamma', aarrow);
+  const aarrowP = fx('const gamma = async (q) => { ext = 1; };');
+  check('key fixture: an async arrow with parenthesized params keys to its binding', aarrowP.length === 1 && aarrowP[0].fn === 'gamma', aarrowP);
+  const aarrowB = fx('const gamma = async q => { ext = 1; };');
+  check('key fixture: an async arrow with a bare param keys to its binding', aarrowB.length === 1 && aarrowB[0].fn === 'gamma', aarrowB);
+  const amove = (inAlpha) => analyzeFiles({ 'owner.js': FX_OWNER, 'case.js': 'const alpha = async () => {' + (inAlpha ? ' ext = 1;' : '') + ' }; const beta = async () => {' + (inAlpha ? '' : ' ext = 1;') + ' };' }).sites.filter(s => s.file === 'case.js').map(key);
+  check('key fixture: moving a write between two named async arrows changes its key', JSON.stringify(amove(true)) !== JSON.stringify(amove(false)) && amove(true)[0].includes('|alpha|') && amove(false)[0].includes('|beta|'), [amove(true), amove(false)]);
+  const moved = (pad) => analyzeFiles({ 'owner.js': FX_OWNER, 'case.js': pad + 'function alpha() { ext = 1; ext2 = 2; }' }).sites.filter(s => s.file === 'case.js').map(key);
+  check('key fixture: moving a function down the file changes no key', JSON.stringify(moved('')) === JSON.stringify(moved('\n\n\n// padding\n\n')), [moved(''), moved('\n\n\n// padding\n\n')]);
+  const dflt = fx('function gamma(q = (ext = 1)) {}');
+  check('key fixture: a write in a default parameter initializer keys to that function', dflt.length === 1 && dflt[0].fn === 'gamma', dflt);
+  const dfltA = fx('const gamma = (q = (ext = 1)) => {};');
+  check('key fixture: a write in an arrow default parameter keys to the arrow binding', dfltA.length === 1 && dfltA[0].fn === 'gamma', dfltA);
+  const dmove = (inAlpha) => analyzeFiles({ 'owner.js': FX_OWNER, 'case.js': 'function alpha(q = ' + (inAlpha ? '(ext = 1)' : '0') + ') {} function beta(q = ' + (inAlpha ? '0' : '(ext = 1)') + ') {}' }).sites.filter(s => s.file === 'case.js').map(key);
+  check('key fixture: moving a write between two functions default parameters changes its key', JSON.stringify(dmove(true)) !== JSON.stringify(dmove(false)) && dmove(true)[0].includes('|alpha|') && dmove(false)[0].includes('|beta|'), [dmove(true), dmove(false)]);
+  const pfun = fx('function gamma(q = function () { ext = 1; }) {}');
+  check('key fixture: a function expression in a parameter default keys to the enclosing function, not the parameter name', pfun.length === 1 && pfun[0].fn === 'gamma', pfun);
+  const parr = fx('const gamma = (() => { ext = 1; });');
+  check('key fixture: a parenthesized assigned arrow keys to its binding', parr.length === 1 && parr[0].fn === 'gamma', parr);
+  const pfex = fx('const gamma = (function () { ext = 1; });');
+  check('key fixture: a parenthesized assigned function expression keys to its binding', pfex.length === 1 && pfex[0].fn === 'gamma', pfex);
+  const pmove = (inAlpha) => analyzeFiles({ 'owner.js': FX_OWNER, 'case.js': 'const alpha = (() => {' + (inAlpha ? ' ext = 1;' : '') + ' }); const beta = (() => {' + (inAlpha ? '' : ' ext = 1;') + ' });' }).sites.filter(s => s.file === 'case.js').map(key);
+  check('key fixture: moving a write between two parenthesized assigned arrows changes its key', JSON.stringify(pmove(true)) !== JSON.stringify(pmove(false)) && pmove(true)[0].includes('|alpha|') && pmove(false)[0].includes('|beta|'), [pmove(true), pmove(false)]);
+  const adflt = fx('const gamma = (q = function () { ext = 1; }) => {};');
+  check('key fixture: a function expression in an arrow parameter default keys to the arrow binding, not the parameter name', adflt.length === 1 && adflt[0].fn === 'gamma', adflt);
+  const callarg = fx('foo(() => { ext = 1; });');
+  check('key fixture: a call-argument arrow stays anonymous (keys to <top-level>)', callarg.length === 1 && callarg[0].fn === '<top-level>', callarg);
+  const nmove = (inAlpha) => analyzeFiles({ 'owner.js': FX_OWNER, 'case.js': 'function outer() { function alpha(q = ' + (inAlpha ? '() => { ext = 1; }' : '0') + ') {} function beta(q = ' + (inAlpha ? '0' : '() => { ext = 1; }') + ') {} }' }).sites.filter(s => s.file === 'case.js').map(key);
+  check('key fixture: moving a default callback between two nested functions changes its key (the nearer parameter span beats the outer body)', JSON.stringify(nmove(true)) !== JSON.stringify(nmove(false)) && nmove(true)[0].includes('|alpha|') && nmove(false)[0].includes('|beta|'), [nmove(true), nmove(false)]);
+  const iife = fx('function gamma() { const value = (() => { ext = 1; })(); }');
+  check('key fixture: an immediately invoked arrow keys to the enclosing function, not the result binding', iife.length === 1 && iife[0].fn === 'gamma', iife);
+  const imove = (inAlpha) => analyzeFiles({ 'owner.js': FX_OWNER, 'case.js': 'function alpha() { const v = (() => {' + (inAlpha ? ' ext = 1;' : '') + ' })(); } function beta() { const v = (() => {' + (inAlpha ? '' : ' ext = 1;') + ' })(); }' }).sites.filter(s => s.file === 'case.js').map(key);
+  check('key fixture: moving an assigned IIFE statement between two functions changes its key', JSON.stringify(imove(true)) !== JSON.stringify(imove(false)) && imove(true)[0].includes('|alpha|') && imove(false)[0].includes('|beta|'), [imove(true), imove(false)]);
+  const tern = fx('function gamma() { const value = cond ? fallback : () => { ext = 1; }; }');
+  check('key fixture: an arrow in a conditional alternate keys to the enclosing function, not the other branch', tern.length === 1 && tern[0].fn === 'gamma', tern);
+  const tmove = (inAlpha) => analyzeFiles({ 'owner.js': FX_OWNER, 'case.js': 'function alpha() { const v = cond ? fallback : () => {' + (inAlpha ? ' ext = 1;' : '') + ' }; } function beta() { const v = cond ? fallback : () => {' + (inAlpha ? '' : ' ext = 1;') + ' }; }' }).sites.filter(s => s.file === 'case.js').map(key);
+  check('key fixture: moving a conditional-alternate arrow between two functions changes its key', JSON.stringify(tmove(true)) !== JSON.stringify(tmove(false)) && tmove(true)[0].includes('|alpha|') && tmove(false)[0].includes('|beta|'), [tmove(true), tmove(false)]);
+  const asi = fx('const alpha = () => 0\next = 1;');
+  check('key fixture: a write after an ASI-ended expression arrow is not claimed by the arrow', asi.length === 1 && asi[0].fn === '<top-level>', asi);
+  const asemi = fx('const alpha = () => 0;\next = 1;');
+  check('key fixture: the same write after an explicit semicolon keys identically', asemi.length === 1 && asemi[0].fn === '<top-level>', asemi);
+  const amove2 = (asiForm) => analyzeFiles({ 'owner.js': FX_OWNER, 'case.js': asiForm ? 'const alpha = () => 0\next = 1;' : 'const alpha = () => { ext = 1; };' }).sites.filter(s => s.file === 'case.js').map(key);
+  check('key fixture: moving a write from after an expression arrow into its block body changes its key', JSON.stringify(amove2(true)) !== JSON.stringify(amove2(false)) && amove2(false)[0].includes('|alpha|'), [amove2(true), amove2(false)]);
+  const cbound = fx('cond ? alpha = () => 0 : (ext = 1);');
+  check('key fixture: a write in the alternate of a conditional enclosing an expression arrow is not claimed by the arrow', cbound.length === 1 && cbound[0].fn === '<top-level>', cbound);
+  const cmove = (inArrow) => analyzeFiles({ 'owner.js': FX_OWNER, 'case.js': inArrow ? 'cond ? alpha = () => { ext = 1; } : 0;' : 'cond ? alpha = () => 0 : (ext = 1);' }).sites.filter(s => s.file === 'case.js').map(key);
+  check('key fixture: moving a write between an enclosing conditional alternate and the arrow body changes its key', JSON.stringify(cmove(true)) !== JSON.stringify(cmove(false)) && cmove(true)[0].includes('|alpha|'), [cmove(true), cmove(false)]);
 }
 
 // ---------------- the tree census ----------------
@@ -667,27 +868,36 @@ const treeSrcs = {};
 for (const f of UNIVERSE) treeSrcs[f] = fs.readFileSync(path.join(ROOT, 'parts', f), 'utf8');
 const tree = analyzeFiles(treeSrcs);
 const census = censusObject(tree);
-console.log(`foreign-write census (recomputed): ${tree.totals.expressions} expressions on ${tree.totals.lines} lines; by file: ` + UNIVERSE.map(f => `${f} ${tree.totals.byFile[f].expressions}/${tree.totals.byFile[f].lines}`).join(', '));
+console.log(`foreign-write census (recomputed): ${tree.totals.expressions} expressions; by file: ` + UNIVERSE.map(f => `${f} ${tree.totals.byFile[f].expressions}`).join(', '));
 if (tree.duplicates.length) console.log('  note: top-level names declared in more than one universe file (first owner kept): ' + tree.duplicates.join('; '));
 
-// The adjudicated sites (coordinator-verified on this tree) MUST be present.
+// The adjudicated sites (coordinator-verified on this tree) MUST be
+// present, in the Arch-5 key form [file, fn, name]. In the line-key
+// era each entry carried a long comment chain narrating its line
+// moves (Beta 1.150 through 1.243: the pins moved on line count alone
+// round after round, totals unchanged, verified pair-for-pair before
+// each regeneration). That narration is preserved verbatim in this
+// file's git history at the Beta 1.243 tree; it is exactly the churn
+// the re-key retires, so it is not carried forward. The identities
+// below were re-derived pair-for-pair against the recomputed census
+// in the Arch-5 round (an old-vs-new differential over the identical
+// tree: the same 58 writes, and each site's enclosing function read
+// from the source by hand and matched against the analyzer's key).
 const MUST = [
-  ['app1.js', 477, 'routeBox'], ['app1.js', 620, 'suggested'], // Beta 1.221 (toast placement): both app1 pins moved on line count alone (routeBox 309 -> 349, suggested 452 -> 492 - the placeToast block grew app1 above them); totals UNCHANGED (57 expressions / 24 lines, same per-file counts, verified pair-for-pair against the recomputed diff before regenerating): the round adds NO foreign write - placeToast writes only DOM style (a member write) and its own locals, and the noteMapState re-place hook is a call // Beta 1.193 (trail redesign): both app1 pins moved on line count alone (routeBox 301 -> 309, suggested 420 -> 429 - the TRAIL_WINDOW_S block and the trailWindow helper grew app1 above them) // Beta 1.169 (Carbon fix round): both app1 pins moved on line count alone (routeBox 296 -> 298, suggested 399 -> 405 - the A-02 migGet helper and the A-03 inheritance block grew app1 above them); the suggested SITE itself gained the sugQueue rebind counted in the census note above. Beta 1.170 (Carbon fix round Phase 2): suggested 405 -> 417 on line count alone (the A-04 raw-history parse +2 and the reconcile block +10 above it); totals UNCHANGED (53 expressions / 21 lines, verified pair-for-pair against the recomputed diff before regenerating): the round's new writes are to function locals or to a part's OWN bindings (restoreInFlight in app4, crSaveInFlight in create-save). Beta 1.187 (GPS package): both pins +1 on line count alone (the GPS_STILL_MPS constant's comment block grew app1 by one line above them); totals UNCHANGED (55 expressions / 23 lines, verified pair-for-pair against the recomputed diff before regenerating): the round's writes are to function locals (stillFix in acceptFix) or app3's OWN binding (smHeading/lastHeadFixAt in updateHeading). Beta 1.189 (raw fix log): both pins +1 on line count alone (the FIXLOG_MAX constant block and the LS_GLOBAL fixlog comment grew app1 above them); totals UNCHANGED (55 expressions / 23 lines, verified pair-for-pair against the recomputed diff before regenerating): the round's logger state (fixLog, fixLogSession, fixLogCount) is declared in app3 and written only there; app1's side is its OWN bindings (fixlogDirty, lastFixLogSave) and calls through its own flag door (markDirty/markClean/writePending), never a bare foreign assignment. 2026-11-15 (load sanitizer round, A-01/A-02): suggested 429 -> 432 on line count alone (the A-01 doneVia validation line +1 and the A-02 notes-model comment +2 above it); totals UNCHANGED (57 expressions / 24 lines, same per-file counts, the pinned-vs-recomputed multisets identical ignoring line numbers, verified pair-for-pair before regenerating): the round adds NO foreign write - its writes are deletes on app1's OWN parsed copies (doneVia, notes entries) and a filter over its own array. 2026-11-15 (denylist fix round, A-05): suggested 432 -> 452 on line count alone (the A-05 snapshot declaration, historyForWrite and resetHistorySnapshot above saveHistory, the indexed sanitizer pass, and the dropPhantom snapshot pop grew app1 above it); totals UNCHANGED (57 expressions / 24 lines, same per-file counts, the pinned-vs-recomputed multisets identical ignoring line numbers, verified pair-for-pair before regenerating): the round adds NO foreign write - app4 reaches the snapshot only through the resetHistorySnapshot CALL, and the round's assignments are to function locals or app1's OWN bindings Beta 1.230 (Android round): both app1 pins moved on line count alone (routeBox 349 -> 466, suggested 492 -> 609 - the DEVICE PROFILE section grew app1 above them); totals UNCHANGED (57 expressions / 24 lines, same per-file counts, the pinned-vs-recomputed multisets identical ignoring line numbers, verified pair-for-pair before regenerating): the round adds NO foreign write - the profile writes only its OWN DP binding and member writes (window.__dp, the document class list), and the map constructor's ratio arrives by call. Beta 1.230 Codex fix round (PR #110): both app1 pins moved on line count alone (routeBox 466 -> 477, suggested 609 -> 620 - the dpEvaluate verdict-revalidation and store-refresh lines, with their header notes, grew app1 above them); totals UNCHANGED (57 expressions / 24 lines, same per-file counts, the pinned-vs-recomputed multisets identical ignoring line numbers, verified pair-for-pair before regenerating): the fix adds NO foreign write - it writes only the profile's OWN DP binding (member writes) and calls its own dpWriteStore
-  ['app4.js', 168, 'trail'], ['app4.js', 168, 'trailSessions'], ['app4.js', 172, 'lastTrailSave'],
-  ['app4.js', 387, 'restoring'], ['create-pick.js', 1339, 'followPaused'], // Beta 1.235: the pin moved 900 -> 1339 on line count alone (the bundled city gazetteer table and the merge block grew create-pick above it); totals UNCHANGED (57 expressions / 24 lines, same per-file counts, the pinned-vs-recomputed multisets identical ignoring line numbers, verified pair-for-pair before regenerating): the round adds NO foreign write - the gazetteer is a frozen data table, crCityLocalMatches only reads it and builds fresh row objects, and the merge writes only crRunCitySearch's own local items list // Beta 1.234 fix round 3 (PR #114, Codex P2 4619119230): the pin moved 899 -> 900 on line count alone (the crRefreshSearch call at crRenderHint's tail grew create-pick above it by one line); totals UNCHANGED (57 expressions / 24 lines, same per-file counts, the pinned-vs-recomputed multisets identical ignoring line numbers, verified pair-for-pair before regenerating): the fix adds NO foreign write - crRefreshSearch only reads state and calls crRunSearch, whose writes are the create owner group's own bindings, and the crCovMerge hook is a call inside the same group // Beta 1.233: the pin moved 898 -> 899 on line count alone (the city-list fade refresh line in crRenderCityChoices). Beta 1.229 gate fix 2: the pin moved 893 -> 898 on line count alone (the Codex P2 box-swap measurement grew crCityBoxSwap above it); totals unchanged (57 / 24), verified by the census recompute. // Beta 1.229 (Aurora fix round): the followPaused pin moved 875 -> 893 on line count alone (the Ontario filter block, the city-results swap helpers and the hint's red-Cancel line grew create-pick above it by more than the deleted last-city handler and lookup machinery took out below and above); same expression, same owner, census total unchanged (57 expressions / 24 lines, same per-file counts, the pinned-vs-recomputed multisets identical ignoring line numbers, verified pair-for-pair before regenerating): the round adds NO foreign write and removes none - crCityBoxSwap writes only the results box's own style, the watchdogs settle their own grids and prep through their own finish doors, and the deleted handler's writes were its own module locals, which the census never counted // Beta 1.223 (create colour states + pop-up unification): the followPaused pin moved 890 -> 874 on line count alone (the loaded-city confirmation machinery - the pillKey computation, the 4-second dismissal clock and its state - left crRenderHint above it, and the round's create-pick additions grew less than the removal took); same expression, same owner, census total unchanged (57 expressions / 24 lines, same per-file counts, the pinned-vs-recomputed multisets identical ignoring line numbers, verified pair-for-pair before regenerating): the round adds NO foreign write and removes none - renderDraft writes only the feature objects it builds, the city bar's label is built from text nodes into its own element, and the retired clock wrote only its own module locals // Beta 1.221 (glyph-only + toast cuts): the app4 pins moved on line count alone (trail/trailSessions 169 -> 168 and lastTrailSave 173 -> 172: the trail-clear success pill's line left clearTrailAll; restoring 388 -> 387: the backup field lines left the export/restore above it); the followPaused pin did NOT move (the create-pick cuts at or below it only shortened lines, and the one deleted line sits below it); totals UNCHANGED (57 expressions / 24 lines, same per-file counts, the pinned-vs-recomputed multisets identical ignoring line numbers, verified pair-for-pair before regenerating): the round adds NO foreign write and removes none - the icon-pack choice left through lsSet/pushField calls (never census-counted), the pill cuts remove calls only, and renderIcons now reads the one glyph row of the same table // Beta 1.216 (create glow/casing round): the followPaused pin moved 851 -> 890 on line count alone (the crGlowStitchFeats helper and the 1.216 notes grew create-pick above it); same expression, same owner, census total unchanged (57 / 24), the pinned-vs-recomputed multisets identical ignoring line numbers: the round adds NO foreign write — crGlowStitchFeats only reads its features and builds local arrays, and crGlowBuildMesh writes only its own vertex buffer // Beta 1.211 (shader glow round): the followPaused pin moved 731 -> 851 on line count alone (the crGlowShader block — mesh builder, layer object, casing ruler — grew create-pick above it); same expression, same owner, census total unchanged (57 / 24), the pinned-vs-recomputed multisets identical ignoring line numbers: the round adds NO foreign write — the glow layer writes only its own GL buffer and module locals, syncCrGlow's sink change calls the layer's own setter (crGlowSetFeatures), and crGlowCasingHalfM only reads the map // Beta 1.210 (create zoom/tap-away round): the followPaused pin moved 726 -> 731 on line count alone (the crZoomW helper block and the crDraftLineDim layer line grew create-pick above it); same expression, same owner, census total unchanged (57 / 24), the pinned-vs-recomputed multisets identical ignoring line numbers: the round adds NO foreign write - crZoomW is a pure function of its argument and crSectorTap only reads its session and draft and calls the toggle door // Beta 1.209 (trim-glow round): the followPaused pin moved 724 -> 726 on line count alone (the syncCrGlow chosen-sectors rewrite grew create-pick above it); same expression, same owner, census total unchanged (57 / 24), the pinned-vs-recomputed multisets identical ignoring line numbers: the round adds NO foreign write - syncCrGlow writes only through the map's own source door (setData) and its locals, and groupSideMap (app2) writes nothing // Beta 1.208 (green paint round): the followPaused pin moved 683 -> 724 on line count alone (the R7 trim-glow block — CR_GLOW_SRC/ensureCrGlowLayers/syncCrGlow — and the R6 row-hint line grew create-pick above it); same expression, same owner, census total unchanged (57 / 24), the pinned-vs-recomputed multisets identical ignoring line numbers, verified pair-for-pair before regenerating: the round adds NO foreign write — syncCrGlow writes only through the map's own source door (setData) and its locals // Beta 1.195 (fix log toggle): the restoring pin moved 382 -> 384 on line count alone (the fxLogRow line in showX and the swFixLog handler grew app4 above it; the fence pair rides at 346/347); totals UNCHANGED (57 expressions / 24 lines, same per-file counts, the pinned-vs-recomputed multisets identical ignoring line numbers, verified pair-for-pair before regenerating): the round adds NO foreign write — app4 reaches the logger's flag only through app3's doors (fixLogIsEnabled / fixLogSetEnabled calls) and its own renderSwitch // Beta 1.193 (trail redesign): the restoring pin moved 365 -> 382 on line count alone (the restore window post-pass and its comments grew app4 above it; the fence pair rides at 344/345) // Beta 1.153: the followPaused site moved 587 -> 606 on line count alone (the create-pick pill machinery grew the file above it); Beta 1.154: 606 -> 608 the same way (the G3 predicate block grew the file above it, the crFaceNow line's deletion below it); Beta 1.157: 608 -> 629 the same way (the tap-width change's CR_TAP_BOXES block + crFeatDistPx grew the file above it); same expression, same owner, census total unchanged (52 / 21). Beta 1.169 (Carbon fix round): 629 -> 633 the same way (the D-02/D-08 create-pick blocks grew the file above it); the census total itself rose 52 -> 53 expressions - ONE new adjudicated-class write: app1's completeFinishCleanup now also rebinds app3's sugQueue beside suggested (the B-11 queue dies with its set at every reset point). Beta 1.176: 633 -> 660 the same way (the slow-load gate, the fresh-load confirmation key and the measured button placement grew crRenderHint above it); same expression, same owner, census total unchanged (53 / 21). Sweep re-run D-04 fix: 660 -> 672 the same way (the crCovStamp helper and the stamped cache read grew create-pick above it); same expression, same owner, census total unchanged (57 / 24). PR #75 remedy (the Codex P2 snapshot pin): 672 -> 680 the same way (the snapshot-pin block grew the cache read above it); same expression, same owner, census total unchanged (57 / 24). PR #75 remedy 2 (the Codex P2 session pin): 680 -> 683 the same way (the pin comment was rewritten when the snapshot pin widened to the open-session pin); same expression, same owner, census total unchanged (57 / 24) Beta 1.227: the followPaused pin moved 874 -> 875 on line count alone (the crSyncClear stage-setter line grew create-pick above it); totals UNCHANGED.
-]; // Beta 1.150: four pins moved with their code (app1 +13 from the migrateLegacyRoute fill-record rewrite - routeBox 277 -> 290, suggested 379 -> 392; app4 restoring 291 -> 296 from the pushField validation block, and the reset block 972 -> 988 below from the update-check rewrite) - the census totals are UNCHANGED (52 expressions / 21 lines, same per-file counts): no foreign write was added or removed, only line numbers followed the edits, and the pin JSON was regenerated by this file's --write in the same change
-// Beta 1.152 (NV round): three pins and the reset block moved again, same discipline - app1 routeBox 290 -> 296 (the NV constants +2 and the computeStretches prefilter +4 above it), suggested 392 -> 409 (capHistoryList +9 and the load caps +2 more above it), app4 restoring 296 -> 301 (the pushField array-cap block +5), the reset block 988 -> 998 (pushField +5, the packTileUrls budget +3, the preloadUrlList budget +2). Totals UNCHANGED again (52 expressions / 21 lines, same per-file counts, verified pair-for-pair against the diff before regenerating): the round's new writes are all to function locals or to a part's OWN bindings.
-// Beta 1.166 (storage fix round): the app4 pins moved again, same discipline - trail/trailSessions 157 -> 163 and lastTrailSave 161 -> 167 (the backupObj settings read +2 and the recoveryObj store block +4 above them), restoring 301 -> 333 (canonicalSettings +9, the store-phase restore block +17 more above it), the reset block 998 -> 1030 with its neighbours (978 -> 1010, 999 -> 1031, 1000 -> 1032, the same +32). Totals UNCHANGED again (52 expressions / 21 lines, same per-file counts, verified pair-for-pair against the recomputed diff before regenerating): the round's new writes are to function locals, to create-packs' OWN bindings (userPackCache, upStoreComplete, upStatus - the create owner group writing its own globals is not foreign), or through the verified write primitives.
-// Beta 1.167 (run/pace fix round): pins moved on line count alone, same discipline - app1 suggested 409 -> 399 (the cap block's replacement by appendHistory, -10 above it), app4 restoring 333 -> 332 and the reset block 1030 -> 1029 with its neighbours (1010 -> 1009, 1031 -> 1030, 1032 -> 1031; the pushField hist-cap branch merged, -1 above them). Totals UNCHANGED again (52 expressions / 21 lines, same per-file counts, verified pair-for-pair against the recomputed diff before regenerating): the round's new app3 writes are to function locals or to app3's OWN new bindings (runDist, runDistWrote - declared in app3, written only there); app1's saveHistory no longer assigns the app1-owned history binding at all.
-// Beta 1.186 (storage fix round): the restoring pin moved 332 -> 346 on line count (the C-01 guard +6 and the P1 fence block grew app4 above it; the reset block moved 1078 -> 1092 with it, neighbours 1072/1093/1094) - and the census total itself ROSE 53 -> 55 expressions / 21 -> 23 lines: the P1 fence adds TWO adjudicated foreign writes of the same name and owner as this pin (app4 setting app1's restoring before the snapshot at 308, and clearing it in the failure doorway restoreFenceDown at 309). The multiset diff against the previous census shows restoring (1 -> 3 sites) as the ONLY count change anywhere, verified pair-for-pair before regenerating; the round's remaining writes go through the verified write primitives or to parts' OWN bindings, and the gate round's markDirty('primary') addition is a call through app1's own flag door, not a bare foreign assignment, so it does not enter the census.
-// Beta 1.189 (raw fix log): the app4 pins moved on line count alone, same discipline - trail/trailSessions 163 -> 165 and lastTrailSave 167 -> 169 (the backupObj fixlog ride +1 and the recoveryObj fixlog line +1 above them), restoring 346 -> 371 (canonicalFixLog, the restore fixlog block, the rollback-scope line and the fence-door edit above it), the reset block 1092 -> 1117 with its neighbours (1072 -> 1097, 1093 -> 1118, 1094 -> 1119). Totals UNCHANGED (55 expressions / 23 lines, same per-file counts, verified pair-for-pair against the recomputed diff before regenerating): the round adds NO foreign write - app4 only READS fixLog and writes through app1's own flag door (markDirty('fixlog') in restoreFenceDown); the logger's bindings are app3's own.
-// Beta 1.190 (fix log cap + e2 stored form): the app4 pins below canonicalFixLog moved on line count alone, same discipline - restoring 371 -> 359 and the reset block 1117 -> 1105 with its neighbours (1097 -> 1085, 1118 -> 1106, 1119 -> 1107), a uniform -12: the canonicalFixLog rewrite (decode through app3's codec, cap, re-encode) is shorter than the hand-rolled sanitize it replaced, and everything above the validator (the trail pins at 165/169 included) did not move. Totals UNCHANGED (55 expressions / 23 lines, same per-file counts; the recomputed diff's EXTRA and MISSING multisets are identical modulo the -12 line shift, verified pair-for-pair before regenerating): the round adds NO foreign write - the codec's writes are to its own function locals, app4 only CALLS app3's fixLogDecodeSessions / fixLogEncodeSessions, and the e2 encode in recoveryObj is a call, not an assignment.
-// Beta 1.190 gate fix (the e3 rewrite — Codex's UTF-16 quota finding on PR #31): the pins moved on line count alone again, same discipline - app1 routeBox 300 -> 301 and suggested 419 -> 420 (+1: the FIXLOG_MAX_CHARS constant line above them), app4 restoring 359 -> 365 with its fence neighbours (321 -> 327, 322 -> 328) and the reset block 1105 -> 1111 with its neighbours (1085 -> 1091, 1106 -> 1112, 1107 -> 1113), a uniform +6 from canonicalFixLog's character-cap loop. Totals UNCHANGED (55 expressions / 23 lines, same per-file counts; EXTRA and MISSING multisets identical modulo the +1/+6 shifts, verified pair-for-pair before regenerating): the e3 codec's writes are to its own function locals and writer objects, fixLogTrim/fixLogRaw/fixLogOut write only the logger's OWN in-memory session fields (_b/_bl ride the session object app3 owns), and app4 only calls app3's codec and validator helpers.
-// Beta 1.218 (icon pack picker): the app4 pins moved on line count alone, same discipline - trail/trailSessions 167 -> 169 and lastTrailSave 171 -> 173 (the backup export's iconpack read and the recovery ride grew app4 above them), restoring 384 -> 388 (the restore's iconpack lines with them), and the reset block 1162 -> 1248 (the pack registry + renderIcons block and the picker block grew app4 above it); census total UNCHANGED (57 expressions / 24 lines, the pinned-vs-recomputed multisets identical ignoring line numbers, verified pair-for-pair before regenerating): the round adds NO foreign write - renderIcons writes app4's OWN ICONS entries and DOM hosts, the picker writes one storage key through lsSet, and app3 only CALLS renderIcons at its GPS transitions.
-for (const [f, ln, nm] of MUST) check(`census contains adjudicated site ${f}:${ln} ${nm}`, tree.sites.some(s => s.file === f && s.line === ln && s.name === nm));
+  ['app1.js', 'buildGeometry', 'routeBox'], // buildGeometry refills app2's routeBox in place on every load
+  ['app1.js', 'completeFinishCleanup', 'suggested'], // the cleanup clears app3's suggestion set (and rebinds sugQueue beside it, Beta 1.169) once both verified writes land
+  ['app4.js', 'clearTrailAll', 'trail'], ['app4.js', 'clearTrailAll', 'trailSessions'], ['app4.js', 'clearTrailAll', 'lastTrailSave'],
+  ['app4.js', 'restoreBackup', 'restoring'], // the P1 fence (Beta 1.186) is three restoring sites under two keys: restoreBackup occ 1 (the fence rises before the snapshot) and occ 2 (the success path), plus restoreFenceDown occ 1 (the failure doorway's arrow)
+  ['create-pick.js', 'enterCreate', 'followPaused'], // enterCreate parks GPS follow for the picking
+];
+for (const [f, fn, nm] of MUST) check(`census contains adjudicated site ${f} ${fn} ${nm}`, tree.sites.some(s => s.file === f && s.fn === fn && s.name === nm));
 {
-  const at988 = tree.sites.filter(s => s.file === 'app5.js' && s.line === 432);
-  check('census: app5.js:432 carries exactly the 11 reset expressions', at988.length === 11, at988); // Beta 1.233: moved 1325 -> 1328 on line count alone (the GLYPH_MENU table and the renderIcons Back stamp grew app4 above it). Beta 1.230 (Android round): moved 1260 -> 1261 on line count alone (syncViewport's Android anchor line grew app4 above the reset block), neighbours with it (1240 -> 1241, 1262 -> 1263, 1263 -> 1264 - the sites the recomputed census reports); totals UNCHANGED (57 expressions / 24 lines, same per-file counts, the pinned-vs-recomputed multisets identical ignoring line numbers, verified pair-for-pair before regenerating): the round adds NO foreign write - the anchor writes the document element's own style (a member write) and reads the profile's gate constant // Beta 1.227: moved 1242 -> 1260 on line count alone (the GLYPH_CREATE map and the renderIcons create-bar stamps grew app4 above the reset block); totals UNCHANGED (57 expressions / 24 lines). // Beta 1.226 gate fix: moved 1224 -> 1242 on line count alone (the pressOn pointer block grew app4 above the reset block), neighbours with it (1204 -> 1222, 1226 -> 1244, 1227 -> 1245 - the sites the recomputed census reports); totals UNCHANGED (57 expressions / 24 lines, same per-file counts, the pinned-vs-recomputed multisets identical ignoring line numbers, verified pair-for-pair before regenerating): the round adds NO foreign write - pressRowEl is app4's own new binding, written only there, and the class toggles are member writes // Beta 1.221 gate fix: moved 1222 -> 1224 on line count alone (the updDone helper + its tail call grew app4 above the reset block), neighbours with it (1202 -> 1204, 1224 -> 1226, 1225 -> 1227 - the sites the recomputed census reports); totals UNCHANGED (57 expressions / 24 lines): the fix adds NO foreign write - updDone writes only DOM pane classes through showSetPane and calls renderStatus // Beta 1.221: moved 1327 -> 1222 on line count alone (the two retired pack registries, the picker block and the backup field lines left app4 above the reset block), neighbours with it (1307 -> 1202, 1329 -> 1224, 1330 -> 1225 - the sites the recomputed census reports); totals UNCHANGED (57 expressions / 24 lines) // Beta 1.219 (icon extras + the ✕ treatment): moved 1283 -> 1320 on line count alone (the extras maps, the X artwork consts and the renderIcons stamp loops grew app4 above it, net of the Puffy removal), neighbours with it (1263 -> 1300, 1285 -> 1322, 1286 -> 1323 - the sites the recomputed census reports); totals UNCHANGED (57 expressions / 24 lines, same per-file counts, the pinned-vs-recomputed multisets identical ignoring line numbers, verified pair-for-pair before regenerating): the round adds NO foreign write - renderIcons writes this part's own ICONS/PACE_ICONS entries (member writes) and DOM hosts, the picker writes one storage key through lsSet // Beta 1.218 (scope update 2): moved 1248 -> 1267 on line count alone (the GLYPH_ICONS block and the generalized image-pack render branch grew app4 above it); totals UNCHANGED (57 expressions / 24 lines) // Beta 1.218 (scope update 3): moved 1267 -> 1283 the same way (the PUFFY_ICONS block grew app4 above it); totals UNCHANGED // Beta 1.203 (tilt + speed pill): moved 1131 -> 1138 on line count alone (goHomeView and its comment block grew app4 above it), neighbours with it (1111 -> 1118, 1132 -> 1139, 1133 -> 1140 - the sites the recomputed census reports); totals UNCHANGED (57 expressions / 24 lines, same per-file counts, the pinned-vs-recomputed multisets identical ignoring line numbers, verified pair-for-pair before regenerating): the round adds NO foreign write - goHomeView writes only its own locals and the speed-pill writes are DOM writes inside app3 // Beta 1.195 (fix log toggle): moved 1129 -> 1131 on line count alone (the fxLogRow display line and the switch handler above it), neighbours with it (1094/1113/1114 — the sites the recomputed census reports); totals UNCHANGED (57 expressions / 24 lines, verified pair-for-pair against the recomputed diff before regenerating) // Beta 1.193 (trail redesign): moved 1111 -> 1129 on line count alone (the restore window post-pass grew app4 above it); totals ROSE 55 -> 57 expressions / 23 -> 24 lines - the round's TWO adjudicated new foreign writes, both the window's own acts in app3: startClean rebinding app1's trail through the window fence (line 313, riding the already-counted runStart line) and finishRun clearing the trail with the run's records (line 506, a new counted line). The multiset diff against the previous census shows those two trail sites as the ONLY count change anywhere, verified pair-for-pair before regenerating // Beta 1.190 gate fix (e3 rewrite): moved 1105 -> 1111 on line count alone (canonicalFixLog's character-cap loop grew app4 by 6 above it), neighbours with it (1091/1112/1113); totals UNCHANGED (55 expressions / 23 lines, verified pair-for-pair against the recomputed diff before regenerating) // Beta 1.190 (fix log cap + e2 stored form): moved 1117 -> 1105 on line count alone (the canonicalFixLog rewrite shrank app4 by 12 above it), neighbours with it (1085/1106/1107); totals UNCHANGED (55 expressions / 23 lines, verified pair-for-pair against the recomputed diff before regenerating) // Beta 1.189 (raw fix log): moved 1092 -> 1117 on line count alone (canonicalFixLog, the restore fixlog block and the backup rides grew app4 above it), neighbours with it (1097/1118/1119); totals UNCHANGED (55 expressions / 23 lines, verified pair-for-pair against the recomputed diff before regenerating) // Beta 1.170: the reset block moved 1029 -> 1043 on line count alone (the C-03/C-04/C-09 app4 blocks grew the file above it), its neighbours with it (1023/1044/1045). Beta 1.180: moved 1043 -> 1047 the same way (the WHATSNEW roll + the boot-trigger comment above it), neighbours with it (1027/1048/1049); census JSON regenerated the same act. Beta 1.183: moved 1047 -> 1077 the same way (the storage-state + pack-budget blocks grew app4 above it), neighbours with it (1057/1078/1079); totals UNCHANGED (53 expressions / 21 lines, verified pair-for-pair against the recomputed diff before regenerating): the round's new writes are to function locals or to app4's OWN new bindings (OFFLINE_PACK_CAP_BYTES, fmtStoreSize, storagePersist - declared in app4, written only there). Beta 1.183 gate fix (PR #21): moved 1077 -> 1078 the same way (the pack writers' turn helper, one line above packMigFingerprint), neighbours with it (1058/1079/1080); totals UNCHANGED, verified pair-for-pair against the recomputed diff. Beta 1.186 (storage fix round): moved 1078 -> 1092 the same way (the C-01 guard and the P1 fence block grew app4 above it), neighbours with it (1072/1093/1094); totals ROSE 53 -> 55 expressions / 21 -> 23 lines - the round's two adjudicated new foreign writes, both the P1 fence itself: app4 now sets app1's restoring BEFORE the snapshot (line 308) and clears it in the failure doorway restoreFenceDown (line 309), beside the success-path assignment already pinned (now at 346). The multiset diff against the previous census shows the restoring sites (1 -> 3) as the ONLY count change in the whole census, verified pair-for-pair before regenerating // Pack-cache maintenance round (PR #70, 2026-11-15): moved 1138 -> 1147 on line count alone (the download's registration-refresh line +1, its prune-proof gate +2, the turn-first reorder +1, the C-01 orphan prune +2 and the C-02 delete-turn restructure +3 above it), neighbours with it (1118 -> 1127, 1139 -> 1148, 1140 -> 1149); totals UNCHANGED (57 expressions / 24 lines, same per-file counts, the pinned-vs-recomputed multisets identical ignoring line numbers, verified pair-for-pair before regenerating): the round adds NO foreign write - the prune's subtractions land on the handler's own locals, the delete's turn handle likewise, and the registration refresh and its proof read are calls // Beta 1.217 (pulsar icons): moved 1147 -> 1162 on line count alone (the PULSAR_ICONS block + refreshPulsarIcons + the boot call grew app4 above it), neighbours with it (1127 -> 1142, 1149 -> 1164, 1150 -> 1165); totals UNCHANGED (57 expressions / 24 lines, same per-file counts, the pinned-vs-recomputed multisets identical ignoring line numbers, verified pair-for-pair before regenerating): the round adds NO foreign write - refreshPulsarIcons writes only DOM img sources and reads its own PULSAR_ICONS map // Beta 1.220 (three-pack picker, puck smoothing, speed circle): moved 1320 -> 1327 on line count alone (the two new pack registries and the MASK_PACKS table grew app4 above the reset block, net of the two retired pack registries leaving), neighbours with it (1300 -> 1307, 1322 -> 1329, 1323 -> 1330); totals UNCHANGED (57 expressions / 24 lines, same per-file counts, the pinned-vs-recomputed multisets identical ignoring line numbers, verified pair-for-pair before regenerating): the round adds NO foreign write - renderIcons writes this part's own ICONS/PACE_ICONS entries (member writes) and DOM hosts, the beam spring state is app3's own, the picker writes one storage key through lsSet // Beta 1.231 (motion round): moved 1261 -> 1313 on line count alone (the minimum-press gate block and the applyNight theme-swap guard grew app4 above the reset block), neighbours with it (1241 -> 1293, 1263 -> 1315, 1264 -> 1316 - the sites the recomputed census reports); totals UNCHANGED (57 expressions / 24 lines, same per-file counts, the pinned-vs-recomputed multisets identical ignoring line numbers, verified pair-for-pair before regenerating): the round adds NO foreign write - the gate's state (openPressRec, openPendingEl, openPendingTimer) is app4's own new bindings, written only there, and everything else is member writes, class toggles and calls // Beta 1.231 (Codex fix round, PR #111): moved 1313 -> 1325 on line count alone (the OPEN_FOCUS_EXEMPT_SEL block grew app4 above the reset block), neighbours with it (1293 -> 1305, 1315 -> 1327, 1316 -> 1328 - the sites the recomputed census reports); totals UNCHANGED (57 expressions / 24 lines, same per-file counts, the pinned-vs-recomputed multisets identical ignoring line numbers, verified pair-for-pair before regenerating): the fix adds NO foreign write - the exemption writes nothing at all; openerElOf only reads and returns Arch-1 (release-stamp round, 2026-11-18): the seat moved app4.js:1328 -> app5.js:432 with the What's New split (the reset block lives in app5.js now; its line = the old app4 line - 896); totals MOVED 57 -> 58 expressions / 24 -> 25 lines - the one genuine delta: the split surfaces app5.js:116's write to app4.js's storagePersist (declared app4.js:543), intra-file and invisible while app4 was one part, cross-file now - real visibility, no new coupling; every other delta in the recomputed diff is the app4 -> app5 relabel of the tail sites, reviewed site-by-site before regenerating
+  // The reset block: unloadRouteToBoot's one statement restoring the
+  // eleven eval empties. (Pre-Arch-5 this check pinned the
+  // statement's line - app5.js:432, where the Arch-1 split landed it.)
+  const RESET11 = ['coveredIdx', 'doneSet', 'doneTimes', 'doneVia', 'history', 'notes', 'pieceTimes', 'pieces', 'runStart', 'trail', 'trailSessions'];
+  const reset = tree.sites.filter(s => s.file === 'app5.js' && s.fn === 'unloadRouteToBoot' && RESET11.includes(s.name));
+  check('census: unloadRouteToBoot carries exactly the 11 reset expressions', reset.length === 11 && RESET11.every(n => reset.some(s => s.name === n && s.occ === 1)), reset);
 }
 
 if (process.argv.includes('--write')) {
@@ -699,9 +909,9 @@ if (process.argv.includes('--write')) {
   try { pinned = JSON.parse(fs.readFileSync(CENSUS_PATH, 'utf8')); } catch (e) { console.log('FAIL census file unreadable: ' + e.message); failures++; }
   if (pinned) {
     const same = JSON.stringify(pinned) === JSON.stringify(census);
-    check('tree census matches the pinned census EXACTLY (' + census.totals.expressions + ' expressions / ' + census.totals.lines + ' lines)', same);
+    check('tree census matches the pinned census EXACTLY (' + census.totals.expressions + ' expressions)', same);
     if (!same) {
-      const key = s => s.file + ':' + s.line + ':' + s.name + '->' + s.owner;
+      const key = s => s.file + '|' + s.fn + '|' + s.name + '#' + s.occ + '->' + s.owner;
       const pinSet = new Map(pinned.sites.map(s => [key(s), 0])); for (const s of pinned.sites) pinSet.set(key(s), pinSet.get(key(s)) + 1);
       const gotSet = new Map(tree.sites.map(s => [key(s), 0])); for (const s of tree.sites) gotSet.set(key(s), gotSet.get(key(s)) + 1);
       for (const [k, n] of gotSet) if ((pinSet.get(k) || 0) !== n) console.log('  EXTRA/CHANGED in recomputed: ' + k + ' x' + n + ' (pinned x' + (pinSet.get(k) || 0) + ')');
