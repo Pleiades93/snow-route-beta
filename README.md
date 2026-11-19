@@ -50,7 +50,7 @@ The detailed storage format and restore rules are documented in `docs/STORAGE-SC
 | `scripts/shard-durations.json` | The measured per-drive durations `scripts/gen-shards.py` balances the CI shards by. |
 | `scripts/carto-dark-matter-style.json` | The vendored CARTO dark-matter basemap style (Beta 1.96): `scripts/genstyles.mjs` reads this copy and stamps its sha256 into the generated banner — no live fetch at generation time. |
 | `tests/sw.test.mjs` | Service worker fetch-strategy tests (Node, mocked caches/fetch) — 45 checks. |
-| `tests/browser/` | The deterministic browser drive battery (83 drives, 1414 checks) plus the offline end-to-end suite (46 checks) — see `docs/TESTING.md`. |
+| `tests/browser/` | The deterministic browser drive battery (84 drives, 1423 checks) plus the offline end-to-end suite (46 checks) — see `docs/TESTING.md`. |
 | `DEVELOPMENT_RULES.md` | How changes are built, tested and merged in this repo. |
 | `CHANGELOG.md` | What changed in each Beta version. |
 | `manifest.json` | Home-screen install metadata (name, icons, full-screen launch). |

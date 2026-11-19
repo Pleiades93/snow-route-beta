@@ -41,23 +41,61 @@ async function crPackResolveCity(name, bbox) { // does the library hold THIS cit
   if (!(pb.s <= bbox.s + EPS && pb.n >= bbox.n - EPS && pb.w <= bbox.w + EPS && pb.e >= bbox.e - EPS)) return null;
   return { slug: e.slug, bbox: pb };
 }
+async function crPackDownload(slug) { // Beta 1.249: ONE download attempt of a city pack, watched at the byte level (Andrew's pack stall rule, 2026-11-19). Through 1.248 the pack fetch carried no timeout of its own - a wedged connection, or a host that never answers, pended crPackLoad's promise forever, and only the preparation watchdogs' 180 s landing bound ever surfaced it, as a failed preparation. The attempt now carries a silence timer in crOverpassFetch's shape (Beta 1.246), on the pack's own two windows from CR_TIMING: packFirstByteMs (120 s) until the first body byte - the static host spends real time producing a big city's file before the first byte moves, so silence there is not yet a wedge - then packStallMs (60 s) between bytes once they flow. On expiry the timer aborts the attempt through its own controller and the attempt throws a TAGGED error (err.packStall) - the retry loop's signal in crPackLoad below. Every other failure (HTTP status, an unreadable or misshapen body, a network throw) is untagged and behaves exactly as it always has. The body is read as a stream and accumulated as byte chunks, concatenated and decoded the streaming branch's way; there is still NO byte cap (the caps in CR_TIMING govern service extracts, not the app's own library). A reader-less response falls back to r.text() under the first-byte window armed at the attempt's start: it cannot see mid-body progress, so the generous window is its only honest bound - the fallback limit 1.246 documented for its own no-stream branch.
+  const ctl = (typeof AbortController !== 'undefined') ? new AbortController() : null;
+  let stallTo = null, sawByte = false, killed = false;
+  const armStall = () => { if (!ctl) return; if (stallTo) clearTimeout(stallTo); stallTo = setTimeout(() => { killed = true; try { ctl.abort(); } catch (e) {} }, sawByte ? CR_TIMING.packStallMs : CR_TIMING.packFirstByteMs); };
+  const clearStall = () => { if (stallTo) clearTimeout(stallTo); };
+  armStall();
+  try {
+    const r = await fetch('packs/' + slug + '.json', { cache: 'no-cache', signal: ctl ? ctl.signal : undefined });
+    if (!r.ok) { clearStall(); throw new Error('pack HTTP ' + r.status); }
+    let text;
+    if (r.body && typeof r.body.getReader === 'function') {
+      const reader = r.body.getReader(), chunks = []; let total = 0;
+      for (;;) {
+        const part = await reader.read();
+        if (part.done) break;
+        total += part.value.byteLength;
+        chunks.push(part.value);
+        sawByte = true;
+        armStall(); // a landed chunk is progress: the silence clock restarts here, on the flowing window once the first byte has landed
+      }
+      const buf = new Uint8Array(total); let off = 0; for (const c of chunks) { buf.set(c, off); off += c.byteLength; }
+      text = new TextDecoder().decode(buf);
+    } else { text = await r.text(); } // no reader: the first-byte window armed at the start bounds the whole read (see the header - no mid-body visibility exists to arm anything finer)
+    clearStall();
+    const pack = JSON.parse(text); // a SyntaxError propagates untagged, exactly as r.json()'s did through 1.248
+    if (!pack || !pack.streets || typeof pack.streets !== 'object') throw new Error('pack shape');
+    return pack;
+  } catch (e) {
+    clearStall();
+    if (killed) { const err = new Error('pack stall'); err.packStall = true; throw err; }
+    throw e;
+  }
+}
 function crPackLoad(slug, force) { // one same-origin download per session per city, adapted ONCE into the Overpass element shape the extract machinery consumes ({ id, tags: { name }, geometry: [{ lat, lon }] }). The pack holds raw segments per street ([[lat, lng], ...] runs, unchained - the app chains at resolve time, as it does for service extracts). Synthetic ids are NEGATIVE and sequential: OSM way ids are positive, so a pack way can never collide with a service way in the merged by-id index. A failed load is NOT cached - a later preparation may retry it.
   if (!crPackSlugOk(slug)) return Promise.reject(new Error('pack slug'));
   if (!force && crPackLoads[slug]) return crPackLoads[slug];
+  const t0 = Date.now();
   const p = (async () => {
-    const r = await fetch('packs/' + slug + '.json', { cache: 'no-cache' });
-    if (!r.ok) throw new Error('pack HTTP ' + r.status);
-    const pack = await r.json();
-    if (!pack || !pack.streets || typeof pack.streets !== 'object') throw new Error('pack shape');
-    const els = [];
-    let idc = 0;
-    for (const nm of Object.keys(pack.streets)) {
-      const segs = pack.streets[nm];
-      if (!Array.isArray(segs)) continue;
-      for (const seg of segs) { if (Array.isArray(seg) && seg.length > 1) els.push({ type: 'way', id: -(++idc), tags: { name: nm }, geometry: seg.map(pt => ({ lat: pt[0], lon: pt[1] })) }); }
+    for (;;) {
+      let pack;
+      try { pack = await crPackDownload(slug); } catch (e) {
+        // Beta 1.249: a SILENCE kill (tagged by crPackDownload) retries INSIDE this promise - invisible to every caller, so nothing already landed is discarded (committed cells, the coverage record, the preparation's state all stand); only the killed attempt's in-flight bytes restart, and bytes in flight were never landed progress - the pack is one JSON document, adapted whole below, exactly as a killed attempt's partial chunks are discarded inside crOverpassFetch (1.246). The retry stands down the moment the load is no longer the session's wanted one: crPackLoads[slug] moving off this promise - crGridStall's delete of the cached promise (create-cache.js), or a superseding force load - is the abandonment signal, the same one that orphaned the wedged promise through 1.248. And it stands down once the load is older than the preparation watchdogs' own bound (CR_TIMING.stallMs, referenced, not restated): inside a preparation that watch always fires first - its clock (last landing / preparation start) starts before this load does, and nothing can land while the pack wedges - so its promise-drop is what stops the loop there, and any late settlement is orphaned by the generation checks as before. The age bound is the loop's own stop for the one caller with no watchdog (the snap index, app3.js), where the rejection lands in its existing fail-cooldown path instead of pending forever. A real failure (untagged) rejects at once, exactly as through 1.248. (The identity read of p below is safe: it is only evaluated after an await settles, by which time the const has been assigned - the same shape the p.catch under this function has always relied on.)
+        if (e && e.packStall && crPackLoads[slug] === p && Date.now() - t0 < CR_TIMING.stallMs) continue;
+        throw e;
+      }
+      const els = [];
+      let idc = 0;
+      for (const nm of Object.keys(pack.streets)) {
+        const segs = pack.streets[nm];
+        if (!Array.isArray(segs)) continue;
+        for (const seg of segs) { if (Array.isArray(seg) && seg.length > 1) els.push({ type: 'way', id: -(++idc), tags: { name: nm }, geometry: seg.map(pt => ({ lat: pt[0], lon: pt[1] })) }); }
+      }
+      if (!els.length) throw new Error('pack empty');
+      return els;
     }
-    if (!els.length) throw new Error('pack empty');
-    return els;
   })();
   crPackLoads[slug] = p;
   p.catch(() => { if (crPackLoads[slug] === p) delete crPackLoads[slug]; });

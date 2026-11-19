@@ -15,17 +15,26 @@ function makeEnv(indexCities) {
     crRenderHint: () => {},
     fetch: async (url) => {
       fetched.push(url);
+      // Beta 1.249 fixture roll: the pack download reads the body as a
+      // stream / text since 1.249 (it used r.json() when this stub was
+      // written), so the fake Response now carries text() beside json() -
+      // the same payload either way; every assertion in this proof is
+      // unchanged.
       if (url === 'packs/index.json') {
+        const payload = { cities: indexCities };
         return {
           ok: true,
           status: 200,
-          json: async () => ({ cities: indexCities }),
+          json: async () => payload,
+          text: async () => JSON.stringify(payload),
         };
       }
+      const payload = { streets: { 'Main St': [[[45.0, -75.0], [45.01, -75.01]]] } };
       return {
         ok: true,
         status: 200,
-        json: async () => ({ streets: { 'Main St': [[[45.0, -75.0], [45.01, -75.01]]] } }),
+        json: async () => payload,
+        text: async () => JSON.stringify(payload),
       };
     },
   };
