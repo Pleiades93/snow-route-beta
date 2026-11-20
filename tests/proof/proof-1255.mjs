@@ -42,20 +42,24 @@ check('5: showConfirm / hideConfirm are the one shared surface, and the danger b
   && app3.includes('const f = confirmDangerCb; hideConfirm(); if (f) f();')
   && app3.includes("$('cfKeep').addEventListener('click', hideConfirm);"));
 const paceLine = slice(app3, "const c = $('paceCancel');", '\n');
-check('6: Cancel start asks through the surface with Andrew\'s copy, and the danger callback is the unchanged discard path',
-  paceLine.includes('showConfirm({')
-  && paceLine.includes("title: 'Cancel this run?'") && paceLine.includes("sub: 'All progress will be lost.'")
-  && paceLine.includes("keep: 'Keep going'") && paceLine.includes("danger: 'Yes, cancel'")
-  && paceLine.includes('cancelStart(); closeSheets();'));
-check('7: the old one-tap discard listener is gone',
-  !app3.includes("c.addEventListener('click', () => { cancelStart(); closeSheets(); })"));
-// Gate round 2 (Codex P1 + P2, both real): the question is bound to its
-// route and run, a route switch clears it, and the pill is exempt from
-// the sheet click-away its buttons bubble through.
+const askBody = slice(app3, 'function askCancelStart()', '\n');
+check('6: both Cancel start entry points route through the one ask, which carries Andrew\'s copy and the unchanged discard path',
+  paceLine.includes('askCancelStart()')
+  && app3.includes("$('cancelStartBtn').addEventListener('click', () => { if (!tapGuard('cancelStartBtn')) return; askCancelStart(); });")
+  && askBody.includes("title: 'Cancel this run?'") && askBody.includes("sub: 'All progress will be lost.'")
+  && askBody.includes("keep: 'Keep going'") && askBody.includes("danger: 'Yes, cancel'")
+  && askBody.includes('cancelStart(); closeSheets();'));
+check('7: the old one-tap discard listeners are gone (Pace and dock forms)',
+  !app3.includes("c.addEventListener('click', () => { cancelStart(); closeSheets(); })")
+  && !app3.includes("return; cancelStart(); });"));
+// Gate rounds 2-3 (Codex P1 + P2 + P2, all real): the question is bound
+// to its route and run, a route switch clears it, the pill is exempt
+// from the sheet click-away its buttons bubble through, and the dock's
+// second Cancel start button asks too.
 const app5 = read('parts/app5.js');
 check('10 (gate P1): the ask captures the route and run, and the callback validates both before discarding',
-  paceLine.includes('const forRoute = activeRoute ? activeRoute.id : null; const forRun = runStart;')
-  && paceLine.includes('if (runStart === forRun && (activeRoute ? activeRoute.id : null) === forRoute) { cancelStart(); closeSheets(); }'));
+  askBody.includes('const forRoute = activeRoute ? activeRoute.id : null; const forRun = runStart;')
+  && askBody.includes('if (runStart === forRun && (activeRoute ? activeRoute.id : null) === forRoute) { cancelStart(); closeSheets(); }'));
 check('11 (gate P1): a route switch clears any pending confirmation',
   app5.slice(app5.indexOf('function loadRoute(id) {'), app5.indexOf('function loadRoute(id) {') + 700).includes('hideConfirm();'));
 check('12 (gate P2): the sheet click-away handler exempts the confirmation pill',

@@ -88,6 +88,27 @@ const afterKeep = await J(`({ runStart, done: [...doneSet].sort(), paceOpen: $('
 ok('C1 Keep going dismisses the pill and the run continues untouched, sheet still open | ' + JSON.stringify(afterKeep) + ', hidden ' + P3.hidden,
   P3.hidden === true && afterKeep.runStart === S0.runStart && JSON.stringify(afterKeep.done) === JSON.stringify(S0.done) && afterKeep.paceOpen === true);
 
+// ---- (c2) the dock's Cancel start asks too (gate round 3, Codex P2) ----
+// The dock carries a second Cancel start button (#cancelStartBtn,
+// visible for the whole run) - through head 2 it still discarded in
+// one tap. Close the sheet, tap the dock button: the same pill must
+// ask, and Keep going must leave the run whole.
+await ev(`(() => { closeSheets(); return true; })()`);
+await sleep(500);
+const dockState = await J(`(() => { const b = $('cancelStartBtn'); const cs = getComputedStyle(b); return { display: cs.display, visible: cs.display !== 'none' }; })()`);
+await ev(`$('cancelStartBtn').click(); true`);
+const shownDock = await poll(`!!$('confirmPill') && !$('confirmPill').classList.contains('hidden')`, 8000).catch(() => false);
+ok('C2 the dock Cancel start asks through the same pill (no one-tap door left) | dock ' + JSON.stringify(dockState) + ', shown ' + shownDock,
+  dockState.visible === true && shownDock === true);
+await pressEl('cfKeep');
+await sleep(300);
+const afterDockKeep = await J(`({ runStart, done: [...doneSet].sort(), pillHidden: $('confirmPill').classList.contains('hidden') })`);
+ok('C3 Keep going at the dock-asked question dismisses it and the run continues | ' + JSON.stringify(afterDockKeep),
+  afterDockKeep.pillHidden === true && afterDockKeep.runStart === S0.runStart && JSON.stringify(afterDockKeep.done) === JSON.stringify(S0.done));
+await ev(`$('paceBtn').click(); true`);
+const paceAgain = await poll(`!!$('paceCancel')`, 15000).catch(() => false);
+ok('C4 the Pace sheet reopens for the switch section | paceCancel ' + paceAgain, paceAgain === true);
+
 // ---- (e) a route switch clears the pending question (gate P1) ----
 // The pill is scrim-free, so navigation stays possible while it is up:
 // ask on 5W, switch to another route, and the question must be GONE -
