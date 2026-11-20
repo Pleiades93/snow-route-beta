@@ -659,7 +659,7 @@ html.theme-swap *, html.theme-swap *::before, html.theme-swap *::after { transit
 <div id="hud">
   <div id="warn">Not saving. Storage is full or blocked</div>
   <div class="row">
-    <div class="titleStack"><div class="title">Snow Route Beta</div><div class="ver" id="ver">Beta 1.249</div></div>
+    <div class="titleStack"><div class="title">Snow Route Beta</div><div class="ver" id="ver">Beta 1.250</div></div>
   </div>
   <div id="stats"></div>
 </div>
@@ -1515,7 +1515,7 @@ BOARD.loadSides();
   const boardEmpty = STREETNAMES.every(n => pieces[n].every(v => v === 0));
   const dropPhantom = () => { // the verified rollback write: storage loses the signature entry only (when the signature came from the raw array, everything else storage holds stays byte-for-byte - a load-time strip is a view, never a write); memory drops the phantom too when the sanitized tail IS that entry (same run identity), and needs no drop when the sanitizer already removed it
     const src = (sig === rawLast && rawLast !== null) ? rawList : history;
-    if (!txSet(LS.hist, JSON.stringify(src.slice(0, -1))).ok) return false;
+    if (!txSet(LS.hist, JSON.stringify(src === rawList ? src.slice(0, -1) : historyForWrite(src.slice(0, -1)))).ok) return false; // Beta 1.250 (cross-audit fix round, N-03): the FALLBACK branch (raw tail not an entry object, so the signature stands in the sanitized view) used to write the bare view slice - permanently stripping every raw entry the sanitizer had dropped the moment this write landed, if the page closed before an ordinary save could restore them. It now writes the historyForWrite merge like every other history writer (A-05): the phantom, a surviving entry missing from the slice, stays deleted; the dropped raw entries ride back verbatim
     if (src === rawList && histRawList === rawList) { histRawList.pop(); histRawView.pop(); } // 2026-11-15 (A-05): the A-05 snapshot pops in step with the raw array this write just shortened, so a later ordinary save cannot resurrect the phantom from the snapshot
     if (last && last.runId && +last.runId === lastMs) history = history.slice(0, -1);
     return true;
@@ -6134,7 +6134,7 @@ function recoveryObj() { // Beta 1.95 (deep audit SR-194-02): the RECOVERY backu
   data.times = ser.times;
   data.via = ser.via;
   data.notes = JSON.stringify(notes);
-  data.hist = JSON.stringify(history);
+  data.hist = JSON.stringify(historyForWrite(history)); // Beta 1.250 (cross-audit fix round): the recovery export writes the A-05 merge like every other history writer - the bare view would ship a file whose restore permanently drops the raw entries the load-time strip is hiding (the same bypass class as N-03)
   data.trail = JSON.stringify(trail);
   data.cov = ser.cov;
   data.sess = JSON.stringify(trailSessions);
@@ -6907,7 +6907,7 @@ $('stDel').addEventListener('click', async () => {
 });
 // ---- About ----
 const WHATSNEW = { // the curated in-app notes: plain words, LATEST RELEASE ONLY (Beta 1.114, Andrew: the accumulated list cluttered the About pane). A release REPLACES this entry with its own in the same change - it never accumulates; the full history lives in CHANGELOG.md, not the app
-  v: 'Beta 1.249', items: ["A stuck city download now retries instead of hanging."] }; // Beta 1.223 (Andrew): What's New entries are SHORT from now on - point form, one short plain line each, no prose paragraphs, no em dashes
+  v: 'Beta 1.250', items: ["An interrupted finish can no longer erase older cleans from your history."] }; // Beta 1.223 (Andrew): What's New entries are SHORT from now on - point form, one short plain line each, no prose paragraphs, no em dashes
 
 function renderAbout() {
   const cur = $('ver').textContent.trim();
