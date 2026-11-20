@@ -172,6 +172,7 @@ ok('P5 switching back to NIGHT keeps everything too | ' + JSON.stringify(SW2),
 await ev(`(() => { markUndone('Woolacott'); deselect(); return true; })()`);
 
 await tapById(ev, 'cancelStartBtn');
+await tapById(ev, 'cfDanger'); // Beta 1.255 PREMISE UPDATE: a UI Cancel start asks first now (the shared confirmation pill, O-03) - the dock tap opens the question and its danger button completes the cancel
 await sleep(400);
 
 await markDoneScn(ev, 'Woolacott', 'tap');
@@ -192,6 +193,7 @@ const T5 = JSON.parse(await ev(`(() => JSON.stringify({ ratio: $('countFill').of
 ok('T5 the pill meter fills with the same work fraction the % reports (measured on the shown pill, inside a run - Beta 1.199) | ' + JSON.stringify(T5),
   Math.abs(T5.ratio - T5.want) < 0.04 && T5.want > 0 && T5.txt === T5.count);
 await tapById(ev, 'cancelStartBtn');
+await tapById(ev, 'cfDanger'); // Beta 1.255 PREMISE UPDATE: a UI Cancel start asks first now (the shared confirmation pill, O-03) - the dock tap opens the question and its danger button completes the cancel
 await sleep(400);
 
 

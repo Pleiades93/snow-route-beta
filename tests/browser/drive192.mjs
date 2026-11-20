@@ -69,6 +69,7 @@ try {
   ok('P6 with a live rate and a reference the banner becomes a verdict with an ETA, Elapsed runs, and Cancel start sits under the banner | ' + JSON.stringify({ vd, el: vm['ELAPSED'], eta: vm['ETA'] }),
     vd.ref === false && /Faster by|Slower by|On pace/.test(vd.t) && vd.t.includes('ETA') && vm['ELAPSED'] === '0:30' && vm['ETA'] !== '–' && vd.cancel === true);
   await ev(`$('paceCancel').click(); true`); await sleep(300);
+  await ev(`$('cfDanger').click(); true`); await sleep(300); // Beta 1.255 PREMISE UPDATE: Cancel start asks first now (the shared confirmation pill, O-03) - the paceCancel tap opens the question and its danger button completes the discard this section needs
 
   // ---------- clean detail inside the Pace sheet ----------
   await ev(`openPace(); true`); await sleep(400);
