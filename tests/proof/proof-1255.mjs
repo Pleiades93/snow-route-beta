@@ -68,8 +68,8 @@ check('12 (gate P2): the sheet click-away handler exempts the confirmation pill'
 // ---------- the release editorial ----------
 check('8: the CHANGELOG top entry is Beta 1.255', changelog.includes('## Beta 1.255'));
 check('9: What\'s New carries the 1.255 bullet, short and dash-free',
-  whatsnew.includes('Settings menus now sit in the centre of the screen, with even spacing in System Health.')
-  && 'Settings menus now sit in the centre of the screen, with even spacing in System Health.'.length <= 108
+  whatsnew.includes('The cancel question now sits over a softly blurred, dimmed background.')
+  && 'The cancel question now sits over a softly blurred, dimmed background.'.length <= 108
   && !whatsnew.includes('—'));
 
 console.log(`proof-1255: ${pass} passed, ${fail} failed`);
