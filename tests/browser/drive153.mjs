@@ -44,6 +44,10 @@ import { startCreateRig, serveRepo, makeResults, finishCreate, sleep } from './h
 //      doors surface (same pane, same doors, the list behind Select
 //      from list) -
 //      the two entries are one menu.
+//   F (orphaned init landing, /correct Phase 2 C6, 2026-11-20): the
+//      pack resolve held in flight while the watchdog stall orphans
+//      the grid's generation - its late landing (guarded by
+//      crGridCurrent alone, bd0e7df's shape) changes nothing.
 // Red side (run against the 1.122 tree before the build): A fails at
 // the chooser (no #crCityChoices exists), D's result-render fails
 // (crIsPlace reads a field jsonv2 doesn't send), B/C cannot start.
@@ -83,6 +87,7 @@ const segLen = pts => { let m = 0; for (let i = 1; i < pts.length; i++) { const 
 const packStreetLen = name => (PACKFX.streets[name] || []).reduce((a, s) => a + segLen(s), 0);
 let packMode = 'ok'; // 'ok' | 'fail' - the vaughan pack file's wire behaviour
 let packDelayMs = 0; // phase A slows the pack download so the in-progress state is observable before the ready state replaces it (Beta 1.176: what is graded there is the gate - nothing shown inside 5 s - and the seeded past-gate percentage form)
+let indexDelayMs = 0; // phase F slows the catalogue answer so the pack resolve is still in flight when the grid is orphaned (the bd0e7df shape)
 
 // ---- static server + CDP rig (shared: harness-create.mjs; this drive's routing table is fulfil, below) ----
 const { server, ORIGIN } = await serveRepo(REPO);
@@ -92,7 +97,7 @@ async function fulfil(sessionId, p, H) {
   const json = (obj, code) => H.json(sessionId, p, obj, code);
   try {
     const pn = new URL(url).pathname;
-    if (pn.endsWith('/packs/index.json')) { wire.push({ kind: 'packindex', url }); return await json(INDEXFX); }
+    if (pn.endsWith('/packs/index.json')) { wire.push({ kind: 'packindex', url }); if (indexDelayMs) await sleep(indexDelayMs); return await json(INDEXFX); }
     if (pn.endsWith('/packs/vaughan.json')) { wire.push({ kind: 'packfile', slug: 'vaughan.json', url }); if (packMode === 'fail') return await json('nf', 404); if (packDelayMs) await sleep(packDelayMs); return await json(PACKFX); }
     if (/\/packs\/[^/]+\.json$/.test(pn)) { wire.push({ kind: 'packfile', slug: pn.split('/').pop(), url }); return await json('nf', 404); }
     if (url.indexOf('nominatim.openstreetmap.org') >= 0) {
@@ -265,6 +270,40 @@ await clickChoice(VAUGHAN_NAME);
 const inPickE = await poll(`typeof creating !== 'undefined' && creating === true && crStage === 'pick'`, 15000);
 ok('E1 COHESION: the cold-start picker\'s Create reaches the SAME doors surface (same pane, "Create new route", both doors, the 5 index cities behind Select from list) and a city pick enters creation from boot too | ' + JSON.stringify(doorE),
   paneE === true && listE === true && chE === true && doorE.manual === true && doorE.manualLabel === 'Manual search' && doorE.list === true && doorE.t === 'Create new route' && inPickE === true);
+
+// ---- phase F: the orphaned INIT landing (bd0e7df / /correct Phase 2 C6 residue, 2026-11-20) ----
+// crCityPrepare's two INIT callbacks - the pack resolve, then the
+// saved-grid read it chains - are guarded by crGridCurrent ALONE (the
+// cell landings carry an ops-membership check in front of it, and the
+// fallback prep's landing re-checks session/generation inline). Until
+// this phase no drive staged that shape: neutering crGridCurrent left
+// drive153/164/181/182 green (the C6 mutation runs in the round's
+// RECORD - drive181 cannot stage it at all: its file:// world never
+// answers the catalogue). Here the catalogue answer is held 3 s
+// (inside the resolve's 8 s race cap), the watchdog stall orphans
+// the grid's generation mid-flight on a seeded progress clock, and
+// the late resolve must land NOWHERE: no pack identity adopted, no
+// dataset identity stamped, no saved read started, no cell fetched,
+// the stall's FAILED settle standing.
+await ev2(`exitCreate()`);
+await ev2(`(() => { crPackIndexP = null; crPackIndexKnown = false; return true; })()`);
+indexDelayMs = 3000;
+await openChooserTab();
+await ev2(`document.getElementById('crDoorManual').click()`);
+await poll(`document.getElementById('rmCityPane').classList.contains('on')`, 10000);
+await typeCity('Vaughan');
+const resultsF = await poll(`document.querySelectorAll('#crCityResults .routeRow').length >= 1`, 15000);
+await ev2(`(() => { const b = [...document.querySelectorAll('#crCityResults .routeRow')].find(x => { const n = x.querySelector('.routeName'); return n && n.textContent === 'Vaughan'; }); if (b) b.click(); return true; })()`);
+const prepF = await poll(`crPrepState === 'preparing' && !!crGrid && !crGrid.fromPack`, 15000).catch(() => false);
+await ev2(`(() => { crGrid.lastProgressAt = Date.now() - CR_TIMING.stallMs - 5000; crGridWatchdog(crGrid); return true; })()`);
+const stalledF = await J(`({ state: crPrepState, fromPack: crGrid ? (crGrid.fromPack || null) : null })`);
+const wireF0 = count('overpass');
+await sleep(5000); // the held catalogue lands ~3 s after the warm start; the saved read + pump would follow inside a second
+indexDelayMs = 0;
+const postF = await J(`({ state: crPrepState, fromPack: crGrid ? (crGrid.fromPack || null) : null, ds: crGrid ? (crGrid.ds || null) : null, done: crGrid ? crGridDoneCount() : 0 })`);
+ok('F1 ORPHANED INIT LANDING (bd0e7df): the pack resolve was still in flight when the watchdog stall orphaned the grid, and its late landing changed NOTHING - no pack identity, no dataset identity, no cell fetched or landed, the FAILED settle stands | results=' + resultsF + ' prep=' + prepF + ' stalled=' + JSON.stringify(stalledF) + ' post=' + JSON.stringify(postF) + ' overpass since stall=' + (count('overpass') - wireF0),
+  resultsF === true && prepF === true && stalledF.state === 'failed' && postF.state === 'failed' && postF.fromPack === null && postF.ds === null && postF.done === 0 && count('overpass') - wireF0 === 0);
+await ev2(`exitCreate()`);
 
 R.exceptions = consoleLog.filter(l => l.indexOf('EXCEPTION') === 0);
 finishCreate(R, proc, server);
