@@ -2,7 +2,7 @@
 <html lang="en" class="boot">
 <head>
 <meta charset="UTF-8">
-<meta http-equiv="Content-Security-Policy" content="default-src 'none'; script-src 'sha384-PUag7F3MAbuvpKWjcE/j46OTk/KFDKluykZss2hB37doNIDniz889l1mO1Fvr9tZ' https://cdn.jsdelivr.net/npm/maplibre-gl@4.7.1/dist/maplibre-gl.js; style-src-elem 'sha384-HOi/PU6c3lEszkyoFbskLiV3KbTq9KfHo0S2t8ZKivJ3PNNK003Kt0d4heN4AjxU' https://cdn.jsdelivr.net; style-src-attr 'unsafe-inline'; img-src 'self' data: blob: https://tiles.basemaps.cartocdn.com https://protomaps.github.io https://cdn.jsdelivr.net; connect-src 'self' https://tiles.basemaps.cartocdn.com https://protomaps.github.io https://cdn.jsdelivr.net https://nominatim.openstreetmap.org https://overpass-api.de https://overpass.kumi.systems; worker-src blob: 'self'; child-src blob: 'self'; font-src 'none'; manifest-src 'self'; base-uri 'none'; form-action 'none'; object-src 'none'">
+<meta http-equiv="Content-Security-Policy" content="default-src 'none'; script-src 'sha384-/IuO940hshaCo4CGq5xCOacabymkRtWtiVTecJrkK4JTDyKn0lZxABdp/jzdjh0z' https://cdn.jsdelivr.net/npm/maplibre-gl@4.7.1/dist/maplibre-gl.js; style-src-elem 'sha384-B6wsFia2uoQE3sPmlBwuibTMcH8aEknSFTDxbpS+6+APqJqVBRaYP14CkSJhKA+m' https://cdn.jsdelivr.net; style-src-attr 'unsafe-inline'; img-src 'self' data: blob: https://tiles.basemaps.cartocdn.com https://protomaps.github.io https://cdn.jsdelivr.net; connect-src 'self' https://tiles.basemaps.cartocdn.com https://protomaps.github.io https://cdn.jsdelivr.net https://nominatim.openstreetmap.org https://overpass-api.de https://overpass.kumi.systems; worker-src blob: 'self'; child-src blob: 'self'; font-src 'none'; manifest-src 'self'; base-uri 'none'; form-action 'none'; object-src 'none'">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="mobile-web-app-capable" content="yes">
@@ -145,7 +145,9 @@
   #selPop { position: fixed; top: calc(var(--vvt, 0px) + 144px + var(--sat)); left: 50%; transform: translateX(-50%); z-index: 1001; display: flex; align-items: center; gap: 8px; background: #ffffff; color: #14161a; border: 1px solid rgba(20,22,26,.08); padding: 13px 14px; border-radius: 16px; box-shadow: 0 8px 22px rgba(20,22,26,.13); flex-direction: column; align-items: stretch; gap: 7px; width: min(262px, 92vw); } /* Beta 1.209 (Andrew): the card wears LOOK 2, the sample he approved - a solid card (white by day), a hairline border, 16px radius, 13/14 padding and a soft drop shadow; the 1.30 glass + blur and the 1.32 street-colour left edge are retired (the edge's --accent feed in renderPanel goes with it). Beta 1.34 (Andrew): ONE fixed width, so the pop-up is the same size for one section or many - no growing/shrinking as the selection changes. Beta 1.215 (Andrew): the ONE fixed width narrows 342px -> 262px - his pick "C" from the width samples - so the centred card leaves the top-right corner (the Day/Night toggle, the re-centre button) clear beside it; the centring (left 50% + translateX(-50%)), the top (144) and the height (112.2) are unchanged, so the one-size invariant restates as 262 x 112.2 and the 1.214 re-centre drop (267 = 144 + 112.2 + 10.8) stands exactly as derived */ /* Beta 1.30: ONE selection pop-up (Andrew) - the multi-select pill he liked, widened into a card that also carries the old header strip's name/status/notes/mark actions */ /* Beta 1.168 (Andrew): the top drops 54px -> 144px (+90) - the pop-up started above the Day/Night button (top 78 + 56 tall = bottom 134) and covered its left half (44px at 390 wide, 24px at 430); 144 lands the pop-up's top 10px below the button's bottom edge, measured in every selection state at 390x844 and 430x932 (the box is one fixed size, so one shift clears them all) */
   body.night #selPop { background: rgba(20,21,27,.97); color: #f2f3f5; border-color: rgba(255,255,255,.07); box-shadow: 0 8px 22px rgba(0,0,0,.4); } /* Beta 1.209 Look 2 night: near-solid charcoal, hairline white border, black shadow */
   #selPop.hidden { display: none; }
-  #confirmPill { position: fixed; top: 50%; left: 50%; transform: translate(-50%, -50%); z-index: 1200; width: min(262px, 92vw); background: #ffffff; color: #14161a; border: 1px solid rgba(20,22,26,.08); border-radius: 16px; box-shadow: 0 8px 22px rgba(20,22,26,.13); padding: 13px 14px; display: flex; flex-direction: column; gap: 7px; } /* Beta 1.255 (O-03, Andrew's pick A from the cancel-confirm samples): THE shared confirmation surface - the selection pill's own faces and box, centred on the viewport, no scrim (the pill floats scrim-free, and there is no outside-tap dismissal: only its two buttons answer). Day face here, night face below - both measured from #selPop itself, so the confirm can never drift from the pill it mirrors */
+  #confirmBackdrop { position: fixed; inset: 0; z-index: 1199; background: rgba(0,0,0,.25); -webkit-backdrop-filter: blur(3px); backdrop-filter: blur(3px); opacity: 0; visibility: hidden; pointer-events: none; transition: opacity var(--anim-dur) var(--ease-close), visibility 0s linear var(--anim-dur); } /* Beta 1.257 (Andrew, from the backdrop ladder samples - his pick B1): THE confirmation's backdrop, owned by showConfirm/hideConfirm in app3.js and shown/hidden with the pill - one full-screen layer above everything else (map, sheets, menus) and below the pill (1199 under its 1200), dimming the scene by a quarter and blurring it 3px so the question stands in focus (the exact sampled pair: rgba(0,0,0,.25) + blur(3px), no re-tuning). The fade rides the shared motion tokens on the OPACITY only (the sheets' own visibility pattern) - the blur value never animates. It takes taps only while it stands (.on): the moment the question is answered it stops intercepting, while its fade finishes visually. A tap on it does nothing: dismissal stays buttons-only, and app5.js's click-away exempts it like the pill, so the tap cannot fall through and close the sheet underneath */
+  #confirmBackdrop.on { opacity: 1; visibility: visible; pointer-events: auto; transition: opacity var(--anim-dur) var(--ease-open), visibility 0s; }
+  #confirmPill { position: fixed; top: 50%; left: 50%; transform: translate(-50%, -50%); z-index: 1200; width: min(262px, 92vw); background: #ffffff; color: #14161a; border: 1px solid rgba(20,22,26,.08); border-radius: 16px; box-shadow: 0 8px 22px rgba(20,22,26,.13); padding: 13px 14px; display: flex; flex-direction: column; gap: 7px; } /* Beta 1.255 (O-03, Andrew's pick A from the cancel-confirm samples): THE shared confirmation surface - the selection pill's own faces and box, centred on the viewport. Through 1.256 it floated scrim-free; Beta 1.257 (Andrew, the backdrop ladder pick) gives the surface its backdrop (#confirmBackdrop, above) - dismissal is still buttons-only: only its two buttons answer. Day face here, night face below - both measured from #selPop itself, so the confirm can never drift from the pill it mirrors */
   body.night #confirmPill { background: rgba(20,21,27,.97); color: #f2f3f5; border-color: rgba(255,255,255,.07); box-shadow: 0 8px 22px rgba(0,0,0,.4); }
   #confirmPill.hidden { display: none; }
   #confirmPill .cfTitle { font-size: 16px; font-weight: 800; line-height: 1.3; } /* the pill title's own type (#selName, Look 2) */
@@ -672,7 +674,7 @@ html.theme-swap *, html.theme-swap *::before, html.theme-swap *::after { transit
 <div id="hud">
   <div id="warn">Not saving. Storage is full or blocked</div>
   <div class="row">
-    <div class="titleStack"><div class="title">Snow Route Beta</div><div class="ver" id="ver">Beta 1.256</div></div>
+    <div class="titleStack"><div class="title">Snow Route Beta</div><div class="ver" id="ver">Beta 1.257</div></div>
   </div>
   <div id="stats"></div>
 </div>
@@ -803,6 +805,7 @@ html.theme-swap *, html.theme-swap *::before, html.theme-swap *::after { transit
   <div id="cleanView" style="display:none"></div>
 </div>
 <div id="finModal" class="modal hidden"><div class="card"><h3>Finish this clean?</h3><p id="finMsg"></p><div class="row"><button id="finNo">✕</button><button id="finYes">Finish clean</button></div></div></div>
+<div id="confirmBackdrop"></div>
 <div id="confirmPill" class="hidden"><div class="cfTitle"></div><div class="cfSub"></div><div class="cfRow"><button id="cfKeep" type="button"></button><button id="cfDanger" type="button"></button></div></div>
 <div id="noteModal" class="modal hidden"><div class="card"><h3 id="noteTitle">Note</h3><textarea id="noteText"></textarea><div class="row"><button id="noteNo">✕</button><button id="noteYes">Save note</button></div></div></div>
 <div id="toast"></div>
@@ -4961,16 +4964,21 @@ $('resetBtn').addEventListener('click', () => {
 $('finNo').addEventListener('click', () => $('finModal').classList.add('hidden'));
 $('finYes').addEventListener('click', () => { if (!tapGuard('finYes')) return; $('finModal').classList.add('hidden'); finishRun(); });
 // Beta 1.255 (O-03): THE shared confirmation surface (head.html #confirmPill -
-// the selection pill's faces and box, centred, no scrim). The app grew three
+// the selection pill's faces and box, centred). The app grew three
 // unrelated confirm patterns (the Finish modal, the Settings reset two-step,
 // the saved-clean two-tap arm); this is the ONE reusable surface new
-// confirmations take, first used by Cancel start. Buttons only: there is no
-// backdrop and no outside-tap dismissal, so a stray tap can neither confirm
+// confirmations take, first used by Cancel start. Beta 1.257 (Andrew, from
+// the backdrop ladder samples - his pick B1): the surface owns a backdrop
+// (head.html #confirmBackdrop - a quarter dim, rgba(0,0,0,.25), under a 3px
+// backdrop blur), shown and hidden with the pill by the two functions below,
+// so every confirmation gets the same focus treatment and no call site ever
+// adds its own. Buttons only: the backdrop is focus, not a tap target -
+// there is no outside-tap dismissal, so a stray tap can neither confirm
 // nor dismiss. showConfirm replaces any pending question wholesale - the
 // stored danger callback is the only one the danger button can ever run.
 let confirmDangerCb = null;
-/** @param {{title: string, sub: string, keep: string, danger: string, onDanger: function(): void}} o @returns {void} */ function showConfirm(o) { const p = $('confirmPill'); p.querySelector('.cfTitle').textContent = o.title; p.querySelector('.cfSub').textContent = o.sub; $('cfKeep').textContent = o.keep; $('cfDanger').textContent = o.danger; confirmDangerCb = o.onDanger || null; p.classList.remove('hidden'); }
-/** @returns {void} */ function hideConfirm() { $('confirmPill').classList.add('hidden'); confirmDangerCb = null; }
+/** @param {{title: string, sub: string, keep: string, danger: string, onDanger: function(): void}} o @returns {void} */ function showConfirm(o) { const p = $('confirmPill'); p.querySelector('.cfTitle').textContent = o.title; p.querySelector('.cfSub').textContent = o.sub; $('cfKeep').textContent = o.keep; $('cfDanger').textContent = o.danger; confirmDangerCb = o.onDanger || null; $('confirmBackdrop').classList.add('on'); p.classList.remove('hidden'); }
+/** @returns {void} */ function hideConfirm() { $('confirmBackdrop').classList.remove('on'); $('confirmPill').classList.add('hidden'); confirmDangerCb = null; }
 $('cfKeep').addEventListener('click', hideConfirm);
 $('cfDanger').addEventListener('click', () => { const f = confirmDangerCb; hideConfirm(); if (f) f(); });
 /** @returns {void} */ function askCancelStart() { const forRoute = activeRoute ? activeRoute.id : null; const forRun = runStart; showConfirm({ title: 'Cancel this run?', sub: 'All progress will be lost.', keep: 'Keep going', danger: 'Yes, cancel', onDanger: () => { if (runStart === forRun && (activeRoute ? activeRoute.id : null) === forRoute) { cancelStart(); closeSheets(); } } }); } // Beta 1.255: THE cancel-start ask - every entry point (the Pace sheet's button, the dock's button) routes through this one function, so the confirmation and its route+run binding can never cover one door and miss the other (gate round 3, Codex P2: the dock's #cancelStartBtn still discarded in one tap)
@@ -6947,7 +6955,7 @@ $('stDel').addEventListener('click', async () => {
 });
 // ---- About ----
 const WHATSNEW = { // the curated in-app notes: plain words, LATEST RELEASE ONLY (Beta 1.114, Andrew: the accumulated list cluttered the About pane). A release REPLACES this entry with its own in the same change - it never accumulates; the full history lives in CHANGELOG.md, not the app
-  v: 'Beta 1.256', items: ["Settings menus now sit in the centre of the screen, with even spacing in System Health."] }; // Beta 1.223 (Andrew): What's New entries are SHORT from now on - point form, one short plain line each, no prose paragraphs, no em dashes
+  v: 'Beta 1.257', items: ["The cancel question now sits over a softly blurred, dimmed background."] }; // Beta 1.223 (Andrew): What's New entries are SHORT from now on - point form, one short plain line each, no prose paragraphs, no em dashes
 
 function renderAbout() {
   const cur = $('ver').textContent.trim();
@@ -6963,7 +6971,7 @@ $('aboutBack').addEventListener('click', () => showSetPane('setMainPane'));
 // acts as that dialog's Cancel / Not yet / Close (each is a plain hide - nothing gets committed).
 document.addEventListener('pointerdown', e => {
   const anySheet = !!document.querySelector('.sheet.open'); // Beta 1.77 (Andrew, live catch): ANY open sheet, read from the DOM - the hand-listed pair missed the Routes sheet in 1.76, so tapping away from it did nothing (and the tap fell through to the map)
-  if (anySheet && !e.target.closest('.sheet') && !e.target.closest('#hud') && !e.target.closest('.modal') && !e.target.closest('#confirmPill')) { closeSheets(); spendTap(400); } // Beta 1.30 (Andrew): the closing tap is spent here - the map never sees it. Beta 1.255 (gate round 2, Codex P2): the confirmation pill is exempt like the modals - a real press on its buttons bubbles through here first, and without the exemption Keep going closed the sheet it was asked over before its own click landed
+  if (anySheet && !e.target.closest('.sheet') && !e.target.closest('#hud') && !e.target.closest('.modal') && !e.target.closest('#confirmPill') && !e.target.closest('#confirmBackdrop')) { closeSheets(); spendTap(400); } // Beta 1.30 (Andrew): the closing tap is spent here - the map never sees it. Beta 1.255 (gate round 2, Codex P2): the confirmation pill is exempt like the modals - a real press on its buttons bubbles through here first, and without the exemption Keep going closed the sheet it was asked over before its own click landed. Beta 1.257: the confirmation's backdrop is exempt the same way - it covers the whole screen while the question is up, so without the exemption a tap on it would close the sheet underneath; the tap does nothing instead (dismissal stays buttons-only)
   // The two banners count as menus too (Andrew: ANY menu): a tap outside one is its Dismiss / Keep going.
   if (!$('suggest').classList.contains('hidden') && !e.target.closest('#suggest')) { $('suggest').classList.add('hidden'); spendTap(400); }
   if (!$('stale').classList.contains('hidden') && !e.target.closest('#stale')) { $('stale').classList.add('hidden'); spendTap(400); }

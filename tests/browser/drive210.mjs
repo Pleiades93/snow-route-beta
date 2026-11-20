@@ -110,10 +110,14 @@ const paceAgain = await poll(`!!$('paceCancel')`, 15000).catch(() => false);
 ok('C4 the Pace sheet reopens for the switch section | paceCancel ' + paceAgain, paceAgain === true);
 
 // ---- (e) a route switch clears the pending question (gate P1) ----
-// The pill is scrim-free, so navigation stays possible while it is up:
-// ask on 5W, switch to another route, and the question must be GONE -
-// never answerable against the new route's state. The 5W run persists
-// whole in its own slot and resumes on the switch back, untouched.
+// A pending question must not ride a route switch: ask on 5W, switch
+// to another route, and the question must be GONE - never answerable
+// against the new route's state. (Through 1.256 the scrim-free pill
+// left tap navigation open while it was up; since Beta 1.257 the
+// pill's backdrop takes those taps, and loadRoute's clear is the
+// standing guard this section grades - premise updated 1.257, no
+// assertion changed.) The 5W run persists whole in its own slot and
+// resumes on the switch back, untouched.
 await ev(`$('paceCancel').click(); true`);
 const shownE = await poll(`!!$('confirmPill') && !$('confirmPill').classList.contains('hidden')`, 8000).catch(() => false);
 await ev(`(() => { const roads = { 'Proto Alpha': [[[43.8,-79.56],[43.81,-79.56]]] }; localStorage.setItem(USERPACKS_KEY, JSON.stringify({ 'proto-test': { name: 'Proto Test', area: 'Test', roads, reference: {} } })); mergeUserPacks(); loadRoute('proto-test'); return true; })()`);
