@@ -270,7 +270,7 @@ const countAtHome = async () => {
   await poll(`(() => { try { return map.querySourceFeatures('protomaps', { sourceLayer: 'roads' }).length > 50; } catch (e) { return false; } })()`, 30000); // the label layers read the tiles - wait until the roads tiles for this framing have actually landed
   await sleep(1200); // symbol placement settles after the tiles
   return J(`(() => {
-    const layers = ['roads_labels_major', 'roads_labels_minor', 'roads_labels_major-route', 'roads_labels_minor-route'].filter(id => map.getLayer(id));
+    const layers = ['roads_labels_major', 'roads_labels_minor', 'roads_labels_major-route', 'roads_labels_minor-priority'].filter(id => map.getLayer(id));
     const seen = new Set();
     for (const f of map.queryRenderedFeatures({ layers })) { const nm = f.properties && f.properties.name; if (nm) seen.add(nm); }
     return { zoom: map.getZoom(), pitch: map.getPitch(), rendered: [...seen] };
@@ -322,7 +322,7 @@ const orient = await J(`(() => {
   const pack = ROUTE_PACKS.find(p => p.id === '5w');
   const ord = { First: '1st', Second: '2nd', Third: '3rd', Fourth: '4th', Fifth: '5th', Sixth: '6th', Seventh: '7th', Eighth: '8th', Ninth: '9th', Tenth: '10th' };
   const byName = {};
-  for (const f of map.queryRenderedFeatures({ layers: ['roads_labels_minor-route'] })) byName[f.properties.name] = f.properties.ang;
+  for (const f of map.queryRenderedFeatures({ layers: ['roads_labels_minor-priority'] })) byName[f.properties.name] = f.properties.ang;
   const feats = Object.entries(byName).map(([name, ang]) => ({ properties: { name, ang } }));
   let checked = 0, worst = 0;
   for (const f of feats) {

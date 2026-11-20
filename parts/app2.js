@@ -81,7 +81,7 @@ function glUnifyLabels(m) { // BASEMAP LABEL UNIFICATION (Andrew, Beta 1.6): the
     const setL = (id, k, v) => { if (!eq(m.getLayoutProperty(id, k), v)) m.setLayoutProperty(id, k, v); }; // Beta 1.41: no-op guards - every redundant style mutation re-triggers symbol placement in the workers, and this pass runs on EVERY stack build (boot, every theme flip, every marking tap). When the value already matches, the mutation is skipped; the end state is identical.
     const setP = (id, k, v) => { if (!eq(m.getPaintProperty(id, k), v)) { try { m.setPaintProperty(id, k, v); } catch (e2) {} } };
     const convF = f => (Array.isArray(f) && f[0] === 'in' && typeof f[1] === 'string') ? ['in', ['get', f[1]], ['literal', f.slice(2)]] : f; // the generated styles author kind filters in legacy form; as expressions they must be rebuilt or any combined filter is rejected whole
-    // (the '-route' priority clones are managed at the END of this pass, after the
+    // (the '-priority' lane is managed at the END of this pass, after the
     // loop has normalized the originals they copy - Beta 1.259, see the note above)
     for (const L of m.getStyle().layers) {
       if (L.type !== 'symbol' || !L.layout || !L.layout['text-field'] || !L['source-layer']) continue;
@@ -149,7 +149,7 @@ function glUnifyLabels(m) { // BASEMAP LABEL UNIFICATION (Andrew, Beta 1.6): the
     // read back from the map, never rebuilt from PM_DAY/PM_NIGHT. The lane's
     // data is rebuilt only when the loaded route changes (this pass runs on
     // every stack build; the signature keeps a marking tap from re-sending it).
-    const laneId = 'roads_labels_minor-route';
+    const laneId = 'roads_labels_minor-priority';
     const pack = (typeof activeRoute !== 'undefined' && activeRoute && Array.isArray(activeRoute.tileNames)) ? activeRoute : null;
     const orig = (m.getStyle().layers || []).find(x => x.id === 'roads_labels_minor');
     if (!pack || !orig || typeof STRETCH === 'undefined' || !STRETCH) {
