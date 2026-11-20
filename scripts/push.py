@@ -29,13 +29,17 @@ This wrapper makes both shapes impossible rather than discouraged:
   push  - runs plan, then a PREFLIGHT against the target branch:
           the PROSPECTIVE remote tree (the branch's tree overlaid
           with this push set) must pass scripts/build-pages.py
-          --check. The derived artifacts were built from every local
+          --check. It runs for every push, whatever the set names:
+          the derived artifacts were built from every local
           assembly input - parts/, the splash artwork, CHANGELOG.md,
           and whatever else the assembler reads - so any input that
           differs from the branch but is not pushed would strand
-          them over inputs that do not build them (Codex P2s on
-          PR #146; the check is over the whole tree, not an input
-          list, so a future input is covered the day it exists).
+          them over inputs that do not build them, and an input-only
+          push (a version bump in CHANGELOG.md alone) would strand
+          the branch's stale derived files under the new input
+          (Codex P2s on PR #146; the check is over the whole tree,
+          not an input list, so a future input is covered the day
+          it exists).
           Then it delegates the transport to the connector helper
           (explicit --repo snow-route-beta and --branch, every pair
           local=remote identical), and VERIFIES THE PUSHED TREE:
@@ -169,12 +173,15 @@ def local_blob_map(root):
 
 def preflight_prospective(root, gh, branch, resolved):
     """The tree this push would CREATE must itself build. Returns an
-    error string or None. Only inputs that differ from the branch and
-    are NOT in the set can make the prospective tree differ from the
-    local one; those are overlaid with their branch blobs in a temp
-    copy and build-pages --check is run there."""
-    if not any(p.startswith("parts/") or p in DERIVED_FOR_PARTS for p in resolved):
-        return None
+    error string or None. Runs for EVERY push (Codex P2 on PR #146:
+    an input-only push - CHANGELOG.md alone, artwork alone - named
+    neither parts/ nor a derived artifact and skipped every check,
+    stranding stale derived files on the branch). Only inputs that
+    differ from the branch and are NOT in the set can make the
+    prospective tree differ from the local one; those are overlaid
+    with their branch blobs in a temp copy and build-pages --check
+    is run there. When nothing differs outside the set, the
+    prospective tree IS the local tree and the check runs on it."""
     _, remote = remote_blobs(gh, branch)
     local = local_blob_map(root)
     # The prospective tree is the branch's tree plus this set. Three
@@ -186,7 +193,13 @@ def preflight_prospective(root, gh, branch, resolved):
                      if p not in resolved and remote[p] != local.get(p))
     drop = sorted(p for p in local if p not in resolved and p not in remote)
     if not overlay and not drop:
-        return None  # prospective == local; plan's freshness check already judged it
+        proc = subprocess.run([sys.executable, str(root / "scripts" / "build-pages.py"), "--check"],
+                              cwd=root, capture_output=True, text=True, timeout=300)
+        if proc.returncode != 0:
+            tail = (proc.stdout + proc.stderr).strip().splitlines()
+            return ("the tree this push would create is the local tree, and it does not "
+                    "build - build-pages --check said: " + (tail[-1] if tail else "(no output)"))
+        return None
     import base64
     import shutil
     import tempfile
