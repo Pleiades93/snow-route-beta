@@ -11,22 +11,34 @@ import { createHash } from 'node:crypto';
 // reader anywhere. The removal deletes the declaration, both writes and
 // the comment mentions, so the assembled app carries no LEFTSIDE string.
 //
-// LEFTBIT is a different, LIVE variable and is NOT touched: checks 4-6
-// pin its declaration, its write and its read verbatim. (Its read -
-// `const leftOff = LEFTBIT[n] === 0 ? ...` - sits inside the block the
-// LEFTSIDE assignment was removed from; the block's remaining lines are
-// retained byte-identical by design.)
+// LEFTBIT was a different, LIVE variable and was NOT touched by the
+// B-05 removal: checks 4-6 then pinned its declaration, its write and
+// its read verbatim. (Its read - `const leftOff = LEFTBIT[n] === 0 ?
+// ...` - sat inside the block the LEFTSIDE assignment was removed
+// from.)
 //
-// Geometry identity: GEO/LEFTBIT are closure-private inside GLP, so the
-// geometry's observable outputs are the paint sources the engine emits.
-// Checks 7-8 drive the shipped engine over a synthetic three-street
-// network (the mergeStrands proof's network) in two board states and
-// pin canonical sha256 hashes of ALL eleven paint sources. The hashes
-// were computed on the UNMODIFIED Beta 1.215 engine; the fixed engine
-// must reproduce them exactly - the removal changes no geometry.
+// Beta 1.258 addendum (2026-11-20): LEFTBIT's ONLY reader was that
+// leftOff line, which computed the street-title anchor's offset. The
+// title system retired in 1.258, leaving LEFTBIT written-never-read -
+// B-05's own defect - so it retired in the same round (declaration,
+// the rebuild clear loop and the write, with its canonicalForward
+// helper). Checks 4-6 now pin its ABSENCE, mirroring checks 1-3.
+//
+// Geometry identity: GEO is closure-private inside GLP, so the
+// geometry's observable outputs are the paint sources the engine
+// emits. Checks 7-8 drive the shipped engine over a synthetic
+// three-street network (the mergeStrands proof's network) in two
+// board states and pin canonical sha256 hashes of the paint sources.
+// The 1.215-era pins covered ALL eleven sources; the 1.258 pins cover
+// the TEN that remain and were DERIVED, not re-measured blind: hashing
+// the unmodified 1.257 engine's sources with labelpts excluded gives
+// exactly these values, and every surviving source's individual hash
+// is unchanged - the retirement removes one source and changes no
+// paint geometry byte.
 //
 // On unmodified main checks 1-3 FAIL and 4-8 pass; with the removal all
-// eight pass.
+// eight pass. (On the 1.257 tree checks 4-8 now fail by design: LEFTBIT
+// stands there and the labelpts source still exists.)
 
 const engine = readFileSync('parts/engine.js', 'utf8');
 const assembled = readFileSync('index.html', 'utf8');
@@ -41,9 +53,9 @@ function check(label, cond, detail = '') {
 check('LEFTSIDE absent from parts/engine.js', !engine.includes('LEFTSIDE'));
 check('LEFTSIDE absent from the assembled index.html', !assembled.includes('LEFTSIDE'));
 check('LEFTSIDE absent from src/tracker-source.html', !source.includes('LEFTSIDE'));
-check('LEFTBIT declaration stands alone: const LEFTBIT = {};', engine.includes('const LEFTBIT = {};'));
-check('LEFTBIT write verbatim', engine.includes('LEFTBIT[n] = canonicalForward ? 0 : 1;   // bit 0 is the left of the stitched direction'));
-check('LEFTBIT read verbatim', engine.includes('const leftOff = LEFTBIT[n] === 0 ? off0 : off1, mid = Math.floor(stitched.length / 2);'));
+check('LEFTBIT absent from parts/engine.js (Beta 1.258: written-never-read after the title retirement)', !engine.includes('LEFTBIT'));
+check('LEFTBIT absent from the assembled index.html', !assembled.includes('LEFTBIT'));
+check('LEFTBIT absent from src/tracker-source.html', !source.includes('LEFTBIT'));
 
 // --- geometry identity over the synthetic network, two board states ---
 const MLAT = 111132, MLNG = 82000;
@@ -89,7 +101,7 @@ function sourcesHash(pieces) {
     ROADS: Object.fromEntries(names.map(n => [n, STRETCH[n].runs.flatMap(r => r.parts)])),
     SPOT: {}, pieces,
     selStretch: null, selSet: [], isNight: () => false,
-    activeRoute: { name: 'Proof' }, glHideLabels: () => {},
+    activeRoute: { name: 'Proof' }, glUnifyLabels: () => {},
   };
   const sources = {}, layers = [];
   const mockGLM = {
@@ -106,9 +118,9 @@ function sourcesHash(pieces) {
   return hash(Object.fromEntries(Object.entries(sources).map(([k, v]) => [k, v.data])));
 }
 
-check('geometry identity, state A (pieces 2/1/2 - 1/2/1 - 1/2/1): all paint sources byte-identical to the unmodified engine',
-  sourcesHash({ LongAve: [2, 1, 2], NorthAve: [1, 2, 1], CrossSt: [1, 2, 1] }) === '9000324c67f493a9d1f49ae9c1c545e61a0c9a05ee0e8dffc01214a3f4cd343d');
-check('geometry identity, state B (pieces 1/0/3 - 3/1/0 - 0/3/2): all paint sources byte-identical to the unmodified engine',
-  sourcesHash({ LongAve: [1, 0, 3], NorthAve: [3, 1, 0], CrossSt: [0, 3, 2] }) === '4dbea0ea4a9743297e6aea716a172a085b17e235d63dd01d6e17c4194102b9ea');
+check('geometry identity, state A (pieces 2/1/2 - 1/2/1 - 1/2/1): the ten surviving paint sources byte-identical to the unmodified engine minus labelpts (Beta 1.258 derivation)',
+  sourcesHash({ LongAve: [2, 1, 2], NorthAve: [1, 2, 1], CrossSt: [1, 2, 1] }) === '5db11af0bf1e7c77a97e77c595bd5615c62d82d1b8666edffce76e3578bb6fd9');
+check('geometry identity, state B (pieces 1/0/3 - 3/1/0 - 0/3/2): the ten surviving paint sources byte-identical to the unmodified engine minus labelpts (Beta 1.258 derivation)',
+  sourcesHash({ LongAve: [1, 0, 3], NorthAve: [3, 1, 0], CrossSt: [0, 3, 2] }) === '1cfd3e1d0acd5f0da3fa38cb5544ddb9fa387c8b0befb0e0f5c49a70ae6234b8');
 
 process.exit(failed ? 1 : 0);

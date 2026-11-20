@@ -64,8 +64,8 @@ check('6: the scrim-free design claims are superseded and removed (the pill comm
 // ---------- the release editorial ----------
 check('7: the CHANGELOG top entry is Beta 1.257', changelog.includes('## Beta 1.257'));
 check('8: What\'s New carries the 1.257 bullet, short and dash-free',
-  whatsnew.includes('The cancel question now sits over a softly blurred, dimmed background.')
-  && 'The cancel question now sits over a softly blurred, dimmed background.'.length <= 108
+  whatsnew.includes('Street names now come from the map itself, spelled in full.')
+  && 'Street names now come from the map itself, spelled in full.'.length <= 108
   && !whatsnew.includes('—'));
 
 console.log(`proof-1257: ${pass} passed, ${fail} failed`);

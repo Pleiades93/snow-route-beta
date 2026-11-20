@@ -464,7 +464,7 @@ const names = STREETNAMES; // the paint engine's name for the street list
 
 // ===== STATE =====
 const STREETSET = new Set();
-/** @param {RoutePack} pack @returns {void} */ function buildGeometry(pack) { // Beta 1.117 (F1): ALL route geometry is (re)built HERE, per load, from the pack - nothing route-shaped is computed at script eval any more. The live containers (ROADS/REFERENCE/STRETCH/STREETNAMES/STREETSET/PRIMARIES/SPOT, app2's routeBox and ROUTE_TILE_NAMES, app3's SAMPLES) are refilled IN PLACE, never rebound, so references captured earlier (GL_HOST's plain entries above all) stay valid. Runs BEFORE loadRouteState: the state sanitizers filter against this geometry. buildSamples (app3) and the paint engine's rebuild (GLP.rebuildRoute, called by loadRoute) complete the per-load rebuild.
+/** @param {RoutePack} pack @returns {void} */ function buildGeometry(pack) { // Beta 1.117 (F1): ALL route geometry is (re)built HERE, per load, from the pack - nothing route-shaped is computed at script eval any more. The live containers (ROADS/REFERENCE/STRETCH/STREETNAMES/STREETSET/PRIMARIES/SPOT, app2's routeBox, app3's SAMPLES) are refilled IN PLACE, never rebound, so references captured earlier (GL_HOST's plain entries above all) stay valid. Runs BEFORE loadRouteState: the state sanitizers filter against this geometry. buildSamples (app3) and the paint engine's rebuild (GLP.rebuildRoute, called by loadRoute) complete the per-load rebuild.
   const roads = (pack && pack.roads) || {}, reference = (pack && pack.reference) || {};
   for (const k of Object.keys(ROADS)) delete ROADS[k]; Object.assign(ROADS, roads);
   for (const k of Object.keys(REFERENCE)) delete REFERENCE[k]; Object.assign(REFERENCE, reference);
@@ -473,9 +473,8 @@ const STREETSET = new Set();
   STREETNAMES.length = 0; for (const n of Object.keys(ROADS)) STREETNAMES.push(n);
   STREETSET.clear(); for (const n of STREETNAMES) STREETSET.add(n);
   PRIMARIES.clear(); for (const n of ((pack && pack.primaries) || [])) if (STREETSET.has(n)) PRIMARIES.add(n);
-  for (const k of Object.keys(SPOT)) delete SPOT[k]; Object.assign(SPOT, (pack && pack.spot) || {});
+  for (const k of Object.keys(SPOT)) delete SPOT[k]; Object.assign(SPOT, (pack && pack.spot) || {}); // Beta 1.258: SPOT's only reader was the retired street-title anchor build - the pack-data plumbing stays (stored packs carry the field); no code reads SPOT now
   routeBox = computeRouteBox(ROADS);
-  ROUTE_TILE_NAMES.length = 0; ROUTE_TILE_NAMES.push(...((pack && pack.tileNames && pack.tileNames.length) ? pack.tileNames : STREETNAMES));
   buildSamples();
 }
 // Beta 1.76: state loads when a route is CHOSEN, not at script eval - before
@@ -869,19 +868,24 @@ window.addEventListener('pagehide', () => flushAux(true));
 // group (c) - state the app REBINDS (pieces on load/restore, the
 // selection on every tap, the active route on load) - is exposed through
 // getters so the engine always reads the CURRENT binding, exactly as its
-// old free-global reads behaved. glHideLabels is also behind a getter: it
+// old free-global reads behaved. glUnifyLabels is also behind a getter: it
 // is declared in app2.js, after this part, and the getter resolves it at
 // call time. Built here, at the end of app1.js, because the engine
 // evaluates immediately after this part in the assembled page. Beta 1.117:
-// the plain entries are the LIVE containers (PRIMARIES/SPOT/STRETCH/ROADS/names)
+// the plain entries are the LIVE containers (PRIMARIES/STRETCH/names)
 // - buildGeometry refills them in place per load, so the engine's captured
 // references stay valid across a switch and GLP.rebuildRoute re-reads them.
 // Guarded by tests/browser/selftest-engine-surface.mjs (the frozen list).
+// Beta 1.258: SPOT and ROADS left the surface - their last engine reader
+// was the retired street-title build (SPOT's anchor hints; the label
+// features built over ROADS). Both stay live app state (SPOT is still
+// refilled per load above as pack-data plumbing); they are simply no
+// longer engine inputs, and the frozen list shrank with them.
 const GL_HOST = {
-  MLAT, MLNG, PRIMARIES, SPOT, STRETCH, ROADS, names, jDistM, ptSegM, isNight,
+  MLAT, MLNG, PRIMARIES, STRETCH, names, jDistM, ptSegM, isNight,
   get pieces() { return BOARD.state().pieces; }, // Arch-2: read through the board module, so the engine sees the current binding after any restore/reset
   get selSet() { return selSet; },
   get selStretch() { return selStretch; },
   get activeRoute() { return activeRoute; },
-  get glHideLabels() { return glHideLabels; },
+  get glUnifyLabels() { return glUnifyLabels; },
 };

@@ -118,9 +118,6 @@ type SunTimes = { rise: number | null, set: number | null };
 /** app2.js: `let routeBox = null` - the active pack's bounding box, set by buildGeometry (app1) on every load. */
 declare var routeBox: RouteBox | null;
 
-/** app2.js: `const ROUTE_TILE_NAMES = []` - refilled in place by buildGeometry (app1) on every load. */
-declare var ROUTE_TILE_NAMES: string[];
-
 /** app3.js: `const SAMPLES = {}` - per-street coverage sample points, refilled by buildSamples. */
 declare var SAMPLES: { [street: string]: LatLng[] };
 
@@ -162,7 +159,7 @@ declare var selSet: any[];
 declare var selStretch: { name: string, idx: number } | null;
 
 /** app2.js: normalizes basemap label layers for a map; app1 only forwards the function through GL_HOST's getter. Its map parameter is MapLibre's, unmodelled in this pilot (see `map` above). */
-declare function glHideLabels(m: any): void;
+declare function glUnifyLabels(m: any): void;
 
 // ---- 3. Browser surface actually used by the checked parts ----
 

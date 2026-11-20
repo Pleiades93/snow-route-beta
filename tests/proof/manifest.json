@@ -24,7 +24,6 @@
   "proof-1245.mjs",
   "proof-1246.mjs",
   "proof-1247.mjs",
-  "proof-1248.mjs",
   "proof-1249.mjs",
   "proof-1250.mjs",
   "proof-1251.mjs",
@@ -34,6 +33,7 @@
   "proof-1255.mjs",
   "proof-1256.mjs",
   "proof-1257.mjs",
+  "proof-1258.mjs",
   "proof-clearall-sibling-maps.mjs",
   "proof-create-class-pills.mjs",
   "proof-create-glow-casing-fix.mjs",
@@ -78,6 +78,10 @@
   {
    "file": "proof-sweep-20261115-071313-d-03.mjs",
    "reason": "Beta 1.243: its subject - importDraft, the photo door's draft-import half - is removed from the app with the Upload photo door, so the D-03 defect class it pinned dies with the feature. The file stays on disk as the record, like proof-rerun-css-batch."
+  },
+  {
+   "file": "proof-1248.mjs",
+   "reason": "Its subject no longer exists: Beta 1.258 (Andrew's decision, 2026-11-20) retired the app's own street titles (streetnamespt1-4 over labelpts) and the 1.248 re-placement helper this proof pinned, and made the basemap's own road labels the street-name system. The retirement's pins live in proof-1258; drive130 grades the rendered rule. Kept on disk as the 1.248 round's record; do not re-add to run."
   }
  ]
 }

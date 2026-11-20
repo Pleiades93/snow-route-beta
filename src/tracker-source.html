@@ -673,7 +673,7 @@ html.theme-swap *, html.theme-swap *::before, html.theme-swap *::after { transit
 <div id="hud">
   <div id="warn">Not saving. Storage is full or blocked</div>
   <div class="row">
-    <div class="titleStack"><div class="title">Snow Route Beta</div><div class="ver" id="ver">Beta 1.257</div></div>
+    <div class="titleStack"><div class="title">Snow Route Beta</div><div class="ver" id="ver">Beta 1.258</div></div>
   </div>
   <div id="stats"></div>
 </div>
@@ -1289,7 +1289,7 @@ const names = STREETNAMES; // the paint engine's name for the street list
 
 // ===== STATE =====
 const STREETSET = new Set();
-/** @param {RoutePack} pack @returns {void} */ function buildGeometry(pack) { // Beta 1.117 (F1): ALL route geometry is (re)built HERE, per load, from the pack - nothing route-shaped is computed at script eval any more. The live containers (ROADS/REFERENCE/STRETCH/STREETNAMES/STREETSET/PRIMARIES/SPOT, app2's routeBox and ROUTE_TILE_NAMES, app3's SAMPLES) are refilled IN PLACE, never rebound, so references captured earlier (GL_HOST's plain entries above all) stay valid. Runs BEFORE loadRouteState: the state sanitizers filter against this geometry. buildSamples (app3) and the paint engine's rebuild (GLP.rebuildRoute, called by loadRoute) complete the per-load rebuild.
+/** @param {RoutePack} pack @returns {void} */ function buildGeometry(pack) { // Beta 1.117 (F1): ALL route geometry is (re)built HERE, per load, from the pack - nothing route-shaped is computed at script eval any more. The live containers (ROADS/REFERENCE/STRETCH/STREETNAMES/STREETSET/PRIMARIES/SPOT, app2's routeBox, app3's SAMPLES) are refilled IN PLACE, never rebound, so references captured earlier (GL_HOST's plain entries above all) stay valid. Runs BEFORE loadRouteState: the state sanitizers filter against this geometry. buildSamples (app3) and the paint engine's rebuild (GLP.rebuildRoute, called by loadRoute) complete the per-load rebuild.
   const roads = (pack && pack.roads) || {}, reference = (pack && pack.reference) || {};
   for (const k of Object.keys(ROADS)) delete ROADS[k]; Object.assign(ROADS, roads);
   for (const k of Object.keys(REFERENCE)) delete REFERENCE[k]; Object.assign(REFERENCE, reference);
@@ -1298,9 +1298,8 @@ const STREETSET = new Set();
   STREETNAMES.length = 0; for (const n of Object.keys(ROADS)) STREETNAMES.push(n);
   STREETSET.clear(); for (const n of STREETNAMES) STREETSET.add(n);
   PRIMARIES.clear(); for (const n of ((pack && pack.primaries) || [])) if (STREETSET.has(n)) PRIMARIES.add(n);
-  for (const k of Object.keys(SPOT)) delete SPOT[k]; Object.assign(SPOT, (pack && pack.spot) || {});
+  for (const k of Object.keys(SPOT)) delete SPOT[k]; Object.assign(SPOT, (pack && pack.spot) || {}); // Beta 1.258: SPOT's only reader was the retired street-title anchor build - the pack-data plumbing stays (stored packs carry the field); no code reads SPOT now
   routeBox = computeRouteBox(ROADS);
-  ROUTE_TILE_NAMES.length = 0; ROUTE_TILE_NAMES.push(...((pack && pack.tileNames && pack.tileNames.length) ? pack.tileNames : STREETNAMES));
   buildSamples();
 }
 // Beta 1.76: state loads when a route is CHOSEN, not at script eval - before
@@ -1694,21 +1693,26 @@ window.addEventListener('pagehide', () => flushAux(true));
 // group (c) - state the app REBINDS (pieces on load/restore, the
 // selection on every tap, the active route on load) - is exposed through
 // getters so the engine always reads the CURRENT binding, exactly as its
-// old free-global reads behaved. glHideLabels is also behind a getter: it
+// old free-global reads behaved. glUnifyLabels is also behind a getter: it
 // is declared in app2.js, after this part, and the getter resolves it at
 // call time. Built here, at the end of app1.js, because the engine
 // evaluates immediately after this part in the assembled page. Beta 1.117:
-// the plain entries are the LIVE containers (PRIMARIES/SPOT/STRETCH/ROADS/names)
+// the plain entries are the LIVE containers (PRIMARIES/STRETCH/names)
 // - buildGeometry refills them in place per load, so the engine's captured
 // references stay valid across a switch and GLP.rebuildRoute re-reads them.
 // Guarded by tests/browser/selftest-engine-surface.mjs (the frozen list).
+// Beta 1.258: SPOT and ROADS left the surface - their last engine reader
+// was the retired street-title build (SPOT's anchor hints; the label
+// features built over ROADS). Both stay live app state (SPOT is still
+// refilled per load above as pack-data plumbing); they are simply no
+// longer engine inputs, and the frozen list shrank with them.
 const GL_HOST = {
-  MLAT, MLNG, PRIMARIES, SPOT, STRETCH, ROADS, names, jDistM, ptSegM, isNight,
+  MLAT, MLNG, PRIMARIES, STRETCH, names, jDistM, ptSegM, isNight,
   get pieces() { return BOARD.state().pieces; }, // Arch-2: read through the board module, so the engine sees the current binding after any restore/reset
   get selSet() { return selSet; },
   get selStretch() { return selStretch; },
   get activeRoute() { return activeRoute; },
-  get glHideLabels() { return glHideLabels; },
+  get glUnifyLabels() { return glUnifyLabels; },
 };
 const GLP = (() => {
   let H = GL_HOST; // Beta 1.103 (architecture Phase 6, C5): the engine's ONLY doorway to the app - every app value, helper, callback and live state read goes through this host object (built in app1.js; also passed to GLP.init). Live state arrives via getters, so an app rebind is seen on the next read, exactly as a free-global read behaved before.
@@ -1762,19 +1766,18 @@ function offsetLine(pts, m) {
   return out;
 }
 
-const labelFeatures = [];
-const labelPointFeatures = [];
 const GEO = {};
 // Left/Right naming (Andrew, 2026-10-28): every street has ONE fixed
 // direction - south end to north end, or west end to east end for
 // east-west streets. Left is the left-hand side in that direction: the
 // same rule for every street, fixed to the street itself, never flipping
-// with the direction of travel. LEFTBIT[name] = which state bit is Left.
-const LEFTBIT = {};
-function buildEngineGeometry() { // Beta 1.117: the engine's route geometry (GEO offsets, LEFTBIT, label features + tiers, the route POI, the hit features) is built HERE from the host's CURRENT data - once at eval (no route loaded yet: empty) and again on every route switch via GLP.rebuildRoute. The containers are refilled in place, never rebound, so every module-level reader (buildFamilies, selectedGeom, addStack) keeps working unchanged.
+// with the direction of travel. (Through 1.257 the engine recorded which
+// state bit is Left in a per-street record, for the street-title
+// anchor's offset; the titles retired in Beta 1.258, and that record -
+// written but never read once the anchors were gone - retired with
+// them, the B-05 rule.)
+function buildEngineGeometry() { // Beta 1.117: the engine's route geometry (GEO offsets, the route POI, the hit features) is built HERE from the host's CURRENT data - once at eval (no route loaded yet: empty) and again on every route switch via GLP.rebuildRoute. The containers are refilled in place, never rebound, so every module-level reader (buildFamilies, selectedGeom, addStack) keeps working unchanged.
   for (const k of Object.keys(GEO)) delete GEO[k];
-  for (const k of Object.keys(LEFTBIT)) delete LEFTBIT[k];
-  labelFeatures.length = 0; labelPointFeatures.length = 0;
   SVMAP = null; // the shared-vertex map is a memoized derivative of GEO (sharedVertexMap) - it must die with the geometry it was built from, or the strand builders read the previous route's streets (the first switch build threw exactly there)
   H.names.forEach(n => {
   // The street's stitched line, RUN BY RUN (Beta 1.144, Package C DA-02/C1):
@@ -1807,73 +1810,12 @@ function buildEngineGeometry() { // Beta 1.117: the engine's route geometry (GEO
     stitchedLen += segLenM(rStitched);
   });
   GEO[n] = { stitched, cuts, off0, off1, offH0, offH1, gaps };
-  const p0 = stitched[0], p1 = stitched[stitched.length - 1];
-  const dLat = p1[0] - p0[0], dLng = p1[1] - p0[1];
-  const canonicalForward = Math.abs(dLat) >= Math.abs(dLng) ? dLat >= 0 : dLng >= 0;
-  LEFTBIT[n] = canonicalForward ? 0 : 1;   // bit 0 is the left of the stitched direction
-  const leftOff = LEFTBIT[n] === 0 ? off0 : off1, mid = Math.floor(stitched.length / 2);
-  const dx = (leftOff[mid][1] - stitched[mid][1]) * H.MLNG, dy = (leftOff[mid][0] - stitched[mid][0]) * H.MLAT;
-  // label line: the SPOT segment (or the longest), like the app's labels
-  const segs = H.ROADS[n];
-  let li = (H.SPOT[n] ? H.SPOT[n][0] : -1);
-  if (li < 0 || li >= segs.length) { li = 0; let bl = -1; segs.forEach((sg, j) => { const L = segLenM(sg); if (L > bl) { bl = L; li = j; } }); }
-  labelFeatures.push({ type: 'Feature', properties: { name: n }, geometry: { type: 'LineString', coordinates: GJ(segs[li]) } });
-  // Round 34: a POINT anchor on the same segment at the SPOT fraction.
-  // Line-placed labels need the segment to fit the name on screen, so
-  // at Overview most short streets lost their labels entirely; point
-  // labels render regardless of segment length.
-  const seg = segs[li], fr = H.SPOT[n] ? H.SPOT[n][1] : 0.5;
-  let target = segLenM(seg) * fr, acc = 0, anchor = seg[seg.length - 1];
-  for (let k = 1; k < seg.length; k++) { const d = H.jDistM(seg[k - 1], seg[k]); if (acc + d >= target) { const t = d ? (target - acc) / d : 0; anchor = [seg[k - 1][0] + (seg[k][0] - seg[k - 1][0]) * t, seg[k - 1][1] + (seg[k][1] - seg[k - 1][1]) * t]; break; } acc += d; }
-  labelPointFeatures.push({ type: 'Feature', properties: { name: n, len: Math.round(stitchedLen) }, geometry: { type: 'Point', coordinates: GJ([anchor])[0] } }); // Beta 1.144: the length is the per-run sum (stitchedLen) - segLenM over the concatenated array would add the jumps between a disconnected street's runs
 });
   JUNC = null; // Beta 1.144 (found by drive165, proven on the pristine 1.143 tree): the junction table derives from GEO + the current name set but was built once and never invalidated - after a route switch it still named the PREVIOUS route's streets, and the first marked run's paint on the new route threw 'JUNC[n] is not iterable'. The geometry rebuild is the invalidation point: the table rebuilds lazily from the new geometry on next use.
-  nudgeFifth();
-  assignTiers();
   let a = 90, b = -90, c = 180, d = -180; H.names.forEach(n => GEO[n].stitched.forEach(p => { a = Math.min(a, p[0]); b = Math.max(b, p[0]); c = Math.min(c, p[1]); d = Math.max(d, p[1]); }));
   if (H.names.length) ROUTEPOI.geometry.coordinates = [(c + d) / 2, (a + b) / 2]; // Beta 1.170 (Carbon fix round Phase 2, B-10): an empty geometry keeps the last real centre - through 1.169 the extrema never moved off their seeds when there were no streets to visit, and the midpoint of the seeds is [0,0] (Null Island), where the route-name POI then rendered at overview zooms
   HIT.features = H.names.flatMap(n => GEO[n].cuts.map((ab, i) => ({ type: 'Feature', properties: { name: n, idx: i }, geometry: { type: 'LineString', coordinates: GJ(GEO[n].stitched.slice(ab[0], ab[1] + 1)) } })));
 }
-// Round 35 (Andrew): Fifth's label anchor sits at its Greenpark
-// junction, so the name reads as if it belongs to the yellow street.
-// Push it 45 m away from Greenpark's line - the text sits just off
-// Fifth's own corner instead of on the junction paint.
-function nudgeFifth() {
-  const f = labelPointFeatures.find(x => x.properties.name === 'Fifth');
-  if (!f) return;
-  const A0 = [f.geometry.coordinates[1], f.geometry.coordinates[0]];
-  const gp = GEO['Greenpark'] && GEO['Greenpark'].stitched;
-  if (!gp) return; // Beta 1.117: the nudge is a Route 5W refinement - a pack with a Fifth but no Greenpark simply skips it
-  let bd = 1e9, bq = A0;
-  const gg = GEO['Greenpark'].gaps;
-  for (let k = 1; k < gp.length; k++) {
-    if (gg.has(k)) continue; // Beta 1.144 (verify cycle 2): the segment between two runs is not street - projecting the anchor onto it pushes Fifth's label away from ground that is not Greenpark
-    const a = gp[k - 1], b = gp[k], vx = (b[1] - a[1]) * H.MLNG, vy = (b[0] - a[0]) * H.MLAT;
-    const wx = (A0[1] - a[1]) * H.MLNG, wy = (A0[0] - a[0]) * H.MLAT, L2 = vx * vx + vy * vy;
-    let t = L2 ? (wx * vx + wy * vy) / L2 : 0; t = Math.max(0, Math.min(1, t));
-    const q = [a[0] + (b[0] - a[0]) * t, a[1] + (b[1] - a[1]) * t], d = H.jDistM(A0, q);
-    if (d < bd) { bd = d; bq = q; }
-  }
-  const dx = (A0[1] - bq[1]) * H.MLNG, dy = (A0[0] - bq[0]) * H.MLAT, dl = Math.hypot(dx, dy) || 1;
-  f.geometry.coordinates = [A0[1] + (dx / dl) * 45 / H.MLNG, A0[0] + (dy / dl) * 45 / H.MLAT];
-}
-const LABELS = { type: 'FeatureCollection', features: labelFeatures };
-// Round 39 (Andrew): street names DEPUPULATE as he zooms out - from
-// 13.7 the shortest streets' names drop away in tiers, longest last,
-// until 12.6 where the melt finishes everything. Tier = stitched-
-// length quartile (computed from the data, no hand-set lengths); the
-// six PRIMARY streets are forced into the final tier regardless of
-// length (Astona is a primary but only 187 m long).
-function assignTiers() {
-  if (!labelPointFeatures.length) return; // Beta 1.170 (B-10): no labels, no tiers - through 1.169 the quartile reads below indexed lens[-1] (undefined) and every comparison failed quietly; a no-op only because there were no features to tier either
-  const lens = labelPointFeatures.map(f => f.properties.len).sort((a, b) => a - b);
-  const q = p => lens[Math.min(lens.length - 1, Math.floor(p * lens.length))];
-  const q1 = q(0.25), q2 = q(0.5), q3 = q(0.75);
-  labelPointFeatures.forEach(f => {
-    f.properties.tier = H.PRIMARIES.has(f.properties.name) ? 4 : (f.properties.len < q1 ? 1 : f.properties.len < q2 ? 2 : f.properties.len < q3 ? 3 : 4);
-  });
-}
-const LABELPTS = { type: 'FeatureCollection', features: labelPointFeatures };
 const ROUTEPOI = { type: 'Feature', properties: {}, geometry: { type: 'Point', coordinates: [0, 0] } }; // Beta 1.117: the centre is filled per load by buildEngineGeometry (was an eval-time IIFE over the baked route)
 
 // ---- unified strands (Andrew, 2026-10-28): the route is painted as
@@ -3457,7 +3399,7 @@ function tunePlaceLabels() {
     if (!cls || L.id.includes('dot')) continue;   // low-zoom city dots keep stock behaviour
     const early = PLACE_EARLY[cls];
     const minZ = early !== undefined ? (L.minzoom === undefined ? early : Math.min(L.minzoom, early)) : (L.minzoom || 0); // a layer with NO stock gate (Protomaps places) takes the table value as its gate
-    if (L.minzoom !== minZ || (L.maxzoom === undefined ? 24 : L.maxzoom) !== 15.5) GLM.setLayerZoomRange(L.id, minZ, 15.5); // Beta 1.41: no-op guard (see glHideLabels) - skip when the range already matches
+    if (L.minzoom !== minZ || (L.maxzoom === undefined ? 24 : L.maxzoom) !== 15.5) GLM.setLayerZoomRange(L.id, minZ, 15.5); // Beta 1.41: no-op guard (see glUnifyLabels) - skip when the range already matches
   }
 }
 function addStack() {
@@ -3472,7 +3414,6 @@ function addStack() {
     GLM.addSource('selFill', { type: 'geojson', data: CUR.selFill });
     GLM.addSource('selGlow', { type: 'geojson', data: buildSelGlow() });
     GLM.addSource('hit', { type: 'geojson', data: HIT });
-    GLM.addSource('labelpts', { type: 'geojson', data: LABELPTS });
     GLM.addSource('routepoi', { type: 'geojson', data: ROUTEPOI });
   }
   const before = firstSymbolId();
@@ -3518,48 +3459,15 @@ function addStack() {
   add(line('sel-core-s', 'selGlow', { 'line-color': ['get', 'colHot'], 'line-width': wScale(surfW, 0.42), 'line-opacity': 0.85 }, { 'line-cap': 'butt', 'line-join': 'round' }, ['==', ['get', 'band'], 0]));
   add(line('sel-core-b', 'selGlow', { 'line-color': ['get', 'colHot'], 'line-width': wScale(surfW, 0.42), 'line-opacity': 0.85 }, { 'line-cap': 'butt', 'line-join': 'round' }, ['==', ['get', 'band'], 1]));
   add(line('t1-selfill', 'selFill', { 'line-color': ['get', 'col'], 'line-width': wScale(surfW, 0.5), 'line-opacity': 1 }, { 'line-cap': 'butt' }));   // Beta 1.208 (R3): the selection's vibrant side fill - same width as the board's t1-fill, geometry from the same builder
-  // --- hit + labels (every treatment) ---
+  // --- hit (every treatment) ---
   add(line('hit', 'hit', { 'line-color': '#fff', 'line-width': 24 * WIDTH_K, 'line-opacity': 0 }));
-  // Beta 1.40 (Andrew): our own line-following street names are RETIRED. Zoomed in, the
-  // basemap's own road names take over on every street - ours are the overview titles,
-  // the basemap's are the close-up names, restyled readable (see glHideLabels in app2).
-  // The 'labels' source is no longer added; LABELS/labelFeatures remain as data only.
-  // Round 35/39 (Andrew): the point labels sit at the TOP of the
-  // stack (appended last, like streetnames) so basemap symbols can no
-  // longer knock them out - in Light, housenumber/POI symbols were
-  // silently killing Velmar's name. When a centred name collides,
-  // text-variable-anchor lets the renderer try above / below / beside
-  // the point instead of dropping the name outright - that is what
-  // rescues Bloomingdale, whose neighbours sit ~23 px away at
-  // Overview no matter where along its segment it anchors.
-  // Round 39: FOUR tier layers (see assignTiers) with staggered
-  // minzooms - 13.7 / 13.35 / 13.0 / 12.6 - so the names depopulate
-  // shortest-first as he zooms out through 13.7 to 12.6, while every
-  // tier still pops with the paint at 12.6 (Beta 1.12: no fading). Longest
-  // tier appended last so it wins placement among the tiers.
-  // Beta 1.40 (Andrew): the HANDOVER - our titles fade OUT across 15.4-16.4 while the
-  // basemap's own names fade IN on route streets across the same band (glHideLabels),
-  // so the two systems crossfade and never print together. The 12.6 arrival stays a
-  // near-pop (0.03 of a zoom), per his Beta 1.12 no-fading call for the far switch.
-  // Beta 1.208 (Andrew): the handover is RETIRED at his order - zoomed in, the
-  // basemap printed a route street's name 4-5 times down one screen (the clone
-  // layers repeat along the line at the renderer's 250 px default), and the
-  // spacing cure is not available in this renderer: measured in the real app,
-  // a 300 px repeat already loses Malden Street's label and a 400 px repeat
-  // loses every label in the test view (anchors earn their place per tile
-  // segment, and segments shorter than the repeat get none). So our titles -
-  // exactly one per street, at the street's own anchor - now stay up at EVERY
-  // zoom: no maxzoom, no fade-out stop, and the size ramp gains one high stop
-  // so the name stays readable at z19. glHideLabels no longer builds the
-  // basemap clones, and the originals keep excluding route names, so the
-  // basemap never prints a route street's name at any zoom.
-  const PT_MIN = [13.7, 13.35, 13.0, 12.6];
-  for (let t = 1; t <= 4; t++) {
-    const id = 'streetnamespt' + t;
-    if (!GLM.getLayer(id)) {
-      GLM.addLayer({ id, type: 'symbol', source: 'labelpts', minzoom: PT_MIN[t - 1], filter: ['==', ['get', 'tier'], t], layout: { 'text-field': ['get', 'name'], 'text-font': fontStack, 'text-size': ['interpolate', ['linear'], ['zoom'], 14, 10, 14.6, 10.5, 16.2, 12, 19, 13.5], 'text-padding': 1, 'text-variable-anchor': ['center', 'top', 'bottom', 'left', 'right'], 'text-radial-offset': 0.8, 'symbol-sort-key': ['-', ['get', 'len']], 'text-allow-overlap': false }, paint: { 'text-color': H.isNight() ? '#e8e8e8' : '#333333', 'text-halo-color': H.isNight() ? 'rgba(0,0,0,.8)' : 'rgba(255,255,255,.9)', 'text-opacity': ['interpolate', ['linear'], ['zoom'], 12.59, 0, 12.62, 1, 15.4, 1], 'text-opacity-transition': { duration: 0, delay: 0 }, 'text-halo-width': 1.4 } });
-    }
-  }
+  // Beta 1.258 (Andrew): the app's own street titles are RETIRED - the basemap's
+  // own road names are now the street-name system for every route (see
+  // glUnifyLabels in app2: the roads_labels originals keep their stock filters
+  // and zoom ranges, route streets included). No app-drawn street names remain:
+  // no labelpts source, no streetnamespt layers. The route POI below still
+  // wears the route's name at overview zooms - it is a place marker, not a
+  // street name.
   // Round 35/37 (Andrew): zoomed far out, the route cluster blurs
   // into a blob. The switch point is GL zoom 12.6 (the old 12.6-13.3 melt
   // band's lower edge). Beta 1.12 (Andrew): NO FADING - fading 'looks
@@ -3574,7 +3482,7 @@ function addStack() {
   add({ id: 'routepoi-dot', type: 'circle', source: 'routepoi', maxzoom: 13.3, paint: { 'circle-radius': ['interpolate', ['linear'], ['zoom'], 10, 4.5, 13.5, 6.5], 'circle-color': '#ef476f', 'circle-opacity': ['step', ['zoom'], 1, 12.6, 0], 'circle-opacity-transition': { duration: 0, delay: 0 } } });
   add({ id: 'routepoi-txt', type: 'symbol', source: 'routepoi', maxzoom: 13.3, layout: { 'text-field': (H.activeRoute && H.activeRoute.name) || 'Snow Route', 'text-font': fontStack, 'text-size': 11, 'text-anchor': 'left', 'text-offset': [1.1, 0], 'text-allow-overlap': false }, paint: { 'text-color': H.isNight() ? '#e8e8e8' : '#333333', 'text-halo-color': H.isNight() ? 'rgba(0,0,0,.8)' : 'rgba(255,255,255,.9)', 'text-opacity': ['step', ['zoom'], 1, 12.6, 0], 'text-opacity-transition': { duration: 0, delay: 0 }, 'text-halo-width': 1.6 } });
   ['t1-casing', 't1-casingb', 't1-surface', 't1-band', 't1-fill', 't1-sel', 't1-selband', 't1-selfill', 'sel-core-s', 'sel-core-b', 'hit'].concat([1, 2, 3, 4, 5].flatMap(i => ['sel-glow' + i + '-s', 'sel-glow' + i + '-b'])).forEach(id => { if (GLM.getLayer(id)) GLM.setLayerZoomRange(id, 12.5, 24); });
-  H.glHideLabels(GLM);
+  H.glUnifyLabels(GLM);
   pushSources();
   applyGlow();
   syncTheme();
@@ -3653,21 +3561,6 @@ function managePulse() {
     }, 50);
   } else if (!want && pulseTimer) { clearInterval(pulseTimer); pulseTimer = null; }
 }
-  function rePlaceTitles() { // Beta 1.248: the street titles' anchors are re-decided from scratch - the labelpts source is rebuilt in place (the same LABELPTS data; the four tier layers re-added with their live specs at their stack seats). MapLibre's placement PREFERS the anchor a symbol used in the previous placement pass and keeps it while it still places (placement.ts: prevPlacement.variableOffsets, keyed by crossTileID, which lives with the source's cross-tile index), so an anchor first chosen mid-flight - while the fit view's streets sat closer together on screen and the tile scene was still arriving - can stick for the whole session with the name beside its street (Andrew's cold-open report, 2026-11-18: names off their streets, zooming no cure, a day/night swap - a fresh style and placement chain - the only cure; measured in the round's harness: anchors are always on their streets, the rendered text is what sits off). A rebuilt source gets a fresh cross-tile index, so the next placement pass holds no preference and decides against the settled scene. Nothing about what renders changes - same data, same specs, same seats; only when the decision is (re)made. The host calls this once the pick flight settles (app5's introToRoute hook); a no-op without a map or the source.
-    if (!GLM || !GLM.getSource || !GLM.getSource('labelpts')) return;
-    const ids = [1, 2, 3, 4].map(t => 'streetnamespt' + t).filter(id => GLM.getLayer(id));
-    if (!ids.length) return;
-    const style = GLM.getStyle(); if (!style || !style.layers) return;
-    const specs = ids.map(id => style.layers.find(l => l.id === id));
-    if (specs.some(s => !s)) return;
-    const order = style.layers.map(l => l.id);
-    let succ = null;
-    for (let i = order.indexOf(ids[ids.length - 1]) + 1; i < order.length; i++) { if (ids.indexOf(order[i]) < 0) { succ = order[i]; break; } }
-    for (const id of ids) GLM.removeLayer(id);
-    GLM.removeSource('labelpts');
-    GLM.addSource('labelpts', { type: 'geojson', data: LABELPTS });
-    for (const s of specs) { if (succ) GLM.addLayer(s, succ); else GLM.addLayer(s); }
-  }
   // ---- public API (the app's only handles on the engine) ----
   function stateSig() { return JSON.stringify(H.pieces); }
   function init(gl, host) {
@@ -3685,10 +3578,9 @@ function managePulse() {
     CUR = null; rebuildData(); lastSig = stateSig();
     if (!GLM) return;
     if (GLM.getSource('hit')) GLM.getSource('hit').setData(HIT);
-    if (GLM.getSource('labelpts')) GLM.getSource('labelpts').setData(LABELPTS);
     if (GLM.getSource('routepoi')) GLM.getSource('routepoi').setData(ROUTEPOI);
     if (GLM.getLayer('routepoi-txt')) { try { GLM.setLayoutProperty('routepoi-txt', 'text-field', (H.activeRoute && H.activeRoute.name) || 'Snow Route'); } catch (e) {} } // the POI wears the route's name (Beta 1.79) - a switch renames it
-    H.glHideLabels(GLM); // the tile-label handover follows the new route's street names
+    H.glUnifyLabels(GLM); // the basemap label pass runs on the new route's map
     pushSources();
   }
   function drop() {       // GL failed / fell back to raster: stop touching GL entirely
@@ -3712,14 +3604,14 @@ function managePulse() {
     pushSelSources();
   }
   function active() { return !!GLM; }
-  function setFont(stack) { if (Array.isArray(stack) && stack.length) { fontStack = stack.slice(); if (GLM) { for (const id of ['streetnamespt1', 'streetnamespt2', 'streetnamespt3', 'streetnamespt4', 'routepoi-txt']) { if (GLM.getLayer(id)) { try { GLM.setLayoutProperty(id, 'text-font', fontStack); } catch (e) {} } } } } } // Beta 1.170 (Carbon fix round Phase 2, B-09): layers already on the map take the new stack too - through 1.169 setFont replaced only the variable FUTURE layers are built from, so a basemap restyle (which re-picks the font, then calls sync - not init) left the live label layers rendering the retired stack until the next full rebuild
+  function setFont(stack) { if (Array.isArray(stack) && stack.length) { fontStack = stack.slice(); if (GLM) { for (const id of ['routepoi-txt']) { if (GLM.getLayer(id)) { try { GLM.setLayoutProperty(id, 'text-font', fontStack); } catch (e) {} } } } } } // Beta 1.170 (Carbon fix round Phase 2, B-09): layers already on the map take the new stack too - through 1.169 setFont replaced only the variable FUTURE layers are built from, so a basemap restyle (which re-picks the font, then calls sync - not init) left the live label layers rendering the retired stack until the next full rebuild
   function syncTheme() {
     if (!GLM || !GLM.getLayer) return;
     const night = !!(H && H.isNight && H.isNight());
     lastNight = night;
     const casing = night ? '#000000' : '#5a5f6a', txt = night ? '#e8e8e8' : '#333333', halo = night ? 'rgba(0,0,0,.8)' : 'rgba(255,255,255,.9)';
     for (const id of ['t1-casing', 't1-casingb']) { if (GLM.getLayer(id)) { try { GLM.setPaintProperty(id, 'line-color', casing); } catch (e) {} } }
-    for (const id of ['streetnamespt1', 'streetnamespt2', 'streetnamespt3', 'streetnamespt4', 'routepoi-txt']) { if (GLM.getLayer(id)) { try { GLM.setPaintProperty(id, 'text-color', txt); GLM.setPaintProperty(id, 'text-halo-color', halo); } catch (e) {} } }
+    for (const id of ['routepoi-txt']) { if (GLM.getLayer(id)) { try { GLM.setPaintProperty(id, 'text-color', txt); GLM.setPaintProperty(id, 'text-halo-color', halo); } catch (e) {} } }
   }
   function evalCurvePx(curve, z) { // a scaleW-built interpolate curve evaluated at a zoom, in px (stops: zoom at odd indices from 3, width at even indices >= 4; clamped outside the stop range, linear between)
     let prev = null;
@@ -3727,7 +3619,7 @@ function managePulse() {
     return prev[1];
   }
   function tapTolPx(z) { return Math.max(24, evalCurvePx(surfCASE, z) / 2 + 2); } // The map-tap tolerance follows the WIDEST paint at the tap's zoom, floored at 24 px — the Beta 1.181 rule ("a tap anywhere on the paint still selects instead of deselecting"). Beta 1.206 introduced this formula against BANDCASE, then the widest paint; Beta 1.208 retires the wide band, so the widest paint is now the surface casing (surfCASE): 24 px at z17 and below (the floor - shipped behaviour unchanged), ~27.5 px at z18, ~50.8 px at z19.
-  return { init, drop, sync, syncSel, syncTheme, active, setFont, rebuildRoute, tapTolPx, mute, rePlaceTitles }; // mute exported for the create flow's draft renderer (Beta 1.221 gate fix: create-pick's crDraftLineDim calls GLP.mute - the helper is private to this IIFE, and the bare call threw at draft-layer init, silently aborting every layer after the casing; Codex review P1 on PR #98). Beta 1.248: rePlaceTitles exported for app5's post-flight hook
+  return { init, drop, sync, syncSel, syncTheme, active, setFont, rebuildRoute, tapTolPx, mute }; // mute exported for the create flow's draft renderer (Beta 1.221 gate fix: create-pick's crDraftLineDim calls GLP.mute - the helper is private to this IIFE, and the bare call threw at draft-layer init, silently aborting every layer after the casing; Codex review P1 on PR #98)
 })();
 window.GLP = GLP;// GENERATED by scripts/genstyles.mjs (@protomaps/basemaps 5.7.2 (pinned exactly by scripts/package.json + package-lock.json - install with npm ci), tiles 20261026-01 from the vendored CARTO dark-matter style scripts/carto-dark-matter-style.json sha256 66afc8eb8287, road line-width/line-gap-width x1.5 on roads* layers (Beta 1.181)) - do not hand-edit; regenerate instead.
 // Beta 1.33 (Andrew): BOTH basemaps are Protomaps - one map, two flavours - embedded in the page so a day/night switch is a local setStyle with nothing to fetch and nothing to break.
@@ -3762,8 +3654,7 @@ $('mapNoteNo').addEventListener('click', () => { if (!tapGuard('mapNoteNo')) ret
 setTimeout(() => { if (!glOk) { mapNoteArmed = true; noteMapState(); } }, 15000);
 onMapReady(() => map.on('error', e => { if (!glOk && e && e.error && /fetch|Failed/i.test(e.error.message || '') && !mapNoteArmed) { mapNoteArmed = true; noteMapState(); } }));
 onMapReady(() => map.on('sourcedata', e => { if (e.dataType === 'source' && e.sourceId === 'protomaps' && e.tile) { tilesOk++; if (basemapDead) { basemapDead = false; noteMapState(); } } })); // Beta 1.33: proof the basemap is really drawing - and the moment a tile lands after an outage, the death notice clears itself
-const ROUTE_TILE_NAMES = []; // Beta 1.40: every route street's name AS THE TILES SPELL IT (census of the protomaps 'roads' source layer, 2026-10-31: 34/34 matched exactly once; Fifth = '5th Avenue'). Drives the label handover in glHideLabels. Beta 1.117: the list itself is pack data (pack.tileNames in data.js) - this live array starts empty and buildGeometry refills it in place on every load.
-function glHideLabels(m) { // BASEMAP LABEL UNIFICATION (Andrew, Beta 1.6): the day and night styles are two
+function glUnifyLabels(m) { // BASEMAP LABEL UNIFICATION (Andrew, Beta 1.6): the day and night styles are two
   // different ready-made maps, each printing its own names in its own lettering and size. On every (re)stack,
   // normalize every basemap text layer: same typeface (each glyph service's own Noto Sans - the same face under
   // each service's naming), same size curve per kind of name, road names from the same zoom in both. The words
@@ -3778,21 +3669,15 @@ function glHideLabels(m) { // BASEMAP LABEL UNIFICATION (Andrew, Beta 1.6): the 
       water: ['interpolate', ['linear'], ['zoom'], 10, 11, 15, 13],
       other: ['interpolate', ['linear'], ['zoom'], 15, 10, 18, 12]
     };
-    // Beta 1.40: route-street CLONES of the two road-label layers (the handover, see the
-    // road branch below). A zoom ramp cannot nest inside a name test in one paint value
-    // ('zoom may only feed a top-level step/interpolate' - the map rejects it), so route
-    // streets get their own copy of each label layer: only route names, fading in across
-    // 15.4-16.4, restyled at creation for the current theme. The originals exclude route
-    // names by filter instead. Rebuilt from the embedded style spec on every restack.
-    // Beta 1.208 (Andrew): the clones are RETIRED - zoomed in, they printed a route
-    // street's name 4-5 times down one screen (the renderer's 250 px line repeat),
-    // and a wider repeat is not a cure in this renderer (measured: 300 px already
-    // loses Malden Street's label, 400 px loses every label in the test view -
-    // anchors earn their place per tile segment). Route streets are now named by
-    // the app's own titles at EVERY zoom (engine labelpts: one name per street at
-    // its anchor, no maxzoom, no fade-out); the originals below keep excluding
-    // route names, so the basemap never prints one. Any clone an older build left
-    // on this map is removed, never refreshed or rebuilt.
+    // Beta 1.258 (Andrew): route streets are named by the BASEMAP, like every other
+    // street - the map's own names are the street-name system for every route. The
+    // app's own titles (the engine's streetnamespt layers, retired this round) and
+    // the Beta 1.40/1.208 exclusion that kept route names off the basemap are both
+    // gone: the two roads_labels originals below keep their STOCK filters and zoom
+    // ranges (major from 11, minor from 15), route names included, in the map's own
+    // spelling (Ferrari Court, Santa Barbara Place). The Beta 1.40 clone layers
+    // (route-only copies of the label layers) stay retired - removed below if an
+    // older build left one on this map.
     const spec = (typeof isNight === 'function' && isNight()) ? PM_NIGHT : PM_DAY;
     const eq = (a, b) => JSON.stringify(a) === JSON.stringify(b);
     const setL = (id, k, v) => { if (!eq(m.getLayoutProperty(id, k), v)) m.setLayoutProperty(id, k, v); }; // Beta 1.41: no-op guards - every redundant style mutation re-triggers symbol placement in the workers, and this pass runs on EVERY stack build (boot, every theme flip, every marking tap). When the value already matches, the mutation is skipped; the end state is identical.
@@ -3832,26 +3717,28 @@ function glHideLabels(m) { // BASEMAP LABEL UNIFICATION (Andrew, Beta 1.6): the 
         }
       }
       if (kind === 'road') {
-        if ((L.minzoom || 0) !== 13 || (L.maxzoom === undefined ? 24 : L.maxzoom) !== 24) m.setLayerZoomRange(L.id, 13, 24); // Beta 1.41 guard: same no-op rule as setL/setP
-        // LABEL RULE (Andrew, Beta 1.40; revised Beta 1.208): OUR titles name the route
-        // streets at EVERY zoom - one name per street at its anchor (engine labelpts).
-        // Through 1.207 the basemap's own names took over zoomed in (the handover, on
-        // clone layers), but the clones repeated a name 4-5 times down a close-zoom
-        // screen, so the handover is retired: the clones are never built (removed
-        // above if an older build left one), and the originals exclude route names
-        // at every zoom. Non-route streets keep their basemap names at every zoom.
-        // (The Beta 1.7 clash-exclusion filter that used to live here silently stopped working:
-        // it mixed legacy filter syntax with an expression, and the map rejected it outright.)
         if (id === 'roads_labels_major' || id === 'roads_labels_minor') {
-          // The originals keep every NON-route name; route names are the titles' job.
+          // Beta 1.258: the two road-label originals keep their STOCK zoom range from the
+          // embedded spec (major 11, minor 15) - the blanket 13 below governs the other
+          // road symbols, and forcing it here was half of the old exclusion system.
+          const specL0 = (spec.layers || []).find(x => x.id === id);
+          const sMin = specL0 && typeof specL0.minzoom === 'number' ? specL0.minzoom : 0;
+          const sMax = specL0 && typeof specL0.maxzoom === 'number' ? specL0.maxzoom : 24;
+          if ((L.minzoom || 0) !== sMin || (L.maxzoom === undefined ? 24 : L.maxzoom) !== sMax) m.setLayerZoomRange(L.id, sMin, sMax);
+        } else if ((L.minzoom || 0) !== 13 || (L.maxzoom === undefined ? 24 : L.maxzoom) !== 24) m.setLayerZoomRange(L.id, 13, 24); // Beta 1.41 guard: same no-op rule as setL/setP
+        // LABEL RULE (Andrew, Beta 1.258): the basemap names EVERY street, route
+        // streets included - the originals simply keep their stock filter from the
+        // embedded spec. (Beta 1.40-1.257 excluded the route names here because the
+        // app's own titles named them; the titles are retired, so the exclusion is
+        // retired with them.)
+        if (id === 'roads_labels_major' || id === 'roads_labels_minor') {
           const specL = (spec.layers || []).find(x => x.id === id);
-          const baseF = specL && specL.filter ? convF(specL.filter) : null;
-          const targetF = baseF ? ['all', baseF, ['!', ['in', ['get', 'name'], ['literal', ROUTE_TILE_NAMES]]]] : ['!', ['in', ['get', 'name'], ['literal', ROUTE_TILE_NAMES]]];
-          if (!eq(L.filter, targetF)) { try { m.setFilter(L.id, targetF); } catch (e2) {} } // Beta 1.41 guard
+          const targetF = specL && specL.filter ? convF(specL.filter) : null;
+          if (targetF && !eq(L.filter, targetF)) { try { m.setFilter(L.id, targetF); } catch (e2) {} } // Beta 1.41 guard
           if (!(typeof isNight === 'function' && isNight())) {
             // DAY READABILITY (Andrew, Beta 1.40): the stock day road names are pale and wash
             // out over the app's coloured route lines. Darken them to the app's own label ink
-            // with a firm light edge - the same treatment our titles use. Day only; the night
+            // with a firm light edge - the treatment the retired app titles used to wear. Day only; the night
             // branch above already lifts every name for the dark map.
             setP(L.id, 'text-color', '#333333'); setP(L.id, 'text-halo-color', 'rgba(255,255,255,.92)'); setP(L.id, 'text-halo-width', 1.5);
           }
@@ -6954,7 +6841,7 @@ $('stDel').addEventListener('click', async () => {
 });
 // ---- About ----
 const WHATSNEW = { // the curated in-app notes: plain words, LATEST RELEASE ONLY (Beta 1.114, Andrew: the accumulated list cluttered the About pane). A release REPLACES this entry with its own in the same change - it never accumulates; the full history lives in CHANGELOG.md, not the app
-  v: 'Beta 1.257', items: ["The cancel question now sits over a softly blurred, dimmed background."] }; // Beta 1.223 (Andrew): What's New entries are SHORT from now on - point form, one short plain line each, no prose paragraphs, no em dashes
+  v: 'Beta 1.258', items: ["Street names now come from the map itself, spelled in full."] }; // Beta 1.223 (Andrew): What's New entries are SHORT from now on - point form, one short plain line each, no prose paragraphs, no em dashes
 
 function renderAbout() {
   const cur = $('ver').textContent.trim();
@@ -7331,15 +7218,9 @@ function introToRoute() { // Beta 1.77 (Andrew): a pick opens WIDE on the route'
   let fit = null; try { fit = map.cameraForBounds(b, { padding: 28 }); } catch (e) {}
   if (!fit || !fit.center || typeof fit.zoom !== 'number') { fit0(); return; }
   try { map.jumpTo({ center: fit.center, zoom: Math.max(8, fit.zoom - 3) }); } catch (e) { fit0(); return; }
-  setTimeout(() => { if (!map) return; try { map.flyTo({ center: fit.center, zoom: fit.zoom, pitch: 45, duration: 3000, curve: 1.2, essential: false }); armTitleRePlace(); } catch (e) {} }, 1500); // 1500ms: the splash's exit (780ms) has finished and the wide view - the Route 5W point of interest - has had a moment to sit, before the slow flight in. Beta 1.203 (Andrew): the flight tilts into the 45-degree default as it comes in - centre and zoom are the flat fit's own, unchanged
+  setTimeout(() => { if (!map) return; try { map.flyTo({ center: fit.center, zoom: fit.zoom, pitch: 45, duration: 3000, curve: 1.2, essential: false }); } catch (e) {} }, 1500); // 1500ms: the splash's exit (780ms) has finished and the wide view - the Route 5W point of interest - has had a moment to sit, before the slow flight in. Beta 1.203 (Andrew): the flight tilts into the 45-degree default as it comes in - centre and zoom are the flat fit's own, unchanged
 }
-let titleRePlaceArmed = false;
-function armTitleRePlace() { // Beta 1.248: when THIS flight ends and the map is fully idle, the engine re-decides the street titles' anchors against the settled scene (GLP.rePlaceTitles - the flight's own placement passes decide them mid-flight, and MapLibre keeps a once-chosen side anchor for the session: names sat beside their streets from a cold open until a theme swap). moveend alone is not the signal - the basemap may still be streaming when the flight ends, and a re-decision against a half-arrived scene could stick the same way; idle is the settled scene. The 2.5s timer is only a backstop for an idle that never lands (a tile source that never settles); the pair runs once.
-  if (!map || titleRePlaceArmed) return; titleRePlaceArmed = true;
-  let done = false;
-  const run = () => { if (done) return; done = true; titleRePlaceArmed = false; try { if (window.GLP && window.GLP.rePlaceTitles) window.GLP.rePlaceTitles(); } catch (e) {} };
-  try { map.once('moveend', () => { try { map.once('idle', run); } catch (e) {} setTimeout(run, 2500); }); } catch (e) { titleRePlaceArmed = false; }
-}
+// Beta 1.258: the armTitleRePlace hook that stood here (Beta 1.248-1.257) is retired with the app-title system it served - the engine no longer re-places street titles because the app no longer draws them; the basemap names the streets (see glUnifyLabels, app2).
 function resetSwitchSession() { // Beta 1.117 (F3/F4): the ONE reset block a route switch runs - everything that names the OUTGOING route's session dies here, before the new pack's geometry or state exists. Runs after the F2 flush (loadRoute calls collapseNoteEditor first, so an open note draft has already finalized against the outgoing street).
   // Beta 1.148 (Tranche 5, A4(ii)): the reset knowledge now lives with the state
   // owners - this block only CALLS the owners' hooks (each hook preserves the
@@ -9485,7 +9366,7 @@ onMapReady(() => { if (creating) crSetBackdrop(true); }); // creation entered be
 // own overlay (crDraft) is untouched, and exitCreate restores the exact
 // visibility every hidden layer had before. ----
 const CR_ROUTE_LAYERS = ['t1-casing', 't1-casingb', 't1-surface', 't1-band', 't1-fill', 't1-sel', 't1-selband', 't1-selfill', 'sel-core-s', 'sel-core-b', 'hit', 'routepoi-ring', 'routepoi-dot', 'routepoi-txt']   // Beta 1.207: t1-edge/t1-sele retired with the kerb-line paint - the fill layers (t1-fill/t1-selfill) take their place in the hide list
-  .concat([1, 2, 3, 4].map(t => 'streetnamespt' + t), [1, 2, 3, 4, 5].flatMap(i => ['sel-glow' + i + '-s', 'sel-glow' + i + '-b']));
+  .concat([1, 2, 3, 4, 5].flatMap(i => ['sel-glow' + i + '-s', 'sel-glow' + i + '-b'])); // Beta 1.258: the streetnamespt title layers rode this list through 1.257 - retired with the app's own street titles; the basemap's names are the picking map's own and stay up
 let crHiddenLayers = null; // [[id, visibilityBefore], ...] recorded on the first hide; null = backdrop off
 const CR_POI_SRC = 'crPoi';
 function crPoiFeatures() {

@@ -52,9 +52,9 @@ await ev(`document.querySelector('#rmRoutes .routeRow').click()`);
 await poll(`typeof routeLoaded !== 'undefined' && routeLoaded === true`, 20000);
 await poll(`!document.getElementById('splash')`, 20000);
 await poll(`typeof map === 'undefined' || !map || !map.isMoving()`, 25000);
-const L = await J(`({ names: STREETNAMES.length, primaries: PRIMARIES.size, velmar: Math.round(STRETCH.Velmar.total), total: Math.round(totalWorkM()), parts: Object.values(STRETCH).reduce((a, s) => a + s.parts.length, 0), box: !!routeBox, tiles: ROUTE_TILE_NAMES.length })`);
-ok('L1 5W loads as a pack with its exact geometry (34 streets, 6 primaries, Velmar ~1686 m, 87 stretches, ~35352 m of sides, 68 tile names) | ' + JSON.stringify(L),
-  L.names === PACK5W.names && L.primaries === PACK5W.primaries && L.velmar >= PACK5W.velmar - 3 && L.velmar <= PACK5W.velmar + 3 && L.parts === PACK5W.parts && L.total >= PACK5W.totalWork - 12 && L.total <= PACK5W.totalWork + 13 && L.box === (PACK5W.box !== null) && L.tiles === PACK5W.tiles);
+const L = await J(`({ names: STREETNAMES.length, primaries: PRIMARIES.size, velmar: Math.round(STRETCH.Velmar.total), total: Math.round(totalWorkM()), parts: Object.values(STRETCH).reduce((a, s) => a + s.parts.length, 0), box: !!routeBox })`);
+ok('L1 5W loads as a pack with its exact geometry (34 streets, 6 primaries, Velmar ~1686 m, 87 stretches, ~35352 m of sides) | ' + JSON.stringify(L),
+  L.names === PACK5W.names && L.primaries === PACK5W.primaries && L.velmar >= PACK5W.velmar - 3 && L.velmar <= PACK5W.velmar + 3 && L.parts === PACK5W.parts && L.total >= PACK5W.totalWork - 12 && L.total <= PACK5W.totalWork + 13 && L.box === (PACK5W.box !== null));
 const L2 = await J(`document.getElementById('countTxt').textContent.indexOf('of ${PACK5W.names}') >= 0`); // Beta 1.199 re-derivation: this reads the count STATE updateCount wrote for the loaded pack; it used to scan document.body.innerText, but innerText only sees RENDERED text and the pill no longer renders outside a run - the state lives in #countTxt either way (drive198 P2 pins that it advances while the pill is hidden)
 ok('L2 the count reads "of 34" for the loaded pack', L2 === true);
 
@@ -84,10 +84,10 @@ ok('S4 F2: the switch itself flushed the outgoing route\'s armed writes (trail p
   S4.trail.some(p => p[0] === 43.820123) && (S4.notes.Astona || []).some(e => e.text === 'armed at switch') && S4.snap === true);
 const S5 = await J(`preloadUrlList().length`);
 ok('S5 F5: with a second pack known, the preload manifest GROWS past 897 (union over packs) | ' + S5, typeof S5 === 'number' && S5 > OFFLINE.count);
-await ev(`(() => { if (map && window.GLP && !map.getSource('labelpts')) { try { window.GLP.init(map, GL_HOST); } catch (e) {} } return true; })()`); // in the rig the tile CDN may never ready the style (glOk stays false), so onStyleReady's GLP.init never runs - run it exactly as onStyleReady would, so the engine's sources exist to be read back
-const S6 = await J(`({ labelNames: (map.getSource('labelpts') && map.getSource('labelpts').serialize().data) ? map.getSource('labelpts').serialize().data.features.map(f => f.properties.name).sort() : null, hitN: (map.getSource('hit') && map.getSource('hit').serialize().data) ? map.getSource('hit').serialize().data.features.length : -1 })`);
-ok('S6 the paint engine rebuilt for the fixture (its label points are the fixture streets; its hit features are the fixture stretches: 2+2+1+1) | ' + JSON.stringify(S6),
-  Array.isArray(S6.labelNames) && JSON.stringify(S6.labelNames) === JSON.stringify(['Fixture Alpha', 'Fixture Beta', 'Fixture Gamma', 'Fixture Main']) && S6.hitN === 6);
+await ev(`(() => { if (map && window.GLP && !map.getSource('hit')) { try { window.GLP.init(map, GL_HOST); } catch (e) {} } return true; })()`); // in the rig the tile CDN may never ready the style (glOk stays false), so onStyleReady's GLP.init never runs - run it exactly as onStyleReady would, so the engine's sources exist to be read back
+const S6 = await J(`({ hitN: (map.getSource('hit') && map.getSource('hit').serialize().data) ? map.getSource('hit').serialize().data.features.length : -1 })`);
+ok('S6 the paint engine rebuilt for the fixture (its hit features are the fixture stretches: 2+2+1+1; Beta 1.258: no label-points source exists to rebuild) | ' + JSON.stringify(S6),
+  S6.hitN === 6);
 const D1 = await ev(dump5wSrc);
 
 // ---------- work on the fixture; 5W's slot must not move ----------

@@ -78,8 +78,8 @@ check('9: no second stale literal in app3',
 // ---------- the release editorial ----------
 check('10: the CHANGELOG top entry is Beta 1.252', changelog.includes('## Beta 1.252'));
 check('11: What\'s New carries the 1.252 bullet, short and dash-free',
-  whatsnew.includes('The cancel question now sits over a softly blurred, dimmed background.')
-  && 'The cancel question now sits over a softly blurred, dimmed background.'.length <= 108
+  whatsnew.includes('Street names now come from the map itself, spelled in full.')
+  && 'Street names now come from the map itself, spelled in full.'.length <= 108
   && !whatsnew.includes('—'));
 
 console.log(`proof-1252: ${pass} passed, ${fail} failed`);

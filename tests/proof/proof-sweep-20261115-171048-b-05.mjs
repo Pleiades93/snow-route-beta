@@ -39,7 +39,7 @@ function makeHost() {
       return Math.hypot(px - (ax + t * vx), py - (ay + t * vy));
     },
     isNight() { return false; },
-    glHideLabels() {},
+    glUnifyLabels() {},
   };
   return state;
 }

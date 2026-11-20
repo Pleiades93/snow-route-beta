@@ -75,7 +75,7 @@ check('10: the lengths splice in lockstep with the pool (seed pick and growth jo
 // ---------- the frame ----------
 const wnM = whatsnew.match(/items: \["([^"]*)"\]/);
 check('11: What\'s New carries the CURRENT bullet (rolled to 1.251: this check tracks the current entry each round), within the 108-char cap (and stays em-dash free)',
-  !!wnM && wnM[1] === 'The cancel question now sits over a softly blurred, dimmed background.' && wnM[1].length <= 108 && !whatsnew.includes('—'));
+  !!wnM && wnM[1] === 'Street names now come from the map itself, spelled in full.' && wnM[1].length <= 108 && !whatsnew.includes('—'));
 check('12: the CHANGELOG top entry is Beta 1.245',
   changelog.indexOf('## Beta 1.245') > -1 && changelog.indexOf('## Beta 1.245') < changelog.indexOf('## Beta 1.244'));
 
