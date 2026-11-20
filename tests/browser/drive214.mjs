@@ -1,6 +1,5 @@
 import { launchDrive, finish, bootThrough } from './harness.mjs';
 import fs from 'node:fs';
-import { execSync } from 'node:child_process';
 const { proc, send, S, ev, shot, consoleLog, sleep, poll } = await launchDrive();
 await bootThrough(ev, poll);
 if (!await poll(`!!(window.map && map.getSource && map.getSource('centres'))`, 45000)) throw new Error('drive214: the GL stack never landed - sections C-E would measure an empty map and pass vacuously'); // bootThrough lands the route; the GL stack (sources/layers) lands after - sections C-E read sources and must not race it
@@ -213,39 +212,42 @@ const proj = await J(`(() => {
   for (const [k, ll] of Object.entries(${JSON.stringify(EP.pts || {})})) { const p = map.project([ll[1], ll[0]]); out[k] = [p.x, p.y]; }
   return out;
 })()`);
-fs.writeFileSync('/tmp/drive214-scan.py', `
-import sys, json
-from PIL import Image
-# Each sample scores SIMILARITY to muted gold: 1 - (distance from the window's
-# mean colour to gold) / (gold-to-background distance, ~104 for the bare map
-# grey). A membership count cannot see the gradient - a 50% blend still sits
-# within any sane distance of gold - while the similarity of the mean tracks
-# the gradient's alpha directly (solid ~1, mid-fade ~0.5, bare map ~0), and
-# stays ~0 over any pale basemap surface (major-road fills sit 100+ from gold).
-img = Image.open(sys.argv[1]).convert('RGB')
-pts = json.loads(sys.argv[2]); gold = json.loads(sys.argv[3]); scale = img.width / float(sys.argv[4])
-gr, gg, gb = int(gold[1:3], 16), int(gold[3:5], 16), int(gold[5:7], 16)
-BG = (204, 204, 204)
-span = ((gr - BG[0]) ** 2 + (gg - BG[1]) ** 2 + (gb - BG[2]) ** 2) ** 0.5
-out = {}
-for k, (x, y) in pts.items():
-    cx, cy = int(x * scale), int(y * scale); r = max(4, int(6 * scale)); sr = sg = sb = tot = 0
-    for yy in range(cy - r, cy + r + 1):
-        for xx in range(cx - r, cx + r + 1):
-            if 0 <= xx < img.width and 0 <= yy < img.height:
-                tot += 1
-                pr, pg, pb = img.getpixel((xx, yy))
-                sr += pr; sg += pg; sb += pb
-    if tot:
-        mr, mg, mb = sr / tot, sg / tot, sb / tot
-        d = ((mr - gr) ** 2 + (mg - gg) ** 2 + (mb - gb) ** 2) ** 0.5
-        out[k] = round(max(0.0, 1 - d / span), 3)
-    else:
-        out[k] = 0
-print(json.dumps(out))
-`);
+// The pixel scan runs IN-PAGE on a canvas (the house pattern, drive180):
+// each sample scores SIMILARITY to muted gold: 1 - (distance from the
+// window's mean colour to gold) / (gold-to-background distance, ~104 for
+// the bare map grey). A membership count cannot see the gradient - a 50%
+// blend still sits within any sane distance of gold - while the similarity
+// of the mean tracks the gradient's alpha directly (solid ~1, mid-fade
+// ~0.5, bare map ~0), and stays ~0 over any pale basemap surface
+// (major-road fills sit 100+ from gold). (First shipped with a PIL helper;
+// the shard runners have no Pillow - gate round 3 caught it.)
+const pngB64 = fs.readFileSync('/tmp/drive214-vne.png').toString('base64');
 let scan = {};
-try { scan = JSON.parse(execSync(`python3 /tmp/drive214-scan.py /tmp/drive214-vne.png '${JSON.stringify(proj)}' '${JSON.stringify(EP.gold || '#ffc233')}' '${EP.iw || 1280}'`).toString().trim()); } catch (e) { scan = { err: String(e).slice(0, 200) }; }
+try {
+  scan = await ev(`(async () => {
+    const img = new Image();
+    await new Promise((res, rej) => { img.onload = res; img.onerror = rej; img.src = 'data:image/png;base64,${pngB64}'; });
+    const cv = document.createElement('canvas'); cv.width = img.width; cv.height = img.height;
+    const ctx = cv.getContext('2d'); ctx.drawImage(img, 0, 0);
+    const gold = '${EP.gold || '#ffc233'}';
+    const gr = parseInt(gold.slice(1, 3), 16), gg = parseInt(gold.slice(3, 5), 16), gb = parseInt(gold.slice(5, 7), 16);
+    const span = Math.hypot(gr - 204, gg - 204, gb - 204);
+    const scale = img.width / ${EP.iw || 1280};
+    const pts = ${JSON.stringify(proj)};
+    const out = {};
+    for (const [k, [x, y]] of Object.entries(pts)) {
+      const cxp = Math.round(x * scale), cyp = Math.round(y * scale), r = Math.max(4, Math.round(6 * scale));
+      const x0 = Math.max(0, cxp - r), y0 = Math.max(0, cyp - r), w = Math.min(img.width, cxp + r + 1) - x0, h = Math.min(img.height, cyp + r + 1) - y0;
+      if (w <= 0 || h <= 0) { out[k] = 0; continue; }
+      const d = ctx.getImageData(x0, y0, w, h).data;
+      let sr = 0, sg = 0, sb = 0; const tot = w * h;
+      for (let i = 0; i < d.length; i += 4) { sr += d[i]; sg += d[i + 1]; sb += d[i + 2]; }
+      const dist = Math.hypot(sr / tot - gr, sg / tot - gg, sb / tot - gb);
+      out[k] = Math.round(Math.max(0, 1 - dist / span) * 1000) / 1000;
+    }
+    return out;
+  })()`);
+} catch (e) { scan = { err: String(e).slice(0, 200) }; }
 ok('E1 rendered: 22 m inside the join the Valeria paint is solid muted gold (similarity >= 0.8) | ' + JSON.stringify(scan) + ' proj=' + JSON.stringify(proj) + ' cam=' + JSON.stringify(await J(`(() => ({ c: [map.getCenter().lat, map.getCenter().lng], z: map.getZoom() }))()`)),
   typeof scan.solid === 'number' && scan.solid >= 0.8);
 ok('E2 rendered: mid-fade (7.5 m inside the join) the gold is present but weakened by the gradient (0.15 < similarity, and clearly below solid) | ' + JSON.stringify(scan),
