@@ -1,5 +1,7 @@
 import { launchDrive, finish } from './harness.mjs';
+import fs from 'node:fs';
 const { proc, send, S, ev, consoleLog, sleep, poll } = await launchDrive();
+const INDEXFX = JSON.parse(fs.readFileSync(new URL('../../packs/index.json', import.meta.url), 'utf8'));
 
 // drive213: /correct Phase 2, round C10 - the shipped form must match
 // Andrew's APPROVED form, measured rendered, not asserted from the
@@ -32,12 +34,23 @@ const ok = (name, cond) => R.checks.push([name, cond === true]);
 const J = async (expr) => { const raw = await ev(`(() => { try { return JSON.stringify((${expr})); } catch (e) { return JSON.stringify({ __err: String(e && e.message || e) }); } })()`); return typeof raw === 'string' ? JSON.parse(raw) : {}; };
 
 // ---------- B first: the cold-open Select City, in boot mode ----------
+// The catalogue must be POPULATED for these measurements (Codex P2 on
+// PR #148): this harness serves the app over file://, where
+// packs/index.json is unreachable, so without help the list renders
+// its unavailable-library note and the "picker" being measured is an
+// empty container. The stub below answers the catalogue fetch with
+// the SHIPPED index (read from the repo, inlined) and the cached
+// failed load is reset so the warm re-fires through it - the same
+// seam drive181's stubs use.
 await poll(`typeof loadRoute === 'function'`, 20000);
 await poll(`!!window.__bootAt`, 30000);
+await ev(`(() => { const IX = ${JSON.stringify(INDEXFX)}; const orig = window.fetch.bind(window); window.fetch = (u, o) => { if (String(u).indexOf('packs/index.json') >= 0) return Promise.resolve(new Response(JSON.stringify(IX), { status: 200, headers: { 'Content-Type': 'application/json' } })); return orig(u, o); }; crPackIndexP = null; crPackIndexKnown = false; crWarmCityLibrary(); return true; })()`);
+await poll(`crPackIndexKnown === true`, 10000);
 await ev(`document.getElementById('rmCreate').click()`);
 await poll(`document.getElementById('rmCreatePane').classList.contains('on')`, 10000);
 await ev(`document.getElementById('crDoorList').click()`);
 const paneB = await poll(`document.getElementById('rmCityListPane').classList.contains('on')`, 10000).catch(() => false);
+const rowsB = await poll(`document.querySelectorAll('#crCityList .routeRow').length === ${INDEXFX.cities.length}`, 15000).catch(() => false);
 await sleep(600); // let the pane's entrance settle before measuring
 const B = await J(`(() => {
   const menu = document.getElementById('routeMenu');
@@ -45,17 +58,22 @@ const B = await J(`(() => {
   const list = document.getElementById('crCityList');
   const snow = document.getElementById('snowCv');
   const cs = getComputedStyle(pane);
-  const mr = menu.getBoundingClientRect(), lr = list.getBoundingClientRect();
+  const mr = menu.getBoundingClientRect(), lr = list.getBoundingClientRect(), pr = pane.getBoundingClientRect();
+  let gT = Infinity, gB = -Infinity;
+  for (const el of pane.children) { const r = el.getBoundingClientRect(); if (r.height > 0) { gT = Math.min(gT, r.top); gB = Math.max(gB, r.bottom); } }
   return { boot: menu.classList.contains('boot'), snowAway: snow ? snow.classList.contains('away') : null,
     bgImg: cs.backgroundImage, radius: cs.borderRadius, shadow: cs.boxShadow,
-    listCx: lr.left + lr.width / 2, listW: lr.width, menuCx: mr.left + mr.width / 2 };
+    listCx: lr.left + lr.width / 2, listW: lr.width, menuCx: mr.left + mr.width / 2,
+    grpCy: (gT + gB) / 2, paneCy: pr.top + pr.height / 2 };
 })()`);
 ok('B1 (approved form: no snow behind a menu) at the cold-open Select City the snowfall canvas is AWAY - snow lives on the splash/load screens only, never behind a menu pane (the 1.238 exemption kept it live behind this one pane) | ' + JSON.stringify(B),
   paneB === true && B.boot === true && B.snowAway === true);
 ok('B2 (approved form: the plain menu, not a floating sheet) the Select City pane wears NO sheet form - transparent over the menu\'s own ground, square corners, no shadow (the 1.236-1.238 sheet wore the gradient itself at 26px radius with a shadow, floating over the scene) | ' + JSON.stringify(B),
   B.bgImg === 'none' && B.radius === '0px' && B.shadow === 'none');
-ok('B3 (approved form: the centred block, 1.241) the city list block sits centred in the menu | ' + JSON.stringify(B),
-  B.listW > 200 && Math.abs(B.listCx - B.menuCx) <= 3);
+ok('B3 (approved form: the centred block, 1.241 - horizontal) with the catalogue POPULATED (' + INDEXFX.cities.length + ' city rows rendered), the city list block sits centred in the menu | rows=' + rowsB + ' ' + JSON.stringify(B),
+  rowsB === true && B.listW > 200 && Math.abs(B.listCx - B.menuCx) <= 3);
+ok('B4 (approved form: the centred block, 1.241 - vertical) the whole group (title, list, Back) sits centred vertically in the pane - the pre-1.241 top-aligned layout fails this even though its horizontal centre is unchanged (Codex P2 on PR #148) | ' + JSON.stringify(B),
+  Math.abs(B.grpCy - B.paneCy) <= 6);
 
 // ---------- load 5W for the tab-mode surfaces ----------
 await ev(`document.querySelector('#rmCityListBack') ? document.getElementById('rmCityListBack').click() : true`);
