@@ -97,6 +97,17 @@ with tempfile.TemporaryDirectory() as td:
               md_family="7 8",
               all_drives=("drive1", "drive2", "drive3", "drive4",
                           "drive5", "drive6", "drive7"))), 1)
+    check("tier-map: a drive file in no roster fails (completeness)",
+          run("check-tier-map.py", tm_tree(
+              t / "unregistered",
+              files=("drive1", "drive2", "drive3", "drive4", "drive5",
+                     "drive6", "drive7", "drive8", "drive9"))), 1)
+    check("tier-map: an ALL entry with no drive file fails (completeness)",
+          run("check-tier-map.py", tm_tree(
+              t / "phantom",
+              all_drives=("drive1", "drive2", "drive3", "drive4",
+                          "drive5", "drive6", "drive7", "drive8",
+                          "drive9"))), 1)
 
 # ----------------------------------------------------------- proof coverage
 def pc_tree(base, *, manifest, files):

@@ -16,6 +16,17 @@ and nothing checked either. This guard proves, on every build-and-test:
      the pair is kept in step by machine, not by intention.
   3. Every quarantined drive (tests/quarantine.json) names a real drive.
 
+  4. The roster is complete against the disk (/correct Phase 2, C4):
+     every drive file on disk (tests/browser/drive*.mjs) is registered
+     in run.mjs ALL, and every ALL entry has its file. Sections 1-3 all
+     start from a roster; a drive file in NO roster was invisible to
+     every guard - it ran nowhere, and because scripts/release.py
+     derives the README counts from ALL, it did not even skew the
+     counts. That is the disk side of the 2026-11-16 registration miss
+     (a5a94b2: drive201 reached its tier family but not ALL - section 1
+     covers that shape; this section covers the file nobody rostered
+     anywhere).
+
 Exits 0 on PASS, 1 on any mismatch. Run from the repo root; an optional
 argv[1] names another root (the verdict fixtures in
 scripts/gate-fixtures/ run this guard against synthetic trees).
@@ -63,6 +74,22 @@ for label, drives in rosters.items():
 for q in quar["quarantined"]:
     if not drive_file(q["drive"]):
         errors.append(f"quarantine: {q['drive']} has no file tests/browser/{q['drive']}.mjs")
+
+# 4. The roster is complete against the disk (/correct Phase 2, C4).
+disk_drives = sorted(
+    p.stem for p in (ROOT / "tests" / "browser").glob("drive*.mjs")
+    if re.fullmatch(r"drive\d+", p.stem))
+for d in disk_drives:
+    if d not in ALL:
+        errors.append(
+            f"completeness: {d}.mjs exists on disk but is not in run.mjs ALL - "
+            "it runs nowhere; register it in ALL, regenerate the shards "
+            "(scripts/gen-shards.py) and place it in tests/tier-map.json")
+for d in sorted(ALL):
+    if not drive_file(d):
+        errors.append(
+            f"completeness: {d} is in run.mjs ALL but has no file "
+            f"tests/browser/{d}.mjs")
 
 # 2. The JSON/MD pair agrees.
 md = (ROOT / "tests" / "TIER-MAP.md").read_text(encoding="utf-8")
