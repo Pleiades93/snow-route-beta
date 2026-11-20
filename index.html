@@ -2,7 +2,7 @@
 <html lang="en" class="boot">
 <head>
 <meta charset="UTF-8">
-<meta http-equiv="Content-Security-Policy" content="default-src 'none'; script-src 'sha384-CLfy52Z5gsYHHWV+ixNcr7Xj0KuY7z6pwrosSO4yGSJCRaA95AggAecm0Iguj0v6' https://cdn.jsdelivr.net/npm/maplibre-gl@4.7.1/dist/maplibre-gl.js; style-src-elem 'sha384-d/l/IXQqfXIFaGJZf14qBauOoZmVXzNyH9eaxZAb3sSblpfspu4Tu1q9IqwpR4v2' https://cdn.jsdelivr.net; style-src-attr 'unsafe-inline'; img-src 'self' data: blob: https://tiles.basemaps.cartocdn.com https://protomaps.github.io https://cdn.jsdelivr.net; connect-src 'self' https://tiles.basemaps.cartocdn.com https://protomaps.github.io https://cdn.jsdelivr.net https://nominatim.openstreetmap.org https://overpass-api.de https://overpass.kumi.systems; worker-src blob: 'self'; child-src blob: 'self'; font-src 'none'; manifest-src 'self'; base-uri 'none'; form-action 'none'; object-src 'none'">
+<meta http-equiv="Content-Security-Policy" content="default-src 'none'; script-src 'sha384-5jcqxUCkHFriZzEO9Ca8vdNZzQXeB5el4UwTQoJTYoTibq1FMZNVPvGMiF9bDuE/' https://cdn.jsdelivr.net/npm/maplibre-gl@4.7.1/dist/maplibre-gl.js; style-src-elem 'sha384-ejenvyCtuklaYoc1ms+3CWzqHAnmPGvF0dtuLE5CiOuKRd9JKoTdcchSyiI+bD2O' https://cdn.jsdelivr.net; style-src-attr 'unsafe-inline'; img-src 'self' data: blob: https://tiles.basemaps.cartocdn.com https://protomaps.github.io https://cdn.jsdelivr.net; connect-src 'self' https://tiles.basemaps.cartocdn.com https://protomaps.github.io https://cdn.jsdelivr.net https://nominatim.openstreetmap.org https://overpass-api.de https://overpass.kumi.systems; worker-src blob: 'self'; child-src blob: 'self'; font-src 'none'; manifest-src 'self'; base-uri 'none'; form-action 'none'; object-src 'none'">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="mobile-web-app-capable" content="yes">
@@ -145,6 +145,17 @@
   #selPop { position: fixed; top: calc(var(--vvt, 0px) + 144px + var(--sat)); left: 50%; transform: translateX(-50%); z-index: 1001; display: flex; align-items: center; gap: 8px; background: #ffffff; color: #14161a; border: 1px solid rgba(20,22,26,.08); padding: 13px 14px; border-radius: 16px; box-shadow: 0 8px 22px rgba(20,22,26,.13); flex-direction: column; align-items: stretch; gap: 7px; width: min(262px, 92vw); } /* Beta 1.209 (Andrew): the card wears LOOK 2, the sample he approved - a solid card (white by day), a hairline border, 16px radius, 13/14 padding and a soft drop shadow; the 1.30 glass + blur and the 1.32 street-colour left edge are retired (the edge's --accent feed in renderPanel goes with it). Beta 1.34 (Andrew): ONE fixed width, so the pop-up is the same size for one section or many - no growing/shrinking as the selection changes. Beta 1.215 (Andrew): the ONE fixed width narrows 342px -> 262px - his pick "C" from the width samples - so the centred card leaves the top-right corner (the Day/Night toggle, the re-centre button) clear beside it; the centring (left 50% + translateX(-50%)), the top (144) and the height (112.2) are unchanged, so the one-size invariant restates as 262 x 112.2 and the 1.214 re-centre drop (267 = 144 + 112.2 + 10.8) stands exactly as derived */ /* Beta 1.30: ONE selection pop-up (Andrew) - the multi-select pill he liked, widened into a card that also carries the old header strip's name/status/notes/mark actions */ /* Beta 1.168 (Andrew): the top drops 54px -> 144px (+90) - the pop-up started above the Day/Night button (top 78 + 56 tall = bottom 134) and covered its left half (44px at 390 wide, 24px at 430); 144 lands the pop-up's top 10px below the button's bottom edge, measured in every selection state at 390x844 and 430x932 (the box is one fixed size, so one shift clears them all) */
   body.night #selPop { background: rgba(20,21,27,.97); color: #f2f3f5; border-color: rgba(255,255,255,.07); box-shadow: 0 8px 22px rgba(0,0,0,.4); } /* Beta 1.209 Look 2 night: near-solid charcoal, hairline white border, black shadow */
   #selPop.hidden { display: none; }
+  #confirmPill { position: fixed; top: 50%; left: 50%; transform: translate(-50%, -50%); z-index: 1200; width: min(262px, 92vw); background: #ffffff; color: #14161a; border: 1px solid rgba(20,22,26,.08); border-radius: 16px; box-shadow: 0 8px 22px rgba(20,22,26,.13); padding: 13px 14px; display: flex; flex-direction: column; gap: 7px; } /* Beta 1.255 (O-03, Andrew's pick A from the cancel-confirm samples): THE shared confirmation surface - the selection pill's own faces and box, centred on the viewport, no scrim (the pill floats scrim-free, and there is no outside-tap dismissal: only its two buttons answer). Day face here, night face below - both measured from #selPop itself, so the confirm can never drift from the pill it mirrors */
+  body.night #confirmPill { background: rgba(20,21,27,.97); color: #f2f3f5; border-color: rgba(255,255,255,.07); box-shadow: 0 8px 22px rgba(0,0,0,.4); }
+  #confirmPill.hidden { display: none; }
+  #confirmPill .cfTitle { font-size: 16px; font-weight: 800; line-height: 1.3; } /* the pill title's own type (#selName, Look 2) */
+  #confirmPill .cfSub { font-size: 12px; color: #6f757f; line-height: 1.35; } /* the pill sub-line's own type and grey (#selStatus) */
+  body.night #confirmPill .cfSub { color: #9aa0aa; }
+  #confirmPill .cfRow { display: flex; gap: 5px; margin-top: 2px; }
+  #confirmPill .cfRow button { flex: 1; border: none; border-radius: 11px; height: 42px; min-height: 42px; padding: 0 10px; font-size: 14.5px; font-weight: 700; cursor: pointer; touch-action: manipulation; white-space: nowrap; } /* the pill action buttons' geometry (42px / 11px / 14.5px-700) */
+  #confirmPill #cfKeep { background: rgba(20,22,26,.05); color: #14161a; } /* the ghost: the note button's day tint (#selNote) */
+  body.night #confirmPill #cfKeep { background: rgba(255,255,255,.06); color: #f2f3f5; }
+  #confirmPill #cfDanger { background: #e63a2e; color: #fff; } /* the app's destructive solid - the same red #paceCancel itself wears */
   #selPop button { border: 0; border-radius: 999px; padding: 7px 8px; font-size: 12px; font-weight: 700; cursor: pointer; touch-action: manipulation; min-height: 36px; white-space: nowrap; } /* tightened with the .selActs gap (8px -> 5px) and the card's side padding below: the four action buttons' min-content floor (358px) overflowed the card's 313px inner row and pushed Clear 31px past the card's edge at 390 wide (sweep re-run E-06) */
   #selPop #selAllBtn { background: rgba(6,180,130,.13); color: #087a5b; height: 42px; min-height: 42px; border-radius: 11px; font-size: 14.5px; padding: 0 12px; } /* Beta 1.209 Look 2: Mark both sides wears the action button's mint tint + 42px geometry, so the two mark buttons still share the one official green (drive128 M11) */
   body.night #selPop #selAllBtn { background: rgba(6,214,160,.15); color: #2fe0ae; }
@@ -660,7 +671,7 @@ html.theme-swap *, html.theme-swap *::before, html.theme-swap *::after { transit
 <div id="hud">
   <div id="warn">Not saving. Storage is full or blocked</div>
   <div class="row">
-    <div class="titleStack"><div class="title">Snow Route Beta</div><div class="ver" id="ver">Beta 1.254</div></div>
+    <div class="titleStack"><div class="title">Snow Route Beta</div><div class="ver" id="ver">Beta 1.255</div></div>
   </div>
   <div id="stats"></div>
 </div>
@@ -791,6 +802,7 @@ html.theme-swap *, html.theme-swap *::before, html.theme-swap *::after { transit
   <div id="cleanView" style="display:none"></div>
 </div>
 <div id="finModal" class="modal hidden"><div class="card"><h3>Finish this clean?</h3><p id="finMsg"></p><div class="row"><button id="finNo">✕</button><button id="finYes">Finish clean</button></div></div></div>
+<div id="confirmPill" class="hidden"><div class="cfTitle"></div><div class="cfSub"></div><div class="cfRow"><button id="cfKeep" type="button"></button><button id="cfDanger" type="button"></button></div></div>
 <div id="noteModal" class="modal hidden"><div class="card"><h3 id="noteTitle">Note</h3><textarea id="noteText"></textarea><div class="row"><button id="noteNo">✕</button><button id="noteYes">Save note</button></div></div></div>
 <div id="toast"></div>
 <script src="https://cdn.jsdelivr.net/npm/maplibre-gl@4.7.1/dist/maplibre-gl.js" integrity="sha384-SYKAG6cglRMN0RVvhNeBY0r3FYKNOJtznwA0v7B5Vp9tr31xAHsZC0DqkQ/pZDmj" crossorigin="anonymous"></script>
@@ -4727,7 +4739,7 @@ function renderPace() { // Beta 1.184 (Andrew): the approved redesign - This run
   }
   if (!any) html += '<div style="font-size:13px;color:var(--ink-dim);padding:4px 2px">No cleans saved yet. When you finish a clean and tap Finish, it lands here with its total time.</div>';
   $('pacePad').innerHTML = html;
-  const c = $('paceCancel'); if (c) c.addEventListener('click', () => { cancelStart(); closeSheets(); });
+  const c = $('paceCancel'); if (c) c.addEventListener('click', () => { askCancelStart(); }); // Beta 1.255 (O-03, Andrew's pick A): the tap ASKS now, through the shared confirmation surface (askCancelStart, below with showConfirm) - the discard itself is the unchanged one-tap path, run only by the pill's danger button
   $('pacePad').querySelectorAll('.histRow').forEach(r => r.addEventListener('click', () => openClean(+r.dataset.i)));
 }
 function showPaceMain() { // Beta 1.184: the Pace sheet main view - header + pace content visible, the clean detail hidden
@@ -4935,7 +4947,7 @@ function clearAllMarks() {
   if (!okClear.ok) toast('Storage problem - the clear could not be saved; marks may return on reload', 4200); // Beta 1.63 (audit F04)
 }
 $('clearBtn').addEventListener('click', () => { if (!tapGuard('clearBtn')) return; clearAllMarks(); });
-$('cancelStartBtn').addEventListener('click', () => { if (!tapGuard('cancelStartBtn')) return; cancelStart(); });
+$('cancelStartBtn').addEventListener('click', () => { if (!tapGuard('cancelStartBtn')) return; askCancelStart(); }); // Beta 1.255 (gate round 3, Codex P2): the dock's Cancel start asks through the same bound confirmation - through head 2 it still discarded in one tap, bypassing the Pace sheet's new question entirely
 $('resetBtn').addEventListener('click', () => {
   // Beta 1.110 (Andrew): the Yes/No pop-up below is the ONLY finish gate - the post-Finish Undo is removed, so this button never means anything but Finish.
   if (!tapGuard('resetBtn')) return;
@@ -4947,6 +4959,20 @@ $('resetBtn').addEventListener('click', () => {
 });
 $('finNo').addEventListener('click', () => $('finModal').classList.add('hidden'));
 $('finYes').addEventListener('click', () => { if (!tapGuard('finYes')) return; $('finModal').classList.add('hidden'); finishRun(); });
+// Beta 1.255 (O-03): THE shared confirmation surface (head.html #confirmPill -
+// the selection pill's faces and box, centred, no scrim). The app grew three
+// unrelated confirm patterns (the Finish modal, the Settings reset two-step,
+// the saved-clean two-tap arm); this is the ONE reusable surface new
+// confirmations take, first used by Cancel start. Buttons only: there is no
+// backdrop and no outside-tap dismissal, so a stray tap can neither confirm
+// nor dismiss. showConfirm replaces any pending question wholesale - the
+// stored danger callback is the only one the danger button can ever run.
+let confirmDangerCb = null;
+/** @param {{title: string, sub: string, keep: string, danger: string, onDanger: function(): void}} o @returns {void} */ function showConfirm(o) { const p = $('confirmPill'); p.querySelector('.cfTitle').textContent = o.title; p.querySelector('.cfSub').textContent = o.sub; $('cfKeep').textContent = o.keep; $('cfDanger').textContent = o.danger; confirmDangerCb = o.onDanger || null; p.classList.remove('hidden'); }
+/** @returns {void} */ function hideConfirm() { $('confirmPill').classList.add('hidden'); confirmDangerCb = null; }
+$('cfKeep').addEventListener('click', hideConfirm);
+$('cfDanger').addEventListener('click', () => { const f = confirmDangerCb; hideConfirm(); if (f) f(); });
+/** @returns {void} */ function askCancelStart() { const forRoute = activeRoute ? activeRoute.id : null; const forRun = runStart; showConfirm({ title: 'Cancel this run?', sub: 'All progress will be lost.', keep: 'Keep going', danger: 'Yes, cancel', onDanger: () => { if (runStart === forRun && (activeRoute ? activeRoute.id : null) === forRoute) { cancelStart(); closeSheets(); } } }); } // Beta 1.255: THE cancel-start ask - every entry point (the Pace sheet's button, the dock's button) routes through this one function, so the confirmation and its route+run binding can never cover one door and miss the other (gate round 3, Codex P2: the dock's #cancelStartBtn still discarded in one tap)
 function trailKm(sinceMs) {
   const sinceSec = Math.floor(sinceMs / 1000); // Beta 1.71 (audit B04): trail timestamps are whole seconds - the boundary is compared at the same precision, or a start mid-second discards the run's first legitimate segment (the map's trail filter has floored its boundary since 1.64)
   let d = 0;
@@ -6920,7 +6946,7 @@ $('stDel').addEventListener('click', async () => {
 });
 // ---- About ----
 const WHATSNEW = { // the curated in-app notes: plain words, LATEST RELEASE ONLY (Beta 1.114, Andrew: the accumulated list cluttered the About pane). A release REPLACES this entry with its own in the same change - it never accumulates; the full history lives in CHANGELOG.md, not the app
-  v: 'Beta 1.254', items: ["Eleven small fixes under the hood: storage, downloads, the wake lock and the snow scene."] }; // Beta 1.223 (Andrew): What's New entries are SHORT from now on - point form, one short plain line each, no prose paragraphs, no em dashes
+  v: 'Beta 1.255', items: ["Cancel start now asks first, so one tap cannot wipe a run by mistake."] }; // Beta 1.223 (Andrew): What's New entries are SHORT from now on - point form, one short plain line each, no prose paragraphs, no em dashes
 
 function renderAbout() {
   const cur = $('ver').textContent.trim();
@@ -6936,7 +6962,7 @@ $('aboutBack').addEventListener('click', () => showSetPane('setMainPane'));
 // acts as that dialog's Cancel / Not yet / Close (each is a plain hide - nothing gets committed).
 document.addEventListener('pointerdown', e => {
   const anySheet = !!document.querySelector('.sheet.open'); // Beta 1.77 (Andrew, live catch): ANY open sheet, read from the DOM - the hand-listed pair missed the Routes sheet in 1.76, so tapping away from it did nothing (and the tap fell through to the map)
-  if (anySheet && !e.target.closest('.sheet') && !e.target.closest('#hud') && !e.target.closest('.modal')) { closeSheets(); spendTap(400); } // Beta 1.30 (Andrew): the closing tap is spent here - the map never sees it
+  if (anySheet && !e.target.closest('.sheet') && !e.target.closest('#hud') && !e.target.closest('.modal') && !e.target.closest('#confirmPill')) { closeSheets(); spendTap(400); } // Beta 1.30 (Andrew): the closing tap is spent here - the map never sees it. Beta 1.255 (gate round 2, Codex P2): the confirmation pill is exempt like the modals - a real press on its buttons bubbles through here first, and without the exemption Keep going closed the sheet it was asked over before its own click landed
   // The two banners count as menus too (Andrew: ANY menu): a tap outside one is its Dismiss / Keep going.
   if (!$('suggest').classList.contains('hidden') && !e.target.closest('#suggest')) { $('suggest').classList.add('hidden'); spendTap(400); }
   if (!$('stale').classList.contains('hidden') && !e.target.closest('#stale')) { $('stale').classList.add('hidden'); spendTap(400); }
@@ -7321,6 +7347,7 @@ function resetSwitchSession() { // Beta 1.117 (F3/F4): the ONE reset block a rou
 function loadRoute(id) {
   const pack = ROUTE_PACKS.find(p => p.id === id); if (!pack) return;
   if (routeLoaded && activeRoute && activeRoute.id === id) return; // picking the route already loaded changes nothing (the Routes tab handler guards this too)
+  hideConfirm(); // Beta 1.255 (gate round 2, Codex P1): a route switch clears any pending confirmation - the scrim-free pill permits navigation while it is up, and its question belongs to the route and run it was asked over, never to the one switched to
   // Beta 1.117: loadRoute is BOTH the boot pick and the live switch (pre-1.117 a
   // `if (routeLoaded) return;` guard made it boot-only, and the Routes tab's pick
   // was a silent no-op - segregation audit F1-F4). SWITCH SEMANTICS (= a cold

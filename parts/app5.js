@@ -12,7 +12,7 @@ $('aboutBack').addEventListener('click', () => showSetPane('setMainPane'));
 // acts as that dialog's Cancel / Not yet / Close (each is a plain hide - nothing gets committed).
 document.addEventListener('pointerdown', e => {
   const anySheet = !!document.querySelector('.sheet.open'); // Beta 1.77 (Andrew, live catch): ANY open sheet, read from the DOM - the hand-listed pair missed the Routes sheet in 1.76, so tapping away from it did nothing (and the tap fell through to the map)
-  if (anySheet && !e.target.closest('.sheet') && !e.target.closest('#hud') && !e.target.closest('.modal')) { closeSheets(); spendTap(400); } // Beta 1.30 (Andrew): the closing tap is spent here - the map never sees it
+  if (anySheet && !e.target.closest('.sheet') && !e.target.closest('#hud') && !e.target.closest('.modal') && !e.target.closest('#confirmPill')) { closeSheets(); spendTap(400); } // Beta 1.30 (Andrew): the closing tap is spent here - the map never sees it. Beta 1.255 (gate round 2, Codex P2): the confirmation pill is exempt like the modals - a real press on its buttons bubbles through here first, and without the exemption Keep going closed the sheet it was asked over before its own click landed
   // The two banners count as menus too (Andrew: ANY menu): a tap outside one is its Dismiss / Keep going.
   if (!$('suggest').classList.contains('hidden') && !e.target.closest('#suggest')) { $('suggest').classList.add('hidden'); spendTap(400); }
   if (!$('stale').classList.contains('hidden') && !e.target.closest('#stale')) { $('stale').classList.add('hidden'); spendTap(400); }
@@ -397,6 +397,7 @@ function resetSwitchSession() { // Beta 1.117 (F3/F4): the ONE reset block a rou
 function loadRoute(id) {
   const pack = ROUTE_PACKS.find(p => p.id === id); if (!pack) return;
   if (routeLoaded && activeRoute && activeRoute.id === id) return; // picking the route already loaded changes nothing (the Routes tab handler guards this too)
+  hideConfirm(); // Beta 1.255 (gate round 2, Codex P1): a route switch clears any pending confirmation - the scrim-free pill permits navigation while it is up, and its question belongs to the route and run it was asked over, never to the one switched to
   // Beta 1.117: loadRoute is BOTH the boot pick and the live switch (pre-1.117 a
   // `if (routeLoaded) return;` guard made it boot-only, and the Routes tab's pick
   // was a silent no-op - segregation audit F1-F4). SWITCH SEMANTICS (= a cold

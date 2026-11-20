@@ -104,6 +104,7 @@ await tapById(ev, 'startBtn');
 await waitTrue(poll, `!!runStart && getComputedStyle($('count')).visibility === 'visible'`, 10000);
 const N1 = await J(SNAP);
 await tapById(ev, 'cancelStartBtn');
+await tapById(ev, 'cfDanger'); // Beta 1.255 PREMISE UPDATE: a UI Cancel start asks first now (the shared confirmation pill, O-03) - the dock tap opens the question and its danger button completes the cancel this section grades. (P7 above cancels by direct function call and is unchanged.)
 await waitTrue(poll, `!runStart && getComputedStyle($('count')).visibility === 'hidden'`, 10000);
 const N2 = await J(SNAP);
 ok('P8 night: hidden idle, shown running, hidden after cancel; circle pixel-identical | ' + JSON.stringify({ N0, N1, N2 }),

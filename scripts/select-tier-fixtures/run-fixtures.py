@@ -39,11 +39,11 @@ MAP19 = ["drive115", "drive116", "drive121", "drive127", "drive128", "drive129",
          "drive130", "drive131", "drive133", "drive141", "drive148", "drive149",
          "drive160", "drive161", "drive165", "drive168", "drive174", "drive180",
          "drive182"]
-SESSION26 = ["drive83", "drive86", "drive88", "drive114", "drive118", "drive125",
+SESSION27 = ["drive83", "drive86", "drive88", "drive114", "drive118", "drive125",
              "drive131", "drive135", "drive136", "drive140", "drive145", "drive146",
              "drive147", "drive159", "drive160", "drive161", "drive162", "drive163",
              "drive168", "drive169", "drive170", "drive174", "drive180", "drive184",
-             "drive203", "drive207"]
+             "drive203", "drive207", "drive210"] # Beta 1.255: drive210 (cancel-start confirmation) joins the session family - the pinned roster rolls with it (the SESSION26 -> SESSION27 step, same as 25 -> 26 at 1.252)
 
 # (label, files, expected tier, expected full-battery flag, expected drives check or None)
 # want_drive: a drive name = membership; [] = the set must be empty; None = unchecked.
@@ -85,7 +85,7 @@ EXACT_CASES = [
     ("Tier B map selection is exactly map family + core (protocol section 3)",
      ["parts/engine.js"], "B", MAP19),
     ("Tier B session selection is exactly session family + core, quarantine applied",
-     ["parts/app4.js"], "B", SESSION26),
+     ["parts/app4.js"], "B", SESSION27),
     ("a touched quarantined drive runs, core rides along: drive89 + the six core",
      ["tests/browser/drive89.mjs"], "B", sorted(["drive89"] + CORE)),
     ("a touched quarantined drive joins a family selection untouched by quarantine",

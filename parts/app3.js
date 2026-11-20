@@ -123,7 +123,7 @@ function renderPace() { // Beta 1.184 (Andrew): the approved redesign - This run
   }
   if (!any) html += '<div style="font-size:13px;color:var(--ink-dim);padding:4px 2px">No cleans saved yet. When you finish a clean and tap Finish, it lands here with its total time.</div>';
   $('pacePad').innerHTML = html;
-  const c = $('paceCancel'); if (c) c.addEventListener('click', () => { cancelStart(); closeSheets(); });
+  const c = $('paceCancel'); if (c) c.addEventListener('click', () => { askCancelStart(); }); // Beta 1.255 (O-03, Andrew's pick A): the tap ASKS now, through the shared confirmation surface (askCancelStart, below with showConfirm) - the discard itself is the unchanged one-tap path, run only by the pill's danger button
   $('pacePad').querySelectorAll('.histRow').forEach(r => r.addEventListener('click', () => openClean(+r.dataset.i)));
 }
 function showPaceMain() { // Beta 1.184: the Pace sheet main view - header + pace content visible, the clean detail hidden
@@ -331,7 +331,7 @@ function clearAllMarks() {
   if (!okClear.ok) toast('Storage problem - the clear could not be saved; marks may return on reload', 4200); // Beta 1.63 (audit F04)
 }
 $('clearBtn').addEventListener('click', () => { if (!tapGuard('clearBtn')) return; clearAllMarks(); });
-$('cancelStartBtn').addEventListener('click', () => { if (!tapGuard('cancelStartBtn')) return; cancelStart(); });
+$('cancelStartBtn').addEventListener('click', () => { if (!tapGuard('cancelStartBtn')) return; askCancelStart(); }); // Beta 1.255 (gate round 3, Codex P2): the dock's Cancel start asks through the same bound confirmation - through head 2 it still discarded in one tap, bypassing the Pace sheet's new question entirely
 $('resetBtn').addEventListener('click', () => {
   // Beta 1.110 (Andrew): the Yes/No pop-up below is the ONLY finish gate - the post-Finish Undo is removed, so this button never means anything but Finish.
   if (!tapGuard('resetBtn')) return;
@@ -343,6 +343,20 @@ $('resetBtn').addEventListener('click', () => {
 });
 $('finNo').addEventListener('click', () => $('finModal').classList.add('hidden'));
 $('finYes').addEventListener('click', () => { if (!tapGuard('finYes')) return; $('finModal').classList.add('hidden'); finishRun(); });
+// Beta 1.255 (O-03): THE shared confirmation surface (head.html #confirmPill -
+// the selection pill's faces and box, centred, no scrim). The app grew three
+// unrelated confirm patterns (the Finish modal, the Settings reset two-step,
+// the saved-clean two-tap arm); this is the ONE reusable surface new
+// confirmations take, first used by Cancel start. Buttons only: there is no
+// backdrop and no outside-tap dismissal, so a stray tap can neither confirm
+// nor dismiss. showConfirm replaces any pending question wholesale - the
+// stored danger callback is the only one the danger button can ever run.
+let confirmDangerCb = null;
+/** @param {{title: string, sub: string, keep: string, danger: string, onDanger: function(): void}} o @returns {void} */ function showConfirm(o) { const p = $('confirmPill'); p.querySelector('.cfTitle').textContent = o.title; p.querySelector('.cfSub').textContent = o.sub; $('cfKeep').textContent = o.keep; $('cfDanger').textContent = o.danger; confirmDangerCb = o.onDanger || null; p.classList.remove('hidden'); }
+/** @returns {void} */ function hideConfirm() { $('confirmPill').classList.add('hidden'); confirmDangerCb = null; }
+$('cfKeep').addEventListener('click', hideConfirm);
+$('cfDanger').addEventListener('click', () => { const f = confirmDangerCb; hideConfirm(); if (f) f(); });
+/** @returns {void} */ function askCancelStart() { const forRoute = activeRoute ? activeRoute.id : null; const forRun = runStart; showConfirm({ title: 'Cancel this run?', sub: 'All progress will be lost.', keep: 'Keep going', danger: 'Yes, cancel', onDanger: () => { if (runStart === forRun && (activeRoute ? activeRoute.id : null) === forRoute) { cancelStart(); closeSheets(); } } }); } // Beta 1.255: THE cancel-start ask - every entry point (the Pace sheet's button, the dock's button) routes through this one function, so the confirmation and its route+run binding can never cover one door and miss the other (gate round 3, Codex P2: the dock's #cancelStartBtn still discarded in one tap)
 function trailKm(sinceMs) {
   const sinceSec = Math.floor(sinceMs / 1000); // Beta 1.71 (audit B04): trail timestamps are whole seconds - the boundary is compared at the same precision, or a start mid-second discards the run's first legitimate segment (the map's trail filter has floored its boundary since 1.64)
   let d = 0;

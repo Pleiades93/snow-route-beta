@@ -70,8 +70,8 @@ check('12: the tier minzooms stand (which labels show is unchanged)',
 check('13: the CHANGELOG top entry is Beta 1.248',
   changelog.indexOf('## Beta 1.248') > -1 && changelog.indexOf('## Beta 1.248') < changelog.indexOf('## Beta 1.247'));
 check('14: the What\'s New bullet is the round\'s own line, within the 108-char cap, em-dash free',
-  whatsnew.includes('Eleven small fixes under the hood: storage, downloads, the wake lock and the snow scene.') &&
-  'Eleven small fixes under the hood: storage, downloads, the wake lock and the snow scene.'.length <= 108 &&
+  whatsnew.includes('Cancel start now asks first, so one tap cannot wipe a run by mistake.') &&
+  'Cancel start now asks first, so one tap cannot wipe a run by mistake.'.length <= 108 &&
   !whatsnew.includes('—'));
 
 console.log(`proof-1248: ${pass} passed, ${fail} failed`);
