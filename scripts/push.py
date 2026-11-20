@@ -27,17 +27,21 @@ This wrapper makes both shapes impossible rather than discouraged:
               artifacts must be FRESH: scripts/build-pages.py --check
               must pass, so what is pushed is what the parts build.
   push  - runs plan, then a PREFLIGHT against the target branch:
-          every parts/ file whose local blob differs from the
-          branch's must be in the set - the derived artifacts were
-          built from ALL local parts, so pushing a subset would
-          leave the remote tree holding derived files its own parts
-          do not assemble to (Codex P2 on PR #146). Then it delegates
-          the transport to the connector helper (explicit
-          --repo snow-route-beta and --branch, every pair local=remote
-          identical), and VERIFIES THE PUSHED TREE: the new head's
-          blob for every pushed path must equal the local file's
-          blob. The verification anchor is the remote tree, never
-          the local one.
+          the PROSPECTIVE remote tree (the branch's tree overlaid
+          with this push set) must pass scripts/build-pages.py
+          --check. The derived artifacts were built from every local
+          assembly input - parts/, the splash artwork, CHANGELOG.md,
+          and whatever else the assembler reads - so any input that
+          differs from the branch but is not pushed would strand
+          them over inputs that do not build them (Codex P2s on
+          PR #146; the check is over the whole tree, not an input
+          list, so a future input is covered the day it exists).
+          Then it delegates the transport to the connector helper
+          (explicit --repo snow-route-beta and --branch, every pair
+          local=remote identical), and VERIFIES THE PUSHED TREE:
+          the new head's blob for every pushed path must equal the
+          local file's blob. The verification anchor is the remote
+          tree, never the local one.
 
 Usage:
   python3 scripts/push.py plan <root> --branch B --message M <path>...
@@ -153,26 +157,72 @@ def remote_blobs(gh, branch):
     return head, {e["path"]: e["sha"] for e in tree.get("tree", []) if e.get("type") == "blob"}
 
 
+def local_blob_map(root):
+    out = {}
+    for dirpath, dirnames, filenames in os.walk(root):
+        dirnames[:] = [d for d in dirnames if d not in SKIP_DIRS]
+        for name in filenames:
+            p = Path(dirpath) / name
+            out[p.relative_to(root).as_posix()] = blob_sha(p)
+    return out
+
+
+def preflight_prospective(root, gh, branch, resolved):
+    """The tree this push would CREATE must itself build. Returns an
+    error string or None. Only inputs that differ from the branch and
+    are NOT in the set can make the prospective tree differ from the
+    local one; those are overlaid with their branch blobs in a temp
+    copy and build-pages --check is run there."""
+    if not any(p.startswith("parts/") or p in DERIVED_FOR_PARTS for p in resolved):
+        return None
+    _, remote = remote_blobs(gh, branch)
+    local = local_blob_map(root)
+    # The prospective tree is the branch's tree plus this set. Three
+    # kinds of local content do not reach it unchanged: files whose
+    # branch blob differs (overlay the branch version), files the
+    # branch has that the local tree lacks (restore the branch
+    # version), and local-only files outside the set (drop them).
+    overlay = sorted(p for p in remote
+                     if p not in resolved and remote[p] != local.get(p))
+    drop = sorted(p for p in local if p not in resolved and p not in remote)
+    if not overlay and not drop:
+        return None  # prospective == local; plan's freshness check already judged it
+    import base64
+    import shutil
+    import tempfile
+    tmp = Path(tempfile.mkdtemp(prefix="push-prospective-"))
+    try:
+        shutil.copytree(root, tmp, dirs_exist_ok=True,
+                        ignore=shutil.ignore_patterns(".git", "node_modules", "__pycache__"))
+        base = f"/repos/Pleiades93/{REPO_SLUG}"
+        for rel in overlay:
+            blob = gh.api("GET", f"{base}/git/blobs/{remote[rel]}")
+            data = base64.b64decode(blob["content"])
+            dest = tmp / rel
+            dest.parent.mkdir(parents=True, exist_ok=True)
+            dest.write_bytes(data)
+        for rel in drop:
+            (tmp / rel).unlink(missing_ok=True)
+        proc = subprocess.run([sys.executable, str(tmp / "scripts" / "build-pages.py"), "--check"],
+                              cwd=tmp, capture_output=True, text=True, timeout=300)
+        if proc.returncode != 0:
+            tail = (proc.stdout + proc.stderr).strip().splitlines()
+            named = ", ".join(overlay + drop)
+            return ("the prospective remote tree does not build: file(s) that would not "
+                    "reach " + branch + " in their local form: " + named
+                    + " - the derived artifacts were built from the local tree. "
+                    "Push them too, or revert them locally. build-pages --check said: "
+                    + (tail[-1] if tail else "(no output)"))
+        return None
+    finally:
+        shutil.rmtree(tmp, ignore_errors=True)
+
+
 def do_push(root, branch, message, resolved):
     gh, helper = helper_module()
-    # Preflight: no assembly input may be left behind. The derived
-    # artifacts in the set were built from every local part; a part
-    # that differs from the branch but is not pushed would strand
-    # them over parts that do not assemble to them.
-    if any(p.startswith("parts/") for p in resolved):
-        _, remote = remote_blobs(gh, branch)
-        parts_dir = root / "parts"
-        omitted = []
-        for f in sorted(parts_dir.rglob("*")):
-            if f.is_file():
-                rel = f.relative_to(root).as_posix()
-                if rel not in resolved and remote.get(rel) != blob_sha(f):
-                    omitted.append(rel)
-        if omitted:
-            return fail("parts file(s) differ from " + branch + " but are not in the push "
-                        "set: " + ", ".join(omitted) + " - the derived artifacts were built "
-                        "from them; pushing a subset leaves the remote tree unbuildable. "
-                        "Push them too, or revert them locally.")
+    err = preflight_prospective(root, gh, branch, resolved)
+    if err:
+        return fail(err)
     pairs = [f"{p}={p}" for p in resolved]
     cmd = [sys.executable, helper, "--repo", REPO_SLUG, "--branch", branch,
            "push", "--message", message] + pairs
