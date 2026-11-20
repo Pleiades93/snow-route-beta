@@ -46,9 +46,20 @@ check('6: Cancel start asks through the surface with Andrew\'s copy, and the dan
   paceLine.includes('showConfirm({')
   && paceLine.includes("title: 'Cancel this run?'") && paceLine.includes("sub: 'All progress will be lost.'")
   && paceLine.includes("keep: 'Keep going'") && paceLine.includes("danger: 'Yes, cancel'")
-  && paceLine.includes('onDanger: () => { cancelStart(); closeSheets(); }'));
+  && paceLine.includes('cancelStart(); closeSheets();'));
 check('7: the old one-tap discard listener is gone',
   !app3.includes("c.addEventListener('click', () => { cancelStart(); closeSheets(); })"));
+// Gate round 2 (Codex P1 + P2, both real): the question is bound to its
+// route and run, a route switch clears it, and the pill is exempt from
+// the sheet click-away its buttons bubble through.
+const app5 = read('parts/app5.js');
+check('10 (gate P1): the ask captures the route and run, and the callback validates both before discarding',
+  paceLine.includes('const forRoute = activeRoute ? activeRoute.id : null; const forRun = runStart;')
+  && paceLine.includes('if (runStart === forRun && (activeRoute ? activeRoute.id : null) === forRoute) { cancelStart(); closeSheets(); }'));
+check('11 (gate P1): a route switch clears any pending confirmation',
+  app5.slice(app5.indexOf('function loadRoute(id) {'), app5.indexOf('function loadRoute(id) {') + 700).includes('hideConfirm();'));
+check('12 (gate P2): the sheet click-away handler exempts the confirmation pill',
+  app5.includes("!e.target.closest('#confirmPill')"));
 
 // ---------- the release editorial ----------
 check('8: the CHANGELOG top entry is Beta 1.255', changelog.includes('## Beta 1.255'));

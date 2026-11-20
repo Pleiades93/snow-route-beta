@@ -27,15 +27,22 @@ ok('F0 app boots with the map active', await poll120(`typeof glOk !== 'undefined
 // GPS stub (drive207's pattern): startClean starts GPS through the run.
 await ev(`(() => { navigator.geolocation.watchPosition = () => 4242; navigator.geolocation.clearWatch = () => {}; return true; })()`);
 
-// Pre-run progress: one street done BEFORE the run - the Start snapshot
-// holds it, and a cancel must restore exactly this board.
-await ev(`(() => { doneSet.add('Velmar'); saveAll(); return true; })()`);
+// Pre-run progress: one street done BEFORE the run, marked through the
+// app's own whole-street path (markStreet - the selection button's own
+// function; a bare doneSet.add writes no sides, and the board's load
+// path rebuilds the set from the sides record, so synthetic marks do
+// not survive a route switch - the round trip in section E grades the
+// real currency). The Start snapshot holds this board, and a cancel
+// must restore exactly it.
+await ev(`(() => { markStreet('Velmar', true); return true; })()`);
+await sleep(300);
 await ev(`$('startBtn').click(); true`);
 const started = await poll120(`typeof runStart !== 'undefined' && !!runStart`, 20000).catch(() => false);
 ok('S0 the run starts through the real Start button | started ' + started, started === true);
 // In-run progress: a second street marked during the run - the cancel
 // must revert this one and keep Velmar.
-await ev(`(() => { doneSet.add('Mellings'); saveAll(); return true; })()`);
+await ev(`(() => { markStreet('Mellings', true); return true; })()`);
+await sleep(300);
 await ev(`$('paceBtn').click(); true`);
 const paceReady = await poll(`!!$('paceCancel')`, 15000).catch(() => false);
 ok('S1 the Pace sheet opens with Cancel start on it | paceCancel ' + paceReady, paceReady === true);
@@ -43,6 +50,10 @@ const S0 = await J(`({ runStart, lsStart: localStorage.getItem(LS.start), lsSnap
 ok('S2 the run state is banked (start + snapshot records, both marks) | ' + JSON.stringify(S0), S0.lsStart !== null && S0.lsSnap === true && S0.done.length === 2);
 
 const pillState = async () => J(`(() => { const p = $('confirmPill'); const r = p.getBoundingClientRect(); const cs = getComputedStyle(p); return { hidden: p.classList.contains('hidden') || cs.display === 'none', w: r.width, vw: window.innerWidth, dx: (r.left + r.width / 2) - window.innerWidth / 2, dy: (r.top + r.height / 2) - window.innerHeight / 2, bg: cs.backgroundColor, title: p.querySelector('.cfTitle').textContent, sub: p.querySelector('.cfSub').textContent, keep: $('cfKeep').textContent, danger: $('cfDanger').textContent, dangerBg: getComputedStyle($('cfDanger')).backgroundColor }; })()`);
+// Real pointer input for the pill's buttons (Beta 1.255 gate round 2,
+// Codex P2): a bare .click() fires no pointerdown, so it cannot see the
+// document click-away handler that a real press bubbles through first.
+const pressEl = async (id) => { const pt = await J(`(() => { const b = $('${id}'); if (!b) return null; const q = b.getBoundingClientRect(); return { x: q.left + q.width / 2, y: q.top + q.height / 2 }; })()`); if (!pt || pt.__err || typeof pt.x !== 'number') return false; await send('Input.dispatchMouseEvent', { type: 'mousePressed', x: pt.x, y: pt.y, button: 'left', buttons: 1, clickCount: 1 }, S); await send('Input.dispatchMouseEvent', { type: 'mouseReleased', x: pt.x, y: pt.y, button: 'left', buttons: 0, clickCount: 1 }, S); return true; };
 
 // ---- (a) first tap: the pill shows, the run is untouched (DAY) ----
 await ev(`$('paceCancel').click(); true`);
@@ -66,14 +77,43 @@ ok('B1 an outside tap leaves the pill up and the run live (buttons only) | hidde
   P2.hidden === false && afterOutside.runStart === S0.runStart);
 
 // ---- (c) Keep going dismisses; the run continues ----
-await ev(`(() => { const b = $('cfKeep'); if (b) b.click(); return true; })()`); // null-safe: on a tree without the surface this drive fails its checks, it does not crash
+// A REAL press (pointerdown + up): the press must not trip the sheet
+// click-away on its way to the button (the surface is exempt, like the
+// sheets and modals) - with the exemption missing this press closes
+// the Pace sheet before the click lands and C1 fails.
+await pressEl('cfKeep');
 await sleep(300);
 const P3 = await pillState();
 const afterKeep = await J(`({ runStart, done: [...doneSet].sort(), paceOpen: $('pacePanel').classList.contains('open') })`);
 ok('C1 Keep going dismisses the pill and the run continues untouched, sheet still open | ' + JSON.stringify(afterKeep) + ', hidden ' + P3.hidden,
   P3.hidden === true && afterKeep.runStart === S0.runStart && JSON.stringify(afterKeep.done) === JSON.stringify(S0.done) && afterKeep.paceOpen === true);
 
-// ---- (d) second ask, in NIGHT: geometry + face, then Yes, cancel ----
+// ---- (e) a route switch clears the pending question (gate P1) ----
+// The pill is scrim-free, so navigation stays possible while it is up:
+// ask on 5W, switch to another route, and the question must be GONE -
+// never answerable against the new route's state. The 5W run persists
+// whole in its own slot and resumes on the switch back, untouched.
+await ev(`$('paceCancel').click(); true`);
+const shownE = await poll(`!!$('confirmPill') && !$('confirmPill').classList.contains('hidden')`, 8000).catch(() => false);
+await ev(`(() => { const roads = { 'Proto Alpha': [[[43.8,-79.56],[43.81,-79.56]]] }; localStorage.setItem(USERPACKS_KEY, JSON.stringify({ 'proto-test': { name: 'Proto Test', area: 'Test', roads, reference: {} } })); mergeUserPacks(); loadRoute('proto-test'); return true; })()`);
+const switched = await poll(`typeof activeRoute !== 'undefined' && activeRoute && activeRoute.id === 'proto-test'`, 15000).catch(() => false);
+await sleep(400);
+const P5 = await pillState();
+ok('E1 asking on 5W then switching route clears the pill (no stale question rides the switch) | shown ' + shownE + ', switched ' + switched + ', hidden ' + P5.hidden,
+  shownE === true && switched === true && P5.hidden === true);
+await ev(`(() => { const b = $('cfDanger'); if (b) b.click(); return true; })()`); // the cleared callback must be a no-op even if the hidden button is prodded
+await ev(`(() => { loadRoute('5w'); return true; })()`);
+const backOn5w = await poll(`typeof activeRoute !== 'undefined' && activeRoute && activeRoute.id === '5w' && !!runStart`, 15000).catch(() => false);
+await sleep(400);
+const afterSwitch = await J(`({ runStart, lsStart: localStorage.getItem(LS.start), done: [...doneSet].sort() })`);
+ok('E2 back on 5W the run resumed whole - the stale danger press discarded nothing | ' + JSON.stringify(afterSwitch) + ', back ' + backOn5w,
+  backOn5w === true && afterSwitch.runStart === S0.runStart && afterSwitch.lsStart === S0.lsStart && JSON.stringify(afterSwitch.done) === JSON.stringify(S0.done));
+await ev(`(() => { localStorage.removeItem(USERPACKS_KEY); return true; })()`);
+await ev(`$('paceBtn').click(); true`);
+const paceBack = await poll(`!!$('paceCancel')`, 15000).catch(() => false);
+ok('E3 the Pace sheet reopens on 5W with Cancel start | paceCancel ' + paceBack, paceBack === true);
+
+// ---- (d) second ask, in NIGHT: geometry + face, the stale-run guard, then Yes, cancel ----
 await ev(`(() => { setThemeOverride(true); applyNight(); return true; })()`);
 const nightOn = await poll(`document.body.classList.contains('night')`, 8000).catch(() => false);
 await ev(`$('paceCancel').click(); true`);
@@ -81,11 +121,22 @@ const shownNight = await poll(`!!$('confirmPill') && !$('confirmPill').classList
 const P4 = await pillState();
 ok('D1 (night) the pill shows again, centred, wearing the night face | ' + JSON.stringify(P4) + ', night ' + nightOn,
   nightOn === true && shownNight === true && Math.abs(P4.dx) <= 2 && Math.abs(P4.dy) <= 2 && P4.bg === 'rgba(20, 21, 27, 0.97)');
-await ev(`(() => { const b = $('cfDanger'); if (b) b.click(); return true; })()`);
+// The question is bound to the run it was asked about (gate P1): forge
+// a different run underneath it and the danger press must refuse.
+await ev(`(() => { window.__realRunStart = runStart; runStart = runStart + 100000; return true; })()`);
+await pressEl('cfDanger');
+await sleep(400);
+const forged = await J(`({ runStart, lsStart: localStorage.getItem(LS.start), done: [...doneSet].sort(), pillHidden: $('confirmPill').classList.contains('hidden') })`);
+ok('D2 a danger press against a different run than the one asked about discards nothing | ' + JSON.stringify(forged),
+  forged.runStart === S0.runStart + 100000 && forged.lsStart === S0.lsStart && JSON.stringify(forged.done) === JSON.stringify(S0.done) && forged.pillHidden === true);
+await ev(`(() => { runStart = window.__realRunStart; return true; })()`);
+await ev(`$('paceCancel').click(); true`);
+await poll(`!!$('confirmPill') && !$('confirmPill').classList.contains('hidden')`, 8000).catch(() => false);
+await pressEl('cfDanger');
 const discarded = await poll120(`typeof runStart !== 'undefined' && !runStart`, 15000).catch(() => false);
 await sleep(600); // the sheet's close animation settles
 const afterYes = await J(`({ lsStart: localStorage.getItem(LS.start), lsSnap: localStorage.getItem(LS.snap), done: [...doneSet].sort(), pillHidden: $('confirmPill').classList.contains('hidden'), paceOpen: $('pacePanel').classList.contains('open') })`);
-ok('D2 Yes, cancel discards exactly as the one-tap path did (run + snapshot records gone, pre-run board restored, in-run mark reverted, pill and sheet closed) | ' + JSON.stringify(afterYes) + ', discarded ' + discarded,
+ok('D3 Yes, cancel discards exactly as the one-tap path did (run + snapshot records gone, pre-run board restored, in-run mark reverted, pill and sheet closed) | ' + JSON.stringify(afterYes) + ', discarded ' + discarded,
   discarded === true && afterYes.lsStart === null && afterYes.lsSnap === null
   && JSON.stringify(afterYes.done) === JSON.stringify(['Velmar']) && afterYes.pillHidden === true && afterYes.paceOpen === false);
 
