@@ -676,6 +676,19 @@ locally, first:
    in the flake log — the Beta 1.132 label rename expired three drives
    silently, and this step exists so that class of surprise cannot
    recur unnoticed.
+6. **Assertions are observed failing first (/correct Phase 2, C9).** A
+   new or changed assertion counts only after it has been SEEN to fail
+   for the reason it exists — against the historical tree that carries
+   the real past mistake, or under a named mutation of the current
+   tree — and then seen to pass with the fix in place. An assertion
+   never observed failing is decoration: it may be asserting a form
+   the code never produces (drive133's S13a strict-false against a
+   copy-or-null return, 166e500), or accepting both the correct
+   behaviour and the defect (drive206's P3a window passed the correct
+   ~1 650 ms flowing-window kill and the sawByte mutation's ~3 150 ms
+   first-byte kill alike until C9 capped it below the first-byte
+   bound). The mutation or historical run is recorded in the change's
+   report, not just performed.
 
 ## Honest limitations
 
