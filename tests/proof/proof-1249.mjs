@@ -91,10 +91,10 @@ check('15: the grid stall still drops the cached pack promise (the abandonment s
   cache.includes('delete crPackLoads[g.fromPack]'));
 
 // ---------- the release editorial ----------
-check('16: the CHANGELOG top entry is Beta 1.249', changelog.includes('## Beta 1.249'));
-check('17: What\'s New carries the 1.249 bullet, short and dash-free',
-  whatsnew.includes('A stuck city download now retries instead of hanging.')
-  && 'A stuck city download now retries instead of hanging.'.length <= 108
+check('16: the CHANGELOG top entry is Beta 1.250', changelog.includes('## Beta 1.250'));
+check('17: What\'s New carries the 1.250 bullet, short and dash-free',
+  whatsnew.includes('An interrupted finish can no longer erase older cleans from your history.')
+  && 'An interrupted finish can no longer erase older cleans from your history.'.length <= 108
   && !whatsnew.includes('—'));
 
 console.log(`proof-1249: ${pass} passed, ${fail} failed`);

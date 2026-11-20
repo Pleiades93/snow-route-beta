@@ -706,7 +706,7 @@ BOARD.loadSides();
   const boardEmpty = STREETNAMES.every(n => pieces[n].every(v => v === 0));
   const dropPhantom = () => { // the verified rollback write: storage loses the signature entry only (when the signature came from the raw array, everything else storage holds stays byte-for-byte - a load-time strip is a view, never a write); memory drops the phantom too when the sanitized tail IS that entry (same run identity), and needs no drop when the sanitizer already removed it
     const src = (sig === rawLast && rawLast !== null) ? rawList : history;
-    if (!txSet(LS.hist, JSON.stringify(src.slice(0, -1))).ok) return false;
+    if (!txSet(LS.hist, JSON.stringify(src === rawList ? src.slice(0, -1) : historyForWrite(src.slice(0, -1)))).ok) return false; // Beta 1.250 (cross-audit fix round, N-03): the FALLBACK branch (raw tail not an entry object, so the signature stands in the sanitized view) used to write the bare view slice - permanently stripping every raw entry the sanitizer had dropped the moment this write landed, if the page closed before an ordinary save could restore them. It now writes the historyForWrite merge like every other history writer (A-05): the phantom, a surviving entry missing from the slice, stays deleted; the dropped raw entries ride back verbatim
     if (src === rawList && histRawList === rawList) { histRawList.pop(); histRawView.pop(); } // 2026-11-15 (A-05): the A-05 snapshot pops in step with the raw array this write just shortened, so a later ordinary save cannot resurrect the phantom from the snapshot
     if (last && last.runId && +last.runId === lastMs) history = history.slice(0, -1);
     return true;

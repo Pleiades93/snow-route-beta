@@ -57,9 +57,9 @@ check('6: the create text boxes keep their white pills',
 // ---------- the release editorial ----------
 check('7: the CHANGELOG top entry is Beta 1.247',
   changelog.indexOf('## Beta 1.247') > -1 && changelog.indexOf('## Beta 1.247') < changelog.indexOf('## Beta 1.246'));
-check('8: What\'s New carries the CURRENT entry\'s bullet (rolled to 1.249: this check tracks the current entry each round), within the 108-char cap, em-dash free',
-  whatsnew.includes('A stuck city download now retries instead of hanging.') &&
-  'A stuck city download now retries instead of hanging.'.length <= 108 &&
+check('8: What\'s New carries the CURRENT entry\'s bullet (rolled to 1.250: this check tracks the current entry each round), within the 108-char cap, em-dash free',
+  whatsnew.includes('An interrupted finish can no longer erase older cleans from your history.') &&
+  'An interrupted finish can no longer erase older cleans from your history.'.length <= 108 &&
   !whatsnew.includes('—'));
 
 console.log(`proof-1247: ${pass} passed, ${fail} failed`);
