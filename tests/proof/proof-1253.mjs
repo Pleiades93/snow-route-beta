@@ -82,8 +82,8 @@ check('13: crFailText keys the dense remedy on the failure source too (never on 
 // ---------- the release editorial ----------
 check('11: the CHANGELOG top entry is Beta 1.253', changelog.includes('## Beta 1.253'));
 check('12: What\'s New carries the 1.253 bullet, short and dash-free',
-  whatsnew.includes('Eleven small fixes under the hood: storage, downloads, the wake lock and the snow scene.')
-  && 'Eleven small fixes under the hood: storage, downloads, the wake lock and the snow scene.'.length <= 108
+  whatsnew.includes('Cancel start now asks first, so one tap cannot wipe a run by mistake.')
+  && 'Cancel start now asks first, so one tap cannot wipe a run by mistake.'.length <= 108
   && !whatsnew.includes('—'));
 
 console.log(`proof-1253: ${pass} passed, ${fail} failed`);
