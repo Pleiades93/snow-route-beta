@@ -93,8 +93,8 @@ check('15: the grid stall still drops the cached pack promise (the abandonment s
 // ---------- the release editorial ----------
 check('16: the CHANGELOG top entry is Beta 1.251', changelog.includes('## Beta 1.251'));
 check('17: What\'s New carries the 1.251 bullet, short and dash-free',
-  whatsnew.includes('Saved cities now check they match the current street pack before loading.')
-  && 'Saved cities now check they match the current street pack before loading.'.length <= 108
+  whatsnew.includes('Turning location back on no longer restarts it while it waits for a first fix.')
+  && 'Turning location back on no longer restarts it while it waits for a first fix.'.length <= 108
   && !whatsnew.includes('—'));
 
 console.log(`proof-1249: ${pass} passed, ${fail} failed`);
