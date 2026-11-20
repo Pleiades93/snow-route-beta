@@ -306,5 +306,43 @@ await repeats(500);
 ok('F4 R1 bites: at zoom 17 the frame renders fewer minor-road name repeats at spacing 500 than at the old default 250 | 500:' + rep500 + ' 250:' + rep250,
   typeof rep500 === 'number' && typeof rep250 === 'number' && rep500 < rep250);
 
+// F5 (gate fix, Codex P2 on PR #151): lane names must lie ALONG their roads.
+// text-rotate measures clockwise from the horizontal baseline; the anchor
+// bearing is a compass bearing - the stored ang must be bearing - 90,
+// normalized. Recomputed here from the run geometry, independently of the
+// builder's arithmetic. On the first shipped build ang == bearing and
+// every name lay across its street (this check fails there, by design).
+// The angles are read from the RENDERED lane features at the home framing
+// (querySourceFeatures reads the source tile cache, which is empty once
+// the camera leaves the lane's zoom band).
+await ev(`(() => { goHomeView(); return true; })()`);
+await poll(`!!(window.map && map.loaded())`, 30000);
+await sleep(1200);
+const orient = await J(`(() => {
+  const pack = ROUTE_PACKS.find(p => p.id === '5w');
+  const ord = { First: '1st', Second: '2nd', Third: '3rd', Fourth: '4th', Fifth: '5th', Sixth: '6th', Seventh: '7th', Eighth: '8th', Ninth: '9th', Tenth: '10th' };
+  const byName = {};
+  for (const f of map.queryRenderedFeatures({ layers: ['roads_labels_minor-route'] })) byName[f.properties.name] = f.properties.ang;
+  const feats = Object.entries(byName).map(([name, ang]) => ({ properties: { name, ang } }));
+  let checked = 0, worst = 0;
+  for (const f of feats) {
+    const key = Object.keys(STRETCH).find(n => (pack.tileNames.find(t => t.startsWith(n + ' ')) || pack.tileNames.find(t => t.startsWith((ord[n] || n) + ' ')) || n) === f.properties.name);
+    if (!key) return { checked, worst: 999 };
+    const st = STRETCH[key];
+    let run = st.runs[0]; for (const r of st.runs) if (r.total > run.total) run = r;
+    const L = run.line, cum = run.cum, mid = run.total / 2;
+    const at = d => { for (let i = 1; i < L.length; i++) { if (d <= cum[i] || i === L.length - 1) { const span = cum[i] - cum[i - 1] || 1; const t = Math.max(0, Math.min(1, (d - cum[i - 1]) / span)); return [L[i - 1][0] + (L[i][0] - L[i - 1][0]) * t, L[i - 1][1] + (L[i][1] - L[i - 1][1]) * t]; } } return L[L.length - 1]; };
+    const a = at(Math.max(0, mid - 8)), b = at(Math.min(run.total, mid + 8));
+    let exp = Math.atan2((b[1] - a[1]) * MLNG, (b[0] - a[0]) * MLAT) * 180 / Math.PI - 90;
+    while (exp > 90) exp -= 180; while (exp <= -90) exp += 180;
+    let d = Math.abs(f.properties.ang - exp); if (d > 180) d = 360 - d;
+    if (d > worst) worst = d;
+    checked++;
+  }
+  return { checked, worst };
+})()`);
+ok('F5 lane names lie along their roads: every stored angle is bearing - 90 (worst deviation ' + (orient.worst != null ? Math.round(orient.worst * 10) / 10 : '?') + ' deg over ' + orient.checked + ' names)',
+  orient.checked === 34 && orient.worst <= 1.5);
+
 R.exceptions = consoleLog.filter(l => l.type === 'EXCEPTION').map(l => l.text.slice(0, 200));
 finish(R, proc);

@@ -168,7 +168,7 @@ function glUnifyLabels(m) { // BASEMAP LABEL UNIFICATION (Andrew, Beta 1.6): the
           const L = run.line, cum = run.cum, mid = run.total / 2;
           const at = d => { for (let i = 1; i < L.length; i++) { if (d <= cum[i] || i === L.length - 1) { const span = cum[i] - cum[i - 1] || 1; const t = Math.max(0, Math.min(1, (d - cum[i - 1]) / span)); return [L[i - 1][0] + (L[i][0] - L[i - 1][0]) * t, L[i - 1][1] + (L[i][1] - L[i - 1][1]) * t]; } } return L[L.length - 1]; };
           const c = at(mid), a = at(Math.max(0, mid - 8)), b = at(Math.min(run.total, mid + 8)); // the road's bearing at the anchor, read over +-8 m so a single kink cannot swing the name
-          let ang = Math.atan2((b[1] - a[1]) * MLNG, (b[0] - a[0]) * MLAT) * 180 / Math.PI;
+          let ang = Math.atan2((b[1] - a[1]) * MLNG, (b[0] - a[0]) * MLAT) * 180 / Math.PI - 90; // atan2(east, north) is a compass bearing (clockwise from north); text-rotate measures clockwise from the horizontal baseline - the conversion is bearing - 90 (Beta 1.259 gate fix: as first shipped the raw bearing went in and every lane name lay ACROSS its street; drive214 F5 pins the conversion)
           while (ang > 90) ang -= 180; while (ang <= -90) ang += 180; // names never stand on their heads
           feats.push({ type: 'Feature', properties: { name: full, ang: Math.round(ang * 10) / 10 }, geometry: { type: 'Point', coordinates: [c[1], c[0]] } });
         }
