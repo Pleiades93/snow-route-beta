@@ -70,8 +70,8 @@ check('12: the tier minzooms stand (which labels show is unchanged)',
 check('13: the CHANGELOG top entry is Beta 1.248',
   changelog.indexOf('## Beta 1.248') > -1 && changelog.indexOf('## Beta 1.248') < changelog.indexOf('## Beta 1.247'));
 check('14: the What\'s New bullet is the round\'s own line, within the 108-char cap, em-dash free',
-  whatsnew.includes('In the create flow, the hint button label now always matches what tapping it does.') &&
-  'In the create flow, the hint button label now always matches what tapping it does.'.length <= 108 &&
+  whatsnew.includes('Eleven small fixes under the hood: storage, downloads, the wake lock and the snow scene.') &&
+  'Eleven small fixes under the hood: storage, downloads, the wake lock and the snow scene.'.length <= 108 &&
   !whatsnew.includes('—'));
 
 console.log(`proof-1248: ${pass} passed, ${fail} failed`);

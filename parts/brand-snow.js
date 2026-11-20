@@ -199,6 +199,7 @@
     var dt = Math.min(0.05, (ts - lastTs) / 1000);
     lastTs = ts;
     if (!sceneLive()) { if (++deadFrames > 45) { stop(); return; } } else deadFrames = 0;
+    if (cvS && cvS.classList.contains('away')) { raf = window.requestAnimationFrame(loop); return; } // Beta 1.254 (O-09): the canvas is hidden (.away - a menu sub-pane is up, showRmPane in app2.js) - skip the simulation and the paint entirely until the main pane returns. The scene is NOT dead (sceneLive stays true: the splash/menu are up), so nothing stops or restarts; lastTs already advanced, and dt clamps on the return frame
     clock += dt;
     var amount = settleAmount();
     var i, f;
@@ -225,7 +226,7 @@
   }
   resize();
   var area = W * H; // Beta 1.161: layer sizes follow the scene's area, so the approved sample's density is what any screen size sees
-  var nSpeck = Math.round(area / SPECK.per), nMid = Math.round(area / MID.per), nBlob = Math.max(4, Math.min(8, Math.round(area / BLOB.per)));
+  var nSpeck = Math.min(1000, Math.round(area / SPECK.per)), nMid = Math.round(area / MID.per), nBlob = Math.max(4, Math.min(8, Math.round(area / BLOB.per))); // Beta 1.254 (O-09): the speck count is CAPPED - the density (one per SPECK.per px) is unchanged on phone-size screens (under ~600,000 px of canvas), but an uncapped count billed very large screens thousands of specks per frame
   for (var i = 0; i < nSpeck; i++) specks.push(newSpeck(true));
   for (var j = 0; j < nMid; j++) mids.push(newMid(true));
   for (var k = 0; k < nBlob; k++) blobs.push(newBlob(true));

@@ -93,8 +93,8 @@ check('15: the grid stall still drops the cached pack promise (the abandonment s
 // ---------- the release editorial ----------
 check('16: the CHANGELOG top entry is Beta 1.251', changelog.includes('## Beta 1.251'));
 check('17: What\'s New carries the 1.251 bullet, short and dash-free',
-  whatsnew.includes('In the create flow, the hint button label now always matches what tapping it does.')
-  && 'In the create flow, the hint button label now always matches what tapping it does.'.length <= 108
+  whatsnew.includes('Eleven small fixes under the hood: storage, downloads, the wake lock and the snow scene.')
+  && 'Eleven small fixes under the hood: storage, downloads, the wake lock and the snow scene.'.length <= 108
   && !whatsnew.includes('—'));
 
 console.log(`proof-1249: ${pass} passed, ${fail} failed`);

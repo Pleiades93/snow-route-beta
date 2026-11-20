@@ -59,7 +59,7 @@ import sys
 
 POLICY_TEMPLATE = (
     "default-src 'none'; "
-    "script-src 'sha384-{script}' https://cdn.jsdelivr.net; "
+    "script-src 'sha384-{script}' https://cdn.jsdelivr.net/npm/maplibre-gl@4.7.1/dist/maplibre-gl.js; " # Beta 1.254 (O-08): script-src names the ONE library file the page loads, not the whole jsdelivr origin (any npm package was script-allowed through 1.253). The worker is unaffected: MapLibre spawns it from a blob, and worker-src below already carries blob:. style-src-elem keeps the origin for the matching CSS file - the finding and this narrowing are about script.
     "style-src-elem 'sha384-{style}' https://cdn.jsdelivr.net; "
     "style-src-attr 'unsafe-inline'; "
     "img-src 'self' data: blob: "
