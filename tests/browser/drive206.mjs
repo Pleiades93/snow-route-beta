@@ -28,6 +28,10 @@ import { startCreateRig, serveRepo, makeResults, finishCreate, sleep } from './h
 //   P2 a first byte inside the window, then bytes flowing inside the
 //      flowing window, completes from the ONE attempt - never killed.
 //   P3 bytes flow, then silence: killed on the flowing window, the
+//      (C9/A-01 tightening, /correct Phase 2: P3a's kill window is
+//      capped BELOW the first-byte bound, so the check discriminates
+//      WHICH window killed - the sawByte mutation's ~3 150 ms
+//      first-byte kill now fails it, where the old 7 000 cap passed)
 //      retry completes, the SAME cached promise resolves (it never
 //      rejected), and coverage committed before the load is untouched.
 //   P4 the killed attempt's poison chunk never enters the result, and
@@ -151,7 +155,7 @@ try {
     return { timeout: els === '__timeout', match: JSON.stringify(els) === window.__expected, calls: ats.length, killMs: ats.length > 1 ? ats[1] - ats[0] : -1,
       samePromise: crPackLoads.packc === p, covIntact: JSON.stringify({ boxes: crCov.boxes, names: Object.keys(crCov.byName), ids: Object.keys(crCov.byId) }) === covBefore };
   })()`);
-  ok('P3a a mid-flow silence is killed on the scaled flowing window (~150 ms of bytes + 1.5 s of silence) and the retry commits | ' + JSON.stringify(p3), p3.timeout === false && p3.match === true && p3.calls === 2 && p3.killMs >= 1400 && p3.killMs <= 7000);
+  ok('P3a a mid-flow silence is killed on the scaled flowing window (~150 ms of bytes + 1.5 s of silence) and the retry commits - the upper bound sits BELOW the scaled first-byte bound (2 600 < 3 000), so the kill must have come from the FLOWING window: with the read loop\'s sawByte assignment deleted (the R-04 mutation), the timer never leaves the first-byte window, the kill lands at ~3 150 ms and this check FAILS - the pre-C9 window (7 000) passed both, which was Codex A-01\'s blind spot | ' + JSON.stringify(p3), p3.timeout === false && p3.match === true && p3.calls === 2 && p3.killMs >= 1400 && p3.killMs <= 2600);
   ok('P3b the SAME cached promise resolved (the kill never surfaced to callers) and the coverage committed before the load is byte-identical after it | ' + JSON.stringify(p3), p3.samePromise === true && p3.covIntact === true);
 
   // ---- P4: the killed attempt's poison never lands; the cache keeps the retry's answer ----
