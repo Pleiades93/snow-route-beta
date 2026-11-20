@@ -349,15 +349,18 @@ ok('F5 lane names lie along their roads: every stored angle is bearing - 90 (wor
 // F6/F7 (gate fixes, Codex P2s on PR #151): the names must stay along
 // their roads AND upright when the CAMERA bearing changes (manual
 // rotation, heading-up navigation). The stored angle is a MAP-frame
-// rotation - the renderer adds the camera bearing on screen - so the
-// lane's only job on a bearing change is the flip: the stored angle keeps
-// its map-frame line direction (rendered == angN mod 180) and flips by
-// 180 exactly when the screen angle (rendered + bearing) would leave
-// (-90, 90]. Checked at bearing 90 (F6 - where a subtract-the-bearing
-// build puts every name PERPENDICULAR to its road) and bearing 180 (F7).
+// rotation; MapLibre rotates map coordinates by the NEGATIVE bearing,
+// so the screen angle is (rendered - bearing) - settled by eye in the
+// rendered page: a (stored + bearing) build stood its names on their
+// heads at bearing 90. The lane's only job on a bearing change is the
+// flip: the stored angle keeps its map-frame line direction (rendered
+// == angN mod 180) and flips by 180 exactly when the screen angle would
+// leave (-90, 90]. Checked at bearing 90 (F6 - where a
+// subtract-the-bearing build puts every name PERPENDICULAR to its road)
+// and bearing 180 (F7).
 const orientAt = async (B) => {
   await ev(`(() => { map.jumpTo({ bearing: ${B}, zoom: 13.2 }); return true; })()`); // zoomed a step out from the home framing: rotated, the portrait frame crops an anchor near its edge - the angle law is what is graded here, coverage was F1/F2 at the true home framing
-  // The screen law is RAW: the renderer turns the glyphs by (stored +
+  // The screen law is RAW: the renderer turns the glyphs by (stored -
   // bearing) literally - a raw screen angle of 164 deg is upside-down
   // text, NOT the -16 deg a modulo-180 reading would forgive (the first
   // F6/F7 cut made exactly that mistake and blessed the broken build).
@@ -380,8 +383,8 @@ const orientAt = async (B) => {
       let A = Math.atan2((b[1] - a[1]) * MLNG, (b[0] - a[0]) * MLAT) * 180 / Math.PI - 90;
       while (A > 90) A -= 180; while (A <= -90) A += 180;
       let dLine = Math.abs(((rendered - A) % 180 + 180) % 180); if (dLine > 90) dLine = 180 - dLine;
-      let sExp = A + B; while (sExp > 90) sExp -= 180; while (sExp <= -90) sExp += 180;
-      let sRaw = rendered + B; while (sRaw > 180) sRaw -= 360; while (sRaw <= -180) sRaw += 360;
+      let sExp = A - B; while (sExp > 90) sExp -= 180; while (sExp <= -90) sExp += 180;
+      let sRaw = rendered - B; while (sRaw > 180) sRaw -= 360; while (sRaw <= -180) sRaw += 360;
       if (dLine > worstLine) worstLine = dLine;
       if (Math.abs(sRaw - sExp) > worstScreen) worstScreen = Math.abs(sRaw - sExp);
       checked++;

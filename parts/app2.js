@@ -153,25 +153,28 @@ function glUnifyLabels(m) { // BASEMAP LABEL UNIFICATION (Andrew, Beta 1.6): the
     const pack = (typeof activeRoute !== 'undefined' && activeRoute && Array.isArray(activeRoute.tileNames)) ? activeRoute : null;
     const orig = (m.getStyle().layers || []).find(x => x.id === 'roads_labels_minor');
     // The stored angle is the NORTH-UP rotation, in MAP coordinates: with
-    // text-rotation-alignment 'map' the renderer itself adds the camera
-    // bearing on screen, so a name that lies along its road north-up lies
-    // along it at every bearing. The one defect is the flip: when the
-    // SCREEN angle (stored + bearing) leaves (-90, 90] the name would read
-    // upside down, and point symbols cannot use text-keep-upright
-    // (MapLibre reserves it for line placement). So on a bearing change -
-    // a manual rotation, or heading-up navigation (headCam, app3) - the
-    // stored angle flips by 180 exactly when its screen angle would leave
-    // the upright range; the map-frame line direction never changes (gate
-    // fixes, Codex P2s on PR #151: the first cut subtracted the bearing,
-    // which double-rotated at every bearing but 180 - drive214 F6 pins
-    // the flip at bearings 90 and 180).
+    // text-rotation-alignment 'map' a name that lies along its road
+    // north-up lies along it at every bearing. The one defect is the
+    // flip: MapLibre rotates map coordinates by the NEGATIVE bearing, so
+    // the SCREEN angle is (stored - bearing) - when that leaves (-90, 90]
+    // the name reads upside down, and point symbols cannot use
+    // text-keep-upright (MapLibre reserves it for line placement). So on
+    // a bearing change - a manual rotation, or heading-up navigation
+    // (headCam, app3) - the stored angle flips by 180 exactly when its
+    // screen angle would leave the upright range; the map-frame line
+    // direction never changes (gate fixes, Codex P2s on PR #151: the
+    // first cut subtracted the bearing from the stored angle itself,
+    // which double-rotated; the second used (stored + bearing) for the
+    // flip decision, the wrong sign - settled by eye in the rendered
+    // page at bearing 90, where that build's names stood on their heads;
+    // drive214 F6/F7 pin the law at bearings 90 and 180).
     const applyLaneBearing = () => {
       const base = m.__routeLabelBase, src = m.getSource('route-labels');
       if (!base || !src) return;
       const brg = Math.round((m.getBearing ? m.getBearing() : 0) * 10) / 10;
       if (m.__routeLabelBearing === brg) return;
       m.__routeLabelBearing = brg;
-      const feats = base.map(f => { let a = f.properties.ang; const screen = a + brg; if (screen > 90) a -= 180; else if (screen <= -90) a += 180; return { type: 'Feature', properties: { name: f.properties.name, ang: Math.round(a * 10) / 10 }, geometry: f.geometry }; });
+      const feats = base.map(f => { let a = f.properties.ang; const screen = a - brg; if (screen > 90) a -= 180; else if (screen <= -90) a += 180; return { type: 'Feature', properties: { name: f.properties.name, ang: Math.round(a * 10) / 10 }, geometry: f.geometry }; });
       src.setData({ type: 'FeatureCollection', features: feats });
     };
     m.__applyRouteLabelBearing = applyLaneBearing;

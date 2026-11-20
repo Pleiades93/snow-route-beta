@@ -2,7 +2,7 @@
 <html lang="en" class="boot">
 <head>
 <meta charset="UTF-8">
-<meta http-equiv="Content-Security-Policy" content="default-src 'none'; script-src 'sha384-E6r8d6rAEg5WpH4WF57huJ+3bNdxrdCANXPdGvu1CIXYWpI3avKNW2T2O1UFfODQ' https://cdn.jsdelivr.net/npm/maplibre-gl@4.7.1/dist/maplibre-gl.js; style-src-elem 'sha384-B6wsFia2uoQE3sPmlBwuibTMcH8aEknSFTDxbpS+6+APqJqVBRaYP14CkSJhKA+m' https://cdn.jsdelivr.net; style-src-attr 'unsafe-inline'; img-src 'self' data: blob: https://tiles.basemaps.cartocdn.com https://protomaps.github.io https://cdn.jsdelivr.net; connect-src 'self' https://tiles.basemaps.cartocdn.com https://protomaps.github.io https://cdn.jsdelivr.net https://nominatim.openstreetmap.org https://overpass-api.de https://overpass.kumi.systems; worker-src blob: 'self'; child-src blob: 'self'; font-src 'none'; manifest-src 'self'; base-uri 'none'; form-action 'none'; object-src 'none'">
+<meta http-equiv="Content-Security-Policy" content="default-src 'none'; script-src 'sha384-zTiiyVtnph4Bph3lbKnaM1PwWk8fkDBazajyU7wUGOECrc+mPSqviV55jwcZ3EHB' https://cdn.jsdelivr.net/npm/maplibre-gl@4.7.1/dist/maplibre-gl.js; style-src-elem 'sha384-B6wsFia2uoQE3sPmlBwuibTMcH8aEknSFTDxbpS+6+APqJqVBRaYP14CkSJhKA+m' https://cdn.jsdelivr.net; style-src-attr 'unsafe-inline'; img-src 'self' data: blob: https://tiles.basemaps.cartocdn.com https://protomaps.github.io https://cdn.jsdelivr.net; connect-src 'self' https://tiles.basemaps.cartocdn.com https://protomaps.github.io https://cdn.jsdelivr.net https://nominatim.openstreetmap.org https://overpass-api.de https://overpass.kumi.systems; worker-src blob: 'self'; child-src blob: 'self'; font-src 'none'; manifest-src 'self'; base-uri 'none'; form-action 'none'; object-src 'none'">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="mobile-web-app-capable" content="yes">
@@ -3885,25 +3885,28 @@ function glUnifyLabels(m) { // BASEMAP LABEL UNIFICATION (Andrew, Beta 1.6): the
     const pack = (typeof activeRoute !== 'undefined' && activeRoute && Array.isArray(activeRoute.tileNames)) ? activeRoute : null;
     const orig = (m.getStyle().layers || []).find(x => x.id === 'roads_labels_minor');
     // The stored angle is the NORTH-UP rotation, in MAP coordinates: with
-    // text-rotation-alignment 'map' the renderer itself adds the camera
-    // bearing on screen, so a name that lies along its road north-up lies
-    // along it at every bearing. The one defect is the flip: when the
-    // SCREEN angle (stored + bearing) leaves (-90, 90] the name would read
-    // upside down, and point symbols cannot use text-keep-upright
-    // (MapLibre reserves it for line placement). So on a bearing change -
-    // a manual rotation, or heading-up navigation (headCam, app3) - the
-    // stored angle flips by 180 exactly when its screen angle would leave
-    // the upright range; the map-frame line direction never changes (gate
-    // fixes, Codex P2s on PR #151: the first cut subtracted the bearing,
-    // which double-rotated at every bearing but 180 - drive214 F6 pins
-    // the flip at bearings 90 and 180).
+    // text-rotation-alignment 'map' a name that lies along its road
+    // north-up lies along it at every bearing. The one defect is the
+    // flip: MapLibre rotates map coordinates by the NEGATIVE bearing, so
+    // the SCREEN angle is (stored - bearing) - when that leaves (-90, 90]
+    // the name reads upside down, and point symbols cannot use
+    // text-keep-upright (MapLibre reserves it for line placement). So on
+    // a bearing change - a manual rotation, or heading-up navigation
+    // (headCam, app3) - the stored angle flips by 180 exactly when its
+    // screen angle would leave the upright range; the map-frame line
+    // direction never changes (gate fixes, Codex P2s on PR #151: the
+    // first cut subtracted the bearing from the stored angle itself,
+    // which double-rotated; the second used (stored + bearing) for the
+    // flip decision, the wrong sign - settled by eye in the rendered
+    // page at bearing 90, where that build's names stood on their heads;
+    // drive214 F6/F7 pin the law at bearings 90 and 180).
     const applyLaneBearing = () => {
       const base = m.__routeLabelBase, src = m.getSource('route-labels');
       if (!base || !src) return;
       const brg = Math.round((m.getBearing ? m.getBearing() : 0) * 10) / 10;
       if (m.__routeLabelBearing === brg) return;
       m.__routeLabelBearing = brg;
-      const feats = base.map(f => { let a = f.properties.ang; const screen = a + brg; if (screen > 90) a -= 180; else if (screen <= -90) a += 180; return { type: 'Feature', properties: { name: f.properties.name, ang: Math.round(a * 10) / 10 }, geometry: f.geometry }; });
+      const feats = base.map(f => { let a = f.properties.ang; const screen = a - brg; if (screen > 90) a -= 180; else if (screen <= -90) a += 180; return { type: 'Feature', properties: { name: f.properties.name, ang: Math.round(a * 10) / 10 }, geometry: f.geometry }; });
       src.setData({ type: 'FeatureCollection', features: feats });
     };
     m.__applyRouteLabelBearing = applyLaneBearing;
