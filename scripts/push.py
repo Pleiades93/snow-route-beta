@@ -189,9 +189,14 @@ def preflight_prospective(root, gh, branch, resolved):
     # branch blob differs (overlay the branch version), files the
     # branch has that the local tree lacks (restore the branch
     # version), and local-only files outside the set (drop them).
+    # The checker itself is exempt from overlay/drop: it is the
+    # measuring instrument, not a measured input (and a prospective
+    # copy without it could not be checked at all).
+    checker = "scripts/build-pages.py"
     overlay = sorted(p for p in remote
-                     if p not in resolved and remote[p] != local.get(p))
-    drop = sorted(p for p in local if p not in resolved and p not in remote)
+                     if p not in resolved and p != checker and remote[p] != local.get(p))
+    drop = sorted(p for p in local
+                  if p not in resolved and p != checker and p not in remote)
     if not overlay and not drop:
         proc = subprocess.run([sys.executable, str(root / "scripts" / "build-pages.py"), "--check"],
                               cwd=root, capture_output=True, text=True, timeout=300)
