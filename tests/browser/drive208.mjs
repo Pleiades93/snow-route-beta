@@ -38,10 +38,12 @@ const btnLabel = async () => { const b = await J(`(() => { const b = $('crHintBt
 // ---- W1: dense box failure over a settled grid ----
 await ev(`(() => { crWanted = null; crPrepFail = { ok: false, kind: 'dense' }; crFailFromGrid = false; crPrepAnchor = null; crPrepState = 'failed'; crRenderHint(); return true; })()`);
 const w1Label = await btnLabel();
+const w1Hint = await J(`(() => $('createHint').textContent)()`);
 const centre = await J(`(() => { const c = map.getCenter(); return { lat: c.lat, lng: c.lng }; })()`);
 await ev(`(() => { $('crHintBtn').click(); return true; })()`);
 const w1 = await J(`(() => ({ state: crPrepState, anchor: crPrepAnchor }))()`);
 ok('W1 a dense box failure over a grid reads Prepare this area - not Retry | label ' + JSON.stringify(w1Label.label), w1Label.label === 'Prepare this area' && w1Label.shown === true);
+ok('W1 the failure text names the same remedy (tap Prepare this area, never tap Retry) | hint ' + JSON.stringify(w1Hint), typeof w1Hint === 'string' && w1Hint.indexOf('tap Prepare this area') >= 0 && w1Hint.indexOf('tap Retry') < 0);
 ok('W1 the click prepares at the map centre, matching the label | state ' + w1.state + ', anchor ' + JSON.stringify(w1.anchor), w1.state === 'preparing' && !!w1.anchor && Math.abs(w1.anchor.lat - centre.lat) < 1e-9 && Math.abs(w1.anchor.lng - centre.lng) < 1e-9);
 
 // ---- W2: a grid failure - Retry that resumes ----

@@ -21,6 +21,7 @@ import { readFileSync } from 'node:fs';
 const root = new URL('../../', import.meta.url);
 const read = (p) => readFileSync(new URL(p, root), 'utf8');
 const pick = read('parts/create-pick.js');
+const cache = read('parts/create-cache.js');
 const whatsnew = read('parts/whatsnew.js');
 const changelog = read('CHANGELOG.md');
 
@@ -72,6 +73,11 @@ check('9: the handler reads the decision and dispatches on its action',
   && handler.includes("act === 'resume'") && handler.includes("act === 'prepare-centre'"));
 check('10: the handler interprets no state itself (no crFailFromGrid, no prep-state tests)',
   handler.length > 0 && !handler.includes('crFailFromGrid') && !handler.includes('crPrepState ==='));
+
+// ---------- the failure text agrees with the button ----------
+check('13: crFailText keys the dense remedy on the failure source too (never on the grid existing)',
+  cache.includes("f.kind === 'dense') return crFailFromGrid ? 'Parts of '")
+  && !cache.includes("f.kind === 'dense') return crGrid ?"));
 
 // ---------- the release editorial ----------
 check('11: the CHANGELOG top entry is Beta 1.253', changelog.includes('## Beta 1.253'));
