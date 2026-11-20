@@ -26,17 +26,16 @@ import vm from 'node:vm';
 //        off the selection's line. The selection's side paint is now
 //        built by the same fillSlicePts helper as the board's, so it
 //        is a contiguous sub-path of the board strand by construction.
-//   R4 - street-name labels must not multiply at close zoom. The
-//        repeats were the basemap's line labels on the route clones
-//        (symbol-placement: line, the renderer's default 250 px
-//        repeat): at z17-19 a screen holds ~1,100 px of street, so
-//        the name repeated 4-5 times. Widening the repeat is not a
-//        cure in this renderer (measured in the real app: 300 px
-//        loses Malden Street's label, 400 px loses them all), so the
-//        shipped rule is the app's own titles at every zoom - the
-//        title layers no longer end at 16.4, the clones are retired,
-//        and labelpts' one anchor per street is the only route name
-//        a screen can show.
+//   R4 - street-name labels. The 1.208 form of this rule (the app's
+//        own titles at every zoom, the basemap clones retired) is
+//        SUPERSEDED by Beta 1.258 (Andrew's decision, 2026-11-20):
+//        the app's titles carried the variable-anchor placement
+//        defect and are retired outright; the basemap's own road
+//        labels are now the street-name system for every route, and
+//        their repeats along a long street are the map's own
+//        behaviour, accepted knowingly. R4 now pins the retirement's
+//        shape (the full pins live in proof-1258; drive130 grades
+//        the rendered rule).
 //
 // This proof drives the shipped engine (GLP, loaded verbatim from
 // parts/engine.js) over the mergeStrands proof's synthetic network,
@@ -87,7 +86,7 @@ const host = {
   SPOT: {},
   pieces: { LongAve: [1, 1, 1], NorthAve: [0, 0, 0], CrossSt: [0, 0, 0], DiagSt: [0, 0] },
   selStretch: null, selSet: [], isNight: () => false,
-  activeRoute: { name: 'Proof' }, glHideLabels: () => {},
+  activeRoute: { name: 'Proof' }, glUnifyLabels: () => {},
 };
 
 const sources = {}, layers = [];
@@ -317,26 +316,21 @@ host.pieces.LongAve = [1, 1, 1];
 host.selStretch = null; host.selSet = [];
 GLP.sync();
 
-// ---- R4: a street's name never crowds a screen (Andrew). The first
-// build widened the basemap clones' symbol-spacing toward ~500 m;
-// measured in the real app (drive130, gate rounds 1-3) that kills the
-// names instead - the renderer's line placement earns anchors per
-// tile segment, so a 300 px repeat already loses Malden Street's
-// label and 400 px loses every label in the test view. The shipped
-// rule is therefore the app's own titles at EVERY zoom: labelpts
-// carries exactly one point per street (its anchor), the title layers
-// no longer end at 16.4, and the basemap clones are retired (never
-// built; removed if an older build left one), with the originals
-// still excluding route names - so a route street's name can print
-// at most once on any screen, at any zoom.
+// ---- R4: the street-name system is the basemap's own (Beta 1.258,
+// Andrew's decision, 2026-11-20). The 1.208 form pinned the app's own
+// titles at every zoom; the titles are retired now (their placement
+// defect is the reason - see proof-1258's header), the route-name
+// exclusion is undone, and the basemap clones stay retired. What
+// survives of the old R4: the measured-dead symbol-spacing cure is
+// still not shipped, and clone leftovers are still removed.
 check('R4: no symbol-spacing is set anywhere in app2.js (the measured-dead cure is not shipped)',
   !app2.includes('symbol-spacing'));
 check('R4: the basemap clones are never built and any leftover is removed',
   !app2.includes('addLayer(clone') && app2.includes('removeLayer(cloneId)'));
-check('R4: the title layers stay up at close zoom (no 16.4 maxzoom, no fade-out stop)',
-  !eng.includes('maxzoom: 16.4') && !eng.includes('16.4, 0]') && eng.includes('15.4, 1]'));
-check('R4: the title size ramp gains a high stop so names stay readable at z19',
-  eng.includes('16.2, 12, 19, 13.5'));
+check('R4: the engine builds no title layers and no labelpts source (Beta 1.258 retirement)',
+  !eng.includes("addSource('labelpts'") && !eng.includes("'streetnamespt' + t") && !eng.includes('labelPointFeatures'));
+check('R4: app2 carries no route-name exclusion (no tile-names list, no name filter)',
+  !app2.includes('ROUTE_TILE_NAMES') && !app2.includes("['literal', ROUTE_TILE_NAMES]"));
 
 // ---- R5 (same round): both SECONDARY pills wear the dark ink
 // (Andrew's pick C from the three-variant sample) — the 1.207 white

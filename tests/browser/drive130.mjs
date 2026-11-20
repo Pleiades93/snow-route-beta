@@ -4,19 +4,24 @@ await bootThrough(ev, poll); // Beta 1.76: boots end at the route menu now - cli
 
 
 
-// drive130: the street-name rule (Andrew, Beta 1.40; revised Beta 1.208). OUR titles
-// name the route streets - one name per street at its anchor (labelpts) - at EVERY
-// zoom; the basemap never prints a route street's name (the originals exclude them
-// by filter). Beta 1.40's handover (titles fade out across 15.4-16.4 while basemap
-// clones fade in) is retired in 1.208: the clones repeated a name 4-5 times down a
-// close-zoom screen, and widening their line repeat is not a cure in this renderer
-// (measured in this drive's own view: a 300 px repeat loses Malden Street's label,
-// 400 px loses every label - anchors earn their place per tile segment). Day
-// basemap road names are restyled dark for readability; our old line-following
-// labels are retired; the West link reference line no longer draws. The L4/L7
-// rendered-feature checks are the ones that would have caught the Beta 1.33-era
-// clash, where the exclusion filter was silently rejected and basemap names
-// printed on route streets at every zoom.
+// drive130: the street-name rule (Andrew's decision, 2026-11-20; Beta 1.258).
+// THE MAP'S OWN NAMES: the basemap's native road labels name every street,
+// route streets included, in their full suffixed spelling (Ferrari Court,
+// Santa Barbara Place), at the basemap's own zoom behaviour (major names
+// from zoom 11, minor names from zoom 15). The app's own titles - the
+// engine's streetnamespt1-4 point layers over the labelpts source, which
+// named the route streets from Beta 1.40 to 1.257 while app2 excluded
+// those names from the basemap by filter - are RETIRED: they carried the
+// variable-anchor placement defect Beta 1.248 diagnosed, and this round's
+// measurements on the live 1.257 build showed its one-shot heal could not
+// hold the class (one zoom in and back after a clean settle re-stuck
+// Marconi 21.1 px and Flatbush 14.4 px off their streets). The Beta 1.40
+// basemap clone layers stay retired. Day basemap road names keep their
+// readable dark restyle; our old line-following labels stay retired; the
+// West link reference line no longer draws. The L2/L4/L7 checks grade the
+// new rule in the rendered page: stock filters and stock zoom ranges on
+// the originals, and the basemap itself printing a route street's full
+// name at close zoom.
 const R = { checks: [] };
 const ok = (name, cond) => R.checks.push([name, cond === true]);
 // Beta 1.83 (flake hardening): this drive's first-read crash has tripped four
@@ -65,36 +70,43 @@ if (!introDone) throw new Error('drive130: readiness "intro flight finished" not
 ok('L0 app boots with the map active', await poll120(`typeof glOk !== 'undefined' && glOk === true`, 30000));
 
 const S1 = await jread(`(() => {
-  const pt = map.getLayer('streetnamespt4');
+  const maj = map.getLayer('roads_labels_major');
+  const min = map.getLayer('roads_labels_minor');
   return JSON.stringify({
     streetnamesGone: !map.getLayer('streetnames'),
-    ptOpacity: pt ? JSON.stringify(map.getPaintProperty('streetnamespt4', 'text-opacity')) : '',
-    ptMax: pt ? pt.maxzoom : null,
+    titlesGone: !map.getLayer('streetnamespt1') && !map.getLayer('streetnamespt2') && !map.getLayer('streetnamespt3') && !map.getLayer('streetnamespt4'),
+    noLabelSrc: !map.getSource('labelpts'),
     cloneMaj: !!map.getLayer('roads_labels_major-route'),
     cloneMin: !!map.getLayer('roads_labels_minor-route'),
     cloneOpacity: map.getLayer('roads_labels_major-route') ? JSON.stringify(map.getPaintProperty('roads_labels_major-route', 'text-opacity')) : '',
     cloneFilter: map.getLayer('roads_labels_minor-route') ? JSON.stringify(map.getFilter('roads_labels_minor-route')) : '',
     origFilter: JSON.stringify(map.getFilter('roads_labels_major')),
+    origFilterMin: JSON.stringify(map.getFilter('roads_labels_minor')),
+    majMin: maj ? maj.minzoom : null,
+    minMin: min ? min.minzoom : null,
     dayColor: String(map.getPaintProperty('roads_labels_major', 'text-color')),
     dayHalo: String(map.getPaintProperty('roads_labels_minor', 'text-halo-width')),
     refFeatures: map.getSource('ref') ? map.querySourceFeatures('ref').length : -1
   });
 })()`);
 ok('L1 our line-following streetnames layer is retired | streetnamesGone ' + S1.streetnamesGone, S1.streetnamesGone === true);
-ok('L2 our titles stay up at close zoom (Beta 1.208: no fade-out, no maxzoom) | opacity ' + S1.ptOpacity + ' maxzoom ' + S1.ptMax,
-  S1.ptOpacity.includes('15.4') && !S1.ptOpacity.includes('16.4') && (typeof S1.ptMax !== 'number' || S1.ptMax === 24));
+ok('L1b the app title layers and their labelpts source are retired (Beta 1.258) | titlesGone ' + S1.titlesGone + ' noLabelSrc ' + S1.noLabelSrc,
+  S1.titlesGone === true && S1.noLabelSrc === true);
+ok('L2 the originals carry their STOCK filters - no route name is excluded (Beta 1.258) | major ' + S1.origFilter.slice(0, 60) + ' minor ' + S1.origFilterMin.slice(0, 60),
+  !S1.origFilter.includes('Velmar Drive') && S1.origFilter.includes('"highway"') && S1.origFilter.includes('"major_road"') && !S1.origFilterMin.includes('Velmar Drive') && S1.origFilterMin.includes('"minor_road"'));
 ok('L3 route-name clone layers are retired (Beta 1.208: never built) | clones ' + S1.cloneMaj + '/' + S1.cloneMin,
   S1.cloneMaj === false && S1.cloneMin === false);
-ok('L4 originals exclude route names by a valid combined filter | orig ' + S1.origFilter.slice(0, 60),
-  S1.origFilter.startsWith('["all"') && S1.origFilter.includes('Velmar Drive'));
+ok('L4 the originals keep their STOCK zoom ranges (major from 11, minor from 15) | minzooms ' + S1.majMin + '/' + S1.minMin,
+  S1.majMin === 11 && S1.minMin === 15);
 ok('L5 day road names wear the readable restyle | color ' + S1.dayColor + ' halo ' + S1.dayHalo, S1.dayColor === '#333333' && S1.dayHalo === '1.5');
 ok('L6 the reference source draws nothing (West link off the map) | ref features ' + S1.refFeatures, S1.refFeatures === 0);
 const poiTxt = await ev(`map.getLayer('routepoi-txt') ? JSON.stringify(map.getLayoutProperty('routepoi-txt', 'text-field')) : 'missing'`);
 ok('L6b the point of interest wears the route name, not the app name (Beta 1.79, Andrew) | poi ' + poiTxt, poiTxt === '"Route 5W"');
 
-// The rendered proof at close zoom (Beta 1.208 form): centred on Woolacott's title
-// anchor, the route name prints on the TITLE layers exactly once - the originals
-// must return none of the route names (no basemap route names, no doubling, ever).
+// The rendered proof at close zoom (Beta 1.258 form): centred on Woolacott, the
+// BASEMAP itself prints the route street's name in its full suffixed spelling
+// (Woolacott Road) on the originals - the names the app titles used to carry
+// now come from the map, and no app-drawn name exists to double them.
 // 2026-11-09 (L7 root hardening, part 2 - Andrew's flake-gate order; tests-only): with
 // the camera provably at rest (part 1, the intro gate at the top of this drive), the
 // read is gated on the render pipeline's TERMINAL state, not on a momentary predicate.
@@ -106,12 +118,12 @@ ok('L6b the point of interest wears the route name, not the app name (Beta 1.79,
 // the graded sample found the clones missing Malden Street - placement had moved on).
 // The wait below samples the sets themselves and settles only when the map reports
 // loaded, an idle event has fired since the jump, the check's own predicate holds,
-// AND the full clone/orig name sets are identical across 4 consecutive samples
+// AND the full orig name set is identical across 4 consecutive samples
 // (~1.2 s): no tile, placement or fade input then remains that could change the
 // graded sample - and the graded sample IS the last stable sample, not a fresh read
 // taken after the wait. A page that never converges still fails, on its final sample.
 await ev(`(() => { window.__l7idleAt = 0; map.once('idle', () => { window.__l7idleAt = Date.now(); }); map.jumpTo({ center: [-79.56061255176667, 43.8186978701749], zoom: 17.5 }); return true; })()`);
-let S2 = { titles: [], orig: [] };
+let S2 = { orig: [] };
 let settled = false, l7PrevKey = '', l7Streak = 0, l7Samples = 0;
 const l7T0 = Date.now();
 while (Date.now() - l7T0 < 60000) {
@@ -119,31 +131,31 @@ while (Date.now() - l7T0 < 60000) {
   const s = await jread(`(() => JSON.stringify({
     loaded: map.loaded(),
     idle: (window.__l7idleAt || 0) > 0,
-    titles: map.queryRenderedFeatures({ layers: ['streetnamespt1', 'streetnamespt2', 'streetnamespt3', 'streetnamespt4'] }).map(f => f.properties.name),
     orig: map.queryRenderedFeatures({ layers: ['roads_labels_major', 'roads_labels_minor'] }).map(f => f.properties.name)
   }))()`).catch(() => null);
   if (s) {
-    S2 = { titles: s.titles, orig: s.orig };
-    const key = JSON.stringify([[...new Set(s.titles)].sort(), [...new Set(s.orig)].sort()]);
-    const pred = s.titles.includes('Woolacott') && !s.orig.includes('Woolacott Road') && !s.orig.includes('Malden Street') && !s.orig.includes('Cartwright Boulevard');
+    S2 = { orig: s.orig };
+    const key = JSON.stringify([...new Set(s.orig)].sort());
+    const pred = s.orig.includes('Woolacott Road');
     if (s.loaded && s.idle && pred && key === l7PrevKey) { l7Streak++; if (l7Streak >= 3) { settled = true; break; } }
     else { l7Streak = 0; l7PrevKey = key; }
   }
   await sleep(400);
 }
-ok('L7 at close zoom the route name prints on the titles exactly once and never on the basemap | titles ' + JSON.stringify(S2.titles) + ' orig ' + JSON.stringify(S2.orig) + ' | settle ' + (settled ? (Date.now() - l7T0) + 'ms' : 'NEVER') + ' samples ' + l7Samples,
-  settled === true && S2.titles.filter(n => n === 'Woolacott').length === 1 && !S2.orig.includes('Woolacott Road') && !S2.orig.includes('Malden Street') && !S2.orig.includes('Cartwright Boulevard'));
+ok('L7 at close zoom the basemap itself prints the route name in full (Woolacott Road, suffix and all) | orig ' + JSON.stringify(S2.orig) + ' | settle ' + (settled ? (Date.now() - l7T0) + 'ms' : 'NEVER') + ' samples ' + l7Samples,
+  settled === true && S2.orig.includes('Woolacott Road'));
 
-// Night: the titles wear the engine's night colour and the clones stay retired.
+// Night: the basemap names wear the night lift and the clones stay retired.
 await ev(`(() => { localStorage.setItem('snowroute.v2.night', '1'); localStorage.setItem('snowroute.v2.nightExp', '4102444800000'); location.reload(); return true; })()`); // Beta 1.77: a stored override carries its sun-boundary expiry with it
 await sleep(3000);
 await bootThrough(ev, poll, { pinTheme: false }); // Beta 1.76: the reload returns to the route menu - pick 5W so the engine rebuilds the titles under the night style; Beta 1.77: keep the seeded night override (no day pin)
 ok('L8 night boot with the map active', await poll120(`typeof glOk !== 'undefined' && glOk === true && document.body.classList.contains('night')`, 30000));
 const S3 = await jread(`(() => JSON.stringify({
   clone: !!map.getLayer('roads_labels_major-route'),
-  col: map.getLayer('streetnamespt4') ? String(map.getPaintProperty('streetnamespt4', 'text-color')) : ''
+  titlesGone: !map.getLayer('streetnamespt1'),
+  col: map.getLayer('roads_labels_major') ? String(map.getPaintProperty('roads_labels_major', 'text-color')) : ''
 }))()`);
-ok('L9 night titles wear the lifted name colour and no clones return | clone ' + S3.clone + ' color ' + S3.col, S3.clone === false && S3.col === '#e8e8e8');
+ok('L9 night: the basemap names wear the night lift (#ccd6df), no titles and no clones return | clone ' + S3.clone + ' titlesGone ' + S3.titlesGone + ' color ' + S3.col, S3.clone === false && S3.titlesGone === true && S3.col === '#ccd6df');
 
 R.exceptions = consoleLog.filter(c => c.type === 'EXCEPTION').map(c => String(c.text || '').slice(0, 200));
 finish(R, proc);

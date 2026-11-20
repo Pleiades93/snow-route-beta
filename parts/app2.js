@@ -27,8 +27,7 @@ $('mapNoteNo').addEventListener('click', () => { if (!tapGuard('mapNoteNo')) ret
 setTimeout(() => { if (!glOk) { mapNoteArmed = true; noteMapState(); } }, 15000);
 onMapReady(() => map.on('error', e => { if (!glOk && e && e.error && /fetch|Failed/i.test(e.error.message || '') && !mapNoteArmed) { mapNoteArmed = true; noteMapState(); } }));
 onMapReady(() => map.on('sourcedata', e => { if (e.dataType === 'source' && e.sourceId === 'protomaps' && e.tile) { tilesOk++; if (basemapDead) { basemapDead = false; noteMapState(); } } })); // Beta 1.33: proof the basemap is really drawing - and the moment a tile lands after an outage, the death notice clears itself
-const ROUTE_TILE_NAMES = []; // Beta 1.40: every route street's name AS THE TILES SPELL IT (census of the protomaps 'roads' source layer, 2026-10-31: 34/34 matched exactly once; Fifth = '5th Avenue'). Drives the label handover in glHideLabels. Beta 1.117: the list itself is pack data (pack.tileNames in data.js) - this live array starts empty and buildGeometry refills it in place on every load.
-function glHideLabels(m) { // BASEMAP LABEL UNIFICATION (Andrew, Beta 1.6): the day and night styles are two
+function glUnifyLabels(m) { // BASEMAP LABEL UNIFICATION (Andrew, Beta 1.6): the day and night styles are two
   // different ready-made maps, each printing its own names in its own lettering and size. On every (re)stack,
   // normalize every basemap text layer: same typeface (each glyph service's own Noto Sans - the same face under
   // each service's naming), same size curve per kind of name, road names from the same zoom in both. The words
@@ -43,21 +42,15 @@ function glHideLabels(m) { // BASEMAP LABEL UNIFICATION (Andrew, Beta 1.6): the 
       water: ['interpolate', ['linear'], ['zoom'], 10, 11, 15, 13],
       other: ['interpolate', ['linear'], ['zoom'], 15, 10, 18, 12]
     };
-    // Beta 1.40: route-street CLONES of the two road-label layers (the handover, see the
-    // road branch below). A zoom ramp cannot nest inside a name test in one paint value
-    // ('zoom may only feed a top-level step/interpolate' - the map rejects it), so route
-    // streets get their own copy of each label layer: only route names, fading in across
-    // 15.4-16.4, restyled at creation for the current theme. The originals exclude route
-    // names by filter instead. Rebuilt from the embedded style spec on every restack.
-    // Beta 1.208 (Andrew): the clones are RETIRED - zoomed in, they printed a route
-    // street's name 4-5 times down one screen (the renderer's 250 px line repeat),
-    // and a wider repeat is not a cure in this renderer (measured: 300 px already
-    // loses Malden Street's label, 400 px loses every label in the test view -
-    // anchors earn their place per tile segment). Route streets are now named by
-    // the app's own titles at EVERY zoom (engine labelpts: one name per street at
-    // its anchor, no maxzoom, no fade-out); the originals below keep excluding
-    // route names, so the basemap never prints one. Any clone an older build left
-    // on this map is removed, never refreshed or rebuilt.
+    // Beta 1.258 (Andrew): route streets are named by the BASEMAP, like every other
+    // street - the map's own names are the street-name system for every route. The
+    // app's own titles (the engine's streetnamespt layers, retired this round) and
+    // the Beta 1.40/1.208 exclusion that kept route names off the basemap are both
+    // gone: the two roads_labels originals below keep their STOCK filters and zoom
+    // ranges (major from 11, minor from 15), route names included, in the map's own
+    // spelling (Ferrari Court, Santa Barbara Place). The Beta 1.40 clone layers
+    // (route-only copies of the label layers) stay retired - removed below if an
+    // older build left one on this map.
     const spec = (typeof isNight === 'function' && isNight()) ? PM_NIGHT : PM_DAY;
     const eq = (a, b) => JSON.stringify(a) === JSON.stringify(b);
     const setL = (id, k, v) => { if (!eq(m.getLayoutProperty(id, k), v)) m.setLayoutProperty(id, k, v); }; // Beta 1.41: no-op guards - every redundant style mutation re-triggers symbol placement in the workers, and this pass runs on EVERY stack build (boot, every theme flip, every marking tap). When the value already matches, the mutation is skipped; the end state is identical.
@@ -97,26 +90,28 @@ function glHideLabels(m) { // BASEMAP LABEL UNIFICATION (Andrew, Beta 1.6): the 
         }
       }
       if (kind === 'road') {
-        if ((L.minzoom || 0) !== 13 || (L.maxzoom === undefined ? 24 : L.maxzoom) !== 24) m.setLayerZoomRange(L.id, 13, 24); // Beta 1.41 guard: same no-op rule as setL/setP
-        // LABEL RULE (Andrew, Beta 1.40; revised Beta 1.208): OUR titles name the route
-        // streets at EVERY zoom - one name per street at its anchor (engine labelpts).
-        // Through 1.207 the basemap's own names took over zoomed in (the handover, on
-        // clone layers), but the clones repeated a name 4-5 times down a close-zoom
-        // screen, so the handover is retired: the clones are never built (removed
-        // above if an older build left one), and the originals exclude route names
-        // at every zoom. Non-route streets keep their basemap names at every zoom.
-        // (The Beta 1.7 clash-exclusion filter that used to live here silently stopped working:
-        // it mixed legacy filter syntax with an expression, and the map rejected it outright.)
         if (id === 'roads_labels_major' || id === 'roads_labels_minor') {
-          // The originals keep every NON-route name; route names are the titles' job.
+          // Beta 1.258: the two road-label originals keep their STOCK zoom range from the
+          // embedded spec (major 11, minor 15) - the blanket 13 below governs the other
+          // road symbols, and forcing it here was half of the old exclusion system.
+          const specL0 = (spec.layers || []).find(x => x.id === id);
+          const sMin = specL0 && typeof specL0.minzoom === 'number' ? specL0.minzoom : 0;
+          const sMax = specL0 && typeof specL0.maxzoom === 'number' ? specL0.maxzoom : 24;
+          if ((L.minzoom || 0) !== sMin || (L.maxzoom === undefined ? 24 : L.maxzoom) !== sMax) m.setLayerZoomRange(L.id, sMin, sMax);
+        } else if ((L.minzoom || 0) !== 13 || (L.maxzoom === undefined ? 24 : L.maxzoom) !== 24) m.setLayerZoomRange(L.id, 13, 24); // Beta 1.41 guard: same no-op rule as setL/setP
+        // LABEL RULE (Andrew, Beta 1.258): the basemap names EVERY street, route
+        // streets included - the originals simply keep their stock filter from the
+        // embedded spec. (Beta 1.40-1.257 excluded the route names here because the
+        // app's own titles named them; the titles are retired, so the exclusion is
+        // retired with them.)
+        if (id === 'roads_labels_major' || id === 'roads_labels_minor') {
           const specL = (spec.layers || []).find(x => x.id === id);
-          const baseF = specL && specL.filter ? convF(specL.filter) : null;
-          const targetF = baseF ? ['all', baseF, ['!', ['in', ['get', 'name'], ['literal', ROUTE_TILE_NAMES]]]] : ['!', ['in', ['get', 'name'], ['literal', ROUTE_TILE_NAMES]]];
-          if (!eq(L.filter, targetF)) { try { m.setFilter(L.id, targetF); } catch (e2) {} } // Beta 1.41 guard
+          const targetF = specL && specL.filter ? convF(specL.filter) : null;
+          if (targetF && !eq(L.filter, targetF)) { try { m.setFilter(L.id, targetF); } catch (e2) {} } // Beta 1.41 guard
           if (!(typeof isNight === 'function' && isNight())) {
             // DAY READABILITY (Andrew, Beta 1.40): the stock day road names are pale and wash
             // out over the app's coloured route lines. Darken them to the app's own label ink
-            // with a firm light edge - the same treatment our titles use. Day only; the night
+            // with a firm light edge - the treatment the retired app titles used to wear. Day only; the night
             // branch above already lifts every name for the dark map.
             setP(L.id, 'text-color', '#333333'); setP(L.id, 'text-halo-color', 'rgba(255,255,255,.92)'); setP(L.id, 'text-halo-width', 1.5);
           }

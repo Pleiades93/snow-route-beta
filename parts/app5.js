@@ -373,15 +373,9 @@ function introToRoute() { // Beta 1.77 (Andrew): a pick opens WIDE on the route'
   let fit = null; try { fit = map.cameraForBounds(b, { padding: 28 }); } catch (e) {}
   if (!fit || !fit.center || typeof fit.zoom !== 'number') { fit0(); return; }
   try { map.jumpTo({ center: fit.center, zoom: Math.max(8, fit.zoom - 3) }); } catch (e) { fit0(); return; }
-  setTimeout(() => { if (!map) return; try { map.flyTo({ center: fit.center, zoom: fit.zoom, pitch: 45, duration: 3000, curve: 1.2, essential: false }); armTitleRePlace(); } catch (e) {} }, 1500); // 1500ms: the splash's exit (780ms) has finished and the wide view - the Route 5W point of interest - has had a moment to sit, before the slow flight in. Beta 1.203 (Andrew): the flight tilts into the 45-degree default as it comes in - centre and zoom are the flat fit's own, unchanged
+  setTimeout(() => { if (!map) return; try { map.flyTo({ center: fit.center, zoom: fit.zoom, pitch: 45, duration: 3000, curve: 1.2, essential: false }); } catch (e) {} }, 1500); // 1500ms: the splash's exit (780ms) has finished and the wide view - the Route 5W point of interest - has had a moment to sit, before the slow flight in. Beta 1.203 (Andrew): the flight tilts into the 45-degree default as it comes in - centre and zoom are the flat fit's own, unchanged
 }
-let titleRePlaceArmed = false;
-function armTitleRePlace() { // Beta 1.248: when THIS flight ends and the map is fully idle, the engine re-decides the street titles' anchors against the settled scene (GLP.rePlaceTitles - the flight's own placement passes decide them mid-flight, and MapLibre keeps a once-chosen side anchor for the session: names sat beside their streets from a cold open until a theme swap). moveend alone is not the signal - the basemap may still be streaming when the flight ends, and a re-decision against a half-arrived scene could stick the same way; idle is the settled scene. The 2.5s timer is only a backstop for an idle that never lands (a tile source that never settles); the pair runs once.
-  if (!map || titleRePlaceArmed) return; titleRePlaceArmed = true;
-  let done = false;
-  const run = () => { if (done) return; done = true; titleRePlaceArmed = false; try { if (window.GLP && window.GLP.rePlaceTitles) window.GLP.rePlaceTitles(); } catch (e) {} };
-  try { map.once('moveend', () => { try { map.once('idle', run); } catch (e) {} setTimeout(run, 2500); }); } catch (e) { titleRePlaceArmed = false; }
-}
+// Beta 1.258: the armTitleRePlace hook that stood here (Beta 1.248-1.257) is retired with the app-title system it served - the engine no longer re-places street titles because the app no longer draws them; the basemap names the streets (see glUnifyLabels, app2).
 function resetSwitchSession() { // Beta 1.117 (F3/F4): the ONE reset block a route switch runs - everything that names the OUTGOING route's session dies here, before the new pack's geometry or state exists. Runs after the F2 flush (loadRoute calls collapseNoteEditor first, so an open note draft has already finalized against the outgoing street).
   // Beta 1.148 (Tranche 5, A4(ii)): the reset knowledge now lives with the state
   // owners - this block only CALLS the owners' hooks (each hook preserves the

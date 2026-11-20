@@ -69,7 +69,7 @@ const host = {
   SPOT: {},
   pieces: { LongAve: [2, 1, 2], NorthAve: [1, 2, 1], CrossSt: [1, 2, 1] },
   selStretch: null, selSet: [], isNight: () => false,
-  activeRoute: { name: 'Proof' }, glHideLabels: () => {},
+  activeRoute: { name: 'Proof' }, glUnifyLabels: () => {},
 };
 
 const sources = {}, layers = [];

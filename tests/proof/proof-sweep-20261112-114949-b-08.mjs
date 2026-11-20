@@ -18,7 +18,7 @@ const host = {
   selStretch: null,
   selSet: [],
   isNight: () => night,
-  glHideLabels: () => {},
+  glUnifyLabels: () => {},
   jDistM: (a, b) => Math.hypot((b[1] - a[1]) * MLNG, (b[0] - a[0]) * MLAT),
   ptSegM: () => 999,
 };
@@ -41,7 +41,7 @@ const mockGL = {
 };
 
 const CASING_IDS = ['t1-casing', 't1-casingb'];
-const LABEL_IDS = ['streetnamespt1', 'streetnamespt2', 'streetnamespt3', 'streetnamespt4', 'routepoi-txt'];
+const LABEL_IDS = ['routepoi-txt']; // Beta 1.258: the app title layers are retired - the route POI label is the only app label layer the theme pass serves
 
 let failures = 0;
 function check(label, ok, detail = '') {

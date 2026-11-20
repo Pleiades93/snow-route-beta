@@ -19,9 +19,12 @@ import { readFileSync } from 'node:fs';
 // The frozen census (work/phase6/CENSUS.md, 2026-11-04): 172 free reads
 // across these 15 names, zero free writes, grouped (a) data/constants,
 // (b) functions called, (c) mutable state read live (via getters).
+// Beta 1.258 narrowing: SPOT and ROADS left the list - their last engine
+// reader was the retired street-title build, so the surface is now these
+// 13 names; the GL_HOST literal in app1.js shrank to match.
 const FROZEN = [
-  'MLAT', 'MLNG', 'PRIMARIES', 'SPOT', 'STRETCH', 'ROADS', 'names',       // (a)
-  'jDistM', 'ptSegM', 'isNight', 'glHideLabels',                     // (b)
+  'MLAT', 'MLNG', 'PRIMARIES', 'STRETCH', 'names',                     // (a)
+  'jDistM', 'ptSegM', 'isNight', 'glUnifyLabels',                     // (b)
   'pieces', 'selSet', 'selStretch', 'activeRoute',                   // (c)
 ];
 

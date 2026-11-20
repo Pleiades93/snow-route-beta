@@ -49,7 +49,7 @@ const host = {
   selSet: [],
   isNight: () => false,
   activeRoute: { name: 'Proof' },
-  glHideLabels: () => {},
+  glUnifyLabels: () => {},
 };
 
 const sources = {}, layers = [];

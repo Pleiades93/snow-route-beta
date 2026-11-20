@@ -62,7 +62,6 @@ function census(pack) {
     id: pack.id, name: pack.name, area: pack.area,
     names: names.length, nameList: names,
     primaries: (pack.primaries || []).length, primaryList: (pack.primaries || []).slice(),
-    tiles: (pack.tileNames || []).length,
     parts, partsByStreet,
     stretchTotal: Math.round(stretchTotal),
     totalWork: Math.round(stretchTotal * 2),
