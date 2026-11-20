@@ -346,40 +346,58 @@ const orient = await J(`(() => {
 ok('F5 lane names lie along their roads: every stored angle is bearing - 90 (worst deviation ' + (orient.worst != null ? Math.round(orient.worst * 10) / 10 : '?') + ' deg over ' + orient.checked + ' names)',
   orient.checked === 34 && orient.worst <= 1.5);
 
-// F6 (gate fix, Codex P2 on PR #151): the names must stay upright when the
-// CAMERA bearing changes (manual rotation, heading-up navigation). Point
-// symbols cannot use text-keep-upright, so the lane re-bases its written
-// angles against the live bearing. At bearing 180 every rendered angle
-// must equal normalize(angN - 180) - and therefore stay within +-90 (never
-// on its head) - where angN is F5's north-up value, recomputed here.
-await ev(`(() => { map.jumpTo({ bearing: 180 }); return true; })()`);
-await sleep(1500); // the rotate hook re-bases the lane data
-const orient180 = await J(`(() => {
-  const pack = ROUTE_PACKS.find(p => p.id === '5w');
-  const ord = { First: '1st', Second: '2nd', Third: '3rd', Fourth: '4th', Fifth: '5th', Sixth: '6th', Seventh: '7th', Eighth: '8th', Ninth: '9th', Tenth: '10th' };
-  const byName = {};
-  for (const f of map.queryRenderedFeatures({ layers: ['roads_labels_minor-priority'] })) byName[f.properties.name] = f.properties.ang;
-  const feats = Object.entries(byName).map(([name, ang]) => ({ properties: { name, ang } }));
-  let checked = 0, worst = 0, maxAbs = 0;
-  for (const f of feats) {
-    const key = Object.keys(STRETCH).find(n => (pack.tileNames.find(t => t.startsWith(n + ' ')) || pack.tileNames.find(t => t.startsWith((ord[n] || n) + ' ')) || n) === f.properties.name);
-    if (!key) return { checked, worst: 999, maxAbs };
-    const st = STRETCH[key];
-    let run = st.runs[0]; for (const r of st.runs) if (r.total > run.total) run = r;
-    const L = run.line, cum = run.cum, mid = run.total / 2;
-    const at = d => { for (let i = 1; i < L.length; i++) { if (d <= cum[i] || i === L.length - 1) { const span = cum[i] - cum[i - 1] || 1; const t = Math.max(0, Math.min(1, (d - cum[i - 1]) / span)); return [L[i - 1][0] + (L[i][0] - L[i - 1][0]) * t, L[i - 1][1] + (L[i][1] - L[i - 1][1]) * t]; } } return L[L.length - 1]; };
-    const a = at(Math.max(0, mid - 8)), b = at(Math.min(run.total, mid + 8));
-    let exp = Math.atan2((b[1] - a[1]) * MLNG, (b[0] - a[0]) * MLAT) * 180 / Math.PI - 90 - 180;
-    while (exp > 90) exp -= 180; while (exp <= -90) exp += 180;
-    let d = Math.abs(f.properties.ang - exp); if (d > 180) d = 360 - d;
-    if (d > worst) worst = d;
-    if (Math.abs(f.properties.ang) > maxAbs) maxAbs = Math.abs(f.properties.ang);
-    checked++;
-  }
-  return { checked, worst, maxAbs };
-})()`);
-ok('F6 lane names stay upright under a rotated camera: at bearing 180 every angle is re-based (worst deviation ' + (orient180.worst != null ? Math.round(orient180.worst * 10) / 10 : '?') + ' deg, steepest ' + orient180.maxAbs + ' deg over ' + orient180.checked + ' names)',
-  orient180.checked === 34 && orient180.worst <= 1.5 && orient180.maxAbs <= 90.5);
+// F6/F7 (gate fixes, Codex P2s on PR #151): the names must stay along
+// their roads AND upright when the CAMERA bearing changes (manual
+// rotation, heading-up navigation). The stored angle is a MAP-frame
+// rotation - the renderer adds the camera bearing on screen - so the
+// lane's only job on a bearing change is the flip: the stored angle keeps
+// its map-frame line direction (rendered == angN mod 180) and flips by
+// 180 exactly when the screen angle (rendered + bearing) would leave
+// (-90, 90]. Checked at bearing 90 (F6 - where a subtract-the-bearing
+// build puts every name PERPENDICULAR to its road) and bearing 180 (F7).
+const orientAt = async (B) => {
+  await ev(`(() => { map.jumpTo({ bearing: ${B}, zoom: 13.2 }); return true; })()`); // zoomed a step out from the home framing: rotated, the portrait frame crops an anchor near its edge - the angle law is what is graded here, coverage was F1/F2 at the true home framing
+  // The screen law is RAW: the renderer turns the glyphs by (stored +
+  // bearing) literally - a raw screen angle of 164 deg is upside-down
+  // text, NOT the -16 deg a modulo-180 reading would forgive (the first
+  // F6/F7 cut made exactly that mistake and blessed the broken build).
+  // Poll until the re-based data has rendered (a fixed sleep raced it).
+  const measure = `(() => {
+    const B = map.getBearing();
+    const pack = ROUTE_PACKS.find(p => p.id === '5w');
+    const ord = { First: '1st', Second: '2nd', Third: '3rd', Fourth: '4th', Fifth: '5th', Sixth: '6th', Seventh: '7th', Eighth: '8th', Ninth: '9th', Tenth: '10th' };
+    const byName = {};
+    for (const f of map.queryRenderedFeatures({ layers: ['roads_labels_minor-priority'] })) byName[f.properties.name] = f.properties.ang;
+    let checked = 0, worstLine = 0, worstScreen = 0;
+    for (const [name, rendered] of Object.entries(byName)) {
+      const key = Object.keys(STRETCH).find(n => (pack.tileNames.find(t => t.startsWith(n + ' ')) || pack.tileNames.find(t => t.startsWith((ord[n] || n) + ' ')) || n) === name);
+      if (!key) return { checked, worstLine: 999, worstScreen: 999 };
+      const st = STRETCH[key];
+      let run = st.runs[0]; for (const r of st.runs) if (r.total > run.total) run = r;
+      const L = run.line, cum = run.cum, mid = run.total / 2;
+      const at = d => { for (let i = 1; i < L.length; i++) { if (d <= cum[i] || i === L.length - 1) { const span = cum[i] - cum[i - 1] || 1; const t = Math.max(0, Math.min(1, (d - cum[i - 1]) / span)); return [L[i - 1][0] + (L[i][0] - L[i - 1][0]) * t, L[i - 1][1] + (L[i][1] - L[i - 1][1]) * t]; } } return L[L.length - 1]; };
+      const a = at(Math.max(0, mid - 8)), b = at(Math.min(run.total, mid + 8));
+      let A = Math.atan2((b[1] - a[1]) * MLNG, (b[0] - a[0]) * MLAT) * 180 / Math.PI - 90;
+      while (A > 90) A -= 180; while (A <= -90) A += 180;
+      let dLine = Math.abs(((rendered - A) % 180 + 180) % 180); if (dLine > 90) dLine = 180 - dLine;
+      let sExp = A + B; while (sExp > 90) sExp -= 180; while (sExp <= -90) sExp += 180;
+      let sRaw = rendered + B; while (sRaw > 180) sRaw -= 360; while (sRaw <= -180) sRaw += 360;
+      if (dLine > worstLine) worstLine = dLine;
+      if (Math.abs(sRaw - sExp) > worstScreen) worstScreen = Math.abs(sRaw - sExp);
+      checked++;
+    }
+    return { checked, worstLine, worstScreen };
+  })()`;
+  let m = await J(measure);
+  for (let i = 0; i < 24 && !(m.checked === 34 && m.worstLine <= 1.5 && m.worstScreen <= 1.5); i++) { await sleep(500); m = await J(measure); }
+  return m;
+};
+const orient90 = await orientAt(90);
+ok('F6 lane names stay along their roads under a rotated camera: at bearing 90 the map-frame line direction is preserved (worst ' + (orient90.worstLine != null ? Math.round(orient90.worstLine * 10) / 10 : '?') + ' deg) and the screen angle is the upright one (worst ' + (orient90.worstScreen != null ? Math.round(orient90.worstScreen * 10) / 10 : '?') + ' deg) over ' + orient90.checked + ' names',
+  orient90.checked === 34 && orient90.worstLine <= 1.5 && orient90.worstScreen <= 1.5);
+const orient180 = await orientAt(180);
+ok('F7 lane names stay upright at bearing 180: line direction preserved (worst ' + (orient180.worstLine != null ? Math.round(orient180.worstLine * 10) / 10 : '?') + ' deg), screen angle upright (worst ' + (orient180.worstScreen != null ? Math.round(orient180.worstScreen * 10) / 10 : '?') + ' deg) over ' + orient180.checked + ' names',
+  orient180.checked === 34 && orient180.worstLine <= 1.5 && orient180.worstScreen <= 1.5);
 await ev(`(() => { map.jumpTo({ bearing: 0 }); return true; })()`);
 await sleep(800);
 

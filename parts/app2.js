@@ -152,20 +152,26 @@ function glUnifyLabels(m) { // BASEMAP LABEL UNIFICATION (Andrew, Beta 1.6): the
     const laneId = 'roads_labels_minor-priority';
     const pack = (typeof activeRoute !== 'undefined' && activeRoute && Array.isArray(activeRoute.tileNames)) ? activeRoute : null;
     const orig = (m.getStyle().layers || []).find(x => x.id === 'roads_labels_minor');
-    // The stored angle is the NORTH-UP rotation. Point symbols cannot use
-    // text-keep-upright (MapLibre reserves it for line placement), so when
-    // the camera bearing changes - a manual rotation, or heading-up
-    // navigation (headCam, app3) - the written angles are re-based against
-    // the live bearing: ang_screen = normalize(ang - bearing), which keeps
-    // every name along its road on screen and never on its head (gate fix,
-    // Codex P2 on PR #151; drive214 F6 pins it at bearing 180).
+    // The stored angle is the NORTH-UP rotation, in MAP coordinates: with
+    // text-rotation-alignment 'map' the renderer itself adds the camera
+    // bearing on screen, so a name that lies along its road north-up lies
+    // along it at every bearing. The one defect is the flip: when the
+    // SCREEN angle (stored + bearing) leaves (-90, 90] the name would read
+    // upside down, and point symbols cannot use text-keep-upright
+    // (MapLibre reserves it for line placement). So on a bearing change -
+    // a manual rotation, or heading-up navigation (headCam, app3) - the
+    // stored angle flips by 180 exactly when its screen angle would leave
+    // the upright range; the map-frame line direction never changes (gate
+    // fixes, Codex P2s on PR #151: the first cut subtracted the bearing,
+    // which double-rotated at every bearing but 180 - drive214 F6 pins
+    // the flip at bearings 90 and 180).
     const applyLaneBearing = () => {
       const base = m.__routeLabelBase, src = m.getSource('route-labels');
       if (!base || !src) return;
       const brg = Math.round((m.getBearing ? m.getBearing() : 0) * 10) / 10;
       if (m.__routeLabelBearing === brg) return;
       m.__routeLabelBearing = brg;
-      const feats = base.map(f => { let a = f.properties.ang - brg; while (a > 90) a -= 180; while (a <= -90) a += 180; return { type: 'Feature', properties: { name: f.properties.name, ang: Math.round(a * 10) / 10 }, geometry: f.geometry }; });
+      const feats = base.map(f => { let a = f.properties.ang; const screen = a + brg; if (screen > 90) a -= 180; else if (screen <= -90) a += 180; return { type: 'Feature', properties: { name: f.properties.name, ang: Math.round(a * 10) / 10 }, geometry: f.geometry }; });
       src.setData({ type: 'FeatureCollection', features: feats });
     };
     m.__applyRouteLabelBearing = applyLaneBearing;
