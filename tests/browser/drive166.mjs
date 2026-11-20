@@ -858,12 +858,22 @@ ok('J8e (city clip piece choice - Beta 1.245, the PR #128 Codex catch) a run tha
 // anchors sit OUTSIDE Vaughan's committed coverage - a box whose anchor is
 // already covered is a no-op by design (CG-PF-04), which is also why the
 // section's expected box bounds move with the new remedy centre.
+// Beta 1.253 PREMISE UPDATE (#20): through 1.252 the entry click above rode
+// the click handler's else branch - the hidden button (the ready state
+// renders no button of its own since 1.153) still dispatched the zoom offer
+// when fired programmatically, one half of the label/action split #20
+// names. The one decision (crHintAction) now serves the ready state no
+// button and no dispatch, so this section fires the preparation call the
+// dispatch made - crStartPrep at the map centre - directly. Everything the
+// section grades (the box bounds, the dense refusal, the remedy pair, the
+// new-centre remedy) is unchanged; the remedy's LABEL is the corrected one
+// (see the J9/J8c check).
 await jEnter();
 const s11Pick = await poll(`typeof creating !== 'undefined' && creating === true && crStage === 'pick' && crGrid !== null && crPrepState === 'ready'`, 20000).catch(() => false);
 await ev(`window.__jMode = 'dense'`);
 await ev(`map.jumpTo({ center: [-79.574666, 43.95], zoom: 15 })`);
 await sleep(600);
-await ev(`document.getElementById('crHintBtn').click()`); // Prepare this area - the box, which the dense profile refuses
+await ev(`(() => { const c = map.getCenter(); crStartPrep({ lat: c.lat, lng: c.lng }); })()`); // the fallback box at the map centre, which the dense profile refuses (Beta 1.253: fired directly - see the premise update above)
 const s11Dense = await poll(`crPrepState === 'failed' && crPrepFail && crPrepFail.kind === 'dense'`, 20000).catch(() => false);
 const S11a = await J(`({ btn: document.getElementById('crHintBtn').textContent, grid: !!crGrid })`);
 await ev(`map.jumpTo({ center: [-79.35, 43.95], zoom: 13 })`);
@@ -874,8 +884,8 @@ const s11Ready = await poll(`crPrepState === 'ready'`, 20000).catch(() => false)
 const S11log = await geoSince(gcS11);
 const s11Body = batchBodies(S11log)[0] || '';
 const s11M = /\(([-\d.]+),([-\d.]+),([-\d.]+),([-\d.]+)\)/.exec(s11Body);
-ok('J9/J8c (fallback box + dense remedy; Beta 1.229 entry) with Vaughan loaded (' + s11Pick + '), Prepare-this-area runs the fallback box at the map centre; a dense refusal leaves the failed state with its remedy on the button (' + JSON.stringify(S11a) + ' - with a city grid present the button reads Retry, and its click is the handler\'s dense branch: prepare wherever the map now sits) - moving the map and tapping it prepares the NEW centre\'s box (bounds ' + (s11M ? s11M.slice(1).join(',') : '?') + ') | dense failed: ' + s11Dense + ', ready after remedy: ' + s11Ready,
-  s11Pick === true && s11Dense === true && S11a.btn === 'Retry' && S11a.grid === true && s11Ready === true && !!s11M && Math.abs(+s11M[1] - 43.923054) < 0.002 && Math.abs(+s11M[3] - 43.976946) < 0.002);
+ok('J9/J8c (fallback box + dense remedy; Beta 1.229 entry, Beta 1.253 label) with Vaughan loaded (' + s11Pick + '), Prepare-this-area runs the fallback box at the map centre; a dense refusal leaves the failed state with its remedy on the button (' + JSON.stringify(S11a) + ' - since Beta 1.253 the button reads Prepare this area, the remedy its click has always run: through 1.252 it read Retry over a settled grid while the click prepared at the map centre, the #20 label/action split) - moving the map and tapping it prepares the NEW centre\'s box (bounds ' + (s11M ? s11M.slice(1).join(',') : '?') + ') | dense failed: ' + s11Dense + ', ready after remedy: ' + s11Ready,
+  s11Pick === true && s11Dense === true && S11a.btn === 'Prepare this area' && S11a.grid === true && s11Ready === true && !!s11M && Math.abs(+s11M[1] - 43.923054) < 0.002 && Math.abs(+s11M[3] - 43.976946) < 0.002);
 await jExitDiscard();
 // S12: the quota/cap degradation is DISCLOSED, and the session still works
 await jWipe();

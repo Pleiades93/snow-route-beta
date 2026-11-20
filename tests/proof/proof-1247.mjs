@@ -58,8 +58,8 @@ check('6: the create text boxes keep their white pills',
 check('7: the CHANGELOG top entry is Beta 1.247',
   changelog.indexOf('## Beta 1.247') > -1 && changelog.indexOf('## Beta 1.247') < changelog.indexOf('## Beta 1.246'));
 check('8: What\'s New carries the CURRENT entry\'s bullet (rolled to 1.251: this check tracks the current entry each round), within the 108-char cap, em-dash free',
-  whatsnew.includes('Turning location back on no longer restarts it while it waits for a first fix.') &&
-  'Turning location back on no longer restarts it while it waits for a first fix.'.length <= 108 &&
+  whatsnew.includes('In the create flow, the hint button label now always matches what tapping it does.') &&
+  'In the create flow, the hint button label now always matches what tapping it does.'.length <= 108 &&
   !whatsnew.includes('—'));
 
 console.log(`proof-1247: ${pass} passed, ${fail} failed`);

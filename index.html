@@ -2,7 +2,7 @@
 <html lang="en" class="boot">
 <head>
 <meta charset="UTF-8">
-<meta http-equiv="Content-Security-Policy" content="default-src 'none'; script-src 'sha384-gOmQWjzTT3Rjv5yyKfeH894jkxVK6tP+mKC/kcoCawHkL1GXZcwjELUjdcs768fP' https://cdn.jsdelivr.net; style-src-elem 'sha384-d/l/IXQqfXIFaGJZf14qBauOoZmVXzNyH9eaxZAb3sSblpfspu4Tu1q9IqwpR4v2' https://cdn.jsdelivr.net; style-src-attr 'unsafe-inline'; img-src 'self' data: blob: https://tiles.basemaps.cartocdn.com https://protomaps.github.io https://cdn.jsdelivr.net; connect-src 'self' https://tiles.basemaps.cartocdn.com https://protomaps.github.io https://cdn.jsdelivr.net https://nominatim.openstreetmap.org https://overpass-api.de https://overpass.kumi.systems; worker-src blob: 'self'; child-src blob: 'self'; font-src 'none'; manifest-src 'self'; base-uri 'none'; form-action 'none'; object-src 'none'">
+<meta http-equiv="Content-Security-Policy" content="default-src 'none'; script-src 'sha384-uOHv1xfRyLRLN2Yf+s3MAbDADdjPGKDeWnhIVsst6UH3kiuaG7LhzyV4fv6wV9/j' https://cdn.jsdelivr.net; style-src-elem 'sha384-d/l/IXQqfXIFaGJZf14qBauOoZmVXzNyH9eaxZAb3sSblpfspu4Tu1q9IqwpR4v2' https://cdn.jsdelivr.net; style-src-attr 'unsafe-inline'; img-src 'self' data: blob: https://tiles.basemaps.cartocdn.com https://protomaps.github.io https://cdn.jsdelivr.net; connect-src 'self' https://tiles.basemaps.cartocdn.com https://protomaps.github.io https://cdn.jsdelivr.net https://nominatim.openstreetmap.org https://overpass-api.de https://overpass.kumi.systems; worker-src blob: 'self'; child-src blob: 'self'; font-src 'none'; manifest-src 'self'; base-uri 'none'; form-action 'none'; object-src 'none'">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="mobile-web-app-capable" content="yes">
@@ -660,7 +660,7 @@ html.theme-swap *, html.theme-swap *::before, html.theme-swap *::after { transit
 <div id="hud">
   <div id="warn">Not saving. Storage is full or blocked</div>
   <div class="row">
-    <div class="titleStack"><div class="title">Snow Route Beta</div><div class="ver" id="ver">Beta 1.252</div></div>
+    <div class="titleStack"><div class="title">Snow Route Beta</div><div class="ver" id="ver">Beta 1.253</div></div>
   </div>
   <div id="stats"></div>
 </div>
@@ -6909,7 +6909,7 @@ $('stDel').addEventListener('click', async () => {
 });
 // ---- About ----
 const WHATSNEW = { // the curated in-app notes: plain words, LATEST RELEASE ONLY (Beta 1.114, Andrew: the accumulated list cluttered the About pane). A release REPLACES this entry with its own in the same change - it never accumulates; the full history lives in CHANGELOG.md, not the app
-  v: 'Beta 1.252', items: ["Turning location back on no longer restarts it while it waits for a first fix."] }; // Beta 1.223 (Andrew): What's New entries are SHORT from now on - point form, one short plain line each, no prose paragraphs, no em dashes
+  v: 'Beta 1.253', items: ["In the create flow, the hint button label now always matches what tapping it does."] }; // Beta 1.223 (Andrew): What's New entries are SHORT from now on - point form, one short plain line each, no prose paragraphs, no em dashes
 
 function renderAbout() {
   const cur = $('ver').textContent.trim();
@@ -8212,7 +8212,7 @@ function crGridResume() { // the degraded/stopped remedy: fetch ONLY the missing
 // crStartPrep), which was never this function. Nothing calls it any more.
 function crFailText(f) { // the honest taxonomy (scope item 5): unreachable / answered-with-error / too-dense read differently because they ARE different
   if (!f) return '';
-  if (f.kind === 'dense') return crGrid ? 'Parts of ' + (crCity ? crCity.name : 'the city') + ' were too dense to load - tap Retry to try those parts again' : 'That area is too dense to load at once - move the map to a less busy part of ' + (crCity ? crCity.name : 'the city') + ', then tap Prepare this area'; // box form per CG-PF-09: the footprint is FIXED, so zooming changes nothing - the working remedy is preparing a less dense area, and the button in this state does exactly that (map centre). Grid form: the dense cells are the failed parts, and Retry resumes exactly them
+  if (f.kind === 'dense') return crFailFromGrid ? 'Parts of ' + (crCity ? crCity.name : 'the city') + ' were too dense to load - tap Retry to try those parts again' : 'That area is too dense to load at once - move the map to a less busy part of ' + (crCity ? crCity.name : 'the city') + ', then tap Prepare this area'; // box form per CG-PF-09: the footprint is FIXED, so zooming changes nothing - the working remedy is preparing a less dense area, and the button in this state does exactly that (map centre). Grid form: the dense cells are the failed parts, and Retry resumes exactly them. Beta 1.253 (#20): the branch keys on the failure's SOURCE (crFailFromGrid), never on the grid's existence - through 1.252 it keyed on crGrid like the button's label did, so a dense BOX failure landing over a settled grid told the user to tap a Retry the button did not read
   if (f.kind === 'error') return 'The street-shape service answered with an error' + (f.status ? ' (' + f.status + ')' : '') + ' - tap Retry';
   if (f.kind === 'badjson') return 'The street-shape service sent back something unreadable - tap Retry';
   return 'The street-shape service didn’t answer - tap Retry';
@@ -8227,6 +8227,22 @@ function crFailText(f) { // the honest taxonomy (scope item 5): unreachable / an
 // readout read as a glitch). The terminal states - the load confirmation,
 // failure, degraded - are never gated: they are outcomes, not progress.
 const CR_LOAD_GATE_MS = 5000;
+function crHintAction() { // Beta 1.253 (cross-audit fix round 4, #20): the ONE decision for the hint button - crRenderHint takes the LABEL from here and the button's click handler takes the ACTION from here, so the two can never diverge. Through 1.252 each side interpreted the state on its own: the renderer keyed the failed state on crGrid (a grid object existing) while the handler keyed it on crFailFromGrid (the failure's SOURCE, create-fetch.js's stated rule), so a fallback-BOX failure landing while a grid existed read 'Retry' - the renderer's dense remedy ('Prepare this area') was unreachable whenever a grid existed - while the click prepared a new area at the map centre. The precedence is the click handler's long-standing order, now stated once: an in-flight load's Cancel outranks everything; an outstanding offer (crWanted) outranks the state remedies; the failed state keys on crFailFromGrid, never on crGrid's existence.
+  if (crPrepState === 'preparing') return { label: 'Cancel', act: 'cancel' };
+  if (crWanted) return { label: crWanted.label, act: 'wanted' };
+  if (crPrepState === 'degraded') {
+    if (!crGrid) return { label: '', act: '' }; // degraded is a grid state - with no grid there is no remedy to offer, and no button may promise one
+    return crGrid.stopped === 'cancelled' ? { label: 'Resume', act: 'resume' } : { label: 'Retry missing parts', act: 'resume' };
+  }
+  if (crPrepState === 'failed') {
+    if (crFailFromGrid) return { label: 'Retry', act: 'resume' }; // a failed GRID retries its missing cells
+    if (crPrepFail && crPrepFail.kind === 'dense') return { label: 'Prepare this area', act: 'prepare-centre' }; // a dense BOX failure: retrying the same anchor cannot help (fixed footprint) - prepare wherever the map now sits (CG-PF-09)
+    return { label: 'Retry', act: 'retry-anchor' }; // a failed BOX re-runs at its own anchor
+  }
+  if (crPrepState === 'ready') return { label: '', act: '' }; // an offer in the ready state is the crWanted case above; a healthy city offers no button of its own (Beta 1.153)
+  if (map && map.getZoom() >= 14) return { label: 'Prepare this area', act: 'prepare-centre' };
+  return { label: '', act: '' };
+}
 function crRenderHint() { // the ONE writer of the pick-stage hint + its action button + the sheet's city chip: state-driven, so no stale text survives a state change
   if (!creating || crStage !== 'pick') return;
   const hint = $('createHint'), btn = $('crHintBtn');
@@ -8236,27 +8252,27 @@ function crRenderHint() { // the ONE writer of the pick-stage hint + its action 
   const pastGate = t0 => !!t0 && (Date.now() - t0) >= CR_LOAD_GATE_MS; // the gate reads the load's OWN start, so a readout that appears carries the load's true progress at that moment; the loads' own 1 s tickers re-render through this writer as the gate opens - no second clock exists to go stale
   if (crPrepState === 'preparing' && crPrep) { // the fallback box, when IT is the in-flight operation: it outranks the grid text - a settled (or still-loading) city grid must not label a box wait with stale part counts
     gated = !pastGate(crPrep.startedAt);
-    if (!gated) { text = 'Preparing street shapes for ' + (crCity ? crCity.name : 'this area') + '…'; btnLabel = 'Cancel'; } // Beta 1.176: gated like every load readout; past the gate it keeps its truthful wording minus the elapsed-seconds suffix - the box is ONE fetch with no countable parts, so no percentage exists for it (an invented one would be a fabrication, not a format)
+    if (!gated) { text = 'Preparing street shapes for ' + (crCity ? crCity.name : 'this area') + '…'; } // Beta 1.176: gated like every load readout; past the gate it keeps its truthful wording minus the elapsed-seconds suffix - the box is ONE fetch with no countable parts, so no percentage exists for it (an invented one would be a fabrication, not a format)
   }
   else if (crPrepState === 'preparing' && crGrid) { // the city grid - the live service or the app's own library behind the one extract seam, and ONE readout for both since 1.176
     gated = !pastGate(crGrid.startedAt);
-    if (!gated) { const done = crGridDoneCount(), total = crGrid.cells.length; text = 'Loading ' + crGrid.name + ', ' + (total > 0 ? Math.round(done / total * 100) : 0) + '%'; btnLabel = 'Cancel'; } // Beta 1.176 (Andrew's amendment): name + percentage ONLY - no part counts ('part 0 of 30'), no elapsed seconds, no failed-so-far tally (failures surface in the degraded/failed states, which are never gated). The percentage is the honest count in the form he asked for - cells done of cells total, the same counters the retired part readout used - so the 1.123 pack wording ('from the app's own library…') retires with it: one readout format for a city load, and the pack's cells are the same counters
+    if (!gated) { const done = crGridDoneCount(), total = crGrid.cells.length; text = 'Loading ' + crGrid.name + ', ' + (total > 0 ? Math.round(done / total * 100) : 0) + '%'; } // Beta 1.176 (Andrew's amendment): name + percentage ONLY - no part counts ('part 0 of 30'), no elapsed seconds, no failed-so-far tally (failures surface in the degraded/failed states, which are never gated). The percentage is the honest count in the form he asked for - cells done of cells total, the same counters the retired part readout used - so the 1.123 pack wording ('from the app's own library…') retires with it: one readout format for a city load, and the pack's cells are the same counters
   }
   else if (crPrepState === 'degraded' && crGrid) {
-    if (crGrid.stopped === 'cancelled') { text = 'Loading stopped - ' + crGrid.name + ' ' + (crGrid.cells.length ? Math.round(crGridDoneCount() / crGrid.cells.length * 100) : 0) + '% loaded'; btnLabel = 'Resume'; } // Beta 1.176 (Andrew's standing rule): a loading readout speaks in percentages - the stopped state names how much of the city landed as a percentage of its cells, not a part count; the Resume remedy is unchanged
-    else { text = crGrid.name + ' loaded except ' + (crGridFailedCount() + crGridPendingCount()) + ' part' + ((crGridFailedCount() + crGridPendingCount()) === 1 ? '' : 's') + ' - streets there may be missing'; btnLabel = 'Retry missing parts'; }
-    if (crWanted) btnLabel = crWanted.label;
+    if (crGrid.stopped === 'cancelled') { text = 'Loading stopped - ' + crGrid.name + ' ' + (crGrid.cells.length ? Math.round(crGridDoneCount() / crGrid.cells.length * 100) : 0) + '% loaded'; } // Beta 1.176 (Andrew's standing rule): a loading readout speaks in percentages - the stopped state names how much of the city landed as a percentage of its cells, not a part count; the Resume remedy is unchanged
+    else { text = crGrid.name + ' loaded except ' + (crGridFailedCount() + crGridPendingCount()) + ' part' + ((crGridFailedCount() + crGridPendingCount()) === 1 ? '' : 's') + ' - streets there may be missing'; }
   }
-  else if (crPrepState === 'failed') { text = crFailText(crPrepFail); btnLabel = crGrid ? 'Retry' : ((crPrepFail && crPrepFail.kind === 'dense') ? 'Prepare this area' : 'Retry'); if (crWanted) btnLabel = crWanted.label; } // grid failure: Retry resumes the missing cells. Box dense: Retry at the same anchor cannot help (fixed footprint) - the button prepares wherever the map now sits (CG-PF-09). Beta 1.154 (B3 build): the wanted override applies in this branch too, as it always did in the degraded/ready branches - through 1.153 an outstanding offer's button read 'Retry' here while the click actually started the fallback preparation at the wanted anchor (the 2026-11-09 lifecycle trace's label wart); with no offer outstanding the label stays 'Retry', and the click is then genuinely a retry
+  else if (crPrepState === 'failed') { text = crFailText(crPrepFail); } // the failed state's BUTTON is crHintAction's now (Beta 1.253, #20): through 1.252 this branch labelled from crGrid's existence - 'Retry' whenever a grid object existed, the dense 'Prepare this area' only when none did - while the click branched on crFailFromGrid, so a dense box failure landing over a settled grid read 'Retry' and prepared a new area at the map centre. The label history (CG-PF-09's dense rule; Beta 1.154's wanted override, which closed the through-1.153 wart where an offer's button read 'Retry' while the click prepared at the offer's anchor) is preserved inside the one decision
   else if (crPrepState === 'ready') {
     // Beta 1.223 (Andrew): NO success text in the ready state - the loaded-city
     // confirmation ('<City> — loaded ...', cached and fresh forms, Beta 1.153/1.176)
     // is removed whole; silence means it loaded. What still speaks in the ready
     // state: a disclosure note riding below (cache/pack), standing alone per the
     // 1.175 rule, and an outstanding offer's button.
-    if (crWanted) btnLabel = crWanted.label; // an outstanding offer (a tap outside coverage, a pending street) keeps its working button in the ready state too (CG-PF-09: the first build's ready state hid it) - since Beta 1.153 removed the healthy-state Refresh, it is the ready state's only button
+    // (an outstanding offer's button in this state is crHintAction's crWanted case, as it is in every state - CG-PF-09: the first build's ready state hid it)
   }
-  else { text = crCity ? 'Search for a street in ' + crCity.name + ', or zoom in and prepare this area' : 'Search, fly to a street, then tap it on the map'; if (crWanted) btnLabel = crWanted.label; else if (map && map.getZoom() >= 14) btnLabel = 'Prepare this area'; }
+  else { text = crCity ? 'Search for a street in ' + crCity.name + ', or zoom in and prepare this area' : 'Search, fly to a street, then tap it on the map'; }
+  if (!gated) btnLabel = crHintAction().label; // Beta 1.253 (#20): the button's label is the ONE decision's (crHintAction, above) - the branches above now compute text and the gate only. Inside the 5 s gate the label stays empty, exactly as the branches' own gated assignments kept it empty through 1.252
   if (!gated) { // Beta 1.176: inside the gate the pill renders nothing at all - a disclosure note does not leak it open early (the note is still state, and rides the first ungated render or the terminal state, so nothing is ever swallowed)
     if (crCacheNote && crCity && crCacheNoteCity === crCity.name) text = text ? text + ' · ' + crCacheNote : crCacheNote; // the disclosed cache state rides the hint (amendment C: degradation is said, never silent) - Beta 1.143 (DA-06): only when the note belongs to the city on screen. Beta 1.175: since the ready-state hints were removed, a note can ride an otherwise EMPTY hint - it then stands alone, with no dangling separator
     if (crPackNote && crCity) text = text ? text + ' · ' + crPackNote : crPackNote; // Beta 1.123: the disclosed pack state rides the hint the same way - a fallen-back load says the library didn't load, in every state the hint shows. Beta 1.175: the same stand-alone rule as the cache note above
@@ -9609,17 +9625,13 @@ $('crCityBack').addEventListener('click', () => {
   else { showRmPane('rmCreatePane'); }
 });
 $('crCityChange').addEventListener('click', () => crOpenCityPane('pick'));
-$('crHintBtn').addEventListener('click', () => {
-  if (crPrepState === 'preparing') { crCancelPrep(); return; }
-  if (crWanted) { crStartPrep(crWanted.anchor); return; } // an outstanding offer (outside-coverage tap / pending street) prepares exactly where it points - it outranks the state remedies below
-  if (crPrepState === 'degraded') { crGridResume(); return; } // Resume / Retry missing parts: only the missing cells fetch (amendments A+B)
-  if (crPrepState === 'failed') {
-    if (crFailFromGrid) { crGridResume(); return; } // a failed GRID retries its missing cells
-    if (crPrepFail && crPrepFail.kind === 'dense') { if (map) { const c = map.getCenter(); crStartPrep({ lat: c.lat, lng: c.lng }); } } // the dense remedy: prepare wherever the map now sits (CG-PF-09)
-    else if (crPrepAnchor) crStartPrep(crPrepAnchor); // Retry: the same anchor again
-    return;
-  }
-  if (map) { const c = map.getCenter(); crStartPrep({ lat: c.lat, lng: c.lng }); } // Prepare this area: the anchor is the map centre he is looking at. (Beta 1.153: the ready state's Refresh dispatch is GONE with the button - a healthy cached city offers no reload, so no state routes here to crGridRefresh any more.)
+$('crHintBtn').addEventListener('click', () => { // Beta 1.253 (#20): the action is the SAME decision that labelled the button (crHintAction, above crRenderHint) - this handler dispatches, it no longer re-interprets the state, so a label can never promise one remedy while the click delivers another
+  const act = crHintAction().act;
+  if (act === 'cancel') { crCancelPrep(); return; }
+  if (act === 'wanted') { crStartPrep(crWanted.anchor); return; } // an outstanding offer (outside-coverage tap / pending street) prepares exactly where it points - it outranks the state remedies
+  if (act === 'resume') { crGridResume(); return; } // Resume / Retry missing parts / a failed grid's Retry: only the missing cells fetch (amendments A+B)
+  if (act === 'retry-anchor') { if (crPrepAnchor) crStartPrep(crPrepAnchor); return; } // a failed box's Retry: the same anchor again
+  if (act === 'prepare-centre') { if (map) { const c = map.getCenter(); crStartPrep({ lat: c.lat, lng: c.lng }); } return; } // Prepare this area (the dense remedy, CG-PF-09, and the zoomed-in none state): the anchor is the map centre he is looking at. (Beta 1.153: the ready state's Refresh dispatch is GONE with the button - a healthy cached city offers no reload, so no decision routes there to crGridRefresh any more.)
 });
 onMapReady(() => map.on('moveend', () => { if (creating && crStage === 'pick' && crPrepState === 'none') crRenderHint(); })); // the Prepare-this-area offer follows the zoom (it appears only at picking zoom) - never a silent download while merely panning
 $('crSearchInput').addEventListener('keydown', e => { if (e.key === 'Enter') crSearch(); });
