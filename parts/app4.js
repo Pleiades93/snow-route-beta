@@ -410,8 +410,19 @@ function fmtStoreSize(n) { // Beta 1.183: storage sizes in the Status pane's pla
   if (n < 1024 * 1024 * 1024) return Math.round(n / (1024 * 1024)) + ' MB';
   return (n / (1024 * 1024 * 1024)).toFixed(1).replace(/\.0$/, '') + ' GB';
 }
+function packTileEnum(src, pk, budget) { // Beta 1.254 (cross-audit #10): the ONE ordered tile enumeration for a (source, pack) pair - packTileUrls (one pack's attributed set) and preloadUrlList (the union manifest) both consume it, so the zoom policy, the span budgeting and the z15 core margins live in exactly one place; through 1.253 the two functions duplicated the whole algorithm (even the comments were copied) under a header claiming they could never drift apart. Returns the URLs in enumeration order plus the budget left over - each caller keeps its own nesting, and therefore its own output order: the manifest's frozen 897-URL fingerprint is this enumeration replayed style > source > pack, and the attributed set is the same enumeration replayed style > source for one pack.
+  const urls = [];
+  const maxz = Math.min(14, src.maxzoom || 14);
+  const ex = pk.box || computeRouteBox(pk.roads || {});
+  // tile y grows SOUTHWARD: the north edge (y1) is the smaller number - looping y0..y1 (the pre-1.34 code) silently downloaded ZERO tiles; drive123 A8 counts the fetched tile URLs so this can never pass unnoticed again
+  // Beta 1.72 (Phase 3, item R04): the wide zooms join the set - the map itself allows zoom 8 (minZoom), but the preload stopped at z10, so offline at z8-9 the basemap had nothing to draw. Over the Vaughan box those zooms are 3 tiles (1 + 2).
+  if (ex) for (let z = 8; z <= maxz; z++) { const [x0, y1] = tileNums(ex.w, ex.n, z); const [x1, y0] = tileNums(ex.e, ex.s, z); const span = (x1 - x0 + 1) * (y0 - y1 + 1) * src.tiles.length; if (!(span <= budget)) continue; budget -= Math.max(0, span); for (let x = x0; x <= x1; x++) for (let y = y1; y <= y0; y++) for (const t of src.tiles) urls.push(t.replace('{z}', z).replace('{x}', x).replace('{y}', y)); }
+  // Beta 1.41: display zooms 15-19 all render from z15 tiles (the source's maxzoom) - yet the set above stops at 14, so the working zoom band was the LEAST cached. Add z15 over the route core only (the pack's own roads bounds + margin, so it cannot drift): 15 tiles for 5W. z15 over the whole Vaughan box would be ~1,400 files for streets he never opens.
+  if ((src.maxzoom || 14) >= 15) { const rb = computeRouteBox(pk.roads || {}); if (rb) { const cb = { w: rb.w - 0.005, s: rb.s - 0.004, e: rb.e + 0.005, n: rb.n + 0.004 }; const [cx0, cy1] = tileNums(cb.w, cb.n, 15); const [cx1, cy0] = tileNums(cb.e, cb.s, 15); const span15 = (cx1 - cx0 + 1) * (cy0 - cy1 + 1) * src.tiles.length; if (span15 <= budget) { budget -= Math.max(0, span15); for (let x = cx0; x <= cx1; x++) for (let y = cy1; y <= cy0; y++) for (const t of src.tiles) urls.push(t.replace('{z}', 15).replace('{x}', x).replace('{y}', y)); } } }
+  return { urls, budget };
+}
 function packTileUrls(pk) { // Beta 1.117 (F5): the TILE urls attributable to ONE pack - its offline area (pack.box; a pack without one falls back to its own roads' bounds) at z8-14 plus its z15 route core. Sprites and glyphs are shared chrome, attributable to no route. preloadUrlList unions this over every known pack; the per-route preload record counts against it.
-  // Beta 1.152 (NV round, NV3b): the enumeration itself is budgeted - PACK_TILES_MAX tile iterations for this pack, each zoom's span counted BEFORE its loop runs and the zoom skipped whole when it does not fit. normalizePack's extent ceiling (NV3a) rejects such a pack at every import path, but a pack record planted straight into storage never passes through the validator, and this function runs at every boot that carries a preload record: a worldwide box is ~356.8M iterations per source and never returned (measured). Under the budget the output is identical to the unbudgeted enumeration - proven against the frozen 897-URL fixture by tests/browser/selftest-nv1152.mjs.
+  // Beta 1.152 (NV round, NV3b): the enumeration itself is budgeted - PACK_TILES_MAX tile iterations for this pack, each zoom's span counted BEFORE its loop runs and the zoom skipped whole when it does not fit. normalizePack's extent ceiling (NV3a) rejects such a pack at every import path, but a pack record planted straight into storage never passes through the validator, and this function runs at every boot that carries a preload record: a worldwide box is ~356.8M iterations per source and never returned (measured). Under the budget the output is identical to the unbudgeted enumeration - proven against the frozen 897-URL fixture by tests/browser/selftest-nv1152.mjs. Beta 1.254 (#10): the enumeration itself is packTileEnum's now (above) - this function keeps only the per-pack budget thread and the style > source nesting.
   const urls = new Set();
   let budget = PACK_TILES_MAX;
   for (const key of ['day', 'night']) {
@@ -419,13 +430,8 @@ function packTileUrls(pk) { // Beta 1.117 (F5): the TILE urls attributable to ON
     for (const srcName of Object.keys(stj.sources || {})) {
       const src = stj.sources[srcName];
       if (src.type !== 'vector' || !src.tiles) continue;
-      const maxz = Math.min(14, src.maxzoom || 14);
-      const ex = pk.box || computeRouteBox(pk.roads || {});
-      // tile y grows SOUTHWARD: the north edge (y1) is the smaller number - looping y0..y1 (the pre-1.34 code) silently downloaded ZERO tiles; drive123 A8 counts the fetched tile URLs so this can never pass unnoticed again
-      // Beta 1.72 (Phase 3, item R04): the wide zooms join the set - the map itself allows zoom 8 (minZoom), but the preload stopped at z10, so offline at z8-9 the basemap had nothing to draw. Over the Vaughan box those zooms are 3 tiles (1 + 2).
-      if (ex) for (let z = 8; z <= maxz; z++) { const [x0, y1] = tileNums(ex.w, ex.n, z); const [x1, y0] = tileNums(ex.e, ex.s, z); const span = (x1 - x0 + 1) * (y0 - y1 + 1) * src.tiles.length; if (!(span <= budget)) continue; budget -= Math.max(0, span); for (let x = x0; x <= x1; x++) for (let y = y1; y <= y0; y++) for (const t of src.tiles) urls.add(t.replace('{z}', z).replace('{x}', x).replace('{y}', y)); }
-      // Beta 1.41: display zooms 15-19 all render from z15 tiles (the source's maxzoom) - yet the set above stops at 14, so the working zoom band was the LEAST cached. Add z15 over the route core only (the pack's own roads bounds + margin, so it cannot drift): 15 tiles for 5W. z15 over the whole Vaughan box would be ~1,400 files for streets he never opens.
-      if ((src.maxzoom || 14) >= 15) { const rb = computeRouteBox(pk.roads || {}); if (rb) { const cb = { w: rb.w - 0.005, s: rb.s - 0.004, e: rb.e + 0.005, n: rb.n + 0.004 }; const [cx0, cy1] = tileNums(cb.w, cb.n, 15); const [cx1, cy0] = tileNums(cb.e, cb.s, 15); const span15 = (cx1 - cx0 + 1) * (cy0 - cy1 + 1) * src.tiles.length; if (span15 <= budget) { budget -= Math.max(0, span15); for (let x = cx0; x <= cx1; x++) for (let y = cy1; y <= cy0; y++) for (const t of src.tiles) urls.add(t.replace('{z}', 15).replace('{x}', x).replace('{y}', y)); } } }
+      const r = packTileEnum(src, pk, budget); budget = r.budget;
+      for (const u of r.urls) urls.add(u);
     }
   }
   return urls;
@@ -441,16 +447,10 @@ function preloadUrlList() { // Beta 1.95 (deep audit SR-194-06): the determinist
     for (const srcName of Object.keys(stj.sources || {})) {
       const src = stj.sources[srcName];
       if (src.type !== 'vector' || !src.tiles) continue;
-      const maxz = Math.min(14, src.maxzoom || 14);
       for (const pk of ROUTE_PACKS) {
-        const ex = pk.box || computeRouteBox(pk.roads || {});
-        // tile y grows SOUTHWARD: the north edge (y1) is the smaller number - looping y0..y1 (the pre-1.34 code) silently downloaded ZERO tiles; drive123 A8 counts the fetched tile URLs so this can never pass unnoticed again
-        // Beta 1.72 (Phase 3, item R04): the wide zooms join the set - the map itself allows zoom 8 (minZoom), but the preload stopped at z10, so offline at z8-9 the basemap had nothing to draw. Over the Vaughan box those zooms are 3 tiles (1 + 2).
-        let budget = budgets.get(pk) ?? PACK_TILES_MAX;
-        if (ex) for (let z = 8; z <= maxz; z++) { const [x0, y1] = tileNums(ex.w, ex.n, z); const [x1, y0] = tileNums(ex.e, ex.s, z); const span = (x1 - x0 + 1) * (y0 - y1 + 1) * src.tiles.length; if (!(span <= budget)) continue; budget -= Math.max(0, span); for (let x = x0; x <= x1; x++) for (let y = y1; y <= y0; y++) for (const t of src.tiles) urls.add(t.replace('{z}', z).replace('{x}', x).replace('{y}', y)); }
-        // Beta 1.41: display zooms 15-19 all render from z15 tiles (the source's maxzoom) - yet the set above stops at 14, so the working zoom band was the LEAST cached. Add z15 over the route core only (the pack's own roads bounds + margin, derived from the pack's own data so it cannot drift): 15 tiles for 5W. z15 over the whole Vaughan box would be ~1,400 files for streets he never opens.
-        if ((src.maxzoom || 14) >= 15) { const rb = computeRouteBox(pk.roads || {}); if (rb) { const cb = { w: rb.w - 0.005, s: rb.s - 0.004, e: rb.e + 0.005, n: rb.n + 0.004 }; const [cx0, cy1] = tileNums(cb.w, cb.n, 15); const [cx1, cy0] = tileNums(cb.e, cb.s, 15); const span15 = (cx1 - cx0 + 1) * (cy0 - cy1 + 1) * src.tiles.length; if (span15 <= budget) { budget -= Math.max(0, span15); for (let x = cx0; x <= cx1; x++) for (let y = cy1; y <= cy0; y++) for (const t of src.tiles) urls.add(t.replace('{z}', 15).replace('{x}', x).replace('{y}', y)); } } }
-        budgets.set(pk, budget);
+        const r = packTileEnum(src, pk, budgets.get(pk) ?? PACK_TILES_MAX); // Beta 1.254 (#10): the enumeration is packTileEnum's - this loop keeps only the per-pack budget thread (the Map) and the style > source > pack nesting the fingerprint's order depends on
+        budgets.set(pk, r.budget);
+        for (const u of r.urls) urls.add(u);
       }
     }
   }
@@ -568,6 +568,9 @@ $('updBtn').addEventListener('click', async () => {
   } catch (e) { updState = 'fail'; } // Beta 1.150: a failed check is reported as a failed check - the pre-1.150 catch reloaded 'to be safe', which could only land on the same cached shell the probe just failed to get past
   updDone(); // the 'diff' outcome and the catch's 'fail' land here - same trip to the version row as the early returns above
 });
+
+// Beta 1.254 (O-07): the update reload above lands on '?updnav=1&v=...' so the worker takes its network path for that ONE navigation (updNav, src/sw.js). The marker's work is done the moment this boot's navigation has been routed, so it is stripped from the address here, at boot - through 1.253 it stayed for the whole session, and every later reload re-entered updNav (a network wait bounded at 10 s) instead of the early cached serve.
+try { if (/(^|[?&])updnav=/.test(location.search)) window.history.replaceState(null, '', location.pathname); } catch (e) {} // window.history, explicitly: the app's own clean-history array shadows the bare `history` name in this script scope, and the bare form throws (drive209's first run caught exactly that - the strip never fired)
 
 // ===== FAN / NIGHT / FLIP / HOME =====
 const ICONS = { // the icon mint table: renderIcons fills every entry from the ACTIVE pack at boot (its call stands at the foot of the registry, before first paint), so the table ships EMPTY - no pack's artwork lives here (Beta 1.220: the faces that initialized this table through Beta 1.219 went with their retired packs)

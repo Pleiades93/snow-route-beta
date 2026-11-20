@@ -15,6 +15,8 @@ let crPackNote = ''; // the disclosed pack state ('' = nothing to say); rides th
 let crPackIndexP = null; // the session's catalogue promise (null result cached too: no library this session)
 let crPackIndexKnown = false; // Beta 1.251 (cross-audit fix round, R-02): the catalogue ANSWERED (a cities list came back) - a city it does not list is the live service's dataset ('overpass'), which is an identity of its own; an unanswered catalogue states no identity at all
 let crPackLoads = Object.create(null); // slug -> Promise<elements>: the session's downloaded packs, adapted once
+const crPackCtls = Object.create(null); // Beta 1.254 (O-06): slug -> the CURRENT download attempt's AbortController, owned by the load (registered by crPackDownload below) - so dropping the load (crGridStall, create-cache.js) can abort the attempt itself; through 1.253 the controller was local to the attempt, the promise-drop left a progressing download streaming to nowhere, and a Retry then downloaded the pack twice over mobile data
+function crPackAbort(slug) { const c = crPackCtls[slug]; if (c) { delete crPackCtls[slug]; try { c.abort(); } catch (e) {} } }
 function crPackSlugOk(s) { return typeof s === 'string' && /^[a-z0-9][a-z0-9_-]*$/i.test(s) && s.toLowerCase() !== 'index'; }
 function crPackIndexLoad() {
   if (!crPackIndexP) {
@@ -46,6 +48,7 @@ async function crPackResolveCity(name, bbox) { // does the library hold THIS cit
 }
 async function crPackDownload(slug) { // Beta 1.249: ONE download attempt of a city pack, watched at the byte level (Andrew's pack stall rule, 2026-11-19). Through 1.248 the pack fetch carried no timeout of its own - a wedged connection, or a host that never answers, pended crPackLoad's promise forever, and only the preparation watchdogs' 180 s landing bound ever surfaced it, as a failed preparation. The attempt now carries a silence timer in crOverpassFetch's shape (Beta 1.246), on the pack's own two windows from CR_TIMING: packFirstByteMs (120 s) until the first body byte - the static host spends real time producing a big city's file before the first byte moves, so silence there is not yet a wedge - then packStallMs (60 s) between bytes once they flow. On expiry the timer aborts the attempt through its own controller and the attempt throws a TAGGED error (err.packStall) - the retry loop's signal in crPackLoad below. Every other failure (HTTP status, an unreadable or misshapen body, a network throw) is untagged and behaves exactly as it always has. The body is read as a stream and accumulated as byte chunks, concatenated and decoded the streaming branch's way; there is still NO byte cap (the caps in CR_TIMING govern service extracts, not the app's own library). A reader-less response falls back to r.text() under the first-byte window armed at the attempt's start: it cannot see mid-body progress, so the generous window is its only honest bound - the fallback limit 1.246 documented for its own no-stream branch.
   const ctl = (typeof AbortController !== 'undefined') ? new AbortController() : null;
+  if (ctl) crPackCtls[slug] = ctl; // Beta 1.254 (O-06): the load owns this attempt's controller until the attempt settles (the finally below unregisters it) or the load is dropped (crPackAbort)
   let stallTo = null, sawByte = false, killed = false;
   const armStall = () => { if (!ctl) return; if (stallTo) clearTimeout(stallTo); stallTo = setTimeout(() => { killed = true; try { ctl.abort(); } catch (e) {} }, sawByte ? CR_TIMING.packStallMs : CR_TIMING.packFirstByteMs); };
   const clearStall = () => { if (stallTo) clearTimeout(stallTo); };
@@ -75,7 +78,7 @@ async function crPackDownload(slug) { // Beta 1.249: ONE download attempt of a c
     clearStall();
     if (killed) { const err = new Error('pack stall'); err.packStall = true; throw err; }
     throw e;
-  }
+  } finally { if (ctl && crPackCtls[slug] === ctl) delete crPackCtls[slug]; } // a settled attempt unregisters itself; an aborted one was already unregistered by crPackAbort
 }
 function crPackLoad(slug, force) { // one same-origin download per session per city, adapted ONCE into the Overpass element shape the extract machinery consumes ({ id, tags: { name }, geometry: [{ lat, lon }] }). The pack holds raw segments per street ([[lat, lng], ...] runs, unchained - the app chains at resolve time, as it does for service extracts). Synthetic ids are NEGATIVE and sequential: OSM way ids are positive, so a pack way can never collide with a service way in the merged by-id index. A failed load is NOT cached - a later preparation may retry it.
   if (!crPackSlugOk(slug)) return Promise.reject(new Error('pack slug'));

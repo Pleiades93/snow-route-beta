@@ -246,15 +246,23 @@ function closeClean() {
 }
 
 // ===== RUN LIFECYCLE =====
-let wakeLock = null;
+let wakeLock = null, wakePending = null; // Beta 1.254 (O-04): wakePending is the ONE in-flight request, shared by every overlapping caller - through 1.253 two syncWake calls that overlapped inside the request await each minted a lock, and the second assignment orphaned the first, which was then never released
 async function syncWake() {
   const wantNow = () => !!runStart && document.visibilityState === 'visible' && settings.awake; // Beta 1.111: the wake lock is gated on the On-the-job toggle - the request/release machinery below is unchanged; where the API is absent the request is a silent no-op and nothing here throws. Beta 1.112 (Andrew): settings.awake is session-only state - always OFF at a cold open, never stored. Beta 1.113 (round 112, CG-112-04): eligibility is a FUNCTION, recomputed after the request await - capturing it once let a toggle-off (or a finish) landing mid-request leave the late-arriving lock held with the switch OFF
   try {
     if (wantNow() && !wakeLock && navigator.wakeLock) {
-      const lock = await navigator.wakeLock.request('screen');
-      lock.addEventListener('release', () => { if (wakeLock === lock) wakeLock = null; });
-      if (wantNow()) wakeLock = lock; // still wanted: hold it
-      else { try { lock.release(); } catch (e) {} } // no longer wanted (toggle off / run finished / tab hidden during the request): release on arrival, wakeLock stays null
+      if (!wakePending) {
+        wakePending = (async () => {
+          try {
+            const lock = await navigator.wakeLock.request('screen');
+            lock.addEventListener('release', () => { if (wakeLock === lock) wakeLock = null; });
+            if (wantNow()) wakeLock = lock; // still wanted: hold it - the sentinel is owned from here until its release (its own release event, or the release branch below)
+            else { try { lock.release(); } catch (e) {} } // no longer wanted (toggle off / run finished / tab hidden during the request): release on arrival, wakeLock stays null
+          } catch (e) { /* wake lock is best-effort */ }
+          wakePending = null;
+        })();
+      }
+      await wakePending; // every overlapping caller waits on the same one request - no second sentinel exists to leak
     }
     if (!wantNow() && wakeLock) { const w = wakeLock; wakeLock = null; w.release(); }
   } catch (e) { /* wake lock is best-effort */ }
@@ -503,9 +511,9 @@ $('noteYes').addEventListener('click', () => {
 // ===== GPS (checklist SS7) =====
 // Beta 1.64 (audit R01): lastFixTs is the last accepted fix's OWN timestamp - a callback carrying an older one is stale
 let watchId = null, watchGen = 0, gpsFromRun = false, gpsPos = null, dispPos = null, lastFixAt = 0, watchStartedAt = 0, lastFixTs = 0, lastFixSpd = 0, lastGood = null, spdTimer = 0, offRouteArmed = true, followPaused = false, staleWatchTimer = 0; // Beta 1.198: lastFixSpd = the last ACCEPTED fix's own speed (m/s) — followCam's correction cap is relative to it (see the cap's comment there)
-const SAMPLES = {};
+const SAMPLES = Object.create(null); // Beta 1.254 (O-02): null-prototype like ROADS - buildSamples refills it by Object.assign from street-name keys
 function samplesFor(stretch, names) { // Beta 1.117: the coverage samples as a PURE function of a stretch set - the pre-1.117 eval-time IIFE, parameterized. buildSamples refills the live SAMPLES from it on every load (via buildGeometry); app4's packGeometry builds a non-active pack's samples from it for snapshot validation (F6).
-  const out = {};
+  const out = Object.create(null); // Beta 1.254 (O-02): filled by street-name assignment - a plain object would lose a '__proto__' street to its prototype
   for (const n of names) { const pts = []; for (const run of stretch[n].runs) { const L = run.line, cum = run.cum; let i = 1; for (let d = 0; d <= run.total; d += COV_SAMPLE_M) { while (i < cum.length - 1 && cum[i] < d) i++; const span = cum[i] - cum[i - 1] || 1, t = (d - cum[i - 1]) / span; pts.push([L[i - 1][0] + (L[i][0] - L[i - 1][0]) * t, L[i - 1][1] + (L[i][1] - L[i - 1][1]) * t]); } } out[n] = pts; } // Beta 1.144 (Package C, DA-02/C1): samples are taken PER RUN - a disconnected street's later runs are covered streets too, and coverage must be able to suggest them. The 1.135 hoisted cursor resets per run (each run's distances rise monotonically on their own); a single-run street produces the identical sample list. // Beta 1.135 (programme D): the segment cursor i is hoisted out of the sample loop - sample distances rise monotonically, so a sample's segment never lies before the previous sample's, and the pre-1.135 per-sample restart re-walked the line from its start every 15 m (18,449 cursor-condition checks on Route 5W; the hoisted cursor advances at most once per segment). The samples produced are identical (the 1.135 fixture harness compares them byte-for-byte).
   return out;
 }

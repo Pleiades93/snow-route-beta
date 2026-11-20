@@ -53,8 +53,9 @@ const FIVEW = fiveWCx.__RP.find(p => p.id === '5w');
 if (process.argv.includes('--child-nv3b')) {
   const api = new Function('GL_STYLES', 'computeRouteBox', 'distM', 'PACK_TILES_MAX', `
     ${extract(app4, 'function tileNums(')}
+    ${extract(app4, 'function packTileEnum(')}
     ${extract(app4, 'function packTileUrls(')}
-    return { packTileUrls };`);
+    return { packTileUrls };`); // Beta 1.254 (#10): packTileUrls consumes the shared enumerator now - the extraction carries it too, or the child evals a dangling reference
   const cx = {}; vm.runInNewContext(pmstyles + '\n;globalThis.__GS = { day: PM_DAY, night: PM_NIGHT };', cx, { filename: 'pmstyles.js' });
   cx.GL_STYLES = cx.__GS;
   const g = new Function('MLAT', 'MLNG', `
@@ -180,9 +181,10 @@ ok('NV1/NV3a control: the worst legitimate pack still validates', normalizePack(
 // ============================ NV3b: tile enumeration ============================
 const app4Api = new Function('GL_STYLES', 'computeRouteBox', 'distM', 'ROUTE_PACKS', 'PACK_TILES_MAX', `
   ${extract(app4, 'function tileNums(')}
+  ${extract(app4, 'function packTileEnum(')}
   ${extract(app4, 'function packTileUrls(')}
   ${extract(app4, 'function preloadUrlList(')}
-  return { packTileUrls, preloadUrlList };`);
+  return { packTileUrls, preloadUrlList };`); // Beta 1.254 (#10): both views consume packTileEnum - the extraction carries it too
 const pmCx = {}; vm.runInNewContext(pmstyles + '\n;globalThis.__GS = { day: PM_DAY, night: PM_NIGHT };', pmCx, { filename: 'pmstyles.js' });
   pmCx.GL_STYLES = pmCx.__GS;
 const gApi = new Function('MLAT', 'MLNG', `

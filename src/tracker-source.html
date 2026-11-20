@@ -659,7 +659,7 @@ html.theme-swap *, html.theme-swap *::before, html.theme-swap *::after { transit
 <div id="hud">
   <div id="warn">Not saving. Storage is full or blocked</div>
   <div class="row">
-    <div class="titleStack"><div class="title">Snow Route Beta</div><div class="ver" id="ver">Beta 1.253</div></div>
+    <div class="titleStack"><div class="title">Snow Route Beta</div><div class="ver" id="ver">Beta 1.254</div></div>
   </div>
   <div id="stats"></div>
 </div>
@@ -835,11 +835,11 @@ const FIXLOG_MAX_CHARS = 200000; // Beta 1.195: the same log's second cap, in CH
 // the ACTIVE pack's geometry: empty until a pack loads, refilled in place by
 // buildGeometry on every load/switch (never rebound, so every captured
 // reference - GL_HOST's included - stays valid across a switch).
-/** @type {RoadsMap} */ const ROADS = {};
-/** @type {RoadsMap} */ const REFERENCE = {};
+/** @type {RoadsMap} */ const ROADS = Object.create(null); // Beta 1.254 (O-02): null-prototype, like normalizePack's own maps - a street literally named '__proto__' (reachable through a crafted backup's userpacks) must land as an ENTRY; on a plain object Object.assign runs the __proto__ setter instead, the street vanishes from the board and the swapped prototype outlives later route switches
+/** @type {RoadsMap} */ const REFERENCE = Object.create(null);
 /** @param {string} id @returns {RouteKeys} */ function routeKeys(id) { const p = 'snowroute.' + id + '.'; return { done: p + 'v2', times: p + 'v2.times', hist: p + 'v2.history', notes: p + 'v4.notes', via: p + 'v4.via', trail: p + 'v4.trail', cov: p + 'v4.cov', start: p + 'v5.start', flip: p + 'v5.flip', sides: p + 'v5.sides', sess: p + 'v5.sess', pre: p + 'v5.preload', snap: p + 'v5.snap', mig: p + 'v2.migrated', migfill: p + 'v2.migfill', finclean: p + 'v5.finclean', rundist: p + 'v5.rundist', rundist2: p + 'v5.rundist2' }; } // Beta 1.94 (deep audit SR-193-02/03): two slot-local records join the layout - 'snap' is the running clean's persisted pre-Start board (Start writes it, Finish/Cancel delete it; transient, and not a ROUTE_FIELDS member - it rides backups only in normalized form, via snapForExport in app4, since Beta 1.96/1.97) and 'mig' is the legacy migration's explicit completion marker (see migrateLegacyRoute) and never a backup field. Beta 1.141 (Package A, DA-10): 'finclean' joins them on the same terms - the durable finish-cleanup obligation (finishRun's transaction writes it, saveAll's success discharges it, completeFinishCleanup completes it at load); transient, never backed up, not in ROUTE_FIELDS. Beta 1.150 (security-audit fix round): 'migfill' joins them on the same terms - the migration's per-field fill record (see migrateLegacyRoute); written only while a migration is incomplete, deleted when its marker commits. Beta 1.167 (run/pace fix round, B5): 'rundist' joins on the finclean terms WITHOUT any backup ride - the running clean's accumulated-distance record (app3's runDist), genuinely never backed up: Finish bakes its value into the archive entry's km, and a lost record re-derives from the surviving trail (adoptRunDist, app3).
 const LS_GLOBAL = { night: 'snowroute.v2.night', nightExp: 'snowroute.v2.nightExp', exp: 'snowroute.v5.export', prep: 'snowroute.prep.v1', lastArea: 'snowroute.v2.lastarea', fixlog: 'snowroute.v1.fixlog', dp: 'snowroute.v1.dp' }; // Beta 1.118: lastArea = the create flow's area pre-fill memory. Beta 1.189: fixlog = the raw GPS fix log (app3) - a DEVICE record, not route data (it spans routes and locate sessions), so it lives with the globals and rides backups at top level like the settings record, never as a ROUTE_FIELDS member. Beta 1.230: dp = the device profile's stored tier hint (the DEVICE PROFILE section below) - a DEVICE record on fixlog's storage terms (global, spans routes, never a ROUTE_FIELDS member) but NOT backed up: the hint is a measurement of THIS device, and a backup restored onto another phone must not import it; a missing key is the standing default (full quality, no hint)
-const LEGACY_KEYS = { done: 'snowroute.v2', times: 'snowroute.v2.times', hist: 'snowroute.v2.history', notes: 'snowroute.v4.notes', via: 'snowroute.v4.via', trail: 'snowroute.v4.trail', cov: 'snowroute.v4.cov', start: 'snowroute.v5.start', flip: 'snowroute.v5.flip', sides: 'snowroute.v5.sides', sess: 'snowroute.v5.sess', snap: 'snowroute.v5.snap', finclean: 'snowroute.v5.finclean', rundist: 'snowroute.v5.rundist', rundist2: 'snowroute.v5.rundist2' }; // Beta 1.193: 'rundist2' rides here on rundist's terms - the counter's second copy (bankRunDistMirror, app3), written only by the trail-flush path in flushAux below, never backed up; adoption reads it when the primary is lost (adoptRunDist, app3). snap rides here too so LS.snap is defined on a legacy-fallback boot (the pre-1.76 app never wrote one - the key is simply absent there, which the cancel path already treats as 'no snapshot'); finclean rides for the same reason (Beta 1.141); rundist rides for the same reason (Beta 1.167, B5)
+const LEGACY_KEYS = { done: 'snowroute.v2', times: 'snowroute.v2.times', hist: 'snowroute.v2.history', notes: 'snowroute.v4.notes', via: 'snowroute.v4.via', trail: 'snowroute.v4.trail', cov: 'snowroute.v4.cov', start: 'snowroute.v5.start', flip: 'snowroute.v5.flip', sides: 'snowroute.v5.sides', sess: 'snowroute.v5.sess', pre: 'snowroute.5w.v5.preload', snap: 'snowroute.v5.snap', finclean: 'snowroute.v5.finclean', rundist: 'snowroute.v5.rundist', rundist2: 'snowroute.v5.rundist2' }; // Beta 1.193: 'rundist2' rides here on rundist's terms - the counter's second copy (bankRunDistMirror, app3), written only by the trail-flush path in flushAux below, never backed up; adoption reads it when the primary is lost (adoptRunDist, app3). snap rides here too so LS.snap is defined on a legacy-fallback boot (the pre-1.76 app never wrote one - the key is simply absent there, which the cancel path already treats as 'no snapshot'); finclean rides for the same reason (Beta 1.141); rundist rides for the same reason (Beta 1.167, B5). Beta 1.254 (O-01): 'pre' rides too, naming the LIVE slot (routeKeys('5w').pre) - through 1.253 a fallback boot had LS.pre undefined, so the preload writer stored its record under a localStorage key literally named "undefined" and the readers read it back from there; the fallback session's preload record now lands where a later migrated boot looks for it
 const ROUTE_FIELDS = ['done', 'times', 'hist', 'notes', 'via', 'trail', 'cov', 'start', 'flip', 'sides', 'sess'];
 const PACK_FIELDS = ['name', 'area', 'primaries', 'spot', 'tileNames', 'box', 'roads', 'reference']; // Beta 1.131 (maintainability programme A): the ONE list of fields a route pack carries - normalizePack (create-packs.js) builds every validated pack by walking THIS list, so a field joins the pack format by joining this list (with its cleaner there); a field absent from the list does not survive validation, by construction. Deliberately distinct from ROUTE_FIELDS above: those are storage-slot fields, and 'snap' in particular is a slot field that is NOT a pack field (hand-carried at restore scope by design) - it must never be added here.
 // ===== RULE CONSTANTS (Beta 1.136, maintainability programme F): every number that IS a
@@ -1020,7 +1020,7 @@ const DP = { platform: DP_PLATFORM, entered: false, tier: 0, hint: 0, stored: -1
 /** @returns {number} */ function dpPixelRatio() { return DP_ANDROID ? DP_TIERS[DP.tier].pr : 2; } // the map constructor's ratio: on Android the applied tier's, everywhere else the literal 2 the constructor carried through 1.229 (drive131's W1 reads it live)
 /** @param {number[]} a @returns {number} */ function dpMedian(a) { if (!a.length) return 0; const s = a.slice().sort((x, y) => x - y); return s[Math.floor(s.length / 2)]; }
 /** @param {number} ms @returns {number} */ function dpGradeOf(ms) { return ms <= 26 ? 0 : (ms <= 45 ? 1 : 2); } // median work-frame ms -> tier: full holds ~38fps+ through real render work; past 45ms the full-quality canvas is the strain the Pixel showed
-/** @param {number} t @returns {void} */ function dpWriteStore(t) { if (DP.stored === t) return; DP.stored = t; try { lsSet(LS_GLOBAL.dp, JSON.stringify({ t, at: Date.now() })); } catch (e) { /* the hint is a cache of a measurement - a failed write costs nothing, the next evaluation rewrites it */ } }
+/** @param {number} t @returns {void} */ function dpWriteStore(t) { if (DP.stored === t) return; try { if (lsSet(LS_GLOBAL.dp, JSON.stringify({ t, at: Date.now() }))) DP.stored = t; } catch (e) { /* the hint is a cache of a measurement - a failed write costs nothing, the next evaluation rewrites it */ } } // Beta 1.254 (N-02): DP.stored advances ONLY on a successful write - through 1.253 it was set before lsSet ran, and lsSet reports failure by returning false rather than throwing, so one failed write marked the tier stored forever and suppressed every retry the catch comment promised
 /** @returns {void} */ function dpBootGrade() { // the launch judgment (rules 1 + 6): the fresh median of the boot's first draws grades the session; the stored hint only chose the starting tier while these frames accumulated
   DP.booted = true;
   const g = dpGradeOf(dpMedian(DP.samples));
@@ -1234,10 +1234,10 @@ const tapLast = {};
   for (let i = 1; i < bounds.length; i++) parts.push(sliceLine(line, cum, bounds[i - 1], bounds[i]));
   return parts;
 }
-/** @type {StretchMap} */ const STRETCH = {};
+/** @type {StretchMap} */ const STRETCH = Object.create(null); // Beta 1.254 (O-02): null-prototype like ROADS - buildGeometry refills it by Object.assign from street-name keys
 /** @param {RoadsMap} roads @returns {StretchMap} */ function computeStretches(roads) { // Beta 1.117: the stretch builder as a PURE function of a roads object - the pre-1.117 eval-time IIFE, parameterized. buildGeometry fills the live STRETCH from it on every load; backup/restore (app4's packGeometry) builds a non-active pack's geometry from it without touching the live one (F6). Beta 1.144 (Package C, DA-02/C1): the builder runs PER RUN (stitchRuns) - each run is cut at the junctions ITS OWN line meets (other streets' vertices from ALL their runs; a street never cuts itself), the street's parts are the runs' parts concatenated in run order, and total is the SUM over runs, so a disconnected street is tracked whole: marking, totals and pace all see every metre that was saved. line/cum keep the first run (the principal line) for the readers that need a single line (fly-to centres); runs carries {line, cum, total, parts} per run for the consumers that must see them all (coverage samples, the paint engine). For a single-run street every field is exactly the pre-1.144 value.
-  /** @type {StretchMap} */ const out = {};
-  const runsOf = {}, totals = {};
+  /** @type {StretchMap} */ const out = Object.create(null); // Beta 1.254 (O-02): name-keyed by assignment - a plain object would swallow a '__proto__' street into its prototype and read totals back off Object.prototype
+  const runsOf = Object.create(null), totals = Object.create(null);
   for (const n of Object.keys(roads)) {
     const runs = stitchRuns(n, roads).map(L => { const cum = [0]; for (let i = 1; i < L.length; i++) cum.push(cum[i - 1] + distM(L[i - 1], L[i])); return { line: L, cum, total: cum[cum.length - 1], parts: null }; });
     runsOf[n] = runs;
@@ -4849,15 +4849,23 @@ function closeClean() {
 }
 
 // ===== RUN LIFECYCLE =====
-let wakeLock = null;
+let wakeLock = null, wakePending = null; // Beta 1.254 (O-04): wakePending is the ONE in-flight request, shared by every overlapping caller - through 1.253 two syncWake calls that overlapped inside the request await each minted a lock, and the second assignment orphaned the first, which was then never released
 async function syncWake() {
   const wantNow = () => !!runStart && document.visibilityState === 'visible' && settings.awake; // Beta 1.111: the wake lock is gated on the On-the-job toggle - the request/release machinery below is unchanged; where the API is absent the request is a silent no-op and nothing here throws. Beta 1.112 (Andrew): settings.awake is session-only state - always OFF at a cold open, never stored. Beta 1.113 (round 112, CG-112-04): eligibility is a FUNCTION, recomputed after the request await - capturing it once let a toggle-off (or a finish) landing mid-request leave the late-arriving lock held with the switch OFF
   try {
     if (wantNow() && !wakeLock && navigator.wakeLock) {
-      const lock = await navigator.wakeLock.request('screen');
-      lock.addEventListener('release', () => { if (wakeLock === lock) wakeLock = null; });
-      if (wantNow()) wakeLock = lock; // still wanted: hold it
-      else { try { lock.release(); } catch (e) {} } // no longer wanted (toggle off / run finished / tab hidden during the request): release on arrival, wakeLock stays null
+      if (!wakePending) {
+        wakePending = (async () => {
+          try {
+            const lock = await navigator.wakeLock.request('screen');
+            lock.addEventListener('release', () => { if (wakeLock === lock) wakeLock = null; });
+            if (wantNow()) wakeLock = lock; // still wanted: hold it - the sentinel is owned from here until its release (its own release event, or the release branch below)
+            else { try { lock.release(); } catch (e) {} } // no longer wanted (toggle off / run finished / tab hidden during the request): release on arrival, wakeLock stays null
+          } catch (e) { /* wake lock is best-effort */ }
+          wakePending = null;
+        })();
+      }
+      await wakePending; // every overlapping caller waits on the same one request - no second sentinel exists to leak
     }
     if (!wantNow() && wakeLock) { const w = wakeLock; wakeLock = null; w.release(); }
   } catch (e) { /* wake lock is best-effort */ }
@@ -5106,9 +5114,9 @@ $('noteYes').addEventListener('click', () => {
 // ===== GPS (checklist SS7) =====
 // Beta 1.64 (audit R01): lastFixTs is the last accepted fix's OWN timestamp - a callback carrying an older one is stale
 let watchId = null, watchGen = 0, gpsFromRun = false, gpsPos = null, dispPos = null, lastFixAt = 0, watchStartedAt = 0, lastFixTs = 0, lastFixSpd = 0, lastGood = null, spdTimer = 0, offRouteArmed = true, followPaused = false, staleWatchTimer = 0; // Beta 1.198: lastFixSpd = the last ACCEPTED fix's own speed (m/s) — followCam's correction cap is relative to it (see the cap's comment there)
-const SAMPLES = {};
+const SAMPLES = Object.create(null); // Beta 1.254 (O-02): null-prototype like ROADS - buildSamples refills it by Object.assign from street-name keys
 function samplesFor(stretch, names) { // Beta 1.117: the coverage samples as a PURE function of a stretch set - the pre-1.117 eval-time IIFE, parameterized. buildSamples refills the live SAMPLES from it on every load (via buildGeometry); app4's packGeometry builds a non-active pack's samples from it for snapshot validation (F6).
-  const out = {};
+  const out = Object.create(null); // Beta 1.254 (O-02): filled by street-name assignment - a plain object would lose a '__proto__' street to its prototype
   for (const n of names) { const pts = []; for (const run of stretch[n].runs) { const L = run.line, cum = run.cum; let i = 1; for (let d = 0; d <= run.total; d += COV_SAMPLE_M) { while (i < cum.length - 1 && cum[i] < d) i++; const span = cum[i] - cum[i - 1] || 1, t = (d - cum[i - 1]) / span; pts.push([L[i - 1][0] + (L[i][0] - L[i - 1][0]) * t, L[i - 1][1] + (L[i][1] - L[i - 1][1]) * t]); } } out[n] = pts; } // Beta 1.144 (Package C, DA-02/C1): samples are taken PER RUN - a disconnected street's later runs are covered streets too, and coverage must be able to suggest them. The 1.135 hoisted cursor resets per run (each run's distances rise monotonically on their own); a single-run street produces the identical sample list. // Beta 1.135 (programme D): the segment cursor i is hoisted out of the sample loop - sample distances rise monotonically, so a sample's segment never lies before the previous sample's, and the pre-1.135 per-sample restart re-walked the line from its start every 15 m (18,449 cursor-condition checks on Route 5W; the hoisted cursor advances at most once per segment). The samples produced are identical (the 1.135 fixture harness compares them byte-for-byte).
   return out;
 }
@@ -6425,8 +6433,19 @@ function fmtStoreSize(n) { // Beta 1.183: storage sizes in the Status pane's pla
   if (n < 1024 * 1024 * 1024) return Math.round(n / (1024 * 1024)) + ' MB';
   return (n / (1024 * 1024 * 1024)).toFixed(1).replace(/\.0$/, '') + ' GB';
 }
+function packTileEnum(src, pk, budget) { // Beta 1.254 (cross-audit #10): the ONE ordered tile enumeration for a (source, pack) pair - packTileUrls (one pack's attributed set) and preloadUrlList (the union manifest) both consume it, so the zoom policy, the span budgeting and the z15 core margins live in exactly one place; through 1.253 the two functions duplicated the whole algorithm (even the comments were copied) under a header claiming they could never drift apart. Returns the URLs in enumeration order plus the budget left over - each caller keeps its own nesting, and therefore its own output order: the manifest's frozen 897-URL fingerprint is this enumeration replayed style > source > pack, and the attributed set is the same enumeration replayed style > source for one pack.
+  const urls = [];
+  const maxz = Math.min(14, src.maxzoom || 14);
+  const ex = pk.box || computeRouteBox(pk.roads || {});
+  // tile y grows SOUTHWARD: the north edge (y1) is the smaller number - looping y0..y1 (the pre-1.34 code) silently downloaded ZERO tiles; drive123 A8 counts the fetched tile URLs so this can never pass unnoticed again
+  // Beta 1.72 (Phase 3, item R04): the wide zooms join the set - the map itself allows zoom 8 (minZoom), but the preload stopped at z10, so offline at z8-9 the basemap had nothing to draw. Over the Vaughan box those zooms are 3 tiles (1 + 2).
+  if (ex) for (let z = 8; z <= maxz; z++) { const [x0, y1] = tileNums(ex.w, ex.n, z); const [x1, y0] = tileNums(ex.e, ex.s, z); const span = (x1 - x0 + 1) * (y0 - y1 + 1) * src.tiles.length; if (!(span <= budget)) continue; budget -= Math.max(0, span); for (let x = x0; x <= x1; x++) for (let y = y1; y <= y0; y++) for (const t of src.tiles) urls.push(t.replace('{z}', z).replace('{x}', x).replace('{y}', y)); }
+  // Beta 1.41: display zooms 15-19 all render from z15 tiles (the source's maxzoom) - yet the set above stops at 14, so the working zoom band was the LEAST cached. Add z15 over the route core only (the pack's own roads bounds + margin, so it cannot drift): 15 tiles for 5W. z15 over the whole Vaughan box would be ~1,400 files for streets he never opens.
+  if ((src.maxzoom || 14) >= 15) { const rb = computeRouteBox(pk.roads || {}); if (rb) { const cb = { w: rb.w - 0.005, s: rb.s - 0.004, e: rb.e + 0.005, n: rb.n + 0.004 }; const [cx0, cy1] = tileNums(cb.w, cb.n, 15); const [cx1, cy0] = tileNums(cb.e, cb.s, 15); const span15 = (cx1 - cx0 + 1) * (cy0 - cy1 + 1) * src.tiles.length; if (span15 <= budget) { budget -= Math.max(0, span15); for (let x = cx0; x <= cx1; x++) for (let y = cy1; y <= cy0; y++) for (const t of src.tiles) urls.push(t.replace('{z}', 15).replace('{x}', x).replace('{y}', y)); } } }
+  return { urls, budget };
+}
 function packTileUrls(pk) { // Beta 1.117 (F5): the TILE urls attributable to ONE pack - its offline area (pack.box; a pack without one falls back to its own roads' bounds) at z8-14 plus its z15 route core. Sprites and glyphs are shared chrome, attributable to no route. preloadUrlList unions this over every known pack; the per-route preload record counts against it.
-  // Beta 1.152 (NV round, NV3b): the enumeration itself is budgeted - PACK_TILES_MAX tile iterations for this pack, each zoom's span counted BEFORE its loop runs and the zoom skipped whole when it does not fit. normalizePack's extent ceiling (NV3a) rejects such a pack at every import path, but a pack record planted straight into storage never passes through the validator, and this function runs at every boot that carries a preload record: a worldwide box is ~356.8M iterations per source and never returned (measured). Under the budget the output is identical to the unbudgeted enumeration - proven against the frozen 897-URL fixture by tests/browser/selftest-nv1152.mjs.
+  // Beta 1.152 (NV round, NV3b): the enumeration itself is budgeted - PACK_TILES_MAX tile iterations for this pack, each zoom's span counted BEFORE its loop runs and the zoom skipped whole when it does not fit. normalizePack's extent ceiling (NV3a) rejects such a pack at every import path, but a pack record planted straight into storage never passes through the validator, and this function runs at every boot that carries a preload record: a worldwide box is ~356.8M iterations per source and never returned (measured). Under the budget the output is identical to the unbudgeted enumeration - proven against the frozen 897-URL fixture by tests/browser/selftest-nv1152.mjs. Beta 1.254 (#10): the enumeration itself is packTileEnum's now (above) - this function keeps only the per-pack budget thread and the style > source nesting.
   const urls = new Set();
   let budget = PACK_TILES_MAX;
   for (const key of ['day', 'night']) {
@@ -6434,13 +6453,8 @@ function packTileUrls(pk) { // Beta 1.117 (F5): the TILE urls attributable to ON
     for (const srcName of Object.keys(stj.sources || {})) {
       const src = stj.sources[srcName];
       if (src.type !== 'vector' || !src.tiles) continue;
-      const maxz = Math.min(14, src.maxzoom || 14);
-      const ex = pk.box || computeRouteBox(pk.roads || {});
-      // tile y grows SOUTHWARD: the north edge (y1) is the smaller number - looping y0..y1 (the pre-1.34 code) silently downloaded ZERO tiles; drive123 A8 counts the fetched tile URLs so this can never pass unnoticed again
-      // Beta 1.72 (Phase 3, item R04): the wide zooms join the set - the map itself allows zoom 8 (minZoom), but the preload stopped at z10, so offline at z8-9 the basemap had nothing to draw. Over the Vaughan box those zooms are 3 tiles (1 + 2).
-      if (ex) for (let z = 8; z <= maxz; z++) { const [x0, y1] = tileNums(ex.w, ex.n, z); const [x1, y0] = tileNums(ex.e, ex.s, z); const span = (x1 - x0 + 1) * (y0 - y1 + 1) * src.tiles.length; if (!(span <= budget)) continue; budget -= Math.max(0, span); for (let x = x0; x <= x1; x++) for (let y = y1; y <= y0; y++) for (const t of src.tiles) urls.add(t.replace('{z}', z).replace('{x}', x).replace('{y}', y)); }
-      // Beta 1.41: display zooms 15-19 all render from z15 tiles (the source's maxzoom) - yet the set above stops at 14, so the working zoom band was the LEAST cached. Add z15 over the route core only (the pack's own roads bounds + margin, so it cannot drift): 15 tiles for 5W. z15 over the whole Vaughan box would be ~1,400 files for streets he never opens.
-      if ((src.maxzoom || 14) >= 15) { const rb = computeRouteBox(pk.roads || {}); if (rb) { const cb = { w: rb.w - 0.005, s: rb.s - 0.004, e: rb.e + 0.005, n: rb.n + 0.004 }; const [cx0, cy1] = tileNums(cb.w, cb.n, 15); const [cx1, cy0] = tileNums(cb.e, cb.s, 15); const span15 = (cx1 - cx0 + 1) * (cy0 - cy1 + 1) * src.tiles.length; if (span15 <= budget) { budget -= Math.max(0, span15); for (let x = cx0; x <= cx1; x++) for (let y = cy1; y <= cy0; y++) for (const t of src.tiles) urls.add(t.replace('{z}', 15).replace('{x}', x).replace('{y}', y)); } } }
+      const r = packTileEnum(src, pk, budget); budget = r.budget;
+      for (const u of r.urls) urls.add(u);
     }
   }
   return urls;
@@ -6456,16 +6470,10 @@ function preloadUrlList() { // Beta 1.95 (deep audit SR-194-06): the determinist
     for (const srcName of Object.keys(stj.sources || {})) {
       const src = stj.sources[srcName];
       if (src.type !== 'vector' || !src.tiles) continue;
-      const maxz = Math.min(14, src.maxzoom || 14);
       for (const pk of ROUTE_PACKS) {
-        const ex = pk.box || computeRouteBox(pk.roads || {});
-        // tile y grows SOUTHWARD: the north edge (y1) is the smaller number - looping y0..y1 (the pre-1.34 code) silently downloaded ZERO tiles; drive123 A8 counts the fetched tile URLs so this can never pass unnoticed again
-        // Beta 1.72 (Phase 3, item R04): the wide zooms join the set - the map itself allows zoom 8 (minZoom), but the preload stopped at z10, so offline at z8-9 the basemap had nothing to draw. Over the Vaughan box those zooms are 3 tiles (1 + 2).
-        let budget = budgets.get(pk) ?? PACK_TILES_MAX;
-        if (ex) for (let z = 8; z <= maxz; z++) { const [x0, y1] = tileNums(ex.w, ex.n, z); const [x1, y0] = tileNums(ex.e, ex.s, z); const span = (x1 - x0 + 1) * (y0 - y1 + 1) * src.tiles.length; if (!(span <= budget)) continue; budget -= Math.max(0, span); for (let x = x0; x <= x1; x++) for (let y = y1; y <= y0; y++) for (const t of src.tiles) urls.add(t.replace('{z}', z).replace('{x}', x).replace('{y}', y)); }
-        // Beta 1.41: display zooms 15-19 all render from z15 tiles (the source's maxzoom) - yet the set above stops at 14, so the working zoom band was the LEAST cached. Add z15 over the route core only (the pack's own roads bounds + margin, derived from the pack's own data so it cannot drift): 15 tiles for 5W. z15 over the whole Vaughan box would be ~1,400 files for streets he never opens.
-        if ((src.maxzoom || 14) >= 15) { const rb = computeRouteBox(pk.roads || {}); if (rb) { const cb = { w: rb.w - 0.005, s: rb.s - 0.004, e: rb.e + 0.005, n: rb.n + 0.004 }; const [cx0, cy1] = tileNums(cb.w, cb.n, 15); const [cx1, cy0] = tileNums(cb.e, cb.s, 15); const span15 = (cx1 - cx0 + 1) * (cy0 - cy1 + 1) * src.tiles.length; if (span15 <= budget) { budget -= Math.max(0, span15); for (let x = cx0; x <= cx1; x++) for (let y = cy1; y <= cy0; y++) for (const t of src.tiles) urls.add(t.replace('{z}', 15).replace('{x}', x).replace('{y}', y)); } } }
-        budgets.set(pk, budget);
+        const r = packTileEnum(src, pk, budgets.get(pk) ?? PACK_TILES_MAX); // Beta 1.254 (#10): the enumeration is packTileEnum's - this loop keeps only the per-pack budget thread (the Map) and the style > source > pack nesting the fingerprint's order depends on
+        budgets.set(pk, r.budget);
+        for (const u of r.urls) urls.add(u);
       }
     }
   }
@@ -6583,6 +6591,9 @@ $('updBtn').addEventListener('click', async () => {
   } catch (e) { updState = 'fail'; } // Beta 1.150: a failed check is reported as a failed check - the pre-1.150 catch reloaded 'to be safe', which could only land on the same cached shell the probe just failed to get past
   updDone(); // the 'diff' outcome and the catch's 'fail' land here - same trip to the version row as the early returns above
 });
+
+// Beta 1.254 (O-07): the update reload above lands on '?updnav=1&v=...' so the worker takes its network path for that ONE navigation (updNav, src/sw.js). The marker's work is done the moment this boot's navigation has been routed, so it is stripped from the address here, at boot - through 1.253 it stayed for the whole session, and every later reload re-entered updNav (a network wait bounded at 10 s) instead of the early cached serve.
+try { if (/(^|[?&])updnav=/.test(location.search)) window.history.replaceState(null, '', location.pathname); } catch (e) {} // window.history, explicitly: the app's own clean-history array shadows the bare `history` name in this script scope, and the bare form throws (drive209's first run caught exactly that - the strip never fired)
 
 // ===== FAN / NIGHT / FLIP / HOME =====
 const ICONS = { // the icon mint table: renderIcons fills every entry from the ACTIVE pack at boot (its call stands at the foot of the registry, before first paint), so the table ships EMPTY - no pack's artwork lives here (Beta 1.220: the faces that initialized this table through Beta 1.219 went with their retired packs)
@@ -6908,7 +6919,7 @@ $('stDel').addEventListener('click', async () => {
 });
 // ---- About ----
 const WHATSNEW = { // the curated in-app notes: plain words, LATEST RELEASE ONLY (Beta 1.114, Andrew: the accumulated list cluttered the About pane). A release REPLACES this entry with its own in the same change - it never accumulates; the full history lives in CHANGELOG.md, not the app
-  v: 'Beta 1.253', items: ["In the create flow, the hint button label now always matches what tapping it does."] }; // Beta 1.223 (Andrew): What's New entries are SHORT from now on - point form, one short plain line each, no prose paragraphs, no em dashes
+  v: 'Beta 1.254', items: ["Eleven small fixes under the hood: storage, downloads, the wake lock and the snow scene."] }; // Beta 1.223 (Andrew): What's New entries are SHORT from now on - point form, one short plain line each, no prose paragraphs, no em dashes
 
 function renderAbout() {
   const cur = $('ver').textContent.trim();
@@ -7680,6 +7691,8 @@ let crPackNote = ''; // the disclosed pack state ('' = nothing to say); rides th
 let crPackIndexP = null; // the session's catalogue promise (null result cached too: no library this session)
 let crPackIndexKnown = false; // Beta 1.251 (cross-audit fix round, R-02): the catalogue ANSWERED (a cities list came back) - a city it does not list is the live service's dataset ('overpass'), which is an identity of its own; an unanswered catalogue states no identity at all
 let crPackLoads = Object.create(null); // slug -> Promise<elements>: the session's downloaded packs, adapted once
+const crPackCtls = Object.create(null); // Beta 1.254 (O-06): slug -> the CURRENT download attempt's AbortController, owned by the load (registered by crPackDownload below) - so dropping the load (crGridStall, create-cache.js) can abort the attempt itself; through 1.253 the controller was local to the attempt, the promise-drop left a progressing download streaming to nowhere, and a Retry then downloaded the pack twice over mobile data
+function crPackAbort(slug) { const c = crPackCtls[slug]; if (c) { delete crPackCtls[slug]; try { c.abort(); } catch (e) {} } }
 function crPackSlugOk(s) { return typeof s === 'string' && /^[a-z0-9][a-z0-9_-]*$/i.test(s) && s.toLowerCase() !== 'index'; }
 function crPackIndexLoad() {
   if (!crPackIndexP) {
@@ -7711,6 +7724,7 @@ async function crPackResolveCity(name, bbox) { // does the library hold THIS cit
 }
 async function crPackDownload(slug) { // Beta 1.249: ONE download attempt of a city pack, watched at the byte level (Andrew's pack stall rule, 2026-11-19). Through 1.248 the pack fetch carried no timeout of its own - a wedged connection, or a host that never answers, pended crPackLoad's promise forever, and only the preparation watchdogs' 180 s landing bound ever surfaced it, as a failed preparation. The attempt now carries a silence timer in crOverpassFetch's shape (Beta 1.246), on the pack's own two windows from CR_TIMING: packFirstByteMs (120 s) until the first body byte - the static host spends real time producing a big city's file before the first byte moves, so silence there is not yet a wedge - then packStallMs (60 s) between bytes once they flow. On expiry the timer aborts the attempt through its own controller and the attempt throws a TAGGED error (err.packStall) - the retry loop's signal in crPackLoad below. Every other failure (HTTP status, an unreadable or misshapen body, a network throw) is untagged and behaves exactly as it always has. The body is read as a stream and accumulated as byte chunks, concatenated and decoded the streaming branch's way; there is still NO byte cap (the caps in CR_TIMING govern service extracts, not the app's own library). A reader-less response falls back to r.text() under the first-byte window armed at the attempt's start: it cannot see mid-body progress, so the generous window is its only honest bound - the fallback limit 1.246 documented for its own no-stream branch.
   const ctl = (typeof AbortController !== 'undefined') ? new AbortController() : null;
+  if (ctl) crPackCtls[slug] = ctl; // Beta 1.254 (O-06): the load owns this attempt's controller until the attempt settles (the finally below unregisters it) or the load is dropped (crPackAbort)
   let stallTo = null, sawByte = false, killed = false;
   const armStall = () => { if (!ctl) return; if (stallTo) clearTimeout(stallTo); stallTo = setTimeout(() => { killed = true; try { ctl.abort(); } catch (e) {} }, sawByte ? CR_TIMING.packStallMs : CR_TIMING.packFirstByteMs); };
   const clearStall = () => { if (stallTo) clearTimeout(stallTo); };
@@ -7740,7 +7754,7 @@ async function crPackDownload(slug) { // Beta 1.249: ONE download attempt of a c
     clearStall();
     if (killed) { const err = new Error('pack stall'); err.packStall = true; throw err; }
     throw e;
-  }
+  } finally { if (ctl && crPackCtls[slug] === ctl) delete crPackCtls[slug]; } // a settled attempt unregisters itself; an aborted one was already unregistered by crPackAbort
 }
 function crPackLoad(slug, force) { // one same-origin download per session per city, adapted ONCE into the Overpass element shape the extract machinery consumes ({ id, tags: { name }, geometry: [{ lat, lon }] }). The pack holds raw segments per street ([[lat, lng], ...] runs, unchained - the app chains at resolve time, as it does for service extracts). Synthetic ids are NEGATIVE and sequential: OSM way ids are positive, so a pack way can never collide with a service way in the merged by-id index. A failed load is NOT cached - a later preparation may retry it.
   if (!crPackSlugOk(slug)) return Promise.reject(new Error('pack slug'));
@@ -8111,7 +8125,7 @@ function crGridStall(g) { // Beta 1.229: a stalled grid lands where every failed
   for (const op of Array.from(g.ops)) crAbortOp(op);
   g.ops.clear(); g.active = 0;
   for (const c of g.cells) if (c.state !== 'done') c.state = 'failed';
-  if (g.fromPack) { try { delete crPackLoads[g.fromPack]; } catch (e) {} } // the pack download itself may be the wedged piece (its fetch carries no timeout): its cached promise is dropped, so Retry downloads the pack FRESH instead of re-awaiting the same never-settling promise and stalling a second time on the spot
+  if (g.fromPack) { try { delete crPackLoads[g.fromPack]; } catch (e) {} crPackAbort(g.fromPack); } // the pack download itself may be the wedged piece: its cached promise is dropped, so Retry downloads the pack FRESH instead of re-awaiting the same never-settling promise and stalling a second time on the spot. Beta 1.254 (O-06): the dropped load's in-flight attempt is ABORTED too (crPackAbort, create-citydata.js) - through 1.253 only the promise was dropped, and a still-progressing attempt kept streaming to nowhere behind the fresh Retry
   crCovGen++; // the stall orphans the grid's generation, exactly as Cancel does: an initialization callback still in flight (the saved-grid read, the pack resolve) checks crGridCurrent and lands nowhere, instead of arming a ticker and a pump over a grid that has already finished. crGridResume re-adopts the grid into the live generation, so Retry is unaffected
   crGridFinish(g);
 }
@@ -8178,13 +8192,13 @@ function crCityPrepare() { // a city is picked: load its whole extract - from th
           const byId = Object.create(null); // Beta 1.150: a stored way id of '__proto__' lands as an entry here, not as the map's prototype
           for (const sw of saved.ways) { const w = crCleanStoredWay(sw); if (w) byId[w.id] = { name: w.name, pts: w.pts }; } // Beta 1.150 (security-audit fix round, finding city-cache-restore-skips-way-validation): every stored triple passes the extract's own cleaning (crCleanStoredWay, create-citydata.js) before it may enter coverage - pre-1.150 this fold installed raw triples on array-shape checks alone, planting out-of-range / NaN / empty-named geometry the extract never held
           if (!Object.keys(byId).length && saved.ways.length) continue; // Beta 1.151 (hotfix for the 1.150 C2 gate's own regression): a cell is certified (box + done, below) when at least one VALIDATED way came out of it OR its stored list was legitimately EMPTY - phase 1 stores empty cells (no named streets: park/lake/city-edge) with ways: [], and the 1.150 rule conflated them with the audit's poison case, a NON-EMPTY list whose ways are all corrupt, which still stays pending here and is fetched fresh, never marked done on the cache's say-so
-          crCovMerge([], null); // ensure the cov exists before the direct fold below
+          crCovEnsure(); // ensure the cov exists before the direct fold below. Beta 1.254 (A-02): NOT crCovMerge - through 1.253 this seat called the merge with an empty extract once per restored cell, and the merge rebuilt the whole byName index from every accumulated way (and re-fired the search refresh) each time, O(cells x ways) under a comment claiming the rebuild ran once; the fold below writes byId/boxes directly, the index rebuilds ONCE after the loop (1.169), and the one search refresh lands there too
           for (const id of Object.keys(byId)) crCov.byId[id] = byId[id];
           if (!crCov.boxes.some(b => b.s === cell.box.s && b.w === cell.box.w && b.n === cell.box.n && b.e === cell.box.e)) crCov.boxes.push(cell.box);
           cell.state = 'done'; restored++; folded = true;
         }
       }
-      if (folded) { const fresh = crCovFromWays(crCov.byId, crCov.boxes); crCov.byName = fresh.byName; } // Beta 1.169 (D-06): the byName index is rebuilt ONCE, after the fold - through 1.168 crCovFromWays ran inside the per-cell loop above, reindexing every accumulated way for every restored cell (O(cells x ways) on a large cached city). Nothing observes byName mid-loop (the fold is one synchronous pass), so the single rebuild lands the identical index.
+      if (folded) { const fresh = crCovFromWays(crCov.byId, crCov.boxes); crCov.byName = fresh.byName; crRefreshSearch(); } // Beta 1.169 (D-06): the byName index is rebuilt ONCE, after the fold - through 1.168 crCovFromWays ran inside the per-cell loop above, reindexing every accumulated way for every restored cell (O(cells x ways) on a large cached city). Nothing observes byName mid-loop (the fold is one synchronous pass), so the single rebuild lands the identical index. Beta 1.254 (A-02): the one crRefreshSearch here preserves crCovMerge's refresh semantics for the restore (coverage changed) at the same once-only count - nothing could observe a mid-loop refresh either
       if (restored) { g.fromCache = true; g.savedAt = rec.savedAt || null; }
     }
     if (restored === g.cells.length) { crSetPrepState('ready'); crSweepPending(); crRenderHint(); return; } // fully saved: instant ready, ZERO downloads (amendment C)
@@ -10488,6 +10502,7 @@ async function saveDraftRoute() {
     var dt = Math.min(0.05, (ts - lastTs) / 1000);
     lastTs = ts;
     if (!sceneLive()) { if (++deadFrames > 45) { stop(); return; } } else deadFrames = 0;
+    if (cvS && cvS.classList.contains('away')) { raf = window.requestAnimationFrame(loop); return; } // Beta 1.254 (O-09): the canvas is hidden (.away - a menu sub-pane is up, showRmPane in app2.js) - skip the simulation and the paint entirely until the main pane returns. The scene is NOT dead (sceneLive stays true: the splash/menu are up), so nothing stops or restarts; lastTs already advanced, and dt clamps on the return frame
     clock += dt;
     var amount = settleAmount();
     var i, f;
@@ -10514,7 +10529,7 @@ async function saveDraftRoute() {
   }
   resize();
   var area = W * H; // Beta 1.161: layer sizes follow the scene's area, so the approved sample's density is what any screen size sees
-  var nSpeck = Math.round(area / SPECK.per), nMid = Math.round(area / MID.per), nBlob = Math.max(4, Math.min(8, Math.round(area / BLOB.per)));
+  var nSpeck = Math.min(1000, Math.round(area / SPECK.per)), nMid = Math.round(area / MID.per), nBlob = Math.max(4, Math.min(8, Math.round(area / BLOB.per))); // Beta 1.254 (O-09): the speck count is CAPPED - the density (one per SPECK.per px) is unchanged on phone-size screens (under ~600,000 px of canvas), but an uncapped count billed very large screens thousands of specks per frame
   for (var i = 0; i < nSpeck; i++) specks.push(newSpeck(true));
   for (var j = 0; j < nMid; j++) mids.push(newMid(true));
   for (var k = 0; k < nBlob; k++) blobs.push(newBlob(true));

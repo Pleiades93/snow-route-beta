@@ -192,7 +192,15 @@ it off mid-watch stops recording without closing the session or
 touching stored data. The record itself is unchanged by the toggle
 and rides backups at top level as `fixlog` (see Backup envelope);
 there is no display, export or share surface for it — it leaves the
-device only inside a backup).
+device only inside a backup),
+`snowroute.v1.dp` (the device profile's stored tier hint, Beta 1.230;
+a DEVICE record on fixlog's storage terms — global, spans routes —
+but NOT backed up: the hint is a measurement of THIS device, and a
+backup restored onto another phone must not import it. Shape
+`{t, at}` — the stored tier and the epoch-ms it was written. A
+missing or corrupt value reads as tier 0, the standing full-quality
+default. Beta 1.254: a failed write is not recorded as stored, so the
+next evaluation retries it).
 
 ## Migration: legacy → 5W slot (Beta 1.76; commit rule revised Beta 1.94)
 
