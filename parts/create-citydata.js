@@ -13,6 +13,7 @@
 let crPackCtx = null; // { slug, bbox, failed } while the active city's preparation is pack-backed; null = the service is the source
 let crPackNote = ''; // the disclosed pack state ('' = nothing to say); rides the hint like crCacheNote
 let crPackIndexP = null; // the session's catalogue promise (null result cached too: no library this session)
+let crPackIndexKnown = false; // Beta 1.251 (cross-audit fix round, R-02): the catalogue ANSWERED (a cities list came back) - a city it does not list is the live service's dataset ('overpass'), which is an identity of its own; an unanswered catalogue states no identity at all
 let crPackLoads = Object.create(null); // slug -> Promise<elements>: the session's downloaded packs, adapted once
 function crPackSlugOk(s) { return typeof s === 'string' && /^[a-z0-9][a-z0-9_-]*$/i.test(s) && s.toLowerCase() !== 'index'; }
 function crPackIndexLoad() {
@@ -22,7 +23,9 @@ function crPackIndexLoad() {
         const r = await fetch('packs/index.json', { cache: 'no-cache' });
         if (!r.ok) return null;
         const ix = await r.json();
-        return (ix && Array.isArray(ix.cities) && ix.cities.length) ? ix.cities : null;
+        const cities = (ix && Array.isArray(ix.cities) && ix.cities.length) ? ix.cities : null;
+        if (cities) crPackIndexKnown = true;
+        return cities;
       } catch (e) { return null; }
     })();
   }
@@ -39,7 +42,7 @@ async function crPackResolveCity(name, bbox) { // does the library hold THIS cit
   if (![pb.s, pb.w, pb.n, pb.e].every(isFinite)) return null;
   const EPS = 1e-6;
   if (!(pb.s <= bbox.s + EPS && pb.n >= bbox.n - EPS && pb.w <= bbox.w + EPS && pb.e >= bbox.e - EPS)) return null;
-  return { slug: e.slug, bbox: pb };
+  return { slug: e.slug, bbox: pb, gen: typeof e.generatedAt === 'string' ? e.generatedAt : '' }; // Beta 1.251 (R-02): the catalogue's generatedAt is the pack's version stamp - republishing a pack re-stamps it, and the dataset identity (crDatasetId, create-cache.js) binds saved records to it
 }
 async function crPackDownload(slug) { // Beta 1.249: ONE download attempt of a city pack, watched at the byte level (Andrew's pack stall rule, 2026-11-19). Through 1.248 the pack fetch carried no timeout of its own - a wedged connection, or a host that never answers, pended crPackLoad's promise forever, and only the preparation watchdogs' 180 s landing bound ever surfaced it, as a failed preparation. The attempt now carries a silence timer in crOverpassFetch's shape (Beta 1.246), on the pack's own two windows from CR_TIMING: packFirstByteMs (120 s) until the first body byte - the static host spends real time producing a big city's file before the first byte moves, so silence there is not yet a wedge - then packStallMs (60 s) between bytes once they flow. On expiry the timer aborts the attempt through its own controller and the attempt throws a TAGGED error (err.packStall) - the retry loop's signal in crPackLoad below. Every other failure (HTTP status, an unreadable or misshapen body, a network throw) is untagged and behaves exactly as it always has. The body is read as a stream and accumulated as byte chunks, concatenated and decoded the streaming branch's way; there is still NO byte cap (the caps in CR_TIMING govern service extracts, not the app's own library). A reader-less response falls back to r.text() under the first-byte window armed at the attempt's start: it cannot see mid-body progress, so the generous window is its only honest bound - the fallback limit 1.246 documented for its own no-stream branch.
   const ctl = (typeof AbortController !== 'undefined') ? new AbortController() : null;
