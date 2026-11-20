@@ -152,10 +152,29 @@ function glUnifyLabels(m) { // BASEMAP LABEL UNIFICATION (Andrew, Beta 1.6): the
     const laneId = 'roads_labels_minor-priority';
     const pack = (typeof activeRoute !== 'undefined' && activeRoute && Array.isArray(activeRoute.tileNames)) ? activeRoute : null;
     const orig = (m.getStyle().layers || []).find(x => x.id === 'roads_labels_minor');
+    // The stored angle is the NORTH-UP rotation. Point symbols cannot use
+    // text-keep-upright (MapLibre reserves it for line placement), so when
+    // the camera bearing changes - a manual rotation, or heading-up
+    // navigation (headCam, app3) - the written angles are re-based against
+    // the live bearing: ang_screen = normalize(ang - bearing), which keeps
+    // every name along its road on screen and never on its head (gate fix,
+    // Codex P2 on PR #151; drive214 F6 pins it at bearing 180).
+    const applyLaneBearing = () => {
+      const base = m.__routeLabelBase, src = m.getSource('route-labels');
+      if (!base || !src) return;
+      const brg = Math.round((m.getBearing ? m.getBearing() : 0) * 10) / 10;
+      if (m.__routeLabelBearing === brg) return;
+      m.__routeLabelBearing = brg;
+      const feats = base.map(f => { let a = f.properties.ang - brg; while (a > 90) a -= 180; while (a <= -90) a += 180; return { type: 'Feature', properties: { name: f.properties.name, ang: Math.round(a * 10) / 10 }, geometry: f.geometry }; });
+      src.setData({ type: 'FeatureCollection', features: feats });
+    };
+    m.__applyRouteLabelBearing = applyLaneBearing;
+    if (!m.__routeLabelBearingHook && m.on) { m.__routeLabelBearingHook = true; let lastApply = 0; m.on('rotate', () => { const now = Date.now(); if (now - lastApply < 120) return; lastApply = now; if (m.__applyRouteLabelBearing) m.__applyRouteLabelBearing(); }); m.on('rotateend', () => { if (m.__applyRouteLabelBearing) m.__applyRouteLabelBearing(); }); }
     if (!pack || !orig || typeof STRETCH === 'undefined' || !STRETCH) {
       if (m.getLayer(laneId)) { try { m.removeLayer(laneId); } catch (e2) {} }
       if (m.getSource('route-labels')) { try { m.removeSource('route-labels'); } catch (e2) {} }
       m.__routeLabelSig = null;
+      m.__routeLabelBase = null;
     } else {
       const sig = pack.id + ':' + Object.keys(pack.roads || {}).length;
       if (m.__routeLabelSig !== sig || !m.getSource('route-labels')) {
@@ -172,10 +191,12 @@ function glUnifyLabels(m) { // BASEMAP LABEL UNIFICATION (Andrew, Beta 1.6): the
           while (ang > 90) ang -= 180; while (ang <= -90) ang += 180; // names never stand on their heads
           feats.push({ type: 'Feature', properties: { name: full, ang: Math.round(ang * 10) / 10 }, geometry: { type: 'Point', coordinates: [c[1], c[0]] } });
         }
-        const fc = { type: 'FeatureCollection', features: feats };
-        if (m.getSource('route-labels')) m.getSource('route-labels').setData(fc); else m.addSource('route-labels', { type: 'geojson', data: fc });
+        m.__routeLabelBase = feats; // north-up angles; the source itself only ever carries the bearing-adjusted copy (applyLaneBearing)
+        if (!m.getSource('route-labels')) m.addSource('route-labels', { type: 'geojson', data: { type: 'FeatureCollection', features: [] } });
+        m.__routeLabelBearing = undefined; // force the applier to write the fresh base
         m.__routeLabelSig = sig;
       }
+      applyLaneBearing();
       const existing = m.getLayer(laneId);
       if (existing && existing.source !== 'route-labels') { try { m.removeLayer(laneId); } catch (e2) {} } // a lane from an older build of this round rode the tile source - it cannot work (see the note above) and is rebuilt below
       if (!m.getLayer(laneId)) {

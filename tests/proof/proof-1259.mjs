@@ -58,7 +58,7 @@ check('8: gradients are literal per colour via fadeGrad, casing follows the them
 check('9: the lane is managed in glUnifyLabels, copied from the live minor layer',
   app2.includes("const laneId = 'roads_labels_minor-priority';") && app2.includes("lane.source = 'route-labels';"));
 check('10: the lane is point-anchored, bearing-turned, overlap-guaranteed, and hands over at 15',
-  app2.includes("'symbol-placement': 'point'") && app2.includes("'text-rotate': ['get', 'ang']") && app2.includes("'text-allow-overlap': true") && app2.includes('lane.maxzoom = 15;') && app2.includes('180 / Math.PI - 90')); // the -90 is the bearing-to-rotation conversion (gate fix, Codex P2): without it every lane name lies across its street
+  app2.includes("'symbol-placement': 'point'") && app2.includes("'text-rotate': ['get', 'ang']") && app2.includes("'text-allow-overlap': true") && app2.includes('lane.maxzoom = 15;') && app2.includes('180 / Math.PI - 90') && app2.includes('__applyRouteLabelBearing')); // the -90 is the bearing-to-rotation conversion (gate fix, Codex P2): without it every lane name lies across its street; __applyRouteLabelBearing re-bases the angles against the camera bearing so the names stay upright when the map rotates (the second Codex P2)
 check('11: the full spelling lookup is ordinal-aware (Fifth -> 5th Avenue)',
   app2.includes("Fifth: '5th'"));
 
