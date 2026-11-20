@@ -28,6 +28,8 @@ await bootThrough(ev, poll); // boots end at the route menu - click through to a
 // amended by Andrew at the gate: the centre button wears the standard GPS
 // crosshair icon and the Locate tab's face is byte-identical to 1.115.
 // Beta 1.204 amendment (road snap): S3 re-derived - see the check itself.
+// Beta 1.252 amendment (R-01 session clock): section A's stale setup ages
+// watchStartedAt alongside lastFixAt - see the note at the ageing line.
 // The S scenario drives east across Velmar; since the snap, the camera
 // follows the snapped point, whose centreline projection itself creeps
 // on that perpendicular crossing, so S3 now grades the camera against
@@ -182,7 +184,7 @@ await dragMouse(cv.x, cv.y, -168);
 await sleep(350);
 const aDrag = await J(`(() => { const c = map.getCenter(); return { lng: c.lng, lat: c.lat, paused: followPaused }; })()`);
 const aCalls0 = await J(`window.__wpCalls`);
-await ev(`(() => { window.__feed.on = false; lastFixAt = Date.now() - 60000; return true; })()`);
+await ev(`(() => { window.__feed.on = false; lastFixAt = Date.now() - 60000; watchStartedAt = Date.now() - 120000; return true; })()`); // Beta 1.252 amendment (R-01, Codex P1 on PR #137): the stale setup ages BOTH stamps - since 1.252 the watchdog judges silence from the later of the last fix and the watch's own start, so ageing lastFixAt alone leaves a young watch fresh for 45 s and A1's restart arrives late or never; ageing the session start too keeps A grading the aged-fix restart it was written for (the drive207 B4 pattern)
 const aRestarted = await poll120(`window.__wpCalls > ${aCalls0}`, 30000);
 await sleep(400);
 const aState = await J(`(() => { const c = map.getCenter(); return { lng: c.lng, lat: c.lat, paused: followPaused, wid: watchId }; })()`);
