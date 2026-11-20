@@ -28,7 +28,13 @@ turn every discovered bug into a permanent regression test.
    every drive premise (label, selector, contract string) the diff removes
    must have its drives updated in the same change, or the expiry recorded in
    the flake log the same day (Beta 1.136, programme E — the Beta 1.132 label
-   rename silently expiring three drives is the worked example).
+   rename silently expiring three drives is the worked example). When the
+   change alters any user-facing wording, also run `scripts/sweep-check.py`
+   with the OLD strings before pushing (the mechanical form of the
+   whole-tests-tree sweep rule — the 1.223 dash sweep's missed copies in
+   drive118/136/161 and e2e-offline are the worked example): every hit is
+   re-pinned in the same change or adjudicated per-occurrence in the
+   sweep's own output.
 8. **Document** — update the docs the change makes stale, in the same change.
 9. **Merge only when safe** — per the tier rules of §3 as restructured
    2026-11-09 (operative table: `tests/TIER-MAP.md` + `tests/tier-map.json`):
