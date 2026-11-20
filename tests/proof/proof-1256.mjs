@@ -40,8 +40,8 @@ check('3 (b): an empty status line takes no box',
   head.includes('#xPreStat:empty { display: none; }'));
 check('4: the CHANGELOG top entry is Beta 1.256', changelog.includes('## Beta 1.256'));
 check('5: What\'s New carries the 1.256 bullet, short and dash-free',
-  whatsnew.includes('Street names now come from the map itself, spelled in full.')
-  && 'Street names now come from the map itself, spelled in full.'.length <= 108
+  whatsnew.includes('Where your paint meets a bigger street, it now fades out gently instead of stopping dead.')
+  && 'Where your paint meets a bigger street, it now fades out gently instead of stopping dead.'.length <= 108
   && !whatsnew.includes('—'));
 
 console.log(`proof-1256: ${pass} passed, ${fail} failed`);

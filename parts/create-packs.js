@@ -61,6 +61,93 @@ async function initUserPacks() { // first-1.166-launch migration + every later b
   if (typeof renderRouteLists === 'function') renderRouteLists();
   return result;
 }
+// ===== Beta 1.259: boundary ends - the ONE computation of where route paint
+// must feather out (Andrew's decision, 2026-11-20, option C). A boundary end
+// is a run end where the street continues past the route into a NON-route
+// street: the paint ends AT the join (the boundary street's first centreline,
+// measured from the approach side) with a gradient fade over the last 15 m
+// (the engine's half of the rule lives in engine.js). A run end shared with
+// another route street is a junction - the junction machinery owns it, never
+// a feather. A run end no non-route street crosses near is a dead end (or a
+// mid-block pick end) - the street ends there and so does the paint,
+// unchanged. Records: { street: [[endLat, endLng, joinLat, joinLng], ...] }.
+// Called by the create save with the prepared extract, and by
+// scripts/derive-pack-ends.mjs for the shipped pack (the extract there is
+// the city pack's street library) - one computation, both callers.
+function computeBoundaryEnds(roads, allStreets) {
+  const out = {};
+  if (!roads || !allStreets) return out;
+  const routeNames = Object.keys(roads);
+  const runsCache = {};
+  const runsOf = n => runsCache[n] || (runsCache[n] = stitchRuns(n, roads));
+  const ptSeg = (p, a, b) => { // distance from p to segment a-b, flat-metre space (projOnLine's axes)
+    const ax = a[1] * MLNG, ay = a[0] * MLAT, bx = b[1] * MLNG, by = b[0] * MLAT, px = p[1] * MLNG, py = p[0] * MLAT;
+    const vx = bx - ax, vy = by - ay, L2 = vx * vx + vy * vy;
+    let t = L2 ? ((px - ax) * vx + (py - ay) * vy) / L2 : 0; t = Math.max(0, Math.min(1, t));
+    return Math.hypot(px - (ax + vx * t), py - (ay + vy * t));
+  };
+  const segX = (a, b, c, d) => { // the two segments' crossing point, or null (parallel/collinear included)
+    const ax = a[1] * MLNG, ay = a[0] * MLAT, bx = b[1] * MLNG, by = b[0] * MLAT, cx = c[1] * MLNG, cy = c[0] * MLAT, dx = d[1] * MLNG, dy = d[0] * MLAT;
+    const den = (bx - ax) * (dy - cy) - (by - ay) * (dx - cx);
+    if (Math.abs(den) < 1e-9) return null;
+    const t = ((cx - ax) * (dy - cy) - (cy - ay) * (dx - cx)) / den, u = ((cx - ax) * (by - ay) - (cy - ay) * (bx - ax)) / den;
+    if (t < 0 || t > 1 || u < 0 || u > 1) return null;
+    return [a[0] + (b[0] - a[0]) * t, a[1] + (b[1] - a[1]) * t];
+  };
+  for (const n of routeNames) {
+    for (const line of runsOf(n)) {
+      const cum = [0]; for (let i = 1; i < line.length; i++) cum.push(cum[i - 1] + distM(line[i - 1], line[i]));
+      const total = cum[cum.length - 1];
+      const atD = d => { // the point at along-run distance d (sliceLine's interpolation)
+        for (let i = 1; i < line.length; i++) { if (d <= cum[i] || i === line.length - 1) { const span = cum[i] - cum[i - 1] || 1; const t = Math.max(0, Math.min(1, (d - cum[i - 1]) / span)); return [line[i - 1][0] + (line[i][0] - line[i - 1][0]) * t, line[i - 1][1] + (line[i][1] - line[i - 1][1]) * t]; } }
+        return line[line.length - 1];
+      };
+      for (const atStart of [true, false]) {
+        const E = atStart ? line[0] : line[line.length - 1];
+        let junction = false; // another route street's vertex at E: a route junction owns this end
+        for (const m of routeNames) { if (m === n || junction) continue; for (const rl of runsOf(m)) { for (const v of rl) if (Math.abs(v[0] - E[0]) < 0.00004 && Math.abs(v[1] - E[1]) < 0.00004 && distM(v, E) <= 2) { junction = true; break; } if (junction) break; } }
+        if (junction) continue;
+        const crossings = []; // { street, behind, pt } - behind = metres from E back along the run
+        for (const m of Object.keys(allStreets)) {
+          if (routeNames.includes(m)) continue;
+          const ways = allStreets[m]; if (!Array.isArray(ways)) continue;
+          let collinear = false; const mine = [];
+          for (const w of ways) {
+            if (!Array.isArray(w)) continue;
+            for (let i = 1; i < w.length; i++) {
+              const a = w[i - 1], b = w[i];
+              if (ptSeg(E, a, b) > 45) continue; // nothing this segment does can touch the end's window
+              // a segment running ALONG the run is the street's own continuation (the extract
+              // names it in full - 'Valeria Boulevard' against the pack's 'Valeria'), never a boundary
+              const pa = projOnLine(line, cum, a), pb = projOnLine(line, cum, b);
+              if (pa.off <= 1 && pb.off <= 1) { collinear = true; continue; }
+              for (let j = 1; j < line.length; j++) {
+                const dSeg = atStart ? cum[j] : total - cum[j - 1]; // this run segment's nearest behind value
+                if (dSeg > 34 && (atStart ? cum[j - 1] : total - cum[j]) > 34) continue;
+                const X = segX(line[j - 1], line[j], a, b);
+                if (X) { const dX = cum[j - 1] + distM(line[j - 1], X); const behind = atStart ? dX : total - dX; if (behind >= -0.5 && behind <= 32) mine.push({ street: m, behind, pt: X }); }
+              }
+              for (const v of [a, b]) { // a way ENDING on the run (a T from the far side) is a crossing too
+                const pv = projOnLine(line, cum, v);
+                if (pv.off <= 0.75) { const behind = atStart ? pv.d : total - pv.d; if (behind >= -0.5 && behind <= 32) mine.push({ street: m, behind, pt: atD(pv.d) }); }
+              }
+            }
+          }
+          if (!collinear) crossings.push(...mine);
+        }
+        if (!crossings.length) continue; // dead end: no record, the paint keeps its natural end
+        let minBehind = Infinity; for (const c of crossings) if (c.behind < minBehind) minBehind = c.behind;
+        const street0 = crossings.find(c => c.behind === minBehind).street; // the boundary street is the closest crossing's
+        let joinBehind = minBehind; // the join is that street's FURTHEST-back crossing near the end - its first centreline (a divided road's near carriageway); the cluster bound keeps a second, unrelated crossing of the same street from dragging the join away
+        for (const c of crossings) if (c.street === street0 && c.behind <= minBehind + 20 && c.behind > joinBehind) joinBehind = c.behind;
+        const join = atD(atStart ? joinBehind : total - joinBehind);
+        const r6 = v => Math.round(v * 1e6) / 1e6;
+        (out[n] = out[n] || []).push([r6(E[0]), r6(E[1]), r6(join[0]), r6(join[1])]);
+      }
+    }
+  }
+  return out;
+}
 function normalizePack(raw, opts) { // -> { ok: true, pack } | { ok: false, error } - fail-closed with a named error, nothing half-built
   opts = opts || {};
   const bad = m => ({ ok: false, error: m });
@@ -115,7 +202,21 @@ function normalizePack(raw, opts) { // -> { ok: true, pack } | { ok: false, erro
   if (raw.box && isFinite(raw.box.w) && isFinite(raw.box.s) && isFinite(raw.box.e) && isFinite(raw.box.n) && raw.box.w < raw.box.e && raw.box.s < raw.box.n) box = { w: raw.box.w, s: raw.box.s, e: raw.box.e, n: raw.box.n };
   else { const cb = computeRouteBox({ ...rc.roads, ...reference }); if (cb) box = { w: Math.max(-180, cb.w - 0.03), s: Math.max(-90, cb.s - 0.025), e: Math.min(180, cb.e + 0.03), n: Math.min(90, cb.n + 0.025) }; }
   if (box && (box.w < -180 || box.e > 180 || box.s < -90 || box.n > 90 || box.e - box.w > PACK_BOX_MAX_DEG || box.n - box.s > PACK_BOX_MAX_DEG)) return bad('the route area is too big'); // Beta 1.152 (NV round, NV3a): extent and world-bounds validation, fail-closed like every other check here, over the declared box and the derived one alike. A box is an offline-download area and the tile enumerators (app4) iterate it zoom by zoom: a worldwide box enumerates ~356.8M tile URLs per source and never returns (measured) - it is a preload wedge, not a route. The ceiling (~7.6x the widest shipped city bbox, 10x the declared 5W box) rejects it at EVERY entry point, this validator being the single gate for draft import, save, backup restore and the boot merge. The enumerators carry their own budget as well (NV3b), for records that never pass through here.
-  const cleaned = { name, area, primaries, spot: {}, tileNames: [...tileSet], box, roads: rc.roads, reference };
+  const ends = {}; // Beta 1.259: boundary-end records, cleaned leniently like primaries - records naming a real road with four in-range coordinates survive (rounded to the pack's own 1e-6 grid); anything else is dropped, never a rejection: a malformed ends field must not block a save or a restore of an otherwise valid route
+  if (raw.ends && typeof raw.ends === 'object' && !Array.isArray(raw.ends)) {
+    for (const nm of Object.keys(raw.ends)) {
+      if (!rc.roads[nm] || !Array.isArray(raw.ends[nm])) continue;
+      const list = [];
+      for (const r of raw.ends[nm]) {
+        if (!Array.isArray(r) || r.length < 4) continue;
+        const a = r[0], b = r[1], c = r[2], d = r[3];
+        if (!isFinite(a) || !isFinite(b) || !isFinite(c) || !isFinite(d) || Math.abs(a) > 90 || Math.abs(b) > 180 || Math.abs(c) > 90 || Math.abs(d) > 180) continue;
+        list.push([Math.round(a * 1e6) / 1e6, Math.round(b * 1e6) / 1e6, Math.round(c * 1e6) / 1e6, Math.round(d * 1e6) / 1e6]);
+      }
+      if (list.length) ends[nm] = list;
+    }
+  }
+  const cleaned = { name, area, primaries, spot: {}, tileNames: [...tileSet], box, roads: rc.roads, reference, ends };
   const pack = {};
   for (const f of PACK_FIELDS) { if (f in cleaned) pack[f] = cleaned[f]; else if (raw[f] !== undefined) pack[f] = raw[f]; } // Beta 1.131 (programme A): the pack is built by walking PACK_FIELDS (app1) - the list is the single source for what a pack carries. Every listed field has a cleaner above today, so the raw fall-through never fires; it exists so a future field added to the list (before its cleaner lands) is carried through rather than silently dropped - the pre-1.131 trap was the hand-written return literal here forgetting a field.
   return { ok: true, pack };

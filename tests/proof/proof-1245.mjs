@@ -73,9 +73,9 @@ check('10: the lengths splice in lockstep with the pool (seed pick and growth jo
   pick.includes('const first = pool.splice(bi, 1)[0]; lens.splice(bi, 1);') && pick.includes('segs.push(addSeg); pool.splice(i, 1); lens.splice(i, 1); grew = true; break;'));
 
 // ---------- the frame ----------
-const wnM = whatsnew.match(/items: \["([^"]*)"\]/);
+const wnM = whatsnew.match(/items: \["([^"]*)"/); // Beta 1.259 premise update: the extractor took the entry's ONLY item (items: ["..."] end-bracketed); the 1.259 entry carries three bullets (one per change in the round, per the addenda), so the match now takes the FIRST item - the claim below (the current entry's lead bullet, the cap, no em dash) is unchanged
 check('11: What\'s New carries the CURRENT bullet (rolled to 1.251: this check tracks the current entry each round), within the 108-char cap (and stays em-dash free)',
-  !!wnM && wnM[1] === 'Street names now come from the map itself, spelled in full.' && wnM[1].length <= 108 && !whatsnew.includes('—'));
+  !!wnM && wnM[1] === 'Where your paint meets a bigger street, it now fades out gently instead of stopping dead.' && wnM[1].length <= 108 && !whatsnew.includes('—'));
 check('12: the CHANGELOG top entry is Beta 1.245',
   changelog.indexOf('## Beta 1.245') > -1 && changelog.indexOf('## Beta 1.245') < changelog.indexOf('## Beta 1.244'));
 

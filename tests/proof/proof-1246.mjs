@@ -76,7 +76,7 @@ check('9: the fallback watchdog still tests its start clock against stallMs',
 // ---------- the release editorial ----------
 check('10: the CHANGELOG top entry is Beta 1.246', changelog.includes('## Beta 1.246'));
 check('11: What\'s New carries the CURRENT entry\'s bullet (rolled to 1.251: this check tracks the current entry each round)',
-  whatsnew.includes('Street names now come from the map itself, spelled in full.'));
+  whatsnew.includes('Where your paint meets a bigger street, it now fades out gently instead of stopping dead.'));
 
 console.log(`proof-1246: ${pass} passed, ${fail} failed`);
 process.exit(fail ? 1 : 0);

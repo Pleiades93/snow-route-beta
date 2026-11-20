@@ -22,7 +22,16 @@ async function saveDraftRoute() {
   const name = $('crNameInput').value.trim();
   if (!name) { toast('Give the route a name first', 2600); return; }
   const area = $('crAreaInput').value.trim();
-  const v = normalizePack({ name, area, primaries: [...draft.primaries], roads: crFilteredRoads(), reference: {} }, { tileNames: [...Object.values(draft.osmNames), ...(draft.tileNames || [])] }); // Beta 1.127: the SAVE stores chosen sectors only - the draft keeps the whole streets, the pack never sees the unchosen ends
+  const roads = crFilteredRoads();
+  const ends = (() => { // Beta 1.259: the saved pack carries its boundary ends, computed from the SAME extract the sectors were cut from (computeBoundaryEnds, create-packs.js - the one computation; the shipped pack's field is derived the same way). No prepared coverage (a save path that never prepared an extract) stores no records and the route paints exactly as before - the feather is a property of the data, earned where the data exists
+    try {
+      if (!crCov || !crCov.byName) return {};
+      const all = {};
+      for (const nm of Object.keys(crCov.byName)) { const ways = crCov.byName[nm].map(w => w && w.pts).filter(p => Array.isArray(p) && p.length > 1); if (ways.length) all[nm] = ways; }
+      return computeBoundaryEnds(roads, all);
+    } catch (e) { return {}; }
+  })();
+  const v = normalizePack({ name, area, primaries: [...draft.primaries], roads, reference: {}, ends }, { tileNames: [...Object.values(draft.osmNames), ...(draft.tileNames || [])] }); // Beta 1.127: the SAVE stores chosen sectors only - the draft keeps the whole streets, the pack never sees the unchosen ends
   if (!v.ok) { toast('Could not save: ' + v.error, 4000); return; }
   const pack = v.pack; pack.id = uniqueRouteId(name);
   if (!(await upPut(pack.id, pack))) { toast('Storage problem - the route could not be saved', 4000); return; } // Beta 1.166: the save is ONE route's own verified store write (create-packs.js) - the DA-05 hazard class is gone by construction: there is no whole-record read-modify-write left to erase another route, a corrupt legacy record cannot block a save it is no longer part of, and a failed write refuses THIS route only, before it is registered anywhere

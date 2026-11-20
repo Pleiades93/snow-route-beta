@@ -13,9 +13,11 @@ const GLP = (() => {
     GLM.getSource('bands').setData(CUR.bands);
     GLM.getSource('edges').setData(CUR.edges);
     GLM.getSource('fills').setData(CUR.fills);
+    if (GLM.getSource('fades')) GLM.getSource('fades').setData(CUR.fades);
     GLM.getSource('sel').setData(CUR.sel);
     GLM.getSource('selBand').setData(CUR.selBand);
     GLM.getSource('selFill').setData(CUR.selFill);
+    if (GLM.getSource('selFades')) GLM.getSource('selFades').setData(CUR.selFades);
     if (GLM.getSource('selGlow')) GLM.getSource('selGlow').setData(buildSelGlow());
     managePulse();
   }
@@ -24,6 +26,7 @@ const GLP = (() => {
     GLM.getSource('sel').setData(CUR.sel);
     GLM.getSource('selBand').setData(CUR.selBand);
     GLM.getSource('selFill').setData(CUR.selFill);
+    if (GLM.getSource('selFades')) GLM.getSource('selFades').setData(CUR.selFades);
     if (GLM.getSource('selGlow')) GLM.getSource('selGlow').setData(buildSelGlow());
     managePulse();
   }
@@ -125,6 +128,10 @@ function mute(hex) {
   return '#' + rgb.map(v => Math.round((v + m) * 255).toString(16).padStart(2, '0')).join('');
 }
 let MUGREEN = mute(GREEN);   // let (round 25): setScheme() recomputes it from the scheme's green
+function fadeGrad(hex) {   // Beta 1.259: a boundary-end feather's line-gradient - full colour at progress 0 (the solid seam) to clear at 1 (the join). Literal rgba stops per colour: line-gradient cannot read feature properties (MapLibre), so each colour wears its own layer (addStack) - the approved sample's construction.
+  const c = [parseInt(hex.slice(1, 3), 16), parseInt(hex.slice(3, 5), 16), parseInt(hex.slice(5, 7), 16)];
+  return ['interpolate', ['linear'], ['line-progress'], 0, 'rgba(' + c[0] + ',' + c[1] + ',' + c[2] + ',1)', 1, 'rgba(' + c[0] + ',' + c[1] + ',' + c[2] + ',0)'];
+}
 function segCross(p1, p2, p3, p4) {
   const a = XYOf(p1), b = XYOf(p2), c = XYOf(p3), d = XYOf(p4);
   const o = (x, y, z) => (y[0] - x[0]) * (z[1] - x[1]) - (y[1] - x[1]) * (z[0] - x[0]);
@@ -1481,11 +1488,75 @@ function fillCornerLinks(fills) {
     fills.push({ pts: [a.E, [Cxy[1] / H.MLAT, Cxy[0] / H.MLNG], b.E], key: 'fill', mem: [a.mem, b.mem], corner: true });   // the corner flag is explicit (gate round 4, Codex P2): an ordinary strand merged from two consecutive pieces ALSO carries two mem entries, so mem-count alone cannot identify a connector
   }
 }
+// ===== Beta 1.259: boundary-end feathers (Andrew's decision, 2026-11-20,
+// option C - flush sampled twice and rejected). Where route paint ends at a
+// boundary while the street continues, the paint ends AT the join (the
+// boundary street's first centreline, recorded in the pack by
+// computeBoundaryEnds, create-packs.js) with a smooth gradient fade over the
+// last 15 m, gone exactly at the join. The split below is the engine's half:
+// for a slice whose end vertex carries a record, the slice is cut at the
+// join (the overshoot stub past it is dropped whole), the last FADE_M
+// metres before the join become a FADE feature of their own - emitted
+// outside mergeStrands into the lineMetrics 'fades'/'selFades' sources,
+// ordered solid-seam first so line-progress runs full colour -> clear -
+// and the rest stays an ordinary solid slice. Junction ends are defended
+// twice: a record is only ever written for a non-junction end, and a slice
+// end whose vertex another route street shares is never split here
+// (sharedVertexMap), so the junction machinery's run-through is untouched
+// by construction. Dead ends carry no record and keep their natural end.
+const FADE_M = 15;
+function boundaryRecAt(n, pt) { // the street's boundary-end record whose END point is pt, or null
+  const ends = H.STRETCH[n] && H.STRETCH[n].ends;
+  if (!ends) return null;
+  for (const r of ends) if (H.jDistM([r[0], r[1]], pt) <= 1.5) return r;
+  return null;
+}
+function splitBoundaryEnd(pts, join, atStart) { // -> { solid, fade }: cut pts at the join (found by projection, XY space) and split off the fade zone; either part can be null when the slice is shorter than the zone it would carry
+  const cum = [0]; for (let i = 1; i < pts.length; i++) cum.push(cum[i - 1] + H.jDistM(pts[i - 1], pts[i]));
+  const total = cum[cum.length - 1];
+  const J = XYOf(join);
+  let dJ = null, bestD = Infinity;
+  for (let i = 1; i < pts.length; i++) {
+    const A = XYOf(pts[i - 1]), B = XYOf(pts[i]);
+    const vx = B[0] - A[0], vy = B[1] - A[1], L2 = vx * vx + vy * vy;
+    let t = L2 ? ((J[0] - A[0]) * vx + (J[1] - A[1]) * vy) / L2 : 0; t = Math.max(0, Math.min(1, t));
+    const dd = Math.hypot(J[0] - (A[0] + vx * t), J[1] - (A[1] + vy * t));
+    if (dd < bestD) { bestD = dd; dJ = cum[i - 1] + Math.sqrt(L2) * t; }
+  }
+  if (dJ === null) return { solid: pts, fade: null };
+  const sub = (d0, d1) => { // the points between two along-distances, cut points interpolated (sliceLine's way)
+    if (d1 - d0 < 0.05) return null;
+    const at = d => { for (let i = 1; i < pts.length; i++) { if (d <= cum[i] || i === pts.length - 1) { const span = cum[i] - cum[i - 1] || 1; const t = Math.max(0, Math.min(1, (d - cum[i - 1]) / span)); return [pts[i - 1][0] + (pts[i][0] - pts[i - 1][0]) * t, pts[i - 1][1] + (pts[i][1] - pts[i - 1][1]) * t]; } } return pts[pts.length - 1]; };
+    const out = [at(d0)];
+    for (let i = 0; i < pts.length; i++) if (cum[i] > d0 && cum[i] < d1) out.push(pts[i]);
+    out.push(at(d1));
+    return out.length > 1 ? out : null;
+  };
+  if (!atStart) return { solid: sub(0, Math.max(0, dJ - FADE_M)), fade: sub(Math.max(0, dJ - FADE_M), dJ) };
+  const fadePts = sub(dJ, Math.min(total, dJ + FADE_M));
+  return { solid: sub(Math.min(total, dJ + FADE_M), total), fade: fadePts ? fadePts.reverse() : null }; // a run-start fade is ordered seam -> join like every other: the slice's own order runs join-first there, so it reverses
+}
+function boundarySplit(n, ab, pts, kind, col, withCasing) { // -> { solid, fades }: apply the boundary-end split at both of a slice's ends (a one-piece run can carry two). ab indexes GEO[n].stitched - the record match is judged on the STITCHED vertex, so a fill slice on its offset line splits by the same record, at the point nearest the join on its own line.
+  let solid = pts; const fades = [];
+  const g = GEO[n];
+  for (const atStart of [true, false]) {
+    if (!solid || solid.length < 2) break;
+    const vtx = atStart ? g.stitched[ab[0]] : g.stitched[ab[1]];
+    const rec = boundaryRecAt(n, vtx);
+    if (!rec) continue;
+    const svm = sharedVertexMap();
+    if ((svm[coordKey(vtx)] || []).some(e => e.n !== n)) continue; // a vertex another route street shares is a junction, whatever the pack says
+    const sp = splitBoundaryEnd(solid, [rec[2], rec[3]], atStart);
+    if (sp.fade) { fades.push({ pts: sp.fade, k: kind, col }); if (withCasing) fades.push({ pts: sp.fade, k: 'x', col }); }
+    solid = sp.solid;
+  }
+  return { solid, fades };
+}
 function buildFamilies() {
   THROUGH_SEGS = [];
   const pairs = junctionPairs();
   PAIRS_CUR = pairs;
-  const centreSlices = [], bandSlices = [], edgeSlices = [], fillSlices = [];
+  const centreSlices = [], bandSlices = [], edgeSlices = [], fillSlices = [], fadeSlices = [];
   H.names.forEach(n => {
     const g = GEO[n];
     g.cuts.forEach((ab, idx) => {
@@ -1505,10 +1576,12 @@ function buildFamilies() {
         let bPts = g.stitched.slice(ab[0], ab[1] + 1);
         if (idx === 0 || g.gaps.has(ab[0]) || H.pieces[n][idx - 1] === 0) bPts = clipEndAtJunction(n, ab[0], bPts, true, ownHalf);
         if (idx === g.cuts.length - 1 || g.gaps.has(g.cuts[idx + 1][0]) || H.pieces[n][idx + 1] === 0) bPts = clipEndAtJunction(n, ab[1], bPts, false, ownHalf);
-        bandSlices.push({ pts: bPts, key: 'band', mem: [{ n, idx }], e0: null, e1: null });
+        const bSp = boundarySplit(n, ab, bPts, 'b', MUGREEN, true); // Beta 1.259: a band at a boundary end feathers like every other family
+        for (const f of bSp.fades) fadeSlices.push(f);
+        if (bSp.solid) bandSlices.push({ pts: bSp.solid, key: 'band', mem: [{ n, idx }], e0: null, e1: null });
       }
-      else centreSlices.push({ pts: cPts, key, mem: [{ n, idx }], e0: null, e1: null });
-      if (!isBand && bits !== 0) [0, 1].forEach(side => { if (bits & (1 << side)) fillSlices.push({ pts: fillSlicePts(n, idx, side), key: 'fill', mem: [{ n, idx, side }], e0: null, e1: null }); });   // Beta 1.208: a one-side-done piece also emits its side's FILL (the half-road green Andrew ordered in place of the kerb outline)
+      else { const cSp = boundarySplit(n, ab, cPts, 'c', key, true); for (const f of cSp.fades) fadeSlices.push(f); if (cSp.solid) centreSlices.push({ pts: cSp.solid, key, mem: [{ n, idx }], e0: null, e1: null }); }
+      if (!isBand && bits !== 0) [0, 1].forEach(side => { if (bits & (1 << side)) { const fSp = boundarySplit(n, ab, fillSlicePts(n, idx, side), 'f', MUGREEN, false); for (const f of fSp.fades) fadeSlices.push(f); if (fSp.solid) fillSlices.push({ pts: fSp.solid, key: 'fill', mem: [{ n, idx, side }], e0: null, e1: null }); } });   // Beta 1.208: a one-side-done piece also emits its side's FILL (the half-road green Andrew ordered in place of the kerb outline). Beta 1.259: the fill feathers at a boundary end too, split on its own half-offset line at the point nearest the join
     });
     [0, 1].forEach(side => {
       edgeRunSlices(n, side, idx => H.pieces[n][idx] !== 3 && (H.pieces[n][idx] & (1 << side))).forEach(sl => edgeSlices.push(sl));
@@ -1529,17 +1602,19 @@ function buildFamilies() {
   lastResortConnect(edges, bands);
   LASTCHAINS = { centres, bands, edges, fills };
   const fc = (list, colFn) => ({ type: 'FeatureCollection', features: list.map(sl => { const c = colFn(sl); return { type: 'Feature', properties: { col: c, colG: mute(c) }, geometry: { type: 'LineString', coordinates: GJ(sl.pts) } }; }) });
-  return { centres: fc(centres, sl => sl.key), bands: fc(bands, () => MUGREEN), edges: fc(edges, () => MUGREEN), fills: fc(fills, () => MUGREEN) };
+  return { centres: fc(centres, sl => sl.key), bands: fc(bands, () => MUGREEN), edges: fc(edges, () => MUGREEN), fills: fc(fills, () => MUGREEN), fades: { type: 'FeatureCollection', features: fadeSlices.map(sl => ({ type: 'Feature', properties: { col: sl.col, k: sl.k }, geometry: { type: 'LineString', coordinates: GJ(sl.pts) } })) } }; // Beta 1.259: the fade features bypass mergeStrands by design - each is its own short line in the lineMetrics source, so the gradient's progress spans exactly the fade zone
 }
 function currentSelList() { // every selected stretch (Beta 1.28): the app's selSet when multi-selecting, else the single anchor - read live at build time, like the original builders read the app global sel
   return (typeof H.selSet !== 'undefined' && Array.isArray(H.selSet) && H.selSet.length) ? H.selSet : (sel ? [sel] : []);
 }
+let SEL_FILL_FADES = []; // Beta 1.259: buildSelFill's boundary-end fades, handed to the selFades assembly in rebuildData/init/syncSel (the LASTCHAINS side-channel precedent) - the function's own return stays the selFill collection it has always returned
 function buildSelFill() {   // the selected sectors' side fills (vibrant) - Beta 1.208 (R3): built by fillSlicePts, the SAME local rule that builds the board's fills, so a selected stretch's done side paints vertex-for-vertex as the board paints it and the green can no longer disconnect at the stretch boundary. The retired buildSel('e') rebuilt the side from a ONE-PIECE edge run: a lone piece can never earn the junction through-grant the full marked run gets (throughOK needs both arms in the run) and it received none of the corner/through post-passes, so the selected stretch's kerb line clipped at junctions the board line runs through - Andrew's disconnected green (his Valeria stretch 10 screenshot, 2026-11-15).
   const feats = [];
   const selSides = [];
+  SEL_FILL_FADES = [];
   for (const it of currentSelList()) {
     const bits = H.pieces[it.name][it.idx];
-    if (bits !== 3) [0, 1].forEach(side => { if (bits & (1 << side)) { feats.push({ type: 'Feature', properties: { col: GREEN, colG: mute(GREEN) }, geometry: { type: 'LineString', coordinates: GJ(fillSlicePts(it.name, it.idx, side)) } }); selSides.push({ n: it.name, idx: it.idx, side }); } });
+    if (bits !== 3) [0, 1].forEach(side => { if (bits & (1 << side)) { const fSp = boundarySplit(it.name, GEO[it.name].cuts[it.idx], fillSlicePts(it.name, it.idx, side), 'f', GREEN, false); for (const f of fSp.fades) SEL_FILL_FADES.push(f); if (fSp.solid) { feats.push({ type: 'Feature', properties: { col: GREEN, colG: mute(GREEN) }, geometry: { type: 'LineString', coordinates: GJ(fSp.solid) } }); selSides.push({ n: it.name, idx: it.idx, side }); } } }); // Beta 1.259: a selected fill feathers at a boundary end exactly as the board's does
   }
   // Beta 1.208 (Codex P2, gate round 4): the corner connectors ride along.
   // fillCornerLinks wraps a marked side around a junction corner with a
@@ -1578,30 +1653,37 @@ function selectedGeom(it) {   // a selected stretch's painted slice: stitched po
   if (isBand) {   // Beta 1.208 (gate round 3): the selection's band redraw follows the board band's per-side-paint clip rule, so selected and deselected paint meet a neighbouring fill identically
     if (idx === 0 || g.gaps.has(ab[0]) || H.pieces[n][idx - 1] === 0) pts = clipEndAtJunction(n, ab[0], pts, true, half);
     if (idx === g.cuts.length - 1 || g.gaps.has(g.cuts[idx + 1][0]) || H.pieces[n][idx + 1] === 0) pts = clipEndAtJunction(n, ab[1], pts, false, half);
-    return { pts, bits, half };
   }
-  if (idx === 0 || g.gaps.has(ab[0]) || famKey(idx - 1) !== key) pts = clipEndAtJunction(n, ab[0], pts, true, half);
-  if (idx === g.cuts.length - 1 || g.gaps.has(g.cuts[idx + 1][0]) || famKey(idx + 1) !== key) pts = clipEndAtJunction(n, ab[1], pts, false, half);
-  return { pts, bits, half };
+  else {
+    if (idx === 0 || g.gaps.has(ab[0]) || famKey(idx - 1) !== key) pts = clipEndAtJunction(n, ab[0], pts, true, half);
+    if (idx === g.cuts.length - 1 || g.gaps.has(g.cuts[idx + 1][0]) || famKey(idx + 1) !== key) pts = clipEndAtJunction(n, ab[1], pts, false, half);
+  }
+  const sp = boundarySplit(n, ab, pts, isBand ? 'b' : 'c', isBand ? GREEN : colOf(n, bits), false); // Beta 1.259: the selection redraw feathers at a boundary end in the vibrant colour - pts becomes the trimmed solid (the glow, which reads this same geometry, stops at the seam with it), the fades ride along for buildSelC
+  return { pts: sp.solid, bits, half, fades: sp.fades };
 }
 function buildSelC() {   // the selected sector's core: a vibrant BAND when complete, a vibrant core otherwise
   // (round 15: the locals were named sel/selBand, SHADOWING the
   // global selection - colOf(sel.name) read undefined and every
   // selected pending stretch rendered RED, yellow streets included.
   // Andrew caught it live, 2026-10-29.)
-  const selFeats = [], bandFeats = [];
+  const selFeats = [], bandFeats = [], selFades = [];
   for (const it of currentSelList()) {
     const sg = selectedGeom(it);
     if (!sg) continue;
+    if (sg.fades) for (const f of sg.fades) selFades.push(f); // Beta 1.259: the stretch's boundary-end fades (vibrant) - collected even when nothing solid survives the split
+    if (!sg.pts || sg.pts.length < 2) continue;
     if (sg.bits !== 3) selFeats.push({ type: 'Feature', properties: { col: colOf(it.name, sg.bits) }, geometry: { type: 'LineString', coordinates: GJ(sg.pts) } });
     else bandFeats.push({ type: 'Feature', properties: { col: GREEN }, geometry: { type: 'LineString', coordinates: GJ(sg.pts) } });
   }
-  return { sel: selFeats.length ? { type: 'FeatureCollection', features: selFeats } : EMPTYFC, selBand: bandFeats.length ? { type: 'FeatureCollection', features: bandFeats } : EMPTYFC };
+  return { sel: selFeats.length ? { type: 'FeatureCollection', features: selFeats } : EMPTYFC, selBand: bandFeats.length ? { type: 'FeatureCollection', features: bandFeats } : EMPTYFC, selFades };
+}
+function fadeFC(triples) { // Beta 1.259: fade triples ({pts, k, col}) -> the selFades collection (the board's fades are built in buildFamilies' return)
+  return triples.length ? { type: 'FeatureCollection', features: triples.map(sl => ({ type: 'Feature', properties: { col: sl.col, k: sl.k }, geometry: { type: 'LineString', coordinates: GJ(sl.pts) } })) } : EMPTYFC;
 }
 const HIT = { type: 'FeatureCollection', features: [] }; // Beta 1.117: filled per load by buildEngineGeometry
 buildEngineGeometry(); // the eval pass: no route is loaded yet, so this builds the empty geometry - the structures exist and every reader is safe; GLP.rebuildRoute rebuilds for real on each load
 let CUR = null;
-function rebuildData() { const F = buildFamilies(); const SC = buildSelC();
+function rebuildData() { const F = buildFamilies(); const SC = buildSelC(); const SF = buildSelFill();
   // Paint order (round 21, Andrew's rule): within the centres source,
   // RED strands sort before YELLOW strands, so at any junction yellow
   // paints over red and the red street reads as butting into it.
@@ -1610,7 +1692,7 @@ function rebuildData() { const F = buildFamilies(); const SC = buildSelC();
   // colours the same way. Geometry untouched; features only reorder.
   const yRank = f => (f.properties.col === mute(YELLOW) || f.properties.col === YELLOW) ? 1 : 0;   // keys off the live scheme (round 25)
   F.centres.features.sort((a, b) => yRank(a) - yRank(b));
-  CUR = { centres: F.centres, bands: F.bands, edges: F.edges, fills: F.fills, sel: SC.sel, selBand: SC.selBand, selFill: buildSelFill() }; }
+  CUR = { centres: F.centres, bands: F.bands, edges: F.edges, fills: F.fills, fades: F.fades, sel: SC.sel, selBand: SC.selBand, selFill: SF, selFades: fadeFC([...SC.selFades, ...SEL_FILL_FADES]) }; }
 
 function scaleW(curve) { return curve.map((v, i) => (i >= 4 && i % 2 === 0) ? +(v * WIDTH_K).toFixed(3) : v); }   // Beta 1.181: scale an interpolate width curve by WIDTH_K (widths sit at even indices >= 4, the wPlus/wScale index rule)
 const surfW = scaleW(['interpolate', ['linear'], ['zoom'], 14, 2.5, 16, 7.63, 17, 15.25, 18, 30.5, 19, 61]);   // street-end width fix: z16-19 stops set so the DRAWN width holds the geographic 9.9 m on the app's true map scale (the old 6.5/9.5/15/24 drew only 8.4/6.2/4.9/3.9 m, so terminating ends — cut flush to the crossing paint's designed edge — hung gapped from the paint as drawn)
@@ -1693,6 +1775,8 @@ function addStack() {
     GLM.addSource('bands', { type: 'geojson', data: CUR.bands });
     GLM.addSource('edges', { type: 'geojson', data: CUR.edges });
     GLM.addSource('fills', { type: 'geojson', data: CUR.fills });
+    GLM.addSource('fades', { type: 'geojson', lineMetrics: true, data: CUR.fades }); // Beta 1.259: lineMetrics is line-gradient's precondition
+    GLM.addSource('selFades', { type: 'geojson', lineMetrics: true, data: CUR.selFades });
     GLM.addSource('sel', { type: 'geojson', data: CUR.sel });
     GLM.addSource('selBand', { type: 'geojson', data: CUR.selBand });
     GLM.addSource('selFill', { type: 'geojson', data: CUR.selFill });
@@ -1714,6 +1798,17 @@ function addStack() {
   add(line('t1-surface', 'centres', { 'line-color': ['get', 'col'], 'line-width': surfW, 'line-opacity': ['step', ['zoom'], 0, 12.6, 1], 'line-opacity-transition': { duration: 0, delay: 0 } }, { 'line-cap': 'butt' }));
   add(line('t1-band', 'bands', { 'line-color': ['get', 'col'], 'line-width': surfW, 'line-opacity': ['step', ['zoom'], 0, 12.6, 1], 'line-opacity-transition': { duration: 0, delay: 0 } }, { 'line-cap': 'butt' }));   // Beta 1.208 (R1): the completed band draws at surfW - the same width as the not-done surface, per Andrew's order
   add(line('t1-fill', 'fills', { 'line-color': ['get', 'col'], 'line-width': wScale(surfW, 0.5), 'line-opacity': ['step', ['zoom'], 0, 12.6, 1], 'line-opacity-transition': { duration: 0, delay: 0 } }, { 'line-cap': 'butt' }));   // Beta 1.208 (R2): a done side's green fills its half of the road (half-offset ribbon at half the surface's drawn width) - it replaces the t1-edge kerb line, whose fixed 4.5 px shrank to an outline at close zoom. The edges source itself is still built (its junction pipeline is untouched) but no longer drawn.
+  // --- Beta 1.259: boundary-end feathers. One literal-gradient layer per
+  // colour (line-gradient cannot read feature properties): the fade
+  // features carry k (x casing / c centre / b band / f fill) and col, and
+  // each layer paints its own colour's gradient over its kind. The casing
+  // gradient follows the theme like t1-casing's colour (syncTheme). ---
+  const fadeOp = ['step', ['zoom'], 0, 12.6, 1];
+  add(line('fade-casing', 'fades', { 'line-gradient': fadeGrad(H.isNight() ? '#000000' : '#5a5f6a'), 'line-width': surfCASE, 'line-opacity': fadeOp, 'line-opacity-transition': { duration: 0, delay: 0 } }, { 'line-cap': 'butt' }, ['==', ['get', 'k'], 'x']));
+  add(line('fade-surf-y', 'fades', { 'line-gradient': fadeGrad(mute(YELLOW)), 'line-width': surfW, 'line-opacity': fadeOp, 'line-opacity-transition': { duration: 0, delay: 0 } }, { 'line-cap': 'butt' }, ['all', ['==', ['get', 'k'], 'c'], ['==', ['get', 'col'], mute(YELLOW)]]));
+  add(line('fade-surf-r', 'fades', { 'line-gradient': fadeGrad(mute(RED)), 'line-width': surfW, 'line-opacity': fadeOp, 'line-opacity-transition': { duration: 0, delay: 0 } }, { 'line-cap': 'butt' }, ['all', ['==', ['get', 'k'], 'c'], ['==', ['get', 'col'], mute(RED)]]));
+  add(line('fade-band-g', 'fades', { 'line-gradient': fadeGrad(MUGREEN), 'line-width': surfW, 'line-opacity': fadeOp, 'line-opacity-transition': { duration: 0, delay: 0 } }, { 'line-cap': 'butt' }, ['==', ['get', 'k'], 'b']));
+  add(line('fade-fill-g', 'fades', { 'line-gradient': fadeGrad(MUGREEN), 'line-width': wScale(surfW, 0.5), 'line-opacity': fadeOp, 'line-opacity-transition': { duration: 0, delay: 0 } }, { 'line-cap': 'butt' }, ['==', ['get', 'k'], 'f']));
   // --- selection glow (round 16, restored onto the r15 paint at
   // Andrew's direction 2026-10-29): three nested widths in the
   // street's OWN colour under the vibrant redraw; managePulse
@@ -1743,6 +1838,11 @@ function addStack() {
   add(line('sel-core-s', 'selGlow', { 'line-color': ['get', 'colHot'], 'line-width': wScale(surfW, 0.42), 'line-opacity': 0.85 }, { 'line-cap': 'butt', 'line-join': 'round' }, ['==', ['get', 'band'], 0]));
   add(line('sel-core-b', 'selGlow', { 'line-color': ['get', 'colHot'], 'line-width': wScale(surfW, 0.42), 'line-opacity': 0.85 }, { 'line-cap': 'butt', 'line-join': 'round' }, ['==', ['get', 'band'], 1]));
   add(line('t1-selfill', 'selFill', { 'line-color': ['get', 'col'], 'line-width': wScale(surfW, 0.5), 'line-opacity': 1 }, { 'line-cap': 'butt' }));   // Beta 1.208 (R3): the selection's vibrant side fill - same width as the board's t1-fill, geometry from the same builder
+  // Beta 1.259: the selection's boundary-end feathers, in the vibrant colours
+  add(line('selfade-y', 'selFades', { 'line-gradient': fadeGrad(YELLOW), 'line-width': surfW, 'line-opacity': 1 }, { 'line-cap': 'butt' }, ['all', ['==', ['get', 'k'], 'c'], ['==', ['get', 'col'], YELLOW]]));
+  add(line('selfade-r', 'selFades', { 'line-gradient': fadeGrad(RED), 'line-width': surfW, 'line-opacity': 1 }, { 'line-cap': 'butt' }, ['all', ['==', ['get', 'k'], 'c'], ['==', ['get', 'col'], RED]]));
+  add(line('selfade-g', 'selFades', { 'line-gradient': fadeGrad(GREEN), 'line-width': surfW, 'line-opacity': 1 }, { 'line-cap': 'butt' }, ['==', ['get', 'k'], 'b']));
+  add(line('selfade-fill', 'selFades', { 'line-gradient': fadeGrad(GREEN), 'line-width': wScale(surfW, 0.5), 'line-opacity': 1 }, { 'line-cap': 'butt' }, ['==', ['get', 'k'], 'f']));
   // --- hit (every treatment) ---
   add(line('hit', 'hit', { 'line-color': '#fff', 'line-width': 24 * WIDTH_K, 'line-opacity': 0 }));
   // Beta 1.258 (Andrew): the app's own street titles are RETIRED - the basemap's
@@ -1765,7 +1865,7 @@ function addStack() {
   add({ id: 'routepoi-ring', type: 'circle', source: 'routepoi', maxzoom: 13.3, paint: { 'circle-radius': ['interpolate', ['linear'], ['zoom'], 10, 7, 13.5, 9], 'circle-color': '#ffffff', 'circle-opacity': ['step', ['zoom'], 1, 12.6, 0], 'circle-opacity-transition': { duration: 0, delay: 0 } } });
   add({ id: 'routepoi-dot', type: 'circle', source: 'routepoi', maxzoom: 13.3, paint: { 'circle-radius': ['interpolate', ['linear'], ['zoom'], 10, 4.5, 13.5, 6.5], 'circle-color': '#ef476f', 'circle-opacity': ['step', ['zoom'], 1, 12.6, 0], 'circle-opacity-transition': { duration: 0, delay: 0 } } });
   add({ id: 'routepoi-txt', type: 'symbol', source: 'routepoi', maxzoom: 13.3, layout: { 'text-field': (H.activeRoute && H.activeRoute.name) || 'Snow Route', 'text-font': fontStack, 'text-size': 11, 'text-anchor': 'left', 'text-offset': [1.1, 0], 'text-allow-overlap': false }, paint: { 'text-color': H.isNight() ? '#e8e8e8' : '#333333', 'text-halo-color': H.isNight() ? 'rgba(0,0,0,.8)' : 'rgba(255,255,255,.9)', 'text-opacity': ['step', ['zoom'], 1, 12.6, 0], 'text-opacity-transition': { duration: 0, delay: 0 }, 'text-halo-width': 1.6 } });
-  ['t1-casing', 't1-casingb', 't1-surface', 't1-band', 't1-fill', 't1-sel', 't1-selband', 't1-selfill', 'sel-core-s', 'sel-core-b', 'hit'].concat([1, 2, 3, 4, 5].flatMap(i => ['sel-glow' + i + '-s', 'sel-glow' + i + '-b'])).forEach(id => { if (GLM.getLayer(id)) GLM.setLayerZoomRange(id, 12.5, 24); });
+  ['t1-casing', 't1-casingb', 't1-surface', 't1-band', 't1-fill', 'fade-casing', 'fade-surf-y', 'fade-surf-r', 'fade-band-g', 'fade-fill-g', 't1-sel', 't1-selband', 't1-selfill', 'selfade-y', 'selfade-r', 'selfade-g', 'selfade-fill', 'sel-core-s', 'sel-core-b', 'hit'].concat([1, 2, 3, 4, 5].flatMap(i => ['sel-glow' + i + '-s', 'sel-glow' + i + '-b'])).forEach(id => { if (GLM.getLayer(id)) GLM.setLayerZoomRange(id, 12.5, 24); });
   H.glUnifyLabels(GLM);
   pushSources();
   applyGlow();
@@ -1779,7 +1879,7 @@ function buildSelGlow() {
   const feats = []; // Beta 1.170 (Carbon fix round Phase 2, B-04): one glow feature per selected stretch, the same iteration buildSel/buildSelC run - through 1.169 this built only the single anchor's geometry (selectedGeom() with no argument), so a multi-select glowed one stretch while the vibrant selection lines painted them all
   for (const it of currentSelList()) {
     const sg = selectedGeom(it);
-    if (!sg) continue;
+    if (!sg || !sg.pts || sg.pts.length < 2) continue; // Beta 1.259: a stretch fully inside a boundary fade zone has no solid line to glow under
     const c = colOf(it.name, sg.bits);
     feats.push({ type: 'Feature', properties: { col: c, colHot: lighten(c, 0.68), colLit: lighten(c, 0.30), band: sg.bits === 3 ? 1 : 0 }, geometry: { type: 'LineString', coordinates: GJ(sg.pts) } });
   }
@@ -1853,7 +1953,7 @@ function managePulse() {
     sel = H.selStretch ? { name: H.selStretch.name, idx: H.selStretch.idx } : null;
     const sig = stateSig();
     if (!CUR || sig !== lastSig) { rebuildData(); lastSig = sig; }
-    else { const SC = buildSelC(); CUR.sel = SC.sel; CUR.selBand = SC.selBand; CUR.selFill = buildSelFill(); }
+    else { const SC = buildSelC(); CUR.sel = SC.sel; CUR.selBand = SC.selBand; CUR.selFill = buildSelFill(); CUR.selFades = fadeFC([...SC.selFades, ...SEL_FILL_FADES]); }
     addStack();           // re-adds sources+layers on the fresh GL map and pushes CUR
   }
   function rebuildRoute() { // Beta 1.117: the app switched routes and rebuilt its own geometry (buildGeometry, app1) - rebuild the engine's from the host's current data and re-point every route-shaped source at it. The basemap and layers are untouched; only data moves.
@@ -1884,7 +1984,7 @@ function managePulse() {
     sel = H.selStretch ? { name: H.selStretch.name, idx: H.selStretch.idx } : null;
     if (!GLM || !CUR) return;
     const SC = buildSelC();
-    CUR.sel = SC.sel; CUR.selBand = SC.selBand; CUR.selFill = buildSelFill();
+    CUR.sel = SC.sel; CUR.selBand = SC.selBand; CUR.selFill = buildSelFill(); CUR.selFades = fadeFC([...SC.selFades, ...SEL_FILL_FADES]);
     pushSelSources();
   }
   function active() { return !!GLM; }
@@ -1895,6 +1995,7 @@ function managePulse() {
     lastNight = night;
     const casing = night ? '#000000' : '#5a5f6a', txt = night ? '#e8e8e8' : '#333333', halo = night ? 'rgba(0,0,0,.8)' : 'rgba(255,255,255,.9)';
     for (const id of ['t1-casing', 't1-casingb']) { if (GLM.getLayer(id)) { try { GLM.setPaintProperty(id, 'line-color', casing); } catch (e) {} } }
+    if (GLM.getLayer('fade-casing')) { try { GLM.setPaintProperty('fade-casing', 'line-gradient', fadeGrad(casing)); } catch (e) {} } // Beta 1.259: the feather's casing gradient follows the theme with the casings
     for (const id of ['routepoi-txt']) { if (GLM.getLayer(id)) { try { GLM.setPaintProperty(id, 'text-color', txt); GLM.setPaintProperty(id, 'text-halo-color', halo); } catch (e) {} } }
   }
   function evalCurvePx(curve, z) { // a scaleW-built interpolate curve evaluated at a zoom, in px (stops: zoom at odd indices from 3, width at even indices >= 4; clamped outside the stop range, linear between)
