@@ -120,6 +120,11 @@ def main():
         print("SWEEP ERROR: no old strings given - a sweep with no input proves nothing")
         return 2
 
+    if not (root / "tests").is_dir():
+        print(f"SWEEP ERROR: no tests/ directory under {root} - a sweep over zero "
+              "files proves nothing (Codex P2 on PR #147)")
+        return 2
+
     needles = {}
     for s in olds:
         for v in variants(s):

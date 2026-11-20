@@ -362,7 +362,9 @@ with tempfile.TemporaryDirectory() as td:
                                   "--old", "anything"], capture_output=True, text=True, timeout=120)
     check("sweep: a missing registry is an error, never a silent clean sweep",
           missing_reg.returncode, 2)
+    check("sweep: a root without a tests directory is an error, never a silent clean sweep",
+          run_sweep(t / "no-such-root", ["anything"]), 2)
 
-total = 31
+total = 32
 print(f"gate fixtures: {total - len(failures)} pass, {len(failures)} fail")
 sys.exit(1 if failures else 0)
