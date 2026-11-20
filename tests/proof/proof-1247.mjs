@@ -58,8 +58,8 @@ check('6: the create text boxes keep their white pills',
 check('7: the CHANGELOG top entry is Beta 1.247',
   changelog.indexOf('## Beta 1.247') > -1 && changelog.indexOf('## Beta 1.247') < changelog.indexOf('## Beta 1.246'));
 check('8: What\'s New carries the CURRENT entry\'s bullet (rolled to 1.251: this check tracks the current entry each round), within the 108-char cap, em-dash free',
-  whatsnew.includes('Cancel start now asks first, so one tap cannot wipe a run by mistake.') &&
-  'Cancel start now asks first, so one tap cannot wipe a run by mistake.'.length <= 108 &&
+  whatsnew.includes('Settings menus now sit in the centre of the screen, with even spacing in System Health.') &&
+  'Settings menus now sit in the centre of the screen, with even spacing in System Health.'.length <= 108 &&
   !whatsnew.includes('—'));
 
 console.log(`proof-1247: ${pass} passed, ${fail} failed`);
