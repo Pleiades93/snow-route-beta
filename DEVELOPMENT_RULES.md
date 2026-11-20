@@ -84,6 +84,17 @@ gate) is identical whichever route carries it — a tooling hiccup is
 never a reason to skip a step, and never a blocker to report before the
 fallbacks have been tried.
 
+**The one supported push path (/correct Phase 2, C2+C8).** Every push of
+files goes through `scripts/push.py` (`push <root> --branch B --message
+M <repo-relative path>...`): it refuses basename-only entries (the
+helper's basename default scattered five pushes to the repo root), it
+refuses a parts/ push that does not carry the fresh derived artifacts
+(src/tracker-source.html, index.html), and it verifies the PUSHED
+tree's blobs against the local files after the transport push. A
+`plan` run validates the set without touching the network. Do not push
+through the helper directly — the discipline it cannot enforce is the
+point.
+
 ## 2. Per-change report (required with every merge)
 
 - What changed and why.
