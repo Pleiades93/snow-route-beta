@@ -68,12 +68,19 @@ def variants(s):
     form (drives pin wording inside /.../ literals - 'not saving
     (sides)' is asserted as /not saving \\(sides\\)/; Codex P2 on
     PR #147)."""
-    esc = s.replace("\\", "\\\\").replace("'", "\\'").replace('"', '\\"')
+    # JS string-literal forms, one per quote: a literal escapes its
+    # OWN enclosing quote (and backslashes), never the other quote -
+    # escaping both made a mixed-quote string unmatchable in either
+    # literal form (Codex P2 on PR #147).
+    base = s.replace("\\", "\\\\")
+    lit_sq = base.replace("'", "\\'")
+    lit_dq = base.replace('"', '\\"')
+    lit_bt = base.replace("`", "\\`")
     # Regex-escaped the way a JS /.../ literal writes it: backslash
     # before each metacharacter, spaces and quotes untouched (Python's
     # re.escape also escapes spaces, which no drive does).
     resc = "".join("\\" + c if c in "\\.^$*+?()[]{}|" else c for c in s)
-    return {s, esc, resc}
+    return {s, lit_sq, lit_dq, lit_bt, resc}
 
 
 def iter_files(root):

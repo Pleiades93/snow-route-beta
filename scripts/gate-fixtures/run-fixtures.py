@@ -364,7 +364,10 @@ with tempfile.TemporaryDirectory() as td:
           missing_reg.returncode, 2)
     check("sweep: a root without a tests directory is an error, never a silent clean sweep",
           run_sweep(t / "no-such-root", ["anything"]), 2)
+    check("sweep: a mixed-quote old string is caught in its single-quoted literal form",
+          run_sweep(sweep_tree(t / "mixq", files={"tests/browser/drive1.mjs": "x.includes('couldn\\'t save \"Town\"')\n"}),
+                    ["couldn't save \"Town\""]), 1)
 
-total = 32
+total = 33
 print(f"gate fixtures: {total - len(failures)} pass, {len(failures)} fail")
 sys.exit(1 if failures else 0)
