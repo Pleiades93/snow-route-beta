@@ -3,15 +3,17 @@
 (2026-11-17; added on the PR #107 Codex P1 - judging logic ships
 with fixtures, docs/TESTING.md rule 1).
 
-scripts/check-tier-map.py, scripts/check-proof-coverage.py and
-scripts/run-proofs.py all decide pass/fail for the gate. Running them
+scripts/check-tier-map.py, scripts/check-proof-coverage.py,
+scripts/run-proofs.py and scripts/push.py (plan mode) all decide
+pass/fail for the gate. Running them
 against the real repository proves only their happy path; these
 fixtures run each script against synthetic trees in a temp directory
 and assert BOTH verdicts: the valid tree passes, and every documented
 failure class (dangling roster entry, JSON/MD roster drift, a roster
 drive outside the runner's ALL list, an unlisted or duplicated proof,
 a retirement without a reason, a manifest naming a missing file, a
-proof exiting nonzero, a proof timing out) fails.
+proof exiting nonzero, a proof timing out, a basename-only push
+entry, a parts push missing its derived artifacts) fails.
 
 Run: python3 scripts/gate-fixtures/run-fixtures.py
 Exit 0 = every case produced its expected verdict.
@@ -176,6 +178,34 @@ with tempfile.TemporaryDirectory() as td:
               proofs={"p.mjs": SLOW_PROOF}),
               env_extra={"PROOF_TIMEOUT_S": "1"}), 1)
 
-total = 14
+# ---------------------------------------------------------------- push path
+def run_push(root, files):
+    proc = subprocess.run([PY, str(ROOT / "scripts" / "push.py"), "plan", str(root),
+                           "--branch", "fixture", "--message", "fixture"] + files,
+                          capture_output=True, text=True, timeout=120)
+    return proc.returncode
+
+
+def push_tree(base, *, files):
+    for rel in files:
+        w(base / rel, "fixture\n")
+    return base
+
+
+with tempfile.TemporaryDirectory() as td:
+    t = Path(td)
+    check("push: a basename-only entry for a file that lives in a directory is refused",
+          run_push(push_tree(t / "base", files=["parts/app3.js"]), ["app3.js"]), 1)
+    check("push: a parts file without its derived artifacts is refused",
+          run_push(push_tree(t / "nderiv", files=["parts/app3.js", "src/tracker-source.html",
+                                                  "index.html"]),
+                   ["parts/app3.js"]), 1)
+    check("push: a non-parts set of repo-relative paths passes plan",
+          run_push(push_tree(t / "ok", files=["docs/x.md", "scripts/y.py"]),
+                   ["docs/x.md", "scripts/y.py"]), 0)
+    check("push: a bare name that exists only at the root passes plan",
+          run_push(push_tree(t / "root", files=["README.md"]), ["README.md"]), 0)
+
+total = 18
 print(f"gate fixtures: {total - len(failures)} pass, {len(failures)} fail")
 sys.exit(1 if failures else 0)
