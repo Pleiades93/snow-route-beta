@@ -67,14 +67,25 @@ function crCacheDisclose(cityName, sess) { // the one wording for every cache fa
   crCacheNote = 'Couldn’t save ' + cityName + ' on this phone, it will reload next time';
   crRenderHint();
 }
-function crCacheSaveCell(cityName, bbox, totalCells, key, ways) { // write-through, one cell at a time, serialized; ways in the compact stored form [[id, name, pts], ...]
+function crCacheRecFits(rec, bbox, ds) { // Beta 1.251 (cross-audit fix round, R-02): the ONE fit test for a saved cache record, extracted from the two word-for-word copies (restore in crCityPrepare, the queued write below) - a record fits this grid when its bounding box is this grid's AND its dataset identity is this preparation's. The identity binds the record to the dataset its cells were downloaded from ('pack:<slug>@<catalogue generatedAt>' or 'overpass'): pack way ids are file-order counters, so a republished pack can renumber every street, and a record restored or merged across that boundary would certify coverage for ways this dataset never contained. A mismatch is treated exactly as a bounding-box mismatch has always been - the record starts over (the call sites set rec = null). A side that cannot state an identity (a pre-1.251 record with no ds, or a preparation whose catalogue never answered, ds null) is no evidence of mismatch: the box test alone decides, exactly as before.
+  if (!rec) return false;
+  if (rec.bbox && (rec.bbox.s !== bbox.s || rec.bbox.n !== bbox.n || rec.bbox.w !== bbox.w || rec.bbox.e !== bbox.e)) return false;
+  if (ds && rec.ds && rec.ds !== ds) return false;
+  return true;
+}
+function crDatasetId(pk) { // Beta 1.251 (R-02): the dataset identity a preparation's cells belong to - a pack city's identity is its catalogue version stamp (crPackResolveCity's gen); a city the answered catalogue does not list is the live service's ('overpass'); an unanswered catalogue states none (null)
+  if (pk) return 'pack:' + pk.slug + '@' + pk.gen;
+  return crPackIndexKnown ? 'overpass' : null;
+}
+function crCacheSaveCell(cityName, bbox, totalCells, key, ways, ds) { // write-through, one cell at a time, serialized; ways in the compact stored form [[id, name, pts], ...]. Beta 1.251 (R-02): ds is the WRITING preparation's dataset identity, captured with the call like sess below - the queued write is judged against the record under it, never against whatever preparation happens to be live when the queue drains
   const sess = crSession; // Beta 1.143 (DA-06): the commissioning session, captured with the call - suppression and disclosure below bind to it; the WRITE itself always lands, as it did through 1.142 (queued cells must survive a preparation's cancel/resume: drive150 J6a/J11a)
   crCacheQueue = crCacheQueue.then(async () => {
     if (crCacheNote && crCacheNoteCity === cityName && crCacheNoteSession === sess) return; // already refused/failed for THIS city in THIS session: stop writing, the disclosure stands (Beta 1.143, DA-06: another city's - or a closed session's - failure never mutes this session's writes)
     let rec = await crIdbGet(cityName);
-    if (rec && rec.bbox && (rec.bbox.s !== bbox.s || rec.bbox.n !== bbox.n || rec.bbox.w !== bbox.w || rec.bbox.e !== bbox.e)) rec = null; // CG-PF-15: a record saved under a DIFFERENT bounding box is not this grid's cache - its cells were downloaded for another grid. Merging a fresh cell into it while overwriting its bbox would defeat the restore-time bbox guard in crCityPrepare and certify coverage that was never downloaded for this grid; a changed box starts the record over
+    if (!crCacheRecFits(rec, bbox, ds)) rec = null; // CG-PF-15 + Beta 1.251 (R-02): a record saved under a DIFFERENT bounding box or a DIFFERENT dataset is not this grid's cache - its cells were downloaded for another grid or another pack edition. Merging a fresh cell into it while overwriting its bbox would defeat the restore-time guard in crCityPrepare and certify coverage that was never downloaded for this grid; a changed box or dataset starts the record over
     if (!rec) rec = { cityName, bbox, cells: {}, savedAt: Date.now(), totalCells };
     rec.bbox = bbox; rec.totalCells = totalCells;
+    if (ds) rec.ds = ds; // Beta 1.251 (R-02): the record carries the identity of the dataset its cells belong to (a fitting pre-1.251 record gains the stamp on its first write under the new rule)
     rec.cells[key] = { at: Date.now(), ways };
     rec.savedAt = Date.now();
     let size = 0;
@@ -158,7 +169,7 @@ function crGridPump(g) { // keep at most CR_GRID_PARALLEL cell fetches in flight
         crCovMerge(res.json.elements, cell.box);
         const ways = [];
         for (const el of res.json.elements || []) { const w = crCov.byId[el && el.id]; if (w) ways.push([el.id, w.name, w.pts]); }
-        crCacheSaveCell(g.name, g.bbox, g.cells.length, cell.key, ways);
+        crCacheSaveCell(g.name, g.bbox, g.cells.length, cell.key, ways, g.ds);
       } else if (res.kind === 'stale' || g.stopped) { cell.state = 'pending'; }
       else if (cell.tries < CR_CELL_TRIES) { cell.state = 'pending'; g.lastFail = res; }
       else { cell.state = 'failed'; g.lastFail = res; }
@@ -180,15 +191,21 @@ function crCityPrepare() { // a city is picked: load its whole extract - from th
   crCacheNote = ''; crCacheNoteCity = ''; // a fresh preparation starts with no failure state (Beta 1.143, DA-06: the owner binding resets with the note)
   crPackCtx = null; crPackNote = ''; // Beta 1.123: a new city's preparation re-decides its source (pack vs service) below
   const cells = crGridCellsFor(bbox);
-  const g = crGrid = { name, bbox, cells, gen, session, startedAt: Date.now(), lastProgressAt: Date.now(), ticker: null, ops: new Set(), active: 0, fromCache: false, savedAt: null, stopped: null, lastFail: null }; // Beta 1.229: lastProgressAt - the progress watchdog's clock (crGridWatchdog below): preparation starting is the first progress mark; the saved-grid read landing, the pack resolve landing, every landed cell and every resume restart it
+  const g = crGrid = { name, bbox, cells, gen, session, startedAt: Date.now(), lastProgressAt: Date.now(), ticker: null, ops: new Set(), active: 0, fromCache: false, savedAt: null, stopped: null, lastFail: null, ds: null }; // Beta 1.229: lastProgressAt - the progress watchdog's clock (crGridWatchdog below): preparation starting is the first progress mark; the saved-grid read landing, the pack resolve landing, every landed cell and every resume restart it. Beta 1.251 (R-02): ds - the grid's dataset identity (crDatasetId), set when the pack resolve lands below, before any restore or write is judged
   crSetPrepState('preparing'); crPrepFail = null; crFailFromGrid = false; crWanted = null; // Beta 1.154 (B3 build): crFailFromGrid clears at THIS entry too - through 1.153 it survived a city change (the 2026-11-09 lifecycle trace's cross-session latch finding); S1/S8 always cleared it at entry, S6 now does the same
   crRenderHint();
   crGridArmTicker(g); // Beta 1.229: the heartbeat runs from preparation ENTRY - the saved-grid read and the pack resolve below are inside the watchdog's reach from here on, not just the pump
-  crIdbGet(name).then(rec => {
+  // Beta 1.251 (R-02): the pack resolve lands BEFORE the saved-grid read, because the restore's fit test (crCacheRecFits) is judged against the preparation's dataset identity and the identity is the resolve's answer. Through 1.250 the read came first and the resolve only fed the pump. The catalogue is warmed at boot, so the resolve is normally already in hand; its race cap sits far inside the progress watchdog's bound, and the resolve landing restarts that clock below. A fully saved city still restores with ZERO downloads - it just learns its source first. The resolve also still precedes the pump, so the source decision remains the grid's from its first cell (Beta 1.123) and the hint can name it; a pack city skips the minutes warning - its first load is one static download, seconds not minutes.
+  crPackResolveCity(name, bbox).then(pk => {
+    if (!crGridCurrent(g)) return; // the session moved on while the catalogue answered: land nowhere (CG-PF-05)
+    g.lastProgressAt = Date.now(); // Beta 1.229: the pack resolve landing is progress - the read's and the pump's clocks start from here
+    if (pk) { g.fromPack = pk.slug; crPackCtx = { slug: pk.slug, bbox: pk.bbox, failed: false }; }
+    g.ds = crDatasetId(pk);
+    crIdbGet(name).then(rec => {
     if (!crGridCurrent(g)) return;
     g.lastProgressAt = Date.now(); // Beta 1.229: the saved-grid read landing is progress, restored cells or none
     let restored = 0;
-    if (rec && rec.bbox && (rec.bbox.s !== bbox.s || rec.bbox.n !== bbox.n || rec.bbox.w !== bbox.w || rec.bbox.e !== bbox.e)) rec = null; // a record saved under a DIFFERENT bounding box (the lookup's answer changed) is not this grid's cache - its cell keys would restore the wrong streets
+    if (!crCacheRecFits(rec, bbox, g.ds)) rec = null; // a record saved under a DIFFERENT bounding box (the lookup's answer changed) or a DIFFERENT dataset (the pack was republished and its ways renumbered) is not this grid's cache - its cell keys would restore the wrong streets
     if (rec && rec.cells) {
       let folded = false; // Beta 1.169 (Carbon fix round, D-06): set by the fold below; the byName rebuild runs ONCE after the loop (see there)
       for (const cell of g.cells) {
@@ -207,17 +224,9 @@ function crCityPrepare() { // a city is picked: load its whole extract - from th
       if (restored) { g.fromCache = true; g.savedAt = rec.savedAt || null; }
     }
     if (restored === g.cells.length) { crSetPrepState('ready'); crSweepPending(); crRenderHint(); return; } // fully saved: instant ready, ZERO downloads (amendment C)
-    // Beta 1.123: resolve the pack BEFORE the pump starts, so the source
-    // decision is the grid's from its first cell (and the hint can name
-    // it). A pack city skips the minutes warning - its first load is one
-    // static download, seconds not minutes.
-    crPackResolveCity(name, bbox).then(pk => {
-      if (!crGridCurrent(g)) return; // the session moved on while the catalogue answered: land nowhere (CG-PF-05)
-      g.lastProgressAt = Date.now(); // Beta 1.229: the pack resolve landing is progress - the pump's own clock starts from here
-      if (pk) { g.fromPack = pk.slug; crPackCtx = { slug: pk.slug, bbox: pk.bbox, failed: false }; }
-      crGridArmTicker(g); // Beta 1.229: re-armed fresh for the pump phase (the heartbeat has run since preparation entry - see crCityPrepare)
-      crRenderHint();
-      crGridPump(g);
+    crGridArmTicker(g); // Beta 1.229: re-armed fresh for the pump phase (the heartbeat has run since preparation entry - see crCityPrepare)
+    crRenderHint();
+    crGridPump(g);
     });
   });
 }
