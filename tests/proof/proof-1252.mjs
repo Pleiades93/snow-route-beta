@@ -78,8 +78,8 @@ check('9: no second stale literal in app3',
 // ---------- the release editorial ----------
 check('10: the CHANGELOG top entry is Beta 1.252', changelog.includes('## Beta 1.252'));
 check('11: What\'s New carries the 1.252 bullet, short and dash-free',
-  whatsnew.includes('Turning location back on no longer restarts it while it waits for a first fix.')
-  && 'Turning location back on no longer restarts it while it waits for a first fix.'.length <= 108
+  whatsnew.includes('In the create flow, the hint button label now always matches what tapping it does.')
+  && 'In the create flow, the hint button label now always matches what tapping it does.'.length <= 108
   && !whatsnew.includes('—'));
 
 console.log(`proof-1252: ${pass} passed, ${fail} failed`);
