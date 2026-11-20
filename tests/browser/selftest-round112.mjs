@@ -163,7 +163,7 @@ const t = (name, cond) => { if (cond) pass++; else { fail++; console.log('FAIL',
     const navigatorStub = { wakeLock: { request: () => new Promise(res => { resolveReq = () => res(fakeLock); }) } };
     const settingsObj = { awake: true };
     const api = new Function('navigator', 'document', 'settings',
-      'let wakeLock = null; let runStart = 1000;\n' + syncWake +
+      'let wakeLock = null, wakePending = null; let runStart = 1000;\n' + syncWake + // Beta 1.254 (O-04): syncWake's shared in-flight request lives in wakePending, declared beside wakeLock in app3 - the sandbox declares both, as it always declared wakeLock
       '\nreturn { syncWake, setRun: t => { runStart = t; }, held: () => wakeLock !== null };')(
       navigatorStub, { visibilityState: 'visible' }, settingsObj);
     return { api, settingsObj, resolve: () => resolveReq(), releases: () => releaseCalls };
