@@ -97,5 +97,24 @@ check('17: What\'s New carries the 1.251 bullet, short and dash-free',
   && 'The cancel question now sits over a softly blurred, dimmed background.'.length <= 108
   && !whatsnew.includes('—'));
 
+// ---------- the first byte must be RECORDED, not just read about ----------
+// /correct Phase 2, C1 proof-pin half (cross-audit R-04, 2026-11-20):
+// checks 6-7 pin the ternary that READS sawByte and the re-arm that a
+// landed chunk triggers, but through this round nothing pinned the
+// assignment that SETS the flag. Deleting `sawByte = true;` from the
+// read loop leaves the timer on the 120 s first-byte window forever -
+// the 60 s between-bytes rule dies - and every check above stayed
+// green (mutation run in the Phase 2 record: 17/17 under the deletion).
+// Check 18 pins the behaviour-level anchor: the assignment stands
+// inside the streaming read loop (between the reader's creation and
+// the chunk concatenation), and it stands exactly once in the file,
+// so a copy planted elsewhere cannot satisfy it while the loop loses
+// its own. Mutation-proven: red under the deletion, green restored.
+const loopSlice = citydata.slice(citydata.indexOf('const reader = r.body.getReader()'), citydata.indexOf('const buf = new Uint8Array(total)'));
+check('18: a landed chunk SETS the flag the timer reads - sawByte = true stands inside the streaming read loop, and exactly once in the file',
+  loopSlice.length > 0
+  && loopSlice.includes('sawByte = true;')
+  && (citydata.match(/sawByte = true;/g) || []).length === 1);
+
 console.log(`proof-1249: ${pass} passed, ${fail} failed`);
 process.exit(fail ? 1 : 0);
