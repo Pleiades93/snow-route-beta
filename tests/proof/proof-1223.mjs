@@ -59,8 +59,8 @@ check('1f: both chosen layers keep the bare crZoomW(6.75) width (no case-nested 
   (pick.match(/'line-width': crZoomW\(6\.75\)/g) || []).length >= 2 && !/'line-width': \['case'/.test(pick));
 
 // ---------- 2: About breathing room + short What's New ----------
-check('2a: #setMenu top padding carries the safe-area inset',
-  rule('#setMenu').includes('padding: calc(24px + env(safe-area-inset-top, 0px)) 24px calc(88px + env(safe-area-inset-bottom, 0px))'));
+check('2a: #setMenu top padding carries the safe-area inset (Beta 1.256: the top is now the bottom\'s equal - 88px + the larger inset at both ends - so the panes centre on the viewport; both 1.223 clearances stand, the top carries its inset and more, the bottom never drops below 88 + an inset)',
+  rule('#setMenu').includes('padding: calc(88px + max(env(safe-area-inset-top, 0px), env(safe-area-inset-bottom, 0px))) 24px calc(88px + max(env(safe-area-inset-top, 0px), env(safe-area-inset-bottom, 0px)))'));
 check('2a2: #setMenu lays its column from flex-start (a centred column clips an overflowing pane top beyond the scroller)',
   rule('#setMenu').includes('justify-content: flex-start'));
 check('2b: WHATSNEW stands in its own data part carrying the stamp token (the assembler fills it from the CHANGELOG top)', whatsnew.includes("v: '@@VERSION@@', items:"));
