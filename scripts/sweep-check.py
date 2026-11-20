@@ -23,10 +23,13 @@ script searches:
     the unit suites - the whole tree, not the family being edited);
   - the probe registry (default: the snow goal's fix-checks.json;
     --no-registry skips it, e.g. for historical-tree runs);
-for each old string in BOTH its exact form and its backslash-escaped
-form (the shape it takes inside JS string literals and regexes in
-the drives). Every hit is printed as string -> file:line and the
-exit code is 1: a hit is an un-swept pin until it is accounted for.
+for each old string in its exact form, its backslash-escaped
+JS string-literal form, and its regex-escaped form (the shapes it
+takes inside the drives' literals and /.../ matchers). Every hit is
+printed as string -> file:line and the exit code is 1: a hit is an
+un-swept pin until it is accounted for. A registry path that does
+not exist is an ERROR (exit 2), never a silent skip - --no-registry
+is the deliberate exclusion.
 
 Not every occurrence is a pin: check-NAME labels carry the words as
 prose, and a negative pin (an includes() absence assertion) carries
@@ -60,9 +63,17 @@ SKIP_DIRS = {".git", "node_modules", "__pycache__"}
 
 
 def variants(s):
-    """The exact string + its backslash-escaped JS-literal form."""
+    """The forms an old string takes in the tests: exact, the
+    backslash-escaped JS string-literal form, and the regex-escaped
+    form (drives pin wording inside /.../ literals - 'not saving
+    (sides)' is asserted as /not saving \\(sides\\)/; Codex P2 on
+    PR #147)."""
     esc = s.replace("\\", "\\\\").replace("'", "\\'").replace('"', '\\"')
-    return {s, esc} if esc != s else {s}
+    # Regex-escaped the way a JS /.../ literal writes it: backslash
+    # before each metacharacter, spaces and quotes untouched (Python's
+    # re.escape also escapes spaces, which no drive does).
+    resc = "".join("\\" + c if c in "\\.^$*+?()[]{}|" else c for c in s)
+    return {s, esc, resc}
 
 
 def iter_files(root):
@@ -121,7 +132,13 @@ def main():
         for needle, lineno in search_file(f, needles):
             hits.append((needles[needle], rel, lineno))
     registry_searched = False
-    if not args.no_registry and args.registry.is_file():
+    if not args.no_registry:
+        if not args.registry.is_file():
+            print(f"SWEEP ERROR: registry not found at {args.registry} - the sweep "
+                  "includes the probe registry by design; pass --no-registry to "
+                  "exclude it deliberately (Codex P2 on PR #147: a missing registry "
+                  "must never pass silently as a clean sweep)")
+            return 2
         registry_searched = True
         for needle, lineno in search_file(args.registry, needles):
             hits.append((needles[needle], str(args.registry), lineno))

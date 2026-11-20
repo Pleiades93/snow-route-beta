@@ -354,7 +354,15 @@ with tempfile.TemporaryDirectory() as td:
     check("sweep: the backslash-escaped form of an old string is also caught",
           run_sweep(sweep_tree(t / "esc", files={"tests/browser/drive1.mjs": "x === 'it\\'s gone'\n"}),
                     ["it's gone"]), 1)
+    check("sweep: the regex-escaped form of an old string is also caught",
+          run_sweep(sweep_tree(t / "resc", files={"tests/browser/drive1.mjs": "/not saving \\(sides\\)/.test(t)\n"}),
+                    ["not saving (sides)"]), 1)
+    missing_reg = subprocess.run([PY, str(ROOT / "scripts" / "sweep-check.py"), str(t / "clean"),
+                                  "--registry", "/definitely/missing/fix-checks.json",
+                                  "--old", "anything"], capture_output=True, text=True, timeout=120)
+    check("sweep: a missing registry is an error, never a silent clean sweep",
+          missing_reg.returncode, 2)
 
-total = 29
+total = 31
 print(f"gate fixtures: {total - len(failures)} pass, {len(failures)} fail")
 sys.exit(1 if failures else 0)
