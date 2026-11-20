@@ -55,24 +55,27 @@ check('4: the dense box failure prepares at the map centre, labelled as what it 
   decision.includes("kind === 'dense') return { label: 'Prepare this area', act: 'prepare-centre' };"));
 check('5: degraded without a grid offers no button (no promise without a remedy)',
   decision.includes("if (!crGrid) return { label: '', act: '' };"));
+check('6: the ready state offers no button and no dispatch (the 1.153 design), and the zoom offer falls through only for unbranched states',
+  decision.includes("crPrepState === 'ready') return { label: '', act: '' };")
+  && decision.indexOf("crPrepState === 'ready')") < decision.indexOf("map.getZoom() >= 14"));
 
 // ---------- the renderer consumes it ----------
-check('6: the renderer takes its label from the decision, once',
+check('7: the renderer takes its label from the decision, once',
   pick.includes('btnLabel = crHintAction().label')
   && (pick.match(/btnLabel = /g) || []).length === 2); // the declaration + the one application - no branch assigns a label any more
-check('7: the old crGrid-keyed failed label is gone',
+check('8: the old crGrid-keyed failed label is gone',
   !pick.includes("crGrid ? 'Retry'"));
 
 // ---------- the handler only dispatches ----------
-check('8: the handler reads the decision and dispatches on its action',
+check('9: the handler reads the decision and dispatches on its action',
   handler.includes('const act = crHintAction().act;')
   && handler.includes("act === 'resume'") && handler.includes("act === 'prepare-centre'"));
-check('9: the handler interprets no state itself (no crFailFromGrid, no prep-state tests)',
+check('10: the handler interprets no state itself (no crFailFromGrid, no prep-state tests)',
   handler.length > 0 && !handler.includes('crFailFromGrid') && !handler.includes('crPrepState ==='));
 
 // ---------- the release editorial ----------
-check('10: the CHANGELOG top entry is Beta 1.253', changelog.includes('## Beta 1.253'));
-check('11: What\'s New carries the 1.253 bullet, short and dash-free',
+check('11: the CHANGELOG top entry is Beta 1.253', changelog.includes('## Beta 1.253'));
+check('12: What\'s New carries the 1.253 bullet, short and dash-free',
   whatsnew.includes('In the create flow, the hint button label now always matches what tapping it does.')
   && 'In the create flow, the hint button label now always matches what tapping it does.'.length <= 108
   && !whatsnew.includes('—'));
