@@ -26,12 +26,18 @@ This wrapper makes both shapes impossible rather than discouraged:
           (4) when parts or derived files are in the set, the derived
               artifacts must be FRESH: scripts/build-pages.py --check
               must pass, so what is pushed is what the parts build.
-  push  - runs plan, delegates the transport to the connector helper
-          (explicit --repo snow-route-beta and --branch, every pair
-          local=remote identical), then VERIFIES THE PUSHED TREE:
-          the new head's blob for every pushed path must equal the
-          local file's blob. The verification anchor is the remote
-          tree, never the local one.
+  push  - runs plan, then a PREFLIGHT against the target branch:
+          every parts/ file whose local blob differs from the
+          branch's must be in the set - the derived artifacts were
+          built from ALL local parts, so pushing a subset would
+          leave the remote tree holding derived files its own parts
+          do not assemble to (Codex P2 on PR #146). Then it delegates
+          the transport to the connector helper (explicit
+          --repo snow-route-beta and --branch, every pair local=remote
+          identical), and VERIFIES THE PUSHED TREE: the new head's
+          blob for every pushed path must equal the local file's
+          blob. The verification anchor is the remote tree, never
+          the local one.
 
 Usage:
   python3 scripts/push.py plan <root> --branch B --message M <path>...
@@ -140,8 +146,33 @@ def helper_module():
     return mod, helper
 
 
+def remote_blobs(gh, branch):
+    base = f"/repos/Pleiades93/{REPO_SLUG}"
+    head = gh.api("GET", f"{base}/git/ref/heads/{branch}")["object"]["sha"]
+    tree = gh.api("GET", f"{base}/git/trees/{head}?recursive=1")
+    return head, {e["path"]: e["sha"] for e in tree.get("tree", []) if e.get("type") == "blob"}
+
+
 def do_push(root, branch, message, resolved):
     gh, helper = helper_module()
+    # Preflight: no assembly input may be left behind. The derived
+    # artifacts in the set were built from every local part; a part
+    # that differs from the branch but is not pushed would strand
+    # them over parts that do not assemble to them.
+    if any(p.startswith("parts/") for p in resolved):
+        _, remote = remote_blobs(gh, branch)
+        parts_dir = root / "parts"
+        omitted = []
+        for f in sorted(parts_dir.rglob("*")):
+            if f.is_file():
+                rel = f.relative_to(root).as_posix()
+                if rel not in resolved and remote.get(rel) != blob_sha(f):
+                    omitted.append(rel)
+        if omitted:
+            return fail("parts file(s) differ from " + branch + " but are not in the push "
+                        "set: " + ", ".join(omitted) + " - the derived artifacts were built "
+                        "from them; pushing a subset leaves the remote tree unbuildable. "
+                        "Push them too, or revert them locally.")
     pairs = [f"{p}={p}" for p in resolved]
     cmd = [sys.executable, helper, "--repo", REPO_SLUG, "--branch", branch,
            "push", "--message", message] + pairs
@@ -155,10 +186,7 @@ def do_push(root, branch, message, resolved):
         return fail("the transport push failed (see above) - nothing was verified")
     # Verify the PUSHED tree: every pushed path's remote blob must
     # equal the local file's blob at the branch's new head.
-    base = f"/repos/Pleiades93/{REPO_SLUG}"
-    head = gh.api("GET", f"{base}/git/ref/heads/{branch}")["object"]["sha"]
-    tree = gh.api("GET", f"{base}/git/trees/{head}?recursive=1")
-    remote = {e["path"]: e["sha"] for e in tree.get("tree", []) if e.get("type") == "blob"}
+    head, remote = remote_blobs(gh, branch)
     bad = [p for p in resolved if remote.get(p) != blob_sha(root / p)]
     if bad:
         return fail("pushed-tree verification failed - the remote blob differs from the "
