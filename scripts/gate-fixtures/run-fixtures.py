@@ -205,7 +205,13 @@ with tempfile.TemporaryDirectory() as td:
                    ["docs/x.md", "scripts/y.py"]), 0)
     check("push: a bare name that exists only at the root passes plan",
           run_push(push_tree(t / "root", files=["README.md"]), ["README.md"]), 0)
+    check("push: a ./-spelled parts entry still meets the derived-artifact guard",
+          run_push(push_tree(t / "dotderiv", files=["parts/app3.js", "src/tracker-source.html",
+                                                    "index.html"]),
+                   ["./parts/app3.js"]), 1)
+    check("push: a ./-spelled basename is refused like the plain basename",
+          run_push(push_tree(t / "dotbase", files=["parts/app3.js"]), ["./app3.js"]), 1)
 
-total = 18
+total = 20
 print(f"gate fixtures: {total - len(failures)} pass, {len(failures)} fail")
 sys.exit(1 if failures else 0)

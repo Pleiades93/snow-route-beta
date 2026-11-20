@@ -45,6 +45,7 @@ import argparse
 import hashlib
 import importlib.util
 import os
+import posixpath
 import subprocess
 import sys
 from pathlib import Path
@@ -81,8 +82,12 @@ def validate(root, entries):
     by_base = tree_basenames(root)
     resolved = []
     for entry in entries:
-        entry = entry.replace(os.sep, "/")
-        if entry.startswith("/") or entry.startswith("../") or "/../" in entry:
+        # Canonicalize BEFORE any classification: a spelling like
+        # ./parts/app3.js must meet the same guards as parts/app3.js
+        # (Codex P2 on PR #146 - the un-normalized spelling walked
+        # around both derived-artifact guards).
+        entry = posixpath.normpath(entry.replace(os.sep, "/"))
+        if entry.startswith("/") or entry == ".." or entry.startswith("../"):
             return None, f"'{entry}' is not a repo-relative path inside the tree"
         if "/" not in entry:
             matches = by_base.get(entry, [])
@@ -140,7 +145,10 @@ def do_push(root, branch, message, resolved):
     pairs = [f"{p}={p}" for p in resolved]
     cmd = [sys.executable, helper, "--repo", REPO_SLUG, "--branch", branch,
            "push", "--message", message] + pairs
-    proc = subprocess.run(cmd, capture_output=True, text=True, timeout=600)
+    # cwd=root (Codex P2 on PR #146): the pairs are repo-relative, so
+    # the transport must read them from the VALIDATED tree, not from
+    # whatever directory the caller happened to invoke this from.
+    proc = subprocess.run(cmd, cwd=root, capture_output=True, text=True, timeout=600)
     sys.stdout.write(proc.stdout)
     if proc.returncode != 0:
         sys.stderr.write(proc.stderr)
