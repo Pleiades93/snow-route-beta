@@ -1205,7 +1205,8 @@ function renderDraft() { // the DRAFT renders through its own GeoJSON source, co
   src.setData({ type: 'FeatureCollection', features: feats });
   syncCrGlow(); // Beta 1.208: the trim glow tracks the draft's own render - the street's normal draft paint is untouched above and below it
 }
-onMapReady(() => map.on('styledata', () => { if (creating) { renderDraft(); crSetBackdrop(true); crIsectEnsure(); } })); // a basemap swap mid-create wipes custom layers - redraw the draft and re-hide the backdrop. Beta 1.262: the POI surface's layers are custom too - crIsectEnsure re-seats them and re-points the source at the standing POI, so a picked crossing's marker survives a theme swap mid-create
+onMapReady(() => map.on('styledata', () => { if (creating) { if (map.getLayer('crDraftCase') && (!crIsectPoi || map.getLayer('crIsectDot'))) return; // gate fix (Codex P2, PR #158): styledata also fires for paint-only updates - the POI pulse's own frame writes among them - and the restoration below is for basemap swaps only: when the custom layers all still stand, nothing was wiped, so a standing pulse must not rebuild the draft and POI sources frame after frame. A swap wipes the layers atomically, so a missing sentinel IS the swap signal
+  renderDraft(); crSetBackdrop(true); crIsectEnsure(); } })); // a basemap swap mid-create wipes custom layers - redraw the draft and re-hide the backdrop. Beta 1.262: the POI surface's layers are custom too - crIsectEnsure re-seats them and re-points the source at the standing POI, so a picked crossing's marker survives a theme swap mid-create
 onMapReady(() => { if (creating) crSetBackdrop(true); }); // creation entered before the map existed (boot mode): the backdrop lands when the map does
 
 // ---- creation backdrop (Beta 1.120, Andrew's design): while creating, the
@@ -1461,15 +1462,20 @@ function crSyncClear() { $('crClear').classList.toggle('on', !!$('crSearchInput'
 const CR_ISECT_SRC = 'crIsect';
 let crIsectPoi = null; // { lat, lon, name } while the surface stands, else null
 let crIsectRaf = 0; // the pulse's frame handle; 0 = the pulse is not running
+let crIsectPushed = null; // the point key the source currently holds ('lat,lon', '' for empty, null = unknown - a fresh source always takes a push)
 function crIsectEnsure() { // the surface's layers, (re)seated in the CURRENT style - a basemap swap wipes them, so the styledata hook re-runs this and re-points the source at the standing POI
   if (!map || typeof map.addSource !== 'function') return;
   try {
-    if (!map.getSource(CR_ISECT_SRC)) map.addSource(CR_ISECT_SRC, { type: 'geojson', data: { type: 'FeatureCollection', features: [] } });
+    if (!map.getSource(CR_ISECT_SRC)) { map.addSource(CR_ISECT_SRC, { type: 'geojson', data: { type: 'FeatureCollection', features: [] } }); crIsectPushed = null; }
     let before; // the pair stacks BELOW the first label layer, as in the approved sample - the street names draw over the marker, never under it
     try { const lab = ((map.getStyle() && map.getStyle().layers) || []).find(l => l.type === 'symbol' && l.layout && l.layout['text-field']); if (lab) before = lab.id; } catch (e) {}
-    if (!map.getLayer('crIsectHalo')) map.addLayer({ id: 'crIsectHalo', type: 'circle', source: CR_ISECT_SRC, paint: { 'circle-radius': 7, 'circle-color': '#2C4AD2', 'circle-opacity': 0 } }, before);
+    if (!map.getLayer('crIsectHalo')) map.addLayer({ id: 'crIsectHalo', type: 'circle', source: CR_ISECT_SRC, paint: { 'circle-radius': 7, 'circle-color': '#2C4AD2', 'circle-opacity': 0, 'circle-radius-transition': { duration: 0, delay: 0 }, 'circle-opacity-transition': { duration: 0, delay: 0 } } }, before); // gate fix (Codex P2, PR #158): the frame loop drives the halo's paint - zero-duration transitions, or MapLibre's default 300 ms paint transition would chase each frame's target, smearing the pulse law and gliding across its cycle reset instead of restarting
     if (!map.getLayer('crIsectDot')) map.addLayer({ id: 'crIsectDot', type: 'circle', source: CR_ISECT_SRC, paint: { 'circle-radius': 7, 'circle-color': '#2C4AD2' } }, before);
-    if (crIsectPoi) map.getSource(CR_ISECT_SRC).setData({ type: 'Feature', properties: {}, geometry: { type: 'Point', coordinates: [crIsectPoi.lon, crIsectPoi.lat] } });
+    const want = crIsectPoi ? crIsectPoi.lat + ',' + crIsectPoi.lon : '';
+    if (want !== crIsectPushed) { // push only on change - a re-seat that re-pushes the same point every call would feed the styledata cycle the gate fix below guards against
+      if (crIsectPoi) map.getSource(CR_ISECT_SRC).setData({ type: 'Feature', properties: {}, geometry: { type: 'Point', coordinates: [crIsectPoi.lon, crIsectPoi.lat] } });
+      crIsectPushed = want;
+    }
   } catch (e) { /* the style may still be loading - the styledata hook retries while creating */ }
 }
 function crIsectHaloRest() { // the halo's rest frame: core-sized and invisible - set explicitly at every stop, so the layer never carries a stale mid-pulse frame into its next standing (a re-set under reduced motion would otherwise show the frozen disc)
@@ -1503,7 +1509,7 @@ function crIsectSet(lat, lon, name) { // the surface's ONE writer: state, bar te
 }
 function crIsectClear() { // the surface's ONE teardown: state, pulse, marker and bar text die together - each closing seat calls this and keeps only its own extras
   crIsectPoi = null; crIsectPulseStop(); crIsectHaloRest();
-  try { if (map && map.getSource(CR_ISECT_SRC)) map.getSource(CR_ISECT_SRC).setData({ type: 'FeatureCollection', features: [] }); } catch (e) {}
+  try { if (map && map.getSource(CR_ISECT_SRC)) { map.getSource(CR_ISECT_SRC).setData({ type: 'FeatureCollection', features: [] }); crIsectPushed = ''; } } catch (e) {}
   $('crSearchInput').value = ''; crSyncClear();
 }
 $('crClear').addEventListener('click', () => { // Beta 1.227 (Andrew): the clear disc empties the text and the results and keeps the focus in the input - it never exits anything. The body is the old ✕'s first-press job (Beta 1.120), moved whole onto its own control

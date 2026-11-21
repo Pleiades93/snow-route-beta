@@ -37,8 +37,8 @@ const block = span('// ---- Beta 1.262 (Andrew, 2026-11-20): the intersection PO
 // ---------- the surface ----------
 check('1: the surface state stands: one GeoJSON source id, one POI record, one frame handle',
   pick.includes("const CR_ISECT_SRC = 'crIsect';") && pick.includes('let crIsectPoi = null;') && pick.includes('let crIsectRaf = 0;'));
-check('2: the marker is two native circle layers on that source - halo under dot, the decided paints (core-sized blue halo at rest opacity 0; solid blue core, radius 7)',
-  block.includes("map.addLayer({ id: 'crIsectHalo', type: 'circle', source: CR_ISECT_SRC, paint: { 'circle-radius': 7, 'circle-color': '#2C4AD2', 'circle-opacity': 0 } }, before)") &&
+check('2: the marker is two native circle layers on that source - halo under dot, the decided paints (core-sized blue halo at rest opacity 0 with zero-duration transitions, gate fix PR #158; solid blue core, radius 7)',
+  block.includes("map.addLayer({ id: 'crIsectHalo', type: 'circle', source: CR_ISECT_SRC, paint: { 'circle-radius': 7, 'circle-color': '#2C4AD2', 'circle-opacity': 0, 'circle-radius-transition': { duration: 0, delay: 0 }, 'circle-opacity-transition': { duration: 0, delay: 0 } } }, before)") &&
   block.includes("map.addLayer({ id: 'crIsectDot', type: 'circle', source: CR_ISECT_SRC, paint: { 'circle-radius': 7, 'circle-color': '#2C4AD2' } }, before)") &&
   block.indexOf('crIsectHalo') < block.indexOf('crIsectDot'));
 check('3: NO ring and NO DOM mechanism: the surface block carries no circle stroke paint, creates no element, and uses no Marker class',
@@ -75,8 +75,12 @@ check('11: the teardown itself kills the whole pair: state nulled, pulse stopped
   span('function crIsectClear()', "$('crClear').addEventListener").includes('crIsectPoi = null; crIsectPulseStop(); crIsectHaloRest();') &&
   span('function crIsectClear()', "$('crClear').addEventListener").includes("map.getSource(CR_ISECT_SRC).setData({ type: 'FeatureCollection', features: [] })") &&
   span('function crIsectClear()', "$('crClear').addEventListener").includes("$('crSearchInput').value = ''; crSyncClear();"));
-check('12: a basemap swap mid-create re-seats the surface (the styledata hook re-ensures it beside the draft and the backdrop)',
-  pick.includes("if (creating) { renderDraft(); crSetBackdrop(true); crIsectEnsure(); }"));
+check('12: a basemap swap mid-create re-seats the surface (the styledata hook re-ensures it beside the draft and the backdrop, behind the gate fix\'s stand-down guard)',
+  pick.includes("map.on('styledata'") && pick.includes("renderDraft(); crSetBackdrop(true); crIsectEnsure(); } }));"));
+
+check('14: the frame loop cannot storm the creation sources (gate fix, PR #158): the styledata restoration stands down while the custom layers stand (a missing sentinel is the swap signal), and the ensure pushes the point only on change',
+  pick.includes("if (map.getLayer('crDraftCase') && (!crIsectPoi || map.getLayer('crIsectDot'))) return;") &&
+  block.includes('if (want !== crIsectPushed)') && block.includes("let crIsectPushed = null;"));
 
 // ---------- the release editorial ----------
 check('13: What\'s New carries the 1.262 bullet, within the 108-char cap, em-dash free, and the CHANGELOG top entry is Beta 1.262 above 1.261',

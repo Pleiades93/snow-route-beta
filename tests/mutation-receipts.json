@@ -896,6 +896,32 @@
    "red": "proof-1236 check E3 fails (23 pass, 1 fail)",
    "green": "proof-1236 passes 24/24 with the seat restored",
    "issued": "2026-11-21 intersection-1262"
+  },
+  {
+   "id": "proof-1262-gate-fixes",
+   "check": "tests/proof/proof-1262.mjs",
+   "kind": "mutation",
+   "files": {
+    "tests/proof/proof-1262.mjs": "c3de040cd7684541d505a1c72871787d0a620fafc74c6d25ced2a5ae295b716c",
+    "parts/create-pick.js": "e6b34de74c85e38a634fe027efb4a32a45571828e640229fc101144dd4a81224"
+   },
+   "mutation": "parts/create-pick.js: the halo's zero-duration transition specs and the styledata stand-down guard stripped (the PR #158 gate fixes removed)",
+   "red": "proof-1262 checks 2 and 14 fail (12 passed, 2 failed); drive215 P5b fails (no transition specs in the style) and P9 counts 7 renderDraft rebuilds in 2 s of standing pulse",
+   "green": "proof-1262 passes 14/14 and drive215 17/17 with the fixes in",
+   "issued": "2026-11-21 intersection-1262 gate round"
+  },
+  {
+   "id": "drive215-gate-fixes",
+   "check": "tests/browser/drive215.mjs",
+   "kind": "mutation",
+   "files": {
+    "tests/browser/drive215.mjs": "cee0c8418d3841a23fb67a247bbf14afaf09026667df3da8eff647f6b49060ec",
+    "parts/create-pick.js": "e6b34de74c85e38a634fe027efb4a32a45571828e640229fc101144dd4a81224"
+   },
+   "mutation": "the PR #158 head before the gate fixes (5b37af7f): halo without paint transitions, styledata restoration answering paint-only events",
+   "red": "drive215 P5b fails (getPaintProperty returns no transition specs) and P9 fails with 7 renderDraft calls in 2 s of standing pulse (15 other checks pass)",
+   "green": "drive215 passes 17/17 on the fixed build, P9 counting 0 rebuilds",
+   "issued": "2026-11-21 intersection-1262 gate round"
   }
  ]
 }

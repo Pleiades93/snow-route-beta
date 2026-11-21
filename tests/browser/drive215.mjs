@@ -164,6 +164,24 @@ await ev(`setThemeOverride(false); applyNight(); setBasemap(); true`);
 await poll(`!!map.getLayer('crIsectDot')`, 15000).catch(() => false);
 await sleep(400);
 
+// ---------- the frame-driven pulse's two engine contracts (gate round, Codex P2s on PR #158) ----------
+// (i) MapLibre's default paint transition is 300 ms: without zero-duration
+// overrides the painted halo would chase each frame's target instead of
+// wearing it, smearing the law P7 grades off the targets. The overrides
+// are what make target == painted, so they are pinned on the style spec.
+const TR = await J(`(() => { const l = (map.getStyle().layers || []).find(x => x.id === 'crIsectHalo'); return l ? { r: l.paint['circle-radius-transition'], o: l.paint['circle-opacity-transition'] } : null; })()`);
+ok('P5b the halo carries zero-duration paint transitions, so the frame loop paints its values directly (no 300 ms default-transition smear across the cycle reset) | ' + JSON.stringify(TR),
+  !!TR && !!TR.r && TR.r.duration === 0 && !!TR.o && TR.o.duration === 0);
+// (ii) The pulse's per-frame paint updates fire styledata; the basemap-swap
+// restoration must not answer them - a standing pulse that rebuilt the
+// draft + route POI sources every frame would tax the phone for as long
+// as the crossing stands. Count renderDraft calls over 2 s of standing.
+await ev(`window.__rdN = 0; window.__rdOrig = renderDraft; renderDraft = function () { window.__rdN++; return window.__rdOrig.apply(this, arguments); }; true`);
+await sleep(2000);
+const rdN = await ev(`window.__rdN`);
+await ev(`renderDraft = window.__rdOrig; true`);
+ok('P9 a standing pulse does not rebuild the creation sources: renderDraft calls over 2 s of standing pulse | n=' + rdN, typeof rdN === 'number' && rdN <= 2);
+
 // ---------- lifecycle L1: the clear disc takes the whole surface ----------
 await ev(`document.getElementById('crClear').click()`);
 await sleep(200);
