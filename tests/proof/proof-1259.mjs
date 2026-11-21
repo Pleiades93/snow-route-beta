@@ -69,11 +69,9 @@ check('12: symbol-spacing 500 is set in the normalization path on the road-label
 // ---------- the release editorial ----------
 check('13: the CHANGELOG top entry is Beta 1.259',
   changelog.indexOf('## Beta 1.259') > -1 && changelog.indexOf('## Beta 1.259') < changelog.indexOf('## Beta 1.258'));
-check('14: the What\'s New bullets are the round\'s own lines, within the 108-char cap, em-dash free',
-  whatsnew.includes('Where your paint meets a bigger street, it now fades out gently instead of stopping dead.') &&
-  whatsnew.includes('Every street on your route shows its name at the home zoom.') &&
-  whatsnew.includes('Street names repeat less often along long streets.') &&
-  'Where your paint meets a bigger street, it now fades out gently instead of stopping dead.'.length <= 108 &&
+check('14: What\'s New carries the CURRENT entry\'s bullet (rolled to 1.260: this check tracks the current entry each round, like the other release-editorial checks; the 1.259 bullets it shipped with live in the CHANGELOG), within the 108-char cap, em-dash free',
+  whatsnew.includes("The splash logo's snow now rounds off at the ends and melts into the blue at the bottom.") &&
+  "The splash logo's snow now rounds off at the ends and melts into the blue at the bottom.".length <= 108 &&
   !whatsnew.includes('—'));
 
 console.log(`proof-1259: ${pass} passed, ${fail} failed`);

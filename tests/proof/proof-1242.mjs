@@ -88,7 +88,7 @@ check('16: the hint styling is the original .crPSub (13px, the dim ink token) - 
 
 // ---------- the frame ----------
 check('17: What\'s New carries the current entry\'s bullet (rolled to 1.251: this check tracks the CURRENT entry each round; and stays em-dash free)',
-  whatsnew.includes('Where your paint meets a bigger street, it now fades out gently instead of stopping dead.') && !whatsnew.includes('—'));
+  whatsnew.includes('The splash logo\'s snow now rounds off at the ends and melts into the blue at the bottom.') && !whatsnew.includes('—'));
 check('18: the CHANGELOG order stands (1.242 above 1.241; the 1.244 entry rides above both - proof-1244 pins the top)', changelog.indexOf('## Beta 1.242') > -1 && changelog.indexOf('## Beta 1.242') < changelog.indexOf('## Beta 1.241'));
 
 console.log(`proof-1242: ${pass} pass, ${fail} fail`);
