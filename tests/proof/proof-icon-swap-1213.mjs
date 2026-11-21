@@ -16,6 +16,16 @@ import zlib from 'node:zlib';
 // hash differs, the maskable wears the old composition, the splash
 // asset is 512x423, and favicon.svg is the old artwork.
 //
+// Beta 1.260 amendment (2026-11-20, TEST class): the P section's
+// splash file is no longer the pack's byte-for-byte foreground -
+// it is Andrew's approved edit OF that foreground (the snow mound's
+// cut ends finished as rounded noses, and a STRONG alpha feather
+// dissolving the bottom edge into the splash gradient), swapped in
+// byte-for-byte as its own file. The P hash and bottom-corner pins
+// are re-pinned in place below with the reason stated; the S/M/F
+// sections stand exactly as shipped - those files do not change.
+// proof-1260 pins the edited artwork's own shape in full.
+//
 // Run from the repo root:  node tests/proof/proof-icon-swap-1213.mjs
 
 let pass = 0, fail = 0;
@@ -103,13 +113,13 @@ check('M: zero artwork pixels outside the squircle mask (the rendered overlay QA
 // ================= P - the splash artwork is the pack's transparent foreground =================
 console.log('P - splash artwork: 512x512, transparent where the tile would have painted');
 const splash = decodePng(readFileSync('splash-artwork-512.png'));
-check('P: the splash artwork is byte-identical to the pack foreground (sha256)',
-  sha256('splash-artwork-512.png') === '44daff74588abf708fe79393a5fd96bd5be072db1ecb2801b65e7d813287b39a');
+check('P: the splash artwork is the Beta 1.260 approved edit of the pack foreground (sha256) - re-pinned in place (the pack original read 44daff74588a\u2026; Andrew\u2019s rounded-ends + strong-feather edit of it, swapped byte-for-byte, no re-encode)',
+  sha256('splash-artwork-512.png') === 'e00154e3583f2c1ab4a01cb21efefd1fb326887cae92a708bc62a059024c356b');
 check('P: splash asset is 512x512 (the 1.191 asset was 512x423)', splash.w === 512 && splash.h === 512);
 check('P: splash alpha is 0 at every point the artwork leaves clear - top corners, top-mid, left-mid, right-mid and (61,61) (drive180 NOTILE\u2019s points)',
   pxAt(splash, 0, 0)[3] === 0 && pxAt(splash, 511, 0)[3] === 0 && pxAt(splash, 256, 0)[3] === 0 && pxAt(splash, 0, 256)[3] === 0 && pxAt(splash, 511, 256)[3] === 0 && pxAt(splash, 61, 61)[3] === 0);
-check('P: the bottom corners are the artwork\u2019s own snow band (alpha 255) - the asset\u2019s shape, asserted',
-  pxAt(splash, 0, 511)[3] === 255 && pxAt(splash, 511, 511)[3] === 255);
+check('P: the bottom corners are fully transparent (alpha 0) - re-pinned in place: the Beta 1.260 STRONG feather dissolves the snow\u2019s bottom edge into the splash gradient, so the corners the 1.213 pin asserted opaque (alpha 255, the pack band\u2019s shape) now read 0 by Andrew\u2019s design; proof-1260 pins the fade\u2019s full profile',
+  pxAt(splash, 0, 511)[3] === 0 && pxAt(splash, 511, 511)[3] === 0);
 
 // ================= F - favicon.svg is the pack's master vector =================
 console.log('F - favicon: the pack master vector, truly vector, link stands');

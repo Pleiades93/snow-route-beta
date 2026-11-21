@@ -81,7 +81,7 @@ check('18: the seats keep their own extras (exitCreate still clears the field; t
 
 // ---------- the frame ----------
 check('19: What\'s New carries the CURRENT entry\'s bullet (rolled to 1.251: this check tracks the CURRENT entry each round; and stays em-dash free)',
-  whatsnew.includes('Where your paint meets a bigger street, it now fades out gently instead of stopping dead.') && !whatsnew.includes('—'));
+  whatsnew.includes('The splash logo\'s snow now rounds off at the ends and melts into the blue at the bottom.') && !whatsnew.includes('—'));
 check('20: the CHANGELOG order stands (1.243 above 1.242; the 1.244 entry rides above both - proof-1244 pins the top)',
   changelog.indexOf('## Beta 1.243') > -1 && changelog.indexOf('## Beta 1.243') < changelog.indexOf('## Beta 1.242'));
 
