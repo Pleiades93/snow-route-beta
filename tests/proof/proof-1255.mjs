@@ -68,8 +68,8 @@ check('12 (gate P2): the sheet click-away handler exempts the confirmation pill'
 // ---------- the release editorial ----------
 check('8: the CHANGELOG top entry is Beta 1.255', changelog.includes('## Beta 1.255'));
 check('9: What\'s New carries the 1.255 bullet, short and dash-free',
-  whatsnew.includes('Picking an intersection now names it in the search bar and marks it with a pulsing blue dot.')
-  && 'Picking an intersection now names it in the search bar and marks it with a pulsing blue dot.'.length <= 108
+  whatsnew.includes('Street names are back to the app\'s original labels.')
+  && 'Street names are back to the app\'s original labels.'.length <= 108
   && !whatsnew.includes('—'));
 
 console.log(`proof-1255: ${pass} passed, ${fail} failed`);

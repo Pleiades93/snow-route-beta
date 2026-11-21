@@ -84,11 +84,11 @@ check('14: the frame loop cannot storm the creation sources (gate fixes, PR #158
   block.includes('if (want !== crIsectPushed)') && block.includes("let crIsectPushed = null;"));
 
 // ---------- the release editorial ----------
-check('13: What\'s New carries the 1.262 bullet, within the 108-char cap, em-dash free, and the CHANGELOG top entry is Beta 1.262 above 1.261',
-  whatsnew.includes('Picking an intersection now names it in the search bar and marks it with a pulsing blue dot.') &&
-  'Picking an intersection now names it in the search bar and marks it with a pulsing blue dot.'.length <= 108 &&
+check('13: What\'s New carries the 1.263 bullet (rolled by the naming-revert round), within the 108-char cap, em-dash free, and the CHANGELOG top entry is Beta 1.263 above 1.262',
+  whatsnew.includes('Street names are back to the app\'s original labels.') &&
+  'Street names are back to the app\'s original labels.'.length <= 108 &&
   !whatsnew.includes('—') &&
-  changelog.indexOf('## Beta 1.262') > -1 && changelog.indexOf('## Beta 1.262') < changelog.indexOf('## Beta 1.261'));
+  changelog.indexOf('## Beta 1.263') > -1 && changelog.indexOf('## Beta 1.263') < changelog.indexOf('## Beta 1.262'));
 
 console.log(`proof-1262: ${pass} passed, ${fail} failed`);
 process.exit(fail ? 1 : 0);

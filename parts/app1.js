@@ -475,7 +475,7 @@ const STREETSET = new Set();
   STREETNAMES.length = 0; for (const n of Object.keys(ROADS)) STREETNAMES.push(n);
   STREETSET.clear(); for (const n of STREETNAMES) STREETSET.add(n);
   PRIMARIES.clear(); for (const n of ((pack && pack.primaries) || [])) if (STREETSET.has(n)) PRIMARIES.add(n);
-  for (const k of Object.keys(SPOT)) delete SPOT[k]; Object.assign(SPOT, (pack && pack.spot) || {}); // Beta 1.258: SPOT's only reader was the retired street-title anchor build - the pack-data plumbing stays (stored packs carry the field); no code reads SPOT now
+  for (const k of Object.keys(SPOT)) delete SPOT[k]; Object.assign(SPOT, (pack && pack.spot) || {});
   ROUTE_TILE_NAMES.length = 0; ROUTE_TILE_NAMES.push(...((pack && pack.tileNames && pack.tileNames.length) ? pack.tileNames : STREETNAMES)); // MIX SAMPLE restore (pre-1.258 verbatim): the basemap exclusion's name list, refilled per load
   routeBox = computeRouteBox(ROADS);
   buildSamples();
@@ -879,11 +879,6 @@ window.addEventListener('pagehide', () => flushAux(true));
 // - buildGeometry refills them in place per load, so the engine's captured
 // references stay valid across a switch and GLP.rebuildRoute re-reads them.
 // Guarded by tests/browser/selftest-engine-surface.mjs (the frozen list).
-// Beta 1.258: SPOT and ROADS left the surface - their last engine reader
-// was the retired street-title build (SPOT's anchor hints; the label
-// features built over ROADS). Both stay live app state (SPOT is still
-// refilled per load above as pack-data plumbing); they are simply no
-// longer engine inputs, and the frozen list shrank with them.
 const GL_HOST = {
   MLAT, MLNG, PRIMARIES, SPOT, STRETCH, ROADS, names, jDistM, ptSegM, isNight,
   get pieces() { return BOARD.state().pieces; }, // Arch-2: read through the board module, so the engine sees the current binding after any restore/reset

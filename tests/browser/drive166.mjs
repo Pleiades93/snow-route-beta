@@ -18,6 +18,9 @@
 // post-(d) reloads had wiped them in the combined drive), so each
 // section starts from the same state it started from there.
 
+// Beta 1.263 addendum (Andrew's naming-revert decision, 2026-11-21): the
+// mix is reverted - the app titles hide in create again (the hide list
+// carries them, as through 1.257), so H1 is back to its 1.257 form.
 import { launchDrive, bootThrough, finish } from './harness.mjs';
 // Beta 1.144 TEST-PREMISE UPDATE (Package C, DA-04): the create draft and the packs it saves now key streets by their FULL map name ('Bordeaux Drive', 'Alderson Avenue'); through 1.143 they keyed on the shortened name. Every key read in this drive (draft.roads, computeStretches, mains, markDone/streetComplete on the created route, saved-pack mains) follows the full name; DISPLAY reads (panel/preview row text, search text) still match the short form, and the photo-import fixtures' authored keys (the envelope's 'Bordeaux') are unchanged - the import keeps the file's own keys. Ship-gate completion (2026-11-07 night): the J-section fixture-street reads ('Faraway Avenue', 'Farfaraway Avenue', 'Edgewater Avenue', 'Crosscell Avenue', incl. the crPending key) and P1's saved-key expectation were missed by the first repair pass and are full-name now; the first local run exposed them as 6 failures + ~150 s of dead polls (TEST, flake log).
 import fs from 'node:fs';
@@ -347,31 +350,27 @@ ok('G4 the search-probe session exits create mode cleanly', SG4.creating === fal
 
 // ---------- (h) the creation backdrop: POIs only (Beta 1.120) ----------
 // With 5W loaded, entering create used to leave its painted streets and
-// selection covering the picking map. Now the engine's route paint hides
-// (the street names are the basemap's own since Beta 1.258 and stay up;
-// since Beta 1.261 the app's own titles are back below zoom 15 and hide
-// with the route again - the create backdrop's hide list carries them,
-// which is why H1's hidden-layer count moves 24 -> 28 below),
-// and a POI for EVERY pack in the database
+// selection covering the picking map. Now the engine's route paint and
+// street-name layers hide, and a POI for EVERY pack in the database
 // (the map's own zoomed-out treatment) gives orientation instead.
 const FX150 = { id: 'fx150', name: 'Fixture Route', area: 'Nowhere', primaries: [], roads: { 'Fixture Alpha': [[[43.845, -79.575], [43.845, -79.565]]], 'Fixture Beta': [[[43.855, -79.575], [43.855, -79.565]]] }, reference: {} };
 await ev(`(() => { ROUTE_PACKS.push(${JSON.stringify(FX150)}); return true; })()`);
 const engReady = await poll(`!!(window.map && map.getLayer && map.getLayer('t1-surface'))`, 30000).catch(() => false);
-const H0 = await J(`({ surf: map.getLayoutProperty('t1-surface', 'visibility') || 'visible', names: map.getLayoutProperty('roads_labels_minor', 'visibility') || 'visible', sel: map.getLayoutProperty('t1-sel', 'visibility') || 'visible', packs: ROUTE_PACKS.map(p => p.name) })`);
+const H0 = await J(`({ surf: map.getLayoutProperty('t1-surface', 'visibility') || 'visible', names: map.getLayoutProperty('streetnamespt1', 'visibility') || 'visible', sel: map.getLayoutProperty('t1-sel', 'visibility') || 'visible', packs: ROUTE_PACKS.map(p => p.name) })`);
 const Dpre = await ev(dump5wSrc);
 await ev(`openRouteMenu()`);
 await ev(`document.getElementById('rmCreate').click()`);
 await ev(`document.getElementById('crDoorManual').click()`);
 await pickCityVaughan(); // Beta 1.121: create mode (and its backdrop) now starts at the city pick
 await sleep(600);
-const H1 = await J(`({ surf: map.getLayoutProperty('t1-surface', 'visibility') || 'visible', names: map.getLayoutProperty('roads_labels_minor', 'visibility') || 'visible', sel: map.getLayoutProperty('t1-sel', 'visibility') || 'visible', rec: (typeof crHiddenLayers !== 'undefined' && crHiddenLayers) ? crHiddenLayers.length : -1, poi: map.getSource('crPoi') ? map.getSource('crPoi').serialize().data.features.map(f => f.properties.name) : null, poiLayers: ['crPoiRing', 'crPoiDot', 'crPoiTxt'].map(id => !!map.getLayer(id)), draftSrc: !!map.getSource('crDraft') })`);
-ok('H1 entering create hides the loaded route\'s paint and selection (engine layers visibility none); the basemap\'s own street names stay up - they are the map\'s, not the route\'s (Beta 1.258) - the engine stack MUST be ready in this session (test-suite restructure, 2026-11-09: the old either/or form passed vacuously when the engine layers were absent; absent layers now FAIL, here and in H3) | engReady ' + engReady + ' | ' + JSON.stringify(H1),
-  engReady === true && H1.surf === 'none' && H1.names === H0.names && H1.sel === 'none' && H1.rec === 28);
+const H1 = await J(`({ surf: map.getLayoutProperty('t1-surface', 'visibility') || 'visible', names: map.getLayoutProperty('streetnamespt1', 'visibility') || 'visible', sel: map.getLayoutProperty('t1-sel', 'visibility') || 'visible', rec: (typeof crHiddenLayers !== 'undefined' && crHiddenLayers) ? crHiddenLayers.length : -1, poi: map.getSource('crPoi') ? map.getSource('crPoi').serialize().data.features.map(f => f.properties.name) : null, poiLayers: ['crPoiRing', 'crPoiDot', 'crPoiTxt'].map(id => !!map.getLayer(id)), draftSrc: !!map.getSource('crDraft') })`);
+ok('H1 entering create hides the loaded route\'s paint, selection and street names (engine layers visibility none) - the engine stack MUST be ready in this session (test-suite restructure, 2026-11-09: the old either/or form passed vacuously when the engine layers were absent; absent layers now FAIL, here and in H3) | engReady ' + engReady + ' | ' + JSON.stringify(H1),
+  engReady === true && H1.surf === 'none' && H1.names === 'none' && H1.sel === 'none' && H1.rec === 28);
 ok('H2 while creating, the backdrop shows a POI for EVERY pack in the database (5W, the created route, the fixture) and the draft overlay still exists | ' + JSON.stringify(H1.poi),
   !!H1.poi && H1.poi.length === H0.packs.length && H1.poi.indexOf('Route 5W') >= 0 && H1.poi.indexOf('Fixture Route') >= 0 && H1.poiLayers.every(Boolean) && H1.draftSrc === true);
 await ev(`document.getElementById('crExit').click()`);
 await sleep(500);
-const H2 = await J(`({ surf: map.getLayoutProperty('t1-surface', 'visibility') || 'visible', names: map.getLayoutProperty('roads_labels_minor', 'visibility') || 'visible', sel: map.getLayoutProperty('t1-sel', 'visibility') || 'visible', poi: !!map.getSource('crPoi'), creating })`);
+const H2 = await J(`({ surf: map.getLayoutProperty('t1-surface', 'visibility') || 'visible', names: map.getLayoutProperty('streetnamespt1', 'visibility') || 'visible', sel: map.getLayoutProperty('t1-sel', 'visibility') || 'visible', poi: !!map.getSource('crPoi'), creating })`);
 ok('H3 exiting create restores the route paint exactly as it was and removes the POI backdrop (engine stack MUST be ready - no vacuous pass, see H1) | engReady ' + engReady + ' | ' + JSON.stringify(H2),
   engReady === true && H2.creating === false && H2.poi === false && H2.surf === H0.surf && H2.names === H0.names && H2.sel === H0.sel);
 const Dpost = await ev(dump5wSrc);
