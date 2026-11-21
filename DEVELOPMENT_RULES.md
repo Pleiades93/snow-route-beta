@@ -106,7 +106,10 @@ standing-failures baseline refuses the push — a round whose code
 motion orphans a probe literal re-pins it in the same round, instead
 of the orphan surfacing whenever someone next runs the registry by
 hand (the C1 class: six stale patterns reached the Beta 1.258
-close-out unrun, and eight more had accumulated by 1.260).
+close-out unrun, and eight more had accumulated by 1.260). The gate
+runs against the prospective tree the push would create as well as
+the local tree, so a fix that is not in the push set cannot certify
+the push.
 
 ## 2. Per-change report (required with every merge)
 

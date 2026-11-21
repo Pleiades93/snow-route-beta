@@ -359,6 +359,22 @@ with tempfile.TemporaryDirectory() as td:
     check("push: a named-but-missing registry refuses (a gate that cannot run is not a pass)",
           run_push(t / "regbase", ["index.html"], mode="push",
                    env_extra={**regbase, "SNOW_FIX_CHECKS_REGISTRY": str(t / "regbase" / "nope.json")}), 1)
+    # The gate also runs against the PROSPECTIVE tree (Codex P2 on
+    # PR #153): a probe whose fix exists locally but is NOT in the
+    # push set must not certify the push - the branch-plus-set tree
+    # is what lands, and it still lacks the literal.
+    prosp = push_tree2(t / "prosp", parts={"a.js": "A", "b.js": "B"}, changelog="## Beta 1.0\n",
+                       tracker="AB", index="shell Beta 1.0 AB")
+    w(t / "prosp" / "docs" / "guard.md", "the REQUIRED-LITERAL lives here\n")
+    w(t / "prosp" / "README.md", "fixture\n")
+    w(t / "prosp" / "fixture-registry.json", json.dumps({"checks": [
+        {"id": "fixture-probe-prospective", "type": "grep_present",
+         "file": "/home/hatch/workspace/snow-route-5w/beta1/repo/docs/guard.md",
+         "pattern": "REQUIRED-LITERAL"}]}))
+    check("push: an unpushed local fix cannot certify the push (prospective-tree registry gate)",
+          run_push(t / "prosp", ["README.md"], mode="push", env_extra=prosp), 1)
+    check("push: pushing the fixing file itself passes the prospective-tree registry gate",
+          run_push(t / "prosp", ["README.md", "docs/guard.md"], mode="push", env_extra=prosp), 0)
 
 # ------------------------------------------------------------- sweep check
 def run_sweep(root, olds):

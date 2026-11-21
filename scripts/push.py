@@ -43,6 +43,10 @@ This wrapper makes both shapes impossible rather than discouraged:
           Before any of that, the REGISTRY GATE (/correct Phase 3
           round (a), closing class C1's registry form): the push
           tree must pass the fix-checks registry's grep probes -
+          and so must the PROSPECTIVE tree the push would create
+          (the gate runs again on the branch-plus-set overlay the
+          preflight builds, so an omitted locally-fixed file cannot
+          certify a fix that never lands - Codex P2 on PR #153) -
           the literal pins that code motion silently orphans (the
           1.258 close-out found six pre-existing stale patterns
           only because that round happened to run the full
@@ -241,6 +245,9 @@ def preflight_prospective(root, gh, branch, resolved):
             dest.write_bytes(data)
         for rel in drop:
             (tmp / rel).unlink(missing_ok=True)
+        err = registry_gate(tmp, label="prospective")
+        if err:
+            return ("the prospective remote tree fails the registry gate: " + err)
         proc = subprocess.run([sys.executable, str(tmp / "scripts" / "build-pages.py"), "--check"],
                               cwd=tmp, capture_output=True, text=True, timeout=300)
         if proc.returncode != 0:
@@ -277,7 +284,7 @@ def registry_targets(root, probe, goal_dir):
     return [cand]
 
 
-def registry_gate(root):
+def registry_gate(root, label="push"):
     """The registry's grep probes must pass against the push tree.
     Returns an error string or None. Mirrors the shared runner's
     semantics (~/workspace/tools/fix-checks/run_fix_checks.py): a
@@ -331,7 +338,7 @@ def registry_gate(root):
                 "app if the probe is right, or re-pin the probe in the "
                 "registry if the code legitimately moved")
     note = f" ({len(based)} standing-baseline failure(s) tolerated: {', '.join(based)})" if based else ""
-    print(f"REGISTRY GATE: {ran} grep probes run serially against the push tree, "
+    print(f"REGISTRY GATE: {ran} grep probes run serially against the {label} tree, "
           f"no unaccounted failures{note}")
     return None
 
