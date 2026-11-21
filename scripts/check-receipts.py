@@ -33,9 +33,12 @@ the class was that it ONLY happened there.
 
 Usage:
   python3 scripts/check-receipts.py verify <root>
-      Print each receipt's state (CURRENT / STALE / BROKEN) against
-      a tree. Exit 1 only on a malformed receipts file or a receipt
-      naming a file that does not exist.
+      Print each receipt's state (CURRENT / STALE / BROKEN /
+      INVALID) against a tree. Exit 1 on a malformed receipts file,
+      a receipt naming a file that does not exist, or a receipt
+      whose evidence fields are incomplete: a receipt counts toward
+      coverage only when it is well-formed AND every pinned file
+      matches (receipt_problems owns the field rule).
   python3 scripts/check-receipts.py gate <root> --changed <path>...
       The push gate: every changed check/judge path must be covered
       by a current receipt. Exit 1 names the uncovered paths.
@@ -119,13 +122,40 @@ def load_receipts(root):
     return data["receipts"], None
 
 
-def receipt_state(root, receipt):
-    """CURRENT (every pinned file matches), STALE (a pinned file's
-    content moved), or BROKEN (a pinned file is gone, or the receipt
-    is malformed)."""
+def receipt_problems(receipt):
+    """Field-level validity of a receipt record. A receipt is the
+    record of an observation: the evidence fields (the named check,
+    the kind, the mutation, the failing observation, the clean pass)
+    must be present and non-empty, and the check it names must be
+    one of the files it pins. Hashes alone certify nothing - a
+    hash-only record would let a changed check through with no
+    failing observation ever recorded, the exact hole the gate
+    exists to close (Codex P2 on PR #155). Returns a list of
+    problems; [] means the record is well-formed."""
+    if not isinstance(receipt, dict):
+        return ["the receipt is not an object"]
+    problems = []
+    for field in ("id", "check", "mutation", "red", "green", "issued"):
+        value = receipt.get(field)
+        if not isinstance(value, str) or not value.strip():
+            problems.append(f"'{field}' is missing or empty")
+    if receipt.get("kind") not in KINDS:
+        problems.append(f"'kind' must be one of {', '.join(KINDS)}")
     files = receipt.get("files")
     if not isinstance(files, dict) or not files:
-        return "BROKEN"
+        problems.append("'files' must be a non-empty map of path -> sha256")
+    elif receipt.get("check") not in files:
+        problems.append("the named check is not among the pinned files")
+    return problems
+
+
+def receipt_state(root, receipt):
+    """CURRENT (well-formed, every pinned file matches), STALE (a
+    pinned file's content moved), BROKEN (a pinned file is gone), or
+    INVALID (the record itself is incomplete - it covers nothing)."""
+    if receipt_problems(receipt):
+        return "INVALID"
+    files = receipt.get("files")
     for rel, want in files.items():
         p = Path(root) / rel
         if not p.is_file():
@@ -184,12 +214,15 @@ def cmd_verify(root):
     bad = 0
     for r in receipts:
         state = receipt_state(root, r)
-        if state == "BROKEN":
+        if state in ("BROKEN", "INVALID"):
             bad += 1
         print(f"{state}: {r.get('id', '?')} (check {r.get('check', '?')}, "
               f"kind {r.get('kind', '?')}, {len(r.get('files', {}))} file(s) pinned)")
+        if state == "INVALID":
+            for problem in receipt_problems(r):
+                print(f"    invalid: {problem}")
     if bad:
-        print(f"RECEIPTS: {bad} broken receipt(s) name files that do not exist")
+        print(f"RECEIPTS: {bad} broken or invalid receipt(s)")
         return 1
     return 0
 
@@ -215,6 +248,11 @@ def cmd_issue(root, args):
         print(f"ISSUE REFUSED: receipt id '{args.id}' already exists - "
               "receipts are append-only history; a re-observation gets a new id")
         return 1
+    for field in ("mutation", "red", "green"):
+        if not getattr(args, field).strip():
+            print(f"ISSUE REFUSED: --{field} is empty - a receipt records an "
+                  "observation actually made, not a placeholder for one")
+            return 1
     files = {}
     for rel in args.file:
         p = Path(root) / rel

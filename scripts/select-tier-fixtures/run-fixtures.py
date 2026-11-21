@@ -22,6 +22,12 @@ are no longer Tier A paths; parts/pmstyles.js is a generated output and
 never classifies; proof files (tests/proof/**) ride along like drive
 files and never escalate a round.
 
+The 2026-11-21 extension pins the mutation receipts file
+(tests/mutation-receipts.json, /correct Phase 3 round (b)) to the
+same ride-along rule: it is bookkeeping that must accompany every
+check change, so if it classified, every tested change would fall
+to the unmatched default (Tier C) - Codex P2 on PR #155.
+
 Run: python3 scripts/select-tier-fixtures/run-fixtures.py
 Exit 0 = every case matched its expected (tier, full-battery, drives).
 """
@@ -86,6 +92,10 @@ CASES = [
      ["tests/proof/proof-1228.mjs"], "A", False, None),
     ("the proof manifest alone rides along at Tier A",
      ["tests/proof/manifest.json"], "A", False, None),
+    ("the mutation receipts file alone rides along at Tier A (bookkeeping never escalates)",
+     ["tests/mutation-receipts.json"], "A", False, None),
+    ("a proof file plus its mutation receipt stays Tier A",
+     ["tests/proof/proof-1228.mjs", "tests/mutation-receipts.json"], "A", False, None),
 ]
 
 # (label, files, expected tier, expected COMPLETE drive set)
@@ -102,6 +112,11 @@ EXACT_CASES = [
      ["parts/engine.js", "tests/proof/proof-1228.mjs"], "B", MAP),
     ("a proof file alone selects exactly the core set at Tier A",
      ["tests/proof/proof-1228.mjs"], "A", CORE),
+    ("a family change plus its mutation receipt adds nothing and escalates nothing",
+     ["parts/engine.js", "tests/mutation-receipts.json"], "B", MAP),
+    ("an engine-plus-drive change plus its receipt stays Tier B (Codex P2, PR #155)",
+     ["parts/engine.js", "tests/browser/drive161.mjs", "tests/mutation-receipts.json"],
+     "B", sorted(set(MAP) | {"drive161"})),
 ]
 
 failures = 0

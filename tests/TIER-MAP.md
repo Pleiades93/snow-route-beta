@@ -184,6 +184,14 @@ manifest line — the old per-proof steps in checks.yml, whose edits
 forced nearly every round to Tier C, are gone. The gate's own
 machinery (workflows, bridge, selector, guards, this map) stays Tier C.
 
+**Clause 5 — mutation receipts ride along (2026-11-21).**
+The mutation receipts file (`tests/mutation-receipts.json`,
+/correct Phase 3 round (b)) never classifies a round either: it is
+bookkeeping that must accompany every check change, so classifying
+it would escalate exactly the changes that carry regression tests
+to Tier C (Codex P2 on PR #155). The tier comes from the change
+itself; the receipts file rides with it.
+
 Also in this round: drive201/drive202 left the session family (the
 drives were deleted in Beta 1.221 with the icon-pack picker they
 tested; the roster entries were the drift), drive203 joined this

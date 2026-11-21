@@ -18,7 +18,9 @@ proof exiting nonzero, a proof timing out, a basename-only push
 entry, a parts push missing its derived artifacts, stale derived
 artifacts, an omitted assembly input, an input-only push, a
 transport landing a wrong blob, a changed check or judge file with
-no current mutation receipt) fails.
+no current mutation receipt, a receipt carrying hashes but no
+recorded observation, a receipt naming a check it does not pin)
+fails.
 
 Run: python3 scripts/gate-fixtures/run-fixtures.py
 Exit 0 = every case produced its expected verdict.
@@ -483,6 +485,25 @@ with tempfile.TemporaryDirectory() as td:
                   ["tests/browser/drive9001.mjs"])
     check("receipts: a rendered-evidence receipt covers its drive (honest kind, not a fake mutation)",
           run_receipts(t, ["tests/browser/drive9001.mjs"]), 0)
+    # A receipt is the record of an observation, not a bag of hashes
+    # (Codex P2 on PR #155): correct hashes with the evidence fields
+    # absent, or a named check the receipt does not pin, cover
+    # nothing - the gate must refuse both shapes.
+    import hashlib
+    drive_sha = hashlib.sha256(
+        (t / "tests" / "browser" / "drive9001.mjs").read_bytes()).hexdigest()
+    w(t / "tests" / "mutation-receipts.json", json.dumps({"receipts": [
+        {"id": "fixture-hash-only",
+         "files": {"tests/browser/drive9001.mjs": drive_sha}}]}))
+    check("receipts: a hash-only receipt with no recorded observation covers nothing",
+          run_receipts(t, ["tests/browser/drive9001.mjs"]), 1)
+    w(t / "tests" / "mutation-receipts.json", json.dumps({"receipts": [
+        {"id": "fixture-check-not-pinned", "check": "tests/browser/drive9999.mjs",
+         "kind": "mutation", "mutation": "m", "red": "r", "green": "g",
+         "issued": "gate-fixtures",
+         "files": {"tests/browser/drive9001.mjs": drive_sha}}]}))
+    check("receipts: a receipt whose named check is not among its pinned files covers nothing",
+          run_receipts(t, ["tests/browser/drive9001.mjs"]), 1)
     w(t / "tests" / "mutation-receipts.json", "{not json\n")
     check("receipts: a malformed receipts file refuses the gate (a gate that cannot read its records)",
           run_receipts(t, ["tests/browser/drive9001.mjs"]), 1)
@@ -526,6 +547,6 @@ with tempfile.TemporaryDirectory() as td:
           run_sweep(sweep_tree(t / "mixq", files={"tests/browser/drive1.mjs": "x.includes('couldn\\'t save \"Town\"')\n"}),
                     ["couldn't save \"Town\""]), 1)
 
-total = 41
+total = 43
 print(f"gate fixtures: {total - len(failures)} pass, {len(failures)} fail")
 sys.exit(1 if failures else 0)

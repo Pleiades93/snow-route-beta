@@ -49,6 +49,16 @@ Amendment (2026-11-09, Andrew approved):
     real ship rebuilds both files; if they escalated, no app change
     could ever classify below Tier C and the tiers would never fire.)
 
+Amendment (2026-11-21, /correct Phase 3 round (b), Codex P2 on
+PR #155):
+  * The mutation receipts file (tests/mutation-receipts.json) rides
+    along like proof files and never classifies a change. Every
+    drive or proof change must ship its receipt in that file, so
+    classifying it would escalate every tested change to the map's
+    unmatched default (Tier C) and the fast tiers would never fire
+    for exactly the changes that carry regression tests - the
+    opposite of the ride-along policy in tests/TIER-MAP.md.
+
 Usage:
   select-tier.py --files changed.txt [--force A|B|C]
   select-tier.py --files changed.txt --github-output   (append to $GITHUB_OUTPUT)
@@ -69,6 +79,11 @@ from pathlib import Path
 ROOT = Path(__file__).resolve().parent.parent
 
 DRIVE_RE = re.compile(r"^tests/browser/drive[^/]*\.mjs$")
+
+# The mutation receipts file (/correct Phase 3 round (b)): bookkeeping
+# that must accompany check changes, so it rides along like proofs and
+# never classifies (see the 2026-11-21 amendment in the docstring).
+RECEIPTS_FILE = "tests/mutation-receipts.json"
 
 
 def load(name):
@@ -125,10 +140,14 @@ def select(files, force=None):
     touched = sorted({drive_name(f) for f in files if is_drive(f)})
     generated = set(tmap.get("generated_outputs", []))
     proofs = sorted({f for f in files if f.startswith("tests/proof/")})
-    app_files = [f for f in files if not is_drive(f) and f not in generated and f not in proofs]
+    receipts = sorted({f for f in files if f == RECEIPTS_FILE})
+    app_files = [f for f in files if not is_drive(f) and f not in generated
+                 and f not in proofs and f not in receipts]
     ride = f"; drive files ride along: {', '.join(touched)}" if touched else ""
     if proofs:
         ride += "; proof files ride along: " + ", ".join(p.rsplit("/", 1)[-1] for p in proofs)
+    if receipts:
+        ride += "; mutation receipts ride along"
     if not app_files:
         if touched:
             # A touched drive always runs, quarantined or not
@@ -139,6 +158,8 @@ def select(files, force=None):
             return "B", sel, False, "drives only: " + ", ".join(touched) + " (+ core)"
         if proofs:
             return "A", core_set(tmap, quar), False, "proof files only - proofs ride along" + ride
+        if receipts:
+            return "A", core_set(tmap, quar), False, "mutation receipts only - bookkeeping rides along" + ride
         return "A", core_set(tmap, quar), False, "generated outputs only - no source change"
     for f in app_files:
         if any(match(f, e) for e in tmap["tier_c_paths"]):

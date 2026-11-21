@@ -74,6 +74,45 @@
    "red": "exclusion lifted: M2b FAILS (Valeria Boulevard renders on the basemap layers at zoom 14.7) and M4 FAILS (the live -pre15 filter no longer names Valeria); cap 16: M3 FAILS (13 app titles render at 15.7) and M4 FAILS (title maxzoom reads 16); unhealed: M5's rebuild counter stayed 1 through zoom/rotate/re-pick (9 on the healed build)",
    "green": "drive214 26/26 checks PASS on the clean tree (local run, 2026-11-21, main 7880b5d6). The PR #151 instances in their original form no longer exist to retrofit: the presence-count F1/F2, the modulo-180 F6 and F5/F7 were retired with the lane in 1.261 and replaced by M1-M5; the Pillow pixel scan was already replaced by an in-page canvas scan in 1.259's own gate round 3",
    "issued": "2026-11-21 correct-phase3b"
+  },
+  {
+   "id": "gate-fixtures-push-judges-neuter-r2",
+   "check": "scripts/gate-fixtures/run-fixtures.py",
+   "kind": "mutation",
+   "files": {
+    "scripts/gate-fixtures/run-fixtures.py": "1e1b0ee94d974e023b9cd3beadc24949b4b5e368abf5dbffd3700dd7113e7663",
+    "scripts/push.py": "64dcc5f1bf17e8dd8d946a39fdc79a1a77791422da68c93d877e36442506b998"
+   },
+   "mutation": "Scratch copy of the tree with scripts/push.py's judging functions neutered to pass-throughs: validate keeps path resolution but drops every guard, derived_fresh / preflight_prospective / registry_gate return None (receipts_gate left live; it is reached only through preflight_prospective in push mode). Re-observation after the PR #155 fix round changed the suite and the receipts judge.",
+   "red": "Gate fixtures 30 pass / 13 FAIL: the four validate-guard refusals (basename-only, missing derived artifacts, both ./-spellings), stale-derived freshness, prospective-tree omission, input-only bump, registry probe failure, missing registry, prospective-tree registry fix, and the three receipts-gate refusals all stopped refusing (exit 0, want 1)",
+   "green": "Clean tree (PR #155 head after the Codex fix round): gate fixtures 43 pass / 0 fail",
+   "issued": "2026-11-21 correct-phase3b codex-fix"
+  },
+  {
+   "id": "gate-fixtures-receipts-neuter-r2",
+   "check": "scripts/gate-fixtures/run-fixtures.py",
+   "kind": "mutation",
+   "files": {
+    "scripts/gate-fixtures/run-fixtures.py": "1e1b0ee94d974e023b9cd3beadc24949b4b5e368abf5dbffd3700dd7113e7663",
+    "scripts/check-receipts.py": "aa40c57593e5be5074f4964f5cc37f6d708fffc431b92544c0edcdb8a4670bcd"
+   },
+   "mutation": "Scratch copy of the tree with scripts/check-receipts.py's uncovered() neutered to return [] (no trigger is ever uncovered), re-observed after the PR #155 fix round added receipt field validation (receipt_problems) to the judge.",
+   "red": "Gate fixtures: exactly the 6 refusal cases the coverage verdict owns FAIL - new check without receipt, check edited after issue (stale), judge named only via its suite, CLI drive without receipt, and the two new invalid-receipt cases (hash-only record, named check not pinned) all stopped refusing (exit 0, want 1); every acceptance case still passes",
+   "green": "Clean tree (PR #155 head after the Codex fix round): gate fixtures 43 pass / 0 fail",
+   "issued": "2026-11-21 correct-phase3b codex-fix"
+  },
+  {
+   "id": "select-tier-receipts-ride-along",
+   "check": "scripts/select-tier-fixtures/run-fixtures.py",
+   "kind": "mutation",
+   "files": {
+    "scripts/select-tier-fixtures/run-fixtures.py": "a03f4500e8d9ac85179ecd5274a9905beeef8c7d0b170e98da272c2068094d63",
+    "scripts/select-tier.py": "b7c9db80ca3d7ad78fbd8c3def32f16eefe9d88630b437a7e5244454d3297492"
+   },
+   "mutation": "Scratch copy with the receipts exclusion removed from scripts/select-tier.py (tests/mutation-receipts.json classifies again - the pre-fix behaviour Codex P2 on PR #155 caught: the file hits the tier-C paths and escalates every change that carries a receipt).",
+   "red": "Select-tier fixtures 21 pass / 4 FAIL - exactly the four new ride-along cases: receipts file alone, proof + receipt, family + receipt, and engine + drive + receipt all select Tier C (full battery) instead of A / A / B / B",
+   "green": "Clean tree: select-tier fixtures 25 pass / 0 fail; the same four cases select A / A / B / B with the receipts file named in the reason as riding along",
+   "issued": "2026-11-21 correct-phase3b codex-fix"
   }
  ]
 }
