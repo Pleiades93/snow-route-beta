@@ -1,0 +1,275 @@
+#!/usr/bin/env python3
+"""Mutation receipts for new and changed checks (/correct Phase 3,
+round (b) - class N1: first-pass checks that cannot bite).
+
+TESTING.md rule 6 says an assertion counts only after it has been
+SEEN to fail for the reason it exists. Through Phase 2 and the 1.259
+cadence window that rule was prose, and the class kept firing after
+it landed: push.py's gate fixtures stayed green with the judging
+functions neutered (PR #146), sweep-check as first built swept
+silently empty in three shapes (PR #147), drive213's B3 measured the
+harness's unavailable-library note instead of the app (PR #148), and
+drive214 counted label presence while the names lay across their
+streets, forgave the defect in its own bearing law, and shelled out
+to a library CI does not have (PR #151). Six instances, four PRs -
+every one made real by the review seat, not by its author.
+
+This script is the mechanical form: a check that is added or changed
+ships with a RECEIPT in tests/mutation-receipts.json recording the
+deliberate break (a mutation of the current tree, the historical
+tree carrying the real past mistake, or - honestly labelled - a
+rendered/manual measurement), the check FAILING under it, and the
+check passing clean. The receipt pins the sha256 of every file its
+evidence depends on (the check itself and any judge it exercises),
+so the receipt goes stale the moment any of them moves.
+
+scripts/push.py runs the gate half of this module on every push: a
+check or judge file that differs from the branch must be named by a
+CURRENT receipt (every pinned file matching the tree the push would
+create), or the push is refused. The gate proves presence and
+freshness; the bite itself is spot-verified by replaying the
+recorded mutation, which is what the review seat already does -
+the class was that it ONLY happened there.
+
+Usage:
+  python3 scripts/check-receipts.py verify <root>
+      Print each receipt's state (CURRENT / STALE / BROKEN) against
+      a tree. Exit 1 only on a malformed receipts file or a receipt
+      naming a file that does not exist.
+  python3 scripts/check-receipts.py gate <root> --changed <path>...
+      The push gate: every changed check/judge path must be covered
+      by a current receipt. Exit 1 names the uncovered paths.
+  python3 scripts/check-receipts.py issue <root> --id ID --check PATH
+      --kind mutation|historical|rendered --mutation TEXT --red TEXT
+      --green TEXT --file PATH [--file PATH...]
+      Append a receipt, pinning the named files' sha256 from the
+      tree. Run this AFTER the mutation has actually been observed
+      failing and the clean check passing - the texts are the
+      record of that observation, not a substitute for it.
+"""
+import argparse
+import fnmatch
+import hashlib
+import json
+import sys
+from pathlib import Path
+
+RECEIPTS_REL = "tests/mutation-receipts.json"
+
+# Files whose verdicts decide pass/fail for the gate: proofs, browser
+# drives, the runner's own selftests, the service-worker suite, and
+# the fixture suites that judge the gate scripts.
+CHECK_PATTERNS = [
+    "tests/proof/proof-*.mjs",
+    "tests/browser/drive*.mjs",
+    "tests/browser/selftest-*.mjs",
+    "tests/sw.test.mjs",
+    "scripts/gate-fixtures/run-fixtures.py",
+    "scripts/select-tier-fixtures/run-fixtures.py",
+    "scripts/premise-lint-fixtures/run-fixtures.py",
+]
+
+# The judging scripts those suites exercise. A change to a judge is
+# a change to every verdict it produces, so it triggers the same
+# receipt requirement as a change to the check itself.
+JUDGE_PATHS = {
+    "scripts/push.py",
+    "scripts/check-receipts.py",
+    "scripts/sweep-check.py",
+    "scripts/check-tier-map.py",
+    "scripts/check-proof-coverage.py",
+    "scripts/check-shard-coverage.py",
+    "scripts/run-proofs.py",
+    "scripts/select-tier.py",
+    "scripts/premise-lint.py",
+}
+
+KINDS = ("mutation", "historical", "rendered")
+
+
+def is_check_path(path):
+    return any(fnmatch.fnmatch(path, pat) for pat in CHECK_PATTERNS)
+
+
+def trigger_paths(changed):
+    """The subset of a push's changed paths that require a current
+    receipt: check files and judge files. Everything else (app code,
+    docs, the receipts file itself) is not a verdict being changed."""
+    return sorted(p for p in changed if is_check_path(p) or p in JUDGE_PATHS)
+
+
+def sha256_file(path):
+    return hashlib.sha256(Path(path).read_bytes()).hexdigest()
+
+
+def load_receipts(root):
+    """Returns (receipts, error). A missing receipts file is an empty
+    set, not an error - the gate then simply finds nothing covered.
+    A malformed one is an error: a gate that cannot read its own
+    records refuses rather than waves through."""
+    f = Path(root) / RECEIPTS_REL
+    if not f.is_file():
+        return [], None
+    try:
+        data = json.loads(f.read_text())
+    except (OSError, ValueError) as e:
+        return None, f"{RECEIPTS_REL} is unreadable: {e}"
+    if not isinstance(data, dict) or not isinstance(data.get("receipts"), list):
+        return None, f"{RECEIPTS_REL} does not carry a receipts list"
+    return data["receipts"], None
+
+
+def receipt_state(root, receipt):
+    """CURRENT (every pinned file matches), STALE (a pinned file's
+    content moved), or BROKEN (a pinned file is gone, or the receipt
+    is malformed)."""
+    files = receipt.get("files")
+    if not isinstance(files, dict) or not files:
+        return "BROKEN"
+    for rel, want in files.items():
+        p = Path(root) / rel
+        if not p.is_file():
+            return "BROKEN"
+        if sha256_file(p) != want:
+            return "STALE"
+    return "CURRENT"
+
+
+def uncovered(root, triggers):
+    """(uncovered_paths, error): the trigger paths no CURRENT receipt
+    names. A receipt covers exactly the paths in its files map - the
+    files its evidence was observed against."""
+    receipts, err = load_receipts(root)
+    if err:
+        return None, err
+    covered = set()
+    for r in receipts:
+        if receipt_state(root, r) == "CURRENT":
+            covered.update(r.get("files", {}).keys())
+    return [p for p in triggers if p not in covered], None
+
+
+def refusal_text(missing):
+    return ("changed check/judge file(s) with no CURRENT mutation receipt: "
+            + ", ".join(missing)
+            + " - rule 6 is mechanical now (class N1): observe the check "
+            "failing under a named mutation or on the historical tree, "
+            "then record it with scripts/check-receipts.py issue and push "
+            "tests/mutation-receipts.json with the change")
+
+
+def gate(root, changed):
+    """The push gate's verdict. Returns an error string or None."""
+    triggers = trigger_paths(changed)
+    if not triggers:
+        return None
+    missing, err = uncovered(root, triggers)
+    if err:
+        return "the mutation-receipt gate cannot run: " + err
+    if missing:
+        return refusal_text(missing)
+    print(f"RECEIPTS GATE: {len(triggers)} changed check/judge path(s) covered "
+          "by current mutation receipts")
+    return None
+
+
+def cmd_verify(root):
+    receipts, err = load_receipts(root)
+    if err:
+        print("RECEIPTS ERROR: " + err)
+        return 1
+    if not receipts:
+        print("RECEIPTS: none recorded")
+        return 0
+    bad = 0
+    for r in receipts:
+        state = receipt_state(root, r)
+        if state == "BROKEN":
+            bad += 1
+        print(f"{state}: {r.get('id', '?')} (check {r.get('check', '?')}, "
+              f"kind {r.get('kind', '?')}, {len(r.get('files', {}))} file(s) pinned)")
+    if bad:
+        print(f"RECEIPTS: {bad} broken receipt(s) name files that do not exist")
+        return 1
+    return 0
+
+
+def cmd_gate(root, changed):
+    err = gate(root, changed)
+    if err:
+        print("RECEIPTS GATE REFUSED: " + err)
+        return 1
+    return 0
+
+
+def cmd_issue(root, args):
+    f = Path(root) / RECEIPTS_REL
+    data = {"about": "", "receipts": []}
+    if f.is_file():
+        try:
+            data = json.loads(f.read_text())
+        except ValueError as e:
+            print(f"ISSUE REFUSED: existing {RECEIPTS_REL} is malformed: {e}")
+            return 1
+    if any(r.get("id") == args.id for r in data["receipts"]):
+        print(f"ISSUE REFUSED: receipt id '{args.id}' already exists - "
+              "receipts are append-only history; a re-observation gets a new id")
+        return 1
+    files = {}
+    for rel in args.file:
+        p = Path(root) / rel
+        if not p.is_file():
+            print(f"ISSUE REFUSED: {rel} is not a file in the tree")
+            return 1
+        files[rel] = sha256_file(p)
+    if args.check not in files:
+        print(f"ISSUE REFUSED: the check itself ({args.check}) must be one of "
+              "the pinned --file paths - a receipt pins what its evidence "
+              "was observed against")
+        return 1
+    data["receipts"].append({
+        "id": args.id,
+        "check": args.check,
+        "kind": args.kind,
+        "files": files,
+        "mutation": args.mutation,
+        "red": args.red,
+        "green": args.green,
+        "issued": args.issued,
+    })
+    f.parent.mkdir(parents=True, exist_ok=True)
+    f.write_text(json.dumps(data, indent=1) + "\n")
+    print(f"RECEIPT ISSUED: {args.id} - {len(files)} file(s) pinned from the tree")
+    return 0
+
+
+def main():
+    ap = argparse.ArgumentParser(description="Mutation receipts for checks (class N1)")
+    sub = ap.add_subparsers(dest="mode", required=True)
+    pv = sub.add_parser("verify")
+    pv.add_argument("root", type=Path)
+    pg = sub.add_parser("gate")
+    pg.add_argument("root", type=Path)
+    pg.add_argument("--changed", nargs="+", required=True)
+    pi = sub.add_parser("issue")
+    pi.add_argument("root", type=Path)
+    pi.add_argument("--id", required=True)
+    pi.add_argument("--check", required=True)
+    pi.add_argument("--kind", required=True, choices=KINDS)
+    pi.add_argument("--mutation", required=True)
+    pi.add_argument("--red", required=True)
+    pi.add_argument("--green", required=True)
+    pi.add_argument("--issued", required=True,
+                    help="the round/date the observation was made, e.g. 2026-11-21 correct-phase3b")
+    pi.add_argument("--file", action="append", required=True)
+    args = ap.parse_args()
+    root = args.root.resolve()
+    if args.mode == "verify":
+        return cmd_verify(root)
+    if args.mode == "gate":
+        return cmd_gate(root, args.changed)
+    return cmd_issue(root, args)
+
+
+if __name__ == "__main__":
+    sys.exit(main())

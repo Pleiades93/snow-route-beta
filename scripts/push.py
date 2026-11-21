@@ -61,6 +61,23 @@ This wrapper makes both shapes impossible rather than discouraged:
           SNOW_FIX_CHECKS_REGISTRY; an environment carrying no
           registry (CI fixtures) skips the gate with a printed
           line, never silently.
+          Alongside it, the RECEIPTS GATE (/correct Phase 3 round (b),
+          closing class N1): a check or judge file this push changes
+          (proofs, drives, selftests, fixture suites, and the gate
+          scripts they exercise - the scope lives in
+          scripts/check-receipts.py) must be named by a CURRENT
+          mutation receipt in tests/mutation-receipts.json - a durable
+          record of the check observed FAILING under a named mutation
+          or on the historical tree, pinning the sha256 of every file
+          its evidence depends on, so a later edit stales it. TESTING.md
+          rule 6 stated this as prose and the class kept firing
+          (fixtures that stayed green with the judges neutered, a
+          sweep that passed silently empty, a drive that measured the
+          harness instead of the app); the gate makes the record a
+          precondition of the push, verified against the prospective
+          tree like the registry gate. The gate proves presence and
+          freshness; the bite is spot-verified by replaying the
+          recorded mutation, as the review seat does.
           Then it delegates the transport to the connector helper
           (explicit --repo snow-route-beta and --branch, every pair
           local=remote identical), and VERIFIES THE PUSHED TREE:
@@ -228,6 +245,9 @@ def preflight_prospective(root, gh, branch, resolved):
             tail = (proc.stdout + proc.stderr).strip().splitlines()
             return ("the tree this push would create is the local tree, and it does not "
                     "build - build-pages --check said: " + (tail[-1] if tail else "(no output)"))
+        err = receipts_gate(root, root, remote, local, resolved)
+        if err:
+            return "the prospective remote tree fails the receipts gate: " + err
         return None
     import base64
     import shutil
@@ -248,6 +268,9 @@ def preflight_prospective(root, gh, branch, resolved):
         err = registry_gate(tmp, label="prospective")
         if err:
             return ("the prospective remote tree fails the registry gate: " + err)
+        err = receipts_gate(tmp, root, remote, local, resolved)
+        if err:
+            return ("the prospective remote tree fails the receipts gate: " + err)
         proc = subprocess.run([sys.executable, str(tmp / "scripts" / "build-pages.py"), "--check"],
                               cwd=tmp, capture_output=True, text=True, timeout=300)
         if proc.returncode != 0:
@@ -261,6 +284,37 @@ def preflight_prospective(root, gh, branch, resolved):
         return None
     finally:
         shutil.rmtree(tmp, ignore_errors=True)
+
+
+def receipts_gate(prospective_root, instrument_root, remote, local, resolved):
+    """CURRENT mutation receipts must cover every check/judge file
+    this push changes (class N1; scripts/check-receipts.py owns the
+    scope and the coverage rule). The checking logic is loaded from
+    the LOCAL tree - the measuring instrument, exempt from the
+    prospective overlay like build-pages.py - while the receipts
+    file and the pinned files are read from the PROSPECTIVE tree,
+    so a receipt that would not land with this push cannot certify
+    it. Returns an error string or None."""
+    script = instrument_root / "scripts" / "check-receipts.py"
+    if not script.is_file():
+        print("RECEIPTS GATE SKIPPED: scripts/check-receipts.py is not in "
+              "this tree (it predates the gate)")
+        return None
+    spec = importlib.util.spec_from_file_location("snow_check_receipts", script)
+    mod = importlib.util.module_from_spec(spec)
+    spec.loader.exec_module(mod)
+    changed = [p for p in resolved if remote.get(p) != local.get(p)]
+    triggers = mod.trigger_paths(changed)
+    if not triggers:
+        return None
+    missing, err = mod.uncovered(prospective_root, triggers)
+    if err:
+        return "the mutation-receipt gate cannot run: " + err
+    if missing:
+        return mod.refusal_text(missing)
+    print(f"RECEIPTS GATE: {len(triggers)} changed check/judge path(s) covered "
+          "by current mutation receipts")
+    return None
 
 
 def registry_targets(root, probe, goal_dir):

@@ -689,6 +689,18 @@ locally, first:
    first-byte kill alike until C9 capped it below the first-byte
    bound). The mutation or historical run is recorded in the change's
    report, not just performed.
+   Since /correct Phase 3 round (b) (class N1 - this rule as prose let
+   six more can't-bite checks through, two of them in the first build
+   round after the rule landed), the record is a **mutation receipt**:
+   a new or changed check (proof, drive, selftest, fixture suite) or a
+   changed gate judge ships with an entry in
+   `tests/mutation-receipts.json` naming the break, the failing
+   observation, and the clean pass, pinning the sha256 of every file
+   the evidence depends on. `scripts/check-receipts.py` issues and
+   verifies receipts; `scripts/push.py` refuses a push whose changed
+   check/judge files no current receipt names. A check whose evidence
+   is a rendered or manual measurement carries a receipt of kind
+   `rendered` recording that evidence - never a fabricated mutation.
 
 ## Honest limitations
 
