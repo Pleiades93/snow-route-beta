@@ -1262,6 +1262,14 @@ function crSetBackdrop(on) {
     for (const id of ['crPoiRing', 'crPoiDot', 'crPoiTxt']) { try { if (map.getLayer(id)) map.removeLayer(id); } catch (e) {} }
     try { if (map.getSource(CR_POI_SRC)) map.removeSource(CR_POI_SRC); } catch (e) {}
   }
+  // Beta 1.265 (Andrew): the backdrop flip is also the naming flip - while
+  // creating, the basemap names every street (glUnifyLabels lifts its
+  // route-name exclusion under the create-mode state); on exit the exclusion
+  // returns. Re-running the label pass here lands the change at enter/exit
+  // themselves instead of at the next restack; enterCreate sets `creating`
+  // before crSetBackdrop(true) and exitCreate clears it before
+  // crSetBackdrop(false), so the pass computes the right side both ways.
+  try { if (typeof glUnifyLabels === 'function') glUnifyLabels(map); } catch (e) {}
   syncCrGlow(); // Beta 1.208: the backdrop flip is the creation exit's reliable beat - if a trim session somehow outlived its render, the glow still dies here
 }
 function crRowEl(n, g) {

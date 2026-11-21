@@ -108,8 +108,8 @@ check('12 (R-05): the dp entry documents its shape and terms',
 // ---------- the release editorial ----------
 check('13: the CHANGELOG top entry is Beta 1.254', changelog.includes('## Beta 1.254'));
 check('14: What\'s New carries the 1.254 bullet, short and dash-free',
-  whatsnew.includes('Feathered road ends no longer show while you create a route.')
-  && 'Feathered road ends no longer show while you create a route.'.length <= 108
+  whatsnew.includes('Street names now show everywhere while you create a route.')
+  && 'Street names now show everywhere while you create a route.'.length <= 108
   && !whatsnew.includes('—'));
 
 console.log(`proof-1254: ${pass} passed, ${fail} failed`);

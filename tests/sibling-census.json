@@ -782,6 +782,94 @@
     "scripts/check-census.py": "dd55f34cd855e60a6fadae7e261aa99f1682b9d7d8446696532045e3a281fafb"
    },
    "issued": "2026-11-21 createfeatherleak-1264 (Beta 1.264)"
+  },
+  {
+   "id": "createmodenaming-1265",
+   "kind": "app",
+   "anchors": {
+    "elements": [],
+    "functions": [
+     "glUnifyLabels",
+     "crSetBackdrop"
+    ]
+   },
+   "changed": [
+    "parts/app2.js",
+    "parts/create-pick.js",
+    "parts/whatsnew.js"
+   ],
+   "rows": [
+    {
+     "id": "caller:crSetBackdrop:parts/create-pick.js:enterCreate",
+     "kind": "caller",
+     "source": "derived: call-site scan of parts/ - crSetBackdrop() is called from enterCreate in parts/create-pick.js",
+     "status": "covered",
+     "note": "the backdrop-on door, now also the naming-lift door: drive218 section B enters via enterCreate('pick') and asserts the exclusion is lifted from both road-label filters (B1), basemap labels render ON route streets (B2), and the title layers stay hidden (B3)"
+    },
+    {
+     "id": "caller:crSetBackdrop:parts/create-pick.js:exitCreate",
+     "kind": "caller",
+     "source": "derived: call-site scan of parts/ - crSetBackdrop() is called from exitCreate in parts/create-pick.js",
+     "status": "covered",
+     "note": "the restore door: drive218 section D exits (after both theme swaps) and asserts the exclusion is restored in both filters (D1), the basemap prints zero route names again (D2), and the title layers return to their exact route-mode visibility (D3); section E2 repeats the exit cleanly"
+    },
+    {
+     "id": "caller:crSetBackdrop:parts/create-pick.js:map:styledata",
+     "kind": "caller",
+     "source": "derived: call-site scan of parts/ - crSetBackdrop() is called from map:styledata in parts/create-pick.js",
+     "status": "covered",
+     "note": "the swap re-apply door: drive218 section C swaps the basemap twice mid-create (night, then day); the restyle fires this hook, crSetBackdrop re-runs, and the label pass recomputes from the still-set create state - the exclusion stays lifted and route names keep printing (C1/C2)"
+    },
+    {
+     "id": "caller:crSetBackdrop:parts/create-pick.js:top-level",
+     "kind": "caller",
+     "source": "derived: call-site scan of parts/ - crSetBackdrop() is called from top-level in parts/create-pick.js",
+     "status": "covered",
+     "note": "the onMapReady boot-mode call (creation entered before the map exists): it fires the same crSetBackdrop(true) over the same state - in boot mode no route is loaded, ROUTE_TILE_NAMES is empty, so there is nothing to exclude or lift and the lifted filter is the stock filter either way; the graded behaviour rides the enterCreate/exitCreate rows"
+    },
+    {
+     "id": "caller:glUnifyLabels:parts/app1.js:top-level",
+     "kind": "caller",
+     "source": "derived: call-site scan of parts/ - glUnifyLabels() is called from top-level in parts/app1.js",
+     "status": "covered",
+     "note": "the host bridge getter (H.glUnifyLabels) the engine's stack build calls - not a behaviour call site of its own: every boot runs the pass through it, and drive218 section A grades its non-create output (exclusion on both filters, zero basemap route names, titles naming) while sections B-E grade the same pass under the create state and after restacks"
+    },
+    {
+     "id": "caller:glUnifyLabels:parts/create-pick.js:crSetBackdrop",
+     "kind": "caller",
+     "source": "derived: call-site scan of parts/ - glUnifyLabels() is called from crSetBackdrop in parts/create-pick.js",
+     "status": "covered",
+     "note": "the NEW call this round adds: crSetBackdrop re-runs the label pass on the flip - drive218 proves the timing, reading the filters immediately after enterCreate (lifted, B1) and immediately after exitCreate (restored, D1), not at some later restack"
+    },
+    {
+     "id": "gesture:parts/create-pick.js:map:styledata",
+     "kind": "gesture",
+     "source": "derived: handler scan - the map styledata handler in parts/create-pick.js touches crSetBackdrop without dismissing it",
+     "status": "covered",
+     "note": "the styledata handler's backdrop touch is the mid-create theme-swap path: drive218 section C drives both swaps through setBasemap (the handler fires) and the lift persists in both directions (C1/C2)"
+    }
+   ],
+   "files": {
+    "parts/app1.js": "ad3bf7f8e4f509f37532579d071ada75cafd156223eb9a874c672577b6108bac",
+    "parts/app2.js": "588bf80e2951d61d79cf1038c0f7dc5a7c49ee695c53ec7714d538f16e5a5767",
+    "parts/app3.js": "da6c7d85eafbb97572278b818ff60a6fc25c5c35a3e51ee6c8ceb23f52ddf91c",
+    "parts/app4.js": "059a12937fd806f09bc2db6a3af52bae51ac8e714d40715894136ffb9df63e4f",
+    "parts/app5.js": "e5ce0ad3e66c9a5ae70cee9d925eb74aa2fa25d0699e51e9ef51ef5593fd4359",
+    "parts/brand-snow.js": "86fa9a02f29c7345ee68d68daffd9c72da612921b64da37f1eccf6b72161ac5f",
+    "parts/create-cache.js": "2a7e983aa50862cb074a16abf9266a41a1a175c69faa5215b1d3d289aa2b5327",
+    "parts/create-citydata.js": "393d90f275d971b5e52352deebaece381279acd0e86495ffa2da35701de9148e",
+    "parts/create-fetch.js": "e7a65bd88dc338213946c4537dc5d397f79396ec416b6f4ebf4be831927aeb66",
+    "parts/create-packs.js": "ae77fbe77d3ef5970c0b432bc4152fd57a34cf98c1f09a1855ca150459cd0ad8",
+    "parts/create-pick.js": "7e1f7a13976f457313ca3ca27bb9489ad9c14dc58feaa48b5a194fdd0c4003ed",
+    "parts/create-save.js": "2a222b90b438907eb0835722d4230499716945109c70578791c41b24ef89f752",
+    "parts/data.js": "9137d8d6353ef2ec97b153ded7628175cdc8c483c770e6d5e2258ca50c558e04",
+    "parts/engine.js": "891ab8409d5f8ae21d7be06da450eb55fe8b631121a8af1c7d50cc10d98c90ad",
+    "parts/pmstyles.js": "f3501db9c16dbc6a5fa8c901089101e4913772384de1f069accb23a614bb90fc",
+    "parts/whatsnew.js": "2da99fb37682f1b69b5ff59d1a8d0665ae9274dd3617dd0dd252fef87c967596",
+    "parts/head.html": "dbce12695cb3b0c04209dee474f018d6ffc65139bd41c7957b8b47a9ece4b3bb",
+    "scripts/check-census.py": "dd55f34cd855e60a6fadae7e261aa99f1682b9d7d8446696532045e3a281fafb"
+   },
+   "issued": "2026-11-21"
   }
  ]
 }
