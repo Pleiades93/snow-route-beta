@@ -271,36 +271,72 @@ class Scan:
                     if receiver in var_el:
                         receiver = var_el[receiver]
                     start = m.end()
-                    end = self._callback_end(text, start)
-                    self.handlers.append({
-                        "rel": rel, "receiver": receiver, "event": event,
-                        "start": m.start(), "cb_start": start, "end": end,
-                        "body": text[start:end],
-                    })
+                    # The registration call's own span bounds every
+                    # search below: a callback span that runs past it
+                    # swallows the NEXT statement's body and
+                    # misattributes its calls (Codex P2, PR #156).
+                    call_open = text.rfind("(", m.start(), m.end())
+                    call_end = match_span(text, call_open, "(", ")") \
+                        if call_open >= 0 else len(text)
+                    # A named callback - addEventListener('click',
+                    # hideConfirm) - has no inline body at all: the
+                    # handler body is the named function's definition
+                    # body, wherever it lives. An unresolved reference
+                    # (a bare identifier naming nothing defined in the
+                    # tree) falls through to the bounded inline scan,
+                    # which finds no body inside the call and rows
+                    # nothing.
+                    named = re.match(r"\s*([A-Za-z_$][\w$]*)\s*(?=[),])",
+                                     text[start:call_end])
+                    resolved = None
+                    if named and named.group(1) in self.defs:
+                        cands = self.defs[named.group(1)]
+                        resolved = next(((r, s, e) for (r, s, e) in cands
+                                         if r == rel), cands[0])
+                    if resolved:
+                        srel, cs, ce = resolved
+                        self.handlers.append({
+                            "rel": rel, "receiver": receiver, "event": event,
+                            "start": m.start(), "srel": srel,
+                            "cb_start": cs, "end": ce,
+                            "body": self.masked[srel][cs:ce],
+                            "obody": self.files[srel][cs:ce],
+                            "named": named.group(1),
+                        })
+                    else:
+                        end = self._callback_end(text, start, call_end)
+                        self.handlers.append({
+                            "rel": rel, "receiver": receiver, "event": event,
+                            "start": m.start(), "srel": rel,
+                            "cb_start": start, "end": end,
+                            "body": text[start:end],
+                            "obody": orig[start:end],
+                            "named": None,
+                        })
 
     @staticmethod
-    def _callback_end(text, i):
-        """End index of the call expression whose argument list the
-        handler callback opens: find the callback's body brace (or
-        the closing paren for an expression-bodied arrow)."""
-        # Skip to the callback: 'function' or '(' params or a bare id.
-        brace = text.find("{", i)
-        paren = text.find("(", i)
+    def _callback_end(text, i, bound):
+        """End index of an inline handler callback, searching only
+        inside the registration call (bound is the index just past
+        its closing paren): the callback's body brace, or the call's
+        own end for an expression-bodied arrow."""
+        brace = text.find("{", i, bound)
+        paren = text.find("(", i, bound)
         if 0 <= paren and (brace < 0 or paren < brace):
-            close = match_span(text, paren, "(", ")")
+            close = min(match_span(text, paren, "(", ")"), bound)
             # After params comes => then { or an expression.
-            nxt = text.find("{", close)
-            arrow = text.find("=>", close)
+            nxt = text.find("{", close, bound)
+            arrow = text.find("=>", close, bound)
             if 0 <= arrow and (nxt < 0 or arrow < nxt):
                 if nxt >= 0 and text[arrow + 2:nxt].strip() == "":
-                    return match_span(text, nxt, "{", "}")
-                # Expression body: ends at the addEventListener close.
-                return close
+                    return min(match_span(text, nxt, "{", "}"), bound)
+                # Expression body: it runs to the call's close.
+                return bound
             if nxt >= 0:
-                return match_span(text, nxt, "{", "}")
+                return min(match_span(text, nxt, "{", "}"), bound)
             return close
         if brace >= 0:
-            return match_span(text, brace, "{", "}")
+            return min(match_span(text, brace, "{", "}"), bound)
         return i
 
     def call_sites(self, name):
@@ -336,7 +372,7 @@ class Scan:
         """The enclosing context for a position: a handler receiver,
         a function name, or 'top-level'."""
         for h in self.handlers:
-            if h["rel"] == rel and h["cb_start"] <= index < h["end"]:
+            if h["srel"] == rel and h["cb_start"] <= index < h["end"]:
                 return f"{h['receiver']}:{h['event']}"
         best = None
         for name, spans in self.defs.items():
@@ -379,6 +415,16 @@ def derive_rows(scan, anchors):
     rows = {}
 
     def add(rid, kind, source):
+        # Two distinct paths can share a natural id (two document
+        # listeners for the same event in one file): collapsing them
+        # into one row would silently drop a sibling, the exact
+        # failure this census exists to prevent (Codex P2, PR #156).
+        # Same id AND same source is the same path - dedupe; same id,
+        # different source takes a stable #n suffix in scan order.
+        base, n = rid, 2
+        while rid in rows and rows[rid]["source"] != source:
+            rid = f"{base}#{n}"
+            n += 1
         if rid not in rows:
             rows[rid] = {"id": rid, "kind": kind, "source": source}
 
@@ -398,6 +444,14 @@ def derive_rows(scan, anchors):
             ctx = scan.context_of(rel, idx)
             add(f"caller:{fn}:{rel}:{ctx}", "caller",
                 f"derived: call-site scan of parts/ - {fn}() is called from {ctx} in {rel}")
+    # A registration by reference is a call path too: the event
+    # invokes the named function directly, with no call site in any
+    # body ($('cfKeep').addEventListener('click', hideConfirm)).
+    for h in scan.handlers:
+        if h["named"] and h["named"] in functions:
+            add(f"caller:{h['named']}:{h['rel']}:{h['receiver']}:{h['event']}", "caller",
+                f"derived: handler scan of parts/ - {h['named']} is registered by reference "
+                f"as the {h['receiver']} {h['event']} handler in {h['rel']}; the event invokes it directly")
 
     # ---- doors and exits and state, per guard
     for g in guards:
@@ -412,17 +466,41 @@ def derive_rows(scan, anchors):
                 sanctioned.append((rel,) + scan.arg_span(rel, idx))
             for h in scan.handlers:
                 body = h["body"]
+                rid = f"door:{h['rel']}:{h['receiver']}:{h['event']}"
+                # A handler that IS the action or the guard by
+                # reference: the event invokes it directly.
+                if h["named"] == action:
+                    add(rid, "door",
+                        f"derived: handler scan of parts/ - the {h['receiver']} {h['event']} handler "
+                        f"in {h['rel']} registers {action} itself by reference, BYPASSING {guard}()")
+                    continue
+                if h["named"] == guard:
+                    add(rid, "door",
+                        f"derived: handler scan of parts/ - the {h['receiver']} {h['event']} handler "
+                        f"in {h['rel']} registers {guard} itself by reference; the event reaches "
+                        f"{action}() only through {guard}()")
+                    continue
                 # An action call inside a guard call's argument span
                 # is the sanctioned callback, not a door.
                 calls_action = False
                 for m in re.finditer(r"(?<![\w$.])" + re.escape(action) + r"\s*\(", body):
                     pos = h["cb_start"] + m.start()
-                    if not any(r == h["rel"] and s <= pos < e for (r, s, e) in sanctioned):
+                    if not any(r == h["srel"] and s <= pos < e for (r, s, e) in sanctioned):
                         calls_action = True
                 calls_guard = _calls(body, guard)
                 hop = None if calls_guard else _one_hop_to(scan, body, guard)
-                rid = f"door:{h['rel']}:{h['receiver']}:{h['event']}"
-                if calls_action and not calls_guard and not hop:
+                # The unsanctioned direct call is checked FIRST: a
+                # handler holding both a direct call and a guarded
+                # path is a bypass with a second door, never a clean
+                # routed door (Codex P2, PR #156 - the mixed branch
+                # below was unreachable when ordered last).
+                if calls_action and (calls_guard or hop):
+                    via = guard if calls_guard else f"{hop}() -> {guard}"
+                    add(rid, "door",
+                        f"derived: handler scan of parts/ - the {h['receiver']} {h['event']} handler "
+                        f"in {h['rel']} calls {action}() directly, BYPASSING {guard}(), and also "
+                        f"routes via {via}() - the direct call is a second, unguarded door")
+                elif calls_action:
                     add(rid, "door",
                         f"derived: handler scan of parts/ - the {h['receiver']} {h['event']} handler "
                         f"in {h['rel']} calls {action}() directly, BYPASSING {guard}()")
@@ -431,11 +509,6 @@ def derive_rows(scan, anchors):
                     add(rid, "door",
                         f"derived: handler scan of parts/ - the {h['receiver']} {h['event']} handler "
                         f"in {h['rel']} reaches {action}() through {via}()")
-                elif calls_action:
-                    add(rid, "door",
-                        f"derived: handler scan of parts/ - the {h['receiver']} {h['event']} handler "
-                        f"in {h['rel']} calls {action}() and also routes via {guard}() - "
-                        "the direct call's reachability is the author's to answer")
             # State binding at each guard call site.
             for (rel, idx) in scan.call_sites(guard):
                 s, e = scan.arg_span(rel, idx)
@@ -474,24 +547,25 @@ def derive_rows(scan, anchors):
             for h in scan.handlers:
                 if h["receiver"] in ("document", "window"):
                     body = h["body"]
-                    obody = scan.files[h["rel"]][h["cb_start"]:h["end"]]
+                    obody = h["obody"]
                     dismisses = _calls(body, "closeSheets") or "classList.add('hidden')" in obody \
                         or 'classList.add("hidden")' in obody or any(_calls(body, f) for f in hide_fns)
                     if dismisses:
-                        orig_body = scan.files[h["rel"]][h["cb_start"]:h["end"]]
-                        exempt = (f"closest('#{surface}')" in orig_body or
-                                  f'closest("#{surface}")' in orig_body)
+                        exempt = (f"closest('#{surface}')" in obody or
+                                  f'closest("#{surface}")' in obody)
                         add(f"exit:{h['rel']}:document:{h['event']}", "exit",
                             f"derived: dismissal scan - the document {h['event']} handler in {h['rel']} "
                             "dismisses surfaces and "
                             + (f"exempts #{surface}" if exempt else
                                f"does NOT exempt #{surface} - a press on the surface bubbles through it"))
                         continue
-                hit = [f for f in hide_fns if _calls(h["body"], f)]
+                hit = [f for f in hide_fns if _calls(h["body"], f) or f == h["named"]]
                 if hit:
+                    how = (f"registers {hit[0]} by reference" if hit[0] == h["named"]
+                           and not _calls(h["body"], hit[0]) else f"calls {hit[0]}()")
                     add(f"exit:{h['rel']}:{h['receiver']}:{h['event']}", "exit",
                         f"derived: handler scan - the {h['receiver']} {h['event']} handler in "
-                        f"{h['rel']} calls {hit[0]}(), an exit from #{surface}")
+                        f"{h['rel']} {how}, an exit from #{surface}")
             for name in sorted(hide_fns):
                 for (rel, idx) in scan.call_sites(name):
                     ctx = scan.context_of(rel, idx)
@@ -525,9 +599,9 @@ def derive_rows(scan, anchors):
         if h["receiver"] not in ("document", "window", "map"):
             continue
         rid_exit = f"exit:{h['rel']}:document:{h['event']}"
-        if rid_exit in rows:
+        if any(k == rid_exit or k.startswith(rid_exit + "#") for k in rows):
             continue
-        orig_body = scan.files[h["rel"]][h["cb_start"]:h["end"]]
+        orig_body = h["obody"]
         touched = [f for f in functions if _calls(h["body"], f)] + \
                   [e for e in elements if f"$('{e}')" in orig_body or f"$(\"{e}\")" in orig_body]
         if touched:

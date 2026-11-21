@@ -647,6 +647,59 @@ with tempfile.TemporaryDirectory() as td:
     check("census: a machinery-only change set passes the CLI gate with no census at all",
           run_census_cli(t / "badledger", "gate", ["--changed", "docs/x.md"]), 0)
 
+    # The three derivation shapes Codex's P2s named on PR #156,
+    # pinned at the derive level: a named callback's body is the
+    # handler body (and a by-reference registration at end-of-file
+    # still rows its exit); two same-event document listeners get
+    # distinct row ids; a handler holding both a direct action call
+    # and a guarded path is reported as a bypass, never as routed.
+    def derive_rows_of(name, parts_map, anchors_obj):
+        base = t / name
+        for rel, content in parts_map.items():
+            w(base / rel, content)
+        w(base / "anchors.json", json.dumps(anchors_obj))
+        proc = subprocess.run([PY, str(ROOT / "scripts" / "check-census.py"), "derive",
+                               str(base), "--anchors", str(base / "anchors.json")],
+                              capture_output=True, text=True, timeout=60)
+        assert proc.returncode == 0, proc.stdout + proc.stderr
+        return {r["id"]: r["source"] for r in json.loads(proc.stdout)["rows"]}
+
+    census_anchors = {"functions": ["showConfirm", "hideConfirm"],
+                      "elements": ["confirmPill"],
+                      "guards": [{"guard": "showConfirm", "action": "cancelStart",
+                                  "surface": "confirmPill", "state": []}]}
+    named_rows = derive_rows_of("censusnamed", {"parts/a.js": (
+        "function showConfirm(o) { $('confirmPill').classList.remove('hidden'); }\n"
+        "function hideConfirm() { $('confirmPill').classList.add('hidden'); }\n"
+        "function cancelStart() { }\n"
+        "function onDock() { cancelStart(); }\n"
+        "$('dockBtn').addEventListener('click', onDock);\n"
+        "$('keepBtn').addEventListener('click', hideConfirm);\n")}, census_anchors)
+    door = named_rows.get("door:parts/a.js:dockBtn:click", "")
+    exit_ref = named_rows.get("exit:parts/a.js:keepBtn:click", "")
+    check("census: a named callback's body is the handler body, and a by-reference registration at EOF rows its exit",
+          0 if ("BYPASSING" in door and "by reference" in exit_ref) else 1, 0)
+
+    dup_rows = derive_rows_of("censusdup", {"parts/a.js": (
+        "function hideConfirm() { $('confirmPill').classList.add('hidden'); }\n"
+        "document.addEventListener('pointerdown', e => { if (!e.target.closest('#confirmPill')) closeSheets(); });\n"
+        "document.addEventListener('pointerdown', e => { hideConfirm(); });\n")}, census_anchors)
+    dup_exits = {k: v for k, v in dup_rows.items() if k.startswith("exit:parts/a.js:document:pointerdown")}
+    check("census: two same-event document listeners derive two distinct exit rows (no collapsed sibling)",
+          0 if (set(dup_exits) == {"exit:parts/a.js:document:pointerdown",
+                                   "exit:parts/a.js:document:pointerdown#2"}
+                and any("exempts #confirmPill" in v for v in dup_exits.values())
+                and any("does NOT exempt #confirmPill" in v for v in dup_exits.values())) else 1, 0)
+
+    mixed_rows = derive_rows_of("censusmixed", {"parts/a.js": (
+        "function showConfirm(o) { if (o && o.onDanger) o.onDanger(); }\n"
+        "function cancelStart() { }\n"
+        "$('mixBtn').addEventListener('click', () => { if (window.runStart) cancelStart(); "
+        "else showConfirm({onDanger: () => cancelStart()}); });\n")}, census_anchors)
+    mixed_door = mixed_rows.get("door:parts/a.js:mixBtn:click", "")
+    check("census: a handler with both a direct action call and a guarded path is a bypass, never a routed door",
+          0 if ("BYPASSING" in mixed_door and "unguarded" in mixed_door) else 1, 0)
+
 # ------------------------------------------------------------- sweep check
 def run_sweep(root, olds):
     proc = subprocess.run([PY, str(ROOT / "scripts" / "sweep-check.py"), str(root),
@@ -686,6 +739,6 @@ with tempfile.TemporaryDirectory() as td:
           run_sweep(sweep_tree(t / "mixq", files={"tests/browser/drive1.mjs": "x.includes('couldn\\'t save \"Town\"')\n"}),
                     ["couldn't save \"Town\""]), 1)
 
-total = 50
+total = 53
 print(f"gate fixtures: {total - len(failures)} pass, {len(failures)} fail")
 sys.exit(1 if failures else 0)
