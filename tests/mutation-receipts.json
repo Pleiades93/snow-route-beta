@@ -208,6 +208,47 @@
    "red": "check-receipts.py gate --changed scripts/check-census.py exits 0 in the scratch tree - a changed census judge needs no mutation receipt at all",
    "green": "with the shipped JUDGE_PATHS the receipts gate covers scripts/check-census.py only through current receipts (this one and the two gate-fixtures census receipts); check-receipts.py verify lists them CURRENT on the fixed tree",
    "issued": "2026-11-21 correct-phase3c-fix"
+  },
+  {
+   "id": "gate-fixtures-census-gate-neuter-r3",
+   "check": "scripts/gate-fixtures/run-fixtures.py",
+   "kind": "mutation",
+   "files": {
+    "scripts/gate-fixtures/run-fixtures.py": "9882435ec7d2bbd9587aa5459564f1443a7c2695e75ed98e3489554df0848ed6",
+    "scripts/push.py": "e89ca957631bf801622a3acee5aefd9db1e611bdc15130bb16c92beba71a9f8d",
+    "scripts/check-census.py": "dd55f34cd855e60a6fadae7e261aa99f1682b9d7d8446696532045e3a281fafb"
+   },
+   "mutation": "scripts/check-census.py gate() neutered in a scratch copy of the final tree to return None unconditionally (the census gate certifies every push) - re-observation after the PR #156 gesture-suppression fix changed check-census.py and the fixture suite",
+   "red": "gate fixtures 50 pass, 4 FAIL - exactly the four refusal cases the census gate owns: a parts change with no sibling census pushes (exit 0, want 1), a hand-typed census omitting a derived door row pushes, a census leaving a derived row unmarked pushes, a malformed census file passes the CLI gate",
+   "green": "gate fixtures 54 pass, 0 fail on the unmutated final tree",
+   "issued": "2026-11-21 correct-phase3c-fix2"
+  },
+  {
+   "id": "gate-fixtures-census-derive-neuter-r3",
+   "check": "scripts/gate-fixtures/run-fixtures.py",
+   "kind": "mutation",
+   "files": {
+    "scripts/gate-fixtures/run-fixtures.py": "9882435ec7d2bbd9587aa5459564f1443a7c2695e75ed98e3489554df0848ed6",
+    "scripts/push.py": "e89ca957631bf801622a3acee5aefd9db1e611bdc15130bb16c92beba71a9f8d",
+    "scripts/check-census.py": "dd55f34cd855e60a6fadae7e261aa99f1682b9d7d8446696532045e3a281fafb"
+   },
+   "mutation": "scripts/check-census.py derive_rows() neutered in a scratch copy of the final tree to return no rows (the census derives nothing, so every issued census certifies empty) - re-observation after the PR #156 gesture-suppression fix",
+   "red": "gate fixtures 48 pass, 6 FAIL - the two re-derivation-dependent refusals (omitted door row, unmarked row) plus all four derive-level cases (named callback, duplicate listeners, mixed door, gesture suppression): with no derived rows none of them can be posed",
+   "green": "gate fixtures 54 pass, 0 fail on the unmutated final tree",
+   "issued": "2026-11-21 correct-phase3c-fix2"
+  },
+  {
+   "id": "receipts-census-judge-scope-r3",
+   "check": "scripts/check-receipts.py",
+   "kind": "mutation",
+   "files": {
+    "scripts/check-receipts.py": "53ea21a73dd76601b05028a8031961b997fb8892e89e186f3479c514d6bc0a63",
+    "scripts/check-census.py": "dd55f34cd855e60a6fadae7e261aa99f1682b9d7d8446696532045e3a281fafb"
+   },
+   "mutation": "scripts/check-census.py removed from JUDGE_PATHS in a scratch copy of the final tree's scripts/check-receipts.py (the census judge escapes rule 6's trigger set) - re-observation after the PR #156 gesture-suppression fix changed the pinned census tool",
+   "red": "check-receipts.py gate --changed scripts/check-census.py exits 0 in the scratch tree - a changed census judge needs no mutation receipt at all",
+   "green": "with the shipped JUDGE_PATHS the receipts gate covers scripts/check-census.py only through current receipts (this one and the two gate-fixtures census receipts); check-receipts.py verify lists them CURRENT on the final tree",
+   "issued": "2026-11-21 correct-phase3c-fix2"
   }
  ]
 }

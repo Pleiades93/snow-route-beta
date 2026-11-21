@@ -700,6 +700,23 @@ with tempfile.TemporaryDirectory() as td:
     check("census: a handler with both a direct action call and a guarded path is a bypass, never a routed door",
           0 if ("BYPASSING" in mixed_door and "unguarded" in mixed_door) else 1, 0)
 
+    # The fourth shape, from the PR #156 fix round's own re-review:
+    # an exit row suppresses the gesture row only for the SAME
+    # registration - a second same-event handler that touches an
+    # anchor without dismissing still derives its gesture row.
+    gesture_anchors = {"functions": ["hideConfirm", "openerElOf"],
+                       "elements": ["confirmPill"],
+                       "guards": [{"guard": "showConfirm", "action": "cancelStart",
+                                   "surface": "confirmPill", "state": []}]}
+    gesture_rows = derive_rows_of("censusgesture", {"parts/a.js": (
+        "function hideConfirm() { $('confirmPill').classList.add('hidden'); }\n"
+        "function openerElOf(t) { return t; }\n"
+        "document.addEventListener('pointerdown', e => { if (!e.target.closest('#confirmPill')) closeSheets(); });\n"
+        "document.addEventListener('pointerdown', e => { openerElOf(e.target); });\n")}, gesture_anchors)
+    check("census: one handler's exit row does not suppress a different same-event handler's gesture row",
+          0 if ("exit:parts/a.js:document:pointerdown" in gesture_rows
+                and "gesture:parts/a.js:document:pointerdown" in gesture_rows) else 1, 0)
+
 # ------------------------------------------------------------- sweep check
 def run_sweep(root, olds):
     proc = subprocess.run([PY, str(ROOT / "scripts" / "sweep-check.py"), str(root),
@@ -739,6 +756,6 @@ with tempfile.TemporaryDirectory() as td:
           run_sweep(sweep_tree(t / "mixq", files={"tests/browser/drive1.mjs": "x.includes('couldn\\'t save \"Town\"')\n"}),
                     ["couldn't save \"Town\""]), 1)
 
-total = 53
+total = 54
 print(f"gate fixtures: {total - len(failures)} pass, {len(failures)} fail")
 sys.exit(1 if failures else 0)

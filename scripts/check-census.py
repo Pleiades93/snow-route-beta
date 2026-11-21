@@ -296,6 +296,7 @@ class Scan:
                     if resolved:
                         srel, cs, ce = resolved
                         self.handlers.append({
+                            "idx": len(self.handlers),
                             "rel": rel, "receiver": receiver, "event": event,
                             "start": m.start(), "srel": srel,
                             "cb_start": cs, "end": ce,
@@ -306,6 +307,7 @@ class Scan:
                     else:
                         end = self._callback_end(text, start, call_end)
                         self.handlers.append({
+                            "idx": len(self.handlers),
                             "rel": rel, "receiver": receiver, "event": event,
                             "start": m.start(), "srel": rel,
                             "cb_start": start, "end": end,
@@ -431,6 +433,10 @@ def derive_rows(scan, anchors):
     functions = list(anchors.get("functions") or [])
     elements = list(anchors.get("elements") or [])
     guards = list(anchors.get("guards") or [])
+    # Registrations that produced an exit row, by handler index:
+    # the gesture family skips exactly those, never every handler
+    # sharing a file/event key (Codex P2, PR #156 fix round).
+    exit_handlers = set()
     for g in guards:
         for f in (g.get("guard"), g.get("action")):
             if f and f not in functions:
@@ -558,6 +564,7 @@ def derive_rows(scan, anchors):
                             "dismisses surfaces and "
                             + (f"exempts #{surface}" if exempt else
                                f"does NOT exempt #{surface} - a press on the surface bubbles through it"))
+                        exit_handlers.add(h["idx"])
                         continue
                 hit = [f for f in hide_fns if _calls(h["body"], f) or f == h["named"]]
                 if hit:
@@ -566,6 +573,7 @@ def derive_rows(scan, anchors):
                     add(f"exit:{h['rel']}:{h['receiver']}:{h['event']}", "exit",
                         f"derived: handler scan - the {h['receiver']} {h['event']} handler in "
                         f"{h['rel']} {how}, an exit from #{surface}")
+                    exit_handlers.add(h["idx"])
             for name in sorted(hide_fns):
                 for (rel, idx) in scan.call_sites(name):
                     ctx = scan.context_of(rel, idx)
@@ -598,9 +606,8 @@ def derive_rows(scan, anchors):
     for h in scan.handlers:
         if h["receiver"] not in ("document", "window", "map"):
             continue
-        rid_exit = f"exit:{h['rel']}:document:{h['event']}"
-        if any(k == rid_exit or k.startswith(rid_exit + "#") for k in rows):
-            continue
+        if h["idx"] in exit_handlers:
+            continue  # this registration dismisses; it is an exit, not a gesture
         orig_body = h["obody"]
         touched = [f for f in functions if _calls(h["body"], f)] + \
                   [e for e in elements if f"$('{e}')" in orig_body or f"$(\"{e}\")" in orig_body]
