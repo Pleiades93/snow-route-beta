@@ -730,6 +730,33 @@ locally, first:
    the tree being pushed, and is fully marked; it cannot verify
    the marks are true - the review seat spot-checks them, reading
    the author's own enumeration instead of producing it.
+8. **Mirrors are derived or checked, never hand-kept on trust
+   (/correct Phase 3 round (d), class C4 generalized).** A
+   hand-maintained mirror - a file or list whose content duplicates
+   a fact owned elsewhere - is either GENERATED from its source or
+   verified against it by `scripts/check-mirrors.py`, which
+   `scripts/push.py` runs on every push (the mirrors gate) against
+   the tree the push would create. The families: the declaration
+   file `scripts/app1-types.d.ts` (its RoutePack typedef against
+   PACK_FIELDS, its RouteKeys typedef against routeKeys()'s keys,
+   and every section-2 cross-part global against the home part its
+   comment names - the retired direction CI's tsc cannot see, and
+   the drift this round found live: applyNight's home still named
+   app4.js after the function moved to app5.js); the foreign-write
+   census's UNIVERSE plus its named exclusions against the
+   assembler's part list (brand-snow.js sat in neither for two
+   months - excluded correctly, as a pure IIFE, but unrecorded);
+   the selftests' CI wiring against the disk, both directions;
+   the shard lists against the partition `scripts/gen-shards.py`
+   generates; and the receipts gate's JUDGE_PATHS against the
+   `scripts/check-*.py` files on disk. Where derivation is cheap
+   the mirror is deleted instead of checked: the packfields
+   selftest's cap list is now derived from the judging code it
+   extracts, joining the fixture rosters round (a) derived. A
+   mirror this rule does not cover mechanically (the extraction
+   selftests' bespoke sandbox stubs; the storage schema's prose)
+   is named in the round record that censuses it, so the omission
+   is a decision, not an oversight.
 
 ## Honest limitations
 

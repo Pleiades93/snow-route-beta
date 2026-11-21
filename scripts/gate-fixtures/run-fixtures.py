@@ -6,8 +6,9 @@ with fixtures, docs/TESTING.md rule 1).
 scripts/check-tier-map.py, scripts/check-proof-coverage.py,
 scripts/run-proofs.py, scripts/push.py (plan mode),
 scripts/sweep-check.py, scripts/check-receipts.py (the mutation-
-receipt gate, /correct Phase 3 round (b)) and
-scripts/check-census.py (the sibling-census gate, round (c)) all
+receipt gate, /correct Phase 3 round (b)),
+scripts/check-census.py (the sibling-census gate, round (c)) and
+scripts/check-mirrors.py (the mirrors gate, round (d)) all
 decide pass/fail for the gate. Running them
 against the real repository proves only their happy path; these
 fixtures run each script against synthetic trees in a temp directory
@@ -22,7 +23,13 @@ transport landing a wrong blob, a changed check or judge file with
 no current mutation receipt, a receipt carrying hashes but no
 recorded observation, a receipt naming a check it does not pin, a
 parts push with no sibling census, a hand-typed census omitting a
-derived door row, a census leaving a derived row unmarked) fails.
+derived door row, a census leaving a derived row unmarked, a
+declaration typedef drifted from its source list, a cross-part
+global whose home part no longer declares it, an assembled part
+outside the foreign-write census and its named exclusions, a
+selftest on disk wired nowhere in CI, shard lists hand-edited away
+from the generated partition, a judging script missing from the
+receipts gate's judge list, a push carrying a drifted mirror) fails.
 
 Run: python3 scripts/gate-fixtures/run-fixtures.py
 Exit 0 = every case produced its expected verdict.
@@ -756,6 +763,119 @@ with tempfile.TemporaryDirectory() as td:
           run_sweep(sweep_tree(t / "mixq", files={"tests/browser/drive1.mjs": "x.includes('couldn\\'t save \"Town\"')\n"}),
                     ["couldn't save \"Town\""]), 1)
 
-total = 54
+# ------------------------------------------------------- mirror check
+def run_mirrors(root):
+    proc = subprocess.run([PY, str(ROOT / "scripts" / "check-mirrors.py"), str(root)],
+                          capture_output=True, text=True, timeout=120)
+    return proc.returncode
+
+
+def mirrors_tree(base, *, pack_typedef="name: string, ends: {}",
+                 home_global="glThing", extra_parts=(), unwired=False,
+                 swap_shards=False, extra_judge=False):
+    """A miniature tree whose mirrors all agree, built consistent by
+    construction (the shard lists are the real generator's partition
+    of the fixture roster); each keyword breaks exactly one family."""
+    import importlib.util
+    spec = importlib.util.spec_from_file_location(
+        "fixture_gen_shards", ROOT / "scripts" / "gen-shards.py")
+    gen = importlib.util.module_from_spec(spec)
+    spec.loader.exec_module(gen)
+    drives = [f"drive{i}" for i in range(1, 9)]
+    shards = gen.partition(drives, {})[0]
+    if swap_shards:
+        shards[0][0], shards[1][0] = shards[1][0], shards[0][0]
+    parts_list = ", ".join(f'"{p}"' for p in
+                           ("head.html", "app1.js", "brand-snow.js") + extra_parts)
+    w(base / "parts" / "app1.js",
+      "const PACK_FIELDS = ['name', 'ends'];\n"
+      "function routeKeys(id) { return { done: 'x', sess: 'y' }; }\n")
+    w(base / "parts" / "app2.js", f"let {home_global} = null;\n")
+    w(base / "scripts" / "app1-types.d.ts",
+      "// fixture declarations\n"
+      f"type RoutePack = {{ {pack_typedef} }};\n"
+      "type RouteKeys = { done: string, sess: string };\n"
+      "// ---- 2. Cross-part globals ----\n"
+      "/** app2.js: a fixture global. */\n"
+      "declare var glThing: any;\n"
+      "// ---- 3. Browser surface ----\n"
+      "declare var window: any;\n")
+    w(base / "scripts" / "assemble.py", f"PARTS = [{parts_list}]\n")
+    w(base / "scripts" / "check-receipts.py",
+      'JUDGE_PATHS = {\n    "scripts/check-receipts.py",\n}\n')
+    if extra_judge:
+        w(base / "scripts" / "check-widget.py", "# fixture judge\n")
+    w(base / "tests" / "browser" / "selftest-foreign-writes.mjs",
+      "// Universe: parts/app1.js (brand-snow.js excluded - fixture IIFE).\n"
+      "const UNIVERSE = ['app1.js'];\n"
+      "const RULE = 'Universe: parts/app1.js (brand-snow.js excluded - fixture).';\n")
+    w(base / "tests" / "browser" / "selftest-fixture.mjs", "// fixture selftest\n")
+    if unwired:
+        w(base / "tests" / "browser" / "selftest-unwired.mjs", "// never wired\n")
+    w(base / "tests" / "browser" / "run.mjs",
+      "const ALL = [" + ",".join(f"'{d}'" for d in drives) + "]\n")
+    w(base / "scripts" / "shard-durations.json", json.dumps({"seconds": {}}))
+    shard_steps = "".join(
+        f'      - run: echo shard\n        drives: "{" ".join(s)}"\n' for s in shards)
+    w(base / ".github" / "workflows" / "checks.yml",
+      "jobs:\n  build:\n    steps:\n"
+      "      - name: fixture selftest\n"
+      "        run: node tests/browser/selftest-fixture.mjs\n"
+      "      - name: census selftest\n"
+      "        run: node tests/browser/selftest-foreign-writes.mjs\n" + shard_steps)
+    return base
+
+
+with tempfile.TemporaryDirectory() as td:
+    t = Path(td)
+    check("mirrors: a consistent tree passes",
+          run_mirrors(mirrors_tree(t / "ok")), 0)
+    check("mirrors: a RoutePack typedef missing a PACK_FIELDS field fails",
+          run_mirrors(mirrors_tree(t / "typedef", pack_typedef="name: string")), 1)
+    check("mirrors: a cross-part global its home part no longer declares fails",
+          run_mirrors(mirrors_tree(t / "retired", home_global="glOther")), 1)
+    check("mirrors: an assembled part outside the census and its exclusions fails",
+          run_mirrors(mirrors_tree(t / "unaccounted", extra_parts=("app6.js",))), 1)
+    check("mirrors: a selftest on disk wired nowhere fails",
+          run_mirrors(mirrors_tree(t / "unwired", unwired=True)), 1)
+    check("mirrors: shard lists hand-swapped away from the generated partition fail",
+          run_mirrors(mirrors_tree(t / "swapped", swap_shards=True)), 1)
+    check("mirrors: a judging script missing from JUDGE_PATHS fails",
+          run_mirrors(mirrors_tree(t / "judge", extra_judge=True)), 1)
+
+    # The push gate itself: a drifted mirror refuses the push, an
+    # agreeing tree pushes. The fixture tree carries a copy of the
+    # real scripts/check-mirrors.py - push.py loads its gate logic
+    # from the push tree, the measuring instrument, exactly as in
+    # production (the receipts fixtures' shape).
+    def mirrors_push_tree(name, *, wired):
+        env = push_tree2(t / name, parts={"a.js": "A", "b.js": "B"},
+                         changelog="## Beta 1.0\n", tracker="AB",
+                         index="shell Beta 1.0 AB")
+        w(t / name / "scripts" / "check-mirrors.py",
+          (ROOT / "scripts" / "check-mirrors.py").read_text())
+        w(t / name / "tests" / "browser" / "selftest-fixture.mjs",
+          "// fixture selftest\n")
+        # The branch holds the selftest and the WIRED workflow, so
+        # the prospective tree carries both: the drift case then
+        # differs from the branch exactly in the workflow it pushes.
+        patch_branch(t / name, "tests/browser/selftest-fixture.mjs",
+                     "// fixture selftest\n")
+        wired_yml = ("jobs:\n  build:\n    steps:\n"
+                     "      - name: fixture selftest\n"
+                     "        run: node tests/browser/selftest-fixture.mjs\n")
+        patch_branch(t / name, ".github/workflows/checks.yml", wired_yml)
+        w(t / name / ".github" / "workflows" / "checks.yml",
+          wired_yml if wired else "jobs:\n  build:\n    steps:\n")
+        return env
+    mp_drift = mirrors_push_tree("mpdrift", wired=False)
+    check("push: a tree whose selftest wiring has drifted is refused (mirrors gate)",
+          run_push(t / "mpdrift", [".github/workflows/checks.yml"],
+                   mode="push", env_extra=mp_drift), 1)
+    mp_ok = mirrors_push_tree("mpok", wired=True)
+    check("push: a tree whose mirrors agree pushes (mirrors gate)",
+          run_push(t / "mpok", ["index.html"], mode="push", env_extra=mp_ok), 0)
+
+total = 63
 print(f"gate fixtures: {total - len(failures)} pass, {len(failures)} fail")
 sys.exit(1 if failures else 0)
