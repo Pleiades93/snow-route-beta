@@ -84,11 +84,11 @@ check('14: the frame loop cannot storm the creation sources (gate fixes, PR #158
   block.includes('if (want !== crIsectPushed)') && block.includes("let crIsectPushed = null;"));
 
 // ---------- the release editorial ----------
-check('13: What\'s New carries the 1.265 bullet (rolled by the create-mode-naming round), within the 108-char cap, em-dash free, and the CHANGELOG top entry is Beta 1.265 above 1.264',
-  whatsnew.includes('Street names now show everywhere while you create a route.') &&
-  'Street names now show everywhere while you create a route.'.length <= 108 &&
+check('13: What\'s New carries the 1.266 bullet (rolled by the unified-load-in round), within the 108-char cap, em-dash free, and the CHANGELOG top entry is Beta 1.266 above 1.265',
+  whatsnew.includes('Street names now fade in together when a route loads, instead of blinking.') &&
+  'Street names now fade in together when a route loads, instead of blinking.'.length <= 108 &&
   !whatsnew.includes('—') &&
-  changelog.indexOf('## Beta 1.265') > -1 && changelog.indexOf('## Beta 1.265') < changelog.indexOf('## Beta 1.264'));
+  changelog.indexOf('## Beta 1.266') > -1 && changelog.indexOf('## Beta 1.266') < changelog.indexOf('## Beta 1.265'));
 
 console.log(`proof-1262: ${pass} passed, ${fail} failed`);
 process.exit(fail ? 1 : 0);

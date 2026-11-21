@@ -870,6 +870,233 @@
     "scripts/check-census.py": "dd55f34cd855e60a6fadae7e261aa99f1682b9d7d8446696532045e3a281fafb"
    },
    "issued": "2026-11-21"
+  },
+  {
+   "id": "unifiedloadin-1266",
+   "kind": "app",
+   "anchors": {
+    "functions": [
+     "glUnifyLabels",
+     "nameHoldApply",
+     "nameHoldSet",
+     "nameLayerIds",
+     "scaleNameStops",
+     "loadRoute",
+     "introToRoute",
+     "armTitleRePlace",
+     "beginNameLoadIn",
+     "noteNameLoadInReplaced",
+     "noteNameLoadInNoFlight",
+     "noteNameLoadInSwitch",
+     "revealNameLoadIn",
+     "unloadRouteToBoot",
+     "liIdle"
+    ],
+    "elements": []
+   },
+   "changed": [
+    "parts/app2.js",
+    "parts/app5.js",
+    "parts/whatsnew.js"
+   ],
+   "rows": [
+    {
+     "id": "caller:armTitleRePlace:parts/app5.js:introToRoute",
+     "kind": "caller",
+     "source": "derived: call-site scan of parts/ - armTitleRePlace() is called from introToRoute in parts/app5.js",
+     "status": "covered",
+     "note": "the flight still arms the one hook: drive219 A3 counts exactly one re-place per load, its teardown inside the hold; proof-1266 check 6 pins the single arming site and the hook's surviving shape"
+    },
+    {
+     "id": "caller:beginNameLoadIn:parts/app5.js:loadRoute",
+     "kind": "caller",
+     "source": "derived: call-site scan of parts/ - beginNameLoadIn() is called from loadRoute in parts/app5.js",
+     "status": "covered",
+     "note": "every intro pick opens the cycle here: drive219 A runs the whole load-in from this call; proof-1266 check 7 pins it before introToRoute"
+    },
+    {
+     "id": "caller:glUnifyLabels:parts/app1.js:top-level",
+     "kind": "caller",
+     "source": "derived: call-site scan of parts/ - glUnifyLabels() is called from top-level in parts/app1.js",
+     "status": "covered",
+     "note": "the GL_HOST forwarding seat: the hold re-application rides this pass on every engine stack build - drive219 B1's mid-load-in theme swap restacks through it and lands held; proof-1266 check 3 pins the call at the pass's end"
+    },
+    {
+     "id": "caller:glUnifyLabels:parts/create-pick.js:crSetBackdrop",
+     "kind": "caller",
+     "source": "derived: call-site scan of parts/ - glUnifyLabels() is called from crSetBackdrop in parts/create-pick.js",
+     "status": "covered",
+     "note": "the create-mode backdrop re-run (Beta 1.265): nameHoldApply no-ops when no load-in stands (multiplier 1, not held), so create-mode naming is byte-for-byte the 1.265 behaviour - drive218 stays green in this round's battery"
+    },
+    {
+     "id": "caller:introToRoute:parts/app5.js:loadRoute",
+     "kind": "caller",
+     "source": "derived: call-site scan of parts/ - introToRoute() is called from loadRoute in parts/app5.js",
+     "status": "covered",
+     "note": "the intro flight itself: drive219 A flies it under the hold, C proves its dwell timeout stands down for a superseded pick, G takes its instant-fit branch"
+    },
+    {
+     "id": "caller:liIdle:parts/app5.js:map:idle",
+     "kind": "caller",
+     "source": "derived: handler scan of parts/ - liIdle is registered by reference as the map idle handler in parts/app5.js; the event invokes it directly",
+     "status": "covered",
+     "note": "the standing idle listener: drive219 A reveals at the settled idle; D proves a suppressed idle reveals nothing early (the backstop owns that reveal)"
+    },
+    {
+     "id": "caller:liIdle:parts/app5.js:noteNameLoadInNoFlight",
+     "kind": "caller",
+     "source": "derived: call-site scan of parts/ - liIdle() is called from noteNameLoadInNoFlight in parts/app5.js",
+     "status": "covered",
+     "note": "the instant-fit settle taking the reveal test by hand: drive219 G1 (reduced motion) completes the cycle through this call"
+    },
+    {
+     "id": "caller:liIdle:parts/app5.js:noteNameLoadInReplaced",
+     "kind": "caller",
+     "source": "derived: call-site scan of parts/ - liIdle() is called from noteNameLoadInReplaced in parts/app5.js",
+     "status": "covered",
+     "note": "the post-re-place settle test: drive219 A (the rebuilt source's own idle completes the reveal) and D (the test keeps failing while the camera moves, so the timer owns it)"
+    },
+    {
+     "id": "caller:liIdle:parts/app5.js:noteNameLoadInSwitch",
+     "kind": "caller",
+     "source": "derived: call-site scan of parts/ - liIdle() is called from noteNameLoadInSwitch in parts/app5.js",
+     "status": "covered",
+     "note": "the switch settle test: drive219 C1 resolves the second pick through it"
+    },
+    {
+     "id": "caller:loadRoute:parts/app2.js:top-level",
+     "kind": "caller",
+     "source": "derived: call-site scan of parts/ - loadRoute() is called from top-level in parts/app2.js",
+     "status": "covered",
+     "note": "the boot-side pick path into loadRoute: every drive in the battery boots through it, drive219 A-H included; the generation bump it now carries is pinned by proof-1266 check 7"
+    },
+    {
+     "id": "caller:loadRoute:parts/create-save.js:top-level",
+     "kind": "caller",
+     "source": "derived: call-site scan of parts/ - loadRoute() is called from top-level in parts/create-save.js",
+     "status": "covered",
+     "note": "the create-save flow's load of the just-saved route: same loadRoute body, same cycle - exercised by the create-flow drives in the full battery (drive214 family); drive219 covers the cycle itself"
+    },
+    {
+     "id": "caller:nameHoldApply:parts/app2.js:glUnifyLabels",
+     "kind": "caller",
+     "source": "derived: call-site scan of parts/ - nameHoldApply() is called from glUnifyLabels in parts/app2.js",
+     "status": "covered",
+     "note": "the restack seat: proof-1266 check 3 pins the call; drive219 B1's theme swap proves a restack lands held"
+    },
+    {
+     "id": "caller:nameHoldApply:parts/app2.js:nameHoldSet",
+     "kind": "caller",
+     "source": "derived: call-site scan of parts/ - nameHoldApply() is called from nameHoldSet in parts/app2.js",
+     "status": "covered",
+     "note": "the engage and per-frame ramp applications: drive219 A2 (every held sample at effective opacity 0 across all 17 layers) and E1 (a bare engage holds the road names at 0)"
+    },
+    {
+     "id": "caller:nameHoldApply:parts/app2.js:step",
+     "kind": "caller",
+     "source": "derived: call-site scan of parts/ - nameHoldApply() is called from step in parts/app2.js",
+     "status": "covered",
+     "note": "the ramp's per-frame application: drive219 A6 (the three groups' crossing brackets overlap - one ramp) and A7 (the final frame restores natural paint verbatim)"
+    },
+    {
+     "id": "caller:nameHoldSet:parts/app5.js:beginNameLoadIn",
+     "kind": "caller",
+     "source": "derived: call-site scan of parts/ - nameHoldSet() is called from beginNameLoadIn in parts/app5.js",
+     "status": "covered",
+     "note": "the engage: drive219 A2/E1 - the hold is shut before the load-in's first frame"
+    },
+    {
+     "id": "caller:nameHoldSet:parts/app5.js:revealNameLoadIn",
+     "kind": "caller",
+     "source": "derived: call-site scan of parts/ - nameHoldSet() is called from revealNameLoadIn in parts/app5.js",
+     "status": "covered",
+     "note": "the release: drive219 A/D/E all end through this ramp; H1 ends a cycle through it from the unload"
+    },
+    {
+     "id": "caller:nameLayerIds:parts/app2.js:nameHoldApply",
+     "kind": "caller",
+     "source": "derived: call-site scan of parts/ - nameLayerIds() is called from nameHoldApply in parts/app2.js",
+     "status": "covered",
+     "note": "the held set itself: proof-1266 check 2 pins the four tiers plus the basemap discriminator and the POI exclusion; drive219 A2 measures all three name groups at 0 while the POI's choreography is untouched"
+    },
+    {
+     "id": "caller:noteNameLoadInNoFlight:parts/app5.js:introToRoute",
+     "kind": "caller",
+     "source": "derived: call-site scan of parts/ - noteNameLoadInNoFlight() is called from introToRoute in parts/app5.js",
+     "status": "covered",
+     "note": "all four instant-fit call sites (the empty-pack return and the three fit0 fallbacks): proof-1266 check 8 counts exactly four; drive219 G1 exercises the reduced-motion site end to end"
+    },
+    {
+     "id": "caller:noteNameLoadInReplaced:parts/app5.js:run",
+     "kind": "caller",
+     "source": "derived: call-site scan of parts/ - noteNameLoadInReplaced() is called from run in parts/app5.js",
+     "status": "covered",
+     "note": "the hook's run noting the load-in from inside the hold: drive219 A3 (the teardown and the note are the same event) and D1 (the note arms the 6 s timer the drill measures)"
+    },
+    {
+     "id": "caller:noteNameLoadInSwitch:parts/app5.js:loadRoute",
+     "kind": "caller",
+     "source": "derived: call-site scan of parts/ - noteNameLoadInSwitch() is called from loadRoute in parts/app5.js",
+     "status": "covered",
+     "note": "the switch note: drive219 C1 - one reveal crossing serves both picks"
+    },
+    {
+     "id": "caller:revealNameLoadIn:parts/app5.js:map:idle",
+     "kind": "caller",
+     "source": "derived: call-site scan of parts/ - revealNameLoadIn() is called from map:idle in parts/app5.js",
+     "status": "covered",
+     "note": "the reveal reached from the idle path (liIdle) and from both backstop timers (liTimer): drive219 A (idle), D (post-re-place timer), E (absolute timer)"
+    },
+    {
+     "id": "caller:revealNameLoadIn:parts/app5.js:unloadRouteToBoot",
+     "kind": "caller",
+     "source": "derived: call-site scan of parts/ - revealNameLoadIn() is called from unloadRouteToBoot in parts/app5.js",
+     "status": "covered",
+     "note": "the unload reveal: drive219 H1 unloads at the load-in's height and the multiplier stands back at 1 with no name stranded"
+    },
+    {
+     "id": "caller:scaleNameStops:parts/app2.js:nameHoldApply",
+     "kind": "caller",
+     "source": "derived: call-site scan of parts/ - scaleNameStops() is called from nameHoldApply in parts/app2.js",
+     "status": "covered",
+     "note": "the transform: proof-1266 check 1b pins it and bans the refused wrap; drive219 A2 is its behavioural proof (the titles' effective opacity is 0 in every held sample - under the wrap it read 1)"
+    },
+    {
+     "id": "caller:unloadRouteToBoot:parts/app5.js:deleteRoute",
+     "kind": "caller",
+     "source": "derived: call-site scan of parts/ - unloadRouteToBoot() is called from deleteRoute in parts/app5.js",
+     "status": "covered",
+     "note": "the delete door into the unload: the battery's route-delete drives exercise deleteRoute itself; drive219 H1 covers the unload's new first line (end the cycle) directly"
+    },
+    {
+     "id": "gesture:parts/app5.js:map:idle",
+     "kind": "gesture",
+     "source": "derived: handler scan - the map idle handler in parts/app5.js touches revealNameLoadIn without dismissing it",
+     "status": "covered",
+     "note": "the load-in's idle registration (beginNameLoadIn's map.on): drive219 A reveals through it, D counts zero idles under a moving camera, E's boot-view idles fire and are correctly gated out (the settle was never noted, so only the absolute timer reveals)"
+    }
+   ],
+   "files": {
+    "parts/app1.js": "ad3bf7f8e4f509f37532579d071ada75cafd156223eb9a874c672577b6108bac",
+    "parts/app2.js": "375e627b12fb3878ec16c094e7c216be7759cdaf63707dec481fce0e9e4be026",
+    "parts/app3.js": "da6c7d85eafbb97572278b818ff60a6fc25c5c35a3e51ee6c8ceb23f52ddf91c",
+    "parts/app4.js": "059a12937fd806f09bc2db6a3af52bae51ac8e714d40715894136ffb9df63e4f",
+    "parts/app5.js": "d0a79fe85e6c8cd7135fb871d0d57bf3ad115f73828d255a61342a6d3d0aa4e2",
+    "parts/brand-snow.js": "86fa9a02f29c7345ee68d68daffd9c72da612921b64da37f1eccf6b72161ac5f",
+    "parts/create-cache.js": "2a7e983aa50862cb074a16abf9266a41a1a175c69faa5215b1d3d289aa2b5327",
+    "parts/create-citydata.js": "393d90f275d971b5e52352deebaece381279acd0e86495ffa2da35701de9148e",
+    "parts/create-fetch.js": "e7a65bd88dc338213946c4537dc5d397f79396ec416b6f4ebf4be831927aeb66",
+    "parts/create-packs.js": "ae77fbe77d3ef5970c0b432bc4152fd57a34cf98c1f09a1855ca150459cd0ad8",
+    "parts/create-pick.js": "7e1f7a13976f457313ca3ca27bb9489ad9c14dc58feaa48b5a194fdd0c4003ed",
+    "parts/create-save.js": "2a222b90b438907eb0835722d4230499716945109c70578791c41b24ef89f752",
+    "parts/data.js": "9137d8d6353ef2ec97b153ded7628175cdc8c483c770e6d5e2258ca50c558e04",
+    "parts/engine.js": "891ab8409d5f8ae21d7be06da450eb55fe8b631121a8af1c7d50cc10d98c90ad",
+    "parts/pmstyles.js": "f3501db9c16dbc6a5fa8c901089101e4913772384de1f069accb23a614bb90fc",
+    "parts/whatsnew.js": "0d787006e328718c7ba23543b8c3bdef946907ed167402c09649d4dc043257ab",
+    "parts/head.html": "dbce12695cb3b0c04209dee474f018d6ffc65139bd41c7957b8b47a9ece4b3bb",
+    "scripts/check-census.py": "dd55f34cd855e60a6fadae7e261aa99f1682b9d7d8446696532045e3a281fafb"
+   },
+   "issued": "2026-11-21 unifiedloadin-1266"
   }
  ]
 }

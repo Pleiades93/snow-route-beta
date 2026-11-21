@@ -28,6 +28,104 @@ setTimeout(() => { if (!glOk) { mapNoteArmed = true; noteMapState(); } }, 15000)
 onMapReady(() => map.on('error', e => { if (!glOk && e && e.error && /fetch|Failed/i.test(e.error.message || '') && !mapNoteArmed) { mapNoteArmed = true; noteMapState(); } }));
 onMapReady(() => map.on('sourcedata', e => { if (e.dataType === 'source' && e.sourceId === 'protomaps' && e.tile) { tilesOk++; if (basemapDead) { basemapDead = false; noteMapState(); } } })); // Beta 1.33: proof the basemap is really drawing - and the moment a tile lands after an outage, the death notice clears itself
 const ROUTE_TILE_NAMES = []; // Beta 1.40: every route street's name AS THE TILES SPELL IT (census of the protomaps 'roads' source layer, 2026-10-31: 34/34 matched exactly once; Fifth = '5th Avenue'). Drives the label exclusion in glUnifyLabels. Beta 1.117: the list itself is pack data (pack.tileNames in data.js) - this live array starts empty and buildGeometry refills it in place on every load.
+// ===== NAME LOAD-IN HOLD (Beta 1.266, Andrew's approved design, 2026-11-21) =====
+// On a route pick, EVERY name on the map - the basemap's text layers and the
+// route's own street titles - is held invisible for the whole load-in window,
+// the one anchor re-place (app5's hook) runs inside the hold where its
+// teardown cannot be seen, and at the settled idle all names fade in together
+// over one 350 ms ramp. The diagnosis (cold-start-flicker-2026-11-21) proved
+// the blink this kills: the titles placed during the pick flight, the hook's
+// rebuild then tore the labelpts source down at the idle, and all 33 titles
+// vanished for the worker's re-parse (~1-2 s; ~4.9 s under 6x CPU throttle)
+// in the same moment the surrounding basemap names finished fading in.
+// The hold is a MULTIPLIER over each layer's own text-opacity: a layer's
+// natural paint (the titles' zoom ramp included) is captured verbatim on
+// first touch and restored verbatim when the ramp completes, so outside a
+// load-in the style is byte-for-byte the pre-1.266 one. The multiplier is
+// applied by TRANSFORMING the paint, never by wrapping it: this MapLibre's
+// paint validator silently refuses any value that embeds the layer's own
+// expression as a sub-expression (a ['*', natural, mult] wrap reads back
+// unchanged - measured in the round's harness, drive219's first runs),
+// while a zoom interpolate rebuilt with its stop outputs scaled is
+// accepted. A layer whose set does not take is recorded in nameFade.unheld
+// and falls back to the flat multiplier, so a refusal can never again pass
+// as a held layer. The state machine that engages and releases the hold
+// lives in app5 (beginNameLoadIn and family); this block owns only the paint.
+const NAME_FADE_MS = 350; // the joint fade-in's length (Andrew's ~300-400 ms)
+let nameFade = { held: false, mult: 1, orig: {}, trans: {}, raf: 0, t0: 0, unheld: {} };
+function scaleNameStops(expr, mult) { // a zoom interpolate or step whose stop outputs are plain numbers, rebuilt with every output scaled by mult - the same expression shape, so the validator takes it and the layer's own zoom behaviour is preserved proportionally. Any other shape returns null (the caller falls back).
+  if (!Array.isArray(expr)) return null;
+  if (expr[0] === 'interpolate') { // ['interpolate', interpolation, input, stopIn, stopOut, ...]
+    const out = expr.slice();
+    for (let i = 4; i < out.length; i += 2) { if (typeof out[i] !== 'number') return null; out[i] = out[i] * mult; }
+    return out;
+  }
+  if (expr[0] === 'step') { // ['step', input, out0, stopIn, out1, ...]
+    const out = expr.slice();
+    if (typeof out[2] !== 'number') return null;
+    out[2] = out[2] * mult;
+    for (let i = 4; i < out.length; i += 2) { if (typeof out[i] !== 'number') return null; out[i] = out[i] * mult; }
+    return out;
+  }
+  return null;
+}
+function nameLayerIds(m) { // every layer that prints a NAME: the basemap's text layers (glUnifyLabels' own discriminator - a symbol layer carrying a text-field over a tile source-layer) plus the route's four title tiers. The route POI text is NOT a street name and the intro choreography sits the POI on screen during the dwell (Beta 1.203), so it is never held.
+  const ids = [];
+  try { for (const L of m.getStyle().layers) { if (L.type === 'symbol' && L.layout && L.layout['text-field'] && L['source-layer']) ids.push(L.id); } } catch (e) {}
+  for (const id of ['streetnamespt1', 'streetnamespt2', 'streetnamespt3', 'streetnamespt4']) { try { if (m.getLayer(id) && ids.indexOf(id) < 0) ids.push(id); } catch (e) {} }
+  return ids;
+}
+function nameHoldApply(m) { // (re)apply the current multiplier to every name layer present. glUnifyLabels calls this at the end of its pass, so every restack (a theme swap, a stack rebuild) lands in the held state; the engine's stack build calls that pass after the title layers are added, and the re-place re-adds the titles from their live specs (which carry the held paint), so no engine code needs to know the hold exists. The release ramp calls it per frame.
+  if (!m || (!nameFade.held && nameFade.mult === 1)) return;
+  for (const id of nameLayerIds(m)) {
+    try {
+      if (!(id in nameFade.orig)) { nameFade.orig[id] = m.getPaintProperty(id, 'text-opacity'); nameFade.trans[id] = m.getPaintProperty(id, 'text-opacity-transition'); }
+      const o = nameFade.orig[id];
+      let v;
+      if (nameFade.mult === 1) v = o;
+      else if (o === undefined) v = nameFade.mult;
+      else if (typeof o === 'number') v = o * nameFade.mult;
+      else { const s = scaleNameStops(o, nameFade.mult); v = s === null ? nameFade.mult : s; } // an expression shape the scaler does not know degrades to the flat multiplier - held flat beats not held at all
+      if (JSON.stringify(m.getPaintProperty(id, 'text-opacity')) !== JSON.stringify(v)) {
+        m.setPaintProperty(id, 'text-opacity', v);
+        if (JSON.stringify(m.getPaintProperty(id, 'text-opacity')) !== JSON.stringify(v)) { // the set did not take (a validator refusal is silent in this MapLibre): fall back to the flat multiplier and leave the layer named in unheld, where the load-in's evidence can see it
+          nameFade.unheld[id] = true;
+          m.setPaintProperty(id, 'text-opacity', nameFade.mult);
+        }
+      }
+      const t = m.getPaintProperty(id, 'text-opacity-transition');
+      if (!t || t.duration !== 0) m.setPaintProperty(id, 'text-opacity-transition', { duration: 0, delay: 0 }); // the ramp drives the fade itself; a style transition would double-animate every step
+    } catch (e) {}
+  }
+}
+function nameHoldSet(on) { // engage (instant - the hold must be shut before the load-in's first frame can paint a name) or release (the one joint ramp)
+  if (on) {
+    if (nameFade.raf) { cancelAnimationFrame(nameFade.raf); nameFade.raf = 0; }
+    nameFade.held = true; nameFade.mult = 0; nameFade.unheld = {};
+    if (typeof map !== 'undefined' && map) nameHoldApply(map);
+    return;
+  }
+  if (!nameFade.held && nameFade.mult === 1) return;
+  nameFade.held = false;
+  nameFade.t0 = (typeof performance !== 'undefined' ? performance.now() : Date.now());
+  const step = () => {
+    nameFade.raf = 0;
+    const now = (typeof performance !== 'undefined' ? performance.now() : Date.now());
+    const k = Math.min(1, (now - nameFade.t0) / NAME_FADE_MS);
+    nameFade.mult = k;
+    if (typeof map !== 'undefined' && map) nameHoldApply(map);
+    if (k < 1) { nameFade.raf = requestAnimationFrame(step); return; }
+    // the ramp is done: restore every touched layer's natural paint verbatim and forget it - from here the style is the pre-1.266 one again
+    if (typeof map !== 'undefined' && map) {
+      for (const id of Object.keys(nameFade.orig)) {
+        try { if (map.getLayer(id)) { map.setPaintProperty(id, 'text-opacity', nameFade.orig[id] === undefined ? null : nameFade.orig[id]); map.setPaintProperty(id, 'text-opacity-transition', nameFade.trans[id] === undefined ? null : nameFade.trans[id]); } } catch (e) {}
+      }
+    }
+    nameFade.orig = {}; nameFade.trans = {}; nameFade.mult = 1;
+  };
+  nameFade.raf = requestAnimationFrame(step);
+  setTimeout(() => { if (!nameFade.held && nameFade.mult < 1 && !nameFade.raf) step(); }, NAME_FADE_MS + 150); // a starved rAF (a hidden tab) must not strand the fade mid-ramp
+}
 function glUnifyLabels(m) { // BASEMAP LABEL UNIFICATION (Andrew, Beta 1.6): the day and night styles are two
   // different ready-made maps, each printing its own names in its own lettering and size. On every (re)stack,
   // normalize every basemap text layer: same typeface (each glyph service's own Noto Sans - the same face under
@@ -136,6 +234,7 @@ function glUnifyLabels(m) { // BASEMAP LABEL UNIFICATION (Andrew, Beta 1.6): the
       }
     }
   } catch (e) { /* a style without label layers has nothing to normalize */ }
+  nameHoldApply(m); // Beta 1.266: this pass runs at the end of every stack build, so it is the one seat that re-lands the name load-in hold on every layer a restack just (re)built - the basemap's text layers above and the route titles the engine added before calling this pass
 }
 function addReferenceLayers() {
   const feats = [];
