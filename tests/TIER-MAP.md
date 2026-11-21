@@ -192,6 +192,15 @@ it would escalate exactly the changes that carry regression tests
 to Tier C (Codex P2 on PR #155). The tier comes from the change
 itself; the receipts file rides with it.
 
+**Clause 6 — the sibling census rides along (2026-11-21).**
+The sibling census file (`tests/sibling-census.json`,
+/correct Phase 3 round (c)) never classifies a round either: it is
+bookkeeping that must accompany every parts change (the push gate
+refuses a parts change no current census names), so classifying
+it would escalate exactly the changes the census exists to
+accompany. The tier comes from the change itself; the census
+file rides with it.
+
 Also in this round: drive201/drive202 left the session family (the
 drives were deleted in Beta 1.221 with the icon-pack picker they
 tested; the roster entries were the drift), drive203 joined this

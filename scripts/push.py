@@ -78,6 +78,27 @@ This wrapper makes both shapes impossible rather than discouraged:
           tree like the registry gate. The gate proves presence and
           freshness; the bite is spot-verified by replaying the
           recorded mutation, as the review seat does.
+          Alongside those, the CENSUS GATE (/correct Phase 3 round
+          (c), closing class N2): a push that changes any parts/
+          file must be named by a CURRENT sibling census in
+          tests/sibling-census.json whose derived rows are all
+          marked covered or not-applicable-with-reason. The census
+          (scripts/check-census.py) is the pre-push enumeration of
+          the touched surfaces' sibling paths - every door, exit,
+          caller, state binding and mutation, theme face and
+          gesture path - DERIVED from the tree by scanning parts/,
+          because the class was first submissions covering the
+          named path while the review seat enumerated the siblings
+          afterwards (1.255's confirmation took four heads: the
+          unbound question, the dock's second Cancel door, the
+          sheet click-away exit). The gate re-derives the rows from
+          the prospective tree, so a hand-typed census that omits
+          a derived sibling cannot certify the push; it verifies
+          the census exists, is derived, and is fully marked - the
+          truth of the marks remains the review seat's spot-check.
+          A round that changes no parts/ surface records a
+          machinery-exempt entry in the same ledger instead, so
+          the absence of a census is a stated fact.
           Then it delegates the transport to the connector helper
           (explicit --repo snow-route-beta and --branch, every pair
           local=remote identical), and VERIFIES THE PUSHED TREE:
@@ -248,6 +269,9 @@ def preflight_prospective(root, gh, branch, resolved):
         err = receipts_gate(root, root, remote, local, resolved)
         if err:
             return "the prospective remote tree fails the receipts gate: " + err
+        err = census_gate(root, root, remote, local, resolved)
+        if err:
+            return "the prospective remote tree fails the census gate: " + err
         return None
     import base64
     import shutil
@@ -271,6 +295,9 @@ def preflight_prospective(root, gh, branch, resolved):
         err = receipts_gate(tmp, root, remote, local, resolved)
         if err:
             return ("the prospective remote tree fails the receipts gate: " + err)
+        err = census_gate(tmp, root, remote, local, resolved)
+        if err:
+            return ("the prospective remote tree fails the census gate: " + err)
         proc = subprocess.run([sys.executable, str(tmp / "scripts" / "build-pages.py"), "--check"],
                               cwd=tmp, capture_output=True, text=True, timeout=300)
         if proc.returncode != 0:
@@ -315,6 +342,29 @@ def receipts_gate(prospective_root, instrument_root, remote, local, resolved):
     print(f"RECEIPTS GATE: {len(triggers)} changed check/judge path(s) covered "
           "by current mutation receipts")
     return None
+
+
+def census_gate(prospective_root, instrument_root, remote, local, resolved):
+    """A parts-changing push must be named by a CURRENT sibling
+    census whose derived rows are all marked (class N2;
+    scripts/check-census.py owns the derivation and the coverage
+    rule). The checking logic loads from the LOCAL tree - the
+    measuring instrument, exempt from the prospective overlay like
+    build-pages.py - while the census ledger and the scanned parts
+    files are read from the PROSPECTIVE tree, and the rows are
+    re-derived there, so a census that would not land with this
+    push, or that omits a sibling the pushed tree carries, cannot
+    certify it. Returns an error string or None."""
+    script = instrument_root / "scripts" / "check-census.py"
+    if not script.is_file():
+        print("CENSUS GATE SKIPPED: scripts/check-census.py is not in "
+              "this tree (it predates the gate)")
+        return None
+    spec = importlib.util.spec_from_file_location("snow_check_census", script)
+    mod = importlib.util.module_from_spec(spec)
+    spec.loader.exec_module(mod)
+    changed = [p for p in resolved if remote.get(p) != local.get(p)]
+    return mod.gate(prospective_root, changed)
 
 
 def registry_targets(root, probe, goal_dir):

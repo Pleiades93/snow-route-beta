@@ -59,6 +59,14 @@ PR #155):
     for exactly the changes that carry regression tests - the
     opposite of the ride-along policy in tests/TIER-MAP.md.
 
+Amendment (2026-11-21, /correct Phase 3 round (c)):
+  * The sibling census file (tests/sibling-census.json) rides
+    along on the same terms: every parts change must ship its
+    census in that file, so classifying it would escalate exactly
+    the changes the census exists to accompany. (Named in this
+    round itself, not left for the gate to find - the N2 class is
+    sibling paths arriving late, and the tier selector is one.)
+
 Usage:
   select-tier.py --files changed.txt [--force A|B|C]
   select-tier.py --files changed.txt --github-output   (append to $GITHUB_OUTPUT)
@@ -84,6 +92,10 @@ DRIVE_RE = re.compile(r"^tests/browser/drive[^/]*\.mjs$")
 # that must accompany check changes, so it rides along like proofs and
 # never classifies (see the 2026-11-21 amendment in the docstring).
 RECEIPTS_FILE = "tests/mutation-receipts.json"
+
+# The sibling census file (/correct Phase 3 round (c)): bookkeeping
+# that must accompany parts changes, on the same terms.
+CENSUS_FILE = "tests/sibling-census.json"
 
 
 def load(name):
@@ -141,13 +153,16 @@ def select(files, force=None):
     generated = set(tmap.get("generated_outputs", []))
     proofs = sorted({f for f in files if f.startswith("tests/proof/")})
     receipts = sorted({f for f in files if f == RECEIPTS_FILE})
+    census = sorted({f for f in files if f == CENSUS_FILE})
     app_files = [f for f in files if not is_drive(f) and f not in generated
-                 and f not in proofs and f not in receipts]
+                 and f not in proofs and f not in receipts and f not in census]
     ride = f"; drive files ride along: {', '.join(touched)}" if touched else ""
     if proofs:
         ride += "; proof files ride along: " + ", ".join(p.rsplit("/", 1)[-1] for p in proofs)
     if receipts:
         ride += "; mutation receipts ride along"
+    if census:
+        ride += "; sibling census rides along"
     if not app_files:
         if touched:
             # A touched drive always runs, quarantined or not
@@ -160,6 +175,8 @@ def select(files, force=None):
             return "A", core_set(tmap, quar), False, "proof files only - proofs ride along" + ride
         if receipts:
             return "A", core_set(tmap, quar), False, "mutation receipts only - bookkeeping rides along" + ride
+        if census:
+            return "A", core_set(tmap, quar), False, "sibling census only - bookkeeping rides along" + ride
         return "A", core_set(tmap, quar), False, "generated outputs only - no source change"
     for f in app_files:
         if any(match(f, e) for e in tmap["tier_c_paths"]):

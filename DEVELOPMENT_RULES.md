@@ -120,7 +120,23 @@ observed failing under a named mutation or on the historical tree
 stayed green with the judges neutered, a sweep that passed silently
 empty, and a drive that measured the harness instead of the app all
 ship; the receipt is now a precondition of the push, verified
-against the prospective tree like the registry gate).
+against the prospective tree like the registry gate). Since
+/correct Phase 3 round (c), a push that changes any `parts/` file
+also runs the **census gate**: the push must be named by a current
+sibling census in `tests/sibling-census.json` whose derived rows
+are all marked covered or not-applicable-with-reason — the
+pre-push enumeration of the touched surfaces' sibling paths
+(every door, exit, caller, state binding and mutation, theme
+face and gesture path, derived from the tree by
+`scripts/check-census.py`; TESTING.md rule 7, class N2: first
+submissions covered the named path while the review seat
+enumerated the siblings afterwards — Beta 1.255's confirmation
+took four heads for the unbound question, the dock's second
+Cancel door and the sheet click-away exit). The gate re-derives
+the rows from the prospective tree, so a hand-typed census that
+omits a derived sibling cannot certify the push; a round that
+changes no `parts/` surface records a machinery-exempt entry in
+the same ledger instead.
 
 ## 2. Per-change report (required with every merge)
 

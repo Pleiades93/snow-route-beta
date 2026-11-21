@@ -701,6 +701,35 @@ locally, first:
    check/judge files no current receipt names. A check whose evidence
    is a rendered or manual measurement carries a receipt of kind
    `rendered` recording that evidence - never a fabricated mutation.
+7. **Sibling paths are enumerated before the first push
+   (/correct Phase 3 round (c), class N2).** A round that changes
+   any `parts/` file ships a **sibling census** in
+   `tests/sibling-census.json`: the author declares the round's
+   anchors (the functions and elements it touches, and for a
+   guarded action the guard, the action, the surface element, and
+   the state the question binds), and `scripts/check-census.py`
+   DERIVES the sibling rows from the tree - every caller of an
+   anchor function, every entry door to the action (flagging any
+   that bypasses the guard), every exit from the surface (its own
+   controls, dismissal handlers that do or do not exempt it,
+   state-changing paths that must clear it), every guard call
+   site's state binding, every function that mutates the bound
+   state, both theme faces of the surface's elements, and the
+   gesture paths that touch the anchors. Every derived row is
+   marked covered or not-applicable-with-reason before the push;
+   `scripts/push.py` re-derives the rows from the prospective tree
+   and refuses a parts push no current, fully-marked census names.
+   The class this closes: first submissions covered the named path
+   and the review seat enumerated the siblings afterwards - Beta
+   1.255's confirmation took four heads (the unbound question, the
+   dock's second Cancel door, the sheet click-away exit), and the
+   census derivation run against that round's first submission
+   lists all three before the fact. A round that changes no
+   `parts/` surface records a machinery-exempt entry in the same
+   ledger. The gate verifies the census exists, was derived from
+   the tree being pushed, and is fully marked; it cannot verify
+   the marks are true - the review seat spot-checks them, reading
+   the author's own enumeration instead of producing it.
 
 ## Honest limitations
 
