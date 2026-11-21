@@ -46,7 +46,15 @@
 // on a tree whose title cap is 16 the seam check (3) fails; on a tree
 // with the band split removed (exclusion lifted below 15) check 4 fails
 // and drive214 M2 catches the doubles in the rendered page.
+// Gate fix (Codex P2, PR #154): the restored label build read the sparse
+// SPOT map with a plain read, so a street named 'constructor' (or any
+// inherited object key) with no spot entry resolved to a truthy
+// prototype value and the anchor computation threw, aborting the route
+// load. The read is own-entry-only now; check 12 is the behavioural pin
+// (the round's fixture: the unpatched build throws on it, the patched
+// build anchors the street by its longest segment).
 import { readFileSync } from 'node:fs';
+import vm from 'node:vm';
 
 const root = new URL('../../', import.meta.url);
 const read = (p) => readFileSync(new URL(p, root), 'utf8');
@@ -130,9 +138,51 @@ check('10: LEFTBIT is present AND read by the label-anchor computation (load-bea
 check('11: the create-pick hide list carries the four title layers again',
   createPick.includes("[1, 2, 3, 4].map(t => 'streetnamespt' + t)"));
 
-// ---------- (12) the release editorial ----------
+// ---------- (12) the SPOT read is own-entry-only (gate fix, Codex P2) ----------
+// The engine fixture pattern of proof-leftside-removal-b05, narrowed to
+// the hazard: a street named 'constructor', SPOT empty (sparse - no own
+// entry). On the unpatched build GLP.init throws inside the label build;
+// on this build it completes and the street gets its fallback anchor.
+const fixMLAT = 111132, fixMLNG = 82000;
+const fixPt = (xM, yM) => [43.8 + yM / fixMLAT, -79.5 + xM / fixMLNG];
+const fixSeg = (x0, y0, x1, y1) => { const pts = []; const n = Math.max(2, Math.round(Math.hypot(x1 - x0, y1 - y0) / 20)); for (let k = 0; k <= n; k++) pts.push(fixPt(x0 + (x1 - x0) * k / n, y0 + (y1 - y0) * k / n)); return pts; };
+const fixSTRETCH = {
+  'constructor': { runs: [{ parts: [fixSeg(-120, 0, 0, 0), fixSeg(0, 0, 60, 0), fixSeg(60, 0, 120, 0)] }] },
+  LongAve: { runs: [{ parts: [fixSeg(-120, 60, 0, 60), fixSeg(0, 60, 60, 60), fixSeg(60, 60, 120, 60)] }] },
+};
+const fixNames = Object.keys(fixSTRETCH);
+let fixOk = false, fixNamesOut = [];
+try {
+  const host = {
+    PRIMARIES: new Set(), MLAT: fixMLAT, MLNG: fixMLNG,
+    jDistM: (a, b) => Math.hypot((b[1] - a[1]) * fixMLNG, (b[0] - a[0]) * fixMLAT),
+    ptSegM(p, a, b) { const px = p[1] * fixMLNG, py = p[0] * fixMLAT; const ax = a[1] * fixMLNG, ay = a[0] * fixMLAT; const bx = b[1] * fixMLNG, by = b[0] * fixMLAT; const vx = bx - ax, vy = by - ay, L2 = vx * vx + vy * vy || 1; const tt = Math.max(0, Math.min(1, ((px - ax) * vx + (py - ay) * vy) / L2)); return Math.hypot(px - (ax + tt * vx), py - (ay + tt * vy)); },
+    names: fixNames, STRETCH: fixSTRETCH,
+    ROADS: Object.fromEntries(fixNames.map(n => [n, fixSTRETCH[n].runs.flatMap(r => r.parts)])),
+    SPOT: {}, pieces: { 'constructor': [1, 1, 1], LongAve: [1, 1, 1] },
+    selStretch: null, selSet: [], isNight: () => false,
+    activeRoute: { name: 'Proof' }, glUnifyLabels: () => {},
+  };
+  const sources = {}, layers = [];
+  const mockGLM = {
+    getStyle: () => ({ layers }), getSource: id => sources[id],
+    addSource: (id, spec) => { sources[id] = { data: spec.data, setData(d) { this.data = d; } }; },
+    getLayer: id => layers.find(l => l.id === id), addLayer: l => { layers.push(l); },
+    setLayerZoomRange: () => {}, setLayoutProperty: () => {}, setPaintProperty: () => {},
+    on: () => {}, once: () => {},
+  };
+  const ctx = { GL_HOST: host, window: {}, setInterval: () => 1, clearInterval: () => {} };
+  vm.runInNewContext(engine, ctx);
+  ctx.window.GLP.init(mockGLM, host);
+  fixNamesOut = sources.labelpts && sources.labelpts.data ? sources.labelpts.data.features.map(f => f.properties.name) : [];
+  fixOk = fixNamesOut.includes('constructor') && fixNamesOut.includes('LongAve');
+} catch (e) { fixOk = false; }
+check('12: a street named like an inherited object key (constructor) with no SPOT entry still loads and anchors - the SPOT read is own-entry-only (gate fix, Codex P2 on PR #154)',
+  engine.includes('Object.prototype.hasOwnProperty.call(H.SPOT, n)') && fixOk);
+
+// ---------- (13) the release editorial ----------
 const BULLET = "Street names are the app's own labels when zoomed out, and the map's full names when you zoom in close.";
-check("12: What's New carries the 1.261 bullet (the brief's bullet, shortened only to fit the standing 108-char cap, meaning kept), em-dash free, and the CHANGELOG top entry is Beta 1.261",
+check("13: What's New carries the 1.261 bullet (the brief's bullet, shortened only to fit the standing 108-char cap, meaning kept), em-dash free, and the CHANGELOG top entry is Beta 1.261",
   whatsnew.includes(BULLET) && BULLET.length <= 108 && !whatsnew.includes('—') &&
   changelog.indexOf('## Beta 1.261') > -1 && changelog.indexOf('## Beta 1.261') < changelog.indexOf('## Beta 1.260'));
 

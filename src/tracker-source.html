@@ -1833,13 +1833,14 @@ function buildEngineGeometry() { // Beta 1.117: the engine's route geometry (GEO
   const dx = (leftOff[mid][1] - stitched[mid][1]) * H.MLNG, dy = (leftOff[mid][0] - stitched[mid][0]) * H.MLAT;
   // label line: the SPOT segment (or the longest), like the app's labels
   const segs = H.ROADS[n];
-  let li = (H.SPOT[n] ? H.SPOT[n][0] : -1);
+  const spotE = Object.prototype.hasOwnProperty.call(H.SPOT, n) ? H.SPOT[n] : null; // Beta 1.261 gate fix (Codex P2, PR #154): SPOT is sparse (only streets with a spot entry carry one), and a plain read of a missing key resolves INHERITED object properties - a street named 'constructor' or 'toString' read back a truthy prototype value, li went undefined (both bounds comparisons fail on undefined), and segLenM threw, aborting the route load. Own entries only.
+  let li = (spotE ? spotE[0] : -1);
   if (li < 0 || li >= segs.length) { li = 0; let bl = -1; segs.forEach((sg, j) => { const L = segLenM(sg); if (L > bl) { bl = L; li = j; } }); }
   // Round 34: a POINT anchor on the same segment at the SPOT fraction.
   // Line-placed labels need the segment to fit the name on screen, so
   // at Overview most short streets lost their labels entirely; point
   // labels render regardless of segment length.
-  const seg = segs[li], fr = H.SPOT[n] ? H.SPOT[n][1] : 0.5;
+  const seg = segs[li], fr = spotE ? spotE[1] : 0.5;
   let target = segLenM(seg) * fr, acc = 0, anchor = seg[seg.length - 1];
   for (let k = 1; k < seg.length; k++) { const d = H.jDistM(seg[k - 1], seg[k]); if (acc + d >= target) { const t = d ? (target - acc) / d : 0; anchor = [seg[k - 1][0] + (seg[k][0] - seg[k - 1][0]) * t, seg[k - 1][1] + (seg[k][1] - seg[k - 1][1]) * t]; break; } acc += d; }
   labelPointFeatures.push({ type: 'Feature', properties: { name: n, len: Math.round(stitchedLen) }, geometry: { type: 'Point', coordinates: GJ([anchor])[0] } }); // Beta 1.144: the length is the per-run sum (stitchedLen) - segLenM over the concatenated array would add the jumps between a disconnected street's runs
