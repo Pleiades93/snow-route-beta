@@ -815,6 +815,11 @@ def mirrors_tree(base, *, pack_typedef="name: string, ends: {}",
     w(base / "tests" / "browser" / "run.mjs",
       "const ALL = [" + ",".join(f"'{d}'" for d in drives) + "]\n")
     w(base / "scripts" / "shard-durations.json", json.dumps({"seconds": {}}))
+    # The shards family loads the generator from the tree under
+    # check (PR #157 Codex P2), so the synthetic tree carries the
+    # real one its shard lists were computed with.
+    w(base / "scripts" / "gen-shards.py",
+      (ROOT / "scripts" / "gen-shards.py").read_text())
     shard_steps = "".join(
         f'      - run: echo shard\n        drives: "{" ".join(s)}"\n' for s in shards)
     w(base / ".github" / "workflows" / "checks.yml",
@@ -842,6 +847,17 @@ with tempfile.TemporaryDirectory() as td:
           run_mirrors(mirrors_tree(t / "swapped", swap_shards=True)), 1)
     check("mirrors: a judging script missing from JUDGE_PATHS fails",
           run_mirrors(mirrors_tree(t / "judge", extra_judge=True)), 1)
+    # The prospective-source case (Codex P2 on PR #157): the tree
+    # under check carries a gen-shards.py whose SHARDS disagrees
+    # with its own workflow lists, while the checker's neighbouring
+    # generator agrees with them. Loading the generator from beside
+    # the checker certifies this tree; loading it from the tree
+    # refuses it.
+    gt = mirrors_tree(t / "gensrc")
+    genp = gt / "scripts" / "gen-shards.py"
+    genp.write_text(genp.read_text().replace("SHARDS = 8", "SHARDS = 4"))
+    check("mirrors: the tree's own generator outranks the checker's (prospective source)",
+          run_mirrors(gt), 1)
 
     # The push gate itself: a drifted mirror refuses the push, an
     # agreeing tree pushes. The fixture tree carries a copy of the
@@ -876,6 +892,6 @@ with tempfile.TemporaryDirectory() as td:
     check("push: a tree whose mirrors agree pushes (mirrors gate)",
           run_push(t / "mpok", ["index.html"], mode="push", env_extra=mp_ok), 0)
 
-total = 63
+total = 64
 print(f"gate fixtures: {total - len(failures)} pass, {len(failures)} fail")
 sys.exit(1 if failures else 0)

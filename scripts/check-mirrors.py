@@ -341,8 +341,19 @@ def family_shards(root):
         return ["shards: checks.yml carries shard lists but "
                 "tests/browser/run.mjs or scripts/shard-durations.json "
                 "(their generation sources) is missing"]
+    # The generation source loads from the tree UNDER CHECK, never
+    # from beside this checker: push.py loads this module from the
+    # instrument root and gates the prospective tree, and a partial
+    # push can carry a different gen-shards.py than the local
+    # checkout - certifying against the local generator would pass
+    # or refuse the wrong tree (Codex P2 on PR #157).
+    gen_src = root / "scripts" / "gen-shards.py"
+    if not gen_src.is_file():
+        return ["shards: checks.yml carries shard lists but "
+                "scripts/gen-shards.py (their generation source) "
+                "is missing from the tree under check"]
     spec = importlib.util.spec_from_file_location(
-        "snow_gen_shards", Path(__file__).resolve().parent / "gen-shards.py")
+        "snow_gen_shards", gen_src)
     gen = importlib.util.module_from_spec(spec)
     spec.loader.exec_module(gen)
     names = gen.all_drives(root)
