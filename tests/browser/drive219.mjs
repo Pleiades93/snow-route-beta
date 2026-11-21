@@ -1,4 +1,5 @@
 import { launchDrive, finish, pinDayTheme } from './harness.mjs';
+import { laneViolations, groupHeldViolations, crossBracket, bracketsOverlap } from './lane-judge.mjs';
 const { proc, send, S, ev, consoleLog, sleep, poll } = await launchDrive();
 await send('Emulation.setDeviceMetricsOverride', { width: 420, height: 900, deviceScaleFactor: 1, mobile: true }, S); // this lane grades presence and paint, not pixels: at the harness's retina factor the software-rendered headless map eats the main thread and the 50 ms sampler starves to a few ticks a second (measured), which would stretch the very timings under grade. At factor 1 the sampler holds its 50 ms median (measured).
 
@@ -72,9 +73,11 @@ const INSTRUMENT = `(() => {
   // wrapped each expression-shaped paint in a ['*', natural, mult] value
   // that this MapLibre's paint validator silently refuses, so the titles
   // sat at natural paint while the bookkeeping said 0 (fixed by
-  // transforming the paint instead - scaleNameStops in app2). A group's
-  // effective opacity is the MINIMUM over its layers: the group is only
-  // as visible as its least visible member is not - the conservative read.
+  // transforming the paint instead - scaleNameStops in app2). The judging
+  // itself lives in lane-judge.mjs (extracted, fixture-tested by
+  // selftest-lane219.mjs): per-name values from each name's own layer,
+  // and group maxima for the held assertion - a group aggregated by its
+  // minimum would acquit a layer that escaped behind held siblings.
   const effOf = (v, z) => {
     if (v === undefined) return 1;
     if (typeof v === 'number') return v;
@@ -85,7 +88,6 @@ const INSTRUMENT = `(() => {
     }
     return 1;
   };
-  const groupEff = (ids) => { if (!ids.length) return null; const z = map.getZoom(); let m = Infinity; for (const id of ids) { try { m = Math.min(m, effOf(map.getPaintProperty(id, 'text-opacity'), z)); } catch (e) {} } return m === Infinity ? null : m; };
   // The layer sets are enumerated on styledata (a stack build, a theme
   // swap) and cached between ticks - a getStyle() clone per tick, this
   // drive's first shape, starved the sampler to ~2 ticks a second and
@@ -114,41 +116,35 @@ const INSTRUMENT = `(() => {
       }
       if (typeof nameFade !== 'undefined') window.__li.unheld = { ...nameFade.unheld };
       const L = window.__liLayers || { base: [], road: [], place: [], titles: [] };
-      const buckets = { titles: new Set(), road: new Set(), place: new Set() };
+      // Per-layer effective opacity, computed once per tick; the groups
+      // carry each name with ITS OWN layer's value (the lane judges per
+      // name) plus the group's max/min (the held assertion reads the
+      // max - see lane-judge.mjs for why the min must never acquit).
+      const z = map.getZoom();
+      const layerEff = {};
+      for (const id of [...L.titles, ...L.base]) { try { layerEff[id] = effOf(map.getPaintProperty(id, 'text-opacity'), z); } catch (e) { layerEff[id] = 1; } }
+      const stats = (ids) => { if (!ids.length) return { names: {}, effMax: null, effMin: null }; const es = ids.map((id) => layerEff[id]); return { names: {}, effMax: Math.max(...es), effMin: Math.min(...es) }; };
+      const groups = { titles: stats(L.titles), road: stats(L.road), place: stats(L.place) };
       let nRoad = 0;
       const roadSet = new Set(L.road), placeSet = new Set(L.place), titleSet = new Set(L.titles);
       for (const f of map.queryRenderedFeatures({ layers: [...L.titles, ...L.base] })) {
         const nm = f.properties && f.properties.name; if (!nm) continue;
         const lid = f.layer && f.layer.id;
-        if (titleSet.has(lid)) buckets.titles.add(nm);
-        else if (roadSet.has(lid)) { buckets.road.add(nm); nRoad++; }
-        else if (placeSet.has(lid)) buckets.place.add(nm);
+        if (titleSet.has(lid)) groups.titles.names[nm] = layerEff[lid];
+        else if (roadSet.has(lid)) { groups.road.names[nm] = layerEff[lid]; nRoad++; }
+        else if (placeSet.has(lid)) groups.place.names[nm] = layerEff[lid];
       }
       window.__li.samples.push({ t: performance.now(),
         mult: (typeof nameFade !== 'undefined' ? nameFade.mult : 1), held: (typeof nameFade !== 'undefined' ? nameFade.held : false),
-        titles: [...buckets.titles], road: [...buckets.road], place: [...buckets.place], nRoad,
-        effT: groupEff(L.titles), effR: groupEff(L.road), effP: groupEff(L.place),
+        groups,
+        titles: Object.keys(groups.titles.names), road: Object.keys(groups.road.names), place: Object.keys(groups.place.names), nRoad,
+        effT: groups.titles.effMax, effR: groups.road.effMax, effP: groups.place.effMax,
         mTitles: L.titles.length ? applied(L.titles[0]) : null, mRoad: L.road.length ? applied(L.road[0]) : null, mPlace: L.place.length ? applied(L.place[0]) : null });
     } catch (e) {}
   }, 50);
   return true;
 })()`;
 
-const laneViolations = (samples, group, multOf) => {
-  // a name violates the lane if, after its first VISIBLE appearance
-  // (placed in a sample whose multiplier is past 0.5), it is absent from
-  // any later sample in the window
-  const seen = new Map();
-  const bad = new Set();
-  for (const s of samples) {
-    const names = s[group] || [];
-    const vis = multOf(s) > 0.5;
-    for (const n of names) if (vis && !seen.has(n)) seen.set(n, true);
-    if (vis) for (const n of seen.keys()) if (!names.includes(n)) bad.add(n);
-  }
-  return [...bad];
-};
-const maxGap = (samples) => { let g = 0; for (let i = 1; i < samples.length; i++) g = Math.max(g, samples[i].t - samples[i - 1].t); return g; };
 const medianGap = (samples) => { const g = []; for (let i = 1; i < samples.length; i++) g.push(samples[i].t - samples[i - 1].t); g.sort((a, b) => a - b); return g.length ? g[Math.floor(g.length / 2)] : 0; };
 const heldWindowGap = (samples) => { const h = samples.findIndex((x) => x.held); if (h < 0) return -1; let g = 0; for (let i = h + 1; i < samples.length; i++) g = Math.max(g, samples[i].t - samples[i - 1].t); return g; };
 const waitCycle = async (ms) => poll(`(() => { try { const last = window.__li.samples[window.__li.samples.length - 1]; return !!last && last.titles.length >= 30 && (typeof nameFade === 'undefined' || (nameFade.mult === 1 && !nameFade.held)); } catch (e) { return false; } })()`, ms);
@@ -161,14 +157,14 @@ const aDone = await waitCycle(40000);
 await sleep(700); // let the post-reveal samples land (the restore check reads live paint)
 const A = await J(`window.__li`);
 console.log('drive219 A: samples ' + A.samples.length + ', tears ' + JSON.stringify(A.tears) + ', replaces ' + A.replaces + ', cycle ' + aDone);
-const effVis = (key) => (s) => (s[key] === null || s[key] === undefined ? 1 : s[key]);
-const aLaneT = laneViolations(A.samples, 'titles', effVis('effT'));
-const aLaneR = laneViolations(A.samples, 'road', effVis('effR'));
+const aLaneT = laneViolations(A.samples, 'titles');
+const aLaneR = laneViolations(A.samples, 'road');
 ok('A1 the load-in completes: names reach visible at the end (cycle poll: ' + aDone + ', final titles placed: ' + (A.samples.length ? A.samples[A.samples.length - 1].titles.length : 0) + ', samples: ' + A.samples.length + ')',
   aDone === true && A.samples.length > 15);
 const aHeldSamples = A.samples.filter((s) => s.held);
-const aEffHeld = aHeldSamples.every((s) => (s.effT === null || s.effT <= 0.05) && (s.effR === null || s.effR <= 0.05) && (s.effP === null || s.effP <= 0.05));
-ok('A2 the hold is REAL on the rendered surface, not just in the app\'s bookkeeping: it engaged (held samples at multiplier 0: ' + aHeldSamples.filter((s) => s.mult === 0).length + '), and in EVERY held sample the effective opacity of all three name groups - each layer\'s live spec evaluated at the current zoom - stands at 0 (the first shape of this fix wrapped the titles\' paint in a value the map\'s validator silently refuses, and the titles sat visible under a bookkeeping 0; this check is that escape\'s regression pin), and no layer is recorded unheld (unheld: ' + JSON.stringify(A.unheld || {}) + ')',
+const aHeldViolations = groupHeldViolations(A.samples, ['titles', 'road', 'place']);
+const aEffHeld = aHeldViolations.length === 0;
+ok('A2 the hold is REAL on the rendered surface, not just in the app\'s bookkeeping: it engaged (held samples at multiplier 0: ' + aHeldSamples.filter((s) => s.mult === 0).length + '), and in EVERY held sample the effective opacity of all three name groups - each layer\'s live spec evaluated at the current zoom - stands at 0 (the first shape of this fix wrapped the titles\' paint in a value the map\'s validator silently refuses, and the titles sat visible under a bookkeeping 0; this check is that escape\'s regression pin), and no layer is recorded unheld (unheld: ' + JSON.stringify(A.unheld || {}) + ', held violations: ' + JSON.stringify(aHeldViolations.slice(0, 4)) + ')',
   aHeldSamples.some((s) => s.mult === 0) && aEffHeld && Object.keys(A.unheld || {}).length === 0);
 ok('A3 the one re-place ran exactly once, and its labelpts teardown landed INSIDE the hold (replaces: ' + A.replaces + ', teardowns: ' + A.tears.length + ', teardown multipliers: ' + JSON.stringify(A.tears.map((t) => t.mult)) + ')',
   A.replaces === 1 && A.tears.length === 1 && A.tears[0].mult === 0);
@@ -176,16 +172,10 @@ ok('A4 THE LANE, titles: no title, once visibly appeared, ever returns to zero i
   aLaneT.length === 0);
 ok('A5 THE LANE, basemap road names: no visible road name ever returns to zero inside the window (violations: ' + JSON.stringify(aLaneR.slice(0, 6)) + ')',
   aLaneR.length === 0);
-const bracket = (samples, key) => { // the crossing bracket: [last sample not yet visible, first sample visible] on effective opacity, from the hold's start - honest under this sandbox's sparse sampling, where a point estimate of a 350 ms ramp is not measurable, and still convicting for the old shape (titles visible seconds before the basemap names: disjoint brackets)
-  const h = samples.findIndex((x) => x.held); const from = h > -1 ? h : 0;
-  let lo = -1, hi = -1;
-  for (let i = from; i < samples.length; i++) { const v = samples[i][key]; if (v === null || v === undefined) continue; if (v <= 0.5) lo = samples[i].t; else { hi = samples[i].t; break; } }
-  return [lo, hi];
-};
-const bT = bracket(A.samples, 'effT'), bR = bracket(A.samples, 'effR'), bP = bracket(A.samples, 'effP');
-const bracketsOverlap = bT[1] > 0 && bR[1] > 0 && bP[1] > 0 && Math.max(bT[0], bR[0], bP[0]) <= Math.min(bT[1], bR[1], bP[1]);
+const bT = crossBracket(A.samples, 'titles'), bR = crossBracket(A.samples, 'road'), bP = crossBracket(A.samples, 'place');
+const bracketsShared = bracketsOverlap([bT, bR, bP]);
 ok('A6 the names fade in TOGETHER: the visible-crossing brackets of titles, road names and place names (last invisible sample -> first visible sample, on effective opacity) all share a common moment - one fade, not a sequence (brackets, ms from the first sample: titles [' + Math.round(bT[0] - A.samples[0].t) + ', ' + Math.round(bT[1] - A.samples[0].t) + '], road [' + Math.round(bR[0] - A.samples[0].t) + ', ' + Math.round(bR[1] - A.samples[0].t) + '], place [' + Math.round(bP[0] - A.samples[0].t) + ', ' + Math.round(bP[1] - A.samples[0].t) + '])',
-  bracketsOverlap);
+  bracketsShared);
 const restored = await J(`(() => {
   const nat = window.__li.naturals || {};
   const out = {};
@@ -218,7 +208,7 @@ const bDone = await waitCycle(40000);
 await sleep(500);
 const B = await J(`window.__li`);
 console.log('drive219 B: samples ' + B.samples.length + ', tears ' + JSON.stringify(B.tears) + ', replaces ' + B.replaces + ', cycle ' + bDone + ', final mult ' + (B.samples.length ? B.samples[B.samples.length - 1].mult : -1) + ', final titles ' + (B.samples.length ? B.samples[B.samples.length - 1].titles.length : 0));
-const bLaneT = laneViolations(B.samples, 'titles', effVis('effT'));
+const bLaneT = laneViolations(B.samples, 'titles');
 ok('B1 a theme swap mid-load-in resolves through the same cycle: the load-in completes, the one re-place still ran once, every teardown landed inside the hold, and the title lane holds (cycle: ' + bDone + ', replaces: ' + B.replaces + ', teardowns: ' + JSON.stringify(B.tears.map((t) => t.mult)) + ', lane violations: ' + JSON.stringify(bLaneT.slice(0, 6)) + ')',
   bDone === true && B.replaces === 1 && B.tears.every((t) => t.mult === 0) && bLaneT.length === 0);
 
@@ -288,7 +278,7 @@ await ev(`document.querySelector('#rmRoutes .routeRow') && document.querySelecto
 const gDone = await waitCycle(40000);
 await sleep(500);
 const G = await J(`window.__li`);
-const gLaneT = laneViolations(G.samples, 'titles', effVis('effT'));
+const gLaneT = laneViolations(G.samples, 'titles');
 ok('G1 the instant-fit settle (reduced motion emulated: no flight, so no re-place is owed) completes the same cycle: the hold engages, NO re-place runs and NO teardown lands, the names fade in at the settled camera, and the title lane holds (cycle: ' + gDone + ', replaces: ' + G.replaces + ', teardowns: ' + G.tears.length + ', lane violations: ' + JSON.stringify(gLaneT.slice(0, 6)) + ', final titles: ' + (G.samples.length ? G.samples[G.samples.length - 1].titles.length : 0) + ')',
   gDone === true && G.replaces === 0 && G.tears.length === 0 && gLaneT.length === 0 && G.samples[G.samples.length - 1].titles.length >= 30);
 await send('Emulation.setEmulatedMedia', { features: [] }, S);

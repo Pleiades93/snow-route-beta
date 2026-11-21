@@ -182,6 +182,8 @@ jobs:
         run: node tests/browser/selftest-readiness.mjs
       - name: Judging-logic fixtures (Tranche 2 gate)
         run: node tests/browser/selftest-judging-fixtures.mjs
+      - name: Presence-lane judge fixtures (Beta 1.266 gate)
+        run: node tests/browser/selftest-lane219.mjs
       - name: Foreign-write census (Tranche 2 gate)
         run: node tests/browser/selftest-foreign-writes.mjs
       - name: Route board module fixtures (Arch-2 gate)

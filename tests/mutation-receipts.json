@@ -1984,6 +1984,44 @@
    "red": "drive219 fails 10 of 14 on the 1.265 tree: A2 no hold engages, A3 the teardown lands at multiplier null (visible), A4 the lane convicts the blink by name (Fifth, Velmar, Conti, Bourbon, Columbus, Flushing, Astona, Blackburn, Santa Barbara and more titles appear, then vanish), A5 basemap road names drop, A7 no naturals registry, B1/C1/D1/E1/H1 no load-in cycle at all (A1/A6/F1/G1 pass - the instant-fit path has no flight and nothing to blink, on either tree) - observed in this round",
    "green": "drive219 passes 14/14 on the fixed tree: the teardown lands inside the hold, the lane is clean on effective opacity, the fade brackets overlap, naturals restore verbatim (17 layers), the theme swap, the second pick, the instant-fit settle and the mid-load-in unload all resolve through the one cycle, and both backstops land (7.2 s post-re-place under a camera storm; 15.0 s absolute) - observed in this round",
    "issued": "2026-11-21 unifiedloadin-1266"
+  },
+  {
+   "id": "drive219-unified-load-in-judge",
+   "check": "tests/browser/drive219.mjs",
+   "kind": "rendered",
+   "files": {
+    "tests/browser/drive219.mjs": "75d54c04a6d95c244351f5f783d7e7bdaf8623d28bf8c35d6c582911de4fd2c6"
+   },
+   "mutation": "rendered fail-first on the Beta 1.265 tree (no name hold exists: the re-place teardown lands visible at the flight's idle and the titles blink): boot-phase presence sampling across the pick, flight, settle and reveal, a post-load-in pan, a mid-load-in theme swap, a second pick mid-load-in, both backstop drills, the reduced-motion instant-fit settle, and a mid-load-in unload. Supersedes drive219-unified-load-in-final: the judging logic was extracted to lane-judge.mjs and hardened per Codex review on PR #162 (per-name strict lane; group maxima for the held assertion), with fixtures in selftest-lane219.mjs; red and green re-observed on the final drive",
+   "red": "drive219 fails 10 of 14 on the 1.265 tree: A2 no hold engages, A3 the teardown lands at multiplier null (visible), A4 the lane convicts the blink by name (titles appear, then vanish), A5 basemap road names drop, A7 no naturals registry, B1/C1/D1/E1/H1 no load-in cycle at all (A1/A6/F1/G1 pass - the instant-fit path has no flight and nothing to blink, on either tree) - observed in this round",
+   "green": "drive219 passes 14/14 on the fixed tree with the extracted judge: the teardown lands inside the hold, the lane is clean on per-name effective opacity, the fade brackets overlap, naturals restore verbatim (17 layers), the theme swap, the second pick, the instant-fit settle and the mid-load-in unload all resolve through the one cycle, and both backstops land - observed in this round; selftest-lane219 fixtures pass 9/9 including both Codex counterexample shapes",
+   "issued": "2026-11-21 unifiedloadin-1266"
+  },
+  {
+   "id": "selftest-lane219-held-max",
+   "check": "tests/browser/selftest-lane219.mjs",
+   "kind": "mutation",
+   "files": {
+    "tests/browser/selftest-lane219.mjs": "ab3d3a87746e35788b8b132c395ef95c9df20c850064f0bf7e26843efcedc0f5",
+    "tests/browser/lane-judge.mjs": "e03ea221236066be908978ed9047304baa8a805dc31c1c8625f8f210ab3e1e1d"
+   },
+   "mutation": "tests/browser/lane-judge.mjs: groupHeldViolations reads the group's effMin instead of its effMax (the aggregation Codex's PR #162 finding caught - an escaped layer hides behind held siblings)",
+   "red": "selftest-lane219 fails exactly F5 (8 pass, 1 fail) - observed in this round's mutation run",
+   "green": "selftest-lane219 passes 9/9 with the judge reading effMax",
+   "issued": "2026-11-21 unifiedloadin-1266"
+  },
+  {
+   "id": "selftest-lane219-lane-strict",
+   "check": "tests/browser/selftest-lane219.mjs",
+   "kind": "mutation",
+   "files": {
+    "tests/browser/selftest-lane219.mjs": "ab3d3a87746e35788b8b132c395ef95c9df20c850064f0bf7e26843efcedc0f5",
+    "tests/browser/lane-judge.mjs": "e03ea221236066be908978ed9047304baa8a805dc31c1c8625f8f210ab3e1e1d"
+   },
+   "mutation": "tests/browser/lane-judge.mjs: laneViolations suspends the disappearance check on samples whose group effMax is at or under 0.5 (the round's first judge form, Codex's second PR #162 finding)",
+   "red": "selftest-lane219 fails F2 and F4 (7 pass, 2 fail): the visible-invisible-visible sequence and the post-reveal fade both acquit under the suspending judge - observed in this round's mutation run",
+   "green": "selftest-lane219 passes 9/9 with the strict lane",
+   "issued": "2026-11-21 unifiedloadin-1266"
   }
  ]
 }
