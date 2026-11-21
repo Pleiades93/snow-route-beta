@@ -76,12 +76,13 @@ check('16: all five seats call the owner (exit, clear disc, short input, outside
   (pick.match(/crResetSearch\(\);/g) || []).length === 5);
 check('17: the dead crSearchCtl machinery is gone (no declaration, no assignment, no abort call - the two comments that record its removal stand as history, the codebase convention)',
   !pick.includes('crSearchCtl =') && !pick.includes('crSearchCtl.abort') && !pick.includes('crSearchCtl = null'));
-check('18: the seats keep their own extras (exitCreate still clears the field; the disc still refocuses)',
-  pick.includes("$('crSearchInput').value = ''; crSyncClear();") && pick.includes("crSyncClear(); $('crSearchInput').focus();"));
+check('18: the seats keep their own extras (exitCreate still clears the field - through the 1.262 teardown, which owns the emptying literal now; the disc still refocuses)',
+  pick.includes("$('crSearchInput').value = ''; crSyncClear();") &&
+  pick.indexOf("$('crSearchInput').focus();", pick.indexOf("$('crClear').addEventListener")) > pick.indexOf('crIsectClear();', pick.indexOf("$('crClear').addEventListener")));
 
 // ---------- the frame ----------
 check('19: What\'s New carries the CURRENT entry\'s bullet (rolled to 1.251: this check tracks the CURRENT entry each round; and stays em-dash free)',
-  whatsnew.includes('Street names are the app\'s own labels when zoomed out, and the map\'s full names when you zoom in close.') && !whatsnew.includes('—'));
+  whatsnew.includes('Picking an intersection now names it in the search bar and marks it with a pulsing blue dot.') && !whatsnew.includes('—'));
 check('20: the CHANGELOG order stands (1.243 above 1.242; the 1.244 entry rides above both - proof-1244 pins the top)',
   changelog.indexOf('## Beta 1.243') > -1 && changelog.indexOf('## Beta 1.243') < changelog.indexOf('## Beta 1.242'));
 

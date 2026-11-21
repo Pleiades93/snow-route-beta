@@ -181,7 +181,7 @@ check('12: a street named like an inherited object key (constructor) with no SPO
   engine.includes('Object.prototype.hasOwnProperty.call(H.SPOT, n)') && fixOk);
 
 // ---------- (13) the release editorial ----------
-const BULLET = "Street names are the app's own labels when zoomed out, and the map's full names when you zoom in close.";
+const BULLET = "Picking an intersection now names it in the search bar and marks it with a pulsing blue dot.";
 check("13: What's New carries the 1.261 bullet (the brief's bullet, shortened only to fit the standing 108-char cap, meaning kept), em-dash free, and the CHANGELOG top entry is Beta 1.261",
   whatsnew.includes(BULLET) && BULLET.length <= 108 && !whatsnew.includes('—') &&
   changelog.indexOf('## Beta 1.261') > -1 && changelog.indexOf('## Beta 1.261') < changelog.indexOf('## Beta 1.260'));

@@ -78,6 +78,7 @@ function crRenderHint() { // the ONE writer of the pick-stage hint + its action 
 function crAddStreet(name, segs) { // Beta 1.144 (Package C, DA-04): the draft keys on the FULL map name - through 1.143 the key was shortStreetName(osmName), so two distinct streets sharing a shortened name (Addington Avenue / Addington Place) collided: only the first could ever enter a draft, and tapping the second opened the first's sectors. shortStreetName survives ONLY as the display form (toasts, rows, the sector bar's title); every key in the draft - roads, primaries, sectors, parts, pending - is the full name, and the saved pack inherits the full names, so both streets can live in one route.
   draft.roads[name] = segs; draft.osmNames[name] = name; crGeomGen++; // a tapped street joins as a SECONDARY (fork 3) - flip it to PRIMARY in the list if it is one. Beta 1.135 (N3): the generation bump is the draft-geometry cache's invalidation for this in-place join (see crDraftGeom)
   delete crPending[name];
+  crIsectClear(); // Beta 1.262: the first road selection ends the POI surface - the picked crossing's name and marker clear as if they were never there
   renderDraft(); renderCrLists(); crRenderHint();
   // Beta 1.153 (Andrew): no 'Added' popup - the road's own picked state on the map and in the panel is the feedback.
 }
@@ -93,6 +94,7 @@ function crAddRun(name, segs) { // Beta 1.144 (OPT-L1): a further DISCONNECTED r
     const rec = crStreetParts(name);
     if (rec) { const set = crChosenSet(name, before); for (let i = before.parts.length; i < rec.parts.length; i++) set.add(i); crSetChosen(name, rec, set); }
   }
+  crIsectClear(); // Beta 1.262: a road selection like any other - the POI surface ends here too (see crAddStreet)
   renderDraft(); renderCrLists(); crRenderHint();
   // Beta 1.153 (Andrew): no 'Added the other part' popup either - same rule as crAddStreet.
 }
@@ -1203,7 +1205,10 @@ function renderDraft() { // the DRAFT renders through its own GeoJSON source, co
   src.setData({ type: 'FeatureCollection', features: feats });
   syncCrGlow(); // Beta 1.208: the trim glow tracks the draft's own render - the street's normal draft paint is untouched above and below it
 }
-onMapReady(() => map.on('styledata', () => { if (creating) { renderDraft(); crSetBackdrop(true); } })); // a basemap swap mid-create wipes custom layers - redraw the draft and re-hide the backdrop
+onMapReady(() => map.on('styledata', () => { if (creating) { if (map.getLayer('crDraftCase') && (!crIsectPoi || map.getLayer('crIsectDot'))) { // gate fix (Codex P2, PR #158): styledata also fires for paint-only updates - the POI pulse's own frame writes among them - and the restoration below is for basemap swaps only: when the custom layers all still stand, nothing was wiped, so a standing pulse must not rebuild the draft and POI sources frame after frame. A swap wipes the layers atomically, so a missing sentinel IS the swap signal. The ONE order-sensitive piece still runs here: the backdrop hides the loaded route's layers BY ID, and GLP.init re-creates them (visible) after this listener's restoration turn on a swap - if any recorded layer stands visible again, re-apply the backdrop, or the restored route stack shows over the creation map (Codex P2, PR #158 gate round 2)
+    if (crHiddenLayers && crHiddenLayers.some(pr => { try { return map.getLayer(pr[0]) && (map.getLayoutProperty(pr[0], 'visibility') || 'visible') !== 'none'; } catch (e) { return false; } })) crSetBackdrop(true);
+    return; }
+  renderDraft(); crSetBackdrop(true); crIsectEnsure(); } })); // a basemap swap mid-create wipes custom layers - redraw the draft and re-hide the backdrop. Beta 1.262: the POI surface's layers are custom too - crIsectEnsure re-seats them and re-points the source at the standing POI, so a picked crossing's marker survives a theme swap mid-create
 onMapReady(() => { if (creating) crSetBackdrop(true); }); // creation entered before the map existed (boot mode): the backdrop lands when the map does
 
 // ---- creation backdrop (Beta 1.120, Andrew's design): while creating, the
@@ -1371,7 +1376,7 @@ function exitCreate() {
   crCov = null; crCity = null; crSetPrepState('none'); crPrepFail = null; crFailFromGrid = false; crPrepAnchor = null; crPending = {}; crToppedUp = {}; crWanted = null; // Beta 1.154 (B3 build): the state write routes through the prep record's setter, and crFailFromGrid clears with the session (the 2026-11-09 lifecycle trace's latch finding) - it must not survive into a new session
   $('crHintBtn').style.display = 'none';
   crResetSearch(); // Beta 1.243 (Arch-3): the flow close ends the search through the owner, like every closing seat - no in-flight suggestion may land after the flow has closed
-  $('crSearchInput').value = ''; crSyncClear(); // Beta 1.236 (Andrew): the typed street dies with the session too - through 1.235 this teardown closed the results and killed the in-flight search but never cleared the field itself, so the last typed street (his report: 'Weston') sat in the bar when a later creation opened, in any city; the clear disc's path was the only seat that ever emptied it. The disc's own state follows the field through crSyncClear, the same call that path makes.
+  crIsectClear(); // Beta 1.236 (Andrew): the typed street dies with the session too - through 1.235 this teardown closed the results and killed the in-flight search but never cleared the field itself, so the last typed street (his report: 'Weston') sat in the bar when a later creation opened, in any city; the clear disc's path was the only seat that ever emptied it. The disc's own state follows the field through crSyncClear, the same call that path makes. Beta 1.262: the emptying runs through the POI surface's teardown (crIsectClear), so a live crossing marker dies with the session here too, not just its name.
   document.body.classList.remove('creating');
   for (const id of ['createBar', 'createSheet', 'previewSheet', 'createResults', 'createHint']) $(id).classList.remove('on');
   crSetBackdrop(false); // Beta 1.120: the loaded route's paint returns exactly as it was
@@ -1437,14 +1442,87 @@ function crResetSearch() { // Beta 1.243 (Arch-3, architecture scan candidate 3)
   $('createResults').classList.remove('on');
 }
 function crSyncClear() { $('crClear').classList.toggle('on', !!$('crSearchInput').value); } // Beta 1.227: the clear disc exists only while the input holds text
+// ---- Beta 1.262 (Andrew, 2026-11-20): the intersection POI - ONE
+// temporary surface for a picked crossing. Through 1.261 a search pick
+// flew the map and left the bar holding the typed fragment: the
+// crossing he had chosen was named nowhere and marked nowhere. The
+// surface is a pair with ONE lifecycle - the full intersection name in
+// the search bar and a marker on the crossing - set together by
+// crIsectSet at the pick and cleared together by crIsectClear, "as if
+// it was never there", at the first road selection (crAddStreet /
+// crAddRun), at the clear disc, when the search text is emptied, and
+// when the flow closes (exitCreate). The marker is a NATIVE map layer
+// of the GPS stack's own family - a GeoJSON source with two circle
+// layers, drawn by the engine, never a DOM overlay: a solid dot in the
+// app link blue (#2C4AD2), radius 7, NO white ring, and a halo of the
+// same blue swelling to 3x the core while it fades - the motion Andrew
+// confirmed on the recorded sample (cycle 1800 ms, easeOutQuad, halo
+// alpha 0.38 -> 0; intersection-sample-2026-11-20/RECORD3). MOTION
+// CONTRACT: the pulse runs only while the surface stands, and under
+// reduced motion it does not run at all - the halo rests invisible and
+// the steady core alone marks the crossing.
+const CR_ISECT_SRC = 'crIsect';
+let crIsectPoi = null; // { lat, lon, name } while the surface stands, else null
+let crIsectRaf = 0; // the pulse's frame handle; 0 = the pulse is not running
+let crIsectPushed = null; // the point key the source currently holds ('lat,lon', '' for empty, null = unknown - a fresh source always takes a push)
+function crIsectEnsure() { // the surface's layers, (re)seated in the CURRENT style - a basemap swap wipes them, so the styledata hook re-runs this and re-points the source at the standing POI
+  if (!map || typeof map.addSource !== 'function') return;
+  try {
+    if (!map.getSource(CR_ISECT_SRC)) { map.addSource(CR_ISECT_SRC, { type: 'geojson', data: { type: 'FeatureCollection', features: [] } }); crIsectPushed = null; }
+    let before; // the pair stacks BELOW the first label layer, as in the approved sample - the street names draw over the marker, never under it
+    try { const lab = ((map.getStyle() && map.getStyle().layers) || []).find(l => l.type === 'symbol' && l.layout && l.layout['text-field']); if (lab) before = lab.id; } catch (e) {}
+    if (!map.getLayer('crIsectHalo')) map.addLayer({ id: 'crIsectHalo', type: 'circle', source: CR_ISECT_SRC, paint: { 'circle-radius': 7, 'circle-color': '#2C4AD2', 'circle-opacity': 0, 'circle-radius-transition': { duration: 0, delay: 0 }, 'circle-opacity-transition': { duration: 0, delay: 0 } } }, before); // gate fix (Codex P2, PR #158): the frame loop drives the halo's paint - zero-duration transitions, or MapLibre's default 300 ms paint transition would chase each frame's target, smearing the pulse law and gliding across its cycle reset instead of restarting
+    if (!map.getLayer('crIsectDot')) map.addLayer({ id: 'crIsectDot', type: 'circle', source: CR_ISECT_SRC, paint: { 'circle-radius': 7, 'circle-color': '#2C4AD2' } }, before);
+    const want = crIsectPoi ? crIsectPoi.lat + ',' + crIsectPoi.lon : '';
+    if (want !== crIsectPushed) { // push only on change - a re-seat that re-pushes the same point every call would feed the styledata cycle the gate fix below guards against
+      if (crIsectPoi) map.getSource(CR_ISECT_SRC).setData({ type: 'Feature', properties: {}, geometry: { type: 'Point', coordinates: [crIsectPoi.lon, crIsectPoi.lat] } });
+      crIsectPushed = want;
+    }
+  } catch (e) { /* the style may still be loading - the styledata hook retries while creating */ }
+}
+function crIsectHaloRest() { // the halo's rest frame: core-sized and invisible - set explicitly at every stop, so the layer never carries a stale mid-pulse frame into its next standing (a re-set under reduced motion would otherwise show the frozen disc)
+  try { if (map && map.getLayer('crIsectHalo')) { map.setPaintProperty('crIsectHalo', 'circle-radius', 7); map.setPaintProperty('crIsectHalo', 'circle-opacity', 0); } } catch (e) {}
+}
+function crIsectPulseStart() {
+  crIsectPulseStop();
+  if (!crIsectPoi) return;
+  crIsectHaloRest();
+  if (window.matchMedia && matchMedia('(prefers-reduced-motion: reduce)').matches) return; // the motion contract's rest: no pulse under reduced motion - the halo stays invisible and the core stands alone
+  const tick = () => {
+    if (!crIsectPoi) { crIsectRaf = 0; return; }
+    try {
+      if (map && map.getLayer('crIsectHalo')) {
+        const t = (performance.now() % 1800) / 1800;
+        const ease = 1 - (1 - t) * (1 - t); // easeOutQuad, the sample's curve: the halo leaves fast and settles as it fades
+        map.setPaintProperty('crIsectHalo', 'circle-radius', 7 + 14 * ease); // 7 -> 21: the core to 3x
+        map.setPaintProperty('crIsectHalo', 'circle-opacity', 0.38 * (1 - t));
+      }
+    } catch (e) {}
+    crIsectRaf = requestAnimationFrame(tick);
+  };
+  crIsectRaf = requestAnimationFrame(tick);
+}
+function crIsectPulseStop() { if (crIsectRaf) { cancelAnimationFrame(crIsectRaf); crIsectRaf = 0; } }
+function crIsectSet(lat, lon, name) { // the surface's ONE writer: state, bar text and marker land together or not at all
+  crIsectPoi = { lat, lon, name };
+  $('crSearchInput').value = name; crSyncClear(); // the FULL chosen name replaces the typed fragment, and the clear disc stands with it
+  crIsectEnsure();
+  crIsectPulseStart();
+}
+function crIsectClear() { // the surface's ONE teardown: state, pulse, marker and bar text die together - each closing seat calls this and keeps only its own extras
+  crIsectPoi = null; crIsectPulseStop(); crIsectHaloRest();
+  try { if (map && map.getSource(CR_ISECT_SRC)) { map.getSource(CR_ISECT_SRC).setData({ type: 'FeatureCollection', features: [] }); crIsectPushed = ''; } } catch (e) {}
+  $('crSearchInput').value = ''; crSyncClear();
+}
 $('crClear').addEventListener('click', () => { // Beta 1.227 (Andrew): the clear disc empties the text and the results and keeps the focus in the input - it never exits anything. The body is the old ✕'s first-press job (Beta 1.120), moved whole onto its own control
   crResetSearch(); // Beta 1.243 (Arch-3): the close is the owner's - the disc's own remaining work is the field itself (empty it, sync the disc, keep the focus)
-  $('crSearchInput').value = '';
-  crSyncClear(); $('crSearchInput').focus();
+  crIsectClear(); // Beta 1.262: the field emptying runs through the POI surface's teardown - with a picked crossing standing, its marker dies with its name here; with none, this is exactly the disc's old job (the field emptied, the disc synced through crSyncClear)
+  $('crSearchInput').focus();
 });
 $('crSearchInput').addEventListener('input', () => {
   if (crSearchTimer) { clearTimeout(crSearchTimer); crSearchTimer = null; }
   crSyncClear();
+  if (!$('crSearchInput').value) crIsectClear(); // Beta 1.262: backspacing the bar empty ends the POI surface too - the picked name and the marker are one surface, so neither half outlives the other
   const q = $('crSearchInput').value.trim();
   if (q.length < 3) { crResetSearch(); return; }
   crSearchTimer = setTimeout(() => { crSearchTimer = null; crRunSearch(true); }, 300);
@@ -1632,7 +1710,8 @@ function crResultRowEl(it) { // one intersection row: the set's pin + the crossi
     const cur = b._crItem || it; // the item this row displays NOW (see _crItem above) - a retained row re-rendered with another city's same-named crossing picks the new coordinates, not its first render's
     const lat = parseFloat(cur.lat), lon = parseFloat(cur.lon); if (!isFinite(lat) || !isFinite(lon)) return;
     const a = cur.address || {}; crAreaGuess = a.city || a.town || a.village || a.municipality || a.county || (cur._isect && crCity ? crCity.name : ''); // Beta 1.234: an on-device crossing carries no address block - its area is the city whose extract computed it, so the guess the city pick set (crPickCity) stands for a crossing pick instead of blanking
-    if (map) map.flyTo({ center: [lon, lat], zoom: Math.max(map.getZoom(), 15), duration: 900 });
+    crIsectSet(lat, lon, cur.display_name); // Beta 1.262 (Andrew): the pick lands the POI surface - the full crossing name in the bar and the pulsing marker on the crossing, one lifecycle (crIsectSet / crIsectClear above)
+    if (map) map.flyTo({ center: [lon, lat], zoom: Math.max(map.getZoom(), 17), duration: 900 }); // Beta 1.262 (Andrew): intersections land at zoom 17, his decided fly-to - the max() form stands, so a pick made from closer in never zooms out (through 1.261 the floor was 15)
     if (crGrid && crCity && crInBox(crGrid.bbox, lat, lon)) { /* inside the picked city: its grid is the preparation (already running or saved) - no second download for a search pick */ }
     else crStartPrep({ lat, lng: lon }); // Beta 1.121: outside any city coverage, the search pick ANCHORS the fallback box preparation (anchor rule (a)) - taps then resolve locally from the extract
   });
