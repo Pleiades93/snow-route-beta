@@ -673,7 +673,7 @@ html.theme-swap *, html.theme-swap *::before, html.theme-swap *::after { transit
 <div id="hud">
   <div id="warn">Not saving. Storage is full or blocked</div>
   <div class="row">
-    <div class="titleStack"><div class="title">Snow Route Beta</div><div class="ver" id="ver">Beta 1.264</div></div>
+    <div class="titleStack"><div class="title">Snow Route Beta</div><div class="ver" id="ver">Beta 1.265</div></div>
   </div>
   <div id="stats"></div>
 </div>
@@ -3949,9 +3949,20 @@ function glUnifyLabels(m) { // BASEMAP LABEL UNIFICATION (Andrew, Beta 1.6): the
         // it mixed legacy filter syntax with an expression, and the map rejected it outright.)
         if (id === 'roads_labels_major' || id === 'roads_labels_minor') {
           // The originals keep every NON-route name; route names are the titles' job.
+          // Beta 1.265 (Andrew): while a route is being CREATED, naming reverts to
+          // MAP DEFAULTS - the exclusion clause is simply not added, so the basemap
+          // names every street, the loaded route's included (in create mode its own
+          // titles hide with the route stack, so through 1.264 its streets showed
+          // NO name at all - a blank hole exactly where he is picking). The
+          // create-mode state (`creating`) is the single condition: crSetBackdrop
+          // re-runs this pass when the backdrop flips, and every restack (a
+          // mid-create theme swap included) recomputes the filter from the same
+          // state. Outside create mode the target is byte-for-byte the filter
+          // above. No label layer is forked - the same two layers carry both.
           const specL = (spec.layers || []).find(x => x.id === id);
           const baseF = specL && specL.filter ? convF(specL.filter) : null;
-          const targetF = baseF ? ['all', baseF, ['!', ['in', ['get', 'name'], ['literal', ROUTE_TILE_NAMES]]]] : ['!', ['in', ['get', 'name'], ['literal', ROUTE_TILE_NAMES]]];
+          const exclF = ['!', ['in', ['get', 'name'], ['literal', ROUTE_TILE_NAMES]]];
+          const targetF = (typeof creating !== 'undefined' && creating) ? baseF : (baseF ? ['all', baseF, exclF] : exclF);
           if (!eq(L.filter, targetF)) { try { m.setFilter(L.id, targetF); } catch (e2) {} } // Beta 1.41 guard
           setL(L.id, 'symbol-spacing', 500); // Beta 1.259 (Andrew, the repetition sample), KEPT by the Beta 1.263 naming revert as its one named exception: R1 for the WHOLE map - a street's name repeats every 500 px instead of the engine default 250 (half as often; at zoom 17 Santa Barbara Place went 3 -> 2 repeats, Velmar Drive 2 -> 1). The value is owned HERE: before 1.259 it was set nowhere in the app, so the engine default decided it silently. Wider spacings were rejected in the sample - anchors laid from the line start can leave a street unnamed in a given view.
           if (!(typeof isNight === 'function' && isNight())) {
@@ -7060,7 +7071,7 @@ $('stDel').addEventListener('click', async () => {
 });
 // ---- About ----
 const WHATSNEW = { // the curated in-app notes: plain words, LATEST RELEASE ONLY (Beta 1.114, Andrew: the accumulated list cluttered the About pane). A release REPLACES this entry with its own in the same change - it never accumulates; the full history lives in CHANGELOG.md, not the app
-  v: 'Beta 1.264', items: ["Feathered road ends no longer show while you create a route."] }; // Beta 1.223 (Andrew): What's New entries are SHORT from now on - point form, one short plain line each, no prose paragraphs, no em dashes
+  v: 'Beta 1.265', items: ["Street names now show everywhere while you create a route."] }; // Beta 1.223 (Andrew): What's New entries are SHORT from now on - point form, one short plain line each, no prose paragraphs, no em dashes
 
 function renderAbout() {
   const cur = $('ver').textContent.trim();
@@ -9737,6 +9748,14 @@ function crSetBackdrop(on) {
     for (const id of ['crPoiRing', 'crPoiDot', 'crPoiTxt']) { try { if (map.getLayer(id)) map.removeLayer(id); } catch (e) {} }
     try { if (map.getSource(CR_POI_SRC)) map.removeSource(CR_POI_SRC); } catch (e) {}
   }
+  // Beta 1.265 (Andrew): the backdrop flip is also the naming flip - while
+  // creating, the basemap names every street (glUnifyLabels lifts its
+  // route-name exclusion under the create-mode state); on exit the exclusion
+  // returns. Re-running the label pass here lands the change at enter/exit
+  // themselves instead of at the next restack; enterCreate sets `creating`
+  // before crSetBackdrop(true) and exitCreate clears it before
+  // crSetBackdrop(false), so the pass computes the right side both ways.
+  try { if (typeof glUnifyLabels === 'function') glUnifyLabels(map); } catch (e) {}
   syncCrGlow(); // Beta 1.208: the backdrop flip is the creation exit's reliable beat - if a trim session somehow outlived its render, the glow still dies here
 }
 function crRowEl(n, g) {

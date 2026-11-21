@@ -88,7 +88,7 @@ check('16: the hint styling is the original .crPSub (13px, the dim ink token) - 
 
 // ---------- the frame ----------
 check('17: What\'s New carries the current entry\'s bullet (rolled to 1.251: this check tracks the CURRENT entry each round; and stays em-dash free)',
-  whatsnew.includes('Feathered road ends no longer show while you create a route.') && !whatsnew.includes('—'));
+  whatsnew.includes('Street names now show everywhere while you create a route.') && !whatsnew.includes('—'));
 check('18: the CHANGELOG order stands (1.242 above 1.241; the 1.244 entry rides above both - proof-1244 pins the top)', changelog.indexOf('## Beta 1.242') > -1 && changelog.indexOf('## Beta 1.242') < changelog.indexOf('## Beta 1.241'));
 
 console.log(`proof-1242: ${pass} pass, ${fail} fail`);

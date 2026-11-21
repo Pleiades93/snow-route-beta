@@ -364,8 +364,8 @@ check('R4: no label clone is sanctioned - the tile-fed clones stay retired (thei
   app2.includes("const cloneId = baseId + '-route';") && !app2.includes('roads_labels_minor-priority') && !app2.includes("'route-labels'") && !app2.includes('-pre15'));
 check('R4: the engine builds the title layers and the labelpts source again, uncapped (Beta 1.263 premise update: the 1.258 retirement is reversed at every zoom)',
   eng.includes("addSource('labelpts'") && eng.includes("'streetnamespt' + t") && !eng.includes('maxzoom: 15'));
-check('R4: app2 carries the route-name exclusion again, on the two originals at every zoom (Beta 1.263 premise update)',
-  app2.includes('ROUTE_TILE_NAMES') && app2.includes("['all', baseF, ['!', ['in', ['get', 'name'], ['literal', ROUTE_TILE_NAMES]]]]"));
+check('R4: app2 carries the route-name exclusion again, on the two originals at every zoom (Beta 1.263 premise update; Beta 1.265 premise update: the literal is built once as exclF and applied under the create-mode condition - outside create mode the computed filter is unchanged)',
+  app2.includes('ROUTE_TILE_NAMES') && app2.includes("const exclF = ['!', ['in', ['get', 'name'], ['literal', ROUTE_TILE_NAMES]]];") && app2.includes("['all', baseF, exclF]"));
 
 // ---- R5 (same round): both SECONDARY pills wear the dark ink
 // (Andrew's pick C from the three-variant sample) — the 1.207 white

@@ -40,8 +40,8 @@ check('3 (b): an empty status line takes no box',
   head.includes('#xPreStat:empty { display: none; }'));
 check('4: the CHANGELOG top entry is Beta 1.256', changelog.includes('## Beta 1.256'));
 check('5: What\'s New carries the 1.256 bullet, short and dash-free',
-  whatsnew.includes('Feathered road ends no longer show while you create a route.')
-  && 'Feathered road ends no longer show while you create a route.'.length <= 108
+  whatsnew.includes('Street names now show everywhere while you create a route.')
+  && 'Street names now show everywhere while you create a route.'.length <= 108
   && !whatsnew.includes('—'));
 
 console.log(`proof-1256: ${pass} passed, ${fail} failed`);

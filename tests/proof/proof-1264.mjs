@@ -85,10 +85,10 @@ check('5: crSetBackdrop records and hides by iterating CR_ROUTE_LAYERS (the list
   createPick.includes('for (const id of CR_ROUTE_LAYERS)') && createPick.includes("map.setLayoutProperty(pair[0], 'visibility', 'none')"));
 
 // ---------- (6) the release editorial ----------
-const BULLET = 'Feathered road ends no longer show while you create a route.';
-check("6: What's New carries the 1.264 bullet (plain words: the feather tips stay off the creation map), within the 108-char cap, em-dash free, and the CHANGELOG top entry is Beta 1.264 above 1.263",
+const BULLET = 'Street names now show everywhere while you create a route.';
+check("6: What's New carries the 1.265 bullet (rolled by the create-mode-naming round), within the 108-char cap, em-dash free, and the CHANGELOG top entry is Beta 1.265 above 1.264",
   whatsnew.includes(BULLET) && BULLET.length <= 108 && !whatsnew.includes('—') &&
-  changelog.indexOf('## Beta 1.264') > -1 && changelog.indexOf('## Beta 1.264') < changelog.indexOf('## Beta 1.263'));
+  changelog.indexOf('## Beta 1.265') > -1 && changelog.indexOf('## Beta 1.265') < changelog.indexOf('## Beta 1.264'));
 
 console.log(`proof-1264: ${pass} passed, ${fail} failed`);
 process.exit(fail ? 1 : 0);

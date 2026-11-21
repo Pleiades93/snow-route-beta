@@ -109,9 +109,20 @@ function glUnifyLabels(m) { // BASEMAP LABEL UNIFICATION (Andrew, Beta 1.6): the
         // it mixed legacy filter syntax with an expression, and the map rejected it outright.)
         if (id === 'roads_labels_major' || id === 'roads_labels_minor') {
           // The originals keep every NON-route name; route names are the titles' job.
+          // Beta 1.265 (Andrew): while a route is being CREATED, naming reverts to
+          // MAP DEFAULTS - the exclusion clause is simply not added, so the basemap
+          // names every street, the loaded route's included (in create mode its own
+          // titles hide with the route stack, so through 1.264 its streets showed
+          // NO name at all - a blank hole exactly where he is picking). The
+          // create-mode state (`creating`) is the single condition: crSetBackdrop
+          // re-runs this pass when the backdrop flips, and every restack (a
+          // mid-create theme swap included) recomputes the filter from the same
+          // state. Outside create mode the target is byte-for-byte the filter
+          // above. No label layer is forked - the same two layers carry both.
           const specL = (spec.layers || []).find(x => x.id === id);
           const baseF = specL && specL.filter ? convF(specL.filter) : null;
-          const targetF = baseF ? ['all', baseF, ['!', ['in', ['get', 'name'], ['literal', ROUTE_TILE_NAMES]]]] : ['!', ['in', ['get', 'name'], ['literal', ROUTE_TILE_NAMES]]];
+          const exclF = ['!', ['in', ['get', 'name'], ['literal', ROUTE_TILE_NAMES]]];
+          const targetF = (typeof creating !== 'undefined' && creating) ? baseF : (baseF ? ['all', baseF, exclF] : exclF);
           if (!eq(L.filter, targetF)) { try { m.setFilter(L.id, targetF); } catch (e2) {} } // Beta 1.41 guard
           setL(L.id, 'symbol-spacing', 500); // Beta 1.259 (Andrew, the repetition sample), KEPT by the Beta 1.263 naming revert as its one named exception: R1 for the WHOLE map - a street's name repeats every 500 px instead of the engine default 250 (half as often; at zoom 17 Santa Barbara Place went 3 -> 2 repeats, Velmar Drive 2 -> 1). The value is owned HERE: before 1.259 it was set nowhere in the app, so the engine default decided it silently. Wider spacings were rejected in the sample - anchors laid from the line start can leave a street unnamed in a given view.
           if (!(typeof isNight === 'function' && isNight())) {
