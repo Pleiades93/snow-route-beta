@@ -70,8 +70,8 @@
   "proof-sweep-20261115-171048-e-01.mjs",
   "proof-trim-glow-path-pills.mjs",
   "proof-wording-finished-cleans.mjs",
-  "proof-1261.mjs",
-  "proof-1262.mjs"
+  "proof-1262.mjs",
+  "proof-1263.mjs"
  ],
  "retired": [
   {
@@ -89,6 +89,10 @@
   {
    "file": "proof-1258.mjs",
    "reason": "Beta 1.261 (labelmix-1261): its subject - the 1.258 retirement of the app title system - is reversed by Andrew's decision of 2026-11-20 (the label mix: the titles are restored below zoom 15, capped there, with the basemap full names at 15 and up). Its pins assert the titles' absence and the lane-era basemap shape, so they invert by the decision itself, not by a defect. The file stays on disk as the record of the 1.258 round, like proof-1248 before it; the mix's shape is pinned by proof-1261 and graded in the rendered page by drive214's M sections."
+  },
+  {
+   "file": "proof-1261.mjs",
+   "reason": "Beta 1.263 (labelrevert-1263): its subject - the 1.261 label mix (titles capped at 15, the '-pre15' band split, the standing heal) - is reversed by Andrew's decision of 2026-11-21 (\"We should revert the naming system to before all this\"), after the heal's per-settle teardown measured as the street-name flicker (33 of 33 titles dropped at every settle). Its seam, band and heal pins invert by the decision itself, not by a defect. The file stays on disk as the record of the 1.261 round, like proof-1258 before it; the reverted shape is pinned by proof-1263 and graded in the rendered page by drive214's reworked M sections and drive216."
   }
  ]
 }

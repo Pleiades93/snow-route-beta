@@ -639,6 +639,77 @@
     "scripts/check-census.py": "dd55f34cd855e60a6fadae7e261aa99f1682b9d7d8446696532045e3a281fafb"
    },
    "issued": "2026-11-21 intersection-1262 gate round 2 (backdrop drift re-application in the styledata stand-down)"
+  },
+  {
+   "id": "labelrevert-1263",
+   "kind": "app",
+   "anchors": {
+    "functions": [
+     "glUnifyLabels",
+     "rePlaceTitles",
+     "armTitleRePlace",
+     "buildEngineGeometry"
+    ],
+    "elements": []
+   },
+   "changed": [
+    "parts/app1.js",
+    "parts/app2.js",
+    "parts/app5.js",
+    "parts/engine.js",
+    "parts/whatsnew.js"
+   ],
+   "rows": [
+    {
+     "id": "caller:armTitleRePlace:parts/app5.js:introToRoute",
+     "kind": "caller",
+     "source": "derived: call-site scan of parts/ - armTitleRePlace() is called from introToRoute in parts/app5.js",
+     "status": "covered",
+     "note": "the hook's ONLY caller is the pick flight, as in b494fb51 - proof-1263 check 8 pins the call inside the flyTo line; drive145 N22/N23 grade the intro flight rendered"
+    },
+    {
+     "id": "caller:buildEngineGeometry:parts/engine.js:rebuildRoute",
+     "kind": "caller",
+     "source": "derived: call-site scan of parts/ - buildEngineGeometry() is called from rebuildRoute in parts/engine.js",
+     "status": "covered",
+     "note": "route switches rebuild the geometry incl. the restored label features - proof-1263 check 9 pins the restored lines; drive214/drive216 boot through picks and grade the titles rendered"
+    },
+    {
+     "id": "caller:buildEngineGeometry:parts/engine.js:top-level",
+     "kind": "caller",
+     "source": "derived: call-site scan of parts/ - buildEngineGeometry() is called from top-level in parts/engine.js",
+     "status": "covered",
+     "note": "the eval-time build runs with no route loaded (empty containers) - every drive boot exercises it; the restored length-reset line is inert on empty arrays"
+    },
+    {
+     "id": "caller:glUnifyLabels:parts/app1.js:top-level",
+     "kind": "caller",
+     "source": "derived: call-site scan of parts/ - glUnifyLabels() is called from top-level in parts/app1.js",
+     "status": "covered",
+     "note": "the GL_HOST getter seat - selftest-engine-surface pins the frozen surface incl. glUnifyLabels; proof-1263 checks 3 and 6 pin the restored body and the R1 exception line"
+    }
+   ],
+   "files": {
+    "parts/app1.js": "ad3bf7f8e4f509f37532579d071ada75cafd156223eb9a874c672577b6108bac",
+    "parts/app2.js": "4aba538882d1e75ec70051444ab5ae9bba5cd05590a2eb6f84f8dca85e165bbc",
+    "parts/app3.js": "da6c7d85eafbb97572278b818ff60a6fc25c5c35a3e51ee6c8ceb23f52ddf91c",
+    "parts/app4.js": "059a12937fd806f09bc2db6a3af52bae51ac8e714d40715894136ffb9df63e4f",
+    "parts/app5.js": "e5ce0ad3e66c9a5ae70cee9d925eb74aa2fa25d0699e51e9ef51ef5593fd4359",
+    "parts/brand-snow.js": "86fa9a02f29c7345ee68d68daffd9c72da612921b64da37f1eccf6b72161ac5f",
+    "parts/create-cache.js": "2a7e983aa50862cb074a16abf9266a41a1a175c69faa5215b1d3d289aa2b5327",
+    "parts/create-citydata.js": "393d90f275d971b5e52352deebaece381279acd0e86495ffa2da35701de9148e",
+    "parts/create-fetch.js": "e7a65bd88dc338213946c4537dc5d397f79396ec416b6f4ebf4be831927aeb66",
+    "parts/create-packs.js": "ae77fbe77d3ef5970c0b432bc4152fd57a34cf98c1f09a1855ca150459cd0ad8",
+    "parts/create-pick.js": "1738118d3261b10185411062a57005f3f8c7c357b467bb15296bf6fca8e240a1",
+    "parts/create-save.js": "2a222b90b438907eb0835722d4230499716945109c70578791c41b24ef89f752",
+    "parts/data.js": "9137d8d6353ef2ec97b153ded7628175cdc8c483c770e6d5e2258ca50c558e04",
+    "parts/engine.js": "891ab8409d5f8ae21d7be06da450eb55fe8b631121a8af1c7d50cc10d98c90ad",
+    "parts/pmstyles.js": "f3501db9c16dbc6a5fa8c901089101e4913772384de1f069accb23a614bb90fc",
+    "parts/whatsnew.js": "edc38d74b5021f5618fb8cfb0d822877b9df52f6963c0908fc5a8b240a10177f",
+    "parts/head.html": "dbce12695cb3b0c04209dee474f018d6ffc65139bd41c7957b8b47a9ece4b3bb",
+    "scripts/check-census.py": "dd55f34cd855e60a6fadae7e261aa99f1682b9d7d8446696532045e3a281fafb"
+   },
+   "issued": "2026-11-21"
   }
  ]
 }

@@ -1,3 +1,6 @@
+// Beta 1.263 addendum (Andrew's naming-revert decision, 2026-11-21): the
+// mix is reverted - the street-title layers are the setFont fan-out's
+// first citizens again, as through 1.257; this drive is back to that form.
 import { launchDrive, finish, bootThrough } from './harness.mjs';
 const { proc, ev, consoleLog, sleep, poll } = await launchDrive();
 await bootThrough(ev, poll);
@@ -25,9 +28,8 @@ await bootThrough(ev, poll);
 //      one route exists, adds the active route's own share, and the
 //      reset line falls back to any route's download record.
 //   G: B-04 + B-09 (map-live) - a multi-select's glow carries one feature
-//      per selected stretch, and GLP.setFont re-fonts the label layer
-//      already on the map (Beta 1.258: the route POI label is the only
-//      app label layer left).
+//      per selected stretch, and GLP.setFont re-fonts the label layers
+//      already on the map.
 //   H: B-10 + A-05 (map-live, destructive - runs last) - unloading to the
 //      boot picker keeps the route POI at its last real centre instead
 //      of [0,0], and the counter on the empty geometry reads 0%, not NaN%.
@@ -154,22 +156,21 @@ try {
   ok('F4 the reset line falls back to any route\'s download record instead of contradicting the maps line | pre: ' + f.pre, /^Offline maps downloaded /.test(f.pre || ''));
 
   // ---- G: B-04 + B-09 on the live map ----
-  const mapUp = await poll(`typeof map !== 'undefined' && !!map && !!map.getSource && !!map.getSource('selGlow') && !!map.getLayer && !!map.getLayer('routepoi-txt')`, 20000).catch(() => false);
+  const mapUp = await poll(`typeof map !== 'undefined' && !!map && !!map.getSource && !!map.getSource('selGlow') && !!map.getLayer && !!map.getLayer('streetnamespt1')`, 20000).catch(() => false);
   const g = mapUp ? await J(`(() => {
     selSet = [{ name: 'Velmar', idx: 0 }, { name: 'Mellings', idx: 0 }];
     sel = selSet[0];
     GLP.syncSel();
     const glow = map.getSource('selGlow').serialize().data;
-    const fontBefore = map.getLayoutProperty('routepoi-txt', 'text-font');
+    const fontBefore = map.getLayoutProperty('streetnamespt1', 'text-font');
     GLP.setFont(['ZZ Test Font']);
-    const fontAfter = map.getLayoutProperty('routepoi-txt', 'text-font');
+    const fontAfter = map.getLayoutProperty('streetnamespt1', 'text-font');
     const poiAfter = map.getLayoutProperty('routepoi-txt', 'text-font');
-    const titleAfter = map.getLayer('streetnamespt1') ? map.getLayoutProperty('streetnamespt1', 'text-font') : null;
     GLP.setFont(fontBefore);
-    return { glowN: glow && glow.features ? glow.features.length : -1, fontBefore, fontAfter, poiAfter, titleAfter };
+    return { glowN: glow && glow.features ? glow.features.length : -1, fontBefore, fontAfter, poiAfter };
   })()`) : { glowN: -1 };
   ok('G1 a two-stretch selection glows TWO features (one per stretch, not just the anchor) | glowN: ' + g.glowN + (mapUp ? '' : ' (map never came up in this environment)'), g.glowN === 2);
-  ok('G2 setFont re-fonts the LIVE label layers (Beta 1.261: the four street-title layers are back on the fan-out, plus the route POI label - through 1.260 the POI label was the only one) | ' + JSON.stringify({ before: g.fontBefore, after: g.fontAfter, poi: g.poiAfter, title: g.titleAfter }), JSON.stringify(g.fontAfter) === JSON.stringify(['ZZ Test Font']) && JSON.stringify(g.poiAfter) === JSON.stringify(['ZZ Test Font']) && JSON.stringify(g.titleAfter) === JSON.stringify(['ZZ Test Font']));
+  ok('G2 setFont re-fonts the LIVE label layers (street names + route POI) | ' + JSON.stringify({ before: g.fontBefore, after: g.fontAfter, poi: g.poiAfter }), JSON.stringify(g.fontAfter) === JSON.stringify(['ZZ Test Font']) && JSON.stringify(g.poiAfter) === JSON.stringify(['ZZ Test Font']));
 
   // ---- H: B-10 + A-05 after unload (destructive - last) ----
   const h = mapUp ? await J(`(() => {

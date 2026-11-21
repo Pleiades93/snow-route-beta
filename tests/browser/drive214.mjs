@@ -271,7 +271,17 @@ ok('E3 rendered: 6 m PAST the join (the old overshoot stub) there is no gold lef
 // are retired and replaced by the M sections below (M1: the app titles
 // render at home, day and night; M2: no basemap route full-names below 15 -
 // the exclusion the mix restores; M3: the handover at 15+; M4: the live
-// seam read-back; M5: the standing heal fires). F3 (the R1 live read-back) stands
+// seam read-back; M5: the standing heal fires).
+// Beta 1.263 REWORK (the naming revert, Andrew's decision 2026-11-21):
+// the mix is reverted to the pre-1.258 system, so M3 and M4 INVERT (the
+// titles render at 15.7 too - no cap - and the exclusion holds at every
+// zoom, so there are no doubles anywhere; the live read-back is the
+// restored shape: no cap, blanket 13-24 ranges, exclusion on the
+// originals, no '-pre15' layer), M5 INVERTS (after the pick flight's one
+// re-place, camera moves cause NO further labelpts rebuilds - the
+// teardown that flickered is gone; drive216 grades presence through the
+// settles), and M2's liveness moves to the original major layer (the
+// band it watched no longer exists). F3 (the R1 live read-back) stands
 // verbatim - R1 ships on in the mix exactly as 1.259 built it; F4's
 // toggle comparison is retired where it stood below, with its evidence.
 // F5/F6/F7
@@ -289,12 +299,12 @@ const countTitlesAtHome = async () => {
   // after gate round 1 of this round failed in CI): sample the placed
   // title set until it is identical across 3 consecutive samples AND
   // holds at least 30 names; the graded sample is the last stable one.
-  // A first-live read is not enough here - the Home flight's own settle
-  // arms the standing heal, whose rebuild empties the placement for a
-  // beat before it re-converges (CI read 0 of 34 on a poll that had
-  // already seen the titles live; locally the same race read 0 in this
-  // drive's first run). If the set never stabilises, the last sample is
-  // graded and the check fails honestly on it.
+  // A first-live read is not enough here - placement converges over a
+  // beat after a flight (tile arrivals re-decide collisions), and a
+  // first-live read can catch a half-placed set (the 1.261 round read 0
+  // of 34 in CI on a poll that had already seen the titles live). If the
+  // set never stabilises, the last sample is graded and the check fails
+  // honestly on it.
   const readTitles = `(() => { const layers = ['streetnamespt1', 'streetnamespt2', 'streetnamespt3', 'streetnamespt4'].filter(id => map.getLayer(id)); const seen = new Set(); for (const f of map.queryRenderedFeatures({ layers })) { if (f.properties && f.properties.name) seen.add(f.properties.name); } return { zoom: map.getZoom(), pitch: map.getPitch(), rendered: [...seen], lanePresent: !!map.getLayer('roads_labels_minor-priority') }; })()`;
   let prevKey = '', streak = 0, last = null;
   const t0 = Date.now();
@@ -368,7 +378,7 @@ ok('F4 (retired toggle, see the note above) the spacing excursion restores the o
 // 1.259 tree the lane (a different layer) is not read here, but the stock
 // major layer carried no exclusion either.
 const basemapRouteNamesBelow15 = async () => J(`(() => {
-  const layers = ['roads_labels_major', 'roads_labels_major-pre15', 'roads_labels_minor'].filter(id => map.getLayer(id));
+  const layers = ['roads_labels_major', 'roads_labels_minor'].filter(id => map.getLayer(id));
   const seen = new Set();
   for (const f of map.queryRenderedFeatures({ layers })) { const nm = f.properties && f.properties.name; if (nm) seen.add(nm); }
   const full = ${JSON.stringify(routeFullNames)};
@@ -378,26 +388,29 @@ await ev(`(() => { goHomeView(); return true; })()`);
 await poll(`!!(window.map && map.loaded())`, 30000);
 await sleep(1000);
 const m2home = await basemapRouteNamesBelow15();
-ok('M2 no basemap route full-names below 15 at home: the pre-15 exclusion holds | zoom ' + (m2home.zoom || 0).toFixed(2) + ', full names rendered by basemap layers: ' + JSON.stringify(m2home.hits),
+ok('M2 no basemap route full-names below 15 at home: the exclusion holds | zoom ' + (m2home.zoom || 0).toFixed(2) + ', full names rendered by basemap layers: ' + JSON.stringify(m2home.hits),
   Array.isArray(m2home.hits) && m2home.hits.length === 0);
 await ev(`(() => { map.zoomTo(14.7, { duration: 700 }); return true; })()`);
 await poll(`!!(window.map && map.loaded() && !map.isMoving())`, 30000);
-// Liveness before the exclusion read: the -pre15 band must be provably
+// Liveness before the exclusion read: the major layer must be provably
 // rendering names in this frame (the non-route majors) before an empty
-// route-name read counts as the exclusion working - an unloaded band
+// route-name read counts as the exclusion working - an unloaded layer
 // would pass vacuously, the failure this drive's header warns against.
-const m2live = await poll(`(() => { try { if (!map.getLayer('roads_labels_major-pre15')) return false; for (const f of map.queryRenderedFeatures({ layers: ['roads_labels_major-pre15'] })) { if (f.properties && f.properties.name) return true; } return false; } catch (e) { return false; } })()`, 30000);
+const m2live = await poll(`(() => { try { if (!map.getLayer('roads_labels_major')) return false; for (const f of map.queryRenderedFeatures({ layers: ['roads_labels_major'] })) { if (f.properties && f.properties.name) return true; } return false; } catch (e) { return false; } })()`, 30000);
 await sleep(600);
 const m2mid = await basemapRouteNamesBelow15();
-ok('M2b no basemap route full-names below 15 at zoom 14.7 either (band provably live first: ' + m2live + ') | full names rendered: ' + JSON.stringify(m2mid.hits),
+ok('M2b no basemap route full-names below 15 at zoom 14.7 either (layer provably live first: ' + m2live + ') | full names rendered: ' + JSON.stringify(m2mid.hits),
   m2live === true && Array.isArray(m2mid.hits) && m2mid.hits.length === 0);
 
-// M3: the handover - at 15.7 the titles are gone (the cap) and the
-// basemap's full names own the route streets. On a titles-restored tree
-// WITHOUT the cap, title features render here and this fails.
+// M3 (INVERTED by the 1.263 revert): NO handover - at 15.7 the app titles
+// still render (no cap) and the basemap prints NO route full name (the
+// exclusion holds above 15 too), so a route street is never named twice
+// at any zoom. On the mix tree the titles are capped away here and the
+// basemap owns the names: this fails there by design.
 await ev(`(() => { map.jumpTo({ zoom: 15.7 }); return true; })()`);
 await poll(`(() => { try { return map.querySourceFeatures('protomaps', { sourceLayer: 'roads' }).length > 50; } catch (e) { return false; } })()`, 30000);
-await poll(`(() => { try { const seen = new Set(); for (const f of map.queryRenderedFeatures({ layers: ['roads_labels_major', 'roads_labels_minor'] })) { if (f.properties && f.properties.name) seen.add(f.properties.name); } return seen.size >= 5; } catch (e) { return false; } })()`, 30000); // the full names must have PLACED before the handover is graded (same fixed-sleep race)
+await poll(`(() => { try { const seen = new Set(); for (const f of map.queryRenderedFeatures({ layers: ['roads_labels_major', 'roads_labels_minor'] })) { if (f.properties && f.properties.name) seen.add(f.properties.name); } return seen.size >= 5; } catch (e) { return false; } })()`, 30000); // the basemap layers must be provably rendering (non-route names) before an empty route-name read counts as the exclusion working
+await poll(`(() => { try { let n = 0; for (const f of map.queryRenderedFeatures({ layers: ${JSON.stringify(TITLE_LAYERS)} })) n++; return n >= 5; } catch (e) { return false; } })()`, 30000); // and the titles must have PLACED before their count is graded
 await sleep(600);
 const m3 = await J(`(() => {
   const titleLayers = ${JSON.stringify(TITLE_LAYERS)}.filter(id => map.getLayer(id));
@@ -409,45 +422,50 @@ const m3 = await J(`(() => {
   const full = ${JSON.stringify(routeFullNames)};
   return { zoom: map.getZoom(), titleFeats, fullHits: full.filter(n => seen.has(n)) };
 })()`);
-ok('M3 the handover at 15+: zero app titles render at zoom 15.7 and the basemap full names own the streets | titles ' + m3.titleFeats + ', basemap route full-names ' + (m3.fullHits || []).length + ' of 34: ' + (m3.fullHits || []).join(', '),
-  m3.titleFeats === 0 && (m3.fullHits || []).length >= 5);
+ok('M3 no handover, no doubles at 15+: the app titles still render at zoom 15.7 (no cap) and the basemap prints no route full name there (the exclusion holds at every zoom) | titles ' + m3.titleFeats + ', basemap route full-names: ' + JSON.stringify(m3.fullHits),
+  m3.titleFeats >= 5 && (m3.fullHits || []).length === 0);
 
-// M4: the live seam read-back - the three numbers that hold the handover,
-// read off the running map: title cap 15, major band from 15, minor from
-// 15, and the '-pre15' copy alive 11-15 wearing the exclusion (its filter
-// names the route's tile names).
+// M4 (INVERTED by the 1.263 revert): the live read-back of the restored
+// shape - the title layers carry NO maxzoom, both basemap originals wear
+// the blanket 13-24 range the restored pass sets, the exclusion filter
+// (naming the route's tile names) sits on BOTH originals, and no
+// '-pre15' layer exists.
 const m4 = await J(`(() => {
   const L = id => map.getLayer(id);
-  const pre = L('roads_labels_major-pre15');
   return {
-    titleMax: L('streetnamespt1') ? L('streetnamespt1').maxzoom : null,
+    titleMax: L('streetnamespt1') ? (L('streetnamespt1').maxzoom === undefined ? null : L('streetnamespt1').maxzoom) : 'absent',
     majorMin: L('roads_labels_major') ? L('roads_labels_major').minzoom : null,
+    majorMax: L('roads_labels_major') ? (L('roads_labels_major').maxzoom === undefined ? null : L('roads_labels_major').maxzoom) : null,
     minorMin: L('roads_labels_minor') ? L('roads_labels_minor').minzoom : null,
-    preMin: pre ? pre.minzoom : null, preMax: pre ? pre.maxzoom : null,
-    preFilter: pre ? JSON.stringify(map.getFilter('roads_labels_major-pre15')) : '',
+    prePresent: !!L('roads_labels_major-pre15') || !!L('roads_labels_minor-pre15'),
+    majorFilter: JSON.stringify(map.getFilter('roads_labels_major')),
+    minorFilter: JSON.stringify(map.getFilter('roads_labels_minor')),
   };
 })()`);
-ok('M4 the live seam: title maxzoom 15, major minzoom 15, minor minzoom 15, -pre15 band 11-15 with the route-name exclusion in its filter | ' + JSON.stringify({ t: m4.titleMax, maj: m4.majorMin, min: m4.minorMin, pre: [m4.preMin, m4.preMax] }),
-  m4.titleMax === 15 && m4.majorMin === 15 && m4.minorMin === 15 && m4.preMin === 11 && m4.preMax === 15 && (m4.preFilter || '').includes('Valeria Boulevard'));
+ok('M4 the restored shape live: no title maxzoom, blanket 13-24 on both basemap originals, the route-name exclusion in both filters, no -pre15 layer | ' + JSON.stringify({ t: m4.titleMax, maj: [m4.majorMin, m4.majorMax], min: m4.minorMin, pre: m4.prePresent }),
+  m4.titleMax === null && m4.majorMin === 13 && (m4.majorMax === null || m4.majorMax === 24) && m4.minorMin === 13 && m4.prePresent === false && (m4.majorFilter || '').includes('Valeria Boulevard') && (m4.minorFilter || '').includes('Valeria Boulevard'));
 
-// M5: the standing heal fires - the labelpts source is rebuilt after an
-// animated zoom settles and again after an animated rotate settles
-// (counted by wrapping map.removeSource, the rebuild's tell). On the
-// unhealed mix (the 1.248 one-flight hook only) neither move re-places
-// and the count never moves: this fails there by design.
+// M5 (INVERTED by the 1.263 revert): NO standing heal - after the pick
+// flight's one re-place (the restored 1.248 hook, long landed by this
+// section), an animated zoom and an animated rotate cause NO further
+// labelpts rebuilds (counted by wrapping map.removeSource, the rebuild's
+// tell). On the mix tree the heal rebuilds after both moves and this
+// fails there by design - that rebuild is the teardown that flickered.
 await ev(`(() => { goHomeView(); return true; })()`);
 await poll(`!!(window.map && map.loaded() && !map.isMoving())`, 30000);
-await sleep(1000);
+await sleep(3500); // any armed one-flight backstop (2.5 s) has landed by now; the count below starts from a quiet map
 await ev(`(() => { window.__rpCount = 0; const orig = map.removeSource.bind(map); map.removeSource = function (id) { if (id === 'labelpts') window.__rpCount++; return orig(id); }; return true; })()`);
 const rpBase = await J(`(() => window.__rpCount)()`);
 await ev(`(() => { map.zoomTo(14.2, { duration: 700 }); return true; })()`);
-await poll(`(() => window.__rpCount > ${rpBase})()`, 25000);
+await poll(`!!(window.map && map.loaded() && !map.isMoving())`, 30000);
+await sleep(3000); // the heal decided at idle, within a beat of the settle - a rebuild inside this window is the flicker mechanism itself
 const rpAfterZoom = await J(`(() => window.__rpCount)()`);
 await ev(`(() => { map.rotateTo(30, { duration: 700 }); return true; })()`);
-await poll(`(() => window.__rpCount > ${rpAfterZoom})()`, 25000);
+await poll(`!!(window.map && map.loaded() && !map.isMoving())`, 30000);
+await sleep(3000);
 const rpAfterRot = await J(`(() => window.__rpCount)()`);
-ok('M5 the standing heal re-places titles after camera moves: labelpts rebuilds after an animated zoom (' + rpBase + ' -> ' + rpAfterZoom + ') and after an animated rotate (' + rpAfterZoom + ' -> ' + rpAfterRot + ')',
-  rpAfterZoom > rpBase && rpAfterRot > rpAfterZoom);
+ok('M5 no standing heal: labelpts is NOT rebuilt after an animated zoom (' + rpBase + ' -> ' + rpAfterZoom + ') or an animated rotate (' + rpAfterZoom + ' -> ' + rpAfterRot + ') - the only re-place in the system is the pick flight\'s one',
+  rpAfterZoom === rpBase && rpAfterRot === rpAfterZoom);
 await ev(`(() => { map.jumpTo({ bearing: 0 }); return true; })()`);
 await sleep(800);
 

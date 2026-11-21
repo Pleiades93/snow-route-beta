@@ -948,6 +948,289 @@
    "red": "drive215 P10 fails: the stand-in route layer, recorded and hidden, then re-created visible as GLP.init leaves it after a swap, stays visible (visibility undefined) across 1.5 s of pulse styledata beats; the other 17 checks pass",
    "green": "drive215 passes 18/18 with the drift re-application in (the layer reads visibility none)",
    "issued": "2026-11-21 intersection-1262 gate round 2"
+  },
+  {
+   "id": "whatsnew-roll-1263-proof-1242",
+   "check": "tests/proof/proof-1242.mjs",
+   "kind": "mutation",
+   "files": {
+    "tests/proof/proof-1242.mjs": "99f14c9ff08113c1e8d57287ab95c8cbce1b3ebee87228d0aad6310916acc9d5",
+    "parts/whatsnew.js": "edc38d74b5021f5618fb8cfb0d822877b9df52f6963c0908fc5a8b240a10177f"
+   },
+   "mutation": "parts/whatsnew.js bullet replaced with a deliberately wrong bullet (the Beta 1.263 What's New roll changed this proof's pinned bullet string)",
+   "red": "proof-1242 fails exactly its What's New bullet check (1 fail, the rest pass) - observed in this round's mutation run",
+   "green": "proof-1242 passes in full with the shipped 1.263 bullet",
+   "issued": "2026-11-21 labelrevert-1263"
+  },
+  {
+   "id": "whatsnew-roll-1263-proof-1243",
+   "check": "tests/proof/proof-1243.mjs",
+   "kind": "mutation",
+   "files": {
+    "tests/proof/proof-1243.mjs": "386845f19e3912c0c64599988cc793775376f9b8de1f1c9f0b4709df8714ba2d",
+    "parts/whatsnew.js": "edc38d74b5021f5618fb8cfb0d822877b9df52f6963c0908fc5a8b240a10177f"
+   },
+   "mutation": "parts/whatsnew.js bullet replaced with a deliberately wrong bullet (the Beta 1.263 What's New roll changed this proof's pinned bullet string)",
+   "red": "proof-1243 fails exactly its What's New bullet check (1 fail, the rest pass) - observed in this round's mutation run",
+   "green": "proof-1243 passes in full with the shipped 1.263 bullet",
+   "issued": "2026-11-21 labelrevert-1263"
+  },
+  {
+   "id": "whatsnew-roll-1263-proof-1245",
+   "check": "tests/proof/proof-1245.mjs",
+   "kind": "mutation",
+   "files": {
+    "tests/proof/proof-1245.mjs": "ca987ba66007333c864c37d52425aa3a4d4d267bd906fcb792c7a468f5267abe",
+    "parts/whatsnew.js": "edc38d74b5021f5618fb8cfb0d822877b9df52f6963c0908fc5a8b240a10177f"
+   },
+   "mutation": "parts/whatsnew.js bullet replaced with a deliberately wrong bullet (the Beta 1.263 What's New roll changed this proof's pinned bullet string)",
+   "red": "proof-1245 fails exactly its What's New bullet check (1 fail, the rest pass) - observed in this round's mutation run",
+   "green": "proof-1245 passes in full with the shipped 1.263 bullet",
+   "issued": "2026-11-21 labelrevert-1263"
+  },
+  {
+   "id": "whatsnew-roll-1263-proof-1246",
+   "check": "tests/proof/proof-1246.mjs",
+   "kind": "mutation",
+   "files": {
+    "tests/proof/proof-1246.mjs": "8160aee1d992a7fda4d2e5a617e0ab6a5b0731aac0d787e5925d85fd6dba32ec",
+    "parts/whatsnew.js": "edc38d74b5021f5618fb8cfb0d822877b9df52f6963c0908fc5a8b240a10177f"
+   },
+   "mutation": "parts/whatsnew.js bullet replaced with a deliberately wrong bullet (the Beta 1.263 What's New roll changed this proof's pinned bullet string)",
+   "red": "proof-1246 fails exactly its What's New bullet check (1 fail, the rest pass) - observed in this round's mutation run",
+   "green": "proof-1246 passes in full with the shipped 1.263 bullet",
+   "issued": "2026-11-21 labelrevert-1263"
+  },
+  {
+   "id": "whatsnew-roll-1263-proof-1247",
+   "check": "tests/proof/proof-1247.mjs",
+   "kind": "mutation",
+   "files": {
+    "tests/proof/proof-1247.mjs": "539ac8e61ae5df2dc39c864d582c60f51b9b1b6c790db35c2df5c3c791cd7651",
+    "parts/whatsnew.js": "edc38d74b5021f5618fb8cfb0d822877b9df52f6963c0908fc5a8b240a10177f"
+   },
+   "mutation": "parts/whatsnew.js bullet replaced with a deliberately wrong bullet (the Beta 1.263 What's New roll changed this proof's pinned bullet string)",
+   "red": "proof-1247 fails exactly its What's New bullet check (1 fail, the rest pass) - observed in this round's mutation run",
+   "green": "proof-1247 passes in full with the shipped 1.263 bullet",
+   "issued": "2026-11-21 labelrevert-1263"
+  },
+  {
+   "id": "whatsnew-roll-1263-proof-1249",
+   "check": "tests/proof/proof-1249.mjs",
+   "kind": "mutation",
+   "files": {
+    "tests/proof/proof-1249.mjs": "d1c4fa569a183884e3426b611e95ff69699e25aa51f8729c1aa175d90b2b68a4",
+    "parts/whatsnew.js": "edc38d74b5021f5618fb8cfb0d822877b9df52f6963c0908fc5a8b240a10177f"
+   },
+   "mutation": "parts/whatsnew.js bullet replaced with a deliberately wrong bullet (the Beta 1.263 What's New roll changed this proof's pinned bullet string)",
+   "red": "proof-1249 fails exactly its What's New bullet check (1 fail, the rest pass) - observed in this round's mutation run",
+   "green": "proof-1249 passes in full with the shipped 1.263 bullet",
+   "issued": "2026-11-21 labelrevert-1263"
+  },
+  {
+   "id": "whatsnew-roll-1263-proof-1252",
+   "check": "tests/proof/proof-1252.mjs",
+   "kind": "mutation",
+   "files": {
+    "tests/proof/proof-1252.mjs": "4205115b12070fac1365a6b095785acb23bd85fb59fe308e27bb0e6b8ee87c7d",
+    "parts/whatsnew.js": "edc38d74b5021f5618fb8cfb0d822877b9df52f6963c0908fc5a8b240a10177f"
+   },
+   "mutation": "parts/whatsnew.js bullet replaced with a deliberately wrong bullet (the Beta 1.263 What's New roll changed this proof's pinned bullet string)",
+   "red": "proof-1252 fails exactly its What's New bullet check (1 fail, the rest pass) - observed in this round's mutation run",
+   "green": "proof-1252 passes in full with the shipped 1.263 bullet",
+   "issued": "2026-11-21 labelrevert-1263"
+  },
+  {
+   "id": "whatsnew-roll-1263-proof-1253",
+   "check": "tests/proof/proof-1253.mjs",
+   "kind": "mutation",
+   "files": {
+    "tests/proof/proof-1253.mjs": "e7a5ababa45bd781116b70bc1d2ff8acd8b0a3cac66e6765919794c86d312c97",
+    "parts/whatsnew.js": "edc38d74b5021f5618fb8cfb0d822877b9df52f6963c0908fc5a8b240a10177f"
+   },
+   "mutation": "parts/whatsnew.js bullet replaced with a deliberately wrong bullet (the Beta 1.263 What's New roll changed this proof's pinned bullet string)",
+   "red": "proof-1253 fails exactly its What's New bullet check (1 fail, the rest pass) - observed in this round's mutation run",
+   "green": "proof-1253 passes in full with the shipped 1.263 bullet",
+   "issued": "2026-11-21 labelrevert-1263"
+  },
+  {
+   "id": "whatsnew-roll-1263-proof-1254",
+   "check": "tests/proof/proof-1254.mjs",
+   "kind": "mutation",
+   "files": {
+    "tests/proof/proof-1254.mjs": "e90d313e89f1a9963c905fdc53d99cae92564849f7182092bcafaed853266826",
+    "parts/whatsnew.js": "edc38d74b5021f5618fb8cfb0d822877b9df52f6963c0908fc5a8b240a10177f"
+   },
+   "mutation": "parts/whatsnew.js bullet replaced with a deliberately wrong bullet (the Beta 1.263 What's New roll changed this proof's pinned bullet string)",
+   "red": "proof-1254 fails exactly its What's New bullet check (1 fail, the rest pass) - observed in this round's mutation run",
+   "green": "proof-1254 passes in full with the shipped 1.263 bullet",
+   "issued": "2026-11-21 labelrevert-1263"
+  },
+  {
+   "id": "whatsnew-roll-1263-proof-1255",
+   "check": "tests/proof/proof-1255.mjs",
+   "kind": "mutation",
+   "files": {
+    "tests/proof/proof-1255.mjs": "352bdee503e9c186cd272e7bb71058ca8b118df0d4d77984ebe10cf6c5f639a4",
+    "parts/whatsnew.js": "edc38d74b5021f5618fb8cfb0d822877b9df52f6963c0908fc5a8b240a10177f"
+   },
+   "mutation": "parts/whatsnew.js bullet replaced with a deliberately wrong bullet (the Beta 1.263 What's New roll changed this proof's pinned bullet string)",
+   "red": "proof-1255 fails exactly its What's New bullet check (1 fail, the rest pass) - observed in this round's mutation run",
+   "green": "proof-1255 passes in full with the shipped 1.263 bullet",
+   "issued": "2026-11-21 labelrevert-1263"
+  },
+  {
+   "id": "whatsnew-roll-1263-proof-1256",
+   "check": "tests/proof/proof-1256.mjs",
+   "kind": "mutation",
+   "files": {
+    "tests/proof/proof-1256.mjs": "e0ba4d9781f837c8fc55feb3916402f60a4555500e1fe618de846c0c10bc4999",
+    "parts/whatsnew.js": "edc38d74b5021f5618fb8cfb0d822877b9df52f6963c0908fc5a8b240a10177f"
+   },
+   "mutation": "parts/whatsnew.js bullet replaced with a deliberately wrong bullet (the Beta 1.263 What's New roll changed this proof's pinned bullet string)",
+   "red": "proof-1256 fails exactly its What's New bullet check (1 fail, the rest pass) - observed in this round's mutation run",
+   "green": "proof-1256 passes in full with the shipped 1.263 bullet",
+   "issued": "2026-11-21 labelrevert-1263"
+  },
+  {
+   "id": "whatsnew-roll-1263-proof-1257",
+   "check": "tests/proof/proof-1257.mjs",
+   "kind": "mutation",
+   "files": {
+    "tests/proof/proof-1257.mjs": "aa26092f2b53812eaad4609cd2ed58207dbd92c38b417f1ce5789696cd2857df",
+    "parts/whatsnew.js": "edc38d74b5021f5618fb8cfb0d822877b9df52f6963c0908fc5a8b240a10177f"
+   },
+   "mutation": "parts/whatsnew.js bullet replaced with a deliberately wrong bullet (the Beta 1.263 What's New roll changed this proof's pinned bullet string)",
+   "red": "proof-1257 fails exactly its What's New bullet check (1 fail, the rest pass) - observed in this round's mutation run",
+   "green": "proof-1257 passes in full with the shipped 1.263 bullet",
+   "issued": "2026-11-21 labelrevert-1263"
+  },
+  {
+   "id": "whatsnew-roll-1263-proof-1259",
+   "check": "tests/proof/proof-1259.mjs",
+   "kind": "mutation",
+   "files": {
+    "tests/proof/proof-1259.mjs": "1ceebeb1cc4fdbf1e2e8fcbe0ff75789f102039a55d17fe4b216a0e98b7c4329",
+    "parts/whatsnew.js": "edc38d74b5021f5618fb8cfb0d822877b9df52f6963c0908fc5a8b240a10177f"
+   },
+   "mutation": "parts/whatsnew.js bullet replaced with a deliberately wrong bullet (the Beta 1.263 What's New roll changed this proof's pinned bullet string)",
+   "red": "proof-1259 fails exactly its What's New bullet check (1 fail, the rest pass) - observed in this round's mutation run",
+   "green": "proof-1259 passes in full with the shipped 1.263 bullet",
+   "issued": "2026-11-21 labelrevert-1263"
+  },
+  {
+   "id": "whatsnew-roll-1263-proof-1262",
+   "check": "tests/proof/proof-1262.mjs",
+   "kind": "mutation",
+   "files": {
+    "tests/proof/proof-1262.mjs": "45f7c32faf225d0258ad214aa794564717bb150bf626778b9339a716963a15f9",
+    "parts/whatsnew.js": "edc38d74b5021f5618fb8cfb0d822877b9df52f6963c0908fc5a8b240a10177f"
+   },
+   "mutation": "parts/whatsnew.js bullet replaced with a deliberately wrong bullet (the Beta 1.263 What's New roll changed this proof's pinned bullet string)",
+   "red": "proof-1262 fails exactly its What's New bullet check (1 fail, the rest pass) - observed in this round's mutation run",
+   "green": "proof-1262 passes in full with the shipped 1.263 bullet",
+   "issued": "2026-11-21 labelrevert-1263"
+  },
+  {
+   "id": "proof-1263-revert-shape",
+   "check": "tests/proof/proof-1263.mjs",
+   "kind": "historical",
+   "files": {
+    "tests/proof/proof-1263.mjs": "441d0552059571590a149da45952af95a68b03cd03eb76ec35ac494fa645dad3",
+    "parts/engine.js": "891ab8409d5f8ae21d7be06da450eb55fe8b631121a8af1c7d50cc10d98c90ad",
+    "parts/app2.js": "4aba538882d1e75ec70051444ab5ae9bba5cd05590a2eb6f84f8dca85e165bbc",
+    "parts/app5.js": "e5ce0ad3e66c9a5ae70cee9d925eb74aa2fa25d0699e51e9ef51ef5593fd4359"
+   },
+   "mutation": "the historical tree: Beta 1.262 (c8bf7485) - titles capped at 15, the '-pre15' band split live, armTitleHeal installed, the one-flight hook retired, labelFeatures/LABELS trimmed",
+   "red": "proof-1263 run against the 1.262 tree fails 7 of 13 checks (2 cap, 3 exclusion/split form, 5 clone guard, 7 heal present, 8 hook absent, 9 residue absent, 13 editorial) - observed in this round",
+   "green": "proof-1263 passes 13/13 on the reverted tree; the full manifest passes 71/71",
+   "issued": "2026-11-21 labelrevert-1263"
+  },
+  {
+   "id": "repin-1263-green-half-road-r4",
+   "check": "tests/proof/proof-green-half-road.mjs",
+   "kind": "historical",
+   "files": {
+    "tests/proof/proof-green-half-road.mjs": "0c8e6c2e6744a76bd15cce493a6db823e7416e741ed4cf11e7f5c9caaa2961c2",
+    "parts/app2.js": "4aba538882d1e75ec70051444ab5ae9bba5cd05590a2eb6f84f8dca85e165bbc",
+    "parts/engine.js": "891ab8409d5f8ae21d7be06da450eb55fe8b631121a8af1c7d50cc10d98c90ad"
+   },
+   "mutation": "the pre-rework proof (HEAD, the 1.261 premise form of R4: the '-pre15' band copy as the one sanctioned clone) run against the reverted tree",
+   "red": "the old R4 clone pin fails on the reverted tree (the band it sanctions no longer exists) - observed in this round",
+   "green": "the reworked proof passes in full on the reverted tree (38 PASS lines, 0 FAIL)",
+   "issued": "2026-11-21 labelrevert-1263"
+  },
+  {
+   "id": "drive216-presence-settle",
+   "check": "tests/browser/drive216.mjs",
+   "kind": "rendered",
+   "files": {
+    "tests/browser/drive216.mjs": "1be61bed49d4b2424b28c62ec61c470f70e0cfaf95eeeb2f58ab522d2c2ee6a4"
+   },
+   "mutation": "rendered fail-first on the Beta 1.262 tree (the standing heal live): the presence sampler through the gesture suite with a 6x CPU-throttled pass",
+   "red": "drive216 FAILS on the 1.262 tree: the throttled zoom drops 17 named titles during its settle and the final home read catches the heal blackout at 0 titles placed - observed in this round",
+   "green": "drive216 passes 9/9 on the reverted tree: zero drops in every phase (pan, zoom through 15 both ways, rotate, theme swap, throttled pan+zoom), home placement stable at 30+ titles",
+   "issued": "2026-11-21 labelrevert-1263"
+  },
+  {
+   "id": "repin-1263-drive214-msections",
+   "check": "tests/browser/drive214.mjs",
+   "kind": "rendered",
+   "files": {
+    "tests/browser/drive214.mjs": "da3a730bb7f95401562e69dcc3f0c5abb246558f7fabd43b2f474d57c4eacad5"
+   },
+   "mutation": "rendered fail-first on the Beta 1.262 tree (the label mix live): the reworked M sections run against the mix",
+   "red": "drive214 FAILS on the 1.262 tree: M3 (titles 0 at 15.7, basemap prints 7 route full-names), M4 (cap 15, band present), M5 (labelpts rebuilds 0 -> 1 -> 2 after zoom and rotate - the heal in the act), M2b (its liveness seat, the original major layer, renders nothing below 15 on the mix) - observed in this round",
+   "green": "drive214 passes 26/26 on the reverted tree (feather sections A-E unchanged, M1/M1n/F3/F4 stand, M2/M3/M4/M5 grade the restored shape)",
+   "issued": "2026-11-21 labelrevert-1263"
+  },
+  {
+   "id": "repin-1263-drive130-labels",
+   "check": "tests/browser/drive130.mjs",
+   "kind": "rendered",
+   "files": {
+    "tests/browser/drive130.mjs": "82c493441297e792b28684874ce1460d2d5a67490f3c4d5f4664ae03a670360d"
+   },
+   "mutation": "rendered fail-first on the Beta 1.262 tree: the restored (b494fb51-form) label checks run against the mix",
+   "red": "drive130 FAILS on the 1.262 tree: L2 (title maxzoom reads 15), L4 (originals carry the stock filter, no exclusion), L7 (no titles at close zoom; the basemap prints Woolacott Road) - observed in this round",
+   "green": "drive130 passes 11/11 on the reverted tree",
+   "issued": "2026-11-21 labelrevert-1263"
+  },
+  {
+   "id": "repin-1263-drive131-w4",
+   "check": "tests/browser/drive131.mjs",
+   "kind": "rendered",
+   "files": {
+    "tests/browser/drive131.mjs": "38ac27067c7efc80eccb61daa8f50a22b6a8dd95c246489a37f4d89591483909"
+   },
+   "mutation": "rendered fail-first on the Beta 1.260 tree (the 1.258 retirement live): the restored W4 (titles present, clones retired) run against the retirement",
+   "red": "drive131 FAILS on the 1.260 tree at W4 (the title layers are absent) - observed in this round; on the 1.262 mix tree W4 passes, since the mix kept the titles below 15 - the retirement is this check's discriminating tree",
+   "green": "drive131 passes 5/5 on the reverted tree",
+   "issued": "2026-11-21 labelrevert-1263"
+  },
+  {
+   "id": "repin-1263-drive166-h1",
+   "check": "tests/browser/drive166.mjs",
+   "kind": "rendered",
+   "files": {
+    "tests/browser/drive166.mjs": "cf421519f4b171decdc6a3c5254c39c6afdc94e0256642ce092a178c6952c03d"
+   },
+   "mutation": "rendered fail-first on the Beta 1.260 tree (the 1.258 retirement live): the restored H1 (create hides the street titles with the route) run against the retirement",
+   "red": "drive166 FAILS on the 1.260 tree at H1 (streetnamespt1 reads visible - no title layers exist to hide - and the hidden-layer count is 24, not 28) - observed in this round",
+   "green": "drive166 passes 58/58 on the reverted tree",
+   "issued": "2026-11-21 labelrevert-1263"
+  },
+  {
+   "id": "repin-1263-drive190-g2",
+   "check": "tests/browser/drive190.mjs",
+   "kind": "rendered",
+   "files": {
+    "tests/browser/drive190.mjs": "ab83a2cabafa1a7018326b46ea4a03542214ec4e8b15803175b1bfe40a690dd0"
+   },
+   "mutation": "rendered fail-first on the Beta 1.260 tree (the 1.258 retirement live): the restored G2 (setFont re-fonts the street-title layers) run against the retirement",
+   "red": "drive190 FAILS on the 1.260 tree: the map-up poll on streetnamespt1 never satisfies and G2 has no title layer to re-font - observed in this round",
+   "green": "drive190 passes 20/20 on the reverted tree",
+   "issued": "2026-11-21 labelrevert-1263"
   }
  ]
 }

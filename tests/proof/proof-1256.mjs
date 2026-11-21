@@ -40,8 +40,8 @@ check('3 (b): an empty status line takes no box',
   head.includes('#xPreStat:empty { display: none; }'));
 check('4: the CHANGELOG top entry is Beta 1.256', changelog.includes('## Beta 1.256'));
 check('5: What\'s New carries the 1.256 bullet, short and dash-free',
-  whatsnew.includes('Picking an intersection now names it in the search bar and marks it with a pulsing blue dot.')
-  && 'Picking an intersection now names it in the search bar and marks it with a pulsing blue dot.'.length <= 108
+  whatsnew.includes('Street names are back to the app\'s original labels.')
+  && 'Street names are back to the app\'s original labels.'.length <= 108
   && !whatsnew.includes('—'));
 
 console.log(`proof-1256: ${pass} passed, ${fail} failed`);

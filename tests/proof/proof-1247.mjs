@@ -58,8 +58,8 @@ check('6: the create text boxes keep their white pills',
 check('7: the CHANGELOG top entry is Beta 1.247',
   changelog.indexOf('## Beta 1.247') > -1 && changelog.indexOf('## Beta 1.247') < changelog.indexOf('## Beta 1.246'));
 check('8: What\'s New carries the CURRENT entry\'s bullet (rolled to 1.251: this check tracks the current entry each round), within the 108-char cap, em-dash free',
-  whatsnew.includes('Picking an intersection now names it in the search bar and marks it with a pulsing blue dot.') &&
-  'Picking an intersection now names it in the search bar and marks it with a pulsing blue dot.'.length <= 108 &&
+  whatsnew.includes('Street names are back to the app\'s original labels.') &&
+  'Street names are back to the app\'s original labels.'.length <= 108 &&
   !whatsnew.includes('—'));
 
 console.log(`proof-1247: ${pass} passed, ${fail} failed`);
