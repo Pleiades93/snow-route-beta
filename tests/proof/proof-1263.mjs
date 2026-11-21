@@ -155,10 +155,10 @@ check('12: a street named like an inherited object key (constructor) with no SPO
   engine.includes('Object.prototype.hasOwnProperty.call(H.SPOT, n)') && fixOk);
 
 // ---------- (13) the release editorial ----------
-const BULLET = "Street names are back to the app's original labels.";
-check("13: What's New carries the 1.263 bullet (plain words: the names are back to the original system), em-dash free, and the CHANGELOG top entry is Beta 1.263",
+const BULLET = "Feathered road ends no longer show while you create a route.";
+check("13: What's New carries the 1.264 bullet (rolled by the create-feather-leak round), em-dash free, and the CHANGELOG top entry is Beta 1.264 above 1.263",
   whatsnew.includes(BULLET) && BULLET.length <= 108 && !whatsnew.includes('—') &&
-  changelog.indexOf('## Beta 1.263') > -1 && changelog.indexOf('## Beta 1.263') < changelog.indexOf('## Beta 1.262'));
+  changelog.indexOf('## Beta 1.264') > -1 && changelog.indexOf('## Beta 1.264') < changelog.indexOf('## Beta 1.263'));
 
 console.log(`proof-1263: ${pass} passed, ${fail} failed`);
 process.exit(fail ? 1 : 0);
