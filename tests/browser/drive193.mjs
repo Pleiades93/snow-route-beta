@@ -111,6 +111,22 @@ const C0 = await core();
 ok('P3 the puck renders at the fix (opaque blue core found) | ' + JSON.stringify({ n: C0.n, coreW: C0.coreW, D: C0.D }), C0.n > 100 && Math.abs(C0.coreW - 0.62 * C0.D) <= 3);
 
 // ---- W: width constancy across zoom x pitch (the 1.182 balloon, killed) ----
+// Beta 1.261 premise repair (gate round 3): the street titles are HIDDEN
+// for the W cells (and restored right after W2). foot()'s diff premise -
+// the a/b pair straddles only the puck's visibility flip - cannot hold
+// with live titles in the window: since 1.261 the standing heal can
+// re-place a title (Velmar's own, inside this fix's window at zoom 14)
+// at any idle after a settle, including between the pair, and its glyphs
+// read as footprint width (CI: spread 9 on three consecutive heads, the
+// wide cell always a zoom-14 one). Gate round 2's warm-grab quiet loop
+// narrowed the window but could not close it - the heal waits for
+// loaded(), which can land after quiet is declared. The puck's width is
+// the subject here, never the labels; hiding the label layers for the
+// measurement is the same isolation the b grab applies to the puck
+// layer itself. (The quiet loop in foot() stays: it still absorbs the
+// tile transients it was built for.)
+const TITLE_IDS = ['streetnamespt1', 'streetnamespt2', 'streetnamespt3', 'streetnamespt4'];
+const titleVis = JSON.parse(await ev(`(() => { const v = {}; for (const id of ${JSON.stringify(TITLE_IDS)}) { if (map.getLayer(id)) { v[id] = map.getLayoutProperty(id, 'visibility') || 'visible'; map.setLayoutProperty(id, 'visibility', 'none'); } } return JSON.stringify(v); })()`));
 const cells = [];
 for (const z of [14, 16, 18, 19]) for (const p of [0, 60]) {
   await ev(`map.jumpTo({ center: [${FIX.lng}, ${FIX.lat}], zoom: ${z}, pitch: ${p}, bearing: 0 })`); await settle();
@@ -122,6 +138,7 @@ const coreOff = cells.map(c => Math.abs(c.coreW - 0.62 * c.D));
 ok('W1 core width frozen at 0.62 x D at z14/16/18/19 x pitch 0/60 | cells ' + JSON.stringify(cells.map(c => [c.z, c.p, c.coreW])) + ' spread ' + coreSpread, cells.every(c => c.n > 60) && coreSpread <= 3 && coreOff.every(v => v <= 3));
 const footSpread = Math.max(...cells.map(c => c.footW)) - Math.min(...cells.map(c => c.footW));
 ok('W2 full footprint width frozen too | spread ' + footSpread + ' cells ' + JSON.stringify(cells.map(c => [c.z, c.p, c.footW])), cells.every(c => c.fn > 200) && footSpread <= 4);
+await ev(`(() => { const v = ${JSON.stringify(titleVis)}; for (const id of Object.keys(v)) { if (map.getLayer(id)) map.setLayoutProperty(id, 'visibility', v[id]); } return true; })()`); // titles restored - the sections below measure the puck against the real map again
 
 // ---- T: tilt silhouette at pitch 60 = 0.50 x D, flat = 1.00 x D ----
 // Measured on the diff footprint's STRONG channel (dl > 90): the exact
