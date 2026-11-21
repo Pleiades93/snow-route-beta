@@ -130,6 +130,13 @@ function nameHoldApply(m) { // (re)apply the current multiplier to every name la
     } catch (e) {}
   }
 }
+function nameHoldNaturalVis(id) { // the UNDERLYING visibility of a held layer - its captured natural, never the hold's transient 'none'. The create backdrop (create-pick's crSetBackdrop) snapshots layer visibility when it hides the route stack; entered during a load-in it would otherwise record the transient 'none' as the state to restore, and the titles would stand hidden after creation exits (Codex review, PR #162). The backdrop consults this so its snapshot names the underlying state. A captured ABSENCE is itself the natural (the layer carries no visibility key), and reads 'visible' here; only a never-captured layer returns undefined, and the backdrop falls back to the live value for those.
+  if (!(id in nameFade.vis)) return undefined;
+  return nameFade.vis[id] === undefined ? 'visible' : nameFade.vis[id];
+}
+function nameBackdropHolds(id) { // whether the create backdrop currently has this layer hidden: while it does, the load-in's own visibility restore defers - the backdrop's exit restores the underlying natural (the snapshot above), and resurrecting the layer mid-creation would break the backdrop's hide
+  try { return typeof crHiddenLayers !== 'undefined' && !!crHiddenLayers && crHiddenLayers.some((pr) => pr[0] === id); } catch (e) { return false; }
+}
 function nameHoldSet(on) { // engage (instant - the hold must be shut before the load-in's first frame can paint a name) or release (the one joint ramp)
   if (on) {
     if (nameFade.raf) { cancelAnimationFrame(nameFade.raf); nameFade.raf = 0; }
@@ -142,7 +149,7 @@ function nameHoldSet(on) { // engage (instant - the hold must be shut before the
   // the layers come back into placement BEFORE the ramp's first frame, with their paint still at the ramp's zero - they place for the first time at the settled view and fade in there
   if (typeof map !== 'undefined' && map) {
     for (const id of Object.keys(nameFade.vis)) {
-      try { if (map.getLayer(id)) map.setLayoutProperty(id, 'visibility', nameFade.vis[id] === undefined ? null : nameFade.vis[id]); } catch (e) {}
+      try { if (map.getLayer(id) && !nameBackdropHolds(id)) map.setLayoutProperty(id, 'visibility', nameFade.vis[id] === undefined ? null : nameFade.vis[id]); } catch (e) {}
     }
   }
   nameFade.t0 = (typeof performance !== 'undefined' ? performance.now() : Date.now());
@@ -156,7 +163,7 @@ function nameHoldSet(on) { // engage (instant - the hold must be shut before the
     // the ramp is done: restore every touched layer's natural paint and visibility verbatim and forget them - from here the style is the pre-1.266 one again
     if (typeof map !== 'undefined' && map) {
       for (const id of Object.keys(nameFade.orig)) {
-        try { if (map.getLayer(id)) { map.setPaintProperty(id, 'text-opacity', nameFade.orig[id] === undefined ? null : nameFade.orig[id]); map.setPaintProperty(id, 'text-opacity-transition', nameFade.trans[id] === undefined ? null : nameFade.trans[id]); map.setLayoutProperty(id, 'visibility', nameFade.vis[id] === undefined ? null : nameFade.vis[id]); } } catch (e) {}
+        try { if (map.getLayer(id)) { map.setPaintProperty(id, 'text-opacity', nameFade.orig[id] === undefined ? null : nameFade.orig[id]); map.setPaintProperty(id, 'text-opacity-transition', nameFade.trans[id] === undefined ? null : nameFade.trans[id]); if (!nameBackdropHolds(id)) map.setLayoutProperty(id, 'visibility', nameFade.vis[id] === undefined ? null : nameFade.vis[id]); } } catch (e) {}
       }
     }
     nameFade.orig = {}; nameFade.trans = {}; nameFade.vis = {}; nameFade.mult = 1;

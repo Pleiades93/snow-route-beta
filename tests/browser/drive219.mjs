@@ -295,4 +295,20 @@ const H2 = await J(`({ held: window.__li.samples.some((s) => s.held), lastMult: 
 ok('H1 unloading the route mid-load-in (the delete path) ends the cycle: the hold had engaged, the unload releases it, and the multiplier stands back at 1 - no name is stranded invisible over the boot view (hold seen: ' + H2.held + ', released: ' + hDone + ', final multiplier: ' + H2.lastMult + ')',
   H2.held === true && hDone === true && H2.lastMult === 1);
 
+// ================= Phase I: entering create mode mid-load-in (the two visibility owners) =================
+await send('Page.reload', {}, S);
+await bootToPicker();
+await ev(INSTRUMENT);
+await ev(`document.querySelector('#rmRoutes .routeRow') && document.querySelector('#rmRoutes .routeRow').click()`);
+await poll(`typeof nameFade !== 'undefined' && nameFade.held`, 15000);
+await ev(`(() => { enterCreate('pick'); return true; })()`); // the backdrop snapshots the route stack's visibility NOW, while the hold's transient 'none' stands on the titles - the exact seat of the PR #162 Codex finding
+const iDone = await poll(`typeof nameFade !== 'undefined' && nameFade.mult === 1 && !nameFade.held`, 40000); // the load-in completes underneath creation (its reveal defers the titles' visibility to the backdrop) - completion is read off the load-in's own state, not off placed titles: under the backdrop the titles are hidden and place nothing, so the placed-titles poll could never see this cycle finish
+const iDuring = await J(`(() => { const ids = ['streetnamespt1', 'streetnamespt2', 'streetnamespt3', 'streetnamespt4'].filter((id) => map.getLayer(id)); return { hidden: ids.every((id) => map.getLayoutProperty(id, 'visibility') === 'none'), layers: ids.length, vis: ids.map((id) => map.getLayoutProperty(id, 'visibility') || 'visible'), creating: (typeof creating !== 'undefined' ? creating : '?'), snap: (typeof crHiddenLayers !== 'undefined' && crHiddenLayers ? crHiddenLayers.filter((pr) => pr[0].startsWith('streetnames')) : null) }; })()`);
+await ev(`(() => { exitCreate(); return true; })()`);
+await poll(`!!(window.map && map.loaded() && !map.isMoving())`, 30000);
+await sleep(1200);
+const iAfter = await J(`(() => { const ids = ['streetnamespt1', 'streetnamespt2', 'streetnamespt3', 'streetnamespt4'].filter((id) => map.getLayer(id)); const vis = ids.map((id) => map.getLayoutProperty(id, 'visibility') || 'visible'); const s = new Set(); for (const f of map.queryRenderedFeatures({ layers: ids })) if (f.properties && f.properties.name) s.add(f.properties.name); return { vis, placed: s.size }; })()`);
+ok('I1 entering create mode mid-load-in and leaving after it completes: during creation the backdrop\'s hide holds against the load-in\'s reveal (titles hidden: ' + iDuring.hidden + '), and after the exit the titles stand at their natural visibility and place - the backdrop recorded the UNDERLYING state, not the hold\'s transient none (cycle under creation: ' + iDone + ', during: ' + JSON.stringify(iDuring) + ', visibilities after exit: ' + JSON.stringify(iAfter.vis) + ', titles placed: ' + iAfter.placed + ')',
+  iDone === true && iDuring.hidden === true && iAfter.vis.every((v) => v !== 'none') && iAfter.placed >= 30);
+
 finish(R, proc);

@@ -3970,6 +3970,13 @@ function nameHoldApply(m) { // (re)apply the current multiplier to every name la
     } catch (e) {}
   }
 }
+function nameHoldNaturalVis(id) { // the UNDERLYING visibility of a held layer - its captured natural, never the hold's transient 'none'. The create backdrop (create-pick's crSetBackdrop) snapshots layer visibility when it hides the route stack; entered during a load-in it would otherwise record the transient 'none' as the state to restore, and the titles would stand hidden after creation exits (Codex review, PR #162). The backdrop consults this so its snapshot names the underlying state. A captured ABSENCE is itself the natural (the layer carries no visibility key), and reads 'visible' here; only a never-captured layer returns undefined, and the backdrop falls back to the live value for those.
+  if (!(id in nameFade.vis)) return undefined;
+  return nameFade.vis[id] === undefined ? 'visible' : nameFade.vis[id];
+}
+function nameBackdropHolds(id) { // whether the create backdrop currently has this layer hidden: while it does, the load-in's own visibility restore defers - the backdrop's exit restores the underlying natural (the snapshot above), and resurrecting the layer mid-creation would break the backdrop's hide
+  try { return typeof crHiddenLayers !== 'undefined' && !!crHiddenLayers && crHiddenLayers.some((pr) => pr[0] === id); } catch (e) { return false; }
+}
 function nameHoldSet(on) { // engage (instant - the hold must be shut before the load-in's first frame can paint a name) or release (the one joint ramp)
   if (on) {
     if (nameFade.raf) { cancelAnimationFrame(nameFade.raf); nameFade.raf = 0; }
@@ -3982,7 +3989,7 @@ function nameHoldSet(on) { // engage (instant - the hold must be shut before the
   // the layers come back into placement BEFORE the ramp's first frame, with their paint still at the ramp's zero - they place for the first time at the settled view and fade in there
   if (typeof map !== 'undefined' && map) {
     for (const id of Object.keys(nameFade.vis)) {
-      try { if (map.getLayer(id)) map.setLayoutProperty(id, 'visibility', nameFade.vis[id] === undefined ? null : nameFade.vis[id]); } catch (e) {}
+      try { if (map.getLayer(id) && !nameBackdropHolds(id)) map.setLayoutProperty(id, 'visibility', nameFade.vis[id] === undefined ? null : nameFade.vis[id]); } catch (e) {}
     }
   }
   nameFade.t0 = (typeof performance !== 'undefined' ? performance.now() : Date.now());
@@ -3996,7 +4003,7 @@ function nameHoldSet(on) { // engage (instant - the hold must be shut before the
     // the ramp is done: restore every touched layer's natural paint and visibility verbatim and forget them - from here the style is the pre-1.266 one again
     if (typeof map !== 'undefined' && map) {
       for (const id of Object.keys(nameFade.orig)) {
-        try { if (map.getLayer(id)) { map.setPaintProperty(id, 'text-opacity', nameFade.orig[id] === undefined ? null : nameFade.orig[id]); map.setPaintProperty(id, 'text-opacity-transition', nameFade.trans[id] === undefined ? null : nameFade.trans[id]); map.setLayoutProperty(id, 'visibility', nameFade.vis[id] === undefined ? null : nameFade.vis[id]); } } catch (e) {}
+        try { if (map.getLayer(id)) { map.setPaintProperty(id, 'text-opacity', nameFade.orig[id] === undefined ? null : nameFade.orig[id]); map.setPaintProperty(id, 'text-opacity-transition', nameFade.trans[id] === undefined ? null : nameFade.trans[id]); if (!nameBackdropHolds(id)) map.setLayoutProperty(id, 'visibility', nameFade.vis[id] === undefined ? null : nameFade.vis[id]); } } catch (e) {}
       }
     }
     nameFade.orig = {}; nameFade.trans = {}; nameFade.vis = {}; nameFade.mult = 1;
@@ -9888,7 +9895,7 @@ function renderDraft() { // the DRAFT renders through its own GeoJSON source, co
   syncCrGlow(); // Beta 1.208: the trim glow tracks the draft's own render - the street's normal draft paint is untouched above and below it
 }
 onMapReady(() => map.on('styledata', () => { if (creating) { if (map.getLayer('crDraftCase') && (!crIsectPoi || map.getLayer('crIsectDot'))) { // gate fix (Codex P2, PR #158): styledata also fires for paint-only updates - the POI pulse's own frame writes among them - and the restoration below is for basemap swaps only: when the custom layers all still stand, nothing was wiped, so a standing pulse must not rebuild the draft and POI sources frame after frame. A swap wipes the layers atomically, so a missing sentinel IS the swap signal. The ONE order-sensitive piece still runs here: the backdrop hides the loaded route's layers BY ID, and GLP.init re-creates them (visible) after this listener's restoration turn on a swap - if any recorded layer stands visible again, re-apply the backdrop, or the restored route stack shows over the creation map (Codex P2, PR #158 gate round 2)
-    if (crHiddenLayers && crHiddenLayers.some(pr => { try { return map.getLayer(pr[0]) && (map.getLayoutProperty(pr[0], 'visibility') || 'visible') !== 'none'; } catch (e) { return false; } })) crSetBackdrop(true);
+    if (crHiddenLayers && (crHiddenLayers.some(pr => { try { return map.getLayer(pr[0]) && (map.getLayoutProperty(pr[0], 'visibility') || 'visible') !== 'none'; } catch (e) { return false; } }) || CR_ROUTE_LAYERS.some(id => { try { return map.getLayer(id) && !crHiddenLayers.some(pr => pr[0] === id) && (map.getLayoutProperty(id, 'visibility') || 'visible') !== 'none'; } catch (e) { return false; } }))) crSetBackdrop(true); // Beta 1.266: an UNRECORDED route layer standing visible fires it too - a layer that lands after the enter snapshot (the stack still building when creation opens, mid-load-in) is not in the record yet, and the recorded-only check would never see it
     return; }
   renderDraft(); crSetBackdrop(true); crIsectEnsure(); } })); // a basemap swap mid-create wipes custom layers - redraw the draft and re-hide the backdrop. Beta 1.262: the POI surface's layers are custom too - crIsectEnsure re-seats them and re-points the source at the standing POI, so a picked crossing's marker survives a theme swap mid-create
 onMapReady(() => { if (creating) crSetBackdrop(true); }); // creation entered before the map existed (boot mode): the backdrop lands when the map does
@@ -9933,9 +9940,12 @@ function ensureCrPoiLayers() {
 function crSetBackdrop(on) {
   if (!map || typeof map.setLayoutProperty !== 'function') return;
   if (on) {
+    const crVisPair = (id) => { const nat = (typeof nameHoldNaturalVis === 'function') ? nameHoldNaturalVis(id) : undefined; return [id, nat === undefined ? (map.getLayoutProperty(id, 'visibility') || 'visible') : (nat || 'visible')]; }; // Beta 1.266: a snapshot pair records the UNDERLYING visibility - entered during a name load-in, a title layer's live 'none' is the hold's transient, and restoring it on exit would leave the titles hidden after the load-in completed (Codex review, PR #162); nameHoldNaturalVis (app2) names the captured natural
     if (!crHiddenLayers) {
       crHiddenLayers = [];
-      for (const id of CR_ROUTE_LAYERS) { try { if (map.getLayer(id)) crHiddenLayers.push([id, map.getLayoutProperty(id, 'visibility') || 'visible']); } catch (e) {} }
+      for (const id of CR_ROUTE_LAYERS) { try { if (map.getLayer(id)) crHiddenLayers.push(crVisPair(id)); } catch (e) {} }
+    } else {
+      for (const id of CR_ROUTE_LAYERS) { try { if (map.getLayer(id) && !crHiddenLayers.some((pr) => pr[0] === id)) crHiddenLayers.push(crVisPair(id)); } catch (e) {} } // Beta 1.266: the top-up - a route layer that lands after the enter snapshot (the stack still building when creation opens) joins the record here, so the hide below covers it from its first frame under creation
     }
     for (const pair of crHiddenLayers) { try { map.setLayoutProperty(pair[0], 'visibility', 'none'); } catch (e) {} }
     ensureCrPoiLayers();

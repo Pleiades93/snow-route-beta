@@ -80,7 +80,7 @@ check('12: a basemap swap mid-create re-seats the surface (the styledata hook re
 
 check('14: the frame loop cannot storm the creation sources (gate fixes, PR #158): the styledata restoration stands down while the custom layers stand (a missing sentinel is the swap signal), the ensure pushes the point only on change, and the stand-down still re-applies the backdrop when a recorded route layer stands visible again (the order-sensitive piece: GLP.init re-creates the route stack after this listener\'s turn on a swap)',
   pick.includes("if (map.getLayer('crDraftCase') && (!crIsectPoi || map.getLayer('crIsectDot'))) {") &&
-  pick.includes("crHiddenLayers.some(pr => { try { return map.getLayer(pr[0]) && (map.getLayoutProperty(pr[0], 'visibility') || 'visible') !== 'none'; } catch (e) { return false; } })) crSetBackdrop(true);") &&
+  pick.includes("crHiddenLayers.some(pr => { try { return map.getLayer(pr[0]) && (map.getLayoutProperty(pr[0], 'visibility') || 'visible') !== 'none'; } catch (e) { return false; } }) || CR_ROUTE_LAYERS.some(id => { try { return map.getLayer(id) && !crHiddenLayers.some(pr => pr[0] === id) && (map.getLayoutProperty(id, 'visibility') || 'visible') !== 'none'; } catch (e) { return false; } }))) crSetBackdrop(true);") && // Beta 1.266: the re-apply condition grew the unrecorded-layer clause (the backdrop top-up) - the recorded-layer clause this check pins stands unchanged inside it
   block.includes('if (want !== crIsectPushed)') && block.includes("let crIsectPushed = null;"));
 
 // ---------- the release editorial ----------

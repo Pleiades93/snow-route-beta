@@ -40,6 +40,15 @@ const hideBody = hideStart > -1 ? app2.slice(hideStart, app2.indexOf('\n}\n', hi
 check("1c: a basemap name layer's hold writes VISIBILITY only (nameHoldHideOnly sets layout visibility and contains no paint write at all) - a single text-opacity write on a basemap symbol layer resets its tiles' placement state and blanks a marginal title at the next zoom boundary (measured on the pre-1.266 tree: Bell Harbour, drive216's P3)",
   hideStart > -1 && hideBody.includes('setLayoutProperty') && !hideBody.includes('setPaintProperty'));
 
+// ---------- (1d) the two visibility owners are coordinated (Codex, PR #162) ----------
+const createPick = read('parts/create-pick.js');
+check('1d: the create backdrop and the load-in coordinate their visibility ownership: app2 exports the underlying natural (nameHoldNaturalVis) and defers its restore while the backdrop holds a layer (nameBackdropHolds), and crSetBackdrop\'s snapshot consults the natural instead of recording the hold\'s transient none',
+  app2.includes('function nameHoldNaturalVis(id)') &&
+  app2.includes('function nameBackdropHolds(id)') &&
+  app2.includes('!nameBackdropHolds(id)') &&
+  createPick.includes('nameHoldNaturalVis(id)') &&
+  createPick.includes('!crHiddenLayers.some((pr) => pr[0] === id)')); // the top-up: a route layer landing after the enter snapshot joins the record (and the styledata watcher fires on an unrecorded visible route layer), so the backdrop's hide covers late layers too
+
 // ---------- (2) the held set is names only: titles + basemap text, never the POI ----------
 const idsStart = app2.indexOf('function nameLayerIds(m)');
 const idsBody = idsStart > -1 ? app2.slice(idsStart, app2.indexOf('\n}\n', idsStart)) : '';

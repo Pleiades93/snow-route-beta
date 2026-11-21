@@ -2060,6 +2060,45 @@
    "red": "drive219 fails 9-10 of 14 across runs on the 1.265 tree: A2 no hold engages, A3 the teardown lands at multiplier null (visible), A7 no naturals registry, B1/C1/D1/E1/H1 no load-in cycle at all, and in the denser runs A4 convicts the blink by name (Fifth, Velmar, Conti, Bourbon, Columbus, Flushing, Astona, Blackburn, Santa Barbara) with A5/A6 failing alongside (A1/F1/G1 pass - the instant-fit path has no flight and nothing to blink, on either tree) - observed in this round",
    "green": "drive219 passes 14/14 on the final tree: the teardown lands inside the hold, every held sample stands at effective opacity 0 with the basemap layers hidden and never paint-written, the lane is clean on per-name effective opacity, the fade brackets overlap, naturals restore verbatim, the theme swap, the second pick, the instant-fit settle and the mid-load-in unload all resolve through the one cycle, and both backstops land (the post-re-place reveal with the settle test suppressed; 15.0 s absolute) - observed in this round; selftest-lane219 fixtures pass 9/9",
    "issued": "2026-11-21 unifiedloadin-1266"
+  },
+  {
+   "id": "proof-1266-backdrop-coordination",
+   "check": "tests/proof/proof-1266.mjs",
+   "kind": "mutation",
+   "files": {
+    "tests/proof/proof-1266.mjs": "211375c12ca30900d5560a35ea492bd26eb2444e21f03d5d31816da2bf2a4300",
+    "parts/create-pick.js": "98db68b00f4edce0f4cb92c4164bd08bb029393c45d04155923a31195fb69b97",
+    "parts/app2.js": "3945d6e9f78be28040d81d0398b8f867ba0a88cd8f60d2f9ab4db9039ed67eae"
+   },
+   "mutation": "parts/create-pick.js: crSetBackdrop's snapshot pair stops consulting nameHoldNaturalVis and records the live visibility (the PR #162 defect: the hold's transient 'none' becomes the restore state)",
+   "red": "proof-1266 fails exactly check 1d (11 pass, 1 fail) - observed in this round's mutation run; at drive level the same defect is drive219 I1's scenario (titles hidden after creation exits)",
+   "green": "proof-1266 passes 12/12 on the final tree; drive219 I1 passes (backdrop records the underlying 'visible', titles stand visible and placed after the exit)",
+   "issued": "2026-11-21 unifiedloadin-1266"
+  },
+  {
+   "id": "drive219-unified-load-in-final3",
+   "check": "tests/browser/drive219.mjs",
+   "kind": "rendered",
+   "files": {
+    "tests/browser/drive219.mjs": "c7e3249d0d2dec1a50f691a5038438f83fb100c371c90afc190ab76f4b844771"
+   },
+   "mutation": "rendered fail-first on the Beta 1.265 tree (no name hold exists). Supersedes drive219-unified-load-in-final2 after phase I (the create-backdrop coordination, PR #162) joined the drive and the basemap visibility split settled",
+   "red": "drive219 fails 9-10 of 14 across runs on the 1.265 tree (the pre-phase-I form): A2/A3/A7/B1/C1/D1/E1/H1 fail structurally and A4 convicts the blink by name in the denser runs - observed in this round",
+   "green": "drive219 passes 15/15 on the final tree, phase I included: entering create mode mid-load-in, the backdrop's hide holds against the reveal, the backdrop records the underlying visibility (with the late-layer top-up), and after the exit the titles stand visible and placed - observed in this round; drive218 stays 14/14 with the backdrop changes",
+   "issued": "2026-11-21 unifiedloadin-1266"
+  },
+  {
+   "id": "proof-1262-backdrop-topup-repin",
+   "check": "tests/proof/proof-1262.mjs",
+   "kind": "mutation",
+   "files": {
+    "tests/proof/proof-1262.mjs": "e516424320e1972aaa60a2912ec4b0e378fbc6cecc6fbda5b3b4f695948eabc5",
+    "parts/create-pick.js": "98db68b00f4edce0f4cb92c4164bd08bb029393c45d04155923a31195fb69b97"
+   },
+   "mutation": "parts/create-pick.js: the styledata watcher's re-apply condition reverts to the recorded-layer clause alone (Beta 1.266's unrecorded-layer clause removed - the backdrop top-up unwatched)",
+   "red": "proof-1262 fails exactly check 14 (13 pass, 1 fail) - observed in this round's mutation run",
+   "green": "proof-1262 passes 14/14 on the final tree (its check 14 re-pinned to the extended condition, the recorded-layer clause unchanged inside it)",
+   "issued": "2026-11-21 unifiedloadin-1266"
   }
  ]
 }
