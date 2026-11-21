@@ -34,6 +34,12 @@ check("1b: the multiplier is applied by TRANSFORMING the paint (scaleNameStops r
   !app2.includes("['*', o, nameFade.mult]") &&
   app2.includes('nameFade.unheld[id] = true;'));
 
+// ---------- (1c) basemap name layers are held by visibility alone - their paint is never written ----------
+const hideStart = app2.indexOf('function nameHoldHideOnly(m, id)');
+const hideBody = hideStart > -1 ? app2.slice(hideStart, app2.indexOf('\n}\n', hideStart)) : '';
+check("1c: a basemap name layer's hold writes VISIBILITY only (nameHoldHideOnly sets layout visibility and contains no paint write at all) - a single text-opacity write on a basemap symbol layer resets its tiles' placement state and blanks a marginal title at the next zoom boundary (measured on the pre-1.266 tree: Bell Harbour, drive216's P3)",
+  hideStart > -1 && hideBody.includes('setLayoutProperty') && !hideBody.includes('setPaintProperty'));
+
 // ---------- (2) the held set is names only: titles + basemap text, never the POI ----------
 const idsStart = app2.indexOf('function nameLayerIds(m)');
 const idsBody = idsStart > -1 ? app2.slice(idsStart, app2.indexOf('\n}\n', idsStart)) : '';

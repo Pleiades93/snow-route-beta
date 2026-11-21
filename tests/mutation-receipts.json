@@ -2022,6 +2022,44 @@
    "red": "selftest-lane219 fails F2 and F4 (7 pass, 2 fail): the visible-invisible-visible sequence and the post-reveal fade both acquit under the suspending judge - observed in this round's mutation run",
    "green": "selftest-lane219 passes 9/9 with the strict lane",
    "issued": "2026-11-21 unifiedloadin-1266"
+  },
+  {
+   "id": "proof-1266-hold-transform-v2",
+   "check": "tests/proof/proof-1266.mjs",
+   "kind": "mutation",
+   "files": {
+    "tests/proof/proof-1266.mjs": "71ff1e812ed3f9c32dd51a0935bb805925356a8941bd4dc3cf9ad096f5503565",
+    "parts/app2.js": "390a4f99044ad7c6d76a01f1497d1f13657b553003e8f3127899525463b556c4"
+   },
+   "mutation": "parts/app2.js: nameHoldApply's transform replaced by the refused ['*', natural, mult] wrap (supersedes the proof-1266-hold-transform observation after the basemap visibility split changed app2)",
+   "red": "proof-1266 fails exactly check 1b (10 pass, 1 fail) - re-observed in this round's mutation run on the final app2",
+   "green": "proof-1266 passes 11/11 on the final tree",
+   "issued": "2026-11-21 unifiedloadin-1266"
+  },
+  {
+   "id": "proof-1266-basemap-paint-ban",
+   "check": "tests/proof/proof-1266.mjs",
+   "kind": "mutation",
+   "files": {
+    "tests/proof/proof-1266.mjs": "71ff1e812ed3f9c32dd51a0935bb805925356a8941bd4dc3cf9ad096f5503565",
+    "parts/app2.js": "390a4f99044ad7c6d76a01f1497d1f13657b553003e8f3127899525463b556c4"
+   },
+   "mutation": "parts/app2.js: nameHoldHideOnly gains a text-opacity write on a basemap name layer (the basemap paint ban lifted)",
+   "red": "proof-1266 fails exactly check 1c (10 pass, 1 fail) - observed in this round's mutation run; at drive level the same write is the placement-state reset drive216's P3 convicts (Bell Harbour)",
+   "green": "proof-1266 passes 11/11 on the final tree",
+   "issued": "2026-11-21 unifiedloadin-1266"
+  },
+  {
+   "id": "drive219-unified-load-in-final2",
+   "check": "tests/browser/drive219.mjs",
+   "kind": "rendered",
+   "files": {
+    "tests/browser/drive219.mjs": "d13a067af8723eda2dc053d022b0c97ed23d9f74a34ebec5749c50b0d2b0e906"
+   },
+   "mutation": "rendered fail-first on the Beta 1.265 tree (no name hold exists: the re-place teardown lands visible at the flight's idle and the titles blink): boot-phase presence sampling across the pick, flight, settle and reveal, a post-load-in pan, a mid-load-in theme swap, a second pick mid-load-in, both backstop drills (the post-re-place drill now suppresses the settle test by holding map.loaded() false from the click), the reduced-motion instant-fit settle, and a mid-load-in unload. Supersedes drive219-unified-load-in-judge after the basemap visibility split and the drill hardening",
+   "red": "drive219 fails 9-10 of 14 across runs on the 1.265 tree: A2 no hold engages, A3 the teardown lands at multiplier null (visible), A7 no naturals registry, B1/C1/D1/E1/H1 no load-in cycle at all, and in the denser runs A4 convicts the blink by name (Fifth, Velmar, Conti, Bourbon, Columbus, Flushing, Astona, Blackburn, Santa Barbara) with A5/A6 failing alongside (A1/F1/G1 pass - the instant-fit path has no flight and nothing to blink, on either tree) - observed in this round",
+   "green": "drive219 passes 14/14 on the final tree: the teardown lands inside the hold, every held sample stands at effective opacity 0 with the basemap layers hidden and never paint-written, the lane is clean on per-name effective opacity, the fade brackets overlap, naturals restore verbatim, the theme swap, the second pick, the instant-fit settle and the mid-load-in unload all resolve through the one cycle, and both backstops land (the post-re-place reveal with the settle test suppressed; 15.0 s absolute) - observed in this round; selftest-lane219 fixtures pass 9/9",
+   "issued": "2026-11-21 unifiedloadin-1266"
   }
  ]
 }

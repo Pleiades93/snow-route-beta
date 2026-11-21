@@ -2,7 +2,7 @@
 <html lang="en" class="boot">
 <head>
 <meta charset="UTF-8">
-<meta http-equiv="Content-Security-Policy" content="default-src 'none'; script-src 'sha384-bhi2bZkjGgKGpJ7EiLbK17RF10E3ick6phJ2Yg+IUFsLEfWTxTtj5Bd/4sdgzgYq' https://cdn.jsdelivr.net/npm/maplibre-gl@4.7.1/dist/maplibre-gl.js; style-src-elem 'sha384-B6wsFia2uoQE3sPmlBwuibTMcH8aEknSFTDxbpS+6+APqJqVBRaYP14CkSJhKA+m' https://cdn.jsdelivr.net; style-src-attr 'unsafe-inline'; img-src 'self' data: blob: https://tiles.basemaps.cartocdn.com https://protomaps.github.io https://cdn.jsdelivr.net; connect-src 'self' https://tiles.basemaps.cartocdn.com https://protomaps.github.io https://cdn.jsdelivr.net https://nominatim.openstreetmap.org https://overpass-api.de https://overpass.kumi.systems; worker-src blob: 'self'; child-src blob: 'self'; font-src 'none'; manifest-src 'self'; base-uri 'none'; form-action 'none'; object-src 'none'">
+<meta http-equiv="Content-Security-Policy" content="default-src 'none'; script-src 'sha384-SQfUDxtCENHwqx47IvgtiQY1fmqCGdJiTXxlvXiWRr7HNHDd5CwIE8EbUsTWQkAM' https://cdn.jsdelivr.net/npm/maplibre-gl@4.7.1/dist/maplibre-gl.js; style-src-elem 'sha384-B6wsFia2uoQE3sPmlBwuibTMcH8aEknSFTDxbpS+6+APqJqVBRaYP14CkSJhKA+m' https://cdn.jsdelivr.net; style-src-attr 'unsafe-inline'; img-src 'self' data: blob: https://tiles.basemaps.cartocdn.com https://protomaps.github.io https://cdn.jsdelivr.net; connect-src 'self' https://tiles.basemaps.cartocdn.com https://protomaps.github.io https://cdn.jsdelivr.net https://nominatim.openstreetmap.org https://overpass-api.de https://overpass.kumi.systems; worker-src blob: 'self'; child-src blob: 'self'; font-src 'none'; manifest-src 'self'; base-uri 'none'; form-action 'none'; object-src 'none'">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="mobile-web-app-capable" content="yes">
@@ -3879,21 +3879,44 @@ const ROUTE_TILE_NAMES = []; // Beta 1.40: every route street's name AS THE TILE
 // rebuild then tore the labelpts source down at the idle, and all 33 titles
 // vanished for the worker's re-parse (~1-2 s; ~4.9 s under 6x CPU throttle)
 // in the same moment the surrounding basemap names finished fading in.
-// The hold is a MULTIPLIER over each layer's own text-opacity: a layer's
-// natural paint (the titles' zoom ramp included) is captured verbatim on
-// first touch and restored verbatim when the ramp completes, so outside a
-// load-in the style is byte-for-byte the pre-1.266 one. The multiplier is
-// applied by TRANSFORMING the paint, never by wrapping it: this MapLibre's
-// paint validator silently refuses any value that embeds the layer's own
-// expression as a sub-expression (a ['*', natural, mult] wrap reads back
-// unchanged - measured in the round's harness, drive219's first runs),
-// while a zoom interpolate rebuilt with its stop outputs scaled is
-// accepted. A layer whose set does not take is recorded in nameFade.unheld
-// and falls back to the flat multiplier, so a refusal can never again pass
-// as a held layer. The state machine that engages and releases the hold
-// lives in app5 (beginNameLoadIn and family); this block owns only the paint.
+// The hold comes in two kinds, because the two name families answer to
+// different placement machinery. The route's TITLE layers (a GeoJSON
+// source) are held by a multiplier over their own text-opacity - the
+// paint transformed to the multiplier's value while the window stands,
+// ramped back to natural over the one fade at the reveal - and, like
+// every held layer, by visibility 'none' while the window stands. The
+// BASEMAP's name layers are held by VISIBILITY ALONE: their paint is
+// never written, not once, because a single text-opacity write on a
+// basemap symbol layer resets its tiles' placement state, and a
+// marginal title that competes in those tiles blanks for one placement
+// pass at the next zoom boundary (measured three ways in the round's
+// harness: a two-write manual hold on the pre-1.266 tree reproduces
+// it, Bell Harbour in drive216's P3; an untouched tree is clean; heavy
+// paint churn on a title layer alone does not reproduce it). A hidden
+// basemap layer leaves placement for the window and, when its
+// visibility returns at the reveal, re-places at the settled view and
+// fades in by the engine's own symbol fade, together with the titles'
+// ramp. The visibility half is not decoration either: name layers that
+// spend the window at opacity 0 (visible to the placement engine,
+// painting nothing) leave a placement-history residue of the same
+// family, so every held layer leaves placement entirely, and its
+// anchors are first decided at the settled view when the fade begins -
+// which is also the re-place's own purpose. A layer's natural paint (the titles' zoom ramp included) and
+// its natural visibility are captured verbatim on first touch and
+// restored verbatim when the ramp completes, so outside a load-in the
+// style is byte-for-byte the pre-1.266 one. The multiplier is applied
+// by TRANSFORMING the paint, never by wrapping it: this MapLibre's
+// paint validator silently refuses any value that embeds the layer's
+// own expression as a sub-expression (a ['*', natural, mult] wrap reads
+// back unchanged - measured in the round's harness, drive219's first
+// runs), while a zoom interpolate rebuilt with its stop outputs scaled
+// is accepted. A layer whose set does not take is recorded in
+// nameFade.unheld and falls back to the flat multiplier, so a refusal
+// can never again pass as a held layer. The state machine that engages
+// and releases the hold lives in app5 (beginNameLoadIn and family);
+// this block owns only the paint and the visibility.
 const NAME_FADE_MS = 350; // the joint fade-in's length (Andrew's ~300-400 ms)
-let nameFade = { held: false, mult: 1, orig: {}, trans: {}, raf: 0, t0: 0, unheld: {} };
+let nameFade = { held: false, mult: 1, orig: {}, trans: {}, vis: {}, raf: 0, t0: 0, unheld: {} };
 function scaleNameStops(expr, mult) { // a zoom interpolate or step whose stop outputs are plain numbers, rebuilt with every output scaled by mult - the same expression shape, so the validator takes it and the layer's own zoom behaviour is preserved proportionally. Any other shape returns null (the caller falls back).
   if (!Array.isArray(expr)) return null;
   if (expr[0] === 'interpolate') { // ['interpolate', interpolation, input, stopIn, stopOut, ...]
@@ -3910,17 +3933,26 @@ function scaleNameStops(expr, mult) { // a zoom interpolate or step whose stop o
   }
   return null;
 }
-function nameLayerIds(m) { // every layer that prints a NAME: the basemap's text layers (glUnifyLabels' own discriminator - a symbol layer carrying a text-field over a tile source-layer) plus the route's four title tiers. The route POI text is NOT a street name and the intro choreography sits the POI on screen during the dwell (Beta 1.203), so it is never held.
-  const ids = [];
-  try { for (const L of m.getStyle().layers) { if (L.type === 'symbol' && L.layout && L.layout['text-field'] && L['source-layer']) ids.push(L.id); } } catch (e) {}
-  for (const id of ['streetnamespt1', 'streetnamespt2', 'streetnamespt3', 'streetnamespt4']) { try { if (m.getLayer(id) && ids.indexOf(id) < 0) ids.push(id); } catch (e) {} }
-  return ids;
+function nameLayerIds(m) { // every layer that prints a NAME, in two kinds: the basemap's text layers (glUnifyLabels' own discriminator - a symbol layer carrying a text-field over a tile source-layer) and the route's four title tiers. The route POI text is NOT a street name and the intro choreography sits the POI on screen during the dwell (Beta 1.203), so it is never held.
+  const base = [], titles = [];
+  try { for (const L of m.getStyle().layers) { if (L.type === 'symbol' && L.layout && L.layout['text-field'] && L['source-layer']) base.push(L.id); } } catch (e) {}
+  for (const id of ['streetnamespt1', 'streetnamespt2', 'streetnamespt3', 'streetnamespt4']) { try { if (m.getLayer(id)) titles.push(id); } catch (e) {} }
+  return { base, titles };
+}
+function nameHoldHideOnly(m, id) { // a BASEMAP name layer's hold: VISIBILITY ONLY - its paint is never written, not once. A single text-opacity write on a basemap symbol layer resets its tiles' placement state, and a marginal title that competes in those tiles blanks for one placement pass at the next zoom boundary (measured on the pre-1.266 tree with a two-write manual hold: Bell Harbour, drive216's P3; an untouched tree is clean). Hidden, the layer leaves placement for the window; when its visibility returns at the reveal it re-places at the settled view and fades in by the engine's own symbol fade - no paint write is needed, or forgiven.
+  try {
+    if (!(id in nameFade.vis)) nameFade.vis[id] = m.getLayoutProperty(id, 'visibility');
+    if (nameFade.held && m.getLayoutProperty(id, 'visibility') !== 'none') m.setLayoutProperty(id, 'visibility', 'none');
+  } catch (e) {}
 }
 function nameHoldApply(m) { // (re)apply the current multiplier to every name layer present. glUnifyLabels calls this at the end of its pass, so every restack (a theme swap, a stack rebuild) lands in the held state; the engine's stack build calls that pass after the title layers are added, and the re-place re-adds the titles from their live specs (which carry the held paint), so no engine code needs to know the hold exists. The release ramp calls it per frame.
   if (!m || (!nameFade.held && nameFade.mult === 1)) return;
-  for (const id of nameLayerIds(m)) {
+  const kinds = nameLayerIds(m);
+  for (const id of kinds.base) nameHoldHideOnly(m, id);
+  for (const id of kinds.titles) {
     try {
-      if (!(id in nameFade.orig)) { nameFade.orig[id] = m.getPaintProperty(id, 'text-opacity'); nameFade.trans[id] = m.getPaintProperty(id, 'text-opacity-transition'); }
+      if (!(id in nameFade.orig)) { nameFade.orig[id] = m.getPaintProperty(id, 'text-opacity'); nameFade.trans[id] = m.getPaintProperty(id, 'text-opacity-transition'); nameFade.vis[id] = m.getLayoutProperty(id, 'visibility'); }
+      if (nameFade.held && m.getLayoutProperty(id, 'visibility') !== 'none') m.setLayoutProperty(id, 'visibility', 'none'); // while the window stands the layer leaves placement entirely (the block comment above: an opacity-only hold leaves a placement-history residue)
       const o = nameFade.orig[id];
       let v;
       if (nameFade.mult === 1) v = o;
@@ -3948,6 +3980,12 @@ function nameHoldSet(on) { // engage (instant - the hold must be shut before the
   }
   if (!nameFade.held && nameFade.mult === 1) return;
   nameFade.held = false;
+  // the layers come back into placement BEFORE the ramp's first frame, with their paint still at the ramp's zero - they place for the first time at the settled view and fade in there
+  if (typeof map !== 'undefined' && map) {
+    for (const id of Object.keys(nameFade.vis)) {
+      try { if (map.getLayer(id)) map.setLayoutProperty(id, 'visibility', nameFade.vis[id] === undefined ? null : nameFade.vis[id]); } catch (e) {}
+    }
+  }
   nameFade.t0 = (typeof performance !== 'undefined' ? performance.now() : Date.now());
   const step = () => {
     nameFade.raf = 0;
@@ -3956,13 +3994,13 @@ function nameHoldSet(on) { // engage (instant - the hold must be shut before the
     nameFade.mult = k;
     if (typeof map !== 'undefined' && map) nameHoldApply(map);
     if (k < 1) { nameFade.raf = requestAnimationFrame(step); return; }
-    // the ramp is done: restore every touched layer's natural paint verbatim and forget it - from here the style is the pre-1.266 one again
+    // the ramp is done: restore every touched layer's natural paint and visibility verbatim and forget them - from here the style is the pre-1.266 one again
     if (typeof map !== 'undefined' && map) {
       for (const id of Object.keys(nameFade.orig)) {
-        try { if (map.getLayer(id)) { map.setPaintProperty(id, 'text-opacity', nameFade.orig[id] === undefined ? null : nameFade.orig[id]); map.setPaintProperty(id, 'text-opacity-transition', nameFade.trans[id] === undefined ? null : nameFade.trans[id]); } } catch (e) {}
+        try { if (map.getLayer(id)) { map.setPaintProperty(id, 'text-opacity', nameFade.orig[id] === undefined ? null : nameFade.orig[id]); map.setPaintProperty(id, 'text-opacity-transition', nameFade.trans[id] === undefined ? null : nameFade.trans[id]); map.setLayoutProperty(id, 'visibility', nameFade.vis[id] === undefined ? null : nameFade.vis[id]); } } catch (e) {}
       }
     }
-    nameFade.orig = {}; nameFade.trans = {}; nameFade.mult = 1;
+    nameFade.orig = {}; nameFade.trans = {}; nameFade.vis = {}; nameFade.mult = 1;
   };
   nameFade.raf = requestAnimationFrame(step);
   setTimeout(() => { if (!nameFade.held && nameFade.mult < 1 && !nameFade.raf) step(); }, NAME_FADE_MS + 150); // a starved rAF (a hidden tab) must not strand the fade mid-ramp
