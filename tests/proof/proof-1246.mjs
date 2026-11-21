@@ -76,7 +76,7 @@ check('9: the fallback watchdog still tests its start clock against stallMs',
 // ---------- the release editorial ----------
 check('10: the CHANGELOG top entry is Beta 1.246', changelog.includes('## Beta 1.246'));
 check('11: What\'s New carries the CURRENT entry\'s bullet (rolled to 1.251: this check tracks the current entry each round)',
-  whatsnew.includes('The splash logo\'s snow now rounds off at the ends and melts into the blue at the bottom.'));
+  whatsnew.includes('Street names are the app\'s own labels when zoomed out, and the map\'s full names when you zoom in close.'));
 
 console.log(`proof-1246: ${pass} passed, ${fail} failed`);
 process.exit(fail ? 1 : 0);

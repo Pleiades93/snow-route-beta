@@ -66,8 +66,23 @@ const foot = async () => {
     const W = Math.ceil(D * 2.1);
     const x0 = Math.max(0, Math.min(cnv.width - W, Math.round(pt.x * dev - W / 2))), y0 = Math.max(0, Math.min(cnv.height - W, Math.round(pt.y * dev - W / 2)));
     const grab = (skipFirst) => new Promise(res => { const to = setTimeout(() => res(null), 6000); let skipped = false; const go = () => { if (skipFirst && !skipped) { skipped = true; map.once('render', go); map.triggerRepaint(); return; } clearTimeout(to); try { if (!window.__puckCv) window.__puckCv = document.createElement('canvas'); const c2 = window.__puckCv; c2.width = W; c2.height = W; const ctx = c2.getContext('2d', { willReadFrequently: true }); ctx.drawImage(cnv, x0, y0, W, W, 0, 0, W, W); res(Array.from(ctx.getImageData(0, 0, W, W).data)); } catch (e) { res(null); } }; map.once('render', go); map.triggerRepaint(); });
-    const aWarm = await grab(false); if (!aWarm) return { err: 'warm grab failed' };
-    const a = await grab(false); if (!a) return { err: 'grab a failed' }; // two visible grabs back to back: the first absorbs any tile still landing in the window, so the a/b pair straddles only the visibility flip
+    // The a/b pair must straddle ONLY the visibility flip, so warm grabs
+    // run until two consecutive frames are pixel-identical in the window:
+    // every transient has then finished. Through Beta 1.260 two grabs
+    // sufficed (the first absorbed any tile still landing). Beta 1.261
+    // premise repair: the app titles are back, and the standing title
+    // heal re-places them after a camera settle - Velmar's own title
+    // sits inside this fix's window at zoom 14, and a re-place landing
+    // between the pair entered the diff and read as footprint width
+    // (W2 spread 9 in CI on both 1.261 heads, the z14/pitch-60 cell
+    // wide). The last warm grab is the a frame.
+    let a = await grab(false); if (!a) return { err: 'warm grab failed' };
+    for (let q = 0; q < 8; q++) {
+      const prev = a; a = await grab(false); if (!a) return { err: 'grab a failed' };
+      let quiet = prev.length === a.length;
+      if (quiet) { for (let i = 0; i < a.length; i++) { if (a[i] !== prev[i]) { quiet = false; break; } } }
+      if (quiet) break;
+    }
     let b = null; try { map.setLayoutProperty('gps-puck-shader', 'visibility', 'none'); b = await grab(true); } finally { map.setLayoutProperty('gps-puck-shader', 'visibility', 'visible'); map.triggerRepaint(); }
     if (!b) return { err: 'grab b failed' };
     let n = 0, ns = 0, minx = 1e9, maxx = -1, miny = 1e9, maxy = -1, sminy = 1e9, smaxy = -1, sminx = 1e9, smaxx = -1;
@@ -96,6 +111,22 @@ const C0 = await core();
 ok('P3 the puck renders at the fix (opaque blue core found) | ' + JSON.stringify({ n: C0.n, coreW: C0.coreW, D: C0.D }), C0.n > 100 && Math.abs(C0.coreW - 0.62 * C0.D) <= 3);
 
 // ---- W: width constancy across zoom x pitch (the 1.182 balloon, killed) ----
+// Beta 1.261 premise repair (gate round 3): the street titles are HIDDEN
+// for the W cells (and restored right after W2). foot()'s diff premise -
+// the a/b pair straddles only the puck's visibility flip - cannot hold
+// with live titles in the window: since 1.261 the standing heal can
+// re-place a title (Velmar's own, inside this fix's window at zoom 14)
+// at any idle after a settle, including between the pair, and its glyphs
+// read as footprint width (CI: spread 9 on three consecutive heads, the
+// wide cell always a zoom-14 one). Gate round 2's warm-grab quiet loop
+// narrowed the window but could not close it - the heal waits for
+// loaded(), which can land after quiet is declared. The puck's width is
+// the subject here, never the labels; hiding the label layers for the
+// measurement is the same isolation the b grab applies to the puck
+// layer itself. (The quiet loop in foot() stays: it still absorbs the
+// tile transients it was built for.)
+const TITLE_IDS = ['streetnamespt1', 'streetnamespt2', 'streetnamespt3', 'streetnamespt4'];
+const titleVis = JSON.parse(await ev(`(() => { const v = {}; for (const id of ${JSON.stringify(TITLE_IDS)}) { if (map.getLayer(id)) { v[id] = map.getLayoutProperty(id, 'visibility') || 'visible'; map.setLayoutProperty(id, 'visibility', 'none'); } } return JSON.stringify(v); })()`));
 const cells = [];
 for (const z of [14, 16, 18, 19]) for (const p of [0, 60]) {
   await ev(`map.jumpTo({ center: [${FIX.lng}, ${FIX.lat}], zoom: ${z}, pitch: ${p}, bearing: 0 })`); await settle();
@@ -107,6 +138,7 @@ const coreOff = cells.map(c => Math.abs(c.coreW - 0.62 * c.D));
 ok('W1 core width frozen at 0.62 x D at z14/16/18/19 x pitch 0/60 | cells ' + JSON.stringify(cells.map(c => [c.z, c.p, c.coreW])) + ' spread ' + coreSpread, cells.every(c => c.n > 60) && coreSpread <= 3 && coreOff.every(v => v <= 3));
 const footSpread = Math.max(...cells.map(c => c.footW)) - Math.min(...cells.map(c => c.footW));
 ok('W2 full footprint width frozen too | spread ' + footSpread + ' cells ' + JSON.stringify(cells.map(c => [c.z, c.p, c.footW])), cells.every(c => c.fn > 200) && footSpread <= 4);
+await ev(`(() => { const v = ${JSON.stringify(titleVis)}; for (const id of Object.keys(v)) { if (map.getLayer(id)) map.setLayoutProperty(id, 'visibility', v[id]); } return true; })()`); // titles restored - the sections below measure the puck against the real map again
 
 // ---- T: tilt silhouette at pitch 60 = 0.50 x D, flat = 1.00 x D ----
 // Measured on the diff footprint's STRONG channel (dl > 90): the exact

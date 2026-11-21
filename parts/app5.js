@@ -376,6 +376,10 @@ function introToRoute() { // Beta 1.77 (Andrew): a pick opens WIDE on the route'
   setTimeout(() => { if (!map) return; try { map.flyTo({ center: fit.center, zoom: fit.zoom, pitch: 45, duration: 3000, curve: 1.2, essential: false }); } catch (e) {} }, 1500); // 1500ms: the splash's exit (780ms) has finished and the wide view - the Route 5W point of interest - has had a moment to sit, before the slow flight in. Beta 1.203 (Andrew): the flight tilts into the 45-degree default as it comes in - centre and zoom are the flat fit's own, unchanged
 }
 // Beta 1.258: the armTitleRePlace hook that stood here (Beta 1.248-1.257) is retired with the app-title system it served - the engine no longer re-places street titles because the app no longer draws them; the basemap names the streets (see glUnifyLabels, app2).
+// Beta 1.261: the titles are restored (engine.js) but the 1.248 hook is NOT - the engine owns
+// re-placement now, after ANY camera move that settles somewhere new (armTitleHeal in
+// engine.js). The hook covered only this file's pick flight and its backstop could decide
+// against a half-arrived scene; the engine rule covers every flight and re-arms instead.
 function resetSwitchSession() { // Beta 1.117 (F3/F4): the ONE reset block a route switch runs - everything that names the OUTGOING route's session dies here, before the new pack's geometry or state exists. Runs after the F2 flush (loadRoute calls collapseNoteEditor first, so an open note draft has already finalized against the outgoing street).
   // Beta 1.148 (Tranche 5, A4(ii)): the reset knowledge now lives with the state
   // owners - this block only CALLS the owners' hooks (each hook preserves the

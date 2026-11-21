@@ -164,11 +164,12 @@ try {
     GLP.setFont(['ZZ Test Font']);
     const fontAfter = map.getLayoutProperty('routepoi-txt', 'text-font');
     const poiAfter = map.getLayoutProperty('routepoi-txt', 'text-font');
+    const titleAfter = map.getLayer('streetnamespt1') ? map.getLayoutProperty('streetnamespt1', 'text-font') : null;
     GLP.setFont(fontBefore);
-    return { glowN: glow && glow.features ? glow.features.length : -1, fontBefore, fontAfter, poiAfter };
+    return { glowN: glow && glow.features ? glow.features.length : -1, fontBefore, fontAfter, poiAfter, titleAfter };
   })()`) : { glowN: -1 };
   ok('G1 a two-stretch selection glows TWO features (one per stretch, not just the anchor) | glowN: ' + g.glowN + (mapUp ? '' : ' (map never came up in this environment)'), g.glowN === 2);
-  ok('G2 setFont re-fonts the LIVE label layer (Beta 1.258: the route POI label is the one app label layer) | ' + JSON.stringify({ before: g.fontBefore, after: g.fontAfter, poi: g.poiAfter }), JSON.stringify(g.fontAfter) === JSON.stringify(['ZZ Test Font']) && JSON.stringify(g.poiAfter) === JSON.stringify(['ZZ Test Font']));
+  ok('G2 setFont re-fonts the LIVE label layers (Beta 1.261: the four street-title layers are back on the fan-out, plus the route POI label - through 1.260 the POI label was the only one) | ' + JSON.stringify({ before: g.fontBefore, after: g.fontAfter, poi: g.poiAfter, title: g.titleAfter }), JSON.stringify(g.fontAfter) === JSON.stringify(['ZZ Test Font']) && JSON.stringify(g.poiAfter) === JSON.stringify(['ZZ Test Font']) && JSON.stringify(g.titleAfter) === JSON.stringify(['ZZ Test Font']));
 
   // ---- H: B-10 + A-05 after unload (destructive - last) ----
   const h = mapUp ? await J(`(() => {

@@ -93,8 +93,8 @@ check('15: the grid stall still drops the cached pack promise (the abandonment s
 // ---------- the release editorial ----------
 check('16: the CHANGELOG top entry is Beta 1.251', changelog.includes('## Beta 1.251'));
 check('17: What\'s New carries the 1.251 bullet, short and dash-free',
-  whatsnew.includes('The splash logo\'s snow now rounds off at the ends and melts into the blue at the bottom.')
-  && 'The splash logo\'s snow now rounds off at the ends and melts into the blue at the bottom.'.length <= 108
+  whatsnew.includes('Street names are the app\'s own labels when zoomed out, and the map\'s full names when you zoom in close.')
+  && 'Street names are the app\'s own labels when zoomed out, and the map\'s full names when you zoom in close.'.length <= 108
   && !whatsnew.includes('—'));
 
 // ---------- the first byte must be RECORDED, not just read about ----------

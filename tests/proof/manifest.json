@@ -33,7 +33,6 @@
   "proof-1255.mjs",
   "proof-1256.mjs",
   "proof-1257.mjs",
-  "proof-1258.mjs",
   "proof-1259.mjs",
   "proof-1260.mjs",
   "proof-clearall-sibling-maps.mjs",
@@ -70,7 +69,8 @@
   "proof-sweep-20261115-171048-b-05.mjs",
   "proof-sweep-20261115-171048-e-01.mjs",
   "proof-trim-glow-path-pills.mjs",
-  "proof-wording-finished-cleans.mjs"
+  "proof-wording-finished-cleans.mjs",
+  "proof-1261.mjs"
  ],
  "retired": [
   {
@@ -84,6 +84,10 @@
   {
    "file": "proof-1248.mjs",
    "reason": "Its subject no longer exists: Beta 1.258 (Andrew's decision, 2026-11-20) retired the app's own street titles (streetnamespt1-4 over labelpts) and the 1.248 re-placement helper this proof pinned, and made the basemap's own road labels the street-name system. The retirement's pins live in proof-1258; drive130 grades the rendered rule. Kept on disk as the 1.248 round's record; do not re-add to run."
+  },
+  {
+   "file": "proof-1258.mjs",
+   "reason": "Beta 1.261 (labelmix-1261): its subject - the 1.258 retirement of the app title system - is reversed by Andrew's decision of 2026-11-20 (the label mix: the titles are restored below zoom 15, capped there, with the basemap full names at 15 and up). Its pins assert the titles' absence and the lane-era basemap shape, so they invert by the decision itself, not by a defect. The file stays on disk as the record of the 1.258 round, like proof-1248 before it; the mix's shape is pinned by proof-1261 and graded in the rendered page by drive214's M sections."
   }
  ]
 }

@@ -64,8 +64,8 @@ check('6: the scrim-free design claims are superseded and removed (the pill comm
 // ---------- the release editorial ----------
 check('7: the CHANGELOG top entry is Beta 1.257', changelog.includes('## Beta 1.257'));
 check('8: What\'s New carries the 1.257 bullet, short and dash-free',
-  whatsnew.includes('The splash logo\'s snow now rounds off at the ends and melts into the blue at the bottom.')
-  && 'The splash logo\'s snow now rounds off at the ends and melts into the blue at the bottom.'.length <= 108
+  whatsnew.includes('Street names are the app\'s own labels when zoomed out, and the map\'s full names when you zoom in close.')
+  && 'Street names are the app\'s own labels when zoomed out, and the map\'s full names when you zoom in close.'.length <= 108
   && !whatsnew.includes('—'));
 
 console.log(`proof-1257: ${pass} passed, ${fail} failed`);

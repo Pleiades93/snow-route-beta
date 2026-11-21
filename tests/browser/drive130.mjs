@@ -22,6 +22,20 @@ await bootThrough(ev, poll); // Beta 1.76: boots end at the route menu now - cli
 // new rule in the rendered page: stock filters and stock zoom ranges on
 // the originals, and the basemap itself printing a route street's full
 // name at close zoom.
+//
+// Beta 1.261 addendum (Andrew's label-mix decision, 2026-11-20, the same
+// evening - it supersedes the 1.258 rule above BELOW zoom 15): the app
+// titles are restored under a maxzoom-15 cap, and the basemap major layer
+// is split at 15 - the original owns 15-and-up with its stock filter and
+// a '-pre15' copy carries the route-name exclusion across 11-15, so below
+// 15 the app titles name the route streets and the basemap cannot double
+// them; at 15 and up the 1.258 rule stands exactly as written above.
+// L1b flips (titles present again), L2 becomes band-aware (originals keep
+// stock filters; the exclusion lives on the -pre15 copy), L4 becomes
+// band-aware (major original now starts at 15, minor at 15, the -pre15
+// copy from 11), L9 flips its titles clause (titles present at night) and
+// keeps the night lift. L7 stands verbatim - at close zoom the basemap
+// prints the full name and the capped titles are gone, so nothing doubles.
 const R = { checks: [] };
 const ok = (name, cond) => R.checks.push([name, cond === true]);
 // Beta 1.83 (flake hardening): this drive's first-read crash has tripped four
@@ -74,8 +88,11 @@ const S1 = await jread(`(() => {
   const min = map.getLayer('roads_labels_minor');
   return JSON.stringify({
     streetnamesGone: !map.getLayer('streetnames'),
-    titlesGone: !map.getLayer('streetnamespt1') && !map.getLayer('streetnamespt2') && !map.getLayer('streetnamespt3') && !map.getLayer('streetnamespt4'),
-    noLabelSrc: !map.getSource('labelpts'),
+    titlesHere: !!map.getLayer('streetnamespt1') && !!map.getLayer('streetnamespt2') && !!map.getLayer('streetnamespt3') && !!map.getLayer('streetnamespt4'),
+    labelSrcHere: !!map.getSource('labelpts'),
+    preHere: !!map.getLayer('roads_labels_major-pre15'),
+    preMin: map.getLayer('roads_labels_major-pre15') ? map.getLayer('roads_labels_major-pre15').minzoom : null,
+    preFilter: map.getLayer('roads_labels_major-pre15') ? JSON.stringify(map.getFilter('roads_labels_major-pre15')) : '',
     cloneMaj: !!map.getLayer('roads_labels_major-route'),
     cloneMin: !!map.getLayer('roads_labels_minor-route'),
     cloneOpacity: map.getLayer('roads_labels_major-route') ? JSON.stringify(map.getPaintProperty('roads_labels_major-route', 'text-opacity')) : '',
@@ -90,14 +107,14 @@ const S1 = await jread(`(() => {
   });
 })()`);
 ok('L1 our line-following streetnames layer is retired | streetnamesGone ' + S1.streetnamesGone, S1.streetnamesGone === true);
-ok('L1b the app title layers and their labelpts source are retired (Beta 1.258) | titlesGone ' + S1.titlesGone + ' noLabelSrc ' + S1.noLabelSrc,
-  S1.titlesGone === true && S1.noLabelSrc === true);
-ok('L2 the originals carry their STOCK filters - no route name is excluded (Beta 1.258) | major ' + S1.origFilter.slice(0, 60) + ' minor ' + S1.origFilterMin.slice(0, 60),
-  !S1.origFilter.includes('Velmar Drive') && S1.origFilter.includes('"highway"') && S1.origFilter.includes('"major_road"') && !S1.origFilterMin.includes('Velmar Drive') && S1.origFilterMin.includes('"minor_road"'));
+ok('L1b the app title layers and their labelpts source are BACK (Beta 1.261: restored under the zoom-15 cap) | titlesHere ' + S1.titlesHere + ' labelSrcHere ' + S1.labelSrcHere,
+  S1.titlesHere === true && S1.labelSrcHere === true);
+ok('L2 band-aware: the ORIGINALS carry their STOCK filters, and the route-name exclusion lives on the -pre15 copy only (Beta 1.261) | major ' + S1.origFilter.slice(0, 60) + ' minor ' + S1.origFilterMin.slice(0, 60) + ' pre15 excludes Velmar: ' + S1.preFilter.includes('Velmar Drive'),
+  !S1.origFilter.includes('Velmar Drive') && S1.origFilter.includes('"highway"') && S1.origFilter.includes('"major_road"') && !S1.origFilterMin.includes('Velmar Drive') && S1.origFilterMin.includes('"minor_road"') && S1.preHere === true && S1.preFilter.includes('Velmar Drive'));
 ok('L3 route-name clone layers are retired (Beta 1.208: never built) | clones ' + S1.cloneMaj + '/' + S1.cloneMin,
   S1.cloneMaj === false && S1.cloneMin === false);
-ok('L4 the originals keep their STOCK zoom ranges (major from 11, minor from 15) | minzooms ' + S1.majMin + '/' + S1.minMin,
-  S1.majMin === 11 && S1.minMin === 15);
+ok('L4 band-aware zoom ranges: the major ORIGINAL now starts at 15 (the split narrowed it), minor from 15, and the -pre15 copy carries the 11-15 band (Beta 1.261) | minzooms major ' + S1.majMin + ' minor ' + S1.minMin + ' pre15 ' + S1.preMin,
+  S1.majMin === 15 && S1.minMin === 15 && S1.preMin === 11);
 ok('L5 day road names wear the readable restyle | color ' + S1.dayColor + ' halo ' + S1.dayHalo, S1.dayColor === '#333333' && S1.dayHalo === '1.5');
 ok('L6 the reference source draws nothing (West link off the map) | ref features ' + S1.refFeatures, S1.refFeatures === 0);
 const poiTxt = await ev(`map.getLayer('routepoi-txt') ? JSON.stringify(map.getLayoutProperty('routepoi-txt', 'text-field')) : 'missing'`);
@@ -152,10 +169,10 @@ await bootThrough(ev, poll, { pinTheme: false }); // Beta 1.76: the reload retur
 ok('L8 night boot with the map active', await poll120(`typeof glOk !== 'undefined' && glOk === true && document.body.classList.contains('night')`, 30000));
 const S3 = await jread(`(() => JSON.stringify({
   clone: !!map.getLayer('roads_labels_major-route'),
-  titlesGone: !map.getLayer('streetnamespt1'),
+  titlesHere: !!map.getLayer('streetnamespt1'),
   col: map.getLayer('roads_labels_major') ? String(map.getPaintProperty('roads_labels_major', 'text-color')) : ''
 }))()`);
-ok('L9 night: the basemap names wear the night lift (#ccd6df), no titles and no clones return | clone ' + S3.clone + ' titlesGone ' + S3.titlesGone + ' color ' + S3.col, S3.clone === false && S3.titlesGone === true && S3.col === '#ccd6df');
+ok('L9 night: the basemap names wear the night lift (#ccd6df), the titles are present under the night style too, and no clones return (Beta 1.261) | clone ' + S3.clone + ' titlesHere ' + S3.titlesHere + ' color ' + S3.col, S3.clone === false && S3.titlesHere === true && S3.col === '#ccd6df');
 
 R.exceptions = consoleLog.filter(c => c.type === 'EXCEPTION').map(c => String(c.text || '').slice(0, 200));
 finish(R, proc);
