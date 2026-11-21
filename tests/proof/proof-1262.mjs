@@ -80,15 +80,15 @@ check('12: a basemap swap mid-create re-seats the surface (the styledata hook re
 
 check('14: the frame loop cannot storm the creation sources (gate fixes, PR #158): the styledata restoration stands down while the custom layers stand (a missing sentinel is the swap signal), the ensure pushes the point only on change, and the stand-down still re-applies the backdrop when a recorded route layer stands visible again (the order-sensitive piece: GLP.init re-creates the route stack after this listener\'s turn on a swap)',
   pick.includes("if (map.getLayer('crDraftCase') && (!crIsectPoi || map.getLayer('crIsectDot'))) {") &&
-  pick.includes("crHiddenLayers.some(pr => { try { return map.getLayer(pr[0]) && (map.getLayoutProperty(pr[0], 'visibility') || 'visible') !== 'none'; } catch (e) { return false; } })) crSetBackdrop(true);") &&
+  pick.includes("crHiddenLayers.some(pr => { try { return map.getLayer(pr[0]) && (map.getLayoutProperty(pr[0], 'visibility') || 'visible') !== 'none'; } catch (e) { return false; } }) || CR_ROUTE_LAYERS.some(id => { try { return map.getLayer(id) && !crHiddenLayers.some(pr => pr[0] === id) && (map.getLayoutProperty(id, 'visibility') || 'visible') !== 'none'; } catch (e) { return false; } }))) crSetBackdrop(true);") && // Beta 1.266: the re-apply condition grew the unrecorded-layer clause (the backdrop top-up) - the recorded-layer clause this check pins stands unchanged inside it
   block.includes('if (want !== crIsectPushed)') && block.includes("let crIsectPushed = null;"));
 
 // ---------- the release editorial ----------
-check('13: What\'s New carries the 1.265 bullet (rolled by the create-mode-naming round), within the 108-char cap, em-dash free, and the CHANGELOG top entry is Beta 1.265 above 1.264',
-  whatsnew.includes('Street names now show everywhere while you create a route.') &&
-  'Street names now show everywhere while you create a route.'.length <= 108 &&
+check('13: What\'s New carries the 1.266 bullet (rolled by the unified-load-in round), within the 108-char cap, em-dash free, and the CHANGELOG top entry is Beta 1.266 above 1.265',
+  whatsnew.includes('Street names now fade in together when a route loads, instead of blinking.') &&
+  'Street names now fade in together when a route loads, instead of blinking.'.length <= 108 &&
   !whatsnew.includes('—') &&
-  changelog.indexOf('## Beta 1.265') > -1 && changelog.indexOf('## Beta 1.265') < changelog.indexOf('## Beta 1.264'));
+  changelog.indexOf('## Beta 1.266') > -1 && changelog.indexOf('## Beta 1.266') < changelog.indexOf('## Beta 1.265'));
 
 console.log(`proof-1262: ${pass} passed, ${fail} failed`);
 process.exit(fail ? 1 : 0);

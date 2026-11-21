@@ -1713,6 +1713,392 @@
    "red": "proof-green-half-road failed exactly R4's exclusion check on the fixed tree before the re-pin - observed in this round",
    "green": "proof-green-half-road passes in full after the re-pin (ALL CHECKS PASS)",
    "issued": "2026-11-21 createmodenaming-1265"
+  },
+  {
+   "id": "whatsnew-roll-1266-proof-1242",
+   "check": "tests/proof/proof-1242.mjs",
+   "kind": "mutation",
+   "files": {
+    "tests/proof/proof-1242.mjs": "4d957a7e4436aec99795ce86f8377ab36a3d59e064ee450844c51e5e123b847c",
+    "parts/whatsnew.js": "0d787006e328718c7ba23543b8c3bdef946907ed167402c09649d4dc043257ab"
+   },
+   "mutation": "parts/whatsnew.js bullet replaced with a deliberately wrong bullet (the Beta 1.266 What's New roll changed this proof's pinned bullet string)",
+   "red": "proof-1242 fails exactly its What's New bullet check (1 fail, the rest pass) - observed in this round's mutation run",
+   "green": "proof-1242 passes in full with the shipped 1.266 bullet",
+   "issued": "2026-11-21 unifiedloadin-1266"
+  },
+  {
+   "id": "whatsnew-roll-1266-proof-1243",
+   "check": "tests/proof/proof-1243.mjs",
+   "kind": "mutation",
+   "files": {
+    "tests/proof/proof-1243.mjs": "3c2fe74b4f7a454499912475ee869ea08b36f293f10e81b03201b692297b0f64",
+    "parts/whatsnew.js": "0d787006e328718c7ba23543b8c3bdef946907ed167402c09649d4dc043257ab"
+   },
+   "mutation": "parts/whatsnew.js bullet replaced with a deliberately wrong bullet (the Beta 1.266 What's New roll changed this proof's pinned bullet string)",
+   "red": "proof-1243 fails exactly its What's New bullet check (1 fail, the rest pass) - observed in this round's mutation run",
+   "green": "proof-1243 passes in full with the shipped 1.266 bullet",
+   "issued": "2026-11-21 unifiedloadin-1266"
+  },
+  {
+   "id": "whatsnew-roll-1266-proof-1245",
+   "check": "tests/proof/proof-1245.mjs",
+   "kind": "mutation",
+   "files": {
+    "tests/proof/proof-1245.mjs": "9f5741eb5c2c2a62c5cb9e973630cf313ef5f9207e1a63ab3faa885238a2d820",
+    "parts/whatsnew.js": "0d787006e328718c7ba23543b8c3bdef946907ed167402c09649d4dc043257ab"
+   },
+   "mutation": "parts/whatsnew.js bullet replaced with a deliberately wrong bullet (the Beta 1.266 What's New roll changed this proof's pinned bullet string)",
+   "red": "proof-1245 fails exactly its What's New bullet check (1 fail, the rest pass) - observed in this round's mutation run",
+   "green": "proof-1245 passes in full with the shipped 1.266 bullet",
+   "issued": "2026-11-21 unifiedloadin-1266"
+  },
+  {
+   "id": "whatsnew-roll-1266-proof-1246",
+   "check": "tests/proof/proof-1246.mjs",
+   "kind": "mutation",
+   "files": {
+    "tests/proof/proof-1246.mjs": "22e216f2b6ee00c6526709819822bc8fa005b02e745dc128d83d02dfd0e66aff",
+    "parts/whatsnew.js": "0d787006e328718c7ba23543b8c3bdef946907ed167402c09649d4dc043257ab"
+   },
+   "mutation": "parts/whatsnew.js bullet replaced with a deliberately wrong bullet (the Beta 1.266 What's New roll changed this proof's pinned bullet string)",
+   "red": "proof-1246 fails exactly its What's New bullet check (1 fail, the rest pass) - observed in this round's mutation run",
+   "green": "proof-1246 passes in full with the shipped 1.266 bullet",
+   "issued": "2026-11-21 unifiedloadin-1266"
+  },
+  {
+   "id": "whatsnew-roll-1266-proof-1247",
+   "check": "tests/proof/proof-1247.mjs",
+   "kind": "mutation",
+   "files": {
+    "tests/proof/proof-1247.mjs": "046582fa98d9f5e37a3fa7ccaaa15bda2d61a11d07443ececc76b1c1a7002509",
+    "parts/whatsnew.js": "0d787006e328718c7ba23543b8c3bdef946907ed167402c09649d4dc043257ab"
+   },
+   "mutation": "parts/whatsnew.js bullet replaced with a deliberately wrong bullet (the Beta 1.266 What's New roll changed this proof's pinned bullet string)",
+   "red": "proof-1247 fails exactly its What's New bullet check (1 fail, the rest pass) - observed in this round's mutation run",
+   "green": "proof-1247 passes in full with the shipped 1.266 bullet",
+   "issued": "2026-11-21 unifiedloadin-1266"
+  },
+  {
+   "id": "whatsnew-roll-1266-proof-1249",
+   "check": "tests/proof/proof-1249.mjs",
+   "kind": "mutation",
+   "files": {
+    "tests/proof/proof-1249.mjs": "ac60ccf62eb5eb53c491001f442b4045ddea513e5fc5b16daff29138372eac18",
+    "parts/whatsnew.js": "0d787006e328718c7ba23543b8c3bdef946907ed167402c09649d4dc043257ab"
+   },
+   "mutation": "parts/whatsnew.js bullet replaced with a deliberately wrong bullet (the Beta 1.266 What's New roll changed this proof's pinned bullet string)",
+   "red": "proof-1249 fails exactly its What's New bullet check (1 fail, the rest pass) - observed in this round's mutation run",
+   "green": "proof-1249 passes in full with the shipped 1.266 bullet",
+   "issued": "2026-11-21 unifiedloadin-1266"
+  },
+  {
+   "id": "whatsnew-roll-1266-proof-1252",
+   "check": "tests/proof/proof-1252.mjs",
+   "kind": "mutation",
+   "files": {
+    "tests/proof/proof-1252.mjs": "37daaa044c848f55bb756f88ea5a352567ac32268e3fbf3002b1ac9d0e22711b",
+    "parts/whatsnew.js": "0d787006e328718c7ba23543b8c3bdef946907ed167402c09649d4dc043257ab"
+   },
+   "mutation": "parts/whatsnew.js bullet replaced with a deliberately wrong bullet (the Beta 1.266 What's New roll changed this proof's pinned bullet string)",
+   "red": "proof-1252 fails exactly its What's New bullet check (1 fail, the rest pass) - observed in this round's mutation run",
+   "green": "proof-1252 passes in full with the shipped 1.266 bullet",
+   "issued": "2026-11-21 unifiedloadin-1266"
+  },
+  {
+   "id": "whatsnew-roll-1266-proof-1253",
+   "check": "tests/proof/proof-1253.mjs",
+   "kind": "mutation",
+   "files": {
+    "tests/proof/proof-1253.mjs": "b13db3b7a541497fcee2ea778baa2372b78bbc7714fd7802c8605b37606e910d",
+    "parts/whatsnew.js": "0d787006e328718c7ba23543b8c3bdef946907ed167402c09649d4dc043257ab"
+   },
+   "mutation": "parts/whatsnew.js bullet replaced with a deliberately wrong bullet (the Beta 1.266 What's New roll changed this proof's pinned bullet string)",
+   "red": "proof-1253 fails exactly its What's New bullet check (1 fail, the rest pass) - observed in this round's mutation run",
+   "green": "proof-1253 passes in full with the shipped 1.266 bullet",
+   "issued": "2026-11-21 unifiedloadin-1266"
+  },
+  {
+   "id": "whatsnew-roll-1266-proof-1254",
+   "check": "tests/proof/proof-1254.mjs",
+   "kind": "mutation",
+   "files": {
+    "tests/proof/proof-1254.mjs": "5cced517126789618d1b0a53edb0fc5b4eb89b7b41d2ad27f5c3827e5b127277",
+    "parts/whatsnew.js": "0d787006e328718c7ba23543b8c3bdef946907ed167402c09649d4dc043257ab"
+   },
+   "mutation": "parts/whatsnew.js bullet replaced with a deliberately wrong bullet (the Beta 1.266 What's New roll changed this proof's pinned bullet string)",
+   "red": "proof-1254 fails exactly its What's New bullet check (1 fail, the rest pass) - observed in this round's mutation run",
+   "green": "proof-1254 passes in full with the shipped 1.266 bullet",
+   "issued": "2026-11-21 unifiedloadin-1266"
+  },
+  {
+   "id": "whatsnew-roll-1266-proof-1255",
+   "check": "tests/proof/proof-1255.mjs",
+   "kind": "mutation",
+   "files": {
+    "tests/proof/proof-1255.mjs": "8fc4fe02a023497e95e6a6e2c9842a61fa13b56907872ba99f3e54ba5369fca8",
+    "parts/whatsnew.js": "0d787006e328718c7ba23543b8c3bdef946907ed167402c09649d4dc043257ab"
+   },
+   "mutation": "parts/whatsnew.js bullet replaced with a deliberately wrong bullet (the Beta 1.266 What's New roll changed this proof's pinned bullet string)",
+   "red": "proof-1255 fails exactly its What's New bullet check (1 fail, the rest pass) - observed in this round's mutation run",
+   "green": "proof-1255 passes in full with the shipped 1.266 bullet",
+   "issued": "2026-11-21 unifiedloadin-1266"
+  },
+  {
+   "id": "whatsnew-roll-1266-proof-1256",
+   "check": "tests/proof/proof-1256.mjs",
+   "kind": "mutation",
+   "files": {
+    "tests/proof/proof-1256.mjs": "ec97d19edee3388e1c5c56b6d8e915f5e1a6fef3e48b7bd579849e7c61a6bd75",
+    "parts/whatsnew.js": "0d787006e328718c7ba23543b8c3bdef946907ed167402c09649d4dc043257ab"
+   },
+   "mutation": "parts/whatsnew.js bullet replaced with a deliberately wrong bullet (the Beta 1.266 What's New roll changed this proof's pinned bullet string)",
+   "red": "proof-1256 fails exactly its What's New bullet check (1 fail, the rest pass) - observed in this round's mutation run",
+   "green": "proof-1256 passes in full with the shipped 1.266 bullet",
+   "issued": "2026-11-21 unifiedloadin-1266"
+  },
+  {
+   "id": "whatsnew-roll-1266-proof-1257",
+   "check": "tests/proof/proof-1257.mjs",
+   "kind": "mutation",
+   "files": {
+    "tests/proof/proof-1257.mjs": "e47101b97d2b0a5f888d177f5d6af0ea50b212d1bc8a7970be0759c2522d9159",
+    "parts/whatsnew.js": "0d787006e328718c7ba23543b8c3bdef946907ed167402c09649d4dc043257ab"
+   },
+   "mutation": "parts/whatsnew.js bullet replaced with a deliberately wrong bullet (the Beta 1.266 What's New roll changed this proof's pinned bullet string)",
+   "red": "proof-1257 fails exactly its What's New bullet check (1 fail, the rest pass) - observed in this round's mutation run",
+   "green": "proof-1257 passes in full with the shipped 1.266 bullet",
+   "issued": "2026-11-21 unifiedloadin-1266"
+  },
+  {
+   "id": "whatsnew-roll-1266-proof-1259",
+   "check": "tests/proof/proof-1259.mjs",
+   "kind": "mutation",
+   "files": {
+    "tests/proof/proof-1259.mjs": "1f3ad35d2ca88f2d56995fa4c595ac11f8363496fe7de211f8579bc07fd63a55",
+    "parts/whatsnew.js": "0d787006e328718c7ba23543b8c3bdef946907ed167402c09649d4dc043257ab"
+   },
+   "mutation": "parts/whatsnew.js bullet replaced with a deliberately wrong bullet (the Beta 1.266 What's New roll changed this proof's pinned bullet string)",
+   "red": "proof-1259 fails exactly its What's New bullet check (1 fail, the rest pass) - observed in this round's mutation run",
+   "green": "proof-1259 passes in full with the shipped 1.266 bullet",
+   "issued": "2026-11-21 unifiedloadin-1266"
+  },
+  {
+   "id": "whatsnew-roll-1266-proof-1262",
+   "check": "tests/proof/proof-1262.mjs",
+   "kind": "mutation",
+   "files": {
+    "tests/proof/proof-1262.mjs": "297e137fdc7a237df307710f8d2cef9d949928dd0e91ead0b47e20c0703d895e",
+    "parts/whatsnew.js": "0d787006e328718c7ba23543b8c3bdef946907ed167402c09649d4dc043257ab"
+   },
+   "mutation": "parts/whatsnew.js bullet replaced with a deliberately wrong bullet (the Beta 1.266 What's New roll changed this proof's pinned bullet string)",
+   "red": "proof-1262 fails exactly its What's New bullet check (1 fail, the rest pass) - observed in this round's mutation run",
+   "green": "proof-1262 passes in full with the shipped 1.266 bullet",
+   "issued": "2026-11-21 unifiedloadin-1266"
+  },
+  {
+   "id": "whatsnew-roll-1266-proof-1263",
+   "check": "tests/proof/proof-1263.mjs",
+   "kind": "mutation",
+   "files": {
+    "tests/proof/proof-1263.mjs": "876c73b4b31c9d72ca6ab293c09df76348bf110b09f5e04b082e0a236c7b90d8",
+    "parts/whatsnew.js": "0d787006e328718c7ba23543b8c3bdef946907ed167402c09649d4dc043257ab"
+   },
+   "mutation": "parts/whatsnew.js bullet replaced with a deliberately wrong bullet (the Beta 1.266 What's New roll changed this proof's pinned bullet string)",
+   "red": "proof-1263 fails exactly its What's New bullet check (1 fail, the rest pass) - observed in this round's mutation run",
+   "green": "proof-1263 passes in full with the shipped 1.266 bullet",
+   "issued": "2026-11-21 unifiedloadin-1266"
+  },
+  {
+   "id": "whatsnew-roll-1266-proof-1264",
+   "check": "tests/proof/proof-1264.mjs",
+   "kind": "mutation",
+   "files": {
+    "tests/proof/proof-1264.mjs": "9bca2f2280933630ee6daaa04c931c59a51aad4416ecb2dd22a410c336c5566f",
+    "parts/whatsnew.js": "0d787006e328718c7ba23543b8c3bdef946907ed167402c09649d4dc043257ab"
+   },
+   "mutation": "parts/whatsnew.js bullet replaced with a deliberately wrong bullet (the Beta 1.266 What's New roll changed this proof's pinned bullet string)",
+   "red": "proof-1264 fails exactly its What's New bullet check (1 fail, the rest pass) - observed in this round's mutation run",
+   "green": "proof-1264 passes in full with the shipped 1.266 bullet",
+   "issued": "2026-11-21 unifiedloadin-1266"
+  },
+  {
+   "id": "whatsnew-roll-1266-proof-1265",
+   "check": "tests/proof/proof-1265.mjs",
+   "kind": "mutation",
+   "files": {
+    "tests/proof/proof-1265.mjs": "b38ac3e4fd4ce4ed971498ba04279952f2c4ed5975d4749c01c872458974bf24",
+    "parts/whatsnew.js": "0d787006e328718c7ba23543b8c3bdef946907ed167402c09649d4dc043257ab"
+   },
+   "mutation": "parts/whatsnew.js bullet replaced with a deliberately wrong bullet (the Beta 1.266 What's New roll changed this proof's pinned bullet string)",
+   "red": "proof-1265 fails exactly its What's New bullet check (1 fail, the rest pass) - observed in this round's mutation run",
+   "green": "proof-1265 passes in full with the shipped 1.266 bullet",
+   "issued": "2026-11-21 unifiedloadin-1266"
+  },
+  {
+   "id": "proof-1266-hold-transform",
+   "check": "tests/proof/proof-1266.mjs",
+   "kind": "mutation",
+   "files": {
+    "tests/proof/proof-1266.mjs": "292bfdd49b45d1d77411f0133e5a7238923c44f7b26646d452277718c72fd49c",
+    "parts/app2.js": "375e627b12fb3878ec16c094e7c216be7759cdaf63707dec481fce0e9e4be026"
+   },
+   "mutation": "parts/app2.js: nameHoldApply's transform replaced by the refused ['*', natural, mult] wrap (the multiplier applied by wrapping instead of scaleNameStops)",
+   "red": "proof-1266 fails exactly check 1b (9 pass, 1 fail) - observed in this round's mutation run; at drive level the same wrap is the escape drive219's A2 catches (the titles at natural paint under a bookkeeping 0)",
+   "green": "proof-1266 passes 10/10 on the fixed tree; the full manifest passes with it",
+   "issued": "2026-11-21 unifiedloadin-1266"
+  },
+  {
+   "id": "proof-1266-backstop-values",
+   "check": "tests/proof/proof-1266.mjs",
+   "kind": "mutation",
+   "files": {
+    "tests/proof/proof-1266.mjs": "292bfdd49b45d1d77411f0133e5a7238923c44f7b26646d452277718c72fd49c",
+    "parts/app5.js": "d0a79fe85e6c8cd7135fb871d0d57bf3ad115f73828d255a61342a6d3d0aa4e2"
+   },
+   "mutation": "parts/app5.js: the absolute 15 s backstop timer removed from beginNameLoadIn (the load-in left with only the settle path and the post-re-place timer)",
+   "red": "proof-1266 fails exactly check 5 (9 pass, 1 fail) - observed in this round's mutation run",
+   "green": "proof-1266 passes 10/10 on the fixed tree",
+   "issued": "2026-11-21 unifiedloadin-1266"
+  },
+  {
+   "id": "drive219-unified-load-in",
+   "check": "tests/browser/drive219.mjs",
+   "kind": "rendered",
+   "files": {
+    "tests/browser/drive219.mjs": "415206b3cdf5bfeddeb6c17da2abce03c51f5e8dcfad24e0ec7685a2e3c867b9"
+   },
+   "mutation": "rendered fail-first on the Beta 1.265 tree (no name hold exists: the re-place teardown lands visible at the flight's idle and the titles blink): boot-phase presence sampling across the pick, flight, settle and reveal, a post-load-in pan, a mid-load-in theme swap, a second pick mid-load-in, and both backstop drills",
+   "red": "drive219 fails 9 of 12 on the 1.265 tree: A2 no hold engages, A3 the teardown lands at multiplier null (visible), A4 the lane convicts the blink by name (Fifth, Velmar, Conti, Bourbon, Columbus, Flushing, Astona, Blackburn, Santa Barbara and more titles appear, then vanish), A5 two basemap road names drop, A7 no naturals registry, B1/C1/D1/E1 no load-in cycle at all - observed in this round",
+   "green": "drive219 passes 12/12 on the fixed tree: the teardown lands inside the hold, the lane is clean on effective opacity, the fade brackets overlap, naturals restore verbatim (17 layers), the theme swap and the second pick resolve through the one cycle, and both backstops land (7.5 s post-re-place under a camera storm; 15.0 s absolute) - observed in this round",
+   "issued": "2026-11-21 unifiedloadin-1266"
+  },
+  {
+   "id": "drive219-unified-load-in-final",
+   "check": "tests/browser/drive219.mjs",
+   "kind": "rendered",
+   "files": {
+    "tests/browser/drive219.mjs": "7d74a4fcdbf6cb2f18f2f64ef6b5e194a7bb4ad11a081355cffda642dd735b21"
+   },
+   "mutation": "rendered fail-first on the Beta 1.265 tree (no name hold exists: the re-place teardown lands visible at the flight's idle and the titles blink): boot-phase presence sampling across the pick, flight, settle and reveal, a post-load-in pan, a mid-load-in theme swap, a second pick mid-load-in, both backstop drills, the reduced-motion instant-fit settle, and a mid-load-in unload. Supersedes the drive219-unified-load-in receipt, which observed the drive's 12-check form before phases G/H were added",
+   "red": "drive219 fails 10 of 14 on the 1.265 tree: A2 no hold engages, A3 the teardown lands at multiplier null (visible), A4 the lane convicts the blink by name (Fifth, Velmar, Conti, Bourbon, Columbus, Flushing, Astona, Blackburn, Santa Barbara and more titles appear, then vanish), A5 basemap road names drop, A7 no naturals registry, B1/C1/D1/E1/H1 no load-in cycle at all (A1/A6/F1/G1 pass - the instant-fit path has no flight and nothing to blink, on either tree) - observed in this round",
+   "green": "drive219 passes 14/14 on the fixed tree: the teardown lands inside the hold, the lane is clean on effective opacity, the fade brackets overlap, naturals restore verbatim (17 layers), the theme swap, the second pick, the instant-fit settle and the mid-load-in unload all resolve through the one cycle, and both backstops land (7.2 s post-re-place under a camera storm; 15.0 s absolute) - observed in this round",
+   "issued": "2026-11-21 unifiedloadin-1266"
+  },
+  {
+   "id": "drive219-unified-load-in-judge",
+   "check": "tests/browser/drive219.mjs",
+   "kind": "rendered",
+   "files": {
+    "tests/browser/drive219.mjs": "75d54c04a6d95c244351f5f783d7e7bdaf8623d28bf8c35d6c582911de4fd2c6"
+   },
+   "mutation": "rendered fail-first on the Beta 1.265 tree (no name hold exists: the re-place teardown lands visible at the flight's idle and the titles blink): boot-phase presence sampling across the pick, flight, settle and reveal, a post-load-in pan, a mid-load-in theme swap, a second pick mid-load-in, both backstop drills, the reduced-motion instant-fit settle, and a mid-load-in unload. Supersedes drive219-unified-load-in-final: the judging logic was extracted to lane-judge.mjs and hardened per Codex review on PR #162 (per-name strict lane; group maxima for the held assertion), with fixtures in selftest-lane219.mjs; red and green re-observed on the final drive",
+   "red": "drive219 fails 10 of 14 on the 1.265 tree: A2 no hold engages, A3 the teardown lands at multiplier null (visible), A4 the lane convicts the blink by name (titles appear, then vanish), A5 basemap road names drop, A7 no naturals registry, B1/C1/D1/E1/H1 no load-in cycle at all (A1/A6/F1/G1 pass - the instant-fit path has no flight and nothing to blink, on either tree) - observed in this round",
+   "green": "drive219 passes 14/14 on the fixed tree with the extracted judge: the teardown lands inside the hold, the lane is clean on per-name effective opacity, the fade brackets overlap, naturals restore verbatim (17 layers), the theme swap, the second pick, the instant-fit settle and the mid-load-in unload all resolve through the one cycle, and both backstops land - observed in this round; selftest-lane219 fixtures pass 9/9 including both Codex counterexample shapes",
+   "issued": "2026-11-21 unifiedloadin-1266"
+  },
+  {
+   "id": "selftest-lane219-held-max",
+   "check": "tests/browser/selftest-lane219.mjs",
+   "kind": "mutation",
+   "files": {
+    "tests/browser/selftest-lane219.mjs": "ab3d3a87746e35788b8b132c395ef95c9df20c850064f0bf7e26843efcedc0f5",
+    "tests/browser/lane-judge.mjs": "e03ea221236066be908978ed9047304baa8a805dc31c1c8625f8f210ab3e1e1d"
+   },
+   "mutation": "tests/browser/lane-judge.mjs: groupHeldViolations reads the group's effMin instead of its effMax (the aggregation Codex's PR #162 finding caught - an escaped layer hides behind held siblings)",
+   "red": "selftest-lane219 fails exactly F5 (8 pass, 1 fail) - observed in this round's mutation run",
+   "green": "selftest-lane219 passes 9/9 with the judge reading effMax",
+   "issued": "2026-11-21 unifiedloadin-1266"
+  },
+  {
+   "id": "selftest-lane219-lane-strict",
+   "check": "tests/browser/selftest-lane219.mjs",
+   "kind": "mutation",
+   "files": {
+    "tests/browser/selftest-lane219.mjs": "ab3d3a87746e35788b8b132c395ef95c9df20c850064f0bf7e26843efcedc0f5",
+    "tests/browser/lane-judge.mjs": "e03ea221236066be908978ed9047304baa8a805dc31c1c8625f8f210ab3e1e1d"
+   },
+   "mutation": "tests/browser/lane-judge.mjs: laneViolations suspends the disappearance check on samples whose group effMax is at or under 0.5 (the round's first judge form, Codex's second PR #162 finding)",
+   "red": "selftest-lane219 fails F2 and F4 (7 pass, 2 fail): the visible-invisible-visible sequence and the post-reveal fade both acquit under the suspending judge - observed in this round's mutation run",
+   "green": "selftest-lane219 passes 9/9 with the strict lane",
+   "issued": "2026-11-21 unifiedloadin-1266"
+  },
+  {
+   "id": "proof-1266-hold-transform-v2",
+   "check": "tests/proof/proof-1266.mjs",
+   "kind": "mutation",
+   "files": {
+    "tests/proof/proof-1266.mjs": "71ff1e812ed3f9c32dd51a0935bb805925356a8941bd4dc3cf9ad096f5503565",
+    "parts/app2.js": "390a4f99044ad7c6d76a01f1497d1f13657b553003e8f3127899525463b556c4"
+   },
+   "mutation": "parts/app2.js: nameHoldApply's transform replaced by the refused ['*', natural, mult] wrap (supersedes the proof-1266-hold-transform observation after the basemap visibility split changed app2)",
+   "red": "proof-1266 fails exactly check 1b (10 pass, 1 fail) - re-observed in this round's mutation run on the final app2",
+   "green": "proof-1266 passes 11/11 on the final tree",
+   "issued": "2026-11-21 unifiedloadin-1266"
+  },
+  {
+   "id": "proof-1266-basemap-paint-ban",
+   "check": "tests/proof/proof-1266.mjs",
+   "kind": "mutation",
+   "files": {
+    "tests/proof/proof-1266.mjs": "71ff1e812ed3f9c32dd51a0935bb805925356a8941bd4dc3cf9ad096f5503565",
+    "parts/app2.js": "390a4f99044ad7c6d76a01f1497d1f13657b553003e8f3127899525463b556c4"
+   },
+   "mutation": "parts/app2.js: nameHoldHideOnly gains a text-opacity write on a basemap name layer (the basemap paint ban lifted)",
+   "red": "proof-1266 fails exactly check 1c (10 pass, 1 fail) - observed in this round's mutation run; at drive level the same write is the placement-state reset drive216's P3 convicts (Bell Harbour)",
+   "green": "proof-1266 passes 11/11 on the final tree",
+   "issued": "2026-11-21 unifiedloadin-1266"
+  },
+  {
+   "id": "drive219-unified-load-in-final2",
+   "check": "tests/browser/drive219.mjs",
+   "kind": "rendered",
+   "files": {
+    "tests/browser/drive219.mjs": "d13a067af8723eda2dc053d022b0c97ed23d9f74a34ebec5749c50b0d2b0e906"
+   },
+   "mutation": "rendered fail-first on the Beta 1.265 tree (no name hold exists: the re-place teardown lands visible at the flight's idle and the titles blink): boot-phase presence sampling across the pick, flight, settle and reveal, a post-load-in pan, a mid-load-in theme swap, a second pick mid-load-in, both backstop drills (the post-re-place drill now suppresses the settle test by holding map.loaded() false from the click), the reduced-motion instant-fit settle, and a mid-load-in unload. Supersedes drive219-unified-load-in-judge after the basemap visibility split and the drill hardening",
+   "red": "drive219 fails 9-10 of 14 across runs on the 1.265 tree: A2 no hold engages, A3 the teardown lands at multiplier null (visible), A7 no naturals registry, B1/C1/D1/E1/H1 no load-in cycle at all, and in the denser runs A4 convicts the blink by name (Fifth, Velmar, Conti, Bourbon, Columbus, Flushing, Astona, Blackburn, Santa Barbara) with A5/A6 failing alongside (A1/F1/G1 pass - the instant-fit path has no flight and nothing to blink, on either tree) - observed in this round",
+   "green": "drive219 passes 14/14 on the final tree: the teardown lands inside the hold, every held sample stands at effective opacity 0 with the basemap layers hidden and never paint-written, the lane is clean on per-name effective opacity, the fade brackets overlap, naturals restore verbatim, the theme swap, the second pick, the instant-fit settle and the mid-load-in unload all resolve through the one cycle, and both backstops land (the post-re-place reveal with the settle test suppressed; 15.0 s absolute) - observed in this round; selftest-lane219 fixtures pass 9/9",
+   "issued": "2026-11-21 unifiedloadin-1266"
+  },
+  {
+   "id": "proof-1266-backdrop-coordination",
+   "check": "tests/proof/proof-1266.mjs",
+   "kind": "mutation",
+   "files": {
+    "tests/proof/proof-1266.mjs": "211375c12ca30900d5560a35ea492bd26eb2444e21f03d5d31816da2bf2a4300",
+    "parts/create-pick.js": "98db68b00f4edce0f4cb92c4164bd08bb029393c45d04155923a31195fb69b97",
+    "parts/app2.js": "3945d6e9f78be28040d81d0398b8f867ba0a88cd8f60d2f9ab4db9039ed67eae"
+   },
+   "mutation": "parts/create-pick.js: crSetBackdrop's snapshot pair stops consulting nameHoldNaturalVis and records the live visibility (the PR #162 defect: the hold's transient 'none' becomes the restore state)",
+   "red": "proof-1266 fails exactly check 1d (11 pass, 1 fail) - observed in this round's mutation run; at drive level the same defect is drive219 I1's scenario (titles hidden after creation exits)",
+   "green": "proof-1266 passes 12/12 on the final tree; drive219 I1 passes (backdrop records the underlying 'visible', titles stand visible and placed after the exit)",
+   "issued": "2026-11-21 unifiedloadin-1266"
+  },
+  {
+   "id": "drive219-unified-load-in-final3",
+   "check": "tests/browser/drive219.mjs",
+   "kind": "rendered",
+   "files": {
+    "tests/browser/drive219.mjs": "c7e3249d0d2dec1a50f691a5038438f83fb100c371c90afc190ab76f4b844771"
+   },
+   "mutation": "rendered fail-first on the Beta 1.265 tree (no name hold exists). Supersedes drive219-unified-load-in-final2 after phase I (the create-backdrop coordination, PR #162) joined the drive and the basemap visibility split settled",
+   "red": "drive219 fails 9-10 of 14 across runs on the 1.265 tree (the pre-phase-I form): A2/A3/A7/B1/C1/D1/E1/H1 fail structurally and A4 convicts the blink by name in the denser runs - observed in this round",
+   "green": "drive219 passes 15/15 on the final tree, phase I included: entering create mode mid-load-in, the backdrop's hide holds against the reveal, the backdrop records the underlying visibility (with the late-layer top-up), and after the exit the titles stand visible and placed - observed in this round; drive218 stays 14/14 with the backdrop changes",
+   "issued": "2026-11-21 unifiedloadin-1266"
+  },
+  {
+   "id": "proof-1262-backdrop-topup-repin",
+   "check": "tests/proof/proof-1262.mjs",
+   "kind": "mutation",
+   "files": {
+    "tests/proof/proof-1262.mjs": "e516424320e1972aaa60a2912ec4b0e378fbc6cecc6fbda5b3b4f695948eabc5",
+    "parts/create-pick.js": "98db68b00f4edce0f4cb92c4164bd08bb029393c45d04155923a31195fb69b97"
+   },
+   "mutation": "parts/create-pick.js: the styledata watcher's re-apply condition reverts to the recorded-layer clause alone (Beta 1.266's unrecorded-layer clause removed - the backdrop top-up unwatched)",
+   "red": "proof-1262 fails exactly check 14 (13 pass, 1 fail) - observed in this round's mutation run",
+   "green": "proof-1262 passes 14/14 on the final tree (its check 14 re-pinned to the extended condition, the recorded-layer clause unchanged inside it)",
+   "issued": "2026-11-21 unifiedloadin-1266"
   }
  ]
 }

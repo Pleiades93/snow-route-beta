@@ -156,10 +156,10 @@ check('12: a street named like an inherited object key (constructor) with no SPO
   engine.includes('Object.prototype.hasOwnProperty.call(H.SPOT, n)') && fixOk);
 
 // ---------- (13) the release editorial ----------
-const BULLET = "Street names now show everywhere while you create a route.";
-check("13: What's New carries the 1.265 bullet (rolled by the create-mode-naming round), em-dash free, and the CHANGELOG top entry is Beta 1.265 above 1.264",
+const BULLET = "Street names now fade in together when a route loads, instead of blinking.";
+check("13: What's New carries the 1.266 bullet (rolled by the unified-load-in round), em-dash free, and the CHANGELOG top entry is Beta 1.266 above 1.265",
   whatsnew.includes(BULLET) && BULLET.length <= 108 && !whatsnew.includes('—') &&
-  changelog.indexOf('## Beta 1.265') > -1 && changelog.indexOf('## Beta 1.265') < changelog.indexOf('## Beta 1.264'));
+  changelog.indexOf('## Beta 1.266') > -1 && changelog.indexOf('## Beta 1.266') < changelog.indexOf('## Beta 1.265'));
 
 console.log(`proof-1263: ${pass} passed, ${fail} failed`);
 process.exit(fail ? 1 : 0);
