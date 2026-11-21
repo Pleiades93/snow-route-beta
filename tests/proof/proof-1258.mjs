@@ -65,15 +65,15 @@ check('11: the route POI still wears the route name (a place marker, not a stree
   engine.includes("add({ id: 'routepoi-txt'") && engine.includes("'routepoi-txt'"));
 check('12: font and theme passes now serve the POI label only',
   engine.includes("['routepoi-txt']") && !engine.includes('streetnamespt1'));
-check('13: the retired Beta 1.40 clone layers are still removed if an older build left one',
-  app2.includes('removeLayer(cloneId)'));
+check('13: a clone layer an older build left cannot persist (Beta 1.259 premise update: the blanket removal this check pinned is superseded - the -route id is now the round\'s own priority lane, and glUnifyLabels removes any lane whose source is not its own route-labels source, which is exactly the older tile-fed clone\'s shape)',
+  app2.includes("existing.source !== 'route-labels'"));
 
 // ---------- the release editorial ----------
 check('14: the CHANGELOG top entry is Beta 1.258',
   changelog.indexOf('## Beta 1.258') > -1 && changelog.indexOf('## Beta 1.258') < changelog.indexOf('## Beta 1.257'));
 check('15: the What\'s New bullet is the round\'s own line, within the 108-char cap, em-dash free',
-  whatsnew.includes('Street names now come from the map itself, spelled in full.') &&
-  'Street names now come from the map itself, spelled in full.'.length <= 108 &&
+  whatsnew.includes('Where your paint meets a bigger street, it now fades out gently instead of stopping dead.') &&
+  'Where your paint meets a bigger street, it now fades out gently instead of stopping dead.'.length <= 108 &&
   !whatsnew.includes('—'));
 
 console.log(`proof-1258: ${pass} passed, ${fail} failed`);

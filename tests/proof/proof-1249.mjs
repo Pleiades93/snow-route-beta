@@ -93,8 +93,8 @@ check('15: the grid stall still drops the cached pack promise (the abandonment s
 // ---------- the release editorial ----------
 check('16: the CHANGELOG top entry is Beta 1.251', changelog.includes('## Beta 1.251'));
 check('17: What\'s New carries the 1.251 bullet, short and dash-free',
-  whatsnew.includes('Street names now come from the map itself, spelled in full.')
-  && 'Street names now come from the map itself, spelled in full.'.length <= 108
+  whatsnew.includes('Where your paint meets a bigger street, it now fades out gently instead of stopping dead.')
+  && 'Where your paint meets a bigger street, it now fades out gently instead of stopping dead.'.length <= 108
   && !whatsnew.includes('—'));
 
 // ---------- the first byte must be RECORDED, not just read about ----------

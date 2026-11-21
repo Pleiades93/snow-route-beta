@@ -36,6 +36,16 @@ import { createHash } from 'node:crypto';
 // is unchanged - the retirement removes one source and changes no
 // paint geometry byte.
 //
+// Beta 1.259 addendum (2026-11-20): the road-end feather adds two paint
+// sources (fades, selFades) to the engine. Over this synthetic network
+// they are EMPTY by construction - the fixture streets carry no boundary
+// 'ends' records, so the feather is inert and no paint geometry byte
+// changes. Checks 7-8 keep their 1.258 pins over the same ten sources
+// (the fade sources excluded from the hash, by the same derivation the
+// 1.258 addendum used for labelpts), and checks 9-10 pin the new
+// invariant directly: the fade sources exist and carry no features in
+// either state - no ends, no fades, geometry untouched.
+//
 // On unmodified main checks 1-3 FAIL and 4-8 pass; with the removal all
 // eight pass. (On the 1.257 tree checks 4-8 now fail by design: LEFTBIT
 // stands there and the labelpts source still exists.)
@@ -115,12 +125,21 @@ function sourcesHash(pieces) {
   const ctx = { GL_HOST: host, window: {}, setInterval: () => 1, clearInterval: () => {} };
   vm.runInNewContext(engine, ctx);
   ctx.window.GLP.init(mockGLM, host);
-  return hash(Object.fromEntries(Object.entries(sources).map(([k, v]) => [k, v.data])));
+  const byId = Object.fromEntries(Object.entries(sources).map(([k, v]) => [k, v.data]));
+  const ten = Object.fromEntries(Object.entries(byId).filter(([k]) => k !== 'fades' && k !== 'selFades'));
+  const fadesEmpty = !!(byId.fades && byId.selFades && (byId.fades.features || []).length === 0 && (byId.selFades.features || []).length === 0);
+  return { tenHash: hash(ten), fadesEmpty };
 }
 
+const stateA = sourcesHash({ LongAve: [2, 1, 2], NorthAve: [1, 2, 1], CrossSt: [1, 2, 1] });
+const stateB = sourcesHash({ LongAve: [1, 0, 3], NorthAve: [3, 1, 0], CrossSt: [0, 3, 2] });
 check('geometry identity, state A (pieces 2/1/2 - 1/2/1 - 1/2/1): the ten surviving paint sources byte-identical to the unmodified engine minus labelpts (Beta 1.258 derivation)',
-  sourcesHash({ LongAve: [2, 1, 2], NorthAve: [1, 2, 1], CrossSt: [1, 2, 1] }) === '5db11af0bf1e7c77a97e77c595bd5615c62d82d1b8666edffce76e3578bb6fd9');
+  stateA.tenHash === '5db11af0bf1e7c77a97e77c595bd5615c62d82d1b8666edffce76e3578bb6fd9');
 check('geometry identity, state B (pieces 1/0/3 - 3/1/0 - 0/3/2): the ten surviving paint sources byte-identical to the unmodified engine minus labelpts (Beta 1.258 derivation)',
-  sourcesHash({ LongAve: [1, 0, 3], NorthAve: [3, 1, 0], CrossSt: [0, 3, 2] }) === '1cfd3e1d0acd5f0da3fa38cb5544ddb9fa387c8b0befb0e0f5c49a70ae6234b8');
+  stateB.tenHash === '1cfd3e1d0acd5f0da3fa38cb5544ddb9fa387c8b0befb0e0f5c49a70ae6234b8');
+check('Beta 1.259: the fade sources exist and are empty in state A (no boundary records in the fixture - the feather is inert)',
+  stateA.fadesEmpty);
+check('Beta 1.259: the fade sources exist and are empty in state B',
+  stateB.fadesEmpty);
 
 process.exit(failed ? 1 : 0);

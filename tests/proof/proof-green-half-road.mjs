@@ -320,13 +320,25 @@ GLP.sync();
 // Andrew's decision, 2026-11-20). The 1.208 form pinned the app's own
 // titles at every zoom; the titles are retired now (their placement
 // defect is the reason - see proof-1258's header), the route-name
-// exclusion is undone, and the basemap clones stay retired. What
-// survives of the old R4: the measured-dead symbol-spacing cure is
-// still not shipped, and clone leftovers are still removed.
-check('R4: no symbol-spacing is set anywhere in app2.js (the measured-dead cure is not shipped)',
-  !app2.includes('symbol-spacing'));
-check('R4: the basemap clones are never built and any leftover is removed',
-  !app2.includes('addLayer(clone') && app2.includes('removeLayer(cloneId)'));
+// exclusion is undone, and the basemap clones stay retired.
+// Beta 1.259 premise updates (Andrew's decisions of 2026-11-20, which
+// postdate and supersede the two pins below): (1) repetition R1 - the
+// old pin ("the measured-dead symbol-spacing cure is not shipped")
+// guarded a spacing experiment tried as a cure for the APP titles'
+// placement defect; Andrew has since ordered symbol-spacing 500 on the
+// basemap's own road-label layers for the whole map, so the pin flips:
+// exactly ONE symbol-spacing write exists in app2.js, the owned R1 line
+// (proof-1259 pins its value and placement). (2) The route-name
+// priority lane (roads_labels_minor-priority) is not a basemap clone -
+// it is fed by the route's own geometry, not the tiles - and the
+// blanket clone removal the old pin asserted is superseded by the
+// lane's stale-source guard (the same update proof-1258's check 13
+// recorded): the retired tile-fed clones ('-route' ids) are still never
+// built, and a leftover lane of any other shape is still removed.
+check('R4: symbol-spacing appears exactly once in app2.js - the owned R1 line (Beta 1.259 premise update: Andrew ordered R1 after the measured-dead pin was written)',
+  app2.split('symbol-spacing').length - 1 === 1 && app2.includes("setL(L.id, 'symbol-spacing', 500);"));
+check('R4: the basemap clones are never built and a leftover lane of any other shape is removed (Beta 1.259 premise update: the priority lane is not a clone)',
+  !app2.includes('addLayer(clone') && !app2.includes("'roads_labels_minor-route'") && !app2.includes("'roads_labels_major-route'") && app2.includes("existing.source !== 'route-labels'"));
 check('R4: the engine builds no title layers and no labelpts source (Beta 1.258 retirement)',
   !eng.includes("addSource('labelpts'") && !eng.includes("'streetnamespt' + t") && !eng.includes('labelPointFeatures'));
 check('R4: app2 carries no route-name exclusion (no tile-names list, no name filter)',
