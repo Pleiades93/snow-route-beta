@@ -55,12 +55,19 @@ check('8: gradients are literal per colour via fadeGrad, casing follows the them
   engine.includes('function fadeGrad(hex)') && engine.includes("setPaintProperty('fade-casing', 'line-gradient', fadeGrad(casing))"));
 
 // ---------- (2) the priority lane ----------
-check('9: the lane is managed in glUnifyLabels, copied from the live minor layer',
-  app2.includes("const laneId = 'roads_labels_minor-priority';") && app2.includes("lane.source = 'route-labels';"));
-check('10: the lane is point-anchored, bearing-turned, overlap-guaranteed, and hands over at 15',
-  app2.includes("'symbol-placement': 'point'") && app2.includes("'text-rotate': ['get', 'ang']") && app2.includes("'text-allow-overlap': true") && app2.includes('lane.maxzoom = 15;') && app2.includes('180 / Math.PI - 90') && app2.includes('__applyRouteLabelBearing')); // the -90 is the bearing-to-rotation conversion (gate fix, Codex P2): without it every lane name lies across its street; __applyRouteLabelBearing re-bases the angles against the camera bearing so the names stay upright when the map rotates (the second Codex P2)
-check('11: the full spelling lookup is ordinal-aware (Fifth -> 5th Avenue)',
-  app2.includes("Fifth: '5th'"));
+// Beta 1.261 ROLL (labelmix-1261): the lane this section pinned is DELETED
+// whole by Andrew's label-mix decision of 2026-11-20 (the 34-of-34-at-home
+// requirement it served was reversed the same evening; the mix restores
+// the app titles below 15 instead). Checks 9-11 flip to absence pins with
+// the reason here; the mix's own shape is pinned by proof-1261. The
+// feather checks (1-8) and the R1 check (12) stand untouched - both ship
+// on in 1.261 exactly as this round built them.
+check('9: RETIRED by 1.261 - the lane layer is gone from glUnifyLabels (was: managed there, copied from the live minor layer)',
+  !app2.includes("const laneId = 'roads_labels_minor-priority';") && !app2.includes("lane.source = 'route-labels';"));
+check('10: RETIRED by 1.261 - the lane angle machinery is gone (was: point-anchored, bearing-turned, overlap-guaranteed, handing over at 15)',
+  !app2.includes('__applyRouteLabelBearing') && !app2.includes('lane.maxzoom = 15;'));
+check('11: RETIRED by 1.261 - the ordinal spelling lookup is gone with the lane (the spellings are pack data, tileNames in data.js, as since 1.117)',
+  !app2.includes("Fifth: '5th'"));
 
 // ---------- (3) R1 repetition ----------
 check('12: symbol-spacing 500 is set in the normalization path on the road-label originals',
@@ -69,9 +76,9 @@ check('12: symbol-spacing 500 is set in the normalization path on the road-label
 // ---------- the release editorial ----------
 check('13: the CHANGELOG top entry is Beta 1.259',
   changelog.indexOf('## Beta 1.259') > -1 && changelog.indexOf('## Beta 1.259') < changelog.indexOf('## Beta 1.258'));
-check('14: What\'s New carries the CURRENT entry\'s bullet (rolled to 1.260: this check tracks the current entry each round, like the other release-editorial checks; the 1.259 bullets it shipped with live in the CHANGELOG), within the 108-char cap, em-dash free',
-  whatsnew.includes("The splash logo's snow now rounds off at the ends and melts into the blue at the bottom.") &&
-  "The splash logo's snow now rounds off at the ends and melts into the blue at the bottom.".length <= 108 &&
+check('14: What\'s New carries the CURRENT entry\'s bullet (rolled to 1.261: this check tracks the current entry each round, like the other release-editorial checks; the bullets it shipped with live in the CHANGELOG), within the 108-char cap, em-dash free',
+  whatsnew.includes("Street names are the app's own labels when zoomed out, and the map's full names when you zoom in close.") &&
+  "Street names are the app's own labels when zoomed out, and the map's full names when you zoom in close.".length <= 108 &&
   !whatsnew.includes('—'));
 
 console.log(`proof-1259: ${pass} passed, ${fail} failed`);

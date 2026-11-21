@@ -22,8 +22,13 @@ import { readFileSync } from 'node:fs';
 // Beta 1.258 narrowing: SPOT and ROADS left the list - their last engine
 // reader was the retired street-title build, so the surface is now these
 // 13 names; the GL_HOST literal in app1.js shrank to match.
+// Beta 1.261 widening (the label mix): the street-title build is restored
+// and reads H.SPOT / H.ROADS again (the label anchor sits on the SPOT
+// segment of the ROADS runs), so both names return to the list - the
+// surface is the Phase 6 census's 15 names again, and the GL_HOST
+// literal in app1.js regrew to match.
 const FROZEN = [
-  'MLAT', 'MLNG', 'PRIMARIES', 'STRETCH', 'names',                     // (a)
+  'MLAT', 'MLNG', 'PRIMARIES', 'STRETCH', 'names', 'SPOT', 'ROADS',   // (a)
   'jDistM', 'ptSegM', 'isNight', 'glUnifyLabels',                     // (b)
   'pieces', 'selSet', 'selStretch', 'activeRoute',                   // (c)
 ];

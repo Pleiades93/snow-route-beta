@@ -335,14 +335,26 @@ GLP.sync();
 // lane's stale-source guard (the same update proof-1258's check 13
 // recorded): the retired tile-fed clones ('-route' ids) are still never
 // built, and a leftover lane of any other shape is still removed.
-check('R4: symbol-spacing appears exactly once in app2.js - the owned R1 line (Beta 1.259 premise update: Andrew ordered R1 after the measured-dead pin was written)',
-  app2.split('symbol-spacing').length - 1 === 1 && app2.includes("setL(L.id, 'symbol-spacing', 500);"));
-check('R4: the basemap clones are never built and a leftover lane of any other shape is removed (Beta 1.259 premise update: the priority lane is not a clone)',
-  !app2.includes('addLayer(clone') && !app2.includes("'roads_labels_minor-route'") && !app2.includes("'roads_labels_major-route'") && app2.includes("existing.source !== 'route-labels'"));
-check('R4: the engine builds no title layers and no labelpts source (Beta 1.258 retirement)',
-  !eng.includes("addSource('labelpts'") && !eng.includes("'streetnamespt' + t") && !eng.includes('labelPointFeatures'));
-check('R4: app2 carries no route-name exclusion (no tile-names list, no name filter)',
-  !app2.includes('ROUTE_TILE_NAMES') && !app2.includes("['literal', ROUTE_TILE_NAMES]"));
+// Beta 1.261 premise update (Andrew's label-mix decision, 2026-11-20,
+// which postdates and supersedes the 1.258/1.259 forms of all four pins
+// below): the app titles are RESTORED below zoom 15 (capped there), the
+// priority lane is DELETED whole, and the basemap major layer is split
+// at 15 - the original owns 15-and-up with its stock filter and a
+// '-pre15' copy cloned from the live normalized layer carries the
+// route-name exclusion across 11-15. The pins flip to that state: the
+// R1 write stays the one owned spacing write; the '-route' tile-fed
+// clones stay retired and the lane stays absent; the '-pre15' copy is
+// the one sanctioned clone; the engine builds the title layers again;
+// the exclusion is back, on the pre-15 band only. proof-1261 pins the
+// mix's full shape including the seam; drive214 grades it rendered.
+check('R4: the owned R1 symbol-spacing write appears exactly once in app2.js (Beta 1.261 premise update: the second symbol-spacing string in the file is the band-split comment naming the value the clone inherits)',
+  app2.split("setL(L.id, 'symbol-spacing', 500);").length - 1 === 1);
+check('R4: the tile-fed clones stay retired and the 1.259 lane is deleted; the one sanctioned clone is the -pre15 band copy (Beta 1.261 premise update)',
+  !app2.includes("'roads_labels_minor-route'") && !app2.includes("'roads_labels_major-route'") && !app2.includes('roads_labels_minor-priority') && !app2.includes("'route-labels'") && app2.includes("const preId = baseId + '-pre15';"));
+check('R4: the engine builds the title layers and the labelpts source again (Beta 1.261 premise update: the 1.258 retirement is reversed below zoom 15)',
+  eng.includes("addSource('labelpts'") && eng.includes("'streetnamespt' + t"));
+check('R4: app2 carries the route-name exclusion again, on the -pre15 band (Beta 1.261 premise update)',
+  app2.includes('ROUTE_TILE_NAMES') && app2.includes("['literal', ROUTE_TILE_NAMES]"));
 
 // ---- R5 (same round): both SECONDARY pills wear the dark ink
 // (Andrew's pick C from the three-variant sample) — the 1.207 white

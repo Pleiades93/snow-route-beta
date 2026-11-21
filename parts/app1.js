@@ -476,6 +476,7 @@ const STREETSET = new Set();
   STREETSET.clear(); for (const n of STREETNAMES) STREETSET.add(n);
   PRIMARIES.clear(); for (const n of ((pack && pack.primaries) || [])) if (STREETSET.has(n)) PRIMARIES.add(n);
   for (const k of Object.keys(SPOT)) delete SPOT[k]; Object.assign(SPOT, (pack && pack.spot) || {}); // Beta 1.258: SPOT's only reader was the retired street-title anchor build - the pack-data plumbing stays (stored packs carry the field); no code reads SPOT now
+  ROUTE_TILE_NAMES.length = 0; ROUTE_TILE_NAMES.push(...((pack && pack.tileNames && pack.tileNames.length) ? pack.tileNames : STREETNAMES)); // MIX SAMPLE restore (pre-1.258 verbatim): the basemap exclusion's name list, refilled per load
   routeBox = computeRouteBox(ROADS);
   buildSamples();
 }
@@ -884,7 +885,7 @@ window.addEventListener('pagehide', () => flushAux(true));
 // refilled per load above as pack-data plumbing); they are simply no
 // longer engine inputs, and the frozen list shrank with them.
 const GL_HOST = {
-  MLAT, MLNG, PRIMARIES, STRETCH, names, jDistM, ptSegM, isNight,
+  MLAT, MLNG, PRIMARIES, SPOT, STRETCH, ROADS, names, jDistM, ptSegM, isNight,
   get pieces() { return BOARD.state().pieces; }, // Arch-2: read through the board module, so the engine sees the current binding after any restore/reset
   get selSet() { return selSet; },
   get selStretch() { return selStretch; },

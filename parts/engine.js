@@ -53,6 +53,11 @@ function offsetLine(pts, m) {
   return out;
 }
 
+// Beta 1.261 trim: the pre-1.258 restore also revived labelFeatures/LABELS (a per-street
+// LineString collection rebuilt on every load) - proven unread tree-wide (no source, no
+// export, no reader since the 'labels' source was dropped in 1.40), so they are NOT restored.
+// Only the point features below feed a layer; that is the whole label geometry.
+const labelPointFeatures = [];
 const GEO = {};
 // Left/Right naming (Andrew, 2026-10-28): every street has ONE fixed
 // direction - south end to north end, or west end to east end for
@@ -63,8 +68,11 @@ const GEO = {};
 // anchor's offset; the titles retired in Beta 1.258, and that record -
 // written but never read once the anchors were gone - retired with
 // them, the B-05 rule.)
+const LEFTBIT = {}; // MIX SAMPLE (2026-11-20): restored with the street titles - which state bit is Left, per street, as through 1.257
 function buildEngineGeometry() { // Beta 1.117: the engine's route geometry (GEO offsets, the route POI, the hit features) is built HERE from the host's CURRENT data - once at eval (no route loaded yet: empty) and again on every route switch via GLP.rebuildRoute. The containers are refilled in place, never rebound, so every module-level reader (buildFamilies, selectedGeom, addStack) keeps working unchanged.
   for (const k of Object.keys(GEO)) delete GEO[k];
+  for (const k of Object.keys(LEFTBIT)) delete LEFTBIT[k];
+  labelPointFeatures.length = 0;
   SVMAP = null; // the shared-vertex map is a memoized derivative of GEO (sharedVertexMap) - it must die with the geometry it was built from, or the strand builders read the previous route's streets (the first switch build threw exactly there)
   H.names.forEach(n => {
   // The street's stitched line, RUN BY RUN (Beta 1.144, Package C DA-02/C1):
@@ -97,12 +105,71 @@ function buildEngineGeometry() { // Beta 1.117: the engine's route geometry (GEO
     stitchedLen += segLenM(rStitched);
   });
   GEO[n] = { stitched, cuts, off0, off1, offH0, offH1, gaps };
+  const p0 = stitched[0], p1 = stitched[stitched.length - 1];
+  const dLat = p1[0] - p0[0], dLng = p1[1] - p0[1];
+  const canonicalForward = Math.abs(dLat) >= Math.abs(dLng) ? dLat >= 0 : dLng >= 0;
+  LEFTBIT[n] = canonicalForward ? 0 : 1;   // bit 0 is the left of the stitched direction
+  const leftOff = LEFTBIT[n] === 0 ? off0 : off1, mid = Math.floor(stitched.length / 2);
+  const dx = (leftOff[mid][1] - stitched[mid][1]) * H.MLNG, dy = (leftOff[mid][0] - stitched[mid][0]) * H.MLAT;
+  // label line: the SPOT segment (or the longest), like the app's labels
+  const segs = H.ROADS[n];
+  let li = (H.SPOT[n] ? H.SPOT[n][0] : -1);
+  if (li < 0 || li >= segs.length) { li = 0; let bl = -1; segs.forEach((sg, j) => { const L = segLenM(sg); if (L > bl) { bl = L; li = j; } }); }
+  // Round 34: a POINT anchor on the same segment at the SPOT fraction.
+  // Line-placed labels need the segment to fit the name on screen, so
+  // at Overview most short streets lost their labels entirely; point
+  // labels render regardless of segment length.
+  const seg = segs[li], fr = H.SPOT[n] ? H.SPOT[n][1] : 0.5;
+  let target = segLenM(seg) * fr, acc = 0, anchor = seg[seg.length - 1];
+  for (let k = 1; k < seg.length; k++) { const d = H.jDistM(seg[k - 1], seg[k]); if (acc + d >= target) { const t = d ? (target - acc) / d : 0; anchor = [seg[k - 1][0] + (seg[k][0] - seg[k - 1][0]) * t, seg[k - 1][1] + (seg[k][1] - seg[k - 1][1]) * t]; break; } acc += d; }
+  labelPointFeatures.push({ type: 'Feature', properties: { name: n, len: Math.round(stitchedLen) }, geometry: { type: 'Point', coordinates: GJ([anchor])[0] } }); // Beta 1.144: the length is the per-run sum (stitchedLen) - segLenM over the concatenated array would add the jumps between a disconnected street's runs
 });
   JUNC = null; // Beta 1.144 (found by drive165, proven on the pristine 1.143 tree): the junction table derives from GEO + the current name set but was built once and never invalidated - after a route switch it still named the PREVIOUS route's streets, and the first marked run's paint on the new route threw 'JUNC[n] is not iterable'. The geometry rebuild is the invalidation point: the table rebuilds lazily from the new geometry on next use.
+  nudgeFifth();
+  assignTiers();
   let a = 90, b = -90, c = 180, d = -180; H.names.forEach(n => GEO[n].stitched.forEach(p => { a = Math.min(a, p[0]); b = Math.max(b, p[0]); c = Math.min(c, p[1]); d = Math.max(d, p[1]); }));
   if (H.names.length) ROUTEPOI.geometry.coordinates = [(c + d) / 2, (a + b) / 2]; // Beta 1.170 (Carbon fix round Phase 2, B-10): an empty geometry keeps the last real centre - through 1.169 the extrema never moved off their seeds when there were no streets to visit, and the midpoint of the seeds is [0,0] (Null Island), where the route-name POI then rendered at overview zooms
   HIT.features = H.names.flatMap(n => GEO[n].cuts.map((ab, i) => ({ type: 'Feature', properties: { name: n, idx: i }, geometry: { type: 'LineString', coordinates: GJ(GEO[n].stitched.slice(ab[0], ab[1] + 1)) } })));
 }
+// Round 35 (Andrew): Fifth's label anchor sits at its Greenpark
+// junction, so the name reads as if it belongs to the yellow street.
+// Push it 45 m away from Greenpark's line - the text sits just off
+// Fifth's own corner instead of on the junction paint.
+function nudgeFifth() {
+  const f = labelPointFeatures.find(x => x.properties.name === 'Fifth');
+  if (!f) return;
+  const A0 = [f.geometry.coordinates[1], f.geometry.coordinates[0]];
+  const gp = GEO['Greenpark'] && GEO['Greenpark'].stitched;
+  if (!gp) return; // Beta 1.117: the nudge is a Route 5W refinement - a pack with a Fifth but no Greenpark simply skips it
+  let bd = 1e9, bq = A0;
+  const gg = GEO['Greenpark'].gaps;
+  for (let k = 1; k < gp.length; k++) {
+    if (gg.has(k)) continue; // Beta 1.144 (verify cycle 2): the segment between two runs is not street - projecting the anchor onto it pushes Fifth's label away from ground that is not Greenpark
+    const a = gp[k - 1], b = gp[k], vx = (b[1] - a[1]) * H.MLNG, vy = (b[0] - a[0]) * H.MLAT;
+    const wx = (A0[1] - a[1]) * H.MLNG, wy = (A0[0] - a[0]) * H.MLAT, L2 = vx * vx + vy * vy;
+    let t = L2 ? (wx * vx + wy * vy) / L2 : 0; t = Math.max(0, Math.min(1, t));
+    const q = [a[0] + (b[0] - a[0]) * t, a[1] + (b[1] - a[1]) * t], d = H.jDistM(A0, q);
+    if (d < bd) { bd = d; bq = q; }
+  }
+  const dx = (A0[1] - bq[1]) * H.MLNG, dy = (A0[0] - bq[0]) * H.MLAT, dl = Math.hypot(dx, dy) || 1;
+  f.geometry.coordinates = [A0[1] + (dx / dl) * 45 / H.MLNG, A0[0] + (dy / dl) * 45 / H.MLAT];
+}
+// Round 39 (Andrew): street names DEPUPULATE as he zooms out - from
+// 13.7 the shortest streets' names drop away in tiers, longest last,
+// until 12.6 where the melt finishes everything. Tier = stitched-
+// length quartile (computed from the data, no hand-set lengths); the
+// six PRIMARY streets are forced into the final tier regardless of
+// length (Astona is a primary but only 187 m long).
+function assignTiers() {
+  if (!labelPointFeatures.length) return; // Beta 1.170 (B-10): no labels, no tiers - through 1.169 the quartile reads below indexed lens[-1] (undefined) and every comparison failed quietly; a no-op only because there were no features to tier either
+  const lens = labelPointFeatures.map(f => f.properties.len).sort((a, b) => a - b);
+  const q = p => lens[Math.min(lens.length - 1, Math.floor(p * lens.length))];
+  const q1 = q(0.25), q2 = q(0.5), q3 = q(0.75);
+  labelPointFeatures.forEach(f => {
+    f.properties.tier = H.PRIMARIES.has(f.properties.name) ? 4 : (f.properties.len < q1 ? 1 : f.properties.len < q2 ? 2 : f.properties.len < q3 ? 3 : 4);
+  });
+}
+const LABELPTS = { type: 'FeatureCollection', features: labelPointFeatures };
 const ROUTEPOI = { type: 'Feature', properties: {}, geometry: { type: 'Point', coordinates: [0, 0] } }; // Beta 1.117: the centre is filled per load by buildEngineGeometry (was an eval-time IIFE over the baked route)
 
 // ---- unified strands (Andrew, 2026-10-28): the route is painted as
@@ -1782,6 +1849,7 @@ function addStack() {
     GLM.addSource('selFill', { type: 'geojson', data: CUR.selFill });
     GLM.addSource('selGlow', { type: 'geojson', data: buildSelGlow() });
     GLM.addSource('hit', { type: 'geojson', data: HIT });
+    GLM.addSource('labelpts', { type: 'geojson', data: LABELPTS });
     GLM.addSource('routepoi', { type: 'geojson', data: ROUTEPOI });
   }
   const before = firstSymbolId();
@@ -1845,13 +1913,47 @@ function addStack() {
   add(line('selfade-fill', 'selFades', { 'line-gradient': fadeGrad(GREEN), 'line-width': wScale(surfW, 0.5), 'line-opacity': 1 }, { 'line-cap': 'butt' }, ['==', ['get', 'k'], 'f']));
   // --- hit (every treatment) ---
   add(line('hit', 'hit', { 'line-color': '#fff', 'line-width': 24 * WIDTH_K, 'line-opacity': 0 }));
-  // Beta 1.258 (Andrew): the app's own street titles are RETIRED - the basemap's
-  // own road names are now the street-name system for every route (see
-  // glUnifyLabels in app2: the roads_labels originals keep their stock filters
-  // and zoom ranges, route streets included). No app-drawn street names remain:
-  // no labelpts source, no streetnamespt layers. The route POI below still
-  // wears the route's name at overview zooms - it is a place marker, not a
-  // street name.
+  // MIX SAMPLE (2026-11-20): the retired titles are BACK for this sample, capped at
+  // maxzoom 15 - at 15 the basemap's own names take over (glUnifyLabels splits the
+  // basemap road layers at 15 to match, so the two systems never print together).
+  // The rest of this block is the pre-1.258 text verbatim, history notes included -
+  // its 'no maxzoom' line below describes the 1.208-1.257 run, not this mix.
+  // Round 35/39 (Andrew): the point labels sit at the TOP of the
+  // stack (appended last, like streetnames) so basemap symbols can no
+  // longer knock them out - in Light, housenumber/POI symbols were
+  // silently killing Velmar's name. When a centred name collides,
+  // text-variable-anchor lets the renderer try above / below / beside
+  // the point instead of dropping the name outright - that is what
+  // rescues Bloomingdale, whose neighbours sit ~23 px away at
+  // Overview no matter where along its segment it anchors.
+  // Round 39: FOUR tier layers (see assignTiers) with staggered
+  // minzooms - 13.7 / 13.35 / 13.0 / 12.6 - so the names depopulate
+  // shortest-first as he zooms out through 13.7 to 12.6, while every
+  // tier still pops with the paint at 12.6 (Beta 1.12: no fading). Longest
+  // tier appended last so it wins placement among the tiers.
+  // Beta 1.40 (Andrew): the HANDOVER - our titles fade OUT across 15.4-16.4 while the
+  // basemap's own names fade IN on route streets across the same band (glHideLabels),
+  // so the two systems crossfade and never print together. The 12.6 arrival stays a
+  // near-pop (0.03 of a zoom), per his Beta 1.12 no-fading call for the far switch.
+  // Beta 1.208 (Andrew): the handover is RETIRED at his order - zoomed in, the
+  // basemap printed a route street's name 4-5 times down one screen (the clone
+  // layers repeat along the line at the renderer's 250 px default), and the
+  // spacing cure is not available in this renderer: measured in the real app,
+  // a 300 px repeat already loses Malden Street's label and a 400 px repeat
+  // loses every label in the test view (anchors earn their place per tile
+  // segment, and segments shorter than the repeat get none). So our titles -
+  // exactly one per street, at the street's own anchor - now stay up at EVERY
+  // zoom: no maxzoom, no fade-out stop, and the size ramp gains one high stop
+  // so the name stays readable at z19. glHideLabels no longer builds the
+  // basemap clones, and the originals keep excluding route names, so the
+  // basemap never prints a route street's name at any zoom.
+  const PT_MIN = [13.7, 13.35, 13.0, 12.6];
+  for (let t = 1; t <= 4; t++) {
+    const id = 'streetnamespt' + t;
+    if (!GLM.getLayer(id)) {
+      GLM.addLayer({ id, type: 'symbol', source: 'labelpts', minzoom: PT_MIN[t - 1], maxzoom: 15, filter: ['==', ['get', 'tier'], t], layout: { 'text-field': ['get', 'name'], 'text-font': fontStack, 'text-size': ['interpolate', ['linear'], ['zoom'], 14, 10, 14.6, 10.5, 16.2, 12, 19, 13.5], 'text-padding': 1, 'text-variable-anchor': ['center', 'top', 'bottom', 'left', 'right'], 'text-radial-offset': 0.8, 'symbol-sort-key': ['-', ['get', 'len']], 'text-allow-overlap': false }, paint: { 'text-color': H.isNight() ? '#e8e8e8' : '#333333', 'text-halo-color': H.isNight() ? 'rgba(0,0,0,.8)' : 'rgba(255,255,255,.9)', 'text-opacity': ['interpolate', ['linear'], ['zoom'], 12.59, 0, 12.62, 1, 15.4, 1], 'text-opacity-transition': { duration: 0, delay: 0 }, 'text-halo-width': 1.4 } });
+    }
+  }
   // Round 35/37 (Andrew): zoomed far out, the route cluster blurs
   // into a blob. The switch point is GL zoom 12.6 (the old 12.6-13.3 melt
   // band's lower edge). Beta 1.12 (Andrew): NO FADING - fading 'looks
@@ -1945,6 +2047,69 @@ function managePulse() {
     }, 50);
   } else if (!want && pulseTimer) { clearInterval(pulseTimer); pulseTimer = null; }
 }
+  function rePlaceTitles() { // Beta 1.248: the street titles' anchors are re-decided from scratch - the labelpts source is rebuilt in place (the same LABELPTS data; the four tier layers re-added with their live specs at their stack seats). MapLibre's placement PREFERS the anchor a symbol used in the previous placement pass and keeps it while it still places (placement.ts: prevPlacement.variableOffsets, keyed by crossTileID, which lives with the source's cross-tile index), so an anchor first chosen mid-flight - while the fit view's streets sat closer together on screen and the tile scene was still arriving - can stick for the whole session with the name beside its street (Andrew's cold-open report, 2026-11-18: names off their streets, zooming no cure, a day/night swap - a fresh style and placement chain - the only cure; measured in the round's harness: anchors are always on their streets, the rendered text is what sits off). A rebuilt source gets a fresh cross-tile index, so the next placement pass holds no preference and decides against the settled scene. Nothing about what renders changes - same data, same specs, same seats; only when the decision is (re)made. Called by the engine's own standing heal (armTitleHeal, below) whenever the camera settles somewhere new; through 1.260 a one-shot host hook called it after the pick flight only. A no-op without a map or the source.
+    if (!GLM || !GLM.getSource || !GLM.getSource('labelpts')) return;
+    const ids = [1, 2, 3, 4].map(t => 'streetnamespt' + t).filter(id => GLM.getLayer(id));
+    if (!ids.length) return;
+    const style = GLM.getStyle(); if (!style || !style.layers) return;
+    const specs = ids.map(id => style.layers.find(l => l.id === id));
+    if (specs.some(s => !s)) return;
+    const order = style.layers.map(l => l.id);
+    let succ = null;
+    for (let i = order.indexOf(ids[ids.length - 1]) + 1; i < order.length; i++) { if (ids.indexOf(order[i]) < 0) { succ = order[i]; break; } }
+    for (const id of ids) GLM.removeLayer(id);
+    GLM.removeSource('labelpts');
+    GLM.addSource('labelpts', { type: 'geojson', data: LABELPTS });
+    for (const s of specs) { if (succ) GLM.addLayer(s, succ); else GLM.addLayer(s); }
+  }
+  // Beta 1.261 (Andrew's addendum to the mix build): the standing title heal - the ENGINE owns
+  // re-placement, not a host hook on one flight. 1.248 healed only the pick's flyTo; the
+  // street-labels round then measured a plain zoom excursion re-sticking titles on the healed
+  // build (and this round measured rotate and zoom-to-mid doing the same, the stuck names
+  // surviving pans and even a route re-pick, cleared only by a theme swap's fresh style).
+  // The rule: remember the camera signature (zoom / pitch / bearing / centre) at which the
+  // titles were last re-decided; when a move ends at a different signature, re-decide once
+  // the map next idles - and if the scene is still arriving at that idle (map moving or tiles
+  // loading), re-arm for the next idle instead of deciding against a partial scene (the
+  // 1.248 hook's 2.5 s backstop could fire into exactly that half-arrived scene). Keying on
+  // the camera rather than on which feature moved it covers every carrier with one rule:
+  // the pick flight, route switches, Home, zoom excursions, rotates, pans, GPS flights.
+  // The signature read is null-safe end to end: a host whose map cannot be
+  // read (the test battery's stub maps carry no camera) simply never arms
+  // the heal - it must never be able to break init (proof-green-half-road
+  // caught exactly that in this round's first battery run).
+  function titleCamSig(gl) {
+    try {
+      if (!gl || typeof gl.getCenter !== 'function' || typeof gl.getZoom !== 'function') return null;
+      const c = gl.getCenter();
+      return [gl.getZoom().toFixed(2), gl.getPitch().toFixed(1), gl.getBearing().toFixed(1), c.lng.toFixed(5), c.lat.toFixed(5)].join('/');
+    } catch (e) { return null; }
+  }
+  function armTitleHeal(gl) {
+    if (!gl || gl.__titleHeal || typeof gl.on !== 'function' || typeof gl.once !== 'function') return; gl.__titleHeal = true;
+    let lastSig = titleCamSig(gl); // this map's baseline: the camera the titles were last re-decided at (null until a camera can be read)
+    let armed = false;
+    gl.on('moveend', () => {
+      if (GLM !== gl || armed) return;
+      const sig = titleCamSig(gl);
+      if (sig === null) return;
+      if (lastSig === null) { lastSig = sig; return; }
+      if (sig === lastSig) return;
+      armed = true;
+      const tryHeal = () => {
+        if (GLM !== gl) { armed = false; return; }
+        const moving = typeof gl.isMoving === 'function' ? gl.isMoving() : false;
+        const loaded = typeof gl.loaded === 'function' ? gl.loaded() : true;
+        if (moving || !loaded) { gl.once('idle', tryHeal); return; }
+        armed = false;
+        const nowSig = titleCamSig(gl);
+        if (nowSig === null || nowSig === lastSig) return;
+        rePlaceTitles();
+        lastSig = nowSig;
+      };
+      gl.once('idle', tryHeal);
+    });
+  }
   // ---- public API (the app's only handles on the engine) ----
   function stateSig() { return JSON.stringify(H.pieces); }
   function init(gl, host) {
@@ -1955,6 +2120,7 @@ function managePulse() {
     if (!CUR || sig !== lastSig) { rebuildData(); lastSig = sig; }
     else { const SC = buildSelC(); CUR.sel = SC.sel; CUR.selBand = SC.selBand; CUR.selFill = buildSelFill(); CUR.selFades = fadeFC([...SC.selFades, ...SEL_FILL_FADES]); }
     addStack();           // re-adds sources+layers on the fresh GL map and pushes CUR
+    armTitleHeal(GLM);    // Beta 1.261: the standing title heal rides every map instance init creates
   }
   function rebuildRoute() { // Beta 1.117: the app switched routes and rebuilt its own geometry (buildGeometry, app1) - rebuild the engine's from the host's current data and re-point every route-shaped source at it. The basemap and layers are untouched; only data moves.
     buildEngineGeometry();
@@ -1962,6 +2128,7 @@ function managePulse() {
     CUR = null; rebuildData(); lastSig = stateSig();
     if (!GLM) return;
     if (GLM.getSource('hit')) GLM.getSource('hit').setData(HIT);
+    if (GLM.getSource('labelpts')) GLM.getSource('labelpts').setData(LABELPTS);
     if (GLM.getSource('routepoi')) GLM.getSource('routepoi').setData(ROUTEPOI);
     if (GLM.getLayer('routepoi-txt')) { try { GLM.setLayoutProperty('routepoi-txt', 'text-field', (H.activeRoute && H.activeRoute.name) || 'Snow Route'); } catch (e) {} } // the POI wears the route's name (Beta 1.79) - a switch renames it
     H.glUnifyLabels(GLM); // the basemap label pass runs on the new route's map
@@ -1988,7 +2155,7 @@ function managePulse() {
     pushSelSources();
   }
   function active() { return !!GLM; }
-  function setFont(stack) { if (Array.isArray(stack) && stack.length) { fontStack = stack.slice(); if (GLM) { for (const id of ['routepoi-txt']) { if (GLM.getLayer(id)) { try { GLM.setLayoutProperty(id, 'text-font', fontStack); } catch (e) {} } } } } } // Beta 1.170 (Carbon fix round Phase 2, B-09): layers already on the map take the new stack too - through 1.169 setFont replaced only the variable FUTURE layers are built from, so a basemap restyle (which re-picks the font, then calls sync - not init) left the live label layers rendering the retired stack until the next full rebuild
+  function setFont(stack) { if (Array.isArray(stack) && stack.length) { fontStack = stack.slice(); if (GLM) { for (const id of ['streetnamespt1', 'streetnamespt2', 'streetnamespt3', 'streetnamespt4', 'routepoi-txt']) { if (GLM.getLayer(id)) { try { GLM.setLayoutProperty(id, 'text-font', fontStack); } catch (e) {} } } } } } // Beta 1.170 (Carbon fix round Phase 2, B-09): layers already on the map take the new stack too - through 1.169 setFont replaced only the variable FUTURE layers are built from, so a basemap restyle (which re-picks the font, then calls sync - not init) left the live label layers rendering the retired stack until the next full rebuild
   function syncTheme() {
     if (!GLM || !GLM.getLayer) return;
     const night = !!(H && H.isNight && H.isNight());
@@ -1996,7 +2163,7 @@ function managePulse() {
     const casing = night ? '#000000' : '#5a5f6a', txt = night ? '#e8e8e8' : '#333333', halo = night ? 'rgba(0,0,0,.8)' : 'rgba(255,255,255,.9)';
     for (const id of ['t1-casing', 't1-casingb']) { if (GLM.getLayer(id)) { try { GLM.setPaintProperty(id, 'line-color', casing); } catch (e) {} } }
     if (GLM.getLayer('fade-casing')) { try { GLM.setPaintProperty('fade-casing', 'line-gradient', fadeGrad(casing)); } catch (e) {} } // Beta 1.259: the feather's casing gradient follows the theme with the casings
-    for (const id of ['routepoi-txt']) { if (GLM.getLayer(id)) { try { GLM.setPaintProperty(id, 'text-color', txt); GLM.setPaintProperty(id, 'text-halo-color', halo); } catch (e) {} } }
+    for (const id of ['streetnamespt1', 'streetnamespt2', 'streetnamespt3', 'streetnamespt4', 'routepoi-txt']) { if (GLM.getLayer(id)) { try { GLM.setPaintProperty(id, 'text-color', txt); GLM.setPaintProperty(id, 'text-halo-color', halo); } catch (e) {} } }
   }
   function evalCurvePx(curve, z) { // a scaleW-built interpolate curve evaluated at a zoom, in px (stops: zoom at odd indices from 3, width at even indices >= 4; clamped outside the stop range, linear between)
     let prev = null;
@@ -2004,6 +2171,6 @@ function managePulse() {
     return prev[1];
   }
   function tapTolPx(z) { return Math.max(24, evalCurvePx(surfCASE, z) / 2 + 2); } // The map-tap tolerance follows the WIDEST paint at the tap's zoom, floored at 24 px — the Beta 1.181 rule ("a tap anywhere on the paint still selects instead of deselecting"). Beta 1.206 introduced this formula against BANDCASE, then the widest paint; Beta 1.208 retires the wide band, so the widest paint is now the surface casing (surfCASE): 24 px at z17 and below (the floor - shipped behaviour unchanged), ~27.5 px at z18, ~50.8 px at z19.
-  return { init, drop, sync, syncSel, syncTheme, active, setFont, rebuildRoute, tapTolPx, mute }; // mute exported for the create flow's draft renderer (Beta 1.221 gate fix: create-pick's crDraftLineDim calls GLP.mute - the helper is private to this IIFE, and the bare call threw at draft-layer init, silently aborting every layer after the casing; Codex review P1 on PR #98)
+  return { init, drop, sync, syncSel, syncTheme, active, setFont, rebuildRoute, tapTolPx, mute, rePlaceTitles }; // mute exported for the create flow's draft renderer (Beta 1.221 gate fix: create-pick's crDraftLineDim calls GLP.mute - the helper is private to this IIFE, and the bare call threw at draft-layer init, silently aborting every layer after the casing; Codex review P1 on PR #98)
 })();
 window.GLP = GLP;

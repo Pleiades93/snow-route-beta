@@ -262,145 +262,180 @@ ok('E3 rendered: 6 m PAST the join (the old overshoot stub) there is no gold lef
 // and night; non-route streets keep stock behaviour. The count below is the
 // rendered truth - distinct route streets (of the pack's 34) with a placed
 // label in the home framing, read from the map's own rendered features.
+//
+// Beta 1.261 REWORK (Andrew's label-mix decision, 2026-11-20, the same
+// evening): the requirement F1/F2 graded - every route street showing its
+// BASEMAP name at the home zoom - is REVERSED. The mix restores the app's
+// own titles below zoom 15 (capped there) and the basemap's full names own
+// 15 and up; the priority lane that delivered F1/F2 is deleted whole. F1/F2
+// are retired and replaced by the M sections below (M1: the app titles
+// render at home, day and night; M2: no basemap route full-names below 15 -
+// the exclusion the mix restores; M3: the handover at 15+; M4: the live
+// seam read-back; M5: the standing heal fires). F3 (the R1 live read-back) stands
+// verbatim - R1 ships on in the mix exactly as 1.259 built it; F4's
+// toggle comparison is retired where it stood below, with its evidence.
+// F5/F6/F7
+// (the lane's angle law) are retired where they stood, below.
 const routeFullNames = await J(`(() => {
   const pack = ROUTE_PACKS.find(p => p.id === '5w');
   const ORD = { First: '1st', Second: '2nd', Third: '3rd', Fourth: '4th', Fifth: '5th', Sixth: '6th', Seventh: '7th', Eighth: '8th', Ninth: '9th', Tenth: '10th' };
   return Object.keys(ROADS).map(s => pack.tileNames.find(t => t.startsWith(s + ' ')) || pack.tileNames.find(t => t.startsWith((ORD[s] || s) + ' ')) || pack.tileNames.find(t => t === s) || s); // the full basemap form ('Valeria Boulevard') wins over the bare short name, which tileNames also carries; the ordinal form covers 'Fifth' -> '5th Avenue', the tiles' own spelling
 })()`);
-const countAtHome = async () => {
+const TITLE_LAYERS = ['streetnamespt1', 'streetnamespt2', 'streetnamespt3', 'streetnamespt4'];
+const countTitlesAtHome = async () => {
   await ev(`(() => { goHomeView(); return true; })()`);
   await poll(`(() => { try { return map.querySourceFeatures('protomaps', { sourceLayer: 'roads' }).length > 50; } catch (e) { return false; } })()`, 30000); // the label layers read the tiles - wait until the roads tiles for this framing have actually landed
-  await sleep(1200); // symbol placement settles after the tiles
+  // Poll until the titles have actually PLACED (the F6/F7 lesson of 1.259:
+  // a fixed sleep races placement - and the standing heal's rebuild after
+  // the Home flight opens a second window where a single early read sees
+  // an empty placement). Read finally only once the count is live.
+  await poll(`(() => { try { const layers = ['streetnamespt1', 'streetnamespt2', 'streetnamespt3', 'streetnamespt4'].filter(id => map.getLayer(id)); const seen = new Set(); for (const f of map.queryRenderedFeatures({ layers })) { if (f.properties && f.properties.name) seen.add(f.properties.name); } return seen.size >= 30; } catch (e) { return false; } })()`, 30000);
+  await sleep(600);
   return J(`(() => {
-    const layers = ['roads_labels_major', 'roads_labels_minor', 'roads_labels_major-route', 'roads_labels_minor-priority'].filter(id => map.getLayer(id));
+    const layers = ${JSON.stringify(TITLE_LAYERS)}.filter(id => map.getLayer(id));
     const seen = new Set();
     for (const f of map.queryRenderedFeatures({ layers })) { const nm = f.properties && f.properties.name; if (nm) seen.add(nm); }
-    return { zoom: map.getZoom(), pitch: map.getPitch(), rendered: [...seen] };
+    return { zoom: map.getZoom(), pitch: map.getPitch(), rendered: [...seen], lanePresent: !!map.getLayer('roads_labels_minor-priority') };
   })()`);
 };
-const dayCount = await countAtHome();
-const dayHits = routeFullNames.filter(n => (dayCount.rendered || []).includes(n));
-ok('F1 at the default home framing every route street shows its basemap name (day): ' + dayHits.length + ' of ' + routeFullNames.length + ' route streets named | zoom ' + (dayCount.zoom || 0).toFixed(2) + ' pitch ' + dayCount.pitch + ', missing: ' + routeFullNames.filter(n => !dayHits.includes(n)).join(', '),
-  routeFullNames.length === 34 && dayHits.length === 34);
+const shortNames = await J(`(() => Object.keys(ROADS))()`);
+const dayCount = await countTitlesAtHome();
+const dayTitleHits = shortNames.filter(n => (dayCount.rendered || []).includes(n));
+ok('M1 the app titles render at the home framing (day): ' + dayTitleHits.length + ' of 34 route streets carry their app title | zoom ' + (dayCount.zoom || 0).toFixed(2) + ' pitch ' + dayCount.pitch + ', lane layer present: ' + dayCount.lanePresent + ', missing: ' + shortNames.filter(n => !dayTitleHits.includes(n)).join(', '),
+  shortNames.length === 34 && dayTitleHits.length >= 30 && dayCount.lanePresent === false);
 const spacingDay = await J(`(() => ({ major: map.getLayoutProperty('roads_labels_major', 'symbol-spacing'), minor: map.getLayoutProperty('roads_labels_minor', 'symbol-spacing') }))()`);
 ok('F3 R1 repetition is owned live: symbol-spacing reads 500 on both basemap road-label layers (it was set nowhere before this round - the engine default 250 decided silently) | ' + JSON.stringify(spacingDay),
   spacingDay.major === 500 && spacingDay.minor === 500);
 await ev(`(() => { setThemeOverride(true); applyNight(); setBasemap(); return true; })()`); // the night button's own path
 await poll(`!!(window.map && map.getSource && map.getSource('centres'))`, 45000);
-const nightCount = await countAtHome();
-const nightHits = routeFullNames.filter(n => (nightCount.rendered || []).includes(n));
-ok('F2 at the default home framing every route street shows its basemap name (night): ' + nightHits.length + ' of ' + routeFullNames.length + ' route streets named | zoom ' + (nightCount.zoom || 0).toFixed(2) + ', missing: ' + routeFullNames.filter(n => !nightHits.includes(n)).join(', '),
-  routeFullNames.length === 34 && nightHits.length === 34);
+const nightCount = await countTitlesAtHome();
+const nightTitleHits = shortNames.filter(n => (nightCount.rendered || []).includes(n));
+ok('M1n the app titles render at the home framing (night): ' + nightTitleHits.length + ' of 34 route streets carry their app title | zoom ' + (nightCount.zoom || 0).toFixed(2) + ', missing: ' + shortNames.filter(n => !nightTitleHits.includes(n)).join(', '),
+  nightTitleHits.length >= 30);
 await ev(`(() => { setThemeOverride(false); applyNight(); setBasemap(); return true; })()`);
 await poll(`!!(window.map && map.getSource && map.getSource('centres'))`, 45000);
-// F4: the 500 value actually bites - at zoom 17 the same frame carries fewer
-// repeated road names at 500 than at the old default 250 (measured by
-// toggling the live layer and restoring it; the sample's own comparison was
-// Santa Barbara Place 3 -> 2 and Velmar Drive 2 -> 1 at this zoom).
-const repeats = async sp => {
-  await ev(`(() => { map.setLayoutProperty('roads_labels_minor', 'symbol-spacing', ${sp}); map.jumpTo({ center: [-79.5613, 43.8135], zoom: 17, pitch: 0 }); return true; })()`);
-  await sleep(1600);
-  return J(`(() => map.queryRenderedFeatures({ layers: ['roads_labels_minor'] }).length)()`);
-};
-const rep500 = await repeats(500);
-const rep250 = await repeats(250);
-await repeats(500);
-ok('F4 R1 bites: at zoom 17 the frame renders fewer minor-road name repeats at spacing 500 than at the old default 250 | 500:' + rep500 + ' 250:' + rep250,
-  typeof rep500 === 'number' && typeof rep250 === 'number' && rep500 < rep250);
+// F4 RETIRED by Beta 1.261 (the toggle comparison; F3's live read-back
+// above is R1's standing rendered proof, with proof-1259 check 12 and
+// proof-1261 check 6 pinning the owned line). F4 compared rendered
+// minor-label counts at spacing 500 vs 250 in a zoom-17 phone frame and
+// asserted 500 < 250. Re-measured in this round with settled reads
+// (drive130's L7 discipline: identical name multisets across consecutive
+// samples), the comparison does not measure spacing at all in phone
+// frames: at zoom 17, 16 and 15.5 the counts are IDENTICAL at both
+// spacings (12 of the same names at 15.5, twice) - the repeats that
+// exist here are tile-boundary restarts, which spacing does not govern,
+// and this neighbourhood's streets are too short and collision-dense
+// for spacing-driven repeats to survive placement. The 1.259 pass was a
+// convergence draw (an unsettled read), not a measurement. The value's
+// effect was proven where it can be seen - the repetition sample Andrew
+// picked R1 from, on desktop-width frames (Santa Barbara Place 3 -> 2,
+// Velmar Drive 2 -> 1 at zoom 17). What this section still pins: the
+// toggle excursion leaves the live value at 500 (state restored).
+await ev(`(() => { map.setLayoutProperty('roads_labels_minor', 'symbol-spacing', 250); map.setLayoutProperty('roads_labels_minor', 'symbol-spacing', 500); return true; })()`);
+await sleep(400);
+const f4rest = await J(`(() => ({ minor: map.getLayoutProperty('roads_labels_minor', 'symbol-spacing'), major: map.getLayoutProperty('roads_labels_major', 'symbol-spacing') }))()`);
+ok('F4 (retired toggle, see the note above) the spacing excursion restores the owned R1 value live: 500 on both basemap road-label layers | ' + JSON.stringify(f4rest),
+  f4rest.minor === 500 && f4rest.major === 500);
 
-// F5 (gate fix, Codex P2 on PR #151): lane names must lie ALONG their roads.
-// text-rotate measures clockwise from the horizontal baseline; the anchor
-// bearing is a compass bearing - the stored ang must be bearing - 90,
-// normalized. Recomputed here from the run geometry, independently of the
-// builder's arithmetic. On the first shipped build ang == bearing and
-// every name lay across its street (this check fails there, by design).
-// The angles are read from the RENDERED lane features at the home framing
-// (querySourceFeatures reads the source tile cache, which is empty once
-// the camera leaves the lane's zoom band).
+// F5/F6/F7 RETIRED by Beta 1.261: they graded the priority lane's stored
+// angle law (bearing - 90, upright under camera rotation). The lane is
+// deleted whole by the label mix; the restored app titles are point
+// symbols whose orientation is MapLibre's variable-anchor placement, not
+// a stored angle, so there is no angle law left to grade. Their rendered
+// concern - names lying along their streets - is graded for the mix by
+// the 1.261 round's geometric harness (RECORD.md of the round: rendered
+// text centroid vs street line, day and night, after pan / zoom / rotate
+// / re-pick / theme swap), not by this drive.
+
+// ---------- M: the label mix in the rendered page (Beta 1.261) ----------
+// M2: below 15 the basemap must NOT print a route street's full name - the
+// '-pre15' band carries the restored exclusion, so a route name below 15
+// can only be the app's own title (short form). Checked at the home
+// framing and at 14.7 (the sample's MID framing). On a mix tree with the
+// exclusion lifted, the band prints the full names and this fails; on the
+// 1.259 tree the lane (a different layer) is not read here, but the stock
+// major layer carried no exclusion either.
+const basemapRouteNamesBelow15 = async () => J(`(() => {
+  const layers = ['roads_labels_major', 'roads_labels_major-pre15', 'roads_labels_minor'].filter(id => map.getLayer(id));
+  const seen = new Set();
+  for (const f of map.queryRenderedFeatures({ layers })) { const nm = f.properties && f.properties.name; if (nm) seen.add(nm); }
+  const full = ${JSON.stringify(routeFullNames)};
+  return { zoom: map.getZoom(), hits: full.filter(n => seen.has(n)) };
+})()`);
 await ev(`(() => { goHomeView(); return true; })()`);
 await poll(`!!(window.map && map.loaded())`, 30000);
-await sleep(1200);
-const orient = await J(`(() => {
-  const pack = ROUTE_PACKS.find(p => p.id === '5w');
-  const ord = { First: '1st', Second: '2nd', Third: '3rd', Fourth: '4th', Fifth: '5th', Sixth: '6th', Seventh: '7th', Eighth: '8th', Ninth: '9th', Tenth: '10th' };
-  const byName = {};
-  for (const f of map.queryRenderedFeatures({ layers: ['roads_labels_minor-priority'] })) byName[f.properties.name] = f.properties.ang;
-  const feats = Object.entries(byName).map(([name, ang]) => ({ properties: { name, ang } }));
-  let checked = 0, worst = 0;
-  for (const f of feats) {
-    const key = Object.keys(STRETCH).find(n => (pack.tileNames.find(t => t.startsWith(n + ' ')) || pack.tileNames.find(t => t.startsWith((ord[n] || n) + ' ')) || n) === f.properties.name);
-    if (!key) return { checked, worst: 999 };
-    const st = STRETCH[key];
-    let run = st.runs[0]; for (const r of st.runs) if (r.total > run.total) run = r;
-    const L = run.line, cum = run.cum, mid = run.total / 2;
-    const at = d => { for (let i = 1; i < L.length; i++) { if (d <= cum[i] || i === L.length - 1) { const span = cum[i] - cum[i - 1] || 1; const t = Math.max(0, Math.min(1, (d - cum[i - 1]) / span)); return [L[i - 1][0] + (L[i][0] - L[i - 1][0]) * t, L[i - 1][1] + (L[i][1] - L[i - 1][1]) * t]; } } return L[L.length - 1]; };
-    const a = at(Math.max(0, mid - 8)), b = at(Math.min(run.total, mid + 8));
-    let exp = Math.atan2((b[1] - a[1]) * MLNG, (b[0] - a[0]) * MLAT) * 180 / Math.PI - 90;
-    while (exp > 90) exp -= 180; while (exp <= -90) exp += 180;
-    let d = Math.abs(f.properties.ang - exp); if (d > 180) d = 360 - d;
-    if (d > worst) worst = d;
-    checked++;
-  }
-  return { checked, worst };
-})()`);
-ok('F5 lane names lie along their roads: every stored angle is bearing - 90 (worst deviation ' + (orient.worst != null ? Math.round(orient.worst * 10) / 10 : '?') + ' deg over ' + orient.checked + ' names)',
-  orient.checked === 34 && orient.worst <= 1.5);
+await sleep(1000);
+const m2home = await basemapRouteNamesBelow15();
+ok('M2 no basemap route full-names below 15 at home: the pre-15 exclusion holds | zoom ' + (m2home.zoom || 0).toFixed(2) + ', full names rendered by basemap layers: ' + JSON.stringify(m2home.hits),
+  Array.isArray(m2home.hits) && m2home.hits.length === 0);
+await ev(`(() => { map.zoomTo(14.7, { duration: 700 }); return true; })()`);
+await poll(`!!(window.map && map.loaded() && !map.isMoving())`, 30000);
+// Liveness before the exclusion read: the -pre15 band must be provably
+// rendering names in this frame (the non-route majors) before an empty
+// route-name read counts as the exclusion working - an unloaded band
+// would pass vacuously, the failure this drive's header warns against.
+await poll(`(() => { try { if (!map.getLayer('roads_labels_major-pre15')) return false; for (const f of map.queryRenderedFeatures({ layers: ['roads_labels_major-pre15'] })) { if (f.properties && f.properties.name) return true; } return false; } catch (e) { return false; } })()`, 30000);
+await sleep(600);
+const m2mid = await basemapRouteNamesBelow15();
+ok('M2b no basemap route full-names below 15 at zoom 14.7 either | full names rendered: ' + JSON.stringify(m2mid.hits),
+  Array.isArray(m2mid.hits) && m2mid.hits.length === 0);
 
-// F6/F7 (gate fixes, Codex P2s on PR #151): the names must stay along
-// their roads AND upright when the CAMERA bearing changes (manual
-// rotation, heading-up navigation). The stored angle is a MAP-frame
-// rotation; MapLibre rotates map coordinates by the NEGATIVE bearing,
-// so the screen angle is (rendered - bearing) - settled by eye in the
-// rendered page: a (stored + bearing) build stood its names on their
-// heads at bearing 90. The lane's only job on a bearing change is the
-// flip: the stored angle keeps its map-frame line direction (rendered
-// == angN mod 180) and flips by 180 exactly when the screen angle would
-// leave (-90, 90]. Checked at bearing 90 (F6 - where a
-// subtract-the-bearing build puts every name PERPENDICULAR to its road)
-// and bearing 180 (F7).
-const orientAt = async (B) => {
-  await ev(`(() => { map.jumpTo({ bearing: ${B}, zoom: 13.2 }); return true; })()`); // zoomed a step out from the home framing: rotated, the portrait frame crops an anchor near its edge - the angle law is what is graded here, coverage was F1/F2 at the true home framing
-  // The screen law is RAW: the renderer turns the glyphs by (stored -
-  // bearing) literally - a raw screen angle of 164 deg is upside-down
-  // text, NOT the -16 deg a modulo-180 reading would forgive (the first
-  // F6/F7 cut made exactly that mistake and blessed the broken build).
-  // Poll until the re-based data has rendered (a fixed sleep raced it).
-  const measure = `(() => {
-    const B = map.getBearing();
-    const pack = ROUTE_PACKS.find(p => p.id === '5w');
-    const ord = { First: '1st', Second: '2nd', Third: '3rd', Fourth: '4th', Fifth: '5th', Sixth: '6th', Seventh: '7th', Eighth: '8th', Ninth: '9th', Tenth: '10th' };
-    const byName = {};
-    for (const f of map.queryRenderedFeatures({ layers: ['roads_labels_minor-priority'] })) byName[f.properties.name] = f.properties.ang;
-    let checked = 0, worstLine = 0, worstScreen = 0;
-    for (const [name, rendered] of Object.entries(byName)) {
-      const key = Object.keys(STRETCH).find(n => (pack.tileNames.find(t => t.startsWith(n + ' ')) || pack.tileNames.find(t => t.startsWith((ord[n] || n) + ' ')) || n) === name);
-      if (!key) return { checked, worstLine: 999, worstScreen: 999 };
-      const st = STRETCH[key];
-      let run = st.runs[0]; for (const r of st.runs) if (r.total > run.total) run = r;
-      const L = run.line, cum = run.cum, mid = run.total / 2;
-      const at = d => { for (let i = 1; i < L.length; i++) { if (d <= cum[i] || i === L.length - 1) { const span = cum[i] - cum[i - 1] || 1; const t = Math.max(0, Math.min(1, (d - cum[i - 1]) / span)); return [L[i - 1][0] + (L[i][0] - L[i - 1][0]) * t, L[i - 1][1] + (L[i][1] - L[i - 1][1]) * t]; } } return L[L.length - 1]; };
-      const a = at(Math.max(0, mid - 8)), b = at(Math.min(run.total, mid + 8));
-      let A = Math.atan2((b[1] - a[1]) * MLNG, (b[0] - a[0]) * MLAT) * 180 / Math.PI - 90;
-      while (A > 90) A -= 180; while (A <= -90) A += 180;
-      let dLine = Math.abs(((rendered - A) % 180 + 180) % 180); if (dLine > 90) dLine = 180 - dLine;
-      let sExp = A - B; while (sExp > 90) sExp -= 180; while (sExp <= -90) sExp += 180;
-      let sRaw = rendered - B; while (sRaw > 180) sRaw -= 360; while (sRaw <= -180) sRaw += 360;
-      if (dLine > worstLine) worstLine = dLine;
-      if (Math.abs(sRaw - sExp) > worstScreen) worstScreen = Math.abs(sRaw - sExp);
-      checked++;
-    }
-    return { checked, worstLine, worstScreen };
-  })()`;
-  let m = await J(measure);
-  for (let i = 0; i < 24 && !(m.checked === 34 && m.worstLine <= 1.5 && m.worstScreen <= 1.5); i++) { await sleep(500); m = await J(measure); }
-  return m;
-};
-const orient90 = await orientAt(90);
-ok('F6 lane names stay along their roads under a rotated camera: at bearing 90 the map-frame line direction is preserved (worst ' + (orient90.worstLine != null ? Math.round(orient90.worstLine * 10) / 10 : '?') + ' deg) and the screen angle is the upright one (worst ' + (orient90.worstScreen != null ? Math.round(orient90.worstScreen * 10) / 10 : '?') + ' deg) over ' + orient90.checked + ' names',
-  orient90.checked === 34 && orient90.worstLine <= 1.5 && orient90.worstScreen <= 1.5);
-const orient180 = await orientAt(180);
-ok('F7 lane names stay upright at bearing 180: line direction preserved (worst ' + (orient180.worstLine != null ? Math.round(orient180.worstLine * 10) / 10 : '?') + ' deg), screen angle upright (worst ' + (orient180.worstScreen != null ? Math.round(orient180.worstScreen * 10) / 10 : '?') + ' deg) over ' + orient180.checked + ' names',
-  orient180.checked === 34 && orient180.worstLine <= 1.5 && orient180.worstScreen <= 1.5);
+// M3: the handover - at 15.7 the titles are gone (the cap) and the
+// basemap's full names own the route streets. On a titles-restored tree
+// WITHOUT the cap, title features render here and this fails.
+await ev(`(() => { map.jumpTo({ zoom: 15.7 }); return true; })()`);
+await poll(`(() => { try { return map.querySourceFeatures('protomaps', { sourceLayer: 'roads' }).length > 50; } catch (e) { return false; } })()`, 30000);
+await poll(`(() => { try { const seen = new Set(); for (const f of map.queryRenderedFeatures({ layers: ['roads_labels_major', 'roads_labels_minor'] })) { if (f.properties && f.properties.name) seen.add(f.properties.name); } return seen.size >= 5; } catch (e) { return false; } })()`, 30000); // the full names must have PLACED before the handover is graded (same fixed-sleep race)
+await sleep(600);
+const m3 = await J(`(() => {
+  const titleLayers = ${JSON.stringify(TITLE_LAYERS)}.filter(id => map.getLayer(id));
+  let titleFeats = 0;
+  for (const f of map.queryRenderedFeatures({ layers: titleLayers })) titleFeats++;
+  const baseLayers = ['roads_labels_major', 'roads_labels_minor'].filter(id => map.getLayer(id));
+  const seen = new Set();
+  for (const f of map.queryRenderedFeatures({ layers: baseLayers })) { const nm = f.properties && f.properties.name; if (nm) seen.add(nm); }
+  const full = ${JSON.stringify(routeFullNames)};
+  return { zoom: map.getZoom(), titleFeats, fullHits: full.filter(n => seen.has(n)) };
+})()`);
+ok('M3 the handover at 15+: zero app titles render at zoom 15.7 and the basemap full names own the streets | titles ' + m3.titleFeats + ', basemap route full-names ' + (m3.fullHits || []).length + ' of 34: ' + (m3.fullHits || []).join(', '),
+  m3.titleFeats === 0 && (m3.fullHits || []).length >= 5);
+
+// M4: the live seam read-back - the three numbers that hold the handover,
+// read off the running map: title cap 15, major band from 15, minor from
+// 15, and the '-pre15' copy alive 11-15 wearing the exclusion (its filter
+// names the route's tile names).
+const m4 = await J(`(() => {
+  const L = id => map.getLayer(id);
+  const pre = L('roads_labels_major-pre15');
+  return {
+    titleMax: L('streetnamespt1') ? L('streetnamespt1').maxzoom : null,
+    majorMin: L('roads_labels_major') ? L('roads_labels_major').minzoom : null,
+    minorMin: L('roads_labels_minor') ? L('roads_labels_minor').minzoom : null,
+    preMin: pre ? pre.minzoom : null, preMax: pre ? pre.maxzoom : null,
+    preFilter: pre ? JSON.stringify(map.getFilter('roads_labels_major-pre15')) : '',
+  };
+})()`);
+ok('M4 the live seam: title maxzoom 15, major minzoom 15, minor minzoom 15, -pre15 band 11-15 with the route-name exclusion in its filter | ' + JSON.stringify({ t: m4.titleMax, maj: m4.majorMin, min: m4.minorMin, pre: [m4.preMin, m4.preMax] }),
+  m4.titleMax === 15 && m4.majorMin === 15 && m4.minorMin === 15 && m4.preMin === 11 && m4.preMax === 15 && (m4.preFilter || '').includes('Valeria Boulevard'));
+
+// M5: the standing heal fires - the labelpts source is rebuilt after an
+// animated zoom settles and again after an animated rotate settles
+// (counted by wrapping map.removeSource, the rebuild's tell). On the
+// unhealed mix (the 1.248 one-flight hook only) neither move re-places
+// and the count never moves: this fails there by design.
+await ev(`(() => { goHomeView(); return true; })()`);
+await poll(`!!(window.map && map.loaded() && !map.isMoving())`, 30000);
+await sleep(1000);
+await ev(`(() => { window.__rpCount = 0; const orig = map.removeSource.bind(map); map.removeSource = function (id) { if (id === 'labelpts') window.__rpCount++; return orig(id); }; return true; })()`);
+const rpBase = await J(`(() => window.__rpCount)()`);
+await ev(`(() => { map.zoomTo(14.2, { duration: 700 }); return true; })()`);
+await poll(`(() => window.__rpCount > ${rpBase})()`, 25000);
+const rpAfterZoom = await J(`(() => window.__rpCount)()`);
+await ev(`(() => { map.rotateTo(30, { duration: 700 }); return true; })()`);
+await poll(`(() => window.__rpCount > ${rpAfterZoom})()`, 25000);
+const rpAfterRot = await J(`(() => window.__rpCount)()`);
+ok('M5 the standing heal re-places titles after camera moves: labelpts rebuilds after an animated zoom (' + rpBase + ' -> ' + rpAfterZoom + ') and after an animated rotate (' + rpAfterZoom + ' -> ' + rpAfterRot + ')',
+  rpAfterZoom > rpBase && rpAfterRot > rpAfterZoom);
 await ev(`(() => { map.jumpTo({ bearing: 0 }); return true; })()`);
 await sleep(800);
 

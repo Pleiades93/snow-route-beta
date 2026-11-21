@@ -24,6 +24,20 @@ import { createHash } from 'node:crypto';
 // the rebuild clear loop and the write, with its canonicalForward
 // helper). Checks 4-6 now pin its ABSENCE, mirroring checks 1-3.
 //
+// Beta 1.261 addendum (2026-11-20): the title system is restored
+// (Andrew's label mix), and LEFTBIT returns WITH it - declaration,
+// clear loop, write, canonicalForward helper and the leftOff read,
+// verbatim from the pre-1.258 tree, because the anchor computation
+// reads it again. It is load-bearing, not residue: the 1.261 round's
+// trim removed only what it proved unread (labelFeatures/LABELS).
+// Checks 4-6 flip back to the B-05-era presence pins (declaration,
+// write, read verbatim). Checks 7-8 keep their 1.258 pins verbatim: the
+// hash's source set excludes labelpts BY NAME, exactly as the 1.258
+// derivation excluded it when deriving the pins from the 1.257 engine
+// (on the 1.258 tree the source simply did not exist) - and the pins
+// pass unchanged, which proves the restore changed no paint geometry
+// byte.
+//
 // Geometry identity: GEO is closure-private inside GLP, so the
 // geometry's observable outputs are the paint sources the engine
 // emits. Checks 7-8 drive the shipped engine over a synthetic
@@ -63,9 +77,9 @@ function check(label, cond, detail = '') {
 check('LEFTSIDE absent from parts/engine.js', !engine.includes('LEFTSIDE'));
 check('LEFTSIDE absent from the assembled index.html', !assembled.includes('LEFTSIDE'));
 check('LEFTSIDE absent from src/tracker-source.html', !source.includes('LEFTSIDE'));
-check('LEFTBIT absent from parts/engine.js (Beta 1.258: written-never-read after the title retirement)', !engine.includes('LEFTBIT'));
-check('LEFTBIT absent from the assembled index.html', !assembled.includes('LEFTBIT'));
-check('LEFTBIT absent from src/tracker-source.html', !source.includes('LEFTBIT'));
+check('LEFTBIT declaration present in parts/engine.js (Beta 1.261: restored with the titles, read again)', engine.includes('const LEFTBIT = {};'));
+check('LEFTBIT write present in parts/engine.js (the canonicalForward assignment)', engine.includes('LEFTBIT[n] = canonicalForward ? 0 : 1;'));
+check('LEFTBIT read present in parts/engine.js (the label-anchor computation reads it)', engine.includes('const leftOff = LEFTBIT[n] === 0 ? off0 : off1'));
 
 // --- geometry identity over the synthetic network, two board states ---
 const MLAT = 111132, MLNG = 82000;
@@ -126,7 +140,12 @@ function sourcesHash(pieces) {
   vm.runInNewContext(engine, ctx);
   ctx.window.GLP.init(mockGLM, host);
   const byId = Object.fromEntries(Object.entries(sources).map(([k, v]) => [k, v.data]));
-  const ten = Object.fromEntries(Object.entries(byId).filter(([k]) => k !== 'fades' && k !== 'selFades'));
+  // Beta 1.261: labelpts is excluded by name, exactly as the 1.258
+  // derivation excluded it when deriving the pins below from the 1.257
+  // engine - it is the title source, not a paint source, and the titles'
+  // return must not move the paint hashes (and does not: the pins pass
+  // unchanged with it excluded, which is the geometry-identity claim).
+  const ten = Object.fromEntries(Object.entries(byId).filter(([k]) => k !== 'fades' && k !== 'selFades' && k !== 'labelpts'));
   const fadesEmpty = !!(byId.fades && byId.selFades && (byId.fades.features || []).length === 0 && (byId.selFades.features || []).length === 0);
   return { tenHash: hash(ten), fadesEmpty };
 }

@@ -118,6 +118,9 @@ type SunTimes = { rise: number | null, set: number | null };
 /** app2.js: `let routeBox = null` - the active pack's bounding box, set by buildGeometry (app1) on every load. */
 declare var routeBox: RouteBox | null;
 
+/** app2.js: `const ROUTE_TILE_NAMES = []` - refilled in place by buildGeometry (app1) on every load. (Beta 1.261: restored with the label mix - the pre-15 basemap exclusion reads it again; removed in 1.258 with the retirement.) */
+declare var ROUTE_TILE_NAMES: string[];
+
 /** app3.js: `const SAMPLES = {}` - per-street coverage sample points, refilled by buildSamples. */
 declare var SAMPLES: { [street: string]: LatLng[] };
 
