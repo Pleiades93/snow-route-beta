@@ -297,7 +297,17 @@ def push_tree2(base, *, parts, changelog, tracker, index, branch_parts=None):
         contents[h] = base64.b64encode(data).decode()
     state = base / "mock-state.json"
     w(state, json.dumps({"head": "mockhead1", "blobs": blobs, "contents": contents}))
-    return {"SNOW_GITHUB_HELPER": str(mock), "SNOW_MOCK_STATE": str(state)}
+    # A fixture registry whose one grep probe passes against this tree
+    # (parts/a.js always carries an "A…"-led body): the registry gate
+    # (/correct Phase 3 round (a)) runs on every push-mode fixture, so
+    # the mock environment names its registry explicitly - the cases
+    # below then break it on purpose.
+    registry = base / "fixture-registry.json"
+    w(registry, json.dumps({"checks": [
+        {"id": "fixture-probe-a", "type": "grep_present",
+         "file": str(base / "parts" / "a.js"), "pattern": "A"}]}))
+    return {"SNOW_GITHUB_HELPER": str(mock), "SNOW_MOCK_STATE": str(state),
+            "SNOW_FIX_CHECKS_REGISTRY": str(registry)}
 
 
 with tempfile.TemporaryDirectory() as td:
@@ -328,6 +338,27 @@ with tempfile.TemporaryDirectory() as td:
     check("push: a transport that lands a wrong blob fails verification",
           run_push(t / "corrupt", ["index.html"], mode="push",
                    env_extra={**corrupt, "SNOW_MOCK_CORRUPT": "1"}), 1)
+    # Registry gate (/correct Phase 3 round (a)): the push tree must
+    # pass the registry's grep probes - the C1 literal class.
+    regfail = push_tree2(t / "regfail", parts={"a.js": "A", "b.js": "B"}, changelog="## Beta 1.0\n",
+                         tracker="AB", index="shell Beta 1.0 AB")
+    w(t / "regfail" / "fixture-registry.json", json.dumps({"checks": [
+        {"id": "fixture-probe-broken", "type": "grep_present",
+         "file": str(t / "regfail" / "parts" / "a.js"), "pattern": "NOT-IN-THE-TREE"}]}))
+    check("push: a registry grep probe failing against the push tree refuses the push",
+          run_push(t / "regfail", ["index.html"], mode="push", env_extra=regfail), 1)
+    regbase = push_tree2(t / "regbase", parts={"a.js": "A", "b.js": "B"}, changelog="## Beta 1.0\n",
+                         tracker="AB", index="shell Beta 1.0 AB")
+    w(t / "regbase" / "fixture-registry.json", json.dumps({"checks": [
+        {"id": "fixture-probe-broken", "type": "grep_present",
+         "file": str(t / "regbase" / "parts" / "a.js"), "pattern": "NOT-IN-THE-TREE"}]}))
+    w(t / "regbase" / "fix-checks-standing-failures.json",
+      json.dumps({"standing_failures": ["fixture-probe-broken"]}))
+    check("push: a failing probe on the standing-failures baseline is tolerated",
+          run_push(t / "regbase", ["index.html"], mode="push", env_extra=regbase), 0)
+    check("push: a named-but-missing registry refuses (a gate that cannot run is not a pass)",
+          run_push(t / "regbase", ["index.html"], mode="push",
+                   env_extra={**regbase, "SNOW_FIX_CHECKS_REGISTRY": str(t / "regbase" / "nope.json")}), 1)
 
 # ------------------------------------------------------------- sweep check
 def run_sweep(root, olds):

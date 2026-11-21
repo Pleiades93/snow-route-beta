@@ -34,17 +34,24 @@ spec = importlib.util.spec_from_file_location("select_tier", ROOT / "scripts" / 
 mod = importlib.util.module_from_spec(spec)
 spec.loader.exec_module(mod)
 
-CORE = ["drive131", "drive160", "drive161", "drive168", "drive174", "drive180"]
-MAP20 = ["drive115", "drive116", "drive121", "drive127", "drive128", "drive129",
-         "drive130", "drive131", "drive133", "drive141", "drive148", "drive149",
-         "drive160", "drive161", "drive165", "drive168", "drive174", "drive180",
-         "drive182", "drive214"] # Beta 1.259: drive214 (road-end feather) joins the map family - the pinned roster rolls with it (MAP19 -> MAP20, same roll pattern as SESSION below)
-SESSION31 = ["drive83", "drive86", "drive88", "drive114", "drive118", "drive125",
-             "drive131", "drive135", "drive136", "drive140", "drive145", "drive146",
-             "drive147", "drive159", "drive160", "drive161", "drive162", "drive163",
-             "drive168", "drive169", "drive170", "drive174", "drive180", "drive184",
-             "drive203", "drive207", "drive210", "drive211", "drive212",
-             "drive213", "drive214"] # Beta 1.257: drive212 (confirmation backdrop) joins the session family - the pinned roster rolls with it (the SESSION28 -> SESSION29 step, same as 27 -> 28 at 1.256); /correct Phase 2 C10: drive213 (approved form) joins - SESSION29 -> SESSION30; Beta 1.259: drive214 joins - SESSION30 -> SESSION31
+# The expected sets are DERIVED from tests/tier-map.json (+ quarantine),
+# never hand-listed (/correct Phase 3 round (a), closing the C1 fixture
+# form): through 1.259 these were hand-maintained copies (MAP19 -> MAP20,
+# SESSION26 -> ... -> SESSION31), and every drive-adding round rolled them
+# by hand, each roll discovered at the gate. The roster's truth lives in
+# tier-map.json - check-tier-map guards its completeness against the
+# disk - and these fixtures grade the SELECTOR's set algebra (family +
+# core, quarantine removed) against an independent derivation from that
+# same source. A new drive joins a family in tier-map.json and the
+# expected set follows with no fixture edit.
+import json
+_tmap = json.loads((ROOT / "tests" / "tier-map.json").read_text())
+_quar = {q["drive"] for q in json.loads((ROOT / "tests" / "quarantine.json").read_text())["quarantined"]}
+CORE = sorted(set(_tmap["tier_a_core"]) - _quar)
+def _family(name):
+    return sorted((set(_tmap["families"][name]["drives"]) | set(_tmap["tier_a_core"])) - _quar)
+MAP = _family("map")
+SESSION = _family("session")
 
 # (label, files, expected tier, expected full-battery flag, expected drives check or None)
 # want_drive: a drive name = membership; [] = the set must be empty; None = unchecked.
@@ -84,15 +91,15 @@ CASES = [
 # (label, files, expected tier, expected COMPLETE drive set)
 EXACT_CASES = [
     ("Tier B map selection is exactly map family + core (protocol section 3)",
-     ["parts/engine.js"], "B", MAP20),
+     ["parts/engine.js"], "B", MAP),
     ("Tier B session selection is exactly session family + core, quarantine applied",
-     ["parts/app4.js"], "B", SESSION31),
+     ["parts/app4.js"], "B", SESSION),
     ("a touched quarantined drive runs, core rides along: drive89 + the six core",
      ["tests/browser/drive89.mjs"], "B", sorted(["drive89"] + CORE)),
     ("a touched quarantined drive joins a family selection untouched by quarantine",
-     ["parts/engine.js", "tests/browser/drive89.mjs"], "B", MAP20 + ["drive89"]),
+     ["parts/engine.js", "tests/browser/drive89.mjs"], "B", MAP + ["drive89"]),
     ("a proof file riding a family change adds nothing and escalates nothing",
-     ["parts/engine.js", "tests/proof/proof-1228.mjs"], "B", MAP20),
+     ["parts/engine.js", "tests/proof/proof-1228.mjs"], "B", MAP),
     ("a proof file alone selects exactly the core set at Tier A",
      ["tests/proof/proof-1228.mjs"], "A", CORE),
 ]

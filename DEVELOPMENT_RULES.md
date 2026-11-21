@@ -99,7 +99,14 @@ refuses a parts/ push that does not carry the fresh derived artifacts
 tree's blobs against the local files after the transport push. A
 `plan` run validates the set without touching the network. Do not push
 through the helper directly — the discipline it cannot enforce is the
-point.
+point. Since /correct Phase 3 round (a), a push also runs the
+**registry gate** first: the fix-checks registry's grep probes run
+serially against the push tree, and any failure outside the recorded
+standing-failures baseline refuses the push — a round whose code
+motion orphans a probe literal re-pins it in the same round, instead
+of the orphan surfacing whenever someone next runs the registry by
+hand (the C1 class: six stale patterns reached the Beta 1.258
+close-out unrun, and eight more had accumulated by 1.260).
 
 ## 2. Per-change report (required with every merge)
 
