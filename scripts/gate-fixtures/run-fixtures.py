@@ -4,8 +4,9 @@
 with fixtures, docs/TESTING.md rule 1).
 
 scripts/check-tier-map.py, scripts/check-proof-coverage.py,
-scripts/run-proofs.py, scripts/push.py (plan mode) and
-scripts/sweep-check.py all decide
+scripts/run-proofs.py, scripts/push.py (plan mode),
+scripts/sweep-check.py and scripts/check-receipts.py (the mutation-
+receipt gate, /correct Phase 3 round (b)) all decide
 pass/fail for the gate. Running them
 against the real repository proves only their happy path; these
 fixtures run each script against synthetic trees in a temp directory
@@ -16,7 +17,10 @@ a retirement without a reason, a manifest naming a missing file, a
 proof exiting nonzero, a proof timing out, a basename-only push
 entry, a parts push missing its derived artifacts, stale derived
 artifacts, an omitted assembly input, an input-only push, a
-transport landing a wrong blob) fails.
+transport landing a wrong blob, a changed check or judge file with
+no current mutation receipt, a receipt carrying hashes but no
+recorded observation, a receipt naming a check it does not pin)
+fails.
 
 Run: python3 scripts/gate-fixtures/run-fixtures.py
 Exit 0 = every case produced its expected verdict.
@@ -198,6 +202,42 @@ def push_tree(base, *, files):
     return base
 
 
+def run_receipts(root, changed):
+    proc = subprocess.run([PY, str(ROOT / "scripts" / "check-receipts.py"), "gate",
+                           str(root), "--changed"] + changed,
+                          capture_output=True, text=True, timeout=120)
+    return proc.returncode
+
+
+def issue_receipt(root, rid, check_path, kind, files):
+    proc = subprocess.run([PY, str(ROOT / "scripts" / "check-receipts.py"), "issue",
+                           str(root), "--id", rid, "--check", check_path,
+                           "--kind", kind, "--mutation", "fixture mutation",
+                           "--red", "fixture red", "--green", "fixture green",
+                           "--issued", "gate-fixtures"] +
+                          [a for f in files for a in ("--file", f)],
+                          capture_output=True, text=True, timeout=120)
+    assert proc.returncode == 0, proc.stdout + proc.stderr
+
+
+def patch_branch(base, rel, text):
+    """Set (or, with text=None, remove) the mock branch's blob for a
+    path, so a fixture can pose as a branch that holds an older -
+    or no - version of a file the local tree carries."""
+    import base64
+    import hashlib
+    state_path = base / "mock-state.json"
+    s = json.loads(state_path.read_text())
+    if text is None:
+        s["blobs"].pop(rel, None)
+    else:
+        data = text.encode()
+        h = hashlib.sha1(b"blob " + str(len(data)).encode() + b"\0" + data).hexdigest()
+        s["blobs"][rel] = h
+        s["contents"][h] = base64.b64encode(data).decode()
+    state_path.write_text(json.dumps(s))
+
+
 with tempfile.TemporaryDirectory() as td:
     t = Path(td)
     check("push: a basename-only entry for a file that lives in a directory is refused",
@@ -375,6 +415,98 @@ with tempfile.TemporaryDirectory() as td:
           run_push(t / "prosp", ["README.md"], mode="push", env_extra=prosp), 1)
     check("push: pushing the fixing file itself passes the prospective-tree registry gate",
           run_push(t / "prosp", ["README.md", "docs/guard.md"], mode="push", env_extra=prosp), 0)
+    # Receipts gate (/correct Phase 3 round (b)): a changed check or
+    # judge file must be named by a CURRENT mutation receipt - rule 6
+    # as a precondition, not a hope (class N1). The fixture trees
+    # carry a copy of the real scripts/check-receipts.py: push.py
+    # loads its gate logic from the push tree, the measuring
+    # instrument, exactly as in production.
+    def receipts_tree(name, *, proof_text):
+        env = push_tree2(t / name, parts={"a.js": "A", "b.js": "B"}, changelog="## Beta 1.0\n",
+                         tracker="AB", index="shell Beta 1.0 AB")
+        w(t / name / "scripts" / "check-receipts.py",
+          (ROOT / "scripts" / "check-receipts.py").read_text())
+        w(t / name / "tests" / "proof" / "proof-9001.mjs", proof_text)
+        return env
+    rc_new = receipts_tree("rcnew", proof_text="proof v1\n")
+    check("push: a new check with no mutation receipt is refused (receipts gate)",
+          run_push(t / "rcnew", ["tests/proof/proof-9001.mjs"], mode="push", env_extra=rc_new), 1)
+    rc_ok = receipts_tree("rcok", proof_text="proof v1\n")
+    issue_receipt(t / "rcok", "fixture-rcok", "tests/proof/proof-9001.mjs", "mutation",
+                  ["tests/proof/proof-9001.mjs"])
+    check("push: a new check with a current mutation receipt pushes",
+          run_push(t / "rcok", ["tests/proof/proof-9001.mjs", "tests/mutation-receipts.json"],
+                   mode="push", env_extra=rc_ok), 0)
+    rc_stale = receipts_tree("rcstale", proof_text="proof v0\n")
+    patch_branch(t / "rcstale", "tests/proof/proof-9001.mjs", "proof v0\n")
+    issue_receipt(t / "rcstale", "fixture-rcstale", "tests/proof/proof-9001.mjs", "mutation",
+                  ["tests/proof/proof-9001.mjs"])
+    w(t / "rcstale" / "tests" / "proof" / "proof-9001.mjs", "proof v1 edited after the receipt\n")
+    check("push: a check edited after its receipt was issued is refused (stale receipt)",
+          run_push(t / "rcstale", ["tests/proof/proof-9001.mjs", "tests/mutation-receipts.json"],
+                   mode="push", env_extra=rc_stale), 1)
+    def judge_tree(name, *, cover_judge):
+        env = push_tree2(t / name, parts={"a.js": "A", "b.js": "B"}, changelog="## Beta 1.0\n",
+                         tracker="AB", index="shell Beta 1.0 AB")
+        w(t / name / "scripts" / "check-receipts.py",
+          (ROOT / "scripts" / "check-receipts.py").read_text())
+        w(t / name / "scripts" / "push.py", "fixture judge v1\n")
+        w(t / name / "scripts" / "gate-fixtures" / "run-fixtures.py", "fixture suite\n")
+        patch_branch(t / name, "scripts/push.py", "fixture judge v0\n")
+        # The branch already holds the suite and the receipts script,
+        # unchanged - a real branch carries every existing file, and
+        # the prospective tree must too, or the receipt that pins the
+        # suite would read as naming a missing file.
+        patch_branch(t / name, "scripts/gate-fixtures/run-fixtures.py", "fixture suite\n")
+        patch_branch(t / name, "scripts/check-receipts.py",
+                     (ROOT / "scripts" / "check-receipts.py").read_text())
+        files = ["scripts/gate-fixtures/run-fixtures.py"]
+        if cover_judge:
+            files.append("scripts/push.py")
+        issue_receipt(t / name, "fixture-" + name, "scripts/gate-fixtures/run-fixtures.py",
+                      "mutation", files)
+        return env
+    rc_judge = judge_tree("rcjudge", cover_judge=False)
+    check("push: a changed judge whose receipt names only the suite is refused (receipts gate)",
+          run_push(t / "rcjudge", ["scripts/push.py", "tests/mutation-receipts.json"],
+                   mode="push", env_extra=rc_judge), 1)
+    rc_judge2 = judge_tree("rcjudge2", cover_judge=True)
+    check("push: a changed judge named by a current receipt pushes",
+          run_push(t / "rcjudge2", ["scripts/push.py", "tests/mutation-receipts.json"],
+                   mode="push", env_extra=rc_judge2), 0)
+
+# ------------------------------------------------- mutation receipts
+with tempfile.TemporaryDirectory() as td:
+    t = Path(td)
+    w(t / "tests" / "browser" / "drive9001.mjs", "drive v1\n")
+    check("receipts: a changed drive with no receipt is refused by the gate",
+          run_receipts(t, ["tests/browser/drive9001.mjs"]), 1)
+    issue_receipt(t, "fixture-rendered", "tests/browser/drive9001.mjs", "rendered",
+                  ["tests/browser/drive9001.mjs"])
+    check("receipts: a rendered-evidence receipt covers its drive (honest kind, not a fake mutation)",
+          run_receipts(t, ["tests/browser/drive9001.mjs"]), 0)
+    # A receipt is the record of an observation, not a bag of hashes
+    # (Codex P2 on PR #155): correct hashes with the evidence fields
+    # absent, or a named check the receipt does not pin, cover
+    # nothing - the gate must refuse both shapes.
+    import hashlib
+    drive_sha = hashlib.sha256(
+        (t / "tests" / "browser" / "drive9001.mjs").read_bytes()).hexdigest()
+    w(t / "tests" / "mutation-receipts.json", json.dumps({"receipts": [
+        {"id": "fixture-hash-only",
+         "files": {"tests/browser/drive9001.mjs": drive_sha}}]}))
+    check("receipts: a hash-only receipt with no recorded observation covers nothing",
+          run_receipts(t, ["tests/browser/drive9001.mjs"]), 1)
+    w(t / "tests" / "mutation-receipts.json", json.dumps({"receipts": [
+        {"id": "fixture-check-not-pinned", "check": "tests/browser/drive9999.mjs",
+         "kind": "mutation", "mutation": "m", "red": "r", "green": "g",
+         "issued": "gate-fixtures",
+         "files": {"tests/browser/drive9001.mjs": drive_sha}}]}))
+    check("receipts: a receipt whose named check is not among its pinned files covers nothing",
+          run_receipts(t, ["tests/browser/drive9001.mjs"]), 1)
+    w(t / "tests" / "mutation-receipts.json", "{not json\n")
+    check("receipts: a malformed receipts file refuses the gate (a gate that cannot read its records)",
+          run_receipts(t, ["tests/browser/drive9001.mjs"]), 1)
 
 # ------------------------------------------------------------- sweep check
 def run_sweep(root, olds):
@@ -415,6 +547,6 @@ with tempfile.TemporaryDirectory() as td:
           run_sweep(sweep_tree(t / "mixq", files={"tests/browser/drive1.mjs": "x.includes('couldn\\'t save \"Town\"')\n"}),
                     ["couldn't save \"Town\""]), 1)
 
-total = 33
+total = 43
 print(f"gate fixtures: {total - len(failures)} pass, {len(failures)} fail")
 sys.exit(1 if failures else 0)

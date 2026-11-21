@@ -1,0 +1,118 @@
+{
+ "about": "Mutation receipts (TESTING.md rule 6, mechanical form - /correct Phase 3 round (b), class N1). Every new or changed check (proof, drive, selftest, fixture suite) and every changed gate judge ships with a receipt here: the deliberate break it was observed failing under (a mutation of the current tree, the historical tree carrying the real past mistake, or - kind 'rendered', honestly labelled - a rendered/manual measurement), the failing observation, and the clean pass. Each receipt pins the sha256 of every file its evidence depends on; scripts/check-receipts.py verifies currency, and scripts/push.py refuses a push whose changed check/judge files no current receipt names. Receipts are append-only history: a re-observation gets a new id. Issue with: python3 scripts/check-receipts.py issue <root> --id ID --check PATH --kind mutation|historical|rendered --mutation TEXT --red TEXT --green TEXT --issued ROUND --file PATH...",
+ "receipts": [
+  {
+   "id": "gate-fixtures-push-judges-neuter",
+   "check": "scripts/gate-fixtures/run-fixtures.py",
+   "kind": "mutation",
+   "files": {
+    "scripts/gate-fixtures/run-fixtures.py": "18a279db05eba2e31613dc06d10579f8d6fe00a4e349539fc72c3f2ddee7aa4d",
+    "scripts/push.py": "64dcc5f1bf17e8dd8d946a39fdc79a1a77791422da68c93d877e36442506b998"
+   },
+   "mutation": "scratch copy of this tree with scripts/push.py's judging functions neutered to pass-throughs (validate returns the entries unchecked, derived_fresh / preflight_prospective / registry_gate return None) - the PR #146 shape, extended to today's judge set",
+   "red": "gate fixtures 28 pass, 13 FAIL - every refusal case the judges own goes green-lit, including the three receipts-gate refusals (preflight neutered past them)",
+   "green": "gate fixtures 41 pass, 0 fail on the clean tree (2026-11-21, this round)",
+   "issued": "2026-11-21 correct-phase3b"
+  },
+  {
+   "id": "gate-fixtures-receipts-neuter",
+   "check": "scripts/gate-fixtures/run-fixtures.py",
+   "kind": "mutation",
+   "files": {
+    "scripts/gate-fixtures/run-fixtures.py": "18a279db05eba2e31613dc06d10579f8d6fe00a4e349539fc72c3f2ddee7aa4d",
+    "scripts/check-receipts.py": "1c60124c5cfe73da3efa5918cc6fe88009fdb6402aceaf3f130b5ce38b3127b4"
+   },
+   "mutation": "scratch copy of this tree with scripts/check-receipts.py's uncovered() neutered to return [] (the receipts gate accepts everything)",
+   "red": "gate fixtures 37 pass, 4 FAIL - exactly the four refusal cases the coverage verdict owns (three push-mode receipts refusals + the CLI refusal); every acceptance case still passes",
+   "green": "gate fixtures 41 pass, 0 fail on the clean tree (2026-11-21, this round)",
+   "issued": "2026-11-21 correct-phase3b"
+  },
+  {
+   "id": "sweep-check-loud-shapes",
+   "check": "scripts/sweep-check.py",
+   "kind": "historical",
+   "files": {
+    "scripts/sweep-check.py": "992b934db3eed1d0878fbb24d292867d5be9d091c665737d18b219b0a6e6df23"
+   },
+   "mutation": "the three shapes in which sweep-check as first built (PR #147) passed silently empty, recreated as synthetic trees: (1) the old string present only in its regex-escaped form in tests/, (2) the probe registry missing, (3) a root with no tests/ directory",
+   "red": "all three are loud today (2026-11-21 runs): (1) SWEEP INCOMPLETE exit 1, naming the escaped pin; (2) SWEEP ERROR exit 2 (missing registry); (3) SWEEP ERROR exit 2 (no tests/ directory)",
+   "green": "a clean synthetic tree sweeps SWEEP CLEAN, exit 0; the gate-fixture sweep cases (7) pass in the 41/41 suite run",
+   "issued": "2026-11-21 correct-phase3b"
+  },
+  {
+   "id": "drive213-b3-catalogue-stub",
+   "check": "tests/browser/drive213.mjs",
+   "kind": "mutation",
+   "files": {
+    "tests/browser/drive213.mjs": "3eaafc920d7c5c5f15a42dc74cd711376e50b6d1648c8484a79cbda5170b7945"
+   },
+   "mutation": "scratch copy with drive213's catalogue stub removed (the fetch stub answering packs/index.json with the shipped index) - the pre-PR#148 shape, in which B3 measured the file:// harness's unavailable-library surface instead of the app",
+   "red": "drive213 5/6 FAIL: B3 fails with rows=false - and the failure output shows the unpopulated list WAS centred (listCx 210 = menuCx 210), the exact geometry that let the pre-fix B3 pass vacuously; the fixed check refuses the unpopulated surface",
+   "green": "drive213 6/6 checks PASS on the clean tree (local run, 2026-11-21, main 7880b5d6)",
+   "issued": "2026-11-21 correct-phase3b"
+  },
+  {
+   "id": "proof-1261-seam-mutations",
+   "check": "tests/proof/proof-1261.mjs",
+   "kind": "mutation",
+   "files": {
+    "tests/proof/proof-1261.mjs": "904494442a1e9ced2ea9883d501497c2ed407574fe601d11e75b35d240d3a23d"
+   },
+   "mutation": "title cap drift: parts/engine.js title maxzoom 15 -> 16 in a scratch copy (one of the mutation set recorded by the 1.261 round, re-run this round); the 1.261 set also carried the exclusion lifted on the -pre15 band and the heal call removed from init, and 9 of 12 checks failing on the pre-1.261 base tree",
+   "red": "cap mutation: checks 2 (the cap) and 3 (THE SEAM PIN) FAIL, 11 passed / 2 failed (re-run 2026-11-21); 1.261 record: exclusion lifted -> check 4 FAILS; heal removed -> check 7 FAILS",
+   "green": "proof-1261: 13 passed, 0 failed on the clean tree (re-run 2026-11-21)",
+   "issued": "2026-11-21 correct-phase3b"
+  },
+  {
+   "id": "drive214-mix-rendered",
+   "check": "tests/browser/drive214.mjs",
+   "kind": "rendered",
+   "files": {
+    "tests/browser/drive214.mjs": "2a8339b765a82843d6119d3050f5eabac594843eaceb1736913d3af225028db2"
+   },
+   "mutation": "rendered fail-first from the 1.261 round (its RECORD holds the runs): the basemap exclusion lifted below 15, the title cap drifted to 16, and the unhealed mix (no armTitleHeal) - the live forms of the PR #151 presence-count class for the surface drive214 now grades",
+   "red": "exclusion lifted: M2b FAILS (Valeria Boulevard renders on the basemap layers at zoom 14.7) and M4 FAILS (the live -pre15 filter no longer names Valeria); cap 16: M3 FAILS (13 app titles render at 15.7) and M4 FAILS (title maxzoom reads 16); unhealed: M5's rebuild counter stayed 1 through zoom/rotate/re-pick (9 on the healed build)",
+   "green": "drive214 26/26 checks PASS on the clean tree (local run, 2026-11-21, main 7880b5d6). The PR #151 instances in their original form no longer exist to retrofit: the presence-count F1/F2, the modulo-180 F6 and F5/F7 were retired with the lane in 1.261 and replaced by M1-M5; the Pillow pixel scan was already replaced by an in-page canvas scan in 1.259's own gate round 3",
+   "issued": "2026-11-21 correct-phase3b"
+  },
+  {
+   "id": "gate-fixtures-push-judges-neuter-r2",
+   "check": "scripts/gate-fixtures/run-fixtures.py",
+   "kind": "mutation",
+   "files": {
+    "scripts/gate-fixtures/run-fixtures.py": "1e1b0ee94d974e023b9cd3beadc24949b4b5e368abf5dbffd3700dd7113e7663",
+    "scripts/push.py": "64dcc5f1bf17e8dd8d946a39fdc79a1a77791422da68c93d877e36442506b998"
+   },
+   "mutation": "Scratch copy of the tree with scripts/push.py's judging functions neutered to pass-throughs: validate keeps path resolution but drops every guard, derived_fresh / preflight_prospective / registry_gate return None (receipts_gate left live; it is reached only through preflight_prospective in push mode). Re-observation after the PR #155 fix round changed the suite and the receipts judge.",
+   "red": "Gate fixtures 30 pass / 13 FAIL: the four validate-guard refusals (basename-only, missing derived artifacts, both ./-spellings), stale-derived freshness, prospective-tree omission, input-only bump, registry probe failure, missing registry, prospective-tree registry fix, and the three receipts-gate refusals all stopped refusing (exit 0, want 1)",
+   "green": "Clean tree (PR #155 head after the Codex fix round): gate fixtures 43 pass / 0 fail",
+   "issued": "2026-11-21 correct-phase3b codex-fix"
+  },
+  {
+   "id": "gate-fixtures-receipts-neuter-r2",
+   "check": "scripts/gate-fixtures/run-fixtures.py",
+   "kind": "mutation",
+   "files": {
+    "scripts/gate-fixtures/run-fixtures.py": "1e1b0ee94d974e023b9cd3beadc24949b4b5e368abf5dbffd3700dd7113e7663",
+    "scripts/check-receipts.py": "aa40c57593e5be5074f4964f5cc37f6d708fffc431b92544c0edcdb8a4670bcd"
+   },
+   "mutation": "Scratch copy of the tree with scripts/check-receipts.py's uncovered() neutered to return [] (no trigger is ever uncovered), re-observed after the PR #155 fix round added receipt field validation (receipt_problems) to the judge.",
+   "red": "Gate fixtures: exactly the 6 refusal cases the coverage verdict owns FAIL - new check without receipt, check edited after issue (stale), judge named only via its suite, CLI drive without receipt, and the two new invalid-receipt cases (hash-only record, named check not pinned) all stopped refusing (exit 0, want 1); every acceptance case still passes",
+   "green": "Clean tree (PR #155 head after the Codex fix round): gate fixtures 43 pass / 0 fail",
+   "issued": "2026-11-21 correct-phase3b codex-fix"
+  },
+  {
+   "id": "select-tier-receipts-ride-along",
+   "check": "scripts/select-tier-fixtures/run-fixtures.py",
+   "kind": "mutation",
+   "files": {
+    "scripts/select-tier-fixtures/run-fixtures.py": "a03f4500e8d9ac85179ecd5274a9905beeef8c7d0b170e98da272c2068094d63",
+    "scripts/select-tier.py": "b7c9db80ca3d7ad78fbd8c3def32f16eefe9d88630b437a7e5244454d3297492"
+   },
+   "mutation": "Scratch copy with the receipts exclusion removed from scripts/select-tier.py (tests/mutation-receipts.json classifies again - the pre-fix behaviour Codex P2 on PR #155 caught: the file hits the tier-C paths and escalates every change that carries a receipt).",
+   "red": "Select-tier fixtures 21 pass / 4 FAIL - exactly the four new ride-along cases: receipts file alone, proof + receipt, family + receipt, and engine + drive + receipt all select Tier C (full battery) instead of A / A / B / B",
+   "green": "Clean tree: select-tier fixtures 25 pass / 0 fail; the same four cases select A / A / B / B with the receipts file named in the reason as riding along",
+   "issued": "2026-11-21 correct-phase3b codex-fix"
+  }
+ ]
+}

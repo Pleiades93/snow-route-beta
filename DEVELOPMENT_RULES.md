@@ -109,7 +109,18 @@ hand (the C1 class: six stale patterns reached the Beta 1.258
 close-out unrun, and eight more had accumulated by 1.260). The gate
 runs against the prospective tree the push would create as well as
 the local tree, so a fix that is not in the push set cannot certify
-the push.
+the push. Since /correct Phase 3 round (b), a push also runs the
+**receipts gate**: a check or judge file the push changes (proofs,
+drives, selftests, fixture suites, and the gate scripts they
+exercise — the scope lives in `scripts/check-receipts.py`) must be
+named by a current mutation receipt in
+`tests/mutation-receipts.json` — the durable record of the check
+observed failing under a named mutation or on the historical tree
+(TESTING.md rule 6, class N1: the rule as prose let fixtures that
+stayed green with the judges neutered, a sweep that passed silently
+empty, and a drive that measured the harness instead of the app all
+ship; the receipt is now a precondition of the push, verified
+against the prospective tree like the registry gate).
 
 ## 2. Per-change report (required with every merge)
 
