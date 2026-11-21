@@ -148,11 +148,124 @@ def top_level_keys(obj_literal):
     return keys
 
 
+def mask_code(src):
+    """The source with comments and string/template literal text
+    blanked to spaces (newlines and ${ } interpolation code kept).
+    Lets the declaration scan count braces honestly: a brace inside
+    a literal is not a scope. Regex literals are not specially
+    lexed - a pattern carrying an unbalanced brace or a quote
+    would mislead the depth count; the parts' patterns carry
+    neither (the clean-tree verdict and the fixture suite are the
+    standing evidence, and the grammar grows only on a named
+    miss, the census derivation's rule)."""
+    out = list(src)
+    i, n = 0, len(src)
+    stack = []  # ("template",) or ("interp", brace_depth)
+    state = "code"
+    while i < n:
+        ch = src[i]
+        nxt = src[i + 1] if i + 1 < n else ""
+        if state == "code":
+            if ch == "/" and nxt == "/":
+                out[i] = out[i + 1] = " "
+                i += 2
+                state = "line"
+            elif ch == "/" and nxt == "*":
+                out[i] = out[i + 1] = " "
+                i += 2
+                state = "block"
+            elif ch in "'\"":
+                out[i] = " "
+                i += 1
+                state = ch
+            elif ch == "`":
+                out[i] = " "
+                i += 1
+                state = "template"
+            elif ch == "}" and stack and stack[-1][0] == "interp":
+                kind, depth = stack[-1]
+                if depth == 0:
+                    stack.pop()
+                    state = "template"
+                else:
+                    stack[-1] = (kind, depth - 1)
+                i += 1
+            elif ch == "{" and stack and stack[-1][0] == "interp":
+                stack[-1] = ("interp", stack[-1][1] + 1)
+                i += 1
+            else:
+                i += 1
+        elif state == "line":
+            if ch == "\n":
+                state = "code"
+            else:
+                out[i] = " "
+            i += 1
+        elif state == "block":
+            if ch == "*" and nxt == "/":
+                out[i] = out[i + 1] = " "
+                i += 2
+                state = "code"
+            else:
+                if ch != "\n":
+                    out[i] = " "
+                i += 1
+        elif state in "'\"":
+            if ch == "\\":
+                out[i] = " "
+                if i + 1 < n and src[i + 1] != "\n":
+                    out[i + 1] = " "
+                i += 2
+            elif ch == state or ch == "\n":
+                if ch != "\n":
+                    out[i] = " "
+                i += 1
+                state = "code"
+            else:
+                out[i] = " "
+                i += 1
+        elif state == "template":
+            if ch == "\\":
+                out[i] = " "
+                if i + 1 < n and src[i + 1] != "\n":
+                    out[i + 1] = " "
+                i += 2
+            elif ch == "`":
+                out[i] = " "
+                i += 1
+                state = "code"
+            elif ch == "$" and nxt == "{":
+                stack.append(("interp", 0))
+                i += 2
+                state = "code"
+            else:
+                if ch != "\n":
+                    out[i] = " "
+                i += 1
+    return "".join(out)
+
+
 def top_level_names(src):
-    """Top-level declared names in a part: line-start declarations,
-    with multi-declarator statements split on top-level commas."""
+    """Top-level declared names in a part: declarations whose
+    match starts at brace depth 0 in the masked source, with
+    multi-declarator statements split on top-level commas. The
+    depth filter is the point (Codex P2 on PR #157): a nested
+    line-start `function applyNight() {}` inside another function
+    is not a top-level binding and must not certify one."""
+    src = mask_code(src)
+    depth_at = [0] * (len(src) + 1)
+    depth = 0
+    for i, ch in enumerate(src):
+        depth_at[i] = depth
+        if ch == "{":
+            depth += 1
+        elif ch == "}":
+            depth -= 1
+    depth_at[len(src)] = depth
     names = set()
-    for m in re.finditer(r"(?m)^(let|const|var)\s+([^;]+);", src):
+    for m in re.finditer(r"(?m)^\s*(let|const|var)\s+([^;]+);", src):
+        if depth_at[m.start()] != 0:
+            continue
         body = m.group(2)
         depth, seg, segs = 0, "", []
         for ch in body:
@@ -172,11 +285,12 @@ def top_level_names(src):
                 names.add(mm.group(1))
     # Function declarations at line start, including the JSDoc-led
     # form this codebase writes (`/** @returns {X} */ function f() {`)
-    # - a declaration the line-start rule alone would miss.
+    # - the comment is spaces in the masked source, so leading
+    # whitespace covers it.
     for m in re.finditer(
-            r"(?m)^(?:\s*/\*[^*\n]*(?:\*(?!/)[^*\n]*)*\*/\s*)?"
-            r"(?:async\s+)?function\s+([A-Za-z_$][\w$]*)", src):
-        names.add(m.group(1))
+            r"(?m)^\s*(?:async\s+)?function\s+([A-Za-z_$][\w$]*)", src):
+        if depth_at[m.start()] == 0:
+            names.add(m.group(1))
     return names
 
 
@@ -303,13 +417,24 @@ def family_census(root):
 
 # ------------------------------------------------------------ family: wiring
 
+def active_yaml(wf):
+    """The workflow text with full-line comments removed. A step
+    commented out in checks.yml does not run, so its commands are
+    not wiring (Codex P2 on PR #157: the raw-text search counted a
+    commented-out selftest step as CI wiring). Inline trailing
+    comments disable nothing and stay."""
+    return "\n".join(
+        line for line in wf.splitlines()
+        if not line.lstrip().startswith("#"))
+
+
 def family_wiring(root):
     wf = read(root, ".github/workflows/checks.yml")
     if wf is None:
         return None
     problems = []
     disk = sorted(p.name for p in (root / "tests" / "browser").glob("selftest-*.mjs"))
-    wired = sorted(set(re.findall(r"node tests/browser/(selftest-[\w.-]+\.mjs)", wf)))
+    wired = sorted(set(re.findall(r"node tests/browser/(selftest-[\w.-]+\.mjs)", active_yaml(wf))))
     for name in disk:
         if name not in wired:
             problems.append(
@@ -331,6 +456,7 @@ def family_shards(root):
     wf = read(root, ".github/workflows/checks.yml")
     if wf is None:
         return None
+    wf = active_yaml(wf)
     actual_raw = re.findall(r'drives:\s*"([^"]+)"', wf)
     if not actual_raw:
         return None

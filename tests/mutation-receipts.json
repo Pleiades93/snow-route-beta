@@ -529,6 +529,127 @@
    "red": "The gate fixtures' drift case flips: 'push: a tree whose selftest wiring has drifted is refused (mirrors gate)' FAIL (got exit 0, want 1) - the drifted push lands; suite 63/64.",
    "green": "With the gate live, the same case refuses the push (exit 1) and the agreeing tree pushes (exit 0); suite 64/64.",
    "issued": "correct-phase3d-codex-fix"
+  },
+  {
+   "id": "correct-phase3d-mirrors-checker-r3",
+   "check": "scripts/check-mirrors.py",
+   "kind": "mutation",
+   "files": {
+    "scripts/check-mirrors.py": "ccf6a6da6f6ca6da0f7c685a0c1ee2bc9929866887060126150d0a9ba0db2e9c",
+    "scripts/gate-fixtures/run-fixtures.py": "d0f8d63364e674953ab27ad5241a72a9dd3a191cb687975f0bb32e245a907fff"
+   },
+   "mutation": "Each mirror family broken in turn on synthetic and real trees (typedef minus ends; applyNight home reverted; retired global re-added; unaccounted assembled part; unwired selftest; ghost wired step; two shard drives swapped; judge dropped from JUDGE_PATHS); family_wiring neutered; a tree whose own gen-shards.py says SHARDS = 4 against its eight generated lists checked with the pre-fix checker (PR #157 Codex P2 #1); a home part whose declared global survives only as a nested flush-left function namesake after the top-level one is renamed (Codex P2 #2); a checks.yml whose selftest step is commented out (Codex P2 #3).",
+   "red": "Every drift shape exits 1 naming both sides; the pristine tree itself failed census + judges before this round's fixes; the pre-fix checker CERTIFIES the SHARDS = 4 tree (exit 0), counts the nested namesake as the top-level declaration (types passes), and counts the commented-out step as wiring (wiring passes).",
+   "green": "The fixed checker loads the generator from the tree under check, scans declarations scope-aware over the masked source (brace depth 0), and reads only active workflow lines: all three Codex shapes fail naming the drift, the clean tree passes all five families, and gate fixtures pass 66/66 including one case per Codex shape. The scope-aware scan was adjudicated name-by-name against the old line-start scan on every part: every delta is a nested declaration the old scan over-counted (engine.js is one IIFE; loadRouteState's flush-left locals) or a JSDoc-led top-level const the old scan missed (app1's $).",
+   "issued": "correct-phase3d-codex-fix2"
+  },
+  {
+   "id": "correct-phase3d-gate-fixtures-r3",
+   "check": "scripts/gate-fixtures/run-fixtures.py",
+   "kind": "mutation",
+   "files": {
+    "scripts/gate-fixtures/run-fixtures.py": "d0f8d63364e674953ab27ad5241a72a9dd3a191cb687975f0bb32e245a907fff",
+    "scripts/push.py": "c69c55704e06cd18eef359ec3c143adb440cd487550ecb68d2eabdba38138794",
+    "scripts/check-mirrors.py": "ccf6a6da6f6ca6da0f7c685a0c1ee2bc9929866887060126150d0a9ba0db2e9c"
+   },
+   "mutation": "The mirrors cases exercised against neutered judges (mirrors_gate disabled in a scratch push.py; family_wiring disabled in a scratch check-mirrors.py) and against the three pre-fix checker shapes from PR #157's Codex rounds (beside-the-checker generator, scope-blind declaration scan, raw-text wiring search). Re-issue after fix round 2 added one fixture case per Codex shape.",
+   "red": "The suite reports exactly the mirrors cases failing under each neuter (62/63 and 61/63 in the first observation), and the pre-fix checker passes the three Codex-shape cases' trees.",
+   "green": "Unneutered suite on the fixed tree: 66 pass, 0 fail (54 pre-existing + 12 mirrors).",
+   "issued": "correct-phase3d-codex-fix2"
+  },
+  {
+   "id": "correct-phase3d-judge-paths-r3",
+   "check": "scripts/check-receipts.py",
+   "kind": "mutation",
+   "files": {
+    "scripts/check-receipts.py": "8d1b98df178aa2918255054bd04cfa9c52157fd0d383b08a3cc995391ccbcbe3",
+    "scripts/check-mirrors.py": "ccf6a6da6f6ca6da0f7c685a0c1ee2bc9929866887060126150d0a9ba0db2e9c"
+   },
+   "mutation": "scripts/check-mirrors.py removed from JUDGE_PATHS in a scratch copy of check-receipts.py. (Re-issue: the PR #157 fix rounds changed the pinned check-mirrors.py; the mutation and observations are unchanged in substance and were re-run.)",
+   "red": "The receipts gate CLI against a tree whose only changed file is scripts/check-mirrors.py exits 0 - the judging script escapes the mutation-receipt requirement entirely.",
+   "green": "With check-mirrors.py listed in JUDGE_PATHS, the same gate run refuses (exit 1, naming scripts/check-mirrors.py); check-mirrors.py's judges family independently fails any tree where a scripts/check-*.py is unlisted.",
+   "issued": "correct-phase3d-codex-fix2"
+  },
+  {
+   "id": "correct-phase3d-census-exclusions-r3",
+   "check": "tests/browser/selftest-foreign-writes.mjs",
+   "kind": "historical",
+   "files": {
+    "tests/browser/selftest-foreign-writes.mjs": "185cdc6c504bff54afab099b593d200eacffe75eb44e86350f186ecf7cba7507",
+    "tests/browser/fixtures/foreign-writes-census.json": "ac216e270606c1b7755f9052bfc4d1d60c4ec22c151945a84ed8cc6cc8126d39",
+    "scripts/check-mirrors.py": "ccf6a6da6f6ca6da0f7c685a0c1ee2bc9929866887060126150d0a9ba0db2e9c"
+   },
+   "mutation": "The pre-round tree state: parts/brand-snow.js is assembled by scripts/assemble.py but named in neither the census UNIVERSE nor its exclusions - the state the tree shipped in from Beta 1.158 to 1.261. (Re-issue: the PR #157 fix rounds changed the pinned check-mirrors.py; the historical state and verdicts are unchanged.)",
+   "red": "scripts/check-mirrors.py on the pristine tree FAILS the census family: 'parts/brand-snow.js is assembled but is neither in the census UNIVERSE nor named in its exclusions'.",
+   "green": "With brand-snow.js named in the selftest header prose and RULE (adjudicated: a pure IIFE with zero top-level bindings whose only outward surface is a window member write) and the census JSON regenerated via --write, check-mirrors passes and the selftest passes with universe/totals/sites byte-identical (30 expressions) - only the rule text changed.",
+   "issued": "correct-phase3d-codex-fix2"
+  },
+  {
+   "id": "correct-phase3d-mirrors-push-gate-r3",
+   "check": "scripts/push.py",
+   "kind": "mutation",
+   "files": {
+    "scripts/push.py": "c69c55704e06cd18eef359ec3c143adb440cd487550ecb68d2eabdba38138794",
+    "scripts/gate-fixtures/run-fixtures.py": "d0f8d63364e674953ab27ad5241a72a9dd3a191cb687975f0bb32e245a907fff"
+   },
+   "mutation": "mirrors_gate neutered to return None at the top of its body in a scratch copy of push.py (both preflight call sites left in place). Re-observation after PR #157 fix round 2 changed the fixture suite.",
+   "red": "The gate fixtures' drift case flips: 'push: a tree whose selftest wiring has drifted is refused (mirrors gate)' FAIL (got exit 0, want 1) - the drifted push lands; suite 65/66.",
+   "green": "With the gate live, the same case refuses the push (exit 1) and the agreeing tree pushes (exit 0); suite 66/66.",
+   "issued": "correct-phase3d-codex-fix2"
+  },
+  {
+   "id": "gate-fixtures-push-judges-neuter-r5",
+   "check": "scripts/gate-fixtures/run-fixtures.py",
+   "kind": "mutation",
+   "files": {
+    "scripts/gate-fixtures/run-fixtures.py": "d0f8d63364e674953ab27ad5241a72a9dd3a191cb687975f0bb32e245a907fff",
+    "scripts/push.py": "c69c55704e06cd18eef359ec3c143adb440cd487550ecb68d2eabdba38138794"
+   },
+   "mutation": "Scratch copy of the tree with scripts/push.py's judging functions neutered: validate resolves a basename-only entry to its match and its parts/derived-artifact guard is disabled; derived_fresh, preflight_prospective and registry_gate return None at the top. Re-observation after PR #157 fix round 2 changed the fixture suite (66 cases).",
+   "red": "Gate fixtures 49 pass, 17 FAIL - the same seventeen refusals as the r4 observation, all green-lit under the neuter.",
+   "green": "Gate fixtures 66 pass, 0 fail on the fixed tree.",
+   "issued": "correct-phase3d-codex-fix2"
+  },
+  {
+   "id": "gate-fixtures-receipts-neuter-r5",
+   "check": "scripts/gate-fixtures/run-fixtures.py",
+   "kind": "mutation",
+   "files": {
+    "scripts/gate-fixtures/run-fixtures.py": "d0f8d63364e674953ab27ad5241a72a9dd3a191cb687975f0bb32e245a907fff",
+    "scripts/check-receipts.py": "8d1b98df178aa2918255054bd04cfa9c52157fd0d383b08a3cc995391ccbcbe3"
+   },
+   "mutation": "Scratch copy of the tree with scripts/check-receipts.py's uncovered() neutered to return ([], None) - no trigger is ever uncovered. Re-observation after PR #157 fix round 2 changed the fixture suite.",
+   "red": "Gate fixtures 59 pass, 7 FAIL - the seven coverage refusals of the r4 observation all stop refusing.",
+   "green": "Gate fixtures 66 pass, 0 fail on the fixed tree.",
+   "issued": "correct-phase3d-codex-fix2"
+  },
+  {
+   "id": "gate-fixtures-census-gate-neuter-r6",
+   "check": "scripts/gate-fixtures/run-fixtures.py",
+   "kind": "mutation",
+   "files": {
+    "scripts/gate-fixtures/run-fixtures.py": "d0f8d63364e674953ab27ad5241a72a9dd3a191cb687975f0bb32e245a907fff",
+    "scripts/push.py": "c69c55704e06cd18eef359ec3c143adb440cd487550ecb68d2eabdba38138794",
+    "scripts/check-census.py": "dd55f34cd855e60a6fadae7e261aa99f1682b9d7d8446696532045e3a281fafb"
+   },
+   "mutation": "scripts/check-census.py gate() neutered in a scratch copy of the tree to return None unconditionally (the census gate certifies every push) - re-observation after PR #157 fix round 2 changed the fixture suite.",
+   "red": "Gate fixtures 62 pass, 4 FAIL - exactly the four refusal cases the census gate owns.",
+   "green": "Gate fixtures 66 pass, 0 fail on the fixed tree.",
+   "issued": "correct-phase3d-codex-fix2"
+  },
+  {
+   "id": "gate-fixtures-census-derive-neuter-r6",
+   "check": "scripts/gate-fixtures/run-fixtures.py",
+   "kind": "mutation",
+   "files": {
+    "scripts/gate-fixtures/run-fixtures.py": "d0f8d63364e674953ab27ad5241a72a9dd3a191cb687975f0bb32e245a907fff",
+    "scripts/push.py": "c69c55704e06cd18eef359ec3c143adb440cd487550ecb68d2eabdba38138794",
+    "scripts/check-census.py": "dd55f34cd855e60a6fadae7e261aa99f1682b9d7d8446696532045e3a281fafb"
+   },
+   "mutation": "scripts/check-census.py derive_rows() neutered in a scratch copy of the tree to return no rows (the census derives nothing, so every issued census certifies empty) - re-observation after PR #157 fix round 2 changed the fixture suite.",
+   "red": "Gate fixtures 60 pass, 6 FAIL - the two re-derivation-dependent refusals plus the four derive-level cases: with no derived rows none of them can be posed.",
+   "green": "Gate fixtures 66 pass, 0 fail on the fixed tree.",
+   "issued": "correct-phase3d-codex-fix2"
   }
  ]
 }

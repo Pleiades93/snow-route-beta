@@ -772,7 +772,8 @@ def run_mirrors(root):
 
 def mirrors_tree(base, *, pack_typedef="name: string, ends: {}",
                  home_global="glThing", extra_parts=(), unwired=False,
-                 swap_shards=False, extra_judge=False):
+                 swap_shards=False, extra_judge=False, nested_global=False,
+                 comment_step=False):
     """A miniature tree whose mirrors all agree, built consistent by
     construction (the shard lists are the real generator's partition
     of the fixture roster); each keyword breaks exactly one family."""
@@ -790,7 +791,16 @@ def mirrors_tree(base, *, pack_typedef="name: string, ends: {}",
     w(base / "parts" / "app1.js",
       "const PACK_FIELDS = ['name', 'ends'];\n"
       "function routeKeys(id) { return { done: 'x', sess: 'y' }; }\n")
-    w(base / "parts" / "app2.js", f"let {home_global} = null;\n")
+    if nested_global:
+        # The declared global exists only nested inside a function
+        # (flush-left, the shape this codebase writes) - a line-start
+        # scan counts it, a scope-aware scan must not.
+        w(base / "parts" / "app2.js",
+          "function wrapper() {\n"
+          f"let {home_global} = null;\n"
+          "}\n")
+    else:
+        w(base / "parts" / "app2.js", f"let {home_global} = null;\n")
     w(base / "scripts" / "app1-types.d.ts",
       "// fixture declarations\n"
       f"type RoutePack = {{ {pack_typedef} }};\n"
@@ -822,10 +832,16 @@ def mirrors_tree(base, *, pack_typedef="name: string, ends: {}",
       (ROOT / "scripts" / "gen-shards.py").read_text())
     shard_steps = "".join(
         f'      - run: echo shard\n        drives: "{" ".join(s)}"\n' for s in shards)
+    fixture_step = ("      - name: fixture selftest\n"
+                    "        run: node tests/browser/selftest-fixture.mjs\n")
+    if comment_step:
+        # The step is present as text but commented out - it does
+        # not run, so the selftest is unwired (PR #157 Codex P2).
+        fixture_step = "".join("# " + ln + "\n"
+                               for ln in fixture_step.splitlines())
     w(base / ".github" / "workflows" / "checks.yml",
       "jobs:\n  build:\n    steps:\n"
-      "      - name: fixture selftest\n"
-      "        run: node tests/browser/selftest-fixture.mjs\n"
+      + fixture_step +
       "      - name: census selftest\n"
       "        run: node tests/browser/selftest-foreign-writes.mjs\n" + shard_steps)
     return base
@@ -858,6 +874,10 @@ with tempfile.TemporaryDirectory() as td:
     genp.write_text(genp.read_text().replace("SHARDS = 8", "SHARDS = 4"))
     check("mirrors: the tree's own generator outranks the checker's (prospective source)",
           run_mirrors(gt), 1)
+    check("mirrors: a global declared only nested in its home part fails (scope-aware scan)",
+          run_mirrors(mirrors_tree(t / "nested", nested_global=True)), 1)
+    check("mirrors: a selftest whose step is commented out is unwired",
+          run_mirrors(mirrors_tree(t / "commented", comment_step=True)), 1)
 
     # The push gate itself: a drifted mirror refuses the push, an
     # agreeing tree pushes. The fixture tree carries a copy of the
@@ -892,6 +912,6 @@ with tempfile.TemporaryDirectory() as td:
     check("push: a tree whose mirrors agree pushes (mirrors gate)",
           run_push(t / "mpok", ["index.html"], mode="push", env_extra=mp_ok), 0)
 
-total = 64
+total = 66
 print(f"gate fixtures: {total - len(failures)} pass, {len(failures)} fail")
 sys.exit(1 if failures else 0)
