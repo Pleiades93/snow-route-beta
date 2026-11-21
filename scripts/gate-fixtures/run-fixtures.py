@@ -5,9 +5,10 @@ with fixtures, docs/TESTING.md rule 1).
 
 scripts/check-tier-map.py, scripts/check-proof-coverage.py,
 scripts/run-proofs.py, scripts/push.py (plan mode),
-scripts/sweep-check.py and scripts/check-receipts.py (the mutation-
-receipt gate, /correct Phase 3 round (b)) all decide
-pass/fail for the gate. Running them
+scripts/sweep-check.py, scripts/check-receipts.py (the mutation-
+receipt gate, /correct Phase 3 round (b)) and
+scripts/check-census.py (the sibling-census gate, round (c)) all
+decide pass/fail for the gate. Running them
 against the real repository proves only their happy path; these
 fixtures run each script against synthetic trees in a temp directory
 and assert BOTH verdicts: the valid tree passes, and every documented
@@ -19,8 +20,9 @@ entry, a parts push missing its derived artifacts, stale derived
 artifacts, an omitted assembly input, an input-only push, a
 transport landing a wrong blob, a changed check or judge file with
 no current mutation receipt, a receipt carrying hashes but no
-recorded observation, a receipt naming a check it does not pin)
-fails.
+recorded observation, a receipt naming a check it does not pin, a
+parts push with no sibling census, a hand-typed census omitting a
+derived door row, a census leaving a derived row unmarked) fails.
 
 Run: python3 scripts/gate-fixtures/run-fixtures.py
 Exit 0 = every case produced its expected verdict.
@@ -508,6 +510,143 @@ with tempfile.TemporaryDirectory() as td:
     check("receipts: a malformed receipts file refuses the gate (a gate that cannot read its records)",
           run_receipts(t, ["tests/browser/drive9001.mjs"]), 1)
 
+# ------------------------------------------------- sibling census
+def run_census_cli(root, subcmd, extra):
+    proc = subprocess.run([PY, str(ROOT / "scripts" / "check-census.py"), subcmd,
+                           str(root)] + extra,
+                          capture_output=True, text=True, timeout=120)
+    return proc.returncode
+
+
+# A miniature confirmation surface shaped like Beta 1.255's first
+# submission: the Pace door routes through the guard, the dock door
+# (parts/b.js) calls the action directly. The census derivation
+# must enumerate both; a census that names only the guarded door
+# is the hand-typed shape this gate exists to refuse (class N2).
+CENSUS_PART_A = """// A fixture confirmation surface.
+let confirmDangerCb = null;
+let runStart = null;
+function showConfirm(o) { const p = $('confirmPill'); confirmDangerCb = o.onDanger || null; p.classList.remove('hidden'); }
+function hideConfirm() { $('confirmPill').classList.add('hidden'); confirmDangerCb = null; }
+function cancelStart() { runStart = null; }
+function wirePace() {
+  const c = $('paceCancel'); if (c) c.addEventListener('click', () => { showConfirm({ onDanger: () => { cancelStart(); } }); });
+}
+$('cfKeep').addEventListener('click', hideConfirm);
+"""
+CENSUS_PART_B = """// B fixture: the dock door.
+$('cancelStartBtn').addEventListener('click', () => { cancelStart(); });
+"""
+CENSUS_ANCHORS = {
+    "functions": ["showConfirm"],
+    "elements": ["confirmPill"],
+    "guards": [{"guard": "showConfirm", "action": "cancelStart",
+                "surface": "confirmPill", "state": ["runStart"]}],
+}
+
+
+def census_tree(name, *, omit_door=False, leave_unmarked=False):
+    """A buildable fixture tree carrying the mini surface, an older
+    branch version of both parts, and a census issued through the
+    real CLI with every derived row marked - unless the caller asks
+    for the hand-typed omission or an unmarked row. Returns env."""
+    base = t / name
+    env = push_tree2(base, parts={"a.js": CENSUS_PART_A, "b.js": CENSUS_PART_B},
+                     changelog="## Beta 1.0\n",
+                     tracker=CENSUS_PART_A + CENSUS_PART_B,
+                     index="shell Beta 1.0 " + CENSUS_PART_A + CENSUS_PART_B,
+                     branch_parts={"a.js": "// A older a\n", "b.js": "// B older b\n"})
+    w(base / "scripts" / "check-census.py",
+      (ROOT / "scripts" / "check-census.py").read_text())
+    w(base / "scripts" / "check-receipts.py",
+      (ROOT / "scripts" / "check-receipts.py").read_text())
+    # A real branch carries the gate scripts unchanged, so the
+    # prospective tree keeps them (and the census pins on them).
+    patch_branch(base, "scripts/check-census.py",
+                 (ROOT / "scripts" / "check-census.py").read_text())
+    patch_branch(base, "scripts/check-receipts.py",
+                 (ROOT / "scripts" / "check-receipts.py").read_text())
+    anchors = base / "census-anchors.json"
+    w(anchors, json.dumps(CENSUS_ANCHORS))
+    rows = json.loads(subprocess.run(
+        [PY, str(ROOT / "scripts" / "check-census.py"), "derive", str(base),
+         "--anchors", str(anchors)], capture_output=True, text=True,
+        timeout=120).stdout)["rows"]
+    marks = {}
+    for r in rows:
+        if omit_door and r["id"] == "door:parts/b.js:cancelStartBtn:click":
+            continue  # not a mark - the row is deleted from the record below
+        if leave_unmarked and r["id"] == "theme:confirmPill":
+            continue
+        marks[r["id"]] = {"status": "covered", "note": "fixture mark"}
+    marks_path = base / "census-marks.json"
+    w(marks_path, json.dumps(marks))
+    proc = subprocess.run(
+        [PY, str(ROOT / "scripts" / "check-census.py"), "issue", str(base),
+         "--id", "fixture-census", "--anchors", str(anchors),
+         "--changed", "parts/a.js", "--changed", "parts/b.js",
+         "--marks", str(marks_path), "--issued", "gate-fixtures"],
+        capture_output=True, text=True, timeout=120)
+    assert proc.returncode == 0, proc.stdout + proc.stderr
+    if omit_door:
+        ledger = json.loads((base / "tests" / "sibling-census.json").read_text())
+        rec = ledger["rounds"][0]
+        rec["rows"] = [r for r in rec["rows"]
+                       if r["id"] != "door:parts/b.js:cancelStartBtn:click"]
+        w(base / "tests" / "sibling-census.json", json.dumps(ledger, indent=1) + "\n")
+    return env
+
+
+with tempfile.TemporaryDirectory() as td:
+    t = Path(td)
+    no_census = push_tree2(t / "nocensus", parts={"a.js": CENSUS_PART_A, "b.js": CENSUS_PART_B},
+                           changelog="## Beta 1.0\n",
+                           tracker=CENSUS_PART_A + CENSUS_PART_B,
+                           index="shell Beta 1.0 " + CENSUS_PART_A + CENSUS_PART_B,
+                           branch_parts={"a.js": "// A older a\n", "b.js": "// B older b\n"})
+    w(t / "nocensus" / "scripts" / "check-census.py",
+      (ROOT / "scripts" / "check-census.py").read_text())
+    w(t / "nocensus" / "scripts" / "check-receipts.py",
+      (ROOT / "scripts" / "check-receipts.py").read_text())
+    check("push: a parts change with no sibling census is refused (census gate)",
+          run_push(t / "nocensus", ["parts/a.js", "parts/b.js", "src/tracker-source.html",
+                                    "index.html"],
+                   mode="push", env_extra=no_census), 1)
+    full = census_tree("censusok")
+    check("push: a parts change with a current, fully-marked census pushes",
+          run_push(t / "censusok", ["parts/a.js", "parts/b.js", "src/tracker-source.html",
+                                    "index.html", "tests/sibling-census.json"],
+                   mode="push", env_extra=full), 0)
+    omitted = census_tree("censusomit", omit_door=True)
+    check("push: a hand-typed census omitting a derived door row is refused (re-derivation)",
+          run_push(t / "censusomit", ["parts/a.js", "parts/b.js", "src/tracker-source.html",
+                                      "index.html", "tests/sibling-census.json"],
+                   mode="push", env_extra=omitted), 1)
+    unmarked = census_tree("censusunmarked", leave_unmarked=True)
+    check("push: a census leaving a derived row unmarked is refused",
+          run_push(t / "censusunmarked", ["parts/a.js", "parts/b.js", "src/tracker-source.html",
+                                          "index.html", "tests/sibling-census.json"],
+                   mode="push", env_extra=unmarked), 1)
+    # Machinery-only: local parts identical to the branch's (no
+    # pending parts delta - a differing unpushed part would refuse
+    # this push at the prospective build check, PR #146's rule, long
+    # before the census gate is consulted).
+    mach = push_tree2(t / "censusmach", parts={"a.js": CENSUS_PART_A, "b.js": CENSUS_PART_B},
+                      changelog="## Beta 1.0\n",
+                      tracker=CENSUS_PART_A + CENSUS_PART_B,
+                      index="shell Beta 1.0 " + CENSUS_PART_A + CENSUS_PART_B)
+    w(t / "censusmach" / "scripts" / "check-census.py",
+      (ROOT / "scripts" / "check-census.py").read_text())
+    w(t / "censusmach" / "README.md", "fixture v2\n")
+    patch_branch(t / "censusmach", "README.md", "fixture v1\n")
+    check("push: a machinery-only push needs no census (the exemption is the round's record, not the gate's)",
+          run_push(t / "censusmach", ["README.md"], mode="push", env_extra=mach), 0)
+    w(t / "badledger" / "tests" / "sibling-census.json", "{not json\n")
+    check("census: a malformed census file refuses the gate (a gate that cannot read its records)",
+          run_census_cli(t / "badledger", "gate", ["--changed", "parts/a.js"]), 1)
+    check("census: a machinery-only change set passes the CLI gate with no census at all",
+          run_census_cli(t / "badledger", "gate", ["--changed", "docs/x.md"]), 0)
+
 # ------------------------------------------------------------- sweep check
 def run_sweep(root, olds):
     proc = subprocess.run([PY, str(ROOT / "scripts" / "sweep-check.py"), str(root),
@@ -547,6 +686,6 @@ with tempfile.TemporaryDirectory() as td:
           run_sweep(sweep_tree(t / "mixq", files={"tests/browser/drive1.mjs": "x.includes('couldn\\'t save \"Town\"')\n"}),
                     ["couldn't save \"Town\""]), 1)
 
-total = 43
+total = 50
 print(f"gate fixtures: {total - len(failures)} pass, {len(failures)} fail")
 sys.exit(1 if failures else 0)

@@ -28,6 +28,12 @@ same ride-along rule: it is bookkeeping that must accompany every
 check change, so if it classified, every tested change would fall
 to the unmatched default (Tier C) - Codex P2 on PR #155.
 
+The second 2026-11-21 extension pins the sibling census file
+(tests/sibling-census.json, /correct Phase 3 round (c)) to the
+same rule, named in its own round rather than left for a gate
+to find: it is bookkeeping that must accompany every parts
+change.
+
 Run: python3 scripts/select-tier-fixtures/run-fixtures.py
 Exit 0 = every case matched its expected (tier, full-battery, drives).
 """
@@ -96,6 +102,10 @@ CASES = [
      ["tests/mutation-receipts.json"], "A", False, None),
     ("a proof file plus its mutation receipt stays Tier A",
      ["tests/proof/proof-1228.mjs", "tests/mutation-receipts.json"], "A", False, None),
+    ("the sibling census file alone rides along at Tier A (bookkeeping never escalates)",
+     ["tests/sibling-census.json"], "A", False, None),
+    ("a proof file plus its sibling census stays Tier A",
+     ["tests/proof/proof-1228.mjs", "tests/sibling-census.json"], "A", False, None),
 ]
 
 # (label, files, expected tier, expected COMPLETE drive set)
@@ -116,6 +126,11 @@ EXACT_CASES = [
      ["parts/engine.js", "tests/mutation-receipts.json"], "B", MAP),
     ("an engine-plus-drive change plus its receipt stays Tier B (Codex P2, PR #155)",
      ["parts/engine.js", "tests/browser/drive161.mjs", "tests/mutation-receipts.json"],
+     "B", sorted(set(MAP) | {"drive161"})),
+    ("a family change plus its sibling census adds nothing and escalates nothing",
+     ["parts/engine.js", "tests/sibling-census.json"], "B", MAP),
+    ("an engine-plus-drive change plus its census stays Tier B",
+     ["parts/engine.js", "tests/browser/drive161.mjs", "tests/sibling-census.json"],
      "B", sorted(set(MAP) | {"drive161"})),
 ]
 
