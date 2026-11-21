@@ -6,6 +6,12 @@
    "kind": "machinery-exempt",
    "reason": "Machinery only: this round builds the census mechanism itself (scripts/check-census.py, the census gate in scripts/push.py, the census ride-along in scripts/select-tier.py, gate and select-tier fixtures, TESTING.md rule 7, DEVELOPMENT_RULES section 1) and changes no parts/ surface, so there are no anchors to enumerate. The gate-fixture suite proves the exemption is the round's record, not the gate's: a machinery-only push needs no census, and a parts push without one is refused.",
    "issued": "2026-11-21 correct-phase3c"
+  },
+  {
+   "id": "correct-phase3d-c4",
+   "kind": "machinery-exempt",
+   "reason": "Machinery only: /correct Phase 3 round (d) adds scripts/check-mirrors.py + the mirrors gate in push.py, derives the packfields cap list, names brand-snow.js in the foreign-writes census exclusions and fixes the app1-types.d.ts applyNight home part (a comment in a never-assembled declaration file). No parts/ surface changes.",
+   "issued": "correct-phase3d-builder"
   }
  ]
 }

@@ -50,10 +50,23 @@ function constNum(src, name) { // the value of a numeric const (Beta 1.136: the 
   if (!m) throw new Error(name + ' not found');
   return Number(m[1]);
 }
-const CAP_NAMES = ['PACK_NAME_MAX', 'PACK_AREA_MAX', 'PACK_STREET_NAME_MAX', 'PACK_STREETS_MAX', 'PACK_SEGS_MAX', 'PACK_SEG_PTS_MAX', 'PACK_POINTS_MAX', 'PACK_TILENAME_MAX', 'PACK_TILENAMES_MAX', 'PACK_BOX_MAX_DEG', 'PACK_LENGTH_MAX_M']; // Beta 1.152 (NV round): the validator gained the extent and total-length ceilings - the sandbox receives them like the other caps
+const JUDGED = extract(app1src, 'distM') + '\n' + extract(app1src, 'computeRouteBox') + '\n' + extract(createSrc, 'normalizePack');
+// /correct Phase 3 round (d) (class C4 generalized): the cap list is DERIVED
+// from the judged code, never hand-kept. Through Beta 1.259 this was a
+// literal list of the caps the sandbox must receive; a cap the validator
+// gained (the 1.152 extent and total-length ceilings were exactly that
+// event) joined the sandbox only when someone remembered to extend the
+// list by hand. The list is now every PACK_* constant the extracted
+// judging code references (comments stripped, PACK_FIELDS itself
+// excluded - it travels as its own sandbox argument): a cap the
+// validator gains is in the sandbox by construction, and a name the
+// code references but app1 does not define fails loudly in constNum
+// below. The cap VALUES stay pinned literally in P3 - the ceilings are
+// product decisions; only the roster is derived.
+const CAP_NAMES = [...new Set((JUDGED.replace(/\/\*[\s\S]*?\*\//g, ' ').replace(/(^|[^:])\/\/[^\n]*/g, '$1 ').match(/\bPACK_[A-Z][A-Z_]*\b/g) || []))].filter(n => n !== 'PACK_FIELDS').sort();
 const CAPS = {}; for (const n of CAP_NAMES) CAPS[n] = constNum(app1src, n);
 const api = new Function('MLAT', 'MLNG', 'ROADS', 'PACK_FIELDS', ...CAP_NAMES,
-  extract(app1src, 'distM') + '\n' + extract(app1src, 'computeRouteBox') + '\n' + extract(createSrc, 'normalizePack') + '\nreturn { normalizePack };')(111320, 80386, {}, PACK_FIELDS, ...CAP_NAMES.map(n => CAPS[n]));
+  JUDGED + '\nreturn { normalizePack };')(111320, 80386, {}, PACK_FIELDS, ...CAP_NAMES.map(n => CAPS[n]));
 let pass = 0, fail = 0;
 const t = (name, cond) => { if (cond) pass++; else { fail++; console.log('FAIL', name); } };
 const clone = o => JSON.parse(JSON.stringify(o));

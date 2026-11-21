@@ -136,7 +136,7 @@ declare var sugQueue: string[];
 /** app3.js: the last accepted GPS fix {ll, at}, or null before any fix. */
 declare var lastGood: { ll: number[], at: number } | null;
 
-/** app4.js: repaints the day/night theme; called by themeTick (app1) at a boundary. */
+/** app5.js: repaints the day/night theme; called by themeTick (app1) at a boundary. (The mirror named app4.js, the function's earlier home, until /correct Phase 3 round (d) - the declaration's type was right and only its provenance had drifted, the direction tsc cannot see.) */
 declare function applyNight(): void;
 
 /** app2.js: the MapLibre map instance or null. The pilot does not model MapLibre's API - app1 only null-tests the binding and passes it nowhere - so it is typed as any rather than given an invented class shape. */

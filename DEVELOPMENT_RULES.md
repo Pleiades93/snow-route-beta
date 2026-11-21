@@ -136,7 +136,23 @@ Cancel door and the sheet click-away exit). The gate re-derives
 the rows from the prospective tree, so a hand-typed census that
 omits a derived sibling cannot certify the push; a round that
 changes no `parts/` surface records a machinery-exempt entry in
-the same ledger instead.
+the same ledger instead. Since /correct Phase 3 round (d), a push
+also runs the **mirrors gate**: `scripts/check-mirrors.py` verifies
+the tree's hand-maintained mirrors against their sources — the
+declaration file's typedefs and cross-part globals against the
+parts, the foreign-write census's universe and named exclusions
+against the assembler's part list, the selftests' CI wiring
+against the disk, the shard lists against the generated
+partition, and the receipts gate's judge list against the
+`check-*.py` files on disk (TESTING.md rule 8, class C4
+generalized: Phase 2's closure guarded the drive roster and the
+same shape fired on every unguarded mirror after it — the types
+file at 1.258 and again at 1.259, the packfields expectations,
+the census universe silently missing an assembled part). A mirror
+that can be derived is derived instead (the fixture rosters in
+round (a); the packfields cap list in this round); the rest are
+checked on every push, against the prospective tree like the
+other gates.
 
 ## 2. Per-change report (required with every merge)
 

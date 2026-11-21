@@ -79,6 +79,7 @@ JUDGE_PATHS = {
     "scripts/push.py",
     "scripts/check-receipts.py",
     "scripts/check-census.py",
+    "scripts/check-mirrors.py",
     "scripts/sweep-check.py",
     "scripts/check-tier-map.py",
     "scripts/check-proof-coverage.py",

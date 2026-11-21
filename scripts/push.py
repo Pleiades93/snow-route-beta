@@ -99,6 +99,24 @@ This wrapper makes both shapes impossible rather than discouraged:
           A round that changes no parts/ surface records a
           machinery-exempt entry in the same ledger instead, so
           the absence of a census is a stated fact.
+          Alongside those, the MIRRORS GATE (/correct Phase 3 round
+          (d), closing class C4 generalized): the push tree's
+          hand-maintained mirrors must agree with their sources -
+          scripts/check-mirrors.py verifies the declaration file
+          (typedef fields against PACK_FIELDS and routeKeys, and
+          every section-2 cross-part global against the home part
+          its comment names - the retired direction CI's tsc cannot
+          see), the foreign-write census's universe plus named
+          exclusions against the assembler's part list, the
+          selftests' CI wiring against the disk, the shard lists
+          against the generated partition, and the receipts gate's
+          judge list against the check-*.py files on disk. Phase 2
+          closed C4's roster instance and the shape kept firing on
+          every unguarded mirror (the types file at 1.258 AND
+          1.259, the census universe silently missing an assembled
+          part); the mirrors that can be derived are derived, and
+          the rest are checked here, on every push, against the
+          prospective tree like the other gates.
           Then it delegates the transport to the connector helper
           (explicit --repo snow-route-beta and --branch, every pair
           local=remote identical), and VERIFIES THE PUSHED TREE:
@@ -272,6 +290,9 @@ def preflight_prospective(root, gh, branch, resolved):
         err = census_gate(root, root, remote, local, resolved)
         if err:
             return "the prospective remote tree fails the census gate: " + err
+        err = mirrors_gate(root, root)
+        if err:
+            return "the prospective remote tree fails the mirrors gate: " + err
         return None
     import base64
     import shutil
@@ -298,6 +319,9 @@ def preflight_prospective(root, gh, branch, resolved):
         err = census_gate(tmp, root, remote, local, resolved)
         if err:
             return ("the prospective remote tree fails the census gate: " + err)
+        err = mirrors_gate(tmp, root)
+        if err:
+            return ("the prospective remote tree fails the mirrors gate: " + err)
         proc = subprocess.run([sys.executable, str(tmp / "scripts" / "build-pages.py"), "--check"],
                               cwd=tmp, capture_output=True, text=True, timeout=300)
         if proc.returncode != 0:
@@ -365,6 +389,29 @@ def census_gate(prospective_root, instrument_root, remote, local, resolved):
     spec.loader.exec_module(mod)
     changed = [p for p in resolved if remote.get(p) != local.get(p)]
     return mod.gate(prospective_root, changed)
+
+
+def mirrors_gate(prospective_root, instrument_root):
+    """The push tree's hand-maintained mirrors must agree with
+    their sources (class C4 generalized; scripts/check-mirrors.py
+    owns the family set and the comparisons). Mirrors are
+    tree-wide facts, not change-scoped ones, so the whole set is
+    verified against the PROSPECTIVE tree on every push - a drift
+    that predates the round still refuses the push that would
+    carry it past the gate unexamined, and the round that moves a
+    source must move its mirror in the same push. The checking
+    logic loads from the LOCAL tree - the measuring instrument,
+    exempt from the prospective overlay like build-pages.py.
+    Returns an error string or None."""
+    script = instrument_root / "scripts" / "check-mirrors.py"
+    if not script.is_file():
+        print("MIRRORS GATE SKIPPED: scripts/check-mirrors.py is not in "
+              "this tree (it predates the gate)")
+        return None
+    spec = importlib.util.spec_from_file_location("snow_check_mirrors", script)
+    mod = importlib.util.module_from_spec(spec)
+    spec.loader.exec_module(mod)
+    return mod.gate(prospective_root)
 
 
 def registry_targets(root, probe, goal_dir):
