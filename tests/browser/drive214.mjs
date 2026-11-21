@@ -285,18 +285,30 @@ const TITLE_LAYERS = ['streetnamespt1', 'streetnamespt2', 'streetnamespt3', 'str
 const countTitlesAtHome = async () => {
   await ev(`(() => { goHomeView(); return true; })()`);
   await poll(`(() => { try { return map.querySourceFeatures('protomaps', { sourceLayer: 'roads' }).length > 50; } catch (e) { return false; } })()`, 30000); // the label layers read the tiles - wait until the roads tiles for this framing have actually landed
-  // Poll until the titles have actually PLACED (the F6/F7 lesson of 1.259:
-  // a fixed sleep races placement - and the standing heal's rebuild after
-  // the Home flight opens a second window where a single early read sees
-  // an empty placement). Read finally only once the count is live.
-  await poll(`(() => { try { const layers = ['streetnamespt1', 'streetnamespt2', 'streetnamespt3', 'streetnamespt4'].filter(id => map.getLayer(id)); const seen = new Set(); for (const f of map.queryRenderedFeatures({ layers })) { if (f.properties && f.properties.name) seen.add(f.properties.name); } return seen.size >= 30; } catch (e) { return false; } })()`, 30000);
-  await sleep(600);
-  return J(`(() => {
-    const layers = ${JSON.stringify(TITLE_LAYERS)}.filter(id => map.getLayer(id));
-    const seen = new Set();
-    for (const f of map.queryRenderedFeatures({ layers })) { const nm = f.properties && f.properties.name; if (nm) seen.add(nm); }
-    return { zoom: map.getZoom(), pitch: map.getPitch(), rendered: [...seen], lanePresent: !!map.getLayer('roads_labels_minor-priority') };
-  })()`);
+  // The graded read is a STABILITY read (drive130's L7 discipline, applied
+  // after gate round 1 of this round failed in CI): sample the placed
+  // title set until it is identical across 3 consecutive samples AND
+  // holds at least 30 names; the graded sample is the last stable one.
+  // A first-live read is not enough here - the Home flight's own settle
+  // arms the standing heal, whose rebuild empties the placement for a
+  // beat before it re-converges (CI read 0 of 34 on a poll that had
+  // already seen the titles live; locally the same race read 0 in this
+  // drive's first run). If the set never stabilises, the last sample is
+  // graded and the check fails honestly on it.
+  const readTitles = `(() => { const layers = ['streetnamespt1', 'streetnamespt2', 'streetnamespt3', 'streetnamespt4'].filter(id => map.getLayer(id)); const seen = new Set(); for (const f of map.queryRenderedFeatures({ layers })) { if (f.properties && f.properties.name) seen.add(f.properties.name); } return { zoom: map.getZoom(), pitch: map.getPitch(), rendered: [...seen], lanePresent: !!map.getLayer('roads_labels_minor-priority') }; })()`;
+  let prevKey = '', streak = 0, last = null;
+  const t0 = Date.now();
+  while (Date.now() - t0 < 90000) {
+    const s = await J(readTitles);
+    if (s && Array.isArray(s.rendered)) {
+      last = s;
+      const key = JSON.stringify([...s.rendered].sort());
+      if (key === prevKey && s.rendered.length >= 30) { streak++; if (streak >= 2) break; }
+      else { streak = 0; prevKey = key; }
+    }
+    await sleep(500);
+  }
+  return last || J(readTitles);
 };
 const shortNames = await J(`(() => Object.keys(ROADS))()`);
 const dayCount = await countTitlesAtHome();
@@ -374,11 +386,11 @@ await poll(`!!(window.map && map.loaded() && !map.isMoving())`, 30000);
 // rendering names in this frame (the non-route majors) before an empty
 // route-name read counts as the exclusion working - an unloaded band
 // would pass vacuously, the failure this drive's header warns against.
-await poll(`(() => { try { if (!map.getLayer('roads_labels_major-pre15')) return false; for (const f of map.queryRenderedFeatures({ layers: ['roads_labels_major-pre15'] })) { if (f.properties && f.properties.name) return true; } return false; } catch (e) { return false; } })()`, 30000);
+const m2live = await poll(`(() => { try { if (!map.getLayer('roads_labels_major-pre15')) return false; for (const f of map.queryRenderedFeatures({ layers: ['roads_labels_major-pre15'] })) { if (f.properties && f.properties.name) return true; } return false; } catch (e) { return false; } })()`, 30000);
 await sleep(600);
 const m2mid = await basemapRouteNamesBelow15();
-ok('M2b no basemap route full-names below 15 at zoom 14.7 either | full names rendered: ' + JSON.stringify(m2mid.hits),
-  Array.isArray(m2mid.hits) && m2mid.hits.length === 0);
+ok('M2b no basemap route full-names below 15 at zoom 14.7 either (band provably live first: ' + m2live + ') | full names rendered: ' + JSON.stringify(m2mid.hits),
+  m2live === true && Array.isArray(m2mid.hits) && m2mid.hits.length === 0);
 
 // M3: the handover - at 15.7 the titles are gone (the cap) and the
 // basemap's full names own the route streets. On a titles-restored tree

@@ -66,8 +66,23 @@ const foot = async () => {
     const W = Math.ceil(D * 2.1);
     const x0 = Math.max(0, Math.min(cnv.width - W, Math.round(pt.x * dev - W / 2))), y0 = Math.max(0, Math.min(cnv.height - W, Math.round(pt.y * dev - W / 2)));
     const grab = (skipFirst) => new Promise(res => { const to = setTimeout(() => res(null), 6000); let skipped = false; const go = () => { if (skipFirst && !skipped) { skipped = true; map.once('render', go); map.triggerRepaint(); return; } clearTimeout(to); try { if (!window.__puckCv) window.__puckCv = document.createElement('canvas'); const c2 = window.__puckCv; c2.width = W; c2.height = W; const ctx = c2.getContext('2d', { willReadFrequently: true }); ctx.drawImage(cnv, x0, y0, W, W, 0, 0, W, W); res(Array.from(ctx.getImageData(0, 0, W, W).data)); } catch (e) { res(null); } }; map.once('render', go); map.triggerRepaint(); });
-    const aWarm = await grab(false); if (!aWarm) return { err: 'warm grab failed' };
-    const a = await grab(false); if (!a) return { err: 'grab a failed' }; // two visible grabs back to back: the first absorbs any tile still landing in the window, so the a/b pair straddles only the visibility flip
+    // The a/b pair must straddle ONLY the visibility flip, so warm grabs
+    // run until two consecutive frames are pixel-identical in the window:
+    // every transient has then finished. Through Beta 1.260 two grabs
+    // sufficed (the first absorbed any tile still landing). Beta 1.261
+    // premise repair: the app titles are back, and the standing title
+    // heal re-places them after a camera settle - Velmar's own title
+    // sits inside this fix's window at zoom 14, and a re-place landing
+    // between the pair entered the diff and read as footprint width
+    // (W2 spread 9 in CI on both 1.261 heads, the z14/pitch-60 cell
+    // wide). The last warm grab is the a frame.
+    let a = await grab(false); if (!a) return { err: 'warm grab failed' };
+    for (let q = 0; q < 8; q++) {
+      const prev = a; a = await grab(false); if (!a) return { err: 'grab a failed' };
+      let quiet = prev.length === a.length;
+      if (quiet) { for (let i = 0; i < a.length; i++) { if (a[i] !== prev[i]) { quiet = false; break; } } }
+      if (quiet) break;
+    }
     let b = null; try { map.setLayoutProperty('gps-puck-shader', 'visibility', 'none'); b = await grab(true); } finally { map.setLayoutProperty('gps-puck-shader', 'visibility', 'visible'); map.triggerRepaint(); }
     if (!b) return { err: 'grab b failed' };
     let n = 0, ns = 0, minx = 1e9, maxx = -1, miny = 1e9, maxy = -1, sminy = 1e9, smaxy = -1, sminx = 1e9, smaxx = -1;
