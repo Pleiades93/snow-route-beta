@@ -650,6 +650,252 @@
    "red": "Gate fixtures 60 pass, 6 FAIL - the two re-derivation-dependent refusals plus the four derive-level cases: with no derived rows none of them can be posed.",
    "green": "Gate fixtures 66 pass, 0 fail on the fixed tree.",
    "issued": "correct-phase3d-codex-fix2"
+  },
+  {
+   "id": "whatsnew-roll-1262-proof-1242",
+   "check": "tests/proof/proof-1242.mjs",
+   "kind": "mutation",
+   "files": {
+    "tests/proof/proof-1242.mjs": "8b8e6b8fcea61087f6fa1f29491dd0cfd0fdcd77df011b49cf6ba2af0cd55980",
+    "parts/whatsnew.js": "e75b0e42b4e44cd99fe8f97783421f0bd4f14412748f089008bdaad703058722"
+   },
+   "mutation": "parts/whatsnew.js bullet replaced with a deliberately wrong bullet, app rebuilt (the Beta 1.262 What's New roll changed this proof's pinned bullet string)",
+   "red": "proof-1242 fails exactly its What's New bullet check (1 fail, the rest pass)",
+   "green": "proof-1242 passes in full with the shipped bullet",
+   "issued": "2026-11-21 intersection-1262"
+  },
+  {
+   "id": "whatsnew-roll-1262-proof-1243",
+   "check": "tests/proof/proof-1243.mjs",
+   "kind": "mutation",
+   "files": {
+    "tests/proof/proof-1243.mjs": "2752a00b2ee87946cdea3803a60200e6241897c55cbc3f9eafb82e8a55bb7c53",
+    "parts/whatsnew.js": "e75b0e42b4e44cd99fe8f97783421f0bd4f14412748f089008bdaad703058722"
+   },
+   "mutation": "parts/whatsnew.js bullet replaced with a deliberately wrong bullet, app rebuilt (the Beta 1.262 What's New roll changed this proof's pinned bullet string)",
+   "red": "proof-1243 fails exactly its What's New bullet check (1 fail, the rest pass)",
+   "green": "proof-1243 passes in full with the shipped bullet",
+   "issued": "2026-11-21 intersection-1262"
+  },
+  {
+   "id": "whatsnew-roll-1262-proof-1245",
+   "check": "tests/proof/proof-1245.mjs",
+   "kind": "mutation",
+   "files": {
+    "tests/proof/proof-1245.mjs": "43b7f03e2465061806d227d5a455d4680e327785b40328d3ffe7053613cd26ea",
+    "parts/whatsnew.js": "e75b0e42b4e44cd99fe8f97783421f0bd4f14412748f089008bdaad703058722"
+   },
+   "mutation": "parts/whatsnew.js bullet replaced with a deliberately wrong bullet, app rebuilt (the Beta 1.262 What's New roll changed this proof's pinned bullet string)",
+   "red": "proof-1245 fails exactly its What's New bullet check (1 fail, the rest pass)",
+   "green": "proof-1245 passes in full with the shipped bullet",
+   "issued": "2026-11-21 intersection-1262"
+  },
+  {
+   "id": "whatsnew-roll-1262-proof-1246",
+   "check": "tests/proof/proof-1246.mjs",
+   "kind": "mutation",
+   "files": {
+    "tests/proof/proof-1246.mjs": "08f435a344fb827fae29760f133790cdc43b0f99dd0e043ff4ae3f984131df9d",
+    "parts/whatsnew.js": "e75b0e42b4e44cd99fe8f97783421f0bd4f14412748f089008bdaad703058722"
+   },
+   "mutation": "parts/whatsnew.js bullet replaced with a deliberately wrong bullet, app rebuilt (the Beta 1.262 What's New roll changed this proof's pinned bullet string)",
+   "red": "proof-1246 fails exactly its What's New bullet check (1 fail, the rest pass)",
+   "green": "proof-1246 passes in full with the shipped bullet",
+   "issued": "2026-11-21 intersection-1262"
+  },
+  {
+   "id": "whatsnew-roll-1262-proof-1247",
+   "check": "tests/proof/proof-1247.mjs",
+   "kind": "mutation",
+   "files": {
+    "tests/proof/proof-1247.mjs": "f0ff3fb62afce6a7d19b5c28309611a4b88ce049be018477fab49a4e68941af2",
+    "parts/whatsnew.js": "e75b0e42b4e44cd99fe8f97783421f0bd4f14412748f089008bdaad703058722"
+   },
+   "mutation": "parts/whatsnew.js bullet replaced with a deliberately wrong bullet, app rebuilt (the Beta 1.262 What's New roll changed this proof's pinned bullet string)",
+   "red": "proof-1247 fails exactly its What's New bullet check (1 fail, the rest pass)",
+   "green": "proof-1247 passes in full with the shipped bullet",
+   "issued": "2026-11-21 intersection-1262"
+  },
+  {
+   "id": "whatsnew-roll-1262-proof-1249",
+   "check": "tests/proof/proof-1249.mjs",
+   "kind": "mutation",
+   "files": {
+    "tests/proof/proof-1249.mjs": "b5291d4076d62a9de9210983f032d78ba224890facde90a3748c0974ee76eebc",
+    "parts/whatsnew.js": "e75b0e42b4e44cd99fe8f97783421f0bd4f14412748f089008bdaad703058722"
+   },
+   "mutation": "parts/whatsnew.js bullet replaced with a deliberately wrong bullet, app rebuilt (the Beta 1.262 What's New roll changed this proof's pinned bullet string)",
+   "red": "proof-1249 fails exactly its What's New bullet check (1 fail, the rest pass)",
+   "green": "proof-1249 passes in full with the shipped bullet",
+   "issued": "2026-11-21 intersection-1262"
+  },
+  {
+   "id": "whatsnew-roll-1262-proof-1252",
+   "check": "tests/proof/proof-1252.mjs",
+   "kind": "mutation",
+   "files": {
+    "tests/proof/proof-1252.mjs": "47358880d581125f53383c4fe5f14d1b15d4de4bb9b58de0c15b56fc2da2702b",
+    "parts/whatsnew.js": "e75b0e42b4e44cd99fe8f97783421f0bd4f14412748f089008bdaad703058722"
+   },
+   "mutation": "parts/whatsnew.js bullet replaced with a deliberately wrong bullet, app rebuilt (the Beta 1.262 What's New roll changed this proof's pinned bullet string)",
+   "red": "proof-1252 fails exactly its What's New bullet check (1 fail, the rest pass)",
+   "green": "proof-1252 passes in full with the shipped bullet",
+   "issued": "2026-11-21 intersection-1262"
+  },
+  {
+   "id": "whatsnew-roll-1262-proof-1253",
+   "check": "tests/proof/proof-1253.mjs",
+   "kind": "mutation",
+   "files": {
+    "tests/proof/proof-1253.mjs": "13eaa97d312f0e6f64b788f464cfd1969c4b3cbb53bcbe5ee0783a766fefe1d6",
+    "parts/whatsnew.js": "e75b0e42b4e44cd99fe8f97783421f0bd4f14412748f089008bdaad703058722"
+   },
+   "mutation": "parts/whatsnew.js bullet replaced with a deliberately wrong bullet, app rebuilt (the Beta 1.262 What's New roll changed this proof's pinned bullet string)",
+   "red": "proof-1253 fails exactly its What's New bullet check (1 fail, the rest pass)",
+   "green": "proof-1253 passes in full with the shipped bullet",
+   "issued": "2026-11-21 intersection-1262"
+  },
+  {
+   "id": "whatsnew-roll-1262-proof-1254",
+   "check": "tests/proof/proof-1254.mjs",
+   "kind": "mutation",
+   "files": {
+    "tests/proof/proof-1254.mjs": "87e356b851688c68f048c35e030434d409e308e215d5ddc62ceaacb79dd8854e",
+    "parts/whatsnew.js": "e75b0e42b4e44cd99fe8f97783421f0bd4f14412748f089008bdaad703058722"
+   },
+   "mutation": "parts/whatsnew.js bullet replaced with a deliberately wrong bullet, app rebuilt (the Beta 1.262 What's New roll changed this proof's pinned bullet string)",
+   "red": "proof-1254 fails exactly its What's New bullet check (1 fail, the rest pass)",
+   "green": "proof-1254 passes in full with the shipped bullet",
+   "issued": "2026-11-21 intersection-1262"
+  },
+  {
+   "id": "whatsnew-roll-1262-proof-1255",
+   "check": "tests/proof/proof-1255.mjs",
+   "kind": "mutation",
+   "files": {
+    "tests/proof/proof-1255.mjs": "b8b6be2715790c02d3fba8685f1ebb2347754c55f270d7011843738a45aeb0b9",
+    "parts/whatsnew.js": "e75b0e42b4e44cd99fe8f97783421f0bd4f14412748f089008bdaad703058722"
+   },
+   "mutation": "parts/whatsnew.js bullet replaced with a deliberately wrong bullet, app rebuilt (the Beta 1.262 What's New roll changed this proof's pinned bullet string)",
+   "red": "proof-1255 fails exactly its What's New bullet check (1 fail, the rest pass)",
+   "green": "proof-1255 passes in full with the shipped bullet",
+   "issued": "2026-11-21 intersection-1262"
+  },
+  {
+   "id": "whatsnew-roll-1262-proof-1256",
+   "check": "tests/proof/proof-1256.mjs",
+   "kind": "mutation",
+   "files": {
+    "tests/proof/proof-1256.mjs": "e161677b0aa7181ce82e69554fd839fb1ba66ed4fc1b1aa9732c793c6c3bb0ee",
+    "parts/whatsnew.js": "e75b0e42b4e44cd99fe8f97783421f0bd4f14412748f089008bdaad703058722"
+   },
+   "mutation": "parts/whatsnew.js bullet replaced with a deliberately wrong bullet, app rebuilt (the Beta 1.262 What's New roll changed this proof's pinned bullet string)",
+   "red": "proof-1256 fails exactly its What's New bullet check (1 fail, the rest pass)",
+   "green": "proof-1256 passes in full with the shipped bullet",
+   "issued": "2026-11-21 intersection-1262"
+  },
+  {
+   "id": "whatsnew-roll-1262-proof-1257",
+   "check": "tests/proof/proof-1257.mjs",
+   "kind": "mutation",
+   "files": {
+    "tests/proof/proof-1257.mjs": "d0e8a5f207195d65f0ab6a48593b72fc1c23d771e88359e267b9fe5f032d68da",
+    "parts/whatsnew.js": "e75b0e42b4e44cd99fe8f97783421f0bd4f14412748f089008bdaad703058722"
+   },
+   "mutation": "parts/whatsnew.js bullet replaced with a deliberately wrong bullet, app rebuilt (the Beta 1.262 What's New roll changed this proof's pinned bullet string)",
+   "red": "proof-1257 fails exactly its What's New bullet check (1 fail, the rest pass)",
+   "green": "proof-1257 passes in full with the shipped bullet",
+   "issued": "2026-11-21 intersection-1262"
+  },
+  {
+   "id": "whatsnew-roll-1262-proof-1259",
+   "check": "tests/proof/proof-1259.mjs",
+   "kind": "mutation",
+   "files": {
+    "tests/proof/proof-1259.mjs": "d39eaa7b47367dc5b679fe6468abb68d7f6004bf37d9a529553ef06be0afacc0",
+    "parts/whatsnew.js": "e75b0e42b4e44cd99fe8f97783421f0bd4f14412748f089008bdaad703058722"
+   },
+   "mutation": "parts/whatsnew.js bullet replaced with a deliberately wrong bullet, app rebuilt (the Beta 1.262 What's New roll changed this proof's pinned bullet string)",
+   "red": "proof-1259 fails exactly its What's New bullet check (1 fail, the rest pass)",
+   "green": "proof-1259 passes in full with the shipped bullet",
+   "issued": "2026-11-21 intersection-1262"
+  },
+  {
+   "id": "whatsnew-roll-1262-proof-1261",
+   "check": "tests/proof/proof-1261.mjs",
+   "kind": "mutation",
+   "files": {
+    "tests/proof/proof-1261.mjs": "1d2a55f4836af83f38f52f0d5e66e9f81da7b72d3b9c6249a0cdd09b50aef899",
+    "parts/whatsnew.js": "e75b0e42b4e44cd99fe8f97783421f0bd4f14412748f089008bdaad703058722"
+   },
+   "mutation": "parts/whatsnew.js bullet replaced with a deliberately wrong bullet, app rebuilt (the Beta 1.262 What's New roll changed this proof's pinned bullet string)",
+   "red": "proof-1261 fails exactly its What's New bullet check (1 fail, the rest pass)",
+   "green": "proof-1261 passes in full with the shipped bullet",
+   "issued": "2026-11-21 intersection-1262"
+  },
+  {
+   "id": "proof-1261-seam-mutations-r2",
+   "check": "tests/proof/proof-1261.mjs",
+   "kind": "mutation",
+   "files": {
+    "tests/proof/proof-1261.mjs": "1d2a55f4836af83f38f52f0d5e66e9f81da7b72d3b9c6249a0cdd09b50aef899",
+    "parts/engine.js": "6a839b4413f97209b4f4d51c7ecc8e03471d6e9540df85b170c64e1504feeda3"
+   },
+   "mutation": "parts/engine.js title cap maxzoom 15 -> 16 (the 1.261 seam), re-observed in the 1.262 round after the bullet roll staled the r1 receipt",
+   "red": "proof-1261 checks 2 and 3 fail (11 passed, 2 failed)",
+   "green": "proof-1261 passes 13/13 with the cap restored",
+   "issued": "2026-11-21 intersection-1262"
+  },
+  {
+   "id": "proof-1262-zoom-floor",
+   "check": "tests/proof/proof-1262.mjs",
+   "kind": "mutation",
+   "files": {
+    "tests/proof/proof-1262.mjs": "0619a010ca287f8a2f24f1e3ae517469bfb06428246b8e280757cd6bf19a0215",
+    "parts/create-pick.js": "662b7f07d8de2bd814bc88112398eb1a75af5b8b04655973f083c19d3569ac16"
+   },
+   "mutation": "parts/create-pick.js pick flight zoom floor Math.max(map.getZoom(), 17) -> 15",
+   "red": "proof-1262 check 6 fails alone (12 passed, 1 failed)",
+   "green": "proof-1262 passes 13/13 with the floor at 17",
+   "issued": "2026-11-21 intersection-1262"
+  },
+  {
+   "id": "drive215-intersection-poi",
+   "check": "tests/browser/drive215.mjs",
+   "kind": "rendered",
+   "files": {
+    "tests/browser/drive215.mjs": "196c4ab4e87232285f068355161c8c5d454fb475b33a9b6c8a38b1ed21def960"
+   },
+   "mutation": "the check run against the pristine Beta 1.261 build (the surface does not exist there)",
+   "red": "2/15 on the 1.261 tree: P1 the bar held the typed fragment 'borde', P3 the flight landed at zoom 15, P4-P6 no crIsect layers or source in the style, P7/P8/R1 no pulse to measure, Z2/L1-L4 the lifecycle seats absent",
+   "green": "15/15 on the Beta 1.262 build, both themes, 0 exceptions",
+   "issued": "2026-11-21 intersection-1262"
+  },
+  {
+   "id": "repin-1262-proof-1227",
+   "check": "tests/proof/proof-1227.mjs",
+   "kind": "mutation",
+   "files": {
+    "tests/proof/proof-1227.mjs": "d1a95af4eea59ef46e58352bb17441a3938200bcc8c3eccdd659b106cface0e6",
+    "parts/create-pick.js": "662b7f07d8de2bd814bc88112398eb1a75af5b8b04655973f083c19d3569ac16"
+   },
+   "mutation": "parts/create-pick.js clear-disc handler: the crIsectClear() call commented out (the 1.262 teardown seat the re-pinned check 5b names)",
+   "red": "proof-1227 check 5b fails (27/28)",
+   "green": "proof-1227 passes 28/28 with the seat restored",
+   "issued": "2026-11-21 intersection-1262"
+  },
+  {
+   "id": "repin-1262-proof-1236",
+   "check": "tests/proof/proof-1236.mjs",
+   "kind": "mutation",
+   "files": {
+    "tests/proof/proof-1236.mjs": "25efcd9d964d068d6a2e65907b971a7170156fced193de710595bc2ffd898640",
+    "parts/create-pick.js": "662b7f07d8de2bd814bc88112398eb1a75af5b8b04655973f083c19d3569ac16"
+   },
+   "mutation": "parts/create-pick.js clear-disc handler: the crIsectClear() call commented out (the 1.262 teardown seat the re-pinned check E3 names; E1/E2 pin the exitCreate seat and fail on any tree without it, as the 1.261 tree shows)",
+   "red": "proof-1236 check E3 fails (23 pass, 1 fail)",
+   "green": "proof-1236 passes 24/24 with the seat restored",
+   "issued": "2026-11-21 intersection-1262"
   }
  ]
 }

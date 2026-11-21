@@ -1,3 +1,3 @@
 const WHATSNEW = { // the curated in-app notes: plain words, LATEST RELEASE ONLY (Beta 1.114, Andrew: the accumulated list cluttered the About pane). A release REPLACES this entry with its own in the same change - it never accumulates; the full history lives in CHANGELOG.md, not the app
-  v: '@@VERSION@@', items: ["Street names are the app's own labels when zoomed out, and the map's full names when you zoom in close."] }; // Beta 1.223 (Andrew): What's New entries are SHORT from now on - point form, one short plain line each, no prose paragraphs, no em dashes
+  v: '@@VERSION@@', items: ["Picking an intersection now names it in the search bar and marks it with a pulsing blue dot."] }; // Beta 1.223 (Andrew): What's New entries are SHORT from now on - point form, one short plain line each, no prose paragraphs, no em dashes
 
