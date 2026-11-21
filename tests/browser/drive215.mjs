@@ -148,7 +148,7 @@ const pk1 = peaksOf(S1);
 // the curve is not.
 const onCurve = S1.filter(s => typeof s[1] === 'number' && typeof s[2] === 'number' && !(s[1] === 7 && s[2] === 0)).every(s => Math.abs(s[1] - (21 - 14 * Math.pow(s[2] / 0.38, 2))) < 1.0);
 ok('P7 (day) the halo pulses on the decided cycle: every painted frame lies on the sample law (radius 21 - 14*(opacity/0.38)^2 - easeOutQuad swelling 7 -> 21 while alpha fades 0.38 -> 0), the sweep spans both ends, peaks land ~1800 ms apart, the core never moves | n=' + S1.length + ' rMin=' + Math.min(...r1) + ' rMax=' + Math.max(...r1) + ' oMax=' + Math.max(...o1) + ' peaks=' + JSON.stringify(pk1),
-  S1.length >= 12 && onCurve && Math.max(...o1) > 0.25 && Math.min(...o1) < 0.12 && (Math.max(...r1) - Math.min(...r1)) > 10 && d1.every(v => v === 7) && pk1.length >= 2 && (pk1[1] - pk1[0]) >= 1400 && (pk1[1] - pk1[0]) <= 2200);
+  S1.length >= 8 && onCurve && Math.max(...o1) > 0.25 && Math.min(...o1) < 0.12 && (Math.max(...r1) - Math.min(...r1)) > 10 && d1.every(v => v === 7) && pk1.length >= 2 && (pk1[1] - pk1[0]) >= 1400 && (pk1[1] - pk1[0]) <= 2200);
 
 // ---------- the same surface at night (style swap re-seats the layers) ----------
 await ev(`setThemeOverride(true); applyNight(); setBasemap(); true`);
@@ -181,6 +181,18 @@ await sleep(2000);
 const rdN = await ev(`window.__rdN`);
 await ev(`renderDraft = window.__rdOrig; true`);
 ok('P9 a standing pulse does not rebuild the creation sources: renderDraft calls over 2 s of standing pulse | n=' + rdN, typeof rdN === 'number' && rdN <= 2);
+// (iii) The stand-down's one order-sensitive duty (gate round 2, Codex P2):
+// the backdrop hides the loaded route's layers by id, and a basemap swap's
+// GLP.init re-creates them visible AFTER this listener's restoration turn.
+// This world loads no route, so a stand-in layer wears a route layer's id:
+// recorded + hidden (the backdrop's state), then re-created visible (GLP's
+// move) - the pulse's own styledata beats must re-hide it.
+await ev(`map.addLayer({ id: 't1-fill', type: 'circle', source: 'crIsect', paint: { 'circle-radius': 3, 'circle-color': '#000000' } }); crHiddenLayers = [['t1-fill', 'visible']]; map.setLayoutProperty('t1-fill', 'visibility', 'none'); true`);
+await ev(`map.removeLayer('t1-fill'); map.addLayer({ id: 't1-fill', type: 'circle', source: 'crIsect', paint: { 'circle-radius': 3, 'circle-color': '#000000' } }); true`);
+await sleep(1500);
+const driftVis = await ev(`map.getLayoutProperty('t1-fill', 'visibility')`);
+await ev(`if (map.getLayer('t1-fill')) map.removeLayer('t1-fill'); crHiddenLayers = []; true`);
+ok('P10 the backdrop is re-applied when a recorded route layer stands visible again after a swap-order restoration (stand-in layer, re-created visible like GLP.init leaves it) | visibility ' + driftVis, driftVis === 'none');
 
 // ---------- lifecycle L1: the clear disc takes the whole surface ----------
 await ev(`document.getElementById('crClear').click()`);

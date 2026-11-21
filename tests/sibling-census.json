@@ -482,6 +482,163 @@
     "scripts/check-census.py": "dd55f34cd855e60a6fadae7e261aa99f1682b9d7d8446696532045e3a281fafb"
    },
    "issued": "2026-11-21 intersection-1262 gate round (PR #158 fixes: halo transitions, styledata stand-down, ensure push-on-change)"
+  },
+  {
+   "id": "intersection-1262-r4",
+   "kind": "app",
+   "anchors": {
+    "functions": [
+     "crIsectSet",
+     "crIsectClear",
+     "crIsectEnsure",
+     "crIsectPulseStart",
+     "crIsectPulseStop",
+     "crIsectHaloRest"
+    ],
+    "elements": [
+     "crSearchInput",
+     "crClear"
+    ]
+   },
+   "changed": [
+    "parts/create-pick.js",
+    "parts/whatsnew.js"
+   ],
+   "rows": [
+    {
+     "id": "caller:crIsectClear:parts/create-pick.js:crAddRun",
+     "kind": "caller",
+     "source": "derived: call-site scan of parts/ - crIsectClear() is called from crAddRun in parts/create-pick.js",
+     "status": "covered",
+     "note": "proof-1262 check 10 pins the run door's teardown call; the street door is the rendered one (drive215 L3)"
+    },
+    {
+     "id": "caller:crIsectClear:parts/create-pick.js:crAddStreet",
+     "kind": "caller",
+     "source": "derived: call-site scan of parts/ - crIsectClear() is called from crAddStreet in parts/create-pick.js",
+     "status": "covered",
+     "note": "drive215 L3 (first road selection clears bar, source, disc) + proof-1262 check 10"
+    },
+    {
+     "id": "caller:crIsectClear:parts/create-pick.js:crClear:click",
+     "kind": "caller",
+     "source": "derived: call-site scan of parts/ - crIsectClear() is called from crClear:click in parts/create-pick.js",
+     "status": "covered",
+     "note": "drive215 L1 (disc tap clears the pair, focus kept) + proof-1262 check 10"
+    },
+    {
+     "id": "caller:crIsectClear:parts/create-pick.js:crSearchInput:input",
+     "kind": "caller",
+     "source": "derived: call-site scan of parts/ - crIsectClear() is called from crSearchInput:input in parts/create-pick.js",
+     "status": "covered",
+     "note": "drive215 L2 (emptying the bar clears the pair) + proof-1262 check 10"
+    },
+    {
+     "id": "caller:crIsectClear:parts/create-pick.js:exitCreate",
+     "kind": "caller",
+     "source": "derived: call-site scan of parts/ - crIsectClear() is called from exitCreate in parts/create-pick.js",
+     "status": "covered",
+     "note": "drive215 L4 (flow close with a live surface clears bar and source) + proof-1262 check 10"
+    },
+    {
+     "id": "caller:crIsectEnsure:parts/create-pick.js:crIsectSet",
+     "kind": "caller",
+     "source": "derived: call-site scan of parts/ - crIsectEnsure() is called from crIsectSet in parts/create-pick.js",
+     "status": "covered",
+     "note": "drive215 P4/P6 (layers exist in the style, source point on the crossing)"
+    },
+    {
+     "id": "caller:crIsectEnsure:parts/create-pick.js:map:styledata",
+     "kind": "caller",
+     "source": "derived: call-site scan of parts/ - crIsectEnsure() is called from map:styledata in parts/create-pick.js",
+     "status": "covered",
+     "note": "drive215 P8 (theme swap mid-standing: layers re-seated, POI restored, pulse still on the law at night)"
+    },
+    {
+     "id": "caller:crIsectHaloRest:parts/create-pick.js:crIsectClear",
+     "kind": "caller",
+     "source": "derived: call-site scan of parts/ - crIsectHaloRest() is called from crIsectClear in parts/create-pick.js",
+     "status": "covered",
+     "note": "drive215 L1 reads the halo back at its rest frame (radius 7, opacity 0) after the clear; R1 reads the same rest under reduced motion"
+    },
+    {
+     "id": "caller:crIsectHaloRest:parts/create-pick.js:crIsectPulseStart",
+     "kind": "caller",
+     "source": "derived: call-site scan of parts/ - crIsectHaloRest() is called from crIsectPulseStart in parts/create-pick.js",
+     "status": "covered",
+     "note": "drive215 R1 (reduced motion: rest frame, no loop) and P7 (the law's frames start from rest)"
+    },
+    {
+     "id": "caller:crIsectPulseStart:parts/create-pick.js:crIsectSet",
+     "kind": "caller",
+     "source": "derived: call-site scan of parts/ - crIsectPulseStart() is called from crIsectSet in parts/create-pick.js",
+     "status": "covered",
+     "note": "drive215 P7 (pulse measured frame by frame on the sample's law)"
+    },
+    {
+     "id": "caller:crIsectPulseStop:parts/create-pick.js:crIsectClear",
+     "kind": "caller",
+     "source": "derived: call-site scan of parts/ - crIsectPulseStop() is called from crIsectClear in parts/create-pick.js",
+     "status": "covered",
+     "note": "drive215 L1/L2/L4 (after every clear the source is empty and no pulse frame returns)"
+    },
+    {
+     "id": "caller:crIsectPulseStop:parts/create-pick.js:crIsectPulseStart",
+     "kind": "caller",
+     "source": "derived: call-site scan of parts/ - crIsectPulseStop() is called from crIsectPulseStart in parts/create-pick.js",
+     "status": "covered",
+     "note": "restart hygiene inside the start; drive215 P7's even ~1800 ms peak spacing is the observable (a doubled loop breaks the law)"
+    },
+    {
+     "id": "caller:crIsectSet:parts/create-pick.js:b:click",
+     "kind": "caller",
+     "source": "derived: call-site scan of parts/ - crIsectSet() is called from b:click in parts/create-pick.js",
+     "status": "covered",
+     "note": "the pick itself: drive215 P1-P7 (bar text, flight, layers, pulse)"
+    },
+    {
+     "id": "gesture:parts/create-pick.js:map:styledata",
+     "kind": "gesture",
+     "source": "derived: handler scan - the map styledata handler in parts/create-pick.js touches crIsectEnsure without dismissing it",
+     "status": "covered",
+     "note": "the styledata path does not dismiss the surface, it re-seats it: drive215 P8"
+    },
+    {
+     "id": "theme:crClear",
+     "kind": "theme",
+     "source": "derived: stylesheet scan of parts/head.html - #crClear has a day rule and NO body.night rule",
+     "status": "na",
+     "note": "no styling change this round - the disc's day/night faces are the standing 1.244 rim recipe, untouched; the marker's own night face is graded by drive215 P8"
+    },
+    {
+     "id": "theme:crSearchInput",
+     "kind": "theme",
+     "source": "derived: stylesheet scan of parts/head.html - #crSearchInput has a day rule and a body.night rule",
+     "status": "na",
+     "note": "no styling change this round - the bar's text behaviour is theme-independent; the surface at night is graded by drive215 P8"
+    }
+   ],
+   "files": {
+    "parts/app1.js": "bc8736b76232f04af1797f502564b088515f8a9abaabdc5d90f0f603782fbe89",
+    "parts/app2.js": "205a84ab8fa5e558b5ef4cfd4eac72083daab9838fda8559b7f2cb4616c4a7ee",
+    "parts/app3.js": "da6c7d85eafbb97572278b818ff60a6fc25c5c35a3e51ee6c8ceb23f52ddf91c",
+    "parts/app4.js": "059a12937fd806f09bc2db6a3af52bae51ac8e714d40715894136ffb9df63e4f",
+    "parts/app5.js": "ab6042308d6a524198acf98f30c9d63c0c74a5d691727df3aa76ca75a684e4d3",
+    "parts/brand-snow.js": "86fa9a02f29c7345ee68d68daffd9c72da612921b64da37f1eccf6b72161ac5f",
+    "parts/create-cache.js": "2a7e983aa50862cb074a16abf9266a41a1a175c69faa5215b1d3d289aa2b5327",
+    "parts/create-citydata.js": "393d90f275d971b5e52352deebaece381279acd0e86495ffa2da35701de9148e",
+    "parts/create-fetch.js": "e7a65bd88dc338213946c4537dc5d397f79396ec416b6f4ebf4be831927aeb66",
+    "parts/create-packs.js": "ae77fbe77d3ef5970c0b432bc4152fd57a34cf98c1f09a1855ca150459cd0ad8",
+    "parts/create-pick.js": "1738118d3261b10185411062a57005f3f8c7c357b467bb15296bf6fca8e240a1",
+    "parts/create-save.js": "2a222b90b438907eb0835722d4230499716945109c70578791c41b24ef89f752",
+    "parts/data.js": "9137d8d6353ef2ec97b153ded7628175cdc8c483c770e6d5e2258ca50c558e04",
+    "parts/engine.js": "6a839b4413f97209b4f4d51c7ecc8e03471d6e9540df85b170c64e1504feeda3",
+    "parts/pmstyles.js": "f3501db9c16dbc6a5fa8c901089101e4913772384de1f069accb23a614bb90fc",
+    "parts/whatsnew.js": "e75b0e42b4e44cd99fe8f97783421f0bd4f14412748f089008bdaad703058722",
+    "parts/head.html": "dbce12695cb3b0c04209dee474f018d6ffc65139bd41c7957b8b47a9ece4b3bb",
+    "scripts/check-census.py": "dd55f34cd855e60a6fadae7e261aa99f1682b9d7d8446696532045e3a281fafb"
+   },
+   "issued": "2026-11-21 intersection-1262 gate round 2 (backdrop drift re-application in the styledata stand-down)"
   }
  ]
 }

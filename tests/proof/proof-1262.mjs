@@ -78,8 +78,9 @@ check('11: the teardown itself kills the whole pair: state nulled, pulse stopped
 check('12: a basemap swap mid-create re-seats the surface (the styledata hook re-ensures it beside the draft and the backdrop, behind the gate fix\'s stand-down guard)',
   pick.includes("map.on('styledata'") && pick.includes("renderDraft(); crSetBackdrop(true); crIsectEnsure(); } }));"));
 
-check('14: the frame loop cannot storm the creation sources (gate fix, PR #158): the styledata restoration stands down while the custom layers stand (a missing sentinel is the swap signal), and the ensure pushes the point only on change',
-  pick.includes("if (map.getLayer('crDraftCase') && (!crIsectPoi || map.getLayer('crIsectDot'))) return;") &&
+check('14: the frame loop cannot storm the creation sources (gate fixes, PR #158): the styledata restoration stands down while the custom layers stand (a missing sentinel is the swap signal), the ensure pushes the point only on change, and the stand-down still re-applies the backdrop when a recorded route layer stands visible again (the order-sensitive piece: GLP.init re-creates the route stack after this listener\'s turn on a swap)',
+  pick.includes("if (map.getLayer('crDraftCase') && (!crIsectPoi || map.getLayer('crIsectDot'))) {") &&
+  pick.includes("crHiddenLayers.some(pr => { try { return map.getLayer(pr[0]) && (map.getLayoutProperty(pr[0], 'visibility') || 'visible') !== 'none'; } catch (e) { return false; } })) crSetBackdrop(true);") &&
   block.includes('if (want !== crIsectPushed)') && block.includes("let crIsectPushed = null;"));
 
 // ---------- the release editorial ----------

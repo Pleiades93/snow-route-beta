@@ -922,6 +922,32 @@
    "red": "drive215 P5b fails (getPaintProperty returns no transition specs) and P9 fails with 7 renderDraft calls in 2 s of standing pulse (15 other checks pass)",
    "green": "drive215 passes 17/17 on the fixed build, P9 counting 0 rebuilds",
    "issued": "2026-11-21 intersection-1262 gate round"
+  },
+  {
+   "id": "proof-1262-gate-fixes-r2",
+   "check": "tests/proof/proof-1262.mjs",
+   "kind": "mutation",
+   "files": {
+    "tests/proof/proof-1262.mjs": "401260c33d22f1005ca414d8315b5254d338d937cdc17748fa62e2769b794f89",
+    "parts/create-pick.js": "1738118d3261b10185411062a57005f3f8c7c357b467bb15296bf6fca8e240a1"
+   },
+   "mutation": "parts/create-pick.js: the styledata stand-down's backdrop drift re-application stripped (the PR #158 gate round 2 fix removed)",
+   "red": "proof-1262 check 14 fails (13 passed, 1 failed); drive215 P10 fails - the stand-in route layer re-created visible keeps visibility undefined (visible) instead of being re-hidden",
+   "green": "proof-1262 passes 14/14 and drive215 18/18 with the drift re-application in",
+   "issued": "2026-11-21 intersection-1262 gate round 2"
+  },
+  {
+   "id": "drive215-gate-fixes-r2",
+   "check": "tests/browser/drive215.mjs",
+   "kind": "mutation",
+   "files": {
+    "tests/browser/drive215.mjs": "c7e2b5114416b81a40d30ab149806278c27e5506ecd16b3f9edc2ec529e05a52",
+    "parts/create-pick.js": "1738118d3261b10185411062a57005f3f8c7c357b467bb15296bf6fca8e240a1"
+   },
+   "mutation": "parts/create-pick.js: the styledata stand-down's backdrop drift re-application stripped (head 3854e924's shape)",
+   "red": "drive215 P10 fails: the stand-in route layer, recorded and hidden, then re-created visible as GLP.init leaves it after a swap, stays visible (visibility undefined) across 1.5 s of pulse styledata beats; the other 17 checks pass",
+   "green": "drive215 passes 18/18 with the drift re-application in (the layer reads visibility none)",
+   "issued": "2026-11-21 intersection-1262 gate round 2"
   }
  ]
 }
