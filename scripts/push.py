@@ -40,6 +40,27 @@ This wrapper makes both shapes impossible rather than discouraged:
           (Codex P2s on PR #146; the check is over the whole tree,
           not an input list, so a future input is covered the day
           it exists).
+          Before any of that, the REGISTRY GATE (/correct Phase 3
+          round (a), closing class C1's registry form): the push
+          tree must pass the fix-checks registry's grep probes -
+          and so must the PROSPECTIVE tree the push would create
+          (the gate runs again on the branch-plus-set overlay the
+          preflight builds, so an omitted locally-fixed file cannot
+          certify a fix that never lands - Codex P2 on PR #153) -
+          the literal pins that code motion silently orphans (the
+          1.258 close-out found six pre-existing stale patterns
+          only because that round happened to run the full
+          registry by hand). The grep probes run SERIALLY against
+          THIS tree (their registered paths, which name the shared
+          repo, are remapped onto the push root), and any failure
+          outside the recorded standing-failures baseline refuses
+          the push. command_exit0 probes are not re-run here - the
+          gate battery owns behaviour; this gate owns the literal
+          class. The registry's location defaults to the snow
+          goal's registry and can be overridden with
+          SNOW_FIX_CHECKS_REGISTRY; an environment carrying no
+          registry (CI fixtures) skips the gate with a printed
+          line, never silently.
           Then it delegates the transport to the connector helper
           (explicit --repo snow-route-beta and --branch, every pair
           local=remote identical), and VERIFIES THE PUSHED TREE:
@@ -56,6 +77,7 @@ can be overridden with SNOW_GITHUB_HELPER. plan never touches the
 network and is what the gate fixtures exercise.
 """
 import argparse
+import glob as globmod
 import hashlib
 import importlib.util
 import os
@@ -65,6 +87,8 @@ import sys
 from pathlib import Path
 
 REPO_SLUG = "snow-route-beta"
+REGISTRY_DEFAULT = ("/home/hatch/workspace/goals/snow-route-5w-tracker-rebuild"
+                    "/hidden_files/fix-checks.json")
 DERIVED_FOR_PARTS = ["src/tracker-source.html", "index.html"]
 SKIP_DIRS = {".git", "node_modules", "__pycache__"}
 
@@ -221,6 +245,9 @@ def preflight_prospective(root, gh, branch, resolved):
             dest.write_bytes(data)
         for rel in drop:
             (tmp / rel).unlink(missing_ok=True)
+        err = registry_gate(tmp, label="prospective")
+        if err:
+            return ("the prospective remote tree fails the registry gate: " + err)
         proc = subprocess.run([sys.executable, str(tmp / "scripts" / "build-pages.py"), "--check"],
                               cwd=tmp, capture_output=True, text=True, timeout=300)
         if proc.returncode != 0:
@@ -236,7 +263,90 @@ def preflight_prospective(root, gh, branch, resolved):
         shutil.rmtree(tmp, ignore_errors=True)
 
 
+def registry_targets(root, probe, goal_dir):
+    """The files a grep probe pins. Registered absolute paths name
+    the shared repo (…/beta1/repo/…); the part after that prefix is
+    the repo-relative path, remapped onto the push root. Any other
+    absolute path is used as-is (a probe may pin a file outside the
+    repo). A relative path resolves against the registry's goal
+    directory, exactly as the shared runner resolves it - those
+    probes pin goal documents, not repo files."""
+    raw = probe.get("file") or probe.get("file_glob")
+    if not raw:
+        return []
+    if os.path.isabs(raw):
+        marker = "/beta1/repo/"
+        cand = root / raw.split(marker, 1)[1] if marker in raw else Path(raw)
+    else:
+        cand = goal_dir / raw
+    if probe.get("file_glob"):
+        return [Path(f) for f in sorted(globmod.glob(str(cand)))]
+    return [cand]
+
+
+def registry_gate(root, label="push"):
+    """The registry's grep probes must pass against the push tree.
+    Returns an error string or None. Mirrors the shared runner's
+    semantics (~/workspace/tools/fix-checks/run_fix_checks.py): a
+    missing target is a failure for both grep types, never a pass;
+    ci_only probes are not this shell's to run. Failures listed in
+    the registry's standing-failures manifest are the recorded
+    baseline and are reported, not blocking."""
+    path = os.environ.get("SNOW_FIX_CHECKS_REGISTRY", REGISTRY_DEFAULT)
+    if not os.path.isfile(path):
+        if "SNOW_FIX_CHECKS_REGISTRY" in os.environ:
+            return ("SNOW_FIX_CHECKS_REGISTRY names a registry that does not "
+                    f"exist: {path} - a named gate that cannot run refuses")
+        print(f"REGISTRY GATE SKIPPED: no registry at {path} "
+              "(this environment carries none)")
+        return None
+    import json
+    checks = json.loads(Path(path).read_text())["checks"]
+    goal_dir = Path(path).resolve().parent.parent
+    baseline = set()
+    standing = Path(path).with_name("fix-checks-standing-failures.json")
+    if standing.is_file():
+        entries = json.loads(standing.read_text()).get("standing_failures", [])
+        baseline = {e if isinstance(e, str) else e.get("id") for e in entries}
+    fails, based, ran = [], [], 0
+    for probe in checks:
+        if probe.get("type") not in ("grep_present", "grep_absent"):
+            continue
+        if probe.get("ci_only"):
+            continue
+        ran += 1
+        targets = registry_targets(root, probe, goal_dir)
+        found = False
+        missing = not targets
+        for t in targets:
+            try:
+                content = t.read_text(errors="ignore")
+            except OSError:
+                missing = True
+                continue
+            if probe["pattern"] in content:
+                found = True
+        ok = (found if probe["type"] == "grep_present" else not found) and not missing
+        if not ok:
+            (based if probe["id"] in baseline else fails).append(probe["id"])
+    if fails:
+        return ("the fix-checks registry fails against this tree: "
+                + ", ".join(fails)
+                + " - a round whose code motion orphans a probe literal "
+                "re-pins it in the same round (the C1 class; six stale "
+                "patterns reached the 1.258 close-out unrun). Fix the "
+                "app if the probe is right, or re-pin the probe in the "
+                "registry if the code legitimately moved")
+    note = f" ({len(based)} standing-baseline failure(s) tolerated: {', '.join(based)})" if based else ""
+    print(f"REGISTRY GATE: {ran} grep probes run serially against the {label} tree, "
+          f"no unaccounted failures{note}")
+    return None
+
+
 def do_push(root, branch, message, resolved):
+    err = registry_gate(root)
+    if err:
+        return fail(err)
     gh, helper = helper_module()
     err = preflight_prospective(root, gh, branch, resolved)
     if err:
