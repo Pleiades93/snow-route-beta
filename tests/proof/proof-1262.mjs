@@ -84,11 +84,11 @@ check('14: the frame loop cannot storm the creation sources (gate fixes, PR #158
   block.includes('if (want !== crIsectPushed)') && block.includes("let crIsectPushed = null;"));
 
 // ---------- the release editorial ----------
-check('13: What\'s New carries the 1.263 bullet (rolled by the naming-revert round), within the 108-char cap, em-dash free, and the CHANGELOG top entry is Beta 1.263 above 1.262',
-  whatsnew.includes('Street names are back to the app\'s original labels.') &&
-  'Street names are back to the app\'s original labels.'.length <= 108 &&
+check('13: What\'s New carries the 1.264 bullet (rolled by the create-feather-leak round), within the 108-char cap, em-dash free, and the CHANGELOG top entry is Beta 1.264 above 1.263',
+  whatsnew.includes('Feathered road ends no longer show while you create a route.') &&
+  'Feathered road ends no longer show while you create a route.'.length <= 108 &&
   !whatsnew.includes('—') &&
-  changelog.indexOf('## Beta 1.263') > -1 && changelog.indexOf('## Beta 1.263') < changelog.indexOf('## Beta 1.262'));
+  changelog.indexOf('## Beta 1.264') > -1 && changelog.indexOf('## Beta 1.264') < changelog.indexOf('## Beta 1.263'));
 
 console.log(`proof-1262: ${pass} passed, ${fail} failed`);
 process.exit(fail ? 1 : 0);

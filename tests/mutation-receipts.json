@@ -1231,6 +1231,240 @@
    "red": "drive190 FAILS on the 1.260 tree: the map-up poll on streetnamespt1 never satisfies and G2 has no title layer to re-font - observed in this round",
    "green": "drive190 passes 20/20 on the reverted tree",
    "issued": "2026-11-21 labelrevert-1263"
+  },
+  {
+   "id": "whatsnew-roll-1264-proof-1242",
+   "check": "tests/proof/proof-1242.mjs",
+   "kind": "mutation",
+   "files": {
+    "tests/proof/proof-1242.mjs": "5ecfefeeb3d54e46d1737a47d09449b876a8f555618ba271136cfcd5b88ae7c9",
+    "parts/whatsnew.js": "a04fc9dfa2b913c1d0ea5e30aa0045e5f37d005d11257bf9630a957ebad4d2cb"
+   },
+   "mutation": "parts/whatsnew.js bullet replaced with a deliberately wrong bullet (the Beta 1.264 What's New roll changed this proof's pinned bullet string)",
+   "red": "proof-1242 fails exactly its What's New bullet check (1 fail, the rest pass) - observed in this round's mutation run",
+   "green": "proof-1242 passes in full with the shipped 1.264 bullet",
+   "issued": "2026-11-21 createfeatherleak-1264"
+  },
+  {
+   "id": "whatsnew-roll-1264-proof-1243",
+   "check": "tests/proof/proof-1243.mjs",
+   "kind": "mutation",
+   "files": {
+    "tests/proof/proof-1243.mjs": "d930a26020f4636e719c8c8c570ae82daf14c23d75aa100c3152e696a57d8b39",
+    "parts/whatsnew.js": "a04fc9dfa2b913c1d0ea5e30aa0045e5f37d005d11257bf9630a957ebad4d2cb"
+   },
+   "mutation": "parts/whatsnew.js bullet replaced with a deliberately wrong bullet (the Beta 1.264 What's New roll changed this proof's pinned bullet string)",
+   "red": "proof-1243 fails exactly its What's New bullet check (1 fail, the rest pass) - observed in this round's mutation run",
+   "green": "proof-1243 passes in full with the shipped 1.264 bullet",
+   "issued": "2026-11-21 createfeatherleak-1264"
+  },
+  {
+   "id": "whatsnew-roll-1264-proof-1245",
+   "check": "tests/proof/proof-1245.mjs",
+   "kind": "mutation",
+   "files": {
+    "tests/proof/proof-1245.mjs": "d29f93b2dd51a704371c345a4b65bbb9d1bc7fdd37be9838351ec3329dcebe34",
+    "parts/whatsnew.js": "a04fc9dfa2b913c1d0ea5e30aa0045e5f37d005d11257bf9630a957ebad4d2cb"
+   },
+   "mutation": "parts/whatsnew.js bullet replaced with a deliberately wrong bullet (the Beta 1.264 What's New roll changed this proof's pinned bullet string)",
+   "red": "proof-1245 fails exactly its What's New bullet check (1 fail, the rest pass) - observed in this round's mutation run",
+   "green": "proof-1245 passes in full with the shipped 1.264 bullet",
+   "issued": "2026-11-21 createfeatherleak-1264"
+  },
+  {
+   "id": "whatsnew-roll-1264-proof-1246",
+   "check": "tests/proof/proof-1246.mjs",
+   "kind": "mutation",
+   "files": {
+    "tests/proof/proof-1246.mjs": "56862e8646c561cf4a708201ea2214af4e80ab52d5b7b5627ee85d542142f8ea",
+    "parts/whatsnew.js": "a04fc9dfa2b913c1d0ea5e30aa0045e5f37d005d11257bf9630a957ebad4d2cb"
+   },
+   "mutation": "parts/whatsnew.js bullet replaced with a deliberately wrong bullet (the Beta 1.264 What's New roll changed this proof's pinned bullet string)",
+   "red": "proof-1246 fails exactly its What's New bullet check (1 fail, the rest pass) - observed in this round's mutation run",
+   "green": "proof-1246 passes in full with the shipped 1.264 bullet",
+   "issued": "2026-11-21 createfeatherleak-1264"
+  },
+  {
+   "id": "whatsnew-roll-1264-proof-1247",
+   "check": "tests/proof/proof-1247.mjs",
+   "kind": "mutation",
+   "files": {
+    "tests/proof/proof-1247.mjs": "e8f2285f003381de62bf298a16bc8d70bfad7231e6101fe1178baba397b20576",
+    "parts/whatsnew.js": "a04fc9dfa2b913c1d0ea5e30aa0045e5f37d005d11257bf9630a957ebad4d2cb"
+   },
+   "mutation": "parts/whatsnew.js bullet replaced with a deliberately wrong bullet (the Beta 1.264 What's New roll changed this proof's pinned bullet string)",
+   "red": "proof-1247 fails exactly its What's New bullet check (1 fail, the rest pass) - observed in this round's mutation run",
+   "green": "proof-1247 passes in full with the shipped 1.264 bullet",
+   "issued": "2026-11-21 createfeatherleak-1264"
+  },
+  {
+   "id": "whatsnew-roll-1264-proof-1249",
+   "check": "tests/proof/proof-1249.mjs",
+   "kind": "mutation",
+   "files": {
+    "tests/proof/proof-1249.mjs": "6542cbf1c226979c9de0766ee7e36e172136c87ff5f43a58f8de6b1666ae2d5d",
+    "parts/whatsnew.js": "a04fc9dfa2b913c1d0ea5e30aa0045e5f37d005d11257bf9630a957ebad4d2cb"
+   },
+   "mutation": "parts/whatsnew.js bullet replaced with a deliberately wrong bullet (the Beta 1.264 What's New roll changed this proof's pinned bullet string)",
+   "red": "proof-1249 fails exactly its What's New bullet check (1 fail, the rest pass) - observed in this round's mutation run",
+   "green": "proof-1249 passes in full with the shipped 1.264 bullet",
+   "issued": "2026-11-21 createfeatherleak-1264"
+  },
+  {
+   "id": "whatsnew-roll-1264-proof-1252",
+   "check": "tests/proof/proof-1252.mjs",
+   "kind": "mutation",
+   "files": {
+    "tests/proof/proof-1252.mjs": "009f9e65fca5b41a1f93a6eba5bb9a2a1374c6d1bba86336c60e058866994fe8",
+    "parts/whatsnew.js": "a04fc9dfa2b913c1d0ea5e30aa0045e5f37d005d11257bf9630a957ebad4d2cb"
+   },
+   "mutation": "parts/whatsnew.js bullet replaced with a deliberately wrong bullet (the Beta 1.264 What's New roll changed this proof's pinned bullet string)",
+   "red": "proof-1252 fails exactly its What's New bullet check (1 fail, the rest pass) - observed in this round's mutation run",
+   "green": "proof-1252 passes in full with the shipped 1.264 bullet",
+   "issued": "2026-11-21 createfeatherleak-1264"
+  },
+  {
+   "id": "whatsnew-roll-1264-proof-1253",
+   "check": "tests/proof/proof-1253.mjs",
+   "kind": "mutation",
+   "files": {
+    "tests/proof/proof-1253.mjs": "cc10e4ae0341967255e5c900c86136640e9a5d4f53498dac42e0f291b3f1b74b",
+    "parts/whatsnew.js": "a04fc9dfa2b913c1d0ea5e30aa0045e5f37d005d11257bf9630a957ebad4d2cb"
+   },
+   "mutation": "parts/whatsnew.js bullet replaced with a deliberately wrong bullet (the Beta 1.264 What's New roll changed this proof's pinned bullet string)",
+   "red": "proof-1253 fails exactly its What's New bullet check (1 fail, the rest pass) - observed in this round's mutation run",
+   "green": "proof-1253 passes in full with the shipped 1.264 bullet",
+   "issued": "2026-11-21 createfeatherleak-1264"
+  },
+  {
+   "id": "whatsnew-roll-1264-proof-1254",
+   "check": "tests/proof/proof-1254.mjs",
+   "kind": "mutation",
+   "files": {
+    "tests/proof/proof-1254.mjs": "82cc7be029e3cf50aef750321450f27307852fe0987178d7472ffe946484faea",
+    "parts/whatsnew.js": "a04fc9dfa2b913c1d0ea5e30aa0045e5f37d005d11257bf9630a957ebad4d2cb"
+   },
+   "mutation": "parts/whatsnew.js bullet replaced with a deliberately wrong bullet (the Beta 1.264 What's New roll changed this proof's pinned bullet string)",
+   "red": "proof-1254 fails exactly its What's New bullet check (1 fail, the rest pass) - observed in this round's mutation run",
+   "green": "proof-1254 passes in full with the shipped 1.264 bullet",
+   "issued": "2026-11-21 createfeatherleak-1264"
+  },
+  {
+   "id": "whatsnew-roll-1264-proof-1255",
+   "check": "tests/proof/proof-1255.mjs",
+   "kind": "mutation",
+   "files": {
+    "tests/proof/proof-1255.mjs": "5c8d200f9a9caac8e593aa3a7a4b732629e4c50c00e89da71c0d568808d902c9",
+    "parts/whatsnew.js": "a04fc9dfa2b913c1d0ea5e30aa0045e5f37d005d11257bf9630a957ebad4d2cb"
+   },
+   "mutation": "parts/whatsnew.js bullet replaced with a deliberately wrong bullet (the Beta 1.264 What's New roll changed this proof's pinned bullet string)",
+   "red": "proof-1255 fails exactly its What's New bullet check (1 fail, the rest pass) - observed in this round's mutation run",
+   "green": "proof-1255 passes in full with the shipped 1.264 bullet",
+   "issued": "2026-11-21 createfeatherleak-1264"
+  },
+  {
+   "id": "whatsnew-roll-1264-proof-1256",
+   "check": "tests/proof/proof-1256.mjs",
+   "kind": "mutation",
+   "files": {
+    "tests/proof/proof-1256.mjs": "41cda851513db39a9e8ea4b3beaa69418cc90caeafd97a2f1b404db1e562346c",
+    "parts/whatsnew.js": "a04fc9dfa2b913c1d0ea5e30aa0045e5f37d005d11257bf9630a957ebad4d2cb"
+   },
+   "mutation": "parts/whatsnew.js bullet replaced with a deliberately wrong bullet (the Beta 1.264 What's New roll changed this proof's pinned bullet string)",
+   "red": "proof-1256 fails exactly its What's New bullet check (1 fail, the rest pass) - observed in this round's mutation run",
+   "green": "proof-1256 passes in full with the shipped 1.264 bullet",
+   "issued": "2026-11-21 createfeatherleak-1264"
+  },
+  {
+   "id": "whatsnew-roll-1264-proof-1257",
+   "check": "tests/proof/proof-1257.mjs",
+   "kind": "mutation",
+   "files": {
+    "tests/proof/proof-1257.mjs": "193123d9d32e29eaa0d5d83cc488338653b4fd9a8151583de645542f0c090e7a",
+    "parts/whatsnew.js": "a04fc9dfa2b913c1d0ea5e30aa0045e5f37d005d11257bf9630a957ebad4d2cb"
+   },
+   "mutation": "parts/whatsnew.js bullet replaced with a deliberately wrong bullet (the Beta 1.264 What's New roll changed this proof's pinned bullet string)",
+   "red": "proof-1257 fails exactly its What's New bullet check (1 fail, the rest pass) - observed in this round's mutation run",
+   "green": "proof-1257 passes in full with the shipped 1.264 bullet",
+   "issued": "2026-11-21 createfeatherleak-1264"
+  },
+  {
+   "id": "whatsnew-roll-1264-proof-1259",
+   "check": "tests/proof/proof-1259.mjs",
+   "kind": "mutation",
+   "files": {
+    "tests/proof/proof-1259.mjs": "69b1e043a178c8913c1a7d324b049fd1df4a852a2502c2a44c1305613fd96969",
+    "parts/whatsnew.js": "a04fc9dfa2b913c1d0ea5e30aa0045e5f37d005d11257bf9630a957ebad4d2cb"
+   },
+   "mutation": "parts/whatsnew.js bullet replaced with a deliberately wrong bullet (the Beta 1.264 What's New roll changed this proof's pinned bullet string)",
+   "red": "proof-1259 fails exactly its What's New bullet check (1 fail, the rest pass) - observed in this round's mutation run",
+   "green": "proof-1259 passes in full with the shipped 1.264 bullet",
+   "issued": "2026-11-21 createfeatherleak-1264"
+  },
+  {
+   "id": "whatsnew-roll-1264-proof-1262",
+   "check": "tests/proof/proof-1262.mjs",
+   "kind": "mutation",
+   "files": {
+    "tests/proof/proof-1262.mjs": "854c27f6d97f742bfead0b1072d089c56d7bf601891a718f2fd1b61d894cf3f9",
+    "parts/whatsnew.js": "a04fc9dfa2b913c1d0ea5e30aa0045e5f37d005d11257bf9630a957ebad4d2cb"
+   },
+   "mutation": "parts/whatsnew.js bullet replaced with a deliberately wrong bullet (the Beta 1.264 What's New roll changed this proof's pinned bullet string)",
+   "red": "proof-1262 fails exactly its What's New bullet check (1 fail, the rest pass) - observed in this round's mutation run",
+   "green": "proof-1262 passes in full with the shipped 1.264 bullet",
+   "issued": "2026-11-21 createfeatherleak-1264"
+  },
+  {
+   "id": "whatsnew-roll-1264-proof-1263",
+   "check": "tests/proof/proof-1263.mjs",
+   "kind": "mutation",
+   "files": {
+    "tests/proof/proof-1263.mjs": "6f09a1e11181b7379f57e8207f6e8d1969e9e074852789101f5af6d9da98eb70",
+    "parts/whatsnew.js": "a04fc9dfa2b913c1d0ea5e30aa0045e5f37d005d11257bf9630a957ebad4d2cb"
+   },
+   "mutation": "parts/whatsnew.js bullet replaced with a deliberately wrong bullet (the Beta 1.264 What's New roll changed this proof's pinned bullet string)",
+   "red": "proof-1263 fails exactly its What's New bullet check (1 fail, the rest pass) - observed in this round's mutation run",
+   "green": "proof-1263 passes in full with the shipped 1.264 bullet",
+   "issued": "2026-11-21 createfeatherleak-1264"
+  },
+  {
+   "id": "proof-1264-derived-guard",
+   "check": "tests/proof/proof-1264.mjs",
+   "kind": "mutation",
+   "files": {
+    "tests/proof/proof-1264.mjs": "16f9ea1297db796ec175bd7f5b3d65821f55c2ac1d54fa0d202c0d14c0bf300e",
+    "parts/create-pick.js": "4eaffb364f01bfad5a5da9d91ef11b2e9453a9414481c292bcd08c435ed850cc",
+    "parts/engine.js": "891ab8409d5f8ae21d7be06da450eb55fe8b631121a8af1c7d50cc10d98c90ad"
+   },
+   "mutation": "parts/create-pick.js: 'fade-casing' removed from CR_ROUTE_LAYERS (one id of the nine the fix adds)",
+   "red": "proof-1264 fails checks 2 and 3 - check 2 names the removed id as unhidden: [\"fade-casing\"]; the other four checks pass - observed in this round's mutation run",
+   "green": "proof-1264 passes 6/6 on the fixed tree; the full manifest passes 72/72",
+   "issued": "2026-11-21 createfeatherleak-1264"
+  },
+  {
+   "id": "drive217-create-feather-leak",
+   "check": "tests/browser/drive217.mjs",
+   "kind": "rendered",
+   "files": {
+    "tests/browser/drive217.mjs": "b2b961fbe19cf67926d7fb39e38c7a8393ff499111df8892221e8503c5c5bdaa"
+   },
+   "mutation": "rendered fail-first on the Beta 1.263 tree (the nine feather layers absent from CR_ROUTE_LAYERS): boot, load 5W, frame Andrew's screenshot framing, enterCreate('pick'), theme swaps, exitCreate",
+   "red": "drive217 fails 5 of 13 on the 1.263 tree: B1 14 rendered fade features in create mode, B2 all nine fade layers visible, B3 the recorded hide list (28 entries) names none of the fades, C1/C2 the 14 persist through both theme swaps - observed in this round",
+   "green": "drive217 passes 13/13 on the fixed tree: 0 rendered across all nine fade layers in create mode and through both swaps, the fades source data intact (14 features), exit restores the route-mode count and visibilities exactly",
+   "issued": "2026-11-21 createfeatherleak-1264"
+  },
+  {
+   "id": "drive166-h1-repin-1264",
+   "check": "tests/browser/drive166.mjs",
+   "kind": "historical",
+   "files": {
+    "tests/browser/drive166.mjs": "e70b9eac97e2aa8f89e04e7bb39c32144336343e51acedc5cde53e25990720e4",
+    "parts/create-pick.js": "4eaffb364f01bfad5a5da9d91ef11b2e9453a9414481c292bcd08c435ed850cc"
+   },
+   "mutation": "drive166 H1's recorded-count pin re-derived from 28 to 37 at Beta 1.264 (28 + the nine feather layers the fix adds to CR_ROUTE_LAYERS)",
+   "red": "the re-pinned check (rec === 37) run against the 1.263 tree fails H1 with the recorded hide list at 28 - the nine feather layers absent from it (drive166 56/58; the second failure, J11b, is a storage-timing flake that passed in the battery run on the fixed tree)",
+   "green": "on the fixed tree the local battery's drive166 run observed H1's complete state satisfying the re-pinned assertion (engReady true; surf, names and sel all none; rec 37) and failed only against the superseded 28 pin in the same check; solo re-runs under mutation-battery CPU contention hit the engReady boot flake and the 300 s runner timeout instead, so the full-drive green is the CI gate run",
+   "issued": "2026-11-21 beta-1264"
   }
  ]
 }

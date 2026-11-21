@@ -18,7 +18,8 @@
     "drive185",
     "drive208",
     "drive214",
-    "drive215"
+    "drive215",
+    "drive217"
    ],
    "paths": [
     "parts/create-cache.js",
@@ -46,7 +47,8 @@
     "drive168",
     "drive182",
     "drive214",
-    "drive216"
+    "drive216",
+    "drive217"
    ],
    "paths": [
     "parts/engine.js"

@@ -710,6 +710,78 @@
     "scripts/check-census.py": "dd55f34cd855e60a6fadae7e261aa99f1682b9d7d8446696532045e3a281fafb"
    },
    "issued": "2026-11-21"
+  },
+  {
+   "id": "createfeatherleak-1264",
+   "kind": "app",
+   "anchors": {
+    "functions": [
+     "crSetBackdrop"
+    ],
+    "elements": []
+   },
+   "changed": [
+    "parts/create-pick.js",
+    "parts/whatsnew.js"
+   ],
+   "rows": [
+    {
+     "id": "caller:crSetBackdrop:parts/create-pick.js:enterCreate",
+     "kind": "caller",
+     "source": "derived: call-site scan of parts/ - crSetBackdrop() is called from enterCreate in parts/create-pick.js",
+     "status": "covered",
+     "note": "the backdrop-on door: drive217 section B enters via enterCreate('pick') and asserts zero rendered features across all nine fade layers, each standing visibility 'none', and the recorded hide list naming all nine (B1-B3)"
+    },
+    {
+     "id": "caller:crSetBackdrop:parts/create-pick.js:exitCreate",
+     "kind": "caller",
+     "source": "derived: call-site scan of parts/ - crSetBackdrop() is called from exitCreate in parts/create-pick.js",
+     "status": "covered",
+     "note": "the restore door: drive217 section D exits and asserts the board feathers render again at the route-mode count (14) and every fade layer's visibility is restored to its exact route-mode value (D1/D2)"
+    },
+    {
+     "id": "caller:crSetBackdrop:parts/create-pick.js:map:styledata",
+     "kind": "caller",
+     "source": "derived: call-site scan of parts/ - crSetBackdrop() is called from map:styledata in parts/create-pick.js",
+     "status": "covered",
+     "note": "the swap re-hide door: drive217 section C swaps the basemap twice mid-create (night, then day); the style re-creates the route stack visible and this hook re-applies the backdrop over the recorded list - the fades stay hidden and render zero (C1/C2)"
+    },
+    {
+     "id": "caller:crSetBackdrop:parts/create-pick.js:top-level",
+     "kind": "caller",
+     "source": "derived: call-site scan of parts/ - crSetBackdrop() is called from top-level in parts/create-pick.js",
+     "status": "na",
+     "note": "the onMapReady boot-mode call (creation entered before the map exists) fires the same crSetBackdrop(true) over the same recorded list; this round changes only the list's CONTENTS (nine ids of data), not when or how any caller fires - the boot-mode timing is untouched and untestable in the drive's menu boot; the list itself is pinned by proof-1264 and the three interactive callers are covered above"
+    },
+    {
+     "id": "gesture:parts/create-pick.js:map:styledata",
+     "kind": "gesture",
+     "source": "derived: handler scan - the map styledata handler in parts/create-pick.js touches crSetBackdrop without dismissing it",
+     "status": "covered",
+     "note": "the styledata handler's backdrop re-application is exercised end-to-end by drive217 section C's two real basemap swaps mid-create (the fades are re-hidden after each swap, zero rendered)"
+    }
+   ],
+   "files": {
+    "parts/app1.js": "ad3bf7f8e4f509f37532579d071ada75cafd156223eb9a874c672577b6108bac",
+    "parts/app2.js": "4aba538882d1e75ec70051444ab5ae9bba5cd05590a2eb6f84f8dca85e165bbc",
+    "parts/app3.js": "da6c7d85eafbb97572278b818ff60a6fc25c5c35a3e51ee6c8ceb23f52ddf91c",
+    "parts/app4.js": "059a12937fd806f09bc2db6a3af52bae51ac8e714d40715894136ffb9df63e4f",
+    "parts/app5.js": "e5ce0ad3e66c9a5ae70cee9d925eb74aa2fa25d0699e51e9ef51ef5593fd4359",
+    "parts/brand-snow.js": "86fa9a02f29c7345ee68d68daffd9c72da612921b64da37f1eccf6b72161ac5f",
+    "parts/create-cache.js": "2a7e983aa50862cb074a16abf9266a41a1a175c69faa5215b1d3d289aa2b5327",
+    "parts/create-citydata.js": "393d90f275d971b5e52352deebaece381279acd0e86495ffa2da35701de9148e",
+    "parts/create-fetch.js": "e7a65bd88dc338213946c4537dc5d397f79396ec416b6f4ebf4be831927aeb66",
+    "parts/create-packs.js": "ae77fbe77d3ef5970c0b432bc4152fd57a34cf98c1f09a1855ca150459cd0ad8",
+    "parts/create-pick.js": "4eaffb364f01bfad5a5da9d91ef11b2e9453a9414481c292bcd08c435ed850cc",
+    "parts/create-save.js": "2a222b90b438907eb0835722d4230499716945109c70578791c41b24ef89f752",
+    "parts/data.js": "9137d8d6353ef2ec97b153ded7628175cdc8c483c770e6d5e2258ca50c558e04",
+    "parts/engine.js": "891ab8409d5f8ae21d7be06da450eb55fe8b631121a8af1c7d50cc10d98c90ad",
+    "parts/pmstyles.js": "f3501db9c16dbc6a5fa8c901089101e4913772384de1f069accb23a614bb90fc",
+    "parts/whatsnew.js": "a04fc9dfa2b913c1d0ea5e30aa0045e5f37d005d11257bf9630a957ebad4d2cb",
+    "parts/head.html": "dbce12695cb3b0c04209dee474f018d6ffc65139bd41c7957b8b47a9ece4b3bb",
+    "scripts/check-census.py": "dd55f34cd855e60a6fadae7e261aa99f1682b9d7d8446696532045e3a281fafb"
+   },
+   "issued": "2026-11-21 createfeatherleak-1264 (Beta 1.264)"
   }
  ]
 }

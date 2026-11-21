@@ -41,8 +41,8 @@ alone and the protocol text and the machine disagreed):
 
 | Family | Paths | Drives |
 | --- | --- | --- |
-| create | `parts/create-cache.js`, `create-citydata.js`, `create-fetch.js`, `create-packs.js`, `create-pick.js`, `packs/` | 151 152 153 154 155 156 160 164 166 181 183 185 208 214 215 |
-| map | `parts/engine.js` | 115 116 121 127 128 129 130 133 141 148 149 165 168 182 214 216 |
+| create | `parts/create-cache.js`, `create-citydata.js`, `create-fetch.js`, `create-packs.js`, `create-pick.js`, `packs/` | 151 152 153 154 155 156 160 164 166 181 183 185 208 214 215 217 |
+| map | `parts/engine.js` | 115 116 121 127 128 129 130 133 141 148 149 165 168 182 214 216 217 |
 | session | `parts/app2.js`, `parts/app3.js`, `parts/app4.js`, `parts/app5.js` | 83 86 88 89* 114 118 125 135 136 140 145 146 147 159 161 162 163 169 170 184 203 207 210 211 212 213 214 |
 
 *quarantined drives are removed from the set by the selector, unless
