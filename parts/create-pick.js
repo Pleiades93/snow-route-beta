@@ -253,7 +253,7 @@ function crSectorTap(lngLat) { // a map tap while trimming: the sector under the
   if (idx >= 0) { crToggleSector(name, idx); return true; }
   return false;
 }
-function crOpenSectors(name) { // opens a picked street's trimming - TWO doors since Beta 1.128 (Andrew's fork, decided from his 1.127 device session): the panel row (1.127) AND a map tap on the already-picked street (pickStreet routes here), which is where his finger went on device. Beta 1.129: entry SNAPSHOTS the street's pick as it stands (whole road, or the trim in force) - the sector bar's Cancel restores that snapshot exactly
+function crOpenSectors(name) { // opens a picked street's trimming - TWO doors since Beta 1.128 (Andrew's fork, decided from his 1.127 device session): the panel row (1.127) AND a map tap on the already-picked street (pickStreet routes here), which is where his finger went on device. Beta 1.129: entry SNAPSHOTS the street's pick as it stands (whole road, or the trim in force) - the tap-away's cancel restores that snapshot exactly (through 1.268 the restorer was the sector bar's Cancel button; Beta 1.269 replaced that button with Deselect and the restore's only door is the tap-away)
   if (!draft || !draft.roads || !Object.prototype.hasOwnProperty.call(draft.roads, name)) return; // Beta 1.150: own-property at this door too - a prototype member must not read as a held run and carry the call into the parts work below
   if (!crStreetParts(name)) return;
   if (crSectorSession.street !== name) crSectorSession.snapshot = (draft.sectors && draft.sectors[name]) ? draft.sectors[name].slice() : null; // a fresh entry only - re-entering the same street's open session must not move Cancel's restore point
@@ -265,12 +265,17 @@ function crOpenSectors(name) { // opens a picked street's trimming - TWO doors s
   renderDraft(); crRenderHint();
 }
 function crCloseSectors() { if (!crSectorSession.street) return; crSectorReset(); renderDraft(); syncCrGlow(); const sheet = $('createSheet'); if (sheet && sheet.classList.contains('on')) crMorphTo(crWantedFace()); else syncCrPanel(); crRenderHint(); } // Beta 1.208: syncCrGlow stands here explicitly because Done's path does not re-render the draft - the glow dies with the session, not with the next render. Beta 1.223: Done's path DOES re-render now (renderDraft above) - the draft's active flags live in the source features, so without a rebuild the closed street would stay vibrant on crDraftLineActive instead of returning to its gentle mute; every other session-closing path (Cancel, stage change, street removal, Clear all) already re-rendered, and this was the one that did not (Codex P2, PR #100)
-function crCancelSectors() { // Beta 1.129 (Andrew: "I still need a way to cancel selections while I'm selecting something"): the deliberate back-out of a sector session - the street's pick returns EXACTLY as it was when sector mode was entered (the whole road, or the trim then in force), every face repaints from the restored state, and sector mode closes back to the panel. Distinct from un-picking every sector by toggles, which still removes the street - that is a selection, this is an abandonment of the session's edits
+function crCancelSectors() { // Beta 1.129 (Andrew: "I still need a way to cancel selections while I'm selecting something"): the deliberate back-out of a sector session - the street's pick returns EXACTLY as it was when sector mode was entered (the whole road, or the trim then in force), every face repaints from the restored state, and sector mode closes back to the panel. Distinct from un-picking every sector by toggles, which still removes the street - that is a selection, this is an abandonment of the session's edits. Beta 1.269: the bar's Cancel BUTTON is gone (Deselect stands in its slot) - this path's only door is now the tap-away (crMapTap), which is where Andrew's finger already cancelled; the restore behaviour itself is unchanged
   const s = crSectorSession.street; if (!s || !draft) return;
   if (crSectorSession.snapshot) { draft.sectors = draft.sectors || {}; draft.sectors[s] = crSectorSession.snapshot.slice(); }
   else if (draft.sectors) delete draft.sectors[s];
   crCloseSectors();
   renderDraft(); renderCrLists();
+}
+function crDeselectSectors() { // Beta 1.269 (Andrew, sample C of the trim-sheet sample): the bar's third door - the street leaves the draft ENTIRELY and the bar closes back to the panel. The removal is crRemoveStreet, the ONE removal path (the Review list's row x lands there too) - never a second implementation: the street leaves with all of its draft state, and the session pair resets inside that call, as for every removal. crRemoveStreet re-renders every face but does not move the sheet surface, so the landing is crCloseSectors' own (morph to the wanted face, or the rest-state sync when the sheet is away)
+  const s = crSectorSession.street; if (!s || !draft) return;
+  crRemoveStreet(s);
+  const sheet = $('createSheet'); if (sheet && sheet.classList.contains('on')) crMorphTo(crWantedFace()); else syncCrPanel();
 }
 function renderSectorBar() {
   const s = crSectorSession.street; if (!s || !draft || !draft.roads[s]) return;
@@ -1406,18 +1411,25 @@ function askDiscard(then) { if (draft && draftStreets().length) crConfirm('Throw
 function fitDraft() {
   if (!draft || !map) return;
   const bb = computeRouteBox(crFilteredRoads()); if (!bb) return; // Beta 1.127: the preview frames what will save (chosen sectors), not the whole streets. Beta 1.267: an empty draft computes no box, so no flight fires - the guard above is the no-flight rule.
-  // Beta 1.267 (Andrew): entering the preview FLIES to the draft in the home
-  // view's feel - the flat fit of the draft's box (goHomeView's own recipe:
-  // cameraForBounds with no pitch folded in, so the zoom is the fit's zoom,
-  // zooming out past the home framing when the draft spans wider), tilted to
-  // pitch 45, flown with the load-in flight's motion family (flyTo, curve
-  // 1.2 - introToRoute, app5). Through 1.266 this was an 800 ms fitBounds at
-  // whatever pitch the picking had left, so the review opened on a flat,
-  // close crop instead of the whole route in the default view.
+  // Beta 1.269 (Andrew, from his live 1.267 session): the flight is FLAT
+  // overhead (pitch 0) and fits the draft into the map area the Review
+  // sheet leaves VISIBLE - the sheet covers the screen's bottom, so the
+  // fit's bottom padding is the sheet's own MEASURED height plus a 24 px
+  // comfort margin: the whole draft lands above the sheet, zoomed in just
+  // enough to fill that space, nothing hidden behind the sheet. The sheet
+  // is measured at flight time, never a guessed constant - its height
+  // varies with the draft's street count. The fit itself is still
+  // cameraForBounds (goHomeView's recipe, no pitch folded in) and the
+  // motion family is still the load-in flight's (flyTo, curve 1.2).
+  // Beta 1.267 flew this same fit tilted to pitch 45 over the FULL
+  // screen; on device the draft's lower half slid under the sheet and
+  // the tilt read wrong against it, which is the report this replaces.
+  const sheet = $('previewSheet');
+  const pad = { top: 56, left: 56, right: 56, bottom: (sheet ? sheet.offsetHeight : 0) + 24 };
   const b = [[bb.w, bb.s], [bb.e, bb.n]];
-  let fit = null; try { fit = map.cameraForBounds(b, { padding: 56 }); } catch (e) {}
-  if (fit && fit.center && typeof fit.zoom === 'number') { try { map.flyTo({ center: fit.center, zoom: fit.zoom, pitch: 45, bearing: 0, duration: 2000, curve: 1.2, essential: false }); return; } catch (e) {} }
-  try { map.fitBounds(b, { padding: 56, duration: 800 }); } catch (e) {}
+  let fit = null; try { fit = map.cameraForBounds(b, { padding: pad }); } catch (e) {}
+  if (fit && fit.center && typeof fit.zoom === 'number') { try { map.flyTo({ center: fit.center, zoom: fit.zoom, pitch: 0, bearing: 0, duration: 2000, curve: 1.2, essential: false }); return; } catch (e) {} }
+  try { map.fitBounds(b, { padding: pad, pitch: 0, duration: 800 }); } catch (e) {}
 }
 $('crExit').addEventListener('click', () => { // Beta 1.227 (Andrew): the back pill ONLY goes back - it runs the exit the old ✕ ran once the search was empty (discard confirm, exit creating, the doors if boot). Clearing the search is the bar's own clear disc now: through 1.226 this one button carried both jobs (Beta 1.120: clear first, exit second), the two-meanings-one-button confusion the redesign removes
   askDiscard(() => { const wasBoot = !routeLoaded; exitCreate(); if (wasBoot) openDoors(); });
@@ -2047,7 +2059,7 @@ function crFeatDistPx(lngLat, part) { // pixels from the tap to the nearest poin
 }
 function crMapTap(e) {
   if (!creating || crStage !== 'pick' || !map) return;
-  if (crSectorSession.street) { if (!crSectorTap(e.lngLat)) crCancelSectors(); return; } // Beta 1.127: while trimming, a map tap speaks only to the street being trimmed - it can neither add nor remove another street. Beta 1.210 (Andrew): a tap that resolves to NO sector of the trim street is a tap-away and acts exactly like the bar's Cancel - the whole crCancelSectors path (snapshot restored, session closed, glow out), never a parallel exit. Taps on sectors still toggle and never exit (crSectorTap answers true); taps on the card, the search bar and the other create chrome are DOM and never reach the map; and a drag/pan cannot land here at all - MapLibre's click fires only when press and release land within its click tolerance, the same tap-vs-drag discipline the main map's tap-away deselect already rests on
+  if (crSectorSession.street) { if (!crSectorTap(e.lngLat)) crCancelSectors(); return; } // Beta 1.127: while trimming, a map tap speaks only to the street being trimmed - it can neither add nor remove another street. Beta 1.210 (Andrew): a tap that resolves to NO sector of the trim street is a tap-away and runs the whole crCancelSectors path (snapshot restored, session closed, glow out), never a parallel exit - through 1.268 it acted exactly like the bar's Cancel button; since Beta 1.269 the button is Deselect and this tap is the cancel's only door. Taps on sectors still toggle and never exit (crSectorTap answers true); taps on the card, the search bar and the other create chrome are DOM and never reach the map; and a drag/pan cannot land here at all - MapLibre's click fires only when press and release land within its click tolerance, the same tap-vs-drag discipline the main map's tap-away deselect already rests on
   // Beta 1.119: query a small BOX around the tap, not the tap's single pixel.
   // Rendered road lines are a few px wide and a fingertip lands +/-10-20 px
   // off them, so the 1.118 point query almost never held a road and every
@@ -2089,7 +2101,7 @@ $('crClearAll').addEventListener('click', () => { // Andrew's addition (2026-11-
 });
 $('crSbWhole').addEventListener('click', () => { const s = crSectorSession.street; if (!s) return; const rec = crStreetParts(s); if (rec) crSetChosen(s, rec, new Set(rec.parts.map((_, i) => i))); renderDraft(); renderCrLists(); renderSectorBar(); }); // Entire road: every sector back on (the pick is stored as no entry again)
 $('crSbDone').addEventListener('click', () => crCloseSectors()); // Done: back to the panel
-$('crSbCancel').addEventListener('click', () => crCancelSectors()); // Cancel (Beta 1.129): restore the pick as it was when sector mode was entered, and leave
+$('crSbDeselect').addEventListener('click', () => crDeselectSectors()); // Deselect (Beta 1.269): the street leaves the draft entirely, through crRemoveStreet. Through 1.268 this slot was Cancel (Beta 1.129's snapshot restore) - the restore lives on the tap-away now (crMapTap -> crCancelSectors), and this button does the removal Andrew reached for
 (() => { // the panel's tuck-away gesture (mockup screens 3-4): drag or flick the grab handle / header downward to collapse; a plain tap there collapses too. Buttons inside the header keep their own taps (the check below), and the rows below scroll natively - drags never start there
   const sheet = $('createSheet'), head = $('crPanelHead'); if (!sheet || !head) return; // Beta 1.129: the drag moves the SURFACE (the one card), not a face inside it
   let pid = null, startY = 0, lastY = 0, samples = [], moved = false;

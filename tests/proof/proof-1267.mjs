@@ -12,9 +12,13 @@
 //     (fade 15) and the 8 proven dead ends (fade 10) by street name.
 // (2) NAMES ON TOP: ensureDraftLayers seats all five draft layers below
 //     the first label layer via the shared crFirstLabelLayerId finder.
-// (3) DONE FLIGHT: fitDraft flies (flyTo, pitch 45, curve 1.2) to the
-//     flat cameraForBounds fit of the draft box; an empty draft returns
-//     before any flight call.
+// (3) DONE FLIGHT: fitDraft flies (flyTo, curve 1.2) to the flat
+//     cameraForBounds fit of the draft box; an empty draft returns
+//     before any flight call. (Beta 1.269 re-pin: the flight's landing
+//     changed - pitch 0, and the fit's bottom padding is the Review
+//     sheet's measured height + 24, so the draft lands in the visible
+//     area above the sheet; 1.267's pitch-45 full-screen fit was
+//     rejected by Andrew live. Check 3a pins the 1.269 shape.)
 // (4) SETTINGS WORDING: the Display & Sound row reads "Keep screen
 //     awake" / "Screen won't dim while cleaning" (aria follows); the old
 //     strings are gone from parts/.
@@ -79,8 +83,8 @@ check('2c: the trim glow still inserts before crDraftCase (it follows the draft 
 // ---------- (3) Done flight ----------
 const fdStart = pick.indexOf('function fitDraft() {');
 const fdBody = fdStart > -1 ? pick.slice(fdStart, pick.indexOf('\n}\n', fdStart)) : '';
-check('3a: fitDraft flies with the load-in motion family to pitch 45 - flyTo, curve 1.2, the flat cameraForBounds fit',
-  fdBody.includes('map.cameraForBounds(b, { padding: 56 })') && fdBody.includes('map.flyTo({ center: fit.center, zoom: fit.zoom, pitch: 45, bearing: 0, duration: 2000, curve: 1.2, essential: false })'));
+check('3a: fitDraft flies with the load-in motion family, FLAT (Beta 1.269 re-pin) - flyTo pitch 0, curve 1.2, the cameraForBounds fit whose bottom padding is the sheet\'s measured height + 24',
+  fdBody.includes('map.cameraForBounds(b, { padding: pad })') && fdBody.includes('bottom: (sheet ? sheet.offsetHeight : 0) + 24') && fdBody.includes('map.flyTo({ center: fit.center, zoom: fit.zoom, pitch: 0, bearing: 0, duration: 2000, curve: 1.2, essential: false })'));
 check('3b: an empty draft returns before any flight (the box guard stands ahead of the flyTo)',
   fdBody.indexOf('if (!bb) return;') > -1 && fdBody.indexOf('if (!bb) return;') < fdBody.indexOf('map.flyTo'));
 check('3c: setCreateStage still routes the preview through fitDraft',
@@ -95,7 +99,7 @@ check('4b: the old strings are gone from parts/',
 
 // ---------- editorial ----------
 check('5: What\'s New carries the round\'s headline bullet (dead ends feather) and no em dash',
-  whatsnew.includes('Route lines are a touch slimmer, matched closer to the road under them.') && !whatsnew.includes('—'));
+  whatsnew.includes('Done in create-a-route now shows your whole route flat, above the review list.') && !whatsnew.includes('—'));
 
 console.log('proof-1267: ' + pass + ' pass, ' + fail + ' fail');
 process.exit(fail ? 1 : 0);

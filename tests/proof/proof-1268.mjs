@@ -71,7 +71,7 @@ check('5: calibration arithmetic - WIDTH_K 1.3 at the 1.08 == 1.0x calibration p
   Math.abs(1.3 / 1.08 - 1.20) / 1.20 <= 0.10);
 
 check('6: What\'s New carries the round\'s bullet, em-dash free, and the CHANGELOG top entry is Beta 1.268 above 1.267',
-  whatsnew.includes('Route lines are a touch slimmer, matched closer to the road under them.') &&
+  whatsnew.includes('Done in create-a-route now shows your whole route flat, above the review list.') &&
   !whatsnew.includes('—') &&
   changelog.indexOf('## Beta 1.268') > -1 && changelog.indexOf('## Beta 1.268') < changelog.indexOf('## Beta 1.267'));
 

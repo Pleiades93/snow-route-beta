@@ -18,12 +18,19 @@ if (!await poll(`!!(window.map && map.getSource && map.getSource('fades'))`, 450
 //     label layer in the style order, so a chosen street's basemap name
 //     prints over its highlight; exit restores the non-create stack
 //     order exactly.
-// (3) DONE FLIGHT: pressing Done flies to the draft's flat fit at
-//     pitch 45 - every draft point inside the viewport at the landing;
-//     an empty draft fires no flight at all.
+// (3) DONE FLIGHT: pressing Done flies the draft FLAT (pitch 0) into
+//     the visible map area ABOVE the Review sheet - the fit's bottom
+//     padding is the sheet's measured height plus a comfort margin, so
+//     every draft point lands above the sheet's top edge; an empty
+//     draft fires no flight at all. (Beta 1.269 re-pin: through 1.268
+//     this section pinned 1.267's pitch-45 full-screen fit, which
+//     Andrew rejected live - the tilted draft slid under the sheet.)
 // Both-ways: on the 1.266 tree A fails (7 records, 14 fades), B1 fails
 // (the draft layers sit above the labels), C1/C2 fail (the old fitDraft
-// was an 800 ms flat fitBounds at the picking pitch).
+// was an 800 ms flat fitBounds at the picking pitch); on the 1.268 tree
+// C1 fails (the flight lands at pitch 45) and C2 fails (the full-screen
+// fit centres the draft on the whole viewport, so its southern points
+// project behind the sheet).
 const R = { checks: [] };
 const ok = (name, cond) => R.checks.push([name, cond === true]);
 const J = async (expr) => { const raw = await ev(`(() => { try { return JSON.stringify((${expr})); } catch (e) { return JSON.stringify({ __err: String(e && e.message || e) }); } })()`); return typeof raw === 'string' ? JSON.parse(raw) : {}; };
@@ -118,17 +125,21 @@ await poll(`!!(typeof creating !== 'undefined' && creating)`, 15000);
 await ev(`(() => { const pack = ROUTE_PACKS.find(p => p.id === '5w'); for (const n of ['Velmar', 'Valeria', 'Dianawood', 'Ferrari']) crAddStreet(n, pack.roads[n]); map.jumpTo({ center: [-79.5605, 43.8145], zoom: 16.5, pitch: 0 }); return true; })()`);
 await settle();
 await ev(`(() => { document.getElementById('crDoneBtn').click(); return true; })()`);
-await poll(`!!(window.map && !map.isMoving() && Math.abs(map.getPitch() - 45) < 1)`, 45000);
+await poll(`!!(window.map && !map.isMoving() && map.getPitch() < 1)`, 45000);
 await settle();
 const C = await J(`(() => {
-  const out = { pitch: map.getPitch(), zoom: map.getZoom(), outside: 0, pts: 0 };
-  const W = map.getCanvas().clientWidth, H = map.getCanvas().clientHeight;
-  for (const segs of Object.values(draft.roads)) for (const seg of segs) for (const p of seg) { const pr = map.project([p[1], p[0]]); out.pts++; if (pr.x < -30 || pr.x > W + 30 || pr.y < -30 || pr.y > H + 30) out.outside++; }
+  const sheet = document.getElementById('previewSheet');
+  const sheetTop = sheet.getBoundingClientRect().top, sheetH = sheet.offsetHeight;
+  const bb = computeRouteBox(crFilteredRoads());
+  const fit = map.cameraForBounds([[bb.w, bb.s], [bb.e, bb.n]], { padding: { top: 56, left: 56, right: 56, bottom: sheetH + 24 } });
+  const out = { pitch: map.getPitch(), zoom: map.getZoom(), fitZoom: fit.zoom, ctrOff: Math.hypot(map.getCenter().lng - fit.center.lng, map.getCenter().lat - fit.center.lat), sheetTop, outside: 0, pts: 0 };
+  const W = map.getCanvas().clientWidth;
+  for (const segs of Object.values(draft.roads)) for (const seg of segs) for (const p of seg) { const pr = map.project([p[1], p[0]]); out.pts++; if (pr.x < 12 || pr.x > W - 12 || pr.y < 12 || pr.y > sheetTop - 12) out.outside++; }
   return out;
 })()`);
-ok('C1 Done lands at pitch 45 with the home-feel zoom (not the picking zoom 16.5, not a close crop) | pitch ' + C.pitch + ', zoom ' + C.zoom,
-  Math.abs(C.pitch - 45) < 1 && C.zoom < 15.5 && C.zoom > 12);
-ok('C2 every draft point sits inside the viewport at the landing (the whole draft in view before Save/Add/Start over) | ' + C.outside + ' of ' + C.pts + ' points outside',
+ok('C1 Done lands FLAT (pitch 0) on the sheet-aware fit: the landed zoom and centre are the fit recomputed in-page from the sheet\'s measured height (not the picking zoom 16.5, not the old full-screen fit) | pitch ' + C.pitch + ', zoom ' + C.zoom + ' vs fit ' + C.fitZoom + ', centre off ' + C.ctrOff,
+  C.pitch < 1 && Math.abs(C.zoom - C.fitZoom) <= 0.1 && C.ctrOff < 0.001 && C.zoom < 16);
+ok('C2 every draft point sits inside the VISIBLE region above the Review sheet at the landing - inside the canvas width and at least 12 px above the sheet\'s measured top edge and below the top edge (the whole draft in view before Save/Add/Start over, nothing behind the sheet) | sheet top ' + C.sheetTop + ', ' + C.outside + ' of ' + C.pts + ' points outside',
   C.pts > 100 && C.outside === 0);
 
 // ---------- D: an empty draft fires no flight ----------

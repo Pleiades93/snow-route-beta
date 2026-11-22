@@ -35,6 +35,14 @@
   "proof-1257.mjs",
   "proof-1259.mjs",
   "proof-1260.mjs",
+  "proof-1262.mjs",
+  "proof-1263.mjs",
+  "proof-1264.mjs",
+  "proof-1265.mjs",
+  "proof-1266.mjs",
+  "proof-1267.mjs",
+  "proof-1268.mjs",
+  "proof-1269.mjs",
   "proof-clearall-sibling-maps.mjs",
   "proof-create-class-pills.mjs",
   "proof-create-glow-casing-fix.mjs",
@@ -69,14 +77,7 @@
   "proof-sweep-20261115-171048-b-05.mjs",
   "proof-sweep-20261115-171048-e-01.mjs",
   "proof-trim-glow-path-pills.mjs",
-  "proof-wording-finished-cleans.mjs",
-  "proof-1262.mjs",
-  "proof-1263.mjs",
-  "proof-1264.mjs",
-  "proof-1265.mjs",
-  "proof-1266.mjs",
-  "proof-1267.mjs",
-  "proof-1268.mjs"
+  "proof-wording-finished-cleans.mjs"
  ],
  "retired": [
   {
