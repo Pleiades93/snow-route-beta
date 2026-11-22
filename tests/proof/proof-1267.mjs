@@ -99,7 +99,7 @@ check('4b: the old strings are gone from parts/',
 
 // ---------- editorial ----------
 check('5: What\'s New carries the round\'s headline bullet (dead ends feather) and no em dash',
-  whatsnew.includes('Done in create-a-route now shows your whole route flat, above the review list.') && !whatsnew.includes('—'));
+  whatsnew.includes('Street names now load in with the map, in sync, instead of popping in after a wait.') && !whatsnew.includes('—'));
 
 console.log('proof-1267: ' + pass + ' pass, ' + fail + ' fail');
 process.exit(fail ? 1 : 0);

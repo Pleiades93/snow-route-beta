@@ -28,13 +28,21 @@ setTimeout(() => { if (!glOk) { mapNoteArmed = true; noteMapState(); } }, 15000)
 onMapReady(() => map.on('error', e => { if (!glOk && e && e.error && /fetch|Failed/i.test(e.error.message || '') && !mapNoteArmed) { mapNoteArmed = true; noteMapState(); } }));
 onMapReady(() => map.on('sourcedata', e => { if (e.dataType === 'source' && e.sourceId === 'protomaps' && e.tile) { tilesOk++; if (basemapDead) { basemapDead = false; noteMapState(); } } })); // Beta 1.33: proof the basemap is really drawing - and the moment a tile lands after an outage, the death notice clears itself
 const ROUTE_TILE_NAMES = []; // Beta 1.40: every route street's name AS THE TILES SPELL IT (census of the protomaps 'roads' source layer, 2026-10-31: 34/34 matched exactly once; Fifth = '5th Avenue'). Drives the label exclusion in glUnifyLabels. Beta 1.117: the list itself is pack data (pack.tileNames in data.js) - this live array starts empty and buildGeometry refills it in place on every load.
-// ===== NAME LOAD-IN HOLD (Beta 1.266, Andrew's approved design, 2026-11-21) =====
-// On a route pick, EVERY name on the map - the basemap's text layers and the
-// route's own street titles - is held invisible for the whole load-in window,
-// the one anchor re-place (app5's hook) runs inside the hold where its
-// teardown cannot be seen, and at the settled idle all names fade in together
-// over one 350 ms ramp. The diagnosis (cold-start-flicker-2026-11-21) proved
-// the blink this kills: the titles placed during the pick flight, the hook's
+// ===== NAME HOLD (Beta 1.266, scoped by Beta 1.270 to the title guard's cure) =====
+// Beta 1.266 held EVERY name on the map - the basemap's text layers and the
+// route's own street titles - invisible for the whole load-in window, ran
+// the one anchor re-place inside the hold where its teardown could not be
+// seen, and faded all names in together over one 350 ms ramp at the settled
+// idle. Beta 1.270 (Andrew's synchronised-streaming design, 2026-11-21)
+// retires that cycle: the names stream in with the map, nothing is held on
+// a normal pick, and this machinery survives in ONE scope - the title
+// guard's cure (app5's armTitleRePlace), which engages it TITLES-ONLY on
+// the rare pick where a title demonstrably placed mid-flight, so the cure's
+// teardown cannot be seen either. The basemap half of the hold is retired
+// with the cycle: no path engages it now, and nameHoldHideOnly stands only
+// as the record of why a basemap paint/visibility write is banned. The
+// diagnosis (cold-start-flicker-2026-11-21) proved the blink the original
+// hold killed: the titles placed during the pick flight, the hook's
 // rebuild then tore the labelpts source down at the idle, and all 33 titles
 // vanished for the worker's re-parse (~1-2 s; ~4.9 s under 6x CPU throttle)
 // in the same moment the surrounding basemap names finished fading in.
@@ -72,10 +80,13 @@ const ROUTE_TILE_NAMES = []; // Beta 1.40: every route street's name AS THE TILE
 // is accepted. A layer whose set does not take is recorded in
 // nameFade.unheld and falls back to the flat multiplier, so a refusal
 // can never again pass as a held layer. The state machine that engages
-// and releases the hold lives in app5 (beginNameLoadIn and family);
-// this block owns only the paint and the visibility.
-const NAME_FADE_MS = 350; // the joint fade-in's length (Andrew's ~300-400 ms)
-let nameFade = { held: false, mult: 1, orig: {}, trans: {}, vis: {}, raf: 0, t0: 0, unheld: {} };
+// and releases the hold lives in app5 (the title guard's cure path);
+// this block owns only the paint and the visibility. Beta 1.270: the
+// engage carries a scope - 'titles' (the cure: the four title tiers only,
+// the basemap untouched) or 'all' (the retired 1.266 scope, kept so the
+// apply/restore paths stay symmetric with the naturals they captured).
+const NAME_FADE_MS = 350; // the fade-in's length (Andrew's ~300-400 ms)
+let nameFade = { held: false, mult: 1, scope: 'all', orig: {}, trans: {}, vis: {}, raf: 0, t0: 0, unheld: {} };
 function scaleNameStops(expr, mult) { // a zoom interpolate or step whose stop outputs are plain numbers, rebuilt with every output scaled by mult - the same expression shape, so the validator takes it and the layer's own zoom behaviour is preserved proportionally. Any other shape returns null (the caller falls back).
   if (!Array.isArray(expr)) return null;
   if (expr[0] === 'interpolate') { // ['interpolate', interpolation, input, stopIn, stopOut, ...]
@@ -104,10 +115,10 @@ function nameHoldHideOnly(m, id) { // a BASEMAP name layer's hold: VISIBILITY ON
     if (nameFade.held && m.getLayoutProperty(id, 'visibility') !== 'none') m.setLayoutProperty(id, 'visibility', 'none');
   } catch (e) {}
 }
-function nameHoldApply(m) { // (re)apply the current multiplier to every name layer present. glUnifyLabels calls this at the end of its pass, so every restack (a theme swap, a stack rebuild) lands in the held state; the engine's stack build calls that pass after the title layers are added, and the re-place re-adds the titles from their live specs (which carry the held paint), so no engine code needs to know the hold exists. The release ramp calls it per frame.
+function nameHoldApply(m) { // (re)apply the current multiplier to every name layer in the hold's scope. glUnifyLabels calls this at the end of its pass, so a restack during a standing cure (a theme swap, a stack rebuild) lands in the held state; the engine's stack build calls that pass after the title layers are added, and the re-place re-adds the titles from their live specs (which carry the held paint), so no engine code needs to know the hold exists. The release ramp calls it per frame.
   if (!m || (!nameFade.held && nameFade.mult === 1)) return;
   const kinds = nameLayerIds(m);
-  for (const id of kinds.base) nameHoldHideOnly(m, id);
+  if (nameFade.scope !== 'titles') for (const id of kinds.base) nameHoldHideOnly(m, id); // Beta 1.270: a titles-scoped hold never touches a basemap layer - not its paint, not its visibility
   for (const id of kinds.titles) {
     try {
       if (!(id in nameFade.orig)) { nameFade.orig[id] = m.getPaintProperty(id, 'text-opacity'); nameFade.trans[id] = m.getPaintProperty(id, 'text-opacity-transition'); nameFade.vis[id] = m.getLayoutProperty(id, 'visibility'); }
@@ -137,10 +148,10 @@ function nameHoldNaturalVis(id) { // the UNDERLYING visibility of a held layer -
 function nameBackdropHolds(id) { // whether the create backdrop currently has this layer hidden: while it does, the load-in's own visibility restore defers - the backdrop's exit restores the underlying natural (the snapshot above), and resurrecting the layer mid-creation would break the backdrop's hide
   try { return typeof crHiddenLayers !== 'undefined' && !!crHiddenLayers && crHiddenLayers.some((pr) => pr[0] === id); } catch (e) { return false; }
 }
-function nameHoldSet(on) { // engage (instant - the hold must be shut before the load-in's first frame can paint a name) or release (the one joint ramp)
+function nameHoldSet(on, titlesOnly) { // engage (instant - the cure's hold must be shut before the re-place's teardown can paint) or release (the 350 ms ramp back to natural). Beta 1.270: the only engage left is the guard cure's, and it is titles-only; the second argument names that scope at the call site.
   if (on) {
     if (nameFade.raf) { cancelAnimationFrame(nameFade.raf); nameFade.raf = 0; }
-    nameFade.held = true; nameFade.mult = 0; nameFade.unheld = {};
+    nameFade.held = true; nameFade.mult = 0; nameFade.scope = titlesOnly ? 'titles' : 'all'; nameFade.unheld = {};
     if (typeof map !== 'undefined' && map) nameHoldApply(map);
     return;
   }
@@ -166,7 +177,7 @@ function nameHoldSet(on) { // engage (instant - the hold must be shut before the
         try { if (map.getLayer(id)) { map.setPaintProperty(id, 'text-opacity', nameFade.orig[id] === undefined ? null : nameFade.orig[id]); map.setPaintProperty(id, 'text-opacity-transition', nameFade.trans[id] === undefined ? null : nameFade.trans[id]); if (!nameBackdropHolds(id)) map.setLayoutProperty(id, 'visibility', nameFade.vis[id] === undefined ? null : nameFade.vis[id]); } } catch (e) {}
       }
     }
-    nameFade.orig = {}; nameFade.trans = {}; nameFade.vis = {}; nameFade.mult = 1;
+    nameFade.orig = {}; nameFade.trans = {}; nameFade.vis = {}; nameFade.mult = 1; nameFade.scope = 'all';
   };
   nameFade.raf = requestAnimationFrame(step);
   setTimeout(() => { if (!nameFade.held && nameFade.mult < 1 && !nameFade.raf) step(); }, NAME_FADE_MS + 150); // a starved rAF (a hidden tab) must not strand the fade mid-ramp

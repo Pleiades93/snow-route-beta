@@ -2671,6 +2671,142 @@
     "scripts/check-census.py": "dd55f34cd855e60a6fadae7e261aa99f1682b9d7d8446696532045e3a281fafb"
    },
    "issued": "2026-11-21 create-sheet-fixes-1269"
+  },
+  {
+   "id": "sync-streaming-1270",
+   "kind": "app",
+   "anchors": {
+    "elements": [],
+    "functions": [
+     "armTitleRePlace",
+     "releaseTitleCure",
+     "nameHoldSet",
+     "nameHoldApply",
+     "nameHoldNaturalVis",
+     "loadRoute",
+     "unloadRouteToBoot",
+     "introToRoute"
+    ]
+   },
+   "changed": [
+    "parts/app2.js",
+    "parts/app5.js",
+    "parts/whatsnew.js"
+   ],
+   "rows": [
+    {
+     "id": "caller:armTitleRePlace:parts/app5.js:introToRoute",
+     "kind": "caller",
+     "source": "derived: call-site scan of parts/ - armTitleRePlace() is called from introToRoute in parts/app5.js",
+     "status": "covered",
+     "note": "the guard's only caller - the flown path arms it at the flyTo; drive219 phases A (skip) and D (fired cure) grade both outcomes of this call"
+    },
+    {
+     "id": "caller:introToRoute:parts/app5.js:loadRoute",
+     "kind": "caller",
+     "source": "derived: call-site scan of parts/ - introToRoute() is called from loadRoute in parts/app5.js",
+     "status": "covered",
+     "note": "the boot pick's only road to the flight; the instant-fit paths inside it owe no check (drive219 phase G grades the reduced-motion settle)"
+    },
+    {
+     "id": "caller:loadRoute:parts/app2.js:top-level",
+     "kind": "caller",
+     "source": "derived: call-site scan of parts/ - loadRoute() is called from top-level in parts/app2.js",
+     "status": "na",
+     "note": "the Routes tab pick handler - its behaviour is unchanged except that a standing cure hold is released beside the generation bump; graded end-to-end by drive219 phase C (second pick mid-window)"
+    },
+    {
+     "id": "caller:loadRoute:parts/create-save.js:top-level",
+     "kind": "caller",
+     "source": "derived: call-site scan of parts/ - loadRoute() is called from top-level in parts/create-save.js",
+     "status": "na",
+     "note": "the create-save completion pick - same loadRoute path as the tab pick; no guard is armed on a switch (it frames at once on the settled view), unchanged by this round beyond the cure release"
+    },
+    {
+     "id": "caller:nameHoldApply:parts/app2.js:glUnifyLabels",
+     "kind": "caller",
+     "source": "derived: call-site scan of parts/ - nameHoldApply() is called from glUnifyLabels in parts/app2.js",
+     "status": "covered",
+     "note": "a restack during a standing cure lands the incoming titles held - the scope gate (titles-only never touches the basemap loop) is pinned by proof-1270 check 6 and graded by drive219 phase B (theme swap) and D"
+    },
+    {
+     "id": "caller:nameHoldApply:parts/app2.js:nameHoldSet",
+     "kind": "caller",
+     "source": "derived: call-site scan of parts/ - nameHoldApply() is called from nameHoldSet in parts/app2.js",
+     "status": "covered",
+     "note": "the engage's own apply - drive219 phase D grades the rendered hold (D2: titles at effective opacity 0 while held)"
+    },
+    {
+     "id": "caller:nameHoldApply:parts/app2.js:step",
+     "kind": "caller",
+     "source": "derived: call-site scan of parts/ - nameHoldApply() is called from step in parts/app2.js",
+     "status": "covered",
+     "note": "the release ramp's per-frame apply - drive219 phase D grades the restore after the ramp (D3: natural paint verbatim)"
+    },
+    {
+     "id": "caller:nameHoldNaturalVis:parts/create-pick.js:crVisPair",
+     "kind": "caller",
+     "source": "derived: call-site scan of parts/ - nameHoldNaturalVis() is called from crVisPair in parts/create-pick.js",
+     "status": "covered",
+     "note": "the backdrop coordination survives the retired cycle: the only hold it can now meet is a cure hold; pinned by proof-1270 check 9 and graded by drive219 phase I (create entered mid-window)"
+    },
+    {
+     "id": "caller:nameHoldSet:parts/app5.js:cure",
+     "kind": "caller",
+     "source": "derived: call-site scan of parts/ - nameHoldSet() is called from cure in parts/app5.js",
+     "status": "covered",
+     "note": "the ONLY hold engage left in the app - titles-only, inside the guard's cure; pinned by proof-1270 check 4 (exactly one nameHoldSet(true in app5) and graded by drive219 phase D"
+    },
+    {
+     "id": "caller:nameHoldSet:parts/app5.js:release",
+     "kind": "caller",
+     "source": "derived: call-site scan of parts/ - nameHoldSet() is called from release in parts/app5.js",
+     "status": "covered",
+     "note": "the cure's one-shot release (idle or the 6 s backstop, whichever first; a second call is a no-op by the titleCureRelease identity test) - drive219 phase D grades the completed release"
+    },
+    {
+     "id": "caller:releaseTitleCure:parts/app5.js:loadRoute",
+     "kind": "caller",
+     "source": "derived: call-site scan of parts/ - releaseTitleCure() is called from loadRoute in parts/app5.js",
+     "status": "covered",
+     "note": "a new pick retires a standing cure - pinned by proof-1270 check 5 (the exact line in both callers)"
+    },
+    {
+     "id": "caller:releaseTitleCure:parts/app5.js:unloadRouteToBoot",
+     "kind": "caller",
+     "source": "derived: call-site scan of parts/ - releaseTitleCure() is called from unloadRouteToBoot in parts/app5.js",
+     "status": "covered",
+     "note": "a route delete retires a standing cure - pinned by proof-1270 check 5; drive219 phase H grades the unload-and-repick path"
+    },
+    {
+     "id": "caller:unloadRouteToBoot:parts/app5.js:deleteRoute",
+     "kind": "caller",
+     "source": "derived: call-site scan of parts/ - unloadRouteToBoot() is called from deleteRoute in parts/app5.js",
+     "status": "na",
+     "note": "the delete path itself is unchanged; only its generation line now also releases a cure instead of revealing a load-in (the load-in no longer exists)"
+    }
+   ],
+   "files": {
+    "parts/app1.js": "ad3bf7f8e4f509f37532579d071ada75cafd156223eb9a874c672577b6108bac",
+    "parts/app2.js": "6424284d8e486346eb92ca967368a4d3d877cbb521cbfd4481e7faadde1fc508",
+    "parts/app3.js": "da6c7d85eafbb97572278b818ff60a6fc25c5c35a3e51ee6c8ceb23f52ddf91c",
+    "parts/app4.js": "059a12937fd806f09bc2db6a3af52bae51ac8e714d40715894136ffb9df63e4f",
+    "parts/app5.js": "66b0980aba320ff3dd5182a5b57fe14d2909acaa24c256e68e570d40b4d67b3f",
+    "parts/brand-snow.js": "86fa9a02f29c7345ee68d68daffd9c72da612921b64da37f1eccf6b72161ac5f",
+    "parts/create-cache.js": "2a7e983aa50862cb074a16abf9266a41a1a175c69faa5215b1d3d289aa2b5327",
+    "parts/create-citydata.js": "393d90f275d971b5e52352deebaece381279acd0e86495ffa2da35701de9148e",
+    "parts/create-fetch.js": "e7a65bd88dc338213946c4537dc5d397f79396ec416b6f4ebf4be831927aeb66",
+    "parts/create-packs.js": "8653a58e37ead9cfff6b1bfc0029b033eb690716efc22cb3571abcbc9ca75c33",
+    "parts/create-pick.js": "7188458b087496ad52ff5d159ae23668b543d0100a3d58c3b251d33374258dd6",
+    "parts/create-save.js": "ad39720727f43d397e72443c92955c5a35d530f03e3219b2182c9ee7c062e52d",
+    "parts/data.js": "9684c69862156dc70ee9a2b88278b4e825c5bf35f0c150fbc5660ccbdce9304b",
+    "parts/engine.js": "d6d1f676ac8bc2a302cfbaf56de1e10cb361fd8b746d94d6380a5e4ebaf76173",
+    "parts/pmstyles.js": "f3501db9c16dbc6a5fa8c901089101e4913772384de1f069accb23a614bb90fc",
+    "parts/whatsnew.js": "2777d9cfae5d821041b9538decada23b79c7b6c752df9878576970716327e324",
+    "parts/head.html": "2e150921d447daa9a3d3f9cf2f9a2e661f7e3d885f686dc14537c65d35f49179",
+    "scripts/check-census.py": "dd55f34cd855e60a6fadae7e261aa99f1682b9d7d8446696532045e3a281fafb"
+   },
+   "issued": "2026-11-22-sync-1270"
   }
  ]
 }

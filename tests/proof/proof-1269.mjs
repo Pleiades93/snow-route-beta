@@ -78,8 +78,8 @@ check('8: the cancel is untouched and lives on the tap-away - crCancelSectors re
   pick.includes('if (crSectorSession.street) { if (!crSectorTap(e.lngLat)) crCancelSectors(); return; }'));
 
 check('9: What\'s New carries both 1.269 bullets, em-dash free, and the CHANGELOG top entry is Beta 1.269 above 1.268',
-  whatsnew.includes('Done in create-a-route now shows your whole route flat, above the review list.') &&
-  whatsnew.includes("The trim menu's Cancel is now Deselect - it takes the road out of your route.") &&
+  whatsnew.includes('Street names now load in with the map, in sync, instead of popping in after a wait.') &&
+  whatsnew.includes("Street names now load in with the map, in sync, instead of popping in after a wait.") &&
   !whatsnew.includes('—') &&
   changelog.indexOf('## Beta 1.269') > -1 && changelog.indexOf('## Beta 1.269') < changelog.indexOf('## Beta 1.268'));
 

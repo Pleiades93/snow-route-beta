@@ -82,8 +82,8 @@ check('13: crFailText keys the dense remedy on the failure source too (never on 
 // ---------- the release editorial ----------
 check('11: the CHANGELOG top entry is Beta 1.253', changelog.includes('## Beta 1.253'));
 check('12: What\'s New carries the 1.253 bullet, short and dash-free',
-  whatsnew.includes('Done in create-a-route now shows your whole route flat, above the review list.')
-  && 'Done in create-a-route now shows your whole route flat, above the review list.'.length <= 108
+  whatsnew.includes('Street names now load in with the map, in sync, instead of popping in after a wait.')
+  && 'Street names now load in with the map, in sync, instead of popping in after a wait.'.length <= 108
   && !whatsnew.includes('—'));
 
 console.log(`proof-1253: ${pass} passed, ${fail} failed`);
