@@ -43,8 +43,8 @@ check('2: the marker is two native circle layers on that source - halo under dot
   block.indexOf('crIsectHalo') < block.indexOf('crIsectDot'));
 check('3: NO ring and NO DOM mechanism: the surface block carries no circle stroke paint, creates no element, and uses no Marker class',
   !block.includes('circle-stroke') && !block.includes('createElement') && !block.includes('Marker(') && !block.includes('setDOMContent'));
-check('4: the pair stacks below the first label layer (the sample\'s seat - street names draw over the marker)',
-  block.includes("l.type === 'symbol' && l.layout && l.layout['text-field']") && block.includes('if (lab) before = lab.id;'));
+check('4: the pair stacks below the first label layer (the sample\'s seat - street names draw over the marker) - through the shared finder since Beta 1.267 (crFirstLabelLayerId, whose own body carries the symbol/text-field test)',
+  block.includes('const before = crFirstLabelLayerId();') && pick.includes("l.type === 'symbol' && l.layout && l.layout['text-field']"));
 
 // ---------- the pick ----------
 const pickSeat = span("b.addEventListener('click', () => {", '});\n  return b;');
@@ -85,8 +85,8 @@ check('14: the frame loop cannot storm the creation sources (gate fixes, PR #158
 
 // ---------- the release editorial ----------
 check('13: What\'s New carries the 1.266 bullet (rolled by the unified-load-in round), within the 108-char cap, em-dash free, and the CHANGELOG top entry is Beta 1.266 above 1.265',
-  whatsnew.includes('Street names now fade in together when a route loads, instead of blinking.') &&
-  'Street names now fade in together when a route loads, instead of blinking.'.length <= 108 &&
+  whatsnew.includes('Dead ends now feather out, like the ends where a street continues.') &&
+  'Dead ends now feather out, like the ends where a street continues.'.length <= 108 &&
   !whatsnew.includes('—') &&
   changelog.indexOf('## Beta 1.266') > -1 && changelog.indexOf('## Beta 1.266') < changelog.indexOf('## Beta 1.265'));
 

@@ -28,7 +28,10 @@ async function saveDraftRoute() {
       if (!crCov || !crCov.byName) return {};
       const all = {};
       for (const nm of Object.keys(crCov.byName)) { const ways = crCov.byName[nm].map(w => w && w.pts).filter(p => Array.isArray(p) && p.length > 1); if (ways.length) all[nm] = ways; }
-      return computeBoundaryEnds(roads, all);
+      const be = computeBoundaryEnds(roads, all);
+      const de = computeDeadEnds(roads, all); // Beta 1.267: dead ends join the same field, computed by the sibling computation from the same extract
+      for (const k of Object.keys(de)) be[k] = (be[k] || []).concat(de[k]);
+      return be;
     } catch (e) { return {}; }
   })();
   const v = normalizePack({ name, area, primaries: [...draft.primaries], roads, reference: {}, ends }, { tileNames: [...Object.values(draft.osmNames), ...(draft.tileNames || [])] }); // Beta 1.127: the SAVE stores chosen sectors only - the draft keeps the whole streets, the pack never sees the unchosen ends

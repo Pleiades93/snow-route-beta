@@ -1,4 +1,4 @@
-// derive-pack-ends.mjs - Beta 1.259: (re)derive a shipped pack's boundary-end
+// derive-pack-ends.mjs - Beta 1.259: (re)derive a shipped pack's end
 // records (the pack field `ends`) with the app's OWN computation -
 // computeBoundaryEnds (parts/create-packs.js) - run in the assembled page
 // against the city pack's street library, the same extract shape the create
@@ -37,7 +37,10 @@ try {
   for (const [nm, ways] of Object.entries(CITY)) {
     if (ways.some(w => w.some(p => p[0] >= box.s - g && p[0] <= box.n + g && p[1] >= box.w - g && p[1] <= box.e + g))) all[nm] = ways;
   }
-  return JSON.stringify({ ends: computeBoundaryEnds(pack.roads, all) });
+  const be = computeBoundaryEnds(pack.roads, all);
+  const de = computeDeadEnds(pack.roads, all); // Beta 1.267: dead ends derive through the same page, the sibling computation, the same extract
+  for (const k of Object.keys(de)) be[k] = (be[k] || []).concat(de[k]);
+  return JSON.stringify({ ends: be });
 })()`));
 } finally { try { proc.kill('SIGKILL'); } catch (_) {} } // the browser dies with the script either way - a failed run must not leave it holding the harness's debug port for the next launch
 if (out.__err) { console.error(out.__err); process.exit(1); }

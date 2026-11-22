@@ -17,6 +17,14 @@ if (!await poll(`!!(window.map && map.getSource && map.getSource('centres'))`, 4
 // Weston), and Valeria S / Greenpark E / Woolacott N / Velmar N / Velmar
 // W with the join AT the end. Topper E is a dead end (its street stops
 // 38.4 m short of Weston) and must NOT be treated.
+// RE-PINNED at Beta 1.267 (the CREATE round; Andrew DECIDED 2026-11-21,
+// Option 1): dead ends feather too, at 10 m with the join AT the end -
+// the shipped pack now carries 15 ends records (the 7 boundary at fade
+// 15 plus the 8 proven dead ends at fade 10) and Topper E IS treated,
+// as a dead end. B1/C3/C6 grade the new state; the boundary-class checks
+// (A1/A2/B2/C4/C5/C7) are unchanged in shape - computeBoundaryEnds still
+// derives exactly the 7 boundary records and leaves dead ends to its
+// sibling computeDeadEnds.
 // Both-ways: on the 1.258 tree every section fails - there is no
 // computeBoundaryEnds, no ends field, no fades source, and the rendered
 // stub past the Valeria join is solid gold (section E).
@@ -44,6 +52,16 @@ const FIX = [ // [street, end point, metres from the end back to the join]
   ['Velmar', [43.822621, -79.557839], 0.0],
   ['Velmar', [43.820752, -79.566990], 0.0],
 ];
+const DEAD = [ // Beta 1.267: [street, end point] - the 8 proven dead ends (join AT the end, fade 10)
+  ['Dianawood', [43.806147, -79.563949]],
+  ['Julian', [43.809475, -79.564965]],
+  ['Bayside', [43.818042, -79.564521]],
+  ['Tina', [43.812494, -79.564038]],
+  ['Topper', [43.822043, -79.555735]],
+  ['Boddy', [43.815833, -79.564884]],
+  ['Angie', [43.815174, -79.556854]],
+  ['Ferrari', [43.80881, -79.560576]],
+];
 const TOPPER_E = [43.822043, -79.555735];
 const ASTONA_W = [43.8206723, -79.5572012]; // a route junction (Astona meets Velmar)
 
@@ -69,10 +87,10 @@ const B = await J(`(() => {
   for (const [n, s] of Object.entries(STRETCH)) if (s.ends) attached[n] = s.ends;
   return { packEnds: pack ? (pack.ends || null) : null, attached };
 })()`);
-ok('B1 the shipped Route 5W pack carries the ends field with the same 7 records | ' + JSON.stringify(B.packEnds).slice(0, 300),
-  countRecs(B.packEnds) === 7 && FIX.every(([n, pt, b]) => matchRec(B.packEnds, n, pt, b)));
+ok('B1 the shipped Route 5W pack carries the ends field with 15 records (the 7 boundary plus the 8 dead ends since Beta 1.267) | ' + JSON.stringify(B.packEnds).slice(0, 300),
+  countRecs(B.packEnds) === 15 && FIX.every(([n, pt, b]) => matchRec(B.packEnds, n, pt, b)) && DEAD.every(([n, pt]) => matchRec(B.packEnds, n, pt, 0)));
 ok('B2 buildGeometry attaches the records to STRETCH (the engine\'s input): every fixture street carries its ends | attached: ' + Object.keys(B.attached || {}).join(','),
-  ['Valeria', 'Greenpark', 'Astona', 'Woolacott', 'Velmar'].every(n => (B.attached || {})[n] && matchRec({ [n]: B.attached[n] }, n, FIX.find(f => f[0] === n)[1], FIX.find(f => f[0] === n)[2])));
+  [...new Set([...FIX, ...DEAD.map(([n, pt]) => [n, pt, 0])].map(p => p[0]))].every(n => { const f = [...FIX, ...DEAD.map(([n2, pt]) => [n2, pt, 0])].find(p => p[0] === n); return (B.attached || {})[n] && matchRec({ [n]: B.attached[n] }, n, f[1], f[2]); }));
 
 // ---------- C: the fade sources, layers and geometry ----------
 const C = await J(`(() => {
@@ -109,11 +127,14 @@ const C = await J(`(() => {
     }
     per[name + '@' + pt[0]] = { joinPt, fades: fadesHere.length, fadeLen, over };
   }
-  // Topper: no fade near its east end; its paint still reaches the natural end
+  // Topper: since Beta 1.267 its east end is a treated DEAD end - a centre
+  // fade spans the last ~10 m and the centre paint stops where it begins
   const tO = oriented('Topper', ${JSON.stringify(TOPPER_E)});
-  let topperFade = 0, topperReach = -1;
+  let topperFade = 0, topperReach = -1, topperFadeLen = 0;
   if (tO) {
     topperFade = feats.fades.filter(f => f.geometry.coordinates.some(c => distM(ll(c), ${JSON.stringify(TOPPER_E)}) <= 40)).length;
+    const tc = feats.fades.filter(f => f.properties.k === 'c' && f.geometry.coordinates.some(c => distM(ll(c), ${JSON.stringify(TOPPER_E)}) <= 40));
+    topperFadeLen = tc.length ? Math.max(...tc.map(featLen)) : 0;
     for (const f of feats.centres) for (const c of f.geometry.coordinates) { const p = ll(c); const pr = projOnLine(tO.line, tO.cum, p); if (pr.off <= 6 && pr.d > topperReach) topperReach = pr.d; }
   }
   // junction run-through: Velmar's paint through the Astona W vertex
@@ -137,20 +158,20 @@ const C = await J(`(() => {
   return { lineMetrics: { fades: !!(srcSpec('fades') && srcSpec('fades').lineMetrics), selFades: !!(srcSpec('selFades') && srcSpec('selFades').lineMetrics) },
     layers: ['fade-casing', 'fade-surf-y', 'fade-surf-r', 'fade-band-g', 'fade-fill-g', 'selfade-y', 'selfade-r', 'selfade-g', 'selfade-fill'].map(id => [id, layerIds.includes(id)]),
     counts: { c: feats.fades.filter(f => f.properties.k === 'c').length, x: feats.fades.filter(f => f.properties.k === 'x').length },
-    per, topperFade, topperReach, topperTotal: tO ? tO.total : -1, through, fadeNearJunction };
+    per, topperFade, topperFadeLen, topperReach, topperTotal: tO ? tO.total : -1, through, fadeNearJunction };
 })()`);
 ok('C1 the fades and selFades sources exist and carry lineMetrics (line-gradient\'s precondition) | ' + JSON.stringify(C.lineMetrics),
   !C.__err && C.lineMetrics && C.lineMetrics.fades === true && C.lineMetrics.selFades === true);
 ok('C2 all nine fade layers are on the map | ' + JSON.stringify(C.layers),
   !C.__err && C.layers && C.layers.every(([, on]) => on === true));
-ok('C3 at rest the board carries exactly 7 centre fades and 7 casing fades - one per boundary end | ' + JSON.stringify(C.counts),
-  !C.__err && C.counts && C.counts.c === 7 && C.counts.x === 7);
+ok('C3 at rest the board carries exactly 15 centre fades and 15 casing fades - one per treated end (7 boundary + 8 dead since Beta 1.267) | ' + JSON.stringify(C.counts),
+  !C.__err && C.counts && C.counts.c === 15 && C.counts.x === 15);
 ok('C4 every boundary end has its fade: a centre fade ending at the join (+-1.5 m) with a 13.5-16.5 m span | ' + JSON.stringify(C.per).slice(0, 500),
   !C.__err && C.per && Object.values(C.per).every(p => !p.noRun && p.fades >= 1 && p.fadeLen >= 13.5 && p.fadeLen <= 16.5));
 ok('C5 no board paint crosses a join: at the two overshoot ends (and every other fixture end) no centres/bands/fills/fades vertex projects past the join by more than 0.75 m | ' + JSON.stringify(C.per).slice(0, 500),
   !C.__err && C.per && Object.values(C.per).every(p => p.over <= 0.75));
-ok('C6 Topper E is NOT treated: no fade feature within 40 m of its end, and its centre paint still reaches within 1.5 m of the natural end | fade=' + C.topperFade + ' reach=' + C.topperReach + '/' + C.topperTotal,
-  !C.__err && C.topperFade === 0 && C.topperTotal > 0 && C.topperReach >= C.topperTotal - 1.5);
+ok('C6 Topper E IS treated as a dead end (Beta 1.267): a centre fade of 8.5-11.5 m spans its last metres, and its centre paint stops where the fade begins (about 10 m short of the natural end) | fade=' + C.topperFade + ' fadeLen=' + C.topperFadeLen + ' reach=' + C.topperReach + '/' + C.topperTotal,
+  !C.__err && C.topperFade >= 1 && C.topperFadeLen >= 8.5 && C.topperFadeLen <= 11.5 && C.topperTotal > 0 && C.topperReach >= C.topperTotal - 11.5 && C.topperReach <= C.topperTotal - 8.5);
 ok('C7 junction run-through intact: Velmar\'s centre paint passes through the Astona W junction vertex with at least 10 m of paint on both sides, and no fade feature comes within 25 m of it | ' + JSON.stringify(C.through) + ' fadeNear=' + C.fadeNearJunction,
   !C.__err && C.through && (C.through.dV - C.through.lo) >= 10 && (C.through.hi - C.through.dV) >= 10 && C.fadeNearJunction === 0);
 
