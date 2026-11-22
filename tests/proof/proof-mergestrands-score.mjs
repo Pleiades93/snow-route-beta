@@ -31,7 +31,7 @@ import vm from 'node:vm';
 // On the unfixed engine checks 1-2 FAIL and check 3 passes; with the
 // fix all three pass. Coordinates below are metres in the synthetic
 // grid (x east, y north of the LongAve/CrossSt junction), matched with
-// 0.75 m tolerance - the side lines sit SURF_HALF (4.95 m) off their
+// 0.75 m tolerance - the side lines sit SURF_HALF (4.29 m at WIDTH_K 1.3, Beta 1.268; 4.95 m at 1.5) off their
 // centrelines, hence the 4.9/55/65 ordinates.
 
 const src = readFileSync('parts/engine.js', 'utf8');

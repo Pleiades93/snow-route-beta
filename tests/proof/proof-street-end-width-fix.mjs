@@ -29,9 +29,11 @@ import { readFileSync } from 'node:fs';
 // Route 5W's latitude (43.81 N; the investigation measured 9.24 px/m
 // at z19 live, the formula gives 9.28 — tolerances absorb the delta).
 //
-//   check 1-2: drawn surface == 9.9 m at z16-19, and its half-width
-//              meets the 4.95 m flush cut at z17-19 (the gap property
-//              itself: half-width below 4.95 IS the end gap).
+//   check 1-2: drawn surface == the geographic surface width
+//              (2 x SURF_HALF = 6.6 x WIDTH_K m) at z16-19, and its
+//              half-width meets the SURF_HALF flush cut at z17-19
+//              (the gap property itself: half-width below the cut
+//              IS the end gap).
 //   check 3:   drawn band == 14.4 m at z15-19, half-width meets the
 //              7.2 m flush cut at z17-19.
 //   check 4-5: casing rims (t1-casing over surfW; BANDCASE over BANDW)
@@ -52,9 +54,21 @@ import { readFileSync } from 'node:fs';
 // band end trims use SURF_HALF, and tapTolPx follows surfCASE. The
 // 1.206-era checks 3, 5, 6 and 8 are replaced below by the new spec's
 // pins (3S, 5S, 6S, 8S); checks 1, 2, 4 and 7 are unchanged — the
-// street-end property itself (surface half-width meets the 4.95 m
+// street-end property itself (surface half-width meets the SURF_HALF
 // flush cut) is untouched by the supersession, and band ends now cut
-// at that same 4.95 m edge, which check 3S pins.
+// at that same edge, which check 3S pins.
+//
+// RE-BASE (Beta 1.268, WIDTHS round): WIDTH_K 1.5 -> 1.3 narrows the
+// paint to 1.20x the basemap road (Andrew's decision, measured - see
+// proof-1268). The geographic surface is 8.58 m (was 9.9 m), the
+// flush cut is SURF_HALF 4.29 m (was 4.95 m), the surfW z14 stop
+// assembles to 3.25 px (was 3.75) and the tap tolerance's live values
+// are 24.09 px at z18 / 44.25 px at z19 (were 27.49 / 50.75). The
+// PROPERTY is unchanged - the drawn surface meets the flush cut at
+// every close zoom - so checks 1, 2 and 3S now read their targets
+// from WIDTH_K itself (6.6x / 3.3x) instead of the frozen 1.5-era
+// numbers, and checks 7 and 8S re-pin their assembled values. The
+// defect narrative above is the 2026-11-15 record at WIDTH_K 1.5.
 //
 // Run from the repo root:  node tests/proof/proof-street-end-width-fix.mjs
 
@@ -107,16 +121,18 @@ try { casing = curveStops('const surfCASE = '); } catch (e) { casing = null; }
 const M_PER_PX = z => (40075016.686 * Math.cos(43.81 * Math.PI / 180)) / (512 * Math.pow(2, z));
 const drawnM = (pairs, z) => widthAt(pairs, z) * M_PER_PX(z);
 
-// Check 1: drawn surface holds the geographic 9.9 m at z16-19.
+// Check 1: drawn surface holds the geographic surface width
+// (2 x SURF_HALF = 6.6 x WIDTH_K m: 9.9 m at WIDTH_K 1.5, 8.58 m at 1.3).
+const SURF_FULL_M = 6.6 * WIDTH_K, SURF_CUT_M = 3.3 * WIDTH_K;
 for (const z of [16, 17, 18, 19]) {
   const d = drawnM(surfW, z);
-  ok(`surfW drawn width at z${z} ~= 9.9 m`, Math.abs(d - 9.9) <= 0.3, d.toFixed(2) + ' m');
+  ok(`surfW drawn width at z${z} ~= ${SURF_FULL_M.toFixed(2)} m (2 x SURF_HALF)`, Math.abs(d - SURF_FULL_M) <= 0.3, d.toFixed(2) + ' m');
 }
 // Check 2: the meeting property — drawn surface half-width reaches the
-// 4.95 m flush-cut edge at z17-19 (below it, the difference is the gap).
+// SURF_HALF flush-cut edge at z17-19 (below it, the difference is the gap).
 for (const z of [17, 18, 19]) {
   const half = drawnM(surfW, z) / 2;
-  ok(`surface half-width at z${z} meets the 4.95 m end cut`, half >= 4.95 - 0.05, half.toFixed(2) + ' m');
+  ok(`surface half-width at z${z} meets the ${SURF_CUT_M.toFixed(2)} m end cut`, half >= SURF_CUT_M - 0.05, half.toFixed(2) + ' m');
 }
 // Check 3S (supersedes 1.206 check 3): the wider band is retired —
 // the band layers draw with surfW itself, so the drawn band equals
@@ -129,7 +145,7 @@ ok('3S: band end trims use SURF_HALF (clipStrandEnds(bands, SURF_HALF, ...) — 
   src.includes('clipStrandEnds(bands, SURF_HALF, null, (sl, atStart)') && !/BAND_HALF\s*[,);]/.test(src));
 for (const z of [17, 18, 19]) {
   const half = drawnM(surfW, z) / 2;
-  ok(`3S: band (== surface) half-width at z${z} meets its 4.95 m end cut`, half >= 4.95 - 0.05, half.toFixed(2) + ' m');
+  ok(`3S: band (== surface) half-width at z${z} meets its ${SURF_CUT_M.toFixed(2)} m end cut`, half >= SURF_CUT_M - 0.05, half.toFixed(2) + ' m');
 }
 // Check 4: t1-casing rim over surfW equals the shipped rim at every stop
 // (shipped spec rims 2.0/2.5/3.0/3.5/4.0 at z14/16/17/18/19, x WIDTH_K px).
@@ -150,9 +166,10 @@ const SHIP_SURFCASE = { 14: 4.5, 16: 10.13, 17: 18.25, 18: 33.99, 19: 65 };
 ok('6S: surfCASE stops == the shipped casing stops',
   !!casing && Object.entries(SHIP_SURFCASE).every(([z, w]) => { const p = casing.find(([zz]) => zz === +z); return p && Math.abs(p[1] - w) < 1e-9; }),
   casing ? JSON.stringify(casing) : 'surfCASE missing');
-// Check 7: surfW z14 stop untouched (2.5 raw = 3.75 px assembled).
+// Check 7: surfW z14 stop untouched (2.5 raw = 2.5 x WIDTH_K px
+// assembled: 3.75 px at WIDTH_K 1.5, 3.25 px at 1.3).
 const s14 = widthAt(surfW, 14);
-ok('surfW z14 stop unchanged (3.75 px)', Math.abs(s14 - 3.75) < 1e-9, s14.toFixed(3) + ' px');
+ok(`surfW z14 stop unchanged (${(2.5 * WIDTH_K).toFixed(2)} px)`, Math.abs(s14 - 2.5 * WIDTH_K) < 1e-9, s14.toFixed(3) + ' px');
 
 // Check 8S (was check 8, Codex P2 on PR #81, re-based by the Beta
 // 1.208 supersession): the map-tap tolerance must follow the widest
@@ -162,7 +179,8 @@ ok('surfW z14 stop unchanged (3.75 px)', Math.abs(s14 - 3.75) < 1e-9, s14.toFixe
 // handler reads it. Under 1.206 the widest paint was the band casing
 // (BANDCASE, half-width 37 / 71 px at z18/19, tolerance 39 / 73.1);
 // since 1.208 the widest paint is the surface casing, so the formula
-// reads surfCASE (tolerance 27.49 / 50.75). Pin the formula's
+// reads surfCASE (tolerance 27.49 / 50.75 at WIDTH_K 1.5; 24.09 /
+// 44.25 at 1.268's 1.3). Pin the formula's
 // presence and its numeric coverage from the parsed curve: at every
 // zoom the tolerance covers the widest paint's half-width with
 // margin, and at z17 and below it is exactly the shipped 24 (the
@@ -182,12 +200,13 @@ for (const z of [14, 15, 16, 17, 18, 19]) {
   ok(`tap tolerance at z${z} covers the widest paint`, !isNaN(widestHalf) && tol >= widestHalf + 2 - 1e-9 && (z > 17 || tol === 24),
     isNaN(widestHalf) ? 'surfCASE missing' : 'tol ' + tol.toFixed(1) + ' px vs paint half ' + widestHalf.toFixed(1) + ' px');
 }
-// The live values the formula yields on the shipped curves (measured
-// in the running app, green-half-road QA): 27.49 px at z18, 50.75 at
-// z19 — down from 38.98 / 73.1 under the retired band casing.
+// The live values the formula yields on the shipped curves: at
+// WIDTH_K 1.3 (Beta 1.268), 24.09 px at z18 and 44.25 px at z19 —
+// they were 27.49 / 50.75 at WIDTH_K 1.5, and 38.98 / 73.1 under the
+// retired band casing.
 if (casing) {
-  ok('8S: tap tolerance at z18 == 27.49 px (live value)', Math.abs(Math.max(24, widthAt(casing, 18) / 2 + 2) - 27.49) <= 0.1, (widthAt(casing, 18) / 2 + 2).toFixed(2));
-  ok('8S: tap tolerance at z19 == 50.75 px (live value)', Math.abs(Math.max(24, widthAt(casing, 19) / 2 + 2) - 50.75) <= 0.1, (widthAt(casing, 19) / 2 + 2).toFixed(2));
+  ok('8S: tap tolerance at z18 == 24.09 px (live value at WIDTH_K 1.3)', Math.abs(Math.max(24, widthAt(casing, 18) / 2 + 2) - 24.09) <= 0.1, (widthAt(casing, 18) / 2 + 2).toFixed(2));
+  ok('8S: tap tolerance at z19 == 44.25 px (live value at WIDTH_K 1.3)', Math.abs(Math.max(24, widthAt(casing, 19) / 2 + 2) - 44.25) <= 0.1, (widthAt(casing, 19) / 2 + 2).toFixed(2));
 }
 
 console.log(failures === 0 ? 'ALL CHECKS PASS' : failures + ' CHECK(S) FAILED');

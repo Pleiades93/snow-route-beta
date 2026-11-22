@@ -476,7 +476,7 @@ function ptSegDistPx(p, a, b) { const vx = b.x - a.x, vy = b.y - a.y, L2 = vx * 
 function nearestStreet(pt) { let best = null, bd = Infinity; for (const n of STREETNAMES) for (const seg of ROADS[n]) for (let i = 1; i < seg.length; i++) { const d = ptSegDistPx(pt, projLL(seg[i - 1]), projLL(seg[i])); if (d < bd) { bd = d; best = n; } } return { name: best, d: bd }; }
 function nearestStretch(name, pt) { let bi = 0, bd = Infinity; STRETCH[name].parts.forEach((part, idx) => { for (let i = 1; i < part.length; i++) { const d = ptSegDistPx(pt, projLL(part[i - 1]), projLL(part[i])); if (d < bd) { bd = d; bi = idx; } } }); return { idx: bi, d: bd }; }
 function geoSideFrame(name, idx, anchorLL) {
-  // The engine's convention: side 0 = geographic LEFT of the stitched line (off0, +3.3 m x WIDTH_K = 4.95 m at 1.5x, Beta 1.181), side 1 = RIGHT.
+  // The engine's convention: side 0 = geographic LEFT of the stitched line (off0, +3.3 m x WIDTH_K = 4.29 m at 1.3x, Beta 1.268; 4.95 m at the 1.5x of Beta 1.181), side 1 = RIGHT.
   // Returns the anchor's projection on the stretch + the geographic LEFT unit vector (metre space).
   const part = STRETCH[name].parts[idx];
   const px = anchorLL[1] * MLNG, py = anchorLL[0] * MLAT;

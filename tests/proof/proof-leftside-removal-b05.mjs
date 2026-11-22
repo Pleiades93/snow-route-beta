@@ -60,6 +60,17 @@ import { createHash } from 'node:crypto';
 // invariant directly: the fade sources exist and carry no features in
 // either state - no ends, no fades, geometry untouched.
 //
+// Beta 1.268 addendum (2026-11-21, WIDTHS round): WIDTH_K 1.5 -> 1.3
+// narrows the paint, so the offset geometry the sources carry changes
+// and checks 7-8's pins are RE-DERIVED for the new constant, by the
+// same derivation as 1.258. The isolation was verified, not assumed:
+// the shipped 1.268 engine with WIDTH_K forced back to 1.5 reproduces
+// the 1.258 pins EXACTLY (5db11af0... / 1cfd3e1d...), so the constant
+// is the only geometry change in the round; at 1.3 the pins are
+// 53928e48... / 7a8cab4a.... The identity claim is unchanged: the
+// LEFTSIDE/LEFTBIT removals and restores moved no paint byte - at any
+// given WIDTH_K the sources are what the unmodified engine emits.
+//
 // On unmodified main checks 1-3 FAIL and 4-8 pass; with the removal all
 // eight pass. (On the 1.257 tree checks 4-8 now fail by design: LEFTBIT
 // stands there and the labelpts source still exists.)
@@ -152,10 +163,10 @@ function sourcesHash(pieces) {
 
 const stateA = sourcesHash({ LongAve: [2, 1, 2], NorthAve: [1, 2, 1], CrossSt: [1, 2, 1] });
 const stateB = sourcesHash({ LongAve: [1, 0, 3], NorthAve: [3, 1, 0], CrossSt: [0, 3, 2] });
-check('geometry identity, state A (pieces 2/1/2 - 1/2/1 - 1/2/1): the ten surviving paint sources byte-identical to the unmodified engine minus labelpts (Beta 1.258 derivation)',
-  stateA.tenHash === '5db11af0bf1e7c77a97e77c595bd5615c62d82d1b8666edffce76e3578bb6fd9');
-check('geometry identity, state B (pieces 1/0/3 - 3/1/0 - 0/3/2): the ten surviving paint sources byte-identical to the unmodified engine minus labelpts (Beta 1.258 derivation)',
-  stateB.tenHash === '1cfd3e1d0acd5f0da3fa38cb5544ddb9fa387c8b0befb0e0f5c49a70ae6234b8');
+check('geometry identity, state A (pieces 2/1/2 - 1/2/1 - 1/2/1): the ten surviving paint sources byte-identical to the unmodified engine minus labelpts (Beta 1.268 re-derivation at WIDTH_K 1.3; the 1.258 pins return when WIDTH_K is forced back to 1.5)',
+  stateA.tenHash === '53928e48e19af85c8b577a61ea78239abb16ec10da3e5c583e184489fc74fe82');
+check('geometry identity, state B (pieces 1/0/3 - 3/1/0 - 0/3/2): the ten surviving paint sources byte-identical to the unmodified engine minus labelpts (Beta 1.268 re-derivation at WIDTH_K 1.3; the 1.258 pins return when WIDTH_K is forced back to 1.5)',
+  stateB.tenHash === '7a8cab4a2132711cabba4c81c294999b68ed240eedd4ee31821fa359f9c192b0');
 check('Beta 1.259: the fade sources exist and are empty in state A (no boundary records in the fixture - the feather is inert)',
   stateA.fadesEmpty);
 check('Beta 1.259: the fade sources exist and are empty in state B',
