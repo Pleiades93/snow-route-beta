@@ -54,39 +54,22 @@ for (const sig of ['SIGINT', 'SIGTERM']) {
   process.on(sig, () => { for (const p of liveGroups) killGroup(p); process.exit(sig === 'SIGINT' ? 130 : 143); });
 }
 
-// Temp-residue reap (2026-11-22): on the local rig /tmp is a 512M tmpfs,
-// and every drive leaves Chromium residue in it - org.chromium.Chromium.*
-// temp dirs plus the drives' own --user-data-dir=/tmp/*profile-* dirs
-// (hardcoded in the harness and the bespoke rigs). The harness kills its
-// browsers on exit but nothing deleted the dirs, so a dense day of
-// batteries filled the scratch disk and poisoned later runs (ENOSPC
-// presents as unrelated drive failures). The runner owns the reap now:
-// each drive child gets a TMPDIR on the home disk (removed when the drive
-// closes), after every drive the runner removes residue dirs created
-// during that drive's lifetime from the system temp dirs, and at startup
-// it sweeps residue older than an hour (left behind by killed runners).
-// Patterns stay narrow, only directories are removed, and a cleanup
-// failure never affects a verdict.
+// Per-drive temp ownership (2026-11-22): on the local rig /tmp is a 512M
+// tmpfs, and every drive used to leave Chromium residue in it - the
+// harness kills its browsers on exit but nothing deleted their profile
+// and temp dirs, so a dense day of batteries filled the scratch disk and
+// poisoned later runs (ENOSPC presents as unrelated drive failures). Each
+// drive child now gets a TMPDIR of its own on the home disk, removed when
+// the drive closes; the harness and the create rigs build their browser
+// profiles under TMPDIR, so a drive's whole temp footprint lives and dies
+// inside its own dir. The runner NEVER sweeps shared temp directories by
+// name or timestamp (Beta 1.272, Codex P2 on PR #168: a name+time sweep of
+// /tmp can delete another live drive's profile - the owned-dir model is
+// the fix, not a narrower sweep).
 const DRIVE_TMP_BASE = path.join(os.homedir(), '.cache', 'sdt'); // SHORT on purpose: Chromium's singleton socket lives under TMPDIR and dies (SIGABRT, "Socket path too long") past the ~108-char unix-socket limit - the drive name stays OUT of the path for the same reason (fixture-orphan-throw's long name was the first to cross it, CI 2026-11-22)
-const RESIDUE = [/^org\.chromium\.Chromium\./, /profile-/];
-const REAP_DIRS = [...new Set([os.tmpdir(), '/tmp'])];
-function reapResidue(dir, minMtime, maxMtime) {
-  let names;
-  try { names = fs.readdirSync(dir); } catch (e) { return; }
-  for (const n of names) {
-    if (!RESIDUE.some(r => r.test(n))) continue;
-    const p = path.join(dir, n);
-    try {
-      const st = fs.statSync(p);
-      if (st.isDirectory() && st.mtimeMs >= minMtime && st.mtimeMs <= maxMtime) fs.rmSync(p, { recursive: true, force: true });
-    } catch (e) {}
-  }
-}
-for (const d of REAP_DIRS) reapResidue(d, 0, Date.now() - 3600000);
 
 function runOne(name) {
   return new Promise(resolve => {
-    const startedAt = Date.now();
     let driveTmp = null;
     try { fs.mkdirSync(DRIVE_TMP_BASE, { recursive: true }); driveTmp = fs.mkdtempSync(path.join(DRIVE_TMP_BASE, 'd')); } catch (e) {}
     const env = driveTmp ? { ...process.env, TMPDIR: driveTmp } : process.env;
@@ -99,7 +82,6 @@ function runOne(name) {
     p.on('close', code => {
       clearTimeout(timer); killGroup(p); liveGroups.delete(p);
       if (driveTmp) { try { fs.rmSync(driveTmp, { recursive: true, force: true }); } catch (e) {} }
-      for (const d of REAP_DIRS) reapResidue(d, startedAt - 5000, Infinity);
       resolve({ name, code, out, err, timedOut });
     });
   });

@@ -22,6 +22,8 @@
 // (local origin + SRI mirror) and are NOT on this harness yet.
 import { spawn } from 'node:child_process';
 import fs from 'node:fs';
+import os from 'node:os';
+import path from 'node:path';
 import { ensureProxyBridge } from './proxy-bridge.mjs';
 
 export const sleep = ms => new Promise(r => setTimeout(r, ms));
@@ -87,7 +89,7 @@ export async function launchDrive({ patterns = PATTERNS_DEFAULT, page = process.
   for (let attempt = 1; attempt <= 3 && !wsUrl; attempt++) {
     proc = spawn(CHROME, [
     '--headless=new', '--no-sandbox', '--disable-gpu', '--hide-scrollbars', ...proxyArgs,
-    '--remote-debugging-port=0', '--disable-features=LocalNetworkAccessChecks', '--user-data-dir=/tmp/v6profile-' + Date.now() + '-a' + attempt,
+    '--remote-debugging-port=0', '--disable-features=LocalNetworkAccessChecks', '--user-data-dir=' + path.join(os.tmpdir(), 'v6profile-' + Date.now() + '-a' + attempt), // Beta 1.272 (Codex P2, PR #168): under this process's TMPDIR - the runner's per-drive dir - never shared /tmp
     '--window-size=420,900', 'about:blank'
   ], { stdio: ['ignore', 'pipe', 'pipe'] });
     try {
