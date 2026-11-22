@@ -1,3 +1,3 @@
 const WHATSNEW = { // the curated in-app notes: plain words, LATEST RELEASE ONLY (Beta 1.114, Andrew: the accumulated list cluttered the About pane). A release REPLACES this entry with its own in the same change - it never accumulates; the full history lives in CHANGELOG.md, not the app
-  v: '@@VERSION@@', items: ["Dead ends now feather out, like the ends where a street continues.", "Street names stay on top while you pick roads for a new route.", "Pressing Done now flies out to show your whole new route.", "Shorter wording on the keep-screen-awake setting."] }; // Beta 1.223 (Andrew): What's New entries are SHORT from now on - point form, one short plain line each, no prose paragraphs, no em dashes
+  v: '@@VERSION@@', items: ["Route lines are a touch slimmer, matched closer to the road under them."] }; // Beta 1.223 (Andrew): What's New entries are SHORT from now on - point form, one short plain line each, no prose paragraphs, no em dashes
 

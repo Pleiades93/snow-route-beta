@@ -95,7 +95,7 @@ check('4b: the old strings are gone from parts/',
 
 // ---------- editorial ----------
 check('5: What\'s New carries the round\'s headline bullet (dead ends feather) and no em dash',
-  whatsnew.includes('Dead ends now feather out, like the ends where a street continues.') && !whatsnew.includes('—'));
+  whatsnew.includes('Route lines are a touch slimmer, matched closer to the road under them.') && !whatsnew.includes('—'));
 
 console.log('proof-1267: ' + pass + ' pass, ' + fail + ' fail');
 process.exit(fail ? 1 : 0);

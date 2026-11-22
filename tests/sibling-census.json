@@ -2159,6 +2159,233 @@
     "scripts/check-census.py": "dd55f34cd855e60a6fadae7e261aa99f1682b9d7d8446696532045e3a281fafb"
    },
    "issued": "2026-11-22"
+  },
+  {
+   "id": "widths-1268",
+   "kind": "app",
+   "anchors": {
+    "functions": [
+     "scaleW",
+     "wPlus",
+     "glowW",
+     "tapTolPx",
+     "clipStrandEnds",
+     "clipEndAtJunction",
+     "geoSideFrame"
+    ],
+    "elements": []
+   },
+   "changed": [
+    "parts/engine.js,parts/app2.js,parts/create-pick.js,parts/whatsnew.js"
+   ],
+   "rows": [
+    {
+     "id": "caller:clipEndAtJunction:parts/engine.js:buildFamilies",
+     "kind": "caller",
+     "source": "derived: call-site scan of parts/ - clipEndAtJunction() is called from buildFamilies in parts/engine.js",
+     "status": "covered",
+     "note": "the end cap is placed at SURF_HALF, which derives from WIDTH_K (3.3 x WIDTH_K) - it scales with the constant by construction; the flush-cut property at the new 4.29 m is pinned by proof-street-end-width-fix checks 2/3S (re-pinned this round, mutation-observed)"
+    },
+    {
+     "id": "caller:clipEndAtJunction:parts/engine.js:clipOnLine",
+     "kind": "caller",
+     "source": "derived: call-site scan of parts/ - clipEndAtJunction() is called from clipOnLine in parts/engine.js",
+     "status": "covered",
+     "note": "same SURF_HALF path as buildFamilies - scales by construction; proof-green-half-road R2e pins the oblique end on the crossing paint edge at 4.29 m (re-pinned this round)"
+    },
+    {
+     "id": "caller:clipEndAtJunction:parts/engine.js:clipStrandEnds",
+     "kind": "caller",
+     "source": "derived: call-site scan of parts/ - clipEndAtJunction() is called from clipStrandEnds in parts/engine.js",
+     "status": "covered",
+     "note": "clipStrandEnds passes SURF_HALF through to clipEndAtJunction - scales by construction; proof-sweep b-07 pins the clips at 4.29 m (re-pinned this round)"
+    },
+    {
+     "id": "caller:clipEndAtJunction:parts/engine.js:selectedGeom",
+     "kind": "caller",
+     "source": "derived: call-site scan of parts/ - clipEndAtJunction() is called from selectedGeom in parts/engine.js",
+     "status": "covered",
+     "note": "selection geometry clips through the same SURF_HALF path - the selection narrows with the paint, which is the round's intent; proof-green-half-road R3 family pins selection/board identity at the new width"
+    },
+    {
+     "id": "caller:clipStrandEnds:parts/engine.js:buildFamilies",
+     "kind": "caller",
+     "source": "derived: call-site scan of parts/ - clipStrandEnds() is called from buildFamilies in parts/engine.js",
+     "status": "covered",
+     "note": "board families clip at SURF_HALF (4.29 m at WIDTH_K 1.3) - proof-sweep b-07 checks 3-5 pin the family-boundary, street-start and run-gap clips at the new value (re-pinned, mutation-observed)"
+    },
+    {
+     "id": "caller:geoSideFrame:parts/app2.js:map:move",
+     "kind": "caller",
+     "source": "derived: call-site scan of parts/ - geoSideFrame() is called from map:move in parts/app2.js",
+     "status": "covered",
+     "note": "geoSideFrame reads the engine's side-offset lines (off0/off1 at 3.3 x WIDTH_K), so the tap frame follows the narrower paint automatically; this round's only app2.js edit is the comment stating the new 4.29 m value - no behaviour edit in the function"
+    },
+    {
+     "id": "caller:glowW:parts/engine.js:applyGlow",
+     "kind": "caller",
+     "source": "derived: call-site scan of parts/ - glowW() is called from applyGlow in parts/engine.js",
+     "status": "covered",
+     "note": "glowW scales its added width by WIDTH_K, so the selection glow grows from the narrower curves proportionally - the standing rule (the glow rim scales with the road) is preserved by construction"
+    },
+    {
+     "id": "caller:scaleW:parts/engine.js:top-level",
+     "kind": "caller",
+     "source": "derived: call-site scan of parts/ - scaleW() is called from top-level in parts/engine.js",
+     "status": "covered",
+     "note": "scaleW is the multiplier itself: every paint curve (surfW, surfCASE, the fade and fill curves) is defined through it, so the whole stack scales from the one constant; proof-street-end-width-fix evaluates the shipped curves from source and pins the drawn width at 8.58 m"
+    },
+    {
+     "id": "caller:wPlus:parts/engine.js:addStack",
+     "kind": "caller",
+     "source": "derived: call-site scan of parts/ - wPlus() is called from addStack in parts/engine.js",
+     "status": "covered",
+     "note": "the stack's casing widths are curve + wPlus deltas, both WIDTH_K-scaled - casing rims over the surface keep their shipped relationship, pinned by proof-street-end-width-fix check 4 (rim x WIDTH_K, read from source)"
+    },
+    {
+     "id": "gesture:parts/app2.js:map:move",
+     "kind": "gesture",
+     "source": "derived: handler scan - the map move handler in parts/app2.js touches geoSideFrame without dismissing it",
+     "status": "covered",
+     "note": "the move handler's use of geoSideFrame is unchanged in behaviour: it consumes the engine offsets, which now sit at 4.29 m; no gesture semantics, dismissal or timing change in this round (the app2.js edit is a comment value)"
+    }
+   ],
+   "files": {
+    "parts/app1.js": "ad3bf7f8e4f509f37532579d071ada75cafd156223eb9a874c672577b6108bac",
+    "parts/app2.js": "5ff1abe58c8008664743555c5f195cdbd309b41e8bf288d1dfbede0a08a714ff",
+    "parts/app3.js": "da6c7d85eafbb97572278b818ff60a6fc25c5c35a3e51ee6c8ceb23f52ddf91c",
+    "parts/app4.js": "059a12937fd806f09bc2db6a3af52bae51ac8e714d40715894136ffb9df63e4f",
+    "parts/app5.js": "d0a79fe85e6c8cd7135fb871d0d57bf3ad115f73828d255a61342a6d3d0aa4e2",
+    "parts/brand-snow.js": "86fa9a02f29c7345ee68d68daffd9c72da612921b64da37f1eccf6b72161ac5f",
+    "parts/create-cache.js": "2a7e983aa50862cb074a16abf9266a41a1a175c69faa5215b1d3d289aa2b5327",
+    "parts/create-citydata.js": "393d90f275d971b5e52352deebaece381279acd0e86495ffa2da35701de9148e",
+    "parts/create-fetch.js": "e7a65bd88dc338213946c4537dc5d397f79396ec416b6f4ebf4be831927aeb66",
+    "parts/create-packs.js": "8653a58e37ead9cfff6b1bfc0029b033eb690716efc22cb3571abcbc9ca75c33",
+    "parts/create-pick.js": "0c6688e2148a00ba9d5fb864bc4dc4e687c6fa6d3758abbe8384cb645ec1fead",
+    "parts/create-save.js": "ad39720727f43d397e72443c92955c5a35d530f03e3219b2182c9ee7c062e52d",
+    "parts/data.js": "9684c69862156dc70ee9a2b88278b4e825c5bf35f0c150fbc5660ccbdce9304b",
+    "parts/engine.js": "d6d1f676ac8bc2a302cfbaf56de1e10cb361fd8b746d94d6380a5e4ebaf76173",
+    "parts/pmstyles.js": "f3501db9c16dbc6a5fa8c901089101e4913772384de1f069accb23a614bb90fc",
+    "parts/whatsnew.js": "c3a4723a84037f236162428d340fa7bfe929015fe7337d416dc8f8e83e25ea00",
+    "parts/head.html": "9db24ad6af81a344ca55aa0be8ec423f864409f89007929f5fb8fd4c53fe85bf",
+    "scripts/check-census.py": "dd55f34cd855e60a6fadae7e261aa99f1682b9d7d8446696532045e3a281fafb"
+   },
+   "issued": "2026-11-21-widths-1268"
+  },
+  {
+   "id": "widths-1268-v2",
+   "kind": "app",
+   "anchors": {
+    "functions": [
+     "scaleW",
+     "wPlus",
+     "glowW",
+     "tapTolPx",
+     "clipStrandEnds",
+     "clipEndAtJunction",
+     "geoSideFrame"
+    ],
+    "elements": []
+   },
+   "changed": [
+    "parts/app2.js",
+    "parts/create-pick.js",
+    "parts/engine.js",
+    "parts/whatsnew.js"
+   ],
+   "rows": [
+    {
+     "id": "caller:clipEndAtJunction:parts/engine.js:buildFamilies",
+     "kind": "caller",
+     "source": "derived: call-site scan of parts/ - clipEndAtJunction() is called from buildFamilies in parts/engine.js",
+     "status": "covered",
+     "note": "the end cap is placed at SURF_HALF, which derives from WIDTH_K (3.3 x WIDTH_K) - it scales with the constant by construction; the flush-cut property at the new 4.29 m is pinned by proof-street-end-width-fix checks 2/3S (re-pinned this round, mutation-observed)"
+    },
+    {
+     "id": "caller:clipEndAtJunction:parts/engine.js:clipOnLine",
+     "kind": "caller",
+     "source": "derived: call-site scan of parts/ - clipEndAtJunction() is called from clipOnLine in parts/engine.js",
+     "status": "covered",
+     "note": "same SURF_HALF path as buildFamilies - scales by construction; proof-green-half-road R2e pins the oblique end on the crossing paint edge at 4.29 m (re-pinned this round)"
+    },
+    {
+     "id": "caller:clipEndAtJunction:parts/engine.js:clipStrandEnds",
+     "kind": "caller",
+     "source": "derived: call-site scan of parts/ - clipEndAtJunction() is called from clipStrandEnds in parts/engine.js",
+     "status": "covered",
+     "note": "clipStrandEnds passes SURF_HALF through to clipEndAtJunction - scales by construction; proof-sweep b-07 pins the clips at 4.29 m (re-pinned this round)"
+    },
+    {
+     "id": "caller:clipEndAtJunction:parts/engine.js:selectedGeom",
+     "kind": "caller",
+     "source": "derived: call-site scan of parts/ - clipEndAtJunction() is called from selectedGeom in parts/engine.js",
+     "status": "covered",
+     "note": "selection geometry clips through the same SURF_HALF path - the selection narrows with the paint, which is the round's intent; proof-green-half-road R3 family pins selection/board identity at the new width"
+    },
+    {
+     "id": "caller:clipStrandEnds:parts/engine.js:buildFamilies",
+     "kind": "caller",
+     "source": "derived: call-site scan of parts/ - clipStrandEnds() is called from buildFamilies in parts/engine.js",
+     "status": "covered",
+     "note": "board families clip at SURF_HALF (4.29 m at WIDTH_K 1.3) - proof-sweep b-07 checks 3-5 pin the family-boundary, street-start and run-gap clips at the new value (re-pinned, mutation-observed)"
+    },
+    {
+     "id": "caller:geoSideFrame:parts/app2.js:map:move",
+     "kind": "caller",
+     "source": "derived: call-site scan of parts/ - geoSideFrame() is called from map:move in parts/app2.js",
+     "status": "covered",
+     "note": "geoSideFrame reads the engine's side-offset lines (off0/off1 at 3.3 x WIDTH_K), so the tap frame follows the narrower paint automatically; this round's only app2.js edit is the comment stating the new 4.29 m value - no behaviour edit in the function"
+    },
+    {
+     "id": "caller:glowW:parts/engine.js:applyGlow",
+     "kind": "caller",
+     "source": "derived: call-site scan of parts/ - glowW() is called from applyGlow in parts/engine.js",
+     "status": "covered",
+     "note": "glowW scales its added width by WIDTH_K, so the selection glow grows from the narrower curves proportionally - the standing rule (the glow rim scales with the road) is preserved by construction"
+    },
+    {
+     "id": "caller:scaleW:parts/engine.js:top-level",
+     "kind": "caller",
+     "source": "derived: call-site scan of parts/ - scaleW() is called from top-level in parts/engine.js",
+     "status": "covered",
+     "note": "scaleW is the multiplier itself: every paint curve (surfW, surfCASE, the fade and fill curves) is defined through it, so the whole stack scales from the one constant; proof-street-end-width-fix evaluates the shipped curves from source and pins the drawn width at 8.58 m"
+    },
+    {
+     "id": "caller:wPlus:parts/engine.js:addStack",
+     "kind": "caller",
+     "source": "derived: call-site scan of parts/ - wPlus() is called from addStack in parts/engine.js",
+     "status": "covered",
+     "note": "the stack's casing widths are curve + wPlus deltas, both WIDTH_K-scaled - casing rims over the surface keep their shipped relationship, pinned by proof-street-end-width-fix check 4 (rim x WIDTH_K, read from source)"
+    },
+    {
+     "id": "gesture:parts/app2.js:map:move",
+     "kind": "gesture",
+     "source": "derived: handler scan - the map move handler in parts/app2.js touches geoSideFrame without dismissing it",
+     "status": "covered",
+     "note": "the move handler's use of geoSideFrame is unchanged in behaviour: it consumes the engine offsets, which now sit at 4.29 m; no gesture semantics, dismissal or timing change in this round (the app2.js edit is a comment value)"
+    }
+   ],
+   "files": {
+    "parts/app1.js": "ad3bf7f8e4f509f37532579d071ada75cafd156223eb9a874c672577b6108bac",
+    "parts/app2.js": "5ff1abe58c8008664743555c5f195cdbd309b41e8bf288d1dfbede0a08a714ff",
+    "parts/app3.js": "da6c7d85eafbb97572278b818ff60a6fc25c5c35a3e51ee6c8ceb23f52ddf91c",
+    "parts/app4.js": "059a12937fd806f09bc2db6a3af52bae51ac8e714d40715894136ffb9df63e4f",
+    "parts/app5.js": "d0a79fe85e6c8cd7135fb871d0d57bf3ad115f73828d255a61342a6d3d0aa4e2",
+    "parts/brand-snow.js": "86fa9a02f29c7345ee68d68daffd9c72da612921b64da37f1eccf6b72161ac5f",
+    "parts/create-cache.js": "2a7e983aa50862cb074a16abf9266a41a1a175c69faa5215b1d3d289aa2b5327",
+    "parts/create-citydata.js": "393d90f275d971b5e52352deebaece381279acd0e86495ffa2da35701de9148e",
+    "parts/create-fetch.js": "e7a65bd88dc338213946c4537dc5d397f79396ec416b6f4ebf4be831927aeb66",
+    "parts/create-packs.js": "8653a58e37ead9cfff6b1bfc0029b033eb690716efc22cb3571abcbc9ca75c33",
+    "parts/create-pick.js": "0c6688e2148a00ba9d5fb864bc4dc4e687c6fa6d3758abbe8384cb645ec1fead",
+    "parts/create-save.js": "ad39720727f43d397e72443c92955c5a35d530f03e3219b2182c9ee7c062e52d",
+    "parts/data.js": "9684c69862156dc70ee9a2b88278b4e825c5bf35f0c150fbc5660ccbdce9304b",
+    "parts/engine.js": "d6d1f676ac8bc2a302cfbaf56de1e10cb361fd8b746d94d6380a5e4ebaf76173",
+    "parts/pmstyles.js": "f3501db9c16dbc6a5fa8c901089101e4913772384de1f069accb23a614bb90fc",
+    "parts/whatsnew.js": "c3a4723a84037f236162428d340fa7bfe929015fe7337d416dc8f8e83e25ea00",
+    "parts/head.html": "9db24ad6af81a344ca55aa0be8ec423f864409f89007929f5fb8fd4c53fe85bf",
+    "scripts/check-census.py": "dd55f34cd855e60a6fadae7e261aa99f1682b9d7d8446696532045e3a281fafb"
+   },
+   "issued": "2026-11-21-widths-1268"
   }
  ]
 }

@@ -1101,12 +1101,25 @@ function cornerTouchSlices(slices, pairs) {
     });
   });
 }
-// ---- road width (Beta 1.181, Andrew): EVERY road is 1.5x wider -
-// the route paint curves, the side-offset geometry, the junction
-// trims and the selection glow all live in one world scaled by this
-// ONE number. The basemap carries the same factor, baked into its
-// styles at generation time (scripts/genstyles.mjs, ROAD_WIDTH_K).
-const WIDTH_K = 1.5;
+// ---- road width (Beta 1.181, Andrew): the route paint curves, the
+// side-offset geometry, the junction trims and the selection glow all
+// live in one world scaled by this ONE number. The basemap carries
+// its own factor, baked into its styles at generation time
+// (scripts/genstyles.mjs, ROAD_WIDTH_K = 1.5, unchanged since 1.181).
+// Beta 1.268 (Andrew, 2026-11-21): the two factors SPLIT - the
+// basemap stays 1.5 and the PAINT narrows until it
+// renders 1.20x the basemap road's own width (at 1.5, ~1.4x). THE PIN:
+// WIDTH_K (here), ROAD_WIDTH_K (scripts/genstyles.mjs) and the 1.20
+// ratio are one decision held in three places. Calibration, measured
+// at Velmar, home framing (zoom 13.9792, pitch 45, day): at
+// ROAD_WIDTH_K 1.5 the basemap road renders 6.7 px and WIDTH_K 1.08
+// paints 6.7 px (1.0x), so the 1.20 ratio lands at WIDTH_K 1.30 -
+// measured on the Beta 1.267 tree: paint 8.0 px against the road's
+// 6.7 px = 1.19x (route-width sample 2026-11-21 and the WIDTHS
+// round's own captures, widths-round-2026-11-21). If EITHER constant
+// changes, the ratio must be re-measured before the change ships -
+// the two systems drift apart silently otherwise.
+const WIDTH_K = 1.3;
 // ---- solid-paint end trims (Andrew, 2026-10-28, round 13): a wide
 // solid (centre surface, completed band, or the selection redraw of
 // one) ENDING at a junction must butt against the crossing street's
@@ -1115,7 +1128,7 @@ const WIDTH_K = 1.5;
 // until both corners sit inside every crossing street's paint strip.
 // Where the corners already sit inside (most junctions), nothing moves
 // and same-colour paint stays seamless.
-const SURF_HALF = 3.3 * WIDTH_K, HALF_HALF = 1.65 * WIDTH_K;   // geographic half-widths the GL paint curves track (base 3.3 m x WIDTH_K = 4.95 m at 1.5x; surfW ~9.9 m at working zooms). Beta 1.208 (Andrew: "make the green match the others"): the completed band draws at the surface's width, so all full-road paint shares ONE half-width - SURF_HALF (the old BAND_HALF 7.2 m is retired with the BANDW curve). HALF_HALF (2.475 m) is the one-side fill's own half-width: the fill ribbon is centred HALF_HALF from the centreline and spans centreline to kerb.
+const SURF_HALF = 3.3 * WIDTH_K, HALF_HALF = 1.65 * WIDTH_K;   // geographic half-widths the GL paint curves track (base 3.3 m x WIDTH_K = 4.29 m at 1.3x; surfW ~8.58 m at working zooms). Beta 1.208 (Andrew: "make the green match the others"): the completed band draws at the surface's width, so all full-road paint shares ONE half-width - SURF_HALF (the old BAND_HALF 7.2 m is retired with the BANDW curve). HALF_HALF (2.145 m) is the one-side fill's own half-width: the fill ribbon is centred HALF_HALF from the centreline and spans centreline to kerb.
 function ptSegDistM(p, a, b) {
   const P = XYOf(p), A = XYOf(a), B = XYOf(b);
   const vx = B[0] - A[0], vy = B[1] - A[1], L2 = vx * vx + vy * vy || 1;
@@ -1763,7 +1776,7 @@ function rebuildData() { const F = buildFamilies(); const SC = buildSelC(); cons
   CUR = { centres: F.centres, bands: F.bands, edges: F.edges, fills: F.fills, fades: F.fades, sel: SC.sel, selBand: SC.selBand, selFill: SF, selFades: fadeFC([...SC.selFades, ...SEL_FILL_FADES]) }; }
 
 function scaleW(curve) { return curve.map((v, i) => (i >= 4 && i % 2 === 0) ? +(v * WIDTH_K).toFixed(3) : v); }   // Beta 1.181: scale an interpolate width curve by WIDTH_K (widths sit at even indices >= 4, the wPlus/wScale index rule)
-const surfW = scaleW(['interpolate', ['linear'], ['zoom'], 14, 2.5, 16, 7.63, 17, 15.25, 18, 30.5, 19, 61]);   // street-end width fix: z16-19 stops set so the DRAWN width holds the geographic 9.9 m on the app's true map scale (the old 6.5/9.5/15/24 drew only 8.4/6.2/4.9/3.9 m, so terminating ends — cut flush to the crossing paint's designed edge — hung gapped from the paint as drawn)
+const surfW = scaleW(['interpolate', ['linear'], ['zoom'], 14, 2.5, 16, 7.63, 17, 15.25, 18, 30.5, 19, 61]);   // street-end width fix: z16-19 stops set so the DRAWN width holds the geographic surface width (2 x SURF_HALF: 9.9 m at WIDTH_K 1.5, 8.58 m at 1.3) on the app's true map scale (the old 6.5/9.5/15/24 drew only 8.4/6.2/4.9/3.9 m, so terminating ends — cut flush to the crossing paint's designed edge — hung gapped from the paint as drawn)
 const surfCASE = scaleW(['interpolate', ['linear'], ['zoom'], 14, 4.5, 16, 10.13, 17, 18.25, 18, 33.99, 19, 65]);   // the surface's casing curve (the dark rim under the paint), factored out of the t1-casing layer at Beta 1.208: completed bands now draw at the surface's width, so their casing is THIS curve too, and tapTolPx reads the widest paint from it. BANDW/BANDCASE (the wider band curves, last set by the 1.206 street-end fix) are retired here - 1.208 supersedes them by Andrew's order.
 const wPlus = (curve, d) => curve.map((v, i) => (i >= 4 && i % 2 === 0) ? v + d * WIDTH_K : v);   // widen an interpolate width curve by d px at every stop (widths sit at even indices >= 4); Beta 1.181: the added px scale by WIDTH_K too, so the glow rim grows proportionally with the road
 const wScale = (curve, f) => curve.map((v, i) => (i >= 4 && i % 2 === 0) ? v * f : v);   // scale an interpolate width curve (same index rule as wPlus)
@@ -2121,7 +2134,7 @@ function managePulse() {
     for (let i = 3; i + 1 < curve.length; i += 2) { if (z <= curve[i]) { if (!prev) return curve[i + 1]; return prev[1] + (curve[i + 1] - prev[1]) * ((z - prev[0]) / (curve[i] - prev[0])); } prev = [curve[i], curve[i + 1]]; }
     return prev[1];
   }
-  function tapTolPx(z) { return Math.max(24, evalCurvePx(surfCASE, z) / 2 + 2); } // The map-tap tolerance follows the WIDEST paint at the tap's zoom, floored at 24 px — the Beta 1.181 rule ("a tap anywhere on the paint still selects instead of deselecting"). Beta 1.206 introduced this formula against BANDCASE, then the widest paint; Beta 1.208 retires the wide band, so the widest paint is now the surface casing (surfCASE): 24 px at z17 and below (the floor - shipped behaviour unchanged), ~27.5 px at z18, ~50.8 px at z19.
+  function tapTolPx(z) { return Math.max(24, evalCurvePx(surfCASE, z) / 2 + 2); } // The map-tap tolerance follows the WIDEST paint at the tap's zoom, floored at 24 px — the Beta 1.181 rule ("a tap anywhere on the paint still selects instead of deselecting"). Beta 1.206 introduced this formula against BANDCASE, then the widest paint; Beta 1.208 retires the wide band, so the widest paint is now the surface casing (surfCASE): 24 px at z17 and below (the floor - shipped behaviour unchanged), ~24.1 px at z18, ~44.3 px at z19 (the z18/z19 values re-measured at Beta 1.268's WIDTH_K 1.3; they were ~27.5 / ~50.8 at 1.5).
   return { init, drop, sync, syncSel, syncTheme, active, setFont, rebuildRoute, tapTolPx, mute, rePlaceTitles }; // mute exported for the create flow's draft renderer (Beta 1.221 gate fix: create-pick's crDraftLineDim calls GLP.mute - the helper is private to this IIFE, and the bare call threw at draft-layer init, silently aborting every layer after the casing; Codex review P1 on PR #98). Beta 1.248: rePlaceTitles exported for app5's post-flight hook
 })();
 window.GLP = GLP;

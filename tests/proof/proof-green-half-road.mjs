@@ -3,6 +3,14 @@ import vm from 'node:vm';
 
 // Green half-road proof (fix_id: green-half-road, Beta 1.208, 2026-11-15).
 //
+// RE-BASE (Beta 1.268, WIDTHS round): WIDTH_K 1.5 -> 1.3 narrows the
+// paint to 1.20x the basemap road (proof-1268). Every metric
+// expectation below is re-pinned to the new geometry: HALF_HALF
+// 2.475 -> 2.145 m, SURF_HALF 4.95 -> 4.29 m, the surface (and so
+// the junction square and the R2d break) 9.9 -> 8.58 m. The rules
+// R1-R4 are unchanged; the 1.206/1.208 narrative below is the record
+// at WIDTH_K 1.5.
+//
 // Andrew's three paint rules from his Beta 1.206 phone screenshots
 // (Valeria Boulevard, one side done), plus the label rule R4:
 //
@@ -17,7 +25,7 @@ import vm from 'node:vm';
 //        4.5 px at every zoom): half the road zoomed out, a thin kerb
 //        outline zoomed in (measured: 9 device px at z17, z18 AND
 //        z19). The fix builds a FILL family on half-offset lines
-//        (+/-2.475 m) drawn at half the surface width (surfW x 0.5).
+//        (+/-2.145 m) drawn at half the surface width (surfW x 0.5).
 //   R3 - selecting a stretch must not break its green. The shipped
 //        selection rebuilt the stretch's side line from that piece
 //        alone (buildSel('e')), so it re-clipped the junction ends
@@ -140,23 +148,23 @@ const fills = sources.fills ? strandsM(sources.fills.data) : [];
 check('R2: a fills source exists and LongAve side 0 (all 3 pieces marked) paints as ONE strand through the CrossSt junction',
   fills.length === 1 && fills[0].some(p => p[0] < -60) && fills[0].some(p => p[0] > 60),
   'strands=' + fills.length);
-check('R2: every fill point rides the half-offset line (2.475 m off the centreline, +/-0.45 m)',
-  fills.length === 1 && fills[0].every(p => Math.abs(p[1] - 2.475) <= 0.45),
+check('R2: every fill point rides the half-offset line (2.145 m off the centreline, +/-0.45 m)',
+  fills.length === 1 && fills[0].every(p => Math.abs(p[1] - 2.145) <= 0.45),
   fills.length ? 'y range ' + Math.min(...fills[0].map(p => p[1])).toFixed(2) + '..' + Math.max(...fills[0].map(p => p[1])).toFixed(2) : 'no fills');
 
 // ---- R2b: a fill that STOPS at a junction keeps its offset to the
 // very end (Codex P2 on PR #83: the generic end clip solves along the
 // centreline, so a terminating fill's last vertices sat 0.613 m from
-// the centreline instead of 2.475 m — green spilling onto the
+// the centreline instead of 2.145 m — green spilling onto the
 // unfinished side). LongAve [1, 0, 0]: the fill ends at the CrossSt
 // junction; its end must sit ON the half-offset line, flush at the
-// crossing street's near paint edge (x ~= -4.95).
+// crossing street's near paint edge (x ~= -4.29).
 host.pieces.LongAve = [1, 0, 0];
 GLP.sync();
 const fillsT = sources.fills ? strandsM(sources.fills.data) : [];
 check('R2b: a terminating fill exists (LongAve piece 0 only)', fillsT.length === 1, 'strands=' + fillsT.length);
-check('R2b: every point of the terminating fill — including its last vertices — rides the half-offset line (2.475 m, +/-0.45 m)',
-  fillsT.length === 1 && fillsT[0].every(p => Math.abs(p[1] - 2.475) <= 0.45),
+check('R2b: every point of the terminating fill — including its last vertices — rides the half-offset line (2.145 m, +/-0.45 m)',
+  fillsT.length === 1 && fillsT[0].every(p => Math.abs(p[1] - 2.145) <= 0.45),
   fillsT.length ? 'last two points: ' + JSON.stringify(fillsT[0].slice(-2).map(p => [ +p[0].toFixed(2), +p[1].toFixed(2) ])) : 'no fills');
 check('R2b: the terminating fill ends flush at the crossing street\u2019s near paint edge (end x within [-6.5, -3.5], not cut far back, not overshooting)',
   fillsT.length === 1 && (() => { const e = fillsT[0][fillsT[0].length - 1]; return e[0] >= -6.5 && e[0] <= -3.5; })(),
@@ -172,17 +180,17 @@ GLP.sync();
 // traced the kerb around corners; the fills had no corner treatment).
 // LongAve [2,0,0] (south fill, west arm) + CrossSt [0,2,0] (east
 // fill, north arm): a connector strand must join them through the
-// half-lines' corner point (2.475, -2.475).
+// half-lines' corner point (2.145, -2.145).
 host.pieces.LongAve = [2, 0, 0];
 host.pieces.CrossSt = [0, 2, 0];
 GLP.sync();
 const fillsC = sources.fills ? strandsM(sources.fills.data) : [];
 const nearPt = (s, x, y, tol) => s.some(p => Math.hypot(p[0] - x, p[1] - y) <= tol);
-const conn = fillsC.find(s => s.length >= 3 && nearPt(s, 2.475, -2.475, 1.6));
-check('R2c: a corner connector joins the two streets\u2019 fills through the half-corner point (2.475, -2.475)',
+const conn = fillsC.find(s => s.length >= 3 && nearPt(s, 2.145, -2.145, 1.6));
+check('R2c: a corner connector joins the two streets\u2019 fills through the half-corner point (2.145, -2.145)',
   !!conn && fillsC.length === 3, 'strands=' + fillsC.length + ' ends=' + JSON.stringify(fillsC.map(s => [s[0].map(v => +v.toFixed(1)), s[s.length - 1].map(v => +v.toFixed(1))]))); 
 check('R2c: the connector\u2019s ends are the two fills\u2019 own ends (no new endpoints invented)',
-  !!conn && nearPt([conn[0]], -4.95, -2.475, 0.35) && nearPt([conn[conn.length - 1]], 2.475, 4.95, 0.35),
+  !!conn && nearPt([conn[0]], -4.29, -2.145, 0.35) && nearPt([conn[conn.length - 1]], 2.145, 4.29, 0.35),
   conn ? 'conn ends=' + JSON.stringify([conn[0].map(v => +v.toFixed(2)), conn[conn.length - 1].map(v => +v.toFixed(2))]) : 'no connector');
 host.pieces.CrossSt = [0, 0, 0];
 GLP.sync();
@@ -199,7 +207,7 @@ GLP.sync();
 // junction square's half - 9.9 m - unpainted. The green strands must
 // MEET at the boundary vertex, in both directions.
 const stripEnds = () => {
-  const fills = strandsM(sources.fills.data).filter(s => s.filter(p => Math.abs(p[1] - 2.475) <= 0.5).length >= s.length * 0.7);
+  const fills = strandsM(sources.fills.data).filter(s => s.filter(p => Math.abs(p[1] - 2.145) <= 0.5).length >= s.length * 0.7);
   const bands = strandsM(sources.bands.data);
   return { fillE: fills.length ? Math.max(...fills.map(s => Math.max(...s.map(p => p[0])))) : null,
            fillW: fills.length ? Math.min(...fills.map(s => Math.min(...s.map(p => p[0])))) : null,
@@ -209,7 +217,7 @@ const stripEnds = () => {
 host.pieces.LongAve = [1, 3, 3];
 GLP.sync();
 let se = stripEnds();
-check('R2d: fill flowing into a band meets it at the boundary (no 9.9 m break in the completed side)',
+check('R2d: fill flowing into a band meets it at the boundary (no 8.58 m break in the completed side)',
   se.fillE !== null && se.bandW !== null && se.fillE >= se.bandW - 0.3,
   'fillE=' + se.fillE + ' bandW=' + se.bandW);
 host.pieces.LongAve = [3, 1, 0];
@@ -225,7 +233,7 @@ GLP.sync();
 // degree crossing (DiagSt crosses LongAve at x=60), a terminating
 // fill's cap must sit flush on the crossing street's near paint
 // edge: the end point ON the half-offset line AND on the edge line
-// (4.95 m from the diagonal's centreline), the approach running
+// (4.29 m from the diagonal's centreline), the approach running
 // normal to the diagonal. Projecting the solved end onto the line
 // (the gate-round-2 construction) put the cap's centre at ~6.7 m
 // from the diagonal's centreline - a ~3 m wedge.
@@ -237,8 +245,8 @@ const oEi = oStrand ? oStrand.reduce((bi, p, i) => (p[0] > oStrand[bi][0] ? i : 
 const oEnd = oStrand ? oStrand[oEi] : null;   // east end, at the DiagSt junction
 const oPrev = oStrand ? oStrand[oEi > 0 ? oEi - 1 : oEi + 1] : null;
 const dDiag = p => Math.abs((p[0] - 60) - p[1]) / Math.SQRT2;   // distance to DiagSt's centreline (the y=x line through (60,0))
-check('R2e: the oblique fill end sits ON the crossing paint edge (4.95 m from the diagonal centreline, +/-0.5) and ON its half line (2.475, +/-0.45)',
-  !!oEnd && Math.abs(dDiag(oEnd) - 4.95) <= 0.5 && Math.abs(oEnd[1] - 2.475) <= 0.45,
+check('R2e: the oblique fill end sits ON the crossing paint edge (4.29 m from the diagonal centreline, +/-0.5) and ON its half line (2.145, +/-0.45)',
+  !!oEnd && Math.abs(dDiag(oEnd) - 4.29) <= 0.5 && Math.abs(oEnd[1] - 2.145) <= 0.45,
   oEnd ? 'end=(' + oEnd.map(v => +v.toFixed(2)) + ') dDiag=' + dDiag(oEnd).toFixed(2) : 'no strand');
 check('R2e: the oblique approach runs normal to the diagonal (edge-normal approach preserved)',
   !!oEnd && !!oPrev && (() => { const vx = oPrev[0] - oEnd[0], vy = oPrev[1] - oEnd[1], L = Math.hypot(vx, vy) || 1; return Math.abs((vx / L + vy / L) / Math.SQRT2) <= 0.25; })(),
@@ -274,7 +282,7 @@ check('tap tolerance keeps the 24 px floor at z17 and below',
 // ---- R3b (gate round 4, Codex P2): the corner connector rides the
 // selection redraw. LongAve [2, 0, 0] + CrossSt [0, 2, 0] is the R2c
 // corner: the board's fills wrap it with a connector through
-// (2.475, -2.475) to CrossSt's fill end (2.475, 4.95). Selecting
+// (2.145, -2.145) to CrossSt's fill end (2.145, 4.29). Selecting
 // LongAve piece 0 must redraw that connector in selFill, or the
 // selected surface covers its first arm and the green breaks while
 // the stretch is selected.
@@ -287,7 +295,7 @@ GLP.syncSel();
 const selFillC = sources.selFill ? strandsM(sources.selFill.data) : [];
 const nearPtC = (s, x, y) => s.some(p => Math.hypot(p[0] - x, p[1] - y) <= 0.6);
 check('R3b: selecting a corner piece redraws its corner connector (through the corner point to the other street\'s fill end)',
-  selFillC.some(s => nearPtC(s, 2.475, -2.475) && nearPtC(s, 2.475, 4.95)),
+  selFillC.some(s => nearPtC(s, 2.145, -2.145) && nearPtC(s, 2.145, 4.29)),
   'selFill strands=' + selFillC.length);
 host.pieces.LongAve = [1, 1, 1];
 host.pieces.CrossSt = [0, 0, 0];

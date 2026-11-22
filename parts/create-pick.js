@@ -996,7 +996,10 @@ function ensureDraftLayers() {
 // crGlowShader, porting the sample's proven construction
 // (work/glow-shader-sample/RECORD.md): a ribbon mesh built in METRES around
 // the glow's lines, the falloff computed per pixel in the fragment shader -
-// full strength inside the road's kerb (4.95 m, the engine's SURF_HALF), then
+// full strength inside the road's kerb (4.95 m - the glow's own kerb, frozen
+// from its 1.211 sample: it was the engine's SURF_HALF then, and is NOT since
+// Beta 1.268 narrowed the paint to SURF_HALF 4.29 m; the glow surrounds the
+// road-keyed draft, which did not narrow, so its sample form is unchanged), then
 // a smooth (1-t)^2 decay across a breathing reach, 4.0 s cycle, reach 5<->9 m
 // and peak alpha 0.50<->0.80 in phase. SEVEN cross-section rings carry the
 // distance attribute (a two-row ribbon interpolates it to the outer value
