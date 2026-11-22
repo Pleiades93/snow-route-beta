@@ -7739,16 +7739,22 @@ function unloadRouteToBoot() { // Beta 1.124: the ACTIVE route was deleted - ret
   const rm = $('routeMenu'); rm.classList.remove('tab', 'open'); rm.classList.add('boot', 'show'); const bl = $('brandLayer'); if (bl) bl.classList.remove('off', 'bye'); /* Beta 1.155: the picker return revives the landed title in its layer (finish() parked it at the pick) */ showRmPane('rmMain'); renderRouteLists();
   syncWake();
 }
-async function deleteRoute(id) { // Beta 1.124 (Andrew): delete a route HE created - the shipped packs are refused (SHIPPED_PACK_IDS), so the built-in 5W can never be deleted. Order is the safety: (1) the userpacks definition goes first, through a strict read and a VERIFIED write - on any failure nothing else is touched, the route stays listed and fully intact, and a toast names the storage problem; (2) only then is the pack unregistered and every key of its slot wiped - enumerated from routeKeys (ROUTE_FIELDS + snap + mig + its preload record), never hand-listed, so a future field joins the sweep by construction; (3) if it was the active route, the app returns to the boot picker; (4) the list re-renders without it. Beta 1.166: the definition's home is the IndexedDB store - step (1) is a verified store delete, PLUS the removal of any not-yet-drained legacy shadow copy (while a legacy record stands, its copy wins at boot, so leaving one would resurrect the route); a shadow-removal failure puts the store entry back rather than strand a half-deleted route.
-  const ix = ROUTE_PACKS.findIndex(p => p.id === id); if (ix < 0 || SHIPPED_PACK_IDS.has(id)) return;
+async function deleteRoute(id) { // Beta 1.124 (Andrew): delete a route HE created. Beta 1.271 (Andrew, 2026-11-21: EVERY route gets a Delete, the shipped 5W included) SUPERSEDES the 1.124 shipped refusal below - the order discipline is unchanged, only step (1)'s target differs by kind: a SHIPPED pack's step (1) writes the tombstone record (create-packs' SHIPPED_DELETED_KEY, strict read + verified write) because its definition is data.js, not a stored record; a created route's step (1) is the store delete + shadow removal, exactly as before. Order is the safety: (1) the userpacks definition goes first, through a strict read and a VERIFIED write - on any failure nothing else is touched, the route stays listed and fully intact, and a toast names the storage problem; (2) only then is the pack unregistered and every key of its slot wiped - enumerated from routeKeys (ROUTE_FIELDS + snap + mig + its preload record), never hand-listed, so a future field joins the sweep by construction; (3) if it was the active route, the app returns to the boot picker; (4) the list re-renders without it. Beta 1.166: the definition's home is the IndexedDB store - step (1) is a verified store delete, PLUS the removal of any not-yet-drained legacy shadow copy (while a legacy record stands, its copy wins at boot, so leaving one would resurrect the route); a shadow-removal failure puts the store entry back rather than strand a half-deleted route.
+  const ix = ROUTE_PACKS.findIndex(p => p.id === id); if (ix < 0) return;
   const pack = ROUTE_PACKS[ix];
-  const legacy = readUserPacks(); // strict, as ever: a legacy record that cannot be read is never rewritten blind - rescuing one deletion must never cost every created route
-  if (legacy === null) { toast('Storage problem - the route could not be deleted', 4000); return; }
-  if (!(await upDel(id))) { toast('Storage problem - the route could not be deleted', 4000); return; } // the storage-outcome contract, unchanged: the definition's removal is verified before any data is wiped - a route whose definition survived keeps its data and its row
-  if (legacy[id]) {
-    const shadow = { ...legacy }; delete shadow[id];
-    const okShadow = Object.keys(shadow).length ? (lsSet(USERPACKS_KEY, JSON.stringify(shadow)) && !(readUserPacks() || {})[id]) : (lsDel(USERPACKS_KEY) && localStorage.getItem(USERPACKS_KEY) === null);
-    if (!okShadow) { await upPut(id, pack); toast('Storage problem - the route could not be deleted', 4000); return; }
+  if (SHIPPED_PACK_IDS.has(id)) { // Beta 1.271: the shipped step (1) - the tombstone write, verified before anything is wiped, on the same storage-outcome contract
+    const dead = readShippedDeleted(); // strict: a tombstone record that cannot be read is never rewritten blind
+    if (dead === null) { toast('Storage problem - the route could not be deleted', 4000); return; }
+    if (!dead.includes(id) && !(lsSet(SHIPPED_DELETED_KEY, JSON.stringify([...dead, id])) && (readShippedDeleted() || []).includes(id))) { toast('Storage problem - the route could not be deleted', 4000); return; }
+  } else {
+    const legacy = readUserPacks(); // strict, as ever: a legacy record that cannot be read is never rewritten blind - rescuing one deletion must never cost every created route
+    if (legacy === null) { toast('Storage problem - the route could not be deleted', 4000); return; }
+    if (!(await upDel(id))) { toast('Storage problem - the route could not be deleted', 4000); return; } // the storage-outcome contract, unchanged: the definition's removal is verified before any data is wiped - a route whose definition survived keeps its data and its row
+    if (legacy[id]) {
+      const shadow = { ...legacy }; delete shadow[id];
+      const okShadow = Object.keys(shadow).length ? (lsSet(USERPACKS_KEY, JSON.stringify(shadow)) && !(readUserPacks() || {})[id]) : (lsDel(USERPACKS_KEY) && localStorage.getItem(USERPACKS_KEY) === null);
+      if (!okShadow) { await upPut(id, pack); toast('Storage problem - the route could not be deleted', 4000); return; }
+    }
   }
   delete userPackCache[id]; // the backup picture joins the commit
   const wasActive = !!(activeRoute && activeRoute.id === id && routeLoaded);
@@ -7758,8 +7764,8 @@ async function deleteRoute(id) { // Beta 1.124 (Andrew): delete a route HE creat
   if (wasActive) unloadRouteToBoot(); else renderRouteLists();
   if (wipeFailed) toast('Route deleted, but some of its saved data could not be deleted (storage problem)', 4200); // Beta 1.146 (census C2): the definition IS gone (verified above) and the pack stays unregistered - in-memory tenancy matches storage - but the success toast must NOT fire over a slot that could not be fully wiped; the failure is said out loud, on deleteRoute's own storage-problem surface (the same toast form its definition-write failures use)
 }
-function askDeleteRoute(id) { // Beta 1.124: the Delete button on a created route's row (app2's routeRowEl) - the shared create confirm asks, with the deletion labels; the confirm's card is the theme-token surface in both day and night.
-  const pack = ROUTE_PACKS.find(p => p.id === id); if (!pack || SHIPPED_PACK_IDS.has(id)) return;
+function askDeleteRoute(id) { // Beta 1.124: the Delete on a route's row - the shared create confirm asks, with the deletion labels; the confirm's card is the theme-token surface in both day and night. Beta 1.271: the ask opens for EVERY route, shipped packs included (the 1.124 shipped refusal is superseded by Andrew's 2026-11-21 ruling).
+  const pack = ROUTE_PACKS.find(p => p.id === id); if (!pack) return;
   crConfirm('Delete ' + pack.name + '?', 'The route and everything saved for it on this phone (progress, notes, history) will be removed. This can’t be undone.', () => deleteRoute(id), { yes: 'Delete', no: 'Cancel', danger: true });
 }
 // ===== Beta 1.118: CREATE A ROUTE (Step 2 of the route programme; Andrew's approved mockups) =====
@@ -7781,6 +7787,11 @@ function askDeleteRoute(id) { // Beta 1.124: the Delete button on a created rout
 // every entry path (save, backup restore, boot merge) uses.
 const USERPACKS_KEY = 'snowroute.v2.userpacks'; // the on-device record of created routes: { <id>: <pack> }. Shipped packs live in data.js; created packs live here.
 const SHIPPED_PACK_IDS = new Set(ROUTE_PACKS.map(p => p.id)); // captured at eval, BEFORE any user pack merges - data.js holds shipped packs only
+const SHIPPED_DELETED_KEY = 'snowroute.v2.shippeddeleted'; // Beta 1.271 (Andrew, 2026-11-21: EVERY route gets a Delete, the shipped 5W included): the tombstone record for deleted SHIPPED packs. A shipped pack's definition lives in data.js (code), so its deletion cannot remove a stored definition the way a created route's delete does - the delete writes this record instead (verified, like every house write) and every boot unregisters the named packs before the first render (the filter below). A DEVICE record - this phone's route list - never backed up: a backup carries route data, not this phone's deletions.
+function readShippedDeleted() { // the stored tombstone list, or null when it cannot be read/parsed at all (the readUserPacks discipline: strict writers treat null as a failure and never rewrite blind)
+  try { const raw = localStorage.getItem(SHIPPED_DELETED_KEY); if (raw == null) return []; const o = JSON.parse(raw); return Array.isArray(o) ? o.filter(x => typeof x === 'string') : null; } catch (e) { return null; }
+}
+function loadShippedDeleted() { const r = readShippedDeleted(); return r || []; }
 function readUserPacks() { // the stored record, or null when it cannot be read/parsed at all (callers that must not lose data treat null as a failure; lenient callers use loadUserPacks)
   try { const raw = localStorage.getItem(USERPACKS_KEY); if (raw == null) return {}; const o = JSON.parse(raw); return (o && typeof o === 'object' && !Array.isArray(o)) ? o : null; } catch (e) { return null; }
 }
@@ -8075,6 +8086,7 @@ function mergeUserPacks() { // boot: the runtime pack list = shipped packs + cre
     if (ix >= 0) ROUTE_PACKS[ix] = v.pack; else ROUTE_PACKS.push(v.pack);
   }
 }
+const shippedDead = loadShippedDeleted(); for (let i = ROUTE_PACKS.length - 1; i >= 0; i--) { if (shippedDead.includes(ROUTE_PACKS[i].id)) ROUTE_PACKS.splice(i, 1); } // Beta 1.271: the tombstone applies BEFORE the created-pack merge - mergeUserPacks' collision rule (a created pack wins its id) is Andrew's-data-wins, and a created pack must never be hidden by a shipped pack's tombstone
 mergeUserPacks(); // Beta 1.166: this synchronous pass is now the LEGACY half of the boot - the pre-1.166 record registers exactly as every earlier build registered it, so a first 1.166 boot is fully usable on the legacy data before the store read lands, and the record stays the fallback read until initUserPacks' drain has verified every route into the store
 window.__userPacksReady = initUserPacks(); // Beta 1.166: the store half of the boot + the migration drain, exposed (with the status reader below) so the battery can await and inspect it - the migratePack/__migrateStatus precedent. Fire-and-forget for the app itself: it never blocks the boot, and because the marker is earned, an incomplete drain simply runs again next boot
 window.__userPacksStatus = () => upStatus;

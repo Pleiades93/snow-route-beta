@@ -306,5 +306,26 @@ const keysH2 = await J(`({ left: Object.values(routeKeys('route-4')).filter(k =>
 ok('H2 NORMAL DELETE STILL FULLY GREEN: with healthy storage the row leaves and every slot key reads null (the success pill was cut in Beta 1.221 - the vanished row is the report) | surviving keys: ' + JSON.stringify(keysH2.left),
   goneH2 === true && (keysH2.left || []).length === 0);
 
+// ---- phase H3: Beta 1.271 - the SHIPPED route's Delete is WIRED (Codex P2, PR #167) ----
+// Andrew's ruling is Delete on EVERY route, the shipped 5W included - but the
+// 1.124 guard inside askDeleteRoute/deleteRoute refused shipped packs, so the
+// new dropdown's Delete on 5W was a silent no-op until this phase's subject
+// landed. Seed two slot keys, open 5W's own dropdown, Delete: the ask must
+// OPEN, the confirm must unregister the pack, wipe the slot and write the
+// tombstone - and a reload must keep it gone (the boot filter) while the
+// list still renders.
+await ev2(`(() => { const rk = routeKeys('5w'); localStorage.setItem(rk.notes, '{}'); localStorage.setItem(rk.hist, '[]'); return true; })()`);
+await openListTab();
+await ev2(`(() => { const d = document.querySelector('#rmRoutes .routeDrop[data-route="5w"]'); const r = document.querySelector('#rmRoutes .routeRow[data-route="5w"]'); if (d && !d.classList.contains('open') && r) r.click(); const b = d && d.querySelector('.dropDel'); if (b) b.click(); return true; })()`);
+const askH3 = await poll(`!document.getElementById('crModal').classList.contains('hidden')`, 10000);
+await ev2(`document.getElementById('crModalYes').click()`);
+const goneH3 = await poll(`!document.querySelector('#rmRoutes .routeRow[data-route="5w"]')`, 15000);
+const stH3 = JSON.parse(await ev2(`(() => JSON.stringify({ pack: ROUTE_PACKS.some(p => p.id === '5w'), dead: loadShippedDeleted(), notes: localStorage.getItem(routeKeys('5w').notes), hist: localStorage.getItem(routeKeys('5w').hist) }))()`));
+await send('Page.reload', { ignoreCache: false }, PAGE_S);
+await poll(`document.querySelectorAll('#rmRoutes .routeRow').length > 0`, 20000);
+const stH3b = JSON.parse(await ev2(`(() => JSON.stringify({ pack: ROUTE_PACKS.some(p => p.id === '5w'), row: !!document.querySelector('#rmRoutes .routeRow[data-route="5w"]'), rows: document.querySelectorAll('#rmRoutes .routeRow').length }))()`));
+ok('H3 SHIPPED DELETE IS WIRED: 5W\'s dropdown Delete opens the ask, the confirm unregisters the pack, wipes its slot and writes the tombstone - and a reload keeps it gone while the list renders | ' + JSON.stringify({ askH3, goneH3, stH3, stH3b }),
+  askH3 === true && goneH3 === true && stH3.pack === false && (stH3.dead || []).includes('5w') && stH3.notes === null && stH3.hist === null && stH3b.pack === false && stH3b.row === false && stH3b.rows > 0);
+
 R.exceptions = consoleLog.filter(l => l.indexOf('EXCEPTION') === 0);
 finishCreate(R, proc, server);

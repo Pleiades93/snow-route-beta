@@ -19,6 +19,7 @@ const app1 = read('parts/app1.js');
 const app2 = read('parts/app2.js');
 const app3 = read('parts/app3.js');
 const app5 = read('parts/app5.js');
+const packs = read('parts/create-packs.js');
 const whatsnew = read('parts/whatsnew.js');
 let pass = 0, fail = 0;
 const check = (name, ok) => { console.log(`${ok ? 'PASS' : 'FAIL'}  ${name}`); ok ? pass++ : fail++; };
@@ -46,6 +47,13 @@ check('2b every row renders with its dropdown sibling; the builder and the deleg
   app2.includes("const load = e.target.closest('.dropLoad'); if (load) { choose(load.closest('.routeDrop').dataset.route); return; }"));
 check('2c the in-row Delete is retired (no routeDel anywhere in app2 or the stylesheet rules)',
   !app2.includes('routeDel') && !head.includes('.routeDel {') && !head.includes('.routeRow:has(> .routeDel)'));
+check('2d the shipped-route Delete is WIRED, not just drawn (Codex P2, PR #167): the ask opens for every pack, deleteRoute refuses nothing but a missing pack, and a shipped deletion writes the tombstone the boot applies before the created-pack merge',
+  app5.includes('const pack = ROUTE_PACKS.find(p => p.id === id); if (!pack) return;') &&
+  app5.includes('const ix = ROUTE_PACKS.findIndex(p => p.id === id); if (ix < 0) return;') &&
+  app5.includes("lsSet(SHIPPED_DELETED_KEY, JSON.stringify([...dead, id]))") &&
+  packs.includes("const SHIPPED_DELETED_KEY = 'snowroute.v2.shippeddeleted';") &&
+  packs.includes('if (shippedDead.includes(ROUTE_PACKS[i].id)) ROUTE_PACKS.splice(i, 1);') &&
+  packs.indexOf('shippedDead.includes') < packs.indexOf('mergeUserPacks();'));
 
 // ---- Clear and stale on the shared confirmation ---------------------------
 check('3a the Clear ask stands, bound to its route, running clearAllMarks on the danger seat',

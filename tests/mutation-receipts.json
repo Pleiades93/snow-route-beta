@@ -3853,6 +3853,30 @@
    "red": "FAIL on the 1.270 tree - T5/F3/F5 grade the Clear confirmation ask and the retired banner slots; the old tree clears silently and still shows the banners",
    "green": "32/32 checks, 0 exceptions on the 1.271 tree",
    "issued": "2026-11-22 beta-1271-menus-round"
+  },
+  {
+   "id": "proof-1271-menus-b",
+   "check": "tests/proof/proof-1271.mjs",
+   "kind": "historical",
+   "files": {
+    "tests/proof/proof-1271.mjs": "5ef8a1b6b8d8638b46674d506ddd31bdb826aad0db0de0222e3cdd153c5b8117"
+   },
+   "mutation": "the historical Beta 1.270 tree (803c520) carrying the round's updated test files",
+   "red": "0 pass, 16 fail on the 1.270 tree - the sixteenth check (2d, the shipped-delete wiring) fails there with the rest: no tombstone record, no boot filter, the ask still refuses shipped packs",
+   "green": "16/16 on the 1.271 tree; full proof run 78/78",
+   "issued": "2026-11-22 beta-1271-menus-round (Codex P2 fix)"
+  },
+  {
+   "id": "drive154-shipped-1271",
+   "check": "tests/browser/drive154.mjs",
+   "kind": "historical",
+   "files": {
+    "tests/browser/drive154.mjs": "dc7f2c854394d5bc01f544631e271d54f7d96b365e17fbe0f9155048fd3153e8"
+   },
+   "mutation": "the historical Beta 1.270 tree (803c520) carrying the round's updated test files",
+   "red": "H3 FAIL on the 1.270 tree for exactly the Codex P2 reason: 5W's dropdown Delete never opens the ask (askH3 false - askDeleteRoute returns on SHIPPED_PACK_IDS), so the pack, the slot and the absent tombstone all stay; the drive's other reworked phases fail there as recorded in drive154-1271",
+   "green": "19/19 checks, 0 exceptions on the 1.271 tree - H3 green end to end (ask opens, slot wiped, tombstone written, reload keeps 5W gone)",
+   "issued": "2026-11-22 beta-1271-menus-round (Codex P2 fix)"
   }
  ]
 }
