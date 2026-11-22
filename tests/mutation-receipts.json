@@ -3913,6 +3913,30 @@
    "red": "FAIL on the 1.270 tree (BROWSER TESTS: FAIL, solo run 2026-11-22) - H3/H4/H5 all red there for their subjects' reasons: no dropdown or tombstone machinery exists (H3), uniqueRouteId hands a new route the id '5w' itself (H4), and doRestore aborts the whole restore on the unknown route 5w (H5)",
    "green": "21/21 checks, 0 exceptions on the 1.271 tree (solo local run, 2026-11-22)",
    "issued": "2026-11-22 beta-1271-menus-round"
+  },
+  {
+   "id": "proof-1271-menus-d",
+   "check": "tests/proof/proof-1271.mjs",
+   "kind": "historical",
+   "files": {
+    "tests/proof/proof-1271.mjs": "bcf48004b6f991c3dedea9a384aa71b923cea8bd4119479fd052494f85ef3717"
+   },
+   "mutation": "the historical Beta 1.270 tree (803c520) carrying the round's updated test files",
+   "red": "0 pass, 16 fail on the 1.270 tree - check 2d as extended for the third Codex review (the v1 restore's tombstone skip and the finclean discharge filter) fails there with the rest: neither line exists on the old tree",
+   "green": "16/16 on the 1.271 tree; full proof run 78/78",
+   "issued": "2026-11-22 beta-1271-menus-round"
+  },
+  {
+   "id": "drive154-tombstone-1271b",
+   "check": "tests/browser/drive154.mjs",
+   "kind": "historical",
+   "files": {
+    "tests/browser/drive154.mjs": "39de7eab17c42c2bb5d1a51df15906ab35add55cf309ad08a00173af2f39b24d"
+   },
+   "mutation": "the historical Beta 1.270 tree (803c520) carrying the round's updated test files",
+   "red": "FAIL on the 1.270 tree (BROWSER TESTS: FAIL, solo run 2026-11-22) - H6 red there by construction: the old tree has no tombstone concept, so a v1 restore writes the planted notes into the live 5W slot and its result toast cannot name a skip; H3/H4/H5 red as recorded in drive154-tombstone-1271",
+   "green": "22/22 checks, 0 exceptions on the 1.271 tree (solo local run, 2026-11-22)",
+   "issued": "2026-11-22 beta-1271-menus-round"
   }
  ]
 }

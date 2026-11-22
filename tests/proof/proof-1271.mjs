@@ -56,7 +56,9 @@ check('2d the shipped-route Delete is WIRED, not just drawn (Codex P2, PR #167):
   packs.includes('if (shippedDead.includes(ROUTE_PACKS[i].id)) ROUTE_PACKS.splice(i, 1);') &&
   packs.indexOf('shippedDead.includes') < packs.indexOf('mergeUserPacks();') &&
   packs.includes('SHIPPED_PACK_IDS.has(id) || Object.prototype.hasOwnProperty.call(userPackCache, id)') &&
-  app4.includes('if (SHIPPED_PACK_IDS.has(id) && !ROUTE_PACKS.some(p => p.id === id)) { deadSkipped.push(id); continue; }'));
+  app4.includes('if (SHIPPED_PACK_IDS.has(id) && !ROUTE_PACKS.some(p => p.id === id)) { deadSkipped.push(id); continue; }') &&
+  app4.includes("const dead5 = SHIPPED_PACK_IDS.has('5w') && !pack5; if (dead5) deadSkipped.push('5w');") &&
+  app4.includes('if (deadSkipped.includes(rid)) continue; entries.push([routeKeys(rid).finclean, null]);'));
 
 // ---- Clear and stale on the shared confirmation ---------------------------
 check('3a the Clear ask stands, bound to its route, running clearAllMarks on the danger seat',
