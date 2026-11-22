@@ -93,8 +93,8 @@ check('15: the grid stall still drops the cached pack promise (the abandonment s
 // ---------- the release editorial ----------
 check('16: the CHANGELOG top entry is Beta 1.251', changelog.includes('## Beta 1.251'));
 check('17: What\'s New carries the 1.251 bullet, short and dash-free',
-  whatsnew.includes('Done in create-a-route now shows your whole route flat, above the review list.')
-  && 'Done in create-a-route now shows your whole route flat, above the review list.'.length <= 108
+  whatsnew.includes('Street names now load in with the map, in sync, instead of popping in after a wait.')
+  && 'Street names now load in with the map, in sync, instead of popping in after a wait.'.length <= 108
   && !whatsnew.includes('—'));
 
 // ---------- the first byte must be RECORDED, not just read about ----------

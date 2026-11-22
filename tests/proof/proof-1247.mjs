@@ -58,8 +58,8 @@ check('6: the create text boxes keep their white pills',
 check('7: the CHANGELOG top entry is Beta 1.247',
   changelog.indexOf('## Beta 1.247') > -1 && changelog.indexOf('## Beta 1.247') < changelog.indexOf('## Beta 1.246'));
 check('8: What\'s New carries the CURRENT entry\'s bullet (rolled to 1.251: this check tracks the current entry each round), within the 108-char cap, em-dash free',
-  whatsnew.includes('Done in create-a-route now shows your whole route flat, above the review list.') &&
-  'Done in create-a-route now shows your whole route flat, above the review list.'.length <= 108 &&
+  whatsnew.includes('Street names now load in with the map, in sync, instead of popping in after a wait.') &&
+  'Street names now load in with the map, in sync, instead of popping in after a wait.'.length <= 108 &&
   !whatsnew.includes('—'));
 
 console.log(`proof-1247: ${pass} passed, ${fail} failed`);

@@ -39,10 +39,10 @@
   "proof-1263.mjs",
   "proof-1264.mjs",
   "proof-1265.mjs",
-  "proof-1266.mjs",
   "proof-1267.mjs",
   "proof-1268.mjs",
   "proof-1269.mjs",
+  "proof-1270.mjs",
   "proof-clearall-sibling-maps.mjs",
   "proof-create-class-pills.mjs",
   "proof-create-glow-casing-fix.mjs",
@@ -99,6 +99,10 @@
   {
    "file": "proof-1261.mjs",
    "reason": "Beta 1.263 (labelrevert-1263): its subject - the 1.261 label mix (titles capped at 15, the '-pre15' band split, the standing heal) - is reversed by Andrew's decision of 2026-11-21 (\"We should revert the naming system to before all this\"), after the heal's per-settle teardown measured as the street-name flicker (33 of 33 titles dropped at every settle). Its seam, band and heal pins invert by the decision itself, not by a defect. The file stays on disk as the record of the 1.261 round, like proof-1258 before it; the reverted shape is pinned by proof-1263 and graded in the rendered page by drive214's reworked M sections and drive216."
+  },
+  {
+   "file": "proof-1266.mjs",
+   "reason": "Beta 1.270 (SYNC round): its subject - the 1.266 unified load-in (every name held for the whole window, the one re-place inside the hold, the joint reveal with its two backstops) - is retired by Andrew's synchronised-streaming decision of 2026-11-21, taken on his lived verdict on 1.266 (a nameless wait, then a pop). Its pins assert the hold cycle's presence, so they invert by the decision itself, not by a defect. The file stays on disk as the record of the 1.266 round, like proof-1261 before it; the streaming shape is pinned by proof-1270 and graded in the rendered page by drive219's rewritten lane."
   }
  ]
 }

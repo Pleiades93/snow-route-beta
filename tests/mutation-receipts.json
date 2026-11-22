@@ -2862,6 +2862,371 @@
    "red": "proof-1268 fails exactly its What's New bullet check (1 fail, the rest pass) - observed in this round's mutation run",
    "green": "proof-1268 passes in full with the shipped 1.269 bullet",
    "issued": "2026-11-21-create-sheet-fixes-1269"
+  },
+  {
+   "id": "proof-1242-whatsnew-roll-1270",
+   "check": "tests/proof/proof-1242.mjs",
+   "kind": "historical",
+   "files": {
+    "tests/proof/proof-1242.mjs": "fdd9f0125e98047a6edffd6a9303e796553e92390979761edc3786fda6b08ea3",
+    "parts/whatsnew.js": "2777d9cfae5d821041b9538decada23b79c7b6c752df9878576970716327e324"
+   },
+   "mutation": "the What's New re-point (Beta 1.270 replaces the 1.269 bullets): this proof's bullet pin still named the 1.269 entry while parts/whatsnew.js carried the 1.270 bullet - the standing per-round roll",
+   "red": "the un-rolled proof fails against the 1.270 What's New - observed in this round's run-proofs pass before the roll (57/77, the failing set exactly the bullet-pinning proofs)",
+   "green": "passes in the full manifest run on the fixed tree after the roll (77/77) - observed in this round",
+   "issued": "2026-11-22 sync-1270"
+  },
+  {
+   "id": "proof-1243-whatsnew-roll-1270",
+   "check": "tests/proof/proof-1243.mjs",
+   "kind": "historical",
+   "files": {
+    "tests/proof/proof-1243.mjs": "2b0db104af0445d5e1f34fdd1ad81a246b14d5be2d1b2792f40db8b28b079582",
+    "parts/whatsnew.js": "2777d9cfae5d821041b9538decada23b79c7b6c752df9878576970716327e324"
+   },
+   "mutation": "the What's New re-point (Beta 1.270 replaces the 1.269 bullets): this proof's bullet pin still named the 1.269 entry while parts/whatsnew.js carried the 1.270 bullet - the standing per-round roll",
+   "red": "the un-rolled proof fails against the 1.270 What's New - observed in this round's run-proofs pass before the roll (57/77, the failing set exactly the bullet-pinning proofs)",
+   "green": "passes in the full manifest run on the fixed tree after the roll (77/77) - observed in this round",
+   "issued": "2026-11-22 sync-1270"
+  },
+  {
+   "id": "proof-1245-whatsnew-roll-1270",
+   "check": "tests/proof/proof-1245.mjs",
+   "kind": "historical",
+   "files": {
+    "tests/proof/proof-1245.mjs": "c70bc96f88faa54dd301cc76389878c29ea0534bc8993989f93bb888c57df05c",
+    "parts/whatsnew.js": "2777d9cfae5d821041b9538decada23b79c7b6c752df9878576970716327e324"
+   },
+   "mutation": "the What's New re-point (Beta 1.270 replaces the 1.269 bullets): this proof's bullet pin still named the 1.269 entry while parts/whatsnew.js carried the 1.270 bullet - the standing per-round roll",
+   "red": "the un-rolled proof fails against the 1.270 What's New - observed in this round's run-proofs pass before the roll (57/77, the failing set exactly the bullet-pinning proofs)",
+   "green": "passes in the full manifest run on the fixed tree after the roll (77/77) - observed in this round",
+   "issued": "2026-11-22 sync-1270"
+  },
+  {
+   "id": "proof-1246-whatsnew-roll-1270",
+   "check": "tests/proof/proof-1246.mjs",
+   "kind": "historical",
+   "files": {
+    "tests/proof/proof-1246.mjs": "07eb45f784091507b7755caa23b34d4bbc048e35a30edb8758dfbccfdbcfaf58",
+    "parts/whatsnew.js": "2777d9cfae5d821041b9538decada23b79c7b6c752df9878576970716327e324"
+   },
+   "mutation": "the What's New re-point (Beta 1.270 replaces the 1.269 bullets): this proof's bullet pin still named the 1.269 entry while parts/whatsnew.js carried the 1.270 bullet - the standing per-round roll",
+   "red": "the un-rolled proof fails against the 1.270 What's New - observed in this round's run-proofs pass before the roll (57/77, the failing set exactly the bullet-pinning proofs)",
+   "green": "passes in the full manifest run on the fixed tree after the roll (77/77) - observed in this round",
+   "issued": "2026-11-22 sync-1270"
+  },
+  {
+   "id": "proof-1247-whatsnew-roll-1270",
+   "check": "tests/proof/proof-1247.mjs",
+   "kind": "historical",
+   "files": {
+    "tests/proof/proof-1247.mjs": "ec66f774d7fc99a6956cb5b106377f51db33fd33a66deadcfda66daf776c1070",
+    "parts/whatsnew.js": "2777d9cfae5d821041b9538decada23b79c7b6c752df9878576970716327e324"
+   },
+   "mutation": "the What's New re-point (Beta 1.270 replaces the 1.269 bullets): this proof's bullet pin still named the 1.269 entry while parts/whatsnew.js carried the 1.270 bullet - the standing per-round roll",
+   "red": "the un-rolled proof fails against the 1.270 What's New - observed in this round's run-proofs pass before the roll (57/77, the failing set exactly the bullet-pinning proofs)",
+   "green": "passes in the full manifest run on the fixed tree after the roll (77/77) - observed in this round",
+   "issued": "2026-11-22 sync-1270"
+  },
+  {
+   "id": "proof-1249-whatsnew-roll-1270",
+   "check": "tests/proof/proof-1249.mjs",
+   "kind": "historical",
+   "files": {
+    "tests/proof/proof-1249.mjs": "51a26620b6be00aa22f2eaa7b4a946f6d7f6b72d951aa92d5c5608f4e95ccda3",
+    "parts/whatsnew.js": "2777d9cfae5d821041b9538decada23b79c7b6c752df9878576970716327e324"
+   },
+   "mutation": "the What's New re-point (Beta 1.270 replaces the 1.269 bullets): this proof's bullet pin still named the 1.269 entry while parts/whatsnew.js carried the 1.270 bullet - the standing per-round roll",
+   "red": "the un-rolled proof fails against the 1.270 What's New - observed in this round's run-proofs pass before the roll (57/77, the failing set exactly the bullet-pinning proofs)",
+   "green": "passes in the full manifest run on the fixed tree after the roll (77/77) - observed in this round",
+   "issued": "2026-11-22 sync-1270"
+  },
+  {
+   "id": "proof-1252-whatsnew-roll-1270",
+   "check": "tests/proof/proof-1252.mjs",
+   "kind": "historical",
+   "files": {
+    "tests/proof/proof-1252.mjs": "64968e5974eda96a1649e267b92801cf2b58014af091c75070707f2b2be07b76",
+    "parts/whatsnew.js": "2777d9cfae5d821041b9538decada23b79c7b6c752df9878576970716327e324"
+   },
+   "mutation": "the What's New re-point (Beta 1.270 replaces the 1.269 bullets): this proof's bullet pin still named the 1.269 entry while parts/whatsnew.js carried the 1.270 bullet - the standing per-round roll",
+   "red": "the un-rolled proof fails against the 1.270 What's New - observed in this round's run-proofs pass before the roll (57/77, the failing set exactly the bullet-pinning proofs)",
+   "green": "passes in the full manifest run on the fixed tree after the roll (77/77) - observed in this round",
+   "issued": "2026-11-22 sync-1270"
+  },
+  {
+   "id": "proof-1253-whatsnew-roll-1270",
+   "check": "tests/proof/proof-1253.mjs",
+   "kind": "historical",
+   "files": {
+    "tests/proof/proof-1253.mjs": "c1b311b5e2cd5179a1031ebe9e9dbb3bef2c8e5cfac48877f074d9abaa927ab5",
+    "parts/whatsnew.js": "2777d9cfae5d821041b9538decada23b79c7b6c752df9878576970716327e324"
+   },
+   "mutation": "the What's New re-point (Beta 1.270 replaces the 1.269 bullets): this proof's bullet pin still named the 1.269 entry while parts/whatsnew.js carried the 1.270 bullet - the standing per-round roll",
+   "red": "the un-rolled proof fails against the 1.270 What's New - observed in this round's run-proofs pass before the roll (57/77, the failing set exactly the bullet-pinning proofs)",
+   "green": "passes in the full manifest run on the fixed tree after the roll (77/77) - observed in this round",
+   "issued": "2026-11-22 sync-1270"
+  },
+  {
+   "id": "proof-1254-whatsnew-roll-1270",
+   "check": "tests/proof/proof-1254.mjs",
+   "kind": "historical",
+   "files": {
+    "tests/proof/proof-1254.mjs": "9d3cda0cbe6267c6b517cfcfa23a6354a6451a67b2adfae6e091cb2adc05bbdf",
+    "parts/whatsnew.js": "2777d9cfae5d821041b9538decada23b79c7b6c752df9878576970716327e324"
+   },
+   "mutation": "the What's New re-point (Beta 1.270 replaces the 1.269 bullets): this proof's bullet pin still named the 1.269 entry while parts/whatsnew.js carried the 1.270 bullet - the standing per-round roll",
+   "red": "the un-rolled proof fails against the 1.270 What's New - observed in this round's run-proofs pass before the roll (57/77, the failing set exactly the bullet-pinning proofs)",
+   "green": "passes in the full manifest run on the fixed tree after the roll (77/77) - observed in this round",
+   "issued": "2026-11-22 sync-1270"
+  },
+  {
+   "id": "proof-1255-whatsnew-roll-1270",
+   "check": "tests/proof/proof-1255.mjs",
+   "kind": "historical",
+   "files": {
+    "tests/proof/proof-1255.mjs": "f2546ba1682ab5a518a1b2c43d2a6a4a0eb66a963e746fbf7dd98f7623ebb0d5",
+    "parts/whatsnew.js": "2777d9cfae5d821041b9538decada23b79c7b6c752df9878576970716327e324"
+   },
+   "mutation": "the What's New re-point (Beta 1.270 replaces the 1.269 bullets): this proof's bullet pin still named the 1.269 entry while parts/whatsnew.js carried the 1.270 bullet - the standing per-round roll",
+   "red": "the un-rolled proof fails against the 1.270 What's New - observed in this round's run-proofs pass before the roll (57/77, the failing set exactly the bullet-pinning proofs)",
+   "green": "passes in the full manifest run on the fixed tree after the roll (77/77) - observed in this round",
+   "issued": "2026-11-22 sync-1270"
+  },
+  {
+   "id": "proof-1256-whatsnew-roll-1270",
+   "check": "tests/proof/proof-1256.mjs",
+   "kind": "historical",
+   "files": {
+    "tests/proof/proof-1256.mjs": "d540cc212d2d9cf3ac31615abb93e77e23aff03e451cf8153cf384dd1bc1fdc6",
+    "parts/whatsnew.js": "2777d9cfae5d821041b9538decada23b79c7b6c752df9878576970716327e324"
+   },
+   "mutation": "the What's New re-point (Beta 1.270 replaces the 1.269 bullets): this proof's bullet pin still named the 1.269 entry while parts/whatsnew.js carried the 1.270 bullet - the standing per-round roll",
+   "red": "the un-rolled proof fails against the 1.270 What's New - observed in this round's run-proofs pass before the roll (57/77, the failing set exactly the bullet-pinning proofs)",
+   "green": "passes in the full manifest run on the fixed tree after the roll (77/77) - observed in this round",
+   "issued": "2026-11-22 sync-1270"
+  },
+  {
+   "id": "proof-1257-whatsnew-roll-1270",
+   "check": "tests/proof/proof-1257.mjs",
+   "kind": "historical",
+   "files": {
+    "tests/proof/proof-1257.mjs": "533ab58681ce44543f82f56c4c1bb4959cbae667d2fb6f3b1b8b73737149e088",
+    "parts/whatsnew.js": "2777d9cfae5d821041b9538decada23b79c7b6c752df9878576970716327e324"
+   },
+   "mutation": "the What's New re-point (Beta 1.270 replaces the 1.269 bullets): this proof's bullet pin still named the 1.269 entry while parts/whatsnew.js carried the 1.270 bullet - the standing per-round roll",
+   "red": "the un-rolled proof fails against the 1.270 What's New - observed in this round's run-proofs pass before the roll (57/77, the failing set exactly the bullet-pinning proofs)",
+   "green": "passes in the full manifest run on the fixed tree after the roll (77/77) - observed in this round",
+   "issued": "2026-11-22 sync-1270"
+  },
+  {
+   "id": "proof-1259-whatsnew-roll-1270",
+   "check": "tests/proof/proof-1259.mjs",
+   "kind": "historical",
+   "files": {
+    "tests/proof/proof-1259.mjs": "668d2aa362a578109305e11e02bf177b382d6ed8b344af501309b4f0baa9ca45",
+    "parts/whatsnew.js": "2777d9cfae5d821041b9538decada23b79c7b6c752df9878576970716327e324"
+   },
+   "mutation": "the What's New re-point (Beta 1.270 replaces the 1.269 bullets): this proof's bullet pin still named the 1.269 entry while parts/whatsnew.js carried the 1.270 bullet - the standing per-round roll",
+   "red": "the un-rolled proof fails against the 1.270 What's New - observed in this round's run-proofs pass before the roll (57/77, the failing set exactly the bullet-pinning proofs)",
+   "green": "passes in the full manifest run on the fixed tree after the roll (77/77) - observed in this round",
+   "issued": "2026-11-22 sync-1270"
+  },
+  {
+   "id": "proof-1262-whatsnew-roll-1270",
+   "check": "tests/proof/proof-1262.mjs",
+   "kind": "historical",
+   "files": {
+    "tests/proof/proof-1262.mjs": "e77b0c6e26d8cfa4da28cd78ef520c380e7af86f5e0a990912d430dbd5c6b8ac",
+    "parts/whatsnew.js": "2777d9cfae5d821041b9538decada23b79c7b6c752df9878576970716327e324"
+   },
+   "mutation": "the What's New re-point (Beta 1.270 replaces the 1.269 bullets): this proof's bullet pin still named the 1.269 entry while parts/whatsnew.js carried the 1.270 bullet - the standing per-round roll",
+   "red": "the un-rolled proof fails against the 1.270 What's New - observed in this round's run-proofs pass before the roll (57/77, the failing set exactly the bullet-pinning proofs)",
+   "green": "passes in the full manifest run on the fixed tree after the roll (77/77) - observed in this round",
+   "issued": "2026-11-22 sync-1270"
+  },
+  {
+   "id": "proof-1264-whatsnew-roll-1270",
+   "check": "tests/proof/proof-1264.mjs",
+   "kind": "historical",
+   "files": {
+    "tests/proof/proof-1264.mjs": "b2b78fc821e4d76d80c5e80b2bf71412145d06782c3cb3e50ec0d47946f07f84",
+    "parts/whatsnew.js": "2777d9cfae5d821041b9538decada23b79c7b6c752df9878576970716327e324"
+   },
+   "mutation": "the What's New re-point (Beta 1.270 replaces the 1.269 bullets): this proof's bullet pin still named the 1.269 entry while parts/whatsnew.js carried the 1.270 bullet - the standing per-round roll",
+   "red": "the un-rolled proof fails against the 1.270 What's New - observed in this round's run-proofs pass before the roll (57/77, the failing set exactly the bullet-pinning proofs)",
+   "green": "passes in the full manifest run on the fixed tree after the roll (77/77) - observed in this round",
+   "issued": "2026-11-22 sync-1270"
+  },
+  {
+   "id": "proof-1265-whatsnew-roll-1270",
+   "check": "tests/proof/proof-1265.mjs",
+   "kind": "historical",
+   "files": {
+    "tests/proof/proof-1265.mjs": "fa290b5671269dd63a060cc032c22fc1765282aa4c6e2f31e6751ebbc3429798",
+    "parts/whatsnew.js": "2777d9cfae5d821041b9538decada23b79c7b6c752df9878576970716327e324"
+   },
+   "mutation": "the What's New re-point (Beta 1.270 replaces the 1.269 bullets): this proof's bullet pin still named the 1.269 entry while parts/whatsnew.js carried the 1.270 bullet - the standing per-round roll",
+   "red": "the un-rolled proof fails against the 1.270 What's New - observed in this round's run-proofs pass before the roll (57/77, the failing set exactly the bullet-pinning proofs)",
+   "green": "passes in the full manifest run on the fixed tree after the roll (77/77) - observed in this round",
+   "issued": "2026-11-22 sync-1270"
+  },
+  {
+   "id": "proof-1266-whatsnew-roll-1270",
+   "check": "tests/proof/proof-1266.mjs",
+   "kind": "historical",
+   "files": {
+    "tests/proof/proof-1266.mjs": "e2cfbe681a27cd2963f0129aeb3431fd1678355aae9d8d4c9d2e691ef96e2912",
+    "parts/whatsnew.js": "2777d9cfae5d821041b9538decada23b79c7b6c752df9878576970716327e324"
+   },
+   "mutation": "the What's New re-point (Beta 1.270 replaces the 1.269 bullets): this proof's bullet pin still named the 1.269 entry while parts/whatsnew.js carried the 1.270 bullet - the standing per-round roll",
+   "red": "the un-rolled proof fails against the 1.270 What's New - observed in this round's run-proofs pass before the roll (57/77, the failing set exactly the bullet-pinning proofs)",
+   "green": "passes in the full manifest run on the fixed tree after the roll (77/77) - observed in this round",
+   "issued": "2026-11-22 sync-1270"
+  },
+  {
+   "id": "proof-1267-whatsnew-roll-1270",
+   "check": "tests/proof/proof-1267.mjs",
+   "kind": "historical",
+   "files": {
+    "tests/proof/proof-1267.mjs": "9ccbe20ca7ffb0874a5e650aa88d012e19b2667552dafd8cf97f61e95247ba0c",
+    "parts/whatsnew.js": "2777d9cfae5d821041b9538decada23b79c7b6c752df9878576970716327e324"
+   },
+   "mutation": "the What's New re-point (Beta 1.270 replaces the 1.269 bullets): this proof's bullet pin still named the 1.269 entry while parts/whatsnew.js carried the 1.270 bullet - the standing per-round roll",
+   "red": "the un-rolled proof fails against the 1.270 What's New - observed in this round's run-proofs pass before the roll (57/77, the failing set exactly the bullet-pinning proofs)",
+   "green": "passes in the full manifest run on the fixed tree after the roll (77/77) - observed in this round",
+   "issued": "2026-11-22 sync-1270"
+  },
+  {
+   "id": "proof-1268-whatsnew-roll-1270",
+   "check": "tests/proof/proof-1268.mjs",
+   "kind": "historical",
+   "files": {
+    "tests/proof/proof-1268.mjs": "c086255a7d1b5cafd0ccf521a68efd5337bd527bc2e06a2a378146ea9b7f5925",
+    "parts/whatsnew.js": "2777d9cfae5d821041b9538decada23b79c7b6c752df9878576970716327e324"
+   },
+   "mutation": "the What's New re-point (Beta 1.270 replaces the 1.269 bullets): this proof's bullet pin still named the 1.269 entry while parts/whatsnew.js carried the 1.270 bullet - the standing per-round roll",
+   "red": "the un-rolled proof fails against the 1.270 What's New - observed in this round's run-proofs pass before the roll (57/77, the failing set exactly the bullet-pinning proofs)",
+   "green": "passes in the full manifest run on the fixed tree after the roll (77/77) - observed in this round",
+   "issued": "2026-11-22 sync-1270"
+  },
+  {
+   "id": "proof-1269-whatsnew-roll-1270",
+   "check": "tests/proof/proof-1269.mjs",
+   "kind": "historical",
+   "files": {
+    "tests/proof/proof-1269.mjs": "d6e82d150eb329df4ecbdae72be804a2ca26efe1e7120467b8f2dedc3fdcf701",
+    "parts/whatsnew.js": "2777d9cfae5d821041b9538decada23b79c7b6c752df9878576970716327e324"
+   },
+   "mutation": "the What's New re-point (Beta 1.270 replaces the 1.269 bullets): this proof's bullet pin still named the 1.269 entry while parts/whatsnew.js carried the 1.270 bullet - the standing per-round roll",
+   "red": "the un-rolled proof fails against the 1.270 What's New - observed in this round's run-proofs pass before the roll (57/77, the failing set exactly the bullet-pinning proofs)",
+   "green": "passes in the full manifest run on the fixed tree after the roll (77/77) - observed in this round",
+   "issued": "2026-11-22 sync-1270"
+  },
+  {
+   "id": "proof-1263-hook-repin-1270",
+   "check": "tests/proof/proof-1263.mjs",
+   "kind": "historical",
+   "files": {
+    "tests/proof/proof-1263.mjs": "27f8f81f0b4d24b4cb00302d37276381af474c4500a567a4a3920c7b5c625fd1",
+    "parts/app5.js": "66b0980aba320ff3dd5182a5b57fe14d2909acaa24c256e68e570d40b4d67b3f"
+   },
+   "mutation": "Beta 1.270 rewrites the one-flight hook as the conditional title guard (the unconditional moveend -> idle shape check 8 pinned is retired with the 1.266 cycle)",
+   "red": "check 8 fails on the 1.270 tree before the re-pin (12 passed, 1 failed - the pinned literals titleRePlaceArmed / setTimeout(run, 2500) are gone) - observed in this round",
+   "green": "proof-1263 passes 13/13 on the fixed tree with check 8 re-pinned to the guard's shape - observed in this round",
+   "issued": "2026-11-22 sync-1270"
+  },
+  {
+   "id": "proof-1270-sync-streaming",
+   "check": "tests/proof/proof-1270.mjs",
+   "kind": "historical",
+   "files": {
+    "tests/proof/proof-1270.mjs": "501e9f5b25eb6fd65110c2db7db33fff81d0f63d6221121039d8ec27f958ef8f",
+    "parts/app5.js": "66b0980aba320ff3dd5182a5b57fe14d2909acaa24c256e68e570d40b4d67b3f",
+    "parts/app2.js": "6424284d8e486346eb92ca967368a4d3d877cbb521cbfd4481e7faadde1fc508"
+   },
+   "mutation": "the pristine Beta 1.269 tree: the hold cycle stands, no title guard exists, the hold carries no scope",
+   "red": "proof-1270 fails 8 of 12 on the 1.269 tree (checks 1, 2, 2b, 3, 4, 5, 6, 10 - the retired cycle present, the guard and the scoped hold absent) - observed in this round against the fresh clone at 3dd2adda",
+   "green": "proof-1270 passes 12/12 on the fixed tree - observed in this round",
+   "issued": "2026-11-22 sync-1270"
+  },
+  {
+   "id": "drive219-streaming-lane-1270",
+   "check": "tests/browser/drive219.mjs",
+   "kind": "rendered",
+   "files": {
+    "tests/browser/drive219.mjs": "ff8d827dcdd054d59d5e4a8a382f42691e6432c3dfe07a4df6c051c3008a20ab",
+    "tests/browser/lane-judge.mjs": "e03ea221236066be908978ed9047304baa8a805dc31c1c8625f8f210ab3e1e1d"
+   },
+   "mutation": "the pristine Beta 1.269 tree (the 1.266 hold cycle: every name held on the pick, the re-place unconditional, the joint reveal on backstops)",
+   "red": "drive219 does not pass on the 1.269 tree - the run.mjs run was killed at the runner's 300 s cap and recorded FAIL (the old cycle's backstop waits outlast the new lane's polls); the properties the lane grades are absent there by construction (a hold engages on the pick, the re-place runs unconditionally, titles complete seconds after the basemap names) and proof-1270's 8/12 red on the same tree pins that absence statically - observed in this round against the fresh clone at 3dd2adda",
+   "green": "drive219 passes 16/16 with 0 exceptions on the fixed tree (the guard runs and skips in phase A, fires exactly once inside the titles-only hold in phase D, titles and basemap names complete inside the same bracket) - observed in this round",
+   "issued": "2026-11-22 sync-1270"
+  },
+  {
+   "id": "proof-1270-release-order-1270",
+   "check": "tests/proof/proof-1270.mjs",
+   "kind": "historical",
+   "files": {
+    "tests/proof/proof-1270.mjs": "bd66e601dc88a6828b904bae3b8a06bd91f2ba66f856cb25a5cb2347b267120a",
+    "parts/app5.js": "7b6b7f43577a3be48f10017114a1ff5bbf1a8d721db4c79d7ba84f4aadbaf587"
+   },
+   "mutation": "the PR #166 gate head's releaseTitleCure (clear-first: the registration is nulled before the callback runs, so the release closure's identity check refuses itself - Codex P1)",
+   "red": "proof-1270 check 5b fails on the clear-first order (12 pass, 1 fail) - observed in this round",
+   "green": "proof-1270 passes 13/13 on the fixed tree (invoke-first; the closure clears the registration itself) and the full manifest run is 77/77 - observed in this round",
+   "issued": "2026-11-22 sync-1270-codex-fix"
+  },
+  {
+   "id": "drive219-phaseJ-1270",
+   "check": "tests/browser/drive219.mjs",
+   "kind": "mutation",
+   "files": {
+    "tests/browser/drive219.mjs": "fc2950d2f0306932349e5f5042020b868c4671a19a554e435456df9016e6f1d8",
+    "tests/browser/lane-judge.mjs": "e03ea221236066be908978ed9047304baa8a805dc31c1c8625f8f210ab3e1e1d",
+    "parts/app5.js": "7b6b7f43577a3be48f10017114a1ff5bbf1a8d721db4c79d7ba84f4aadbaf587"
+   },
+   "mutation": "parts/app5.js releaseTitleCure restored to the clear-first order (the PR #166 gate head's form): the standing cure release is invoked after its registration is cleared, so its identity check refuses it",
+   "red": "drive219 phase J fails on the mutant (J-only run, first staging attempt): cure fired, the in-page teardown hook unloaded inside the hold, live release false, final titles 0, final held true, final multiplier 0 - the hold never releases and the re-pick's titles stay invisible - observed in this round",
+   "green": "drive219 passes 17/17 on the fixed tree (phase J: the unload inside the hold releases it, the re-pick streams to 34 titles at natural paint) - observed in this round",
+   "issued": "2026-11-22 sync-1270-codex-fix"
+  },
+  {
+   "id": "drive219-determinism-1270",
+   "check": "tests/browser/drive219.mjs",
+   "kind": "historical",
+   "files": {
+    "tests/browser/drive219.mjs": "fd79c83cb5fc45de951393957f82ce9070d53cc03708c66dea46bfdca23cdffe",
+    "tests/browser/lane-judge.mjs": "e03ea221236066be908978ed9047304baa8a805dc31c1c8625f8f210ab3e1e1d",
+    "parts/app5.js": "7b6b7f43577a3be48f10017114a1ff5bbf1a8d721db4c79d7ba84f4aadbaf587"
+   },
+   "mutation": "the PR #166 gate's first CI run (head 8fe0ba15, tier drives B job): on the fast CI runners a title genuinely places mid-flight on phase A's unstaged pick, the guard fires a legitimate cure, and A2/A3 convict the app for its designed behaviour (held samples 1, replaces 1); in phase D a single served title-only call is an engine consumer's, the guard's own check never queries, and the guardChecks>=1 break accepts the attempt as decided with replaces 0 (D1 fails)",
+   "red": "drive219 fails 13/16 in CI on head 8fe0ba15 (A2, A3, D1) while passing 16/16 locally - the lane's preconditions were environment-dependent, observed in the gate log",
+   "green": "the streaming phases stage the count at zero at the guard's own seam (skip stub) and phase D retries until the firing itself; locally the J-only and D-only cuts pass their checks on the fixed tree and the full lane passed 17/17 before this change - the cloud gate grades the full lane on the new head",
+   "issued": "2026-11-22 sync-1270-ci-fix"
+  },
+  {
+   "id": "drive219-gate3-1270",
+   "check": "tests/browser/drive219.mjs",
+   "kind": "historical",
+   "files": {
+    "tests/browser/drive219.mjs": "66abf5c0333ee23237ba364bfe340deb905001d3b8d38ad4a26481bad9136de8"
+   },
+   "mutation": "the PR #166 gate's second CI run (head 9125206f, tier drives B job 137249734723): drive219 failed 14/17 - B1 road violations [Chancellor Drive, Ansley Grove Road] judged from the swap while the swapped scene was still filling the shared collision space; D1 guard checks 0 across 3 attempts because each attempt was read before the guard's arm-time backstop (pick + ~8 s) fired and the retry's reload wiped it, while phase J (which polls for the firing itself) fired in the same run; I1 placed 0 because phase I arms the skip stub at the title-only query seam and the phase's OWN placement reads were title-only queries at that same seam - the stub answered [] for the test itself, while a stub-free probe of the identical sequence placed 34 titles",
+   "red": "drive219 fails 14/17 in CI on head 9125206f (B1, D1, I1) with the three signatures above, from the gate log; locally the B+I cut reproduced I1 exactly (placed 0, visibilities restored) and a stub-free probe of the same sequence placed 34",
+   "green": "cuts from the fixed drive on the fixed tree: A+D cut 11/11 (the firing poll waits out the guard's whole decision window), B+I cut 2/2 (road lane anchored at the titles' completion as A5/D2; phase I reads through the mixed layer list the sampler uses, so its own stub cannot intercept them); the cloud gate grades the full lane on the new head",
+   "issued": "2026-11-22 sync-1270-gate3"
+  },
+  {
+   "id": "drive219-gate4-1270",
+   "check": "tests/browser/drive219.mjs",
+   "kind": "historical",
+   "files": {
+    "tests/browser/drive219.mjs": "10429f79fd4e66cd2f45ba6dbd465412a3a0c2879ea00088005ba8983721cfc4"
+   },
+   "mutation": "the PR #166 gate's third CI run (head 7c969990, tier drives B): drive219 improved to 16/17 (B1, D1, I1 all pass - the window poll fired the cure in CI) but A3 failed with title-only queries seen: 0 while the streaming itself was perfect (replaces 0, teardowns 0, titles placed): phase A is the drive's first pick in a cold browser, and the engine's title-stack build lagged past BOTH of the guard's check points (moveend and the arm-time backstop at pick + ~8 s), so the guard's check found no title layers, legitimately took no count, and stood down - the guard never got to decide, and no correct app behaviour could have satisfied the check on that attempt",
+   "red": "drive219 fails 16/17 in CI on head 7c969990 (A3 only: title-only queries seen 0, replaces 0, teardowns 0, titles placed) from the gate log",
+   "green": "phase A gains an unmeasured fixture warm-up (one throwaway pick settled and unloaded before the instrument installs, so the graded pick's layers exist before its flight) and a decision-window poll before its read, as phase D; A cut from the fixed drive passes 8/8 locally (A1-A7 + F1); the cloud gate grades the full lane on the new head",
+   "issued": "2026-11-22 sync-1270-gate4"
   }
  ]
 }

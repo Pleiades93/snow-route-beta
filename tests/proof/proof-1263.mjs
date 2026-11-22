@@ -90,10 +90,10 @@ check('7: the standing heal is gone - no armTitleHeal, no titleCamSig, no init c
   !engine.includes('armTitleHeal') && !engine.includes('titleCamSig'));
 
 // ---------- (8) the one-flight hook restored ----------
-check("8: app5's one-flight hook is restored as in b494fb51 (armTitleRePlace armed by the pick flight, moveend -> once idle, 2.5 s backstop) and rePlaceTitles is exported for it",
-  app5.includes('let titleRePlaceArmed = false;') && app5.includes('function armTitleRePlace()') &&
+check("8: app5's one-flight hook (armTitleRePlace, restored as in b494fb51) is armed by the pick flight and rePlaceTitles is exported for it - Beta 1.270 re-pins the trigger: the hook is now the conditional title guard (moveend -> placed-title count -> the cure at idle with its 2.5 s backstop only when a title placed mid-flight), per Andrew's synchronised-streaming decision; the unconditional shape this check pinned through 1.269 is retired with the 1.266 cycle (proof-1270 pins the guard)",
+  app5.includes('let titleGuardArmed = false;') && app5.includes('function armTitleRePlace()') &&
   app5.includes('essential: false }); armTitleRePlace();') &&
-  app5.includes('setTimeout(run, 2500);') &&
+  app5.includes('setTimeout(cure, 2500);') &&
   engine.includes('mute, rePlaceTitles }') && engine.includes("Beta 1.248: rePlaceTitles exported for app5's post-flight hook"));
 
 // ---------- (9) labelFeatures / LABELS restored as data ----------
@@ -156,7 +156,7 @@ check('12: a street named like an inherited object key (constructor) with no SPO
   engine.includes('Object.prototype.hasOwnProperty.call(H.SPOT, n)') && fixOk);
 
 // ---------- (13) the release editorial ----------
-const BULLET = "Done in create-a-route now shows your whole route flat, above the review list.";
+const BULLET = "Street names now load in with the map, in sync, instead of popping in after a wait.";
 check("13: What's New carries the 1.266 bullet (rolled by the unified-load-in round), em-dash free, and the CHANGELOG top entry is Beta 1.266 above 1.265",
   whatsnew.includes(BULLET) && BULLET.length <= 108 && !whatsnew.includes('—') &&
   changelog.indexOf('## Beta 1.266') > -1 && changelog.indexOf('## Beta 1.266') < changelog.indexOf('## Beta 1.265'));

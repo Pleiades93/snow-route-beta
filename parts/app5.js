@@ -366,77 +366,65 @@ if (__splashEl && !window.matchMedia('(prefers-reduced-motion: reduce)').matches
 // the route menu is NOT removed with it: finish() parks it below the screen
 // and the Routes tab slides it back up (app2's openRouteMenu).
 function introToRoute() { // Beta 1.77 (Andrew): a pick opens WIDE on the route's area and flies in to the fitted view as the splash leaves, instead of the map simply appearing already zoomed in. Beta 1.81 (Andrew): the wide view dwells longer on the Route 5W point of interest and the flight in is slower and gentler - the old one was over before he could take the map in
-  if (!routeBox) { noteNameLoadInNoFlight(); return; } // Beta 1.117: an empty pack has no area to fly to - the map simply stays where it is. Beta 1.266: and no flight means no re-place is owed, so the load-in holding the names is told the settle is already here
-  const liGen = loadInGen; // Beta 1.266: the pick generation this intro belongs to - a newer pick landing during the dwell below retires this flight whole (its timeout checks the generation before it flies)
+  if (!routeBox) { return; } // Beta 1.117: an empty pack has no area to fly to - the map simply stays where it is. Beta 1.270: and no flight means no title placed mid-flight, so no guard check is owed either
+  const liGen = loadInGen; // the pick generation this intro belongs to - a newer pick landing during the dwell below retires this flight whole (its timeout checks the generation before it flies)
   const b = [[routeBox.w, routeBox.s], [routeBox.e, routeBox.n]];
   const fit0 = () => { try { map.fitBounds(b, { padding: 28, animate: false }); map.jumpTo({ pitch: 45 }); } catch (e) {} }; // Beta 1.203: the no-flight fallback (reduced motion, no cameraForBounds) lands on the same tilted default, instantly - the flat fit first, the tilt applied at its centre/zoom
-  if (!map.cameraForBounds || (window.matchMedia && matchMedia('(prefers-reduced-motion: reduce)').matches)) { fit0(); noteNameLoadInNoFlight(); return; } // Beta 1.266: the instant fit decides the anchors at the settled camera in one pass - no flight, no re-place owed
+  if (!map.cameraForBounds || (window.matchMedia && matchMedia('(prefers-reduced-motion: reduce)').matches)) { fit0(); return; } // the instant fit decides the anchors at the settled camera in one pass - no flight, no mid-flight placement, no guard check owed
   let fit = null; try { fit = map.cameraForBounds(b, { padding: 28 }); } catch (e) {}
-  if (!fit || !fit.center || typeof fit.zoom !== 'number') { fit0(); noteNameLoadInNoFlight(); return; } // Beta 1.266: same instant-fit settle as above
-  try { map.jumpTo({ center: fit.center, zoom: Math.max(8, fit.zoom - 3) }); } catch (e) { fit0(); noteNameLoadInNoFlight(); return; } // Beta 1.266: same instant-fit settle as above
+  if (!fit || !fit.center || typeof fit.zoom !== 'number') { fit0(); return; } // same instant-fit settle as above
+  try { map.jumpTo({ center: fit.center, zoom: Math.max(8, fit.zoom - 3) }); } catch (e) { fit0(); return; } // same instant-fit settle as above
   setTimeout(() => { if (!map || liGen !== loadInGen) return; try { map.flyTo({ center: fit.center, zoom: fit.zoom, pitch: 45, duration: 3000, curve: 1.2, essential: false }); armTitleRePlace(); } catch (e) {} }, 1500); // 1500ms: the splash's exit (780ms) has finished and the wide view - the Route 5W point of interest - has had a moment to sit, before the slow flight in. Beta 1.203 (Andrew): the flight tilts into the 45-degree default as it comes in - centre and zoom are the flat fit's own, unchanged
 }
-let titleRePlaceArmed = false;
-function armTitleRePlace() { // Beta 1.248: when THIS flight ends and the map is fully idle, the engine re-decides the street titles' anchors against the settled scene (GLP.rePlaceTitles - the flight's own placement passes decide them mid-flight, and MapLibre keeps a once-chosen side anchor for the session: names sat beside their streets from a cold open until a theme swap). moveend alone is not the signal - the basemap may still be streaming when the flight ends, and a re-decision against a half-arrived scene could stick the same way; idle is the settled scene. The 2.5s timer is only a backstop for an idle that never lands (a tile source that never settles); the pair runs once.
-  if (!map || titleRePlaceArmed) return; titleRePlaceArmed = true;
-  const liGen = loadInGen; // Beta 1.266: the generation this hook belongs to - a newer pick (loadRoute bumps it) retires the hook whole: its run stands down without re-placing, because the newer pick's own load-in owns the names now
-  let done = false;
-  const run = () => { if (done) return; done = true; if (liGen !== loadInGen) return; titleRePlaceArmed = false; try { if (window.GLP && window.GLP.rePlaceTitles) window.GLP.rePlaceTitles(); } catch (e) {} noteNameLoadInReplaced(); }; // Beta 1.266: the re-place has run INSIDE the name hold (app2's nameFade) - the load-in is told, and its reveal waits for the rebuilt source's own idle from here
-  try { map.once('moveend', () => { try { map.once('idle', run); } catch (e) {} setTimeout(run, 2500); }); } catch (e) { titleRePlaceArmed = false; }
-  setTimeout(run, 6500); // Beta 1.266: arm-time backstop - an interrupted animation can swallow moveend itself, which would strand both the re-place and the load-in waiting on it. Armed at the flight's launch, it lands 6.5 s later: strictly after the moveend pair's own latest fire (moveend + 2.5 s, the flight being 3 s), so it can only ever fire when moveend was never delivered; the done flag keeps the run single.
-}
-
-// ===== UNIFIED NAME LOAD-IN (Beta 1.266, Andrew's approved design, 2026-11-21) =====
-// The cycle the pick runs so the names arrive ONCE, together: beginNameLoadIn
-// engages app2's name hold the moment a route is picked (before the intro
-// flight), the one re-place runs inside the hold (the hook above notes it),
-// and when the scene is genuinely settled - re-place done AND the map idle
-// with every source loaded - revealNameLoadIn releases the hold into the one
-// joint 350 ms fade. Two backstops bound the wait, because names must never
-// wait forever: 6 s after the re-place (the diagnosis measured the rebuilt
-// source's re-parse at ~4.9 s under 6x CPU throttle, so a healthy rebuild
-// always lands inside it; a stalled one fades the basemap in anyway and the
-// titles join as they parse), and an absolute 15 s from the pick (the worst
-// legitimate chain is ~11.9 s: the 1.5 s dwell + the 3 s flight + the hook's
-// 2.5 s backstop + the throttled rebuild). The generation counter makes every
-// timer and listener single-pick: a newer pick's cycle is the only live one.
+// ===== TITLE PLACEMENT GUARD (Beta 1.270, Andrew's synchronised-streaming design, 2026-11-21) =====
+// The names stream in with the map now - no hold, no unconditional rebuild
+// (the 1.266 hold-then-reveal cycle is retired: Andrew's lived verdict was a
+// nameless wait, then a pop; the investigation in loadin-warm-2026-11-21
+// measured the two tile pipelines finishing 23 ms apart when nothing
+// interferes). What survives of the 1.248 hook is its CURE, made
+// conditional: the defect it answered is real but phone-only (a title that
+// places DURING the flight's final approach can keep a mid-flight side
+// anchor for the session - names beside their streets until a theme swap).
+// So at moveend the guard counts the titles placed so far: ZERO placed
+// means every title's first placement happens against the settled scene,
+// the precondition the rebuild exists to defeat is absent, and the
+// teardown is skipped (the investigation's pixel audit: the rebuild in
+// that case is a complete visual no-op, 0 differing pixels of 1,512,000).
+// Any title placed means the cure runs once, at idle, wrapped in app2's
+// TITLES-ONLY hold so the cure cannot blink either - the basemap names are
+// never held in any path (a paint or visibility write on a basemap layer
+// is banned outright by the drive216 P3 finding). Worst case on a fired
+// pick is the 1.266 behaviour scoped to the route titles alone.
 let loadInGen = 0;
-let liActive = false, liReplaced = false, liSwitched = false, liRevealed = false, liTimers = [];
-function liTimer(fn, ms) { const g = loadInGen; const id = setTimeout(() => { if (g === loadInGen) fn(); }, ms); liTimers.push(id); return id; }
-function beginNameLoadIn() { // the intro pick's opening: hold every name before the flight, arm the absolute backstop, and listen for the settled idle for the whole window (the hook's own idle is one-shot and gates the re-place, so the reveal needs its own)
-  liActive = true; liReplaced = false; liSwitched = false; liRevealed = false;
-  nameHoldSet(true);
-  try { if (map) map.on('idle', liIdle); } catch (e) {}
-  liTimer(revealNameLoadIn, 15000);
-}
-function liIdle() { // the reveal's settled test, run on every idle inside the window and by hand from the note functions: the re-place (or a switch's fresh placement, or an instant fit) must be behind us AND the scene must actually stand loaded
-  if (!liActive || liRevealed || !(liReplaced || liSwitched)) return;
-  try { if (map && typeof map.loaded === 'function' && !map.loaded()) return; } catch (e) {}
-  revealNameLoadIn();
-}
-function noteNameLoadInReplaced() { // the hook ran the one re-place inside the hold: arm the post-re-place backstop and take the settled test now (the rebuilt source usually lands after this, at its own idle)
-  if (!liActive) return;
-  liReplaced = true;
-  liTimer(revealNameLoadIn, 6000);
-  liIdle();
-}
-function noteNameLoadInNoFlight() { // introToRoute's instant-fit paths: the camera lands in one jump, the anchors are decided against the settled scene in a single pass, and no re-place is owed - the load-in's settle is the scene's own idle
-  if (!liActive) return;
-  liReplaced = true;
-  liIdle();
-}
-function noteNameLoadInSwitch() { // a route picked while a load-in stands: the hold simply carries over to the incoming route (its stack rebuild lands held, through the same label pass), no flight or re-place is owed for it (a switch frames at once on the settled view), and the reveal takes the switch's own idle. The absolute backstop re-arms under the new generation.
-  if (!liActive) return;
-  liSwitched = true;
-  liTimer(revealNameLoadIn, 15000);
-  liIdle();
-}
-function revealNameLoadIn() { // one-shot: release the hold into the joint fade and retire the cycle
-  if (!liActive || liRevealed) return;
-  liRevealed = true; liActive = false;
-  for (const id of liTimers) clearTimeout(id); liTimers = [];
-  try { if (map) map.off('idle', liIdle); } catch (e) {}
-  nameHoldSet(false);
+let titleGuardArmed = false;
+let titleCureRelease = null; // the standing cure's one-shot release, or null - loadRoute and unloadRouteToBoot call it so a pick or a delete never leaves a previous pick's cure holding the new scene's titles
+function releaseTitleCure() { const f = titleCureRelease; if (f) f(); } // Beta 1.270 (PR #166, Codex P1): invoke the release WHILE IT IS STILL REGISTERED - the closure opens with an identity check (titleCureRelease !== release -> stand down) that retires stale invocations, so clearing the registration first makes the callback refuse itself and the hold never releases (titles invisible indefinitely, the incoming route's included). The closure clears the registration as its own first act, so invoke-first loses no safety; proof-1270 check 5b pins this order
+function armTitleRePlace() {
+  if (!map || titleGuardArmed) return; titleGuardArmed = true;
+  const liGen = loadInGen; // the generation this guard belongs to - a newer pick retires it whole: its check stands down, because the newer pick's own flight arms its own guard
+  let done = false;
+  const finish = () => { if (done) return; done = true; titleGuardArmed = false; };
+  const check = () => { // at moveend (or the arm-time backstop below): count the titles placed so far - the guard's whole decision is this one number
+    if (done) return;
+    if (liGen !== loadInGen) { finish(); return; }
+    let placed = 0;
+    try { const ids = ['streetnamespt1', 'streetnamespt2', 'streetnamespt3', 'streetnamespt4'].filter((id) => map.getLayer(id)); if (ids.length) placed = map.queryRenderedFeatures({ layers: ids }).length; } catch (e) {}
+    if (!placed) { finish(); return; } // the streaming path: nothing placed mid-flight, nothing owed
+    const cure = () => { // at idle (the settled scene - a re-decision against a half-arrived scene could stick the same way the original defect did)
+      if (done) return; finish();
+      if (liGen !== loadInGen) return;
+      nameHoldSet(true, true); // titles only - the basemap is never held
+      try { if (window.GLP && window.GLP.rePlaceTitles) window.GLP.rePlaceTitles(); } catch (e) {}
+      const release = () => { if (titleCureRelease !== release) return; titleCureRelease = null; nameHoldSet(false); };
+      titleCureRelease = release;
+      try { map.once('idle', release); } catch (e) { release(); }
+      setTimeout(release, 6000); // backstop: a stalled rebuild must not hold the titles forever - the diagnosis measured the rebuilt source's re-parse at ~4.9 s under 6x CPU throttle, so a healthy rebuild always lands inside it
+    };
+    try { map.once('idle', cure); } catch (e) { cure(); }
+    setTimeout(cure, 2500); // the idle backstop, as the 1.248 hook had: a tile source that never settles must not strand the cure
+  };
+  try { map.once('moveend', check); } catch (e) { titleGuardArmed = false; }
+  setTimeout(check, 6500); // arm-time backstop: an interrupted animation can swallow moveend itself; armed at the flight's launch it lands strictly after the moveend path's own latest fire, and the done flag keeps the check single
 }
 
 function resetSwitchSession() { // Beta 1.117 (F3/F4): the ONE reset block a route switch runs - everything that names the OUTGOING route's session dies here, before the new pack's geometry or state exists. Runs after the F2 flush (loadRoute calls collapseNoteEditor first, so an open note draft has already finalized against the outgoing street).
@@ -454,7 +442,7 @@ function resetSwitchSession() { // Beta 1.117 (F3/F4): the ONE reset block a rou
 function loadRoute(id) {
   const pack = ROUTE_PACKS.find(p => p.id === id); if (!pack) return;
   if (routeLoaded && activeRoute && activeRoute.id === id) return; // picking the route already loaded changes nothing (the Routes tab handler guards this too)
-  loadInGen++; titleRePlaceArmed = false; // Beta 1.266: every effective pick starts a new load-in generation - a flight hook or timer an earlier pick left pending is stale from this line on (the hook's run checks the generation and stands down; loadRoute owns the armed flag's reset for the same reason)
+  loadInGen++; titleGuardArmed = false; releaseTitleCure(); // Beta 1.270: every effective pick starts a new generation - a guard or cure an earlier pick left pending is stale from this line on (the guard's check reads the generation and stands down, and a standing cure hold is released here rather than left over the incoming route's titles; loadRoute owns both resets for the same reason)
   hideConfirm(); // Beta 1.255 (gate round 2, Codex P1): a route switch clears any pending confirmation - the scrim-free pill permits navigation while it is up, and its question belongs to the route and run it was asked over, never to the one switched to
   // Beta 1.117: loadRoute is BOTH the boot pick and the live switch (pre-1.117 a
   // `if (routeLoaded) return;` guard made it boot-only, and the Routes tab's pick
@@ -482,15 +470,15 @@ function loadRoute(id) {
     if (typeof glOk !== 'undefined' && glOk && window.GLP) {
       if (!map.getSource('centres')) window.GLP.init(map, GL_HOST); else if (!switching) window.GLP.sync();
     }
-    if (switching) { noteNameLoadInSwitch(); try { addReferenceLayers(); } catch (e) {} if (routeBox) goHomeView(); } // a switch frames the new route at once, on the same tilted default Home lands on (Beta 1.203) - the wide dwell + slow flight (introToRoute) is boot choreography only
-    else { beginNameLoadIn(); introToRoute(); } // Beta 1.266: the name hold engages BEFORE the intro flight, so the whole load-in window (the dwell included) runs with every name held out
+    if (switching) { try { addReferenceLayers(); } catch (e) {} if (routeBox) goHomeView(); } // a switch frames the new route at once, on the same tilted default Home lands on (Beta 1.203) - the wide dwell + slow flight (introToRoute) is boot choreography only. Beta 1.270: a switch arms no guard - it frames at once on the settled view, so no title places mid-flight
+    else { introToRoute(); } // Beta 1.270: nothing is held back - the names stream in with the map from the pick itself; the flight's guard (armTitleRePlace, inside introToRoute) checks at moveend whether any title placed mid-flight and only then runs its cure
   }
   refreshAll(); checkStale(); syncWake();
   // Beta 1.221: the resumed-clean pill is cut (Andrew's toast rule - the resumed board and the Finish button are the mechanism). The 1.95 snapshot-honesty note that rode it lives on in the cancel path's own warning, which fires if he actually cancels.e snow), but a run whose cancel snapshot is missing or damaged is resumed with its reduced Cancel guarantee stated, not silent
   if (runStart) startGps(true);
 }
 function unloadRouteToBoot() { // Beta 1.124: the ACTIVE route was deleted - return the app to the boot-picker state, mirroring a cold boot before any pick (no geometry at eval, no state loaded, LS at its eval default, the menu in boot mode over rmMain). The mirror is of the RESTING picker, whose html carries NO boot class (Beta 1.126 - see the remove() below). Unlike a route SWITCH there is no flush: the outgoing slot's keys are wiped by deleteRoute right after, so nothing may write into them here - resetSwitchSession's clearing (note timer, dirty flags) is exactly the teardown needed, and its flush steps are deliberately NOT run.
-  loadInGen++; titleRePlaceArmed = false; revealNameLoadIn(); // Beta 1.266: the route a load-in was holding names for is gone - end the cycle here (the reveal fades the picker's own basemap names back in) rather than leaving the hold standing over the boot view
+  loadInGen++; titleGuardArmed = false; releaseTitleCure(); // Beta 1.270: the route a guard or cure was watching is gone - retire both here rather than leaving a cure hold standing over the boot view
   const hadRun = !!runStart;
   resetSwitchSession();
   if (hadRun) stopGps(true); // a clean on a deleted route cannot keep recording - its trail's slot no longer exists
