@@ -187,7 +187,7 @@ function computeDeadEnds(roads, allStreets) {
   const runsOf = n => runsCache[n] || (runsCache[n] = stitchRuns(n, roads));
   const r6 = v => Math.round(v * 1e6) / 1e6;
   for (const n of routeNames) {
-    const ownNames = Object.keys(allStreets).filter(m => !routeNames.includes(m) && (m === n || m.startsWith(n + ' ') || n.startsWith(m + ' ')));
+    const ownNames = Object.keys(allStreets).filter(m => m === n || m.startsWith(n + ' ') || n.startsWith(m + ' ')); // the street's own extract names - exact name first: a CREATE draft keys its roads by the FULL street name, so the exact-name key IS a route name and must not be vetoed by route membership (Codex P2, PR #163: with the veto, a created route's own geometry was excluded at both filters and its dead ends never feathered)
     for (const line of runsOf(n)) {
       for (const atStart of [true, false]) {
         const E = atStart ? line[0] : line[line.length - 1];
@@ -202,9 +202,9 @@ function computeDeadEnds(roads, allStreets) {
         const ux = ox / oLen, uy = oy / oLen;
         let terminates = false, extendsPast = false, otherNear = false;
         for (const m of Object.keys(allStreets)) {
-          if (routeNames.includes(m)) continue;
-          const ways = allStreets[m]; if (!Array.isArray(ways)) continue;
           const isOwn = ownNames.includes(m);
+          if (routeNames.includes(m) && !isOwn) continue; // other selected streets are not evidence either way; the current street's own geometry is (the exact-name case above)
+          const ways = allStreets[m]; if (!Array.isArray(ways)) continue;
           for (const w of ways) {
             if (!Array.isArray(w) || w.length < 2) continue;
             if (isOwn) {

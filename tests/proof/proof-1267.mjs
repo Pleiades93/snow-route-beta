@@ -42,6 +42,10 @@ check('1a: the fade lengths are named constants in create-packs.js - BOUNDARY_FA
   packs.includes('const BOUNDARY_FADE_M = 15;') && packs.includes('const DEAD_FADE_M = 10;'));
 check('1b: computeDeadEnds exists as the sibling computation and calls computeBoundaryEnds (the boundary class wins its ends)',
   packs.includes('function computeDeadEnds(roads, allStreets)') && packs.includes('const boundary = computeBoundaryEnds(roads, allStreets);'));
+check('1b2: the street\'s own geometry is never vetoed by route membership at either filter (the CREATE full-name keying - Codex P2, PR #163): ownNames carries no routeNames veto and the scan skips only non-own route streets',
+  packs.includes("const ownNames = Object.keys(allStreets).filter(m => m === n || m.startsWith(n + ' ') || n.startsWith(m + ' '));") &&
+  packs.includes('if (routeNames.includes(m) && !isOwn) continue;') &&
+  !packs.includes('!routeNames.includes(m) && (m === n'));
 check('1c: a dead record carries join == end and DEAD_FADE_M; a boundary record carries BOUNDARY_FADE_M as element 5',
   packs.includes('(out[n] = out[n] || []).push([r6(E[0]), r6(E[1]), r6(E[0]), r6(E[1]), DEAD_FADE_M]);') &&
   packs.includes('(out[n] = out[n] || []).push([r6(E[0]), r6(E[1]), r6(join[0]), r6(join[1]), BOUNDARY_FADE_M]);'));

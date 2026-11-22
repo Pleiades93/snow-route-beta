@@ -66,6 +66,26 @@ const A3 = await J(`(() => {
 ok('A3 in-page derivation from the Vaughan library reproduces the field: 7 boundary + 8 dead, dead streets exact, every derived dead end within 2 m of its shipped record | ' + JSON.stringify(A3),
   A3.b === 7 && A3.d === 8 && JSON.stringify(A3.deadStreets) === JSON.stringify(['Angie', 'Bayside', 'Boddy', 'Dianawood', 'Ferrari', 'Julian', 'Tina', 'Topper']) && A3.maxOff <= 2);
 
+// ---------- A4: the CREATE-shaped derivation (roads keyed by FULL street name) ----------
+// A create draft keys its roads by the full name ('Tina Place'), which is also the
+// extract's key - the street's own geometry must still count as its own at both
+// filters (Codex P2 on PR #163: keyed this way, computeDeadEnds returned {}).
+const A4 = await J(`(() => {
+  const pack = ROUTE_PACKS.find(p => p.id === '5w');
+  const all = ${JSON.stringify(subset)};
+  const one = computeDeadEnds({ 'Tina Place': all['Tina Place'] }, all);
+  const fullRoads = {};
+  for (const k of Object.keys(pack.roads)) { const fk = Object.keys(all).find(m => m === k || m.startsWith(k + ' ')); if (fk) fullRoads[fk] = pack.roads[k]; }
+  const de = computeDeadEnds(fullRoads, all);
+  const tot = o => Object.values(o).reduce((a, v) => a + v.length, 0);
+  const tina = (one['Tina Place'] || [])[0] || null;
+  const shippedTina = (pack.ends['Tina'] || [])[0];
+  const tinaOff = tina && shippedTina ? Math.hypot((tina[0] - shippedTina[0]) * 111320, (tina[1] - shippedTina[1]) * 85390) : -1;
+  return { oneCount: tot(one), tinaOff, d: tot(de), deadStreets: Object.keys(de).sort() };
+})()`);
+ok('A4 CREATE-shaped input (full-name keys): the single-street Tina Place derivation yields its dead record at the shipped point, and the full route keyed by full names yields the same 8 dead ends | ' + JSON.stringify(A4),
+  A4.oneCount === 1 && A4.tinaOff >= 0 && A4.tinaOff <= 2 && A4.d === 8 && JSON.stringify(A4.deadStreets) === JSON.stringify(['Angie Place', 'Bayside Court', 'Boddy Court', 'Dianawood Ridge', 'Ferrari Court', 'Julian Court', 'Tina Place', 'Topper Court']));
+
 // ---------- B: names on top in create mode ----------
 const orderBefore = await J(`(map.getStyle().layers || []).map(l => l.id).filter(id => !id.startsWith('cr'))`);
 await ev(`(() => { enterCreate('pick'); return true; })()`);

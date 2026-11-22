@@ -2118,15 +2118,15 @@
    "check": "tests/proof/proof-1267.mjs",
    "kind": "mutation",
    "files": {
-    "tests/proof/proof-1267.mjs": "17dbc3846ab2cc6ade49475325efcf912ce1e7dfdaecb28040a63ca2f3fc25b7",
-    "parts/create-packs.js": "3e7bf056f494ab5375ef23688346b6ca7bfe075916d01f2b7e1087da3a3d41e3",
+    "tests/proof/proof-1267.mjs": "bedf518a24b3ad68a85c109692138dbb12d4975336fe02eecc499155e17cebc4",
+    "parts/create-packs.js": "8653a58e37ead9cfff6b1bfc0029b033eb690716efc22cb3571abcbc9ca75c33",
     "parts/engine.js": "6ccb172dc8baf1ab283760c24a7d834ede444d388b88f6410ce98b5a2fb86213",
     "parts/create-pick.js": "ad20ad06897d9ded0948692d6661728bf11fbe410f03fa5011d08b15c1f85ef1",
     "parts/data.js": "9684c69862156dc70ee9a2b88278b4e825c5bf35f0c150fbc5660ccbdce9304b"
    },
    "mutation": "parts/create-packs.js: computeDeadEnds gutted (its boundary call replaced by an early return {})",
    "red": "proof-1267 fails exactly check 1b - observed in this round's mutation run; on the Beta 1.266 tree the proof fails 14 of 16 checks",
-   "green": "proof-1267 passes 16/16 on the shipped tree",
+   "green": "proof-1267 passes 17/17 on the shipped tree (check 1b2 added with the PR #163 Codex fix: the own-geometry veto is pinned absent)",
    "issued": "2026-11-21 create-1267"
   },
   {
@@ -2134,14 +2134,14 @@
    "check": "tests/browser/drive220.mjs",
    "kind": "mutation",
    "files": {
-    "tests/browser/drive220.mjs": "5806787ba2e3c839c5b75dcc694efb3943e8f71b74e1a1ac0b07b4ccefaae9da",
-    "parts/create-packs.js": "3e7bf056f494ab5375ef23688346b6ca7bfe075916d01f2b7e1087da3a3d41e3",
+    "tests/browser/drive220.mjs": "0cff73a388ae96cb539e925ab3a1d17cdce69198abca19436f8432675e56fb9e",
+    "parts/create-packs.js": "8653a58e37ead9cfff6b1bfc0029b033eb690716efc22cb3571abcbc9ca75c33",
     "parts/create-pick.js": "ad20ad06897d9ded0948692d6661728bf11fbe410f03fa5011d08b15c1f85ef1",
     "parts/data.js": "9684c69862156dc70ee9a2b88278b4e825c5bf35f0c150fbc5660ccbdce9304b"
    },
-   "mutation": "the Beta 1.266 tree itself (no computeDeadEnds, draft layers above the labels, the flat fitBounds fitDraft)",
-   "red": "drive220 on the 1.266 tree fails 5 of 9 checks (A1, A2, A3, B1, C1) - observed in this round's red run",
-   "green": "drive220 passes 9/9 on the shipped tree",
+   "mutation": "two reds observed: (1) the Beta 1.266 tree itself (no computeDeadEnds, draft layers above the labels, the flat fitBounds fitDraft); (2) the PR #163 head with the own-geometry veto restored in computeDeadEnds (the Codex P2 shape)",
+   "red": "red (1): drive220 on the 1.266 tree fails 5 of 9 checks (A1, A2, A3, B1, C1). red (2): with the veto restored, drive220 fails exactly A4 (the CREATE-shaped derivation returns {} - oneCount 0, d 0), 9/10",
+   "green": "drive220 passes 10/10 on the shipped tree (A4 added with the Codex fix)",
    "issued": "2026-11-21 create-1267"
   },
   {
