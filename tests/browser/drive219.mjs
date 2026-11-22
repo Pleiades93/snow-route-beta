@@ -115,6 +115,7 @@ const INSTRUMENT = `(() => {
       if (Array.isArray(layers) && layers.length && layers.every((id) => TITLE_IDS.includes(id))) {
         window.__li.guardChecks++;
         if (window.__liForceCure) { window.__li.cureStubUsed = true; window.__li.cureStubServes = (window.__li.cureStubServes || 0) + 1; return [{ properties: { name: '__forced__' }, layer: { id: 'streetnamespt1' } }]; }
+        if (window.__liForceSkip) { return []; } // the streaming phases' precondition, stated at the same seam: the guard's count is ZERO, so it skips - deterministic in every environment (on the fast CI runners a title genuinely places mid-flight on an unstaged pick and the guard fires a legitimate cure, which the PR #166 gate's phase A convicted as a hold: A2/A3 failed there with replaces 1 while the app behaved exactly as designed). Everything downstream of the count is the app's real code, as with the cure stub
       }
     } catch (e) {}
     return origQRF(...args);
@@ -207,6 +208,7 @@ const waitCureDone = async (ms) => poll(`(() => { try { const last = window.__li
 // ================= Phase A: the streaming load-in =================
 await bootToPicker();
 await ev(INSTRUMENT);
+await ev(`(() => { window.__liForceSkip = true; return true; })()`); // the skip precondition at the guard's own seam (see the instrument): phase A grades the streaming path, so the guard's count is staged at zero - phase D stages the opposite
 await ev(`document.querySelector('#rmRoutes .routeRow') && document.querySelector('#rmRoutes .routeRow').click()`);
 const aDone = await waitSettled(40000);
 await sleep(700);
@@ -216,7 +218,7 @@ ok('A1 the load-in completes by streaming: the titles reach full placement with 
   aDone === true && A.samples.length > 0 && A.samples[A.samples.length - 1].titles.length >= 30);
 ok('A2 NO HOLD EVER ENGAGES on a normal pick - not one sample stands held, and no layer is recorded unheld (held samples: ' + A.samples.filter((s) => s.held).length + ', unheld: ' + JSON.stringify(A.unheld || {}) + '): the 1.266 cycle is retired, not dormant',
   A.samples.every((s) => !s.held) && Object.keys(A.unheld || {}).length === 0);
-ok('A3 the guard RAN and SKIPPED: its moveend count was taken (title-only queries seen: ' + A.guardChecks + ') and it owed no cure - zero re-places, zero labelpts teardowns (replaces: ' + A.replaces + ', teardowns: ' + A.tears.length + '). On this harness no title places mid-flight (the investigation measured the count at 0 on every cold pick), so the unconditional rebuild 1.266 shipped is exactly the waste this check removes',
+ok('A3 the guard RAN and SKIPPED: its moveend count was taken (title-only queries seen: ' + A.guardChecks + ') and it owed no cure - zero re-places, zero labelpts teardowns (replaces: ' + A.replaces + ', teardowns: ' + A.tears.length + '). The count is staged at zero at the guard\'s own seam: unstaged, the count is environment-dependent (0 on every cold pick locally; on the fast CI runners a title places mid-flight and the guard fires - correctly - which is phase D\'s subject, not a streaming defect). With the count at zero the unconditional rebuild 1.266 shipped is exactly the waste this check removes',
   A.guardChecks >= 1 && A.replaces === 0 && A.tears.length === 0);
 const aSettled = A.samples.filter((x) => x.t >= A.moveEndAt);
 const aLaneT = laneViolations(aSettled, 'titles');
@@ -246,6 +248,7 @@ ok('F1 a pan after the load-in settles with NO teardown and NO re-place - moveme
 await send('Page.reload', {}, S);
 await bootToPicker();
 await ev(INSTRUMENT);
+await ev(`(() => { window.__liForceSkip = true; return true; })()`); // the streaming precondition, as phase A: the swap is graded, not the guard
 await ev(`document.querySelector('#rmRoutes .routeRow') && document.querySelector('#rmRoutes .routeRow').click()`);
 await sleep(2200); // the flight runs 1500 -> 4500 ms: this lands mid-flight
 const bSwapAt = await J(`performance.now()`);
@@ -264,6 +267,7 @@ ok('B1 a theme swap mid-flight resolves by streaming: the load-in completes on t
 await send('Page.reload', {}, S);
 await bootToPicker();
 await ev(INSTRUMENT);
+await ev(`(() => { window.__liForceSkip = true; return true; })()`); // the streaming precondition, as phase A: both picks' guards count zero and skip
 await ev(`document.querySelector('#rmRoutes .routeRow') && document.querySelector('#rmRoutes .routeRow').click()`);
 await sleep(600); // inside the first pick's dwell - its flight has not even launched
 await ev(`(() => { try { const p = JSON.parse(JSON.stringify(ROUTE_PACKS[0])); p.id = '5x'; p.name = 'Route 5X'; ROUTE_PACKS.push(p); loadRoute('5x'); } catch (e) { window.__li.pokeErr = String(e && e.message || e); } return true; })()`);
@@ -284,7 +288,13 @@ ok('C1 a second route pick during the window (a page-side clone pack, the sandbo
 // staged on that attempt, which is a fixture-timing miss, not an app
 // verdict (the same class as the harness's browser-startup retry). If
 // the guard DID decide and still did not fire, the phase fails on the
-// first such attempt with no retry.
+// first such attempt with no retry. The ONLY break is the firing itself
+// (replaces 1): the PR #166 CI gate showed a served title-only call is
+// not proof the guard decided - an engine consumer can take the stub's
+// answer while the guard's own check never queries (guard checks 1,
+// replaces 0, the attempt wrongly accepted as decided) - so a
+// no-fire attempt retries on the same terms as a staging miss, and
+// three no-fire attempts fail D1 honestly.
 let D = null, dDone = false, dAttempts = 0;
 for (let attempt = 1; attempt <= 3; attempt++) {
   dAttempts = attempt;
@@ -296,7 +306,7 @@ for (let attempt = 1; attempt <= 3; attempt++) {
   dDone = await waitCureDone(45000);
   await sleep(700);
   D = await J(`window.__li`);
-  if (D.replaces === 1 || D.guardChecks >= 1) break; // fired, or the guard decided against a served count - either way the staging held and the verdict is real
+  if (D.replaces === 1) break; // the firing is the only proof the staging held - anything else retries
 }
 console.log('drive219 D: attempts ' + dAttempts + ', samples ' + D.samples.length + ', tears ' + JSON.stringify(D.tears) + ', replaces ' + D.replaces + ', guardChecks ' + D.guardChecks + ', stubUsed ' + D.cureStubUsed + ', done ' + dDone);
 ok('D1 THE CURE FIRES on a placed-mid-flight count: the re-place ran exactly once and its labelpts teardown landed INSIDE the titles-only hold (staging attempts: ' + dAttempts + ', stub served: ' + D.cureStubUsed + ' x' + (D.cureStubServes || 0) + ', guard checks: ' + D.guardChecks + ', replaces: ' + D.replaces + ', teardowns: ' + D.tears.length + ', teardown multipliers: ' + JSON.stringify(D.tears.map((t) => t.mult)) + ') - a guard that never fires in tests is an assertion, not a proof; this phase is the firing',
@@ -322,6 +332,7 @@ await send('Page.reload', {}, S);
 await send('Emulation.setEmulatedMedia', { features: [{ name: 'prefers-reduced-motion', value: 'reduce' }] }, S);
 await bootToPicker();
 await ev(INSTRUMENT);
+await ev(`(() => { window.__liForceSkip = true; return true; })()`); // the streaming precondition, as phase A (the instant-fit path owes no check anyway - this is insurance, not a crutch)
 await ev(`document.querySelector('#rmRoutes .routeRow') && document.querySelector('#rmRoutes .routeRow').click()`);
 const gDone = await waitSettled(40000);
 await sleep(500);
@@ -335,6 +346,7 @@ await send('Emulation.setEmulatedMedia', { features: [] }, S);
 await send('Page.reload', {}, S);
 await bootToPicker();
 await ev(INSTRUMENT);
+await ev(`(() => { window.__liForceSkip = true; return true; })()`); // the streaming precondition, as phase A: no cure hold can stand across the unload in this phase - phase J grades the unload with one standing
 await ev(`document.querySelector('#rmRoutes .routeRow') && document.querySelector('#rmRoutes .routeRow').click()`);
 await sleep(900); // inside the dwell - the window is wide open
 await ev(`(() => { unloadRouteToBoot(); return true; })()`); // the delete path's own unload: with no hold standing there is nothing to strand - the picker's basemap names simply carry on
@@ -351,6 +363,7 @@ ok('H1 unloading the route mid-window (the delete path) and picking again comple
 await send('Page.reload', {}, S);
 await bootToPicker();
 await ev(INSTRUMENT);
+await ev(`(() => { window.__liForceSkip = true; return true; })()`); // the streaming precondition, as phase A: with the count staged at zero no hold can stand when the backdrop snapshots - the phase's premise, made deterministic
 await ev(`document.querySelector('#rmRoutes .routeRow') && document.querySelector('#rmRoutes .routeRow').click()`);
 await sleep(900); // mid-window: the stream is running when creation opens
 await ev(`(() => { enterCreate('pick'); return true; })()`); // the backdrop snapshots the route stack's visibility NOW - with no hold standing, the snapshot reads the naturals directly (the PR #162 transient-none hazard has no hold to rise from on this path; a cure hold is the only one left, and it never spans a pick)

@@ -3189,6 +3189,20 @@
    "red": "drive219 phase J fails on the mutant (J-only run, first staging attempt): cure fired, the in-page teardown hook unloaded inside the hold, live release false, final titles 0, final held true, final multiplier 0 - the hold never releases and the re-pick's titles stay invisible - observed in this round",
    "green": "drive219 passes 17/17 on the fixed tree (phase J: the unload inside the hold releases it, the re-pick streams to 34 titles at natural paint) - observed in this round",
    "issued": "2026-11-22 sync-1270-codex-fix"
+  },
+  {
+   "id": "drive219-determinism-1270",
+   "check": "tests/browser/drive219.mjs",
+   "kind": "historical",
+   "files": {
+    "tests/browser/drive219.mjs": "fd79c83cb5fc45de951393957f82ce9070d53cc03708c66dea46bfdca23cdffe",
+    "tests/browser/lane-judge.mjs": "e03ea221236066be908978ed9047304baa8a805dc31c1c8625f8f210ab3e1e1d",
+    "parts/app5.js": "7b6b7f43577a3be48f10017114a1ff5bbf1a8d721db4c79d7ba84f4aadbaf587"
+   },
+   "mutation": "the PR #166 gate's first CI run (head 8fe0ba15, tier drives B job): on the fast CI runners a title genuinely places mid-flight on phase A's unstaged pick, the guard fires a legitimate cure, and A2/A3 convict the app for its designed behaviour (held samples 1, replaces 1); in phase D a single served title-only call is an engine consumer's, the guard's own check never queries, and the guardChecks>=1 break accepts the attempt as decided with replaces 0 (D1 fails)",
+   "red": "drive219 fails 13/16 in CI on head 8fe0ba15 (A2, A3, D1) while passing 16/16 locally - the lane's preconditions were environment-dependent, observed in the gate log",
+   "green": "the streaming phases stage the count at zero at the guard's own seam (skip stub) and phase D retries until the firing itself; locally the J-only and D-only cuts pass their checks on the fixed tree and the full lane passed 17/17 before this change - the cloud gate grades the full lane on the new head",
+   "issued": "2026-11-22 sync-1270-ci-fix"
   }
  ]
 }
