@@ -263,7 +263,10 @@ jobs:
     if: (needs.plan.outputs.tier == 'A' || needs.plan.outputs.tier == 'B') && !(github.event_name == 'push' && github.ref == 'refs/heads/main')
     name: tier drives (${{ needs.plan.outputs.tier }})
     runs-on: ubuntu-latest
-    timeout-minutes: 30
+    # 45 since Beta 1.268: the Tier B set (67 drives) outgrew the 30 cap -
+    # PR #164's first gate run passed 56/56 completed drives and was
+    # cancelled by the cap with 11 drives unrun.
+    timeout-minutes: 45
     steps:
       - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4
       - name: Set up Node
