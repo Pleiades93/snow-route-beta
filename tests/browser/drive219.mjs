@@ -207,10 +207,30 @@ const waitCureDone = async (ms) => poll(`(() => { try { const last = window.__li
 
 // ================= Phase A: the streaming load-in =================
 await bootToPicker();
+// Fixture warm-up (unmeasured, before the instrument installs): one
+// throwaway pick, settled, then unloaded back to the picker. The
+// graded pick below is the FIRST pick of the whole drive in a cold
+// browser, and on the CI runners the engine's title-stack build can
+// lag past BOTH of the guard's check points (moveend, then the
+// arm-time backstop at pick + ~8 s) - a check that finds no title
+// layers yet legitimately takes no count and stands down, so the
+// guard never gets to decide and A3's "the guard RAN" cannot be
+// staged on that attempt (PR #166 gate, head 7c969990: A3 failed with
+// title-only queries seen: 0 while the streaming itself was perfect -
+// replaces 0, teardowns 0, titles placed). The warm pick leaves every
+// asset the graded pick needs cached, so its layers exist before its
+// flight; the graded pick itself is a normal boot-style pick from the
+// picker state the unload restores, and it is the only pick the
+// instrument measures.
+await ev(`document.querySelector('#rmRoutes .routeRow') && document.querySelector('#rmRoutes .routeRow').click()`);
+await poll(`(() => { try { const ids = ['streetnamespt1', 'streetnamespt2', 'streetnamespt3', 'streetnamespt4'].filter((id) => map.getLayer(id)); if (!ids.length) return false; const s = new Set(); for (const f of map.queryRenderedFeatures({ layers: ids })) if (f.properties && f.properties.name) s.add(f.properties.name); return s.size >= 30; } catch (e) { return false; } })()`, 45000); // the warm pick's own settle, read off the real map (no instrument yet, no stub armed - a plain title-only read is honest here)
+await ev(`(() => { unloadRouteToBoot(); return true; })()`);
+await poll(`!!document.querySelector('#rmRoutes .routeRow')`, 20000);
 await ev(INSTRUMENT);
 await ev(`(() => { window.__liForceSkip = true; return true; })()`); // the skip precondition at the guard's own seam (see the instrument): phase A grades the streaming path, so the guard's count is staged at zero - phase D stages the opposite
 await ev(`document.querySelector('#rmRoutes .routeRow') && document.querySelector('#rmRoutes .routeRow').click()`);
 const aDone = await waitSettled(40000);
+await poll(`!!(window.__li && window.__li.guardChecks >= 1)`, 15000); // the guard's whole decision window, waited out before the read - its backstop can land after the stream settles (phase D's window lesson, learned in the same gate)
 await sleep(700);
 const A = await J(`window.__li`);
 console.log('drive219 A: samples ' + A.samples.length + ', tears ' + A.tears.length + ', replaces ' + A.replaces + ', guardChecks ' + A.guardChecks + ', settled ' + aDone);

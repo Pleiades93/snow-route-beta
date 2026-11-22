@@ -3215,6 +3215,18 @@
    "red": "drive219 fails 14/17 in CI on head 9125206f (B1, D1, I1) with the three signatures above, from the gate log; locally the B+I cut reproduced I1 exactly (placed 0, visibilities restored) and a stub-free probe of the same sequence placed 34",
    "green": "cuts from the fixed drive on the fixed tree: A+D cut 11/11 (the firing poll waits out the guard's whole decision window), B+I cut 2/2 (road lane anchored at the titles' completion as A5/D2; phase I reads through the mixed layer list the sampler uses, so its own stub cannot intercept them); the cloud gate grades the full lane on the new head",
    "issued": "2026-11-22 sync-1270-gate3"
+  },
+  {
+   "id": "drive219-gate4-1270",
+   "check": "tests/browser/drive219.mjs",
+   "kind": "historical",
+   "files": {
+    "tests/browser/drive219.mjs": "10429f79fd4e66cd2f45ba6dbd465412a3a0c2879ea00088005ba8983721cfc4"
+   },
+   "mutation": "the PR #166 gate's third CI run (head 7c969990, tier drives B): drive219 improved to 16/17 (B1, D1, I1 all pass - the window poll fired the cure in CI) but A3 failed with title-only queries seen: 0 while the streaming itself was perfect (replaces 0, teardowns 0, titles placed): phase A is the drive's first pick in a cold browser, and the engine's title-stack build lagged past BOTH of the guard's check points (moveend and the arm-time backstop at pick + ~8 s), so the guard's check found no title layers, legitimately took no count, and stood down - the guard never got to decide, and no correct app behaviour could have satisfied the check on that attempt",
+   "red": "drive219 fails 16/17 in CI on head 7c969990 (A3 only: title-only queries seen 0, replaces 0, teardowns 0, titles placed) from the gate log",
+   "green": "phase A gains an unmeasured fixture warm-up (one throwaway pick settled and unloaded before the instrument installs, so the graded pick's layers exist before its flight) and a decision-window poll before its read, as phase D; A cut from the fixed drive passes 8/8 locally (A1-A7 + F1); the cloud gate grades the full lane on the new head",
+   "issued": "2026-11-22 sync-1270-gate4"
   }
  ]
 }
