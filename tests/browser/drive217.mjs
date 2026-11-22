@@ -26,6 +26,11 @@ if (!await poll(`!!(window.map && map.getSource && map.getSource('fades'))`, 450
 // the tile count is not the data).
 // Both-ways: on the 1.263 tree B1/B2 fail with 14 rendered features and
 // all five board fade layers standing visible inside create mode.
+// COUNTS RE-PINNED at Beta 1.267: the dead-end feather grew the shipped
+// ends from 7 to 15, so the route-mode feather set is 30 features
+// (15 casing + 15 centre) and the fades source carries 30 - the leak
+// invariant this drive grades (create renders ZERO of them, exit
+// restores the route count exactly) is unchanged.
 const R = { checks: [] };
 const ok = (name, cond) => R.checks.push([name, cond === true]);
 const J = async (expr) => { const raw = await ev(`(() => { try { return JSON.stringify((${expr})); } catch (e) { return JSON.stringify({ __err: String(e && e.message || e) }); } })()`); return typeof raw === 'string' ? JSON.parse(raw) : {}; };
@@ -54,25 +59,25 @@ const settle = async () => { await poll(`!!(window.map && map.loaded() && !map.i
 await ev(`(() => { map.jumpTo({ center: [-79.5598, 43.8147], zoom: 13.4 }); return true; })()`);
 await settle();
 const A = await probe();
-ok('A1 route mode: the board feathers render at the 7 shipped ends (14 features: 7 casing + 7 centre) | got ' + A.boardRendered + ' (casing ' + A.rendered['fade-casing'] + ', surf-y ' + A.rendered['fade-surf-y'] + ', surf-r ' + A.rendered['fade-surf-r'] + ')',
-  A.boardRendered === 14 && A.rendered['fade-casing'] === 7);
+ok('A1 route mode: the board feathers render at the 15 shipped ends (30 features: 15 casing + 15 centre) | got ' + A.boardRendered + ' (casing ' + A.rendered['fade-casing'] + ', surf-y ' + A.rendered['fade-surf-y'] + ', surf-r ' + A.rendered['fade-surf-r'] + ')',
+  A.boardRendered === 30 && A.rendered['fade-casing'] === 15);
 ok('A2 route mode: all nine fade layers stand visible | ' + JSON.stringify(ALL_FADES.map(id => A.vis[id])),
   ALL_FADES.every(id => A.vis[id] === 'visible'));
-ok('A3 route mode: the fades source is populated | features ' + A.fadesSrc, A.fadesSrc >= 14);
+ok('A3 route mode: the fades source is populated | features ' + A.fadesSrc, A.fadesSrc >= 30);
 
 // ---------- B: create mode - nothing of the loaded route's feathers ----------
 await ev(`(() => { enterCreate('pick'); return true; })()`);
 await poll(`!!(typeof creating !== 'undefined' && creating && crHiddenLayers)`, 15000);
 await settle();
 const B = await probe();
-ok('B1 create mode: ZERO rendered features across all nine fade layers (the leak rendered 14) | got ' + B.allRendered + ' ' + JSON.stringify(B.rendered),
+ok('B1 create mode: ZERO rendered features across all nine fade layers (the leak rendered 30) | got ' + B.allRendered + ' ' + JSON.stringify(B.rendered),
   B.allRendered === 0);
 ok('B2 create mode: every fade layer is hidden by the backdrop, selection fades included | ' + JSON.stringify(ALL_FADES.map(id => B.vis[id])),
   ALL_FADES.every(id => B.vis[id] === 'none'));
 ok('B3 create mode: the backdrop\'s recorded hide list names all nine fade layers | recorded ' + (B.hidden ? B.hidden.length : 'null'),
   Array.isArray(B.hidden) && ALL_FADES.every(id => B.hidden.includes(id)));
 ok('B4 create mode: the fades source keeps its features (visibility only - the loaded route\'s data is untouched) | route ' + A.fadesSrc + ' -> create ' + B.fadesSrc,
-  B.fadesSrc === A.fadesSrc && B.fadesSrc >= 14);
+  B.fadesSrc === A.fadesSrc && B.fadesSrc >= 30);
 ok('B5 create mode: the by-design route POI stands (the backdrop did not over-hide) | rendered ' + B.poi, B.poi === 1);
 
 // ---------- C: a mid-create theme swap must not resurrect the feathers ----------
@@ -97,7 +102,7 @@ await ev(`(() => { exitCreate(); return true; })()`);
 await settle();
 const D = await probe();
 ok('D1 after exitCreate: the board feathers render again at the route-mode count | route ' + A.boardRendered + ' -> after exit ' + D.boardRendered,
-  D.boardRendered === A.boardRendered && D.boardRendered === 14);
+  D.boardRendered === A.boardRendered && D.boardRendered === 30);
 ok('D2 after exitCreate: every fade layer\'s visibility is restored to its route-mode value | ' + JSON.stringify(ALL_FADES.map(id => D.vis[id])),
   ALL_FADES.every(id => D.vis[id] === A.vis[id]));
 ok('D3 after exitCreate: the create POI layers are gone | crPoiDot rendered ' + D.poi, D.poi === -1);

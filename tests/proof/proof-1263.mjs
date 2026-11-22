@@ -156,7 +156,7 @@ check('12: a street named like an inherited object key (constructor) with no SPO
   engine.includes('Object.prototype.hasOwnProperty.call(H.SPOT, n)') && fixOk);
 
 // ---------- (13) the release editorial ----------
-const BULLET = "Street names now fade in together when a route loads, instead of blinking.";
+const BULLET = "Dead ends now feather out, like the ends where a street continues.";
 check("13: What's New carries the 1.266 bullet (rolled by the unified-load-in round), em-dash free, and the CHANGELOG top entry is Beta 1.266 above 1.265",
   whatsnew.includes(BULLET) && BULLET.length <= 108 && !whatsnew.includes('—') &&
   changelog.indexOf('## Beta 1.266') > -1 && changelog.indexOf('## Beta 1.266') < changelog.indexOf('## Beta 1.265'));

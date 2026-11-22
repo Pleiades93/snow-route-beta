@@ -1611,6 +1611,554 @@
     "scripts/check-census.py": "dd55f34cd855e60a6fadae7e261aa99f1682b9d7d8446696532045e3a281fafb"
    },
    "issued": "2026-11-21 unifiedloadin-1266"
+  },
+  {
+   "id": "create-1267",
+   "kind": "app",
+   "anchors": {
+    "elements": [
+     "swAwake"
+    ],
+    "functions": [
+     "computeBoundaryEnds",
+     "computeDeadEnds",
+     "endsPtSeg",
+     "normalizePack",
+     "ensureDraftLayers",
+     "crFirstLabelLayerId",
+     "crIsectEnsure",
+     "fitDraft",
+     "setCreateStage",
+     "splitBoundaryEnd",
+     "boundarySplit",
+     "boundaryRecAt",
+     "fadeMOf",
+     "saveDraftRoute"
+    ]
+   },
+   "changed": [
+    "parts/create-packs.js",
+    "parts/create-pick.js",
+    "parts/create-save.js",
+    "parts/engine.js",
+    "parts/head.html",
+    "parts/data.js",
+    "parts/whatsnew.js"
+   ],
+   "rows": [
+    {
+     "id": "caller:boundaryRecAt:parts/engine.js:boundarySplit",
+     "kind": "caller",
+     "source": "derived: call-site scan of parts/ - boundaryRecAt() is called from boundarySplit in parts/engine.js",
+     "status": "covered",
+     "note": "unchanged caller: the record it returns now carries element 5, consumed by fadeMOf at the same site - proof-1267 1f, drive220 A"
+    },
+    {
+     "id": "caller:boundarySplit:parts/engine.js:buildFamilies",
+     "kind": "caller",
+     "source": "derived: call-site scan of parts/ - boundarySplit() is called from buildFamilies in parts/engine.js",
+     "status": "covered",
+     "note": "board families split on the per-record length now: drive220 A2 counts 30 fade features (15 records) on the shipped pack; proof-1267 1f"
+    },
+    {
+     "id": "caller:boundarySplit:parts/engine.js:buildSelFill",
+     "kind": "caller",
+     "source": "derived: call-site scan of parts/ - boundarySplit() is called from buildSelFill in parts/engine.js",
+     "status": "covered",
+     "note": "selection fill rides the same boundarySplit/fadeMOf path - the per-record length applies to selection fades identically; proof-1267 1f pins the single split site"
+    },
+    {
+     "id": "caller:boundarySplit:parts/engine.js:selectedGeom",
+     "kind": "caller",
+     "source": "derived: call-site scan of parts/ - boundarySplit() is called from selectedGeom in parts/engine.js",
+     "status": "covered",
+     "note": "selected geometry rides the same boundarySplit/fadeMOf path as the board; proof-1267 1f"
+    },
+    {
+     "id": "caller:computeBoundaryEnds:parts/create-packs.js:computeDeadEnds",
+     "kind": "caller",
+     "source": "derived: call-site scan of parts/ - computeBoundaryEnds() is called from computeDeadEnds in parts/create-packs.js",
+     "status": "covered",
+     "note": "the sibling calls it so boundary ends win their class: proof-1267 1b; drive220 A3 derives 7 boundary + 8 dead with no overlap"
+    },
+    {
+     "id": "caller:computeBoundaryEnds:parts/create-save.js:crSaveBtn:click",
+     "kind": "caller",
+     "source": "derived: call-site scan of parts/ - computeBoundaryEnds() is called from crSaveBtn:click in parts/create-save.js",
+     "status": "covered",
+     "note": "the save merges both computations into the one ends field: proof-1267 1d"
+    },
+    {
+     "id": "caller:computeDeadEnds:parts/create-save.js:crSaveBtn:click",
+     "kind": "caller",
+     "source": "derived: call-site scan of parts/ - computeDeadEnds() is called from crSaveBtn:click in parts/create-save.js",
+     "status": "covered",
+     "note": "same merge at the save: proof-1267 1d"
+    },
+    {
+     "id": "caller:crFirstLabelLayerId:parts/create-pick.js:crIsectEnsure",
+     "kind": "caller",
+     "source": "derived: call-site scan of parts/ - crFirstLabelLayerId() is called from crIsectEnsure in parts/create-pick.js",
+     "status": "covered",
+     "note": "the marker pair now reads the shared finder: proof-1262 check 4 re-pinned to the shared shape this round; drive220 B1"
+    },
+    {
+     "id": "caller:crFirstLabelLayerId:parts/create-pick.js:ensureDraftLayers",
+     "kind": "caller",
+     "source": "derived: call-site scan of parts/ - crFirstLabelLayerId() is called from ensureDraftLayers in parts/create-pick.js",
+     "status": "covered",
+     "note": "the draft layers seat below the finder's layer: proof-1267 2a/2b; drive220 B1 measures the style order"
+    },
+    {
+     "id": "caller:crIsectEnsure:parts/create-pick.js:crIsectSet",
+     "kind": "caller",
+     "source": "derived: call-site scan of parts/ - crIsectEnsure() is called from crIsectSet in parts/create-pick.js",
+     "status": "covered",
+     "note": "unchanged call path; its beforeId now comes from the shared finder with identical semantics - proof-1262 passes re-pinned"
+    },
+    {
+     "id": "caller:crIsectEnsure:parts/create-pick.js:map:styledata",
+     "kind": "caller",
+     "source": "derived: call-site scan of parts/ - crIsectEnsure() is called from map:styledata in parts/create-pick.js",
+     "status": "covered",
+     "note": "a basemap swap mid-create re-seats the pair through the same finder; the draft layers re-seat through renderDraft on the same event - drive218 C grades swap behaviour in create mode"
+    },
+    {
+     "id": "caller:endsPtSeg:parts/create-packs.js:ox",
+     "kind": "caller",
+     "source": "derived: call-site scan of parts/ - endsPtSeg() is called from ox in parts/create-packs.js",
+     "status": "na",
+     "note": "spurious anchor hit: \"ox\" is a local variable in computeDeadEnds (the outward-direction x component), not a call of endsPtSeg - the function's real callers are computeBoundaryEnds (aliased ptSeg) and computeDeadEnds' proximity scan"
+    },
+    {
+     "id": "caller:ensureDraftLayers:parts/create-pick.js:renderDraft",
+     "kind": "caller",
+     "source": "derived: call-site scan of parts/ - ensureDraftLayers() is called from renderDraft in parts/create-pick.js",
+     "status": "covered",
+     "note": "every draft render re-runs the seating; drive220 B1/B2 grade order + print over a chosen street"
+    },
+    {
+     "id": "caller:fadeMOf:parts/engine.js:boundarySplit",
+     "kind": "caller",
+     "source": "derived: call-site scan of parts/ - fadeMOf() is called from boundarySplit in parts/engine.js",
+     "status": "covered",
+     "note": "the one consumer: proof-1267 1f; drive220 A"
+    },
+    {
+     "id": "caller:fitDraft:parts/create-pick.js:setCreateStage",
+     "kind": "caller",
+     "source": "derived: call-site scan of parts/ - fitDraft() is called from setCreateStage in parts/create-pick.js",
+     "status": "covered",
+     "note": "the preview stage is the flight's only caller: proof-1267 3c; drive220 C (flight) and D (empty draft, no flight)"
+    },
+    {
+     "id": "caller:normalizePack:parts/app4.js:recoveryObj",
+     "kind": "caller",
+     "source": "derived: call-site scan of parts/ - normalizePack() is called from recoveryObj in parts/app4.js",
+     "status": "covered",
+     "note": "restore/recovery packs pass the same cleaner - element 5 preserved by the lenient rule: proof-1267 1e"
+    },
+    {
+     "id": "caller:normalizePack:parts/app4.js:restoreBackup",
+     "kind": "caller",
+     "source": "derived: call-site scan of parts/ - normalizePack() is called from restoreBackup in parts/app4.js",
+     "status": "covered",
+     "note": "same cleaner, same preservation: proof-1267 1e"
+    },
+    {
+     "id": "caller:normalizePack:parts/app4.js:xPre:click",
+     "kind": "caller",
+     "source": "derived: call-site scan of parts/ - normalizePack() is called from xPre:click in parts/app4.js",
+     "status": "covered",
+     "note": "same cleaner, same preservation: proof-1267 1e"
+    },
+    {
+     "id": "caller:normalizePack:parts/create-packs.js:initUserPacks",
+     "kind": "caller",
+     "source": "derived: call-site scan of parts/ - normalizePack() is called from initUserPacks in parts/create-packs.js",
+     "status": "covered",
+     "note": "boot registration of stored packs passes the same cleaner - a stored 5-element record survives: proof-1267 1e"
+    },
+    {
+     "id": "caller:normalizePack:parts/create-packs.js:mergeUserPacks",
+     "kind": "caller",
+     "source": "derived: call-site scan of parts/ - normalizePack() is called from mergeUserPacks in parts/create-packs.js",
+     "status": "covered",
+     "note": "same cleaner at the legacy merge: proof-1267 1e"
+    },
+    {
+     "id": "caller:normalizePack:parts/create-save.js:crSaveBtn:click",
+     "kind": "caller",
+     "source": "derived: call-site scan of parts/ - normalizePack() is called from crSaveBtn:click in parts/create-save.js",
+     "status": "covered",
+     "note": "the save's own validation: the merged ends (boundary + dead) pass through it - proof-1267 1d/1e"
+    },
+    {
+     "id": "caller:saveDraftRoute:parts/create-save.js:crSaveBtn:click",
+     "kind": "caller",
+     "source": "derived: handler scan of parts/ - saveDraftRoute is registered by reference as the crSaveBtn click handler in parts/create-save.js; the event invokes it directly",
+     "status": "covered",
+     "note": "the save handler itself is unchanged apart from the ends merge inside it: proof-1267 1d"
+    },
+    {
+     "id": "caller:setCreateStage:parts/create-pick.js:crCityBack:click",
+     "kind": "caller",
+     "source": "derived: call-site scan of parts/ - setCreateStage() is called from crCityBack:click in parts/create-pick.js",
+     "status": "covered",
+     "note": "returning to pick/preview from the city pane re-enters the stage machine; the preview arm flies only with a draft - drive220 D pins the empty case"
+    },
+    {
+     "id": "caller:setCreateStage:parts/create-pick.js:crDoneBtn:click",
+     "kind": "caller",
+     "source": "derived: call-site scan of parts/ - setCreateStage() is called from crDoneBtn:click in parts/create-pick.js",
+     "status": "covered",
+     "note": "the Done door itself: drive220 C clicks the real button and grades the landing"
+    },
+    {
+     "id": "caller:setCreateStage:parts/create-pick.js:crEnterPickFromCity",
+     "kind": "caller",
+     "source": "derived: call-site scan of parts/ - setCreateStage() is called from crEnterPickFromCity in parts/create-pick.js",
+     "status": "covered",
+     "note": "city-first entry lands on pick (no preview, no flight) - unchanged arm; drive220 C/D exercise the stage machine around it"
+    },
+    {
+     "id": "caller:setCreateStage:parts/create-pick.js:enterCreate",
+     "kind": "caller",
+     "source": "derived: call-site scan of parts/ - setCreateStage() is called from enterCreate in parts/create-pick.js",
+     "status": "covered",
+     "note": "entry lands on pick - no flight on entry; drive220 B/C/D all enter through here"
+    },
+    {
+     "id": "caller:setCreateStage:parts/create-pick.js:pvAddBtn:click",
+     "kind": "caller",
+     "source": "derived: call-site scan of parts/ - setCreateStage() is called from pvAddBtn:click in parts/create-pick.js",
+     "status": "covered",
+     "note": "Add street returns to pick from the preview - the flight fires on the NEXT Done, not on this arm; drive220 C covers the Done arm it leads back to"
+    },
+    {
+     "id": "caller:setCreateStage:parts/create-save.js:crNameBack:click",
+     "kind": "caller",
+     "source": "derived: call-site scan of parts/ - setCreateStage() is called from crNameBack:click in parts/create-save.js",
+     "status": "covered",
+     "note": "Back from name-it returns to preview, which re-runs fitDraft - the same flight, re-framing the same draft; drive220 C grades the flight this arm shares"
+    },
+    {
+     "id": "caller:splitBoundaryEnd:parts/engine.js:boundarySplit",
+     "kind": "caller",
+     "source": "derived: call-site scan of parts/ - splitBoundaryEnd() is called from boundarySplit in parts/engine.js",
+     "status": "covered",
+     "note": "the split now takes the record length: proof-1267 1f; drive220 A2 (30 features at the two lengths)"
+    },
+    {
+     "id": "gesture:parts/create-pick.js:map:styledata",
+     "kind": "gesture",
+     "source": "derived: handler scan - the map styledata handler in parts/create-pick.js touches crIsectEnsure without dismissing it",
+     "status": "covered",
+     "note": "a basemap swap mid-create wipes and re-seats the custom layers - the draft re-seats below the labels through ensureDraftLayers on this very event (drive218 C grades the swap in create mode; drive220 B1 grades the seat)"
+    },
+    {
+     "id": "theme:swAwake",
+     "kind": "theme",
+     "source": "derived: stylesheet scan of parts/head.html - #swAwake has NO day rule and NO body.night rule",
+     "status": "covered",
+     "note": "markup wording only - the switch, its handler and both theme faces are untouched; proof-1267 4a/4b pin the strings, and no drive premise names the old text (the Rule-1 sweep found zero test hits)"
+    }
+   ],
+   "files": {
+    "parts/app1.js": "ad3bf7f8e4f509f37532579d071ada75cafd156223eb9a874c672577b6108bac",
+    "parts/app2.js": "3945d6e9f78be28040d81d0398b8f867ba0a88cd8f60d2f9ab4db9039ed67eae",
+    "parts/app3.js": "da6c7d85eafbb97572278b818ff60a6fc25c5c35a3e51ee6c8ceb23f52ddf91c",
+    "parts/app4.js": "059a12937fd806f09bc2db6a3af52bae51ac8e714d40715894136ffb9df63e4f",
+    "parts/app5.js": "d0a79fe85e6c8cd7135fb871d0d57bf3ad115f73828d255a61342a6d3d0aa4e2",
+    "parts/brand-snow.js": "86fa9a02f29c7345ee68d68daffd9c72da612921b64da37f1eccf6b72161ac5f",
+    "parts/create-cache.js": "2a7e983aa50862cb074a16abf9266a41a1a175c69faa5215b1d3d289aa2b5327",
+    "parts/create-citydata.js": "393d90f275d971b5e52352deebaece381279acd0e86495ffa2da35701de9148e",
+    "parts/create-fetch.js": "e7a65bd88dc338213946c4537dc5d397f79396ec416b6f4ebf4be831927aeb66",
+    "parts/create-packs.js": "3e7bf056f494ab5375ef23688346b6ca7bfe075916d01f2b7e1087da3a3d41e3",
+    "parts/create-pick.js": "ad20ad06897d9ded0948692d6661728bf11fbe410f03fa5011d08b15c1f85ef1",
+    "parts/create-save.js": "ad39720727f43d397e72443c92955c5a35d530f03e3219b2182c9ee7c062e52d",
+    "parts/data.js": "9684c69862156dc70ee9a2b88278b4e825c5bf35f0c150fbc5660ccbdce9304b",
+    "parts/engine.js": "6ccb172dc8baf1ab283760c24a7d834ede444d388b88f6410ce98b5a2fb86213",
+    "parts/pmstyles.js": "f3501db9c16dbc6a5fa8c901089101e4913772384de1f069accb23a614bb90fc",
+    "parts/whatsnew.js": "01ab2ec7aba2d81e21fdef03c963cef2f0877af568ad1ed7ef2d736dd6dec640",
+    "parts/head.html": "9db24ad6af81a344ca55aa0be8ec423f864409f89007929f5fb8fd4c53fe85bf",
+    "scripts/check-census.py": "dd55f34cd855e60a6fadae7e261aa99f1682b9d7d8446696532045e3a281fafb"
+   },
+   "issued": "2026-11-21 create-1267"
+  },
+  {
+   "id": "create-1267-v2",
+   "kind": "app",
+   "anchors": {
+    "elements": [
+     "swAwake"
+    ],
+    "functions": [
+     "computeBoundaryEnds",
+     "computeDeadEnds",
+     "endsPtSeg",
+     "normalizePack",
+     "ensureDraftLayers",
+     "crFirstLabelLayerId",
+     "crIsectEnsure",
+     "fitDraft",
+     "setCreateStage",
+     "splitBoundaryEnd",
+     "boundarySplit",
+     "boundaryRecAt",
+     "fadeMOf",
+     "saveDraftRoute"
+    ]
+   },
+   "changed": [
+    "parts/create-packs.js",
+    "parts/create-pick.js",
+    "parts/create-save.js",
+    "parts/engine.js",
+    "parts/head.html",
+    "parts/data.js",
+    "parts/whatsnew.js"
+   ],
+   "rows": [
+    {
+     "id": "caller:boundaryRecAt:parts/engine.js:boundarySplit",
+     "kind": "caller",
+     "source": "derived: call-site scan of parts/ - boundaryRecAt() is called from boundarySplit in parts/engine.js",
+     "status": "covered",
+     "note": "unchanged caller: the record it returns now carries element 5, consumed by fadeMOf at the same site - proof-1267 1f, drive220 A"
+    },
+    {
+     "id": "caller:boundarySplit:parts/engine.js:buildFamilies",
+     "kind": "caller",
+     "source": "derived: call-site scan of parts/ - boundarySplit() is called from buildFamilies in parts/engine.js",
+     "status": "covered",
+     "note": "board families split on the per-record length now: drive220 A2 counts 30 fade features (15 records) on the shipped pack; proof-1267 1f"
+    },
+    {
+     "id": "caller:boundarySplit:parts/engine.js:buildSelFill",
+     "kind": "caller",
+     "source": "derived: call-site scan of parts/ - boundarySplit() is called from buildSelFill in parts/engine.js",
+     "status": "covered",
+     "note": "selection fill rides the same boundarySplit/fadeMOf path - the per-record length applies to selection fades identically; proof-1267 1f pins the single split site"
+    },
+    {
+     "id": "caller:boundarySplit:parts/engine.js:selectedGeom",
+     "kind": "caller",
+     "source": "derived: call-site scan of parts/ - boundarySplit() is called from selectedGeom in parts/engine.js",
+     "status": "covered",
+     "note": "selected geometry rides the same boundarySplit/fadeMOf path as the board; proof-1267 1f"
+    },
+    {
+     "id": "caller:computeBoundaryEnds:parts/create-packs.js:computeDeadEnds",
+     "kind": "caller",
+     "source": "derived: call-site scan of parts/ - computeBoundaryEnds() is called from computeDeadEnds in parts/create-packs.js",
+     "status": "covered",
+     "note": "the sibling calls it so boundary ends win their class: proof-1267 1b; drive220 A3 derives 7 boundary + 8 dead with no overlap"
+    },
+    {
+     "id": "caller:computeBoundaryEnds:parts/create-save.js:crSaveBtn:click",
+     "kind": "caller",
+     "source": "derived: call-site scan of parts/ - computeBoundaryEnds() is called from crSaveBtn:click in parts/create-save.js",
+     "status": "covered",
+     "note": "the save merges both computations into the one ends field: proof-1267 1d"
+    },
+    {
+     "id": "caller:computeDeadEnds:parts/create-save.js:crSaveBtn:click",
+     "kind": "caller",
+     "source": "derived: call-site scan of parts/ - computeDeadEnds() is called from crSaveBtn:click in parts/create-save.js",
+     "status": "covered",
+     "note": "same merge at the save: proof-1267 1d"
+    },
+    {
+     "id": "caller:crFirstLabelLayerId:parts/create-pick.js:crIsectEnsure",
+     "kind": "caller",
+     "source": "derived: call-site scan of parts/ - crFirstLabelLayerId() is called from crIsectEnsure in parts/create-pick.js",
+     "status": "covered",
+     "note": "the marker pair now reads the shared finder: proof-1262 check 4 re-pinned to the shared shape this round; drive220 B1"
+    },
+    {
+     "id": "caller:crFirstLabelLayerId:parts/create-pick.js:ensureDraftLayers",
+     "kind": "caller",
+     "source": "derived: call-site scan of parts/ - crFirstLabelLayerId() is called from ensureDraftLayers in parts/create-pick.js",
+     "status": "covered",
+     "note": "the draft layers seat below the finder's layer: proof-1267 2a/2b; drive220 B1 measures the style order"
+    },
+    {
+     "id": "caller:crIsectEnsure:parts/create-pick.js:crIsectSet",
+     "kind": "caller",
+     "source": "derived: call-site scan of parts/ - crIsectEnsure() is called from crIsectSet in parts/create-pick.js",
+     "status": "covered",
+     "note": "unchanged call path; its beforeId now comes from the shared finder with identical semantics - proof-1262 passes re-pinned"
+    },
+    {
+     "id": "caller:crIsectEnsure:parts/create-pick.js:map:styledata",
+     "kind": "caller",
+     "source": "derived: call-site scan of parts/ - crIsectEnsure() is called from map:styledata in parts/create-pick.js",
+     "status": "covered",
+     "note": "a basemap swap mid-create re-seats the pair through the same finder; the draft layers re-seat through renderDraft on the same event - drive218 C grades swap behaviour in create mode"
+    },
+    {
+     "id": "caller:endsPtSeg:parts/create-packs.js:ox",
+     "kind": "caller",
+     "source": "derived: call-site scan of parts/ - endsPtSeg() is called from ox in parts/create-packs.js",
+     "status": "na",
+     "note": "spurious anchor hit: \"ox\" is a local variable in computeDeadEnds (the outward-direction x component), not a call of endsPtSeg - the function's real callers are computeBoundaryEnds (aliased ptSeg) and computeDeadEnds' proximity scan"
+    },
+    {
+     "id": "caller:ensureDraftLayers:parts/create-pick.js:renderDraft",
+     "kind": "caller",
+     "source": "derived: call-site scan of parts/ - ensureDraftLayers() is called from renderDraft in parts/create-pick.js",
+     "status": "covered",
+     "note": "every draft render re-runs the seating; drive220 B1/B2 grade order + print over a chosen street"
+    },
+    {
+     "id": "caller:fadeMOf:parts/engine.js:boundarySplit",
+     "kind": "caller",
+     "source": "derived: call-site scan of parts/ - fadeMOf() is called from boundarySplit in parts/engine.js",
+     "status": "covered",
+     "note": "the one consumer: proof-1267 1f; drive220 A"
+    },
+    {
+     "id": "caller:fitDraft:parts/create-pick.js:setCreateStage",
+     "kind": "caller",
+     "source": "derived: call-site scan of parts/ - fitDraft() is called from setCreateStage in parts/create-pick.js",
+     "status": "covered",
+     "note": "the preview stage is the flight's only caller: proof-1267 3c; drive220 C (flight) and D (empty draft, no flight)"
+    },
+    {
+     "id": "caller:normalizePack:parts/app4.js:recoveryObj",
+     "kind": "caller",
+     "source": "derived: call-site scan of parts/ - normalizePack() is called from recoveryObj in parts/app4.js",
+     "status": "covered",
+     "note": "restore/recovery packs pass the same cleaner - element 5 preserved by the lenient rule: proof-1267 1e"
+    },
+    {
+     "id": "caller:normalizePack:parts/app4.js:restoreBackup",
+     "kind": "caller",
+     "source": "derived: call-site scan of parts/ - normalizePack() is called from restoreBackup in parts/app4.js",
+     "status": "covered",
+     "note": "same cleaner, same preservation: proof-1267 1e"
+    },
+    {
+     "id": "caller:normalizePack:parts/app4.js:xPre:click",
+     "kind": "caller",
+     "source": "derived: call-site scan of parts/ - normalizePack() is called from xPre:click in parts/app4.js",
+     "status": "covered",
+     "note": "same cleaner, same preservation: proof-1267 1e"
+    },
+    {
+     "id": "caller:normalizePack:parts/create-packs.js:initUserPacks",
+     "kind": "caller",
+     "source": "derived: call-site scan of parts/ - normalizePack() is called from initUserPacks in parts/create-packs.js",
+     "status": "covered",
+     "note": "boot registration of stored packs passes the same cleaner - a stored 5-element record survives: proof-1267 1e"
+    },
+    {
+     "id": "caller:normalizePack:parts/create-packs.js:mergeUserPacks",
+     "kind": "caller",
+     "source": "derived: call-site scan of parts/ - normalizePack() is called from mergeUserPacks in parts/create-packs.js",
+     "status": "covered",
+     "note": "same cleaner at the legacy merge: proof-1267 1e"
+    },
+    {
+     "id": "caller:normalizePack:parts/create-save.js:crSaveBtn:click",
+     "kind": "caller",
+     "source": "derived: call-site scan of parts/ - normalizePack() is called from crSaveBtn:click in parts/create-save.js",
+     "status": "covered",
+     "note": "the save's own validation: the merged ends (boundary + dead) pass through it - proof-1267 1d/1e"
+    },
+    {
+     "id": "caller:saveDraftRoute:parts/create-save.js:crSaveBtn:click",
+     "kind": "caller",
+     "source": "derived: handler scan of parts/ - saveDraftRoute is registered by reference as the crSaveBtn click handler in parts/create-save.js; the event invokes it directly",
+     "status": "covered",
+     "note": "the save handler itself is unchanged apart from the ends merge inside it: proof-1267 1d"
+    },
+    {
+     "id": "caller:setCreateStage:parts/create-pick.js:crCityBack:click",
+     "kind": "caller",
+     "source": "derived: call-site scan of parts/ - setCreateStage() is called from crCityBack:click in parts/create-pick.js",
+     "status": "covered",
+     "note": "returning to pick/preview from the city pane re-enters the stage machine; the preview arm flies only with a draft - drive220 D pins the empty case"
+    },
+    {
+     "id": "caller:setCreateStage:parts/create-pick.js:crDoneBtn:click",
+     "kind": "caller",
+     "source": "derived: call-site scan of parts/ - setCreateStage() is called from crDoneBtn:click in parts/create-pick.js",
+     "status": "covered",
+     "note": "the Done door itself: drive220 C clicks the real button and grades the landing"
+    },
+    {
+     "id": "caller:setCreateStage:parts/create-pick.js:crEnterPickFromCity",
+     "kind": "caller",
+     "source": "derived: call-site scan of parts/ - setCreateStage() is called from crEnterPickFromCity in parts/create-pick.js",
+     "status": "covered",
+     "note": "city-first entry lands on pick (no preview, no flight) - unchanged arm; drive220 C/D exercise the stage machine around it"
+    },
+    {
+     "id": "caller:setCreateStage:parts/create-pick.js:enterCreate",
+     "kind": "caller",
+     "source": "derived: call-site scan of parts/ - setCreateStage() is called from enterCreate in parts/create-pick.js",
+     "status": "covered",
+     "note": "entry lands on pick - no flight on entry; drive220 B/C/D all enter through here"
+    },
+    {
+     "id": "caller:setCreateStage:parts/create-pick.js:pvAddBtn:click",
+     "kind": "caller",
+     "source": "derived: call-site scan of parts/ - setCreateStage() is called from pvAddBtn:click in parts/create-pick.js",
+     "status": "covered",
+     "note": "Add street returns to pick from the preview - the flight fires on the NEXT Done, not on this arm; drive220 C covers the Done arm it leads back to"
+    },
+    {
+     "id": "caller:setCreateStage:parts/create-save.js:crNameBack:click",
+     "kind": "caller",
+     "source": "derived: call-site scan of parts/ - setCreateStage() is called from crNameBack:click in parts/create-save.js",
+     "status": "covered",
+     "note": "Back from name-it returns to preview, which re-runs fitDraft - the same flight, re-framing the same draft; drive220 C grades the flight this arm shares"
+    },
+    {
+     "id": "caller:splitBoundaryEnd:parts/engine.js:boundarySplit",
+     "kind": "caller",
+     "source": "derived: call-site scan of parts/ - splitBoundaryEnd() is called from boundarySplit in parts/engine.js",
+     "status": "covered",
+     "note": "the split now takes the record length: proof-1267 1f; drive220 A2 (30 features at the two lengths)"
+    },
+    {
+     "id": "gesture:parts/create-pick.js:map:styledata",
+     "kind": "gesture",
+     "source": "derived: handler scan - the map styledata handler in parts/create-pick.js touches crIsectEnsure without dismissing it",
+     "status": "covered",
+     "note": "a basemap swap mid-create wipes and re-seats the custom layers - the draft re-seats below the labels through ensureDraftLayers on this very event (drive218 C grades the swap in create mode; drive220 B1 grades the seat)"
+    },
+    {
+     "id": "theme:swAwake",
+     "kind": "theme",
+     "source": "derived: stylesheet scan of parts/head.html - #swAwake has NO day rule and NO body.night rule",
+     "status": "covered",
+     "note": "markup wording only - the switch, its handler and both theme faces are untouched; proof-1267 4a/4b pin the strings, and no drive premise names the old text (the Rule-1 sweep found zero test hits)"
+    }
+   ],
+   "files": {
+    "parts/app1.js": "ad3bf7f8e4f509f37532579d071ada75cafd156223eb9a874c672577b6108bac",
+    "parts/app2.js": "3945d6e9f78be28040d81d0398b8f867ba0a88cd8f60d2f9ab4db9039ed67eae",
+    "parts/app3.js": "da6c7d85eafbb97572278b818ff60a6fc25c5c35a3e51ee6c8ceb23f52ddf91c",
+    "parts/app4.js": "059a12937fd806f09bc2db6a3af52bae51ac8e714d40715894136ffb9df63e4f",
+    "parts/app5.js": "d0a79fe85e6c8cd7135fb871d0d57bf3ad115f73828d255a61342a6d3d0aa4e2",
+    "parts/brand-snow.js": "86fa9a02f29c7345ee68d68daffd9c72da612921b64da37f1eccf6b72161ac5f",
+    "parts/create-cache.js": "2a7e983aa50862cb074a16abf9266a41a1a175c69faa5215b1d3d289aa2b5327",
+    "parts/create-citydata.js": "393d90f275d971b5e52352deebaece381279acd0e86495ffa2da35701de9148e",
+    "parts/create-fetch.js": "e7a65bd88dc338213946c4537dc5d397f79396ec416b6f4ebf4be831927aeb66",
+    "parts/create-packs.js": "8653a58e37ead9cfff6b1bfc0029b033eb690716efc22cb3571abcbc9ca75c33",
+    "parts/create-pick.js": "ad20ad06897d9ded0948692d6661728bf11fbe410f03fa5011d08b15c1f85ef1",
+    "parts/create-save.js": "ad39720727f43d397e72443c92955c5a35d530f03e3219b2182c9ee7c062e52d",
+    "parts/data.js": "9684c69862156dc70ee9a2b88278b4e825c5bf35f0c150fbc5660ccbdce9304b",
+    "parts/engine.js": "6ccb172dc8baf1ab283760c24a7d834ede444d388b88f6410ce98b5a2fb86213",
+    "parts/pmstyles.js": "f3501db9c16dbc6a5fa8c901089101e4913772384de1f069accb23a614bb90fc",
+    "parts/whatsnew.js": "01ab2ec7aba2d81e21fdef03c963cef2f0877af568ad1ed7ef2d736dd6dec640",
+    "parts/head.html": "9db24ad6af81a344ca55aa0be8ec423f864409f89007929f5fb8fd4c53fe85bf",
+    "scripts/check-census.py": "dd55f34cd855e60a6fadae7e261aa99f1682b9d7d8446696532045e3a281fafb"
+   },
+   "issued": "2026-11-22"
   }
  ]
 }

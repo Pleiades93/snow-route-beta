@@ -42,10 +42,10 @@ check('3: normalizePack cleans the ends field (and keeps it in the cleaned liter
   createPacks.includes('const ends = {};') && createPacks.includes('roads: rc.roads, reference, ends'));
 check('4: PACK_FIELDS carries ends, and buildGeometry attaches it to STRETCH',
   app1.includes("'reference', 'ends']") && app1.includes('STRETCH[n].ends = endsIn[n]'));
-check('5: the shipped 5W pack carries exactly the census fixture (7 records, Topper absent)',
-  data.includes('"Valeria":[[43.815217,-79.553531,43.815187,-79.553677],[43.806726,-79.557991,43.806726,-79.557991]]') &&
-  data.includes('"Velmar":[[43.822621,-79.557839,43.822621,-79.557839],[43.820752,-79.566989,43.820752,-79.566989]]') &&
-  !data.includes('"Topper":['));
+check('5: the shipped 5W pack carries exactly the census fixture (15 records since Beta 1.267: the 7 boundary at fade 15 plus the 8 dead ends at fade 10 - Topper present now, as a dead end)',
+  data.includes('"Valeria":[[43.815217,-79.553531,43.815187,-79.553677,15],[43.806726,-79.557991,43.806726,-79.557991,15]]') &&
+  data.includes('"Velmar":[[43.822621,-79.557839,43.822621,-79.557839,15],[43.820752,-79.566989,43.820752,-79.566989,15]]') &&
+  data.includes('"Topper":[[43.822043,-79.555735,43.822043,-79.555735,10]]'));
 check('6: the engine splits at the join (boundarySplit, FADE_M 15, the shared-vertex defence)',
   engine.includes('function boundarySplit(n, ab, pts, kind, col, withCasing)') && engine.includes('const FADE_M = 15;') && engine.includes('e.n !== n'));
 check('7: the fade sources are lineMetrics (line-gradient precondition) and the nine layers exist',
@@ -77,8 +77,8 @@ check('12: symbol-spacing 500 is set in the normalization path on the road-label
 check('13: the CHANGELOG top entry is Beta 1.259',
   changelog.indexOf('## Beta 1.259') > -1 && changelog.indexOf('## Beta 1.259') < changelog.indexOf('## Beta 1.258'));
 check('14: What\'s New carries the CURRENT entry\'s bullet (rolled to 1.261: this check tracks the current entry each round, like the other release-editorial checks; the bullets it shipped with live in the CHANGELOG), within the 108-char cap, em-dash free',
-  whatsnew.includes("Street names now fade in together when a route loads, instead of blinking.") &&
-  "Street names now fade in together when a route loads, instead of blinking.".length <= 108 &&
+  whatsnew.includes("Dead ends now feather out, like the ends where a street continues.") &&
+  "Dead ends now feather out, like the ends where a street continues.".length <= 108 &&
   !whatsnew.includes('—'));
 
 console.log(`proof-1259: ${pass} passed, ${fail} failed`);

@@ -1558,7 +1558,7 @@ function fillCornerLinks(fills) {
 // computeBoundaryEnds, create-packs.js) with a smooth gradient fade over the
 // last 15 m, gone exactly at the join. The split below is the engine's half:
 // for a slice whose end vertex carries a record, the slice is cut at the
-// join (the overshoot stub past it is dropped whole), the last FADE_M
+// join (the overshoot stub past it is dropped whole), the last fade-length
 // metres before the join become a FADE feature of their own - emitted
 // outside mergeStrands into the lineMetrics 'fades'/'selFades' sources,
 // ordered solid-seam first so line-progress runs full colour -> clear -
@@ -1566,15 +1566,20 @@ function fillCornerLinks(fills) {
 // twice: a record is only ever written for a non-junction end, and a slice
 // end whose vertex another route street shares is never split here
 // (sharedVertexMap), so the junction machinery's run-through is untouched
-// by construction. Dead ends carry no record and keep their natural end.
-const FADE_M = 15;
-function boundaryRecAt(n, pt) { // the street's boundary-end record whose END point is pt, or null
+// by construction. Beta 1.267: dead ends carry records too (computeDeadEnds,
+// create-packs.js) - their join is the end itself, so the same split fades
+// the last 10 m into the terminus; pick ends still carry no record and keep
+// their natural end.
+const FADE_M = 15; // Beta 1.267: no longer the rule - the fade length is PER-RECORD data (record element 5, written by the end computations in create-packs.js: 15 boundary, 10 dead). This constant is only the default for a legacy 4-element record that carries no length of its own.
+function fadeMOf(rec) { return (rec && isFinite(rec[4]) && rec[4] > 0) ? rec[4] : FADE_M; }
+function boundaryRecAt(n, pt) { // the street's end record (boundary or dead) whose END point is pt, or null
   const ends = H.STRETCH[n] && H.STRETCH[n].ends;
   if (!ends) return null;
   for (const r of ends) if (H.jDistM([r[0], r[1]], pt) <= 1.5) return r;
   return null;
 }
-function splitBoundaryEnd(pts, join, atStart) { // -> { solid, fade }: cut pts at the join (found by projection, XY space) and split off the fade zone; either part can be null when the slice is shorter than the zone it would carry
+function splitBoundaryEnd(pts, join, atStart, fadeM) { // -> { solid, fade }: cut pts at the join (found by projection, XY space) and split off the fade zone (fadeM metres, the record's own length); either part can be null when the slice is shorter than the zone it would carry
+  const fm = isFinite(fadeM) && fadeM > 0 ? fadeM : FADE_M;
   const cum = [0]; for (let i = 1; i < pts.length; i++) cum.push(cum[i - 1] + H.jDistM(pts[i - 1], pts[i]));
   const total = cum[cum.length - 1];
   const J = XYOf(join);
@@ -1595,9 +1600,9 @@ function splitBoundaryEnd(pts, join, atStart) { // -> { solid, fade }: cut pts a
     out.push(at(d1));
     return out.length > 1 ? out : null;
   };
-  if (!atStart) return { solid: sub(0, Math.max(0, dJ - FADE_M)), fade: sub(Math.max(0, dJ - FADE_M), dJ) };
-  const fadePts = sub(dJ, Math.min(total, dJ + FADE_M));
-  return { solid: sub(Math.min(total, dJ + FADE_M), total), fade: fadePts ? fadePts.reverse() : null }; // a run-start fade is ordered seam -> join like every other: the slice's own order runs join-first there, so it reverses
+  if (!atStart) return { solid: sub(0, Math.max(0, dJ - fm)), fade: sub(Math.max(0, dJ - fm), dJ) };
+  const fadePts = sub(dJ, Math.min(total, dJ + fm));
+  return { solid: sub(Math.min(total, dJ + fm), total), fade: fadePts ? fadePts.reverse() : null }; // a run-start fade is ordered seam -> join like every other: the slice's own order runs join-first there, so it reverses
 }
 function boundarySplit(n, ab, pts, kind, col, withCasing) { // -> { solid, fades }: apply the boundary-end split at both of a slice's ends (a one-piece run can carry two). ab indexes GEO[n].stitched - the record match is judged on the STITCHED vertex, so a fill slice on its offset line splits by the same record, at the point nearest the join on its own line.
   let solid = pts; const fades = [];
@@ -1609,7 +1614,7 @@ function boundarySplit(n, ab, pts, kind, col, withCasing) { // -> { solid, fades
     if (!rec) continue;
     const svm = sharedVertexMap();
     if ((svm[coordKey(vtx)] || []).some(e => e.n !== n)) continue; // a vertex another route street shares is a junction, whatever the pack says
-    const sp = splitBoundaryEnd(solid, [rec[2], rec[3]], atStart);
+    const sp = splitBoundaryEnd(solid, [rec[2], rec[3]], atStart, fadeMOf(rec)); // Beta 1.267: the record's own fade length (a dead end's join is its end point, so its split lands exactly at the terminus)
     if (sp.fade) { fades.push({ pts: sp.fade, k: kind, col }); if (withCasing) fades.push({ pts: sp.fade, k: 'x', col }); }
     solid = sp.solid;
   }

@@ -85,7 +85,7 @@ check('5: crSetBackdrop records and hides by iterating CR_ROUTE_LAYERS (the list
   createPick.includes('for (const id of CR_ROUTE_LAYERS)') && createPick.includes("map.setLayoutProperty(pair[0], 'visibility', 'none')"));
 
 // ---------- (6) the release editorial ----------
-const BULLET = 'Street names now fade in together when a route loads, instead of blinking.';
+const BULLET = 'Dead ends now feather out, like the ends where a street continues.';
 check("6: What's New carries the 1.266 bullet (rolled by the unified-load-in round), within the 108-char cap, em-dash free, and the CHANGELOG top entry is Beta 1.266 above 1.265",
   whatsnew.includes(BULLET) && BULLET.length <= 108 && !whatsnew.includes('—') &&
   changelog.indexOf('## Beta 1.266') > -1 && changelog.indexOf('## Beta 1.266') < changelog.indexOf('## Beta 1.265'));

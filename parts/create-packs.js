@@ -69,23 +69,30 @@ async function initUserPacks() { // first-1.166-launch migration + every later b
 // (the engine's half of the rule lives in engine.js). A run end shared with
 // another route street is a junction - the junction machinery owns it, never
 // a feather. A run end no non-route street crosses near is a dead end (or a
-// mid-block pick end) - the street ends there and so does the paint,
-// unchanged. Records: { street: [[endLat, endLng, joinLat, joinLng], ...] }.
+// mid-block pick end) - the street ends there; since Beta 1.267 the DEAD
+// class earns its own record from the sibling computation below (10 m,
+// Andrew's Option 1) while a pick end still earns none. Records:
+// { street: [[endLat, endLng, joinLat, joinLng, fadeM], ...] } - fadeM is
+// per-record data since 1.267; 4-element records from older packs default
+// to 15 in the engine.
 // Called by the create save with the prepared extract, and by
 // scripts/derive-pack-ends.mjs for the shipped pack (the extract there is
 // the city pack's street library) - one computation, both callers.
+const BOUNDARY_FADE_M = 15; // Beta 1.259: a boundary end's fade length, carried ON each record (element 5) since Beta 1.267 made the length per-record data
+const DEAD_FADE_M = 10; // Beta 1.267 (Andrew, Option 1): a dead end's fade length, likewise per-record
+function endsPtSeg(p, a, b) { // distance from p to segment a-b, flat-metre space (projOnLine's axes) - shared by both end computations (hoisted at Beta 1.267 from computeBoundaryEnds' closure, verbatim)
+  const ax = a[1] * MLNG, ay = a[0] * MLAT, bx = b[1] * MLNG, by = b[0] * MLAT, px = p[1] * MLNG, py = p[0] * MLAT;
+  const vx = bx - ax, vy = by - ay, L2 = vx * vx + vy * vy;
+  let t = L2 ? ((px - ax) * vx + (py - ay) * vy) / L2 : 0; t = Math.max(0, Math.min(1, t));
+  return Math.hypot(px - (ax + vx * t), py - (ay + vy * t));
+}
 function computeBoundaryEnds(roads, allStreets) {
   const out = {};
   if (!roads || !allStreets) return out;
   const routeNames = Object.keys(roads);
   const runsCache = {};
   const runsOf = n => runsCache[n] || (runsCache[n] = stitchRuns(n, roads));
-  const ptSeg = (p, a, b) => { // distance from p to segment a-b, flat-metre space (projOnLine's axes)
-    const ax = a[1] * MLNG, ay = a[0] * MLAT, bx = b[1] * MLNG, by = b[0] * MLAT, px = p[1] * MLNG, py = p[0] * MLAT;
-    const vx = bx - ax, vy = by - ay, L2 = vx * vx + vy * vy;
-    let t = L2 ? ((px - ax) * vx + (py - ay) * vy) / L2 : 0; t = Math.max(0, Math.min(1, t));
-    return Math.hypot(px - (ax + vx * t), py - (ay + vy * t));
-  };
+  const ptSeg = endsPtSeg;
   const segX = (a, b, c, d) => { // the two segments' crossing point, or null (parallel/collinear included)
     const ax = a[1] * MLNG, ay = a[0] * MLAT, bx = b[1] * MLNG, by = b[0] * MLAT, cx = c[1] * MLNG, cy = c[0] * MLAT, dx = d[1] * MLNG, dy = d[0] * MLAT;
     const den = (bx - ax) * (dy - cy) - (by - ay) * (dx - cx);
@@ -135,14 +142,85 @@ function computeBoundaryEnds(roads, allStreets) {
           }
           if (!collinear) crossings.push(...mine);
         }
-        if (!crossings.length) continue; // dead end: no record, the paint keeps its natural end
+        if (!crossings.length) continue; // no crossing: not a boundary end - computeDeadEnds below decides whether it is a dead end (record) or a pick end (none)
         let minBehind = Infinity; for (const c of crossings) if (c.behind < minBehind) minBehind = c.behind;
         const street0 = crossings.find(c => c.behind === minBehind).street; // the boundary street is the closest crossing's
         let joinBehind = minBehind; // the join is that street's FURTHEST-back crossing near the end - its first centreline (a divided road's near carriageway); the cluster bound keeps a second, unrelated crossing of the same street from dragging the join away
         for (const c of crossings) if (c.street === street0 && c.behind <= minBehind + 20 && c.behind > joinBehind) joinBehind = c.behind;
         const join = atD(atStart ? joinBehind : total - joinBehind);
         const r6 = v => Math.round(v * 1e6) / 1e6;
-        (out[n] = out[n] || []).push([r6(E[0]), r6(E[1]), r6(join[0]), r6(join[1])]);
+        (out[n] = out[n] || []).push([r6(E[0]), r6(E[1]), r6(join[0]), r6(join[1]), BOUNDARY_FADE_M]); // Beta 1.267: element 5 is the fade length - per-record data the engine reads (older 4-element records default to 15 there)
+      }
+    }
+  }
+  return out;
+}
+// ===== Beta 1.267: dead ends - the sibling computation (Andrew's decision,
+// 2026-11-21, Option 1: dead ends feather too, over 10 m; boundary ends stay
+// 15 m). A dead end is a run end that is NOT a junction (no other route
+// street's vertex there), NOT a boundary end (no non-route street crosses
+// near it - computeBoundaryEnds owns that class and its records win), and
+// where the street's OWN extract geometry terminates: an own way ends at
+// the run end and no own point extends past it along the run's outward
+// direction. That last pair is what separates a true dead end from a
+// mid-block pick end (the street continues past the pick, so its geometry
+// extends past the end and no record is written) - the distinction the
+// dead-end count record (dead-end-count-2026-11-21) proved on Route 5W:
+// exactly 8 (Dianawood SW, Julian W, Bayside E, Tina N, Topper E, Boddy N,
+// Angie NW, Ferrari S), reconciling 53 junctions + 7 boundary + 8 dead = 68
+// run ends. A record's join IS its end (the paint dies AT the terminus) and
+// element 5 carries DEAD_FADE_M. Own-way matching is name-prefix based (the
+// shipped pack's short names against the library's full names) but every
+// signal is judged geometrically within 50 m, so a same-prefix street
+// across the city (Julian Drive vs Julian Court) can never qualify an end.
+// Conservative extras from the count record's evidence bar: any OTHER
+// street passing within 4 m of the end, or ending within 12 m of it,
+// disqualifies the end - a terminus something else nearly touches is not
+// painted as a dead end on this evidence. Called from the same two call
+// sites as computeBoundaryEnds (the create save, derive-pack-ends.mjs).
+function computeDeadEnds(roads, allStreets) {
+  const out = {};
+  if (!roads || !allStreets) return out;
+  const routeNames = Object.keys(roads);
+  const boundary = computeBoundaryEnds(roads, allStreets);
+  const runsCache = {};
+  const runsOf = n => runsCache[n] || (runsCache[n] = stitchRuns(n, roads));
+  const r6 = v => Math.round(v * 1e6) / 1e6;
+  for (const n of routeNames) {
+    const ownNames = Object.keys(allStreets).filter(m => m === n || m.startsWith(n + ' ') || n.startsWith(m + ' ')); // the street's own extract names - exact name first: a CREATE draft keys its roads by the FULL street name, so the exact-name key IS a route name and must not be vetoed by route membership (Codex P2, PR #163: with the veto, a created route's own geometry was excluded at both filters and its dead ends never feathered)
+    for (const line of runsOf(n)) {
+      for (const atStart of [true, false]) {
+        const E = atStart ? line[0] : line[line.length - 1];
+        const inward = atStart ? line[1] : line[line.length - 2];
+        if (!inward) continue;
+        let junction = false; // the boundary computation's own test, verbatim in shape: another route street's vertex at E owns the end
+        for (const m of routeNames) { if (m === n || junction) continue; for (const rl of runsOf(m)) { for (const v of rl) if (Math.abs(v[0] - E[0]) < 0.00004 && Math.abs(v[1] - E[1]) < 0.00004 && distM(v, E) <= 2) { junction = true; break; } if (junction) break; } }
+        if (junction) continue;
+        if ((boundary[n] || []).some(r => distM([r[0], r[1]], E) <= 1.5)) continue; // a boundary end: the 15 m class owns it
+        // the run's outward direction at E, flat-metre space
+        const ox = (E[1] - inward[1]) * MLNG, oy = (E[0] - inward[0]) * MLAT, oLen = Math.hypot(ox, oy) || 1;
+        const ux = ox / oLen, uy = oy / oLen;
+        let terminates = false, extendsPast = false, otherNear = false;
+        for (const m of Object.keys(allStreets)) {
+          const isOwn = ownNames.includes(m);
+          if (routeNames.includes(m) && !isOwn) continue; // other selected streets are not evidence either way; the current street's own geometry is (the exact-name case above)
+          const ways = allStreets[m]; if (!Array.isArray(ways)) continue;
+          for (const w of ways) {
+            if (!Array.isArray(w) || w.length < 2) continue;
+            if (isOwn) {
+              if (!w.some(p => distM(p, E) <= 50)) continue; // a same-prefix street across the city is not this street (the Julian Drive guard)
+              if (distM(w[0], E) <= 2 || distM(w[w.length - 1], E) <= 2) terminates = true;
+              for (const p of w) { const t = ((p[1] - E[1]) * MLNG) * ux + ((p[0] - E[0]) * MLAT) * uy; if (t > 2) { extendsPast = true; break; } }
+            } else {
+              if (distM(w[0], E) <= 12 || distM(w[w.length - 1], E) <= 12) { otherNear = true; continue; }
+              for (let i = 1; i < w.length; i++) if (endsPtSeg(E, w[i - 1], w[i]) <= 4) { otherNear = true; break; }
+            }
+            if (extendsPast || otherNear) break;
+          }
+          if (extendsPast || otherNear) break;
+        }
+        if (!terminates || extendsPast || otherNear) continue; // a pick end (geometry continues), an end something else nearly touches, or no own geometry in hand: no record
+        (out[n] = out[n] || []).push([r6(E[0]), r6(E[1]), r6(E[0]), r6(E[1]), DEAD_FADE_M]);
       }
     }
   }
@@ -211,7 +289,9 @@ function normalizePack(raw, opts) { // -> { ok: true, pack } | { ok: false, erro
         if (!Array.isArray(r) || r.length < 4) continue;
         const a = r[0], b = r[1], c = r[2], d = r[3];
         if (!isFinite(a) || !isFinite(b) || !isFinite(c) || !isFinite(d) || Math.abs(a) > 90 || Math.abs(b) > 180 || Math.abs(c) > 90 || Math.abs(d) > 180) continue;
-        list.push([Math.round(a * 1e6) / 1e6, Math.round(b * 1e6) / 1e6, Math.round(c * 1e6) / 1e6, Math.round(d * 1e6) / 1e6]);
+        const rec = [Math.round(a * 1e6) / 1e6, Math.round(b * 1e6) / 1e6, Math.round(c * 1e6) / 1e6, Math.round(d * 1e6) / 1e6];
+        if (isFinite(r[4]) && r[4] > 0 && r[4] <= 100) rec.push(Math.round(r[4] * 10) / 10); // Beta 1.267: element 5, the per-record fade length - a sane value survives; an absent or bad one leaves the 4-element form and the engine's 15 m default applies
+        list.push(rec);
       }
       if (list.length) ends[nm] = list;
     }
