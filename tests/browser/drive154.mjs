@@ -313,8 +313,15 @@ ok('H2 NORMAL DELETE STILL FULLY GREEN: with healthy storage the row leaves and 
 // landed. Seed two slot keys, open 5W's own dropdown, Delete: the ask must
 // OPEN, the confirm must unregister the pack, wipe the slot and write the
 // tombstone - and a reload must keep it gone (the boot filter) while the
-// list still renders.
-await ev2(`(() => { const rk = routeKeys('5w'); localStorage.setItem(rk.notes, '{}'); localStorage.setItem(rk.hist, '[]'); return true; })()`);
+// list still renders. Every earlier created route has been deleted by its
+// own phase by now, so a survivor (route-9) is seeded first: without one,
+// the post-delete list is legitimately EMPTY and "the list renders" has
+// nothing to render (three runs failed on exactly that false premise -
+// the reload state read packs: [] with fromStore: 0, the app correct).
+await ev2(`(() => { const rec = readUserPacks() || {}; rec['route-9'] = ${JSON.stringify(TEST_PACK('Route 9'))}; localStorage.setItem('snowroute.v2.userpacks', JSON.stringify(rec)); const rk9 = routeKeys('route-9'); const vals = { done: '[]', times: '{}', hist: '[]', notes: '{}', via: '{}', trail: '[]', cov: '{}', start: '0', flip: '{}', sides: '{"p":{},"t":{}}', sess: '[]', pre: '{"at":0}', snap: '{"x":1}', mig: '1' }; for (const f of Object.keys(rk9)) localStorage.setItem(rk9[f], vals[f] || 'x'); const rk = routeKeys('5w'); localStorage.setItem(rk.notes, '{}'); localStorage.setItem(rk.hist, '[]'); return true; })()`);
+await send('Page.reload', { ignoreCache: false }, PAGE_S);
+await ev2(`window.__userPacksReady`);
+await poll(`!!document.querySelector('#rmRoutes .routeRow[data-route="route-9"]') && !!document.querySelector('#rmRoutes .routeRow[data-route="5w"]')`, 30000);
 await openListTab();
 await ev2(`(() => { const d = document.querySelector('#rmRoutes .routeDrop[data-route="5w"]'); const r = document.querySelector('#rmRoutes .routeRow[data-route="5w"]'); if (d && !d.classList.contains('open') && r) r.click(); const b = d && d.querySelector('.dropDel'); if (b) b.click(); return true; })()`);
 const askH3 = await poll(`!document.getElementById('crModal').classList.contains('hidden')`, 10000);
@@ -322,10 +329,33 @@ await ev2(`document.getElementById('crModalYes').click()`);
 const goneH3 = await poll(`!document.querySelector('#rmRoutes .routeRow[data-route="5w"]')`, 15000);
 const stH3 = JSON.parse(await ev2(`(() => JSON.stringify({ pack: ROUTE_PACKS.some(p => p.id === '5w'), dead: loadShippedDeleted(), notes: localStorage.getItem(routeKeys('5w').notes), hist: localStorage.getItem(routeKeys('5w').hist) }))()`));
 await send('Page.reload', { ignoreCache: false }, PAGE_S);
-await poll(`document.querySelectorAll('#rmRoutes .routeRow').length > 0`, 20000);
-const stH3b = JSON.parse(await ev2(`(() => JSON.stringify({ pack: ROUTE_PACKS.some(p => p.id === '5w'), row: !!document.querySelector('#rmRoutes .routeRow[data-route="5w"]'), rows: document.querySelectorAll('#rmRoutes .routeRow').length }))()`));
-ok('H3 SHIPPED DELETE IS WIRED: 5W\'s dropdown Delete opens the ask, the confirm unregisters the pack, wipes its slot and writes the tombstone - and a reload keeps it gone while the list renders | ' + JSON.stringify({ askH3, goneH3, stH3, stH3b }),
-  askH3 === true && goneH3 === true && stH3.pack === false && (stH3.dead || []).includes('5w') && stH3.notes === null && stH3.hist === null && stH3b.pack === false && stH3b.row === false && stH3b.rows > 0);
+await ev2(`window.__userPacksReady`); // the store half of the boot settles before the list is read (phase H's own settle - the created routes register from IndexedDB, not the deleted legacy record)
+await poll(`!!document.querySelector('#rmRoutes .routeRow[data-route="route-9"]')`, 30000);
+const stH3b = JSON.parse(await ev2(`(() => JSON.stringify({ pack: ROUTE_PACKS.some(p => p.id === '5w'), row: !!document.querySelector('#rmRoutes .routeRow[data-route="5w"]'), rows: document.querySelectorAll('#rmRoutes .routeRow').length, survivor: !!document.querySelector('#rmRoutes .routeRow[data-route="route-9"]') }))()`));
+ok('H3 SHIPPED DELETE IS WIRED: 5W\'s dropdown Delete opens the ask, the confirm unregisters the pack, wipes its slot and writes the tombstone - and a reload keeps it gone while the seeded survivor still renders | ' + JSON.stringify({ askH3, goneH3, stH3, stH3b }),
+  askH3 === true && goneH3 === true && stH3.pack === false && (stH3.dead || []).includes('5w') && stH3.notes === null && stH3.hist === null && stH3b.pack === false && stH3b.row === false && stH3b.survivor === true);
+
+// ---- phases H4/H5: the tombstone's two cousins (Codex P2s, PR #167, second review) ----
+// H4: a shipped id stays RESERVED for route creation even while tombstoned -
+// a created route named 5W must not be assigned '5w' (it would be misread as
+// shipped by deleteRoute and refused by doRestore's created-id check).
+const idH4 = await ev2(`uniqueRouteId('5W')`);
+ok('H4 SHIPPED IDS STAY RESERVED: with 5W tombstoned, a new route named 5W is assigned ' + JSON.stringify(idH4) + ', never the shipped id itself', idH4 !== '5w' && /^5w-\d+$/.test(idH4 || ''));
+// H5: restoring an earlier backup that carries the deleted shipped route's
+// data must NOT abort the whole restore - the tombstoned route is skipped
+// and reported, the surviving created route's data lands, and the shipped
+// route stays deleted through the restore's own reload.
+const preH5 = JSON.parse(await ev2(`(() => { const live = ROUTE_PACKS.find(p => !SHIPPED_PACK_IDS.has(p.id)); const bk = { app: 'snowroute-backup', v: 2, routes: { '5w': { notes: '{}' } }, userpacks: {} }; if (live) bk.routes[live.id] = { notes: '{}' }; document.getElementById('xText').value = JSON.stringify(bk); return JSON.stringify({ live: live ? live.id : null }); })()`)); // field values ride in their stored STRING form - pushField refuses anything else ('bad value', restore aborts), as drive136's real exports show
+await ev2(`(() => { sessionStorage.removeItem('__h5toast'); const iv = setInterval(() => { const t = document.getElementById('toast').textContent; if (t) sessionStorage.setItem('__h5toast', t); }, 50); setTimeout(() => clearInterval(iv), 25000); return true; })()`); // the result toast lives only 600ms before the restore's own reload replaces the page - record it into sessionStorage (which survives the reload) instead of polling the doomed element
+await ev2(`doRestore(); true`);
+await poll(`!!sessionStorage.getItem('__h5toast')`, 20000);
+const toastH5txt = await ev2(`sessionStorage.getItem('__h5toast')`);
+const toastH5 = !!toastH5txt && /Backup restored/.test(toastH5txt) && /deleted on this phone/.test(toastH5txt);
+await ev2(`window.__userPacksReady`);
+await poll(`document.querySelectorAll('#rmRoutes .routeRow').length > 0`, 30000);
+const stH5 = JSON.parse(await ev2(`(() => JSON.stringify({ pack: ROUTE_PACKS.some(p => p.id === '5w'), row: !!document.querySelector('#rmRoutes .routeRow[data-route="5w"]') }))()`));
+ok('H5 RESTORE SKIPS THE TOMBSTONED ROUTE, RESTORES THE REST: the result names the skip, the restore completes and reloads, and 5W stays deleted | ' + JSON.stringify({ preH5, toastH5, toastH5txt, stH5 }),
+  !!preH5.live && toastH5 === true && stH5.pack === false && stH5.row === false);
 
 R.exceptions = consoleLog.filter(l => l.indexOf('EXCEPTION') === 0);
 finishCreate(R, proc, server);

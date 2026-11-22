@@ -4168,6 +4168,381 @@
     "scripts/check-census.py": "dd55f34cd855e60a6fadae7e261aa99f1682b9d7d8446696532045e3a281fafb"
    },
    "issued": "Beta 1.271 MENUS round, 2026-11-22: re-derivation after the Codex P2 fix (PR #167) wired the shipped-route Delete - anchors extended with deleteRoute/askDeleteRoute/readShippedDeleted/loadShippedDeleted; 41 rows, 39 covered, 2 na (the checkStale firing path, as before)"
+  },
+  {
+   "id": "menus-1271e",
+   "kind": "app",
+   "anchors": {
+    "elements": [
+     "routeDrop",
+     "dropLoad",
+     "dropDel",
+     "dropLoaded",
+     "confirmPill",
+     "cfDanger",
+     "clearBtn",
+     "centreBtn",
+     "routeRow",
+     "routeList"
+    ],
+    "functions": [
+     "routeDropEl",
+     "routeRowEl",
+     "renderRouteLists",
+     "wireRouteRows",
+     "renderPanel",
+     "boardHasMarks",
+     "askClearAll",
+     "clearAllMarks",
+     "checkStale",
+     "coverFix",
+     "completeFinishCleanup",
+     "cancelStart",
+     "finishRun",
+     "resetNotesHistorySession",
+     "deleteRoute",
+     "askDeleteRoute",
+     "readShippedDeleted",
+     "loadShippedDeleted",
+     "uniqueRouteId",
+     "restoreBackup"
+    ],
+    "guards": []
+   },
+   "changed": [
+    "parts/app1.js",
+    "parts/app2.js",
+    "parts/app3.js",
+    "parts/app4.js",
+    "parts/app5.js",
+    "parts/create-packs.js",
+    "parts/head.html",
+    "parts/whatsnew.js"
+   ],
+   "rows": [
+    {
+     "id": "caller:askClearAll:parts/app3.js:clearBtn:click",
+     "kind": "caller",
+     "source": "derived: call-site scan of parts/ - askClearAll() is called from clearBtn:click in parts/app3.js",
+     "status": "covered",
+     "note": "drive196 T5 presses the Clear item at all four corners and the centre - every press raises askClearAll's confirmation; proof-1271 3a pins the handler wiring"
+    },
+    {
+     "id": "caller:askDeleteRoute:parts/app2.js:container:click",
+     "kind": "caller",
+     "source": "derived: call-site scan of parts/ - askDeleteRoute() is called from container:click in parts/app2.js",
+     "status": "covered",
+     "note": "the delegation's Delete seat - graded by drive154 E2 (the ask on a created route) and H3 (the ask on the shipped 5W itself, the Codex P2 path)"
+    },
+    {
+     "id": "caller:boardHasMarks:parts/app3.js:clearAllMarks",
+     "kind": "caller",
+     "source": "derived: call-site scan of parts/ - boardHasMarks() is called from clearAllMarks in parts/app3.js",
+     "status": "covered",
+     "note": "clearAllMarks' own first check - exercised by every clear in the battery (drive143 C2/X1, drive118, drive196 T5's confirmed clears)"
+    },
+    {
+     "id": "caller:boardHasMarks:parts/app3.js:clearBtn:click",
+     "kind": "caller",
+     "source": "derived: call-site scan of parts/ - boardHasMarks() is called from clearBtn:click in parts/app3.js",
+     "status": "covered",
+     "note": "the handler asks only over a marked board: drive196 T5 marks before every press and the ask fires; proof-1271 3a/3b pin the guard and the shared predicate"
+    },
+    {
+     "id": "caller:cancelStart:parts/app3.js:askCancelStart",
+     "kind": "caller",
+     "source": "derived: call-site scan of parts/ - cancelStart() is called from askCancelStart in parts/app3.js",
+     "status": "covered",
+     "note": "cancelStart's body lost its suggestion resets this round; drive143 C1 grades cancelStart clearing the cancelled run's coverage, drive89/drive125 grade the ask path"
+    },
+    {
+     "id": "caller:checkStale:parts/app3.js:startClean",
+     "kind": "caller",
+     "source": "derived: call-site scan of parts/ - checkStale() is called from startClean in parts/app3.js",
+     "status": "na",
+     "note": "the caller runs checkStale on every Start across the battery (its early-return path); the >12h firing path is pinned statically by proof-1271 3c - the banner version was never drive-graded on the firing path either (drive196 borrowed the element for geometry only), so no sibling coverage existed to carry"
+    },
+    {
+     "id": "caller:checkStale:parts/app5.js:loadRoute",
+     "kind": "caller",
+     "source": "derived: call-site scan of parts/ - checkStale() is called from loadRoute in parts/app5.js",
+     "status": "na",
+     "note": "same disposition as the startClean caller: loadRoute invokes checkStale on every pick in every drive (early-return path); the firing path is proof-1271 3c's static pin"
+    },
+    {
+     "id": "caller:clearAllMarks:parts/app3.js:askClearAll",
+     "kind": "caller",
+     "source": "derived: call-site scan of parts/ - clearAllMarks() is called from askClearAll in parts/app3.js",
+     "status": "covered",
+     "note": "drive196 T5 answers the ask at its danger button on every press and reads the wiped board - the ask-to-wipe path is graded end to end"
+    },
+    {
+     "id": "caller:completeFinishCleanup:parts/app1.js:loadRouteState",
+     "kind": "caller",
+     "source": "derived: call-site scan of parts/ - completeFinishCleanup() is called from loadRouteState in parts/app1.js",
+     "status": "covered",
+     "note": "the cleanup lost its suggestion resets; the finish lifecycle it serves is graded by drive143 U0/U1 and drive89 (finish archives, no phantom state at the next load)"
+    },
+    {
+     "id": "caller:coverFix:parts/app3.js:acceptFix",
+     "kind": "caller",
+     "source": "derived: call-site scan of parts/ - coverFix() is called from acceptFix in parts/app3.js",
+     "status": "covered",
+     "note": "drive118 grades coverage through the real fix path (acceptFix -> coverFix); drive188 C2 grades coverFix directly at full strength with no offer appearing"
+    },
+    {
+     "id": "caller:deleteRoute:parts/app5.js:askDeleteRoute",
+     "kind": "caller",
+     "source": "derived: call-site scan of parts/ - deleteRoute() is called from askDeleteRoute in parts/app5.js",
+     "status": "covered",
+     "note": "the confirm's callback - every delete phase lands on it: drive154 E5/H1/H2 (created), H3 (shipped, tombstone branch), drive155 (active + non-active)"
+    },
+    {
+     "id": "caller:finishRun:parts/app3.js:finYes:click",
+     "kind": "caller",
+     "source": "derived: call-site scan of parts/ - finishRun() is called from finYes:click in parts/app3.js",
+     "status": "covered",
+     "note": "drive89 and drive143 U-series run the Finish Yes path; the round touched finishRun only by removing its suggestion reset"
+    },
+    {
+     "id": "caller:finishRun:parts/app3.js:performReset",
+     "kind": "caller",
+     "source": "derived: call-site scan of parts/ - finishRun() is called from performReset in parts/app3.js",
+     "status": "covered",
+     "note": "the reset flows (drive143, drive150 family) run performReset -> finishRun; the suggestion-reset removal is inside the graded path"
+    },
+    {
+     "id": "caller:loadShippedDeleted:parts/create-packs.js:top-level",
+     "kind": "caller",
+     "source": "derived: call-site scan of parts/ - loadShippedDeleted() is called from top-level in parts/create-packs.js",
+     "status": "covered",
+     "note": "the boot filter runs at every boot in every drive (empty record = no-op); its positive leg is graded by drive154 H3's reload - 5W stays unregistered and unlisted"
+    },
+    {
+     "id": "caller:readShippedDeleted:parts/app5.js:deleteRoute",
+     "kind": "caller",
+     "source": "derived: call-site scan of parts/ - readShippedDeleted() is called from deleteRoute in parts/app5.js",
+     "status": "covered",
+     "note": "the strict read inside the shipped branch - drive154 H3's delete reads it on the happy path; a corrupt record's refusal rides the same strict-read discipline as readUserPacks, graded by drive154 H1's fault-injection family"
+    },
+    {
+     "id": "caller:readShippedDeleted:parts/create-packs.js:loadShippedDeleted",
+     "kind": "caller",
+     "source": "derived: call-site scan of parts/ - readShippedDeleted() is called from loadShippedDeleted in parts/create-packs.js",
+     "status": "covered",
+     "note": "the lenient boot read - exercised at every boot in every drive and positively by drive154 H3's reload leg"
+    },
+    {
+     "id": "caller:renderPanel:parts/app2.js:deselect",
+     "kind": "caller",
+     "source": "derived: call-site scan of parts/ - renderPanel() is called from deselect in parts/app2.js",
+     "status": "covered",
+     "note": "renderPanel no longer raises body.selOpen; drive128 M13c grades the outcome (the re-centre button holds its seat with the card open and closed) and deselect runs across the selection drives"
+    },
+    {
+     "id": "caller:renderPanel:parts/app2.js:finishChange",
+     "kind": "caller",
+     "source": "derived: call-site scan of parts/ - renderPanel() is called from finishChange in parts/app2.js",
+     "status": "covered",
+     "note": "same renderPanel change; finishChange renders run through drive89/drive143's finish flows"
+    },
+    {
+     "id": "caller:renderPanel:parts/app2.js:refreshAll",
+     "kind": "caller",
+     "source": "derived: call-site scan of parts/ - renderPanel() is called from refreshAll in parts/app2.js",
+     "status": "covered",
+     "note": "same renderPanel change; refreshAll fires on every state change in every drive - the no-drop outcome is pinned by proof-1271 5a and drive128 M13c"
+    },
+    {
+     "id": "caller:renderPanel:parts/app2.js:refreshSelUI",
+     "kind": "caller",
+     "source": "derived: call-site scan of parts/ - renderPanel() is called from refreshSelUI in parts/app2.js",
+     "status": "covered",
+     "note": "same renderPanel change; the selection UI refresh is graded throughout drive128"
+    },
+    {
+     "id": "caller:renderPanel:parts/app3.js:cancelStart",
+     "kind": "caller",
+     "source": "derived: call-site scan of parts/ - renderPanel() is called from cancelStart in parts/app3.js",
+     "status": "covered",
+     "note": "same renderPanel change; cancelStart's render is inside drive143 C1's graded path"
+    },
+    {
+     "id": "caller:renderRouteLists:parts/app2.js:openRouteMenu",
+     "kind": "caller",
+     "source": "derived: call-site scan of parts/ - renderRouteLists() is called from openRouteMenu in parts/app2.js",
+     "status": "covered",
+     "note": "every list now renders row + dropdown sibling pairs; graded by drive154 E1/E1b and drive155, and by every drive's boot through the menu"
+    },
+    {
+     "id": "caller:renderRouteLists:parts/app2.js:rmChoose:click",
+     "kind": "caller",
+     "source": "derived: call-site scan of parts/ - renderRouteLists() is called from rmChoose:click in parts/app2.js",
+     "status": "covered",
+     "note": "same render change; the choose/load flows are graded by the converted load drives (drive219's boot picks, drive150's route picks)"
+    },
+    {
+     "id": "caller:renderRouteLists:parts/app5.js:deleteRoute",
+     "kind": "caller",
+     "source": "derived: call-site scan of parts/ - renderRouteLists() is called from deleteRoute in parts/app5.js",
+     "status": "covered",
+     "note": "deleteRoute re-renders the lists after a delete - drive154's delete phases and drive155 grade the lists after deletion (rows and dropdowns gone together)"
+    },
+    {
+     "id": "caller:renderRouteLists:parts/app5.js:loadRoute",
+     "kind": "caller",
+     "source": "derived: call-site scan of parts/ - renderRouteLists() is called from loadRoute in parts/app5.js",
+     "status": "covered",
+     "note": "same render change; loadRoute runs in every drive's boot"
+    },
+    {
+     "id": "caller:renderRouteLists:parts/app5.js:unloadRouteToBoot",
+     "kind": "caller",
+     "source": "derived: call-site scan of parts/ - renderRouteLists() is called from unloadRouteToBoot in parts/app5.js",
+     "status": "covered",
+     "note": "same render change; the unload path is graded by drive155 (delete of the loaded route returns to boot) and drive150"
+    },
+    {
+     "id": "caller:renderRouteLists:parts/create-packs.js:initUserPacks",
+     "kind": "caller",
+     "source": "derived: call-site scan of parts/ - renderRouteLists() is called from initUserPacks in parts/create-packs.js",
+     "status": "covered",
+     "note": "same render change; user-pack init renders the lists in drive154/drive155's created-route phases"
+    },
+    {
+     "id": "caller:resetNotesHistorySession:parts/app5.js:resetSwitchSession",
+     "kind": "caller",
+     "source": "derived: call-site scan of parts/ - resetNotesHistorySession() is called from resetSwitchSession in parts/app5.js",
+     "status": "covered",
+     "note": "the hook lost its suggestion reset line; route switches are graded by drive150/drive152 (switch, state isolation)"
+    },
+    {
+     "id": "caller:restoreBackup:parts/app4.js:doRestore",
+     "kind": "caller",
+     "source": "derived: call-site scan of parts/ - restoreBackup() is called from doRestore in parts/app4.js",
+     "status": "covered",
+     "note": "doRestore is the restore door's only caller of restoreBackup - exercised by the whole restore family (drive136, drive176) and, for this round's tombstone skip inside restoreBackup, by drive154 H5 (a backup carrying the deleted 5W restores the rest and names the skip); proof-1271 check 2d pins the skip line"
+    },
+    {
+     "id": "caller:routeDropEl:parts/app2.js:renderRouteLists",
+     "kind": "caller",
+     "source": "derived: call-site scan of parts/ - routeDropEl() is called from renderRouteLists in parts/app2.js",
+     "status": "covered",
+     "note": "the new builder - drive154 E1/E1b grade the rendered dropdown (closed, pills, toggle) and drive155 deletes through it"
+    },
+    {
+     "id": "caller:routeRowEl:parts/app2.js:renderRouteLists",
+     "kind": "caller",
+     "source": "derived: call-site scan of parts/ - routeRowEl() is called from renderRouteLists in parts/app2.js",
+     "status": "covered",
+     "note": "rows are DIVs now with no in-row Delete - drive154 E1 asserts the shape on every row including 5W"
+    },
+    {
+     "id": "caller:uniqueRouteId:parts/create-save.js:crSaveBtn:click",
+     "kind": "caller",
+     "source": "derived: call-site scan of parts/ - uniqueRouteId() is called from crSaveBtn:click in parts/create-save.js",
+     "status": "covered",
+     "note": "the create flow's save seat - exercised by every create drive; this round's change (shipped ids stay reserved even while tombstoned) is graded directly by drive154 H4 and pinned by proof-1271 check 2d"
+    },
+    {
+     "id": "caller:wireRouteRows:parts/app2.js:top-level",
+     "kind": "caller",
+     "source": "derived: call-site scan of parts/ - wireRouteRows() is called from top-level in parts/app2.js",
+     "status": "covered",
+     "note": "the delegation routes dropdown presses (Load/Delete/toggle) - graded by drive154 (toggle, delete asks), drive155 (deleteViaUi) and every converted load drive (row press + Load pill)"
+    },
+    {
+     "id": "theme:centreBtn",
+     "kind": "theme",
+     "source": "derived: stylesheet scan of parts/head.html - #centreBtn has a day rule and NO body.night rule",
+     "status": "covered",
+     "note": "the button's rules are unchanged except the retired drop; drive128 M13c measures it in the selection states and drive196 measures the dock geometry day and night"
+    },
+    {
+     "id": "theme:cfDanger",
+     "kind": "theme",
+     "source": "derived: stylesheet scan of parts/head.html - #cfDanger has a day rule and NO body.night rule",
+     "status": "covered",
+     "note": "cfDanger's red now comes from the one shared rule (proof-1271 1a, proof-1255's re-pin); the pill is exercised day-side by drive196 T5 and drive125 - the shared rule is theme-blind by construction (one definition, no night override)"
+    },
+    {
+     "id": "theme:clearBtn",
+     "kind": "theme",
+     "source": "derived: stylesheet scan of parts/head.html - #clearBtn has NO day rule and NO body.night rule",
+     "status": "covered",
+     "note": "the tab item itself is unchanged (only its click gained the ask) - drive196 measures the bar day and night and presses Clear in the day section; drive125 pins the tab order"
+    },
+    {
+     "id": "theme:confirmPill",
+     "kind": "theme",
+     "source": "derived: stylesheet scan of parts/head.html - #confirmPill has a day rule and a body.night rule",
+     "status": "covered",
+     "note": "the pill family is graded across drive89/drive125/drive196 in day form; its night form rides the same rules the 1.257 round pinned (proof-1255 family) - this round changed only which asks route into it"
+    },
+    {
+     "id": "theme:dropDel",
+     "kind": "theme",
+     "source": "derived: stylesheet scan of parts/head.html - #dropDel has NO day rule and NO body.night rule",
+     "status": "covered",
+     "note": "the Delete pill's fill is the shared danger rule, which is theme-blind (one definition for the blue menu, day and night - proof-1271 1a); the pill renders inside the route menu only, graded by drive154/155"
+    },
+    {
+     "id": "theme:dropLoad",
+     "kind": "theme",
+     "source": "derived: stylesheet scan of parts/head.html - #dropLoad has NO day rule and NO body.night rule",
+     "status": "covered",
+     "note": "the Load pill lives only inside the blue route menu (a single-theme surface); graded by every converted load drive and drive154 E1b"
+    },
+    {
+     "id": "theme:dropLoaded",
+     "kind": "theme",
+     "source": "derived: stylesheet scan of parts/head.html - #dropLoaded has NO day rule and NO body.night rule",
+     "status": "covered",
+     "note": "the inert Loaded pill lives only inside the blue route menu; graded by drive154 E1 (the loaded route's dropdown) and drive155"
+    },
+    {
+     "id": "theme:routeDrop",
+     "kind": "theme",
+     "source": "derived: stylesheet scan of parts/head.html - #routeDrop has NO day rule and NO body.night rule",
+     "status": "covered",
+     "note": "the dropdown card lives only inside the blue route menu; its single definition is pinned by proof-1271 2a and graded rendered by drive154 E1/E1b"
+    },
+    {
+     "id": "theme:routeList",
+     "kind": "theme",
+     "source": "derived: stylesheet scan of parts/head.html - #routeList has NO day rule and NO body.night rule",
+     "status": "covered",
+     "note": "the list surface is unchanged; it renders in every drive's boot, day and (via drive196's night pass over the chrome) night contexts"
+    },
+    {
+     "id": "theme:routeRow",
+     "kind": "theme",
+     "source": "derived: stylesheet scan of parts/head.html - #routeRow has NO day rule and NO body.night rule",
+     "status": "covered",
+     "note": "the row's own rules are unchanged (it became a DIV in markup, same classes); graded rendered by drive154 E1 in the menu's single theme"
+    }
+   ],
+   "files": {
+    "parts/app1.js": "d8857798678b413a74d0db892973ba2664f111f9a7c0dd9a1fa5638dda518d9c",
+    "parts/app2.js": "c436a5db83c5fb8d95df49cca59300559eec084d46ab6391d25af83230872801",
+    "parts/app3.js": "3a87e41eb39bd0d24123d3759508819fdf7094b21eb10e2763b22fada4cb1cfe",
+    "parts/app4.js": "29e7677e31810a8ed8aa2685198b4034e7b424aca7af7ff7706ebb3305c486e7",
+    "parts/app5.js": "518421b86af728577853ead7f08bae53c986a62a59b05d65835b82d7ea2b5c8e",
+    "parts/brand-snow.js": "86fa9a02f29c7345ee68d68daffd9c72da612921b64da37f1eccf6b72161ac5f",
+    "parts/create-cache.js": "2a7e983aa50862cb074a16abf9266a41a1a175c69faa5215b1d3d289aa2b5327",
+    "parts/create-citydata.js": "393d90f275d971b5e52352deebaece381279acd0e86495ffa2da35701de9148e",
+    "parts/create-fetch.js": "e7a65bd88dc338213946c4537dc5d397f79396ec416b6f4ebf4be831927aeb66",
+    "parts/create-packs.js": "a8b60fb7d601c1e83f555eb703b625a571ec878937ac36fcaddd05aecf635975",
+    "parts/create-pick.js": "7188458b087496ad52ff5d159ae23668b543d0100a3d58c3b251d33374258dd6",
+    "parts/create-save.js": "ad39720727f43d397e72443c92955c5a35d530f03e3219b2182c9ee7c062e52d",
+    "parts/data.js": "9684c69862156dc70ee9a2b88278b4e825c5bf35f0c150fbc5660ccbdce9304b",
+    "parts/engine.js": "d6d1f676ac8bc2a302cfbaf56de1e10cb361fd8b746d94d6380a5e4ebaf76173",
+    "parts/pmstyles.js": "f3501db9c16dbc6a5fa8c901089101e4913772384de1f069accb23a614bb90fc",
+    "parts/whatsnew.js": "6357932ee6b184c692b2ea61d64bb1a60fc6f7a897522ad366cea7e6c22c6edf",
+    "parts/head.html": "11ec9528290c2286f4a4102e88b9883216fca5c4787888608dea503749db3ba2",
+    "scripts/check-census.py": "dd55f34cd855e60a6fadae7e261aa99f1682b9d7d8446696532045e3a281fafb"
+   },
+   "issued": "2026-11-22 beta-1271-menus-round"
   }
  ]
 }

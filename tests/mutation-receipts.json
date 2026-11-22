@@ -3877,6 +3877,42 @@
    "red": "H3 FAIL on the 1.270 tree for exactly the Codex P2 reason: 5W's dropdown Delete never opens the ask (askH3 false - askDeleteRoute returns on SHIPPED_PACK_IDS), so the pack, the slot and the absent tombstone all stay; the drive's other reworked phases fail there as recorded in drive154-1271",
    "green": "19/19 checks, 0 exceptions on the 1.271 tree - H3 green end to end (ask opens, slot wiped, tombstone written, reload keeps 5W gone)",
    "issued": "2026-11-22 beta-1271-menus-round (Codex P2 fix)"
+  },
+  {
+   "id": "drive132-pick-1271",
+   "check": "tests/browser/drive132.mjs",
+   "kind": "historical",
+   "files": {
+    "tests/browser/drive132.mjs": "7fc090f6e8d715fc8ab34651835b39e2e3bc4b67e14e611c53eff3a9300a1c48"
+   },
+   "mutation": "the round's own pre-conversion heads (b7c945c and 036c5e4) carrying the UNCONVERTED drive132 - a premise conversion, observed in CI rather than on the 1.270 tree: on the old tree the row tap still loads, so the converted pick is not red there",
+   "red": "CI FAIL on both pre-conversion 1.271 heads: checks run 45049607802 shard 2 (b7c945c) and run 45051162226 shard 2 (036c5e4) - drive132 5/6, S3 failed: a bare row tap now only opens the dropdown, so the splash stayed",
+   "green": "6/6 checks, 0 exceptions on the converted 1.271 tree (solo local run, 2026-11-22)",
+   "issued": "2026-11-22 beta-1271-menus-round"
+  },
+  {
+   "id": "proof-1271-menus-c",
+   "check": "tests/proof/proof-1271.mjs",
+   "kind": "historical",
+   "files": {
+    "tests/proof/proof-1271.mjs": "48b6d93bff7e9828bea4419a307e90c7cb032ec009d3099d0e28226e5ca99a25"
+   },
+   "mutation": "the historical Beta 1.270 tree (803c520) carrying the round's updated test files",
+   "red": "0 pass, 16 fail on the 1.270 tree - check 2d as extended for the second Codex review (uniqueRouteId's shipped reservation, restoreBackup's tombstone skip) fails there with the rest: neither line exists on the old tree",
+   "green": "16/16 on the 1.271 tree; full proof run 78/78",
+   "issued": "2026-11-22 beta-1271-menus-round"
+  },
+  {
+   "id": "drive154-tombstone-1271",
+   "check": "tests/browser/drive154.mjs",
+   "kind": "historical",
+   "files": {
+    "tests/browser/drive154.mjs": "a747cda559c34289aace6021d0887e6c04e087384ab7f0f01f0d5d98014edd37"
+   },
+   "mutation": "the historical Beta 1.270 tree (803c520) carrying the round's updated test files",
+   "red": "FAIL on the 1.270 tree (BROWSER TESTS: FAIL, solo run 2026-11-22) - H3/H4/H5 all red there for their subjects' reasons: no dropdown or tombstone machinery exists (H3), uniqueRouteId hands a new route the id '5w' itself (H4), and doRestore aborts the whole restore on the unknown route 5w (H5)",
+   "green": "21/21 checks, 0 exceptions on the 1.271 tree (solo local run, 2026-11-22)",
+   "issued": "2026-11-22 beta-1271-menus-round"
   }
  ]
 }

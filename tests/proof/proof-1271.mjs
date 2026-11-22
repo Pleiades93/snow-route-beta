@@ -18,6 +18,7 @@ const head = read('parts/head.html');
 const app1 = read('parts/app1.js');
 const app2 = read('parts/app2.js');
 const app3 = read('parts/app3.js');
+const app4 = read('parts/app4.js');
 const app5 = read('parts/app5.js');
 const packs = read('parts/create-packs.js');
 const whatsnew = read('parts/whatsnew.js');
@@ -53,7 +54,9 @@ check('2d the shipped-route Delete is WIRED, not just drawn (Codex P2, PR #167):
   app5.includes("lsSet(SHIPPED_DELETED_KEY, JSON.stringify([...dead, id]))") &&
   packs.includes("const SHIPPED_DELETED_KEY = 'snowroute.v2.shippeddeleted';") &&
   packs.includes('if (shippedDead.includes(ROUTE_PACKS[i].id)) ROUTE_PACKS.splice(i, 1);') &&
-  packs.indexOf('shippedDead.includes') < packs.indexOf('mergeUserPacks();'));
+  packs.indexOf('shippedDead.includes') < packs.indexOf('mergeUserPacks();') &&
+  packs.includes('SHIPPED_PACK_IDS.has(id) || Object.prototype.hasOwnProperty.call(userPackCache, id)') &&
+  app4.includes('if (SHIPPED_PACK_IDS.has(id) && !ROUTE_PACKS.some(p => p.id === id)) { deadSkipped.push(id); continue; }'));
 
 // ---- Clear and stale on the shared confirmation ---------------------------
 check('3a the Clear ask stands, bound to its route, running clearAllMarks on the danger seat',

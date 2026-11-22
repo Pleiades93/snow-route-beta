@@ -2,7 +2,7 @@
 <html lang="en" class="boot">
 <head>
 <meta charset="UTF-8">
-<meta http-equiv="Content-Security-Policy" content="default-src 'none'; script-src 'sha384-qiof8kHDlJRHC0WRGhXScp6UOCrrxbLTKTrea/AbiNwQbk19cFMrfGhW+G6lkdfx' https://cdn.jsdelivr.net/npm/maplibre-gl@4.7.1/dist/maplibre-gl.js; style-src-elem 'sha384-FOMZKwpVGazJVS8eg4UE4QqzqQgd9P9qMtOUL6BvI1D0iKPr0Omc63F0vC2IKasW' https://cdn.jsdelivr.net; style-src-attr 'unsafe-inline'; img-src 'self' data: blob: https://tiles.basemaps.cartocdn.com https://protomaps.github.io https://cdn.jsdelivr.net; connect-src 'self' https://tiles.basemaps.cartocdn.com https://protomaps.github.io https://cdn.jsdelivr.net https://nominatim.openstreetmap.org https://overpass-api.de https://overpass.kumi.systems; worker-src blob: 'self'; child-src blob: 'self'; font-src 'none'; manifest-src 'self'; base-uri 'none'; form-action 'none'; object-src 'none'">
+<meta http-equiv="Content-Security-Policy" content="default-src 'none'; script-src 'sha384-xGIISFH5bv18L9zXgZ9kWfkMIP+96ozWm5q+230eAxNqlmpi1NyCgsxl/JO0SfV4' https://cdn.jsdelivr.net/npm/maplibre-gl@4.7.1/dist/maplibre-gl.js; style-src-elem 'sha384-FOMZKwpVGazJVS8eg4UE4QqzqQgd9P9qMtOUL6BvI1D0iKPr0Omc63F0vC2IKasW' https://cdn.jsdelivr.net; style-src-attr 'unsafe-inline'; img-src 'self' data: blob: https://tiles.basemaps.cartocdn.com https://protomaps.github.io https://cdn.jsdelivr.net; connect-src 'self' https://tiles.basemaps.cartocdn.com https://protomaps.github.io https://cdn.jsdelivr.net https://nominatim.openstreetmap.org https://overpass-api.de https://overpass.kumi.systems; worker-src blob: 'self'; child-src blob: 'self'; font-src 'none'; manifest-src 'self'; base-uri 'none'; form-action 'none'; object-src 'none'">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="mobile-web-app-capable" content="yes">
@@ -6587,6 +6587,7 @@ async function restoreBackup(parsed) { // production doRestore semantics: valida
     entries.push([targetKey, v]); return true;
   };
   let snapDropped = false; // Beta 1.96 (SR-195-02): set when a backup CARRIES a start snapshot that cannot be restored with its run - the result message must say so
+  let deadSkipped = []; // Beta 1.271 (Codex P2, PR #167): the names of tombstoned shipped routes whose backup data this restore skips - the deletion on THIS phone is the newer act and wins over the older backup; the skip is reported in the result message, never silent, and never aborts the restore of everything else
   let restoredPacks = null; // Beta 1.118: the created-route definitions this backup carries, validated before anything is written
   let allPacks = ROUTE_PACKS; // the routes this restore knows about: the runtime list, plus restoredPacks once validated
   if (parsed.v === 2) {
@@ -6603,6 +6604,7 @@ async function restoreBackup(parsed) { // production doRestore semantics: valida
       allPacks = ROUTE_PACKS.filter(p => !restoredPacks[p.id]).concat(Object.values(restoredPacks)); // Beta 1.142 (Package B, DA-01): ONE entry per route id, the INCOMING definition in it - everything below that iterates allPacks (session clearing, derived sides, the rollback scope) must see the definition this backup installs, never a duplicate of the one it replaces
     }
     for (const id of Object.keys(parsed.routes)) {
+      if (SHIPPED_PACK_IDS.has(id) && !ROUTE_PACKS.some(p => p.id === id)) { deadSkipped.push(id); continue; } // Beta 1.271: a shipped route deleted on this phone (its tombstone removed it from ROUTE_PACKS) - its backup data is skipped and reported below; pre-fix this fell into the unknown-route abort and made every earlier multi-route backup unrestorable
       const pack = (restoredPacks ? restoredPacks[id] : null) || ROUTE_PACKS.find(p => p.id === id); if (!pack) { toast('Backup mentions an unknown route (' + id + ') - nothing was changed', 3200); return; } // Beta 1.118: a route whose definition rides this same backup is known. Beta 1.142 (Package B, DA-01): the incoming definition is judged FIRST - pre-1.142 the existing pack won this lookup, so a replaced route's name filter and snapshot validation ran against its OLD geometry while the new definition was installed underneath them
       const data = parsed.routes[id]; if (!data || typeof data !== 'object' || Array.isArray(data)) { toast('That is not a Snow Route backup', 3200); return; }
       const rk = routeKeys(id);
@@ -6737,7 +6739,7 @@ async function restoreBackup(parsed) { // production doRestore semantics: valida
   if (restoredPacks) for (const rid of Object.keys(restoredPacks)) userPackCache[rid] = restoredPacks[rid]; // Beta 1.166: the backup picture joins the commit - the reload follows immediately, but the cache must never describe a store state that was rolled back or never written
   // Beta 1.141 (Package A, DA-10) discharge note: the finish-cleanup discharge itself moved INTO the verified write set above in Beta 1.150 (see the finclean entries) - the 1.141 rule stands unchanged (a restore discharges the obligations of exactly the routes it rewrites; an omitted route's obligation stays armed), only its mechanism is now verified like every other write in this function
   restoring = true; markClean('trail'); markClean('aux'); markClean('sess'); // the reload's pagehide flush must not write the old in-memory trail/coverage over the restored data
-  toast('Backup restored - reloading' + (droppedNames ? ' · ' + droppedNames + ' unknown street name' + (droppedNames === 1 ? '' : 's') + ' in the backup were ignored' : '') + (snapDropped ? ' · the saved start snapshot was not usable, so Cancel will rebuild from the marks made during the clean' : ''), snapDropped ? 4600 : undefined); // Beta 1.94 (audit F-05): the drop count is part of the result, not a silent loader detail. Beta 1.96 (SR-195-02): a dropped start snapshot is reported the same way
+  toast('Backup restored - reloading' + (droppedNames ? ' · ' + droppedNames + ' unknown street name' + (droppedNames === 1 ? '' : 's') + ' in the backup were ignored' : '') + (snapDropped ? ' · the saved start snapshot was not usable, so Cancel will rebuild from the marks made during the clean' : '') + (deadSkipped.length ? ' · ' + deadSkipped.join(', ') + ' was deleted on this phone, so its saved data was not restored' : ''), (snapDropped || deadSkipped.length) ? 4600 : undefined); // Beta 1.94 (audit F-05): the drop count is part of the result, not a silent loader detail. Beta 1.96 (SR-195-02): a dropped start snapshot is reported the same way
   setTimeout(() => location.reload(), 600);
 }
 let restoreInFlight = false; // Beta 1.170 (Carbon fix round Phase 2, C-09): single-flight for the restore door, same shape as preloadRunning below - restoreBackup is ASYNC (its created-route store writes await), so through 1.169 a second tap, or a file pick landing while a paste restore ran, started a competing restore whose pre-write snapshot could capture the first restore's half-written state
@@ -8095,7 +8097,7 @@ window.__userPacksReady.then(() => { if (anyPreloadRecord()) migratePack(); }); 
 function uniqueRouteId(name) { // a slug from the name, uniqueness-checked against shipped + created ids
   let base = name.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-+|-+$/g, '').slice(0, 32) || 'route';
   let id = base, i = 2;
-  while (ROUTE_PACKS.some(p => p.id === id) || Object.prototype.hasOwnProperty.call(userPackCache, id)) { id = base + '-' + i; i++; }
+  while (ROUTE_PACKS.some(p => p.id === id) || SHIPPED_PACK_IDS.has(id) || Object.prototype.hasOwnProperty.call(userPackCache, id)) { id = base + '-' + i; i++; } // Beta 1.271 (Codex P2, PR #167): SHIPPED_PACK_IDS stay reserved even when the pack is tombstoned off ROUTE_PACKS - a created route that took a shipped id would be misread as shipped by deleteRoute (its store definition never deleted, resurrecting it) and refused by doRestore's created-id check
   return id;
 }
 function nextRouteNameGuess() { let mx = 1; for (const p of ROUTE_PACKS) { const m = /^Route (\d+)$/.exec(p.name || ''); if (m) mx = Math.max(mx, +m[1] + 1); } return 'Route ' + Math.max(mx, ROUTE_PACKS.length + 1); }
