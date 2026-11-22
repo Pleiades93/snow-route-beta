@@ -3937,6 +3937,18 @@
    "red": "FAIL on the 1.270 tree (BROWSER TESTS: FAIL, solo run 2026-11-22) - H6 red there by construction: the old tree has no tombstone concept, so a v1 restore writes the planted notes into the live 5W slot and its result toast cannot name a skip; H3/H4/H5 red as recorded in drive154-tombstone-1271",
    "green": "22/22 checks, 0 exceptions on the 1.271 tree (solo local run, 2026-11-22)",
    "issued": "2026-11-22 beta-1271-menus-round"
+  },
+  {
+   "id": "selftest-pr23-1271",
+   "check": "tests/browser/selftest-pr23-fixes.mjs",
+   "kind": "historical",
+   "files": {
+    "tests/browser/selftest-pr23-fixes.mjs": "9556f3e6a6dfc6dc752c2cd8dbfb218387b9d7b72f2c65a0223ec1cc181be494"
+   },
+   "mutation": "the round's own fix-2 head (26f231f) in CI - a premise break, observed in CI rather than on the 1.270 tree: the selftest evals uniqueRouteId in isolation, where the old function needed no SHIPPED_PACK_IDS",
+   "red": "CI build-and-test FAIL on head 189430a1 (job 137310040355): ReferenceError: SHIPPED_PACK_IDS is not defined at uniqueRouteId, from selftest-pr23-fixes' mkUnique - every browser shard was green on the same head; only this isolated eval lacked the new binding",
+   "green": "selftest-pr23-fixes 19 pass, 0 fail locally on the fixed tree (incl. the new R7 tombstone-reservation check); the build-and-test steps after it verified locally too (gps-package 20/20, select-tier fixtures 29/29)",
+   "issued": "2026-11-22 beta-1271-menus-round"
   }
  ]
 }

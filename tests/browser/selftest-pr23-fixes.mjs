@@ -68,14 +68,15 @@ t('H4 ordinary headings unchanged', headDelta(350, 10) === 20 && headDelta(10, 3
 // ---- Bug 4: uniqueRouteId - an id held only by the user-pack cache (a stored
 // pack that failed normalization, so it never entered ROUTE_PACKS) must not be
 // re-minted: the save would overwrite that route's stored record ----
-const mkUnique = (routePacks, cache) => new Function('ROUTE_PACKS', 'userPackCache',
-  extractFrom(packs, 'uniqueRouteId') + '\nreturn uniqueRouteId;')(routePacks, cache);
+const mkUnique = (routePacks, cache, shipped) => new Function('ROUTE_PACKS', 'userPackCache', 'SHIPPED_PACK_IDS',
+  extractFrom(packs, 'uniqueRouteId') + '\nreturn uniqueRouteId;')(routePacks, cache, shipped || new Set(['5w'])); // Beta 1.271: uniqueRouteId also consults SHIPPED_PACK_IDS (shipped ids stay reserved even while tombstoned off ROUTE_PACKS) - the isolated eval must be handed the set or the extraction throws ReferenceError, as CI's build-and-test showed on the fix's first head
 t('R1 cache-held id is not re-minted', mkUnique([], { 'my-route': {} })('My Route') === 'my-route-2');
 t('R2 shipped-id collision still suffixes', mkUnique([{ id: 'my-route' }], {})('My Route') === 'my-route-2');
 t('R3 shipped + cache collisions walk to -3', mkUnique([{ id: 'my-route' }], { 'my-route-2': {} })('My Route') === 'my-route-3');
 t("R4 'constructor' slug: prototype names are not phantom collisions", mkUnique([], {})('Constructor') === 'constructor');
 t("R5 a cache entry literally named 'constructor' does collide", mkUnique([], { constructor: {} })('Constructor') === 'constructor-2');
 t('R6 free name mints its plain slug', mkUnique([], {})('New Street') === 'new-street');
+t("R7 tombstoned shipped id stays reserved: '5W' mints '5w-2' with no pack registered", mkUnique([], {})('5W') === '5w-2');
 
 // ---- Bug 1: edgeRunSlices' other-arm crossing scan - the street's own name
 // must SKIP (continue), not ABORT (break) the scan of the other streets: with
