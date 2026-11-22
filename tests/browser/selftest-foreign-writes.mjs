@@ -905,12 +905,17 @@ for (const [f, fn, nm] of MUST) check(`census contains adjudicated site ${f} ${f
   // the board's six empties - coveredIdx, doneSet, doneTimes, doneVia,
   // pieceTimes, pieces - moved into the board module (BOARD.emptyBoard,
   // app1), so exactly the five non-board empties remain written here,
-  // and the six board names must NOT appear as writes in this function.)
-  const RESET5 = ['history', 'notes', 'runStart', 'trail', 'trailSessions'];
+  // and the six board names must NOT appear as writes in this function.
+  // Beta 1.272, architecture programme #2: history's emptying moved into
+  // the history repository (HIST.unload, app1) the same way, so exactly
+  // the four remaining empties are written here, and history must NOT
+  // appear as a write in this function either.)
+  const RESET4 = ['notes', 'runStart', 'trail', 'trailSessions'];
   const BOARD6 = ['coveredIdx', 'doneSet', 'doneTimes', 'doneVia', 'pieceTimes', 'pieces'];
-  const reset = tree.sites.filter(s => s.file === 'app5.js' && s.fn === 'unloadRouteToBoot' && RESET5.includes(s.name));
+  const reset = tree.sites.filter(s => s.file === 'app5.js' && s.fn === 'unloadRouteToBoot' && RESET4.includes(s.name));
   const boardWrites = tree.sites.filter(s => s.file === 'app5.js' && s.fn === 'unloadRouteToBoot' && BOARD6.includes(s.name));
-  check('census: unloadRouteToBoot carries exactly the 5 non-board reset expressions and no board writes (Arch-2)', reset.length === 5 && RESET5.every(n => reset.some(s => s.name === n && s.occ === 1)) && boardWrites.length === 0, reset);
+  const histWrites = tree.sites.filter(s => s.file === 'app5.js' && s.fn === 'unloadRouteToBoot' && s.name === 'history');
+  check('census: unloadRouteToBoot carries exactly the 4 non-board, non-history reset expressions, no board writes and no history write (Arch-2 + programme #2)', reset.length === 4 && RESET4.every(n => reset.some(s => s.name === n && s.occ === 1)) && boardWrites.length === 0 && histWrites.length === 0, reset);
 }
 
 if (process.argv.includes('--write')) {

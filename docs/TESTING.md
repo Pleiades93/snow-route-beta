@@ -465,8 +465,8 @@ all - the battery calls them by name).
 
 The surface, by drive-call count: $ (27) / loadRoute (21) / togglePiece (14) / markDone (13) / buildBackup (11) / doRestore (9) / openRouteMenu (12)
 saveAll (11) / cancelStart (8) / exitCreate (9) / startClean (9) / computeStretches (7) / acceptFix (6) / flushAux (6)
-renderStreets (6) / streetComplete (6) / finishRun (5) / markUndone (6) / routeKeys (5)
-saveHistory (5) / saveStart (5) / setThemeOverride (5) / applyNight (4) / crIdbGet (4) / crCovMerge (4) / enterCreate (4)
+renderStreets (6) / streetComplete (6) / finishRun (5) / markUndone (6) / HIST.save (6) / routeKeys (5)
+saveStart (5) / setThemeOverride (5) / applyNight (4) / crIdbGet (4) / crCovMerge (4) / enterCreate (4)
 noteTextOf (4) / performReset (5) / pickStreet (4) / restoreBackup (5) / selectStretch (4) / setNoteText (4)
 startGps (4) / stopGps (4) / clearAllMarks (3) / clearThemeOverride (3) / closeSheets (3) / crRenderHint (3)
 crSectorTap (3) / crStartPrep (3) / crStreetChosenM (3) / deselect (3) / distM (3) / isNight (3) / refreshAll (3)

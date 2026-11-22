@@ -156,7 +156,7 @@ check('12: a street named like an inherited object key (constructor) with no SPO
   engine.includes('Object.prototype.hasOwnProperty.call(H.SPOT, n)') && fixOk);
 
 // ---------- (13) the release editorial ----------
-const BULLET = "Tap a route in the list to open its menu: Load, or Delete. Every route can be deleted now.";
+const BULLET = "Under the hood: clean history loads, saves and restores from one place, the same way everywhere.";
 check("13: What's New carries the 1.266 bullet (rolled by the unified-load-in round), em-dash free, and the CHANGELOG top entry is Beta 1.266 above 1.265",
   whatsnew.includes(BULLET) && BULLET.length <= 108 && !whatsnew.includes('—') &&
   changelog.indexOf('## Beta 1.266') > -1 && changelog.indexOf('## Beta 1.266') < changelog.indexOf('## Beta 1.265'));

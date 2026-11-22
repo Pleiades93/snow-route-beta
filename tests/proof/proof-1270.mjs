@@ -115,7 +115,7 @@ check('9: the create backdrop still snapshots the UNDERLYING visibility through 
 
 // ---------- (10) editorial ----------
 check('10: What\'s New carries the 1.270 bullet, em-dash free, and the CHANGELOG top entry is Beta 1.270 above 1.269',
-  whatsnew.includes('Tap a route in the list to open its menu: Load, or Delete. Every route can be deleted now.') &&
+  whatsnew.includes('Under the hood: clean history loads, saves and restores from one place, the same way everywhere.') &&
   !whatsnew.includes('—') &&
   changelog.indexOf('## Beta 1.270') > -1 && changelog.indexOf('## Beta 1.270') < changelog.indexOf('## Beta 1.269'));
 

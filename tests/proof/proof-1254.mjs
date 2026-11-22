@@ -108,8 +108,8 @@ check('12 (R-05): the dp entry documents its shape and terms',
 // ---------- the release editorial ----------
 check('13: the CHANGELOG top entry is Beta 1.254', changelog.includes('## Beta 1.254'));
 check('14: What\'s New carries the 1.254 bullet, short and dash-free',
-  whatsnew.includes('Tap a route in the list to open its menu: Load, or Delete. Every route can be deleted now.')
-  && 'Tap a route in the list to open its menu: Load, or Delete. Every route can be deleted now.'.length <= 108
+  whatsnew.includes('Under the hood: clean history loads, saves and restores from one place, the same way everywhere.')
+  && 'Under the hood: clean history loads, saves and restores from one place, the same way everywhere.'.length <= 108
   && !whatsnew.includes('—'));
 
 console.log(`proof-1254: ${pass} passed, ${fail} failed`);

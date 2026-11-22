@@ -57,7 +57,7 @@ ok('T3 after Yes the button shows NO Undo - label stays FINISH (Beta 1.110)', A.
 // every run, and the standing guard for a reintroduced Undo is drive146's C0/C1b (post-finish
 // button state + pop-up behaviour), which samples the same property at the moment it matters.
 // 1.5 s of local sampling remains as this drive's own smoke of the same claim.
-await ev(`(() => { history = []; saveHistory(); return true; })()`);
+await ev(`(() => { history = []; HIST.save(); return true; })()`);
 await mark3();
 await ev(`(() => { $('resetBtn').click(); return true; })()`);
 await pollRead(`(() => JSON.stringify({ open: !$('finModal').classList.contains('hidden') }))()`, v => v.open === true, 4000); // the pop-up must actually be open before Yes is tapped

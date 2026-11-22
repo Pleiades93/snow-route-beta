@@ -44,7 +44,7 @@ try {
     const items = {}; STREETNAMES.forEach((n, i) => { items[n] = iso(T0 + (i + 1) * 180000); });
     history = [{ at: iso(T0 + 34 * 180000 + 1680000), startedAt: iso(T0), km: 21.4, via: {}, sides: { p: {}, t: {} },
       items, notes: { Velmar: [{ k: 'note', text: 'drive192 detail note', at: iso(T0 + 180000) }] } }];
-    saveHistory();
+    HIST.save();
     markDone('Velmar', 'tap'); pieces['Mellings'][0] = (pieces['Mellings'][0] | 1); refreshAll();
     return { ttl: fmtDate3(history[0].at), last: fmtHM(histDur(history[0]).durMs), pace: cleanPaceKm(history[0]), tw: (cleanWorkM(history[0]) / 2000).toFixed(1),
       wantRoad: (workDoneM() / 2000).toFixed(1) + ' km', wantStreets: STREETNAMES.filter(streetComplete).length + '/' + STREETNAMES.length }; })()`);

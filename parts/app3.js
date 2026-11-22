@@ -224,8 +224,8 @@ function openClean(i) {
       return;
     }
     clearTimeout(cleanDelTimer);
-    history.splice(cleanIdx, 1);
-    const okDel = saveHistory();
+    HIST.deleteAt(cleanIdx);
+    const okDel = HIST.save();
     backToCleans();
     if (!okDel) toast('Storage problem - the delete could not be saved; the clean may return on reload', 4200); // Beta 1.63 (audit F04)
     updateCount();
@@ -473,7 +473,7 @@ function finishRun() {
   // written afterwards was not, so a failed sides write resurrected the
   // finished clean beside its own archive entry on the next launch.
   let newHist = null;
-  if (archiving) newHist = appendHistory(history, snap); // Beta 1.167 (B1): the incoming archive JOINS the history - nothing is evicted, at any size (through 1.166 trimHistoryForFinish applied the 10-clean cap here, Beta 1.104 CG-103-01 protecting only the incoming entry itself)
+  if (archiving) newHist = HIST.appended(snap); // Beta 1.167 (B1): the incoming archive JOINS the history - nothing is evicted, at any size (through 1.166 trimHistoryForFinish applied the 10-clean cap here, Beta 1.104 CG-103-01 protecting only the incoming entry itself)
   const cleared = BOARD.clearedSides(); // Arch-2: the zeroed sides a committed finish writes are built by the board module
   const prevSidesRaw = lsGet(LS.sides); // kept so the start step's rollback can restore this write exactly (including its absence)
   // Beta 1.102 (Phase 4, C3): the finish transaction on the ONE coordinator - the
@@ -482,7 +482,7 @@ function finishRun() {
   // leaves a signature reconcileInterruptedFinish resolves at boot (CG-196-04).
   const fSteps = [];
   fSteps.push({ name: 'finclean', write: () => txSet(LS.finclean, JSON.stringify({ run: runStart || 0, at: finishAt })), undo: () => txDel(LS.finclean) }); // Beta 1.141 (Package A, DA-10): the metadata-cleanup obligation is the transaction's FIRST step, so every prefix reconciliation can call a committed finish carries it, and a rolled-back finish undoes it with the rest. The post-commit saveAll below normally discharges it at once; if those writes fail and the page dies first, completeFinishCleanup (app1) completes the cleanup at the next load instead of leaving the finished run's notes/coverage live forever.
-  if (archiving) fSteps.push({ name: 'archive', write: () => txSet(LS.hist, JSON.stringify(historyForWrite(newHist))), undo: () => txSet(LS.hist, JSON.stringify(historyForWrite(prevHist))) }); // 2026-11-15 (denylist fix round, A-05): the archive write and its rollback write the historyForWrite merge, not the bare view - a finish is an ordinary save for the entries it does not touch, and the load strip stays a view through it and through its undo
+  if (archiving) fSteps.push({ name: 'archive', write: () => txSet(LS.hist, HIST.serialise(newHist)), undo: () => txSet(LS.hist, HIST.serialise(prevHist)) }); // 2026-11-15 (denylist fix round, A-05): the archive write and its rollback write the repository merge (HIST.serialise, Beta 1.272), not the bare view - a finish is an ordinary save for the entries it does not touch, and the load strip stays a view through it and through its undo
   fSteps.push({ name: 'sides', write: () => txSet(LS.sides, JSON.stringify(cleared)), undo: () => prevSidesRaw === null ? txDel(LS.sides) : txSet(LS.sides, prevSidesRaw) });
   if (runStart) fSteps.push({ name: 'start', write: () => txDel(LS.start), undo: () => txSet(LS.start, String(runStart)) });
   const fTx = runTx(fSteps);
@@ -492,7 +492,7 @@ function finishRun() {
     toast('Storage problem - finish stopped, your clean is intact', 4200); return;
   }
   lsDel(LS.snap); markClean('snap'); resetRunDist(); lsDel(LS.rundist); lsDel(LS.rundist2); trail = []; markDirty('trail'); // Beta 1.167 (B5): the distance counter is consumed into the archive entry (km) - its record goes with the run. Beta 1.193: its mirror copy goes too, and the trail window is cleared with them - the run is over, so the fallback's only consumer is gone (the Start fence and the load window would evict the points anyway; clearing here keeps the stored trail honest between runs). Beta 1.94 (SR-193-02): the run is finished - its cancel snapshot goes with it. Ungated on purpose: a leftover snapshot is stamped with THIS run's start, so it can never match a future run, and the next Start overwrites it anyway
-  if (archiving) history = newHist;
+  if (archiving) HIST.replaceView(newHist);
   BOARD.zeroMarks(); notes = {}; runStart = 0; runSnap = null; // Arch-2: the board half of this reset is the module's in-place zero
   stopGps(); deselect(); // Beta 1.193: through 1.190 this also force-drew the trail to clear the finished line (Beta 1.69) - there is no line any more; the window itself was cleared with the counter records above
   const restRes = saveAll(); const restOk = restRes.ok; // the gated sides write already landed; this pass carries the metadata - a failure here warns but cannot resurrect anything (authority + archive agree)

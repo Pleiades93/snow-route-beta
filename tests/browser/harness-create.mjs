@@ -40,6 +40,7 @@
 import { spawn } from 'node:child_process';
 import fs from 'node:fs';
 import http from 'node:http';
+import os from 'node:os';
 import path from 'node:path';
 
 export const sleep = ms => new Promise(r => setTimeout(r, ms));
@@ -77,6 +78,12 @@ async function passthroughFulfil(sessionId, p, H) {
 }
 
 export async function startCreateRig({ profile, fulfil = null, jsonMode = 'coded', autoAttach = true, evaluateMode = 'throw', disableFeatures = 'LocalNetworkAccessChecks', extraFlags = [], devtoolsErrorWithBuf = false, onPaused = null } = {}) {
+  // Beta 1.272 (Codex P2, PR #168): a caller's profile NAME is honoured, its
+  // directory is not - the profile is rebased under this process's TMPDIR,
+  // which the runner sets to the drive's own per-drive temp dir (removed at
+  // drive close). Profiles never sit in shared /tmp again, so no cleanup
+  // sweep of shared directories is needed or wanted.
+  if (profile) profile = path.join(os.tmpdir(), path.basename(profile));
   const proc = spawn(CHROME, ['--headless=new', '--no-sandbox', '--disable-gpu', '--hide-scrollbars', '--no-proxy-server', '--remote-debugging-port=0', '--disable-features=' + disableFeatures, '--user-data-dir=' + profile, ...extraFlags, '--window-size=420,900', 'about:blank'], { stdio: ['ignore', 'pipe', 'pipe'] });
   const wsUrl = await new Promise((res, rej) => { let buf = ''; proc.stderr.on('data', d => { buf += d; const m = buf.match(/DevTools listening on (ws:\/\/\S+)/); if (m) res(m[1]); }); setTimeout(() => rej(new Error(devtoolsErrorWithBuf ? 'no devtools url: ' + buf.slice(0, 500) : 'no devtools url')), 25000); });
   const ws = new WebSocket(wsUrl);

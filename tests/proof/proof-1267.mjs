@@ -99,7 +99,7 @@ check('4b: the old strings are gone from parts/',
 
 // ---------- editorial ----------
 check('5: What\'s New carries the round\'s headline bullet (dead ends feather) and no em dash',
-  whatsnew.includes('Tap a route in the list to open its menu: Load, or Delete. Every route can be deleted now.') && !whatsnew.includes('—'));
+  whatsnew.includes('Under the hood: clean history loads, saves and restores from one place, the same way everywhere.') && !whatsnew.includes('—'));
 
 console.log('proof-1267: ' + pass + ' pass, ' + fail + ' fail');
 process.exit(fail ? 1 : 0);

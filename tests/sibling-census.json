@@ -4918,6 +4918,377 @@
     "scripts/check-census.py": "dd55f34cd855e60a6fadae7e261aa99f1682b9d7d8446696532045e3a281fafb"
    },
    "issued": "2026-11-22 beta-1271-menus-round"
+  },
+  {
+   "id": "arch2-1272",
+   "kind": "app",
+   "anchors": {
+    "functions": [
+     "HIST",
+     "reconcileInterruptedFinish",
+     "saveAll",
+     "openClean",
+     "finishRun",
+     "recoveryObj",
+     "unloadRouteToBoot"
+    ],
+    "elements": [],
+    "guards": []
+   },
+   "changed": [
+    "parts/app1.js",
+    "parts/app3.js",
+    "parts/app4.js",
+    "parts/app5.js"
+   ],
+   "rows": [
+    {
+     "id": "caller:finishRun:parts/app3.js:finYes:click",
+     "kind": "caller",
+     "source": "derived: call-site scan of parts/ - finishRun() is called from finYes:click in parts/app3.js",
+     "status": "covered",
+     "note": "finish drives 187/177; drive221 H2 exercises the finish archive + rollback through HIST in a real page"
+    },
+    {
+     "id": "caller:finishRun:parts/app3.js:performReset",
+     "kind": "caller",
+     "source": "derived: call-site scan of parts/ - finishRun() is called from performReset in parts/app3.js",
+     "status": "covered",
+     "note": "reset flows in drives 187/136 run finishRun's reset entry; history writes ride HIST.serialise there too"
+    },
+    {
+     "id": "caller:openClean:parts/app3.js:r:click",
+     "kind": "caller",
+     "source": "derived: call-site scan of parts/ - openClean() is called from r:click in parts/app3.js",
+     "status": "covered",
+     "note": "drive221 H1 deletes through HIST.deleteAt + HIST.save from the history view; drive89 covers the view itself"
+    },
+    {
+     "id": "caller:reconcileInterruptedFinish:parts/app1.js:loadRouteState",
+     "kind": "caller",
+     "source": "derived: call-site scan of parts/ - reconcileInterruptedFinish() is called from loadRouteState in parts/app1.js",
+     "status": "covered",
+     "note": "proof-1250 pins the phantom rollback; drive221 H2 runs it end to end in a real page"
+    },
+    {
+     "id": "caller:recoveryObj:parts/app4.js:buildRecovery",
+     "kind": "caller",
+     "source": "derived: call-site scan of parts/ - recoveryObj() is called from buildRecovery in parts/app4.js",
+     "status": "covered",
+     "note": "drive221 H4 asserts the recovery export equals HIST.serialise(); drive118's restore suite consumes the same envelope"
+    },
+    {
+     "id": "caller:saveAll:parts/app1.js:flushAux",
+     "kind": "caller",
+     "source": "derived: call-site scan of parts/ - saveAll() is called from flushAux in parts/app1.js",
+     "status": "covered",
+     "note": "session battery save paths (drives 187/192) + selftest-history 13/13 on the repository merge"
+    },
+    {
+     "id": "caller:saveAll:parts/app2.js:saveAllWarned",
+     "kind": "caller",
+     "source": "derived: call-site scan of parts/ - saveAll() is called from saveAllWarned in parts/app2.js",
+     "status": "covered",
+     "note": "session battery save paths (drives 89/147/187) exercise saveAllWarned's saves, now writing the history merge via HIST.serialise"
+    },
+    {
+     "id": "caller:saveAll:parts/app3.js:finishRun",
+     "kind": "caller",
+     "source": "derived: call-site scan of parts/ - saveAll() is called from finishRun in parts/app3.js",
+     "status": "covered",
+     "note": "drives 187/177 + drive221 H2 finish flows"
+    },
+    {
+     "id": "caller:saveAll:parts/app4.js:backupObj",
+     "kind": "caller",
+     "source": "derived: call-site scan of parts/ - saveAll() is called from backupObj in parts/app4.js",
+     "status": "covered",
+     "note": "drive118 restore suite + drive121 backup flows build on backupObj's save"
+    },
+    {
+     "id": "caller:saveAll:parts/app5.js:loadRoute",
+     "kind": "caller",
+     "source": "derived: call-site scan of parts/ - saveAll() is called from loadRoute in parts/app5.js",
+     "status": "covered",
+     "note": "route loading in drives 163/177/186 re-saves through saveAll on load"
+    },
+    {
+     "id": "caller:unloadRouteToBoot:parts/app5.js:deleteRoute",
+     "kind": "caller",
+     "source": "derived: call-site scan of parts/ - unloadRouteToBoot() is called from deleteRoute in parts/app5.js",
+     "status": "covered",
+     "note": "drive219 route-delete flows + drive163; HIST.unload retires the snapshot with the route"
+    }
+   ],
+   "files": {
+    "parts/app1.js": "26f3e20ac82b4c5a85a25adaa3c4a0e6758aa252c370c72b1db2bf46f8b9e860",
+    "parts/app2.js": "c436a5db83c5fb8d95df49cca59300559eec084d46ab6391d25af83230872801",
+    "parts/app3.js": "47976e3fbb89e68f6dd5bd645eff508fa271a98e25afcc9625983106b004f14b",
+    "parts/app4.js": "4a8274bade07dca06247c271fb00110bdb8c3e9d672d35d01150fc2a8f80c0a8",
+    "parts/app5.js": "2e15bb69e07d3ded76305285beecb56c8381ef4fd122a0f77d3ad486248957ba",
+    "parts/brand-snow.js": "86fa9a02f29c7345ee68d68daffd9c72da612921b64da37f1eccf6b72161ac5f",
+    "parts/create-cache.js": "2a7e983aa50862cb074a16abf9266a41a1a175c69faa5215b1d3d289aa2b5327",
+    "parts/create-citydata.js": "393d90f275d971b5e52352deebaece381279acd0e86495ffa2da35701de9148e",
+    "parts/create-fetch.js": "e7a65bd88dc338213946c4537dc5d397f79396ec416b6f4ebf4be831927aeb66",
+    "parts/create-packs.js": "a8b60fb7d601c1e83f555eb703b625a571ec878937ac36fcaddd05aecf635975",
+    "parts/create-pick.js": "7188458b087496ad52ff5d159ae23668b543d0100a3d58c3b251d33374258dd6",
+    "parts/create-save.js": "ad39720727f43d397e72443c92955c5a35d530f03e3219b2182c9ee7c062e52d",
+    "parts/data.js": "9684c69862156dc70ee9a2b88278b4e825c5bf35f0c150fbc5660ccbdce9304b",
+    "parts/engine.js": "d6d1f676ac8bc2a302cfbaf56de1e10cb361fd8b746d94d6380a5e4ebaf76173",
+    "parts/pmstyles.js": "f3501db9c16dbc6a5fa8c901089101e4913772384de1f069accb23a614bb90fc",
+    "parts/whatsnew.js": "6357932ee6b184c692b2ea61d64bb1a60fc6f7a897522ad366cea7e6c22c6edf",
+    "parts/head.html": "11ec9528290c2286f4a4102e88b9883216fca5c4787888608dea503749db3ba2",
+    "scripts/check-census.py": "dd55f34cd855e60a6fadae7e261aa99f1682b9d7d8446696532045e3a281fafb"
+   },
+   "issued": "2026-11-22"
+  },
+  {
+   "id": "arch2-1272b",
+   "kind": "app",
+   "anchors": {
+    "functions": [
+     "HIST",
+     "reconcileInterruptedFinish",
+     "saveAll",
+     "openClean",
+     "finishRun",
+     "recoveryObj",
+     "unloadRouteToBoot"
+    ],
+    "elements": [],
+    "guards": []
+   },
+   "changed": [
+    "parts/app1.js",
+    "parts/app3.js",
+    "parts/app4.js",
+    "parts/app5.js",
+    "parts/whatsnew.js"
+   ],
+   "rows": [
+    {
+     "id": "caller:finishRun:parts/app3.js:finYes:click",
+     "kind": "caller",
+     "source": "derived: call-site scan of parts/ - finishRun() is called from finYes:click in parts/app3.js",
+     "status": "covered",
+     "note": "finish drives 187/177; drive221 H2 exercises the finish archive + rollback through HIST in a real page"
+    },
+    {
+     "id": "caller:finishRun:parts/app3.js:performReset",
+     "kind": "caller",
+     "source": "derived: call-site scan of parts/ - finishRun() is called from performReset in parts/app3.js",
+     "status": "covered",
+     "note": "reset flows in drives 187/136 run finishRun's reset entry; history writes ride HIST.serialise there too"
+    },
+    {
+     "id": "caller:openClean:parts/app3.js:r:click",
+     "kind": "caller",
+     "source": "derived: call-site scan of parts/ - openClean() is called from r:click in parts/app3.js",
+     "status": "covered",
+     "note": "drive221 H1 deletes through HIST.deleteAt + HIST.save from the history view; drive89 covers the view itself"
+    },
+    {
+     "id": "caller:reconcileInterruptedFinish:parts/app1.js:loadRouteState",
+     "kind": "caller",
+     "source": "derived: call-site scan of parts/ - reconcileInterruptedFinish() is called from loadRouteState in parts/app1.js",
+     "status": "covered",
+     "note": "proof-1250 pins the phantom rollback; drive221 H2 runs it end to end in a real page"
+    },
+    {
+     "id": "caller:recoveryObj:parts/app4.js:buildRecovery",
+     "kind": "caller",
+     "source": "derived: call-site scan of parts/ - recoveryObj() is called from buildRecovery in parts/app4.js",
+     "status": "covered",
+     "note": "drive221 H4 asserts the recovery export equals HIST.serialise(); drive118's restore suite consumes the same envelope"
+    },
+    {
+     "id": "caller:saveAll:parts/app1.js:flushAux",
+     "kind": "caller",
+     "source": "derived: call-site scan of parts/ - saveAll() is called from flushAux in parts/app1.js",
+     "status": "covered",
+     "note": "session battery save paths (drives 187/192) + selftest-history 13/13 on the repository merge"
+    },
+    {
+     "id": "caller:saveAll:parts/app2.js:saveAllWarned",
+     "kind": "caller",
+     "source": "derived: call-site scan of parts/ - saveAll() is called from saveAllWarned in parts/app2.js",
+     "status": "covered",
+     "note": "session battery save paths (drives 89/147/187) exercise saveAllWarned's saves, now writing the history merge via HIST.serialise"
+    },
+    {
+     "id": "caller:saveAll:parts/app3.js:finishRun",
+     "kind": "caller",
+     "source": "derived: call-site scan of parts/ - saveAll() is called from finishRun in parts/app3.js",
+     "status": "covered",
+     "note": "drives 187/177 + drive221 H2 finish flows"
+    },
+    {
+     "id": "caller:saveAll:parts/app4.js:backupObj",
+     "kind": "caller",
+     "source": "derived: call-site scan of parts/ - saveAll() is called from backupObj in parts/app4.js",
+     "status": "covered",
+     "note": "drive118 restore suite + drive121 backup flows build on backupObj's save"
+    },
+    {
+     "id": "caller:saveAll:parts/app5.js:loadRoute",
+     "kind": "caller",
+     "source": "derived: call-site scan of parts/ - saveAll() is called from loadRoute in parts/app5.js",
+     "status": "covered",
+     "note": "route loading in drives 163/177/186 re-saves through saveAll on load"
+    },
+    {
+     "id": "caller:unloadRouteToBoot:parts/app5.js:deleteRoute",
+     "kind": "caller",
+     "source": "derived: call-site scan of parts/ - unloadRouteToBoot() is called from deleteRoute in parts/app5.js",
+     "status": "covered",
+     "note": "drive219 route-delete flows + drive163; HIST.unload retires the snapshot with the route"
+    }
+   ],
+   "files": {
+    "parts/app1.js": "26f3e20ac82b4c5a85a25adaa3c4a0e6758aa252c370c72b1db2bf46f8b9e860",
+    "parts/app2.js": "c436a5db83c5fb8d95df49cca59300559eec084d46ab6391d25af83230872801",
+    "parts/app3.js": "47976e3fbb89e68f6dd5bd645eff508fa271a98e25afcc9625983106b004f14b",
+    "parts/app4.js": "4a8274bade07dca06247c271fb00110bdb8c3e9d672d35d01150fc2a8f80c0a8",
+    "parts/app5.js": "2e15bb69e07d3ded76305285beecb56c8381ef4fd122a0f77d3ad486248957ba",
+    "parts/brand-snow.js": "86fa9a02f29c7345ee68d68daffd9c72da612921b64da37f1eccf6b72161ac5f",
+    "parts/create-cache.js": "2a7e983aa50862cb074a16abf9266a41a1a175c69faa5215b1d3d289aa2b5327",
+    "parts/create-citydata.js": "393d90f275d971b5e52352deebaece381279acd0e86495ffa2da35701de9148e",
+    "parts/create-fetch.js": "e7a65bd88dc338213946c4537dc5d397f79396ec416b6f4ebf4be831927aeb66",
+    "parts/create-packs.js": "a8b60fb7d601c1e83f555eb703b625a571ec878937ac36fcaddd05aecf635975",
+    "parts/create-pick.js": "7188458b087496ad52ff5d159ae23668b543d0100a3d58c3b251d33374258dd6",
+    "parts/create-save.js": "ad39720727f43d397e72443c92955c5a35d530f03e3219b2182c9ee7c062e52d",
+    "parts/data.js": "9684c69862156dc70ee9a2b88278b4e825c5bf35f0c150fbc5660ccbdce9304b",
+    "parts/engine.js": "d6d1f676ac8bc2a302cfbaf56de1e10cb361fd8b746d94d6380a5e4ebaf76173",
+    "parts/pmstyles.js": "f3501db9c16dbc6a5fa8c901089101e4913772384de1f069accb23a614bb90fc",
+    "parts/whatsnew.js": "ea24f3839b7e09e23221be5e1e50beef241a9d288e3b4d8df7f2516e874f9c0c",
+    "parts/head.html": "11ec9528290c2286f4a4102e88b9883216fca5c4787888608dea503749db3ba2",
+    "scripts/check-census.py": "dd55f34cd855e60a6fadae7e261aa99f1682b9d7d8446696532045e3a281fafb"
+   },
+   "issued": "2026-11-22"
+  },
+  {
+   "id": "arch2-1272c",
+   "kind": "app",
+   "anchors": {
+    "functions": [
+     "HIST",
+     "reconcileInterruptedFinish",
+     "saveAll",
+     "openClean",
+     "finishRun",
+     "recoveryObj",
+     "unloadRouteToBoot"
+    ],
+    "elements": [],
+    "guards": []
+   },
+   "changed": [
+    "parts/app1.js",
+    "parts/app3.js",
+    "parts/app4.js",
+    "parts/app5.js",
+    "parts/whatsnew.js"
+   ],
+   "rows": [
+    {
+     "id": "caller:finishRun:parts/app3.js:finYes:click",
+     "kind": "caller",
+     "source": "derived: call-site scan of parts/ - finishRun() is called from finYes:click in parts/app3.js",
+     "status": "covered",
+     "note": "finish drives 187/177; drive221 H2 exercises the finish archive + rollback through HIST in a real page"
+    },
+    {
+     "id": "caller:finishRun:parts/app3.js:performReset",
+     "kind": "caller",
+     "source": "derived: call-site scan of parts/ - finishRun() is called from performReset in parts/app3.js",
+     "status": "covered",
+     "note": "reset flows in drives 187/136 run finishRun's reset entry; history writes ride HIST.serialise there too"
+    },
+    {
+     "id": "caller:openClean:parts/app3.js:r:click",
+     "kind": "caller",
+     "source": "derived: call-site scan of parts/ - openClean() is called from r:click in parts/app3.js",
+     "status": "covered",
+     "note": "drive221 H1 deletes through HIST.deleteAt + HIST.save from the history view; drive89 covers the view itself"
+    },
+    {
+     "id": "caller:reconcileInterruptedFinish:parts/app1.js:loadRouteState",
+     "kind": "caller",
+     "source": "derived: call-site scan of parts/ - reconcileInterruptedFinish() is called from loadRouteState in parts/app1.js",
+     "status": "covered",
+     "note": "proof-1250 pins the phantom rollback; drive221 H2 runs it end to end in a real page"
+    },
+    {
+     "id": "caller:recoveryObj:parts/app4.js:buildRecovery",
+     "kind": "caller",
+     "source": "derived: call-site scan of parts/ - recoveryObj() is called from buildRecovery in parts/app4.js",
+     "status": "covered",
+     "note": "drive221 H4 asserts the recovery export equals HIST.serialise(); drive118's restore suite consumes the same envelope"
+    },
+    {
+     "id": "caller:saveAll:parts/app1.js:flushAux",
+     "kind": "caller",
+     "source": "derived: call-site scan of parts/ - saveAll() is called from flushAux in parts/app1.js",
+     "status": "covered",
+     "note": "session battery save paths (drives 187/192) + selftest-history 13/13 on the repository merge"
+    },
+    {
+     "id": "caller:saveAll:parts/app2.js:saveAllWarned",
+     "kind": "caller",
+     "source": "derived: call-site scan of parts/ - saveAll() is called from saveAllWarned in parts/app2.js",
+     "status": "covered",
+     "note": "session battery save paths (drives 89/147/187) exercise saveAllWarned's saves, now writing the history merge via HIST.serialise"
+    },
+    {
+     "id": "caller:saveAll:parts/app3.js:finishRun",
+     "kind": "caller",
+     "source": "derived: call-site scan of parts/ - saveAll() is called from finishRun in parts/app3.js",
+     "status": "covered",
+     "note": "drives 187/177 + drive221 H2 finish flows"
+    },
+    {
+     "id": "caller:saveAll:parts/app4.js:backupObj",
+     "kind": "caller",
+     "source": "derived: call-site scan of parts/ - saveAll() is called from backupObj in parts/app4.js",
+     "status": "covered",
+     "note": "drive118 restore suite + drive121 backup flows build on backupObj's save"
+    },
+    {
+     "id": "caller:saveAll:parts/app5.js:loadRoute",
+     "kind": "caller",
+     "source": "derived: call-site scan of parts/ - saveAll() is called from loadRoute in parts/app5.js",
+     "status": "covered",
+     "note": "route loading in drives 163/177/186 re-saves through saveAll on load"
+    },
+    {
+     "id": "caller:unloadRouteToBoot:parts/app5.js:deleteRoute",
+     "kind": "caller",
+     "source": "derived: call-site scan of parts/ - unloadRouteToBoot() is called from deleteRoute in parts/app5.js",
+     "status": "covered",
+     "note": "drive219 route-delete flows + drive163; HIST.unload retires the snapshot with the route"
+    }
+   ],
+   "files": {
+    "parts/app1.js": "26f3e20ac82b4c5a85a25adaa3c4a0e6758aa252c370c72b1db2bf46f8b9e860",
+    "parts/app2.js": "c436a5db83c5fb8d95df49cca59300559eec084d46ab6391d25af83230872801",
+    "parts/app3.js": "47976e3fbb89e68f6dd5bd645eff508fa271a98e25afcc9625983106b004f14b",
+    "parts/app4.js": "4a8274bade07dca06247c271fb00110bdb8c3e9d672d35d01150fc2a8f80c0a8",
+    "parts/app5.js": "2e15bb69e07d3ded76305285beecb56c8381ef4fd122a0f77d3ad486248957ba",
+    "parts/brand-snow.js": "86fa9a02f29c7345ee68d68daffd9c72da612921b64da37f1eccf6b72161ac5f",
+    "parts/create-cache.js": "2a7e983aa50862cb074a16abf9266a41a1a175c69faa5215b1d3d289aa2b5327",
+    "parts/create-citydata.js": "393d90f275d971b5e52352deebaece381279acd0e86495ffa2da35701de9148e",
+    "parts/create-fetch.js": "e7a65bd88dc338213946c4537dc5d397f79396ec416b6f4ebf4be831927aeb66",
+    "parts/create-packs.js": "a8b60fb7d601c1e83f555eb703b625a571ec878937ac36fcaddd05aecf635975",
+    "parts/create-pick.js": "7188458b087496ad52ff5d159ae23668b543d0100a3d58c3b251d33374258dd6",
+    "parts/create-save.js": "ad39720727f43d397e72443c92955c5a35d530f03e3219b2182c9ee7c062e52d",
+    "parts/data.js": "9684c69862156dc70ee9a2b88278b4e825c5bf35f0c150fbc5660ccbdce9304b",
+    "parts/engine.js": "d6d1f676ac8bc2a302cfbaf56de1e10cb361fd8b746d94d6380a5e4ebaf76173",
+    "parts/pmstyles.js": "f3501db9c16dbc6a5fa8c901089101e4913772384de1f069accb23a614bb90fc",
+    "parts/whatsnew.js": "820a2801a46acc2b7fe58c48a693794c07cabbd2c0d002fee2f116d4cb24382b",
+    "parts/head.html": "11ec9528290c2286f4a4102e88b9883216fca5c4787888608dea503749db3ba2",
+    "scripts/check-census.py": "dd55f34cd855e60a6fadae7e261aa99f1682b9d7d8446696532045e3a281fafb"
+   },
+   "issued": "2026-11-22"
   }
  ]
 }

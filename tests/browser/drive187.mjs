@@ -36,7 +36,7 @@ try {
                t: { Astona: STRETCH.Astona.parts.map(() => [null, null]), Velmar: STRETCH.Velmar.parts.map(() => [iso(T0 + 600000), iso(T0 + 1200000)]), Mellings: STRETCH.Mellings.parts.map(() => [iso(T0 + 1800000), iso(T0 + 1800000)]) } } };
     const entryB = { at: iso(T0 + 7200000), startedAt: iso(T0 + 3600000), km: 0, via: {}, notes: {},
       items: { Velmar: iso(T0 + 600000) }, sides: { p: {}, t: {} } };
-    history = [entryA, entryB]; saveHistory();
+    history = [entryA, entryB]; HIST.save();
     openClean(0);
     const rowFor = nm => [...document.querySelectorAll('.cvRow')].find(x => { const n = x.querySelector('.cvNm'); return n && n.textContent === nm; });
     const read = nm => { const r = rowFor(nm); if (!r) return { tm: '', det: '' }; r.click(); return { tm: r.querySelector('.cvTm').textContent, det: r.querySelector('.cvDet').textContent }; };
@@ -59,7 +59,7 @@ try {
     !(b3.bV.tm || '').includes('gap') && !(b3.bV.det || '').includes('Gap since') && (b3.metaB || '').includes('Total elapsed'));
 
   // ---- B4: the legacy clean is listed, opens, and deletes ----
-  const b4seed = await J(`(() => { const iso = new Date(Date.now() - 86400000).toISOString(); history = [{ at: iso, items: { Velmar: null, Mellings: null }, via: {}, notes: {}, sides: { p: {}, t: {} }, km: 0, startedAt: null }]; saveHistory(); histOpen = true; renderPace(); const rows = [...document.querySelectorAll('.histRow')]; return { n: rows.length, text: rows.length ? rows[0].textContent : '' }; })()`);
+  const b4seed = await J(`(() => { const iso = new Date(Date.now() - 86400000).toISOString(); history = [{ at: iso, items: { Velmar: null, Mellings: null }, via: {}, notes: {}, sides: { p: {}, t: {} }, km: 0, startedAt: null }]; HIST.save(); histOpen = true; renderPace(); const rows = [...document.querySelectorAll('.histRow')]; return { n: rows.length, text: rows.length ? rows[0].textContent : '' }; })()`);
   ok('B4a the timestamp-less legacy clean is LISTED in Saved cleans as time-not-recorded | ' + JSON.stringify(b4seed),
     b4seed.n === 1 && (b4seed.text || '').includes('time not recorded'));
   await ev(`document.querySelector('.histRow').click(); true`); await sleep(400);

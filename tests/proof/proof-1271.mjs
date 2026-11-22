@@ -86,8 +86,8 @@ check('5a the selection-open drop is retired: no body.selOpen #centreBtn rule, n
   !head.includes('body.selOpen #centreBtn') && !head.includes('267px') && !app2.includes("classList.add('selOpen')") && !app2.includes("classList.remove('selOpen')"));
 
 // ---- the What's New line ----------------------------------------------------
-check('6a the round\'s What\'s New bullet stands first',
-  whatsnew.indexOf('Tap a route in the list to open its menu') > -1 && whatsnew.indexOf('Tap a route in the list to open its menu') < whatsnew.indexOf('Clear asks first'));
+check('6a the round\'s What\'s New bullet stands first (rolled forward at Beta 1.272: the current entry stands first in its place)',
+  whatsnew.includes('items: ["Under the hood: clean history loads, saves and restores from one place, the same way everywhere."]'));
 
 console.log(`proof-1271: ${pass} pass, ${fail} fail`);
 process.exit(fail ? 1 : 0);

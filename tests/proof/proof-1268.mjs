@@ -71,7 +71,7 @@ check('5: calibration arithmetic - WIDTH_K 1.3 at the 1.08 == 1.0x calibration p
   Math.abs(1.3 / 1.08 - 1.20) / 1.20 <= 0.10);
 
 check('6: What\'s New carries the round\'s bullet, em-dash free, and the CHANGELOG top entry is Beta 1.268 above 1.267',
-  whatsnew.includes('Tap a route in the list to open its menu: Load, or Delete. Every route can be deleted now.') &&
+  whatsnew.includes('Under the hood: clean history loads, saves and restores from one place, the same way everywhere.') &&
   !whatsnew.includes('—') &&
   changelog.indexOf('## Beta 1.268') > -1 && changelog.indexOf('## Beta 1.268') < changelog.indexOf('## Beta 1.267'));
 

@@ -74,7 +74,7 @@ await sleep(3000);
 await ev(`loadRoute('5w'); true`); await sleep(600); // Beta 1.76
 st8 = await state();
 ok('F8b after reload the finished state persists - no run resurrects | ' + JSON.stringify(st8), st8.done === 0 && st8.lsHist === 1 && (await ev(`runStart`)) === 0);
-await ev(`(() => { history = []; saveHistory(); return true; })()`); // F6 below counts history writes from a clean slate, exactly as the pre-1.110 flow left it
+await ev(`(() => { history = []; HIST.save(); return true; })()`); // F6 below counts history writes from a clean slate, exactly as the pre-1.110 flow left it
 await seed();
 // F6 (Beta 1.63, audit F02): the ROLLBACK write itself fails - the archive
 // write lands, the authority write fails, and rolling the archive back

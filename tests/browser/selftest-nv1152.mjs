@@ -209,12 +209,19 @@ ok('NV4: capHistoryList is absent from app1.js', !app1.includes('function capHis
 ok('NV4: trimHistoryForFinish is absent from app1.js', !app1.includes('function trimHistoryForFinish('));
 ok('NV4: capHistoryList is not called in app4.js (restore stores history whole)', !app4.includes('capHistoryList('));
 {
-  const appendHistory = new Function(extract(app1, 'function appendHistory(') + '\nreturn appendHistory;')();
+  // Beta 1.272 (architecture programme #2): the append is HIST.appended(entry)
+  // in the history repository, reading the ambient view binding - the adapter
+  // keeps this check's (list, entry) shape over it.
+  const objAt = app1.indexOf('const HIST = {');
+  if (objAt < 0) throw new Error('HIST not found in app1.js');
+  let d = 0, j = app1.indexOf('{', objAt);
+  for (; j < app1.length; j++) { if (app1[j] === '{') d++; else if (app1[j] === '}') { d--; if (!d) break; } }
+  const appendHistory = new Function('let history = [];\n' + app1.slice(objAt, j + 1) + ';\nreturn (list, entry) => { history = list; return HIST.appended(entry); };')();
   const big = []; for (let i = 0; i < 20000; i++) big.push({ at: 'x' + i, items: { S0: null } });
   const t0 = Date.now();
   const out = appendHistory(big, { at: 'new', items: { S0: null } });
   const dt = Date.now() - t0;
-  ok('NV4: appendHistory over a 20,000-entry list retains all 20,001 in ' + dt + ' ms (linear - the quadratic trim NV4 defended against no longer exists)', out.length === 20001 && out[20000].at === 'new' && out[0].at === 'x0' && dt < 2000);
+  ok('NV4: the append (HIST.appended) over a 20,000-entry list retains all 20,001 in ' + dt + ' ms (linear - the quadratic trim NV4 defended against no longer exists)', out.length === 20001 && out[20000].at === 'new' && out[0].at === 'x0' && dt < 2000);
 }
 
 console.log(`selftest-nv1152: ${pass} passed, ${fail} failed`);

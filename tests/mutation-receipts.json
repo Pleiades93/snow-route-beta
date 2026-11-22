@@ -3949,6 +3949,449 @@
    "red": "CI build-and-test FAIL on head 189430a1 (job 137310040355): ReferenceError: SHIPPED_PACK_IDS is not defined at uniqueRouteId, from selftest-pr23-fixes' mkUnique - every browser shard was green on the same head; only this isolated eval lacked the new binding",
    "green": "selftest-pr23-fixes 19 pass, 0 fail locally on the fixed tree (incl. the new R7 tombstone-reservation check); the build-and-test steps after it verified locally too (gps-package 20/20, select-tier fixtures 29/29)",
    "issued": "2026-11-22 beta-1271-menus-round"
+  },
+  {
+   "id": "proof-1250-arch2-1272",
+   "check": "tests/proof/proof-1250.mjs",
+   "kind": "historical",
+   "files": {
+    "tests/proof/proof-1250.mjs": "9ed18f9a11dabd451abd11ec1f43df5e4f20041097824596ac9daf8c15d8edc4"
+   },
+   "mutation": "the historical Beta 1.271 tree (d902e5bc) carrying the round's updated test files",
+   "red": "crashes on the 1.271 tree: Error: object not found: HIST (the proof extracts the repository from app1.js; the old tree has none)",
+   "green": "8/8 on the 1.272 tree; full proof manifest 78/78",
+   "issued": "2026-11-22 beta-1272-arch2-round"
+  },
+  {
+   "id": "proof-a05-arch2-1272",
+   "check": "tests/proof/proof-rerun-denylist-a05.mjs",
+   "kind": "historical",
+   "files": {
+    "tests/proof/proof-rerun-denylist-a05.mjs": "d30298f4af23f7e9e359d573944aca3100f980252bf4b27356085763a81bd3ae"
+   },
+   "mutation": "the historical Beta 1.271 tree (d902e5bc) carrying the round's updated test files",
+   "red": "crashes on the 1.271 tree: Error: object not found: HIST",
+   "green": "9/9 on the 1.272 tree; full proof manifest 78/78",
+   "issued": "2026-11-22 beta-1272-arch2-round"
+  },
+  {
+   "id": "selftest-history-arch2-1272",
+   "check": "tests/browser/selftest-history.mjs",
+   "kind": "historical",
+   "files": {
+    "tests/browser/selftest-history.mjs": "4da8c95afb53a32eb27f2f9b5572dc75ff16bd91cf05e040328b0997e722d4a8"
+   },
+   "mutation": "the historical Beta 1.271 tree (d902e5bc) carrying the round's updated test files",
+   "red": "crashes on the 1.271 tree: Error: HIST not found in app1.js (the selftest extracts the append path from app1.js)",
+   "green": "13/13 on the 1.272 tree (HIST.appended adapter)",
+   "issued": "2026-11-22 beta-1272-arch2-round"
+  },
+  {
+   "id": "selftest-nv1152-arch2-1272",
+   "check": "tests/browser/selftest-nv1152.mjs",
+   "kind": "historical",
+   "files": {
+    "tests/browser/selftest-nv1152.mjs": "3af07e5b3b2d28fa30f46a12441e99ecfb1eafb706fad124e10c8b6a3736f9db"
+   },
+   "mutation": "the historical Beta 1.271 tree (d902e5bc) carrying the round's updated test files",
+   "red": "crashes on the 1.271 tree: Error: HIST not found in app1.js",
+   "green": "20/20 on the 1.272 tree (HIST.appended adapter)",
+   "issued": "2026-11-22 beta-1272-arch2-round"
+  },
+  {
+   "id": "selftest-foreign-writes-arch2-1272",
+   "check": "tests/browser/selftest-foreign-writes.mjs",
+   "kind": "historical",
+   "files": {
+    "tests/browser/selftest-foreign-writes.mjs": "ea86ea131ec4683f137cdb2e281da170c244a5b19c516b58609edace23f5730b"
+   },
+   "mutation": "the historical Beta 1.271 tree (d902e5bc) carrying the round's updated test files",
+   "red": "FAIL (1) on the 1.271 tree, on the round's own assertion: unloadRouteToBoot carries exactly the 4 non-board, non-history reset expressions - the old unload still writes history (RESET5), the new census block (RESET4) refuses it",
+   "green": "PASS on the 1.272 tree: pinned census regenerated at exactly the two intended removals, 28 -> 26 expressions",
+   "issued": "2026-11-22 beta-1272-arch2-round"
+  },
+  {
+   "id": "drive89-arch2-1272",
+   "check": "tests/browser/drive89.mjs",
+   "kind": "historical",
+   "files": {
+    "tests/browser/drive89.mjs": "a60df3831b45f5d360698cdd9dbaad0b6a13864611dbb09eb1ba70724e26e55d"
+   },
+   "mutation": "the historical Beta 1.271 tree (d902e5bc) carrying the round's updated test files",
+   "red": "FAIL on the 1.271 tree: no result block (exit 1) - the drive's HIST.save() page eval throws ReferenceError (no HIST on the old tree) and the drive dies",
+   "green": "15/15 checks, 0 exceptions on the 1.272 tree (solo local run, 2026-11-22)",
+   "issued": "2026-11-22 beta-1272-arch2-round"
+  },
+  {
+   "id": "drive136-arch2-1272",
+   "check": "tests/browser/drive136.mjs",
+   "kind": "historical",
+   "files": {
+    "tests/browser/drive136.mjs": "de4f30f83dc484c912b8f1495436b4d8a5e97ae22dd9114937e078f85468f4f1"
+   },
+   "mutation": "the historical Beta 1.271 tree (d902e5bc) carrying the round's updated test files",
+   "red": "FAIL on the 1.271 tree: no result block (exit 1) - the drive's HIST.save() page eval throws ReferenceError and the drive dies",
+   "green": "24/24 checks, 0 exceptions on the 1.272 tree (solo local run, 2026-11-22)",
+   "issued": "2026-11-22 beta-1272-arch2-round"
+  },
+  {
+   "id": "drive147-arch2-1272",
+   "check": "tests/browser/drive147.mjs",
+   "kind": "historical",
+   "files": {
+    "tests/browser/drive147.mjs": "285781d86cf3dd8729ab40bf44821e567ad9184911d8b5f6d30f4b5f7677a0b1"
+   },
+   "mutation": "the historical Beta 1.271 tree (d902e5bc) carrying the round's updated test files",
+   "red": "FAIL on the 1.271 tree: 26/26 checks run but FAIL FATAL: page evaluation threw: ReferenceError: HIST is not defined (the re-pointed save call)",
+   "green": "33/33 checks, 0 exceptions on the 1.272 tree (solo local run, 2026-11-22)",
+   "issued": "2026-11-22 beta-1272-arch2-round"
+  },
+  {
+   "id": "drive187-arch2-1272",
+   "check": "tests/browser/drive187.mjs",
+   "kind": "historical",
+   "files": {
+    "tests/browser/drive187.mjs": "228c74ab4729881fc8193fdbb5241c112dc419ca73fcda32e59e699f5879a6ec"
+   },
+   "mutation": "the historical Beta 1.271 tree (d902e5bc) carrying the round's updated test files",
+   "red": "FAIL on the 1.271 tree: 0/2 checks - the history-seeded setup cannot land (the drive's HIST.save() calls throw on the old tree), B3a/B3b read undefined seed values",
+   "green": "19/19 checks, 0 exceptions on the 1.272 tree (solo local run, 2026-11-22)",
+   "issued": "2026-11-22 beta-1272-arch2-round"
+  },
+  {
+   "id": "drive192-arch2-1272",
+   "check": "tests/browser/drive192.mjs",
+   "kind": "historical",
+   "files": {
+    "tests/browser/drive192.mjs": "e83cb0a729a807aba802b4f35bbe0d4e70ce0d6f96b007e8442288c39ec54861"
+   },
+   "mutation": "the historical Beta 1.271 tree (d902e5bc) carrying the round's updated test files",
+   "red": "FAIL on the 1.271 tree: 43/51 - P1/P2 fail: the pace panel's LAST CLEAN / LAST PACE seed never lands because the drive's HIST.save() call throws on the old tree; the history-fed checks are exactly the red ones",
+   "green": "51/51 checks, 0 exceptions on the 1.272 tree (solo local re-run, 2026-11-22; the earlier batch 49/51 was load flake)",
+   "issued": "2026-11-22 beta-1272-arch2-round"
+  },
+  {
+   "id": "drive221-arch2-1272",
+   "check": "tests/browser/drive221.mjs",
+   "kind": "historical",
+   "files": {
+    "tests/browser/drive221.mjs": "eea82043a783c1ceec6725b33c512e9a47612c3bb54ab6293a84e6db7fbbdf9e"
+   },
+   "mutation": "the historical Beta 1.271 tree (d902e5bc) carrying the round's updated test files",
+   "red": "FAIL on the 1.271 tree: 4/9 - H1 load and H1 serialise fail with HIST is not defined (the fixture exercises the repository, which the old tree does not have)",
+   "green": "9/9 checks, 0 exceptions on the 1.272 tree (solo local run, 2026-11-22)",
+   "issued": "2026-11-22 beta-1272-arch2-round"
+  },
+  {
+   "id": "drive118-arch2-1272",
+   "check": "tests/browser/drive118.mjs",
+   "kind": "historical",
+   "files": {
+    "tests/browser/drive118.mjs": "7dac662d25e6b35c68ca9c7c4a91a8e4293af647dc3f9c8cfea2786e927221ee"
+   },
+   "mutation": "the historical Beta 1.271 tree (d902e5bc) carrying the round's updated test files",
+   "red": "FAIL on the 1.271 tree: no result block (exit 1) - the R66 session's HIST.save() page eval throws ReferenceError (no HIST on the old tree) and the session dies before its checks",
+   "green": "no local green exists for the full drive: its local verdict is the known-env R66 reload race, identical on BOTH trees (known-env-failures.md, OPEN 2026-11-22, pristine-proven); the 1.272 cloud gate is the deciding run for this drive, as it was for 1.271 (green there on CI run 45056886460)",
+   "issued": "2026-11-22 beta-1272-arch2-round"
+  },
+  {
+   "id": "proof-1242-whatsnew-roll-1272",
+   "check": "tests/proof/proof-1242.mjs",
+   "kind": "historical",
+   "files": {
+    "tests/proof/proof-1242.mjs": "6979440f1e684ca7ddddd88dd88af66f2a432fc6125d28de7fba001c5db8dac2",
+    "parts/whatsnew.js": "820a2801a46acc2b7fe58c48a693794c07cabbd2c0d002fee2f116d4cb24382b"
+   },
+   "mutation": "the What's New re-point (Beta 1.272 replaces the 1.271 bullets): this proof's bullet pin still named the 1.271 entry while parts/whatsnew.js carried the 1.272 bullet - the standing per-round roll",
+   "red": "the un-rolled proof fails against the 1.272 What's New - observed in this round's run-proofs pass before the roll (55/78, the failing set exactly the bullet-pinning proofs)",
+   "green": "passes in the full manifest run on the fixed tree after the roll (78/78) - observed in this round",
+   "issued": "2026-11-22 beta-1272-arch2-round"
+  },
+  {
+   "id": "proof-1243-whatsnew-roll-1272",
+   "check": "tests/proof/proof-1243.mjs",
+   "kind": "historical",
+   "files": {
+    "tests/proof/proof-1243.mjs": "3993b9f94806648d94d8694121ec2439514186fbb9780a59ffd71856ddf9c584",
+    "parts/whatsnew.js": "820a2801a46acc2b7fe58c48a693794c07cabbd2c0d002fee2f116d4cb24382b"
+   },
+   "mutation": "the What's New re-point (Beta 1.272 replaces the 1.271 bullets): this proof's bullet pin still named the 1.271 entry while parts/whatsnew.js carried the 1.272 bullet - the standing per-round roll",
+   "red": "the un-rolled proof fails against the 1.272 What's New - observed in this round's run-proofs pass before the roll (55/78, the failing set exactly the bullet-pinning proofs)",
+   "green": "passes in the full manifest run on the fixed tree after the roll (78/78) - observed in this round",
+   "issued": "2026-11-22 beta-1272-arch2-round"
+  },
+  {
+   "id": "proof-1245-whatsnew-roll-1272",
+   "check": "tests/proof/proof-1245.mjs",
+   "kind": "historical",
+   "files": {
+    "tests/proof/proof-1245.mjs": "8840765624e968f713ee88d4613670818b448c9e77863f7526a16eeb3b34db90",
+    "parts/whatsnew.js": "820a2801a46acc2b7fe58c48a693794c07cabbd2c0d002fee2f116d4cb24382b"
+   },
+   "mutation": "the What's New re-point (Beta 1.272 replaces the 1.271 bullets): this proof's bullet pin still named the 1.271 entry while parts/whatsnew.js carried the 1.272 bullet - the standing per-round roll",
+   "red": "the un-rolled proof fails against the 1.272 What's New - observed in this round's run-proofs pass before the roll (55/78, the failing set exactly the bullet-pinning proofs)",
+   "green": "passes in the full manifest run on the fixed tree after the roll (78/78) - observed in this round",
+   "issued": "2026-11-22 beta-1272-arch2-round"
+  },
+  {
+   "id": "proof-1246-whatsnew-roll-1272",
+   "check": "tests/proof/proof-1246.mjs",
+   "kind": "historical",
+   "files": {
+    "tests/proof/proof-1246.mjs": "aac5e56a8e0843d2d25e733d9e493bc0fb4d2927a0a102fa14e95516dd91ca46",
+    "parts/whatsnew.js": "820a2801a46acc2b7fe58c48a693794c07cabbd2c0d002fee2f116d4cb24382b"
+   },
+   "mutation": "the What's New re-point (Beta 1.272 replaces the 1.271 bullets): this proof's bullet pin still named the 1.271 entry while parts/whatsnew.js carried the 1.272 bullet - the standing per-round roll",
+   "red": "the un-rolled proof fails against the 1.272 What's New - observed in this round's run-proofs pass before the roll (55/78, the failing set exactly the bullet-pinning proofs)",
+   "green": "passes in the full manifest run on the fixed tree after the roll (78/78) - observed in this round",
+   "issued": "2026-11-22 beta-1272-arch2-round"
+  },
+  {
+   "id": "proof-1247-whatsnew-roll-1272",
+   "check": "tests/proof/proof-1247.mjs",
+   "kind": "historical",
+   "files": {
+    "tests/proof/proof-1247.mjs": "f22b5184887fb07065c3d2be73680fd10528f682ee984442ec5f30b6c881bfd3",
+    "parts/whatsnew.js": "820a2801a46acc2b7fe58c48a693794c07cabbd2c0d002fee2f116d4cb24382b"
+   },
+   "mutation": "the What's New re-point (Beta 1.272 replaces the 1.271 bullets): this proof's bullet pin still named the 1.271 entry while parts/whatsnew.js carried the 1.272 bullet - the standing per-round roll",
+   "red": "the un-rolled proof fails against the 1.272 What's New - observed in this round's run-proofs pass before the roll (55/78, the failing set exactly the bullet-pinning proofs)",
+   "green": "passes in the full manifest run on the fixed tree after the roll (78/78) - observed in this round",
+   "issued": "2026-11-22 beta-1272-arch2-round"
+  },
+  {
+   "id": "proof-1249-whatsnew-roll-1272",
+   "check": "tests/proof/proof-1249.mjs",
+   "kind": "historical",
+   "files": {
+    "tests/proof/proof-1249.mjs": "30b182d0a7ed1a8f857c282e6fe9771cf7193c748650480f6c97516c57302f2d",
+    "parts/whatsnew.js": "820a2801a46acc2b7fe58c48a693794c07cabbd2c0d002fee2f116d4cb24382b"
+   },
+   "mutation": "the What's New re-point (Beta 1.272 replaces the 1.271 bullets): this proof's bullet pin still named the 1.271 entry while parts/whatsnew.js carried the 1.272 bullet - the standing per-round roll",
+   "red": "the un-rolled proof fails against the 1.272 What's New - observed in this round's run-proofs pass before the roll (55/78, the failing set exactly the bullet-pinning proofs)",
+   "green": "passes in the full manifest run on the fixed tree after the roll (78/78) - observed in this round",
+   "issued": "2026-11-22 beta-1272-arch2-round"
+  },
+  {
+   "id": "proof-1252-whatsnew-roll-1272",
+   "check": "tests/proof/proof-1252.mjs",
+   "kind": "historical",
+   "files": {
+    "tests/proof/proof-1252.mjs": "31e36ea7f5c7b1742543b0135dfca7b2f9e3349aa6bf9935b17bd63c4c321d62",
+    "parts/whatsnew.js": "820a2801a46acc2b7fe58c48a693794c07cabbd2c0d002fee2f116d4cb24382b"
+   },
+   "mutation": "the What's New re-point (Beta 1.272 replaces the 1.271 bullets): this proof's bullet pin still named the 1.271 entry while parts/whatsnew.js carried the 1.272 bullet - the standing per-round roll",
+   "red": "the un-rolled proof fails against the 1.272 What's New - observed in this round's run-proofs pass before the roll (55/78, the failing set exactly the bullet-pinning proofs)",
+   "green": "passes in the full manifest run on the fixed tree after the roll (78/78) - observed in this round",
+   "issued": "2026-11-22 beta-1272-arch2-round"
+  },
+  {
+   "id": "proof-1253-whatsnew-roll-1272",
+   "check": "tests/proof/proof-1253.mjs",
+   "kind": "historical",
+   "files": {
+    "tests/proof/proof-1253.mjs": "64ffe8b79d36b257331df690ddb17f6525deb6568a92fd88e1718c8aceffc9d2",
+    "parts/whatsnew.js": "820a2801a46acc2b7fe58c48a693794c07cabbd2c0d002fee2f116d4cb24382b"
+   },
+   "mutation": "the What's New re-point (Beta 1.272 replaces the 1.271 bullets): this proof's bullet pin still named the 1.271 entry while parts/whatsnew.js carried the 1.272 bullet - the standing per-round roll",
+   "red": "the un-rolled proof fails against the 1.272 What's New - observed in this round's run-proofs pass before the roll (55/78, the failing set exactly the bullet-pinning proofs)",
+   "green": "passes in the full manifest run on the fixed tree after the roll (78/78) - observed in this round",
+   "issued": "2026-11-22 beta-1272-arch2-round"
+  },
+  {
+   "id": "proof-1254-whatsnew-roll-1272",
+   "check": "tests/proof/proof-1254.mjs",
+   "kind": "historical",
+   "files": {
+    "tests/proof/proof-1254.mjs": "4fb089eae97cb62700de142ce62ddb4af4251990acd9db19c5ac1c36d83b1bf0",
+    "parts/whatsnew.js": "820a2801a46acc2b7fe58c48a693794c07cabbd2c0d002fee2f116d4cb24382b"
+   },
+   "mutation": "the What's New re-point (Beta 1.272 replaces the 1.271 bullets): this proof's bullet pin still named the 1.271 entry while parts/whatsnew.js carried the 1.272 bullet - the standing per-round roll",
+   "red": "the un-rolled proof fails against the 1.272 What's New - observed in this round's run-proofs pass before the roll (55/78, the failing set exactly the bullet-pinning proofs)",
+   "green": "passes in the full manifest run on the fixed tree after the roll (78/78) - observed in this round",
+   "issued": "2026-11-22 beta-1272-arch2-round"
+  },
+  {
+   "id": "proof-1255-whatsnew-roll-1272",
+   "check": "tests/proof/proof-1255.mjs",
+   "kind": "historical",
+   "files": {
+    "tests/proof/proof-1255.mjs": "5466f23bf15dfff5eca81f565f77d0ee8cb05cbaa994608698aae41097b6b85d",
+    "parts/whatsnew.js": "820a2801a46acc2b7fe58c48a693794c07cabbd2c0d002fee2f116d4cb24382b"
+   },
+   "mutation": "the What's New re-point (Beta 1.272 replaces the 1.271 bullets): this proof's bullet pin still named the 1.271 entry while parts/whatsnew.js carried the 1.272 bullet - the standing per-round roll",
+   "red": "the un-rolled proof fails against the 1.272 What's New - observed in this round's run-proofs pass before the roll (55/78, the failing set exactly the bullet-pinning proofs)",
+   "green": "passes in the full manifest run on the fixed tree after the roll (78/78) - observed in this round",
+   "issued": "2026-11-22 beta-1272-arch2-round"
+  },
+  {
+   "id": "proof-1256-whatsnew-roll-1272",
+   "check": "tests/proof/proof-1256.mjs",
+   "kind": "historical",
+   "files": {
+    "tests/proof/proof-1256.mjs": "46a6a194c4b88d65659d25984f6802332fd7555b72fef7feb22f9aaf71b63d2e",
+    "parts/whatsnew.js": "820a2801a46acc2b7fe58c48a693794c07cabbd2c0d002fee2f116d4cb24382b"
+   },
+   "mutation": "the What's New re-point (Beta 1.272 replaces the 1.271 bullets): this proof's bullet pin still named the 1.271 entry while parts/whatsnew.js carried the 1.272 bullet - the standing per-round roll",
+   "red": "the un-rolled proof fails against the 1.272 What's New - observed in this round's run-proofs pass before the roll (55/78, the failing set exactly the bullet-pinning proofs)",
+   "green": "passes in the full manifest run on the fixed tree after the roll (78/78) - observed in this round",
+   "issued": "2026-11-22 beta-1272-arch2-round"
+  },
+  {
+   "id": "proof-1257-whatsnew-roll-1272",
+   "check": "tests/proof/proof-1257.mjs",
+   "kind": "historical",
+   "files": {
+    "tests/proof/proof-1257.mjs": "ab3dabc5497b011c128c619be9e74a040b97fb823f06eed6b07e787e2743b406",
+    "parts/whatsnew.js": "820a2801a46acc2b7fe58c48a693794c07cabbd2c0d002fee2f116d4cb24382b"
+   },
+   "mutation": "the What's New re-point (Beta 1.272 replaces the 1.271 bullets): this proof's bullet pin still named the 1.271 entry while parts/whatsnew.js carried the 1.272 bullet - the standing per-round roll",
+   "red": "the un-rolled proof fails against the 1.272 What's New - observed in this round's run-proofs pass before the roll (55/78, the failing set exactly the bullet-pinning proofs)",
+   "green": "passes in the full manifest run on the fixed tree after the roll (78/78) - observed in this round",
+   "issued": "2026-11-22 beta-1272-arch2-round"
+  },
+  {
+   "id": "proof-1259-whatsnew-roll-1272",
+   "check": "tests/proof/proof-1259.mjs",
+   "kind": "historical",
+   "files": {
+    "tests/proof/proof-1259.mjs": "95ab55bdca825c3e7fa701b2af55fa9b5bcf81805e537a39336d61f15d40165d",
+    "parts/whatsnew.js": "820a2801a46acc2b7fe58c48a693794c07cabbd2c0d002fee2f116d4cb24382b"
+   },
+   "mutation": "the What's New re-point (Beta 1.272 replaces the 1.271 bullets): this proof's bullet pin still named the 1.271 entry while parts/whatsnew.js carried the 1.272 bullet - the standing per-round roll",
+   "red": "the un-rolled proof fails against the 1.272 What's New - observed in this round's run-proofs pass before the roll (55/78, the failing set exactly the bullet-pinning proofs)",
+   "green": "passes in the full manifest run on the fixed tree after the roll (78/78) - observed in this round",
+   "issued": "2026-11-22 beta-1272-arch2-round"
+  },
+  {
+   "id": "proof-1262-whatsnew-roll-1272",
+   "check": "tests/proof/proof-1262.mjs",
+   "kind": "historical",
+   "files": {
+    "tests/proof/proof-1262.mjs": "baa83b6f2123ee4194537b9d3baef40a9e36e3f1da5f76ef52062dd56710c114",
+    "parts/whatsnew.js": "820a2801a46acc2b7fe58c48a693794c07cabbd2c0d002fee2f116d4cb24382b"
+   },
+   "mutation": "the What's New re-point (Beta 1.272 replaces the 1.271 bullets): this proof's bullet pin still named the 1.271 entry while parts/whatsnew.js carried the 1.272 bullet - the standing per-round roll",
+   "red": "the un-rolled proof fails against the 1.272 What's New - observed in this round's run-proofs pass before the roll (55/78, the failing set exactly the bullet-pinning proofs)",
+   "green": "passes in the full manifest run on the fixed tree after the roll (78/78) - observed in this round",
+   "issued": "2026-11-22 beta-1272-arch2-round"
+  },
+  {
+   "id": "proof-1263-whatsnew-roll-1272",
+   "check": "tests/proof/proof-1263.mjs",
+   "kind": "historical",
+   "files": {
+    "tests/proof/proof-1263.mjs": "2fb92680038d29a218c023339b86f96855b42745ef929c52fefc99b76137ada7",
+    "parts/whatsnew.js": "820a2801a46acc2b7fe58c48a693794c07cabbd2c0d002fee2f116d4cb24382b"
+   },
+   "mutation": "the What's New re-point (Beta 1.272 replaces the 1.271 bullets): this proof's bullet pin still named the 1.271 entry while parts/whatsnew.js carried the 1.272 bullet - the standing per-round roll",
+   "red": "the un-rolled proof fails against the 1.272 What's New - observed in this round's run-proofs pass before the roll (55/78, the failing set exactly the bullet-pinning proofs)",
+   "green": "passes in the full manifest run on the fixed tree after the roll (78/78) - observed in this round",
+   "issued": "2026-11-22 beta-1272-arch2-round"
+  },
+  {
+   "id": "proof-1264-whatsnew-roll-1272",
+   "check": "tests/proof/proof-1264.mjs",
+   "kind": "historical",
+   "files": {
+    "tests/proof/proof-1264.mjs": "95aa6bccfee2a9a56f5388fc9f6788fc4defbfcd4e230c32ef8088edb76a1891",
+    "parts/whatsnew.js": "820a2801a46acc2b7fe58c48a693794c07cabbd2c0d002fee2f116d4cb24382b"
+   },
+   "mutation": "the What's New re-point (Beta 1.272 replaces the 1.271 bullets): this proof's bullet pin still named the 1.271 entry while parts/whatsnew.js carried the 1.272 bullet - the standing per-round roll",
+   "red": "the un-rolled proof fails against the 1.272 What's New - observed in this round's run-proofs pass before the roll (55/78, the failing set exactly the bullet-pinning proofs)",
+   "green": "passes in the full manifest run on the fixed tree after the roll (78/78) - observed in this round",
+   "issued": "2026-11-22 beta-1272-arch2-round"
+  },
+  {
+   "id": "proof-1265-whatsnew-roll-1272",
+   "check": "tests/proof/proof-1265.mjs",
+   "kind": "historical",
+   "files": {
+    "tests/proof/proof-1265.mjs": "9d57067264dc94374eb0b70949a886eb9a4988943e486e7a5d9b926ab83d0be5",
+    "parts/whatsnew.js": "820a2801a46acc2b7fe58c48a693794c07cabbd2c0d002fee2f116d4cb24382b"
+   },
+   "mutation": "the What's New re-point (Beta 1.272 replaces the 1.271 bullets): this proof's bullet pin still named the 1.271 entry while parts/whatsnew.js carried the 1.272 bullet - the standing per-round roll",
+   "red": "the un-rolled proof fails against the 1.272 What's New - observed in this round's run-proofs pass before the roll (55/78, the failing set exactly the bullet-pinning proofs)",
+   "green": "passes in the full manifest run on the fixed tree after the roll (78/78) - observed in this round",
+   "issued": "2026-11-22 beta-1272-arch2-round"
+  },
+  {
+   "id": "proof-1266-whatsnew-roll-1272",
+   "check": "tests/proof/proof-1266.mjs",
+   "kind": "historical",
+   "files": {
+    "tests/proof/proof-1266.mjs": "dbfe3003d099016c2d8ea4325154451cfa5220508fa0aecb483da9e029c393d9",
+    "parts/whatsnew.js": "820a2801a46acc2b7fe58c48a693794c07cabbd2c0d002fee2f116d4cb24382b"
+   },
+   "mutation": "the What's New re-point (Beta 1.272 replaces the 1.271 bullets): this proof's bullet pin still named the 1.271 entry while parts/whatsnew.js carried the 1.272 bullet - the standing per-round roll",
+   "red": "the un-rolled proof fails against the 1.272 What's New - observed in this round's run-proofs pass before the roll (55/78, the failing set exactly the bullet-pinning proofs)",
+   "green": "passes in the full manifest run on the fixed tree after the roll (78/78) - observed in this round",
+   "issued": "2026-11-22 beta-1272-arch2-round"
+  },
+  {
+   "id": "proof-1267-whatsnew-roll-1272",
+   "check": "tests/proof/proof-1267.mjs",
+   "kind": "historical",
+   "files": {
+    "tests/proof/proof-1267.mjs": "36fb8037d3c4f4561052bcd589244ccf109679afb4ee6e6fae05903fe9131abc",
+    "parts/whatsnew.js": "820a2801a46acc2b7fe58c48a693794c07cabbd2c0d002fee2f116d4cb24382b"
+   },
+   "mutation": "the What's New re-point (Beta 1.272 replaces the 1.271 bullets): this proof's bullet pin still named the 1.271 entry while parts/whatsnew.js carried the 1.272 bullet - the standing per-round roll",
+   "red": "the un-rolled proof fails against the 1.272 What's New - observed in this round's run-proofs pass before the roll (55/78, the failing set exactly the bullet-pinning proofs)",
+   "green": "passes in the full manifest run on the fixed tree after the roll (78/78) - observed in this round",
+   "issued": "2026-11-22 beta-1272-arch2-round"
+  },
+  {
+   "id": "proof-1268-whatsnew-roll-1272",
+   "check": "tests/proof/proof-1268.mjs",
+   "kind": "historical",
+   "files": {
+    "tests/proof/proof-1268.mjs": "149ddb840ed47bcf1d3684783f3a626a039d8ecf41018be5716f68da173e4eb7",
+    "parts/whatsnew.js": "820a2801a46acc2b7fe58c48a693794c07cabbd2c0d002fee2f116d4cb24382b"
+   },
+   "mutation": "the What's New re-point (Beta 1.272 replaces the 1.271 bullets): this proof's bullet pin still named the 1.271 entry while parts/whatsnew.js carried the 1.272 bullet - the standing per-round roll",
+   "red": "the un-rolled proof fails against the 1.272 What's New - observed in this round's run-proofs pass before the roll (55/78, the failing set exactly the bullet-pinning proofs)",
+   "green": "passes in the full manifest run on the fixed tree after the roll (78/78) - observed in this round",
+   "issued": "2026-11-22 beta-1272-arch2-round"
+  },
+  {
+   "id": "proof-1269-whatsnew-roll-1272",
+   "check": "tests/proof/proof-1269.mjs",
+   "kind": "historical",
+   "files": {
+    "tests/proof/proof-1269.mjs": "5de57e2f94e3a31cd9937ad34a141f3ca8c5288aef678cade206569f70be6e22",
+    "parts/whatsnew.js": "820a2801a46acc2b7fe58c48a693794c07cabbd2c0d002fee2f116d4cb24382b"
+   },
+   "mutation": "the What's New re-point (Beta 1.272 replaces the 1.271 bullets): this proof's bullet pin still named the 1.271 entry while parts/whatsnew.js carried the 1.272 bullet - the standing per-round roll",
+   "red": "the un-rolled proof fails against the 1.272 What's New - observed in this round's run-proofs pass before the roll (55/78, the failing set exactly the bullet-pinning proofs)",
+   "green": "passes in the full manifest run on the fixed tree after the roll (78/78) - observed in this round",
+   "issued": "2026-11-22 beta-1272-arch2-round"
+  },
+  {
+   "id": "proof-1270-whatsnew-roll-1272",
+   "check": "tests/proof/proof-1270.mjs",
+   "kind": "historical",
+   "files": {
+    "tests/proof/proof-1270.mjs": "880b105d6db1db609607decc1db0ce8ace916fac32860d2e2709e70fdbeb11bd",
+    "parts/whatsnew.js": "820a2801a46acc2b7fe58c48a693794c07cabbd2c0d002fee2f116d4cb24382b"
+   },
+   "mutation": "the What's New re-point (Beta 1.272 replaces the 1.271 bullets): this proof's bullet pin still named the 1.271 entry while parts/whatsnew.js carried the 1.272 bullet - the standing per-round roll",
+   "red": "the un-rolled proof fails against the 1.272 What's New - observed in this round's run-proofs pass before the roll (55/78, the failing set exactly the bullet-pinning proofs)",
+   "green": "passes in the full manifest run on the fixed tree after the roll (78/78) - observed in this round",
+   "issued": "2026-11-22 beta-1272-arch2-round"
+  },
+  {
+   "id": "proof-1271-whatsnew-roll-1272",
+   "check": "tests/proof/proof-1271.mjs",
+   "kind": "historical",
+   "files": {
+    "tests/proof/proof-1271.mjs": "ea20bb27e0f5f0cc96095ffd4cf307f2763b24160d362f2e81bb72465e1431c1",
+    "parts/whatsnew.js": "820a2801a46acc2b7fe58c48a693794c07cabbd2c0d002fee2f116d4cb24382b"
+   },
+   "mutation": "the What's New re-point (Beta 1.272 replaces the 1.271 bullets): this proof's bullet pin still named the 1.271 entry while parts/whatsnew.js carried the 1.272 bullet - the standing per-round roll",
+   "red": "the un-rolled proof fails against the 1.272 What's New - observed in this round's run-proofs pass before the roll (55/78, the failing set exactly the bullet-pinning proofs)",
+   "green": "passes in the full manifest run on the fixed tree after the roll (78/78) - observed in this round",
+   "issued": "2026-11-22 beta-1272-arch2-round"
   }
  ]
 }

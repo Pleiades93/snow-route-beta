@@ -19,10 +19,13 @@ import vm from 'node:vm';
 // data.hist, so a recovery file's restore dropped the same raw entries.
 //
 // The fix: both writes go through historyForWrite, like every other history
-// writer since A-05. This proof extracts the shipped functions verbatim and
-// runs them in a vm against planted state. On unmodified main the two
-// preservation checks FAIL (the phantom-removal checks pass both ways);
-// with the fix all checks pass.
+// writer since A-05. (Beta 1.272, architecture programme #2: the merge and
+// the rollback moved into the HIST repository - the rollback is
+// HIST.dropPhantom, the recovery export writes HIST.serialise() - with the
+// semantics unchanged; this proof drives them there.) This proof extracts
+// the shipped code verbatim and runs it in a vm against planted state. On
+// unmodified main the two preservation checks FAIL (the phantom-removal
+// checks pass both ways); with the fix all checks pass.
 
 const app1 = readFileSync('parts/app1.js', 'utf8');
 const app4 = readFileSync('parts/app4.js', 'utf8');
@@ -39,7 +42,18 @@ function extractFn(src, name) {
   throw new Error('unbalanced braces extracting ' + name);
 }
 
-const forWriteSrc = extractFn(app1, 'historyForWrite(list)');
+function extractObj(src, name) {
+  const at = src.indexOf('const ' + name + ' = {');
+  if (at < 0) throw new Error('object not found: ' + name);
+  const open = src.indexOf('{', at);
+  let depth = 0;
+  for (let i = open; i < src.length; i++) {
+    if (src[i] === '{') depth++;
+    else if (src[i] === '}') { depth--; if (depth === 0) return src.slice(at, i + 1) + ';'; }
+  }
+  throw new Error('unbalanced braces extracting ' + name);
+}
+const histSrc = extractObj(app1, 'HIST');
 const reconcileSrc = extractFn(app1, 'reconcileInterruptedFinish(rawHistory)');
 const actionSrc = extractFn(app1, 'finishReconcileAction(startMs, lastStartedMs, boardEmpty)');
 const boardMatchSrc = extractFn(app1, 'finishBoardMatch(entry, P, T, names)');
@@ -65,7 +79,7 @@ function check(name, cond, detail) {
 {
   const ctx = vm.createContext({});
   vm.runInContext(`
-let history = [], histRawList = null, histRawView = null, runStart = 0, pieces = {}, pieceTimes = {};
+let history = [], runStart = 0, pieces = {}, pieceTimes = {};
 const STREETNAMES = ['Velmar', 'Mellings'];
 const LS = { hist: 'planted.hist', start: 'planted.start', finclean: 'planted.finclean' };
 const __writes = [];
@@ -74,12 +88,12 @@ function txDel(k) { __writes.push([k, null]); return { ok: true }; }
 function lsGet(k) { return null; }
 function parseJ(t, fb) { if (t == null) return fb; try { return JSON.parse(t); } catch (e) { return fb; } }
 `, ctx);
-  vm.runInContext(forWriteSrc + '\n' + actionSrc + '\n' + boardMatchSrc + '\n' + noRunSrc + '\n' + reconcileSrc, ctx);
+  vm.runInContext(histSrc + '\n' + actionSrc + '\n' + boardMatchSrc + '\n' + noRunSrc + '\n' + reconcileSrc, ctx);
   const out = vm.runInContext(`
 const rawList = [${JSON.stringify(E_FOREIGN)}, ${JSON.stringify(E_PHANTOM_RAW)}, null];
-histRawList = rawList;
-histRawView = [null, ${JSON.stringify(E_PHANTOM_VIEW)}, null];
-history = [histRawView[1]];
+HIST._rawList = rawList;
+HIST._rawView = [null, ${JSON.stringify(E_PHANTOM_VIEW)}, null];
+history = [HIST._rawView[1]];
 runStart = 1700000000000;
 pieces = { Velmar: [1], Mellings: [0] };
 pieceTimes = { Velmar: [], Mellings: [] };
@@ -99,7 +113,7 @@ reconcileInterruptedFinish(rawList);
 {
   const ctx = vm.createContext({});
   vm.runInContext(`
-let history = [], histRawList = null, histRawView = null, runStart = 0;
+let history = [], runStart = 0;
 let routeLoaded = true, activeRoute = { id: 'r1' }, recoveryDisclosure = null;
 const RAW_READ_FAILED = '__RAW_READ_FAILED__';
 const BOARD = { serialiseLive: () => ({ sides: 'S', done: 'D', times: 'T', via: 'V', cov: 'C' }) };
@@ -112,11 +126,11 @@ const LS_GLOBAL = { night: 'k.night', nightExp: 'k.nightExp' };
 const settings = { vib: true, chime: false, chimeSound: 'ding' };
 const fixLog = [];
 `, ctx);
-  vm.runInContext(forWriteSrc + '\n' + recoverySrc, ctx);
+  vm.runInContext(histSrc + '\n' + recoverySrc, ctx);
   const out = vm.runInContext(`
-histRawList = [${JSON.stringify(E_FOREIGN)}, ${JSON.stringify(E_KEEP_RAW)}];
-histRawView = [null, ${JSON.stringify(E_KEEP_VIEW)}];
-history = [histRawView[1]];
+HIST._rawList = [${JSON.stringify(E_FOREIGN)}, ${JSON.stringify(E_KEEP_RAW)}];
+HIST._rawView = [null, ${JSON.stringify(E_KEEP_VIEW)}];
+history = [HIST._rawView[1]];
 const o = recoveryObj();
 ({ app: o && o.app, hist: o ? JSON.parse(o.routes.r1.hist) : null })
 `, ctx);
