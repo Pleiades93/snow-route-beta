@@ -67,7 +67,7 @@ for (const sig of ['SIGINT', 'SIGTERM']) {
 // it sweeps residue older than an hour (left behind by killed runners).
 // Patterns stay narrow, only directories are removed, and a cleanup
 // failure never affects a verdict.
-const DRIVE_TMP_BASE = path.join(os.homedir(), '.cache', 'snowroute-drive-tmp');
+const DRIVE_TMP_BASE = path.join(os.homedir(), '.cache', 'sdt'); // SHORT on purpose: Chromium's singleton socket lives under TMPDIR and dies (SIGABRT, "Socket path too long") past the ~108-char unix-socket limit - the drive name stays OUT of the path for the same reason (fixture-orphan-throw's long name was the first to cross it, CI 2026-11-22)
 const RESIDUE = [/^org\.chromium\.Chromium\./, /profile-/];
 const REAP_DIRS = [...new Set([os.tmpdir(), '/tmp'])];
 function reapResidue(dir, minMtime, maxMtime) {
@@ -88,7 +88,7 @@ function runOne(name) {
   return new Promise(resolve => {
     const startedAt = Date.now();
     let driveTmp = null;
-    try { fs.mkdirSync(DRIVE_TMP_BASE, { recursive: true }); driveTmp = fs.mkdtempSync(path.join(DRIVE_TMP_BASE, name + '-')); } catch (e) {}
+    try { fs.mkdirSync(DRIVE_TMP_BASE, { recursive: true }); driveTmp = fs.mkdtempSync(path.join(DRIVE_TMP_BASE, 'd')); } catch (e) {}
     const env = driveTmp ? { ...process.env, TMPDIR: driveTmp } : process.env;
     const p = spawn(process.execPath, [path.join(HERE, name + '.mjs')], { cwd: HERE, env, detached: true });
     liveGroups.add(p);
