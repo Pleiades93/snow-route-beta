@@ -120,7 +120,7 @@ function recoveryObj() { // Beta 1.95 (deep audit SR-194-02): the RECOVERY backu
   data.times = ser.times;
   data.via = ser.via;
   data.notes = JSON.stringify(notes);
-  data.hist = JSON.stringify(historyForWrite(history)); // Beta 1.250 (cross-audit fix round): the recovery export writes the A-05 merge like every other history writer - the bare view would ship a file whose restore permanently drops the raw entries the load-time strip is hiding (the same bypass class as N-03)
+  data.hist = HIST.serialise(); // Beta 1.250 (cross-audit fix round): the recovery export writes the A-05 merge like every other history writer (through the repository since Beta 1.272) - the bare view would ship a file whose restore permanently drops the raw entries the load-time strip is hiding (the same bypass class as N-03)
   data.trail = JSON.stringify(trail);
   data.cov = ser.cov;
   data.sess = JSON.stringify(trailSessions);

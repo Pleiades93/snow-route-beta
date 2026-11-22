@@ -104,7 +104,7 @@ const rtRaw = await ev(`(() => { const n = STREETNAMES.find(x => STRETCH[x].part
   togglePiece(n, 0, 0); togglePiece(n, 0, 1);
   notes[n] = [{ k: 'hazard', at: new Date().toISOString() }]; saveAll();
   history = [{ at: new Date().toISOString(), items: { [n]: new Date().toISOString() }, via: {}, notes: {}, km: 0 }];
-  saveHistory(); return JSON.stringify({ n, bak: buildBackup() }); })()`);
+  HIST.save(); return JSON.stringify({ n, bak: buildBackup() }); })()`);
 const RT = JSON.parse(rtRaw);
 await ev(`(() => { localStorage.clear(); location.reload(); return true; })()`); await sleep(3000);
 await ev(`loadRoute('5w'); true`); await sleep(600); // Beta 1.76: a reload lands on the route menu
@@ -215,7 +215,7 @@ const ok = (name, cond) => R.checks.push([name, cond === true]);
 const toast = async () => await ev(`(() => $('toast').textContent)()`);
 await sleep(3200);
 
-await ev(`(() => { markDone('Columbus', 'tap'); saveAll(); saveHistory(); window.__good = buildBackup(); return true; })()`);
+await ev(`(() => { markDone('Columbus', 'tap'); saveAll(); HIST.save(); window.__good = buildBackup(); return true; })()`);
 await sleep(300);
 await ev(`(() => { markDone('Galloway', 'tap'); return true; })()`);
 await sleep(300);
@@ -226,7 +226,7 @@ const B1 = JSON.parse(await ev(`(() => JSON.stringify([...doneSet]))()`));
 ok('B1 valid backup restores exactly', JSON.stringify(B1) === '["Columbus"]');
 
 // recapture AFTER the reload wiped window.__good (the drive65 bug)
-await ev(`(() => { saveAll(); saveHistory(); window.__good = buildBackup(); markDone('Galloway', 'tap'); return true; })()`);
+await ev(`(() => { saveAll(); HIST.save(); window.__good = buildBackup(); markDone('Galloway', 'tap'); return true; })()`);
 await sleep(300);
 
 await ev(`(() => { const p = JSON.parse(window.__good); p.v = 99; $('xText').value = JSON.stringify(p); doRestore(); return true; })()`);

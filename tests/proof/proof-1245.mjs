@@ -75,7 +75,7 @@ check('10: the lengths splice in lockstep with the pool (seed pick and growth jo
 // ---------- the frame ----------
 const wnM = whatsnew.match(/items: \["([^"]*)"/); // Beta 1.259 premise update: the extractor took the entry's ONLY item (items: ["..."] end-bracketed); the 1.259 entry carries three bullets (one per change in the round, per the addenda), so the match now takes the FIRST item - the claim below (the current entry's lead bullet, the cap, no em dash) is unchanged
 check('11: What\'s New carries the CURRENT bullet (rolled to 1.251: this check tracks the current entry each round), within the 108-char cap (and stays em-dash free)',
-  !!wnM && wnM[1] === 'Tap a route in the list to open its menu: Load, or Delete. Every route can be deleted now.' && wnM[1].length <= 108 && !whatsnew.includes('—'));
+  !!wnM && wnM[1] === 'Under the hood: clean history loads, saves and restores from one place, the same way everywhere.' && wnM[1].length <= 108 && !whatsnew.includes('—'));
 check('12: the CHANGELOG top entry is Beta 1.245',
   changelog.indexOf('## Beta 1.245') > -1 && changelog.indexOf('## Beta 1.245') < changelog.indexOf('## Beta 1.244'));
 

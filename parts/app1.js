@@ -485,17 +485,57 @@ const STREETSET = new Set();
 // its slot. The load body is the pre-1.76 eval-time block VERBATIM (same
 // sanitizers, same order), wrapped.
 let doneSet = new Set(), doneTimes = {}, doneVia = {}, notes = {}, history = [], runStart = 0, trail = [], trailSessions = [], coveredIdx = {}, pieces = {}, pieceTimes = {};
-/** @param {HistoryEntry[]} list @param {HistoryEntry} entry @returns {HistoryEntry[]} */ function appendHistory(list, entry) { return [...list, entry]; } // Beta 1.167 (run/pace fix round, B1 - Andrew's requirement, run/pace audit RP-03/RP-01): THE HISTORY CAP IS GONE. Through 1.166 the archive was capped at 10 cleans per route - trimHistory (save), trimHistoryForFinish (finish) and capHistoryList (load + app4's restore) enforced one eviction rule (oldest non-full first, else oldest overall) at four points, and clean #11 silently erased an older clean; an interrupted finish at the cap could lose the evicted clean for good even though the finish itself rolled back. All four points are retired together: this append never drops, saveHistory writes history whole, loadRouteState below keeps everything its (linear) sanitizer passes, and app4's pushField stores a backup's history whole. The 1.152 NV round's crafted-oversize protection (NV4) is re-homed, not lost: the quadratic trim it defended against no longer exists, every remaining history consumer is linear (the load sanitizer, the save stringify, the pace render, the backup scan), and an oversize planted value is bounded by localStorage's own quota and the restore's verified write set. Retention is fixture-proven in tests/browser/selftest-history.mjs, the cap's absence in selftest-nv1152.mjs, and both at page level in drive177/drive186.
-let histRawList = null, histRawView = null; // 2026-11-15 (denylist fix round, A-05): the load-time history snapshot - histRawList is the raw stored array (the second parse in loadRouteState), histRawView runs parallel to it: the view entry each raw entry produced at load, or null when the sanitizer dropped it. Writers persist historyForWrite(...), never the bare view: a load-time strip is a view, never a write (the rule dropPhantom already honours for its rollback write).
-/** @param {HistoryEntry[]} list @returns {HistoryEntry[]} */ function historyForWrite(list) { // 2026-11-15 (A-05): the array a history writer may persist. Raw entries the sanitizer dropped ride back verbatim (invisible in the view, undeletable from it, still storage's); surviving entries are written in their RAW form - entries are never mutated after load (deletes splice the array, finishes append), so raw is the stored truth and the strip never becomes permanent; entries appended since load ride at the end, in view order. A surviving entry missing from `list` was deleted by the user this session and stays deleted. No snapshot (no load ran for this slot, or the route was unloaded): the list is the whole truth and is written as-is.
-  if (!histRawList || !histRawView) return list;
-  const alive = new Set(list); const seen = new Set(); const out = [];
-  for (let i = 0; i < histRawList.length; i++) { const v = histRawView[i]; if (v == null) { out.push(histRawList[i]); continue; } seen.add(v); if (alive.has(v)) out.push(histRawList[i]); }
-  for (const h of list) if (!seen.has(h)) out.push(h);
-  return out;
-}
-/** @returns {void} */ function resetHistorySnapshot() { histRawList = null; histRawView = null; } // 2026-11-15 (A-05): unloadRouteToBoot (app4) calls this when it empties the route state - the snapshot dies with the route it describes, and a stale one must never merge into another route's slot. A call, not a foreign write: app4 never assigns app1's bindings directly (the foreign-write census discipline).
-/** @returns {boolean} */ function saveHistory() { return lsSet(LS.hist, JSON.stringify(historyForWrite(history))); } // Beta 1.63 (audit F04): the delete-clean handler branches on this. Beta 1.167 (B1): no trim on the way out - history is written whole, however long it grows
+const HIST = { // Beta 1.272 (architecture programme #2): the history repository - the ONE owner of the clean-history record's load, projection, append, delete, identified-finish rollback and serialisation. The `history` binding above stays the public view (the projection every reader consumes); the A-05 raw/view correspondence below is private to this object, and every writer persists through it - no caller hand-builds the merge or touches the snapshot again. The A-04/A-05/B1 semantics are moved, not reinterpreted; their comments ride with the code.
+  _rawList: null, _rawView: null, // 2026-11-15 (denylist fix round, A-05): the load-time history snapshot - _rawList is the raw stored array (the second parse in loadFrom), _rawView runs parallel to it: the view entry each raw entry produced at load, or null when the sanitizer dropped it. Writers persist forWrite(...), never the bare view: a load-time strip is a view, never a write (the rule dropPhantom honours for its rollback write).
+  /** @param {string} text @returns {HistoryEntry[]} */ loadFrom(text) { // the load half: parses the stored text TWICE (Beta 1.170, Carbon fix round Phase 2, A-04: the sanitizer below mutates the surviving entries in place, so the reconciliation at the end of the load needs its own untouched copy of the stored array - the raw parse returned here), sanitizes into the view, and records the A-05 snapshot as it goes
+    const parsed = parseJ(text, []);
+    const raw = parseJ(text, []);
+    // History (production): chronological (oldest first); items is a street->time MAP (legacy array entries migrate to it).
+    // Sanitized at load: real entries only, real streets only, times null or parseable - anything else is dropped, never crashes.
+    const list = Array.isArray(parsed) ? parsed : [];
+    // 2026-11-15 (A-05): the sanitizer runs as ONE indexed pass over the parsed array - the same predicates and the same items rewrite as the filter/map/filter it replaces, in the same order - and records the A-05 snapshot as it goes: _rawList is the raw parse (the same text parsed twice, so index i is the same entry in both), _rawView[i] is the view entry raw entry i produced, or null when the pass dropped it. The view the user works with is unchanged; the snapshot is what lets the writers keep the strip a view (forWrite).
+    this._rawList = Array.isArray(raw) ? raw : [];
+    this._rawView = [];
+    const _view = [];
+    for (let i = 0; i < list.length; i++) {
+      const h = list[i]; let v = null;
+      if (h && typeof h === 'object' && !Array.isArray(h) && !isNaN(Date.parse(h.at)) && h.items && typeof h.items === 'object') {
+        const m = {};
+        if (Array.isArray(h.items)) { for (const n of h.items) if (typeof n === 'string' && STREETSET.has(n)) m[n] = (h.times && typeof h.times[n] === 'string' && !isNaN(Date.parse(h.times[n]))) ? h.times[n] : null; }
+        else { for (const n of Object.keys(h.items)) { const t = h.items[n]; if (STREETSET.has(n) && (t === null || (typeof t === 'string' && !isNaN(Date.parse(t))))) m[n] = t; } }
+        h.items = m;
+        if (Object.keys(m).length > 0) v = h;
+      }
+      this._rawView.push(v);
+      if (v) _view.push(v);
+    }
+    history = _view;
+    // Beta 1.167 (B1): NO load cap (through 1.166 this line trimmed a planted oversize history to the writers' 10 with the linear capHistoryList). History is retained whole now; the sanitizer above is linear in the stored size, so a planted oversize array costs one linear pass and is bounded by the storage quota itself - and the quadratic trim such an array used to threaten no longer exists (appended).
+    return raw;
+  },
+  /** @returns {HistoryEntry[]} */ rawList() { return Array.isArray(this._rawList) ? this._rawList : []; }, // the raw parse reconcileInterruptedFinish judges (A-04) - the same array loadFrom returned
+  /** @param {HistoryEntry[]} list @returns {HistoryEntry[]} */ forWrite(list) { // 2026-11-15 (A-05): the array a history writer may persist. Raw entries the sanitizer dropped ride back verbatim (invisible in the view, undeletable from it, still storage's); surviving entries are written in their RAW form - entries are never mutated after load (deletes splice the array, finishes append), so raw is the stored truth and the strip never becomes permanent; entries appended since load ride at the end, in view order. A surviving entry missing from `list` was deleted by the user this session and stays deleted. No snapshot (no load ran for this slot, or the route was unloaded): the list is the whole truth and is written as-is.
+    if (!this._rawList || !this._rawView) return list;
+    const alive = new Set(list); const seen = new Set(); const out = [];
+    for (let i = 0; i < this._rawList.length; i++) { const v = this._rawView[i]; if (v == null) { out.push(this._rawList[i]); continue; } seen.add(v); if (alive.has(v)) out.push(this._rawList[i]); }
+    for (const h of list) if (!seen.has(h)) out.push(h);
+    return out;
+  },
+  /** @param {HistoryEntry[]} [list] @returns {string} */ serialise(list) { return JSON.stringify(this.forWrite(list === undefined ? history : list)); }, // the one serialised form every history writer persists (the finish archive + its undo, the recovery export, the ordinary save, the delete save)
+  /** @returns {boolean} */ save() { return lsSet(LS.hist, this.serialise()); }, // Beta 1.63 (audit F04): the delete-clean handler branches on this. Beta 1.167 (B1): no trim on the way out - history is written whole, however long it grows
+  /** @param {HistoryEntry} entry @returns {HistoryEntry[]} */ appended(entry) { return [...history, entry]; }, // Beta 1.167 (run/pace fix round, B1 - Andrew's requirement, run/pace audit RP-03/RP-01): THE HISTORY CAP IS GONE. Through 1.166 the archive was capped at 10 cleans per route - trimHistory (save), trimHistoryForFinish (finish) and capHistoryList (load + app4's restore) enforced one eviction rule (oldest non-full first, else oldest overall) at four points, and clean #11 silently erased an older clean; an interrupted finish at the cap could lose the evicted clean for good even though the finish itself rolled back. All four points are retired together: this append never drops, save writes history whole, loadFrom above keeps everything its (linear) sanitizer passes, and app4's pushField stores a backup's history whole. The 1.152 NV round's crafted-oversize protection (NV4) is re-homed, not lost: the quadratic trim it defended against no longer exists, every remaining history consumer is linear (the load sanitizer, the save stringify, the pace render, the backup scan), and an oversize planted value is bounded by localStorage's own quota and the restore's verified write set. Retention is fixture-proven in tests/browser/selftest-history.mjs, the cap's absence in selftest-nv1152.mjs, and both at page level in drive177/drive186.
+  /** @param {number} i @returns {void} */ deleteAt(i) { history.splice(i, 1); }, // the delete-clean mutation (app3) - the save that persists it is the caller's (the handler branches on save()'s result)
+  /** @param {HistoryEntry[]} list @returns {void} */ replaceView(list) { history = list; }, // the finish commit (app3): the transaction has already persisted this list through serialise; the view adopts it whole
+  /** @param {*} sig @param {*} rawLast @param {*} last @param {number} lastMs @returns {boolean} */ dropPhantom(sig, rawLast, last, lastMs) { // reconcileInterruptedFinish's verified rollback, under the repository's roof: storage loses the signature entry only (when the signature came from the raw array, everything else storage holds stays byte-for-byte - a load-time strip is a view, never a write); memory drops the phantom too when the sanitized tail IS that entry (same run identity), and needs no drop when the sanitizer already removed it
+    const rawList = this.rawList();
+    const src = (sig === rawLast && rawLast !== null) ? rawList : history;
+    if (!txSet(LS.hist, JSON.stringify(src === rawList ? src.slice(0, -1) : this.forWrite(src.slice(0, -1)))).ok) return false; // Beta 1.250 (cross-audit fix round, N-03): the FALLBACK branch (raw tail not an entry object, so the signature stands in the sanitized view) writes the forWrite merge like every other history writer (A-05): the phantom, a surviving entry missing from the slice, stays deleted; the dropped raw entries ride back verbatim
+    if (src === rawList) { this._rawList.pop(); this._rawView.pop(); } // 2026-11-15 (A-05): the A-05 snapshot pops in step with the raw array this write just shortened, so a later ordinary save cannot resurrect the phantom from the snapshot
+    if (last && last.runId && +last.runId === lastMs) history = history.slice(0, -1);
+    return true;
+  },
+  /** @returns {void} */ unload() { history = []; this._rawList = null; this._rawView = null; }, // 2026-11-15 (A-05): unloadRouteToBoot (app5) calls this when it empties the route state - the snapshot dies with the route it describes, and a stale one must never merge into another route's slot. A call, not a foreign write: app5 never assigns app1's bindings directly (the foreign-write census discipline).
+};
 let startDirty = false; // Beta 1.92 (deep audit F05): a failed start write/delete arms this retry, walked by the flushAux heartbeat until it lands - a stale start key must never resurrect a finished run on the next boot
 let snapDirty = false; // Beta 1.94 (deep audit SR-193-02): the same retry discipline for the persisted pre-Start snapshot (saveSnap, app3) - a failed snapshot write is retried by flushAux until it lands
 /** @returns {StorageOutcome} */ function saveStart() { const ok = runStart ? lsSet(LS.start, String(runStart)) : lsDel(LS.start); startDirty = !ok; return ok ? storeOk() : storeFail('start', true); } // Beta 1.57: reports its result like every other write, for the saveAll contract
@@ -655,31 +695,7 @@ notes = parseJ(lsGet(LS.notes), {});
 // an object text rendered '[object Object]' in note lines and a bad at rendered 'NaN:NaN AM' flag times).
 if (!notes || typeof notes !== 'object' || Array.isArray(notes)) notes = {};
 Object.keys(notes).forEach(n => { if (!STREETSET.has(n) || !Array.isArray(notes[n])) delete notes[n]; else notes[n] = notes[n].filter(f => f && typeof f === 'object' && typeof f.k === 'string' && (f.text === undefined || typeof f.text === 'string') && (f.at === undefined || (typeof f.at === 'string' && !isNaN(Date.parse(f.at))))); });
-const _histText = lsGet(LS.hist);
-history = parseJ(_histText, []);
-const rawHistory = parseJ(_histText, []); // Beta 1.170 (Carbon fix round Phase 2, A-04): a SECOND parse of the same text - the sanitizer below mutates the surviving entries in place, so the reconciliation at the end of this load needs its own untouched copy of the stored array (see reconcileInterruptedFinish).
-// History (production): chronological (oldest first); items is a street->time MAP (legacy array entries migrate to it).
-// Sanitized at load: real entries only, real streets only, times null or parseable - anything else is dropped, never crashes.
-if (!Array.isArray(history)) history = [];
-// 2026-11-15 (denylist fix round, A-05): the sanitizer runs as ONE indexed pass over the parsed array - the same predicates and the same items rewrite as the filter/map/filter it replaces, in the same order - and records the A-05 snapshot as it goes: histRawList is the raw parse (rawHistory below, the same text parsed twice, so index i is the same entry in both), histRawView[i] is the view entry raw entry i produced, or null when the pass dropped it. The view the user works with is unchanged; the snapshot is what lets the writers keep the strip a view (historyForWrite).
-histRawList = Array.isArray(rawHistory) ? rawHistory : [];
-histRawView = [];
-{ const _view = [];
-  for (let i = 0; i < history.length; i++) {
-    const h = history[i]; let v = null;
-    if (h && typeof h === 'object' && !Array.isArray(h) && !isNaN(Date.parse(h.at)) && h.items && typeof h.items === 'object') {
-      const m = {};
-      if (Array.isArray(h.items)) { for (const n of h.items) if (typeof n === 'string' && STREETSET.has(n)) m[n] = (h.times && typeof h.times[n] === 'string' && !isNaN(Date.parse(h.times[n]))) ? h.times[n] : null; }
-      else { for (const n of Object.keys(h.items)) { const t = h.items[n]; if (STREETSET.has(n) && (t === null || (typeof t === 'string' && !isNaN(Date.parse(t))))) m[n] = t; } }
-      h.items = m;
-      if (Object.keys(m).length > 0) v = h;
-    }
-    histRawView.push(v);
-    if (v) _view.push(v);
-  }
-  history = _view;
-}
-// Beta 1.167 (B1): NO load cap (through 1.166 this line trimmed a planted oversize history to the writers' 10 with the linear capHistoryList). History is retained whole now; the sanitizer above is linear in the stored size, so a planted oversize array costs one linear pass and is bounded by the storage quota itself - and the quadratic trim such an array used to threaten no longer exists (appendHistory).
+const rawHistory = HIST.loadFrom(lsGet(LS.hist)); // Beta 1.272 (#2): the repository parses, sanitizes and snapshots; the raw parse it returns is reconcileInterruptedFinish's judge (A-04)
 // Run start (production): epoch milliseconds, stored as a bare digit string (NOT JSON).
 runStart = 0;
 try { const s = lsGet(LS.start); runStart = (typeof s === 'string' && /^\d+$/.test(s) && isFinite(+s) && +s >= 946684800000 && +s <= 4102444800000) ? +s : 0; } catch (e) { runStart = 0; } // Beta 1.150 (security-audit fix round, finding restore-start-scalar-unvalidated, loader half): the stored start is parsed as strictly as the restore now validates it - a digit string inside the epoch-ms band. The old '+lsGet(...) || 0' coerced a crafted '1' into a live phantom run (and 'Infinity' into an endless one) whose Cancel wiped the route; every other epoch this loader accepts is band-checked the same way (trail sessions and trail points, below)
@@ -705,16 +721,9 @@ BOARD.loadSides();
   const sig = (rawLast && typeof rawLast === 'object' && !Array.isArray(rawLast)) ? rawLast : last; // a raw tail that is not an entry object can carry no run identity - the sanitized tail stands in for it
   const lastMs = sig && sig.runId ? (+sig.runId || 0) : 0; // Beta 1.104 (CG-103-02): the entry's run identity; an entry without one yields 0 and can never match a run start. Beta 1.146: in the no-run branch below this same value must equal the finclean marker's at
   const boardEmpty = STREETNAMES.every(n => pieces[n].every(v => v === 0));
-  const dropPhantom = () => { // the verified rollback write: storage loses the signature entry only (when the signature came from the raw array, everything else storage holds stays byte-for-byte - a load-time strip is a view, never a write); memory drops the phantom too when the sanitized tail IS that entry (same run identity), and needs no drop when the sanitizer already removed it
-    const src = (sig === rawLast && rawLast !== null) ? rawList : history;
-    if (!txSet(LS.hist, JSON.stringify(src === rawList ? src.slice(0, -1) : historyForWrite(src.slice(0, -1)))).ok) return false; // Beta 1.250 (cross-audit fix round, N-03): the FALLBACK branch (raw tail not an entry object, so the signature stands in the sanitized view) used to write the bare view slice - permanently stripping every raw entry the sanitizer had dropped the moment this write landed, if the page closed before an ordinary save could restore them. It now writes the historyForWrite merge like every other history writer (A-05): the phantom, a surviving entry missing from the slice, stays deleted; the dropped raw entries ride back verbatim
-    if (src === rawList && histRawList === rawList) { histRawList.pop(); histRawView.pop(); } // 2026-11-15 (A-05): the A-05 snapshot pops in step with the raw array this write just shortened, so a later ordinary save cannot resurrect the phantom from the snapshot
-    if (last && last.runId && +last.runId === lastMs) history = history.slice(0, -1);
-    return true;
-  };
-  if (runStart) { const act = finishReconcileAction(runStart, lastMs, boardEmpty); if (act === 'rollback') { dropPhantom(); } else if (act === 'complete') { if (txDel(LS.start).ok) runStart = 0; } return; }
+  if (runStart) { const act = finishReconcileAction(runStart, lastMs, boardEmpty); if (act === 'rollback') { HIST.dropPhantom(sig, rawLast, last, lastMs); } else if (act === 'complete') { if (txDel(LS.start).ok) runStart = 0; } return; }
   const marker = parseJ(lsGet(LS.finclean), null); const markerRun = marker && typeof marker === 'object' && !Array.isArray(marker) ? marker.run : null; const markerAt = marker && typeof marker === 'object' ? (+marker.at || 0) : 0; const boardMatch = !boardEmpty && finishBoardMatch(sig, pieces, pieceTimes, STREETNAMES);
-  if (finishReconcileNoRunAction(markerRun, markerAt, lastMs, boardEmpty, boardMatch) === 'rollback') { if (dropPhantom()) txDel(LS.finclean); }
+  if (finishReconcileNoRunAction(markerRun, markerAt, lastMs, boardEmpty, boardMatch) === 'rollback') { if (HIST.dropPhantom(sig, rawLast, last, lastMs)) txDel(LS.finclean); }
 }
 /** @returns {void} */ function completeFinishCleanup() { // Beta 1.141 (Package A, DA-10): finishRun's transaction writes the slot's finclean record as its first step, so a COMMITTED finish whose post-commit metadata writes then failed (notes/coverage refuse; the primaryDirty retry is in-memory and dies with the page) leaves a DURABLE obligation behind. This completes it at load. Guards, all required: the obligation exists; no run is live (a live run owns notes/coverage - its data is never touched); the loaded board is the cleared board a committed finish leaves (a restored or cancelled live board is non-empty and untouchable). The cleanup is two verified writes of the same '{}' saveAll writes for a finished board; only when BOTH verify do the in-memory copies clear and the obligation delete. Any failure leaves the obligation (and the loaded state, which then matches storage) for the next load - idempotent, safe on every load, a single read on a clean slot.
   if (runStart) return;
@@ -811,7 +820,7 @@ let primaryDirty = false; // Beta 1.94 (deep audit SR-193-05): a failed saveAll 
     if (!lsSet(LS.times, ser.times) && !failedKey) failedKey = 'times';
     if (!lsSet(LS.via, ser.via) && !failedKey) failedKey = 'via';
     if (!lsSet(LS.notes, JSON.stringify(notes)) && !failedKey) failedKey = 'notes';
-    if (!lsSet(LS.hist, JSON.stringify(historyForWrite(history))) && !failedKey) failedKey = 'history'; // 2026-11-15 (A-05): the ordinary save writes the merge, never the bare view - the load strip stays a view
+    if (!lsSet(LS.hist, HIST.serialise()) && !failedKey) failedKey = 'history'; // 2026-11-15 (A-05): the ordinary save writes the merge through the repository (Beta 1.272), never the bare view - the load strip stays a view
     if (!saveStart().ok && !failedKey) failedKey = 'start';
     if (!lsSet(LS.cov, ser.cov) && !failedKey) failedKey = 'coverage';
   }

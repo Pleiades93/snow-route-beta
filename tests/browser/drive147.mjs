@@ -174,7 +174,7 @@ try {
     const T = Date.now() - 7200000;
     const day = 86400000;
     history = Array.from({ length: 10 }, (_, i) => ({ at: new Date(T - (10 - i) * day).toISOString(), items: Object.fromEntries(STREETNAMES.map(n => [n, new Date(T - 3600000).toISOString()])), via: {}, notes: {}, startedAt: new Date(T - (10 - i) * day).toISOString() }));
-    saveHistory();
+    HIST.save();
     runStart = T; saveStart();
     doneSet = new Set(['Velmar', 'Angie', 'Astona']);
     doneTimes = { Velmar: new Date(T + 600000).toISOString(), Angie: new Date(T + 900000).toISOString(), Astona: new Date(T + 1200000).toISOString() };

@@ -16,39 +16,32 @@ import vm from 'node:vm';
 // The fix: the sanitizer records a snapshot (histRawList / histRawView) and
 // the writers persist historyForWrite(...): entries the strip dropped ride
 // back verbatim, survivors are written in their raw form, user deletions
-// still delete, and finishes still append.
+// still delete, and finishes still append. (Beta 1.272, architecture
+// programme #2: the snapshot and the writers moved into the HIST repository
+// in parts/app1.js - loadFrom / forWrite / serialise / save / deleteAt /
+// appended - with the semantics unchanged; this proof drives them there.)
 //
-// This proof extracts the shipped history load block verbatim (from the
-// `const _histText` line to just before the Run-start block), saveHistory,
-// and historyForWrite when present, and runs them in a vm against a planted
-// storage stub. On unmodified main the storage-preservation checks FAIL
-// (the view checks pass both ways); with the fix all checks pass.
+// This proof extracts the shipped HIST object verbatim and runs it in a vm
+// against a planted storage stub. On unmodified main the
+// storage-preservation checks FAIL (the view checks pass both ways); with
+// the fix all checks pass.
 
 const src = readFileSync('parts/app1.js', 'utf8');
 
-const startAt = src.indexOf('const _histText = lsGet(LS.hist);');
-if (startAt < 0) throw new Error('history load block not found in parts/app1.js');
-const endAt = src.indexOf('// Run start (production)', startAt);
-if (endAt < 0) throw new Error('Run-start block not found after the history load');
-const loadBlock = src.slice(startAt, endAt);
-if (!loadBlock.includes('STREETSET.has(n)')) throw new Error('extracted block does not contain the items sanitizer');
-
-const saveAt = src.indexOf('function saveHistory()');
-if (saveAt < 0) throw new Error('saveHistory not found');
-const saveLine = src.slice(src.lastIndexOf('\n', saveAt) + 1, src.indexOf('\n', saveAt));
-
-function extractFn(name) {
-  const at = src.indexOf('function ' + name);
-  if (at < 0) return '';
+function extractObj(name) {
+  const at = src.indexOf('const ' + name + ' = {');
+  if (at < 0) throw new Error('object not found: ' + name);
   const open = src.indexOf('{', at);
   let depth = 0;
   for (let i = open; i < src.length; i++) {
     if (src[i] === '{') depth++;
-    else if (src[i] === '}') { depth--; if (depth === 0) return src.slice(at, i + 1); }
+    else if (src[i] === '}') { depth--; if (depth === 0) return src.slice(at, i + 1) + ';'; }
   }
   throw new Error('unbalanced braces extracting ' + name);
 }
-const forWriteSrc = src.includes('function historyForWrite') ? extractFn('historyForWrite(list)') : '';
+const histSrc = extractObj('HIST');
+if (!histSrc.includes('STREETSET.has(n)')) throw new Error('extracted HIST does not contain the items sanitizer (loadFrom)');
+if (!histSrc.includes('dropPhantom')) throw new Error('extracted HIST does not contain dropPhantom');
 
 // Planted storage: a valid entry; a mixed entry (one current street, one
 // street the pack no longer has); an entry naming ONLY the foreign street;
@@ -62,13 +55,13 @@ const plantedText = JSON.stringify([E1, E2, E3, E4]);
 const harness = `
 __out.viewLen = history.length;
 __out.viewE2Items = Object.keys(history[1].items).sort();
-saveHistory();
+HIST.save();
 __out.afterSave = store.get('planted.hist');
-history.splice(0, 1); // the user deletes the first clean (Pace delete handler)
-saveHistory();
+HIST.deleteAt(0); // the user deletes the first clean (Pace delete handler)
+HIST.save();
 __out.afterDelete = store.get('planted.hist');
-history.push({ at: '2026-11-04T12:00:00.000Z', items: { Velmar: '2026-11-04T12:05:00.000Z' }, workM: 555 });
-saveHistory();
+history = HIST.appended({ at: '2026-11-04T12:00:00.000Z', items: { Velmar: '2026-11-04T12:05:00.000Z' }, workM: 555 });
+HIST.save();
 __out.afterAppend = store.get('planted.hist');
 `;
 
@@ -78,15 +71,15 @@ const ctx = vm.createContext({
   STREETSET: new Set(['Velmar', 'Mellings'])
 });
 vm.runInContext(`
-let history = [], histRawList = null, histRawView = null;
+let history = [];
 const store = new Map([['planted.hist', plantedText]]);
 function lsGet(k) { return store.has(k) ? store.get(k) : null; }
 function lsSet(k, v) { store.set(k, String(v)); return true; }
 function parseJ(t, fb) { if (t == null) return fb; try { return JSON.parse(t); } catch (e) { return fb; } }
 const __out = {};
 `, ctx);
-vm.runInContext(loadBlock, ctx);
-vm.runInContext(forWriteSrc + '\n' + saveLine, ctx);
+vm.runInContext(histSrc, ctx);
+vm.runInContext('HIST.loadFrom(plantedText);', ctx);
 vm.runInContext(harness, ctx);
 const out = vm.runInContext('__out', ctx);
 

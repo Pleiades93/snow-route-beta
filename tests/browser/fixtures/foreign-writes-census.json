@@ -15,7 +15,7 @@
     "engine.js"
   ],
   "totals": {
-    "expressions": 28,
+    "expressions": 26,
     "byFile": {
       "app1.js": {
         "expressions": 1
@@ -24,13 +24,13 @@
         "expressions": 0
       },
       "app3.js": {
-        "expressions": 9
+        "expressions": 8
       },
       "app4.js": {
         "expressions": 6
       },
       "app5.js": {
-        "expressions": 11
+        "expressions": 10
       },
       "create-packs.js": {
         "expressions": 0
@@ -81,13 +81,6 @@
       "file": "app3.js",
       "fn": "cancelStart",
       "name": "trailSessions",
-      "owner": "app1.js",
-      "occ": 1
-    },
-    {
-      "file": "app3.js",
-      "fn": "finishRun",
-      "name": "history",
       "owner": "app1.js",
       "occ": 1
     },
@@ -200,13 +193,6 @@
       "file": "app5.js",
       "fn": "unloadRouteToBoot",
       "name": "activeRoute",
-      "owner": "app1.js",
-      "occ": 1
-    },
-    {
-      "file": "app5.js",
-      "fn": "unloadRouteToBoot",
-      "name": "history",
       "owner": "app1.js",
       "occ": 1
     },

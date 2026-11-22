@@ -18,7 +18,17 @@ function extract(name) {
   for (; j < src.length; j++) { if (src[j] === '{') d++; else if (src[j] === '}') { d--; if (!d) break; } }
   return src.slice(i, j + 1);
 }
-const api = new Function(extract('appendHistory') + '\nreturn { appendHistory };')();
+function extractObj(name) {
+  const i = src.indexOf('const ' + name + ' = {');
+  if (i < 0) throw new Error(name + ' not found in app1.js');
+  let d = 0, j = src.indexOf('{', i);
+  for (; j < src.length; j++) { if (src[j] === '{') d++; else if (src[j] === '}') { d--; if (!d) break; } }
+  return src.slice(i, j + 1) + ';';
+}
+// Beta 1.272 (architecture programme #2): the append lives in the HIST
+// repository as HIST.appended(entry), reading the ambient view binding -
+// the adapter below keeps this fixture's (list, entry) shape over it.
+const api = new Function('let history = [];\n' + extractObj('HIST') + '\nreturn { appendHistory: (list, entry) => { history = list; return HIST.appended(entry); } };')();
 let pass = 0, fail = 0;
 const t = (name, cond) => { if (cond) pass++; else { fail++; console.log('FAIL', name); } };
 const entry = (tag, nItems) => ({ at: 'T' + tag, items: Object.fromEntries(Array.from({ length: nItems }, (_, i) => ['S' + i, null])) });

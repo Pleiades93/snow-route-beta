@@ -93,8 +93,8 @@ check('15: the grid stall still drops the cached pack promise (the abandonment s
 // ---------- the release editorial ----------
 check('16: the CHANGELOG top entry is Beta 1.251', changelog.includes('## Beta 1.251'));
 check('17: What\'s New carries the 1.251 bullet, short and dash-free',
-  whatsnew.includes('Tap a route in the list to open its menu: Load, or Delete. Every route can be deleted now.')
-  && 'Tap a route in the list to open its menu: Load, or Delete. Every route can be deleted now.'.length <= 108
+  whatsnew.includes('Under the hood: clean history loads, saves and restores from one place, the same way everywhere.')
+  && 'Under the hood: clean history loads, saves and restores from one place, the same way everywhere.'.length <= 108
   && !whatsnew.includes('—'));
 
 // ---------- the first byte must be RECORDED, not just read about ----------
