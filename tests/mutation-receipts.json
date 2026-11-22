@@ -2521,6 +2521,347 @@
    "red": "proof-1267 fails exactly its What's New bullet check (1 fail, the rest pass) - observed in this round's mutation run",
    "green": "proof-1267 passes in full with the shipped 1.268 bullet",
    "issued": "2026-11-21-widths-1268"
+  },
+  {
+   "id": "drive220-create-sheet-fixes",
+   "check": "tests/browser/drive220.mjs",
+   "kind": "historical",
+   "files": {
+    "tests/browser/drive220.mjs": "a90e7c2b06d2aef2a19c1cfc5aaa267d5a63fc97e5ba908b2fdac3b1b3fd527a",
+    "parts/create-pick.js": "7188458b087496ad52ff5d159ae23668b543d0100a3d58c3b251d33374258dd6"
+   },
+   "mutation": "the Beta 1.268 tree itself (main ae2d7a3d): fitDraft flies to pitch 45 with a uniform 56px fit and no sheet-aware bottom padding - the behaviour Andrew rejected live",
+   "red": "updated drive220 on the pristine 1.268 tree: 8/10, exactly C1 + C2 fail (C1: pitch 45, landed zoom 13.9436 vs the sheet-aware fit 13.4757; C2: sheet top 450, 103 of 202 points project outside the visible region above the sheet)",
+   "green": "drive220 passes 10/10 on the Beta 1.269 tree (C1: pitch < 1, landed zoom within 0.1 of the in-page recomputed sheet-aware fit; C2: every draft point inside the region above the measured sheet top)",
+   "issued": "2026-11-21 create-sheet-fixes-1269"
+  },
+  {
+   "id": "drive156-create-sheet-fixes",
+   "check": "tests/browser/drive156.mjs",
+   "kind": "historical",
+   "files": {
+    "tests/browser/drive156.mjs": "82ee13c3dd484344f06d38ee735f9e6cd6539cc594d29d54e2d007945df64958",
+    "parts/create-pick.js": "7188458b087496ad52ff5d159ae23668b543d0100a3d58c3b251d33374258dd6",
+    "parts/head.html": "2e150921d447daa9a3d3f9cf2f9a2e661f7e3d885f686dc14537c65d35f49179"
+   },
+   "mutation": "the Beta 1.268 tree itself (main ae2d7a3d): the sector bar's left button is #crSbCancel (a session exit that restores the entry snapshot); no Deselect exists",
+   "red": "updated drive156 on the pristine 1.268 tree: 158-A1 fails on the button premise only (bar reads Cancel, no #crSbDeselect; every tap-away restore claim in A1 passes) and 158-A5 fails (btn false, Long Road still in the draft) - the restore claims pass on both trees, proving the tap-away behaviour is preserved, not re-invented",
+   "green": "drive156 on the Beta 1.269 tree: every functional check passes including 158-A1-A5 (36/37 in the combined run; the one failure, 158-B4 INSUFFICIENT OBSERVATION, is the cited known-env frame-sampler class - it failed identically on the pristine tree in the same window)",
+   "issued": "2026-11-21 create-sheet-fixes-1269"
+  },
+  {
+   "id": "proof-1269-create-sheet-fixes",
+   "check": "tests/proof/proof-1269.mjs",
+   "kind": "historical",
+   "files": {
+    "tests/proof/proof-1269.mjs": "e622709d8cbe5a0ab2887574e5642ada66f5fb98f2c3b41af6abcc900f7c64cb",
+    "parts/create-pick.js": "7188458b087496ad52ff5d159ae23668b543d0100a3d58c3b251d33374258dd6",
+    "parts/head.html": "2e150921d447daa9a3d3f9cf2f9a2e661f7e3d885f686dc14537c65d35f49179",
+    "parts/whatsnew.js": "e9a38a3d9be72698904d3fc79b3a3ed1ed19cff3b73cafe3de6daee093aca78f"
+   },
+   "mutation": "the Beta 1.268 tree itself (main ae2d7a3d): pitch-45 Done flight, #crSbCancel on the sector bar, no crDeselectSectors, the old What's New headline bullet",
+   "red": "proof-1269 on the pristine 1.268 tree fails checks 1, 2, 3, 5, 6, 7 and 9 (4 and 8 pass on both trees - they pin the untouched tap-away restore and the empty-draft guard)",
+   "green": "proof-1269 passes 9/9 on the Beta 1.269 tree; the full proof suite passes 77/77",
+   "issued": "2026-11-21 create-sheet-fixes-1269"
+  },
+  {
+   "id": "proof-1229-create-sheet-fixes",
+   "check": "tests/proof/proof-1229.mjs",
+   "kind": "historical",
+   "files": {
+    "tests/proof/proof-1229.mjs": "e7b06308c2b37707c6c04c4eb7ce17af44d9b6958556e4ae841f8cd5fbdcc6f0",
+    "parts/head.html": "2e150921d447daa9a3d3f9cf2f9a2e661f7e3d885f686dc14537c65d35f49179"
+   },
+   "mutation": "the Beta 1.268 tree itself (main ae2d7a3d): the sector bar's red ghost rule is keyed to #crSbCancel",
+   "red": "re-pinned proof-1229 on the pristine 1.268 tree fails exactly check 6b (32 pass) - the #crSbDeselect rule does not exist there",
+   "green": "proof-1229 passes 33/33 on the Beta 1.269 tree (6b: the #crSbDeselect rule carries color: #e63a2e)",
+   "issued": "2026-11-21 create-sheet-fixes-1269"
+  },
+  {
+   "id": "proof-1267-create-sheet-fixes",
+   "check": "tests/proof/proof-1267.mjs",
+   "kind": "historical",
+   "files": {
+    "tests/proof/proof-1267.mjs": "84e88b02d15b547c83fb9deed357042fa417f6c98766b8725a09c38bbc613288",
+    "parts/create-pick.js": "7188458b087496ad52ff5d159ae23668b543d0100a3d58c3b251d33374258dd6"
+   },
+   "mutation": "the Beta 1.268 tree itself (main ae2d7a3d): fitDraft is the 1.267 pitch-45 shape proof-1267's check 3a originally pinned",
+   "red": "re-pinned proof-1267 (check 3a only; the round's other checks untouched) on the pristine 1.268 tree fails exactly 3a among the round's checks (its check 5 also fails there, carrying the rolled 1.269 bullet - that pair is the roll receipt's observation)",
+   "green": "proof-1267 passes 17/17 on the Beta 1.269 tree (3a pins the flat flight: sheet-measured bottom padding, pitch 0 in the flyTo and the fallback)",
+   "issued": "2026-11-21 create-sheet-fixes-1269"
+  },
+  {
+   "id": "proof-create-zoom-tapaway-create-sheet-fixes",
+   "check": "tests/proof/proof-create-zoom-tapaway.mjs",
+   "kind": "historical",
+   "files": {
+    "tests/proof/proof-create-zoom-tapaway.mjs": "b86b064885f24103261c2c2cd30a6796ad0bf19380aba8ee3a2114c918333cc3",
+    "parts/create-pick.js": "7188458b087496ad52ff5d159ae23668b543d0100a3d58c3b251d33374258dd6"
+   },
+   "mutation": "the Beta 1.268 tree itself (main ae2d7a3d): the sector bar's Cancel button carries a click listener wired to crCancelSectors - the re-pinned S2 asserts the restore is reachable ONLY through crMapTap's tap-away routing and that no click listener wires crCancelSectors",
+   "red": "re-pinned proof-create-zoom-tapaway on the pristine 1.268 tree fails exactly S2 (the button wiring exists there)",
+   "green": "proof-create-zoom-tapaway passes in full on the Beta 1.269 tree (the 1.129 snapshot restore survives untouched on the tap-away; the bar's left button is Deselect)",
+   "issued": "2026-11-21 create-sheet-fixes-1269"
+  },
+  {
+   "id": "whatsnew-roll-1269-proof-1242",
+   "check": "tests/proof/proof-1242.mjs",
+   "kind": "mutation",
+   "files": {
+    "tests/proof/proof-1242.mjs": "7bee9618e4550c6a230ab6ab0c72ca9a44a8e9f4dcb14adc614756174b24710a",
+    "parts/whatsnew.js": "e9a38a3d9be72698904d3fc79b3a3ed1ed19cff3b73cafe3de6daee093aca78f"
+   },
+   "mutation": "parts/whatsnew.js headline bullet replaced with a deliberately wrong bullet (the Beta 1.269 What's New roll changed this proof's pinned bullet string)",
+   "red": "proof-1242 fails exactly its What's New bullet check (1 fail, the rest pass) - observed in this round's mutation run",
+   "green": "proof-1242 passes in full with the shipped 1.269 bullet",
+   "issued": "2026-11-21-create-sheet-fixes-1269"
+  },
+  {
+   "id": "whatsnew-roll-1269-proof-1243",
+   "check": "tests/proof/proof-1243.mjs",
+   "kind": "mutation",
+   "files": {
+    "tests/proof/proof-1243.mjs": "01c97284180bb4c545b1b14f3d4723ed0a24332279ecdbb3bbb813920c996080",
+    "parts/whatsnew.js": "e9a38a3d9be72698904d3fc79b3a3ed1ed19cff3b73cafe3de6daee093aca78f"
+   },
+   "mutation": "parts/whatsnew.js headline bullet replaced with a deliberately wrong bullet (the Beta 1.269 What's New roll changed this proof's pinned bullet string)",
+   "red": "proof-1243 fails exactly its What's New bullet check (1 fail, the rest pass) - observed in this round's mutation run",
+   "green": "proof-1243 passes in full with the shipped 1.269 bullet",
+   "issued": "2026-11-21-create-sheet-fixes-1269"
+  },
+  {
+   "id": "whatsnew-roll-1269-proof-1245",
+   "check": "tests/proof/proof-1245.mjs",
+   "kind": "mutation",
+   "files": {
+    "tests/proof/proof-1245.mjs": "725dcaf0f7ad61599ff74a2f5e381a04097748eab2ec599e4794239a7892f226",
+    "parts/whatsnew.js": "e9a38a3d9be72698904d3fc79b3a3ed1ed19cff3b73cafe3de6daee093aca78f"
+   },
+   "mutation": "parts/whatsnew.js headline bullet replaced with a deliberately wrong bullet (the Beta 1.269 What's New roll changed this proof's pinned bullet string)",
+   "red": "proof-1245 fails exactly its What's New bullet check (1 fail, the rest pass) - observed in this round's mutation run",
+   "green": "proof-1245 passes in full with the shipped 1.269 bullet",
+   "issued": "2026-11-21-create-sheet-fixes-1269"
+  },
+  {
+   "id": "whatsnew-roll-1269-proof-1246",
+   "check": "tests/proof/proof-1246.mjs",
+   "kind": "mutation",
+   "files": {
+    "tests/proof/proof-1246.mjs": "31a56d48cf0f1bc68ce191c2a1ec3f656d95995097fff9dad3b001df75cfbd02",
+    "parts/whatsnew.js": "e9a38a3d9be72698904d3fc79b3a3ed1ed19cff3b73cafe3de6daee093aca78f"
+   },
+   "mutation": "parts/whatsnew.js headline bullet replaced with a deliberately wrong bullet (the Beta 1.269 What's New roll changed this proof's pinned bullet string)",
+   "red": "proof-1246 fails exactly its What's New bullet check (1 fail, the rest pass) - observed in this round's mutation run",
+   "green": "proof-1246 passes in full with the shipped 1.269 bullet",
+   "issued": "2026-11-21-create-sheet-fixes-1269"
+  },
+  {
+   "id": "whatsnew-roll-1269-proof-1247",
+   "check": "tests/proof/proof-1247.mjs",
+   "kind": "mutation",
+   "files": {
+    "tests/proof/proof-1247.mjs": "24c6cd0ab2754515fb705e71b5944a2813d35601f0a1e8d73fa1e9b22ce91791",
+    "parts/whatsnew.js": "e9a38a3d9be72698904d3fc79b3a3ed1ed19cff3b73cafe3de6daee093aca78f"
+   },
+   "mutation": "parts/whatsnew.js headline bullet replaced with a deliberately wrong bullet (the Beta 1.269 What's New roll changed this proof's pinned bullet string)",
+   "red": "proof-1247 fails exactly its What's New bullet check (1 fail, the rest pass) - observed in this round's mutation run",
+   "green": "proof-1247 passes in full with the shipped 1.269 bullet",
+   "issued": "2026-11-21-create-sheet-fixes-1269"
+  },
+  {
+   "id": "whatsnew-roll-1269-proof-1249",
+   "check": "tests/proof/proof-1249.mjs",
+   "kind": "mutation",
+   "files": {
+    "tests/proof/proof-1249.mjs": "c7944edf1eef68fb41d74ec2094530622d96f5cf7371f75ee1774362322dcd16",
+    "parts/whatsnew.js": "e9a38a3d9be72698904d3fc79b3a3ed1ed19cff3b73cafe3de6daee093aca78f"
+   },
+   "mutation": "parts/whatsnew.js headline bullet replaced with a deliberately wrong bullet (the Beta 1.269 What's New roll changed this proof's pinned bullet string)",
+   "red": "proof-1249 fails exactly its What's New bullet check (1 fail, the rest pass) - observed in this round's mutation run",
+   "green": "proof-1249 passes in full with the shipped 1.269 bullet",
+   "issued": "2026-11-21-create-sheet-fixes-1269"
+  },
+  {
+   "id": "whatsnew-roll-1269-proof-1252",
+   "check": "tests/proof/proof-1252.mjs",
+   "kind": "mutation",
+   "files": {
+    "tests/proof/proof-1252.mjs": "0666fa1fd89d078e214b7f82d3846b756d4ecc5673add27926eb9d6c3b6d2807",
+    "parts/whatsnew.js": "e9a38a3d9be72698904d3fc79b3a3ed1ed19cff3b73cafe3de6daee093aca78f"
+   },
+   "mutation": "parts/whatsnew.js headline bullet replaced with a deliberately wrong bullet (the Beta 1.269 What's New roll changed this proof's pinned bullet string)",
+   "red": "proof-1252 fails exactly its What's New bullet check (1 fail, the rest pass) - observed in this round's mutation run",
+   "green": "proof-1252 passes in full with the shipped 1.269 bullet",
+   "issued": "2026-11-21-create-sheet-fixes-1269"
+  },
+  {
+   "id": "whatsnew-roll-1269-proof-1253",
+   "check": "tests/proof/proof-1253.mjs",
+   "kind": "mutation",
+   "files": {
+    "tests/proof/proof-1253.mjs": "cf39f19ef3319279189e5d5e50525125f974a55a7063445fbe6d30accf4a8950",
+    "parts/whatsnew.js": "e9a38a3d9be72698904d3fc79b3a3ed1ed19cff3b73cafe3de6daee093aca78f"
+   },
+   "mutation": "parts/whatsnew.js headline bullet replaced with a deliberately wrong bullet (the Beta 1.269 What's New roll changed this proof's pinned bullet string)",
+   "red": "proof-1253 fails exactly its What's New bullet check (1 fail, the rest pass) - observed in this round's mutation run",
+   "green": "proof-1253 passes in full with the shipped 1.269 bullet",
+   "issued": "2026-11-21-create-sheet-fixes-1269"
+  },
+  {
+   "id": "whatsnew-roll-1269-proof-1254",
+   "check": "tests/proof/proof-1254.mjs",
+   "kind": "mutation",
+   "files": {
+    "tests/proof/proof-1254.mjs": "f1d9f7aa414e40afc3480c48fd2151dcc04f9e7cfa0a8637345d9be6bb3c0576",
+    "parts/whatsnew.js": "e9a38a3d9be72698904d3fc79b3a3ed1ed19cff3b73cafe3de6daee093aca78f"
+   },
+   "mutation": "parts/whatsnew.js headline bullet replaced with a deliberately wrong bullet (the Beta 1.269 What's New roll changed this proof's pinned bullet string)",
+   "red": "proof-1254 fails exactly its What's New bullet check (1 fail, the rest pass) - observed in this round's mutation run",
+   "green": "proof-1254 passes in full with the shipped 1.269 bullet",
+   "issued": "2026-11-21-create-sheet-fixes-1269"
+  },
+  {
+   "id": "whatsnew-roll-1269-proof-1255",
+   "check": "tests/proof/proof-1255.mjs",
+   "kind": "mutation",
+   "files": {
+    "tests/proof/proof-1255.mjs": "6dc8220284949dd1bf83b731d2e3a76b35356bdf3c9bec42f8832090755887af",
+    "parts/whatsnew.js": "e9a38a3d9be72698904d3fc79b3a3ed1ed19cff3b73cafe3de6daee093aca78f"
+   },
+   "mutation": "parts/whatsnew.js headline bullet replaced with a deliberately wrong bullet (the Beta 1.269 What's New roll changed this proof's pinned bullet string)",
+   "red": "proof-1255 fails exactly its What's New bullet check (1 fail, the rest pass) - observed in this round's mutation run",
+   "green": "proof-1255 passes in full with the shipped 1.269 bullet",
+   "issued": "2026-11-21-create-sheet-fixes-1269"
+  },
+  {
+   "id": "whatsnew-roll-1269-proof-1256",
+   "check": "tests/proof/proof-1256.mjs",
+   "kind": "mutation",
+   "files": {
+    "tests/proof/proof-1256.mjs": "3594a1bc81e66c5cd1eaeedc505aef71dda27fd6d04252cba0136d6cb4e686e4",
+    "parts/whatsnew.js": "e9a38a3d9be72698904d3fc79b3a3ed1ed19cff3b73cafe3de6daee093aca78f"
+   },
+   "mutation": "parts/whatsnew.js headline bullet replaced with a deliberately wrong bullet (the Beta 1.269 What's New roll changed this proof's pinned bullet string)",
+   "red": "proof-1256 fails exactly its What's New bullet check (1 fail, the rest pass) - observed in this round's mutation run",
+   "green": "proof-1256 passes in full with the shipped 1.269 bullet",
+   "issued": "2026-11-21-create-sheet-fixes-1269"
+  },
+  {
+   "id": "whatsnew-roll-1269-proof-1257",
+   "check": "tests/proof/proof-1257.mjs",
+   "kind": "mutation",
+   "files": {
+    "tests/proof/proof-1257.mjs": "474b256fe57b6d00f5ad1217acca48a013e6c5ab72254cb868c70f936b929f9c",
+    "parts/whatsnew.js": "e9a38a3d9be72698904d3fc79b3a3ed1ed19cff3b73cafe3de6daee093aca78f"
+   },
+   "mutation": "parts/whatsnew.js headline bullet replaced with a deliberately wrong bullet (the Beta 1.269 What's New roll changed this proof's pinned bullet string)",
+   "red": "proof-1257 fails exactly its What's New bullet check (1 fail, the rest pass) - observed in this round's mutation run",
+   "green": "proof-1257 passes in full with the shipped 1.269 bullet",
+   "issued": "2026-11-21-create-sheet-fixes-1269"
+  },
+  {
+   "id": "whatsnew-roll-1269-proof-1259",
+   "check": "tests/proof/proof-1259.mjs",
+   "kind": "mutation",
+   "files": {
+    "tests/proof/proof-1259.mjs": "54b79a679d64080abb40bd76d75877523341340380fb3f231098d7fa38e0b658",
+    "parts/whatsnew.js": "e9a38a3d9be72698904d3fc79b3a3ed1ed19cff3b73cafe3de6daee093aca78f"
+   },
+   "mutation": "parts/whatsnew.js headline bullet replaced with a deliberately wrong bullet (the Beta 1.269 What's New roll changed this proof's pinned bullet string)",
+   "red": "proof-1259 fails exactly its What's New bullet check (1 fail, the rest pass) - observed in this round's mutation run",
+   "green": "proof-1259 passes in full with the shipped 1.269 bullet",
+   "issued": "2026-11-21-create-sheet-fixes-1269"
+  },
+  {
+   "id": "whatsnew-roll-1269-proof-1262",
+   "check": "tests/proof/proof-1262.mjs",
+   "kind": "mutation",
+   "files": {
+    "tests/proof/proof-1262.mjs": "3ca1a63d3cb8cc8742975c930a342cf797f51542c897fd72f0ccb594e6859b48",
+    "parts/whatsnew.js": "e9a38a3d9be72698904d3fc79b3a3ed1ed19cff3b73cafe3de6daee093aca78f"
+   },
+   "mutation": "parts/whatsnew.js headline bullet replaced with a deliberately wrong bullet (the Beta 1.269 What's New roll changed this proof's pinned bullet string)",
+   "red": "proof-1262 fails exactly its What's New bullet check (1 fail, the rest pass) - observed in this round's mutation run",
+   "green": "proof-1262 passes in full with the shipped 1.269 bullet",
+   "issued": "2026-11-21-create-sheet-fixes-1269"
+  },
+  {
+   "id": "whatsnew-roll-1269-proof-1263",
+   "check": "tests/proof/proof-1263.mjs",
+   "kind": "mutation",
+   "files": {
+    "tests/proof/proof-1263.mjs": "4e2ccc3783ca8f410976abf786c98cae275af28108e40c05fa38b35c3b87cf22",
+    "parts/whatsnew.js": "e9a38a3d9be72698904d3fc79b3a3ed1ed19cff3b73cafe3de6daee093aca78f"
+   },
+   "mutation": "parts/whatsnew.js headline bullet replaced with a deliberately wrong bullet (the Beta 1.269 What's New roll changed this proof's pinned bullet string)",
+   "red": "proof-1263 fails exactly its What's New bullet check (1 fail, the rest pass) - observed in this round's mutation run",
+   "green": "proof-1263 passes in full with the shipped 1.269 bullet",
+   "issued": "2026-11-21-create-sheet-fixes-1269"
+  },
+  {
+   "id": "whatsnew-roll-1269-proof-1264",
+   "check": "tests/proof/proof-1264.mjs",
+   "kind": "mutation",
+   "files": {
+    "tests/proof/proof-1264.mjs": "03f8ec043383e5f5de50ca5036a0927116cc6b26f0d2b0edb46c8dccaab1d9be",
+    "parts/whatsnew.js": "e9a38a3d9be72698904d3fc79b3a3ed1ed19cff3b73cafe3de6daee093aca78f"
+   },
+   "mutation": "parts/whatsnew.js headline bullet replaced with a deliberately wrong bullet (the Beta 1.269 What's New roll changed this proof's pinned bullet string)",
+   "red": "proof-1264 fails exactly its What's New bullet check (1 fail, the rest pass) - observed in this round's mutation run",
+   "green": "proof-1264 passes in full with the shipped 1.269 bullet",
+   "issued": "2026-11-21-create-sheet-fixes-1269"
+  },
+  {
+   "id": "whatsnew-roll-1269-proof-1265",
+   "check": "tests/proof/proof-1265.mjs",
+   "kind": "mutation",
+   "files": {
+    "tests/proof/proof-1265.mjs": "1aa98ebf804e87091b9420eb7557a5b1778e98eb4b80a4e489549a3bfa3d38ab",
+    "parts/whatsnew.js": "e9a38a3d9be72698904d3fc79b3a3ed1ed19cff3b73cafe3de6daee093aca78f"
+   },
+   "mutation": "parts/whatsnew.js headline bullet replaced with a deliberately wrong bullet (the Beta 1.269 What's New roll changed this proof's pinned bullet string)",
+   "red": "proof-1265 fails exactly its What's New bullet check (1 fail, the rest pass) - observed in this round's mutation run",
+   "green": "proof-1265 passes in full with the shipped 1.269 bullet",
+   "issued": "2026-11-21-create-sheet-fixes-1269"
+  },
+  {
+   "id": "whatsnew-roll-1269-proof-1266",
+   "check": "tests/proof/proof-1266.mjs",
+   "kind": "mutation",
+   "files": {
+    "tests/proof/proof-1266.mjs": "058aca202818a80bbbf30bfe4878c826c6c6e530ca6df59907e3a4d6fe45ebad",
+    "parts/whatsnew.js": "e9a38a3d9be72698904d3fc79b3a3ed1ed19cff3b73cafe3de6daee093aca78f"
+   },
+   "mutation": "parts/whatsnew.js headline bullet replaced with a deliberately wrong bullet (the Beta 1.269 What's New roll changed this proof's pinned bullet string)",
+   "red": "proof-1266 fails exactly its What's New bullet check (1 fail, the rest pass) - observed in this round's mutation run",
+   "green": "proof-1266 passes in full with the shipped 1.269 bullet",
+   "issued": "2026-11-21-create-sheet-fixes-1269"
+  },
+  {
+   "id": "whatsnew-roll-1269-proof-1267",
+   "check": "tests/proof/proof-1267.mjs",
+   "kind": "mutation",
+   "files": {
+    "tests/proof/proof-1267.mjs": "84e88b02d15b547c83fb9deed357042fa417f6c98766b8725a09c38bbc613288",
+    "parts/whatsnew.js": "e9a38a3d9be72698904d3fc79b3a3ed1ed19cff3b73cafe3de6daee093aca78f"
+   },
+   "mutation": "parts/whatsnew.js headline bullet replaced with a deliberately wrong bullet (the Beta 1.269 What's New roll changed this proof's pinned bullet string)",
+   "red": "proof-1267 fails exactly its What's New bullet check (1 fail, the rest pass) - observed in this round's mutation run",
+   "green": "proof-1267 passes in full with the shipped 1.269 bullet",
+   "issued": "2026-11-21-create-sheet-fixes-1269"
+  },
+  {
+   "id": "whatsnew-roll-1269-proof-1268",
+   "check": "tests/proof/proof-1268.mjs",
+   "kind": "mutation",
+   "files": {
+    "tests/proof/proof-1268.mjs": "6b57cddb392c7cb092e03d6f4189850040153aabe91c3376366c94cd7b813f0a",
+    "parts/whatsnew.js": "e9a38a3d9be72698904d3fc79b3a3ed1ed19cff3b73cafe3de6daee093aca78f"
+   },
+   "mutation": "parts/whatsnew.js headline bullet replaced with a deliberately wrong bullet (the Beta 1.269 What's New roll changed this proof's pinned bullet string)",
+   "red": "proof-1268 fails exactly its What's New bullet check (1 fail, the rest pass) - observed in this round's mutation run",
+   "green": "proof-1268 passes in full with the shipped 1.269 bullet",
+   "issued": "2026-11-21-create-sheet-fixes-1269"
   }
  ]
 }

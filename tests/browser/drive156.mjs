@@ -470,7 +470,8 @@ const enterPickWithExtract = async () => {
   return await poll(`typeof creating !== 'undefined' && creating === true && crStage === 'pick' && !!crCov`, 10000);
 };
 const rowClick = async () => { await ev2(`(() => { const r = document.querySelector('#crPickList .crPRow'); if (r) r.click(); return true; })()`); return await poll(`crSectorSession.street === 'Long Road'`, 10000); };
-const clickCancel = async () => await J(`(() => { const b = document.getElementById('crSbCancel'); if (!b) return { exists: false }; const lbl = b.textContent; b.click(); return { exists: true, lbl }; })()`);
+const tapAway = async () => await ev2(`crMapTap({ lngLat: { lat: 43.79, lng: -79.56 } })`); // a tap far from Long Road (a kilometre south of it): crSectorTap resolves no sector of the street there, so crMapTap runs the cancel - the production tap-away door, driven through the real entry
+const barBtn = async () => await J(`(() => { const d = document.getElementById('crSbDeselect'); const c = document.getElementById('crSbCancel'); return { dExists: !!d, dLbl: d ? d.textContent : '', cExists: !!c }; })()`);
 const rowSub = async () => await J(`(() => { const r = document.querySelector('#crPickList .crPRow'); return r ? (r.querySelector('.crPSub') || {}).textContent || '' : ''; })()`);
 const settled = async () => await poll(`(typeof crMorph === 'undefined' || crMorph === null) && document.getElementById('createSheet').style.height === ''`, 12000);
 const restRect = async () => await J(`(() => { const r = document.getElementById('createSheet').getBoundingClientRect(); return { l: r.left, t: r.top, r: r.right, b: r.bottom, w: r.width, h: r.height }; })()`);
@@ -479,23 +480,31 @@ await send('Page.navigate', { url: ORIGIN + '/index.html' }, PAGE_S);
 await bootRoute();
 await ev2(`(() => { setThemeOverride(false); applyNight(); return true; })()`); // pin DAY through the app's own seam: the auto theme is sunset-driven, so an unpinned "day" run after sunset silently samples the night token (drive154's E3 lesson)
 
-// ================= A: sector Cancel =================
+// ================= A: the cancel (tap-away since Beta 1.269) + Deselect =================
+// Beta 1.269 premise update: the sector bar's Cancel BUTTON is gone - its
+// slot carries Deselect now, and the snapshot-restore cancel lives on its
+// remaining door, the tap-away (crMapTap -> crCancelSectors). A1/A2/A4
+// below therefore exit through a real tap-away (a map tap resolving to no
+// sector of the street) instead of the retired button; their claims are
+// unchanged - the restore is now proven where it lives. A5 is new: it
+// proves the Deselect button itself.
 const inA = await enterPickWithExtract();
 await ev2(`pickStreet('Long Road', { lat: 43.8, lng: -79.574 })`);
 await poll(`draft && !!draft.roads['Long Road']`, 10000);
-// A1: trim this session, Cancel -> the whole road returns
+// A1: trim this session, tap away -> the whole road returns
 const openA1 = await rowClick();
 await ev2(`crSectorTap({ lat: 43.8, lng: -79.578 })`); // part 0 off
 await ev2(`crSectorTap({ lat: 43.8, lng: -79.562 })`); // part 4 off
 const trimA1 = await poll(`!!draft.sectors['Long Road'] && draft.sectors['Long Road'].length === 3`, 10000);
-const ccA1 = await clickCancel();
+const btnA1 = await barBtn();
+await tapAway();
 const outA1 = await poll(`crSectorSession.street === null`, 10000);
 await settled();
 const stA1 = await J(`({ sec: draft.sectors['Long Road'], mode: crSectorSession.street, panel: getComputedStyle(document.getElementById('crPanel')).display, chosen: Math.round(crStreetChosenM('Long Road', computeStretches(draft.roads))) })`);
 const subA1 = await rowSub();
-ok('158-A1 CANCEL RESTORES THE ENTIRE ROAD: entered via the row, trimmed the two end sectors ([1,2,3]), Cancel restores the entry snapshot - no sector entry, the chosen length is the whole ~1,608 m again, the row reads "Entire road", sector mode closed and the panel is back | opened: ' + openA1 + ', trimmed: ' + trimA1 + ', cancel btn: ' + JSON.stringify(ccA1) + ', out: ' + outA1 + ' | ' + JSON.stringify(stA1) + ' | ' + subA1,
-  inA === true && openA1 === true && trimA1 === true && ccA1.exists === true && ccA1.lbl === 'Cancel' && outA1 === true && stA1.sec === undefined && Math.abs(stA1.chosen - 1608) <= 4 && stA1.panel !== 'none' && subA1.indexOf('Entire road') === 0);
-// A2: enter already trimmed, trim further, Cancel -> the ENTRY trim returns exactly
+ok('158-A1 TAP-AWAY RESTORES THE ENTIRE ROAD: entered via the row, trimmed the two end sectors ([1,2,3]), a tap-away restores the entry snapshot - no sector entry, the chosen length is the whole ~1,608 m again, the row reads "Entire road", sector mode closed and the panel is back; and the bar\'s button is no longer the cancel\'s door (it reads "Deselect"; no #crSbCancel exists) | opened: ' + openA1 + ', trimmed: ' + trimA1 + ', bar btn: ' + JSON.stringify(btnA1) + ', out: ' + outA1 + ' | ' + JSON.stringify(stA1) + ' | ' + subA1,
+  inA === true && openA1 === true && trimA1 === true && btnA1.dExists === true && btnA1.dLbl === 'Deselect' && btnA1.cExists === false && outA1 === true && stA1.sec === undefined && Math.abs(stA1.chosen - 1608) <= 4 && stA1.panel !== 'none' && subA1.indexOf('Entire road') === 0);
+// A2: enter already trimmed, trim further, tap away -> the ENTRY trim returns exactly
 await rowClick();
 await ev2(`crSectorTap({ lat: 43.8, lng: -79.578 })`);
 await ev2(`crSectorTap({ lat: 43.8, lng: -79.562 })`);
@@ -506,12 +515,12 @@ await settled();
 const openA2 = await rowClick(); // snapshot is now [1,2,3]
 await ev2(`crSectorTap({ lat: 43.8, lng: -79.574 })`); // part 1 off -> [2,3]
 const trimA2 = await poll(`!!draft.sectors['Long Road'] && draft.sectors['Long Road'].length === 2`, 10000);
-await clickCancel();
+await tapAway();
 const outA2 = await poll(`crSectorSession.street === null`, 10000);
 await settled();
 const stA2 = await J(`({ sel: draft.sectors['Long Road'], chosen: Math.round(crStreetChosenM('Long Road', computeStretches(draft.roads))) })`);
 const subA2 = await rowSub();
-ok('158-A2 CANCEL RESTORES THE ENTRY TRIM, NOT THE ENTIRE ROAD: with [1,2,3] already saved by Done, re-entering and un-picking part 1 ([2,3]) then Cancel brings back exactly [1,2,3] - ~964 m, the row again reads "3 of 5 sectors" | opened: ' + openA2 + ', trimmed: ' + trimA2 + ', out: ' + outA2 + ' | ' + JSON.stringify(stA2) + ' | ' + subA2,
+ok('158-A2 TAP-AWAY RESTORES THE ENTRY TRIM, NOT THE ENTIRE ROAD: with [1,2,3] already saved by Done, re-entering and un-picking part 1 ([2,3]) then tapping away brings back exactly [1,2,3] - ~964 m, the row again reads "3 of 5 sectors" | opened: ' + openA2 + ', trimmed: ' + trimA2 + ', out: ' + outA2 + ' | ' + JSON.stringify(stA2) + ' | ' + subA2,
   openA2 === true && trimA2 === true && outA2 === true && JSON.stringify(stA2.sel) === '[1,2,3]' && Math.abs(stA2.chosen - 964) <= 8 && subA2.indexOf('3 of 5 sectors') === 0);
 // A3: Done keeps the session's trims
 await rowClick();
@@ -521,7 +530,7 @@ await ev2(`document.getElementById('crSbDone').click()`);
 const outA3 = await poll(`crSectorSession.street === null`, 10000);
 await settled();
 const stA3 = await J(`({ sel: draft.sectors['Long Road'] })`);
-ok('158-A3 DONE KEEPS THE TRIMS: un-picking part 3 inside the session and pressing Done leaves the selection at [1,2] - Done and Cancel are different doors | trimmed: ' + trimA3 + ', out: ' + outA3 + ' | ' + JSON.stringify(stA3),
+ok('158-A3 DONE KEEPS THE TRIMS: un-picking part 3 inside the session and pressing Done leaves the selection at [1,2] - Done and the tap-away are different doors | trimmed: ' + trimA3 + ', out: ' + outA3 + ' | ' + JSON.stringify(stA3),
   trimA3 === true && outA3 === true && JSON.stringify(stA3.sel) === '[1,2]');
 // A4: the MAP door snapshots too
 await ev2(`(() => { // drive157's tap-seam stub: a box query names Long Road under the tap
@@ -539,12 +548,22 @@ const openA4 = await poll(`crSectorSession.street === 'Long Road'`, 10000);
 await ev2(`(() => { if (map.__qrfOrig) { map.queryRenderedFeatures = map.__qrfOrig; delete map.__qrfOrig; } return true; })()`);
 await ev2(`crSectorTap({ lat: 43.8, lng: -79.574 })`); // part 1 off -> [2]
 const trimA4 = await poll(`!!draft.sectors['Long Road'] && draft.sectors['Long Road'].length === 1`, 10000);
-await clickCancel();
+await tapAway();
 const outA4 = await poll(`crSectorSession.street === null`, 10000);
 await settled();
 const stA4 = await J(`({ sel: draft.sectors['Long Road'] })`);
-ok('158-A4 THE MAP DOOR SNAPSHOTS TOO: entering sector mode by re-tapping the picked road on the map, un-picking part 1 ([2]), then Cancel restores the entry state [1,2] - the snapshot discipline is the entry\'s, not the door\'s | opened: ' + openA4 + ', trimmed: ' + trimA4 + ', out: ' + outA4 + ' | ' + JSON.stringify(stA4),
+ok('158-A4 THE MAP DOOR SNAPSHOTS TOO: entering sector mode by re-tapping the picked road on the map, un-picking part 1 ([2]), then a tap-away restores the entry state [1,2] - the snapshot discipline is the entry\'s, not the door\'s | opened: ' + openA4 + ', trimmed: ' + trimA4 + ', out: ' + outA4 + ' | ' + JSON.stringify(stA4),
   openA4 === true && trimA4 === true && outA4 === true && JSON.stringify(stA4.sel) === '[1,2]');
+// A5: Deselect removes the street entirely (Beta 1.269)
+const openA5 = await rowClick(); // snapshot is [1,2]
+await ev2(`crSectorTap({ lat: 43.8, lng: -79.574 })`); // part 1 off -> [2]: the session carries an edit when Deselect lands
+const trimA5 = await poll(`!!draft.sectors['Long Road'] && draft.sectors['Long Road'].length === 1`, 10000);
+const btnA5 = await J(`(() => { const b = document.getElementById('crSbDeselect'); if (b) b.click(); return !!b; })()`);
+const outA5 = await poll(`crSectorSession.street === null && !(draft && draft.roads['Long Road'])`, 10000);
+await settled();
+const stA5 = await J(`({ roads: draft ? Object.keys(draft.roads) : ['<no draft>'], sec: draft && draft.sectors ? draft.sectors['Long Road'] : undefined, rows: document.querySelectorAll('#crPickList .crPRow').length, feats: (map.getSource('crDraft').serialize().data.features || []).filter(f => f.properties.name === 'Long Road').length, bar: getComputedStyle(document.getElementById('crSectorBar')).display, panel: getComputedStyle(document.getElementById('crPanel')).display })`);
+ok('158-A5 DESELECT REMOVES THE ROAD ENTIRELY (Beta 1.269): with a trim edit live in the session ([2] of the entry [1,2]), pressing the bar\'s Deselect takes Long Road out of the draft completely - no road entry, no sector entry, no panel row, no draft paint for it - and the bar closes back to the panel (the same removal the Review row x performs, not a session exit: Done would have kept [2], the tap-away would have restored [1,2]) | opened: ' + openA5 + ', trimmed: ' + trimA5 + ', btn: ' + btnA5 + ', out: ' + outA5 + ' | ' + JSON.stringify(stA5),
+  openA5 === true && trimA5 === true && btnA5 === true && outA5 === true && stA5.roads.length === 0 && stA5.sec === undefined && stA5.rows === 0 && stA5.feats === 0 && stA5.bar === 'none' && stA5.panel !== 'none');
 await ev2(`exitCreate()`);
 
 // ================= B: the one-object animation, frame by frame =================

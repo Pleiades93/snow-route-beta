@@ -85,8 +85,8 @@ check('14: the frame loop cannot storm the creation sources (gate fixes, PR #158
 
 // ---------- the release editorial ----------
 check('13: What\'s New carries the 1.266 bullet (rolled by the unified-load-in round), within the 108-char cap, em-dash free, and the CHANGELOG top entry is Beta 1.266 above 1.265',
-  whatsnew.includes('Route lines are a touch slimmer, matched closer to the road under them.') &&
-  'Route lines are a touch slimmer, matched closer to the road under them.'.length <= 108 &&
+  whatsnew.includes('Done in create-a-route now shows your whole route flat, above the review list.') &&
+  'Done in create-a-route now shows your whole route flat, above the review list.'.length <= 108 &&
   !whatsnew.includes('—') &&
   changelog.indexOf('## Beta 1.266') > -1 && changelog.indexOf('## Beta 1.266') < changelog.indexOf('## Beta 1.265'));
 

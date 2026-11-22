@@ -64,8 +64,8 @@ check('6: the scrim-free design claims are superseded and removed (the pill comm
 // ---------- the release editorial ----------
 check('7: the CHANGELOG top entry is Beta 1.257', changelog.includes('## Beta 1.257'));
 check('8: What\'s New carries the 1.257 bullet, short and dash-free',
-  whatsnew.includes('Route lines are a touch slimmer, matched closer to the road under them.')
-  && 'Route lines are a touch slimmer, matched closer to the road under them.'.length <= 108
+  whatsnew.includes('Done in create-a-route now shows your whole route flat, above the review list.')
+  && 'Done in create-a-route now shows your whole route flat, above the review list.'.length <= 108
   && !whatsnew.includes('—'));
 
 console.log(`proof-1257: ${pass} passed, ${fail} failed`);

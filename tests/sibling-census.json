@@ -2386,6 +2386,291 @@
     "scripts/check-census.py": "dd55f34cd855e60a6fadae7e261aa99f1682b9d7d8446696532045e3a281fafb"
    },
    "issued": "2026-11-21-widths-1268"
+  },
+  {
+   "id": "create-sheet-fixes-1269",
+   "kind": "app",
+   "anchors": {
+    "elements": [
+     "crSbDeselect",
+     "crSbDone",
+     "crSbAll",
+     "previewSheet",
+     "createSheet",
+     "sectorBar"
+    ],
+    "functions": [
+     "fitDraft",
+     "crDeselectSectors",
+     "crRemoveStreet",
+     "crCancelSectors",
+     "crMapTap",
+     "crOpenSectors",
+     "crCloseSectors",
+     "crMorphTo",
+     "crWantedFace",
+     "syncCrPanel"
+    ]
+   },
+   "changed": [
+    "parts/create-pick.js",
+    "parts/head.html",
+    "parts/whatsnew.js"
+   ],
+   "rows": [
+    {
+     "id": "caller:crCancelSectors:parts/create-pick.js:map:click",
+     "kind": "caller",
+     "source": "derived: call-site scan of parts/ - crCancelSectors() is called from map:click in parts/create-pick.js",
+     "status": "covered",
+     "note": "now the ONLY door to the cancel/restore (the bar button is gone): drive156 158-A1/A2/A4 prove the tap-away restore end-to-end and proof-create-zoom-tapaway S2 pins that no click listener wires crCancelSectors"
+    },
+    {
+     "id": "caller:crCloseSectors:parts/create-pick.js:crCancelSectors",
+     "kind": "caller",
+     "source": "derived: call-site scan of parts/ - crCloseSectors() is called from crCancelSectors in parts/create-pick.js",
+     "status": "covered",
+     "note": "the cancel's internals are unchanged; exercised by the drive156 A1/A2/A4 tap-away runs (bar closes, panel returns, snapshot restored)"
+    },
+    {
+     "id": "caller:crCloseSectors:parts/create-pick.js:crSbDone:click",
+     "kind": "caller",
+     "source": "derived: call-site scan of parts/ - crCloseSectors() is called from crSbDone:click in parts/create-pick.js",
+     "status": "covered",
+     "note": "the Done door is unchanged; drive156 158-A3 proves Done keeps the trims made in the session"
+    },
+    {
+     "id": "caller:crDeselectSectors:parts/create-pick.js:crSbDeselect:click",
+     "kind": "caller",
+     "source": "derived: call-site scan of parts/ - crDeselectSectors() is called from crSbDeselect:click in parts/create-pick.js",
+     "status": "covered",
+     "note": "the round's new wiring: drive156 158-A5 clicks the real #crSbDeselect button and proves full removal; proof-1269 check 7 pins the addEventListener wiring"
+    },
+    {
+     "id": "caller:crMapTap:parts/create-pick.js:map:click",
+     "kind": "caller",
+     "source": "derived: handler scan of parts/ - crMapTap is registered by reference as the map click handler in parts/create-pick.js; the event invokes it directly",
+     "status": "covered",
+     "note": "the tap-away door itself: drive156's reworked A section drives crMapTap (the production map-click handler) for its exits"
+    },
+    {
+     "id": "caller:crMorphTo:parts/create-pick.js:crCloseSectors",
+     "kind": "caller",
+     "source": "derived: call-site scan of parts/ - crMorphTo() is called from crCloseSectors in parts/create-pick.js",
+     "status": "covered",
+     "note": "unchanged close-path morph, exercised by every drive156 A-section exit; the morph motion itself is drive156's B-section subject"
+    },
+    {
+     "id": "caller:crMorphTo:parts/create-pick.js:crCollapsePanel",
+     "kind": "caller",
+     "source": "derived: call-site scan of parts/ - crMorphTo() is called from crCollapsePanel in parts/create-pick.js",
+     "status": "na",
+     "note": "panel collapse morph: no code on this path changed in this round (the changes are fitDraft's camera and the sector bar's left button); derived only because crMorphTo is an anchor"
+    },
+    {
+     "id": "caller:crMorphTo:parts/create-pick.js:crDeselectSectors",
+     "kind": "caller",
+     "source": "derived: call-site scan of parts/ - crMorphTo() is called from crDeselectSectors in parts/create-pick.js",
+     "status": "covered",
+     "note": "crDeselectSectors lands the surface via crMorphTo(crWantedFace()) when #createSheet is on: proof-1269 check 7 pins it; drive156 A5 asserts the bar closes back to the panel"
+    },
+    {
+     "id": "caller:crMorphTo:parts/create-pick.js:crExpandPanel",
+     "kind": "caller",
+     "source": "derived: call-site scan of parts/ - crMorphTo() is called from crExpandPanel in parts/create-pick.js",
+     "status": "na",
+     "note": "panel expand morph: no code on this path changed in this round; derived only because crMorphTo is an anchor"
+    },
+    {
+     "id": "caller:crMorphTo:parts/create-pick.js:crOpenSectors",
+     "kind": "caller",
+     "source": "derived: call-site scan of parts/ - crMorphTo() is called from crOpenSectors in parts/create-pick.js",
+     "status": "covered",
+     "note": "opening the sector bar is the entry to every drive156 A scenario (A1/A2/A4/A5 open sectors first); the only edit on this path is a stale-comment correction"
+    },
+    {
+     "id": "caller:crOpenSectors:parts/create-pick.js:pickStreet",
+     "kind": "caller",
+     "source": "derived: call-site scan of parts/ - crOpenSectors() is called from pickStreet in parts/create-pick.js",
+     "status": "covered",
+     "note": "the second-tap entry Andrew named (drive156 158-B3's subject); unchanged by the round and exercised by the A section's entries"
+    },
+    {
+     "id": "caller:crOpenSectors:parts/create-pick.js:row:click",
+     "kind": "caller",
+     "source": "derived: call-site scan of parts/ - crOpenSectors() is called from row:click in parts/create-pick.js",
+     "status": "covered",
+     "note": "the Review-row entry into sector mode: drive156 158-A1 enters via the row; unchanged by the round"
+    },
+    {
+     "id": "caller:crRemoveStreet:parts/create-pick.js:crDeselectSectors",
+     "kind": "caller",
+     "source": "derived: call-site scan of parts/ - crRemoveStreet() is called from crDeselectSectors in parts/create-pick.js",
+     "status": "covered",
+     "note": "the round's core claim - Deselect lands on the ONE removal path, not a second implementation: proof-1269 check 7 pins the call; drive156 A5 proves the end state (no road entry, no sector entry, no panel row, no draft paint)"
+    },
+    {
+     "id": "caller:crRemoveStreet:parts/create-pick.js:crToggleSector",
+     "kind": "caller",
+     "source": "derived: call-site scan of parts/ - crRemoveStreet() is called from crToggleSector in parts/create-pick.js",
+     "status": "na",
+     "note": "the toggle-off-last-sector removal: crToggleSector and crRemoveStreet are byte-identical to 1.268 in this round; derived only because crRemoveStreet is an anchor"
+    },
+    {
+     "id": "caller:crRemoveStreet:parts/create-pick.js:del:click",
+     "kind": "caller",
+     "source": "derived: call-site scan of parts/ - crRemoveStreet() is called from del:click in parts/create-pick.js",
+     "status": "covered",
+     "note": "the Review row x - the reference removal Deselect must match; drive156 A5's assertions mirror its end state and proof-1269 pins both doors landing on the same function"
+    },
+    {
+     "id": "caller:crWantedFace:parts/create-pick.js:crCloseSectors",
+     "kind": "caller",
+     "source": "derived: call-site scan of parts/ - crWantedFace() is called from crCloseSectors in parts/create-pick.js",
+     "status": "covered",
+     "note": "unchanged helper on the close path, exercised by all drive156 A-section exits"
+    },
+    {
+     "id": "caller:crWantedFace:parts/create-pick.js:crDeselectSectors",
+     "kind": "caller",
+     "source": "derived: call-site scan of parts/ - crWantedFace() is called from crDeselectSectors in parts/create-pick.js",
+     "status": "covered",
+     "note": "proof-1269 check 7 pins crDeselectSectors landing through crMorphTo(crWantedFace())"
+    },
+    {
+     "id": "caller:crWantedFace:parts/create-pick.js:syncCrPanel",
+     "kind": "caller",
+     "source": "derived: call-site scan of parts/ - crWantedFace() is called from syncCrPanel in parts/create-pick.js",
+     "status": "covered",
+     "note": "crDeselectSectors' fallback branch (sheet off) lands via syncCrPanel; proof-1269 check 7 pins the whole function body including that branch"
+    },
+    {
+     "id": "caller:fitDraft:parts/create-pick.js:setCreateStage",
+     "kind": "caller",
+     "source": "derived: call-site scan of parts/ - fitDraft() is called from setCreateStage in parts/create-pick.js",
+     "status": "covered",
+     "note": "the Done path - fitDraft's only caller: drive220 C1/C2 prove the new flat, sheet-aware flight end-to-end; the empty-draft guard is drive220's D section and proof-1269 check 4"
+    },
+    {
+     "id": "caller:syncCrPanel:parts/create-pick.js:crCloseSectors",
+     "kind": "caller",
+     "source": "derived: call-site scan of parts/ - syncCrPanel() is called from crCloseSectors in parts/create-pick.js",
+     "status": "covered",
+     "note": "close-path panel sync, exercised by the drive156 A-section exits"
+    },
+    {
+     "id": "caller:syncCrPanel:parts/create-pick.js:crCollapsePanel",
+     "kind": "caller",
+     "source": "derived: call-site scan of parts/ - syncCrPanel() is called from crCollapsePanel in parts/create-pick.js",
+     "status": "na",
+     "note": "panel collapse sync: no code on this path changed in this round; derived only because syncCrPanel is an anchor"
+    },
+    {
+     "id": "caller:syncCrPanel:parts/create-pick.js:crDeselectSectors",
+     "kind": "caller",
+     "source": "derived: call-site scan of parts/ - syncCrPanel() is called from crDeselectSectors in parts/create-pick.js",
+     "status": "covered",
+     "note": "the new function's else-branch landing; proof-1269 check 7 pins it"
+    },
+    {
+     "id": "caller:syncCrPanel:parts/create-pick.js:crMorphTo",
+     "kind": "caller",
+     "source": "derived: call-site scan of parts/ - syncCrPanel() is called from crMorphTo in parts/create-pick.js",
+     "status": "na",
+     "note": "morph settle plumbing: untouched by this round; derived only because syncCrPanel is an anchor"
+    },
+    {
+     "id": "caller:syncCrPanel:parts/create-pick.js:crOpenSectors",
+     "kind": "caller",
+     "source": "derived: call-site scan of parts/ - syncCrPanel() is called from crOpenSectors in parts/create-pick.js",
+     "status": "covered",
+     "note": "open-path panel sync, exercised by every drive156 A-section entry"
+    },
+    {
+     "id": "caller:syncCrPanel:parts/create-pick.js:crSettleMorph",
+     "kind": "caller",
+     "source": "derived: call-site scan of parts/ - syncCrPanel() is called from crSettleMorph in parts/create-pick.js",
+     "status": "na",
+     "note": "morph settle plumbing: untouched by this round; derived only because syncCrPanel is an anchor"
+    },
+    {
+     "id": "caller:syncCrPanel:parts/create-pick.js:renderCrLists",
+     "kind": "caller",
+     "source": "derived: call-site scan of parts/ - syncCrPanel() is called from renderCrLists in parts/create-pick.js",
+     "status": "covered",
+     "note": "after Deselect's removal the lists re-render through this path; drive156 A5 asserts zero panel rows for the removed road"
+    },
+    {
+     "id": "gesture:parts/create-pick.js:map:click",
+     "kind": "gesture",
+     "source": "derived: handler scan - the map click handler in parts/create-pick.js touches crCancelSectors without dismissing it",
+     "status": "covered",
+     "note": "the tap-away gesture reaches crCancelSectors through crMapTap without any button dismissal - the Beta 1.129 restore semantics: drive156 158-A1/A2/A4 and proof-create-zoom-tapaway prove it"
+    },
+    {
+     "id": "theme:crSbAll",
+     "kind": "theme",
+     "source": "derived: stylesheet scan of parts/head.html - #crSbAll has NO day rule and NO body.night rule",
+     "status": "na",
+     "note": "the Entire road button: styling untouched by this round (no day or night rule before or after); its behaviour is exercised by drive156 A3/A4"
+    },
+    {
+     "id": "theme:crSbDeselect",
+     "kind": "theme",
+     "source": "derived: stylesheet scan of parts/head.html - #crSbDeselect has a day rule and NO body.night rule",
+     "status": "covered",
+     "note": "the renamed rule carries Cancel's exact red ghost styling (day rule: transparent background, #e63a2e text, hairline border); proof-1229 check 6b and proof-1269 check 6 pin it; night parity is the rename itself - #crSbCancel likewise had no night-specific rule"
+    },
+    {
+     "id": "theme:crSbDone",
+     "kind": "theme",
+     "source": "derived: stylesheet scan of parts/head.html - #crSbDone has a day rule and NO body.night rule",
+     "status": "na",
+     "note": "the Done button's styling is untouched by this round, identical to 1.268"
+    },
+    {
+     "id": "theme:createSheet",
+     "kind": "theme",
+     "source": "derived: stylesheet scan of parts/head.html - #createSheet has a day rule and NO body.night rule",
+     "status": "na",
+     "note": "the sheet's own rules are untouched; Part 1 measures the sibling previewSheet at runtime and changes no stylesheet rule for either sheet"
+    },
+    {
+     "id": "theme:previewSheet",
+     "kind": "theme",
+     "source": "derived: stylesheet scan of parts/head.html - #previewSheet has NO day rule and NO body.night rule",
+     "status": "covered",
+     "note": "Part 1 measures previewSheet.offsetHeight at runtime for the fit's bottom padding: drive220 C1 recomputes the fit from the live sheet and C2 asserts against its measured top edge; no CSS rule added or changed - the measurement is the coverage"
+    },
+    {
+     "id": "theme:sectorBar",
+     "kind": "theme",
+     "source": "derived: stylesheet scan of parts/head.html - #sectorBar has NO day rule and NO body.night rule",
+     "status": "na",
+     "note": "the bar container's styling is untouched; only the left button's id, label and rule name changed inside it"
+    }
+   ],
+   "files": {
+    "parts/app1.js": "ad3bf7f8e4f509f37532579d071ada75cafd156223eb9a874c672577b6108bac",
+    "parts/app2.js": "5ff1abe58c8008664743555c5f195cdbd309b41e8bf288d1dfbede0a08a714ff",
+    "parts/app3.js": "da6c7d85eafbb97572278b818ff60a6fc25c5c35a3e51ee6c8ceb23f52ddf91c",
+    "parts/app4.js": "059a12937fd806f09bc2db6a3af52bae51ac8e714d40715894136ffb9df63e4f",
+    "parts/app5.js": "d0a79fe85e6c8cd7135fb871d0d57bf3ad115f73828d255a61342a6d3d0aa4e2",
+    "parts/brand-snow.js": "86fa9a02f29c7345ee68d68daffd9c72da612921b64da37f1eccf6b72161ac5f",
+    "parts/create-cache.js": "2a7e983aa50862cb074a16abf9266a41a1a175c69faa5215b1d3d289aa2b5327",
+    "parts/create-citydata.js": "393d90f275d971b5e52352deebaece381279acd0e86495ffa2da35701de9148e",
+    "parts/create-fetch.js": "e7a65bd88dc338213946c4537dc5d397f79396ec416b6f4ebf4be831927aeb66",
+    "parts/create-packs.js": "8653a58e37ead9cfff6b1bfc0029b033eb690716efc22cb3571abcbc9ca75c33",
+    "parts/create-pick.js": "7188458b087496ad52ff5d159ae23668b543d0100a3d58c3b251d33374258dd6",
+    "parts/create-save.js": "ad39720727f43d397e72443c92955c5a35d530f03e3219b2182c9ee7c062e52d",
+    "parts/data.js": "9684c69862156dc70ee9a2b88278b4e825c5bf35f0c150fbc5660ccbdce9304b",
+    "parts/engine.js": "d6d1f676ac8bc2a302cfbaf56de1e10cb361fd8b746d94d6380a5e4ebaf76173",
+    "parts/pmstyles.js": "f3501db9c16dbc6a5fa8c901089101e4913772384de1f069accb23a614bb90fc",
+    "parts/whatsnew.js": "e9a38a3d9be72698904d3fc79b3a3ed1ed19cff3b73cafe3de6daee093aca78f",
+    "parts/head.html": "2e150921d447daa9a3d3f9cf2f9a2e661f7e3d885f686dc14537c65d35f49179",
+    "scripts/check-census.py": "dd55f34cd855e60a6fadae7e261aa99f1682b9d7d8446696532045e3a281fafb"
+   },
+   "issued": "2026-11-21 create-sheet-fixes-1269"
   }
  ]
 }
