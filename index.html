@@ -2,7 +2,7 @@
 <html lang="en" class="boot">
 <head>
 <meta charset="UTF-8">
-<meta http-equiv="Content-Security-Policy" content="default-src 'none'; script-src 'sha384-jLrYrdR8QkqgBSDbdlPuqa4uvywrDxOvoZme64CmtLp/gEr8kD8ys25hV9EUnemV' https://cdn.jsdelivr.net/npm/maplibre-gl@4.7.1/dist/maplibre-gl.js; style-src-elem 'sha384-tmY3TpLG3IBHj1Up3VD7qdEfXIhozozAPJ9yO555DP2Yf0nkzcrBjraMu4xPAkwd' https://cdn.jsdelivr.net; style-src-attr 'unsafe-inline'; img-src 'self' data: blob: https://tiles.basemaps.cartocdn.com https://protomaps.github.io https://cdn.jsdelivr.net; connect-src 'self' https://tiles.basemaps.cartocdn.com https://protomaps.github.io https://cdn.jsdelivr.net https://nominatim.openstreetmap.org https://overpass-api.de https://overpass.kumi.systems; worker-src blob: 'self'; child-src blob: 'self'; font-src 'none'; manifest-src 'self'; base-uri 'none'; form-action 'none'; object-src 'none'">
+<meta http-equiv="Content-Security-Policy" content="default-src 'none'; script-src 'sha384-sguTGWWfRpH4hUC4t+3tf3kVzJ4L4mjbdAjtIPPgqC1OcUPs06P+ws6Wz/GNni4u' https://cdn.jsdelivr.net/npm/maplibre-gl@4.7.1/dist/maplibre-gl.js; style-src-elem 'sha384-FOMZKwpVGazJVS8eg4UE4QqzqQgd9P9qMtOUL6BvI1D0iKPr0Omc63F0vC2IKasW' https://cdn.jsdelivr.net; style-src-attr 'unsafe-inline'; img-src 'self' data: blob: https://tiles.basemaps.cartocdn.com https://protomaps.github.io https://cdn.jsdelivr.net; connect-src 'self' https://tiles.basemaps.cartocdn.com https://protomaps.github.io https://cdn.jsdelivr.net https://nominatim.openstreetmap.org https://overpass-api.de https://overpass.kumi.systems; worker-src blob: 'self'; child-src blob: 'self'; font-src 'none'; manifest-src 'self'; base-uri 'none'; form-action 'none'; object-src 'none'">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="mobile-web-app-capable" content="yes">
@@ -85,12 +85,7 @@
   body.night #selPop #selNote { background: rgba(255,255,255,.06); color: #c9cdd4; }
   #selNote svg { width: 16px; height: 16px; display: block; margin: auto; }
   #selNote img { width: 16px; height: 16px; display: block; margin: auto; } /* Beta 1.219: the img form (a pack artwork) fills the same 16px box as the svg form - a separate rule, so the pinned svg rule above never moves */ /* Beta 1.209 Look 2: the note icon steps 19px -> 16px */
-  .banner { position: fixed; left: calc(10px + var(--sal)); right: calc(10px + var(--sar)); bottom: calc(var(--vvb, 0px) + 236px + var(--sab)); z-index: 1000; background: var(--card); -webkit-backdrop-filter: var(--blur); backdrop-filter: var(--blur); color: var(--ink); border-radius: 16px; box-shadow: var(--shadow-card); padding: 10px 12px; display: flex; align-items: center; gap: 10px; font-size: 13px; }
-  .banner.hidden { display: none; }
-  .banner span { flex: 1; line-height: 1.4; }
-  .banner button { border: none; border-radius: var(--rad-btn); padding: 8px 10px; font-size: 13px; font-weight: 700; min-height: 38px; background: linear-gradient(135deg, #3d65ef, #1b2fb6); color: #fff; white-space: nowrap; }
-  .banner button.red { background: #e63a2e; }
-  #stale { z-index: 1001; }
+  /* Beta 1.271: the .banner family retired with its only two wearers (the suggestion and stale-clean banners) - the stale question lives on the shared confirmation pill now; the suggestion offer is gone entirely */
   #mapNote { position: fixed; left: calc(10px + var(--sal)); right: calc(10px + var(--sar)); bottom: calc(var(--vvb, 0px) + 240px + var(--sab)); z-index: 1003; background: var(--card); -webkit-backdrop-filter: var(--blur); backdrop-filter: var(--blur); color: var(--ink); border-radius: 16px; box-shadow: var(--shadow-card); padding: 10px 12px; display: flex; align-items: center; gap: 10px; font-size: 13px; }
   #mapNote.hidden { display: none; }
   #mapNote span { flex: 1; line-height: 1.4; }
@@ -157,7 +152,7 @@
   #confirmPill .cfRow button { flex: 1; border: none; border-radius: 11px; height: 42px; min-height: 42px; padding: 0 10px; font-size: 14.5px; font-weight: 700; cursor: pointer; touch-action: manipulation; white-space: nowrap; } /* the pill action buttons' geometry (42px / 11px / 14.5px-700) */
   #confirmPill #cfKeep { background: rgba(20,22,26,.05); color: #14161a; } /* the ghost: the note button's day tint (#selNote) */
   body.night #confirmPill #cfKeep { background: rgba(255,255,255,.06); color: #f2f3f5; }
-  #confirmPill #cfDanger { background: #e63a2e; color: #fff; } /* the app's destructive solid - the same red #paceCancel itself wears */
+  /* Beta 1.271: #cfDanger is a WEARER of the one shared danger solid, defined at the .routeDel site in the menu block below - it keeps no colour rule of its own */
   #selPop button { border: 0; border-radius: 999px; padding: 7px 8px; font-size: 12px; font-weight: 700; cursor: pointer; touch-action: manipulation; min-height: 36px; white-space: nowrap; } /* tightened with the .selActs gap (8px -> 5px) and the card's side padding below: the four action buttons' min-content floor (358px) overflowed the card's 313px inner row and pushed Clear 31px past the card's edge at 390 wide (sweep re-run E-06) */
   #selPop #selAllBtn { background: rgba(6,180,130,.13); color: #087a5b; height: 42px; min-height: 42px; border-radius: 11px; font-size: 14.5px; padding: 0 12px; } /* Beta 1.209 Look 2: Mark both sides wears the action button's mint tint + 42px geometry, so the two mark buttons still share the one official green (drive128 M11) */
   body.night #selPop #selAllBtn { background: rgba(6,214,160,.15); color: #2fe0ae; }
@@ -317,7 +312,7 @@
   .modal.hidden { display: none; }
   .modal:not(.hidden) { animation: menuFade var(--anim-dur) var(--ease-open); }
   .modal:not(.hidden) .card { animation: menuRise var(--anim-dur) var(--ease-open); }
-  .banner:not(.hidden), #mapNote:not(.hidden) { animation: menuRise var(--anim-dur) var(--ease-open); }
+  #mapNote:not(.hidden) { animation: menuRise var(--anim-dur) var(--ease-open); }
   #selPop:not(.hidden) { animation: menuRiseC var(--anim-dur) var(--ease-open); } /* centred: its rise keyframes must carry the -50% X shift or the pop-up jumps sideways mid-animation */
   @keyframes menuRiseC { from { opacity: 0; transform: translateX(-50%) translateY(10px) scale(.97); } }
   @keyframes menuFade { from { opacity: 0; } }
@@ -327,13 +322,12 @@
   .modal .card p { font-size: 13px; color: var(--ink-dim); line-height: 1.5; margin-bottom: 14px; white-space: pre-wrap; }
   .modal .row { display: flex; gap: 8px; }
   .modal .row button { flex: 1; border: none; border-radius: var(--rad-btn); padding: 11px; font-size: 14px; font-weight: 700; min-height: 44px; }
-  #finYes { background: #c22f24; color: #fff; }
+  /* Beta 1.271: #finYes wears the shared danger solid (menu block below) - its own #c22f24 rule retired */
   #noteYes { background: linear-gradient(135deg, #3d65ef, #1b2fb6); color: #fff; }
   #noteText { width: 100%; min-height: 74px; border-radius: var(--rad-btn); border: 1px solid var(--hair); background: var(--field); color: var(--ink); font-size: 16px; /* 16px: no iOS focus auto-zoom (Beta 1.18) */ padding: 9px; margin-bottom: 12px; font-family: inherit; }
   #xText { width: 100%; min-height: 150px; border-radius: 14px; border: 1px solid rgba(255,255,255,.45); background: #fff; color: #14161c; font-size: 11.5px; padding: 10px; font-family: inherit; resize: vertical; } /* Beta 1.88: the backup box, restyled for the blue pane (white box, dark text - the mock Andrew approved). Beta 1.153 (Andrew): the font joins the app's ONE stack (-apple-system, sans-serif via the root rule) - it was the UI's last monospace deviant. */
   .bkBtn { font-size: 16px; height: 58px; padding: 0 16px; text-align: center; width: 100%; } /* Beta 1.233: the Settings sub-pane buttons join the one pill height - exactly 58px */
-  #stDel { background: rgba(230,57,46,.18); color: #ffb3ac; } /* Beta 1.229 (Andrew's universal rule): 'Delete maps' wears the in-menu Delete treatment - the .routeDel colours (red tint, light red ink) on the Backup pane's own button; colour only */
-  #stDel:active { background: rgba(230,57,46,.18); } /* holds the tint on press, like .routeDel's own hold rule */
+  /* Beta 1.271 (Andrew, danger cohesion Set A): #stDel wears the shared danger solid (menu block below), rest and press - the 1.229 .routeDel tint copy retired */
   #xOpts, #xRestoreOpts { display: flex; flex-direction: column; gap: 12px; width: 100%; } /* Beta 1.89: the backup pane's option groups stack at the pane's own rhythm */
   #xPreStat { font-size: 12.5px; color: rgba(255,255,255,.9); line-height: 1.5; text-align: center; }
   #xPreStat:empty { display: none; } /* Beta 1.256 (Andrew): an empty status line takes no box - as a flex item it ate the pane gap twice over (12 above + 12 below), so the HEALTH section label below it took 30px of air where MAPS takes 18 (the pane gap + the label's own 6px). With no box at rest-empty, the label's air is 18 in every state, populated or not */
@@ -387,7 +381,7 @@
   #nightBtn { position: fixed; top: calc(var(--vvt, 0px) + 25px + var(--sat)); right: calc(12px + var(--sar)); z-index: 1000; margin: 0; } /* Beta 1.88 (Andrew): Day/Night is its own round button at top-right - the dockBtn class itself, so it IS the Pace/Streets button (56px, same glass, same 27px icon), only placed (Beta 1.222: the shared surface is the Soft Lift - an opaque gradient with lift shadows - not glass any more; the glass tokens stand untouched for #spdPill, which keeps its own rule and is NOT lifted - it is a readout, not a button). Sweep re-run E-03: the top now rides var(--sat) like #hud / #spdPill / #selPop - without it the button sat a full safe-area higher than the rest of the top chrome on notched phones. Beta 1.228 (Andrew): the offset is now the title's own - #hud's 25px padding-top - so this button's top edge stands level with the "Snow Route Beta" title's top edge, opposite sides of one line; the speed circle keeps its 78px seat under the title (its 1.220 level-with-the-moon property is superseded by this title line, and drive199 measures the new geometry) */
   #centreBtn { position: fixed; top: calc(var(--vvt, 0px) + 91px + var(--sat)); right: calc(12px + var(--sar)); z-index: 1002; margin: 0; } /* Beta 1.115 (Andrew): the re-centre button - same dockBtn, same right edge, directly below Day/Night (25 + 56 + 10 gap - the stack rose with Day/Night in Beta 1.228, the 10px gap byte-identical). Shown only while the follow is suspended (syncCentreBtn, app3). Sweep re-run E-03: the top rides var(--sat) like the rest of the top chrome, and z-index 1002 lifts the button ABOVE #selPop (1001) - at the same 144px top the centred popup overlapped the button's left ~44px at 390 wide and, painting later, stole its taps; the button now paints over the card's corner instead, so it is never covered in the one state where both show (follow suspended + a street selected) */
   #centreBtn.hidden { display: none; }
-  body.selOpen #centreBtn { top: calc(var(--vvt, 0px) + 267px + var(--sat)); } /* Beta 1.214: the selection card's title row now holds the note button in the card's top-right corner - the corner the re-centre button paints over (the E-03 lift above assumed plain card surface there; measured at 390 wide the button covered 29 of the note button's 34 px and took its centre tap). While the card is open (body.selOpen, toggled by renderPanel - the card's only show/hide path) the re-centre button drops below the card instead: card top 144 + card height 112.2 + a 10.8 gap = 267, the same ~10 px gap language as its own 91 (day/night bottom 81 + 10, Beta 1.228). Both controls stay fully tappable; the button returns the moment the card closes */
+  /* Beta 1.271 (Andrew's ruling): the re-centre button NEVER drops - the 1.214 body.selOpen drop retired, and renderPanel no longer raises the class; the button holds its 91px seat under Day/Night in every state */
   #toast { position: absolute; left: 50%; bottom: calc(var(--vvb) + 188px + var(--sab)); /* Beta 1.221 (placement, Andrew's bar: the pill never sits on a control): this 188px is only the FLOOR the pill starts from - the old fixed 120px band sat inside the dock stack's span (measured top ~208px), so a pill painted across the Start button it reported on, and no other fixed number clears every state either (the note banner rides above the dock, sheets and modals bring their own controls, and the pill's height changes with its text). placeToast() in app1.js therefore measures at fire time and raises the pill above whatever it would cover, with a 6px gap; drive204 verifies zero overlap in the rendered page across every state a surviving toast can fire. The floor rides var(--vvb) like the dock does, so the starting gap holds when browser chrome shows */ transform: translateX(-50%) translateY(16px); z-index: 10001; /* Beta 1.93 (deep audit F03): above the full-screen takeovers (10000) - backup/restore errors toasted from inside Settings were hidden behind its opaque blue */ background: linear-gradient(135deg, #3d65ef, #1b2fb6); color: #fff; font-size: 15px; font-weight: 700; padding: 10px 18px; border-radius: 999px; box-shadow: 0 8px 20px rgba(20,35,110,.45); /* Beta 1.223 (Andrew, option A): EVERY pop-up wears this one style - the app blue gradient pill, white bold text, one size standard, identical day and night; #createHint and #crHintBtn carry the same declarations. Through 1.222 the toast was a dark box (rgba(20,22,28,.95), radius 10px, 13px) that matched nothing else */ opacity: 0; pointer-events: none; transition: opacity var(--anim-dur) var(--ease-open), transform var(--anim-dur) var(--ease-open); max-width: 86vw; text-align: center; }
   #toast.show { opacity: 1; transform: translateX(-50%) translateY(0); }
   #map { transition: transform .45s ease-in-out; }
@@ -450,15 +444,22 @@ body.snow-scene #routeMenu.boot { background: transparent; } /* Beta 1.159: whil
 .rmPane { width: min(342px, 92vw); display: none; flex-direction: column; gap: 12px; }
 .rmPane.on { display: flex; }
 #rmCreatePane { padding-top: 6px; } /* Andrew, 2026-11-19 (rides silently under Beta 1.249 - no version bump, by his order): the Create door pane's pill pair sat exactly 3px above the boot pane's pair - the pane centres as a whole block and its extras around the pair are unbalanced (title 26 + gap 12 = 38 above; gap 12 + Back 32 = 44 below), so the pair absorbed half the 6px imbalance. Measured in the rendered page, both themes, zero jitter (work/pill-shift-measure-2026-11-19). These 6px above the title balance the pane around its pair: the pane grows 210 to 216 and the pair drops exactly 3px onto the boot pair's centre-line. Local test battery waived by Andrew for this one-line change; CI still gates the PR. */
-.rmBtn { appearance: none; -webkit-appearance: none; border: none; background: rgba(255,255,255,.18); box-shadow: 0 2px 8px rgba(10,16,60,.25); color: #fff; font-size: 19px; font-weight: 650; height: 58px; padding: 0 20px; border-radius: 14px; text-align: center; cursor: pointer; } /* Beta 1.158 (Andrew, from the landing-height examples page's route-menu mock - he directed its pill treatment into ALL the blue menus: the text centred, the stronger white outline around the pill, the tinted faded fill, and "Choose route is solid and Create new route is not - that's a good effect"): THE one pill definition for both blue menus (#routeMenu and #setMenu share this chrome; no per-menu copies). The default is the mock's SECONDARY - tinted fill rgba(255,255,255,.16), the outline as an inset ring (1.5px, white at .75), text centred - and .primary below is the mock's SOLID. Fill, ring, radius (14px) and ink are the mock's own values (its .menu-btn / .menu-btn.secondary); the app's 19px menu type and 18px vertical padding stay (the mock's 17px was its 360px stage's scale). Through 1.157: 1px border at .45 white, fill .14, radius 16, text LEFT. drive180's PILL checks measure the centring and the two fills on the boot menu. Beta 1.222 (Andrew, soft-fill pick from the blue-menu sample): the inset RING RETIRES on the default pill - it wears the soft fill rgba(255,255,255,.18) with a soft drop shadow (0 2px 8px rgba(10,16,60,.25)) and no outline; .quiet keeps its quieter delta (fill .10, shadow at .18); .primary's SOLID white is unchanged - his locked carve-out. drive180's PILL checks re-pin to the soft fill in this round. Beta 1.233 (Andrew): the pill height is pinned at exactly 58px - the 18px vertical padding retired into the height - and the same 58 lands on .quiet, .bkBtn and the list rows below: every blue-menu pill, no exceptions. */
+/* Beta 1.271: the pill takes the app's one stack (font-family: inherit) - as a bare button it computed the UA button stack, which the route rows matched only while they were buttons too; as DIVs they inherit the app stack, and drive180's ROWF grades the two equal. */
+.rmBtn { appearance: none; -webkit-appearance: none; font-family: inherit; border: none; background: rgba(255,255,255,.18); box-shadow: 0 2px 8px rgba(10,16,60,.25); color: #fff; font-size: 19px; font-weight: 650; height: 58px; padding: 0 20px; border-radius: 14px; text-align: center; cursor: pointer; } /* Beta 1.158 (Andrew, from the landing-height examples page's route-menu mock - he directed its pill treatment into ALL the blue menus: the text centred, the stronger white outline around the pill, the tinted faded fill, and "Choose route is solid and Create new route is not - that's a good effect"): THE one pill definition for both blue menus (#routeMenu and #setMenu share this chrome; no per-menu copies). The default is the mock's SECONDARY - tinted fill rgba(255,255,255,.16), the outline as an inset ring (1.5px, white at .75), text centred - and .primary below is the mock's SOLID. Fill, ring, radius (14px) and ink are the mock's own values (its .menu-btn / .menu-btn.secondary); the app's 19px menu type and 18px vertical padding stay (the mock's 17px was its 360px stage's scale). Through 1.157: 1px border at .45 white, fill .14, radius 16, text LEFT. drive180's PILL checks measure the centring and the two fills on the boot menu. Beta 1.222 (Andrew, soft-fill pick from the blue-menu sample): the inset RING RETIRES on the default pill - it wears the soft fill rgba(255,255,255,.18) with a soft drop shadow (0 2px 8px rgba(10,16,60,.25)) and no outline; .quiet keeps its quieter delta (fill .10, shadow at .18); .primary's SOLID white is unchanged - his locked carve-out. drive180's PILL checks re-pin to the soft fill in this round. Beta 1.233 (Andrew): the pill height is pinned at exactly 58px - the 18px vertical padding retired into the height - and the same 58 lands on .quiet, .bkBtn and the list rows below: every blue-menu pill, no exceptions. */
 .rmBtn.primary { background: #fff; color: #173a8a; box-shadow: 0 6px 18px rgba(0,0,0,.18); } /* the mock's solid primary: white fill, deep-blue ink, a soft drop shadow, no ring - the one dominant action of a pane wears it (markup opts in per pane; the inventory is in Beta 1.158's ship record) */
 .rmBtn.primary:active { background: #fff; } /* Beta 1.226: holds the solid rest fill on press (was the #dbe4fd flash) */
 .rmBtn:active { background: rgba(255,255,255,.18); } /* Beta 1.226: holds the rest soft fill on press */
 .routeChev { font-size: 22px; color: rgba(255,255,255,.7); flex: none; } /* Beta 1.124: the city list rows' chevron (mockup) */
-.routeDel { appearance: none; -webkit-appearance: none; border: 1px solid rgba(255,120,110,.65); background: rgba(230,57,46,.18); color: #ffb3ac; font-size: 14px; font-weight: 650; padding: 8px 14px; border-radius: 10px; cursor: pointer; flex: none; } /* Beta 1.124 (Andrew, approved mockup): Delete on a created route's row */
-.routeDel:active { background: rgba(230,57,46,.18); } /* Beta 1.226: holds the rest tint on press */
+/* Beta 1.271 (Andrew, danger cohesion Set A): THE danger solid - ONE shared definition for every solid destructive pill, day and night: solid #e63a2e, white. Wearers: the confirmation's danger seat, Settings' Delete maps, the Finish Yes, the create modal's danger Yes, the create hint's Cancel face, the route dropdown's Delete and the preview sheet's Start over. Through 1.270 the red was copied into ~11 rules and a second red (#c22f24) had crept into four of them; the tint, ghost and glyph forms Andrew kept stay in their own rules - only the solid lives here. The .routeDel tint that sat on this site retires into the dropdown's Delete below. */
+#confirmPill #cfDanger, #stDel, #stDel:active, #finYes, #crModalYes.danger, #crHintBtn.danger, .routeDrop .dropDel, #pvStartOverBtn { background: #e63a2e; color: #fff; }
+.routeDrop { --drop-pill: 40px; --drop-fs: 14px; --drop-pad: 6px; --drop-gap: 5px; --drop-rad: 10px; display: none; flex-direction: column; gap: var(--drop-gap); padding: var(--drop-pad); margin: -10px 0 10px; border-radius: var(--drop-rad); background: rgba(255,255,255,.10); box-shadow: 0 2px 8px rgba(10,16,60,.18); } /* Beta 1.271 (Andrew, Option D at the samples' SMALL size): the dropdown card under a route row - Load (or the loaded route's inert Loaded) over Delete. Its size is defined ONCE, in the custom properties above, which its pills and spacing all read (the sample rounds' strategic debt, paid in the build as ordered). The -10px top margin cancels the row's own bottom margin so card and row read as one unit; the bottom margin keeps the list's 10px stride */
+.routeDrop.open { display: flex; }
+.routeDrop button { appearance: none; -webkit-appearance: none; border: none; height: var(--drop-pill); min-height: var(--drop-pill); border-radius: var(--drop-rad); font-size: var(--drop-fs); font-weight: 700; padding: 0 14px; cursor: pointer; box-shadow: 0 2px 8px rgba(10,16,60,.25); } /* the standard pill shadow (.rmBtn's) */
+.routeDrop .dropLoad { background: #fff; color: #173a8a; } /* the menu's solid primary face (.rmBtn.primary) at the dropdown's size */
+.routeDrop .dropLoad:active { background: #fff; } /* holds the solid on press, like .rmBtn.primary:active */
+.routeDrop .dropLoaded { background: #fff; color: #173a8a; opacity: .55; cursor: default; } /* the loaded route's inert pill (the samples' V1 pairing): the same white face, dimmed - the live Delete under it must always read stronger, which the solid guarantees */
 #crModal { z-index: 10002; } /* Beta 1.124: the create confirm must also serve route deletion, which is asked from INSIDE the route menu (z 10000) - the shared modal rises above the takeovers for that call too (the toast at 10001 is the precedent); during creation the menu is closed and nothing changes */
-#crModalYes.danger { background: #c22f24; color: #fff; } /* Beta 1.124: a destructive confirm's Yes wears the app's destructive red (the finYes red) */
+/* Beta 1.271: #crModalYes.danger wears the shared danger solid (above) - the #c22f24 family red retired */
 #crModalNo.cancelRed { color: #e63a2e; } /* Beta 1.229 (Andrew's universal rule): the confirm's No button wears the app's red text while it reads 'Cancel' (crConfirm toggles the class with the label); the plain ✕ form keeps the card ink */
 .rmTitle { color: #fff; font-size: 22px; font-weight: 700; text-align: center; } /* Beta 1.237 (Andrew, from the centred-titles sample, widened by his ruling 2026-11-18 18:09 EST): EVERY blue menu's pane titles sit in the MIDDLE - the centring lives in this base rule so it covers every .rmTitle wearer in both blue menus: #routeMenu (Choose a route, Create new route, Select City inside its floating sheet, Name your route, the city question) and #setMenu (System Health, Display and Sound, Done chime, About, Backup). The round first shipped a #routeMenu-scoped rule because the sample showed only that menu; Andrew's ruling overruled the scope - "every blue menu that has a title", from the cold open to Settings to About. The Pace and Streets sheets are not blue menus (they wear .sheetTitle, not this class) and are untouched. Nothing else moves: same size, weight, colour and spacing, and no pane geometry changes (the 1.236 sheet anchors stand). Through 1.236 no alignment was set anywhere, so every title rode left. */
 .rmNote { color: rgba(255,255,255,.88); font-size: 16px; line-height: 1.45; }
@@ -471,8 +472,7 @@ body.snow-scene #routeMenu.boot { background: transparent; } /* Beta 1.159: whil
 #routeMenu .routeRow { background: rgba(255,255,255,.18); border: none; box-shadow: 0 2px 8px rgba(10,16,60,.25); color: #fff; margin-bottom: 10px; position: relative; justify-content: flex-end; height: 58px; padding: 8px 16px; } /* Beta 1.158: the menu's list rows wear the unified pill family's tint + ring tokens (Beta 1.222: the family's soft fill + soft shadow tokens - the ring retired with the rest of the family). Beta 1.159 (Andrew, overruling the 1.158 note that kept the rows left-aligned): the rows are pills in full - see the .routeMeta rule below. The row becomes the positioning frame: the extras (chevron, badge, Delete) stay in flow at the right edge (flex-end), and the row keeps a pill's height even when it carries no extras (the meta no longer sets it) */
 #routeMenu .routeMeta { position: absolute; left: 0; right: 0; top: 50%; transform: translateY(-50%); align-items: center; text-align: center; padding: 0 54px; pointer-events: none; } /* Beta 1.159 (Andrew): the row's name and sub lines are CENTRED on the pill itself - the meta spans the row's full width (its side padding keeps wrapped lines clear of the chevron/Delete zone) and centres both lines, so the text sits on the row's centre no matter what rides at the right edge. pointer-events: none - taps belong to the row (a <button>, or the list's delegation for a created route's div) exactly as before */
 #routeMenu .routeCheck { width: 25px; height: 25px; flex: none; } /* Beta 1.233 (Andrew): the loaded route's disc check - 25px at the pill's right edge (the picked sample's size), clear of the meta column's 54px side padding, so the name stays dead centre */
-#routeMenu .routeRow:has(> .routeDel):has(> .routeCheck) .routeMeta { padding-right: 157px; } /* Beta 1.233: a loaded CREATED route carries Delete AND the check - the meta's right clearance grows by the check's 35px zone over the Delete-only rule below */
-#routeMenu .routeRow:has(> .routeDel) .routeMeta { padding-right: 122px; } /* sweep re-run E-04: the 54px side padding above was sized for the chevron - a Delete button's zone starts ~114px from the row's right edge, so a centred name ran up to 33px UNDER the button. Rows carrying a Delete give the meta the clearance the 1.159 note always intended; chevron/badge rows keep 54px and their true centre */
+/* Beta 1.271: the :has(> .routeDel) meta clearances retire with .routeDel - Delete lives in the dropdown now; the check alone fits the base 54px clearance */
 #routeMenu .routeName { font-size: 19px; line-height: 1.08; display: -webkit-box; -webkit-line-clamp: 2; line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden; } /* Beta 1.159: the name takes the unified pill's own size (the .rmBtn 19px; its weight was already the pill's 650). Sweep re-run E-04: the name clamps at two lines - the meta is absolutely positioned, so an unclamped long name grew the meta to 141px inside the fixed 68px row and spilled over the neighbouring rows; two lines + the one-line area below is the tallest meta that fits the row. Beta 1.233: the row is 58px now, so the pair's leading tightens (name 1.08, area 1.12 in its rule below) - the tallest meta (two name lines + the area) measures 56.6px and still fits the pill (E-04 re-proves it) */
 #routeMenu .routeArea { font-weight: 500; line-height: 1.12; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; max-width: 100%; } /* Beta 1.159: the sub line takes the pill sub-line's weight (the .rmBtn .m-sub 500; its 13px size and .75 ink already matched). Sweep re-run E-04: the area holds one line (ellipsis past that) - the second half of the meta-height clamp above. max-width: 100% is load-bearing (Codex P2 on the batch's PR): .routeMeta centres its children (align-items: center), so without it a long subtitle's box grows to the meta's full width instead of the padded column and the ellipsis never engages - the text slid into the Delete/chevron zone exactly like the name did */
 #routeMenu .routeRow:active { background: rgba(255,255,255,.18); } /* Beta 1.226: holds the rest soft fill on press */
@@ -481,7 +481,7 @@ body.snow-scene #routeMenu.boot { background: transparent; } /* Beta 1.159: whil
    and preview stages live on the map (search bar + bottom sheets) while
    body.creating hides the working chrome. Route colours carry the meaning:
    gold = primary, raspberry = secondary. */
-body.creating #dock, body.creating #tabBar, body.creating #hud, body.creating #nightBtn, body.creating #centreBtn, body.creating #selPop, body.creating #chips, body.creating #suggest, body.creating #stale, body.creating #mapNote { display: none !important; }
+body.creating #dock, body.creating #tabBar, body.creating #hud, body.creating #nightBtn, body.creating #centreBtn, body.creating #selPop, body.creating #chips, body.creating #mapNote { display: none !important; }
 /* Beta 1.120 (Andrew): the whole create row sits lower by HALF ITS OWN
    HEIGHT - the row's height is fixed at 50px (the search wrap and the
    exit button both wear it), so the shift is a fixed 25px, named once
@@ -560,7 +560,7 @@ body.night .crResult:first-child:active { background: rgba(255,255,255,.06); }
    no coverage) - a real button, not hint text, because it carries an
    action Andrew must be able to tap. */
 #crHintBtn { position: fixed; top: calc(114px + var(--cr-shift) + env(safe-area-inset-top, 0px)); left: 50%; transform: translateX(-50%); z-index: 4900; border: none; background: linear-gradient(135deg, #3d65ef, #1b2fb6); color: #fff; font-size: 15px; font-weight: 700; padding: 10px 18px; border-radius: 999px; box-shadow: 0 8px 20px rgba(20,35,110,.45); cursor: pointer; } /* Beta 1.223: padding + shadow aligned to the one pop-up standard (option A) the hint above wears - it already carried the gradient pill; now the whole family is one declaration set */
-#crHintBtn.danger { background: #c22f24; } /* Beta 1.229 (Andrew's universal rule): anything Cancel is red - crRenderHint hangs this class on the button while its label reads Cancel, so the preparation readout's Cancel pill wears the app's destructive red (the finYes / crModalYes.danger red); Resume/Retry/Prepare keep the blue above */
+/* Beta 1.271: #crHintBtn.danger wears the shared danger solid (the menu block) - the #c22f24 family red retired; Resume/Retry/Prepare keep the blue above */
 #crCityChange { appearance: none; -webkit-appearance: none; width: 100%; border: none; background: var(--chip); color: var(--ink); font-size: 14.5px; font-weight: 600; padding: 10px 14px; border-radius: 12px; cursor: pointer; text-align: center; margin-bottom: 9px; flex: none; } /* Beta 1.223 (Andrew, option E from the city-picker sample): the city control is a slim full-width bar directly above Done, not the outline pill that sat in the panel title through 1.222. Its surface is the sheet's own chip tint; no new colour anywhere */
 #crCityChange b { font-weight: 750; }
 .crCityGo { color: var(--link); font-weight: 700; } /* the word 'change' in the app's own link blue - the one link token, both themes */
@@ -587,6 +587,7 @@ body.night .crResult:first-child:active { background: rgba(255,255,255,.06); }
 .crPrimary:disabled { opacity: .45; }
 .crGhost { appearance: none; -webkit-appearance: none; border: 1px solid var(--hair); background: transparent; color: var(--ink); font-size: 16px; font-weight: 650; padding: 13px 18px; border-radius: 14px; width: 100%; cursor: pointer; }
 .crDanger { appearance: none; -webkit-appearance: none; border: none; background: none; color: #e63a2e; font-size: 15px; font-weight: 650; padding: 8px; cursor: pointer; width: 100%; }
+#pvStartOverBtn { border-radius: 14px; padding: 13px 18px; font-size: 16px; font-weight: 700; } /* Beta 1.271 (Andrew's explicit call): Start over is a FULL solid-red button - the create family's button geometry (.crGhost's padding and radius) with its fill from the shared danger solid; through 1.270 it wore .crDanger's text-only form */
 .crBtns { display: flex; flex-direction: column; gap: 9px; }
 /* Beta 1.129 (Andrew, from his 1.128 device session): the pick sheet is ONE SURFACE - #createSheet itself is the card (background, radius, shadow), and the panel / tucked-away strip / sector bar are CONTENTS inside it, never boxes of their own. The .crG-* classes below are the surface's three resting geometries; a face change morphs the surface's own height, side insets, bottom inset and corner radii together (crMorphTo in app4.js) while the contents cross-fade - the box on screen at the start of the motion is the box on screen at the end of it, so it cannot disappear and reappear as a pill the way 1.127's element swap and 1.128's three-box morph both read on his phone. The shell's cap (.csheet max-height) still bounds the whole thing at ~half the screen, and the rows scroll inside the panel. */
 #createSheet { background: var(--card-solid); color: var(--ink); box-shadow: 0 -6px 30px rgba(8,12,40,.30); padding: 0; margin: 0; border-radius: 20px 20px 0 0; }
@@ -611,7 +612,7 @@ body.night .crResult:first-child:active { background: rgba(255,255,255,.06); }
 .crPChip { border: none; border-radius: 999px; font-size: 12px; font-weight: 800; letter-spacing: .3px; padding: 6px 10px; cursor: pointer; flex: none; appearance: none; -webkit-appearance: none; } /* Beta 1.207 (Andrew): the pick-stage chip wears the SAME filled pill as the review stage's .crChip - one design through the whole selection process */
 .crPChip.primary { background: #ffc233; color: #000000; }
 .crPChip.sec { background: #ef476f; color: #000000; } /* Beta 1.209: true black ink #000000, matching .crChip.sec and both PRIMARY pills (Andrew's pick, superseding 1.208's #4a3200) */
-.crPDel { border: none; background: rgba(230,58,46,.10); color: #c22f24; font-size: 14px; font-weight: 700; width: 34px; height: 34px; border-radius: 50%; cursor: pointer; flex: none; appearance: none; -webkit-appearance: none; }
+.crPDel { border: none; background: rgba(230,58,46,.10); color: #e63a2e; font-size: 14px; font-weight: 700; width: 34px; height: 34px; border-radius: 50%; cursor: pointer; flex: none; appearance: none; -webkit-appearance: none; } /* Beta 1.271: the glyph joins the app red #e63a2e (was the #c22f24 family red); the faint tint form is kept */
 .crPanelBtns { flex-direction: row; }
 .crPanelBtns .crPrimary, .crPanelBtns .crGhost { flex: 1 1 0; width: auto; }
 #crStrip { padding: 13px 16px; display: flex; align-items: center; gap: 10px; }
@@ -647,10 +648,10 @@ body.night #crSbWhole { color: var(--sec); border-color: var(--sec); } /* Beta 1
 body.night .crHintRow { color: rgba(242,244,248,.55); }
 input, textarea { caret-color: currentColor; } /* Beta 1.125 (Andrew): the typing caret - the flashing vertical line beside the last letter - is always visible in every search bar and field, in the field's own text colour (white on the blue menus, ink on cards) */
 .rmLbl { color: rgba(255,255,255,.85); font-size: 14px; font-weight: 650; margin-bottom: -6px; }
-/* Beta 1.226 (Andrew, from the approved motion sample): THE PRESS - every pressable button or pill shrinks a touch while pressed (scale .97 over 150ms ease-out; Beta 1.231: the timing was 120ms through 1.230 - at 150ms the shrink completes exactly as the minimum-press floor in app4 lets an opening button fire), and the blue menus no longer light up on press (their :active rules above now hold the rest fill), so the shrink is the whole press feedback. Display-only readouts never join this block: the speed circle (#spdPill), the street count (#count), the stats line and the stat values carry no rule here and gain no transition. Three pressables are centred by a rest transform - #cancelStartBtn, the menus' bottom X pair (#rmClose/#setClose) and #crHintBtn - so their :active composes the shrink with translateX(-50%) and they cannot jump sideways mid-press. Small controls inside a tappable row (.crPChip/.crPDel, .routeDel) ride their row's shrink instead of compounding a second scale: an ancestor matches :active while a child is pressed. Beta 1.228 (Andrew): the street rows' locate control leaves that family - it is a labelled pill with its OWN shrink, and the two presses are separate. So .srow leaves the :active group below (an ancestor :active on the pill's press would shrink the whole row - the exact read Andrew rejected) and the row's shrink is its pressOn twin alone: already its only path on a direct press, since a plain div never enters :active in the test browser, and the pressOn handler's button guard keeps a pill press from ever raising the class. */
-.tabItem, .dockBtn, .runBtn, .sideChip .chipBtn, #selPop button, #sheetClose, #paceClose, #finNo, #noteNo, #xClose, #crModalX, #mapNoteNo, #filters button, .srow, .srow .sloc, .noteEd .nedSave, .noteEd .nedDone, #pacePad button, .cvHead button, .cvDel, .cvRow, .prow.histRow, .rmBtn, button.m-card, #routeMenu .routeRow, .rmBack, .modal .row button, .banner button, #crExit, #crClear, .crResult, .crPrimary, .crGhost, .crDanger, .crChip, .crDel, #crClearAll, #crCityChange, #crReviewBtn, .crSbBtns button, .crPRow, #cancelStartBtn, #rmClose, #setClose, #crHintBtn { transition: transform 150ms ease-out; }
+/* Beta 1.226 (Andrew, from the approved motion sample): THE PRESS - every pressable button or pill shrinks a touch while pressed (scale .97 over 150ms ease-out; Beta 1.231: the timing was 120ms through 1.230 - at 150ms the shrink completes exactly as the minimum-press floor in app4 lets an opening button fire), and the blue menus no longer light up on press (their :active rules above now hold the rest fill), so the shrink is the whole press feedback. Display-only readouts never join this block: the speed circle (#spdPill), the street count (#count), the stats line and the stat values carry no rule here and gain no transition. Three pressables are centred by a rest transform - #cancelStartBtn, the menus' bottom X pair (#rmClose/#setClose) and #crHintBtn - so their :active composes the shrink with translateX(-50%) and they cannot jump sideways mid-press. Small controls inside a tappable row (.crPChip/.crPDel) ride their row's shrink instead of compounding a second scale: an ancestor matches :active while a child is pressed. Beta 1.228 (Andrew): the street rows' locate control leaves that family - it is a labelled pill with its OWN shrink, and the two presses are separate. So .srow leaves the :active group below (an ancestor :active on the pill's press would shrink the whole row - the exact read Andrew rejected) and the row's shrink is its pressOn twin alone: already its only path on a direct press, since a plain div never enters :active in the test browser, and the pressOn handler's button guard keeps a pill press from ever raising the class. */
+.tabItem, .dockBtn, .runBtn, .sideChip .chipBtn, #selPop button, #sheetClose, #paceClose, #finNo, #noteNo, #xClose, #crModalX, #mapNoteNo, #filters button, .srow, .srow .sloc, .noteEd .nedSave, .noteEd .nedDone, #pacePad button, .cvHead button, .cvDel, .cvRow, .prow.histRow, .rmBtn, button.m-card, #routeMenu .routeRow, .rmBack, .modal .row button, .routeDrop .dropLoad, .routeDrop .dropDel, #crExit, #crClear, .crResult, .crPrimary, .crGhost, .crDanger, .crChip, .crDel, #crClearAll, #crCityChange, #crReviewBtn, .crSbBtns button, .crPRow, #cancelStartBtn, #rmClose, #setClose, #crHintBtn { transition: transform 150ms ease-out; }
 .m-switch { transition: background .18s ease, transform 150ms ease-out; } /* the switch keeps its own background fade - this rule replaces its transition declaration, so the fade is restated beside the shrink */
-.tabItem:active, .dockBtn:active, .runBtn:active, .sideChip .chipBtn:active, #selPop button:active, #sheetClose:active, #paceClose:active, #finNo:active, #noteNo:active, #xClose:active, #crModalX:active, #mapNoteNo:active, #filters button:active, .srow .sloc:active, .noteEd .nedSave:active, .noteEd .nedDone:active, #pacePad button:active, .cvHead button:active, .cvDel:active, .cvRow:active, .prow.histRow:active, .rmBtn:active, button.m-card:active, #routeMenu .routeRow:active, .rmBack:active, .modal .row button:active, .banner button:active, #crExit:active, #crClear:active, .crResult:active, .crPrimary:active, .crGhost:active, .crDanger:active, .crChip:active, .crDel:active, #crClearAll:active, #crCityChange:active, #crReviewBtn:active, .crSbBtns button:active, .crPRow:active, .m-switch:active { transform: scale(.97); }
+.tabItem:active, .dockBtn:active, .runBtn:active, .sideChip .chipBtn:active, #selPop button:active, #sheetClose:active, #paceClose:active, #finNo:active, #noteNo:active, #xClose:active, #crModalX:active, #mapNoteNo:active, #filters button:active, .srow .sloc:active, .noteEd .nedSave:active, .noteEd .nedDone:active, #pacePad button:active, .cvHead button:active, .cvDel:active, .cvRow:active, .prow.histRow:active, .rmBtn:active, button.m-card:active, #routeMenu .routeRow:active, .rmBack:active, .modal .row button:active, .routeDrop .dropLoad:active, .routeDrop .dropDel:active, #crExit:active, #crClear:active, .crResult:active, .crPrimary:active, .crGhost:active, .crDanger:active, .crChip:active, .crDel:active, #crClearAll:active, #crCityChange:active, #crReviewBtn:active, .crSbBtns button:active, .crPRow:active, .m-switch:active { transform: scale(.97); }
 #cancelStartBtn:active { transform: translateX(-50%) scale(.97); }
 #rmClose:active, #setClose:active { transform: translateX(-50%) scale(.97); }
 #crHintBtn:active { transform: translateX(-50%) scale(.97); }
@@ -674,12 +675,10 @@ html.theme-swap *, html.theme-swap *::before, html.theme-swap *::after { transit
 <div id="hud">
   <div id="warn">Not saving. Storage is full or blocked</div>
   <div class="row">
-    <div class="titleStack"><div class="title">Snow Route Beta</div><div class="ver" id="ver">Beta 1.270</div></div>
+    <div class="titleStack"><div class="title">Snow Route Beta</div><div class="ver" id="ver">Beta 1.271</div></div>
   </div>
   <div id="stats"></div>
 </div>
-<div id="suggest" class="banner hidden"><span id="sugText"></span><button id="sugYes">Show street</button><button id="sugNo" class="red">Dismiss</button></div>
-<div id="stale" class="banner hidden"><span id="staleText"></span><button id="staleYes">Finish it</button><button id="staleNo" class="red">Keep going</button></div>
 <div id="mapNote" class="hidden"><span>Maps can't load. Streets, GPS and marking still work. Check your connection.</span><button id="mapNoteNo">✕</button></div>
 <button id="nightBtn" class="dockBtn"></button>
 <button id="centreBtn" class="dockBtn hidden" title="Centre on me"></button>
@@ -869,7 +868,6 @@ const PACK_FIELDS = ['name', 'area', 'primaries', 'spot', 'tileNames', 'box', 'r
 // validator's three 60-character caps and two 80 caps are likewise separate per field.
 const COV_SAMPLE_M = 15; // coverage samples are laid along a street every this many metres (samplesFor, app3)
 const COV_RADIUS_M = 22; // a GPS fix covers the samples within this radius of it (coverFix, app3)
-const COV_FRAC = 0.85; // the covered fraction at which an unmarked street is SUGGESTED (never auto-marked - coverFix, app3)
 const GPS_ACCURACY_M = 65; // fixes reported worse than this are rejected while a fresh good fix exists; the accept comparison (<=) and the reject comparison (>) are ONE rule - this constant (acceptFix, app3)
 const GPS_STILL_MPS = 0.5; // Beta 1.187 (GPS package, STOP B): a recorded fix reporting under this speed is a stopped fix - acceptFix's trail guard banks no distance and records no trail point from it (a parked truck's fix wander was banking a median 138 phantom metres a minute into saved cleans). The position path is NOT gated by it: the dot follows every accepted fix exactly as before. (A tighter 28 m accuracy gate and a stationary position hold were priced in the same harness and did NOT ship - both measured neutral-to-worse; the round record carries the numbers.)
 const GPS_STALE_MS = 45000; // a watch silent this long is restarted (app3): silence runs from the later of the last accepted fix and the current watch's own start, so this one value is also a fresh watch's first-fix window (Beta 1.252, R-01 - one threshold by design; a longer cold-fix window, if ever wanted, becomes a sibling constant HERE, never a second literal in app3) - a GPS policy
@@ -1550,7 +1548,7 @@ BOARD.loadSides();
   if (!STREETNAMES.every(n => pieces[n].every(v => v === 0))) return;
   if (!txSet(LS.notes, '{}').ok) return;
   if (!txSet(LS.cov, '{}').ok) return;
-  BOARD.clearNotesAndCoverage(); suggested = new Set(); sugQueue = [];
+  BOARD.clearNotesAndCoverage(); // Beta 1.271: the suggestion set this line also reset is gone with its banner
   txDel(LS.finclean);
 }
 // ===== DAY/NIGHT (Beta 1.77, Andrew): the theme follows the sun by default.
@@ -4508,8 +4506,8 @@ function markUndone(name) {
 function markStreet(name, done) { if (done) markDone(name, 'tap'); else markUndone(name); showChips(); }
 function renderPanel() { // ONE selection pop-up (Beta 1.30, Andrew): the header strip and the multi-select pill are the same pop-up now - pill glass, every action inside, content follows the selection
   const p = $('selPop');
-  if (!sel) { p.classList.add('hidden'); document.body.classList.remove('selOpen'); return; }
-  p.classList.remove('hidden'); document.body.classList.add('selOpen'); // Beta 1.214: body.selOpen drops the re-centre button below the card while it is open (head.html) - the card's title-row note button lives in the corner that button otherwise paints over
+  if (!sel) { p.classList.add('hidden'); return; }
+  p.classList.remove('hidden'); // Beta 1.271: renderPanel no longer raises body.selOpen - its only consumer, the 1.214 re-centre drop, is retired; the button holds its seat in every state
   const multi = selSet.length >= 2; // Beta 1.34 (Andrew): single and multi are the SAME size now - same box, same two rows; only the words and buttons change
   if (!multi) {
     $('selName').textContent = sel.name;
@@ -4864,7 +4862,7 @@ makeSheetDraggable($('pacePanel'));
 // 1.232 a "Currently loaded" badge) is a TAB-mode-only signal: at boot
 // nothing is loaded yet, and in 1.76/1.77 the marker render landing
 // mid-exit read as a flicker on the pick (Andrew, live catch).
-// wireRouteRows binds the rows to the mode's chooser.
+// wireRouteRows binds the rows to the mode's chooser. Beta 1.271: a row press toggles the row's dropdown (the same press again closes it); the chooser runs only from the dropdown's Load pill.
 function routeRowShell(tag, name, sub, opts) { // Beta 1.136 (programme F): the ONE route-row builder - a .routeRow element carrying the .routeMeta column (a .routeName line, plus a .routeArea line unless sub is null) and, when opts.chevron, the .routeChev. Through 1.135 the row shape was hand-built at three sites (route rows below, the create flow's city rows and its manual-search rows); they all build through this now, so the shape can only drift in one place. Text is assigned via textContent throughout (the Beta 1.94 F-04 rule: pack/city names are data, never markup). opts.cls adds a class (the city list's loading row); callers hang their own extras (dataset, badge, Delete, listeners) on the returned row.
   opts = opts || {};
   const b = document.createElement(tag || 'button'); b.className = 'routeRow' + (opts.cls ? ' ' + opts.cls : '');
@@ -4876,18 +4874,34 @@ function routeRowShell(tag, name, sub, opts) { // Beta 1.136 (programme F): the 
   if (opts.chevron) { const chev = document.createElement('span'); chev.className = 'routeChev'; chev.textContent = '›'; b.appendChild(chev); }
   return b;
 }
-function routeRowEl(p) { // Beta 1.94 (audit F-04): rows are built as DOM nodes with textContent, never by interpolating pack data into innerHTML - a pack's name/area are data, and the day route creation lands, a typed name must not be able to become markup. The row shape (classes, badge rule) is unchanged; wireRouteRows' container delegation reads data-route as before. Beta 1.136: the row itself comes from routeRowShell above; this function adds the route-specific extras (the tab-mode loaded check, a created route's Delete).
+function routeRowEl(p) { // Beta 1.94 (audit F-04): rows are built as DOM nodes with textContent, never by interpolating pack data into innerHTML - a pack's name/area are data, and the day route creation lands, a typed name must not be able to become markup. The row shape (classes, badge rule) is unchanged; wireRouteRows' container delegation reads data-route as before. Beta 1.136: the row itself comes from routeRowShell above; this function adds the route-specific extras (the tab-mode loaded check). Beta 1.271 (Andrew, Option D): EVERY row is a DIV now, shipped packs included - the row's dropdown (routeDropEl below, rendered as its sibling) carries real buttons, and buttons cannot nest in a <button> row; the created-route Delete that rode the row itself retires into that dropdown, live on every route.
   const tab = $('routeMenu').classList.contains('tab');
-  const user = !SHIPPED_PACK_IDS.has(p.id); // Beta 1.124: a route Andrew created (not a shipped pack) can be deleted - its row is a DIV, not a <button>, because the Delete control is a real button and buttons cannot nest; the row's choose behaviour is unchanged (the container delegation reads data-route on any .routeRow)
-  const b = routeRowShell(user ? 'div' : 'button', p.name, p.area + ' · ' + Object.keys(p.roads).length + ' streets'); b.dataset.route = p.id;
-  if (user) { const del = document.createElement('button'); del.className = 'routeDel'; del.type = 'button'; del.textContent = 'Delete'; del.addEventListener('click', e => { e.stopPropagation(); askDeleteRoute(p.id); }); b.appendChild(del); } // the Delete tap stops here - it must never read as a tap on the row itself (which would load the route it is about to delete)
+  const b = routeRowShell('div', p.name, p.area + ' · ' + Object.keys(p.roads).length + ' streets'); b.dataset.route = p.id;
   if (tab && activeRoute && activeRoute.id === p.id) { const ck = document.createElement('img'); ck.className = 'routeCheck'; ck.alt = 'Currently loaded'; ck.src = GLYPH_MENU.check; b.appendChild(ck); } // Beta 1.233 (Andrew): the loaded route wears the Glyph disc check at the pill's right edge - appended last so it holds the edge even beside a Delete; the 1.207 "Currently loaded" badge and its centred name-row wrap are gone, and the name + area stay dead centre in the meta column. Beta 1.233 fix round 1 (PR #113, Codex P2): the check's alt text carries the loaded state's name for a screen reader - the words stay off the screen, per Andrew's design
   return b;
 }
-function renderRouteLists() { document.querySelectorAll('.routeList').forEach(el => { el.replaceChildren(...ROUTE_PACKS.map(routeRowEl)); menuListFade(el); }); }
+function routeDropEl(p) { // Beta 1.271 (Andrew, Option D): a route's dropdown card, rendered as its row's sibling - Load over Delete, or (tab mode, the loaded route) the inert Loaded pill over Delete. Delete is LIVE on every route, shipped 5W included, and asks through the same askDeleteRoute the row's old Delete button used. The card's size is one CSS definition (the .routeDrop custom properties in head.html); this builder only hangs the two pills.
+  const tab = $('routeMenu').classList.contains('tab');
+  const card = document.createElement('div'); card.className = 'routeDrop'; card.dataset.route = p.id;
+  const top = document.createElement('button'); top.type = 'button';
+  if (tab && activeRoute && activeRoute.id === p.id) { top.className = 'dropLoaded'; top.textContent = 'Loaded'; } else { top.className = 'dropLoad'; top.textContent = 'Load'; }
+  const del = document.createElement('button'); del.type = 'button'; del.className = 'dropDel'; del.textContent = 'Delete';
+  card.appendChild(top); card.appendChild(del);
+  return card;
+}
+function renderRouteLists() { document.querySelectorAll('.routeList').forEach(el => { el.replaceChildren(...ROUTE_PACKS.flatMap(p => [routeRowEl(p), routeDropEl(p)])); menuListFade(el); }); } // Beta 1.271: each row renders with its dropdown card as its sibling
 function menuListFade(el) { // Beta 1.233 (Andrew, the feathered-edges sample): a menu scroll list feathers an edge ONLY while that edge hides more content - 30px of dissolve at a covered end, none at a rested end, both ends dissolving at the same rate (one gradient, mirrored - the symmetry Andrew checked on the samples). Refreshed wherever what an edge covers can change: on scroll, on render, on pane show, on resize. Beta 1.241 (Andrew): this seat also owns the city list's scroll arrow (#crCityArrow, head.html), read from the same two quantities on the same refreshes - the arrow stands only while the list rests at its very top with more below (the fadeB condition at scrollTop 0), fades to its kept seat the moment scrolling starts, and takes no seat at all when the list fits without scrolling.
   if (!el) return; const max = el.scrollHeight - el.clientHeight; el.classList.toggle('fadeT', el.scrollTop > 1); el.classList.toggle('fadeB', max > 1 && el.scrollTop < max - 1); if (el.id === 'crCityList') { const a = $('crCityArrow'); if (a) { const over = max > 1; a.classList.toggle('gone', !over); a.classList.toggle('hide', over && el.scrollTop > 1); } } }
-function wireRouteRows(container, choose) { container.addEventListener('click', e => { const row = e.target.closest('.routeRow'); if (row) choose(row.dataset.route); }); }
+function wireRouteRows(container, choose) { container.addEventListener('click', e => { // Beta 1.271: the delegation sorts the tap by what it landed on - the dropdown's Delete asks, its Load chooses, its inert Loaded spends the tap, and a press anywhere else on a row toggles that row's dropdown (open, or closed if it was the open one; opening one closes any other)
+  const del = e.target.closest('.dropDel'); if (del) { askDeleteRoute(del.closest('.routeDrop').dataset.route); return; }
+  const load = e.target.closest('.dropLoad'); if (load) { choose(load.closest('.routeDrop').dataset.route); return; }
+  if (e.target.closest('.dropLoaded')) return;
+  const row = e.target.closest('.routeRow'); if (!row) return;
+  const drop = row.nextElementSibling; if (!drop || !drop.classList.contains('routeDrop')) return;
+  const wasOpen = drop.classList.contains('open');
+  container.querySelectorAll('.routeDrop.open').forEach(d => d.classList.remove('open'));
+  if (!wasOpen) drop.classList.add('open');
+}); }
 function showRmPane(id) { ['rmMain', 'rmListPane', 'rmCreatePane', 'rmCityListPane', 'rmNamePane', 'rmCityPane'].forEach(p => $(p).classList.toggle('on', p === id)); menuListFade($('crCityList')); menuListFade($('rmRoutes')); const __away = id !== 'rmMain'; const __bl = $('brandLayer'); if (__bl) __bl.classList.toggle('away', __away); const __cv = $('snowCv'); if (__cv) __cv.classList.toggle('away', __away); } // Beta 1.159 (Andrew, title lifetime rule): the "Snow Route" title - and the snowfall with it - appears ONLY on the main pane; every other pane carries .away on the title's layer and the snow canvas, and returning to rmMain clears it. This function is the ONE pane choke point (every menu navigation in boot and tab mode passes through it), so the rule lives here and nowhere else; in tab mode the brand layer is parked (.off) and the canvas is gone with the splash, so both toggles are inert there. Beta 1.239 (Andrew's ruling, 2026-11-18): the 1.236 citySheet toggle and the 1.238 boot exemption that rode on this seat are both reverted - the toggle is the plain 1.159 form again in every mode, and no pane is exempted.
 function openRouteMenu() { crWarmCityLibrary(); const rm = $('routeMenu'); closeSheets(); showRmPane('rmMain'); rm.classList.add('tab'); renderRouteLists(); rm.classList.add('open'); } // Beta 1.130: showing the route menu warms the city catalogue - Create lives behind this menu, and the download is done or nearly done by the time the city list is tapped (the cold-open stutter fix; crWarmCityLibrary rides the cached promise, so this costs at most one small fetch per session)
 function closeRouteMenu() { const rm = $('routeMenu'); rm.classList.remove('open'); rm.classList.remove('tab'); }
@@ -5217,7 +5231,7 @@ function cancelStart() {
     markDirty('trail'); markDirty('sess');
   }
   runSnap = null;
-  runStart = 0; suggested = new Set(); sugQueue = []; $('suggest').classList.add('hidden');
+  runStart = 0;
   const okCancel = saveAllWarned().ok; flushAux(true);
   const trailPending = writePending('trail') || writePending('sess'); // Beta 1.93 (follow-up audit R07): the erasure claim below is gated on the trail/session writes having actually landed
   if (wasRunGps) stopGps();
@@ -5229,18 +5243,24 @@ function cancelStart() {
   else if (!okCancel) toast('Start cancelled - warning: the cancellation could not be saved; the clean may return on reload', 4200);
 } // Beta 1.69 (audits N03 + trail): cancelStart ignored saveAll's result and claimed success unconditionally; it also never refreshed the trail, so a cancelled run's line lingered
 $('startBtn').addEventListener('click', () => { if (!tapGuard('startBtn')) return; startClean(); });
-// CLEAR (Andrew, Beta 1.7): header button beside Pace - one tap wipes EVERY mark on the board (all streets,
-// both sides), plus the completion times/vias and the GPS coverage that would instantly re-suggest them.
+// CLEAR (Andrew, Beta 1.7): header button beside Pace - wipes EVERY mark on the board (all streets,
+// both sides), plus the completion times/vias and the GPS coverage behind them. Beta 1.271 (Andrew):
+// the tap ASKS first, through the shared confirmation (askClearAll) - through 1.270 this was the most
+// destructive un-asked action in the app (the danger inventory's #17).
 // The run itself (start time, trail, notes, history) is untouched - this is the mistake eraser, not a finish.
+function boardHasMarks() { return doneSet.size > 0 || STREETNAMES.some(n => pieces[n].some(v => v !== 0)) || Object.keys(coveredIdx).length > 0; } // Beta 1.70 (audit A04): coverage-only state is something to clear too - the old guard claimed 'nothing to clear' while coverage sat untouched. Beta 1.271: the guard is its own predicate now - the Clear tap reads it to decide whether there is anything worth asking over, and clearAllMarks keeps it as its own first check
 function clearAllMarks() {
-  const any = doneSet.size > 0 || STREETNAMES.some(n => pieces[n].some(v => v !== 0)) || Object.keys(coveredIdx).length > 0 || suggested.size > 0; // Beta 1.70 (audit A04): coverage-only state is something to clear too - the old guard claimed 'nothing to clear' while coverage and suggestions sat untouched
+  const any = boardHasMarks();
   if (!any) { return; }
-  BOARD.zeroMarks(); suggested = new Set(); sugQueue = []; // Arch-2: the board emptying is the module's in-place zero
-  $('suggest').classList.add('hidden'); delete $('suggest').dataset.n; // Beta 1.71 (audit B01): the one path the 1.70 dismissal sweep missed - Clear wiped the coverage behind the panel but left the panel itself up, its Yes still able to select the street
+  BOARD.zeroMarks(); // Arch-2: the board emptying is the module's in-place zero
   deselect(); const okClear = finishChange();
   if (!okClear.ok) toast('Storage problem - the clear could not be saved; marks may return on reload', 4200); // Beta 1.63 (audit F04)
 }
-$('clearBtn').addEventListener('click', () => { if (!tapGuard('clearBtn')) return; clearAllMarks(); });
+$('clearBtn').addEventListener('click', () => { if (!tapGuard('clearBtn')) return; if (boardHasMarks()) askClearAll(); });
+function askClearAll() { // Beta 1.271 (Andrew): the Clear ask - the shared confirmation, bound to the route it was opened over (askCancelStart's binding discipline); the wipe itself is clearAllMarks, unchanged. An empty board never raises the question (the handler's guard above).
+  const forRoute = activeRoute ? activeRoute.id : null;
+  showConfirm({ title: 'Clear all marks?', sub: 'Every mark, time and coverage on this route will be wiped. The run itself keeps going.', keep: 'Keep marks', danger: 'Clear all', onDanger: () => { if ((activeRoute ? activeRoute.id : null) === forRoute) clearAllMarks(); } });
+}
 $('cancelStartBtn').addEventListener('click', () => { if (!tapGuard('cancelStartBtn')) return; askCancelStart(); }); // Beta 1.255 (gate round 3, Codex P2): the dock's Cancel start asks through the same bound confirmation - through head 2 it still discarded in one tap, bypassing the Pace sheet's new question entirely
 $('resetBtn').addEventListener('click', () => {
   // Beta 1.110 (Andrew): the Yes/No pop-up below is the ONLY finish gate - the post-Finish Undo is removed, so this button never means anything but Finish.
@@ -5397,7 +5417,7 @@ function finishRun() {
   }
   lsDel(LS.snap); markClean('snap'); resetRunDist(); lsDel(LS.rundist); lsDel(LS.rundist2); trail = []; markDirty('trail'); // Beta 1.167 (B5): the distance counter is consumed into the archive entry (km) - its record goes with the run. Beta 1.193: its mirror copy goes too, and the trail window is cleared with them - the run is over, so the fallback's only consumer is gone (the Start fence and the load window would evict the points anyway; clearing here keeps the stored trail honest between runs). Beta 1.94 (SR-193-02): the run is finished - its cancel snapshot goes with it. Ungated on purpose: a leftover snapshot is stamped with THIS run's start, so it can never match a future run, and the next Start overwrites it anyway
   if (archiving) history = newHist;
-  BOARD.zeroMarks(); notes = {}; runStart = 0; runSnap = null; suggested = new Set(); sugQueue = []; $('suggest').classList.add('hidden'); // Arch-2: the board half of this reset is the module's in-place zero // Beta 1.70 (audit A04): the suggestion set is run-scoped too - finishRun used to clear the coverage but keep the set, so suggested streets never suggested again
+  BOARD.zeroMarks(); notes = {}; runStart = 0; runSnap = null; // Arch-2: the board half of this reset is the module's in-place zero
   stopGps(); deselect(); // Beta 1.193: through 1.190 this also force-drew the trail to clear the finished line (Beta 1.69) - there is no line any more; the window itself was cleared with the counter records above
   const restRes = saveAll(); const restOk = restRes.ok; // the gated sides write already landed; this pass carries the metadata - a failure here warns but cannot resurrect anything (authority + archive agree)
   finishChange();
@@ -5405,13 +5425,11 @@ function finishRun() {
   onFinishFeedback(); // Beta 1.111: only on the COMMITTED path (every failure return above leaves the run intact and silent) - the Done chime plays twice here (once for Chime Melody) plus the finish vibration pattern, per the On-the-job settings; fully guarded in app4
 }
 function performReset() { finishRun(); } // production's name for the finish action (the test battery calls it directly)
-function checkStale() {
-  const stale = runStart && (Date.now() - runStart > 12 * 3600000);
-  $('stale').classList.toggle('hidden', !stale);
-  if (stale) $('staleText').textContent = 'This clean started ' + fmtClock(new Date(runStart)) + ', over 12 hours ago. Finish it, or keep going?';
+function checkStale() { // Beta 1.271 (Andrew): the stale-clean question moves OFF its banner onto the shared confirmation pill - same trigger (a run older than 12 hours, judged at Start and at route load), same two answers in the pop-up's seats: Keep going the left ghost, Finish it the right danger solid. The danger seat runs the Finish button's own click, exactly as the banner's Yes did; the ask binds the run it was opened over, like askCancelStart.
+  if (!(runStart && (Date.now() - runStart > 12 * 3600000))) return;
+  const forRun = runStart;
+  showConfirm({ title: 'Finish this clean?', sub: 'It started ' + fmtClock(new Date(runStart)) + ', over 12 hours ago.', keep: 'Keep going', danger: 'Finish it', onDanger: () => { if (runStart === forRun) $('resetBtn').click(); } });
 }
-$('staleYes').addEventListener('click', () => { $('stale').classList.add('hidden'); $('resetBtn').click(); });
-$('staleNo').addEventListener('click', () => $('stale').classList.add('hidden'));
 
 // ===== NOTES (production model: notes[street] = [{k:'note', at, text} | {k: flag kind, at}]) =====
 const FLAGS = { car: 'Car blocking', hazard: 'Hazard', missed: 'Missed spot', salt: 'Needs salt' };
@@ -5448,13 +5466,12 @@ function samplesFor(stretch, names) { // Beta 1.117: the coverage samples as a P
 }
 function buildSamples() { const built = samplesFor(STRETCH, STREETNAMES); for (const k of Object.keys(SAMPLES)) delete SAMPLES[k]; Object.assign(SAMPLES, built); covSamplesGen++; } // Beta 1.135 (programme D): the generation bump invalidates coverFix's per-street sample boxes (below) - the samples they were measured from just changed
 // (the coverage-index sanitizer lives in loadRouteState, app1 - Beta 1.76: it must run over the loaded state, and state now loads on route pick, not at eval)
-let suggested = new Set();
 function resetNotesHistorySession() { // Beta 1.148 (Tranche 5, A4(ii)): app3's OWN route-switch reset, called by app4's resetSwitchSession - the run-snapshot / history / modal-note / suggestion session's reset knowledge lives here, with its state
   resetRunDist(); // Beta 1.167 (B5): the in-memory distance counter belongs to the outgoing run; its persisted record stays in the outgoing slot (like LS.snap below) and is re-adopted lazily if he switches back mid-run
   runSnap = null; // F3: the in-memory cancel snapshot belongs to the outgoing run. The PERSISTED copy (LS.snap, in the outgoing slot) is deliberately untouched - after switching back, Cancel validates it exactly as it does after a reload
   histOpen = false; cleanIdx = null; cleanDelArmed = false; if (cleanDelTimer) { clearTimeout(cleanDelTimer); cleanDelTimer = 0; } // the history panel and its delete-arming
   noteFor = null; $('noteModal').classList.add('hidden'); // the modal note editor
-  suggested = new Set(); sugQueue = []; $('suggest').classList.add('hidden'); $('stale').classList.add('hidden'); // run-scoped suggestion set + the two banners (checkStale re-judges the stale banner for the incoming route below)
+  // Beta 1.271: the suggestion set and the two banners this reset used to clear are gone - checkStale re-judges the stale question for the incoming route through the confirmation pill
 }
 function pushGps() {
   const src = map && map.getSource('gps'); if (!src) return;
@@ -6283,37 +6300,22 @@ function acceptFix(pos) {
 // rebound wholesale (route load, cancel-restore, finish, clear - it is never edited in
 // place outside this function), so a new object rebuilds the Sets; the boxes key on the
 // buildSamples generation, bumped on every route load. Judged by drives 126/127 and the
-// 1.135 fixture harness (identical coveredIdx JSON + suggestion sequence).
+// 1.135 fixture harness (identical coveredIdx JSON + suggestion sequence). Beta 1.271: the suggestion OFFER this block's history describes is cut at the offer point below - the banner is removed and nothing offers a street any more; the coverage computation, the sample boxes and the caches are untouched, and the sequence judgement above stands for the coverage half.
 let covSetsFor = null, covSets = {}, covBoxesFor = -1, covBoxes = {}, covSamplesGen = 0;
 function coverFix(ll) {
   if (covSetsFor !== coveredIdx) { covSets = {}; for (const n of Object.keys(coveredIdx)) covSets[n] = new Set(coveredIdx[n]); covSetsFor = coveredIdx; }
   if (covBoxesFor !== covSamplesGen) { covBoxes = {}; const pLat = COV_RADIUS_M / MLAT, pLng = COV_RADIUS_M / MLNG; for (const n of STREETNAMES) { const pts = SAMPLES[n]; if (!pts || !pts.length) continue; let a = 1e9, b = -1e9, c = 1e9, e = -1e9; for (const p of pts) { if (p[0] < a) a = p[0]; if (p[0] > b) b = p[0]; if (p[1] < c) c = p[1]; if (p[1] > e) e = p[1]; } covBoxes[n] = [a - pLat, b + pLat, c - pLng, e + pLng]; } covBoxesFor = covSamplesGen; }
   let changed = false;
   for (const n of STREETNAMES) {
-    if (streetComplete(n) || suggested.has(n)) continue;
+    if (streetComplete(n)) continue;
     const pts = SAMPLES[n]; const set = covSets[n] || (covSets[n] = new Set(coveredIdx[n] || []));
     const box = covBoxes[n]; const outOfBox = box && (ll[0] < box[0] || ll[0] > box[1] || ll[1] < box[2] || ll[1] > box[3]);
     if (!outOfBox) for (let i = 0; i < pts.length; i++) { if (!set.has(i) && distM(ll, pts[i]) <= COV_RADIUS_M) { set.add(i); changed = true; } }
     if (set.size) coveredIdx[n] = [...set];
-    if (set.size >= Math.ceil(pts.length * COV_FRAC) && !streetComplete(n)) { suggested.add(n); showSuggest(n); }
   }
   if (changed) markDirty('aux');
 }
-let sugQueue = []; // Beta 1.169 (Carbon fix round, B-11): streets that qualify while the banner is busy showing another - each gets its turn instead of being overwritten into silence. Run-scoped like `suggested` itself: cleared at the same four resets (cancel, clear-all, finish, route switch)
-function showSuggest(n) {
-  const cur = $('suggest').dataset.n;
-  if (!$('suggest').classList.contains('hidden') && cur && cur !== n) { if (!sugQueue.includes(n)) sugQueue.push(n); return; } // Beta 1.169 (B-11): the banner is showing another street - queue behind it. The street is already in `suggested`, so coverFix will never offer it again this run; through 1.168 this call simply overwrote the banner and the earlier street's one offer was gone for the run.
-  $('sugText').textContent = n + ' looks fully covered by GPS but is not marked done.';
-  $('suggest').dataset.n = n;
-  $('suggest').classList.remove('hidden');
-}
-function sugNext() { // the banner was answered or dismissed: the next queued street takes it - one that has since been marked, or left the route, is skipped
-  while (sugQueue.length && (streetComplete(sugQueue[0]) || !STREETSET.has(sugQueue[0]))) sugQueue.shift();
-  const nxt = sugQueue.shift();
-  if (nxt) { $('sugText').textContent = nxt + ' looks fully covered by GPS but is not marked done.'; $('suggest').dataset.n = nxt; $('suggest').classList.remove('hidden'); }
-}
-$('sugYes').addEventListener('click', () => { const n = $('suggest').dataset.n; $('suggest').classList.add('hidden'); if (n) { const c = STRETCH[n].line[Math.floor(STRETCH[n].line.length / 2)]; if (map) map.flyTo({ center: [c[1], c[0]], zoom: Math.max(map.getZoom(), 15.5) }); selectStretch(n, 0, c); } sugNext(); }); // Beta 1.169 (Carbon fix round, B-02): the flyTo rides the codebase's map===null discipline (the 1.146 C4 idiom - followCam, northUp): in the map-failure world the tap still SELECTS the street; through 1.168 map.getZoom() threw first and the selection never happened
-$('sugNo').addEventListener('click', () => { $('suggest').classList.add('hidden'); sugNext(); });
+// Beta 1.271 (Andrew): the suggestion offer is REMOVED - showSuggest, the sugQueue and the banner handlers that stood here are gone, and coverFix (above) no longer offers a street at the coverage threshold. Coverage itself still computes exactly as before: it feeds the board and the history record (past entries' GPS-suggestion lines still render from their data). GPS suggestions never marked a street; now they do not interrupt either.
 let weakToastAt = 0;
 let gpsDenied = false; // Beta 1.111: the Status health GPS row's amber state - set by a permission denial (gpsError code 1), cleared by any accepted fix
 function gpsError(e) {
@@ -7245,7 +7247,7 @@ $('stDel').addEventListener('click', async () => {
 });
 // ---- About ----
 const WHATSNEW = { // the curated in-app notes: plain words, LATEST RELEASE ONLY (Beta 1.114, Andrew: the accumulated list cluttered the About pane). A release REPLACES this entry with its own in the same change - it never accumulates; the full history lives in CHANGELOG.md, not the app
-  v: 'Beta 1.270', items: ["Street names now load in with the map, in sync, instead of popping in after a wait."] }; // Beta 1.223 (Andrew): What's New entries are SHORT from now on - point form, one short plain line each, no prose paragraphs, no em dashes
+  v: 'Beta 1.271', items: ["Tap a route in the list to open its menu: Load, or Delete. Every route can be deleted now.", "Clear asks first before it wipes the board.", "Every Delete button now wears the same solid red.", "The re-centre button stays under the day/night button, and the GPS suggestion banner is gone."] }; // Beta 1.223 (Andrew): What's New entries are SHORT from now on - point form, one short plain line each, no prose paragraphs, no em dashes
 
 function renderAbout() {
   const cur = $('ver').textContent.trim();
@@ -7262,9 +7264,6 @@ $('aboutBack').addEventListener('click', () => showSetPane('setMainPane'));
 document.addEventListener('pointerdown', e => {
   const anySheet = !!document.querySelector('.sheet.open'); // Beta 1.77 (Andrew, live catch): ANY open sheet, read from the DOM - the hand-listed pair missed the Routes sheet in 1.76, so tapping away from it did nothing (and the tap fell through to the map)
   if (anySheet && !e.target.closest('.sheet') && !e.target.closest('#hud') && !e.target.closest('.modal') && !e.target.closest('#confirmPill') && !e.target.closest('#confirmBackdrop')) { closeSheets(); spendTap(400); } // Beta 1.30 (Andrew): the closing tap is spent here - the map never sees it. Beta 1.255 (gate round 2, Codex P2): the confirmation pill is exempt like the modals - a real press on its buttons bubbles through here first, and without the exemption Keep going closed the sheet it was asked over before its own click landed. Beta 1.257: the confirmation's backdrop is exempt the same way - it covers the whole screen while the question is up, so without the exemption a tap on it would close the sheet underneath; the tap does nothing instead (dismissal stays buttons-only)
-  // The two banners count as menus too (Andrew: ANY menu): a tap outside one is its Dismiss / Keep going.
-  if (!$('suggest').classList.contains('hidden') && !e.target.closest('#suggest')) { $('suggest').classList.add('hidden'); spendTap(400); }
-  if (!$('stale').classList.contains('hidden') && !e.target.closest('#stale')) { $('stale').classList.add('hidden'); spendTap(400); }
 });
 ['finModal', 'noteModal'].forEach(id => { const mEl = $(id); mEl.addEventListener('pointerdown', e => { if (e.target === mEl) mEl.classList.add('hidden'); }); });
 // Beta 1.226: the press shrink for the DIV row families. Buttons shrink through the stylesheet's

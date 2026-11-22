@@ -78,8 +78,8 @@ check('9: no second stale literal in app3',
 // ---------- the release editorial ----------
 check('10: the CHANGELOG top entry is Beta 1.252', changelog.includes('## Beta 1.252'));
 check('11: What\'s New carries the 1.252 bullet, short and dash-free',
-  whatsnew.includes('Street names now load in with the map, in sync, instead of popping in after a wait.')
-  && 'Street names now load in with the map, in sync, instead of popping in after a wait.'.length <= 108
+  whatsnew.includes('Tap a route in the list to open its menu: Load, or Delete. Every route can be deleted now.')
+  && 'Tap a route in the list to open its menu: Load, or Delete. Every route can be deleted now.'.length <= 108
   && !whatsnew.includes('—'));
 
 console.log(`proof-1252: ${pass} passed, ${fail} failed`);

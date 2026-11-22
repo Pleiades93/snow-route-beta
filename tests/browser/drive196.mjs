@@ -14,6 +14,8 @@ await bootThrough(ev, poll); // boots end at the route menu - click through to a
 // 58 -> 51 (the label's line box stands 2px over the design zone, before and
 // after - drive180's SNOW9 pin follows the same 51, and the splash snow
 // peak in parts/brand-snow.js follows it too).
+// Beta 1.271: the .banner family is REMOVED whole - F3/F5 below re-derive
+// on #mapNote, the last bottom-anchored bar; the toast stands.
 // The offset audit this drive proves: #dock 74 -> 67, #spd 76 -> 69,
 // #attrChip 68 -> 61 (the floaters that hug the bar's top edge ride the -7,
 // rendered gaps unchanged); .banner 236, #mapNote 240, #toast 120 stay.
@@ -37,7 +39,7 @@ const geom = () => J(`(() => { const r = (id) => { const e = document.getElement
   const gap = (id) => { const f = r(id); return f && f.h > 0 ? Math.round((bar.y - f.b) * 10) / 10 : null; };
   return { vh: window.innerHeight, bar, barPadT: cs.paddingTop, barPadB: cs.paddingBottom, itemPadT: ci.paddingTop, itemPadB: ci.paddingBottom,
     dock: r('dock'), attr: r('attrChip'), gapDock: gap('dock'), gapAttr: gap('attrChip'),
-    bannerBottom: getComputedStyle(document.getElementById('suggest')).bottom, noteBottom: getComputedStyle(document.getElementById('mapNote')).bottom,
+    bannerGone: !document.getElementById('suggest') && !document.getElementById('stale'), noteBottom: getComputedStyle(document.getElementById('mapNote')).bottom,
     toastBottom: getComputedStyle(document.getElementById('toast')).bottom,
     items: [...document.querySelectorAll('#tabBar .tabItem')].map(e => { const b = e.getBoundingClientRect(); return { id: e.id, x: b.x, y: b.y, w: b.width, h: b.height, r: b.right, b: b.bottom }; }) }; })()`);
 
@@ -56,19 +58,20 @@ ok('B3 all five items fill the content zone (44px tall, equal widths, no overlap
 // ---- the floaters' gaps over the bar's NEW top edge ----------------------
 ok('F1 dock gap above the bar top edge is the pre-change rendered gap: 16px (dock rode 74 -> 67) | gap ' + G.gapDock, G.gapDock !== null && Math.abs(G.gapDock - 16) <= 1);
 ok('F2 attribution chip gap above the bar top edge is the pre-change rendered gap: 10px (chip rode 68 -> 61) | gap ' + G.gapAttr, G.gapAttr !== null && Math.abs(G.gapAttr - 10) <= 1);
-ok('F3 the non-riding offsets are byte-identical: banner bottom 236px, mapNote 240px, toast 188px | ' + [G.bannerBottom, G.noteBottom, G.toastBottom].join('/'),
-  G.bannerBottom === '236px' && G.noteBottom === '240px' && G.toastBottom === '188px'); // Beta 1.221 gate fix: the toast constant is 188px, not 120px - the placement round raised the pill's CSS floor (placeToast starts from it and hops clear by measurement; drive204 holds the placement property). The F3 property is unchanged: the non-riding offsets equal their design constants exactly
+ok('F3 the non-riding offsets are byte-identical: mapNote 240px, toast 188px - and the banner slot is retired entirely (Beta 1.271: no #suggest, no #stale) | ' + [G.noteBottom, G.toastBottom, G.bannerGone].join('/'),
+  G.noteBottom === '240px' && G.toastBottom === '188px' && G.bannerGone === true); // Beta 1.221 gate fix: the toast constant is 188px, not 120px - the placement round raised the pill's CSS floor (placeToast starts from it and hops clear by measurement; drive204 holds the placement property). The F3 property is unchanged: the non-riding offsets equal their design constants exactly
 ok('F4 nothing overlaps the bar: dock and attribution chip clear it | dock ' + JSON.stringify(G.dock) + ' attr ' + JSON.stringify(G.attr),
   !!G.dock && !!G.attr && !overlaps(G.dock, G.bar) && !overlaps(G.attr, G.bar));
 
-// a shown banner must also clear the bar by its stack margin (it did not ride)
-// Beta 1.224 re-derivation (same claim, same strength): the representative banner is #stale now - the backup-nudge bar this check used to borrow is REMOVED with the nudge; #stale wears the same .banner slot at the same 236px bottom.
-await ev(`document.getElementById('stale').classList.remove('hidden'); true`); await sleep(500);
+// a shown bottom bar must also clear the tab bar by its stack margin (it did not ride)
+// Beta 1.224 re-derivation (same claim, same strength): the representative banner was #stale - the backup-nudge bar this check used to borrow was REMOVED with the nudge; #stale wore the same .banner slot at the same 236px bottom.
+// Beta 1.271 re-derivation (same claim, same strength): BOTH .banner bars are REMOVED with the suggestion and stale banners - the representative bottom bar is #mapNote now, the last bottom-anchored bar, at its own 240px.
+await ev(`document.getElementById('mapNote').classList.remove('hidden'); true`); await sleep(500);
 G = await geom();
-const bannerRect = await J(`(() => { const b = document.getElementById('stale').getBoundingClientRect(); return { x: b.x, y: b.y, w: b.width, h: b.height, r: b.right, b: b.bottom }; })()`);
-ok('F5 a shown banner clears the bar entirely (no overlap, in viewport) | banner ' + JSON.stringify(bannerRect) + ' bar ' + JSON.stringify(G.bar),
+const bannerRect = await J(`(() => { const b = document.getElementById('mapNote').getBoundingClientRect(); return { x: b.x, y: b.y, w: b.width, h: b.height, r: b.right, b: b.bottom }; })()`);
+ok('F5 a shown bottom bar clears the tab bar entirely (no overlap, in viewport) | note ' + JSON.stringify(bannerRect) + ' bar ' + JSON.stringify(G.bar),
   bannerRect.h > 0 && !overlaps(bannerRect, G.bar) && bannerRect.b <= G.bar.y && bannerRect.x >= 0 && bannerRect.r <= 390);
-await ev(`document.getElementById('stale').classList.add('hidden'); true`); await sleep(300);
+await ev(`document.getElementById('mapNote').classList.add('hidden'); true`); await sleep(300);
 
 // ---- real presses: corners and centres of all five tab items -------------
 const itemRect = async (id) => (await geom()).items.find(it => it.id === id);
@@ -128,15 +131,20 @@ await ev(`(() => { navigator.geolocation.watchPosition = () => 4242; navigator.g
   }
   ok('T4 Home fires from all four corners and the centre (camera reframes the route each time) | ' + JSON.stringify(ratios), ratios.every(Boolean));
 }
-// clearBtn clears marks; re-mark before every press.
+// clearBtn ASKS first now (Beta 1.271): every corner and the centre of the
+// Clear item raise the confirmation, and the ask's danger button - pressed
+// at its own centre each time - is what wipes the marks. Re-mark before
+// every press.
 {
   const rc = await itemRect('clearBtn'); const pts = cornersOf(rc); let seq = [];
   for (let i = 0; i < pts.length; i++) {
     await ev(`togglePiece('Velmar', 0, 0); true`); await sleep(300);
     await pressAt(pts[i][0], pts[i][1]);
+    const dg = await J(`(() => { const pill = document.getElementById('confirmPill'); const b = document.getElementById('cfDanger').getBoundingClientRect(); return { x: b.x + b.width / 2, y: b.y + b.height / 2, shown: !!pill && !pill.classList.contains('hidden') }; })()`);
+    if (dg.shown) await pressAt(dg.x, dg.y);
     seq.push(await ev(`STREETNAMES.every(n => pieces[n].every(v => v === 0))`));
   }
-  ok('T5 Clear fires from all four corners and the centre (marks wiped each time) | ' + JSON.stringify(seq), seq.every(Boolean));
+  ok('T5 Clear fires from all four corners and the centre - each press raises the ask, the ask clears the marks | ' + JSON.stringify(seq), seq.every(Boolean));
 }
 // F6 (the speed chip's gap over the bar) RETIRED in Beta 1.203: the chip it
 // measured was removed whole and replaced by the top-centre speed pill,

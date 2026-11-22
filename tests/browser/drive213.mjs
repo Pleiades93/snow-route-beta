@@ -79,7 +79,7 @@ ok('B4 (approved form: the centred block, 1.241 - vertical) the whole group (tit
 await ev(`document.querySelector('#rmCityListBack') ? document.getElementById('rmCityListBack').click() : true`);
 await ev(`document.getElementById('rmBack2') ? document.getElementById('rmBack2').click() : true`);
 await ev(`document.getElementById('rmChoose').click()`);
-await ev(`document.querySelector('#rmRoutes .routeRow').click()`);
+await ev(`(() => { const r = document.querySelector('#rmRoutes .routeRow'); if (r) { r.click(); const b = r.nextElementSibling && r.nextElementSibling.querySelector('.dropLoad'); if (b) b.click(); } return true; })()`);
 await poll(`typeof routeLoaded !== 'undefined' && routeLoaded === true`, 20000);
 await poll(`!document.getElementById('splash')`, 20000);
 

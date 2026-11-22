@@ -13,9 +13,6 @@ $('aboutBack').addEventListener('click', () => showSetPane('setMainPane'));
 document.addEventListener('pointerdown', e => {
   const anySheet = !!document.querySelector('.sheet.open'); // Beta 1.77 (Andrew, live catch): ANY open sheet, read from the DOM - the hand-listed pair missed the Routes sheet in 1.76, so tapping away from it did nothing (and the tap fell through to the map)
   if (anySheet && !e.target.closest('.sheet') && !e.target.closest('#hud') && !e.target.closest('.modal') && !e.target.closest('#confirmPill') && !e.target.closest('#confirmBackdrop')) { closeSheets(); spendTap(400); } // Beta 1.30 (Andrew): the closing tap is spent here - the map never sees it. Beta 1.255 (gate round 2, Codex P2): the confirmation pill is exempt like the modals - a real press on its buttons bubbles through here first, and without the exemption Keep going closed the sheet it was asked over before its own click landed. Beta 1.257: the confirmation's backdrop is exempt the same way - it covers the whole screen while the question is up, so without the exemption a tap on it would close the sheet underneath; the tap does nothing instead (dismissal stays buttons-only)
-  // The two banners count as menus too (Andrew: ANY menu): a tap outside one is its Dismiss / Keep going.
-  if (!$('suggest').classList.contains('hidden') && !e.target.closest('#suggest')) { $('suggest').classList.add('hidden'); spendTap(400); }
-  if (!$('stale').classList.contains('hidden') && !e.target.closest('#stale')) { $('stale').classList.add('hidden'); spendTap(400); }
 });
 ['finModal', 'noteModal'].forEach(id => { const mEl = $(id); mEl.addEventListener('pointerdown', e => { if (e.target === mEl) mEl.classList.add('hidden'); }); });
 // Beta 1.226: the press shrink for the DIV row families. Buttons shrink through the stylesheet's

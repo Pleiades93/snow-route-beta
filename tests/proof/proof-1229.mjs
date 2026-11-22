@@ -81,10 +81,10 @@ check('5e: the street search bounds its answers to the picked city (Beta 1.234 r
 check('5f: the no-city street path makes no request at all (Beta 1.234 re-derived: the Ontario bound holds by construction - the street search URL builder is gone; the CITY search keeps the live bounded request, proof-1232 check 1p)', !pick.includes("else url += '&countrycodes=ca&viewbox='") && !pick.includes('&bounded=0'));
 
 // ---------- 6: Cancel/Delete wear red ----------
-check('6a: the readout pill wears the destructive red while it reads Cancel', rule('#crHintBtn.danger {').includes('background: #c22f24;') && pick.includes("btn.classList.toggle('danger', btnLabel === 'Cancel')"));
+check('6a: the readout pill wears the destructive red while it reads Cancel (Beta 1.271: via the ONE shared danger rule, its own #c22f24 rule retired)', head.includes('#crHintBtn.danger, .routeDrop .dropDel, #pvStartOverBtn { background: #e63a2e; color: #fff; }') && !head.includes('#crHintBtn.danger { background: #c22f24;') && pick.includes("btn.classList.toggle('danger', btnLabel === 'Cancel')"));
 check('6b: the sector bar\'s destructive slot is red (Beta 1.269: the button is Deselect now, wearing the red Cancel wore)', rule('#crSbDeselect {').includes('color: #e63a2e;'));
 check('6c: the selection card Clear is red', rule('#selPop #selClearBtn {').includes('color: #e63a2e;'));
-check('6d: Delete maps wears the in-menu Delete treatment', rule('#stDel {').includes('background: rgba(230,57,46,.18);') && rule('#stDel {').includes('color: #ffb3ac;'));
+check('6d: Delete maps wears the shared danger solid (Beta 1.271 Set A - the in-menu tint retired)', head.includes('#confirmPill #cfDanger, #stDel, #stDel:active, #finYes') && !head.includes('#stDel { background: rgba(230,57,46,.18);'));
 check('6e: the confirm No button is red while it reads Cancel', rule('#crModalNo.cancelRed {').includes('color: #e63a2e;') && pick.includes("classList.toggle('cancelRed', !!labels && labels.no === 'Cancel')"));
 
 

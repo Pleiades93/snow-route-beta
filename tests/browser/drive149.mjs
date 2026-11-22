@@ -48,7 +48,7 @@ const B3 = await J(`({ n: preloadUrlList().length, fp: packMigFingerprint(preloa
 ok('B3 the offline manifest is the frozen 897 (fingerprint v1:897:mm56ak) BEFORE any route is chosen - it reads pack data, never a live route | ' + JSON.stringify(B3), B3.n === OFFLINE.count && B3.fp === OFFLINE.fingerprint);
 
 // ---------- L: load 5W through the real boot pick ----------
-await ev(`document.querySelector('#rmRoutes .routeRow').click()`);
+await ev(`(() => { const r = document.querySelector('#rmRoutes .routeRow'); if (r) { r.click(); const b = r.nextElementSibling && r.nextElementSibling.querySelector('.dropLoad'); if (b) b.click(); } return true; })()`);
 await poll(`typeof routeLoaded !== 'undefined' && routeLoaded === true`, 20000);
 await poll(`!document.getElementById('splash')`, 20000);
 await poll(`typeof map === 'undefined' || !map || !map.isMoving()`, 25000);
@@ -100,7 +100,7 @@ ok('S8 working on the fixture never touches the 5W slot (dump unchanged)', D1b =
 
 // ---------- R: switch back through the Routes UI ----------
 await ev(`openRouteMenu()`);
-await ev(`document.querySelector('#rmRoutes .routeRow[data-route="5w"]').click()`);
+await ev(`(() => { const r = document.querySelector('#rmRoutes .routeRow[data-route="5w"]'); if (r) { r.click(); const b = r.nextElementSibling && r.nextElementSibling.querySelector('.dropLoad'); if (b) b.click(); } return true; })()`);
 await poll(`typeof activeRoute !== 'undefined' && activeRoute && activeRoute.id === '5w'`, 20000);
 const D2 = await ev(dump5wSrc);
 ok('R1 the 5W storage slot is BYTE-IDENTICAL after the switch-away-and-back round trip', D2 === D1);

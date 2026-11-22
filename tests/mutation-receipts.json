@@ -3227,6 +3227,632 @@
    "red": "drive219 fails 16/17 in CI on head 7c969990 (A3 only: title-only queries seen 0, replaces 0, teardowns 0, titles placed) from the gate log",
    "green": "phase A gains an unmeasured fixture warm-up (one throwaway pick settled and unloaded before the instrument installs, so the graded pick's layers exist before its flight) and a decision-window poll before its read, as phase D; A cut from the fixed drive passes 8/8 locally (A1-A7 + F1); the cloud gate grades the full lane on the new head",
    "issued": "2026-11-22 sync-1270-gate4"
+  },
+  {
+   "id": "proof-1271-menus",
+   "check": "tests/proof/proof-1271.mjs",
+   "kind": "historical",
+   "files": {
+    "tests/proof/proof-1271.mjs": "4ab522e8fba89a68cec74ef4fcffecb263a0cc95881d1b132cb69490ea3e1515"
+   },
+   "mutation": "the historical Beta 1.270 tree (803c520, PR #166 merge) carrying the round's new test files",
+   "red": "0 pass, 15 fail on the 1.270 tree - none of the round's surfaces exist there (no routeDrop, no shared danger rule, banners and suggestion machinery still live)",
+   "green": "15/15 on the 1.271 tree; full proof run 78/78",
+   "issued": "2026-11-22 beta-1271-menus-round"
+  },
+  {
+   "id": "proof-1224-1271",
+   "check": "tests/proof/proof-1224.mjs",
+   "kind": "historical",
+   "files": {
+    "tests/proof/proof-1224.mjs": "811ce12499816cdf8f7562b47c0f04b7a54e2bbe043eee312defb953175877e8"
+   },
+   "mutation": "the historical Beta 1.270 tree (803c520, PR #166 merge) carrying the round's new test files",
+   "red": "2 fail on the 1.270 tree - the re-pinned declarations (danger colours, banner/selOpen retirements, the 1.271 What's New bullet) do not hold there",
+   "green": "full pass on the 1.271 tree (proofs 78/78)",
+   "issued": "2026-11-22 beta-1271-menus-round"
+  },
+  {
+   "id": "proof-1226-1271",
+   "check": "tests/proof/proof-1226.mjs",
+   "kind": "historical",
+   "files": {
+    "tests/proof/proof-1226.mjs": "3448a686130a581f5fe5185d91030f9a55d8f5cd6cc775ee4dadff72c84c8659"
+   },
+   "mutation": "the historical Beta 1.270 tree (803c520, PR #166 merge) carrying the round's new test files",
+   "red": "2 fail on the 1.270 tree - the re-pinned declarations (danger colours, banner/selOpen retirements, the 1.271 What's New bullet) do not hold there",
+   "green": "full pass on the 1.271 tree (proofs 78/78)",
+   "issued": "2026-11-22 beta-1271-menus-round"
+  },
+  {
+   "id": "proof-1228-1271",
+   "check": "tests/proof/proof-1228.mjs",
+   "kind": "historical",
+   "files": {
+    "tests/proof/proof-1228.mjs": "9c7cb4d6106930c91e4c8043b55fdad51845549eff3b9d35934895dd885acac7"
+   },
+   "mutation": "the historical Beta 1.270 tree (803c520, PR #166 merge) carrying the round's new test files",
+   "red": "1 fail on the 1.270 tree - the re-pinned declarations (danger colours, banner/selOpen retirements, the 1.271 What's New bullet) do not hold there",
+   "green": "full pass on the 1.271 tree (proofs 78/78)",
+   "issued": "2026-11-22 beta-1271-menus-round"
+  },
+  {
+   "id": "proof-1229-1271",
+   "check": "tests/proof/proof-1229.mjs",
+   "kind": "historical",
+   "files": {
+    "tests/proof/proof-1229.mjs": "3b49a4ae46803bdb5d1b69b7d6f565a1ad88882c85b933c9241baf68b332aa79"
+   },
+   "mutation": "the historical Beta 1.270 tree (803c520, PR #166 merge) carrying the round's new test files",
+   "red": "2 fail on the 1.270 tree - the re-pinned declarations (danger colours, banner/selOpen retirements, the 1.271 What's New bullet) do not hold there",
+   "green": "full pass on the 1.271 tree (proofs 78/78)",
+   "issued": "2026-11-22 beta-1271-menus-round"
+  },
+  {
+   "id": "proof-1233-1271",
+   "check": "tests/proof/proof-1233.mjs",
+   "kind": "historical",
+   "files": {
+    "tests/proof/proof-1233.mjs": "8f39a58d825f74321b625c390bfbd42f4f29f1605fd5f5d269a4d4d00e06c6e1"
+   },
+   "mutation": "the historical Beta 1.270 tree (803c520, PR #166 merge) carrying the round's new test files",
+   "red": "1 fail on the 1.270 tree - the re-pinned declarations (danger colours, banner/selOpen retirements, the 1.271 What's New bullet) do not hold there",
+   "green": "full pass on the 1.271 tree (proofs 78/78)",
+   "issued": "2026-11-22 beta-1271-menus-round"
+  },
+  {
+   "id": "proof-1255-1271",
+   "check": "tests/proof/proof-1255.mjs",
+   "kind": "historical",
+   "files": {
+    "tests/proof/proof-1255.mjs": "504cc6837c831826171e49730735ea55303d62fdf78c6cd15faf55313e4ec72b"
+   },
+   "mutation": "the historical Beta 1.270 tree (803c520, PR #166 merge) carrying the round's new test files",
+   "red": "2 fail on the 1.270 tree - the re-pinned declarations (danger colours, banner/selOpen retirements, the 1.271 What's New bullet) do not hold there",
+   "green": "full pass on the 1.271 tree (proofs 78/78)",
+   "issued": "2026-11-22 beta-1271-menus-round"
+  },
+  {
+   "id": "proof-selcard-note-move-1271",
+   "check": "tests/proof/proof-selcard-note-move.mjs",
+   "kind": "historical",
+   "files": {
+    "tests/proof/proof-selcard-note-move.mjs": "162dd1a9863e975e662d79738c71b719bee4f9f0d2cbbbbaf5714b4d460c8e8a"
+   },
+   "mutation": "the historical Beta 1.270 tree (803c520, PR #166 merge) carrying the round's new test files",
+   "red": "2 fail on the 1.270 tree - the re-pinned declarations (danger colours, banner/selOpen retirements, the 1.271 What's New bullet) do not hold there",
+   "green": "full pass on the 1.271 tree (proofs 78/78)",
+   "issued": "2026-11-22 beta-1271-menus-round"
+  },
+  {
+   "id": "proof-selcard-width-262-1271",
+   "check": "tests/proof/proof-selcard-width-262.mjs",
+   "kind": "historical",
+   "files": {
+    "tests/proof/proof-selcard-width-262.mjs": "ece290cc30122487d840181e6204db70b6d4d896cce60bccf989344973cc3aa0"
+   },
+   "mutation": "the historical Beta 1.270 tree (803c520, PR #166 merge) carrying the round's new test files",
+   "red": "1 fail on the 1.270 tree - the re-pinned declarations (danger colours, banner/selOpen retirements, the 1.271 What's New bullet) do not hold there",
+   "green": "full pass on the 1.271 tree (proofs 78/78)",
+   "issued": "2026-11-22 beta-1271-menus-round"
+  },
+  {
+   "id": "proof-1242-1271",
+   "check": "tests/proof/proof-1242.mjs",
+   "kind": "historical",
+   "files": {
+    "tests/proof/proof-1242.mjs": "436e08bf0462cc32c97691c5a09623be96236942c5c47f737f924eb1af7ff5f5"
+   },
+   "mutation": "the historical Beta 1.270 tree (803c520, PR #166 merge) carrying the round's new test files",
+   "red": "1 fail on the 1.270 tree - the proof's What's New bullet pin names the 1.271 bullet, the 1.270 page carries the 1.270 bullet",
+   "green": "full pass on the 1.271 tree (proofs 78/78)",
+   "issued": "2026-11-22 beta-1271-menus-round"
+  },
+  {
+   "id": "proof-1243-1271",
+   "check": "tests/proof/proof-1243.mjs",
+   "kind": "historical",
+   "files": {
+    "tests/proof/proof-1243.mjs": "e574ae15cf4bb4ac6f266e726f34bef752972934ee47c91abcdfd358b44b6cd6"
+   },
+   "mutation": "the historical Beta 1.270 tree (803c520, PR #166 merge) carrying the round's new test files",
+   "red": "1 fail on the 1.270 tree - the proof's What's New bullet pin names the 1.271 bullet, the 1.270 page carries the 1.270 bullet",
+   "green": "full pass on the 1.271 tree (proofs 78/78)",
+   "issued": "2026-11-22 beta-1271-menus-round"
+  },
+  {
+   "id": "proof-1245-1271",
+   "check": "tests/proof/proof-1245.mjs",
+   "kind": "historical",
+   "files": {
+    "tests/proof/proof-1245.mjs": "6e08ac221fdc11f3d73fc256e6a6f54c8fb4f56e1138523d7fb29f0d78e711e1"
+   },
+   "mutation": "the historical Beta 1.270 tree (803c520, PR #166 merge) carrying the round's new test files",
+   "red": "1 fail on the 1.270 tree - the proof's What's New bullet pin names the 1.271 bullet, the 1.270 page carries the 1.270 bullet",
+   "green": "full pass on the 1.271 tree (proofs 78/78)",
+   "issued": "2026-11-22 beta-1271-menus-round"
+  },
+  {
+   "id": "proof-1246-1271",
+   "check": "tests/proof/proof-1246.mjs",
+   "kind": "historical",
+   "files": {
+    "tests/proof/proof-1246.mjs": "a6bbb9f0592b5409bb1b6a8e452cc67e9b6d4c498dd9bf10b9e5233ca06d02c6"
+   },
+   "mutation": "the historical Beta 1.270 tree (803c520, PR #166 merge) carrying the round's new test files",
+   "red": "1 fail on the 1.270 tree - the proof's What's New bullet pin names the 1.271 bullet, the 1.270 page carries the 1.270 bullet",
+   "green": "full pass on the 1.271 tree (proofs 78/78)",
+   "issued": "2026-11-22 beta-1271-menus-round"
+  },
+  {
+   "id": "proof-1247-1271",
+   "check": "tests/proof/proof-1247.mjs",
+   "kind": "historical",
+   "files": {
+    "tests/proof/proof-1247.mjs": "e49fc573f516d5d70fa8a2f66e9009aa31ab14e5524cd04c376e49a167869c1a"
+   },
+   "mutation": "the historical Beta 1.270 tree (803c520, PR #166 merge) carrying the round's new test files",
+   "red": "1 fail on the 1.270 tree - the proof's What's New bullet pin names the 1.271 bullet, the 1.270 page carries the 1.270 bullet",
+   "green": "full pass on the 1.271 tree (proofs 78/78)",
+   "issued": "2026-11-22 beta-1271-menus-round"
+  },
+  {
+   "id": "proof-1249-1271",
+   "check": "tests/proof/proof-1249.mjs",
+   "kind": "historical",
+   "files": {
+    "tests/proof/proof-1249.mjs": "797f230e34f588df42182a6016a31be6d581838f81fa7f5b8055a5b05e3d75f9"
+   },
+   "mutation": "the historical Beta 1.270 tree (803c520, PR #166 merge) carrying the round's new test files",
+   "red": "1 fail on the 1.270 tree - the proof's What's New bullet pin names the 1.271 bullet, the 1.270 page carries the 1.270 bullet",
+   "green": "full pass on the 1.271 tree (proofs 78/78)",
+   "issued": "2026-11-22 beta-1271-menus-round"
+  },
+  {
+   "id": "proof-1252-1271",
+   "check": "tests/proof/proof-1252.mjs",
+   "kind": "historical",
+   "files": {
+    "tests/proof/proof-1252.mjs": "16da19092ae0cef5675b1d523459560f94372d4bee2c813a8156cb5faa844ee1"
+   },
+   "mutation": "the historical Beta 1.270 tree (803c520, PR #166 merge) carrying the round's new test files",
+   "red": "1 fail on the 1.270 tree - the proof's What's New bullet pin names the 1.271 bullet, the 1.270 page carries the 1.270 bullet",
+   "green": "full pass on the 1.271 tree (proofs 78/78)",
+   "issued": "2026-11-22 beta-1271-menus-round"
+  },
+  {
+   "id": "proof-1253-1271",
+   "check": "tests/proof/proof-1253.mjs",
+   "kind": "historical",
+   "files": {
+    "tests/proof/proof-1253.mjs": "346bbfd9afd5790d3dd55c3cbb9a0fc271e88923fdfe96e39bf52d6cf032fef1"
+   },
+   "mutation": "the historical Beta 1.270 tree (803c520, PR #166 merge) carrying the round's new test files",
+   "red": "1 fail on the 1.270 tree - the proof's What's New bullet pin names the 1.271 bullet, the 1.270 page carries the 1.270 bullet",
+   "green": "full pass on the 1.271 tree (proofs 78/78)",
+   "issued": "2026-11-22 beta-1271-menus-round"
+  },
+  {
+   "id": "proof-1254-1271",
+   "check": "tests/proof/proof-1254.mjs",
+   "kind": "historical",
+   "files": {
+    "tests/proof/proof-1254.mjs": "0e1f02a71ef97a677633488685f8d682a3dc631871be899c1b2e833b4a9318ed"
+   },
+   "mutation": "the historical Beta 1.270 tree (803c520, PR #166 merge) carrying the round's new test files",
+   "red": "1 fail on the 1.270 tree - the proof's What's New bullet pin names the 1.271 bullet, the 1.270 page carries the 1.270 bullet",
+   "green": "full pass on the 1.271 tree (proofs 78/78)",
+   "issued": "2026-11-22 beta-1271-menus-round"
+  },
+  {
+   "id": "proof-1256-1271",
+   "check": "tests/proof/proof-1256.mjs",
+   "kind": "historical",
+   "files": {
+    "tests/proof/proof-1256.mjs": "ff86026890245631cfbd9dbf968cd0ae9b3d96c26568b001a3779efe0c1f2081"
+   },
+   "mutation": "the historical Beta 1.270 tree (803c520, PR #166 merge) carrying the round's new test files",
+   "red": "1 fail on the 1.270 tree - the proof's What's New bullet pin names the 1.271 bullet, the 1.270 page carries the 1.270 bullet",
+   "green": "full pass on the 1.271 tree (proofs 78/78)",
+   "issued": "2026-11-22 beta-1271-menus-round"
+  },
+  {
+   "id": "proof-1257-1271",
+   "check": "tests/proof/proof-1257.mjs",
+   "kind": "historical",
+   "files": {
+    "tests/proof/proof-1257.mjs": "f2a87c2bd6e644083e5375dcd08b7441908a6708c15dacd0e609fb5949ccdd60"
+   },
+   "mutation": "the historical Beta 1.270 tree (803c520, PR #166 merge) carrying the round's new test files",
+   "red": "1 fail on the 1.270 tree - the proof's What's New bullet pin names the 1.271 bullet, the 1.270 page carries the 1.270 bullet",
+   "green": "full pass on the 1.271 tree (proofs 78/78)",
+   "issued": "2026-11-22 beta-1271-menus-round"
+  },
+  {
+   "id": "proof-1259-1271",
+   "check": "tests/proof/proof-1259.mjs",
+   "kind": "historical",
+   "files": {
+    "tests/proof/proof-1259.mjs": "6862e44c0e6818b47c67b876a4b440b6a6b9c57b7d272ccc5bc0bf95936575b4"
+   },
+   "mutation": "the historical Beta 1.270 tree (803c520, PR #166 merge) carrying the round's new test files",
+   "red": "1 fail on the 1.270 tree - the proof's What's New bullet pin names the 1.271 bullet, the 1.270 page carries the 1.270 bullet",
+   "green": "full pass on the 1.271 tree (proofs 78/78)",
+   "issued": "2026-11-22 beta-1271-menus-round"
+  },
+  {
+   "id": "proof-1262-1271",
+   "check": "tests/proof/proof-1262.mjs",
+   "kind": "historical",
+   "files": {
+    "tests/proof/proof-1262.mjs": "cab53cad56e54639d514bee58768c1deca5a306688ed9b59faffca4fd4875975"
+   },
+   "mutation": "the historical Beta 1.270 tree (803c520, PR #166 merge) carrying the round's new test files",
+   "red": "1 fail on the 1.270 tree - the proof's What's New bullet pin names the 1.271 bullet, the 1.270 page carries the 1.270 bullet",
+   "green": "full pass on the 1.271 tree (proofs 78/78)",
+   "issued": "2026-11-22 beta-1271-menus-round"
+  },
+  {
+   "id": "proof-1263-1271",
+   "check": "tests/proof/proof-1263.mjs",
+   "kind": "historical",
+   "files": {
+    "tests/proof/proof-1263.mjs": "810e7765b42a9a960312f504e551a86ea53dbdebc1ed67aa93ab27dad666cd99"
+   },
+   "mutation": "the historical Beta 1.270 tree (803c520, PR #166 merge) carrying the round's new test files",
+   "red": "1 fail on the 1.270 tree - the proof's What's New bullet pin names the 1.271 bullet, the 1.270 page carries the 1.270 bullet",
+   "green": "full pass on the 1.271 tree (proofs 78/78)",
+   "issued": "2026-11-22 beta-1271-menus-round"
+  },
+  {
+   "id": "proof-1264-1271",
+   "check": "tests/proof/proof-1264.mjs",
+   "kind": "historical",
+   "files": {
+    "tests/proof/proof-1264.mjs": "88c8fb31d7bfac4553c24620ad42acdce98327972b4a4eac3d4c8198844146d5"
+   },
+   "mutation": "the historical Beta 1.270 tree (803c520, PR #166 merge) carrying the round's new test files",
+   "red": "1 fail on the 1.270 tree - the proof's What's New bullet pin names the 1.271 bullet, the 1.270 page carries the 1.270 bullet",
+   "green": "full pass on the 1.271 tree (proofs 78/78)",
+   "issued": "2026-11-22 beta-1271-menus-round"
+  },
+  {
+   "id": "proof-1265-1271",
+   "check": "tests/proof/proof-1265.mjs",
+   "kind": "historical",
+   "files": {
+    "tests/proof/proof-1265.mjs": "c1828d6392d0534176fb5afe07ce474de5e4292cc7e178c6f283bf6504789d8f"
+   },
+   "mutation": "the historical Beta 1.270 tree (803c520, PR #166 merge) carrying the round's new test files",
+   "red": "1 fail on the 1.270 tree - the proof's What's New bullet pin names the 1.271 bullet, the 1.270 page carries the 1.270 bullet",
+   "green": "full pass on the 1.271 tree (proofs 78/78)",
+   "issued": "2026-11-22 beta-1271-menus-round"
+  },
+  {
+   "id": "proof-1266-1271",
+   "check": "tests/proof/proof-1266.mjs",
+   "kind": "historical",
+   "files": {
+    "tests/proof/proof-1266.mjs": "79f25afd4be781f5137d09a50bab40ec4cc96ec40640da0376ccdf906cfdcadd"
+   },
+   "mutation": "the historical Beta 1.270 tree (803c520, PR #166 merge) carrying the round's new test files",
+   "red": "7 fail on the 1.270 tree - the proof's What's New bullet pin names the 1.271 bullet, the 1.270 page carries the 1.270 bullet",
+   "green": "full pass on the 1.271 tree (proofs 78/78)",
+   "issued": "2026-11-22 beta-1271-menus-round"
+  },
+  {
+   "id": "proof-1267-1271",
+   "check": "tests/proof/proof-1267.mjs",
+   "kind": "historical",
+   "files": {
+    "tests/proof/proof-1267.mjs": "01a6d354ecd98efc7d384558f27ca0ab97e516c8df007c256c4966826b4cd0e3"
+   },
+   "mutation": "the historical Beta 1.270 tree (803c520, PR #166 merge) carrying the round's new test files",
+   "red": "1 fail on the 1.270 tree - the proof's What's New bullet pin names the 1.271 bullet, the 1.270 page carries the 1.270 bullet",
+   "green": "full pass on the 1.271 tree (proofs 78/78)",
+   "issued": "2026-11-22 beta-1271-menus-round"
+  },
+  {
+   "id": "proof-1268-1271",
+   "check": "tests/proof/proof-1268.mjs",
+   "kind": "historical",
+   "files": {
+    "tests/proof/proof-1268.mjs": "7eb59e630c02b9c9a6ba04afb62625fd52cacea875d37a9f75522cff089c66fc"
+   },
+   "mutation": "the historical Beta 1.270 tree (803c520, PR #166 merge) carrying the round's new test files",
+   "red": "1 fail on the 1.270 tree - the proof's What's New bullet pin names the 1.271 bullet, the 1.270 page carries the 1.270 bullet",
+   "green": "full pass on the 1.271 tree (proofs 78/78)",
+   "issued": "2026-11-22 beta-1271-menus-round"
+  },
+  {
+   "id": "proof-1269-1271",
+   "check": "tests/proof/proof-1269.mjs",
+   "kind": "historical",
+   "files": {
+    "tests/proof/proof-1269.mjs": "eb0a5faf097c94759a1bcdcf1b7d1f638dffe2b3440bfde99bdcaf10e671a350"
+   },
+   "mutation": "the historical Beta 1.270 tree (803c520, PR #166 merge) carrying the round's new test files",
+   "red": "1 fail on the 1.270 tree - the proof's What's New bullet pin names the 1.271 bullet, the 1.270 page carries the 1.270 bullet",
+   "green": "full pass on the 1.271 tree (proofs 78/78)",
+   "issued": "2026-11-22 beta-1271-menus-round"
+  },
+  {
+   "id": "proof-1270-1271",
+   "check": "tests/proof/proof-1270.mjs",
+   "kind": "historical",
+   "files": {
+    "tests/proof/proof-1270.mjs": "7177efb606a868984d20a73418422058f47b5e174bd09a95793a0842223928b3"
+   },
+   "mutation": "the historical Beta 1.270 tree (803c520, PR #166 merge) carrying the round's new test files",
+   "red": "1 fail on the 1.270 tree - the proof's What's New bullet pin names the 1.271 bullet, the 1.270 page carries the 1.270 bullet",
+   "green": "full pass on the 1.271 tree (proofs 78/78)",
+   "issued": "2026-11-22 beta-1271-menus-round"
+  },
+  {
+   "id": "selftest-fw-1271",
+   "check": "tests/browser/selftest-foreign-writes.mjs",
+   "kind": "mutation",
+   "files": {
+    "tests/browser/selftest-foreign-writes.mjs": "2922c9d534d88d7ab5e371f0700e759ad3f2a78efcaaedc60314c72c9c74cde1",
+    "tests/browser/fixtures/foreign-writes-census.json": "311bc5fa8fc75d79130594462977b6a5540267c65bf6bce3f05315a97de977ec"
+   },
+   "mutation": "Beta 1.271 removes the suggestion machinery, deleting app1 completeFinishCleanup's two foreign writes (suggested, sugQueue) and the two declarations in scripts/app1-types.d.ts",
+   "red": "check mode against the pre-round fixture FAILS - the fixture (30 expressions) expects the two writes the code no longer makes",
+   "green": "after regeneration the fixture holds 28 expressions (delta exactly the two writes) and check mode passes",
+   "issued": "2026-11-22 beta-1271-menus-round"
+  },
+  {
+   "id": "drive135-1271",
+   "check": "tests/browser/drive135.mjs",
+   "kind": "historical",
+   "files": {
+    "tests/browser/drive135.mjs": "45698e13f82f8c522a44194d9d88ce7505418e93f0814a2558c3fe098c447fc8",
+    "tests/browser/harness.mjs": "1c50f0bd4153753c631d1481f6164e0b502728758e86202c2d988777256f246a"
+   },
+   "mutation": "the historical Beta 1.270 tree (803c520, PR #166 merge) carrying the round's new test files",
+   "red": "FAIL on the 1.270 tree - the converted load path presses a row then clicks its sibling .dropLoad; the 1.270 rows load on the press itself and no dropdown exists",
+   "green": "4/4 checks, 0 exceptions on the 1.271 tree",
+   "issued": "2026-11-22 beta-1271-menus-round"
+  },
+  {
+   "id": "drive145-1271",
+   "check": "tests/browser/drive145.mjs",
+   "kind": "historical",
+   "files": {
+    "tests/browser/drive145.mjs": "2eb066129ac9b3fcf9fc8a628ee8e9464774dcb91b6e69b39cc67e20a0fc7394",
+    "tests/browser/harness.mjs": "1c50f0bd4153753c631d1481f6164e0b502728758e86202c2d988777256f246a"
+   },
+   "mutation": "the historical Beta 1.270 tree (803c520, PR #166 merge) carrying the round's new test files",
+   "red": "FAIL on the 1.270 tree - the converted load path presses a row then clicks its sibling .dropLoad; the 1.270 rows load on the press itself and no dropdown exists",
+   "green": "8/8 checks, 0 exceptions on the 1.271 tree",
+   "issued": "2026-11-22 beta-1271-menus-round"
+  },
+  {
+   "id": "drive149-1271",
+   "check": "tests/browser/drive149.mjs",
+   "kind": "historical",
+   "files": {
+    "tests/browser/drive149.mjs": "8886bd952c445971e9e560b916508a15cb37690c5e3a4403fae5d48f4347d35a",
+    "tests/browser/harness.mjs": "1c50f0bd4153753c631d1481f6164e0b502728758e86202c2d988777256f246a"
+   },
+   "mutation": "the historical Beta 1.270 tree (803c520, PR #166 merge) carrying the round's new test files",
+   "red": "FAIL on the 1.270 tree - the converted load path presses a row then clicks its sibling .dropLoad; the 1.270 rows load on the press itself and no dropdown exists",
+   "green": "7/7 checks, 0 exceptions on the 1.271 tree",
+   "issued": "2026-11-22 beta-1271-menus-round"
+  },
+  {
+   "id": "drive150-1271",
+   "check": "tests/browser/drive150.mjs",
+   "kind": "historical",
+   "files": {
+    "tests/browser/drive150.mjs": "9f0c7423bbb9638024be7bd500be8ee4853b90a8947032b845a708710dd076ed",
+    "tests/browser/harness.mjs": "1c50f0bd4153753c631d1481f6164e0b502728758e86202c2d988777256f246a"
+   },
+   "mutation": "the historical Beta 1.270 tree (803c520, PR #166 merge) carrying the round's new test files",
+   "red": "FAIL on the 1.270 tree - the converted load path presses a row then clicks its sibling .dropLoad; the 1.270 rows load on the press itself and no dropdown exists",
+   "green": "34/34 checks, 0 exceptions on the 1.271 tree",
+   "issued": "2026-11-22 beta-1271-menus-round"
+  },
+  {
+   "id": "drive152-1271",
+   "check": "tests/browser/drive152.mjs",
+   "kind": "historical",
+   "files": {
+    "tests/browser/drive152.mjs": "7aa5cf91e64a88b7e39eff2cae9a11c32a7ee9201ef9b499f5b2051eabb3a830",
+    "tests/browser/harness.mjs": "1c50f0bd4153753c631d1481f6164e0b502728758e86202c2d988777256f246a"
+   },
+   "mutation": "the historical Beta 1.270 tree (803c520, PR #166 merge) carrying the round's new test files",
+   "red": "FAIL on the 1.270 tree - the converted load path presses a row then clicks its sibling .dropLoad; the 1.270 rows load on the press itself and no dropdown exists",
+   "green": "24/24 checks, 0 exceptions on the 1.271 tree",
+   "issued": "2026-11-22 beta-1271-menus-round"
+  },
+  {
+   "id": "drive166-1271",
+   "check": "tests/browser/drive166.mjs",
+   "kind": "historical",
+   "files": {
+    "tests/browser/drive166.mjs": "753f460dea6c5f56fa52dd38ed8bb01aaeb8ab95c919a4a3004489b4d80212fd",
+    "tests/browser/harness.mjs": "1c50f0bd4153753c631d1481f6164e0b502728758e86202c2d988777256f246a"
+   },
+   "mutation": "the historical Beta 1.270 tree (803c520, PR #166 merge) carrying the round's new test files",
+   "red": "FAIL on the 1.270 tree - the converted load path presses a row then clicks its sibling .dropLoad; the 1.270 rows load on the press itself and no dropdown exists",
+   "green": "54/54 checks, 0 exceptions on the 1.271 tree",
+   "issued": "2026-11-22 beta-1271-menus-round"
+  },
+  {
+   "id": "drive178-1271",
+   "check": "tests/browser/drive178.mjs",
+   "kind": "historical",
+   "files": {
+    "tests/browser/drive178.mjs": "1418d0ade0dafb7620289a3aa36a3a28c237fe1a11fcab610403d07d4d984195",
+    "tests/browser/harness.mjs": "1c50f0bd4153753c631d1481f6164e0b502728758e86202c2d988777256f246a"
+   },
+   "mutation": "the historical Beta 1.270 tree (803c520, PR #166 merge) carrying the round's new test files",
+   "red": "FAIL on the 1.270 tree - the converted load path presses a row then clicks its sibling .dropLoad; the 1.270 rows load on the press itself and no dropdown exists",
+   "green": "18/18 checks, 0 exceptions on the 1.271 tree",
+   "issued": "2026-11-22 beta-1271-menus-round"
+  },
+  {
+   "id": "drive181-1271",
+   "check": "tests/browser/drive181.mjs",
+   "kind": "historical",
+   "files": {
+    "tests/browser/drive181.mjs": "13ee4cd529fee2c487e0274963bdebcbebe25463af70268938c45c101f752c83",
+    "tests/browser/harness.mjs": "1c50f0bd4153753c631d1481f6164e0b502728758e86202c2d988777256f246a"
+   },
+   "mutation": "the historical Beta 1.270 tree (803c520, PR #166 merge) carrying the round's new test files",
+   "red": "FAIL on the 1.270 tree - the converted load path presses a row then clicks its sibling .dropLoad; the 1.270 rows load on the press itself and no dropdown exists",
+   "green": "20/20 checks, 0 exceptions on the 1.271 tree",
+   "issued": "2026-11-22 beta-1271-menus-round"
+  },
+  {
+   "id": "drive199-1271",
+   "check": "tests/browser/drive199.mjs",
+   "kind": "historical",
+   "files": {
+    "tests/browser/drive199.mjs": "030fcde121a7cdac095e7b8db1cee770adc732cdce718ab4f272c9fb2bb61b4f",
+    "tests/browser/harness.mjs": "1c50f0bd4153753c631d1481f6164e0b502728758e86202c2d988777256f246a"
+   },
+   "mutation": "the historical Beta 1.270 tree (803c520, PR #166 merge) carrying the round's new test files",
+   "red": "FAIL on the 1.270 tree - the converted load path presses a row then clicks its sibling .dropLoad; the 1.270 rows load on the press itself and no dropdown exists",
+   "green": "8/8 checks, 0 exceptions on the 1.271 tree",
+   "issued": "2026-11-22 beta-1271-menus-round"
+  },
+  {
+   "id": "drive213-1271",
+   "check": "tests/browser/drive213.mjs",
+   "kind": "historical",
+   "files": {
+    "tests/browser/drive213.mjs": "601a2f8612a824a3e93ea7b58fa8ae77544cab37f94dabd6df2fbf6b277ac154",
+    "tests/browser/harness.mjs": "1c50f0bd4153753c631d1481f6164e0b502728758e86202c2d988777256f246a"
+   },
+   "mutation": "the historical Beta 1.270 tree (803c520, PR #166 merge) carrying the round's new test files",
+   "red": "FAIL on the 1.270 tree - the converted load path presses a row then clicks its sibling .dropLoad; the 1.270 rows load on the press itself and no dropdown exists",
+   "green": "20/20 checks, 0 exceptions on the 1.271 tree",
+   "issued": "2026-11-22 beta-1271-menus-round"
+  },
+  {
+   "id": "drive215-1271",
+   "check": "tests/browser/drive215.mjs",
+   "kind": "historical",
+   "files": {
+    "tests/browser/drive215.mjs": "2ccd04f2f59c97fc22399814c04be9700072c61f83913c659185ad85b8c89fad",
+    "tests/browser/harness.mjs": "1c50f0bd4153753c631d1481f6164e0b502728758e86202c2d988777256f246a"
+   },
+   "mutation": "the historical Beta 1.270 tree (803c520, PR #166 merge) carrying the round's new test files",
+   "red": "FAIL on the 1.270 tree - the converted load path presses a row then clicks its sibling .dropLoad; the 1.270 rows load on the press itself and no dropdown exists",
+   "green": "20/20 checks, 0 exceptions on the 1.271 tree",
+   "issued": "2026-11-22 beta-1271-menus-round"
+  },
+  {
+   "id": "drive219-1271",
+   "check": "tests/browser/drive219.mjs",
+   "kind": "historical",
+   "files": {
+    "tests/browser/drive219.mjs": "86ecb8cafc74916916ca75213f43d378fb2c078e7d22fba0e76c97ed8cc69f57",
+    "tests/browser/harness.mjs": "1c50f0bd4153753c631d1481f6164e0b502728758e86202c2d988777256f246a"
+   },
+   "mutation": "the historical Beta 1.270 tree (803c520, PR #166 merge) carrying the round's new test files",
+   "red": "FAIL on the 1.270 tree - the converted load path presses a row then clicks its sibling .dropLoad; the 1.270 rows load on the press itself and no dropdown exists",
+   "green": "44/44 checks, 0 exceptions on the 1.271 tree",
+   "issued": "2026-11-22 beta-1271-menus-round"
+  },
+  {
+   "id": "drive180-1271",
+   "check": "tests/browser/drive180.mjs",
+   "kind": "historical",
+   "files": {
+    "tests/browser/drive180.mjs": "2e792e5a3e1701bafca399df11369b104c4e748253a4091914b2b75ff9051f4a",
+    "tests/browser/harness.mjs": "1c50f0bd4153753c631d1481f6164e0b502728758e86202c2d988777256f246a"
+   },
+   "mutation": "the historical Beta 1.270 tree (803c520, PR #166 merge) carrying the round's new test files",
+   "red": "FAIL on the 1.270 tree - the boot pick conversion needs .dropLoad, absent there",
+   "green": "36/37 locally on the 1.271 tree with SEQ1 environment-starved (known-env-failures entry 2026-11-22, identical on the pristine base; 37/37 in the day's first local batch; ROWF passes with the round's font fix)",
+   "issued": "2026-11-22 beta-1271-menus-round"
+  },
+  {
+   "id": "drive118-1271",
+   "check": "tests/browser/drive118.mjs",
+   "kind": "historical",
+   "files": {
+    "tests/browser/drive118.mjs": "0dc6de98ef7d8817b0b9ce2b31c4171df5bb1599a38b73737fe63b38a9f41bf9"
+   },
+   "mutation": "the historical Beta 1.270 tree (803c520, PR #166 merge) carrying the round's new test files",
+   "red": "FAIL on the 1.270 tree - T3's reworked claims target the retired suggestion offer (it still fires there)",
+   "green": "16/16 checks, 0 exceptions on the 1.271 tree",
+   "issued": "2026-11-22 beta-1271-menus-round"
+  },
+  {
+   "id": "drive128-1271",
+   "check": "tests/browser/drive128.mjs",
+   "kind": "historical",
+   "files": {
+    "tests/browser/drive128.mjs": "8d976a2c786f9cd8bc1a43b5b065ad17c1094f140cf005452e42ba2cb747d4fb"
+   },
+   "mutation": "the historical Beta 1.270 tree (803c520, PR #166 merge) carrying the round's new test files",
+   "red": "FAIL on the 1.270 tree - M13c measures the re-centre button HOLDING its 91px seat; the 1.270 tree still drops it below the open card",
+   "green": "34/34 checks, 0 exceptions on the 1.271 tree",
+   "issued": "2026-11-22 beta-1271-menus-round"
+  },
+  {
+   "id": "drive143-1271",
+   "check": "tests/browser/drive143.mjs",
+   "kind": "historical",
+   "files": {
+    "tests/browser/drive143.mjs": "e8ebdcbed31939f6d83ea30b395f9f90b85e871097bf9a90afd326ac32620573"
+   },
+   "mutation": "the historical Beta 1.270 tree (803c520, PR #166 merge) carrying the round's new test files",
+   "red": "FAIL on the 1.270 tree - U0/C1/C2/X1 no longer read the suggested set the old finish/cancel/clear paths reset",
+   "green": "21/21 checks, 0 exceptions on the 1.271 tree",
+   "issued": "2026-11-22 beta-1271-menus-round"
+  },
+  {
+   "id": "drive154-1271",
+   "check": "tests/browser/drive154.mjs",
+   "kind": "historical",
+   "files": {
+    "tests/browser/drive154.mjs": "2a5d296a3db2140651809db56891f70c7876943bde3aefc5cb3a9250e09eaecd"
+   },
+   "mutation": "the historical Beta 1.270 tree (803c520, PR #166 merge) carrying the round's new test files",
+   "red": "FAIL on the 1.270 tree - E1/E1b/H2 grade the dropdown (rows are buttons with an in-row Delete there, no dropdown exists)",
+   "green": "18/18 checks, 0 exceptions on the 1.271 tree",
+   "issued": "2026-11-22 beta-1271-menus-round"
+  },
+  {
+   "id": "drive155-1271",
+   "check": "tests/browser/drive155.mjs",
+   "kind": "historical",
+   "files": {
+    "tests/browser/drive155.mjs": "9b2fa4800d6a6381f0c88d5be11030b6c6cbdb0aa77374d7241269f56ecd9f50"
+   },
+   "mutation": "the historical Beta 1.270 tree (803c520, PR #166 merge) carrying the round's new test files",
+   "red": "FAIL on the 1.270 tree - deleteViaUi opens the row's dropdown and clicks its Delete pill; neither exists there",
+   "green": "6/6 checks, 0 exceptions on the 1.271 tree",
+   "issued": "2026-11-22 beta-1271-menus-round"
+  },
+  {
+   "id": "drive188-1271",
+   "check": "tests/browser/drive188.mjs",
+   "kind": "historical",
+   "files": {
+    "tests/browser/drive188.mjs": "a6bdcf4d521e61cde944384ded39221ada6d1f8bf28462140142021f3c3a0557"
+   },
+   "mutation": "the historical Beta 1.270 tree (803c520, PR #166 merge) carrying the round's new test files",
+   "red": "FAIL on the 1.270 tree - section C asserts the suggestion machinery is GONE; it is fully live there",
+   "green": "55/55 checks, 0 exceptions on the 1.271 tree",
+   "issued": "2026-11-22 beta-1271-menus-round"
+  },
+  {
+   "id": "drive196-1271",
+   "check": "tests/browser/drive196.mjs",
+   "kind": "historical",
+   "files": {
+    "tests/browser/drive196.mjs": "eed2bf1e9dea3919ba8a9078975fb3bf436bafbbe12399aabe529e7abd86ea87"
+   },
+   "mutation": "the historical Beta 1.270 tree (803c520, PR #166 merge) carrying the round's new test files",
+   "red": "FAIL on the 1.270 tree - T5/F3/F5 grade the Clear confirmation ask and the retired banner slots; the old tree clears silently and still shows the banners",
+   "green": "32/32 checks, 0 exceptions on the 1.271 tree",
+   "issued": "2026-11-22 beta-1271-menus-round"
   }
  ]
 }

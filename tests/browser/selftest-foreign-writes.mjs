@@ -893,7 +893,6 @@ if (tree.duplicates.length) console.log('  note: top-level names declared in mor
 // from the source by hand and matched against the analyzer's key).
 const MUST = [
   ['app1.js', 'buildGeometry', 'routeBox'], // buildGeometry refills app2's routeBox in place on every load
-  ['app1.js', 'completeFinishCleanup', 'suggested'], // the cleanup clears app3's suggestion set (and rebinds sugQueue beside it, Beta 1.169) once both verified writes land
   ['app4.js', 'clearTrailAll', 'trail'], ['app4.js', 'clearTrailAll', 'trailSessions'], ['app4.js', 'clearTrailAll', 'lastTrailSave'],
   ['app4.js', 'restoreBackup', 'restoring'], // the P1 fence (Beta 1.186) is three restoring sites under two keys: restoreBackup occ 1 (the fence rises before the snapshot) and occ 2 (the success path), plus restoreFenceDown occ 1 (the failure doorway's arrow)
   ['create-pick.js', 'enterCreate', 'followPaused'], // enterCreate parks GPS follow for the picking

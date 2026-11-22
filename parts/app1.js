@@ -42,7 +42,6 @@ const PACK_FIELDS = ['name', 'area', 'primaries', 'spot', 'tileNames', 'box', 'r
 // validator's three 60-character caps and two 80 caps are likewise separate per field.
 const COV_SAMPLE_M = 15; // coverage samples are laid along a street every this many metres (samplesFor, app3)
 const COV_RADIUS_M = 22; // a GPS fix covers the samples within this radius of it (coverFix, app3)
-const COV_FRAC = 0.85; // the covered fraction at which an unmarked street is SUGGESTED (never auto-marked - coverFix, app3)
 const GPS_ACCURACY_M = 65; // fixes reported worse than this are rejected while a fresh good fix exists; the accept comparison (<=) and the reject comparison (>) are ONE rule - this constant (acceptFix, app3)
 const GPS_STILL_MPS = 0.5; // Beta 1.187 (GPS package, STOP B): a recorded fix reporting under this speed is a stopped fix - acceptFix's trail guard banks no distance and records no trail point from it (a parked truck's fix wander was banking a median 138 phantom metres a minute into saved cleans). The position path is NOT gated by it: the dot follows every accepted fix exactly as before. (A tighter 28 m accuracy gate and a stationary position hold were priced in the same harness and did NOT ship - both measured neutral-to-worse; the round record carries the numbers.)
 const GPS_STALE_MS = 45000; // a watch silent this long is restarted (app3): silence runs from the later of the last accepted fix and the current watch's own start, so this one value is also a fresh watch's first-fix window (Beta 1.252, R-01 - one threshold by design; a longer cold-fix window, if ever wanted, becomes a sibling constant HERE, never a second literal in app3) - a GPS policy
@@ -723,7 +722,7 @@ BOARD.loadSides();
   if (!STREETNAMES.every(n => pieces[n].every(v => v === 0))) return;
   if (!txSet(LS.notes, '{}').ok) return;
   if (!txSet(LS.cov, '{}').ok) return;
-  BOARD.clearNotesAndCoverage(); suggested = new Set(); sugQueue = [];
+  BOARD.clearNotesAndCoverage(); // Beta 1.271: the suggestion set this line also reset is gone with its banner
   txDel(LS.finclean);
 }
 // ===== DAY/NIGHT (Beta 1.77, Andrew): the theme follows the sun by default.

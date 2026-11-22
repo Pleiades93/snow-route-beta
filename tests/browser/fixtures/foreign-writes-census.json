@@ -15,10 +15,10 @@
     "engine.js"
   ],
   "totals": {
-    "expressions": 30,
+    "expressions": 28,
     "byFile": {
       "app1.js": {
-        "expressions": 3
+        "expressions": 1
       },
       "app2.js": {
         "expressions": 0
@@ -61,20 +61,6 @@
       "fn": "buildGeometry",
       "name": "routeBox",
       "owner": "app2.js",
-      "occ": 1
-    },
-    {
-      "file": "app1.js",
-      "fn": "completeFinishCleanup",
-      "name": "sugQueue",
-      "owner": "app3.js",
-      "occ": 1
-    },
-    {
-      "file": "app1.js",
-      "fn": "completeFinishCleanup",
-      "name": "suggested",
-      "owner": "app3.js",
       "occ": 1
     },
     {

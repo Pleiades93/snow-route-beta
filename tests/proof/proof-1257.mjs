@@ -64,8 +64,8 @@ check('6: the scrim-free design claims are superseded and removed (the pill comm
 // ---------- the release editorial ----------
 check('7: the CHANGELOG top entry is Beta 1.257', changelog.includes('## Beta 1.257'));
 check('8: What\'s New carries the 1.257 bullet, short and dash-free',
-  whatsnew.includes('Street names now load in with the map, in sync, instead of popping in after a wait.')
-  && 'Street names now load in with the map, in sync, instead of popping in after a wait.'.length <= 108
+  whatsnew.includes('Tap a route in the list to open its menu: Load, or Delete. Every route can be deleted now.')
+  && 'Tap a route in the list to open its menu: Load, or Delete. Every route can be deleted now.'.length <= 108
   && !whatsnew.includes('—'));
 
 console.log(`proof-1257: ${pass} passed, ${fail} failed`);

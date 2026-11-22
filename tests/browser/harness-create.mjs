@@ -152,7 +152,7 @@ export async function startCreateRig({ profile, fulfil = null, jsonMode = 'coded
     await poll(`!!document.getElementById('rmChoose')`, 20000);
     await ev2(`document.getElementById('rmChoose').click()`);
     await poll(`!!document.querySelector('#rmRoutes .routeRow')`, 20000);
-    await ev2(`document.querySelector('#rmRoutes .routeRow').click()`);
+    await ev2(`(() => { const r = document.querySelector('#rmRoutes .routeRow'); if (r) { r.click(); const b = r.nextElementSibling && r.nextElementSibling.querySelector('.dropLoad'); if (b) b.click(); } return true; })()`);
     await poll(`typeof routeLoaded !== 'undefined' && routeLoaded === true`, 30000);
     await poll(`!document.getElementById('splash')`, 10000);
   };

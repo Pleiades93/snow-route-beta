@@ -307,7 +307,7 @@ function cancelStart() {
     markDirty('trail'); markDirty('sess');
   }
   runSnap = null;
-  runStart = 0; suggested = new Set(); sugQueue = []; $('suggest').classList.add('hidden');
+  runStart = 0;
   const okCancel = saveAllWarned().ok; flushAux(true);
   const trailPending = writePending('trail') || writePending('sess'); // Beta 1.93 (follow-up audit R07): the erasure claim below is gated on the trail/session writes having actually landed
   if (wasRunGps) stopGps();
@@ -319,18 +319,24 @@ function cancelStart() {
   else if (!okCancel) toast('Start cancelled - warning: the cancellation could not be saved; the clean may return on reload', 4200);
 } // Beta 1.69 (audits N03 + trail): cancelStart ignored saveAll's result and claimed success unconditionally; it also never refreshed the trail, so a cancelled run's line lingered
 $('startBtn').addEventListener('click', () => { if (!tapGuard('startBtn')) return; startClean(); });
-// CLEAR (Andrew, Beta 1.7): header button beside Pace - one tap wipes EVERY mark on the board (all streets,
-// both sides), plus the completion times/vias and the GPS coverage that would instantly re-suggest them.
+// CLEAR (Andrew, Beta 1.7): header button beside Pace - wipes EVERY mark on the board (all streets,
+// both sides), plus the completion times/vias and the GPS coverage behind them. Beta 1.271 (Andrew):
+// the tap ASKS first, through the shared confirmation (askClearAll) - through 1.270 this was the most
+// destructive un-asked action in the app (the danger inventory's #17).
 // The run itself (start time, trail, notes, history) is untouched - this is the mistake eraser, not a finish.
+function boardHasMarks() { return doneSet.size > 0 || STREETNAMES.some(n => pieces[n].some(v => v !== 0)) || Object.keys(coveredIdx).length > 0; } // Beta 1.70 (audit A04): coverage-only state is something to clear too - the old guard claimed 'nothing to clear' while coverage sat untouched. Beta 1.271: the guard is its own predicate now - the Clear tap reads it to decide whether there is anything worth asking over, and clearAllMarks keeps it as its own first check
 function clearAllMarks() {
-  const any = doneSet.size > 0 || STREETNAMES.some(n => pieces[n].some(v => v !== 0)) || Object.keys(coveredIdx).length > 0 || suggested.size > 0; // Beta 1.70 (audit A04): coverage-only state is something to clear too - the old guard claimed 'nothing to clear' while coverage and suggestions sat untouched
+  const any = boardHasMarks();
   if (!any) { return; }
-  BOARD.zeroMarks(); suggested = new Set(); sugQueue = []; // Arch-2: the board emptying is the module's in-place zero
-  $('suggest').classList.add('hidden'); delete $('suggest').dataset.n; // Beta 1.71 (audit B01): the one path the 1.70 dismissal sweep missed - Clear wiped the coverage behind the panel but left the panel itself up, its Yes still able to select the street
+  BOARD.zeroMarks(); // Arch-2: the board emptying is the module's in-place zero
   deselect(); const okClear = finishChange();
   if (!okClear.ok) toast('Storage problem - the clear could not be saved; marks may return on reload', 4200); // Beta 1.63 (audit F04)
 }
-$('clearBtn').addEventListener('click', () => { if (!tapGuard('clearBtn')) return; clearAllMarks(); });
+$('clearBtn').addEventListener('click', () => { if (!tapGuard('clearBtn')) return; if (boardHasMarks()) askClearAll(); });
+function askClearAll() { // Beta 1.271 (Andrew): the Clear ask - the shared confirmation, bound to the route it was opened over (askCancelStart's binding discipline); the wipe itself is clearAllMarks, unchanged. An empty board never raises the question (the handler's guard above).
+  const forRoute = activeRoute ? activeRoute.id : null;
+  showConfirm({ title: 'Clear all marks?', sub: 'Every mark, time and coverage on this route will be wiped. The run itself keeps going.', keep: 'Keep marks', danger: 'Clear all', onDanger: () => { if ((activeRoute ? activeRoute.id : null) === forRoute) clearAllMarks(); } });
+}
 $('cancelStartBtn').addEventListener('click', () => { if (!tapGuard('cancelStartBtn')) return; askCancelStart(); }); // Beta 1.255 (gate round 3, Codex P2): the dock's Cancel start asks through the same bound confirmation - through head 2 it still discarded in one tap, bypassing the Pace sheet's new question entirely
 $('resetBtn').addEventListener('click', () => {
   // Beta 1.110 (Andrew): the Yes/No pop-up below is the ONLY finish gate - the post-Finish Undo is removed, so this button never means anything but Finish.
@@ -487,7 +493,7 @@ function finishRun() {
   }
   lsDel(LS.snap); markClean('snap'); resetRunDist(); lsDel(LS.rundist); lsDel(LS.rundist2); trail = []; markDirty('trail'); // Beta 1.167 (B5): the distance counter is consumed into the archive entry (km) - its record goes with the run. Beta 1.193: its mirror copy goes too, and the trail window is cleared with them - the run is over, so the fallback's only consumer is gone (the Start fence and the load window would evict the points anyway; clearing here keeps the stored trail honest between runs). Beta 1.94 (SR-193-02): the run is finished - its cancel snapshot goes with it. Ungated on purpose: a leftover snapshot is stamped with THIS run's start, so it can never match a future run, and the next Start overwrites it anyway
   if (archiving) history = newHist;
-  BOARD.zeroMarks(); notes = {}; runStart = 0; runSnap = null; suggested = new Set(); sugQueue = []; $('suggest').classList.add('hidden'); // Arch-2: the board half of this reset is the module's in-place zero // Beta 1.70 (audit A04): the suggestion set is run-scoped too - finishRun used to clear the coverage but keep the set, so suggested streets never suggested again
+  BOARD.zeroMarks(); notes = {}; runStart = 0; runSnap = null; // Arch-2: the board half of this reset is the module's in-place zero
   stopGps(); deselect(); // Beta 1.193: through 1.190 this also force-drew the trail to clear the finished line (Beta 1.69) - there is no line any more; the window itself was cleared with the counter records above
   const restRes = saveAll(); const restOk = restRes.ok; // the gated sides write already landed; this pass carries the metadata - a failure here warns but cannot resurrect anything (authority + archive agree)
   finishChange();
@@ -495,13 +501,11 @@ function finishRun() {
   onFinishFeedback(); // Beta 1.111: only on the COMMITTED path (every failure return above leaves the run intact and silent) - the Done chime plays twice here (once for Chime Melody) plus the finish vibration pattern, per the On-the-job settings; fully guarded in app4
 }
 function performReset() { finishRun(); } // production's name for the finish action (the test battery calls it directly)
-function checkStale() {
-  const stale = runStart && (Date.now() - runStart > 12 * 3600000);
-  $('stale').classList.toggle('hidden', !stale);
-  if (stale) $('staleText').textContent = 'This clean started ' + fmtClock(new Date(runStart)) + ', over 12 hours ago. Finish it, or keep going?';
+function checkStale() { // Beta 1.271 (Andrew): the stale-clean question moves OFF its banner onto the shared confirmation pill - same trigger (a run older than 12 hours, judged at Start and at route load), same two answers in the pop-up's seats: Keep going the left ghost, Finish it the right danger solid. The danger seat runs the Finish button's own click, exactly as the banner's Yes did; the ask binds the run it was opened over, like askCancelStart.
+  if (!(runStart && (Date.now() - runStart > 12 * 3600000))) return;
+  const forRun = runStart;
+  showConfirm({ title: 'Finish this clean?', sub: 'It started ' + fmtClock(new Date(runStart)) + ', over 12 hours ago.', keep: 'Keep going', danger: 'Finish it', onDanger: () => { if (runStart === forRun) $('resetBtn').click(); } });
 }
-$('staleYes').addEventListener('click', () => { $('stale').classList.add('hidden'); $('resetBtn').click(); });
-$('staleNo').addEventListener('click', () => $('stale').classList.add('hidden'));
 
 // ===== NOTES (production model: notes[street] = [{k:'note', at, text} | {k: flag kind, at}]) =====
 const FLAGS = { car: 'Car blocking', hazard: 'Hazard', missed: 'Missed spot', salt: 'Needs salt' };
@@ -538,13 +542,12 @@ function samplesFor(stretch, names) { // Beta 1.117: the coverage samples as a P
 }
 function buildSamples() { const built = samplesFor(STRETCH, STREETNAMES); for (const k of Object.keys(SAMPLES)) delete SAMPLES[k]; Object.assign(SAMPLES, built); covSamplesGen++; } // Beta 1.135 (programme D): the generation bump invalidates coverFix's per-street sample boxes (below) - the samples they were measured from just changed
 // (the coverage-index sanitizer lives in loadRouteState, app1 - Beta 1.76: it must run over the loaded state, and state now loads on route pick, not at eval)
-let suggested = new Set();
 function resetNotesHistorySession() { // Beta 1.148 (Tranche 5, A4(ii)): app3's OWN route-switch reset, called by app4's resetSwitchSession - the run-snapshot / history / modal-note / suggestion session's reset knowledge lives here, with its state
   resetRunDist(); // Beta 1.167 (B5): the in-memory distance counter belongs to the outgoing run; its persisted record stays in the outgoing slot (like LS.snap below) and is re-adopted lazily if he switches back mid-run
   runSnap = null; // F3: the in-memory cancel snapshot belongs to the outgoing run. The PERSISTED copy (LS.snap, in the outgoing slot) is deliberately untouched - after switching back, Cancel validates it exactly as it does after a reload
   histOpen = false; cleanIdx = null; cleanDelArmed = false; if (cleanDelTimer) { clearTimeout(cleanDelTimer); cleanDelTimer = 0; } // the history panel and its delete-arming
   noteFor = null; $('noteModal').classList.add('hidden'); // the modal note editor
-  suggested = new Set(); sugQueue = []; $('suggest').classList.add('hidden'); $('stale').classList.add('hidden'); // run-scoped suggestion set + the two banners (checkStale re-judges the stale banner for the incoming route below)
+  // Beta 1.271: the suggestion set and the two banners this reset used to clear are gone - checkStale re-judges the stale question for the incoming route through the confirmation pill
 }
 function pushGps() {
   const src = map && map.getSource('gps'); if (!src) return;
@@ -1373,37 +1376,22 @@ function acceptFix(pos) {
 // rebound wholesale (route load, cancel-restore, finish, clear - it is never edited in
 // place outside this function), so a new object rebuilds the Sets; the boxes key on the
 // buildSamples generation, bumped on every route load. Judged by drives 126/127 and the
-// 1.135 fixture harness (identical coveredIdx JSON + suggestion sequence).
+// 1.135 fixture harness (identical coveredIdx JSON + suggestion sequence). Beta 1.271: the suggestion OFFER this block's history describes is cut at the offer point below - the banner is removed and nothing offers a street any more; the coverage computation, the sample boxes and the caches are untouched, and the sequence judgement above stands for the coverage half.
 let covSetsFor = null, covSets = {}, covBoxesFor = -1, covBoxes = {}, covSamplesGen = 0;
 function coverFix(ll) {
   if (covSetsFor !== coveredIdx) { covSets = {}; for (const n of Object.keys(coveredIdx)) covSets[n] = new Set(coveredIdx[n]); covSetsFor = coveredIdx; }
   if (covBoxesFor !== covSamplesGen) { covBoxes = {}; const pLat = COV_RADIUS_M / MLAT, pLng = COV_RADIUS_M / MLNG; for (const n of STREETNAMES) { const pts = SAMPLES[n]; if (!pts || !pts.length) continue; let a = 1e9, b = -1e9, c = 1e9, e = -1e9; for (const p of pts) { if (p[0] < a) a = p[0]; if (p[0] > b) b = p[0]; if (p[1] < c) c = p[1]; if (p[1] > e) e = p[1]; } covBoxes[n] = [a - pLat, b + pLat, c - pLng, e + pLng]; } covBoxesFor = covSamplesGen; }
   let changed = false;
   for (const n of STREETNAMES) {
-    if (streetComplete(n) || suggested.has(n)) continue;
+    if (streetComplete(n)) continue;
     const pts = SAMPLES[n]; const set = covSets[n] || (covSets[n] = new Set(coveredIdx[n] || []));
     const box = covBoxes[n]; const outOfBox = box && (ll[0] < box[0] || ll[0] > box[1] || ll[1] < box[2] || ll[1] > box[3]);
     if (!outOfBox) for (let i = 0; i < pts.length; i++) { if (!set.has(i) && distM(ll, pts[i]) <= COV_RADIUS_M) { set.add(i); changed = true; } }
     if (set.size) coveredIdx[n] = [...set];
-    if (set.size >= Math.ceil(pts.length * COV_FRAC) && !streetComplete(n)) { suggested.add(n); showSuggest(n); }
   }
   if (changed) markDirty('aux');
 }
-let sugQueue = []; // Beta 1.169 (Carbon fix round, B-11): streets that qualify while the banner is busy showing another - each gets its turn instead of being overwritten into silence. Run-scoped like `suggested` itself: cleared at the same four resets (cancel, clear-all, finish, route switch)
-function showSuggest(n) {
-  const cur = $('suggest').dataset.n;
-  if (!$('suggest').classList.contains('hidden') && cur && cur !== n) { if (!sugQueue.includes(n)) sugQueue.push(n); return; } // Beta 1.169 (B-11): the banner is showing another street - queue behind it. The street is already in `suggested`, so coverFix will never offer it again this run; through 1.168 this call simply overwrote the banner and the earlier street's one offer was gone for the run.
-  $('sugText').textContent = n + ' looks fully covered by GPS but is not marked done.';
-  $('suggest').dataset.n = n;
-  $('suggest').classList.remove('hidden');
-}
-function sugNext() { // the banner was answered or dismissed: the next queued street takes it - one that has since been marked, or left the route, is skipped
-  while (sugQueue.length && (streetComplete(sugQueue[0]) || !STREETSET.has(sugQueue[0]))) sugQueue.shift();
-  const nxt = sugQueue.shift();
-  if (nxt) { $('sugText').textContent = nxt + ' looks fully covered by GPS but is not marked done.'; $('suggest').dataset.n = nxt; $('suggest').classList.remove('hidden'); }
-}
-$('sugYes').addEventListener('click', () => { const n = $('suggest').dataset.n; $('suggest').classList.add('hidden'); if (n) { const c = STRETCH[n].line[Math.floor(STRETCH[n].line.length / 2)]; if (map) map.flyTo({ center: [c[1], c[0]], zoom: Math.max(map.getZoom(), 15.5) }); selectStretch(n, 0, c); } sugNext(); }); // Beta 1.169 (Carbon fix round, B-02): the flyTo rides the codebase's map===null discipline (the 1.146 C4 idiom - followCam, northUp): in the map-failure world the tap still SELECTS the street; through 1.168 map.getZoom() threw first and the selection never happened
-$('sugNo').addEventListener('click', () => { $('suggest').classList.add('hidden'); sugNext(); });
+// Beta 1.271 (Andrew): the suggestion offer is REMOVED - showSuggest, the sugQueue and the banner handlers that stood here are gone, and coverFix (above) no longer offers a street at the coverage threshold. Coverage itself still computes exactly as before: it feeds the board and the history record (past entries' GPS-suggestion lines still render from their data). GPS suggestions never marked a street; now they do not interrupt either.
 let weakToastAt = 0;
 let gpsDenied = false; // Beta 1.111: the Status health GPS row's amber state - set by a permission denial (gpsError code 1), cleared by any accepted fix
 function gpsError(e) {

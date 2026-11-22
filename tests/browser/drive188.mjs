@@ -13,11 +13,11 @@ await bootThrough(ev, poll);
 //      derivation for that street (no more RP-09 short-circuit), and
 //      a street present in the map is priced by its bits - including
 //      partial-side work on a street items never completed.
-//   C: B-11 + B-02 - GPS suggestions QUEUE (a second qualifying street
-//      takes the banner when the first is answered instead of being
-//      overwritten into silence), and sugYes with map === null still
-//      selects the street (the 1.146 C4 guard idiom) instead of
-//      throwing on map.getZoom().
+//   C: Beta 1.271 - the GPS suggestion offer is REMOVED (the B-11 queue
+//      and the B-02 sugYes it graded went with the banner): coverage
+//      still computes at full strength through coverFix and nothing is
+//      offered; the stale question and the tab-bar Clear ask live on
+//      as confirmation functions.
 //   D: A-01 - the note editor's blur save and street-switch flush
 //      surface a failed write: blur answers in the hint with the
 //      debounced path's own words; a switch flush whose episode
@@ -81,16 +81,13 @@ try {
   ok('B1 a partial sides map reaches the fuller items derivation (no RP-09 short-circuit) | got ' + Math.round(b.gotPartial) + ', items ' + Math.round(b.itemsDeriv) + ', sides-only ' + Math.round(b.sidesOnly), Math.abs(b.gotPartial - b.itemsDeriv) < 0.5 && b.sidesOnly < b.itemsDeriv - 1);
   ok('B2 a richer sides map still wins (partial-side work on an uncompleted street counts) | got ' + Math.round(b.gotRich) + ' > items-only ' + Math.round(b.richItemsOnly), b.gotRich > b.richItemsOnly + 0.5);
 
-  // ---- C: B-11 queue + B-02 no-map sugYes ----
-  const c0 = await J(`(() => { suggested = new Set(['Velmar', 'Mellings']); sugQueue = []; showSuggest('Velmar'); showSuggest('Mellings'); return { shown: document.getElementById('suggest').dataset.n, q: sugQueue.slice() }; })()`);
-  ok('C1 the second suggestion QUEUES behind the first instead of overwriting it | ' + JSON.stringify(c0), c0.shown === 'Velmar' && JSON.stringify(c0.q) === JSON.stringify(['Mellings']));
-  await ev(`document.getElementById('sugNo').click(); true`); await sleep(150);
-  const c1 = await J(`({ shown: document.getElementById('suggest').dataset.n, hidden: document.getElementById('suggest').classList.contains('hidden') })`);
-  ok('C2 dismissing the first suggestion brings the queued street to the banner | ' + JSON.stringify(c1), c1.shown === 'Mellings' && c1.hidden === false);
+  // ---- C: Beta 1.271 - the suggestion offer is gone, coverage stands ----
+  const c0 = await J(`(() => ({ sugEl: !!document.getElementById('suggest'), staleEl: !!document.getElementById('stale'), showSuggest: typeof showSuggest, sugQueue: typeof sugQueue, suggested: typeof suggested, checkStale: typeof checkStale, askClearAll: typeof askClearAll }))()`);
+  ok('C1 the suggestion machinery is GONE - no banner elements, no showSuggest / sugQueue / suggested bindings - while checkStale and askClearAll live on | ' + JSON.stringify(c0), c0.sugEl === false && c0.staleEl === false && c0.showSuggest === 'undefined' && c0.sugQueue === 'undefined' && c0.suggested === 'undefined' && c0.checkStale === 'function' && c0.askClearAll === 'function');
   const excBefore = exc();
-  const c2 = await J(`(() => { const m = map; map = null; let err = ''; try { document.getElementById('sugYes').click(); } catch (e) { err = String(e && e.message || e); } const selName = sel && sel.name; map = m; return { err, selName, hidden: document.getElementById('suggest').classList.contains('hidden') }; })()`);
-  ok('C3 sugYes with NO map still selects the suggested street (no throw on the unguarded flyTo) | ' + JSON.stringify(c2), c2.err === '' && c2.selName === 'Mellings' && c2.hidden === true);
-  ok('C4 no page exception across the suggestion flow | exc before ' + excBefore + ', now ' + exc(), exc() === excBefore);
+  const c1 = await J(`(() => { const pts = SAMPLES.Velmar; for (const p of pts) coverFix(p); return { cov: (coveredIdx.Velmar || []).length, total: pts.length, sugEl: !!document.getElementById('suggest') }; })()`);
+  ok('C2 coverage still computes at full strength with NO offer: every Velmar sample fed through coverFix lands in coveredIdx and nothing appears | ' + JSON.stringify(c1), c1.cov === c1.total && c1.sugEl === false);
+  ok('C3 no page exception across the coverage flow | exc before ' + excBefore + ', now ' + exc(), exc() === excBefore);
 
   // ---- D: A-01 note flush surfaces ----
   await ev(`if (!document.getElementById('sheet').classList.contains('open')) document.getElementById('streetsBtn').click(); true`); await sleep(300); // the sheet must be OPEN (the button TOGGLES - section A may have left it open) - a hidden textarea cannot take focus, and blur is the event under test

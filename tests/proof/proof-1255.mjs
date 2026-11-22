@@ -32,8 +32,8 @@ check('2: the pill wears the selection pill\'s box (262px, 16px radius, centred,
   && pillCss.includes('transform: translate(-50%, -50%)') && pillCss.includes('background: #ffffff'));
 check('3: the night face is the selection pill\'s night face',
   slice(head, 'body.night #confirmPill {', '}').includes('background: rgba(20,21,27,.97)'));
-check('4: the danger button wears the app\'s destructive red; the row stands at the pill action geometry',
-  slice(head, '#confirmPill #cfDanger {', '}').includes('background: #e63a2e')
+check('4: the danger button wears the app\'s destructive red (Beta 1.271: via the ONE shared danger rule); the row stands at the pill action geometry',
+  slice(head, '#confirmPill #cfDanger,', '}').includes('background: #e63a2e')
   && slice(head, '#confirmPill .cfRow button {', '}').includes('height: 42px'));
 
 // ---------- the shared surface and its wiring ----------
@@ -68,8 +68,8 @@ check('12 (gate P2): the sheet click-away handler exempts the confirmation pill'
 // ---------- the release editorial ----------
 check('8: the CHANGELOG top entry is Beta 1.255', changelog.includes('## Beta 1.255'));
 check('9: What\'s New carries the 1.255 bullet, short and dash-free',
-  whatsnew.includes('Street names now load in with the map, in sync, instead of popping in after a wait.')
-  && 'Street names now load in with the map, in sync, instead of popping in after a wait.'.length <= 108
+  whatsnew.includes('Tap a route in the list to open its menu: Load, or Delete. Every route can be deleted now.')
+  && 'Tap a route in the list to open its menu: Load, or Delete. Every route can be deleted now.'.length <= 108
   && !whatsnew.includes('—'));
 
 console.log(`proof-1255: ${pass} passed, ${fail} failed`);

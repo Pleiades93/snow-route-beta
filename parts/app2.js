@@ -649,8 +649,8 @@ function markUndone(name) {
 function markStreet(name, done) { if (done) markDone(name, 'tap'); else markUndone(name); showChips(); }
 function renderPanel() { // ONE selection pop-up (Beta 1.30, Andrew): the header strip and the multi-select pill are the same pop-up now - pill glass, every action inside, content follows the selection
   const p = $('selPop');
-  if (!sel) { p.classList.add('hidden'); document.body.classList.remove('selOpen'); return; }
-  p.classList.remove('hidden'); document.body.classList.add('selOpen'); // Beta 1.214: body.selOpen drops the re-centre button below the card while it is open (head.html) - the card's title-row note button lives in the corner that button otherwise paints over
+  if (!sel) { p.classList.add('hidden'); return; }
+  p.classList.remove('hidden'); // Beta 1.271: renderPanel no longer raises body.selOpen - its only consumer, the 1.214 re-centre drop, is retired; the button holds its seat in every state
   const multi = selSet.length >= 2; // Beta 1.34 (Andrew): single and multi are the SAME size now - same box, same two rows; only the words and buttons change
   if (!multi) {
     $('selName').textContent = sel.name;
@@ -1005,7 +1005,7 @@ makeSheetDraggable($('pacePanel'));
 // 1.232 a "Currently loaded" badge) is a TAB-mode-only signal: at boot
 // nothing is loaded yet, and in 1.76/1.77 the marker render landing
 // mid-exit read as a flicker on the pick (Andrew, live catch).
-// wireRouteRows binds the rows to the mode's chooser.
+// wireRouteRows binds the rows to the mode's chooser. Beta 1.271: a row press toggles the row's dropdown (the same press again closes it); the chooser runs only from the dropdown's Load pill.
 function routeRowShell(tag, name, sub, opts) { // Beta 1.136 (programme F): the ONE route-row builder - a .routeRow element carrying the .routeMeta column (a .routeName line, plus a .routeArea line unless sub is null) and, when opts.chevron, the .routeChev. Through 1.135 the row shape was hand-built at three sites (route rows below, the create flow's city rows and its manual-search rows); they all build through this now, so the shape can only drift in one place. Text is assigned via textContent throughout (the Beta 1.94 F-04 rule: pack/city names are data, never markup). opts.cls adds a class (the city list's loading row); callers hang their own extras (dataset, badge, Delete, listeners) on the returned row.
   opts = opts || {};
   const b = document.createElement(tag || 'button'); b.className = 'routeRow' + (opts.cls ? ' ' + opts.cls : '');
@@ -1017,18 +1017,34 @@ function routeRowShell(tag, name, sub, opts) { // Beta 1.136 (programme F): the 
   if (opts.chevron) { const chev = document.createElement('span'); chev.className = 'routeChev'; chev.textContent = '›'; b.appendChild(chev); }
   return b;
 }
-function routeRowEl(p) { // Beta 1.94 (audit F-04): rows are built as DOM nodes with textContent, never by interpolating pack data into innerHTML - a pack's name/area are data, and the day route creation lands, a typed name must not be able to become markup. The row shape (classes, badge rule) is unchanged; wireRouteRows' container delegation reads data-route as before. Beta 1.136: the row itself comes from routeRowShell above; this function adds the route-specific extras (the tab-mode loaded check, a created route's Delete).
+function routeRowEl(p) { // Beta 1.94 (audit F-04): rows are built as DOM nodes with textContent, never by interpolating pack data into innerHTML - a pack's name/area are data, and the day route creation lands, a typed name must not be able to become markup. The row shape (classes, badge rule) is unchanged; wireRouteRows' container delegation reads data-route as before. Beta 1.136: the row itself comes from routeRowShell above; this function adds the route-specific extras (the tab-mode loaded check). Beta 1.271 (Andrew, Option D): EVERY row is a DIV now, shipped packs included - the row's dropdown (routeDropEl below, rendered as its sibling) carries real buttons, and buttons cannot nest in a <button> row; the created-route Delete that rode the row itself retires into that dropdown, live on every route.
   const tab = $('routeMenu').classList.contains('tab');
-  const user = !SHIPPED_PACK_IDS.has(p.id); // Beta 1.124: a route Andrew created (not a shipped pack) can be deleted - its row is a DIV, not a <button>, because the Delete control is a real button and buttons cannot nest; the row's choose behaviour is unchanged (the container delegation reads data-route on any .routeRow)
-  const b = routeRowShell(user ? 'div' : 'button', p.name, p.area + ' · ' + Object.keys(p.roads).length + ' streets'); b.dataset.route = p.id;
-  if (user) { const del = document.createElement('button'); del.className = 'routeDel'; del.type = 'button'; del.textContent = 'Delete'; del.addEventListener('click', e => { e.stopPropagation(); askDeleteRoute(p.id); }); b.appendChild(del); } // the Delete tap stops here - it must never read as a tap on the row itself (which would load the route it is about to delete)
+  const b = routeRowShell('div', p.name, p.area + ' · ' + Object.keys(p.roads).length + ' streets'); b.dataset.route = p.id;
   if (tab && activeRoute && activeRoute.id === p.id) { const ck = document.createElement('img'); ck.className = 'routeCheck'; ck.alt = 'Currently loaded'; ck.src = GLYPH_MENU.check; b.appendChild(ck); } // Beta 1.233 (Andrew): the loaded route wears the Glyph disc check at the pill's right edge - appended last so it holds the edge even beside a Delete; the 1.207 "Currently loaded" badge and its centred name-row wrap are gone, and the name + area stay dead centre in the meta column. Beta 1.233 fix round 1 (PR #113, Codex P2): the check's alt text carries the loaded state's name for a screen reader - the words stay off the screen, per Andrew's design
   return b;
 }
-function renderRouteLists() { document.querySelectorAll('.routeList').forEach(el => { el.replaceChildren(...ROUTE_PACKS.map(routeRowEl)); menuListFade(el); }); }
+function routeDropEl(p) { // Beta 1.271 (Andrew, Option D): a route's dropdown card, rendered as its row's sibling - Load over Delete, or (tab mode, the loaded route) the inert Loaded pill over Delete. Delete is LIVE on every route, shipped 5W included, and asks through the same askDeleteRoute the row's old Delete button used. The card's size is one CSS definition (the .routeDrop custom properties in head.html); this builder only hangs the two pills.
+  const tab = $('routeMenu').classList.contains('tab');
+  const card = document.createElement('div'); card.className = 'routeDrop'; card.dataset.route = p.id;
+  const top = document.createElement('button'); top.type = 'button';
+  if (tab && activeRoute && activeRoute.id === p.id) { top.className = 'dropLoaded'; top.textContent = 'Loaded'; } else { top.className = 'dropLoad'; top.textContent = 'Load'; }
+  const del = document.createElement('button'); del.type = 'button'; del.className = 'dropDel'; del.textContent = 'Delete';
+  card.appendChild(top); card.appendChild(del);
+  return card;
+}
+function renderRouteLists() { document.querySelectorAll('.routeList').forEach(el => { el.replaceChildren(...ROUTE_PACKS.flatMap(p => [routeRowEl(p), routeDropEl(p)])); menuListFade(el); }); } // Beta 1.271: each row renders with its dropdown card as its sibling
 function menuListFade(el) { // Beta 1.233 (Andrew, the feathered-edges sample): a menu scroll list feathers an edge ONLY while that edge hides more content - 30px of dissolve at a covered end, none at a rested end, both ends dissolving at the same rate (one gradient, mirrored - the symmetry Andrew checked on the samples). Refreshed wherever what an edge covers can change: on scroll, on render, on pane show, on resize. Beta 1.241 (Andrew): this seat also owns the city list's scroll arrow (#crCityArrow, head.html), read from the same two quantities on the same refreshes - the arrow stands only while the list rests at its very top with more below (the fadeB condition at scrollTop 0), fades to its kept seat the moment scrolling starts, and takes no seat at all when the list fits without scrolling.
   if (!el) return; const max = el.scrollHeight - el.clientHeight; el.classList.toggle('fadeT', el.scrollTop > 1); el.classList.toggle('fadeB', max > 1 && el.scrollTop < max - 1); if (el.id === 'crCityList') { const a = $('crCityArrow'); if (a) { const over = max > 1; a.classList.toggle('gone', !over); a.classList.toggle('hide', over && el.scrollTop > 1); } } }
-function wireRouteRows(container, choose) { container.addEventListener('click', e => { const row = e.target.closest('.routeRow'); if (row) choose(row.dataset.route); }); }
+function wireRouteRows(container, choose) { container.addEventListener('click', e => { // Beta 1.271: the delegation sorts the tap by what it landed on - the dropdown's Delete asks, its Load chooses, its inert Loaded spends the tap, and a press anywhere else on a row toggles that row's dropdown (open, or closed if it was the open one; opening one closes any other)
+  const del = e.target.closest('.dropDel'); if (del) { askDeleteRoute(del.closest('.routeDrop').dataset.route); return; }
+  const load = e.target.closest('.dropLoad'); if (load) { choose(load.closest('.routeDrop').dataset.route); return; }
+  if (e.target.closest('.dropLoaded')) return;
+  const row = e.target.closest('.routeRow'); if (!row) return;
+  const drop = row.nextElementSibling; if (!drop || !drop.classList.contains('routeDrop')) return;
+  const wasOpen = drop.classList.contains('open');
+  container.querySelectorAll('.routeDrop.open').forEach(d => d.classList.remove('open'));
+  if (!wasOpen) drop.classList.add('open');
+}); }
 function showRmPane(id) { ['rmMain', 'rmListPane', 'rmCreatePane', 'rmCityListPane', 'rmNamePane', 'rmCityPane'].forEach(p => $(p).classList.toggle('on', p === id)); menuListFade($('crCityList')); menuListFade($('rmRoutes')); const __away = id !== 'rmMain'; const __bl = $('brandLayer'); if (__bl) __bl.classList.toggle('away', __away); const __cv = $('snowCv'); if (__cv) __cv.classList.toggle('away', __away); } // Beta 1.159 (Andrew, title lifetime rule): the "Snow Route" title - and the snowfall with it - appears ONLY on the main pane; every other pane carries .away on the title's layer and the snow canvas, and returning to rmMain clears it. This function is the ONE pane choke point (every menu navigation in boot and tab mode passes through it), so the rule lives here and nowhere else; in tab mode the brand layer is parked (.off) and the canvas is gone with the splash, so both toggles are inert there. Beta 1.239 (Andrew's ruling, 2026-11-18): the 1.236 citySheet toggle and the 1.238 boot exemption that rode on this seat are both reverted - the toggle is the plain 1.159 form again in every mode, and no pane is exempted.
 function openRouteMenu() { crWarmCityLibrary(); const rm = $('routeMenu'); closeSheets(); showRmPane('rmMain'); rm.classList.add('tab'); renderRouteLists(); rm.classList.add('open'); } // Beta 1.130: showing the route menu warms the city catalogue - Create lives behind this menu, and the download is done or nearly done by the time the city list is tapped (the cold-open stutter fix; crWarmCityLibrary rides the cached promise, so this costs at most one small fetch per session)
 function closeRouteMenu() { const rm = $('routeMenu'); rm.classList.remove('open'); rm.classList.remove('tab'); }
