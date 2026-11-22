@@ -2,7 +2,7 @@
 <html lang="en" class="boot">
 <head>
 <meta charset="UTF-8">
-<meta http-equiv="Content-Security-Policy" content="default-src 'none'; script-src 'sha384-97bFvQIgR8zBvSTni1PHrEheupSRlkaEC+vWRUwYb9mzH0xJyMW6g37M5+InRn72' https://cdn.jsdelivr.net/npm/maplibre-gl@4.7.1/dist/maplibre-gl.js; style-src-elem 'sha384-tmY3TpLG3IBHj1Up3VD7qdEfXIhozozAPJ9yO555DP2Yf0nkzcrBjraMu4xPAkwd' https://cdn.jsdelivr.net; style-src-attr 'unsafe-inline'; img-src 'self' data: blob: https://tiles.basemaps.cartocdn.com https://protomaps.github.io https://cdn.jsdelivr.net; connect-src 'self' https://tiles.basemaps.cartocdn.com https://protomaps.github.io https://cdn.jsdelivr.net https://nominatim.openstreetmap.org https://overpass-api.de https://overpass.kumi.systems; worker-src blob: 'self'; child-src blob: 'self'; font-src 'none'; manifest-src 'self'; base-uri 'none'; form-action 'none'; object-src 'none'">
+<meta http-equiv="Content-Security-Policy" content="default-src 'none'; script-src 'sha384-jLrYrdR8QkqgBSDbdlPuqa4uvywrDxOvoZme64CmtLp/gEr8kD8ys25hV9EUnemV' https://cdn.jsdelivr.net/npm/maplibre-gl@4.7.1/dist/maplibre-gl.js; style-src-elem 'sha384-tmY3TpLG3IBHj1Up3VD7qdEfXIhozozAPJ9yO555DP2Yf0nkzcrBjraMu4xPAkwd' https://cdn.jsdelivr.net; style-src-attr 'unsafe-inline'; img-src 'self' data: blob: https://tiles.basemaps.cartocdn.com https://protomaps.github.io https://cdn.jsdelivr.net; connect-src 'self' https://tiles.basemaps.cartocdn.com https://protomaps.github.io https://cdn.jsdelivr.net https://nominatim.openstreetmap.org https://overpass-api.de https://overpass.kumi.systems; worker-src blob: 'self'; child-src blob: 'self'; font-src 'none'; manifest-src 'self'; base-uri 'none'; form-action 'none'; object-src 'none'">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="mobile-web-app-capable" content="yes">
@@ -7647,7 +7647,7 @@ function introToRoute() { // Beta 1.77 (Andrew): a pick opens WIDE on the route'
 let loadInGen = 0;
 let titleGuardArmed = false;
 let titleCureRelease = null; // the standing cure's one-shot release, or null - loadRoute and unloadRouteToBoot call it so a pick or a delete never leaves a previous pick's cure holding the new scene's titles
-function releaseTitleCure() { const f = titleCureRelease; titleCureRelease = null; if (f) f(); }
+function releaseTitleCure() { const f = titleCureRelease; if (f) f(); } // Beta 1.270 (PR #166, Codex P1): invoke the release WHILE IT IS STILL REGISTERED - the closure opens with an identity check (titleCureRelease !== release -> stand down) that retires stale invocations, so clearing the registration first makes the callback refuse itself and the hold never releases (titles invisible indefinitely, the incoming route's included). The closure clears the registration as its own first act, so invoke-first loses no safety; proof-1270 check 5b pins this order
 function armTitleRePlace() {
   if (!map || titleGuardArmed) return; titleGuardArmed = true;
   const liGen = loadInGen; // the generation this guard belongs to - a newer pick retires it whole: its check stands down, because the newer pick's own flight arms its own guard

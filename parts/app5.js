@@ -398,7 +398,7 @@ function introToRoute() { // Beta 1.77 (Andrew): a pick opens WIDE on the route'
 let loadInGen = 0;
 let titleGuardArmed = false;
 let titleCureRelease = null; // the standing cure's one-shot release, or null - loadRoute and unloadRouteToBoot call it so a pick or a delete never leaves a previous pick's cure holding the new scene's titles
-function releaseTitleCure() { const f = titleCureRelease; titleCureRelease = null; if (f) f(); }
+function releaseTitleCure() { const f = titleCureRelease; if (f) f(); } // Beta 1.270 (PR #166, Codex P1): invoke the release WHILE IT IS STILL REGISTERED - the closure opens with an identity check (titleCureRelease !== release -> stand down) that retires stale invocations, so clearing the registration first makes the callback refuse itself and the hold never releases (titles invisible indefinitely, the incoming route's included). The closure clears the registration as its own first act, so invoke-first loses no safety; proof-1270 check 5b pins this order
 function armTitleRePlace() {
   if (!map || titleGuardArmed) return; titleGuardArmed = true;
   const liGen = loadInGen; // the generation this guard belongs to - a newer pick retires it whole: its check stands down, because the newer pick's own flight arms its own guard

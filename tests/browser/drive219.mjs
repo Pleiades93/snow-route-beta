@@ -65,6 +65,9 @@ await send('Emulation.setDeviceMetricsOverride', { width: 420, height: 900, devi
 //   I  entering create mode mid-window and leaving: the backdrop's
 //      visibility snapshot meets no hold transient, and the titles
 //      stand natural and placed after the exit.
+//   J  unloading WHILE the cure hold stands (PR #166, Codex P1): the
+//      release must be invoked while still registered, or its own
+//      identity check refuses it and the hold never lets go.
 // On the 1.269 tree the lane fails at A: the hold engages on the pick,
 // the re-place runs unconditionally, and the titles complete seconds
 // after the basemap names - the hold-then-pop this design replaces.
@@ -88,7 +91,7 @@ const INSTRUMENT = `(() => {
   map.on('idle', () => { try { window.__li.idles.push(performance.now()); } catch (e) {} });
   map.on('moveend', () => { try { window.__li.moveEndAt = performance.now(); } catch (e) {} }); // the settled frame's start - the lanes judge from here (see the header's settled-frame rule)
   const origRS = map.removeSource.bind(map);
-  map.removeSource = (id) => { if (id === 'labelpts') { try { window.__li.tears.push({ t: performance.now(), mult: (typeof nameFade !== 'undefined' ? nameFade.mult : null) }); } catch (e) {} } return origRS(id); };
+  map.removeSource = (id) => { if (id === 'labelpts') { try { window.__li.tears.push({ t: performance.now(), mult: (typeof nameFade !== 'undefined' ? nameFade.mult : null) }); if (window.__liUnloadOnTear && !window.__liUnloaded) { window.__liUnloaded = true; setTimeout(() => { try { unloadRouteToBoot(); } catch (e) {} }, 0); } } catch (e) {} } return origRS(id); }; // phase J's hook: armed only there - the teardown schedules the route unload on the next task, so it lands after rePlaceTitles' synchronous rebuild completes but inside the re-parse window, while the cure's hold still stands (a CDP-timed unload cannot hit that window reliably, and CPU throttling to widen it starves the placement worker the phase also needs)
   if (window.GLP && window.GLP.rePlaceTitles) { const o = window.GLP.rePlaceTitles.bind(window.GLP); window.GLP.rePlaceTitles = () => { window.__li.replaces++; window.__li.replaceAt = performance.now(); window.__liForceCure = false; return o(); }; } // the cure's own call disarms the phase D stub - the precondition has done its work
   // The guard's seam: its check is a rendered-features query whose layer
   // list is a non-empty subset of the four title tiers. Count those calls
@@ -359,5 +362,66 @@ await sleep(1200);
 const iAfter = await J(`(() => { const ids = ['streetnamespt1', 'streetnamespt2', 'streetnamespt3', 'streetnamespt4'].filter((id) => map.getLayer(id)); const vis = ids.map((id) => map.getLayoutProperty(id, 'visibility') || 'visible'); const s = new Set(); for (const f of map.queryRenderedFeatures({ layers: ids })) if (f.properties && f.properties.name) s.add(f.properties.name); return { vis, placed: s.size }; })()`);
 ok('I1 entering create mode mid-window and leaving: during creation the backdrop\'s hide holds (titles hidden: ' + iDuring.hidden + '), and after the exit the titles stand at their natural visibility and place (during: ' + JSON.stringify(iDuring) + ', visibilities after exit: ' + JSON.stringify(iAfter.vis) + ', titles placed: ' + iAfter.placed + ')',
   iDuring.hidden === true && iAfter.vis.every((v) => v !== 'none') && iAfter.placed >= 30);
+
+// ================= Phase J: unloading WHILE the cure hold stands (PR #166, Codex P1) =================
+// Phase D proves the cure releases on its own idle; phase H unloads with
+// no hold standing. The seam between them: the cure has fired, its
+// titles-only hold stands, and the route is unloaded BEFORE the rebuilt
+// source's idle releases it. unloadRouteToBoot calls releaseTitleCure,
+// which must invoke the release while it is still registered - the
+// closure opens with an identity check (titleCureRelease !== release ->
+// stand down) that retires stale invocations, so a clear-first caller
+// makes the callback refuse itself: the hold never releases and the
+// titles stay invisible indefinitely, the incoming route's included.
+// The phase stages phase D's firing, and the unload is timed IN-PAGE:
+// the instrument's teardown hook schedules unloadRouteToBoot on the
+// next task after the labelpts teardown - after rePlaceTitles'
+// synchronous rebuild completes, inside the re-parse window, while the
+// hold still stands. (Two earlier stagings failed honestly and are
+// recorded here so they are not retried: a CDP-timed unload cannot hit
+// the re-parse window reliably, and 6x CPU throttling to widen the
+// window starves the placement worker past the runner's cap.) The
+// re-pick is then CONFIRMED, not assumed (a click at a stale or absent
+// row silently no-ops). Staging retries follow phase D's rule: only a
+// staging miss (the cure never fired) retries.
+let jFired = false, jAttempts = 0;
+for (let attempt = 1; attempt <= 3 && !jFired; attempt++) {
+  jAttempts = attempt;
+  await send('Page.reload', {}, S);
+  await bootToPicker();
+  await ev(INSTRUMENT);
+  await ev(`(() => { window.__liForceCure = true; window.__liUnloadOnTear = true; return true; })()`); // phase D's stub (the guard's count is served so the cure fires) + the teardown hook (the unload lands inside the hold)
+  await ev(`document.querySelector('#rmRoutes .routeRow') && document.querySelector('#rmRoutes .routeRow').click()`);
+  jFired = await poll(`!!(window.__li && window.__liUnloaded)`, 45000); // the hook fired = the cure fired AND the unload landed inside its hold
+  if (jFired) {
+    await poll(`typeof activeRoute !== 'undefined' && !activeRoute`, 20000); // the unload's own landing (no route active) - so the pick confirmation below cannot read the stale route
+    await poll(`!!document.querySelector('#rmRoutes .routeRow')`, 30000);
+    await ev(`document.querySelector('#rmRoutes .routeRow') && document.querySelector('#rmRoutes .routeRow').click()`);
+    const took = await poll(`typeof activeRoute !== 'undefined' && !!activeRoute`, 20000);
+    if (!took) { await ev(`document.querySelector('#rmRoutes .routeRow') && document.querySelector('#rmRoutes .routeRow').click()`); await poll(`typeof activeRoute !== 'undefined' && !!activeRoute`, 20000); }
+  }
+}
+const jDone = jFired ? await waitCureDone(60000) : false;
+// Judge the end state on the LIVE release state first, as phase D does:
+// the re-pick's own guard may legitimately fire its own cure at its
+// idle (titles placed mid-flight on the re-pick is the guard's exact
+// precondition), and a sampler read taken inside that cure's hold
+// convicts a healthy app - the full-drive run measured exactly that
+// (settled true, 34 titles, last sample caught inside the second cure).
+// The stranded-hold defect this phase exists for never releases at all,
+// so the live poll separates the two cleanly.
+const jReleased = jFired ? await poll(`typeof nameFade !== 'undefined' && nameFade.mult === 1 && !nameFade.held`, 20000) : false;
+// Then wait for the SAMPLER to catch up to the released state before
+// judging its last sample: the sampler ticks behind the live state
+// under load, and a last-sample read taken in the lag convicts the
+// released app with the previous hold's sample (measured: the live
+// state free while the newest sample still showed the re-pick's own
+// legitimate cure). The stranded hold never lets the sampler catch up.
+const jCaught = jReleased ? await poll(`(() => { try { const s = window.__li.samples; const last = s[s.length - 1]; return !!last && !last.held && last.mult === 1 && last.titles.length >= 30; } catch (e) { return false; } })()`, 20000) : false;
+const J219 = await J(`window.__li`);
+const jLast = J219.samples.length ? J219.samples[J219.samples.length - 1] : { titles: [], held: true, mult: 0 };
+console.log('drive219 J: attempts ' + jAttempts + ', fired ' + jFired + ', settled ' + jDone + ', released ' + jReleased + ', sampler caught up ' + jCaught + ', final ' + JSON.stringify({ titles: jLast.titles.length, held: jLast.held, mult: jLast.mult }));
+ok('J1 unloading WHILE the cure hold stands releases it (the PR #166 Codex P1 seam): the re-pick streams to full placement at natural paint and nothing stands held at the end (staging attempts: ' + jAttempts + ', cure fired: ' + jFired + ', settled: ' + jDone + ', live release: ' + jReleased + ', sampler caught up: ' + jCaught + ', final titles: ' + jLast.titles.length + ', final held: ' + jLast.held + ', final multiplier: ' + jLast.mult + ')',
+  jFired === true && jDone === true && jReleased === true && jCaught === true && jLast.titles.length >= 30 && jLast.held === false && jLast.mult === 1);
 
 finish(R, proc);

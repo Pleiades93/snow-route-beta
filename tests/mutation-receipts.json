@@ -3162,6 +3162,33 @@
    "red": "drive219 does not pass on the 1.269 tree - the run.mjs run was killed at the runner's 300 s cap and recorded FAIL (the old cycle's backstop waits outlast the new lane's polls); the properties the lane grades are absent there by construction (a hold engages on the pick, the re-place runs unconditionally, titles complete seconds after the basemap names) and proof-1270's 8/12 red on the same tree pins that absence statically - observed in this round against the fresh clone at 3dd2adda",
    "green": "drive219 passes 16/16 with 0 exceptions on the fixed tree (the guard runs and skips in phase A, fires exactly once inside the titles-only hold in phase D, titles and basemap names complete inside the same bracket) - observed in this round",
    "issued": "2026-11-22 sync-1270"
+  },
+  {
+   "id": "proof-1270-release-order-1270",
+   "check": "tests/proof/proof-1270.mjs",
+   "kind": "historical",
+   "files": {
+    "tests/proof/proof-1270.mjs": "bd66e601dc88a6828b904bae3b8a06bd91f2ba66f856cb25a5cb2347b267120a",
+    "parts/app5.js": "7b6b7f43577a3be48f10017114a1ff5bbf1a8d721db4c79d7ba84f4aadbaf587"
+   },
+   "mutation": "the PR #166 gate head's releaseTitleCure (clear-first: the registration is nulled before the callback runs, so the release closure's identity check refuses itself - Codex P1)",
+   "red": "proof-1270 check 5b fails on the clear-first order (12 pass, 1 fail) - observed in this round",
+   "green": "proof-1270 passes 13/13 on the fixed tree (invoke-first; the closure clears the registration itself) and the full manifest run is 77/77 - observed in this round",
+   "issued": "2026-11-22 sync-1270-codex-fix"
+  },
+  {
+   "id": "drive219-phaseJ-1270",
+   "check": "tests/browser/drive219.mjs",
+   "kind": "mutation",
+   "files": {
+    "tests/browser/drive219.mjs": "fc2950d2f0306932349e5f5042020b868c4671a19a554e435456df9016e6f1d8",
+    "tests/browser/lane-judge.mjs": "e03ea221236066be908978ed9047304baa8a805dc31c1c8625f8f210ab3e1e1d",
+    "parts/app5.js": "7b6b7f43577a3be48f10017114a1ff5bbf1a8d721db4c79d7ba84f4aadbaf587"
+   },
+   "mutation": "parts/app5.js releaseTitleCure restored to the clear-first order (the PR #166 gate head's form): the standing cure release is invoked after its registration is cleared, so its identity check refuses it",
+   "red": "drive219 phase J fails on the mutant (J-only run, first staging attempt): cure fired, the in-page teardown hook unloaded inside the hold, live release false, final titles 0, final held true, final multiplier 0 - the hold never releases and the re-pick's titles stay invisible - observed in this round",
+   "green": "drive219 passes 17/17 on the fixed tree (phase J: the unload inside the hold releases it, the re-pick streams to 34 titles at natural paint) - observed in this round",
+   "issued": "2026-11-22 sync-1270-codex-fix"
   }
  ]
 }

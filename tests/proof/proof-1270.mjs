@@ -72,6 +72,19 @@ check('5: loadRoute and unloadRouteToBoot both retire the guard and release a st
   count(app5, 'loadInGen++; titleGuardArmed = false; releaseTitleCure();') === 2 &&
   app5.includes('function releaseTitleCure()'));
 
+// ---------- (5b) the release is invoked while still registered (PR #166, Codex P1) ----------
+// The cure's release closure opens with an identity check (titleCureRelease
+// !== release -> stand down) - that check is what retires STALE invocations
+// (the idle listener and the 6 s backstop racing a release already done).
+// releaseTitleCure must therefore invoke the callback BEFORE clearing the
+// registration - clear-first makes the callback's own check fail, the hold
+// never releases, and the titles stay invisible indefinitely, the incoming
+// route's included. The closure clears the registration itself as its
+// first act, so invoke-first loses no safety.
+check('5b: releaseTitleCure invokes the standing release while it is still registered (the closure clears the registration itself) - the clear-first order is absent',
+  app5.includes('function releaseTitleCure() { const f = titleCureRelease; if (f) f(); }') &&
+  !app5.includes('titleCureRelease = null; if (f) f();'));
+
 // ---------- (6) the hold machinery is scoped: titles-only never touches the basemap ----------
 check('6: app2\'s hold carries the scope: nameHoldSet takes the titlesOnly flag, nameFade records the scope, and nameHoldApply skips the basemap loop entirely under a titles scope - not its paint, not its visibility',
   app2.includes('function nameHoldSet(on, titlesOnly)') &&
