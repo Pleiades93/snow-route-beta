@@ -3203,6 +3203,18 @@
    "red": "drive219 fails 13/16 in CI on head 8fe0ba15 (A2, A3, D1) while passing 16/16 locally - the lane's preconditions were environment-dependent, observed in the gate log",
    "green": "the streaming phases stage the count at zero at the guard's own seam (skip stub) and phase D retries until the firing itself; locally the J-only and D-only cuts pass their checks on the fixed tree and the full lane passed 17/17 before this change - the cloud gate grades the full lane on the new head",
    "issued": "2026-11-22 sync-1270-ci-fix"
+  },
+  {
+   "id": "drive219-gate3-1270",
+   "check": "tests/browser/drive219.mjs",
+   "kind": "historical",
+   "files": {
+    "tests/browser/drive219.mjs": "66abf5c0333ee23237ba364bfe340deb905001d3b8d38ad4a26481bad9136de8"
+   },
+   "mutation": "the PR #166 gate's second CI run (head 9125206f, tier drives B job 137249734723): drive219 failed 14/17 - B1 road violations [Chancellor Drive, Ansley Grove Road] judged from the swap while the swapped scene was still filling the shared collision space; D1 guard checks 0 across 3 attempts because each attempt was read before the guard's arm-time backstop (pick + ~8 s) fired and the retry's reload wiped it, while phase J (which polls for the firing itself) fired in the same run; I1 placed 0 because phase I arms the skip stub at the title-only query seam and the phase's OWN placement reads were title-only queries at that same seam - the stub answered [] for the test itself, while a stub-free probe of the identical sequence placed 34 titles",
+   "red": "drive219 fails 14/17 in CI on head 9125206f (B1, D1, I1) with the three signatures above, from the gate log; locally the B+I cut reproduced I1 exactly (placed 0, visibilities restored) and a stub-free probe of the same sequence placed 34",
+   "green": "cuts from the fixed drive on the fixed tree: A+D cut 11/11 (the firing poll waits out the guard's whole decision window), B+I cut 2/2 (road lane anchored at the titles' completion as A5/D2; phase I reads through the mixed layer list the sampler uses, so its own stub cannot intercept them); the cloud gate grades the full lane on the new head",
+   "issued": "2026-11-22 sync-1270-gate3"
   }
  ]
 }

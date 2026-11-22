@@ -257,10 +257,10 @@ const bDone = await waitSettled(40000);
 await sleep(500);
 const B = await J(`window.__li`);
 console.log('drive219 B: samples ' + B.samples.length + ', tears ' + B.tears.length + ', replaces ' + B.replaces + ', settled ' + bDone);
-const bAfter = B.samples.filter((s) => s.t >= Math.max(bSwapAt, B.moveEndAt || 0)); // settled-frame rule: from the later of the swap and the flight's end
+const bAfter = B.samples.filter((s) => s.t >= Math.max(bSwapAt, B.moveEndAt || 0)); // settled-frame rule for the TITLES: from the later of the swap and the flight's end
 const bLaneT = laneViolations(bAfter, 'titles');
-const bLaneR = laneViolations(bAfter, 'road');
-ok('B1 a theme swap mid-flight resolves by streaming: the load-in completes on the new style, no re-place runs, and from the swap on neither name family ever drops a visible name (a style swap restacks every layer - basemap names re-stream too, which is the reference behaviour Andrew\'s sync target names; settled: ' + bDone + ', replaces: ' + B.replaces + ', title violations after the swap: ' + JSON.stringify(bLaneT.slice(0, 6)) + ', road violations after the swap: ' + JSON.stringify(bLaneR.slice(0, 6)) + ', final titles: ' + (B.samples.length ? B.samples[B.samples.length - 1].titles.length : 0) + ')',
+const bLaneR = laneViolations(B.samples.filter((x) => x.t >= completeAt(B.samples, 'titles')), 'road'); // the ROAD lane is judged from the titles' completion, as A5 and D2 judge theirs: a style swap restreams BOTH families into the one shared collision space, and until the last family completes a marginal basemap label can legitimately lose its seat mid-restream and return (PR #166 gate, head 9125206f: Chancellor Drive and Ansley Grove Road dropped and returned on the CI runners - the basemap engine's own placement while the scene was still filling, not a name the app dropped)
+ok('B1 a theme swap mid-flight resolves by streaming: the load-in completes on the new style, no re-place runs, and neither name family drops a visible name once its frame settles - the titles from the later of the swap and the flight\'s end, the basemap road names from the titles\' completion (while the swapped scene is still filling, the shared collision space is still seating labels; a style swap restacks every layer - basemap names re-stream too, which is the reference behaviour Andrew\'s sync target names; settled: ' + bDone + ', replaces: ' + B.replaces + ', title violations after the swap: ' + JSON.stringify(bLaneT.slice(0, 6)) + ', road violations after completion: ' + JSON.stringify(bLaneR.slice(0, 6)) + ', final titles: ' + (B.samples.length ? B.samples[B.samples.length - 1].titles.length : 0) + ')',
   bDone === true && B.replaces === 0 && bLaneT.length === 0 && bLaneR.length === 0 && B.samples[B.samples.length - 1].titles.length >= 30);
 
 // ================= Phase C: a second pick during the window =================
@@ -280,21 +280,28 @@ ok('C1 a second route pick during the window (a page-side clone pack, the sandbo
   cDone === true && cLast.titles.length >= 30 && cLast.held === false && cLast.mult === 1 && C.tears.every((t) => t.mult === 0) && C.replaces <= 1);
 
 // ================= Phase D: the fired cure =================
-// The phase retries its staging up to 3 times on ONE condition only: the
-// guard never got to decide (guardChecks 0 at the window's end). Under
-// this VM's load the stack build can lag past the 3 s flight, and when
-// the title layers do not exist yet at moveend the guard's check
-// legitimately takes no count and skips - the precondition cannot be
-// staged on that attempt, which is a fixture-timing miss, not an app
-// verdict (the same class as the harness's browser-startup retry). If
-// the guard DID decide and still did not fire, the phase fails on the
-// first such attempt with no retry. The ONLY break is the firing itself
-// (replaces 1): the PR #166 CI gate showed a served title-only call is
-// not proof the guard decided - an engine consumer can take the stub's
-// answer while the guard's own check never queries (guard checks 1,
-// replaces 0, the attempt wrongly accepted as decided) - so a
-// no-fire attempt retries on the same terms as a staging miss, and
-// three no-fire attempts fail D1 honestly.
+// The phase retries its staging up to 3 times; the ONLY break is the
+// firing itself (replaces 1). Two CI lessons from PR #166 shaped this
+// staging, and both are recorded so they are not relearned:
+// (1) A served title-only call is not proof the guard decided - an
+// engine consumer can take the stub's answer while the guard's own
+// check never queries (first gate: guard checks 1, replaces 0, the
+// attempt wrongly accepted as decided). With the stub armed, ANY
+// title-only query the guard makes fires the cure, so the firing is
+// the only honest proof the staging held.
+// (2) The attempt must be judged only after the guard's WHOLE decision
+// window has closed. The check runs at moveend (pick + ~4.5 s) or at
+// the arm-time backstop (pick + ~8 s; the layers can lag past the
+// flight under load, and a check that finds no title layers takes no
+// count and stands down). On the fast CI runners the streaming
+// completed and the read landed BEFORE the backstop fired - three
+// attempts each recorded guard checks 0 with the backstop still
+// pending, and each retry's reload wiped it (second gate: D1 failed,
+// guard checks 0 across 3 attempts, while phase J - which polls for
+// the firing itself - fired in the same run). So the loop polls for
+// the firing for 20 s (moveend, the backstop and the idle gate, with
+// margin) before it reads anything, and three unfired attempts fail
+// D1 honestly.
 let D = null, dDone = false, dAttempts = 0;
 for (let attempt = 1; attempt <= 3; attempt++) {
   dAttempts = attempt;
@@ -303,10 +310,9 @@ for (let attempt = 1; attempt <= 3; attempt++) {
   await ev(INSTRUMENT);
   await ev(`(() => { window.__liForceCure = true; return true; })()`); // armed BEFORE the pick: the guard's moveend count is a title-only query inside the window
   await ev(`document.querySelector('#rmRoutes .routeRow') && document.querySelector('#rmRoutes .routeRow').click()`);
-  dDone = await waitCureDone(45000);
-  await sleep(700);
+  const fired = await poll(`!!(window.__li && window.__li.replaces === 1)`, 20000); // the guard's whole decision window, waited out (lesson 2 above)
+  if (fired) { dDone = await waitCureDone(45000); await sleep(700); D = await J(`window.__li`); break; }
   D = await J(`window.__li`);
-  if (D.replaces === 1) break; // the firing is the only proof the staging held - anything else retries
 }
 console.log('drive219 D: attempts ' + dAttempts + ', samples ' + D.samples.length + ', tears ' + JSON.stringify(D.tears) + ', replaces ' + D.replaces + ', guardChecks ' + D.guardChecks + ', stubUsed ' + D.cureStubUsed + ', done ' + dDone);
 ok('D1 THE CURE FIRES on a placed-mid-flight count: the re-place ran exactly once and its labelpts teardown landed INSIDE the titles-only hold (staging attempts: ' + dAttempts + ', stub served: ' + D.cureStubUsed + ' x' + (D.cureStubServes || 0) + ', guard checks: ' + D.guardChecks + ', replaces: ' + D.replaces + ', teardowns: ' + D.tears.length + ', teardown multipliers: ' + JSON.stringify(D.tears.map((t) => t.mult)) + ') - a guard that never fires in tests is an assertion, not a proof; this phase is the firing',
@@ -365,14 +371,29 @@ await bootToPicker();
 await ev(INSTRUMENT);
 await ev(`(() => { window.__liForceSkip = true; return true; })()`); // the streaming precondition, as phase A: with the count staged at zero no hold can stand when the backdrop snapshots - the phase's premise, made deterministic
 await ev(`document.querySelector('#rmRoutes .routeRow') && document.querySelector('#rmRoutes .routeRow').click()`);
-await sleep(900); // mid-window: the stream is running when creation opens
+await poll(`!!(window.map && map.isMoving())`, 15000); // creation opens MID-FLIGHT, while the stream is genuinely running - the staging this phase's premise names (the old fixed 900 ms sleep lands inside the pick's 1500 ms dwell on a fast machine, before the flight has even launched)
 await ev(`(() => { enterCreate('pick'); return true; })()`); // the backdrop snapshots the route stack's visibility NOW - with no hold standing, the snapshot reads the naturals directly (the PR #162 transient-none hazard has no hold to rise from on this path; a cure hold is the only one left, and it never spans a pick)
 await sleep(1500);
 const iDuring = await J(`(() => { const ids = ['streetnamespt1', 'streetnamespt2', 'streetnamespt3', 'streetnamespt4'].filter((id) => map.getLayer(id)); return { hidden: ids.every((id) => map.getLayoutProperty(id, 'visibility') === 'none'), layers: ids.length, creating: (typeof creating !== 'undefined' ? creating : '?') }; })()`);
 await ev(`(() => { exitCreate(); return true; })()`);
 await poll(`!!(window.map && map.loaded() && !map.isMoving())`, 30000);
-await sleep(1200);
-const iAfter = await J(`(() => { const ids = ['streetnamespt1', 'streetnamespt2', 'streetnamespt3', 'streetnamespt4'].filter((id) => map.getLayer(id)); const vis = ids.map((id) => map.getLayoutProperty(id, 'visibility') || 'visible'); const s = new Set(); for (const f of map.queryRenderedFeatures({ layers: ids })) if (f.properties && f.properties.name) s.add(f.properties.name); return { vis, placed: s.size }; })()`);
+// Poll the re-placement itself, never a fixed sleep (the one-shot read
+// after a 1200 ms sleep also convicted plain re-placement lag, the
+// class phases D and J judge by polling the live state). Thirty
+// seconds of no placement still fails I1 honestly on the read below.
+// BOTH reads here go through the MIXED layer list - the four title
+// layers plus one basemap symbol layer, filtered back to title-layer
+// features in the read - never a title-only query: this phase arms
+// the skip stub at that seam for the guard, and a title-only read is
+// the stub's exact target, so the phase's own title-only reads
+// answered [] forever and I1 recorded placed 0 while a stub-free
+// probe of the same sequence placed 34 (PR #166 gate, head 9125206f;
+// the sampler has always read mixed, which is why the sampler-judged
+// phases never saw this). A stub at a shared seam intercepts the
+// test's own reads too - read reality the way the sampler does.
+await ev(`window.__iRead = () => { const ids = ['streetnamespt1', 'streetnamespt2', 'streetnamespt3', 'streetnamespt4'].filter((id) => map.getLayer(id)); const vis = ids.map((id) => map.getLayoutProperty(id, 'visibility') || 'visible'); const style = map.getStyle(); const mixer = style && style.layers ? (style.layers.find((l) => l.type === 'symbol' && l['source-layer']) || {}).id : null; const s = new Set(); if (ids.length) { for (const f of map.queryRenderedFeatures({ layers: mixer ? ids.concat([mixer]) : ids })) if (f.layer && ids.includes(f.layer.id) && f.properties && f.properties.name) s.add(f.properties.name); } return { vis, placed: s.size }; }`);
+await poll(`(() => { try { return window.__iRead().placed >= 30; } catch (e) { return false; } })()`, 30000);
+const iAfter = await J(`window.__iRead()`);
 ok('I1 entering create mode mid-window and leaving: during creation the backdrop\'s hide holds (titles hidden: ' + iDuring.hidden + '), and after the exit the titles stand at their natural visibility and place (during: ' + JSON.stringify(iDuring) + ', visibilities after exit: ' + JSON.stringify(iAfter.vis) + ', titles placed: ' + iAfter.placed + ')',
   iDuring.hidden === true && iAfter.vis.every((v) => v !== 'none') && iAfter.placed >= 30);
 
