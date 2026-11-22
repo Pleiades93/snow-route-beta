@@ -25,7 +25,8 @@ ok('S1b during boot the app chrome is absent from the paint (Beta 1.86: boot is 
 ok('S2 splash hands over to the route menu once the app is ready (never traps the user in the brand animation)', await waitTrue(poll, `(function(){ var sp = document.getElementById('splash'); return !!sp && sp.classList.contains('menu'); })()`, 15000));
 await tapById(ev, 'rmChoose');
 await waitTrue(poll, `!!document.querySelector('#rmRoutes .routeRow')`, 10000); // T4: poll the terminal state the next step needs (the route row rendered)
-await tapSelector(ev, '#rmRoutes .routeRow');
+await tapSelector(ev, '#rmRoutes .routeRow'); // Beta 1.271: a row press only opens the route's dropdown now - the pick is its Load pill
+await tapSelector(ev, '#rmRoutes .routeDrop.open .dropLoad');
 const gone132 = await waitAbsent(poll, 'splash', 15000);
 await sleep(1600);
 ok('S3 picking a route removes the splash and it never comes back (removed, not hidden)', gone132 && (await expectStrict(ev, `!document.getElementById('splash')`)));

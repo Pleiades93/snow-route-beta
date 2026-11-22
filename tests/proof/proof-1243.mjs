@@ -82,7 +82,7 @@ check('18: the seats keep their own extras (exitCreate still clears the field - 
 
 // ---------- the frame ----------
 check('19: What\'s New carries the CURRENT entry\'s bullet (rolled to 1.251: this check tracks the CURRENT entry each round; and stays em-dash free)',
-  whatsnew.includes('Street names now load in with the map, in sync, instead of popping in after a wait.') && !whatsnew.includes('—'));
+  whatsnew.includes('Tap a route in the list to open its menu: Load, or Delete. Every route can be deleted now.') && !whatsnew.includes('—'));
 check('20: the CHANGELOG order stands (1.243 above 1.242; the 1.244 entry rides above both - proof-1244 pins the top)',
   changelog.indexOf('## Beta 1.243') > -1 && changelog.indexOf('## Beta 1.243') < changelog.indexOf('## Beta 1.242'));
 

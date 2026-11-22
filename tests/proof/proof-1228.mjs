@@ -55,7 +55,7 @@ check('2d: the pressOn handler still skips any press inside a button (a pill pre
 check('3a: the day/night top is the title\'s own offset (25px)', rule('#nightBtn {').includes('top: calc(var(--vvt, 0px) + 25px + var(--sat));'));
 check('3b: the re-centre button follows at 91px (25 + 56 + the same 10px gap)', rule('#centreBtn {').includes('top: calc(var(--vvt, 0px) + 91px + var(--sat));'));
 check('3c: the speed circle keeps its 78px seat (it did not rise with the stack)', rule('#spdPill {').includes('top: calc(var(--vvt, 0px) + 78px + var(--sat));'));
-check('3d: the selection-open re-centre drop stands (267px, anchored to the card, not the stack)', rule('body.selOpen #centreBtn {').includes('top: calc(var(--vvt, 0px) + 267px + var(--sat));'));
+check('3d: the selection-open re-centre drop is RETIRED (Beta 1.271, Andrew\'s ruling - the button holds its seat in every state)', !head.includes('body.selOpen #centreBtn') && !head.includes('267px'));
 
 // ---------- The sheets stop at the title ----------
 check('4a: the margin is one named constant (8px)', app2.includes('const SHEET_FULL_MARGIN_PX = 8;'));

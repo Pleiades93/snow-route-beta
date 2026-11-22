@@ -68,7 +68,7 @@ ok('B0 no-route boot unchanged: no route loaded, map flat (pitch 0), #spdPill pr
 
 // ---------- the pick: the intro flight tilts as it flies ----------
 await ev(`document.getElementById('rmChoose').click()`);
-await ev(`document.querySelector('#rmRoutes .routeRow').click()`);
+await ev(`(() => { const r = document.querySelector('#rmRoutes .routeRow'); if (r) { r.click(); const b = r.nextElementSibling && r.nextElementSibling.querySelector('.dropLoad'); if (b) b.click(); } return true; })()`);
 const samples = [];
 for (let i = 0; i < 40; i++) { const p = await ev(`map ? map.getPitch() : -1`); if (typeof p === 'number' && p >= 0) samples.push(Math.round(p * 10) / 10); if (samples.length && Math.abs(samples[samples.length - 1] - 45) <= 0.5 && await ev(`!map.isMoving()`)) break; await sleep(200); }
 await poll(`typeof routeLoaded !== 'undefined' && routeLoaded === true`, 20000);

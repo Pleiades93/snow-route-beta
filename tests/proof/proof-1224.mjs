@@ -55,8 +55,8 @@ check('4: the #bakNudge element is gone from the page', !head.includes('id="bakN
 check('4: maybeBackupNudge and its call site are gone from app3', !app3.includes('maybeBackupNudge'));
 check('4: the nudgedAt stamp is gone from every part', !app3.includes('nudgedAt') && !app4.includes('nudgedAt'));
 check('4: the nudge buttons are gone (bakSave / bakLater / bakText)', !app3.includes('bakSave') && !app3.includes('bakLater') && !app3.includes('bakText') && !head.includes('bakSave'));
-check('4: the three surviving bars stand (#suggest, #stale, #mapNote)', head.includes('id="suggest"') && head.includes('id="stale"') && head.includes('id="mapNote"'));
-check('4: the stale bar keeps its slot (#stale z-index 1001 stands, the nudge\'s own 1002 rule is gone)', head.includes('#stale { z-index: 1001; }') && !head.includes('#bakNudge { z-index: 1002; }'));
+check('4: the surviving bar stands (#mapNote) and the two retired banners are gone (Beta 1.271)', !head.includes('id="suggest"') && !head.includes('id="stale"') && head.includes('id="mapNote"'));
+check('4: the stale bar\'s slot rule retired with it in Beta 1.271 (the nudge\'s own 1002 rule stays gone)', !head.includes('#stale { z-index: 1001; }') && !head.includes('#bakNudge { z-index: 1002; }'));
 check('4: the exportedAt stamp survives (noteExported still writes LS.exp)', app4.includes('function noteExported()') && app4.includes('st.exportedAt = Date.now();'));
 
 // V — What's New editorial (version agreement itself is the build gate's since Arch-1)

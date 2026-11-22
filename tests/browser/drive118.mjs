@@ -31,20 +31,20 @@ A = await J(`(() => { const before = { gps: gpsPos, tl: trail.length };
   return { before, after: { gps: gpsPos, tl: trail.length } }; })()`);
 ok('T2 invalid fixes rejected (no position, no trail)', A.after && A.after.gps === null && A.after.tl === (A.before ? A.before.tl : 0));
 
-// T3 (suite 9): partial coverage suggests nothing; crossing 85% suggests - and never marks
+// T3 (suite 9, re-scoped Beta 1.271): coverage accrues through coverFix - and offers nothing, and never marks (the 85% suggestion offer is removed with the banner)
 A = await J(`(() => { let best = null; for (const n of STREETNAMES) if (!best || SAMPLES[n].length < SAMPLES[best].length) best = n;
-  coveredIdx = {}; suggested = new Set(); saveAll();
+  coveredIdx = {}; saveAll();
   const pts = SAMPLES[best]; const half = Math.floor(pts.length / 2);
   for (let i = 0; i < half; i++) coverFix(pts[i]);
-  const mid = { n: best, total: pts.length, cov: (coveredIdx[best] || []).length, sug: suggested.has(best) };
+  const mid = { n: best, total: pts.length, cov: (coveredIdx[best] || []).length };
   for (let i = half; i < pts.length; i++) coverFix(pts[i]);
-  return { mid, end: { cov: (coveredIdx[best] || []).length, sug: suggested.has(best), banner: !$('suggest').classList.contains('hidden'), done: doneSet.has(best), complete: streetComplete(best) } }; })()`);
-ok('T3 half coverage: no suggestion', A.mid && A.mid.sug === false);
-ok('T3 full coverage: suggestion shown', A.end && A.end.sug === true && A.end.banner === true);
-ok('T3 suggestion never marks the street', A.end && A.end.done === false && A.end.complete === false);
+  return { mid, end: { cov: (coveredIdx[best] || []).length, total: pts.length, sugEl: !!document.getElementById('suggest'), done: doneSet.has(best), complete: streetComplete(best) } }; })()`);
+ok('T3 half coverage accrues (every fed sample covers itself) and offers nothing (Beta 1.271: the suggestion banner is removed)', A.mid && A.mid.cov >= Math.floor(A.mid.total / 2));
+ok('T3 full coverage: every sample covered, still nothing offered - no suggestion element exists', A.end && A.end.cov === A.end.total && A.end.sugEl === false);
+ok('T3 coverage never marks the street', A.end && A.end.done === false && A.end.complete === false);
 
 // T4 (suite 8): a fix on one street does not bleed coverage to a neighbouring street
-A = await J(`(() => { coveredIdx = {}; suggested = new Set();
+A = await J(`(() => { coveredIdx = {};
   let pick = null;
   outer: for (const n of STREETNAMES) { for (let i = 0; i < SAMPLES[n].length; i++) { const p = SAMPLES[n][i];
     let dmin = 1e9, dn = null;

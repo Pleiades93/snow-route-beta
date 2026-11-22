@@ -38,7 +38,7 @@ await ev(`document.getElementById('rmBack2').click(); true`); await sleep(400);
 
 // --- the pick -------------------------------------------------------------
 await ev(`document.getElementById('rmChoose').click(); true`); await sleep(400);
-await ev(`document.querySelector('#rmRoutes .routeRow').click(); true`);
+await ev(`(() => { const r = document.querySelector('#rmRoutes .routeRow'); if (r) { r.click(); const b = r.nextElementSibling && r.nextElementSibling.querySelector('.dropLoad'); if (b) b.click(); } return true; })()`);
 ok('N6 picking Route 5W loads it and removes the splash for good', (await poll(`typeof routeLoaded !== 'undefined' && routeLoaded === true && !!activeRoute && activeRoute.id === '5w'`, 15000)) && (await poll(`!document.getElementById('splash')`, 15000)));
 ok('N6b a boot-mode render never marks the loaded route (the 1.77 pick flicker, killed at the source; Beta 1.233: the marker is the disc check)', await ev(`(function(){ renderRouteLists(); var r = document.querySelector('#rmRoutes .routeRow'); return !!r && !r.querySelector('.routeCheck'); })()`));
 ok('N6c after the boot pick the route menu is parked, not gone (the Routes tab can bring it back)', await ev(`(function(){ var rm = document.getElementById('routeMenu'); return !!rm && !rm.classList.contains('open') && !rm.classList.contains('boot') && getComputedStyle(rm).visibility === 'hidden'; })()`));
@@ -280,7 +280,7 @@ ok('N21 after a cold open the override is gone and the sun is in charge again', 
 // area and flies in to the fitted view instead of appearing already zoomed --
 await ev(`document.getElementById('rmChoose').click(); true`);
 await poll(`document.querySelectorAll('#rmRoutes .routeRow').length > 0`, 15000);
-await ev(`document.querySelector('#rmRoutes .routeRow').click(); true`);
+await ev(`(() => { const r = document.querySelector('#rmRoutes .routeRow'); if (r) { r.click(); const b = r.nextElementSibling && r.nextElementSibling.querySelector('.dropLoad'); if (b) b.click(); } return true; })()`);
 await poll(`typeof routeLoaded !== 'undefined' && routeLoaded === true`, 20000);
 ok('N22 a route pick starts the camera wide of the fitted view', await ev(`(function(){ var fit = map.cameraForBounds([[routeBox.w, routeBox.s], [routeBox.e, routeBox.n]], { padding: 28 }); return map.getZoom() < fit.zoom - 1.5; })()`));
 await sleep(2200); // Beta 1.81: the flight starts at +1500ms by design (the wide view dwells on the Route 5W point of interest first) - wait until it is actually under way before polling for the settle, or the poll reads the pre-flight stillness and N23 measures the wide start

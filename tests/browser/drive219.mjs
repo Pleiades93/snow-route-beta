@@ -222,13 +222,13 @@ await bootToPicker();
 // flight; the graded pick itself is a normal boot-style pick from the
 // picker state the unload restores, and it is the only pick the
 // instrument measures.
-await ev(`document.querySelector('#rmRoutes .routeRow') && document.querySelector('#rmRoutes .routeRow').click()`);
+await ev(`(() => { const r = document.querySelector('#rmRoutes .routeRow'); if (r) { r.click(); const b = r.nextElementSibling && r.nextElementSibling.querySelector('.dropLoad'); if (b) b.click(); } return true; })()`);
 await poll(`(() => { try { const ids = ['streetnamespt1', 'streetnamespt2', 'streetnamespt3', 'streetnamespt4'].filter((id) => map.getLayer(id)); if (!ids.length) return false; const s = new Set(); for (const f of map.queryRenderedFeatures({ layers: ids })) if (f.properties && f.properties.name) s.add(f.properties.name); return s.size >= 30; } catch (e) { return false; } })()`, 45000); // the warm pick's own settle, read off the real map (no instrument yet, no stub armed - a plain title-only read is honest here)
 await ev(`(() => { unloadRouteToBoot(); return true; })()`);
 await poll(`!!document.querySelector('#rmRoutes .routeRow')`, 20000);
 await ev(INSTRUMENT);
 await ev(`(() => { window.__liForceSkip = true; return true; })()`); // the skip precondition at the guard's own seam (see the instrument): phase A grades the streaming path, so the guard's count is staged at zero - phase D stages the opposite
-await ev(`document.querySelector('#rmRoutes .routeRow') && document.querySelector('#rmRoutes .routeRow').click()`);
+await ev(`(() => { const r = document.querySelector('#rmRoutes .routeRow'); if (r) { r.click(); const b = r.nextElementSibling && r.nextElementSibling.querySelector('.dropLoad'); if (b) b.click(); } return true; })()`);
 const aDone = await waitSettled(40000);
 await poll(`!!(window.__li && window.__li.guardChecks >= 1)`, 15000); // the guard's whole decision window, waited out before the read - its backstop can land after the stream settles (phase D's window lesson, learned in the same gate)
 await sleep(700);
@@ -269,7 +269,7 @@ await send('Page.reload', {}, S);
 await bootToPicker();
 await ev(INSTRUMENT);
 await ev(`(() => { window.__liForceSkip = true; return true; })()`); // the streaming precondition, as phase A: the swap is graded, not the guard
-await ev(`document.querySelector('#rmRoutes .routeRow') && document.querySelector('#rmRoutes .routeRow').click()`);
+await ev(`(() => { const r = document.querySelector('#rmRoutes .routeRow'); if (r) { r.click(); const b = r.nextElementSibling && r.nextElementSibling.querySelector('.dropLoad'); if (b) b.click(); } return true; })()`);
 await sleep(2200); // the flight runs 1500 -> 4500 ms: this lands mid-flight
 const bSwapAt = await J(`performance.now()`);
 await ev(`(() => { setThemeOverride(true); applyNight(); setBasemap(); return true; })()`);
@@ -288,7 +288,7 @@ await send('Page.reload', {}, S);
 await bootToPicker();
 await ev(INSTRUMENT);
 await ev(`(() => { window.__liForceSkip = true; return true; })()`); // the streaming precondition, as phase A: both picks' guards count zero and skip
-await ev(`document.querySelector('#rmRoutes .routeRow') && document.querySelector('#rmRoutes .routeRow').click()`);
+await ev(`(() => { const r = document.querySelector('#rmRoutes .routeRow'); if (r) { r.click(); const b = r.nextElementSibling && r.nextElementSibling.querySelector('.dropLoad'); if (b) b.click(); } return true; })()`);
 await sleep(600); // inside the first pick's dwell - its flight has not even launched
 await ev(`(() => { try { const p = JSON.parse(JSON.stringify(ROUTE_PACKS[0])); p.id = '5x'; p.name = 'Route 5X'; ROUTE_PACKS.push(p); loadRoute('5x'); } catch (e) { window.__li.pokeErr = String(e && e.message || e); } return true; })()`);
 const cDone = await waitSettled(40000);
@@ -329,7 +329,7 @@ for (let attempt = 1; attempt <= 3; attempt++) {
   await bootToPicker();
   await ev(INSTRUMENT);
   await ev(`(() => { window.__liForceCure = true; return true; })()`); // armed BEFORE the pick: the guard's moveend count is a title-only query inside the window
-  await ev(`document.querySelector('#rmRoutes .routeRow') && document.querySelector('#rmRoutes .routeRow').click()`);
+  await ev(`(() => { const r = document.querySelector('#rmRoutes .routeRow'); if (r) { r.click(); const b = r.nextElementSibling && r.nextElementSibling.querySelector('.dropLoad'); if (b) b.click(); } return true; })()`);
   const fired = await poll(`!!(window.__li && window.__li.replaces === 1)`, 20000); // the guard's whole decision window, waited out (lesson 2 above)
   if (fired) { dDone = await waitCureDone(45000); await sleep(700); D = await J(`window.__li`); break; }
   D = await J(`window.__li`);
@@ -359,7 +359,7 @@ await send('Emulation.setEmulatedMedia', { features: [{ name: 'prefers-reduced-m
 await bootToPicker();
 await ev(INSTRUMENT);
 await ev(`(() => { window.__liForceSkip = true; return true; })()`); // the streaming precondition, as phase A (the instant-fit path owes no check anyway - this is insurance, not a crutch)
-await ev(`document.querySelector('#rmRoutes .routeRow') && document.querySelector('#rmRoutes .routeRow').click()`);
+await ev(`(() => { const r = document.querySelector('#rmRoutes .routeRow'); if (r) { r.click(); const b = r.nextElementSibling && r.nextElementSibling.querySelector('.dropLoad'); if (b) b.click(); } return true; })()`);
 const gDone = await waitSettled(40000);
 await sleep(500);
 const G = await J(`window.__li`);
@@ -373,11 +373,11 @@ await send('Page.reload', {}, S);
 await bootToPicker();
 await ev(INSTRUMENT);
 await ev(`(() => { window.__liForceSkip = true; return true; })()`); // the streaming precondition, as phase A: no cure hold can stand across the unload in this phase - phase J grades the unload with one standing
-await ev(`document.querySelector('#rmRoutes .routeRow') && document.querySelector('#rmRoutes .routeRow').click()`);
+await ev(`(() => { const r = document.querySelector('#rmRoutes .routeRow'); if (r) { r.click(); const b = r.nextElementSibling && r.nextElementSibling.querySelector('.dropLoad'); if (b) b.click(); } return true; })()`);
 await sleep(900); // inside the dwell - the window is wide open
 await ev(`(() => { unloadRouteToBoot(); return true; })()`); // the delete path's own unload: with no hold standing there is nothing to strand - the picker's basemap names simply carry on
 await sleep(800);
-await ev(`document.querySelector('#rmRoutes .routeRow') && document.querySelector('#rmRoutes .routeRow').click()`);
+await ev(`(() => { const r = document.querySelector('#rmRoutes .routeRow'); if (r) { r.click(); const b = r.nextElementSibling && r.nextElementSibling.querySelector('.dropLoad'); if (b) b.click(); } return true; })()`);
 const hDone = await waitSettled(40000);
 await sleep(500);
 const H = await J(`window.__li`);
@@ -390,7 +390,7 @@ await send('Page.reload', {}, S);
 await bootToPicker();
 await ev(INSTRUMENT);
 await ev(`(() => { window.__liForceSkip = true; return true; })()`); // the streaming precondition, as phase A: with the count staged at zero no hold can stand when the backdrop snapshots - the phase's premise, made deterministic
-await ev(`document.querySelector('#rmRoutes .routeRow') && document.querySelector('#rmRoutes .routeRow').click()`);
+await ev(`(() => { const r = document.querySelector('#rmRoutes .routeRow'); if (r) { r.click(); const b = r.nextElementSibling && r.nextElementSibling.querySelector('.dropLoad'); if (b) b.click(); } return true; })()`);
 await poll(`!!(window.map && map.isMoving())`, 15000); // creation opens MID-FLIGHT, while the stream is genuinely running - the staging this phase's premise names (the old fixed 900 ms sleep lands inside the pick's 1500 ms dwell on a fast machine, before the flight has even launched)
 await ev(`(() => { enterCreate('pick'); return true; })()`); // the backdrop snapshots the route stack's visibility NOW - with no hold standing, the snapshot reads the naturals directly (the PR #162 transient-none hazard has no hold to rise from on this path; a cure hold is the only one left, and it never spans a pick)
 await sleep(1500);
@@ -445,14 +445,14 @@ for (let attempt = 1; attempt <= 3 && !jFired; attempt++) {
   await bootToPicker();
   await ev(INSTRUMENT);
   await ev(`(() => { window.__liForceCure = true; window.__liUnloadOnTear = true; return true; })()`); // phase D's stub (the guard's count is served so the cure fires) + the teardown hook (the unload lands inside the hold)
-  await ev(`document.querySelector('#rmRoutes .routeRow') && document.querySelector('#rmRoutes .routeRow').click()`);
+  await ev(`(() => { const r = document.querySelector('#rmRoutes .routeRow'); if (r) { r.click(); const b = r.nextElementSibling && r.nextElementSibling.querySelector('.dropLoad'); if (b) b.click(); } return true; })()`);
   jFired = await poll(`!!(window.__li && window.__liUnloaded)`, 45000); // the hook fired = the cure fired AND the unload landed inside its hold
   if (jFired) {
     await poll(`typeof activeRoute !== 'undefined' && !activeRoute`, 20000); // the unload's own landing (no route active) - so the pick confirmation below cannot read the stale route
     await poll(`!!document.querySelector('#rmRoutes .routeRow')`, 30000);
-    await ev(`document.querySelector('#rmRoutes .routeRow') && document.querySelector('#rmRoutes .routeRow').click()`);
+    await ev(`(() => { const r = document.querySelector('#rmRoutes .routeRow'); if (r) { r.click(); const b = r.nextElementSibling && r.nextElementSibling.querySelector('.dropLoad'); if (b) b.click(); } return true; })()`);
     const took = await poll(`typeof activeRoute !== 'undefined' && !!activeRoute`, 20000);
-    if (!took) { await ev(`document.querySelector('#rmRoutes .routeRow') && document.querySelector('#rmRoutes .routeRow').click()`); await poll(`typeof activeRoute !== 'undefined' && !!activeRoute`, 20000); }
+    if (!took) { await ev(`(() => { const r = document.querySelector('#rmRoutes .routeRow'); if (r) { r.click(); const b = r.nextElementSibling && r.nextElementSibling.querySelector('.dropLoad'); if (b) b.click(); } return true; })()`); await poll(`typeof activeRoute !== 'undefined' && !!activeRoute`, 20000); }
   }
 }
 const jDone = jFired ? await waitCureDone(60000) : false;

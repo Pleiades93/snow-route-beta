@@ -17,6 +17,11 @@
 // every entry path (save, backup restore, boot merge) uses.
 const USERPACKS_KEY = 'snowroute.v2.userpacks'; // the on-device record of created routes: { <id>: <pack> }. Shipped packs live in data.js; created packs live here.
 const SHIPPED_PACK_IDS = new Set(ROUTE_PACKS.map(p => p.id)); // captured at eval, BEFORE any user pack merges - data.js holds shipped packs only
+const SHIPPED_DELETED_KEY = 'snowroute.v2.shippeddeleted'; // Beta 1.271 (Andrew, 2026-11-21: EVERY route gets a Delete, the shipped 5W included): the tombstone record for deleted SHIPPED packs. A shipped pack's definition lives in data.js (code), so its deletion cannot remove a stored definition the way a created route's delete does - the delete writes this record instead (verified, like every house write) and every boot unregisters the named packs before the first render (the filter below). A DEVICE record - this phone's route list - never backed up: a backup carries route data, not this phone's deletions.
+function readShippedDeleted() { // the stored tombstone list, or null when it cannot be read/parsed at all (the readUserPacks discipline: strict writers treat null as a failure and never rewrite blind)
+  try { const raw = localStorage.getItem(SHIPPED_DELETED_KEY); if (raw == null) return []; const o = JSON.parse(raw); return Array.isArray(o) ? o.filter(x => typeof x === 'string') : null; } catch (e) { return null; }
+}
+function loadShippedDeleted() { const r = readShippedDeleted(); return r || []; }
 function readUserPacks() { // the stored record, or null when it cannot be read/parsed at all (callers that must not lose data treat null as a failure; lenient callers use loadUserPacks)
   try { const raw = localStorage.getItem(USERPACKS_KEY); if (raw == null) return {}; const o = JSON.parse(raw); return (o && typeof o === 'object' && !Array.isArray(o)) ? o : null; } catch (e) { return null; }
 }
@@ -311,6 +316,7 @@ function mergeUserPacks() { // boot: the runtime pack list = shipped packs + cre
     if (ix >= 0) ROUTE_PACKS[ix] = v.pack; else ROUTE_PACKS.push(v.pack);
   }
 }
+const shippedDead = loadShippedDeleted(); for (let i = ROUTE_PACKS.length - 1; i >= 0; i--) { if (shippedDead.includes(ROUTE_PACKS[i].id)) ROUTE_PACKS.splice(i, 1); } // Beta 1.271: the tombstone applies BEFORE the created-pack merge - mergeUserPacks' collision rule (a created pack wins its id) is Andrew's-data-wins, and a created pack must never be hidden by a shipped pack's tombstone
 mergeUserPacks(); // Beta 1.166: this synchronous pass is now the LEGACY half of the boot - the pre-1.166 record registers exactly as every earlier build registered it, so a first 1.166 boot is fully usable on the legacy data before the store read lands, and the record stays the fallback read until initUserPacks' drain has verified every route into the store
 window.__userPacksReady = initUserPacks(); // Beta 1.166: the store half of the boot + the migration drain, exposed (with the status reader below) so the battery can await and inspect it - the migratePack/__migrateStatus precedent. Fire-and-forget for the app itself: it never blocks the boot, and because the marker is earned, an incomplete drain simply runs again next boot
 window.__userPacksStatus = () => upStatus;
@@ -318,7 +324,7 @@ window.__userPacksReady.then(() => { if (anyPreloadRecord()) migratePack(); }); 
 function uniqueRouteId(name) { // a slug from the name, uniqueness-checked against shipped + created ids
   let base = name.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-+|-+$/g, '').slice(0, 32) || 'route';
   let id = base, i = 2;
-  while (ROUTE_PACKS.some(p => p.id === id) || Object.prototype.hasOwnProperty.call(userPackCache, id)) { id = base + '-' + i; i++; }
+  while (ROUTE_PACKS.some(p => p.id === id) || SHIPPED_PACK_IDS.has(id) || Object.prototype.hasOwnProperty.call(userPackCache, id)) { id = base + '-' + i; i++; } // Beta 1.271 (Codex P2, PR #167): SHIPPED_PACK_IDS stay reserved even when the pack is tombstoned off ROUTE_PACKS - a created route that took a shipped id would be misread as shipped by deleteRoute (its store definition never deleted, resurrecting it) and refused by doRestore's created-id check
   return id;
 }
 function nextRouteNameGuess() { let mx = 1; for (const p of ROUTE_PACKS) { const m = /^Route (\d+)$/.exec(p.name || ''); if (m) mx = Math.max(mx, +m[1] + 1); } return 'Route ' + Math.max(mx, ROUTE_PACKS.length + 1); }

@@ -127,12 +127,6 @@ declare var SAMPLES: { [street: string]: LatLng[] };
 /** app3.js: rebuilds SAMPLES from the live geometry; called by buildGeometry (app1). */
 declare function buildSamples(): void;
 
-/** app3.js: `let suggested = new Set()` - the run-scoped coverage suggestion set; app1 rebinds it in completeFinishCleanup. */
-declare var suggested: Set<string>;
-
-/** app3.js: `let sugQueue = []` - Beta 1.169 suggestion queue behind the visible banner; app1 rebinds it in completeFinishCleanup beside suggested. */
-declare var sugQueue: string[];
-
 /** app3.js: the last accepted GPS fix {ll, at}, or null before any fix. */
 declare var lastGood: { ll: number[], at: number } | null;
 

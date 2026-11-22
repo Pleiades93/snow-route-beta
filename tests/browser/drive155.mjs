@@ -85,7 +85,7 @@ const openListTab = async () => {
   return await poll(`document.getElementById('rmListPane').classList.contains('on') && !!document.querySelector('#rmRoutes .routeRow')`, 10000);
 };
 const deleteViaUi = async (id) => {
-  await ev2(`(() => { const r = document.querySelector('#rmRoutes .routeRow[data-route="${id}"] .routeDel'); if (r) r.click(); return true; })()`);
+  await ev2(`(() => { const d = document.querySelector('#rmRoutes .routeDrop[data-route="${id}"]'); const r = document.querySelector('#rmRoutes .routeRow[data-route="${id}"]'); if (d && !d.classList.contains('open') && r) r.click(); const b = d && d.querySelector('.dropDel'); if (b) b.click(); return true; })()`); // Beta 1.271: Delete lives in the row's dropdown now - open it, then press its Delete
   await poll(`!document.getElementById('crModal').classList.contains('hidden')`, 10000);
   await ev2(`document.getElementById('crModalYes').click()`);
 };
@@ -114,7 +114,7 @@ await bootRoute();
 
 // ---- phase A: delete the ACTIVE created route, then create again ----
 await openListTab();
-await ev2(`(() => { const r = document.querySelector('#rmRoutes .routeRow[data-route="route-2"]'); if (r) r.click(); return true; })()`);
+await ev2(`(() => { const r = document.querySelector('#rmRoutes .routeRow[data-route="route-2"]'); if (r) { r.click(); const b = r.nextElementSibling && r.nextElementSibling.querySelector('.dropLoad'); if (b) b.click(); } return true; })()`);
 const loadedA = await poll(`typeof routeLoaded !== 'undefined' && routeLoaded === true && activeRoute && activeRoute.id === 'route-2'`, 20000);
 await openListTab();
 await deleteViaUi('route-2');

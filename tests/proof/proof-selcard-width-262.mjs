@@ -56,11 +56,11 @@ console.log('W - the #selPop rule: 262 wide, centred as ever, top unchanged');
     'the one surviving 342 must stand on the .rmPane base rule line');
 }
 
-// ================= D - the re-centre drop stands (its inputs are unchanged) =================
-console.log('D - the 1.214 re-centre drop: top 144 and height 112.2 both stand, so 267 stands');
+// ================= D - the re-centre drop is retired (Beta 1.271) =================
+console.log('D - the 1.214 re-centre drop retired in Beta 1.271 (its inputs are beside the point now)');
 {
-  check('D: the drop rule stands (267 = card top 144 + card height 112.2 + the ~10 gap)',
-    head.includes('body.selOpen #centreBtn { top: calc(var(--vvt, 0px) + 267px + var(--sat)); }'));
+  check('D: the 1.214 re-centre drop is RETIRED (Beta 1.271) - no 267px rule stands',
+    !head.includes('body.selOpen #centreBtn') && !head.includes('267px'));
 }
 
 // ================= S - the status line is untouched (measured one line at 262) =================

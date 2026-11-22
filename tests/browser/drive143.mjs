@@ -12,7 +12,7 @@ await bootThrough(ev, poll); // Beta 1.76: boots end at the route menu now - cli
 // finish (suite 11), partial multi-key save consistency (suite 12).
 // drive143: Beta 1.70 audit fixes (full audit of 1.69, adjudicated 2026-11-02).
 // U1: the finish is final - no Undo follows it (Beta 1.110; replaces A01's undo-honesty check).
-// C1/C2: coverage + suggestions are run-scoped - Cancel clears them, Clear counts them (A04).
+// C1/C2: coverage is run-scoped - Cancel clears it, Clear counts it (A04; the suggestion set it rode with retired in Beta 1.271).
 // G1-G3: archived distance/path are measured from the run's true start (A05).
 // D1: the piece-time sanitizer is bounded by the street's stretch count (A06).
 // G4: GPX splits sessions into separate track segments (A07). H1: no duplicate sheet IDs (A08).
@@ -25,22 +25,22 @@ ok('T0 app script and map object are live', await poll120(`typeof map !== 'undef
 // U1 (Beta 1.110): finish a 3-street clean - the finish is FINAL. No Undo is
 // offered afterwards, and the button's next tap opens the finish pop-up for
 // the current (empty) board instead of restoring anything.
-await ev(`(() => { runStart = Date.now() - 3600000; markDone('Velmar', 'tap'); markDone('Mellings', 'tap'); markDone('Astona', 'tap'); suggested = new Set(['Boddy']); finishRun(); return true; })()`);
+await ev(`(() => { runStart = Date.now() - 3600000; markDone('Velmar', 'tap'); markDone('Mellings', 'tap'); markDone('Astona', 'tap'); finishRun(); return true; })()`);
 await sleep(300);
-const u0 = JSON.parse(await ev(`(() => JSON.stringify({ btn: $('resetBtn').textContent, undoing: $('resetBtn').classList.contains('undoing'), sug: suggested.size, h: history.length }))()`));
-ok('U0 setup: finish archived, the finish cleared the suggestion set (A04), and NO Undo state follows (Beta 1.110) | ' + JSON.stringify(u0), u0.btn === 'FINISH' && u0.undoing === false && u0.sug === 0 && u0.h === 1);
+const u0 = JSON.parse(await ev(`(() => JSON.stringify({ btn: $('resetBtn').textContent, undoing: $('resetBtn').classList.contains('undoing'), h: history.length }))()`));
+ok('U0 setup: finish archived and NO Undo state follows (Beta 1.110) | ' + JSON.stringify(u0), u0.btn === 'FINISH' && u0.undoing === false && u0.h === 1);
 await ev(`(() => { $('resetBtn').click(); return true; })()`); await sleep(300);
 const u1 = JSON.parse(await ev(`(() => JSON.stringify({ open: !$('finModal').classList.contains('hidden'), msg: $('finMsg').textContent, h: history.length, done: doneSet.size }))()`));
 await ev(`(() => { $('finNo').click(); return true; })()`);
 ok('U1 the finished clean stays finished - the button opens the pop-up for the empty board, nothing is restored | ' + JSON.stringify(u1), u1.open === true && /Nothing is marked yet/.test(u1.msg) && u1.h === 1 && u1.done === 0);
-// C1: cancel a clean that has coverage but no marks - coverage and suggestions die with it.
-await ev(`(() => { runStart = Date.now(); coveredIdx = { Velmar: [0, 1, 2] }; suggested = new Set(['Velmar']); cancelStart(); return true; })()`);
-const c1 = JSON.parse(await ev(`(() => JSON.stringify({ cov: Object.keys(coveredIdx).length, sug: suggested.size, shown: $('toast').classList.contains('show') }))()`));
-ok('C1 cancel clears the cancelled run coverage and suggestions | ' + JSON.stringify(c1), c1.cov === 0 && c1.sug === 0 && c1.shown === false); // Beta 1.91: the contract - cancel erases the clean (Beta 1.211 wording sweep: a clean is not a run). Beta 1.96 (SR-195-06): this scenario sets runStart directly, so no snapshot exists by construction and the board rebuilds from the marks. Beta 1.221: the erasure pill is cut (Andrew's toast rule) - the cleared state itself is the report, and no pill fires on a clean cancel
+// C1: cancel a clean that has coverage but no marks - the coverage dies with it.
+await ev(`(() => { runStart = Date.now(); coveredIdx = { Velmar: [0, 1, 2] }; cancelStart(); return true; })()`);
+const c1 = JSON.parse(await ev(`(() => JSON.stringify({ cov: Object.keys(coveredIdx).length, shown: $('toast').classList.contains('show') }))()`));
+ok('C1 cancel clears the cancelled run coverage | ' + JSON.stringify(c1), c1.cov === 0 && c1.shown === false); // Beta 1.91: the contract - cancel erases the clean (Beta 1.211 wording sweep: a clean is not a run). Beta 1.96 (SR-195-06): this scenario sets runStart directly, so no snapshot exists by construction and the board rebuilds from the marks. Beta 1.221: the erasure pill is cut (Andrew's toast rule) - the cleared state itself is the report, and no pill fires on a clean cancel
 // C2: Clear with coverage-only state clears it instead of claiming nothing to do.
-await ev(`(() => { coveredIdx = { Velmar: [0] }; suggested = new Set(['Velmar']); clearAllMarks(); return true; })()`);
-const c2 = JSON.parse(await ev(`(() => JSON.stringify({ cov: Object.keys(coveredIdx).length, sug: suggested.size, shown: $('toast').classList.contains('show') }))()`));
-ok('C2 clear counts coverage-only state as something to clear | ' + JSON.stringify(c2), c2.cov === 0 && c2.sug === 0 && c2.shown === false); // Beta 1.221: neither the old nothing-to-clear claim nor a success pill fires - the clear simply lands
+await ev(`(() => { coveredIdx = { Velmar: [0] }; clearAllMarks(); return true; })()`);
+const c2 = JSON.parse(await ev(`(() => JSON.stringify({ cov: Object.keys(coveredIdx).length, shown: $('toast').classList.contains('show') }))()`));
+ok('C2 clear counts coverage-only state as something to clear | ' + JSON.stringify(c2), c2.cov === 0 && c2.shown === false); // Beta 1.221: neither the old nothing-to-clear claim nor a success pill fires - the clear simply lands
 // G1/G2: a segment straddling the run start is not counted; only whole in-run segments are.
 const g = JSON.parse(await ev(`(() => { const t0 = 1700000000; trail = [[43.82, -79.560, t0 - 60], [43.82, -79.559, t0 + 60], [43.82, -79.558, t0 + 120]]; const km = trailKm(t0 * 1000); const segIn = distM(trail[1], trail[2]) / 1000; const segStraddle = distM(trail[0], trail[1]) / 1000; return JSON.stringify({ km, segIn, segStraddle }); })()`));
 ok('G1/G2 distance from run start counts only segments with both endpoints in the run | km ' + g.km.toFixed(3) + ' in-run ' + g.segIn.toFixed(3) + ' straddle ' + g.segStraddle.toFixed(3), Math.abs(g.km - g.segIn) < 0.002 && g.km < g.segIn + g.segStraddle - 0.01);
@@ -57,10 +57,10 @@ ok('D1 oversized sparse indexes cannot inflate piece-times | ' + JSON.stringify(
 const g4 = JSON.parse(await ev(`(() => { const t0 = 1700000000; trail = [[43.82, -79.560, t0], [43.82, -79.559, t0 + 10], [43.82, -79.558, t0 + 20], [43.83, -79.550, t0 + 3600], [43.83, -79.549, t0 + 3610]]; const g = buildGpx(); trail = []; return JSON.stringify({ segs: g.split('<trkseg>').length - 1, pts: g.split('<trkpt').length - 1 }); })()`));
 ok('G4 GPX exports separate sessions as separate segments | ' + JSON.stringify(g4), g4.segs === 2 && g4.pts === 5);
 // ---- Beta 1.71 (audit of 1.70): B01, B02, B03, B04, B05 + independent distance ----
-// X1 (B01): Clear dismisses the live suggestion panel and its street reference.
-await ev(`(() => { coveredIdx = { Velmar: [0, 1] }; suggested = new Set(['Velmar']); showSuggest('Velmar'); return true; })()`);
-const x1 = JSON.parse(await ev(`(() => { const visBefore = !$('suggest').classList.contains('hidden'); clearAllMarks(); return JSON.stringify({ visBefore, visAfter: !$('suggest').classList.contains('hidden'), n: $('suggest').dataset.n || null, cov: Object.keys(coveredIdx).length }); })()`));
-ok('X1 (B01) clear dismisses the suggestion panel and clears its street | ' + JSON.stringify(x1), x1.visBefore === true && x1.visAfter === false && x1.n === null && x1.cov === 0);
+// X1 (B01, re-scoped Beta 1.271): Clear wipes the coverage the suggestion used to read - the panel it dismissed is gone entirely.
+await ev(`(() => { coveredIdx = { Velmar: [0, 1] }; return true; })()`);
+const x1 = JSON.parse(await ev(`(() => { clearAllMarks(); return JSON.stringify({ cov: Object.keys(coveredIdx).length, sugEl: !!document.getElementById('suggest') }); })()`));
+ok('X1 (B01, re-scoped Beta 1.271) clear wipes the coverage the suggestion used to read - and the panel it dismissed is gone entirely | ' + JSON.stringify(x1), x1.cov === 0 && x1.sugEl === false);
 // X2 (audit section 9 + B03): distance checked against GEODESY, not the app -
 // ten 0.001-degree steps due north along a meridian. Earth's meridian arc at
 // this latitude is ~111.11 m per step (the app's equirectangular constant says

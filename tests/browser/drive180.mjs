@@ -835,7 +835,7 @@ try {
   const t = {};
   await clickId('rmChoose');
   t.toList2 = await waitFor(() => paneOn('rmListPane'), 3000);
-  t.picked = await ev(`(() => { const row = document.querySelector('#rmRoutes .routeRow'); if (!row) return false; row.click(); return true; })()`).then(x => x === true).catch(() => false);
+  t.picked = await ev(`(() => { const row = document.querySelector('#rmRoutes .routeRow'); if (!row) return false; row.click(); const b = row.nextElementSibling && row.nextElementSibling.querySelector('.dropLoad'); if (b) b.click(); return true; })()`).then(x => x === true).catch(() => false);
   t.splashGone = await waitFor(async () => await ev(`!document.getElementById('splash')`).then(x => x === true).catch(() => false), 8000); // finish() runs 780ms after the pick fade; the wait is the splash's removal, not a fixed sleep
   await sleep(900);
   t.opened = await clickId('routesBtn');

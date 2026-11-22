@@ -260,7 +260,7 @@ export async function bootThrough(ev, poll, opts = {}) {
   await ready(`typeof loadRoute === 'function'`, 20000, 'loadRoute defined');
   await ready(`!!window.__bootAt`, 30000, 'app booted (__bootAt)'); // Beta 1.76: wait until bootMap has actually run - a route pick before the map exists is unreachable for a real user (the menu only appears at the readiness gate, after the boot tail) and loadRoute's paint calls need the map
   await ev(`document.getElementById('rmChoose') && document.getElementById('rmChoose').click()`);
-  await ev(`document.querySelector('#rmRoutes .routeRow') && document.querySelector('#rmRoutes .routeRow').click()`);
+  await ev(`(() => { const r = document.querySelector('#rmRoutes .routeRow'); if (r) { r.click(); const b = r.nextElementSibling && r.nextElementSibling.querySelector('.dropLoad'); if (b) b.click(); } return true; })()`);
   await ready(`typeof routeLoaded !== 'undefined' && routeLoaded === true`, 20000, 'route loaded (routeLoaded)');
   await ready(`!document.getElementById('splash')`, 20000, 'splash removed');
   await ready(`typeof map === 'undefined' || !map || !map.isMoving()`, 25000, 'map settled'); // Beta 1.77: the pick's intro flight settles on the fitted view - geometry checks must wait for the landing

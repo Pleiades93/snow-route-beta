@@ -108,7 +108,7 @@ check('B2a: the badge build is gone from app2 (no visible loaded text is built; 
 check('B2b: the loaded row is stamped with the disc check, tab mode only, after Delete', app2.includes("ck.className = 'routeCheck'; ck.alt = 'Currently loaded'; ck.src = GLYPH_MENU.check; b.appendChild(ck);") && app2.indexOf("ck.className = 'routeCheck'") > app2.indexOf('b.appendChild(del);'));
 check('B2e (fix round 1): the loaded state has exactly one accessible name - the check alt - and no visible loaded text returns', (app2.match(/ck\.alt = 'Currently loaded';/g) || []).length === 1 && !app2.includes("ck.alt = '';") && !head.includes('Currently loaded'));
 check('B2c: the badge CSS is gone and the check stands at 25px', !head.includes('.routeBadge') && !head.includes('.routeNameRow') && head.includes('#routeMenu .routeCheck { width: 25px; height: 25px; flex: none; }'));
-check('B2d: a loaded created route clears both right-edge controls', head.includes('#routeMenu .routeRow:has(> .routeDel):has(> .routeCheck) .routeMeta { padding-right: 157px; }'));
+check('B2d: a loaded created route needs no extra clearance - the :has(.routeDel) rules retired with the in-row Delete (Beta 1.271: Delete lives in the dropdown; the check alone fits the base rule)', !head.includes('.routeRow:has(> .routeDel)') && !head.includes('padding-right: 157px') && !head.includes('padding-right: 122px') && head.includes('#routeMenu .routeMeta { position: absolute;'));
 check('B2e: the check payload is byte-pinned', sha(Buffer.from(payload('GLYPH_MENU', 'check'), 'base64')) === 'a629ee0b2959ea4604e566af0f2def1ffc5aeb18653b2407fc65a4b02ee9c9fb');
 
 // ---------- B3: the city list stretch ----------

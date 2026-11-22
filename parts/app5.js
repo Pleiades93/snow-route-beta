@@ -13,9 +13,6 @@ $('aboutBack').addEventListener('click', () => showSetPane('setMainPane'));
 document.addEventListener('pointerdown', e => {
   const anySheet = !!document.querySelector('.sheet.open'); // Beta 1.77 (Andrew, live catch): ANY open sheet, read from the DOM - the hand-listed pair missed the Routes sheet in 1.76, so tapping away from it did nothing (and the tap fell through to the map)
   if (anySheet && !e.target.closest('.sheet') && !e.target.closest('#hud') && !e.target.closest('.modal') && !e.target.closest('#confirmPill') && !e.target.closest('#confirmBackdrop')) { closeSheets(); spendTap(400); } // Beta 1.30 (Andrew): the closing tap is spent here - the map never sees it. Beta 1.255 (gate round 2, Codex P2): the confirmation pill is exempt like the modals - a real press on its buttons bubbles through here first, and without the exemption Keep going closed the sheet it was asked over before its own click landed. Beta 1.257: the confirmation's backdrop is exempt the same way - it covers the whole screen while the question is up, so without the exemption a tap on it would close the sheet underneath; the tap does nothing instead (dismissal stays buttons-only)
-  // The two banners count as menus too (Andrew: ANY menu): a tap outside one is its Dismiss / Keep going.
-  if (!$('suggest').classList.contains('hidden') && !e.target.closest('#suggest')) { $('suggest').classList.add('hidden'); spendTap(400); }
-  if (!$('stale').classList.contains('hidden') && !e.target.closest('#stale')) { $('stale').classList.add('hidden'); spendTap(400); }
 });
 ['finModal', 'noteModal'].forEach(id => { const mEl = $(id); mEl.addEventListener('pointerdown', e => { if (e.target === mEl) mEl.classList.add('hidden'); }); });
 // Beta 1.226: the press shrink for the DIV row families. Buttons shrink through the stylesheet's
@@ -492,16 +489,22 @@ function unloadRouteToBoot() { // Beta 1.124: the ACTIVE route was deleted - ret
   const rm = $('routeMenu'); rm.classList.remove('tab', 'open'); rm.classList.add('boot', 'show'); const bl = $('brandLayer'); if (bl) bl.classList.remove('off', 'bye'); /* Beta 1.155: the picker return revives the landed title in its layer (finish() parked it at the pick) */ showRmPane('rmMain'); renderRouteLists();
   syncWake();
 }
-async function deleteRoute(id) { // Beta 1.124 (Andrew): delete a route HE created - the shipped packs are refused (SHIPPED_PACK_IDS), so the built-in 5W can never be deleted. Order is the safety: (1) the userpacks definition goes first, through a strict read and a VERIFIED write - on any failure nothing else is touched, the route stays listed and fully intact, and a toast names the storage problem; (2) only then is the pack unregistered and every key of its slot wiped - enumerated from routeKeys (ROUTE_FIELDS + snap + mig + its preload record), never hand-listed, so a future field joins the sweep by construction; (3) if it was the active route, the app returns to the boot picker; (4) the list re-renders without it. Beta 1.166: the definition's home is the IndexedDB store - step (1) is a verified store delete, PLUS the removal of any not-yet-drained legacy shadow copy (while a legacy record stands, its copy wins at boot, so leaving one would resurrect the route); a shadow-removal failure puts the store entry back rather than strand a half-deleted route.
-  const ix = ROUTE_PACKS.findIndex(p => p.id === id); if (ix < 0 || SHIPPED_PACK_IDS.has(id)) return;
+async function deleteRoute(id) { // Beta 1.124 (Andrew): delete a route HE created. Beta 1.271 (Andrew, 2026-11-21: EVERY route gets a Delete, the shipped 5W included) SUPERSEDES the 1.124 shipped refusal below - the order discipline is unchanged, only step (1)'s target differs by kind: a SHIPPED pack's step (1) writes the tombstone record (create-packs' SHIPPED_DELETED_KEY, strict read + verified write) because its definition is data.js, not a stored record; a created route's step (1) is the store delete + shadow removal, exactly as before. Order is the safety: (1) the userpacks definition goes first, through a strict read and a VERIFIED write - on any failure nothing else is touched, the route stays listed and fully intact, and a toast names the storage problem; (2) only then is the pack unregistered and every key of its slot wiped - enumerated from routeKeys (ROUTE_FIELDS + snap + mig + its preload record), never hand-listed, so a future field joins the sweep by construction; (3) if it was the active route, the app returns to the boot picker; (4) the list re-renders without it. Beta 1.166: the definition's home is the IndexedDB store - step (1) is a verified store delete, PLUS the removal of any not-yet-drained legacy shadow copy (while a legacy record stands, its copy wins at boot, so leaving one would resurrect the route); a shadow-removal failure puts the store entry back rather than strand a half-deleted route.
+  const ix = ROUTE_PACKS.findIndex(p => p.id === id); if (ix < 0) return;
   const pack = ROUTE_PACKS[ix];
-  const legacy = readUserPacks(); // strict, as ever: a legacy record that cannot be read is never rewritten blind - rescuing one deletion must never cost every created route
-  if (legacy === null) { toast('Storage problem - the route could not be deleted', 4000); return; }
-  if (!(await upDel(id))) { toast('Storage problem - the route could not be deleted', 4000); return; } // the storage-outcome contract, unchanged: the definition's removal is verified before any data is wiped - a route whose definition survived keeps its data and its row
-  if (legacy[id]) {
-    const shadow = { ...legacy }; delete shadow[id];
-    const okShadow = Object.keys(shadow).length ? (lsSet(USERPACKS_KEY, JSON.stringify(shadow)) && !(readUserPacks() || {})[id]) : (lsDel(USERPACKS_KEY) && localStorage.getItem(USERPACKS_KEY) === null);
-    if (!okShadow) { await upPut(id, pack); toast('Storage problem - the route could not be deleted', 4000); return; }
+  if (SHIPPED_PACK_IDS.has(id)) { // Beta 1.271: the shipped step (1) - the tombstone write, verified before anything is wiped, on the same storage-outcome contract
+    const dead = readShippedDeleted(); // strict: a tombstone record that cannot be read is never rewritten blind
+    if (dead === null) { toast('Storage problem - the route could not be deleted', 4000); return; }
+    if (!dead.includes(id) && !(lsSet(SHIPPED_DELETED_KEY, JSON.stringify([...dead, id])) && (readShippedDeleted() || []).includes(id))) { toast('Storage problem - the route could not be deleted', 4000); return; }
+  } else {
+    const legacy = readUserPacks(); // strict, as ever: a legacy record that cannot be read is never rewritten blind - rescuing one deletion must never cost every created route
+    if (legacy === null) { toast('Storage problem - the route could not be deleted', 4000); return; }
+    if (!(await upDel(id))) { toast('Storage problem - the route could not be deleted', 4000); return; } // the storage-outcome contract, unchanged: the definition's removal is verified before any data is wiped - a route whose definition survived keeps its data and its row
+    if (legacy[id]) {
+      const shadow = { ...legacy }; delete shadow[id];
+      const okShadow = Object.keys(shadow).length ? (lsSet(USERPACKS_KEY, JSON.stringify(shadow)) && !(readUserPacks() || {})[id]) : (lsDel(USERPACKS_KEY) && localStorage.getItem(USERPACKS_KEY) === null);
+      if (!okShadow) { await upPut(id, pack); toast('Storage problem - the route could not be deleted', 4000); return; }
+    }
   }
   delete userPackCache[id]; // the backup picture joins the commit
   const wasActive = !!(activeRoute && activeRoute.id === id && routeLoaded);
@@ -511,7 +514,7 @@ async function deleteRoute(id) { // Beta 1.124 (Andrew): delete a route HE creat
   if (wasActive) unloadRouteToBoot(); else renderRouteLists();
   if (wipeFailed) toast('Route deleted, but some of its saved data could not be deleted (storage problem)', 4200); // Beta 1.146 (census C2): the definition IS gone (verified above) and the pack stays unregistered - in-memory tenancy matches storage - but the success toast must NOT fire over a slot that could not be fully wiped; the failure is said out loud, on deleteRoute's own storage-problem surface (the same toast form its definition-write failures use)
 }
-function askDeleteRoute(id) { // Beta 1.124: the Delete button on a created route's row (app2's routeRowEl) - the shared create confirm asks, with the deletion labels; the confirm's card is the theme-token surface in both day and night.
-  const pack = ROUTE_PACKS.find(p => p.id === id); if (!pack || SHIPPED_PACK_IDS.has(id)) return;
+function askDeleteRoute(id) { // Beta 1.124: the Delete on a route's row - the shared create confirm asks, with the deletion labels; the confirm's card is the theme-token surface in both day and night. Beta 1.271: the ask opens for EVERY route, shipped packs included (the 1.124 shipped refusal is superseded by Andrew's 2026-11-21 ruling).
+  const pack = ROUTE_PACKS.find(p => p.id === id); if (!pack) return;
   crConfirm('Delete ' + pack.name + '?', 'The route and everything saved for it on this phone (progress, notes, history) will be removed. This can’t be undone.', () => deleteRoute(id), { yes: 'Delete', no: 'Cancel', danger: true });
 }

@@ -96,7 +96,7 @@ const hintSample = () => J(`({ state: typeof crPrepState !== 'undefined' ? crPre
 await poll(`typeof loadRoute === 'function'`, 20000);
 await poll(`!!window.__bootAt`, 30000);
 await ev(`document.getElementById('rmChoose').click()`);
-await ev(`document.querySelector('#rmRoutes .routeRow').click()`);
+await ev(`(() => { const r = document.querySelector('#rmRoutes .routeRow'); if (r) { r.click(); const b = r.nextElementSibling && r.nextElementSibling.querySelector('.dropLoad'); if (b) b.click(); } return true; })()`);
 await poll(`typeof routeLoaded !== 'undefined' && routeLoaded === true`, 20000);
 await poll(`!document.getElementById('splash')`, 20000);
 await poll(`typeof map === 'undefined' || !map || !map.isMoving()`, 25000);
@@ -249,7 +249,7 @@ const resultSample = () => J(`({ rows: [...document.querySelectorAll('#createRes
 await poll(`typeof loadRoute === 'function'`, 20000);
 await poll(`!!window.__bootAt`, 30000);
 await ev(`document.getElementById('rmChoose').click()`);
-await ev(`document.querySelector('#rmRoutes .routeRow').click()`);
+await ev(`(() => { const r = document.querySelector('#rmRoutes .routeRow'); if (r) { r.click(); const b = r.nextElementSibling && r.nextElementSibling.querySelector('.dropLoad'); if (b) b.click(); } return true; })()`);
 await poll(`typeof routeLoaded !== 'undefined' && routeLoaded === true`, 20000);
 await poll(`!document.getElementById('splash')`, 20000);
 await poll(`typeof map === 'undefined' || !map || !map.isMoving()`, 25000);
