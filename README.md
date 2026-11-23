@@ -39,6 +39,7 @@ The detailed storage format and restore rules are documented in `docs/STORAGE-SC
 | `sw.js` | **Generated** copy of `src/sw.js`. Must sit beside `index.html` on an https host. Never hand-edit. |
 | `scripts/assemble.py` | Concatenates `parts/` into `src/tracker-source.html` (byte-exact recipe; `--check` verifies without writing). |
 | `scripts/build-pages.py` | The repository-owned build: generates `index.html` + `sw.js` from `src/` and runs the assembly, parity, CSP, integrity and version gates. Standard library only. |
+| `scripts/release-op.py` | The one local release operation (architecture #22): derives the README counts, assembles the page, stamps and writes `index.html` + `sw.js`, then re-runs the three `--check` forms as verification — the build half of a release as a single command. |
 | `scripts/release.py` | The release bookkeeping generator (Beta 1.133): derives the battery counts quoted in this README from the suite itself and rewrites them — the counts are generated, never hand-kept — and prints the release checklist (generated steps vs editorial ones). The build fails if the README disagrees with its derivation. |
 | `scripts/csp_stamp.py` | Computes the Content-Security-Policy the build stamps into the page. |
 | `scripts/genstyles.mjs` | Regenerates `parts/pmstyles.js` (the two embedded Protomaps basemap styles) from the `@protomaps/basemaps` package (pinned exactly by `scripts/package.json` + `package-lock.json` — `npm ci` in `scripts/` first); run from `scripts/`. Never hand-edit its output. |

@@ -134,16 +134,19 @@ CHECKLIST = """\
 RELEASE CHECKLIST (Beta 1.133 — generated vs editorial, kept apart)
 
 GENERATED — machines own these; never type them by hand:
-  [ ] python3 scripts/release.py          (README battery counts derived
-                                           from the suite and rewritten)
-  [ ] python3 scripts/assemble.py         (parts/ -> src/tracker-source.html;
-                                           the splash icon bytes are inlined
-                                           from splash-artwork-512.png here)
-  [ ] python3 scripts/build-pages.py      (build + gates: assembly, parity,
-                                           CSP, SEC-10a, version ==
-                                           CHANGELOG top, WHATSNEW.v ==
-                                           displayed version, README counts
-                                           == this script's derivation)
+  [ ] python3 scripts/release-op.py       (the one local release operation,
+                                           architecture #22: counts derived
+                                           from the suite and rewritten,
+                                           parts/ assembled (splash bytes +
+                                           the CHANGELOG stamp inlined),
+                                           the page built and stamped,
+                                           index.html + sw.js written, then
+                                           the three --check forms re-run
+                                           as verification. The steps it
+                                           runs are release.py, assemble.py
+                                           and build-pages.py themselves —
+                                           run them individually only to
+                                           debug the operation)
 
 EDITORIAL — a human writes these, on purpose:
   [ ] CHANGELOG.md: the new top entry (## Beta X.Y — date) describing the
