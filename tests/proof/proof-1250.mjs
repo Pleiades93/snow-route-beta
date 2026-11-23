@@ -58,7 +58,7 @@ const reconcileSrc = extractFn(app1, 'reconcileInterruptedFinish(rawHistory)');
 const actionSrc = extractFn(app1, 'finishReconcileAction(startMs, lastStartedMs, boardEmpty)');
 const boardMatchSrc = extractFn(app1, 'finishBoardMatch(entry, P, T, names)');
 const noRunSrc = extractFn(app1, 'finishReconcileNoRunAction(markerRun, markerAt, lastRunId, boardEmpty, boardMatch)');
-const recoverySrc = extractFn(app4, 'recoveryObj()');
+const recoverySrc = extractObj(app4, 'ENVELOPE'); // Beta 1.280 (architecture #8/#9): the recovery export is the envelope owner's recovery policy now - the proof extracts the owner and drives ENVELOPE.recovery, the same body under its new home
 
 // Planted entries: one naming ONLY a street the route no longer has (the
 // sanitizer drops it from the view; storage still holds it raw), one
@@ -131,7 +131,7 @@ const fixLog = [];
 HIST._rawList = [${JSON.stringify(E_FOREIGN)}, ${JSON.stringify(E_KEEP_RAW)}];
 HIST._rawView = [null, ${JSON.stringify(E_KEEP_VIEW)}];
 history = [HIST._rawView[1]];
-const o = recoveryObj();
+const o = ENVELOPE.recovery();
 ({ app: o && o.app, hist: o ? JSON.parse(o.routes.r1.hist) : null })
 `, ctx);
   check('recovery: the export builds', out.app === 'snowroute-backup' && Array.isArray(out.hist), 'app: ' + out.app);

@@ -64,104 +64,118 @@ function snapForExport(strict) { // Beta 1.97 (audit loop CG-196-02): the ACTIVE
   const pv = validateSnap(parseJ(rawSnap, null), runStart);
   return pv ? BOARD.snapshotObject(pv, runStart) : null;
 }
-function backupObj() { // Beta 1.76: format v2 - routes carry their own slots ({routes: {id: {field: raw}}}) and the night preference rides at top level. Reads stay RAW (Beta 1.48, audit B04): a failed read fails the whole export (null) instead of producing a valid-looking backup with a piece silently missing.
-  PERSIST.flush(true); // Beta 1.92 (deep audit F04): flush the buffered trail/coverage first - a backup must not lag the work it claims to hold
-  // Beta 1.94 (deep audit SR-193-01): the PRIMARY records get the same reconciliation the aux
-  // records got in 1.93 (R02) - but only when a reconciliation is OWED, which is exactly when
-  // a primary save has failed (primaryDirty, SR-193-05): memory is then ahead of storage, and
-  // the raw export below would ship the OLD board as current, silently, in a valid-looking
-  // file. Attempt the verified save first; if it still cannot land, refuse the export (null),
-  // exactly like R02. When no save has failed, storage already holds the last verified save,
-  // so the export reads it raw and writes nothing - an export of never-resaved loaded state
-  // (drive121's frozen fixture) stays byte-true to what is stored, loader derivations and
-  // all. Quiet on purpose: the caller's 'could not be read' message is the honest report.
-  if (routeLoaded && writePending('primary')) { const okPrim = saveAll().ok; if (!okPrim) return null; }
-  if (writePending('trail') || writePending('aux') || writePending('sess') || writePending('fixlog')) return null; // Beta 1.93 (follow-up audit R02): the flush did not land - refuse the export (the caller's 'could not be read' message) rather than ship a valid-looking backup with stale trail/coverage inside. Beta 1.189: the fix log joins the refusal set on the same discipline
-  const routes = {};
-  for (const p of ROUTE_PACKS) {
-    const rk = routeKeys(p.id); const data = {};
-    for (const f of ROUTE_FIELDS) { const key = (activeRoute && p.id === activeRoute.id && LS[f] !== rk[f]) ? LS[f] : rk[f]; const v = rawRead(key); if (v === RAW_READ_FAILED) return null; if (v != null) data[f] = v; }
-    // Beta 1.97 (audit loop CG-196-01/-02): the route's lifecycle state rides EXPLICITLY, never by
-    // omission. A run's start is asserted as its timestamp string; NO run is asserted as start: null -
-    // so a restore can tell "this backup says idle" from an older backup that simply omits the field
-    // (the missing-key rule, which leaves the destination's state alone). A run's validated cancel
-    // snapshot rides along (CG-196-02 - 1.96 carried it in recovery backups only): the active route's
-    // from the shared exporter, any other pack's from its stored copy after validation.
-    const isActive = !!(activeRoute && p.id === activeRoute.id && routeLoaded);
-    const startStr = isActive ? (runStart ? String(runStart) : null) : (data.start !== undefined ? data.start : null);
-    data.start = startStr;
-    if (startStr) {
-      let snapObj = null;
-      if (isActive) { snapObj = snapForExport(true); if (snapObj === undefined) return null; } // a snapshot read failure fails the whole export (B04 discipline) - never a valid-looking backup missing the snapshot
-      else { const rawSnap = rawRead(rk.snap); if (rawSnap === RAW_READ_FAILED) return null; const pv = validateSnap(parseJ(rawSnap, null), +startStr, packGeometry(p)); if (pv) snapObj = BOARD.snapshotObject(pv, +startStr); } // Beta 1.117 (F6): a non-active pack's snapshot validates against ITS OWN geometry
+// Beta 1.280 (architecture programme #9): the backup envelope has ONE owner now.
+// Through 1.279 backupObj and recoveryObj assembled the v2 envelope independently -
+// the same literal shape, the same snapForExport snapshot, but every field's SOURCE
+// decided inline in two places: the normal backup reads storage raw and refuses the
+// whole export when a read fails (the strict policy), the recovery export reads the
+// live in-memory state and treats storage as best-effort (the recovery policy). The
+// policies are named methods here; their bodies are the two builders', moved, not
+// reinterpreted - the envelope bytes for the same state are the same bytes (same
+// construction, same key order, same builders below). backupObj / recoveryObj keep
+// their names as the doorways the callers and the battery resolve.
+const ENVELOPE = {
+  /** @returns {object|null} */ strict() { // Beta 1.76: format v2 - routes carry their own slots ({routes: {id: {field: raw}}}) and the night preference rides at top level. Reads stay RAW (Beta 1.48, audit B04): a failed read fails the whole export (null) instead of producing a valid-looking backup with a piece silently missing.
+    PERSIST.flush(true); // Beta 1.92 (deep audit F04): flush the buffered trail/coverage first - a backup must not lag the work it claims to hold
+    // Beta 1.94 (deep audit SR-193-01): the PRIMARY records get the same reconciliation the aux
+    // records got in 1.93 (R02) - but only when a reconciliation is OWED, which is exactly when
+    // a primary save has failed (primaryDirty, SR-193-05): memory is then ahead of storage, and
+    // the raw export below would ship the OLD board as current, silently, in a valid-looking
+    // file. Attempt the verified save first; if it still cannot land, refuse the export (null),
+    // exactly like R02. When no save has failed, storage already holds the last verified save,
+    // so the export reads it raw and writes nothing - an export of never-resaved loaded state
+    // (drive121's frozen fixture) stays byte-true to what is stored, loader derivations and
+    // all. Quiet on purpose: the caller's 'could not be read' message is the honest report.
+    if (routeLoaded && writePending('primary')) { const okPrim = saveAll().ok; if (!okPrim) return null; }
+    if (writePending('trail') || writePending('aux') || writePending('sess') || writePending('fixlog')) return null; // Beta 1.93 (follow-up audit R02): the flush did not land - refuse the export (the caller's 'could not be read' message) rather than ship a valid-looking backup with stale trail/coverage inside. Beta 1.189: the fix log joins the refusal set on the same discipline
+    const routes = {};
+    for (const p of ROUTE_PACKS) {
+      const rk = routeKeys(p.id); const data = {};
+      for (const f of ROUTE_FIELDS) { const key = (activeRoute && p.id === activeRoute.id && LS[f] !== rk[f]) ? LS[f] : rk[f]; const v = rawRead(key); if (v === RAW_READ_FAILED) return null; if (v != null) data[f] = v; }
+      // Beta 1.97 (audit loop CG-196-01/-02): the route's lifecycle state rides EXPLICITLY, never by
+      // omission. A run's start is asserted as its timestamp string; NO run is asserted as start: null -
+      // so a restore can tell "this backup says idle" from an older backup that simply omits the field
+      // (the missing-key rule, which leaves the destination's state alone). A run's validated cancel
+      // snapshot rides along (CG-196-02 - 1.96 carried it in recovery backups only): the active route's
+      // from the shared exporter, any other pack's from its stored copy after validation.
+      const isActive = !!(activeRoute && p.id === activeRoute.id && routeLoaded);
+      const startStr = isActive ? (runStart ? String(runStart) : null) : (data.start !== undefined ? data.start : null);
+      data.start = startStr;
+      if (startStr) {
+        let snapObj = null;
+        if (isActive) { snapObj = snapForExport(true); if (snapObj === undefined) return null; } // a snapshot read failure fails the whole export (B04 discipline) - never a valid-looking backup missing the snapshot
+        else { const rawSnap = rawRead(rk.snap); if (rawSnap === RAW_READ_FAILED) return null; const pv = validateSnap(parseJ(rawSnap, null), +startStr, packGeometry(p)); if (pv) snapObj = BOARD.snapshotObject(pv, +startStr); } // Beta 1.117 (F6): a non-active pack's snapshot validates against ITS OWN geometry
+        if (snapObj) data.snap = JSON.stringify(snapObj);
+      }
+      routes[p.id] = data;
+    } // Beta 1.92 (deep audit F02): the ACTIVE route exports from the key mapping it is actually running on - on a legacy-fallback boot (migration failed) LS points at the legacy keys, and reading the fresh slot would emit a valid-looking EMPTY backup
+    const night = rawRead(LS_GLOBAL.night); if (night === RAW_READ_FAILED) return null;
+    const nightExp = rawRead(LS_GLOBAL.nightExp); if (nightExp === RAW_READ_FAILED) return null;
+    const o = { app: 'snowroute-backup', v: 2, at: new Date().toISOString(), routes };
+    if (!upStoreComplete) return null; // Beta 1.166: created-route definitions ride from the verified in-memory picture of the IndexedDB store (create-packs.js: userPackCache) - and a boot whose store read failed never gets to claim completeness: the export refuses (the B04 strictness this line has carried since 1.118, re-seated on the new home) rather than ship a valid-looking backup that silently loses routes living only in the store
+    if (Object.keys(userPackCache).length) o.userpacks = { ...userPackCache }; // Beta 1.118: created routes are Andrew's data - their definitions ride every backup
+    if (night != null) o.night = night;
+    if (nightExp != null) o.nightExp = nightExp; // Beta 1.221: the icon-pack choice no longer rides backups - the picker is gone and the one set is Glyph; a pre-1.221 backup carrying the field restores cleanly (the field is simply never read, the missing-key rule in reverse) // Beta 1.77: the theme override and its expiry travel together (an override without its expiry is read as expiring at the next boundary)
+    const stg = rawRead(SETTINGS_KEY); if (stg === RAW_READ_FAILED) return null; if (stg != null) o.settings = stg; // Beta 1.166: the Settings toggles (app1's record: vibration, chime, chime sound) ride every backup too, read with the same B04 strictness as the night pair - a backup whose promise is "restart from where you had it" may not silently drop them. Additive like nightExp before it: older builds ignore the unknown field, older backups simply omit it
+    const fx = rawRead(LS.fixlog); if (fx === RAW_READ_FAILED) return null; if (fx != null) o.fixlog = fx; // Beta 1.189: the raw fix log (app3's debugging record) rides every backup too, with the same B04 strictness - it is the log's ONLY channel off the device, by Andrew's standing debugging-data rule. Additive exactly like settings: older builds ignore the unknown field, older backups simply omit it
+    return o;
+  },
+  /** @returns {object|null} */ recovery() { // Beta 1.95 (deep audit SR-194-02): the RECOVERY backup - the live IN-MEMORY state of the active route, serialized directly. The normal Backup reads storage and REFUSES when storage is behind memory (it would ship a stale board as current); that refusal left the storage-failure warnings' "export a backup now" unactionable in exactly the state they fire in - the marks at risk had no exit before a reload. This export is that exit: same envelope (it restores through the normal path), plus the recovery marker, and the file/labels say plainly that it holds unsaved live data. It never reads the board from storage and never writes anything.
+    if (!routeLoaded || !activeRoute) return null;
+    const data = {};
+    const ser = BOARD.serialiseLive(); // Arch-2: the live board's stored strings come from the board module
+    data.sides = ser.sides;
+    data.done = ser.done;
+    data.times = ser.times;
+    data.via = ser.via;
+    data.notes = JSON.stringify(notes);
+    data.hist = HIST.serialise(); // Beta 1.250 (cross-audit fix round): the recovery export writes the A-05 merge like every other history writer (through the repository since Beta 1.272) - the bare view would ship a file whose restore permanently drops the raw entries the load-time strip is hiding (the same bypass class as N-03)
+    data.trail = JSON.stringify(trail);
+    data.cov = ser.cov;
+    data.sess = JSON.stringify(trailSessions);
+    data.start = runStart ? String(runStart) : null; // Beta 1.97 (audit loop CG-196-01): the recovery backup asserts idle explicitly too - it is a complete backup by construction
+    if (runStart) { // Beta 1.96 (deep audit SR-195-02, Andrew's pick: carry it, do not just warn): the run's cancel snapshot rides INSIDE the recovery file, so a run restored from it - on this phone or another - keeps the exact-restore Cancel it had. 1.95's recovery carried every field except the snapshot, quietly demoting a restored run's Cancel to the stamp journal (which cannot see an unmark). Taken from the in-memory snapshot when there is one, else from the persisted copy after validation; a run with neither simply carries none, and the restore side says so.
+      const snapObj = snapForExport(); // Beta 1.97 (audit loop CG-196-02): the shared construction - the recovery and normal backups carry the identical object
       if (snapObj) data.snap = JSON.stringify(snapObj);
     }
-    routes[p.id] = data;
-  } // Beta 1.92 (deep audit F02): the ACTIVE route exports from the key mapping it is actually running on - on a legacy-fallback boot (migration failed) LS points at the legacy keys, and reading the fresh slot would emit a valid-looking EMPTY backup
-  const night = rawRead(LS_GLOBAL.night); if (night === RAW_READ_FAILED) return null;
-  const nightExp = rawRead(LS_GLOBAL.nightExp); if (nightExp === RAW_READ_FAILED) return null;
-  const o = { app: 'snowroute-backup', v: 2, at: new Date().toISOString(), routes };
-  if (!upStoreComplete) return null; // Beta 1.166: created-route definitions ride from the verified in-memory picture of the IndexedDB store (create-packs.js: userPackCache) - and a boot whose store read failed never gets to claim completeness: the export refuses (the B04 strictness this line has carried since 1.118, re-seated on the new home) rather than ship a valid-looking backup that silently loses routes living only in the store
-  if (Object.keys(userPackCache).length) o.userpacks = { ...userPackCache }; // Beta 1.118: created routes are Andrew's data - their definitions ride every backup
-  if (night != null) o.night = night;
-  if (nightExp != null) o.nightExp = nightExp; // Beta 1.221: the icon-pack choice no longer rides backups - the picker is gone and the one set is Glyph; a pre-1.221 backup carrying the field restores cleanly (the field is simply never read, the missing-key rule in reverse) // Beta 1.77: the theme override and its expiry travel together (an override without its expiry is read as expiring at the next boundary)
-  const stg = rawRead(SETTINGS_KEY); if (stg === RAW_READ_FAILED) return null; if (stg != null) o.settings = stg; // Beta 1.166: the Settings toggles (app1's record: vibration, chime, chime sound) ride every backup too, read with the same B04 strictness as the night pair - a backup whose promise is "restart from where you had it" may not silently drop them. Additive like nightExp before it: older builds ignore the unknown field, older backups simply omit it
-  const fx = rawRead(LS.fixlog); if (fx === RAW_READ_FAILED) return null; if (fx != null) o.fixlog = fx; // Beta 1.189: the raw fix log (app3's debugging record) rides every backup too, with the same B04 strictness - it is the log's ONLY channel off the device, by Andrew's standing debugging-data rule. Additive exactly like settings: older builds ignore the unknown field, older backups simply omit it
-  return o;
-}
+    { const fl = rawRead(routeKeys(activeRoute.id).flip); if (fl !== RAW_READ_FAILED && fl != null) data.flip = fl; } // a read that fails simply leaves the field out (the recovery export's best-effort mode)
+    // Beta 1.142 (Package B, DA-09): the created-route definitions this file must carry are settled
+    // FIRST, before any route entry is built. When the stored record reads cleanly it is carried as
+    // before (1.118); when it cannot be read at all, the definitions come from the in-memory packs -
+    // each re-validated through normalizePack, the one validator - because a recovery file whose
+    // created route has progress but no definition is rejected WHOLESALE by a fresh device
+    // ("unknown route"), in exactly the storage-failure states this export exists for. A route whose
+    // definition cannot be carried even from memory is excluded from the file entirely (its progress
+    // would make the file unrestorable) and named in recoveryDisclosure for shareRecovery's message.
+    // Beta 1.166: "the stored record" in the paragraph above is now the IndexedDB store, read at boot
+    // into userPackCache (create-packs.js): when that read earned completeness, the cache is the
+    // carried set (a superset of the old record read - it also covers routes whose legacy record
+    // has drained away); when it did not, the fallback below runs per route the cache lacks.
+    recoveryDisclosure = null;
+    let upsCarry = null; const excluded = new Set();
+    if (upStoreComplete) upsCarry = { ...userPackCache };
+    else { upsCarry = {}; const badNames = [];
+      for (const pk of ROUTE_PACKS) { if (SHIPPED_PACK_IDS.has(pk.id)) continue; if (userPackCache[pk.id]) { upsCarry[pk.id] = userPackCache[pk.id]; continue; } const v = normalizePack(pk, {}); if (v.ok) { v.pack.id = pk.id; upsCarry[pk.id] = v.pack; } else { excluded.add(pk.id); badNames.push(pk.name || pk.id); } }
+      if (badNames.length) recoveryDisclosure = badNames;
+    }
+    if (excluded.has(activeRoute.id)) return null; // the open route's own definition cannot be carried - no honest recovery file exists, and shareRecovery's unavailable message is the truthful result
+    const routes = {}; routes[activeRoute.id] = data;
+    for (const pk of ROUTE_PACKS) { if (pk.id === activeRoute.id || excluded.has(pk.id)) continue; const rk = routeKeys(pk.id); const d = {}; for (const f of ROUTE_FIELDS) { const v = rawRead(rk[f]); if (v !== RAW_READ_FAILED && v != null) d[f] = v; } if (d.start === undefined) d.start = null;
+      if (d.start) { const rawSnap = rawRead(rk.snap); if (rawSnap !== RAW_READ_FAILED && rawSnap != null) { const pv = validateSnap(parseJ(rawSnap, null), +d.start, packGeometry(pk)); if (pv) d.snap = BOARD.serialiseSnap(pv, +d.start); } } // Beta 1.142 (Package B, DA-08): a non-active RUNNING route's cancel snapshot rides the recovery file too, validated against its own geometry and normalized exactly as the normal backup carries it (1.97) - pre-1.142 recovery copied ROUTE_FIELDS only, so a run restored from a recovery file lost its exact Cancel. Recovery stays best-effort: a snapshot read that fails simply leaves it out.
+      if (Object.keys(d).length) routes[pk.id] = d; } // Beta 1.97 (audit loop CG-196-01): an untouched pack in a recovery file asserts idle like any complete backup
+    const o = { app: 'snowroute-backup', v: 2, recovery: true, at: new Date().toISOString(), routes };
+    if (upsCarry && Object.keys(upsCarry).length) o.userpacks = upsCarry; // Beta 1.118: created-route definitions ride the recovery backup too. Beta 1.142: from the strict record read, or from validated memory when the record cannot be read (DA-09)
+    { const nt = rawRead(LS_GLOBAL.night); if (nt !== RAW_READ_FAILED) { if (nt != null) o.night = nt; const ne = rawRead(LS_GLOBAL.nightExp); if (ne !== RAW_READ_FAILED && ne != null) o.nightExp = ne; } }
+
+    o.settings = JSON.stringify({ vib: settings.vib, chime: settings.chime, chimeSound: settings.chimeSound }); // Beta 1.166: the Settings toggles ride the recovery file too - from the LIVE settings object (this export never reads the board from storage, and the toggles are no different), serialized in exactly the record shape saveSettings writes, so a restore validates and lands it identically to a normal backup's
+    if (fixLog.length) o.fixlog = JSON.stringify(fixLogEncodeSessions(fixLog)); // Beta 1.189: the raw fix log rides the recovery file too - from the LIVE log (this export never reads storage), in exactly the record shape saveFixLog writes, so a restore validates and lands it identically to a normal backup's. Beta 1.190: that shape is the e3 stored form, so the live sessions are encoded on the way out
+    return o;
+  },
+};
+function backupObj() { return ENVELOPE.strict(); } // Beta 1.280: the doorway - the strict policy is ENVELOPE.strict (above)
 function buildBackup() { const o = backupObj(); return o ? JSON.stringify(o, null, 1) : null; }
 let recoveryDisclosure = null; // Beta 1.142 (Package B, DA-09): the names of created routes the LAST recovery build could not carry a definition for (their entries were excluded - see recoveryObj); shareRecovery names them in its result message, so an incomplete recovery file is never silent about what it lacks
-function recoveryObj() { // Beta 1.95 (deep audit SR-194-02): the RECOVERY backup - the live IN-MEMORY state of the active route, serialized directly. The normal Backup reads storage and REFUSES when storage is behind memory (it would ship a stale board as current); that refusal left the storage-failure warnings' "export a backup now" unactionable in exactly the state they fire in - the marks at risk had no exit before a reload. This export is that exit: same envelope (it restores through the normal path), plus the recovery marker, and the file/labels say plainly that it holds unsaved live data. It never reads the board from storage and never writes anything.
-  if (!routeLoaded || !activeRoute) return null;
-  const data = {};
-  const ser = BOARD.serialiseLive(); // Arch-2: the live board's stored strings come from the board module
-  data.sides = ser.sides;
-  data.done = ser.done;
-  data.times = ser.times;
-  data.via = ser.via;
-  data.notes = JSON.stringify(notes);
-  data.hist = HIST.serialise(); // Beta 1.250 (cross-audit fix round): the recovery export writes the A-05 merge like every other history writer (through the repository since Beta 1.272) - the bare view would ship a file whose restore permanently drops the raw entries the load-time strip is hiding (the same bypass class as N-03)
-  data.trail = JSON.stringify(trail);
-  data.cov = ser.cov;
-  data.sess = JSON.stringify(trailSessions);
-  data.start = runStart ? String(runStart) : null; // Beta 1.97 (audit loop CG-196-01): the recovery backup asserts idle explicitly too - it is a complete backup by construction
-  if (runStart) { // Beta 1.96 (deep audit SR-195-02, Andrew's pick: carry it, do not just warn): the run's cancel snapshot rides INSIDE the recovery file, so a run restored from it - on this phone or another - keeps the exact-restore Cancel it had. 1.95's recovery carried every field except the snapshot, quietly demoting a restored run's Cancel to the stamp journal (which cannot see an unmark). Taken from the in-memory snapshot when there is one, else from the persisted copy after validation; a run with neither simply carries none, and the restore side says so.
-    const snapObj = snapForExport(); // Beta 1.97 (audit loop CG-196-02): the shared construction - the recovery and normal backups carry the identical object
-    if (snapObj) data.snap = JSON.stringify(snapObj);
-  }
-  { const fl = rawRead(routeKeys(activeRoute.id).flip); if (fl !== RAW_READ_FAILED && fl != null) data.flip = fl; } // a read that fails simply leaves the field out (the recovery export's best-effort mode)
-  // Beta 1.142 (Package B, DA-09): the created-route definitions this file must carry are settled
-  // FIRST, before any route entry is built. When the stored record reads cleanly it is carried as
-  // before (1.118); when it cannot be read at all, the definitions come from the in-memory packs -
-  // each re-validated through normalizePack, the one validator - because a recovery file whose
-  // created route has progress but no definition is rejected WHOLESALE by a fresh device
-  // ("unknown route"), in exactly the storage-failure states this export exists for. A route whose
-  // definition cannot be carried even from memory is excluded from the file entirely (its progress
-  // would make the file unrestorable) and named in recoveryDisclosure for shareRecovery's message.
-  // Beta 1.166: "the stored record" in the paragraph above is now the IndexedDB store, read at boot
-  // into userPackCache (create-packs.js): when that read earned completeness, the cache is the
-  // carried set (a superset of the old record read - it also covers routes whose legacy record
-  // has drained away); when it did not, the fallback below runs per route the cache lacks.
-  recoveryDisclosure = null;
-  let upsCarry = null; const excluded = new Set();
-  if (upStoreComplete) upsCarry = { ...userPackCache };
-  else { upsCarry = {}; const badNames = [];
-    for (const pk of ROUTE_PACKS) { if (SHIPPED_PACK_IDS.has(pk.id)) continue; if (userPackCache[pk.id]) { upsCarry[pk.id] = userPackCache[pk.id]; continue; } const v = normalizePack(pk, {}); if (v.ok) { v.pack.id = pk.id; upsCarry[pk.id] = v.pack; } else { excluded.add(pk.id); badNames.push(pk.name || pk.id); } }
-    if (badNames.length) recoveryDisclosure = badNames;
-  }
-  if (excluded.has(activeRoute.id)) return null; // the open route's own definition cannot be carried - no honest recovery file exists, and shareRecovery's unavailable message is the truthful result
-  const routes = {}; routes[activeRoute.id] = data;
-  for (const pk of ROUTE_PACKS) { if (pk.id === activeRoute.id || excluded.has(pk.id)) continue; const rk = routeKeys(pk.id); const d = {}; for (const f of ROUTE_FIELDS) { const v = rawRead(rk[f]); if (v !== RAW_READ_FAILED && v != null) d[f] = v; } if (d.start === undefined) d.start = null;
-    if (d.start) { const rawSnap = rawRead(rk.snap); if (rawSnap !== RAW_READ_FAILED && rawSnap != null) { const pv = validateSnap(parseJ(rawSnap, null), +d.start, packGeometry(pk)); if (pv) d.snap = BOARD.serialiseSnap(pv, +d.start); } } // Beta 1.142 (Package B, DA-08): a non-active RUNNING route's cancel snapshot rides the recovery file too, validated against its own geometry and normalized exactly as the normal backup carries it (1.97) - pre-1.142 recovery copied ROUTE_FIELDS only, so a run restored from a recovery file lost its exact Cancel. Recovery stays best-effort: a snapshot read that fails simply leaves it out.
-    if (Object.keys(d).length) routes[pk.id] = d; } // Beta 1.97 (audit loop CG-196-01): an untouched pack in a recovery file asserts idle like any complete backup
-  const o = { app: 'snowroute-backup', v: 2, recovery: true, at: new Date().toISOString(), routes };
-  if (upsCarry && Object.keys(upsCarry).length) o.userpacks = upsCarry; // Beta 1.118: created-route definitions ride the recovery backup too. Beta 1.142: from the strict record read, or from validated memory when the record cannot be read (DA-09)
-  { const nt = rawRead(LS_GLOBAL.night); if (nt !== RAW_READ_FAILED) { if (nt != null) o.night = nt; const ne = rawRead(LS_GLOBAL.nightExp); if (ne !== RAW_READ_FAILED && ne != null) o.nightExp = ne; } }
-
-  o.settings = JSON.stringify({ vib: settings.vib, chime: settings.chime, chimeSound: settings.chimeSound }); // Beta 1.166: the Settings toggles ride the recovery file too - from the LIVE settings object (this export never reads the board from storage, and the toggles are no different), serialized in exactly the record shape saveSettings writes, so a restore validates and lands it identically to a normal backup's
-  if (fixLog.length) o.fixlog = JSON.stringify(fixLogEncodeSessions(fixLog)); // Beta 1.189: the raw fix log rides the recovery file too - from the LIVE log (this export never reads storage), in exactly the record shape saveFixLog writes, so a restore validates and lands it identically to a normal backup's. Beta 1.190: that shape is the e3 stored form, so the live sessions are encoded on the way out
-  return o;
-}
+function recoveryObj() { return ENVELOPE.recovery(); } // Beta 1.280: the doorway - the recovery policy is ENVELOPE.recovery (above)
 function buildRecovery() { const o = recoveryObj(); return o ? JSON.stringify(o, null, 1) : null; }
 // Beta 1.96: downloadBackup follows the same one-button rule as shareBackup - a build failure is the recovery fallback, never a dead-end refusal.
 function downloadBackup() { const b = buildBackup(); if (!b) { shareRecovery(true); return; } dl(new Blob([b], { type: 'application/json' }), 'snowroute-backup.json'); noteExported(); } // Beta 1.48 (audit B09): the filename still carried the retired 5W name; the backup format and its internal marker are unchanged
@@ -213,185 +227,220 @@ function canonicalFixLog(raw) { // Beta 1.189: the one validator for a backup's 
   return out;
 }
 let restoreOverlayPacks = null; // Beta 1.118: during restoreBackup, the validated created-route definitions carried by the backup itself - visible to countUnknownNames and the route lookups so a route restored WITH its definition is never reported (or rejected) as unknown
-async function restoreBackup(parsed) { // production doRestore semantics: validate EVERYTHING before writing; snapshot; write + verify each; verified rollback on any failure. Beta 1.166: ASYNC - a backup carrying created-route definitions now writes them to the IndexedDB store (per-route verified puts, phase 1 below) ahead of the localStorage write set, with the store's own strict snapshot + rollback alongside the record one; every refusal and rollback keeps the validate-then-write order this function has always kept
-  if (!parsed || parsed.app !== 'snowroute-backup') { toast('That is not a Snow Route backup', 3200); return; }
-  const FIELD_SHAPES = { done: 'arr', times: 'obj', hist: 'arr', notes: 'obj', via: 'obj', trail: 'arr', cov: 'obj', sides: 'obj', sess: 'arr' };
-  const entries = []; // [targetKey, value]
-  const pushField = (targetKey, field, v, label, nameSet) => {
-    if (typeof v !== 'string') { toast('Backup has a bad value for ' + label + ' - nothing was changed', 3200); return false; }
-    if (field === 'start') { // Beta 1.150 (security-audit fix round, finding restore-start-scalar-unvalidated): the run-start has no FIELD_SHAPES entry, so its check is semantic, not a shape - the storage contract makes it an epoch-ms digit string, and the loader range-bounds every other epoch it accepts (946684800..4102444800 s), so the restore accepts exactly that band in milliseconds. A crafted '1' used to be committed verbatim through this verified write set and coerced by the loader into a phantom run whose Cancel wiped the route
-      if (!/^\d+$/.test(v) || !isFinite(+v) || +v < 946684800000 || +v > 4102444800000) { toast('Backup has a bad value for ' + label + ' - nothing was changed', 3200); return false; }
-    }
-    if (field === 'night' && v !== '0' && v !== '1') { toast('Backup has a bad value for ' + label + ' - nothing was changed', 3200); return false; } // Beta 1.150: night rode the same unchecked path - its writer (setThemeOverride) stores only the enum '0'/'1'. Its pair nightExp was already validated (1.92 F01) and both keys already land in this one verified write set with rollback, so the pair stays atomic; only the enum was missing
-    const shape = FIELD_SHAPES[field];
-    if (shape) {
-      let pv; try { pv = JSON.parse(v); } catch (e) { toast('Backup value for ' + label + ' is not valid JSON - nothing was changed', 3200); return false; }
-      if (field === 'done' && pv && typeof pv === 'object' && !Array.isArray(pv)) {
-        v = JSON.stringify(Object.keys(pv).filter(nm => pv[nm] && (nameSet || STREETSET).has(nm))); // legacy done-set was a street->time map; migrate like the loader does. Beta 1.117 (F6): filtered against the TARGET route's names (nameSet), not the open route's
-      } else if (shape === 'arr' ? !Array.isArray(pv) : !(pv && typeof pv === 'object' && !Array.isArray(pv))) { toast('Backup value for ' + label + ' has the wrong shape - nothing was changed', 3200); return false; }
-      if (field === 'sess' && Array.isArray(pv) && pv.length > TRAIL_MAX) { // Beta 1.152 (NV round, NV4): the writers' caps, enforced inside restore validation (validate-then-write: the STORED value is the capped one, so no backup can hand the load an oversized array). Only crafted backups are affected - a genuine backup never exceeds the caps its writers enforce. Beta 1.167 (B1): history is NO LONGER capped here - the writers (appendHistory at finish/save) and the loader dropped the 10-clean cap together, so a backup's history is stored whole; the session markers keep their newest entries, as their writers keep them. Markers are first given the loader's own sanitize (finite, de-duplicated, sorted) so the stored value is exactly what the load would have made of it, capped. Beta 1.193 (trail redesign): the TRAIL leaves this block - its bound is no longer a point count but the 60-minute window, which needs the pack's own start entry this per-field closure cannot see; the window is applied to the built entries in the post-pass below, with the same validate-then-write discipline (the stored value is the windowed one).
-        const cs = [...new Set(pv.map(x => Number(x)).filter(x => Number.isFinite(x)))].sort((a, b) => a - b); v = JSON.stringify(cs.slice(Math.max(0, cs.length - TRAIL_MAX)));
+// Beta 1.280 (architecture programme #8): the restore has TWO halves with one owner
+// each. Through 1.279 restoreBackup was one flow - validation, legacy adaptation,
+// the entries list with its repair passes, the IndexedDB phase, two rollback
+// implementations, fencing and UI outcomes in a single function. The PLANNER
+// (plan) validates everything and produces the restore plan: the verified entries
+// list after its repair passes, the created-route definitions and their strict
+// store priors, the unknown-name count and the rollback scope - writing NOTHING.
+// The COORDINATOR (execute) runs the transaction on the plan: fence, snapshot,
+// the IndexedDB phase, the verified write loop, both rollbacks, the commit and
+// the report. restoreBackup keeps its name as the doorway (plan, then execute
+// when a plan came back); a refusal is reported by the planner at its own site,
+// in its own words, exactly as the one-flow restore reported it - the texts are
+// validation outcomes. The transaction discipline is unchanged (validate ->
+// snapshot -> write + verify -> verified rollback -> honest failure reporting).
+// One timing property of the one-flow restore is contract, preserved exactly:
+// it suspended ONLY at the created-route store reads (the priors snapshot in
+// the planner, the store phase in the coordinator), so a backup carrying no
+// created routes planned and executed SYNCHRONOUSLY - outcome toast included -
+// inside the caller's own tick, and the restore drives read that toast
+// synchronously. The planner therefore returns the plan itself when no store
+// read is needed and a promise for it only when one is, and the doorway
+// dispatches without an intervening await.
+const RESTORE = {
+  /** @param {*} parsed @returns {object|Promise<object|null>|null} */ plan(parsed) {
+    if (!parsed || parsed.app !== 'snowroute-backup') { toast('That is not a Snow Route backup', 3200); return null; }
+    const FIELD_SHAPES = { done: 'arr', times: 'obj', hist: 'arr', notes: 'obj', via: 'obj', trail: 'arr', cov: 'obj', sides: 'obj', sess: 'arr' };
+    const entries = []; // [targetKey, value]
+    const pushField = (targetKey, field, v, label, nameSet) => {
+      if (typeof v !== 'string') { toast('Backup has a bad value for ' + label + ' - nothing was changed', 3200); return false; }
+      if (field === 'start') { // Beta 1.150 (security-audit fix round, finding restore-start-scalar-unvalidated): the run-start has no FIELD_SHAPES entry, so its check is semantic, not a shape - the storage contract makes it an epoch-ms digit string, and the loader range-bounds every other epoch it accepts (946684800..4102444800 s), so the restore accepts exactly that band in milliseconds. A crafted '1' used to be committed verbatim through this verified write set and coerced by the loader into a phantom run whose Cancel wiped the route
+        if (!/^\d+$/.test(v) || !isFinite(+v) || +v < 946684800000 || +v > 4102444800000) { toast('Backup has a bad value for ' + label + ' - nothing was changed', 3200); return false; }
       }
-    }
-    entries.push([targetKey, v]); return true;
-  };
-  let snapDropped = false; // Beta 1.96 (SR-195-02): set when a backup CARRIES a start snapshot that cannot be restored with its run - the result message must say so
-  let deadSkipped = []; // Beta 1.271 (Codex P2, PR #167): the names of tombstoned shipped routes whose backup data this restore skips - the deletion on THIS phone is the newer act and wins over the older backup; the skip is reported in the result message, never silent, and never aborts the restore of everything else
-  let restoredPacks = null; // Beta 1.118: the created-route definitions this backup carries, validated before anything is written
-  let allPacks = ROUTE_PACKS; // the routes this restore knows about: the runtime list, plus restoredPacks once validated
-  if (parsed.v === 2) {
-    if (!parsed.routes || typeof parsed.routes !== 'object' || Array.isArray(parsed.routes)) { toast('That is not a Snow Route backup', 3200); return; }
-    if (parsed.userpacks !== undefined) { // Beta 1.118: validate the created-route definitions FIRST - they register before any route state is applied, fail-closed like everything else in this function. An id that collides with a SHIPPED pack is rejected outright: created ids are generated slugs that never collide, so a collision means the file is corrupt or tampered with.
-      if (!parsed.userpacks || typeof parsed.userpacks !== 'object' || Array.isArray(parsed.userpacks)) { toast('Backup has a bad created-routes record - nothing was changed', 3200); return; }
-      restoredPacks = {};
-      for (const rid of Object.keys(parsed.userpacks)) {
-        if (!/^[a-z0-9][a-z0-9-]{0,40}$/.test(rid) || SHIPPED_PACK_IDS.has(rid)) { toast('Backup has a bad created route id (' + rid + ') - nothing was changed', 3200); return; }
-        const v = normalizePack(parsed.userpacks[rid], {});
-        if (!v.ok) { toast('Backup has a bad created route (' + rid + ': ' + v.error + ') - nothing was changed', 3200); return; }
-        v.pack.id = rid; restoredPacks[rid] = v.pack;
+      if (field === 'night' && v !== '0' && v !== '1') { toast('Backup has a bad value for ' + label + ' - nothing was changed', 3200); return false; } // Beta 1.150: night rode the same unchecked path - its writer (setThemeOverride) stores only the enum '0'/'1'. Its pair nightExp was already validated (1.92 F01) and both keys already land in this one verified write set with rollback, so the pair stays atomic; only the enum was missing
+      const shape = FIELD_SHAPES[field];
+      if (shape) {
+        let pv; try { pv = JSON.parse(v); } catch (e) { toast('Backup value for ' + label + ' is not valid JSON - nothing was changed', 3200); return false; }
+        if (field === 'done' && pv && typeof pv === 'object' && !Array.isArray(pv)) {
+          v = JSON.stringify(Object.keys(pv).filter(nm => pv[nm] && (nameSet || STREETSET).has(nm))); // legacy done-set was a street->time map; migrate like the loader does. Beta 1.117 (F6): filtered against the TARGET route's names (nameSet), not the open route's
+        } else if (shape === 'arr' ? !Array.isArray(pv) : !(pv && typeof pv === 'object' && !Array.isArray(pv))) { toast('Backup value for ' + label + ' has the wrong shape - nothing was changed', 3200); return false; }
+        if (field === 'sess' && Array.isArray(pv) && pv.length > TRAIL_MAX) { // Beta 1.152 (NV round, NV4): the writers' caps, enforced inside restore validation (validate-then-write: the STORED value is the capped one, so no backup can hand the load an oversized array). Only crafted backups are affected - a genuine backup never exceeds the caps its writers enforce. Beta 1.167 (B1): history is NO LONGER capped here - the writers (appendHistory at finish/save) and the loader dropped the 10-clean cap together, so a backup's history is stored whole; the session markers keep their newest entries, as their writers keep them. Markers are first given the loader's own sanitize (finite, de-duplicated, sorted) so the stored value is exactly what the load would have made of it, capped. Beta 1.193 (trail redesign): the TRAIL leaves this block - its bound is no longer a point count but the 60-minute window, which needs the pack's own start entry this per-field closure cannot see; the window is applied to the built entries in the post-pass below, with the same validate-then-write discipline (the stored value is the windowed one).
+          const cs = [...new Set(pv.map(x => Number(x)).filter(x => Number.isFinite(x)))].sort((a, b) => a - b); v = JSON.stringify(cs.slice(Math.max(0, cs.length - TRAIL_MAX)));
+        }
       }
-      allPacks = ROUTE_PACKS.filter(p => !restoredPacks[p.id]).concat(Object.values(restoredPacks)); // Beta 1.142 (Package B, DA-01): ONE entry per route id, the INCOMING definition in it - everything below that iterates allPacks (session clearing, derived sides, the rollback scope) must see the definition this backup installs, never a duplicate of the one it replaces
-    }
-    for (const id of Object.keys(parsed.routes)) {
-      if (SHIPPED_PACK_IDS.has(id) && !ROUTE_PACKS.some(p => p.id === id)) { deadSkipped.push(id); continue; } // Beta 1.271: a shipped route deleted on this phone (its tombstone removed it from ROUTE_PACKS) - its backup data is skipped and reported below; pre-fix this fell into the unknown-route abort and made every earlier multi-route backup unrestorable
-      const pack = (restoredPacks ? restoredPacks[id] : null) || ROUTE_PACKS.find(p => p.id === id); if (!pack) { toast('Backup mentions an unknown route (' + id + ') - nothing was changed', 3200); return; } // Beta 1.118: a route whose definition rides this same backup is known. Beta 1.142 (Package B, DA-01): the incoming definition is judged FIRST - pre-1.142 the existing pack won this lookup, so a replaced route's name filter and snapshot validation ran against its OLD geometry while the new definition was installed underneath them
-      const data = parsed.routes[id]; if (!data || typeof data !== 'object' || Array.isArray(data)) { toast('That is not a Snow Route backup', 3200); return; }
-      const rk = routeKeys(id);
-      const pg = packGeometry(pack); // Beta 1.117 (F6): this route's own geometry, for its name filter and snapshot validation below
-      for (const f of ROUTE_FIELDS) { if (data[f] === undefined) continue; if (f === 'start' && data[f] === null) continue; if (!pushField(rk[f], f, data[f], pack.name + ' ' + f, pg.set)) return; }
-      if (data.start === null) { entries.push([rk.start, null]); entries.push([rk.snap, null]); if (data.snap !== undefined && data.snap !== null) snapDropped = true; } // Beta 1.97 (audit loop CG-196-01): an explicit idle assertion (start: null, a current-format complete backup) clears the destination's run state INSIDE the verified write set, so a failed restore rolls the clearing back too. An OMITTED start (older backups) keeps the missing-key rule: the destination's run is left alone.
-      else if (data.snap !== undefined) { // Beta 1.96 (SR-195-02): a carried start snapshot (recovery backups) is restored WITH its run. Beta 1.97 verify cycle 1 (CG-196-01): ELSE - an explicit idle assertion already consumed this route's lifecycle state above; a snap string riding an idle assertion is dropped (and reported), never validated against the deleted start and written back - it earns a write only by passing validateSnap against the start this same backup carries for the route, and it is written in its normalized form through the same verified entries as every other field, so a failed restore rolls it back too. A snapshot that fails validation, or one whose run's start is not in the backup, is dropped and reported in the result message - never applied, never silently kept.
-        const startEnt = entries.find(e => e[0] === rk.start);
-        let restoredSnap = null;
-        if (startEnt && typeof data.snap === 'string') { try { const valid = validateSnap(JSON.parse(data.snap), +startEnt[1], pg); if (valid) restoredSnap = BOARD.serialiseSnap(valid, +startEnt[1]); } catch (e) { /* an unparseable snapshot is a dropped snapshot */ } } // Beta 1.117 (F6): validated against THIS route's geometry (pg), not the open route's
-        if (restoredSnap) entries.push([rk.snap, restoredSnap]); else snapDropped = true;
+      entries.push([targetKey, v]); return true;
+    };
+    let snapDropped = false; // Beta 1.96 (SR-195-02): set when a backup CARRIES a start snapshot that cannot be restored with its run - the result message must say so
+    let deadSkipped = []; // Beta 1.271 (Codex P2, PR #167): the names of tombstoned shipped routes whose backup data this restore skips - the deletion on THIS phone is the newer act and wins over the older backup; the skip is reported in the result message, never silent, and never aborts the restore of everything else
+    let restoredPacks = null; // Beta 1.118: the created-route definitions this backup carries, validated before anything is written
+    let allPacks = ROUTE_PACKS; // the routes this restore knows about: the runtime list, plus restoredPacks once validated
+    if (parsed.v === 2) {
+      if (!parsed.routes || typeof parsed.routes !== 'object' || Array.isArray(parsed.routes)) { toast('That is not a Snow Route backup', 3200); return null; }
+      if (parsed.userpacks !== undefined) { // Beta 1.118: validate the created-route definitions FIRST - they register before any route state is applied, fail-closed like everything else in this function. An id that collides with a SHIPPED pack is rejected outright: created ids are generated slugs that never collide, so a collision means the file is corrupt or tampered with.
+        if (!parsed.userpacks || typeof parsed.userpacks !== 'object' || Array.isArray(parsed.userpacks)) { toast('Backup has a bad created-routes record - nothing was changed', 3200); return null; }
+        restoredPacks = {};
+        for (const rid of Object.keys(parsed.userpacks)) {
+          if (!/^[a-z0-9][a-z0-9-]{0,40}$/.test(rid) || SHIPPED_PACK_IDS.has(rid)) { toast('Backup has a bad created route id (' + rid + ') - nothing was changed', 3200); return null; }
+          const v = normalizePack(parsed.userpacks[rid], {});
+          if (!v.ok) { toast('Backup has a bad created route (' + rid + ': ' + v.error + ') - nothing was changed', 3200); return null; }
+          v.pack.id = rid; restoredPacks[rid] = v.pack;
+        }
+        allPacks = ROUTE_PACKS.filter(p => !restoredPacks[p.id]).concat(Object.values(restoredPacks)); // Beta 1.142 (Package B, DA-01): ONE entry per route id, the INCOMING definition in it - everything below that iterates allPacks (session clearing, derived sides, the rollback scope) must see the definition this backup installs, never a duplicate of the one it replaces
       }
-    }
-    if (parsed.night !== undefined && !pushField(LS_GLOBAL.night, 'night', parsed.night, 'night')) return;
+      for (const id of Object.keys(parsed.routes)) {
+        if (SHIPPED_PACK_IDS.has(id) && !ROUTE_PACKS.some(p => p.id === id)) { deadSkipped.push(id); continue; } // Beta 1.271: a shipped route deleted on this phone (its tombstone removed it from ROUTE_PACKS) - its backup data is skipped and reported below; pre-fix this fell into the unknown-route abort and made every earlier multi-route backup unrestorable
+        const pack = (restoredPacks ? restoredPacks[id] : null) || ROUTE_PACKS.find(p => p.id === id); if (!pack) { toast('Backup mentions an unknown route (' + id + ') - nothing was changed', 3200); return null; } // Beta 1.118: a route whose definition rides this same backup is known. Beta 1.142 (Package B, DA-01): the incoming definition is judged FIRST - pre-1.142 the existing pack won this lookup, so a replaced route's name filter and snapshot validation ran against its OLD geometry while the new definition was installed underneath them
+        const data = parsed.routes[id]; if (!data || typeof data !== 'object' || Array.isArray(data)) { toast('That is not a Snow Route backup', 3200); return null; }
+        const rk = routeKeys(id);
+        const pg = packGeometry(pack); // Beta 1.117 (F6): this route's own geometry, for its name filter and snapshot validation below
+        for (const f of ROUTE_FIELDS) { if (data[f] === undefined) continue; if (f === 'start' && data[f] === null) continue; if (!pushField(rk[f], f, data[f], pack.name + ' ' + f, pg.set)) return null; }
+        if (data.start === null) { entries.push([rk.start, null]); entries.push([rk.snap, null]); if (data.snap !== undefined && data.snap !== null) snapDropped = true; } // Beta 1.97 (audit loop CG-196-01): an explicit idle assertion (start: null, a current-format complete backup) clears the destination's run state INSIDE the verified write set, so a failed restore rolls the clearing back too. An OMITTED start (older backups) keeps the missing-key rule: the destination's run is left alone.
+        else if (data.snap !== undefined) { // Beta 1.96 (SR-195-02): a carried start snapshot (recovery backups) is restored WITH its run. Beta 1.97 verify cycle 1 (CG-196-01): ELSE - an explicit idle assertion already consumed this route's lifecycle state above; a snap string riding an idle assertion is dropped (and reported), never validated against the deleted start and written back - it earns a write only by passing validateSnap against the start this same backup carries for the route, and it is written in its normalized form through the same verified entries as every other field, so a failed restore rolls it back too. A snapshot that fails validation, or one whose run's start is not in the backup, is dropped and reported in the result message - never applied, never silently kept.
+          const startEnt = entries.find(e => e[0] === rk.start);
+          let restoredSnap = null;
+          if (startEnt && typeof data.snap === 'string') { try { const valid = validateSnap(JSON.parse(data.snap), +startEnt[1], pg); if (valid) restoredSnap = BOARD.serialiseSnap(valid, +startEnt[1]); } catch (e) { /* an unparseable snapshot is a dropped snapshot */ } } // Beta 1.117 (F6): validated against THIS route's geometry (pg), not the open route's
+          if (restoredSnap) entries.push([rk.snap, restoredSnap]); else snapDropped = true;
+        }
+      }
+      if (parsed.night !== undefined && !pushField(LS_GLOBAL.night, 'night', parsed.night, 'night')) return null;
 
-    if (parsed.nightExp !== undefined) { const ne = parsed.nightExp; if (typeof ne !== 'string' || !isFinite(+ne) || +ne <= 0) { toast('Backup has a bad value for night override expiry - nothing was changed', 3200); return; } if (!pushField(LS_GLOBAL.nightExp, 'nightExp', ne, 'night override expiry')) return; } // Beta 1.92 (audit F01): the expiry must be a finite positive epoch string - any other text used to sail through and poison the next boot
-    if (parsed.settings !== undefined) { const cs = canonicalSettings(parsed.settings); if (cs === null) { toast('Backup has a bad settings value - nothing was changed', 3200); return; } entries.push([SETTINGS_KEY, cs]); } // Beta 1.166: the Settings toggles restore inside this same verified write set (SETTINGS_KEY joins the rollback scope unconditionally below, like the night pair, so a failed restore puts the device's toggles back too). A backup WITHOUT the field - every backup written before 1.166 - leaves the device's settings untouched: the missing-key rule, as always
-    if (parsed.fixlog !== undefined) { const cf = canonicalFixLog(parsed.fixlog); if (cf === null) { toast('Backup has a bad fix log value - nothing was changed', 3200); return; } entries.push([LS.fixlog, cf]); } // Beta 1.189: the raw fix log restores inside this same verified write set, validated and capped by canonicalFixLog (its key joins the rollback scope unconditionally below, like the settings record, so a failed restore puts the device's own log back too). A backup WITHOUT the field - every backup written before 1.189 - leaves the device's log untouched: the missing-key rule, as always. The field REPLACES the device log whole (never merged), so no C-01-style split of a resident record by an incoming boundary is possible
-  } else if (parsed.v === 1) { // Beta 1.76: a v1 backup is the pre-routes format - its data map (keyed by the legacy storage names) belongs to Route 5W and lands in the 5W slot
-    if (!parsed.data || typeof parsed.data !== 'object' || Array.isArray(parsed.data)) { toast('That is not a Snow Route backup', 3200); return; }
-    const rk5 = routeKeys('5w');
-    const pack5 = ROUTE_PACKS.find(p => p.id === '5w'); const pg5 = pack5 ? packGeometry(pack5) : null; // Beta 1.117 (F6): a v1 backup's names filter against the 5W pack's own set
-    const dead5 = SHIPPED_PACK_IDS.has('5w') && !pack5; if (dead5) deadSkipped.push('5w'); // Beta 1.271 (Codex P2, PR #167, third review): a v1 backup's route data belongs to 5W alone - when 5W is tombstoned on this phone the fields are skipped and reported exactly as the v2 skip above; pre-fix they were written into the deleted slot, outside the rollback scope (SCOPE is built from allPacks, which no longer holds 5W), so a later write failure could not put them back while reporting that nothing was changed. The global night write below is not route data and still runs.
-    if (!dead5) for (const f of ROUTE_FIELDS) { const lv = parsed.data[LEGACY_KEYS[f]]; if (lv === undefined) continue; if (!pushField(rk5[f], f, lv, 'Route 5W ' + f, pg5 ? pg5.set : null)) return; }
-    if (parsed.data['snowroute.v2.night'] !== undefined && !pushField(LS_GLOBAL.night, 'night', parsed.data['snowroute.v2.night'], 'night')) return;
+      if (parsed.nightExp !== undefined) { const ne = parsed.nightExp; if (typeof ne !== 'string' || !isFinite(+ne) || +ne <= 0) { toast('Backup has a bad value for night override expiry - nothing was changed', 3200); return null; } if (!pushField(LS_GLOBAL.nightExp, 'nightExp', ne, 'night override expiry')) return null; } // Beta 1.92 (audit F01): the expiry must be a finite positive epoch string - any other text used to sail through and poison the next boot
+      if (parsed.settings !== undefined) { const cs = canonicalSettings(parsed.settings); if (cs === null) { toast('Backup has a bad settings value - nothing was changed', 3200); return null; } entries.push([SETTINGS_KEY, cs]); } // Beta 1.166: the Settings toggles restore inside this same verified write set (SETTINGS_KEY joins the rollback scope unconditionally below, like the night pair, so a failed restore puts the device's toggles back too). A backup WITHOUT the field - every backup written before 1.166 - leaves the device's settings untouched: the missing-key rule, as always
+      if (parsed.fixlog !== undefined) { const cf = canonicalFixLog(parsed.fixlog); if (cf === null) { toast('Backup has a bad fix log value - nothing was changed', 3200); return null; } entries.push([LS.fixlog, cf]); } // Beta 1.189: the raw fix log restores inside this same verified write set, validated and capped by canonicalFixLog (its key joins the rollback scope unconditionally below, like the settings record, so a failed restore puts the device's own log back too). A backup WITHOUT the field - every backup written before 1.189 - leaves the device's log untouched: the missing-key rule, as always. The field REPLACES the device log whole (never merged), so no C-01-style split of a resident record by an incoming boundary is possible
+    } else if (parsed.v === 1) { // Beta 1.76: a v1 backup is the pre-routes format - its data map (keyed by the legacy storage names) belongs to Route 5W and lands in the 5W slot
+      if (!parsed.data || typeof parsed.data !== 'object' || Array.isArray(parsed.data)) { toast('That is not a Snow Route backup', 3200); return null; }
+      const rk5 = routeKeys('5w');
+      const pack5 = ROUTE_PACKS.find(p => p.id === '5w'); const pg5 = pack5 ? packGeometry(pack5) : null; // Beta 1.117 (F6): a v1 backup's names filter against the 5W pack's own set
+      const dead5 = SHIPPED_PACK_IDS.has('5w') && !pack5; if (dead5) deadSkipped.push('5w'); // Beta 1.271 (Codex P2, PR #167, third review): a v1 backup's route data belongs to 5W alone - when 5W is tombstoned on this phone the fields are skipped and reported exactly as the v2 skip above; pre-fix they were written into the deleted slot, outside the rollback scope (SCOPE is built from allPacks, which no longer holds 5W), so a later write failure could not put them back while reporting that nothing was changed. The global night write below is not route data and still runs.
+      if (!dead5) for (const f of ROUTE_FIELDS) { const lv = parsed.data[LEGACY_KEYS[f]]; if (lv === undefined) continue; if (!pushField(rk5[f], f, lv, 'Route 5W ' + f, pg5 ? pg5.set : null)) return null; }
+      if (parsed.data['snowroute.v2.night'] !== undefined && !pushField(LS_GLOBAL.night, 'night', parsed.data['snowroute.v2.night'], 'night')) return null;
 
-  } else { toast('Unsupported backup version (' + String(parsed.v) + ') - nothing was changed', 3200); return; }
-  let packPriors = null; // Beta 1.166: the store values a geometry-carrying restore is about to overwrite, snapshotted STRICTLY before anything is written - the store phase's rollback material, and the DA-05 strict gate re-seated: a route whose current definition cannot be read refuses the restore here, before a single write, instead of being silently overwritten (1.142's merge-base refusal, carried to the definitions' new home)
-  if (restoredPacks) {
-    packPriors = {};
-    for (const rid of Object.keys(restoredPacks)) { const cur = await upGet(rid); if (cur === UP_READ_FAILED) { toast('Restore stopped - your created-routes store could not be read, so nothing was changed', 3600); return; } packPriors[rid] = cur; }
-    const legacy = readUserPacks(); // a not-yet-drained legacy record still SHADOWS the store at boot for the ids it holds (create-packs.js: the legacy copy wins per id while it stands), so a restored id must leave the legacy record too, inside this same verified write set - and a legacy record that cannot be read refuses the restore for the same DA-05 reason its merge base once did
-    if (legacy === null) { toast('Restore stopped - your created-routes record could not be read, so nothing was changed', 3600); return; }
-    if (Object.keys(legacy).some(rid => rid in restoredPacks)) { const shadow = { ...legacy }; for (const rid of Object.keys(restoredPacks)) delete shadow[rid]; entries.push([USERPACKS_KEY, Object.keys(shadow).length ? JSON.stringify(shadow) : null]); }
-  } // Beta 1.166: the definitions themselves land in the IndexedDB store as per-route verified writes (phase 1 of the write stage below, ahead of the localStorage write set). A restore adds/updates routes - it does not delete ones the backup predates: the store keeps every id this backup does not carry, and packPriors covers exactly the ids it overwrites. The reload that ends every restore re-registers the definitions at boot before their state is read
-  // Beta 1.73 (audit C06, Andrew's call): a backup that replaces a route's TRAIL but carries no
-  // session markers of its own must not inherit the CURRENT trail's markers - they describe the
-  // trail being replaced and would split the restored trail at wrong places. Clear them as part
-  // of this restore: the entry is written and verified like every other, and the snapshot +
-  // rollback below cover the markers too. Applies per route (today: the 5W slot in both formats).
-  for (const p of allPacks) { const rk = routeKeys(p.id); if (entries.some(e => e[0] === rk.trail) && !entries.some(e => e[0] === rk.sess)) entries.push([rk.sess, '[]']); }
-  // Beta 1.186 (storage fix round, C-01): a backup carrying a route's session markers but NOT
-  // its trail brings markers for a trail this restore is not bringing - the shape is genuine,
-  // not just crafted: the exporter carries each field only when its storage key exists, and the
-  // markers are born at Start while the trail key is born at the first accepted fix, so a clean
-  // that was started but never recorded a fix exports markers with no trail. Those markers must
-  // not land: laid over the resident trail they would split it at a boundary that never happened
-  // on it (trailSegments' consumers: drawTrail, buildGpx). But the resident markers are NOT
-  // cleared either - they describe the trail that STAYS, and what a backup does not bring, a
-  // restore does not touch. (C06 above is the true mirror: there the trail IS replaced.)
-  for (const p of allPacks) { const rk = routeKeys(p.id); const si = entries.findIndex(e => e[0] === rk.sess); if (si >= 0 && !entries.some(e => e[0] === rk.trail)) entries.splice(si, 1); }
-  // Beta 1.193 (trail redesign): a restored trail is WINDOWED to the pack's own live run
-  // before it is written (the NV4 discipline: the stored value is the bounded one). The
-  // window is trailWindow's rule applied to the pack's own start entry - a mid-run backup
-  // lands exactly the run's last 60 minutes of points, sanitized as the loader sanitizes,
-  // so no pre-1.191 trail (every clean, up to the old point cap) can resurrect points the
-  // window forbids. A pack carrying a trail but NO live start brings finished runs' points:
-  // under the window they have no consumer, so the stored trail is empty. A pack carrying
-  // no trail at all is untouched here, as ever - what a backup does not bring, a restore
-  // does not touch, and the load window governs the resident trail at the next boot.
-  // When the window empties a pack's trail and the pack has no live run, the pack's
-  // session markers leave the write set with it - the pair retires together (the C-01
-  // rule: markers never outlive their trail), rather than landing as orphans over an
-  // empty trail. Only a NON-EMPTY markers entry is spliced: an entry that already
-  // reads empty is either a genuine empty field or C06's synthetic clear (written
-  // just above when a trail arrives without markers), and writing it is precisely
-  // what clears the resident markers - splicing it would resurrect them by
-  // omission (drive145 N13 caught exactly that in this round's first gate).
-  for (const p of allPacks) { const rk = routeKeys(p.id); const ti = entries.findIndex(e => e[0] === rk.trail); if (ti < 0) continue; const se = entries.find(e => e[0] === rk.start); const startMs = se && /^\d+$/.test(se[1]) ? +se[1] : 0; let pts = parseJ(entries[ti][1], []); pts = Array.isArray(pts) ? pts.filter(q => Array.isArray(q) && q.length === 3 && Number.isFinite(q[0]) && Number.isFinite(q[1]) && Number.isFinite(q[2]) && q[2] >= 946684800 && q[2] <= 4102444800 && Math.abs(q[0]) <= 90 && Math.abs(q[1]) <= 180) : []; const windowed = trailWindow(pts, startMs); entries[ti][1] = JSON.stringify(windowed); if (!startMs && !windowed.length) { const si2 = entries.findIndex(e => e[0] === rk.sess); if (si2 >= 0) { const sv = parseJ(entries[si2][1], []); if (Array.isArray(sv) && sv.length) entries.splice(si2, 1); } } }
-  // Beta 1.92 (deep audit F06, Andrew's pick (a)): a backup carrying a route's completion
-  // list but NO side-marks record (the old v1 shape) used to restore into silence - the
-  // loader trusts the side-marks and rebuilt the list from the phone's existing ones,
-  // erasing the restore while reporting success. Derive the side-marks from the list
-  // instead, by the loader's own rule for streets with no sides record: a completed
-  // street is all-sides-done, stamped with its completion time. Scoped to backups that
-  // lack sides entirely; a backup WITH sides restores exactly as written.
-  for (const p of allPacks) {
-    const rk = routeKeys(p.id);
-    const doneEnt = entries.find(e => e[0] === rk.done);
-    if (!doneEnt || entries.some(e => e[0] === rk.sides)) continue;
-    try {
-      const names = JSON.parse(doneEnt[1]);
-      if (!Array.isArray(names)) continue;
-      const timesEnt = entries.find(e => e[0] === rk.times);
-      const times = timesEnt ? (JSON.parse(timesEnt[1]) || {}) : {};
-      const P = {}, T = {};
-      const pg = packGeometry(p); // Beta 1.117 (F6): derive through the TARGET route's own geometry - pre-1.117 this read the ACTIVE route's STREETSET/STRETCH, so a done-only entry for another route was derived against the wrong streets and its names silently dropped
-      for (const n of names) { if (typeof n !== 'string' || !pg.set.has(n) || !pg.stretch[n]) continue; P[n] = pg.stretch[n].parts.map(() => 3); T[n] = pg.stretch[n].parts.map(() => [times[n] || null, times[n] || null]); }
-      entries.push([rk.sides, JSON.stringify({ p: P, t: T })]); // Beta 1.93 (follow-up audit R03): ALWAYS write the derived authority when the backup carries done-but-no-sides - an explicitly EMPTY list ('[]') is an intentional empty state, and {} reads back as nothing done; skipping the write used to leave the phone's old sides in charge
-    } catch (e) { /* a list that cannot be parsed was already rejected during validation - never invent sides from rubble */ }
-  }
-  for (const rid of (parsed.v === 2 ? Object.keys(parsed.routes) : ['5w'])) { if (deadSkipped.includes(rid)) continue; entries.push([routeKeys(rid).finclean, null]); } // Beta 1.271: a tombstoned route's slot takes no writes from a restore at all - its finclean discharge is skipped with its fields (the deleted slot is outside the rollback scope, so no write into it may ride this verified set) // Beta 1.150 (security-audit fix round, needs-validation record restore-finclean-discharge-outside-transaction - settled CONFIRMED by fault injection, drive176): the finish-cleanup discharge joins the VERIFIED write set as a null (verified-delete) entry, and the rollback scope below gains the finclean keys. Pre-1.150 a bare lsDel after the commit loop discarded its result: a refused delete left the obligation armed over just-restored data, the restore reported success, and the next load's cleanup wiped the restored notes/coverage. A failed discharge now fails the restore with a rollback, like every other write here
-  restoreOverlayPacks = restoredPacks; const droppedNames = countUnknownNames(parsed); restoreOverlayPacks = null; // Beta 1.95 (SR-194-08): counted from the RAW backup before any normalization - see countUnknownNames. Beta 1.118: judged with this backup's own created-route definitions overlaid
-  if (!entries.length) { if (deadSkipped.length) toast(deadSkipped.join(', ') + ' was deleted on this phone, so its saved data was not restored', 4600); else toast('Nothing in that backup to restore', 3000); return; } // Beta 1.271: a backup whose only route data belongs to a tombstoned route restores nothing - the report names the skip, never a bare 'nothing to restore'
-  const SCOPE = []; for (const p of allPacks) SCOPE.push(...slotKeys(p.id)); if (restoredPacks) SCOPE.push(USERPACKS_KEY); SCOPE.push(LS_GLOBAL.night, LS_GLOBAL.nightExp, SETTINGS_KEY); for (const p of allPacks) SCOPE.push(routeKeys(p.id).finclean); // Beta 1.166: SETTINGS_KEY joins the scope unconditionally (SETTINGS_DEF's home record) - a restore that writes the toggles must be able to put the device's own back, and one that does not write them snapshots-and-restores them to themselves, a no-op // Beta 1.150: the finclean keys join the rollback scope - a restore that discharges an obligation must be able to put the armed record back when a later write fails // Beta 1.136: the per-route keys come from slotKeys (app1) - the same ROUTE_FIELDS + snap list, enumerated in one place // Beta 1.118: the created-routes record and restored routes' slots join the rollback scope // Beta 1.96 (SR-195-02): the snapshot key joins the rollback scope - a restore that writes a carried snapshot must be able to put the previous one back
-  SCOPE.push(LS.fixlog); // Beta 1.189: the fix log's key joins the rollback scope unconditionally, like the settings record - a restore that writes it must be able to put the device's own back, and one that does not write it snapshots-and-restores it to itself, a no-op
-  PERSIST.fenceUp(); // Beta 1.186 (storage fix round, P1): the write fence rises BEFORE the snapshot, not on the success path after the commit (its through-1.185 position, beside the markClean calls below). That left the write stage's one yield - phase 1's awaited store puts - unfenced: a flush landing there wrote live records the snapshot had already frozen, and a later failure's rollback rewrote every scoped key from that snapshot, silently discarding the live write under a "nothing was changed" message. Fenced from here, PERSIST.flush refuses and saveAll returns its fenced outcome for the whole write stage, so storage cannot diverge from the snapshot before the commit; the restore's own writes are unfenced by construction (txSet/txDel and upPut write directly, never through the fenced doors). Every failure exit below ends through restoreFenceDown, so a failed restore - which leaves the page running - hands the live state back its flush. Beta 1.275 (architecture #3): the fence itself is PERSIST's - raised and lowered through its doorway, never a foreign write.
-  const restoreFenceDown = () => { PERSIST.fenceDown(); markDirty('trail'); markDirty('sess'); markDirty('aux'); markDirty('primary'); markDirty('fixlog'); }; // Beta 1.189: the fix log's flag re-arms through this same doorway - fixes logged while the fence was up live only in memory, exactly like the trail's. Beta 1.186 (P1): clear the fence and re-arm the trail/session/coverage dirty flags - GPS work that arrived while the fence was up lives only in memory (the rollback restored storage, never memory), and the next flush (heartbeat or fix) must carry it instead of waiting for an incidental save. Both rollback exits (phase 1 and the entries loop) end through this one doorway, so the two failure paths treat concurrent live work identically - through 1.185 the phase-1 exit preserved in-window writes the entries exit discarded. Gate round (Codex finding): the PRIMARY flag re-arms here too - a street mark or note edit made during the write stage was refused by the fence (saveAll returns its fenced outcome and, by the 1.147 design that binds the success path, arms nothing), so without the re-arm it lived only in memory and a reload lost it even though the restore had failed and the page kept running. On a failure exit the rollback has put storage back to the pre-restore board, so the armed heartbeat retry writes the live board, in-window edit included; on success this doorway never runs (the fence stays up into the reload).
-  const snap = {}; let snapOk = true;
-  for (const k of SCOPE) { const v = rawRead(k); if (v === RAW_READ_FAILED) snapOk = false; else snap[k] = v; }
-  if (!snapOk) { restoreFenceDown(); toast('Restore stopped - your current data could not be read for safekeeping, so nothing was changed', 3600); return; }
-  const rollback = () => { // Beta 1.102 (Phase 4, C3): the restore-all rollback on the verified primitives - every scoped key put back (or removed) and read back
-    let okBack = true;
-    for (const k of SCOPE) { const r = snap[k] === null ? txDel(k) : txSet(k, snap[k]); if (!r.ok) okBack = false; }
-    return okBack;
-  };
-  const rollbackPacks = async () => { // Beta 1.166: the store phase's rollback - every overwritten route put back to its strict snapshot (or deleted again, when this restore introduced it), each undoing write verified like the write it undoes
-    let okBack = true;
-    for (const rid of Object.keys(packPriors)) { const r = packPriors[rid] === null ? await upDel(rid) : await upPut(rid, packPriors[rid]); if (!r) okBack = false; }
-    return okBack;
-  };
-  if (restoredPacks) { // Beta 1.166, phase 1: the geometry writes land FIRST, while nothing else has been written - a failure here has only the store to put back, and the localStorage state is still exactly what the snapshot below describes
-    let packFail = null;
-    for (const rid of Object.keys(restoredPacks)) { if (!(await upPut(rid, restoredPacks[rid]))) { packFail = rid; break; } }
-    if (packFail) {
-      if (await rollbackPacks()) toast('Restore failed while saving the created route (' + packFail + ') - your current data was put back, nothing was changed', 3800);
-      else toast('Restore failed while saving the created route (' + packFail + ') - and your previous data could NOT be fully put back - restore from a known-good backup', 4200);
-      restoreFenceDown();
-      return;
+    } else { toast('Unsupported backup version (' + String(parsed.v) + ') - nothing was changed', 3200); return null; }
+    let packPriors = null; // Beta 1.166: the store values a geometry-carrying restore is about to overwrite, snapshotted STRICTLY before anything is written - the store phase's rollback material, and the DA-05 strict gate re-seated: a route whose current definition cannot be read refuses the restore here, before a single write, instead of being silently overwritten (1.142's merge-base refusal, carried to the definitions' new home)
+    const finishPlan = () => {
+      if (restoredPacks) {
+        const legacy = readUserPacks(); // a not-yet-drained legacy record still SHADOWS the store at boot for the ids it holds (create-packs.js: the legacy copy wins per id while it stands), so a restored id must leave the legacy record too, inside this same verified write set - and a legacy record that cannot be read refuses the restore for the same DA-05 reason its merge base once did
+        if (legacy === null) { toast('Restore stopped - your created-routes record could not be read, so nothing was changed', 3600); return null; }
+        if (Object.keys(legacy).some(rid => rid in restoredPacks)) { const shadow = { ...legacy }; for (const rid of Object.keys(restoredPacks)) delete shadow[rid]; entries.push([USERPACKS_KEY, Object.keys(shadow).length ? JSON.stringify(shadow) : null]); }
+      } // Beta 1.166: the definitions themselves land in the IndexedDB store as per-route verified writes (phase 1 of the write stage below, ahead of the localStorage write set). A restore adds/updates routes - it does not delete ones the backup predates: the store keeps every id this backup does not carry, and packPriors covers exactly the ids it overwrites. The reload that ends every restore re-registers the definitions at boot before their state is read
+      // Beta 1.73 (audit C06, Andrew's call): a backup that replaces a route's TRAIL but carries no
+      // session markers of its own must not inherit the CURRENT trail's markers - they describe the
+      // trail being replaced and would split the restored trail at wrong places. Clear them as part
+      // of this restore: the entry is written and verified like every other, and the snapshot +
+      // rollback below cover the markers too. Applies per route (today: the 5W slot in both formats).
+      for (const p of allPacks) { const rk = routeKeys(p.id); if (entries.some(e => e[0] === rk.trail) && !entries.some(e => e[0] === rk.sess)) entries.push([rk.sess, '[]']); }
+      // Beta 1.186 (storage fix round, C-01): a backup carrying a route's session markers but NOT
+      // its trail brings markers for a trail this restore is not bringing - the shape is genuine,
+      // not just crafted: the exporter carries each field only when its storage key exists, and the
+      // markers are born at Start while the trail key is born at the first accepted fix, so a clean
+      // that was started but never recorded a fix exports markers with no trail. Those markers must
+      // not land: laid over the resident trail they would split it at a boundary that never happened
+      // on it (trailSegments' consumers: drawTrail, buildGpx). But the resident markers are NOT
+      // cleared either - they describe the trail that STAYS, and what a backup does not bring, a
+      // restore does not touch. (C06 above is the true mirror: there the trail IS replaced.)
+      for (const p of allPacks) { const rk = routeKeys(p.id); const si = entries.findIndex(e => e[0] === rk.sess); if (si >= 0 && !entries.some(e => e[0] === rk.trail)) entries.splice(si, 1); }
+      // Beta 1.193 (trail redesign): a restored trail is WINDOWED to the pack's own live run
+      // before it is written (the NV4 discipline: the stored value is the bounded one). The
+      // window is trailWindow's rule applied to the pack's own start entry - a mid-run backup
+      // lands exactly the run's last 60 minutes of points, sanitized as the loader sanitizes,
+      // so no pre-1.191 trail (every clean, up to the old point cap) can resurrect points the
+      // window forbids. A pack carrying a trail but NO live start brings finished runs' points:
+      // under the window they have no consumer, so the stored trail is empty. A pack carrying
+      // no trail at all is untouched here, as ever - what a backup does not bring, a restore
+      // does not touch, and the load window governs the resident trail at the next boot.
+      // When the window empties a pack's trail and the pack has no live run, the pack's
+      // session markers leave the write set with it - the pair retires together (the C-01
+      // rule: markers never outlive their trail), rather than landing as orphans over an
+      // empty trail. Only a NON-EMPTY markers entry is spliced: an entry that already
+      // reads empty is either a genuine empty field or C06's synthetic clear (written
+      // just above when a trail arrives without markers), and writing it is precisely
+      // what clears the resident markers - splicing it would resurrect them by
+      // omission (drive145 N13 caught exactly that in this round's first gate).
+      for (const p of allPacks) { const rk = routeKeys(p.id); const ti = entries.findIndex(e => e[0] === rk.trail); if (ti < 0) continue; const se = entries.find(e => e[0] === rk.start); const startMs = se && /^\d+$/.test(se[1]) ? +se[1] : 0; let pts = parseJ(entries[ti][1], []); pts = Array.isArray(pts) ? pts.filter(q => Array.isArray(q) && q.length === 3 && Number.isFinite(q[0]) && Number.isFinite(q[1]) && Number.isFinite(q[2]) && q[2] >= 946684800 && q[2] <= 4102444800 && Math.abs(q[0]) <= 90 && Math.abs(q[1]) <= 180) : []; const windowed = trailWindow(pts, startMs); entries[ti][1] = JSON.stringify(windowed); if (!startMs && !windowed.length) { const si2 = entries.findIndex(e => e[0] === rk.sess); if (si2 >= 0) { const sv = parseJ(entries[si2][1], []); if (Array.isArray(sv) && sv.length) entries.splice(si2, 1); } } }
+      // Beta 1.92 (deep audit F06, Andrew's pick (a)): a backup carrying a route's completion
+      // list but NO side-marks record (the old v1 shape) used to restore into silence - the
+      // loader trusts the side-marks and rebuilt the list from the phone's existing ones,
+      // erasing the restore while reporting success. Derive the side-marks from the list
+      // instead, by the loader's own rule for streets with no sides record: a completed
+      // street is all-sides-done, stamped with its completion time. Scoped to backups that
+      // lack sides entirely; a backup WITH sides restores exactly as written.
+      for (const p of allPacks) {
+        const rk = routeKeys(p.id);
+        const doneEnt = entries.find(e => e[0] === rk.done);
+        if (!doneEnt || entries.some(e => e[0] === rk.sides)) continue;
+        try {
+          const names = JSON.parse(doneEnt[1]);
+          if (!Array.isArray(names)) continue;
+          const timesEnt = entries.find(e => e[0] === rk.times);
+          const times = timesEnt ? (JSON.parse(timesEnt[1]) || {}) : {};
+          const P = {}, T = {};
+          const pg = packGeometry(p); // Beta 1.117 (F6): derive through the TARGET route's own geometry - pre-1.117 this read the ACTIVE route's STREETSET/STRETCH, so a done-only entry for another route was derived against the wrong streets and its names silently dropped
+          for (const n of names) { if (typeof n !== 'string' || !pg.set.has(n) || !pg.stretch[n]) continue; P[n] = pg.stretch[n].parts.map(() => 3); T[n] = pg.stretch[n].parts.map(() => [times[n] || null, times[n] || null]); }
+          entries.push([rk.sides, JSON.stringify({ p: P, t: T })]); // Beta 1.93 (follow-up audit R03): ALWAYS write the derived authority when the backup carries done-but-no-sides - an explicitly EMPTY list ('[]') is an intentional empty state, and {} reads back as nothing done; skipping the write used to leave the phone's old sides in charge
+        } catch (e) { /* a list that cannot be parsed was already rejected during validation - never invent sides from rubble */ }
+      }
+      for (const rid of (parsed.v === 2 ? Object.keys(parsed.routes) : ['5w'])) { if (deadSkipped.includes(rid)) continue; entries.push([routeKeys(rid).finclean, null]); } // Beta 1.271: a tombstoned route's slot takes no writes from a restore at all - its finclean discharge is skipped with its fields (the deleted slot is outside the rollback scope, so no write into it may ride this verified set) // Beta 1.150 (security-audit fix round, needs-validation record restore-finclean-discharge-outside-transaction - settled CONFIRMED by fault injection, drive176): the finish-cleanup discharge joins the VERIFIED write set as a null (verified-delete) entry, and the rollback scope below gains the finclean keys. Pre-1.150 a bare lsDel after the commit loop discarded its result: a refused delete left the obligation armed over just-restored data, the restore reported success, and the next load's cleanup wiped the restored notes/coverage. A failed discharge now fails the restore with a rollback, like every other write here
+      restoreOverlayPacks = restoredPacks; const droppedNames = countUnknownNames(parsed); restoreOverlayPacks = null; // Beta 1.95 (SR-194-08): counted from the RAW backup before any normalization - see countUnknownNames. Beta 1.118: judged with this backup's own created-route definitions overlaid
+      if (!entries.length) { if (deadSkipped.length) toast(deadSkipped.join(', ') + ' was deleted on this phone, so its saved data was not restored', 4600); else toast('Nothing in that backup to restore', 3000); return null; } // Beta 1.271: a backup whose only route data belongs to a tombstoned route restores nothing - the report names the skip, never a bare 'nothing to restore'
+      const SCOPE = []; for (const p of allPacks) SCOPE.push(...slotKeys(p.id)); if (restoredPacks) SCOPE.push(USERPACKS_KEY); SCOPE.push(LS_GLOBAL.night, LS_GLOBAL.nightExp, SETTINGS_KEY); for (const p of allPacks) SCOPE.push(routeKeys(p.id).finclean); // Beta 1.166: SETTINGS_KEY joins the scope unconditionally (SETTINGS_DEF's home record) - a restore that writes the toggles must be able to put the device's own back, and one that does not write them snapshots-and-restores them to themselves, a no-op // Beta 1.150: the finclean keys join the rollback scope - a restore that discharges an obligation must be able to put the armed record back when a later write fails // Beta 1.136: the per-route keys come from slotKeys (app1) - the same ROUTE_FIELDS + snap list, enumerated in one place // Beta 1.118: the created-routes record and restored routes' slots join the rollback scope // Beta 1.96 (SR-195-02): the snapshot key joins the rollback scope - a restore that writes a carried snapshot must be able to put the previous one back
+      SCOPE.push(LS.fixlog); // Beta 1.189: the fix log's key joins the rollback scope unconditionally, like the settings record - a restore that writes it must be able to put the device's own back, and one that does not write it snapshots-and-restores it to itself, a no-op
+      return { entries, restoredPacks, packPriors, allPacks, scope: SCOPE, snapDropped, droppedNames, deadSkipped };
+    };
+    if (restoredPacks) {
+      packPriors = {};
+      const packIds = Object.keys(restoredPacks);
+      if (packIds.length) return (async () => { for (const rid of packIds) { const cur = await upGet(rid); if (cur === UP_READ_FAILED) { toast('Restore stopped - your created-routes store could not be read, so nothing was changed', 3600); return null; } packPriors[rid] = cur; } return finishPlan(); })(); // Beta 1.280: the planner's one suspension sits exactly where the one-flow restore first suspended - the created-route store priors; a backup carrying no created routes never takes it and plans synchronously, outcome included (the RESTORE header carries the contract)
     }
-  }
-  for (const pair of entries) {
-    const k = pair[0], v = pair[1];
-    const wr = v === null ? txDel(k) : txSet(k, v); // Beta 1.97 (CG-196-01) + 1.102 (Phase 4): a null entry is a DELETE (the idle assertion) - every entry written and verified by the same primitives
-    if (!wr.ok) {
-      const lsOk = rollback(); const pkOk = restoredPacks ? await rollbackPacks() : true; // Beta 1.166: a localStorage failure after phase 1 rolls BOTH homes back - the result message only claims "put back" when both verifiably are
-      if (lsOk && pkOk) toast('Restore failed while writing ' + k + ' - your current data was put back, nothing was changed', 3800);
-      else toast('Restore failed while writing ' + k + ' - and your previous data could NOT be fully put back - restore from a known-good backup', 4200);
-      restoreFenceDown();
-      return;
+    return finishPlan();
+  },
+  /** @param {object} plan @returns {Promise<void>} */ async execute(plan) {
+    const entries = plan.entries, restoredPacks = plan.restoredPacks, packPriors = plan.packPriors, SCOPE = plan.scope, snapDropped = plan.snapDropped, droppedNames = plan.droppedNames, deadSkipped = plan.deadSkipped;
+    PERSIST.fenceUp(); // Beta 1.186 (storage fix round, P1): the write fence rises BEFORE the snapshot, not on the success path after the commit (its through-1.185 position, beside the markClean calls below). That left the write stage's one yield - phase 1's awaited store puts - unfenced: a flush landing there wrote live records the snapshot had already frozen, and a later failure's rollback rewrote every scoped key from that snapshot, silently discarding the live write under a "nothing was changed" message. Fenced from here, PERSIST.flush refuses and saveAll returns its fenced outcome for the whole write stage, so storage cannot diverge from the snapshot before the commit; the restore's own writes are unfenced by construction (txSet/txDel and upPut write directly, never through the fenced doors). Every failure exit below ends through restoreFenceDown, so a failed restore - which leaves the page running - hands the live state back its flush. Beta 1.275 (architecture #3): the fence itself is PERSIST's - raised and lowered through its doorway, never a foreign write.
+    const restoreFenceDown = () => { PERSIST.fenceDown(); markDirty('trail'); markDirty('sess'); markDirty('aux'); markDirty('primary'); markDirty('fixlog'); }; // Beta 1.189: the fix log's flag re-arms through this same doorway - fixes logged while the fence was up live only in memory, exactly like the trail's. Beta 1.186 (P1): clear the fence and re-arm the trail/session/coverage dirty flags - GPS work that arrived while the fence was up lives only in memory (the rollback restored storage, never memory), and the next flush (heartbeat or fix) must carry it instead of waiting for an incidental save. Both rollback exits (phase 1 and the entries loop) end through this one doorway, so the two failure paths treat concurrent live work identically - through 1.185 the phase-1 exit preserved in-window writes the entries exit discarded. Gate round (Codex finding): the PRIMARY flag re-arms here too - a street mark or note edit made during the write stage was refused by the fence (saveAll returns its fenced outcome and, by the 1.147 design that binds the success path, arms nothing), so without the re-arm it lived only in memory and a reload lost it even though the restore had failed and the page kept running. On a failure exit the rollback has put storage back to the pre-restore board, so the armed heartbeat retry writes the live board, in-window edit included; on success this doorway never runs (the fence stays up into the reload).
+    const snap = {}; let snapOk = true;
+    for (const k of SCOPE) { const v = rawRead(k); if (v === RAW_READ_FAILED) snapOk = false; else snap[k] = v; }
+    if (!snapOk) { restoreFenceDown(); toast('Restore stopped - your current data could not be read for safekeeping, so nothing was changed', 3600); return; }
+    const rollback = () => { // Beta 1.102 (Phase 4, C3): the restore-all rollback on the verified primitives - every scoped key put back (or removed) and read back
+      let okBack = true;
+      for (const k of SCOPE) { const r = snap[k] === null ? txDel(k) : txSet(k, snap[k]); if (!r.ok) okBack = false; }
+      return okBack;
+    };
+    const rollbackPacks = async () => { // Beta 1.166: the store phase's rollback - every overwritten route put back to its strict snapshot (or deleted again, when this restore introduced it), each undoing write verified like the write it undoes
+      let okBack = true;
+      for (const rid of Object.keys(packPriors)) { const r = packPriors[rid] === null ? await upDel(rid) : await upPut(rid, packPriors[rid]); if (!r) okBack = false; }
+      return okBack;
+    };
+    if (restoredPacks) { // Beta 1.166, phase 1: the geometry writes land FIRST, while nothing else has been written - a failure here has only the store to put back, and the localStorage state is still exactly what the snapshot below describes
+      let packFail = null;
+      for (const rid of Object.keys(restoredPacks)) { if (!(await upPut(rid, restoredPacks[rid]))) { packFail = rid; break; } }
+      if (packFail) {
+        if (await rollbackPacks()) toast('Restore failed while saving the created route (' + packFail + ') - your current data was put back, nothing was changed', 3800);
+        else toast('Restore failed while saving the created route (' + packFail + ') - and your previous data could NOT be fully put back - restore from a known-good backup', 4200);
+        restoreFenceDown();
+        return;
+      }
     }
-  }
-  if (restoredPacks) for (const rid of Object.keys(restoredPacks)) userPackCache[rid] = restoredPacks[rid]; // Beta 1.166: the backup picture joins the commit - the reload follows immediately, but the cache must never describe a store state that was rolled back or never written
-  // Beta 1.141 (Package A, DA-10) discharge note: the finish-cleanup discharge itself moved INTO the verified write set above in Beta 1.150 (see the finclean entries) - the 1.141 rule stands unchanged (a restore discharges the obligations of exactly the routes it rewrites; an omitted route's obligation stays armed), only its mechanism is now verified like every other write in this function
-  PERSIST.fenceUp(); markClean('trail'); markClean('aux'); markClean('sess'); // the reload's pagehide flush must not write the old in-memory trail/coverage over the restored data
-  toast('Backup restored - reloading' + (droppedNames ? ' · ' + droppedNames + ' unknown street name' + (droppedNames === 1 ? '' : 's') + ' in the backup were ignored' : '') + (snapDropped ? ' · the saved start snapshot was not usable, so Cancel will rebuild from the marks made during the clean' : '') + (deadSkipped.length ? ' · ' + deadSkipped.join(', ') + ' was deleted on this phone, so its saved data was not restored' : ''), (snapDropped || deadSkipped.length) ? 4600 : undefined); // Beta 1.94 (audit F-05): the drop count is part of the result, not a silent loader detail. Beta 1.96 (SR-195-02): a dropped start snapshot is reported the same way
-  setTimeout(() => location.reload(), 600);
-}
+    for (const pair of entries) {
+      const k = pair[0], v = pair[1];
+      const wr = v === null ? txDel(k) : txSet(k, v); // Beta 1.97 (CG-196-01) + 1.102 (Phase 4): a null entry is a DELETE (the idle assertion) - every entry written and verified by the same primitives
+      if (!wr.ok) {
+        const lsOk = rollback(); const pkOk = restoredPacks ? await rollbackPacks() : true; // Beta 1.166: a localStorage failure after phase 1 rolls BOTH homes back - the result message only claims "put back" when both verifiably are
+        if (lsOk && pkOk) toast('Restore failed while writing ' + k + ' - your current data was put back, nothing was changed', 3800);
+        else toast('Restore failed while writing ' + k + ' - and your previous data could NOT be fully put back - restore from a known-good backup', 4200);
+        restoreFenceDown();
+        return;
+      }
+    }
+    if (restoredPacks) for (const rid of Object.keys(restoredPacks)) userPackCache[rid] = restoredPacks[rid]; // Beta 1.166: the backup picture joins the commit - the reload follows immediately, but the cache must never describe a store state that was rolled back or never written
+    // Beta 1.141 (Package A, DA-10) discharge note: the finish-cleanup discharge itself moved INTO the verified write set above in Beta 1.150 (see the finclean entries) - the 1.141 rule stands unchanged (a restore discharges the obligations of exactly the routes it rewrites; an omitted route's obligation stays armed), only its mechanism is now verified like every other write in this function
+    PERSIST.fenceUp(); markClean('trail'); markClean('aux'); markClean('sess'); // the reload's pagehide flush must not write the old in-memory trail/coverage over the restored data
+    toast('Backup restored - reloading' + (droppedNames ? ' · ' + droppedNames + ' unknown street name' + (droppedNames === 1 ? '' : 's') + ' in the backup were ignored' : '') + (snapDropped ? ' · the saved start snapshot was not usable, so Cancel will rebuild from the marks made during the clean' : '') + (deadSkipped.length ? ' · ' + deadSkipped.join(', ') + ' was deleted on this phone, so its saved data was not restored' : ''), (snapDropped || deadSkipped.length) ? 4600 : undefined); // Beta 1.94 (audit F-05): the drop count is part of the result, not a silent loader detail. Beta 1.96 (SR-195-02): a dropped start snapshot is reported the same way
+    setTimeout(() => location.reload(), 600);
+  },
+};
+function restoreBackup(parsed) { const planned = RESTORE.plan(parsed); if (!planned) return Promise.resolve(); if (typeof planned.then === 'function') return planned.then(plan => (plan ? RESTORE.execute(plan) : undefined)); return RESTORE.execute(planned); } // Beta 1.280: the doorway - RESTORE.plan validates and plans, RESTORE.execute transacts (above). The dispatch adds NO suspension of its own: a plan the planner produced synchronously is executed in the same tick, exactly as the one-flow restore ran (the RESTORE header carries the contract). Production doRestore semantics, unchanged: validate EVERYTHING before writing; snapshot; write + verify each; verified rollback on any failure.
 let restoreInFlight = false; // Beta 1.170 (Carbon fix round Phase 2, C-09): single-flight for the restore door, same shape as preloadRunning below - restoreBackup is ASYNC (its created-route store writes await), so through 1.169 a second tap, or a file pick landing while a paste restore ran, started a competing restore whose pre-write snapshot could capture the first restore's half-written state
 function doRestore() {
   if (restoreInFlight) return;

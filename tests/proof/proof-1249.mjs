@@ -93,8 +93,8 @@ check('15: the grid stall still drops the cached pack promise (the abandonment s
 // ---------- the release editorial ----------
 check('16: the CHANGELOG top entry is Beta 1.251', changelog.includes('## Beta 1.251'));
 check('17: What\'s New carries the 1.251 bullet, short and dash-free',
-  whatsnew.includes('Under the hood: note editing now runs through one session owner, so drafts and autosaves stay in step.')
-  && 'Under the hood: note editing now runs through one session owner, so drafts and autosaves stay in step.'.length <= 108
+  whatsnew.includes('Under the hood: backup and restore now each run through one owner, so exports and restores stay in step.')
+  && 'Under the hood: backup and restore now each run through one owner, so exports and restores stay in step.'.length <= 108
   && !whatsnew.includes('—'));
 
 // ---------- the first byte must be RECORDED, not just read about ----------

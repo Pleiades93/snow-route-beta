@@ -695,6 +695,13 @@
     },
     {
       "file": "app4.js",
+      "fn": "execute",
+      "name": "storage:k",
+      "owner": "app1.js",
+      "occ": 1
+    },
+    {
+      "file": "app4.js",
       "fn": "noteExported",
       "name": "storage:LS.exp",
       "owner": "app1.js",
@@ -704,13 +711,6 @@
       "file": "app4.js",
       "fn": "renderStatus",
       "name": "storage:literal",
-      "owner": "app1.js",
-      "occ": 1
-    },
-    {
-      "file": "app4.js",
-      "fn": "restoreBackup",
-      "name": "storage:k",
       "owner": "app1.js",
       "occ": 1
     },
