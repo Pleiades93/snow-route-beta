@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 """Assemble the Snow Route page from its parts (Beta 1.94, audit F-02).
 
-The canonical app source is parts/ - fifteen files, concatenated in a
+The canonical app source is parts/ - seventeen files, concatenated in a
 fixed order into src/tracker-source.html, which scripts/build-pages.py then
 stamps (CSP) and publishes as index.html. tracker-source.html is a
 GENERATED file: never hand-edit it; edit the part and re-run this script.

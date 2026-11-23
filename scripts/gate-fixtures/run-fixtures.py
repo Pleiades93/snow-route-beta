@@ -778,6 +778,10 @@ def mirrors_tree(base, *, pack_typedef="name: string, ends: {}",
     # real one its shard lists were computed with.
     w(base / "scripts" / "gen-shards.py",
       (ROOT / "scripts" / "gen-shards.py").read_text())
+    # The generator loads the shared source-inspection layer from
+    # beside its own file (architecture #21), so the tree carries it.
+    w(base / "scripts" / "source_query.py",
+      (ROOT / "scripts" / "source_query.py").read_text())
     shard_steps = "".join(
         f'      - run: echo shard\n        drives: "{" ".join(s)}"\n' for s in shards)
     fixture_step = ("      - name: fixture selftest\n"
@@ -838,6 +842,10 @@ with tempfile.TemporaryDirectory() as td:
                          index="shell Beta 1.0 AB")
         w(t / name / "scripts" / "check-mirrors.py",
           (ROOT / "scripts" / "check-mirrors.py").read_text())
+        # The checker loads the shared source-inspection layer from
+        # beside its own file (architecture #21), so the tree carries it.
+        w(t / name / "scripts" / "source_query.py",
+          (ROOT / "scripts" / "source_query.py").read_text())
         w(t / name / "tests" / "browser" / "selftest-fixture.mjs",
           "// fixture selftest\n")
         # The branch holds the selftest and the WIRED workflow, so
@@ -872,7 +880,8 @@ def shard_tree(base, *, drop_duration=None, extra_duration=None,
                bogus_smoke=False):
     """A miniature tree the REAL shard-coverage guard passes: eight
     fixture drives, a durations file naming exactly them, and verbatim
-    copies of the guard, the partition statement (gen-shards.py) and
+    copies of the guard, the partition statement (gen-shards.py), the
+    shared source-inspection layer both load (source_query.py) and
     the runner (run.mjs, Node built-ins only, so its --list mode runs
     in the bare tree). Each keyword breaks exactly one of the guard's
     arms. Added on the PR #190 Codex P1 (testing-efficiency rollout):
@@ -895,6 +904,10 @@ def shard_tree(base, *, drop_duration=None, extra_duration=None,
     w(base / "scripts" / "gen-shards.py", gen)
     w(base / "scripts" / "check-shard-coverage.py",
       (ROOT / "scripts" / "check-shard-coverage.py").read_text())
+    # Both load the shared source-inspection layer from beside their
+    # own files (architecture #21), so the tree carries it.
+    w(base / "scripts" / "source_query.py",
+      (ROOT / "scripts" / "source_query.py").read_text())
     runner = (ROOT / "tests" / "browser" / "run.mjs").read_text()
     if runner_shifts:
         old = "shards[best].push(n); totals[best] += weight(n);"

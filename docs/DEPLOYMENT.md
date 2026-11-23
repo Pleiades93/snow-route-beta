@@ -10,36 +10,41 @@ ordinary folders (Pages serves them too — the source is public by design).
 ## Build
 
 ```
-python3 scripts/assemble.py
-python3 scripts/build-pages.py
+python3 scripts/release-op.py
 ```
 
-First the assemble step: `scripts/assemble.py` concatenates `parts/`
-(the canonical app source, in its fixed order) into
-`src/tracker-source.html`. That file is generated — never hand-edit
-it; edit the part and re-run the assemble.
+The one local release operation (architecture #22) owns the build end
+to end: it derives the README battery counts from the suite,
+assembles `parts/` (the canonical app source, in its fixed order)
+into `src/tracker-source.html`, stamps the Content-Security-Policy,
+writes `index.html` + `sw.js` at the root, then re-runs the three
+`--check` forms (assemble, release, build-pages) as independent
+verification and prints the artifact hashes. The steps it runs are
+the standing scripts themselves — `scripts/release.py`,
+`scripts/assemble.py`, `scripts/build-pages.py` — so the operation
+cannot drift from them; run one individually only to debug it.
 
-Then `scripts/build-pages.py` reads the assembled
-`src/tracker-source.html` + `src/sw.js`, writes `index.html` + `sw.js`
-at the root, and runs the parity and integrity checks. Never hand-edit
-`index.html` or the root `sw.js`.
+The generated files are never hand-edited: `src/tracker-source.html`,
+`index.html` and the root `sw.js` are outputs. Edit the part (or
+`src/sw.js`) and re-run the operation.
 
 ## Release flow
 
 1. Work on a branch — never commit a release straight to `main`. Edit the
    app (assembled into `src/tracker-source.html`; `src/sw.js` when the
-   worker changes). Bump the version in the three places that carry it:
-   the `#ver` label in the page, the top `CHANGELOG.md` entry and the
-   `WHATSNEW` entry in `parts/app4.js` — the build gate fails the build
-   if any of them disagrees (the What's New comparison is gated since
-   Beta 1.133; before that a stale entry shipped once and only a registry
-   probe noticed). If the worker changed, bump its cache name
-   (`snowroute-shell-vN`) too.
-2. Run `python3 scripts/release.py` — it derives the README battery
-   counts from the suite and rewrites them (generated bookkeeping is
-   never typed by hand; `build-pages.py` asserts the same derivation, so
-   skipping this step fails the build), and prints the release checklist
-   separating the generated steps from the editorial ones.
+   worker changes). The version lives in exactly one place: the top
+   `CHANGELOG.md` entry — assembly stamps it into the `#ver` label and
+   the `WHATSNEW` entry (`parts/whatsnew.js`), and the build gate fails
+   the build if the stamped copies disagree (the What's New comparison
+   is gated since Beta 1.133; before that a stale entry shipped once and
+   only a registry probe noticed). If the worker changed, bump its cache
+   name (`snowroute-shell-vN`) too.
+2. Run `python3 scripts/release-op.py` — the one release operation: it
+   derives the README battery counts from the suite and rewrites them
+   (generated bookkeeping is never typed by hand; the build asserts the
+   same derivation, so skipping the operation fails the build),
+   assembles the page, stamps and writes the artifacts, and verifies
+   the result end to end.
 3. Run the build and the gate (`docs/TESTING.md`) locally — since the
    testing-efficiency rollout (2026-11-23) every pull request runs the
    full battery; there are no tiers.
@@ -48,9 +53,10 @@ at the root, and runs the parity and integrity checks. Never hand-edit
    battery and the offline end-to-end suite.
 5. Merge to `main` only under the merge gate in `DEVELOPMENT_RULES.md`:
    the merged tree is proven identical to the tested branch tree, and
-   `main` then runs the build gate and the Tier A core set (browser-smoke).
-   The offline suite does not run on `main` pushes — it gates Tier C
-   branches and the nightly run.
+   `main` then runs the build gate plus the browser-smoke subset. The
+   full battery runs on every pull request and again nightly on `main`
+   as the environment-drift audit (there are no tiers since the
+   2026-11-23 testing-efficiency rollout).
    Pages serves `main`, so the merge is the release.
 6. Pages picks the files up within a few minutes; GitHub's edge cache can
    lag ~10 minutes behind the push.

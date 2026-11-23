@@ -43,7 +43,7 @@ EDITORIAL ones: the CHANGELOG entry and the What's New prose are
 written by a human on purpose — they are the release's own words.
 Standard library only; no dependencies.
 """
-import re
+import importlib.util
 import sys
 from pathlib import Path
 
@@ -51,31 +51,28 @@ ROOT = Path(__file__).resolve().parent.parent
 BROWSER = ROOT / "tests" / "browser"
 README = ROOT / "README.md"
 
-DEF_LINE = re.compile(r"\s*const\s+(ok|okS|check)\s*=")
-
-
-def _count_sites(path: Path, helpers: tuple) -> int:
-    total = 0
-    pats = [re.compile(r"(?<![\w.])" + h + r"\(") for h in helpers]
-    for line in path.read_text(encoding="utf-8").split("\n"):
-        if DEF_LINE.match(line):
-            continue
-        total += sum(len(p.findall(line)) for p in pats)
-    return total
+# The shared source-inspection layer (architecture #21): the roster
+# rule and the assertion-site counting rule live there, once.
+_sq = importlib.util.spec_from_file_location(
+    "snow_source_query", Path(__file__).resolve().parent / "source_query.py")
+source_query = importlib.util.module_from_spec(_sq)
+_sq.loader.exec_module(source_query)
 
 
 def suite_counts(root: Path = ROOT) -> dict:
     """Derive the battery counts from the suite (see module docstring)."""
     browser = root / "tests" / "browser"
-    names = sorted(p.stem for p in browser.glob("drive*.mjs")
-                   if re.fullmatch(r"drive\d+", p.stem))
+    names = source_query.drive_roster(browser)
     assert names, "release: no drive files in tests/browser/"
     drives = len(names)
     drive_checks = sum(
-        _count_sites(browser / (n + ".mjs"), ("ok", "okS")) for n in names
+        source_query.count_sites(browser / (n + ".mjs"), ("ok", "okS"))
+        for n in names
     )
-    e2e_checks = _count_sites(browser / "e2e-offline.mjs", ("ok", "okS"))
-    sw_checks = _count_sites(root / "tests" / "sw.test.mjs", ("check",))
+    e2e_checks = source_query.count_sites(
+        browser / "e2e-offline.mjs", ("ok", "okS"))
+    sw_checks = source_query.count_sites(
+        root / "tests" / "sw.test.mjs", ("check",))
     return {
         "drives": drives,
         "drive_checks": drive_checks,
@@ -137,16 +134,19 @@ CHECKLIST = """\
 RELEASE CHECKLIST (Beta 1.133 — generated vs editorial, kept apart)
 
 GENERATED — machines own these; never type them by hand:
-  [ ] python3 scripts/release.py          (README battery counts derived
-                                           from the suite and rewritten)
-  [ ] python3 scripts/assemble.py         (parts/ -> src/tracker-source.html;
-                                           the splash icon bytes are inlined
-                                           from splash-artwork-512.png here)
-  [ ] python3 scripts/build-pages.py      (build + gates: assembly, parity,
-                                           CSP, SEC-10a, version ==
-                                           CHANGELOG top, WHATSNEW.v ==
-                                           displayed version, README counts
-                                           == this script's derivation)
+  [ ] python3 scripts/release-op.py       (the one local release operation,
+                                           architecture #22: counts derived
+                                           from the suite and rewritten,
+                                           parts/ assembled (splash bytes +
+                                           the CHANGELOG stamp inlined),
+                                           the page built and stamped,
+                                           index.html + sw.js written, then
+                                           the three --check forms re-run
+                                           as verification. The steps it
+                                           runs are release.py, assemble.py
+                                           and build-pages.py themselves —
+                                           run them individually only to
+                                           debug the operation)
 
 EDITORIAL — a human writes these, on purpose:
   [ ] CHANGELOG.md: the new top entry (## Beta X.Y — date) describing the

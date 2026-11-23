@@ -8913,6 +8913,12 @@
    "kind": "machinery-exempt",
    "reason": "Testing-efficiency rollout: CI/test machinery only (checks.yml, scripts/, tests/) - no parts/ surface is touched by any commit in this round; the app stays byte-identical to Beta 1.281.",
    "issued": "2026-11-23, testing-rollout round, before its first push"
+  },
+  {
+   "id": "machinery-ministack-2026-11-23",
+   "kind": "machinery-exempt",
+   "reason": "Machinery-only round (architecture #21/#22/#23): no parts/ surface changed - the app is byte-identical to Beta 1.281 (index.html sha256 9859c1a9...). Changes are scripts/ (source_query layer, release-op, consumer delegation), tests/mutation-receipts.json, README.md and docs/DEPLOYMENT.md. No sibling app paths exist to enumerate.",
+   "issued": "2026-11-23 machinery-ministack"
   }
  ]
 }

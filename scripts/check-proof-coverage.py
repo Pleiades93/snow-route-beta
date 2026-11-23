@@ -20,7 +20,7 @@ Exits 0 on PASS, 1 on any violation. Run from the repo root; an optional
 argv[1] names another root (the verdict fixtures in
 scripts/gate-fixtures/ run this guard against synthetic trees).
 """
-import json
+import importlib.util
 import sys
 from pathlib import Path
 
@@ -28,8 +28,16 @@ ROOT = Path(sys.argv[1]).resolve() if len(sys.argv) > 1 else Path(__file__).reso
 PROOF_DIR = ROOT / "tests" / "proof"
 errors = []
 
+# The shared source-inspection layer (architecture #21), loaded by
+# path from beside this guard: the proof roster and the retired list
+# are its statements of the rule, shared with run-proofs.py.
+_sq = importlib.util.spec_from_file_location(
+    "snow_source_query", Path(__file__).resolve().parent / "source_query.py")
+source_query = importlib.util.module_from_spec(_sq)
+_sq.loader.exec_module(source_query)
+
 try:
-    manifest = json.loads((PROOF_DIR / "manifest.json").read_text(encoding="utf-8"))
+    manifest = source_query.proof_manifest(PROOF_DIR)
 except FileNotFoundError:
     print("FAIL: tests/proof/manifest.json is missing")
     sys.exit(1)
@@ -38,8 +46,8 @@ if "run" in manifest:
     errors.append("the manifest carries a \"run\" list - the run roster is derived "
                   "from the disk glob since the 2026-11-23 rollout; delete the list")
 
-on_disk = sorted(p.name for p in PROOF_DIR.glob("*.mjs"))
-retired = list(manifest.get("retired", []))
+on_disk = source_query.proof_files(PROOF_DIR)
+retired = source_query.retired_proofs(PROOF_DIR)
 retired_names = []
 for entry in retired:
     if not isinstance(entry, dict) or "file" not in entry:
