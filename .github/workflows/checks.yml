@@ -67,6 +67,16 @@ on:
   push:
     branches: [main]
   pull_request:
+  # Merge-queue readiness (testing-efficiency rollout, 2026-11-23): the
+  # workflow answers merge_group events so the queue CAN be enabled
+  # without a further workflow change - the plan job flags the full
+  # battery for a queue entry and the "tier drives" aggregator reports
+  # on it. The queue itself is NOT enabled by this round: the codex
+  # review gate cannot post on queue commits (its bridge runs on
+  # pull_request_target and judges PR heads), so a queue requiring it
+  # could never merge, and a queue not requiring it would weaken a
+  # locked gate. See the rollout RECORD for the follow-up shape.
+  merge_group:
   workflow_dispatch:
     inputs:
       full:
@@ -113,7 +123,7 @@ jobs:
             echo "::error::workflow_dispatch is only allowed on main (got $REF). A manual run on a pull-request branch posts a skipped 'tier drives' check on that head, and GitHub counts a skipped required check as passing - this job fails instead, so the run posts a red required check (protocol fix round, 2026-11-17)."
             exit 1
           fi
-          if [ "$EVENT" = "pull_request" ]; then
+          if [ "$EVENT" = "pull_request" ] || [ "$EVENT" = "merge_group" ]; then
             echo "drives=true" >> "$GITHUB_OUTPUT"
             echo "offline=true" >> "$GITHUB_OUTPUT"
           elif [ "$EVENT" = "workflow_dispatch" ] && [ "$FULL" = "false" ]; then
@@ -344,7 +354,7 @@ jobs:
     # nightly battery (shards report there) are completely untouched.
     name: tier drives
     needs: [browser-tests, offline-e2e]
-    if: always() && github.event_name == 'pull_request'
+    if: always() && (github.event_name == 'pull_request' || github.event_name == 'merge_group')
     runs-on: ubuntu-latest
     timeout-minutes: 5
     steps:
