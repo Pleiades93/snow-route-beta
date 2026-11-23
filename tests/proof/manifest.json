@@ -81,7 +81,8 @@
   "proof-1271.mjs",
   "proof-1272.mjs",
   "proof-prep-begin-owner.mjs",
-  "proof-cov-owner.mjs"
+  "proof-cov-owner.mjs",
+  "proof-response-consumption.mjs"
  ],
  "retired": [
   {

@@ -46,7 +46,7 @@ async function crPackResolveCity(name, bbox) { // does the library hold THIS cit
   if (!(pb.s <= bbox.s + EPS && pb.n >= bbox.n - EPS && pb.w <= bbox.w + EPS && pb.e >= bbox.e - EPS)) return null;
   return { slug: e.slug, bbox: pb, gen: typeof e.generatedAt === 'string' ? e.generatedAt : '' }; // Beta 1.251 (R-02): the catalogue's generatedAt is the pack's version stamp - republishing a pack re-stamps it, and the dataset identity (crDatasetId, create-cache.js) binds saved records to it
 }
-async function crPackDownload(slug) { // Beta 1.249: ONE download attempt of a city pack, watched at the byte level (Andrew's pack stall rule, 2026-11-19). Through 1.248 the pack fetch carried no timeout of its own - a wedged connection, or a host that never answers, pended crPackLoad's promise forever, and only the preparation watchdogs' 180 s landing bound ever surfaced it, as a failed preparation. The attempt now carries a silence timer in crOverpassFetch's shape (Beta 1.246), on the pack's own two windows from CR_TIMING: packFirstByteMs (120 s) until the first body byte - the static host spends real time producing a big city's file before the first byte moves, so silence there is not yet a wedge - then packStallMs (60 s) between bytes once they flow. On expiry the timer aborts the attempt through its own controller and the attempt throws a TAGGED error (err.packStall) - the retry loop's signal in crPackLoad below. Every other failure (HTTP status, an unreadable or misshapen body, a network throw) is untagged and behaves exactly as it always has. The body is read as a stream and accumulated as byte chunks, concatenated and decoded the streaming branch's way; there is still NO byte cap (the caps in CR_TIMING govern service extracts, not the app's own library). A reader-less response falls back to r.text() under the first-byte window armed at the attempt's start: it cannot see mid-body progress, so the generous window is its only honest bound - the fallback limit 1.246 documented for its own no-stream branch.
+async function crPackDownload(slug) { // Beta 1.249: ONE download attempt of a city pack, watched at the byte level (Andrew's pack stall rule, 2026-11-19). Through 1.248 the pack fetch carried no timeout of its own - a wedged connection, or a host that never answers, pended crPackLoad's promise forever, and only the preparation watchdogs' 180 s landing bound ever surfaced it, as a failed preparation. The attempt now carries a silence timer in crOverpassFetch's shape (Beta 1.246), on the pack's own two windows from CR_TIMING: packFirstByteMs (120 s) until the first body byte - the static host spends real time producing a big city's file before the first byte moves, so silence there is not yet a wedge - then packStallMs (60 s) between bytes once they flow. On expiry the timer aborts the attempt through its own controller and the attempt throws a TAGGED error (err.packStall) - the retry loop's signal in crPackLoad below. Every other failure (HTTP status, an unreadable or misshapen body, a network throw) is untagged and behaves exactly as it always has. The body is consumed through the shared streaming read (crReadBodyText, create-fetch.js - Architecture #18: stream, accumulate, decode, one body for both watched downloads); there is still NO byte cap (the caps in CR_TIMING govern service extracts, not the app's own library). A reader-less response falls back to r.text() under the first-byte window armed at the attempt's start: it cannot see mid-body progress, so the generous window is its only honest bound - the fallback limit 1.246 documented for its own no-stream branch.
   const ctl = (typeof AbortController !== 'undefined') ? new AbortController() : null;
   if (ctl) crPackCtls[slug] = ctl; // Beta 1.254 (O-06): the load owns this attempt's controller until the attempt settles (the finally below unregisters it) or the load is dropped (crPackAbort)
   let stallTo = null, sawByte = false, killed = false;
@@ -56,20 +56,12 @@ async function crPackDownload(slug) { // Beta 1.249: ONE download attempt of a c
   try {
     const r = await fetch('packs/' + slug + '.json', { cache: 'no-cache', signal: ctl ? ctl.signal : undefined });
     if (!r.ok) { clearStall(); throw new Error('pack HTTP ' + r.status); }
-    let text;
-    if (r.body && typeof r.body.getReader === 'function') {
-      const reader = r.body.getReader(), chunks = []; let total = 0;
-      for (;;) {
-        const part = await reader.read();
-        if (part.done) break;
-        total += part.value.byteLength;
-        chunks.push(part.value);
-        sawByte = true;
-        armStall(); // a landed chunk is progress: the silence clock restarts here, on the flowing window once the first byte has landed
-      }
-      const buf = new Uint8Array(total); let off = 0; for (const c of chunks) { buf.set(c, off); off += c.byteLength; }
-      text = new TextDecoder().decode(buf);
-    } else { text = await r.text(); } // no reader: the first-byte window armed at the start bounds the whole read (see the header - no mid-body visibility exists to arm anything finer)
+    const read = await crReadBodyText(r, () => { // Architecture #18: the consumption (stream, accumulate, decode) is crReadBodyText's (create-fetch.js); the pack's POLICIES stay here - the chunk hook records the first byte and re-arms the silence clock on the flowing window, and the hook never stops the read (the pack has no cap and no session verdict to give)
+      sawByte = true;
+      armStall(); // a landed chunk is progress: the silence clock restarts here, on the flowing window once the first byte has landed
+      return null;
+    });
+    const text = read.fallback ? await r.text() : read.text; // no reader: the first-byte window armed at the start bounds the whole read (see the header - no mid-body visibility exists to arm anything finer)
     clearStall();
     const pack = JSON.parse(text); // a SyntaxError propagates untagged, exactly as r.json()'s did through 1.248
     if (!pack || !pack.streets || typeof pack.streets !== 'object') throw new Error('pack shape');

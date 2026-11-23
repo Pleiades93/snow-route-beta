@@ -7430,6 +7430,48 @@
    "red": "proof-1254 FAILS (check 9, the re-pointed A-02 pin: the fold body must contain no crRefreshSearch and no crCovFromWays), observed twice",
    "green": "proof-1254 passes in full on the shipped tree (run-proofs 81/81)",
    "issued": "2026-11-23 section1-arch17"
+  },
+  {
+   "id": "section1-proof-response-consumption",
+   "check": "tests/proof/proof-response-consumption.mjs",
+   "kind": "mutation",
+   "files": {
+    "tests/proof/proof-response-consumption.mjs": "dc08f9b9da47a780597b20593ffbf01d598d469f4b91776bc1cbf578ada9d86e",
+    "parts/create-fetch.js": "60abb28dd4ca71be3850f3e0c3e9f2bab69978cb79100db4c0859ce078f97ec3",
+    "parts/create-citydata.js": "aff6d5e1dbe6f6c9158982fbad7a326cbb946a80c60042d33e679a5a47ea4c0e"
+   },
+   "mutation": "two mutations of crReadBodyText in parts/create-fetch.js, each applied to the shipped tree and reverted byte-exact: (1) the verdict branch disabled (if (verdict) -> if (false)), so a caller's stop verdict is ignored; (2) the chunk accumulation removed (chunks.push dropped), so streamed bodies decode empty",
+   "red": "proof-response-consumption FAILS under each mutation, observed twice per mutation: verdict-ignored fails check 2c (no stopped verdict, reader never cancelled); chunks-dropped fails check 2a (the split multi-byte character decodes to empty)",
+   "green": "proof-response-consumption: 9 passed, 0 failed on the shipped tree",
+   "issued": "2026-11-23 section1-arch18"
+  },
+  {
+   "id": "section1-proof-1249-sawbyte-repoint",
+   "check": "tests/proof/proof-1249.mjs",
+   "kind": "mutation",
+   "files": {
+    "tests/proof/proof-1249.mjs": "d4bea9f31aaf56cc2538a1bd330cd1e51a1b6576806c544da23597386fb3713b",
+    "parts/create-citydata.js": "aff6d5e1dbe6f6c9158982fbad7a326cbb946a80c60042d33e679a5a47ea4c0e",
+    "parts/create-fetch.js": "60abb28dd4ca71be3850f3e0c3e9f2bab69978cb79100db4c0859ce078f97ec3"
+   },
+   "mutation": "the /correct C1 mutation re-run at its new seat: delete the 'sawByte = true;' line from crPackDownload's per-chunk hook in parts/create-citydata.js (the assignment Architecture #18 moved out of the inline read loop into the hook on the shared crReadBodyText), applied to the shipped tree and reverted byte-exact",
+   "red": "proof-1249 FAILS (check 18: the assignment no longer stands inside the download helper, whose slice now spans crPackDownload), observed twice - the same red the C1 round recorded at the old seat",
+   "green": "proof-1249 passes in full on the shipped tree (18 checks; run-proofs 82/82)",
+   "issued": "2026-11-23 section1-arch18"
+  },
+  {
+   "id": "section1-proof-d01-harness-roll",
+   "check": "tests/proof/proof-sweep-20261115-071313-d-01.mjs",
+   "kind": "mutation",
+   "files": {
+    "tests/proof/proof-sweep-20261115-071313-d-01.mjs": "d2641130fe62e7b78260cf2a1c65574a0782acb9281eb5949d6d5a2100f0e3c8",
+    "parts/create-citydata.js": "aff6d5e1dbe6f6c9158982fbad7a326cbb946a80c60042d33e679a5a47ea4c0e",
+    "parts/create-fetch.js": "60abb28dd4ca71be3850f3e0c3e9f2bab69978cb79100db4c0859ce078f97ec3"
+   },
+   "mutation": "rename crPackDownload's consumption call in parts/create-citydata.js (crReadBodyText -> crReadBodyTextGone), applied to the shipped tree and reverted byte-exact: the download path the rolled harness supplies the real helper for no longer resolves",
+   "red": "proof-sweep-20261115-071313-d-01 FAILS (the valid-city load check: crPackLoad rejects through the broken consumption), observed twice - proving the harness roll still grades the real download end to end, assertions unchanged",
+   "green": "proof-sweep-20261115-071313-d-01 passes in full on the shipped tree",
+   "issued": "2026-11-23 section1-arch18"
   }
  ]
 }

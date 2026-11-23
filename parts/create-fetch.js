@@ -61,6 +61,20 @@ function crQL(filter, box, timeoutS) { return '[out:json][timeout:' + timeoutS +
 function crAreaQL(box, timeoutS) { return crQL('"name"]["highway"', box, timeoutS); }
 function crNameQL(osmName, box, timeoutS) { return crQL('"name"="' + osmName.replace(/(["\\])/g, '\\$1') + '"', box, timeoutS); }
 function crAbortOp(op) { try { if (op && op.ctl) op.ctl.abort(); } catch (e) {} } // stop an in-flight fetch's download, not just its right to land (CG-PF-10: Cancel/exit/supersede abort the request itself)
+async function crReadBodyText(r, onChunk) { // Architecture #18: THE shared response consumption - the streaming read, chunk accumulation and decode that crOverpassFetch (below) and crPackDownload (create-citydata.js) each spelled out through 1.280. Returns { text } for a streamed body; { stopped: <verdict> } when the caller's per-chunk hook stops the read (the reader is cancelled here - the caller's own timers, aborts and outcome bookkeeping stay with the caller); or { fallback: true } when the response has no reader, because the no-stream policies differ per caller (the pack reads the text under its first-byte window; the service measures a declared Content-Length before buffering and the buffered bytes after) - so the fallback's text is read at the caller, never here. onChunk(totalBytes) runs on every landed chunk before the chunk is kept; returning a verdict string stops the read with that verdict, returning null keeps reading. Everything POLITICAL stays at the callers: their controllers, their silence timers and windows, the service's byte cap and session checks (delivered through the hook), the pack's stall tag.
+  if (!r.body || typeof r.body.getReader !== 'function') return { fallback: true };
+  const reader = r.body.getReader(), chunks = []; let total = 0;
+  for (;;) {
+    const part = await reader.read();
+    if (part.done) break;
+    total += part.value.byteLength;
+    const verdict = onChunk ? onChunk(total) : null;
+    if (verdict) { try { await reader.cancel(); } catch (e) {} return { stopped: verdict }; }
+    chunks.push(part.value);
+  }
+  const buf = new Uint8Array(total); let off = 0; for (const c of chunks) { buf.set(c, off); off += c.byteLength; }
+  return { text: new TextDecoder().decode(buf) };
+}
 async function crOverpassFetch(ql, budgetMs, attempt1Ms, sessionOk, op) {
   // One query against the public Overpass instances (OVERPASS_URLS) under
   // ONE overall deadline spanning connect + body + parse (CG-PF-02/03):
@@ -94,18 +108,15 @@ async function crOverpassFetch(ql, budgetMs, attempt1Ms, sessionOk, op) {
       if (!r.ok) { lastFail = { ok: false, kind: 'error', status: r.status }; clearTimers(); continue; }
       let text;
       if (r.body && typeof r.body.getReader === 'function') {
-        const reader = r.body.getReader(), chunks = []; let total = 0;
-        for (;;) {
-          const part = await reader.read();
-          if (part.done) break;
-          total += part.value.byteLength;
-          if (total > CR_TIMING.capBytes) { try { if (ctl) ctl.abort(); } catch (e) {} clearTimers(); return { ok: false, kind: 'dense' }; }
-          chunks.push(part.value);
-          armStall(); // a landed chunk is progress: the silence clock restarts here
-          if (sessionOk && !sessionOk()) { clearTimers(); try { await reader.cancel(); } catch (e) {} crAbortOp(op); return { ok: false, kind: 'stale' }; } // superseded mid-stream: stop the download, don't just discard its result (CG-PF-10)
-        }
-        const buf = new Uint8Array(total); let off = 0; for (const c of chunks) { buf.set(c, off); off += c.byteLength; }
-        text = new TextDecoder().decode(buf);
+        const read = await crReadBodyText(r, (total) => { // Architecture #18: the consumption is crReadBodyText's; the POLICIES ride the hook - the byte cap first (enforced as the bytes arrive, as ever), then the silence clock's re-arm, then the session check
+          if (total > CR_TIMING.capBytes) return 'dense';
+          armStall(); // a landed chunk is progress
+          if (sessionOk && !sessionOk()) return 'stale';
+          return null;
+        });
+        if (read.stopped === 'dense') { try { if (ctl) ctl.abort(); } catch (e) {} clearTimers(); return { ok: false, kind: 'dense' }; }
+        if (read.stopped === 'stale') { clearTimers(); crAbortOp(op); return { ok: false, kind: 'stale' }; } // superseded mid-stream: stop the download, don't just discard its result (CG-PF-10) - the reader was cancelled inside crReadBodyText
+        text = read.text;
       } else { const cl = (r.headers && typeof r.headers.get === 'function') ? +(r.headers.get('content-length') || 0) : 0; if (cl > CR_TIMING.capBytes) { clearTimers(); return { ok: false, kind: 'dense' }; } text = await r.text(); if (new TextEncoder().encode(text).length > CR_TIMING.capBytes) { clearTimers(); return { ok: false, kind: 'dense' }; } } // Beta 1.170 (Carbon fix round Phase 2, D-07): the no-stream fallback measures the cap the way the streaming branch does - a declared Content-Length over the cap refuses BEFORE the body is buffered, and the buffered text is measured in BYTES (TextEncoder), where through 1.169 the only check ran after the full buffer landed and compared UTF-16 code units against the byte cap (a multi-byte body passed at up to twice the cap). What a reader-less response still cannot do is abort MID-body - that residual is inherent to the fallback, and is why the streaming branch is the primary. Beta 1.246: the fallback likewise cannot SEE mid-body progress, so its silence timer runs from the answer landing - a text() that wedges is cut by the silence rule, where a trickling one cannot be told apart (the streaming branch remains the primary on every browser that has it)
       clearTimers();
       let json = null;

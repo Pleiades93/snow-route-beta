@@ -2,7 +2,7 @@
 <html lang="en" class="boot">
 <head>
 <meta charset="UTF-8">
-<meta http-equiv="Content-Security-Policy" content="default-src 'none'; script-src 'sha384-6ycq8K5gfCtiGGJRgy7uwDCIp8iivLkeTGXDygT3/FJG9rIJ2stB7vYa3Jst8r5C' https://cdn.jsdelivr.net/npm/maplibre-gl@4.7.1/dist/maplibre-gl.js; style-src-elem 'sha384-l+Ing91zw7+8pk8Zac2Wr0FKBEz+pk8bYSPB00KMpT5TsGP86OppPfSOgVChr4uv' https://cdn.jsdelivr.net; style-src-attr 'unsafe-inline'; img-src 'self' data: blob: https://tiles.basemaps.cartocdn.com https://protomaps.github.io https://cdn.jsdelivr.net; connect-src 'self' https://tiles.basemaps.cartocdn.com https://protomaps.github.io https://cdn.jsdelivr.net https://nominatim.openstreetmap.org https://overpass-api.de https://overpass.kumi.systems; worker-src blob: 'self'; child-src blob: 'self'; font-src 'none'; manifest-src 'self'; base-uri 'none'; form-action 'none'; object-src 'none'">
+<meta http-equiv="Content-Security-Policy" content="default-src 'none'; script-src 'sha384-nebtMLDB42ESjqrdvMXRcd9WGZCom4gjqSwyjNhJbMmwBpDpF6g+zG3uxBo4J7F9' https://cdn.jsdelivr.net/npm/maplibre-gl@4.7.1/dist/maplibre-gl.js; style-src-elem 'sha384-l+Ing91zw7+8pk8Zac2Wr0FKBEz+pk8bYSPB00KMpT5TsGP86OppPfSOgVChr4uv' https://cdn.jsdelivr.net; style-src-attr 'unsafe-inline'; img-src 'self' data: blob: https://tiles.basemaps.cartocdn.com https://protomaps.github.io https://cdn.jsdelivr.net; connect-src 'self' https://tiles.basemaps.cartocdn.com https://protomaps.github.io https://cdn.jsdelivr.net https://nominatim.openstreetmap.org https://overpass-api.de https://overpass.kumi.systems; worker-src blob: 'self'; child-src blob: 'self'; font-src 'none'; manifest-src 'self'; base-uri 'none'; form-action 'none'; object-src 'none'">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="mobile-web-app-capable" content="yes">
@@ -8406,6 +8406,20 @@ function crQL(filter, box, timeoutS) { return '[out:json][timeout:' + timeoutS +
 function crAreaQL(box, timeoutS) { return crQL('"name"]["highway"', box, timeoutS); }
 function crNameQL(osmName, box, timeoutS) { return crQL('"name"="' + osmName.replace(/(["\\])/g, '\\$1') + '"', box, timeoutS); }
 function crAbortOp(op) { try { if (op && op.ctl) op.ctl.abort(); } catch (e) {} } // stop an in-flight fetch's download, not just its right to land (CG-PF-10: Cancel/exit/supersede abort the request itself)
+async function crReadBodyText(r, onChunk) { // Architecture #18: THE shared response consumption - the streaming read, chunk accumulation and decode that crOverpassFetch (below) and crPackDownload (create-citydata.js) each spelled out through 1.280. Returns { text } for a streamed body; { stopped: <verdict> } when the caller's per-chunk hook stops the read (the reader is cancelled here - the caller's own timers, aborts and outcome bookkeeping stay with the caller); or { fallback: true } when the response has no reader, because the no-stream policies differ per caller (the pack reads the text under its first-byte window; the service measures a declared Content-Length before buffering and the buffered bytes after) - so the fallback's text is read at the caller, never here. onChunk(totalBytes) runs on every landed chunk before the chunk is kept; returning a verdict string stops the read with that verdict, returning null keeps reading. Everything POLITICAL stays at the callers: their controllers, their silence timers and windows, the service's byte cap and session checks (delivered through the hook), the pack's stall tag.
+  if (!r.body || typeof r.body.getReader !== 'function') return { fallback: true };
+  const reader = r.body.getReader(), chunks = []; let total = 0;
+  for (;;) {
+    const part = await reader.read();
+    if (part.done) break;
+    total += part.value.byteLength;
+    const verdict = onChunk ? onChunk(total) : null;
+    if (verdict) { try { await reader.cancel(); } catch (e) {} return { stopped: verdict }; }
+    chunks.push(part.value);
+  }
+  const buf = new Uint8Array(total); let off = 0; for (const c of chunks) { buf.set(c, off); off += c.byteLength; }
+  return { text: new TextDecoder().decode(buf) };
+}
 async function crOverpassFetch(ql, budgetMs, attempt1Ms, sessionOk, op) {
   // One query against the public Overpass instances (OVERPASS_URLS) under
   // ONE overall deadline spanning connect + body + parse (CG-PF-02/03):
@@ -8439,18 +8453,15 @@ async function crOverpassFetch(ql, budgetMs, attempt1Ms, sessionOk, op) {
       if (!r.ok) { lastFail = { ok: false, kind: 'error', status: r.status }; clearTimers(); continue; }
       let text;
       if (r.body && typeof r.body.getReader === 'function') {
-        const reader = r.body.getReader(), chunks = []; let total = 0;
-        for (;;) {
-          const part = await reader.read();
-          if (part.done) break;
-          total += part.value.byteLength;
-          if (total > CR_TIMING.capBytes) { try { if (ctl) ctl.abort(); } catch (e) {} clearTimers(); return { ok: false, kind: 'dense' }; }
-          chunks.push(part.value);
-          armStall(); // a landed chunk is progress: the silence clock restarts here
-          if (sessionOk && !sessionOk()) { clearTimers(); try { await reader.cancel(); } catch (e) {} crAbortOp(op); return { ok: false, kind: 'stale' }; } // superseded mid-stream: stop the download, don't just discard its result (CG-PF-10)
-        }
-        const buf = new Uint8Array(total); let off = 0; for (const c of chunks) { buf.set(c, off); off += c.byteLength; }
-        text = new TextDecoder().decode(buf);
+        const read = await crReadBodyText(r, (total) => { // Architecture #18: the consumption is crReadBodyText's; the POLICIES ride the hook - the byte cap first (enforced as the bytes arrive, as ever), then the silence clock's re-arm, then the session check
+          if (total > CR_TIMING.capBytes) return 'dense';
+          armStall(); // a landed chunk is progress
+          if (sessionOk && !sessionOk()) return 'stale';
+          return null;
+        });
+        if (read.stopped === 'dense') { try { if (ctl) ctl.abort(); } catch (e) {} clearTimers(); return { ok: false, kind: 'dense' }; }
+        if (read.stopped === 'stale') { clearTimers(); crAbortOp(op); return { ok: false, kind: 'stale' }; } // superseded mid-stream: stop the download, don't just discard its result (CG-PF-10) - the reader was cancelled inside crReadBodyText
+        text = read.text;
       } else { const cl = (r.headers && typeof r.headers.get === 'function') ? +(r.headers.get('content-length') || 0) : 0; if (cl > CR_TIMING.capBytes) { clearTimers(); return { ok: false, kind: 'dense' }; } text = await r.text(); if (new TextEncoder().encode(text).length > CR_TIMING.capBytes) { clearTimers(); return { ok: false, kind: 'dense' }; } } // Beta 1.170 (Carbon fix round Phase 2, D-07): the no-stream fallback measures the cap the way the streaming branch does - a declared Content-Length over the cap refuses BEFORE the body is buffered, and the buffered text is measured in BYTES (TextEncoder), where through 1.169 the only check ran after the full buffer landed and compared UTF-16 code units against the byte cap (a multi-byte body passed at up to twice the cap). What a reader-less response still cannot do is abort MID-body - that residual is inherent to the fallback, and is why the streaming branch is the primary. Beta 1.246: the fallback likewise cannot SEE mid-body progress, so its silence timer runs from the answer landing - a text() that wedges is cut by the silence rule, where a trickling one cannot be told apart (the streaming branch remains the primary on every browser that has it)
       clearTimers();
       let json = null;
@@ -8532,7 +8543,7 @@ async function crPackResolveCity(name, bbox) { // does the library hold THIS cit
   if (!(pb.s <= bbox.s + EPS && pb.n >= bbox.n - EPS && pb.w <= bbox.w + EPS && pb.e >= bbox.e - EPS)) return null;
   return { slug: e.slug, bbox: pb, gen: typeof e.generatedAt === 'string' ? e.generatedAt : '' }; // Beta 1.251 (R-02): the catalogue's generatedAt is the pack's version stamp - republishing a pack re-stamps it, and the dataset identity (crDatasetId, create-cache.js) binds saved records to it
 }
-async function crPackDownload(slug) { // Beta 1.249: ONE download attempt of a city pack, watched at the byte level (Andrew's pack stall rule, 2026-11-19). Through 1.248 the pack fetch carried no timeout of its own - a wedged connection, or a host that never answers, pended crPackLoad's promise forever, and only the preparation watchdogs' 180 s landing bound ever surfaced it, as a failed preparation. The attempt now carries a silence timer in crOverpassFetch's shape (Beta 1.246), on the pack's own two windows from CR_TIMING: packFirstByteMs (120 s) until the first body byte - the static host spends real time producing a big city's file before the first byte moves, so silence there is not yet a wedge - then packStallMs (60 s) between bytes once they flow. On expiry the timer aborts the attempt through its own controller and the attempt throws a TAGGED error (err.packStall) - the retry loop's signal in crPackLoad below. Every other failure (HTTP status, an unreadable or misshapen body, a network throw) is untagged and behaves exactly as it always has. The body is read as a stream and accumulated as byte chunks, concatenated and decoded the streaming branch's way; there is still NO byte cap (the caps in CR_TIMING govern service extracts, not the app's own library). A reader-less response falls back to r.text() under the first-byte window armed at the attempt's start: it cannot see mid-body progress, so the generous window is its only honest bound - the fallback limit 1.246 documented for its own no-stream branch.
+async function crPackDownload(slug) { // Beta 1.249: ONE download attempt of a city pack, watched at the byte level (Andrew's pack stall rule, 2026-11-19). Through 1.248 the pack fetch carried no timeout of its own - a wedged connection, or a host that never answers, pended crPackLoad's promise forever, and only the preparation watchdogs' 180 s landing bound ever surfaced it, as a failed preparation. The attempt now carries a silence timer in crOverpassFetch's shape (Beta 1.246), on the pack's own two windows from CR_TIMING: packFirstByteMs (120 s) until the first body byte - the static host spends real time producing a big city's file before the first byte moves, so silence there is not yet a wedge - then packStallMs (60 s) between bytes once they flow. On expiry the timer aborts the attempt through its own controller and the attempt throws a TAGGED error (err.packStall) - the retry loop's signal in crPackLoad below. Every other failure (HTTP status, an unreadable or misshapen body, a network throw) is untagged and behaves exactly as it always has. The body is consumed through the shared streaming read (crReadBodyText, create-fetch.js - Architecture #18: stream, accumulate, decode, one body for both watched downloads); there is still NO byte cap (the caps in CR_TIMING govern service extracts, not the app's own library). A reader-less response falls back to r.text() under the first-byte window armed at the attempt's start: it cannot see mid-body progress, so the generous window is its only honest bound - the fallback limit 1.246 documented for its own no-stream branch.
   const ctl = (typeof AbortController !== 'undefined') ? new AbortController() : null;
   if (ctl) crPackCtls[slug] = ctl; // Beta 1.254 (O-06): the load owns this attempt's controller until the attempt settles (the finally below unregisters it) or the load is dropped (crPackAbort)
   let stallTo = null, sawByte = false, killed = false;
@@ -8542,20 +8553,12 @@ async function crPackDownload(slug) { // Beta 1.249: ONE download attempt of a c
   try {
     const r = await fetch('packs/' + slug + '.json', { cache: 'no-cache', signal: ctl ? ctl.signal : undefined });
     if (!r.ok) { clearStall(); throw new Error('pack HTTP ' + r.status); }
-    let text;
-    if (r.body && typeof r.body.getReader === 'function') {
-      const reader = r.body.getReader(), chunks = []; let total = 0;
-      for (;;) {
-        const part = await reader.read();
-        if (part.done) break;
-        total += part.value.byteLength;
-        chunks.push(part.value);
-        sawByte = true;
-        armStall(); // a landed chunk is progress: the silence clock restarts here, on the flowing window once the first byte has landed
-      }
-      const buf = new Uint8Array(total); let off = 0; for (const c of chunks) { buf.set(c, off); off += c.byteLength; }
-      text = new TextDecoder().decode(buf);
-    } else { text = await r.text(); } // no reader: the first-byte window armed at the start bounds the whole read (see the header - no mid-body visibility exists to arm anything finer)
+    const read = await crReadBodyText(r, () => { // Architecture #18: the consumption (stream, accumulate, decode) is crReadBodyText's (create-fetch.js); the pack's POLICIES stay here - the chunk hook records the first byte and re-arms the silence clock on the flowing window, and the hook never stops the read (the pack has no cap and no session verdict to give)
+      sawByte = true;
+      armStall(); // a landed chunk is progress: the silence clock restarts here, on the flowing window once the first byte has landed
+      return null;
+    });
+    const text = read.fallback ? await r.text() : read.text; // no reader: the first-byte window armed at the start bounds the whole read (see the header - no mid-body visibility exists to arm anything finer)
     clearStall();
     const pack = JSON.parse(text); // a SyntaxError propagates untagged, exactly as r.json()'s did through 1.248
     if (!pack || !pack.streets || typeof pack.streets !== 'object') throw new Error('pack shape');

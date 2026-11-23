@@ -8710,6 +8710,74 @@
     "scripts/check-census.py": "dd55f34cd855e60a6fadae7e261aa99f1682b9d7d8446696532045e3a281fafb"
    },
    "issued": "2026-11-23 section1-arch17"
+  },
+  {
+   "id": "section1-arch18-1281",
+   "kind": "app",
+   "anchors": {
+    "functions": [
+     "crReadBodyText",
+     "crOverpassFetch",
+     "crPackDownload"
+    ],
+    "elements": [],
+    "guards": []
+   },
+   "changed": [
+    "parts/create-citydata.js",
+    "parts/create-fetch.js"
+   ],
+   "rows": [
+    {
+     "id": "caller:crOverpassFetch:parts/create-fetch.js:crSourceExtract",
+     "kind": "caller",
+     "source": "derived: call-site scan of parts/ - crOverpassFetch() is called from crSourceExtract in parts/create-fetch.js",
+     "status": "covered",
+     "note": "The seam's service path is byte-identical in shape; only its body read moved into crReadBodyText with the cap/session policies on the hook. Covered by proof-response-consumption + proof-1246 (timer seats untouched) + the #18 focused drive set (151 153 154 155 164 165 173 174 205 206 214 217), green on the step tree - drive205 (attempt stall) and drive206 (pack windows, P3a discrimination) are the timing witnesses."
+    },
+    {
+     "id": "caller:crPackDownload:parts/create-citydata.js:crPackLoad",
+     "kind": "caller",
+     "source": "derived: call-site scan of parts/ - crPackDownload() is called from crPackLoad in parts/create-citydata.js",
+     "status": "covered",
+     "note": "The load's retry/tag/controller policies are untouched; only the attempt's body read moved. Covered by proof-1249 (re-pointed seats) + proof-sweep d-01 (real download end to end) + the #18 focused drive set (151 153 154 155 164 165 173 174 205 206 214 217), green on the step tree - drive205 (attempt stall) and drive206 (pack windows, P3a discrimination) are the timing witnesses."
+    },
+    {
+     "id": "caller:crReadBodyText:parts/create-citydata.js:crPackDownload",
+     "kind": "caller",
+     "source": "derived: call-site scan of parts/ - crReadBodyText() is called from crPackDownload in parts/create-citydata.js",
+     "status": "covered",
+     "note": "proof-response-consumption runs the shared body; proof-1249 check 18 pins the pack hook's sawByte assignment at this call."
+    },
+    {
+     "id": "caller:crReadBodyText:parts/create-fetch.js:crOverpassFetch",
+     "kind": "caller",
+     "source": "derived: call-site scan of parts/ - crReadBodyText() is called from crOverpassFetch in parts/create-fetch.js",
+     "status": "covered",
+     "note": "proof-response-consumption runs the shared body incl. the verdict stop the service's hook produces ('dense'/'stale')."
+    }
+   ],
+   "files": {
+    "parts/app1.js": "cf555a9736c6f9961e906e0fd9c00a531c9ddb88ca3c5ff5765fa33ba62953df",
+    "parts/app2.js": "25749571be73fc2480b23f22a49def500814105e19abe08919e9bec766cc9144",
+    "parts/app3.js": "25b9d5bf8c5bb8e2bb433ad563c110744b65f5bf69932dc428d1d240505a3d39",
+    "parts/app4.js": "adeb3e82d3e73e4ce8a385ea14725f82573f823e49cdec2772aefaa94cbdd28b",
+    "parts/app5.js": "075517797dadbffbebf5d59682dae3a8771b1b5fa3b999c5de4206257160249f",
+    "parts/brand-snow.js": "86fa9a02f29c7345ee68d68daffd9c72da612921b64da37f1eccf6b72161ac5f",
+    "parts/create-cache.js": "e4a00051eab5a4af59b71909b4a6627f53e720b28dc17dc34635db949f746d7c",
+    "parts/create-citydata.js": "aff6d5e1dbe6f6c9158982fbad7a326cbb946a80c60042d33e679a5a47ea4c0e",
+    "parts/create-fetch.js": "60abb28dd4ca71be3850f3e0c3e9f2bab69978cb79100db4c0859ce078f97ec3",
+    "parts/create-packs.js": "a8b60fb7d601c1e83f555eb703b625a571ec878937ac36fcaddd05aecf635975",
+    "parts/create-pick.js": "11b8276387dd243ea200fac987ccd33d9457b3a369e18040eb8b277bd716638c",
+    "parts/create-save.js": "ad39720727f43d397e72443c92955c5a35d530f03e3219b2182c9ee7c062e52d",
+    "parts/data.js": "9684c69862156dc70ee9a2b88278b4e825c5bf35f0c150fbc5660ccbdce9304b",
+    "parts/engine.js": "d6d1f676ac8bc2a302cfbaf56de1e10cb361fd8b746d94d6380a5e4ebaf76173",
+    "parts/pmstyles.js": "f3501db9c16dbc6a5fa8c901089101e4913772384de1f069accb23a614bb90fc",
+    "parts/whatsnew.js": "e24a0d6b2bbc4cf4e7b1207504ed11efbfcaad4805f3c6d597cff316057314fe",
+    "parts/head.html": "bff57252f945388445965c770902c06145d3501ceb21cb6f5507fd542eca066d",
+    "scripts/check-census.py": "dd55f34cd855e60a6fadae7e261aa99f1682b9d7d8446696532045e3a281fafb"
+   },
+   "issued": "2026-11-23 section1-arch18"
   }
  ]
 }

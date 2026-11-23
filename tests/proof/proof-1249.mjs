@@ -61,7 +61,8 @@ check('4: the preparation bound itself stands at 180000 (the watchdogs did not m
 // ---------- the attempt: seat, windows, tag ----------
 check('5: one watched attempt helper exists and reads the body as a stream',
   citydata.includes('async function crPackDownload(slug)')
-  && citydata.includes('r.body.getReader()'));
+  && citydata.includes('crReadBodyText(r,')
+  && fetchJs.includes('r.body.getReader()')); // Section 1 step 6 (Architecture #18, Beta 1.281): the stream itself moved into the shared consumption (crReadBodyText, create-fetch.js) - the claim is unchanged, its seat follows the code
 check('6: the silence timer picks its window by whether a byte has landed - first-byte window before, flowing window after',
   citydata.includes('sawByte ? CR_TIMING.packStallMs : CR_TIMING.packFirstByteMs'));
 check('7: a landed chunk re-arms the timer (the flowing window restarts per chunk)',
@@ -110,7 +111,14 @@ check('17: What\'s New carries the 1.251 bullet, short and dash-free',
 // the chunk concatenation), and it stands exactly once in the file,
 // so a copy planted elsewhere cannot satisfy it while the loop loses
 // its own. Mutation-proven: red under the deletion, green restored.
-const loopSlice = citydata.slice(citydata.indexOf('const reader = r.body.getReader()'), citydata.indexOf('const buf = new Uint8Array(total)'));
+// Section 1 step 6 (Architecture #18, Beta 1.281): the read loop moved
+// into the shared consumption (crReadBodyText, create-fetch.js); the
+// assignment now stands in crPackDownload's per-chunk hook on that
+// consumption - still inside the download's own body, still exactly
+// once in the file, and the slice below spans the whole attempt
+// helper to prove the seat. The deletion mutation was re-run at the
+// new seat for the step's receipt: red, green restored.
+const loopSlice = citydata.slice(citydata.indexOf('async function crPackDownload(slug)'), citydata.indexOf('function crPackLoad('));
 check('18: a landed chunk SETS the flag the timer reads - sawByte = true stands inside the streaming read loop, and exactly once in the file',
   loopSlice.length > 0
   && loopSlice.includes('sawByte = true;')
