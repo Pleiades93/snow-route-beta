@@ -24,8 +24,18 @@ const t = (name, cond) => { if (cond) pass++; else { fail++; console.log('FAIL',
 // ---- Bug 2: cleanWorkM - a null-time completed street missing from the sides
 // map must still price at its full both-sides length (the assessment's
 // constructed legacy clean: pre-fix returns 1000, correct is 1400) ----
+// Beta 1.278 (architecture #6): cleanWorkM is a doorway - the measure lives
+// in the CLEAN owner as workM - so the extraction takes the owner with it;
+// the judged cases are unchanged.
+function extractBlock(src, sig) {
+  const i = src.indexOf(sig);
+  if (i < 0) throw new Error(sig + ' not found');
+  let d = 0, j = src.indexOf('{', i);
+  for (; j < src.length; j++) { if (src[j] === '{') d++; else if (src[j] === '}') { d--; if (!d) return src.slice(i, j + 1); } }
+  throw new Error('unbalanced ' + sig);
+}
 const cleanWorkM = new Function('STRETCH', 'STREETNAMES', 'segLenM',
-  extractFrom(app3, 'cleanWorkM') + '\nreturn cleanWorkM;')(
+  extractBlock(app3, 'const CLEAN = {') + '\n' + extractFrom(app3, 'cleanWorkM') + '\nreturn cleanWorkM;')(
   { Alpha: { total: 200, parts: ['a1'] }, Beta: { total: 500, parts: ['b1'] } },
   ['Alpha', 'Beta'],
   p => ({ a1: 200, b1: 500 }[p]));

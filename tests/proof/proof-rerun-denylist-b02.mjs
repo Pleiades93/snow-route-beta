@@ -12,15 +12,18 @@ import vm from 'node:vm';
 // zero work metres (and no pace) for the life of the entry.
 //
 // The fix: a stored 0 is trusted only when the entry carries at least one
-// parseable side stamp (snapHasStamps) - a MEASURED 0, e.g. the RP-05 case
+// parseable side stamp (snapHasStamps; CLEAN.hasStamps since Beta 1.278) - a MEASURED 0, e.g. the RP-05 case
 // (real stamps, all before Start). A stamp-less 0 measured nothing and the
 // entry falls through to the existing derivation. workM > 0 is untouched.
 //
-// This proof extracts cleanWorkM (and snapHasStamps, when present) verbatim
-// from parts/app3.js and runs them in a vm against a two-street stub
-// geometry. On unmodified main the stamp-less-0 checks FAIL; with the fix
-// all checks pass, and the measured-0 / verbatim / legacy checks pass both
-// ways (behaviour for cleans with real timestamps is preserved).
+// This proof extracts the measure verbatim from parts/app3.js and runs it
+// in a vm against a two-street stub geometry. Beta 1.278 (architecture
+// #6): the measure lives in the CLEAN owner as workM (its stamp probe is
+// the owner's hasStamps) and cleanWorkM is the doorway the app calls -
+// the extraction takes the owner and the doorway. On unmodified main the
+// stamp-less-0 checks FAIL; with the fix all checks pass, and the
+// measured-0 / verbatim / legacy checks pass both ways (behaviour for
+// cleans with real timestamps is preserved).
 
 const src = readFileSync('parts/app3.js', 'utf8');
 
@@ -36,19 +39,32 @@ function extractFn(name) {
   throw new Error('unbalanced braces extracting ' + name);
 }
 
+function extractBlock(sig) {
+  const at = src.indexOf(sig);
+  if (at < 0) return '';
+  const open = src.indexOf('{', at);
+  let depth = 0;
+  for (let i = open; i < src.length; i++) {
+    if (src[i] === '{') depth++;
+    else if (src[i] === '}') { depth--; if (depth === 0) return src.slice(at, i + 1); }
+  }
+  throw new Error('unbalanced braces extracting ' + sig);
+}
+
+const ownerSrc = extractBlock('const CLEAN = {');
+if (!ownerSrc.includes('return h.workM')) throw new Error('CLEAN extraction does not look right');
 const cleanWorkMSrc = extractFn('cleanWorkM(h)');
-if (!cleanWorkMSrc.includes('return h.workM')) throw new Error('cleanWorkM extraction does not look right');
-const snapSrc = src.includes('function snapHasStamps') ? extractFn('snapHasStamps(h)') : '';
 
 const ctx = vm.createContext({
   STREETNAMES: ['Velmar', 'Mellings'],
+  STREETSET: new Set(['Velmar', 'Mellings']),
   STRETCH: {
     Velmar: { total: 100, parts: [{ len: 60 }, { len: 40 }] },
     Mellings: { total: 50, parts: [{ len: 50 }] }
   },
   segLenM: p => p.len
 });
-vm.runInContext(snapSrc + '\n' + cleanWorkMSrc, ctx);
+vm.runInContext(ownerSrc + '\n' + cleanWorkMSrc, ctx);
 const cleanWorkM = vm.runInContext('cleanWorkM', ctx);
 
 const T1 = '2026-11-10T05:00:00.000Z', T2 = '2026-11-10T05:01:00.000Z';

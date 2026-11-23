@@ -9,11 +9,15 @@ import vm from 'node:vm';
 // flipping the full-clean comparison to !==, widening the first loop's
 // guard from && to ||, starting the first loop one past the newest entry
 // (which dereferences undefined), and breaking the fallback loop's bound
-// so it never runs. This proof extracts refRun verbatim and runs it
-// against stub history/cleanCount/STREETNAMES (the harness supplies the
-// scope, the same way sibling proofs supply stub state; cleanCount here
-// counts an entry's cleaned streets, which is its contract in app3).
-// On the clean tree all checks pass; each break above fails at least one.
+// so it never runs. This proof extracts the selection verbatim and runs
+// it against stub history/STREETSET/STREETNAMES (the harness supplies the
+// scope, the same way sibling proofs supply stub state; the count here
+// counts an entry's route streets through STREETSET, which is its
+// contract in app3). Beta 1.278 (architecture #6): the selection lives
+// in the CLEAN owner as ref() and refRun is its doorway - the extraction
+// takes the owner and the doorway; the four breaks above live in the
+// owner's body now and each still fails at least one check below.
+// On the clean tree all checks pass.
 
 const src = readFileSync('parts/app3.js', 'utf8');
 const start = src.indexOf('function refRun()');
@@ -24,6 +28,14 @@ for (let i = src.indexOf('{', start); i < src.length; i++) {
   if (src[i] === '}' && --depth === 0) { end = i + 1; break; }
 }
 const fnText = src.slice(start, end);
+const objStart = src.indexOf('const CLEAN = {');
+if (objStart < 0) { console.log('FAIL: CLEAN owner not found in parts/app3.js'); process.exit(1); }
+let odepth = 0, oend = -1;
+for (let i = src.indexOf('{', objStart); i < src.length; i++) {
+  if (src[i] === '{') odepth++;
+  if (src[i] === '}' && --odepth === 0) { oend = i + 1; break; }
+}
+const objText = src.slice(objStart, oend);
 
 const NAMES = Array.from({ length: 34 }, (_, i) => 'S' + i);
 const entry = n => ({ items: Object.fromEntries(NAMES.slice(0, n).map(k => [k, 1])) });
@@ -31,9 +43,9 @@ function makeRefRun(history) {
   const ctx = vm.createContext({
     history,
     STREETNAMES: NAMES,
-    cleanCount: h => Object.keys(h.items || {}).length,
+    STREETSET: new Set(NAMES),
   });
-  vm.runInContext(fnText + '\nthis.__refRun = refRun;', ctx);
+  vm.runInContext(objText + '\n' + fnText + '\nthis.__refRun = refRun;', ctx);
   return ctx.__refRun;
 }
 

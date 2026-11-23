@@ -7717,6 +7717,87 @@
     "scripts/check-census.py": "dd55f34cd855e60a6fadae7e261aa99f1682b9d7d8446696532045e3a281fafb"
    },
    "issued": "2026-11-23"
+  },
+  {
+   "id": "arch6-1278",
+   "kind": "app",
+   "anchors": {
+    "elements": [],
+    "functions": [
+     "refRun",
+     "cleanCount",
+     "cleanWorkM",
+     "histDur",
+     "cleanPaceKm",
+     "paceInfo",
+     "renderPace",
+     "openClean",
+     "cleanNoteLines"
+    ],
+    "guards": []
+   },
+   "changed": [
+    "parts/app3.js",
+    "parts/whatsnew.js"
+   ],
+   "rows": [
+    {
+     "id": "caller:openClean:parts/app3.js:r:click",
+     "kind": "caller",
+     "source": "derived: call-site scan of parts/ - openClean() is called from r:click in parts/app3.js",
+     "status": "covered",
+     "note": "The history-row click opens the clean detail, which now renders CLEAN.detail whole. Covered by drive192 (opens saved cleans from the pace list; its figure sections pass in every run) and drive188 (the reference and count rules behind the list). The detail derivation itself is equivalence-proven: 169 checks, 0 diffs against the 1.277 helpers."
+    },
+    {
+     "id": "caller:paceInfo:parts/app3.js:renderPace",
+     "kind": "caller",
+     "source": "derived: call-site scan of parts/ - paceInfo() is called from renderPace in parts/app3.js",
+     "status": "covered",
+     "note": "renderPace shows paceInfo's live line beside the CLEAN.summary reads. Covered by drive188 15/15, drive114 23/23 and drive126 16/16 (the pace surfaces); paceInfo's archived half delegates to CLEAN.ref + CLEAN.refRateMh, equivalence-proven (169 checks, 0 diffs)."
+    },
+    {
+     "id": "caller:paceInfo:parts/app3.js:statsLine",
+     "kind": "caller",
+     "source": "derived: call-site scan of parts/ - paceInfo() is called from statsLine in parts/app3.js",
+     "status": "covered",
+     "note": "statsLine renders the finish stats line from paceInfo; paceInfo's archived half now delegates to the owner with byte-identical figures (equivalence harness, 169 checks, 0 diffs). Covered by drive187 19/19 (the finish archive figures) and drive195 15/15."
+    },
+    {
+     "id": "caller:renderPace:parts/app3.js:closeClean",
+     "kind": "caller",
+     "source": "derived: call-site scan of parts/ - renderPace() is called from closeClean in parts/app3.js",
+     "status": "covered",
+     "note": "Closing the clean detail returns to renderPace, which consumes CLEAN.summary for the banner, last-clean cells and saved rows. Covered by drive192 (detail open/close flow; figure sections pass) and drive188 15/15."
+    },
+    {
+     "id": "caller:renderPace:parts/app3.js:openPace",
+     "kind": "caller",
+     "source": "derived: call-site scan of parts/ - renderPace() is called from openPace in parts/app3.js",
+     "status": "covered",
+     "note": "Opening the Pace sheet renders through CLEAN.summary. Covered by drive114 23/23, drive126 16/16 and drive188 15/15 on the final tree."
+    }
+   ],
+   "files": {
+    "parts/app1.js": "cf555a9736c6f9961e906e0fd9c00a531c9ddb88ca3c5ff5765fa33ba62953df",
+    "parts/app2.js": "e0161aa1a5ce7def923be1b2fd70aeff9c233136e2d85f86cbd99a0867a59720",
+    "parts/app3.js": "25b9d5bf8c5bb8e2bb433ad563c110744b65f5bf69932dc428d1d240505a3d39",
+    "parts/app4.js": "77a902a67ce2de0f989a00d9a06c9f16ee7fccdc10e43238ddade610e57e463d",
+    "parts/app5.js": "075517797dadbffbebf5d59682dae3a8771b1b5fa3b999c5de4206257160249f",
+    "parts/brand-snow.js": "86fa9a02f29c7345ee68d68daffd9c72da612921b64da37f1eccf6b72161ac5f",
+    "parts/create-cache.js": "2a7e983aa50862cb074a16abf9266a41a1a175c69faa5215b1d3d289aa2b5327",
+    "parts/create-citydata.js": "393d90f275d971b5e52352deebaece381279acd0e86495ffa2da35701de9148e",
+    "parts/create-fetch.js": "e7a65bd88dc338213946c4537dc5d397f79396ec416b6f4ebf4be831927aeb66",
+    "parts/create-packs.js": "a8b60fb7d601c1e83f555eb703b625a571ec878937ac36fcaddd05aecf635975",
+    "parts/create-pick.js": "7188458b087496ad52ff5d159ae23668b543d0100a3d58c3b251d33374258dd6",
+    "parts/create-save.js": "ad39720727f43d397e72443c92955c5a35d530f03e3219b2182c9ee7c062e52d",
+    "parts/data.js": "9684c69862156dc70ee9a2b88278b4e825c5bf35f0c150fbc5660ccbdce9304b",
+    "parts/engine.js": "d6d1f676ac8bc2a302cfbaf56de1e10cb361fd8b746d94d6380a5e4ebaf76173",
+    "parts/pmstyles.js": "f3501db9c16dbc6a5fa8c901089101e4913772384de1f069accb23a614bb90fc",
+    "parts/whatsnew.js": "b84f0414f8d1cced32b06dddc3cd4bfad4132d5be8c88473c2e3067521d40a4c",
+    "parts/head.html": "bff57252f945388445965c770902c06145d3501ceb21cb6f5507fd542eca066d",
+    "scripts/check-census.py": "dd55f34cd855e60a6fadae7e261aa99f1682b9d7d8446696532045e3a281fafb"
+   },
+   "issued": "2026-11-23"
   }
  ]
 }

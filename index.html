@@ -2,7 +2,7 @@
 <html lang="en" class="boot">
 <head>
 <meta charset="UTF-8">
-<meta http-equiv="Content-Security-Policy" content="default-src 'none'; script-src 'sha384-7jLub/Q6TAj/Srm2lQXVV+WXmP/utoR1fK/7yr7b0dwM+BXQdA4eQwIuLtGI+NUy' https://cdn.jsdelivr.net/npm/maplibre-gl@4.7.1/dist/maplibre-gl.js; style-src-elem 'sha384-l+Ing91zw7+8pk8Zac2Wr0FKBEz+pk8bYSPB00KMpT5TsGP86OppPfSOgVChr4uv' https://cdn.jsdelivr.net; style-src-attr 'unsafe-inline'; img-src 'self' data: blob: https://tiles.basemaps.cartocdn.com https://protomaps.github.io https://cdn.jsdelivr.net; connect-src 'self' https://tiles.basemaps.cartocdn.com https://protomaps.github.io https://cdn.jsdelivr.net https://nominatim.openstreetmap.org https://overpass-api.de https://overpass.kumi.systems; worker-src blob: 'self'; child-src blob: 'self'; font-src 'none'; manifest-src 'self'; base-uri 'none'; form-action 'none'; object-src 'none'">
+<meta http-equiv="Content-Security-Policy" content="default-src 'none'; script-src 'sha384-OdIbjxmUVNm0FJ9fzaOMzF9q1n9kC2csPLTJeGzYevv6JQYNZufzkaT8Y7aL9nHj' https://cdn.jsdelivr.net/npm/maplibre-gl@4.7.1/dist/maplibre-gl.js; style-src-elem 'sha384-l+Ing91zw7+8pk8Zac2Wr0FKBEz+pk8bYSPB00KMpT5TsGP86OppPfSOgVChr4uv' https://cdn.jsdelivr.net; style-src-attr 'unsafe-inline'; img-src 'self' data: blob: https://tiles.basemaps.cartocdn.com https://protomaps.github.io https://cdn.jsdelivr.net; connect-src 'self' https://tiles.basemaps.cartocdn.com https://protomaps.github.io https://cdn.jsdelivr.net https://nominatim.openstreetmap.org https://overpass-api.de https://overpass.kumi.systems; worker-src blob: 'self'; child-src blob: 'self'; font-src 'none'; manifest-src 'self'; base-uri 'none'; form-action 'none'; object-src 'none'">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="mobile-web-app-capable" content="yes">
@@ -679,7 +679,7 @@ html.theme-swap *, html.theme-swap *::before, html.theme-swap *::after { transit
 <div id="hud">
   <div id="warn">Not saving. Storage is full or blocked</div>
   <div class="row">
-    <div class="titleStack"><div class="title">Snow Route Beta</div><div class="ver" id="ver">Beta 1.277</div></div>
+    <div class="titleStack"><div class="title">Snow Route Beta</div><div class="ver" id="ver">Beta 1.278</div></div>
   </div>
   <div id="stats"></div>
 </div>
@@ -4988,31 +4988,102 @@ $('paceBtn').addEventListener('click', () => { if (!tapGuard('paceBtn')) return;
 function refreshAll() { updateCount(); renderPanel(); renderStreets(); }
 
 // ===== PACE (one source) =====
-function refRun() { // newest qualifying clean wins (history is chronological, so search from the end)
-  for (let i = history.length - 1; i >= 0; i--) { const h = history[i]; if (h.items && cleanCount(h) === STREETNAMES.length) return h; } // Beta 1.94 (audit F-01): full = every street in the route's own list, not a hard-coded 34. Beta 1.169 (B-07): counted by cleanCount, like every other surface - a null-timestamped street still counts (it was cleaned), a foreign key never does
-  for (let i = history.length - 1; i >= 0; i--) { const h = history[i]; if (h.items && cleanCount(h) >= 5) return h; }
-  return null;
-}
-function cleanCount(h) { const items = (h && h.items) || {}; return Object.keys(items).filter(n => STREETSET.has(n)).length; } // Beta 1.169 (Carbon fix round, B-07): THE count of a clean's streets, in one place - the streets the clean covers: its item keys that belong to the route, timestamp or not (buildSnap writes a null time for a completed street whose moment was not recorded; the street was still cleaned, and openClean lists it). Through 1.168 refRun and the pace/detail headers counted raw keys while histDur counted only timestamped streets, so the same clean could read '34 streets' in one line and '33 of 34' in the next.
-function snapHasStamps(h) { const T = h && h.sides && h.sides.t; if (!T || typeof T !== 'object') return false; for (const n of Object.keys(T)) { const arr = T[n]; if (!Array.isArray(arr)) continue; for (const pr of arr) { if (Array.isArray(pr) && ((typeof pr[0] === 'string' && !isNaN(Date.parse(pr[0]))) || (typeof pr[1] === 'string' && !isNaN(Date.parse(pr[1]))))) return true; } } return false; } // 2026-11-15 (denylist fix round, B-02): does the entry's stamp journal hold at least one real moment? A finish after a state restore archives with every stamp null, so buildSnap's window sum comes out 0 over NO evidence - that 0 was never measured. A measured 0 (the RP-05 case: real stamps, all before Start) always carries stamps.
-function cleanWorkM(h) { // side-metres a saved clean actually covered
-  if (h && typeof h.workM === 'number' && isFinite(h.workM) && h.workM >= 0 && (h.workM > 0 || snapHasStamps(h))) return h.workM; // Beta 1.167 (run/pace fix round, B2): cleans archived by 1.167+ carry the run-attributed figure Finish measured (buildSnap's workM) - it is read VERBATIM, so pre-Start work never counts (RP-05), a later geometry edit cannot re-price the clean (RP-06), and a partially-recorded sides map cannot short-circuit into an undercount (RP-09). 2026-11-15 (denylist fix round, B-02): the one exception is a stored 0 with no stamps anywhere in the entry - the finish-after-a-restore shape, where buildSnap's window sum measured nothing; that 0 is not trusted, and the entry derives below from its side bits like a legacy one. Legacy entries (no workM) derive below, exactly as they always have.
-  const items = (h && h.items) || {}; let si = 0; for (const n of Object.keys(items)) if (STRETCH[n]) si += STRETCH[n].total * 2; // the items derivation: every completed street at both sides of its full length
-  if (h && h.sides && h.sides.p && typeof h.sides.p === 'object') { let s = 0; for (const n of STREETNAMES) { const p = h.sides.p[n]; if (Array.isArray(p) && STRETCH[n]) { STRETCH[n].parts.forEach((part, i) => { const v = p[i] | 0; const L = segLenM(part); if (v & 1) s += L; if (v & 2) s += L; }); } else if (n in items && STRETCH[n]) s += STRETCH[n].total * 2; } if (s > 0) return s; } // Beta 1.169 (Carbon fix round, B-06): the sides branch used to price ONLY the sides map and return it the moment it priced anything - a PARTIALLY-recorded map (some completed streets carry no sides entry at all) short-circuited into the very RP-09 undercount the stored workM exists to prevent, alive in the legacy branch. The merge is now PER STREET: a street WITH a sides entry is priced by its bits (authoritative - it alone sees partial-side work, including on streets never completed), a completed street MISSING from the map falls back to the items derivation for that street.
-  return si;
-}
+// Beta 1.278 (architecture #6): the archived cleans get their domain model -
+// CLEAN. Through 1.277 everything a saved clean MEASURES was loose in this
+// section: the street count, the covered side-metres, the duration span, the
+// per-road-km pace and the reference selection were separate functions any
+// caller combined for itself, and the two renderers (renderPace here,
+// openClean below) re-derived the rest inline - the total-elapsed interval,
+// its pace rate, the mark-order street walk with its spans and gaps, the
+// noted-but-not-cleaned group. They are one object now: CLEAN holds every
+// measure of an archived entry and the two projections the renderers consume
+// - summary (the Pace sheet's one read of an entry) and detail (the clean
+// detail's whole derivation) - so a figure is computed in exactly one place
+// and every surface shows the same number. The state stays where it lives:
+// the entries are app1's history binding (owned by HIST since architecture
+// #2); CLEAN reads them, it holds nothing. The measures are the old helpers'
+// bodies, moved, not reinterpreted - their comments ride with the code. TWO
+// pace rates stand apart on purpose: refRateMh (the reference window - the
+// run's recorded startedAt to its Finish tap; paceInfo's comparison figure)
+// and detail's paceRate (the window opening at dur's start, which falls back
+// to the first completion stamp when no startedAt precedes it) - the same
+// work over a different window is a different figure, and the model names
+// them apart rather than letting one rate serve both. The doorway functions
+// (refRun, cleanCount, cleanWorkM, histDur, cleanPaceKm, cleanNoteLines)
+// keep their names and signatures - the test battery resolves them by name -
+// and delegate, here or at their old sites below. snapHasStamps retires as
+// a global: its only readers were cleanWorkM (now the owner's own hasStamps)
+// and one proof, which extracts the owner now. workRateMh stays loose below
+// the object: a generic rate over any window, with live callers (paceInfo's
+// live rate) - not an archived measure.
+const CLEAN = {
+  /** @param {HistoryEntry} h @returns {number} */ count(h) { const items = (h && h.items) || {}; return Object.keys(items).filter(n => STREETSET.has(n)).length; }, // Beta 1.169 (Carbon fix round, B-07): THE count of a clean's streets, in one place - the streets the clean covers: its item keys that belong to the route, timestamp or not (buildSnap writes a null time for a completed street whose moment was not recorded; the street was still cleaned, and openClean lists it). Through 1.168 refRun and the pace/detail headers counted raw keys while histDur counted only timestamped streets, so the same clean could read '34 streets' in one line and '33 of 34' in the next.
+  /** @param {HistoryEntry} h @returns {boolean} */ hasStamps(h) { const T = h && h.sides && h.sides.t; if (!T || typeof T !== 'object') return false; for (const n of Object.keys(T)) { const arr = T[n]; if (!Array.isArray(arr)) continue; for (const pr of arr) { if (Array.isArray(pr) && ((typeof pr[0] === 'string' && !isNaN(Date.parse(pr[0]))) || (typeof pr[1] === 'string' && !isNaN(Date.parse(pr[1]))))) return true; } } return false; }, // 2026-11-15 (denylist fix round, B-02): does the entry's stamp journal hold at least one real moment? A finish after a state restore archives with every stamp null, so buildSnap's window sum comes out 0 over NO evidence - that 0 was never measured. A measured 0 (the RP-05 case: real stamps, all before Start) always carries stamps.
+  /** @param {HistoryEntry} h @returns {number} */ workM(h) {
+   // side-metres a saved clean actually covered
+    if (h && typeof h.workM === 'number' && isFinite(h.workM) && h.workM >= 0 && (h.workM > 0 || this.hasStamps(h))) return h.workM; // Beta 1.167 (run/pace fix round, B2): cleans archived by 1.167+ carry the run-attributed figure Finish measured (buildSnap's workM) - it is read VERBATIM, so pre-Start work never counts (RP-05), a later geometry edit cannot re-price the clean (RP-06), and a partially-recorded sides map cannot short-circuit into an undercount (RP-09). 2026-11-15 (denylist fix round, B-02): the one exception is a stored 0 with no stamps anywhere in the entry - the finish-after-a-restore shape, where buildSnap's window sum measured nothing; that 0 is not trusted, and the entry derives below from its side bits like a legacy one. Legacy entries (no workM) derive below, exactly as they always have.
+    const items = (h && h.items) || {}; let si = 0; for (const n of Object.keys(items)) if (STRETCH[n]) si += STRETCH[n].total * 2; // the items derivation: every completed street at both sides of its full length
+    if (h && h.sides && h.sides.p && typeof h.sides.p === 'object') { let s = 0; for (const n of STREETNAMES) { const p = h.sides.p[n]; if (Array.isArray(p) && STRETCH[n]) { STRETCH[n].parts.forEach((part, i) => { const v = p[i] | 0; const L = segLenM(part); if (v & 1) s += L; if (v & 2) s += L; }); } else if (n in items && STRETCH[n]) s += STRETCH[n].total * 2; } if (s > 0) return s; } // Beta 1.169 (Carbon fix round, B-06): the sides branch used to price ONLY the sides map and return it the moment it priced anything - a PARTIALLY-recorded map (some completed streets carry no sides entry at all) short-circuited into the very RP-09 undercount the stored workM exists to prevent, alive in the legacy branch. The merge is now PER STREET: a street WITH a sides entry is priced by its bits (authoritative - it alone sees partial-side work, including on streets never completed), a completed street MISSING from the map falls back to the items derivation for that street.
+    return si;
+  },
+  /** @param {HistoryEntry} h @returns {{count: number, durMs: number, start: number}|null} */ dur(h) {
+    const items = (h && h.items) || {};
+    const ks = Object.keys(items).filter(n => STREETSET.has(n) && items[n]);
+    const ts = ks.map(n => Date.parse(items[n])).filter(t => !isNaN(t)).sort((a, b) => a - b);
+    if (!ts.length) return null;
+    const stA = Date.parse(h.startedAt);
+    const start = (!isNaN(stA) && stA <= ts[0]) ? stA : ts[0];
+    return { count: this.count(h), durMs: ts[ts.length - 1] - start, start }; // Beta 1.169 (B-07): the DURATION still spans the timestamped streets (ks above - a span needs moments), but the COUNT is cleanCount: every street the clean covers, null-timestamped ones included
+  },
+  /** @param {HistoryEntry} h @returns {string|null} */ paceKm(h) {
+   // Beta 1.184: a saved clean pace per ROAD km - its total elapsed (start to the Finish tap) over its road kilometres (cleanWorkM counts SIDES, so road km = cleanWorkM / 2000). null when underivable (a legacy clean with no usable times, or no recorded work)
+    const d = this.dur(h); if (!d) return null;
+    const elapsed = Date.parse(h.at) - d.start; const roadKm = this.workM(h) / 2000;
+    if (!(elapsed > 0) || !(roadKm > 0)) return null;
+    return fmtPaceKm(elapsed / roadKm);
+  },
+  /** @param {HistoryEntry} h @returns {number|null} */ refRateMh(h) { return workRateMh(this.workM(h), Date.parse(h.startedAt || ''), Date.parse(h.at || ''), 0.05); }, // the REFERENCE window rate: the run's recorded startedAt to its Finish tap, at the 0.05 h floor paceInfo has always used - the comparison figure for the live rate. NOT the detail's paceRate (dur's start window): see the header above.
+  /** @returns {HistoryEntry|null} */ ref() {
+   // newest qualifying clean wins (history is chronological, so search from the end)
+    for (let i = history.length - 1; i >= 0; i--) { const h = history[i]; if (h.items && this.count(h) === STREETNAMES.length) return h; } // Beta 1.94 (audit F-01): full = every street in the route's own list, not a hard-coded 34. Beta 1.169 (B-07): counted by cleanCount, like every other surface - a null-timestamped street still counts (it was cleaned), a foreign key never does
+    for (let i = history.length - 1; i >= 0; i--) { const h = history[i]; if (h.items && this.count(h) >= 5) return h; }
+    return null;
+  },
+  /** @param {HistoryEntry} h @returns {object} */ summary(h) { // the summary projection: the one read of an archived clean for the Pace surfaces - renderPace's reference banner, last-clean cells and saved-clean rows all consume this object, so no renderer re-derives a figure the model already holds
+    return { count: this.count(h), dur: this.dur(h), workM: this.workM(h), paceKm: this.paceKm(h) };
+  },
+  /** @param {HistoryEntry} h @returns {object} */ detail(h) { // the street-detail projection: everything openClean renders, derived here - the header measures, the total-elapsed interval and its pace rate, the streets in mark order with their completion moments, stamp spans and gaps, and the noted-but-not-cleaned group. The renderer formats and builds DOM; it interprets no evidence itself.
+    const dur = this.dur(h);
+    const workM = this.workM(h);
+    const elapsedMs = dur ? Date.parse(h.at) - dur.start : NaN; // Beta 1.167 (B3, RP-08): the SECOND interval - the run's start to the Finish tap (h.at). Through 1.166 the single 'Total time' figure was histDur's start-to-LAST-COMPLETION span while the pace rate divided by start-to-Finish: two different intervals, one label, a 15.8% skew on a 30-minute tail. Both are shown now, each under its own label; the math is unchanged.
+    const paceRate = (dur && !isNaN(elapsedMs) && elapsedMs >= 0) ? workRateMh(workM, dur.start, Date.parse(h.at), 0.05) : null; // the DETAIL pace rate: the clean's work over the total-elapsed window (dur's start to the Finish tap). dur's start is startedAt only when it precedes the first completion stamp - when it does not, this window opens at that stamp, where refRateMh's startedAt window would read a different (shorter) span: two windows, two measures, named apart on purpose.
+    const items = h.items || {};
+    const order = Object.keys(items).filter(n => STREETSET.has(n)).sort((x, y) => String(items[x] || '9999').localeCompare(String(items[y] || '9999')));
+    const streets = [];
+    let prev = h.startedAt ? Date.parse(h.startedAt) : NaN;
+    for (const n of order) {
+      const t = items[n] ? Date.parse(items[n]) : NaN;
+      const gapMs = (!isNaN(t) && !isNaN(prev) && t >= prev) ? t - prev : NaN; // Beta 1.167 (B3, RP-07): a completion stamped BEFORE the previous one (a skewed import) yields no gap at all - never a negative duration
+      const stamps = (h.sides && h.sides.t && Array.isArray(h.sides.t[n])) ? h.sides.t[n].flat().map(x => Date.parse(x)).filter(x => !isNaN(x)) : []; // Beta 1.91: the street's own side stamps - span = first side marked to last side marked
+      const spanMs = stamps.length ? Math.max.apply(null, stamps) - Math.min.apply(null, stamps) : NaN;
+      if (!isNaN(t)) prev = t;
+      streets.push({ name: n, at: items[n], tMs: t, gapMs, stamps, spanMs, via: (h.via || {})[n], noteLines: this.noteLines((h.notes || {})[n]) });
+    }
+    const notedOnly = Object.keys(h.notes || {}).filter(n => STREETSET.has(n) && !(n in items) && (h.notes[n] || []).length).map(n => ({ name: n, primary: PRIMARIES.has(n), noteLines: this.noteLines(h.notes[n]) }));
+    return { count: this.count(h), dur, workM, paceKm: this.paceKm(h), elapsedMs, paceRate, streets, notedOnly };
+  },
+  /** @param {Array} entries @returns {string[]} */ noteLines(entries) { return (Array.isArray(entries) ? entries : []).map(f => f.k === 'note' ? ('📝 ' + (f.text || '')) : ((FLAGS[f.k] || f.k) + (f.at ? ' ' + fmtClock(new Date(f.at)) : ''))); },
+};
+function refRun() { return CLEAN.ref(); }
+function cleanCount(h) { return CLEAN.count(h); }
+function cleanWorkM(h) { return CLEAN.workM(h); }
 function workRateMh(workM, startMs, endMs, minH) { const h = (endMs - startMs) / 3600000; return (workM > 0 && h > minH) ? workM / h : null; } // NaN inputs fail the comparisons and yield null
 function fmtRate(r) { return (r / 1000).toFixed(1) + ' km of sides/hr'; }
 const DAY3 = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
 function fmtDate3(iso) { const d = new Date(iso); if (isNaN(d)) return ''; return DAY3[d.getDay()] + ', ' + MON3[d.getMonth()] + ' ' + d.getDate(); } // Beta 1.184: 'Tue, Nov 10' - the redesign date form for saved-clean rows and the detail header
 function fmtHM(ms) { if (ms == null || isNaN(ms) || ms < 0) return '–'; const m = Math.round(ms / 60000); return Math.floor(m / 60) + ':' + String(m % 60).padStart(2, '0'); } // Beta 1.184: colon duration for the redesign stat cells and rows (1:24, 2:41) - presentation only; fmtDur keeps every existing surface
 function fmtPaceKm(msPerKm) { if (msPerKm == null || isNaN(msPerKm) || !isFinite(msPerKm) || msPerKm <= 0) return null; const s = Math.round(msPerKm / 1000); return Math.floor(s / 60) + ':' + String(s % 60).padStart(2, '0'); } // Beta 1.184: '8:56' - minutes:seconds per ROAD km
-function cleanPaceKm(h) { // Beta 1.184: a saved clean pace per ROAD km - its total elapsed (start to the Finish tap) over its road kilometres (cleanWorkM counts SIDES, so road km = cleanWorkM / 2000). null when underivable (a legacy clean with no usable times, or no recorded work)
-  const d = histDur(h); if (!d) return null;
-  const elapsed = Date.parse(h.at) - d.start; const roadKm = cleanWorkM(h) / 2000;
-  if (!(elapsed > 0) || !(roadKm > 0)) return null;
-  return fmtPaceKm(elapsed / roadKm);
-}
+function cleanPaceKm(h) { return CLEAN.paceKm(h); }
 function groupProgress(wantPrimary) { // Beta 1.184: Progress-by-group sums - a completed street counts 1, a street with any side done counts a half (the approved frame 3.5 of 6), else 0
   let sum = 0, cnt = 0;
   for (const n of STREETNAMES) { if (PRIMARIES.has(n) === wantPrimary) { cnt++; sum += streetComplete(n) ? 1 : (streetHalf(n) ? 0.5 : 0); } }
@@ -5034,8 +5105,8 @@ function groupBar(name, g) {
   return '<div class="gbar"><div class="gb-top"><span class="gb-n">' + name + '</span><span class="gb-c">' + fmtCnt(g.sum) + ' of ' + g.cnt + ' streets</span></div><div class="gb-track"><div class="gb-fill" style="width:' + pct + '%"></div><div class="gb-half"></div></div></div>';
 }
 function paceInfo() { // Beta 1.91 (Andrew): pace is a WORK RATE - side-metres per hour, cumulative (work done so far / time so far) off the per-side mark stamps. Interleaved streets and same-street batched marks cannot distort a cumulative rate; a mark left late only makes the live reading lag until it lands, and the totals are never touched by stamp timing.
-  const ref = refRun();
-  const refRateMh = ref ? workRateMh(cleanWorkM(ref), Date.parse(ref.startedAt || ''), Date.parse(ref.at || ''), 0.05) : null;
+  const ref = CLEAN.ref();
+  const refRateMh = ref ? CLEAN.refRateMh(ref) : null;
   let rateMh = null, live = false;
   if (runStart) { const r = workRateMh(liveWorkM(), runStart, Date.now(), 0.02); if (r) { rateMh = r; live = true; } } // Beta 1.93 (audit R06): the numerator is the RUN's work (liveWorkM), not the whole board's
   if (!rateMh) rateMh = refRateMh;
@@ -5054,15 +5125,7 @@ function statsLine() {
 const MON3 = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
 function fmtWhen(iso) { const d = new Date(iso); if (isNaN(d)) return ''; const n = new Date(); const same = d.getFullYear() === n.getFullYear() && d.getMonth() === n.getMonth() && d.getDate() === n.getDate(); return same ? fmtClock(d) : MON3[d.getMonth()] + ' ' + d.getDate() + ', ' + fmtClock(d); }
 function fmtAgo(iso) { const t = Date.parse(iso); if (isNaN(t)) return ''; const m = Math.round((Date.now() - t) / 60000); return m < 1 ? 'just now' : m < 60 ? m + ' min ago' : Math.floor(m / 60) + ' h ' + (m % 60) + ' m ago'; }
-function histDur(h) {
-  const items = (h && h.items) || {};
-  const ks = Object.keys(items).filter(n => STREETSET.has(n) && items[n]);
-  const ts = ks.map(n => Date.parse(items[n])).filter(t => !isNaN(t)).sort((a, b) => a - b);
-  if (!ts.length) return null;
-  const stA = Date.parse(h.startedAt);
-  const start = (!isNaN(stA) && stA <= ts[0]) ? stA : ts[0];
-  return { count: cleanCount(h), durMs: ts[ts.length - 1] - start, start }; // Beta 1.169 (B-07): the DURATION still spans the timestamped streets (ks above - a span needs moments), but the COUNT is cleanCount: every street the clean covers, null-timestamped ones included
-}
+function histDur(h) { return CLEAN.dur(h); }
 let histOpen = false;
 function renderPace() { // Beta 1.184 (Andrew): the approved redesign - This run stat grid, verdict banner, Progress by group, Saved cleans (always expanded). Every figure binds to the same live data the old lines read; the old Reference/Pace/This-run/Work-done lines and the Previous-cleans collapse retire into these slots (see the 1.184 datum mapping in the round record).
   const p = paceInfo();
@@ -5078,22 +5141,21 @@ function renderPace() { // Beta 1.184 (Andrew): the approved redesign - This run
     else if (diffMin < 0) banner = '<div class="verd"><span class="vd-r">▼ Slower by ' + (-diffMin) + ' min</span>. Verdict at today\'s pace' + etaBit + '</div>';
     else banner = '<div class="verd"><span class="vd-g">On pace with the reference clean</span>. Verdict at today\'s pace' + etaBit + '</div>';
   } else if (ref) {
-    const rd = histDur(ref), rp = cleanPaceKm(ref);
-    banner = '<div class="verd ref">Reference clean (' + fmtDate3(ref.at) + ')' + (rd && rp ? ', ' + fmtHM(rd.durMs) + ' total · ' + rp + ' /km pace' : '') + '</div>';
+    const rs = CLEAN.summary(ref);
+    banner = '<div class="verd ref">Reference clean (' + fmtDate3(ref.at) + ')' + (rs.dur && rs.paceKm ? ', ' + fmtHM(rs.dur.durMs) + ' total · ' + rs.paceKm + ' /km pace' : '') + '</div>';
   } else {
     banner = '<div class="verd ref">No reference clean yet. Finish a clean to set your pace</div>';
   }
   const last = history.length ? history[history.length - 1] : null; // most recent = the last element (history is chronological, append-only) - NOT the reference clean; the two can differ
-  const ld = last ? histDur(last) : null;
-  const lp = last ? cleanPaceKm(last) : null;
+  const ls = last ? CLEAN.summary(last) : null;
   let html =
     '<div class="statgrid">' +
     statCell('clock', runStart ? fmtHM(Date.now() - runStart) : '–', 'ELAPSED') +
     statCell('road', (workDoneM() / 2000).toFixed(1) + ' km', 'ROAD CLEARED') +
     statCell('flag', p.etaClock || '–', 'ETA') +
     statCell('list', STREETNAMES.filter(streetComplete).length + '/' + STREETNAMES.length, 'STREETS') +
-    statCell('cal', ld ? fmtHM(ld.durMs) : '–', 'LAST CLEAN') +
-    statCell('gauge', lp || '–', 'LAST PACE /KM') +
+    statCell('cal', ls && ls.dur ? fmtHM(ls.dur.durMs) : '–', 'LAST CLEAN') +
+    statCell('gauge', (ls && ls.paceKm) || '–', 'LAST PACE /KM') +
     '</div>' +
     banner +
     (runStart ? '<button class="red" id="paceCancel">Cancel start</button>' : '') +
@@ -5104,9 +5166,9 @@ function renderPace() { // Beta 1.184 (Andrew): the approved redesign - This run
     '<div class="psec2">Saved cleans</div>';
   let any = 0;
   for (let i = history.length - 1; i >= 0; i--) {
-    const d = histDur(history[i]);
-    if (!d) { html += '<div class="prow histRow" data-i="' + i + '"><span><span class="sc-d">' + fmtDate3(history[i].at) + '</span> <span class="sc-n">· ' + cleanCount(history[i]) + ' streets</span></span><span class="sc-t2">time not recorded</span></div>'; any++; continue; } // Beta 1.167 (B4, RP-04) carries: a legacy clean whose item times are all null is still LISTED - and opens, and deletes through the same two-tap flow
-    html += '<div class="prow histRow" data-i="' + i + '"><span><span class="sc-d">' + fmtDate3(history[i].at) + '</span> <span class="sc-n">· ' + d.count + ' streets</span></span><span class="sc-t">' + fmtHM(d.durMs) + '</span></div>';
+    const s = CLEAN.summary(history[i]);
+    if (!s.dur) { html += '<div class="prow histRow" data-i="' + i + '"><span><span class="sc-d">' + fmtDate3(history[i].at) + '</span> <span class="sc-n">· ' + s.count + ' streets</span></span><span class="sc-t2">time not recorded</span></div>'; any++; continue; } // Beta 1.167 (B4, RP-04) carries: a legacy clean whose item times are all null is still LISTED - and opens, and deletes through the same two-tap flow
+    html += '<div class="prow histRow" data-i="' + i + '"><span><span class="sc-d">' + fmtDate3(history[i].at) + '</span> <span class="sc-n">· ' + s.dur.count + ' streets</span></span><span class="sc-t">' + fmtHM(s.dur.durMs) + '</span></div>';
     any++;
   }
   if (!any) html += '<div style="font-size:13px;color:var(--ink-dim);padding:4px 2px">No cleans saved yet. When you finish a clean and tap Finish, it lands here with its total time.</div>';
@@ -5127,13 +5189,14 @@ function closePace() { closeSheetEl($('pacePanel')); } // same animated close as
 // in mark order with per-street times, its notes, noted-but-not-cleaned group, two-tap delete. Back and Delete
 // both land on Previous cleans (expanded), never on the Streets list. =====
 let cleanIdx = null, cleanDelArmed = false, cleanDelTimer = 0;
-function cleanNoteLines(entries) { return (Array.isArray(entries) ? entries : []).map(f => f.k === 'note' ? ('📝 ' + (f.text || '')) : ((FLAGS[f.k] || f.k) + (f.at ? ' ' + fmtClock(new Date(f.at)) : ''))); }
+function cleanNoteLines(entries) { return CLEAN.noteLines(entries); }
 function openClean(i) {
   const h = history[i];
   if (!h) return;
   cleanIdx = i; cleanDelArmed = false;
   deselect();
-  const d = histDur(h);
+  const pd = CLEAN.detail(h);
+  const d = pd.dur;
   // Beta 1.184: the detail lives INSIDE the Pace sheet now - the pace content yields, the detail takes its seat; the Pace sheet itself stays open (it no longer closes into the Streets sheet)
   const ph = $('paceHead'); if (ph) ph.style.display = 'none';
   const pp = $('pacePad'); if (pp) pp.style.display = 'none';
@@ -5144,62 +5207,60 @@ function openClean(i) {
   const head = document.createElement('div'); head.className = 'cvHead';
   head.innerHTML = '<button class="cvBack">‹ Saved cleans</button><div class="cvTtlRow"><span class="cvTtl"></span><span class="cvSub"></span></div>';
   head.querySelector('.cvTtl').textContent = fmtDate3(h.at);
-  head.querySelector('.cvSub').textContent = cleanCount(h) + ' streets · finished ' + fmtClock(new Date(h.at));
+  head.querySelector('.cvSub').textContent = pd.count + ' streets · finished ' + fmtClock(new Date(h.at));
   head.querySelector('.cvBack').onclick = backToCleans;
   cv.appendChild(head);
   const stats = document.createElement('div'); stats.className = 'statgrid d2'; // Beta 1.184: the design 2x2 cells - TOTAL TIME is histDur span (the same interval the Saved-cleans row shows); ROAD CLEARED is work, GPS TRAIL is travel: different measures, distinct labels, never merged
-  const cpk = cleanPaceKm(h);
+  const cpk = pd.paceKm;
   stats.innerHTML =
     statCell('clock', d ? fmtHM(d.durMs) : '–', 'TOTAL TIME') +
-    statCell('road', (cleanWorkM(h) / 2000).toFixed(1) + ' km', 'ROAD CLEARED') +
+    statCell('road', (pd.workM / 2000).toFixed(1) + ' km', 'ROAD CLEARED') +
     statCell('gauge', cpk ? cpk + ' /km' : '–', 'PACE') +
     statCell('trail', h.km ? (+h.km).toFixed(1) + ' km' : '–', 'GPS TRAIL');
   cv.appendChild(stats);
   const meta = document.createElement('div'); meta.className = 'cvMeta';
-  const elapsedMs = d ? Date.parse(h.at) - d.start : NaN; // Beta 1.167 (B3, RP-08): the SECOND interval - the run's start to the Finish tap (h.at). Through 1.166 the single 'Total time' figure was histDur's start-to-LAST-COMPLETION span while the pace rate divided by start-to-Finish: two different intervals, one label, a 15.8% skew on a 30-minute tail. Both are shown now, each under its own label; the math is unchanged.
-  const paceRate = (d && !isNaN(elapsedMs) && elapsedMs >= 0) ? workRateMh(cleanWorkM(h), d.start, Date.parse(h.at), 0.05) : null; // the pace divides the clean's work by the TOTAL ELAPSED window - the same window workRateMh uses for the reference figure in renderPace - and the meta line says so
-  meta.textContent = (d ? ('Streets done in ' + fmtDur(d.durMs) + ' · Total elapsed ' + fmtDur(Math.max(0, elapsedMs)) + ' · ') : '') + cleanCount(h) + ' streets' + (h.km ? (' · ' + h.km + ' km of GPS trail') : '') + (h.pathShortened ? ' · saved GPS path shortened by the trail cap' : '') + (paceRate ? (' · Pace ' + fmtRate(paceRate) + ' (work / total elapsed)') : '') + (h.startedAt ? (' · started ' + fmtClock(new Date(h.startedAt))) : '') + '\nPace divides the clean\'s recorded work by its total elapsed time (start to the Finish tap). Per-street span = first side marked to last side marked (includes any work in between). Tap a street for its details.';
+  const elapsedMs = pd.elapsedMs; // the total-elapsed interval is the detail projection's measure now (CLEAN.detail carries the RP-08 two-interval history)
+  const paceRate = pd.paceRate; // the pace divides the clean's work by the TOTAL ELAPSED window - the same window workRateMh uses for the reference figure in renderPace - and the meta line says so
+  meta.textContent = (d ? ('Streets done in ' + fmtDur(d.durMs) + ' · Total elapsed ' + fmtDur(Math.max(0, elapsedMs)) + ' · ') : '') + pd.count + ' streets' + (h.km ? (' · ' + h.km + ' km of GPS trail') : '') + (h.pathShortened ? ' · saved GPS path shortened by the trail cap' : '') + (paceRate ? (' · Pace ' + fmtRate(paceRate) + ' (work / total elapsed)') : '') + (h.startedAt ? (' · started ' + fmtClock(new Date(h.startedAt))) : '') + '\nPace divides the clean\'s recorded work by its total elapsed time (start to the Finish tap). Per-street span = first side marked to last side marked (includes any work in between). Tap a street for its details.';
   cv.appendChild(meta);
   const secH = document.createElement('div'); secH.className = 'psec2'; secH.textContent = 'Streets'; cv.appendChild(secH);
-  const items = h.items || {};
-  const order = Object.keys(items).filter(n => STREETSET.has(n)).sort((x, y) => String(items[x] || '9999').localeCompare(String(items[y] || '9999')));
-  let prev = h.startedAt ? Date.parse(h.startedAt) : NaN;
-  order.forEach(n => {
-    const t = items[n] ? Date.parse(items[n]) : NaN;
-    const dur = (!isNaN(t) && !isNaN(prev) && t >= prev) ? t - prev : NaN; // Beta 1.167 (B3, RP-07): a completion stamped BEFORE the previous one (a skewed import) yields no gap at all - never a negative duration
-    const stArr = (h.sides && h.sides.t && Array.isArray(h.sides.t[n])) ? h.sides.t[n].flat().map(x => Date.parse(x)).filter(x => !isNaN(x)) : []; // Beta 1.91: the street's own side stamps - span = first side marked to last side marked
-    const span = stArr.length ? Math.max.apply(null, stArr) - Math.min.apply(null, stArr) : NaN;
-    if (!isNaN(t)) prev = t;
+  pd.streets.forEach(s => {
+    const n = s.name;
+    const t = s.tMs;
+    const dur = s.gapMs;
+    const stArr = s.stamps;
+    const span = s.spanMs;
     const rowEl = document.createElement('div'); rowEl.className = 'cvRow';
     const top = document.createElement('div'); top.className = 'cvTop';
     top.innerHTML = '<span class="dot dot-done"></span><div class="cvNm"></div><div class="cvTm"></div>'; // Beta 1.184: cleaned rows wear the done dot; NO pin anywhere in the detail (pins are the live list's locate control)
     top.querySelector('.cvNm').textContent = n;
     top.querySelector('.cvTm').textContent = (!isNaN(t) ? fmtClock(new Date(t)) : '–') + ((span > 0) ? (' · span ' + fmtDur(span)) : (stArr.length ? ' · marked in one go' : (!isNaN(dur) ? (' · gap ' + fmtDur(dur)) : ''))); // Beta 1.167 (B3, RP-07): a street whose recorded sides all carry ONE moment (span 0 - the whole-street mark) reads as marked in one go instead of inheriting the previous street's gap as its 'took'; the stamp-less fallback is a GAP since the previous completion, and is labelled as one
     rowEl.appendChild(top);
-    const lines = cleanNoteLines((h.notes || {})[n]);
+    const lines = s.noteLines;
     if (lines.length) { const ni = document.createElement('span'); ni.className = 'cvNoteIco'; ni.innerHTML = ICONS.note; top.insertBefore(ni, top.querySelector('.cvTm')); } // Beta 1.184 (Andrew): a note icon ONLY on a street that had a note saved on THIS clean; tapping the row opens the note read-only (the .cvDet below)
     if (lines.length) { const p = document.createElement('div'); p.className = 'cvNt'; p.textContent = lines[0] + (lines.length > 1 ? ' (+' + (lines.length - 1) + ' more)' : ''); rowEl.appendChild(p); }
     const det = document.createElement('div'); det.className = 'cvDet'; det.style.display = 'none';
     const parts = [];
-    parts.push('Marked: ' + (items[n] ? fmtWhen(items[n]) : 'no time recorded'));
+    parts.push('Marked: ' + (s.at ? fmtWhen(s.at) : 'no time recorded'));
     if (span > 0) parts.push('Span: ' + fmtDur(span) + ' - first side marked ' + fmtClock(new Date(Math.min.apply(null, stArr))) + ', last side ' + fmtClock(new Date(Math.max.apply(null, stArr))) + ' (includes any other work in between)'); else if (stArr.length) parts.push('Marked in one go - every recorded side of this street carries the same moment'); else if (!isNaN(dur)) parts.push('Gap since previous street: ' + fmtDur(dur) + ' (no side times recorded for this street; measured from the previous completion, or the clean start)');
-    if ((h.via || {})[n]) parts.push('How: ' + ((h.via || {})[n] === 'gps' ? 'GPS suggestion' : 'marked by tap'));
+    if (s.via) parts.push('How: ' + (s.via === 'gps' ? 'GPS suggestion' : 'marked by tap'));
     lines.forEach(L => parts.push(L));
     det.textContent = parts.join('\n');
     rowEl.appendChild(det);
     rowEl.onclick = () => { det.style.display = det.style.display === 'none' ? '' : 'none'; };
     cv.appendChild(rowEl);
   });
-  const notedOnly = Object.keys(h.notes || {}).filter(n => STREETSET.has(n) && !(n in items) && (h.notes[n] || []).length);
+  const notedOnly = pd.notedOnly;
   if (notedOnly.length) {
     const sec = document.createElement('div'); sec.className = 'cvSec'; sec.textContent = 'Notes on streets not cleaned'; cv.appendChild(sec);
-    notedOnly.forEach(n => {
+    notedOnly.forEach(s => {
+      const n = s.name;
       const rowEl = document.createElement('div'); rowEl.className = 'cvRow';
       const top = document.createElement('div'); top.className = 'cvTop';
-      top.innerHTML = '<span class="dot ' + (PRIMARIES.has(n) ? 'dot-gold' : 'dot-rose') + '"></span><div class="cvNm"></div>'; // Beta 1.184: not-cleaned rows wear their group pending dot
+      top.innerHTML = '<span class="dot ' + (s.primary ? 'dot-gold' : 'dot-rose') + '"></span><div class="cvNm"></div>'; // Beta 1.184: not-cleaned rows wear their group pending dot
       top.querySelector('.cvNm').textContent = n;
       rowEl.appendChild(top);
-      cleanNoteLines(h.notes[n]).forEach(L => { const p = document.createElement('div'); p.className = 'cvNt'; p.textContent = L; rowEl.appendChild(p); });
+      s.noteLines.forEach(L => { const p = document.createElement('div'); p.className = 'cvNt'; p.textContent = L; rowEl.appendChild(p); });
       cv.appendChild(rowEl);
     });
   }
@@ -7373,7 +7434,7 @@ $('stDel').addEventListener('click', async () => {
 });
 // ---- About ----
 const WHATSNEW = { // the curated in-app notes: plain words, LATEST RELEASE ONLY (Beta 1.114, Andrew: the accumulated list cluttered the About pane). A release REPLACES this entry with its own in the same change - it never accumulates; the full history lives in CHANGELOG.md, not the app
-  v: 'Beta 1.277', items: ["Under the hood: start, cancel, finish and route switches now run through one owner, in one set order."] }; // Beta 1.223 (Andrew): What's New entries are SHORT from now on - point form, one short plain line each, no prose paragraphs, no em dashes
+  v: 'Beta 1.278', items: ["Under the hood: one model now measures every saved clean, so its count, time and pace always agree."] }; // Beta 1.223 (Andrew): What's New entries are SHORT from now on - point form, one short plain line each, no prose paragraphs, no em dashes
 
 function renderAbout() {
   const cur = $('ver').textContent.trim();
