@@ -108,8 +108,13 @@ check('10: LEFTBIT is present AND read by the label-anchor computation (load-bea
   engine.includes('const LEFTBIT = {};') && engine.includes('const leftOff = LEFTBIT[n] === 0 ? off0 : off1'));
 
 // ---------- (11) the create backdrop hides the titles ----------
+// Beta 1.282 (#13) re-point, claim unchanged: the hide list no longer spells
+// the titles itself - CR_ROUTE_LAYERS IS the engine catalogue's stack, and
+// the catalogue's title group (in its stack) is the four tiers.
 check('11: the create-pick hide list carries the four title layers',
-  createPick.includes("[1, 2, 3, 4].map(t => 'streetnamespt' + t)"));
+  createPick.includes('const CR_ROUTE_LAYERS = GLP.layers.stack;') &&
+  engine.includes("titles: [1, 2, 3, 4].map(t => 'streetnamespt' + t),") &&
+  engine.includes('LAYERS.stack = [...LAYERS.paint, ...LAYERS.poi, ...LAYERS.titles, ...LAYERS.glow];'));
 
 // ---------- (12) the SPOT read stays own-entry-only (deviation 1, carried from proof-1261) ----------
 // The engine fixture pattern of proof-leftside-removal-b05, narrowed to

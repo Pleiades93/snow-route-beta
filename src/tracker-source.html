@@ -678,7 +678,7 @@ html.theme-swap *, html.theme-swap *::before, html.theme-swap *::after { transit
 <div id="hud">
   <div id="warn">Not saving. Storage is full or blocked</div>
   <div class="row">
-    <div class="titleStack"><div class="title">Snow Route Beta</div><div class="ver" id="ver">Beta 1.281</div></div>
+    <div class="titleStack"><div class="title">Snow Route Beta</div><div class="ver" id="ver">Beta 1.282</div></div>
   </div>
   <div id="stats"></div>
 </div>
@@ -2603,7 +2603,6 @@ function extendIntoBands(edgeChains, pairs) {
     });
   });
 }
-let LASTCHAINS = null;
 let PAIRS_CUR = null;   // the current build's junction pairs (throughOK reads them)
 // Last-resort connector (Andrew's rule, enforced literally): if a marked
 // side line still ends at a junction NOT joined to the marked geometry
@@ -3282,11 +3281,10 @@ function clipOnLine(n, vi, pts, atStart, ownHalf, line) {
 }
 function fillSlicePts(n, idx, side) {   // Beta 1.208: one piece's one-side FILL slice - the half-offset line over the piece, end-trimmed with the centre family's local rule (trim only where THIS side's fill actually ends: the neighbouring piece carries no fill for this side, a run gap intervenes, or the street ends). Shared by buildFamilies and buildSelFill, so the selection's side paint is the board's side paint by construction - the R3 fix (the retired one-piece edge rebuild could never reproduce the board's junction treatment).
   const g = GEO[n], ab = g.cuts[idx];
-  const fam = i => { const b = H.pieces[n][i]; return ((b & (1 << side)) || b === 3) ? 'fill' : 'x' + b; };   // Beta 1.208 (Codex P2, gate round 3): a both-sides piece CONTINUES this side's paint (its band covers the side in full), so the fill keeps its shared vertex beside a band instead of clipping to the near edge - clipping on both sides of the boundary left the junction square's half unpainted, a 9.9 m break in the completed side
   const line = side === 0 ? g.offH0 : g.offH1;
   let pts = line.slice(ab[0], ab[1] + 1);
-  if (idx === 0 || g.gaps.has(ab[0]) || fam(idx - 1) !== 'fill') pts = clipOnLine(n, ab[0], pts, true, HALF_HALF, line);
-  if (idx === g.cuts.length - 1 || g.gaps.has(g.cuts[idx + 1][0]) || fam(idx + 1) !== 'fill') pts = clipOnLine(n, ab[1], pts, false, HALF_HALF, line);
+  if (idx === 0 || g.gaps.has(ab[0]) || !PAINT.fillCont(n, idx - 1, side)) pts = clipOnLine(n, ab[0], pts, true, HALF_HALF, line);   // Beta 1.282 (#12): the fill family's continuation is the PAINT model's (PAINT.fillCont) - the Beta 1.208 rule it carries: a both-sides piece CONTINUES this side's paint (its band covers the side in full), so the fill keeps its shared vertex beside a band instead of clipping to the near edge - clipping on both sides of the boundary left the junction square's half unpainted, a 9.9 m break in the completed side
+  if (idx === g.cuts.length - 1 || g.gaps.has(g.cuts[idx + 1][0]) || !PAINT.fillCont(n, idx + 1, side)) pts = clipOnLine(n, ab[1], pts, false, HALF_HALF, line);
   return pts;
 }
 function fillCornerLinks(fills) {
@@ -3407,6 +3405,38 @@ function boundarySplit(n, ab, pts, kind, col, withCasing) { // -> { solid, fades
   }
   return { solid, fades };
 }
+// ===== Beta 1.282 (architecture programme #12): the PAINT model — the ONE
+// owner of the paint inputs every consumer reads. Through 1.281 the model's
+// pieces were scattered: buildFamilies and selectedGeom each computed the
+// piece classification (band vs colour family) and the end-clip decision
+// inline, the board's merged strands reached buildSelFill through the
+// LASTCHAINS module global, and buildSelFill's boundary-end fades reached
+// their assembly through the SEL_FILL_FADES module global. Both side-
+// channels are retired: the classification, the clip decision and the fill
+// family's continuation live here once; buildFamilies publishes its merged
+// strands into the model; buildSelFill reads them from the model and
+// returns its fades through its own return value, like buildSelC's.
+const PAINT = {
+  strands: null,   // { centres, bands, edges, fills } — the merged strand set of the last buildFamilies pass; the fills carry their corner-connector provenance (the corner flag + mem) the selection redraw reads
+  classify(n, idx) {   // the one classification of a piece: its bits, whether it is a both-sides band, its centre-family key, and the family key of any piece of its street
+    const bits = H.pieces[n][idx];
+    const isBand = bits === 3;
+    const key = isBand ? 'band' : mute(colOf(n, bits));
+    const famKey = i => H.pieces[n][i] === 3 ? 'band' : mute(colOf(n, H.pieces[n][i]));
+    return { bits, isBand, key, famKey };
+  },
+  clipEnds(n, idx, pts, half, bandRule) {   // the one end-clip decision: clip an end only where the paint actually ends there — the neighbouring piece does not continue the paint (the centre-family rule: a different family key; the band rule: no marked side at all), a run gap intervenes, or the street ends. A continuing piece keeps its exact shared vertex, so mergeStrands still joins it seamlessly.
+    const g = GEO[n], ab = g.cuts[idx], c = PAINT.classify(n, idx);
+    const cont = bandRule ? (i => H.pieces[n][i] !== 0) : (i => c.famKey(i) === c.key);
+    if (idx === 0 || g.gaps.has(ab[0]) || !cont(idx - 1)) pts = clipEndAtJunction(n, ab[0], pts, true, half);
+    if (idx === g.cuts.length - 1 || g.gaps.has(g.cuts[idx + 1][0]) || !cont(idx + 1)) pts = clipEndAtJunction(n, ab[1], pts, false, half);
+    return pts;
+  },
+  fillCont(n, i, side) {   // the fill family's continuation: piece i continues side's fill when it marks that side — a both-sides piece included, its band covers the side in full (Beta 1.208, Codex P2 gate round 3)
+    const b = H.pieces[n][i];
+    return !!((b & (1 << side)) || b === 3);
+  }
+};
 function buildFamilies() {
   THROUGH_SEGS = [];
   const pairs = junctionPairs();
@@ -3415,22 +3445,14 @@ function buildFamilies() {
   H.names.forEach(n => {
     const g = GEO[n];
     g.cuts.forEach((ab, idx) => {
-      const bits = H.pieces[n][idx];
+      const c = PAINT.classify(n, idx);   // Beta 1.282 (#12): the classification is the PAINT model's, computed once per piece
+      const bits = c.bits, isBand = c.isBand, key = c.key;
       let cPts = g.stitched.slice(ab[0], ab[1] + 1);
-      const isBand = bits === 3;
-      const key = isBand ? 'band' : mute(colOf(n, bits));
-      const famKey = i => H.pieces[n][i] === 3 ? 'band' : mute(colOf(n, H.pieces[n][i]));
       const ownHalf = SURF_HALF;   // Beta 1.208: bands draw at the surface's width, so a band end trims against the same half-width as a surface end
-      // clip an end only where the paint actually ends there: the
-      // neighbouring cut is a different family/colour, or the street
-      // ends. A continuing family keeps its exact shared vertex, so
-      // mergeStrands still joins it seamlessly.
-      if (idx === 0 || g.gaps.has(ab[0]) || famKey(idx - 1) !== key) cPts = clipEndAtJunction(n, ab[0], cPts, true, ownHalf); // Beta 1.144: a run-start piece's leading end is a street end for its run - it earns the junction clip even when the previous piece (another run's end) wears the same family
-      if (idx === g.cuts.length - 1 || g.gaps.has(g.cuts[idx + 1][0]) || famKey(idx + 1) !== key) cPts = clipEndAtJunction(n, ab[1], cPts, false, ownHalf);
+      cPts = PAINT.clipEnds(n, idx, cPts, ownHalf, false);   // Beta 1.282 (#12): the centre-family clip decision is the model's - clip an end only where the paint actually ends there (a different family/colour next door, a run gap, or the street's end; Beta 1.144: a run-start piece's leading end is a street end for its run - it earns the junction clip even when the previous piece (another run's end) wears the same family)
       if (isBand) {   // Beta 1.208 (Codex P2, gate round 3): the band's own clip rule is per-side-paint, not per-family - a band end clips only where the GREEN fully ends (the neighbouring piece carries no marked side at all). Beside a one-side piece the band keeps its shared vertex, meeting the fill that starts there; clipping on both sides of that boundary left the junction square's half unpainted (a 9.9 m break in the completed side, LongAve [1,3,3] in the proof network). Recomputed from the stitched slice so the centre family's rule above is untouched.
         let bPts = g.stitched.slice(ab[0], ab[1] + 1);
-        if (idx === 0 || g.gaps.has(ab[0]) || H.pieces[n][idx - 1] === 0) bPts = clipEndAtJunction(n, ab[0], bPts, true, ownHalf);
-        if (idx === g.cuts.length - 1 || g.gaps.has(g.cuts[idx + 1][0]) || H.pieces[n][idx + 1] === 0) bPts = clipEndAtJunction(n, ab[1], bPts, false, ownHalf);
+        bPts = PAINT.clipEnds(n, idx, bPts, ownHalf, true);   // Beta 1.282 (#12): the band clip decision is the model's band rule
         const bSp = boundarySplit(n, ab, bPts, 'b', MUGREEN, true); // Beta 1.259: a band at a boundary end feathers like every other family
         for (const f of bSp.fades) fadeSlices.push(f);
         if (bSp.solid) bandSlices.push({ pts: bSp.solid, key: 'band', mem: [{ n, idx }], e0: null, e1: null });
@@ -3455,21 +3477,20 @@ function buildFamilies() {
   throughTouch(edges, pairs);
   extendIntoBands(edges, pairs);
   lastResortConnect(edges, bands);
-  LASTCHAINS = { centres, bands, edges, fills };
+  PAINT.strands = { centres, bands, edges, fills };   // Beta 1.282 (#12): the merged strands are published into the PAINT model - buildSelFill reads the fills (with their corner provenance) from the model, not from a module global
   const fc = (list, colFn) => ({ type: 'FeatureCollection', features: list.map(sl => { const c = colFn(sl); return { type: 'Feature', properties: { col: c, colG: mute(c) }, geometry: { type: 'LineString', coordinates: GJ(sl.pts) } }; }) });
   return { centres: fc(centres, sl => sl.key), bands: fc(bands, () => MUGREEN), edges: fc(edges, () => MUGREEN), fills: fc(fills, () => MUGREEN), fades: { type: 'FeatureCollection', features: fadeSlices.map(sl => ({ type: 'Feature', properties: { col: sl.col, k: sl.k }, geometry: { type: 'LineString', coordinates: GJ(sl.pts) } })) } }; // Beta 1.259: the fade features bypass mergeStrands by design - each is its own short line in the lineMetrics source, so the gradient's progress spans exactly the fade zone
 }
 function currentSelList() { // every selected stretch (Beta 1.28): the app's selSet when multi-selecting, else the single anchor - read live at build time, like the original builders read the app global sel
   return (typeof H.selSet !== 'undefined' && Array.isArray(H.selSet) && H.selSet.length) ? H.selSet : (sel ? [sel] : []);
 }
-let SEL_FILL_FADES = []; // Beta 1.259: buildSelFill's boundary-end fades, handed to the selFades assembly in rebuildData/init/syncSel (the LASTCHAINS side-channel precedent) - the function's own return stays the selFill collection it has always returned
-function buildSelFill() {   // the selected sectors' side fills (vibrant) - Beta 1.208 (R3): built by fillSlicePts, the SAME local rule that builds the board's fills, so a selected stretch's done side paints vertex-for-vertex as the board paints it and the green can no longer disconnect at the stretch boundary. The retired buildSel('e') rebuilt the side from a ONE-PIECE edge run: a lone piece can never earn the junction through-grant the full marked run gets (throughOK needs both arms in the run) and it received none of the corner/through post-passes, so the selected stretch's kerb line clipped at junctions the board line runs through - Andrew's disconnected green (his Valeria stretch 10 screenshot, 2026-11-15).
+function buildSelFill() {   // the selected sectors' side fills (vibrant) - Beta 1.208 (R3): built by fillSlicePts, the SAME local rule that builds the board's fills, so a selected stretch's done side paints vertex-for-vertex as the board paints it and the green can no longer disconnect at the stretch boundary. The retired buildSel('e') rebuilt the side from a ONE-PIECE edge run: a lone piece can never earn the junction through-grant the full marked run gets (throughOK needs both arms in the run) and it received none of the corner/through post-passes, so the selected stretch's kerb line clipped at junctions the board line runs through - Andrew's disconnected green (his Valeria stretch 10 screenshot, 2026-11-15). Beta 1.282 (#12): returns { fill, fades } - its boundary-end fades (Beta 1.259: a selected fill feathers at a boundary end exactly as the board's does) travel through the return, as buildSelC's do, not through a module global.
   const feats = [];
   const selSides = [];
-  SEL_FILL_FADES = [];
+  const fades = [];
   for (const it of currentSelList()) {
     const bits = H.pieces[it.name][it.idx];
-    if (bits !== 3) [0, 1].forEach(side => { if (bits & (1 << side)) { const fSp = boundarySplit(it.name, GEO[it.name].cuts[it.idx], fillSlicePts(it.name, it.idx, side), 'f', GREEN, false); for (const f of fSp.fades) SEL_FILL_FADES.push(f); if (fSp.solid) { feats.push({ type: 'Feature', properties: { col: GREEN, colG: mute(GREEN) }, geometry: { type: 'LineString', coordinates: GJ(fSp.solid) } }); selSides.push({ n: it.name, idx: it.idx, side }); } } }); // Beta 1.259: a selected fill feathers at a boundary end exactly as the board's does
+    if (bits !== 3) [0, 1].forEach(side => { if (bits & (1 << side)) { const fSp = boundarySplit(it.name, GEO[it.name].cuts[it.idx], fillSlicePts(it.name, it.idx, side), 'f', GREEN, false); for (const f of fSp.fades) fades.push(f); if (fSp.solid) { feats.push({ type: 'Feature', properties: { col: GREEN, colG: mute(GREEN) }, geometry: { type: 'LineString', coordinates: GJ(fSp.solid) } }); selSides.push({ n: it.name, idx: it.idx, side }); } } });
   }
   // Beta 1.208 (Codex P2, gate round 4): the corner connectors ride along.
   // fillCornerLinks wraps a marked side around a junction corner with a
@@ -3479,7 +3500,8 @@ function buildSelFill() {   // the selected sectors' side fills (vibrant) - Beta
   // connector's first arm and the green broke by ~5 m for exactly as
   // long as the stretch stayed selected. Any board connector touching a
   // selected side is therefore redrawn here too, from the board's own
-  // strand (LASTCHAINS), in the selection's vibrant green - t1-selfill
+  // strand (the PAINT model's published fills), in the selection's
+  // vibrant green - t1-selfill
   // sits above t1-sel, so selected and deselected paint identically.
   // Connectors are identified by the explicit flag fillCornerLinks
   // sets at creation - NOT by mem count: an ordinary fill strand
@@ -3487,32 +3509,24 @@ function buildSelFill() {   // the selected sectors' side fills (vibrant) - Beta
   // and an early build of this fix mistook exactly that for a
   // connector and painted the unselected piece in selection green
   // (gate round 4, Codex P2).
-  if (selSides.length && typeof LASTCHAINS !== 'undefined' && LASTCHAINS && LASTCHAINS.fills) {
-    for (const sl of LASTCHAINS.fills) {
+  if (selSides.length && PAINT.strands && PAINT.strands.fills) {
+    for (const sl of PAINT.strands.fills) {
       if (!sl.corner || !sl.mem) continue;
       if (sl.mem.some(m => m && selSides.some(s => s.n === m.n && s.idx === m.idx && s.side === m.side)))
         feats.push({ type: 'Feature', properties: { col: GREEN, colG: mute(GREEN) }, geometry: { type: 'LineString', coordinates: GJ(sl.pts) } });
     }
   }
-  return { type: 'FeatureCollection', features: feats };
+  return { fill: { type: 'FeatureCollection', features: feats }, fades };
 }
 const EMPTYFC = { type: 'FeatureCollection', features: [] };
 function selectedGeom(it) {   // a selected stretch's painted slice: stitched points, edge-clipped at its junctions
   const s0 = it || sel;
   if (!s0) return null;
-  const n = s0.name, idx = s0.idx, g = GEO[n], ab = g.cuts[idx], bits = H.pieces[n][idx];
-  const isBand = bits === 3, half = SURF_HALF;   // Beta 1.208: the selection redraw of a band trims at the width the band now draws
-  const key = isBand ? 'band' : mute(colOf(n, bits));
-  const famKey = i => H.pieces[n][i] === 3 ? 'band' : mute(colOf(n, H.pieces[n][i]));
+  const n = s0.name, idx = s0.idx, g = GEO[n], ab = g.cuts[idx];
+  const c = PAINT.classify(n, idx);   // Beta 1.282 (#12): the classification is the PAINT model's
+  const bits = c.bits, isBand = c.isBand, half = SURF_HALF;   // Beta 1.208: the selection redraw of a band trims at the width the band now draws
   let pts = g.stitched.slice(ab[0], ab[1] + 1);
-  if (isBand) {   // Beta 1.208 (gate round 3): the selection's band redraw follows the board band's per-side-paint clip rule, so selected and deselected paint meet a neighbouring fill identically
-    if (idx === 0 || g.gaps.has(ab[0]) || H.pieces[n][idx - 1] === 0) pts = clipEndAtJunction(n, ab[0], pts, true, half);
-    if (idx === g.cuts.length - 1 || g.gaps.has(g.cuts[idx + 1][0]) || H.pieces[n][idx + 1] === 0) pts = clipEndAtJunction(n, ab[1], pts, false, half);
-  }
-  else {
-    if (idx === 0 || g.gaps.has(ab[0]) || famKey(idx - 1) !== key) pts = clipEndAtJunction(n, ab[0], pts, true, half);
-    if (idx === g.cuts.length - 1 || g.gaps.has(g.cuts[idx + 1][0]) || famKey(idx + 1) !== key) pts = clipEndAtJunction(n, ab[1], pts, false, half);
-  }
+  pts = PAINT.clipEnds(n, idx, pts, half, isBand);   // Beta 1.282 (#12): the clip decision is the model's - Beta 1.208 (gate round 3): a band follows the board band's per-side-paint clip rule, so selected and deselected paint meet a neighbouring fill identically; any other piece follows the centre-family rule
   const sp = boundarySplit(n, ab, pts, isBand ? 'b' : 'c', isBand ? GREEN : colOf(n, bits), false); // Beta 1.259: the selection redraw feathers at a boundary end in the vibrant colour - pts becomes the trimmed solid (the glow, which reads this same geometry, stops at the seam with it), the fades ride along for buildSelC
   return { pts: sp.solid, bits, half, fades: sp.fades };
 }
@@ -3547,7 +3561,7 @@ function rebuildData() { const F = buildFamilies(); const SC = buildSelC(); cons
   // colours the same way. Geometry untouched; features only reorder.
   const yRank = f => (f.properties.col === mute(YELLOW) || f.properties.col === YELLOW) ? 1 : 0;   // keys off the live scheme (round 25)
   F.centres.features.sort((a, b) => yRank(a) - yRank(b));
-  CUR = { centres: F.centres, bands: F.bands, edges: F.edges, fills: F.fills, fades: F.fades, sel: SC.sel, selBand: SC.selBand, selFill: SF, selFades: fadeFC([...SC.selFades, ...SEL_FILL_FADES]) }; }
+  CUR = { centres: F.centres, bands: F.bands, edges: F.edges, fills: F.fills, fades: F.fades, sel: SC.sel, selBand: SC.selBand, selFill: SF.fill, selFades: fadeFC([...SC.selFades, ...SF.fades]) }; }
 
 function scaleW(curve) { return curve.map((v, i) => (i >= 4 && i % 2 === 0) ? +(v * WIDTH_K).toFixed(3) : v); }   // Beta 1.181: scale an interpolate width curve by WIDTH_K (widths sit at even indices >= 4, the wPlus/wScale index rule)
 const surfW = scaleW(['interpolate', ['linear'], ['zoom'], 14, 2.5, 16, 7.63, 17, 15.25, 18, 30.5, 19, 61]);   // street-end width fix: z16-19 stops set so the DRAWN width holds the geographic surface width (2 x SURF_HALF: 9.9 m at WIDTH_K 1.5, 8.58 m at 1.3) on the app's true map scale (the old 6.5/9.5/15/24 drew only 8.4/6.2/4.9/3.9 m, so terminating ends — cut flush to the crossing paint's designed edge — hung gapped from the paint as drawn)
@@ -3623,6 +3637,28 @@ function tunePlaceLabels() {
     if (L.minzoom !== minZ || (L.maxzoom === undefined ? 24 : L.maxzoom) !== 15.5) GLM.setLayerZoomRange(L.id, minZ, 15.5); // Beta 1.41: no-op guard (see glUnifyLabels) - skip when the range already matches
   }
 }
+// ---- Beta 1.282 (architecture programme #13): the engine's LAYER CATALOGUE.
+// Through 1.281 the engine's layer ids were re-listed by hand at every
+// consumer: the zoom-range line in addStack spelled the twenty paint ids
+// and rebuilt the ten glow ids, rePlaceTitles rebuilt the four title ids,
+// setFont and syncTheme each spelled the five text ids, app2's
+// nameLayerIds and app5's title guard each spelled the four titles again,
+// and create mode's CR_ROUTE_LAYERS re-listed all thirty-seven. LAYERS is
+// the one catalogue: the groups are written once, here, in stack order,
+// and the two derived lists (text = the layers that carry text; stack =
+// every route layer in stack order, create mode's hide list) are computed
+// from the groups. Every consumer reads the catalogue - in this file
+// directly, the other parts through GLP.layers. The title and glow groups
+// keep the exact expressions that always built them, so the ids are the
+// historical ones by construction.
+const LAYERS = {
+  paint: ['t1-casing', 't1-casingb', 't1-surface', 't1-band', 't1-fill', 'fade-casing', 'fade-surf-y', 'fade-surf-r', 'fade-band-g', 'fade-fill-g', 't1-sel', 't1-selband', 't1-selfill', 'selfade-y', 'selfade-r', 'selfade-g', 'selfade-fill', 'sel-core-s', 'sel-core-b', 'hit'],
+  poi: ['routepoi-ring', 'routepoi-dot', 'routepoi-txt'],
+  titles: [1, 2, 3, 4].map(t => 'streetnamespt' + t),
+  glow: [1, 2, 3, 4, 5].flatMap(i => ['sel-glow' + i + '-s', 'sel-glow' + i + '-b']),
+};
+LAYERS.text = [...LAYERS.titles, 'routepoi-txt'];
+LAYERS.stack = [...LAYERS.paint, ...LAYERS.poi, ...LAYERS.titles, ...LAYERS.glow];
 function addStack() {
   tunePlaceLabels();
   if (!GLM.getSource('centres')) {
@@ -3754,7 +3790,7 @@ function addStack() {
   add({ id: 'routepoi-ring', type: 'circle', source: 'routepoi', maxzoom: 13.3, paint: { 'circle-radius': ['interpolate', ['linear'], ['zoom'], 10, 7, 13.5, 9], 'circle-color': '#ffffff', 'circle-opacity': ['step', ['zoom'], 1, 12.6, 0], 'circle-opacity-transition': { duration: 0, delay: 0 } } });
   add({ id: 'routepoi-dot', type: 'circle', source: 'routepoi', maxzoom: 13.3, paint: { 'circle-radius': ['interpolate', ['linear'], ['zoom'], 10, 4.5, 13.5, 6.5], 'circle-color': '#ef476f', 'circle-opacity': ['step', ['zoom'], 1, 12.6, 0], 'circle-opacity-transition': { duration: 0, delay: 0 } } });
   add({ id: 'routepoi-txt', type: 'symbol', source: 'routepoi', maxzoom: 13.3, layout: { 'text-field': (H.activeRoute && H.activeRoute.name) || 'Snow Route', 'text-font': fontStack, 'text-size': 11, 'text-anchor': 'left', 'text-offset': [1.1, 0], 'text-allow-overlap': false }, paint: { 'text-color': H.isNight() ? '#e8e8e8' : '#333333', 'text-halo-color': H.isNight() ? 'rgba(0,0,0,.8)' : 'rgba(255,255,255,.9)', 'text-opacity': ['step', ['zoom'], 1, 12.6, 0], 'text-opacity-transition': { duration: 0, delay: 0 }, 'text-halo-width': 1.6 } });
-  ['t1-casing', 't1-casingb', 't1-surface', 't1-band', 't1-fill', 'fade-casing', 'fade-surf-y', 'fade-surf-r', 'fade-band-g', 'fade-fill-g', 't1-sel', 't1-selband', 't1-selfill', 'selfade-y', 'selfade-r', 'selfade-g', 'selfade-fill', 'sel-core-s', 'sel-core-b', 'hit'].concat([1, 2, 3, 4, 5].flatMap(i => ['sel-glow' + i + '-s', 'sel-glow' + i + '-b'])).forEach(id => { if (GLM.getLayer(id)) GLM.setLayerZoomRange(id, 12.5, 24); });
+  LAYERS.paint.concat(LAYERS.glow).forEach(id => { if (GLM.getLayer(id)) GLM.setLayerZoomRange(id, 12.5, 24); }); // Beta 1.282 (#13): the paint and glow groups are the catalogue's
   H.glUnifyLabels(GLM);
   pushSources();
   applyGlow();
@@ -3836,7 +3872,7 @@ function managePulse() {
 }
   function rePlaceTitles() { // Beta 1.248: the street titles' anchors are re-decided from scratch - the labelpts source is rebuilt in place (the same LABELPTS data; the four tier layers re-added with their live specs at their stack seats). MapLibre's placement PREFERS the anchor a symbol used in the previous placement pass and keeps it while it still places (placement.ts: prevPlacement.variableOffsets, keyed by crossTileID, which lives with the source's cross-tile index), so an anchor first chosen mid-flight - while the fit view's streets sat closer together on screen and the tile scene was still arriving - can stick for the whole session with the name beside its street (Andrew's cold-open report, 2026-11-18: names off their streets, zooming no cure, a day/night swap - a fresh style and placement chain - the only cure; measured in the round's harness: anchors are always on their streets, the rendered text is what sits off). A rebuilt source gets a fresh cross-tile index, so the next placement pass holds no preference and decides against the settled scene. Nothing about what renders changes - same data, same specs, same seats; only when the decision is (re)made. The host calls this once the pick flight settles (app5's introToRoute hook); a no-op without a map or the source.
     if (!GLM || !GLM.getSource || !GLM.getSource('labelpts')) return;
-    const ids = [1, 2, 3, 4].map(t => 'streetnamespt' + t).filter(id => GLM.getLayer(id));
+    const ids = LAYERS.titles.filter(id => GLM.getLayer(id)); // Beta 1.282 (#13): the title group is the catalogue's
     if (!ids.length) return;
     const style = GLM.getStyle(); if (!style || !style.layers) return;
     const specs = ids.map(id => style.layers.find(l => l.id === id));
@@ -3857,7 +3893,7 @@ function managePulse() {
     sel = H.selStretch ? { name: H.selStretch.name, idx: H.selStretch.idx } : null;
     const sig = stateSig();
     if (!CUR || sig !== lastSig) { rebuildData(); lastSig = sig; }
-    else { const SC = buildSelC(); CUR.sel = SC.sel; CUR.selBand = SC.selBand; CUR.selFill = buildSelFill(); CUR.selFades = fadeFC([...SC.selFades, ...SEL_FILL_FADES]); }
+    else { const SC = buildSelC(); const SF = buildSelFill(); CUR.sel = SC.sel; CUR.selBand = SC.selBand; CUR.selFill = SF.fill; CUR.selFades = fadeFC([...SC.selFades, ...SF.fades]); }
     addStack();           // re-adds sources+layers on the fresh GL map and pushes CUR
   }
   function rebuildRoute() { // Beta 1.117: the app switched routes and rebuilt its own geometry (buildGeometry, app1) - rebuild the engine's from the host's current data and re-point every route-shaped source at it. The basemap and layers are untouched; only data moves.
@@ -3889,11 +3925,12 @@ function managePulse() {
     sel = H.selStretch ? { name: H.selStretch.name, idx: H.selStretch.idx } : null;
     if (!GLM || !CUR) return;
     const SC = buildSelC();
-    CUR.sel = SC.sel; CUR.selBand = SC.selBand; CUR.selFill = buildSelFill(); CUR.selFades = fadeFC([...SC.selFades, ...SEL_FILL_FADES]);
+    const SF = buildSelFill();
+    CUR.sel = SC.sel; CUR.selBand = SC.selBand; CUR.selFill = SF.fill; CUR.selFades = fadeFC([...SC.selFades, ...SF.fades]);
     pushSelSources();
   }
   function active() { return !!GLM; }
-  function setFont(stack) { if (Array.isArray(stack) && stack.length) { fontStack = stack.slice(); if (GLM) { for (const id of ['streetnamespt1', 'streetnamespt2', 'streetnamespt3', 'streetnamespt4', 'routepoi-txt']) { if (GLM.getLayer(id)) { try { GLM.setLayoutProperty(id, 'text-font', fontStack); } catch (e) {} } } } } } // Beta 1.170 (Carbon fix round Phase 2, B-09): layers already on the map take the new stack too - through 1.169 setFont replaced only the variable FUTURE layers are built from, so a basemap restyle (which re-picks the font, then calls sync - not init) left the live label layers rendering the retired stack until the next full rebuild
+  function setFont(stack) { if (Array.isArray(stack) && stack.length) { fontStack = stack.slice(); if (GLM) { for (const id of LAYERS.text) { if (GLM.getLayer(id)) { try { GLM.setLayoutProperty(id, 'text-font', fontStack); } catch (e) {} } } } } } // Beta 1.170 (Carbon fix round Phase 2, B-09): layers already on the map take the new stack too - through 1.169 setFont replaced only the variable FUTURE layers are built from, so a basemap restyle (which re-picks the font, then calls sync - not init) left the live label layers rendering the retired stack until the next full rebuild
   function syncTheme() {
     if (!GLM || !GLM.getLayer) return;
     const night = !!(H && H.isNight && H.isNight());
@@ -3901,7 +3938,7 @@ function managePulse() {
     const casing = night ? '#000000' : '#5a5f6a', txt = night ? '#e8e8e8' : '#333333', halo = night ? 'rgba(0,0,0,.8)' : 'rgba(255,255,255,.9)';
     for (const id of ['t1-casing', 't1-casingb']) { if (GLM.getLayer(id)) { try { GLM.setPaintProperty(id, 'line-color', casing); } catch (e) {} } }
     if (GLM.getLayer('fade-casing')) { try { GLM.setPaintProperty('fade-casing', 'line-gradient', fadeGrad(casing)); } catch (e) {} } // Beta 1.259: the feather's casing gradient follows the theme with the casings
-    for (const id of ['streetnamespt1', 'streetnamespt2', 'streetnamespt3', 'streetnamespt4', 'routepoi-txt']) { if (GLM.getLayer(id)) { try { GLM.setPaintProperty(id, 'text-color', txt); GLM.setPaintProperty(id, 'text-halo-color', halo); } catch (e) {} } }
+    for (const id of LAYERS.text) { if (GLM.getLayer(id)) { try { GLM.setPaintProperty(id, 'text-color', txt); GLM.setPaintProperty(id, 'text-halo-color', halo); } catch (e) {} } }
   }
   function evalCurvePx(curve, z) { // a scaleW-built interpolate curve evaluated at a zoom, in px (stops: zoom at odd indices from 3, width at even indices >= 4; clamped outside the stop range, linear between)
     let prev = null;
@@ -3909,7 +3946,7 @@ function managePulse() {
     return prev[1];
   }
   function tapTolPx(z) { return Math.max(24, evalCurvePx(surfCASE, z) / 2 + 2); } // The map-tap tolerance follows the WIDEST paint at the tap's zoom, floored at 24 px — the Beta 1.181 rule ("a tap anywhere on the paint still selects instead of deselecting"). Beta 1.206 introduced this formula against BANDCASE, then the widest paint; Beta 1.208 retires the wide band, so the widest paint is now the surface casing (surfCASE): 24 px at z17 and below (the floor - shipped behaviour unchanged), ~24.1 px at z18, ~44.3 px at z19 (the z18/z19 values re-measured at Beta 1.268's WIDTH_K 1.3; they were ~27.5 / ~50.8 at 1.5).
-  return { init, drop, sync, syncSel, syncTheme, active, setFont, rebuildRoute, tapTolPx, mute, rePlaceTitles }; // mute exported for the create flow's draft renderer (Beta 1.221 gate fix: create-pick's crDraftLineDim calls GLP.mute - the helper is private to this IIFE, and the bare call threw at draft-layer init, silently aborting every layer after the casing; Codex review P1 on PR #98). Beta 1.248: rePlaceTitles exported for app5's post-flight hook
+  return { init, drop, sync, syncSel, syncTheme, active, setFont, rebuildRoute, tapTolPx, layers: LAYERS, mute, rePlaceTitles }; // layers exported for the catalogue's cross-part readers (Beta 1.282, #13: app2's nameLayerIds, app5's title guard, create-pick's CR_ROUTE_LAYERS). mute exported for the create flow's draft renderer (Beta 1.221 gate fix: create-pick's crDraftLineDim calls GLP.mute - the helper is private to this IIFE, and the bare call threw at draft-layer init, silently aborting every layer after the casing; Codex review P1 on PR #98). Beta 1.248: rePlaceTitles exported for app5's post-flight hook
 })();
 window.GLP = GLP;// GENERATED by scripts/genstyles.mjs (@protomaps/basemaps 5.7.2 (pinned exactly by scripts/package.json + package-lock.json - install with npm ci), tiles 20261026-01 from the vendored CARTO dark-matter style scripts/carto-dark-matter-style.json sha256 66afc8eb8287, road line-width/line-gap-width x1.5 on roads* layers (Beta 1.181)) - do not hand-edit; regenerate instead.
 // Beta 1.33 (Andrew): BOTH basemaps are Protomaps - one map, two flavours - embedded in the page so a day/night switch is a local setStyle with nothing to fetch and nothing to break.
@@ -4023,7 +4060,7 @@ function scaleNameStops(expr, mult) { // a zoom interpolate or step whose stop o
 function nameLayerIds(m) { // every layer that prints a NAME, in two kinds: the basemap's text layers (glUnifyLabels' own discriminator - a symbol layer carrying a text-field over a tile source-layer) and the route's four title tiers. The route POI text is NOT a street name and the intro choreography sits the POI on screen during the dwell (Beta 1.203), so it is never held.
   const base = [], titles = [];
   try { for (const L of m.getStyle().layers) { if (L.type === 'symbol' && L.layout && L.layout['text-field'] && L['source-layer']) base.push(L.id); } } catch (e) {}
-  for (const id of ['streetnamespt1', 'streetnamespt2', 'streetnamespt3', 'streetnamespt4']) { try { if (m.getLayer(id)) titles.push(id); } catch (e) {} }
+  for (const id of window.GLP.layers.titles) { try { if (m.getLayer(id)) titles.push(id); } catch (e) {} } // Beta 1.282 (#13): the title group is the engine catalogue's (GLP.layers), not a hand-kept copy
   return { base, titles };
 }
 function nameHoldHideOnly(m, id) { // a BASEMAP name layer's hold: VISIBILITY ONLY - its paint is never written, not once. A single text-opacity write on a basemap symbol layer resets its tiles' placement state, and a marginal title that competes in those tiles blanks for one placement pass at the next zoom boundary (measured on the pre-1.266 tree with a two-write manual hold: Bell Harbour, drive216's P3; an untouched tree is clean). Hidden, the layer leaves placement for the window; when its visibility returns at the reveal it re-places at the settled view and fades in by the engine's own symbol fade - no paint write is needed, or forgiven.
@@ -7489,7 +7526,7 @@ $('stDel').addEventListener('click', async () => {
 });
 // ---- About ----
 const WHATSNEW = { // the curated in-app notes: plain words, LATEST RELEASE ONLY (Beta 1.114, Andrew: the accumulated list cluttered the About pane). A release REPLACES this entry with its own in the same change - it never accumulates; the full history lives in CHANGELOG.md, not the app
-  v: 'Beta 1.281', items: ["Under the hood: route building now runs through one owner per job, so creating a route stays in step."] }; // Beta 1.223 (Andrew): What's New entries are SHORT from now on - point form, one short plain line each, no prose paragraphs, no em dashes
+  v: 'Beta 1.282', items: ["Under the hood: the route paint and map layers now each run through one owner, keeping the map in step."] }; // Beta 1.223 (Andrew): What's New entries are SHORT from now on - point form, one short plain line each, no prose paragraphs, no em dashes
 
 function renderAbout() {
   const cur = $('ver').textContent.trim();
@@ -7898,7 +7935,7 @@ function armTitleRePlace() {
     if (done) return;
     if (liGen !== loadInGen) { finish(); return; }
     let placed = 0;
-    try { const ids = ['streetnamespt1', 'streetnamespt2', 'streetnamespt3', 'streetnamespt4'].filter((id) => map.getLayer(id)); if (ids.length) placed = map.queryRenderedFeatures({ layers: ids }).length; } catch (e) {}
+    try { const ids = window.GLP.layers.titles.filter((id) => map.getLayer(id)); if (ids.length) placed = map.queryRenderedFeatures({ layers: ids }).length; } catch (e) {} // Beta 1.282 (#13): the title group is the engine catalogue's (GLP.layers)
     if (!placed) { finish(); return; } // the streaming path: nothing placed mid-flight, nothing owed
     const cure = () => { // at idle (the settled scene - a re-decision against a half-arrived scene could stick the same way the original defect did)
       if (done) return; finish();
@@ -10320,8 +10357,7 @@ onMapReady(() => { if (creating) crSetBackdrop(true); }); // creation entered be
 // anchors, not the route POI). Orientation with zero clutter. The draft's
 // own overlay (crDraft) is untouched, and exitCreate restores the exact
 // visibility every hidden layer had before. ----
-const CR_ROUTE_LAYERS = ['t1-casing', 't1-casingb', 't1-surface', 't1-band', 't1-fill', 'fade-casing', 'fade-surf-y', 'fade-surf-r', 'fade-band-g', 'fade-fill-g', 't1-sel', 't1-selband', 't1-selfill', 'selfade-y', 'selfade-r', 'selfade-g', 'selfade-fill', 'sel-core-s', 'sel-core-b', 'hit', 'routepoi-ring', 'routepoi-dot', 'routepoi-txt']   // Beta 1.207: t1-edge/t1-sele retired with the kerb-line paint - the fill layers (t1-fill/t1-selfill) take their place in the hide list. Beta 1.264: the Beta 1.259 feather layers join the list in the engine's stack order (the board fades after t1-fill, the selection fades after t1-selfill) - through 1.263 they were missing, so the loaded route's feather tips rendered over the creation map. Membership is no longer hand-kept on trust: proof-1264 derives the route stack from engine.js's addStack and fails if a stack layer is missing here
-  .concat([1, 2, 3, 4].map(t => 'streetnamespt' + t), [1, 2, 3, 4, 5].flatMap(i => ['sel-glow' + i + '-s', 'sel-glow' + i + '-b'])); // MIX SAMPLE restore (pre-1.258 shape): the title layers hide in the create backdrop again
+const CR_ROUTE_LAYERS = GLP.layers.stack;   // Beta 1.207: t1-edge/t1-sele retired with the kerb-line paint - the fill layers (t1-fill/t1-selfill) take their place in the hide list. Beta 1.264: the Beta 1.259 feather layers join the list in the engine's stack order (the board fades after t1-fill, the selection fades after t1-selfill) - through 1.263 they were missing, so the loaded route's feather tips rendered over the creation map. Beta 1.282 (#13): the list itself is no longer spelled here at all - it IS the engine catalogue's stack (paint + poi + titles + glow, in stack order), read through GLP.layers; the title layers hide in the create backdrop again (the pre-1.258 shape). Membership is not hand-kept on trust: proof-1264 derives the route stack from engine.js's addStack and fails if a stack layer is missing from the catalogue
 let crHiddenLayers = null; // [[id, visibilityBefore], ...] recorded on the first hide; null = backdrop off
 const CR_POI_SRC = 'crPoi';
 function crPoiFeatures() {

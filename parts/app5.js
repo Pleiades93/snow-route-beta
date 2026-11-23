@@ -405,7 +405,7 @@ function armTitleRePlace() {
     if (done) return;
     if (liGen !== loadInGen) { finish(); return; }
     let placed = 0;
-    try { const ids = ['streetnamespt1', 'streetnamespt2', 'streetnamespt3', 'streetnamespt4'].filter((id) => map.getLayer(id)); if (ids.length) placed = map.queryRenderedFeatures({ layers: ids }).length; } catch (e) {}
+    try { const ids = window.GLP.layers.titles.filter((id) => map.getLayer(id)); if (ids.length) placed = map.queryRenderedFeatures({ layers: ids }).length; } catch (e) {} // Beta 1.282 (#13): the title group is the engine catalogue's (GLP.layers)
     if (!placed) { finish(); return; } // the streaming path: nothing placed mid-flight, nothing owed
     const cure = () => { // at idle (the settled scene - a re-decision against a half-arrived scene could stick the same way the original defect did)
       if (done) return; finish();

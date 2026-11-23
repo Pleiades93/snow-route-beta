@@ -106,7 +106,7 @@ function scaleNameStops(expr, mult) { // a zoom interpolate or step whose stop o
 function nameLayerIds(m) { // every layer that prints a NAME, in two kinds: the basemap's text layers (glUnifyLabels' own discriminator - a symbol layer carrying a text-field over a tile source-layer) and the route's four title tiers. The route POI text is NOT a street name and the intro choreography sits the POI on screen during the dwell (Beta 1.203), so it is never held.
   const base = [], titles = [];
   try { for (const L of m.getStyle().layers) { if (L.type === 'symbol' && L.layout && L.layout['text-field'] && L['source-layer']) base.push(L.id); } } catch (e) {}
-  for (const id of ['streetnamespt1', 'streetnamespt2', 'streetnamespt3', 'streetnamespt4']) { try { if (m.getLayer(id)) titles.push(id); } catch (e) {} }
+  for (const id of window.GLP.layers.titles) { try { if (m.getLayer(id)) titles.push(id); } catch (e) {} } // Beta 1.282 (#13): the title group is the engine catalogue's (GLP.layers), not a hand-kept copy
   return { base, titles };
 }
 function nameHoldHideOnly(m, id) { // a BASEMAP name layer's hold: VISIBILITY ONLY - its paint is never written, not once. A single text-opacity write on a basemap symbol layer resets its tiles' placement state, and a marginal title that competes in those tiles blanks for one placement pass at the next zoom boundary (measured on the pre-1.266 tree with a two-write manual hold: Bell Harbour, drive216's P3; an untouched tree is clean). Hidden, the layer leaves placement for the window; when its visibility returns at the reveal it re-places at the settled view and fades in by the engine's own symbol fade - no paint write is needed, or forgiven.

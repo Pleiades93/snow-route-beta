@@ -53,7 +53,7 @@ const guardBody = guardStart > -1 ? app5.slice(guardStart, app5.indexOf('\n}\n',
 check('3: the guard counts placed titles at moveend through the rendered-features query over the four title tiers, and the zero case finishes WITHOUT the re-place - the conditional the whole design rests on',
   guardBody.includes("map.once('moveend', check)") &&
   guardBody.includes('map.queryRenderedFeatures({ layers: ids })') &&
-  ['streetnamespt1', 'streetnamespt2', 'streetnamespt3', 'streetnamespt4'].every((id) => guardBody.includes(`'${id}'`)) &&
+  guardBody.includes('window.GLP.layers.titles.filter') && engine.includes("titles: [1, 2, 3, 4].map(t => 'streetnamespt' + t),") && // Beta 1.282 (#13) re-point, claim unchanged: the guard reads the four tiers from the engine catalogue (GLP.layers.titles IS streetnamespt1-4 by its defining expression)
   guardBody.includes('if (!placed) { finish(); return; }') &&
   count(guardBody, 'rePlaceTitles') === 2); // the existence test and the one call - there is no second road to the re-place
 
