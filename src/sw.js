@@ -32,20 +32,34 @@ self.addEventListener('install', e => {
 self.addEventListener('activate', e => {
   // one-time cleanup: the two exact legacy names below are the pre-rename beta caches
   e.waitUntil(caches.keys().then(ks => Promise.all(ks.filter(k => (k.startsWith('snowroute-') || k === 'snow5wbeta1-shell-v1' || k === 'snow5wbeta1-tiles-v1') && k !== CACHE && k !== TILES && k !== OFFLINE).map(k => caches.delete(k))))
+    .then(async () => {
+      // Beta 1.285 (issue #171): prune QUERY-KEYED variants of the two shell keys (scope?…, index.html?…) left behind by pre-1.285 launches. Under the old ignoreSearch lookups such an entry sat ahead of the canonical key in insertion order and won every offline or slow launch with a frozen build; netFirst now matches the exact scope key, and this prune removes the poison outright. ONLY shell-key variants are pruned: the CORE library URLs and the entries netFirst stores under their own URLs (manifest, icons, launch images) are legitimate residents of this cache and stay.
+      const scope = self.registration.scope;
+      const bare = u => { const p = new URL(u); p.search = ''; return p.href; };
+      const c = await caches.open(CACHE);
+      await Promise.all((await c.keys()).filter(r => { const b = bare(r.url); return (b === scope || b === scope + 'index.html') && r.url !== b; }).map(r => c.delete(r)));
+    })
     .then(() => self.clients.claim()));
 });
 async function netFirst(r, cacheName, ev) {   // fresh when the network answers fast, cached otherwise
   const c = await caches.open(cacheName);
+  const shell = cacheName === CACHE && r.mode === 'navigate' ? self.registration.scope : null;
+  const matchCached = () => shell ? c.match(shell) : c.match(r, { ignoreSearch: true });
+  const storeShell = res => Promise.all([
+    c.put(shell, res.clone()).catch(() => {}),
+    c.put(shell + 'index.html', res.clone()).catch(() => {})
+  ]);
   let fp; try { fp = fetch(r); } catch (e) { fp = Promise.reject(e); }   // a synchronous throw becomes a rejection the fallback below already handles
   let res = null, netErr = false, timedOut = false;
   const TIMEOUT = Symbol('timeout');
   try { const w = await Promise.race([fp, new Promise(done => setTimeout(() => done(TIMEOUT), 2000))]); if (w === TIMEOUT) timedOut = true; else res = w; }
   catch (e) { netErr = true; }   // the network answered with a rejection (offline, DNS, reset): straight to the cache fallback below, as before
-  if (timedOut && r.mode === 'navigate') {
+  if (timedOut && shell) {
     // Beta 1.221 (webperf piece 6): a NAVIGATION that has not answered in 2 s checks the cache NOW instead of waiting out the old second race (3.5 s + 5 s = ~8.5 s before an installed app opened on a hanging connection). A cached shell is served at once and the SAME fetch keeps running in the background - bound to the fetch event's lifetime where the caller passed it - so a genuinely new version still lands in the cache for the next launch, and the page's own update check (network-only probe + forced reload) is untouched. With NOTHING cached there is no shell to serve, so the bounded wait stays: a further 5 s for the real answer (SEC-7's slow-network respect, ~7 s worst case, down from ~8.5 s).
-    const early = await c.match(r, { ignoreSearch: true }).catch(() => undefined) || await c.match(self.registration.scope, { ignoreSearch: true }).catch(() => undefined);
+    // Beta 1.285 (issue #171): the shortcut matches the scope key EXACTLY - the old ignoreSearch lookup returned the first insertion-order match, so an older query-keyed entry won over the current shell.
+    const early = await matchCached().catch(() => undefined);
     if (early) {
-      const bg = fp.then(late => { if (late && late.ok) return Promise.all([c.put(self.registration.scope, late.clone()).catch(() => {}), c.put(self.registration.scope + 'index.html', late.clone()).catch(() => {})]); }).catch(() => {}); // Beta 1.221 gate fix (Codex P2, PR #98): the refresh lands under the CANONICAL shell keys (the install's two), not under the navigation's own URL - a launch carrying a query (?v=, a shortcut's parameter) otherwise refreshed a junk key and left the shell the next launch reads stale
+      const bg = fp.then(late => { if (late && late.ok) return storeShell(late); }).catch(() => {}); // Beta 1.221 gate fix (Codex P2, PR #98): the refresh lands under the CANONICAL shell keys (the install's two), so a query-bearing launch refreshes the shell the next launch reads
       if (ev) { try { ev.waitUntil(bg); } catch (err) {} }
       return early;
     }
@@ -54,15 +68,23 @@ async function netFirst(r, cacheName, ev) {   // fresh when the network answers 
     try { res = await Promise.race([fp, new Promise((_, j) => setTimeout(() => j(new Error('stalled')), 8000))]); } catch (e2) { netErr = true; }
   }
   try {
-    if (res && res.ok) { try { await c.put(r, res.clone()); } catch (e) {} return res; }   // NEW-02 (audit 5): awaited + caught like cacheFirst - a failed cache write must never sink a good response or escape as an unhandled rejection
+    if (res && res.ok) {
+      // Beta 1.285 (issue #171): a fast shell navigation refreshes BOTH canonical keys and never stores under its own URL - the old put under the request URL is what created the query-keyed entries (a launch carrying ?share=, ?utm… froze that build into the cache).
+      try {
+        if (shell) await storeShell(res);
+        else await c.put(r, res.clone());
+      } catch (e) {}   // NEW-02 (audit 5): a failed cache write must never sink a good response or escape as an unhandled rejection
+      return res;
+    }
     // Server answered with an error status (503 etc.): prefer a good cached copy
     // (BUG-03, ChatGPT audit #2) - surface the error only when nothing is cached.
     // The app-shell fallback applies ONLY to page navigations (ISSUE-03,
     // audit #2): a map style or data request must never be handed HTML.
-    const hitErr = await c.match(r, { ignoreSearch: true }) || (r.mode === 'navigate' ? await c.match(self.registration.scope, { ignoreSearch: true }) : undefined); // Beta 1.170 (C-07): the scope fallback ignores the query too - a stored shell key must answer a launch that arrives carrying one
+    // Beta 1.285 (issue #171): the error fallback reads the exact scope key for a shell navigation - it answers query-bearing and explicit-file launches alike and no stale variant can be picked. (Beta 1.170's C-07 ignoreSearch scope match is superseded: exact matching is safe now because install and every refresh write the canonical keys.)
+    const hitErr = await matchCached();
     return hitErr || res || Response.error();   // res is null exactly when the network failed outright (netErr) and nothing is cached
   } catch (e) {
-    const hit = await c.match(r, { ignoreSearch: true }) || (r.mode === 'navigate' ? await c.match(self.registration.scope, { ignoreSearch: true }) : undefined);
+    const hit = await matchCached();
     return hit || Response.error();
   }
 }

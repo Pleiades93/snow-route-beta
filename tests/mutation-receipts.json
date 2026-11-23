@@ -8428,6 +8428,32 @@
    "red": "selftest-round112 on the mutated Beta 1.284 tree: '01 failed flush -> rebuilt editor says Not saved - Storage problem' FAILS (16 passed, 1 failed)",
    "green": "selftest-round112: 17 passed, 0 failed on the byte-exact revert. This r2 refreshes the 1.279 receipt's pins on the 1.284 tree: the selftest's stDel extraction marker was re-pointed to the handler's event-taking head (Beta 1.284 #170) with its claim unchanged, and app2/app3 carry the round's call-site changes",
    "issued": "2026-11-23 beta-1284-marking-cluster"
+  },
+  {
+   "id": "offline171-shell-keys",
+   "check": "tests/sw.test.mjs",
+   "kind": "historical",
+   "files": {
+    "tests/sw.test.mjs": "d4e7f2456c1698a4eebf5829a62e7b901dd9d081a76a716ff1c98e821332711c",
+    "src/sw.js": "051bfdafedc51edb89521f01528f4f22104a71348743b0b7462aeef31323c0fe"
+   },
+   "mutation": "src/sw.js at base f29ce154 (pre-1.285): netFirst stored a fast navigation under the request URL, query included, and the 2s shortcut, error and catch fallbacks matched the shell with ignoreSearch, so an older query-keyed entry wins insertion order forever; activate never pruned inside the shell cache",
+   "red": "New suite against the base worker (scratch copy, work/offline-cluster-2026-11-23/red171): exit 1, exactly 5 FAIL - '#171 offline root navigation serves BUILD-C', '#171 HTTP 503 on a query navigation serves BUILD-C', '#171 stalled query navigation serves BUILD-C at the shortcut', '#171 fast query navigation stores only the two canonical keys', '#171 activation prunes only stray entries before claiming clients'; all 45 pre-existing assertions PASS (47 PASS total)",
+   "green": "Shipped worker: node tests/sw.test.mjs exit 0, 52/52 PASS (45 pre-existing + 7 new #171 assertions)",
+   "issued": "2026-11-23 offline-cluster round (issue #171 takeover), local run"
+  },
+  {
+   "id": "offline171-narrow-prune",
+   "check": "tests/sw.test.mjs",
+   "kind": "mutation",
+   "files": {
+    "tests/sw.test.mjs": "d4e7f2456c1698a4eebf5829a62e7b901dd9d081a76a716ff1c98e821332711c",
+    "src/sw.js": "051bfdafedc51edb89521f01528f4f22104a71348743b0b7462aeef31323c0fe"
+   },
+   "mutation": "src/sw.js activate with the Codex draft's broad keep-set prune (keep only scope, scope+index.html and CORE URLs; delete every other shell-cache entry)",
+   "red": "Suite against the broad-prune worker (scratch copy, work/offline-cluster-2026-11-23/red171-broad): exit 1, exactly 2 FAIL - '#171 activation prunes only stray entries before claiming clients' and '#171 activation keeps legitimate non-shell residents (narrow prune)' - the prune deleted a same-origin asset entry and a non-CORE CDN entry; all navigation checks PASS (50 PASS total)",
+   "green": "Shipped narrowed prune (only query-keyed variants of the two shell keys are deleted): suite exit 0, 52/52 PASS",
+   "issued": "2026-11-23 offline-cluster round (issue #171 takeover adjudication), local run"
   }
  ]
 }
