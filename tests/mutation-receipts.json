@@ -7943,6 +7943,42 @@
    "red": "Under the mutation the selftest FAILS both arms (item length 110 over the cap; em dash present), exit 1",
    "green": "Restored: selftest 3/3 PASS; the full proof suite passes 83/83 with every bullet pin removed (combined checks keep their CHANGELOG-order clauses under trimmed labels)",
    "issued": "2026-11-23 testing-rollout round, local run"
+  },
+  {
+   "id": "testing-rollout-drive216-decision-c",
+   "check": "tests/browser/drive216.mjs",
+   "kind": "mutation",
+   "files": {
+    "tests/browser/drive216.mjs": "4deb2fbd1fdeaef4f5ea967889a29e0b038722e3a20c61191f2b945e54cdd363"
+   },
+   "mutation": "phaseReport's drop rule: the old any-single-sample rule vs the amended decision C (3+ consecutive misses), run over synthetic sample windows",
+   "red": "Old rule convicts the Bell Harbour shape (1-2 sample misses from the queryRenderedFeatures settle blind spot): dropped=true on windows where the name renders at full ink",
+   "green": "Amended rule: 1-2 consecutive misses NOT dropped; 3+ and 5+ consecutive misses (the 1.261 heal blackout shape) still dropped - 6/6 synthetic cases as specified. Local full-drive runs are title-starved on this rig (known-env entry, pristine-identical); CI is the decider for the full drive",
+   "issued": "2026-11-23 testing-rollout round, local run"
+  },
+  {
+   "id": "testing-rollout-drive204-settle",
+   "check": "tests/browser/drive204.mjs",
+   "kind": "mutation",
+   "files": {
+    "tests/browser/drive204.mjs": "97f8cd9c8393d1e12c0556933767021b97ce2d0487788d9d7024013563b80a8e"
+   },
+   "mutation": "The toast settle wait scoped document-wide (this round's first implementation) instead of to the toast element: a running clean keeps other animations alive indefinitely (the recording pulse)",
+   "red": "clean-day: 'the rise settled before measuring' FAILED (document-wide animations never empty during a clean); idle-day passed",
+   "green": "Toast-scoped settle: drive204 36/36 PASS, twice in a row locally; a never-settling rise now fails its own check instead of being measured anyway (the old poll swallowed its timeout)",
+   "issued": "2026-11-23 testing-rollout round, local run"
+  },
+  {
+   "id": "testing-rollout-drive180-notile2",
+   "check": "tests/browser/drive180.mjs",
+   "kind": "historical",
+   "files": {
+    "tests/browser/drive180.mjs": "d368c25571aebdd58baddb3d6a2eee95505e283123fa21125312ce371b148da3"
+   },
+   "mutation": "NOTILE2 capture simultaneity: the box was read from the trace's last sample and the screenshot taken a CDP round-trip later (the recorded NOTILE2 flake class)",
+   "red": "Historical: NOTILE2's recorded flakes - the 12%/12% sample landing on the wrong pixel while the icon was still moving (flake log)",
+   "green": "New capture (two polls same box + two rAFs + getBoundingClientRect in the same evaluate + re-shoot x3 if moved): drive180 37/37 PASS twice locally; NOTILE2 green in all four runs (the other two failed only the known SEQ1 dark-window env flake)",
+   "issued": "2026-11-23 testing-rollout round, local run"
   }
  ]
 }

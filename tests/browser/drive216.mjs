@@ -15,7 +15,8 @@ if (!await poll(`!!(window.map && map.getSource && map.getSource('centres'))`, 4
 // sampler records the placed title set every 50 ms while scripted
 // gestures run (pan, zoom through 15, rotate, theme swap, home), and a
 // name counts as DROPPED if it is placed before AND after a gesture but
-// absent from any sample during it. The pick/load phase is NOT graded -
+// absent from THREE OR MORE CONSECUTIVE samples during it (amended
+// decision C, Andrew 2026-11-23 - see phaseReport). The pick/load phase is NOT graded -
 // the restored system's one re-place after the pick flight (the 1.248
 // hook) is the old behaviour Andrew chose back, not a flicker; grading
 // starts once the boot placement is stable. A second pass repeats the
@@ -50,7 +51,15 @@ const phaseReport = async (fromMark, toMark) => J(`(() => {
   const win = P.samples.slice(a, b + 1);
   const before = new Set(win[0] || []), after = new Set(win[win.length - 1] || []);
   const both = [...before].filter(n => after.has(n));
-  const dropped = both.filter(n => win.some(sm => !sm.includes(n)));
+  // Amended decision C (Andrew, 2026-11-23): a title counts as dropped
+  // only when THREE OR MORE CONSECUTIVE samples miss it. The old
+  // any-single-sample rule convicted the Bell Harbour case, which the
+  // 2026-11-22 investigation proved was a queryRenderedFeatures blind
+  // spot in the settle after the camera stops - the name renders at
+  // full ink while the query misses it for a sample or two. The graded
+  // property is unchanged: a real teardown (the 1.261 heal's blackout)
+  // misses for many consecutive samples, throttled or not.
+  const dropped = both.filter(n => { let run = 0; for (const sm of win) { run = sm.includes(n) ? 0 : run + 1; if (run >= 3) return true; } return false; });
   return { samples: win.length, before: before.size, after: after.size, dropped };
 })()`);
 

@@ -41,13 +41,34 @@ const measure = () => J(`(() => {
 
 const fire = async (state, text) => {
   await ev(`(() => { toast(${JSON.stringify(text)}, 60000); return true; })()`);
-  // Wait for the rise to actually SETTLE (the pill's live transform offset back to 0)
-  // before measuring: the standing band is the property under test, and a fixed sleep
-  // races the transition on a loaded rig - a mid-rise pill sweeps the space below its
-  // band and reads as an overlap that is not its standing position (idle-day flaked
-  // 104x10 against startBtn exactly this way, Beta 1.221 gate round).
-  await poll(`(() => { try { return Math.abs(new DOMMatrixReadOnly(getComputedStyle($('toast')).transform).m42 || 0) < 0.5; } catch (e) { return false; } })()`, 5000).catch(() => false);
-  await sleep(60);
+  // Wait for the rise to actually SETTLE before measuring: the standing band is
+  // the property under test, and a fixed sleep races the transition on a loaded
+  // rig - a mid-rise pill sweeps the space below its band and reads as an overlap
+  // that is not its standing position (idle-day flaked 104x10 against startBtn
+  // exactly this way, Beta 1.221 gate round). Testing-efficiency rollout
+  // (2026-11-23): the settle is now the animation system's own state - the
+  // TOAST's own animations finished, confirmed across two animation frames -
+  // and a rise that never settles FAILS the check below, where the old poll
+  // swallowed its timeout and measured anyway. The wait is scoped to the
+  // toast element, not the document: a running clean keeps other animations
+  // alive indefinitely (the recording pulse), so a document-wide wait never
+  // empties in the clean states - observed on this round's first run, when
+  // clean-day failed the settle while idle-day passed.
+  const settled = await ev(`(async () => {
+    const el = $('toast');
+    if (!el) return false;
+    const t0 = performance.now();
+    for (;;) {
+      const running = el.getAnimations().filter(a => a.playState === 'running').length;
+      if (running === 0) {
+        await new Promise(r => requestAnimationFrame(() => requestAnimationFrame(r)));
+        return el.getAnimations().filter(a => a.playState === 'running').length === 0;
+      }
+      if (performance.now() - t0 > 5000) return false;
+      await new Promise(r => requestAnimationFrame(r));
+    }
+  })()`).catch(() => false);
+  ok(state + ': the rise settled before measuring (the toast\'s own animations finished, confirmed across two frames)', settled === true);
   const m = await measure();
   ok(state + ': zero overlap with any control', m.hits && m.hits.length === 0);
   if (m.hits && m.hits.length) R.checks[R.checks.length - 1][0] += ' | OVERLAPS: ' + m.hits.join('; ');
