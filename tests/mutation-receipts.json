@@ -7955,6 +7955,31 @@
    "red": "DROP_RUN=2: selftest-title-drop exit 1 (two-consecutive-misses and counter-reset fixtures convict + the DROP_RUN pin fails). DROP_RUN=1: exit 1 (every gap fixture convicts). Both observed locally 2026-11-23.",
    "green": "Clean tree: selftest-title-drop 14/14 fixtures hold, exit 0; wired as a build-and-test step in checks.yml; drive216 imports judgeTitleDrops from title-drop.mjs and grades the fetched sample window with it (Codex P1 on PR #190: the decision-C predicate was embedded in the in-page expression with its six synthetic cases existing only in a receipt's prose - TESTING.md rule 1 requires the extraction + committed fixtures)",
    "issued": "2026-11-23 testing-rollout codex-fix (PR #190)"
+  },
+  {
+   "id": "testing-rollout-shard-coverage-fixtures",
+   "check": "scripts/gate-fixtures/run-fixtures.py",
+   "kind": "mutation",
+   "files": {
+    "scripts/gate-fixtures/run-fixtures.py": "dce27f2589b93c6cd2f056a7dcf22d616076e2719cb439b47b646e77ef87b989",
+    "scripts/check-shard-coverage.py": "e5ecfc2f020e593a3cbfe0b00e6d698cb4677dd7979e45f73ae6646e0295f067"
+   },
+   "mutation": "check-shard-coverage.py with its runner-agreement arm neutered (the run.mjs --list comparison disabled): a runner whose runtime partition has drifted from the gen-shards statement is no longer convicted by the guard",
+   "red": "Neutered guard, local 2026-11-23: gate fixtures 71 pass / 1 FAIL - exactly 'shard coverage: a runner partition disagreeing with the statement fails' got exit 0, want 1. Before this commit the rewritten guard's failure paths (missing/extra duration entries, duplicate partition, runner disagreement, bogus smoke name) were proven only by the commit-3 receipt's prose (Codex P1 on PR #190).",
+   "green": "Clean tree: gate fixtures 72 pass / 0 fail, including the six new shard-coverage cases (faithful miniature tree passes; each single-arm break fails); the guard copy restored byte-exact after the observation (sha256 verified); gate-fixtures runs in build-and-test, so the cases run in CI on every PR",
+   "issued": "2026-11-23 testing-rollout codex-fix (PR #190)"
+  },
+  {
+   "id": "testing-rollout-drive204-settle-r2",
+   "check": "tests/browser/drive204.mjs",
+   "kind": "mutation",
+   "files": {
+    "tests/browser/drive204.mjs": "fdc3ab12eeca8ce335a370fa7b8657d8296fe1df5abe77c195812dac783adb85"
+   },
+   "mutation": "The commit-9 settle (the toast element's own animations only) against a scene whose Settings sheet is still travelling: placeToast() raised the pill at fire time against the sheet's mid-entrance geometry, and the standing pill ended 6 px into the sheet button's box - exactly placeToast's gap - while the toast itself had long settled",
+   "red": "PR #190 gate run 2 (run 45231113676, shard 3 job 137891499431, head d2650069): drive204 35/36 FAIL - 'settings-day: zero overlap with any control | OVERLAPS: stBtn 210x6'. Run 1 on the previous head passed drive204 36/36; the failure is the scene, not the toast rise.",
+   "green": "This head: fire() additionally requires the measured scene (the pill's box + every visible control's box, via sceneSnap over measure()'s own selector list) identical across two samples 150 ms apart before measuring, else the settle check fails; syntax + build-pages --check PASS locally (README derivation unchanged, 36 checks); the drive-level green is this PR's next gate run (local Chrome launch is blocked on this rig - WebGL domain policy at harness start, before any test code)",
+   "issued": "2026-11-23 testing-rollout gate-fix (PR #190)"
   }
  ]
 }

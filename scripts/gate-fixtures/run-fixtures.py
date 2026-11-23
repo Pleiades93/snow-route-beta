@@ -28,7 +28,10 @@ declaration typedef drifted from its source list, a cross-part
 global whose home part no longer declares it, an assembled part
 outside the foreign-write census and its named exclusions, a
 selftest on disk wired nowhere in CI, shard lists hand-edited away
-from the generated partition, a judging script missing from the
+from the generated partition, a shard durations file missing a drive
+or naming a non-drive, a shard partition covering a drive twice, a
+runner partition disagreeing with the partition statement, a smoke
+list naming a non-roster drive, a judging script missing from the
 receipts gate's judge list, a push carrying a drifted mirror) fails.
 
 Run: python3 scripts/gate-fixtures/run-fixtures.py
@@ -857,6 +860,70 @@ with tempfile.TemporaryDirectory() as td:
     check("push: a tree whose mirrors agree pushes (mirrors gate)",
           run_push(t / "mpok", ["index.html"], mode="push", env_extra=mp_ok), 0)
 
-total = 66
+# ------------------------------------------------------- shard coverage
+def run_shard_coverage(root):
+    proc = subprocess.run([PY, str(root / "scripts" / "check-shard-coverage.py")],
+                          capture_output=True, text=True, timeout=120)
+    return proc.returncode
+
+
+def shard_tree(base, *, drop_duration=None, extra_duration=None,
+               duplicate_in_partition=False, runner_shifts=False,
+               bogus_smoke=False):
+    """A miniature tree the REAL shard-coverage guard passes: eight
+    fixture drives, a durations file naming exactly them, and verbatim
+    copies of the guard, the partition statement (gen-shards.py) and
+    the runner (run.mjs, Node built-ins only, so its --list mode runs
+    in the bare tree). Each keyword breaks exactly one of the guard's
+    arms. Added on the PR #190 Codex P1 (testing-efficiency rollout):
+    the rewritten guard's failure paths were proven only by mutation
+    receipts; docs/TESTING.md rule 1 wants them as committed fixtures."""
+    drives = [f"drive{i}" for i in range(101, 109)]
+    for d in drives:
+        w(base / f"tests/browser/{d}.mjs", "// fixture drive\n")
+    seconds = {d: 10 + (i % 3) * 5 for i, d in enumerate(drives)}
+    if drop_duration:
+        seconds.pop(drop_duration)
+    if extra_duration:
+        seconds[extra_duration] = 5
+    w(base / "scripts/shard-durations.json", json.dumps({"seconds": seconds}))
+    gen = (ROOT / "scripts" / "gen-shards.py").read_text()
+    if duplicate_in_partition:
+        old = "return [sorted(s) for s in shards], totals, weight"
+        assert gen.count(old) == 1
+        gen = gen.replace(old, "shards[0] = shards[0] + shards[1][:1]\n    " + old)
+    w(base / "scripts" / "gen-shards.py", gen)
+    w(base / "scripts" / "check-shard-coverage.py",
+      (ROOT / "scripts" / "check-shard-coverage.py").read_text())
+    runner = (ROOT / "tests" / "browser" / "run.mjs").read_text()
+    if runner_shifts:
+        old = "shards[best].push(n); totals[best] += weight(n);"
+        assert runner.count(old) == 1
+        runner = runner.replace(
+            old, "shards[(best + 1) % SHARD_COUNT].push(n); totals[best] += weight(n);")
+    w(base / "tests" / "browser" / "run.mjs", runner)
+    smoke = "drive101 drive102" if not bogus_smoke else "drive101 drive999"
+    w(base / ".github" / "workflows" / "checks.yml",
+      "jobs:\n  smoke:\n    steps:\n"
+      f"      - run: node tests/browser/run.mjs {smoke}\n")
+    return base
+
+
+with tempfile.TemporaryDirectory() as td:
+    t = Path(td)
+    check("shard coverage: a faithful miniature tree passes",
+          run_shard_coverage(shard_tree(t / "sc-ok")), 0)
+    check("shard coverage: a drive with no duration entry fails",
+          run_shard_coverage(shard_tree(t / "sc-missing", drop_duration="drive108")), 1)
+    check("shard coverage: a duration entry naming no drive fails",
+          run_shard_coverage(shard_tree(t / "sc-extra", extra_duration="drive999")), 1)
+    check("shard coverage: a partition covering a drive twice fails",
+          run_shard_coverage(shard_tree(t / "sc-dupe", duplicate_in_partition=True)), 1)
+    check("shard coverage: a runner partition disagreeing with the statement fails",
+          run_shard_coverage(shard_tree(t / "sc-runner", runner_shifts=True)), 1)
+    check("shard coverage: a smoke list naming a non-roster drive fails",
+          run_shard_coverage(shard_tree(t / "sc-smoke", bogus_smoke=True)), 1)
+
+total = 72
 print(f"gate fixtures: {total - len(failures)} pass, {len(failures)} fail")
 sys.exit(1 if failures else 0)
