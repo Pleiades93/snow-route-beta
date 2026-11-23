@@ -147,6 +147,19 @@ jobs:
           python-version: '3.12'
       - name: Build check (generated files match source; parity + integrity)
         run: python3 scripts/build-pages.py --check
+      - name: Share the built page (one build of record per run)
+        # Testing-efficiency rollout (2026-11-23): the build check above has
+        # just proven the committed index.html byte-identical to a fresh
+        # build, so this artifact IS the run's one build, kept for anything
+        # downstream that needs the built page. The drive shards use the
+        # committed copy (the same bytes, parity-proven) rather than paying
+        # a download per shard - the report measured that saving at <30 s
+        # and it is not worth a per-shard failure mode.
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4
+        with:
+          name: built-page
+          path: index.html
+          if-no-files-found: error
       - name: Shard coverage (every drive in exactly one shard)
         run: python3 scripts/check-shard-coverage.py
       - name: Tier-map coverage (every roster entry runnable; tier-map.json and TIER-MAP.md in step)
@@ -157,6 +170,12 @@ jobs:
         uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020 # v4
         with:
           node-version: '22'
+          # Testing-efficiency rollout (2026-11-23): cache the npm downloads
+          # the tsc step's `npm ci` in scripts/ would otherwise fetch fresh
+          # every run (keyed on the pinned lockfile). Chrome needs no cache:
+          # the shards use the runner image's preinstalled browser.
+          cache: 'npm'
+          cache-dependency-path: scripts/package-lock.json
       - name: Type check (scope in scripts/tsconfig.json - data.js, app1.js, engine.js, pmstyles.js; begun as the A1 pilot, Beta 1.149)
         working-directory: scripts
         run: |
