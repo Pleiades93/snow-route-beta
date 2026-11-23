@@ -6215,6 +6215,357 @@
    "red": "drive142 T1b false on the mutated final tree (owner teardown x0), observed in all three cycles; every other check green each time, including T4 (Cancel honesty through the owner)",
    "green": "drive142 6/6 on the reverted final tree (parts/app3.js sha256 be088ce8e870c8120224973cfa6f628c6d517c836cbe7260b924826d56854d33, byte-identical to the pre-mutation file)",
    "issued": "2026-11-23 arch5-1277"
+  },
+  {
+   "id": "proof-mut-refrun-arch6-1278",
+   "check": "tests/proof/proof-mut-refrun.mjs",
+   "kind": "mutation",
+   "files": {
+    "tests/proof/proof-mut-refrun.mjs": "6938e6cc4c59a7428930dfa00b632b2e6af844b2a3f62d139e72600c071dbc6a",
+    "parts/app3.js": "25b9d5bf8c5bb8e2bb433ad563c110744b65f5bf69932dc428d1d240505a3d39"
+   },
+   "mutation": "CLEAN.ref's full-set comparison flipped in parts/app3.js (this.count(h) === STREETNAMES.length became !==), so the reference selection prefers partial cleans over full ones",
+   "red": "proof-mut-refrun: 4 FAILING - observed twice on the mutated tree",
+   "green": "proof-mut-refrun: all pass on the byte-exact revert (parts/app3.js sha256 25b9d5bf8c5bb8e2bb433ad563c110744b65f5bf69932dc428d1d240505a3d39); the check now extracts the CLEAN owner and the refRun doorway (architecture #6)",
+   "issued": "2026-11-23 arch6-1278"
+  },
+  {
+   "id": "selftest-judging-fixtures-arch6-1278",
+   "check": "tests/browser/selftest-judging-fixtures.mjs",
+   "kind": "mutation",
+   "files": {
+    "tests/browser/selftest-judging-fixtures.mjs": "70b9b5ec53808d634de69199543d52168be9fbb5ceeaf83eaf056ca79a722f5b",
+    "parts/app3.js": "25b9d5bf8c5bb8e2bb433ad563c110744b65f5bf69932dc428d1d240505a3d39"
+   },
+   "mutation": "CLEAN.ref's full-set comparison flipped in parts/app3.js (this.count(h) === STREETNAMES.length became !==), so the reference selection prefers partial cleans over full ones",
+   "red": "selftest-judging-fixtures: 6 FAILURE(S) of 127 - observed twice on the mutated tree",
+   "green": "selftest-judging-fixtures: 127 checks pass on the byte-exact revert; the factory now extracts the CLEAN owner alongside the doorways (architecture #6)",
+   "issued": "2026-11-23 arch6-1278"
+  },
+  {
+   "id": "proof-rerun-denylist-b02-arch6-1278",
+   "check": "tests/proof/proof-rerun-denylist-b02.mjs",
+   "kind": "mutation",
+   "files": {
+    "tests/proof/proof-rerun-denylist-b02.mjs": "413fa0a3f4e795f7b50075c0ca78d4d91fb21ccb28de9e8b2daeedd6d40a23f3",
+    "parts/app3.js": "25b9d5bf8c5bb8e2bb433ad563c110744b65f5bf69932dc428d1d240505a3d39"
+   },
+   "mutation": "CLEAN.workM's stamp gate removed in parts/app3.js ((h.workM > 0 || this.hasStamps(h)) became (h.workM > 0 || true)), so a stored workM of 0 is trusted even with completion stamps present",
+   "red": "proof-rerun-denylist-b02: 3 passed, 3 failed - observed twice on the mutated tree",
+   "green": "proof-rerun-denylist-b02: 6 passed, 0 failed on the byte-exact revert; the proof now extracts the CLEAN owner and the cleanWorkM doorway, and its sanity check reads the owner's workM source (architecture #6)",
+   "issued": "2026-11-23 arch6-1278"
+  },
+  {
+   "id": "selftest-pr23-arch6-1278",
+   "check": "tests/browser/selftest-pr23-fixes.mjs",
+   "kind": "mutation",
+   "files": {
+    "tests/browser/selftest-pr23-fixes.mjs": "8b8dbdf51ba2fcd38540724572ae9108393774c54f63d881862f934acb77c4af",
+    "parts/app3.js": "25b9d5bf8c5bb8e2bb433ad563c110744b65f5bf69932dc428d1d240505a3d39"
+   },
+   "mutation": "CLEAN.workM's per-street fallback zeroed in parts/app3.js (the stored-per-street branch's s += STRETCH[n].total * 2 became s += 0)",
+   "red": "selftest-pr23-fixes: 18 pass, 1 fail (W1: the 1000-not-1400 historical value) - observed twice on the mutated tree",
+   "green": "selftest-pr23-fixes: 19 pass, 0 fail on the byte-exact revert; the check now extracts the CLEAN owner and the cleanWorkM doorway (architecture #6)",
+   "issued": "2026-11-23 arch6-1278"
+  },
+  {
+   "id": "proof-1242-whatsnew-roll-1278",
+   "check": "tests/proof/proof-1242.mjs",
+   "kind": "historical",
+   "files": {
+    "tests/proof/proof-1242.mjs": "202b47db892c18de50650b786d0bfe67df88accd9ec400c0b48b9dcea8bcd1c1",
+    "parts/whatsnew.js": "b84f0414f8d1cced32b06dddc3cd4bfad4132d5be8c88473c2e3067521d40a4c"
+   },
+   "mutation": "the Beta 1.277 What's New bullet restored into parts/whatsnew.js (the standing version-roll red: the proof's bullet pin names the 1.278 bullet)",
+   "red": "proof-1242 fails in the manifest run with the 1.277 bullet in place (22 bullet-pinning proofs red together)",
+   "green": "proofs 78/78 in the manifest run with the 1.278 bullet in place",
+   "issued": "2026-11-23 arch6-1278"
+  },
+  {
+   "id": "proof-1243-whatsnew-roll-1278",
+   "check": "tests/proof/proof-1243.mjs",
+   "kind": "historical",
+   "files": {
+    "tests/proof/proof-1243.mjs": "043a3f0d0a894deaea5761c3216355d148d81db511013c4b1d62f86ccc0927cc",
+    "parts/whatsnew.js": "b84f0414f8d1cced32b06dddc3cd4bfad4132d5be8c88473c2e3067521d40a4c"
+   },
+   "mutation": "the Beta 1.277 What's New bullet restored into parts/whatsnew.js (the standing version-roll red: the proof's bullet pin names the 1.278 bullet)",
+   "red": "proof-1243 fails in the manifest run with the 1.277 bullet in place (22 bullet-pinning proofs red together)",
+   "green": "proofs 78/78 in the manifest run with the 1.278 bullet in place",
+   "issued": "2026-11-23 arch6-1278"
+  },
+  {
+   "id": "proof-1245-whatsnew-roll-1278",
+   "check": "tests/proof/proof-1245.mjs",
+   "kind": "historical",
+   "files": {
+    "tests/proof/proof-1245.mjs": "12907212b7473f7fa1dddced644047f7cb619e4a39b47d7a37ac63772479d3fe",
+    "parts/whatsnew.js": "b84f0414f8d1cced32b06dddc3cd4bfad4132d5be8c88473c2e3067521d40a4c"
+   },
+   "mutation": "the Beta 1.277 What's New bullet restored into parts/whatsnew.js (the standing version-roll red: the proof's bullet pin names the 1.278 bullet)",
+   "red": "proof-1245 fails in the manifest run with the 1.277 bullet in place (22 bullet-pinning proofs red together)",
+   "green": "proofs 78/78 in the manifest run with the 1.278 bullet in place",
+   "issued": "2026-11-23 arch6-1278"
+  },
+  {
+   "id": "proof-1246-whatsnew-roll-1278",
+   "check": "tests/proof/proof-1246.mjs",
+   "kind": "historical",
+   "files": {
+    "tests/proof/proof-1246.mjs": "0d32b61858504a111e3338a86e2edcfc65fc61ee7390e7a6d73a287030576019",
+    "parts/whatsnew.js": "b84f0414f8d1cced32b06dddc3cd4bfad4132d5be8c88473c2e3067521d40a4c"
+   },
+   "mutation": "the Beta 1.277 What's New bullet restored into parts/whatsnew.js (the standing version-roll red: the proof's bullet pin names the 1.278 bullet)",
+   "red": "proof-1246 fails in the manifest run with the 1.277 bullet in place (22 bullet-pinning proofs red together)",
+   "green": "proofs 78/78 in the manifest run with the 1.278 bullet in place",
+   "issued": "2026-11-23 arch6-1278"
+  },
+  {
+   "id": "proof-1247-whatsnew-roll-1278",
+   "check": "tests/proof/proof-1247.mjs",
+   "kind": "historical",
+   "files": {
+    "tests/proof/proof-1247.mjs": "af68dd8ad705f650af193d76ef796277f408a780892f330bc060d17ed8e29942",
+    "parts/whatsnew.js": "b84f0414f8d1cced32b06dddc3cd4bfad4132d5be8c88473c2e3067521d40a4c"
+   },
+   "mutation": "the Beta 1.277 What's New bullet restored into parts/whatsnew.js (the standing version-roll red: the proof's bullet pin names the 1.278 bullet)",
+   "red": "proof-1247 fails in the manifest run with the 1.277 bullet in place (22 bullet-pinning proofs red together)",
+   "green": "proofs 78/78 in the manifest run with the 1.278 bullet in place",
+   "issued": "2026-11-23 arch6-1278"
+  },
+  {
+   "id": "proof-1249-whatsnew-roll-1278",
+   "check": "tests/proof/proof-1249.mjs",
+   "kind": "historical",
+   "files": {
+    "tests/proof/proof-1249.mjs": "589a9fc662eecd0559d0b60b2c3338abf88aca433f0517c877f558cf3a31a36d",
+    "parts/whatsnew.js": "b84f0414f8d1cced32b06dddc3cd4bfad4132d5be8c88473c2e3067521d40a4c"
+   },
+   "mutation": "the Beta 1.277 What's New bullet restored into parts/whatsnew.js (the standing version-roll red: the proof's bullet pin names the 1.278 bullet)",
+   "red": "proof-1249 fails in the manifest run with the 1.277 bullet in place (22 bullet-pinning proofs red together)",
+   "green": "proofs 78/78 in the manifest run with the 1.278 bullet in place",
+   "issued": "2026-11-23 arch6-1278"
+  },
+  {
+   "id": "proof-1252-whatsnew-roll-1278",
+   "check": "tests/proof/proof-1252.mjs",
+   "kind": "historical",
+   "files": {
+    "tests/proof/proof-1252.mjs": "c2cf32aea9095cecda650d4c96d6703b5e836b2c35ae49165c5ef611f13aadf8",
+    "parts/whatsnew.js": "b84f0414f8d1cced32b06dddc3cd4bfad4132d5be8c88473c2e3067521d40a4c"
+   },
+   "mutation": "the Beta 1.277 What's New bullet restored into parts/whatsnew.js (the standing version-roll red: the proof's bullet pin names the 1.278 bullet)",
+   "red": "proof-1252 fails in the manifest run with the 1.277 bullet in place (22 bullet-pinning proofs red together)",
+   "green": "proofs 78/78 in the manifest run with the 1.278 bullet in place",
+   "issued": "2026-11-23 arch6-1278"
+  },
+  {
+   "id": "proof-1253-whatsnew-roll-1278",
+   "check": "tests/proof/proof-1253.mjs",
+   "kind": "historical",
+   "files": {
+    "tests/proof/proof-1253.mjs": "086a488aab017560004fe12b303eb0a6d89557b9cdc913512b8a33511e168223",
+    "parts/whatsnew.js": "b84f0414f8d1cced32b06dddc3cd4bfad4132d5be8c88473c2e3067521d40a4c"
+   },
+   "mutation": "the Beta 1.277 What's New bullet restored into parts/whatsnew.js (the standing version-roll red: the proof's bullet pin names the 1.278 bullet)",
+   "red": "proof-1253 fails in the manifest run with the 1.277 bullet in place (22 bullet-pinning proofs red together)",
+   "green": "proofs 78/78 in the manifest run with the 1.278 bullet in place",
+   "issued": "2026-11-23 arch6-1278"
+  },
+  {
+   "id": "proof-1254-whatsnew-roll-1278",
+   "check": "tests/proof/proof-1254.mjs",
+   "kind": "historical",
+   "files": {
+    "tests/proof/proof-1254.mjs": "0feaf4b5642f7ad46ef8651b0b53bced195af1f751d55173727d592462a6bc74",
+    "parts/whatsnew.js": "b84f0414f8d1cced32b06dddc3cd4bfad4132d5be8c88473c2e3067521d40a4c"
+   },
+   "mutation": "the Beta 1.277 What's New bullet restored into parts/whatsnew.js (the standing version-roll red: the proof's bullet pin names the 1.278 bullet)",
+   "red": "proof-1254 fails in the manifest run with the 1.277 bullet in place (22 bullet-pinning proofs red together)",
+   "green": "proofs 78/78 in the manifest run with the 1.278 bullet in place",
+   "issued": "2026-11-23 arch6-1278"
+  },
+  {
+   "id": "proof-1255-whatsnew-roll-1278",
+   "check": "tests/proof/proof-1255.mjs",
+   "kind": "historical",
+   "files": {
+    "tests/proof/proof-1255.mjs": "74bf28fc992723e24aee6318bbe7858dbb54182aa38f34b3738010038d2e86a7",
+    "parts/whatsnew.js": "b84f0414f8d1cced32b06dddc3cd4bfad4132d5be8c88473c2e3067521d40a4c"
+   },
+   "mutation": "the Beta 1.277 What's New bullet restored into parts/whatsnew.js (the standing version-roll red: the proof's bullet pin names the 1.278 bullet)",
+   "red": "proof-1255 fails in the manifest run with the 1.277 bullet in place (22 bullet-pinning proofs red together)",
+   "green": "proofs 78/78 in the manifest run with the 1.278 bullet in place",
+   "issued": "2026-11-23 arch6-1278"
+  },
+  {
+   "id": "proof-1256-whatsnew-roll-1278",
+   "check": "tests/proof/proof-1256.mjs",
+   "kind": "historical",
+   "files": {
+    "tests/proof/proof-1256.mjs": "eda43e886962f7f61d05fb7d849260e785b11b16c3d18dc33c3c3b08df6fe2d6",
+    "parts/whatsnew.js": "b84f0414f8d1cced32b06dddc3cd4bfad4132d5be8c88473c2e3067521d40a4c"
+   },
+   "mutation": "the Beta 1.277 What's New bullet restored into parts/whatsnew.js (the standing version-roll red: the proof's bullet pin names the 1.278 bullet)",
+   "red": "proof-1256 fails in the manifest run with the 1.277 bullet in place (22 bullet-pinning proofs red together)",
+   "green": "proofs 78/78 in the manifest run with the 1.278 bullet in place",
+   "issued": "2026-11-23 arch6-1278"
+  },
+  {
+   "id": "proof-1257-whatsnew-roll-1278",
+   "check": "tests/proof/proof-1257.mjs",
+   "kind": "historical",
+   "files": {
+    "tests/proof/proof-1257.mjs": "95b7c5e230d918d37ba23d92abe0dbaea45dd8fd5c88e9ba4bd1e905368c9d6f",
+    "parts/whatsnew.js": "b84f0414f8d1cced32b06dddc3cd4bfad4132d5be8c88473c2e3067521d40a4c"
+   },
+   "mutation": "the Beta 1.277 What's New bullet restored into parts/whatsnew.js (the standing version-roll red: the proof's bullet pin names the 1.278 bullet)",
+   "red": "proof-1257 fails in the manifest run with the 1.277 bullet in place (22 bullet-pinning proofs red together)",
+   "green": "proofs 78/78 in the manifest run with the 1.278 bullet in place",
+   "issued": "2026-11-23 arch6-1278"
+  },
+  {
+   "id": "proof-1259-whatsnew-roll-1278",
+   "check": "tests/proof/proof-1259.mjs",
+   "kind": "historical",
+   "files": {
+    "tests/proof/proof-1259.mjs": "526d657c05910b08074098d9437ec64047a4e205bbe9dc9769de4195d18c1ce7",
+    "parts/whatsnew.js": "b84f0414f8d1cced32b06dddc3cd4bfad4132d5be8c88473c2e3067521d40a4c"
+   },
+   "mutation": "the Beta 1.277 What's New bullet restored into parts/whatsnew.js (the standing version-roll red: the proof's bullet pin names the 1.278 bullet)",
+   "red": "proof-1259 fails in the manifest run with the 1.277 bullet in place (22 bullet-pinning proofs red together)",
+   "green": "proofs 78/78 in the manifest run with the 1.278 bullet in place",
+   "issued": "2026-11-23 arch6-1278"
+  },
+  {
+   "id": "proof-1262-whatsnew-roll-1278",
+   "check": "tests/proof/proof-1262.mjs",
+   "kind": "historical",
+   "files": {
+    "tests/proof/proof-1262.mjs": "0f494ebf46e64d193cd41af73014c2afc0cb0078f2cc72c3ffa38ebeab7fca46",
+    "parts/whatsnew.js": "b84f0414f8d1cced32b06dddc3cd4bfad4132d5be8c88473c2e3067521d40a4c"
+   },
+   "mutation": "the Beta 1.277 What's New bullet restored into parts/whatsnew.js (the standing version-roll red: the proof's bullet pin names the 1.278 bullet)",
+   "red": "proof-1262 fails in the manifest run with the 1.277 bullet in place (22 bullet-pinning proofs red together)",
+   "green": "proofs 78/78 in the manifest run with the 1.278 bullet in place",
+   "issued": "2026-11-23 arch6-1278"
+  },
+  {
+   "id": "proof-1263-whatsnew-roll-1278",
+   "check": "tests/proof/proof-1263.mjs",
+   "kind": "historical",
+   "files": {
+    "tests/proof/proof-1263.mjs": "86a368b4f6faaccdb277709625a8508aa50773187eebe22d1fc1d195e01b7b59",
+    "parts/whatsnew.js": "b84f0414f8d1cced32b06dddc3cd4bfad4132d5be8c88473c2e3067521d40a4c"
+   },
+   "mutation": "the Beta 1.277 What's New bullet restored into parts/whatsnew.js (the standing version-roll red: the proof's bullet pin names the 1.278 bullet)",
+   "red": "proof-1263 fails in the manifest run with the 1.277 bullet in place (22 bullet-pinning proofs red together)",
+   "green": "proofs 78/78 in the manifest run with the 1.278 bullet in place",
+   "issued": "2026-11-23 arch6-1278"
+  },
+  {
+   "id": "proof-1264-whatsnew-roll-1278",
+   "check": "tests/proof/proof-1264.mjs",
+   "kind": "historical",
+   "files": {
+    "tests/proof/proof-1264.mjs": "44a4f3787b20b59c0f77297426e73ee44bfa7eb34fa8a615ea443adf6d054a02",
+    "parts/whatsnew.js": "b84f0414f8d1cced32b06dddc3cd4bfad4132d5be8c88473c2e3067521d40a4c"
+   },
+   "mutation": "the Beta 1.277 What's New bullet restored into parts/whatsnew.js (the standing version-roll red: the proof's bullet pin names the 1.278 bullet)",
+   "red": "proof-1264 fails in the manifest run with the 1.277 bullet in place (22 bullet-pinning proofs red together)",
+   "green": "proofs 78/78 in the manifest run with the 1.278 bullet in place",
+   "issued": "2026-11-23 arch6-1278"
+  },
+  {
+   "id": "proof-1265-whatsnew-roll-1278",
+   "check": "tests/proof/proof-1265.mjs",
+   "kind": "historical",
+   "files": {
+    "tests/proof/proof-1265.mjs": "34a2f3106f2ad16e6e1781d7f0bc8ac78e4a111035770126a0368dad2c55a02b",
+    "parts/whatsnew.js": "b84f0414f8d1cced32b06dddc3cd4bfad4132d5be8c88473c2e3067521d40a4c"
+   },
+   "mutation": "the Beta 1.277 What's New bullet restored into parts/whatsnew.js (the standing version-roll red: the proof's bullet pin names the 1.278 bullet)",
+   "red": "proof-1265 fails in the manifest run with the 1.277 bullet in place (22 bullet-pinning proofs red together)",
+   "green": "proofs 78/78 in the manifest run with the 1.278 bullet in place",
+   "issued": "2026-11-23 arch6-1278"
+  },
+  {
+   "id": "proof-1267-whatsnew-roll-1278",
+   "check": "tests/proof/proof-1267.mjs",
+   "kind": "historical",
+   "files": {
+    "tests/proof/proof-1267.mjs": "24efcf3e64ba0b965b19a19ff3bac503fea7805f3fc9184c73f5f08ba3366a9d",
+    "parts/whatsnew.js": "b84f0414f8d1cced32b06dddc3cd4bfad4132d5be8c88473c2e3067521d40a4c"
+   },
+   "mutation": "the Beta 1.277 What's New bullet restored into parts/whatsnew.js (the standing version-roll red: the proof's bullet pin names the 1.278 bullet)",
+   "red": "proof-1267 fails in the manifest run with the 1.277 bullet in place (22 bullet-pinning proofs red together)",
+   "green": "proofs 78/78 in the manifest run with the 1.278 bullet in place",
+   "issued": "2026-11-23 arch6-1278"
+  },
+  {
+   "id": "proof-1268-whatsnew-roll-1278",
+   "check": "tests/proof/proof-1268.mjs",
+   "kind": "historical",
+   "files": {
+    "tests/proof/proof-1268.mjs": "fd4fc8bdc5b9829d65e12c13f85c9fa58b56115d8fcc9dd4a97db444f2d8c45c",
+    "parts/whatsnew.js": "b84f0414f8d1cced32b06dddc3cd4bfad4132d5be8c88473c2e3067521d40a4c"
+   },
+   "mutation": "the Beta 1.277 What's New bullet restored into parts/whatsnew.js (the standing version-roll red: the proof's bullet pin names the 1.278 bullet)",
+   "red": "proof-1268 fails in the manifest run with the 1.277 bullet in place (22 bullet-pinning proofs red together)",
+   "green": "proofs 78/78 in the manifest run with the 1.278 bullet in place",
+   "issued": "2026-11-23 arch6-1278"
+  },
+  {
+   "id": "proof-1269-whatsnew-roll-1278",
+   "check": "tests/proof/proof-1269.mjs",
+   "kind": "historical",
+   "files": {
+    "tests/proof/proof-1269.mjs": "54d1479b84cdc11433d2322d65059713f1219cdf4133a21a342b8a5192c5d6ec",
+    "parts/whatsnew.js": "b84f0414f8d1cced32b06dddc3cd4bfad4132d5be8c88473c2e3067521d40a4c"
+   },
+   "mutation": "the Beta 1.277 What's New bullet restored into parts/whatsnew.js (the standing version-roll red: the proof's bullet pin names the 1.278 bullet)",
+   "red": "proof-1269 fails in the manifest run with the 1.277 bullet in place (22 bullet-pinning proofs red together)",
+   "green": "proofs 78/78 in the manifest run with the 1.278 bullet in place",
+   "issued": "2026-11-23 arch6-1278"
+  },
+  {
+   "id": "proof-1270-whatsnew-roll-1278",
+   "check": "tests/proof/proof-1270.mjs",
+   "kind": "historical",
+   "files": {
+    "tests/proof/proof-1270.mjs": "4ebbcc799524be694b65a77c43f8df046b6c9444893c2d8b8a20a9a6c6d8594a",
+    "parts/whatsnew.js": "b84f0414f8d1cced32b06dddc3cd4bfad4132d5be8c88473c2e3067521d40a4c"
+   },
+   "mutation": "the Beta 1.277 What's New bullet restored into parts/whatsnew.js (the standing version-roll red: the proof's bullet pin names the 1.278 bullet)",
+   "red": "proof-1270 fails in the manifest run with the 1.277 bullet in place (22 bullet-pinning proofs red together)",
+   "green": "proofs 78/78 in the manifest run with the 1.278 bullet in place",
+   "issued": "2026-11-23 arch6-1278"
+  },
+  {
+   "id": "proof-1271-whatsnew-roll-1278",
+   "check": "tests/proof/proof-1271.mjs",
+   "kind": "historical",
+   "files": {
+    "tests/proof/proof-1271.mjs": "b088014d959fdcda1d23f95e9a875245ff2c0306ca79616e310f62af7f5a9825",
+    "parts/whatsnew.js": "b84f0414f8d1cced32b06dddc3cd4bfad4132d5be8c88473c2e3067521d40a4c"
+   },
+   "mutation": "the Beta 1.277 What's New bullet restored into parts/whatsnew.js (the standing version-roll red: the proof's bullet pin names the 1.278 bullet)",
+   "red": "proof-1271 fails in the manifest run with the 1.277 bullet in place (22 bullet-pinning proofs red together)",
+   "green": "proofs 78/78 in the manifest run with the 1.278 bullet in place",
+   "issued": "2026-11-23 arch6-1278"
+  },
+  {
+   "id": "proof-1266-whatsnew-roll-1278",
+   "check": "tests/proof/proof-1266.mjs",
+   "kind": "historical",
+   "files": {
+    "tests/proof/proof-1266.mjs": "36c55db3fe4a199bd0c355993930cb51596fe35a4a32816b98b23dbd206cbfcd",
+    "parts/whatsnew.js": "b84f0414f8d1cced32b06dddc3cd4bfad4132d5be8c88473c2e3067521d40a4c"
+   },
+   "mutation": "the Beta 1.277 What's New bullet restored into parts/whatsnew.js (the standing version-roll red: the proof's bullet pin names the 1.278 bullet)",
+   "red": "proof-1266 check 9 (its What's New bullet pin) fails standalone with the 1.277 bullet in place: 5 passed, 7 failed",
+   "green": "proof-1266 check 9 passes standalone with the 1.278 bullet in place: 6 passed, 6 failed - the remaining failures are the retired proof's stale non-bullet pins; proof-1266 is outside the manifest",
+   "issued": "2026-11-23 arch6-1278"
   }
  ]
 }

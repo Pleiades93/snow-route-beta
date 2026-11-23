@@ -575,7 +575,8 @@ locally, first:
    geometry/snapshot/pace judging logic —
    `tests/browser/selftest-judging-fixtures.mjs` extracts
    stitchRuns/finishJunctionCuts/computeStretches, samplesFor,
-   validateSnap and paceInfo (with refRun/cleanWorkM) verbatim from the
+   validateSnap and paceInfo (with refRun/cleanWorkM and, since
+   Beta 1.278, the CLEAN owner those doorways delegate to) verbatim from the
    parts and checks them in plain Node against expectations hand-derived
    from the documented semantics (no golden masters); and the
    foreign-write census — `tests/browser/selftest-foreign-writes.mjs`

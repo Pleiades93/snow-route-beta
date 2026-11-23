@@ -50,6 +50,7 @@ const factory = new Function(`
   ${extract(app1, 'function fmtClock(')}
   ${extract(app3, 'function samplesFor(')}
   ${extract(app1, 'function validateSnap(')} // Arch-2: validateSnap lives in app1's board module now; the extraction follows it, the judged cases are unchanged
+  ${extract(app3, 'const CLEAN = {')} // Arch-6 (Beta 1.278): the archived-clean measures live in the CLEAN owner now; the doorways extracted below delegate to it - the judged cases are unchanged
   ${extract(app3, 'function cleanCount(')}
   ${extract(app3, 'function refRun(')}
   ${extract(app3, 'function cleanWorkM(')}
