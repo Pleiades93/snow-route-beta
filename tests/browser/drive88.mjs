@@ -63,6 +63,7 @@ ok('P3 tapping a street expands its details incl. the note', A.vis && /Gap since
 await ev(`(() => { $('cleanView').querySelector('.cvDel').click(); return true; })()`); await poll(`$('cleanView').querySelector('.cvDel').textContent.includes('confirm')`, 10000); // T4: poll the terminal state P4 asserts (the delete armed)
 A = JSON.parse(await ev(`(() => JSON.stringify({ armed: $('cleanView').querySelector('.cvDel').textContent, h: history.length }))()`));
 ok('P4 first tap arms the delete', /confirm/.test(A.armed) && A.h === 1);
+await sleep(850); // Beta 1.284 (#174): the confirm must wait out the delete's 700 ms arm minimum - an earlier confirm is refused by design
 await ev(`(() => { $('cleanView').querySelector('.cvDel').click(); return true; })()`); await poll(`history.length === 0 && $('cleanView').classList.contains('hidden')`, 10000); // T4: poll the terminal state P4 asserts (clean deleted, view closed)
 A = JSON.parse(await ev(`(() => JSON.stringify({ h: history.length, ls: localStorage.getItem('snowroute.5w.v2.history'), cvHidden: $('cleanView').classList.contains('hidden') }))()`));
 ok('P4 second tap deletes the clean and persists', A.h === 0 && A.ls === '[]' && A.cvHidden);

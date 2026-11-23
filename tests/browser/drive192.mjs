@@ -90,7 +90,7 @@ try {
   await ev(`(() => { const r = [...$('cleanView').querySelectorAll('.cvRow')].find(x => x.querySelector('.cvNm').textContent === 'Velmar'); r.click(); return true; })()`); await sleep(200);
   const det = await J(`(() => { const r = [...$('cleanView').querySelectorAll('.cvRow')].find(x => x.querySelector('.cvNm').textContent === 'Velmar'); const d = r.querySelector('.cvDet'); return { vis: d.style.display !== 'none', txt: d.textContent }; })()`);
   ok('P10 the noted street detail opens read-only with the note readable | ' + (det.txt || '').slice(0, 80), det.vis === true && (det.txt || '').includes('drive192 detail note'));
-  await ev(`$('cleanView').querySelector('.cvDel').click(); true`); await sleep(200);
+  await ev(`$('cleanView').querySelector('.cvDel').click(); true`); await sleep(850); // Beta 1.284 (#174): the confirm tap must land at least 700 ms after the arming tap (the delete's arm minimum)
   const armed = await ev(`$('cleanView').querySelector('.cvDel').textContent`);
   await ev(`$('cleanView').querySelector('.cvDel').click(); true`); await sleep(400);
   const after = await J(`({ h: history.length, cvHidden: $('cleanView').classList.contains('hidden'), padShown: $('pacePad').style.display !== 'none', rows: document.querySelectorAll('#pacePad .histRow').length })`);

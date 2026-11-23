@@ -66,7 +66,7 @@ try {
   const b4open = await J(`({ ttl: (document.querySelector('.cvTtl') || {}).textContent || '', sub: (document.querySelector('.cvSub') || {}).textContent || '', want: fmtDate3(history[0].at), del: !!document.querySelector('.cvDel') })`);
   ok('B4b the legacy clean OPENS in the detail view (Beta 1.184 header: the date + a streets/finished sub-line) with its delete button | ' + JSON.stringify(b4open),
     (b4open.ttl || '') === b4open.want && (b4open.sub || '').includes('2 streets · finished') && b4open.del === true);
-  await ev(`document.querySelector('.cvDel').click(); true`); await sleep(200);
+  await ev(`document.querySelector('.cvDel').click(); true`); await sleep(850); // Beta 1.284 (#174): the confirm tap must land at least 700 ms after the arming tap (the delete's arm minimum)
   const b4arm = await J(`(document.querySelector('.cvDel') || {}).textContent || ''`);
   await ev(`document.querySelector('.cvDel').click(); true`); await sleep(400);
   const b4done = await J(`({ n: history.length, stored: localStorage.getItem(routeKeys('5w').hist) })`);

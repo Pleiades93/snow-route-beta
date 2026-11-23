@@ -5275,6 +5275,7 @@ function showPaceMain() { // Beta 1.184: the Pace sheet main view - header + pac
   const ph = $('paceHead'); if (ph) ph.style.display = '';
   const pp = $('pacePad'); if (pp) pp.style.display = '';
   cleanIdx = null;
+  cleanDelArmedAt = NaN;
 }
 function openPace() { deselect(); closeSheets(); $('pacePanel').style.height = ''; $('pacePanel').style.maxHeight = ''; showPaceMain(); renderPace(); $('pacePanel').classList.add('open'); } // Beta 1.184: showPaceMain first - an open left on the clean detail returns to the Pace main view
 function closePace() { closeSheetEl($('pacePanel')); } // same animated close as every sheet (Beta 1.30)
@@ -5282,12 +5283,13 @@ function closePace() { closeSheetEl($('pacePanel')); } // same animated close as
 // ===== CLEAN DETAIL (production v5.53 model): one archived clean inside the list sheet - totals, its streets
 // in mark order with per-street times, its notes, noted-but-not-cleaned group, two-tap delete. Back and Delete
 // both land on Previous cleans (expanded), never on the Streets list. =====
-let cleanIdx = null, cleanDelArmed = false, cleanDelTimer = 0;
+const CLEAN_DEL_MIN_ARM_MS = 700;
+let cleanIdx = null, cleanDelArmed = false, cleanDelTimer = 0, cleanDelArmedAt = NaN;
 function cleanNoteLines(entries) { return CLEAN.noteLines(entries); }
 function openClean(i) {
   const h = history[i];
   if (!h) return;
-  cleanIdx = i; cleanDelArmed = false;
+  cleanIdx = i; cleanDelArmed = false; cleanDelArmedAt = NaN;
   deselect();
   const pd = CLEAN.detail(h);
   const d = pd.dur;
@@ -5359,13 +5361,16 @@ function openClean(i) {
     });
   }
   const del = document.createElement('button'); del.className = 'cvDel'; del.textContent = 'Delete this clean';
-  del.onclick = () => {
+  del.onclick = ev => {
+    const timestamp = ev?.timeStamp;
     if (!cleanDelArmed) {
       cleanDelArmed = true; del.classList.add('armed'); del.textContent = 'Tap again to confirm delete';
+      cleanDelArmedAt = timestamp >= 0 && Number.isFinite(timestamp) ? timestamp : NaN;
       clearTimeout(cleanDelTimer);
-      cleanDelTimer = setTimeout(() => { cleanDelArmed = false; del.classList.remove('armed'); del.textContent = 'Delete this clean'; }, 5000);
+      cleanDelTimer = setTimeout(() => { cleanDelArmed = false; cleanDelArmedAt = NaN; del.classList.remove('armed'); del.textContent = 'Delete this clean'; }, 5000);
       return;
     }
+    if (!Number.isFinite(timestamp) || !(timestamp - cleanDelArmedAt >= CLEAN_DEL_MIN_ARM_MS)) return;
     clearTimeout(cleanDelTimer);
     HIST.deleteAt(cleanIdx);
     const okDel = HIST.save();
@@ -5446,7 +5451,7 @@ const RUN = {
   /** @returns {void} */ switchReset() { // the route switch's reset of this session (resetNotesHistorySession below is its doorway - app5's resetSwitchSession resolves that name): the distance counter's state zeroes, but its persisted record STAYS in the outgoing slot and is re-adopted lazily if he switches back mid-run (Beta 1.167, B5); the in-memory cancel snapshot drops - the PERSISTED copy in the outgoing slot is deliberately untouched, so after switching back Cancel validates it exactly as it does after a reload; the history panel and its delete-arming close; and the modal note editor closes with its target dropped. Beta 1.271: the suggestion set and the two banners this reset used to clear are gone - checkStale re-judges the stale question for the incoming route through the confirmation pill.
     RUNDIST.reset();
     runSnap = null; // F3: the in-memory cancel snapshot belongs to the outgoing run. The PERSISTED copy (LS.snap, in the outgoing slot) is deliberately untouched - after switching back, Cancel validates it exactly as it does after a reload
-    histOpen = false; cleanIdx = null; cleanDelArmed = false; if (cleanDelTimer) { clearTimeout(cleanDelTimer); cleanDelTimer = 0; }
+    histOpen = false; cleanIdx = null; cleanDelArmed = false; cleanDelArmedAt = NaN; if (cleanDelTimer) { clearTimeout(cleanDelTimer); cleanDelTimer = 0; }
     noteFor = null; $('noteModal').classList.add('hidden');
   },
 };

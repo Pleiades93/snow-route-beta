@@ -1,5 +1,5 @@
 {
- "about": "Per-drive CI durations in seconds. Original measurement: run 42733900054 (2026-11-09), result-line timestamp deltas, single run per drive. Refreshed 2026-11-23 (machinery tidy round) from the gate runs of PR #191 (45242270260) and PR #192 (45252029151) on the post-rollout pipeline: every one of the 100 drives carries exactly two samples (one per run, result-line timestamp deltas inside each shard job, timeout samples excluded - none occurred), and the stored value is the mean of the two. No placeholder entries remain: the 38 drives that joined after 2026-11-09 and carried the 20.75 s median placeholder are now measured. tests/browser/run.mjs prints a DRIVE_TIME line per drive so future refreshes read the values directly instead of mining timestamps. The runtime balancer (tests/browser/run.mjs --shard) and scripts/gen-shards.py read this file; the key set must name exactly the drive roster (scripts/check-shard-coverage.py enforces it). Re-measure whenever drive times shift materially.",
+ "about": "Per-drive CI durations in seconds. Original measurement: run 42733900054 (2026-11-09), result-line timestamp deltas, single run per drive. Refreshed 2026-11-23 (machinery tidy round) from the gate runs of PR #191 (45242270260) and PR #192 (45252029151) on the post-rollout pipeline: every one of the 100 drives carries exactly two samples (one per run, result-line timestamp deltas inside each shard job, timeout samples excluded - none occurred), and the stored value is the mean of the two. No placeholder entries remain: the 38 drives that joined after 2026-11-09 and carried the 20.75 s median placeholder are now measured. tests/browser/run.mjs prints a DRIVE_TIME line per drive so future refreshes read the values directly instead of mining timestamps. The runtime balancer (tests/browser/run.mjs --shard) and scripts/gen-shards.py read this file; the key set must name exactly the drive roster (scripts/check-shard-coverage.py enforces it). Re-measure whenever drive times shift materially. drive223 (Beta 1.284, issue #174) carries the 21.55 median as a placeholder until its first measured gate runs; it is listed in unmeasured.",
  "measured_from_runs": [
   42733900054,
   45242270260,
@@ -105,7 +105,10 @@
   "drive219": 77.6,
   "drive220": 18.4,
   "drive221": 13.3,
-  "drive222": 14.7
+  "drive222": 14.7,
+  "drive223": 21.55
  },
- "unmeasured": []
+ "unmeasured": [
+  "drive223"
+ ]
 }
