@@ -1,5 +1,5 @@
 {
-  "rule": "Universe: parts/app1.js, app2.js, app3.js, app4.js, app5.js, create-packs.js, create-fetch.js, create-citydata.js, create-cache.js, create-pick.js, create-save.js, engine.js (data.js, whatsnew.js and pmstyles.js excluded - data/generated; brand-snow.js excluded - a single IIFE declaring no top-level bindings and writing no other part's binding, its only outward surface the member write window.__snow). Owner = the part file holding a binding's top-level declaration, except the six create-*.js files form ONE owner group labelled create.js (the historical part name): a binding declared in any create-*.js file is owned by that group, and a write is foreign iff the target's owner group differs from the writing file's owner group; site records keep the concrete file holding the write. A FOREIGN WRITE is an assignment/update expression (=, +=, -=, *=, /=, %=, **=, ++, -- prefix or postfix) whose target is a bare identifier (not a member expression; a declaration initializer never counts) resolving through lexical scope to a top-level binding owned by a different part file or owner group. Comments/strings/templates masked (interpolations are code); scopes tracked by braces with their declarations (function/arrow/catch params, let/const/var at any depth, function declarations). Destructuring assignment targets count per bound identifier; for (x of ...) with a bare identifier assigns. Site records are keyed by enclosing function (Arch-5 re-key, 2026-11-19): {file, fn, name, owner, occ} - fn is the innermost enclosing function with a name (a declaration name, a method name, or the binding/property an anonymous function is assigned to; an anonymous function with no such slot is transparent for keying, its writes keying to the nearest named enclosing function, or '<top-level>' when there is none), and occ is the 1-based ordinal of the write among writes to the same target within that function in source order. Parameter lists are part of their function for keying: a write in a default initializer keys to that function, never to the parameter name. Wrapping parentheses and an async modifier around an assigned function are transparent for keying. Line numbers are not part of the record.",
+  "rule": "Universe: parts/app1.js, app2.js, app3.js, app4.js, app5.js, create-packs.js, create-fetch.js, create-citydata.js, create-cache.js, create-pick.js, create-save.js, engine.js (data.js, whatsnew.js and pmstyles.js excluded - data/generated; brand-snow.js excluded - a single IIFE declaring no top-level bindings and writing no other part's binding, its only outward surface the member write window.__snow). Owner = the part file holding a binding's top-level declaration, except the six create-*.js files form ONE owner group labelled create.js (the historical part name): a binding declared in any create-*.js file is owned by that group, and a write is foreign iff the target's owner group differs from the writing file's owner group; site records keep the concrete file holding the write. A FOREIGN WRITE is an assignment/update expression (=, +=, -=, *=, /=, %=, **=, ++, -- prefix or postfix) whose target is a bare identifier (not a member expression; a declaration initializer never counts) resolving through lexical scope to a top-level binding owned by a different part file or owner group. Comments/strings/templates masked (interpolations are code); scopes tracked by braces with their declarations (function/arrow/catch params, let/const/var at any depth, function declarations). Destructuring assignment targets count per bound identifier; for (x of ...) with a bare identifier assigns. Site records are keyed by enclosing function (Arch-5 re-key, 2026-11-19): {file, fn, name, owner, occ} - fn is the innermost enclosing function with a name (a declaration name, a method name, or the binding/property an anonymous function is assigned to; an anonymous function with no such slot is transparent for keying, its writes keying to the nearest named enclosing function, or '<top-level>' when there is none), and occ is the 1-based ordinal of the write among writes to the same target within that function in source order. Parameter lists are part of their function for keying: a write in a default initializer keys to that function, never to the parameter name. Wrapping parentheses and an async modifier around an assigned function are transparent for keying. Line numbers are not part of the record. Beta 1.274 (architecture programme #1) adds three site classes under the same keying: MEMBER SITES - a write through a member chain rooted at a board state container (pieces, pieceTimes, doneSet, doneTimes, doneVia): an assignment/update on the chain, a delete operator on the chain, or a mutating method call (add/delete/clear) on doneSet; a root resolving to a local shadow never counts. STORAGE SITES - a call through lsSet, txSet or localStorage.setItem/removeItem, named storage:<key root> (LS.<name>, a leading identifier, literal, or computed). IDB SITES - an indexedDB.open call. The census also carries a FORBIDDEN table: a named member or storage entry found outside its owner file fails the run unless an EXEMPTIONS entry names that exact file+fn+name; exemptions are part of this record.",
   "universe": [
     "app1.js",
     "app2.js",
@@ -16,6 +16,9 @@
   ],
   "totals": {
     "expressions": 26,
+    "member": 31,
+    "storage": 49,
+    "idb": 2,
     "byFile": {
       "app1.js": {
         "expressions": 1
@@ -237,6 +240,630 @@
       "name": "followPaused",
       "owner": "app3.js",
       "occ": 1
+    }
+  ],
+  "memberSites": [
+    {
+      "file": "app1.js",
+      "fn": "clearStreet",
+      "name": "doneSet",
+      "owner": "app1.js",
+      "occ": 1
+    },
+    {
+      "file": "app1.js",
+      "fn": "clearStreet",
+      "name": "doneTimes",
+      "owner": "app1.js",
+      "occ": 1
+    },
+    {
+      "file": "app1.js",
+      "fn": "clearStreet",
+      "name": "doneVia",
+      "owner": "app1.js",
+      "occ": 1
+    },
+    {
+      "file": "app1.js",
+      "fn": "clearStreet",
+      "name": "pieceTimes",
+      "owner": "app1.js",
+      "occ": 1
+    },
+    {
+      "file": "app1.js",
+      "fn": "clearStreet",
+      "name": "pieces",
+      "owner": "app1.js",
+      "occ": 1
+    },
+    {
+      "file": "app1.js",
+      "fn": "completeStreet",
+      "name": "doneSet",
+      "owner": "app1.js",
+      "occ": 1
+    },
+    {
+      "file": "app1.js",
+      "fn": "completeStreet",
+      "name": "doneTimes",
+      "owner": "app1.js",
+      "occ": 1
+    },
+    {
+      "file": "app1.js",
+      "fn": "completeStreet",
+      "name": "doneVia",
+      "owner": "app1.js",
+      "occ": 1
+    },
+    {
+      "file": "app1.js",
+      "fn": "completeStreet",
+      "name": "pieceTimes",
+      "owner": "app1.js",
+      "occ": 1
+    },
+    {
+      "file": "app1.js",
+      "fn": "completeStreet",
+      "name": "pieces",
+      "owner": "app1.js",
+      "occ": 1
+    },
+    {
+      "file": "app1.js",
+      "fn": "loadDoneMeta",
+      "name": "doneTimes",
+      "owner": "app1.js",
+      "occ": 1
+    },
+    {
+      "file": "app1.js",
+      "fn": "loadDoneMeta",
+      "name": "doneVia",
+      "owner": "app1.js",
+      "occ": 1
+    },
+    {
+      "file": "app1.js",
+      "fn": "loadSides",
+      "name": "doneTimes",
+      "owner": "app1.js",
+      "occ": 1
+    },
+    {
+      "file": "app1.js",
+      "fn": "loadSides",
+      "name": "doneVia",
+      "owner": "app1.js",
+      "occ": 1
+    },
+    {
+      "file": "app1.js",
+      "fn": "loadSides",
+      "name": "pieceTimes",
+      "owner": "app1.js",
+      "occ": 1
+    },
+    {
+      "file": "app1.js",
+      "fn": "loadSides",
+      "name": "pieceTimes",
+      "owner": "app1.js",
+      "occ": 2
+    },
+    {
+      "file": "app1.js",
+      "fn": "loadSides",
+      "name": "pieceTimes",
+      "owner": "app1.js",
+      "occ": 3
+    },
+    {
+      "file": "app1.js",
+      "fn": "loadSides",
+      "name": "pieces",
+      "owner": "app1.js",
+      "occ": 1
+    },
+    {
+      "file": "app1.js",
+      "fn": "rederive",
+      "name": "doneTimes",
+      "owner": "app1.js",
+      "occ": 1
+    },
+    {
+      "file": "app1.js",
+      "fn": "rederive",
+      "name": "doneVia",
+      "owner": "app1.js",
+      "occ": 1
+    },
+    {
+      "file": "app1.js",
+      "fn": "setSide",
+      "name": "doneSet",
+      "owner": "app1.js",
+      "occ": 1
+    },
+    {
+      "file": "app1.js",
+      "fn": "setSide",
+      "name": "doneSet",
+      "owner": "app1.js",
+      "occ": 2
+    },
+    {
+      "file": "app1.js",
+      "fn": "setSide",
+      "name": "doneTimes",
+      "owner": "app1.js",
+      "occ": 1
+    },
+    {
+      "file": "app1.js",
+      "fn": "setSide",
+      "name": "doneTimes",
+      "owner": "app1.js",
+      "occ": 2
+    },
+    {
+      "file": "app1.js",
+      "fn": "setSide",
+      "name": "doneVia",
+      "owner": "app1.js",
+      "occ": 1
+    },
+    {
+      "file": "app1.js",
+      "fn": "setSide",
+      "name": "doneVia",
+      "owner": "app1.js",
+      "occ": 2
+    },
+    {
+      "file": "app1.js",
+      "fn": "setSide",
+      "name": "pieceTimes",
+      "owner": "app1.js",
+      "occ": 1
+    },
+    {
+      "file": "app1.js",
+      "fn": "setSide",
+      "name": "pieceTimes",
+      "owner": "app1.js",
+      "occ": 2
+    },
+    {
+      "file": "app1.js",
+      "fn": "setSide",
+      "name": "pieces",
+      "owner": "app1.js",
+      "occ": 1
+    },
+    {
+      "file": "app1.js",
+      "fn": "zeroMarks",
+      "name": "pieceTimes",
+      "owner": "app1.js",
+      "occ": 1
+    },
+    {
+      "file": "app1.js",
+      "fn": "zeroMarks",
+      "name": "pieces",
+      "owner": "app1.js",
+      "occ": 1
+    }
+  ],
+  "storageSites": [
+    {
+      "file": "app1.js",
+      "fn": "completeFinishCleanup",
+      "name": "storage:LS.cov",
+      "owner": "app1.js",
+      "occ": 1
+    },
+    {
+      "file": "app1.js",
+      "fn": "completeFinishCleanup",
+      "name": "storage:LS.notes",
+      "owner": "app1.js",
+      "occ": 1
+    },
+    {
+      "file": "app1.js",
+      "fn": "dpWriteStore",
+      "name": "storage:LS_GLOBAL",
+      "owner": "app1.js",
+      "occ": 1
+    },
+    {
+      "file": "app1.js",
+      "fn": "dropPhantom",
+      "name": "storage:LS.hist",
+      "owner": "app1.js",
+      "occ": 1
+    },
+    {
+      "file": "app1.js",
+      "fn": "flushAux",
+      "name": "storage:LS.cov",
+      "owner": "app1.js",
+      "occ": 1
+    },
+    {
+      "file": "app1.js",
+      "fn": "lsDel",
+      "name": "storage:k",
+      "owner": "app1.js",
+      "occ": 1
+    },
+    {
+      "file": "app1.js",
+      "fn": "lsSet",
+      "name": "storage:k",
+      "owner": "app1.js",
+      "occ": 1
+    },
+    {
+      "file": "app1.js",
+      "fn": "migrateLegacyRoute",
+      "name": "storage:rk",
+      "owner": "app1.js",
+      "occ": 1
+    },
+    {
+      "file": "app1.js",
+      "fn": "migrateLegacyRoute",
+      "name": "storage:rk",
+      "owner": "app1.js",
+      "occ": 2
+    },
+    {
+      "file": "app1.js",
+      "fn": "migrateLegacyRoute",
+      "name": "storage:rk",
+      "owner": "app1.js",
+      "occ": 3
+    },
+    {
+      "file": "app1.js",
+      "fn": "save",
+      "name": "storage:LS.hist",
+      "owner": "app1.js",
+      "occ": 1
+    },
+    {
+      "file": "app1.js",
+      "fn": "saveAll",
+      "name": "storage:LS.cov",
+      "owner": "app1.js",
+      "occ": 1
+    },
+    {
+      "file": "app1.js",
+      "fn": "saveAll",
+      "name": "storage:LS.done",
+      "owner": "app1.js",
+      "occ": 1
+    },
+    {
+      "file": "app1.js",
+      "fn": "saveAll",
+      "name": "storage:LS.hist",
+      "owner": "app1.js",
+      "occ": 1
+    },
+    {
+      "file": "app1.js",
+      "fn": "saveAll",
+      "name": "storage:LS.notes",
+      "owner": "app1.js",
+      "occ": 1
+    },
+    {
+      "file": "app1.js",
+      "fn": "saveAll",
+      "name": "storage:LS.sides",
+      "owner": "app1.js",
+      "occ": 1
+    },
+    {
+      "file": "app1.js",
+      "fn": "saveAll",
+      "name": "storage:LS.times",
+      "owner": "app1.js",
+      "occ": 1
+    },
+    {
+      "file": "app1.js",
+      "fn": "saveAll",
+      "name": "storage:LS.via",
+      "owner": "app1.js",
+      "occ": 1
+    },
+    {
+      "file": "app1.js",
+      "fn": "saveProg",
+      "name": "storage:rk",
+      "owner": "app1.js",
+      "occ": 1
+    },
+    {
+      "file": "app1.js",
+      "fn": "saveSess",
+      "name": "storage:LS.sess",
+      "owner": "app1.js",
+      "occ": 1
+    },
+    {
+      "file": "app1.js",
+      "fn": "saveSettings",
+      "name": "storage:SETTINGS_KEY",
+      "owner": "app1.js",
+      "occ": 1
+    },
+    {
+      "file": "app1.js",
+      "fn": "saveStart",
+      "name": "storage:LS.start",
+      "owner": "app1.js",
+      "occ": 1
+    },
+    {
+      "file": "app1.js",
+      "fn": "saveTrail",
+      "name": "storage:LS.trail",
+      "owner": "app1.js",
+      "occ": 1
+    },
+    {
+      "file": "app1.js",
+      "fn": "setThemeOverride",
+      "name": "storage:LS.night",
+      "owner": "app1.js",
+      "occ": 1
+    },
+    {
+      "file": "app1.js",
+      "fn": "setThemeOverride",
+      "name": "storage:LS.nightExp",
+      "owner": "app1.js",
+      "occ": 1
+    },
+    {
+      "file": "app1.js",
+      "fn": "txSet",
+      "name": "storage:key",
+      "owner": "app1.js",
+      "occ": 1
+    },
+    {
+      "file": "app3.js",
+      "fn": "bankRunDistMirror",
+      "name": "storage:LS.rundist2",
+      "owner": "app1.js",
+      "occ": 1
+    },
+    {
+      "file": "app3.js",
+      "fn": "persistRunDist",
+      "name": "storage:LS.rundist",
+      "owner": "app1.js",
+      "occ": 1
+    },
+    {
+      "file": "app3.js",
+      "fn": "saveFixLog",
+      "name": "storage:LS.fixlog",
+      "owner": "app1.js",
+      "occ": 1
+    },
+    {
+      "file": "app3.js",
+      "fn": "saveSnap",
+      "name": "storage:LS.snap",
+      "owner": "app1.js",
+      "occ": 1
+    },
+    {
+      "file": "app3.js",
+      "fn": "undo",
+      "name": "storage:LS.hist",
+      "owner": "app1.js",
+      "occ": 1
+    },
+    {
+      "file": "app3.js",
+      "fn": "undo",
+      "name": "storage:LS.sides",
+      "owner": "app1.js",
+      "occ": 1
+    },
+    {
+      "file": "app3.js",
+      "fn": "undo",
+      "name": "storage:LS.start",
+      "owner": "app1.js",
+      "occ": 1
+    },
+    {
+      "file": "app3.js",
+      "fn": "write",
+      "name": "storage:LS.finclean",
+      "owner": "app1.js",
+      "occ": 1
+    },
+    {
+      "file": "app3.js",
+      "fn": "write",
+      "name": "storage:LS.hist",
+      "owner": "app1.js",
+      "occ": 1
+    },
+    {
+      "file": "app3.js",
+      "fn": "write",
+      "name": "storage:LS.sides",
+      "owner": "app1.js",
+      "occ": 1
+    },
+    {
+      "file": "app4.js",
+      "fn": "<top-level>",
+      "name": "storage:LS.pre",
+      "owner": "app1.js",
+      "occ": 1
+    },
+    {
+      "file": "app4.js",
+      "fn": "<top-level>",
+      "name": "storage:PACKMIG_KEY",
+      "owner": "app1.js",
+      "occ": 1
+    },
+    {
+      "file": "app4.js",
+      "fn": "noteExported",
+      "name": "storage:LS.exp",
+      "owner": "app1.js",
+      "occ": 1
+    },
+    {
+      "file": "app4.js",
+      "fn": "renderStatus",
+      "name": "storage:literal",
+      "owner": "app1.js",
+      "occ": 1
+    },
+    {
+      "file": "app4.js",
+      "fn": "restoreBackup",
+      "name": "storage:k",
+      "owner": "app1.js",
+      "occ": 1
+    },
+    {
+      "file": "app4.js",
+      "fn": "rollback",
+      "name": "storage:k",
+      "owner": "app1.js",
+      "occ": 1
+    },
+    {
+      "file": "app5.js",
+      "fn": "deleteRoute",
+      "name": "storage:SHIPPED_DELETED_KEY",
+      "owner": "app1.js",
+      "occ": 1
+    },
+    {
+      "file": "app5.js",
+      "fn": "deleteRoute",
+      "name": "storage:USERPACKS_KEY",
+      "owner": "app1.js",
+      "occ": 1
+    },
+    {
+      "file": "app5.js",
+      "fn": "migratePack",
+      "name": "storage:PACKMIG_KEY",
+      "owner": "app1.js",
+      "occ": 1
+    },
+    {
+      "file": "create-packs.js",
+      "fn": "initUserPacks",
+      "name": "storage:UP_MIG_KEY",
+      "owner": "app1.js",
+      "occ": 1
+    },
+    {
+      "file": "create-pick.js",
+      "fn": "apply",
+      "name": "storage:LS_GLOBAL",
+      "owner": "app1.js",
+      "occ": 1
+    },
+    {
+      "file": "create-save.js",
+      "fn": "saveDraftRoute",
+      "name": "storage:LS_GLOBAL",
+      "owner": "app1.js",
+      "occ": 1
+    },
+    {
+      "file": "create-save.js",
+      "fn": "saveDraftRoute",
+      "name": "storage:routeKeys(...)",
+      "owner": "app1.js",
+      "occ": 1
+    }
+  ],
+  "idbSites": [
+    {
+      "file": "create-packs.js",
+      "fn": "upIdbOpen",
+      "name": "idb:open",
+      "owner": "create-packs.js",
+      "occ": 1
+    },
+    {
+      "file": "create-cache.js",
+      "fn": "crIdbOpen",
+      "name": "idb:open",
+      "owner": "create-cache.js",
+      "occ": 1
+    }
+  ],
+  "forbidden": [
+    {
+      "kind": "member",
+      "name": "pieces",
+      "owner": "app1.js"
+    },
+    {
+      "kind": "member",
+      "name": "pieceTimes",
+      "owner": "app1.js"
+    },
+    {
+      "kind": "member",
+      "name": "doneSet",
+      "owner": "app1.js"
+    },
+    {
+      "kind": "member",
+      "name": "doneTimes",
+      "owner": "app1.js"
+    },
+    {
+      "kind": "member",
+      "name": "doneVia",
+      "owner": "app1.js"
+    },
+    {
+      "kind": "storage",
+      "name": "storage:LS.hist",
+      "owner": "app1.js"
+    }
+  ],
+  "exemptions": [
+    {
+      "file": "app3.js",
+      "fn": "write",
+      "name": "storage:LS.hist"
+    },
+    {
+      "file": "app3.js",
+      "fn": "undo",
+      "name": "storage:LS.hist"
     }
   ]
 }

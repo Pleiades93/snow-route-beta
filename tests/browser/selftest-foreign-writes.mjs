@@ -162,7 +162,7 @@ const UNIVERSE = ['app1.js', 'app2.js', 'app3.js', 'app4.js', 'app5.js', 'create
 const CREATE_FAMILY = new Set(['create-packs.js', 'create-fetch.js', 'create-citydata.js', 'create-cache.js', 'create-pick.js', 'create-save.js']);
 const ownerGroup = (f) => CREATE_FAMILY.has(f) ? 'create.js' : f; // the six create-*.js files are ONE owner group, labelled by the historical part name
 const CENSUS_PATH = path.join(HERE, 'fixtures', 'foreign-writes-census.json');
-const RULE = 'Universe: parts/app1.js, app2.js, app3.js, app4.js, app5.js, create-packs.js, create-fetch.js, create-citydata.js, create-cache.js, create-pick.js, create-save.js, engine.js (data.js, whatsnew.js and pmstyles.js excluded - data/generated; brand-snow.js excluded - a single IIFE declaring no top-level bindings and writing no other part\'s binding, its only outward surface the member write window.__snow). Owner = the part file holding a binding\'s top-level declaration, except the six create-*.js files form ONE owner group labelled create.js (the historical part name): a binding declared in any create-*.js file is owned by that group, and a write is foreign iff the target\'s owner group differs from the writing file\'s owner group; site records keep the concrete file holding the write. A FOREIGN WRITE is an assignment/update expression (=, +=, -=, *=, /=, %=, **=, ++, -- prefix or postfix) whose target is a bare identifier (not a member expression; a declaration initializer never counts) resolving through lexical scope to a top-level binding owned by a different part file or owner group. Comments/strings/templates masked (interpolations are code); scopes tracked by braces with their declarations (function/arrow/catch params, let/const/var at any depth, function declarations). Destructuring assignment targets count per bound identifier; for (x of ...) with a bare identifier assigns. Site records are keyed by enclosing function (Arch-5 re-key, 2026-11-19): {file, fn, name, owner, occ} - fn is the innermost enclosing function with a name (a declaration name, a method name, or the binding/property an anonymous function is assigned to; an anonymous function with no such slot is transparent for keying, its writes keying to the nearest named enclosing function, or \'<top-level>\' when there is none), and occ is the 1-based ordinal of the write among writes to the same target within that function in source order. Parameter lists are part of their function for keying: a write in a default initializer keys to that function, never to the parameter name. Wrapping parentheses and an async modifier around an assigned function are transparent for keying. Line numbers are not part of the record.';
+const RULE = 'Universe: parts/app1.js, app2.js, app3.js, app4.js, app5.js, create-packs.js, create-fetch.js, create-citydata.js, create-cache.js, create-pick.js, create-save.js, engine.js (data.js, whatsnew.js and pmstyles.js excluded - data/generated; brand-snow.js excluded - a single IIFE declaring no top-level bindings and writing no other part\'s binding, its only outward surface the member write window.__snow). Owner = the part file holding a binding\'s top-level declaration, except the six create-*.js files form ONE owner group labelled create.js (the historical part name): a binding declared in any create-*.js file is owned by that group, and a write is foreign iff the target\'s owner group differs from the writing file\'s owner group; site records keep the concrete file holding the write. A FOREIGN WRITE is an assignment/update expression (=, +=, -=, *=, /=, %=, **=, ++, -- prefix or postfix) whose target is a bare identifier (not a member expression; a declaration initializer never counts) resolving through lexical scope to a top-level binding owned by a different part file or owner group. Comments/strings/templates masked (interpolations are code); scopes tracked by braces with their declarations (function/arrow/catch params, let/const/var at any depth, function declarations). Destructuring assignment targets count per bound identifier; for (x of ...) with a bare identifier assigns. Site records are keyed by enclosing function (Arch-5 re-key, 2026-11-19): {file, fn, name, owner, occ} - fn is the innermost enclosing function with a name (a declaration name, a method name, or the binding/property an anonymous function is assigned to; an anonymous function with no such slot is transparent for keying, its writes keying to the nearest named enclosing function, or \'<top-level>\' when there is none), and occ is the 1-based ordinal of the write among writes to the same target within that function in source order. Parameter lists are part of their function for keying: a write in a default initializer keys to that function, never to the parameter name. Wrapping parentheses and an async modifier around an assigned function are transparent for keying. Line numbers are not part of the record. Beta 1.274 (architecture programme #1) adds three site classes under the same keying: MEMBER SITES - a write through a member chain rooted at a board state container (pieces, pieceTimes, doneSet, doneTimes, doneVia): an assignment/update on the chain, a delete operator on the chain, or a mutating method call (add/delete/clear) on doneSet; a root resolving to a local shadow never counts. STORAGE SITES - a call through lsSet, txSet or localStorage.setItem/removeItem, named storage:<key root> (LS.<name>, a leading identifier, literal, or computed). IDB SITES - an indexedDB.open call. The census also carries a FORBIDDEN table: a named member or storage entry found outside its owner file fails the run unless an EXEMPTIONS entry names that exact file+fn+name; exemptions are part of this record.';
 
 // ---------------- tokenizer (comments/strings masked; templates: interpolations are code) ----------------
 const KEYWORDS = new Set(['if', 'else', 'for', 'while', 'do', 'switch', 'case', 'default', 'break', 'continue', 'return', 'function', 'var', 'let', 'const', 'new', 'delete', 'typeof', 'void', 'in', 'of', 'instanceof', 'try', 'catch', 'finally', 'throw', 'class', 'extends', 'super', 'this', 'null', 'true', 'false', 'undefined', 'yield', 'async', 'await', 'static', 'get', 'set', 'export', 'import', 'from']);
@@ -216,6 +216,37 @@ function tokenize(src) {
 
 // ---------------- scope analysis ----------------
 const ASSIGN_OPS = new Set(['=', '+=', '-=', '*=', '/=', '%=', '**=']);
+// Beta 1.274 (architecture programme #1, the write-ban): three more site
+// classes ride the same tokenization and fn keying. MEMBER SITES: a write
+// through a member chain rooted at one of the board's state containers
+// (an assignment/update/delete on the chain, or a mutating method call
+// on the set) - the class the bare-identifier census cannot see, and the
+// one BOARD ownership is made of. STORAGE SITES: a call through the
+// storage doors (lsSet / txSet / localStorage.setItem / removeItem),
+// named by its key expression's root. IDB SITES: an indexedDB.open call.
+// A site in any class is recorded in EVERY file, the owner's included -
+// the census pins the owner's own set exactly, and the FORBIDDEN table
+// below then refuses named entries outside their owner (an exemption is
+// a named, pinned site the ban spares deliberately; it is part of the
+// census record, so adding one is the same reviewed act as a re-pin).
+const MEMBER_ROOTS = new Set(['pieces', 'pieceTimes', 'doneSet', 'doneTimes', 'doneVia']);
+const SET_MUTATORS = new Set(['add', 'delete', 'clear']); // doneSet's mutating methods (has/get are reads)
+const FORBIDDEN = [
+  { kind: 'member', name: 'pieces', owner: 'app1.js' },
+  { kind: 'member', name: 'pieceTimes', owner: 'app1.js' },
+  { kind: 'member', name: 'doneSet', owner: 'app1.js' },
+  { kind: 'member', name: 'doneTimes', owner: 'app1.js' },
+  { kind: 'member', name: 'doneVia', owner: 'app1.js' },
+  { kind: 'storage', name: 'storage:LS.hist', owner: 'app1.js' },
+];
+const EXEMPTIONS = [
+  // The finish transaction's archive write and its undo (app3 finishRun)
+  // write only HIST.serialise output through txSet - the repository's
+  // own string, carried by the transaction that owns the finish. Named
+  // here so any OTHER LS.hist write outside app1 fails the ban.
+  { file: 'app3.js', fn: 'write', name: 'storage:LS.hist' },
+  { file: 'app3.js', fn: 'undo', name: 'storage:LS.hist' },
+];
 const OPEN = { '(': ')', '[': ']', '{': '}' }, CLOSE = { ')': '(', ']': '[', '}': '{' };
 function matchClose(toks, openIdx) { let d = 0; for (let j = openIdx; j < toks.length; j++) { const v = toks[j].v; if (OPEN[v]) d++; else if (CLOSE[v]) { d--; if (!d) return j; } } return toks.length - 1; }
 function matchOpen(toks, closeIdx) { let d = 0; for (let j = closeIdx; j >= 0; j--) { const v = toks[j].v; if (CLOSE[v]) d++; else if (OPEN[v]) { d--; if (!d) return j; } } return 0; }
@@ -648,7 +679,18 @@ function analyzeFiles(fileSrcs) {
       else if (!firstFile.has(e.name)) { firstFile.set(e.name, f); ownerMap.set(e.name, ownerGroup(f)); }
     }
   }
-  const sites = [], implicit = new Set();
+  const sites = [], memberSites = [], storageSites = [], idbSites = [], implicit = new Set();
+  // A storage call's key root: LS.<name> for the namespace keys, the
+  // leading identifier for a computed key expression (routeKeys(...)),
+  // 'literal' for a string key, 'computed' for anything else.
+  const keyRootOf = (toks, a) => {
+    const t0 = toks[a];
+    if (!t0) return 'computed';
+    if (t0.t === 'str') return 'literal';
+    if (t0.t === 'id' && t0.v === 'LS' && toks[a + 1] && toks[a + 1].v === '.' && toks[a + 2] && toks[a + 2].t === 'id') return 'LS.' + toks[a + 2].v;
+    if (t0.t === 'id') return toks[a + 1] && toks[a + 1].v === '(' ? t0.v + '(...)' : t0.v;
+    return 'computed';
+  };
   for (const f of files) {
     const an = analyses[f], toks = an.toks;
     // resolution: innermost containing scope first (brace ancestors +
@@ -707,6 +749,47 @@ function analyzeFiles(fileSrcs) {
       const isPre = prev && (prev.v === '++' || prev.v === '--') && !(next && (next.v === '.' || next.v === '?.' || next.v === '[')) && !(beforePrev && (beforePrev.t === 'id' || beforePrev.t === 'num' || beforePrev.t === 'str' || beforePrev.v === ')' || beforePrev.v === ']'));
       if (isForAssign || isAssign || isPost || isPre) consider(i);
     }
+    // Beta 1.274 second pass: member / storage / IDB sites (see the
+    // MEMBER_ROOTS note at the constants). Same resolution discipline:
+    // a root that resolves to a LOCAL shadow (validateSnap's own pieces)
+    // is not the module's container and never counts.
+    for (let i = 0; i < toks.length; i++) {
+      const tk = toks[i];
+      if (tk.t !== 'id' || an.declNameToks.has(i)) continue;
+      const prev = toks[i - 1], next = toks[i + 1];
+      if (prev && (prev.v === '.' || prev.v === '?.')) continue;
+      if (MEMBER_ROOTS.has(tk.v)) {
+        const r = resolve(i, tk.v);
+        if (r === 'local' || r == null) continue;
+        // walk the member chain rooted here
+        let j = i, lastProp = null;
+        while (true) {
+          if (toks[j + 1] && toks[j + 1].v === '.' && toks[j + 2] && toks[j + 2].t === 'id') { lastProp = toks[j + 2].v; j += 2; continue; }
+          if (toks[j + 1] && toks[j + 1].v === '[') { j = matchClose(toks, j + 1); lastProp = null; continue; }
+          break;
+        }
+        if (j === i) continue; // bare identifier - the first pass's business
+        const after = toks[j + 1];
+        const isMethod = tk.v === 'doneSet' && lastProp && SET_MUTATORS.has(lastProp) && after && after.v === '(';
+        const isAssign = after && ASSIGN_OPS.has(after.v);
+        const isPost = after && (after.v === '++' || after.v === '--');
+        const isPre = prev && (prev.v === '++' || prev.v === '--' || prev.v === 'delete') && !(toks[i - 2] && toks[i - 2].v === '.');
+        if (isMethod || isAssign || isPost || isPre) memberSites.push({ file: f, fn: an.fnAt(i), name: tk.v, owner: firstFile.get(tk.v) || '?' });
+        continue;
+      }
+      if ((tk.v === 'lsSet' || tk.v === 'txSet') && next && next.v === '(') {
+        storageSites.push({ file: f, fn: an.fnAt(i), name: 'storage:' + keyRootOf(toks, i + 2), owner: 'app1.js' });
+        continue;
+      }
+      if (tk.v === 'localStorage' && next && next.v === '.' && toks[i + 2] && (toks[i + 2].v === 'setItem' || toks[i + 2].v === 'removeItem') && toks[i + 3] && toks[i + 3].v === '(') {
+        storageSites.push({ file: f, fn: an.fnAt(i), name: 'storage:' + keyRootOf(toks, i + 4), owner: 'app1.js' });
+        continue;
+      }
+      if (tk.v === 'indexedDB' && next && next.v === '.' && toks[i + 2] && toks[i + 2].v === 'open' && toks[i + 3] && toks[i + 3].v === '(') {
+        idbSites.push({ file: f, fn: an.fnAt(i), name: 'idb:open', owner: f });
+        continue;
+      }
+    }
   }
   // Arch-5 occurrence ordinals: sites are generated in token order
   // per file, so a running count per (file, fn, name) assigns each
@@ -715,17 +798,40 @@ function analyzeFiles(fileSrcs) {
   for (const s of sites) { const k = s.file + '\0' + s.fn + '\0' + s.name; const n = (occCount.get(k) || 0) + 1; occCount.set(k, n); s.occ = n; }
   const keyed = sites.map(s => ({ file: s.file, fn: s.fn, name: s.name, owner: s.owner, occ: s.occ }));
   const fileOrder = new Map(files.map((f, i) => [f, i]));
-  keyed.sort((a, b) => fileOrder.get(a.file) - fileOrder.get(b.file) || (a.fn < b.fn ? -1 : a.fn > b.fn ? 1 : 0) || (a.name < b.name ? -1 : a.name > b.name ? 1 : 0) || a.occ - b.occ);
+  const sortSites = (arr) => arr.sort((a, b) => fileOrder.get(a.file) - fileOrder.get(b.file) || (a.fn < b.fn ? -1 : a.fn > b.fn ? 1 : 0) || (a.name < b.name ? -1 : a.name > b.name ? 1 : 0) || a.occ - b.occ);
+  sortSites(keyed);
+  const keyClass = (arr) => {
+    const occ = new Map();
+    for (const s of arr) { const k = s.file + '\0' + s.fn + '\0' + s.name; const n = (occ.get(k) || 0) + 1; occ.set(k, n); s.occ = n; }
+    return sortSites(arr.map(s => ({ file: s.file, fn: s.fn, name: s.name, owner: s.owner, occ: s.occ })));
+  };
+  const memberKeyed = keyClass(memberSites), storageKeyed = keyClass(storageSites), idbKeyed = keyClass(idbSites);
   const byFile = {};
   for (const f of files) {
     const mine = keyed.filter(s => s.file === f);
     byFile[f] = { expressions: mine.length };
   }
-  return { sites: keyed, totals: { expressions: keyed.length, byFile }, implicit: [...implicit].sort(), duplicates };
+  return { sites: keyed, memberSites: memberKeyed, storageSites: storageKeyed, idbSites: idbKeyed, totals: { expressions: keyed.length, member: memberKeyed.length, storage: storageKeyed.length, idb: idbKeyed.length, byFile }, implicit: [...implicit].sort(), duplicates };
 }
 
 function censusObject(res) {
-  return { rule: RULE, universe: UNIVERSE.slice(), totals: res.totals, sites: res.sites };
+  return { rule: RULE, universe: UNIVERSE.slice(), totals: res.totals, sites: res.sites, memberSites: res.memberSites, storageSites: res.storageSites, idbSites: res.idbSites, forbidden: FORBIDDEN, exemptions: EXEMPTIONS };
+}
+
+// The write-ban: a FORBIDDEN entry refuses any site of its kind+name
+// outside its owner file, sparing only sites an EXEMPTIONS entry names
+// (file + fn + name). Returns the violating sites (empty = ban holds).
+function banViolations(res) {
+  const out = [];
+  const classes = { member: res.memberSites, storage: res.storageSites, idb: res.idbSites };
+  for (const fb of FORBIDDEN) {
+    for (const s of classes[fb.kind] || []) {
+      if (s.name !== fb.name || s.file === fb.owner) continue;
+      if (EXEMPTIONS.some(e => e.file === s.file && e.fn === s.fn && e.name === s.name)) continue;
+      out.push({ kind: fb.kind, ...s });
+    }
+  }
+  return out;
 }
 
 // ---------------- fixtures: the analyzer must be able to fail ----------------
@@ -871,6 +977,31 @@ for (const [label, src, want] of FX_CASES) {
   check('key fixture: moving a write between an enclosing conditional alternate and the arrow body changes its key', JSON.stringify(cmove(true)) !== JSON.stringify(cmove(false)) && cmove(true)[0].includes('|alpha|'), [cmove(true), cmove(false)]);
 }
 
+// Beta 1.274 fixtures: the member / storage / IDB passes and the ban
+// must each be able to fail.
+{
+  const BOARD_OWNER = 'let pieces = {}, pieceTimes = {}, doneTimes = {}, doneVia = {}; const doneSet = new Set(); const LS = { hist: "h", sides: "s" }; function lsSet() {} function txSet() {}';
+  const bx = (src) => analyzeFiles({ 'app1.js': BOARD_OWNER, 'case.js': src });
+  const mem = (src) => bx(src).memberSites.filter(s => s.file === 'case.js');
+  const sto = (src) => bx(src).storageSites.filter(s => s.file === 'case.js');
+  const idb = (src) => bx(src).idbSites.filter(s => s.file === 'case.js');
+  check('member fixture: a chain assignment counts', mem('pieces[a][0] = 1;').length === 1, mem('pieces[a][0] = 1;'));
+  check('member fixture: a chain read never counts', mem('const x = pieces[a][0] & 1; if (doneSet.has(a)) {}').length === 0);
+  check('member fixture: a mutating set method counts, a read method does not', mem('doneSet.add(a);').length === 1 && mem('doneSet.has(a);').length === 0);
+  check('member fixture: the delete operator on a chain counts', mem('delete doneTimes[a];').length === 1);
+  check('member fixture: a compound assignment on a chain counts', mem('pieceTimes[a] += 1;').length === 1);
+  check('member fixture: a locally shadowed root never counts', mem('function f() { const pieces = {}; pieces[a] = 1; }').length === 0);
+  check('member fixture: a bare write to the root is the first pass, not this one', mem('pieces = {};').length === 0);
+  check('storage fixture: an LS key names its site', sto('lsSet(LS.hist, "x");').length === 1 && sto('lsSet(LS.hist, "x");')[0].name === 'storage:LS.hist', sto('lsSet(LS.hist, "x");'));
+  check('storage fixture: a literal key and a txSet call count', sto('txSet("k", 1);').length === 1 && sto('txSet("k", 1);')[0].name === 'storage:literal');
+  check('storage fixture: a read never counts', sto('lsGet(LS.hist);').length === 0);
+  check('idb fixture: an open counts', idb('indexedDB.open("x", 1);').length === 1);
+  check('ban fixture: a foreign member site violates', banViolations({ memberSites: [{ file: 'app2.js', fn: 'rogue', name: 'pieces', owner: 'app1.js', occ: 1 }], storageSites: [], idbSites: [] }).length === 1);
+  check('ban fixture: the owner file never violates', banViolations({ memberSites: [{ file: 'app1.js', fn: 'capture', name: 'pieces', owner: 'app1.js', occ: 1 }], storageSites: [], idbSites: [] }).length === 0);
+  check('ban fixture: a named exemption spares its site', banViolations({ memberSites: [], storageSites: [{ file: 'app3.js', fn: 'write', name: 'storage:LS.hist', owner: 'app1.js', occ: 1 }], idbSites: [] }).length === 0);
+  check('ban fixture: a foreign LS.hist write violates', banViolations({ memberSites: [], storageSites: [{ file: 'app4.js', fn: 'rogue', name: 'storage:LS.hist', owner: 'app1.js', occ: 1 }], idbSites: [] }).length === 1);
+}
+
 // ---------------- the tree census ----------------
 const treeSrcs = {};
 for (const f of UNIVERSE) treeSrcs[f] = fs.readFileSync(path.join(ROOT, 'parts', f), 'utf8');
@@ -916,6 +1047,12 @@ for (const [f, fn, nm] of MUST) check(`census contains adjudicated site ${f} ${f
   const boardWrites = tree.sites.filter(s => s.file === 'app5.js' && s.fn === 'unloadRouteToBoot' && BOARD6.includes(s.name));
   const histWrites = tree.sites.filter(s => s.file === 'app5.js' && s.fn === 'unloadRouteToBoot' && s.name === 'history');
   check('census: unloadRouteToBoot carries exactly the 4 non-board, non-history reset expressions, no board writes and no history write (Arch-2 + programme #2)', reset.length === 4 && RESET4.every(n => reset.some(s => s.name === n && s.occ === 1)) && boardWrites.length === 0 && histWrites.length === 0, reset);
+}
+
+{
+  const violations = banViolations(tree);
+  check(`write-ban holds on the tree (${tree.totals.member} member, ${tree.totals.storage} storage, ${tree.totals.idb} idb sites censused)`, violations.length === 0, violations);
+  for (const v of violations) console.log(`  BAN: ${v.kind} ${v.name} written in ${v.file} ${v.fn} (owner ${v.owner})`);
 }
 
 if (process.argv.includes('--write')) {
