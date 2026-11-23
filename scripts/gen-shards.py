@@ -35,8 +35,8 @@ Usage:
                                             proof against the runner is
                                             check-shard-coverage.py)
 """
+import importlib.util
 import json
-import re
 import statistics
 import sys
 from pathlib import Path
@@ -44,16 +44,20 @@ from pathlib import Path
 ROOT = Path(__file__).resolve().parent.parent
 SHARDS = 8  # test-suite restructure (2026-11-09): eight shards
 
+# The shared source-inspection layer (architecture #21): loaded by
+# path from beside this file, so a tree carrying this generator
+# carries its own layer with it (the gate fixtures copy both).
+_sq = importlib.util.spec_from_file_location(
+    "snow_source_query", Path(__file__).resolve().parent / "source_query.py")
+source_query = importlib.util.module_from_spec(_sq)
+_sq.loader.exec_module(source_query)
+
 
 def all_drives(root: Path = ROOT) -> list:
-    """The roster: every drive*.mjs file in tests/browser/ - the same
-    glob run.mjs computes its roster from (testing-efficiency rollout,
-    2026-11-23; the hand-kept ALL array this replaces is gone)."""
-    names = []
-    for p in (root / "tests" / "browser").glob("drive*.mjs"):
-        stem = p.name[:-4]
-        if re.fullmatch(r"drive\d+", stem):
-            names.append(stem)
+    """The roster: source_query.drive_roster() (the one statement of
+    the rule - the glob run.mjs computes its roster from, since the
+    testing-efficiency rollout), presented in numeric order."""
+    names = source_query.drive_roster(root / "tests" / "browser")
     return sorted(names, key=lambda n: int(n[5:]))
 
 
@@ -74,8 +78,9 @@ def partition(names: list, durations: dict) -> list:
 def current_lists(wf_text: str) -> list:
     # Kept for scripts/check-mirrors.py, whose shards family reads any
     # shard lists a tree still carries (a tree with none is skipped
-    # there). Since the rollout, checks.yml carries none.
-    return [s.split() for s in re.findall(r'drives:\s*"([^"]+)"', wf_text)]
+    # there). Since the rollout, checks.yml carries none. The
+    # extraction itself is source_query.workflow_shard_lists().
+    return source_query.workflow_shard_lists(wf_text)
 
 
 def main() -> int:

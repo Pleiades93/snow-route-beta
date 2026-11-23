@@ -17,7 +17,7 @@ argv[1] names another root and PROOF_TIMEOUT_S overrides the
 per-proof timeout (the verdict fixtures in scripts/gate-fixtures/
 use both against synthetic trees).
 """
-import json
+import importlib.util
 import os
 import subprocess
 import sys
@@ -26,9 +26,18 @@ from pathlib import Path
 ROOT = Path(sys.argv[1]).resolve() if len(sys.argv) > 1 else Path(__file__).resolve().parent.parent
 TIMEOUT_S = int(os.environ.get("PROOF_TIMEOUT_S", "180"))
 
-manifest = json.loads((ROOT / "tests" / "proof" / "manifest.json").read_text(encoding="utf-8"))
-retired = {e["file"] for e in manifest.get("retired", []) if isinstance(e, dict) and "file" in e}
-names = sorted(p.name for p in (ROOT / "tests" / "proof").glob("*.mjs") if p.name not in retired)
+# The proof roster is source_query's (architecture #21 - the one
+# statement of the rule): every proof file on disk except the
+# manifest's retired entries.
+_sq = importlib.util.spec_from_file_location(
+    "snow_source_query", Path(__file__).resolve().parent / "source_query.py")
+source_query = importlib.util.module_from_spec(_sq)
+_sq.loader.exec_module(source_query)
+
+PROOF_DIR = ROOT / "tests" / "proof"
+retired = {e["file"] for e in source_query.retired_proofs(PROOF_DIR)
+           if isinstance(e, dict) and "file" in e}
+names = [n for n in source_query.proof_files(PROOF_DIR) if n not in retired]
 if not names:
     print("FAIL: no proofs to run (the tests/proof glob is empty or everything is retired)")
     sys.exit(1)

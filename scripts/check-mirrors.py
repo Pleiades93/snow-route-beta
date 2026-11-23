@@ -81,6 +81,14 @@ import re
 import sys
 from pathlib import Path
 
+# The shared source-inspection layer (architecture #21), loaded by
+# path from beside this file, so the measuring instrument carries its
+# own layer (the gate fixtures copy it alongside this checker).
+_sq = importlib.util.spec_from_file_location(
+    "snow_source_query", Path(__file__).resolve().parent / "source_query.py")
+source_query = importlib.util.module_from_spec(_sq)
+_sq.loader.exec_module(source_query)
+
 
 # ------------------------------------------------------------ helpers
 
@@ -459,8 +467,11 @@ def family_shards(root):
     if wf is None:
         return None
     wf = active_yaml(wf)
-    actual_raw = re.findall(r'drives:\s*"([^"]+)"', wf)
-    if not actual_raw:
+    # The shard-list extraction is source_query.workflow_shard_lists()
+    # (architecture #21 - the one statement of the rule, shared with
+    # gen-shards.current_lists); this probe only asks whether the tree
+    # carries lists at all.
+    if not source_query.workflow_shard_lists(wf):
         return None
     problems = []
     run_src = read(root, "tests/browser/run.mjs")

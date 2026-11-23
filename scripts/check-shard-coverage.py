@@ -23,7 +23,6 @@ Exits 0 on PASS, 1 on any mismatch. Run from the repo root.
 """
 import importlib.util
 import json
-import re
 import subprocess
 import sys
 from pathlib import Path
@@ -31,12 +30,18 @@ from pathlib import Path
 ROOT = Path(__file__).resolve().parent.parent
 errors = []
 
-# The roster: the glob of drive files on disk.
-disk = sorted(p.stem for p in (ROOT / "tests" / "browser").glob("drive*.mjs")
-              if re.fullmatch(r"drive\d+", p.stem))
-# run.mjs computes its roster from the same glob (the hand-kept ALL array
-# is gone); the runner-agreement check below - its --list output against
-# this partition - is what proves the two globs name the same set.
+# The shared source-inspection layer (architecture #21), loaded by
+# path from beside this guard (the gate fixtures copy both).
+_sq = importlib.util.spec_from_file_location(
+    "snow_source_query", Path(__file__).resolve().parent / "source_query.py")
+source_query = importlib.util.module_from_spec(_sq)
+_sq.loader.exec_module(source_query)
+
+# The roster: source_query.drive_roster() (the one statement of the
+# rule). run.mjs computes its roster from the same glob (the hand-kept
+# ALL array is gone); the runner-agreement check below - its --list
+# output against this partition - is what proves the two agree.
+disk = source_query.drive_roster(ROOT / "tests" / "browser")
 
 # The durations file must name exactly the roster.
 durations = json.loads((ROOT / "scripts" / "shard-durations.json").read_text(encoding="utf-8"))["seconds"]
@@ -63,8 +68,7 @@ for i, want in enumerate(shards, 1):
 
 # The smoke list must name only real drives.
 wf = (ROOT / ".github" / "workflows" / "checks.yml").read_text(encoding="utf-8")
-smoke = re.findall(r"run:\s*node tests/browser/run\.mjs ((?:drive\d+ ?)+)\s*$", wf, re.M)
-smoke_names = smoke[0].split() if smoke else []
+smoke_names = source_query.workflow_smoke_drives(wf)
 for name in smoke_names:
     if name not in disk:
         errors.append(f"smoke drive {name} is not in the roster")

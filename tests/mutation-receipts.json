@@ -7980,6 +7980,86 @@
    "red": "PR #190 gate run 2 (run 45231113676, shard 3 job 137891499431, head d2650069): drive204 35/36 FAIL - 'settings-day: zero overlap with any control | OVERLAPS: stBtn 210x6'. Run 1 on the previous head passed drive204 36/36; the failure is the scene, not the toast rise.",
    "green": "This head: fire() additionally requires the measured scene (the pill's box + every visible control's box, via sceneSnap over measure()'s own selector list) identical across two samples 150 ms apart before measuring, else the settle check fails; syntax + build-pages --check PASS locally (README derivation unchanged, 36 checks); the drive-level green is this PR's next gate run (local Chrome launch is blocked on this rig - WebGL domain policy at harness start, before any test code)",
    "issued": "2026-11-23 testing-rollout gate-fix (PR #190)"
+  },
+  {
+   "id": "arch21-source-query-shard-coverage",
+   "check": "scripts/check-shard-coverage.py",
+   "kind": "mutation",
+   "files": {
+    "scripts/check-shard-coverage.py": "36ffc803779340fd60f0283305aa4682be7a207995fdccc9905ff7bc5354deb4",
+    "scripts/source_query.py": "bdd6f34ea357638e998ffc87455dcf1b8f8d75cc1196dcd34568022771125fd3",
+    "scripts/gen-shards.py": "020b2257244fb56fa8a18dc121e429a8a1ecd0d5a6b30fde036c6e59a6ecaf1d"
+   },
+   "mutation": "source_query.drive_files roster filter narrowed to drive numbers < 220, so drive220-222 fall out of the roster the guard partitions",
+   "red": "check-shard-coverage exit 1: 'shard-durations.json does not name exactly the roster (extra: [drive220, drive221, drive222])' plus runner disagreement on all 8 shards; gen-shards --check exit 1 with the same extra set",
+   "green": "Restored layer: 'shard coverage: PASS (100 drives across 8 shards, disjoint and complete; durations name exactly the roster; runner agrees shard for shard)' and gen-shards --check PASS",
+   "issued": "2026-11-23 machinery-ministack (arch #21)"
+  },
+  {
+   "id": "arch21-source-query-proof-coverage",
+   "check": "scripts/check-proof-coverage.py",
+   "kind": "mutation",
+   "files": {
+    "scripts/check-proof-coverage.py": "9486143a52a5534223047da221d8325ca3e15f16750793ba5fab291efb54dda9",
+    "scripts/source_query.py": "bdd6f34ea357638e998ffc87455dcf1b8f8d75cc1196dcd34568022771125fd3"
+   },
+   "mutation": "source_query.retired_proofs returns its first retired entry twice",
+   "red": "check-proof-coverage exit 1: 'FAIL: proof-rerun-css-batch.mjs is retired more than once in the manifest'",
+   "green": "Restored layer: 'proof coverage: PASS (83 gate-run, 6 retired, 89 files on disk - the roster is the disk glob, the retired list is honest)'",
+   "issued": "2026-11-23 machinery-ministack (arch #21)"
+  },
+  {
+   "id": "arch21-source-query-run-proofs",
+   "check": "scripts/run-proofs.py",
+   "kind": "mutation",
+   "files": {
+    "scripts/run-proofs.py": "843965347200e8c927cf41e0d49ac7dc398b2fb19ffb8fdc8aa010b2f867035c",
+    "scripts/source_query.py": "bdd6f34ea357638e998ffc87455dcf1b8f8d75cc1196dcd34568022771125fd3"
+   },
+   "mutation": "source_query.proof_files returns [] (the runner's roster is empty)",
+   "red": "run-proofs exit 1: 'FAIL: no proofs to run (the tests/proof glob is empty or everything is retired)'",
+   "green": "Restored layer: run-proofs 'proofs: 83/83 passed'",
+   "issued": "2026-11-23 machinery-ministack (arch #21)"
+  },
+  {
+   "id": "arch21-source-query-premise-lint",
+   "check": "scripts/premise-lint.py",
+   "kind": "mutation",
+   "files": {
+    "scripts/premise-lint.py": "476124b268dc0dfb8f8d2933ae44cee9811027fee9695d046eb094b1cb998fb7",
+    "scripts/source_query.py": "bdd6f34ea357638e998ffc87455dcf1b8f8d75cc1196dcd34568022771125fd3"
+   },
+   "mutation": "source_query.drive_files returns [] (the lint enumerates no drives, so no removed premise can be flagged)",
+   "red": "premise-lint fixtures: 8 failure(s) over 14 run(s), exit 1",
+   "green": "Restored layer: premise-lint fixtures: PASS (14 runs over 7 cases)",
+   "issued": "2026-11-23 machinery-ministack (arch #21)"
+  },
+  {
+   "id": "arch21-source-query-mirrors",
+   "check": "scripts/check-mirrors.py",
+   "kind": "mutation",
+   "files": {
+    "scripts/check-mirrors.py": "ba31bf8045d2e3ddf1b93423858f091e8ad691f796a7dd6a80e1f34631947c90",
+    "scripts/source_query.py": "bdd6f34ea357638e998ffc87455dcf1b8f8d75cc1196dcd34568022771125fd3"
+   },
+   "mutation": "source_query.workflow_shard_lists returns [] (the mirrors shards family sees no lists in any tree and skips)",
+   "red": "gate fixtures 70 pass / 2 fail: 'mirrors: shard lists hand-swapped away from the generated partition fail -> got exit 0, want 1' and 'mirrors: the tree's own generator outranks the checker's (prospective source) -> got exit 0, want 1'",
+   "green": "Restored layer: gate fixtures 72 pass, 0 fail; check-mirrors on the real tree 'mirror check: PASS (every hand-maintained mirror agrees with its source)'",
+   "issued": "2026-11-23 machinery-ministack (arch #21)"
+  },
+  {
+   "id": "arch21-gate-fixtures-layer-copies",
+   "check": "scripts/gate-fixtures/run-fixtures.py",
+   "kind": "mutation",
+   "files": {
+    "scripts/gate-fixtures/run-fixtures.py": "959010f01db24cbb6a31e81ff9bdbad82b4702214a46165cc41588b4cab2d515",
+    "scripts/check-shard-coverage.py": "36ffc803779340fd60f0283305aa4682be7a207995fdccc9905ff7bc5354deb4",
+    "scripts/source_query.py": "bdd6f34ea357638e998ffc87455dcf1b8f8d75cc1196dcd34568022771125fd3"
+   },
+   "mutation": "check-shard-coverage's runner-agreement arm neutered (the got != want content comparison dropped, exit status only)",
+   "red": "gate fixtures 71 pass / 1 fail: 'shard coverage: a runner partition disagreeing with the statement fails -> got exit 0, want 1'",
+   "green": "Restored guard: gate fixtures 72 pass, 0 fail",
+   "issued": "2026-11-23 machinery-ministack (arch #21)"
   }
  ]
 }

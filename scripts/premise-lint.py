@@ -49,11 +49,19 @@ from parts/ files; hits inside tests/browser/fixtures are ignored
 (fixtures are frozen data by design).
 """
 import difflib
+import importlib.util
 import re
 import sys
 from pathlib import Path
 
 ROOT = Path(__file__).resolve().parent.parent
+
+# The shared source-inspection layer (architecture #21), loaded by
+# path from beside this file.
+_sq = importlib.util.spec_from_file_location(
+    "snow_source_query", Path(__file__).resolve().parent / "source_query.py")
+source_query = importlib.util.module_from_spec(_sq)
+_sq.loader.exec_module(source_query)
 LITERAL = re.compile(r"""'([^'\n]{4,})'|"([^"\n]{4,})"|`([^`\n]{4,})`""")
 
 
@@ -285,7 +293,11 @@ def main() -> int:
         drives_root = Path(args[args.index("--drives-dir") + 1])
     else:
         drives_root = ROOT / "tests" / "browser"
-    drives = sorted(drives_root.glob("drive*.mjs"))
+    # The drive roster is source_query.drive_files() (architecture
+    # #21 - the one statement of the roster rule; this lint previously
+    # globbed drive*.mjs with no numeric filter, a second grammar of
+    # the same question).
+    drives = source_query.drive_files(drives_root)
     e2e = drives_root / "e2e-offline.mjs"
     if e2e.exists():
         drives = drives + [e2e]
