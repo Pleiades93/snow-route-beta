@@ -46,10 +46,15 @@ SHARDS = 8  # test-suite restructure (2026-11-09): eight shards
 
 
 def all_drives(root: Path = ROOT) -> list:
-    src = (root / "tests" / "browser" / "run.mjs").read_text(encoding="utf-8")
-    m = re.search(r"const ALL = \[([^\]]*)\]", src)
-    assert m, "gen-shards: run.mjs carries no ALL list"
-    return re.findall(r"'(drive\d+)'", m.group(1))
+    """The roster: every drive*.mjs file in tests/browser/ - the same
+    glob run.mjs computes its roster from (testing-efficiency rollout,
+    2026-11-23; the hand-kept ALL array this replaces is gone)."""
+    names = []
+    for p in (root / "tests" / "browser").glob("drive*.mjs"):
+        stem = p.name[:-4]
+        if re.fullmatch(r"drive\d+", stem):
+            names.append(stem)
+    return sorted(names, key=lambda n: int(n[5:]))
 
 
 def partition(names: list, durations: dict) -> list:

@@ -32,7 +32,16 @@ const HERE = path.dirname(fileURLToPath(import.meta.url));
 // 167 (->147), 179 (->178), 119 (->e2e-offline E24). Duplicate checks cut
 // only where a line-level proof showed an equal-or-stronger assertion in
 // the host; see the restructure record for the per-merge proofs.
-const ALL = ['drive83', 'drive86', 'drive88', 'drive89', 'drive114', 'drive115', 'drive116', 'drive117', 'drive118', 'drive120', 'drive121', 'drive123', 'drive124', 'drive125', 'drive126', 'drive127', 'drive128', 'drive129', 'drive130', 'drive131', 'drive132', 'drive133', 'drive135', 'drive136', 'drive140', 'drive141', 'drive142', 'drive143', 'drive145', 'drive146', 'drive147', 'drive148', 'drive149', 'drive150', 'drive151', 'drive152', 'drive153', 'drive154', 'drive155', 'drive156', 'drive159', 'drive160', 'drive161', 'drive162', 'drive163', 'drive164', 'drive165', 'drive166', 'drive168', 'drive169', 'drive170', 'drive171', 'drive172', 'drive173', 'drive174', 'drive175', 'drive176', 'drive177', 'drive178', 'drive180', 'drive181', 'drive182', 'drive183', 'drive184', 'drive185', 'drive186', 'drive187', 'drive188', 'drive189', 'drive190', 'drive191', 'drive192', 'drive193', 'drive194', 'drive195', 'drive196', 'drive197', 'drive198', 'drive199', 'drive200', 'drive203', 'drive204', 'drive205', 'drive206', 'drive207', 'drive208', 'drive209', 'drive210', 'drive211', 'drive212', 'drive213', 'drive214', 'drive215', 'drive216', 'drive217', 'drive218', 'drive219', 'drive220', 'drive221', 'drive222'];
+// Testing-efficiency rollout (2026-11-23): the roster is GENERATED from
+// the disk - every drive*.mjs file in this directory is in the battery,
+// so adding a drive is dropping in the file, never editing a list here
+// (the hand-kept ALL list this replaces drifted exactly the way the
+// generated shard lists did). check-shard-coverage.py proves this glob,
+// scripts/shard-durations.json and the partition all name the same set.
+const ALL = fs.readdirSync(HERE)
+  .filter(f => /^drive\d+\.mjs$/.test(f))
+  .map(f => f.slice(0, -4))
+  .sort((a, b) => Number(a.slice(5)) - Number(b.slice(5)));
 
 // Runtime shard balancing (testing-efficiency rollout, 2026-11-23): the
 // eight CI shards used to be hand-pasted drive lists in checks.yml,

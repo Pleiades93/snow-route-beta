@@ -4,13 +4,14 @@ testing-efficiency rollout, 2026-11-23).
 
 The browser drives run in parallel shards. Through Beta 1.281 the
 shard lists were pasted into checks.yml and this guard proved they
-partitioned the runner's ALL list exactly once. Since the rollout the
+partitioned the drive roster exactly once. Since the rollout the
 runner computes its share at runtime (tests/browser/run.mjs --shard N)
 from scripts/shard-durations.json, and this guard proves the runtime
 form cannot silently lose or double-run a drive:
 
   * the durations file names EXACTLY the drive roster (the glob of
-    tests/browser/drive*.mjs, which must also equal run.mjs's ALL);
+    tests/browser/drive*.mjs - run.mjs rosters itself from the same
+    glob, and the runner-agreement check below proves they agree);
   * the partition (scripts/gen-shards.py's statement of the rule)
     covers the roster exactly once - no drive in two shards, none
     missing;
@@ -30,29 +31,25 @@ from pathlib import Path
 ROOT = Path(__file__).resolve().parent.parent
 errors = []
 
-# The roster: the glob of drive files on disk, and run.mjs's ALL list.
-disk = sorted(p.stem for p in (ROOT / "tests" / "browser").glob("drive*.mjs"))
-run_src = (ROOT / "tests" / "browser" / "run.mjs").read_text(encoding="utf-8")
-m = re.search(r"const ALL = \[([^\]]*)\]", run_src)
-if not m:
-    print("FAIL: could not find const ALL in tests/browser/run.mjs")
-    sys.exit(1)
-ALL = re.findall(r"'(drive\d+)'", m.group(1))
-if sorted(ALL) != disk:
-    errors.append(f"run.mjs ALL != the drive files on disk (only in ALL: {sorted(set(ALL) - set(disk))}; only on disk: {sorted(set(disk) - set(ALL))})")
+# The roster: the glob of drive files on disk.
+disk = sorted(p.stem for p in (ROOT / "tests" / "browser").glob("drive*.mjs")
+              if re.fullmatch(r"drive\d+", p.stem))
+# run.mjs computes its roster from the same glob (the hand-kept ALL array
+# is gone); the runner-agreement check below - its --list output against
+# this partition - is what proves the two globs name the same set.
 
 # The durations file must name exactly the roster.
 durations = json.loads((ROOT / "scripts" / "shard-durations.json").read_text(encoding="utf-8"))["seconds"]
-if sorted(durations) != sorted(ALL):
-    errors.append(f"shard-durations.json does not name exactly the roster (missing: {sorted(set(ALL) - set(durations))}; extra: {sorted(set(durations) - set(ALL))})")
+if sorted(durations) != disk:
+    errors.append(f"shard-durations.json does not name exactly the roster (missing: {sorted(set(disk) - set(durations))}; extra: {sorted(set(durations) - set(disk))})")
 
 # The partition statement (gen-shards.py) must cover the roster exactly once.
 spec = importlib.util.spec_from_file_location("snow_gen_shards", ROOT / "scripts" / "gen-shards.py")
 gen = importlib.util.module_from_spec(spec)
 spec.loader.exec_module(gen)
-shards, totals, _ = gen.partition(ALL, durations)
+shards, totals, _ = gen.partition(disk, durations)
 flat = [n for s in shards for n in s]
-if sorted(flat) != sorted(ALL) or len(flat) != len(set(flat)):
+if sorted(flat) != disk or len(flat) != len(set(flat)):
     errors.append("the partition does not cover the roster exactly once")
 
 # The runner's runtime partition must agree, shard for shard.
@@ -69,12 +66,12 @@ wf = (ROOT / ".github" / "workflows" / "checks.yml").read_text(encoding="utf-8")
 smoke = re.findall(r"run:\s*node tests/browser/run\.mjs ((?:drive\d+ ?)+)\s*$", wf, re.M)
 smoke_names = smoke[0].split() if smoke else []
 for name in smoke_names:
-    if name not in ALL:
+    if name not in disk:
         errors.append(f"smoke drive {name} is not in the roster")
 
 if errors:
     for e in errors:
         print("FAIL:", e)
     sys.exit(1)
-print(f"shard coverage: PASS ({len(ALL)} drives across {len(shards)} shards, disjoint and complete; "
+print(f"shard coverage: PASS ({len(disk)} drives across {len(shards)} shards, disjoint and complete; "
       f"durations name exactly the roster; runner agrees shard for shard; smoke set {smoke_names})")

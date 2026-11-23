@@ -68,7 +68,6 @@ CHECK_PATTERNS = [
     "tests/browser/selftest-*.mjs",
     "tests/sw.test.mjs",
     "scripts/gate-fixtures/run-fixtures.py",
-    "scripts/select-tier-fixtures/run-fixtures.py",
     "scripts/premise-lint-fixtures/run-fixtures.py",
 ]
 
@@ -81,11 +80,9 @@ JUDGE_PATHS = {
     "scripts/check-census.py",
     "scripts/check-mirrors.py",
     "scripts/sweep-check.py",
-    "scripts/check-tier-map.py",
     "scripts/check-proof-coverage.py",
     "scripts/check-shard-coverage.py",
     "scripts/run-proofs.py",
-    "scripts/select-tier.py",
     "scripts/premise-lint.py",
 }
 

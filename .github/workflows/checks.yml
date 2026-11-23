@@ -32,8 +32,8 @@ name: checks
 # full battery on main is dispatched by Muse's 1 AM job - the
 # environment-drift audit a tree hash cannot see (runner/browser
 # changes). scripts/check-shard-coverage.py runs in build-and-test and
-# fails the build if the shard lists ever stop covering every drive in
-# run.mjs exactly once.
+# fails the build if the runtime shard partition ever stops covering
+# every drive on disk exactly once.
 # Protocol fix round (2026-11-17, Andrew approved): the plan job FAILS
 # any workflow_dispatch on a ref other than main (the skipped-check
 # hole through the dispatch door - see the plan job); Tier B selections
@@ -42,6 +42,16 @@ name: checks
 # per-proof steps - registering a proof no longer edits this file);
 # the tier-map and proof-coverage guards run in build-and-test; and
 # build-and-test proves parts/pmstyles.js regenerates byte-identical.
+# Testing-efficiency rollout (2026-11-23, Andrew's decision): THE TIERS
+# ARE RETIRED - the paragraphs above are the historical record of the
+# tiered era. Every pull request now runs the full battery; the plan job
+# only routes by event; scripts/select-tier.py, tests/tier-map.json,
+# tests/TIER-MAP.md and tests/quarantine.json are deleted, and the
+# tier-map guard with them (the roster-completeness claim it carried
+# lives on in scripts/check-shard-coverage.py). The FLAKE RULE stated
+# above STANDS unchanged. The proof roster is likewise generated:
+# scripts/run-proofs.py runs every proof on disk except the manifest's
+# retired-with-reason list.
 on:
   # Gate hardening (2026-11-12, Andrew approved): the push trigger is
   # scoped to main ONLY. A push to a pull-request branch used to fire a
@@ -59,11 +69,10 @@ on:
   pull_request:
   workflow_dispatch:
     inputs:
-      tier:
-        description: 'Gate tier: full (default) = Tier C battery + offline-e2e; A/B/C force a tier; auto decides from the diff vs main'
-        type: choice
-        options: [full, auto, A, B, C]
-        default: full
+      full:
+        description: 'Full battery (default) = every drive shard + offline-e2e; false = build checks only. (Replaces the retired tier input - tier selection was removed by the testing-efficiency rollout, 2026-11-23.)'
+        type: boolean
+        default: true
 permissions:
   contents: read # Beta 1.94 (audit F-08): the workflow only checks out and tests - it never needs write access to the repository
 concurrency:
@@ -73,62 +82,53 @@ concurrency:
   cancel-in-progress: true
 jobs:
   plan:
-    # Tier selection (test-suite restructure, 2026-11-09): diffs the change
-    # and applies the written map (tests/TIER-MAP.md) via
-    # scripts/select-tier.py. A default manual dispatch is Tier C (the
-    # nightly battery, dispatched on main); a push to main is Tier A (the
-    # browser-smoke job runs the core set); everything else is decided by
-    # the paths the change touches. Protocol fix round (2026-11-17): a
-    # workflow_dispatch on any ref other than main FAILS in this job by
-    # design - on a pull-request branch its fixed-name "tier drives"
-    # aggregator would be skipped, and GitHub counts a skipped required
-    # check as passing (the hole class closed for branch pushes on
-    # 2026-11-12, through the dispatch door). Failing here posts a red
-    # required check on that head instead of a skipped one.
+    # The plan (testing-efficiency rollout, 2026-11-23): there is NO tier
+    # selection anymore - Andrew's decision dropped the tiers, so every
+    # pull request runs the FULL battery (all drive shards + offline-e2e)
+    # and this job only routes by event: a push to main is covered by the
+    # browser-smoke job; a workflow_dispatch on main runs the full battery
+    # unless its `full` input is false (the nightly battery uses the
+    # default). scripts/select-tier.py, tests/tier-map.json and
+    # tests/TIER-MAP.md are deleted with the tiers. Protocol fix round
+    # (2026-11-17) rule KEPT: a workflow_dispatch on any ref other than
+    # main FAILS in this job by design - on a pull-request branch its
+    # fixed-name "tier drives" aggregator would be skipped, and GitHub
+    # counts a skipped required check as passing (the hole class closed
+    # for branch pushes on 2026-11-12, through the dispatch door).
+    # Failing here posts a red required check on that head instead.
     runs-on: ubuntu-latest
     timeout-minutes: 10
     outputs:
-      tier: ${{ steps.plan.outputs.tier }}
       drives: ${{ steps.plan.outputs.drives }}
       offline: ${{ steps.plan.outputs.offline }}
     steps:
-      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4
-        with:
-          fetch-depth: 0
-      - name: Plan (tier selection by the written map, tests/TIER-MAP.md)
+      - name: Plan (full battery on every PR - tier selection retired)
         id: plan
         env:
           EVENT: ${{ github.event_name }}
-          BEFORE: ${{ github.event.before }}
-          AFTER: ${{ github.sha }}
-          BASE: ${{ github.event.pull_request.base.sha }}
           REF: ${{ github.ref }}
-          FORCE: ${{ inputs.tier }}
+          FULL: ${{ inputs.full }}
         run: |
           if [ "$EVENT" = "workflow_dispatch" ] && [ "$REF" != "refs/heads/main" ]; then
             echo "::error::workflow_dispatch is only allowed on main (got $REF). A manual run on a pull-request branch posts a skipped 'tier drives' check on that head, and GitHub counts a skipped required check as passing - this job fails instead, so the run posts a red required check (protocol fix round, 2026-11-17)."
             exit 1
           fi
-          if [ -n "$FORCE" ] && [ "$FORCE" != "auto" ]; then
-            F="$FORCE"; [ "$F" = "full" ] && F="C"
-            python3 scripts/select-tier.py --files /dev/null --force "$F" --github-output
-          elif [ "$EVENT" = "push" ] && [ "$REF" = "refs/heads/main" ]; then
-            python3 scripts/select-tier.py --files /dev/null --force A --github-output
-          elif [ "$EVENT" = "pull_request" ]; then
-            git diff --name-only "$BASE...$AFTER" > /tmp/changed.txt
-            python3 scripts/select-tier.py --files /tmp/changed.txt --github-output
+          if [ "$EVENT" = "pull_request" ]; then
+            echo "drives=true" >> "$GITHUB_OUTPUT"
+            echo "offline=true" >> "$GITHUB_OUTPUT"
+          elif [ "$EVENT" = "workflow_dispatch" ] && [ "$FULL" = "false" ]; then
+            echo "drives=false" >> "$GITHUB_OUTPUT"
+            echo "offline=false" >> "$GITHUB_OUTPUT"
+          elif [ "$EVENT" = "workflow_dispatch" ]; then
+            echo "drives=true" >> "$GITHUB_OUTPUT"
+            echo "offline=true" >> "$GITHUB_OUTPUT"
           else
-            if [ -n "$BEFORE" ] && [ "$BEFORE" != "0000000000000000000000000000000000000000" ]; then
-              git diff --name-only "$BEFORE" "$AFTER" > /tmp/changed.txt
-            else
-              git fetch --no-tags origin main >/dev/null 2>&1 || true
-              git diff --name-only origin/main...HEAD > /tmp/changed.txt || git diff --name-only HEAD~1 > /tmp/changed.txt
-            fi
-            python3 scripts/select-tier.py --files /tmp/changed.txt --github-output
+            echo "drives=false" >> "$GITHUB_OUTPUT"
+            echo "offline=false" >> "$GITHUB_OUTPUT"
           fi
   build-and-test:
     # PREFLIGHT (testing-efficiency rollout, 2026-11-23): this job is the
-    # cheap-checks gate the drive jobs wait on (browser-tests, tier-drives,
+    # cheap-checks gate the drive jobs wait on (browser-tests,
     # browser-smoke and offline-e2e all `needs` it) - build check, coverage
     # guards, tsc, the selftests and the proofs run ONCE here instead of
     # racing the shards. It keeps the name build-and-test because branch
@@ -162,8 +162,6 @@ jobs:
           if-no-files-found: error
       - name: Shard coverage (every drive in exactly one shard)
         run: python3 scripts/check-shard-coverage.py
-      - name: Tier-map coverage (every roster entry runnable; tier-map.json and TIER-MAP.md in step)
-        run: python3 scripts/check-tier-map.py
       - name: Proof coverage (every proof gate-run or retired with a reason)
         run: python3 scripts/check-proof-coverage.py
       - name: Set up Node
@@ -236,9 +234,7 @@ jobs:
         run: node tests/browser/selftest-pr23-fixes.mjs
       - name: GPS package fixtures (Beta 1.187 gate)
         run: node tests/browser/selftest-gps-package.mjs
-      - name: Tier selector fixtures (PR #23 gate; Beta 1.185)
-        run: python3 scripts/select-tier-fixtures/run-fixtures.py
-      - name: Gate-script verdict fixtures (protocol fix round, 2026-11-17 - the tier-map guard, the proof-coverage guard and the proof runner prove both verdicts on synthetic trees)
+      - name: Gate-script verdict fixtures (protocol fix round, 2026-11-17 - the proof-coverage guard and the proof runner prove both verdicts on synthetic trees)
         run: python3 scripts/gate-fixtures/run-fixtures.py
       - name: Premise lint (advisory - drive premises this PR's app diff touches)
         if: github.event_name == 'pull_request'
@@ -248,12 +244,12 @@ jobs:
           git diff ${{ github.event.pull_request.base.sha }} -- parts/ > /tmp/pr-premise.diff
           python3 scripts/premise-lint.py --diff /tmp/pr-premise.diff
   browser-tests:
-    # Tier C: the full battery. Runs everywhere the plan selects Tier C
-    # EXCEPT a push to main (the smoke job takes that; a main push plans
-    # Tier A in any case). The nightly dispatch plans Tier C, so the
-    # nightly full battery on main is unchanged.
+    # The full battery (tier selection retired by the testing-efficiency
+    # rollout, 2026-11-23): runs wherever the plan flags drives - every
+    # pull request and a full workflow_dispatch. A push to main never
+    # flags drives (the smoke job takes that event).
     needs: [plan, build-and-test]
-    if: needs.plan.outputs.tier == 'C' && !(github.event_name == 'push' && github.ref == 'refs/heads/main')
+    if: needs.plan.outputs.drives == 'true' 
     name: browser-tests shard ${{ matrix.shard }}
     runs-on: ubuntu-latest
     timeout-minutes: 45
@@ -276,34 +272,14 @@ jobs:
         run: echo "CHROME_BIN=$(command -v google-chrome || command -v chromium || command -v chromium-browser)" >> "$GITHUB_ENV"
       - name: Browser tests (deterministic drives, shard ${{ matrix.shard }})
         run: node tests/browser/run.mjs --shard ${{ matrix.shard }}
-  tier-drives:
-    # Tier A (core set) and Tier B (the touched surface's family) gates on
-    # branches and PRs. A push to main is excluded: the browser-smoke job
-    # runs the same Tier A core set there.
-    needs: [plan, build-and-test]
-    if: (needs.plan.outputs.tier == 'A' || needs.plan.outputs.tier == 'B') && !(github.event_name == 'push' && github.ref == 'refs/heads/main')
-    name: tier drives (${{ needs.plan.outputs.tier }})
-    runs-on: ubuntu-latest
-    # 45 since Beta 1.268: the Tier B set (67 drives) outgrew the 30 cap -
-    # PR #164's first gate run passed 56/56 completed drives and was
-    # cancelled by the cap with 11 drives unrun.
-    timeout-minutes: 45
-    steps:
-      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4
-      - name: Set up Node
-        uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020 # v4
-        with:
-          node-version: '22'
-      - name: Locate Chrome
-        run: echo "CHROME_BIN=$(command -v google-chrome || command -v chromium || command -v chromium-browser)" >> "$GITHUB_ENV"
-      - name: Tier drives (${{ needs.plan.outputs.tier }} - ${{ needs.plan.outputs.drives }})
-        run: node tests/browser/run.mjs ${{ needs.plan.outputs.drives }}
   browser-smoke:
-    # Push to main (i.e. a merge landing): the Tier A core set only
-    # (tests/TIER-MAP.md) - drive180 mandatory; drive89 excluded while
-    # quarantined; drive123 and drive145 left the fast gate in the
-    # 2026-11-09 restructure. The branch gate already ran the tier the
-    # change required on the identical tree.
+    # Push to main (i.e. a merge landing): the smoke set only - the six
+    # drives named in the step below (drive180 mandatory; drive123 and
+    # drive145 left the fast gate in the 2026-11-09 restructure; the set
+    # was the Tier A core set until the tiers were retired by the
+    # testing-efficiency rollout, 2026-11-23, and check-shard-coverage.py
+    # proves every name is a real drive). The branch gate already ran the
+    # full battery on the identical tree.
     needs: build-and-test
     if: github.event_name == 'push' && github.ref == 'refs/heads/main'
     runs-on: ubuntu-latest
@@ -316,13 +292,14 @@ jobs:
           node-version: '22'
       - name: Locate Chrome
         run: echo "CHROME_BIN=$(command -v google-chrome || command -v chromium || command -v chromium-browser)" >> "$GITHUB_ENV"
-      - name: Browser smoke (Tier A core set)
+      - name: Browser smoke (the smoke set)
         run: node tests/browser/run.mjs drive131 drive160 drive161 drive168 drive174 drive180
   offline-e2e:
-    # Tier C and nightly only (test-suite restructure, 2026-11-09): the
-    # service-worker shell does not change on every ship - see the finding
-    # in tests/TIER-MAP.md. The plan job flags offline=true exactly for
-    # Tier C (which the nightly dispatch and a default dispatch select).
+    # Every pull request and the nightly dispatch (the plan flags
+    # offline=true for exactly those): since the tiers were retired
+    # (testing-efficiency rollout, 2026-11-23) the offline end-to-end
+    # runs with the full battery instead of only on deep-mechanics
+    # changes - the service-worker shell is part of what a PR can break.
     needs: [plan, build-and-test]
     if: needs.plan.outputs.offline == 'true'
     runs-on: ubuntu-latest
@@ -347,48 +324,46 @@ jobs:
     # drive gates. The tier job's own check name carries a variable tier
     # suffix ("tier drives (A)"), so branch protection cannot require it.
     # This job reports the drive-gate verdict under ONE fixed name -
-    # "tier drives" - on pull requests: it passes only when the drive gate
-    # that ran for the selected tier passed (tier-drives for Tier A/B, the
-    # browser-tests shards for Tier C), and fails when either drive job
-    # failed or was cancelled, or when neither ran (plan anomaly - fail
-    # closed). offline-e2e is in the aggregate on the same terms
-    # (retro-fixes round, 2026-11-14): when the plan flags offline (Tier C),
-    # its failure or cancellation fails this gate; when it is legitimately
-    # skipped (plan flag false, Tier A/B), its "skipped" result is ignored
-    # and the drive verdict decides - exactly how the not-selected drive
-    # job is treated. Fail-closed is preserved: offline-e2e can only be
-    # skipped when its plan-flag condition is false or the plan itself
-    # failed, and a failed plan skips both drive jobs too, so the
-    # neither-ran arm below still fails the gate. On push /
+    # "tier drives" - on pull requests. Since the tiers were retired
+    # (testing-efficiency rollout, 2026-11-23) the aggregate is simpler
+    # than the tiered form this comment used to describe: it passes only
+    # when the browser-tests shards passed, fails when they failed or
+    # were cancelled, and fails closed when they did not run (plan
+    # anomaly). offline-e2e is in the aggregate on the same terms
+    # (retro-fixes round, 2026-11-14): when the plan flags offline (every
+    # PR), its failure or cancellation fails this gate; when it is
+    # legitimately skipped (plan flag false), its "skipped" result is
+    # ignored and the drive verdict decides. Fail-closed is preserved:
+    # offline-e2e can only be skipped when its plan-flag condition is
+    # false or the plan itself failed, and a failed plan skips the drive
+    # job too, so the did-not-run arm below still fails the gate. On push /
     # workflow_dispatch events it is skipped by
     # condition, so main pushes (browser-smoke reports there) and the
     # nightly battery (shards report there) are completely untouched.
     name: tier drives
-    needs: [tier-drives, browser-tests, offline-e2e]
+    needs: [browser-tests, offline-e2e]
     if: always() && github.event_name == 'pull_request'
     runs-on: ubuntu-latest
     timeout-minutes: 5
     steps:
       - name: Aggregate drive-gate verdict
         env:
-          TIER_RESULT: ${{ needs.tier-drives.result }}
           SHARDS_RESULT: ${{ needs.browser-tests.result }}
           OFFLINE_RESULT: ${{ needs.offline-e2e.result }}
         run: |
-          echo "tier-drives result: ${TIER_RESULT}"
-          echo "browser-tests (Tier C shards) result: ${SHARDS_RESULT}"
+          echo "browser-tests (full-battery shards) result: ${SHARDS_RESULT}"
           echo "offline-e2e result: ${OFFLINE_RESULT}"
           if [ "${OFFLINE_RESULT}" = "failure" ] || [ "${OFFLINE_RESULT}" = "cancelled" ]; then
             echo "::error::The offline end-to-end gate failed or was cancelled."
             exit 1
           fi
-          if [ "${TIER_RESULT}" = "failure" ] || [ "${TIER_RESULT}" = "cancelled" ] || [ "${SHARDS_RESULT}" = "failure" ] || [ "${SHARDS_RESULT}" = "cancelled" ]; then
+          if [ "${SHARDS_RESULT}" = "failure" ] || [ "${SHARDS_RESULT}" = "cancelled" ]; then
             echo "::error::A drive gate failed or was cancelled."
             exit 1
           fi
-          if [ "${TIER_RESULT}" = "success" ] || [ "${SHARDS_RESULT}" = "success" ]; then
+          if [ "${SHARDS_RESULT}" = "success" ]; then
             echo "Drive gate passed."
             exit 0
           fi
-          echo "::error::Neither drive gate ran on this pull request - failing closed."
+          echo "::error::The drive gate did not run on this pull request - failing closed."
           exit 1

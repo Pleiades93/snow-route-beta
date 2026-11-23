@@ -83,11 +83,11 @@ inlines the exact bytes of `icon-512.png` there — the shipped page is
 unchanged, the source part is ~281 KB smaller and reviewable.
 
 CI (GitHub Actions) runs the build gate and the service-worker suite on
-every push; the browser battery runs sharded across eight jobs, at the
-tier the change classifies for (`tests/TIER-MAP.md`): the Tier A core set on
-`main` pushes, the touched families' drives (Tier B) or the full battery
-(Tier C) on branches, and the full battery nightly — dispatched by Muse's
-1 AM job, since checks.yml carries no schedule trigger. How changes are
+every push; the browser battery runs sharded across eight jobs: the
+smoke set on `main` pushes, the full battery on pull requests and
+nightly — dispatched by Muse's 1 AM job, since checks.yml carries no
+schedule trigger. (Tier selection was retired by the testing-efficiency
+rollout, 2026-11-23: every PR runs the full battery.) How changes are
 merged is in `DEVELOPMENT_RULES.md`; functional testing is in
 `docs/TESTING.md`; deployment is `docs/DEPLOYMENT.md`; architecture is
 `docs/ARCHITECTURE.md`; the storage layout is `docs/STORAGE-SCHEMA.md`.

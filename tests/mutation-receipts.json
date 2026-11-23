@@ -7812,6 +7812,95 @@
    "red": "Suite exit 1 with exactly: FAIL '1.221 uncached slow navigation awaits the network answer' (the fake clock makes the abandonment land inside the case's advance window)",
    "green": "Restored sw.js: suite exit 0, 45/45 PASS in 0.59s real time (was ~35s of real sleeps)",
    "issued": "2026-11-23 testing-rollout round, local run"
+  },
+  {
+   "id": "testing-rollout-run-proofs",
+   "check": "scripts/run-proofs.py",
+   "kind": "mutation",
+   "files": {
+    "scripts/run-proofs.py": "66688a0f1f0b7675530cf9a20d24b86b303266426c86df178ae845542cbb734d",
+    "scripts/gate-fixtures/run-fixtures.py": "9d04506f06c8351cf73446f9ecd36965e3945a59e6e3989ac8feb9ef0a66c871"
+   },
+   "mutation": "Testing-efficiency rollout commit 6 (generated lists + tier removal): run-proofs.py derives the run roster from the tests/proof glob minus the manifest retired list; the gate-fixtures prove a retired proof does not run, a nonzero proof fails the run and a timed-out proof fails the run",
+   "red": "Pre-change verdicts observed in this session (fixture failures on the old contract; mirrors judges-family FAIL during the transition)",
+   "green": "Gate fixtures 66/66 PASS, mirrors PASS, proof coverage PASS (83 gate-run from the glob), run-proofs 83/83",
+   "issued": "2026-11-23 testing-rollout round, local run"
+  },
+  {
+   "id": "testing-rollout-proof-coverage",
+   "check": "scripts/check-proof-coverage.py",
+   "kind": "mutation",
+   "files": {
+    "scripts/check-proof-coverage.py": "b8735ea442205c4442013931f006d96bed9f53ada0710e62507c789837dc4edc",
+    "scripts/gate-fixtures/run-fixtures.py": "9d04506f06c8351cf73446f9ecd36965e3945a59e6e3989ac8feb9ef0a66c871"
+   },
+   "mutation": "Testing-efficiency rollout commit 6 (generated lists + tier removal): check-proof-coverage.py guards the derived-roster contract; the gate-fixtures prove a leftover run list fails, a duplicated retirement fails, a reasonless retirement fails and a retirement naming a missing file fails",
+   "red": "Pre-change verdicts observed in this session (fixture failures on the old contract; mirrors judges-family FAIL during the transition)",
+   "green": "Gate fixtures 66/66 PASS, mirrors PASS, proof coverage PASS (83 gate-run from the glob), run-proofs 83/83",
+   "issued": "2026-11-23 testing-rollout round, local run"
+  },
+  {
+   "id": "testing-rollout-receipts-judges",
+   "check": "scripts/check-receipts.py",
+   "kind": "mutation",
+   "files": {
+    "scripts/check-receipts.py": "22cdc181d74a6323146afce7f18bc88250a05f7b5947a35f0dec5858d7423c2c",
+    "scripts/gate-fixtures/run-fixtures.py": "9d04506f06c8351cf73446f9ecd36965e3945a59e6e3989ac8feb9ef0a66c871"
+   },
+   "mutation": "Testing-efficiency rollout commit 6 (generated lists + tier removal): check-receipts.py JUDGE_PATHS and CHECK_PATTERNS no longer name the tier machinery deleted by this rollout (select-tier.py, check-tier-map.py, select-tier-fixtures); the mirrors judges family flagged the still-present check-tier-map.py as unlisted (observed FAIL) until its deletion restored agreement (PASS)",
+   "red": "Pre-change verdicts observed in this session (fixture failures on the old contract; mirrors judges-family FAIL during the transition)",
+   "green": "Gate fixtures 66/66 PASS, mirrors PASS, proof coverage PASS (83 gate-run from the glob), run-proofs 83/83",
+   "issued": "2026-11-23 testing-rollout round, local run"
+  },
+  {
+   "id": "testing-rollout-shard-coverage-glob",
+   "check": "scripts/check-shard-coverage.py",
+   "kind": "mutation",
+   "files": {
+    "scripts/check-shard-coverage.py": "e5ecfc2f020e593a3cbfe0b00e6d698cb4677dd7979e45f73ae6646e0295f067",
+    "scripts/shard-durations.json": "91ae87e704385874a6f11965b8a98326f3ab8f3c5da715df604711ac0d3df6d3",
+    "tests/browser/run.mjs": "e6ca9b1d347c052ad9441895140a43c18fa2026b27d3f874c9f060c993544989"
+   },
+   "mutation": "check-shard-coverage.py takes the roster from the drive-file glob (the hand-kept run.mjs ALL it used to parse is deleted); the runner-agreement check now carries the glob-vs-glob proof",
+   "red": "drive222.mjs moved out of the tree: guard FAIL 'shard-durations.json does not name exactly the roster (extra: drive222)', exit 1",
+   "green": "Restored: PASS (100 drives across 8 shards, disjoint and complete; runner agrees shard for shard); the before/after drive sets diffed IDENTICAL (100 names)",
+   "issued": "2026-11-23 testing-rollout round, local run"
+  },
+  {
+   "id": "testing-rollout-gate-fixtures-tiers",
+   "check": "scripts/gate-fixtures/run-fixtures.py",
+   "kind": "mutation",
+   "files": {
+    "scripts/gate-fixtures/run-fixtures.py": "9d04506f06c8351cf73446f9ecd36965e3945a59e6e3989ac8feb9ef0a66c871"
+   },
+   "mutation": "gate-fixtures: the tier-map section is deleted with its guard; the proof-coverage and run-proofs sections assert the derived-roster contract (leftover run list fails, duplicated/reasonless/ghost retirement fails, retired proof does not run); the mirrors fixture tree writes drive files instead of an ALL list",
+   "red": "First run on the new contract: 65 pass, 1 fail (mirrors consistent-tree case, still built on the deleted ALL list) - the fixture was the stale side",
+   "green": "Fixture tree fixed to write drive files: gate fixtures 66 pass, 0 fail",
+   "issued": "2026-11-23 testing-rollout round, local run"
+  },
+  {
+   "id": "testing-rollout-mirrors-doc",
+   "check": "scripts/check-mirrors.py",
+   "kind": "historical",
+   "files": {
+    "scripts/check-mirrors.py": "76d7447d5d56cbfabb036aef1987c69781e04031c54fdbca6ede8b9afb4e75e5"
+   },
+   "mutation": "Docstring only: the C4 roster instance's home is now described as the retired tier-map guard, its completeness claim living on in check-shard-coverage.py. No logic changed.",
+   "red": "n/a (comment-only change; the guard's verdicts are fixture-proven unchanged)",
+   "green": "Mirrors PASS on the rollout tree; gate fixtures 66/66 including every mirrors family case",
+   "issued": "2026-11-23 testing-rollout round, local run"
+  },
+  {
+   "id": "testing-rollout-pr23-comment",
+   "check": "tests/browser/selftest-pr23-fixes.mjs",
+   "kind": "historical",
+   "files": {
+    "tests/browser/selftest-pr23-fixes.mjs": "fe480a68c081d4ed59876182921626675c316858f38c82e9a69ec9d3acfb5607"
+   },
+   "mutation": "Comment only: the header's bug-5 line now records that the tier selector it pointed at was retired with the tiers (2026-11-23). No assertion or extraction changed.",
+   "red": "n/a (comment-only; the suite's discriminating cases are untouched)",
+   "green": "selftest-pr23-fixes runs green on the rollout tree (all bug 1-4 cases pass)",
+   "issued": "2026-11-23 testing-rollout round, local run"
   }
  ]
 }

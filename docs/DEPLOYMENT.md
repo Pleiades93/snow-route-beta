@@ -40,12 +40,11 @@ at the root, and runs the parity and integrity checks. Never hand-edit
    never typed by hand; `build-pages.py` asserts the same derivation, so
    skipping this step fails the build), and prints the release checklist
    separating the generated steps from the editorial ones.
-3. Run the build and the gate for the change's tier (`docs/TESTING.md`,
-   operative table `tests/TIER-MAP.md`) locally — the full battery only for
-   Tier C changes.
+3. Run the build and the gate (`docs/TESTING.md`) locally — since the
+   testing-efficiency rollout (2026-11-23) every pull request runs the
+   full battery; there are no tiers.
 4. Push the branch. CI runs the build gate, the service-worker suite, and
-   the tier the plan job selects for the change: the Tier A core set, the
-   Tier B touched-family drives, or (Tier C) the full sharded browser
+   the full sharded browser
    battery and the offline end-to-end suite.
 5. Merge to `main` only under the merge gate in `DEVELOPMENT_RULES.md`:
    the merged tree is proven identical to the tested branch tree, and
