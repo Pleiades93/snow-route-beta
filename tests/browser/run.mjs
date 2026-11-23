@@ -148,7 +148,16 @@ function parseResults(out) {
 
 let allPass = true;
 for (const name of names) {
+  const driveT0 = performance.now();
   const r = await runOne(name);
+  // Machinery tidy (2026-11-23): one machine-readable timing line per
+  // drive, printed on EVERY outcome path (pass, fail, no result block,
+  // timeout) - CI job logs timestamp every line, so these lines are the
+  // raw material for refreshing scripts/shard-durations.json from real
+  // runs instead of the 2026-11-09 measurement the balancer carried
+  // (38 of its 100 entries were median placeholders). The line is
+  // pinned by tests/browser/selftest-runner.mjs.
+  console.log(`DRIVE_TIME ${name} ${((performance.now() - driveT0) / 1000).toFixed(1)}`);
   // Testing-efficiency rollout (2026-11-23): surface the harness's fetch
   // failures in the run log even when the drive itself passes - before this
   // they died in the child's stderr, which is only printed on failure paths.

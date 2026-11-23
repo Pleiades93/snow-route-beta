@@ -8128,6 +8128,19 @@
    "red": "proof-paint-model FAIL 5c+5d (15 passed, 2 failed), observed twice 2026-11-23 on the post-#13 tree",
    "green": "proof-paint-model 17 passed, 0 failed on the reverted tree",
    "issued": "2026-11-23 section2-arch13-refresh"
+  },
+  {
+   "id": "machinery-tidy-drive-time",
+   "check": "tests/browser/selftest-runner.mjs",
+   "kind": "mutation",
+   "files": {
+    "tests/browser/selftest-runner.mjs": "9c7465c7c68b51c4c78a35c2b55aa659224ddc9bb8efc516ebb0f5e091db640f",
+    "tests/browser/run.mjs": "e160bc87e45a78d2f4ef2a2334a534613ed5c1098de31dc4d058c7ae00b37df1"
+   },
+   "mutation": "tests/browser/run.mjs with the DRIVE_TIME print removed (the pre-change runner at base d95feadf): the runner emits no timing lines",
+   "red": "selftest-runner against the unmodified runner: 11 FAIL, every one a DRIVE_TIME assertion (10 per-fixture 'exactly one DRIVE_TIME line' + the combined-run count); all 26 pre-existing verdict checks PASS - RUNNER SELF-TEST: FAIL (11)",
+   "green": "selftest-runner with the DRIVE_TIME print in run.mjs: 37 PASS, 0 FAIL - RUNNER SELF-TEST: PASS",
+   "issued": "2026-11-23"
   }
  ]
 }

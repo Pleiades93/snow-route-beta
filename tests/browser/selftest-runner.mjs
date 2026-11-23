@@ -34,6 +34,13 @@
 //                    fixtures above.
 // Fixtures are deleted afterwards, pass or fail. No browser is needed:
 // the fixtures only print the JSON block the runner parses.
+//
+// Machinery tidy (2026-11-23): the runner also prints one machine-
+// readable DRIVE_TIME line per drive (its elapsed seconds), on every
+// outcome path - CI job logs timestamp every line, so those lines are
+// the raw material for refreshing scripts/shard-durations.json from
+// real runs. The per-fixture loop below pins exactly one well-formed
+// DRIVE_TIME line per run, and the combined run pins the count.
 import { spawnSync } from 'node:child_process';
 import fs from 'node:fs';
 import path from 'node:path';
@@ -77,6 +84,8 @@ try {
     const wantPass = !!EXPECT_PASS[name];
     check(`${name}: runner exit ${wantPass ? 0 : 1}`, (r.status === 0) === wantPass);
     check(`${name}: runner printed a verdict`, new RegExp(name + ':.*(PASS|FAIL)').test(r.stdout || ''));
+    const timeLines = (r.stdout || '').match(new RegExp(`^DRIVE_TIME ${name} \\d+\\.\\d$`, 'gm')) || [];
+    check(`${name}: runner printed exactly one DRIVE_TIME line`, timeLines.length === 1);
     if (name === 'fixture-hang') check('fixture-hang: killed promptly by the runner timeout', elapsed < 30000);
     if (name === 'fixture-fatal') check('fixture-fatal: the recorded fatal is printed in the drive summary', /FATAL: fixture mid-scenario boom/.test(r.stdout || ''));
   }
@@ -114,6 +123,7 @@ try {
   const all = spawnSync(process.execPath, [path.join(HERE, 'run.mjs'), ...Object.keys(FIXTURES)], { cwd: HERE, env: { ...process.env, RUNNER_TIMEOUT_MS: '2500' }, encoding: 'utf8', timeout: 120000 });
   check('combined run: exit 1 when any drive fails', all.status === 1);
   check('combined run: summary line reports FAIL', /BROWSER TESTS: FAIL/.test(all.stdout || ''));
+  check('combined run: one DRIVE_TIME line per drive', ((all.stdout || '').match(/^DRIVE_TIME /gm) || []).length === Object.keys(FIXTURES).length);
 } finally {
   for (const name of Object.keys(FIXTURES)) {
     try { fs.unlinkSync(path.join(HERE, name + '.mjs')); } catch {}
