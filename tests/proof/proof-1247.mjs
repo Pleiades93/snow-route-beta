@@ -58,8 +58,8 @@ check('6: the create text boxes keep their white pills',
 check('7: the CHANGELOG top entry is Beta 1.247',
   changelog.indexOf('## Beta 1.247') > -1 && changelog.indexOf('## Beta 1.247') < changelog.indexOf('## Beta 1.246'));
 check('8: What\'s New carries the CURRENT entry\'s bullet (rolled to 1.251: this check tracks the current entry each round), within the 108-char cap, em-dash free',
-  whatsnew.includes('The route dropdown now grows out of its pill, same width and colour, and tucks away a little quicker.') &&
-  'The route dropdown now grows out of its pill, same width and colour, and tucks away a little quicker.'.length <= 108 &&
+  whatsnew.includes('Under the hood: marking a side or a whole street now runs through one place, the same everywhere.') &&
+  'Under the hood: marking a side or a whole street now runs through one place, the same everywhere.'.length <= 108 &&
   !whatsnew.includes('—'));
 
 console.log(`proof-1247: ${pass} passed, ${fail} failed`);

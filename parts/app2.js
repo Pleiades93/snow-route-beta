@@ -605,16 +605,10 @@ let saveWarned = false; // Beta 1.101 (Phase 3 / C2): the storage-warning episod
 function saveAllWarned() { const r = saveAll(); if (!r.ok) { if (!saveWarned) { saveWarned = true; toast('Storage is not saving (' + r.failedKey + ') - export a recovery backup now', 4200); } } else saveWarned = false; return r; } // the non-transactional save path: saveAll plus the episode warning. The finish transaction calls saveAll directly and does its own gated messaging.
 function finishChange() { if (window.GLP) window.GLP.sync(); renderPanel(); updateCount(); renderStreets(); const r = saveAllWarned(); syncWake(); return r; } // Beta 1.63 (audit F04): callers that announce an outcome branch on the save result - since Beta 1.101 (Phase 3) that result is the storage-outcome object
 function finishChangeMarked() { const wb = saveWarned; const r = finishChange(); if (!r.ok && wb) toast('Not saved - storage problem', 3200); return r; } // Beta 1.97 (audit loop CG-196-05): the marking callers' half of the save-honesty contract - when the save fails, NO outcome toast may replace the storage warning; saveAll raises that warning once per episode (saveWarned), so when it was already raised before this call, the caller still owes a plain 'not saved' rather than silence
-function applyPiece(name, idx, side, on) { // the piece mutation with NO rendering - returns the street name if this change completed it
-  const bit = side ? 2 : 1; const was = pieces[name][idx];
-  const now = on ? (was | bit) : (was & ~bit);
-  if (now === was) return null;
-  pieces[name][idx] = now;
-  if (!pieceTimes[name][idx]) pieceTimes[name][idx] = [null, null];
-  pieceTimes[name][idx][side] = on ? new Date().toISOString() : null;
-  if (streetComplete(name) && !doneSet.has(name)) { doneSet.add(name); doneTimes[name] = new Date().toISOString(); doneVia[name] = 'sides'; onStreetComplete(name); return name; } // Beta 1.111: applyPiece is the piece-marking funnel - this branch is the exact false-to-true completion flip, so the Done-chime / vibration feedback (app4, fully guarded, can never throw into marking) fires here and in markDone, the only two places a street becomes complete
-  if (!streetComplete(name) && doneSet.has(name)) { doneSet.delete(name); delete doneTimes[name]; delete doneVia[name]; }
-  return null;
+function applyPiece(name, idx, side, on) { // Beta 1.274 (programme #1): the piece mutation lives in BOARD.setSide now - this wrapper keeps the global the callers and drives use, fires the completion feedback the operation reports, and returns the street name if this change completed it, exactly as before. Beta 1.111: the feedback (app4, fully guarded, can never throw into marking) fires on the exact false-to-true flip, here and in markDone - the only two places a street becomes complete.
+  const t = BOARD.setSide(name, idx, side, on);
+  if (t.completed) onStreetComplete(t.completed);
+  return t.completed;
 }
 function togglePiece(name, idx, side) {
   const bit = side ? 2 : 1;
@@ -630,20 +624,13 @@ function togglePieceGroup(side) { // one chip, whole selection: a side not done 
 }
 $('selAllBtn').addEventListener('click', () => { if (!tapGuard('selAll')) return; for (const en of selSet) for (const side of [0, 1]) { applyPiece(en.name, en.idx, side, true); } showChips(); finishChangeMarked(); }); // Beta 1.146 (census C3): the outcome is the 1.101 storage-outcome OBJECT - {ok:false} is truthy, so the old bare test fired the success toasts beside the storage warning; every sibling marking caller (okTp/okTg/okMd/okMu) already branches on .ok
 $('selClearBtn').addEventListener('click', () => { if (!tapGuard('selClear')) return; deselect(); });
-function markDone(name, via, at) { // production contract: whole street done; sides already marked keep their real times, the rest inherit the completion moment
-  const wasComplete111 = streetComplete(name); // Beta 1.111: whole-street marking bypasses applyPiece - the completion feedback fires only on a real false-to-true flip here too
-  pieces[name] = STRETCH[name].parts.map(() => 3);
-  const mts = at || new Date().toISOString();
-  const cur = (pieceTimes[name] && typeof pieceTimes[name] === 'object') ? pieceTimes[name] : {};
-  pieceTimes[name] = STRETCH[name].parts.map((_, i) => { const pr = Array.isArray(cur[i]) ? cur[i] : [null, null]; return [pr[0] || mts, pr[1] || mts]; });
-  doneSet.add(name); doneTimes[name] = mts; doneVia[name] = via || 'tap';
-  if (!wasComplete111) onStreetComplete(name); // Beta 1.111: see applyPiece
+function markDone(name, via, at) { // Beta 1.274 (programme #1): the mutation is BOARD.completeStreet (production contract unchanged: whole street done; sides already marked keep their real times, the rest inherit the completion moment); the feedback and the finish stay here, in the old order
+  const t = BOARD.completeStreet(name, via, at);
+  if (t.flipped) onStreetComplete(name); // Beta 1.111: whole-street marking bypasses applyPiece - the completion feedback fires only on a real false-to-true flip here too
   finishChangeMarked(); // Beta 1.94 (audit F-01): the total derives from the route's street list
 }
-function markUndone(name) {
-  pieces[name] = STRETCH[name].parts.map(() => 0);
-  pieceTimes[name] = STRETCH[name].parts.map(() => [null, null]);
-  doneSet.delete(name); delete doneTimes[name]; delete doneVia[name];
+function markUndone(name) { // Beta 1.274: the mutation is BOARD.clearStreet; the finish stays here
+  BOARD.clearStreet(name);
   finishChangeMarked();
 }
 function markStreet(name, done) { if (done) markDone(name, 'tap'); else markUndone(name); showChips(); }

@@ -644,6 +644,31 @@ const BOARD = {
     for (const n of STREETNAMES) { p[n] = STRETCH[n].parts.map(() => 0); t[n] = {}; }
     return { p, t };
   },
+  /** @param {string} name @param {number} idx @param {number} side @param {boolean} on @returns {{completed: (string|null), uncompleted: boolean}} */ setSide(name, idx, side, on) { // Beta 1.274 (programme #1): applyPiece's mutation under the module's roof - the piece write with NO rendering and NO feedback; the completion flip and the un-completion are REPORTED and the caller fires the feedback, so the observable order is the old one exactly
+    const bit = side ? 2 : 1; const was = pieces[name][idx];
+    const now = on ? (was | bit) : (was & ~bit);
+    if (now === was) return { completed: null, uncompleted: false };
+    pieces[name][idx] = now;
+    if (!pieceTimes[name][idx]) pieceTimes[name][idx] = [null, null];
+    pieceTimes[name][idx][side] = on ? new Date().toISOString() : null;
+    if (streetComplete(name) && !doneSet.has(name)) { doneSet.add(name); doneTimes[name] = new Date().toISOString(); doneVia[name] = 'sides'; return { completed: name, uncompleted: false }; } // Beta 1.111: the exact false-to-true completion flip - the wrapper fires onStreetComplete on this report
+    if (!streetComplete(name) && doneSet.has(name)) { doneSet.delete(name); delete doneTimes[name]; delete doneVia[name]; return { completed: null, uncompleted: true }; }
+    return { completed: null, uncompleted: false };
+  },
+  /** @param {string} name @param {string} via @param {string} at @returns {{flipped: boolean}} */ completeStreet(name, via, at) { // Beta 1.274 (programme #1): markDone's mutation - whole street done; sides already marked keep their real times, the rest inherit the completion moment. NO feedback, NO finish: the caller fires both, in the old order.
+    const wasComplete = streetComplete(name); // Beta 1.111: the feedback fires only on a real false-to-true flip, which this reports
+    pieces[name] = STRETCH[name].parts.map(() => 3);
+    const mts = at || new Date().toISOString();
+    const cur = (pieceTimes[name] && typeof pieceTimes[name] === 'object') ? pieceTimes[name] : {};
+    pieceTimes[name] = STRETCH[name].parts.map((_, i) => { const pr = Array.isArray(cur[i]) ? cur[i] : [null, null]; return [pr[0] || mts, pr[1] || mts]; });
+    doneSet.add(name); doneTimes[name] = mts; doneVia[name] = via || 'tap';
+    return { flipped: !wasComplete };
+  },
+  /** @param {string} name @returns {void} */ clearStreet(name) { // Beta 1.274 (programme #1): markUndone's mutation - the street zeroed whole, its completion record dropped
+    pieces[name] = STRETCH[name].parts.map(() => 0);
+    pieceTimes[name] = STRETCH[name].parts.map(() => [null, null]);
+    doneSet.delete(name); delete doneTimes[name]; delete doneVia[name];
+  },
   /** @returns {void} */ loadDoneMeta() { // loadRouteState segment 1 (repair): the stored done set and its times/via, per-field sanitized
     const _doneRaw = parseJ(lsGet(LS.done), []);
     doneSet = new Set(Array.isArray(_doneRaw) ? _doneRaw.filter(n => typeof n === 'string' && STREETSET.has(n)) : []); // audit D2: a non-array value (legacy object, number) made new Set() throw and killed the boot; loadSides re-derives this from pieces below regardless

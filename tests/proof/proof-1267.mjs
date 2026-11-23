@@ -99,7 +99,7 @@ check('4b: the old strings are gone from parts/',
 
 // ---------- editorial ----------
 check('5: What\'s New carries the round\'s headline bullet (dead ends feather) and no em dash',
-  whatsnew.includes('The route dropdown now grows out of its pill, same width and colour, and tucks away a little quicker.') && !whatsnew.includes('—'));
+  whatsnew.includes('Under the hood: marking a side or a whole street now runs through one place, the same everywhere.') && !whatsnew.includes('—'));
 
 console.log('proof-1267: ' + pass + ' pass, ' + fail + ' fail');
 process.exit(fail ? 1 : 0);
