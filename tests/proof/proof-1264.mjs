@@ -23,7 +23,16 @@
 // The rendered behaviour is graded by drive217. Fail-first baseline:
 // on the Beta 1.263 tree checks 2 and 3 fail (the nine feather ids are
 // derived from addStack and absent from CR_ROUTE_LAYERS).
+// Beta 1.282 (architecture #13) re-shape, claim unchanged: the hide list
+// and the stack must still agree exactly in both directions - but the
+// list is no longer a literal in create-pick.js; it IS the engine's
+// LAYERS catalogue (CR_ROUTE_LAYERS = GLP.layers.stack). This proof now
+// evaluates the catalogue out of engine.js, grades it against the
+// addStack derivation, and pins create-pick's seat on the catalogue
+// (check 5). The drift class this guards is the same one, one level up:
+// a stack layer missing from the catalogue leaks exactly as before.
 import { readFileSync } from 'node:fs';
+import vm from 'node:vm';
 
 const root = new URL('../../', import.meta.url);
 const read = (p) => readFileSync(new URL(p, root), 'utf8');
@@ -45,34 +54,28 @@ for (const m of stackBody.matchAll(/add\(\{ id: '([^']+)'/g)) stack.add(m[1]);
 const tierLoop = stackBody.match(/for \(let t = 1; t <= (\d+); t\+\+\) \{\s*const id = 'streetnamespt' \+ t;/);
 if (tierLoop) for (let t = 1; t <= Number(tierLoop[1]); t++) stack.add('streetnamespt' + t);
 
-// ---------- read CR_ROUTE_LAYERS (base array + its concat expansions) ----------
-const listStart = createPick.indexOf('const CR_ROUTE_LAYERS =');
-const listLine2 = listStart > -1 ? createPick.indexOf('\n', createPick.indexOf('\n', listStart) + 1) : -1;
-const listStmt = listStart > -1 && listLine2 > listStart ? createPick.slice(listStart, listLine2) : ''; // the statement is exactly two lines (the base array, then the concat line)
-const list = new Set();
-const baseArr = listStmt.match(/\[([^\]]*)\]\s*\/\/ Beta 1\.207/);
-if (baseArr) for (const m of baseArr[1].matchAll(/'([^']+)'/g)) list.add(m[1]);
-for (const m of listStmt.matchAll(/\[([\d, ]+)\]\.map\(t => '([^']+)' \+ t\)/g)) {
-  for (const n of m[1].split(',').map(x => x.trim()).filter(Boolean)) list.add(m[2] + n);
-}
-for (const m of listStmt.matchAll(/\[([\d, ]+)\]\.flatMap\(i => \['([^']+)' \+ i \+ '-s', '([^']+)' \+ i \+ '-b'\]\)/g)) {
-  for (const n of m[1].split(',').map(x => x.trim()).filter(Boolean)) { list.add(m[2] + n + '-s'); list.add(m[3] + n + '-b'); }
-}
+// ---------- read the hide list: the engine catalogue's stack (Beta 1.282) ----------
+const catStart = engine.indexOf('const LAYERS = {');
+const catEndMark = 'LAYERS.stack = [...LAYERS.paint, ...LAYERS.poi, ...LAYERS.titles, ...LAYERS.glow];';
+const catEnd = catStart > -1 ? engine.indexOf(catEndMark, catStart) : -1;
+const catSrc = catStart > -1 && catEnd > catStart ? engine.slice(catStart, catEnd + catEndMark.length) : '';
+const LAYERS = catSrc ? vm.runInNewContext(catSrc + '\nLAYERS;') : null;
+const list = new Set(LAYERS ? LAYERS.stack : []);
 
 const FADES = ['fade-casing', 'fade-surf-y', 'fade-surf-r', 'fade-band-g', 'fade-fill-g', 'selfade-y', 'selfade-r', 'selfade-g', 'selfade-fill'];
 const EXCLUSIONS = []; // route-stack layers that stay visible in create mode, each with its reason - none today (see header)
 
 // ---------- (1) the derivation is real, not an empty extraction ----------
-check('1: the derivation reads the stack (35+ layer ids from addStack, the streetnamespt tier loop among them) and the list (35+ ids) - a silently empty extraction fails here, not downstream',
+check('1: the derivation reads the stack (35+ layer ids from addStack, the streetnamespt tier loop among them) and the catalogue (35+ ids in its stack) - a silently empty extraction fails here, not downstream',
   stack.size >= 35 && list.size >= 35 && stack.has('streetnamespt1') && stack.has('streetnamespt4') && list.has('sel-glow5-b'));
 
 // ---------- (2) stack ⊆ list: nothing the engine stacks escapes the backdrop ----------
 const unhidden = [...stack].filter(id => !list.has(id) && !EXCLUSIONS.includes(id));
-check('2: every route-stack layer addStack builds is named in CR_ROUTE_LAYERS (or in this proof\'s named EXCLUSIONS) - the leak class | unhidden: ' + JSON.stringify(unhidden),
+check('2: every route-stack layer addStack builds is named in the catalogue stack CR_ROUTE_LAYERS reads (or in this proof\'s named EXCLUSIONS) - the leak class | unhidden: ' + JSON.stringify(unhidden),
   unhidden.length === 0);
 
 // ---------- (3) the nine feather ids, named ----------
-check('3: all nine Beta 1.259 feather layers are derived from addStack AND named in CR_ROUTE_LAYERS (the 1.264 fix itself)',
+check('3: all nine Beta 1.259 feather layers are derived from addStack AND named in the catalogue stack (the 1.264 fix itself)',
   FADES.every(id => stack.has(id)) && FADES.every(id => list.has(id)));
 
 // ---------- (4) list ⊆ stack: no stale entries ----------
@@ -81,8 +84,8 @@ check('4: every CR_ROUTE_LAYERS member is a layer addStack actually builds - no 
   stale.length === 0);
 
 // ---------- (5) the list is the backdrop's working list ----------
-check('5: crSetBackdrop records and hides by iterating CR_ROUTE_LAYERS (the list this proof reads is the list the backdrop uses)',
-  createPick.includes('for (const id of CR_ROUTE_LAYERS)') && createPick.includes("map.setLayoutProperty(pair[0], 'visibility', 'none')"));
+check('5: crSetBackdrop records and hides by iterating CR_ROUTE_LAYERS, and CR_ROUTE_LAYERS IS the catalogue stack this proof reads (GLP.layers.stack - the list this proof reads is the list the backdrop uses)',
+  createPick.includes('const CR_ROUTE_LAYERS = GLP.layers.stack;') && createPick.includes('for (const id of CR_ROUTE_LAYERS)') && createPick.includes("map.setLayoutProperty(pair[0], 'visibility', 'none')"));
 
 // ---------- (6) the release editorial ----------
 check("6: the CHANGELOG orders Beta 1.266 above 1.265",

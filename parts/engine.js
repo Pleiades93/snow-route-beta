@@ -1863,6 +1863,28 @@ function tunePlaceLabels() {
     if (L.minzoom !== minZ || (L.maxzoom === undefined ? 24 : L.maxzoom) !== 15.5) GLM.setLayerZoomRange(L.id, minZ, 15.5); // Beta 1.41: no-op guard (see glUnifyLabels) - skip when the range already matches
   }
 }
+// ---- Beta 1.282 (architecture programme #13): the engine's LAYER CATALOGUE.
+// Through 1.281 the engine's layer ids were re-listed by hand at every
+// consumer: the zoom-range line in addStack spelled the twenty paint ids
+// and rebuilt the ten glow ids, rePlaceTitles rebuilt the four title ids,
+// setFont and syncTheme each spelled the five text ids, app2's
+// nameLayerIds and app5's title guard each spelled the four titles again,
+// and create mode's CR_ROUTE_LAYERS re-listed all thirty-seven. LAYERS is
+// the one catalogue: the groups are written once, here, in stack order,
+// and the two derived lists (text = the layers that carry text; stack =
+// every route layer in stack order, create mode's hide list) are computed
+// from the groups. Every consumer reads the catalogue - in this file
+// directly, the other parts through GLP.layers. The title and glow groups
+// keep the exact expressions that always built them, so the ids are the
+// historical ones by construction.
+const LAYERS = {
+  paint: ['t1-casing', 't1-casingb', 't1-surface', 't1-band', 't1-fill', 'fade-casing', 'fade-surf-y', 'fade-surf-r', 'fade-band-g', 'fade-fill-g', 't1-sel', 't1-selband', 't1-selfill', 'selfade-y', 'selfade-r', 'selfade-g', 'selfade-fill', 'sel-core-s', 'sel-core-b', 'hit'],
+  poi: ['routepoi-ring', 'routepoi-dot', 'routepoi-txt'],
+  titles: [1, 2, 3, 4].map(t => 'streetnamespt' + t),
+  glow: [1, 2, 3, 4, 5].flatMap(i => ['sel-glow' + i + '-s', 'sel-glow' + i + '-b']),
+};
+LAYERS.text = [...LAYERS.titles, 'routepoi-txt'];
+LAYERS.stack = [...LAYERS.paint, ...LAYERS.poi, ...LAYERS.titles, ...LAYERS.glow];
 function addStack() {
   tunePlaceLabels();
   if (!GLM.getSource('centres')) {
@@ -1994,7 +2016,7 @@ function addStack() {
   add({ id: 'routepoi-ring', type: 'circle', source: 'routepoi', maxzoom: 13.3, paint: { 'circle-radius': ['interpolate', ['linear'], ['zoom'], 10, 7, 13.5, 9], 'circle-color': '#ffffff', 'circle-opacity': ['step', ['zoom'], 1, 12.6, 0], 'circle-opacity-transition': { duration: 0, delay: 0 } } });
   add({ id: 'routepoi-dot', type: 'circle', source: 'routepoi', maxzoom: 13.3, paint: { 'circle-radius': ['interpolate', ['linear'], ['zoom'], 10, 4.5, 13.5, 6.5], 'circle-color': '#ef476f', 'circle-opacity': ['step', ['zoom'], 1, 12.6, 0], 'circle-opacity-transition': { duration: 0, delay: 0 } } });
   add({ id: 'routepoi-txt', type: 'symbol', source: 'routepoi', maxzoom: 13.3, layout: { 'text-field': (H.activeRoute && H.activeRoute.name) || 'Snow Route', 'text-font': fontStack, 'text-size': 11, 'text-anchor': 'left', 'text-offset': [1.1, 0], 'text-allow-overlap': false }, paint: { 'text-color': H.isNight() ? '#e8e8e8' : '#333333', 'text-halo-color': H.isNight() ? 'rgba(0,0,0,.8)' : 'rgba(255,255,255,.9)', 'text-opacity': ['step', ['zoom'], 1, 12.6, 0], 'text-opacity-transition': { duration: 0, delay: 0 }, 'text-halo-width': 1.6 } });
-  ['t1-casing', 't1-casingb', 't1-surface', 't1-band', 't1-fill', 'fade-casing', 'fade-surf-y', 'fade-surf-r', 'fade-band-g', 'fade-fill-g', 't1-sel', 't1-selband', 't1-selfill', 'selfade-y', 'selfade-r', 'selfade-g', 'selfade-fill', 'sel-core-s', 'sel-core-b', 'hit'].concat([1, 2, 3, 4, 5].flatMap(i => ['sel-glow' + i + '-s', 'sel-glow' + i + '-b'])).forEach(id => { if (GLM.getLayer(id)) GLM.setLayerZoomRange(id, 12.5, 24); });
+  LAYERS.paint.concat(LAYERS.glow).forEach(id => { if (GLM.getLayer(id)) GLM.setLayerZoomRange(id, 12.5, 24); }); // Beta 1.282 (#13): the paint and glow groups are the catalogue's
   H.glUnifyLabels(GLM);
   pushSources();
   applyGlow();
@@ -2076,7 +2098,7 @@ function managePulse() {
 }
   function rePlaceTitles() { // Beta 1.248: the street titles' anchors are re-decided from scratch - the labelpts source is rebuilt in place (the same LABELPTS data; the four tier layers re-added with their live specs at their stack seats). MapLibre's placement PREFERS the anchor a symbol used in the previous placement pass and keeps it while it still places (placement.ts: prevPlacement.variableOffsets, keyed by crossTileID, which lives with the source's cross-tile index), so an anchor first chosen mid-flight - while the fit view's streets sat closer together on screen and the tile scene was still arriving - can stick for the whole session with the name beside its street (Andrew's cold-open report, 2026-11-18: names off their streets, zooming no cure, a day/night swap - a fresh style and placement chain - the only cure; measured in the round's harness: anchors are always on their streets, the rendered text is what sits off). A rebuilt source gets a fresh cross-tile index, so the next placement pass holds no preference and decides against the settled scene. Nothing about what renders changes - same data, same specs, same seats; only when the decision is (re)made. The host calls this once the pick flight settles (app5's introToRoute hook); a no-op without a map or the source.
     if (!GLM || !GLM.getSource || !GLM.getSource('labelpts')) return;
-    const ids = [1, 2, 3, 4].map(t => 'streetnamespt' + t).filter(id => GLM.getLayer(id));
+    const ids = LAYERS.titles.filter(id => GLM.getLayer(id)); // Beta 1.282 (#13): the title group is the catalogue's
     if (!ids.length) return;
     const style = GLM.getStyle(); if (!style || !style.layers) return;
     const specs = ids.map(id => style.layers.find(l => l.id === id));
@@ -2134,7 +2156,7 @@ function managePulse() {
     pushSelSources();
   }
   function active() { return !!GLM; }
-  function setFont(stack) { if (Array.isArray(stack) && stack.length) { fontStack = stack.slice(); if (GLM) { for (const id of ['streetnamespt1', 'streetnamespt2', 'streetnamespt3', 'streetnamespt4', 'routepoi-txt']) { if (GLM.getLayer(id)) { try { GLM.setLayoutProperty(id, 'text-font', fontStack); } catch (e) {} } } } } } // Beta 1.170 (Carbon fix round Phase 2, B-09): layers already on the map take the new stack too - through 1.169 setFont replaced only the variable FUTURE layers are built from, so a basemap restyle (which re-picks the font, then calls sync - not init) left the live label layers rendering the retired stack until the next full rebuild
+  function setFont(stack) { if (Array.isArray(stack) && stack.length) { fontStack = stack.slice(); if (GLM) { for (const id of LAYERS.text) { if (GLM.getLayer(id)) { try { GLM.setLayoutProperty(id, 'text-font', fontStack); } catch (e) {} } } } } } // Beta 1.170 (Carbon fix round Phase 2, B-09): layers already on the map take the new stack too - through 1.169 setFont replaced only the variable FUTURE layers are built from, so a basemap restyle (which re-picks the font, then calls sync - not init) left the live label layers rendering the retired stack until the next full rebuild
   function syncTheme() {
     if (!GLM || !GLM.getLayer) return;
     const night = !!(H && H.isNight && H.isNight());
@@ -2142,7 +2164,7 @@ function managePulse() {
     const casing = night ? '#000000' : '#5a5f6a', txt = night ? '#e8e8e8' : '#333333', halo = night ? 'rgba(0,0,0,.8)' : 'rgba(255,255,255,.9)';
     for (const id of ['t1-casing', 't1-casingb']) { if (GLM.getLayer(id)) { try { GLM.setPaintProperty(id, 'line-color', casing); } catch (e) {} } }
     if (GLM.getLayer('fade-casing')) { try { GLM.setPaintProperty('fade-casing', 'line-gradient', fadeGrad(casing)); } catch (e) {} } // Beta 1.259: the feather's casing gradient follows the theme with the casings
-    for (const id of ['streetnamespt1', 'streetnamespt2', 'streetnamespt3', 'streetnamespt4', 'routepoi-txt']) { if (GLM.getLayer(id)) { try { GLM.setPaintProperty(id, 'text-color', txt); GLM.setPaintProperty(id, 'text-halo-color', halo); } catch (e) {} } }
+    for (const id of LAYERS.text) { if (GLM.getLayer(id)) { try { GLM.setPaintProperty(id, 'text-color', txt); GLM.setPaintProperty(id, 'text-halo-color', halo); } catch (e) {} } }
   }
   function evalCurvePx(curve, z) { // a scaleW-built interpolate curve evaluated at a zoom, in px (stops: zoom at odd indices from 3, width at even indices >= 4; clamped outside the stop range, linear between)
     let prev = null;
@@ -2150,6 +2172,6 @@ function managePulse() {
     return prev[1];
   }
   function tapTolPx(z) { return Math.max(24, evalCurvePx(surfCASE, z) / 2 + 2); } // The map-tap tolerance follows the WIDEST paint at the tap's zoom, floored at 24 px — the Beta 1.181 rule ("a tap anywhere on the paint still selects instead of deselecting"). Beta 1.206 introduced this formula against BANDCASE, then the widest paint; Beta 1.208 retires the wide band, so the widest paint is now the surface casing (surfCASE): 24 px at z17 and below (the floor - shipped behaviour unchanged), ~24.1 px at z18, ~44.3 px at z19 (the z18/z19 values re-measured at Beta 1.268's WIDTH_K 1.3; they were ~27.5 / ~50.8 at 1.5).
-  return { init, drop, sync, syncSel, syncTheme, active, setFont, rebuildRoute, tapTolPx, mute, rePlaceTitles }; // mute exported for the create flow's draft renderer (Beta 1.221 gate fix: create-pick's crDraftLineDim calls GLP.mute - the helper is private to this IIFE, and the bare call threw at draft-layer init, silently aborting every layer after the casing; Codex review P1 on PR #98). Beta 1.248: rePlaceTitles exported for app5's post-flight hook
+  return { init, drop, sync, syncSel, syncTheme, active, setFont, rebuildRoute, tapTolPx, layers: LAYERS, mute, rePlaceTitles }; // layers exported for the catalogue's cross-part readers (Beta 1.282, #13: app2's nameLayerIds, app5's title guard, create-pick's CR_ROUTE_LAYERS). mute exported for the create flow's draft renderer (Beta 1.221 gate fix: create-pick's crDraftLineDim calls GLP.mute - the helper is private to this IIFE, and the bare call threw at draft-layer init, silently aborting every layer after the casing; Codex review P1 on PR #98). Beta 1.248: rePlaceTitles exported for app5's post-flight hook
 })();
 window.GLP = GLP;

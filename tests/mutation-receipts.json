@@ -8073,6 +8073,61 @@
    "red": "proof-paint-model FAIL 5c+5d (15 passed, 2 failed), observed twice 2026-11-23",
    "green": "proof-paint-model 17 passed, 0 failed on the reverted tree; full suite 84/84",
    "issued": "2026-11-23 section2-arch12"
+  },
+  {
+   "id": "catalogue-stack-feather-1282",
+   "check": "tests/proof/proof-1264.mjs",
+   "kind": "mutation",
+   "files": {
+    "tests/proof/proof-1264.mjs": "71c0bcc2860f083b73326f7780823280948082de7a55d122806b96f57c863dbc",
+    "parts/engine.js": "f24f1f5439bd827cdea3850ae42769de0796ad40003e536f8f8307d697af0a59",
+    "parts/create-pick.js": "cace96469252c243856ed4cb04d7cf4a54ac62dbed1f10b0e6b883c769f76998"
+   },
+   "mutation": "LAYERS.paint in parts/engine.js drops 'fade-casing'",
+   "red": "proof-1264 FAIL 2+3 (4 passed, 2 failed; unhidden: fade-casing), observed twice 2026-11-23",
+   "green": "proof-1264 6 passed, 0 failed on the reverted tree",
+   "issued": "2026-11-23 section2-arch13"
+  },
+  {
+   "id": "catalogue-titles-hidelist-1282",
+   "check": "tests/proof/proof-1263.mjs",
+   "kind": "mutation",
+   "files": {
+    "tests/proof/proof-1263.mjs": "bf11a5adf99afacc9662c7c11d62edbdcf73f1dfb47f607909fe280169c8503e",
+    "parts/engine.js": "f24f1f5439bd827cdea3850ae42769de0796ad40003e536f8f8307d697af0a59",
+    "parts/create-pick.js": "cace96469252c243856ed4cb04d7cf4a54ac62dbed1f10b0e6b883c769f76998"
+   },
+   "mutation": "LAYERS.titles in parts/engine.js built from [1, 2, 3] instead of [1, 2, 3, 4]",
+   "red": "proof-1263 FAIL 11 (12 passed, 1 failed), observed twice 2026-11-23",
+   "green": "proof-1263 13 passed, 0 failed on the reverted tree",
+   "issued": "2026-11-23 section2-arch13"
+  },
+  {
+   "id": "catalogue-titles-guard-1282",
+   "check": "tests/proof/proof-1270.mjs",
+   "kind": "mutation",
+   "files": {
+    "tests/proof/proof-1270.mjs": "48ed8ad8fa04a6383e9b5a2b98074dc3fc9fcd84e4575a38aa390f56003f05c2",
+    "parts/app5.js": "f7ee95b5c68ddf4878e224dc83917964a85d5bba742d9df9bf9a37959b6348eb",
+    "parts/engine.js": "f24f1f5439bd827cdea3850ae42769de0796ad40003e536f8f8307d697af0a59"
+   },
+   "mutation": "app5 title guard reads GLP.layers.paint instead of GLP.layers.titles",
+   "red": "proof-1270 FAIL 3 only, observed twice 2026-11-23",
+   "green": "proof-1270 13 pass, 0 fail on the reverted tree",
+   "issued": "2026-11-23 section2-arch13"
+  },
+  {
+   "id": "paint-model-band-clip-1282-r2",
+   "check": "tests/proof/proof-paint-model.mjs",
+   "kind": "mutation",
+   "files": {
+    "tests/proof/proof-paint-model.mjs": "59e70af0c70787097a928642d5a012d71a1940271e73023259c0b320cd4a5e3d",
+    "parts/engine.js": "f24f1f5439bd827cdea3850ae42769de0796ad40003e536f8f8307d697af0a59"
+   },
+   "mutation": "PAINT.clipEnds band continuation inverted (H.pieces[n][i] !== 0 -> === 0) in parts/engine.js - re-run on the post-#13 tree (the step-1 receipt's pins staled when #13 touched engine.js)",
+   "red": "proof-paint-model FAIL 5c+5d (15 passed, 2 failed), observed twice 2026-11-23 on the post-#13 tree",
+   "green": "proof-paint-model 17 passed, 0 failed on the reverted tree",
+   "issued": "2026-11-23 section2-arch13-refresh"
   }
  ]
 }
