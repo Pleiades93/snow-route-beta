@@ -40,8 +40,8 @@ check('3 (b): an empty status line takes no box',
   head.includes('#xPreStat:empty { display: none; }'));
 check('4: the CHANGELOG top entry is Beta 1.256', changelog.includes('## Beta 1.256'));
 check('5: What\'s New carries the 1.256 bullet, short and dash-free',
-  whatsnew.includes('Under the hood: run distance has one owner now, so it is recorded, banked and recovered in one place.')
-  && 'Under the hood: run distance has one owner now, so it is recorded, banked and recovered in one place.'.length <= 108
+  whatsnew.includes('Under the hood: start, cancel, finish and route switches now run through one owner, in one set order.')
+  && 'Under the hood: start, cancel, finish and route switches now run through one owner, in one set order.'.length <= 108
   && !whatsnew.includes('—'));
 
 console.log(`proof-1256: ${pass} passed, ${fail} failed`);

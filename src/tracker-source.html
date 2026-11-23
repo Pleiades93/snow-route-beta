@@ -678,7 +678,7 @@ html.theme-swap *, html.theme-swap *::before, html.theme-swap *::after { transit
 <div id="hud">
   <div id="warn">Not saving. Storage is full or blocked</div>
   <div class="row">
-    <div class="titleStack"><div class="title">Snow Route Beta</div><div class="ver" id="ver">Beta 1.276</div></div>
+    <div class="titleStack"><div class="title">Snow Route Beta</div><div class="ver" id="ver">Beta 1.277</div></div>
   </div>
   <div id="stats"></div>
 </div>
@@ -5262,13 +5262,45 @@ function saveSnap() { // Beta 1.94 (deep audit SR-193-02): the pre-Start board i
   const ok = lsSet(LS.snap, BOARD.serialiseSnap(runSnap, runStart)); // Arch-2: the snapshot string is the board module's one construction
   if (ok) markClean('snap'); else markDirty('snap'); return ok ? storeOk() : storeFail('snap', true);
 }
+// Beta 1.277 (architecture #5): the run's transitions have ONE owner - RUN.
+// Through 1.276 the four transitions each spelled their own reset ritual by
+// hand: Start captured the snapshot, stamped runStart and opened the
+// distance counter inline; Cancel and Finish each repeated the same
+// teardown (the cancel snapshot's delete, its flag clean, the counter's
+// end, the run identity zero) in their own order beside their own extras;
+// and the route switch kept a fourth, state-only reset of the same session
+// (the counter's state zero, the snapshot dropped, the history panel and
+// the note editor closed down). The suggestion half of the recorded
+// candidate is NOT here: Beta 1.271 removed the suggestion offer outright
+// (showSuggest, the queue and the banner handlers are gone; coverage
+// still computes and feeds the board), so no protocol remains to own -
+// what remains is the transitions, and they are RUN's methods now. The
+// state itself stays where it lives (runStart is app1's binding, runSnap
+// is declared above with its 1.91 rationale): the owner holds the ACTS,
+// each in its transition's old order. The four doorway functions
+// (startClean, cancelStart, finishRun, resetNotesHistorySession) keep
+// their names and signatures - the test battery calls them by name.
+const RUN = {
+  /** @returns {void} */ begin() { // Start's identity half: the pre-Start board captured (BOARD.capture - its copy depths are the semantics Cancel relies on), the run stamped, and the distance counter opened for it (RUNDIST.begin banks the fresh record at once, so even an instant reload resumes THIS run's counter - Beta 1.167, B5). startClean keeps the trail fence, the saves and the rest of the Start around it.
+    runSnap = BOARD.capture(); runStart = Date.now(); RUNDIST.begin();
+  },
+  /** @returns {void} */ end() { // the Finish/Cancel teardown: the run is consumed (Finish bakes it into the archive) or erased (Cancel) - its cancel snapshot goes with it (a leftover is stamped with THIS run's start, so it can never match a future run, and the next Start overwrites it anyway; the delete is ungated on purpose, Beta 1.94), the snapshot's flag clears with the delete, the distance counter ends (its record and mirror go with the run - Beta 1.167, B5; Beta 1.193), and the run identity zeroes. Each caller runs it at the exact point its spelled teardown stood and keeps its own extras in position: Finish clears the trail window right after, Cancel arms the trail/session retries right after.
+    lsDel(LS.snap); markClean('snap'); RUNDIST.end(); runSnap = null; runStart = 0;
+  },
+  /** @returns {void} */ switchReset() { // the route switch's reset of this session (resetNotesHistorySession below is its doorway - app5's resetSwitchSession resolves that name): the distance counter's state zeroes, but its persisted record STAYS in the outgoing slot and is re-adopted lazily if he switches back mid-run (Beta 1.167, B5); the in-memory cancel snapshot drops - the PERSISTED copy in the outgoing slot is deliberately untouched, so after switching back Cancel validates it exactly as it does after a reload; the history panel and its delete-arming close; and the modal note editor closes with its target dropped. Beta 1.271: the suggestion set and the two banners this reset used to clear are gone - checkStale re-judges the stale question for the incoming route through the confirmation pill.
+    RUNDIST.reset();
+    runSnap = null; // F3: the in-memory cancel snapshot belongs to the outgoing run. The PERSISTED copy (LS.snap, in the outgoing slot) is deliberately untouched - after switching back, Cancel validates it exactly as it does after a reload
+    histOpen = false; cleanIdx = null; cleanDelArmed = false; if (cleanDelTimer) { clearTimeout(cleanDelTimer); cleanDelTimer = 0; }
+    noteFor = null; $('noteModal').classList.add('hidden');
+  },
+};
 // Beta 1.193 (trail redesign): startClean carries the Start fence - the four statements after
 // persistRunDist inside it window the trail to the new run, so anything recorded before this
 // Start is evicted here (finish/cancel already clear theirs; the fence makes the window
 // invariant local to Start rather than trusting every exit path).
 // Arch-2: the pre-Start snapshot is captured by the board module (BOARD.capture - its copy depths are the semantics Cancel relies on).
 function startClean() { snapReset(); // Beta 1.204: Start Clean is the driving snap's HARD EXIT - the hold and the blend die at the tap itself, so the shown point is already back on the true position before the clean's first fix; snapFix's runStart gate then keeps snapping impossible for the whole clean
-  runSnap = BOARD.capture(); runStart = Date.now(); RUNDIST.begin(); const trailAtStart = trail.length; trail = trailWindow(trail, runStart); if (trail.length !== trailAtStart) markDirty('trail'); const okSnap = saveSnap(); const okSess = noteSessionStart(); const okStart = saveAllWarned(); startGps(true); updateCount(); syncWake(); if (!okStart.ok) toast('Clean started - warning: the clean state could not be saved (storage problem)', 4200); else if (!okSess.ok) toast('Clean started - warning: the session marker could not be saved; it will keep retrying', 4200); else if (!okSnap.ok) toast('Clean started - warning: the cancel safety snapshot could not be saved; it will keep retrying', 4200); checkStale(); } // Beta 1.221 gate fix (Codex P2, PR #98): the snapshot branch is guarded by !okSnap.ok - when the toast cuts removed the old success pill, the chain's last branch lost its condition and EVERY healthy Start showed this failure warning; the healthy path must stay silent (drive146 S1/S2) // Beta 1.167 (B5): startClean banks a fresh distance counter for the new run (RUNDIST.begin beside runStart above), so even an instant reload resumes THIS run's counter. // Beta 1.73 (audit C04): the marker save is part of the start's honesty check, not a silent side write // Beta 1.63 (audit F04): the clean still starts - he is standing in the snow - but the message stops claiming a saved state that does not exist
+  RUN.begin(); const trailAtStart = trail.length; trail = trailWindow(trail, runStart); if (trail.length !== trailAtStart) markDirty('trail'); const okSnap = saveSnap(); const okSess = noteSessionStart(); const okStart = saveAllWarned(); startGps(true); updateCount(); syncWake(); if (!okStart.ok) toast('Clean started - warning: the clean state could not be saved (storage problem)', 4200); else if (!okSess.ok) toast('Clean started - warning: the session marker could not be saved; it will keep retrying', 4200); else if (!okSnap.ok) toast('Clean started - warning: the cancel safety snapshot could not be saved; it will keep retrying', 4200); checkStale(); } // Beta 1.221 gate fix (Codex P2, PR #98): the snapshot branch is guarded by !okSnap.ok - when the toast cuts removed the old success pill, the chain's last branch lost its condition and EVERY healthy Start showed this failure warning; the healthy path must stay silent (drive146 S1/S2) // Beta 1.167 (B5): Start banks a fresh distance counter for the new run (RUN.begin, the transition owner's Start half), so even an instant reload resumes THIS run's counter. // Beta 1.73 (audit C04): the marker save is part of the start's honesty check, not a silent side write // Beta 1.63 (audit F04): the clean still starts - he is standing in the snow - but the message stops claiming a saved state that does not exist
 // Beta 1.91 (Andrew): Cancel start erases everything the run recorded - its trail points, its session
 // marker, any sides marked during it, its coverage and suggestions - and stores nothing. Only Finish
 // stores a run. (Supersedes the Beta 1.70 A04 call that kept the trail as history - Andrew's word.)
@@ -5290,11 +5322,9 @@ function cancelStart() {
         BOARD.revertRunMarks(runStart); // Arch-2: the journal fallback (unmark at/after Start, re-derive, drop coverage) is the board module's one operation
       }
     }
-    lsDel(LS.snap); markClean('snap'); RUNDIST.end(); // Beta 1.167 (B5) + 1.193: the cancelled run's distance record and its mirror copy go with it (RUNDIST.end). The run is cancelled - its snapshot goes with it (a stale one could never match a future run's start stamp, but there is no reason to keep it)
+    RUN.end(); // Beta 1.277 (architecture #5): the teardown is the transition owner's - the snapshot delete, its flag clean, the counter's end (the cancelled run's distance record and its mirror copy go with it - Beta 1.167, B5 + 1.193) and the identity zero, in the old order (RUN.end, above)
     markDirty('trail'); markDirty('sess');
   }
-  runSnap = null;
-  runStart = 0;
   const okCancel = saveAllWarned().ok; PERSIST.flush(true);
   const trailPending = writePending('trail') || writePending('sess'); // Beta 1.93 (follow-up audit R07): the erasure claim below is gated on the trail/session writes having actually landed
   if (wasRunGps) stopGps();
@@ -5518,9 +5548,9 @@ function finishRun() {
     if (fTx.failedStep === 'archive') { toast('Storage full - finish stopped, clean intact', 3600); return; }
     toast('Storage problem - finish stopped, your clean is intact', 4200); return;
   }
-  lsDel(LS.snap); markClean('snap'); RUNDIST.end(); trail = []; markDirty('trail'); // Beta 1.167 (B5): the distance counter is consumed into the archive entry (km) - its record goes with the run (RUNDIST.end). Beta 1.193: its mirror copy goes too, and the trail window is cleared with them - the run is over, so the fallback's only consumer is gone (the Start fence and the load window would evict the points anyway; clearing here keeps the stored trail honest between runs). Beta 1.94 (SR-193-02): the run is finished - its cancel snapshot goes with it. Ungated on purpose: a leftover snapshot is stamped with THIS run's start, so it can never match a future run, and the next Start overwrites it anyway
+  RUN.end(); trail = []; markDirty('trail'); // Beta 1.277 (architecture #5): the teardown is the transition owner's - the snapshot delete, its flag clean, the counter's end and the identity zero, in the old order (RUN.end, above). Beta 1.167 (B5): the distance counter is consumed into the archive entry (km) - its record goes with the run. Beta 1.193: its mirror copy goes too, and the trail window is cleared with them - the run is over, so the fallback's only consumer is gone (the Start fence and the load window would evict the points anyway; clearing here keeps the stored trail honest between runs)
   if (archiving) HIST.replaceView(newHist);
-  BOARD.zeroMarks(); notes = {}; runStart = 0; runSnap = null; // Arch-2: the board half of this reset is the module's in-place zero
+  BOARD.zeroMarks(); notes = {}; // Arch-2: the board half of this reset is the module's in-place zero (the run identity zeroed with RUN.end above)
   stopGps(); deselect(); // Beta 1.193: through 1.190 this also force-drew the trail to clear the finished line (Beta 1.69) - there is no line any more; the window itself was cleared with the counter records above
   const restRes = saveAll(); const restOk = restRes.ok; // the gated sides write already landed; this pass carries the metadata - a failure here warns but cannot resurrect anything (authority + archive agree)
   finishChange();
@@ -5569,13 +5599,7 @@ function samplesFor(stretch, names) { // Beta 1.117: the coverage samples as a P
 }
 function buildSamples() { const built = samplesFor(STRETCH, STREETNAMES); for (const k of Object.keys(SAMPLES)) delete SAMPLES[k]; Object.assign(SAMPLES, built); covSamplesGen++; } // Beta 1.135 (programme D): the generation bump invalidates coverFix's per-street sample boxes (below) - the samples they were measured from just changed
 // (the coverage-index sanitizer lives in loadRouteState, app1 - Beta 1.76: it must run over the loaded state, and state now loads on route pick, not at eval)
-function resetNotesHistorySession() { // Beta 1.148 (Tranche 5, A4(ii)): app3's OWN route-switch reset, called by app4's resetSwitchSession - the run-snapshot / history / modal-note / suggestion session's reset knowledge lives here, with its state
-  RUNDIST.reset(); // Beta 1.167 (B5): the in-memory distance counter belongs to the outgoing run; its persisted record stays in the outgoing slot (like LS.snap below) and is re-adopted lazily if he switches back mid-run
-  runSnap = null; // F3: the in-memory cancel snapshot belongs to the outgoing run. The PERSISTED copy (LS.snap, in the outgoing slot) is deliberately untouched - after switching back, Cancel validates it exactly as it does after a reload
-  histOpen = false; cleanIdx = null; cleanDelArmed = false; if (cleanDelTimer) { clearTimeout(cleanDelTimer); cleanDelTimer = 0; } // the history panel and its delete-arming
-  noteFor = null; $('noteModal').classList.add('hidden'); // the modal note editor
-  // Beta 1.271: the suggestion set and the two banners this reset used to clear are gone - checkStale re-judges the stale question for the incoming route through the confirmation pill
-}
+function resetNotesHistorySession() { RUN.switchReset(); } // Beta 1.277 (architecture #5): the reset itself is the transition owner's (RUN.switchReset, in the RUN LIFECYCLE section above) - this doorway keeps the published handle. Beta 1.148 (Tranche 5, A4(ii)): app3's OWN route-switch reset, called by app5's resetSwitchSession - the run-snapshot / history / modal-note session's reset knowledge lives with the owner now
 function pushGps() {
   const src = map && map.getSource('gps'); if (!src) return;
   const feats = [];
@@ -7348,7 +7372,7 @@ $('stDel').addEventListener('click', async () => {
 });
 // ---- About ----
 const WHATSNEW = { // the curated in-app notes: plain words, LATEST RELEASE ONLY (Beta 1.114, Andrew: the accumulated list cluttered the About pane). A release REPLACES this entry with its own in the same change - it never accumulates; the full history lives in CHANGELOG.md, not the app
-  v: 'Beta 1.276', items: ["Under the hood: run distance has one owner now, so it is recorded, banked and recovered in one place."] }; // Beta 1.223 (Andrew): What's New entries are SHORT from now on - point form, one short plain line each, no prose paragraphs, no em dashes
+  v: 'Beta 1.277', items: ["Under the hood: start, cancel, finish and route switches now run through one owner, in one set order."] }; // Beta 1.223 (Andrew): What's New entries are SHORT from now on - point form, one short plain line each, no prose paragraphs, no em dashes
 
 function renderAbout() {
   const cur = $('ver').textContent.trim();

@@ -1,3 +1,3 @@
 const WHATSNEW = { // the curated in-app notes: plain words, LATEST RELEASE ONLY (Beta 1.114, Andrew: the accumulated list cluttered the About pane). A release REPLACES this entry with its own in the same change - it never accumulates; the full history lives in CHANGELOG.md, not the app
-  v: '@@VERSION@@', items: ["Under the hood: run distance has one owner now, so it is recorded, banked and recovered in one place."] }; // Beta 1.223 (Andrew): What's New entries are SHORT from now on - point form, one short plain line each, no prose paragraphs, no em dashes
+  v: '@@VERSION@@', items: ["Under the hood: start, cancel, finish and route switches now run through one owner, in one set order."] }; // Beta 1.223 (Andrew): What's New entries are SHORT from now on - point form, one short plain line each, no prose paragraphs, no em dashes
 

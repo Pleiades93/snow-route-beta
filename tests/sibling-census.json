@@ -7409,6 +7409,314 @@
     "scripts/check-census.py": "dd55f34cd855e60a6fadae7e261aa99f1682b9d7d8446696532045e3a281fafb"
    },
    "issued": "2026-11-23"
+  },
+  {
+   "id": "arch5-1277",
+   "kind": "app",
+   "anchors": {
+    "functions": [
+     "startClean",
+     "cancelStart",
+     "finishRun",
+     "performReset",
+     "resetNotesHistorySession",
+     "resetSwitchSession",
+     "saveSnap",
+     "noteSessionStart",
+     "buildSnap",
+     "checkStale",
+     "askCancelStart",
+     "clearAllMarks"
+    ],
+    "elements": [],
+    "guards": []
+   },
+   "changed": [
+    "parts/app3.js",
+    "parts/whatsnew.js"
+   ],
+   "rows": [
+    {
+     "id": "caller:askCancelStart:parts/app3.js:cancelStartBtn:click",
+     "kind": "caller",
+     "source": "derived: call-site scan of parts/ - askCancelStart() is called from cancelStartBtn:click in parts/app3.js",
+     "status": "covered",
+     "note": "the dock's Cancel door routes through the unchanged askCancelStart into cancelStart, whose teardown is now RUN.end - proof-1255 pins the ask body and this listener; drive142 T4 proves the cancel honesty outcome through the owner"
+    },
+    {
+     "id": "caller:askCancelStart:parts/app3.js:paceCancel:click",
+     "kind": "caller",
+     "source": "derived: call-site scan of parts/ - askCancelStart() is called from paceCancel:click in parts/app3.js",
+     "status": "covered",
+     "note": "the Pace sheet's Cancel door takes the same askCancelStart path as the dock door - one confirmation, one cancelStart; proof-1255 pins the ask"
+    },
+    {
+     "id": "caller:buildSnap:parts/app3.js:finishRun",
+     "kind": "caller",
+     "source": "derived: call-site scan of parts/ - buildSnap() is called from finishRun in parts/app3.js",
+     "status": "covered",
+     "note": "finishRun still builds the archive entry before its transaction; buildSnap is untouched by this round (its counter read went through RUNDIST.distance in architecture #4) - drives 187/195 cover the archive figures"
+    },
+    {
+     "id": "caller:cancelStart:parts/app3.js:askCancelStart",
+     "kind": "caller",
+     "source": "derived: call-site scan of parts/ - cancelStart() is called from askCancelStart in parts/app3.js",
+     "status": "covered",
+     "note": "the ask's route+run-bound callback calls cancelStart unchanged; the teardown inside is RUN.end at the old position - proof-1255 pins the binding, drive133 (20/20) covers the cancel outcomes on all snapshot paths"
+    },
+    {
+     "id": "caller:checkStale:parts/app3.js:startClean",
+     "kind": "caller",
+     "source": "derived: call-site scan of parts/ - checkStale() is called from startClean in parts/app3.js",
+     "status": "covered",
+     "note": "startClean still ends with checkStale, after RUN.begin and the saves - position and trigger unchanged; checkStale itself untouched"
+    },
+    {
+     "id": "caller:checkStale:parts/app5.js:loadRoute",
+     "kind": "caller",
+     "source": "derived: call-site scan of parts/ - checkStale() is called from loadRoute in parts/app5.js",
+     "status": "covered",
+     "note": "route load re-judges the stale question through the same untouched checkStale; the switch path it rides is covered by drive149 (21/21)"
+    },
+    {
+     "id": "caller:clearAllMarks:parts/app3.js:askClearAll",
+     "kind": "caller",
+     "source": "derived: call-site scan of parts/ - clearAllMarks() is called from askClearAll in parts/app3.js",
+     "status": "covered",
+     "note": "neighbour by anchor only: clearAllMarks and BOARD.zeroMarks are NOT changed by this round - the zeroMarks absorption is the Arch-2 seam, excluded from candidate #5 by the programme text; the Clear path stands exactly as shipped in 1.271"
+    },
+    {
+     "id": "caller:finishRun:parts/app3.js:finYes:click",
+     "kind": "caller",
+     "source": "derived: call-site scan of parts/ - finishRun() is called from finYes:click in parts/app3.js",
+     "status": "covered",
+     "note": "the Finish confirmation's Yes calls finishRun unchanged; its commit tail now runs RUN.end with the trail clear kept right after - drives 133/142/187 exercise the finish outcomes"
+    },
+    {
+     "id": "caller:finishRun:parts/app3.js:performReset",
+     "kind": "caller",
+     "source": "derived: call-site scan of parts/ - finishRun() is called from performReset in parts/app3.js",
+     "status": "covered",
+     "note": "performReset remains finishRun's published alias (the battery calls it by name, frozen compatibility surface) - untouched, delegating as before"
+    },
+    {
+     "id": "caller:noteSessionStart:parts/app3.js:startClean",
+     "kind": "caller",
+     "source": "derived: call-site scan of parts/ - noteSessionStart() is called from startClean in parts/app3.js",
+     "status": "covered",
+     "note": "startClean still records the session marker in the same position, right after RUN.begin and saveSnap; noteSessionStart untouched - drive146 (26/26) covers the Start chain"
+    },
+    {
+     "id": "caller:resetNotesHistorySession:parts/app5.js:resetSwitchSession",
+     "kind": "caller",
+     "source": "derived: call-site scan of parts/ - resetNotesHistorySession() is called from resetSwitchSession in parts/app5.js",
+     "status": "covered",
+     "note": "the switch reset reaches app3 through the doorway, now a one-line delegation to RUN.switchReset - drive149 S3 pins the in-memory snapshot cleared by the switch, drive184 (10/10) covers the switch/flush behaviour"
+    },
+    {
+     "id": "caller:resetSwitchSession:parts/app5.js:loadRoute",
+     "kind": "caller",
+     "source": "derived: call-site scan of parts/ - resetSwitchSession() is called from loadRoute in parts/app5.js",
+     "status": "covered",
+     "note": "route load drives the switch reset through the doorway before the incoming state loads; covered by drive149's switch family"
+    },
+    {
+     "id": "caller:resetSwitchSession:parts/app5.js:unloadRouteToBoot",
+     "kind": "caller",
+     "source": "derived: call-site scan of parts/ - resetSwitchSession() is called from unloadRouteToBoot in parts/app5.js",
+     "status": "covered",
+     "note": "the unload path also passes through resetSwitchSession and so through the doorway; unloadRouteToBoot's own eval-empties reset is the boot teardown, not a run transition - unchanged and out of this round's scope (recorded in the round RECORD)"
+    },
+    {
+     "id": "caller:saveSnap:parts/app3.js:startClean",
+     "kind": "caller",
+     "source": "derived: call-site scan of parts/ - saveSnap() is called from startClean in parts/app3.js",
+     "status": "covered",
+     "note": "saveSnap still runs inside startClean immediately after the run's identity is set - now by RUN.begin, which assigns the runSnap/runStart saveSnap reads, in the old order; drives 133/146 cover the snapshot save and its failure warning"
+    },
+    {
+     "id": "caller:startClean:parts/app3.js:startBtn:click",
+     "kind": "caller",
+     "source": "derived: call-site scan of parts/ - startClean() is called from startBtn:click in parts/app3.js",
+     "status": "covered",
+     "note": "the Start button calls startClean unchanged; its identity half is RUN.begin - drive146 (26/26) pins the Start toast chain, drive133 the resumed-run behaviour"
+    }
+   ],
+   "files": {
+    "parts/app1.js": "cf555a9736c6f9961e906e0fd9c00a531c9ddb88ca3c5ff5765fa33ba62953df",
+    "parts/app2.js": "e0161aa1a5ce7def923be1b2fd70aeff9c233136e2d85f86cbd99a0867a59720",
+    "parts/app3.js": "e7913d133b17b29e6a92abc3148e969d713624362fb9972b6ae3071c48e6fdfa",
+    "parts/app4.js": "77a902a67ce2de0f989a00d9a06c9f16ee7fccdc10e43238ddade610e57e463d",
+    "parts/app5.js": "075517797dadbffbebf5d59682dae3a8771b1b5fa3b999c5de4206257160249f",
+    "parts/brand-snow.js": "86fa9a02f29c7345ee68d68daffd9c72da612921b64da37f1eccf6b72161ac5f",
+    "parts/create-cache.js": "2a7e983aa50862cb074a16abf9266a41a1a175c69faa5215b1d3d289aa2b5327",
+    "parts/create-citydata.js": "393d90f275d971b5e52352deebaece381279acd0e86495ffa2da35701de9148e",
+    "parts/create-fetch.js": "e7a65bd88dc338213946c4537dc5d397f79396ec416b6f4ebf4be831927aeb66",
+    "parts/create-packs.js": "a8b60fb7d601c1e83f555eb703b625a571ec878937ac36fcaddd05aecf635975",
+    "parts/create-pick.js": "7188458b087496ad52ff5d159ae23668b543d0100a3d58c3b251d33374258dd6",
+    "parts/create-save.js": "ad39720727f43d397e72443c92955c5a35d530f03e3219b2182c9ee7c062e52d",
+    "parts/data.js": "9684c69862156dc70ee9a2b88278b4e825c5bf35f0c150fbc5660ccbdce9304b",
+    "parts/engine.js": "d6d1f676ac8bc2a302cfbaf56de1e10cb361fd8b746d94d6380a5e4ebaf76173",
+    "parts/pmstyles.js": "f3501db9c16dbc6a5fa8c901089101e4913772384de1f069accb23a614bb90fc",
+    "parts/whatsnew.js": "1045bc0af28104cb032b921b6b9339bff90944caf4b4bdce0428a2078613b9c9",
+    "parts/head.html": "bff57252f945388445965c770902c06145d3501ceb21cb6f5507fd542eca066d",
+    "scripts/check-census.py": "dd55f34cd855e60a6fadae7e261aa99f1682b9d7d8446696532045e3a281fafb"
+   },
+   "issued": "2026-11-23"
+  },
+  {
+   "id": "arch5-1277b",
+   "kind": "app",
+   "anchors": {
+    "functions": [
+     "startClean",
+     "cancelStart",
+     "finishRun",
+     "performReset",
+     "resetNotesHistorySession",
+     "resetSwitchSession",
+     "saveSnap",
+     "noteSessionStart",
+     "buildSnap",
+     "checkStale",
+     "askCancelStart",
+     "clearAllMarks"
+    ],
+    "elements": [],
+    "guards": []
+   },
+   "changed": [
+    "parts/app3.js",
+    "parts/whatsnew.js"
+   ],
+   "rows": [
+    {
+     "id": "caller:askCancelStart:parts/app3.js:cancelStartBtn:click",
+     "kind": "caller",
+     "source": "derived: call-site scan of parts/ - askCancelStart() is called from cancelStartBtn:click in parts/app3.js",
+     "status": "covered",
+     "note": "the dock's Cancel door routes through the unchanged askCancelStart into cancelStart, whose teardown is now RUN.end - proof-1255 pins the ask body and this listener; drive142 T4 proves the cancel honesty outcome through the owner"
+    },
+    {
+     "id": "caller:askCancelStart:parts/app3.js:paceCancel:click",
+     "kind": "caller",
+     "source": "derived: call-site scan of parts/ - askCancelStart() is called from paceCancel:click in parts/app3.js",
+     "status": "covered",
+     "note": "the Pace sheet's Cancel door takes the same askCancelStart path as the dock door - one confirmation, one cancelStart; proof-1255 pins the ask"
+    },
+    {
+     "id": "caller:buildSnap:parts/app3.js:finishRun",
+     "kind": "caller",
+     "source": "derived: call-site scan of parts/ - buildSnap() is called from finishRun in parts/app3.js",
+     "status": "covered",
+     "note": "finishRun still builds the archive entry before its transaction; buildSnap is untouched by this round (its counter read went through RUNDIST.distance in architecture #4) - drives 187/195 cover the archive figures"
+    },
+    {
+     "id": "caller:cancelStart:parts/app3.js:askCancelStart",
+     "kind": "caller",
+     "source": "derived: call-site scan of parts/ - cancelStart() is called from askCancelStart in parts/app3.js",
+     "status": "covered",
+     "note": "the ask's route+run-bound callback calls cancelStart unchanged; the teardown inside is RUN.end at the old position - proof-1255 pins the binding, drive133 (20/20) covers the cancel outcomes on all snapshot paths"
+    },
+    {
+     "id": "caller:checkStale:parts/app3.js:startClean",
+     "kind": "caller",
+     "source": "derived: call-site scan of parts/ - checkStale() is called from startClean in parts/app3.js",
+     "status": "covered",
+     "note": "startClean still ends with checkStale, after RUN.begin and the saves - position and trigger unchanged; checkStale itself untouched"
+    },
+    {
+     "id": "caller:checkStale:parts/app5.js:loadRoute",
+     "kind": "caller",
+     "source": "derived: call-site scan of parts/ - checkStale() is called from loadRoute in parts/app5.js",
+     "status": "covered",
+     "note": "route load re-judges the stale question through the same untouched checkStale; the switch path it rides is covered by drive149 (21/21)"
+    },
+    {
+     "id": "caller:clearAllMarks:parts/app3.js:askClearAll",
+     "kind": "caller",
+     "source": "derived: call-site scan of parts/ - clearAllMarks() is called from askClearAll in parts/app3.js",
+     "status": "covered",
+     "note": "neighbour by anchor only: clearAllMarks and BOARD.zeroMarks are NOT changed by this round - the zeroMarks absorption is the Arch-2 seam, excluded from candidate #5 by the programme text; the Clear path stands exactly as shipped in 1.271"
+    },
+    {
+     "id": "caller:finishRun:parts/app3.js:finYes:click",
+     "kind": "caller",
+     "source": "derived: call-site scan of parts/ - finishRun() is called from finYes:click in parts/app3.js",
+     "status": "covered",
+     "note": "the Finish confirmation's Yes calls finishRun unchanged; its commit tail now runs RUN.end with the trail clear kept right after - drives 133/142/187 exercise the finish outcomes"
+    },
+    {
+     "id": "caller:finishRun:parts/app3.js:performReset",
+     "kind": "caller",
+     "source": "derived: call-site scan of parts/ - finishRun() is called from performReset in parts/app3.js",
+     "status": "covered",
+     "note": "performReset remains finishRun's published alias (the battery calls it by name, frozen compatibility surface) - untouched, delegating as before"
+    },
+    {
+     "id": "caller:noteSessionStart:parts/app3.js:startClean",
+     "kind": "caller",
+     "source": "derived: call-site scan of parts/ - noteSessionStart() is called from startClean in parts/app3.js",
+     "status": "covered",
+     "note": "startClean still records the session marker in the same position, right after RUN.begin and saveSnap; noteSessionStart untouched - drive146 (26/26) covers the Start chain"
+    },
+    {
+     "id": "caller:resetNotesHistorySession:parts/app5.js:resetSwitchSession",
+     "kind": "caller",
+     "source": "derived: call-site scan of parts/ - resetNotesHistorySession() is called from resetSwitchSession in parts/app5.js",
+     "status": "covered",
+     "note": "the switch reset reaches app3 through the doorway, now a one-line delegation to RUN.switchReset - drive149 S3 pins the in-memory snapshot cleared by the switch, drive184 (10/10) covers the switch/flush behaviour"
+    },
+    {
+     "id": "caller:resetSwitchSession:parts/app5.js:loadRoute",
+     "kind": "caller",
+     "source": "derived: call-site scan of parts/ - resetSwitchSession() is called from loadRoute in parts/app5.js",
+     "status": "covered",
+     "note": "route load drives the switch reset through the doorway before the incoming state loads; covered by drive149's switch family"
+    },
+    {
+     "id": "caller:resetSwitchSession:parts/app5.js:unloadRouteToBoot",
+     "kind": "caller",
+     "source": "derived: call-site scan of parts/ - resetSwitchSession() is called from unloadRouteToBoot in parts/app5.js",
+     "status": "covered",
+     "note": "the unload path also passes through resetSwitchSession and so through the doorway; unloadRouteToBoot's own eval-empties reset is the boot teardown, not a run transition - unchanged and out of this round's scope (recorded in the round RECORD)"
+    },
+    {
+     "id": "caller:saveSnap:parts/app3.js:startClean",
+     "kind": "caller",
+     "source": "derived: call-site scan of parts/ - saveSnap() is called from startClean in parts/app3.js",
+     "status": "covered",
+     "note": "saveSnap still runs inside startClean immediately after the run's identity is set - now by RUN.begin, which assigns the runSnap/runStart saveSnap reads, in the old order; drives 133/146 cover the snapshot save and its failure warning"
+    },
+    {
+     "id": "caller:startClean:parts/app3.js:startBtn:click",
+     "kind": "caller",
+     "source": "derived: call-site scan of parts/ - startClean() is called from startBtn:click in parts/app3.js",
+     "status": "covered",
+     "note": "the Start button calls startClean unchanged; its identity half is RUN.begin - drive146 (26/26) pins the Start toast chain, drive133 the resumed-run behaviour"
+    }
+   ],
+   "files": {
+    "parts/app1.js": "cf555a9736c6f9961e906e0fd9c00a531c9ddb88ca3c5ff5765fa33ba62953df",
+    "parts/app2.js": "e0161aa1a5ce7def923be1b2fd70aeff9c233136e2d85f86cbd99a0867a59720",
+    "parts/app3.js": "be088ce8e870c8120224973cfa6f628c6d517c836cbe7260b924826d56854d33",
+    "parts/app4.js": "77a902a67ce2de0f989a00d9a06c9f16ee7fccdc10e43238ddade610e57e463d",
+    "parts/app5.js": "075517797dadbffbebf5d59682dae3a8771b1b5fa3b999c5de4206257160249f",
+    "parts/brand-snow.js": "86fa9a02f29c7345ee68d68daffd9c72da612921b64da37f1eccf6b72161ac5f",
+    "parts/create-cache.js": "2a7e983aa50862cb074a16abf9266a41a1a175c69faa5215b1d3d289aa2b5327",
+    "parts/create-citydata.js": "393d90f275d971b5e52352deebaece381279acd0e86495ffa2da35701de9148e",
+    "parts/create-fetch.js": "e7a65bd88dc338213946c4537dc5d397f79396ec416b6f4ebf4be831927aeb66",
+    "parts/create-packs.js": "a8b60fb7d601c1e83f555eb703b625a571ec878937ac36fcaddd05aecf635975",
+    "parts/create-pick.js": "7188458b087496ad52ff5d159ae23668b543d0100a3d58c3b251d33374258dd6",
+    "parts/create-save.js": "ad39720727f43d397e72443c92955c5a35d530f03e3219b2182c9ee7c062e52d",
+    "parts/data.js": "9684c69862156dc70ee9a2b88278b4e825c5bf35f0c150fbc5660ccbdce9304b",
+    "parts/engine.js": "d6d1f676ac8bc2a302cfbaf56de1e10cb361fd8b746d94d6380a5e4ebaf76173",
+    "parts/pmstyles.js": "f3501db9c16dbc6a5fa8c901089101e4913772384de1f069accb23a614bb90fc",
+    "parts/whatsnew.js": "1045bc0af28104cb032b921b6b9339bff90944caf4b4bdce0428a2078613b9c9",
+    "parts/head.html": "bff57252f945388445965c770902c06145d3501ceb21cb6f5507fd542eca066d",
+    "scripts/check-census.py": "dd55f34cd855e60a6fadae7e261aa99f1682b9d7d8446696532045e3a281fafb"
+   },
+   "issued": "2026-11-23"
   }
  ]
 }

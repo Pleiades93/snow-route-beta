@@ -64,8 +64,8 @@ check('6: the scrim-free design claims are superseded and removed (the pill comm
 // ---------- the release editorial ----------
 check('7: the CHANGELOG top entry is Beta 1.257', changelog.includes('## Beta 1.257'));
 check('8: What\'s New carries the 1.257 bullet, short and dash-free',
-  whatsnew.includes('Under the hood: run distance has one owner now, so it is recorded, banked and recovered in one place.')
-  && 'Under the hood: run distance has one owner now, so it is recorded, banked and recovered in one place.'.length <= 108
+  whatsnew.includes('Under the hood: start, cancel, finish and route switches now run through one owner, in one set order.')
+  && 'Under the hood: start, cancel, finish and route switches now run through one owner, in one set order.'.length <= 108
   && !whatsnew.includes('—'));
 
 console.log(`proof-1257: ${pass} passed, ${fail} failed`);

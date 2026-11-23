@@ -15,7 +15,7 @@
     "engine.js"
   ],
   "totals": {
-    "expressions": 22,
+    "expressions": 21,
     "member": 31,
     "storage": 49,
     "idb": 2,
@@ -27,7 +27,7 @@
         "expressions": 0
       },
       "app3.js": {
-        "expressions": 8
+        "expressions": 7
       },
       "app4.js": {
         "expressions": 2
@@ -68,7 +68,7 @@
     },
     {
       "file": "app3.js",
-      "fn": "cancelStart",
+      "fn": "begin",
       "name": "runStart",
       "owner": "app1.js",
       "occ": 1
@@ -89,6 +89,13 @@
     },
     {
       "file": "app3.js",
+      "fn": "end",
+      "name": "runStart",
+      "owner": "app1.js",
+      "occ": 1
+    },
+    {
+      "file": "app3.js",
       "fn": "finishRun",
       "name": "notes",
       "owner": "app1.js",
@@ -97,21 +104,7 @@
     {
       "file": "app3.js",
       "fn": "finishRun",
-      "name": "runStart",
-      "owner": "app1.js",
-      "occ": 1
-    },
-    {
-      "file": "app3.js",
-      "fn": "finishRun",
       "name": "trail",
-      "owner": "app1.js",
-      "occ": 1
-    },
-    {
-      "file": "app3.js",
-      "fn": "startClean",
-      "name": "runStart",
       "owner": "app1.js",
       "occ": 1
     },
