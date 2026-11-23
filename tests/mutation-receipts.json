@@ -102,19 +102,6 @@
    "issued": "2026-11-21 correct-phase3b codex-fix"
   },
   {
-   "id": "select-tier-receipts-ride-along",
-   "check": "scripts/select-tier-fixtures/run-fixtures.py",
-   "kind": "mutation",
-   "files": {
-    "scripts/select-tier-fixtures/run-fixtures.py": "a03f4500e8d9ac85179ecd5274a9905beeef8c7d0b170e98da272c2068094d63",
-    "scripts/select-tier.py": "b7c9db80ca3d7ad78fbd8c3def32f16eefe9d88630b437a7e5244454d3297492"
-   },
-   "mutation": "Scratch copy with the receipts exclusion removed from scripts/select-tier.py (tests/mutation-receipts.json classifies again - the pre-fix behaviour Codex P2 on PR #155 caught: the file hits the tier-C paths and escalates every change that carries a receipt).",
-   "red": "Select-tier fixtures 21 pass / 4 FAIL - exactly the four new ride-along cases: receipts file alone, proof + receipt, family + receipt, and engine + drive + receipt all select Tier C (full battery) instead of A / A / B / B",
-   "green": "Clean tree: select-tier fixtures 25 pass / 0 fail; the same four cases select A / A / B / B with the receipts file named in the reason as riding along",
-   "issued": "2026-11-21 correct-phase3b codex-fix"
-  },
-  {
    "id": "gate-fixtures-census-gate-neuter",
    "check": "scripts/gate-fixtures/run-fixtures.py",
    "kind": "mutation",
@@ -140,19 +127,6 @@
    "mutation": "scripts/check-census.py derive_rows() neutered in a scratch copy of the tree to return no rows (the census derives nothing, so every issued census certifies empty)",
    "red": "gate fixtures 48 pass, 2 FAIL - the two cases whose refusal depends on re-derivation seeing the rows: the hand-typed census omitting a derived door row pushes, and the census leaving a derived row unmarked pushes (with no derived rows the fixture cannot even pose an unmarked one)",
    "green": "gate fixtures 50 pass, 0 fail on the unmutated tree",
-   "issued": "2026-11-21 correct-phase3c"
-  },
-  {
-   "id": "select-tier-census-ride-along",
-   "check": "scripts/select-tier-fixtures/run-fixtures.py",
-   "kind": "mutation",
-   "files": {
-    "scripts/select-tier-fixtures/run-fixtures.py": "56ff3aca062d0b7cc5d06fbddb25f8887d692eeb8179f957a1f3e8afa5d04958",
-    "scripts/select-tier.py": "c1a7c50bbd1aa7babf5d830fcd9853eb9c7f723c9f7053b021c1fee53120a9a7"
-   },
-   "mutation": "scripts/select-tier.py CENSUS_FILE pointed at a nonexistent path in a scratch copy of the tree (the sibling census stops riding along as bookkeeping)",
-   "red": "select-tier fixtures 25 pass, 4 FAIL - all four census cases escalate to Tier C on 'deep path touched: tests/sibling-census.json': the census alone, a proof change plus census, a family change plus census, and an engine-plus-drive change plus census",
-   "green": "select-tier fixtures 29 pass, 0 fail on the unmutated tree",
    "issued": "2026-11-21 correct-phase3c"
   },
   {
@@ -394,19 +368,6 @@
    "mutation": "scripts/check-census.py removed from JUDGE_PATHS in a scratch copy of scripts/check-receipts.py (the census judge escapes rule 6's trigger set) - re-observation after round (d) changed check-receipts.py (check-mirrors.py joined JUDGE_PATHS).",
    "red": "check-receipts.py gate --changed scripts/check-census.py exits 0 in the scratch tree - a changed census judge needs no mutation receipt at all.",
    "green": "With the shipped JUDGE_PATHS the receipts gate covers scripts/check-census.py only through current receipts (this one and the two gate-fixtures census receipts); check-receipts.py verify lists them CURRENT on the round (d) tree.",
-   "issued": "correct-phase3d-reissue"
-  },
-  {
-   "id": "select-tier-receipts-ride-along-r2",
-   "check": "scripts/select-tier-fixtures/run-fixtures.py",
-   "kind": "mutation",
-   "files": {
-    "scripts/select-tier-fixtures/run-fixtures.py": "56ff3aca062d0b7cc5d06fbddb25f8887d692eeb8179f957a1f3e8afa5d04958",
-    "scripts/select-tier.py": "c1a7c50bbd1aa7babf5d830fcd9853eb9c7f723c9f7053b021c1fee53120a9a7"
-   },
-   "mutation": "Scratch copy with the receipts ride-along removed from scripts/select-tier.py (the receipts set forced empty, so tests/mutation-receipts.json classifies again and hits the tier-C deep paths - the pre-fix behaviour Codex P2 on PR #155 caught). Re-observation in round (d): the r1 receipt had gone stale when round (c) changed select-tier.py and was never re-issued.",
-   "red": "Select-tier fixtures 25 pass, 4 FAIL - exactly the four ride-along cases (receipts file alone, proof + receipt, family + receipt, engine + drive + receipt) all select Tier C instead of A / A / B / B.",
-   "green": "Clean tree: select-tier fixtures 29 pass, 0 fail; the same four cases select A / A / B / B with the receipts file named in the reason as riding along.",
    "issued": "correct-phase3d-reissue"
   },
   {
