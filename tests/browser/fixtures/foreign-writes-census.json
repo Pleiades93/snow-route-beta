@@ -618,15 +618,15 @@
     },
     {
       "file": "app3.js",
-      "fn": "bankRunDistMirror",
-      "name": "storage:LS.rundist2",
+      "fn": "bank",
+      "name": "storage:LS.rundist",
       "owner": "app1.js",
       "occ": 1
     },
     {
       "file": "app3.js",
-      "fn": "persistRunDist",
-      "name": "storage:LS.rundist",
+      "fn": "flushMirror",
+      "name": "storage:LS.rundist2",
       "owner": "app1.js",
       "occ": 1
     },

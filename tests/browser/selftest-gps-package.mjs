@@ -133,23 +133,45 @@ const herr = (z) => Math.abs(((((headFactory.get() - z + 180) % 360) + 360) % 36
 }
 
 // ---- STOP B: the shipped acceptFix trail block, verbatim, over stub state ----
+// Beta 1.276 (architecture #4): the block's counter half is RUNDIST.record now,
+// so the harness extracts the shipped RUNDIST definition too and instantiates
+// it in-scope over the same stub locals - the proof still runs shipped code
+// (the owner itself, not a stub of it); "persists" counts the LS.rundist
+// writes the shipped bank lands in the stub store.
 const blkStart = app3.indexOf('const stillFix = typeof speed');
 const blkEnd = app3.indexOf('coverFix(sm);') + 'coverFix(sm);'.length;
 if (blkStart < 0 || blkEnd <= blkStart) throw new Error('trail block not found');
 const trailBlock = app3.slice(blkStart, blkEnd);
+const rdStart = app3.indexOf('const RUNDIST = {');
+if (rdStart < 0) throw new Error('RUNDIST not found');
+let rdDepth = 0, rdEnd = -1;
+for (let j = app3.indexOf('{', rdStart); j < app3.length; j++) { if (app3[j] === '{') rdDepth++; else if (app3[j] === '}') { rdDepth--; if (!rdDepth) { rdEnd = j + 1; break; } } }
+if (rdEnd < 0) throw new Error('RUNDIST block not closed');
+const rundistSrc = app3.slice(rdStart, rdEnd) + ';';
 const MLAT = 111320, MLNG = 80386;
 const distM = (a, b) => Math.hypot((a[1] - b[1]) * MLNG, (a[0] - b[0]) * MLAT);
 function makeTrailHarness() {
   const calls = { persist: 0, dirty: [], flush: 0, draw: 0, cover: 0 };
-  const state = { trail: [], runDist: { m: 0, run: 1000000, capped: false } };
-  const run = new Function('speed', 'sm', 'now', 'state', 'calls', 'env', `
-    const GPS_STILL_MPS = 0.5, TRAIL_MAX = 100000, TRAIL_WINDOW_S = 3600; // Beta 1.193: the shipped block's window eviction names the app1 constant - the harness stubs it at its shipped value, like TRAIL_MAX beside it
-    const runStart = 1000000, trail = state.trail, runDist = state.runDist;
-    const distM = env.distM, persistRunDist = () => calls.persist++, markDirty = k => calls.dirty.push(k),
-      PERSIST = { flush: () => calls.flush++ }, drawTrail = () => calls.draw++, coverFix = () => calls.cover++; // Beta 1.275 (architecture #3): the shipped block calls PERSIST.flush now - the stub mirrors the doorway it names
-    ${trailBlock}
+  const state = { trail: [] };
+  const factory = new Function('state', 'calls', 'env', `
+    const GPS_STILL_MPS = 0.5, TRAIL_WINDOW_S = 3600; // Beta 1.193: the shipped block's window eviction names the app1 constant - the harness stubs it at its shipped value
+    const runStart = 1000000, trail = state.trail;
+    const distM = env.distM, trailKm = () => 0, markDirty = k => calls.dirty.push(k),
+      PERSIST = { flush: () => calls.flush++ }, drawTrail = () => calls.draw++, coverFix = () => calls.cover++;
+    const store = new Map();
+    const LS = { rundist: 'test.rundist', rundist2: 'test.rundist2' };
+    const lsSet = (k, v) => { store.set(k, String(v)); if (k === LS.rundist) calls.persist++; return true; };
+    const lsGet = k => (store.has(k) ? store.get(k) : null);
+    const lsDel = k => store.delete(k);
+    ${rundistSrc}
+    RUNDIST.cur = { m: 0, run: 1000000, capped: false }; // the pre-1.193 seed shape: the retired capped field rides the record and the owner must be indifferent to it
+    const fix = (speed, sm, now) => {
+      ${trailBlock}
+    };
+    return { fix, owner: RUNDIST };
   `);
-  return { calls, state, fix: (speed, sm, now) => run(speed, sm, now, state, calls, env) };
+  const inner = factory(state, calls, env);
+  return { calls, state, owner: inner.owner, fix: inner.fix };
 }
 const env = { distM };
 const P = (lat, lng) => [lat, lng];
@@ -158,13 +180,13 @@ const P = (lat, lng) => [lat, lng];
   t('S1 a moving fix records a trail point', h.state.trail.length === 1 && h.calls.persist === 1);
   const dirtyBefore = h.calls.dirty.length;
   h.fix(0.3, P(43.8001, -79.5001), 1002000); // stopped fix ~14 m of wander away
-  t('S2 a stopped fix records no point, banks no distance, persists nothing', h.state.trail.length === 1 && h.state.runDist.m === 0 && h.calls.persist === 1 && !h.calls.dirty.slice(dirtyBefore).includes('trail'));
+  t('S2 a stopped fix records no point, banks no distance, persists nothing', h.state.trail.length === 1 && h.owner.cur.m === 0 && h.calls.persist === 1 && !h.calls.dirty.slice(dirtyBefore).includes('trail'));
   t('S2b a stopped fix still runs coverage and the aux flush (Beta 1.193: the block makes NO draw call - drawTrail is retired with the map line, and the stub count staying at zero proves the shipped block never reaches for it)', h.calls.cover === 2 && h.calls.flush === 2 && h.calls.draw === 0);
   h.fix(0, P(43.8002, -79.5002), 1003000); // speed exactly 0: still stopped
-  t('S3 a speed-0 fix records nothing either', h.state.trail.length === 1 && h.state.runDist.m === 0);
+  t('S3 a speed-0 fix records nothing either', h.state.trail.length === 1 && h.owner.cur.m === 0);
   h.fix(2, P(43.8010, -79.5000), 1004000); // moving again, ~111 m north of point 1
   t('S4 the next moving fix banks the segment from the last RECORDED point (real distance survives the guard)',
-    h.state.trail.length === 2 && near(h.state.runDist.m, distM(P(43.8000, -79.5000), P(43.8010, -79.5000)), 0.01));
+    h.state.trail.length === 2 && near(h.owner.cur.m, distM(P(43.8000, -79.5000), P(43.8010, -79.5000)), 0.01));
   h.fix(null, P(43.8011, -79.5000), 1005000); // no reported speed: no evidence of stillness
   t('S5 a fix with no reported speed records as before', h.state.trail.length === 3);
   h.fix(0.5, P(43.8012, -79.5000), 1006000); // exactly at the threshold: moving (guard is < 0.5)

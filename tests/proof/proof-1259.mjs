@@ -77,8 +77,8 @@ check('12: symbol-spacing 500 is set in the normalization path on the road-label
 check('13: the CHANGELOG top entry is Beta 1.259',
   changelog.indexOf('## Beta 1.259') > -1 && changelog.indexOf('## Beta 1.259') < changelog.indexOf('## Beta 1.258'));
 check('14: What\'s New carries the CURRENT entry\'s bullet (rolled to 1.261: this check tracks the current entry each round, like the other release-editorial checks; the bullets it shipped with live in the CHANGELOG), within the 108-char cap, em-dash free',
-  whatsnew.includes("Under the hood: saving now runs through one scheduler, so marks, trail and backups write in one set order.") &&
-  "Under the hood: saving now runs through one scheduler, so marks, trail and backups write in one set order.".length <= 108 &&
+  whatsnew.includes("Under the hood: run distance has one owner now, so it is recorded, banked and recovered in one place.") &&
+  "Under the hood: run distance has one owner now, so it is recorded, banked and recovered in one place.".length <= 108 &&
   !whatsnew.includes('—'));
 
 console.log(`proof-1259: ${pass} passed, ${fail} failed`);

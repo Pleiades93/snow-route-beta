@@ -6967,6 +6967,448 @@
     "scripts/check-census.py": "dd55f34cd855e60a6fadae7e261aa99f1682b9d7d8446696532045e3a281fafb"
    },
    "issued": "2026-11-22"
+  },
+  {
+   "id": "arch4-1276",
+   "kind": "app",
+   "anchors": {
+    "functions": [
+     "persistRunDist",
+     "bankRunDistMirror",
+     "startClean",
+     "cancelStart",
+     "finishRun",
+     "buildSnap",
+     "acceptFix",
+     "resetNotesHistorySession",
+     "flush",
+     "lateFn",
+     "flushAux",
+     "saveAll",
+     "buildBackup",
+     "startGps",
+     "resetSwitchSession",
+     "loadRoute"
+    ],
+    "elements": [],
+    "guards": []
+   },
+   "changed": [
+    "parts/app1.js,parts/app3.js,parts/whatsnew.js"
+   ],
+   "rows": [
+    {
+     "id": "caller:acceptFix:parts/app3.js:startGps",
+     "kind": "caller",
+     "source": "derived: call-site scan of parts/ - acceptFix() is called from startGps in parts/app3.js",
+     "status": "covered",
+     "note": "the caller reaches the same acceptFix; its counter half now runs through RUNDIST.record (adopt, anchor, trailKm's pair rule, the bank) with the trail append and window eviction unmoved in acceptFix - drive187, drive195, drive200 and the GPS-package selftest prove the recorded outcomes identical"
+    },
+    {
+     "id": "caller:buildBackup:parts/app4.js:downloadBackup",
+     "kind": "caller",
+     "source": "derived: call-site scan of parts/ - buildBackup() is called from downloadBackup in parts/app4.js",
+     "status": "covered",
+     "note": "the caller reaches the same doorway/flush signatures, now served by PERSIST (architecture #3); exercised by the round's focused drives (83/86/114/133/136/141/145/169/187/194/195) and proofs 78/78 - same keys, order, throttles and outcomes"
+    },
+    {
+     "id": "caller:buildBackup:parts/app4.js:shareBackup",
+     "kind": "caller",
+     "source": "derived: call-site scan of parts/ - buildBackup() is called from shareBackup in parts/app4.js",
+     "status": "covered",
+     "note": "the caller reaches the same doorway/flush signatures, now served by PERSIST (architecture #3); exercised by the round's focused drives (83/86/114/133/136/141/145/169/187/194/195) and proofs 78/78 - same keys, order, throttles and outcomes"
+    },
+    {
+     "id": "caller:buildSnap:parts/app3.js:finishRun",
+     "kind": "caller",
+     "source": "derived: call-site scan of parts/ - buildSnap() is called from finishRun in parts/app3.js",
+     "status": "covered",
+     "note": "buildSnap's counter read is RUNDIST.distance() now, adoption inside the owner; the trailKm fallback stands - drive187's finish archives the counter's true total (B5b/B5d)"
+    },
+    {
+     "id": "caller:cancelStart:parts/app3.js:askCancelStart",
+     "kind": "caller",
+     "source": "derived: call-site scan of parts/ - cancelStart() is called from askCancelStart in parts/app3.js",
+     "status": "covered",
+     "note": "cancelStart's teardown triple (reset plus both storage deletes) is RUNDIST.end() at the same position in the flow"
+    },
+    {
+     "id": "caller:finishRun:parts/app3.js:finYes:click",
+     "kind": "caller",
+     "source": "derived: call-site scan of parts/ - finishRun() is called from finYes:click in parts/app3.js",
+     "status": "covered",
+     "note": "finishRun's teardown is RUNDIST.end(); its archive read through buildSnap is RUNDIST.distance() - drive187 B5b/B5d pin the archived totals"
+    },
+    {
+     "id": "caller:finishRun:parts/app3.js:performReset",
+     "kind": "caller",
+     "source": "derived: call-site scan of parts/ - finishRun() is called from performReset in parts/app3.js",
+     "status": "covered",
+     "note": "the reset path reaches the same finishRun; its counter teardown and archive read are the owner's acts (RUNDIST.end / RUNDIST.distance)"
+    },
+    {
+     "id": "caller:flush:parts/app1.js:top-level",
+     "kind": "caller",
+     "source": "derived: call-site scan of parts/ - flush() is called from top-level in parts/app1.js",
+     "status": "covered",
+     "note": "PERSIST.flush (the #3 owner) still resolves persistRunDist and bankRunDistMirror by name for its run-distance steps; both survive as one-line delegations into RUNDIST.bank and RUNDIST.flushMirror, so the flush walk keeps the old order exactly"
+    },
+    {
+     "id": "caller:flush:parts/engine.js:edgeRunSlices",
+     "kind": "caller",
+     "source": "derived: call-site scan of parts/ - flush() is called from edgeRunSlices in parts/engine.js",
+     "status": "na",
+     "note": "a namesake flush inside the engine's slice runner, unrelated to PERSIST.flush and to the counter"
+    },
+    {
+     "id": "caller:lateFn:parts/app1.js:top-level",
+     "kind": "caller",
+     "source": "derived: call-site scan of parts/ - lateFn() is called from top-level in parts/app1.js",
+     "status": "covered",
+     "note": "lateFn resolves the same two doorway names; the doorways delegate to the owner - the resolution contract is what this round preserved on purpose"
+    },
+    {
+     "id": "caller:loadRoute:parts/app2.js:top-level",
+     "kind": "caller",
+     "source": "derived: call-site scan of parts/ - loadRoute() is called from top-level in parts/app2.js",
+     "status": "covered",
+     "note": "the caller reaches the same doorway/flush signatures, now served by PERSIST (architecture #3); exercised by the round's focused drives (83/86/114/133/136/141/145/169/187/194/195) and proofs 78/78 - same keys, order, throttles and outcomes"
+    },
+    {
+     "id": "caller:loadRoute:parts/create-save.js:top-level",
+     "kind": "caller",
+     "source": "derived: call-site scan of parts/ - loadRoute() is called from top-level in parts/create-save.js",
+     "status": "covered",
+     "note": "the caller reaches the same doorway/flush signatures, now served by PERSIST (architecture #3); exercised by the round's focused drives (83/86/114/133/136/141/145/169/187/194/195) and proofs 78/78 - same keys, order, throttles and outcomes"
+    },
+    {
+     "id": "caller:resetNotesHistorySession:parts/app5.js:resetSwitchSession",
+     "kind": "caller",
+     "source": "derived: call-site scan of parts/ - resetNotesHistorySession() is called from resetSwitchSession in parts/app5.js",
+     "status": "covered",
+     "note": "the switch reset's counter act is RUNDIST.reset() - state-only, the stored record stays in the outgoing slot for lazy re-adoption on switch-back, exactly the pre-1.276 split"
+    },
+    {
+     "id": "caller:resetSwitchSession:parts/app5.js:loadRoute",
+     "kind": "caller",
+     "source": "derived: call-site scan of parts/ - resetSwitchSession() is called from loadRoute in parts/app5.js",
+     "status": "covered",
+     "note": "loadRoute reaches the switch reset unchanged; the counter's part of that reset is RUNDIST.reset() as on the resetNotesHistorySession row"
+    },
+    {
+     "id": "caller:resetSwitchSession:parts/app5.js:unloadRouteToBoot",
+     "kind": "caller",
+     "source": "derived: call-site scan of parts/ - resetSwitchSession() is called from unloadRouteToBoot in parts/app5.js",
+     "status": "covered",
+     "note": "the unload reaches the switch reset unchanged; the counter's part of it is RUNDIST.reset() (state-only, the outgoing slot's record untouched)"
+    },
+    {
+     "id": "caller:saveAll:parts/app1.js:top-level",
+     "kind": "caller",
+     "source": "derived: call-site scan of parts/ - saveAll() is called from top-level in parts/app1.js",
+     "status": "covered",
+     "note": "the caller reaches the same doorway/flush signatures, now served by PERSIST (architecture #3); exercised by the round's focused drives (83/86/114/133/136/141/145/169/187/194/195) and proofs 78/78 - same keys, order, throttles and outcomes"
+    },
+    {
+     "id": "caller:saveAll:parts/app2.js:saveAllWarned",
+     "kind": "caller",
+     "source": "derived: call-site scan of parts/ - saveAll() is called from saveAllWarned in parts/app2.js",
+     "status": "covered",
+     "note": "the caller reaches the same doorway/flush signatures, now served by PERSIST (architecture #3); exercised by the round's focused drives (83/86/114/133/136/141/145/169/187/194/195) and proofs 78/78 - same keys, order, throttles and outcomes"
+    },
+    {
+     "id": "caller:saveAll:parts/app3.js:finishRun",
+     "kind": "caller",
+     "source": "derived: call-site scan of parts/ - saveAll() is called from finishRun in parts/app3.js",
+     "status": "covered",
+     "note": "the caller reaches the same doorway/flush signatures, now served by PERSIST (architecture #3); exercised by the round's focused drives (83/86/114/133/136/141/145/169/187/194/195) and proofs 78/78 - same keys, order, throttles and outcomes"
+    },
+    {
+     "id": "caller:saveAll:parts/app4.js:backupObj",
+     "kind": "caller",
+     "source": "derived: call-site scan of parts/ - saveAll() is called from backupObj in parts/app4.js",
+     "status": "covered",
+     "note": "the caller reaches the same doorway/flush signatures, now served by PERSIST (architecture #3); exercised by the round's focused drives (83/86/114/133/136/141/145/169/187/194/195) and proofs 78/78 - same keys, order, throttles and outcomes"
+    },
+    {
+     "id": "caller:saveAll:parts/app5.js:loadRoute",
+     "kind": "caller",
+     "source": "derived: call-site scan of parts/ - saveAll() is called from loadRoute in parts/app5.js",
+     "status": "covered",
+     "note": "the caller reaches the same doorway/flush signatures, now served by PERSIST (architecture #3); exercised by the round's focused drives (83/86/114/133/136/141/145/169/187/194/195) and proofs 78/78 - same keys, order, throttles and outcomes"
+    },
+    {
+     "id": "caller:startClean:parts/app3.js:startBtn:click",
+     "kind": "caller",
+     "source": "derived: call-site scan of parts/ - startClean() is called from startBtn:click in parts/app3.js",
+     "status": "covered",
+     "note": "startClean opens the counter through RUNDIST.begin() - fresh record, zeroed write ledger, the forced first bank; the mirror ledger is deliberately not reset, as before - drive200's B arm proves recording from the tap"
+    },
+    {
+     "id": "caller:startGps:parts/app3.js:gpsBtn:click",
+     "kind": "caller",
+     "source": "derived: call-site scan of parts/ - startGps() is called from gpsBtn:click in parts/app3.js",
+     "status": "na",
+     "note": "the Locate watch is view-only and never touches the counter (Beta 1.49); this round changes nothing on that path"
+    },
+    {
+     "id": "caller:startGps:parts/app3.js:startClean",
+     "kind": "caller",
+     "source": "derived: call-site scan of parts/ - startGps() is called from startClean in parts/app3.js",
+     "status": "covered",
+     "note": "startClean starts GPS as before; its only counter interaction is RUNDIST.begin() at the open"
+    },
+    {
+     "id": "caller:startGps:parts/app5.js:loadRoute",
+     "kind": "caller",
+     "source": "derived: call-site scan of parts/ - startGps() is called from loadRoute in parts/app5.js",
+     "status": "na",
+     "note": "loadRoute's GPS start is setup plumbing; the counter is reached on the switch only through the reset, censused on its own rows"
+    }
+   ],
+   "files": {
+    "parts/app1.js": "cf555a9736c6f9961e906e0fd9c00a531c9ddb88ca3c5ff5765fa33ba62953df",
+    "parts/app2.js": "e0161aa1a5ce7def923be1b2fd70aeff9c233136e2d85f86cbd99a0867a59720",
+    "parts/app3.js": "e83888e7064c2101004e95fac8a0843f88573d89bf1b8566620a78477c76a051",
+    "parts/app4.js": "77a902a67ce2de0f989a00d9a06c9f16ee7fccdc10e43238ddade610e57e463d",
+    "parts/app5.js": "075517797dadbffbebf5d59682dae3a8771b1b5fa3b999c5de4206257160249f",
+    "parts/brand-snow.js": "86fa9a02f29c7345ee68d68daffd9c72da612921b64da37f1eccf6b72161ac5f",
+    "parts/create-cache.js": "2a7e983aa50862cb074a16abf9266a41a1a175c69faa5215b1d3d289aa2b5327",
+    "parts/create-citydata.js": "393d90f275d971b5e52352deebaece381279acd0e86495ffa2da35701de9148e",
+    "parts/create-fetch.js": "e7a65bd88dc338213946c4537dc5d397f79396ec416b6f4ebf4be831927aeb66",
+    "parts/create-packs.js": "a8b60fb7d601c1e83f555eb703b625a571ec878937ac36fcaddd05aecf635975",
+    "parts/create-pick.js": "7188458b087496ad52ff5d159ae23668b543d0100a3d58c3b251d33374258dd6",
+    "parts/create-save.js": "ad39720727f43d397e72443c92955c5a35d530f03e3219b2182c9ee7c062e52d",
+    "parts/data.js": "9684c69862156dc70ee9a2b88278b4e825c5bf35f0c150fbc5660ccbdce9304b",
+    "parts/engine.js": "d6d1f676ac8bc2a302cfbaf56de1e10cb361fd8b746d94d6380a5e4ebaf76173",
+    "parts/pmstyles.js": "f3501db9c16dbc6a5fa8c901089101e4913772384de1f069accb23a614bb90fc",
+    "parts/whatsnew.js": "443eb1c9595a2de40c6b03f93318a850c9e426b328fc7248c03ea2f2fbb82ebd",
+    "parts/head.html": "bff57252f945388445965c770902c06145d3501ceb21cb6f5507fd542eca066d",
+    "scripts/check-census.py": "dd55f34cd855e60a6fadae7e261aa99f1682b9d7d8446696532045e3a281fafb"
+   },
+   "issued": "2026-11-23"
+  },
+  {
+   "id": "arch4-1276b",
+   "kind": "app",
+   "anchors": {
+    "functions": [
+     "persistRunDist",
+     "bankRunDistMirror",
+     "startClean",
+     "cancelStart",
+     "finishRun",
+     "buildSnap",
+     "acceptFix",
+     "resetNotesHistorySession",
+     "flush",
+     "lateFn",
+     "flushAux",
+     "saveAll",
+     "buildBackup",
+     "startGps",
+     "resetSwitchSession",
+     "loadRoute"
+    ],
+    "elements": [],
+    "guards": []
+   },
+   "changed": [
+    "parts/app1.js",
+    "parts/app3.js",
+    "parts/whatsnew.js"
+   ],
+   "rows": [
+    {
+     "id": "caller:acceptFix:parts/app3.js:startGps",
+     "kind": "caller",
+     "source": "derived: call-site scan of parts/ - acceptFix() is called from startGps in parts/app3.js",
+     "status": "covered",
+     "note": "the caller reaches the same acceptFix; its counter half now runs through RUNDIST.record (adopt, anchor, trailKm's pair rule, the bank) with the trail append and window eviction unmoved in acceptFix - drive187, drive195, drive200 and the GPS-package selftest prove the recorded outcomes identical"
+    },
+    {
+     "id": "caller:buildBackup:parts/app4.js:downloadBackup",
+     "kind": "caller",
+     "source": "derived: call-site scan of parts/ - buildBackup() is called from downloadBackup in parts/app4.js",
+     "status": "covered",
+     "note": "the caller reaches the same doorway/flush signatures, now served by PERSIST (architecture #3); exercised by the round's focused drives (83/86/114/133/136/141/145/169/187/194/195) and proofs 78/78 - same keys, order, throttles and outcomes"
+    },
+    {
+     "id": "caller:buildBackup:parts/app4.js:shareBackup",
+     "kind": "caller",
+     "source": "derived: call-site scan of parts/ - buildBackup() is called from shareBackup in parts/app4.js",
+     "status": "covered",
+     "note": "the caller reaches the same doorway/flush signatures, now served by PERSIST (architecture #3); exercised by the round's focused drives (83/86/114/133/136/141/145/169/187/194/195) and proofs 78/78 - same keys, order, throttles and outcomes"
+    },
+    {
+     "id": "caller:buildSnap:parts/app3.js:finishRun",
+     "kind": "caller",
+     "source": "derived: call-site scan of parts/ - buildSnap() is called from finishRun in parts/app3.js",
+     "status": "covered",
+     "note": "buildSnap's counter read is RUNDIST.distance() now, adoption inside the owner; the trailKm fallback stands - drive187's finish archives the counter's true total (B5b/B5d)"
+    },
+    {
+     "id": "caller:cancelStart:parts/app3.js:askCancelStart",
+     "kind": "caller",
+     "source": "derived: call-site scan of parts/ - cancelStart() is called from askCancelStart in parts/app3.js",
+     "status": "covered",
+     "note": "cancelStart's teardown triple (reset plus both storage deletes) is RUNDIST.end() at the same position in the flow"
+    },
+    {
+     "id": "caller:finishRun:parts/app3.js:finYes:click",
+     "kind": "caller",
+     "source": "derived: call-site scan of parts/ - finishRun() is called from finYes:click in parts/app3.js",
+     "status": "covered",
+     "note": "finishRun's teardown is RUNDIST.end(); its archive read through buildSnap is RUNDIST.distance() - drive187 B5b/B5d pin the archived totals"
+    },
+    {
+     "id": "caller:finishRun:parts/app3.js:performReset",
+     "kind": "caller",
+     "source": "derived: call-site scan of parts/ - finishRun() is called from performReset in parts/app3.js",
+     "status": "covered",
+     "note": "the reset path reaches the same finishRun; its counter teardown and archive read are the owner's acts (RUNDIST.end / RUNDIST.distance)"
+    },
+    {
+     "id": "caller:flush:parts/app1.js:top-level",
+     "kind": "caller",
+     "source": "derived: call-site scan of parts/ - flush() is called from top-level in parts/app1.js",
+     "status": "covered",
+     "note": "PERSIST.flush (the #3 owner) still resolves persistRunDist and bankRunDistMirror by name for its run-distance steps; both survive as one-line delegations into RUNDIST.bank and RUNDIST.flushMirror, so the flush walk keeps the old order exactly"
+    },
+    {
+     "id": "caller:flush:parts/engine.js:edgeRunSlices",
+     "kind": "caller",
+     "source": "derived: call-site scan of parts/ - flush() is called from edgeRunSlices in parts/engine.js",
+     "status": "na",
+     "note": "a namesake flush inside the engine's slice runner, unrelated to PERSIST.flush and to the counter"
+    },
+    {
+     "id": "caller:lateFn:parts/app1.js:top-level",
+     "kind": "caller",
+     "source": "derived: call-site scan of parts/ - lateFn() is called from top-level in parts/app1.js",
+     "status": "covered",
+     "note": "lateFn resolves the same two doorway names; the doorways delegate to the owner - the resolution contract is what this round preserved on purpose"
+    },
+    {
+     "id": "caller:loadRoute:parts/app2.js:top-level",
+     "kind": "caller",
+     "source": "derived: call-site scan of parts/ - loadRoute() is called from top-level in parts/app2.js",
+     "status": "covered",
+     "note": "the caller reaches the same doorway/flush signatures, now served by PERSIST (architecture #3); exercised by the round's focused drives (83/86/114/133/136/141/145/169/187/194/195) and proofs 78/78 - same keys, order, throttles and outcomes"
+    },
+    {
+     "id": "caller:loadRoute:parts/create-save.js:top-level",
+     "kind": "caller",
+     "source": "derived: call-site scan of parts/ - loadRoute() is called from top-level in parts/create-save.js",
+     "status": "covered",
+     "note": "the caller reaches the same doorway/flush signatures, now served by PERSIST (architecture #3); exercised by the round's focused drives (83/86/114/133/136/141/145/169/187/194/195) and proofs 78/78 - same keys, order, throttles and outcomes"
+    },
+    {
+     "id": "caller:resetNotesHistorySession:parts/app5.js:resetSwitchSession",
+     "kind": "caller",
+     "source": "derived: call-site scan of parts/ - resetNotesHistorySession() is called from resetSwitchSession in parts/app5.js",
+     "status": "covered",
+     "note": "the switch reset's counter act is RUNDIST.reset() - state-only, the stored record stays in the outgoing slot for lazy re-adoption on switch-back, exactly the pre-1.276 split"
+    },
+    {
+     "id": "caller:resetSwitchSession:parts/app5.js:loadRoute",
+     "kind": "caller",
+     "source": "derived: call-site scan of parts/ - resetSwitchSession() is called from loadRoute in parts/app5.js",
+     "status": "covered",
+     "note": "loadRoute reaches the switch reset unchanged; the counter's part of that reset is RUNDIST.reset() as on the resetNotesHistorySession row"
+    },
+    {
+     "id": "caller:resetSwitchSession:parts/app5.js:unloadRouteToBoot",
+     "kind": "caller",
+     "source": "derived: call-site scan of parts/ - resetSwitchSession() is called from unloadRouteToBoot in parts/app5.js",
+     "status": "covered",
+     "note": "the unload reaches the switch reset unchanged; the counter's part of it is RUNDIST.reset() (state-only, the outgoing slot's record untouched)"
+    },
+    {
+     "id": "caller:saveAll:parts/app1.js:top-level",
+     "kind": "caller",
+     "source": "derived: call-site scan of parts/ - saveAll() is called from top-level in parts/app1.js",
+     "status": "covered",
+     "note": "the caller reaches the same doorway/flush signatures, now served by PERSIST (architecture #3); exercised by the round's focused drives (83/86/114/133/136/141/145/169/187/194/195) and proofs 78/78 - same keys, order, throttles and outcomes"
+    },
+    {
+     "id": "caller:saveAll:parts/app2.js:saveAllWarned",
+     "kind": "caller",
+     "source": "derived: call-site scan of parts/ - saveAll() is called from saveAllWarned in parts/app2.js",
+     "status": "covered",
+     "note": "the caller reaches the same doorway/flush signatures, now served by PERSIST (architecture #3); exercised by the round's focused drives (83/86/114/133/136/141/145/169/187/194/195) and proofs 78/78 - same keys, order, throttles and outcomes"
+    },
+    {
+     "id": "caller:saveAll:parts/app3.js:finishRun",
+     "kind": "caller",
+     "source": "derived: call-site scan of parts/ - saveAll() is called from finishRun in parts/app3.js",
+     "status": "covered",
+     "note": "the caller reaches the same doorway/flush signatures, now served by PERSIST (architecture #3); exercised by the round's focused drives (83/86/114/133/136/141/145/169/187/194/195) and proofs 78/78 - same keys, order, throttles and outcomes"
+    },
+    {
+     "id": "caller:saveAll:parts/app4.js:backupObj",
+     "kind": "caller",
+     "source": "derived: call-site scan of parts/ - saveAll() is called from backupObj in parts/app4.js",
+     "status": "covered",
+     "note": "the caller reaches the same doorway/flush signatures, now served by PERSIST (architecture #3); exercised by the round's focused drives (83/86/114/133/136/141/145/169/187/194/195) and proofs 78/78 - same keys, order, throttles and outcomes"
+    },
+    {
+     "id": "caller:saveAll:parts/app5.js:loadRoute",
+     "kind": "caller",
+     "source": "derived: call-site scan of parts/ - saveAll() is called from loadRoute in parts/app5.js",
+     "status": "covered",
+     "note": "the caller reaches the same doorway/flush signatures, now served by PERSIST (architecture #3); exercised by the round's focused drives (83/86/114/133/136/141/145/169/187/194/195) and proofs 78/78 - same keys, order, throttles and outcomes"
+    },
+    {
+     "id": "caller:startClean:parts/app3.js:startBtn:click",
+     "kind": "caller",
+     "source": "derived: call-site scan of parts/ - startClean() is called from startBtn:click in parts/app3.js",
+     "status": "covered",
+     "note": "startClean opens the counter through RUNDIST.begin() - fresh record, zeroed write ledger, the forced first bank; the mirror ledger is deliberately not reset, as before - drive200's B arm proves recording from the tap"
+    },
+    {
+     "id": "caller:startGps:parts/app3.js:gpsBtn:click",
+     "kind": "caller",
+     "source": "derived: call-site scan of parts/ - startGps() is called from gpsBtn:click in parts/app3.js",
+     "status": "na",
+     "note": "the Locate watch is view-only and never touches the counter (Beta 1.49); this round changes nothing on that path"
+    },
+    {
+     "id": "caller:startGps:parts/app3.js:startClean",
+     "kind": "caller",
+     "source": "derived: call-site scan of parts/ - startGps() is called from startClean in parts/app3.js",
+     "status": "covered",
+     "note": "startClean starts GPS as before; its only counter interaction is RUNDIST.begin() at the open"
+    },
+    {
+     "id": "caller:startGps:parts/app5.js:loadRoute",
+     "kind": "caller",
+     "source": "derived: call-site scan of parts/ - startGps() is called from loadRoute in parts/app5.js",
+     "status": "na",
+     "note": "loadRoute's GPS start is setup plumbing; the counter is reached on the switch only through the reset, censused on its own rows"
+    }
+   ],
+   "files": {
+    "parts/app1.js": "cf555a9736c6f9961e906e0fd9c00a531c9ddb88ca3c5ff5765fa33ba62953df",
+    "parts/app2.js": "e0161aa1a5ce7def923be1b2fd70aeff9c233136e2d85f86cbd99a0867a59720",
+    "parts/app3.js": "e83888e7064c2101004e95fac8a0843f88573d89bf1b8566620a78477c76a051",
+    "parts/app4.js": "77a902a67ce2de0f989a00d9a06c9f16ee7fccdc10e43238ddade610e57e463d",
+    "parts/app5.js": "075517797dadbffbebf5d59682dae3a8771b1b5fa3b999c5de4206257160249f",
+    "parts/brand-snow.js": "86fa9a02f29c7345ee68d68daffd9c72da612921b64da37f1eccf6b72161ac5f",
+    "parts/create-cache.js": "2a7e983aa50862cb074a16abf9266a41a1a175c69faa5215b1d3d289aa2b5327",
+    "parts/create-citydata.js": "393d90f275d971b5e52352deebaece381279acd0e86495ffa2da35701de9148e",
+    "parts/create-fetch.js": "e7a65bd88dc338213946c4537dc5d397f79396ec416b6f4ebf4be831927aeb66",
+    "parts/create-packs.js": "a8b60fb7d601c1e83f555eb703b625a571ec878937ac36fcaddd05aecf635975",
+    "parts/create-pick.js": "7188458b087496ad52ff5d159ae23668b543d0100a3d58c3b251d33374258dd6",
+    "parts/create-save.js": "ad39720727f43d397e72443c92955c5a35d530f03e3219b2182c9ee7c062e52d",
+    "parts/data.js": "9684c69862156dc70ee9a2b88278b4e825c5bf35f0c150fbc5660ccbdce9304b",
+    "parts/engine.js": "d6d1f676ac8bc2a302cfbaf56de1e10cb361fd8b746d94d6380a5e4ebaf76173",
+    "parts/pmstyles.js": "f3501db9c16dbc6a5fa8c901089101e4913772384de1f069accb23a614bb90fc",
+    "parts/whatsnew.js": "443eb1c9595a2de40c6b03f93318a850c9e426b328fc7248c03ea2f2fbb82ebd",
+    "parts/head.html": "bff57252f945388445965c770902c06145d3501ceb21cb6f5507fd542eca066d",
+    "scripts/check-census.py": "dd55f34cd855e60a6fadae7e261aa99f1682b9d7d8446696532045e3a281fafb"
+   },
+   "issued": "2026-11-23"
   }
  ]
 }

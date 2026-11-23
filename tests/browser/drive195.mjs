@@ -90,8 +90,8 @@ try {
   const resumeRun = async () => J(`(() => { Object.defineProperty(navigator, 'geolocation', { value: { watchPosition: (okCb, errCb) => { window.__wp = okCb; return 777; }, clearWatch: () => {} }, configurable: true }); startGps(true); return { wid: watchId, gfr: gpsFromRun }; })()`);
   let truth = 0; // metres, summed from the feeder's independent haversine per leg
   const leg = async (n) => { const r = await J(`window.__feed195(${n})`); truth += r.truth; return r; };
-  const banked = async () => J(`(() => { flushAux(true); return { m: runDist.m, pri: JSON.parse(localStorage.getItem(LS.rundist) || 'null'), mir: JSON.parse(localStorage.getItem(LS.rundist2) || 'null'), tl: trail.length, newest: trail.length ? trail[trail.length - 1][2] : 0, oldest: trail.length ? trail[0][2] : 0 }; })()`);
-  const recover = async () => J(`(() => { adoptRunDist(); return { rec: runDist.m, tl: trail.length, newest: trail.length ? trail[trail.length - 1][2] : 0, oldest: trail.length ? trail[0][2] : 0 }; })()`);
+  const banked = async () => J(`(() => { flushAux(true); return { m: RUNDIST.cur.m, pri: JSON.parse(localStorage.getItem(LS.rundist) || 'null'), mir: JSON.parse(localStorage.getItem(LS.rundist2) || 'null'), tl: trail.length, newest: trail.length ? trail[trail.length - 1][2] : 0, oldest: trail.length ? trail[0][2] : 0 }; })()`);
+  const recover = async () => J(`(() => { RUNDIST.adopt(); return { rec: RUNDIST.cur.m, tl: trail.length, newest: trail.length ? trail[trail.length - 1][2] : 0, oldest: trail.length ? trail[0][2] : 0 }; })()`);
 
   // ---- K1: kill at hour 1 ----
   await leg(720);
@@ -137,14 +137,14 @@ try {
   await J(`(() => { const last = trail[trail.length - 1]; window.__prev195 = [last[0], last[1]]; return true; })()`);
   await leg(240); // 20 more minutes in this page; counter and trail advance together
   const tail9 = await J(`trail[trail.length - 1]`); // the true tail - the phone never moves; only storage is about to lose it
-  const b9 = await J(`(() => { const st = JSON.parse(localStorage.getItem(LS.trail) || '[]'); localStorage.setItem(LS.trail, JSON.stringify(st.slice(0, -40))); return { m: runDist.m, cut: st.length - 40 }; })()`); // the fault: the stored trail now ends 40 points (500 m) behind the banked counter. NO flush - a flush would land the true trail and heal the fault, which is exactly what a hard crash prevents
+  const b9 = await J(`(() => { const st = JSON.parse(localStorage.getItem(LS.trail) || '[]'); localStorage.setItem(LS.trail, JSON.stringify(st.slice(0, -40))); return { m: RUNDIST.cur.m, cut: st.length - 40 }; })()`); // the fault: the stored trail now ends 40 points (500 m) behind the banked counter. NO flush - a flush would land the true trail and heal the fault, which is exactly what a hard crash prevents
   await reloadPage();
   await resumeRun();
   await install(rs3 + 28200000, null);
   const r9 = await recover();
   await J(`(() => { window.__prev195 = [${tail9[0]}, ${tail9[1]}]; return true; })()`); // the feeder continues from the TRUE position, not from the stored trail's truncated tail
   await leg(1);
-  const m9 = await J(`runDist.m`);
+  const m9 = await J(`RUNDIST.cur.m`);
   ok('K9 after a crash that loses the trail\u2019s buffered tail, adoption recovers the banked figure AND the first new segment is one step (~12.5 m), not a re-measure of banked travel | ' + JSON.stringify({ banked: b9.m, rec: r9.rec, firstSeg: m9 - r9.rec, storedAfterCut: b9.cut }),
     Math.abs(r9.rec - b9.m) <= 5 && (m9 - r9.rec) >= 0 && (m9 - r9.rec) <= 13.5);
   await leg(120); // 10 more minutes - the run continues clean on the restored endpoint
@@ -153,12 +153,12 @@ try {
     Math.abs(b9b.m - truth) <= 0.0025 * truth);
 
   // ---- K4: primary destroyed - the mirror carries it ----
-  const k4 = await J(`(() => { localStorage.removeItem(LS.rundist); runDist = { run: 0, m: 0 }; adoptRunDist(); return { rec: runDist.m, mir: JSON.parse(localStorage.getItem(LS.rundist2) || 'null') }; })()`);
+  const k4 = await J(`(() => { localStorage.removeItem(LS.rundist); RUNDIST.cur = { run: 0, m: 0 }; RUNDIST.adopt(); return { rec: RUNDIST.cur.m, mir: JSON.parse(localStorage.getItem(LS.rundist2) || 'null') }; })()`);
   ok('K4 with the primary record destroyed, adoption recovers the MIRROR\u2019s figure within a few metres of the banked total | ' + JSON.stringify({ banked: b9b.m, rec: k4.rec, mirM: k4.mir && k4.mir.m }),
     Math.abs(k4.rec - b9b.m) <= 5 && Math.abs((k4.mir || {}).m - b9b.m) < 0.01);
 
   // ---- K5: both copies destroyed - exactly the window, nothing more ----
-  const k5 = await J(`(() => { localStorage.setItem(LS.rundist, 'corrupt'); localStorage.setItem(LS.rundist2, 'corrupt'); runDist = { run: 0, m: 0 }; adoptRunDist(); return { rec: runDist.m, tk: trailKm(runStart) * 1000, tl: trail.length }; })()`);
+  const k5 = await J(`(() => { localStorage.setItem(LS.rundist, 'corrupt'); localStorage.setItem(LS.rundist2, 'corrupt'); RUNDIST.cur = { run: 0, m: 0 }; RUNDIST.adopt(); return { rec: RUNDIST.cur.m, tk: trailKm(runStart) * 1000, tl: trail.length }; })()`);
   ok('K5 with BOTH copies destroyed, recovery equals the window\u2019s own distance exactly (the named residual) and is tens of km below truth | ' + JSON.stringify({ truth, rec: k5.rec, tk: k5.tk, tl: k5.tl }),
     Math.abs(k5.rec - k5.tk) < 0.001 && k5.rec > 8000 && (truth - k5.rec) > 30000);
 
@@ -180,7 +180,7 @@ try {
   ok('K8b the restore windows the legacy trail to the pack\u2019s live run - none - so it lands EMPTY, while the archived clean keeps its path and flag | ' + JSON.stringify(k8),
     k8.trailStored === '[]' && k8.legKm === 12.3 && k8.legPath === 2 && k8.legFlag === true);
   await reloadPage();
-  const k8c = await J(`(() => ({ tl: trail.length, boots: typeof runDist === 'object' }))()`);
+  const k8c = await J(`(() => ({ tl: trail.length, boots: typeof RUNDIST.cur === 'object' }))()`);
   ok('K8c after the restore the app boots sane with an empty resident trail | ' + JSON.stringify(k8c), k8c.tl === 0 && k8c.boots === true);
 } catch (e) {
   R.fatal = String(e && e.message || e);
