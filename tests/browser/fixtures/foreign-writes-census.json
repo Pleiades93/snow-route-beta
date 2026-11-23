@@ -15,7 +15,7 @@
     "engine.js"
   ],
   "totals": {
-    "expressions": 26,
+    "expressions": 22,
     "member": 31,
     "storage": 49,
     "idb": 2,
@@ -30,7 +30,7 @@
         "expressions": 8
       },
       "app4.js": {
-        "expressions": 6
+        "expressions": 2
       },
       "app5.js": {
         "expressions": 10
@@ -125,13 +125,6 @@
     {
       "file": "app4.js",
       "fn": "clearTrailAll",
-      "name": "lastTrailSave",
-      "owner": "app1.js",
-      "occ": 1
-    },
-    {
-      "file": "app4.js",
-      "fn": "clearTrailAll",
       "name": "trail",
       "owner": "app1.js",
       "occ": 1
@@ -140,27 +133,6 @@
       "file": "app4.js",
       "fn": "clearTrailAll",
       "name": "trailSessions",
-      "owner": "app1.js",
-      "occ": 1
-    },
-    {
-      "file": "app4.js",
-      "fn": "restoreBackup",
-      "name": "restoring",
-      "owner": "app1.js",
-      "occ": 1
-    },
-    {
-      "file": "app4.js",
-      "fn": "restoreBackup",
-      "name": "restoring",
-      "owner": "app1.js",
-      "occ": 2
-    },
-    {
-      "file": "app4.js",
-      "fn": "restoreFenceDown",
-      "name": "restoring",
       "owner": "app1.js",
       "occ": 1
     },
@@ -492,7 +464,7 @@
     },
     {
       "file": "app1.js",
-      "fn": "flushAux",
+      "fn": "flush",
       "name": "storage:LS.cov",
       "owner": "app1.js",
       "occ": 1

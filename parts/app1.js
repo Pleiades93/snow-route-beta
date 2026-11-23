@@ -30,7 +30,7 @@ const FIXLOG_MAX_CHARS = 200000; // Beta 1.195: the same log's second cap, in CH
 /** @type {RoadsMap} */ const REFERENCE = Object.create(null);
 /** @param {string} id @returns {RouteKeys} */ function routeKeys(id) { const p = 'snowroute.' + id + '.'; return { done: p + 'v2', times: p + 'v2.times', hist: p + 'v2.history', notes: p + 'v4.notes', via: p + 'v4.via', trail: p + 'v4.trail', cov: p + 'v4.cov', start: p + 'v5.start', flip: p + 'v5.flip', sides: p + 'v5.sides', sess: p + 'v5.sess', pre: p + 'v5.preload', snap: p + 'v5.snap', mig: p + 'v2.migrated', migfill: p + 'v2.migfill', finclean: p + 'v5.finclean', rundist: p + 'v5.rundist', rundist2: p + 'v5.rundist2' }; } // Beta 1.94 (deep audit SR-193-02/03): two slot-local records join the layout - 'snap' is the running clean's persisted pre-Start board (Start writes it, Finish/Cancel delete it; transient, and not a ROUTE_FIELDS member - it rides backups only in normalized form, via snapForExport in app4, since Beta 1.96/1.97) and 'mig' is the legacy migration's explicit completion marker (see migrateLegacyRoute) and never a backup field. Beta 1.141 (Package A, DA-10): 'finclean' joins them on the same terms - the durable finish-cleanup obligation (finishRun's transaction writes it, saveAll's success discharges it, completeFinishCleanup completes it at load); transient, never backed up, not in ROUTE_FIELDS. Beta 1.150 (security-audit fix round): 'migfill' joins them on the same terms - the migration's per-field fill record (see migrateLegacyRoute); written only while a migration is incomplete, deleted when its marker commits. Beta 1.167 (run/pace fix round, B5): 'rundist' joins on the finclean terms WITHOUT any backup ride - the running clean's accumulated-distance record (app3's runDist), genuinely never backed up: Finish bakes its value into the archive entry's km, and a lost record re-derives from the surviving trail (adoptRunDist, app3).
 const LS_GLOBAL = { night: 'snowroute.v2.night', nightExp: 'snowroute.v2.nightExp', exp: 'snowroute.v5.export', prep: 'snowroute.prep.v1', lastArea: 'snowroute.v2.lastarea', fixlog: 'snowroute.v1.fixlog', dp: 'snowroute.v1.dp' }; // Beta 1.118: lastArea = the create flow's area pre-fill memory. Beta 1.189: fixlog = the raw GPS fix log (app3) - a DEVICE record, not route data (it spans routes and locate sessions), so it lives with the globals and rides backups at top level like the settings record, never as a ROUTE_FIELDS member. Beta 1.230: dp = the device profile's stored tier hint (the DEVICE PROFILE section below) - a DEVICE record on fixlog's storage terms (global, spans routes, never a ROUTE_FIELDS member) but NOT backed up: the hint is a measurement of THIS device, and a backup restored onto another phone must not import it; a missing key is the standing default (full quality, no hint)
-const LEGACY_KEYS = { done: 'snowroute.v2', times: 'snowroute.v2.times', hist: 'snowroute.v2.history', notes: 'snowroute.v4.notes', via: 'snowroute.v4.via', trail: 'snowroute.v4.trail', cov: 'snowroute.v4.cov', start: 'snowroute.v5.start', flip: 'snowroute.v5.flip', sides: 'snowroute.v5.sides', sess: 'snowroute.v5.sess', pre: 'snowroute.5w.v5.preload', snap: 'snowroute.v5.snap', finclean: 'snowroute.v5.finclean', rundist: 'snowroute.v5.rundist', rundist2: 'snowroute.v5.rundist2' }; // Beta 1.193: 'rundist2' rides here on rundist's terms - the counter's second copy (bankRunDistMirror, app3), written only by the trail-flush path in flushAux below, never backed up; adoption reads it when the primary is lost (adoptRunDist, app3). snap rides here too so LS.snap is defined on a legacy-fallback boot (the pre-1.76 app never wrote one - the key is simply absent there, which the cancel path already treats as 'no snapshot'); finclean rides for the same reason (Beta 1.141); rundist rides for the same reason (Beta 1.167, B5). Beta 1.254 (O-01): 'pre' rides too, naming the LIVE slot (routeKeys('5w').pre) - through 1.253 a fallback boot had LS.pre undefined, so the preload writer stored its record under a localStorage key literally named "undefined" and the readers read it back from there; the fallback session's preload record now lands where a later migrated boot looks for it
+const LEGACY_KEYS = { done: 'snowroute.v2', times: 'snowroute.v2.times', hist: 'snowroute.v2.history', notes: 'snowroute.v4.notes', via: 'snowroute.v4.via', trail: 'snowroute.v4.trail', cov: 'snowroute.v4.cov', start: 'snowroute.v5.start', flip: 'snowroute.v5.flip', sides: 'snowroute.v5.sides', sess: 'snowroute.v5.sess', pre: 'snowroute.5w.v5.preload', snap: 'snowroute.v5.snap', finclean: 'snowroute.v5.finclean', rundist: 'snowroute.v5.rundist', rundist2: 'snowroute.v5.rundist2' }; // Beta 1.193: 'rundist2' rides here on rundist's terms - the counter's second copy (bankRunDistMirror, app3), written only by the trail-flush path in PERSIST.flush below, never backed up; adoption reads it when the primary is lost (adoptRunDist, app3). snap rides here too so LS.snap is defined on a legacy-fallback boot (the pre-1.76 app never wrote one - the key is simply absent there, which the cancel path already treats as 'no snapshot'); finclean rides for the same reason (Beta 1.141); rundist rides for the same reason (Beta 1.167, B5). Beta 1.254 (O-01): 'pre' rides too, naming the LIVE slot (routeKeys('5w').pre) - through 1.253 a fallback boot had LS.pre undefined, so the preload writer stored its record under a localStorage key literally named "undefined" and the readers read it back from there; the fallback session's preload record now lands where a later migrated boot looks for it
 const ROUTE_FIELDS = ['done', 'times', 'hist', 'notes', 'via', 'trail', 'cov', 'start', 'flip', 'sides', 'sess'];
 const PACK_FIELDS = ['name', 'area', 'primaries', 'spot', 'tileNames', 'box', 'roads', 'reference', 'ends']; // Beta 1.131 (maintainability programme A): the ONE list of fields a route pack carries - normalizePack (create-packs.js) builds every validated pack by walking THIS list, so a field joins the pack format by joining this list (with its cleaner there); a field absent from the list does not survive validation, by construction. Deliberately distinct from ROUTE_FIELDS above: those are storage-slot fields, and 'snap' in particular is a slot field that is NOT a pack field (hand-carried at restore scope by design) - it must never be added here. Beta 1.259: 'ends' joins the format - per street, the boundary-end records ([endLat, endLng, joinLat, joinLng]) the paint engine feathers at (computeBoundaryEnds, create-packs.js, is the one computation).
 // ===== RULE CONSTANTS (Beta 1.136, maintainability programme F): every number that IS a
@@ -45,8 +45,8 @@ const COV_RADIUS_M = 22; // a GPS fix covers the samples within this radius of i
 const GPS_ACCURACY_M = 65; // fixes reported worse than this are rejected while a fresh good fix exists; the accept comparison (<=) and the reject comparison (>) are ONE rule - this constant (acceptFix, app3)
 const GPS_STILL_MPS = 0.5; // Beta 1.187 (GPS package, STOP B): a recorded fix reporting under this speed is a stopped fix - acceptFix's trail guard banks no distance and records no trail point from it (a parked truck's fix wander was banking a median 138 phantom metres a minute into saved cleans). The position path is NOT gated by it: the dot follows every accepted fix exactly as before. (A tighter 28 m accuracy gate and a stationary position hold were priced in the same harness and did NOT ship - both measured neutral-to-worse; the round record carries the numbers.)
 const GPS_STALE_MS = 45000; // a watch silent this long is restarted (app3): silence runs from the later of the last accepted fix and the current watch's own start, so this one value is also a fresh watch's first-fix window (Beta 1.252, R-01 - one threshold by design; a longer cold-fix window, if ever wanted, becomes a sibling constant HERE, never a second literal in app3) - a GPS policy
-const TRAIL_FLUSH_MS = 45000; // the buffered trail write's flush interval (flushAux, below) - a STORAGE policy; see the fence above
-const COV_SAVE_MS = 15000; // the coverage write's throttle window (flushAux, below; declared here with the rule constants since Beta 1.136 - its 1.135 flush discipline is unchanged)
+const TRAIL_FLUSH_MS = 45000; // the buffered trail write's flush interval (PERSIST.flush, below) - a STORAGE policy; see the fence above
+const COV_SAVE_MS = 15000; // the coverage write's throttle window (PERSIST.flush, below; declared here with the rule constants since Beta 1.136 - its 1.135 flush discipline is unchanged)
 const PACK_NAME_MAX = 60, PACK_AREA_MAX = 60, PACK_STREET_NAME_MAX = 60; // the pack validator's per-field character caps (normalizePack, create.js) - separate constants per field, per the fence above
 const PACK_STREETS_MAX = 300, PACK_SEGS_MAX = 80, PACK_SEG_PTS_MAX = 4000, PACK_POINTS_MAX = 150000; // the pack validator's shape caps (normalizePack, create.js); PACK_SEGS_MAX (segments per street) and PACK_TILENAME_MAX (characters per tile name) both happen to be 80 - different policies, separate constants
 const PACK_TILENAME_MAX = 80, PACK_TILENAMES_MAX = 400;
@@ -536,9 +536,7 @@ const HIST = { // Beta 1.272 (architecture programme #2): the history repository
   },
   /** @returns {void} */ unload() { history = []; this._rawList = null; this._rawView = null; }, // 2026-11-15 (A-05): unloadRouteToBoot (app5) calls this when it empties the route state - the snapshot dies with the route it describes, and a stale one must never merge into another route's slot. A call, not a foreign write: app5 never assigns app1's bindings directly (the foreign-write census discipline).
 };
-let startDirty = false; // Beta 1.92 (deep audit F05): a failed start write/delete arms this retry, walked by the flushAux heartbeat until it lands - a stale start key must never resurrect a finished run on the next boot
-let snapDirty = false; // Beta 1.94 (deep audit SR-193-02): the same retry discipline for the persisted pre-Start snapshot (saveSnap, app3) - a failed snapshot write is retried by flushAux until it lands
-/** @returns {StorageOutcome} */ function saveStart() { const ok = runStart ? lsSet(LS.start, String(runStart)) : lsDel(LS.start); startDirty = !ok; return ok ? storeOk() : storeFail('start', true); } // Beta 1.57: reports its result like every other write, for the saveAll contract
+/** @returns {StorageOutcome} */ function saveStart() { const ok = runStart ? lsSet(LS.start, String(runStart)) : lsDel(LS.start); if (ok) markClean('start'); else markDirty('start'); return ok ? storeOk() : storeFail('start', true); } // Beta 1.57: reports its result like every other write, for the saveAll contract. Beta 1.275 (architecture #3): the flag itself is PERSIST's now (below) - this writer arms/clears it through the doorway like every other file; its retry rationale (1.92 F05: a stale start key must never resurrect a finished run) lives in the PERSIST header
 /** @param {string} n @returns {boolean} */ function streetComplete(n) { const p = pieces[n]; if (!Array.isArray(p)) return doneSet.has(n); return p.every(v => v === 3); }
 /** @param {*} raw @param {number} count @returns {PieceTimePair[]} */ function sanitizePieceTimes(raw, count) { // Beta 1.64 (audit F07): only [stringOrNull, stringOrNull] pairs survive - a nested string used to reach applyPiece and throw under strict mode. Accepts the array shape the app writes and the numeric-keyed object a JSON round-trip of a sparse structure can produce. Beta 1.70 (audit A06): indexes are bounded by the street's real stretch count - a corrupt key like 10000 used to inflate a sparse array to that length (~50 KB of nulls per street, worse for larger keys).
   /** @type {(pr: *) => PieceTimePair} */ const pair = pr => Array.isArray(pr) ? [typeof pr[0] === 'string' ? pr[0] : null, typeof pr[1] === 'string' ? pr[1] : null] : [null, null];
@@ -637,7 +635,7 @@ const BOARD = {
   /** @returns {{sides: string, done: string, times: string, via: string, cov: string}} */ serialiseLive() { // the live board's stored strings, one construction: saveAll writes them as the primary save and the recovery export reads them verbatim
     return { sides: JSON.stringify({ p: pieces, t: pieceTimes }), done: JSON.stringify([...doneSet]), times: JSON.stringify(doneTimes), via: JSON.stringify(doneVia), cov: JSON.stringify(coveredIdx) };
   },
-  /** @returns {string} */ serialiseCov() { return JSON.stringify(coveredIdx); }, // flushAux's throttled coverage write
+  /** @returns {string} */ serialiseCov() { return JSON.stringify(coveredIdx); }, // PERSIST.flush's throttled coverage write
   /** @returns {*} */ sidesCopy() { return JSON.parse(JSON.stringify({ p: pieces, t: pieceTimes })); }, // buildSnap's archived sides: a deep copy in the stored {p, t} shape
   /** @returns {*} */ clearedSides() { // finishRun's transaction input: the zeroed sides maps a committed finish writes as the cleared authority
     const p = {}, t = {};
@@ -834,9 +832,8 @@ document.addEventListener('visibilitychange', () => { if (document.visibilitySta
 // writes and messaging. (Beta 1.101, Phase 3: the old global failure key, the
 // quiet toggle and the warned flag are retired - outcomes travel in the
 // returned result, and messaging lives in the app layer.)
-let primaryDirty = false; // Beta 1.94 (deep audit SR-193-05): a failed saveAll arms this flag and flushAux's heartbeat retries the primary save until it lands. Before 1.94 the heartbeat retried only the auxiliary records and the start key, so a failed metadata write (notes/times/via/done/history) waited for the next incidental save - while Finish's own message promised a retry nothing performed.
-/** @returns {StorageOutcome} */ function saveAll() { // Beta 1.101 (Phase 3 / C2): returns the storage-outcome result - the first failing record is named in failedKey and a retry is armed via primaryDirty. No toast here: storage never speaks to the user (saveAllWarned in app2 owns the warning).
-  if (restoring) return storeFail('restoring', false); // Beta 1.147 (hypothesis H1, CONFIRMED): while a restore's reload is pending the in-memory board is still the PRE-restore one, so any save here would resurrect it over the restored records - fenced exactly like flushAux below: no write, and NO primaryDirty arm, so no retry ever fires against the restored data. Callers branch on the outcome object as for any failed save.
+/** @returns {StorageOutcome} */ function saveAll() { // Beta 1.101 (Phase 3 / C2): returns the storage-outcome result - the first failing record is named in failedKey and a retry is armed via the primary flag. No toast here: storage never speaks to the user (saveAllWarned in app2 owns the warning). Beta 1.275 (architecture #3): the flag and the fence are PERSIST's (below) - the retry rationale (1.94 SR-193-05: a failed metadata write retries on the heartbeat instead of waiting for an incidental save) lives in the PERSIST header.
+  if (PERSIST.fenced()) return storeFail('restoring', false); // Beta 1.147 (hypothesis H1, CONFIRMED): while a restore's reload is pending the in-memory board is still the PRE-restore one, so any save here would resurrect it over the restored records - fenced exactly like PERSIST.flush: no write, and NO primary arm, so no retry ever fires against the restored data. Callers branch on the outcome object as for any failed save.
   let failedKey = null;
   const ser = BOARD.serialiseLive(); // Arch-2: the board's stored strings are built once, in the module
   if (!lsSet(LS.sides, ser.sides)) failedKey = 'sides';
@@ -849,52 +846,78 @@ let primaryDirty = false; // Beta 1.94 (deep audit SR-193-05): a failed saveAll 
     if (!saveStart().ok && !failedKey) failedKey = 'start';
     if (!lsSet(LS.cov, ser.cov) && !failedKey) failedKey = 'coverage';
   }
-  if (failedKey) { primaryDirty = true; return storeFail(failedKey, true); }
-  primaryDirty = false;
+  if (failedKey) { return storeFail(failedKey, true); }
+  markClean('primary');
   if (lsGet(LS.finclean) !== null) lsDel(LS.finclean); // Beta 1.141 (Package A, DA-10): a fully landed primary save discharges the finish-cleanup obligation - the stored notes/coverage ARE the in-memory ones now, whoever's they are; the obligation only ever outlives FAILED saves
   return storeOk();
 }
-// Dirty-flag access (Beta 1.101, Phase 3 / C2): the flags themselves stay storage-owned
-// state in this file; code in app3/app4 arms, clears and reads them ONLY through these
-// three functions, so the retry machinery has one doorway. Kinds: trail, sess, snap,
-// start, aux, primary. (The episode-warning state is NOT one of these - it is app-layer
-// messaging state and lives in app2 with saveAllWarned.)
-/** @param {string} kind @returns {void} */ function markDirty(kind) { if (kind === 'trail') trailDirty = true; else if (kind === 'sess') sessDirty = true; else if (kind === 'snap') snapDirty = true; else if (kind === 'start') startDirty = true; else if (kind === 'aux') auxDirty = true; else if (kind === 'primary') primaryDirty = true; else if (kind === 'fixlog') fixlogDirty = true; }
-/** @param {string} kind @returns {void} */ function markClean(kind) { if (kind === 'trail') trailDirty = false; else if (kind === 'sess') sessDirty = false; else if (kind === 'snap') snapDirty = false; else if (kind === 'start') startDirty = false; else if (kind === 'aux') auxDirty = false; else if (kind === 'primary') primaryDirty = false; else if (kind === 'fixlog') fixlogDirty = false; }
-/** @param {string} kind @returns {boolean} */ function writePending(kind) { return kind === 'trail' ? trailDirty : kind === 'sess' ? sessDirty : kind === 'snap' ? snapDirty : kind === 'start' ? startDirty : kind === 'aux' ? auxDirty : kind === 'primary' ? primaryDirty : kind === 'fixlog' ? fixlogDirty : false; }
-// Aux flush (production model): the trail JSON is the big write (~250 KB at cap) - at most every 45 s while
-// recording, always when forced (page hide/close). Dirty flags clear ONLY when the write actually lands, so a
-// failed write is retried by the next flush instead of silently dropping GPS points. While `restoring` is set
-// (a restore is mid-flight), flushes are refused so the restore's reload cannot clobber the restored data.
-let trailDirty = false, auxDirty = false, sessDirty = false, lastTrailSave = 0, restoring = false; // Beta 1.73 (audit C04/C05): sessDirty is the session markers' retry flag, same discipline as trailDirty - a failed marker write is retried by flushAux instead of being silently dropped
-let fixlogDirty = false, lastFixLogSave = 0; // Beta 1.189: the raw fix log's retry flag and flush window, the trail's discipline exactly (saveFixLog itself lives in app3 beside the log it writes; flushAux probes for it like saveSnap)
+// PERSIST (Beta 1.275, architecture #3): the persistence scheduling owner. Everything
+// about WHEN buffered state reaches storage lives here and nowhere else: the seven
+// dirty flags (trail, sess, snap, start, aux, primary, fixlog), the three throttle
+// windows (trail, coverage, fix log), the restore write fence, and the flush walk
+// itself. Through 1.274 these were scattered bindings and a hand-scheduled flushAux
+// that discovered its late writers (app3's saveFixLog, saveSnap, persistRunDist,
+// bankRunDistMirror) through per-line typeof probes; the probes are now the step
+// table's one lateFn resolution, the fence has one owner (saveAll and the flush both
+// consult it - the duplication the scan charged), and app4 raises/lowers the fence
+// through fenceUp/fenceDown instead of writing this file's binding.
+// The disciplines the flags carry, unchanged: a flag clears ONLY when its write
+// actually lands, so a failed write is retried by the next flush instead of silently
+// dropping data (trail/sess: 1.73 C04/C05; start: 1.92 F05 - a stale start key must
+// never resurrect a finished run; snap: 1.94 SR-193-02; primary: 1.94 SR-193-05).
+// Production model: the trail JSON is the big write (~250 KB at cap) - at most every
+// TRAIL_FLUSH_MS while recording, always when forced (page hide/close); the fix log
+// rides the trail's cadence (1.189); coverage is throttled to COV_SAVE_MS on
+// unforced flushes (1.135/1.136 - acceptFix flushes on EVERY fix, and the window
+// starts only on a SUCCESSFUL write; forced flushes always write, the 15 s heartbeat
+// is the backstop, and saveAll writes coverage unconditionally on a primary save).
+// The fence: while a restore is mid-flight, flushes are refused and saveAll returns
+// its fenced outcome, so the restore's reload cannot clobber the restored data
+// (1.147 H1; the fence rises before the restore's snapshot, 1.186 P1 - app4's policy
+// of when to raise/lower it and what to re-arm stays app4's).
+// (The episode-warning state is NOT persistence state - it is app-layer messaging
+// state and lives in app2 with saveAllWarned.)
+/** @param {string} name @returns {Function|null} */ function lateFn(name) { const f = globalThis[name]; return typeof f === 'function' ? f : null; } // the step table's one late-writer resolution: app3 loads after app1, so its writers are resolved by name at flush time (and a partial load simply skips the step, exactly what the old typeof probes did)
+const PERSIST = {
+  flags: { trail: false, sess: false, snap: false, start: false, aux: false, primary: false, fixlog: false },
+  windows: { trail: 0, cov: 0, fixlog: 0 }, // the last SUCCESSFUL write per throttled kind (0 = never: the first flush writes at once)
+  fence: false,
+  /** @param {string} kind @returns {void} */ markDirty(kind) { if (kind in this.flags) this.flags[kind] = true; },
+  /** @param {string} kind @returns {void} */ markClean(kind) { if (kind in this.flags) this.flags[kind] = false; },
+  /** @param {string} kind @returns {boolean} */ writePending(kind) { return !!this.flags[kind]; },
+  /** @returns {boolean} */ fenced() { return this.fence; },
+  /** @returns {void} */ fenceUp() { this.fence = true; },
+  /** @returns {void} */ fenceDown() { this.fence = false; },
+  /** @param {string} kind @returns {void} */ noteWrite(kind) { if (kind === 'trail') this.windows.trail = Date.now(); }, // a writer that landed its own write outside the flush (clearTrailAll, app4) restarts the kind's throttle window here
+  /** @param {boolean} [force] @returns {void} */ flush(force) {
+    if (this.fence) return;
+    if (this.flags.aux && (force || Date.now() - this.windows.cov >= COV_SAVE_MS) && lsSet(LS.cov, BOARD.serialiseCov())) { this.flags.aux = false; this.windows.cov = Date.now(); }
+    if (this.flags.trail && (force || Date.now() - this.windows.trail > TRAIL_FLUSH_MS) && saveTrail().ok) { this.flags.trail = false; this.windows.trail = Date.now(); }
+    if (this.flags.sess && saveSess().ok) this.flags.sess = false;
+    const saveFixLogFn = lateFn('saveFixLog');
+    if (this.flags.fixlog && saveFixLogFn && (force || Date.now() - this.windows.fixlog > TRAIL_FLUSH_MS) && saveFixLogFn().ok) { this.flags.fixlog = false; this.windows.fixlog = Date.now(); } // Beta 1.189: the fix log flushes on the trail's cadence (its JSON is the same size family - re-stringifying it per fix is out); forced flushes always write, so a backup or page death never leaves it behind
+    if (this.flags.start) saveStart(); // Beta 1.92 (audit F05): saveStart re-arms the flag itself on failure
+    const saveSnapFn = lateFn('saveSnap');
+    if (this.flags.snap && saveSnapFn) saveSnapFn(); // Beta 1.94 (SR-193-02): the cancel snapshot retries on the same heartbeat (saveSnap lives in app3 beside runSnap and manages its own flag through the doorway)
+    const persistRunDistFn = lateFn('persistRunDist');
+    if (force && runStart && persistRunDistFn) persistRunDistFn(true); // Beta 1.186 (storage fix round, P2): a FORCED flush is the page's last word (pagehide, visibility hidden, the route switch's pre-flush), so the run-distance counter banks with it. Beta 1.193 (counter hardening): the counter banks on every recorded fix, so this forced bank is a formality kept for the page-death path. The runStart gate matters: with no run in flight there is no counter to bank, and an ungated call would mint the zero record into the outgoing route's slot on every route switch - drive184's field-for-field round-trip caught exactly that.
+    const bankMirrorFn = lateFn('bankRunDistMirror');
+    if (runStart && bankMirrorFn) bankMirrorFn(); // Beta 1.193 (counter hardening): the counter's SECOND copy (LS.rundist2) is written only from this flush path - a different writer, trigger and cadence from persistRunDist's per-fix direct write, so the two records fail independently: a lost or clobbered primary (the 1.186 species) leaves the mirror intact and vice versa. It is coherent with the trail flushed beside it - both lag together, and a forced flush lands both.
+    if (this.flags.primary) saveAll(); // Beta 1.94 (SR-193-05): a failed primary save retries here - saveAll clears the flag itself when a save lands whole
+  },
+};
+// Dirty-flag access (Beta 1.101, Phase 3 / C2): code in app3/app4 arms, clears and
+// reads the flags ONLY through these three functions, so the retry machinery has one
+// doorway. Beta 1.275: the doorway delegates to PERSIST, the flags' owner.
+/** @param {string} kind @returns {void} */ function markDirty(kind) { PERSIST.markDirty(kind); }
+/** @param {string} kind @returns {void} */ function markClean(kind) { PERSIST.markClean(kind); }
+/** @param {string} kind @returns {boolean} */ function writePending(kind) { return PERSIST.writePending(kind); }
 /** @returns {StorageOutcome} */ function saveTrail() { const ok = lsSet(LS.trail, JSON.stringify(trail)); return ok ? storeOk() : storeFail('trail', true); }
 /** @returns {StorageOutcome} */ function saveSess() { const ok = lsSet(LS.sess, JSON.stringify(trailSessions)); return ok ? storeOk() : storeFail('sess', true); }
-// Beta 1.135 (maintainability programme D): the coverage write is THROTTLED. acceptFix calls
-// flushAux on EVERY fix, and through 1.134 each call re-stringified the whole coverage map
-// (~1 Hz for the length of a clean). Unforced flushes now write coverage at most once per
-// COV_SAVE_MS; FORCED flushes (visibility hidden, pagehide, the route switch's pre-flush)
-// always write, so nothing earned is ever held back at a moment that matters. The window
-// starts only on a SUCCESSFUL write - a failed write leaves auxDirty set and the very next
-// flush retries, exactly the flag discipline above. Between windows the 15 s heartbeat is
-// the backstop, and saveAll still writes coverage unconditionally on every primary save.
-// (COV_SAVE_MS itself is declared with the rule constants at the top of this file, Beta 1.136.)
-let lastCovSave = 0; // the last successful coverage write (0 = never: the first flush writes at once)
-/** @param {boolean} [force] @returns {void} */ function flushAux(force) {
-  if (restoring) return;
-  if (auxDirty && (force || Date.now() - lastCovSave >= COV_SAVE_MS) && lsSet(LS.cov, BOARD.serialiseCov())) { auxDirty = false; lastCovSave = Date.now(); }
-  if (trailDirty && (force || Date.now() - lastTrailSave > TRAIL_FLUSH_MS) && saveTrail().ok) { trailDirty = false; lastTrailSave = Date.now(); }
-  if (sessDirty && saveSess().ok) sessDirty = false;
-  if (fixlogDirty && typeof saveFixLog === 'function' && (force || Date.now() - lastFixLogSave > TRAIL_FLUSH_MS) && saveFixLog().ok) { fixlogDirty = false; lastFixLogSave = Date.now(); } // Beta 1.189: the fix log flushes on the trail's cadence (its JSON is the same size family - re-stringifying it per fix is out); forced flushes always write, so a backup or page death never leaves it behind
-  if (startDirty) saveStart(); // Beta 1.92 (audit F05): saveStart re-arms the flag itself on failure
-  if (snapDirty && typeof saveSnap === 'function') saveSnap(); // Beta 1.94 (SR-193-02): the cancel snapshot retries on the same heartbeat (saveSnap lives in app3 beside runSnap; the typeof probe keeps this safe in any partial-load state)
-  if (force && runStart && typeof persistRunDist === 'function') persistRunDist(true); // Beta 1.186 (storage fix round, P2): a FORCED flush is the page's last word (pagehide, visibility hidden, the route switch's pre-flush), so the run-distance counter banks with it. Through 1.185 flushAux never carried the counter, so a mid-run reload inside the throttle window resumed the stale banked figure and buildSnap baked it into the archived clean - the trail itself was always fully flushed; only the counter lagged. Beta 1.193 (counter hardening): the counter's own throttle is gone - persistRunDist banks on every recorded fix - so this forced bank is now a formality kept for the page-death path, and the mirror bank below rides EVERY flush, forced or not. The runStart gate matters: with no run in flight there is no counter to bank, and an ungated call would mint the zero record into the outgoing route's slot on every route switch - drive184's field-for-field round-trip caught exactly that.
-  if (runStart && typeof bankRunDistMirror === 'function') bankRunDistMirror(); // Beta 1.193 (counter hardening): the counter's SECOND copy (LS.rundist2) is written only from this flush path - a different writer, trigger and cadence from persistRunDist's per-fix direct write, so the two records fail independently: a lost or clobbered primary (the 1.186 species) leaves the mirror intact and vice versa. It is coherent with the trail flushed beside it - both lag together, and a forced flush lands both. bankRunDistMirror lives in app3 beside the counter; the typeof probe mirrors the saveSnap line above.
-  if (primaryDirty) saveAll(); // Beta 1.94 (SR-193-05): a failed primary save retries here - saveAll clears the flag itself when a save lands whole
-}
-setInterval(() => { flushAux(false); themeTick(); }, 15000); // Beta 1.77: the same 15 s heartbeat also walks the day/night cycle across its boundaries
-document.addEventListener('visibilitychange', () => { if (document.visibilityState === 'hidden') flushAux(true); });
-window.addEventListener('pagehide', () => flushAux(true));
+/** @param {boolean} [force] @returns {void} */ function flushAux(force) { PERSIST.flush(force); } // Beta 1.275 (architecture #3): the published flush handle - the walk itself is PERSIST.flush (above), the scheduling owner. This one-line delegation stays because the handle is public surface: drives call flushAux(true) in page context to force the page-death flush, exactly as they did when the walk lived here.
+setInterval(() => { PERSIST.flush(false); themeTick(); }, 15000); // Beta 1.77: the same 15 s heartbeat also walks the day/night cycle across its boundaries
+document.addEventListener('visibilitychange', () => { if (document.visibilityState === 'hidden') PERSIST.flush(true); });
+window.addEventListener('pagehide', () => PERSIST.flush(true));
 
 // Beta 1.103 (architecture Phase 6, C5): the paint engine's host. The engine
 // (parts/engine.js) reads NOTHING from the app directly any more - every app

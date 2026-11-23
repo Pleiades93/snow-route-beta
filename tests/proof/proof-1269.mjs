@@ -78,8 +78,8 @@ check('8: the cancel is untouched and lives on the tap-away - crCancelSectors re
   pick.includes('if (crSectorSession.street) { if (!crSectorTap(e.lngLat)) crCancelSectors(); return; }'));
 
 check('9: What\'s New carries both 1.269 bullets, em-dash free, and the CHANGELOG top entry is Beta 1.269 above 1.268',
-  whatsnew.includes('Under the hood: marking a side or a whole street now runs through one place, the same everywhere.') &&
-  whatsnew.includes("Under the hood: marking a side or a whole street now runs through one place, the same everywhere.") &&
+  whatsnew.includes('Under the hood: saving now runs through one scheduler, so marks, trail and backups write in one set order.') &&
+  whatsnew.includes("Under the hood: saving now runs through one scheduler, so marks, trail and backups write in one set order.") &&
   !whatsnew.includes('—') &&
   changelog.indexOf('## Beta 1.269') > -1 && changelog.indexOf('## Beta 1.269') < changelog.indexOf('## Beta 1.268'));
 

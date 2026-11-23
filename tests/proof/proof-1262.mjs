@@ -85,8 +85,8 @@ check('14: the frame loop cannot storm the creation sources (gate fixes, PR #158
 
 // ---------- the release editorial ----------
 check('13: What\'s New carries the 1.266 bullet (rolled by the unified-load-in round), within the 108-char cap, em-dash free, and the CHANGELOG top entry is Beta 1.266 above 1.265',
-  whatsnew.includes('Under the hood: marking a side or a whole street now runs through one place, the same everywhere.') &&
-  'Under the hood: marking a side or a whole street now runs through one place, the same everywhere.'.length <= 108 &&
+  whatsnew.includes('Under the hood: saving now runs through one scheduler, so marks, trail and backups write in one set order.') &&
+  'Under the hood: saving now runs through one scheduler, so marks, trail and backups write in one set order.'.length <= 108 &&
   !whatsnew.includes('—') &&
   changelog.indexOf('## Beta 1.266') > -1 && changelog.indexOf('## Beta 1.266') < changelog.indexOf('## Beta 1.265'));
 

@@ -5750,6 +5750,407 @@
     "scripts/check-census.py": "dd55f34cd855e60a6fadae7e261aa99f1682b9d7d8446696532045e3a281fafb"
    },
    "issued": "2026-11-22"
+  },
+  {
+   "id": "arch3-1275",
+   "kind": "app",
+   "anchors": {
+    "functions": [
+     "saveStart",
+     "saveAll",
+     "markDirty",
+     "markClean",
+     "writePending",
+     "flushAux",
+     "lateFn",
+     "flush",
+     "fenceUp",
+     "fenceDown",
+     "fenced",
+     "noteWrite",
+     "cancelStart",
+     "acceptFix",
+     "buildBackup",
+     "clearTrailAll",
+     "restoreBackup",
+     "loadRoute"
+    ],
+    "elements": [],
+    "guards": []
+   },
+   "changed": [
+    "parts/app1.js",
+    "parts/app3.js",
+    "parts/app4.js",
+    "parts/app5.js",
+    "parts/whatsnew.js"
+   ],
+   "rows": [
+    {
+     "id": "caller:acceptFix:parts/app3.js:startGps",
+     "kind": "caller",
+     "source": "derived: call-site scan of parts/ - acceptFix() is called from startGps in parts/app3.js",
+     "status": "covered",
+     "note": "the caller reaches the same doorway/flush signatures, now served by PERSIST (architecture #3); exercised by the round's focused drives (83/86/114/133/136/141/145/169/187/194/195) and proofs 78/78 - same keys, order, throttles and outcomes"
+    },
+    {
+     "id": "caller:buildBackup:parts/app4.js:downloadBackup",
+     "kind": "caller",
+     "source": "derived: call-site scan of parts/ - buildBackup() is called from downloadBackup in parts/app4.js",
+     "status": "covered",
+     "note": "the caller reaches the same doorway/flush signatures, now served by PERSIST (architecture #3); exercised by the round's focused drives (83/86/114/133/136/141/145/169/187/194/195) and proofs 78/78 - same keys, order, throttles and outcomes"
+    },
+    {
+     "id": "caller:buildBackup:parts/app4.js:shareBackup",
+     "kind": "caller",
+     "source": "derived: call-site scan of parts/ - buildBackup() is called from shareBackup in parts/app4.js",
+     "status": "covered",
+     "note": "the caller reaches the same doorway/flush signatures, now served by PERSIST (architecture #3); exercised by the round's focused drives (83/86/114/133/136/141/145/169/187/194/195) and proofs 78/78 - same keys, order, throttles and outcomes"
+    },
+    {
+     "id": "caller:cancelStart:parts/app3.js:askCancelStart",
+     "kind": "caller",
+     "source": "derived: call-site scan of parts/ - cancelStart() is called from askCancelStart in parts/app3.js",
+     "status": "covered",
+     "note": "the caller reaches the same doorway/flush signatures, now served by PERSIST (architecture #3); exercised by the round's focused drives (83/86/114/133/136/141/145/169/187/194/195) and proofs 78/78 - same keys, order, throttles and outcomes"
+    },
+    {
+     "id": "caller:fenceDown:parts/app1.js:top-level",
+     "kind": "caller",
+     "source": "derived: call-site scan of parts/ - fenceDown() is called from top-level in parts/app1.js",
+     "status": "covered",
+     "note": "the caller reaches the same doorway/flush signatures, now served by PERSIST (architecture #3); exercised by the round's focused drives (83/86/114/133/136/141/145/169/187/194/195) and proofs 78/78 - same keys, order, throttles and outcomes"
+    },
+    {
+     "id": "caller:fenceUp:parts/app1.js:top-level",
+     "kind": "caller",
+     "source": "derived: call-site scan of parts/ - fenceUp() is called from top-level in parts/app1.js",
+     "status": "covered",
+     "note": "the caller reaches the same doorway/flush signatures, now served by PERSIST (architecture #3); exercised by the round's focused drives (83/86/114/133/136/141/145/169/187/194/195) and proofs 78/78 - same keys, order, throttles and outcomes"
+    },
+    {
+     "id": "caller:fenced:parts/app1.js:top-level",
+     "kind": "caller",
+     "source": "derived: call-site scan of parts/ - fenced() is called from top-level in parts/app1.js",
+     "status": "covered",
+     "note": "the caller reaches the same doorway/flush signatures, now served by PERSIST (architecture #3); exercised by the round's focused drives (83/86/114/133/136/141/145/169/187/194/195) and proofs 78/78 - same keys, order, throttles and outcomes"
+    },
+    {
+     "id": "caller:flush:parts/app1.js:top-level",
+     "kind": "caller",
+     "source": "derived: call-site scan of parts/ - flush() is called from top-level in parts/app1.js",
+     "status": "covered",
+     "note": "the caller reaches the same doorway/flush signatures, now served by PERSIST (architecture #3); exercised by the round's focused drives (83/86/114/133/136/141/145/169/187/194/195) and proofs 78/78 - same keys, order, throttles and outcomes"
+    },
+    {
+     "id": "caller:flush:parts/engine.js:edgeRunSlices",
+     "kind": "caller",
+     "source": "derived: call-site scan of parts/ - flush() is called from edgeRunSlices in parts/engine.js",
+     "status": "na",
+     "note": "name collision: edgeRunSlices' flush is its own local geometry helper (parts/engine.js:418), not PERSIST.flush - no persistence behaviour in this row"
+    },
+    {
+     "id": "caller:lateFn:parts/app1.js:top-level",
+     "kind": "caller",
+     "source": "derived: call-site scan of parts/ - lateFn() is called from top-level in parts/app1.js",
+     "status": "covered",
+     "note": "the caller reaches the same doorway/flush signatures, now served by PERSIST (architecture #3); exercised by the round's focused drives (83/86/114/133/136/141/145/169/187/194/195) and proofs 78/78 - same keys, order, throttles and outcomes"
+    },
+    {
+     "id": "caller:loadRoute:parts/app2.js:top-level",
+     "kind": "caller",
+     "source": "derived: call-site scan of parts/ - loadRoute() is called from top-level in parts/app2.js",
+     "status": "covered",
+     "note": "the caller reaches the same doorway/flush signatures, now served by PERSIST (architecture #3); exercised by the round's focused drives (83/86/114/133/136/141/145/169/187/194/195) and proofs 78/78 - same keys, order, throttles and outcomes"
+    },
+    {
+     "id": "caller:loadRoute:parts/create-save.js:top-level",
+     "kind": "caller",
+     "source": "derived: call-site scan of parts/ - loadRoute() is called from top-level in parts/create-save.js",
+     "status": "covered",
+     "note": "the caller reaches the same doorway/flush signatures, now served by PERSIST (architecture #3); exercised by the round's focused drives (83/86/114/133/136/141/145/169/187/194/195) and proofs 78/78 - same keys, order, throttles and outcomes"
+    },
+    {
+     "id": "caller:markClean:parts/app1.js:saveAll",
+     "kind": "caller",
+     "source": "derived: call-site scan of parts/ - markClean() is called from saveAll in parts/app1.js",
+     "status": "covered",
+     "note": "the caller reaches the same doorway/flush signatures, now served by PERSIST (architecture #3); exercised by the round's focused drives (83/86/114/133/136/141/145/169/187/194/195) and proofs 78/78 - same keys, order, throttles and outcomes"
+    },
+    {
+     "id": "caller:markClean:parts/app1.js:saveStart",
+     "kind": "caller",
+     "source": "derived: call-site scan of parts/ - markClean() is called from saveStart in parts/app1.js",
+     "status": "covered",
+     "note": "the caller reaches the same doorway/flush signatures, now served by PERSIST (architecture #3); exercised by the round's focused drives (83/86/114/133/136/141/145/169/187/194/195) and proofs 78/78 - same keys, order, throttles and outcomes"
+    },
+    {
+     "id": "caller:markClean:parts/app1.js:top-level",
+     "kind": "caller",
+     "source": "derived: call-site scan of parts/ - markClean() is called from top-level in parts/app1.js",
+     "status": "covered",
+     "note": "the caller reaches the same doorway/flush signatures, now served by PERSIST (architecture #3); exercised by the round's focused drives (83/86/114/133/136/141/145/169/187/194/195) and proofs 78/78 - same keys, order, throttles and outcomes"
+    },
+    {
+     "id": "caller:markClean:parts/app3.js:cancelStart",
+     "kind": "caller",
+     "source": "derived: call-site scan of parts/ - markClean() is called from cancelStart in parts/app3.js",
+     "status": "covered",
+     "note": "the caller reaches the same doorway/flush signatures, now served by PERSIST (architecture #3); exercised by the round's focused drives (83/86/114/133/136/141/145/169/187/194/195) and proofs 78/78 - same keys, order, throttles and outcomes"
+    },
+    {
+     "id": "caller:markClean:parts/app3.js:finishRun",
+     "kind": "caller",
+     "source": "derived: call-site scan of parts/ - markClean() is called from finishRun in parts/app3.js",
+     "status": "covered",
+     "note": "the caller reaches the same doorway/flush signatures, now served by PERSIST (architecture #3); exercised by the round's focused drives (83/86/114/133/136/141/145/169/187/194/195) and proofs 78/78 - same keys, order, throttles and outcomes"
+    },
+    {
+     "id": "caller:markClean:parts/app3.js:saveSnap",
+     "kind": "caller",
+     "source": "derived: call-site scan of parts/ - markClean() is called from saveSnap in parts/app3.js",
+     "status": "covered",
+     "note": "the caller reaches the same doorway/flush signatures, now served by PERSIST (architecture #3); exercised by the round's focused drives (83/86/114/133/136/141/145/169/187/194/195) and proofs 78/78 - same keys, order, throttles and outcomes"
+    },
+    {
+     "id": "caller:markClean:parts/app4.js:clearTrailAll",
+     "kind": "caller",
+     "source": "derived: call-site scan of parts/ - markClean() is called from clearTrailAll in parts/app4.js",
+     "status": "covered",
+     "note": "the caller reaches the same doorway/flush signatures, now served by PERSIST (architecture #3); exercised by the round's focused drives (83/86/114/133/136/141/145/169/187/194/195) and proofs 78/78 - same keys, order, throttles and outcomes"
+    },
+    {
+     "id": "caller:markClean:parts/app4.js:restoreBackup",
+     "kind": "caller",
+     "source": "derived: call-site scan of parts/ - markClean() is called from restoreBackup in parts/app4.js",
+     "status": "covered",
+     "note": "the caller reaches the same doorway/flush signatures, now served by PERSIST (architecture #3); exercised by the round's focused drives (83/86/114/133/136/141/145/169/187/194/195) and proofs 78/78 - same keys, order, throttles and outcomes"
+    },
+    {
+     "id": "caller:markClean:parts/app5.js:resetSwitchSession",
+     "kind": "caller",
+     "source": "derived: call-site scan of parts/ - markClean() is called from resetSwitchSession in parts/app5.js",
+     "status": "covered",
+     "note": "the caller reaches the same doorway/flush signatures, now served by PERSIST (architecture #3); exercised by the round's focused drives (83/86/114/133/136/141/145/169/187/194/195) and proofs 78/78 - same keys, order, throttles and outcomes"
+    },
+    {
+     "id": "caller:markDirty:parts/app1.js:loadRouteState",
+     "kind": "caller",
+     "source": "derived: call-site scan of parts/ - markDirty() is called from loadRouteState in parts/app1.js",
+     "status": "covered",
+     "note": "the caller reaches the same doorway/flush signatures, now served by PERSIST (architecture #3); exercised by the round's focused drives (83/86/114/133/136/141/145/169/187/194/195) and proofs 78/78 - same keys, order, throttles and outcomes"
+    },
+    {
+     "id": "caller:markDirty:parts/app1.js:saveStart",
+     "kind": "caller",
+     "source": "derived: call-site scan of parts/ - markDirty() is called from saveStart in parts/app1.js",
+     "status": "covered",
+     "note": "the caller reaches the same doorway/flush signatures, now served by PERSIST (architecture #3); exercised by the round's focused drives (83/86/114/133/136/141/145/169/187/194/195) and proofs 78/78 - same keys, order, throttles and outcomes"
+    },
+    {
+     "id": "caller:markDirty:parts/app1.js:top-level",
+     "kind": "caller",
+     "source": "derived: call-site scan of parts/ - markDirty() is called from top-level in parts/app1.js",
+     "status": "covered",
+     "note": "the caller reaches the same doorway/flush signatures, now served by PERSIST (architecture #3); exercised by the round's focused drives (83/86/114/133/136/141/145/169/187/194/195) and proofs 78/78 - same keys, order, throttles and outcomes"
+    },
+    {
+     "id": "caller:markDirty:parts/app3.js:acceptFix",
+     "kind": "caller",
+     "source": "derived: call-site scan of parts/ - markDirty() is called from acceptFix in parts/app3.js",
+     "status": "covered",
+     "note": "the caller reaches the same doorway/flush signatures, now served by PERSIST (architecture #3); exercised by the round's focused drives (83/86/114/133/136/141/145/169/187/194/195) and proofs 78/78 - same keys, order, throttles and outcomes"
+    },
+    {
+     "id": "caller:markDirty:parts/app3.js:cancelStart",
+     "kind": "caller",
+     "source": "derived: call-site scan of parts/ - markDirty() is called from cancelStart in parts/app3.js",
+     "status": "covered",
+     "note": "the caller reaches the same doorway/flush signatures, now served by PERSIST (architecture #3); exercised by the round's focused drives (83/86/114/133/136/141/145/169/187/194/195) and proofs 78/78 - same keys, order, throttles and outcomes"
+    },
+    {
+     "id": "caller:markDirty:parts/app3.js:coverFix",
+     "kind": "caller",
+     "source": "derived: call-site scan of parts/ - markDirty() is called from coverFix in parts/app3.js",
+     "status": "covered",
+     "note": "the caller reaches the same doorway/flush signatures, now served by PERSIST (architecture #3); exercised by the round's focused drives (83/86/114/133/136/141/145/169/187/194/195) and proofs 78/78 - same keys, order, throttles and outcomes"
+    },
+    {
+     "id": "caller:markDirty:parts/app3.js:finishRun",
+     "kind": "caller",
+     "source": "derived: call-site scan of parts/ - markDirty() is called from finishRun in parts/app3.js",
+     "status": "covered",
+     "note": "the caller reaches the same doorway/flush signatures, now served by PERSIST (architecture #3); exercised by the round's focused drives (83/86/114/133/136/141/145/169/187/194/195) and proofs 78/78 - same keys, order, throttles and outcomes"
+    },
+    {
+     "id": "caller:markDirty:parts/app3.js:fixLogClose",
+     "kind": "caller",
+     "source": "derived: call-site scan of parts/ - markDirty() is called from fixLogClose in parts/app3.js",
+     "status": "covered",
+     "note": "the caller reaches the same doorway/flush signatures, now served by PERSIST (architecture #3); exercised by the round's focused drives (83/86/114/133/136/141/145/169/187/194/195) and proofs 78/78 - same keys, order, throttles and outcomes"
+    },
+    {
+     "id": "caller:markDirty:parts/app3.js:fixLogOpen",
+     "kind": "caller",
+     "source": "derived: call-site scan of parts/ - markDirty() is called from fixLogOpen in parts/app3.js",
+     "status": "covered",
+     "note": "the caller reaches the same doorway/flush signatures, now served by PERSIST (architecture #3); exercised by the round's focused drives (83/86/114/133/136/141/145/169/187/194/195) and proofs 78/78 - same keys, order, throttles and outcomes"
+    },
+    {
+     "id": "caller:markDirty:parts/app3.js:fixLogRaw",
+     "kind": "caller",
+     "source": "derived: call-site scan of parts/ - markDirty() is called from fixLogRaw in parts/app3.js",
+     "status": "covered",
+     "note": "the caller reaches the same doorway/flush signatures, now served by PERSIST (architecture #3); exercised by the round's focused drives (83/86/114/133/136/141/145/169/187/194/195) and proofs 78/78 - same keys, order, throttles and outcomes"
+    },
+    {
+     "id": "caller:markDirty:parts/app3.js:noteSessionStart",
+     "kind": "caller",
+     "source": "derived: call-site scan of parts/ - markDirty() is called from noteSessionStart in parts/app3.js",
+     "status": "covered",
+     "note": "the caller reaches the same doorway/flush signatures, now served by PERSIST (architecture #3); exercised by the round's focused drives (83/86/114/133/136/141/145/169/187/194/195) and proofs 78/78 - same keys, order, throttles and outcomes"
+    },
+    {
+     "id": "caller:markDirty:parts/app3.js:saveSnap",
+     "kind": "caller",
+     "source": "derived: call-site scan of parts/ - markDirty() is called from saveSnap in parts/app3.js",
+     "status": "covered",
+     "note": "the caller reaches the same doorway/flush signatures, now served by PERSIST (architecture #3); exercised by the round's focused drives (83/86/114/133/136/141/145/169/187/194/195) and proofs 78/78 - same keys, order, throttles and outcomes"
+    },
+    {
+     "id": "caller:markDirty:parts/app3.js:startClean",
+     "kind": "caller",
+     "source": "derived: call-site scan of parts/ - markDirty() is called from startClean in parts/app3.js",
+     "status": "covered",
+     "note": "the caller reaches the same doorway/flush signatures, now served by PERSIST (architecture #3); exercised by the round's focused drives (83/86/114/133/136/141/145/169/187/194/195) and proofs 78/78 - same keys, order, throttles and outcomes"
+    },
+    {
+     "id": "caller:markDirty:parts/app4.js:clearTrailAll",
+     "kind": "caller",
+     "source": "derived: call-site scan of parts/ - markDirty() is called from clearTrailAll in parts/app4.js",
+     "status": "covered",
+     "note": "the caller reaches the same doorway/flush signatures, now served by PERSIST (architecture #3); exercised by the round's focused drives (83/86/114/133/136/141/145/169/187/194/195) and proofs 78/78 - same keys, order, throttles and outcomes"
+    },
+    {
+     "id": "caller:markDirty:parts/app4.js:restoreFenceDown",
+     "kind": "caller",
+     "source": "derived: call-site scan of parts/ - markDirty() is called from restoreFenceDown in parts/app4.js",
+     "status": "covered",
+     "note": "the caller reaches the same doorway/flush signatures, now served by PERSIST (architecture #3); exercised by the round's focused drives (83/86/114/133/136/141/145/169/187/194/195) and proofs 78/78 - same keys, order, throttles and outcomes"
+    },
+    {
+     "id": "caller:noteWrite:parts/app1.js:top-level",
+     "kind": "caller",
+     "source": "derived: call-site scan of parts/ - noteWrite() is called from top-level in parts/app1.js",
+     "status": "covered",
+     "note": "the caller reaches the same doorway/flush signatures, now served by PERSIST (architecture #3); exercised by the round's focused drives (83/86/114/133/136/141/145/169/187/194/195) and proofs 78/78 - same keys, order, throttles and outcomes"
+    },
+    {
+     "id": "caller:restoreBackup:parts/app4.js:doRestore",
+     "kind": "caller",
+     "source": "derived: call-site scan of parts/ - restoreBackup() is called from doRestore in parts/app4.js",
+     "status": "covered",
+     "note": "the caller reaches the same doorway/flush signatures, now served by PERSIST (architecture #3); exercised by the round's focused drives (83/86/114/133/136/141/145/169/187/194/195) and proofs 78/78 - same keys, order, throttles and outcomes"
+    },
+    {
+     "id": "caller:saveAll:parts/app1.js:top-level",
+     "kind": "caller",
+     "source": "derived: call-site scan of parts/ - saveAll() is called from top-level in parts/app1.js",
+     "status": "covered",
+     "note": "the caller reaches the same doorway/flush signatures, now served by PERSIST (architecture #3); exercised by the round's focused drives (83/86/114/133/136/141/145/169/187/194/195) and proofs 78/78 - same keys, order, throttles and outcomes"
+    },
+    {
+     "id": "caller:saveAll:parts/app2.js:saveAllWarned",
+     "kind": "caller",
+     "source": "derived: call-site scan of parts/ - saveAll() is called from saveAllWarned in parts/app2.js",
+     "status": "covered",
+     "note": "the caller reaches the same doorway/flush signatures, now served by PERSIST (architecture #3); exercised by the round's focused drives (83/86/114/133/136/141/145/169/187/194/195) and proofs 78/78 - same keys, order, throttles and outcomes"
+    },
+    {
+     "id": "caller:saveAll:parts/app3.js:finishRun",
+     "kind": "caller",
+     "source": "derived: call-site scan of parts/ - saveAll() is called from finishRun in parts/app3.js",
+     "status": "covered",
+     "note": "the caller reaches the same doorway/flush signatures, now served by PERSIST (architecture #3); exercised by the round's focused drives (83/86/114/133/136/141/145/169/187/194/195) and proofs 78/78 - same keys, order, throttles and outcomes"
+    },
+    {
+     "id": "caller:saveAll:parts/app4.js:backupObj",
+     "kind": "caller",
+     "source": "derived: call-site scan of parts/ - saveAll() is called from backupObj in parts/app4.js",
+     "status": "covered",
+     "note": "the caller reaches the same doorway/flush signatures, now served by PERSIST (architecture #3); exercised by the round's focused drives (83/86/114/133/136/141/145/169/187/194/195) and proofs 78/78 - same keys, order, throttles and outcomes"
+    },
+    {
+     "id": "caller:saveAll:parts/app5.js:loadRoute",
+     "kind": "caller",
+     "source": "derived: call-site scan of parts/ - saveAll() is called from loadRoute in parts/app5.js",
+     "status": "covered",
+     "note": "the caller reaches the same doorway/flush signatures, now served by PERSIST (architecture #3); exercised by the round's focused drives (83/86/114/133/136/141/145/169/187/194/195) and proofs 78/78 - same keys, order, throttles and outcomes"
+    },
+    {
+     "id": "caller:saveStart:parts/app1.js:saveAll",
+     "kind": "caller",
+     "source": "derived: call-site scan of parts/ - saveStart() is called from saveAll in parts/app1.js",
+     "status": "covered",
+     "note": "the caller reaches the same doorway/flush signatures, now served by PERSIST (architecture #3); exercised by the round's focused drives (83/86/114/133/136/141/145/169/187/194/195) and proofs 78/78 - same keys, order, throttles and outcomes"
+    },
+    {
+     "id": "caller:saveStart:parts/app1.js:top-level",
+     "kind": "caller",
+     "source": "derived: call-site scan of parts/ - saveStart() is called from top-level in parts/app1.js",
+     "status": "covered",
+     "note": "the caller reaches the same doorway/flush signatures, now served by PERSIST (architecture #3); exercised by the round's focused drives (83/86/114/133/136/141/145/169/187/194/195) and proofs 78/78 - same keys, order, throttles and outcomes"
+    },
+    {
+     "id": "caller:writePending:parts/app1.js:top-level",
+     "kind": "caller",
+     "source": "derived: call-site scan of parts/ - writePending() is called from top-level in parts/app1.js",
+     "status": "covered",
+     "note": "the caller reaches the same doorway/flush signatures, now served by PERSIST (architecture #3); exercised by the round's focused drives (83/86/114/133/136/141/145/169/187/194/195) and proofs 78/78 - same keys, order, throttles and outcomes"
+    },
+    {
+     "id": "caller:writePending:parts/app3.js:cancelStart",
+     "kind": "caller",
+     "source": "derived: call-site scan of parts/ - writePending() is called from cancelStart in parts/app3.js",
+     "status": "covered",
+     "note": "the caller reaches the same doorway/flush signatures, now served by PERSIST (architecture #3); exercised by the round's focused drives (83/86/114/133/136/141/145/169/187/194/195) and proofs 78/78 - same keys, order, throttles and outcomes"
+    },
+    {
+     "id": "caller:writePending:parts/app4.js:backupObj",
+     "kind": "caller",
+     "source": "derived: call-site scan of parts/ - writePending() is called from backupObj in parts/app4.js",
+     "status": "covered",
+     "note": "the caller reaches the same doorway/flush signatures, now served by PERSIST (architecture #3); exercised by the round's focused drives (83/86/114/133/136/141/145/169/187/194/195) and proofs 78/78 - same keys, order, throttles and outcomes"
+    },
+    {
+     "id": "caller:writePending:parts/app5.js:loadRoute",
+     "kind": "caller",
+     "source": "derived: call-site scan of parts/ - writePending() is called from loadRoute in parts/app5.js",
+     "status": "covered",
+     "note": "the caller reaches the same doorway/flush signatures, now served by PERSIST (architecture #3); exercised by the round's focused drives (83/86/114/133/136/141/145/169/187/194/195) and proofs 78/78 - same keys, order, throttles and outcomes"
+    }
+   ],
+   "files": {
+    "parts/app1.js": "ea09cb8b20d18e3961a5506ff58890aaac0aa73cda7cccd06397c24c59ecaff4",
+    "parts/app2.js": "e0161aa1a5ce7def923be1b2fd70aeff9c233136e2d85f86cbd99a0867a59720",
+    "parts/app3.js": "3fa5b5e3e729371872b25c0f12a75ec2c0421d62cdd217a0ac9be549cac39a7e",
+    "parts/app4.js": "77a902a67ce2de0f989a00d9a06c9f16ee7fccdc10e43238ddade610e57e463d",
+    "parts/app5.js": "075517797dadbffbebf5d59682dae3a8771b1b5fa3b999c5de4206257160249f",
+    "parts/brand-snow.js": "86fa9a02f29c7345ee68d68daffd9c72da612921b64da37f1eccf6b72161ac5f",
+    "parts/create-cache.js": "2a7e983aa50862cb074a16abf9266a41a1a175c69faa5215b1d3d289aa2b5327",
+    "parts/create-citydata.js": "393d90f275d971b5e52352deebaece381279acd0e86495ffa2da35701de9148e",
+    "parts/create-fetch.js": "e7a65bd88dc338213946c4537dc5d397f79396ec416b6f4ebf4be831927aeb66",
+    "parts/create-packs.js": "a8b60fb7d601c1e83f555eb703b625a571ec878937ac36fcaddd05aecf635975",
+    "parts/create-pick.js": "7188458b087496ad52ff5d159ae23668b543d0100a3d58c3b251d33374258dd6",
+    "parts/create-save.js": "ad39720727f43d397e72443c92955c5a35d530f03e3219b2182c9ee7c062e52d",
+    "parts/data.js": "9684c69862156dc70ee9a2b88278b4e825c5bf35f0c150fbc5660ccbdce9304b",
+    "parts/engine.js": "d6d1f676ac8bc2a302cfbaf56de1e10cb361fd8b746d94d6380a5e4ebaf76173",
+    "parts/pmstyles.js": "f3501db9c16dbc6a5fa8c901089101e4913772384de1f069accb23a614bb90fc",
+    "parts/whatsnew.js": "dd887ff6d144f1e7cb1e0df8fb38f502d0fa0f74f96cc9ea9f314e6a324e43ff",
+    "parts/head.html": "bff57252f945388445965c770902c06145d3501ceb21cb6f5507fd542eca066d",
+    "scripts/check-census.py": "dd55f34cd855e60a6fadae7e261aa99f1682b9d7d8446696532045e3a281fafb"
+   },
+   "issued": "2026-11-22"
   }
  ]
 }

@@ -79,7 +79,7 @@ await ev(`startClean()`); await sleep(200);
 await ev(`(function(){ var orig = lsSet; window.__lsOrig133 = orig; lsSet = function(k, v){ if (k === LS.trail) return false; return orig(k, v); }; return true; })()`);
 await ev(`cancelStart()`);
 await sleep(200);
-const S10 = JSON.parse(await ev(`(() => JSON.stringify({ toast: $('toast').textContent, dirty: trailDirty }))()`));
+const S10 = JSON.parse(await ev(`(() => JSON.stringify({ toast: $('toast').textContent, dirty: writePending('trail') }))()`));
 ok('S10 a failed trail save qualifies the cancel message (no false erasure claim) | ' + JSON.stringify(S10), /could not be saved yet/.test(S10.toast) && S10.dirty === true);
 await ev(`(function(){ if (window.__lsOrig133) lsSet = window.__lsOrig133; flushAux(true); return true; })()`);
 
@@ -154,7 +154,7 @@ await ev(`cancelStart()`); await sleep(300);
 const S14a = JSON.parse(await ev(`JSON.stringify(window.__toasts133 || [])`));
 ok('S14a damaged snapshot + unsaved trail cleanup: the message carries the cleanup warning AND the rebuild explanation - the erasure claim never stands alone (Beta 1.96, SR-195-01) | ' + JSON.stringify(S14a), S14a.some(t => /trail cleanup could not be saved/.test(t) && /rebuilt from the marks/.test(t)));
 await ev(`(function(){ lsSet = window.__lsSetOrig; flushAux(true); return true; })()`); await sleep(200);
-ok('S14b when storage recovers the pending trail cleanup lands on retry (Beta 1.96, SR-195-01)', (await ev(`trailDirty === false && sessDirty === false`)) === true);
+ok('S14b when storage recovers the pending trail cleanup lands on retry (Beta 1.96, SR-195-01)', (await ev(`!writePending('trail') && !writePending('sess')`)) === true);
 
 // S13 (Beta 1.95, deep audit SR-194-04): a run resumed WITHOUT a usable
 // cancel snapshot has a reduced Cancel guarantee - it rebuilds from the

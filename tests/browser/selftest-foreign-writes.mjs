@@ -1024,11 +1024,22 @@ if (tree.duplicates.length) console.log('  note: top-level names declared in mor
 // from the source by hand and matched against the analyzer's key).
 const MUST = [
   ['app1.js', 'buildGeometry', 'routeBox'], // buildGeometry refills app2's routeBox in place on every load
-  ['app4.js', 'clearTrailAll', 'trail'], ['app4.js', 'clearTrailAll', 'trailSessions'], ['app4.js', 'clearTrailAll', 'lastTrailSave'],
-  ['app4.js', 'restoreBackup', 'restoring'], // the P1 fence (Beta 1.186) is three restoring sites under two keys: restoreBackup occ 1 (the fence rises before the snapshot) and occ 2 (the success path), plus restoreFenceDown occ 1 (the failure doorway's arrow)
+  ['app4.js', 'clearTrailAll', 'trail'], ['app4.js', 'clearTrailAll', 'trailSessions'],
   ['create-pick.js', 'enterCreate', 'followPaused'], // enterCreate parks GPS follow for the picking
 ];
 for (const [f, fn, nm] of MUST) check(`census contains adjudicated site ${f} ${fn} ${nm}`, tree.sites.some(s => s.file === f && s.fn === fn && s.name === nm));
+// Beta 1.275 (architecture #3): the persistence scheduler owns the fence and the
+// throttle windows now, so the four foreign writes app4 used to make are RETIRED -
+// restoreBackup's two restoring writes and restoreFenceDown's one (the P1 fence,
+// Beta 1.186) go through PERSIST.fenceUp/fenceDown, and clearTrailAll's lastTrailSave
+// stamp through PERSIST.noteWrite. Their absence is pinned here so the doorway
+// cannot quietly revert to a foreign write.
+const MUST_NOT = [
+  ['app4.js', 'clearTrailAll', 'lastTrailSave'],
+  ['app4.js', 'restoreBackup', 'restoring'],
+  ['app4.js', 'restoreFenceDown', 'restoring'],
+];
+for (const [f, fn, nm] of MUST_NOT) check(`census retired site stays retired ${f} ${fn} ${nm} (architecture #3)`, !tree.sites.some(s => s.file === f && s.fn === fn && s.name === nm));
 {
   // The reset block: unloadRouteToBoot's statement restoring the eval
   // empties. (Pre-Arch-5 this check pinned the statement's line -
@@ -1053,6 +1064,12 @@ for (const [f, fn, nm] of MUST) check(`census contains adjudicated site ${f} ${f
   const violations = banViolations(tree);
   check(`write-ban holds on the tree (${tree.totals.member} member, ${tree.totals.storage} storage, ${tree.totals.idb} idb sites censused)`, violations.length === 0, violations);
   for (const v of violations) console.log(`  BAN: ${v.kind} ${v.name} written in ${v.file} ${v.fn} (owner ${v.owner})`);
+  // Beta 1.275 (architecture #3): a write to a never-declared name is an implicit
+  // global - ownerless, so it forms no census site and the exact-match cannot see
+  // it (a planted bare `restoring = true` in app4 passed this selftest silently
+  // until this check landed: the fence's retired binding is exactly the name a
+  // regression would reintroduce). The tree carries none; assert it stays so.
+  check('no implicit-global write targets in the tree (architecture #3)', tree.implicit.length === 0, tree.implicit);
 }
 
 if (process.argv.includes('--write')) {

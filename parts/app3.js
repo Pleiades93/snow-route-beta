@@ -268,9 +268,9 @@ async function syncWake() {
   } catch (e) { /* wake lock is best-effort */ }
 }
 document.addEventListener('visibilitychange', syncWake);
-function noteSessionStart() { const s = Math.floor(runStart / 1000); if (trailSessions[trailSessions.length - 1] !== s) { trailSessions.push(s); if (saveSess().ok) return storeOk(); markDirty('sess'); return storeFail('sess', true); } return storeOk(); } // Beta 1.71 (audit B02): record the session boundary the moment the clean starts - a resumed run adds no new marker, because its Start already recorded one. Beta 1.73 (audit C04): the save result is RETURNED and a failure arms the flushAux retry - 1.71 dropped it, so a failed marker write was silent and a reload could join two cleans in the GPX export
+function noteSessionStart() { const s = Math.floor(runStart / 1000); if (trailSessions[trailSessions.length - 1] !== s) { trailSessions.push(s); if (saveSess().ok) return storeOk(); markDirty('sess'); return storeFail('sess', true); } return storeOk(); } // Beta 1.71 (audit B02): record the session boundary the moment the clean starts - a resumed run adds no new marker, because its Start already recorded one. Beta 1.73 (audit C04): the save result is RETURNED and a failure arms the PERSIST.flush retry - 1.71 dropped it, so a failed marker write was silent and a reload could join two cleans in the GPX export
 let runSnap = null; // Beta 1.91: the board exactly as it was when Start was pressed - Cancel restores it, so a cancelled run erases ONLY what the run itself recorded (marks made before Start are not the run's to erase).
-function saveSnap() { // Beta 1.94 (deep audit SR-193-02): the pre-Start board is ALSO persisted (LS.snap, stamped with the run's start time) the moment a clean starts. The in-memory runSnap dies with the page; after a reload mid-run, Cancel used to fall back to the mark-stamp journal (1.93 R01) - which cannot see an UNMARK, because unmarking erases the stamp, so a pre-Start side removed during the run stayed removed. The persisted snapshot is the board itself: a resumed Cancel restores it exactly, like a live one. A failed write arms snapDirty and the flushAux heartbeat retries (app1), on the same discipline as the start key and the session markers.
+function saveSnap() { // Beta 1.94 (deep audit SR-193-02): the pre-Start board is ALSO persisted (LS.snap, stamped with the run's start time) the moment a clean starts. The in-memory runSnap dies with the page; after a reload mid-run, Cancel used to fall back to the mark-stamp journal (1.93 R01) - which cannot see an UNMARK, because unmarking erases the stamp, so a pre-Start side removed during the run stayed removed. The persisted snapshot is the board itself: a resumed Cancel restores it exactly, like a live one. A failed write arms snapDirty and the PERSIST.flush heartbeat retries (app1), on the same discipline as the start key and the session markers.
   if (!runSnap || !runStart) { markClean('snap'); return storeOk(); }
   const ok = lsSet(LS.snap, BOARD.serialiseSnap(runSnap, runStart)); // Arch-2: the snapshot string is the board module's one construction
   if (ok) markClean('snap'); else markDirty('snap'); return ok ? storeOk() : storeFail('snap', true);
@@ -308,7 +308,7 @@ function cancelStart() {
   }
   runSnap = null;
   runStart = 0;
-  const okCancel = saveAllWarned().ok; flushAux(true);
+  const okCancel = saveAllWarned().ok; PERSIST.flush(true);
   const trailPending = writePending('trail') || writePending('sess'); // Beta 1.93 (follow-up audit R07): the erasure claim below is gated on the trail/session writes having actually landed
   if (wasRunGps) stopGps();
   if (window.GLP) window.GLP.sync(); renderPanel(); renderStreets();
@@ -385,7 +385,7 @@ function trailKm(sinceMs) {
 // re-derives from the surviving trail (adoptRunDist) - the pre-1.167 figure, never worse.
 // Beta 1.186 (storage fix round, P2) extended the never-worse rule to a matching but STALE
 // record: adoption reconciles a banked figure against the surviving trail by max(), and
-// flushAux's forced flush (app1) banks the counter at page death.
+// PERSIST.flush's forced flush (app1) banks the counter at page death.
 // Beta 1.193 (trail redesign + counter hardening, Andrew's adopted design): the trail is
 // now a backend-only rolling window - only the live run's last 60 minutes of points
 // (TRAIL_WINDOW_S, app1) - kept solely as this counter's fallback; there is no drawn trail
@@ -395,7 +395,7 @@ function trailKm(sinceMs) {
 // is hardened instead: persistRunDist banks on EVERY recorded fix (the 30 s / 25 m throttle
 // is gone - the record is a few dozen characters, overwritten in place, so the storage
 // footprint is unchanged) and a second copy rides LS.rundist2, written only by the
-// trail-flush path (bankRunDistMirror via flushAux, app1) so the two records fail
+// trail-flush path (bankRunDistMirror via PERSIST.flush, app1) so the two records fail
 // independently. THE RECONCILIATION INVARIANT: every recovery candidate is a LOWER BOUND
 // of the run's true total - a banked record only ever accumulates real recorded segments,
 // and the window's trailKm sums a SUBSET of the run's recorded pairs under the same pair
@@ -405,7 +405,7 @@ function trailKm(sinceMs) {
 // distance - the last hour, nothing more is promised.
 // The record also carries the counter's ENDPOINT (end - the last recorded point).
 // Per-fix banking writes the counter synchronously while the trail's own write is
-// buffered in flushAux, so a process death inside that buffer leaves the banked
+// buffered in PERSIST.flush, so a process death inside that buffer leaves the banked
 // total AHEAD of the stored trail; without the endpoint, adoption would restore
 // the newer total while the next segment is measured from the stored trail's
 // older tail - counting the in-between travel twice (gate round on PR #38,
@@ -422,11 +422,11 @@ let runDist = { run: 0, m: 0, end: null };
 let runDistWrote = { run: 0, m: 0, end: null };
 let runDistMirrorWrote = '';
 function persistRunDist(force) {
-  if (runStart && runDist.run !== runStart) adoptRunDist(); // Beta 1.186 (gate round, Codex finding): never bank an UN-ADOPTED counter. Adoption is lazy (buildSnap, the first recorded fix) and runDist boots as { run: 0, m: 0 }, so after a mid-run reload the forced flush in flushAux (app1) could fire before either adoption point and write the zero record over the banked one - through 1.190 that loss was permanent for a capped run (its trail was truncated by design, so re-derivation understated). Every other caller already guarantees the match (startClean sets the run before banking; acceptFix adopts before banking), so the guard is a no-op outside that window and the writer itself can no longer clobber a record it has not adopted.
+  if (runStart && runDist.run !== runStart) adoptRunDist(); // Beta 1.186 (gate round, Codex finding): never bank an UN-ADOPTED counter. Adoption is lazy (buildSnap, the first recorded fix) and runDist boots as { run: 0, m: 0 }, so after a mid-run reload the forced flush in PERSIST.flush (app1) could fire before either adoption point and write the zero record over the banked one - through 1.190 that loss was permanent for a capped run (its trail was truncated by design, so re-derivation understated). Every other caller already guarantees the match (startClean sets the run before banking; acceptFix adopts before banking), so the guard is a no-op outside that window and the writer itself can no longer clobber a record it has not adopted.
   if (!force && runDistWrote.run === runDist.run && runDistWrote.m === runDist.m && runDistWrote.end === runDist.end) return; // Beta 1.193: no throttle - the only gate left is CHANGE. acceptFix calls this after every recorded fix, so the banked record is current to the last fix, not to the last 30 s / 25 m window (the pre-1.193 throttle, whose staleness the 1.186 reconciliation existed to absorb). The end term keeps the gate honest now that the endpoint rides the record: end is REPLACED (never mutated) on every recorded fix, so identity-equality means truly unchanged.
   if (lsSet(LS.rundist, JSON.stringify(runDist))) runDistWrote = { run: runDist.run, m: runDist.m, end: runDist.end };
 }
-function bankRunDistMirror() { // Beta 1.193 (counter hardening): the counter's second copy (LS.rundist2), called ONLY by flushAux's trail-flush path (app1) - a different writer, trigger and cadence from persistRunDist's per-fix direct write, so a lost, torn or clobbered primary leaves this copy intact and vice versa. Banks the ADOPTED counter only (the same never-bank-an-un-adopted rule as persistRunDist: a post-reload flush before adoption must not mint the zero counter into the mirror either).
+function bankRunDistMirror() { // Beta 1.193 (counter hardening): the counter's second copy (LS.rundist2), called ONLY by PERSIST.flush's trail-flush path (app1) - a different writer, trigger and cadence from persistRunDist's per-fix direct write, so a lost, torn or clobbered primary leaves this copy intact and vice versa. Banks the ADOPTED counter only (the same never-bank-an-un-adopted rule as persistRunDist: a post-reload flush before adoption must not mint the zero counter into the mirror either).
   if (!runStart) return;
   if (runDist.run !== runStart) adoptRunDist();
   const s = JSON.stringify(runDist);
@@ -1356,7 +1356,7 @@ function acceptFix(pos) {
       persistRunDist(false);
       markDirty('trail');
     }
-    flushAux(false);
+    PERSIST.flush(false);
     coverFix(sm);
   }
 }

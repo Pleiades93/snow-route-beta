@@ -65,7 +65,7 @@ check('5: enterCreate sets `creating` BEFORE crSetBackdrop(true) and exitCreate 
   exBody.indexOf('creating = false;') > -1 && exBody.indexOf('creating = false;') < exBody.indexOf('crSetBackdrop(false)'));
 
 // ---------- (6) the release editorial ----------
-const BULLET = 'Under the hood: marking a side or a whole street now runs through one place, the same everywhere.';
+const BULLET = 'Under the hood: saving now runs through one scheduler, so marks, trail and backups write in one set order.';
 check("6: What's New carries the 1.265 bullet (plain words: names fade in together on load, instead of blinking), within the 108-char cap, em-dash free, and the CHANGELOG top entry is Beta 1.266 above 1.265",
   whatsnew.includes(BULLET) && BULLET.length <= 108 && !whatsnew.includes('—') &&
   changelog.indexOf('## Beta 1.266') > -1 && changelog.indexOf('## Beta 1.266') < changelog.indexOf('## Beta 1.265'));

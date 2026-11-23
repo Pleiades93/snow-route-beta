@@ -36,12 +36,12 @@ await ev(`(() => { trail.push([43.81,-79.56,1767225600],[43.82,-79.57,1767225700
   Storage.prototype.setItem = function(k, v) { if (k === 'snowroute.5w.v4.trail') throw new Error('quota'); return window.__origSI.call(this, k, v); };
   return true; })()`);
 await ev(`(() => { clearTrailAll(); return true; })()`); await sleep(700); // Beta 1.88: the Clear trail button is gone (re-home comes later) - the drives call the clearing itself, which is what the button's second tap did
-A = JSON.parse(await ev(`(() => JSON.stringify({ toast: $('toast').textContent, dirty: trailDirty, ls: localStorage.getItem('snowroute.5w.v4.trail') }))()`));
+A = JSON.parse(await ev(`(() => JSON.stringify({ toast: $('toast').textContent, dirty: writePending('trail'), ls: localStorage.getItem('snowroute.5w.v4.trail') }))()`));
 ok('T2 toast reports the save failure honestly', /saving failed/.test(A.toast));
-ok('T2 clear stays pending (trailDirty)', A.dirty === true);
+ok('T2 clear stays pending (trail flag)', A.dirty === true);
 ok('T2 stored trail untouched by failed clear', A.ls !== '[]');
 await ev(`(() => { Storage.prototype.setItem = window.__origSI; flushAux(true); return true; })()`); await sleep(300);
-A = JSON.parse(await ev(`(() => JSON.stringify({ ls: localStorage.getItem('snowroute.5w.v4.trail'), dirty: trailDirty }))()`));
+A = JSON.parse(await ev(`(() => JSON.stringify({ ls: localStorage.getItem('snowroute.5w.v4.trail'), dirty: writePending('trail') }))()`));
 ok('T2 after recovery the pending clear persists', A.ls === '[]' && A.dirty === false);
 // T3 NEW-03: legacy import drops inherited names
 await ev(`(() => { localStorage.clear(); location.reload(); return true; })()`); await sleep(3000);

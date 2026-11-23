@@ -82,8 +82,8 @@ check('13: crFailText keys the dense remedy on the failure source too (never on 
 // ---------- the release editorial ----------
 check('11: the CHANGELOG top entry is Beta 1.253', changelog.includes('## Beta 1.253'));
 check('12: What\'s New carries the 1.253 bullet, short and dash-free',
-  whatsnew.includes('Under the hood: marking a side or a whole street now runs through one place, the same everywhere.')
-  && 'Under the hood: marking a side or a whole street now runs through one place, the same everywhere.'.length <= 108
+  whatsnew.includes('Under the hood: saving now runs through one scheduler, so marks, trail and backups write in one set order.')
+  && 'Under the hood: saving now runs through one scheduler, so marks, trail and backups write in one set order.'.length <= 108
   && !whatsnew.includes('—'));
 
 console.log(`proof-1253: ${pass} passed, ${fail} failed`);
