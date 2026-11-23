@@ -81,13 +81,13 @@ try {
     const runSec = Math.floor(runStart / 1000);
     trail = []; for (let i = 0; i < 7999; i++) trail.push([+(43.8 + i * 0.000001).toFixed(6), -79.4, runSec + i]);
     localStorage.setItem(LS.rundist, JSON.stringify({ run: runStart, m: 50000, capped: false })); // a 1.190-shape banked record: the retired capped field rides along and must be tolerated (read for run + m, ignored)
-    runDist = { run: 0, m: 0 };
+    RUNDIST.cur = { run: 0, m: 0 };
     gpsFromRun = true;
     markDone('Velmar', 'tap'); markDone('Mellings', 'tap'); markDone('Astona', 'tap');
     return true;
   })()`);
   for (let k = 0; k < 3; k++) { await ev(`acceptFix({ coords: { latitude: ${43.80801 + k * 0.00001}, longitude: -79.4, accuracy: 5, speed: 3, heading: 90 }, timestamp: Date.now() }); true`); await sleep(150); }
-  const pre = await J(`({ m: runDist.m, hasCapped: 'capped' in runDist, trailLen: trail.length })`);
+  const pre = await J(`({ m: RUNDIST.cur.m, hasCapped: 'capped' in RUNDIST.cur, trailLen: trail.length })`);
   ok('B5a (Beta 1.193) at the first appends the planted 2.2 h trail collapses to the 60-minute window (about 800 points, not the 8000 cap) while the counter keeps the banked 50 km - and carries no capped field | ' + JSON.stringify(pre),
     pre.trailLen > 700 && pre.trailLen < 900 && pre.hasCapped === false && pre.m >= 50000);
   await ev(`finishRun(); true`); await sleep(500);
@@ -97,9 +97,9 @@ try {
     post.km === post.wantKm && post.km > post.trailKmNow + 10);
   ok('B5c (Beta 1.193) the entry carries NO truncation flag and NO archived path (both retired with the capped trail), both counter records are consumed at Finish, and the stored trail is cleared with the run',
     post.flag === false && post.hasPath === false && post.rundist === null && post.rundist2 === null && post.trailStored === '[]');
-  const ctl = await J(`(() => { runStart = Date.now() - 600000; saveStart(); trail = []; runDist = { run: 0, m: 0 }; localStorage.removeItem(routeKeys('5w').rundist); localStorage.removeItem(routeKeys('5w').rundist2); gpsFromRun = true; markDone('Velmar', 'tap'); markDone('Mellings', 'tap'); markDone('Astona', 'tap'); return true; })()`);
+  const ctl = await J(`(() => { runStart = Date.now() - 600000; saveStart(); trail = []; RUNDIST.cur = { run: 0, m: 0 }; localStorage.removeItem(routeKeys('5w').rundist); localStorage.removeItem(routeKeys('5w').rundist2); gpsFromRun = true; markDone('Velmar', 'tap'); markDone('Mellings', 'tap'); markDone('Astona', 'tap'); return true; })()`);
   for (let k = 0; k < 3; k++) { await ev(`acceptFix({ coords: { latitude: ${43.81 + k * 0.0001}, longitude: -79.41, accuracy: 5, speed: 3, heading: 90 }, timestamp: Date.now() }); true`); await sleep(150); }
-  const ctlPre = await J(`({ m: runDist.m, tk: +trailKm(runStart).toFixed(1) })`);
+  const ctlPre = await J(`({ m: RUNDIST.cur.m, tk: +trailKm(runStart).toFixed(1) })`);
   await ev(`finishRun(); true`); await sleep(500);
   const ctlPost = await J(`(() => { const e = history[history.length - 1] || {}; return { km: e.km, hasFlag: 'pathShortened' in e, hasPath: 'path' in e }; })()`);
   ok('B5d control: an ordinary short run archives exactly its trail figure, counter and trail agree, and NO flag and NO path are carried | ' + JSON.stringify({ ctlPre, ctlPost }),
@@ -108,7 +108,7 @@ try {
   // ---- P2 (Beta 1.186, storage fix round): the counter can no longer come back
   // stale from a mid-run reload. Through 1.185 (i) flushAux's forced flush never
   // banked the counter, so inside the 30 s / 25 m throttle window the banked
-  // record lagged the run, and (ii) adoptRunDist believed a matching banked
+  // record lagged the run, and (ii) adoption believed a matching banked
   // record verbatim, so buildSnap archived the stale figure while the
   // fully-flushed trail measured more. The fixes: a forced flush banks the
   // counter past its throttle (app1), and adoption reconciles an UNCAPPED
@@ -132,9 +132,9 @@ try {
     const tm = trailKm(runStart) * 1000;
     localStorage.setItem(LS.rundist, JSON.stringify({ run: runStart, m: tm - 20, capped: false })); // a 1.190-shape record: capped rides along, tolerated and ignored
     localStorage.removeItem(LS.rundist2);
-    runDist = { run: 0, m: 0 };
-    adoptRunDist();
-    return { adopted: runDist.m, tm };
+    RUNDIST.cur = { run: 0, m: 0 };
+    RUNDIST.adopt();
+    return { adopted: RUNDIST.cur.m, tm };
   })()`);
   ok('P2a adoption reconciles a stale bank against the surviving trail (adopts the trail measure, not the stale bank) | ' + JSON.stringify(p2adopt),
     p2adopt.tm > 100 && Math.abs(p2adopt.adopted - p2adopt.tm) < 0.01);
@@ -143,20 +143,20 @@ try {
     const banked = tm + 5000; // a bank ABOVE anything the window's trail can measure
     localStorage.setItem(LS.rundist, JSON.stringify({ run: runStart, m: banked, capped: true })); // the 1.190 CAPPED shape: its exemption is retired, the max() must still never reduce it
     localStorage.removeItem(LS.rundist2);
-    runDist = { run: 0, m: 0 };
-    adoptRunDist();
-    return { adopted: runDist.m, banked, hasCapped: 'capped' in runDist };
+    RUNDIST.cur = { run: 0, m: 0 };
+    RUNDIST.adopt();
+    return { adopted: RUNDIST.cur.m, banked, hasCapped: 'capped' in RUNDIST.cur };
   })()`);
   ok('P2b (Beta 1.193) a bank above the trail measure is NEVER reduced by derivation (the max only raises; the retired capped exemption is moot under the window) | ' + JSON.stringify(p2cap),
     p2cap.adopted === p2cap.banked && p2cap.hasCapped === false);
   const p2flush = await J(`(() => {
     const tm = trailKm(runStart) * 1000;
-    runDist = { run: runStart, m: tm - 20 };
-    runDistWrote = { run: 0, m: 0 };
-    persistRunDist(true); // bank the stale figure
+    RUNDIST.cur = { run: runStart, m: tm - 20 };
+    RUNDIST.wrote = { run: 0, m: 0 };
+    RUNDIST.bank(true); // bank the stale figure
     const afterBank = JSON.parse(localStorage.getItem(LS.rundist)).m;
-    runDist.m = tm; // +20 m lands (through 1.190 this sat inside the 30 s / 25 m throttle window)
-    persistRunDist(false); // Beta 1.193: NO throttle - the unforced bank lands on the fix, like every fix
+    RUNDIST.cur.m = tm; // +20 m lands (through 1.190 this sat inside the 30 s / 25 m throttle window)
+    RUNDIST.bank(false); // Beta 1.193: NO throttle - the unforced bank lands on the fix, like every fix
     const afterUnforced = JSON.parse(localStorage.getItem(LS.rundist)).m;
     flushAux(true); // the pagehide-equivalent forced flush: keeps the true figure, and lands the mirror copy with it
     const afterForce = JSON.parse(localStorage.getItem(LS.rundist)).m;
@@ -167,11 +167,11 @@ try {
     Math.abs(p2flush.afterBank - (p2flush.tm - 20)) < 0.01 && Math.abs(p2flush.afterUnforced - p2flush.tm) < 0.01 && Math.abs(p2flush.afterForce - p2flush.tm) < 0.01 && Math.abs(p2flush.mirrorM - p2flush.tm) < 0.01 && p2flush.mirrorRun === p2flush.rs);
   // P2d (Beta 1.186 gate round, Codex finding): the forced flush must never bank
   // an UN-ADOPTED counter. After a mid-run reload, runStart is restored at boot
-  // but runDist still boots as { run: 0, m: 0 } - adoption is lazy
+  // but the counter still boots as { run: 0, m: 0 } - adoption is lazy
   // (buildSnap, the first recorded fix). A pagehide in that window fired P2c's
   // forced bank with the zero counter and overwrote the stored record; through
   // 1.190 the loss was permanent for a capped run (the truncated trail could not
-  // reproduce the banked total). persistRunDist adopts before it writes, so the
+  // reproduce the banked total). RUNDIST.bank adopts before it writes, so the
   // bank lands as the adopted record itself. (Beta 1.193: the planted record
   // keeps its 1.190 capped field - tolerated, ignored, and NOT carried into the
   // rewritten record; the mirror lands the same adopted figure beside it.)
@@ -179,7 +179,7 @@ try {
     const banked = 4321; // a total the surviving trail cannot reproduce
     localStorage.setItem(LS.rundist, JSON.stringify({ run: runStart, m: banked, capped: true }));
     localStorage.removeItem(LS.rundist2);
-    runDist = { run: 0, m: 0 }; runDistWrote = { run: 0, m: 0 }; runDistMirrorWrote = ''; // the post-reload boot state
+    RUNDIST.cur = { run: 0, m: 0 }; RUNDIST.wrote = { run: 0, m: 0 }; RUNDIST.mirrorWrote = ''; // the post-reload boot state
     flushAux(true); // the pagehide-equivalent forced flush, before any fix or buildSnap
     const rec = JSON.parse(localStorage.getItem(LS.rundist));
     const mir = JSON.parse(localStorage.getItem(LS.rundist2) || 'null');
@@ -201,9 +201,9 @@ try {
     trail = [p0];
     localStorage.setItem(LS.rundist, JSON.stringify({ run: runStart, m: 0, end: pEnd }));
     localStorage.removeItem(LS.rundist2);
-    runDist = { run: 0, m: 0, end: null };
-    adoptRunDist();
-    return { m: runDist.m, tl: trail.length, endOk: JSON.stringify(runDist.end) === JSON.stringify(pEnd), tk: trailKm(runStart) * 1000 };
+    RUNDIST.cur = { run: 0, m: 0, end: null };
+    RUNDIST.adopt();
+    return { m: RUNDIST.cur.m, tl: trail.length, endOk: JSON.stringify(RUNDIST.cur.end) === JSON.stringify(pEnd), tk: trailKm(runStart) * 1000 };
   })()`);
   ok('P2e (Beta 1.193) the restored endpoint anchors the counter WITHOUT entering the trail: no synthetic edge, the derivation stays zero, the anchor survives | ' + JSON.stringify(p2e),
     p2e.m === 0 && p2e.tl === 1 && p2e.tk === 0 && p2e.endOk === true);
@@ -219,9 +219,9 @@ try {
     trail = [p0];
     localStorage.setItem(LS.rundist, JSON.stringify({ run: runStart, m: 0, end: p0 }));
     localStorage.setItem(LS.rundist2, JSON.stringify({ run: runStart, m: 0, end: pEnd }));
-    runDist = { run: 0, m: 0, end: null };
-    adoptRunDist();
-    return { m: runDist.m, endOk: JSON.stringify(runDist.end) === JSON.stringify(pEnd) };
+    RUNDIST.cur = { run: 0, m: 0, end: null };
+    RUNDIST.adopt();
+    return { m: RUNDIST.cur.m, endOk: JSON.stringify(RUNDIST.cur.end) === JSON.stringify(pEnd) };
   })()`);
   ok('P2f (Beta 1.193) on a totals TIE the NEWER endpoint wins (the mirror\u2019s anchor survives over the primary\u2019s stale one) | ' + JSON.stringify(p2f),
     p2f.m === 0 && p2f.endOk === true);

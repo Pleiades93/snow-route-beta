@@ -5502,6 +5502,368 @@
    "red": "drive86 15/18 FAIL: T2 clear stays pending (trail flag); C04a dirty:false with the marker write broken and retry armed; C05a dirty:false - observed 2026-11-23 local",
    "green": "drive86 18/18 PASS, 0 exceptions on the reverted tree (app1.js sha256 verified identical to pre-mutation) - observed 2026-11-23 local",
    "issued": "2026-11-23"
+  },
+  {
+   "id": "selftest-gps-package-rundist-1276",
+   "check": "tests/browser/selftest-gps-package.mjs",
+   "kind": "mutation",
+   "files": {
+    "tests/browser/selftest-gps-package.mjs": "5f55eae3f55412b2ea2a9d4cf2ae0652bc8622b6c20290bca52fc5fa83bf1f6e",
+    "parts/app3.js": "e83888e7064c2101004e95fac8a0843f88573d89bf1b8566620a78477c76a051"
+   },
+   "mutation": "RUNDIST.bank's write gated off on the final 1.276 tree (the lsSet(LS.rundist, ...) condition replaced with false - the bank computes but never writes); the selftest instantiates the shipped RUNDIST over its stub store and counts LS.rundist writes as persists",
+   "red": "selftest-gps-package: 18 pass, 2 fail (S1 a moving fix records a trail point; S2 a stopped fix records no point, banks no distance, persists nothing)",
+   "green": "selftest-gps-package: 20 pass, 0 fail on the reverted final tree",
+   "issued": "2026-11-23 arch4-1276"
+  },
+  {
+   "id": "selftest-foreign-writes-ban-1276",
+   "check": "tests/browser/selftest-foreign-writes.mjs",
+   "kind": "mutation",
+   "files": {
+    "tests/browser/selftest-foreign-writes.mjs": "cbebceae8d0a70fb427948def65892db426f5d82b5a29a5495d000f74336133f",
+    "parts/app4.js": "77a902a67ce2de0f989a00d9a06c9f16ee7fccdc10e43238ddade610e57e463d",
+    "parts/app1.js": "cf555a9736c6f9961e906e0fd9c00a531c9ddb88ca3c5ff5765fa33ba62953df"
+   },
+   "mutation": "planted banned member write pieces.__receiptProbe = 1 in app4 clearTrailAll; separately a planted bare restoring = true write in app4 (an implicit global) - the 1275 receipt's plantings, re-observed on the 1.276 tree (app1 changed by this round's comment repoints, which staled the 1275-r2 pin)",
+   "red": "FOREIGN-WRITE CENSUS FAIL (BAN: member pieces written in app4.js clearTrailAll (owner app1.js); and FAIL no implicit-global write targets in the tree)",
+   "green": "FOREIGN-WRITE CENSUS PASS (22 expressions; 31 member, 49 storage, 2 idb sites; the regenerated census delta is exactly the two storage re-keys persistRunDist -> bank and bankRunDistMirror -> flushMirror)",
+   "issued": "2026-11-23 arch4-1276"
+  },
+  {
+   "id": "drive187-arch4-1276",
+   "check": "tests/browser/drive187.mjs",
+   "kind": "historical",
+   "files": {
+    "tests/browser/drive187.mjs": "d5e596a3e85249874582addb3b2749a064b2e3ebb0e6d5e704a50da536b1f93b"
+   },
+   "mutation": "the pristine Beta 1.275 tree (parts/app3.js at merge 28ee1a9a, sha256 3fa5b5e3 matching the 1275 receipt pin) carrying this round's migrated drive187, which speaks only to RUNDIST",
+   "red": "BROWSER TESTS FAIL on the 1.275 tree: the migrated checks throw RUNDIST is not defined (P2b, P2c shown; the B5/P2 families cannot run)",
+   "green": "19/19 checks, 0 exceptions on the 1.276 tree (local run through the runner, 2026-11-23, re-run after the revert)",
+   "issued": "2026-11-23 arch4-1276"
+  },
+  {
+   "id": "proof-1242-whatsnew-roll-1276",
+   "check": "tests/proof/proof-1242.mjs",
+   "kind": "historical",
+   "files": {
+    "tests/proof/proof-1242.mjs": "7f4d71b5a09592ab07a8bbb9701ef554f80aac89a34143c2f664c0518b52897d",
+    "parts/whatsnew.js": "443eb1c9595a2de40c6b03f93318a850c9e426b328fc7248c03ea2f2fbb82ebd"
+   },
+   "mutation": "the Beta 1.275 What's New bullet restored into parts/whatsnew.js (the standing version-roll red: the proof's bullet pin names the 1.276 bullet)",
+   "red": "proofs 56/78 with the 1.275 bullet restored; proof-1242 in the failing set (its pinned bullet is the 1.276 run-distance line)",
+   "green": "proofs 78/78 on the shipped Beta 1.276 tree",
+   "issued": "2026-11-23 arch4-1276"
+  },
+  {
+   "id": "proof-1243-whatsnew-roll-1276",
+   "check": "tests/proof/proof-1243.mjs",
+   "kind": "historical",
+   "files": {
+    "tests/proof/proof-1243.mjs": "101af0a02253bdb1caf3c956c86ef712382c0b825d5213cc8af8202cb330c8bd",
+    "parts/whatsnew.js": "443eb1c9595a2de40c6b03f93318a850c9e426b328fc7248c03ea2f2fbb82ebd"
+   },
+   "mutation": "the Beta 1.275 What's New bullet restored into parts/whatsnew.js (the standing version-roll red: the proof's bullet pin names the 1.276 bullet)",
+   "red": "proofs 56/78 with the 1.275 bullet restored; proof-1243 in the failing set (its pinned bullet is the 1.276 run-distance line)",
+   "green": "proofs 78/78 on the shipped Beta 1.276 tree",
+   "issued": "2026-11-23 arch4-1276"
+  },
+  {
+   "id": "proof-1245-whatsnew-roll-1276",
+   "check": "tests/proof/proof-1245.mjs",
+   "kind": "historical",
+   "files": {
+    "tests/proof/proof-1245.mjs": "706e4479bcaf923d64b6c249e003c49be5b0f8b86201c60d00cd3284c306cc8f",
+    "parts/whatsnew.js": "443eb1c9595a2de40c6b03f93318a850c9e426b328fc7248c03ea2f2fbb82ebd"
+   },
+   "mutation": "the Beta 1.275 What's New bullet restored into parts/whatsnew.js (the standing version-roll red: the proof's bullet pin names the 1.276 bullet)",
+   "red": "proofs 56/78 with the 1.275 bullet restored; proof-1245 in the failing set (its pinned bullet is the 1.276 run-distance line)",
+   "green": "proofs 78/78 on the shipped Beta 1.276 tree",
+   "issued": "2026-11-23 arch4-1276"
+  },
+  {
+   "id": "proof-1246-whatsnew-roll-1276",
+   "check": "tests/proof/proof-1246.mjs",
+   "kind": "historical",
+   "files": {
+    "tests/proof/proof-1246.mjs": "ca18a881e19c10c9301b70203d76aa09f4634549b01f099162c080d3a2b7ef6a",
+    "parts/whatsnew.js": "443eb1c9595a2de40c6b03f93318a850c9e426b328fc7248c03ea2f2fbb82ebd"
+   },
+   "mutation": "the Beta 1.275 What's New bullet restored into parts/whatsnew.js (the standing version-roll red: the proof's bullet pin names the 1.276 bullet)",
+   "red": "proofs 56/78 with the 1.275 bullet restored; proof-1246 in the failing set (its pinned bullet is the 1.276 run-distance line)",
+   "green": "proofs 78/78 on the shipped Beta 1.276 tree",
+   "issued": "2026-11-23 arch4-1276"
+  },
+  {
+   "id": "proof-1247-whatsnew-roll-1276",
+   "check": "tests/proof/proof-1247.mjs",
+   "kind": "historical",
+   "files": {
+    "tests/proof/proof-1247.mjs": "beb37f3f6dcf08a980a9784869a310a52cda4080b6e87e12b09116392759dd87",
+    "parts/whatsnew.js": "443eb1c9595a2de40c6b03f93318a850c9e426b328fc7248c03ea2f2fbb82ebd"
+   },
+   "mutation": "the Beta 1.275 What's New bullet restored into parts/whatsnew.js (the standing version-roll red: the proof's bullet pin names the 1.276 bullet)",
+   "red": "proofs 56/78 with the 1.275 bullet restored; proof-1247 in the failing set (its pinned bullet is the 1.276 run-distance line)",
+   "green": "proofs 78/78 on the shipped Beta 1.276 tree",
+   "issued": "2026-11-23 arch4-1276"
+  },
+  {
+   "id": "proof-1249-whatsnew-roll-1276",
+   "check": "tests/proof/proof-1249.mjs",
+   "kind": "historical",
+   "files": {
+    "tests/proof/proof-1249.mjs": "b49a1b8f64c942b0b70bcde9e09a7768d2f7144f7eb29190f3dd3bb44f5555fe",
+    "parts/whatsnew.js": "443eb1c9595a2de40c6b03f93318a850c9e426b328fc7248c03ea2f2fbb82ebd"
+   },
+   "mutation": "the Beta 1.275 What's New bullet restored into parts/whatsnew.js (the standing version-roll red: the proof's bullet pin names the 1.276 bullet)",
+   "red": "proofs 56/78 with the 1.275 bullet restored; proof-1249 in the failing set (its pinned bullet is the 1.276 run-distance line)",
+   "green": "proofs 78/78 on the shipped Beta 1.276 tree",
+   "issued": "2026-11-23 arch4-1276"
+  },
+  {
+   "id": "proof-1252-whatsnew-roll-1276",
+   "check": "tests/proof/proof-1252.mjs",
+   "kind": "historical",
+   "files": {
+    "tests/proof/proof-1252.mjs": "b17ebce5632ca8742292abb3c68f87e4334d2d2294502e3a877d67a99faf5516",
+    "parts/whatsnew.js": "443eb1c9595a2de40c6b03f93318a850c9e426b328fc7248c03ea2f2fbb82ebd"
+   },
+   "mutation": "the Beta 1.275 What's New bullet restored into parts/whatsnew.js (the standing version-roll red: the proof's bullet pin names the 1.276 bullet)",
+   "red": "proofs 56/78 with the 1.275 bullet restored; proof-1252 in the failing set (its pinned bullet is the 1.276 run-distance line)",
+   "green": "proofs 78/78 on the shipped Beta 1.276 tree",
+   "issued": "2026-11-23 arch4-1276"
+  },
+  {
+   "id": "proof-1253-whatsnew-roll-1276",
+   "check": "tests/proof/proof-1253.mjs",
+   "kind": "historical",
+   "files": {
+    "tests/proof/proof-1253.mjs": "fc9b1d6b9433bbea370364276d8bce60f3e2e6f23c068f204e96fd6661c592e8",
+    "parts/whatsnew.js": "443eb1c9595a2de40c6b03f93318a850c9e426b328fc7248c03ea2f2fbb82ebd"
+   },
+   "mutation": "the Beta 1.275 What's New bullet restored into parts/whatsnew.js (the standing version-roll red: the proof's bullet pin names the 1.276 bullet)",
+   "red": "proofs 56/78 with the 1.275 bullet restored; proof-1253 in the failing set (its pinned bullet is the 1.276 run-distance line)",
+   "green": "proofs 78/78 on the shipped Beta 1.276 tree",
+   "issued": "2026-11-23 arch4-1276"
+  },
+  {
+   "id": "proof-1254-whatsnew-roll-1276",
+   "check": "tests/proof/proof-1254.mjs",
+   "kind": "historical",
+   "files": {
+    "tests/proof/proof-1254.mjs": "d336101e2c808119a86b3c97f9838a8aeb083ba93d3d30df380cbbce2a8fdada",
+    "parts/whatsnew.js": "443eb1c9595a2de40c6b03f93318a850c9e426b328fc7248c03ea2f2fbb82ebd"
+   },
+   "mutation": "the Beta 1.275 What's New bullet restored into parts/whatsnew.js (the standing version-roll red: the proof's bullet pin names the 1.276 bullet)",
+   "red": "proofs 56/78 with the 1.275 bullet restored; proof-1254 in the failing set (its pinned bullet is the 1.276 run-distance line)",
+   "green": "proofs 78/78 on the shipped Beta 1.276 tree",
+   "issued": "2026-11-23 arch4-1276"
+  },
+  {
+   "id": "proof-1255-whatsnew-roll-1276",
+   "check": "tests/proof/proof-1255.mjs",
+   "kind": "historical",
+   "files": {
+    "tests/proof/proof-1255.mjs": "31132263535f3a8340a794e2bbdab6eb7d91726386cdd4e9839e8e8a73e66e5d",
+    "parts/whatsnew.js": "443eb1c9595a2de40c6b03f93318a850c9e426b328fc7248c03ea2f2fbb82ebd"
+   },
+   "mutation": "the Beta 1.275 What's New bullet restored into parts/whatsnew.js (the standing version-roll red: the proof's bullet pin names the 1.276 bullet)",
+   "red": "proofs 56/78 with the 1.275 bullet restored; proof-1255 in the failing set (its pinned bullet is the 1.276 run-distance line)",
+   "green": "proofs 78/78 on the shipped Beta 1.276 tree",
+   "issued": "2026-11-23 arch4-1276"
+  },
+  {
+   "id": "proof-1256-whatsnew-roll-1276",
+   "check": "tests/proof/proof-1256.mjs",
+   "kind": "historical",
+   "files": {
+    "tests/proof/proof-1256.mjs": "c92b03aad32c23b2946f7018842b1add6e22e5fc6b1116e41497b8c21d066e5d",
+    "parts/whatsnew.js": "443eb1c9595a2de40c6b03f93318a850c9e426b328fc7248c03ea2f2fbb82ebd"
+   },
+   "mutation": "the Beta 1.275 What's New bullet restored into parts/whatsnew.js (the standing version-roll red: the proof's bullet pin names the 1.276 bullet)",
+   "red": "proofs 56/78 with the 1.275 bullet restored; proof-1256 in the failing set (its pinned bullet is the 1.276 run-distance line)",
+   "green": "proofs 78/78 on the shipped Beta 1.276 tree",
+   "issued": "2026-11-23 arch4-1276"
+  },
+  {
+   "id": "proof-1257-whatsnew-roll-1276",
+   "check": "tests/proof/proof-1257.mjs",
+   "kind": "historical",
+   "files": {
+    "tests/proof/proof-1257.mjs": "4bd962445a6b1f583a2cf153ffd928249d0de10a2521bc641c430ba3227024f1",
+    "parts/whatsnew.js": "443eb1c9595a2de40c6b03f93318a850c9e426b328fc7248c03ea2f2fbb82ebd"
+   },
+   "mutation": "the Beta 1.275 What's New bullet restored into parts/whatsnew.js (the standing version-roll red: the proof's bullet pin names the 1.276 bullet)",
+   "red": "proofs 56/78 with the 1.275 bullet restored; proof-1257 in the failing set (its pinned bullet is the 1.276 run-distance line)",
+   "green": "proofs 78/78 on the shipped Beta 1.276 tree",
+   "issued": "2026-11-23 arch4-1276"
+  },
+  {
+   "id": "proof-1259-whatsnew-roll-1276",
+   "check": "tests/proof/proof-1259.mjs",
+   "kind": "historical",
+   "files": {
+    "tests/proof/proof-1259.mjs": "ea8ea8c4e9a4c05abb960e46fb5fb316039e212d293cfa147bc54e5e5d682676",
+    "parts/whatsnew.js": "443eb1c9595a2de40c6b03f93318a850c9e426b328fc7248c03ea2f2fbb82ebd"
+   },
+   "mutation": "the Beta 1.275 What's New bullet restored into parts/whatsnew.js (the standing version-roll red: the proof's bullet pin names the 1.276 bullet)",
+   "red": "proofs 56/78 with the 1.275 bullet restored; proof-1259 in the failing set (its pinned bullet is the 1.276 run-distance line)",
+   "green": "proofs 78/78 on the shipped Beta 1.276 tree",
+   "issued": "2026-11-23 arch4-1276"
+  },
+  {
+   "id": "proof-1262-whatsnew-roll-1276",
+   "check": "tests/proof/proof-1262.mjs",
+   "kind": "historical",
+   "files": {
+    "tests/proof/proof-1262.mjs": "8db7e727e9c6ccd219a4ac36a27e587bba77b26344857c5b874a7a739a074932",
+    "parts/whatsnew.js": "443eb1c9595a2de40c6b03f93318a850c9e426b328fc7248c03ea2f2fbb82ebd"
+   },
+   "mutation": "the Beta 1.275 What's New bullet restored into parts/whatsnew.js (the standing version-roll red: the proof's bullet pin names the 1.276 bullet)",
+   "red": "proofs 56/78 with the 1.275 bullet restored; proof-1262 in the failing set (its pinned bullet is the 1.276 run-distance line)",
+   "green": "proofs 78/78 on the shipped Beta 1.276 tree",
+   "issued": "2026-11-23 arch4-1276"
+  },
+  {
+   "id": "proof-1263-whatsnew-roll-1276",
+   "check": "tests/proof/proof-1263.mjs",
+   "kind": "historical",
+   "files": {
+    "tests/proof/proof-1263.mjs": "b5f4b9c853b917b640859d443e48d5e33f3a2f28995f836d94e66398aed960ca",
+    "parts/whatsnew.js": "443eb1c9595a2de40c6b03f93318a850c9e426b328fc7248c03ea2f2fbb82ebd"
+   },
+   "mutation": "the Beta 1.275 What's New bullet restored into parts/whatsnew.js (the standing version-roll red: the proof's bullet pin names the 1.276 bullet)",
+   "red": "proofs 56/78 with the 1.275 bullet restored; proof-1263 in the failing set (its pinned bullet is the 1.276 run-distance line)",
+   "green": "proofs 78/78 on the shipped Beta 1.276 tree",
+   "issued": "2026-11-23 arch4-1276"
+  },
+  {
+   "id": "proof-1264-whatsnew-roll-1276",
+   "check": "tests/proof/proof-1264.mjs",
+   "kind": "historical",
+   "files": {
+    "tests/proof/proof-1264.mjs": "ec5202c9c477050808d1d977ef51d41bea6486815c040094118964aea98741bd",
+    "parts/whatsnew.js": "443eb1c9595a2de40c6b03f93318a850c9e426b328fc7248c03ea2f2fbb82ebd"
+   },
+   "mutation": "the Beta 1.275 What's New bullet restored into parts/whatsnew.js (the standing version-roll red: the proof's bullet pin names the 1.276 bullet)",
+   "red": "proofs 56/78 with the 1.275 bullet restored; proof-1264 in the failing set (its pinned bullet is the 1.276 run-distance line)",
+   "green": "proofs 78/78 on the shipped Beta 1.276 tree",
+   "issued": "2026-11-23 arch4-1276"
+  },
+  {
+   "id": "proof-1265-whatsnew-roll-1276",
+   "check": "tests/proof/proof-1265.mjs",
+   "kind": "historical",
+   "files": {
+    "tests/proof/proof-1265.mjs": "892c55406ccf4dc5e31f2de701eed330a7eb2fe34592670d48c2c8dc2c2fdf6f",
+    "parts/whatsnew.js": "443eb1c9595a2de40c6b03f93318a850c9e426b328fc7248c03ea2f2fbb82ebd"
+   },
+   "mutation": "the Beta 1.275 What's New bullet restored into parts/whatsnew.js (the standing version-roll red: the proof's bullet pin names the 1.276 bullet)",
+   "red": "proofs 56/78 with the 1.275 bullet restored; proof-1265 in the failing set (its pinned bullet is the 1.276 run-distance line)",
+   "green": "proofs 78/78 on the shipped Beta 1.276 tree",
+   "issued": "2026-11-23 arch4-1276"
+  },
+  {
+   "id": "proof-1267-whatsnew-roll-1276",
+   "check": "tests/proof/proof-1267.mjs",
+   "kind": "historical",
+   "files": {
+    "tests/proof/proof-1267.mjs": "7d1231ca75d53bf27f86e990cee7e93f4c683499ccd08935cc4a202b61cfc692",
+    "parts/whatsnew.js": "443eb1c9595a2de40c6b03f93318a850c9e426b328fc7248c03ea2f2fbb82ebd"
+   },
+   "mutation": "the Beta 1.275 What's New bullet restored into parts/whatsnew.js (the standing version-roll red: the proof's bullet pin names the 1.276 bullet)",
+   "red": "proofs 56/78 with the 1.275 bullet restored; proof-1267 in the failing set (its pinned bullet is the 1.276 run-distance line)",
+   "green": "proofs 78/78 on the shipped Beta 1.276 tree",
+   "issued": "2026-11-23 arch4-1276"
+  },
+  {
+   "id": "proof-1268-whatsnew-roll-1276",
+   "check": "tests/proof/proof-1268.mjs",
+   "kind": "historical",
+   "files": {
+    "tests/proof/proof-1268.mjs": "7cc5bd830d8e33e0818ed2c289b279569d2feffdbdb81d89dd1a0db7fcec1bde",
+    "parts/whatsnew.js": "443eb1c9595a2de40c6b03f93318a850c9e426b328fc7248c03ea2f2fbb82ebd"
+   },
+   "mutation": "the Beta 1.275 What's New bullet restored into parts/whatsnew.js (the standing version-roll red: the proof's bullet pin names the 1.276 bullet)",
+   "red": "proofs 56/78 with the 1.275 bullet restored; proof-1268 in the failing set (its pinned bullet is the 1.276 run-distance line)",
+   "green": "proofs 78/78 on the shipped Beta 1.276 tree",
+   "issued": "2026-11-23 arch4-1276"
+  },
+  {
+   "id": "proof-1269-whatsnew-roll-1276",
+   "check": "tests/proof/proof-1269.mjs",
+   "kind": "historical",
+   "files": {
+    "tests/proof/proof-1269.mjs": "f8d80c84332d467537dbe65c1f2e1dc7cc6bd345a0230fedc1f6303f413ff384",
+    "parts/whatsnew.js": "443eb1c9595a2de40c6b03f93318a850c9e426b328fc7248c03ea2f2fbb82ebd"
+   },
+   "mutation": "the Beta 1.275 What's New bullet restored into parts/whatsnew.js (the standing version-roll red: the proof's bullet pin names the 1.276 bullet)",
+   "red": "proofs 56/78 with the 1.275 bullet restored; proof-1269 in the failing set (its pinned bullet is the 1.276 run-distance line)",
+   "green": "proofs 78/78 on the shipped Beta 1.276 tree",
+   "issued": "2026-11-23 arch4-1276"
+  },
+  {
+   "id": "proof-1270-whatsnew-roll-1276",
+   "check": "tests/proof/proof-1270.mjs",
+   "kind": "historical",
+   "files": {
+    "tests/proof/proof-1270.mjs": "3a5bc7036426efa2dc4ccbcf0e4de4ebf7eacd88190c42ba0c3a7a5cc4db40e1",
+    "parts/whatsnew.js": "443eb1c9595a2de40c6b03f93318a850c9e426b328fc7248c03ea2f2fbb82ebd"
+   },
+   "mutation": "the Beta 1.275 What's New bullet restored into parts/whatsnew.js (the standing version-roll red: the proof's bullet pin names the 1.276 bullet)",
+   "red": "proofs 56/78 with the 1.275 bullet restored; proof-1270 in the failing set (its pinned bullet is the 1.276 run-distance line)",
+   "green": "proofs 78/78 on the shipped Beta 1.276 tree",
+   "issued": "2026-11-23 arch4-1276"
+  },
+  {
+   "id": "proof-1271-whatsnew-roll-1276",
+   "check": "tests/proof/proof-1271.mjs",
+   "kind": "historical",
+   "files": {
+    "tests/proof/proof-1271.mjs": "0c916056ba851ef0002db9368f674fe576c9b80c34a5e6000455c64e8a69cb98",
+    "parts/whatsnew.js": "443eb1c9595a2de40c6b03f93318a850c9e426b328fc7248c03ea2f2fbb82ebd"
+   },
+   "mutation": "the Beta 1.275 What's New bullet restored into parts/whatsnew.js (the standing version-roll red: the proof's bullet pin names the 1.276 bullet)",
+   "red": "proofs 56/78 with the 1.275 bullet restored; proof-1271 in the failing set (its pinned bullet is the 1.276 run-distance line)",
+   "green": "proofs 78/78 on the shipped Beta 1.276 tree",
+   "issued": "2026-11-23 arch4-1276"
+  },
+  {
+   "id": "proof-1266-whatsnew-roll-1276",
+   "check": "tests/proof/proof-1266.mjs",
+   "kind": "historical",
+   "files": {
+    "tests/proof/proof-1266.mjs": "78407241527fa910bd84083a47927d078f8f68e365167356bcf2b2ef1141839e",
+    "parts/whatsnew.js": "443eb1c9595a2de40c6b03f93318a850c9e426b328fc7248c03ea2f2fbb82ebd"
+   },
+   "mutation": "the Beta 1.275 What's New bullet restored into parts/whatsnew.js; proof-1266 is retired from the running manifest (its 1.266-era app pins are historical), so its bullet pin (check 9) was observed directly",
+   "red": "proof-1266 check 9 fails with the 1.275 bullet restored (5 passed, 7 failed run directly - the other six fails are its standing retired pins, present with either bullet)",
+   "green": "proof-1266 check 9 passes with the shipped 1.276 bullet (6 passed, 6 failed run directly; the proof is not in the manifest's run list)",
+   "issued": "2026-11-23 arch4-1276"
+  },
+  {
+   "id": "drive195-arch4-1276",
+   "check": "tests/browser/drive195.mjs",
+   "kind": "historical",
+   "files": {
+    "tests/browser/drive195.mjs": "3fb18e3b56755316c951d9cb634ef8167cb71e1453f9f413c70c444f83699530"
+   },
+   "mutation": "the pristine Beta 1.275 tree (parts/app3.js at merge 28ee1a9a, sha256 3fa5b5e3 matching the 1275 receipt pin) carrying this round's migrated drive195, which seeds and reads the counter only through RUNDIST",
+   "red": "BROWSER TESTS FAIL on the 1.275 tree: K8c throws RUNDIST is not defined and the K5 recovery read cannot run",
+   "green": "15/15 checks, 0 exceptions on the 1.276 tree (local runs through the runner, 2026-11-23, including the re-run after the revert)",
+   "issued": "2026-11-23 arch4-1276"
+  },
+  {
+   "id": "drive200-arch4-1276",
+   "check": "tests/browser/drive200.mjs",
+   "kind": "historical",
+   "files": {
+    "tests/browser/drive200.mjs": "b2e07a91d15ea6174b6c01180aaa82cb73430d4e8105e16e20d754d96798764d"
+   },
+   "mutation": "the pristine Beta 1.275 tree (parts/app3.js at merge 28ee1a9a, sha256 3fa5b5e3 matching the 1275 receipt pin) carrying this round's migrated drive200, whose RESET and state reads name RUNDIST.cur",
+   "red": "BROWSER TESTS FAIL on the 1.275 tree: the drive cannot complete (timed out at the runner's 300 s cap and was killed - its counter reads throw on the undefined owner and its waits never satisfy)",
+   "green": "29/29 checks, 0 exceptions on the 1.276 tree (direct run, 356 s, 2026-11-23; the local runner's 300 s cap sits under this drive's local runtime on this machine, the cloud gate is its deciding run)",
+   "issued": "2026-11-23 arch4-1276"
   }
  ]
 }

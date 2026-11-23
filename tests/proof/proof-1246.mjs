@@ -76,7 +76,7 @@ check('9: the fallback watchdog still tests its start clock against stallMs',
 // ---------- the release editorial ----------
 check('10: the CHANGELOG top entry is Beta 1.246', changelog.includes('## Beta 1.246'));
 check('11: What\'s New carries the CURRENT entry\'s bullet (rolled to 1.251: this check tracks the current entry each round)',
-  whatsnew.includes('Under the hood: saving now runs through one scheduler, so marks, trail and backups write in one set order.'));
+  whatsnew.includes('Under the hood: run distance has one owner now, so it is recorded, banked and recovered in one place.'));
 
 console.log(`proof-1246: ${pass} passed, ${fail} failed`);
 process.exit(fail ? 1 : 0);

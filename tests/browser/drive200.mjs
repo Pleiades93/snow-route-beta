@@ -102,7 +102,7 @@ function scoreReplay(fixes, samples, polyReg, ways) {
 
 // ---- rig plumbing (drive197's replay mechanics, batched in-page) ----
 const CLOCK = `(() => { watchId = 4242; followPaused = true; window.__fakeT0 = Date.now(); window.__fakeNow = window.__fakeT0; const rp = performance.now(); Date.now = () => window.__fakeNow; performance.now = () => rp - 3600000 + (window.__fakeNow - window.__fakeT0); window.__polyReg = []; window.__polyMap = new Map(); window.__smpl = []; window.__snapSample = () => { let pid = -1; if (typeof snapHeld !== 'undefined' && snapHeld) { if (!window.__polyMap.has(snapHeld)) { window.__polyMap.set(snapHeld, window.__polyReg.length); window.__polyReg.push([snapHeld.name, snapHeld.pts]); } pid = window.__polyMap.get(snapHeld); } const pr = (typeof snapHeld !== 'undefined' && snapHeld && typeof snapProject === 'function' && dispPos) ? snapProject(dispPos) : null; const sh = dispShownPos(); return { pid, w: snapW, proj: pr && pr.slice(), shown: sh && sh.slice(), disp: dispPos && dispPos.slice(), n: snapFixN }; }; return true; })()`;
-const RESET = `(() => { try { stopGps(); } catch (e) {} watchId = 4242; followPaused = true; smHeading = null; headF = null; lastHeadFixAt = 0; lastHeadFixPerf = 0; kf = null; gpsPos = null; dispPos = null; dispOff = [0, 0]; lastFixTs = 0; lastGood = null; lastFixAt = 0; gpsAccM = 0; facingDeg = null; dispHoldReset(); snapReset(); snapFixN = 0; runStart = null; gpsFromRun = false; trail = []; runDist = null; coveredIdx = {}; try { fixLogClose(); } catch (e) {} fixLog = []; fixLogCount = 0; fixLogSession = null; fixLogSetEnabled(false); window.__smpl = []; window.__polyReg = []; window.__polyMap = new Map(); return true; })()`;
+const RESET = `(() => { try { stopGps(); } catch (e) {} watchId = 4242; followPaused = true; smHeading = null; headF = null; lastHeadFixAt = 0; lastHeadFixPerf = 0; kf = null; gpsPos = null; dispPos = null; dispOff = [0, 0]; lastFixTs = 0; lastGood = null; lastFixAt = 0; gpsAccM = 0; facingDeg = null; dispHoldReset(); snapReset(); snapFixN = 0; runStart = null; gpsFromRun = false; trail = []; RUNDIST.cur = null; coveredIdx = {}; try { fixLogClose(); } catch (e) {} fixLog = []; fixLogCount = 0; fixLogSession = null; fixLogSetEnabled(false); window.__smpl = []; window.__polyReg = []; window.__polyMap = new Map(); return true; })()`;
 
 function batchExpr(fixes, { hookIdx = -1, wantBlend = false } = {}) {
   const data = JSON.stringify(fixes.map(f => [f[0], f[1], f[2], f[3], f[4], f[5]]));
@@ -355,7 +355,7 @@ ok(`B1 HARD EXIT AT THE TAP: a live hold (pid ${preClean.pid}) dies inside start
 const nBefore = await rig.J(`snapFixN`);
 await rig.ev2(batchExpr(S1.slice(30, 70)));
 const bSamples = await rig.J(`window.__smpl.slice(30)`);
-const bState = await rig.J(`({ n: snapFixN, m: runDist ? runDist.m : -1, trail: trail.length })`);
+const bState = await rig.J(`({ n: snapFixN, m: RUNDIST.cur ? RUNDIST.cur.m : -1, trail: trail.length })`);
 ok(`B2 CLEAN RUNNING: 40 fast fixes during the clean engage ZERO times (matcher still processed all 40: snapFixN ${nBefore} -> ${bState.n}) while recording runs (banked ${Math.round(bState.m)} m, trail ${bState.trail} pts)`, bSamples.every(s => s.pid === -1) && bState.n - nBefore === 40 && bState.m > 500 && bState.trail > 10);
 
 // ---- phase C (treatment): logger + recording under an engaged snap ----
@@ -372,7 +372,7 @@ await startCleanWrapped(rig);
 const lastTs = S2[S2.length - 1][0];
 const tail = S2.slice(400, 520).map(f => [lastTs + 1000 + (f[0] - S2[400][0]), f[1], f[2], f[3], f[4], f[5], f[6], f[7], f[8]]);
 await rig.ev2(batchExpr(tail));
-const recT = await rig.J(`({ trail, m: runDist ? runDist.m : null, cov: coveredIdx })`);
+const recT = await rig.J(`({ trail, m: RUNDIST.cur ? RUNDIST.cur.m : null, cov: coveredIdx })`);
 ok(`C0 TREATMENT PREMISE: snapping verifiably engaged on ${c1Held}/659 fixes of the invariant replay, logger captured ${outT.length} rows`, c1Held > 300 && outT.length >= 650);
 try { rig.proc.kill('SIGKILL'); } catch (e) {}
 
@@ -390,7 +390,7 @@ const c2Held = c2.samples.filter(s => s.pid >= 0).length;
 const outC = await rig2.J(`fixLog[fixLog.length - 1].f.map(r => r[6])`);
 await startCleanWrapped(rig2);
 await rig2.ev2(batchExpr(tail));
-const recC = await rig2.J(`({ trail, m: runDist ? runDist.m : null, cov: coveredIdx })`);
+const recC = await rig2.J(`({ trail, m: RUNDIST.cur ? RUNDIST.cur.m : null, cov: coveredIdx })`);
 ok(`C1 CONTROL PREMISE: the pinned-empty index engaged on ${c2Held}/659 fixes (bar 0)`, c2Held === 0);
 ok(`C2 LOGGER INVARIANT: the fix logger's per-fix output rows are byte-identical snapped vs unsnapped (${outT.length} vs ${outC.length} rows)`, JSON.stringify(outT) === JSON.stringify(outC));
 ok('C3 RECORDING INVARIANT: trail positions, banked distance and coverage are identical snapped vs unsnapped (trail points compared on position: their third element is a page-clock run stamp, which differs between any two boots - the invariant is that the snap changes nothing RECORDED, and position-for-position, metre-for-metre and street-for-street it does not)', JSON.stringify({ trail: recT.trail.map(p => [p[0], p[1]]), m: recT.m, cov: recT.cov }) === JSON.stringify({ trail: recC.trail.map(p => [p[0], p[1]]), m: recC.m, cov: recC.cov }));
