@@ -1675,7 +1675,7 @@ document.addEventListener('visibilitychange', () => { if (document.visibilitySta
     if (!saveStart().ok && !failedKey) failedKey = 'start';
     if (!lsSet(LS.cov, ser.cov) && !failedKey) failedKey = 'coverage';
   }
-  if (failedKey) { return storeFail(failedKey, true); }
+  if (failedKey) { markDirty('primary'); return storeFail(failedKey, true); }
   markClean('primary');
   if (lsGet(LS.finclean) !== null) lsDel(LS.finclean); // Beta 1.141 (Package A, DA-10): a fully landed primary save discharges the finish-cleanup obligation - the stored notes/coverage ARE the in-memory ones now, whoever's they are; the obligation only ever outlives FAILED saves
   return storeOk();

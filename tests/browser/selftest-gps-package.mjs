@@ -146,7 +146,7 @@ function makeTrailHarness() {
     const GPS_STILL_MPS = 0.5, TRAIL_MAX = 100000, TRAIL_WINDOW_S = 3600; // Beta 1.193: the shipped block's window eviction names the app1 constant - the harness stubs it at its shipped value, like TRAIL_MAX beside it
     const runStart = 1000000, trail = state.trail, runDist = state.runDist;
     const distM = env.distM, persistRunDist = () => calls.persist++, markDirty = k => calls.dirty.push(k),
-      flushAux = () => calls.flush++, drawTrail = () => calls.draw++, coverFix = () => calls.cover++;
+      PERSIST = { flush: () => calls.flush++ }, drawTrail = () => calls.draw++, coverFix = () => calls.cover++; // Beta 1.275 (architecture #3): the shipped block calls PERSIST.flush now - the stub mirrors the doorway it names
     ${trailBlock}
   `);
   return { calls, state, fix: (speed, sm, now) => run(speed, sm, now, state, calls, env) };

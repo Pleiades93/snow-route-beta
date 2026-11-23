@@ -5410,6 +5410,85 @@
    "red": "FOREIGN-WRITE CENSUS FAIL (BAN: member pieces written in app4.js clearTrailAll (owner app1.js); and FAIL no implicit-global write targets in the tree)",
    "green": "FOREIGN-WRITE CENSUS PASS (22 expressions, retired sites pinned absent)",
    "issued": "2026-11-22"
+  },
+  {
+   "id": "drive83-flagblind-trail-1275-r2",
+   "check": "tests/browser/drive83.mjs",
+   "kind": "mutation",
+   "files": {
+    "tests/browser/drive83.mjs": "18be5f6d99a60e93c1c156f4e040df8c9eac13bbb780dbabcd70712b84b70c6f",
+    "parts/app1.js": "3a6a900377855eee20222efed44bc2b8e85585637c5566badd119e33f46eca55"
+   },
+   "mutation": "PERSIST.flush's trail step ignores its dirty flag (the flag condition removed from the step)",
+   "red": "drive83 FAIL 15/17 (SEC-9a: the out-of-range trail point survives - the flag-blind flush keeps rewriting the un-sanitised trail)",
+   "green": "drive83 PASS 17/17 (re-verified on the final tree after the arm restoration)",
+   "issued": "2026-11-22"
+  },
+  {
+   "id": "drive133-trail-noclear-1275-r2",
+   "check": "tests/browser/drive133.mjs",
+   "kind": "mutation",
+   "files": {
+    "tests/browser/drive133.mjs": "182440054f1f14bf6edc92976f5bacbb58dbb1a84f3952fda3f3e6bcaabee2fb",
+    "parts/app1.js": "3a6a900377855eee20222efed44bc2b8e85585637c5566badd119e33f46eca55"
+   },
+   "mutation": "PERSIST.flush's trail step writes but never clears the trail flag",
+   "red": "drive133 FAIL (S14b: the pending trail cleanup never reads landed)",
+   "green": "drive133 PASS 49/49 (re-verified on the final tree)",
+   "issued": "2026-11-22"
+  },
+  {
+   "id": "drive136-primary-noarm-1275-r2",
+   "check": "tests/browser/drive136.mjs",
+   "kind": "mutation",
+   "files": {
+    "tests/browser/drive136.mjs": "d108973c22558201b95b87d00b6d438d93960d6c7741cc78182f3028e1cc5890",
+    "parts/app1.js": "3a6a900377855eee20222efed44bc2b8e85585637c5566badd119e33f46eca55"
+   },
+   "mutation": "saveAll stops arming the primary retry on a failed save (the markDirty primary call removed)",
+   "red": "drive136 FAIL (f9a: a failed saveAll arms no retry - the pending read is false). The same defect later shipped in the first 1.275 push by a mutation-battery revert and was caught by Codex review (P1, PR #183) - the arm is restored and this receipt re-issued against the fixed tree",
+   "green": "drive136 PASS 27/27 (on the fixed tree)",
+   "issued": "2026-11-22"
+  },
+  {
+   "id": "drive169-fenceup-noop-1275-r2",
+   "check": "tests/browser/drive169.mjs",
+   "kind": "mutation",
+   "files": {
+    "tests/browser/drive169.mjs": "3594f745e0e85d3d5ad5ed234b97dec79c8dd1a2960b227df30e879a03f15b71",
+    "parts/app1.js": "3a6a900377855eee20222efed44bc2b8e85585637c5566badd119e33f46eca55"
+   },
+   "mutation": "PERSIST.fenceUp() made a no-op (the restore write fence never rises)",
+   "red": "drive169 FAIL (FENCE: saveAll in the window returns ok:true and writes, storedDone 3; P1: fenceUp false, the in-window flush lands, storedTrailNow 3; P1b)",
+   "green": "drive169 PASS 50/50 (re-verified on the final tree)",
+   "issued": "2026-11-22"
+  },
+  {
+   "id": "selftest-foreign-writes-ban-1275-r2",
+   "check": "tests/browser/selftest-foreign-writes.mjs",
+   "kind": "mutation",
+   "files": {
+    "tests/browser/selftest-foreign-writes.mjs": "cbebceae8d0a70fb427948def65892db426f5d82b5a29a5495d000f74336133f",
+    "parts/app4.js": "77a902a67ce2de0f989a00d9a06c9f16ee7fccdc10e43238ddade610e57e463d",
+    "parts/app1.js": "3a6a900377855eee20222efed44bc2b8e85585637c5566badd119e33f46eca55"
+   },
+   "mutation": "planted banned member write pieces.__receiptProbe = 1 in app4 clearTrailAll; separately a planted bare restoring = true write in app4 (an implicit global)",
+   "red": "FOREIGN-WRITE CENSUS FAIL (BAN: member pieces written in app4.js clearTrailAll (owner app1.js); and FAIL no implicit-global write targets in the tree)",
+   "green": "FOREIGN-WRITE CENSUS PASS (22 expressions, retired sites pinned absent)",
+   "issued": "2026-11-22"
+  },
+  {
+   "id": "selftest-gps-package-persist-stub-1275",
+   "check": "tests/browser/selftest-gps-package.mjs",
+   "kind": "mutation",
+   "files": {
+    "tests/browser/selftest-gps-package.mjs": "47b48afe05b67779690a6d87f52a80ca0cad1483132173b18a8bcce7fc5c8ff8",
+    "parts/app3.js": "3fa5b5e3e729371872b25c0f12a75ec2c0421d62cdd217a0ac9be549cac39a7e"
+   },
+   "mutation": "architecture #3 renamed the shipped acceptFix block's per-fix flush call from flushAux(false) to PERSIST.flush(false); the selftest evals that block verbatim over a stub harness",
+   "red": "selftest-gps-package throws ReferenceError: PERSIST is not defined (observed locally and in the first 1.275 cloud gate, build-and-test) - its harness stub predates the rename",
+   "green": "selftest-gps-package: 20 pass, 0 fail with the stub mirroring the PERSIST doorway",
+   "issued": "2026-11-22"
   }
  ]
 }
