@@ -82,10 +82,17 @@ check('8 (O-09): the snow loop skips away frames and the speck count is capped',
   && snow.includes('Math.min(1000, Math.round(area / SPECK.per))'));
 
 // ---------- A-02: the restore fold does not merge per cell ----------
+// Section 1 step 5 (Architecture #17, Beta 1.281): the claim is unchanged; its
+// literals moved - the fold and the rebuild are the coverage record's owner
+// functions now (crCovFold / crCovReindex, create-citydata.js), so the check
+// pins the restore's new call lines AND the fold's own body (a fold that
+// reindexed or refreshed per cell would break A-02 from inside the owner).
 check('9 (A-02): no per-cell crCovMerge in the restore; one rebuild + one refresh after the loop',
   !cache.includes('crCovMerge([], null)')
-  && cache.includes('crCovEnsure(); // ensure the cov exists before the direct fold below')
-  && cache.includes('crCov.byName = fresh.byName; crRefreshSearch();'));
+  && cache.includes('crCovFold(byId, cell.box);')
+  && cache.includes('crCovReindex(); crRefreshSearch();')
+  && !slice(citydata, 'function crCovFold(', 'function crCovReindex(').includes('crRefreshSearch')
+  && !slice(citydata, 'function crCovFold(', 'function crCovReindex(').includes('crCovFromWays'));
 
 // ---------- #10: one ordered tile enumerator ----------
 const ptu = slice(app4, 'function packTileUrls', '\n}');

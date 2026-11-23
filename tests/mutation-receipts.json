@@ -7402,6 +7402,34 @@
    "red": "proof FAILS under each mutation, observed twice per mutation: drop-wanted-clear 9 passed 4 failed (checks 2, 3, 5d, 6a - the bundle text, its single survival, and the wanted-clear effect no drive observes); drop-failfromgrid-clear 10 passed 3 failed; resume-door-uncalled 11 passed 2 failed",
    "green": "proof-prep-begin-owner: 13 passed, 0 failed on the shipped tree",
    "issued": "2026-11-23 section1-arch16"
+  },
+  {
+   "id": "section1-proof-cov-owner",
+   "check": "tests/proof/proof-cov-owner.mjs",
+   "kind": "mutation",
+   "files": {
+    "tests/proof/proof-cov-owner.mjs": "6d62c081e4135848bb8e2889f8cf1074145a396807a6dfc7b21ee9bc291adede",
+    "parts/create-citydata.js": "34c49bedba4f16a90761988e4731aacab0d9793bad6a33fd5f20582fd2206abc",
+    "parts/create-cache.js": "e4a00051eab5a4af59b71909b4a6627f53e720b28dc17dc34635db949f746d7c"
+   },
+   "mutation": "four mutations of the arch #17 extraction, each applied to the shipped tree and reverted byte-exact: (1) crCovFold gains a per-cell crRefreshSearch(); (2) crCovFold gains a per-cell crCovReindex(); (3) crCleanPts stops calling crCleanPtPush and re-inlines the normalisation; (4) crCovMerge drops its crRefreshSearch()",
+   "red": "proof-cov-owner FAILS under each mutation, observed twice per mutation: fold-refresh 6a (refresh counted after a fold), fold-reindex 6a/6b (byName populated by a fold), cleanpts-inline 1c (the shared call gone, inline rounding back), merge-no-refresh 6d (refresh count 0 after a merge). The same battery also turns proof-1254 check 9 RED under mutation 1 and proof-1234 RED under mutation 4, each twice",
+   "green": "proof-cov-owner: 14 passed, 0 failed on the shipped tree",
+   "issued": "2026-11-23 section1-arch17"
+  },
+  {
+   "id": "section1-proof-1254-a02-repoint",
+   "check": "tests/proof/proof-1254.mjs",
+   "kind": "mutation",
+   "files": {
+    "tests/proof/proof-1254.mjs": "9f2a2ff6caedbdf32d28663695462b5f1d3313a19d39bce048ab805a562ae1e7",
+    "parts/create-citydata.js": "34c49bedba4f16a90761988e4731aacab0d9793bad6a33fd5f20582fd2206abc",
+    "parts/create-cache.js": "e4a00051eab5a4af59b71909b4a6627f53e720b28dc17dc34635db949f746d7c"
+   },
+   "mutation": "crCovFold gains a per-cell crRefreshSearch() inside its body in parts/create-citydata.js (the A-02 violation moved inside the new owner), applied to the shipped tree and reverted byte-exact",
+   "red": "proof-1254 FAILS (check 9, the re-pointed A-02 pin: the fold body must contain no crRefreshSearch and no crCovFromWays), observed twice",
+   "green": "proof-1254 passes in full on the shipped tree (run-proofs 81/81)",
+   "issued": "2026-11-23 section1-arch17"
   }
  ]
 }

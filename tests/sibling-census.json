@@ -8589,6 +8589,127 @@
     "scripts/check-census.py": "dd55f34cd855e60a6fadae7e261aa99f1682b9d7d8446696532045e3a281fafb"
    },
    "issued": "2026-11-23 section1-arch16"
+  },
+  {
+   "id": "section1-arch17-1281",
+   "kind": "app",
+   "anchors": {
+    "functions": [
+     "crCovFold",
+     "crCovReindex",
+     "crCovMerge",
+     "crIndexWays",
+     "crCleanPts",
+     "crCleanPtPush",
+     "crCityPrepare"
+    ],
+    "elements": [],
+    "guards": []
+   },
+   "changed": [
+    "parts/create-cache.js",
+    "parts/create-citydata.js"
+   ],
+   "rows": [
+    {
+     "id": "caller:crCityPrepare:parts/create-pick.js:crEnterPickFromCity",
+     "kind": "caller",
+     "source": "derived: call-site scan of parts/ - crCityPrepare() is called from crEnterPickFromCity in parts/create-pick.js",
+     "status": "covered",
+     "note": "The restore fold inside crCityPrepare now routes through crCovFold/crCovReindex. Covered by proof-1254 check 9 (re-pointed) + proof-cov-owner + the #17 focused drive set (151 153 154 155 164 165 173 174 206 214 215 217), green on the step tree."
+    },
+    {
+     "id": "caller:crCleanPtPush:parts/create-citydata.js:crCleanPts",
+     "kind": "caller",
+     "source": "derived: call-site scan of parts/ - crCleanPtPush() is called from crCleanPts in parts/create-citydata.js",
+     "status": "covered",
+     "note": "proof-cov-owner checks 1c/4a-4c run crCleanPts on real and poisoned pairs through the shared normalisation."
+    },
+    {
+     "id": "caller:crCleanPtPush:parts/create-citydata.js:crIndexWays",
+     "kind": "caller",
+     "source": "derived: call-site scan of parts/ - crCleanPtPush() is called from crIndexWays in parts/create-citydata.js",
+     "status": "covered",
+     "note": "proof-cov-owner checks 1b/3b/3c run crIndexWays through the shared normalisation (rounding, dedupe, survival)."
+    },
+    {
+     "id": "caller:crCleanPts:parts/create-citydata.js:crCleanStoredWay",
+     "kind": "caller",
+     "source": "derived: call-site scan of parts/ - crCleanPts() is called from crCleanStoredWay in parts/create-citydata.js",
+     "status": "covered",
+     "note": "The stored-way cleaning path is unchanged except its normalisation call; covered by proof-cov-owner 4b + the #17 focused drive set (151 153 154 155 164 165 173 174 206 214 215 217), green on the step tree (cached-city restores run through crCleanStoredWay)."
+    },
+    {
+     "id": "caller:crCovFold:parts/create-cache.js:crCityPrepare",
+     "kind": "caller",
+     "source": "derived: call-site scan of parts/ - crCovFold() is called from crCityPrepare in parts/create-cache.js",
+     "status": "covered",
+     "note": "proof-1254 check 9 pins the call line and the fold body's purity; proof-cov-owner 6a/6b run the fold. the #17 focused drive set (151 153 154 155 164 165 173 174 206 214 215 217), green on the step tree."
+    },
+    {
+     "id": "caller:crCovMerge:parts/create-cache.js:crGridPump",
+     "kind": "caller",
+     "source": "derived: call-site scan of parts/ - crCovMerge() is called from crGridPump in parts/create-cache.js",
+     "status": "covered",
+     "note": "crCovMerge's body order is unchanged apart from the reindex call; covered by proof-cov-owner 6d + proof-1234 R2 + the #17 focused drive set (151 153 154 155 164 165 173 174 206 214 215 217), green on the step tree."
+    },
+    {
+     "id": "caller:crCovMerge:parts/create-citydata.js:crStartPrep",
+     "kind": "caller",
+     "source": "derived: call-site scan of parts/ - crCovMerge() is called from crStartPrep in parts/create-citydata.js",
+     "status": "covered",
+     "note": "Same owner, fallback landing; covered by proof-cov-owner 6d + the #17 focused drive set (151 153 154 155 164 165 173 174 206 214 215 217), green on the step tree."
+    },
+    {
+     "id": "caller:crCovMerge:parts/create-pick.js:pickStreet",
+     "kind": "caller",
+     "source": "derived: call-site scan of parts/ - crCovMerge() is called from pickStreet in parts/create-pick.js",
+     "status": "covered",
+     "note": "Same owner, top-up landing; covered by proof-cov-owner 6d + the #17 focused drive set (151 153 154 155 164 165 173 174 206 214 215 217), green on the step tree (tap/top-up flows)."
+    },
+    {
+     "id": "caller:crCovReindex:parts/create-cache.js:crCityPrepare",
+     "kind": "caller",
+     "source": "derived: call-site scan of parts/ - crCovReindex() is called from crCityPrepare in parts/create-cache.js",
+     "status": "covered",
+     "note": "proof-1254 check 9 pins the once-after-the-loop call line; proof-cov-owner 6c runs the rebuild."
+    },
+    {
+     "id": "caller:crCovReindex:parts/create-citydata.js:crCovMerge",
+     "kind": "caller",
+     "source": "derived: call-site scan of parts/ - crCovReindex() is called from crCovMerge in parts/create-citydata.js",
+     "status": "covered",
+     "note": "proof-cov-owner 6d: a merge reindexes and refreshes exactly once."
+    },
+    {
+     "id": "caller:crIndexWays:parts/create-citydata.js:crCovMerge",
+     "kind": "caller",
+     "source": "derived: call-site scan of parts/ - crIndexWays() is called from crCovMerge in parts/create-citydata.js",
+     "status": "covered",
+     "note": "proof-cov-owner 3b/3c + 6d run the indexing inside and beside the merge."
+    }
+   ],
+   "files": {
+    "parts/app1.js": "cf555a9736c6f9961e906e0fd9c00a531c9ddb88ca3c5ff5765fa33ba62953df",
+    "parts/app2.js": "25749571be73fc2480b23f22a49def500814105e19abe08919e9bec766cc9144",
+    "parts/app3.js": "25b9d5bf8c5bb8e2bb433ad563c110744b65f5bf69932dc428d1d240505a3d39",
+    "parts/app4.js": "adeb3e82d3e73e4ce8a385ea14725f82573f823e49cdec2772aefaa94cbdd28b",
+    "parts/app5.js": "075517797dadbffbebf5d59682dae3a8771b1b5fa3b999c5de4206257160249f",
+    "parts/brand-snow.js": "86fa9a02f29c7345ee68d68daffd9c72da612921b64da37f1eccf6b72161ac5f",
+    "parts/create-cache.js": "e4a00051eab5a4af59b71909b4a6627f53e720b28dc17dc34635db949f746d7c",
+    "parts/create-citydata.js": "34c49bedba4f16a90761988e4731aacab0d9793bad6a33fd5f20582fd2206abc",
+    "parts/create-fetch.js": "e4d3299947bf6950824bffd58a24b534ed97cf502ba4bb68c7a8b1d8b5058f50",
+    "parts/create-packs.js": "a8b60fb7d601c1e83f555eb703b625a571ec878937ac36fcaddd05aecf635975",
+    "parts/create-pick.js": "11b8276387dd243ea200fac987ccd33d9457b3a369e18040eb8b277bd716638c",
+    "parts/create-save.js": "ad39720727f43d397e72443c92955c5a35d530f03e3219b2182c9ee7c062e52d",
+    "parts/data.js": "9684c69862156dc70ee9a2b88278b4e825c5bf35f0c150fbc5660ccbdce9304b",
+    "parts/engine.js": "d6d1f676ac8bc2a302cfbaf56de1e10cb361fd8b746d94d6380a5e4ebaf76173",
+    "parts/pmstyles.js": "f3501db9c16dbc6a5fa8c901089101e4913772384de1f069accb23a614bb90fc",
+    "parts/whatsnew.js": "e24a0d6b2bbc4cf4e7b1207504ed11efbfcaad4805f3c6d597cff316057314fe",
+    "parts/head.html": "bff57252f945388445965c770902c06145d3501ceb21cb6f5507fd542eca066d",
+    "scripts/check-census.py": "dd55f34cd855e60a6fadae7e261aa99f1682b9d7d8446696532045e3a281fafb"
+   },
+   "issued": "2026-11-23 section1-arch17"
   }
  ]
 }
