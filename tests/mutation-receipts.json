@@ -8060,6 +8060,19 @@
    "red": "gate fixtures 71 pass / 1 fail: 'shard coverage: a runner partition disagreeing with the statement fails -> got exit 0, want 1'",
    "green": "Restored guard: gate fixtures 72 pass, 0 fail",
    "issued": "2026-11-23 machinery-ministack (arch #21)"
+  },
+  {
+   "id": "paint-model-band-clip-1282",
+   "check": "tests/proof/proof-paint-model.mjs",
+   "kind": "mutation",
+   "files": {
+    "tests/proof/proof-paint-model.mjs": "59e70af0c70787097a928642d5a012d71a1940271e73023259c0b320cd4a5e3d",
+    "parts/engine.js": "2dcb5cfb67885493469eaa2d912d55ddff0a01eb0ab8029ebea17b25f5471e03"
+   },
+   "mutation": "PAINT.clipEnds band continuation inverted (H.pieces[n][i] !== 0 -> === 0) in parts/engine.js",
+   "red": "proof-paint-model FAIL 5c+5d (15 passed, 2 failed), observed twice 2026-11-23",
+   "green": "proof-paint-model 17 passed, 0 failed on the reverted tree; full suite 84/84",
+   "issued": "2026-11-23 section2-arch12"
   }
  ]
 }
