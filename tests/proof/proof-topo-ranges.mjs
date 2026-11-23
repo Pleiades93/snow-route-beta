@@ -103,13 +103,14 @@ const H = {
 const xyLine = engine.split('\n').find(l => l.startsWith('const XYOf ='));
 const gjLine = engine.split('\n').find(l => l.startsWith('const GJ ='));
 const widthLine = engine.split('\n').find(l => l.startsWith('const WIDTH_K ='));
+const coordLine = engine.split('\n').find(l => l.startsWith('const coordKey ='));   // Beta 1.283 (#11 stage 2): TOPO.index keys the shared-vertex index by coordKey
 const prelude = [
-  xyLine, gjLine, widthLine,
+  xyLine, gjLine, widthLine, coordLine,
   extractFn(engine, 'function segLenM('),
   extractFn(engine, 'function offsetLine('),
   'const GEO = {};', topoSrc, 'const LEFTBIT = {};',
   'const labelFeatures = [];', 'const labelPointFeatures = [];',
-  'let SVMAP = null;', 'let JUNC = null;',
+  'let JUNC = null;',
   'const ROUTEPOI = { type: \'Feature\', properties: {}, geometry: { type: \'Point\', coordinates: [0, 0] } };',
   'const HIT = { type: \'FeatureCollection\', features: [] };',
   extractFn(engine, 'function buildEngineGeometry()'),

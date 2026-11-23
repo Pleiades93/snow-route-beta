@@ -2,7 +2,7 @@
 <html lang="en" class="boot">
 <head>
 <meta charset="UTF-8">
-<meta http-equiv="Content-Security-Policy" content="default-src 'none'; script-src 'sha384-bWsezcD6RS7xaWriz896Gu/xJf6poTeYPPztvZHncNHh2CzMuNPJHy5Mk4R08eiV' https://cdn.jsdelivr.net/npm/maplibre-gl@4.7.1/dist/maplibre-gl.js; style-src-elem 'sha384-l+Ing91zw7+8pk8Zac2Wr0FKBEz+pk8bYSPB00KMpT5TsGP86OppPfSOgVChr4uv' https://cdn.jsdelivr.net; style-src-attr 'unsafe-inline'; img-src 'self' data: blob: https://tiles.basemaps.cartocdn.com https://protomaps.github.io https://cdn.jsdelivr.net; connect-src 'self' https://tiles.basemaps.cartocdn.com https://protomaps.github.io https://cdn.jsdelivr.net https://nominatim.openstreetmap.org https://overpass-api.de https://overpass.kumi.systems; worker-src blob: 'self'; child-src blob: 'self'; font-src 'none'; manifest-src 'self'; base-uri 'none'; form-action 'none'; object-src 'none'">
+<meta http-equiv="Content-Security-Policy" content="default-src 'none'; script-src 'sha384-ILT6hUidAea6qhf/XhRaun7NhlHj+SuKLcd3h6TWKaK3IFZb9B6xZisChocwLJ2f' https://cdn.jsdelivr.net/npm/maplibre-gl@4.7.1/dist/maplibre-gl.js; style-src-elem 'sha384-l+Ing91zw7+8pk8Zac2Wr0FKBEz+pk8bYSPB00KMpT5TsGP86OppPfSOgVChr4uv' https://cdn.jsdelivr.net; style-src-attr 'unsafe-inline'; img-src 'self' data: blob: https://tiles.basemaps.cartocdn.com https://protomaps.github.io https://cdn.jsdelivr.net; connect-src 'self' https://tiles.basemaps.cartocdn.com https://protomaps.github.io https://cdn.jsdelivr.net https://nominatim.openstreetmap.org https://overpass-api.de https://overpass.kumi.systems; worker-src blob: 'self'; child-src blob: 'self'; font-src 'none'; manifest-src 'self'; base-uri 'none'; form-action 'none'; object-src 'none'">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="mobile-web-app-capable" content="yes">
@@ -1845,11 +1845,21 @@ const GEO = {};
 // ranges as it concatenates the runs, and the table is reset with the
 // geometry, so it can never name a previous route's streets — the 1.144
 // lesson SVMAP and JUNC each learned by hand holds here by construction.
+// The owner also holds the SHARED-VERTEX INDEX (which streets meet at
+// which stitched vertex), accumulated street by street as the geometry
+// is seated, in the same H.names x stitched order the hand-built copies
+// used — through 1.282 that index was built three times (buildJunctions'
+// local map, junctionPairs' per-call rebuild, and the memoized
+// sharedVertexMap with its hand invalidation).
 const TOPO = {
   _ranges: {},   // name -> [{start, end}] — each run's vertex-index range in GEO[n].stitched, in run order
   _starts: {},   // name -> Set of the vertex indices that open a later run (the range starts after the first)
-  reset() { this._ranges = {}; this._starts = {}; },
+  _verts: {},   // coordKey -> [{n, vi}] — every street/vertex at that point, in build order
+  reset() { this._ranges = {}; this._starts = {}; this._verts = {}; },
   seat(n, ranges) { this._ranges[n] = ranges; this._starts[n] = new Set(ranges.slice(1).map(r => r.start)); },
+  index(n, stitched) { stitched.forEach((pt, vi) => { const k = coordKey(pt); (this._verts[k] = this._verts[k] || []).push({ n, vi }); }); },
+  verts() { return this._verts; },   // the whole shared-vertex index
+  at(key) { return this._verts[key] || []; },   // the streets/vertices at one point
   ranges(n) { return this._ranges[n] || []; },
   runStart(n, k) { const s = this._starts[n]; return !!s && s.has(k); },   // vertex k opens a later run of n (the pre-#11 gap-set test)
   segReal(n, si) { return !this.runStart(n, si + 1); },   // the segment si -> si+1 lies inside one run; the pair across a run boundary is not street
@@ -1866,8 +1876,7 @@ function buildEngineGeometry() { // Beta 1.117: the engine's route geometry (GEO
   for (const k of Object.keys(GEO)) delete GEO[k];
   for (const k of Object.keys(LEFTBIT)) delete LEFTBIT[k];
   labelFeatures.length = 0; labelPointFeatures.length = 0;
-  SVMAP = null; // the shared-vertex map is a memoized derivative of GEO (sharedVertexMap) - it must die with the geometry it was built from, or the strand builders read the previous route's streets (the first switch build threw exactly there)
-  TOPO.reset(); // Beta 1.283 (#11): the run-structure table is a derivative of the geometry too - it dies here and is re-seated street by street below, so it can never name a previous route's runs
+  TOPO.reset(); // Beta 1.283 (#11): the run-structure table and the shared-vertex index are derivatives of the geometry - they die here and are re-seated street by street below, so they can never name a previous route's streets (the lesson the retired sharedVertexMap learned by hand in 1.117: its memo had to be nulled here or the strand builders read the previous route's vertices)
   H.names.forEach(n => {
   // The street's stitched line, RUN BY RUN (Beta 1.144, Package C DA-02/C1):
   // within a run, sectors are exact slices of it (sector k+1 starts at the
@@ -1902,6 +1911,7 @@ function buildEngineGeometry() { // Beta 1.117: the engine's route geometry (GEO
   });
   GEO[n] = { stitched, cuts, off0, off1, offH0, offH1 };
   TOPO.seat(n, ranges);
+  TOPO.index(n, stitched);
   const p0 = stitched[0], p1 = stitched[stitched.length - 1];
   const dLat = p1[0] - p0[0], dLng = p1[1] - p0[1];
   const canonicalForward = Math.abs(dLat) >= Math.abs(dLng) ? dLat >= 0 : dLng >= 0;
@@ -2022,8 +2032,7 @@ const CORRIDOR = 5.2;   // metres: half the drawn road width
 let JUNC = null;
 function buildJunctions() {
   JUNC = {}; H.names.forEach(n => { JUNC[n] = []; });
-  const at = {};
-  H.names.forEach(n => GEO[n].stitched.forEach((pt, vi) => { const k = coordKey(pt); (at[k] = at[k] || []).push({ n, vi }); }));
+  const at = TOPO.verts();   // Beta 1.283 (#11): the shared-vertex index is TOPO's, built with the geometry in this same H.names x stitched order - JUNC's contents and per-street entry order are unchanged
   const dirAt = (n, vi) => {
     const st = GEO[n].stitched;
     const [lo, hi] = TOPO.win(n, vi, st.length); // Beta 1.144: the direction window clamps at the vertex's own RUN ends - a run-boundary vertex's neighbour across the gap belongs to a different piece of the street and would hand the junction a direction the street does not have there (Beta 1.283, #11: the clamp is TOPO.win's)
@@ -2040,13 +2049,9 @@ function buildJunctions() {
     }));
   });
 }
-let SVMAP = null;
-function sharedVertexMap() {
-  if (SVMAP) return SVMAP;
-  SVMAP = {};
-  H.names.forEach(n => GEO[n].stitched.forEach((pt, vi) => { const k = coordKey(pt); (SVMAP[k] = SVMAP[k] || []).push({ n, vi }); }));
-  return SVMAP;
-}
+// Beta 1.283 (#11): the shared-vertex map lives on TOPO now (TOPO.verts /
+// TOPO.at, built with the geometry) - the memoized sharedVertexMap and
+// its hand invalidation are retired.
 // ---- through-connection (Andrew, 2026-10-28, round 9): "they all have
 // to connect... no matter which way it goes." A side line marked on BOTH
 // arms of a junction runs THROUGH it - unless a marked line of another
@@ -2066,7 +2071,6 @@ function throughOK(A, side, J, runPts) {
   const sideSign = Math.sign((XYOf(off)[0] - Vx[0]) * nA[0] + (XYOf(off)[1] - Vx[1]) * nA[1]);
   if (!sideSign) return false;
   const signsOf = pt => { const w = XYOf(pt); return [Math.sign((w[0] - Vx[0]) * nA[0] + (w[1] - Vx[1]) * nA[1]), Math.sign((w[0] - Vx[0]) * nB[0] + (w[1] - Vx[1]) * nB[1])]; };
-  const map = sharedVertexMap();
   // Blocked by a RAW CROSSING (round 10): if this street's raw side line
   // properly crosses another street's marked raw side line within 13 m
   // of V at a point that is NOT their vetted corner, running through
@@ -2077,7 +2081,7 @@ function throughOK(A, side, J, runPts) {
   const pairsNow = PAIRS_CUR || junctionPairs();
   const offA = side === 0 ? GEO[A].off0 : GEO[A].off1;
   let crossed = false;
-  for (const E of (map[vKey] || [])) {
+  for (const E of TOPO.at(vKey)) {
     if (E.n === A || crossed) continue;
     const gD = GEO[E.n];
     [0, 1].forEach(tt => {
@@ -2362,8 +2366,7 @@ function pathBadGreen(pts, J, excl, cornerPt) {
   return false;
 }
 function junctionPairs() {
-  const at = {};
-  H.names.forEach(n => GEO[n].stitched.forEach((pt, vi) => { const k = coordKey(pt); (at[k] = at[k] || []).push({ n, vi }); }));
+  const at = TOPO.verts();   // Beta 1.283 (#11): the shared-vertex index is TOPO's - junctionPairs used to rebuild its own copy on every call
   const pairs = {};
   const link = (A, B, corner) => {
     const ka = A.n + '|' + A.vi + '|' + A.side, kb = B.n + '|' + B.vi + '|' + B.side;
@@ -2536,7 +2539,7 @@ function bridgeStragglers(chains, pairs) {
     return [dy / m / H.MLAT, dx / m / H.MLNG];
   };
   const pathLen = pts => { let L = 0; for (let i = 0; i + 1 < pts.length; i++) L += H.jDistM(pts[i], pts[i + 1]); return L; };
-  const verts = Object.values(sharedVertexMap())
+  const verts = Object.values(TOPO.verts())
     .filter(list => new Set(list.map(e => e.n)).size >= 2)
     .map(list => GEO[list[0].n].stitched[list[0].vi]);
   for (let iter = 0; iter < 120; iter++) {
@@ -2643,7 +2646,7 @@ let PAIRS_CUR = null;   // the current build's junction pairs (throughOK reads t
 // clips away; this pass vets against the FINAL geometry instead.)
 function lastResortConnect(edges, bands) {
   if (!JUNC) buildJunctions();
-  const jList = Object.values(sharedVertexMap()).filter(l => new Set(l.map(e => e.n)).size >= 2)
+  const jList = Object.values(TOPO.verts()).filter(l => new Set(l.map(e => e.n)).size >= 2)
     .map(l => ({ V: GEO[l[0].n].stitched[l[0].vi], streets: [...new Set(l.map(e => e.n))] }));
   const frameFor = (V, A, B) => {
     const J1 = (JUNC[A] || []).find(x => x.B === B && H.jDistM(x.V, V) < 2);
@@ -3076,7 +3079,7 @@ function clipEndAtJunction(n, vi, pts, atStart, ownHalf) {
   const entries = (JUNC[n] || []).filter(J => J.viA === vi);
   if (!entries.length) return pts;
   const V = GEO[n].stitched[vi];
-  const grp = sharedVertexMap()[coordKey(V)] || [];
+  const grp = TOPO.at(coordKey(V));
   const end0 = atStart ? pts[0] : pts[pts.length - 1];
   // candidate approach anchors at growing depths: a trace that bends
   // right at the junction (Fifth leaving the Bloomingdale corridor)
@@ -3211,7 +3214,7 @@ function clipStrandEnds(strands, half, guideFor, skipEnd) {
       if (skipEnd && skipEnd(sl, atStart)) return;   // Beta 1.208 (gate round 3): bands skip ends whose green continues as a neighbouring piece's fill - clipping them would reopen the fill/band break this round closed
       const E = atStart ? sl.pts[0] : sl.pts[sl.pts.length - 1];
       if (!E) return;
-      const grp = sharedVertexMap()[coordKey(E)] || [];
+      const grp = TOPO.at(coordKey(E));
       if (new Set(grp.map(e => e.n)).size < 2) return;
       const A = atStart ? sl.mem[0].n : sl.mem[sl.mem.length - 1].n;
       const ent = grp.find(e => e.n === A);
@@ -3334,7 +3337,7 @@ function fillCornerLinks(fills) {
   // pairs never qualify (same street, or near-parallel lines), and a
   // lone side earns no connector - it still ends at the near edge.
   const verts = [];
-  const svm = sharedVertexMap();
+  const svm = TOPO.verts();
   for (const k in svm) { const g = svm[k]; if (new Set(g.map(e => e.n)).size >= 2) verts.push(GEO[g[0].n].stitched[g[0].vi]); }
   if (!verts.length) return;
   const ends = [];
@@ -3425,7 +3428,7 @@ function boundarySplit(n, ab, pts, kind, col, withCasing) { // -> { solid, fades
     const vtx = atStart ? g.stitched[ab[0]] : g.stitched[ab[1]];
     const rec = boundaryRecAt(n, vtx);
     if (!rec) continue;
-    const svm = sharedVertexMap();
+    const svm = TOPO.verts();
     if ((svm[coordKey(vtx)] || []).some(e => e.n !== n)) continue; // a vertex another route street shares is a junction, whatever the pack says
     const sp = splitBoundaryEnd(solid, [rec[2], rec[3]], atStart, fadeMOf(rec)); // Beta 1.267: the record's own fade length (a dead end's join is its end point, so its split lands exactly at the terminus)
     if (sp.fade) { fades.push({ pts: sp.fade, k: kind, col }); if (withCasing) fades.push({ pts: sp.fade, k: 'x', col }); }

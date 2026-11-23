@@ -8180,6 +8180,32 @@
    "red": "selftest-pr23-fixes crashes: TypeError: Cannot read properties of undefined (reading 'has') from the extracted scan block, observed 2026-11-23 on the arch11 stage-1 tree",
    "green": "selftest-pr23-fixes: 19 pass, 0 fail on the restored tree",
    "issued": "2026-11-23 arch11-stage1"
+  },
+  {
+   "id": "topo-vertices-index-order-1283",
+   "check": "tests/proof/proof-topo-vertices.mjs",
+   "kind": "mutation",
+   "files": {
+    "tests/proof/proof-topo-vertices.mjs": "8f1bc0febed421fcf372fce8431ef277c112a1977161d24dcd5fac1e543e253e",
+    "parts/engine.js": "e7adcaae52d9b63990806dc620653088c76043067dc685d01f37853b19671d82"
+   },
+   "mutation": "TOPO.index accumulates each street's vertices in reverse order (unshift instead of push) in parts/engine.js - entry order inside every shared key inverts",
+   "red": "proof-topo-vertices: 9 passed, 2 failed (check 3b index equality in build order, check 4 JUNC contents and per-street order over 114 entries), observed 2026-11-23 on the arch11 stage-2 tree",
+   "green": "proof-topo-vertices: 11 passed, 0 failed on the restored tree; full proof suite 86/86",
+   "issued": "2026-11-23 arch11-stage2"
+  },
+  {
+   "id": "topo-ranges-segreal-1283-r2",
+   "check": "tests/proof/proof-topo-ranges.mjs",
+   "kind": "mutation",
+   "files": {
+    "tests/proof/proof-topo-ranges.mjs": "15d436c4450659905305feceb9e8b4ac1300a4e8888f023ffb86e6a221d3db41",
+    "parts/engine.js": "e7adcaae52d9b63990806dc620653088c76043067dc685d01f37853b19671d82"
+   },
+   "mutation": "TOPO.segReal negation dropped in parts/engine.js - the stage-1 receipt's mutation re-run on the post-stage-2 tree (stage 2 moved the proof's prelude: the SVMAP stub retired with SVMAP, coordKey extracted for TOPO.index)",
+   "red": "proof-topo-ranges: 12 passed, 2 failed (check 4 predicate agreement, check 5a), observed 2026-11-23 on the arch11 stage-2 tree",
+   "green": "proof-topo-ranges: 14 passed, 0 failed on the restored tree",
+   "issued": "2026-11-23 arch11-stage2-refresh"
   }
  ]
 }
