@@ -115,7 +115,7 @@ check('9: the create backdrop still snapshots the UNDERLYING visibility through 
 
 // ---------- (10) editorial ----------
 check('10: What\'s New carries the 1.270 bullet, em-dash free, and the CHANGELOG top entry is Beta 1.270 above 1.269',
-  whatsnew.includes('Under the hood: one model now measures every saved clean, so its count, time and pace always agree.') &&
+  whatsnew.includes('Under the hood: note editing now runs through one session owner, so drafts and autosaves stay in step.') &&
   !whatsnew.includes('—') &&
   changelog.indexOf('## Beta 1.270') > -1 && changelog.indexOf('## Beta 1.270') < changelog.indexOf('## Beta 1.269'));
 

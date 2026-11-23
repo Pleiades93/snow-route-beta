@@ -21,25 +21,31 @@ let pass = 0, fail = 0;
 const t = (name, cond) => { if (cond) pass++; else { fail++; console.log('FAIL', name); } };
 
 // ---------- CG-112-01: the same-street note flush must read .ok ----------
-// renderStreets' declaration + flush lines and the rebuilt-editor hint line
-// are extracted verbatim from app2.js; setNoteText is verbatim from app3.js.
+// The shipped NOTEEDIT session owner (architecture #7) is extracted
+// verbatim from app2.js, composed with renderStreets' flush caller line,
+// its noteFlushed declaration and the rebuilt-editor hint line, also
+// verbatim; setNoteText is verbatim from app3.js. The invariant is the
+// same one round 112 pinned: the rebuild flush returns setNoteText's
+// .ok, never the truthy outcome object.
 {
   const setNoteText = extract(app3, 'function setNoteText(n, txt) {', 'function flagText', 'setNoteText');
+  const ownerSrc = extract(app2, 'const NOTEEDIT = {', '\n};', 'NOTEEDIT owner') + '\n};';
   const declLine = lineOf(app2, 'let noteFlushed = false', 'noteFlushed declaration');
-  const flushLine = lineOf(app2, 'draftFor === noteOpenFor && noteSaveTimer', 'note flush line');
+  const flushLine = lineOf(app2, 'NOTEEDIT.flushRebuild(draft, draftFor)', 'note flush line');
   const hintLine = lineOf(app2, "hint.textContent = 'Saved", 'rebuilt-editor hint line');
   const runFlush = (saveOk) => {
     const fn = new Function('notes', 'saveAllWarned', setNoteText + '; return setNoteText;')({},
       () => saveOk ? { ok: true, failedKey: null, retryPending: false } : { ok: false, failedKey: 'snowroute.5w.v2', retryPending: true });
     const hint = { textContent: 'Saves automatically' };
     const snippet = [
-      "const draft = 'car at #12', draftFor = 'Velmar', noteOpenFor = 'Velmar', n = 'Velmar';",
-      'let noteSaveTimer = 99;',
+      ownerSrc,
+      "NOTEEDIT.openFor = 'Velmar'; NOTEEDIT.edFor = 'Velmar'; NOTEEDIT.saveTimer = 99;",
+      "const draft = 'car at #12', draftFor = 'Velmar', n = 'Velmar';",
       'const ed = { querySelector: () => __hint };',
       declLine, flushLine, hintLine,
       'return __hint.textContent;'
     ].join('\n');
-    return new Function('setNoteText', '__hint', snippet)(fn, hint);
+    return new Function('setNoteText', 'saveWarned', 'toast', '__hint', snippet)(fn, false, () => {}, hint);
   };
   t('01 failed flush -> rebuilt editor says Not saved - Storage problem', runFlush(false) === 'Not saved - Storage problem');
   t('01 successful flush -> rebuilt editor says Saved ✓ (control)', runFlush(true) === 'Saved ✓');

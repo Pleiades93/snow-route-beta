@@ -99,7 +99,7 @@ try {
   await ev(`closeSheets(); true`); await sleep(400);
 
   // ---------- fresh board for the Streets section ----------
-  await ev(`(() => { const rk = routeKeys('5w'); [rk.done, rk.sides, rk.times, rk.notes, rk.via, rk.snap, rk.start].forEach(k => { if (k) localStorage.removeItem(k); }); noteOpenFor = null; loadRouteState('5w'); refreshAll(); return true; })()`); await sleep(300);
+  await ev(`(() => { const rk = routeKeys('5w'); [rk.done, rk.sides, rk.times, rk.notes, rk.via, rk.snap, rk.start].forEach(k => { if (k) localStorage.removeItem(k); }); NOTEEDIT.openFor = null; loadRouteState('5w'); refreshAll(); return true; })()`); await sleep(300);
 
   // ---------- S: Streets structure, tabs, states ----------
   await ev(`$('streetsBtn').click(); true`); await poll(`document.querySelectorAll('.srow').length > 0`, 10000);
@@ -136,7 +136,7 @@ try {
 
   // ---------- note editor: row tap, label, Save/Done, icon appears ----------
   await ev(`(() => { const r = [...document.querySelectorAll('.srow')].find(x => x.querySelector('.nm').textContent === 'Velmar'); r.querySelector('.nwrap').click(); return true; })()`);
-  await poll(`typeof noteOpenFor !== 'undefined' && noteOpenFor === 'Velmar' && !!document.querySelector('.noteEd textarea')`, 10000);
+  await poll(`typeof NOTEEDIT !== 'undefined' && NOTEEDIT.openFor === 'Velmar' && !!document.querySelector('.noteEd textarea')`, 10000);
   const e0 = await J(`(() => ({ lbl: document.querySelector('.noteEd .nedLbl').textContent, save: !!document.querySelector('.noteEd .nedSave'), done: !!document.querySelector('.noteEd .nedDone') }))()`);
   ok('S10 a row tap opens the note editor with its Note label and Save/Done actions | ' + JSON.stringify(e0),
     e0.lbl === 'Note: Velmar' && e0.save === true && e0.done === true);
@@ -145,7 +145,7 @@ try {
   ok('S11 Save note writes through the same store, and the note icon appears on that street only | ' + JSON.stringify(e1),
     e1.saved === 'drive192 note' && e1.ico === true && e1.ico2 === false);
   await ev(`(() => { document.querySelector('.noteEd .nedDone').click(); return true; })()`); await sleep(300);
-  ok('S12 Done closes the editor', await ev(`!document.querySelector('.noteEd') && noteOpenFor === null`) === true);
+  ok('S12 Done closes the editor', await ev(`!document.querySelector('.noteEd') && NOTEEDIT.openFor === null`) === true);
 
   // ---------- Locate pill tap locates ----------
   const pinRes = await J(`(() => { const c = STRETCH['Astona'].line[Math.floor(STRETCH['Astona'].line.length / 2)]; // the pill handler's own target (app2): the middle point of the street's line
@@ -162,7 +162,7 @@ try {
   await setVp(390, 844);
   await ev(`(() => { if (!$('sheet').classList.contains('open')) $('streetsBtn').click(); return true; })()`); await sleep(650);
   await ev(`(() => { const r = [...document.querySelectorAll('.srow')].find(x => x.querySelector('.nm').textContent === 'Velmar'); r.querySelector('.nwrap').click(); return true; })()`);
-  await poll(`typeof noteOpenFor !== 'undefined' && noteOpenFor === 'Velmar' && !!document.querySelector('.noteEd textarea')`, 10000); await sleep(700);
+  await poll(`typeof NOTEEDIT !== 'undefined' && NOTEEDIT.openFor === 'Velmar' && !!document.querySelector('.noteEd textarea')`, 10000); await sleep(700);
   const kb = await J(`(() => { const sb = $('sheetBody').getBoundingClientRect(); const ta = document.querySelector('.noteEd textarea').getBoundingClientRect(); return { h: $('sheet').offsetHeight, full: $('sheet').classList.contains('full'), sbTop: Math.round(sb.top), taTop: Math.round(ta.top), taBot: Math.round(ta.bottom), sbBot: Math.round(sb.bottom), titleTop: document.querySelector('#hud .title').getBoundingClientRect().top }; })()`);
   ok('KB1 opening the note editor raises the Streets sheet to the full stop (Beta 1.228: the title cap - viewport less the title top, less the 8px margin) | ' + JSON.stringify(kb), kb.full === true && Math.abs(kb.h - (844 - (kb.titleTop - 8))) <= 10);
   ok('KB2 at 390x844 the scroll region top clears a ~300px keyboard edge (544) and the editor sits inside the visible scroll region - the precondition ensureFieldVisible needs | ' + JSON.stringify(kb),

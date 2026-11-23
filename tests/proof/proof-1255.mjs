@@ -68,8 +68,8 @@ check('12 (gate P2): the sheet click-away handler exempts the confirmation pill'
 // ---------- the release editorial ----------
 check('8: the CHANGELOG top entry is Beta 1.255', changelog.includes('## Beta 1.255'));
 check('9: What\'s New carries the 1.255 bullet, short and dash-free',
-  whatsnew.includes('Under the hood: one model now measures every saved clean, so its count, time and pace always agree.')
-  && 'Under the hood: one model now measures every saved clean, so its count, time and pace always agree.'.length <= 108
+  whatsnew.includes('Under the hood: note editing now runs through one session owner, so drafts and autosaves stay in step.')
+  && 'Under the hood: note editing now runs through one session owner, so drafts and autosaves stay in step.'.length <= 108
   && !whatsnew.includes('—'));
 
 console.log(`proof-1255: ${pass} passed, ${fail} failed`);

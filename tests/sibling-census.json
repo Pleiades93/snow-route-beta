@@ -7798,6 +7798,131 @@
     "scripts/check-census.py": "dd55f34cd855e60a6fadae7e261aa99f1682b9d7d8446696532045e3a281fafb"
    },
    "issued": "2026-11-23"
+  },
+  {
+   "id": "arch7-1279",
+   "kind": "app",
+   "anchors": {
+    "functions": [
+     "renderStreets",
+     "collapseNoteEditor",
+     "resetStreetsSession",
+     "syncNoteSheetRaise"
+    ],
+    "elements": [],
+    "guards": []
+   },
+   "changed": [
+    "parts/app2.js",
+    "parts/whatsnew.js"
+   ],
+   "rows": [
+    {
+     "id": "caller:collapseNoteEditor:parts/app2.js:closeSheetEl",
+     "kind": "caller",
+     "source": "derived: call-site scan of parts/ - collapseNoteEditor() is called from closeSheetEl in parts/app2.js",
+     "status": "covered",
+     "note": "The animated close funnel (X, tab toggle, Locate pill, another sheet, outside tap): the doorway now renders only when NOTEEDIT.collapse() reports a session was open - the same test-and-clear, moved into the owner. Covered by drive135 (43/43, the keyboard/editor session closes the sheet with an editor open) and drive192's sheet sections."
+    },
+    {
+     "id": "caller:collapseNoteEditor:parts/app2.js:sheet:pointerup",
+     "kind": "caller",
+     "source": "derived: call-site scan of parts/ - collapseNoteEditor() is called from sheet:pointerup in parts/app2.js",
+     "status": "covered",
+     "note": "The drag/flick settleClose funnel - the second close door of Beta 1.106, riding the same doorway. Covered by drive192's sheet drag sections (its detent gestures flake locally per the standing known-env entry; the gate arbitrates) and drive135."
+    },
+    {
+     "id": "caller:collapseNoteEditor:parts/app5.js:loadRoute",
+     "kind": "caller",
+     "source": "derived: call-site scan of parts/ - collapseNoteEditor() is called from loadRoute in parts/app5.js",
+     "status": "covered",
+     "note": "A route load collapses any open editor before the new route's state lands. Covered by drive192 (its fresh-board loadRouteState runs with the session live) and drive86 (18/18, the session family)."
+    },
+    {
+     "id": "caller:renderStreets:parts/app2.js:collapseNoteEditor",
+     "kind": "caller",
+     "source": "derived: call-site scan of parts/ - renderStreets() is called from collapseNoteEditor in parts/app2.js",
+     "status": "covered",
+     "note": "The collapse render itself - now conditional on the owner's test-and-clear. Covered by every note drive: 88 (16/16), 140 (6/6), 188 (15/15), 135 (43/43), 192 (note sections)."
+    },
+    {
+     "id": "caller:renderStreets:parts/app2.js:finishChange",
+     "kind": "caller",
+     "source": "derived: call-site scan of parts/ - renderStreets() is called from finishChange in parts/app2.js",
+     "status": "covered",
+     "note": "A mark's re-render - the render now opens with NOTEEDIT.capture and the two flushes; the flush semantics are the moved bodies verbatim. Covered by drive88 and drive192 marking flows, and by selftest-round112's verbatim extraction of the owner + caller line (mutation-proven this round)."
+    },
+    {
+     "id": "caller:renderStreets:parts/app2.js:refreshAll",
+     "kind": "caller",
+     "source": "derived: call-site scan of parts/ - renderStreets() is called from refreshAll in parts/app2.js",
+     "status": "covered",
+     "note": "The style-ready/theme refresh re-render - the same-street rebuild path whose synchronous flush (flushRebuild, the CG-112-01 .ok read) strands no draft. Covered by drive140 N4 (same-street re-render keeps the draft) and drive192's fresh-board refreshAll."
+    },
+    {
+     "id": "caller:renderStreets:parts/app2.js:selBtn:click",
+     "kind": "caller",
+     "source": "derived: call-site scan of parts/ - renderStreets() is called from selBtn:click in parts/app2.js",
+     "status": "covered",
+     "note": "The selection panel's complete/not-done re-render. The doorway signature is unchanged; covered by the session-family battery in the gate (drives 88/192 exercise the selection flows)."
+    },
+    {
+     "id": "caller:renderStreets:parts/app2.js:streetsBtn:click",
+     "kind": "caller",
+     "source": "derived: call-site scan of parts/ - renderStreets() is called from streetsBtn:click in parts/app2.js",
+     "status": "covered",
+     "note": "Opening the Streets sheet renders the list (and the editor when the session has one open). Covered by every note drive - they all open the sheet through this button (88, 135, 140, 188, 192)."
+    },
+    {
+     "id": "caller:renderStreets:parts/app3.js:cancelStart",
+     "kind": "caller",
+     "source": "derived: call-site scan of parts/ - renderStreets() is called from cancelStart in parts/app3.js",
+     "status": "covered",
+     "note": "Cancel's re-render. Covered by the cancel family in the gate battery (drive133) and locally by drive86 (18/18, the session family); renderStreets' own change is the session extraction, exercised by the note drives."
+    },
+    {
+     "id": "caller:renderStreets:parts/app3.js:noteYes:click",
+     "kind": "caller",
+     "source": "derived: call-site scan of parts/ - renderStreets() is called from noteYes:click in parts/app3.js",
+     "status": "covered",
+     "note": "The note MODAL's confirm re-render (app3's separate surface - untouched by this round; only the render it calls changed internally). Covered by the note flows of drives 140/192 in the battery."
+    },
+    {
+     "id": "caller:resetStreetsSession:parts/app5.js:resetSwitchSession",
+     "kind": "caller",
+     "source": "derived: call-site scan of parts/ - resetStreetsSession() is called from resetSwitchSession in parts/app5.js",
+     "status": "covered",
+     "note": "The route switch's Streets reset - its note line is now NOTEEDIT.reset() (the three fields and the timer, the moved body). Covered by the route-switch drive (149) in the gate battery and by drive192's route reloads locally."
+    },
+    {
+     "id": "caller:syncNoteSheetRaise:parts/app2.js:renderStreets",
+     "kind": "caller",
+     "source": "derived: call-site scan of parts/ - syncNoteSheetRaise() is called from renderStreets in parts/app2.js",
+     "status": "covered",
+     "note": "The raise follows the editor's existence on every render; it now reads NOTEEDIT.openFor and owns NOTEEDIT.raiseActive. Covered by drive192 KB1 (opening the editor raises the sheet to the full stop - passing in every local run) and drive135's keyboard sections."
+    }
+   ],
+   "files": {
+    "parts/app1.js": "cf555a9736c6f9961e906e0fd9c00a531c9ddb88ca3c5ff5765fa33ba62953df",
+    "parts/app2.js": "25749571be73fc2480b23f22a49def500814105e19abe08919e9bec766cc9144",
+    "parts/app3.js": "25b9d5bf8c5bb8e2bb433ad563c110744b65f5bf69932dc428d1d240505a3d39",
+    "parts/app4.js": "77a902a67ce2de0f989a00d9a06c9f16ee7fccdc10e43238ddade610e57e463d",
+    "parts/app5.js": "075517797dadbffbebf5d59682dae3a8771b1b5fa3b999c5de4206257160249f",
+    "parts/brand-snow.js": "86fa9a02f29c7345ee68d68daffd9c72da612921b64da37f1eccf6b72161ac5f",
+    "parts/create-cache.js": "2a7e983aa50862cb074a16abf9266a41a1a175c69faa5215b1d3d289aa2b5327",
+    "parts/create-citydata.js": "393d90f275d971b5e52352deebaece381279acd0e86495ffa2da35701de9148e",
+    "parts/create-fetch.js": "e7a65bd88dc338213946c4537dc5d397f79396ec416b6f4ebf4be831927aeb66",
+    "parts/create-packs.js": "a8b60fb7d601c1e83f555eb703b625a571ec878937ac36fcaddd05aecf635975",
+    "parts/create-pick.js": "7188458b087496ad52ff5d159ae23668b543d0100a3d58c3b251d33374258dd6",
+    "parts/create-save.js": "ad39720727f43d397e72443c92955c5a35d530f03e3219b2182c9ee7c062e52d",
+    "parts/data.js": "9684c69862156dc70ee9a2b88278b4e825c5bf35f0c150fbc5660ccbdce9304b",
+    "parts/engine.js": "d6d1f676ac8bc2a302cfbaf56de1e10cb361fd8b746d94d6380a5e4ebaf76173",
+    "parts/pmstyles.js": "f3501db9c16dbc6a5fa8c901089101e4913772384de1f069accb23a614bb90fc",
+    "parts/whatsnew.js": "f18d6c5776d0cd1b9672727b270fe7aa1b2ac8f5de7978fc2579ba1ea339a2f1",
+    "parts/head.html": "bff57252f945388445965c770902c06145d3501ceb21cb6f5507fd542eca066d",
+    "scripts/check-census.py": "dd55f34cd855e60a6fadae7e261aa99f1682b9d7d8446696532045e3a281fafb"
+   },
+   "issued": "2026-11-23"
   }
  ]
 }

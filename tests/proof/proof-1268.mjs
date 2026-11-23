@@ -71,7 +71,7 @@ check('5: calibration arithmetic - WIDTH_K 1.3 at the 1.08 == 1.0x calibration p
   Math.abs(1.3 / 1.08 - 1.20) / 1.20 <= 0.10);
 
 check('6: What\'s New carries the round\'s bullet, em-dash free, and the CHANGELOG top entry is Beta 1.268 above 1.267',
-  whatsnew.includes('Under the hood: one model now measures every saved clean, so its count, time and pace always agree.') &&
+  whatsnew.includes('Under the hood: note editing now runs through one session owner, so drafts and autosaves stay in step.') &&
   !whatsnew.includes('—') &&
   changelog.indexOf('## Beta 1.268') > -1 && changelog.indexOf('## Beta 1.268') < changelog.indexOf('## Beta 1.267'));
 

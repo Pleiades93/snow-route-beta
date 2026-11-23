@@ -78,8 +78,8 @@ check('9: no second stale literal in app3',
 // ---------- the release editorial ----------
 check('10: the CHANGELOG top entry is Beta 1.252', changelog.includes('## Beta 1.252'));
 check('11: What\'s New carries the 1.252 bullet, short and dash-free',
-  whatsnew.includes('Under the hood: one model now measures every saved clean, so its count, time and pace always agree.')
-  && 'Under the hood: one model now measures every saved clean, so its count, time and pace always agree.'.length <= 108
+  whatsnew.includes('Under the hood: note editing now runs through one session owner, so drafts and autosaves stay in step.')
+  && 'Under the hood: note editing now runs through one session owner, so drafts and autosaves stay in step.'.length <= 108
   && !whatsnew.includes('—'));
 
 console.log(`proof-1252: ${pass} passed, ${fail} failed`);

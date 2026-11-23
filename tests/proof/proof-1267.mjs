@@ -99,7 +99,7 @@ check('4b: the old strings are gone from parts/',
 
 // ---------- editorial ----------
 check('5: What\'s New carries the round\'s headline bullet (dead ends feather) and no em dash',
-  whatsnew.includes('Under the hood: one model now measures every saved clean, so its count, time and pace always agree.') && !whatsnew.includes('—'));
+  whatsnew.includes('Under the hood: note editing now runs through one session owner, so drafts and autosaves stay in step.') && !whatsnew.includes('—'));
 
 console.log('proof-1267: ' + pass + ' pass, ' + fail + ' fail');
 process.exit(fail ? 1 : 0);

@@ -204,7 +204,7 @@ ok('V3c bottom offset still 0px after the whole cycle', await ev(`document.docum
 await send('Emulation.setDeviceMetricsOverride', { width: 420, height: 560, deviceScaleFactor: 2, mobile: true }, S); await sleep(200);
 await ev(`(() => { const ta = document.querySelector('.noteEd textarea'); if (ta) ta.focus(); return true; })()`); await sleep(250);
 const wBefore = await ev(`document.body.classList.contains('kb')`);
-await ev(`(() => { noteOpenFor = null; renderStreets(); return true; })()`);
+await ev(`(() => { NOTEEDIT.openFor = null; renderStreets(); return true; })()`);
 await sleep(120);
 const wHold = await ev(`document.body.classList.contains('kb')`);
 ok('W1 editor destroyed by a rebuild mid-typing: the freeze HOLDS while the height is unsettled (owner decides, not the render) | before ' + wBefore + ' hold ' + wHold, wBefore === true && wHold === true);
