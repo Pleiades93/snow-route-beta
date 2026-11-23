@@ -8467,6 +8467,19 @@
    "red": "Current suite against the pre-#175 worker (scratch copy, work/offline-cluster-2026-11-23/red175): exit 1, exactly 3 FAIL - '#175 the oldest browsing glyph survives the trim', '#175 the oldest browsing sprite survives the trim', '#175 the browsing glyph is still served offline'; the F-03 cap assertion and the exactly-3000 tile count PASS on the old worker (53 PASS total) - the cap existed, it counted the wrong entries",
    "green": "Shipped tile-only trim: node tests/sw.test.mjs exit 0, 56/56 PASS (52 prior + 4 new #175 assertions)",
    "issued": "2026-11-23 offline-cluster round (issue #175 takeover), local run"
+  },
+  {
+   "id": "offline-e18-tile-flood",
+   "check": "tests/browser/e2e-offline.mjs",
+   "kind": "historical",
+   "files": {
+    "src/sw.js": "18c5864567555a5eee6d6250c91d569e2b5409d11b27d3dae192b19d7e698f1a",
+    "tests/browser/e2e-offline.mjs": "80a72c4508efb4a62596deafeb6168edc16102a2e01b426141926d65a96bc841"
+   },
+   "mutation": "premise correction, no code mutation: E18's flood shape and observation predate the tile-only cap (issue #175) - extensionless flood entries are exempt from the trim by design",
+   "red": "CI gate attempt 1 on PR #196 head 6abd08a2 (run 45289771170, offline-e2e job 138095820763): FAIL E18 - trim observed at -1, pack intact 897 of 897",
+   "green": "the corrected check (realistic CARTO .mvt flood; the reading counts tile keys) passes in the PR #196 gate re-run on the head carrying this receipt; the run id is recorded in the round RECORD.md",
+   "issued": "2026-11-23 offline-cluster"
   }
  ]
 }
