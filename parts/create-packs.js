@@ -91,6 +91,10 @@ function endsPtSeg(p, a, b) { // distance from p to segment a-b, flat-metre spac
   let t = L2 ? ((px - ax) * vx + (py - ay) * vy) / L2 : 0; t = Math.max(0, Math.min(1, t));
   return Math.hypot(px - (ax + vx * t), py - (ay + vy * t));
 }
+function endsJunction(routeNames, runsOf, n, E) { // whether another route street's vertex sits at the run end E (the <=2 m vertex test) - the ONE junction test both end computations judge by (Beta 1.283, architecture #11 stage 4: before, each carried the loop verbatim in shape, free to drift apart)
+  for (const m of routeNames) { if (m === n) continue; for (const rl of runsOf(m)) for (const v of rl) if (Math.abs(v[0] - E[0]) < 0.00004 && Math.abs(v[1] - E[1]) < 0.00004 && distM(v, E) <= 2) return true; }
+  return false;
+}
 function computeBoundaryEnds(roads, allStreets) {
   const out = {};
   if (!roads || !allStreets) return out;
@@ -116,9 +120,7 @@ function computeBoundaryEnds(roads, allStreets) {
       };
       for (const atStart of [true, false]) {
         const E = atStart ? line[0] : line[line.length - 1];
-        let junction = false; // another route street's vertex at E: a route junction owns this end
-        for (const m of routeNames) { if (m === n || junction) continue; for (const rl of runsOf(m)) { for (const v of rl) if (Math.abs(v[0] - E[0]) < 0.00004 && Math.abs(v[1] - E[1]) < 0.00004 && distM(v, E) <= 2) { junction = true; break; } if (junction) break; } }
-        if (junction) continue;
+        if (endsJunction(routeNames, runsOf, n, E)) continue; // another route street's vertex at E: a route junction owns this end
         const crossings = []; // { street, behind, pt } - behind = metres from E back along the run
         for (const m of Object.keys(allStreets)) {
           if (routeNames.includes(m)) continue;
@@ -198,9 +200,7 @@ function computeDeadEnds(roads, allStreets) {
         const E = atStart ? line[0] : line[line.length - 1];
         const inward = atStart ? line[1] : line[line.length - 2];
         if (!inward) continue;
-        let junction = false; // the boundary computation's own test, verbatim in shape: another route street's vertex at E owns the end
-        for (const m of routeNames) { if (m === n || junction) continue; for (const rl of runsOf(m)) { for (const v of rl) if (Math.abs(v[0] - E[0]) < 0.00004 && Math.abs(v[1] - E[1]) < 0.00004 && distM(v, E) <= 2) { junction = true; break; } if (junction) break; } }
-        if (junction) continue;
+        if (endsJunction(routeNames, runsOf, n, E)) continue; // the shared junction test (endsJunction): another route street's vertex at E owns the end
         if ((boundary[n] || []).some(r => distM([r[0], r[1]], E) <= 1.5)) continue; // a boundary end: the 15 m class owns it
         // the run's outward direction at E, flat-metre space
         const ox = (E[1] - inward[1]) * MLNG, oy = (E[0] - inward[0]) * MLAT, oLen = Math.hypot(ox, oy) || 1;

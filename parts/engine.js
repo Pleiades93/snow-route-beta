@@ -57,6 +57,63 @@ const labelFeatures = [];
 const labelPointFeatures = [];
 const LABELS = { type: 'FeatureCollection', features: labelFeatures };
 const GEO = {};
+// ===== Beta 1.283 (architecture programme #11): TOPO — the ONE owner of
+// the route's RUN STRUCTURE: which vertices of a street's stitched line
+// belong to which run, and the questions every consumer asks of that
+// structure. Through 1.282 the structure survived the geometry build only
+// as a bare per-street Set of the vertex indices where later runs
+// start, and 25 sites across this engine re-derived what a gap MEANS —
+// a real segment vs the bridge between two runs, a run-interior vertex,
+// the direction window clamped at a run's ends (the clamp written out
+// twice, verbatim). The ranges below are the structure; the predicates
+// are its only interpretation. buildEngineGeometry seats each street's
+// ranges as it concatenates the runs, and the table is reset with the
+// geometry, so it can never name a previous route's streets — the 1.144
+// lesson SVMAP and JUNC each learned by hand holds here by construction.
+// The owner also holds the SHARED-VERTEX INDEX (which streets meet at
+// which stitched vertex), accumulated street by street as the geometry
+// is seated, in the same H.names x stitched order the hand-built copies
+// used — through 1.282 that index was built three times (buildJunctions'
+// local map, junctionPairs' per-call rebuild, and the memoized
+// sharedVertexMap with its hand invalidation).
+const TOPO = {
+  _ranges: {},   // name -> [{start, end}] — each run's vertex-index range in GEO[n].stitched, in run order
+  _starts: {},   // name -> Set of the vertex indices that open a later run (the range starts after the first)
+  _verts: {},   // coordKey -> [{n, vi}] — every street/vertex at that point, in build order
+  _ends: {},   // 'name|vi' -> { kind, rec } — the classification of the run end at that vertex (stage 3)
+  reset() { this._ranges = {}; this._starts = {}; this._verts = {}; this._ends = {}; },
+  seat(n, ranges) { this._ranges[n] = ranges; this._starts[n] = new Set(ranges.slice(1).map(r => r.start)); },
+  index(n, stitched) { stitched.forEach((pt, vi) => { const k = coordKey(pt); (this._verts[k] = this._verts[k] || []).push({ n, vi }); }); },
+  verts() { return this._verts; },   // the whole shared-vertex index
+  at(key) { return this._verts[key] || []; },   // the streets/vertices at one point
+  // Stage 3: every run end classified ONCE, here, from the finished
+  // index and the street's end records: 'junction' when another street
+  // shares the end vertex (the classification boundarySplit's defence
+  // used to re-derive per slice end), else 'feather' carrying the
+  // matched record (boundaryRecAt's rule, applied once per run end
+  // instead of per slice end), else 'end' — a plain end of the route.
+  // Junction wins over feather, as the defence always ruled. On the
+  // shipped 5W the census is exact: 68 run ends = 53 junction + 15
+  // feather + 0 end (proof-topo-ends).
+  classifyEnds() {
+    this._ends = {};
+    for (const n of Object.keys(this._ranges)) {
+      const stitched = GEO[n].stitched;
+      for (const r of this._ranges[n]) for (const vi of [r.start, r.end]) {
+        const v = stitched[vi];
+        if (this.at(coordKey(v)).some(e => e.n !== n)) { this._ends[n + '|' + vi] = { kind: 'junction', rec: null }; continue; }
+        const rec = boundaryRecAt(n, v);
+        this._ends[n + '|' + vi] = rec ? { kind: 'feather', rec } : { kind: 'end', rec: null };
+      }
+    }
+  },
+  endAt(n, vi) { return this._ends[n + '|' + vi] || null; },   // the classification of the run end at vertex vi — null when vi is not a run end
+  ranges(n) { return this._ranges[n] || []; },
+  runStart(n, k) { const s = this._starts[n]; return !!s && s.has(k); },   // vertex k opens a later run of n (the pre-#11 gap-set test)
+  segReal(n, si) { return !this.runStart(n, si + 1); },   // the segment si -> si+1 lies inside one run; the pair across a run boundary is not street
+  interior(n, vi, len) { return vi > 0 && vi < len - 1 && !this.runStart(n, vi) && !this.runStart(n, vi + 1); },   // vertex vi sits strictly inside a run, so the street runs THROUGH it — a run-end vertex terminates the street there even when it resumes elsewhere
+  win(n, vi, len) { return [this.runStart(n, vi) ? vi : Math.max(0, vi - 1), this.runStart(n, vi + 1) ? vi : Math.min(len - 1, vi + 1)]; }   // the direction window at vi, clamped at the vertex's own run ends — a neighbour across a gap belongs to a different piece of the street and would hand the reader a direction the street does not have there
+};
 // Left/Right naming (Andrew, 2026-10-28): every street has ONE fixed
 // direction - south end to north end, or west end to east end for
 // east-west streets. Left is the left-hand side in that direction: the
@@ -67,7 +124,7 @@ function buildEngineGeometry() { // Beta 1.117: the engine's route geometry (GEO
   for (const k of Object.keys(GEO)) delete GEO[k];
   for (const k of Object.keys(LEFTBIT)) delete LEFTBIT[k];
   labelFeatures.length = 0; labelPointFeatures.length = 0;
-  SVMAP = null; // the shared-vertex map is a memoized derivative of GEO (sharedVertexMap) - it must die with the geometry it was built from, or the strand builders read the previous route's streets (the first switch build threw exactly there)
+  TOPO.reset(); // Beta 1.283 (#11): the run-structure table and the shared-vertex index are derivatives of the geometry - they die here and are re-seated street by street below, so they can never name a previous route's streets (the lesson the retired sharedVertexMap learned by hand in 1.117: its memo had to be nulled here or the strand builders read the previous route's vertices)
   H.names.forEach(n => {
   // The street's stitched line, RUN BY RUN (Beta 1.144, Package C DA-02/C1):
   // within a run, sectors are exact slices of it (sector k+1 starts at the
@@ -76,13 +133,14 @@ function buildEngineGeometry() { // Beta 1.117: the engine's route geometry (GEO
   // street) has several runs: their points concatenate into the same
   // stitched array with GLOBAL vertex ranges per part, but the offsets are
   // computed PER RUN (an offset line must never bridge the omitted ground
-  // between runs), and gaps records the vertex index each later run starts
-  // at, so every segment walk in this engine can refuse to step across a
-  // discontinuity. A single-run street builds byte-identically to before.
-  const stitched = [], cuts = [], gaps = new Set();
+  // between runs), and TOPO seats the vertex range each run occupies in
+  // the stitched array, so every segment walk in this engine can refuse
+  // to step across a discontinuity. A single-run street builds
+  // byte-identically to before.
+  const stitched = [], cuts = [], ranges = [];
   let off0 = [], off1 = [], offH0 = [], offH1 = [], stitchedLen = 0;
   H.STRETCH[n].runs.forEach((run, ri) => {
-    if (ri > 0) gaps.add(stitched.length);
+    const rStart = stitched.length;
     const base = stitched.length, rStitched = [];
     run.parts.forEach((part, i) => {
       const a = i === 0 ? base : stitched.length - 1;
@@ -97,8 +155,11 @@ function buildEngineGeometry() { // Beta 1.117: the engine's route geometry (GEO
     off0 = off0.concat(offsetLine(rStitched, 3.3 * WIDTH_K)); off1 = off1.concat(offsetLine(rStitched, -3.3 * WIDTH_K));
     offH0 = offH0.concat(offsetLine(rStitched, 1.65 * WIDTH_K)); offH1 = offH1.concat(offsetLine(rStitched, -1.65 * WIDTH_K));   // Beta 1.208: the half-offset lines (centreline-to-kerb midlines) the one-side fills are built on - same per-run construction as the kerb lines
     stitchedLen += segLenM(rStitched);
+    ranges.push({ start: rStart, end: stitched.length - 1 });
   });
-  GEO[n] = { stitched, cuts, off0, off1, offH0, offH1, gaps };
+  GEO[n] = { stitched, cuts, off0, off1, offH0, offH1 };
+  TOPO.seat(n, ranges);
+  TOPO.index(n, stitched);
   const p0 = stitched[0], p1 = stitched[stitched.length - 1];
   const dLat = p1[0] - p0[0], dLng = p1[1] - p0[1];
   const canonicalForward = Math.abs(dLat) >= Math.abs(dLng) ? dLat >= 0 : dLng >= 0;
@@ -120,6 +181,7 @@ function buildEngineGeometry() { // Beta 1.117: the engine's route geometry (GEO
   for (let k = 1; k < seg.length; k++) { const d = H.jDistM(seg[k - 1], seg[k]); if (acc + d >= target) { const t = d ? (target - acc) / d : 0; anchor = [seg[k - 1][0] + (seg[k][0] - seg[k - 1][0]) * t, seg[k - 1][1] + (seg[k][1] - seg[k - 1][1]) * t]; break; } acc += d; }
   labelPointFeatures.push({ type: 'Feature', properties: { name: n, len: Math.round(stitchedLen) }, geometry: { type: 'Point', coordinates: GJ([anchor])[0] } }); // Beta 1.144: the length is the per-run sum (stitchedLen) - segLenM over the concatenated array would add the jumps between a disconnected street's runs
 });
+  TOPO.classifyEnds(); // Beta 1.283 (#11, stage 3): with every street seated and indexed, classify every run end once - the feather consumers read the classification, never a per-slice re-derivation
   JUNC = null; // Beta 1.144 (found by drive165, proven on the pristine 1.143 tree): the junction table derives from GEO + the current name set but was built once and never invalidated - after a route switch it still named the PREVIOUS route's streets, and the first marked run's paint on the new route threw 'JUNC[n] is not iterable'. The geometry rebuild is the invalidation point: the table rebuilds lazily from the new geometry on next use.
   nudgeFifth();
   assignTiers();
@@ -138,9 +200,8 @@ function nudgeFifth() {
   const gp = GEO['Greenpark'] && GEO['Greenpark'].stitched;
   if (!gp) return; // Beta 1.117: the nudge is a Route 5W refinement - a pack with a Fifth but no Greenpark simply skips it
   let bd = 1e9, bq = A0;
-  const gg = GEO['Greenpark'].gaps;
   for (let k = 1; k < gp.length; k++) {
-    if (gg.has(k)) continue; // Beta 1.144 (verify cycle 2): the segment between two runs is not street - projecting the anchor onto it pushes Fifth's label away from ground that is not Greenpark
+    if (!TOPO.segReal('Greenpark', k - 1)) continue; // Beta 1.144 (verify cycle 2): the segment between two runs is not street - projecting the anchor onto it pushes Fifth's label away from ground that is not Greenpark
     const a = gp[k - 1], b = gp[k], vx = (b[1] - a[1]) * H.MLNG, vy = (b[0] - a[0]) * H.MLAT;
     const wx = (A0[1] - a[1]) * H.MLNG, wy = (A0[0] - a[0]) * H.MLAT, L2 = vx * vx + vy * vy;
     let t = L2 ? (wx * vx + wy * vy) / L2 : 0; t = Math.max(0, Math.min(1, t));
@@ -220,11 +281,10 @@ const CORRIDOR = 5.2;   // metres: half the drawn road width
 let JUNC = null;
 function buildJunctions() {
   JUNC = {}; H.names.forEach(n => { JUNC[n] = []; });
-  const at = {};
-  H.names.forEach(n => GEO[n].stitched.forEach((pt, vi) => { const k = coordKey(pt); (at[k] = at[k] || []).push({ n, vi }); }));
+  const at = TOPO.verts();   // Beta 1.283 (#11): the shared-vertex index is TOPO's, built with the geometry in this same H.names x stitched order - JUNC's contents and per-street entry order are unchanged
   const dirAt = (n, vi) => {
-    const st = GEO[n].stitched, gaps = GEO[n].gaps; // Beta 1.144: the direction window clamps at the vertex's own RUN ends - a run-boundary vertex's neighbour across the gap belongs to a different piece of the street and would hand the junction a direction the street does not have there
-    const lo = gaps.has(vi) ? vi : Math.max(0, vi - 1), hi = gaps.has(vi + 1) ? vi : Math.min(st.length - 1, vi + 1);
+    const st = GEO[n].stitched;
+    const [lo, hi] = TOPO.win(n, vi, st.length); // Beta 1.144: the direction window clamps at the vertex's own RUN ends - a run-boundary vertex's neighbour across the gap belongs to a different piece of the street and would hand the junction a direction the street does not have there (Beta 1.283, #11: the clamp is TOPO.win's)
     const a = XYOf(st[lo]), b = XYOf(st[hi]);
     const dx = b[0] - a[0], dy = b[1] - a[1], m = Math.hypot(dx, dy) || 1;
     return [dx / m, dy / m];
@@ -238,13 +298,9 @@ function buildJunctions() {
     }));
   });
 }
-let SVMAP = null;
-function sharedVertexMap() {
-  if (SVMAP) return SVMAP;
-  SVMAP = {};
-  H.names.forEach(n => GEO[n].stitched.forEach((pt, vi) => { const k = coordKey(pt); (SVMAP[k] = SVMAP[k] || []).push({ n, vi }); }));
-  return SVMAP;
-}
+// Beta 1.283 (#11): the shared-vertex map lives on TOPO now (TOPO.verts /
+// TOPO.at, built with the geometry) - the memoized sharedVertexMap and
+// its hand invalidation are retired.
 // ---- through-connection (Andrew, 2026-10-28, round 9): "they all have
 // to connect... no matter which way it goes." A side line marked on BOTH
 // arms of a junction runs THROUGH it - unless a marked line of another
@@ -264,7 +320,6 @@ function throughOK(A, side, J, runPts) {
   const sideSign = Math.sign((XYOf(off)[0] - Vx[0]) * nA[0] + (XYOf(off)[1] - Vx[1]) * nA[1]);
   if (!sideSign) return false;
   const signsOf = pt => { const w = XYOf(pt); return [Math.sign((w[0] - Vx[0]) * nA[0] + (w[1] - Vx[1]) * nA[1]), Math.sign((w[0] - Vx[0]) * nB[0] + (w[1] - Vx[1]) * nB[1])]; };
-  const map = sharedVertexMap();
   // Blocked by a RAW CROSSING (round 10): if this street's raw side line
   // properly crosses another street's marked raw side line within 13 m
   // of V at a point that is NOT their vetted corner, running through
@@ -275,7 +330,7 @@ function throughOK(A, side, J, runPts) {
   const pairsNow = PAIRS_CUR || junctionPairs();
   const offA = side === 0 ? GEO[A].off0 : GEO[A].off1;
   let crossed = false;
-  for (const E of (map[vKey] || [])) {
+  for (const E of TOPO.at(vKey)) {
     if (E.n === A || crossed) continue;
     const gD = GEO[E.n];
     [0, 1].forEach(tt => {
@@ -285,10 +340,10 @@ function throughOK(A, side, J, runPts) {
       const offD = tt === 0 ? gD.off0 : gD.off1;
       const corners = (pairsNow[A + '|' + J.viA + '|' + side] || []).filter(pr => pr.n2 === E.n && pr.side2 === tt && pr.corner).map(pr => pr.corner);
       for (let s1 = 0; s1 + 1 < offA.length && !crossed; s1++) {
-        if (GEO[A].gaps.has(s1 + 1)) continue; // Beta 1.144: the segment between two runs is not street - it can neither cross nor be crossed
+        if (!TOPO.segReal(A, s1)) continue; // Beta 1.144: the segment between two runs is not street - it can neither cross nor be crossed
         if (H.ptSegM(V, offA[s1], offA[s1 + 1]) > 13) continue;
         for (let s2 = 0; s2 + 1 < offD.length; s2++) {
-          if (gD.gaps.has(s2 + 1)) continue;
+          if (!TOPO.segReal(E.n, s2)) continue;
           if (H.ptSegM(V, offD[s2], offD[s2 + 1]) > 13) continue;
           if (!segCross(offA[s1], offA[s1 + 1], offD[s2], offD[s2 + 1])) continue;
           const X = lineHit(offA[s1], offA[s1 + 1], offD[s2], offD[s2 + 1]);
@@ -461,7 +516,7 @@ function edgeRunSlices(n, side, marked) {
               if (!marked) continue;
               const off = t === 0 ? gd.off0 : gd.off1;
               for (let oi = 0; oi + 1 < off.length; oi++) {
-                if (gd.gaps.has(oi + 1)) continue; // Beta 1.144: not a real segment (between two runs of dn)
+                if (!TOPO.segReal(dn, oi)) continue; // Beta 1.144: not a real segment (between two runs of dn)
                 if (H.ptSegM(J.V, off[oi], off[oi + 1]) > 14) continue;
                 if (properX(run.pts[si], run.pts[si + 1], off[oi], off[oi + 1])) { crosses = true; break; }
               }
@@ -482,7 +537,7 @@ function edgeRunSlices(n, side, marked) {
   g.cuts.forEach((ab, idx) => {
     if (marked(idx)) {
       const sl = off.slice(ab[0], ab[1] + 1);
-      if (run && run.lastIdx === idx - 1 && !g.gaps.has(ab[0])) { run.pts = run.pts.concat(sl.slice(1)); run.lastIdx = idx; } // Beta 1.144: consecutive pieces join into one strand only within a run - a piece that starts a new run (its first vertex is a gap start) always opens a fresh strand, so no painted line ever bridges the ground between a disconnected street's runs
+      if (run && run.lastIdx === idx - 1 && !TOPO.runStart(n, ab[0])) { run.pts = run.pts.concat(sl.slice(1)); run.lastIdx = idx; } // Beta 1.144: consecutive pieces join into one strand only within a run - a piece that starts a new run (its first vertex is a gap start) always opens a fresh strand, so no painted line ever bridges the ground between a disconnected street's runs
       else { flush(); run = { pts: sl.slice(), firstIdx: idx, lastIdx: idx }; }
     } else flush();
   });
@@ -500,9 +555,9 @@ function edgeRunSlices(n, side, marked) {
 // built on it were then vetoed, leaving shy ends (gate12 evidence).
 function polyCorner(n1, side1, n2, side2, V, vi1, vi2) {
   const o1 = side1 === 0 ? GEO[n1].off0 : GEO[n1].off1, o2 = side2 === 0 ? GEO[n2].off0 : GEO[n2].off1;
-  const segsOf = (off, vi, gaps) => {
+  const segsOf = (off, vi, n) => {
     const segs = [];
-    for (let i = 0; i + 1 < off.length; i++) { if (gaps.has(i + 1)) continue; segs.push({ seg: [off[i], off[i + 1]], ext: false }); } // Beta 1.144 (verify cycle 2): the segment between two runs is not street - a corner found on it pairs sides at a junction that does not exist
+    for (let i = 0; i + 1 < off.length; i++) { if (!TOPO.segReal(n, i)) continue; segs.push({ seg: [off[i], off[i + 1]], ext: false }); } // Beta 1.144 (verify cycle 2): the segment between two runs is not street - a corner found on it pairs sides at a junction that does not exist (Beta 1.283, #11: the run membership is TOPO's)
     if (vi === 0 && off.length > 1) { const d = [off[0][0] - off[1][0], off[0][1] - off[1][1]], L = H.jDistM(off[0], off[1]) || 1; segs.push({ seg: [[off[0][0] + d[0] * 8 / L, off[0][1] + d[1] * 8 / L], off[0]], ext: true }); }
     if (vi === off.length - 1 && off.length > 1) { const e = off[off.length - 1], q = off[off.length - 2], d = [e[0] - q[0], e[1] - q[1]], L = H.jDistM(q, e) || 1; segs.push({ seg: [e, [e[0] + d[0] * 8 / L, e[1] + d[1] * 8 / L]], ext: true }); }
     return segs;
@@ -514,13 +569,13 @@ function polyCorner(n1, side1, n2, side2, V, vi1, vi2) {
   // Valeria's east arm with Angie across the junction)
   const legCrosses = (endPt, X, otherN) => {
     const st = GEO[otherN].stitched;
-    for (let si = 0; si + 1 < st.length; si++) { if (GEO[otherN].gaps.has(si + 1)) continue; if (H.ptSegM(V, st[si], st[si + 1]) < 13 && segCross(endPt, X, st[si], st[si + 1])) return true; } // Beta 1.144: gap segments are not centreline
+    for (let si = 0; si + 1 < st.length; si++) { if (!TOPO.segReal(otherN, si)) continue; if (H.ptSegM(V, st[si], st[si + 1]) < 13 && segCross(endPt, X, st[si], st[si + 1])) return true; } // Beta 1.144: gap segments are not centreline
     return false;
   };
   let best = null, bd = 1e9;
-  for (const s1 of segsOf(o1, vi1, GEO[n1].gaps)) {
+  for (const s1 of segsOf(o1, vi1, n1)) {
     if (H.ptSegM(V, s1.seg[0], s1.seg[1]) > 12) continue;
-    for (const s2 of segsOf(o2, vi2, GEO[n2].gaps)) {
+    for (const s2 of segsOf(o2, vi2, n2)) {
       if (H.ptSegM(V, s2.seg[0], s2.seg[1]) > 12) continue;
       const X = lineHit(s1.seg[0], s1.seg[1], s2.seg[0], s2.seg[1]);
       if (!X) continue;
@@ -545,7 +600,7 @@ function pathBadGreen(pts, J, excl, cornerPt) {
       if (!marked) continue;
       const off = t === 0 ? g2.off0 : g2.off1;
       for (let si = 0; si + 1 < off.length; si++) {
-        if (g2.gaps.has(si + 1)) continue; // Beta 1.144: not a real segment
+        if (!TOPO.segReal(n2, si)) continue; // Beta 1.144: not a real segment
         if (H.ptSegM(J, off[si], off[si + 1]) > 14) continue;
         for (let s2 = 0; s2 + 1 < pts.length; s2++) {
           if (!segCross(pts[s2], pts[s2 + 1], off[si], off[si + 1])) continue;
@@ -560,8 +615,7 @@ function pathBadGreen(pts, J, excl, cornerPt) {
   return false;
 }
 function junctionPairs() {
-  const at = {};
-  H.names.forEach(n => GEO[n].stitched.forEach((pt, vi) => { const k = coordKey(pt); (at[k] = at[k] || []).push({ n, vi }); }));
+  const at = TOPO.verts();   // Beta 1.283 (#11): the shared-vertex index is TOPO's - junctionPairs used to rebuild its own copy on every call
   const pairs = {};
   const link = (A, B, corner) => {
     const ka = A.n + '|' + A.vi + '|' + A.side, kb = B.n + '|' + B.vi + '|' + B.side;
@@ -590,7 +644,7 @@ function junctionPairs() {
           for (const n2 of H.names) {
             const st = GEO[n2].stitched;
             for (let si = 0; si + 1 < st.length; si++) {
-              if (GEO[n2].gaps.has(si + 1)) continue; // Beta 1.144: not a real segment
+              if (!TOPO.segReal(n2, si)) continue; // Beta 1.144: not a real segment
               if (H.ptSegM(J, st[si], st[si + 1]) >= 13 || !segCross(pts[s2], pts[s2 + 1], st[si], st[si + 1])) continue;
               const X = lineHit(pts[s2], pts[s2 + 1], st[si], st[si + 1]);
               if (!X || H.jDistM(X, J) > 6) return true;   // corner-blob crossings sit at the offset distance (~3.3 m); far crossings are excursions
@@ -643,7 +697,7 @@ const pathBadNear = (pts, J) => {
       for (const n2 of H.names) {
         const st = GEO[n2].stitched;
         for (let si = 0; si + 1 < st.length; si++) {
-          if (GEO[n2].gaps.has(si + 1)) continue; // Beta 1.144: not a real segment
+          if (!TOPO.segReal(n2, si)) continue; // Beta 1.144: not a real segment
           if (H.ptSegM(J, st[si], st[si + 1]) >= 13 || !segCross(pts[s2], pts[s2 + 1], st[si], st[si + 1])) continue;
           const X = lineHit(pts[s2], pts[s2 + 1], st[si], st[si + 1]);
           if (!X || H.jDistM(X, J) > 6) return true;
@@ -727,14 +781,14 @@ function bridgeStragglers(chains, pairs) {
   if (!JUNC) buildJunctions();
   const revC = c => ({ pts: [...c.pts].reverse(), key: c.key, mem: c.mem, e0: c.e1, e1: c.e0 });
   const dirLL = (n, vi) => {
-    const st = GEO[n].stitched, gaps = GEO[n].gaps; // Beta 1.144: same run clamp as buildJunctions' dirAt
-    const lo = gaps.has(vi) ? vi : Math.max(0, vi - 1), hi = gaps.has(vi + 1) ? vi : Math.min(st.length - 1, vi + 1);
+    const st = GEO[n].stitched;
+    const [lo, hi] = TOPO.win(n, vi, st.length); // Beta 1.144: same run clamp as buildJunctions' dirAt (Beta 1.283, #11: the clamp is TOPO.win's - the two hand-written copies are one now)
     const a = XYOf(st[lo]), b = XYOf(st[hi]);
     const dx = b[0] - a[0], dy = b[1] - a[1], m = Math.hypot(dx, dy) || 1;
     return [dy / m / H.MLAT, dx / m / H.MLNG];
   };
   const pathLen = pts => { let L = 0; for (let i = 0; i + 1 < pts.length; i++) L += H.jDistM(pts[i], pts[i + 1]); return L; };
-  const verts = Object.values(sharedVertexMap())
+  const verts = Object.values(TOPO.verts())
     .filter(list => new Set(list.map(e => e.n)).size >= 2)
     .map(list => GEO[list[0].n].stitched[list[0].vi]);
   for (let iter = 0; iter < 120; iter++) {
@@ -841,7 +895,7 @@ let PAIRS_CUR = null;   // the current build's junction pairs (throughOK reads t
 // clips away; this pass vets against the FINAL geometry instead.)
 function lastResortConnect(edges, bands) {
   if (!JUNC) buildJunctions();
-  const jList = Object.values(sharedVertexMap()).filter(l => new Set(l.map(e => e.n)).size >= 2)
+  const jList = Object.values(TOPO.verts()).filter(l => new Set(l.map(e => e.n)).size >= 2)
     .map(l => ({ V: GEO[l[0].n].stitched[l[0].vi], streets: [...new Set(l.map(e => e.n))] }));
   const frameFor = (V, A, B) => {
     const J1 = (JUNC[A] || []).find(x => x.B === B && H.jDistM(x.V, V) < 2);
@@ -977,7 +1031,7 @@ function lastResortConnect(edges, bands) {
           if (!badPath) for (const n2 of H.names) {
             const st = GEO[n2].stitched;
             for (let si = 0; si + 1 < st.length && !badPath; si++) {
-              if (GEO[n2].gaps.has(si + 1)) continue; // Beta 1.144: not a real segment
+              if (!TOPO.segReal(n2, si)) continue; // Beta 1.144: not a real segment
               if (H.ptSegM(V, st[si], st[si + 1]) >= 13 || !segCross(seg[0], seg[1], st[si], st[si + 1])) continue;
               const X = lineHit(seg[0], seg[1], st[si], st[si + 1]);
               if (!X) continue;
@@ -1025,9 +1079,9 @@ function lastResortConnect(edges, bands) {
 // anywhere the raw lines do not (round 10: straight corner chords cut
 // across bending neighbours - Santa Barbara x Columbus).
 function rawPath(n, side, fromPt, toPt, V) {
-  const off = side === 0 ? GEO[n].off0 : GEO[n].off1, gaps = GEO[n].gaps;
+  const off = side === 0 ? GEO[n].off0 : GEO[n].off1;
   let fi = -1;
-  for (let s2 = 0; s2 + 1 < off.length; s2++) { if (gaps.has(s2 + 1)) continue; if (H.ptSegM(fromPt, off[s2], off[s2 + 1]) < 0.05) { fi = s2; break; } } // Beta 1.144: the segment between two runs is not part of the line - fromPt cannot lie on it, and the walk below never steps across it (a retraced bridge path stays inside the run both its points live in)
+  for (let s2 = 0; s2 + 1 < off.length; s2++) { if (!TOPO.segReal(n, s2)) continue; if (H.ptSegM(fromPt, off[s2], off[s2 + 1]) < 0.05) { fi = s2; break; } } // Beta 1.144: the segment between two runs is not part of the line - fromPt cannot lie on it, and the walk below never steps across it (a retraced bridge path stays inside the run both its points live in)
   if (fi < 0) return null;
   for (const dir of [1, -1]) {
     const pts = [];
@@ -1040,7 +1094,7 @@ function rawPath(n, side, fromPt, toPt, V) {
       if (H.jDistM(p, V) > 17) break;
       pts.push(p);
       const nk = k + dir;
-      if (dir === 1 ? gaps.has(nk) : gaps.has(k)) break;
+      if (dir === 1 ? TOPO.runStart(n, nk) : TOPO.runStart(n, k)) break;
       k = nk;
       if (k < 0 || k >= off.length) break;
     }
@@ -1081,7 +1135,7 @@ function cornerTouchSlices(slices, pairs) {
             if (!marked) continue;
             const off = t2 === 0 ? gd.off0 : gd.off1;
             for (let s2 = 0; s2 + 1 < off.length && !bad; s2++) {
-              if (gd.gaps.has(s2 + 1)) continue; // Beta 1.144 (verify cycle 2): the segment between two runs is not street - it cannot veto a corner hop
+              if (!TOPO.segReal(dn, s2)) continue; // Beta 1.144 (verify cycle 2): the segment between two runs is not street - it cannot veto a corner hop
               if (H.ptSegM(V, off[s2], off[s2 + 1]) > 16) continue;
               if (properX(endPt, pr.corner, off[s2], off[s2 + 1])) bad = true;
             }
@@ -1168,7 +1222,7 @@ function nearestPaintM(cp, B) {
   const st = GEO[B].stitched;
   let bd = 1e9, half = SURF_HALF, pt = null;
   for (let k = 0; k < st.length - 1; k++) {
-    if (GEO[B].gaps.has(k + 1)) continue; // Beta 1.144: the between-runs pair is not a segment of B
+    if (!TOPO.segReal(B, k)) continue; // Beta 1.144: the between-runs pair is not a segment of B
     const d = ptSegDistM(cp, st[k], st[k + 1]);
     if (d < bd) { bd = d; half = SURF_HALF; pt = nearestPtOnSeg(cp, st[k], st[k + 1]); }
   }
@@ -1215,8 +1269,8 @@ function capLineFor(B, viB, Ix, Vx) {
   // arm that bends away.
   const st = GEO[B].stitched, Vp = st[viB];
   let pPrev = null, pNext = null;
-  for (let k = viB - 1; k >= 0; k--) { if (GEO[B].gaps.has(k + 1)) break; if (H.jDistM(st[k], Vp) >= 1) { pPrev = st[k]; break; } } // Beta 1.144: an arm is a direction within the vertex's own run - the scan never borrows a point from the run on the other side of a gap
-  for (let k = viB + 1; k < st.length; k++) { if (GEO[B].gaps.has(k)) break; if (H.jDistM(st[k], Vp) >= 1) { pNext = st[k]; break; } }
+  for (let k = viB - 1; k >= 0; k--) { if (!TOPO.segReal(B, k)) break; if (H.jDistM(st[k], Vp) >= 1) { pPrev = st[k]; break; } } // Beta 1.144: an arm is a direction within the vertex's own run - the scan never borrows a point from the run on the other side of a gap
+  for (let k = viB + 1; k < st.length; k++) { if (TOPO.runStart(B, k)) break; if (H.jDistM(st[k], Vp) >= 1) { pNext = st[k]; break; } }
   const arms = [];
   if (pPrev) arms.push(pPrev);
   if (pNext) arms.push(pNext);
@@ -1274,7 +1328,7 @@ function clipEndAtJunction(n, vi, pts, atStart, ownHalf) {
   const entries = (JUNC[n] || []).filter(J => J.viA === vi);
   if (!entries.length) return pts;
   const V = GEO[n].stitched[vi];
-  const grp = sharedVertexMap()[coordKey(V)] || [];
+  const grp = TOPO.at(coordKey(V));
   const end0 = atStart ? pts[0] : pts[pts.length - 1];
   // candidate approach anchors at growing depths: a trace that bends
   // right at the junction (Fifth leaving the Bloomingdale corridor)
@@ -1306,7 +1360,7 @@ function clipEndAtJunction(n, vi, pts, atStart, ownHalf) {
       // cap will lie on)?
       if (ge) {
         const bst = GEO[J.B].stitched;
-        const spans = (grp.filter(e => e.n === J.B)).some(e => e.vi > 0 && e.vi < bst.length - 1 && !GEO[J.B].gaps.has(e.vi) && !GEO[J.B].gaps.has(e.vi + 1)); // Beta 1.144: a vertex at a run end does not span the junction - the street terminates there even when it resumes elsewhere
+        const spans = (grp.filter(e => e.n === J.B)).some(e => TOPO.interior(J.B, e.vi, bst.length)); // Beta 1.144: a vertex at a run end does not span the junction - the street terminates there even when it resumes elsewhere (Beta 1.283, #11: the spans predicate is TOPO.interior's)
         if (spans) {
           // capLineFor picks the near edge from the anchor's side,
           // and a trace can overshoot the crossing street before
@@ -1355,7 +1409,7 @@ function clipEndAtJunction(n, vi, pts, atStart, ownHalf) {
       // centre there - stopping short on both sides opens a hole
       // (Fifth x Greenpark 104 m2, Columbus x Santa Barbara 90 m2).
       const bSt = GEO[worst.J.B].stitched;
-      const bSpans = grp.filter(e => e.n === worst.J.B).some(e => e.vi > 0 && e.vi < bSt.length - 1 && !GEO[worst.J.B].gaps.has(e.vi) && !GEO[worst.J.B].gaps.has(e.vi + 1)); // Beta 1.144 (verify cycle 2): the same run-boundary rule as the spans predicate above - a vertex at a run end does not span the junction
+      const bSpans = grp.filter(e => e.n === worst.J.B).some(e => TOPO.interior(worst.J.B, e.vi, bSt.length)); // Beta 1.144 (verify cycle 2): the same run-boundary rule as the spans predicate above - a vertex at a run end does not span the junction (Beta 1.283, #11: TOPO.interior's, both copies)
       const P = bSpans ? [(Ex[1] + cap.ny * L) / H.MLAT, (Ex[0] + cap.nx * L) / H.MLNG]
                        : [(Ex[1] - cap.ny * L) / H.MLAT, (Ex[0] - cap.nx * L) / H.MLNG];
       const cumE = (1 - t) * Math.hypot(dv[0], dv[1]);
@@ -1409,7 +1463,7 @@ function clipStrandEnds(strands, half, guideFor, skipEnd) {
       if (skipEnd && skipEnd(sl, atStart)) return;   // Beta 1.208 (gate round 3): bands skip ends whose green continues as a neighbouring piece's fill - clipping them would reopen the fill/band break this round closed
       const E = atStart ? sl.pts[0] : sl.pts[sl.pts.length - 1];
       if (!E) return;
-      const grp = sharedVertexMap()[coordKey(E)] || [];
+      const grp = TOPO.at(coordKey(E));
       if (new Set(grp.map(e => e.n)).size < 2) return;
       const A = atStart ? sl.mem[0].n : sl.mem[sl.mem.length - 1].n;
       const ent = grp.find(e => e.n === A);
@@ -1509,8 +1563,8 @@ function fillSlicePts(n, idx, side) {   // Beta 1.208: one piece's one-side FILL
   const g = GEO[n], ab = g.cuts[idx];
   const line = side === 0 ? g.offH0 : g.offH1;
   let pts = line.slice(ab[0], ab[1] + 1);
-  if (idx === 0 || g.gaps.has(ab[0]) || !PAINT.fillCont(n, idx - 1, side)) pts = clipOnLine(n, ab[0], pts, true, HALF_HALF, line);   // Beta 1.282 (#12): the fill family's continuation is the PAINT model's (PAINT.fillCont) - the Beta 1.208 rule it carries: a both-sides piece CONTINUES this side's paint (its band covers the side in full), so the fill keeps its shared vertex beside a band instead of clipping to the near edge - clipping on both sides of the boundary left the junction square's half unpainted, a 9.9 m break in the completed side
-  if (idx === g.cuts.length - 1 || g.gaps.has(g.cuts[idx + 1][0]) || !PAINT.fillCont(n, idx + 1, side)) pts = clipOnLine(n, ab[1], pts, false, HALF_HALF, line);
+  if (idx === 0 || TOPO.runStart(n, ab[0]) || !PAINT.fillCont(n, idx - 1, side)) pts = clipOnLine(n, ab[0], pts, true, HALF_HALF, line);   // Beta 1.282 (#12): the fill family's continuation is the PAINT model's (PAINT.fillCont) - the Beta 1.208 rule it carries: a both-sides piece CONTINUES this side's paint (its band covers the side in full), so the fill keeps its shared vertex beside a band instead of clipping to the near edge - clipping on both sides of the boundary left the junction square's half unpainted, a 9.9 m break in the completed side
+  if (idx === g.cuts.length - 1 || TOPO.runStart(n, g.cuts[idx + 1][0]) || !PAINT.fillCont(n, idx + 1, side)) pts = clipOnLine(n, ab[1], pts, false, HALF_HALF, line);
   return pts;
 }
 function fillCornerLinks(fills) {
@@ -1532,7 +1586,7 @@ function fillCornerLinks(fills) {
   // pairs never qualify (same street, or near-parallel lines), and a
   // lone side earns no connector - it still ends at the near edge.
   const verts = [];
-  const svm = sharedVertexMap();
+  const svm = TOPO.verts();
   for (const k in svm) { const g = svm[k]; if (new Set(g.map(e => e.n)).size >= 2) verts.push(GEO[g[0].n].stitched[g[0].vi]); }
   if (!verts.length) return;
   const ends = [];
@@ -1576,7 +1630,7 @@ function fillCornerLinks(fills) {
 // and the rest stays an ordinary solid slice. Junction ends are defended
 // twice: a record is only ever written for a non-junction end, and a slice
 // end whose vertex another route street shares is never split here
-// (sharedVertexMap), so the junction machinery's run-through is untouched
+// (TOPO's run-end classification), so the junction machinery's run-through is untouched
 // by construction. Beta 1.267: dead ends carry records too (computeDeadEnds,
 // create-packs.js) - their join is the end itself, so the same split fades
 // the last 10 m into the terminus; pick ends still carry no record and keep
@@ -1615,16 +1669,13 @@ function splitBoundaryEnd(pts, join, atStart, fadeM) { // -> { solid, fade }: cu
   const fadePts = sub(dJ, Math.min(total, dJ + fm));
   return { solid: sub(Math.min(total, dJ + fm), total), fade: fadePts ? fadePts.reverse() : null }; // a run-start fade is ordered seam -> join like every other: the slice's own order runs join-first there, so it reverses
 }
-function boundarySplit(n, ab, pts, kind, col, withCasing) { // -> { solid, fades }: apply the boundary-end split at both of a slice's ends (a one-piece run can carry two). ab indexes GEO[n].stitched - the record match is judged on the STITCHED vertex, so a fill slice on its offset line splits by the same record, at the point nearest the join on its own line.
+function boundarySplit(n, ab, pts, kind, col, withCasing) { // -> { solid, fades }: apply the boundary-end split at both of a slice's ends (a one-piece run can carry two). ab indexes GEO[n].stitched - the split is judged on the cut's end vertices through TOPO's run-end classification, so a fill slice on its offset line splits by the same record, at the point nearest the join on its own line.
   let solid = pts; const fades = [];
-  const g = GEO[n];
   for (const atStart of [true, false]) {
     if (!solid || solid.length < 2) break;
-    const vtx = atStart ? g.stitched[ab[0]] : g.stitched[ab[1]];
-    const rec = boundaryRecAt(n, vtx);
-    if (!rec) continue;
-    const svm = sharedVertexMap();
-    if ((svm[coordKey(vtx)] || []).some(e => e.n !== n)) continue; // a vertex another route street shares is a junction, whatever the pack says
+    const cls = TOPO.endAt(n, atStart ? ab[0] : ab[1]);   // Beta 1.283 (#11, stage 3): the end's classification is TOPO's, computed once at the geometry build - only a feather end splits, carrying its record; a junction end (a vertex another route street shares) is never split here, whatever the pack says, and a cut end that is not a run end carries no classification and never splits
+    if (!cls || cls.kind !== 'feather') continue;
+    const rec = cls.rec;
     const sp = splitBoundaryEnd(solid, [rec[2], rec[3]], atStart, fadeMOf(rec)); // Beta 1.267: the record's own fade length (a dead end's join is its end point, so its split lands exactly at the terminus)
     if (sp.fade) { fades.push({ pts: sp.fade, k: kind, col }); if (withCasing) fades.push({ pts: sp.fade, k: 'x', col }); }
     solid = sp.solid;
@@ -1654,8 +1705,8 @@ const PAINT = {
   clipEnds(n, idx, pts, half, bandRule) {   // the one end-clip decision: clip an end only where the paint actually ends there — the neighbouring piece does not continue the paint (the centre-family rule: a different family key; the band rule: no marked side at all), a run gap intervenes, or the street ends. A continuing piece keeps its exact shared vertex, so mergeStrands still joins it seamlessly.
     const g = GEO[n], ab = g.cuts[idx], c = PAINT.classify(n, idx);
     const cont = bandRule ? (i => H.pieces[n][i] !== 0) : (i => c.famKey(i) === c.key);
-    if (idx === 0 || g.gaps.has(ab[0]) || !cont(idx - 1)) pts = clipEndAtJunction(n, ab[0], pts, true, half);
-    if (idx === g.cuts.length - 1 || g.gaps.has(g.cuts[idx + 1][0]) || !cont(idx + 1)) pts = clipEndAtJunction(n, ab[1], pts, false, half);
+    if (idx === 0 || TOPO.runStart(n, ab[0]) || !cont(idx - 1)) pts = clipEndAtJunction(n, ab[0], pts, true, half);
+    if (idx === g.cuts.length - 1 || TOPO.runStart(n, g.cuts[idx + 1][0]) || !cont(idx + 1)) pts = clipEndAtJunction(n, ab[1], pts, false, half);
     return pts;
   },
   fillCont(n, i, side) {   // the fill family's continuation: piece i continues side's fill when it marks that side — a both-sides piece included, its band covers the side in full (Beta 1.208, Codex P2 gate round 3)
@@ -1693,7 +1744,7 @@ function buildFamilies() {
   const centres = mergeStrands(centreSlices, null);
   const bands = mergeStrands(bandSlices, null);
   clipStrandEnds(centres, SURF_HALF);
-  clipStrandEnds(bands, SURF_HALF, null, (sl, atStart) => { const m = atStart ? sl.mem[0] : sl.mem[sl.mem.length - 1]; if (!m) return false; const g = GEO[m.n], ni = atStart ? m.idx - 1 : m.idx + 1; if (ni < 0 || ni >= g.cuts.length) return false; if (g.gaps.has(g.cuts[atStart ? m.idx : ni][0])) return false; return H.pieces[m.n][ni] !== 0; });
+  clipStrandEnds(bands, SURF_HALF, null, (sl, atStart) => { const m = atStart ? sl.mem[0] : sl.mem[sl.mem.length - 1]; if (!m) return false; const g = GEO[m.n], ni = atStart ? m.idx - 1 : m.idx + 1; if (ni < 0 || ni >= g.cuts.length) return false; if (TOPO.runStart(m.n, g.cuts[atStart ? m.idx : ni][0])) return false; return H.pieces[m.n][ni] !== 0; });
   const fills = mergeStrands(fillSlices, null);   // Beta 1.208: exact joins only, like centres/bands - consecutive marked pieces share the half-line vertex, so a side's fill is one strand flowing through its junctions
   clipStrandEnds(fills, HALF_HALF, (sl, atStart) => { const m = atStart ? sl.mem[0] : sl.mem[sl.mem.length - 1]; return m && m.side !== undefined ? (m.side ? GEO[m.n].offH1 : GEO[m.n].offH0) : null; });   // Beta 1.208: fill strand ends clip ON their half-offset line (clipOnLine), never dragged toward the centreline
   fillCornerLinks(fills);   // Beta 1.208: and where a marked side turns a corner into another street's marked side, the fills wrap the corner (fillCornerLinks)

@@ -9171,6 +9171,647 @@
    "kind": "machinery-exempt",
    "reason": "Machinery-only tidy round: no parts/ surface changed - the app is byte-identical to Beta 1.282 (index.html sha256 12c5833d...). Changes are tests/browser/run.mjs (DRIVE_TIME print) + its runner selftest, scripts/shard-durations.json (measured refresh), tests/mutation-receipts.json and this ledger. No sibling app paths exist to enumerate.",
    "issued": "2026-11-23 machinery-tidy"
+  },
+  {
+   "id": "arch11-stage1-1283",
+   "kind": "app",
+   "anchors": {
+    "elements": [],
+    "functions": [
+     "buildEngineGeometry",
+     "nudgeFifth",
+     "buildJunctions",
+     "throughOK",
+     "edgeRunSlices",
+     "polyCorner",
+     "bridgeStragglers",
+     "rawPath",
+     "cornerTouchSlices",
+     "nearestPaintM",
+     "capLineFor",
+     "clipEndAtJunction",
+     "fillSlicePts",
+     "buildFamilies",
+     "lastResortConnect",
+     "clipEnds"
+    ],
+    "guards": []
+   },
+   "changed": [
+    "parts/engine.js"
+   ],
+   "rows": [
+    {
+     "id": "caller:bridgeStragglers:parts/engine.js:buildFamilies",
+     "kind": "caller",
+     "source": "derived: call-site scan of parts/ - bridgeStragglers() is called from buildFamilies in parts/engine.js",
+     "status": "covered",
+     "note": "Engine-internal call site, unchanged itself. Stage 1 (arch #11) changed only how the callee reads run structure: TOPO predicates that are literal transcriptions of the retired gap-set tests. Graded by proof-topo-ranges (predicate agreement with the cuts-derived run starts at every vertex/segment of the real build) and the paint drives in the battery."
+    },
+    {
+     "id": "caller:buildEngineGeometry:parts/engine.js:rebuildRoute",
+     "kind": "caller",
+     "source": "derived: call-site scan of parts/ - buildEngineGeometry() is called from rebuildRoute in parts/engine.js",
+     "status": "covered",
+     "note": "The route-switch rebuild: buildEngineGeometry now also resets and re-seats TOPO beside GEO/SVMAP, so no previous route's run structure survives. proof-topo-ranges check 5b grades exactly this (rebuild with a smaller route clears Dianawood from TOPO and GEO)."
+    },
+    {
+     "id": "caller:buildEngineGeometry:parts/engine.js:top-level",
+     "kind": "caller",
+     "source": "derived: call-site scan of parts/ - buildEngineGeometry() is called from top-level in parts/engine.js",
+     "status": "covered",
+     "note": "The eval-time build (no route loaded): TOPO resets and seats nothing; consumers iterate seated streets only. Covered by the boot drives and proof-topo-ranges check 5a (unseated street reads as one implicit run)."
+    },
+    {
+     "id": "caller:buildFamilies:parts/engine.js:rebuildData",
+     "kind": "caller",
+     "source": "derived: call-site scan of parts/ - buildFamilies() is called from rebuildData in parts/engine.js",
+     "status": "covered",
+     "note": "Engine-internal call site, unchanged itself. Stage 1 (arch #11) changed only how the callee reads run structure: TOPO predicates that are literal transcriptions of the retired gap-set tests. Graded by proof-topo-ranges (predicate agreement with the cuts-derived run starts at every vertex/segment of the real build) and the paint drives in the battery."
+    },
+    {
+     "id": "caller:buildJunctions:parts/engine.js:bridgeStragglers",
+     "kind": "caller",
+     "source": "derived: call-site scan of parts/ - buildJunctions() is called from bridgeStragglers in parts/engine.js",
+     "status": "covered",
+     "note": "Engine-internal call site, unchanged itself. Stage 1 (arch #11) changed only how the callee reads run structure: TOPO predicates that are literal transcriptions of the retired gap-set tests. Graded by proof-topo-ranges (predicate agreement with the cuts-derived run starts at every vertex/segment of the real build) and the paint drives in the battery."
+    },
+    {
+     "id": "caller:buildJunctions:parts/engine.js:clipEndAtJunction",
+     "kind": "caller",
+     "source": "derived: call-site scan of parts/ - buildJunctions() is called from clipEndAtJunction in parts/engine.js",
+     "status": "covered",
+     "note": "Engine-internal call site, unchanged itself. Stage 1 (arch #11) changed only how the callee reads run structure: TOPO predicates that are literal transcriptions of the retired gap-set tests. Graded by proof-topo-ranges (predicate agreement with the cuts-derived run starts at every vertex/segment of the real build) and the paint drives in the battery."
+    },
+    {
+     "id": "caller:buildJunctions:parts/engine.js:clipPieces",
+     "kind": "caller",
+     "source": "derived: call-site scan of parts/ - buildJunctions() is called from clipPieces in parts/engine.js",
+     "status": "covered",
+     "note": "Engine-internal call site, unchanged itself. Stage 1 (arch #11) changed only how the callee reads run structure: TOPO predicates that are literal transcriptions of the retired gap-set tests. Graded by proof-topo-ranges (predicate agreement with the cuts-derived run starts at every vertex/segment of the real build) and the paint drives in the battery."
+    },
+    {
+     "id": "caller:buildJunctions:parts/engine.js:flush",
+     "kind": "caller",
+     "source": "derived: call-site scan of parts/ - buildJunctions() is called from flush in parts/engine.js",
+     "status": "covered",
+     "note": "Engine-internal call site, unchanged itself. Stage 1 (arch #11) changed only how the callee reads run structure: TOPO predicates that are literal transcriptions of the retired gap-set tests. Graded by proof-topo-ranges (predicate agreement with the cuts-derived run starts at every vertex/segment of the real build) and the paint drives in the battery."
+    },
+    {
+     "id": "caller:buildJunctions:parts/engine.js:lastResortConnect",
+     "kind": "caller",
+     "source": "derived: call-site scan of parts/ - buildJunctions() is called from lastResortConnect in parts/engine.js",
+     "status": "covered",
+     "note": "Engine-internal call site, unchanged itself. Stage 1 (arch #11) changed only how the callee reads run structure: TOPO predicates that are literal transcriptions of the retired gap-set tests. Graded by proof-topo-ranges (predicate agreement with the cuts-derived run starts at every vertex/segment of the real build) and the paint drives in the battery."
+    },
+    {
+     "id": "caller:capLineFor:parts/engine.js:clipEndAtJunction",
+     "kind": "caller",
+     "source": "derived: call-site scan of parts/ - capLineFor() is called from clipEndAtJunction in parts/engine.js",
+     "status": "covered",
+     "note": "Engine-internal call site, unchanged itself. Stage 1 (arch #11) changed only how the callee reads run structure: TOPO predicates that are literal transcriptions of the retired gap-set tests. Graded by proof-topo-ranges (predicate agreement with the cuts-derived run starts at every vertex/segment of the real build) and the paint drives in the battery."
+    },
+    {
+     "id": "caller:capLineFor:parts/engine.js:spans",
+     "kind": "caller",
+     "source": "derived: call-site scan of parts/ - capLineFor() is called from spans in parts/engine.js",
+     "status": "covered",
+     "note": "Engine-internal call site, unchanged itself. Stage 1 (arch #11) changed only how the callee reads run structure: TOPO predicates that are literal transcriptions of the retired gap-set tests. Graded by proof-topo-ranges (predicate agreement with the cuts-derived run starts at every vertex/segment of the real build) and the paint drives in the battery."
+    },
+    {
+     "id": "caller:clipEndAtJunction:parts/engine.js:clipOnLine",
+     "kind": "caller",
+     "source": "derived: call-site scan of parts/ - clipEndAtJunction() is called from clipOnLine in parts/engine.js",
+     "status": "covered",
+     "note": "Engine-internal call site, unchanged itself. Stage 1 (arch #11) changed only how the callee reads run structure: TOPO predicates that are literal transcriptions of the retired gap-set tests. Graded by proof-topo-ranges (predicate agreement with the cuts-derived run starts at every vertex/segment of the real build) and the paint drives in the battery."
+    },
+    {
+     "id": "caller:clipEndAtJunction:parts/engine.js:clipStrandEnds",
+     "kind": "caller",
+     "source": "derived: call-site scan of parts/ - clipEndAtJunction() is called from clipStrandEnds in parts/engine.js",
+     "status": "covered",
+     "note": "Engine-internal call site, unchanged itself. Stage 1 (arch #11) changed only how the callee reads run structure: TOPO predicates that are literal transcriptions of the retired gap-set tests. Graded by proof-topo-ranges (predicate agreement with the cuts-derived run starts at every vertex/segment of the real build) and the paint drives in the battery."
+    },
+    {
+     "id": "caller:clipEndAtJunction:parts/engine.js:top-level",
+     "kind": "caller",
+     "source": "derived: call-site scan of parts/ - clipEndAtJunction() is called from top-level in parts/engine.js",
+     "status": "covered",
+     "note": "Engine-internal call site, unchanged itself. Stage 1 (arch #11) changed only how the callee reads run structure: TOPO predicates that are literal transcriptions of the retired gap-set tests. Graded by proof-topo-ranges (predicate agreement with the cuts-derived run starts at every vertex/segment of the real build) and the paint drives in the battery."
+    },
+    {
+     "id": "caller:clipEnds:parts/engine.js:top-level",
+     "kind": "caller",
+     "source": "derived: call-site scan of parts/ - clipEnds() is called from top-level in parts/engine.js",
+     "status": "covered",
+     "note": "PAINT.clipEnds (the #12 model's clip decision) reads TOPO.runStart at both piece ends instead of the retired GEO gap set - the run-gap clip is the same decision. Graded by proof-paint-model check 5e (receipt paint-model-band-clip-1283) and proof-topo-ranges."
+    },
+    {
+     "id": "caller:cornerTouchSlices:parts/engine.js:buildFamilies",
+     "kind": "caller",
+     "source": "derived: call-site scan of parts/ - cornerTouchSlices() is called from buildFamilies in parts/engine.js",
+     "status": "covered",
+     "note": "Engine-internal call site, unchanged itself. Stage 1 (arch #11) changed only how the callee reads run structure: TOPO predicates that are literal transcriptions of the retired gap-set tests. Graded by proof-topo-ranges (predicate agreement with the cuts-derived run starts at every vertex/segment of the real build) and the paint drives in the battery."
+    },
+    {
+     "id": "caller:edgeRunSlices:parts/engine.js:buildFamilies",
+     "kind": "caller",
+     "source": "derived: call-site scan of parts/ - edgeRunSlices() is called from buildFamilies in parts/engine.js",
+     "status": "covered",
+     "note": "Engine-internal call site, unchanged itself. Stage 1 (arch #11) changed only how the callee reads run structure: TOPO predicates that are literal transcriptions of the retired gap-set tests. Graded by proof-topo-ranges (predicate agreement with the cuts-derived run starts at every vertex/segment of the real build) and the paint drives in the battery."
+    },
+    {
+     "id": "caller:fillSlicePts:parts/engine.js:buildFamilies",
+     "kind": "caller",
+     "source": "derived: call-site scan of parts/ - fillSlicePts() is called from buildFamilies in parts/engine.js",
+     "status": "covered",
+     "note": "Engine-internal call site, unchanged itself. Stage 1 (arch #11) changed only how the callee reads run structure: TOPO predicates that are literal transcriptions of the retired gap-set tests. Graded by proof-topo-ranges (predicate agreement with the cuts-derived run starts at every vertex/segment of the real build) and the paint drives in the battery."
+    },
+    {
+     "id": "caller:fillSlicePts:parts/engine.js:buildSelFill",
+     "kind": "caller",
+     "source": "derived: call-site scan of parts/ - fillSlicePts() is called from buildSelFill in parts/engine.js",
+     "status": "covered",
+     "note": "The selection's fill slices come from the same helper as the board's (the R3 construction); its end trims now read TOPO.runStart. Graded by proof-green-half-road and proof-topo-ranges."
+    },
+    {
+     "id": "caller:lastResortConnect:parts/engine.js:buildFamilies",
+     "kind": "caller",
+     "source": "derived: call-site scan of parts/ - lastResortConnect() is called from buildFamilies in parts/engine.js",
+     "status": "covered",
+     "note": "Engine-internal call site, unchanged itself. Stage 1 (arch #11) changed only how the callee reads run structure: TOPO predicates that are literal transcriptions of the retired gap-set tests. Graded by proof-topo-ranges (predicate agreement with the cuts-derived run starts at every vertex/segment of the real build) and the paint drives in the battery."
+    },
+    {
+     "id": "caller:nearestPaintM:parts/engine.js:clipEndAtJunction",
+     "kind": "caller",
+     "source": "derived: call-site scan of parts/ - nearestPaintM() is called from clipEndAtJunction in parts/engine.js",
+     "status": "covered",
+     "note": "Engine-internal call site, unchanged itself. Stage 1 (arch #11) changed only how the callee reads run structure: TOPO predicates that are literal transcriptions of the retired gap-set tests. Graded by proof-topo-ranges (predicate agreement with the cuts-derived run starts at every vertex/segment of the real build) and the paint drives in the battery."
+    },
+    {
+     "id": "caller:nearestPaintM:parts/engine.js:spans",
+     "kind": "caller",
+     "source": "derived: call-site scan of parts/ - nearestPaintM() is called from spans in parts/engine.js",
+     "status": "covered",
+     "note": "Engine-internal call site, unchanged itself. Stage 1 (arch #11) changed only how the callee reads run structure: TOPO predicates that are literal transcriptions of the retired gap-set tests. Graded by proof-topo-ranges (predicate agreement with the cuts-derived run starts at every vertex/segment of the real build) and the paint drives in the battery."
+    },
+    {
+     "id": "caller:nearestPaintM:parts/engine.js:t",
+     "kind": "caller",
+     "source": "derived: call-site scan of parts/ - nearestPaintM() is called from t in parts/engine.js",
+     "status": "covered",
+     "note": "Engine-internal call site, unchanged itself. Stage 1 (arch #11) changed only how the callee reads run structure: TOPO predicates that are literal transcriptions of the retired gap-set tests. Graded by proof-topo-ranges (predicate agreement with the cuts-derived run starts at every vertex/segment of the real build) and the paint drives in the battery."
+    },
+    {
+     "id": "caller:nudgeFifth:parts/engine.js:buildEngineGeometry",
+     "kind": "caller",
+     "source": "derived: call-site scan of parts/ - nudgeFifth() is called from buildEngineGeometry in parts/engine.js",
+     "status": "covered",
+     "note": "nudgeFifth is called by the build; its Greenpark segment walk now reads TOPO.segReal('Greenpark', k - 1) - the same segment-reality test, transcribed. Graded by proof-topo-ranges and the label drives."
+    },
+    {
+     "id": "caller:polyCorner:parts/engine.js:bridgeStragglers",
+     "kind": "caller",
+     "source": "derived: call-site scan of parts/ - polyCorner() is called from bridgeStragglers in parts/engine.js",
+     "status": "covered",
+     "note": "Engine-internal call site, unchanged itself. Stage 1 (arch #11) changed only how the callee reads run structure: TOPO predicates that are literal transcriptions of the retired gap-set tests. Graded by proof-topo-ranges (predicate agreement with the cuts-derived run starts at every vertex/segment of the real build) and the paint drives in the battery."
+    },
+    {
+     "id": "caller:polyCorner:parts/engine.js:junctionPairs",
+     "kind": "caller",
+     "source": "derived: call-site scan of parts/ - polyCorner() is called from junctionPairs in parts/engine.js",
+     "status": "covered",
+     "note": "Engine-internal call site, unchanged itself. Stage 1 (arch #11) changed only how the callee reads run structure: TOPO predicates that are literal transcriptions of the retired gap-set tests. Graded by proof-topo-ranges (predicate agreement with the cuts-derived run starts at every vertex/segment of the real build) and the paint drives in the battery."
+    },
+    {
+     "id": "caller:rawPath:parts/engine.js:cornerTouchSlices",
+     "kind": "caller",
+     "source": "derived: call-site scan of parts/ - rawPath() is called from cornerTouchSlices in parts/engine.js",
+     "status": "covered",
+     "note": "Engine-internal call site, unchanged itself. Stage 1 (arch #11) changed only how the callee reads run structure: TOPO predicates that are literal transcriptions of the retired gap-set tests. Graded by proof-topo-ranges (predicate agreement with the cuts-derived run starts at every vertex/segment of the real build) and the paint drives in the battery."
+    },
+    {
+     "id": "caller:rawPath:parts/engine.js:joinInfo",
+     "kind": "caller",
+     "source": "derived: call-site scan of parts/ - rawPath() is called from joinInfo in parts/engine.js",
+     "status": "covered",
+     "note": "Engine-internal call site, unchanged itself. Stage 1 (arch #11) changed only how the callee reads run structure: TOPO predicates that are literal transcriptions of the retired gap-set tests. Graded by proof-topo-ranges (predicate agreement with the cuts-derived run starts at every vertex/segment of the real build) and the paint drives in the battery."
+    },
+    {
+     "id": "caller:throughOK:parts/engine.js:flush",
+     "kind": "caller",
+     "source": "derived: call-site scan of parts/ - throughOK() is called from flush in parts/engine.js",
+     "status": "covered",
+     "note": "Engine-internal call site, unchanged itself. Stage 1 (arch #11) changed only how the callee reads run structure: TOPO predicates that are literal transcriptions of the retired gap-set tests. Graded by proof-topo-ranges (predicate agreement with the cuts-derived run starts at every vertex/segment of the real build) and the paint drives in the battery."
+    }
+   ],
+   "files": {
+    "parts/app1.js": "cf555a9736c6f9961e906e0fd9c00a531c9ddb88ca3c5ff5765fa33ba62953df",
+    "parts/app2.js": "03df6c6e76bcc5b5db6f0d8d0666652a17dd06164987d2cb5e490773b3386021",
+    "parts/app3.js": "25b9d5bf8c5bb8e2bb433ad563c110744b65f5bf69932dc428d1d240505a3d39",
+    "parts/app4.js": "adeb3e82d3e73e4ce8a385ea14725f82573f823e49cdec2772aefaa94cbdd28b",
+    "parts/app5.js": "f7ee95b5c68ddf4878e224dc83917964a85d5bba742d9df9bf9a37959b6348eb",
+    "parts/brand-snow.js": "86fa9a02f29c7345ee68d68daffd9c72da612921b64da37f1eccf6b72161ac5f",
+    "parts/create-cache.js": "e4a00051eab5a4af59b71909b4a6627f53e720b28dc17dc34635db949f746d7c",
+    "parts/create-citydata.js": "aff6d5e1dbe6f6c9158982fbad7a326cbb946a80c60042d33e679a5a47ea4c0e",
+    "parts/create-fetch.js": "60abb28dd4ca71be3850f3e0c3e9f2bab69978cb79100db4c0859ce078f97ec3",
+    "parts/create-packs.js": "a8b60fb7d601c1e83f555eb703b625a571ec878937ac36fcaddd05aecf635975",
+    "parts/create-pick.js": "cace96469252c243856ed4cb04d7cf4a54ac62dbed1f10b0e6b883c769f76998",
+    "parts/create-save.js": "ad39720727f43d397e72443c92955c5a35d530f03e3219b2182c9ee7c062e52d",
+    "parts/data.js": "9684c69862156dc70ee9a2b88278b4e825c5bf35f0c150fbc5660ccbdce9304b",
+    "parts/engine.js": "b59479a6c6f788c6ead47ee614cc2a9f7a86904d395bd8239bc7f00def8d819f",
+    "parts/pmstyles.js": "f3501db9c16dbc6a5fa8c901089101e4913772384de1f069accb23a614bb90fc",
+    "parts/whatsnew.js": "fbca99c4ca3650d4d4ef268e914bfc6b28dc01b74507706f8fdda9f8b533aa25",
+    "parts/head.html": "bff57252f945388445965c770902c06145d3501ceb21cb6f5507fd542eca066d",
+    "scripts/check-census.py": "dd55f34cd855e60a6fadae7e261aa99f1682b9d7d8446696532045e3a281fafb"
+   },
+   "issued": "2026-11-23 arch11-stage1"
+  },
+  {
+   "id": "arch11-stage2-1283",
+   "kind": "app",
+   "anchors": {
+    "elements": [],
+    "functions": [
+     "buildEngineGeometry",
+     "buildJunctions",
+     "throughOK",
+     "junctionPairs",
+     "bridgeStragglers",
+     "lastResortConnect",
+     "clipEndAtJunction",
+     "clipStrandEnds",
+     "fillCornerLinks",
+     "boundarySplit"
+    ],
+    "guards": []
+   },
+   "changed": [
+    "parts/engine.js"
+   ],
+   "rows": [
+    {
+     "id": "caller:boundarySplit:parts/engine.js:buildFamilies",
+     "kind": "caller",
+     "source": "derived: call-site scan of parts/ - boundarySplit() is called from buildFamilies in parts/engine.js",
+     "status": "covered",
+     "note": "boundarySplit's shared-vertex defence (a vertex another street shares is a junction, whatever the pack says) reads TOPO.verts() now - the same index, so the defence's verdicts are unchanged. Graded by proof-topo-vertices, proof-1259 and the feather drives."
+    },
+    {
+     "id": "caller:boundarySplit:parts/engine.js:buildSelFill",
+     "kind": "caller",
+     "source": "derived: call-site scan of parts/ - boundarySplit() is called from buildSelFill in parts/engine.js",
+     "status": "covered",
+     "note": "Engine-internal call site, unchanged itself. Stage 2 (arch #11) changed only where the callee's shared-vertex index comes from: TOPO.verts / TOPO.at, built with the geometry in the same H.names x stitched order as the three retired hand-built copies. Graded by proof-topo-vertices (index equality against an independent derivation, JUNC contents and order) and the paint drives in the battery."
+    },
+    {
+     "id": "caller:boundarySplit:parts/engine.js:selectedGeom",
+     "kind": "caller",
+     "source": "derived: call-site scan of parts/ - boundarySplit() is called from selectedGeom in parts/engine.js",
+     "status": "covered",
+     "note": "Engine-internal call site, unchanged itself. Stage 2 (arch #11) changed only where the callee's shared-vertex index comes from: TOPO.verts / TOPO.at, built with the geometry in the same H.names x stitched order as the three retired hand-built copies. Graded by proof-topo-vertices (index equality against an independent derivation, JUNC contents and order) and the paint drives in the battery."
+    },
+    {
+     "id": "caller:bridgeStragglers:parts/engine.js:buildFamilies",
+     "kind": "caller",
+     "source": "derived: call-site scan of parts/ - bridgeStragglers() is called from buildFamilies in parts/engine.js",
+     "status": "covered",
+     "note": "Engine-internal call site, unchanged itself. Stage 2 (arch #11) changed only where the callee's shared-vertex index comes from: TOPO.verts / TOPO.at, built with the geometry in the same H.names x stitched order as the three retired hand-built copies. Graded by proof-topo-vertices (index equality against an independent derivation, JUNC contents and order) and the paint drives in the battery."
+    },
+    {
+     "id": "caller:buildEngineGeometry:parts/engine.js:rebuildRoute",
+     "kind": "caller",
+     "source": "derived: call-site scan of parts/ - buildEngineGeometry() is called from rebuildRoute in parts/engine.js",
+     "status": "covered",
+     "note": "Engine-internal call site, unchanged itself. Stage 2 (arch #11) changed only where the callee's shared-vertex index comes from: TOPO.verts / TOPO.at, built with the geometry in the same H.names x stitched order as the three retired hand-built copies. Graded by proof-topo-vertices (index equality against an independent derivation, JUNC contents and order) and the paint drives in the battery."
+    },
+    {
+     "id": "caller:buildEngineGeometry:parts/engine.js:top-level",
+     "kind": "caller",
+     "source": "derived: call-site scan of parts/ - buildEngineGeometry() is called from top-level in parts/engine.js",
+     "status": "covered",
+     "note": "Engine-internal call site, unchanged itself. Stage 2 (arch #11) changed only where the callee's shared-vertex index comes from: TOPO.verts / TOPO.at, built with the geometry in the same H.names x stitched order as the three retired hand-built copies. Graded by proof-topo-vertices (index equality against an independent derivation, JUNC contents and order) and the paint drives in the battery."
+    },
+    {
+     "id": "caller:buildJunctions:parts/engine.js:bridgeStragglers",
+     "kind": "caller",
+     "source": "derived: call-site scan of parts/ - buildJunctions() is called from bridgeStragglers in parts/engine.js",
+     "status": "covered",
+     "note": "Engine-internal call site, unchanged itself. Stage 2 (arch #11) changed only where the callee's shared-vertex index comes from: TOPO.verts / TOPO.at, built with the geometry in the same H.names x stitched order as the three retired hand-built copies. Graded by proof-topo-vertices (index equality against an independent derivation, JUNC contents and order) and the paint drives in the battery."
+    },
+    {
+     "id": "caller:buildJunctions:parts/engine.js:clipEndAtJunction",
+     "kind": "caller",
+     "source": "derived: call-site scan of parts/ - buildJunctions() is called from clipEndAtJunction in parts/engine.js",
+     "status": "covered",
+     "note": "clipEndAtJunction both triggers the JUNC build and reads the vertex group itself - the group now comes from TOPO.at(coordKey(V)), the same list buildJunctions derives from. Graded by proof-topo-vertices and the junction drives."
+    },
+    {
+     "id": "caller:buildJunctions:parts/engine.js:clipPieces",
+     "kind": "caller",
+     "source": "derived: call-site scan of parts/ - buildJunctions() is called from clipPieces in parts/engine.js",
+     "status": "covered",
+     "note": "Engine-internal call site, unchanged itself. Stage 2 (arch #11) changed only where the callee's shared-vertex index comes from: TOPO.verts / TOPO.at, built with the geometry in the same H.names x stitched order as the three retired hand-built copies. Graded by proof-topo-vertices (index equality against an independent derivation, JUNC contents and order) and the paint drives in the battery."
+    },
+    {
+     "id": "caller:buildJunctions:parts/engine.js:flush",
+     "kind": "caller",
+     "source": "derived: call-site scan of parts/ - buildJunctions() is called from flush in parts/engine.js",
+     "status": "covered",
+     "note": "Engine-internal call site, unchanged itself. Stage 2 (arch #11) changed only where the callee's shared-vertex index comes from: TOPO.verts / TOPO.at, built with the geometry in the same H.names x stitched order as the three retired hand-built copies. Graded by proof-topo-vertices (index equality against an independent derivation, JUNC contents and order) and the paint drives in the battery."
+    },
+    {
+     "id": "caller:buildJunctions:parts/engine.js:lastResortConnect",
+     "kind": "caller",
+     "source": "derived: call-site scan of parts/ - buildJunctions() is called from lastResortConnect in parts/engine.js",
+     "status": "covered",
+     "note": "Engine-internal call site, unchanged itself. Stage 2 (arch #11) changed only where the callee's shared-vertex index comes from: TOPO.verts / TOPO.at, built with the geometry in the same H.names x stitched order as the three retired hand-built copies. Graded by proof-topo-vertices (index equality against an independent derivation, JUNC contents and order) and the paint drives in the battery."
+    },
+    {
+     "id": "caller:clipEndAtJunction:parts/engine.js:clipOnLine",
+     "kind": "caller",
+     "source": "derived: call-site scan of parts/ - clipEndAtJunction() is called from clipOnLine in parts/engine.js",
+     "status": "covered",
+     "note": "Engine-internal call site, unchanged itself. Stage 2 (arch #11) changed only where the callee's shared-vertex index comes from: TOPO.verts / TOPO.at, built with the geometry in the same H.names x stitched order as the three retired hand-built copies. Graded by proof-topo-vertices (index equality against an independent derivation, JUNC contents and order) and the paint drives in the battery."
+    },
+    {
+     "id": "caller:clipEndAtJunction:parts/engine.js:clipStrandEnds",
+     "kind": "caller",
+     "source": "derived: call-site scan of parts/ - clipEndAtJunction() is called from clipStrandEnds in parts/engine.js",
+     "status": "covered",
+     "note": "Engine-internal call site, unchanged itself. Stage 2 (arch #11) changed only where the callee's shared-vertex index comes from: TOPO.verts / TOPO.at, built with the geometry in the same H.names x stitched order as the three retired hand-built copies. Graded by proof-topo-vertices (index equality against an independent derivation, JUNC contents and order) and the paint drives in the battery."
+    },
+    {
+     "id": "caller:clipEndAtJunction:parts/engine.js:top-level",
+     "kind": "caller",
+     "source": "derived: call-site scan of parts/ - clipEndAtJunction() is called from top-level in parts/engine.js",
+     "status": "covered",
+     "note": "Engine-internal call site, unchanged itself. Stage 2 (arch #11) changed only where the callee's shared-vertex index comes from: TOPO.verts / TOPO.at, built with the geometry in the same H.names x stitched order as the three retired hand-built copies. Graded by proof-topo-vertices (index equality against an independent derivation, JUNC contents and order) and the paint drives in the battery."
+    },
+    {
+     "id": "caller:clipStrandEnds:parts/engine.js:buildFamilies",
+     "kind": "caller",
+     "source": "derived: call-site scan of parts/ - clipStrandEnds() is called from buildFamilies in parts/engine.js",
+     "status": "covered",
+     "note": "Engine-internal call site, unchanged itself. Stage 2 (arch #11) changed only where the callee's shared-vertex index comes from: TOPO.verts / TOPO.at, built with the geometry in the same H.names x stitched order as the three retired hand-built copies. Graded by proof-topo-vertices (index equality against an independent derivation, JUNC contents and order) and the paint drives in the battery."
+    },
+    {
+     "id": "caller:fillCornerLinks:parts/engine.js:buildFamilies",
+     "kind": "caller",
+     "source": "derived: call-site scan of parts/ - fillCornerLinks() is called from buildFamilies in parts/engine.js",
+     "status": "covered",
+     "note": "Engine-internal call site, unchanged itself. Stage 2 (arch #11) changed only where the callee's shared-vertex index comes from: TOPO.verts / TOPO.at, built with the geometry in the same H.names x stitched order as the three retired hand-built copies. Graded by proof-topo-vertices (index equality against an independent derivation, JUNC contents and order) and the paint drives in the battery."
+    },
+    {
+     "id": "caller:junctionPairs:parts/engine.js:buildFamilies",
+     "kind": "caller",
+     "source": "derived: call-site scan of parts/ - junctionPairs() is called from buildFamilies in parts/engine.js",
+     "status": "covered",
+     "note": "Engine-internal call site, unchanged itself. Stage 2 (arch #11) changed only where the callee's shared-vertex index comes from: TOPO.verts / TOPO.at, built with the geometry in the same H.names x stitched order as the three retired hand-built copies. Graded by proof-topo-vertices (index equality against an independent derivation, JUNC contents and order) and the paint drives in the battery."
+    },
+    {
+     "id": "caller:junctionPairs:parts/engine.js:throughOK",
+     "kind": "caller",
+     "source": "derived: call-site scan of parts/ - junctionPairs() is called from throughOK in parts/engine.js",
+     "status": "covered",
+     "note": "throughOK's fallback pair computation reads TOPO.verts() instead of junctionPairs rebuilding its own map per call - same contents, same order. Graded by proof-topo-vertices."
+    },
+    {
+     "id": "caller:lastResortConnect:parts/engine.js:buildFamilies",
+     "kind": "caller",
+     "source": "derived: call-site scan of parts/ - lastResortConnect() is called from buildFamilies in parts/engine.js",
+     "status": "covered",
+     "note": "Engine-internal call site, unchanged itself. Stage 2 (arch #11) changed only where the callee's shared-vertex index comes from: TOPO.verts / TOPO.at, built with the geometry in the same H.names x stitched order as the three retired hand-built copies. Graded by proof-topo-vertices (index equality against an independent derivation, JUNC contents and order) and the paint drives in the battery."
+    },
+    {
+     "id": "caller:throughOK:parts/engine.js:flush",
+     "kind": "caller",
+     "source": "derived: call-site scan of parts/ - throughOK() is called from flush in parts/engine.js",
+     "status": "covered",
+     "note": "Engine-internal call site, unchanged itself. Stage 2 (arch #11) changed only where the callee's shared-vertex index comes from: TOPO.verts / TOPO.at, built with the geometry in the same H.names x stitched order as the three retired hand-built copies. Graded by proof-topo-vertices (index equality against an independent derivation, JUNC contents and order) and the paint drives in the battery."
+    }
+   ],
+   "files": {
+    "parts/app1.js": "cf555a9736c6f9961e906e0fd9c00a531c9ddb88ca3c5ff5765fa33ba62953df",
+    "parts/app2.js": "03df6c6e76bcc5b5db6f0d8d0666652a17dd06164987d2cb5e490773b3386021",
+    "parts/app3.js": "25b9d5bf8c5bb8e2bb433ad563c110744b65f5bf69932dc428d1d240505a3d39",
+    "parts/app4.js": "adeb3e82d3e73e4ce8a385ea14725f82573f823e49cdec2772aefaa94cbdd28b",
+    "parts/app5.js": "f7ee95b5c68ddf4878e224dc83917964a85d5bba742d9df9bf9a37959b6348eb",
+    "parts/brand-snow.js": "86fa9a02f29c7345ee68d68daffd9c72da612921b64da37f1eccf6b72161ac5f",
+    "parts/create-cache.js": "e4a00051eab5a4af59b71909b4a6627f53e720b28dc17dc34635db949f746d7c",
+    "parts/create-citydata.js": "aff6d5e1dbe6f6c9158982fbad7a326cbb946a80c60042d33e679a5a47ea4c0e",
+    "parts/create-fetch.js": "60abb28dd4ca71be3850f3e0c3e9f2bab69978cb79100db4c0859ce078f97ec3",
+    "parts/create-packs.js": "a8b60fb7d601c1e83f555eb703b625a571ec878937ac36fcaddd05aecf635975",
+    "parts/create-pick.js": "cace96469252c243856ed4cb04d7cf4a54ac62dbed1f10b0e6b883c769f76998",
+    "parts/create-save.js": "ad39720727f43d397e72443c92955c5a35d530f03e3219b2182c9ee7c062e52d",
+    "parts/data.js": "9684c69862156dc70ee9a2b88278b4e825c5bf35f0c150fbc5660ccbdce9304b",
+    "parts/engine.js": "e7adcaae52d9b63990806dc620653088c76043067dc685d01f37853b19671d82",
+    "parts/pmstyles.js": "f3501db9c16dbc6a5fa8c901089101e4913772384de1f069accb23a614bb90fc",
+    "parts/whatsnew.js": "fbca99c4ca3650d4d4ef268e914bfc6b28dc01b74507706f8fdda9f8b533aa25",
+    "parts/head.html": "bff57252f945388445965c770902c06145d3501ceb21cb6f5507fd542eca066d",
+    "scripts/check-census.py": "dd55f34cd855e60a6fadae7e261aa99f1682b9d7d8446696532045e3a281fafb"
+   },
+   "issued": "2026-11-23 arch11-stage2"
+  },
+  {
+   "id": "arch11-stage3-1283",
+   "kind": "app",
+   "anchors": {
+    "elements": [],
+    "functions": [
+     "buildEngineGeometry",
+     "boundarySplit"
+    ],
+    "guards": []
+   },
+   "changed": [
+    "parts/engine.js"
+   ],
+   "rows": [
+    {
+     "id": "caller:boundarySplit:parts/engine.js:buildFamilies",
+     "kind": "caller",
+     "source": "derived: call-site scan of parts/ - boundarySplit() is called from buildFamilies in parts/engine.js",
+     "status": "covered",
+     "note": "Stage 3 (arch #11): boundarySplit no longer matches end records per slice end - it reads TOPO.endAt, the run-end classification computed once at the geometry build (junction when another street shares the end vertex, feather carrying the matched record, else end). The split decision per cut end is graded exactly by proof-topo-ends check 5 (every cut of every street, join and fade compared), the classification census by its checks 3b-3d (68 ends = 53 junction + 15 feather + 0 plain), and the feather geometry by proof-1259 and the feather drives."
+    },
+    {
+     "id": "caller:boundarySplit:parts/engine.js:buildSelFill",
+     "kind": "caller",
+     "source": "derived: call-site scan of parts/ - boundarySplit() is called from buildSelFill in parts/engine.js",
+     "status": "covered",
+     "note": "Engine-internal call site, unchanged itself. Stage 3 (arch #11) changed only where the callee's split decision comes from: TOPO's once-per-build run-end classification instead of a per-slice record scan plus shared-vertex defence. The four-case truth table (record x shared) is identical under both rules, junction winning - recorded in the round's RECORD.md and graded by proof-topo-ends."
+    },
+    {
+     "id": "caller:boundarySplit:parts/engine.js:selectedGeom",
+     "kind": "caller",
+     "source": "derived: call-site scan of parts/ - boundarySplit() is called from selectedGeom in parts/engine.js",
+     "status": "covered",
+     "note": "Engine-internal call site, unchanged itself. Stage 3 (arch #11) changed only where the callee's split decision comes from: TOPO's once-per-build run-end classification instead of a per-slice record scan plus shared-vertex defence. The four-case truth table (record x shared) is identical under both rules, junction winning - recorded in the round's RECORD.md and graded by proof-topo-ends."
+    },
+    {
+     "id": "caller:buildEngineGeometry:parts/engine.js:rebuildRoute",
+     "kind": "caller",
+     "source": "derived: call-site scan of parts/ - buildEngineGeometry() is called from rebuildRoute in parts/engine.js",
+     "status": "covered",
+     "note": "Engine-internal call site, unchanged itself. Stage 3 (arch #11): the geometry build now ends with TOPO.classifyEnds(), classifying every run end once from the finished vertex index and the streets' end records. Graded by proof-topo-ends (census 53/15/0 over the shipped pack, every record claimed exactly once)."
+    },
+    {
+     "id": "caller:buildEngineGeometry:parts/engine.js:top-level",
+     "kind": "caller",
+     "source": "derived: call-site scan of parts/ - buildEngineGeometry() is called from top-level in parts/engine.js",
+     "status": "covered",
+     "note": "Engine-internal call site, unchanged itself. Stage 3 (arch #11): the geometry build now ends with TOPO.classifyEnds(), classifying every run end once from the finished vertex index and the streets' end records. Graded by proof-topo-ends (census 53/15/0 over the shipped pack, every record claimed exactly once)."
+    }
+   ],
+   "files": {
+    "parts/app1.js": "cf555a9736c6f9961e906e0fd9c00a531c9ddb88ca3c5ff5765fa33ba62953df",
+    "parts/app2.js": "03df6c6e76bcc5b5db6f0d8d0666652a17dd06164987d2cb5e490773b3386021",
+    "parts/app3.js": "25b9d5bf8c5bb8e2bb433ad563c110744b65f5bf69932dc428d1d240505a3d39",
+    "parts/app4.js": "adeb3e82d3e73e4ce8a385ea14725f82573f823e49cdec2772aefaa94cbdd28b",
+    "parts/app5.js": "f7ee95b5c68ddf4878e224dc83917964a85d5bba742d9df9bf9a37959b6348eb",
+    "parts/brand-snow.js": "86fa9a02f29c7345ee68d68daffd9c72da612921b64da37f1eccf6b72161ac5f",
+    "parts/create-cache.js": "e4a00051eab5a4af59b71909b4a6627f53e720b28dc17dc34635db949f746d7c",
+    "parts/create-citydata.js": "aff6d5e1dbe6f6c9158982fbad7a326cbb946a80c60042d33e679a5a47ea4c0e",
+    "parts/create-fetch.js": "60abb28dd4ca71be3850f3e0c3e9f2bab69978cb79100db4c0859ce078f97ec3",
+    "parts/create-packs.js": "a8b60fb7d601c1e83f555eb703b625a571ec878937ac36fcaddd05aecf635975",
+    "parts/create-pick.js": "cace96469252c243856ed4cb04d7cf4a54ac62dbed1f10b0e6b883c769f76998",
+    "parts/create-save.js": "ad39720727f43d397e72443c92955c5a35d530f03e3219b2182c9ee7c062e52d",
+    "parts/data.js": "9684c69862156dc70ee9a2b88278b4e825c5bf35f0c150fbc5660ccbdce9304b",
+    "parts/engine.js": "8be0d22d46ea2c5c25ef07dd7bf0374e0437a545b54e71d0d41292045ee18410",
+    "parts/pmstyles.js": "f3501db9c16dbc6a5fa8c901089101e4913772384de1f069accb23a614bb90fc",
+    "parts/whatsnew.js": "fbca99c4ca3650d4d4ef268e914bfc6b28dc01b74507706f8fdda9f8b533aa25",
+    "parts/head.html": "bff57252f945388445965c770902c06145d3501ceb21cb6f5507fd542eca066d",
+    "scripts/check-census.py": "dd55f34cd855e60a6fadae7e261aa99f1682b9d7d8446696532045e3a281fafb"
+   },
+   "issued": "2026-11-23"
+  },
+  {
+   "id": "arch11-stage4-1283",
+   "kind": "app",
+   "anchors": {
+    "elements": [],
+    "functions": [
+     "computeBoundaryEnds",
+     "computeDeadEnds"
+    ],
+    "guards": []
+   },
+   "changed": [
+    "parts/create-packs.js"
+   ],
+   "rows": [
+    {
+     "id": "caller:computeBoundaryEnds:parts/create-packs.js:computeDeadEnds",
+     "kind": "caller",
+     "source": "derived: call-site scan of parts/ - computeBoundaryEnds() is called from computeDeadEnds in parts/create-packs.js",
+     "status": "covered",
+     "note": "Stage 4 (arch #11): the junction test both end computations carried verbatim is now the one shared helper endsJunction in create-packs.js - same tolerance (0.00004 deg box + distM <= 2), same iteration order, same first-hit verdict. Equivalence: the derive computation over the shipped pack + vaughan library is byte-identical before/after (7 boundary + 8 dead records, equal to the shipped pack.ends), run in Node with the real extracted functions (the browser derive script cannot launch on this rig). Shape pinned by proof-1267 check 1h."
+    },
+    {
+     "id": "caller:computeBoundaryEnds:parts/create-save.js:crSaveBtn:click",
+     "kind": "caller",
+     "source": "derived: call-site scan of parts/ - computeBoundaryEnds() is called from crSaveBtn:click in parts/create-save.js",
+     "status": "covered",
+     "note": "Call site unchanged itself. Stage 4 (arch #11) changed only the callee's internals: its junction test is the shared endsJunction helper it now holds in common with computeDeadEnds. Graded by proof-1267 (checks 1b, 1h), the byte-identical derive equivalence in the round's RECORD.md, and the create drives (drive214, drive220) in the battery."
+    },
+    {
+     "id": "caller:computeDeadEnds:parts/create-save.js:crSaveBtn:click",
+     "kind": "caller",
+     "source": "derived: call-site scan of parts/ - computeDeadEnds() is called from crSaveBtn:click in parts/create-save.js",
+     "status": "covered",
+     "note": "Call site unchanged itself. Stage 4 (arch #11) changed only the callee's internals: its junction test is the shared endsJunction helper it now holds in common with computeBoundaryEnds. Graded by proof-1267 (checks 1b, 1h), the byte-identical derive equivalence in the round's RECORD.md, and the create drives (drive214, drive220) in the battery."
+    }
+   ],
+   "files": {
+    "parts/app1.js": "cf555a9736c6f9961e906e0fd9c00a531c9ddb88ca3c5ff5765fa33ba62953df",
+    "parts/app2.js": "03df6c6e76bcc5b5db6f0d8d0666652a17dd06164987d2cb5e490773b3386021",
+    "parts/app3.js": "25b9d5bf8c5bb8e2bb433ad563c110744b65f5bf69932dc428d1d240505a3d39",
+    "parts/app4.js": "adeb3e82d3e73e4ce8a385ea14725f82573f823e49cdec2772aefaa94cbdd28b",
+    "parts/app5.js": "f7ee95b5c68ddf4878e224dc83917964a85d5bba742d9df9bf9a37959b6348eb",
+    "parts/brand-snow.js": "86fa9a02f29c7345ee68d68daffd9c72da612921b64da37f1eccf6b72161ac5f",
+    "parts/create-cache.js": "e4a00051eab5a4af59b71909b4a6627f53e720b28dc17dc34635db949f746d7c",
+    "parts/create-citydata.js": "aff6d5e1dbe6f6c9158982fbad7a326cbb946a80c60042d33e679a5a47ea4c0e",
+    "parts/create-fetch.js": "60abb28dd4ca71be3850f3e0c3e9f2bab69978cb79100db4c0859ce078f97ec3",
+    "parts/create-packs.js": "51b05ebfbb2cd6d45d52c79aac226c73862f1d17b8aca1fd7561c8892f1abbe7",
+    "parts/create-pick.js": "cace96469252c243856ed4cb04d7cf4a54ac62dbed1f10b0e6b883c769f76998",
+    "parts/create-save.js": "ad39720727f43d397e72443c92955c5a35d530f03e3219b2182c9ee7c062e52d",
+    "parts/data.js": "9684c69862156dc70ee9a2b88278b4e825c5bf35f0c150fbc5660ccbdce9304b",
+    "parts/engine.js": "8be0d22d46ea2c5c25ef07dd7bf0374e0437a545b54e71d0d41292045ee18410",
+    "parts/pmstyles.js": "f3501db9c16dbc6a5fa8c901089101e4913772384de1f069accb23a614bb90fc",
+    "parts/whatsnew.js": "fbca99c4ca3650d4d4ef268e914bfc6b28dc01b74507706f8fdda9f8b533aa25",
+    "parts/head.html": "bff57252f945388445965c770902c06145d3501ceb21cb6f5507fd542eca066d",
+    "scripts/check-census.py": "dd55f34cd855e60a6fadae7e261aa99f1682b9d7d8446696532045e3a281fafb"
+   },
+   "issued": "2026-11-23"
+  },
+  {
+   "id": "arch11-release-1283",
+   "kind": "app",
+   "anchors": {
+    "elements": [],
+    "functions": [],
+    "guards": []
+   },
+   "changed": [
+    "parts/whatsnew.js"
+   ],
+   "rows": [],
+   "files": {
+    "parts/app1.js": "cf555a9736c6f9961e906e0fd9c00a531c9ddb88ca3c5ff5765fa33ba62953df",
+    "parts/app2.js": "03df6c6e76bcc5b5db6f0d8d0666652a17dd06164987d2cb5e490773b3386021",
+    "parts/app3.js": "25b9d5bf8c5bb8e2bb433ad563c110744b65f5bf69932dc428d1d240505a3d39",
+    "parts/app4.js": "adeb3e82d3e73e4ce8a385ea14725f82573f823e49cdec2772aefaa94cbdd28b",
+    "parts/app5.js": "f7ee95b5c68ddf4878e224dc83917964a85d5bba742d9df9bf9a37959b6348eb",
+    "parts/brand-snow.js": "86fa9a02f29c7345ee68d68daffd9c72da612921b64da37f1eccf6b72161ac5f",
+    "parts/create-cache.js": "e4a00051eab5a4af59b71909b4a6627f53e720b28dc17dc34635db949f746d7c",
+    "parts/create-citydata.js": "aff6d5e1dbe6f6c9158982fbad7a326cbb946a80c60042d33e679a5a47ea4c0e",
+    "parts/create-fetch.js": "60abb28dd4ca71be3850f3e0c3e9f2bab69978cb79100db4c0859ce078f97ec3",
+    "parts/create-packs.js": "51b05ebfbb2cd6d45d52c79aac226c73862f1d17b8aca1fd7561c8892f1abbe7",
+    "parts/create-pick.js": "cace96469252c243856ed4cb04d7cf4a54ac62dbed1f10b0e6b883c769f76998",
+    "parts/create-save.js": "ad39720727f43d397e72443c92955c5a35d530f03e3219b2182c9ee7c062e52d",
+    "parts/data.js": "9684c69862156dc70ee9a2b88278b4e825c5bf35f0c150fbc5660ccbdce9304b",
+    "parts/engine.js": "8be0d22d46ea2c5c25ef07dd7bf0374e0437a545b54e71d0d41292045ee18410",
+    "parts/pmstyles.js": "f3501db9c16dbc6a5fa8c901089101e4913772384de1f069accb23a614bb90fc",
+    "parts/whatsnew.js": "3201e66c80d0ab9f5769bb696ec5701175490d67647fda32f9de132b258b682a",
+    "parts/head.html": "bff57252f945388445965c770902c06145d3501ceb21cb6f5507fd542eca066d",
+    "scripts/check-census.py": "dd55f34cd855e60a6fadae7e261aa99f1682b9d7d8446696532045e3a281fafb"
+   },
+   "issued": "2026-11-23"
+  },
+  {
+   "id": "arch11-release-1283-r2",
+   "kind": "app",
+   "anchors": {
+    "elements": [],
+    "functions": [],
+    "guards": []
+   },
+   "changed": [
+    "parts/whatsnew.js"
+   ],
+   "rows": [],
+   "files": {
+    "parts/app1.js": "cf555a9736c6f9961e906e0fd9c00a531c9ddb88ca3c5ff5765fa33ba62953df",
+    "parts/app2.js": "03df6c6e76bcc5b5db6f0d8d0666652a17dd06164987d2cb5e490773b3386021",
+    "parts/app3.js": "25b9d5bf8c5bb8e2bb433ad563c110744b65f5bf69932dc428d1d240505a3d39",
+    "parts/app4.js": "adeb3e82d3e73e4ce8a385ea14725f82573f823e49cdec2772aefaa94cbdd28b",
+    "parts/app5.js": "f7ee95b5c68ddf4878e224dc83917964a85d5bba742d9df9bf9a37959b6348eb",
+    "parts/brand-snow.js": "86fa9a02f29c7345ee68d68daffd9c72da612921b64da37f1eccf6b72161ac5f",
+    "parts/create-cache.js": "e4a00051eab5a4af59b71909b4a6627f53e720b28dc17dc34635db949f746d7c",
+    "parts/create-citydata.js": "aff6d5e1dbe6f6c9158982fbad7a326cbb946a80c60042d33e679a5a47ea4c0e",
+    "parts/create-fetch.js": "60abb28dd4ca71be3850f3e0c3e9f2bab69978cb79100db4c0859ce078f97ec3",
+    "parts/create-packs.js": "51b05ebfbb2cd6d45d52c79aac226c73862f1d17b8aca1fd7561c8892f1abbe7",
+    "parts/create-pick.js": "cace96469252c243856ed4cb04d7cf4a54ac62dbed1f10b0e6b883c769f76998",
+    "parts/create-save.js": "ad39720727f43d397e72443c92955c5a35d530f03e3219b2182c9ee7c062e52d",
+    "parts/data.js": "9684c69862156dc70ee9a2b88278b4e825c5bf35f0c150fbc5660ccbdce9304b",
+    "parts/engine.js": "8be0d22d46ea2c5c25ef07dd7bf0374e0437a545b54e71d0d41292045ee18410",
+    "parts/pmstyles.js": "f3501db9c16dbc6a5fa8c901089101e4913772384de1f069accb23a614bb90fc",
+    "parts/whatsnew.js": "f6a9d02a935ee4f595f6528f71fe117aa3a42ed77f4ad3b004aab93de261c3c1",
+    "parts/head.html": "bff57252f945388445965c770902c06145d3501ceb21cb6f5507fd542eca066d",
+    "scripts/check-census.py": "dd55f34cd855e60a6fadae7e261aa99f1682b9d7d8446696532045e3a281fafb"
+   },
+   "issued": "2026-11-23"
   }
  ]
 }
