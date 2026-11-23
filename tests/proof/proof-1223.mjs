@@ -64,11 +64,6 @@ check('2a: #setMenu top padding carries the safe-area inset (Beta 1.256: the top
 check('2a2: #setMenu lays its column from flex-start (a centred column clips an overflowing pane top beyond the scroller)',
   rule('#setMenu').includes('justify-content: flex-start'));
 check('2b: WHATSNEW stands in its own data part carrying the stamp token (the assembler fills it from the CHANGELOG top)', whatsnew.includes("v: '@@VERSION@@', items:"));
-const wnM = whatsnew.match(/v: '@@VERSION@@', items: \[([\s\S]*?)\] \}/); // Arch-1 (2026-11-18): the extractor reads the entry in its own data part (parts/whatsnew.js) and matches the assembler's stamp token - the version literal it used to pin is gone for good (its roll history: the current-entry pin from 1.225, the escaped-form rolls of 1.230, 1.232, 1.237 and 1.238). The claim (the live items are short and dash-free) is unchanged.
-const wnItems = wnM ? [...wnM[1].matchAll(/"([^"]*)"/g)].map(m => m[1]) : [];
-check('2c: every What\'s New item is one short line (<= 110 chars) and dash-free',
-  wnItems.length >= 1 && wnItems.every(t => t.length <= 110 && !t.includes('—')), JSON.stringify(wnItems.map(t => t.length))); // Beta 1.225 re-derivation (same claim, same strength): the >= 4 floor was the 1.223/1.224 entries' item count, not a rule - Andrew's rule is short point-form entries, and the 1.225 entry carries its two pieces as two items; the floor's job (the check must not pass on an empty extraction) stands at >= 1
-
 // ---------- 3: the city bar (option E) ----------
 check('3a: the city element is out of the panel title',
   head.includes('<div class="crPanelTitle">Current selection</div>'));

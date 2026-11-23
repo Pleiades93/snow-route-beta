@@ -57,10 +57,6 @@ check('6: the create text boxes keep their white pills',
 // ---------- the release editorial ----------
 check('7: the CHANGELOG top entry is Beta 1.247',
   changelog.indexOf('## Beta 1.247') > -1 && changelog.indexOf('## Beta 1.247') < changelog.indexOf('## Beta 1.246'));
-check('8: What\'s New carries the CURRENT entry\'s bullet (rolled to 1.251: this check tracks the current entry each round), within the 108-char cap, em-dash free',
-  whatsnew.includes('Under the hood: route building now runs through one owner per job, so creating a route stays in step.') &&
-  'Under the hood: route building now runs through one owner per job, so creating a route stays in step.'.length <= 108 &&
-  !whatsnew.includes('—'));
 
 console.log(`proof-1247: ${pass} passed, ${fail} failed`);
 process.exit(fail ? 1 : 0);

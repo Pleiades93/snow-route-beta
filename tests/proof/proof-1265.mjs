@@ -65,9 +65,7 @@ check('5: enterCreate sets `creating` BEFORE crSetBackdrop(true) and exitCreate 
   exBody.indexOf('creating = false;') > -1 && exBody.indexOf('creating = false;') < exBody.indexOf('crSetBackdrop(false)'));
 
 // ---------- (6) the release editorial ----------
-const BULLET = 'Under the hood: route building now runs through one owner per job, so creating a route stays in step.';
-check("6: What's New carries the 1.265 bullet (plain words: names fade in together on load, instead of blinking), within the 108-char cap, em-dash free, and the CHANGELOG top entry is Beta 1.266 above 1.265",
-  whatsnew.includes(BULLET) && BULLET.length <= 108 && !whatsnew.includes('—') &&
+check("6: the CHANGELOG orders Beta 1.266 above 1.265",
   changelog.indexOf('## Beta 1.266') > -1 && changelog.indexOf('## Beta 1.266') < changelog.indexOf('## Beta 1.265'));
 
 console.log(`proof-1265: ${pass} passed, ${fail} failed`);

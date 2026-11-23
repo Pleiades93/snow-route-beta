@@ -81,10 +81,6 @@ check('13: crFailText keys the dense remedy on the failure source too (never on 
 
 // ---------- the release editorial ----------
 check('11: the CHANGELOG top entry is Beta 1.253', changelog.includes('## Beta 1.253'));
-check('12: What\'s New carries the 1.253 bullet, short and dash-free',
-  whatsnew.includes('Under the hood: route building now runs through one owner per job, so creating a route stays in step.')
-  && 'Under the hood: route building now runs through one owner per job, so creating a route stays in step.'.length <= 108
-  && !whatsnew.includes('—'));
 
 console.log(`proof-1253: ${pass} passed, ${fail} failed`);
 process.exit(fail ? 1 : 0);

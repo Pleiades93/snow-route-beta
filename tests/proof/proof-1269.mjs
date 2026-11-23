@@ -78,10 +78,7 @@ check('8: the cancel is untouched and lives on the tap-away - crCancelSectors re
   pick.includes('draft.sectors[name] = snap.slice();') && // the owner's restore statement itself (the snapshot returns as a copy)
   pick.includes('if (crSectorSession.street) { if (!crSectorTap(e.lngLat)) crCancelSectors(); return; }'));
 
-check('9: What\'s New carries both 1.269 bullets, em-dash free, and the CHANGELOG top entry is Beta 1.269 above 1.268',
-  whatsnew.includes('Under the hood: route building now runs through one owner per job, so creating a route stays in step.') &&
-  whatsnew.includes("Under the hood: route building now runs through one owner per job, so creating a route stays in step.") &&
-  !whatsnew.includes('—') &&
+check('9: the CHANGELOG orders Beta 1.269 above 1.268',
   changelog.indexOf('## Beta 1.269') > -1 && changelog.indexOf('## Beta 1.269') < changelog.indexOf('## Beta 1.268'));
 
 console.log(`proof-1269: ${pass} pass, ${fail} fail`);

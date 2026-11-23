@@ -84,10 +84,7 @@ check('14: the frame loop cannot storm the creation sources (gate fixes, PR #158
   block.includes('if (want !== crIsectPushed)') && block.includes("let crIsectPushed = null;"));
 
 // ---------- the release editorial ----------
-check('13: What\'s New carries the 1.266 bullet (rolled by the unified-load-in round), within the 108-char cap, em-dash free, and the CHANGELOG top entry is Beta 1.266 above 1.265',
-  whatsnew.includes('Under the hood: route building now runs through one owner per job, so creating a route stays in step.') &&
-  'Under the hood: route building now runs through one owner per job, so creating a route stays in step.'.length <= 108 &&
-  !whatsnew.includes('—') &&
+check('13: the CHANGELOG orders Beta 1.266 above 1.265',
   changelog.indexOf('## Beta 1.266') > -1 && changelog.indexOf('## Beta 1.266') < changelog.indexOf('## Beta 1.265'));
 
 console.log(`proof-1262: ${pass} passed, ${fail} failed`);

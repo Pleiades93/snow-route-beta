@@ -71,10 +71,6 @@ check('13: a clone layer an older build left cannot persist (Beta 1.259 premise 
 // ---------- the release editorial ----------
 check('14: the CHANGELOG top entry is Beta 1.258',
   changelog.indexOf('## Beta 1.258') > -1 && changelog.indexOf('## Beta 1.258') < changelog.indexOf('## Beta 1.257'));
-check('15: the What\'s New bullet is the round\'s own line, within the 108-char cap, em-dash free',
-  whatsnew.includes('The splash logo\'s snow now rounds off at the ends and melts into the blue at the bottom.') &&
-  'The splash logo\'s snow now rounds off at the ends and melts into the blue at the bottom.'.length <= 108 &&
-  !whatsnew.includes('—'));
 
 console.log(`proof-1258: ${pass} passed, ${fail} failed`);
 process.exit(fail ? 1 : 0);

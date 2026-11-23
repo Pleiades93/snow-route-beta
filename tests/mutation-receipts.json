@@ -7901,6 +7901,48 @@
    "red": "n/a (comment-only; the suite's discriminating cases are untouched)",
    "green": "selftest-pr23-fixes runs green on the rollout tree (all bug 1-4 cases pass)",
    "issued": "2026-11-23 testing-rollout round, local run"
+  },
+  {
+   "id": "testing-rollout-bullet-roll",
+   "check": "tests/browser/selftest-whatsnew.mjs",
+   "kind": "mutation",
+   "files": {
+    "tests/browser/selftest-whatsnew.mjs": "0346019fae314a5eb53c2806d335b1604175ce017d6a604728cc27f8de1d469a",
+    "tests/proof/proof-1223.mjs": "9cc030ff53bba29eb09b16c9e9785d6aadc0e1d58423a5a7f975772a2ef75f9d",
+    "tests/proof/proof-1224.mjs": "e9101a3ee5352bf2c5a2ffdbdd0b0cf5766be7ab8f8f3c12d2a60977ead9a275",
+    "tests/proof/proof-1241.mjs": "d9a420e0eb88e76f4c3eb70bba2304920856a02230ea352f28eb5506a80f7e7c",
+    "tests/proof/proof-1242.mjs": "e839e6683dbcb27045664665228f223a180210766db100b3d80ad8e156ce1a60",
+    "tests/proof/proof-1243.mjs": "e9acad378d41d4d1022b9bc826396dbea459834150876ba0a75739306c523cd0",
+    "tests/proof/proof-1244.mjs": "46f57ee914a63040d0ab606a8941183ce2c783f0e32ec7ae75aecc818d9b6c74",
+    "tests/proof/proof-1245.mjs": "e6507b8a5c858696f51f733a30efa81aa3a449eaa223d85d32bfeea9e7417c65",
+    "tests/proof/proof-1246.mjs": "deee07a5019aeeba25b46d895d96f090bb15a245de56e1cfd3e611fb382f1bbc",
+    "tests/proof/proof-1247.mjs": "6be03dbba3e87fa51dab3a3d0d106e5a9f9d4a015f9a675b8cc7927e7d7ae779",
+    "tests/proof/proof-1248.mjs": "a8db45c8617106be1281f94999d78afc303631ab2ed579c2860b41f9f6c14b81",
+    "tests/proof/proof-1249.mjs": "75c922a169f59e24c35c8eeb2e780579dd6a05ab26c666e733afa0c5dbe5af01",
+    "tests/proof/proof-1252.mjs": "bf2586a9aac3f13c2ea4fa767613d863fd8fdeed9b3a08c257709b8585ce4096",
+    "tests/proof/proof-1253.mjs": "93c9fbcf1277b7d4cae2d3789ad048d50bfc3013131422838981523a7bbc309f",
+    "tests/proof/proof-1254.mjs": "aef4dcbf45eede2d976e2699373c4e0519670b203d4c80c4b9cb5e80d211c21f",
+    "tests/proof/proof-1255.mjs": "07cf00e97027017b77f7e9dae0b90659bc87830005b63effd1781f4c3148bd94",
+    "tests/proof/proof-1256.mjs": "887083b7dedb2024109aa05ad1f4d21680148aaac465d49c22893341054b1206",
+    "tests/proof/proof-1257.mjs": "55d20f59f58b592a566088f6fd36b8c1210007b6231fa87dae4103bdf33bbef6",
+    "tests/proof/proof-1258.mjs": "e949e4818fa424a0128c01ca67cf414850acfbb24570f370a9cd50549ec21df3",
+    "tests/proof/proof-1259.mjs": "56caced99a7b937820b80595510eaef06f78c98d083413310666e59d81e7651c",
+    "tests/proof/proof-1261.mjs": "2279f18766feb7ffa08657501a7ec49c0cd33e65b184067f4459a1cf002a4d86",
+    "tests/proof/proof-1262.mjs": "f148da57274eee5091cd12833111e4d557e14a701018999b15d4436d380dc93b",
+    "tests/proof/proof-1263.mjs": "8bc480b74377f8f376d34c1c0c898bf719addd8e49fdb78654636009a0f420ad",
+    "tests/proof/proof-1264.mjs": "a79206613abef54325bcea24a8ed4bd966f42bfb2242d26b1975224a8451bbd5",
+    "tests/proof/proof-1265.mjs": "cd233c22a23e1579954a55b86024f380dd1e640c0db4c6ac3f3f2d1fe077cb74",
+    "tests/proof/proof-1266.mjs": "c31ba55919c1de2b3c8d851480d0a9f62f4f094f34b6e9682a8987eb981d935c",
+    "tests/proof/proof-1267.mjs": "8c38de8b1e7a59f231790d89401b67275a43a067d78f021dbec70f0b4876168d",
+    "tests/proof/proof-1268.mjs": "2c77bfe1f35518a89d32184f2fa964505700a6401507c3202d437e2ba95801f2",
+    "tests/proof/proof-1269.mjs": "93348a8c8a6da7ed58f064aa8d7fe23eebbe028285781f6210bfe608896c0388",
+    "tests/proof/proof-1270.mjs": "06a420b72c42890e81b52ca55b84c7fc26acfb845dfa51a60e2d4b48ca4a5a78",
+    "tests/proof/proof-1271.mjs": "adfa852c5337a6fd32dfbeeabc437e72df6b5e0235fd0c74390b7db833d856ad"
+   },
+   "mutation": "The What's New bullet rule (every item <=108 chars, no em dash in parts/whatsnew.js) moved from ~30 hand-rolled per-release pins in the proof files to ONE general selftest; an em dash edited into the current bullet (temporary, reverted) is the mutation",
+   "red": "Under the mutation the selftest FAILS both arms (item length 110 over the cap; em dash present), exit 1",
+   "green": "Restored: selftest 3/3 PASS; the full proof suite passes 83/83 with every bullet pin removed (combined checks keep their CHANGELOG-order clauses under trimmed labels)",
+   "issued": "2026-11-23 testing-rollout round, local run"
   }
  ]
 }

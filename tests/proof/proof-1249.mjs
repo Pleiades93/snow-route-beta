@@ -93,10 +93,6 @@ check('15: the grid stall still drops the cached pack promise (the abandonment s
 
 // ---------- the release editorial ----------
 check('16: the CHANGELOG top entry is Beta 1.251', changelog.includes('## Beta 1.251'));
-check('17: What\'s New carries the 1.251 bullet, short and dash-free',
-  whatsnew.includes('Under the hood: route building now runs through one owner per job, so creating a route stays in step.')
-  && 'Under the hood: route building now runs through one owner per job, so creating a route stays in step.'.length <= 108
-  && !whatsnew.includes('—'));
 
 // ---------- the first byte must be RECORDED, not just read about ----------
 // /correct Phase 2, C1 proof-pin half (cross-audit R-04, 2026-11-20):

@@ -63,10 +63,6 @@ check('6: the scrim-free design claims are superseded and removed (the pill comm
 
 // ---------- the release editorial ----------
 check('7: the CHANGELOG top entry is Beta 1.257', changelog.includes('## Beta 1.257'));
-check('8: What\'s New carries the 1.257 bullet, short and dash-free',
-  whatsnew.includes('Under the hood: route building now runs through one owner per job, so creating a route stays in step.')
-  && 'Under the hood: route building now runs through one owner per job, so creating a route stays in step.'.length <= 108
-  && !whatsnew.includes('—'));
 
 console.log(`proof-1257: ${pass} passed, ${fail} failed`);
 process.exit(fail ? 1 : 0);

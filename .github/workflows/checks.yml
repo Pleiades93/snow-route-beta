@@ -234,6 +234,8 @@ jobs:
         run: node tests/browser/selftest-pr23-fixes.mjs
       - name: GPS package fixtures (Beta 1.187 gate)
         run: node tests/browser/selftest-gps-package.mjs
+      - name: What's New entry rules (testing-efficiency rollout, 2026-11-23 - the one home of the bullet rule the release proofs used to re-pin by hand)
+        run: node tests/browser/selftest-whatsnew.mjs
       - name: Gate-script verdict fixtures (protocol fix round, 2026-11-17 - the proof-coverage guard and the proof runner prove both verdicts on synthetic trees)
         run: python3 scripts/gate-fixtures/run-fixtures.py
       - name: Premise lint (advisory - drive premises this PR's app diff touches)
