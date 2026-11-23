@@ -124,6 +124,16 @@ jobs:
             python3 scripts/select-tier.py --files /tmp/changed.txt --github-output
           fi
   build-and-test:
+    # PREFLIGHT (testing-efficiency rollout, 2026-11-23): this job is the
+    # cheap-checks gate the drive jobs wait on (browser-tests, tier-drives,
+    # browser-smoke and offline-e2e all `needs` it) - build check, coverage
+    # guards, tsc, the selftests and the proofs run ONCE here instead of
+    # racing the shards. It keeps the name build-and-test because branch
+    # protection requires a check of exactly that name; renaming the job
+    # would leave the required check unposted and every PR unmergeable.
+    # The three runner self-tests (runner, cleanup, scenario) moved here
+    # from the drive jobs in the same round: they prove the harness, not
+    # the app, and running them in every shard only multiplied their cost.
     runs-on: ubuntu-latest
     timeout-minutes: 20
     steps:
@@ -156,6 +166,12 @@ jobs:
           git -C "$GITHUB_WORKSPACE" diff --exit-code -- parts/pmstyles.js
       - name: Service worker tests
         run: node tests/sw.test.mjs
+      - name: "Runner self-test (verdicts: exit code, timeout, result block)"
+        run: node tests/browser/selftest-runner.mjs
+      - name: "Cleanup self-test (orphan browsers: throw + timeout paths)"
+        run: node tests/browser/selftest-cleanup.mjs
+      - name: "Scenario-layer fixtures (Tranche 4 gate)"
+        run: node tests/browser/selftest-scenario.mjs
       - name: Trail segmentation fixtures (test-change gate)
         run: node tests/browser/selftest-trail-segments.mjs
       - name: Storage-outcome contract fixtures (Phase 3 gate)
@@ -214,7 +230,7 @@ jobs:
     # EXCEPT a push to main (the smoke job takes that; a main push plans
     # Tier A in any case). The nightly dispatch plans Tier C, so the
     # nightly full battery on main is unchanged.
-    needs: plan
+    needs: [plan, build-and-test]
     if: needs.plan.outputs.tier == 'C' && !(github.event_name == 'push' && github.ref == 'refs/heads/main')
     name: browser-tests shard ${{ matrix.shard }}
     runs-on: ubuntu-latest
@@ -247,19 +263,13 @@ jobs:
           node-version: '22'
       - name: Locate Chrome
         run: echo "CHROME_BIN=$(command -v google-chrome || command -v chromium || command -v chromium-browser)" >> "$GITHUB_ENV"
-      - name: "Runner self-test (verdicts: exit code, timeout, result block)"
-        run: node tests/browser/selftest-runner.mjs
-      - name: "Cleanup self-test (orphan browsers: throw + timeout paths)"
-        run: node tests/browser/selftest-cleanup.mjs
-      - name: "Scenario-layer fixtures (Tranche 4 gate)"
-        run: node tests/browser/selftest-scenario.mjs
       - name: Browser tests (deterministic drives, shard ${{ matrix.shard }})
         run: node tests/browser/run.mjs ${{ matrix.drives }}
   tier-drives:
     # Tier A (core set) and Tier B (the touched surface's family) gates on
     # branches and PRs. A push to main is excluded: the browser-smoke job
     # runs the same Tier A core set there.
-    needs: plan
+    needs: [plan, build-and-test]
     if: (needs.plan.outputs.tier == 'A' || needs.plan.outputs.tier == 'B') && !(github.event_name == 'push' && github.ref == 'refs/heads/main')
     name: tier drives (${{ needs.plan.outputs.tier }})
     runs-on: ubuntu-latest
@@ -275,12 +285,6 @@ jobs:
           node-version: '22'
       - name: Locate Chrome
         run: echo "CHROME_BIN=$(command -v google-chrome || command -v chromium || command -v chromium-browser)" >> "$GITHUB_ENV"
-      - name: "Runner self-test (verdicts: exit code, timeout, result block)"
-        run: node tests/browser/selftest-runner.mjs
-      - name: "Cleanup self-test (orphan browsers: throw + timeout paths)"
-        run: node tests/browser/selftest-cleanup.mjs
-      - name: "Scenario-layer fixtures (Tranche 4 gate)"
-        run: node tests/browser/selftest-scenario.mjs
       - name: Tier drives (${{ needs.plan.outputs.tier }} - ${{ needs.plan.outputs.drives }})
         run: node tests/browser/run.mjs ${{ needs.plan.outputs.drives }}
   browser-smoke:
@@ -289,6 +293,7 @@ jobs:
     # quarantined; drive123 and drive145 left the fast gate in the
     # 2026-11-09 restructure. The branch gate already ran the tier the
     # change required on the identical tree.
+    needs: build-and-test
     if: github.event_name == 'push' && github.ref == 'refs/heads/main'
     runs-on: ubuntu-latest
     timeout-minutes: 30
@@ -300,12 +305,6 @@ jobs:
           node-version: '22'
       - name: Locate Chrome
         run: echo "CHROME_BIN=$(command -v google-chrome || command -v chromium || command -v chromium-browser)" >> "$GITHUB_ENV"
-      - name: "Runner self-test (verdicts: exit code, timeout, result block)"
-        run: node tests/browser/selftest-runner.mjs
-      - name: "Cleanup self-test (orphan browsers: throw + timeout paths)"
-        run: node tests/browser/selftest-cleanup.mjs
-      - name: "Scenario-layer fixtures (Tranche 4 gate)"
-        run: node tests/browser/selftest-scenario.mjs
       - name: Browser smoke (Tier A core set)
         run: node tests/browser/run.mjs drive131 drive160 drive161 drive168 drive174 drive180
   offline-e2e:
@@ -313,7 +312,7 @@ jobs:
     # service-worker shell does not change on every ship - see the finding
     # in tests/TIER-MAP.md. The plan job flags offline=true exactly for
     # Tier C (which the nightly dispatch and a default dispatch select).
-    needs: plan
+    needs: [plan, build-and-test]
     if: needs.plan.outputs.offline == 'true'
     runs-on: ubuntu-latest
     timeout-minutes: 30
