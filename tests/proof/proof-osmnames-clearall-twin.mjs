@@ -27,11 +27,19 @@ import vm from 'node:vm';
 
 const src = readFileSync('parts/create-pick.js', 'utf8');
 
-// Locate the crClearAll handler and lift its reset statement verbatim.
+// Locate the reset statement and lift it verbatim. Through 1.280 the
+// statement was spelled out in the crClearAll handler's confirm callback;
+// Architecture #14 moved it, verbatim, onto the DRAFT owner (the clearAll
+// method) and the handler now delegates - so the extraction first proves
+// the door runs through the owner, then anchors on the owner's method.
 const handlerAt = src.indexOf("$('crClearAll')");
 if (handlerAt < 0) throw new Error('crClearAll handler not found in parts/create-pick.js');
-const assignAt = src.indexOf('draft.osmNames =', handlerAt);
-if (assignAt < 0) throw new Error('no draft.osmNames assignment inside the crClearAll handler');
+const doorAt = src.indexOf('DRAFT.clearAll()', handlerAt);
+if (doorAt < 0 || doorAt > handlerAt + 1000) throw new Error('the crClearAll handler does not delegate to DRAFT.clearAll');
+const ownerAt = src.indexOf('clearAll() {');
+if (ownerAt < 0) throw new Error('DRAFT.clearAll not found in parts/create-pick.js');
+const assignAt = src.indexOf('draft.osmNames =', ownerAt);
+if (assignAt < 0) throw new Error('no draft.osmNames assignment inside DRAFT.clearAll');
 const lineStart = src.lastIndexOf('\n', assignAt) + 1;
 const lineEnd = src.indexOf('\n', assignAt);
 const resetStmt = src.slice(lineStart, lineEnd).trim();

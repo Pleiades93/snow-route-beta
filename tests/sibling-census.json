@@ -8069,6 +8069,103 @@
     "scripts/check-census.py": "dd55f34cd855e60a6fadae7e261aa99f1682b9d7d8446696532045e3a281fafb"
    },
    "issued": "2026-11-23 arch8-restore-1280"
+  },
+  {
+   "id": "section1-arch14-1281",
+   "kind": "app",
+   "anchors": {
+    "functions": [
+     "crAddStreet",
+     "crAddRun",
+     "crRemoveStreet"
+    ],
+    "elements": [
+     "crClearAll"
+    ],
+    "guards": []
+   },
+   "changed": [
+    "parts/create-pick.js"
+   ],
+   "rows": [
+    {
+     "id": "caller:crAddRun:parts/create-citydata.js:crSweepPending",
+     "kind": "caller",
+     "source": "derived: call-site scan of parts/ - crAddRun() is called from crSweepPending in parts/create-citydata.js",
+     "status": "covered",
+     "note": "The sweep's add door: crAddRun keeps its name and signature as a doorway delegating to DRAFT.addRun (body verbatim). Covered by drives 164/166/214/217 and proof-1262 check 10's re-pointed span over the owner method."
+    },
+    {
+     "id": "caller:crAddRun:parts/create-pick.js:pickStreet",
+     "kind": "caller",
+     "source": "derived: call-site scan of parts/ - crAddRun() is called from pickStreet in parts/create-pick.js",
+     "status": "covered",
+     "note": "The tap door for a further disconnected run: doorway delegation, body verbatim on the owner. Covered by drives 151-156, 181, 214, 215, 218, 220."
+    },
+    {
+     "id": "caller:crAddStreet:parts/create-citydata.js:crSweepPending",
+     "kind": "caller",
+     "source": "derived: call-site scan of parts/ - crAddStreet() is called from crSweepPending in parts/create-citydata.js",
+     "status": "covered",
+     "note": "The sweep's first-add door: doorway delegation to DRAFT.addStreet, body verbatim. Covered by drives 164/166/214/217 and proof-1262 check 10."
+    },
+    {
+     "id": "caller:crAddStreet:parts/create-pick.js:pickStreet",
+     "kind": "caller",
+     "source": "derived: call-site scan of parts/ - crAddStreet() is called from pickStreet in parts/create-pick.js",
+     "status": "covered",
+     "note": "The map-tap add door (also called by name from drive220): doorway delegation, body verbatim. Covered by drives 151-156, 181, 214, 215, 218, 220."
+    },
+    {
+     "id": "caller:crRemoveStreet:parts/create-pick.js:crDeselectSectors",
+     "kind": "caller",
+     "source": "derived: call-site scan of parts/ - crRemoveStreet() is called from crDeselectSectors in parts/create-pick.js",
+     "status": "covered",
+     "note": "The trim bar's Deselect door lands on the one removal path, unchanged: doorway delegation to DRAFT.removeStreet. Covered by proof-1269 check 7 (text unchanged) and drives 156/181/220."
+    },
+    {
+     "id": "caller:crRemoveStreet:parts/create-pick.js:crToggleSector",
+     "kind": "caller",
+     "source": "derived: call-site scan of parts/ - crRemoveStreet() is called from crToggleSector in parts/create-pick.js",
+     "status": "covered",
+     "note": "Un-picking every sector removes the street through the same doorway; body verbatim. Covered by drives 156/181 (sector toggling) - the sector internals themselves are step #15's move, untouched here."
+    },
+    {
+     "id": "caller:crRemoveStreet:parts/create-pick.js:del:click",
+     "kind": "caller",
+     "source": "derived: call-site scan of parts/ - crRemoveStreet() is called from del:click in parts/create-pick.js",
+     "status": "covered",
+     "note": "Both row delete buttons (preview row and panel row) call the removal doorway exactly as before. Covered by drives 154/155/214/218."
+    },
+    {
+     "id": "theme:crClearAll",
+     "kind": "theme",
+     "source": "derived: stylesheet scan of parts/head.html - #crClearAll has a day rule and NO body.night rule",
+     "status": "covered",
+     "note": "The Clear-all button element and its styles are untouched - only its confirm callback's body moved onto DRAFT.clearAll (the reset statement verbatim, extracted by proof-clearall-sibling-maps and proof-osmnames-clearall-twin, both re-pointed with receipts). No theme face changes."
+    }
+   ],
+   "files": {
+    "parts/app1.js": "cf555a9736c6f9961e906e0fd9c00a531c9ddb88ca3c5ff5765fa33ba62953df",
+    "parts/app2.js": "25749571be73fc2480b23f22a49def500814105e19abe08919e9bec766cc9144",
+    "parts/app3.js": "25b9d5bf8c5bb8e2bb433ad563c110744b65f5bf69932dc428d1d240505a3d39",
+    "parts/app4.js": "adeb3e82d3e73e4ce8a385ea14725f82573f823e49cdec2772aefaa94cbdd28b",
+    "parts/app5.js": "075517797dadbffbebf5d59682dae3a8771b1b5fa3b999c5de4206257160249f",
+    "parts/brand-snow.js": "86fa9a02f29c7345ee68d68daffd9c72da612921b64da37f1eccf6b72161ac5f",
+    "parts/create-cache.js": "2a7e983aa50862cb074a16abf9266a41a1a175c69faa5215b1d3d289aa2b5327",
+    "parts/create-citydata.js": "393d90f275d971b5e52352deebaece381279acd0e86495ffa2da35701de9148e",
+    "parts/create-fetch.js": "e7a65bd88dc338213946c4537dc5d397f79396ec416b6f4ebf4be831927aeb66",
+    "parts/create-packs.js": "a8b60fb7d601c1e83f555eb703b625a571ec878937ac36fcaddd05aecf635975",
+    "parts/create-pick.js": "3dfc74ca833ccd4242040dfc63230b3dab95626fe96d5c71f6f92bf9b0550bd4",
+    "parts/create-save.js": "ad39720727f43d397e72443c92955c5a35d530f03e3219b2182c9ee7c062e52d",
+    "parts/data.js": "9684c69862156dc70ee9a2b88278b4e825c5bf35f0c150fbc5660ccbdce9304b",
+    "parts/engine.js": "d6d1f676ac8bc2a302cfbaf56de1e10cb361fd8b746d94d6380a5e4ebaf76173",
+    "parts/pmstyles.js": "f3501db9c16dbc6a5fa8c901089101e4913772384de1f069accb23a614bb90fc",
+    "parts/whatsnew.js": "e24a0d6b2bbc4cf4e7b1207504ed11efbfcaad4805f3c6d597cff316057314fe",
+    "parts/head.html": "bff57252f945388445965c770902c06145d3501ceb21cb6f5507fd542eca066d",
+    "scripts/check-census.py": "dd55f34cd855e60a6fadae7e261aa99f1682b9d7d8446696532045e3a281fafb"
+   },
+   "issued": "2026-11-23 section1-arch14"
   }
  ]
 }

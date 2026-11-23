@@ -75,38 +75,65 @@ function crRenderHint() { // the ONE writer of the pick-stage hint + its action 
       cc.textContent = ''; const b = document.createElement('b'); b.textContent = crCity.name; const go = document.createElement('span'); go.className = 'crCityGo'; go.textContent = 'change'; cc.append('Working in ', b, ' · ', go); cc.style.display = ''; } else cc.style.display = 'none'; }
   crRefreshSearch(); // Beta 1.234 fix round 3 (PR #114, Codex P2): every coverage landing renders this hint as it lands (the prepare completions, the grid pump, the saved-city fold's rebuild), so the open street search refreshes with it - see crRefreshSearch at crRunSearch for the guards that keep a dismissed search dismissed
 }
-function crAddStreet(name, segs) { // Beta 1.144 (Package C, DA-04): the draft keys on the FULL map name - through 1.143 the key was shortStreetName(osmName), so two distinct streets sharing a shortened name (Addington Avenue / Addington Place) collided: only the first could ever enter a draft, and tapping the second opened the first's sectors. shortStreetName survives ONLY as the display form (toasts, rows, the sector bar's title); every key in the draft - roads, primaries, sectors, parts, pending - is the full name, and the saved pack inherits the full names, so both streets can live in one route.
-  draft.roads[name] = segs; draft.osmNames[name] = name; crGeomGen++; // a tapped street joins as a SECONDARY (fork 3) - flip it to PRIMARY in the list if it is one. Beta 1.135 (N3): the generation bump is the draft-geometry cache's invalidation for this in-place join (see crDraftGeom)
-  delete crPending[name];
-  crIsectClear(); // Beta 1.262: the first road selection ends the POI surface - the picked crossing's name and marker clear as if they were never there
-  renderDraft(); renderCrLists(); crRenderHint();
-  // Beta 1.153 (Andrew): no 'Added' popup - the road's own picked state on the map and in the panel is the feedback.
-}
+// ---- the DRAFT owner (Architecture #14): every mutation of the draft's
+// roads / primaries / names / pending set, and the render that follows a
+// mutation, live here. Through 1.280 each entry point coordinated those
+// pieces itself: the post-mutation render ritual (the draft overlay, both
+// lists, the hint, in that order) was spelled out at four sites, and the
+// category toggle was duplicated at the two row chips. The mutation ORDER
+// inside each method is the order its entry point always ran - this round
+// moves the bodies, it does not re-derive them. The crAddStreet /
+// crAddRun / crRemoveStreet names survive as doorways below (the battery
+// calls the first by name; the pending sweep in create-citydata calls
+// both add doors). Sector state proper is #15's move; the methods below
+// touch it only where the pre-owner bodies did (the add-run trim dance,
+// the removal's deletes, Clear-all's wholesale reset).
+const DRAFT = {
+  render() { renderDraft(); renderCrLists(); crRenderHint(); }, // the ONE post-mutation render, in the order every mutation site already used
+  renderLists() { renderDraft(); renderCrLists(); }, // the category toggle's tail: the hint does not read the primaries, so it is not re-rendered
+  addStreet(name, segs) { // Beta 1.144 (Package C, DA-04): the draft keys on the FULL map name - through 1.143 the key was shortStreetName(osmName), so two distinct streets sharing a shortened name (Addington Avenue / Addington Place) collided: only the first could ever enter a draft, and tapping the second opened the first's sectors. shortStreetName survives ONLY as the display form (toasts, rows, the sector bar's title); every key in the draft - roads, primaries, sectors, parts, pending - is the full name, and the saved pack inherits the full names, so both streets can live in one route.
+    draft.roads[name] = segs; draft.osmNames[name] = name; crGeomGen++; // a tapped street joins as a SECONDARY (fork 3) - flip it to PRIMARY in the list if it is one. Beta 1.135 (N3): the generation bump is the draft-geometry cache's invalidation for this in-place join (see crDraftGeom)
+    delete crPending[name];
+    crIsectClear(); // Beta 1.262: the first road selection ends the POI surface - the picked crossing's name and marker clear as if they were never there
+    DRAFT.render();
+    // Beta 1.153 (Andrew): no 'Added' popup - the road's own picked state on the map and in the panel is the feedback.
+  },
+  addRun(name, segs) { // Beta 1.144 (OPT-L1): a further DISCONNECTED run of an already-picked street joins the SAME street entry - the segment list grows (the run's parts append after the existing runs' parts: runs form in segment order, so existing sector indexes keep their meaning), the geometry cache invalidates, and the cached sector record dies so boundaries recompute over the fuller street. A trimmed street keeps its trim AND gains the new run's parts as chosen - the tap that added the run was a pick, so its parts join the chosen set explicitly rather than falling out of the save by omission; an untrimmed street simply stays whole.
+    const before = (draft.sectors && draft.sectors[name]) ? crStreetParts(name) : null;
+    draft.roads[name] = draft.roads[name].concat(segs); crGeomGen++;
+    if (draft.parts) delete draft.parts[name];
+    if (before) {
+      const rec = crStreetParts(name);
+      if (rec) { const set = crChosenSet(name, before); for (let i = before.parts.length; i < rec.parts.length; i++) set.add(i); crSetChosen(name, rec, set); }
+    }
+    crIsectClear(); // Beta 1.262: a road selection like any other - the POI surface ends here too (see the add-street method above)
+    DRAFT.render();
+    // Beta 1.153 (Andrew): no 'Added the other part' popup either - same rule as the add-street method.
+  },
+  removeStreet(name) { // Beta 1.127: the ONE removal path - the panel's x, the preview's x and Clear all land here (Beta 1.128: those are the ONLY doors; a map tap on a picked street opens its sectors instead), so a street leaves with ALL of its draft state (geometry, primary flag, names, sector pick, cached parts) and every face re-renders from the same state
+    if (!draft || !draft.roads[name]) return;
+    delete draft.roads[name]; draft.primaries.delete(name); delete draft.osmNames[name]; crGeomGen++; // Beta 1.135 (N3): the removal invalidates the shared draft geometry (see crDraftGeom)
+    if (draft.sectors) delete draft.sectors[name];
+    if (draft.parts) delete draft.parts[name];
+    delete crPending[name];
+    if (crSectorSession.street === name) crSectorReset();
+    DRAFT.render();
+  },
+  togglePrimary(name) { if (draft.primaries.has(name)) draft.primaries.delete(name); else draft.primaries.add(name); DRAFT.renderLists(); }, // the category flip both row chips spelled out identically through 1.280 - one body now
+  clearAll() { // the Clear-all door's wholesale reset (through 1.280 it was spelled out in the crClearAll confirm callback): every draft map replaced - null-prototype, like every creation site (the clearall proofs extract the reset statement below verbatim) - the geometry generation bumped, pending cleared, the sector session reset, then the one render
+    draft.roads = Object.create(null); draft.primaries.clear(); draft.osmNames = Object.create(null); draft.sectors = Object.create(null); draft.parts = Object.create(null);
+    crGeomGen++; crPending = {}; // Beta 1.170 (Carbon fix round Phase 2, D-04): the wholesale roads replacement obeys the same two duties as every other roads mutation - through 1.169 it was the one mutation that did not bump the geometry generation (the crDraftGeom cache's roads-identity key happens to catch this particular replacement, but the bump is the contract every other mutation keeps, and the cache's gen key exists to be moved by exactly this class of change) and it left the pending rows standing, so crSweepPending could re-add a street the user had just cleared
+    crSectorReset();
+    DRAFT.render();
+  }
+};
+function crAddStreet(name, segs) { DRAFT.addStreet(name, segs); } // Architecture #14: doorway - the body lives on the DRAFT owner above
 function crRunHeld(name, segs) { // Beta 1.144 (OPT-L1): is this resolved run ALREADY part of the draft street? Segment identity is exact - a run's stored segments are the extract's way point arrays (or its stitched line when the run was bridged), and resolving the same run again reproduces them deterministically, so set membership on the serialized segments is the identity test
   const held = new Set((draft.roads[name] || []).map(sg => JSON.stringify(sg)));
   return segs.length > 0 && segs.every(sg => held.has(JSON.stringify(sg)));
 }
-function crAddRun(name, segs) { // Beta 1.144 (OPT-L1): a further DISCONNECTED run of an already-picked street joins the SAME street entry - the segment list grows (the run's parts append after the existing runs' parts: runs form in segment order, so existing sector indexes keep their meaning), the geometry cache invalidates, and the cached sector record dies so boundaries recompute over the fuller street. A trimmed street keeps its trim AND gains the new run's parts as chosen - the tap that added the run was a pick, so its parts join the chosen set explicitly rather than falling out of the save by omission; an untrimmed street simply stays whole.
-  const before = (draft.sectors && draft.sectors[name]) ? crStreetParts(name) : null;
-  draft.roads[name] = draft.roads[name].concat(segs); crGeomGen++;
-  if (draft.parts) delete draft.parts[name];
-  if (before) {
-    const rec = crStreetParts(name);
-    if (rec) { const set = crChosenSet(name, before); for (let i = before.parts.length; i < rec.parts.length; i++) set.add(i); crSetChosen(name, rec, set); }
-  }
-  crIsectClear(); // Beta 1.262: a road selection like any other - the POI surface ends here too (see crAddStreet)
-  renderDraft(); renderCrLists(); crRenderHint();
-  // Beta 1.153 (Andrew): no 'Added the other part' popup either - same rule as crAddStreet.
-}
-function crRemoveStreet(name) { // Beta 1.127: the ONE removal path - the panel's x, the preview's x and Clear all land here (Beta 1.128: those are the ONLY doors; a map tap on a picked street opens its sectors instead), so a street leaves with ALL of its draft state (geometry, primary flag, names, sector pick, cached parts) and every face re-renders from the same state
-  if (!draft || !draft.roads[name]) return;
-  delete draft.roads[name]; draft.primaries.delete(name); delete draft.osmNames[name]; crGeomGen++; // Beta 1.135 (N3): the removal invalidates the shared draft geometry (see crDraftGeom)
-  if (draft.sectors) delete draft.sectors[name];
-  if (draft.parts) delete draft.parts[name];
-  delete crPending[name];
-  if (crSectorSession.street === name) crSectorReset();
-  renderDraft(); renderCrLists(); crRenderHint();
-}
+function crAddRun(name, segs) { DRAFT.addRun(name, segs); } // Architecture #14: doorway - the body lives on the DRAFT owner above
+function crRemoveStreet(name) { DRAFT.removeStreet(name); } // Architecture #14: doorway - the body lives on the DRAFT owner above
 // ---- sectors (Beta 1.127, Andrew's approved mockups in beta1/work/create-sectors-mockups/):
 // a picked street can be trimmed to the junction-to-junction pieces he
 // actually cleans - a long road that runs past his subdivision enters
@@ -1295,7 +1322,7 @@ function crRowEl(n, g) {
   const nm = document.createElement('span'); nm.className = 'crName'; nm.textContent = shortStreetName(n); row.appendChild(nm); // Beta 1.144 (DA-04): rows display the short name; the draft key behind them is the full map name
   const ln = document.createElement('span'); ln.className = 'crLen'; ln.textContent = fmtLenM(crStreetChosenM(n, g)); row.appendChild(ln); // Beta 1.130 (maintainability re-scan N1): the preview's rows bill the CHOSEN length through the same helper as the panel's rows and every total - through 1.129 this read g[n].total, so a sector-trimmed street showed its WHOLE length on the check screen while the panel billed the trim and the preview's own total (renderCrLists sums crStreetChosenM) disagreed with its rows
   const chip = document.createElement('button'); chip.className = 'crChip ' + (primary ? 'primary' : 'sec'); chip.textContent = primary ? 'PRIMARY' : 'SECONDARY';
-  chip.addEventListener('click', () => { if (draft.primaries.has(n)) draft.primaries.delete(n); else draft.primaries.add(n); renderDraft(); renderCrLists(); });
+  chip.addEventListener('click', () => DRAFT.togglePrimary(n)); // Architecture #14: the toggle lives on the DRAFT owner
   row.appendChild(chip);
   const del = document.createElement('button'); del.className = 'crDel'; del.textContent = '✕'; del.title = 'Remove ' + shortStreetName(n);
   del.addEventListener('click', () => crRemoveStreet(n)); // Beta 1.127: the shared removal path (sector state leaves with the street)
@@ -1316,7 +1343,7 @@ function crPanelRowEl(n, g) { // Beta 1.127 (Andrew's approved mockup, screen 2)
   const hint = document.createElement('span'); hint.className = 'crPSub'; hint.textContent = 'Tap a road to adjust sectors'; meta.appendChild(hint); // Beta 1.208 (Andrew): the instruction gets its OWN line under the length line - through 1.207 it rode the same line after an em dash. Beta 1.242 (Andrew): the words are his exact words - through 1.241 the line read 'Tap row to adjust'. WORDING ONLY: he sampled restyles (bolder, app blue, pill, footnote, extra air) and rejected them all - the styling stays the original .crPSub
   row.appendChild(meta);
   const chip = document.createElement('button'); chip.className = 'crPChip ' + (primary ? 'primary' : 'sec'); chip.textContent = primary ? 'PRIMARY' : 'SECONDARY';
-  chip.addEventListener('click', e => { e.stopPropagation(); if (draft.primaries.has(n)) draft.primaries.delete(n); else draft.primaries.add(n); renderDraft(); renderCrLists(); });
+  chip.addEventListener('click', e => { e.stopPropagation(); DRAFT.togglePrimary(n); }); // Architecture #14: the toggle lives on the DRAFT owner
   row.appendChild(chip);
   const del = document.createElement('button'); del.className = 'crPDel'; del.textContent = '✕'; del.title = 'Remove ' + shortStreetName(n);
   del.addEventListener('click', e => { e.stopPropagation(); crRemoveStreet(n); });
@@ -2092,12 +2119,7 @@ $('crDoneBtn').addEventListener('click', () => { if (draftStreets().length) setC
 $('crReviewBtn').addEventListener('click', () => crExpandPanel()); // the bar's way back (mockup screen 4)
 $('crClearAll').addEventListener('click', () => { // Andrew's addition (2026-11-06): empty the picks at once - behind the shared confirm, the same discipline as Start over and route deletion; the city and the session stay
   const n = draft ? draftStreets().length : 0; if (!n) return;
-  crConfirm('Clear all ' + n + (n === 1 ? ' road?' : ' roads?'), 'Every road you picked will be taken off this route. The city stays loaded.', () => {
-    draft.roads = Object.create(null); draft.primaries.clear(); draft.osmNames = Object.create(null); draft.sectors = Object.create(null); draft.parts = Object.create(null);
-    crGeomGen++; crPending = {}; // Beta 1.170 (Carbon fix round Phase 2, D-04): the wholesale roads replacement obeys the same two duties as every other roads mutation - through 1.169 it was the one mutation that did not bump the geometry generation (the crDraftGeom cache's roads-identity key happens to catch this particular replacement, but the bump is the contract every other mutation keeps, and the cache's gen key exists to be moved by exactly this class of change) and it left the pending rows standing, so crSweepPending could re-add a street the user had just cleared
-    crSectorReset();
-    renderDraft(); renderCrLists(); crRenderHint();
-  }, { yes: 'Clear all', no: 'Cancel', danger: true });
+  crConfirm('Clear all ' + n + (n === 1 ? ' road?' : ' roads?'), 'Every road you picked will be taken off this route. The city stays loaded.', () => { DRAFT.clearAll(); }, { yes: 'Clear all', no: 'Cancel', danger: true }); // Architecture #14: the wholesale reset lives on the DRAFT owner (its clearAll method)
 });
 $('crSbWhole').addEventListener('click', () => { const s = crSectorSession.street; if (!s) return; const rec = crStreetParts(s); if (rec) crSetChosen(s, rec, new Set(rec.parts.map((_, i) => i))); renderDraft(); renderCrLists(); renderSectorBar(); }); // Entire road: every sector back on (the pick is stored as no entry again)
 $('crSbDone').addEventListener('click', () => crCloseSectors()); // Done: back to the panel

@@ -7296,6 +7296,45 @@
    "red": "selftest-foreign-writes reports FAIL (1): the planted write is convicted as an implicit-global write target - observed twice",
    "green": "selftest-foreign-writes passes in full on the reverted tree (revert byte-exact, sha256-verified); the regenerated census differs from 1.279 by exactly one re-key (the safekeeping snapshot site, restoreBackup -> execute), 21 expressions as before",
    "issued": "2026-11-23 arch8-restore-1280"
+  },
+  {
+   "id": "section1-proof-1262-isect-owner",
+   "check": "tests/proof/proof-1262.mjs",
+   "kind": "mutation",
+   "files": {
+    "tests/proof/proof-1262.mjs": "444def726a50de08e7f11355993ea2ed8f2f99391bf7b13d519ab50fbfda7f1b",
+    "parts/create-pick.js": "3dfc74ca833ccd4242040dfc63230b3dab95626fe96d5c71f6f92bf9b0550bd4"
+   },
+   "mutation": "parts/create-pick.js: the crIsectClear() call inside DRAFT.addStreet removed (replaced with void 0), so the first road selection no longer ends the POI surface",
+   "red": "proof-1262 fails 1 of 14 (check 10, the add-door teardown span) - observed twice",
+   "green": "proof-1262 passes 14/14 on the reverted tree (revert byte-exact, sha256-verified)",
+   "issued": "2026-11-23 section1-arch14"
+  },
+  {
+   "id": "section1-proof-clearall-sibling-owner",
+   "check": "tests/proof/proof-clearall-sibling-maps.mjs",
+   "kind": "mutation",
+   "files": {
+    "tests/proof/proof-clearall-sibling-maps.mjs": "6c34de8e79b24a6dd824f653b9269eeadc18ac8a217464f810e3e69c8382e864",
+    "parts/create-pick.js": "3dfc74ca833ccd4242040dfc63230b3dab95626fe96d5c71f6f92bf9b0550bd4"
+   },
+   "mutation": "parts/create-pick.js: DRAFT.clearAll's reset assigns draft.roads = {} (plain object) instead of Object.create(null) - the original 2026-11-15 defect form",
+   "red": "proof-clearall-sibling-maps exits 1 (the roads null-prototype and inherited-member checks fail) - observed twice",
+   "green": "proof-clearall-sibling-maps passes on the reverted tree (revert byte-exact, sha256-verified)",
+   "issued": "2026-11-23 section1-arch14"
+  },
+  {
+   "id": "section1-proof-osmnames-twin-owner",
+   "check": "tests/proof/proof-osmnames-clearall-twin.mjs",
+   "kind": "mutation",
+   "files": {
+    "tests/proof/proof-osmnames-clearall-twin.mjs": "f347257729687ff4eae6a42935d2b94d2d96d9c39a64cb1dbc81f88de12d52c2",
+    "parts/create-pick.js": "3dfc74ca833ccd4242040dfc63230b3dab95626fe96d5c71f6f92bf9b0550bd4"
+   },
+   "mutation": "parts/create-pick.js: DRAFT.clearAll's reset assigns draft.osmNames = {} (plain object) instead of Object.create(null) - the original defect form",
+   "red": "proof-osmnames-clearall-twin exits 1 (the osmNames null-prototype and inherited-member checks fail) - observed twice",
+   "green": "proof-osmnames-clearall-twin passes on the reverted tree (revert byte-exact, sha256-verified)",
+   "issued": "2026-11-23 section1-arch14"
   }
  ]
 }

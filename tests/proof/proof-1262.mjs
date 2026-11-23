@@ -66,8 +66,8 @@ check('9: the motion contract\'s rest: reduced motion starts no pulse, and the h
 
 // ---------- the lifecycle ----------
 check('10: the teardown is called at every closing seat: first road selection (both add doors), the clear disc, the emptied bar, the flow close',
-  span('function crAddStreet(name, segs)', 'function crRunHeld').includes('crIsectClear();') &&
-  span('function crAddRun(name, segs)', 'function crRemoveStreet').includes('crIsectClear();') &&
+  span('addStreet(name, segs) {', 'addRun(name, segs) {').includes('crIsectClear();') && // Architecture #14: the add bodies live on the DRAFT owner; the crAddStreet / crAddRun doorways delegate to these methods
+  span('addRun(name, segs) {', 'removeStreet(name) {').includes('crIsectClear();') &&
   span("$('crClear').addEventListener('click'", "$('crSearchInput').addEventListener('input'").includes('crIsectClear();') &&
   span("$('crSearchInput').addEventListener('input'", 'function crSearch()').includes("if (!$('crSearchInput').value) crIsectClear();") &&
   span('function exitCreate()', 'function openDoors()').includes('crIsectClear();'));
