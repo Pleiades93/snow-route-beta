@@ -154,6 +154,13 @@ const ws = new WebSocket(wsUrl);
         body: buf.toString('base64')
       }, S);
     } catch (e) {
+      // Testing-efficiency rollout (2026-11-23): a failed fulfil used to be
+      // swallowed silently, so CDN/network trouble was invisible in the logs
+      // (0 of 50 failed attempts looked network-caused, but the evidence was
+      // being thrown away here). Print the URL and the error; run.mjs
+      // forwards these lines into the run log. The hermetic-fixture question
+      // is decided on what these lines show over the coming weeks.
+      console.error('[harness fetch-fail] ' + url + ' :: ' + ((e && e.message) || e));
       await send('Fetch.failRequest', { requestId: p.requestId, errorReason: 'Failed' }, S);
     }
   }

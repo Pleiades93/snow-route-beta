@@ -98,6 +98,10 @@ function parseResults(out) {
 let allPass = true;
 for (const name of names) {
   const r = await runOne(name);
+  // Testing-efficiency rollout (2026-11-23): surface the harness's fetch
+  // failures in the run log even when the drive itself passes - before this
+  // they died in the child's stderr, which is only printed on failure paths.
+  for (const line of String(r.err || '').split('\n')) if (line.startsWith('[harness fetch-fail]')) console.log(`${name}: ${line}`);
   if (r.timedOut) {
     console.log(`${name}: FAIL - timed out after ${TIMEOUT_MS}ms and was killed`);
     allPass = false;
@@ -105,7 +109,7 @@ for (const name of names) {
   }
   const R = parseResults(r.out);
   if (!R || !Array.isArray(R.checks)) {
-    console.log(`${name}: FAIL - no result block (exit ${r.code})` + (r.err ? `\n  stderr: ${r.err.slice(0, 300)}` : ''));
+    console.log(`${name}: FAIL - no result block (exit ${r.code})` + (r.err ? `\n  stderr: ${r.err}` : '')); // full stderr (testing-efficiency rollout, 2026-11-23): the 300-char cut hid the actual error on exactly the failures that needed diagnosing
     allPass = false;
     continue;
   }
@@ -114,7 +118,7 @@ for (const name of names) {
   const empty = R.checks.length === 0; // Beta 1.94 (deep audit SR-193-06): an empty checks array used to PASS - a drive that ran nothing proved nothing, and a harness break that swallowed a drive's checks would have shipped as green. Zero checks is a failure, named as such.
   const pass = r.code === 0 && !empty && failed.length === 0 && exc === 0 && !R.fatal;
   if (!pass) allPass = false;
-  console.log(`${name}: ${R.checks.length - failed.length}/${R.checks.length} checks, ${exc} exceptions - ${pass ? 'PASS' : 'FAIL'}` + (r.code !== 0 ? ` (child exit ${r.code})` : '') + (empty ? ' (no checks ran)' : '') + (R.fatal ? ` FATAL: ${String(R.fatal).slice(0, 300)}` : ''));
+  console.log(`${name}: ${R.checks.length - failed.length}/${R.checks.length} checks, ${exc} exceptions - ${pass ? 'PASS' : 'FAIL'}` + (r.code !== 0 ? ` (child exit ${r.code})` : '') + (empty ? ' (no checks ran)' : '') + (R.fatal ? ` FATAL: ${String(R.fatal)}` : ''));
   for (const [n] of failed) console.log(`  FAILED: ${n}`);
   if (Array.isArray(R.exceptions)) for (const x of R.exceptions) console.log(`  EXC: ${x}`);
 }
