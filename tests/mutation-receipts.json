@@ -7485,6 +7485,305 @@
    "red": "proof-city-search-owner FAILS under each mutation, observed twice per mutation: drops-abort fails 1b/4c (the held request is never aborted); drops-bump fails 1b/2/4b/5 (the sequence never moves, the held search stays current); paneopen-uncalled fails 2/3 (a second spelled-out bump exists, the seat no longer calls the owner)",
    "green": "proof-city-search-owner: 10 passed, 0 failed on the shipped tree",
    "issued": "2026-11-23 section1-arch19"
+  },
+  {
+   "id": "whatsnew-roll-1281-proof-1242",
+   "check": "tests/proof/proof-1242.mjs",
+   "kind": "mutation",
+   "files": {
+    "tests/proof/proof-1242.mjs": "b22a00baaaf3289dbadec52c36841f7ddf7e69b97e1ccdc36a15af64aa3e906c",
+    "parts/whatsnew.js": "7116104af9879fa69027abe4a0b74ec3ca57cdec0d7b92a4fccfb5e20eb13748"
+   },
+   "mutation": "parts/whatsnew.js bullet replaced with a deliberately wrong bullet, app rebuilt (the Beta 1.281 What's New roll changed this proof's pinned bullet string)",
+   "red": "proof-1242 fails exactly its What's New bullet check (1 fail, the rest pass)",
+   "green": "proof-1242 passes in full with the shipped bullet",
+   "issued": "2026-11-23 section1-1281"
+  },
+  {
+   "id": "whatsnew-roll-1281-proof-1243",
+   "check": "tests/proof/proof-1243.mjs",
+   "kind": "mutation",
+   "files": {
+    "tests/proof/proof-1243.mjs": "e26d987254d1177a4328debd7e73cdc3f1cf0888a70ba5e868238198400f60e9",
+    "parts/whatsnew.js": "7116104af9879fa69027abe4a0b74ec3ca57cdec0d7b92a4fccfb5e20eb13748"
+   },
+   "mutation": "parts/whatsnew.js bullet replaced with a deliberately wrong bullet, app rebuilt (the Beta 1.281 What's New roll changed this proof's pinned bullet string)",
+   "red": "proof-1243 fails exactly its What's New bullet check (1 fail, the rest pass)",
+   "green": "proof-1243 passes in full with the shipped bullet",
+   "issued": "2026-11-23 section1-1281"
+  },
+  {
+   "id": "whatsnew-roll-1281-proof-1245",
+   "check": "tests/proof/proof-1245.mjs",
+   "kind": "mutation",
+   "files": {
+    "tests/proof/proof-1245.mjs": "4bb3bb8a9dbca9dff19f21fa1d92628b2e37963e0239bea44df1f0048a7f3ca7",
+    "parts/whatsnew.js": "7116104af9879fa69027abe4a0b74ec3ca57cdec0d7b92a4fccfb5e20eb13748"
+   },
+   "mutation": "parts/whatsnew.js bullet replaced with a deliberately wrong bullet, app rebuilt (the Beta 1.281 What's New roll changed this proof's pinned bullet string)",
+   "red": "proof-1245 fails exactly its What's New bullet check (1 fail, the rest pass)",
+   "green": "proof-1245 passes in full with the shipped bullet",
+   "issued": "2026-11-23 section1-1281"
+  },
+  {
+   "id": "whatsnew-roll-1281-proof-1246",
+   "check": "tests/proof/proof-1246.mjs",
+   "kind": "mutation",
+   "files": {
+    "tests/proof/proof-1246.mjs": "8c219c2ea999956a64063ecdf301e9438f4e599e20846fb3b895a76b42ae239c",
+    "parts/whatsnew.js": "7116104af9879fa69027abe4a0b74ec3ca57cdec0d7b92a4fccfb5e20eb13748"
+   },
+   "mutation": "parts/whatsnew.js bullet replaced with a deliberately wrong bullet, app rebuilt (the Beta 1.281 What's New roll changed this proof's pinned bullet string)",
+   "red": "proof-1246 fails exactly its What's New bullet check (1 fail, the rest pass)",
+   "green": "proof-1246 passes in full with the shipped bullet",
+   "issued": "2026-11-23 section1-1281"
+  },
+  {
+   "id": "whatsnew-roll-1281-proof-1247",
+   "check": "tests/proof/proof-1247.mjs",
+   "kind": "mutation",
+   "files": {
+    "tests/proof/proof-1247.mjs": "e2b82b9115018d7c863f7458828219d2ef30196a5ae5cb94a89851a03596f55d",
+    "parts/whatsnew.js": "7116104af9879fa69027abe4a0b74ec3ca57cdec0d7b92a4fccfb5e20eb13748"
+   },
+   "mutation": "parts/whatsnew.js bullet replaced with a deliberately wrong bullet, app rebuilt (the Beta 1.281 What's New roll changed this proof's pinned bullet string)",
+   "red": "proof-1247 fails exactly its What's New bullet check (1 fail, the rest pass)",
+   "green": "proof-1247 passes in full with the shipped bullet",
+   "issued": "2026-11-23 section1-1281"
+  },
+  {
+   "id": "whatsnew-roll-1281-proof-1249",
+   "check": "tests/proof/proof-1249.mjs",
+   "kind": "mutation",
+   "files": {
+    "tests/proof/proof-1249.mjs": "af68517dd359e41c08a67cb438bdbf1f813a2d5995c89ecf33f1683da30c2b03",
+    "parts/whatsnew.js": "7116104af9879fa69027abe4a0b74ec3ca57cdec0d7b92a4fccfb5e20eb13748"
+   },
+   "mutation": "parts/whatsnew.js bullet replaced with a deliberately wrong bullet, app rebuilt (the Beta 1.281 What's New roll changed this proof's pinned bullet string)",
+   "red": "proof-1249 fails exactly its What's New bullet check (1 fail, the rest pass)",
+   "green": "proof-1249 passes in full with the shipped bullet",
+   "issued": "2026-11-23 section1-1281"
+  },
+  {
+   "id": "whatsnew-roll-1281-proof-1252",
+   "check": "tests/proof/proof-1252.mjs",
+   "kind": "mutation",
+   "files": {
+    "tests/proof/proof-1252.mjs": "899ed8b59d0cfd41be0d8d3be238c5fc070bd5b248e3293d56a726f9330895c6",
+    "parts/whatsnew.js": "7116104af9879fa69027abe4a0b74ec3ca57cdec0d7b92a4fccfb5e20eb13748"
+   },
+   "mutation": "parts/whatsnew.js bullet replaced with a deliberately wrong bullet, app rebuilt (the Beta 1.281 What's New roll changed this proof's pinned bullet string)",
+   "red": "proof-1252 fails exactly its What's New bullet check (1 fail, the rest pass)",
+   "green": "proof-1252 passes in full with the shipped bullet",
+   "issued": "2026-11-23 section1-1281"
+  },
+  {
+   "id": "whatsnew-roll-1281-proof-1253",
+   "check": "tests/proof/proof-1253.mjs",
+   "kind": "mutation",
+   "files": {
+    "tests/proof/proof-1253.mjs": "0f6b84453c84df877bf36323f9d0599c54e387f2a91502e0a8a3a7420c7a5422",
+    "parts/whatsnew.js": "7116104af9879fa69027abe4a0b74ec3ca57cdec0d7b92a4fccfb5e20eb13748"
+   },
+   "mutation": "parts/whatsnew.js bullet replaced with a deliberately wrong bullet, app rebuilt (the Beta 1.281 What's New roll changed this proof's pinned bullet string)",
+   "red": "proof-1253 fails exactly its What's New bullet check (1 fail, the rest pass)",
+   "green": "proof-1253 passes in full with the shipped bullet",
+   "issued": "2026-11-23 section1-1281"
+  },
+  {
+   "id": "whatsnew-roll-1281-proof-1254",
+   "check": "tests/proof/proof-1254.mjs",
+   "kind": "mutation",
+   "files": {
+    "tests/proof/proof-1254.mjs": "357267841d7c752db979bac053788151d6bb5f4b08ef46762d72c7ef1b845cdd",
+    "parts/whatsnew.js": "7116104af9879fa69027abe4a0b74ec3ca57cdec0d7b92a4fccfb5e20eb13748"
+   },
+   "mutation": "parts/whatsnew.js bullet replaced with a deliberately wrong bullet, app rebuilt (the Beta 1.281 What's New roll changed this proof's pinned bullet string)",
+   "red": "proof-1254 fails exactly its What's New bullet check (1 fail, the rest pass)",
+   "green": "proof-1254 passes in full with the shipped bullet",
+   "issued": "2026-11-23 section1-1281"
+  },
+  {
+   "id": "whatsnew-roll-1281-proof-1255",
+   "check": "tests/proof/proof-1255.mjs",
+   "kind": "mutation",
+   "files": {
+    "tests/proof/proof-1255.mjs": "a49846b2f9b6cd49723ab864d033db6f5ef0368b3f0aec980f495b4ec065ac7e",
+    "parts/whatsnew.js": "7116104af9879fa69027abe4a0b74ec3ca57cdec0d7b92a4fccfb5e20eb13748"
+   },
+   "mutation": "parts/whatsnew.js bullet replaced with a deliberately wrong bullet, app rebuilt (the Beta 1.281 What's New roll changed this proof's pinned bullet string)",
+   "red": "proof-1255 fails exactly its What's New bullet check (1 fail, the rest pass)",
+   "green": "proof-1255 passes in full with the shipped bullet",
+   "issued": "2026-11-23 section1-1281"
+  },
+  {
+   "id": "whatsnew-roll-1281-proof-1256",
+   "check": "tests/proof/proof-1256.mjs",
+   "kind": "mutation",
+   "files": {
+    "tests/proof/proof-1256.mjs": "da0568e41a1d7db6ab1c6f69407e7124c3d09b285079ace973d0c0a4a9cb3ffd",
+    "parts/whatsnew.js": "7116104af9879fa69027abe4a0b74ec3ca57cdec0d7b92a4fccfb5e20eb13748"
+   },
+   "mutation": "parts/whatsnew.js bullet replaced with a deliberately wrong bullet, app rebuilt (the Beta 1.281 What's New roll changed this proof's pinned bullet string)",
+   "red": "proof-1256 fails exactly its What's New bullet check (1 fail, the rest pass)",
+   "green": "proof-1256 passes in full with the shipped bullet",
+   "issued": "2026-11-23 section1-1281"
+  },
+  {
+   "id": "whatsnew-roll-1281-proof-1257",
+   "check": "tests/proof/proof-1257.mjs",
+   "kind": "mutation",
+   "files": {
+    "tests/proof/proof-1257.mjs": "51f164da6efbb5f76e89880106a98337e90f7564d6313ef999e575b824197b37",
+    "parts/whatsnew.js": "7116104af9879fa69027abe4a0b74ec3ca57cdec0d7b92a4fccfb5e20eb13748"
+   },
+   "mutation": "parts/whatsnew.js bullet replaced with a deliberately wrong bullet, app rebuilt (the Beta 1.281 What's New roll changed this proof's pinned bullet string)",
+   "red": "proof-1257 fails exactly its What's New bullet check (1 fail, the rest pass)",
+   "green": "proof-1257 passes in full with the shipped bullet",
+   "issued": "2026-11-23 section1-1281"
+  },
+  {
+   "id": "whatsnew-roll-1281-proof-1259",
+   "check": "tests/proof/proof-1259.mjs",
+   "kind": "mutation",
+   "files": {
+    "tests/proof/proof-1259.mjs": "aa3bb8d27c91e8b3f49c588f77bc43e6f2bc51037ef3cb13288f1fedddb61f06",
+    "parts/whatsnew.js": "7116104af9879fa69027abe4a0b74ec3ca57cdec0d7b92a4fccfb5e20eb13748"
+   },
+   "mutation": "parts/whatsnew.js bullet replaced with a deliberately wrong bullet, app rebuilt (the Beta 1.281 What's New roll changed this proof's pinned bullet string)",
+   "red": "proof-1259 fails exactly its What's New bullet check (1 fail, the rest pass)",
+   "green": "proof-1259 passes in full with the shipped bullet",
+   "issued": "2026-11-23 section1-1281"
+  },
+  {
+   "id": "whatsnew-roll-1281-proof-1262",
+   "check": "tests/proof/proof-1262.mjs",
+   "kind": "mutation",
+   "files": {
+    "tests/proof/proof-1262.mjs": "32954b7539202c8809879e2e962fded521ecd1ea27337dc06c1b0244e0d0b9ee",
+    "parts/whatsnew.js": "7116104af9879fa69027abe4a0b74ec3ca57cdec0d7b92a4fccfb5e20eb13748"
+   },
+   "mutation": "parts/whatsnew.js bullet replaced with a deliberately wrong bullet, app rebuilt (the Beta 1.281 What's New roll changed this proof's pinned bullet string)",
+   "red": "proof-1262 fails exactly its What's New bullet check (1 fail, the rest pass)",
+   "green": "proof-1262 passes in full with the shipped bullet",
+   "issued": "2026-11-23 section1-1281"
+  },
+  {
+   "id": "whatsnew-roll-1281-proof-1263",
+   "check": "tests/proof/proof-1263.mjs",
+   "kind": "mutation",
+   "files": {
+    "tests/proof/proof-1263.mjs": "32332ebd0f31426b29639a1c7bb6ddd7fa4aa5303da2c62c5aedef6597533b6f",
+    "parts/whatsnew.js": "7116104af9879fa69027abe4a0b74ec3ca57cdec0d7b92a4fccfb5e20eb13748"
+   },
+   "mutation": "parts/whatsnew.js bullet replaced with a deliberately wrong bullet, app rebuilt (the Beta 1.281 What's New roll changed this proof's pinned bullet string)",
+   "red": "proof-1263 fails exactly its What's New bullet check (1 fail, the rest pass)",
+   "green": "proof-1263 passes in full with the shipped bullet",
+   "issued": "2026-11-23 section1-1281"
+  },
+  {
+   "id": "whatsnew-roll-1281-proof-1264",
+   "check": "tests/proof/proof-1264.mjs",
+   "kind": "mutation",
+   "files": {
+    "tests/proof/proof-1264.mjs": "e729cd7bb212934b2dcc828c45254065d782f063cf8efa3b9a79c3de2a3587e5",
+    "parts/whatsnew.js": "7116104af9879fa69027abe4a0b74ec3ca57cdec0d7b92a4fccfb5e20eb13748"
+   },
+   "mutation": "parts/whatsnew.js bullet replaced with a deliberately wrong bullet, app rebuilt (the Beta 1.281 What's New roll changed this proof's pinned bullet string)",
+   "red": "proof-1264 fails exactly its What's New bullet check (1 fail, the rest pass)",
+   "green": "proof-1264 passes in full with the shipped bullet",
+   "issued": "2026-11-23 section1-1281"
+  },
+  {
+   "id": "whatsnew-roll-1281-proof-1265",
+   "check": "tests/proof/proof-1265.mjs",
+   "kind": "mutation",
+   "files": {
+    "tests/proof/proof-1265.mjs": "774cd5b1e56b72f50641c15596fcd0be79b37d676eb3d7c0af0f23ee184bbf9d",
+    "parts/whatsnew.js": "7116104af9879fa69027abe4a0b74ec3ca57cdec0d7b92a4fccfb5e20eb13748"
+   },
+   "mutation": "parts/whatsnew.js bullet replaced with a deliberately wrong bullet, app rebuilt (the Beta 1.281 What's New roll changed this proof's pinned bullet string)",
+   "red": "proof-1265 fails exactly its What's New bullet check (1 fail, the rest pass)",
+   "green": "proof-1265 passes in full with the shipped bullet",
+   "issued": "2026-11-23 section1-1281"
+  },
+  {
+   "id": "whatsnew-roll-1281-proof-1267",
+   "check": "tests/proof/proof-1267.mjs",
+   "kind": "mutation",
+   "files": {
+    "tests/proof/proof-1267.mjs": "e8430679dcb79ab864039fe71b5cbbdf3591412adfde2df2513f80f640396bb1",
+    "parts/whatsnew.js": "7116104af9879fa69027abe4a0b74ec3ca57cdec0d7b92a4fccfb5e20eb13748"
+   },
+   "mutation": "parts/whatsnew.js bullet replaced with a deliberately wrong bullet, app rebuilt (the Beta 1.281 What's New roll changed this proof's pinned bullet string)",
+   "red": "proof-1267 fails exactly its What's New bullet check (1 fail, the rest pass)",
+   "green": "proof-1267 passes in full with the shipped bullet",
+   "issued": "2026-11-23 section1-1281"
+  },
+  {
+   "id": "whatsnew-roll-1281-proof-1268",
+   "check": "tests/proof/proof-1268.mjs",
+   "kind": "mutation",
+   "files": {
+    "tests/proof/proof-1268.mjs": "66ba9e1c515fcfc6ea3a5f0d7908526da3e9702cd2cea5172fd6e9b00028ca45",
+    "parts/whatsnew.js": "7116104af9879fa69027abe4a0b74ec3ca57cdec0d7b92a4fccfb5e20eb13748"
+   },
+   "mutation": "parts/whatsnew.js bullet replaced with a deliberately wrong bullet, app rebuilt (the Beta 1.281 What's New roll changed this proof's pinned bullet string)",
+   "red": "proof-1268 fails exactly its What's New bullet check (1 fail, the rest pass)",
+   "green": "proof-1268 passes in full with the shipped bullet",
+   "issued": "2026-11-23 section1-1281"
+  },
+  {
+   "id": "whatsnew-roll-1281-proof-1269",
+   "check": "tests/proof/proof-1269.mjs",
+   "kind": "mutation",
+   "files": {
+    "tests/proof/proof-1269.mjs": "e4fc982eee02135c7c6e6b3e784f12fa8c3460a7476d15e397c820fe0f9b0467",
+    "parts/whatsnew.js": "7116104af9879fa69027abe4a0b74ec3ca57cdec0d7b92a4fccfb5e20eb13748"
+   },
+   "mutation": "parts/whatsnew.js bullet replaced with a deliberately wrong bullet, app rebuilt (the Beta 1.281 What's New roll changed this proof's pinned bullet string)",
+   "red": "proof-1269 fails exactly its What's New bullet check (1 fail, the rest pass)",
+   "green": "proof-1269 passes in full with the shipped bullet",
+   "issued": "2026-11-23 section1-1281"
+  },
+  {
+   "id": "whatsnew-roll-1281-proof-1270",
+   "check": "tests/proof/proof-1270.mjs",
+   "kind": "mutation",
+   "files": {
+    "tests/proof/proof-1270.mjs": "9e25bc11a62be788eef938374bc73576a1789629a6e6cb9f3c0d8bf7dbbd9eaa",
+    "parts/whatsnew.js": "7116104af9879fa69027abe4a0b74ec3ca57cdec0d7b92a4fccfb5e20eb13748"
+   },
+   "mutation": "parts/whatsnew.js bullet replaced with a deliberately wrong bullet, app rebuilt (the Beta 1.281 What's New roll changed this proof's pinned bullet string)",
+   "red": "proof-1270 fails exactly its What's New bullet check (1 fail, the rest pass)",
+   "green": "proof-1270 passes in full with the shipped bullet",
+   "issued": "2026-11-23 section1-1281"
+  },
+  {
+   "id": "whatsnew-roll-1281-proof-1271",
+   "check": "tests/proof/proof-1271.mjs",
+   "kind": "mutation",
+   "files": {
+    "tests/proof/proof-1271.mjs": "a1789abcfc30a8abd6006f5a9323f33861299245d491a6c63c111d992518e76d",
+    "parts/whatsnew.js": "7116104af9879fa69027abe4a0b74ec3ca57cdec0d7b92a4fccfb5e20eb13748"
+   },
+   "mutation": "parts/whatsnew.js bullet replaced with a deliberately wrong bullet, app rebuilt (the Beta 1.281 What's New roll changed this proof's pinned bullet string)",
+   "red": "proof-1271 fails exactly its What's New bullet check (1 fail, the rest pass)",
+   "green": "proof-1271 passes in full with the shipped bullet",
+   "issued": "2026-11-23 section1-1281"
+  },
+  {
+   "id": "proof-1266-whatsnew-roll-1281",
+   "check": "tests/proof/proof-1266.mjs",
+   "kind": "historical",
+   "files": {
+    "tests/proof/proof-1266.mjs": "c0288ceb1229319a92abfca1a2862817ab8d6f6007729e09f9b739eb4c0ccfb9",
+    "parts/whatsnew.js": "7116104af9879fa69027abe4a0b74ec3ca57cdec0d7b92a4fccfb5e20eb13748"
+   },
+   "mutation": "a deliberately wrong bullet in parts/whatsnew.js, app rebuilt; proof-1266 is retired from the running manifest (its 1.266-era app pins are historical), so its bullet pin (check 9) was observed directly",
+   "red": "proof-1266 check 9 FAILS standalone with the wrong bullet in place (the other six fails are its standing retired pins, present with either bullet)",
+   "green": "proof-1266 check 9 passes with the shipped 1.281 bullet in place (6 passed, 6 failed standalone - its standing retirement state, identical on the pristine tree)",
+   "issued": "2026-11-23 section1-1281"
   }
  ]
 }

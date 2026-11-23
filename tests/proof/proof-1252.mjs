@@ -78,8 +78,8 @@ check('9: no second stale literal in app3',
 // ---------- the release editorial ----------
 check('10: the CHANGELOG top entry is Beta 1.252', changelog.includes('## Beta 1.252'));
 check('11: What\'s New carries the 1.252 bullet, short and dash-free',
-  whatsnew.includes('Under the hood: backup and restore now each run through one owner, so exports and restores stay in step.')
-  && 'Under the hood: backup and restore now each run through one owner, so exports and restores stay in step.'.length <= 108
+  whatsnew.includes('Under the hood: route building now runs through one owner per job, so creating a route stays in step.')
+  && 'Under the hood: route building now runs through one owner per job, so creating a route stays in step.'.length <= 108
   && !whatsnew.includes('—'));
 
 console.log(`proof-1252: ${pass} passed, ${fail} failed`);
