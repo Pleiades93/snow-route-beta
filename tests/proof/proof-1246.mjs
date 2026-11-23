@@ -76,7 +76,7 @@ check('9: the fallback watchdog still tests its start clock against stallMs',
 // ---------- the release editorial ----------
 check('10: the CHANGELOG top entry is Beta 1.246', changelog.includes('## Beta 1.246'));
 check('11: What\'s New carries the CURRENT entry\'s bullet (rolled to 1.251: this check tracks the current entry each round)',
-  whatsnew.includes('Under the hood: backup and restore now each run through one owner, so exports and restores stay in step.'));
+  whatsnew.includes('Under the hood: route building now runs through one owner per job, so creating a route stays in step.'));
 
 console.log(`proof-1246: ${pass} passed, ${fail} failed`);
 process.exit(fail ? 1 : 0);

@@ -46,6 +46,31 @@ if (!crStreetPartsSrc) throw new Error('crStreetParts not found');
 // and crStreetParts never references it, so the same proof runs (and fails
 // on behaviour) against the unfixed tree.
 const crCovStampSrc = extractFn(src, 'crCovStamp');
+// Architecture #15: crStreetParts reads the trim through the DRAFT owner
+// (DRAFT.hasTrim), so the run carries the owner too - brace-matched with
+// strings and comments skipped (the literal carries both). Absent on the
+// pre-#14 tree, where crStreetParts never references it: conditional, like
+// the stamp helper above.
+function extractConst(source, name) {
+  const marker = 'const ' + name + ' = {';
+  const start = source.indexOf(marker);
+  if (start < 0) return null;
+  let i = source.indexOf('{', start), depth = 0;
+  let inS = null, inLine = false, inBlock = false, esc = false;
+  for (; i < source.length; i++) {
+    const c = source[i], n = source[i + 1];
+    if (inLine) { if (c === '\n') inLine = false; continue; }
+    if (inBlock) { if (c === '*' && n === '/') { inBlock = false; i++; } continue; }
+    if (inS) { if (esc) { esc = false; continue; } if (c === '\\') { esc = true; continue; } if (c === inS) inS = null; continue; }
+    if (c === '/' && n === '/') { inLine = true; i++; continue; }
+    if (c === '/' && n === '*') { inBlock = true; i++; continue; }
+    if (c === "'" || c === '"' || c === '`') { inS = c; continue; }
+    if (c === '{') depth++;
+    else if (c === '}') { depth--; if (depth === 0) return source.slice(start, i + 1) + ';'; }
+  }
+  return null;
+}
+const draftOwnerSrc = extractConst(src, 'DRAFT');
 
 const MLAT = 111320, MLNG = 80000;
 
@@ -119,7 +144,7 @@ const ctx = vm.createContext({
   }
 });
 
-vm.runInContext((crCovStampSrc ? crCovStampSrc + '\n' : '') + crStreetPartsSrc, ctx);
+vm.runInContext((crCovStampSrc ? crCovStampSrc + '\n' : '') + (draftOwnerSrc ? draftOwnerSrc + '\n' : '') + crStreetPartsSrc, ctx);
 
 let failures = 0;
 function check(desc, ok) {

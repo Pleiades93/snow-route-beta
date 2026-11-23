@@ -53,6 +53,28 @@ function extractFn(src, name) {
   for (; k < src.length; k++) { if (src[k] === '{') d++; else if (src[k] === '}') { d--; if (!d) break; } }
   return src.slice(i, k + 1);
 }
+// Architecture #15: sector state lives on the DRAFT owner (a const object
+// literal), so the S1 run needs the owner extracted too - brace-matched
+// with strings and comments skipped (the literal carries both).
+function extractConst(src, name) {
+  const marker = 'const ' + name + ' = {';
+  const start = src.indexOf(marker);
+  if (start < 0) return null;
+  let i = src.indexOf('{', start), d = 0;
+  let inS = null, inLine = false, inBlock = false, esc = false;
+  for (; i < src.length; i++) {
+    const c = src[i], n = src[i + 1];
+    if (inLine) { if (c === '\n') inLine = false; continue; }
+    if (inBlock) { if (c === '*' && n === '/') { inBlock = false; i++; } continue; }
+    if (inS) { if (esc) { esc = false; continue; } if (c === '\\') { esc = true; continue; } if (c === inS) inS = null; continue; }
+    if (c === '/' && n === '/') { inLine = true; i++; continue; }
+    if (c === '/' && n === '*') { inBlock = true; i++; continue; }
+    if (c === "'" || c === '"' || c === '`') { inS = c; continue; }
+    if (c === '{') d++;
+    else if (c === '}') { d--; if (d === 0) return src.slice(start, i + 1) + ';'; }
+  }
+  return null;
+}
 
 const head = readFileSync('parts/head.html', 'utf8');
 const app1 = readFileSync('parts/app1.js', 'utf8');
@@ -80,8 +102,9 @@ console.log('S1 - trim glow covers the chosen sectors only');
   const sync = extractFn(createPick, 'syncCrGlow');
   const ensure = extractFn(createPick, 'ensureCrGlowLayers');
   const chosen = extractFn(createPick, 'crChosenSet');
-  check('glow functions extractable', !!(sync && ensure && chosen));
-  if (sync && ensure && chosen) {
+  const draftOwner = extractConst(createPick, 'DRAFT'); // Architecture #15: crChosenSet is a doorway onto the DRAFT owner - the run carries the owner itself
+  check('glow functions extractable', !!(sync && ensure && chosen && draftOwner));
+  if (sync && ensure && chosen && draftOwner) {
     // a four-sector street; each sector a distinct two-point line
     const parts = [0, 1, 2, 3].map(i => [[43.80 + i * 0.01, -79.55], [43.80 + i * 0.01 + 0.004, -79.54]]);
     const wholeRun = [[43.80, -79.55], [43.85, -79.53]];
@@ -105,6 +128,7 @@ console.log('S1 - trim glow covers the chosen sectors only');
     `, ctx);
     ctx.parts = parts; ctx.wholeRun = wholeRun;
     vm.runInContext(ensure, ctx);
+    vm.runInContext(draftOwner, ctx);
     vm.runInContext(chosen, ctx);
     vm.runInContext(sync, ctx);
     const run = expr => vm.runInContext(expr, ctx);

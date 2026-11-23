@@ -43,12 +43,13 @@ let crCovGen = 0; // the coverage generation
 let crPrep = null; // { gen, session, anchor, startedAt, ticker, op } while a FALLBACK box preparation is in flight
 let crGrid = null; // { name, bbox, cells: [{ key, box, state, tries }], gen, session, startedAt, ticker, ops: Set, active, fromCache, savedAt, stopped, lastFail } while a CITY grid preparation exists (kept after it settles, for progress/resume state)
 let crPrepState = 'none'; // 'none' | 'preparing' | 'ready' | 'degraded' | 'failed'  ('degraded': a city grid settled with parts missing - what loaded is usable, the rest is resumable). Beta 1.154 (B3 build): app writes go through crSetPrepState below - a direct assignment survives only as the battery's scenario seeding, never in app code
-// Beta 1.154 (B3 build, part 1): THE PREP STATE RECORD. The transition table is the OBSERVED lifecycle - all 13 edges driven through the real UI / preparation paths in the 2026-11-09 lifecycle trace (beta1/work/b3-lifecycle-trace/TRACE-RECORD.md), none inferred. A write outside the table is REFUSED (the state does not move) and recorded in crPrepViolations: entry writes (-> 'preparing') and the exit write (-> 'none') are legal from every state, and every settled landing is guard-gated to fire only from 'preparing', from which all four landings are in-table - so a refusal can only fire on a future bug or a foreign write, which is what the record exists to catch. (A write of the state already held is a re-assertion, not a transition - see the setter.) The setter owns validation + assignment ONLY: each write site's side effects (fail set/clear, anchor, wanted, sweeps, renders) stay at the site, because the sites share no common bundle.
+// Beta 1.154 (B3 build, part 1): THE PREP STATE RECORD. The transition table is the OBSERVED lifecycle - all 13 edges driven through the real UI / preparation paths in the 2026-11-09 lifecycle trace (beta1/work/b3-lifecycle-trace/TRACE-RECORD.md), none inferred. A write outside the table is REFUSED (the state does not move) and recorded in crPrepViolations: entry writes (-> 'preparing') and the exit write (-> 'none') are legal from every state, and every settled landing is guard-gated to fire only from 'preparing', from which all four landings are in-table - so a refusal can only fire on a future bug or a foreign write, which is what the record exists to catch. (A write of the state already held is a re-assertion, not a transition - see the setter.) The setter owns validation + assignment ONLY: each write site's side effects (fail set/clear, anchor, wanted, sweeps, renders) stay at the site, because the sites share no common bundle - with one exception since Architecture #16: the preparation-ENTRY bundle (state to 'preparing', failure and its provenance cleared, outstanding offer answered) proved identical at all three entries and lives on crPrepBegin below; the anchor remains crStartPrep's own, and the settled landings keep their side effects at their sites.
 const CR_PREP_EDGES = { none: ['preparing', 'none'], preparing: ['preparing', 'ready', 'degraded', 'failed', 'none'], ready: ['preparing', 'none'], degraded: ['preparing', 'none'], failed: ['preparing', 'none'] };
 const crPrepViolations = []; // 'from->to' of every refused transition - empty in every healthy run; the battery's teeth checks (drive181) read it
 function crSetPrepState(next) { if (next === crPrepState) return true; const row = CR_PREP_EDGES[crPrepState]; if (row && row.indexOf(next) >= 0) { crPrepState = next; return true; } crPrepViolations.push(crPrepState + '->' + next); return false; } // a write of the state the record already holds is a re-assertion, not a transition: the settle sites are re-entrant (two cell completions in one tick can both reach the grid's finish) and re-asserted the same value, unremarked, through 1.153 - the setter passes it, unrecorded (drive181's first CI run proved the re-assertions happen in healthy flows: ready->ready, failed->failed, degraded->degraded). A current state with no row in the table (a value the app itself never holds) refuses every CHANGE the same way - the record never throws
 let crPrepFail = null; // { kind: 'unreachable' | 'error' | 'dense' | 'badjson', status?, remark? }
 let crFailFromGrid = false; // which preparation produced crPrepFail - the Retry button resumes a failed GRID's missing cells but re-runs a failed fallback BOX at its anchor; the two must never be confused when both exist
+function crPrepBegin() { crSetPrepState('preparing'); crPrepFail = null; crFailFromGrid = false; crWanted = null; } // Architecture #16: THE PREPARATION-ENTRY BUNDLE - the one begin every preparation entry runs (crCityPrepare, crGridResume and crStartPrep each spelled it out through 1.280): the state record moves to 'preparing' through its setter, the previous failure and its grid/box provenance clear, and any outstanding preparation offer is answered by the starting. What stays at the sites, deliberately: the coverage-generation bump (each site spends the token differently - a local binding on the two prepare paths, adoption into the grid record on resume) and crStartPrep's anchor (its Retry target is the fallback's own, set in the same breath)
 let crPrepAnchor = null; // where Retry / a not-ready tap re-prepares
 let crPending = {}; // full map name -> { osmName, lngLat }: streets whose full shape reaches beyond verified coverage (fail-closed) - listed as pending, NEVER added half-known
 let crToppedUp = {}; // '<full name>@<gen>' -> true: a street's ONE top-up per coverage generation is spent
@@ -60,6 +61,20 @@ function crQL(filter, box, timeoutS) { return '[out:json][timeout:' + timeoutS +
 function crAreaQL(box, timeoutS) { return crQL('"name"]["highway"', box, timeoutS); }
 function crNameQL(osmName, box, timeoutS) { return crQL('"name"="' + osmName.replace(/(["\\])/g, '\\$1') + '"', box, timeoutS); }
 function crAbortOp(op) { try { if (op && op.ctl) op.ctl.abort(); } catch (e) {} } // stop an in-flight fetch's download, not just its right to land (CG-PF-10: Cancel/exit/supersede abort the request itself)
+async function crReadBodyText(r, onChunk) { // Architecture #18: THE shared response consumption - the streaming read, chunk accumulation and decode that crOverpassFetch (below) and crPackDownload (create-citydata.js) each spelled out through 1.280. Returns { text } for a streamed body; { stopped: <verdict> } when the caller's per-chunk hook stops the read (the reader is cancelled here - the caller's own timers, aborts and outcome bookkeeping stay with the caller); or { fallback: true } when the response has no reader, because the no-stream policies differ per caller (the pack reads the text under its first-byte window; the service measures a declared Content-Length before buffering and the buffered bytes after) - so the fallback's text is read at the caller, never here. onChunk(totalBytes) runs on every landed chunk before the chunk is kept; returning a verdict string stops the read with that verdict, returning null keeps reading. Everything POLITICAL stays at the callers: their controllers, their silence timers and windows, the service's byte cap and session checks (delivered through the hook), the pack's stall tag.
+  if (!r.body || typeof r.body.getReader !== 'function') return { fallback: true };
+  const reader = r.body.getReader(), chunks = []; let total = 0;
+  for (;;) {
+    const part = await reader.read();
+    if (part.done) break;
+    total += part.value.byteLength;
+    const verdict = onChunk ? onChunk(total) : null;
+    if (verdict) { try { await reader.cancel(); } catch (e) {} return { stopped: verdict }; }
+    chunks.push(part.value);
+  }
+  const buf = new Uint8Array(total); let off = 0; for (const c of chunks) { buf.set(c, off); off += c.byteLength; }
+  return { text: new TextDecoder().decode(buf) };
+}
 async function crOverpassFetch(ql, budgetMs, attempt1Ms, sessionOk, op) {
   // One query against the public Overpass instances (OVERPASS_URLS) under
   // ONE overall deadline spanning connect + body + parse (CG-PF-02/03):
@@ -93,18 +108,15 @@ async function crOverpassFetch(ql, budgetMs, attempt1Ms, sessionOk, op) {
       if (!r.ok) { lastFail = { ok: false, kind: 'error', status: r.status }; clearTimers(); continue; }
       let text;
       if (r.body && typeof r.body.getReader === 'function') {
-        const reader = r.body.getReader(), chunks = []; let total = 0;
-        for (;;) {
-          const part = await reader.read();
-          if (part.done) break;
-          total += part.value.byteLength;
-          if (total > CR_TIMING.capBytes) { try { if (ctl) ctl.abort(); } catch (e) {} clearTimers(); return { ok: false, kind: 'dense' }; }
-          chunks.push(part.value);
-          armStall(); // a landed chunk is progress: the silence clock restarts here
-          if (sessionOk && !sessionOk()) { clearTimers(); try { await reader.cancel(); } catch (e) {} crAbortOp(op); return { ok: false, kind: 'stale' }; } // superseded mid-stream: stop the download, don't just discard its result (CG-PF-10)
-        }
-        const buf = new Uint8Array(total); let off = 0; for (const c of chunks) { buf.set(c, off); off += c.byteLength; }
-        text = new TextDecoder().decode(buf);
+        const read = await crReadBodyText(r, (total) => { // Architecture #18: the consumption is crReadBodyText's; the POLICIES ride the hook - the byte cap first (enforced as the bytes arrive, as ever), then the silence clock's re-arm, then the session check
+          if (total > CR_TIMING.capBytes) return 'dense';
+          armStall(); // a landed chunk is progress
+          if (sessionOk && !sessionOk()) return 'stale';
+          return null;
+        });
+        if (read.stopped === 'dense') { try { if (ctl) ctl.abort(); } catch (e) {} clearTimers(); return { ok: false, kind: 'dense' }; }
+        if (read.stopped === 'stale') { clearTimers(); crAbortOp(op); return { ok: false, kind: 'stale' }; } // superseded mid-stream: stop the download, don't just discard its result (CG-PF-10) - the reader was cancelled inside crReadBodyText
+        text = read.text;
       } else { const cl = (r.headers && typeof r.headers.get === 'function') ? +(r.headers.get('content-length') || 0) : 0; if (cl > CR_TIMING.capBytes) { clearTimers(); return { ok: false, kind: 'dense' }; } text = await r.text(); if (new TextEncoder().encode(text).length > CR_TIMING.capBytes) { clearTimers(); return { ok: false, kind: 'dense' }; } } // Beta 1.170 (Carbon fix round Phase 2, D-07): the no-stream fallback measures the cap the way the streaming branch does - a declared Content-Length over the cap refuses BEFORE the body is buffered, and the buffered text is measured in BYTES (TextEncoder), where through 1.169 the only check ran after the full buffer landed and compared UTF-16 code units against the byte cap (a multi-byte body passed at up to twice the cap). What a reader-less response still cannot do is abort MID-body - that residual is inherent to the fallback, and is why the streaming branch is the primary. Beta 1.246: the fallback likewise cannot SEE mid-body progress, so its silence timer runs from the answer landing - a text() that wedges is cut by the silence rule, where a trickling one cannot be told apart (the streaming branch remains the primary on every browser that has it)
       clearTimers();
       let json = null;

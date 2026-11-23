@@ -66,8 +66,8 @@ check('9: the motion contract\'s rest: reduced motion starts no pulse, and the h
 
 // ---------- the lifecycle ----------
 check('10: the teardown is called at every closing seat: first road selection (both add doors), the clear disc, the emptied bar, the flow close',
-  span('function crAddStreet(name, segs)', 'function crRunHeld').includes('crIsectClear();') &&
-  span('function crAddRun(name, segs)', 'function crRemoveStreet').includes('crIsectClear();') &&
+  span('addStreet(name, segs) {', 'addRun(name, segs) {').includes('crIsectClear();') && // Architecture #14: the add bodies live on the DRAFT owner; the crAddStreet / crAddRun doorways delegate to these methods
+  span('addRun(name, segs) {', 'removeStreet(name) {').includes('crIsectClear();') &&
   span("$('crClear').addEventListener('click'", "$('crSearchInput').addEventListener('input'").includes('crIsectClear();') &&
   span("$('crSearchInput').addEventListener('input'", 'function crSearch()').includes("if (!$('crSearchInput').value) crIsectClear();") &&
   span('function exitCreate()', 'function openDoors()').includes('crIsectClear();'));
@@ -85,8 +85,8 @@ check('14: the frame loop cannot storm the creation sources (gate fixes, PR #158
 
 // ---------- the release editorial ----------
 check('13: What\'s New carries the 1.266 bullet (rolled by the unified-load-in round), within the 108-char cap, em-dash free, and the CHANGELOG top entry is Beta 1.266 above 1.265',
-  whatsnew.includes('Under the hood: backup and restore now each run through one owner, so exports and restores stay in step.') &&
-  'Under the hood: backup and restore now each run through one owner, so exports and restores stay in step.'.length <= 108 &&
+  whatsnew.includes('Under the hood: route building now runs through one owner per job, so creating a route stays in step.') &&
+  'Under the hood: route building now runs through one owner per job, so creating a route stays in step.'.length <= 108 &&
   !whatsnew.includes('—') &&
   changelog.indexOf('## Beta 1.266') > -1 && changelog.indexOf('## Beta 1.266') < changelog.indexOf('## Beta 1.265'));
 

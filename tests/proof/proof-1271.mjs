@@ -87,7 +87,7 @@ check('5a the selection-open drop is retired: no body.selOpen #centreBtn rule, n
 
 // ---- the What's New line ----------------------------------------------------
 check('6a the round\'s What\'s New bullet stands first (rolled forward at Beta 1.272: the current entry stands first in its place)',
-  whatsnew.includes('items: ["Under the hood: backup and restore now each run through one owner, so exports and restores stay in step."]'));
+  whatsnew.includes('items: ["Under the hood: route building now runs through one owner per job, so creating a route stays in step."]'));
 
 console.log(`proof-1271: ${pass} pass, ${fail} fail`);
 process.exit(fail ? 1 : 0);

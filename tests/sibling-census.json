@@ -8069,6 +8069,844 @@
     "scripts/check-census.py": "dd55f34cd855e60a6fadae7e261aa99f1682b9d7d8446696532045e3a281fafb"
    },
    "issued": "2026-11-23 arch8-restore-1280"
+  },
+  {
+   "id": "section1-arch14-1281",
+   "kind": "app",
+   "anchors": {
+    "functions": [
+     "crAddStreet",
+     "crAddRun",
+     "crRemoveStreet"
+    ],
+    "elements": [
+     "crClearAll"
+    ],
+    "guards": []
+   },
+   "changed": [
+    "parts/create-pick.js"
+   ],
+   "rows": [
+    {
+     "id": "caller:crAddRun:parts/create-citydata.js:crSweepPending",
+     "kind": "caller",
+     "source": "derived: call-site scan of parts/ - crAddRun() is called from crSweepPending in parts/create-citydata.js",
+     "status": "covered",
+     "note": "The sweep's add door: crAddRun keeps its name and signature as a doorway delegating to DRAFT.addRun (body verbatim). Covered by drives 164/166/214/217 and proof-1262 check 10's re-pointed span over the owner method."
+    },
+    {
+     "id": "caller:crAddRun:parts/create-pick.js:pickStreet",
+     "kind": "caller",
+     "source": "derived: call-site scan of parts/ - crAddRun() is called from pickStreet in parts/create-pick.js",
+     "status": "covered",
+     "note": "The tap door for a further disconnected run: doorway delegation, body verbatim on the owner. Covered by drives 151-156, 181, 214, 215, 218, 220."
+    },
+    {
+     "id": "caller:crAddStreet:parts/create-citydata.js:crSweepPending",
+     "kind": "caller",
+     "source": "derived: call-site scan of parts/ - crAddStreet() is called from crSweepPending in parts/create-citydata.js",
+     "status": "covered",
+     "note": "The sweep's first-add door: doorway delegation to DRAFT.addStreet, body verbatim. Covered by drives 164/166/214/217 and proof-1262 check 10."
+    },
+    {
+     "id": "caller:crAddStreet:parts/create-pick.js:pickStreet",
+     "kind": "caller",
+     "source": "derived: call-site scan of parts/ - crAddStreet() is called from pickStreet in parts/create-pick.js",
+     "status": "covered",
+     "note": "The map-tap add door (also called by name from drive220): doorway delegation, body verbatim. Covered by drives 151-156, 181, 214, 215, 218, 220."
+    },
+    {
+     "id": "caller:crRemoveStreet:parts/create-pick.js:crDeselectSectors",
+     "kind": "caller",
+     "source": "derived: call-site scan of parts/ - crRemoveStreet() is called from crDeselectSectors in parts/create-pick.js",
+     "status": "covered",
+     "note": "The trim bar's Deselect door lands on the one removal path, unchanged: doorway delegation to DRAFT.removeStreet. Covered by proof-1269 check 7 (text unchanged) and drives 156/181/220."
+    },
+    {
+     "id": "caller:crRemoveStreet:parts/create-pick.js:crToggleSector",
+     "kind": "caller",
+     "source": "derived: call-site scan of parts/ - crRemoveStreet() is called from crToggleSector in parts/create-pick.js",
+     "status": "covered",
+     "note": "Un-picking every sector removes the street through the same doorway; body verbatim. Covered by drives 156/181 (sector toggling) - the sector internals themselves are step #15's move, untouched here."
+    },
+    {
+     "id": "caller:crRemoveStreet:parts/create-pick.js:del:click",
+     "kind": "caller",
+     "source": "derived: call-site scan of parts/ - crRemoveStreet() is called from del:click in parts/create-pick.js",
+     "status": "covered",
+     "note": "Both row delete buttons (preview row and panel row) call the removal doorway exactly as before. Covered by drives 154/155/214/218."
+    },
+    {
+     "id": "theme:crClearAll",
+     "kind": "theme",
+     "source": "derived: stylesheet scan of parts/head.html - #crClearAll has a day rule and NO body.night rule",
+     "status": "covered",
+     "note": "The Clear-all button element and its styles are untouched - only its confirm callback's body moved onto DRAFT.clearAll (the reset statement verbatim, extracted by proof-clearall-sibling-maps and proof-osmnames-clearall-twin, both re-pointed with receipts). No theme face changes."
+    }
+   ],
+   "files": {
+    "parts/app1.js": "cf555a9736c6f9961e906e0fd9c00a531c9ddb88ca3c5ff5765fa33ba62953df",
+    "parts/app2.js": "25749571be73fc2480b23f22a49def500814105e19abe08919e9bec766cc9144",
+    "parts/app3.js": "25b9d5bf8c5bb8e2bb433ad563c110744b65f5bf69932dc428d1d240505a3d39",
+    "parts/app4.js": "adeb3e82d3e73e4ce8a385ea14725f82573f823e49cdec2772aefaa94cbdd28b",
+    "parts/app5.js": "075517797dadbffbebf5d59682dae3a8771b1b5fa3b999c5de4206257160249f",
+    "parts/brand-snow.js": "86fa9a02f29c7345ee68d68daffd9c72da612921b64da37f1eccf6b72161ac5f",
+    "parts/create-cache.js": "2a7e983aa50862cb074a16abf9266a41a1a175c69faa5215b1d3d289aa2b5327",
+    "parts/create-citydata.js": "393d90f275d971b5e52352deebaece381279acd0e86495ffa2da35701de9148e",
+    "parts/create-fetch.js": "e7a65bd88dc338213946c4537dc5d397f79396ec416b6f4ebf4be831927aeb66",
+    "parts/create-packs.js": "a8b60fb7d601c1e83f555eb703b625a571ec878937ac36fcaddd05aecf635975",
+    "parts/create-pick.js": "3dfc74ca833ccd4242040dfc63230b3dab95626fe96d5c71f6f92bf9b0550bd4",
+    "parts/create-save.js": "ad39720727f43d397e72443c92955c5a35d530f03e3219b2182c9ee7c062e52d",
+    "parts/data.js": "9684c69862156dc70ee9a2b88278b4e825c5bf35f0c150fbc5660ccbdce9304b",
+    "parts/engine.js": "d6d1f676ac8bc2a302cfbaf56de1e10cb361fd8b746d94d6380a5e4ebaf76173",
+    "parts/pmstyles.js": "f3501db9c16dbc6a5fa8c901089101e4913772384de1f069accb23a614bb90fc",
+    "parts/whatsnew.js": "e24a0d6b2bbc4cf4e7b1207504ed11efbfcaad4805f3c6d597cff316057314fe",
+    "parts/head.html": "bff57252f945388445965c770902c06145d3501ceb21cb6f5507fd542eca066d",
+    "scripts/check-census.py": "dd55f34cd855e60a6fadae7e261aa99f1682b9d7d8446696532045e3a281fafb"
+   },
+   "issued": "2026-11-23 section1-arch14"
+  },
+  {
+   "id": "section1-arch15-1281",
+   "kind": "app",
+   "anchors": {
+    "functions": [
+     "crChosenSet",
+     "crSetChosen",
+     "crStreetParts",
+     "crCancelSectors",
+     "crOpenSectors",
+     "crStreetChosenM",
+     "crFilteredRoads",
+     "renderDraft",
+     "crPanelRowEl"
+    ],
+    "elements": [],
+    "guards": []
+   },
+   "changed": [
+    "parts/create-pick.js"
+   ],
+   "rows": [
+    {
+     "id": "caller:crCancelSectors:parts/create-pick.js:map:click",
+     "kind": "caller",
+     "source": "derived: call-site scan of parts/ - crCancelSectors() is called from map:click in parts/create-pick.js",
+     "status": "covered",
+     "note": "The Cancel restore routes through DRAFT.restoreTrim / DRAFT.dropTrim (snapshot returns as a copy, exactly as before). Covered by proof-1269 check 8 and proof-create-zoom-tapaway S2 (both re-pointed to the owner statement) and the #15 focused drive set (151 153 154 155 156 164 165 166 181 208 214 215 217 218 220), green on the step tree."
+    },
+    {
+     "id": "caller:crChosenSet:parts/create-pick.js:crChosenLenM",
+     "kind": "caller",
+     "source": "derived: call-site scan of parts/ - crChosenSet() is called from crChosenLenM in parts/create-pick.js",
+     "status": "covered",
+     "note": "Doorway delegation: crChosenSet returns DRAFT.chosenSet (body verbatim on the owner). Covered by proof-trim-glow-path-pills S1, which extracts and RUNS the owner, and the #15 focused drive set (151 153 154 155 156 164 165 166 181 208 214 215 217 218 220), green on the step tree."
+    },
+    {
+     "id": "caller:crChosenSet:parts/create-pick.js:crToggleSector",
+     "kind": "caller",
+     "source": "derived: call-site scan of parts/ - crChosenSet() is called from crToggleSector in parts/create-pick.js",
+     "status": "covered",
+     "note": "Doorway delegation: crChosenSet returns DRAFT.chosenSet (body verbatim on the owner). Covered by proof-trim-glow-path-pills S1, which extracts and RUNS the owner, and the #15 focused drive set (151 153 154 155 156 164 165 166 181 208 214 215 217 218 220), green on the step tree."
+    },
+    {
+     "id": "caller:crChosenSet:parts/create-pick.js:renderDraft",
+     "kind": "caller",
+     "source": "derived: call-site scan of parts/ - crChosenSet() is called from renderDraft in parts/create-pick.js",
+     "status": "covered",
+     "note": "Doorway delegation: crChosenSet returns DRAFT.chosenSet (body verbatim on the owner). Covered by proof-trim-glow-path-pills S1, which extracts and RUNS the owner, and the #15 focused drive set (151 153 154 155 156 164 165 166 181 208 214 215 217 218 220), green on the step tree."
+    },
+    {
+     "id": "caller:crChosenSet:parts/create-pick.js:renderSectorBar",
+     "kind": "caller",
+     "source": "derived: call-site scan of parts/ - crChosenSet() is called from renderSectorBar in parts/create-pick.js",
+     "status": "covered",
+     "note": "Doorway delegation: crChosenSet returns DRAFT.chosenSet (body verbatim on the owner). Covered by proof-trim-glow-path-pills S1, which extracts and RUNS the owner, and the #15 focused drive set (151 153 154 155 156 164 165 166 181 208 214 215 217 218 220), green on the step tree."
+    },
+    {
+     "id": "caller:crChosenSet:parts/create-pick.js:syncCrGlow",
+     "kind": "caller",
+     "source": "derived: call-site scan of parts/ - crChosenSet() is called from syncCrGlow in parts/create-pick.js",
+     "status": "covered",
+     "note": "Doorway delegation: crChosenSet returns DRAFT.chosenSet (body verbatim on the owner). Covered by proof-trim-glow-path-pills S1, which extracts and RUNS the owner, and the #15 focused drive set (151 153 154 155 156 164 165 166 181 208 214 215 217 218 220), green on the step tree."
+    },
+    {
+     "id": "caller:crChosenSet:parts/create-pick.js:top-level",
+     "kind": "caller",
+     "source": "derived: call-site scan of parts/ - crChosenSet() is called from top-level in parts/create-pick.js",
+     "status": "covered",
+     "note": "Doorway delegation: crChosenSet returns DRAFT.chosenSet (body verbatim on the owner). Covered by proof-trim-glow-path-pills S1, which extracts and RUNS the owner, and the #15 focused drive set (151 153 154 155 156 164 165 166 181 208 214 215 217 218 220), green on the step tree."
+    },
+    {
+     "id": "caller:crFilteredRoads:parts/create-pick.js:fitDraft",
+     "kind": "caller",
+     "source": "derived: call-site scan of parts/ - crFilteredRoads() is called from fitDraft in parts/create-pick.js",
+     "status": "covered",
+     "note": "The save filter reads each street's trim via DRAFT.trimOf (verbatim read); the pack format is untouched. Covered by the #15 focused drive set (151 153 154 155 156 164 165 166 181 208 214 215 217 218 220), green on the step tree (save/preview paths)."
+    },
+    {
+     "id": "caller:crFilteredRoads:parts/create-save.js:crSaveBtn:click",
+     "kind": "caller",
+     "source": "derived: call-site scan of parts/ - crFilteredRoads() is called from crSaveBtn:click in parts/create-save.js",
+     "status": "covered",
+     "note": "The save filter reads each street's trim via DRAFT.trimOf (verbatim read); the pack format is untouched. Covered by the #15 focused drive set (151 153 154 155 156 164 165 166 181 208 214 215 217 218 220), green on the step tree (save/preview paths)."
+    },
+    {
+     "id": "caller:crOpenSectors:parts/create-pick.js:pickStreet",
+     "kind": "caller",
+     "source": "derived: call-site scan of parts/ - crOpenSectors() is called from pickStreet in parts/create-pick.js",
+     "status": "covered",
+     "note": "The entry snapshot is taken via DRAFT.snapshotTrim (a copy of the trim in force, or null). Covered by the #15 focused drive set (151 153 154 155 156 164 165 166 181 208 214 215 217 218 220), green on the step tree (sector sessions opened from the panel row and the map tap)."
+    },
+    {
+     "id": "caller:crOpenSectors:parts/create-pick.js:row:click",
+     "kind": "caller",
+     "source": "derived: call-site scan of parts/ - crOpenSectors() is called from row:click in parts/create-pick.js",
+     "status": "covered",
+     "note": "The entry snapshot is taken via DRAFT.snapshotTrim (a copy of the trim in force, or null). Covered by the #15 focused drive set (151 153 154 155 156 164 165 166 181 208 214 215 217 218 220), green on the step tree (sector sessions opened from the panel row and the map tap)."
+    },
+    {
+     "id": "caller:crPanelRowEl:parts/create-pick.js:renderCrLists",
+     "kind": "caller",
+     "source": "derived: call-site scan of parts/ - crPanelRowEl() is called from renderCrLists in parts/create-pick.js",
+     "status": "covered",
+     "note": "The panel row's trim read goes through DRAFT.trimOf (verbatim read); row text unchanged. Covered by the #15 focused drive set (151 153 154 155 156 164 165 166 181 208 214 215 217 218 220), green on the step tree."
+    },
+    {
+     "id": "caller:crSetChosen:parts/create-pick.js:crSbWhole:click",
+     "kind": "caller",
+     "source": "derived: call-site scan of parts/ - crSetChosen() is called from crSbWhole:click in parts/create-pick.js",
+     "status": "covered",
+     "note": "Doorway delegation: crSetChosen calls DRAFT.setChosen (body verbatim on the owner; full set still stores as no entry). Covered by the #15 focused drive set (151 153 154 155 156 164 165 166 181 208 214 215 217 218 220), green on the step tree (sector toggles and Entire-road paths)."
+    },
+    {
+     "id": "caller:crSetChosen:parts/create-pick.js:crToggleSector",
+     "kind": "caller",
+     "source": "derived: call-site scan of parts/ - crSetChosen() is called from crToggleSector in parts/create-pick.js",
+     "status": "covered",
+     "note": "Doorway delegation: crSetChosen calls DRAFT.setChosen (body verbatim on the owner; full set still stores as no entry). Covered by the #15 focused drive set (151 153 154 155 156 164 165 166 181 208 214 215 217 218 220), green on the step tree (sector toggles and Entire-road paths)."
+    },
+    {
+     "id": "caller:crSetChosen:parts/create-pick.js:top-level",
+     "kind": "caller",
+     "source": "derived: call-site scan of parts/ - crSetChosen() is called from top-level in parts/create-pick.js",
+     "status": "covered",
+     "note": "Doorway delegation: crSetChosen calls DRAFT.setChosen (body verbatim on the owner; full set still stores as no entry). Covered by the #15 focused drive set (151 153 154 155 156 164 165 166 181 208 214 215 217 218 220), green on the step tree (sector toggles and Entire-road paths)."
+    },
+    {
+     "id": "caller:crStreetChosenM:parts/create-pick.js:crPanelRowEl",
+     "kind": "caller",
+     "source": "derived: call-site scan of parts/ - crStreetChosenM() is called from crPanelRowEl in parts/create-pick.js",
+     "status": "covered",
+     "note": "The picked-length read goes through DRAFT.trimOf (verbatim read). Covered by the #15 focused drive set (151 153 154 155 156 164 165 166 181 208 214 215 217 218 220), green on the step tree (panel/preview/name-it lengths on trimmed streets)."
+    },
+    {
+     "id": "caller:crStreetChosenM:parts/create-pick.js:crRowEl",
+     "kind": "caller",
+     "source": "derived: call-site scan of parts/ - crStreetChosenM() is called from crRowEl in parts/create-pick.js",
+     "status": "covered",
+     "note": "The picked-length read goes through DRAFT.trimOf (verbatim read). Covered by the #15 focused drive set (151 153 154 155 156 164 165 166 181 208 214 215 217 218 220), green on the step tree (panel/preview/name-it lengths on trimmed streets)."
+    },
+    {
+     "id": "caller:crStreetChosenM:parts/create-pick.js:renderCrLists",
+     "kind": "caller",
+     "source": "derived: call-site scan of parts/ - crStreetChosenM() is called from renderCrLists in parts/create-pick.js",
+     "status": "covered",
+     "note": "The picked-length read goes through DRAFT.trimOf (verbatim read). Covered by the #15 focused drive set (151 153 154 155 156 164 165 166 181 208 214 215 217 218 220), green on the step tree (panel/preview/name-it lengths on trimmed streets)."
+    },
+    {
+     "id": "caller:crStreetChosenM:parts/create-save.js:pvSaveBtn:click",
+     "kind": "caller",
+     "source": "derived: call-site scan of parts/ - crStreetChosenM() is called from pvSaveBtn:click in parts/create-save.js",
+     "status": "covered",
+     "note": "The picked-length read goes through DRAFT.trimOf (verbatim read). Covered by the #15 focused drive set (151 153 154 155 156 164 165 166 181 208 214 215 217 218 220), green on the step tree (panel/preview/name-it lengths on trimmed streets)."
+    },
+    {
+     "id": "caller:crStreetParts:parts/create-pick.js:crFilteredRoads",
+     "kind": "caller",
+     "source": "derived: call-site scan of parts/ - crStreetParts() is called from crFilteredRoads in parts/create-pick.js",
+     "status": "covered",
+     "note": "The record cache pin now reads DRAFT.hasTrim (the verbatim presence test); the record itself is unchanged. Covered by proof-rerun-d04, which extracts and RUNS the owner through the trim-pin sequences, and the #15 focused drive set (151 153 154 155 156 164 165 166 181 208 214 215 217 218 220), green on the step tree."
+    },
+    {
+     "id": "caller:crStreetParts:parts/create-pick.js:crOpenSectors",
+     "kind": "caller",
+     "source": "derived: call-site scan of parts/ - crStreetParts() is called from crOpenSectors in parts/create-pick.js",
+     "status": "covered",
+     "note": "The record cache pin now reads DRAFT.hasTrim (the verbatim presence test); the record itself is unchanged. Covered by proof-rerun-d04, which extracts and RUNS the owner through the trim-pin sequences, and the #15 focused drive set (151 153 154 155 156 164 165 166 181 208 214 215 217 218 220), green on the step tree."
+    },
+    {
+     "id": "caller:crStreetParts:parts/create-pick.js:crPanelRowEl",
+     "kind": "caller",
+     "source": "derived: call-site scan of parts/ - crStreetParts() is called from crPanelRowEl in parts/create-pick.js",
+     "status": "covered",
+     "note": "The record cache pin now reads DRAFT.hasTrim (the verbatim presence test); the record itself is unchanged. Covered by proof-rerun-d04, which extracts and RUNS the owner through the trim-pin sequences, and the #15 focused drive set (151 153 154 155 156 164 165 166 181 208 214 215 217 218 220), green on the step tree."
+    },
+    {
+     "id": "caller:crStreetParts:parts/create-pick.js:crSbWhole:click",
+     "kind": "caller",
+     "source": "derived: call-site scan of parts/ - crStreetParts() is called from crSbWhole:click in parts/create-pick.js",
+     "status": "covered",
+     "note": "The record cache pin now reads DRAFT.hasTrim (the verbatim presence test); the record itself is unchanged. Covered by proof-rerun-d04, which extracts and RUNS the owner through the trim-pin sequences, and the #15 focused drive set (151 153 154 155 156 164 165 166 181 208 214 215 217 218 220), green on the step tree."
+    },
+    {
+     "id": "caller:crStreetParts:parts/create-pick.js:crSectorTap",
+     "kind": "caller",
+     "source": "derived: call-site scan of parts/ - crStreetParts() is called from crSectorTap in parts/create-pick.js",
+     "status": "covered",
+     "note": "The record cache pin now reads DRAFT.hasTrim (the verbatim presence test); the record itself is unchanged. Covered by proof-rerun-d04, which extracts and RUNS the owner through the trim-pin sequences, and the #15 focused drive set (151 153 154 155 156 164 165 166 181 208 214 215 217 218 220), green on the step tree."
+    },
+    {
+     "id": "caller:crStreetParts:parts/create-pick.js:crStreetChosenM",
+     "kind": "caller",
+     "source": "derived: call-site scan of parts/ - crStreetParts() is called from crStreetChosenM in parts/create-pick.js",
+     "status": "covered",
+     "note": "The record cache pin now reads DRAFT.hasTrim (the verbatim presence test); the record itself is unchanged. Covered by proof-rerun-d04, which extracts and RUNS the owner through the trim-pin sequences, and the #15 focused drive set (151 153 154 155 156 164 165 166 181 208 214 215 217 218 220), green on the step tree."
+    },
+    {
+     "id": "caller:crStreetParts:parts/create-pick.js:crToggleSector",
+     "kind": "caller",
+     "source": "derived: call-site scan of parts/ - crStreetParts() is called from crToggleSector in parts/create-pick.js",
+     "status": "covered",
+     "note": "The record cache pin now reads DRAFT.hasTrim (the verbatim presence test); the record itself is unchanged. Covered by proof-rerun-d04, which extracts and RUNS the owner through the trim-pin sequences, and the #15 focused drive set (151 153 154 155 156 164 165 166 181 208 214 215 217 218 220), green on the step tree."
+    },
+    {
+     "id": "caller:crStreetParts:parts/create-pick.js:renderDraft",
+     "kind": "caller",
+     "source": "derived: call-site scan of parts/ - crStreetParts() is called from renderDraft in parts/create-pick.js",
+     "status": "covered",
+     "note": "The record cache pin now reads DRAFT.hasTrim (the verbatim presence test); the record itself is unchanged. Covered by proof-rerun-d04, which extracts and RUNS the owner through the trim-pin sequences, and the #15 focused drive set (151 153 154 155 156 164 165 166 181 208 214 215 217 218 220), green on the step tree."
+    },
+    {
+     "id": "caller:crStreetParts:parts/create-pick.js:renderSectorBar",
+     "kind": "caller",
+     "source": "derived: call-site scan of parts/ - crStreetParts() is called from renderSectorBar in parts/create-pick.js",
+     "status": "covered",
+     "note": "The record cache pin now reads DRAFT.hasTrim (the verbatim presence test); the record itself is unchanged. Covered by proof-rerun-d04, which extracts and RUNS the owner through the trim-pin sequences, and the #15 focused drive set (151 153 154 155 156 164 165 166 181 208 214 215 217 218 220), green on the step tree."
+    },
+    {
+     "id": "caller:crStreetParts:parts/create-pick.js:syncCrGlow",
+     "kind": "caller",
+     "source": "derived: call-site scan of parts/ - crStreetParts() is called from syncCrGlow in parts/create-pick.js",
+     "status": "covered",
+     "note": "The record cache pin now reads DRAFT.hasTrim (the verbatim presence test); the record itself is unchanged. Covered by proof-rerun-d04, which extracts and RUNS the owner through the trim-pin sequences, and the #15 focused drive set (151 153 154 155 156 164 165 166 181 208 214 215 217 218 220), green on the step tree."
+    },
+    {
+     "id": "caller:crStreetParts:parts/create-pick.js:top-level",
+     "kind": "caller",
+     "source": "derived: call-site scan of parts/ - crStreetParts() is called from top-level in parts/create-pick.js",
+     "status": "covered",
+     "note": "The record cache pin now reads DRAFT.hasTrim (the verbatim presence test); the record itself is unchanged. Covered by proof-rerun-d04, which extracts and RUNS the owner through the trim-pin sequences, and the #15 focused drive set (151 153 154 155 156 164 165 166 181 208 214 215 217 218 220), green on the step tree."
+    },
+    {
+     "id": "caller:renderDraft:parts/create-pick.js:crCancelSectors",
+     "kind": "caller",
+     "source": "derived: call-site scan of parts/ - renderDraft() is called from crCancelSectors in parts/create-pick.js",
+     "status": "covered",
+     "note": "The draft render reads each street's trim via DRAFT.trimOf (verbatim read); paint behaviour unchanged. Covered by the #15 focused drive set (151 153 154 155 156 164 165 166 181 208 214 215 217 218 220), green on the step tree."
+    },
+    {
+     "id": "caller:renderDraft:parts/create-pick.js:crCloseSectors",
+     "kind": "caller",
+     "source": "derived: call-site scan of parts/ - renderDraft() is called from crCloseSectors in parts/create-pick.js",
+     "status": "covered",
+     "note": "The draft render reads each street's trim via DRAFT.trimOf (verbatim read); paint behaviour unchanged. Covered by the #15 focused drive set (151 153 154 155 156 164 165 166 181 208 214 215 217 218 220), green on the step tree."
+    },
+    {
+     "id": "caller:renderDraft:parts/create-pick.js:crOpenSectors",
+     "kind": "caller",
+     "source": "derived: call-site scan of parts/ - renderDraft() is called from crOpenSectors in parts/create-pick.js",
+     "status": "covered",
+     "note": "The draft render reads each street's trim via DRAFT.trimOf (verbatim read); paint behaviour unchanged. Covered by the #15 focused drive set (151 153 154 155 156 164 165 166 181 208 214 215 217 218 220), green on the step tree."
+    },
+    {
+     "id": "caller:renderDraft:parts/create-pick.js:crSbWhole:click",
+     "kind": "caller",
+     "source": "derived: call-site scan of parts/ - renderDraft() is called from crSbWhole:click in parts/create-pick.js",
+     "status": "covered",
+     "note": "The draft render reads each street's trim via DRAFT.trimOf (verbatim read); paint behaviour unchanged. Covered by the #15 focused drive set (151 153 154 155 156 164 165 166 181 208 214 215 217 218 220), green on the step tree."
+    },
+    {
+     "id": "caller:renderDraft:parts/create-pick.js:crToggleSector",
+     "kind": "caller",
+     "source": "derived: call-site scan of parts/ - renderDraft() is called from crToggleSector in parts/create-pick.js",
+     "status": "covered",
+     "note": "The draft render reads each street's trim via DRAFT.trimOf (verbatim read); paint behaviour unchanged. Covered by the #15 focused drive set (151 153 154 155 156 164 165 166 181 208 214 215 217 218 220), green on the step tree."
+    },
+    {
+     "id": "caller:renderDraft:parts/create-pick.js:exitCreate",
+     "kind": "caller",
+     "source": "derived: call-site scan of parts/ - renderDraft() is called from exitCreate in parts/create-pick.js",
+     "status": "covered",
+     "note": "The draft render reads each street's trim via DRAFT.trimOf (verbatim read); paint behaviour unchanged. Covered by the #15 focused drive set (151 153 154 155 156 164 165 166 181 208 214 215 217 218 220), green on the step tree."
+    },
+    {
+     "id": "caller:renderDraft:parts/create-pick.js:map:styledata",
+     "kind": "caller",
+     "source": "derived: call-site scan of parts/ - renderDraft() is called from map:styledata in parts/create-pick.js",
+     "status": "covered",
+     "note": "The draft render reads each street's trim via DRAFT.trimOf (verbatim read); paint behaviour unchanged. Covered by the #15 focused drive set (151 153 154 155 156 164 165 166 181 208 214 215 217 218 220), green on the step tree."
+    },
+    {
+     "id": "caller:renderDraft:parts/create-pick.js:setCreateStage",
+     "kind": "caller",
+     "source": "derived: call-site scan of parts/ - renderDraft() is called from setCreateStage in parts/create-pick.js",
+     "status": "covered",
+     "note": "The draft render reads each street's trim via DRAFT.trimOf (verbatim read); paint behaviour unchanged. Covered by the #15 focused drive set (151 153 154 155 156 164 165 166 181 208 214 215 217 218 220), green on the step tree."
+    },
+    {
+     "id": "caller:renderDraft:parts/create-pick.js:top-level",
+     "kind": "caller",
+     "source": "derived: call-site scan of parts/ - renderDraft() is called from top-level in parts/create-pick.js",
+     "status": "covered",
+     "note": "The draft render reads each street's trim via DRAFT.trimOf (verbatim read); paint behaviour unchanged. Covered by the #15 focused drive set (151 153 154 155 156 164 165 166 181 208 214 215 217 218 220), green on the step tree."
+    },
+    {
+     "id": "gesture:parts/create-pick.js:map:click",
+     "kind": "gesture",
+     "source": "derived: handler scan - the map click handler in parts/create-pick.js touches crCancelSectors without dismissing it",
+     "status": "covered",
+     "note": "Gesture path into the re-pointed surface: the handlers on this path (map tap -> crOpenSectors/crCancelSectors, styledata -> renderDraft) keep their bodies except the sector reads/writes now routing through the DRAFT owner, verbatim. Covered by the #15 focused drive set (151 153 154 155 156 164 165 166 181 208 214 215 217 218 220), green on the step tree."
+    },
+    {
+     "id": "gesture:parts/create-pick.js:map:styledata",
+     "kind": "gesture",
+     "source": "derived: handler scan - the map styledata handler in parts/create-pick.js touches renderDraft without dismissing it",
+     "status": "covered",
+     "note": "Gesture path into the re-pointed surface: the handlers on this path (map tap -> crOpenSectors/crCancelSectors, styledata -> renderDraft) keep their bodies except the sector reads/writes now routing through the DRAFT owner, verbatim. Covered by the #15 focused drive set (151 153 154 155 156 164 165 166 181 208 214 215 217 218 220), green on the step tree."
+    }
+   ],
+   "files": {
+    "parts/app1.js": "cf555a9736c6f9961e906e0fd9c00a531c9ddb88ca3c5ff5765fa33ba62953df",
+    "parts/app2.js": "25749571be73fc2480b23f22a49def500814105e19abe08919e9bec766cc9144",
+    "parts/app3.js": "25b9d5bf8c5bb8e2bb433ad563c110744b65f5bf69932dc428d1d240505a3d39",
+    "parts/app4.js": "adeb3e82d3e73e4ce8a385ea14725f82573f823e49cdec2772aefaa94cbdd28b",
+    "parts/app5.js": "075517797dadbffbebf5d59682dae3a8771b1b5fa3b999c5de4206257160249f",
+    "parts/brand-snow.js": "86fa9a02f29c7345ee68d68daffd9c72da612921b64da37f1eccf6b72161ac5f",
+    "parts/create-cache.js": "2a7e983aa50862cb074a16abf9266a41a1a175c69faa5215b1d3d289aa2b5327",
+    "parts/create-citydata.js": "393d90f275d971b5e52352deebaece381279acd0e86495ffa2da35701de9148e",
+    "parts/create-fetch.js": "e7a65bd88dc338213946c4537dc5d397f79396ec416b6f4ebf4be831927aeb66",
+    "parts/create-packs.js": "a8b60fb7d601c1e83f555eb703b625a571ec878937ac36fcaddd05aecf635975",
+    "parts/create-pick.js": "11b8276387dd243ea200fac987ccd33d9457b3a369e18040eb8b277bd716638c",
+    "parts/create-save.js": "ad39720727f43d397e72443c92955c5a35d530f03e3219b2182c9ee7c062e52d",
+    "parts/data.js": "9684c69862156dc70ee9a2b88278b4e825c5bf35f0c150fbc5660ccbdce9304b",
+    "parts/engine.js": "d6d1f676ac8bc2a302cfbaf56de1e10cb361fd8b746d94d6380a5e4ebaf76173",
+    "parts/pmstyles.js": "f3501db9c16dbc6a5fa8c901089101e4913772384de1f069accb23a614bb90fc",
+    "parts/whatsnew.js": "e24a0d6b2bbc4cf4e7b1207504ed11efbfcaad4805f3c6d597cff316057314fe",
+    "parts/head.html": "bff57252f945388445965c770902c06145d3501ceb21cb6f5507fd542eca066d",
+    "scripts/check-census.py": "dd55f34cd855e60a6fadae7e261aa99f1682b9d7d8446696532045e3a281fafb"
+   },
+   "issued": "2026-11-23 section1-arch15"
+  },
+  {
+   "id": "section1-arch16-1281",
+   "kind": "app",
+   "anchors": {
+    "functions": [
+     "crCityPrepare",
+     "crGridResume",
+     "crStartPrep",
+     "crPrepBegin"
+    ],
+    "elements": [],
+    "guards": []
+   },
+   "changed": [
+    "parts/create-cache.js",
+    "parts/create-citydata.js",
+    "parts/create-fetch.js"
+   ],
+   "rows": [
+    {
+     "id": "caller:crCityPrepare:parts/create-pick.js:crEnterPickFromCity",
+     "kind": "caller",
+     "source": "derived: call-site scan of parts/ - crCityPrepare() is called from crEnterPickFromCity in parts/create-pick.js",
+     "status": "covered",
+     "note": "drive151 (city prepare end-to-end), drive153 (generation gating), drive154, drive164, drive181 (lifecycle) - all PASS on the section1-arch16 tree"
+    },
+    {
+     "id": "caller:crGridResume:parts/create-pick.js:crHintBtn:click",
+     "kind": "caller",
+     "source": "derived: call-site scan of parts/ - crGridResume() is called from crHintBtn:click in parts/create-pick.js",
+     "status": "covered",
+     "note": "drive153 (resume path), drive208 (Retry hint over seeded grid failure - the crFailFromGrid clear's biting check), drive164 - all PASS"
+    },
+    {
+     "id": "caller:crPrepBegin:parts/create-cache.js:crCityPrepare",
+     "kind": "caller",
+     "source": "derived: call-site scan of parts/ - crPrepBegin() is called from crCityPrepare in parts/create-cache.js",
+     "status": "covered",
+     "note": "proof-prep-begin-owner check 4a pins the door; drive151/153/154/155/164/181/185 exercise the entry - all PASS"
+    },
+    {
+     "id": "caller:crPrepBegin:parts/create-cache.js:crGridResume",
+     "kind": "caller",
+     "source": "derived: call-site scan of parts/ - crPrepBegin() is called from crGridResume in parts/create-cache.js",
+     "status": "covered",
+     "note": "proof-prep-begin-owner check 4b pins the door; drive153 + drive208 exercise the resume entry - all PASS"
+    },
+    {
+     "id": "caller:crPrepBegin:parts/create-citydata.js:crStartPrep",
+     "kind": "caller",
+     "source": "derived: call-site scan of parts/ - crPrepBegin() is called from crStartPrep in parts/create-citydata.js",
+     "status": "covered",
+     "note": "proof-prep-begin-owner check 4c pins the door and the kept anchor assignment; drive151/155/164/208 exercise the fallback entry - all PASS"
+    },
+    {
+     "id": "caller:crStartPrep:parts/create-pick.js:b:click",
+     "kind": "caller",
+     "source": "derived: call-site scan of parts/ - crStartPrep() is called from b:click in parts/create-pick.js",
+     "status": "covered",
+     "note": "drive151/155 (fallback prepare from a tap), drive164 - all PASS"
+    },
+    {
+     "id": "caller:crStartPrep:parts/create-pick.js:crHintBtn:click",
+     "kind": "caller",
+     "source": "derived: call-site scan of parts/ - crStartPrep() is called from crHintBtn:click in parts/create-pick.js",
+     "status": "covered",
+     "note": "drive208 (hint offers over seeded failures), drive181 - all PASS"
+    }
+   ],
+   "files": {
+    "parts/app1.js": "cf555a9736c6f9961e906e0fd9c00a531c9ddb88ca3c5ff5765fa33ba62953df",
+    "parts/app2.js": "25749571be73fc2480b23f22a49def500814105e19abe08919e9bec766cc9144",
+    "parts/app3.js": "25b9d5bf8c5bb8e2bb433ad563c110744b65f5bf69932dc428d1d240505a3d39",
+    "parts/app4.js": "adeb3e82d3e73e4ce8a385ea14725f82573f823e49cdec2772aefaa94cbdd28b",
+    "parts/app5.js": "075517797dadbffbebf5d59682dae3a8771b1b5fa3b999c5de4206257160249f",
+    "parts/brand-snow.js": "86fa9a02f29c7345ee68d68daffd9c72da612921b64da37f1eccf6b72161ac5f",
+    "parts/create-cache.js": "3c40d8c240ebc97b50b2eb2cc21fc06409ac373c3298873d8b6b33e61e81c940",
+    "parts/create-citydata.js": "21d7d195b7771f1ec1305c4a3a915bf5b369b1456889caa7353892d26b5eb971",
+    "parts/create-fetch.js": "e4d3299947bf6950824bffd58a24b534ed97cf502ba4bb68c7a8b1d8b5058f50",
+    "parts/create-packs.js": "a8b60fb7d601c1e83f555eb703b625a571ec878937ac36fcaddd05aecf635975",
+    "parts/create-pick.js": "11b8276387dd243ea200fac987ccd33d9457b3a369e18040eb8b277bd716638c",
+    "parts/create-save.js": "ad39720727f43d397e72443c92955c5a35d530f03e3219b2182c9ee7c062e52d",
+    "parts/data.js": "9684c69862156dc70ee9a2b88278b4e825c5bf35f0c150fbc5660ccbdce9304b",
+    "parts/engine.js": "d6d1f676ac8bc2a302cfbaf56de1e10cb361fd8b746d94d6380a5e4ebaf76173",
+    "parts/pmstyles.js": "f3501db9c16dbc6a5fa8c901089101e4913772384de1f069accb23a614bb90fc",
+    "parts/whatsnew.js": "e24a0d6b2bbc4cf4e7b1207504ed11efbfcaad4805f3c6d597cff316057314fe",
+    "parts/head.html": "bff57252f945388445965c770902c06145d3501ceb21cb6f5507fd542eca066d",
+    "scripts/check-census.py": "dd55f34cd855e60a6fadae7e261aa99f1682b9d7d8446696532045e3a281fafb"
+   },
+   "issued": "2026-11-23 section1-arch16"
+  },
+  {
+   "id": "section1-arch17-1281",
+   "kind": "app",
+   "anchors": {
+    "functions": [
+     "crCovFold",
+     "crCovReindex",
+     "crCovMerge",
+     "crIndexWays",
+     "crCleanPts",
+     "crCleanPtPush",
+     "crCityPrepare"
+    ],
+    "elements": [],
+    "guards": []
+   },
+   "changed": [
+    "parts/create-cache.js",
+    "parts/create-citydata.js"
+   ],
+   "rows": [
+    {
+     "id": "caller:crCityPrepare:parts/create-pick.js:crEnterPickFromCity",
+     "kind": "caller",
+     "source": "derived: call-site scan of parts/ - crCityPrepare() is called from crEnterPickFromCity in parts/create-pick.js",
+     "status": "covered",
+     "note": "The restore fold inside crCityPrepare now routes through crCovFold/crCovReindex. Covered by proof-1254 check 9 (re-pointed) + proof-cov-owner + the #17 focused drive set (151 153 154 155 164 165 173 174 206 214 215 217), green on the step tree."
+    },
+    {
+     "id": "caller:crCleanPtPush:parts/create-citydata.js:crCleanPts",
+     "kind": "caller",
+     "source": "derived: call-site scan of parts/ - crCleanPtPush() is called from crCleanPts in parts/create-citydata.js",
+     "status": "covered",
+     "note": "proof-cov-owner checks 1c/4a-4c run crCleanPts on real and poisoned pairs through the shared normalisation."
+    },
+    {
+     "id": "caller:crCleanPtPush:parts/create-citydata.js:crIndexWays",
+     "kind": "caller",
+     "source": "derived: call-site scan of parts/ - crCleanPtPush() is called from crIndexWays in parts/create-citydata.js",
+     "status": "covered",
+     "note": "proof-cov-owner checks 1b/3b/3c run crIndexWays through the shared normalisation (rounding, dedupe, survival)."
+    },
+    {
+     "id": "caller:crCleanPts:parts/create-citydata.js:crCleanStoredWay",
+     "kind": "caller",
+     "source": "derived: call-site scan of parts/ - crCleanPts() is called from crCleanStoredWay in parts/create-citydata.js",
+     "status": "covered",
+     "note": "The stored-way cleaning path is unchanged except its normalisation call; covered by proof-cov-owner 4b + the #17 focused drive set (151 153 154 155 164 165 173 174 206 214 215 217), green on the step tree (cached-city restores run through crCleanStoredWay)."
+    },
+    {
+     "id": "caller:crCovFold:parts/create-cache.js:crCityPrepare",
+     "kind": "caller",
+     "source": "derived: call-site scan of parts/ - crCovFold() is called from crCityPrepare in parts/create-cache.js",
+     "status": "covered",
+     "note": "proof-1254 check 9 pins the call line and the fold body's purity; proof-cov-owner 6a/6b run the fold. the #17 focused drive set (151 153 154 155 164 165 173 174 206 214 215 217), green on the step tree."
+    },
+    {
+     "id": "caller:crCovMerge:parts/create-cache.js:crGridPump",
+     "kind": "caller",
+     "source": "derived: call-site scan of parts/ - crCovMerge() is called from crGridPump in parts/create-cache.js",
+     "status": "covered",
+     "note": "crCovMerge's body order is unchanged apart from the reindex call; covered by proof-cov-owner 6d + proof-1234 R2 + the #17 focused drive set (151 153 154 155 164 165 173 174 206 214 215 217), green on the step tree."
+    },
+    {
+     "id": "caller:crCovMerge:parts/create-citydata.js:crStartPrep",
+     "kind": "caller",
+     "source": "derived: call-site scan of parts/ - crCovMerge() is called from crStartPrep in parts/create-citydata.js",
+     "status": "covered",
+     "note": "Same owner, fallback landing; covered by proof-cov-owner 6d + the #17 focused drive set (151 153 154 155 164 165 173 174 206 214 215 217), green on the step tree."
+    },
+    {
+     "id": "caller:crCovMerge:parts/create-pick.js:pickStreet",
+     "kind": "caller",
+     "source": "derived: call-site scan of parts/ - crCovMerge() is called from pickStreet in parts/create-pick.js",
+     "status": "covered",
+     "note": "Same owner, top-up landing; covered by proof-cov-owner 6d + the #17 focused drive set (151 153 154 155 164 165 173 174 206 214 215 217), green on the step tree (tap/top-up flows)."
+    },
+    {
+     "id": "caller:crCovReindex:parts/create-cache.js:crCityPrepare",
+     "kind": "caller",
+     "source": "derived: call-site scan of parts/ - crCovReindex() is called from crCityPrepare in parts/create-cache.js",
+     "status": "covered",
+     "note": "proof-1254 check 9 pins the once-after-the-loop call line; proof-cov-owner 6c runs the rebuild."
+    },
+    {
+     "id": "caller:crCovReindex:parts/create-citydata.js:crCovMerge",
+     "kind": "caller",
+     "source": "derived: call-site scan of parts/ - crCovReindex() is called from crCovMerge in parts/create-citydata.js",
+     "status": "covered",
+     "note": "proof-cov-owner 6d: a merge reindexes and refreshes exactly once."
+    },
+    {
+     "id": "caller:crIndexWays:parts/create-citydata.js:crCovMerge",
+     "kind": "caller",
+     "source": "derived: call-site scan of parts/ - crIndexWays() is called from crCovMerge in parts/create-citydata.js",
+     "status": "covered",
+     "note": "proof-cov-owner 3b/3c + 6d run the indexing inside and beside the merge."
+    }
+   ],
+   "files": {
+    "parts/app1.js": "cf555a9736c6f9961e906e0fd9c00a531c9ddb88ca3c5ff5765fa33ba62953df",
+    "parts/app2.js": "25749571be73fc2480b23f22a49def500814105e19abe08919e9bec766cc9144",
+    "parts/app3.js": "25b9d5bf8c5bb8e2bb433ad563c110744b65f5bf69932dc428d1d240505a3d39",
+    "parts/app4.js": "adeb3e82d3e73e4ce8a385ea14725f82573f823e49cdec2772aefaa94cbdd28b",
+    "parts/app5.js": "075517797dadbffbebf5d59682dae3a8771b1b5fa3b999c5de4206257160249f",
+    "parts/brand-snow.js": "86fa9a02f29c7345ee68d68daffd9c72da612921b64da37f1eccf6b72161ac5f",
+    "parts/create-cache.js": "e4a00051eab5a4af59b71909b4a6627f53e720b28dc17dc34635db949f746d7c",
+    "parts/create-citydata.js": "34c49bedba4f16a90761988e4731aacab0d9793bad6a33fd5f20582fd2206abc",
+    "parts/create-fetch.js": "e4d3299947bf6950824bffd58a24b534ed97cf502ba4bb68c7a8b1d8b5058f50",
+    "parts/create-packs.js": "a8b60fb7d601c1e83f555eb703b625a571ec878937ac36fcaddd05aecf635975",
+    "parts/create-pick.js": "11b8276387dd243ea200fac987ccd33d9457b3a369e18040eb8b277bd716638c",
+    "parts/create-save.js": "ad39720727f43d397e72443c92955c5a35d530f03e3219b2182c9ee7c062e52d",
+    "parts/data.js": "9684c69862156dc70ee9a2b88278b4e825c5bf35f0c150fbc5660ccbdce9304b",
+    "parts/engine.js": "d6d1f676ac8bc2a302cfbaf56de1e10cb361fd8b746d94d6380a5e4ebaf76173",
+    "parts/pmstyles.js": "f3501db9c16dbc6a5fa8c901089101e4913772384de1f069accb23a614bb90fc",
+    "parts/whatsnew.js": "e24a0d6b2bbc4cf4e7b1207504ed11efbfcaad4805f3c6d597cff316057314fe",
+    "parts/head.html": "bff57252f945388445965c770902c06145d3501ceb21cb6f5507fd542eca066d",
+    "scripts/check-census.py": "dd55f34cd855e60a6fadae7e261aa99f1682b9d7d8446696532045e3a281fafb"
+   },
+   "issued": "2026-11-23 section1-arch17"
+  },
+  {
+   "id": "section1-arch18-1281",
+   "kind": "app",
+   "anchors": {
+    "functions": [
+     "crReadBodyText",
+     "crOverpassFetch",
+     "crPackDownload"
+    ],
+    "elements": [],
+    "guards": []
+   },
+   "changed": [
+    "parts/create-citydata.js",
+    "parts/create-fetch.js"
+   ],
+   "rows": [
+    {
+     "id": "caller:crOverpassFetch:parts/create-fetch.js:crSourceExtract",
+     "kind": "caller",
+     "source": "derived: call-site scan of parts/ - crOverpassFetch() is called from crSourceExtract in parts/create-fetch.js",
+     "status": "covered",
+     "note": "The seam's service path is byte-identical in shape; only its body read moved into crReadBodyText with the cap/session policies on the hook. Covered by proof-response-consumption + proof-1246 (timer seats untouched) + the #18 focused drive set (151 153 154 155 164 165 173 174 205 206 214 217), green on the step tree - drive205 (attempt stall) and drive206 (pack windows, P3a discrimination) are the timing witnesses."
+    },
+    {
+     "id": "caller:crPackDownload:parts/create-citydata.js:crPackLoad",
+     "kind": "caller",
+     "source": "derived: call-site scan of parts/ - crPackDownload() is called from crPackLoad in parts/create-citydata.js",
+     "status": "covered",
+     "note": "The load's retry/tag/controller policies are untouched; only the attempt's body read moved. Covered by proof-1249 (re-pointed seats) + proof-sweep d-01 (real download end to end) + the #18 focused drive set (151 153 154 155 164 165 173 174 205 206 214 217), green on the step tree - drive205 (attempt stall) and drive206 (pack windows, P3a discrimination) are the timing witnesses."
+    },
+    {
+     "id": "caller:crReadBodyText:parts/create-citydata.js:crPackDownload",
+     "kind": "caller",
+     "source": "derived: call-site scan of parts/ - crReadBodyText() is called from crPackDownload in parts/create-citydata.js",
+     "status": "covered",
+     "note": "proof-response-consumption runs the shared body; proof-1249 check 18 pins the pack hook's sawByte assignment at this call."
+    },
+    {
+     "id": "caller:crReadBodyText:parts/create-fetch.js:crOverpassFetch",
+     "kind": "caller",
+     "source": "derived: call-site scan of parts/ - crReadBodyText() is called from crOverpassFetch in parts/create-fetch.js",
+     "status": "covered",
+     "note": "proof-response-consumption runs the shared body incl. the verdict stop the service's hook produces ('dense'/'stale')."
+    }
+   ],
+   "files": {
+    "parts/app1.js": "cf555a9736c6f9961e906e0fd9c00a531c9ddb88ca3c5ff5765fa33ba62953df",
+    "parts/app2.js": "25749571be73fc2480b23f22a49def500814105e19abe08919e9bec766cc9144",
+    "parts/app3.js": "25b9d5bf8c5bb8e2bb433ad563c110744b65f5bf69932dc428d1d240505a3d39",
+    "parts/app4.js": "adeb3e82d3e73e4ce8a385ea14725f82573f823e49cdec2772aefaa94cbdd28b",
+    "parts/app5.js": "075517797dadbffbebf5d59682dae3a8771b1b5fa3b999c5de4206257160249f",
+    "parts/brand-snow.js": "86fa9a02f29c7345ee68d68daffd9c72da612921b64da37f1eccf6b72161ac5f",
+    "parts/create-cache.js": "e4a00051eab5a4af59b71909b4a6627f53e720b28dc17dc34635db949f746d7c",
+    "parts/create-citydata.js": "aff6d5e1dbe6f6c9158982fbad7a326cbb946a80c60042d33e679a5a47ea4c0e",
+    "parts/create-fetch.js": "60abb28dd4ca71be3850f3e0c3e9f2bab69978cb79100db4c0859ce078f97ec3",
+    "parts/create-packs.js": "a8b60fb7d601c1e83f555eb703b625a571ec878937ac36fcaddd05aecf635975",
+    "parts/create-pick.js": "11b8276387dd243ea200fac987ccd33d9457b3a369e18040eb8b277bd716638c",
+    "parts/create-save.js": "ad39720727f43d397e72443c92955c5a35d530f03e3219b2182c9ee7c062e52d",
+    "parts/data.js": "9684c69862156dc70ee9a2b88278b4e825c5bf35f0c150fbc5660ccbdce9304b",
+    "parts/engine.js": "d6d1f676ac8bc2a302cfbaf56de1e10cb361fd8b746d94d6380a5e4ebaf76173",
+    "parts/pmstyles.js": "f3501db9c16dbc6a5fa8c901089101e4913772384de1f069accb23a614bb90fc",
+    "parts/whatsnew.js": "e24a0d6b2bbc4cf4e7b1207504ed11efbfcaad4805f3c6d597cff316057314fe",
+    "parts/head.html": "bff57252f945388445965c770902c06145d3501ceb21cb6f5507fd542eca066d",
+    "scripts/check-census.py": "dd55f34cd855e60a6fadae7e261aa99f1682b9d7d8446696532045e3a281fafb"
+   },
+   "issued": "2026-11-23 section1-arch18"
+  },
+  {
+   "id": "section1-arch19-1281",
+   "kind": "app",
+   "anchors": {
+    "functions": [
+     "crResetCitySearch",
+     "crOpenCityPane",
+     "crRunCitySearch"
+    ],
+    "elements": [],
+    "guards": []
+   },
+   "changed": [
+    "parts/create-pick.js"
+   ],
+   "rows": [
+    {
+     "id": "caller:crOpenCityPane:parts/create-pick.js:crCityChange:click",
+     "kind": "caller",
+     "source": "derived: call-site scan of parts/ - crOpenCityPane() is called from crCityChange:click in parts/create-pick.js",
+     "status": "covered",
+     "note": "The pane open now closes any held search through crResetCitySearch. Covered by proof-city-search-owner check 3 + the #19 focused drive set (151 153 154 155 164 165 181 214 217), green on the step tree - drive164 is the city-search invalidation witness."
+    },
+    {
+     "id": "caller:crOpenCityPane:parts/create-pick.js:crDoorManual:click",
+     "kind": "caller",
+     "source": "derived: call-site scan of parts/ - crOpenCityPane() is called from crDoorManual:click in parts/create-pick.js",
+     "status": "covered",
+     "note": "Same owner call at the pane open. proof-city-search-owner check 3 + the #19 focused drive set (151 153 154 155 164 165 181 214 217), green on the step tree - drive164 is the city-search invalidation witness."
+    },
+    {
+     "id": "caller:crOpenCityPane:parts/create-pick.js:pvAddBtn:click",
+     "kind": "caller",
+     "source": "derived: call-site scan of parts/ - crOpenCityPane() is called from pvAddBtn:click in parts/create-pick.js",
+     "status": "covered",
+     "note": "Same owner call at the pane open. proof-city-search-owner check 3 + the #19 focused drive set (151 153 154 155 164 165 181 214 217), green on the step tree - drive164 is the city-search invalidation witness."
+    },
+    {
+     "id": "caller:crResetCitySearch:parts/create-pick.js:crCityBack:click",
+     "kind": "caller",
+     "source": "derived: call-site scan of parts/ - crResetCitySearch() is called from crCityBack:click in parts/create-pick.js",
+     "status": "covered",
+     "note": "proof-city-search-owner checks 1-6 (the owner's three moves run for real); the Back seat keeps only its navigation extras."
+    },
+    {
+     "id": "caller:crResetCitySearch:parts/create-pick.js:crCityInput:input",
+     "kind": "caller",
+     "source": "derived: call-site scan of parts/ - crResetCitySearch() is called from crCityInput:input in parts/create-pick.js",
+     "status": "covered",
+     "note": "proof-city-search-owner + drive164 (invalidation at the input event is its home ground)."
+    },
+    {
+     "id": "caller:crResetCitySearch:parts/create-pick.js:crOpenCityPane",
+     "kind": "caller",
+     "source": "derived: call-site scan of parts/ - crResetCitySearch() is called from crOpenCityPane in parts/create-pick.js",
+     "status": "covered",
+     "note": "proof-city-search-owner check 3 pins this seat's call; battery mutation 3 (seat un-called) turns it red twice."
+    },
+    {
+     "id": "caller:crResetCitySearch:parts/create-pick.js:crRunCitySearch",
+     "kind": "caller",
+     "source": "derived: call-site scan of parts/ - crResetCitySearch() is called from crRunCitySearch in parts/create-pick.js",
+     "status": "covered",
+     "note": "proof-city-search-owner check 3 pins the short-query seat's call; drive164 covers the short-query invalidation."
+    },
+    {
+     "id": "caller:crRunCitySearch:parts/create-pick.js:crCityInput:input",
+     "kind": "caller",
+     "source": "derived: call-site scan of parts/ - crRunCitySearch() is called from crCityInput:input in parts/create-pick.js",
+     "status": "covered",
+     "note": "The debounce re-arm after the owner's close is the seat's own extra, unchanged. drive164 + the #19 focused drive set (151 153 154 155 164 165 181 214 217), green on the step tree - drive164 is the city-search invalidation witness."
+    }
+   ],
+   "files": {
+    "parts/app1.js": "cf555a9736c6f9961e906e0fd9c00a531c9ddb88ca3c5ff5765fa33ba62953df",
+    "parts/app2.js": "25749571be73fc2480b23f22a49def500814105e19abe08919e9bec766cc9144",
+    "parts/app3.js": "25b9d5bf8c5bb8e2bb433ad563c110744b65f5bf69932dc428d1d240505a3d39",
+    "parts/app4.js": "adeb3e82d3e73e4ce8a385ea14725f82573f823e49cdec2772aefaa94cbdd28b",
+    "parts/app5.js": "075517797dadbffbebf5d59682dae3a8771b1b5fa3b999c5de4206257160249f",
+    "parts/brand-snow.js": "86fa9a02f29c7345ee68d68daffd9c72da612921b64da37f1eccf6b72161ac5f",
+    "parts/create-cache.js": "e4a00051eab5a4af59b71909b4a6627f53e720b28dc17dc34635db949f746d7c",
+    "parts/create-citydata.js": "aff6d5e1dbe6f6c9158982fbad7a326cbb946a80c60042d33e679a5a47ea4c0e",
+    "parts/create-fetch.js": "60abb28dd4ca71be3850f3e0c3e9f2bab69978cb79100db4c0859ce078f97ec3",
+    "parts/create-packs.js": "a8b60fb7d601c1e83f555eb703b625a571ec878937ac36fcaddd05aecf635975",
+    "parts/create-pick.js": "d88cf1d778f213b2524d54bf23768b0bc3089e22ecd5b31f0a62915d4624ed32",
+    "parts/create-save.js": "ad39720727f43d397e72443c92955c5a35d530f03e3219b2182c9ee7c062e52d",
+    "parts/data.js": "9684c69862156dc70ee9a2b88278b4e825c5bf35f0c150fbc5660ccbdce9304b",
+    "parts/engine.js": "d6d1f676ac8bc2a302cfbaf56de1e10cb361fd8b746d94d6380a5e4ebaf76173",
+    "parts/pmstyles.js": "f3501db9c16dbc6a5fa8c901089101e4913772384de1f069accb23a614bb90fc",
+    "parts/whatsnew.js": "e24a0d6b2bbc4cf4e7b1207504ed11efbfcaad4805f3c6d597cff316057314fe",
+    "parts/head.html": "bff57252f945388445965c770902c06145d3501ceb21cb6f5507fd542eca066d",
+    "scripts/check-census.py": "dd55f34cd855e60a6fadae7e261aa99f1682b9d7d8446696532045e3a281fafb"
+   },
+   "issued": "2026-11-23 section1-arch19"
+  },
+  {
+   "id": "section1-release-1281",
+   "kind": "app",
+   "anchors": {
+    "functions": [],
+    "elements": [],
+    "guards": []
+   },
+   "changed": [
+    "parts/whatsnew.js"
+   ],
+   "rows": [],
+   "files": {
+    "parts/app1.js": "cf555a9736c6f9961e906e0fd9c00a531c9ddb88ca3c5ff5765fa33ba62953df",
+    "parts/app2.js": "25749571be73fc2480b23f22a49def500814105e19abe08919e9bec766cc9144",
+    "parts/app3.js": "25b9d5bf8c5bb8e2bb433ad563c110744b65f5bf69932dc428d1d240505a3d39",
+    "parts/app4.js": "adeb3e82d3e73e4ce8a385ea14725f82573f823e49cdec2772aefaa94cbdd28b",
+    "parts/app5.js": "075517797dadbffbebf5d59682dae3a8771b1b5fa3b999c5de4206257160249f",
+    "parts/brand-snow.js": "86fa9a02f29c7345ee68d68daffd9c72da612921b64da37f1eccf6b72161ac5f",
+    "parts/create-cache.js": "e4a00051eab5a4af59b71909b4a6627f53e720b28dc17dc34635db949f746d7c",
+    "parts/create-citydata.js": "aff6d5e1dbe6f6c9158982fbad7a326cbb946a80c60042d33e679a5a47ea4c0e",
+    "parts/create-fetch.js": "60abb28dd4ca71be3850f3e0c3e9f2bab69978cb79100db4c0859ce078f97ec3",
+    "parts/create-packs.js": "a8b60fb7d601c1e83f555eb703b625a571ec878937ac36fcaddd05aecf635975",
+    "parts/create-pick.js": "d88cf1d778f213b2524d54bf23768b0bc3089e22ecd5b31f0a62915d4624ed32",
+    "parts/create-save.js": "ad39720727f43d397e72443c92955c5a35d530f03e3219b2182c9ee7c062e52d",
+    "parts/data.js": "9684c69862156dc70ee9a2b88278b4e825c5bf35f0c150fbc5660ccbdce9304b",
+    "parts/engine.js": "d6d1f676ac8bc2a302cfbaf56de1e10cb361fd8b746d94d6380a5e4ebaf76173",
+    "parts/pmstyles.js": "f3501db9c16dbc6a5fa8c901089101e4913772384de1f069accb23a614bb90fc",
+    "parts/whatsnew.js": "7116104af9879fa69027abe4a0b74ec3ca57cdec0d7b92a4fccfb5e20eb13748",
+    "parts/head.html": "bff57252f945388445965c770902c06145d3501ceb21cb6f5507fd542eca066d",
+    "scripts/check-census.py": "dd55f34cd855e60a6fadae7e261aa99f1682b9d7d8446696532045e3a281fafb"
+   },
+   "issued": "2026-11-23 section1-release"
   }
  ]
 }

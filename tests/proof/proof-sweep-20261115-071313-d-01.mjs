@@ -5,7 +5,16 @@ import vm from 'node:vm';
 const src = readFileSync('parts/create-citydata.js', 'utf8');
 const endIdx = src.indexOf('function crIndexWays');
 assert.ok(endIdx > 0, 'could not locate slice boundary in parts/create-citydata.js');
-const slice = src.slice(0, endIdx);
+// Section 1 step 6 fixture roll (Architecture #18, Beta 1.281): crPackDownload
+// consumes the body through the shared crReadBodyText (parts/create-fetch.js)
+// since 1.281, so the harness supplies that one real function beside the
+// citydata slice - the same fixture-roll shape as the Beta 1.249 streaming
+// change below. Every assertion in this proof is unchanged.
+const fetchSrc = readFileSync('parts/create-fetch.js', 'utf8');
+const consumeAt = fetchSrc.indexOf('async function crReadBodyText(');
+assert.ok(consumeAt > 0, 'could not locate crReadBodyText in parts/create-fetch.js');
+const consumeFn = fetchSrc.slice(consumeAt, fetchSrc.indexOf('\nasync function crOverpassFetch(', consumeAt));
+const slice = src.slice(0, endIdx) + '\n' + consumeFn;
 
 function makeEnv(indexCities) {
   const fetched = [];

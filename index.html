@@ -2,7 +2,7 @@
 <html lang="en" class="boot">
 <head>
 <meta charset="UTF-8">
-<meta http-equiv="Content-Security-Policy" content="default-src 'none'; script-src 'sha384-Q/TRcAY8insbI2v6v7aFTeXqonFRNOaSKwJ0sIz9yykVJUEPum5UK48CPh2N07ea' https://cdn.jsdelivr.net/npm/maplibre-gl@4.7.1/dist/maplibre-gl.js; style-src-elem 'sha384-l+Ing91zw7+8pk8Zac2Wr0FKBEz+pk8bYSPB00KMpT5TsGP86OppPfSOgVChr4uv' https://cdn.jsdelivr.net; style-src-attr 'unsafe-inline'; img-src 'self' data: blob: https://tiles.basemaps.cartocdn.com https://protomaps.github.io https://cdn.jsdelivr.net; connect-src 'self' https://tiles.basemaps.cartocdn.com https://protomaps.github.io https://cdn.jsdelivr.net https://nominatim.openstreetmap.org https://overpass-api.de https://overpass.kumi.systems; worker-src blob: 'self'; child-src blob: 'self'; font-src 'none'; manifest-src 'self'; base-uri 'none'; form-action 'none'; object-src 'none'">
+<meta http-equiv="Content-Security-Policy" content="default-src 'none'; script-src 'sha384-nOjLzCQ8Z1pvmhUdqB2M2q/4WjEAK3ZBMztzLxi8qzqyuZ1WjdjUo0ujJdQU1pGI' https://cdn.jsdelivr.net/npm/maplibre-gl@4.7.1/dist/maplibre-gl.js; style-src-elem 'sha384-l+Ing91zw7+8pk8Zac2Wr0FKBEz+pk8bYSPB00KMpT5TsGP86OppPfSOgVChr4uv' https://cdn.jsdelivr.net; style-src-attr 'unsafe-inline'; img-src 'self' data: blob: https://tiles.basemaps.cartocdn.com https://protomaps.github.io https://cdn.jsdelivr.net; connect-src 'self' https://tiles.basemaps.cartocdn.com https://protomaps.github.io https://cdn.jsdelivr.net https://nominatim.openstreetmap.org https://overpass-api.de https://overpass.kumi.systems; worker-src blob: 'self'; child-src blob: 'self'; font-src 'none'; manifest-src 'self'; base-uri 'none'; form-action 'none'; object-src 'none'">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="mobile-web-app-capable" content="yes">
@@ -679,7 +679,7 @@ html.theme-swap *, html.theme-swap *::before, html.theme-swap *::after { transit
 <div id="hud">
   <div id="warn">Not saving. Storage is full or blocked</div>
   <div class="row">
-    <div class="titleStack"><div class="title">Snow Route Beta</div><div class="ver" id="ver">Beta 1.280</div></div>
+    <div class="titleStack"><div class="title">Snow Route Beta</div><div class="ver" id="ver">Beta 1.281</div></div>
   </div>
   <div id="stats"></div>
 </div>
@@ -7490,7 +7490,7 @@ $('stDel').addEventListener('click', async () => {
 });
 // ---- About ----
 const WHATSNEW = { // the curated in-app notes: plain words, LATEST RELEASE ONLY (Beta 1.114, Andrew: the accumulated list cluttered the About pane). A release REPLACES this entry with its own in the same change - it never accumulates; the full history lives in CHANGELOG.md, not the app
-  v: 'Beta 1.280', items: ["Under the hood: backup and restore now each run through one owner, so exports and restores stay in step."] }; // Beta 1.223 (Andrew): What's New entries are SHORT from now on - point form, one short plain line each, no prose paragraphs, no em dashes
+  v: 'Beta 1.281', items: ["Under the hood: route building now runs through one owner per job, so creating a route stays in step."] }; // Beta 1.223 (Andrew): What's New entries are SHORT from now on - point form, one short plain line each, no prose paragraphs, no em dashes
 
 function renderAbout() {
   const cur = $('ver').textContent.trim();
@@ -8388,12 +8388,13 @@ let crCovGen = 0; // the coverage generation
 let crPrep = null; // { gen, session, anchor, startedAt, ticker, op } while a FALLBACK box preparation is in flight
 let crGrid = null; // { name, bbox, cells: [{ key, box, state, tries }], gen, session, startedAt, ticker, ops: Set, active, fromCache, savedAt, stopped, lastFail } while a CITY grid preparation exists (kept after it settles, for progress/resume state)
 let crPrepState = 'none'; // 'none' | 'preparing' | 'ready' | 'degraded' | 'failed'  ('degraded': a city grid settled with parts missing - what loaded is usable, the rest is resumable). Beta 1.154 (B3 build): app writes go through crSetPrepState below - a direct assignment survives only as the battery's scenario seeding, never in app code
-// Beta 1.154 (B3 build, part 1): THE PREP STATE RECORD. The transition table is the OBSERVED lifecycle - all 13 edges driven through the real UI / preparation paths in the 2026-11-09 lifecycle trace (beta1/work/b3-lifecycle-trace/TRACE-RECORD.md), none inferred. A write outside the table is REFUSED (the state does not move) and recorded in crPrepViolations: entry writes (-> 'preparing') and the exit write (-> 'none') are legal from every state, and every settled landing is guard-gated to fire only from 'preparing', from which all four landings are in-table - so a refusal can only fire on a future bug or a foreign write, which is what the record exists to catch. (A write of the state already held is a re-assertion, not a transition - see the setter.) The setter owns validation + assignment ONLY: each write site's side effects (fail set/clear, anchor, wanted, sweeps, renders) stay at the site, because the sites share no common bundle.
+// Beta 1.154 (B3 build, part 1): THE PREP STATE RECORD. The transition table is the OBSERVED lifecycle - all 13 edges driven through the real UI / preparation paths in the 2026-11-09 lifecycle trace (beta1/work/b3-lifecycle-trace/TRACE-RECORD.md), none inferred. A write outside the table is REFUSED (the state does not move) and recorded in crPrepViolations: entry writes (-> 'preparing') and the exit write (-> 'none') are legal from every state, and every settled landing is guard-gated to fire only from 'preparing', from which all four landings are in-table - so a refusal can only fire on a future bug or a foreign write, which is what the record exists to catch. (A write of the state already held is a re-assertion, not a transition - see the setter.) The setter owns validation + assignment ONLY: each write site's side effects (fail set/clear, anchor, wanted, sweeps, renders) stay at the site, because the sites share no common bundle - with one exception since Architecture #16: the preparation-ENTRY bundle (state to 'preparing', failure and its provenance cleared, outstanding offer answered) proved identical at all three entries and lives on crPrepBegin below; the anchor remains crStartPrep's own, and the settled landings keep their side effects at their sites.
 const CR_PREP_EDGES = { none: ['preparing', 'none'], preparing: ['preparing', 'ready', 'degraded', 'failed', 'none'], ready: ['preparing', 'none'], degraded: ['preparing', 'none'], failed: ['preparing', 'none'] };
 const crPrepViolations = []; // 'from->to' of every refused transition - empty in every healthy run; the battery's teeth checks (drive181) read it
 function crSetPrepState(next) { if (next === crPrepState) return true; const row = CR_PREP_EDGES[crPrepState]; if (row && row.indexOf(next) >= 0) { crPrepState = next; return true; } crPrepViolations.push(crPrepState + '->' + next); return false; } // a write of the state the record already holds is a re-assertion, not a transition: the settle sites are re-entrant (two cell completions in one tick can both reach the grid's finish) and re-asserted the same value, unremarked, through 1.153 - the setter passes it, unrecorded (drive181's first CI run proved the re-assertions happen in healthy flows: ready->ready, failed->failed, degraded->degraded). A current state with no row in the table (a value the app itself never holds) refuses every CHANGE the same way - the record never throws
 let crPrepFail = null; // { kind: 'unreachable' | 'error' | 'dense' | 'badjson', status?, remark? }
 let crFailFromGrid = false; // which preparation produced crPrepFail - the Retry button resumes a failed GRID's missing cells but re-runs a failed fallback BOX at its anchor; the two must never be confused when both exist
+function crPrepBegin() { crSetPrepState('preparing'); crPrepFail = null; crFailFromGrid = false; crWanted = null; } // Architecture #16: THE PREPARATION-ENTRY BUNDLE - the one begin every preparation entry runs (crCityPrepare, crGridResume and crStartPrep each spelled it out through 1.280): the state record moves to 'preparing' through its setter, the previous failure and its grid/box provenance clear, and any outstanding preparation offer is answered by the starting. What stays at the sites, deliberately: the coverage-generation bump (each site spends the token differently - a local binding on the two prepare paths, adoption into the grid record on resume) and crStartPrep's anchor (its Retry target is the fallback's own, set in the same breath)
 let crPrepAnchor = null; // where Retry / a not-ready tap re-prepares
 let crPending = {}; // full map name -> { osmName, lngLat }: streets whose full shape reaches beyond verified coverage (fail-closed) - listed as pending, NEVER added half-known
 let crToppedUp = {}; // '<full name>@<gen>' -> true: a street's ONE top-up per coverage generation is spent
@@ -8405,6 +8406,20 @@ function crQL(filter, box, timeoutS) { return '[out:json][timeout:' + timeoutS +
 function crAreaQL(box, timeoutS) { return crQL('"name"]["highway"', box, timeoutS); }
 function crNameQL(osmName, box, timeoutS) { return crQL('"name"="' + osmName.replace(/(["\\])/g, '\\$1') + '"', box, timeoutS); }
 function crAbortOp(op) { try { if (op && op.ctl) op.ctl.abort(); } catch (e) {} } // stop an in-flight fetch's download, not just its right to land (CG-PF-10: Cancel/exit/supersede abort the request itself)
+async function crReadBodyText(r, onChunk) { // Architecture #18: THE shared response consumption - the streaming read, chunk accumulation and decode that crOverpassFetch (below) and crPackDownload (create-citydata.js) each spelled out through 1.280. Returns { text } for a streamed body; { stopped: <verdict> } when the caller's per-chunk hook stops the read (the reader is cancelled here - the caller's own timers, aborts and outcome bookkeeping stay with the caller); or { fallback: true } when the response has no reader, because the no-stream policies differ per caller (the pack reads the text under its first-byte window; the service measures a declared Content-Length before buffering and the buffered bytes after) - so the fallback's text is read at the caller, never here. onChunk(totalBytes) runs on every landed chunk before the chunk is kept; returning a verdict string stops the read with that verdict, returning null keeps reading. Everything POLITICAL stays at the callers: their controllers, their silence timers and windows, the service's byte cap and session checks (delivered through the hook), the pack's stall tag.
+  if (!r.body || typeof r.body.getReader !== 'function') return { fallback: true };
+  const reader = r.body.getReader(), chunks = []; let total = 0;
+  for (;;) {
+    const part = await reader.read();
+    if (part.done) break;
+    total += part.value.byteLength;
+    const verdict = onChunk ? onChunk(total) : null;
+    if (verdict) { try { await reader.cancel(); } catch (e) {} return { stopped: verdict }; }
+    chunks.push(part.value);
+  }
+  const buf = new Uint8Array(total); let off = 0; for (const c of chunks) { buf.set(c, off); off += c.byteLength; }
+  return { text: new TextDecoder().decode(buf) };
+}
 async function crOverpassFetch(ql, budgetMs, attempt1Ms, sessionOk, op) {
   // One query against the public Overpass instances (OVERPASS_URLS) under
   // ONE overall deadline spanning connect + body + parse (CG-PF-02/03):
@@ -8438,18 +8453,15 @@ async function crOverpassFetch(ql, budgetMs, attempt1Ms, sessionOk, op) {
       if (!r.ok) { lastFail = { ok: false, kind: 'error', status: r.status }; clearTimers(); continue; }
       let text;
       if (r.body && typeof r.body.getReader === 'function') {
-        const reader = r.body.getReader(), chunks = []; let total = 0;
-        for (;;) {
-          const part = await reader.read();
-          if (part.done) break;
-          total += part.value.byteLength;
-          if (total > CR_TIMING.capBytes) { try { if (ctl) ctl.abort(); } catch (e) {} clearTimers(); return { ok: false, kind: 'dense' }; }
-          chunks.push(part.value);
-          armStall(); // a landed chunk is progress: the silence clock restarts here
-          if (sessionOk && !sessionOk()) { clearTimers(); try { await reader.cancel(); } catch (e) {} crAbortOp(op); return { ok: false, kind: 'stale' }; } // superseded mid-stream: stop the download, don't just discard its result (CG-PF-10)
-        }
-        const buf = new Uint8Array(total); let off = 0; for (const c of chunks) { buf.set(c, off); off += c.byteLength; }
-        text = new TextDecoder().decode(buf);
+        const read = await crReadBodyText(r, (total) => { // Architecture #18: the consumption is crReadBodyText's; the POLICIES ride the hook - the byte cap first (enforced as the bytes arrive, as ever), then the silence clock's re-arm, then the session check
+          if (total > CR_TIMING.capBytes) return 'dense';
+          armStall(); // a landed chunk is progress
+          if (sessionOk && !sessionOk()) return 'stale';
+          return null;
+        });
+        if (read.stopped === 'dense') { try { if (ctl) ctl.abort(); } catch (e) {} clearTimers(); return { ok: false, kind: 'dense' }; }
+        if (read.stopped === 'stale') { clearTimers(); crAbortOp(op); return { ok: false, kind: 'stale' }; } // superseded mid-stream: stop the download, don't just discard its result (CG-PF-10) - the reader was cancelled inside crReadBodyText
+        text = read.text;
       } else { const cl = (r.headers && typeof r.headers.get === 'function') ? +(r.headers.get('content-length') || 0) : 0; if (cl > CR_TIMING.capBytes) { clearTimers(); return { ok: false, kind: 'dense' }; } text = await r.text(); if (new TextEncoder().encode(text).length > CR_TIMING.capBytes) { clearTimers(); return { ok: false, kind: 'dense' }; } } // Beta 1.170 (Carbon fix round Phase 2, D-07): the no-stream fallback measures the cap the way the streaming branch does - a declared Content-Length over the cap refuses BEFORE the body is buffered, and the buffered text is measured in BYTES (TextEncoder), where through 1.169 the only check ran after the full buffer landed and compared UTF-16 code units against the byte cap (a multi-byte body passed at up to twice the cap). What a reader-less response still cannot do is abort MID-body - that residual is inherent to the fallback, and is why the streaming branch is the primary. Beta 1.246: the fallback likewise cannot SEE mid-body progress, so its silence timer runs from the answer landing - a text() that wedges is cut by the silence rule, where a trickling one cannot be told apart (the streaming branch remains the primary on every browser that has it)
       clearTimers();
       let json = null;
@@ -8531,7 +8543,7 @@ async function crPackResolveCity(name, bbox) { // does the library hold THIS cit
   if (!(pb.s <= bbox.s + EPS && pb.n >= bbox.n - EPS && pb.w <= bbox.w + EPS && pb.e >= bbox.e - EPS)) return null;
   return { slug: e.slug, bbox: pb, gen: typeof e.generatedAt === 'string' ? e.generatedAt : '' }; // Beta 1.251 (R-02): the catalogue's generatedAt is the pack's version stamp - republishing a pack re-stamps it, and the dataset identity (crDatasetId, create-cache.js) binds saved records to it
 }
-async function crPackDownload(slug) { // Beta 1.249: ONE download attempt of a city pack, watched at the byte level (Andrew's pack stall rule, 2026-11-19). Through 1.248 the pack fetch carried no timeout of its own - a wedged connection, or a host that never answers, pended crPackLoad's promise forever, and only the preparation watchdogs' 180 s landing bound ever surfaced it, as a failed preparation. The attempt now carries a silence timer in crOverpassFetch's shape (Beta 1.246), on the pack's own two windows from CR_TIMING: packFirstByteMs (120 s) until the first body byte - the static host spends real time producing a big city's file before the first byte moves, so silence there is not yet a wedge - then packStallMs (60 s) between bytes once they flow. On expiry the timer aborts the attempt through its own controller and the attempt throws a TAGGED error (err.packStall) - the retry loop's signal in crPackLoad below. Every other failure (HTTP status, an unreadable or misshapen body, a network throw) is untagged and behaves exactly as it always has. The body is read as a stream and accumulated as byte chunks, concatenated and decoded the streaming branch's way; there is still NO byte cap (the caps in CR_TIMING govern service extracts, not the app's own library). A reader-less response falls back to r.text() under the first-byte window armed at the attempt's start: it cannot see mid-body progress, so the generous window is its only honest bound - the fallback limit 1.246 documented for its own no-stream branch.
+async function crPackDownload(slug) { // Beta 1.249: ONE download attempt of a city pack, watched at the byte level (Andrew's pack stall rule, 2026-11-19). Through 1.248 the pack fetch carried no timeout of its own - a wedged connection, or a host that never answers, pended crPackLoad's promise forever, and only the preparation watchdogs' 180 s landing bound ever surfaced it, as a failed preparation. The attempt now carries a silence timer in crOverpassFetch's shape (Beta 1.246), on the pack's own two windows from CR_TIMING: packFirstByteMs (120 s) until the first body byte - the static host spends real time producing a big city's file before the first byte moves, so silence there is not yet a wedge - then packStallMs (60 s) between bytes once they flow. On expiry the timer aborts the attempt through its own controller and the attempt throws a TAGGED error (err.packStall) - the retry loop's signal in crPackLoad below. Every other failure (HTTP status, an unreadable or misshapen body, a network throw) is untagged and behaves exactly as it always has. The body is consumed through the shared streaming read (crReadBodyText, create-fetch.js - Architecture #18: stream, accumulate, decode, one body for both watched downloads); there is still NO byte cap (the caps in CR_TIMING govern service extracts, not the app's own library). A reader-less response falls back to r.text() under the first-byte window armed at the attempt's start: it cannot see mid-body progress, so the generous window is its only honest bound - the fallback limit 1.246 documented for its own no-stream branch.
   const ctl = (typeof AbortController !== 'undefined') ? new AbortController() : null;
   if (ctl) crPackCtls[slug] = ctl; // Beta 1.254 (O-06): the load owns this attempt's controller until the attempt settles (the finally below unregisters it) or the load is dropped (crPackAbort)
   let stallTo = null, sawByte = false, killed = false;
@@ -8541,20 +8553,12 @@ async function crPackDownload(slug) { // Beta 1.249: ONE download attempt of a c
   try {
     const r = await fetch('packs/' + slug + '.json', { cache: 'no-cache', signal: ctl ? ctl.signal : undefined });
     if (!r.ok) { clearStall(); throw new Error('pack HTTP ' + r.status); }
-    let text;
-    if (r.body && typeof r.body.getReader === 'function') {
-      const reader = r.body.getReader(), chunks = []; let total = 0;
-      for (;;) {
-        const part = await reader.read();
-        if (part.done) break;
-        total += part.value.byteLength;
-        chunks.push(part.value);
-        sawByte = true;
-        armStall(); // a landed chunk is progress: the silence clock restarts here, on the flowing window once the first byte has landed
-      }
-      const buf = new Uint8Array(total); let off = 0; for (const c of chunks) { buf.set(c, off); off += c.byteLength; }
-      text = new TextDecoder().decode(buf);
-    } else { text = await r.text(); } // no reader: the first-byte window armed at the start bounds the whole read (see the header - no mid-body visibility exists to arm anything finer)
+    const read = await crReadBodyText(r, () => { // Architecture #18: the consumption (stream, accumulate, decode) is crReadBodyText's (create-fetch.js); the pack's POLICIES stay here - the chunk hook records the first byte and re-arms the silence clock on the flowing window, and the hook never stops the read (the pack has no cap and no session verdict to give)
+      sawByte = true;
+      armStall(); // a landed chunk is progress: the silence clock restarts here, on the flowing window once the first byte has landed
+      return null;
+    });
+    const text = read.fallback ? await r.text() : read.text; // no reader: the first-byte window armed at the start bounds the whole read (see the header - no mid-body visibility exists to arm anything finer)
     clearStall();
     const pack = JSON.parse(text); // a SyntaxError propagates untagged, exactly as r.json()'s did through 1.248
     if (!pack || !pack.streets || typeof pack.streets !== 'object') throw new Error('pack shape');
@@ -8610,23 +8614,23 @@ async function crPackServe(box, name, sessionOk) { // the seam's pack answer: th
   for (const el of els) { if (name && el.tags.name !== name) continue; if (el.geometry.some(g => g.lat >= box.s && g.lat <= box.n && g.lon >= box.w && g.lon <= box.e)) out.push(el); }
   return { ok: true, json: { elements: out }, ms: Date.now() - t0 };
 }
-function crIndexWays(elements, byId) { // Overpass elements -> byId { id: { name, pts } }, with the point cleaning the per-tap fetch used (1e7 rounding, sub-0.1 m duplicates dropped)
+function crCleanPtPush(pts, lat, lon) { const p = [Math.round(lat * 1e7) / 1e7, Math.round(lon * 1e7) / 1e7]; if (!pts.length || distM(pts[pts.length - 1], p) > 0.1) pts.push(p); } // Architecture #17: THE point normalisation - one body for the two cleaners that each spelled it out through 1.280 (crIndexWays on fetched geometry, crCleanPts on stored pairs): 1e7 rounding, and a point is kept only when it sits more than 0.1 m past the last kept one. Each caller keeps its own admission rules around it (crIndexWays trusts the extract's shape; crCleanPts validates finiteness/range first) and its own survival rule (a way is kept only when more than one point survives)
+function crIndexWays(elements, byId) { // Overpass elements -> byId { id: { name, pts } }, with the point cleaning the per-tap fetch used (crCleanPtPush: 1e7 rounding, sub-0.1 m duplicates dropped)
   for (const el of elements || []) {
     if (!el || el.type !== 'way' || el.id == null || !el.tags || typeof el.tags.name !== 'string' || !el.tags.name) continue;
     if (!Array.isArray(el.geometry) || el.geometry.length < 2) continue;
     const pts = [];
-    for (const g of el.geometry) { const p = [Math.round(g.lat * 1e7) / 1e7, Math.round(g.lon * 1e7) / 1e7]; if (!pts.length || distM(pts[pts.length - 1], p) > 0.1) pts.push(p); }
+    for (const g of el.geometry) crCleanPtPush(pts, g.lat, g.lon);
     if (pts.length > 1) byId[el.id] = { name: el.tags.name, pts };
   }
   return byId;
 }
-function crCleanPts(rawPts) { // Beta 1.150 (security-audit fix round): THE point cleaning for a stored [lat, lon] pair list, mirroring crIndexWays' rules (1e7 rounding, a point is kept only when it sits more than 0.1 m past the last kept one, at least 2 points must survive) plus the finiteness/range condition crResolve demands of every point it reads. A point that is not a finite in-range pair is skipped; the way survives on its remaining points or not at all
+function crCleanPts(rawPts) { // Beta 1.150 (security-audit fix round): THE point cleaning for a stored [lat, lon] pair list, sharing crIndexWays' normalisation through crCleanPtPush (1e7 rounding, a point is kept only when it sits more than 0.1 m past the last kept one, at least 2 points must survive) plus the finiteness/range condition crResolve demands of every point it reads. A point that is not a finite in-range pair is skipped; the way survives on its remaining points or not at all
   if (!Array.isArray(rawPts)) return null;
   const pts = [];
   for (const gp of rawPts) {
     if (!Array.isArray(gp) || gp.length < 2 || !isFinite(gp[0]) || !isFinite(gp[1]) || gp[0] < -90 || gp[0] > 90 || gp[1] < -180 || gp[1] > 180) continue;
-    const p = [Math.round(gp[0] * 1e7) / 1e7, Math.round(gp[1] * 1e7) / 1e7];
-    if (!pts.length || distM(pts[pts.length - 1], p) > 0.1) pts.push(p);
+    crCleanPtPush(pts, gp[0], gp[1]);
   }
   return pts.length > 1 ? pts : null;
 }
@@ -8645,11 +8649,12 @@ function crCovFromWays(byId, boxes) { // the coverage record: the extract's ways
   return { gen: crCovGen, byName, byId, boxes: (boxes || []).slice(), fetchedAt: Date.now() };
 }
 function crCovEnsure() { if (!crCov) crCov = crCovFromWays(Object.create(null), []); return crCov; } // Beta 1.150: the coverage byId starts life null-prototype (as crCovFromWays' byName now does) - the cache fold writes stored way ids into it, and an id of '__proto__' must land as an entry, never as the index's prototype. Every coverage birth site (here, crCityPrepare) passes Object.create(null) for the same reason
+function crCovFold(byId, box) { const cov = crCovEnsure(); for (const id of Object.keys(byId)) cov.byId[id] = byId[id]; if (box && !cov.boxes.some(b => b.s === box.s && b.w === box.w && b.n === box.n && b.e === box.e)) cov.boxes.push(box); return cov; } // Architecture #17: the coverage record's FOLD - already-validated ways and one answered box land on the record, and nothing else happens: no reindex, no search refresh. The cache restore folds per restored cell through here (through 1.280 it wrote crCov.byId and crCov.boxes directly from create-cache.js); the once-only reindex + refresh after its loop stays the caller's discipline (Beta 1.254, A-02)
+function crCovReindex() { const cov = crCovEnsure(); cov.byName = crCovFromWays(cov.byId, cov.boxes).byName; return cov; } // Architecture #17: the byName rebuild - the name index is a pure function of byId, rebuilt whole at the moments coverage settles (a merge landing below, the restore's fold completing), never per cell (Beta 1.169 / 1.254)
 function crCovMerge(elements, box) { // fold one answered extract (a grid cell, the fallback box, a top-up) into the merged coverage: ways dedupe by id, the answered box joins the verified set
   const cov = crCovEnsure();
   crIndexWays(elements, cov.byId);
-  const fresh = crCovFromWays(cov.byId, cov.boxes);
-  cov.byName = fresh.byName;
+  crCovReindex();
   if (box && !cov.boxes.some(b => b.s === box.s && b.w === box.w && b.n === box.n && b.e === box.e)) cov.boxes.push(box);
   cov.fetchedAt = Date.now();
   crRefreshSearch(); // Beta 1.234 fix round 3 (PR #114, Codex P2): a merge is the moment coverage changes - an open street search re-runs against the fuller extract here, instead of standing on the answer it computed before these streets landed (the refresh and its dismissal guards live at crRefreshSearch in create-pick.js; the search itself merges nothing, so this cannot cascade)
@@ -8752,7 +8757,7 @@ function crStartPrep(anchor) { // the FALLBACK preparation (second amendment, it
   if (crGrid) crGridStop('superseded'); // CG-PF-13: a fallback starting over a live grid must STOP the grid first - the generation bump below would otherwise orphan its in-flight cells in 'fetching' (their answers settle into the dead generation, their handlers discard them, and Resume - which only resets 'failed' cells - could never reschedule them, wedging the city mid-load forever). crGridStop aborts the grid's downloads and returns those cells to 'pending', so the city stays resumable; on a settled grid it changes nothing but the stopped marker, which crGridSettledState already reads correctly
   const session = crSession, gen = ++crCovGen;
   const outer = crBoxAround(anchor.lat, anchor.lng, CR_INNER_KM + CR_BUFFER_KM);
-  crSetPrepState('preparing'); crPrepFail = null; crFailFromGrid = false; crPrepAnchor = anchor; crWanted = null; // starting a preparation IS the answer to any outstanding offer
+  crPrepBegin(); crPrepAnchor = anchor; // starting a preparation IS the answer to any outstanding offer (the offer itself clears inside crPrepBegin, Architecture #16; the anchor stays this site's own - it is the fallback's Retry target)
   const prep = crPrep = { gen, session, anchor, startedAt: Date.now(), ticker: null, op: {} };
   crRenderHint();
   prep.ticker = setInterval(() => { crPrepWatchdog(prep, gen, session); if (crPrepCurrent(gen, session)) crRenderHint(); else clearInterval(prep.ticker); }, 1000); // Beta 1.229: every tick runs the progress watchdog before it renders
@@ -8979,7 +8984,7 @@ function crCityPrepare() { // a city is picked: load its whole extract - from th
   crPackCtx = null; crPackNote = ''; // Beta 1.123: a new city's preparation re-decides its source (pack vs service) below
   const cells = crGridCellsFor(bbox);
   const g = crGrid = { name, bbox, cells, gen, session, startedAt: Date.now(), lastProgressAt: Date.now(), ticker: null, ops: new Set(), active: 0, fromCache: false, savedAt: null, stopped: null, lastFail: null, ds: null }; // Beta 1.229: lastProgressAt - the progress watchdog's clock (crGridWatchdog below): preparation starting is the first progress mark; the saved-grid read landing, the pack resolve landing, every landed cell and every resume restart it. Beta 1.251 (R-02): ds - the grid's dataset identity (crDatasetId), set when the pack resolve lands below, before any restore or write is judged
-  crSetPrepState('preparing'); crPrepFail = null; crFailFromGrid = false; crWanted = null; // Beta 1.154 (B3 build): crFailFromGrid clears at THIS entry too - through 1.153 it survived a city change (the 2026-11-09 lifecycle trace's cross-session latch finding); S1/S8 always cleared it at entry, S6 now does the same
+  crPrepBegin(); // Beta 1.154 (B3 build): crFailFromGrid clears at THIS entry too - through 1.153 it survived a city change (the 2026-11-09 lifecycle trace's cross-session latch finding); S1/S8 always cleared it at entry, S6 now does the same. Architecture #16: the entry bundle itself lives on crPrepBegin (create-fetch.js)
   crRenderHint();
   crGridArmTicker(g); // Beta 1.229: the heartbeat runs from preparation ENTRY - the saved-grid read and the pack resolve below are inside the watchdog's reach from here on, not just the pump
   // Beta 1.251 (R-02): the pack resolve lands BEFORE the saved-grid read, because the restore's fit test (crCacheRecFits) is judged against the preparation's dataset identity and the identity is the resolve's answer. Through 1.250 the read came first and the resolve only fed the pump. The catalogue is warmed at boot, so the resolve is normally already in hand; its race cap sits far inside the progress watchdog's bound, and the resolve landing restarts that clock below. A fully saved city still restores with ZERO downloads - it just learns its source first. The resolve also still precedes the pump, so the source decision remains the grid's from its first cell (Beta 1.123) and the hint can name it; a pack city skips the minutes warning - its first load is one static download, seconds not minutes.
@@ -9001,13 +9006,11 @@ function crCityPrepare() { // a city is picked: load its whole extract - from th
           const byId = Object.create(null); // Beta 1.150: a stored way id of '__proto__' lands as an entry here, not as the map's prototype
           for (const sw of saved.ways) { const w = crCleanStoredWay(sw); if (w) byId[w.id] = { name: w.name, pts: w.pts }; } // Beta 1.150 (security-audit fix round, finding city-cache-restore-skips-way-validation): every stored triple passes the extract's own cleaning (crCleanStoredWay, create-citydata.js) before it may enter coverage - pre-1.150 this fold installed raw triples on array-shape checks alone, planting out-of-range / NaN / empty-named geometry the extract never held
           if (!Object.keys(byId).length && saved.ways.length) continue; // Beta 1.151 (hotfix for the 1.150 C2 gate's own regression): a cell is certified (box + done, below) when at least one VALIDATED way came out of it OR its stored list was legitimately EMPTY - phase 1 stores empty cells (no named streets: park/lake/city-edge) with ways: [], and the 1.150 rule conflated them with the audit's poison case, a NON-EMPTY list whose ways are all corrupt, which still stays pending here and is fetched fresh, never marked done on the cache's say-so
-          crCovEnsure(); // ensure the cov exists before the direct fold below. Beta 1.254 (A-02): NOT crCovMerge - through 1.253 this seat called the merge with an empty extract once per restored cell, and the merge rebuilt the whole byName index from every accumulated way (and re-fired the search refresh) each time, O(cells x ways) under a comment claiming the rebuild ran once; the fold below writes byId/boxes directly, the index rebuilds ONCE after the loop (1.169), and the one search refresh lands there too
-          for (const id of Object.keys(byId)) crCov.byId[id] = byId[id];
-          if (!crCov.boxes.some(b => b.s === cell.box.s && b.w === cell.box.w && b.n === cell.box.n && b.e === cell.box.e)) crCov.boxes.push(cell.box);
+          crCovFold(byId, cell.box); // Architecture #17: the fold lands on the coverage record's owner (create-citydata.js). Beta 1.254 (A-02): NOT crCovMerge - through 1.253 this seat called the merge with an empty extract once per restored cell, and the merge rebuilt the whole byName index from every accumulated way (and re-fired the search refresh) each time, O(cells x ways) under a comment claiming the rebuild ran once; the fold writes entries + the cell's box only, the index rebuilds ONCE after the loop (1.169), and the one search refresh lands there too
           cell.state = 'done'; restored++; folded = true;
         }
       }
-      if (folded) { const fresh = crCovFromWays(crCov.byId, crCov.boxes); crCov.byName = fresh.byName; crRefreshSearch(); } // Beta 1.169 (D-06): the byName index is rebuilt ONCE, after the fold - through 1.168 crCovFromWays ran inside the per-cell loop above, reindexing every accumulated way for every restored cell (O(cells x ways) on a large cached city). Nothing observes byName mid-loop (the fold is one synchronous pass), so the single rebuild lands the identical index. Beta 1.254 (A-02): the one crRefreshSearch here preserves crCovMerge's refresh semantics for the restore (coverage changed) at the same once-only count - nothing could observe a mid-loop refresh either
+      if (folded) { crCovReindex(); crRefreshSearch(); } // Beta 1.169 (D-06): the byName index is rebuilt ONCE, after the fold - through 1.168 crCovFromWays ran inside the per-cell loop above, reindexing every accumulated way for every restored cell (O(cells x ways) on a large cached city). Nothing observes byName mid-loop (the fold is one synchronous pass), so the single rebuild lands the identical index. Beta 1.254 (A-02): the one crRefreshSearch here preserves crCovMerge's refresh semantics for the restore (coverage changed) at the same once-only count - nothing could observe a mid-loop refresh either
       if (restored) { g.fromCache = true; g.savedAt = rec.savedAt || null; }
     }
     if (restored === g.cells.length) { crSetPrepState('ready'); crSweepPending(); crRenderHint(); return; } // fully saved: instant ready, ZERO downloads (amendment C)
@@ -9022,7 +9025,7 @@ function crGridResume() { // the degraded/stopped remedy: fetch ONLY the missing
   g.gen = ++crCovGen; // Cancel bumped the coverage generation to orphan late answers (CG-PF-05); resuming ADOPTS the grid into the live generation, or the pump would refuse it as obsolete and fetch nothing
   g.stopped = null; g.startedAt = Date.now(); g.lastProgressAt = Date.now(); // Beta 1.229: the resume restarts the watchdog's clock - the idle time before it is not a stall
   for (const c of g.cells) if (c.state === 'failed') { c.state = 'pending'; c.tries = 0; }
-  crSetPrepState('preparing'); crPrepFail = null; crFailFromGrid = false; crWanted = null;
+  crPrepBegin(); // Architecture #16: the entry bundle lives on crPrepBegin (create-fetch.js)
   crGridArmTicker(g);
   crRenderHint();
   crGridPump(g);
@@ -9116,38 +9119,81 @@ function crRenderHint() { // the ONE writer of the pick-stage hint + its action 
       cc.textContent = ''; const b = document.createElement('b'); b.textContent = crCity.name; const go = document.createElement('span'); go.className = 'crCityGo'; go.textContent = 'change'; cc.append('Working in ', b, ' · ', go); cc.style.display = ''; } else cc.style.display = 'none'; }
   crRefreshSearch(); // Beta 1.234 fix round 3 (PR #114, Codex P2): every coverage landing renders this hint as it lands (the prepare completions, the grid pump, the saved-city fold's rebuild), so the open street search refreshes with it - see crRefreshSearch at crRunSearch for the guards that keep a dismissed search dismissed
 }
-function crAddStreet(name, segs) { // Beta 1.144 (Package C, DA-04): the draft keys on the FULL map name - through 1.143 the key was shortStreetName(osmName), so two distinct streets sharing a shortened name (Addington Avenue / Addington Place) collided: only the first could ever enter a draft, and tapping the second opened the first's sectors. shortStreetName survives ONLY as the display form (toasts, rows, the sector bar's title); every key in the draft - roads, primaries, sectors, parts, pending - is the full name, and the saved pack inherits the full names, so both streets can live in one route.
-  draft.roads[name] = segs; draft.osmNames[name] = name; crGeomGen++; // a tapped street joins as a SECONDARY (fork 3) - flip it to PRIMARY in the list if it is one. Beta 1.135 (N3): the generation bump is the draft-geometry cache's invalidation for this in-place join (see crDraftGeom)
-  delete crPending[name];
-  crIsectClear(); // Beta 1.262: the first road selection ends the POI surface - the picked crossing's name and marker clear as if they were never there
-  renderDraft(); renderCrLists(); crRenderHint();
-  // Beta 1.153 (Andrew): no 'Added' popup - the road's own picked state on the map and in the panel is the feedback.
-}
+// ---- the DRAFT owner (Architecture #14): every mutation of the draft's
+// roads / primaries / names / pending set, and the render that follows a
+// mutation, live here. Through 1.280 each entry point coordinated those
+// pieces itself: the post-mutation render ritual (the draft overlay, both
+// lists, the hint, in that order) was spelled out at four sites, and the
+// category toggle was duplicated at the two row chips. The mutation ORDER
+// inside each method is the order its entry point always ran - this round
+// moves the bodies, it does not re-derive them. The crAddStreet /
+// crAddRun / crRemoveStreet names survive as doorways below (the battery
+// calls the first by name; the pending sweep in create-citydata calls
+// both add doors). Sector state joined the same owner in Architecture
+// #15: the trimOf / hasTrim / snapshotTrim / chosenSet / setChosen /
+// dropTrim / restoreTrim methods below are the only reads and writes of
+// draft.sectors outside this owner's own wholesale reset and newDraft's
+// creation.
+const DRAFT = {
+  render() { renderDraft(); renderCrLists(); crRenderHint(); }, // the ONE post-mutation render, in the order every mutation site already used
+  renderLists() { renderDraft(); renderCrLists(); }, // the category toggle's tail: the hint does not read the primaries, so it is not re-rendered
+  addStreet(name, segs) { // Beta 1.144 (Package C, DA-04): the draft keys on the FULL map name - through 1.143 the key was shortStreetName(osmName), so two distinct streets sharing a shortened name (Addington Avenue / Addington Place) collided: only the first could ever enter a draft, and tapping the second opened the first's sectors. shortStreetName survives ONLY as the display form (toasts, rows, the sector bar's title); every key in the draft - roads, primaries, sectors, parts, pending - is the full name, and the saved pack inherits the full names, so both streets can live in one route.
+    draft.roads[name] = segs; draft.osmNames[name] = name; crGeomGen++; // a tapped street joins as a SECONDARY (fork 3) - flip it to PRIMARY in the list if it is one. Beta 1.135 (N3): the generation bump is the draft-geometry cache's invalidation for this in-place join (see crDraftGeom)
+    delete crPending[name];
+    crIsectClear(); // Beta 1.262: the first road selection ends the POI surface - the picked crossing's name and marker clear as if they were never there
+    DRAFT.render();
+    // Beta 1.153 (Andrew): no 'Added' popup - the road's own picked state on the map and in the panel is the feedback.
+  },
+  addRun(name, segs) { // Beta 1.144 (OPT-L1): a further DISCONNECTED run of an already-picked street joins the SAME street entry - the segment list grows (the run's parts append after the existing runs' parts: runs form in segment order, so existing sector indexes keep their meaning), the geometry cache invalidates, and the cached sector record dies so boundaries recompute over the fuller street. A trimmed street keeps its trim AND gains the new run's parts as chosen - the tap that added the run was a pick, so its parts join the chosen set explicitly rather than falling out of the save by omission; an untrimmed street simply stays whole.
+    const before = DRAFT.hasTrim(name) ? crStreetParts(name) : null;
+    draft.roads[name] = draft.roads[name].concat(segs); crGeomGen++;
+    if (draft.parts) delete draft.parts[name];
+    if (before) {
+      const rec = crStreetParts(name);
+      if (rec) { const set = crChosenSet(name, before); for (let i = before.parts.length; i < rec.parts.length; i++) set.add(i); crSetChosen(name, rec, set); }
+    }
+    crIsectClear(); // Beta 1.262: a road selection like any other - the POI surface ends here too (see the add-street method above)
+    DRAFT.render();
+    // Beta 1.153 (Andrew): no 'Added the other part' popup either - same rule as the add-street method.
+  },
+  removeStreet(name) { // Beta 1.127: the ONE removal path - the panel's x, the preview's x and Clear all land here (Beta 1.128: those are the ONLY doors; a map tap on a picked street opens its sectors instead), so a street leaves with ALL of its draft state (geometry, primary flag, names, sector pick, cached parts) and every face re-renders from the same state
+    if (!draft || !draft.roads[name]) return;
+    delete draft.roads[name]; draft.primaries.delete(name); delete draft.osmNames[name]; crGeomGen++; // Beta 1.135 (N3): the removal invalidates the shared draft geometry (see crDraftGeom)
+    DRAFT.dropTrim(name);
+    if (draft.parts) delete draft.parts[name];
+    delete crPending[name];
+    if (crSectorSession.street === name) crSectorReset();
+    DRAFT.render();
+  },
+  togglePrimary(name) { if (draft.primaries.has(name)) draft.primaries.delete(name); else draft.primaries.add(name); DRAFT.renderLists(); }, // the category flip both row chips spelled out identically through 1.280 - one body now
+  // ---- sector state (Architecture #15). The stored form is unchanged
+  // since Beta 1.127: an ABSENT entry means the whole road; a present
+  // entry is the sorted array of chosen part indexes.
+  trimOf(name) { return draft && draft.sectors ? draft.sectors[name] : null; }, // the street's trim exactly as the pre-owner sites read it (an absent key reads undefined; no draft reads null)
+  hasTrim(name) { return !!(draft && draft.sectors && draft.sectors[name]); }, // the presence test the parts-record pin (crStreetParts) and the add-run dance used to spell out inline
+  snapshotTrim(name) { const t = DRAFT.trimOf(name); return t ? t.slice() : null; }, // the sector session's entry snapshot (Beta 1.129): a COPY of the trim in force, or null when the whole road stands
+  chosenSet(name, rec) { const sel = DRAFT.trimOf(name); return new Set(sel || rec.parts.map((_, i) => i)); }, // no entry = every sector chosen (the whole road)
+  setChosen(name, rec, set) { // a FULL set stores as NO entry - "whole road" stays the draft's default state, so an untrimmed street carries no sector baggage into counts or the save
+    draft.sectors = draft.sectors || {};
+    if (set.size >= rec.parts.length) delete draft.sectors[name];
+    else draft.sectors[name] = [...set].sort((a, b) => a - b);
+  },
+  dropTrim(name) { if (draft.sectors) delete draft.sectors[name]; }, // a trim leaves with its street (the removal) or with an abandoned restore point (the sector session's cancel, no-snapshot arm)
+  restoreTrim(name, snap) { draft.sectors = draft.sectors || {}; draft.sectors[name] = snap.slice(); }, // the sector session's Cancel restore (Beta 1.129): the entry snapshot returns as a copy, exactly as it was taken
+  clearAll() { // the Clear-all door's wholesale reset (through 1.280 it was spelled out in the crClearAll confirm callback): every draft map replaced - null-prototype, like every creation site (the clearall proofs extract the reset statement below verbatim) - the geometry generation bumped, pending cleared, the sector session reset, then the one render
+    draft.roads = Object.create(null); draft.primaries.clear(); draft.osmNames = Object.create(null); draft.sectors = Object.create(null); draft.parts = Object.create(null);
+    crGeomGen++; crPending = {}; // Beta 1.170 (Carbon fix round Phase 2, D-04): the wholesale roads replacement obeys the same two duties as every other roads mutation - through 1.169 it was the one mutation that did not bump the geometry generation (the crDraftGeom cache's roads-identity key happens to catch this particular replacement, but the bump is the contract every other mutation keeps, and the cache's gen key exists to be moved by exactly this class of change) and it left the pending rows standing, so crSweepPending could re-add a street the user had just cleared
+    crSectorReset();
+    DRAFT.render();
+  }
+};
+function crAddStreet(name, segs) { DRAFT.addStreet(name, segs); } // Architecture #14: doorway - the body lives on the DRAFT owner above
 function crRunHeld(name, segs) { // Beta 1.144 (OPT-L1): is this resolved run ALREADY part of the draft street? Segment identity is exact - a run's stored segments are the extract's way point arrays (or its stitched line when the run was bridged), and resolving the same run again reproduces them deterministically, so set membership on the serialized segments is the identity test
   const held = new Set((draft.roads[name] || []).map(sg => JSON.stringify(sg)));
   return segs.length > 0 && segs.every(sg => held.has(JSON.stringify(sg)));
 }
-function crAddRun(name, segs) { // Beta 1.144 (OPT-L1): a further DISCONNECTED run of an already-picked street joins the SAME street entry - the segment list grows (the run's parts append after the existing runs' parts: runs form in segment order, so existing sector indexes keep their meaning), the geometry cache invalidates, and the cached sector record dies so boundaries recompute over the fuller street. A trimmed street keeps its trim AND gains the new run's parts as chosen - the tap that added the run was a pick, so its parts join the chosen set explicitly rather than falling out of the save by omission; an untrimmed street simply stays whole.
-  const before = (draft.sectors && draft.sectors[name]) ? crStreetParts(name) : null;
-  draft.roads[name] = draft.roads[name].concat(segs); crGeomGen++;
-  if (draft.parts) delete draft.parts[name];
-  if (before) {
-    const rec = crStreetParts(name);
-    if (rec) { const set = crChosenSet(name, before); for (let i = before.parts.length; i < rec.parts.length; i++) set.add(i); crSetChosen(name, rec, set); }
-  }
-  crIsectClear(); // Beta 1.262: a road selection like any other - the POI surface ends here too (see crAddStreet)
-  renderDraft(); renderCrLists(); crRenderHint();
-  // Beta 1.153 (Andrew): no 'Added the other part' popup either - same rule as crAddStreet.
-}
-function crRemoveStreet(name) { // Beta 1.127: the ONE removal path - the panel's x, the preview's x and Clear all land here (Beta 1.128: those are the ONLY doors; a map tap on a picked street opens its sectors instead), so a street leaves with ALL of its draft state (geometry, primary flag, names, sector pick, cached parts) and every face re-renders from the same state
-  if (!draft || !draft.roads[name]) return;
-  delete draft.roads[name]; draft.primaries.delete(name); delete draft.osmNames[name]; crGeomGen++; // Beta 1.135 (N3): the removal invalidates the shared draft geometry (see crDraftGeom)
-  if (draft.sectors) delete draft.sectors[name];
-  if (draft.parts) delete draft.parts[name];
-  delete crPending[name];
-  if (crSectorSession.street === name) crSectorReset();
-  renderDraft(); renderCrLists(); crRenderHint();
-}
+function crAddRun(name, segs) { DRAFT.addRun(name, segs); } // Architecture #14: doorway - the body lives on the DRAFT owner above
+function crRemoveStreet(name) { DRAFT.removeStreet(name); } // Architecture #14: doorway - the body lives on the DRAFT owner above
 // ---- sectors (Beta 1.127, Andrew's approved mockups in beta1/work/create-sectors-mockups/):
 // a picked street can be trimmed to the junction-to-junction pieces he
 // actually cleans - a long road that runs past his subdivision enters
@@ -9185,7 +9231,7 @@ function crStreetParts(name) { // the street's sectors: its stitched runs cut wh
     // they clear - for a session, the next entry, which settles the
     // record before the session's first render. Unreferenced, the
     // record is a pure cache and falls through to the recompute below.
-    if ((draft.sectors && draft.sectors[name]) || crSectorSession.street === name || rec.covStamp === crCovStamp()) return rec;
+    if (DRAFT.hasTrim(name) || crSectorSession.street === name || rec.covStamp === crCovStamp()) return rec;
   }
   const one = {}; one[name] = draft.roads[name];
   const runLines = stitchRuns(name, one).filter(L => L && L.length >= 2);
@@ -9217,15 +9263,11 @@ function crStreetParts(name) { // the street's sectors: its stitched runs cut wh
   draft.parts[name] = rec;
   return rec;
 }
-function crChosenSet(name, rec) { const sel = draft && draft.sectors ? draft.sectors[name] : null; return new Set(sel || rec.parts.map((_, i) => i)); } // no entry = every sector chosen (the whole road)
-function crSetChosen(name, rec, set) { // a FULL set stores as NO entry - "whole road" stays the draft's default state, so an untrimmed street carries no sector baggage into counts or the save
-  draft.sectors = draft.sectors || {};
-  if (set.size >= rec.parts.length) delete draft.sectors[name];
-  else draft.sectors[name] = [...set].sort((a, b) => a - b);
-}
+function crChosenSet(name, rec) { return DRAFT.chosenSet(name, rec); } // Architecture #15 doorway - the body lives on the DRAFT owner (sector state)
+function crSetChosen(name, rec, set) { DRAFT.setChosen(name, rec, set); } // Architecture #15 doorway - the body lives on the DRAFT owner (sector state)
 function crChosenLenM(name, rec) { const set = crChosenSet(name, rec); let s = 0; for (const i of set) if (rec.parts[i]) s += crLineLen(rec.parts[i]); return s; }
 function crStreetChosenM(name, g) { // a street's length AS PICKED - the whole street, or only its chosen sectors when trimmed. Every length the create flow states (panel header + rows, preview count, name-it summary) reads through here, so a trimmed street never bills its unchosen ends
-  const sel = draft && draft.sectors ? draft.sectors[name] : null;
+  const sel = DRAFT.trimOf(name);
   if (!sel) return g && g[name] ? g[name].total : 0;
   const rec = crStreetParts(name); if (!rec) return 0;
   let s = 0; for (const i of sel) if (rec.parts[i]) s += crLineLen(rec.parts[i]);
@@ -9234,7 +9276,7 @@ function crStreetChosenM(name, g) { // a street's length AS PICKED - the whole s
 function crFilteredRoads() { // the roads object the SAVE stores: a trimmed street contributes ONLY its chosen sectors' polylines (each sector as one segment). The pack format is untouched (roads = segment lists); the unchosen ends simply never enter the pack
   const out = {};
   for (const n of draftStreets()) {
-    const sel = draft.sectors ? draft.sectors[n] : null;
+    const sel = DRAFT.trimOf(n);
     if (sel && sel.length) { const rec = crStreetParts(n); out[n] = rec ? sel.map(i => rec.parts[i]).filter(p => p && p.length > 1) : draft.roads[n]; }
     else out[n] = draft.roads[n];
   }
@@ -9297,7 +9339,7 @@ function crSectorTap(lngLat) { // a map tap while trimming: the sector under the
 function crOpenSectors(name) { // opens a picked street's trimming - TWO doors since Beta 1.128 (Andrew's fork, decided from his 1.127 device session): the panel row (1.127) AND a map tap on the already-picked street (pickStreet routes here), which is where his finger went on device. Beta 1.129: entry SNAPSHOTS the street's pick as it stands (whole road, or the trim in force) - the tap-away's cancel restores that snapshot exactly (through 1.268 the restorer was the sector bar's Cancel button; Beta 1.269 replaced that button with Deselect and the restore's only door is the tap-away)
   if (!draft || !draft.roads || !Object.prototype.hasOwnProperty.call(draft.roads, name)) return; // Beta 1.150: own-property at this door too - a prototype member must not read as a held run and carry the call into the parts work below
   if (!crStreetParts(name)) return;
-  if (crSectorSession.street !== name) crSectorSession.snapshot = (draft.sectors && draft.sectors[name]) ? draft.sectors[name].slice() : null; // a fresh entry only - re-entering the same street's open session must not move Cancel's restore point
+  if (crSectorSession.street !== name) crSectorSession.snapshot = DRAFT.snapshotTrim(name); // a fresh entry only - re-entering the same street's open session must not move Cancel's restore point
   crSectorSession.street = name;
   renderSectorBar();
   const sheet = $('createSheet');
@@ -9308,8 +9350,8 @@ function crOpenSectors(name) { // opens a picked street's trimming - TWO doors s
 function crCloseSectors() { if (!crSectorSession.street) return; crSectorReset(); renderDraft(); syncCrGlow(); const sheet = $('createSheet'); if (sheet && sheet.classList.contains('on')) crMorphTo(crWantedFace()); else syncCrPanel(); crRenderHint(); } // Beta 1.208: syncCrGlow stands here explicitly because Done's path does not re-render the draft - the glow dies with the session, not with the next render. Beta 1.223: Done's path DOES re-render now (renderDraft above) - the draft's active flags live in the source features, so without a rebuild the closed street would stay vibrant on crDraftLineActive instead of returning to its gentle mute; every other session-closing path (Cancel, stage change, street removal, Clear all) already re-rendered, and this was the one that did not (Codex P2, PR #100)
 function crCancelSectors() { // Beta 1.129 (Andrew: "I still need a way to cancel selections while I'm selecting something"): the deliberate back-out of a sector session - the street's pick returns EXACTLY as it was when sector mode was entered (the whole road, or the trim then in force), every face repaints from the restored state, and sector mode closes back to the panel. Distinct from un-picking every sector by toggles, which still removes the street - that is a selection, this is an abandonment of the session's edits. Beta 1.269: the bar's Cancel BUTTON is gone (Deselect stands in its slot) - this path's only door is now the tap-away (crMapTap), which is where Andrew's finger already cancelled; the restore behaviour itself is unchanged
   const s = crSectorSession.street; if (!s || !draft) return;
-  if (crSectorSession.snapshot) { draft.sectors = draft.sectors || {}; draft.sectors[s] = crSectorSession.snapshot.slice(); }
-  else if (draft.sectors) delete draft.sectors[s];
+  if (crSectorSession.snapshot) DRAFT.restoreTrim(s, crSectorSession.snapshot);
+  else DRAFT.dropTrim(s);
   crCloseSectors();
   renderDraft(); renderCrLists();
 }
@@ -9505,13 +9547,17 @@ function crPackPickCity(e) { // a chooser tap IS a city pick: it lands in the sa
   crPickCity({ lat: String((s + n) / 2), lon: String((w + ee) / 2), boundingbox: [String(s), String(n), String(w), String(ee)], display_name: e.name + ', Ontario, Canada', address: { city: e.name, state: 'Ontario', country: 'Canada', country_code: 'ca' } }); });
 }
 function crOpenCityPane(ret) {
-  crCitySeq++; if (crCityCtl) { try { crCityCtl.abort(); } catch (e) {} crCityCtl = null; } if (crCityTimer) { clearTimeout(crCityTimer); crCityTimer = null; } // Beta 1.143 (DA-12): reopening the pane supersedes a held city SEARCH too - its late answer must not repopulate the pane it was asked from
+  crResetCitySearch(); // Beta 1.143 (DA-12): reopening the pane supersedes a held city SEARCH too - its late answer must not repopulate the pane it was asked from. Architecture #19: the close runs through crResetCitySearch, the one owner
   crCityReturn = ret;
   $('crCityInput').value = ''; const rb = $('crCityResults'); rb.innerHTML = ''; rb.style.height = ''; crCityBoxTok++; // Beta 1.229: the pane reopens empty at natural height, and any swap release still pending from the last visit is invalidated with it
   if (creating) { if (!routeLoaded) restoreBootChrome(); else openRouteMenu(); }
   showRmPane('rmCityPane');
 }
 let crCityTimer = null, crCitySeq = 0, crCityCtl = null;
+function crResetCitySearch() { // Architecture #19: THE city-search close owner - the mirror of crResetSearch (the street search's owner, Beta 1.243). Ending a held city search was spelled out at four seats (the pane open in crOpenCityPane, the input event, the city pane's Back, and the short-query return inside crRunCitySearch): the same moves - bump the sequence (the family's invalidation: crCitySearchCurrent and crCitySearchSeqCurrent answer to it), abort the in-flight request and drop its handle, clear the pending debounce. The ritual lives here now; the seats keep only their own extras (the input event re-arms its debounce after the close, the short-query return clears the results box, the pane open resets the pane itself). The short-query seat never held a timer to clear - its only caller is the debounce, which spends the timer before running the search - so the owner's timer clear is a no-op at that seat, exactly as the seat's omission was. What the owner deliberately does NOT do: bump the sequence at exitCreate - the catch's seq-only asymmetry (crCitySearchSeqCurrent) is documented there and is not this ritual's to change.
+  crCitySeq++; if (crCityCtl) { try { crCityCtl.abort(); } catch (e) {} crCityCtl = null; }
+  if (crCityTimer) { clearTimeout(crCityTimer); crCityTimer = null; }
+}
 // Beta 1.229: the last-city lookup's generation + abort handle (crCityLookupSeq / crCityLastCtl, CG-PF-11) retire WITH the shortcut they served - see the removal note at the handler's old seat below.
 function crCitySearchCurrent(seq, session) { return seq === crCitySeq && session === crSession; } // Beta 1.154 (B3 build, G3 option (i)): the city-search LANDING's current-check - sequence AND session (the convention is stated at crSearchCurrent above)
 function crCitySearchSeqCurrent(seq) { return seq === crCitySeq; } // Beta 1.154: the city-search CATCH's current-check - sequence ONLY, deliberately weaker than the landing's: exitCreate does not bump crCitySeq (lifecycle trace T7: +0 across four exits), so a late failure from a closed session whose sequence still matches stays silent here exactly as it did inline through 1.153; the name carries the asymmetry so it is never "fixed" by accident
@@ -9969,7 +10015,7 @@ function crCityLocalMatches(q) {
 }
 async function crRunCitySearch() {
   const q = $('crCityInput').value.trim(), box = $('crCityResults');
-  if (q.length < 3) { crCitySeq++; if (crCityCtl) { try { crCityCtl.abort(); } catch (e) {} crCityCtl = null; } crCityBoxSwap(b => { b.innerHTML = ''; }); return; } // Beta 1.143 (DA-12): a short/cleared query invalidates like every other input change - through 1.142 this branch returned before the sequence bump + abort below, so the in-flight answer still held the current sequence when it landed and repopulated the cleared field. Beta 1.229: the clear leaves through the same height animation as every other results change
+  if (q.length < 3) { crResetCitySearch(); crCityBoxSwap(b => { b.innerHTML = ''; }); return; } // Beta 1.143 (DA-12): a short/cleared query invalidates like every other input change - through 1.142 this branch returned before the sequence bump + abort below, so the in-flight answer still held the current sequence when it landed and repopulated the cleared field. Beta 1.229: the clear leaves through the same height animation as every other results change. Architecture #19: the invalidation runs through crResetCitySearch, the one owner
   const seq = ++crCitySeq, session = crSession;
   if (crCityCtl) { try { crCityCtl.abort(); } catch (e) {} }
   const ctl = (typeof AbortController !== 'undefined') ? new AbortController() : null; crCityCtl = ctl;
@@ -10246,7 +10292,7 @@ function renderDraft() { // the DRAFT renders through its own GeoJSON source, co
     const g = crDraftGeom(); // Beta 1.135 (N3): the shared draft geometry - computed once per geometry change, not once per render
     for (const n of draftStreets()) {
       const primary = draft.primaries.has(n) ? 1 : 0;
-      const sel = draft.sectors ? draft.sectors[n] : null;
+      const sel = DRAFT.trimOf(n);
       if (sel || crSectorSession.street === n) {
         const rec = crStreetParts(n); if (!rec) continue;
         const set = crChosenSet(n, rec);
@@ -10336,7 +10382,7 @@ function crRowEl(n, g) {
   const nm = document.createElement('span'); nm.className = 'crName'; nm.textContent = shortStreetName(n); row.appendChild(nm); // Beta 1.144 (DA-04): rows display the short name; the draft key behind them is the full map name
   const ln = document.createElement('span'); ln.className = 'crLen'; ln.textContent = fmtLenM(crStreetChosenM(n, g)); row.appendChild(ln); // Beta 1.130 (maintainability re-scan N1): the preview's rows bill the CHOSEN length through the same helper as the panel's rows and every total - through 1.129 this read g[n].total, so a sector-trimmed street showed its WHOLE length on the check screen while the panel billed the trim and the preview's own total (renderCrLists sums crStreetChosenM) disagreed with its rows
   const chip = document.createElement('button'); chip.className = 'crChip ' + (primary ? 'primary' : 'sec'); chip.textContent = primary ? 'PRIMARY' : 'SECONDARY';
-  chip.addEventListener('click', () => { if (draft.primaries.has(n)) draft.primaries.delete(n); else draft.primaries.add(n); renderDraft(); renderCrLists(); });
+  chip.addEventListener('click', () => DRAFT.togglePrimary(n)); // Architecture #14: the toggle lives on the DRAFT owner
   row.appendChild(chip);
   const del = document.createElement('button'); del.className = 'crDel'; del.textContent = '✕'; del.title = 'Remove ' + shortStreetName(n);
   del.addEventListener('click', () => crRemoveStreet(n)); // Beta 1.127: the shared removal path (sector state leaves with the street)
@@ -10350,14 +10396,14 @@ function crPanelRowEl(n, g) { // Beta 1.127 (Andrew's approved mockup, screen 2)
   const meta = document.createElement('span'); meta.className = 'crPMeta';
   const nm = document.createElement('span'); nm.className = 'crPName'; nm.textContent = shortStreetName(n); meta.appendChild(nm); // Beta 1.144 (DA-04): display form, as in the preview rows
   const sub = document.createElement('span'); sub.className = 'crPSub';
-  const sel = draft.sectors ? draft.sectors[n] : null;
+  const sel = DRAFT.trimOf(n);
   if (sel) { const rec = crStreetParts(n); sub.textContent = sel.length + ' of ' + (rec ? rec.parts.length : sel.length) + ' sectors · ' + fmtLenM(crStreetChosenM(n, g)); }
   else sub.textContent = 'Entire road · ' + fmtLenM(g[n] ? g[n].total : 0); // Beta 1.128: the adjust affordance is stated BEFORE any trim exists - in 1.127 it appeared only after one, so an untrimmed row gave no hint it could be tapped at all
   meta.appendChild(sub);
   const hint = document.createElement('span'); hint.className = 'crPSub'; hint.textContent = 'Tap a road to adjust sectors'; meta.appendChild(hint); // Beta 1.208 (Andrew): the instruction gets its OWN line under the length line - through 1.207 it rode the same line after an em dash. Beta 1.242 (Andrew): the words are his exact words - through 1.241 the line read 'Tap row to adjust'. WORDING ONLY: he sampled restyles (bolder, app blue, pill, footnote, extra air) and rejected them all - the styling stays the original .crPSub
   row.appendChild(meta);
   const chip = document.createElement('button'); chip.className = 'crPChip ' + (primary ? 'primary' : 'sec'); chip.textContent = primary ? 'PRIMARY' : 'SECONDARY';
-  chip.addEventListener('click', e => { e.stopPropagation(); if (draft.primaries.has(n)) draft.primaries.delete(n); else draft.primaries.add(n); renderDraft(); renderCrLists(); });
+  chip.addEventListener('click', e => { e.stopPropagation(); DRAFT.togglePrimary(n); }); // Architecture #14: the toggle lives on the DRAFT owner
   row.appendChild(chip);
   const del = document.createElement('button'); del.className = 'crPDel'; del.textContent = '✕'; del.title = 'Remove ' + shortStreetName(n);
   del.addEventListener('click', e => { e.stopPropagation(); crRemoveStreet(n); });
@@ -10482,14 +10528,13 @@ $('crDoorList').addEventListener('click', () => { showRmPane('rmCityListPane'); 
 $('rmCityListBack').addEventListener('click', () => showRmPane('rmCreatePane')); // the list pane backs to the doors pane (the mockup's pane-to-pane Back chain)
 $('crDoorManual').addEventListener('click', () => { askDiscard(() => { draft = newDraft(); crOpenCityPane('doors'); }); }); // Beta 1.147 (hypothesis H2 hardening): the same local askDiscard wrap as crPackPickCity - no-op on an empty draft, so first entry is unchanged
 $('crCityInput').addEventListener('input', () => { // Beta 1.143 (DA-12, verify cycle 1): EVERY input change invalidates the in-flight search AT THE EVENT - bump + abort here, not when the debounce next runs the search (a response landing inside the 500 ms window otherwise renders into a field the user has already moved past). The street search's handler below has always had this shape; crRunCitySearch's own bump remains the backstop for programmatic calls
-  crCitySeq++; if (crCityCtl) { try { crCityCtl.abort(); } catch (e) {} crCityCtl = null; }
-  if (crCityTimer) { clearTimeout(crCityTimer); crCityTimer = null; }
+  crResetCitySearch(); // Architecture #19: the invalidation runs through crResetCitySearch, the one owner - the seat's own remaining work is the re-arm below
   if ($('crCityInput').value.trim().length < 3) { crCityBoxSwap(b => { b.innerHTML = ''; }); return; } // Beta 1.229: the clear animates like every other results change
   crCityTimer = setTimeout(() => { crCityTimer = null; crRunCitySearch(); }, 500);
 });
 // Beta 1.229 (Andrew): the 'Use <city>' last-city shortcut is REMOVED whole - the button (head.html), this handler, and its Nominatim name re-resolution. The shortcut re-resolved the remembered NAME and silently took the first place hit: Aurora, Ontario's name landed on Aurora, Illinois, whose grid load then sat at 0% (Andrew's live repro, 2026-11-17). Andrew ruled the button makes no sense to him; the bug is now impossible rather than patched - NO path resolves a typed or remembered city NAME to a place at search time. Typed searches go through the Ontario-scoped crRunCitySearch, list picks through the catalogue, and the remembered area's remaining reader is the city list itself (its sort + 'last used' tag in crRenderCityChoices), which is why crPickCity's lsSet(LS_GLOBAL.lastArea) write stays.
 $('crCityBack').addEventListener('click', () => {
-  crCitySeq++; if (crCityCtl) { try { crCityCtl.abort(); } catch (e) {} crCityCtl = null; } if (crCityTimer) { clearTimeout(crCityTimer); crCityTimer = null; } // Beta 1.143 (DA-12): leaving the pane kills a held city search too - request AND pending debounce, as reopening does
+  crResetCitySearch(); // Beta 1.143 (DA-12): leaving the pane kills a held city search too - request AND pending debounce, as reopening does. Architecture #19: the close runs through crResetCitySearch, the one owner
   if (crCityReturn === 'preview' || crCityReturn === 'pick') { if (!routeLoaded) parkBootChrome(); else closeRouteMenu(); setCreateStage(crCityReturn); }
   else { showRmPane('rmCreatePane'); }
 });
@@ -11133,12 +11178,7 @@ $('crDoneBtn').addEventListener('click', () => { if (draftStreets().length) setC
 $('crReviewBtn').addEventListener('click', () => crExpandPanel()); // the bar's way back (mockup screen 4)
 $('crClearAll').addEventListener('click', () => { // Andrew's addition (2026-11-06): empty the picks at once - behind the shared confirm, the same discipline as Start over and route deletion; the city and the session stay
   const n = draft ? draftStreets().length : 0; if (!n) return;
-  crConfirm('Clear all ' + n + (n === 1 ? ' road?' : ' roads?'), 'Every road you picked will be taken off this route. The city stays loaded.', () => {
-    draft.roads = Object.create(null); draft.primaries.clear(); draft.osmNames = Object.create(null); draft.sectors = Object.create(null); draft.parts = Object.create(null);
-    crGeomGen++; crPending = {}; // Beta 1.170 (Carbon fix round Phase 2, D-04): the wholesale roads replacement obeys the same two duties as every other roads mutation - through 1.169 it was the one mutation that did not bump the geometry generation (the crDraftGeom cache's roads-identity key happens to catch this particular replacement, but the bump is the contract every other mutation keeps, and the cache's gen key exists to be moved by exactly this class of change) and it left the pending rows standing, so crSweepPending could re-add a street the user had just cleared
-    crSectorReset();
-    renderDraft(); renderCrLists(); crRenderHint();
-  }, { yes: 'Clear all', no: 'Cancel', danger: true });
+  crConfirm('Clear all ' + n + (n === 1 ? ' road?' : ' roads?'), 'Every road you picked will be taken off this route. The city stays loaded.', () => { DRAFT.clearAll(); }, { yes: 'Clear all', no: 'Cancel', danger: true }); // Architecture #14: the wholesale reset lives on the DRAFT owner (its clearAll method)
 });
 $('crSbWhole').addEventListener('click', () => { const s = crSectorSession.street; if (!s) return; const rec = crStreetParts(s); if (rec) crSetChosen(s, rec, new Set(rec.parts.map((_, i) => i))); renderDraft(); renderCrLists(); renderSectorBar(); }); // Entire road: every sector back on (the pick is stored as no entry again)
 $('crSbDone').addEventListener('click', () => crCloseSectors()); // Done: back to the panel

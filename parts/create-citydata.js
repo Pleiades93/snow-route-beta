@@ -46,7 +46,7 @@ async function crPackResolveCity(name, bbox) { // does the library hold THIS cit
   if (!(pb.s <= bbox.s + EPS && pb.n >= bbox.n - EPS && pb.w <= bbox.w + EPS && pb.e >= bbox.e - EPS)) return null;
   return { slug: e.slug, bbox: pb, gen: typeof e.generatedAt === 'string' ? e.generatedAt : '' }; // Beta 1.251 (R-02): the catalogue's generatedAt is the pack's version stamp - republishing a pack re-stamps it, and the dataset identity (crDatasetId, create-cache.js) binds saved records to it
 }
-async function crPackDownload(slug) { // Beta 1.249: ONE download attempt of a city pack, watched at the byte level (Andrew's pack stall rule, 2026-11-19). Through 1.248 the pack fetch carried no timeout of its own - a wedged connection, or a host that never answers, pended crPackLoad's promise forever, and only the preparation watchdogs' 180 s landing bound ever surfaced it, as a failed preparation. The attempt now carries a silence timer in crOverpassFetch's shape (Beta 1.246), on the pack's own two windows from CR_TIMING: packFirstByteMs (120 s) until the first body byte - the static host spends real time producing a big city's file before the first byte moves, so silence there is not yet a wedge - then packStallMs (60 s) between bytes once they flow. On expiry the timer aborts the attempt through its own controller and the attempt throws a TAGGED error (err.packStall) - the retry loop's signal in crPackLoad below. Every other failure (HTTP status, an unreadable or misshapen body, a network throw) is untagged and behaves exactly as it always has. The body is read as a stream and accumulated as byte chunks, concatenated and decoded the streaming branch's way; there is still NO byte cap (the caps in CR_TIMING govern service extracts, not the app's own library). A reader-less response falls back to r.text() under the first-byte window armed at the attempt's start: it cannot see mid-body progress, so the generous window is its only honest bound - the fallback limit 1.246 documented for its own no-stream branch.
+async function crPackDownload(slug) { // Beta 1.249: ONE download attempt of a city pack, watched at the byte level (Andrew's pack stall rule, 2026-11-19). Through 1.248 the pack fetch carried no timeout of its own - a wedged connection, or a host that never answers, pended crPackLoad's promise forever, and only the preparation watchdogs' 180 s landing bound ever surfaced it, as a failed preparation. The attempt now carries a silence timer in crOverpassFetch's shape (Beta 1.246), on the pack's own two windows from CR_TIMING: packFirstByteMs (120 s) until the first body byte - the static host spends real time producing a big city's file before the first byte moves, so silence there is not yet a wedge - then packStallMs (60 s) between bytes once they flow. On expiry the timer aborts the attempt through its own controller and the attempt throws a TAGGED error (err.packStall) - the retry loop's signal in crPackLoad below. Every other failure (HTTP status, an unreadable or misshapen body, a network throw) is untagged and behaves exactly as it always has. The body is consumed through the shared streaming read (crReadBodyText, create-fetch.js - Architecture #18: stream, accumulate, decode, one body for both watched downloads); there is still NO byte cap (the caps in CR_TIMING govern service extracts, not the app's own library). A reader-less response falls back to r.text() under the first-byte window armed at the attempt's start: it cannot see mid-body progress, so the generous window is its only honest bound - the fallback limit 1.246 documented for its own no-stream branch.
   const ctl = (typeof AbortController !== 'undefined') ? new AbortController() : null;
   if (ctl) crPackCtls[slug] = ctl; // Beta 1.254 (O-06): the load owns this attempt's controller until the attempt settles (the finally below unregisters it) or the load is dropped (crPackAbort)
   let stallTo = null, sawByte = false, killed = false;
@@ -56,20 +56,12 @@ async function crPackDownload(slug) { // Beta 1.249: ONE download attempt of a c
   try {
     const r = await fetch('packs/' + slug + '.json', { cache: 'no-cache', signal: ctl ? ctl.signal : undefined });
     if (!r.ok) { clearStall(); throw new Error('pack HTTP ' + r.status); }
-    let text;
-    if (r.body && typeof r.body.getReader === 'function') {
-      const reader = r.body.getReader(), chunks = []; let total = 0;
-      for (;;) {
-        const part = await reader.read();
-        if (part.done) break;
-        total += part.value.byteLength;
-        chunks.push(part.value);
-        sawByte = true;
-        armStall(); // a landed chunk is progress: the silence clock restarts here, on the flowing window once the first byte has landed
-      }
-      const buf = new Uint8Array(total); let off = 0; for (const c of chunks) { buf.set(c, off); off += c.byteLength; }
-      text = new TextDecoder().decode(buf);
-    } else { text = await r.text(); } // no reader: the first-byte window armed at the start bounds the whole read (see the header - no mid-body visibility exists to arm anything finer)
+    const read = await crReadBodyText(r, () => { // Architecture #18: the consumption (stream, accumulate, decode) is crReadBodyText's (create-fetch.js); the pack's POLICIES stay here - the chunk hook records the first byte and re-arms the silence clock on the flowing window, and the hook never stops the read (the pack has no cap and no session verdict to give)
+      sawByte = true;
+      armStall(); // a landed chunk is progress: the silence clock restarts here, on the flowing window once the first byte has landed
+      return null;
+    });
+    const text = read.fallback ? await r.text() : read.text; // no reader: the first-byte window armed at the start bounds the whole read (see the header - no mid-body visibility exists to arm anything finer)
     clearStall();
     const pack = JSON.parse(text); // a SyntaxError propagates untagged, exactly as r.json()'s did through 1.248
     if (!pack || !pack.streets || typeof pack.streets !== 'object') throw new Error('pack shape');
@@ -125,23 +117,23 @@ async function crPackServe(box, name, sessionOk) { // the seam's pack answer: th
   for (const el of els) { if (name && el.tags.name !== name) continue; if (el.geometry.some(g => g.lat >= box.s && g.lat <= box.n && g.lon >= box.w && g.lon <= box.e)) out.push(el); }
   return { ok: true, json: { elements: out }, ms: Date.now() - t0 };
 }
-function crIndexWays(elements, byId) { // Overpass elements -> byId { id: { name, pts } }, with the point cleaning the per-tap fetch used (1e7 rounding, sub-0.1 m duplicates dropped)
+function crCleanPtPush(pts, lat, lon) { const p = [Math.round(lat * 1e7) / 1e7, Math.round(lon * 1e7) / 1e7]; if (!pts.length || distM(pts[pts.length - 1], p) > 0.1) pts.push(p); } // Architecture #17: THE point normalisation - one body for the two cleaners that each spelled it out through 1.280 (crIndexWays on fetched geometry, crCleanPts on stored pairs): 1e7 rounding, and a point is kept only when it sits more than 0.1 m past the last kept one. Each caller keeps its own admission rules around it (crIndexWays trusts the extract's shape; crCleanPts validates finiteness/range first) and its own survival rule (a way is kept only when more than one point survives)
+function crIndexWays(elements, byId) { // Overpass elements -> byId { id: { name, pts } }, with the point cleaning the per-tap fetch used (crCleanPtPush: 1e7 rounding, sub-0.1 m duplicates dropped)
   for (const el of elements || []) {
     if (!el || el.type !== 'way' || el.id == null || !el.tags || typeof el.tags.name !== 'string' || !el.tags.name) continue;
     if (!Array.isArray(el.geometry) || el.geometry.length < 2) continue;
     const pts = [];
-    for (const g of el.geometry) { const p = [Math.round(g.lat * 1e7) / 1e7, Math.round(g.lon * 1e7) / 1e7]; if (!pts.length || distM(pts[pts.length - 1], p) > 0.1) pts.push(p); }
+    for (const g of el.geometry) crCleanPtPush(pts, g.lat, g.lon);
     if (pts.length > 1) byId[el.id] = { name: el.tags.name, pts };
   }
   return byId;
 }
-function crCleanPts(rawPts) { // Beta 1.150 (security-audit fix round): THE point cleaning for a stored [lat, lon] pair list, mirroring crIndexWays' rules (1e7 rounding, a point is kept only when it sits more than 0.1 m past the last kept one, at least 2 points must survive) plus the finiteness/range condition crResolve demands of every point it reads. A point that is not a finite in-range pair is skipped; the way survives on its remaining points or not at all
+function crCleanPts(rawPts) { // Beta 1.150 (security-audit fix round): THE point cleaning for a stored [lat, lon] pair list, sharing crIndexWays' normalisation through crCleanPtPush (1e7 rounding, a point is kept only when it sits more than 0.1 m past the last kept one, at least 2 points must survive) plus the finiteness/range condition crResolve demands of every point it reads. A point that is not a finite in-range pair is skipped; the way survives on its remaining points or not at all
   if (!Array.isArray(rawPts)) return null;
   const pts = [];
   for (const gp of rawPts) {
     if (!Array.isArray(gp) || gp.length < 2 || !isFinite(gp[0]) || !isFinite(gp[1]) || gp[0] < -90 || gp[0] > 90 || gp[1] < -180 || gp[1] > 180) continue;
-    const p = [Math.round(gp[0] * 1e7) / 1e7, Math.round(gp[1] * 1e7) / 1e7];
-    if (!pts.length || distM(pts[pts.length - 1], p) > 0.1) pts.push(p);
+    crCleanPtPush(pts, gp[0], gp[1]);
   }
   return pts.length > 1 ? pts : null;
 }
@@ -160,11 +152,12 @@ function crCovFromWays(byId, boxes) { // the coverage record: the extract's ways
   return { gen: crCovGen, byName, byId, boxes: (boxes || []).slice(), fetchedAt: Date.now() };
 }
 function crCovEnsure() { if (!crCov) crCov = crCovFromWays(Object.create(null), []); return crCov; } // Beta 1.150: the coverage byId starts life null-prototype (as crCovFromWays' byName now does) - the cache fold writes stored way ids into it, and an id of '__proto__' must land as an entry, never as the index's prototype. Every coverage birth site (here, crCityPrepare) passes Object.create(null) for the same reason
+function crCovFold(byId, box) { const cov = crCovEnsure(); for (const id of Object.keys(byId)) cov.byId[id] = byId[id]; if (box && !cov.boxes.some(b => b.s === box.s && b.w === box.w && b.n === box.n && b.e === box.e)) cov.boxes.push(box); return cov; } // Architecture #17: the coverage record's FOLD - already-validated ways and one answered box land on the record, and nothing else happens: no reindex, no search refresh. The cache restore folds per restored cell through here (through 1.280 it wrote crCov.byId and crCov.boxes directly from create-cache.js); the once-only reindex + refresh after its loop stays the caller's discipline (Beta 1.254, A-02)
+function crCovReindex() { const cov = crCovEnsure(); cov.byName = crCovFromWays(cov.byId, cov.boxes).byName; return cov; } // Architecture #17: the byName rebuild - the name index is a pure function of byId, rebuilt whole at the moments coverage settles (a merge landing below, the restore's fold completing), never per cell (Beta 1.169 / 1.254)
 function crCovMerge(elements, box) { // fold one answered extract (a grid cell, the fallback box, a top-up) into the merged coverage: ways dedupe by id, the answered box joins the verified set
   const cov = crCovEnsure();
   crIndexWays(elements, cov.byId);
-  const fresh = crCovFromWays(cov.byId, cov.boxes);
-  cov.byName = fresh.byName;
+  crCovReindex();
   if (box && !cov.boxes.some(b => b.s === box.s && b.w === box.w && b.n === box.n && b.e === box.e)) cov.boxes.push(box);
   cov.fetchedAt = Date.now();
   crRefreshSearch(); // Beta 1.234 fix round 3 (PR #114, Codex P2): a merge is the moment coverage changes - an open street search re-runs against the fuller extract here, instead of standing on the answer it computed before these streets landed (the refresh and its dismissal guards live at crRefreshSearch in create-pick.js; the search itself merges nothing, so this cannot cascade)
@@ -267,7 +260,7 @@ function crStartPrep(anchor) { // the FALLBACK preparation (second amendment, it
   if (crGrid) crGridStop('superseded'); // CG-PF-13: a fallback starting over a live grid must STOP the grid first - the generation bump below would otherwise orphan its in-flight cells in 'fetching' (their answers settle into the dead generation, their handlers discard them, and Resume - which only resets 'failed' cells - could never reschedule them, wedging the city mid-load forever). crGridStop aborts the grid's downloads and returns those cells to 'pending', so the city stays resumable; on a settled grid it changes nothing but the stopped marker, which crGridSettledState already reads correctly
   const session = crSession, gen = ++crCovGen;
   const outer = crBoxAround(anchor.lat, anchor.lng, CR_INNER_KM + CR_BUFFER_KM);
-  crSetPrepState('preparing'); crPrepFail = null; crFailFromGrid = false; crPrepAnchor = anchor; crWanted = null; // starting a preparation IS the answer to any outstanding offer
+  crPrepBegin(); crPrepAnchor = anchor; // starting a preparation IS the answer to any outstanding offer (the offer itself clears inside crPrepBegin, Architecture #16; the anchor stays this site's own - it is the fallback's Retry target)
   const prep = crPrep = { gen, session, anchor, startedAt: Date.now(), ticker: null, op: {} };
   crRenderHint();
   prep.ticker = setInterval(() => { crPrepWatchdog(prep, gen, session); if (crPrepCurrent(gen, session)) crRenderHint(); else clearInterval(prep.ticker); }, 1000); // Beta 1.229: every tick runs the progress watchdog before it renders

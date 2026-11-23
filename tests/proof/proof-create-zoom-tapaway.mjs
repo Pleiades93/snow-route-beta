@@ -169,7 +169,7 @@ if (sectorTapSrc && featDistMSrc && featDistPxSrc) {
 check('S2: crMapTap routes a sector-tap miss to crCancelSectors',
   pick.includes('if (!crSectorTap(e.lngLat)) crCancelSectors();'));
 check('S2: crCancelSectors still restores the entry snapshot (the path is reused whole, not paralleled) - and since Beta 1.269 the tap-away is its only door (the bar\'s Cancel button is Deselect now; no click listener wires the cancel)',
-  pick.includes('draft.sectors[s] = crSectorSession.snapshot.slice()') && pick.includes('if (crSectorSession.street) { if (!crSectorTap(e.lngLat)) crCancelSectors(); return; }') && !pick.includes("addEventListener('click', () => crCancelSectors())"));
+  pick.includes('DRAFT.restoreTrim(s, crSectorSession.snapshot)') && pick.includes('draft.sectors[name] = snap.slice();') && pick.includes('if (crSectorSession.street) { if (!crSectorTap(e.lngLat)) crCancelSectors(); return; }') && !pick.includes("addEventListener('click', () => crCancelSectors())"));
 
 console.log(`\n${pass} pass, ${fail} fail`);
 process.exit(fail ? 1 : 0);

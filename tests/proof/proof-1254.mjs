@@ -82,10 +82,17 @@ check('8 (O-09): the snow loop skips away frames and the speck count is capped',
   && snow.includes('Math.min(1000, Math.round(area / SPECK.per))'));
 
 // ---------- A-02: the restore fold does not merge per cell ----------
+// Section 1 step 5 (Architecture #17, Beta 1.281): the claim is unchanged; its
+// literals moved - the fold and the rebuild are the coverage record's owner
+// functions now (crCovFold / crCovReindex, create-citydata.js), so the check
+// pins the restore's new call lines AND the fold's own body (a fold that
+// reindexed or refreshed per cell would break A-02 from inside the owner).
 check('9 (A-02): no per-cell crCovMerge in the restore; one rebuild + one refresh after the loop',
   !cache.includes('crCovMerge([], null)')
-  && cache.includes('crCovEnsure(); // ensure the cov exists before the direct fold below')
-  && cache.includes('crCov.byName = fresh.byName; crRefreshSearch();'));
+  && cache.includes('crCovFold(byId, cell.box);')
+  && cache.includes('crCovReindex(); crRefreshSearch();')
+  && !slice(citydata, 'function crCovFold(', 'function crCovReindex(').includes('crRefreshSearch')
+  && !slice(citydata, 'function crCovFold(', 'function crCovReindex(').includes('crCovFromWays'));
 
 // ---------- #10: one ordered tile enumerator ----------
 const ptu = slice(app4, 'function packTileUrls', '\n}');
@@ -108,8 +115,8 @@ check('12 (R-05): the dp entry documents its shape and terms',
 // ---------- the release editorial ----------
 check('13: the CHANGELOG top entry is Beta 1.254', changelog.includes('## Beta 1.254'));
 check('14: What\'s New carries the 1.254 bullet, short and dash-free',
-  whatsnew.includes('Under the hood: backup and restore now each run through one owner, so exports and restores stay in step.')
-  && 'Under the hood: backup and restore now each run through one owner, so exports and restores stay in step.'.length <= 108
+  whatsnew.includes('Under the hood: route building now runs through one owner per job, so creating a route stays in step.')
+  && 'Under the hood: route building now runs through one owner per job, so creating a route stays in step.'.length <= 108
   && !whatsnew.includes('—'));
 
 console.log(`proof-1254: ${pass} passed, ${fail} failed`);

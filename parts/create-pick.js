@@ -75,38 +75,81 @@ function crRenderHint() { // the ONE writer of the pick-stage hint + its action 
       cc.textContent = ''; const b = document.createElement('b'); b.textContent = crCity.name; const go = document.createElement('span'); go.className = 'crCityGo'; go.textContent = 'change'; cc.append('Working in ', b, ' · ', go); cc.style.display = ''; } else cc.style.display = 'none'; }
   crRefreshSearch(); // Beta 1.234 fix round 3 (PR #114, Codex P2): every coverage landing renders this hint as it lands (the prepare completions, the grid pump, the saved-city fold's rebuild), so the open street search refreshes with it - see crRefreshSearch at crRunSearch for the guards that keep a dismissed search dismissed
 }
-function crAddStreet(name, segs) { // Beta 1.144 (Package C, DA-04): the draft keys on the FULL map name - through 1.143 the key was shortStreetName(osmName), so two distinct streets sharing a shortened name (Addington Avenue / Addington Place) collided: only the first could ever enter a draft, and tapping the second opened the first's sectors. shortStreetName survives ONLY as the display form (toasts, rows, the sector bar's title); every key in the draft - roads, primaries, sectors, parts, pending - is the full name, and the saved pack inherits the full names, so both streets can live in one route.
-  draft.roads[name] = segs; draft.osmNames[name] = name; crGeomGen++; // a tapped street joins as a SECONDARY (fork 3) - flip it to PRIMARY in the list if it is one. Beta 1.135 (N3): the generation bump is the draft-geometry cache's invalidation for this in-place join (see crDraftGeom)
-  delete crPending[name];
-  crIsectClear(); // Beta 1.262: the first road selection ends the POI surface - the picked crossing's name and marker clear as if they were never there
-  renderDraft(); renderCrLists(); crRenderHint();
-  // Beta 1.153 (Andrew): no 'Added' popup - the road's own picked state on the map and in the panel is the feedback.
-}
+// ---- the DRAFT owner (Architecture #14): every mutation of the draft's
+// roads / primaries / names / pending set, and the render that follows a
+// mutation, live here. Through 1.280 each entry point coordinated those
+// pieces itself: the post-mutation render ritual (the draft overlay, both
+// lists, the hint, in that order) was spelled out at four sites, and the
+// category toggle was duplicated at the two row chips. The mutation ORDER
+// inside each method is the order its entry point always ran - this round
+// moves the bodies, it does not re-derive them. The crAddStreet /
+// crAddRun / crRemoveStreet names survive as doorways below (the battery
+// calls the first by name; the pending sweep in create-citydata calls
+// both add doors). Sector state joined the same owner in Architecture
+// #15: the trimOf / hasTrim / snapshotTrim / chosenSet / setChosen /
+// dropTrim / restoreTrim methods below are the only reads and writes of
+// draft.sectors outside this owner's own wholesale reset and newDraft's
+// creation.
+const DRAFT = {
+  render() { renderDraft(); renderCrLists(); crRenderHint(); }, // the ONE post-mutation render, in the order every mutation site already used
+  renderLists() { renderDraft(); renderCrLists(); }, // the category toggle's tail: the hint does not read the primaries, so it is not re-rendered
+  addStreet(name, segs) { // Beta 1.144 (Package C, DA-04): the draft keys on the FULL map name - through 1.143 the key was shortStreetName(osmName), so two distinct streets sharing a shortened name (Addington Avenue / Addington Place) collided: only the first could ever enter a draft, and tapping the second opened the first's sectors. shortStreetName survives ONLY as the display form (toasts, rows, the sector bar's title); every key in the draft - roads, primaries, sectors, parts, pending - is the full name, and the saved pack inherits the full names, so both streets can live in one route.
+    draft.roads[name] = segs; draft.osmNames[name] = name; crGeomGen++; // a tapped street joins as a SECONDARY (fork 3) - flip it to PRIMARY in the list if it is one. Beta 1.135 (N3): the generation bump is the draft-geometry cache's invalidation for this in-place join (see crDraftGeom)
+    delete crPending[name];
+    crIsectClear(); // Beta 1.262: the first road selection ends the POI surface - the picked crossing's name and marker clear as if they were never there
+    DRAFT.render();
+    // Beta 1.153 (Andrew): no 'Added' popup - the road's own picked state on the map and in the panel is the feedback.
+  },
+  addRun(name, segs) { // Beta 1.144 (OPT-L1): a further DISCONNECTED run of an already-picked street joins the SAME street entry - the segment list grows (the run's parts append after the existing runs' parts: runs form in segment order, so existing sector indexes keep their meaning), the geometry cache invalidates, and the cached sector record dies so boundaries recompute over the fuller street. A trimmed street keeps its trim AND gains the new run's parts as chosen - the tap that added the run was a pick, so its parts join the chosen set explicitly rather than falling out of the save by omission; an untrimmed street simply stays whole.
+    const before = DRAFT.hasTrim(name) ? crStreetParts(name) : null;
+    draft.roads[name] = draft.roads[name].concat(segs); crGeomGen++;
+    if (draft.parts) delete draft.parts[name];
+    if (before) {
+      const rec = crStreetParts(name);
+      if (rec) { const set = crChosenSet(name, before); for (let i = before.parts.length; i < rec.parts.length; i++) set.add(i); crSetChosen(name, rec, set); }
+    }
+    crIsectClear(); // Beta 1.262: a road selection like any other - the POI surface ends here too (see the add-street method above)
+    DRAFT.render();
+    // Beta 1.153 (Andrew): no 'Added the other part' popup either - same rule as the add-street method.
+  },
+  removeStreet(name) { // Beta 1.127: the ONE removal path - the panel's x, the preview's x and Clear all land here (Beta 1.128: those are the ONLY doors; a map tap on a picked street opens its sectors instead), so a street leaves with ALL of its draft state (geometry, primary flag, names, sector pick, cached parts) and every face re-renders from the same state
+    if (!draft || !draft.roads[name]) return;
+    delete draft.roads[name]; draft.primaries.delete(name); delete draft.osmNames[name]; crGeomGen++; // Beta 1.135 (N3): the removal invalidates the shared draft geometry (see crDraftGeom)
+    DRAFT.dropTrim(name);
+    if (draft.parts) delete draft.parts[name];
+    delete crPending[name];
+    if (crSectorSession.street === name) crSectorReset();
+    DRAFT.render();
+  },
+  togglePrimary(name) { if (draft.primaries.has(name)) draft.primaries.delete(name); else draft.primaries.add(name); DRAFT.renderLists(); }, // the category flip both row chips spelled out identically through 1.280 - one body now
+  // ---- sector state (Architecture #15). The stored form is unchanged
+  // since Beta 1.127: an ABSENT entry means the whole road; a present
+  // entry is the sorted array of chosen part indexes.
+  trimOf(name) { return draft && draft.sectors ? draft.sectors[name] : null; }, // the street's trim exactly as the pre-owner sites read it (an absent key reads undefined; no draft reads null)
+  hasTrim(name) { return !!(draft && draft.sectors && draft.sectors[name]); }, // the presence test the parts-record pin (crStreetParts) and the add-run dance used to spell out inline
+  snapshotTrim(name) { const t = DRAFT.trimOf(name); return t ? t.slice() : null; }, // the sector session's entry snapshot (Beta 1.129): a COPY of the trim in force, or null when the whole road stands
+  chosenSet(name, rec) { const sel = DRAFT.trimOf(name); return new Set(sel || rec.parts.map((_, i) => i)); }, // no entry = every sector chosen (the whole road)
+  setChosen(name, rec, set) { // a FULL set stores as NO entry - "whole road" stays the draft's default state, so an untrimmed street carries no sector baggage into counts or the save
+    draft.sectors = draft.sectors || {};
+    if (set.size >= rec.parts.length) delete draft.sectors[name];
+    else draft.sectors[name] = [...set].sort((a, b) => a - b);
+  },
+  dropTrim(name) { if (draft.sectors) delete draft.sectors[name]; }, // a trim leaves with its street (the removal) or with an abandoned restore point (the sector session's cancel, no-snapshot arm)
+  restoreTrim(name, snap) { draft.sectors = draft.sectors || {}; draft.sectors[name] = snap.slice(); }, // the sector session's Cancel restore (Beta 1.129): the entry snapshot returns as a copy, exactly as it was taken
+  clearAll() { // the Clear-all door's wholesale reset (through 1.280 it was spelled out in the crClearAll confirm callback): every draft map replaced - null-prototype, like every creation site (the clearall proofs extract the reset statement below verbatim) - the geometry generation bumped, pending cleared, the sector session reset, then the one render
+    draft.roads = Object.create(null); draft.primaries.clear(); draft.osmNames = Object.create(null); draft.sectors = Object.create(null); draft.parts = Object.create(null);
+    crGeomGen++; crPending = {}; // Beta 1.170 (Carbon fix round Phase 2, D-04): the wholesale roads replacement obeys the same two duties as every other roads mutation - through 1.169 it was the one mutation that did not bump the geometry generation (the crDraftGeom cache's roads-identity key happens to catch this particular replacement, but the bump is the contract every other mutation keeps, and the cache's gen key exists to be moved by exactly this class of change) and it left the pending rows standing, so crSweepPending could re-add a street the user had just cleared
+    crSectorReset();
+    DRAFT.render();
+  }
+};
+function crAddStreet(name, segs) { DRAFT.addStreet(name, segs); } // Architecture #14: doorway - the body lives on the DRAFT owner above
 function crRunHeld(name, segs) { // Beta 1.144 (OPT-L1): is this resolved run ALREADY part of the draft street? Segment identity is exact - a run's stored segments are the extract's way point arrays (or its stitched line when the run was bridged), and resolving the same run again reproduces them deterministically, so set membership on the serialized segments is the identity test
   const held = new Set((draft.roads[name] || []).map(sg => JSON.stringify(sg)));
   return segs.length > 0 && segs.every(sg => held.has(JSON.stringify(sg)));
 }
-function crAddRun(name, segs) { // Beta 1.144 (OPT-L1): a further DISCONNECTED run of an already-picked street joins the SAME street entry - the segment list grows (the run's parts append after the existing runs' parts: runs form in segment order, so existing sector indexes keep their meaning), the geometry cache invalidates, and the cached sector record dies so boundaries recompute over the fuller street. A trimmed street keeps its trim AND gains the new run's parts as chosen - the tap that added the run was a pick, so its parts join the chosen set explicitly rather than falling out of the save by omission; an untrimmed street simply stays whole.
-  const before = (draft.sectors && draft.sectors[name]) ? crStreetParts(name) : null;
-  draft.roads[name] = draft.roads[name].concat(segs); crGeomGen++;
-  if (draft.parts) delete draft.parts[name];
-  if (before) {
-    const rec = crStreetParts(name);
-    if (rec) { const set = crChosenSet(name, before); for (let i = before.parts.length; i < rec.parts.length; i++) set.add(i); crSetChosen(name, rec, set); }
-  }
-  crIsectClear(); // Beta 1.262: a road selection like any other - the POI surface ends here too (see crAddStreet)
-  renderDraft(); renderCrLists(); crRenderHint();
-  // Beta 1.153 (Andrew): no 'Added the other part' popup either - same rule as crAddStreet.
-}
-function crRemoveStreet(name) { // Beta 1.127: the ONE removal path - the panel's x, the preview's x and Clear all land here (Beta 1.128: those are the ONLY doors; a map tap on a picked street opens its sectors instead), so a street leaves with ALL of its draft state (geometry, primary flag, names, sector pick, cached parts) and every face re-renders from the same state
-  if (!draft || !draft.roads[name]) return;
-  delete draft.roads[name]; draft.primaries.delete(name); delete draft.osmNames[name]; crGeomGen++; // Beta 1.135 (N3): the removal invalidates the shared draft geometry (see crDraftGeom)
-  if (draft.sectors) delete draft.sectors[name];
-  if (draft.parts) delete draft.parts[name];
-  delete crPending[name];
-  if (crSectorSession.street === name) crSectorReset();
-  renderDraft(); renderCrLists(); crRenderHint();
-}
+function crAddRun(name, segs) { DRAFT.addRun(name, segs); } // Architecture #14: doorway - the body lives on the DRAFT owner above
+function crRemoveStreet(name) { DRAFT.removeStreet(name); } // Architecture #14: doorway - the body lives on the DRAFT owner above
 // ---- sectors (Beta 1.127, Andrew's approved mockups in beta1/work/create-sectors-mockups/):
 // a picked street can be trimmed to the junction-to-junction pieces he
 // actually cleans - a long road that runs past his subdivision enters
@@ -144,7 +187,7 @@ function crStreetParts(name) { // the street's sectors: its stitched runs cut wh
     // they clear - for a session, the next entry, which settles the
     // record before the session's first render. Unreferenced, the
     // record is a pure cache and falls through to the recompute below.
-    if ((draft.sectors && draft.sectors[name]) || crSectorSession.street === name || rec.covStamp === crCovStamp()) return rec;
+    if (DRAFT.hasTrim(name) || crSectorSession.street === name || rec.covStamp === crCovStamp()) return rec;
   }
   const one = {}; one[name] = draft.roads[name];
   const runLines = stitchRuns(name, one).filter(L => L && L.length >= 2);
@@ -176,15 +219,11 @@ function crStreetParts(name) { // the street's sectors: its stitched runs cut wh
   draft.parts[name] = rec;
   return rec;
 }
-function crChosenSet(name, rec) { const sel = draft && draft.sectors ? draft.sectors[name] : null; return new Set(sel || rec.parts.map((_, i) => i)); } // no entry = every sector chosen (the whole road)
-function crSetChosen(name, rec, set) { // a FULL set stores as NO entry - "whole road" stays the draft's default state, so an untrimmed street carries no sector baggage into counts or the save
-  draft.sectors = draft.sectors || {};
-  if (set.size >= rec.parts.length) delete draft.sectors[name];
-  else draft.sectors[name] = [...set].sort((a, b) => a - b);
-}
+function crChosenSet(name, rec) { return DRAFT.chosenSet(name, rec); } // Architecture #15 doorway - the body lives on the DRAFT owner (sector state)
+function crSetChosen(name, rec, set) { DRAFT.setChosen(name, rec, set); } // Architecture #15 doorway - the body lives on the DRAFT owner (sector state)
 function crChosenLenM(name, rec) { const set = crChosenSet(name, rec); let s = 0; for (const i of set) if (rec.parts[i]) s += crLineLen(rec.parts[i]); return s; }
 function crStreetChosenM(name, g) { // a street's length AS PICKED - the whole street, or only its chosen sectors when trimmed. Every length the create flow states (panel header + rows, preview count, name-it summary) reads through here, so a trimmed street never bills its unchosen ends
-  const sel = draft && draft.sectors ? draft.sectors[name] : null;
+  const sel = DRAFT.trimOf(name);
   if (!sel) return g && g[name] ? g[name].total : 0;
   const rec = crStreetParts(name); if (!rec) return 0;
   let s = 0; for (const i of sel) if (rec.parts[i]) s += crLineLen(rec.parts[i]);
@@ -193,7 +232,7 @@ function crStreetChosenM(name, g) { // a street's length AS PICKED - the whole s
 function crFilteredRoads() { // the roads object the SAVE stores: a trimmed street contributes ONLY its chosen sectors' polylines (each sector as one segment). The pack format is untouched (roads = segment lists); the unchosen ends simply never enter the pack
   const out = {};
   for (const n of draftStreets()) {
-    const sel = draft.sectors ? draft.sectors[n] : null;
+    const sel = DRAFT.trimOf(n);
     if (sel && sel.length) { const rec = crStreetParts(n); out[n] = rec ? sel.map(i => rec.parts[i]).filter(p => p && p.length > 1) : draft.roads[n]; }
     else out[n] = draft.roads[n];
   }
@@ -256,7 +295,7 @@ function crSectorTap(lngLat) { // a map tap while trimming: the sector under the
 function crOpenSectors(name) { // opens a picked street's trimming - TWO doors since Beta 1.128 (Andrew's fork, decided from his 1.127 device session): the panel row (1.127) AND a map tap on the already-picked street (pickStreet routes here), which is where his finger went on device. Beta 1.129: entry SNAPSHOTS the street's pick as it stands (whole road, or the trim in force) - the tap-away's cancel restores that snapshot exactly (through 1.268 the restorer was the sector bar's Cancel button; Beta 1.269 replaced that button with Deselect and the restore's only door is the tap-away)
   if (!draft || !draft.roads || !Object.prototype.hasOwnProperty.call(draft.roads, name)) return; // Beta 1.150: own-property at this door too - a prototype member must not read as a held run and carry the call into the parts work below
   if (!crStreetParts(name)) return;
-  if (crSectorSession.street !== name) crSectorSession.snapshot = (draft.sectors && draft.sectors[name]) ? draft.sectors[name].slice() : null; // a fresh entry only - re-entering the same street's open session must not move Cancel's restore point
+  if (crSectorSession.street !== name) crSectorSession.snapshot = DRAFT.snapshotTrim(name); // a fresh entry only - re-entering the same street's open session must not move Cancel's restore point
   crSectorSession.street = name;
   renderSectorBar();
   const sheet = $('createSheet');
@@ -267,8 +306,8 @@ function crOpenSectors(name) { // opens a picked street's trimming - TWO doors s
 function crCloseSectors() { if (!crSectorSession.street) return; crSectorReset(); renderDraft(); syncCrGlow(); const sheet = $('createSheet'); if (sheet && sheet.classList.contains('on')) crMorphTo(crWantedFace()); else syncCrPanel(); crRenderHint(); } // Beta 1.208: syncCrGlow stands here explicitly because Done's path does not re-render the draft - the glow dies with the session, not with the next render. Beta 1.223: Done's path DOES re-render now (renderDraft above) - the draft's active flags live in the source features, so without a rebuild the closed street would stay vibrant on crDraftLineActive instead of returning to its gentle mute; every other session-closing path (Cancel, stage change, street removal, Clear all) already re-rendered, and this was the one that did not (Codex P2, PR #100)
 function crCancelSectors() { // Beta 1.129 (Andrew: "I still need a way to cancel selections while I'm selecting something"): the deliberate back-out of a sector session - the street's pick returns EXACTLY as it was when sector mode was entered (the whole road, or the trim then in force), every face repaints from the restored state, and sector mode closes back to the panel. Distinct from un-picking every sector by toggles, which still removes the street - that is a selection, this is an abandonment of the session's edits. Beta 1.269: the bar's Cancel BUTTON is gone (Deselect stands in its slot) - this path's only door is now the tap-away (crMapTap), which is where Andrew's finger already cancelled; the restore behaviour itself is unchanged
   const s = crSectorSession.street; if (!s || !draft) return;
-  if (crSectorSession.snapshot) { draft.sectors = draft.sectors || {}; draft.sectors[s] = crSectorSession.snapshot.slice(); }
-  else if (draft.sectors) delete draft.sectors[s];
+  if (crSectorSession.snapshot) DRAFT.restoreTrim(s, crSectorSession.snapshot);
+  else DRAFT.dropTrim(s);
   crCloseSectors();
   renderDraft(); renderCrLists();
 }
@@ -464,13 +503,17 @@ function crPackPickCity(e) { // a chooser tap IS a city pick: it lands in the sa
   crPickCity({ lat: String((s + n) / 2), lon: String((w + ee) / 2), boundingbox: [String(s), String(n), String(w), String(ee)], display_name: e.name + ', Ontario, Canada', address: { city: e.name, state: 'Ontario', country: 'Canada', country_code: 'ca' } }); });
 }
 function crOpenCityPane(ret) {
-  crCitySeq++; if (crCityCtl) { try { crCityCtl.abort(); } catch (e) {} crCityCtl = null; } if (crCityTimer) { clearTimeout(crCityTimer); crCityTimer = null; } // Beta 1.143 (DA-12): reopening the pane supersedes a held city SEARCH too - its late answer must not repopulate the pane it was asked from
+  crResetCitySearch(); // Beta 1.143 (DA-12): reopening the pane supersedes a held city SEARCH too - its late answer must not repopulate the pane it was asked from. Architecture #19: the close runs through crResetCitySearch, the one owner
   crCityReturn = ret;
   $('crCityInput').value = ''; const rb = $('crCityResults'); rb.innerHTML = ''; rb.style.height = ''; crCityBoxTok++; // Beta 1.229: the pane reopens empty at natural height, and any swap release still pending from the last visit is invalidated with it
   if (creating) { if (!routeLoaded) restoreBootChrome(); else openRouteMenu(); }
   showRmPane('rmCityPane');
 }
 let crCityTimer = null, crCitySeq = 0, crCityCtl = null;
+function crResetCitySearch() { // Architecture #19: THE city-search close owner - the mirror of crResetSearch (the street search's owner, Beta 1.243). Ending a held city search was spelled out at four seats (the pane open in crOpenCityPane, the input event, the city pane's Back, and the short-query return inside crRunCitySearch): the same moves - bump the sequence (the family's invalidation: crCitySearchCurrent and crCitySearchSeqCurrent answer to it), abort the in-flight request and drop its handle, clear the pending debounce. The ritual lives here now; the seats keep only their own extras (the input event re-arms its debounce after the close, the short-query return clears the results box, the pane open resets the pane itself). The short-query seat never held a timer to clear - its only caller is the debounce, which spends the timer before running the search - so the owner's timer clear is a no-op at that seat, exactly as the seat's omission was. What the owner deliberately does NOT do: bump the sequence at exitCreate - the catch's seq-only asymmetry (crCitySearchSeqCurrent) is documented there and is not this ritual's to change.
+  crCitySeq++; if (crCityCtl) { try { crCityCtl.abort(); } catch (e) {} crCityCtl = null; }
+  if (crCityTimer) { clearTimeout(crCityTimer); crCityTimer = null; }
+}
 // Beta 1.229: the last-city lookup's generation + abort handle (crCityLookupSeq / crCityLastCtl, CG-PF-11) retire WITH the shortcut they served - see the removal note at the handler's old seat below.
 function crCitySearchCurrent(seq, session) { return seq === crCitySeq && session === crSession; } // Beta 1.154 (B3 build, G3 option (i)): the city-search LANDING's current-check - sequence AND session (the convention is stated at crSearchCurrent above)
 function crCitySearchSeqCurrent(seq) { return seq === crCitySeq; } // Beta 1.154: the city-search CATCH's current-check - sequence ONLY, deliberately weaker than the landing's: exitCreate does not bump crCitySeq (lifecycle trace T7: +0 across four exits), so a late failure from a closed session whose sequence still matches stays silent here exactly as it did inline through 1.153; the name carries the asymmetry so it is never "fixed" by accident
@@ -928,7 +971,7 @@ function crCityLocalMatches(q) {
 }
 async function crRunCitySearch() {
   const q = $('crCityInput').value.trim(), box = $('crCityResults');
-  if (q.length < 3) { crCitySeq++; if (crCityCtl) { try { crCityCtl.abort(); } catch (e) {} crCityCtl = null; } crCityBoxSwap(b => { b.innerHTML = ''; }); return; } // Beta 1.143 (DA-12): a short/cleared query invalidates like every other input change - through 1.142 this branch returned before the sequence bump + abort below, so the in-flight answer still held the current sequence when it landed and repopulated the cleared field. Beta 1.229: the clear leaves through the same height animation as every other results change
+  if (q.length < 3) { crResetCitySearch(); crCityBoxSwap(b => { b.innerHTML = ''; }); return; } // Beta 1.143 (DA-12): a short/cleared query invalidates like every other input change - through 1.142 this branch returned before the sequence bump + abort below, so the in-flight answer still held the current sequence when it landed and repopulated the cleared field. Beta 1.229: the clear leaves through the same height animation as every other results change. Architecture #19: the invalidation runs through crResetCitySearch, the one owner
   const seq = ++crCitySeq, session = crSession;
   if (crCityCtl) { try { crCityCtl.abort(); } catch (e) {} }
   const ctl = (typeof AbortController !== 'undefined') ? new AbortController() : null; crCityCtl = ctl;
@@ -1205,7 +1248,7 @@ function renderDraft() { // the DRAFT renders through its own GeoJSON source, co
     const g = crDraftGeom(); // Beta 1.135 (N3): the shared draft geometry - computed once per geometry change, not once per render
     for (const n of draftStreets()) {
       const primary = draft.primaries.has(n) ? 1 : 0;
-      const sel = draft.sectors ? draft.sectors[n] : null;
+      const sel = DRAFT.trimOf(n);
       if (sel || crSectorSession.street === n) {
         const rec = crStreetParts(n); if (!rec) continue;
         const set = crChosenSet(n, rec);
@@ -1295,7 +1338,7 @@ function crRowEl(n, g) {
   const nm = document.createElement('span'); nm.className = 'crName'; nm.textContent = shortStreetName(n); row.appendChild(nm); // Beta 1.144 (DA-04): rows display the short name; the draft key behind them is the full map name
   const ln = document.createElement('span'); ln.className = 'crLen'; ln.textContent = fmtLenM(crStreetChosenM(n, g)); row.appendChild(ln); // Beta 1.130 (maintainability re-scan N1): the preview's rows bill the CHOSEN length through the same helper as the panel's rows and every total - through 1.129 this read g[n].total, so a sector-trimmed street showed its WHOLE length on the check screen while the panel billed the trim and the preview's own total (renderCrLists sums crStreetChosenM) disagreed with its rows
   const chip = document.createElement('button'); chip.className = 'crChip ' + (primary ? 'primary' : 'sec'); chip.textContent = primary ? 'PRIMARY' : 'SECONDARY';
-  chip.addEventListener('click', () => { if (draft.primaries.has(n)) draft.primaries.delete(n); else draft.primaries.add(n); renderDraft(); renderCrLists(); });
+  chip.addEventListener('click', () => DRAFT.togglePrimary(n)); // Architecture #14: the toggle lives on the DRAFT owner
   row.appendChild(chip);
   const del = document.createElement('button'); del.className = 'crDel'; del.textContent = '✕'; del.title = 'Remove ' + shortStreetName(n);
   del.addEventListener('click', () => crRemoveStreet(n)); // Beta 1.127: the shared removal path (sector state leaves with the street)
@@ -1309,14 +1352,14 @@ function crPanelRowEl(n, g) { // Beta 1.127 (Andrew's approved mockup, screen 2)
   const meta = document.createElement('span'); meta.className = 'crPMeta';
   const nm = document.createElement('span'); nm.className = 'crPName'; nm.textContent = shortStreetName(n); meta.appendChild(nm); // Beta 1.144 (DA-04): display form, as in the preview rows
   const sub = document.createElement('span'); sub.className = 'crPSub';
-  const sel = draft.sectors ? draft.sectors[n] : null;
+  const sel = DRAFT.trimOf(n);
   if (sel) { const rec = crStreetParts(n); sub.textContent = sel.length + ' of ' + (rec ? rec.parts.length : sel.length) + ' sectors · ' + fmtLenM(crStreetChosenM(n, g)); }
   else sub.textContent = 'Entire road · ' + fmtLenM(g[n] ? g[n].total : 0); // Beta 1.128: the adjust affordance is stated BEFORE any trim exists - in 1.127 it appeared only after one, so an untrimmed row gave no hint it could be tapped at all
   meta.appendChild(sub);
   const hint = document.createElement('span'); hint.className = 'crPSub'; hint.textContent = 'Tap a road to adjust sectors'; meta.appendChild(hint); // Beta 1.208 (Andrew): the instruction gets its OWN line under the length line - through 1.207 it rode the same line after an em dash. Beta 1.242 (Andrew): the words are his exact words - through 1.241 the line read 'Tap row to adjust'. WORDING ONLY: he sampled restyles (bolder, app blue, pill, footnote, extra air) and rejected them all - the styling stays the original .crPSub
   row.appendChild(meta);
   const chip = document.createElement('button'); chip.className = 'crPChip ' + (primary ? 'primary' : 'sec'); chip.textContent = primary ? 'PRIMARY' : 'SECONDARY';
-  chip.addEventListener('click', e => { e.stopPropagation(); if (draft.primaries.has(n)) draft.primaries.delete(n); else draft.primaries.add(n); renderDraft(); renderCrLists(); });
+  chip.addEventListener('click', e => { e.stopPropagation(); DRAFT.togglePrimary(n); }); // Architecture #14: the toggle lives on the DRAFT owner
   row.appendChild(chip);
   const del = document.createElement('button'); del.className = 'crPDel'; del.textContent = '✕'; del.title = 'Remove ' + shortStreetName(n);
   del.addEventListener('click', e => { e.stopPropagation(); crRemoveStreet(n); });
@@ -1441,14 +1484,13 @@ $('crDoorList').addEventListener('click', () => { showRmPane('rmCityListPane'); 
 $('rmCityListBack').addEventListener('click', () => showRmPane('rmCreatePane')); // the list pane backs to the doors pane (the mockup's pane-to-pane Back chain)
 $('crDoorManual').addEventListener('click', () => { askDiscard(() => { draft = newDraft(); crOpenCityPane('doors'); }); }); // Beta 1.147 (hypothesis H2 hardening): the same local askDiscard wrap as crPackPickCity - no-op on an empty draft, so first entry is unchanged
 $('crCityInput').addEventListener('input', () => { // Beta 1.143 (DA-12, verify cycle 1): EVERY input change invalidates the in-flight search AT THE EVENT - bump + abort here, not when the debounce next runs the search (a response landing inside the 500 ms window otherwise renders into a field the user has already moved past). The street search's handler below has always had this shape; crRunCitySearch's own bump remains the backstop for programmatic calls
-  crCitySeq++; if (crCityCtl) { try { crCityCtl.abort(); } catch (e) {} crCityCtl = null; }
-  if (crCityTimer) { clearTimeout(crCityTimer); crCityTimer = null; }
+  crResetCitySearch(); // Architecture #19: the invalidation runs through crResetCitySearch, the one owner - the seat's own remaining work is the re-arm below
   if ($('crCityInput').value.trim().length < 3) { crCityBoxSwap(b => { b.innerHTML = ''; }); return; } // Beta 1.229: the clear animates like every other results change
   crCityTimer = setTimeout(() => { crCityTimer = null; crRunCitySearch(); }, 500);
 });
 // Beta 1.229 (Andrew): the 'Use <city>' last-city shortcut is REMOVED whole - the button (head.html), this handler, and its Nominatim name re-resolution. The shortcut re-resolved the remembered NAME and silently took the first place hit: Aurora, Ontario's name landed on Aurora, Illinois, whose grid load then sat at 0% (Andrew's live repro, 2026-11-17). Andrew ruled the button makes no sense to him; the bug is now impossible rather than patched - NO path resolves a typed or remembered city NAME to a place at search time. Typed searches go through the Ontario-scoped crRunCitySearch, list picks through the catalogue, and the remembered area's remaining reader is the city list itself (its sort + 'last used' tag in crRenderCityChoices), which is why crPickCity's lsSet(LS_GLOBAL.lastArea) write stays.
 $('crCityBack').addEventListener('click', () => {
-  crCitySeq++; if (crCityCtl) { try { crCityCtl.abort(); } catch (e) {} crCityCtl = null; } if (crCityTimer) { clearTimeout(crCityTimer); crCityTimer = null; } // Beta 1.143 (DA-12): leaving the pane kills a held city search too - request AND pending debounce, as reopening does
+  crResetCitySearch(); // Beta 1.143 (DA-12): leaving the pane kills a held city search too - request AND pending debounce, as reopening does. Architecture #19: the close runs through crResetCitySearch, the one owner
   if (crCityReturn === 'preview' || crCityReturn === 'pick') { if (!routeLoaded) parkBootChrome(); else closeRouteMenu(); setCreateStage(crCityReturn); }
   else { showRmPane('rmCreatePane'); }
 });
@@ -2092,12 +2134,7 @@ $('crDoneBtn').addEventListener('click', () => { if (draftStreets().length) setC
 $('crReviewBtn').addEventListener('click', () => crExpandPanel()); // the bar's way back (mockup screen 4)
 $('crClearAll').addEventListener('click', () => { // Andrew's addition (2026-11-06): empty the picks at once - behind the shared confirm, the same discipline as Start over and route deletion; the city and the session stay
   const n = draft ? draftStreets().length : 0; if (!n) return;
-  crConfirm('Clear all ' + n + (n === 1 ? ' road?' : ' roads?'), 'Every road you picked will be taken off this route. The city stays loaded.', () => {
-    draft.roads = Object.create(null); draft.primaries.clear(); draft.osmNames = Object.create(null); draft.sectors = Object.create(null); draft.parts = Object.create(null);
-    crGeomGen++; crPending = {}; // Beta 1.170 (Carbon fix round Phase 2, D-04): the wholesale roads replacement obeys the same two duties as every other roads mutation - through 1.169 it was the one mutation that did not bump the geometry generation (the crDraftGeom cache's roads-identity key happens to catch this particular replacement, but the bump is the contract every other mutation keeps, and the cache's gen key exists to be moved by exactly this class of change) and it left the pending rows standing, so crSweepPending could re-add a street the user had just cleared
-    crSectorReset();
-    renderDraft(); renderCrLists(); crRenderHint();
-  }, { yes: 'Clear all', no: 'Cancel', danger: true });
+  crConfirm('Clear all ' + n + (n === 1 ? ' road?' : ' roads?'), 'Every road you picked will be taken off this route. The city stays loaded.', () => { DRAFT.clearAll(); }, { yes: 'Clear all', no: 'Cancel', danger: true }); // Architecture #14: the wholesale reset lives on the DRAFT owner (its clearAll method)
 });
 $('crSbWhole').addEventListener('click', () => { const s = crSectorSession.street; if (!s) return; const rec = crStreetParts(s); if (rec) crSetChosen(s, rec, new Set(rec.parts.map((_, i) => i))); renderDraft(); renderCrLists(); renderSectorBar(); }); // Entire road: every sector back on (the pick is stored as no entry again)
 $('crSbDone').addEventListener('click', () => crCloseSectors()); // Done: back to the panel
