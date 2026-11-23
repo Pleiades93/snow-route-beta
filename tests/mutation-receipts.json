@@ -5489,6 +5489,19 @@
    "red": "selftest-gps-package throws ReferenceError: PERSIST is not defined (observed locally and in the first 1.275 cloud gate, build-and-test) - its harness stub predates the rename",
    "green": "selftest-gps-package: 20 pass, 0 fail with the stub mirroring the PERSIST doorway",
    "issued": "2026-11-22"
+  },
+  {
+   "id": "drive86-writepending-lie-1275",
+   "check": "tests/browser/drive86.mjs",
+   "kind": "mutation",
+   "files": {
+    "tests/browser/drive86.mjs": "869f3bab9911b0c4e40c2ba49d03543bfd58181e1036a313b9fd9ffb9e3352a8",
+    "parts/app1.js": "3a6a900377855eee20222efed44bc2b8e85585637c5566badd119e33f46eca55"
+   },
+   "mutation": "PERSIST.writePending always returns false (parts/app1.js: the doorway read lies about pending flags)",
+   "red": "drive86 15/18 FAIL: T2 clear stays pending (trail flag); C04a dirty:false with the marker write broken and retry armed; C05a dirty:false - observed 2026-11-23 local",
+   "green": "drive86 18/18 PASS, 0 exceptions on the reverted tree (app1.js sha256 verified identical to pre-mutation) - observed 2026-11-23 local",
+   "issued": "2026-11-23"
   }
  ]
 }
