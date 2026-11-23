@@ -8388,6 +8388,19 @@
    "red": "check 3a fails (14 pass, 1 fail) in a scratch tree carrying the 1.283 app3",
    "green": "proof-1271 passes in full on the Beta 1.284 tree",
    "issued": "2026-11-23 beta-1284-marking-cluster"
+  },
+  {
+   "id": "sync-perf-1284",
+   "check": "tests/proof/proof-sync-perf.mjs",
+   "kind": "historical",
+   "files": {
+    "tests/proof/proof-sync-perf.mjs": "934159686c5c9bc69ec5b35e38d9f47b76564ac937676063b17c50ce5a3b73fd",
+    "parts/engine.js": "a0d921600e511d2c295d88942d82d2316c2433b004ac9ea9552809b12f079c73"
+   },
+   "mutation": "the Beta 1.283 engine (43d711d2): mergeStrands rescans every ordered pair per pass and every mark rebuilds every street's slices",
+   "red": "proof-sync-perf against the 1.283 engine in a scratch tree: check 3 fails - median single-mark sync on the 102-street host 11834.6 ms against the 1500 ms bound (the round harness measured the same baseline at 7293.2 ms median on a quieter run); the liveness checks 1-2 pass there, so the failure is the bound, not the work",
+   "green": "proof-sync-perf 3/3 on the Beta 1.284 tree (median 70.7-75.2 ms across runs); output equivalence of the new engine against the pre-fix engine proven separately over 729 board states, byte-identical (the round's harness, golden hashes from the pre-fix engine)",
+   "issued": "2026-11-23 beta-1284-marking-cluster"
   }
  ]
 }

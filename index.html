@@ -2,7 +2,7 @@
 <html lang="en" class="boot">
 <head>
 <meta charset="UTF-8">
-<meta http-equiv="Content-Security-Policy" content="default-src 'none'; script-src 'sha384-hEQRm5wqe/dt+hQSHqta6wMxRmxZuSJsltARo1MNUteyh74IYLRXGhXYYMAKPz/d' https://cdn.jsdelivr.net/npm/maplibre-gl@4.7.1/dist/maplibre-gl.js; style-src-elem 'sha384-l+Ing91zw7+8pk8Zac2Wr0FKBEz+pk8bYSPB00KMpT5TsGP86OppPfSOgVChr4uv' https://cdn.jsdelivr.net; style-src-attr 'unsafe-inline'; img-src 'self' data: blob: https://tiles.basemaps.cartocdn.com https://protomaps.github.io https://cdn.jsdelivr.net; connect-src 'self' https://tiles.basemaps.cartocdn.com https://protomaps.github.io https://cdn.jsdelivr.net https://nominatim.openstreetmap.org https://overpass-api.de https://overpass.kumi.systems; worker-src blob: 'self'; child-src blob: 'self'; font-src 'none'; manifest-src 'self'; base-uri 'none'; form-action 'none'; object-src 'none'">
+<meta http-equiv="Content-Security-Policy" content="default-src 'none'; script-src 'sha384-grpA9QY2MTMcqi1+or7TWnDVH6Pr/JxKTfmWj8hXpBzYpnf3aHjcRYL7VDpEX1Ww' https://cdn.jsdelivr.net/npm/maplibre-gl@4.7.1/dist/maplibre-gl.js; style-src-elem 'sha384-l+Ing91zw7+8pk8Zac2Wr0FKBEz+pk8bYSPB00KMpT5TsGP86OppPfSOgVChr4uv' https://cdn.jsdelivr.net; style-src-attr 'unsafe-inline'; img-src 'self' data: blob: https://tiles.basemaps.cartocdn.com https://protomaps.github.io https://cdn.jsdelivr.net; connect-src 'self' https://tiles.basemaps.cartocdn.com https://protomaps.github.io https://cdn.jsdelivr.net https://nominatim.openstreetmap.org https://overpass-api.de https://overpass.kumi.systems; worker-src blob: 'self'; child-src blob: 'self'; font-src 'none'; manifest-src 'self'; base-uri 'none'; form-action 'none'; object-src 'none'">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="mobile-web-app-capable" content="yes">
@@ -1900,6 +1900,7 @@ function buildEngineGeometry() { // Beta 1.117: the engine's route geometry (GEO
   for (const k of Object.keys(LEFTBIT)) delete LEFTBIT[k];
   labelFeatures.length = 0; labelPointFeatures.length = 0;
   TOPO.reset(); // Beta 1.283 (#11): the run-structure table and the shared-vertex index are derivatives of the geometry - they die here and are re-seated street by street below, so they can never name a previous route's streets (the lesson the retired sharedVertexMap learned by hand in 1.117: its memo had to be nulled here or the strand builders read the previous route's vertices)
+
   H.names.forEach(n => {
   // The street's stitched line, RUN BY RUN (Beta 1.144, Package C DA-02/C1):
   // within a run, sectors are exact slices of it (sector k+1 starts at the
@@ -2524,12 +2525,47 @@ function mergeStrands(slices, pairs) {
     return out;
   };
   const arr = slices.slice();
+  // Beta 1.284 (#169): the winner scan no longer prices every ordered
+  // pair. joinInfo(a, b) can only produce a candidate when an end of b
+  // touches an end of a (an exact join is coordKey equality of one end
+  // pair, in either orientation) or when one of b's end metas pairs
+  // with one of a's at a junction (a bridge) - so each pass enumerates
+  // a's candidate partners from end indexes and runs joinInfo only for
+  // them, in the original scan order. The winner rule is untouched
+  // (highest score; ties keep the first candidate in scan order), and
+  // a pass is decided the moment a score-2 candidate stands, since no
+  // later candidate can displace it. The pairs the indexes skip are
+  // exactly the pairs joinInfo would have answered with no candidate,
+  // so the fixpoint - and every merged strand - is the same.
+  const metaKey = m => m.n + '|' + m.vi + '|' + m.side;
   for (;;) {
+    const byStart = new Map(), byEnd = new Map(), byMeta = new Map();
+    const index = (map, k, v) => { const l = map.get(k); if (l) l.push(v); else map.set(k, [v]); };
+    arr.forEach((sl, ix) => {
+      index(byStart, coordKey(sl.pts[0]), ix);
+      index(byEnd, coordKey(sl.pts[sl.pts.length - 1]), ix);
+      if (sl.e0) index(byMeta, metaKey(sl.e0), ix);
+      if (sl.e1) index(byMeta, metaKey(sl.e1), ix);
+    });
     /** @type {{ i: number, j: number, score: number, merged: any } | null} */
     let best = null;
-    for (let i = 0; i < arr.length; i++) for (let j = 0; j < arr.length; j++) {
-      if (i === j || arr[i].key !== arr[j].key) continue;
-      joinInfo(arr[i], arr[j]).forEach(c => { if (!best || c.score > best.score) best = { i, j, score: c.score, merged: c.merged }; });
+    for (let i = 0; i < arr.length && !(best && best.score === 2); i++) {
+      const a = arr[i];
+      const cand = new Set();
+      const aS = coordKey(a.pts[0]), aE = coordKey(a.pts[a.pts.length - 1]);
+      for (const ix of byStart.get(aE) || []) cand.add(ix);
+      for (const ix of byStart.get(aS) || []) cand.add(ix);
+      for (const ix of byEnd.get(aE) || []) cand.add(ix);
+      for (const ix of byEnd.get(aS) || []) cand.add(ix);
+      if (pairs) for (const meta of [a.e1, a.e0]) {
+        if (!meta) continue;
+        for (const pr of pairs[metaKey(meta)] || []) for (const ix of byMeta.get(pr.n2 + '|' + pr.vi2 + '|' + pr.side2) || []) cand.add(ix);
+      }
+      const js = [...cand].filter(j => j !== i && arr[j].key === a.key).sort((x, y) => x - y);
+      for (const j of js) {
+        joinInfo(a, arr[j]).forEach(c => { if (!best || c.score > best.score) best = { i, j, score: c.score, merged: c.merged }; });
+        if (best && best.score === 2) break;
+      }
     }
     if (!best) break;
     arr[best.i] = best.merged;
@@ -3489,29 +3525,60 @@ const PAINT = {
     return !!((b & (1 << side)) || b === 3);
   }
 };
+// Beta 1.284 (#169): one street's centre/band/fill/fade slices are a
+// pure function of the street's geometry and its OWN pieces vector -
+// PAINT.classify / clipEnds / fillCont read only H.pieces[n] (the
+// piece, its same-street neighbours), and the clip/split helpers read
+// geometry alone - so buildFamilies caches them per street, keyed on
+// the pieces vector, and a mark on one street rebuilds only that
+// street's slices. The cache holds PRISTINE records and hands out
+// fresh slice objects (fresh pts and mem arrays) on every rebuild:
+// the merges and clipStrandEnds reassign pts on the slices they are
+// given, so a cached record must never be handed out itself. Edge
+// slices are NOT cached: edgeRunSlices reads junction neighbours'
+// pieces and throughOK's build-order claim state, which is
+// junction-scoped, not street-scoped. The cache dies with the
+// geometry (GLP.rebuildRoute clears it on every route switch).
+const SLICE_CACHE = new Map();
+function buildStreetSlices(n) {
+  const g = GEO[n];
+  const centres = [], bands = [], fills = [], fades = [];
+  g.cuts.forEach((ab, idx) => {
+    const c = PAINT.classify(n, idx);   // Beta 1.282 (#12): the classification is the PAINT model's, computed once per piece
+    const bits = c.bits, isBand = c.isBand, key = c.key;
+    let cPts = g.stitched.slice(ab[0], ab[1] + 1);
+    const ownHalf = SURF_HALF;   // Beta 1.208: bands draw at the surface's width, so a band end trims against the same half-width as a surface end
+    cPts = PAINT.clipEnds(n, idx, cPts, ownHalf, false);   // Beta 1.282 (#12): the centre-family clip decision is the model's - clip an end only where the paint actually ends there (a different family/colour next door, a run gap, or the street's end; Beta 1.144: a run-start piece's leading end is a street end for its run - it earns the junction clip even when the previous piece (another run's end) wears the same family)
+    if (isBand) {   // Beta 1.208 (Codex P2, gate round 3): the band's own clip rule is per-side-paint, not per-family - a band end clips only where the GREEN fully ends (the neighbouring piece carries no marked side at all). Beside a one-side piece the band keeps its shared vertex, meeting the fill that starts there; clipping on both sides of that boundary left the junction square's half unpainted (a 9.9 m break in the completed side, LongAve [1,3,3] in the proof network). Recomputed from the stitched slice so the centre family's rule above is untouched.
+      let bPts = g.stitched.slice(ab[0], ab[1] + 1);
+      bPts = PAINT.clipEnds(n, idx, bPts, ownHalf, true);   // Beta 1.282 (#12): the band clip decision is the model's band rule
+      const bSp = boundarySplit(n, ab, bPts, 'b', MUGREEN, true); // Beta 1.259: a band at a boundary end feathers like every other family
+      for (const f of bSp.fades) fades.push(f);
+      if (bSp.solid) bands.push({ pts: bSp.solid, key: 'band', mem: [{ n, idx }], e0: null, e1: null });
+    }
+    else { const cSp = boundarySplit(n, ab, cPts, 'c', key, true); for (const f of cSp.fades) fades.push(f); if (cSp.solid) centres.push({ pts: cSp.solid, key, mem: [{ n, idx }], e0: null, e1: null }); }
+    if (!isBand && bits !== 0) [0, 1].forEach(side => { if (bits & (1 << side)) { const fSp = boundarySplit(n, ab, fillSlicePts(n, idx, side), 'f', MUGREEN, false); for (const f of fSp.fades) fades.push(f); if (fSp.solid) fills.push({ pts: fSp.solid, key: 'fill', mem: [{ n, idx, side }], e0: null, e1: null }); } });   // Beta 1.208: a one-side-done piece also emits its side's FILL (the half-road green Andrew ordered in place of the kerb outline). Beta 1.259: the fill feathers at a boundary end too, split on its own half-offset line at the point nearest the join
+  });
+  return { centres, bands, fills, fades };
+}
+function streetSlices(n) {
+  const sig = H.pieces[n].join(',');
+  let rec = SLICE_CACHE.get(n);
+  if (!rec || rec.sig !== sig) { rec = { sig, out: buildStreetSlices(n) }; SLICE_CACHE.set(n, rec); }
+  const fresh = list => list.map(sl => ({ pts: sl.pts.slice(), key: sl.key, mem: sl.mem.map(m => ({ ...m })), e0: null, e1: null }));
+  return { centres: fresh(rec.out.centres), bands: fresh(rec.out.bands), fills: fresh(rec.out.fills), fades: rec.out.fades.map(f => ({ pts: f.pts.slice(), k: f.k, col: f.col })) };
+}
 function buildFamilies() {
   THROUGH_SEGS = [];
   const pairs = junctionPairs();
   PAIRS_CUR = pairs;
   const centreSlices = [], bandSlices = [], edgeSlices = [], fillSlices = [], fadeSlices = [];
   H.names.forEach(n => {
-    const g = GEO[n];
-    g.cuts.forEach((ab, idx) => {
-      const c = PAINT.classify(n, idx);   // Beta 1.282 (#12): the classification is the PAINT model's, computed once per piece
-      const bits = c.bits, isBand = c.isBand, key = c.key;
-      let cPts = g.stitched.slice(ab[0], ab[1] + 1);
-      const ownHalf = SURF_HALF;   // Beta 1.208: bands draw at the surface's width, so a band end trims against the same half-width as a surface end
-      cPts = PAINT.clipEnds(n, idx, cPts, ownHalf, false);   // Beta 1.282 (#12): the centre-family clip decision is the model's - clip an end only where the paint actually ends there (a different family/colour next door, a run gap, or the street's end; Beta 1.144: a run-start piece's leading end is a street end for its run - it earns the junction clip even when the previous piece (another run's end) wears the same family)
-      if (isBand) {   // Beta 1.208 (Codex P2, gate round 3): the band's own clip rule is per-side-paint, not per-family - a band end clips only where the GREEN fully ends (the neighbouring piece carries no marked side at all). Beside a one-side piece the band keeps its shared vertex, meeting the fill that starts there; clipping on both sides of that boundary left the junction square's half unpainted (a 9.9 m break in the completed side, LongAve [1,3,3] in the proof network). Recomputed from the stitched slice so the centre family's rule above is untouched.
-        let bPts = g.stitched.slice(ab[0], ab[1] + 1);
-        bPts = PAINT.clipEnds(n, idx, bPts, ownHalf, true);   // Beta 1.282 (#12): the band clip decision is the model's band rule
-        const bSp = boundarySplit(n, ab, bPts, 'b', MUGREEN, true); // Beta 1.259: a band at a boundary end feathers like every other family
-        for (const f of bSp.fades) fadeSlices.push(f);
-        if (bSp.solid) bandSlices.push({ pts: bSp.solid, key: 'band', mem: [{ n, idx }], e0: null, e1: null });
-      }
-      else { const cSp = boundarySplit(n, ab, cPts, 'c', key, true); for (const f of cSp.fades) fadeSlices.push(f); if (cSp.solid) centreSlices.push({ pts: cSp.solid, key, mem: [{ n, idx }], e0: null, e1: null }); }
-      if (!isBand && bits !== 0) [0, 1].forEach(side => { if (bits & (1 << side)) { const fSp = boundarySplit(n, ab, fillSlicePts(n, idx, side), 'f', MUGREEN, false); for (const f of fSp.fades) fadeSlices.push(f); if (fSp.solid) fillSlices.push({ pts: fSp.solid, key: 'fill', mem: [{ n, idx, side }], e0: null, e1: null }); } });   // Beta 1.208: a one-side-done piece also emits its side's FILL (the half-road green Andrew ordered in place of the kerb outline). Beta 1.259: the fill feathers at a boundary end too, split on its own half-offset line at the point nearest the join
-    });
+    const own = streetSlices(n);
+    for (const sl of own.centres) centreSlices.push(sl);
+    for (const sl of own.bands) bandSlices.push(sl);
+    for (const sl of own.fills) fillSlices.push(sl);
+    for (const f of own.fades) fadeSlices.push(f);
     [0, 1].forEach(side => {
       edgeRunSlices(n, side, idx => H.pieces[n][idx] !== 3 && (H.pieces[n][idx] & (1 << side))).forEach(sl => edgeSlices.push(sl));
     });
@@ -3950,6 +4017,7 @@ function managePulse() {
   }
   function rebuildRoute() { // Beta 1.117: the app switched routes and rebuilt its own geometry (buildGeometry, app1) - rebuild the engine's from the host's current data and re-point every route-shaped source at it. The basemap and layers are untouched; only data moves.
     buildEngineGeometry();
+    SLICE_CACHE.clear(); // Beta 1.284 (#169): the per-street slice cache is a derivative of the geometry - it dies on every route switch (here, not in buildEngineGeometry: that function is extracted standalone by the topo proofs and must not reach for state outside its own prelude)
     sel = null;
     CUR = null; rebuildData(); lastSig = stateSig();
     if (!GLM) return;
