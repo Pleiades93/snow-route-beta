@@ -8141,6 +8141,45 @@
    "red": "selftest-runner against the unmodified runner: 11 FAIL, every one a DRIVE_TIME assertion (10 per-fixture 'exactly one DRIVE_TIME line' + the combined-run count); all 26 pre-existing verdict checks PASS - RUNNER SELF-TEST: FAIL (11)",
    "green": "selftest-runner with the DRIVE_TIME print in run.mjs: 37 PASS, 0 FAIL - RUNNER SELF-TEST: PASS",
    "issued": "2026-11-23"
+  },
+  {
+   "id": "topo-ranges-segreal-1283",
+   "check": "tests/proof/proof-topo-ranges.mjs",
+   "kind": "mutation",
+   "files": {
+    "tests/proof/proof-topo-ranges.mjs": "87c92b3e6837641f9fa3b5083886d2c64ce603dd3691ebe382481e4e89d2a7c3",
+    "parts/engine.js": "b59479a6c6f788c6ead47ee614cc2a9f7a86904d395bd8239bc7f00def8d819f"
+   },
+   "mutation": "TOPO.segReal negation dropped in parts/engine.js (return this.runStart(n, si + 1) without the !) - the segment-reality predicate inverted",
+   "red": "proof-topo-ranges: 12 passed, 2 failed (check 4 predicate agreement at 2205 readings, check 5a unseated-street contract), observed 2026-11-23 on the arch11 stage-1 tree",
+   "green": "proof-topo-ranges: 14 passed, 0 failed on the restored tree; full proof suite 85/85",
+   "issued": "2026-11-23 arch11-stage1"
+  },
+  {
+   "id": "paint-model-band-clip-1283",
+   "check": "tests/proof/proof-paint-model.mjs",
+   "kind": "mutation",
+   "files": {
+    "tests/proof/proof-paint-model.mjs": "3c95b972134e6d393ed49de3fce1652685a680fe8efbfa5d15b403669be4c0fa",
+    "parts/engine.js": "b59479a6c6f788c6ead47ee614cc2a9f7a86904d395bd8239bc7f00def8d819f"
+   },
+   "mutation": "PAINT.clipEnds band continuation inverted (H.pieces[n][i] !== 0 -> === 0) in parts/engine.js - the section-2 receipt's mutation re-run on the post-#11-stage-1 tree (the fixture re-point to TOPO seating staled the -r2 pins)",
+   "red": "proof-paint-model FAIL 5c+5d (15 passed, 2 failed), observed 2026-11-23 on the arch11 stage-1 tree",
+   "green": "proof-paint-model 17 passed, 0 failed on the reverted tree",
+   "issued": "2026-11-23 arch11-stage1-refresh"
+  },
+  {
+   "id": "selftest-pr23-topo-1283",
+   "check": "tests/browser/selftest-pr23-fixes.mjs",
+   "kind": "mutation",
+   "files": {
+    "tests/browser/selftest-pr23-fixes.mjs": "db80b4ce124c85c807ef222718e168ea64a3aa1ad85fe0390d92c1481cc0445f",
+    "parts/engine.js": "b59479a6c6f788c6ead47ee614cc2a9f7a86904d395bd8239bc7f00def8d819f"
+   },
+   "mutation": "edgeRunSlices' crossing scan reverted to the retired GEO gap-set read (gd.gaps.has(oi + 1)) in parts/engine.js - the verbatim-extracted block then reads a field the TOPO-era fixture no longer carries",
+   "red": "selftest-pr23-fixes crashes: TypeError: Cannot read properties of undefined (reading 'has') from the extracted scan block, observed 2026-11-23 on the arch11 stage-1 tree",
+   "green": "selftest-pr23-fixes: 19 pass, 0 fail on the restored tree",
+   "issued": "2026-11-23 arch11-stage1"
   }
  ]
 }

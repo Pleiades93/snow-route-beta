@@ -9171,6 +9171,261 @@
    "kind": "machinery-exempt",
    "reason": "Machinery-only tidy round: no parts/ surface changed - the app is byte-identical to Beta 1.282 (index.html sha256 12c5833d...). Changes are tests/browser/run.mjs (DRIVE_TIME print) + its runner selftest, scripts/shard-durations.json (measured refresh), tests/mutation-receipts.json and this ledger. No sibling app paths exist to enumerate.",
    "issued": "2026-11-23 machinery-tidy"
+  },
+  {
+   "id": "arch11-stage1-1283",
+   "kind": "app",
+   "anchors": {
+    "elements": [],
+    "functions": [
+     "buildEngineGeometry",
+     "nudgeFifth",
+     "buildJunctions",
+     "throughOK",
+     "edgeRunSlices",
+     "polyCorner",
+     "bridgeStragglers",
+     "rawPath",
+     "cornerTouchSlices",
+     "nearestPaintM",
+     "capLineFor",
+     "clipEndAtJunction",
+     "fillSlicePts",
+     "buildFamilies",
+     "lastResortConnect",
+     "clipEnds"
+    ],
+    "guards": []
+   },
+   "changed": [
+    "parts/engine.js"
+   ],
+   "rows": [
+    {
+     "id": "caller:bridgeStragglers:parts/engine.js:buildFamilies",
+     "kind": "caller",
+     "source": "derived: call-site scan of parts/ - bridgeStragglers() is called from buildFamilies in parts/engine.js",
+     "status": "covered",
+     "note": "Engine-internal call site, unchanged itself. Stage 1 (arch #11) changed only how the callee reads run structure: TOPO predicates that are literal transcriptions of the retired gap-set tests. Graded by proof-topo-ranges (predicate agreement with the cuts-derived run starts at every vertex/segment of the real build) and the paint drives in the battery."
+    },
+    {
+     "id": "caller:buildEngineGeometry:parts/engine.js:rebuildRoute",
+     "kind": "caller",
+     "source": "derived: call-site scan of parts/ - buildEngineGeometry() is called from rebuildRoute in parts/engine.js",
+     "status": "covered",
+     "note": "The route-switch rebuild: buildEngineGeometry now also resets and re-seats TOPO beside GEO/SVMAP, so no previous route's run structure survives. proof-topo-ranges check 5b grades exactly this (rebuild with a smaller route clears Dianawood from TOPO and GEO)."
+    },
+    {
+     "id": "caller:buildEngineGeometry:parts/engine.js:top-level",
+     "kind": "caller",
+     "source": "derived: call-site scan of parts/ - buildEngineGeometry() is called from top-level in parts/engine.js",
+     "status": "covered",
+     "note": "The eval-time build (no route loaded): TOPO resets and seats nothing; consumers iterate seated streets only. Covered by the boot drives and proof-topo-ranges check 5a (unseated street reads as one implicit run)."
+    },
+    {
+     "id": "caller:buildFamilies:parts/engine.js:rebuildData",
+     "kind": "caller",
+     "source": "derived: call-site scan of parts/ - buildFamilies() is called from rebuildData in parts/engine.js",
+     "status": "covered",
+     "note": "Engine-internal call site, unchanged itself. Stage 1 (arch #11) changed only how the callee reads run structure: TOPO predicates that are literal transcriptions of the retired gap-set tests. Graded by proof-topo-ranges (predicate agreement with the cuts-derived run starts at every vertex/segment of the real build) and the paint drives in the battery."
+    },
+    {
+     "id": "caller:buildJunctions:parts/engine.js:bridgeStragglers",
+     "kind": "caller",
+     "source": "derived: call-site scan of parts/ - buildJunctions() is called from bridgeStragglers in parts/engine.js",
+     "status": "covered",
+     "note": "Engine-internal call site, unchanged itself. Stage 1 (arch #11) changed only how the callee reads run structure: TOPO predicates that are literal transcriptions of the retired gap-set tests. Graded by proof-topo-ranges (predicate agreement with the cuts-derived run starts at every vertex/segment of the real build) and the paint drives in the battery."
+    },
+    {
+     "id": "caller:buildJunctions:parts/engine.js:clipEndAtJunction",
+     "kind": "caller",
+     "source": "derived: call-site scan of parts/ - buildJunctions() is called from clipEndAtJunction in parts/engine.js",
+     "status": "covered",
+     "note": "Engine-internal call site, unchanged itself. Stage 1 (arch #11) changed only how the callee reads run structure: TOPO predicates that are literal transcriptions of the retired gap-set tests. Graded by proof-topo-ranges (predicate agreement with the cuts-derived run starts at every vertex/segment of the real build) and the paint drives in the battery."
+    },
+    {
+     "id": "caller:buildJunctions:parts/engine.js:clipPieces",
+     "kind": "caller",
+     "source": "derived: call-site scan of parts/ - buildJunctions() is called from clipPieces in parts/engine.js",
+     "status": "covered",
+     "note": "Engine-internal call site, unchanged itself. Stage 1 (arch #11) changed only how the callee reads run structure: TOPO predicates that are literal transcriptions of the retired gap-set tests. Graded by proof-topo-ranges (predicate agreement with the cuts-derived run starts at every vertex/segment of the real build) and the paint drives in the battery."
+    },
+    {
+     "id": "caller:buildJunctions:parts/engine.js:flush",
+     "kind": "caller",
+     "source": "derived: call-site scan of parts/ - buildJunctions() is called from flush in parts/engine.js",
+     "status": "covered",
+     "note": "Engine-internal call site, unchanged itself. Stage 1 (arch #11) changed only how the callee reads run structure: TOPO predicates that are literal transcriptions of the retired gap-set tests. Graded by proof-topo-ranges (predicate agreement with the cuts-derived run starts at every vertex/segment of the real build) and the paint drives in the battery."
+    },
+    {
+     "id": "caller:buildJunctions:parts/engine.js:lastResortConnect",
+     "kind": "caller",
+     "source": "derived: call-site scan of parts/ - buildJunctions() is called from lastResortConnect in parts/engine.js",
+     "status": "covered",
+     "note": "Engine-internal call site, unchanged itself. Stage 1 (arch #11) changed only how the callee reads run structure: TOPO predicates that are literal transcriptions of the retired gap-set tests. Graded by proof-topo-ranges (predicate agreement with the cuts-derived run starts at every vertex/segment of the real build) and the paint drives in the battery."
+    },
+    {
+     "id": "caller:capLineFor:parts/engine.js:clipEndAtJunction",
+     "kind": "caller",
+     "source": "derived: call-site scan of parts/ - capLineFor() is called from clipEndAtJunction in parts/engine.js",
+     "status": "covered",
+     "note": "Engine-internal call site, unchanged itself. Stage 1 (arch #11) changed only how the callee reads run structure: TOPO predicates that are literal transcriptions of the retired gap-set tests. Graded by proof-topo-ranges (predicate agreement with the cuts-derived run starts at every vertex/segment of the real build) and the paint drives in the battery."
+    },
+    {
+     "id": "caller:capLineFor:parts/engine.js:spans",
+     "kind": "caller",
+     "source": "derived: call-site scan of parts/ - capLineFor() is called from spans in parts/engine.js",
+     "status": "covered",
+     "note": "Engine-internal call site, unchanged itself. Stage 1 (arch #11) changed only how the callee reads run structure: TOPO predicates that are literal transcriptions of the retired gap-set tests. Graded by proof-topo-ranges (predicate agreement with the cuts-derived run starts at every vertex/segment of the real build) and the paint drives in the battery."
+    },
+    {
+     "id": "caller:clipEndAtJunction:parts/engine.js:clipOnLine",
+     "kind": "caller",
+     "source": "derived: call-site scan of parts/ - clipEndAtJunction() is called from clipOnLine in parts/engine.js",
+     "status": "covered",
+     "note": "Engine-internal call site, unchanged itself. Stage 1 (arch #11) changed only how the callee reads run structure: TOPO predicates that are literal transcriptions of the retired gap-set tests. Graded by proof-topo-ranges (predicate agreement with the cuts-derived run starts at every vertex/segment of the real build) and the paint drives in the battery."
+    },
+    {
+     "id": "caller:clipEndAtJunction:parts/engine.js:clipStrandEnds",
+     "kind": "caller",
+     "source": "derived: call-site scan of parts/ - clipEndAtJunction() is called from clipStrandEnds in parts/engine.js",
+     "status": "covered",
+     "note": "Engine-internal call site, unchanged itself. Stage 1 (arch #11) changed only how the callee reads run structure: TOPO predicates that are literal transcriptions of the retired gap-set tests. Graded by proof-topo-ranges (predicate agreement with the cuts-derived run starts at every vertex/segment of the real build) and the paint drives in the battery."
+    },
+    {
+     "id": "caller:clipEndAtJunction:parts/engine.js:top-level",
+     "kind": "caller",
+     "source": "derived: call-site scan of parts/ - clipEndAtJunction() is called from top-level in parts/engine.js",
+     "status": "covered",
+     "note": "Engine-internal call site, unchanged itself. Stage 1 (arch #11) changed only how the callee reads run structure: TOPO predicates that are literal transcriptions of the retired gap-set tests. Graded by proof-topo-ranges (predicate agreement with the cuts-derived run starts at every vertex/segment of the real build) and the paint drives in the battery."
+    },
+    {
+     "id": "caller:clipEnds:parts/engine.js:top-level",
+     "kind": "caller",
+     "source": "derived: call-site scan of parts/ - clipEnds() is called from top-level in parts/engine.js",
+     "status": "covered",
+     "note": "PAINT.clipEnds (the #12 model's clip decision) reads TOPO.runStart at both piece ends instead of the retired GEO gap set - the run-gap clip is the same decision. Graded by proof-paint-model check 5e (receipt paint-model-band-clip-1283) and proof-topo-ranges."
+    },
+    {
+     "id": "caller:cornerTouchSlices:parts/engine.js:buildFamilies",
+     "kind": "caller",
+     "source": "derived: call-site scan of parts/ - cornerTouchSlices() is called from buildFamilies in parts/engine.js",
+     "status": "covered",
+     "note": "Engine-internal call site, unchanged itself. Stage 1 (arch #11) changed only how the callee reads run structure: TOPO predicates that are literal transcriptions of the retired gap-set tests. Graded by proof-topo-ranges (predicate agreement with the cuts-derived run starts at every vertex/segment of the real build) and the paint drives in the battery."
+    },
+    {
+     "id": "caller:edgeRunSlices:parts/engine.js:buildFamilies",
+     "kind": "caller",
+     "source": "derived: call-site scan of parts/ - edgeRunSlices() is called from buildFamilies in parts/engine.js",
+     "status": "covered",
+     "note": "Engine-internal call site, unchanged itself. Stage 1 (arch #11) changed only how the callee reads run structure: TOPO predicates that are literal transcriptions of the retired gap-set tests. Graded by proof-topo-ranges (predicate agreement with the cuts-derived run starts at every vertex/segment of the real build) and the paint drives in the battery."
+    },
+    {
+     "id": "caller:fillSlicePts:parts/engine.js:buildFamilies",
+     "kind": "caller",
+     "source": "derived: call-site scan of parts/ - fillSlicePts() is called from buildFamilies in parts/engine.js",
+     "status": "covered",
+     "note": "Engine-internal call site, unchanged itself. Stage 1 (arch #11) changed only how the callee reads run structure: TOPO predicates that are literal transcriptions of the retired gap-set tests. Graded by proof-topo-ranges (predicate agreement with the cuts-derived run starts at every vertex/segment of the real build) and the paint drives in the battery."
+    },
+    {
+     "id": "caller:fillSlicePts:parts/engine.js:buildSelFill",
+     "kind": "caller",
+     "source": "derived: call-site scan of parts/ - fillSlicePts() is called from buildSelFill in parts/engine.js",
+     "status": "covered",
+     "note": "The selection's fill slices come from the same helper as the board's (the R3 construction); its end trims now read TOPO.runStart. Graded by proof-green-half-road and proof-topo-ranges."
+    },
+    {
+     "id": "caller:lastResortConnect:parts/engine.js:buildFamilies",
+     "kind": "caller",
+     "source": "derived: call-site scan of parts/ - lastResortConnect() is called from buildFamilies in parts/engine.js",
+     "status": "covered",
+     "note": "Engine-internal call site, unchanged itself. Stage 1 (arch #11) changed only how the callee reads run structure: TOPO predicates that are literal transcriptions of the retired gap-set tests. Graded by proof-topo-ranges (predicate agreement with the cuts-derived run starts at every vertex/segment of the real build) and the paint drives in the battery."
+    },
+    {
+     "id": "caller:nearestPaintM:parts/engine.js:clipEndAtJunction",
+     "kind": "caller",
+     "source": "derived: call-site scan of parts/ - nearestPaintM() is called from clipEndAtJunction in parts/engine.js",
+     "status": "covered",
+     "note": "Engine-internal call site, unchanged itself. Stage 1 (arch #11) changed only how the callee reads run structure: TOPO predicates that are literal transcriptions of the retired gap-set tests. Graded by proof-topo-ranges (predicate agreement with the cuts-derived run starts at every vertex/segment of the real build) and the paint drives in the battery."
+    },
+    {
+     "id": "caller:nearestPaintM:parts/engine.js:spans",
+     "kind": "caller",
+     "source": "derived: call-site scan of parts/ - nearestPaintM() is called from spans in parts/engine.js",
+     "status": "covered",
+     "note": "Engine-internal call site, unchanged itself. Stage 1 (arch #11) changed only how the callee reads run structure: TOPO predicates that are literal transcriptions of the retired gap-set tests. Graded by proof-topo-ranges (predicate agreement with the cuts-derived run starts at every vertex/segment of the real build) and the paint drives in the battery."
+    },
+    {
+     "id": "caller:nearestPaintM:parts/engine.js:t",
+     "kind": "caller",
+     "source": "derived: call-site scan of parts/ - nearestPaintM() is called from t in parts/engine.js",
+     "status": "covered",
+     "note": "Engine-internal call site, unchanged itself. Stage 1 (arch #11) changed only how the callee reads run structure: TOPO predicates that are literal transcriptions of the retired gap-set tests. Graded by proof-topo-ranges (predicate agreement with the cuts-derived run starts at every vertex/segment of the real build) and the paint drives in the battery."
+    },
+    {
+     "id": "caller:nudgeFifth:parts/engine.js:buildEngineGeometry",
+     "kind": "caller",
+     "source": "derived: call-site scan of parts/ - nudgeFifth() is called from buildEngineGeometry in parts/engine.js",
+     "status": "covered",
+     "note": "nudgeFifth is called by the build; its Greenpark segment walk now reads TOPO.segReal('Greenpark', k - 1) - the same segment-reality test, transcribed. Graded by proof-topo-ranges and the label drives."
+    },
+    {
+     "id": "caller:polyCorner:parts/engine.js:bridgeStragglers",
+     "kind": "caller",
+     "source": "derived: call-site scan of parts/ - polyCorner() is called from bridgeStragglers in parts/engine.js",
+     "status": "covered",
+     "note": "Engine-internal call site, unchanged itself. Stage 1 (arch #11) changed only how the callee reads run structure: TOPO predicates that are literal transcriptions of the retired gap-set tests. Graded by proof-topo-ranges (predicate agreement with the cuts-derived run starts at every vertex/segment of the real build) and the paint drives in the battery."
+    },
+    {
+     "id": "caller:polyCorner:parts/engine.js:junctionPairs",
+     "kind": "caller",
+     "source": "derived: call-site scan of parts/ - polyCorner() is called from junctionPairs in parts/engine.js",
+     "status": "covered",
+     "note": "Engine-internal call site, unchanged itself. Stage 1 (arch #11) changed only how the callee reads run structure: TOPO predicates that are literal transcriptions of the retired gap-set tests. Graded by proof-topo-ranges (predicate agreement with the cuts-derived run starts at every vertex/segment of the real build) and the paint drives in the battery."
+    },
+    {
+     "id": "caller:rawPath:parts/engine.js:cornerTouchSlices",
+     "kind": "caller",
+     "source": "derived: call-site scan of parts/ - rawPath() is called from cornerTouchSlices in parts/engine.js",
+     "status": "covered",
+     "note": "Engine-internal call site, unchanged itself. Stage 1 (arch #11) changed only how the callee reads run structure: TOPO predicates that are literal transcriptions of the retired gap-set tests. Graded by proof-topo-ranges (predicate agreement with the cuts-derived run starts at every vertex/segment of the real build) and the paint drives in the battery."
+    },
+    {
+     "id": "caller:rawPath:parts/engine.js:joinInfo",
+     "kind": "caller",
+     "source": "derived: call-site scan of parts/ - rawPath() is called from joinInfo in parts/engine.js",
+     "status": "covered",
+     "note": "Engine-internal call site, unchanged itself. Stage 1 (arch #11) changed only how the callee reads run structure: TOPO predicates that are literal transcriptions of the retired gap-set tests. Graded by proof-topo-ranges (predicate agreement with the cuts-derived run starts at every vertex/segment of the real build) and the paint drives in the battery."
+    },
+    {
+     "id": "caller:throughOK:parts/engine.js:flush",
+     "kind": "caller",
+     "source": "derived: call-site scan of parts/ - throughOK() is called from flush in parts/engine.js",
+     "status": "covered",
+     "note": "Engine-internal call site, unchanged itself. Stage 1 (arch #11) changed only how the callee reads run structure: TOPO predicates that are literal transcriptions of the retired gap-set tests. Graded by proof-topo-ranges (predicate agreement with the cuts-derived run starts at every vertex/segment of the real build) and the paint drives in the battery."
+    }
+   ],
+   "files": {
+    "parts/app1.js": "cf555a9736c6f9961e906e0fd9c00a531c9ddb88ca3c5ff5765fa33ba62953df",
+    "parts/app2.js": "03df6c6e76bcc5b5db6f0d8d0666652a17dd06164987d2cb5e490773b3386021",
+    "parts/app3.js": "25b9d5bf8c5bb8e2bb433ad563c110744b65f5bf69932dc428d1d240505a3d39",
+    "parts/app4.js": "adeb3e82d3e73e4ce8a385ea14725f82573f823e49cdec2772aefaa94cbdd28b",
+    "parts/app5.js": "f7ee95b5c68ddf4878e224dc83917964a85d5bba742d9df9bf9a37959b6348eb",
+    "parts/brand-snow.js": "86fa9a02f29c7345ee68d68daffd9c72da612921b64da37f1eccf6b72161ac5f",
+    "parts/create-cache.js": "e4a00051eab5a4af59b71909b4a6627f53e720b28dc17dc34635db949f746d7c",
+    "parts/create-citydata.js": "aff6d5e1dbe6f6c9158982fbad7a326cbb946a80c60042d33e679a5a47ea4c0e",
+    "parts/create-fetch.js": "60abb28dd4ca71be3850f3e0c3e9f2bab69978cb79100db4c0859ce078f97ec3",
+    "parts/create-packs.js": "a8b60fb7d601c1e83f555eb703b625a571ec878937ac36fcaddd05aecf635975",
+    "parts/create-pick.js": "cace96469252c243856ed4cb04d7cf4a54ac62dbed1f10b0e6b883c769f76998",
+    "parts/create-save.js": "ad39720727f43d397e72443c92955c5a35d530f03e3219b2182c9ee7c062e52d",
+    "parts/data.js": "9684c69862156dc70ee9a2b88278b4e825c5bf35f0c150fbc5660ccbdce9304b",
+    "parts/engine.js": "b59479a6c6f788c6ead47ee614cc2a9f7a86904d395bd8239bc7f00def8d819f",
+    "parts/pmstyles.js": "f3501db9c16dbc6a5fa8c901089101e4913772384de1f069accb23a614bb90fc",
+    "parts/whatsnew.js": "fbca99c4ca3650d4d4ef268e914bfc6b28dc01b74507706f8fdda9f8b533aa25",
+    "parts/head.html": "bff57252f945388445965c770902c06145d3501ceb21cb6f5507fd542eca066d",
+    "scripts/check-census.py": "dd55f34cd855e60a6fadae7e261aa99f1682b9d7d8446696532045e3a281fafb"
+   },
+   "issued": "2026-11-23 arch11-stage1"
   }
  ]
 }

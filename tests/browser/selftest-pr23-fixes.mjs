@@ -111,12 +111,16 @@ const ptSegM = (p, a, b) => {
   const tt = Math.max(0, Math.min(1, ((p[1] - a[1]) * vx + (p[0] - a[0]) * vy) / L2));
   return Math.hypot(p[1] - (a[1] + tt * vx), p[0] - (a[0] + tt * vy));
 };
-const mkScan = names => new Function('H', 'GEO', 'CORRIDOR', 'n',
+// Beta 1.283 (#11): the scan block reads the run structure from TOPO now, not a GEO gap set - the real owner, extracted and seated (Crosser is one run, as the retired empty gap set said)
+const topoSrc = eng.slice(eng.indexOf('const TOPO = {'), eng.indexOf('\n};', eng.indexOf('const TOPO = {')) + 3);
+const TOPO = new Function(topoSrc + '\nreturn TOPO;')();
+TOPO.seat('Crosser', [{ start: 0, end: 2 }]);
+const mkScan = names => new Function('H', 'GEO', 'CORRIDOR', 'n', 'TOPO',
   xyLine + '\n' + extractFrom(eng, 'segCross') + '\n' + extractFrom(eng, 'lineHit') +
   '\nreturn function scan(run, J, skip) {\n' + scanBlock + '\nreturn crosses;\n};')(
   { MLAT: 1, MLNG: 1, names, pieces: { Crosser: [1], Self: [3] }, jDistM, ptSegM },
-  { Crosser: { cuts: [[0, 2]], stitched: [[0, 0], [1, 1], [2, 2]], off0: [[-6, -6], [6, 6]], off1: [[-6, -6], [6, 6]], gaps: new Set() } },
-  5.2, 'Self');
+  { Crosser: { cuts: [[0, 2]], stitched: [[0, 0], [1, 1], [2, 2]], off0: [[-6, -6], [6, 6]], off1: [[-6, -6], [6, 6]] } },
+  5.2, 'Self', TOPO);
 const RUN = { pts: [[0, -30], [0, 4]] }; // this street's side line, running through the vertex
 const JV = { V: [0, 0] };
 { const skip = new Set(); const crosses = mkScan(['Self', 'Crosser'])(RUN, JV, skip);
@@ -125,12 +129,12 @@ const JV = { V: [0, 0] };
 { const skip = new Set(); const crosses = mkScan(['Crosser', 'Self'])(RUN, JV, skip);
   t('S2 crossing street first: crossing seen (the order the pre-fix code happened to get right)',
     crosses === true && skip.size === 0); }
-{ const far = new Function('H', 'GEO', 'CORRIDOR', 'n',
+{ const far = new Function('H', 'GEO', 'CORRIDOR', 'n', 'TOPO',
     xyLine + '\n' + extractFrom(eng, 'segCross') + '\n' + extractFrom(eng, 'lineHit') +
     '\nreturn function scan(run, J, skip) {\n' + scanBlock + '\nreturn crosses;\n};')(
     { MLAT: 1, MLNG: 1, names: ['Self', 'Crosser'], pieces: { Crosser: [1], Self: [3] }, jDistM, ptSegM },
-    { Crosser: { cuts: [[0, 2]], stitched: [[0, 0], [1, 1], [2, 2]], off0: [[40, 40], [50, 50]], off1: [[40, 40], [50, 50]], gaps: new Set() } },
-    5.2, 'Self');
+    { Crosser: { cuts: [[0, 2]], stitched: [[0, 0], [1, 1], [2, 2]], off0: [[40, 40], [50, 50]], off1: [[40, 40], [50, 50]] } },
+    5.2, 'Self', TOPO);
   const skip = new Set(); const crosses = far(RUN, JV, skip);
   t('S3 no crossing line near the junction: no cross, junction skipped for the kerb clip as before',
     crosses === false && skip.has(JV) === true); }

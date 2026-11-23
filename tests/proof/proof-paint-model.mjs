@@ -72,7 +72,10 @@ check('3a: the PAINT block extracted whole', paintSrc.includes('fillCont') && pa
 const prelude = [
   // fixture board: street S with five pieces [0, 1, 3, 2, 0] (none, side0, band, side1, none); street T with two pieces [3, 1]
   'const H = { pieces: { S: [0, 1, 3, 2, 0], T: [3, 1] } };',
-  'const GEO = { S: { cuts: [[0, 1], [1, 2], [2, 3], [3, 4], [4, 5]], gaps: new Set() }, T: { cuts: [[0, 1], [1, 2]], gaps: new Set([1]) } };',
+  'const GEO = { S: { cuts: [[0, 1], [1, 2], [2, 3], [3, 4], [4, 5]] }, T: { cuts: [[0, 1], [1, 2]] } };',
+  // Beta 1.283 (#11): the run gap the T fixture used to carry as a GEO field is TOPO's now - the real owner, extracted and seated: S is one run, T's second piece opens a later run at vertex 1
+  engine.slice(engine.indexOf('const TOPO = {'), engine.indexOf('\n};', engine.indexOf('const TOPO = {')) + 3),
+  "TOPO.seat('S', [{ start: 0, end: 5 }]); TOPO.seat('T', [{ start: 0, end: 0 }, { start: 1, end: 2 }]);",
   // palette stubs: the muted colour of a piece is its family letter - A for side bits 1, B for 2, C for 0
   'const colOf = (n, bits) => "col" + bits;',
   'const mute = (c) => "mute(" + c + ")";',
