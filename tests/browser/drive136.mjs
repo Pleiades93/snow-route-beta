@@ -105,10 +105,10 @@ ok('F7 removeItem failure: saveStart reports false; healthy storage reports true
 // (the same trap F1b's comment records).
 await ev(INSTALL_STUB);
 await ev(`__stub('snowroute.5w.v4.notes')`);
-const f9a = JSON.parse(await ev(`(() => { const r = saveAll(); return JSON.stringify({ ok: r.ok, dirty: primaryDirty, fk: r.failedKey }); })()`));
+const f9a = JSON.parse(await ev(`(() => { const r = saveAll(); return JSON.stringify({ ok: r.ok, dirty: writePending('primary'), fk: r.failedKey }); })()`));
 ok('F9a a failed primary save arms the retry flag and names the failed record | ' + JSON.stringify(f9a), f9a.ok === false && f9a.dirty === true && f9a.fk === 'notes');
 await ev(`__unstub()`);
-const f9b = JSON.parse(await ev(`(() => { flushAux(true); return JSON.stringify({ dirty: primaryDirty, stored: localStorage.getItem('snowroute.5w.v4.notes') === JSON.stringify(notes) }); })()`));
+const f9b = JSON.parse(await ev(`(() => { flushAux(true); return JSON.stringify({ dirty: writePending('primary'), stored: localStorage.getItem('snowroute.5w.v4.notes') === JSON.stringify(notes) }); })()`));
 ok('F9b the flush retry lands the failed save once storage recovers | ' + JSON.stringify(f9b), f9b.dirty === false && f9b.stored === true);
 
 // F10 (Beta 1.95, deep audit SR-194-02): when storage is failing, the
@@ -119,7 +119,7 @@ ok('F9b the flush retry lands the failed save once storage recovers | ' + JSON.s
 const f10v0 = await ev(`pieces.Velmar[0]`);
 await ev(`__stub('snowroute.5w.v5.sides')`);
 await ev(`togglePiece('Velmar', 0, 0); true`); await sleep(200);
-const f10a = JSON.parse(await ev(`(() => { try { const rec = buildRecovery(); const o = rec ? JSON.parse(rec) : null; const stored = JSON.parse(localStorage.getItem('snowroute.5w.v5.sides') || '{"p":{}}'); return JSON.stringify({ refused: buildBackup() === null, dirty: primaryDirty, hasRec: !!o, flagged: !!o && o.recovery === true, recVal: o ? JSON.parse(o.routes['5w'].sides).p.Velmar[0] : null, memVal: pieces.Velmar[0], storedVal: stored.p.Velmar ? stored.p.Velmar[0] : null }); } catch (e) { return JSON.stringify({ err: String(e) }); } })()`));
+const f10a = JSON.parse(await ev(`(() => { try { const rec = buildRecovery(); const o = rec ? JSON.parse(rec) : null; const stored = JSON.parse(localStorage.getItem('snowroute.5w.v5.sides') || '{"p":{}}'); return JSON.stringify({ refused: buildBackup() === null, dirty: writePending('primary'), hasRec: !!o, flagged: !!o && o.recovery === true, recVal: o ? JSON.parse(o.routes['5w'].sides).p.Velmar[0] : null, memVal: pieces.Velmar[0], storedVal: stored.p.Velmar ? stored.p.Velmar[0] : null }); } catch (e) { return JSON.stringify({ err: String(e) }); } })()`));
 ok('F10a under a sides-write failure: Backup refuses, the labelled RECOVERY backup carries the live in-memory board (Beta 1.95, SR-194-02) | ' + JSON.stringify(f10a), f10a.refused === true && f10a.dirty === true && f10a.hasRec === true && f10a.flagged === true && f10a.recVal === f10a.memVal && f10a.recVal !== f10a.storedVal && f10a.memVal !== f10v0);
 await ev(`__unstub()`);
 await ev(`(function(){ notes.Velmar = [{ k: 'f10probe', at: '2026-11-04T00:00:00.000Z', text: 'recovery keeps me' }]; return true; })()`);

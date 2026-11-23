@@ -326,7 +326,7 @@ if (e17r1.pass) {
 } else {
   ok('E17 persisted app state survives process death byte-for-byte and reloads identically | back ' + e17r1.pass + (e17r1.diff ? ' | DIFF ' + e17r1.diff : '') + ' | DIAG ' + JSON.stringify(e17r1.diag), false);
 }
-const e17b = JSON.parse(await ev2(`(() => { window.__lsSet = lsSet; lsSet = (k, v) => k === LS.sess ? false : window.__lsSet(k, v); startClean(); return JSON.stringify({ marker: Math.floor(runStart / 1000), run: runStart, dirty: sessDirty, stored: JSON.parse(lsGet(LS.sess) || '[]') }); })()`));
+const e17b = JSON.parse(await ev2(`(() => { window.__lsSet = lsSet; lsSet = (k, v) => k === LS.sess ? false : window.__lsSet(k, v); startClean(); return JSON.stringify({ marker: Math.floor(runStart / 1000), run: runStart, dirty: writePending('sess'), stored: JSON.parse(lsGet(LS.sess) || '[]') }); })()`));
 ok('E17b setup: the marker write failed pre-kill, retry armed, marker not persisted | marker ' + e17b.marker + ' dirty ' + e17b.dirty, e17b.dirty === true && !e17b.stored.includes(e17b.marker));
 await sleep(10000); // commit settle for the run state the start DID save (the marker's 15 s retry stays stubbed and keeps failing, so it remains unpersisted)
 proc.kill('SIGKILL');
@@ -335,7 +335,7 @@ for (const f of ['SingletonLock', 'SingletonCookie', 'SingletonSocket']) { try {
 await launchBrowser();
 const backOk17b = (await poll(`typeof glOk !== 'undefined' && glOk === true`, 90000)) && (await poll(`!!navigator.serviceWorker.controller`, 30000));
 await loadRouteE2E();
-const e17bAfter = JSON.parse(await ev2(`(() => { const before = { run: runStart, sess: JSON.parse(lsGet(LS.sess) || '[]') }; startClean(); const after = { sess: JSON.parse(lsGet(LS.sess) || '[]'), marker: Math.floor(runStart / 1000), dirty: sessDirty }; return JSON.stringify({ before, after }); })()`));
+const e17bAfter = JSON.parse(await ev2(`(() => { const before = { run: runStart, sess: JSON.parse(lsGet(LS.sess) || '[]') }; startClean(); const after = { sess: JSON.parse(lsGet(LS.sess) || '[]'), marker: Math.floor(runStart / 1000), dirty: writePending('sess') }; return JSON.stringify({ before, after }); })()`));
 ok('E17b after the kill: persisted run state intact, the never-persisted marker absent (expected loss), and a fresh start saves cleanly | ' + JSON.stringify(e17bAfter), backOk17b && e17bAfter.before.run === e17b.run && !e17bAfter.before.sess.includes(e17b.marker) && e17bAfter.after.sess.includes(e17bAfter.after.marker) && e17bAfter.after.dirty === false);
 // E24 (test-suite restructure, 2026-11-09): drive119's coverage, folded in -
 // 119 was deleted on the strength of this block existing. What 119 alone

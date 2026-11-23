@@ -197,7 +197,7 @@ try {
   const inWindow = await poll(`window.__p1InWindow === true`, 15000);
   ok('P1 phase 1 reached (the gated store write is in flight - the window is open)', inWindow === true);
   const p1win = JSON.parse(await ev(`(() => { const rk = routeKeys('5w');
-    const fenceUp = restoring;
+    const fenceUp = PERSIST.fenced();
     trail.push([43.902, -79.502, ${P1T} + 120]); markDirty('trail'); flushAux(true);
     return JSON.stringify({ fenceUp, storedTrailNow: JSON.parse(localStorage.getItem(rk.trail)).length, memTrail: trail.length });
   })()`));
@@ -206,7 +206,7 @@ try {
   await ev(`window.__p1Release(); true`);
   const settled = await poll(`window.__p1Settled === true`, 20000);
   ok('P1 the sabotaged restore ran its failure path to completion (a failure never reloads)', settled === true);
-  const p1truth = JSON.parse(await ev(`(() => { const rk = routeKeys('5w'); return JSON.stringify({ start: localStorage.getItem(rk.start), fenceNow: restoring, pendingTrail: writePending('trail') }); })()`));
+  const p1truth = JSON.parse(await ev(`(() => { const rk = routeKeys('5w'); return JSON.stringify({ start: localStorage.getItem(rk.start), fenceNow: PERSIST.fenced(), pendingTrail: writePending('trail') }); })()`));
   ok('P1 the rollback told the truth (the run start is the pre-restore one) and the fence came down after the failure | ' + JSON.stringify(p1truth),
     p1truth.start === String(P1T * 1000) && p1truth.fenceNow === false);
   ok('P1 the trail dirty flag is re-armed on the failure exit (the in-window work is owed a flush) | ' + JSON.stringify(p1truth),
@@ -250,14 +250,14 @@ try {
     window.__p1bTarget = target;
     markDone(target, 'd169');
     const storedDone = JSON.parse(localStorage.getItem(rk.done) || '[]');
-    return JSON.stringify({ target, fenceUp: restoring, armedInWindow: writePending('primary'), storedHas: storedDone.includes(target), memHas: doneSet.has(target) });
+    return JSON.stringify({ target, fenceUp: PERSIST.fenced(), armedInWindow: writePending('primary'), storedHas: storedDone.includes(target), memHas: doneSet.has(target) });
   })()`));
   ok('P1b inside the window the mark is memory-only (the fenced save was refused and armed nothing) | ' + JSON.stringify(p1bwin),
     p1bwin.fenceUp === true && p1bwin.memHas === true && p1bwin.storedHas === false && p1bwin.armedInWindow === false);
   await ev(`window.__p1bRelease(); true`);
   const settledB = await poll(`window.__p1bSettled === true`, 20000);
   ok('P1b the sabotaged restore ran its failure path to completion', settledB === true);
-  const p1bpost = JSON.parse(await ev(`(() => { return JSON.stringify({ fenceNow: restoring, pendingPrimary: writePending('primary') }); })()`));
+  const p1bpost = JSON.parse(await ev(`(() => { return JSON.stringify({ fenceNow: PERSIST.fenced(), pendingPrimary: writePending('primary') }); })()`));
   ok('P1b the failure exit re-arms the PRIMARY retry (the in-window edit is owed a save) | ' + JSON.stringify(p1bpost),
     p1bpost.fenceNow === false && p1bpost.pendingPrimary === true);
   const p1bafter = JSON.parse(await ev(`(() => { const rk = routeKeys('5w'); flushAux(true); const storedDone = JSON.parse(localStorage.getItem(rk.done) || '[]'); return JSON.stringify({ storedHas: storedDone.includes(window.__p1bTarget) }); })()`));

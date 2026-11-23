@@ -453,7 +453,7 @@ function loadRoute(id) {
   const switching = routeLoaded;
   if (switching) {
     collapseNoteEditor(); // an open note draft finalizes against the OUTGOING street first (renderStreets' draft flush, through saveAllWarned)
-    flushAux(true); // F2: the outgoing route's pending trail/session/snapshot/start/coverage writes land in ITS slot before LS repoints
+    PERSIST.flush(true); // F2: the outgoing route's pending trail/session/snapshot/start/coverage writes land in ITS slot before LS repoints
     if (writePending('primary')) { const okPrim = saveAll(); if (!okPrim.ok) toast('Storage problem - some changes on the route you left could not be saved', 4200); } // F2: one verified retry of a failed primary save before the repoint; a failure is said out loud, never silently dropped
     resetSwitchSession(); // F3/F4
   }

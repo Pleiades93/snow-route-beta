@@ -64,8 +64,8 @@ check('6: the scrim-free design claims are superseded and removed (the pill comm
 // ---------- the release editorial ----------
 check('7: the CHANGELOG top entry is Beta 1.257', changelog.includes('## Beta 1.257'));
 check('8: What\'s New carries the 1.257 bullet, short and dash-free',
-  whatsnew.includes('Under the hood: marking a side or a whole street now runs through one place, the same everywhere.')
-  && 'Under the hood: marking a side or a whole street now runs through one place, the same everywhere.'.length <= 108
+  whatsnew.includes('Under the hood: saving now runs through one scheduler, so marks, trail and backups write in one set order.')
+  && 'Under the hood: saving now runs through one scheduler, so marks, trail and backups write in one set order.'.length <= 108
   && !whatsnew.includes('—'));
 
 console.log(`proof-1257: ${pass} passed, ${fail} failed`);

@@ -87,7 +87,7 @@ check('5a the selection-open drop is retired: no body.selOpen #centreBtn rule, n
 
 // ---- the What's New line ----------------------------------------------------
 check('6a the round\'s What\'s New bullet stands first (rolled forward at Beta 1.272: the current entry stands first in its place)',
-  whatsnew.includes('items: ["Under the hood: marking a side or a whole street now runs through one place, the same everywhere."]'));
+  whatsnew.includes('items: ["Under the hood: saving now runs through one scheduler, so marks, trail and backups write in one set order."]'));
 
 console.log(`proof-1271: ${pass} pass, ${fail} fail`);
 process.exit(fail ? 1 : 0);

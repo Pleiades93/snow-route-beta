@@ -50,7 +50,7 @@ ok('SEC-9a GPX export still builds with trkpt', A.gpx);
 ok('SEC-9a no exception from GPX export', exc() === e1);
 // P5 SEC-4: restore survives its own pagehide flush
 await resetRoute(ev, '5w'); await ev(`(() => { location.reload(); return true; })()`); await sleep(3000); // T7: scoped reset - P5 owns only the 5w slot (premise statement in INVENTORY-T47.md); the sleep stays PROCESS-LAUNCH (the reload's fresh page)
-await ev(`(() => { trail.push([43.9, -79.9, 1767225600]); trailDirty = true; $('xText').value = JSON.stringify({ app: 'snowroute-backup', v: 1, data: { 'snowroute.v4.trail': '[[43.8,-79.5,1767225600]]' } }); doRestore(); flushAux(true); return true; })()`);
+await ev(`(() => { trail.push([43.9, -79.9, 1767225600]); markDirty('trail'); $('xText').value = JSON.stringify({ app: 'snowroute-backup', v: 1, data: { 'snowroute.v4.trail': '[[43.8,-79.5,1767225600]]' } }); doRestore(); flushAux(true); return true; })()`);
 await poll(`localStorage.getItem('snowroute.5w.v4.trail') === '[]'`, 10000); // T4: poll the terminal state P5 asserts (the commit landing in storage). Beta 1.193 re-derivation: the v1 trail carries no live run, so the restore commits it WINDOWED to empty - the committed value the flush must not clobber is '[]', and the pre-restore in-memory point (43.9) reappearing in storage is exactly the clobber this check exists to catch
 A = JSON.parse(await ev(`(() => JSON.stringify({ ls: localStorage.getItem('snowroute.5w.v4.trail') }))()`));
 ok('SEC-4 flush after restore does NOT clobber the restored trail (Beta 1.193: committed windowed-empty; the stale in-memory point must not reappear)', A.ls === '[]');

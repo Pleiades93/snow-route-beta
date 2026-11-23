@@ -115,7 +115,7 @@ check('9: the create backdrop still snapshots the UNDERLYING visibility through 
 
 // ---------- (10) editorial ----------
 check('10: What\'s New carries the 1.270 bullet, em-dash free, and the CHANGELOG top entry is Beta 1.270 above 1.269',
-  whatsnew.includes('Under the hood: marking a side or a whole street now runs through one place, the same everywhere.') &&
+  whatsnew.includes('Under the hood: saving now runs through one scheduler, so marks, trail and backups write in one set order.') &&
   !whatsnew.includes('—') &&
   changelog.indexOf('## Beta 1.270') > -1 && changelog.indexOf('## Beta 1.270') < changelog.indexOf('## Beta 1.269'));
 

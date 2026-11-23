@@ -96,7 +96,7 @@ check('8: every instant-fit path in introToRoute notes the no-flight settle - no
   count(app5, 'noteNameLoadInNoFlight();') === 4); // the empty-pack return + the three fit0 fallbacks
 
 // ---------- (9) the release editorial ----------
-const BULLET = 'Under the hood: marking a side or a whole street now runs through one place, the same everywhere.';
+const BULLET = 'Under the hood: saving now runs through one scheduler, so marks, trail and backups write in one set order.';
 check("9: What's New carries the 1.266 bullet (plain words: names fade in together on load), within the 108-char cap, em-dash free, and the CHANGELOG top entry is Beta 1.266 above 1.265",
   whatsnew.includes(BULLET) && BULLET.length <= 108 && !whatsnew.includes('—') &&
   changelog.indexOf('## Beta 1.266') > -1 && changelog.indexOf('## Beta 1.266') < changelog.indexOf('## Beta 1.265'));

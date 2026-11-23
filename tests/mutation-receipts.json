@@ -5018,6 +5018,490 @@
    "red": "FOREIGN-WRITE CENSUS: FAIL with 'BAN: member pieces written in app2.js plantedBanProbe (owner app1.js)' - observed in this round against the current selftest",
    "green": "FOREIGN-WRITE CENSUS: PASS on the unmutated 1.274 tree (26 bare + 31 member + 49 storage + 2 idb sites, ban holds) - observed in this round",
    "issued": "2026-11-22 beta-1274-arch1-round"
+  },
+  {
+   "id": "proof-1242-whatsnew-roll-1275",
+   "check": "tests/proof/proof-1242.mjs",
+   "kind": "historical",
+   "files": {
+    "tests/proof/proof-1242.mjs": "762dcf9f38177a94d63f6285677e969fd82b6dfa0f19b0bd1cd0d4e625292723",
+    "parts/whatsnew.js": "dd887ff6d144f1e7cb1e0df8fb38f502d0fa0f74f96cc9ea9f314e6a324e43ff"
+   },
+   "mutation": "the Beta 1.274 What's New bullet restored into parts/whatsnew.js (the standing version-roll red: the proof's bullet pin names the 1.275 bullet)",
+   "red": "proofs 56/78 with the 1.274 bullet restored; proof-1242 in the failing set (its pinned bullet is the 1.275 scheduler line)",
+   "green": "proofs 78/78 on the shipped Beta 1.275 tree",
+   "issued": "2026-11-22"
+  },
+  {
+   "id": "proof-1243-whatsnew-roll-1275",
+   "check": "tests/proof/proof-1243.mjs",
+   "kind": "historical",
+   "files": {
+    "tests/proof/proof-1243.mjs": "28b429e4bc2d5f968f9e5ba639ccd103e4741910d2c982e76f32594d87b4216a",
+    "parts/whatsnew.js": "dd887ff6d144f1e7cb1e0df8fb38f502d0fa0f74f96cc9ea9f314e6a324e43ff"
+   },
+   "mutation": "the Beta 1.274 What's New bullet restored into parts/whatsnew.js (the standing version-roll red: the proof's bullet pin names the 1.275 bullet)",
+   "red": "proofs 56/78 with the 1.274 bullet restored; proof-1243 in the failing set (its pinned bullet is the 1.275 scheduler line)",
+   "green": "proofs 78/78 on the shipped Beta 1.275 tree",
+   "issued": "2026-11-22"
+  },
+  {
+   "id": "proof-1245-whatsnew-roll-1275",
+   "check": "tests/proof/proof-1245.mjs",
+   "kind": "historical",
+   "files": {
+    "tests/proof/proof-1245.mjs": "94fe9b56c7acd2aec78bcaeaa57b6e3e51a0f10daad9333cd92bc27fe6e19a07",
+    "parts/whatsnew.js": "dd887ff6d144f1e7cb1e0df8fb38f502d0fa0f74f96cc9ea9f314e6a324e43ff"
+   },
+   "mutation": "the Beta 1.274 What's New bullet restored into parts/whatsnew.js (the standing version-roll red: the proof's bullet pin names the 1.275 bullet)",
+   "red": "proofs 56/78 with the 1.274 bullet restored; proof-1245 in the failing set (its pinned bullet is the 1.275 scheduler line)",
+   "green": "proofs 78/78 on the shipped Beta 1.275 tree",
+   "issued": "2026-11-22"
+  },
+  {
+   "id": "proof-1246-whatsnew-roll-1275",
+   "check": "tests/proof/proof-1246.mjs",
+   "kind": "historical",
+   "files": {
+    "tests/proof/proof-1246.mjs": "6345bbf6b680a0f4a7c2094c72f81d1d5eb132de17a5c41cc67cf50dbc2afb2f",
+    "parts/whatsnew.js": "dd887ff6d144f1e7cb1e0df8fb38f502d0fa0f74f96cc9ea9f314e6a324e43ff"
+   },
+   "mutation": "the Beta 1.274 What's New bullet restored into parts/whatsnew.js (the standing version-roll red: the proof's bullet pin names the 1.275 bullet)",
+   "red": "proofs 56/78 with the 1.274 bullet restored; proof-1246 in the failing set (its pinned bullet is the 1.275 scheduler line)",
+   "green": "proofs 78/78 on the shipped Beta 1.275 tree",
+   "issued": "2026-11-22"
+  },
+  {
+   "id": "proof-1247-whatsnew-roll-1275",
+   "check": "tests/proof/proof-1247.mjs",
+   "kind": "historical",
+   "files": {
+    "tests/proof/proof-1247.mjs": "64e3b3a0107b7f03dceadcf9b9c44c3ef584cd37b37408de83ab428245e81724",
+    "parts/whatsnew.js": "dd887ff6d144f1e7cb1e0df8fb38f502d0fa0f74f96cc9ea9f314e6a324e43ff"
+   },
+   "mutation": "the Beta 1.274 What's New bullet restored into parts/whatsnew.js (the standing version-roll red: the proof's bullet pin names the 1.275 bullet)",
+   "red": "proofs 56/78 with the 1.274 bullet restored; proof-1247 in the failing set (its pinned bullet is the 1.275 scheduler line)",
+   "green": "proofs 78/78 on the shipped Beta 1.275 tree",
+   "issued": "2026-11-22"
+  },
+  {
+   "id": "proof-1249-whatsnew-roll-1275",
+   "check": "tests/proof/proof-1249.mjs",
+   "kind": "historical",
+   "files": {
+    "tests/proof/proof-1249.mjs": "54e1a4336e11ec23ced947bfefed45ff4bbc6ffd19c24a0b1e9c433ba0a1d7be",
+    "parts/whatsnew.js": "dd887ff6d144f1e7cb1e0df8fb38f502d0fa0f74f96cc9ea9f314e6a324e43ff"
+   },
+   "mutation": "the Beta 1.274 What's New bullet restored into parts/whatsnew.js (the standing version-roll red: the proof's bullet pin names the 1.275 bullet)",
+   "red": "proofs 56/78 with the 1.274 bullet restored; proof-1249 in the failing set (its pinned bullet is the 1.275 scheduler line)",
+   "green": "proofs 78/78 on the shipped Beta 1.275 tree",
+   "issued": "2026-11-22"
+  },
+  {
+   "id": "proof-1252-whatsnew-roll-1275",
+   "check": "tests/proof/proof-1252.mjs",
+   "kind": "historical",
+   "files": {
+    "tests/proof/proof-1252.mjs": "6877b95ddf2e88c99fb293e17d30300ccea8d896636fd2ec8a2b64e95b3d832e",
+    "parts/whatsnew.js": "dd887ff6d144f1e7cb1e0df8fb38f502d0fa0f74f96cc9ea9f314e6a324e43ff"
+   },
+   "mutation": "the Beta 1.274 What's New bullet restored into parts/whatsnew.js (the standing version-roll red: the proof's bullet pin names the 1.275 bullet)",
+   "red": "proofs 56/78 with the 1.274 bullet restored; proof-1252 in the failing set (its pinned bullet is the 1.275 scheduler line)",
+   "green": "proofs 78/78 on the shipped Beta 1.275 tree",
+   "issued": "2026-11-22"
+  },
+  {
+   "id": "proof-1253-whatsnew-roll-1275",
+   "check": "tests/proof/proof-1253.mjs",
+   "kind": "historical",
+   "files": {
+    "tests/proof/proof-1253.mjs": "a5350ac35b1fd493f7af3bf45fcb2a432e7766eb38e7c06f65f7f20dd4307b8f",
+    "parts/whatsnew.js": "dd887ff6d144f1e7cb1e0df8fb38f502d0fa0f74f96cc9ea9f314e6a324e43ff"
+   },
+   "mutation": "the Beta 1.274 What's New bullet restored into parts/whatsnew.js (the standing version-roll red: the proof's bullet pin names the 1.275 bullet)",
+   "red": "proofs 56/78 with the 1.274 bullet restored; proof-1253 in the failing set (its pinned bullet is the 1.275 scheduler line)",
+   "green": "proofs 78/78 on the shipped Beta 1.275 tree",
+   "issued": "2026-11-22"
+  },
+  {
+   "id": "proof-1254-whatsnew-roll-1275",
+   "check": "tests/proof/proof-1254.mjs",
+   "kind": "historical",
+   "files": {
+    "tests/proof/proof-1254.mjs": "806c6794f9ebe10e61522df945b21b7b8c319e926b2556d102ccacd6bdde8649",
+    "parts/whatsnew.js": "dd887ff6d144f1e7cb1e0df8fb38f502d0fa0f74f96cc9ea9f314e6a324e43ff"
+   },
+   "mutation": "the Beta 1.274 What's New bullet restored into parts/whatsnew.js (the standing version-roll red: the proof's bullet pin names the 1.275 bullet)",
+   "red": "proofs 56/78 with the 1.274 bullet restored; proof-1254 in the failing set (its pinned bullet is the 1.275 scheduler line)",
+   "green": "proofs 78/78 on the shipped Beta 1.275 tree",
+   "issued": "2026-11-22"
+  },
+  {
+   "id": "proof-1255-whatsnew-roll-1275",
+   "check": "tests/proof/proof-1255.mjs",
+   "kind": "historical",
+   "files": {
+    "tests/proof/proof-1255.mjs": "04300436e528ddc26a4f05518c2a38d58656bab60abfcaa6e2ef316d82504060",
+    "parts/whatsnew.js": "dd887ff6d144f1e7cb1e0df8fb38f502d0fa0f74f96cc9ea9f314e6a324e43ff"
+   },
+   "mutation": "the Beta 1.274 What's New bullet restored into parts/whatsnew.js (the standing version-roll red: the proof's bullet pin names the 1.275 bullet)",
+   "red": "proofs 56/78 with the 1.274 bullet restored; proof-1255 in the failing set (its pinned bullet is the 1.275 scheduler line)",
+   "green": "proofs 78/78 on the shipped Beta 1.275 tree",
+   "issued": "2026-11-22"
+  },
+  {
+   "id": "proof-1256-whatsnew-roll-1275",
+   "check": "tests/proof/proof-1256.mjs",
+   "kind": "historical",
+   "files": {
+    "tests/proof/proof-1256.mjs": "3ab93d1815ab1db8e5c05bb7799423f1472acd464d52e100f09894dbb580cf30",
+    "parts/whatsnew.js": "dd887ff6d144f1e7cb1e0df8fb38f502d0fa0f74f96cc9ea9f314e6a324e43ff"
+   },
+   "mutation": "the Beta 1.274 What's New bullet restored into parts/whatsnew.js (the standing version-roll red: the proof's bullet pin names the 1.275 bullet)",
+   "red": "proofs 56/78 with the 1.274 bullet restored; proof-1256 in the failing set (its pinned bullet is the 1.275 scheduler line)",
+   "green": "proofs 78/78 on the shipped Beta 1.275 tree",
+   "issued": "2026-11-22"
+  },
+  {
+   "id": "proof-1257-whatsnew-roll-1275",
+   "check": "tests/proof/proof-1257.mjs",
+   "kind": "historical",
+   "files": {
+    "tests/proof/proof-1257.mjs": "f925d8be7a85f9ed0729ac35d8697a8b5da94881b5003035e83a229851da5a25",
+    "parts/whatsnew.js": "dd887ff6d144f1e7cb1e0df8fb38f502d0fa0f74f96cc9ea9f314e6a324e43ff"
+   },
+   "mutation": "the Beta 1.274 What's New bullet restored into parts/whatsnew.js (the standing version-roll red: the proof's bullet pin names the 1.275 bullet)",
+   "red": "proofs 56/78 with the 1.274 bullet restored; proof-1257 in the failing set (its pinned bullet is the 1.275 scheduler line)",
+   "green": "proofs 78/78 on the shipped Beta 1.275 tree",
+   "issued": "2026-11-22"
+  },
+  {
+   "id": "proof-1259-whatsnew-roll-1275",
+   "check": "tests/proof/proof-1259.mjs",
+   "kind": "historical",
+   "files": {
+    "tests/proof/proof-1259.mjs": "9c85442a5e67150f87b2dfd4429ab2350320db0e9e1e490c806cb8fcee70ac20",
+    "parts/whatsnew.js": "dd887ff6d144f1e7cb1e0df8fb38f502d0fa0f74f96cc9ea9f314e6a324e43ff"
+   },
+   "mutation": "the Beta 1.274 What's New bullet restored into parts/whatsnew.js (the standing version-roll red: the proof's bullet pin names the 1.275 bullet)",
+   "red": "proofs 56/78 with the 1.274 bullet restored; proof-1259 in the failing set (its pinned bullet is the 1.275 scheduler line)",
+   "green": "proofs 78/78 on the shipped Beta 1.275 tree",
+   "issued": "2026-11-22"
+  },
+  {
+   "id": "proof-1262-whatsnew-roll-1275",
+   "check": "tests/proof/proof-1262.mjs",
+   "kind": "historical",
+   "files": {
+    "tests/proof/proof-1262.mjs": "4b832e012212bc6bc1d4768f11c0b7e75ef11e0f8b63d3c8e1a63aaeab244396",
+    "parts/whatsnew.js": "dd887ff6d144f1e7cb1e0df8fb38f502d0fa0f74f96cc9ea9f314e6a324e43ff"
+   },
+   "mutation": "the Beta 1.274 What's New bullet restored into parts/whatsnew.js (the standing version-roll red: the proof's bullet pin names the 1.275 bullet)",
+   "red": "proofs 56/78 with the 1.274 bullet restored; proof-1262 in the failing set (its pinned bullet is the 1.275 scheduler line)",
+   "green": "proofs 78/78 on the shipped Beta 1.275 tree",
+   "issued": "2026-11-22"
+  },
+  {
+   "id": "proof-1263-whatsnew-roll-1275",
+   "check": "tests/proof/proof-1263.mjs",
+   "kind": "historical",
+   "files": {
+    "tests/proof/proof-1263.mjs": "09d98d2d504adaa1b6eb06d8edaa9bb4a43ba3ebf887a8cf2475d3f07e82f5ca",
+    "parts/whatsnew.js": "dd887ff6d144f1e7cb1e0df8fb38f502d0fa0f74f96cc9ea9f314e6a324e43ff"
+   },
+   "mutation": "the Beta 1.274 What's New bullet restored into parts/whatsnew.js (the standing version-roll red: the proof's bullet pin names the 1.275 bullet)",
+   "red": "proofs 56/78 with the 1.274 bullet restored; proof-1263 in the failing set (its pinned bullet is the 1.275 scheduler line)",
+   "green": "proofs 78/78 on the shipped Beta 1.275 tree",
+   "issued": "2026-11-22"
+  },
+  {
+   "id": "proof-1264-whatsnew-roll-1275",
+   "check": "tests/proof/proof-1264.mjs",
+   "kind": "historical",
+   "files": {
+    "tests/proof/proof-1264.mjs": "8f581750e4bc2380410a58eaf55c686e05e6cd5a8e2e01ef2d5792365f083a69",
+    "parts/whatsnew.js": "dd887ff6d144f1e7cb1e0df8fb38f502d0fa0f74f96cc9ea9f314e6a324e43ff"
+   },
+   "mutation": "the Beta 1.274 What's New bullet restored into parts/whatsnew.js (the standing version-roll red: the proof's bullet pin names the 1.275 bullet)",
+   "red": "proofs 56/78 with the 1.274 bullet restored; proof-1264 in the failing set (its pinned bullet is the 1.275 scheduler line)",
+   "green": "proofs 78/78 on the shipped Beta 1.275 tree",
+   "issued": "2026-11-22"
+  },
+  {
+   "id": "proof-1265-whatsnew-roll-1275",
+   "check": "tests/proof/proof-1265.mjs",
+   "kind": "historical",
+   "files": {
+    "tests/proof/proof-1265.mjs": "c4cfc4caabd07269d6765c6b2b5d36e701fbf200c22c70db1435ff2b74cbec33",
+    "parts/whatsnew.js": "dd887ff6d144f1e7cb1e0df8fb38f502d0fa0f74f96cc9ea9f314e6a324e43ff"
+   },
+   "mutation": "the Beta 1.274 What's New bullet restored into parts/whatsnew.js (the standing version-roll red: the proof's bullet pin names the 1.275 bullet)",
+   "red": "proofs 56/78 with the 1.274 bullet restored; proof-1265 in the failing set (its pinned bullet is the 1.275 scheduler line)",
+   "green": "proofs 78/78 on the shipped Beta 1.275 tree",
+   "issued": "2026-11-22"
+  },
+  {
+   "id": "proof-1267-whatsnew-roll-1275",
+   "check": "tests/proof/proof-1267.mjs",
+   "kind": "historical",
+   "files": {
+    "tests/proof/proof-1267.mjs": "a7843bcd855fd14fa860c59231ed2dcf587dd3fffc3cf1c2aef230a66bdc12e3",
+    "parts/whatsnew.js": "dd887ff6d144f1e7cb1e0df8fb38f502d0fa0f74f96cc9ea9f314e6a324e43ff"
+   },
+   "mutation": "the Beta 1.274 What's New bullet restored into parts/whatsnew.js (the standing version-roll red: the proof's bullet pin names the 1.275 bullet)",
+   "red": "proofs 56/78 with the 1.274 bullet restored; proof-1267 in the failing set (its pinned bullet is the 1.275 scheduler line)",
+   "green": "proofs 78/78 on the shipped Beta 1.275 tree",
+   "issued": "2026-11-22"
+  },
+  {
+   "id": "proof-1268-whatsnew-roll-1275",
+   "check": "tests/proof/proof-1268.mjs",
+   "kind": "historical",
+   "files": {
+    "tests/proof/proof-1268.mjs": "4ecac79225f751283bc9f56702e9a76ecfa09ab866345972115d66d35198d24b",
+    "parts/whatsnew.js": "dd887ff6d144f1e7cb1e0df8fb38f502d0fa0f74f96cc9ea9f314e6a324e43ff"
+   },
+   "mutation": "the Beta 1.274 What's New bullet restored into parts/whatsnew.js (the standing version-roll red: the proof's bullet pin names the 1.275 bullet)",
+   "red": "proofs 56/78 with the 1.274 bullet restored; proof-1268 in the failing set (its pinned bullet is the 1.275 scheduler line)",
+   "green": "proofs 78/78 on the shipped Beta 1.275 tree",
+   "issued": "2026-11-22"
+  },
+  {
+   "id": "proof-1269-whatsnew-roll-1275",
+   "check": "tests/proof/proof-1269.mjs",
+   "kind": "historical",
+   "files": {
+    "tests/proof/proof-1269.mjs": "785501e9a26f9f9fd234ec68a042f759b3b4b0c52d14a63658c9db20f4bcc954",
+    "parts/whatsnew.js": "dd887ff6d144f1e7cb1e0df8fb38f502d0fa0f74f96cc9ea9f314e6a324e43ff"
+   },
+   "mutation": "the Beta 1.274 What's New bullet restored into parts/whatsnew.js (the standing version-roll red: the proof's bullet pin names the 1.275 bullet)",
+   "red": "proofs 56/78 with the 1.274 bullet restored; proof-1269 in the failing set (its pinned bullet is the 1.275 scheduler line)",
+   "green": "proofs 78/78 on the shipped Beta 1.275 tree",
+   "issued": "2026-11-22"
+  },
+  {
+   "id": "proof-1270-whatsnew-roll-1275",
+   "check": "tests/proof/proof-1270.mjs",
+   "kind": "historical",
+   "files": {
+    "tests/proof/proof-1270.mjs": "2b947e87400c9683b2ef81c58e86e4c8c07f34deeb5946ceeacebad3c70ca8bd",
+    "parts/whatsnew.js": "dd887ff6d144f1e7cb1e0df8fb38f502d0fa0f74f96cc9ea9f314e6a324e43ff"
+   },
+   "mutation": "the Beta 1.274 What's New bullet restored into parts/whatsnew.js (the standing version-roll red: the proof's bullet pin names the 1.275 bullet)",
+   "red": "proofs 56/78 with the 1.274 bullet restored; proof-1270 in the failing set (its pinned bullet is the 1.275 scheduler line)",
+   "green": "proofs 78/78 on the shipped Beta 1.275 tree",
+   "issued": "2026-11-22"
+  },
+  {
+   "id": "proof-1271-whatsnew-roll-1275",
+   "check": "tests/proof/proof-1271.mjs",
+   "kind": "historical",
+   "files": {
+    "tests/proof/proof-1271.mjs": "be3c7b87b592701fc03315fee90e02db70043daefa3272301a5855b2c557f8fc",
+    "parts/whatsnew.js": "dd887ff6d144f1e7cb1e0df8fb38f502d0fa0f74f96cc9ea9f314e6a324e43ff"
+   },
+   "mutation": "the Beta 1.274 What's New bullet restored into parts/whatsnew.js (the standing version-roll red: the proof's bullet pin names the 1.275 bullet)",
+   "red": "proofs 56/78 with the 1.274 bullet restored; proof-1271 in the failing set (its pinned bullet is the 1.275 scheduler line)",
+   "green": "proofs 78/78 on the shipped Beta 1.275 tree",
+   "issued": "2026-11-22"
+  },
+  {
+   "id": "proof-1266-whatsnew-roll-1275",
+   "check": "tests/proof/proof-1266.mjs",
+   "kind": "historical",
+   "files": {
+    "tests/proof/proof-1266.mjs": "74fc38d16402f971baae0938f13cc715570cf1836da3f786d38b6bca1563d8e2",
+    "parts/whatsnew.js": "dd887ff6d144f1e7cb1e0df8fb38f502d0fa0f74f96cc9ea9f314e6a324e43ff",
+    "CHANGELOG.md": "02e92475d17f5b55479e59bdc76d610fa7b60c133d01de29649359bc2a0e6bbf"
+   },
+   "mutation": "the remote-main (Beta 1.274) whatsnew.js + CHANGELOG.md pair restored together (proof-1266 pins the pair: the bullet and the CHANGELOG top entry move together)",
+   "red": "proof-1266 check 9 failed on the restored 1.274 pair (the bullet and the CHANGELOG top no longer match the 1.275 pins)",
+   "green": "proofs 78/78 on the shipped Beta 1.275 tree",
+   "issued": "2026-11-22"
+  },
+  {
+   "id": "drive83-flagblind-trail-1275",
+   "check": "tests/browser/drive83.mjs",
+   "kind": "mutation",
+   "files": {
+    "tests/browser/drive83.mjs": "18be5f6d99a60e93c1c156f4e040df8c9eac13bbb780dbabcd70712b84b70c6f",
+    "parts/app1.js": "ea09cb8b20d18e3961a5506ff58890aaac0aa73cda7cccd06397c24c59ecaff4"
+   },
+   "mutation": "PERSIST.flush's trail step ignores its dirty flag (the flag condition removed from the step)",
+   "red": "drive83 FAIL 15/17 (SEC-9a: the out-of-range trail point survives - the flag-blind flush keeps rewriting the un-sanitised trail)",
+   "green": "drive83 PASS 17/17",
+   "issued": "2026-11-22"
+  },
+  {
+   "id": "drive86-cleartrail-cleans-1275",
+   "check": "tests/browser/drive86.mjs",
+   "kind": "mutation",
+   "files": {
+    "tests/browser/drive86.mjs": "eb78d352b8f05ad7a48a6caa6be2d2ce758ffd2ece36eb08868d6d20d6b1500a",
+    "parts/app4.js": "77a902a67ce2de0f989a00d9a06c9f16ee7fccdc10e43238ddade610e57e463d"
+   },
+   "mutation": "clearTrailAll's failed-write branch cleans the trail flag instead of arming it (markClean for markDirty)",
+   "red": "drive86 FAIL 6/8 (T2: the clear does not stay pending; the trail record is gone after the heartbeat)",
+   "green": "drive86 PASS 8/8",
+   "issued": "2026-11-22"
+  },
+  {
+   "id": "drive133-trail-noclear-1275",
+   "check": "tests/browser/drive133.mjs",
+   "kind": "mutation",
+   "files": {
+    "tests/browser/drive133.mjs": "182440054f1f14bf6edc92976f5bacbb58dbb1a84f3952fda3f3e6bcaabee2fb",
+    "parts/app1.js": "ea09cb8b20d18e3961a5506ff58890aaac0aa73cda7cccd06397c24c59ecaff4"
+   },
+   "mutation": "PERSIST.flush's trail step writes but never clears the trail flag",
+   "red": "drive133 FAIL (S14b: the pending trail cleanup never reads landed)",
+   "green": "drive133 PASS 49/49",
+   "issued": "2026-11-22"
+  },
+  {
+   "id": "drive136-primary-noarm-1275",
+   "check": "tests/browser/drive136.mjs",
+   "kind": "mutation",
+   "files": {
+    "tests/browser/drive136.mjs": "d108973c22558201b95b87d00b6d438d93960d6c7741cc78182f3028e1cc5890",
+    "parts/app1.js": "ea09cb8b20d18e3961a5506ff58890aaac0aa73cda7cccd06397c24c59ecaff4"
+   },
+   "mutation": "saveAll stops arming the primary retry on a failed save (the markDirty primary call removed)",
+   "red": "drive136 FAIL (f9a: a failed saveAll arms no retry - the pending read is false)",
+   "green": "drive136 PASS 27/27",
+   "issued": "2026-11-22"
+  },
+  {
+   "id": "drive145-backup-noflush-1275",
+   "check": "tests/browser/drive145.mjs",
+   "kind": "mutation",
+   "files": {
+    "tests/browser/drive145.mjs": "d83016f9db7ab09d1c309a6fa22ec5ecc9d08fcde201068c992e1c3d0b40765f",
+    "parts/app4.js": "77a902a67ce2de0f989a00d9a06c9f16ee7fccdc10e43238ddade610e57e463d"
+   },
+   "mutation": "buildBackup's pre-build PERSIST.flush(true) removed (the backup no longer flushes first)",
+   "red": "drive145 FAIL 48/51 (the N20 backup checks: the shipped backup misses the just-earned trail/coverage)",
+   "green": "drive145 PASS 51/51",
+   "issued": "2026-11-22"
+  },
+  {
+   "id": "drive169-fenceup-noop-1275",
+   "check": "tests/browser/drive169.mjs",
+   "kind": "mutation",
+   "files": {
+    "tests/browser/drive169.mjs": "3594f745e0e85d3d5ad5ed234b97dec79c8dd1a2960b227df30e879a03f15b71",
+    "parts/app1.js": "ea09cb8b20d18e3961a5506ff58890aaac0aa73cda7cccd06397c24c59ecaff4"
+   },
+   "mutation": "PERSIST.fenceUp() made a no-op (the restore write fence never rises)",
+   "red": "drive169 FAIL (FENCE: saveAll in the window returns ok:true and writes, storedDone 3; P1: fenceUp false, the in-window flush lands, storedTrailNow 3; P1b)",
+   "green": "drive169 PASS 50/50",
+   "issued": "2026-11-22"
+  },
+  {
+   "id": "selftest-foreign-writes-ban-1275",
+   "check": "tests/browser/selftest-foreign-writes.mjs",
+   "kind": "mutation",
+   "files": {
+    "tests/browser/selftest-foreign-writes.mjs": "cbebceae8d0a70fb427948def65892db426f5d82b5a29a5495d000f74336133f",
+    "parts/app4.js": "77a902a67ce2de0f989a00d9a06c9f16ee7fccdc10e43238ddade610e57e463d",
+    "parts/app1.js": "ea09cb8b20d18e3961a5506ff58890aaac0aa73cda7cccd06397c24c59ecaff4"
+   },
+   "mutation": "planted banned member write pieces.__receiptProbe = 1 in app4 clearTrailAll; separately a planted bare restoring = true write in app4 (an implicit global)",
+   "red": "FOREIGN-WRITE CENSUS FAIL (BAN: member pieces written in app4.js clearTrailAll (owner app1.js); and FAIL no implicit-global write targets in the tree)",
+   "green": "FOREIGN-WRITE CENSUS PASS (22 expressions, retired sites pinned absent)",
+   "issued": "2026-11-22"
+  },
+  {
+   "id": "drive83-flagblind-trail-1275-r2",
+   "check": "tests/browser/drive83.mjs",
+   "kind": "mutation",
+   "files": {
+    "tests/browser/drive83.mjs": "18be5f6d99a60e93c1c156f4e040df8c9eac13bbb780dbabcd70712b84b70c6f",
+    "parts/app1.js": "3a6a900377855eee20222efed44bc2b8e85585637c5566badd119e33f46eca55"
+   },
+   "mutation": "PERSIST.flush's trail step ignores its dirty flag (the flag condition removed from the step)",
+   "red": "drive83 FAIL 15/17 (SEC-9a: the out-of-range trail point survives - the flag-blind flush keeps rewriting the un-sanitised trail)",
+   "green": "drive83 PASS 17/17 (re-verified on the final tree after the arm restoration)",
+   "issued": "2026-11-22"
+  },
+  {
+   "id": "drive133-trail-noclear-1275-r2",
+   "check": "tests/browser/drive133.mjs",
+   "kind": "mutation",
+   "files": {
+    "tests/browser/drive133.mjs": "182440054f1f14bf6edc92976f5bacbb58dbb1a84f3952fda3f3e6bcaabee2fb",
+    "parts/app1.js": "3a6a900377855eee20222efed44bc2b8e85585637c5566badd119e33f46eca55"
+   },
+   "mutation": "PERSIST.flush's trail step writes but never clears the trail flag",
+   "red": "drive133 FAIL (S14b: the pending trail cleanup never reads landed)",
+   "green": "drive133 PASS 49/49 (re-verified on the final tree)",
+   "issued": "2026-11-22"
+  },
+  {
+   "id": "drive136-primary-noarm-1275-r2",
+   "check": "tests/browser/drive136.mjs",
+   "kind": "mutation",
+   "files": {
+    "tests/browser/drive136.mjs": "d108973c22558201b95b87d00b6d438d93960d6c7741cc78182f3028e1cc5890",
+    "parts/app1.js": "3a6a900377855eee20222efed44bc2b8e85585637c5566badd119e33f46eca55"
+   },
+   "mutation": "saveAll stops arming the primary retry on a failed save (the markDirty primary call removed)",
+   "red": "drive136 FAIL (f9a: a failed saveAll arms no retry - the pending read is false). The same defect later shipped in the first 1.275 push by a mutation-battery revert and was caught by Codex review (P1, PR #183) - the arm is restored and this receipt re-issued against the fixed tree",
+   "green": "drive136 PASS 27/27 (on the fixed tree)",
+   "issued": "2026-11-22"
+  },
+  {
+   "id": "drive169-fenceup-noop-1275-r2",
+   "check": "tests/browser/drive169.mjs",
+   "kind": "mutation",
+   "files": {
+    "tests/browser/drive169.mjs": "3594f745e0e85d3d5ad5ed234b97dec79c8dd1a2960b227df30e879a03f15b71",
+    "parts/app1.js": "3a6a900377855eee20222efed44bc2b8e85585637c5566badd119e33f46eca55"
+   },
+   "mutation": "PERSIST.fenceUp() made a no-op (the restore write fence never rises)",
+   "red": "drive169 FAIL (FENCE: saveAll in the window returns ok:true and writes, storedDone 3; P1: fenceUp false, the in-window flush lands, storedTrailNow 3; P1b)",
+   "green": "drive169 PASS 50/50 (re-verified on the final tree)",
+   "issued": "2026-11-22"
+  },
+  {
+   "id": "selftest-foreign-writes-ban-1275-r2",
+   "check": "tests/browser/selftest-foreign-writes.mjs",
+   "kind": "mutation",
+   "files": {
+    "tests/browser/selftest-foreign-writes.mjs": "cbebceae8d0a70fb427948def65892db426f5d82b5a29a5495d000f74336133f",
+    "parts/app4.js": "77a902a67ce2de0f989a00d9a06c9f16ee7fccdc10e43238ddade610e57e463d",
+    "parts/app1.js": "3a6a900377855eee20222efed44bc2b8e85585637c5566badd119e33f46eca55"
+   },
+   "mutation": "planted banned member write pieces.__receiptProbe = 1 in app4 clearTrailAll; separately a planted bare restoring = true write in app4 (an implicit global)",
+   "red": "FOREIGN-WRITE CENSUS FAIL (BAN: member pieces written in app4.js clearTrailAll (owner app1.js); and FAIL no implicit-global write targets in the tree)",
+   "green": "FOREIGN-WRITE CENSUS PASS (22 expressions, retired sites pinned absent)",
+   "issued": "2026-11-22"
+  },
+  {
+   "id": "selftest-gps-package-persist-stub-1275",
+   "check": "tests/browser/selftest-gps-package.mjs",
+   "kind": "mutation",
+   "files": {
+    "tests/browser/selftest-gps-package.mjs": "47b48afe05b67779690a6d87f52a80ca0cad1483132173b18a8bcce7fc5c8ff8",
+    "parts/app3.js": "3fa5b5e3e729371872b25c0f12a75ec2c0421d62cdd217a0ac9be549cac39a7e"
+   },
+   "mutation": "architecture #3 renamed the shipped acceptFix block's per-fix flush call from flushAux(false) to PERSIST.flush(false); the selftest evals that block verbatim over a stub harness",
+   "red": "selftest-gps-package throws ReferenceError: PERSIST is not defined (observed locally and in the first 1.275 cloud gate, build-and-test) - its harness stub predates the rename",
+   "green": "selftest-gps-package: 20 pass, 0 fail with the stub mirroring the PERSIST doorway",
+   "issued": "2026-11-22"
+  },
+  {
+   "id": "drive86-writepending-lie-1275",
+   "check": "tests/browser/drive86.mjs",
+   "kind": "mutation",
+   "files": {
+    "tests/browser/drive86.mjs": "869f3bab9911b0c4e40c2ba49d03543bfd58181e1036a313b9fd9ffb9e3352a8",
+    "parts/app1.js": "3a6a900377855eee20222efed44bc2b8e85585637c5566badd119e33f46eca55"
+   },
+   "mutation": "PERSIST.writePending always returns false (parts/app1.js: the doorway read lies about pending flags)",
+   "red": "drive86 15/18 FAIL: T2 clear stays pending (trail flag); C04a dirty:false with the marker write broken and retry armed; C05a dirty:false - observed 2026-11-23 local",
+   "green": "drive86 18/18 PASS, 0 exceptions on the reverted tree (app1.js sha256 verified identical to pre-mutation) - observed 2026-11-23 local",
+   "issued": "2026-11-23"
   }
  ]
 }
