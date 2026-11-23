@@ -10,6 +10,10 @@
 //     create save, scripts/derive-pack-ends.mjs) merge both computations.
 //     Route 5W's shipped field carries exactly 15 records: the 7 boundary
 //     (fade 15) and the 8 proven dead ends (fade 10) by street name.
+//     (Beta 1.283, architecture #11 stage 4: the junction test both
+//     computations carried verbatim is now the one shared helper
+//     endsJunction - check 1h; the derivation over the shipped pack is
+//     byte-identical before/after the extraction.)
 // (2) NAMES ON TOP: ensureDraftLayers seats all five draft layers below
 //     the first label layer via the shared crFirstLabelLayerId finder.
 // (3) DONE FLIGHT: fitDraft flies (flyTo, curve 1.2) to the flat
@@ -66,6 +70,10 @@ let ends = null; try { ends = m ? JSON.parse(m[1]) : null; } catch (e) {}
 const allRecs = ends ? Object.entries(ends).flatMap(([k, v]) => v.map(r => [k, r])) : [];
 const deadStreets = allRecs.filter(([, r]) => r[4] === 10).map(([k]) => k).sort();
 const DEAD8 = ['Angie', 'Bayside', 'Boddy', 'Dianawood', 'Ferrari', 'Julian', 'Tina', 'Topper'];
+check('1h: the junction test is ONE shared helper (Beta 1.283, #11 stage 4) - endsJunction defined once, called by both end computations, the verbatim per-computation loop gone',
+  packs.includes('function endsJunction(routeNames, runsOf, n, E)') &&
+  (packs.match(/endsJunction\(routeNames, runsOf, n, E\)/g) || []).length === 3 &&
+  !packs.includes('junction = true; break;'));
 check('1g: the shipped 5W ends field carries exactly 15 records - 7 boundary at fade 15, 8 dead at fade 10, the dead on exactly the 8 proven streets | total ' + allRecs.length + ', dead ' + JSON.stringify(deadStreets),
   !!ends && allRecs.length === 15 && allRecs.filter(([, r]) => r[4] === 15).length === 7 &&
   JSON.stringify(deadStreets) === JSON.stringify(DEAD8) &&

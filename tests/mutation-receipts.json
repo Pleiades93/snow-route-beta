@@ -8245,6 +8245,19 @@
    "red": "9 passed, 2 failed (checks 3b, 4)",
    "green": "11 passed, 0 failed",
    "issued": "2026-11-23"
+  },
+  {
+   "id": "proof-1267-endsjunction-1283",
+   "check": "tests/proof/proof-1267.mjs",
+   "kind": "mutation",
+   "files": {
+    "tests/proof/proof-1267.mjs": "188935a4b32fc58de8514ef497fb507f85938ccba6f7ef7408a3271dc43d9540",
+    "parts/create-packs.js": "51b05ebfbb2cd6d45d52c79aac226c73862f1d17b8aca1fd7561c8892f1abbe7"
+   },
+   "mutation": "computeDeadEnds' junction test restored to the verbatim per-computation loop (endsJunction bypassed there)",
+   "red": "16 pass, 1 fail (check 1h)",
+   "green": "17 pass, 0 fail",
+   "issued": "2026-11-23"
   }
  ]
 }
