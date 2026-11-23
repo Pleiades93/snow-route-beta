@@ -7335,6 +7335,58 @@
    "red": "proof-osmnames-clearall-twin exits 1 (the osmNames null-prototype and inherited-member checks fail) - observed twice",
    "green": "proof-osmnames-clearall-twin passes on the reverted tree (revert byte-exact, sha256-verified)",
    "issued": "2026-11-23 section1-arch14"
+  },
+  {
+   "id": "section1-proof-1269-restore-owner",
+   "check": "tests/proof/proof-1269.mjs",
+   "kind": "mutation",
+   "files": {
+    "tests/proof/proof-1269.mjs": "9561e9bef881a4096f8a69b150ffc268e6b2ade02c9e3b2fa8d5de251b41b59c",
+    "parts/create-pick.js": "11b8276387dd243ea200fac987ccd33d9457b3a369e18040eb8b277bd716638c"
+   },
+   "mutation": "parts/create-pick.js: DRAFT.restoreTrim stores the snapshot itself (draft.sectors[name] = snap;) instead of a copy (snap.slice();), so a later trim edit would rewrite Cancel's restore point",
+   "red": "proof-1269 fails check 8 (the owner restore statement pin) under the mutation - observed twice (mutation-battery-15.py restore-copy)",
+   "green": "proof-1269 passes on the reverted tree (revert byte-exact, sha256-verified); full proof suite 79/79",
+   "issued": "2026-11-23 section1-arch15"
+  },
+  {
+   "id": "section1-proof-tapaway-restore-owner",
+   "check": "tests/proof/proof-create-zoom-tapaway.mjs",
+   "kind": "mutation",
+   "files": {
+    "tests/proof/proof-create-zoom-tapaway.mjs": "c490bbaea5ce24ff73fd67a1145e66f57b01d56179411514e3c454f5757ffb44",
+    "parts/create-pick.js": "11b8276387dd243ea200fac987ccd33d9457b3a369e18040eb8b277bd716638c"
+   },
+   "mutation": "parts/create-pick.js: DRAFT.restoreTrim stores the snapshot itself (draft.sectors[name] = snap;) instead of a copy (snap.slice();)",
+   "red": "proof-create-zoom-tapaway fails S2 (the owner restore statement pin) under the mutation - observed twice (mutation-battery-15.py restore-copy)",
+   "green": "proof-create-zoom-tapaway passes on the reverted tree (revert byte-exact, sha256-verified); full proof suite 79/79",
+   "issued": "2026-11-23 section1-arch15"
+  },
+  {
+   "id": "section1-proof-glow-chosenset-owner",
+   "check": "tests/proof/proof-trim-glow-path-pills.mjs",
+   "kind": "mutation",
+   "files": {
+    "tests/proof/proof-trim-glow-path-pills.mjs": "00c855fd6397d8a14ccba9dbc2ecb2b8fb16ff7be57febf063d2f090a4271240",
+    "parts/create-pick.js": "11b8276387dd243ea200fac987ccd33d9457b3a369e18040eb8b277bd716638c"
+   },
+   "mutation": "parts/create-pick.js: DRAFT.chosenSet ignores the street's trim (returns every part index), so the trim glow would cover the whole street again",
+   "red": "proof-trim-glow-path-pills fails S1 (glow covers exactly the chosen sectors) under the mutation - observed twice (mutation-battery-15.py chosenset-trim)",
+   "green": "proof-trim-glow-path-pills passes on the reverted tree (revert byte-exact, sha256-verified); full proof suite 79/79",
+   "issued": "2026-11-23 section1-arch15"
+  },
+  {
+   "id": "section1-proof-d04-hastrim-owner",
+   "check": "tests/proof/proof-rerun-d04-streetparts-covstamp.mjs",
+   "kind": "mutation",
+   "files": {
+    "tests/proof/proof-rerun-d04-streetparts-covstamp.mjs": "513a7b38ea30466c12ff54f9c20c06d38bf31b266cb1ba5db17dbeb0cacdec22",
+    "parts/create-pick.js": "11b8276387dd243ea200fac987ccd33d9457b3a369e18040eb8b277bd716638c"
+   },
+   "mutation": "parts/create-pick.js: DRAFT.hasTrim returns false unconditionally, so crStreetParts loses the trim pin and recomputes a trimmed street's record when coverage grows",
+   "red": "proof-rerun-d04-streetparts-covstamp fails S4 (trimmed street keeps its record) under the mutation - observed twice (mutation-battery-15.py hastrim-pin)",
+   "green": "proof-rerun-d04-streetparts-covstamp passes on the reverted tree (revert byte-exact, sha256-verified); full proof suite 79/79",
+   "issued": "2026-11-23 section1-arch15"
   }
  ]
 }

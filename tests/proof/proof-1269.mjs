@@ -74,7 +74,8 @@ check('7: crDeselectSectors removes through crRemoveStreet (the one removal path
   pick.includes("$('crSbDeselect').addEventListener('click', () => crDeselectSectors());"));
 
 check('8: the cancel is untouched and lives on the tap-away - crCancelSectors restores the snapshot and crMapTap routes no-sector taps to it',
-  pick.includes('draft.sectors[s] = crSectorSession.snapshot.slice();') &&
+  pick.includes('DRAFT.restoreTrim(s, crSectorSession.snapshot)') && // Architecture #15: the restore lives on the DRAFT owner; crCancelSectors delegates
+  pick.includes('draft.sectors[name] = snap.slice();') && // the owner's restore statement itself (the snapshot returns as a copy)
   pick.includes('if (crSectorSession.street) { if (!crSectorTap(e.lngLat)) crCancelSectors(); return; }'));
 
 check('9: What\'s New carries both 1.269 bullets, em-dash free, and the CHANGELOG top entry is Beta 1.269 above 1.268',

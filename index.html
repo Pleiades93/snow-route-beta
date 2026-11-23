@@ -2,7 +2,7 @@
 <html lang="en" class="boot">
 <head>
 <meta charset="UTF-8">
-<meta http-equiv="Content-Security-Policy" content="default-src 'none'; script-src 'sha384-0f240DsilpitCb0FPGXmX4d6FSOMuCt72OOs4CdkbOIsLo9wS2To6xqfjGTIvrPX' https://cdn.jsdelivr.net/npm/maplibre-gl@4.7.1/dist/maplibre-gl.js; style-src-elem 'sha384-l+Ing91zw7+8pk8Zac2Wr0FKBEz+pk8bYSPB00KMpT5TsGP86OppPfSOgVChr4uv' https://cdn.jsdelivr.net; style-src-attr 'unsafe-inline'; img-src 'self' data: blob: https://tiles.basemaps.cartocdn.com https://protomaps.github.io https://cdn.jsdelivr.net; connect-src 'self' https://tiles.basemaps.cartocdn.com https://protomaps.github.io https://cdn.jsdelivr.net https://nominatim.openstreetmap.org https://overpass-api.de https://overpass.kumi.systems; worker-src blob: 'self'; child-src blob: 'self'; font-src 'none'; manifest-src 'self'; base-uri 'none'; form-action 'none'; object-src 'none'">
+<meta http-equiv="Content-Security-Policy" content="default-src 'none'; script-src 'sha384-FaLdUww/ibNKDl4/m8LRJ0p41c4HQ+rJkDX9M3k9i7J0o8Z+JzsdmikaI2i+r7Z3' https://cdn.jsdelivr.net/npm/maplibre-gl@4.7.1/dist/maplibre-gl.js; style-src-elem 'sha384-l+Ing91zw7+8pk8Zac2Wr0FKBEz+pk8bYSPB00KMpT5TsGP86OppPfSOgVChr4uv' https://cdn.jsdelivr.net; style-src-attr 'unsafe-inline'; img-src 'self' data: blob: https://tiles.basemaps.cartocdn.com https://protomaps.github.io https://cdn.jsdelivr.net; connect-src 'self' https://tiles.basemaps.cartocdn.com https://protomaps.github.io https://cdn.jsdelivr.net https://nominatim.openstreetmap.org https://overpass-api.de https://overpass.kumi.systems; worker-src blob: 'self'; child-src blob: 'self'; font-src 'none'; manifest-src 'self'; base-uri 'none'; form-action 'none'; object-src 'none'">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="mobile-web-app-capable" content="yes">
@@ -9126,9 +9126,11 @@ function crRenderHint() { // the ONE writer of the pick-stage hint + its action 
 // moves the bodies, it does not re-derive them. The crAddStreet /
 // crAddRun / crRemoveStreet names survive as doorways below (the battery
 // calls the first by name; the pending sweep in create-citydata calls
-// both add doors). Sector state proper is #15's move; the methods below
-// touch it only where the pre-owner bodies did (the add-run trim dance,
-// the removal's deletes, Clear-all's wholesale reset).
+// both add doors). Sector state joined the same owner in Architecture
+// #15: the trimOf / hasTrim / snapshotTrim / chosenSet / setChosen /
+// dropTrim / restoreTrim methods below are the only reads and writes of
+// draft.sectors outside this owner's own wholesale reset and newDraft's
+// creation.
 const DRAFT = {
   render() { renderDraft(); renderCrLists(); crRenderHint(); }, // the ONE post-mutation render, in the order every mutation site already used
   renderLists() { renderDraft(); renderCrLists(); }, // the category toggle's tail: the hint does not read the primaries, so it is not re-rendered
@@ -9140,7 +9142,7 @@ const DRAFT = {
     // Beta 1.153 (Andrew): no 'Added' popup - the road's own picked state on the map and in the panel is the feedback.
   },
   addRun(name, segs) { // Beta 1.144 (OPT-L1): a further DISCONNECTED run of an already-picked street joins the SAME street entry - the segment list grows (the run's parts append after the existing runs' parts: runs form in segment order, so existing sector indexes keep their meaning), the geometry cache invalidates, and the cached sector record dies so boundaries recompute over the fuller street. A trimmed street keeps its trim AND gains the new run's parts as chosen - the tap that added the run was a pick, so its parts join the chosen set explicitly rather than falling out of the save by omission; an untrimmed street simply stays whole.
-    const before = (draft.sectors && draft.sectors[name]) ? crStreetParts(name) : null;
+    const before = DRAFT.hasTrim(name) ? crStreetParts(name) : null;
     draft.roads[name] = draft.roads[name].concat(segs); crGeomGen++;
     if (draft.parts) delete draft.parts[name];
     if (before) {
@@ -9154,13 +9156,27 @@ const DRAFT = {
   removeStreet(name) { // Beta 1.127: the ONE removal path - the panel's x, the preview's x and Clear all land here (Beta 1.128: those are the ONLY doors; a map tap on a picked street opens its sectors instead), so a street leaves with ALL of its draft state (geometry, primary flag, names, sector pick, cached parts) and every face re-renders from the same state
     if (!draft || !draft.roads[name]) return;
     delete draft.roads[name]; draft.primaries.delete(name); delete draft.osmNames[name]; crGeomGen++; // Beta 1.135 (N3): the removal invalidates the shared draft geometry (see crDraftGeom)
-    if (draft.sectors) delete draft.sectors[name];
+    DRAFT.dropTrim(name);
     if (draft.parts) delete draft.parts[name];
     delete crPending[name];
     if (crSectorSession.street === name) crSectorReset();
     DRAFT.render();
   },
   togglePrimary(name) { if (draft.primaries.has(name)) draft.primaries.delete(name); else draft.primaries.add(name); DRAFT.renderLists(); }, // the category flip both row chips spelled out identically through 1.280 - one body now
+  // ---- sector state (Architecture #15). The stored form is unchanged
+  // since Beta 1.127: an ABSENT entry means the whole road; a present
+  // entry is the sorted array of chosen part indexes.
+  trimOf(name) { return draft && draft.sectors ? draft.sectors[name] : null; }, // the street's trim exactly as the pre-owner sites read it (an absent key reads undefined; no draft reads null)
+  hasTrim(name) { return !!(draft && draft.sectors && draft.sectors[name]); }, // the presence test the parts-record pin (crStreetParts) and the add-run dance used to spell out inline
+  snapshotTrim(name) { const t = DRAFT.trimOf(name); return t ? t.slice() : null; }, // the sector session's entry snapshot (Beta 1.129): a COPY of the trim in force, or null when the whole road stands
+  chosenSet(name, rec) { const sel = DRAFT.trimOf(name); return new Set(sel || rec.parts.map((_, i) => i)); }, // no entry = every sector chosen (the whole road)
+  setChosen(name, rec, set) { // a FULL set stores as NO entry - "whole road" stays the draft's default state, so an untrimmed street carries no sector baggage into counts or the save
+    draft.sectors = draft.sectors || {};
+    if (set.size >= rec.parts.length) delete draft.sectors[name];
+    else draft.sectors[name] = [...set].sort((a, b) => a - b);
+  },
+  dropTrim(name) { if (draft.sectors) delete draft.sectors[name]; }, // a trim leaves with its street (the removal) or with an abandoned restore point (the sector session's cancel, no-snapshot arm)
+  restoreTrim(name, snap) { draft.sectors = draft.sectors || {}; draft.sectors[name] = snap.slice(); }, // the sector session's Cancel restore (Beta 1.129): the entry snapshot returns as a copy, exactly as it was taken
   clearAll() { // the Clear-all door's wholesale reset (through 1.280 it was spelled out in the crClearAll confirm callback): every draft map replaced - null-prototype, like every creation site (the clearall proofs extract the reset statement below verbatim) - the geometry generation bumped, pending cleared, the sector session reset, then the one render
     draft.roads = Object.create(null); draft.primaries.clear(); draft.osmNames = Object.create(null); draft.sectors = Object.create(null); draft.parts = Object.create(null);
     crGeomGen++; crPending = {}; // Beta 1.170 (Carbon fix round Phase 2, D-04): the wholesale roads replacement obeys the same two duties as every other roads mutation - through 1.169 it was the one mutation that did not bump the geometry generation (the crDraftGeom cache's roads-identity key happens to catch this particular replacement, but the bump is the contract every other mutation keeps, and the cache's gen key exists to be moved by exactly this class of change) and it left the pending rows standing, so crSweepPending could re-add a street the user had just cleared
@@ -9212,7 +9228,7 @@ function crStreetParts(name) { // the street's sectors: its stitched runs cut wh
     // they clear - for a session, the next entry, which settles the
     // record before the session's first render. Unreferenced, the
     // record is a pure cache and falls through to the recompute below.
-    if ((draft.sectors && draft.sectors[name]) || crSectorSession.street === name || rec.covStamp === crCovStamp()) return rec;
+    if (DRAFT.hasTrim(name) || crSectorSession.street === name || rec.covStamp === crCovStamp()) return rec;
   }
   const one = {}; one[name] = draft.roads[name];
   const runLines = stitchRuns(name, one).filter(L => L && L.length >= 2);
@@ -9244,15 +9260,11 @@ function crStreetParts(name) { // the street's sectors: its stitched runs cut wh
   draft.parts[name] = rec;
   return rec;
 }
-function crChosenSet(name, rec) { const sel = draft && draft.sectors ? draft.sectors[name] : null; return new Set(sel || rec.parts.map((_, i) => i)); } // no entry = every sector chosen (the whole road)
-function crSetChosen(name, rec, set) { // a FULL set stores as NO entry - "whole road" stays the draft's default state, so an untrimmed street carries no sector baggage into counts or the save
-  draft.sectors = draft.sectors || {};
-  if (set.size >= rec.parts.length) delete draft.sectors[name];
-  else draft.sectors[name] = [...set].sort((a, b) => a - b);
-}
+function crChosenSet(name, rec) { return DRAFT.chosenSet(name, rec); } // Architecture #15 doorway - the body lives on the DRAFT owner (sector state)
+function crSetChosen(name, rec, set) { DRAFT.setChosen(name, rec, set); } // Architecture #15 doorway - the body lives on the DRAFT owner (sector state)
 function crChosenLenM(name, rec) { const set = crChosenSet(name, rec); let s = 0; for (const i of set) if (rec.parts[i]) s += crLineLen(rec.parts[i]); return s; }
 function crStreetChosenM(name, g) { // a street's length AS PICKED - the whole street, or only its chosen sectors when trimmed. Every length the create flow states (panel header + rows, preview count, name-it summary) reads through here, so a trimmed street never bills its unchosen ends
-  const sel = draft && draft.sectors ? draft.sectors[name] : null;
+  const sel = DRAFT.trimOf(name);
   if (!sel) return g && g[name] ? g[name].total : 0;
   const rec = crStreetParts(name); if (!rec) return 0;
   let s = 0; for (const i of sel) if (rec.parts[i]) s += crLineLen(rec.parts[i]);
@@ -9261,7 +9273,7 @@ function crStreetChosenM(name, g) { // a street's length AS PICKED - the whole s
 function crFilteredRoads() { // the roads object the SAVE stores: a trimmed street contributes ONLY its chosen sectors' polylines (each sector as one segment). The pack format is untouched (roads = segment lists); the unchosen ends simply never enter the pack
   const out = {};
   for (const n of draftStreets()) {
-    const sel = draft.sectors ? draft.sectors[n] : null;
+    const sel = DRAFT.trimOf(n);
     if (sel && sel.length) { const rec = crStreetParts(n); out[n] = rec ? sel.map(i => rec.parts[i]).filter(p => p && p.length > 1) : draft.roads[n]; }
     else out[n] = draft.roads[n];
   }
@@ -9324,7 +9336,7 @@ function crSectorTap(lngLat) { // a map tap while trimming: the sector under the
 function crOpenSectors(name) { // opens a picked street's trimming - TWO doors since Beta 1.128 (Andrew's fork, decided from his 1.127 device session): the panel row (1.127) AND a map tap on the already-picked street (pickStreet routes here), which is where his finger went on device. Beta 1.129: entry SNAPSHOTS the street's pick as it stands (whole road, or the trim in force) - the tap-away's cancel restores that snapshot exactly (through 1.268 the restorer was the sector bar's Cancel button; Beta 1.269 replaced that button with Deselect and the restore's only door is the tap-away)
   if (!draft || !draft.roads || !Object.prototype.hasOwnProperty.call(draft.roads, name)) return; // Beta 1.150: own-property at this door too - a prototype member must not read as a held run and carry the call into the parts work below
   if (!crStreetParts(name)) return;
-  if (crSectorSession.street !== name) crSectorSession.snapshot = (draft.sectors && draft.sectors[name]) ? draft.sectors[name].slice() : null; // a fresh entry only - re-entering the same street's open session must not move Cancel's restore point
+  if (crSectorSession.street !== name) crSectorSession.snapshot = DRAFT.snapshotTrim(name); // a fresh entry only - re-entering the same street's open session must not move Cancel's restore point
   crSectorSession.street = name;
   renderSectorBar();
   const sheet = $('createSheet');
@@ -9335,8 +9347,8 @@ function crOpenSectors(name) { // opens a picked street's trimming - TWO doors s
 function crCloseSectors() { if (!crSectorSession.street) return; crSectorReset(); renderDraft(); syncCrGlow(); const sheet = $('createSheet'); if (sheet && sheet.classList.contains('on')) crMorphTo(crWantedFace()); else syncCrPanel(); crRenderHint(); } // Beta 1.208: syncCrGlow stands here explicitly because Done's path does not re-render the draft - the glow dies with the session, not with the next render. Beta 1.223: Done's path DOES re-render now (renderDraft above) - the draft's active flags live in the source features, so without a rebuild the closed street would stay vibrant on crDraftLineActive instead of returning to its gentle mute; every other session-closing path (Cancel, stage change, street removal, Clear all) already re-rendered, and this was the one that did not (Codex P2, PR #100)
 function crCancelSectors() { // Beta 1.129 (Andrew: "I still need a way to cancel selections while I'm selecting something"): the deliberate back-out of a sector session - the street's pick returns EXACTLY as it was when sector mode was entered (the whole road, or the trim then in force), every face repaints from the restored state, and sector mode closes back to the panel. Distinct from un-picking every sector by toggles, which still removes the street - that is a selection, this is an abandonment of the session's edits. Beta 1.269: the bar's Cancel BUTTON is gone (Deselect stands in its slot) - this path's only door is now the tap-away (crMapTap), which is where Andrew's finger already cancelled; the restore behaviour itself is unchanged
   const s = crSectorSession.street; if (!s || !draft) return;
-  if (crSectorSession.snapshot) { draft.sectors = draft.sectors || {}; draft.sectors[s] = crSectorSession.snapshot.slice(); }
-  else if (draft.sectors) delete draft.sectors[s];
+  if (crSectorSession.snapshot) DRAFT.restoreTrim(s, crSectorSession.snapshot);
+  else DRAFT.dropTrim(s);
   crCloseSectors();
   renderDraft(); renderCrLists();
 }
@@ -10273,7 +10285,7 @@ function renderDraft() { // the DRAFT renders through its own GeoJSON source, co
     const g = crDraftGeom(); // Beta 1.135 (N3): the shared draft geometry - computed once per geometry change, not once per render
     for (const n of draftStreets()) {
       const primary = draft.primaries.has(n) ? 1 : 0;
-      const sel = draft.sectors ? draft.sectors[n] : null;
+      const sel = DRAFT.trimOf(n);
       if (sel || crSectorSession.street === n) {
         const rec = crStreetParts(n); if (!rec) continue;
         const set = crChosenSet(n, rec);
@@ -10377,7 +10389,7 @@ function crPanelRowEl(n, g) { // Beta 1.127 (Andrew's approved mockup, screen 2)
   const meta = document.createElement('span'); meta.className = 'crPMeta';
   const nm = document.createElement('span'); nm.className = 'crPName'; nm.textContent = shortStreetName(n); meta.appendChild(nm); // Beta 1.144 (DA-04): display form, as in the preview rows
   const sub = document.createElement('span'); sub.className = 'crPSub';
-  const sel = draft.sectors ? draft.sectors[n] : null;
+  const sel = DRAFT.trimOf(n);
   if (sel) { const rec = crStreetParts(n); sub.textContent = sel.length + ' of ' + (rec ? rec.parts.length : sel.length) + ' sectors · ' + fmtLenM(crStreetChosenM(n, g)); }
   else sub.textContent = 'Entire road · ' + fmtLenM(g[n] ? g[n].total : 0); // Beta 1.128: the adjust affordance is stated BEFORE any trim exists - in 1.127 it appeared only after one, so an untrimmed row gave no hint it could be tapped at all
   meta.appendChild(sub);
