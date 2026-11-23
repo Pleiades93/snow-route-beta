@@ -246,6 +246,8 @@ jobs:
         run: node tests/browser/selftest-gps-package.mjs
       - name: What's New entry rules (testing-efficiency rollout, 2026-11-23 - the one home of the bullet rule the release proofs used to re-pin by hand)
         run: node tests/browser/selftest-whatsnew.mjs
+      - name: Title-drop judge fixtures (drive216 amended decision C, TESTING.md rule 1 - the judge is extracted in title-drop.mjs and proven in plain Node)
+        run: node tests/browser/selftest-title-drop.mjs
       - name: Gate-script verdict fixtures (protocol fix round, 2026-11-17 - the proof-coverage guard and the proof runner prove both verdicts on synthetic trees)
         run: python3 scripts/gate-fixtures/run-fixtures.py
       - name: Premise lint (advisory - drive premises this PR's app diff touches)

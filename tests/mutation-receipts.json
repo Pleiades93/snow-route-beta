@@ -7940,6 +7940,21 @@
    "red": "Historical: NOTILE2's recorded flakes - the 12%/12% sample landing on the wrong pixel while the icon was still moving (flake log)",
    "green": "New capture (two polls same box + two rAFs + getBoundingClientRect in the same evaluate + re-shoot x3 if moved): drive180 37/37 PASS twice locally; NOTILE2 green in all four runs (the other two failed only the known SEQ1 dark-window env flake)",
    "issued": "2026-11-23 testing-rollout round, local run"
+  },
+  {
+   "id": "testing-rollout-drive216-judge-fixtures",
+   "check": "tests/browser/selftest-title-drop.mjs",
+   "kind": "mutation",
+   "files": {
+    "tests/browser/selftest-title-drop.mjs": "e0d2db9f5931b75207ab8546bd1333ad505ccbf90ec677ba93bb57f2c7badad0",
+    "tests/browser/title-drop.mjs": "d3983c16ffb415bea7cd65b3df289eeea9c0be7540d212806b61ef7b82740a73",
+    "tests/browser/drive216.mjs": "c0460427778a099207427fd944b362528fa896f7a3063aec4b978d544c9968cf",
+    ".github/workflows/checks.yml": "c2057ce67b5edb0f83a9f6c70e4a3c2fc679cc075d37b0e36f9a62b06e2d956b"
+   },
+   "mutation": "title-drop.mjs DROP_RUN lowered from 3 to 2, then to 1 (the pre-decision-C any-single-sample rule): the extracted judge convicts the harmless two-miss and one-miss windows drive216 must spare",
+   "red": "DROP_RUN=2: selftest-title-drop exit 1 (two-consecutive-misses and counter-reset fixtures convict + the DROP_RUN pin fails). DROP_RUN=1: exit 1 (every gap fixture convicts). Both observed locally 2026-11-23.",
+   "green": "Clean tree: selftest-title-drop 14/14 fixtures hold, exit 0; wired as a build-and-test step in checks.yml; drive216 imports judgeTitleDrops from title-drop.mjs and grades the fetched sample window with it (Codex P1 on PR #190: the decision-C predicate was embedded in the in-page expression with its six synthetic cases existing only in a receipt's prose - TESTING.md rule 1 requires the extraction + committed fixtures)",
+   "issued": "2026-11-23 testing-rollout codex-fix (PR #190)"
   }
  ]
 }

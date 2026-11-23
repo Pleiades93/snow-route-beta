@@ -1,4 +1,5 @@
 import { launchDrive, finish, bootThrough } from './harness.mjs';
+import { judgeTitleDrops } from './title-drop.mjs';
 const { proc, send, S, ev, consoleLog, sleep, poll } = await launchDrive();
 await bootThrough(ev, poll);
 if (!await poll(`!!(window.map && map.getSource && map.getSource('centres'))`, 45000)) throw new Error('drive216: the GL stack never landed - the sampler would measure an empty map and pass vacuously');
@@ -16,7 +17,8 @@ if (!await poll(`!!(window.map && map.getSource && map.getSource('centres'))`, 4
 // gestures run (pan, zoom through 15, rotate, theme swap, home), and a
 // name counts as DROPPED if it is placed before AND after a gesture but
 // absent from THREE OR MORE CONSECUTIVE samples during it (amended
-// decision C, Andrew 2026-11-23 - see phaseReport). The pick/load phase is NOT graded -
+// decision C, Andrew 2026-11-23 - the judge lives in title-drop.mjs,
+// proven by selftest-title-drop.mjs). The pick/load phase is NOT graded -
 // the restored system's one re-place after the pick flight (the 1.248
 // hook) is the old behaviour Andrew chose back, not a flicker; grading
 // starts once the boot placement is stable. A second pass repeats the
@@ -45,23 +47,18 @@ await ev(`(() => {
 })()`);
 const mark = async (name) => { await ev(`(() => { window.__pres.marks.push({ name: '${name}', at: window.__pres.samples.length }); return true; })()`); };
 const settle = async () => { await poll(`!!(window.map && map.loaded() && !map.isMoving())`, 30000); await sleep(1600); }; // the observation window runs past the settle on purpose: the heal's blackout landed AT the settle (its rebuild fired at idle), so the samples that convict it are the post-settle ones; the gesture's own frames can starve the 50 ms sampler under render load
-const phaseReport = async (fromMark, toMark) => J(`(() => {
-  const P = window.__pres;
-  const a = P.marks.find(m => m.name === '${fromMark}').at, b = P.marks.find(m => m.name === '${toMark}').at;
-  const win = P.samples.slice(a, b + 1);
-  const before = new Set(win[0] || []), after = new Set(win[win.length - 1] || []);
-  const both = [...before].filter(n => after.has(n));
-  // Amended decision C (Andrew, 2026-11-23): a title counts as dropped
-  // only when THREE OR MORE CONSECUTIVE samples miss it. The old
-  // any-single-sample rule convicted the Bell Harbour case, which the
-  // 2026-11-22 investigation proved was a queryRenderedFeatures blind
-  // spot in the settle after the camera stops - the name renders at
-  // full ink while the query misses it for a sample or two. The graded
-  // property is unchanged: a real teardown (the 1.261 heal's blackout)
-  // misses for many consecutive samples, throttled or not.
-  const dropped = both.filter(n => { let run = 0; for (const sm of win) { run = sm.includes(n) ? 0 : run + 1; if (run >= 3) return true; } return false; });
-  return { samples: win.length, before: before.size, after: after.size, dropped };
-})()`);
+// The drop predicate itself lives in title-drop.mjs (amended decision C:
+// dropped = absent from 3+ consecutive samples) - extracted under
+// docs/TESTING.md rule 1 and proven by selftest-title-drop.mjs; this
+// drive only fetches the phase's sample window and hands it to the judge.
+const phaseReport = async (fromMark, toMark) => {
+  const win = await J(`(() => {
+    const P = window.__pres;
+    const a = P.marks.find(m => m.name === '${fromMark}').at, b = P.marks.find(m => m.name === '${toMark}').at;
+    return P.samples.slice(a, b + 1);
+  })()`);
+  return judgeTitleDrops(Array.isArray(win) ? win : []);
+};
 
 // ---------- baseline: the boot placement, stable ----------
 await settle();
