@@ -8414,6 +8414,20 @@
    "red": "proof-tapguard against the 1.283 parts: 6 of 10 checks fail (1b/1c/1d the guard's shape, 2b the single-argument call sites, 3a/3c the event-time sequences); the same tree passes the browser discriminator's pre-fix leg (two taps 150 ms apart in event time both fire, the mark toggles off)",
    "green": "proof-tapguard 10/10 on the Beta 1.284 tree; the browser discriminator's fixed leg swallows the second tap (one toggle, the mark stays). This r2 refreshes the pins after the gate's type check required the guard's event parameter to be typed structurally (the ES2022-only scope has no DOM Event name) - a comment-only change, the proof re-run green on the refreshed tree",
    "issued": "2026-11-23 beta-1284-marking-cluster"
+  },
+  {
+   "id": "selftest-round112-arch7-1279-r2",
+   "check": "tests/browser/selftest-round112.mjs",
+   "kind": "mutation",
+   "files": {
+    "tests/browser/selftest-round112.mjs": "f23bb0c51ce4bc48507c44ba2472ef184a4185edb6913afc759fca68559b731f",
+    "parts/app2.js": "89f14cbd1a555ee7fc26a2658fb72a15ffffc571726b818fc29f084a903c4757",
+    "parts/app3.js": "32a294c5e73690cee65be215c1d6d145e29ae4224171b620bf5d4fee9c59375d"
+   },
+   "mutation": "NOTEEDIT.flushRebuild in parts/app2.js returns the setNoteText outcome OBJECT instead of its .ok (the historical CG-112-01 truthiness bug, re-derived onto the owner)",
+   "red": "selftest-round112 on the mutated Beta 1.284 tree: '01 failed flush -> rebuilt editor says Not saved - Storage problem' FAILS (16 passed, 1 failed)",
+   "green": "selftest-round112: 17 passed, 0 failed on the byte-exact revert. This r2 refreshes the 1.279 receipt's pins on the 1.284 tree: the selftest's stDel extraction marker was re-pointed to the handler's event-taking head (Beta 1.284 #170) with its claim unchanged, and app2/app3 carry the round's call-site changes",
+   "issued": "2026-11-23 beta-1284-marking-cluster"
   }
  ]
 }
