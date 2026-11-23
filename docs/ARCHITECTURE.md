@@ -658,9 +658,19 @@ was removed whole in Beta 1.193: `drawTrail`, `addTrailLayers` and the
 
 `src/sw.js` (deployed as `sw.js`): integrity-checked core (the two MapLibre
 files) in the shell cache `snowroute-shell-v1`; navigations network-first
-with cache fallback. Map data lives in TWO caches (Beta 1.94, audit F-03):
+with cache fallback. Shell navigations write and read ONLY the two
+canonical shell keys (the scope URL and scope + `index.html`) — never the
+navigation's own query-bearing URL — and activation prunes query-keyed
+variants of those keys left by older builds, so a stale entry can never
+win a launch (Beta 1.285, issue #171). Map data lives in TWO caches (Beta 1.94, audit F-03):
 the downloaded offline pack in `snowroute-offline-v1`, and ordinary
-browsing in `snowroute-tiles-v1` (FIFO-trimmed at 3,000 entries). Every
+browsing in `snowroute-tiles-v1` (FIFO-trimmed at a cap of 3,000 VECTOR
+TILES: the trim counts and evicts only `.mvt` tile entries — glyph
+ranges, sprites and style JSON share the browsing cache but are never
+evicted, because a glyph miss fails the whole tile parse in MapLibre;
+Beta 1.285, issue #175. The `.mvt` suffix is the provider's tile-URL
+shape: a provider or tile-format change must update that classification
+in `bumpTileCount` and re-verify it). Every
 map request is answered by `mapFetch`, which checks the pack cache FIRST
 and only falls through to the per-kind strategies (sprites stale-while-
 revalidate, styles network-first, tiles cache-first) in the browsing

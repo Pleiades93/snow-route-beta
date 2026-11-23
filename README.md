@@ -50,7 +50,7 @@ The detailed storage format and restore rules are documented in `docs/STORAGE-SC
 | `scripts/premise-lint.py` | The premise lint (Beta 1.136): flags drive premises (labels, selectors, contract strings) that a `parts/` diff removes, so expired drives are caught in the same change. |
 | `scripts/shard-durations.json` | The measured per-drive durations `scripts/gen-shards.py` balances the CI shards by. |
 | `scripts/carto-dark-matter-style.json` | The vendored CARTO dark-matter basemap style (Beta 1.96): `scripts/genstyles.mjs` reads this copy and stamps its sha256 into the generated banner — no live fetch at generation time. |
-| `tests/sw.test.mjs` | Service worker fetch-strategy tests (Node, mocked caches/fetch) — 52 checks. |
+| `tests/sw.test.mjs` | Service worker fetch-strategy tests (Node, mocked caches/fetch) — 56 checks. |
 | `tests/browser/` | The deterministic browser drive battery (101 drives, 1627 checks) plus the offline end-to-end suite (46 checks) — see `docs/TESTING.md`. |
 | `DEVELOPMENT_RULES.md` | How changes are built, tested and merged in this repo. |
 | `CHANGELOG.md` | What changed in each Beta version. |

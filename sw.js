@@ -4,7 +4,7 @@
 // the SAME folder as index.html, over https. Without it the page still works
 // online. The activate step deletes this app's older caches (and, once, the
 // pre-rename beta caches) so no stale page survives an update.
-const CACHE = 'snowroute-shell-v1', TILES = 'snowroute-tiles-v1', OFFLINE = 'snowroute-offline-v1', MAX_TILES = 3000;   // App identity: own cache names - production and this app share an origin (same Pages domain), and 'snowroute-' does not match production's 'snow5w-' cleanup prefix, so neither app's worker can delete the other's caches. Beta 1.94 (audit F-03): OFFLINE is the downloaded map pack's own cache - mapFetch checks it FIRST for map data, and the browsing cache's FIFO eviction (MAX_TILES, in bumpTileCount) only ever receives the TILES cache, so the pack the operator downloaded can no longer be silently evicted by ordinary browsing
+const CACHE = 'snowroute-shell-v1', TILES = 'snowroute-tiles-v1', OFFLINE = 'snowroute-offline-v1', MAX_TILES = 3000;   // App identity: own cache names - production and this app share an origin (same Pages domain), and 'snowroute-' does not match production's 'snow5w-' cleanup prefix, so neither app's worker can delete the other's caches. Beta 1.94 (audit F-03): OFFLINE is the downloaded map pack's own cache - mapFetch checks it FIRST for map data, and the browsing cache's FIFO eviction (MAX_TILES, in bumpTileCount) only ever receives the TILES cache, so the pack the operator downloaded can no longer be silently evicted by ordinary browsing. Beta 1.285 (issue #175): that FIFO counts and trims vector tiles only - see bumpTileCount.
 // SEC-1 (external audit, 2026-10-27): the library files are cached ONLY
 // through integrity-checked fetches. The old c.add(url) stored ANY ok
 // response - a captive-portal page cached as maplibre-gl.js would then be
@@ -103,10 +103,14 @@ async function updNav(r, cacheName) {   // Beta 1.221 gate fix (Codex P2, PR #98
     return hit || Response.error();
   }
 }
-async function bumpTileCount(c) { // Beta 1.57 (second audit, item 2): the 1.50 batched-eviction counter lived only in worker memory - iOS stops the worker constantly, resetting it, so the trim check could go long stretches without ever firing and the tile cache drifted past its cap. On the first tile put after a wake, seed the counter from the cache's REAL size; the batching (and its performance point) is unchanged.
+async function bumpTileCount(c) { // Beta 1.57 (second audit, item 2): the 1.50 batched-eviction counter lived only in worker memory - iOS stops the worker constantly, resetting it, so the trim check could go long stretches without ever firing and the tile cache drifted past its cap. On the first cache-first browsing put after a wake, seed the counter from the full post-put cache size. The counter schedules checks every 25 increments.
   if (cacheFirst._n === undefined) { try { cacheFirst._n = (await c.keys()).length; } catch (e) { cacheFirst._n = 0; } }
   cacheFirst._n++;
-  if (cacheFirst._n % 25 === 0) { const ks = await c.keys(); for (let i = 0; i < ks.length - MAX_TILES; i++) await c.delete(ks[i]); }
+  if (cacheFirst._n % 25 === 0) {
+    // Beta 1.285 (issue #175): the cap counts VECTOR TILES ONLY. Glyph ranges (.pbf), sprites and style JSON share this cache but are never evicted: a cache hit does not re-insert an entry, so a glyph range fetched on the first map view stayed oldest and was evicted after ~3000 newer entries - and in MapLibre a failed glyph fetch rejects the whole tile parse, blanking labelled tiles offline. CLASSIFICATION RISK: tiles are recognised by the provider's '.mvt' URL suffix - a provider or tile-format change must update this filter and re-verify it (tests/sw.test.mjs case 14a), or tiles will silently stop being trimmed (or worse, non-tiles start being evicted again).
+    const tiles = (await c.keys()).filter(key => new URL(key.url).pathname.endsWith('.mvt'));
+    for (let i = 0; i < tiles.length - MAX_TILES; i++) await c.delete(tiles[i]);
+  }
 }
 async function cacheFirst(r, cacheName) {
   const c = await caches.open(cacheName);

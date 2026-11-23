@@ -8454,6 +8454,19 @@
    "red": "Suite against the broad-prune worker (scratch copy, work/offline-cluster-2026-11-23/red171-broad): exit 1, exactly 2 FAIL - '#171 activation prunes only stray entries before claiming clients' and '#171 activation keeps legitimate non-shell residents (narrow prune)' - the prune deleted a same-origin asset entry and a non-CORE CDN entry; all navigation checks PASS (50 PASS total)",
    "green": "Shipped narrowed prune (only query-keyed variants of the two shell keys are deleted): suite exit 0, 52/52 PASS",
    "issued": "2026-11-23 offline-cluster round (issue #171 takeover adjudication), local run"
+  },
+  {
+   "id": "offline175-tile-trim",
+   "check": "tests/sw.test.mjs",
+   "kind": "historical",
+   "files": {
+    "tests/sw.test.mjs": "2d57c72770ed25bc3392f8377628a594ad24b34d0d6ae563f664227bb94491f2",
+    "src/sw.js": "18c5864567555a5eee6d6250c91d569e2b5409d11b27d3dae192b19d7e698f1a"
+   },
+   "mutation": "src/sw.js at the #171 commit of this branch (pre-#175): bumpTileCount's batched trim deleted the browsing cache's oldest keys indiscriminately - glyphs (.pbf), sprites and style JSON counted toward MAX_TILES and were evicted oldest-first, and a cacheFirst hit never re-inserts, so a first-view glyph range stayed oldest until evicted",
+   "red": "Current suite against the pre-#175 worker (scratch copy, work/offline-cluster-2026-11-23/red175): exit 1, exactly 3 FAIL - '#175 the oldest browsing glyph survives the trim', '#175 the oldest browsing sprite survives the trim', '#175 the browsing glyph is still served offline'; the F-03 cap assertion and the exactly-3000 tile count PASS on the old worker (53 PASS total) - the cap existed, it counted the wrong entries",
+   "green": "Shipped tile-only trim: node tests/sw.test.mjs exit 0, 56/56 PASS (52 prior + 4 new #175 assertions)",
+   "issued": "2026-11-23 offline-cluster round (issue #175 takeover), local run"
   }
  ]
 }

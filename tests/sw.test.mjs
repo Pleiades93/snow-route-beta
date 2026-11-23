@@ -305,8 +305,8 @@ check('1.57 seed: after a restart the counter re-seeds from the real size (26 st
 
 // 14. Beta 1.94 (audit F-03): the downloaded offline pack lives in its OWN
 // cache (snowroute-offline-v1). mapFetch serves a pack hit with the network
-// DOWN, and the browsing cache's FIFO eviction (which trims
-// snowroute-tiles-v1 to MAX_TILES) can never reach into the pack cache -
+// DOWN, and the browsing cache's FIFO eviction (which trims vector tiles
+// in snowroute-tiles-v1 to MAX_TILES) can never reach into the pack cache -
 // before 1.94 the pack shared the browsing cache and ordinary browsing
 // could silently evict the download the operator was relying on. This case
 // needs NAME-AWARE cache mocks; the earlier cases shared one store.
@@ -324,16 +324,40 @@ fetchImpl = async () => { throw new Error('offline'); };
 r = await mapFetch(packTile, null);
 check('F-03 pack hit is served with the network down', (await r.text()) === 'PACK-TILE');
 const floodStore = new Map();
-for (let i = 0; i < 3010; i++) floodStore.set('https://tiles.basemaps.cartocdn.com/flood/' + i, new Response('F'));
+for (let i = 0; i < 3010; i++) floodStore.set('https://tiles.basemaps.cartocdn.com/v/t/15/1/' + i + '.mvt', new Response('F'));
 namedStores.set('snowroute-tiles-v1', floodStore);
 fetchImpl = async () => new Response('FRESH-TILE', { status: 200 });
 delete cacheFirst._n; // fresh worker: the eviction counter re-seeds from the flooded cache
-for (let i = 0; i < 14; i++) await cacheFirst(new Request('https://tiles.basemaps.cartocdn.com/fresh/' + i), 'snowroute-tiles-v1'); // 14 puts cross the seeded counter's first batch boundary (3025): the trim fires exactly there - between boundaries the cache may sit up to 24 over the cap by design (Beta 1.50 batching)
+for (let i = 0; i < 14; i++) await cacheFirst(new Request('https://tiles.basemaps.cartocdn.com/v/t/15/2/' + i + '.mvt'), 'snowroute-tiles-v1'); // 14 puts cross the seeded counter's first batch boundary (3025): the trim fires exactly there - between boundaries the cache may sit up to 24 over the cap by design (Beta 1.50 batching)
 check('F-03 eviction trims the browsing cache back to its cap at the batch boundary', floodStore.size === 3000);
 check('F-03 the pack entry survives browsing-cache eviction', namedStores.get('snowroute-offline-v1').has(packTile.url));
 fetchImpl = async () => { throw new Error('offline'); };
 r = await mapFetch(packTile, null);
 check('F-03 pack hit still served after the eviction ran', (await r.text()) === 'PACK-TILE');
+
+// 14a. Beta 1.285 (issue #175): the earliest glyph and sprite survive a browsing trim,
+// and the glyph still answers a map request when the network is down.
+const glyphReq = new Request('https://protomaps.github.io/basemaps-assets/fonts/Noto%20Sans%20Regular/0-255.pbf');
+const spriteReq = new Request('https://protomaps.github.io/basemaps-assets/sprites/v4/light.png');
+const mixedStore = new Map([
+  [glyphReq.url, new Response('BROWSING-GLYPH')],
+  [spriteReq.url, new Response('BROWSING-SPRITE')]
+]);
+for (let i = 0; i < 3010; i++) mixedStore.set('https://tiles.basemaps.cartocdn.com/v/t/15/1/' + i + '.mvt', new Response('TILE'));
+namedStores.set('snowroute-tiles-v1', mixedStore);
+delete cacheFirst._n;
+fetchImpl = async () => new Response('FRESH-TILE');
+// 3012 seeded entries plus 12 puts and the initial post-put increment reach 3025.
+for (let i = 0; i < 12; i++) {
+  await mapFetch(new Request('https://tiles.basemaps.cartocdn.com/v/t/15/2/' + i + '.mvt?v=1'), null);
+}
+check('#175 the oldest browsing glyph survives the trim', mixedStore.has(glyphReq.url));
+check('#175 the oldest browsing sprite survives the trim', mixedStore.has(spriteReq.url));
+const mixedTileCount = [...mixedStore.keys()].filter(url => url.includes('.mvt')).length;
+check('#175 browsing vector tiles trim to exactly 3000 in the mixed cache', mixedTileCount === 3000);
+fetchImpl = async () => { throw new Error('offline'); };
+r = await mapFetch(glyphReq, null);
+check('#175 the browsing glyph is still served offline', (await r.text()) === 'BROWSING-GLYPH');
 
 // 15. Beta 1.96 (audit-2, N-2): a request in reload mode (the Download button's
 // deliberate re-download, which fetches with cache:'reload') must BYPASS the
