@@ -8401,6 +8401,19 @@
    "red": "proof-sync-perf against the 1.283 engine in a scratch tree: check 3 fails - median single-mark sync on the 102-street host 11834.6 ms against the 1500 ms bound (the round harness measured the same baseline at 7293.2 ms median on a quieter run); the liveness checks 1-2 pass there, so the failure is the bound, not the work",
    "green": "proof-sync-perf 3/3 on the Beta 1.284 tree (median 70.7-75.2 ms across runs); output equivalence of the new engine against the pre-fix engine proven separately over 729 board states, byte-identical (the round's harness, golden hashes from the pre-fix engine)",
    "issued": "2026-11-23 beta-1284-marking-cluster"
+  },
+  {
+   "id": "tapguard-event-time-1284-r2",
+   "check": "tests/proof/proof-tapguard.mjs",
+   "kind": "historical",
+   "files": {
+    "tests/proof/proof-tapguard.mjs": "415fcf75d62f48da9b9aad3a6f2569b95fb8e0963bb700ba350ecf53f2519298",
+    "parts/app1.js": "a271bdfb82dfaa7464df5eb13ab0fc721deeffa672180b3657cd954fed5f5ddc"
+   },
+   "mutation": "parts/app1.js at 43d711d2 (Beta 1.283): tapGuard(key) reading Date.now() at handler time, the truthiness stored-check, and all 24 single-argument call sites",
+   "red": "proof-tapguard against the 1.283 parts: 6 of 10 checks fail (1b/1c/1d the guard's shape, 2b the single-argument call sites, 3a/3c the event-time sequences); the same tree passes the browser discriminator's pre-fix leg (two taps 150 ms apart in event time both fire, the mark toggles off)",
+   "green": "proof-tapguard 10/10 on the Beta 1.284 tree; the browser discriminator's fixed leg swallows the second tap (one toggle, the mark stays). This r2 refreshes the pins after the gate's type check required the guard's event parameter to be typed structurally (the ES2022-only scope has no DOM Event name) - a comment-only change, the proof re-run green on the refreshed tree",
+   "issued": "2026-11-23 beta-1284-marking-cluster"
   }
  ]
 }
